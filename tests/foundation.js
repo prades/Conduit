@@ -70,10 +70,13 @@ const OLD_NAMES = ['spawnPredatorForZone', 'generateSegment', 'ensureWorldTo', '
         same(r.fp, true, 'facilityPlay'); same(r.n, 3, 'the squad'); same(r.room, 'Crystal Chamber', 'the room'); same(r.els, 'core,electric,fire,flux,ice,toxic', 'every element'); same(r.shards, r.start, 'the starting crystals');
         ok(r.creatures >= 1 && r.creatures <= r.cap, r.creatures + ' creatures (cap ' + r.cap + ')'); same(r.near, true, 'the squad is at the Crystal');
     });
-    check('it writes only its own keys: conduit_fp_*', () => {
-        run('toggleGfxLow(); togglePerfReadout(); toggleGfxLow(); togglePerfReadout(); if (typeof facilitySaveNow === "function") facilitySaveNow();');
-        const keys = Object.keys(store); ok(keys.length >= 2, 'nothing was written: ' + keys.join()); same(keys.filter(k => !/^conduit_fp_/.test(k)).join(), '', 'a key that is not the facility\'s');
-        ok(keys.includes('conduit_fp_gfx') && keys.includes('conduit_fp_perf'), 'the settings keys: ' + keys.join());
+    check('it writes only its own keys: conduit_fp_*; the save carries the crystals and the kill count, and puts them back', () => {
+        run('toggleGfxLow(); togglePerfReadout(); toggleGfxLow(); togglePerfReadout(); shardCount = 137; lifetimeKills = 4; _fp.saveReady = true; facilitySaveWrite();');
+        const keys = Object.keys(store); ok(keys.length >= 3, 'nothing was written: ' + keys.join()); same(keys.filter(k => !/^conduit_fp_/.test(k)).join(), '', 'a key that is not the facility\'s');
+        ok(keys.includes('conduit_fp_gfx') && keys.includes('conduit_fp_perf') && keys.includes('conduit_fp_save'), 'the keys: ' + keys.join());
+        const d = JSON.parse(store.conduit_fp_save); same(d.shards, 137, 'the crystals in the save'); same(d.kills, 4, 'the kills in the save');
+        const r = J('(function(){ shardCount = 5; lifetimeKills = 0; facilitySaveApply(JSON.parse(localStorage.getItem("conduit_fp_save"))); return [shardCount, lifetimeKills]; })()'); same(r.join(), '137,4', 'put back');
+        run('shardCount = STARTING_SHARDS; lifetimeKills = 0;');
     });
 
     group('A KILL PAYS ON THE SPOT');

@@ -18,12 +18,12 @@ async function check(name, fn) {
 function ok(c, m) { if (!c) throw new Error(m); }
 
 (async () => {
-    const ctx = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const ctx = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), ctx, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
-    ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; ');
+    ok(run('world.length') > 100, 'fixture: the facility did not build');
+    run('gameState.running = true; facilityBlackoutSet(false);');
 
     // Two fresh followers at (6,2) and (6+gap,2), both "in combat" every tick
     // if `fighting`, run `ticks` bond checks. Returns them on globalThis.
@@ -51,14 +51,14 @@ function ok(c, m) { if (!c) throw new Error(m); }
         ok(/hpStat:Math\.max\(1,newHp\), uid:a\.uid[ ,]/.test(rd('js/game.js')), 'the respawn queue does not carry the uid');
         ok(/bondRestoreFields\(npc, \{ uid: entry\.uid \}\)/.test(rd('js/game.js')), 'the respawn does not restore it');
     });
-    await check('uid and partner survive the wave-transition save', () => {
-        const r = run(`(function(){ const npc0 = { uid: 77, partnerUid: 78 }; actors.length = 0; followers.length = 0;
+    await check('uid and partner survive the facility\'s save (js/facilitysave.js)', () => {
+        const r = run(`(function(){ actors.length = 0; followers.length = 0;
             spawnFollowerFromSave({ element: 'fire', uid: 77, partnerUid: 78 }); const f = followers[followers.length - 1];
             spawnFollowerAtCrystal('ice'); const g = followers[followers.length - 1];
             return { uid: f.uid, partner: f.partnerUid, next: g.uid }; })()`);
         ok(r.uid === 77 && r.partner === 78, JSON.stringify(r));
         ok(r.next > 77, 'a new follower reused a saved uid: ' + r.next);
-        ok(/uid:\s+a\.uid \|\| null,\s+partnerUid:\s+a\.partnerUid \|\| null/.test(rd('js/waves.js')), 'the roster does not save them');
+        ok(/uid:\s*a\.uid \|\| null,\s*partnerUid:\s*a\.partnerUid \|\| null/.test(rd('js/facilitysave.js')), 'the roster does not save them');
     });
 
     group('FORMING');

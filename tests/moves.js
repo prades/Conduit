@@ -19,7 +19,7 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
     rotshard: 'corrodeShot', mimic: 'gravitySlam', petal: 'aegisBloom', hornshell: 'aegisBloom', caldera: 'eruption', seeper: 'eruption', maw: 'chomp' };
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
@@ -30,10 +30,10 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
     check('every form has its move in the table (so every move has a row)', () => {
         for (const id of J('Object.keys(EVOLUTIONS)')) { const n = J(`EVOLUTIONS[${JSON.stringify(id)}].move`); ok(J(`!!MOVE_BY_NAME[${JSON.stringify(n)}]`), id + ': no row for ' + n); }
     });
-    check('every attack row fires a real function; the worker moves fire nothing', () => {
-        for (const id of J('Object.keys(MOVES)')) { const w = ['rewire', 'rapid_discharge', 'heavy_haul'].includes(id); same(J(`typeof MOVES[${JSON.stringify(id)}].fn`), w ? 'object' : 'function', id); }
+    check('every row fires a real function', () => {
+        for (const id of J('Object.keys(MOVES)')) same(J(`typeof MOVES[${JSON.stringify(id)}].fn`), 'function', id);
     });
-    check('every attack move has an INFO row (js/unitinfo.js reads it by name; the worker moves are described by their job)', () => { for (const id of J('Object.keys(MOVES).filter(k => MOVES[k].fn)')) ok(J(`typeof MOVE_INFO[MOVES[${JSON.stringify(id)}].name]`) === 'function', id + ' has no MOVE_INFO'); });
+    check('every move has an INFO row (js/unitinfo.js reads it by name)', () => { for (const id of J('Object.keys(MOVES)')) ok(J(`typeof MOVE_INFO[MOVES[${JSON.stringify(id)}].name]`) === 'function', id + ' has no MOVE_INFO'); });
 
     group('THE SAME MOVE AS BEFORE');
     check('each form\'s default move is the function the old chain called', () => {
@@ -42,7 +42,6 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
             ok(got && got.indexOf(fn + '(') >= 0, id + ': ' + got + ' is not ' + fn);
         }
     });
-    check('the worker forms have nothing to fire', () => { for (const id of ['vessel', 'pod', 'hauler']) same(run(`(function(){ const m = evoMoveOf({ evolved: ${JSON.stringify(id)} }); return m && m.fn ? 'fires' : 'none'; })()`), 'none', id); });
     check('evolutionTick fires the form\'s move, once its cooldown is up', () => {
         run(`gameState.running = true; followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__f = followers[followers.length - 1]; __f.evolved = 'quillstone'; __f._moltAt = -1e9; __f._sigCd = 0;
              globalThis.__fired = 0; globalThis.__keep = MOVES.quill_burst.fn; MOVES.quill_burst.fn = f => { __fired++; f._sigCd = 100; return true; }; evolutionTick();`);

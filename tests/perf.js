@@ -22,6 +22,7 @@
 // is in operations. The rest is the safety property: a cull that is too tight
 // makes things pop in and out at the edges, so every rejection is checked
 // against a conservative idea of what is visible, across the whole map.
+// The scene is the facility (js/init.js boots it): the camera in the arena among its creatures and a squad.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -31,6 +32,7 @@ const SRC = {
     game:   fs.readFileSync(path.join(ROOT, 'js/game.js'),     'utf8'),
     config: fs.readFileSync(path.join(ROOT, 'js/config.js'),   'utf8'),
     elements: fs.readFileSync(path.join(ROOT, 'js/elements.js'), 'utf8'),
+    save:   fs.readFileSync(path.join(ROOT, 'js/facilitysave.js'), 'utf8'),
 };
 
 let failures = 0;
@@ -65,8 +67,7 @@ function boot(counts) {
         },
         set(t, k, v) { counts.n++; t[k] = v; return true; },
     });
-    // A fixed world seed, so the scene is the same every run.
-    const sandbox = makeBrowserSandbox({ tubecrawler_seed: '305419896' });
+    const sandbox = makeBrowserSandbox({});
     const el = () => ({
         style: {}, classList: { add(){}, remove(){}, contains: () => false, toggle(){} },
         textContent: '', innerHTML: '', appendChild(){}, removeChild(){},
@@ -85,38 +86,27 @@ function boot(counts) {
     return { run: e => vm.runInContext(e, ctx), sandbox };
 }
 
-// A busy mid-game board: a dozen pylons, a squad, a pack of predators, loose
-// charged mass and a live infestation. Roughly what a bad moment looks like.
+// A busy moment in the arena: the camera among a squad of ten and a dozen hunting creatures, the alarm up, the facility lit.
 const SCENE = `(function(){
-    gameState.running = true;
-    gameState.phase = "night";
-    // A quota nothing will meet: otherwise checkWaveClear fires on the first
-    // frame and sets running = false, and every later render() returns at once.
-    nightKillCount = 0; nightEnemiesTarget = 99999;
-    alertActive = true; alertTimer = 99999; alertSource = { x: 20, y: 2 };
+    gameState.running = true; facilityBlackoutSet(false);
+    alertActive = true; alertTimer = 99999; alertSource = { x: crystal.x, y: crystal.y };
     unlockedElements = new Set(ELEMENTS.map(e => e.id));
     shardCount = 500;
-    const floor = world.filter(t => !t.pillar && !t.nest && !t.nodeType && t.y >= 0 && t.y <= 3);
-    let made = 0;
-    for (let i = 0; i < floor.length && made < 12; i += 7) {
-        _executeBuildInstant(ELEMENTS[made % ELEMENTS.length], floor[i]); made++;
+    const O = { x: 34, y: 50 };   // open arena floor: x 26..48 at y 49..52 (js/facilitymap.js)
+    player.x = player.targetX = player.visualX = O.x; player.y = player.targetY = player.visualY = O.y; player.fpPath = null;
+    actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
+    for (let k = 0; k < 10; k++) {
+        spawnFollowerAtCrystal(ELEMENTS[k % ELEMENTS.length].id);
+        const f = followers[followers.length - 1]; f.returningToCrystal = false; f.x = O.x - 4 + (k % 5) * 2; f.y = O.y - 1 + Math.floor(k / 5) * 2; if (f.post) f.post = 'arena';
     }
-    for (let k = 0; k < 10; k++) spawnFollowerAtCrystal(ELEMENTS[k % ELEMENTS.length].id);
     let preds = 0;
     for (const sp of Object.keys(SPECIES)) {
         for (const cls of ['scout','striker']) {
-            const def = SPECIES[sp][cls]; if (!def) continue;
-            const p = new Predator(cls, Object.assign({}, def, {color: SPECIES[sp].color}), 6 + preds * 2, 2);
-            p.speciesName = sp; p.className = cls; p.state = "hunt"; p.entryDelay = 0;
-            applySpeciesBody(p, sp); if (typeof initAbility === 'function') initAbility(p);
-            actors.push(p); preds++; if (preds >= 12) break;
+            if (preds >= 12) break;
+            spawnCreature({ species: sp, className: cls, x: O.x - 6 + preds, y: O.y + 1, state: 'hunt' }); preds++;
         }
         if (preds >= 12) break;
     }
-    for (let k = 0; k < 8; k++) spawnChargedMass(4 + k, 2, 10);
-    for (const g of world.filter(t => t.pillar && t.pillarTeam === 'green').slice(0, 3))
-        convertPylonToRed(g, {speciesName:'spider', className:'striker', color:'#a5f'});
-    _cacheAge = -999;
     return { tiles: world.length, actors: actors.length };
 })()`;
 
@@ -124,10 +114,9 @@ const SCENE = `(function(){
     const counts = { n: 0 };
     const E = boot(counts);
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
-    E.sandbox.SRCGAME = SRC.game;
     const scene = E.run(SCENE);
     E.run('for (let i = 0; i < 40; i++) render();');   // settle the caches
-    ok(scene.tiles > 400, 'fixture: the world should have generated, got ' + scene.tiles);
+    ok(scene.tiles > 400, 'fixture: the facility should have built, got ' + scene.tiles);
     ok(E.run('gameState.running'), 'fixture: the loop stopped itself');
 
     // ─────────────────────────────────────────────────────
@@ -140,8 +129,9 @@ const SCENE = `(function(){
         const bad = E.run(`(function(){
             const cx = canvas.width / 2, cy = canvas.height / 2;
             const misses = [];
-            for (let px0 = -12; px0 <= 78; px0 += 3) {
-                for (let py0 = -1; py0 <= 5; py0 += 2) {
+            const B = _fp.F.bounds;
+            for (let px0 = Math.floor(B.minX) - 12; px0 <= Math.ceil(B.maxX) + 12; px0 += 3) {
+                for (let py0 = Math.floor(B.minY) - 1; py0 <= Math.ceil(B.maxY) + 1; py0 += 4) {
                     player.visualX = px0; player.visualY = py0;
                     for (const t of world) {
                         const dx = t.x - px0, dy = t.y - py0;
@@ -158,6 +148,7 @@ const SCENE = `(function(){
                     }
                 }
             }
+            player.visualX = player.x; player.visualY = player.y;
             return misses.slice(0, 5);
         })()`);
         same(bad.length, 0, 'culled something visible: ' + bad.join(' | '));
@@ -175,6 +166,7 @@ const SCENE = `(function(){
                 const dy = (below * 2) * TILE_H;
                 rows.push([dy, visibleForDraw(t.x, t.y)]);
             }
+            player.visualX = player.x; player.visualY = player.y;
             return rows;
         })()`);
         // Everything within 150px below the edge must survive.
@@ -220,7 +212,7 @@ const SCENE = `(function(){
 
     check('it drops roughly half the tiles the old filter kept', () => {
         const r = E.run(`(function(){
-            player.visualX = 2; player.visualY = 2;
+            player.visualX = player.x; player.visualY = player.y;
             const old = world.filter(t => Math.abs(t.x - player.visualX) < RENDER_DIST).length;
             const now = world.filter(t => visibleForDraw(t.x, t.y)).length;
             return { old, now };
@@ -233,99 +225,16 @@ const SCENE = `(function(){
         const at = SRC.game.indexOf('let drawList=');
         const body = SRC.game.slice(at, at + 900);
         ok(at > -1, 'the draw list build could not be located');
-        for (const coll of ['shards', 'chargedMass', 'actors', 'groundItems']) {
-            ok(new RegExp(coll + '\\.forEach\\([a-z]=>\\{ if\\(visibleForDraw').test(body),
-               coll + ' is not culled');
-        }
+        ok(/actors\.forEach\([a-z]=>\{ if\(visibleForDraw/.test(body), 'actors are not culled');
     });
 
-    // A SEPARATE world for the two groups below. They advance the wave, raise
-    // a facility alarm, run thousands of frames and swap the `world` array —
-    // and the frame-budget check further down reads the shared scene. Run in
-    // it, they left it drawing nothing at all and the budget measured 0 ops.
+    // A SEPARATE facility for the group below: it moves the camera all over the
+    // map for hundreds of frames, and the frame-budget check further down reads
+    // the shared scene as it was settled.
     const P = boot({ n: 0 });
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
-    P.sandbox.SRCGAME = SRC.game;
     P.run(SCENE);
     P.run('for (let i = 0; i < 40; i++) render();');
-
-    // ─────────────────────────────────────────────────────
-    group('the predator population is capped');
-
-    // The other half of "the game's going too slow now", and the bigger half.
-    //
-    // The per-zone caps bound WHERE predators are, not how many exist. A
-    // facility alarm makes every zone an alarm zone, each allowing 2+z, so at
-    // wave 9 the zones alone allow 3+4+...+11 = 63 alive at once.
-    //
-    // That is the term the frame scales on. Measured at wave 9 with the alarm
-    // up, holding everything else fixed: 61 predators cost 7.02ms of JS a
-    // frame, 40 cost 5.22, 29 cost 4.27, 16 cost 3.73 and 9 cost 3.33 — a flat
-    // ~0.07ms each on a ~3ms floor. Nothing else in the frame grows like that.
-
-    check('THE CAP: it is a named constant, not a number inline', () => {
-        ok(/const MAX_LIVE_PREDATORS = \d+/.test(SRC.config),
-           'the population ceiling is not a named constant');
-        ok(/_livePredators >= MAX_LIVE_PREDATORS/.test(SRC.game),
-           'the spawn loop does not consult it');
-    });
-
-    check('a facility alarm cannot fill the map past the cap', () => {
-        const r = P.run(`(function(){
-            gameState.phase = 'night'; gameState.nightNumber = 12;
-            activeDayZones = 12;
-            try { triggerAlarm('facility', 20, 2); } catch(e) {}
-            nightEnemiesTarget = 999999;
-            let peak = 0;
-            for (let f = 0; f < 2500; f++) {
-                gameState.running = true; alertTimer = 999999;
-                render();
-                const n = actors.filter(a => !a.dead && a instanceof Predator
-                                             && a.team !== 'green' && !a.isClone).length;
-                if (n > peak) peak = n;
-            }
-            return { peak, cap: MAX_LIVE_PREDATORS, night: gameState.nightNumber };
-        })()`);
-        ok(r.peak > 0, 'fixture: nothing spawned at all');
-        ok(r.peak <= r.cap + 1,
-           `${r.peak} predators alive against a cap of ${r.cap} at wave ${r.night}`);
-    });
-
-    check('but it still fills UP to the cap — this is not a spawn freeze', () => {
-        const r = P.run(`(function(){
-            return actors.filter(a => !a.dead && a instanceof Predator
-                                      && a.team !== 'green' && !a.isClone).length;
-        })()`);
-        ok(r >= Math.min(8, P.run('MAX_LIVE_PREDATORS')),
-           `only ${r} predators alive — the cap is starving the wave, not bounding it`);
-    });
-
-    check('your own clones do not eat the enemy budget', () => {
-        // Behaviour, not source. The first version of this check read the spawn
-        // loop's own inline counter, and passed when the exclusion was deleted
-        // from livePredatorCount() — because there were two counters. There is
-        // one now, and this asks it directly.
-        const r = P.run(`(function(){
-            const before = livePredatorCount();
-            const S = SPECIES['ant'];
-            const mine = [];
-            for (let i = 0; i < 4; i++) {
-                const c = new Predator('scout', Object.assign({}, S.scout, {color:S.color}), 1, 2);
-                c.team = 'green'; c.isClone = true; c.speciesName = 'ant'; c.className = 'scout';
-                actors.push(c); mine.push(c);
-            }
-            const withClones = livePredatorCount();
-            const foe = actors.find(a => !a.dead && a instanceof Predator
-                                         && a.team !== 'green' && !a.isClone);
-            let afterDeath = withClones;
-            if (foe) { foe.dead = true; afterDeath = livePredatorCount(); foe.dead = false; }
-            for (const c of mine) c.dead = true;
-            return { before, withClones, afterDeath, hadFoe: !!foe };
-        })()`);
-        same(r.withClones, r.before, 'four clones of yours changed the enemy count');
-        ok(r.hadFoe, 'fixture: no live predator to kill');
-        same(r.afterDeath, r.before - 1, 'a corpse is still being counted as alive');
-    });
 
     // ─────────────────────────────────────────────────────
     group('the scan does not grow with the map');
@@ -333,11 +242,8 @@ const SCENE = `(function(){
     // THE SECOND REPORT: "the game's going too slow now."
     //
     // Profiled again. The draw list was `world.filter(visibleForDraw)` — every
-    // tile in the world, every frame — and `world` is appended to as the player
-    // walks. Measured: 1256 tiles scanned to find 158 on screen, and twice the
-    // scan for the same picture after walking twice as far. Directly A/B'd, the
-    // filter went 0.078ms -> 0.228ms as the world grew 752 -> 2352 tiles, while
-    // the column-indexed version held flat at 0.022ms.
+    // tile in the world, every frame. Measured: 1256 tiles scanned to find 158
+    // on screen. The column-indexed version holds flat however big the map is.
     //
     // A cache keyed on the camera was tried first and was worthless: the camera
     // moves further in one frame than any lag small enough to be safe, so it
@@ -356,55 +262,22 @@ const SCENE = `(function(){
                 const a = new Set(want), b = new Set(got);
                 if (a.size !== b.size || [...a].some(t => !b.has(t))) mismatches++;
             };
-            // Forward, backward, across the tunnel, and at the extreme rows
-            // where the isometric skew is largest.
+            // The camera carried all over the facility, its rows and its columns, and the
+            // corners where the isometric skew is largest.
+            const B = _fp.F.bounds, put = (x, y) => { player.x = player.targetX = player.visualX = x; player.y = player.targetY = player.visualY = y; player.fpPath = null; };
             for (let leg = 0; leg < 14; leg++) {
-                player.targetX = player.x + (leg % 7 === 6 ? -6 : 4);
-                player.targetY = [0, 1, 2, 3, 3.5, -0.5][leg % 6];
-                for (let f = 0; f < 30; f++) { gameState.running = true; render(); check(); }
+                for (let f = 0; f < 30; f++) { put(B.minX + ((leg * 11 + f * 2) % (B.maxX - B.minX)), B.minY + ((leg * 7 + f) % (B.maxY - B.minY))); gameState.running = true; render(); check(); }
             }
-            for (const y of [-0.5, 0, 4]) {
-                player.y = y; player.visualY = y;
+            for (const [x, y] of [[B.minX, B.minY], [B.maxX, B.minY], [B.minX, B.maxY], [B.maxX, B.maxY]]) {
+                put(x, y);
                 for (let f = 0; f < 20; f++) { gameState.running = true; render(); check(); }
             }
             return { frames, mismatches, worldMax };
         })()`);
         ok(r.frames > 300, 'fixture: too few frames to judge — ' + r.frames);
-        ok(r.worldMax > 700, 'fixture: the world never grew — ' + r.worldMax);
+        ok(r.worldMax > 700, 'fixture: the facility is too small to judge — ' + r.worldMax);
         same(r.mismatches, 0,
              `the indexed list differed from the full filter on ${r.mismatches} of ${r.frames} frames`);
-    });
-
-    // Its own world again: this one walks a thousand tiles to make the map
-    // grow, and the check before it has already advanced P to wave 13 with a
-    // facility alarm up, where nothing generated at all.
-    const G = boot({ n: 0 });
-    for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
-
-    check('THE POINT: the scan stays flat as the world grows', () => {
-        // A window that quietly widened to the whole map would still produce
-        // the correct set — just slowly — so correctness alone cannot tell a
-        // working index from a broken one. This is the performance property.
-        const r = G.run(`(function(){
-            const out = [];
-            // The world is generated out to x=80 at boot and only extends once
-            // the player passes x=70, so a short stroll never grows it at all.
-            for (const walk of [0, 700, 700]) {
-                for (let s = 0; s < walk; s++) { player.targetX = player.x + 6; gameState.running = true; render(); }
-                visibleTilesForDraw();
-                out.push({ world: world.length, scan: _lastDrawScan, vis: visibleTilesForDraw().length });
-            }
-            return out;
-        })()`);
-        ok(r[2].world > r[0].world * 1.4,
-           'fixture: the world did not grow enough to judge — ' + JSON.stringify(r.map(x => x.world)));
-        for (const x of r) {
-            ok(x.scan < x.world / 2,
-               `scanned ${x.scan} candidates of ${x.world} tiles — the window is not bounding anything`);
-        }
-        // Flat, not merely smaller: the last scan must not have grown with the map.
-        ok(r[2].scan < r[0].scan * 1.5,
-           `the scan grew with the world: ${r.map(x => x.scan).join(' -> ')}`);
     });
 
     check('it touches far fewer tiles than the world holds', () => {
@@ -413,23 +286,25 @@ const SCENE = `(function(){
             const cols = tileColumns();
             let indexed = 0;
             for (const c of cols.values()) indexed += c.length;
-            return { world: world.length, cols: cols.size, indexed,
+            return { world: world.length, cols: cols.size, indexed, scan: _lastDrawScan,
                      visible: visibleTilesForDraw().length };
         })()`);
         same(r.indexed, r.world, 'the index lost tiles: ' + r.indexed + ' of ' + r.world);
         ok(r.visible < r.world / 3,
            `${r.visible} visible of ${r.world} — the scene is too small to prove anything`);
+        ok(r.scan < r.world / 2,
+           `scanned ${r.scan} candidates of ${r.world} tiles — the window is not bounding anything`);
     });
 
     check('the index is DERIVED from world, so it cannot drift', () => {
-        // Anything pushed into world by anybody must appear, whoever pushed it
-        // — js/helpers.js pushes a fireWall tile without going near generation.
+        // Anything pushed into world by anybody must appear, whoever pushed it.
         const r = P.run(`(function(){
             visibleTilesForDraw();
             const before = visibleTilesForDraw().length;
-            const t = { type: 'fireWall', x: Math.round(player.visualX), y: 2, life: 180 };
+            const t = { type: 'floor', x: Math.round(player.visualX), y: Math.round(player.visualY) };
             world.push(t);
             const after = visibleTilesForDraw();
+            world.pop();
             return { before, has: after.includes(t) };
         })()`);
         same(r.has, true, 'a tile pushed straight into world never reached the draw list');
@@ -439,7 +314,7 @@ const SCENE = `(function(){
         const r = P.run(`(function(){
             visibleTilesForDraw();
             const old = world;
-            world = [{ type: 'floor', x: Math.round(player.visualX), y: 2 }];
+            world = [{ type: 'floor', x: Math.round(player.visualX), y: Math.round(player.visualY) }];
             const got = visibleTilesForDraw();
             const fromOld = got.some(t => old.includes(t));
             world = old;
@@ -454,11 +329,11 @@ const SCENE = `(function(){
     group('the frame budget');
 
     // Deterministic, unlike timing: this is how much we ask the rasteriser to
-    // do. Measured at 14,327 for this scene after the cull, down from 25,398.
+    // do. Measured at 14,327 for the old scene after the cull, down from 25,398.
     const OP_BUDGET = 19000;
 
     check(`one frame issues fewer than ${OP_BUDGET} canvas operations`, () => {
-        E.run('player.visualX = 2; player.visualY = 2;');
+        E.run('player.visualX = player.x; player.visualY = player.y;');
         E.run('render();');            // settle after the sweep moved the camera
         counts.n = 0;
         E.run('render();');
@@ -478,10 +353,10 @@ const SCENE = `(function(){
     check(`each extra follower on screen costs fewer than ${PER_FOLLOWER_BUDGET} canvas operations`, () => {
         const frameOps = n => {
             E.run(`(function(){ followers.forEach(f => { f.dead = true; }); actors = actors.filter(a => !a.isFollower);
-                followers.length = 0;
+                followers.length = 0; ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
                 for (let i = 0; i < ${n}; i++) { spawnFollowerAtCrystal(ELEMENTS[i % 6].id);
-                    const f = followers[followers.length - 1]; f.x = player.x + (i % 8) - 3.5; f.y = (i % 4) + 0.5;
-                    f.returningToCrystal = false; f.stance = 'hold'; f.job = null; }
+                    const f = followers[followers.length - 1]; f.x = player.x + (i % 8) - 3.5; f.y = player.y + (i % 4) - 1.5;
+                    f.returningToCrystal = false; f.stance = 'hold'; f.job = null; if (f.post) f.post = 'arena'; }
                 for (let i = 0; i < 3; i++) render(); })()`);
             counts.n = 0; E.run('render();'); return counts.n;
         };
@@ -507,10 +382,11 @@ const SCENE = `(function(){
     });
 
     check('the autosave is not on the frame path', () => {
-        // Measured at 0.099ms, about 3% of one frame, so it is NOT a problem —
-        // recorded here because it was a suspect and the measurement cleared it.
-        // What would be a problem is it running every frame.
-        ok(/frame % 300 === 0/.test(SRC.game), 'the autosave is no longer throttled');
+        // The save is written a few seconds apart (js/facilitysave.js FS.every),
+        // never every frame.
+        const every = Number((SRC.save.match(/const FS = \{[^}]*every: (\d+)/) || [])[1]);
+        ok(every >= 60, 'the autosave interval is not a few seconds: ' + every);
+        ok(/_fp\.saveAt\) < FS\.every\) return;/.test(SRC.save), 'the autosave is no longer throttled');
     });
 
     // ─────────────────────────────────────────────────────

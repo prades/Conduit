@@ -1,9 +1,8 @@
-// PRESSURE BETWEEN ALARMS — hunters, and a crystal that slowly heals.
+// PRESSURE BETWEEN ALARMS — a crystal that slowly heals.
 //
-// The audit: with predators off pylons and infestation unreachable, nothing
-// threatened the player between alarms, and the crystal's 300 health was an
-// attrition meter that never recovered. Now ~1 in 4 predators hunts pylons
-// (tests/infest.js holds that), and the crystal heals while no alarm is up.
+// The audit: nothing threatened the Crystal between alarms, and its 300 health
+// was an attrition meter that never recovered. Now the crystal heals while no
+// alarm is up (js/config.js CRYSTAL_REGEN, applied in the frame: js/game.js).
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -19,12 +18,12 @@ async function check(name, fn) {
 function ok(c, m) { if (!c) throw new Error(m); }
 
 (async () => {
-    const ctx = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const ctx = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), ctx, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
-    ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true;');
+    ok(run('world.length') > 100, 'fixture: the facility did not build');
+    run('gameState.running = true; facilityBlackoutSet(false);');
 
     group('the crystal heals between alarms');
 

@@ -19,7 +19,7 @@ const INFO_CATS = [
 
 // What each element's follower attacks are called (the attacks themselves are js/elements.js; their names were only ever written down in the GAME INDEX, so they are written down here too).
 const _IP_ATTACKS = {
-    fire:     { physical: "Ring of Fire",    special: "Meteor",        ult: "Meteor Burst", proc: "burn" },
+    fire:     { physical: "Ring of Fire",    special: "Fire Bombs",    ult: "Volcanic Eruption", proc: "burn" },
     electric: { physical: "Chain Lightning", special: "Static Field",  ult: "EMP",          proc: "stun" },
     ice:      { physical: "Frost Lance",     special: "Ice Burst",     ult: "Blizzard",     proc: "hard freeze" },
     flux:     { physical: "Volatility Aura", special: "Singularity",   ult: "Disorient",    proc: "disorient" },

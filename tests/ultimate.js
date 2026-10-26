@@ -1,13 +1,4 @@
-// THE PLAYER'S ULTIMATE, and what a pylon costs.
-//
-// Two asks, and they share a theme: a price that was spelled out in eight
-// places, and a new number that must not become the ninth.
-//
-// PYLON COST. "Too much to build" was really two costs — 10 in the slow build
-// path, 40 in the instant one — with the radial gate and the element picker each
-// holding their own copy of 40. Since the gate demanded 40 before the picker
-// would even open, the effective price was always 40 and the 10-shard path was
-// unreachable. It is now one constant at 10.
+// THE PLAYER'S ULTIMATE.
 //
 // THE ULTIMATE BAR. One bar, the character's own, SIPHONED from the squad and
 // spent on an army-wide surge. Each follower sends a wisp of static to the
@@ -20,8 +11,8 @@
 //
 // The load-bearing parts are the boundaries: it must not charge while it is
 // running (or a surge pays for the next one and the bar stops reading as a
-// cost), it must lift the ARMY and not the player, and it must never come back
-// from a refresh reading as charged when it was not.
+// cost), it must lift the ARMY and not the player, and a new game must start
+// it empty (js/facilityplay.js facilityResetState).
 //
 // NOTE ON SHAPE: every context is booted at the top, before the checks. check()
 // is synchronous and does not await its callback, so an `await` inside one is a
@@ -35,13 +26,10 @@ const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
 
 const SRC = {
     config:   fs.readFileSync(path.join(ROOT, 'js/config.js'),   'utf8'),
-    commands: fs.readFileSync(path.join(ROOT, 'js/commands.js'), 'utf8'),
-    ui:       fs.readFileSync(path.join(ROOT, 'js/ui.js'),       'utf8'),
     helpers:  fs.readFileSync(path.join(ROOT, 'js/helpers.js'),  'utf8'),
     game:     fs.readFileSync(path.join(ROOT, 'js/game.js'),     'utf8'),
-    save:     fs.readFileSync(path.join(ROOT, 'js/save.js'),     'utf8'),
-    waves:    fs.readFileSync(path.join(ROOT, 'js/waves.js'),    'utf8'),
     elements: fs.readFileSync(path.join(ROOT, 'js/elements.js'), 'utf8'),
+    facility: fs.readFileSync(path.join(ROOT, 'js/facilityplay.js'), 'utf8'),
     html:     fs.readFileSync(path.join(ROOT, 'game.html'),      'utf8'),
 };
 
@@ -57,7 +45,7 @@ function near(a, b, tol, m) {
     if (Math.abs(a - b) > tol) throw new Error(`${m}: expected ~${b} (±${tol}), got ${a}`);
 }
 
-// The whole page. The bar spans config, helpers, game, save, waves and the HUD
+// The whole page. The bar spans config, helpers, game and the HUD
 // markup, so a hand-built sandbox would only prove the piece it was built for.
 async function boot(store) {
     const sandbox = makeBrowserSandbox(store || {});
@@ -68,9 +56,10 @@ async function boot(store) {
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
+    run('facilityBlackoutSet(false);');
     return {
         sandbox, run, store: store || {},
-        // A squad standing at the origin, hurt and out of WILL, so a surge has
+        // A squad standing beside the player (who stands where the facility puts them, by the Crystal), hurt and out of WILL, so a surge has
         // something visible to do.
         // `at` places the squad relative to the player. It defaults to right on
         // top of them because most checks are not about range — but it has to
@@ -78,11 +67,11 @@ async function boot(store) {
         // passes by accident, which is exactly what happened.
         squad(n, at) {
             const off = at === undefined ? 0 : at;
-            run(`player.x = 0; player.y = 0; player.visualX = 0; player.visualY = 0;`);
+            run(`player.x = crystal.x + 2; player.y = crystal.y + 1; player.visualX = player.x; player.visualY = player.y; player.targetX = player.x; player.targetY = player.y; player.fpPath = null;`);
             run('actors = []; followers = [];');
             for (let i = 0; i < n; i++) {
                 run(`(function(){
-                    const f = { x: ${off + i * 0.1}, y: 0, type: "virus", team: "green",
+                    const f = { x: player.x + ${off + i * 0.1}, y: player.y, type: "virus", team: "green",
                                 isFollower: true, dead: false, element: "fire",
                                 health: 10, maxHealth: 40, power: 10,
                                 stats: { hp: 40, attack: 10, specialAttack: 10, will: 20 },
@@ -95,7 +84,7 @@ async function boot(store) {
         // A red punchbag with plenty of health, so damage is measurable.
         target(name) {
             run(`(function(){
-                globalThis.${name} = { x: 0, y: 0, team: "red", dead: false,
+                globalThis.${name} = { x: player.x, y: player.y, team: "red", dead: false,
                                        health: 1000, maxHealth: 1000 };
                 actors.push(${name});
             })()`);
@@ -111,7 +100,6 @@ async function boot(store) {
 (async () => {
     // Every context, up front — see the note on shape above.
     const E  = await boot();   // general state reads
-    const B  = await boot();   // driving builds
     const S  = await boot();   // one full surge, start to finish
     const G1 = await boot();   // charging mid-surge
     const G2 = await boot();   // an unfilled bar
@@ -138,82 +126,6 @@ async function boot(store) {
     const R4 = await boot();   // no accrual in absentia
     const R5 = await boot();   // the surge is not range-gated
     const R6 = await boot();   // the stalled caption
-    // Persistence: write with one context, read back with another.
-    const RT = {};
-    const RTa = await boot(RT);
-    RTa.run('playerUltimate = 42; saveSession();');
-    const RTb = await boot(RT);
-    // The switch, written by one context and read back by another.
-    const SIPH = {};
-    const SIPHa = await boot(SIPH);
-    SIPHa.run('siphonEnabled = false; saveSession();');
-    const SIPHb = await boot(SIPH);
-    const SIPHjunk = await boot({ tubecrawler_session: JSON.stringify({ siphon: 'off' }) });
-    const clamped = [];
-    for (const [saved, expect] of [[9999, 100], [-5, 0], ['lots', 0]]) {
-        const C = await boot({ tubecrawler_session: JSON.stringify({ ult: saved }) });
-        clamped.push([saved, expect, C.run('playerUltimate')]);
-    }
-
-    // ─────────────────────────────────────────────────────
-    group('THE ASK: a pylon costs 10');
-
-    check('the cost is 10', () => {
-        same(E.run('PYLON_BUILD_COST'), 10, 'a pylon should cost 10 shards');
-    });
-
-    check('no site holds its own copy of the price', () => {
-        // Eight literals for one price is how "too expensive" gets fixed in one
-        // place and left alone in seven.
-        for (const [name, src] of [['commands.js', SRC.commands], ['ui.js', SRC.ui]]) {
-            ok(!/\b40 shards\b/.test(src), name + ' still names a price of its own');
-            ok(!/shardCount\s*[<>]=?\s*\d/.test(src), name + ' still compares shards to a literal');
-            ok(!/shardCount\s*[-+]=\s*\d/.test(src), name + ' still adds or deducts a literal');
-        }
-        ok(/PYLON_BUILD_COST/.test(SRC.commands), 'commands.js does not read the constant');
-        ok(/PYLON_BUILD_COST/.test(SRC.ui), 'ui.js does not read the constant');
-    });
-
-    check('the instant build deducts exactly the cost', () => {
-        // Driven, not read: the deduction is what the player feels.
-        B.run('shardCount = 50; gameState.running = true; buildMode = false;');
-        const before = B.run('shardCount');
-        B.run(`(function(){
-            const t = world.find(p => !p.pillar && !p.nest && !p.nodeType && p.y >= 1 && p.y <= 2);
-            _executeBuildInstant(ELEMENTS.find(e => e.id === "fire"), t);
-        })()`);
-        same(before - B.run('shardCount'), 10, 'the instant build should cost the constant');
-    });
-
-    check('the slow build path costs the same', () => {
-        B.run('shardCount = 50;');
-        const before = B.run('shardCount');
-        B.run(`(function(){
-            const t = world.find(p => !p.pillar && !p.nest && !p.nodeType && p.y >= 2 && p.y <= 3);
-            _executeBuild(ELEMENTS.find(e => e.id === "fire"), t);
-        })()`);
-        same(before - B.run('shardCount'), 10, 'the two paths should not disagree on price');
-    });
-
-    check('10 shards is enough to open the picker', () => {
-        // The radial gate demanded 40 before the element picker would appear,
-        // which is what made the cheaper path unreachable.
-        // Sliced to the end of the CASE, not to the first `break;`. An early
-        // refusal added inside the case (for upgrading an enemy pylon) put a
-        // `break;` ahead of the price check and cut it out of the window —
-        // failing this on a change that has nothing to do with shards.
-        const at   = SRC.commands.indexOf('case "build_upgrade"');
-        const next = SRC.commands.indexOf('\n        case "', at + 1);
-        const body = SRC.commands.slice(at, next === -1 ? undefined : next);
-        ok(at > -1 && body.length > 200, 'the build_upgrade case could not be located');
-        ok(/shardCount >= PYLON_BUILD_COST/.test(body), 'the radial gate has its own price');
-    });
-
-    check('an aborted build refunds what it took', () => {
-        const at = SRC.commands.indexOf('No available followers');
-        const body = SRC.commands.slice(at - 300, at + 300);
-        ok(/shardCount \+= PYLON_BUILD_COST/.test(body), 'the refund does not match the cost');
-    });
 
     // ─────────────────────────────────────────────────────
     group('THE ASK: the character has an ultimate bar');
@@ -393,11 +305,11 @@ async function boot(store) {
         const near = R3.run('playerUltimate');
         ok(near > 0, 'fixture: it should be filling while together');
         // Step well away without moving the squad.
-        R3.run(`player.x = SIPHON_RANGE + 10; player.y = 0; siphonWisps = [];`);
+        R3.run(`globalThis.__px = player.x; player.x = __px + SIPHON_RANGE + 10; siphonWisps = [];`);
         R3.run('for (let i = 0; i < 600; i++) siphonTick();');
         same(R3.run('playerUltimate'), near, 'nothing should accrue at a distance');
         // And back.
-        R3.run('player.x = 0; player.y = 0;');
+        R3.run('player.x = __px;');
         R3.run('for (let i = 0; i < 400; i++) siphonTick();');
         ok(R3.run('playerUltimate') > near, 'the draw should resume on return');
     });
@@ -410,7 +322,7 @@ async function boot(store) {
         R4.run('siphonTick();');                       // seed the timer
         const t0 = R4.run('followers[0]._siphonTimer');
         ok(Number.isFinite(t0), 'fixture: the timer should be set');
-        R4.run(`player.x = SIPHON_RANGE + 10;`);
+        R4.run(`player.x = player.x + SIPHON_RANGE + 10;`);
         R4.run('for (let i = 0; i < 500; i++) siphonTick();');
         same(R4.run('followers[0]._siphonTimer'), t0, 'the timer ticked down while away');
     });
@@ -451,8 +363,8 @@ async function boot(store) {
         const follow = Number(SRC.config.match(/const FOLLOW_STOP\s*=\s*([\d.]+)/)[1]);
         ok(r > 4.0, `a range of ${r} would exclude a sniper standing at 4.0`);
         ok(r > follow, `a range of ${r} would exclude a brawler at FOLLOW_STOP (${follow})`);
-        // A camper anchors to a pylon and a worker walks off on chores; both can
-        // be a long way off, and neither is "near me".
+        // A follower holding a room across the facility can be a long way off,
+        // and it is not "near me".
         ok(r < 14, `a range of ${r} reaches things that are not with you at all`);
     });
 
@@ -467,7 +379,7 @@ async function boot(store) {
         // even though the percentage has not moved. Walk TO the squad — the
         // first version of this moved the player to the origin while the squad
         // stood far away, so they were still apart and it "stuck" correctly.
-        R6.run(`player.x = ${far}; player.y = 0; render();`);
+        R6.run(`player.x = followers[0].x; player.visualX = player.x; player.targetX = player.x; render();`);
         const back = R6.run('ultLabel.textContent');
         ok(!/NO SQUAD IN RANGE/.test(back), 'the caption stuck after they came back: ' + back);
     });
@@ -522,19 +434,9 @@ async function boot(store) {
            'the switch should come after the fill, or it draws under it');
     });
 
-    check('the switch survives a refresh', () => {
-        same(JSON.parse(SIPH.tubecrawler_session).siphon, false, 'the switch is not saved');
-        same(SIPHb.run('siphonEnabled'), false, 'it should come back off');
-    });
-
-    check('a junk saved value leaves it on', () => {
-        // On is what a player who has never touched it expects.
-        same(SIPHjunk.run('siphonEnabled'), true, 'a non-boolean should not switch it off');
-    });
-
-    check('a reset turns it back on and clears the air', () => {
-        ok(/siphonEnabled=true; siphonWisps=\[\]; _lastSiphonOn=null;/.test(SRC.waves),
-           'restartGame leaves the siphon where it was');
+    check('a new game turns it back on and clears the air', () => {
+        ok(/siphonEnabled = true; siphonWisps = \[\]; _lastSiphonOn = null;/.test(SRC.facility),
+           'facilityResetState leaves the siphon where it was');
     });
 
     check('the wisps draw with the world, and cheaply', () => {
@@ -648,8 +550,8 @@ async function boot(store) {
         const body = SRC.helpers.slice(at, next === -1 ? undefined : next);
         ok(body.length > 400, 'the applyDamage body could not be located');
         ok(/ARMY_SURGE_POWER/.test(body), 'the multiplier is not in the damage funnel');
-        // The wheel's multiplier moved inside applyDamage (js/breakout.js), so
-        // applyElementalDamage now hands on the plain amount.
+        // The wheel's multiplier is applied inside applyDamage, so
+        // applyElementalDamage hands on the plain amount.
         ok(/function applyElementalDamage[\s\S]{0,600}applyDamage\(target, amount, source, element\)/.test(SRC.helpers),
            'applyElementalDamage no longer funnels into applyDamage');
     });
@@ -668,7 +570,7 @@ async function boot(store) {
         D3.squad(1);
         D3.fill(); D3.run('fireArmySurge();');
         D3.run(`(function(){
-            globalThis._me = { x: 0, y: 0, team: "green", isFollower: true, dead: false,
+            globalThis._me = { x: player.x, y: player.y, team: "green", isFollower: true, dead: false,
                                health: 1000, maxHealth: 1000 };
             actors.push(_me);
             applyDamage(_me, 100, { team: "red", isFollower: false });
@@ -727,38 +629,19 @@ async function boot(store) {
     });
 
     // ─────────────────────────────────────────────────────
-    group('it survives a refresh, and a reset clears it');
-
-    check('the bar round-trips through the session', () => {
-        ok(!!RT.tubecrawler_session, 'the session was not written');
-        same(JSON.parse(RT.tubecrawler_session).ult, 42, 'the bar is not in the snapshot');
-        same(RTb.run('playerUltimate'), 42, 'the bar should come back where it was');
-    });
-
-    check('a junk or over-full saved value is clamped', () => {
-        for (const [saved, expect, got] of clamped) {
-            same(got, expect, `a saved ${JSON.stringify(saved)} should clamp to ${expect}`);
-        }
-    });
-
-    check('the surge timer is deliberately NOT saved', () => {
-        // A ten-second buff resuming hours later is a stranger outcome than
-        // letting it lapse.
-        ok(!/armySurgeTimer/.test(SRC.save), 'the surge timer is being persisted');
-        ok(/ult: Math.round\(playerUltimate\)/.test(SRC.save), 'the bar itself is not persisted');
-    });
+    group('a new game starts it empty, and the index says how it works');
 
     check('the GAME INDEX documents it', () => {
         ok(/ARMY SURGE/.test(SRC.html), 'the index does not describe the ultimate');
         ok(/bar under your health/i.test(SRC.html), 'it does not say where the bar is');
-        ok(/siphoned from followers near you/i.test(SRC.html),
+        ok(/siphoned from (the )?followers near you/i.test(SRC.html),
            'it does not say the charge comes from followers NEAR you');
         ok(/NO SQUAD IN RANGE/.test(SRC.html), 'it does not explain the stalled caption');
         // The range in the docs must be the range in the code.
         const r = SRC.config.match(/const SIPHON_RANGE\s*=\s*([\d.]+)/)[1];
         ok(new RegExp('>' + r + ' tiles<').test(SRC.html),
            'the documented range does not match SIPHON_RANGE (' + r + ')');
-        ok(/camper|worker/i.test(SRC.html), 'it does not say who falls outside the range');
+        ok(/holding a far-off room|camper|worker/i.test(SRC.html), 'it does not say who falls outside the range');
         ok(/does not fill at all/i.test(SRC.html),
            'it does not admit the consequence of siphoning');
         ok(/switch at the right end of the bar/i.test(SRC.html), 'it does not mention the switch');
@@ -767,10 +650,10 @@ async function boot(store) {
         ok(!/fills as you kill/i.test(SRC.html), 'the index still says kills charge it');
     });
 
-    check('a reset clears the bar and any running surge', () => {
-        ok(/playerUltimate=0; armySurgeTimer=0;/.test(SRC.waves),
-           'restartGame leaves the ultimate where it was');
-        ok(/_lastUltInt=-1/.test(SRC.waves),
+    check('a new game clears the bar and any running surge', () => {
+        ok(/playerUltimate = 0; armySurgeTimer = 0; _lastUltInt = -1;/.test(SRC.facility),
+           'facilityResetState leaves the ultimate where it was');
+        ok(/_lastUltInt = -1/.test(SRC.facility),
            'the HUD cache would keep the old reading after a reset');
     });
 

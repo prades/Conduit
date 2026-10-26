@@ -1,5 +1,6 @@
 // THE ATTRACT SCREEN (js/attract.js): the facility as the website's background. game.html?attract is the facility with nobody playing it: dim, quiet, evolved followers now and again walking the halls.
-// Checked here: the flag and what it switches off (storage, save, tutorial, creatures, interface), the light, the searchers' routes, and the page that frames it (index.html), on the real page.
+// Checked here: the flag and what it switches off (storage, the save, the tutorial, the squad, the creatures, the chip, the interface), the light, the searchers' routes, and the page that frames it (index.html), on the real page.
+// (The page boots the facility whatever the address says: ?attract only decides whether anyone is playing it. The strip game, its ?classic flag and its saved choice of game are gone.)
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -26,12 +27,12 @@ function findChromium() {
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(function(){
   var out = {};
   try {
-    out.mode = facilityMode(); out.loaded = facilitySaveLoad();
-    facilityPlayStart();   // (the page's own timer may have done it already: it does nothing twice)
+    out.loaded = facilitySaveLoad();
+    facilityPlayStart();   // (the page booted it as the scripts loaded: it does nothing twice)
     gameState.running = true;
     out.rootClass = document.documentElement.classList.contains('attract'); out.bodyClass = document.body.classList.contains('attract');
-    out.on = facilityPlay; out.at = !!_at; out.followers0 = followers.length; out.blackout = facilityBlackout(); out.dark = _fpDarkAmt(); out.gfx = gfxLow; out.zoom = viewZoom; out.hides = placingHidesUi();
-    out.chip = !!document.getElementById('facilityPlayChip'); out.saveReady = _fp.saveReady; out.creatures = actors.filter(function(a){ return a.team === 'red'; }).length;
+    out.on = facilityPlay; out.at = !!_at; out.followers0 = followers.length; out.blackout = facilityBlackout(); out.dark = _fpDarkAmt(); out.gfx = gfxLow; out.zoom = viewZoom; out.party = partyOn(); out.corners = hudCorners();
+    out.chip = !!document.getElementById('facilityNewChip'); out.saveReady = _fp.saveReady; out.creatures = actors.filter(function(a){ return a.team === 'red'; }).length; out.squadBar = document.getElementById('squadBar') ? document.getElementById('squadBar').classList.contains('on') : null;
     out.cells = _at.cells.length; out.rooms = _at.byRoom.size; out.spots = _at.spots.length; out.forms = _at.forms.length;
     // the sheets: as if they had all arrived (they come over the network, one at a time, on the real page)
     for (var i = 0; i < _at.forms.length; i++) { var c = document.createElement('canvas'); c.width = c.height = 4; c.complete = true; c.naturalWidth = 144; _at.forms[i]._img = c; }
@@ -53,62 +54,69 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(f
     out.frames = frame; out.spawned = _at.spawned; out.searched = _at.searched; out.gone = _at.gone; out.maxCrowd = maxCrowd; out.forms2 = Object.keys(seenForms); out.modes = modes;
     out.followers1 = followers.length; out.actors1 = actors.length; out.camMoved = camMoved; out.lightMin = lightMin; out.lightMax = lightMax; out.texts = texts; out.badLevel = badLevel; out.notEvolved = notEvolved; out.inWall = inWall; out.hostile = hostile;
     out.minDist = minDist; out.maxDist = maxDist; out.playerOnCam = Math.hypot(player.x - _at.cam.x, player.y - _at.cam.y);
-    out.fpSave = localStorage.getItem('conduit_fp_save'); out.modeKept = localStorage.getItem('conduit_mode'); out.classicKept = localStorage.getItem('tubecrawler_probe');
+    out.fpSave = localStorage.getItem('conduit_fp_save'); out.otherKept = localStorage.getItem('other_site_key');
     localStorage.setItem('conduit_fp_save', 'changed'); out.writeBlocked = localStorage.getItem('conduit_fp_save') === 'visitor-save';
-    out.keys = Object.keys(localStorage).filter(function(k){ return !/^(conduit_fp_save|conduit_mode|tubecrawler_probe)$/.test(k); });
+    facilitySaveWrite(); out.saveWriteBlocked = localStorage.getItem('conduit_fp_save') === 'visitor-save';
+    out.keys = Object.keys(localStorage).filter(function(k){ return !/^(conduit_fp_save|other_site_key)$/.test(k); });
   } catch (e) { out.error = String(e && e.stack || e).slice(0, 600); }
   var pre = document.createElement('pre'); pre.id = '__at'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2500); });</script></body>`;
 function measure() {
     const bin = findChromium(); if (!bin) return null;
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'at-')), file = path.join(dir, 'game.html');
-    fs.writeFileSync(file, rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/"><script>try { localStorage.setItem("conduit_fp_save", "visitor-save"); localStorage.setItem("conduit_mode", "classic"); localStorage.setItem("tubecrawler_probe", "visitor"); } catch (e) {}</script>').replace(/<\/body>/i, () => SCRIPT));
+    fs.writeFileSync(file, rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/"><script>try { localStorage.setItem("conduit_fp_save", "visitor-save"); localStorage.setItem("other_site_key", "visitor"); } catch (e) {}</script>').replace(/<\/body>/i, () => SCRIPT));
     let dom = '';
-    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=1300,800', '--virtual-time-budget=60000', '--dump-dom', 'file://' + file + '?attract'], { encoding: 'utf8', timeout: 150000, maxBuffer: 1 << 28 }); } catch (e) { dom = (e.stdout && e.stdout.toString()) || ''; }
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=1300,800', '--virtual-time-budget=60000', '--dump-dom', 'file://' + file + '?attract'], { encoding: 'utf8', timeout: 150000, maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout && e.stdout.toString()) || ''; }
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
-    const m = dom.match(/<pre id="__at">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : undefined;
+    const m = dom.match(/<pre id="__at">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')) : undefined;
 }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
+    ok(run('facilityPlay === true'), 'fixture: the page did not boot the facility');
 
     group('THE FLAG: ?attract, and nothing else, switches it on');
-    check('attractOn follows the address, and the page opens the facility whatever game it last had, with no saved game', () => {
+    check('attractOn follows the address, and while it is on a visitor\'s saved game is not loaded', () => {
         run("window.location.search = ''; attractRefresh();"); same(run('attractOn()'), false, 'off by default');
-        run("window.location.search = '?classic'; attractRefresh();"); same(run('attractOn()'), false, 'off for ?classic'); same(run('facilityMode()'), 'classic', 'classic still opens classic');
-        run("window.location.search = '?attract'; attractRefresh();"); same(run('attractOn()'), true, 'on for ?attract'); same(run('facilityMode()'), 'facility', 'the facility');
-        run("localStorage.setItem('conduit_mode', 'classic'); localStorage.setItem('conduit_fp_save', JSON.stringify({ v: FS.version, followers: [] }))");
-        same(run('facilityMode()'), 'facility', 'a visitor who last played the classic game still sees the facility'); same(run('facilitySaveLoad()'), null, 'a visitor\'s saved game is not loaded');
-        run("window.location.search = '?attract&classic'; attractRefresh();"); same(run('attractOn()'), true, 'on beside other flags');
+        run("localStorage.setItem('conduit_fp_save', JSON.stringify({ v: FS.version, followers: [] }))");
+        same(run('facilitySaveLoad() !== null'), true, 'off: the saved game loads');
+        run("window.location.search = '?attract'; attractRefresh();"); same(run('attractOn()'), true, 'on for ?attract'); same(run('facilitySaveLoad()'), null, 'a visitor\'s saved game is loaded');
+        run("window.location.search = '?attract&other=1'; attractRefresh();"); same(run('attractOn()'), true, 'on beside other flags');
         run("window.location.search = '?attractive'; attractRefresh();"); same(run('attractOn()'), false, 'a word that only begins with it is not it');
-        run("window.location.search = ''; attractRefresh();"); same(run('facilityMode()'), 'classic', 'off again: the saved choice rules again'); same(run('facilitySaveLoad() !== null'), true, 'and the saved game loads again');
-        run("localStorage.removeItem('conduit_mode'); localStorage.removeItem('conduit_fp_save')");
+        run("window.location.search = '?other=attract'; attractRefresh();"); same(run('attractOn()'), false, 'a value is not the flag');
+        run("window.location.search = ''; attractRefresh();"); same(run('facilitySaveLoad() !== null'), true, 'off again: the saved game loads again');
+        run("localStorage.removeItem('conduit_fp_save')");
     });
-    check('in ?attract the canvas interface is hidden, the build zoom is left alone, no chip is added, and the dark is the background\'s own', () => {
-        run("window.location.search = '?attract'; attractRefresh();");
-        same(run('placingHidesUi()'), true, 'no interface'); same(run('facilityBlackout()'), false, 'no blackout'); same(run('_fpDarkAmt()'), J('ATTRACT.dark'), 'its dark');
-        run('viewZoom = 1.3; placingTick();'); same(run('viewZoom'), 1.3, 'placingTick leaves the zoom');
+    check('in ?attract nobody is playing: no squad bar or corners layout, no NEW GAME chip, and the dark is the background\'s own', () => {
+        run("facilityBlackoutSet(false); window.location.search = '?attract'; attractRefresh();");
+        same(run('partyOn()'), false, 'the squad is on'); same(run('hudCorners()'), false, 'the corners layout is on'); same(run('_fpDarkAmt()'), J('ATTRACT.dark'), 'its dark');
+        ok(/if \(document\.getElementById\("facilityNewChip"\) \|\| \(typeof attractOn === "function" && attractOn\(\)\)\) return;/.test(rd('js/facilityplay.js')), 'the NEW GAME chip is added in ?attract');
         run("window.location.search = ''; attractRefresh();");
-        same(run('placingHidesUi()'), false, 'off: the interface is back'); same(run('_fpDarkAmt()'), 0.82, 'off: the ordinary dark'); run('viewZoom = 1;');
+        same(run('partyOn()'), true, 'off: the squad is back'); same(run('_fpDarkAmt()'), J('FP_DARK'), 'off: the ordinary dark');
     });
     check('the frame pace: a frame is drawn at most every 30 ms when it is on, and always when it is off', () => {
-        run("window.location.search = '?attract'; attractRefresh();; _atDrawAt = 0;");
+        run("window.location.search = '?attract'; attractRefresh(); _atDrawAt = 0;");
         same(run('attractSkip(1000)'), false, 'the first is drawn'); same(run('attractSkip(1016)'), true, '16 ms later is skipped'); same(run('attractSkip(1029)'), true, '29 ms later is skipped'); same(run('attractSkip(1033)'), false, '33 ms is drawn');
         run("window.location.search = ''; attractRefresh();"); same(run('attractSkip(1034)'), false, 'off: never skipped');
     });
 
     group('THE HOOKS: each is guarded, and the page is built for it');
     check('every hook is behind attractOn, and the script is loaded before the save it overrides', () => {
-        ok(/attractOn\(\)\) return "facility"/.test(rd('js/facilitysave.js')) && /attractOn\(\)\) return null/.test(rd('js/facilitysave.js')), 'the mode and the save');
+        ok(/attractOn\(\)\) return null/.test(rd('js/facilitysave.js')), 'the save');
         ok(/attractOn\(\)\) \{ attractTick\(\); return; \}/.test(rd('js/facilitytutorial.js')), 'the tick'); ok(/attractOn\(\)\) return;\s*\/\/ \(nothing is written over the picture\)/.test(rd('js/facilitytutorial.js')), 'the overlay');
+        ok(/attractOn\(\) \? ATTRACT\.dark : FP_DARK/.test(rd('js/facilitytutorial.js')), 'the dark');
         ok(/away \? attractRoomLight\(k, here\)/.test(rd('js/facilitystyle.js')) && /if \(away\) attractPools\(pools\)/.test(rd('js/facilitystyle.js')), 'the light');
-        ok(/if \(!\(typeof attractOn === "function" && attractOn\(\)\)\) drawPlayer\(\{x:px,y:py\}\)/.test(rd('js/game.js')), 'the hidden player'); ok(/attractSkip\(now\)\) return;/.test(rd('js/game.js')), 'the pace'); ok(/maxPredators && !\(typeof attractOn === "function" && attractOn\(\)\)\) \{/.test(rd('js/game.js')), 'no zone creature');
-        ok(/if \(away\) attractStart\(F\)/.test(rd('js/facilityplay.js')) && /_fp\.saveReady = !away/.test(rd('js/facilityplay.js')), 'the start and the save');
+        ok(/if \(!\(typeof attractOn === "function" && attractOn\(\)\)\) drawPlayer\(\{x:px,y:py\}\)/.test(rd('js/game.js')), 'the hidden player'); ok(/attractSkip\(now\)\) return;/.test(rd('js/game.js')), 'the pace');
+        const fp = rd('js/facilityplay.js');
+        ok(/if \(away\) attractStart\(F\)/.test(fp) && /_fp\.saveReady = !away/.test(fp), 'the start and the save');
+        ok(/else if \(!away\) for \(const el of \["electric", "core", "fire"\]\)/.test(fp) && /if \(away\) facilityBlackoutSet\(false\);/.test(fp) && /else facilitySpawnInitial\(\);/.test(fp) && /if \(!away && typeof facilityFollowerSpotsStart === "function"\)/.test(fp), 'no squad, no blackout, no creatures, no eggs');
+        ok(/FP_STORE_OK\.test\(String\(k\)\) && !\(typeof attractOn === "function" && attractOn\(\)\)/.test(fp), 'storage is written in ?attract');
+        ok(/!\(typeof attractOn === "function" && attractOn\(\)\)/.test(rd('js/party.js')), 'the squad of three is on in ?attract');
         ok(/const _bare = actor\.fpSpot \|\| \(typeof attractOn === "function" && attractOn\(\)\)/.test(rd('js/draw.js')), 'no bar or name over a searcher');
-        const order = require('./domstub.js').scriptOrder(); ok(order.indexOf('js/attract.js') > 0 && order.indexOf('js/attract.js') < order.indexOf('js/facilitysave.js'), 'attract.js comes before facilitysave.js');
+        const order = scriptOrder(); ok(order.indexOf('js/attract.js') > 0 && order.indexOf('js/attract.js') < order.indexOf('js/facilitysave.js'), 'attract.js comes before facilitysave.js');
     });
     check('game.html shows nothing but the picture in ?attract, from the first paint', () => {
         const h = rd('game.html'); ok(/<script>if \(\/\[\?&\]attract\\b\/\.test\(location\.search\)\) document\.documentElement\.className \+= " attract";<\/script>/.test(h.slice(0, h.indexOf('<style>'))), 'the class is set in the head, before any style');
@@ -129,13 +137,13 @@ function measure() {
     else {
         check('the page ran', () => { ok(r, 'the page did not report'); ok(!r.error, 'the page threw: ' + r.error); });
         if (r && !r.error) {
-            check('it starts the facility whatever game the visitor last had, with the page\'s classes, no blackout, no squad, no creatures, no chip, LOW graphics, no interface', () => {
-                same(r.mode, 'facility', 'the mode'); same(r.loaded, null, 'no saved game'); same(r.rootClass, true, 'the page class'); same(r.bodyClass, true, 'the body class'); same(r.on, true, 'the facility is on'); same(r.at, true, 'the background started');
+            check('it starts the facility whatever the visitor saved, with the page\'s classes, no blackout, no squad, no creatures, no chip, no squad bar, LOW graphics', () => {
+                same(r.loaded, null, 'no saved game'); same(r.rootClass, true, 'the page class'); same(r.bodyClass, true, 'the body class'); same(r.on, true, 'the facility is on'); same(r.at, true, 'the background started');
                 same(r.followers0, 0, 'nobody in the squad'); same(r.blackout, false, 'no blackout'); same(r.dark, 0.94, 'its dark'); same(r.gfx, true, 'LOW graphics'); ok(r.zoom >= 1 && r.zoom <= 1.6, 'a zoom of ' + r.zoom);
-                same(r.hides, true, 'no interface'); same(r.chip, false, 'no chip'); same(r.saveReady, false, 'nothing is saved'); same(r.creatures, 0, 'no creature'); same(r.hostile, 0, 'none came'); same(r.texts, 0, 'no message over the picture');
+                same(r.party, false, 'the squad of three is on'); same(r.corners, false, 'the corners layout is on'); same(r.squadBar, false, 'the squad bar is shown'); same(r.chip, false, 'no chip'); same(r.saveReady, false, 'nothing is saved'); same(r.creatures, 0, 'no creature'); same(r.hostile, 0, 'none came'); same(r.texts, 0, 'no message over the picture');
             });
-            check('it keeps NOTHING: the visitor\'s own saves and choice are as they were, and no key was written', () => {
-                same(r.fpSave, 'visitor-save', 'the facility save'); same(r.modeKept, 'classic', 'the choice of game'); same(r.classicKept, 'visitor', 'the classic game\'s keys'); same(r.writeBlocked, true, 'a write is refused'); same(r.keys.length, 0, 'keys written: ' + r.keys.join());
+            check('it keeps NOTHING: the visitor\'s own save and another site\'s key are as they were, a write is refused, and no key was written', () => {
+                same(r.fpSave, 'visitor-save', 'the facility save'); same(r.otherKept, 'visitor', 'another site\'s key'); same(r.writeBlocked, true, 'a write is refused'); same(r.saveWriteBlocked, true, 'the facility\'s own save wrote'); same(r.keys.length, 0, 'keys written: ' + r.keys.join());
             });
             check('there is somewhere to search: rooms, floor and props, and eleven forms to search it', () => { ok(r.rooms >= 8, r.rooms + ' rooms'); ok(r.cells >= 800, r.cells + ' cells'); ok(r.spots >= 100, r.spots + ' spots beside props'); same(r.forms, 11, 'the evolved forms (an ice mage has none yet)'); });
             check('searchers came, one after another, from out of sight and went (never more than the cap at once, never none left over), each an evolved follower of level 10, on the floor', () => {

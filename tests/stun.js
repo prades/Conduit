@@ -1,7 +1,7 @@
 // The player stun is gone.
 //
 // Dropping to zero health used to freeze you for 180 frames — three seconds of
-// standing still while the night carried on, on top of losing your health and
+// standing still while the fight carried on, on top of losing your health and
 // your position. Control is never taken away now. A short damage-immune window
 // replaces it, purely so a predator parked by the Crystal cannot chain-kill on
 // arrival.
@@ -15,7 +15,7 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
 
 const FILES = ['js/config.js', 'js/game.js', 'js/input.js', 'js/predator.js',
-               'js/abilities.js', 'js/elements.js', 'js/helpers.js', 'js/waves.js'];
+               'js/abilities.js', 'js/elements.js', 'js/helpers.js', 'js/facilityplay.js'];
 const SRC = {};
 for (const f of FILES) SRC[f] = fs.readFileSync(path.join(ROOT, f), 'utf8');
 
@@ -38,7 +38,6 @@ function makeEnv() {
         player: { x: 9, y: 9, visualX: 9, visualY: 9, targetX: 9, targetY: 9,
                   attackCooldown: 0, invuln: 0 },
         PLAYER_RESPAWN_GRACE, PLAYER_HITS, PLAYER_HIT_GRACE,
-        ZONE_LENGTH: 15,
     };
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
@@ -73,10 +72,10 @@ check('THE REPORTED CASE: no stun state exists anywhere', () => {
 
 check('movement is never blocked', () => {
     // The old gate was a bare `if (player.stunned) return;` ahead of the
-    // move-target assignment in handleInput.
+    // walk in handleInput (a path through the facility's doors now).
     const inp = SRC['js/input.js'];
-    const at = inp.indexOf('player.targetX=gx');
-    ok(at > -1, 'could not find the move-target assignment');
+    const at = inp.indexOf('facilityWalkTo(gx, gy)');
+    ok(at > -1, 'could not find the walk in handleInput');
     const before = inp.slice(Math.max(0, at - 900), at);
     ok(!/\bif\s*\(\s*player\.(stunned|invuln)\s*\)\s*return/.test(before),
        'something still refuses to move the player');
@@ -147,8 +146,8 @@ check('a knockdown does not retrigger every frame', () => {
 group('the grace window actually covers everything');
 
 check('THE REPORTED GAP: every player-damage path goes through hurtPlayer', () => {
-    // Six paths can hurt the player. The stun was only consulted by two, so
-    // abdomen shots, vent blasts, acid pools and toxic zones hit through it.
+    // Six paths could hurt the player. The stun was only consulted by two, so
+    // abdomen shots and the rest hit through it.
     const raw = [];
     for (const f of ['js/game.js', 'js/elements.js', 'js/predator.js', 'js/abilities.js']) {
         const lines = SRC[f].split('\n');
@@ -212,18 +211,18 @@ check('the bite routes through hurtPlayer and carries no immunity check of its o
     ok(!/player\.(stunned|invuln)/.test(slice), 'the bite should not re-check immunity itself');
 });
 
-group('a reset leaves a usable player');
+group('a new game leaves a usable player');
 
-check('THE REPORTED GAP: restartGame rebuilds every player field', () => {
+check('THE REPORTED GAP: a new game (js/facilityplay.js facilityResetState) rebuilds every player field', () => {
     // A missing attackCooldown left `undefined <= 0` false, so the fire gate in
     // input.js stayed shut and the weapon could never be used after a reset.
     const initial = SRC['js/config.js'].match(/let player = \{[\s\S]*?\n\};/);
-    const reset   = SRC['js/waves.js'].match(/player=\{[\s\S]*?\};/);
+    const reset   = SRC['js/facilityplay.js'].match(/player = \{[\s\S]*?\};/);
     ok(initial && reset, 'could not read both player shapes');
     const fields = s => new Set([...s.matchAll(/([A-Za-z_]\w*)\s*:/g)].map(m => m[1]));
     const want = fields(initial[0]), got = fields(reset[0]);
     const missing = [...want].filter(k => !got.has(k));
-    eq(missing.length, 0, `restartGame's player is missing: ${missing.join(', ')}`);
+    eq(missing.length, 0, `facilityResetState's player is missing: ${missing.join(', ')}`);
 });
 
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

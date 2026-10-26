@@ -943,21 +943,6 @@ function drawElementEffects() {
                 }
                 break;
             }
-            case "meteor": {
-                const r = Math.max(1, e.radius * TILE_W * 0.6);
-                ctx.fillStyle = e.color;
-                ctx.beginPath();
-                ctx.arc(px, py - 30, r, 0, Math.PI*2);
-                ctx.fill();
-                // Crater rings
-                ctx.strokeStyle = e.color;
-                ctx.lineWidth = 2;
-                ctx.globalAlpha = alpha * 0.4;
-                ctx.beginPath();
-                ctx.arc(px, py - 30, r * 1.4, 0, Math.PI*2);
-                ctx.stroke();
-                break;
-            }
             // Three small puffs drifting up — hollow, a faint fill.
             case "smoke":
             case "toxicCloud": {

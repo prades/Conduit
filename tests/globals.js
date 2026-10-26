@@ -9,24 +9,27 @@
 // but `||` only guards a value that is undefined — an identifier that was never
 // declared throws ReferenceError before the `||` is ever reached.
 //
-// Second, the crash lives in an async continuation. loadConfig() awaits fetch,
-// so everything after that runs on a microtask, and the existing load-order
-// suite evaluates the files synchronously and never sees it.
+// Second, the crash lived in an async continuation: the strip game's
+// loadConfig() awaited fetch, and the load-order suite evaluated the files
+// synchronously and never saw it. (js/init.js is synchronous now and fetches
+// nothing: it boots the facility as the scripts load, so the restore from the
+// save happens before init.js finishes evaluating.)
 //
 // Third — and this one nearly defeated the test as well as the game — whether
-// it crashes depends on saved state. init.js used to ASSIGN those names from
-// the saved perm-upgrade blob, and an assignment to an undeclared name in
-// sloppy mode creates the global. So a player still holding the shop era's
-// localStorage key silently got the variables created for them and never
-// crashed; a player without that key crashed. The first draft of this suite
-// seeded the key and therefore passed with the bug fully present.
+// it crashes depends on saved state. An assignment to an undeclared name in
+// sloppy mode creates the global, so a player whose storage held the right key
+// silently got the variables created for them and never crashed; a player
+// without it crashed. The first draft of this suite seeded the key and
+// therefore passed with the bug fully present.
 //
-// So every scenario below boots twice: once with the shop-era key, once
-// without. Pass A installs a recorder on the global's prototype, which makes an
-// undeclared read yield undefined instead of throwing — so one run names every
-// undeclared global the boot touches instead of stopping at the first. Pass B
-// boots a vanilla context and watches for the unhandled rejection, which is the
-// crash the screenshot showed.
+// So every scenario below boots twice: once with a clean store (a new player)
+// and once with the facility's save in it (a returning player whose followers
+// have to be rebuilt from "conduit_fp_save", js/facilitysave.js). Pass A
+// installs a recorder on the global's prototype, which makes an undeclared read
+// yield undefined instead of throwing — so one run names every undeclared
+// global the boot touches instead of stopping at the first. Pass B boots a
+// vanilla context and watches for the unhandled rejection, which is the crash
+// the screenshot showed. Pass C plays: creatures, a fight, the facility's save.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -44,53 +47,44 @@ const ORDER = scriptOrder();
 
 // Optional browser APIs the game probes for and does not declare. Anything
 // added here is a claim that the host provides it, not the game — keep it
-// short, and never add a game variable to it.
+// short, and never add a game variable to it. (CanvasRenderingContext2D: the
+// facility dims its props through a second context, when the frame's context
+// is a real one; Storage: it filters what reaches localStorage.)
 const HOST_PROVIDED = new Set([
     'innerWidth', 'innerHeight',
     'webkitAudioContext', 'mozRequestAnimationFrame', 'webkitRequestAnimationFrame',
     'DeviceOrientationEvent', 'ontouchstart', 'chrome', 'opr', 'safari',
+    'CanvasRenderingContext2D', 'Storage',
 ]);
 
-// A save with a squad in it: the state that crashed is a returning player whose
-// followers have to be rebuilt from localStorage.
-//
-// `shopEra` decides whether this browser still holds the dead perm-upgrade key.
-// Both answers are real players, and they used to behave differently, so both
-// are tested.
-function seededStore(shopEra) {
-    const store = {
-        tubecrawler_followers: JSON.stringify([
-            { element: 'fire', personality: 'stoic', role: 'brawler',
-              stats: { hp: 22, attack: 6, speed: 11, will: 20 } },
-            { element: 'electric' },
-        ]),
-        tubecrawler_shards: '120',
+// The facility's save, with a squad in it: the state that crashed is a
+// returning player whose followers have to be rebuilt from localStorage. The
+// second entry is bare: the fallback path, which is where the crashing
+// expression lived.
+const SAVE_KEY = 'conduit_fp_save';
+function savedStore() {
+    return {
+        [SAVE_KEY]: JSON.stringify({
+            v: 1,
+            followers: [
+                { element: 'fire', personality: 'stoic', role: 'brawler',
+                  stats: { hp: 22, attack: 6, speed: 11, will: 20 } },
+                { element: 'electric' },
+            ],
+        }),
+        other_site_key: 'kept',   // a key that is not the facility's: left alone
     };
-    if (shopEra) {
-        store.tubecrawler_permupgrades = JSON.stringify({
-            ids: ['overclock'], pylonMaxHPBonus: 40, pylonRangeBonus: 1,
-            pylonFireRateBonus: 15, followerPermPowerBonus: 5, followerPermHPBonus: 25,
-        });
-    }
-    return store;
 }
 
 const SCENARIOS = [
-    { label: 'a browser with no shop-era save (the reported crash)', shopEra: false },
-    { label: 'a browser still holding the shop-era save',            shopEra: true  },
+    { label: 'a browser with no save (a new player)',            saved: false },
+    { label: 'a browser holding the facility\'s save (a returning player)', saved: true  },
 ];
+const storeFor = sc => sc.saved ? savedStore() : { other_site_key: 'kept' };
 
-// ─────────────────────────────────────────────────────────
-//  PASS A — name every global the game reads and never declares
-// ─────────────────────────────────────────────────────────
-async function passA(shopEra) {
-    const store = seededStore(shopEra);
-    const sandbox = makeBrowserSandbox(store);
-    const ctx = vm.createContext(sandbox);
-
+function installRecorder(sandbox, ctx) {
     const seen = new Map();   // name -> stack at the first read
     sandbox.__recordUndeclared = (k, stack) => { if (!seen.has(k)) seen.set(k, stack); };
-
     // The recorder has to sit on the global's PROTOTYPE, not be the global
     // itself: a contextified Proxy global does not get its traps consulted for
     // bare identifier resolution, but a Proxy in the prototype position does.
@@ -104,6 +98,17 @@ async function passA(shopEra) {
         });
         Object.setPrototypeOf(globalThis, _undeclaredGuard);
     `, ctx);
+    return seen;
+}
+
+// ─────────────────────────────────────────────────────────
+//  PASS A — name every global the game reads and never declares
+// ─────────────────────────────────────────────────────────
+async function passA(sc) {
+    const store = storeFor(sc);
+    const sandbox = makeBrowserSandbox(store);
+    const ctx = vm.createContext(sandbox);
+    const seen = installRecorder(sandbox, ctx);
 
     const loadErrors = [];
     for (const rel of ORDER) {
@@ -113,11 +118,8 @@ async function passA(shopEra) {
             loadErrors.push(rel + ' — ' + e.message.split('\n')[0]);
         }
     }
-    // The boot is not finished when the last file finishes evaluating: init.js
-    // calls loadConfig(), which awaits fetch, so the follower restore happens
-    // on a microtask. Snapshotting the offenders here — as the first draft did —
-    // measured only the synchronous part and missed every read on the async
-    // path, which is exactly where the reported crash was.
+    // The boot is synchronous now, but anything a file left on a microtask
+    // still has to run before the offenders are read off.
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
 
     const offenders = [...seen.keys()].filter(k => !HOST_PROVIDED.has(k)).sort();
@@ -127,10 +129,10 @@ async function passA(shopEra) {
 // ─────────────────────────────────────────────────────────
 //  PASS B — the crash, end to end
 // ─────────────────────────────────────────────────────────
-// No recorder this time. An undeclared read throws for real, inside the async
-// continuation of loadConfig, exactly as it did in the browser.
-async function passB(shopEra) {
-    const store = seededStore(shopEra);
+// No recorder this time. An undeclared read throws for real, as it did in the
+// browser.
+async function passB(sc) {
+    const store = storeFor(sc);
     const sandbox = makeBrowserSandbox(store);
     const ctx = vm.createContext(sandbox);
 
@@ -144,8 +146,6 @@ async function passB(shopEra) {
             vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel });
         } catch (e) { thrown.push(rel + ' — ' + e.message.split('\n')[0]); }
     }
-    // init.js calls loadConfig() as it loads, and it awaits fetch twice. Let the
-    // microtasks drain so the continuation — and its crash — actually happens.
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     process.removeListener('unhandledRejection', onRejection);
 
@@ -158,25 +158,16 @@ async function passB(shopEra) {
 // ─────────────────────────────────────────────────────────
 //  PASS C — the gameplay paths the boot never reaches
 // ─────────────────────────────────────────────────────────
-// Two of the six crashing reads were on the boot path. The other four were in
-// _executeBuild, _executeBuildInstant, _executeUpgrade and the attack-pylon
-// fire tick, none of which run while the page is loading — so a boot-only
-// check would have shipped four of them. This pass builds pylons, upgrades one
-// and runs the real render loop, under the same recorder.
+// Two of the six crashing reads were on the boot path; the other four were in
+// code that only runs while playing — so a boot-only check would have shipped
+// four of them. This pass plays the facility under the same recorder: creatures
+// come at the squad, the real frame runs a few hundred times, and the
+// facility's own save is written. The reads the boot made are pass A's: only
+// what is first read while PLAYING counts here.
 async function passC() {
-    const sandbox = makeBrowserSandbox({ tubecrawler_shards: '5000' });
+    const sandbox = makeBrowserSandbox({});
     const ctx = vm.createContext(sandbox);
-
-    const seen = new Map();
-    sandbox.__recordUndeclared = (k, stack) => { if (!seen.has(k)) seen.set(k, stack); };
-    vm.runInContext(`
-        Object.setPrototypeOf(globalThis, new Proxy(Object.create(null), {
-            get(t, k) {
-                if (typeof k === 'string') __recordUndeclared(k, (new Error()).stack || '');
-                return undefined;
-            },
-        }));
-    `, ctx);
+    const seen = installRecorder(sandbox, ctx);
 
     for (const rel of ORDER) {
         try {
@@ -184,58 +175,40 @@ async function passC() {
         } catch (e) { /* reported by pass A */ }
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
+    const atBoot = new Set(seen.keys()); seen.clear();
 
     let drove = null, threw = null;
     try {
         drove = vm.runInContext(`(function(){
-            gameState.running = true;
-            unlockedElements = new Set(ELEMENTS.map(e => e.id)); // A late game: every element held (the ladder unlocks them two waves apart).
-            shardCount = 5000;
-            const floor = world.filter(t => !t.pillar && !t.nest && t.y >= 0 && t.y <= 3);
-            const fire  = ELEMENTS.find(e => e.id === 'fire');
-            const did   = [];
-            if (floor[8])  { _executeBuildInstant(fire, floor[8]);  did.push('buildInstant'); }
-            if (floor[20]) { _executeBuild(fire, floor[20]);        did.push('build'); }
-            // A turret needs a generator carrying power to it now, so the drive
-            // builds one beside the first pylon. Without it nothing is on the
-            // grid, _aPylons comes back empty and the fire tick never runs —
-            // which is the whole path this pass exists to walk.
-            // The generator has to stand near HOME — it draws on the home portal's
-            // reserve only within HOME_POWER_REACH — and the turret beside it, or
-            // nothing is on the grid and the fire tick never runs.
-            // Any two free tiles beside each other near home, not fixed
-            // coordinates: the world seed can put a generated pylon on a chosen
-            // tile, and then no generator is built and the whole drive reports
-            // that it never reached one.
-            const home = world.find(t => isHomePortal(t));
-            const free = world.filter(t => t.type === 'floor' && !t.pillar && !t.nest && !t.nodeType
-                                           && t.y >= 2 && t.y <= 3 && Math.hypot(t.x - home.x, t.y - home.y) <= 5)
-                              .sort((a, b) => a.x - b.x);
-            const gen = free[0];
-            const feed = free.find(t => t !== gen && Math.hypot(t.x - gen.x, t.y - gen.y) <= 1.5);
-            if (gen && feed) { _executeBuildInstant(fire, gen); gen.isGenerator = true;
-                       gen.attackMode = false; gen.waveMode = false; did.push('generator');
-                       _executeBuildInstant(fire, feed); }
-            const plain = world.find(t => t.pillar && t.pillarTeam === 'green'
-                                          && !t.attackMode && !t.waveMode);
-            if (plain) { _executeUpgrade(fire, plain); did.push('upgrade'); }
-            _cacheAge = -999;
-            // Long enough for the attack-pylon fire tick, which only runs every
-            // 90 frames, to come round several times.
-            for (let f = 0; f < 240; f++) render();
+            const did = [];
+            if (!facilityPlay) throw new Error('the page did not boot the facility');
+            gameState.running = true; facilityBlackoutSet(false);
+            canvas.width = 1280; canvas.height = 860;
+            const squad = followers.filter(f => !f.dead);
+            // Three creatures of three kinds, hunting, right beside the squad: the fight starts at once.
+            const made = [];
+            [['ant', 'scout'], ['spider', 'striker'], ['beetle', 'tank']].forEach(([species, className], i) => {
+                const p = spawnCreature({ species, className, x: player.x + 2 + i, y: player.y + 1, level: 3, state: 'hunt' });
+                if (!p) throw new Error('no ' + species + ' ' + className + ' was made');
+                p.provoked = true; made.push(p);
+            });
+            did.push('creatures');
+            for (let f = 0; f < 300; f++) render();
             did.push('frames');
+            const hurt = made.filter(p => p.dead || p.health < p.maxHealth).length;
+            const fought = squad.filter(f => f._nearestEnemy || f.dead || f.health < f.maxHealth).length;
             // Persistence is part of the gameplay path: it runs on a timer in
             // the real game, so nothing else here would exercise it.
-            saveSession();
+            const wrote = facilitySaveWrite();
             did.push('saved');
-            return { did, aPylons: _aPylons.length, frames: frame };
+            return { did, squad: squad.length, creatures: made.length, hurt, fought, frames: frame, wrote };
         })()`, ctx);
     } catch (e) { threw = e; }
 
     for (let i = 0; i < 10; i++) await new Promise(r => setImmediate(r));
-    const offenders = [...seen.keys()].filter(k => !HOST_PROVIDED.has(k)).sort();
-    return { seen, offenders, drove, threw,
-             wroteSession: sandbox.localStorage.getItem('tubecrawler_session') };
+    const offenders = [...seen.keys()].filter(k => !HOST_PROVIDED.has(k) && !atBoot.has(k)).sort();
+    return { seen, offenders, drove, threw, store: sandbox.localStorage,
+             wroteSave: sandbox.localStorage.getItem(SAVE_KEY) };
 }
 
 const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
@@ -244,8 +217,8 @@ const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
 
 (async () => {
     for (const sc of SCENARIOS) {
-        const A = await passA(sc.shopEra);
-        const B = await passB(sc.shopEra);
+        const A = await passA(sc);
+        const B = await passB(sc);
 
         group(sc.label);
 
@@ -260,7 +233,7 @@ const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
             }
         }
 
-        check('THE SCREENSHOT: no unhandled rejection while restoring followers', () => {
+        check('THE SCREENSHOT: no unhandled rejection while booting and restoring followers', () => {
             const msgs = B.rejections.map(r => (r && r.message) || String(r));
             ok(msgs.length === 0, msgs.join(' | '));
         });
@@ -285,38 +258,42 @@ const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
             ok(B.thrown.length === 0, B.thrown.join(' | '));
         });
 
-        check('the saved squad is actually on the map', () => {
-            // Proves the boot reached spawnFollowerFromSave rather than passing
-            // because it bailed out early.
-            const f = B.read('followers');
-            ok(Array.isArray(f), 'followers is not an array');
-            ok(f.length === 2, 'expected the 2 saved followers, got ' + f.length);
-            ok(f.every(n => n.health > 0), 'a restored follower has no health');
+        check('the page booted the facility as the scripts loaded', () => {
+            ok(B.read('typeof facilityPlay !== "undefined" && facilityPlay === true'), 'facilityPlay is not true after the files are evaluated');
+            ok(B.read('typeof _fp !== "undefined" && !!_fp && !!_fp.F'), 'the facility was not built');
         });
 
-        check('a follower with no saved stats still restores', () => {
+        check(sc.saved ? 'the saved squad is actually on the map' : 'a new player starts with the three followers', () => {
+            // Proves the boot reached spawnFollowerFromSave (or the starters)
+            // rather than passing because it bailed out early.
+            const f = B.read('followers');
+            ok(Array.isArray(f), 'followers is not an array');
+            const want = sc.saved ? 2 : 3;
+            ok(f.length === want, 'expected ' + want + ' followers, got ' + f.length);
+            ok(f.every(n => n.health > 0), 'a follower has no health');
+            if (sc.saved) ok(f.some(n => n.element === 'fire' && n.personality === 'stoic' && n.role === 'brawler'), 'the saved brawler did not come back as saved');
+            else ok(['electric', 'core', 'fire'].every(el => f.some(n => n.element === el)), 'the starters are not electric, core and fire: ' + f.map(n => n.element));
+        });
+
+        if (sc.saved) check('a follower with no saved stats still restores', () => {
             // The second save entry is bare `{element:'electric'}` — the
             // fallback path, which is where the crashing expression lived.
             const bare = B.read('followers').find(n => n.element === 'electric');
             ok(!!bare, 'the bare entry did not restore');
             ok(bare.health > 0 && bare.power > 0, 'fallback stats did not apply');
+            ok(bare.personality && bare.stats, 'it was given no personality or stats');
         });
 
-        check('the dead perm-upgrade key is not left in storage', () => {
-            ok(!('tubecrawler_permupgrades' in B.store),
-               'the dead perm-upgrade key survived the boot');
-        });
-
-        check('the purge is surgical', () => {
-            // Shards are still a live currency, and the squad still has to come
-            // back. Clearing more than the one dead key would be a data loss.
-            ok(B.store.tubecrawler_shards === '120', 'the purge ate the shard count');
-            ok('tubecrawler_followers' in B.store, 'the purge ate the follower save');
+        check('the boot leaves the store as it found it: nothing of another site is touched, and no strip-game key is written', () => {
+            ok(B.store.other_site_key === 'kept', 'a key that is not the facility\'s was changed');
+            const strip = Object.keys(B.store).filter(k => /^tubecrawler_/.test(k));
+            ok(strip.length === 0, 'the boot wrote a strip-game key: ' + strip.join(', '));
+            if (sc.saved) ok(SAVE_KEY in B.store, 'the boot threw the facility\'s save away');
         });
     }
 
     group('the recorder is worth trusting');
-    const A = await passA(false);
+    const A = await passA(SCENARIOS[0]);
 
     check('it records a read it has never seen', () => {
         const before = A.seen.size;
@@ -339,27 +316,27 @@ const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
            'the guard was knocked off the prototype chain during load');
     });
 
-    group('building and fighting does not read a dead global either');
+    group('fighting and saving does not read a dead global either');
     const C = await passC();
 
     if (C.offenders.length) {
-        console.log('  undeclared globals read during play:');
+        console.log('  undeclared globals first read during play:');
         for (const k of C.offenders) {
             const frame = (C.seen.get(k).split('\n').find(l => l.includes('js/')) || '').trim();
             console.log(`    ${k}${frame ? '   ' + frame : ''}`);
         }
     }
 
-    check('the drive actually got through all four paths', () => {
+    check('the drive actually got through: creatures came, the squad fought them for 300 frames, the save was written', () => {
         // Without this the pass could report a clean bill of health because it
         // silently did nothing.
         ok(!C.threw, 'driving threw: ' + (C.threw && C.threw.message || ''));
         ok(C.drove, 'the drive returned nothing');
-        for (const step of ['buildInstant', 'build', 'generator', 'upgrade', 'frames', 'saved']) {
-            ok(C.drove.did.includes(step), 'never reached ' + step);
-        }
-        ok(C.drove.aPylons > 0, 'no attack pylon existed, so the fire tick never ran');
-        ok(C.drove.frames >= 240, 'only advanced ' + C.drove.frames + ' frames');
+        for (const step of ['creatures', 'frames', 'saved']) ok(C.drove.did.includes(step), 'never reached ' + step);
+        ok(C.drove.squad === 3 && C.drove.creatures === 3, 'not a squad of three against three creatures');
+        ok(C.drove.frames >= 300, 'only advanced ' + C.drove.frames + ' frames');
+        ok(C.drove.fought > 0, 'no follower ever engaged a creature');
+        ok(C.drove.hurt > 0, 'no creature was ever hit');
     });
 
     check('no undeclared global is read while playing', () => {
@@ -372,26 +349,31 @@ const DEAD_NAMES = ['followerPermHPBonus', 'followerPermPowerBonus',
         ok(live.length === 0, 'still read: ' + live.join(', '));
     });
 
-    check('saveSession actually writes \u2014 it swallows its own errors', () => {
-        // saveSession's whole body sits in try {} catch(e) {}, so ANY throw
-        // inside it — a global it reads that nobody declared, say — silently
-        // disables every bit of session persistence with no symptom at all.
-        // Adding the ultimate bar to the snapshot hit exactly that: the save
-        // stopped happening and only the test fixtures noticed.
+    check('the facility\'s save actually writes — it swallows its own errors', () => {
+        // facilitySaveWrite's body sits in try {} catch(e) { return false; }, so
+        // ANY throw inside it — a global it reads that nobody declared, say —
+        // silently disables every bit of persistence with no symptom at all.
         ok(!C.threw, 'the drive threw: ' + (C.threw && C.threw.message || ''));
-        ok(C.wroteSession, 'the session blob was not written after a drive');
-        const blob = JSON.parse(C.wroteSession);
-        for (const key of ['px', 'py', 'health', 'ult']) {
-            ok(key in blob, 'the snapshot is missing ' + key);
+        ok(C.drove.wrote === true, 'facilitySaveWrite answered ' + (C.drove && C.drove.wrote));
+        ok(C.wroteSave, 'the save was not written after a drive');
+        const blob = JSON.parse(C.wroteSave);
+        for (const key of ['v', 'followers', 'relays', 'inv', 'crystal', 'at']) {
+            ok(key in blob, 'the save is missing ' + key);
         }
+        ok(blob.v === 1 && Array.isArray(blob.followers) && blob.followers.length === 3, 'the save does not hold the squad');
+        const strip = Object.keys(C.store).filter(k => /^tubecrawler_/.test(k));
+        ok(strip.length === 0, 'playing wrote a strip-game key: ' + strip.join(', '));
     });
 
     group('nothing re-grows the shop');
 
     check('no file defines the perm-upgrade store', () => {
-        const save = fs.readFileSync(path.join(ROOT, 'js/save.js'), 'utf8');
-        ok(!/function (save|load)PermUpgrades/.test(save),
-           'savePermUpgrades/loadPermUpgrades are back');
+        const hits = [];
+        for (const rel of ORDER) {
+            const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+            if (/function (save|load)PermUpgrades/.test(src)) hits.push(rel);
+        }
+        ok(hits.length === 0, 'savePermUpgrades/loadPermUpgrades are back in ' + hits.join(', '));
     });
 
     check('no file mentions the perm-bonus names', () => {

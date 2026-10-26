@@ -14,7 +14,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
@@ -46,7 +46,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         for (const r of M.rooms) if (r.id !== 'arena') ok(src.indexOf('"' + r.id + '"') < 0, 'facility.js names ' + r.id);
         ok(rd('js/facilitymap.js').indexOf('function ') < 0, 'logic in the data file');
     });
-    check('the strip game reaches the facility only through guarded facilityPlay hooks (js/facilityplay.js is the one file that uses the map and its movement helpers)', () => {
+    check('only the facility\'s own files use the map and its movement helpers (the engine reaches them through js/facilityplay.js)', () => {
         for (const f of fs.readdirSync(path.join(ROOT, 'js'))) if (f !== 'facility.js' && f !== 'facilitymap.js' && f !== 'facilityplay.js' && f !== 'facilitydecor.js' && f !== 'facilitygrow.js') ok(!/facilityCanStep|facilityMove|facilityWalkable|FACILITY_MAP/.test(rd('js/' + f)), f + ' uses the facility');
     });
 
@@ -361,10 +361,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const keep = rp.rect; M.ramps[0].zone.rect = [10, 10, 5, 5]; let b; try { b = facilityValidate(facilityBuild({})).errors; } catch (e) { b = [String(e)]; } M.ramps[0].zone.rect = keep; return { a, b, ok: facilityValidate(facilityBuild({})).errors }; })()`);
         ok(r.a.length > 0, 'a level with no height passed'); ok(r.b.length > 0, 'an inside-out ramp zone passed'); same(r.ok.length, 0, 'the data stopped validating after the probe: ' + r.ok.join(' | '));
     });
-    check('the lift hooks in the strip game are all guarded by facilityPlay, so the strip game never lifts', () => {
-        for (const f of ['js/game.js', 'js/input.js', 'js/buildmenu.js']) { const lines = rd(f).split('\n').filter(l => /facilityLiftRel|facilityPickLift|facilityLiftPx/.test(l)); ok(lines.length > 0, f + ' has no lift hook'); for (const l of lines) ok(/facilityPlay/.test(l), f + ' has an unguarded lift: ' + l.trim().slice(0, 100)); }
-    });
-
     group('THE DRESSING: floors, decor and furniture fill the rooms out (paint and light, plus solid pieces)');
     check('every room you can walk in has a floor covering from the known styles, and the decor and furniture are plentiful', () => {
         const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js'), styles = ['carpet', 'plate', 'tile', 'labtile', 'concrete', 'grate', 'polished', 'wood', 'sand'];

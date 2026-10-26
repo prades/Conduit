@@ -6,17 +6,20 @@
 // Every piece of the top HUD was hand-placed at absolute coordinates picked on
 // a 1440-wide desktop, where they happen not to touch. Narrow the window and
 // they slide into each other: on a 1024 tablet the health bar, the ultimate
-// bar, the objective banner and the toggle row all overlapped, and the
-// objective line — the one that says which zone to attack next — was underneath
-// three of them. A phone was worse.
-//
-// On top of that the canvas painted its OWN copy of the objective at a fixed
-// screen (230, 58), which is inside the banner's box on anything narrower than
-// a desktop, so the two sentences printed over each other.
+// bar, the objective banner and the toggle row all overlapped. A phone was
+// worse. The top HUD is a flow column now, and the strip game's objective
+// banner (#waveInfo) is gone from the page altogether: the facility's HUD is
+// the crystals (top left), the health and ultimate bars (centre), the room tag
+// with the alarm triangle beside it (top right), the NEW GAME chip, the battle
+// tool and the squad bar (bottom left), the dock (bottom; on a phone the
+// radial menu's hub on the left edge instead). The network panel, the
+// objective plate and the target dial are drawn on the canvas, so the DOM
+// cannot overlap them.
 //
 // These are layout bugs, and layout cannot be reasoned about from the source —
 // it has to be measured. So this suite drives the real browser that ships in
-// this container, loads the real game, and asks it where things ended up.
+// this container, loads the real game (the page boots the facility), and asks
+// it where things ended up.
 //
 // If no browser is available the suite says so and passes: it is a measurement,
 // not a parse, and a missing instrument is not a failing game.
@@ -58,52 +61,44 @@ function findChromium() {
     return null;
 }
 
-// The HUD pieces that all have to be legible together. dnaHud and padHud are
-// hidden until they have something to say, so the probe reveals them — a box
-// that only appears mid-game is exactly the one nobody checks.
-const IDS = ['shards', 'ui', 'ultWrap', 'waveInfo', 'topToggles', 'zoneInfo', 'mixTool',
-             'dnaHud', 'padHud', 'devBtn'];
+// The HUD pieces that all have to be legible together. The alarm triangle is
+// hidden until an alarm is up, so the probe reveals it — a box that only
+// appears mid-game is exactly the one nobody checks. The dock is a tablet's and
+// a desktop's; a phone (700px and under) has the radial menu's hub instead.
+const IDS = ['shards', 'ui', 'ultWrap', 'topToggles', 'zoneInfo', 'alarmIcon', 'mixTool',
+             'squadBar', 'facilityNewChip', 'radialHub'];
+const expectedAt = (id, w) => id === 'topToggles' ? w > 700 : id === 'radialHub' ? w <= 700 : true;
 
-// The two longest lines the banner can produce — the worst case, not the
-// opening one. Anything shorter has slack these do not.
-const LINES = {
-    objective: 'ZONE 11 TAKEN  →  NEXT: ZONE 12 — hack a nest there',
-    alarm: '⚠ FACILITY BREACH — TAKING ZONE 12 — Kill 18/24',
-};
 // The longest ultimate caption, which is what used to run out from under the
 // bar and finish underneath the siphon switch.
 const ULT_CAPTION = 'NO SQUAD IN RANGE · 100%';
 
 // Headless Chromium will not open a window narrower than 500 CSS px, so 500 is
-// the narrowest this can measure. It is still narrower than the longest banner
-// and below the caption's breakpoint, so it exercises the case that was broken
-// — but it is NOT phone-portrait width. The rules that only matter below 500
-// (the 480px centre-column override) are covered by the source checks above
-// rather than by measurement, and that is the limit of this instrument.
+// the narrowest this can measure. It is still below the caption's breakpoint,
+// so it exercises the case that was broken — but it is NOT phone-portrait
+// width. The rules that only matter below 500 (the 480px centre-column
+// override) are covered by the source checks above rather than by measurement,
+// and that is the limit of this instrument.
 const SIZES = [[500, 800], [620, 900], [768, 1024], [1024, 768], [1440, 900]];
 
 // Build a copy of the game whose scripts still resolve against the repo, with a
 // probe appended that measures the HUD and writes the answer into the DOM where
 // --dump-dom will hand it back. No browser-driver dependency, and it is the
 // real page: the real CSS, the real boot, the real fonts.
-function probeSource(line) {
+function probeSource() {
     let html = HTML.replace(/<head>/i, '<head><base href="file://' + ROOT + '/">');
     const probe = `
 <script>
 setTimeout(function () {
   var report = { vw: innerWidth, vh: innerHeight, boxes: {}, hits: {}, text: {} };
-  // Put the HUD into its worst state: the longest banner, the longest ultimate
-  // caption, and the panels that stay hidden until mid-game made visible.
-  var w = document.getElementById('waveInfo');
-  if (w) w.textContent = ${JSON.stringify(line)};
+  try {
+  report.facility = typeof facilityPlay !== 'undefined' && facilityPlay;
+  // Put the HUD into its worst state: the longest ultimate caption, and the
+  // alarm triangle, which stays hidden until an alarm is up, made visible.
   var u = document.getElementById('ultLabel');
   if (u) u.textContent = ${JSON.stringify(ULT_CAPTION)};
-  ['dnaHud', 'padHud'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.style.display = '';
-    el.textContent = id === 'dnaHud' ? 'DNA: ant x3' : 'PAD +2';
-  });
+  document.body.classList.add('alarm-on');
+  report.panelOpen = document.body.classList.contains('panel-open');
   ${JSON.stringify(IDS)}.forEach(function (id) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -127,8 +122,8 @@ setTimeout(function () {
   }
   report.hits.ultWrap   = at('ultWrap', 0.2, 0.5);
   report.hits.siphonBtn = at('siphonBtn', 0.5, 0.5);
-  report.hits.btnSquad  = at('btnSquad', 0.5, 0.5);
-  // On a phone (<= 700px) the top buttons are replaced by the radial menu's hub (js/radialmenu.js).
+  report.hits.btnRoster = at('btnRoster', 0.5, 0.5);
+  // On a phone (<= 700px) the dock is replaced by the radial menu's hub (js/radialmenu.js).
   report.hits.radialHub = at('radialHub', 0.5, 0.5);
   report.topHidden = getComputedStyle(document.getElementById('topToggles')).display === 'none';
   // ...and an empty corner of the column must NOT take them, or it swallows
@@ -146,6 +141,7 @@ setTimeout(function () {
     var sb = document.getElementById('siphonBtn');
     report.text.siphonLeft = sb ? Math.round(sb.getBoundingClientRect().x) : null;
   }
+  } catch (e) { report.err = String(e && e.stack || e); }
   var pre = document.createElement('pre');
   pre.id = 'HUDPROBE';
   pre.textContent = JSON.stringify(report);
@@ -155,14 +151,14 @@ setTimeout(function () {
     return html.replace(/<\/body>/i, probe + '</body>');
 }
 
-function measure(chrome, dir, w, h, line) {
-    const file = path.join(dir, `probe-${w}x${h}-${line.length}.html`);
-    fs.writeFileSync(file, probeSource(line));
+function measure(chrome, dir, w, h) {
+    const file = path.join(dir, `probe-${w}x${h}.html`);
+    fs.writeFileSync(file, probeSource());
     const dom = execFileSync(chrome, [
         '--headless', '--disable-gpu', '--no-sandbox', '--mute-audio',
         '--allow-file-access-from-files', '--hide-scrollbars',
         `--window-size=${w},${h}`, '--virtual-time-budget=6000',
-        '--dump-dom', 'file://' + file + '?classic',
+        '--dump-dom', 'file://' + file,
     ], { encoding: 'utf8', maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'ignore'] });
     const m = dom.match(/<pre id="HUDPROBE">([\s\S]*?)<\/pre>/);
     if (!m) throw new Error(`the page never reported at ${w}x${h} — it did not boot`);
@@ -207,7 +203,7 @@ check('no HUD piece picks its own coordinates any more', () => {
     const end = HTML.indexOf('#overlay');
     ok(start > -1 && end > start, 'the HUD stylesheet could not be located');
     const css = HTML.slice(start, end).replace(/\/\*[\s\S]*?\*\//g, '');
-    for (const id of ['#shards', '#waveInfo', '#topToggles', '#zoneInfo', '#ui']) {
+    for (const id of ['#shards', '#zoneLine', '#zoneInfo', '#ui', '#hudRow1']) {
         const at = css.indexOf(id + ' ');
         if (at < 0) continue;
         const block = css.slice(at, css.indexOf('}', at));
@@ -216,11 +212,9 @@ check('no HUD piece picks its own coordinates any more', () => {
     }
 });
 
-check('the banner shrinks to fit instead of running off the edge', () => {
-    const at = HTML.indexOf('#waveInfo {');
-    const block = HTML.slice(at, HTML.indexOf('}', at));
-    ok(/clamp\(/.test(block), 'the objective line has a fixed size, so it cannot fit a phone');
-    ok(/max-width:\s*100%/.test(block), 'the objective line is not bounded by the screen');
+check('the objective banner of the strip game is gone from the page, not hidden', () => {
+    ok(!/id="waveInfo"/.test(HTML) && !/#waveInfo/.test(HTML), 'the banner is still in the page');
+    ok(!/id="padHud"|id="dnaHud"|id="devBtn"|id="aimRing"|id="btnSquad"|id="btnBuild"/.test(HTML), 'a piece of the strip game\'s HUD is still in the page');
 });
 
 check('the ultimate caption is clipped, not spilled', () => {
@@ -246,33 +240,23 @@ check('the controls inside the see-through column take their clicks back', () =>
     }
 });
 
-check('the DEV button is out of the player HUD', () => {
-    // It was pinned to the top right at z-index 9999, directly over the pad
-    // readout and the zone name.
-    const DEV = fs.readFileSync(path.join(ROOT, 'js/dev.js'), 'utf8');
-    const at = DEV.indexOf('devBtn.textContent');
-    ok(at > -1, 'the DEV button could not be located');
-    const block = DEV.slice(at, at + 400);
-    ok(!/top:"15px"/.test(block), 'the DEV button is still parked on the top HUD');
-    ok(/bottom:/.test(block), 'the DEV button is not anchored to the bottom');
-    // And players do not see it at all: it is only added to the page when the address has ?dev ("remove the dev button").
-    ok(/if \(\/\[\?&\]dev\\b\/\.test\(\(typeof window[^\n]*\)\) document\.body\.appendChild\(devBtn\);/.test(DEV), 'the DEV button is still shown to every player');
-});
-
-check('the in-game index describes the bar the player is actually looking at', () => {
-    const at = HTML.indexOf('THE TOP BAR');
-    ok(at > -1, 'the index never explains the top bar');
-    const docs = HTML.slice(at, at + 3000);
-    // The three alarm names moved from the canvas onto the banner. If the index
-    // lists one the code cannot produce, the docs have drifted.
-    const WAVES = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
-    for (const kind of ['PROXIMITY ALARM', 'ZONE ALARM', 'FACILITY BREACH']) {
-        ok(docs.indexOf(kind) > -1, 'the index does not mention ' + kind);
-        ok(WAVES.indexOf(kind) > -1, 'the index promises ' + kind + ', which the banner cannot say');
+check('the in-game index describes the HUD the player is actually looking at', () => {
+    const at = HTML.indexOf('THE HUD &mdash; WHAT IS WHERE');
+    ok(at > -1, 'the index never explains the HUD');
+    const docs = HTML.slice(at, at + 2500);
+    // The pieces the index names are the pieces the page has.
+    for (const [word, id] of [['crystals', 'shards'], ['ULTIMATE', 'ultWrap'], ['room tag', 'zoneInfo'], ['alarm triangle', 'alarmIcon'], ['squad bar', 'squadBar']]) {
+        ok(docs.indexOf(word) > -1, 'the index does not mention the ' + word);
+        ok(new RegExp('id="' + id + '"').test(HTML), 'the index promises ' + word + ', which the page has not got');
     }
-    ok(/HOME SECURE/.test(docs) && /HOME SECURE/.test(WAVES),
-       'the index and the banner disagree about the opening line');
-    ok(/NEXT: ZONE/.test(docs), 'the index does not show what the objective line looks like');
+    ok(/siphon switch/.test(docs) && /id="siphonBtn"/.test(HTML), 'the siphon switch');
+    // The alarm names the index lists are the ones the code can raise (js/alarm.js).
+    const ALARM = fs.readFileSync(path.join(ROOT, 'js/alarm.js'), 'utf8');
+    for (const kind of ['PROXIMITY ALARM', 'FACILITY BREACH']) {
+        ok(HTML.indexOf(kind) > -1, 'the index does not mention ' + kind);
+        ok(ALARM.indexOf(kind) > -1, 'the index promises ' + kind + ', which the alarm cannot raise');
+    }
+    ok(!/HOME SECURE|NEXT: ZONE|ZONE ALARM/.test(HTML), 'the index still describes the strip game\'s banner');
 });
 
 // ── WHAT THE BROWSER SAYS ────────────────────────────────────────────────────
@@ -289,22 +273,23 @@ if (!chrome) {
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'conduit-hud-'));
 const runs = [];
 try {
-    for (const [w, h] of SIZES) {
-        for (const [kind, line] of Object.entries(LINES)) {
-            runs.push({ w, h, kind, r: measure(chrome, dir, w, h, line) });
-        }
-    }
+    for (const [w, h] of SIZES) runs.push({ w, h, r: measure(chrome, dir, w, h) });
 } finally {
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
 }
 
 group('the measured layout, in a real browser');
 
-check('the fixture really measured something', () => {
-    same(runs.length, SIZES.length * 2, 'not every screen size was measured');
+check('the fixture really measured something: the facility booted, and every piece of its HUD was found', () => {
+    same(runs.length, SIZES.length, 'not every screen size was measured');
     for (const run of runs) {
-        const n = Object.keys(run.r.boxes).length;
-        ok(n >= 7, `only ${n} HUD boxes were found at ${run.w}x${run.h} — the page did not boot`);
+        ok(!run.r.err, `the probe threw at ${run.w}x${run.h}: ${run.r.err}`);
+        same(run.r.facility, true, `the page did not boot the facility at ${run.w}x${run.h}`);
+        same(run.r.panelOpen, false, `a panel is open over the HUD at boot at ${run.w}x${run.h}`);
+        for (const id of IDS) {
+            if (!expectedAt(id, run.w)) { ok(!run.r.boxes[id], `${id} is shown at ${run.w}x${run.h}, where it should not be`); continue; }
+            ok(run.r.boxes[id], `${id} was not found at ${run.w}x${run.h}`);
+        }
     }
 });
 
@@ -312,7 +297,7 @@ check('THE ASK: nothing in the HUD covers anything else, at any size', () => {
     const bad = [];
     for (const run of runs) {
         const hits = overlaps(run.r.boxes);
-        if (hits.length) bad.push(`${run.w}x${run.h} (${run.kind}): ${hits.join(', ')}`);
+        if (hits.length) bad.push(`${run.w}x${run.h}: ${hits.join(', ')}`);
     }
     ok(bad.length === 0, 'HUD pieces overlap — ' + bad.join(' | '));
 });
@@ -322,16 +307,11 @@ check('and nothing hangs off the edge of the screen', () => {
     for (const run of runs) {
         for (const [id, b] of Object.entries(run.r.boxes)) {
             if (b.x < -1 || b.y < -1 || b.x + b.w > run.r.vw + 1 || b.y + b.h > run.r.vh + 1) {
-                bad.push(`${id} at ${run.w}x${run.h} (${run.kind})`);
+                bad.push(`${id} at ${run.w}x${run.h}`);
             }
         }
     }
     ok(bad.length === 0, 'HUD pieces run off screen — ' + bad.join(', '));
-});
-
-check('THE ASK: the objective line under the bars is gone (it is hidden, and takes no room)', () => {
-    ok(/#waveInfo \{ display: none !important; \}/.test(HTML), 'the objective banner is not hidden');
-    for (const run of runs) ok(!run.r.boxes.waveInfo, `the objective banner is still on screen at ${run.w}x${run.h}`);
 });
 
 check('the ultimate caption stays inside its bar and clear of the switch', () => {
@@ -351,12 +331,13 @@ check('the ultimate caption stays inside its bar and clear of the switch', () =>
 
 group('the HUD still takes clicks');
 
-check('the ultimate bar, its switch and the toggles are all hit', () => {
+check('the ultimate bar, its switch, the dock\'s buttons and the phone\'s hub are all hit', () => {
     for (const run of runs) {
         same(run.r.hits.ultWrap, 'ultWrap', `the ultimate bar is unclickable at ${run.w}`);
         same(run.r.hits.siphonBtn, 'siphonBtn', `the siphon switch is unclickable at ${run.w}`);
-        if (run.r.topHidden) same(run.r.hits.radialHub, 'radialHub', `the radial menu hub is unclickable at ${run.w}`);   // a phone: the hub stands in for the buttons
-        else if (run.w <= 700) same(run.r.hits.btnSquad, 'btnSquad', `the SQUAD button is unclickable at ${run.w}`);   // (on a tablet or desktop it lives in the mini radial)
+        same(run.r.topHidden, run.w <= 700, `the dock is ${run.r.topHidden ? 'hidden' : 'shown'} at ${run.w}`);
+        if (run.r.topHidden) same(run.r.hits.radialHub, 'radialHub', `the radial menu hub is unclickable at ${run.w}`);   // a phone: the hub stands in for the dock
+        else same(run.r.hits.btnRoster, 'btnRoster', `the ROSTER button is unclickable at ${run.w}`);
     }
 });
 

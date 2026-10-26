@@ -4,7 +4,7 @@
 // The facility is the game: the page opens it, and it keeps one key, "conduit_fp_save". (The old strip game, its CLASSIC GAME chip and its "tubecrawler_*" keys are gone.)
 //
 // WHAT IS SAVED: the class and its perks, the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
-// (the director's step and what it has already said), the followers (the roster record: level, XP, evolution, traits), the Crystal's health and where the player stands.
+// (the director's step and what it has already said), the followers (the roster record: level, XP, evolution, traits), the crystals and the kill count, the Crystal's health and where the player stands.
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
 // It is written every few seconds while the game is running, and when the page is hidden or closed. NEW GAME (a chip, with a confirmation) throws it away and starts again.
 const FS = { key: "conduit_fp_save", version: 1, every: 180 };
@@ -25,6 +25,7 @@ function facilitySaveCollect() {
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
+        shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
     };
 }
@@ -69,6 +70,7 @@ function facilitySaveApply(d) {
     }
     if (d.spots && typeof followerSpotsApply === "function") followerSpotsApply(d.spots);
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
+    if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
     // where the player stood (if that is still floor), and the followers with them
     const at = d.at; if (at && Number.isFinite(at[0]) && Number.isFinite(at[1]) && facilityStandOk(at[0], at[1])) { player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null; }

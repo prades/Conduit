@@ -2,7 +2,7 @@
 //
 // REPORTED: "The user should be able to slide through the different clone options in the menu to spawn them. Make player cards for the different clone types."
 // The Clone Bay is a strip of player cards (one per clone type, with the creature on it) that slides sideways: drag, wheel, or the arrows. A slide never
-// presses a card's button; a tap on a CLONE button still spawns it. Drives the real page in the real browser (no browser: it says so and passes).
+// presses a card's button; a tap on a CLONE button still spawns it. Drives the real page (the facility) in the real browser (no browser: it says so and passes).
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -26,7 +26,7 @@ const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8'), CLONE = fs.r
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
   gameState.running = true; shardCount = 9999; actors.length = 0; followers.length = 0;
-  var inv = {}; ['ant','beetle','mantis','scorpion','spider','moth'].forEach(function(s){ ['scout','striker','tank'].forEach(function(c){ inv[s + '_' + c] = 99; }); }); setDNA(inv);
+  var inv = {}; ['ant','beetle','mantis','scorpion','spider','moth'].forEach(function(s){ ['scout','striker','tank'].forEach(function(c){ inv[s + '_' + c] = 99; }); }); dnaApply(inv);
   canvas.setPointerCapture = function(){}; canvas.releasePointerCapture = function(){};
   cloneMenuOpen = true; crystalCloneSort = 'species'; _crystalScrollX = 0; render(); render();
   var cb = window._cloneTabBounds; out.bounds = cb; out.nOpts = window._cloneTabOpts.length; out.cardW = cb.cardW; out.arrows = !!window._cloneScrollArrows;
@@ -63,7 +63,7 @@ else {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-')), file = path.join(dir, 'game.html');
     fs.writeFileSync(file, HTML.replace(/<head>/i, '<head><base href="file://' + ROOT + '/">').replace(/<\/body>/i, SCRIPT));
     let dom = '';
-    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=1100,760', '--virtual-time-budget=14000', '--dump-dom', 'file://' + file + '?classic'], { encoding: 'utf8', timeout: 90000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=1100,760', '--virtual-time-budget=14000', '--dump-dom', 'file://' + file], { encoding: 'utf8', timeout: 90000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
     try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
     const m = dom.match(/<pre id="__cc">([\s\S]*?)<\/pre>/), r = m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : null;
     check('the instrument ran', () => ok(r, 'the probe produced nothing'));

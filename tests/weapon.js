@@ -1,13 +1,11 @@
 // The player's weapon. Tapping used to fire at any predator the tap happened to
 // land near, so brushing one while moving spent a shot. Firing is now gated
-// behind an attack mode armed from the radial menu, and costs ammo.
+// behind an attack mode armed from the radial menu (or the auto-lock, js/targeting.js), and costs ammo.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
 const ROOT = path.resolve(__dirname, '..');
-const { fnSource } = require('./domstub.js');
 
-let store = {};
 function makeEnv() {
     const shots = [];
     const sandbox = {
@@ -18,36 +16,33 @@ function makeEnv() {
             getBoundingClientRect: () => ({ left: 0, top: 0, width: 1000, height: 700 }),
         },
         TILE_W: 60, TILE_H: 30,
-        world: [], actors: [], followers: [], floatingTexts: [], shots,
+        actors: [], followers: [], floatingTexts: [], shots,
         player: { x: 0, y: 0, visualX: 0, visualY: 0, invuln: 0, attackCooldown: 0, selectedElement: 'fire' },
         ELEMENTS: [{ id: 'fire', label: 'FIRE', color: '#ff3300' }],
         playerAttackMode: false, playerAmmo: 5,
         PLAYER_AMMO_MAX: 60, PLAYER_AMMO_START: 12,
         _ATKCHIP: { x: 0, y: 0, w: 0, h: 0 },
-        commandMode: false, commandTarget: null, commandNestTarget: null, commandEnemyTarget: null,
-        commandX: 0, commandY: 0, dragDX: 0, dragDY: 0, buildMode: false,
-        nestConnectMode: false, pendingConnectNest: null, nestConnectMisses: 0,
+        commandMode: false, commandTarget: null, commandEnemyTarget: null, commandFollowerTarget: null,
+        commandX: 0, commandY: 0, commandShiftX: 0, commandShiftY: 0, dragDX: 0, dragDY: 0,
+        commandPendingTap: false, selectedRadialAction: null,
+        isPressing: false, longHoldFired: false, touchMoved: false, pressX: 0, pressY: 0, pressStartTime: 0, pointerX: 0, pointerY: 0,
         gameState: { running: true },
         performance: { now: () => 0 },
         getTile: () => null,
         // handleInput checks the crystal before the weapon, so these have to exist.
         crystal: { x: -99, y: -99, health: 300, maxHealth: 300 },
-        crystalMenuOpen: false,
-        isTapNearCrystal: () => false,
+        crystalMenuOpen: false, cloneMenuOpen: false, infoPanelOpen: false, settingsPanelOpen: false,
         spawnFollowerProjectile(src, target) { shots.push({ target }); },
-        saveAmmo() { store.ammo = String(sandbox.playerAmmo); },
-        savePylons() {}, saveNests() {}, saveGameState() {}, saveSession() {},
+        // The facility (js/facilityplay.js): flat floor here, no walls, no lift.
+        facilityLiftRel: () => 0, facilityPickLift: () => 0, facilityWalkTo() { return true; },
         window: { addEventListener() {}, visualViewport: null },
         document: { addEventListener() {}, visibilityState: 'visible' },
+        localStorage: { getItem: () => null, setItem() {} },
     };
     // Predator is an identity class here; only instanceof matters to the filter.
     sandbox.Predator = class Predator {};
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
-    // input.js asks whether a tap landed on the home portal. The REAL
-    // predicate, evaluated from helpers.js — a stub here would be a second
-    // copy of the rule and would not follow it when it changes.
-    vm.runInContext(fnSource('js/helpers.js', 'isHomePortal'), ctx, { filename: 'helpers.js:isHomePortal' });
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8'), ctx, { filename: 'js/input.js' });
     return { sandbox, shots, run: s => vm.runInContext(s, ctx) };
 }
@@ -161,13 +156,10 @@ check('ammo never goes negative', () => {
     env.run('firePlayerShot')(foe);
     eq(env.sandbox.playerAmmo, 0, 'floored at zero');
 });
-check('firing persists the new count', () => {
-    store = {};
-    const env = makeEnv();
-    const { foe } = putEnemy(env, 2, 1);
-    env.sandbox.playerAmmo = 4;
-    env.run('firePlayerShot')(foe);
-    eq(store.ammo, '3', 'saved');
+check('the count is kept by the facility\'s save', () => {
+    const SAVE = fs.readFileSync(path.join(ROOT, 'js/facilitysave.js'), 'utf8');
+    ok(/ammo: playerAmmo/.test(SAVE), 'the save does not keep the magazine');
+    ok(/playerAmmo = d\.ammo/.test(SAVE), 'the save does not put it back');
 });
 check('a dead target is not worth a round', () => {
     const env = makeEnv();
@@ -205,8 +197,7 @@ group('wiring');
 const INPUT  = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
 const DRAW   = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
 const CMD    = fs.readFileSync(path.join(ROOT, 'js/commands.js'), 'utf8');
-const SHOP   = fs.readFileSync(path.join(ROOT, 'js/wavedata.js'), 'utf8');
-const WAVES  = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
+const FACILITY = fs.readFileSync(path.join(ROOT, 'js/facilityplay.js'), 'utf8');
 
 check('the only tap-fire path checks playerAttackMode first', () => {
     const at = INPUT.indexOf('if (playerAttackMode && player.attackCooldown <= 0)');
@@ -229,41 +220,9 @@ check('arming fires at the enemy that was long-pressed', () => {
     const body = CMD.slice(at, at + 800);
     ok(/firePlayerShot\(commandEnemyTarget\)/.test(body), 'arming should also take the shot'); ok(/gunLock\(commandEnemyTarget\)/.test(body), 'arming should also lock on to it (js/gunfire.js: click or hold to keep firing)');
 });
-check('THE SHOP IS GONE: ammo comes from hacking a panel', () => {
-    // The shop sold ammo; with it removed that was the only source, which
-    // would have left the weapon permanently dry after the opening magazine.
-    const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
-    const CFG  = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
-    ok(!/id:"ammo_resupply"/.test(SHOP), 'the shop ammo item is back');
-    ok(!/SHOP_ITEMS/.test(SHOP), 'the shop item list is back');
-    const reward = CFG.match(/const PANEL_AMMO_REWARD = (\d+)/);
-    ok(reward, 'no panel ammo reward defined');
-    ok(Number(reward[1]) > 0, 'the panel reward should actually give rounds');
-    // Paid out where the panel pays shards, and capped.
-    const at = GAME.indexOf('shardCount += _pay;');
-    ok(at > -1, 'could not find the panel payout');
-    const block = GAME.slice(at, at + 700);
-    ok(/PANEL_AMMO_REWARD/.test(block), 'a hacked panel does not yield ammo');
-    ok(/PLAYER_AMMO_MAX - playerAmmo/.test(block), 'the ammo gain is not capped');
-    ok(/saveAmmo\(\)/.test(block), 'the gain is not persisted');
-});
-
-check('a decoy panel pays nothing — no shards, no ammo', () => {
-    // The decoy trips the alarm instead of paying out, and that has to stay
-    // true for ammo as well or the alarm becomes a free resupply.
-    const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
-    // A decoy only trips the alarm in a zone that has not been taken; the
-    // branch is guarded now, so match it by what it does rather than by the
-    // exact condition.
-    const at = GAME.indexOf('triggerAlarm(t.alarmType, t.x, t.y);');
-    ok(at > -1, 'could not find the decoy branch');
-    const decoy = GAME.slice(GAME.lastIndexOf('if (', at), GAME.indexOf('} else {', at));
-    ok(!/PANEL_AMMO_REWARD|playerAmmo/.test(decoy), 'a decoy hands out ammo');
-    ok(!/shardCount/.test(decoy), 'a decoy hands out shards');
-});
 check('a new game resets the magazine and stows the weapon', () => {
-    ok(/clearAmmo\(\)/.test(WAVES), 'restartGame does not clear ammo');
-    ok(/playerAttackMode\s*=\s*false/.test(WAVES), 'restartGame leaves the weapon armed');
+    ok(/playerAmmo = PLAYER_AMMO_START/.test(FACILITY), 'facilityResetState does not refill the magazine');
+    ok(/playerAttackMode\s*=\s*false/.test(FACILITY), 'facilityResetState leaves the weapon armed');
 });
 
 console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

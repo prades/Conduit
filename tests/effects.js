@@ -17,12 +17,12 @@ async function check(name, fn) {
 function ok(c, m) { if (!c) throw new Error(m); }
 
 (async () => {
-    const ctx = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const ctx = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), ctx, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
-    ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run('gameState.running = true; ');
+    ok(run('world.length') > 100, 'fixture: the facility did not build');
+    run('gameState.running = true; facilityBlackoutSet(false);');
     // Record what a draw call does to the canvas: full-screen fills, filled
     // shapes, the widest stroke.
     run(`globalThis.__rec = function(fn){ const r = { fullFills: 0, fills: 0, maxLine: 0, ellipses: 0 }; const keep = {};
@@ -34,18 +34,18 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('RULE 1 · NO FOG');
 
-    await check('THE CULPRIT: a blizzard tints nothing beyond its own zone — no full-screen fill', () => {
+    await check('THE CULPRIT: a blizzard tints nothing beyond its own field — no full-screen fill', () => {
         const r = run(`(function(){ elementEffects.length = 0; activeEmpEffect = null; activeFireEruption = null;
-            elementEffects.push({ type: 'blizzardField', x: player.x, y: 2, zone: 1, color: '#99ddff', life: 200, maxLife: 360 });
+            elementEffects.push({ type: 'blizzardField', x: player.x, y: player.y, radius: ULT_REACH, color: '#99ddff', life: 200, maxLife: 360 });
             return __rec(() => drawElementEffects()); })()`);
         ok(r.fullFills === 0, r.fullFills + ' full-screen fills');
     });
-    await check('a second blizzard in the same zone refreshes the first instead of stacking', () => {
+    await check('a second blizzard within reach of the first refreshes it instead of stacking', () => {
         const r = run(`(function(){ elementEffects.length = 0;
-            for (let i = 0; i < 3; i++) elementEffects.push({ type: 'blizzardField', x: 20, y: 2, zone: 1, life: 100 + i * 50, maxLife: 360 });
-            elementEffects.push({ type: 'blizzardField', x: 40, y: 2, zone: 2, life: 100, maxLife: 360 });
-            updateElementEffects(); return elementEffects.filter(e => e.type === 'blizzardField').map(e => e.zone + ':' + e.life); })()`);
-        ok(r.length === 2 && r.includes('1:199'), JSON.stringify(r));
+            for (let i = 0; i < 3; i++) elementEffects.push({ type: 'blizzardField', x: 20 + i, y: 20, radius: ULT_REACH, life: 100 + i * 50, maxLife: 360 });
+            elementEffects.push({ type: 'blizzardField', x: 20 + 2 * ULT_REACH, y: 20, radius: ULT_REACH, life: 100, maxLife: 360 });
+            updateElementEffects(); return elementEffects.filter(e => e.type === 'blizzardField').map(e => e.x + ':' + e.life); })()`);
+        ok(r.length === 2 && r.some(s => /^2\d:199$/.test(s)), JSON.stringify(r));
     });
     await check('the EMP dims for half a second at 0.35; the eruption only tints the edges, at 0.2', () => {
         ok(run('FX_EMP_FRAMES') <= 30 && run('FX_EMP_DIM') <= 0.35, 'EMP ' + run('FX_EMP_FRAMES') + ' / ' + run('FX_EMP_DIM'));
@@ -70,45 +70,15 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     await check('an impact is a ring and sparks — no filled disc', () => {
         const r = run(`(function(){ elementEffects.length = 0; activeEmpEffect = null;
-            elementEffects.push({ type: 'impact', x: player.x, y: 2, color: '#ff3300', radius: 0.8, life: 10 });
+            elementEffects.push({ type: 'impact', x: player.x, y: player.y, color: '#ff3300', radius: 0.8, life: 10 });
             return __rec(() => drawElementEffects()); })()`);
         ok(r.fills === 0, r.fills + ' fills');
     });
     await check('a shockwave ring is one floor stroke, no fill (the black-disc bug is gone with it)', () => {
         const r = run(`(function(){ elementEffects.length = 0;
-            elementEffects.push({ type: 'ring', x: player.x, y: 2, color: '#00ccaa', radius: 6, life: 20 });
+            elementEffects.push({ type: 'ring', x: player.x, y: player.y, color: '#00ccaa', radius: 6, life: 20 });
             return __rec(() => drawElementEffects()); })()`);
         ok(r.fills === 0 && r.ellipses === 1, JSON.stringify(r));
-    });
-    await check('a pylon link no longer spawns impact discs along itself', () => {
-        ok(!/elementEffects\.push\(\{type:"impact",x:ex,y:ey/.test(rd('js/game.js')), 'the periodic link impact is still there');
-    });
-
-    group('RULE 4 · QUIET WHEN IDLE');
-
-    await check('THE ASK: a wave link is thin threads — never wider than 1.5 px', () => {
-        const r = run(`(function(){ world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.attackModeElement = null; } });
-            shardCount = 999; unlockedElements = new Set(ELEMENTS.map(e => e.id));
-            const home = world.find(t => isHomePortal(t)); const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
-            _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), T(home.x + 1, 2));
-            for (const x of [3, 5, 7]) { const t = T(home.x + x, 2); _executeBuildInstant(ELEMENTS[0], t, 'disruption'); t._awakeUntil = Infinity; }
-            player.x = player.visualX = home.x + 5; player.y = player.visualY = 2;
-            _cacheAge = -999; render(); return { pairs: _wPylonPairs.length, rec: __rec(() => drawWaveLinks()) }; })()`);
-        ok(r.pairs >= 2, 'fixture: no pairs');
-        ok(r.rec.maxLine <= 1.5, 'widest stroke ' + r.rec.maxLine);
-    });
-    await check('an awake wave pylon gets a thin floor ring, not a glow disc', () => {
-        ok(!/_wGlowR/.test(rd('js/game.js')), 'the glow disc is still drawn');
-    });
-    await check('the generator reach ring shows only while held or in build mode', () => {
-        const r = run(`(function(){ buildMode = false; commandMode = false; _cacheAge = -999; render();
-            const off = __rec(() => drawGeneratorLinks()).ellipses;
-            buildMode = true; const on = __rec(() => drawGeneratorLinks()).ellipses; buildMode = false; return { off, on, links: _genLinks.length }; })()`);
-        ok(r.links > 0, 'fixture: no generator links');
-        ok(r.off === 0 && r.on > 0, JSON.stringify(r));
-    });
-    await check('territory is an edge, not a wash over every tile', () => {
-        ok(/_floorTileSprite\(gameState\.phase === "night", Math\.round\(dist \/ FLOOR_DIST_STEP\), "", _tq\)/.test(rd('js/game.js')), 'tiles still take the territory tint');
     });
 
     group('RULE 5 · CAPPED');
@@ -147,30 +117,6 @@ function ok(c, m) { if (!c) throw new Error(m); }
             floatingTexts.push({ x: W, y: H - 80, text: 'TITLE', life: 200, vy: 0 }); updateFloatingTexts();
             return floatingTexts.map(t => t.text + ':' + (t._waiting ? 'wait' : 'show')); })()`);
         ok(JSON.stringify(r) === '["TITLE:show","LINE:show"]', JSON.stringify(r));
-    });
-    await check('combos found together are announced once, short enough for a phone', () => {
-        const r = run(`(function(){ comboDiscovered.clear(); floatingTexts.length = 0; unlockedElements = new Set(ELEMENTS.map(e => e.id));
-            world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.attackModeElement = null; } });
-            const home = world.find(t => isHomePortal(t)); const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
-            _executeBuildInstant(PYLON_PICKER_TYPES.find(e => e.id === GENERATOR_ID), T(home.x + 1, 2));
-            [['fire', 3, 1], ['ice', 5, 1], ['toxic', 4, 3], ['flux', 6, 3], ['core', 7, 1]].forEach(([id, x, y]) => _executeBuildInstant(ELEMENTS.find(e => e.id === id), T(home.x + x, y), waveRole(id)));
-            floatingTexts.length = 0; _cacheAge = -999; render();
-            return floatingTexts.filter(t => /COMBO/.test(t.text) || t.size === 10).map(t => t.text); })()`);
-        ok(r.length === 2 && /\d COMBOS DISCOVERED/.test(r[0]), JSON.stringify(r));
-        ok(r[1].length <= 40, 'the names line is too long for a phone: ' + r[1]);
-    });
-    await check('network tiers that change together are said once, short enough for a phone', () => {
-        const r = run(`(function(){ floatingTexts.length = 0; ELEMENTS.forEach(e => { _prevNetworkTiers[e.id] = 0; networkStrength[e.id] = 0; });
-            world.forEach(t => { if (t.pillar) { t.pillar = false; t.attackMode = false; t.waveMode = false; t.isGenerator = false; t.isBattery = false; t.attackModeElement = null; } });
-            const home = world.find(t => isHomePortal(t)); const T = (x, y) => world.find(t => t.type === 'floor' && t.x === x && t.y === y && !t.nest && !t.nodeType);
-            ['fire', 'ice', 'core', 'toxic'].forEach((id, i) => { _executeBuildInstant(ELEMENTS.find(e => e.id === id), T(home.x + 3 + i * 4, 1), 'battery'); _executeBuildInstant(ELEMENTS.find(e => e.id === id), T(home.x + 4 + i * 4, 2), 'battery'); });
-            floatingTexts.length = 0; _cacheAge = -999; render();
-            return floatingTexts.filter(t => /NETWORK/.test(t.text) || t.size === 10).map(t => t.text); })()`);
-        ok(r.length === 2 && /4 NETWORKS UP/.test(r[0]), JSON.stringify(r));
-        ok(r[1].length <= 40, 'too long for a phone: ' + r[1]);
-    });
-    await check('a pylon shows its label only while held, inspected or building (no longer by distance: the battlefield is bare)', () => {
-        ok(/const _near = pylonLabelsOn\(obj\);/.test(rd('js/game.js')), 'labels are not gated on pylonLabelsOn');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
