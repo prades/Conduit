@@ -50,7 +50,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     player.x = player.visualX = open[0]; player.y = player.visualY = open[1];
     followers.forEach(function(f, i){ f.x = player.x - 0.5 - i * 0.3; f.y = player.y; });
     squadMode = 'all'; mixToolRender(true); await wait(30);
-    spawnPredatorForZone(1, { species: 'beetle', className: 'tank' }); var foe = actors[actors.length - 1]; foe.x = player.visualX + 2; foe.y = player.visualY + 1; foe.team = 'red'; foe.dead = false; foe.level = 4; foe.element = 'fire'; foe.maxHealth = 100; foe.health = 100; foe.state = 'wander'; foe.provoked = false; window.__foe = foe;
+    var foe = spawnCreature({ species: 'beetle', className: 'tank' }); foe.x = player.visualX + 2; foe.y = player.visualY + 1; foe.team = 'red'; foe.dead = false; foe.level = 4; foe.element = 'fire'; foe.maxHealth = 100; foe.health = 100; foe.state = 'wander'; foe.provoked = false; window.__foe = foe;
     standDown = false; frame = Math.ceil((frame + 1) / TARGET.every) * TARGET.every; targetTick(); mixToolRender(false); await wait(30);
     var card = $('#mixTool .mt-foe'), r = card ? card.getBoundingClientRect() : null, pn = $('#mixTool .mt-panel') ? $('#mixTool .mt-panel').getBoundingClientRect() : null, pod = $('#mixTool .mt-pod') ? $('#mixTool .mt-pod').getBoundingClientRect() : null, dock = document.getElementById('topToggles'), dr = dock ? dock.getBoundingClientRect() : null;
     out.card = card ? { text: card.textContent, name: $('#mixTool .mt-foe-name').textContent, sub: $('#mixTool .mt-foe-sub').textContent, num: $('#mixTool .mt-foe-num').textContent, go: $('#mixTool .mt-foe-go').textContent, pop: card.classList.contains('pop'), img: !!$('#mixTool .mt-foe-pic img') && $('#mixTool .mt-foe-pic img').src.indexOf('data:image/png') === 0, w: Math.round(r.width), h: Math.round(r.height), hp: $('#mixTool .mt-foe-hp u').style.width, col: card.style.getPropertyValue('--c') } : null;
@@ -76,8 +76,6 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     click($('#mixTool [data-act=retreat]')); await wait(30); out.retreat = { ordered: followers.filter(function(f){ return f.attackOrder; }).length, go: $('#mixTool .mt-foe-go').textContent };
     // the creature dies: the card goes
     foe.dead = true; targetTick(); frame += TARGET.every; targetTick(); mixToolRender(false); await wait(30); out.gone = { card: !!$('#mixTool .mt-foe'), slotEmpty: $('#mixTool .mt-foe-slot').children.length === 0 };
-    // the classic game has no card and keeps its tabs
-    facilityPlay = false; mixToolRender(true); await wait(30); out.classic = { card: !!$('#mixTool .mt-foe'), tabs: $$('#mixTool .mt-tab').map(function(t){ return t.textContent; }).join() }; facilityPlay = true;
   } catch (e) { out.err = String(e && e.stack || e); }
   var pre = document.createElement('pre'); pre.id = '__ec'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2000); });</script></body>`;
@@ -92,17 +90,17 @@ function measure(w, h) {
 }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); squadMode = "selected"; facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');
-    const MODE_AT_START = run('squadMode'), ELEMENT_IDS = J('ELEMENTS.map(e => e.id)');
+    const MODE_AT_START = run('squadMode'), ELEMENT_IDS = J('ELEMENTS.map(e => e.id)');   // (the page boots the facility, js/init.js: squadMode is what facilityPlayStart left it)
+    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');   // (the start returns early; only the tutorial's blackout is lifted)
     run('partyOn = () => false;');   // (the squad of three and the rooms followers hold have their own tests, tests/party.js: these are about the attack order, with every follower following)
-    // the fixtures: the player at a spot with a clear view, creatures that cannot move (so they stay where they are put) and cannot die, a squad
+    // the fixtures: the player at a spot with a clear view, creatures (js/clone.js spawnCreature) that cannot move (so they stay where they are put) and cannot die, a squad
     run(`globalThis.__open = (() => { const offs = [[2, 1], [-2, 3], [5, 0], [0, 6], [4, 4], [7, 1], [10, 1], [3, 12]]; for (const c of _fp.cellsP.values()) if (offs.every(d => _fpLos(c[0], c[1], c[0] + d[0], c[1] + d[1]) && facilityWalkable(c[0] + d[0], c[1] + d[1], _fp.F))) return c; return null; })();
-        globalThis.__mk = (dx, dy, o) => { spawnPredatorForZone(1, { species: 'ant', className: 'scout' }); const a = actors[actors.length - 1]; a.x = player.visualX + dx; a.y = player.visualY + dy; a.team = 'red'; a.dead = false; a.level = 3; a.moveSpeed = 0; a.baseMoveSpeed = 0; a.health = a.maxHealth = 1e7; a.state = (o && o.calm) ? 'wander' : 'hunt'; a.provoked = !(o && o.calm); return a; };
+        globalThis.__mk = (dx, dy, o) => { const a = spawnCreature({ species: 'ant', className: 'scout' }); a.x = player.visualX + dx; a.y = player.visualY + dy; a.team = 'red'; a.dead = false; a.level = 3; a.moveSpeed = 0; a.baseMoveSpeed = 0; a.health = a.maxHealth = 1e7; a.state = (o && o.calm) ? 'wander' : 'hunt'; a.provoked = !(o && o.calm); return a; };
         globalThis.__fresh = (roles) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; battleFocus = null; squadMode = 'all'; selectedUnits.clear(); floatingTexts.length = 0; followerProjectiles.length = 0;
             player.x = player.targetX = player.visualX = __open[0]; player.y = player.targetY = player.visualY = __open[1]; targetDrop(); standDown = false; _ixSubject = null;
             (roles || ['brawler']).forEach((r, i) => { spawnFollowerAtCrystal(['fire', 'ice', 'toxic', 'electric', 'core', 'flux'][i % 6]); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = r; f.x = player.x - 1 - i * 0.2; f.y = player.y; f.stance = 'follow'; f.health = f.maxHealth = 1e7; f.spawnProtection = 1e9; f.currentWill = 1e5; f.attackCooldown = 0; });   // (nothing the creatures do hurts the squad: these checks are about where it goes)
@@ -112,23 +110,17 @@ function measure(w, h) {
     ok(run('!!__open'), 'no open spot in the facility to test in');
 
     group('THE TOOL IN THE FACILITY: no ELEMENTS tab');
-    check('in the facility the tool is the battle controls only: no tab row, no honeycomb, no ELEMENTS; WHO has ALL and the six elements, then RETREAT, HOLD and COME; on a phone a title and a close button, and a BATTLE pod', () => {
-        run('facilityPlay = true; innerWidth = 1100; crystalMenuOpen = false; _mtTab = "elements";');   // (a stored ELEMENTS preference is ignored here)
+    check('the tool is the battle controls only: no tab row, no honeycomb, no ELEMENTS (nothing to bring online: every element is); WHO has ALL and the six elements (a phone\'s row; the corners layout has the one ALL button: tests/squadfly.js), then RETREAT, HOLD and COME; on a phone a title and a close button, and a BATTLE pod', () => {
+        run('innerWidth = 1100; crystalMenuOpen = false;');
         const w = run('mixToolHTML()'); ok(!/data-tab/.test(w) && !/mt-tab/.test(w) && !/mt-comb|mt-hex|ELEMENTS/.test(w), 'a tab or the honeycomb: ' + w.slice(0, 160)); ok(!/mt-tabs|mt-x/.test(w), 'a tab row on a wide screen');
         same((w.match(/data-scope="/g) || []).length, 7, 'WHO chips (ALL and six elements)'); ok(/data-act="retreat"/.test(w) && /data-order="hold"/.test(w) && /data-order="follow"/.test(w), 'the controls');
         run('innerWidth = 500; crystalMenuOpen = true;'); const n = run('mixToolHTML()'); ok(/class="mt-title">BATTLE</.test(n) && /data-act="close"/.test(n) && !/data-tab|mt-comb/.test(n), 'phone: ' + n.slice(0, 200)); ok(/<span>BATTLE<\/span>/.test(n), 'the pod says BATTLE (it said CRYSTAL 6)');
         run('crystalMenuOpen = false; innerWidth = 1100;');
-        same(run('mixToolTabNow()'), 'battle', 'the tab in force');
-    });
-    check('the classic game keeps its tabs: the ELEMENTS tab (the honeycomb, a gold UNLOCK cell for an earned element) is where its elements are brought online', () => {
-        run('facilityPlay = false; innerWidth = 1100; crystalMenuOpen = false; _mtTab = "battle"; unlockedElements = new Set(["fire", "electric", "ice"]);');
-        const b = run('mixToolHTML()'); ok(/data-tab="battle"/.test(b) && /data-tab="elements"/.test(b), 'the tabs'); same(run('mixToolTabNow()'), 'battle', 'tab');
-        run('_mtTab = "elements";'); const e = run('mixToolHTML()'); ok(/mt-comb/.test(e) && /UNLOCK|LOCKED/.test(e), 'the honeycomb'); same(run('mixToolTabNow()'), 'elements', 'tab');
-        run('_mtTab = "battle"; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlay = true;');
+        same(run('mixToolPodLabel()'), 'BATTLE', 'the pod'); ok(!/data-tab|mt-comb|mt-hex|UNLOCK|_mtTab|mixToolTabNow/.test(rd('js/mixtool.js')), 'the tool\'s code still has a tab, the honeycomb or an unlock cell');
     });
     check('the facility starts with the tool\'s orders going to EVERYONE (the old default was whichever element came first)', () => {
-        ok(/squadMode = "all";/.test(rd('js/facilityplay.js').slice(rd('js/facilityplay.js').indexOf('unlockedElements = new Set(ELEMENTS.map(e => e.id))'), rd('js/facilityplay.js').indexOf('unlockedElements = new Set(ELEMENTS.map(e => e.id))') + 900)), 'facilityPlayStart does not set it');
-        same(MODE_AT_START, 'all', 'squadMode after the facility starts');
+        const src = rd('js/facilityplay.js'); ok(/squadMode = "all";/.test(src.slice(src.indexOf('function facilityPlayStart'), src.indexOf('function facilityStandOk'))), 'facilityPlayStart does not set it');
+        same(MODE_AT_START, 'all', 'squadMode after the facility starts (the page boots it)');
     });
 
     group('THE CARD\'S CREATURE (js/targeting.js)');
@@ -144,11 +136,10 @@ function measure(w, h) {
             far.dead = true; o.deadNow = targetIndexSubject(); __tick(); o.afterDead = targetIndexSubject() === near;
             near.dead = true; mid.dead = true; __tick(); o.empty = targetIndexSubject();
             const w = __mk(2, 1, { calm: true }); const real = _fpLos; _fpLos = () => false; _ixSubject = null; __tick(); o.blocked = targetIndexSubject(); _fpLos = real; __tick(); o.seen = targetIndexSubject() === w;
-            facilityPlay = false; o.classic = targetIndexSubject(); facilityPlay = true;
             for (const a of actors) if (a instanceof Predator) a.dead = true; actors.length = 0; for (const a of keep) actors.push(a); targetDrop(); standDown = false; _ixSubject = null; return o; })()`);
         same(r.none[0], null, 'a card with nobody near'); same(r.first.join(), 'true,true,true', 'the nearest in range is the card\'s and the gun\'s, and each creature has its own id'); same(r.stowed.join(), ',true,true', 'with the gun put away the card is still for the nearest');
         same(r.stays.join(), 'true,', 'a nearer creature took the card from the one it had'); same(r.leaves, true, 'the card does not move to the nearest when its creature leaves'); same(r.tapped.join(), 'true,true', 'a tap on another creature'); same(r.deadNow, null, 'a dead creature stays on the card');
-        same(r.afterDead, true, 'the next one after the card\'s creature dies'); same(r.empty, null, 'no creature: no card'); same(r.blocked, null, 'a creature behind a wall is on the card'); same(r.seen, true, 'a creature in sight is not'); same(r.classic, null, 'the classic game has a card');
+        same(r.afterDead, true, 'the next one after the card\'s creature dies'); same(r.empty, null, 'no creature: no card'); same(r.blocked, null, 'a creature behind a wall is on the card'); same(r.seen, true, 'a creature in sight is not');
     });
     check('what the card says: name, level, class, element, health, bite (and a creature\'s picture as a data URL, made once per kind)', () => {
         const r = J(`(function(){ __fresh(['brawler']); const a = __mk(3, 1, { calm: true }); a.level = 5; a.element = 'ice'; a.maxHealth = 80; a.health = 20; a.power = 7.25; const c = targetCardInfo(a), u = targetPortraitURL(a), u2 = targetPortraitURL(a); const out = { c, u: typeof u, u2: u === u2 }; a.dead = true; return out; })()`);
@@ -168,17 +159,17 @@ function measure(w, h) {
         ok(/ATTACK · ICE 1/.test(r.ice), 'an element: ' + (r.ice.match(/mt-foe-go">([^<]*)/) || [])[1]); ok(/ATTACK · SELECTED 2/.test(r.sel), 'selected: ' + (r.sel.match(/mt-foe-go">([^<]*)/) || [])[1]);
         ok(/ATTACKING · 3 OF 3/.test(r.going) && /mt-foe going/.test(r.going), 'going: ' + (r.going.match(/mt-foe-go">([^<]*)/) || [])[1]); ok(/NO ONE TO SEND/.test(r.none) && /mt-foe idle/.test(r.none), 'nobody');
     });
-    check('a tap sends the units the tool is set to at that creature: ALL, one element (WHO), or the selected roster cards (which win); not the work crew; each is put on follow with no hold and no retreat, and told ATTACKING; a creature nobody can be sent at says so', () => {
-        const r = J(`(function(){ const fs = __fresh(['brawler', 'brawler', 'sniper', 'camper']); const foe = __mk(6, 1, { calm: true }), out = {}; fs[3].duty = 'worker'; fs[1].job = { type: 'move', target: { x: 1, y: 1 } }; fs[1].stance = 'hold'; fs[2].retreatUntil = frame + 100;
+    check('a tap sends the units the tool is set to at that creature: ALL (every follower, a technician too), one element (WHO), or the selected roster cards (which win); each is put on follow with no hold and no retreat, and told ATTACKING; a creature nobody can be sent at says so', () => {
+        const r = J(`(function(){ const fs = __fresh(['brawler', 'brawler', 'sniper', 'camper']); const foe = __mk(6, 1, { calm: true }), out = {}; fs[1].job = { type: 'move', target: { x: 1, y: 1 } }; fs[1].stance = 'hold'; fs[2].retreatUntil = frame + 100;
             floatingTexts.length = 0; out.n = mixToolAttack(foe); out.text = floatingTexts[floatingTexts.length - 1].text;
             out.who = fs.map(f => !!(f.attackOrder && f.attackOrder.target === foe)).join(); out.until = fs[0].attackOrder.until - frame; out.fix = [fs[1].stance, fs[1].job, fs[2].retreatUntil, fs[0]._nearestEnemy === foe]; out.status = fs.map(f => unitStatus(f).text).join(); out.ordered = mixToolOrdered(foe);
             for (const f of fs) f.attackOrder = null; squadMode = 'selected'; player.selectedElement = 'toxic'; out.element = mixToolAttack(foe) + ':' + fs.map(f => !!f.attackOrder).join();
-            for (const f of fs) f.attackOrder = null; ccSetSelection([fs[0], fs[1]]); out.selected = mixToolAttack(foe) + ':' + fs.map(f => !!f.attackOrder).join(); ccClearSelection(); for (const f of fs) f.attackOrder = null;
-            ccSetSelection([fs[3]]); floatingTexts.length = 0; out.crewOnly = mixToolAttack(foe) + ':' + floatingTexts.map(t => t.text).join(); ccClearSelection(); squadMode = 'all';
+            for (const f of fs) f.attackOrder = null; ccSetSelection([fs[0], fs[1]]); out.selected = mixToolAttack(foe) + ':' + fs.map(f => !!f.attackOrder).join(); ccClearSelection(); for (const f of fs) f.attackOrder = null; squadMode = 'all';
+            followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; floatingTexts.length = 0; out.nobody = mixToolAttack(foe) + ':' + floatingTexts.map(t => t.text).join();
             floatingTexts.length = 0; foe.dead = true; out.dead = mixToolAttack(foe) + ':' + floatingTexts.map(t => t.text).join(); out.noFoe = mixToolAttack(null) + ':' + floatingTexts.map(t => t.text).join(); return out; })()`);
-        same(r.n, 3, 'sent'); ok(/^ATTACK · 3 AT .*ANT/.test(r.text), 'said: ' + r.text); same(r.who, 'true,true,true,false', 'the work crew is not sent'); same(r.until, 1800, 'thirty seconds'); same(r.fix.join(), 'follow,,0,true', 'stance, the hold, the retreat, the target at once');
-        same(r.status, 'ATTACKING,ATTACKING,ATTACKING,FOLLOWING'.replace('FOLLOWING', r.status.split(',')[3]), 'the status over their heads'); ok(/^ATTACKING,ATTACKING,ATTACKING,/.test(r.status), 'status ' + r.status); same(r.ordered, 3, 'mixToolOrdered');
-        same(r.element, '1:false,false,true,false', 'only the toxic follower, as WHO says'); same(r.selected, '2:true,true,false,false', 'the selected cards win'); ok(/^0:/.test(r.crewOnly) && /NOBODY TO SEND/.test(r.crewOnly), 'a selection of only the work crew: ' + r.crewOnly);
+        same(r.n, 4, 'sent'); ok(/^ATTACK · 4 AT .*ANT/.test(r.text), 'said: ' + r.text); same(r.who, 'true,true,true,true', 'everyone is sent (a technician too: nobody works)'); same(r.until, 1800, 'thirty seconds'); same(r.fix.join(), 'follow,,0,true', 'stance, the hold, the retreat, the target at once');
+        same(r.status, 'ATTACKING,ATTACKING,ATTACKING,ATTACKING', 'the status over their heads'); same(r.ordered, 4, 'mixToolOrdered');
+        same(r.element, '1:false,false,true,false', 'only the toxic follower, as WHO says'); same(r.selected, '2:true,true,false,false', 'the selected cards win'); ok(/^0:/.test(r.nobody) && /NOBODY TO SEND/.test(r.nobody), 'nobody to send: ' + r.nobody);
         ok(/^0:.*NOTHING TO ATTACK/.test(r.dead), 'a dead creature: ' + r.dead); ok(/^0:.*NOTHING TO ATTACK/.test(r.noFoe), 'no creature: ' + r.noFoe);
     });
     check('RETREAT, HOLD and COME each end an attack order (so does a stance order from the roster), and RETREAT keeps them out of the fight', () => {
@@ -190,14 +181,14 @@ function measure(w, h) {
     });
 
     group('A KNOCKBACK IN THE FACILITY STAYS IN THE FACILITY (js/combat.js)');
-    check('a creature pushed back by a follower (a core follower\'s BASH, a flux pull) is moved by the push and no further than the walls let it: it stays on the floor, and is not thrown to y = 3 as the strip\'s corridor clamp did; the classic game keeps its four rows', () => {
+    check('a creature pushed back by a follower (a core follower\'s BASH, a flux pull) is moved by the push and no further than the walls let it: it stays on the floor, and is not thrown to y = 3 as the strip\'s corridor clamp did', () => {
         const r = J(`(function(){ __fresh(['brawler']); const a = __mk(3, 0, { calm: true }), out = {}; actors = actors.filter(x => x === a || x.isFollower || !(x instanceof Predator)); const y0 = a.y, x0 = a.x;
             a.kbVX = 0.3; a.kbVY = 0.2; const walk = () => facilityWalkable(a.x, a.y, _fp.F); updateStatusEffects(); out.moved = [a.x > x0, a.y > y0 - 0.001, walk()]; for (let i = 0; i < 30; i++) updateStatusEffects(); out.settled = [walk(), Math.abs(a.y - y0) < 4, a.kbVX === 0 && a.kbVY === 0];
             // into a wall: it stops where it was (the wall is as far as a push goes), still on the floor
             a.x = x0; a.y = y0; let wallDir = null; for (const d of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { let k = 0; while (k < 30 && facilityWalkable(a.x + d[0] * k, a.y + d[1] * k, _fp.F)) k++; if (k < 30) { wallDir = d; break; } }
             a.kbVX = wallDir[0] * 2; a.kbVY = wallDir[1] * 2; for (let i = 0; i < 30; i++) updateStatusEffects(); out.wall = [walk(), Math.hypot(a.x - x0, a.y - y0) < 31]; out.noCorridor = a.y > 3.5;
-            facilityPlay = false; a.x = 10; a.y = 8; a.kbVX = 0.2; a.kbVY = 0.2; updateStatusEffects(); out.classic = a.y; facilityPlay = true; a.dead = true; return out; })()`);
-        same(r.moved.join(), 'true,true,true', 'a push moves it, on the floor'); same(r.settled.join(), 'true,true,true', 'it ends on the floor, near where it was, and the push dies away'); same(r.wall.join(), 'true,true', 'a push into a wall'); same(r.noCorridor, true, 'it was thrown to the strip\'s corridor'); same(r.classic, 3, 'the classic game keeps its corridor (y at most 3)');
+            a.dead = true; return out; })()`);
+        same(r.moved.join(), 'true,true,true', 'a push moves it, on the floor'); same(r.settled.join(), 'true,true,true', 'it ends on the floor, near where it was, and the push dies away'); same(r.wall.join(), 'true,true', 'a push into a wall'); same(r.noCorridor, true, 'it was thrown to the strip\'s corridor');
         ok(/facilityConstrain\(actor, _kx, _ky\)/.test(rd('js/combat.js')), 'combat.js');
     });
 
@@ -252,11 +243,11 @@ function measure(w, h) {
         check(w + ': it is kept, not rebuilt: it does not pop up again when the tool re-renders, and its health bar and numbers (and colour: green, yellow, red) follow the creature', () => {
             same(r.stable.pop, false, 'popped up again'); same(r.hurt.kept, true, 'the card was rebuilt for a health change'); same(r.hurt.hp, '40%', 'bar'); same(r.hurt.cls, 'mid', 'yellow'); ok(/^HP 40\/100/.test(r.hurt.num), 'num ' + r.hurt.num); same(r.low.hp, '15%', 'low bar'); same(r.low.cls, 'low', 'red');
         });
-        check(w + ': the strip names who goes (WHO: an element), a tap sends the squad (ATTACKING · 3 OF 3, a message, the orders are on the units), RETREAT takes it back, the creature dying takes the card away, and the classic game has none and keeps its tabs', () => {
+        check(w + ': the strip names who goes (WHO: an element), a tap sends the squad (ATTACKING · 3 OF 3, a message, the orders are on the units), RETREAT takes it back, and the creature dying takes the card away', () => {
             if (wide) { same(r.ice.go, 'ATTACK · SELECTED 1', 'a picked card names who goes'); ok(/ICE/.test(r.ice.who || ''), 'the tool names the member: ' + r.ice.who); same(r.ice.all, false, 'ALL is lit with a card picked'); same(r.ice.after.join(), '0,ATTACK · EVERYONE 3,true', 'ALL lets them go'); }
             else { same(r.ice.go, 'ATTACK · ICE 1', 'WHO'); same(r.ice.who, 'ice', 'the lit chip'); }
             same(r.sent.ordered, 3, 'ordered'); same(r.sent.go, 'ATTACKING · 3 OF 3', 'strip'); same(r.sent.going, true, 'class'); ok(r.sent.texts.some(t => /^ATTACK · 3 AT /.test(t)), 'message ' + r.sent.texts);
-            same(r.retreat.ordered, 0, 'RETREAT'); ok(/^ATTACK/.test(r.retreat.go), 'strip after RETREAT ' + r.retreat.go); same(r.gone.card, false, 'the card stays after the creature dies'); same(r.gone.slotEmpty, true, 'the slot'); same(r.classic.card, false, 'a card in the classic game'); ok(/BATTLE,.*ELEMENTS/.test(r.classic.tabs), 'classic tabs ' + r.classic.tabs);
+            same(r.retreat.ordered, 0, 'RETREAT'); ok(/^ATTACK/.test(r.retreat.go), 'strip after RETREAT ' + r.retreat.go); same(r.gone.card, false, 'the card stays after the creature dies'); same(r.gone.slotEmpty, true, 'the slot');
         });
     }
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

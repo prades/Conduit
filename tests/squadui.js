@@ -1,4 +1,4 @@
-// THE SQUAD IN THE COMMAND CENTER, AND NO MORE WORKING (js/party.js, js/commandcenter.js, js/radialmenu.js, js/mass.js; the facility; the classic game is as it was).
+// THE SQUAD IN THE COMMAND CENTER, AND NO MORE WORKING (js/party.js, js/commandcenter.js, js/radialmenu.js; the facility is the game: there is no work crew, no duty and no roster squad anywhere in it, and no code for them).
 // ASKED: "For the squads, let's make it to where in the roster command center area, you click a creature and it has like a little box at the top that shows the squad. And when you click the creature on the roster, it should show on the side
 // add to party or add to squad. Then when you go at the top to squads, it should already show all three creatures in your squad. So you should be able to see your whole squad up top without having to click to another menu. But if you do click
 // on that squad button at the top [...] this should also show all three of the creatures, followers, a little roster card of each of them. And here you can disband them. And we're also going to remove working. There is no more working."
@@ -102,10 +102,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // an open slot of the window is the same as everywhere: it closes the window and lists who could fill it
     click($$('#ccSquadBody .cc-yoursquad .cc-card.cc-open')[0]); await wait(120); out.winOpenSlot = { open: ccSquadsOpen, filter: ccFilter.squad, shown: getComputedStyle($('#ccSquadWin')).display, cards: cards().length, nOut: followers.filter(function(f){ return !partyIsMember(f); }).length, sel: selectedUnits.size };
     ccSquadsOpen = false; ccRender(); await wait(30);
-    // nobody works: the numbers, the INFO card, the orders, the long-press ring's button
-    var f0 = followers[0]; out.work = { can: followers.map(function(f){ return canWorkMass(f); }).filter(Boolean).length, set: setFollowerDuty(f0, 'worker', true), duty: f0.duty || null, toggle: toggleFollowerDuty(f0), allWork: radialSetAllWork(true), duties: followers.filter(function(f){ return f.duty === 'worker'; }).length,
-      row: ccRow(f0).canWork, sum: ccSelectionSummary().canWork, info: JSON.stringify(unitInfo(f0).jobs), cj: cloneJob({ isClone: true, speciesName: 'beetle', dead: false, team: 'green' }), squadOf: squadOf(f0), live: squadsLive().length };
-    f0.squadId = 'A'; out.stale = { of: squadOf(f0), live: squadsLive().length, make: squadMake([f0]) }; f0.squadId = undefined;
+    // nobody works: no duty on anyone, the INFO card says the squad or the room, no row or summary has a work field, and the code for work, duty and roster squads is gone
+    var f0 = followers[0]; out.work = { duties: followers.filter(function(f){ return f.duty === 'worker'; }).length, info: JSON.stringify(unitInfo(f0).jobs), row: Object.keys(ccRow(f0)).join(), sum: Object.keys(ccSelectionSummary()).join(),
+      gone: ['canWorkMass', 'setFollowerDuty', 'toggleFollowerDuty', 'radialSetAllWork', 'ccApplyDuty', 'cloneJob', 'squadOf', 'squadsLive', 'squadMake'].map(function(n){ return typeof window[n]; }).join() };
     // THE PHONE'S MENU (the radial menu's DOM at any width): the squad strip and ADD TO / REMOVE FROM on the roster cards, YOUR SQUAD with DISBAND, no work in the orders
     ccClose(); partyAdd(partyPosted().slice(0, 3)); await wait(30);
     var panel = function(id){ radialOpen = true; radialPanel = id; radialRender(); var p = $('#radialPanel'); return { text: p.textContent, disband: !!$$('#radialPanel .rp-btn').find(function(b){ return b.textContent === 'DISBAND SQUAD'; }), btns: $$('#radialPanel .rp-btn').map(function(b){ return b.textContent; }), cards: $$('#radialPanel .rp-card:not(.rp-open)').length, open: $$('#radialPanel .rp-open').length, chips: $$('#radialPanel .rp-chips .rp-btn, #radialPanel .rp-chips .rp-chip').map(function(b){ return b.textContent; }) }; };
@@ -126,12 +125,12 @@ function measure(w, h) {
 }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');
+    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');   // (the page boots the facility: the start returns early; only the tutorial's blackout is lifted)
     // fixtures: a clean squad of the given size in the Crystal Chamber, a floor cell in a named room
     run(`globalThis.__cell = (room, k) => { const cs = partyRoomCells(room); return cs[Math.floor(cs.length * (k === undefined ? 0.5 : k))]; };
         globalThis.__fresh = (n) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); squadMode = 'all'; floatingTexts.length = 0; const c = __cell('crystal_chamber'); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1];
@@ -171,25 +170,18 @@ function measure(w, h) {
         same(r.bug.join(), '1,true,1,true,false,true,0', 'the selection is one follower, ADD adds it (not the one removed), nothing stays selected'); same(r.swap.join(), 'true,true,0', 'SWAP'); same(r.disband.join(), '0,0,false', 'DISBAND'); same(r.add.join(), 'true,false,true', 'ADD takes only the ones it added out of the selection');
     });
 
-    group('NO MORE WORKING (the facility)');
-    check('nobody works in the facility: no element can, the duty is refused (even through the roster\'s toggle or ALL TO WORK), a clone has no job, the INFO card has no DUTY and no WORK; the classic game is as it was', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}; const el = ['electric', 'flux', 'core', 'toxic', 'ice', 'fire']; o.can = el.filter(e => canWorkMass({ element: e })).length; const f = fs[0]; f.element = 'electric';
-            o.set = [setFollowerDuty(f, 'worker', true), f.duty || null, toggleFollowerDuty(f), radialSetAllWork(true), fs.filter(x => x.duty === 'worker').length, ccApplyDuty(fs, 'worker')];
-            o.clone = [cloneJob({ isClone: true, speciesName: 'beetle' }), cloneDutyLabel({ isClone: true, speciesName: 'beetle' }), canCloneWork({ isClone: true, speciesName: 'beetle', team: 'green' })];
-            const info = unitInfo(f); o.info = JSON.stringify(info.jobs); facilityPlay = false;
-            o.classic = [el.filter(e => canWorkMass({ element: e })).length, setFollowerDuty(f, 'worker', true), f.duty, JSON.stringify(unitInfo(f).jobs).includes('DUTY'), JSON.stringify(unitInfo(f).jobs).includes('WORK ·')]; setFollowerDuty(f, 'fighter', true); facilityPlay = true; return o; })()`);
-        same(r.can, 0, 'elements that can work'); same(r.set.join(), 'false,,false,0,0,0', 'duty, toggle, ALL TO WORK, the roster\'s duty'); same(r.clone[0], null, 'a clone\'s job'); same(r.clone[1], 'FIGHTER', 'a clone\'s label'); same(r.clone[2], false, 'a clone can work');
-        ok(!/DUTY|WORKING|FIGHTING|WORK/.test(r.info), 'the INFO card talks of work: ' + r.info); ok(/STANCE/.test(r.info) && /IN THE SQUAD/.test(r.info), 'the INFO card does not say it is in the squad: ' + r.info);
-        same(r.classic[0], 5, 'the classic game\'s workers'); same(r.classic[1], true, 'the classic game\'s duty'); same(r.classic[2], 'worker', 'duty set'); same(r.classic[3], true, 'the classic INFO has its DUTY'); same(r.classic[4], true, 'the classic INFO has its WORK');
+    group('NO MORE WORKING (the facility is the game: no work crew, no duty, no roster squads)');
+    check('nobody works: there is no work crew, no duty and no roster squad anywhere in the game (the code is gone), a follower has no duty, no row, summary or filter has a work field, and the INFO card has no DUTY and no WORK: it says it is in the squad, or which room it holds', () => {
+        const r = J(`(function(){ const fs = __fresh(3), o = {}; const f = fs[0]; o.gone = ['canWorkMass', 'setFollowerDuty', 'toggleFollowerDuty', 'radialSetAllWork', 'ccApplyDuty', 'cloneJob', 'cloneDutyLabel', 'canCloneWork', 'squadOf', 'squadsLive', 'squadMake', 'squadAssign'].map(n => typeof globalThis[n]).join();
+            o.duty = [f.duty || null, fs.filter(x => x.duty === 'worker').length]; o.info = JSON.stringify(unitInfo(f).jobs); ccApplyStance([fs[1]], 'hold'); o.held = JSON.stringify(unitInfo(fs[1]).jobs);
+            o.fields = Object.keys(ccRow(f)).join() + '|' + Object.keys(ccSelectionSummary([f])).join() + '|' + Object.keys(ccFilter).join(); return o; })()`);
+        same(r.gone, Array(12).fill('undefined').join(), 'work or roster-squad code is still there'); same(r.duty.join(), ',0', 'a duty'); ok(!/DUTY|WORKING|FIGHTING|WORK/.test(r.info), 'the INFO card talks of work: ' + r.info); ok(/STANCE/.test(r.info) && /IN THE SQUAD/.test(r.info), 'the INFO card does not say it is in the squad: ' + r.info);
+        ok(/HOLDING THE CRYSTAL CHAMBER/.test(r.held) && !/WORK/.test(r.held), 'the INFO card does not say which room it holds: ' + r.held); ok(!/duty|canWork|work|squadId/i.test(r.fields), 'a row, a summary or a filter still has a work or roster-squad field: ' + r.fields);
     });
-    check('there are no roster squads (A, B, C) in the facility: a stale letter on a follower is not found, none can be made; the classic game has them', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}; fs[0].squadId = 'A'; o.fac = [squadOf(fs[0]), squadsLive().length, squadMake([fs[0]]), squadAssign('A', [fs[1]])]; facilityPlay = false; o.cla = [squadOf(fs[0]), squadsLive().length, squadAssign('A', [fs[1]])]; fs[0].squadId = undefined; fs[1].squadId = undefined; facilityPlay = true; return o; })()`);
-        same(r.fac.join(), ',0,,-1', 'the facility\'s roster squads'); same(r.cla.join(), 'A,1,1', 'the classic game\'s roster squads');
-    });
-    check('the code has no way to make a worker in the facility, and the roster does not offer one: the filters, the tag, the DUTY drop-down, ALL TO WORK and the phone\'s WORK button are the classic game\'s alone', () => {
-        const c = rd('js/commandcenter.js'), m = rd('js/radialmenu.js');
-        ok(/if \(!_ccParty\(\)\) \[\["WORKING", "worker"/.test(c), 'the WORKING / FIGHTING filters'); ok(/r\.working && !pt/.test(c), 'the WORK tag'); { const i = c.indexOf('_ccDropdown(side, "duty"'), j = c.lastIndexOf('if (!_ccParty()) {', i); ok(i > 0 && j > 0 && i - j < 1200, 'the DUTY drop-down'); } ok(/\.concat\(_ccParty\(\) \? \[\]/.test(c), 'ALL TO WORK / ALL TO FIGHT');
-        ok(/if \(!_rParty\(\)\) \{[^}]*ALL TO WORK/s.test(m), 'the phone\'s orders'); ok(/canWorkMass\(actor\) \{\s*if \(typeof partyOn === "function" && partyOn\(\)\) return false;/.test(rd('js/mass.js')), 'canWorkMass'); ok(/duty === 'worker' && typeof partyOn === "function" && partyOn\(\)\) return false;/.test(rd('js/mass.js')), 'setFollowerDuty');
+    check('the roster does not offer work or roster squads: no WORKING / FIGHTING filter, no WORK tag, no DUTY drop-down, no ALL TO WORK / ALL TO FIGHT, no MAKE SQUAD, and the phone\'s menu has none of them either; both keep SWITCH ROLES; the work and roster-squad files are gone', () => {
+        const c = rd('js/commandcenter.js'), m = rd('js/radialmenu.js'), code = s => s.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+        ok(!/WORKING|FIGHTING|"duty"|ALL TO WORK|ALL TO FIGHT|MAKE SQUAD|squadId|canWorkMass|_ccParty/.test(code(c)), 'the Command Center still offers work or roster squads'); ok(!/ALL TO WORK|ALL TO FIGHT|MAKE SQUAD|canWorkMass|duty|_rParty/.test(code(m)), 'the phone\'s menu still offers work or roster squads');
+        ok(/SWITCH ROLES/.test(c) && /SWITCH ROLES/.test(m), 'SWITCH ROLES is gone'); ok(!fs.existsSync(path.join(ROOT, 'js/mass.js')) && !fs.existsSync(path.join(ROOT, 'js/squads.js')), 'the work or the roster-squad file is back');
     });
 
     group('THE ROSTER, THE SQUADS WINDOW AND THE PHONE\'S MENU (real browser)');
@@ -233,9 +225,8 @@ function measure(w, h) {
             same(r.winRemoved.win.cards, 2, 'cards after REMOVE'); same(r.winRemoved.win.open, 1, 'a dashed card after REMOVE'); same(r.winRemoved.members, 2, 'the squad');
             same(r.winOpenSlot.open, false, 'an open slot of the window did not close it'); same(r.winOpenSlot.shown, 'none', 'the window'); same(r.winOpenSlot.filter, 'out', 'its list'); same(r.winOpenSlot.cards, r.winOpenSlot.nOut, 'the followers listed'); same(r.winOpenSlot.sel, 0, 'its selection'); same(r.disbanded.members, 0, 'the squad after DISBAND'); same(r.disbanded.posted, 6, 'holding rooms'); same(r.disbanded.allHold, true, 'all posted'); same(r.disbanded.win.cards, 0, 'cards'); same(r.disbanded.win.open, 3, 'dashed cards'); same(r.disbanded.win.disbandOff, true, 'DISBAND is on with nobody'); same(r.disbanded.box.join(), '-,-,-', 'the box'); same(r.disbanded.bar.join(), '-,-,-', 'the bar'); ok(/^SQUAD 0\/3 · 6 POSTED/.test(r.disbanded.summary), 'summary ' + r.disbanded.summary);
         });
-        check(w + ': nobody works: no follower can be put on the crew by any button, no INFO or card says so, and the phone\'s menu has the squad strip, ADD TO / REMOVE FROM SQUAD on the cards, YOUR SQUAD with DISBAND, and no ALL TO WORK', () => {
-            same(r.work.can, 0, 'who can work'); same(r.work.set, false, 'the duty'); same(r.work.duty, null, 'duty'); same(r.work.toggle, false, 'toggle'); same(r.work.allWork, 0, 'ALL TO WORK'); same(r.work.duties, 0, 'workers'); same(r.work.row, false, 'the roster row'); same(r.work.sum, 0, 'the selection'); ok(!/DUTY|WORK/.test(r.work.info), 'INFO ' + r.work.info); same(r.work.cj, null, 'clone job'); same(r.work.squadOf, null, 'squadOf'); same(r.work.live, 0, 'squadsLive');
-            same(r.stale.of, null, 'a stale letter'); same(r.stale.live, 0, 'a stale squad'); same(r.stale.make, null, 'MAKE SQUAD');
+        check(w + ': nobody works: no follower is on a crew, no INFO, row or summary speaks of work or duty, the code for work and roster squads is gone, and the phone\'s menu has the squad strip, ADD TO / REMOVE FROM SQUAD on the cards, YOUR SQUAD with DISBAND, and no ALL TO WORK', () => {
+            same(r.work.duties, 0, 'workers'); ok(!/DUTY|WORK/.test(r.work.info), 'INFO ' + r.work.info); ok(!/duty|canWork|work|squadId/i.test(r.work.row + '|' + r.work.sum), 'the row or the summary: ' + r.work.row + ' | ' + r.work.sum); same(r.work.gone, Array(9).fill('undefined').join(), 'the work and roster-squad code: ' + r.work.gone);
             ok(/YOUR SQUAD · 3 \/ 3/.test(r.radialRoster.text), 'the strip ' + r.radialRoster.text.slice(0, 120)); same(r.radialRoster.chips.length >= 3, true, 'strip chips'); ok(r.radialRoster.btns.filter(b => /REMOVE FROM SQUAD/.test(b)).length === 3, 'REMOVE on the squad\'s cards: ' + r.radialRoster.btns); ok(r.radialRoster.btns.some(b => /ADD TO SQUAD|SQUAD FULL/.test(b)), 'ADD on a card that holds a room'); ok(!r.radialRoster.btns.some(b => /^WORK$/.test(b)) && !/MAKE SQUAD/.test(r.radialRoster.text), 'WORK or MAKE SQUAD');
             ok(/YOUR SQUAD/.test(r.radialSquad.text) && r.radialSquad.disband, 'the squad petal: ' + r.radialSquad.text.slice(0, 100)); same(r.radialSquad.cards, 3, 'its cards'); ok(!/WORKING|WORKERS/.test(r.radialSquad.text), 'the squad petal talks of work');
             ok(!/ALL TO WORK|ALL TO FIGHT/.test(r.radialOrders.text) && /SWITCH ROLES/.test(r.radialOrders.text), 'orders: ' + r.radialOrders.btns); same(r.radialDisbanded.members, 0, 'DISBAND on the phone');

@@ -29,7 +29,7 @@ MOVES     (js/moves.js)     id → { name, fn(f), classes:[ids]? }              
 PLAYER    (the facility's save, js/facilitysave.js)  { cls, perks, xp?, level?, points?, moves:{formId: moveId} }               (cls and perks are saved)
 ```
 
-- **`classStat(name, base)`** is the one function the game asks for a number: `classStat("playerSpeed", FP_PLAYER_SPEED)` returns the base multiplied and added to by every owned perk. The mech's speed, the lamp's reach and the mutagen's levels already go through it; the siphon, the surge and move cooldowns would. Perks that are plain numbers are *only* a `stat` entry, so most perks need no code at all.
+- **`classStat(name, base)`** is the one function the game asks for a number: `classStat("playerSpeed", FP_PLAYER_SPEED)` returns the base multiplied and added to by every owned perk. The mech's speed, the lamp's reach and its overcharge, the mutagen's levels and the shot's damage and rate already go through it; the siphon, the surge and move cooldowns would. Perks that are plain numbers are *only* a `stat` entry, so most perks need no code at all.
 - **`classHook(name, ...args)`** is for the rare perk that does something (on a kill, on a relay restored, on an assault beaten): the game calls named hook points; a perk lists the hook it implements.
 - The class is **data**, so the UI (the class picker, the pack's "requires" chips, the INFO panel's class rows) is generated from the table, as it already is.
 
@@ -66,7 +66,7 @@ The player is hard to kill (three hits, then back at the Crystal), and the creat
 
 A form had one hard-wired move, chosen by its name in an `if/else` chain. The change, most of it built in stage 0:
 
-- **`MOVES` registry** holds every move as `{ id, name, fn }`. The existing ones (PETAL BLAZE, ARC VOLLEY, SINGULARITY SHOT, AEGIS BURST, STATIC RUSH, HEXFIRE, CHOMP, ERUPTION, GRAVITY SLAM, CORRODE SHOT, QUILL BURST, AEGIS BLOOM, REWIRE, RAPID DISCHARGE, HEAVY HAUL) moved out of the chain **unchanged**, and FIRE BOMBS (`bomb_lob`, docs/FIRE-BOMBS.md) was added as a row. *Built.*
+- **`MOVES` registry** holds every move as `{ id, name, fn }`. The existing ones (PETAL BLAZE, QUILL BURST, ARC VOLLEY, SINGULARITY SHOT, AEGIS BURST, STATIC RUSH, HEXFIRE, CORRODE SHOT, GRAVITY SLAM, AEGIS BLOOM, ERUPTION, CHOMP) moved out of the chain **unchanged**, and FIRE BOMBS (`bomb_lob`, docs/FIRE-BOMBS.md) was added as a row. *Built.*
 - **Each evolution lists the moves it may use**: `EVOLUTIONS[id].moves = ["petal_blaze", ...]`, the first being its old move (the default, so nothing changes until the player picks). *Built; the fire forms list two.*
 - **A follower has `f.move`** (saved with it). `evolutionTick` fires `evoMoveOf(f).fn(f)`; the cooldown is the move's own. *Built.*
 - **The UI:** a form with more than one move shows them as buttons on the INFO tab of its card (js/unitinfo.js). *Built.* A "set move" for a selected group in the Command Center, like it has for roles, is left.

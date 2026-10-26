@@ -1,5 +1,5 @@
-// Exercises the insect ability machine, the worker class and the slow fix
-// against stub game state. All of this is DOM-free logic, so it runs for real.
+// Exercises the insect ability machine (js/abilities.js: the charge-up specials and the scout's escape leap) and
+// the slow fix against stub game state. All of this is DOM-free logic, so it runs for real.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -12,11 +12,8 @@ const PREDATORS_ATTACK_PLAYER_FIXTURE = /const PREDATORS_ATTACK_PLAYER\s*=\s*tru
 const sandbox = {
     console, Math, Array, Object, String, Number, Set, Map, isFinite, isNaN, parseInt,
     // ── game globals ──
-    actors: [], world: [], elementEffects: [], floatingTexts: [],
-    _pillarCache: [], zonePredators: {},
+    actors: [], elementEffects: [], floatingTexts: [],
     frame: 0, health: 3, shake: 0, PLAYER_HITS: 3, PLAYER_HIT_GRACE: 60,
-    ZONE_LENGTH: 15, activeDayZones: 3,
-    gameState: { nightNumber: 1, phase: 'day' },
     alertActive: false,
     crystal: { x: 0, y: 2, health: 300, maxHealth: 300 },
     player: { x: 5, y: 2, visualX: 5, visualY: 2, invuln: 0 },
@@ -32,16 +29,6 @@ const sandbox = {
     predatorMayHurtPlayer: () => PREDATORS_ATTACK_PLAYER_FIXTURE,
     isNeutralBystander: a => !!(a && a.isNeutralRecruit && a.team === 'red'),
     Predator: class {},
-    SYNTHETIC_SPECIES: {
-        'XV-09': {
-            color: '#888',
-            nymph:   { width: 17, height: 9,  moveSpeed: 0.026, health: 95,  power: 30, dnaDrops: 3, shardDrop: 10, reactionSpeed: 14 },
-            scout:   { width: 28, height: 13, moveSpeed: 0.019, health: 280, power: 68, dnaDrops: 4, shardDrop: 18, reactionSpeed: 5 },
-            striker: { width: 35, height: 16, moveSpeed: 0.015, health: 420, power: 98, dnaDrops: 5, shardDrop: 26, reactionSpeed: 9 },
-            tank:    { width: 46, height: 21, moveSpeed: 0.009, health: 720, power: 130, dnaDrops: 5, shardDrop: 36, reactionSpeed: 20 },
-            boss:    { width: 42, height: 19, moveSpeed: 0.006, health: 2700, power: 195, dnaDrops: 11, shardDrop: 85, reactionSpeed: 7 },
-        },
-    },
 };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
@@ -70,17 +57,14 @@ function ok(c, m) { if (!c) throw new Error(m); }
 // ── fixtures ──
 function reset() {
     sandbox.actors.length = 0;
-    sandbox.world.length = 0;
-    sandbox._pillarCache.length = 0;
     sandbox.elementEffects.length = 0;
     sandbox.floatingTexts.length = 0;
     sandbox.damageLog.length = 0;
-    sandbox.zonePredators = {};
     sandbox.frame = 0;
     sandbox.health = 3; sandbox.player.invuln = 0;
     sandbox.shake = 0;
     sandbox.alertActive = false;
-    sandbox.player.x = 50; sandbox.player.y = 2; sandbox.player.stunned = 0;
+    sandbox.player.x = 50; sandbox.player.y = 2;
 }
 
 function mkBug(species, cls, over) {
@@ -105,15 +89,6 @@ function mkFoe(over) {
     return f;
 }
 
-function mkPylon(x, over) {
-    const t = Object.assign({ pillar: true, x, y: 3, pillarTeam: 'red', destroyed: false,
-                              health: 20, maxHealth: 20, reconstructing: false,
-                              reconstructProgress: 0 }, over || {});
-    sandbox.world.push(t);
-    if (!t.destroyed) sandbox._pillarCache.push(t);
-    return t;
-}
-
 // Advance a bug N frames through its ability machine.
 function spin(bug, n, extra) {
     for (let i = 0; i < n; i++) {
@@ -125,9 +100,9 @@ function spin(bug, n, extra) {
 
 // ─────────────────────────────────────────────────────────
 group('ability resolution');
-check('worker class always gets SUPER REPAIR', () => {
+check('a worker gets no ability (it stays chaff, like a nymph)', () => {
     for (const sp of ['ant', 'beetle', 'scorpion', 'spider', 'mantis', 'moth'])
-        eq(run('resolveAbilityKey')(sp, 'worker'), 'SUPER_REPAIR', sp);
+        eq(run('resolveAbilityKey')(sp, 'worker'), null, sp);
 });
 check('scout class always gets LEAP', () => {
     for (const sp of ['ant', 'moth', 'spider'])
@@ -143,11 +118,8 @@ check('each species has its own signature special', () => {
     }
     eq(new Set(Object.values(want)).size, 6, 'all six specials distinct');
 });
-check('synthetic species get a stable special, never null', () => {
-    const a = run('resolveAbilityKey')('XV-09', 'tank');
-    const b = run('resolveAbilityKey')('XV-09', 'tank');
-    ok(a && a === b, 'deterministic');
-    ok(run('ABILITY_DEFS')[a], 'resolves to a real def');
+check('a species the table does not know gets none', () => {
+    eq(run('resolveAbilityKey')('XV-09', 'tank'), null, 'unknown species');
 });
 check('every ability def has the fields the machine reads', () => {
     const defs = run('ABILITY_DEFS');
@@ -173,10 +145,12 @@ check('worker is weaker and faster than the same species scout', () => {
         ok(S[sp].worker.health < S[sp].scout.health, sp + ' health');
     }
 });
-check('synthetic species get a derived worker instead of undefined', () => {
-    const d = run('getClassDef')(sandbox.SYNTHETIC_SPECIES['XV-09'], 'worker');
+check('a species table with no worker block gets a derived worker instead of undefined', () => {
+    const partial = { color: '#888', scout: { width: 28, height: 13, moveSpeed: 0.019, health: 280, power: 68, dnaDrops: 4, shardDrop: 18, reactionSpeed: 5 } };
+    const d = run('getClassDef')(partial, 'worker');
     ok(d, 'derived');
     ok(d.power > 0 && d.health > 0 && d.moveSpeed > 0, 'usable stats');
+    ok(d.power < partial.scout.power && d.moveSpeed > partial.scout.moveSpeed, 'weaker and faster than its scout');
     eq(d.abdomenAttack, false, 'workers do not shoot');
 });
 check('an unknown class never returns undefined', () => {
@@ -211,16 +185,17 @@ check('windup roots the insect, so the telegraph is fair', () => {
     eq(b.abilityPhase, 'winding', 'phase');
     eq(run('abilityTick')(b), true, 'claims the frame');
 });
-check('a winding worker is NOT rooted — it keeps repairing', () => {
+check('a worker has no ability: the machine never claims its frame, and nothing charges', () => {
     reset();
-    const p = mkPylon(5, { health: 5 });
-    const b = mkBug('ant', 'worker');
-    let rooted = false;
+    const b = mkBug('ant', 'worker'); mkFoe();
+    let claimed = false;
     for (let i = 0; i < 400; i++) {
         sandbox.frame++;
-        if (run('abilityTick')(b) && b.abilityPhase === 'winding') rooted = true;
+        if (run('abilityTick')(b)) claimed = true;
     }
-    eq(rooted, false, 'worker windup should not root');
+    eq(claimed, false, 'a worker should never be taken over by an ability');
+    eq(b.abilityCharge, 0, 'charge');
+    eq(sandbox.damageLog.length, 0, 'no damage dealt');
 });
 check('the full cycle completes and resets to charging', () => {
     reset();
@@ -316,10 +291,10 @@ check('but the special still lands on what it IS aimed at', () => {
        'a hostile frenzy should still hit the follower it is aimed at');
 });
 
-check('a special spares a recruit walking to the Crystal', () => {
-    // A clone's specials reach team "red", which is a recruit's team until it
-    // arrives. Without the bystander rule your own converted predators cut down
-    // the reinforcements on the way in.
+check('a special spares a recruit waiting in its egg', () => {
+    // A clone's specials reach team "red", which is an egg's team until it is
+    // hatched (js/followerspots.js). Without the bystander rule your own
+    // converted predators would cut down the followers waiting on the pads.
     reset();
     sandbox.player.x = 99; sandbox.player.y = 99;
     const c = mkBug('ant', 'striker', { isClone: true, team: 'green' });
@@ -392,131 +367,6 @@ check('landing hurts nobody', () => {
     for (let i = 0; i < 400; i++) { sandbox.frame++; run('abilityTick')(b); }
     eq(foe.health, 1000, 'the leap damaged the foe');
 });
-check('the escape stays inside the corridor', () => {
-    reset();
-    const b = mkBug('ant', 'scout', { x: 5, y: 0, health: lowHp() });
-    mkFoe({ x: 5, y: 1.5, health: 1e9, maxHealth: 1e9 });   // pushes it toward y < 0
-    spin(b, 400);
-    ok(b.y >= 0 && b.y <= 3, 'leapt out of the corridor to y=' + b.y);
-});
-
-group('worker class');
-check('worker walks toward a damaged pylon of its own team', () => {
-    reset();
-    const p = mkPylon(12, { health: 6 });
-    const b = mkBug('ant', 'worker', { x: 5 });
-    const d0 = Math.abs(p.x - b.x);
-    for (let i = 0; i < 200; i++) { sandbox.frame++; run('workerTick')(b); }
-    ok(Math.abs(p.x - b.x) < d0, 'did not approach');
-});
-check('worker repairs a damaged pylon once in range', () => {
-    reset();
-    const p = mkPylon(5, { health: 6 });
-    const b = mkBug('ant', 'worker', { x: 5, y: 3 });
-    for (let i = 0; i < 100; i++) { sandbox.frame++; run('workerTick')(b); }
-    ok(p.health > 6, 'no repair happened (health ' + p.health + ')');
-});
-check('SUPER REPAIR is several times faster than base repair', () => {
-    reset();
-    const p1 = mkPylon(5, { health: 2 });
-    const w1 = mkBug('ant', 'worker', { x: 5, y: 3 });
-    for (let i = 0; i < 60; i++) { sandbox.frame++; run('workerTick')(w1); }
-    const plain = p1.health - 2;
-
-    reset();
-    const p2 = mkPylon(5, { health: 2 });
-    const w2 = mkBug('ant', 'worker', { x: 5, y: 3, superRepair: true });
-    for (let i = 0; i < 60; i++) { sandbox.frame++; run('workerTick')(w2); }
-    const super_ = p2.health - 2;
-
-    ok(super_ > plain * 3, `super ${super_} should far exceed base ${plain}`);
-});
-check('worker rebuilds a destroyed pylon back to life', () => {
-    reset();
-    const p = mkPylon(5, { destroyed: true, health: 0 });
-    const b = mkBug('ant', 'worker', { x: 5, y: 3, superRepair: true });
-    for (let i = 0; i < 3000 && p.destroyed; i++) { sandbox.frame++; run('workerTick')(b); }
-    eq(p.destroyed, false, 'still a wreck');
-    ok(p.health > 0, 'revived with no health');
-});
-check('worker prefers a standing damaged pylon over a wreck', () => {
-    reset();
-    mkPylon(5, { destroyed: true, health: 0 });     // wreck, right next to it
-    const dmg = mkPylon(7, { health: 4 });          // damaged, further away
-    const b = mkBug('ant', 'worker', { x: 5, y: 3 });
-    eq(run('_abFindRepairTarget')(b), dmg, 'should pick the repairable one');
-});
-check('a red worker ignores green pylons, and a clone ignores red', () => {
-    reset();
-    mkPylon(5, { pillarTeam: 'green', health: 3 });
-    const red = mkBug('ant', 'worker', { x: 5, y: 3 });
-    eq(run('_abFindRepairTarget')(red), null, 'red worker must not fix green pylons');
-
-    reset();
-    const gp = mkPylon(5, { pillarTeam: 'green', health: 3 });
-    const clone = mkBug('ant', 'worker', { x: 5, y: 3, isClone: true, team: 'green' });
-    eq(run('_abFindRepairTarget')(clone), gp, 'cloned worker should fix green pylons');
-});
-check('worker does not repair a pylon already at full health', () => {
-    reset();
-    mkPylon(5, { health: 20 });
-    const b = mkBug('ant', 'worker', { x: 5, y: 3 });
-    eq(run('_abFindRepairTarget')(b), null, 'full-health pylon is not a job');
-});
-check('a badly hurt worker disengages instead of fighting', () => {
-    reset();
-    mkPylon(5, { health: 3 });
-    const b = mkBug('ant', 'worker', { x: 5, y: 3, health: 10, maxHealth: 100 });
-    eq(run('workerTick')(b), false, 'should hand control back');
-    eq(b.state, 'retreat', 'state');
-});
-check('workerTick ignores non-worker classes', () => {
-    reset();
-    mkPylon(5, { health: 3 });
-    const b = mkBug('ant', 'tank', { x: 5, y: 3 });
-    eq(run('workerTick')(b), false, 'not a worker');
-});
-
-group('worker spawn pressure');
-check('a damaged red pylon pulls a worker into that zone', () => {
-    reset();
-    mkPylon(1 * 15 + 3, { health: 8 });
-    eq(run('zoneNeedsWorker')(1), true, 'should want a worker');
-});
-check('an undamaged zone does not', () => {
-    reset();
-    mkPylon(1 * 15 + 3, { health: 20 });
-    eq(run('zoneNeedsWorker')(1), false, 'should not want one');
-});
-check('a green pylon in the zone does not summon a red worker', () => {
-    reset();
-    mkPylon(1 * 15 + 3, { pillarTeam: 'green', health: 2 });
-    eq(run('zoneNeedsWorker')(1), false, 'wrong team');
-});
-check('the zone worker count is capped at two', () => {
-    reset();
-    mkPylon(1 * 15 + 3, { health: 8 });
-    sandbox.zonePredators[1] = [
-        { dead: false, className: 'worker' }, { dead: false, className: 'worker' },
-    ];
-    eq(run('zoneNeedsWorker')(1), false, 'already has two');
-    sandbox.zonePredators[1][0].dead = true;
-    eq(run('zoneNeedsWorker')(1), true, 'one died, room for another');
-});
-check('adding workers did not eat the front-zone boss roll', () => {
-    // The worker branch originally reused `roll`, which consumed the same 0.08
-    // band the boss check needs — bosses would have stopped spawning entirely.
-    reset();
-    sandbox.gameState.nightNumber = 20;
-    const seen = {};
-    for (let i = 0; i < 40000; i++) {
-        const c = run('getZoneClass')(5);   // front zone at activeDayZones=3 → isFront
-        seen[c] = (seen[c] || 0) + 1;
-    }
-    ok(seen.boss > 0, 'no bosses spawned in 40k rolls — the boss band was consumed');
-    ok(seen.worker > 0, 'no workers spawned');
-    ok(seen.tank > 0, 'no tanks spawned');
-});
 
 group('slow plumbing (previously a no-op)');
 check('applySlow records duration and factor', () => {
@@ -566,8 +416,8 @@ check('attack state never latches a base speed of zero', () => {
 check('an actor first seen under a haste or slow still gets a base, and the factor', () => {
     // moveSpeed is only ever scaled by tickSlowSpeed from the base, so before
     // there is a base it is the unscaled speed. REPORTED: followers got no
-    // electric haste — one that first moved inside the zone, renewed every 3
-    // frames, was "slowed" forever and never captured a base at all.
+    // haste — one that first moved while hasted (the EMP's boost), renewed every
+    // few frames, was "slowed" forever and never captured a base at all.
     const a = { moveSpeed: 0.02, state: 'hunt', slowed: 12, slowFactor: 1.9 };
     run('tickSlowSpeed')(a);
     eq(a.baseMoveSpeed, 0.02, 'captured the unscaled speed');
@@ -579,8 +429,8 @@ check('tickSlowSpeed leaves an attacking actor parked at zero', () => {
     eq(a.moveSpeed, 0, 'still parked');
 });
 check('a refreshing slow source cannot latch a permanent freeze', () => {
-    // The ice pylon re-applies its slow every few frames and has a 1.5% chance
-    // of a 0% freeze. Under "strongest wins" that freeze would stick forever.
+    // A slow that is re-applied every few frames (a web, a blizzard) with a
+    // chance of a 0% freeze: under "strongest wins" that freeze would stick forever.
     const a = { moveSpeed: 0.02, baseMoveSpeed: 0.02, state: 'hunt' };
     run('applySlow')(a, 90, 0.0);
     run('applySlow')(a, 40, 0.35);

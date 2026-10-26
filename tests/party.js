@@ -60,8 +60,6 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var cards = $$('#ccGrid .cc-card').map(function(c){ return { st: c.querySelector('.cc-status') ? c.querySelector('.cc-status').textContent : '', tags: Array.prototype.slice.call(c.querySelectorAll('.cc-tag')).map(function(t){ return t.textContent; }).join(',') }; });
     out.roster = { cards: cards, summary: $('#ccSummary') ? $('#ccSummary').textContent : '', stance: null };
     ccClose(); await wait(30);
-    // the classic game has no bar
-    facilityPlay = false; partyBarRender(true); await wait(30); out.classic = { on: bar.classList.contains('on'), shown: getComputedStyle(bar).display }; facilityPlay = true; partyBarRender(true);
   } catch (e) { out.err = String(e && e.stack || e); }
   var pre = document.createElement('pre'); pre.id = '__pt'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2000); });</script></body>`;
@@ -76,15 +74,15 @@ function measure(w, h) {
 }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');
-    // fixtures: a floor cell in a named room, a creature that stays where it is put, a clean squad of the given size in the Crystal Chamber
+    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');   // (the page boots the facility: the start returns early; only the tutorial's blackout is lifted)
+    // fixtures: a floor cell in a named room, a creature (js/clone.js spawnCreature) that stays where it is put, a clean squad of the given size in the Crystal Chamber
     run(`globalThis.__cell = (room, k) => { const cs = partyRoomCells(room); return cs[Math.floor(cs.length * (k === undefined ? 0.5 : k))]; };
-        globalThis.__mk = (x, y, o) => { spawnPredatorForZone(1, { species: 'ant', className: 'scout' }); const a = actors[actors.length - 1]; a.x = x; a.y = y; a.team = 'red'; a.dead = false; a.level = 3; a.moveSpeed = 0; a.baseMoveSpeed = 0; a.health = a.maxHealth = 1e7; a.state = (o && o.calm) ? 'wander' : 'hunt'; a.provoked = !(o && o.calm); return a; };
+        globalThis.__mk = (x, y, o) => { const a = spawnCreature({ species: 'ant', className: 'scout' }); a.x = x; a.y = y; a.team = 'red'; a.dead = false; a.level = 3; a.moveSpeed = 0; a.baseMoveSpeed = 0; a.health = a.maxHealth = 1e7; a.state = (o && o.calm) ? 'wander' : 'hunt'; a.provoked = !(o && o.calm); return a; };
         globalThis.__fresh = (n, el) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); squadMode = 'all'; floatingTexts.length = 0; player.x = player.targetX = player.visualX = __cell('crystal_chamber')[0]; player.y = player.targetY = player.visualY = __cell('crystal_chamber')[1];
             for (let i = 0; i < n; i++) { spawnFollowerAtCrystal(['electric', 'core', 'fire', 'ice', 'toxic', 'flux'][i % 6]); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.health = f.maxHealth = 1e7; f.currentWill = 1e5; f.x = player.x + 0.5 + i * 0.2; f.y = player.y + 0.5; } return followers.slice(); };
         globalThis.__near = (room, x, y, lo, hi) => { const cs = partyRoomCells(room).filter(c => { const d = Math.hypot(c[0] - x, c[1] - y); return d >= lo && d <= hi; }); return cs[0]; };
@@ -92,9 +90,9 @@ function measure(w, h) {
         globalThis.__room = f => partyRoomAt(f.x, f.y);`);
 
     group('THE SQUAD OF THREE');
-    check('the facility starts with the squad of three, in slots 0, 1 and 2, and nobody holding a room; the classic game and the website\'s background have no squad rule', () => {
-        const r = J(`(function(){ const o = {}; o.on = partyOn(); o.n = followers.length; o.mem = partyMembers().length; o.slots = partyOrdered().map(f => f.partySlot).join(); o.posted = partyPosted().length; facilityPlay = false; o.classic = partyOn(); facilityPlay = true; return o; })()`);
-        same(r.on, true, 'partyOn in the facility'); same(r.n, 3, 'the start squad'); same(r.mem, 3, 'in the squad'); same(r.slots, '0,1,2', 'slots'); same(r.posted, 0, 'posted'); same(r.classic, false, 'partyOn in the classic game');
+    check('the facility starts with the squad of three, in slots 0, 1 and 2, and nobody holding a room; the website\'s background has no squad rule', () => {
+        const r = J(`(function(){ const o = {}; o.on = partyOn(); o.n = followers.length; o.mem = partyMembers().length; o.slots = partyOrdered().map(f => f.partySlot).join(); o.posted = partyPosted().length; const keep = attractOn; attractOn = () => true; o.away = partyOn(); attractOn = keep; return o; })()`);
+        same(r.on, true, 'partyOn in the facility'); same(r.n, 3, 'the start squad'); same(r.mem, 3, 'in the squad'); same(r.slots, '0,1,2', 'slots'); same(r.posted, 0, 'posted'); same(r.away, false, 'partyOn in the website\'s background');
         ok(/attractOn\(\)/.test(rd('js/party.js').split('function partyOn')[1].split('\n')[0]), 'the background is not under the rule');
         same(run('PARTY.max'), 3, 'PARTY.max');
     });
@@ -104,12 +102,11 @@ function measure(w, h) {
         same(r.n, 4, 'followers'); same(r.mem, 3, 'in the squad'); same(r.post, 'crystal_chamber', 'the room it holds'); same(r.stance, 'hold', 'stance'); same(r.slot, undefined, 'it has no slot'); ok(/SQUAD FULL/.test(r.said) && /CRYSTAL CHAMBER/.test(r.said), 'it said: ' + r.said); same(r.keep, '0,1,2', 'the first three kept their slots');
         same(r.away, true, 'a posted follower came after the player'); same(r.room, 'crystal_chamber', 'it left its room');
     });
-    check('a slot a member leaves (it dies, goes on the work crew) is free for the next one, which takes that slot; and a squad made over-full some other way is cut to three at the next tick (the newest are posted)', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}; fs[1].dead = true; partySync(false); o.free = partyOrdered().map(f => f.partySlot).join(); spawnFollowerAtCrystal('flux'); const n = followers[followers.length - 1]; o.took = n.partySlot; o.post = n.post || null;
-            fs[0].duty = 'worker'; partySync(false); o.worker = partyMembers().length; o.slots = partyOrdered().map(f => f.partySlot).join();
+    check('a slot a member leaves (it dies) is free for the next one, which takes that slot; and a squad made over-full some other way is cut to three at the next tick (the newest are posted)', () => {
+        const r = J(`(function(){ const fs = __fresh(3), o = {}; fs[1].dead = true; partySync(false); o.free = partyOrdered().map(f => f.partySlot).join(); spawnFollowerAtCrystal('flux'); const n = followers[followers.length - 1]; o.took = n.partySlot; o.post = n.post || null; o.mem = partyMembers().length;
             const more = __fresh(3); const extra = { type: 'virus', element: 'fire', x: 1, y: 1, team: 'green', isFollower: true, dead: false, health: 5, maxHealth: 5, stance: 'follow', role: 'brawler', level: 1 }; actors.push(extra); followers.push(extra); partyTick(); o.over = [partyMembers().length, extra.post || null, extra.stance];
             return o; })()`);
-        same(r.free, '0,2', 'the dead one\'s slot is free'); same(r.took, 1, 'the new follower takes the slot that was free'); same(r.post, null, 'it is not posted'); same(r.worker, 2, 'the work crew is not in the squad (the dead one and the worker are not in it)'); ok(/^1,/.test(r.slots) || /1/.test(r.slots), 'slots ' + r.slots);
+        same(r.free, '0,2', 'the dead one\'s slot is free'); same(r.took, 1, 'the new follower takes the slot that was free'); same(r.post, null, 'it is not posted'); same(r.mem, 3, 'the squad (the dead one is not in it)');
         same(r.over[0], 3, 'the squad is cut to three'); same(typeof r.over[1], 'string', 'the extra one is posted'); same(r.over[2], 'hold', 'stance');
     });
     check('the battle tool\'s orders and the enemy card reach the SQUAD (ALL means the squad, not the followers holding rooms); select a posted follower in the roster and it is ordered too', () => {
@@ -169,10 +166,9 @@ function measure(w, h) {
             const g2 = __fresh(2); const s2 = _fp.spots[1]; s2.egg = _fpSpotEgg(s2); actors.push(s2.egg); const f2 = facilityFollowerSpotTake(s2); o.eggRoom = [f2.post || null, f2.stance, partyMembers().length]; return o; })()`);
         same(r.join.join(), '3,0', 'a recruit with room'); same(r.full.join(), '3,1,crystal_chamber', 'a recruit with the squad full'); same(r.egg[0], r.egg[1], 'the egg holds ITS room'); same(r.egg[2], 'hold', 'stance'); ok(/HOLDS THE/.test(r.egg[3]), 'said ' + r.egg[3]); same(r.eggRoom.join(), ',follow,3', 'an egg with room follows');
     });
-    check('a unit put back on the line from the work crew joins the squad if it has room and holds its room if not; a follower made again (RE-ROLL) leaves the squad and is admitted again when it is back', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}; const w = fs[0]; w.duty = 'worker'; spawnFollowerAtCrystal('ice'); const n = followers[followers.length - 1]; o.n = [partyMembers().length, n.post || null]; setFollowerDuty(w, 'fighter', true); o.back = [!!w.post, w.stance, partyMembers().length];
-            const g = __fresh(2); const f = g[0]; startFollowerReroll(f, true); o.gone = [followers.includes(f), partyMembers().length]; f.x = crystal.x + 0.2; f.y = crystal.y; for (let i = 0; i < 200 && !followers.includes(f); i++) render(); o.again = [followers.includes(f), partyMembers().length, f.post || null]; return o; })()`);
-        same(r.n.join(), '3,', 'the new follower took the slot the work crew left'); same(r.back[0], true, 'back on the line with the squad full: posted'); same(r.back[1], 'hold', 'stance'); same(r.gone.join(), 'false,1', 'a re-roll leaves the squad'); same(r.again.join(), 'true,2,', 'it is back and in the squad');
+    check('a follower made again (RE-ROLL) leaves the squad and is admitted again when it is back', () => {
+        const r = J(`(function(){ const o = {}; const g = __fresh(2); const f = g[0]; startFollowerReroll(f, true); o.gone = [followers.includes(f), partyMembers().length]; f.x = crystal.x + 0.2; f.y = crystal.y; for (let i = 0; i < 200 && !followers.includes(f); i++) render(); o.again = [followers.includes(f), partyMembers().length, f.post || null]; return o; })()`);
+        same(r.gone.join(), 'false,1', 'a re-roll leaves the squad'); same(r.again.join(), 'true,2,', 'it is back and in the squad');
     });
     check('a game is saved with the rooms its followers hold and loaded with them (each in its room again); more than three saved followers with no room come back three following and the rest holding the Crystal Chamber; a follower that dies holding a room is made again holding it', () => {
         const r = J(`(function(){ const fs = __fresh(3), o = {}; const h = __cell('lab_hallway'); fs[0].x = h[0]; fs[0].y = h[1]; ccApplyStance([fs[0]], 'hold'); const snap = followerRosterSnapshot(); o.snap = snap.map(e => e.post || null).join();
@@ -183,15 +179,14 @@ function measure(w, h) {
     });
 
     group('THE AMMUNITION: a small icon with the count (js/targeting.js)');
-    check('the facility draws no chip at the bottom: the ammunition is a faint pill with a cartridge and the round count at the round button\'s place (under its name with a creature locked, in its place with none), amber while armed, red when empty, and a tap on it stows the gun; the classic game keeps its chip', () => {
-        const r = J(`(function(){ const o = {}; __fresh(1); const calls = []; const keepB = uiButton; uiButton = function (r, t) { calls.push(t); return keepB.apply(this, arguments); };
-            const dr = () => { try { drawAmmoChip(); return null; } catch (e) { return e.message; } }; o.chip = [dr(), calls.length]; facilityPlay = false; calls.length = 0; o.classicChip = [dr(), calls.length]; facilityPlay = true; uiButton = keepB;
+    check('there is no chip at the bottom: the ammunition is a faint pill with a cartridge and the round count at the round button\'s place (under its name with a creature locked, in its place with none), amber while armed, red when empty, and a tap on it stows the gun', () => {
+        const r = J(`(function(){ const o = {}; __fresh(1); o.chip = typeof drawAmmoChip;
             o.hud = weaponHud(); o.hud2 = typeof weaponHud().kind + ':' + weaponHud().n;
             playerAttackMode = false; _ATKCHIP.w = 0; let err = null; try { drawTargetUI(); } catch (e) { err = e.message; } o.idle = [err, _ATKCHIP.w];
             innerWidth = 500; playerAttackMode = true; err = null; try { drawTargetUI(); } catch (e) { err = e.message; } o.armed = [err, _ATKCHIP.w > 20, _ATKCHIP.h > 20, _ATKCHIP.x < 100, _ATKCHIP.y > 100]; innerWidth = 900; err = null; try { drawTargetUI(); } catch (e) { err = e.message; } o.armedCorner = [err, _ATKCHIP.w > 20, _ATKCHIP.h > 20, _ATKCHIP.x > canvas.width / 2, _ATKCHIP.y > canvas.height / 2]; playerAmmo = 0; err = null; try { drawTargetUI(); } catch (e) { err = e.message; } o.dry = [err, weaponHud().dry]; playerAmmo = 12; playerAttackMode = false; return o; })()`);
-        same(r.chip.join(), ',0', 'the bottom chip is drawn in the facility'); same(r.classicChip[1], 1, 'the classic game has lost its chip'); same(r.hud.kind, 'ammo', 'hud kind'); ok(r.hud.n >= 0, 'hud n');
+        same(r.chip, 'undefined', 'the old bottom chip is back'); same(r.hud.kind, 'ammo', 'hud kind'); ok(r.hud.n >= 0, 'hud n');
         same(r.idle.join(), ',0', 'the tap area with the gun away'); same(r.armed.join(), ',true,true,true,true', 'the tap area while armed (a phone: top left, by the round button)'); same(r.armedCorner.join(), ',true,true,true,true', 'the tap area while armed (the corners layout: bottom right, by the dial)'); same(r.dry[0], null, 'drawing it empty');
-        const t = rd('js/targeting.js'); ok(/function _tgAmmoIcon/.test(t) && /_tgCartridge/.test(t) && /_tgFuelCell/.test(t) && !/CLICK OR HOLD/.test(t), 'the icon is missing, or the old caption is back'); ok(/if \(typeof facilityPlay !== "undefined" && facilityPlay\) return;/.test(rd('js/ui.js')), 'ui.js still draws the chip in the facility');
+        const t = rd('js/targeting.js'); ok(/function _tgAmmoIcon/.test(t) && /_tgCartridge/.test(t) && /_tgFuelCell/.test(t) && !/CLICK OR HOLD/.test(t), 'the icon is missing, or the old caption is back'); ok(!fs.readdirSync(path.join(ROOT, 'js')).some(f => /drawAmmoChip/.test(rd('js/' + f))), 'a script still draws the old chip');
     });
 
     group('THE SQUAD BAR AND THE ROSTER (real browser)');
@@ -210,10 +205,9 @@ function measure(w, h) {
             same(r.hold.names.join(), '-,-,-', 'the bar after HOLD'); same(r.hold.posted, 3, 'posted'); ok(r.hold.rooms.split(',').every(x => x === r.hold.room), 'rooms ' + r.hold.rooms + ' vs ' + r.hold.room); ok(r.hold.open.split(',').every(x => x === 'block'), 'open slots ' + r.hold.open); ok(r.hold.text.some(t => /^HOLD/.test(t)), 'said ' + r.hold.text);
             same(r.openSlot.roster, 'roster', 'an open slot does not open the roster');
         });
-        check(w + ': recruiting fills the open slots (three in the squad, the fourth holds the Crystal Chamber); the roster\'s cards say HOLDING · the room and carry a POST tag, the squad\'s say FOLLOWING; its summary counts the squad; the classic game has no bar', () => {
+        check(w + ': recruiting fills the open slots (three in the squad, the fourth holds the Crystal Chamber); the roster\'s cards say HOLDING · the room and carry a POST tag, the squad\'s say FOLLOWING; its summary counts the squad', () => {
             same(r.recruit.members, 3, 'the squad'); same(r.recruit.posted, 4, 'posted (the three held, and the fourth recruit)'); same(r.recruit.fourth, 'crystal_chamber', 'the fourth recruit'); same(r.recruit.names.filter(n => n !== '-').length, 3, 'the bar');
             const posted = r.roster.cards.filter(c => /^HOLDING · /.test(c.st)); same(posted.length, 4, 'cards that say the room'); ok(posted.every(c => /POST/.test(c.tags)), 'a POST tag'); ok(r.roster.cards.filter(c => /^FOLLOWING/.test(c.st)).length === 3, 'FOLLOWING cards'); ok(/^SQUAD 3\/3 · 4 POSTED/.test(r.roster.summary), 'summary ' + r.roster.summary);
-            same(r.classic.on, false, 'the bar is on in the classic game'); same(r.classic.shown, 'none', 'shown in the classic game');
         });
     }
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

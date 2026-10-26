@@ -3,7 +3,7 @@
 // card on a tablet, over the foot of the cards on a phone); looking for it showed the bar itself over the dock at 701-900 px, over the tool at 901-1166 px, and over the phone's round buttons. The bar is now placed by the css variables
 // --sb-bottom, --sb-h, --sb-w and --sb-cx (game.html): over the dock, its middle kept clear of the tool's column at the left and (a phone) of the round buttons at the right.
 // ASKED, then: "I think the selected little number thing is kind of irrelevant because it shows you which ones you have selected, and you can only have the squad really selected. So just get rid of the little box that says how many are
-// selected and keep the little rostered squad." The facility has no chip (the squad bar lights the selected cards; a tap on one lets it go); the classic game, which has no bar, keeps it.
+// selected and keep the little rostered squad." There is no chip (the squad bar lights the selected cards; a tap on one lets it go): nothing in the page makes one.
 // ASKED, last: "the on screen squad roster should shuffle into the nook above the attack menu to the left, remove the element picker and replace with 'all' button [...] pull their card roster information up on the fly" (and the groups
 // of the HUD, one to a corner: docs/UI-STYLE.md "The HUD"). On a tablet or a desktop (701 px and wider) the three cards are STACKED over the battle tool at the bottom left, the enemy card is at the bottom right over the dock's line, the crystals and bars
 // are at the top left and the zone tag at the top right; a picked member's card stands beside the stack. A phone keeps what it had.
@@ -39,15 +39,15 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var circle = function(c){ return [Math.round(c.x - c.r), Math.round(c.y - c.r), Math.round(c.x + c.r), Math.round(c.y + c.r)]; };
   var snap = function(){ var o = { dock: rect('#topToggles'), bar: rect('#squadBar'), panel: rect('#mixTool .mt-panel'), pod: rect('#mixTool .mt-pod'), foe: rect('#mixTool .mt-foe'), fly: rect('#squadFly.on'), hudl: rect('#hudLeft'), hudc: rect('#hudCentre'), hudr: rect('#zoneLine'), slots: [] };
     var sl = document.querySelectorAll('#squadBar .sb-slot'); for (var i = 0; i < sl.length; i++) { var b = sl[i].getBoundingClientRect(); o.slots.push([Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]); }
-    if (!dockHasMenus()) { frameNow(); o.round = [circle(_SETTINGSBTN), circle(_SHOPBTN), circle(_CAMPBTN)]; } return o; };
+    if (!dockHasMenus()) { frameNow(); o.round = [circle(_SETTINGSBTN), circle(_BLOB)]; } return o; };   // (a phone's round buttons: SETTINGS at the right edge, js/settings.js; the DNA button, js/clone.js)
   var frameNow = function(){ try { render(); } catch (e) {} };
   try {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; frameNow();
     out.size = { w: innerWidth, h: innerHeight, wide: mixToolWide() };
     // one selected (the squad bar lights its card, and nothing else says how many); one creature locked on: the enemy card
-    selectedUnits.clear(); selectedUnits.add(followers[0]); squadMode = 'selected'; ccRefreshChip(); partyTick();
-    actors = actors.filter(function(a){ return !(a instanceof Predator); }); spawnPredatorForZone(1, { species: 'beetle', className: 'tank' }); var e = actors[actors.length - 1]; e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0;
+    selectedUnits.clear(); selectedUnits.add(followers[0]); squadMode = 'selected'; partyTick();
+    actors = actors.filter(function(a){ return !(a instanceof Predator); }); var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0;
     targetSet(e, true); mixToolRender(true); frameNow(); await wait(60);
     out.shut = snap();
     if (!mixToolWide()) { crystalMenuOpen = true; mixToolRender(true); frameNow(); await wait(60); out.open = snap(); crystalMenuOpen = false; mixToolRender(true); }
@@ -57,13 +57,11 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     selectedUnits.add(followers[0]); selectedUnits.add(followers[2]); partyBarRender(true); out.lit.two = $$('#squadBar .sb-slot.sel').length; mixToolScope('all'); partyBarRender(true); out.lit.scope = [selectedUnits.size, $$('#squadBar .sb-slot.sel').length];
     // an empty slot or two (a follower holding a room): the bar keeps its height
     followers[1].post = partyRoomAt(followers[1].x, followers[1].y); followers[2].post = followers[1].post; partyTick(); await wait(60); out.empty = snap();
-    // the chip: not in the facility, with one selected (or three, or one the roster picked that holds a room); the classic game, with no bar, keeps it
-    var chipEl = function(){ return document.getElementById('selChip'); };
-    selectedUnits.clear(); selectedUnits.add(followers[0]); ccRefreshChip(); await wait(30);
-    out.chip = { made: !!chipEl(), facility: rect('#selChip'), display: chipEl() ? chipEl().style.display : null };
-    selectedUnits.clear(); for (var i = 0; i < followers.length; i++) selectedUnits.add(followers[i]); ccRefreshChip(); await wait(30); out.chip.three = rect('#selChip');
-    selectedUnits.clear(); selectedUnits.add(followers[1]); ccRefreshChip(); await wait(30); out.chip.posted = rect('#selChip');
-    facilityPlay = false; ccRefreshChip(); await wait(30); out.chip.classic = rect('#selChip'); out.chip.classicText = chipEl() ? chipEl().textContent : null; selectedUnits.clear(); ccRefreshChip(); await wait(30); out.chip.classicNone = rect('#selChip'); facilityPlay = true;
+    // the chip: there is none, with one selected (or three, or one the roster picked that holds a room): nothing makes it
+    selectedUnits.clear(); selectedUnits.add(followers[0]); partyTick(); await wait(30);
+    out.chip = { made: !!document.getElementById('selChip'), one: rect('#selChip'), maker: typeof ccRefreshChip };
+    selectedUnits.clear(); for (var i = 0; i < followers.length; i++) selectedUnits.add(followers[i]); partyTick(); await wait(30); out.chip.three = rect('#selChip');
+    selectedUnits.clear(); selectedUnits.add(followers[1]); partyTick(); await wait(30); out.chip.posted = rect('#selChip'); out.chip.madeAfter = !!document.getElementById('selChip');
   } catch (e) { out.err = String(e && e.stack || e); }
   var pre = document.createElement('pre'); pre.id = '__bu'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2000); });</script></body>`;
@@ -108,9 +106,9 @@ for (const [w, h] of [[360, 740], [390, 844], [421, 800], [560, 800], [561, 800]
         ok(s.fly[0] >= s.bar[2] && !cross(s.fly, s.panel) && !cross(s.fly, s.dock) && !cross(s.fly, s.foe) && inside(s.fly, w, h), 'the member\'s card ' + s.fly + ' lies over something (bar ' + s.bar + ', tool ' + s.panel + ', dock ' + s.dock + ', enemy card ' + s.foe + ')');
         ok(r.lit.flyAfter === false, 'the card stays after the member is let go');
     });
-    check(w + ': the facility has no "N SELECTED" chip, with one selected, with all three, or with a follower the roster picked that holds a room; the classic game (no squad bar) keeps it', () => {
-        same(r.chip.made, true, 'the classic game\'s chip is not made'); same(r.chip.display, 'none', 'the chip\'s display in the facility'); same(r.chip.facility, null, 'a chip with one selected'); same(r.chip.three, null, 'a chip with three selected'); same(r.chip.posted, null, 'a chip for a selected follower that holds a room');
-        ok(r.chip.classic, 'the classic game has no chip'); same(r.chip.classicText, '1 SELECTED✕ROSTER', 'the classic chip\'s words'); same(r.chip.classicNone, null, 'the classic chip with nothing selected');
+    check(w + ': there is no "N SELECTED" chip, with one selected, with all three, or with a follower the roster picked that holds a room: nothing in the page makes one', () => {
+        same(r.chip.made, false, 'a chip is in the page'); same(r.chip.maker, 'undefined', 'the chip\'s code is still there'); same(r.chip.one, null, 'a chip with one selected'); same(r.chip.three, null, 'a chip with three selected'); same(r.chip.posted, null, 'a chip for a selected follower that holds a room'); same(r.chip.madeAfter, false, 'a chip was made along the way');
+        ok(!/selChip|ccRefreshChip/.test(fs.readdirSync(path.join(ROOT, 'js')).map(f => rd('js/' + f)).join('\n')), 'a script still makes the chip');
     });
     check(w + ': without the chip, the squad bar says who is selected and lets them go: a tap on a card lights it (and the next tap lets it go), and the battle tool\'s WHO row (ALL) lets the whole selection go', () => {
         same(r.lit.size, 1, 'a tap on a card'); same(r.lit.cls, true, 'the card is not lit'); same(r.lit.after.join(), '0,false', 'a second tap'); same(r.lit.two, 2, 'two lit cards'); same(r.lit.scope.join(), '0,0', 'ALL in the tool leaves a selection');

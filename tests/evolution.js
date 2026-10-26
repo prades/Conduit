@@ -1,9 +1,10 @@
-// EVOLUTION (js/evolution.js) — the fire brawler molts into the BUNKER BLOOM,
-// the electric sniper into the REAVER.
+// EVOLUTION (js/evolution.js) — the fire brawler molts into the QUILLSTONE (once the Bunker Bloom),
+// the electric mage into the THUNDERHEAD (once the Reaver), and so on through the forms.
 //
 // THE REPORTED CASE: "Make the Bunker Bloom an evolution of the fire brawler
 // and the Reaver an evolution of the electric sniper." Asked: automatically at
 // a level; a stat boost and a signature move.
+// The page boots the facility (js/init.js); its tutorial director would level every follower to TUT.followerLevel, which is switched off here (the levels are the fixture's).
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -26,7 +27,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
-    run(`gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); ensureWorldTo(4 * ZONE_LENGTH);`);
+    run(`gameState.running = true; facilityBlackoutSet(false); unlockedElements = new Set(ELEMENTS.map(e => e.id)); TUT.followerLevel = 0;`);
 
     // A follower of this element and role, one XP short of `lv`.
     const mk = (el, role, lv) => run(`(function(){
@@ -61,28 +62,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('unitTypeLabel(__f)'), 'STATIC ORB', 'its tag'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.voltring.legacy === true'), 'the Volt Ring placeholder is no longer handed out'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'thunderhead', 'the electric sniper is the Thunderhead');
     });
-    check('THE ASK: a FLUX WORKER becomes the VOID HAULER (the saucer, design No. 689; once the hover hauler) — a worker is a duty, not a role', () => {
-        mk('flux', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux brawler on worker duty');
-        mk('flux', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'hauler', 'a flux SNIPER on worker duty is a worker first');
-        mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler on the line is the Rift Mimic');
-        mk('core', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core brawler on worker duty is the Worm Vessel, not the Hammer Slug');
-        mk('electric', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'pod', 'an electric worker is the Dynamo Pod, not the Prism Hood');
-        mk('flux', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'voidstar', 'a flux sniper on the line is the Voidstar');
-    });
     check('THE ASK: a FIRE SNIPER becomes the CINDER HALO (design No. 90, the ring drone); a fire brawler is still the Bunker Bloom', () => {
         mk('fire', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'embercowl', 'its form'); same(r.tag, 'EMBER HOOD', 'its tag'); ok(run('EVOLUTIONS.halo.legacy === true'), 'the Cinder Halo design went to the electric brawler'); same(r.role, 'sniper', 'its role');
         mk('fire', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'the fire brawler');
-        mk('fire', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire worker waits (no worker form for it)');
     });
-    check('THE ASK: a TOXIC SNIPER becomes the ROTSHARD (design No. 101, the crystal eaten by its pool); a toxic BRAWLER the SEEPER (No. 578, which replaced the Caldera); campers and workers wait', () => {
+    check('THE ASK: a TOXIC SNIPER becomes the ROTSHARD (design No. 101, the crystal eaten by its pool); a toxic BRAWLER the SEEPER (No. 578, which replaced the Caldera); campers wait', () => {
         mk('toxic', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'rotshard', 'its form'); same(r.tag, 'ROTSHARD', 'its tag'); same(r.role, 'sniper', 'its role');
         mk('toxic', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'seeper', 'a toxic brawler is the Seeper'); same(run('unitTypeLabel(__f)'), 'SEEPER', 'its tag'); ok(run('EVOLUTIONS.caldera.legacy === true'), 'the Caldera is no longer handed out');
         mk('toxic', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic camper waits');
-        mk('toxic', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic worker waits (no worker form for it)');
     });
     check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the HORNSHELL (design No. 220, which replaced the Petal Aegis); a core brawler is still the Aegis Warden', () => {
         mk('core', 'sniper', 20); run(lvlUp);
@@ -91,23 +82,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(run('EVOLUTIONS.petal.legacy === true'), 'the Petal Aegis is no longer handed out'); same(run('evolutionFor({ isFollower: true, element: "core", role: "sniper" }).id'), 'hornshell', 'evolutionFor');
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'the core brawler');
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core camper waits');
-        mk('core', 'sniper', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved'), 'vessel', 'a core mage on worker duty is a worker first');
     });
     check('THE ASK: the ranged role is a MAGE and the post-holding role a TECHNICIAN on screen (their ids stay "sniper" and "camper")', () => {
         same(run('roleLabel("sniper")'), 'MAGE', 'sniper'); same(run('roleLabel("brawler")'), 'BRAWLER', 'brawler'); same(run('roleLabel("camper")'), 'TECHNICIAN', 'camper'); same(run('roleLabel("hybrid")'), 'HYBRID', 'hybrid'); same(run('roleLabel(null)'), '', 'none');
         mk('flux', 'sniper', 5); same(run('unitTypeLabel(__f)'), 'FLUX MAGE', 'the tag over a unit');
-        const UI = fs.readFileSync(path.join(ROOT, 'js/ui.js'), 'utf8');
-        ok(/label:"MAGES"/.test(UI) && /label: "MAGES"/.test(UI) && !/SNIPERS/.test(UI), 'the index still says SNIPERS');
         ok(!/Snipers/.test(fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8')), 'the colony status still says Snipers');
         const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-        ok(!/<strong>Sniper<\/strong>/.test(HTML) && /<strong>Mage<\/strong>/.test(HTML), 'the codex still describes a Sniper');
+        ok(!/<strong>Sniper<\/strong>/.test(HTML) && /<strong>Mage<\/strong>/.test(HTML), 'the index still describes a Sniper');
     });
     check('THE ASK: an ICE BRAWLER becomes the FROST MAW (design No. 156); an ice mage or camper waits', () => {
         mk('ice', 'brawler', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'maw', 'its form'); same(r.tag, 'FROST MAW', 'its tag'); same(r.role, 'brawler', 'its role');
         mk('ice', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'maw', 'a hybrid fights as a brawler');
-        mk('ice', 'brawler', 20); run('__f.duty = "worker";'); run(lvlUp); same(run('__f.evolved || null'), null, 'an ice worker waits (no worker form for it)');
     });
     check('…and nobody else: not an ice mage or a camper — nor before level 10', () => {
         for (const [el, role] of [['ice', 'sniper'], ['ice', 'camper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
@@ -381,24 +368,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dist < 1 && r.a > r.b && r.b > 0 && r.c > 0, 'the dash and the shocks: ' + JSON.stringify(r));
         same(r.far, 0, 'damage to one out of reach'); ok(r.stun, 'not all stunned'); ok(r.cd > 250, 'it did not wait');
     });
-    check('THE ASK: REWIRE — the worm vessel (core worker, design No. 144) puts a downed pylon back online faster and from further away', () => {
-        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
-            const mk = (evo, x) => { spawnFollowerAtCrystal('core'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; f.job = null; f.stance = 'follow'; f.x = x; f.y = 2; f.moveSpeed = 0.05; if (evo) f.evolved = 'vessel'; return f; };
-            const pyl = x => { const t = { x, y: 2, pillar: true, destroyed: false, offline: true, pillarTeam: 'green', rearmProgress: 0, health: 10, maxHealth: 20 }; world.push(t); return t; };
-            const drop = t => world.splice(world.indexOf(t), 1);
-            // The same pylon, 1.4 tiles off: the vessel is already in reach, the plain worker has to walk.
-            const a = pyl(30), p = mk(false, 28.6); followerWorkTick(p); const plainWalks = a.rearmProgress === 0; drop(a);
-            const b = pyl(30), v = mk(true, 28.6); followerWorkTick(v); const vesselWorks = b.rearmProgress > 0; drop(b);
-            // In reach, per step.
-            const c = pyl(30.3), p2 = mk(false, 30); followerWorkTick(p2); const plainStep = c.rearmProgress; drop(c);
-            const d = pyl(30.3), v2 = mk(true, 30); followerWorkTick(v2); const vesselStep = d.rearmProgress; drop(d);
-            return { plainWalks, vesselWorks, plainStep, vesselStep, n: evoRepair(v2), none: evoRepair(p2) }; })()`);
-        ok(r.plainWalks && r.vesselWorks, 'reach: ' + JSON.stringify(r));
-        ok(run('VESSEL_RATE') >= 2 && Math.abs(r.vesselStep / r.plainStep - run('VESSEL_RATE')) < 0.05, 'rate: ' + JSON.stringify(r));
-        ok(r.n && r.n.speed > 1 && r.none === null, 'the worm vessel alone has the bonus: ' + JSON.stringify(r));
-        const src = fs.readFileSync(path.join(ROOT, 'js/mass.js'), 'utf8');
-        ok(/evoRepair\(actor\)/.test(src) && /_rv\.rate/.test(src) && /_rv\.reach/.test(src), 'the repair loop does not ask for the vessel\'s rate and reach');
-    });
     check('the PRISM HOOD runs the same STATIC RUSH (dash, shock, stun) as the Storm Manta did', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'prism'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
@@ -430,64 +399,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { tw: !!d.twitch, changes: cols.filter((c, i) => i && c !== cols[i - 1]).length }; })()`);
         ok(!r.tw, 'the prism hood still has a twitch'); ok(r.changes >= 3 && r.changes <= 5, 'it should advance a frame every 7 steps: ' + JSON.stringify(r));
     });
-    check('THE ASK: HEAVY HAUL — the hover hauler pays double shards, hauls faster and reaches further than a plain flux worker', () => {
-        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
-            const mk = (evo) => { spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; if (evo) f.evolved = 'hauler'; return f; };
-            const plain = mk(false), hv = mk(true), pay = (c) => { const before = shardCount; chargedMass.push({ x: crystal.x, y: crystal.y, state: MASS_STATE.CARRIED, carrier: c, value: 10, bob: 0, spin: 0, progress: 1 });
-                c.x = crystal.x; c.y = crystal.y; updateChargedMass(); return shardCount - before; };
-            const out = { plain: pay(plain), hv: pay(hv), h: evoHaul(hv), none: evoHaul(plain) }; return out; })()`);
-        same(r.plain, 10, 'a plain flux worker\'s delivery'); same(r.hv, 10 * run('HAULER_PAY'), 'the hauler\'s delivery');
-        ok(r.h.speed > 1 && r.h.reach > 1 && r.none === null, JSON.stringify(r));
-        const src = fs.readFileSync(path.join(ROOT, 'js/mass.js'), 'utf8');
-        ok(/evoHaul\(actor\)/.test(src) && /_hv\.speed/.test(src) && /_hv2\.reach/.test(src), 'the haul loop does not ask for the hauler\'s speed and reach');
-    });
-    check('THE ASK: RAPID DISCHARGE — the dynamo pod (electric worker, design No. 71) neutralises faster and from further away', () => {
-        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); chargedMass.length = 0; player.x = 5;
-            const mk = (evo, x) => { spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.duty = 'worker'; f.job = null; f.stance = 'follow'; f.x = x; f.y = 2; f.moveSpeed = 0.05; if (evo) f.evolved = 'pod'; return f; };
-            const lump = (x) => { const m = { x, y: 2, state: MASS_STATE.CHARGED, progress: 0, carrier: null, value: 10, bob: 0, spin: 0 }; chargedMass.push(m); return m; };
-            // The same lump, 1.2 tiles from each: the pod is already in reach, the plain worker has to walk.
-            const a = mk(false, 30), b = mk(true, 60), ma = lump(31.2), mb = lump(61.2);
-            followerWorkTick(a); followerWorkTick(b);
-            const out = { plainWorking: ma.progress > 0, podWorking: mb.progress > 0 };
-            // In reach, per step: the pod's progress against a plain worker's.
-            const c = mk(false, 90), d = mk(true, 120), mc = lump(90.3), md = lump(120.3);
-            for (let i = 0; i < 10; i++) { followerWorkTick(c); followerWorkTick(d); }
-            out.plainStep = mc.progress / 10; out.podStep = md.progress / 10; out.n = evoNeutralise(d); out.none = evoNeutralise(c); return out; })()`);
-        ok(!r.plainWorking && r.podWorking, 'reach: ' + JSON.stringify(r));
-        ok(run('POD_RATE') >= 2 && Math.abs(r.podStep / r.plainStep - run('POD_RATE')) < 0.05, 'rate (a real boost, and what it does): ' + JSON.stringify(r));
-        ok(r.n && r.n.reach > 1 && r.n.speed > 1 && r.none === null, JSON.stringify(r));
-        const src = fs.readFileSync(path.join(ROOT, 'js/mass.js'), 'utf8');
-        ok(/evoNeutralise\(actor\)/.test(src) && /_nv\.rate/.test(src) && /_nv\.reach/.test(src), 'the neutralise loop does not ask for the pod\'s rate and reach');
-    });
-    check('the hover hauler stays one across death (its element and duty too) and a reload', () => {
-        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['flux', 'ice'] };
-            spawnFollowerAtCrystal('flux'); const f = followers[0]; f.role = 'brawler'; f.duty = 'worker'; f.level = 22; f.xp = xpForLevel(22); _applyFollowerLevel(f, true); evoCheck(f);
-            const snap = followerRosterSnapshot()[0]; f.health = 0; f.dead = true;
-            for (let i = 0; i < 400 && !followers.some(x => !x.dead); i++) render();
-            const g = followers.find(x => !x.dead); activeCrystalModulation = null;
-            followers.length = 0; actors = actors.filter(a => !a.isFollower); spawnFollowerFromSave(snap); const h = followers[0];
-            return { saved: snap.evolved, evo: g && g.evolved, el: g && g.element, duty: g && g.duty, loaded: h.evolved, loadedDuty: h.duty }; })()`);
-        same(r.saved, 'hauler', 'in the save'); same(r.evo, 'hauler', 'after respawn'); same(r.el, 'flux', 'its element (flux is still in the mix)');
-        same(r.duty, 'worker', 'its duty'); same(r.loaded, 'hauler', 'after loading'); same(r.loadedDuty, 'worker', 'its duty after loading');
-    });
 
     console.log('\nIT STAYS EVOLVED');
     check('its role is fixed: a role switch skips it', () => {
-        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); ELEMENTS.forEach(e => { followerByElement[e.id] = []; }); if (typeof ccClearSelection === 'function') ccClearSelection();
             spawnFollowerAtCrystal('electric'); const e = followers[0]; e.role = 'sniper'; e.evolved = 'reaver';
             spawnFollowerAtCrystal('fire'); const p = followers[1]; p.role = 'brawler';
             selectedRole = null; squadMode = 'all'; cycleCommandPoolRoles();
             return { e: e.role, p: p.role }; })()`);
         same(r.e, 'sniper', 'the evolved one'); same(r.p, 'sniper', 'the other one (brawler → sniper)');
     });
-    check('its role is put back if anything changes it — except the hover hauler, which has none', () => {
+    check('its role is put back if anything changes it', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
             spawnFollowerAtCrystal('core'); const w = followers[0]; w.role = 'brawler'; w.evolved = 'warden'; w._moltAt = -1e9; w.role = 'camper';
-            spawnFollowerAtCrystal('flux'); const h = followers[1]; h.role = 'sniper'; h.duty = 'worker'; h.evolved = 'hauler'; h._moltAt = -1e9;
-            frame++; evolutionTick(); return { w: w.role, h: h.role }; })()`);
-        same(r.w, 'brawler', 'the warden put back to its role'); same(r.h, 'sniper', 'the hauler\'s role left alone');
+            frame++; evolutionTick(); return { w: w.role }; })()`);
+        same(r.w, 'brawler', 'the warden put back to its role');
     });
-    check('it is saved, and loads back evolved with its boosted stats', () => {
+    check('it is saved, and loads back evolved with its boosted stats (the facility\'s save, js/facilitysave.js)', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0;
             spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.level = 25; f.xp = xpForLevel(25); _applyFollowerLevel(f, true); evoCheck(f);
             const snap = followerRosterSnapshot(); const hp = f.maxHealth;
@@ -498,61 +426,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('it comes back from the dead as the same machine — its element and role too', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0;
-            activeCrystalModulation = { pair: ['electric', 'ice'] };
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'sniper'; f.level = 21; f.xp = xpForLevel(21); _applyFollowerLevel(f, true); evoCheck(f);
             f.health = 0; f.dead = true;
             for (let i = 0; i < 400 && !followers.some(x => !x.dead); i++) render();
-            const g = followers.find(x => !x.dead); activeCrystalModulation = null;
+            const g = followers.find(x => !x.dead);
             return g ? { evo: g.evolved, el: g.element, role: g.role } : null; })()`);
         ok(r, 'it never respawned');
-        same(r.evo, 'thunderhead', 'its form'); same(r.el, 'electric', 'its element (electric is still in the mix)'); same(r.role, 'sniper', 'its role');
-    });
-
-    console.log('\nRESPAWN');
-    check('THE ASK: a follower respawns as the element it died as — unless that element has been dropped from the mix', () => {
-        const back = (entry, pair) => run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ${JSON.stringify(pair)} };
-            const out = []; for (let n = 0; n < 8; n++) { followers.length = 0; actors = actors.filter(a => !a.isFollower);
-                respawnQueue.push(Object.assign({ personality: 'stoic', timer: 1, hpStat: 20 }, ${JSON.stringify(entry)}, { level: ${entry.level || 15}, xp: xpForLevel(${entry.level || 15}) })); for (let i = 0; i < 6; i++) render();
-                const g = followers.find(x => !x.dead); out.push(g ? { el: g.element, evo: g.evolved || null, lv: g.level, xp: g.xp } : null); }
-            activeCrystalModulation = null; return out; })()`);
-        const egg = back({ element: 'fire' }, ['fire', 'ice']);
-        ok(egg.every(x => x && x.el === 'fire'), 'a fire follower, fire still in the mix, did not come back fire: ' + JSON.stringify(egg));
-        const dropped = back({ element: 'fire' }, ['ice', 'toxic']);
-        ok(dropped.every(x => x && (x.el === 'ice' || x.el === 'toxic')), 'a fire follower, fire dropped, should come back as one still in the mix: ' + JSON.stringify(dropped));
-        ok(dropped.some(x => x.el === 'ice') && dropped.some(x => x.el === 'toxic'), 'it should pick from the whole mix (random): ' + JSON.stringify(dropped));
-        // THE ASK: a re-roll costs half its level (rounded down); keeping its element costs nothing
-        ok(egg.every(x => x.lv === 15), 'a follower that keeps its element keeps its level: ' + JSON.stringify(egg));
-        ok(dropped.every(x => x.lv === 7 && x.xp === 7 * 7 * 7), 'a re-rolled follower should be at half its level (15 -> 7), its XP at the start of that level: ' + JSON.stringify(dropped));
-        const lows = [1, 2, 5].map(L => back({ element: 'fire', level: L }, ['ice'])[0].lv);
-        ok(lows[0] === 1 && lows[1] === 1 && lows[2] === 2, 'half rounds down and never goes below 1: ' + JSON.stringify(lows));
-        const evo = back({ element: 'electric', evolved: 'prism' }, ['electric', 'ice']);
-        ok(evo.every(x => x && x.el === 'electric' && x.evo === 'prism'), 'an evolved follower, its element still in the mix, should keep its form: ' + JSON.stringify(evo));
-        const shed = back({ element: 'electric', evolved: 'prism' }, ['ice']);
-        ok(shed.every(x => x && x.el === 'ice' && x.evo !== 'prism'), 'an evolved follower whose element was dropped comes back as another element, an egg, not its old form: ' + JSON.stringify(shed));
-    });
-
-    check('THE ASK: a follower re-rolled to another element is an EGG again and evolves, into its new element\'s form, on its next level-up — not on the spot', () => {
-        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['ice'] };
-            respawnQueue.push({ element: 'electric', evolved: 'prism', personality: 'stoic', timer: 1, hpStat: 20, level: 30, xp: xpForLevel(30) }); for (let i = 0; i < 6; i++) render();
-            const g = followers.find(x => !x.dead); const back = { el: g.element, evo: g.evolved || null, lv: g.level, wait: !!g._evoOnLevelUp };
-            g.role = 'brawler'; for (let i = 0; i < 120; i++) { frame++; evolutionTick(); }   // two seconds of ticks: it must still be an egg
-            const later = { evo: g.evolved || null };
-            gainXp(g, xpForLevel(g.level + 1) - g.xp + 1);   // its next level-up
-            const up = { evo: g.evolved || null, lv: g.level, wait: !!g._evoOnLevelUp, tag: unitTypeLabel(g) };
-            activeCrystalModulation = null; return { back, later, up }; })()`);
-        ok(r.back.el === 'ice' && r.back.evo === null && r.back.lv === 15 && r.back.wait, 'it should come back an ice egg at half its level, waiting: ' + JSON.stringify(r.back));
-        same(r.later.evo, null, 'still an egg two seconds later (level 15 is past the evolve level, but it waits for a level-up)');
-        same(r.up.evo, 'maw', 'its next level-up evolves it into the ice brawler'); ok(!r.up.wait, 'the wait is over once it has evolved');
-        // a follower that keeps its element, and one that had no form, are untouched by the wait
-        const kept = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); respawnQueue.length = 0; activeCrystalModulation = { pair: ['electric'] };
-            respawnQueue.push({ element: 'electric', evolved: 'prism', personality: 'stoic', timer: 1, hpStat: 20, level: 30, xp: xpForLevel(30) }); for (let i = 0; i < 6; i++) render();
-            const g = followers.find(x => !x.dead); activeCrystalModulation = null; return { evo: g.evolved || null, wait: !!g._evoOnLevelUp, lv: g.level }; })()`);
-        same(kept.evo, 'prism', 'the same element keeps its form'); ok(!kept.wait && kept.lv === 30, 'and is not made to wait: ' + JSON.stringify(kept));
+        same(r.evo, 'thunderhead', 'its form'); same(r.el, 'electric', 'its element'); same(r.role, 'sniper', 'its role');
     });
 
     console.log('\nTHE LOOK');
     check('the sheets are in the build, 8 facings × 16 frames of 144 px', () => {
-        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'voidstar', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'staticorb', 'embercowl', 'rotshard', 'mimic', 'petal', 'caldera', 'seeper', 'vessel', 'maw', 'hornshell', 'prism', 'quillstone', 'hammerslug']) {
+        for (const id of run('Object.keys(EVOLUTIONS)')) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png'));
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' size');
         }
@@ -564,7 +449,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
-        for (const id of ['bloom', 'reaver', 'thunderhead', 'serpent', 'voidstar', 'warden', 'hauler', 'manta', 'pod', 'halo', 'voltring', 'staticorb', 'embercowl', 'petal', 'caldera', 'vessel', 'hornshell', 'prism', 'quillstone', 'hammerslug']) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
+        for (const id of run('Object.keys(EVOLUTIONS)').filter(id => !['rotshard', 'mimic', 'maw', 'seeper'].includes(id))) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
     });
     check('THE ASK: a pool lies on the FLOOR — painted by each floor tile, clipped to it, under whatever stands there — not drawn with the unit', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
@@ -590,7 +475,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.molting, 1, 'a molting follower paints no pool until it is out of the egg');
         const GAME = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8');
         ok(/_drawFloorTile\(ctx, px, py[^\n]*\n\s*if \(typeof drawEvoGroundOnTile === "function"\) drawEvoGroundOnTile\(obj\.x, obj\.y, px, py\)/.test(GAME), 'the floor tile does not paint the pools');
-        ok(/drawCablesOnTile\(obj, px, py\); if \(typeof drawEvoGroundOnTile === "function"\) drawEvoGroundOnTile/.test(GAME), 'the camp floor does not paint the pools');
         ok(GAME.indexOf('evoGroundBegin()') > 0 && GAME.indexOf('evoGroundBegin()') < GAME.indexOf('drawList.forEach(obj=>{'), 'the ground list is not built before the world is drawn');
     });
     check('THE ASK: a bundle of followers stands a little further apart (FOLLOWER_SEP), so every unit shows', () => {

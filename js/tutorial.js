@@ -134,7 +134,7 @@ function facilityDirectorTick() {
 // the number of enemies spawned before the wave that is due (waves spawn in order, once)
 function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += TUT.waves[i].who.length; return n; }
 
-// the objective plate: top left, under the FACILITY · EXIT tab. The tutorial's seven steps; then (once a class is chosen) the class's own; then a closing line.
+// the objective plate: top left, under the NEW GAME chip. The tutorial's seven steps; then (once a class is chosen) the class's own; then a closing line.
 // ON A PHONE it is a MAILBOX (ASKED: "in the mobile version [...] make it to where the recent task is in a little mailbox thing with a little exclamation point if there's a new objective"): the plate is folded away into a small envelope where it
 // would be, with a gold "!" on it while the objective is one the player has not opened yet. A tap on the envelope unfolds the plate (the objective and its hint); a tap on the plate folds it away again; a new objective (or the closing line)
 // puts the "!" back. A phone is a screen 700 px wide or less (the line js/mixtool.js mixToolWide draws, where the bottom-left tool is a chip and the menus a hub): the plate would cover a third of the picture. On anything else it is the plate, as it was, and takes no taps.
@@ -167,7 +167,7 @@ function _objBang(bx, by, f) {
 function facilityDrawObjective() {
     _fpObjBottom = 0; _objHit.w = 0; _objBox.w = 0;
     const S = _fp && _fp.tut && _fp.tut.script; if (!S || typeof uiSlab !== "function" || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen)) return;
-    // THE CORNERS (js/party.js hudCorners; a tablet or a desktop): the plate is the place's, under the network panel at the top right (the zone tag, the network, the objective: what is going on where you are); elsewhere it is top left, under the FACILITY · EXIT tab
+    // THE CORNERS (js/party.js hudCorners; a tablet or a desktop): the plate is the place's, under the network panel at the top right (the room tag, the network, the objective: what is going on where you are); elsewhere it is top left, under the FACILITY · EXIT tab
     const W = canvas.width, tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), corner = typeof hudCorners === "function" && hudCorners(), zr = corner && typeof _netZoneRect === "function" ? _netZoneRect() : null, f = typeof frame !== "undefined" ? frame : 0;
     const w = Math.min(W - 24, corner ? 304 : 350), x = corner ? Math.max(12, Math.round((zr ? zr.right : W - 18) - w)) : 12, y = corner ? (typeof _fnBottom === "number" && _fnBottom > 0 ? _fnBottom + 10 : (zr ? Math.round(zr.bottom) + 140 : 190)) : 158;
     let key, title, body, hint = "", col = pc ? pc.colour : UI_TEAL;

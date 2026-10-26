@@ -41,9 +41,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const E = J('infoEntries()');
         for (const c of ['allies', 'foes', 'elements', 'rules']) ok(E.some(e => e.cat === c), c + ' is empty');
         openIndex(); run(`_infoCat = 'elements'`);
-        const L = J('_ipLayout()'); same(L.placed.filter(p => p.it.k === 'nav').length, 7, 'the wheel and the six elements');
+        let navs = 0; for (let n = 0; n < 8; n++) { run(`_infoPageNo = ${n}`); const L = J('_ipLayout()'); if (n >= L.pages) break; navs += L.placed.filter(p => p.it.k === 'nav').length; }   // (the list may run to a second page on a phone)
+        same(navs, 7, 'the wheel and the six elements');
         for (const id of J('ELEMENTS.map(e => e.id)')) ok(E.some(e => e.id === 'el_' + id && e.cat === 'elements'), 'no entry for ' + id);
-        run('closeInfoPanel()');
+        run('closeInfoPanel(); _infoPageNo = 0');
     });
     check('the numbers in the descriptions are the game\'s own constants', () => {
         const rows = id => J(`infoEntry('${id}').rows`).map(r => r.join(' '));
@@ -144,12 +145,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                     ok(L2.px >= 0 && L2.px + L2.pw <= w, p + ' wider than the screen');
                     for (const q of L2.placed) ok(q.y >= L2.py + 50 && q.y + q.h <= L2.py + L2.ph - 60, `${p} p${n}: a row at ${q.y}+${q.h} outside ${L2.py}..${L2.py + L2.ph}`);
                     for (const b of L2.buttons) ok(b.x >= L2.px && b.x + b.w <= L2.px + L2.pw && b.y + b.h <= L2.py + L2.ph, p + ' button outside');
-                    for (const q of L2.placed) if (q.it.k === 'text') ok(q.it.t.length <= L2.chars + 1, `${p}: a line of ${q.it.t.length} chars over ${L2.chars}`);
+                    // the paragraphs are wrapped to the panel's width (an entry's one-line SUB under its name is not wrapped: it is fitted, below)
+                    for (const q of L2.placed) if (q.it.k === 'text' && !(n === 0 && q === L2.placed[1] && p !== 'codex')) ok(q.it.t.length <= L2.chars + 1, `${p}: a line of ${q.it.t.length} chars over ${L2.chars}`);
                 }
             }
             run('closeInfoPanel(); _infoPageNo = 0');
         });
     }
+    check('an entry\'s one-line SUB is drawn fitted to the panel\'s width (uiCaptionFit), never clipped, however narrow the phone', () => {
+        const src = rd('js/infodex.js');
+        ok(/\{ k: "text", t: e\.sub\.toUpperCase\(\), c: "#7f93bd" \}/.test(src), 'the sub is not the second item of an entry page');
+        ok(/else if \(it\.k === "text"\) uiCaptionFit\(it\.t, L\.ix, cy, it\.c \|\| "#c8d4f0", "left", 14, L\.iw\);/.test(src), 'a text line is not fitted to the panel');
+    });
     check('a page that is too tall is split, and the middle button turns the pages round', () => {
         run('canvas.width = 360; canvas.height = 480; openInfoPanel(null, null); _ipGo("e:species")');
         let L = J('_ipLayout()'); ok(L.pages > 1, 'one page of ' + L.placed.length + ' rows'); const pg = L.buttons.find(b => b.id === 'page'); ok(pg, 'no page button');

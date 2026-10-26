@@ -1,4 +1,4 @@
-// Predators must face what they are attacking — melee, crystal, pylon bash,
+// Predators must face what they are attacking — melee, the crystal, the bite,
 // and every ability. The melee attack branch returns before predator.js's
 // HEAD CONTROL block, so nothing was turning them at all.
 const fs = require('fs');
@@ -12,17 +12,11 @@ const PREDATORS_ATTACK_PLAYER_FIXTURE = /const PREDATORS_ATTACK_PLAYER\s*=\s*tru
 
 const sandbox = {
     console, Math, Array, Object, String, Number, Set, Map, isFinite, isNaN, parseInt,
-    actors: [], world: [], elementEffects: [], floatingTexts: [], followerProjectiles: [],
-    _pillarCache: [], zonePredators: {},
-    frame: 0, health: 100, shake: 0,
-    ZONE_LENGTH: 15, activeDayZones: 3,
-    gameState: { nightNumber: 1, phase: 'night' },
+    actors: [], elementEffects: [], floatingTexts: [], followerProjectiles: [],
+    frame: 0, health: 3, shake: 0,
     alertActive: true,                       // keeps predators hostile rather than grazing
-    activeCrystalBuild: null,
     crystal: { x: 0, y: 2, health: 300, maxHealth: 300 },
-    player: { x: 99, y: 2, visualX: 99, visualY: 2, stunned: 0 },
-    PREDATOR_TYPES: { scout: { moveSpeed: 0.022 }, striker: { moveSpeed: 0.018 },
-                      tank: { moveSpeed: 0.012 }, worker: { moveSpeed: 0.024 } },
+    player: { x: 99, y: 2, visualX: 99, visualY: 2, invuln: 0 },
     damageLog: [],
     applyDamage(t, amt, src, el) { sandbox.damageLog.push({ t, amt, el }); if (t) t.health = Math.max(0, (t.health ?? 100) - amt); },
     // The real predicates from js/helpers.js, which the ability and predator
@@ -31,25 +25,14 @@ const sandbox = {
     predatorMayHurtPlayer: () => PREDATORS_ATTACK_PLAYER_FIXTURE,
     isNeutralBystander: a => !!(a && a.isNeutralRecruit && a.team === 'red'),
     applyElementalDamage() {},
-    findNearestFriendlyPillar: () => null,
     spawnFollowerProjectile() { sandbox.followerProjectiles.push({}); },
-    getZoneIndex: x => Math.floor(x / 15),
+    // The facility's walls (js/facilityplay.js): no walls here, a straight line to everything.
+    facilitySteer: (a, tx, ty) => [tx, ty],
+    facilityWanderTarget: a => ({ x: a.x, y: a.y }),
 };
 sandbox.globalThis = sandbox;
-// predator.js reads a handful of config.js constants at runtime. config.js
-// itself touches the DOM, so lift just the constants out of its source —
-// copying the numbers here instead would let the test drift from the game.
-for (const name of ['PYLON_AGGRO_EXPOSURE', 'PYLON_AGGRO_TRAP_RATE',
-                    'PYLON_BASH_COOLDOWN', 'PYLON_AGGRO_GIVE_UP']) {
-    const src = fs.readFileSync(path.join(ROOT, 'js/config.js'), 'utf8');
-    const m = src.match(new RegExp(`const\\s+${name}\\s*=\\s*([\\d.]+)`));
-    if (!m) throw new Error(`config.js no longer defines ${name}`);
-    sandbox[name] = Number(m[1]);
-}
 const ctx = vm.createContext(sandbox);
-// predator.js calls infestTick, so the real infestation file is loaded
-// rather than stubbed — a stub would hide it claiming frames it should not.
-for (const f of ['js/species.js', 'js/abilities.js', 'js/infest.js', 'js/predator.js']) {
+for (const f of ['js/species.js', 'js/abilities.js', 'js/predator.js']) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 }
 const run = s => vm.runInContext(s, ctx);
@@ -82,8 +65,8 @@ function headErrorDeg(pred, tx, ty) {
 }
 
 function reset() {
-    sandbox.actors.length = 0; sandbox.world.length = 0;
-    sandbox._pillarCache.length = 0; sandbox.elementEffects.length = 0;
+    sandbox.actors.length = 0;
+    sandbox.elementEffects.length = 0;
     sandbox.floatingTexts.length = 0; sandbox.followerProjectiles.length = 0;
     sandbox.damageLog.length = 0; sandbox.frame = 0;
     sandbox.crystal.x = 0; sandbox.crystal.y = 2;
@@ -191,15 +174,6 @@ check('a predator gnawing the Crystal faces the Crystal', () => {
     for (let i = 0; i < 40; i++) { sandbox.frame++; p.update(); }
     ok(facingErrorDeg(p, 5, 2) < 15, 'off by ' + facingErrorDeg(p, 5, 2).toFixed(1) + '°');
 });
-check('a predator bashing a pylon faces the pylon', () => {
-    reset();
-    const pylon = { x: 4.3, y: 2, pillar: true, pillarTeam: 'green', destroyed: false, health: 99999, maxHealth: 99999 };
-    sandbox.world.push(pylon); sandbox._pillarCache.push(pylon);
-    const p = mkPred('ant', 'tank', 5, 2);
-    p.pylonAggro = pylon;
-    for (let i = 0; i < 40; i++) { sandbox.frame++; p.update(); }
-    ok(facingErrorDeg(p, pylon.x, pylon.y) < 15, 'off by ' + facingErrorDeg(p, pylon.x, pylon.y).toFixed(1) + '°');
-});
 
 group('abilities');
 function runAbility(p, frames) {
@@ -272,16 +246,6 @@ check('a scorpion faces the victim it lances', () => {
     ok(active, 'lance never fired');
     ok(facingErrorDeg(p, foe.x, foe.y) < 15, 'off by ' + facingErrorDeg(p, foe.x, foe.y).toFixed(1) + '°');
 });
-check('a worker faces the pylon it is repairing', () => {
-    reset();
-    const pylon = { x: 4.4, y: 2, pillar: true, pillarTeam: 'red', destroyed: false,
-                    health: 5, maxHealth: 20, reconstructing: false, reconstructProgress: 0 };
-    sandbox.world.push(pylon); sandbox._pillarCache.push(pylon);
-    const p = mkPred('ant', 'worker', 5, 2);
-    for (let i = 0; i < 120; i++) { sandbox.frame++; run('workerTick')(p); }
-    ok(pylon.health > 5, 'should have been repairing');
-    ok(facingErrorDeg(p, pylon.x, pylon.y) < 20, 'off by ' + facingErrorDeg(p, pylon.x, pylon.y).toFixed(1) + '°');
-});
 
 group('rear-weapon species');
 // faceAbdomenToward's behaviour is covered by the unit test above. Driving a
@@ -298,7 +262,7 @@ check('the abdomen shot aims the rear before spawning the projectile', () => {
     ok(shot > 0, 'no abdomen shot is spawned at all');
     ok(at < shot, 'aiming must happen before the shot is spawned');
 });
-check('melee, crystal and pylon attacks all turn to face', () => {
+check('melee, the crystal and the bite at the player all turn to face', () => {
     const src = fs.readFileSync(path.join(ROOT, 'js/predator.js'), 'utf8');
     const n = (src.match(/faceToward\(this,/g) || []).length;
     ok(n >= 3, 'expected facing on all three attack paths, found ' + n);

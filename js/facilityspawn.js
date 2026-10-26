@@ -7,7 +7,7 @@
 //   - always the kind there are fewest of, so they are all different: ants, beetles, spiders, scorpions, mantises and moths (js/species.js), each in a class of its own;
 //   - they WANDER: pottering about the arena from spot to spot (never out of it), and only hunt when provoked or when an alarm is up.
 // Each is made by spawnCreature (js/clone.js); js/predator.js asks facilityWanderTarget for its next spot.
-// A creature that dies drops SCRAP METAL where it fell (js/drops.js calls facilityScrapDrop): a case that lies there for a minute, which the Armory's terminal turns into ammunition (js/armory.js).
+// A creature that dies drops SCRAP METAL where it fell (js/drops.js calls facilityScrapDrop): a case that lies there for a minute, which the Armory's terminal turns into ammunition (js/weapons.js).
 const FP_SPAWN = {
     room: "arena", every: 1200, first: 480, start: 4, cap: 7, minFromPlayer: 11, spacing: 4,
     species: ["ant", "beetle", "spider", "scorpion", "mantis", "moth"], classes: { scout: 3, worker: 3, striker: 2, tank: 1 }, levels: [2, 4],

@@ -11,7 +11,7 @@
 //   DRAWN          LOW graphics, the interface hidden, the picture at about 30 frames a second while the game steps at 60, and no bigger than about ATTRACT.pixels however big the screen
 //   THE PAGE       is told when it is showing (postMessage {conduit: "attract-ready"}) so it can fade the picture in
 // The pieces are small hooks elsewhere, each guarded by attractOn(): js/facilityplay.js (start, storage, chips), js/facilitysave.js (the mode, no save), js/facilitytutorial.js (the tick, the dark),
-// js/facilitystyle.js (the room light), js/game.js (the hidden player, the frame pace), js/buildmenu.js (the canvas interface), js/evolution.js (a searcher fades), game.html (the page's CSS).
+// js/facilitystyle.js (the room light), js/game.js (the hidden player, the frame pace), js/evolution.js (a searcher fades), game.html (the page's CSS).
 
 const ATTRACT = {
     lit: { base: 0.03, here: 0.16, crowd: 0.12 },    // how lit a room is (0 to 1): every room, the room the camera is in, a room with a searcher in it

@@ -62,7 +62,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // the tool is one slab: ORDERS TO, ALL, RETREAT, HOLD, COME (the tool's height is what game.html reserves for the stack above it)
     var p = $('#mixTool .mt-panel'); out.tool = { h: p ? Math.round(p.getBoundingClientRect().height) : 0, css: getComputedStyle(document.documentElement).getPropertyValue('--cn-tool').trim(), kids: p ? p.children.length : 0 };
     // a creature locked on: the picked member names who goes on the card's strip
-    actors = actors.filter(function(a){ return !(a instanceof Predator); }); spawnPredatorForZone(1, { species: 'beetle', className: 'tank' }); var e = actors[actors.length - 1]; e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0; targetSet(e, true);
+    actors = actors.filter(function(a){ return !(a instanceof Predator); }); var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0; targetSet(e, true);
     selectedUnits.clear(); partyTick(); mixToolRender(true); await wait(60); out.foe0 = $('#mixTool .mt-foe-go') ? $('#mixTool .mt-foe-go').textContent : null;
     selectedUnits.add(partyOrdered()[0]); mixToolRender(true); await wait(60); out.foe1 = $('#mixTool .mt-foe-go') ? $('#mixTool .mt-foe-go').textContent : null;
   } catch (e) { out.err = String(e && e.stack || e); }
@@ -79,20 +79,20 @@ function measure(w, h) {
 }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860; innerWidth = 1100;');
+    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860; innerWidth = 1100;');   // (the page boots the facility: the start returns early; only the tutorial's blackout is lifted)
     run(`globalThis.__cell = (room, k) => { const cs = partyRoomCells(room); return cs[Math.floor(cs.length * (k === undefined ? 0.5 : k))]; };
         globalThis.__fresh = (n) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); squadMode = 'all'; floatingTexts.length = 0; _sfLast = null; player.x = player.targetX = player.visualX = __cell('crystal_chamber')[0]; player.y = player.targetY = player.visualY = __cell('crystal_chamber')[1];
             for (let i = 0; i < n; i++) { spawnFollowerAtCrystal(['electric', 'core', 'fire', 'ice', 'toxic', 'flux'][i % 6]); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.health = f.maxHealth = 1e7; f.currentWill = 1e5; f.x = player.x + 0.5 + i * 0.2; f.y = player.y + 0.5; } partyTick(); return followers.slice(); };`);
 
     group('THE CORNERS LAYOUT (js/party.js hudCorners)');
-    check('a tablet or a desktop in the facility has it (701 px and wider); a phone, the classic game and the website\'s background have not', () => {
-        const r = J(`(function(){ const o = {}; innerWidth = 1100; o.wide = hudCorners(); innerWidth = 701; o.edge = hudCorners(); innerWidth = 700; o.phone = hudCorners(); innerWidth = 1100; facilityPlay = false; o.classic = hudCorners(); facilityPlay = true; return o; })()`);
-        same(r.wide, true, 'a wide screen'); same(r.edge, true, '701 px'); same(r.phone, false, '700 px'); same(r.classic, false, 'the classic game');
+    check('a tablet or a desktop in the facility has it (701 px and wider); a phone and the website\'s background have not', () => {
+        const r = J(`(function(){ const o = {}; innerWidth = 1100; o.wide = hudCorners(); innerWidth = 701; o.edge = hudCorners(); innerWidth = 700; o.phone = hudCorners(); innerWidth = 1100; const keep = attractOn; attractOn = () => true; o.away = hudCorners(); attractOn = keep; return o; })()`);
+        same(r.wide, true, 'a wide screen'); same(r.edge, true, '701 px'); same(r.phone, false, '700 px'); same(r.away, false, 'the website\'s background');
         ok(/document\.body\.classList\.toggle\("corners", hudCorners\(\)\)/.test(rd('js/party.js')), 'the body class is not set by the bar\'s render'); ok(/body\.corners #squadBar/.test(rd('game.html')) && /body\.corners #mixTool/.test(rd('game.html')), 'game.html has no corners rules');
     });
 

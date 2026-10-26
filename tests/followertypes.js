@@ -43,14 +43,13 @@ function ok(c, m) { if (!c) throw new Error(m); }
         const order = J('ELEMENTS.map(e => e.id)').filter(e => ['ice', 'fire', 'toxic'].includes(e)); same(r.pool.join(), order.join(), 'the pool'); same(r.d0, order[0], 'the first'); same(r.d9, order[2], 'the last'); same(r.d5, order[1], 'the middle');
         for (const e of order) ok(r.seen[e] > 140, e + ' came out ' + (r.seen[e] || 0) + ' times in 600'); same(Object.keys(r.seen).length, 3, 'an element that is not online'); same(r.none, null, 'a draw of nothing'); same(r.nonePool.length, 0, 'the pool of nothing');
     });
-    check('there is no element mix left: no mask, no toggles, no re-modulate prompt, no recruit chooser, no ALL cell; the ELEMENTS tab shows what is online and the gold UNLOCK cells', () => {
+    check('there is no element mix left: no mask, no toggles, no re-modulate prompt, no recruit chooser, no ALL cell, and the battle tool has no ELEMENTS tab (every element is online from the start: nothing to bring online)', () => {
         const names = /modulationMask|modulationDirty|modulationToggle|modulationIncludes|modulationUntouched|_getModScheme|normaliseModulationMask|recruitChoice|recruitCrystal|recruitCycle|RE-MODULATE|ELEMENT MIX/;
         for (const f of fs.readdirSync(path.join(ROOT, 'js')).filter(f => f.endsWith('.js'))) { const src = rd('js/' + f); ok(!names.test(src.replace(/\/\/[^\n]*/g, '')), 'js/' + f + ' still has a piece of the mix: ' + (src.replace(/\/\/[^\n]*/g, '').match(names) || [])[0]); }
         ok(!/recruitcrystal|rcx/.test(rd('game.html')), 'game.html still has the recruit crystal'); ok(!fs.existsSync(path.join(ROOT, 'js/recruitcrystal.js')), 'the recruit crystal file is back');
-        const mt = rd('js/mixtool.js'); ok(/data-tab="elements"/.test(mt) && /ELEMENTS/.test(mt) && !/data-all/.test(mt), 'the tab is not the ELEMENTS tab'); ok(/UNLOCK/.test(mt) && /activatePendingElement/.test(mt), 'the earned-unlock pick is gone');
+        const mt = rd('js/mixtool.js'); ok(!/data-tab|mt-comb|mt-hex|UNLOCK|activatePendingElement|data-all/.test(mt), 'the tool has an ELEMENTS tab, a honeycomb or an unlock cell'); same(run('mixToolPodLabel()'), 'BATTLE', 'the pod is not BATTLE');
         same(run('typeof modulationMask'), 'undefined', 'the mask is still a global'); same(run('typeof recruitChoiceNow'), 'undefined', 'the recruit choice is still a global');
-        const blob = J('(function(){ saveProgress(); return JSON.parse(localStorage.getItem("tubecrawler_progress")); })()'); same(Object.keys(blob).sort().join(), 'kills,pending', 'the progress save carries a mix');
-        same(run('(function(){ applyProgress({ kills: 3, pending: [], modulation: ["fire"] }); return lifetimeKills; })()'), 3, 'an old save with a mix does not load');
+        same(run('typeof saveProgress') + run('typeof applyProgress'), 'undefinedundefined', 'the strip\'s progress save (which carried the mix) is back');
     });
 
     group('A RE-ROLL KEEPS WHAT A FOLLOWER IS');
@@ -63,9 +62,9 @@ function ok(c, m) { if (!c) throw new Error(m); }
         for (const x of r) { same(x.started, true, 'the re-roll did not start'); same(x.mid.isF, false, 'still a follower on the way'); same(x.mid.back, true, 'not walking home'); same(x.mid.keep, x.was.el, 'the element to keep'); same(x.mid.want, x.was.role, 'the type to keep');
             same(x.now.role, x.was.role, 'the type changed'); same(x.now.el, x.was.el, 'the element changed'); same(x.now.isF, true, 'not a follower again'); same(x.now.back, false, 'still walking'); same(x.now.want, null, 'the type request was not cleared'); same(x.now.keep, null, 'the element request was not cleared'); same(x.now.inType, true, 'a personality of another type'); same(x.now.listed, true, 'not in the list'); same(x.now.byEl, true, 'not in its element\'s list'); same(x.now.hp, true, 'its health is not its stats\''); }
     });
-    check('a follower found in the world (the strip\'s recruits, js/world.js) is a draw of every personality, and one that is made again at a death keeps its personality (so its type)', () => {
-        ok(/PERSONALITY_KEYS\[Math\.floor\(rnd\(\) \* PERSONALITY_KEYS\.length\)\]/.test(rd('js/world.js')), 'found followers are not a draw');
-        ok(/entry\.personality \|\| PERSONALITY_KEYS/.test(rd('js/game.js')) && /entry\.personality \|\| PERSONALITY_KEYS/.test(rd('js/waves.js')), 'a respawn or a restore does not keep the personality');
+    check('a follower asked for with no type is a draw of every personality (js/species.js), and one that is made again at a death or put back from the save keeps its personality (so its type)', () => {
+        ok(/PERSONALITY_KEYS\[Math\.floor\(Math\.random\(\) \* PERSONALITY_KEYS\.length\)\]/.test(rd('js/species.js').split('function personalityForType')[1] || ''), 'a follower of no type is not a draw');
+        ok(/entry\.personality \|\| PERSONALITY_KEYS/.test(rd('js/game.js')) && /entry\.personality \|\| PERSONALITY_KEYS/.test(rd('js/facilitysave.js')), 'a respawn or a restore does not keep the personality');
         ok(/personalityForType\(actor\.wantType\)/.test(rd('js/npc.js')) && /personalityForType\(type\)/.test(rd('js/helpers.js')), 'the type is not what makes the personality');
     });
 

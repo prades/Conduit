@@ -58,7 +58,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // the class picker and the pack hide it: nothing to tap
     classPickerOpen = true; frames(2); out.picker = { bottom: _fpObjBottom, hit: _objHit.w }; classPickerOpen = false; frames(2);
     // a creature locked on: the round button goes under the mailbox, and (a phone) under the network panel at the top right, whose text runs back to the middle of a narrow screen; opened, under the plate
-    actors = actors.filter(function(a){ return !(a instanceof Predator); }); spawnPredatorForZone(1, { species: 'beetle', className: 'tank' }); var e = actors[actors.length - 1]; e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0;
+    actors = actors.filter(function(a){ return !(a instanceof Predator); }); var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0;
     targetSet(e, true); S().objOpen = false; frames(16); var d = _tgDial; out.dial = d ? { top: d.y - d.r, left: d.x - d.r, right: d.x + d.r, net: _fnBottom, obj: _fpObjBottom, ix: d.ix + d.ir } : null;
     S().objOpen = true; frames(16); var d2 = _tgDial; out.dialOpen = d2 ? { top: d2.y - d2.r, obj: _fpObjBottom, net: _fnBottom } : null;
   } catch (e) { out.err = String(e && e.stack || e); }
@@ -75,12 +75,12 @@ function measure(w, h) {
 }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');
+    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860;');   // (the page boots the facility: the start returns early; only the tutorial's blackout is lifted)
     // a fresh tutorial, the screen the given width, and a way to draw the plate a few times while collecting what it writes
     run(`globalThis.__fresh = (w) => { invReset(); playerClassKey = null; classPickerOpen = false; innerWidth = w; canvas.width = w; canvas.height = 800; facilityTutorialStart(_fp.F); return _fp.tut.script; };
         globalThis.__said = []; globalThis.__draw = (n) => { const keep = ctx.fillText; ctx.fillText = t => __said.push(String(t)); try { for (let i = 0; i < (n || 1); i++) { __said.length = 0; facilityDrawObjective(); } } finally { ctx.fillText = keep; } return __said.slice(); };   // (what the LAST frame wrote: the plate is still folding in the frames before it)`);

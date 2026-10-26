@@ -14,7 +14,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
@@ -37,7 +37,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE CRYSTAL: every element online from the start, and followers a little sturdier');
-    run('facilityPlayStart(); facilityBlackoutSet(false);');
+    run('facilityPlayStart(); facilityBlackoutSet(false);');   // (the page boots the facility: the start returns early; only the tutorial's blackout is lifted)
     check('entering the facility brings every element online (the Crystal can make a follower of any of the six, and the roster\'s element row has all of them)', () => {
         same(J('[...unlockedElements].sort()').join(), 'core,electric,fire,flux,ice,toxic', 'online'); same(J('recruitElementPool().slice().sort()').join(), 'core,electric,fire,flux,ice,toxic', 'the pool a recruit is drawn from');
         const seen = J(`(function(){ const s = new Set(); for (let i = 0; i < 400; i++) s.add(recruitElementPool()[Math.floor(Math.random() * recruitElementPool().length)]); return [...s].sort(); })()`); same(seen.length, 6, 'a draw reaches all six');
@@ -57,11 +57,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ return { spots: _fp.spots.map(s => [s.id, !!s.egg, s.egg && s.egg.element === s.element, s.egg && s.egg.role === s.type, s.egg && s.egg.isNeutralRecruit, s.egg && s.egg.team, s.egg && s.egg.x === s.x && s.egg.y === s.y, s.egg && actors.includes(s.egg)]), items: _fp.items.filter(i => i.fp === 'spot').length, hostile: actors.filter(a => isHostileTarget(a) && a.fpSpot).length }; })()`);
         same(r.items, 7, 'pads'); same(r.hostile, 0, 'an egg is nobody\'s enemy'); for (const s of r.spots) { ok(s[1] && s[2] && s[3] && s[4] && s[7], s[0] + ' is not a full spot: ' + s); same(s[5], 'red', 'neutral'); same(s[6], true, 'on its spot'); }
     });
-    check('eggs stay where they are and are not walked home by the strip\'s walk-up conversion: the player beside one converts nothing but takes it by the spot\'s rule', () => {
+    check('eggs stay where they are and are not walked home: the player beside one (outside the spot\'s reach) converts nothing and takes it only by the spot\'s rule', () => {
         const r = J(`(function(){ const s = _fp.spots[1], e = s.egg, n = followers.length; player.x = s.x + 1.8; player.y = s.y; for (let i = 0; i < 30; i++) { frame++; facilityFollowerSpotsTick(); const nn = followers.length; if (nn !== n) return { early: true }; }
             return { moved: e.x !== s.x || e.y !== s.y, team: e.team, home: !!e.returningToCrystal, followers: followers.length - n, still: s.egg === e }; })()`);
         same(r.early, undefined, 'taken from outside its reach'); same(r.moved, false, 'it moved'); same(r.team, 'red', 'its team'); same(r.home, false, 'walking home'); same(r.followers, 0, 'followers'); same(r.still, true, 'still there');
-        ok(/a\.fpSpot\) return;/.test(rd('js/game.js')), 'the strip\'s conversion skips it');
     });
     check('walking up to an egg makes a follower THERE, of exactly the spot\'s type and element, at full health, with the squad one bigger, and the spot empty with its delay running', () => {
         const r = J(`(function(){ const s = _fp.spots[2], n = followers.length, e = s.egg; player.x = s.x + 0.6; player.y = s.y; frame += 1; facilityFollowerSpotsTick(); const f = followers[followers.length - 1];
@@ -97,9 +96,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(/const _bare = actor\.fpSpot \|\|/.test(rd('js/draw.js')), 'no bar'); ok(/a\.isNeutralRecruit \|\| typeof ctx === "undefined"/.test(rd('js/facilitytutorial.js')), 'no hostile glow');
         const order = require('./domstub.js').scriptOrder(); ok(order.indexOf('js/followerspots.js') > 0, 'the script is on the page');
         ok(/WALK UP TO A FOLLOWER'S EGG/.test(rd('js/tutorial.js')) && /EVERY ELEMENT IS ONLINE FROM THE START/.test(rd('js/tutorial.js')), 'the recruit step says so');
-    });
-    check('the classic game keeps its ladder: the facility\'s unlock is in facilityPlayStart only, and the starting element is still the first', () => {
-        const src = rd('js/facilityplay.js'); ok(/restartGame\(\);[^\n]*\n\s*unlockedElements = new Set\(ELEMENTS\.map\(e => e\.id\)\);/.test(src), 'in the facility\'s start'); same(run('STARTING_ELEMENTS.join()'), 'electric', 'the classic start');
     });
 
     console.log(failures ? '\n' + failures + ' FAILED' : '\nall passed');

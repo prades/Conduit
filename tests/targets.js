@@ -7,26 +7,22 @@
 // THE RECRUITS. Not the predators, as it turned out. A hostile predator's
 // melee strikes team "green", and recruits are "red" — so enemies never
 // touched them. What did was everything on YOUR side, because a recruit stays
-// on team "red" until it reaches the Crystal:
+// on team "red" until it joins (in the facility: the egg waiting on its pad,
+// js/followerspots.js):
 //
 //   - your CLONES, whose melee and threat scan both strike team "red" (and a
 //     clone looks exactly like a predator, so it read as the enemy doing it)
 //   - your FOLLOWERS' element attacks, which sweep an area for hostiles around
 //     whatever they were aiming at
 //
-// Measured: 90 seconds of a facility alarm with six followers, two clones and
-// the player parked among eleven incoming recruits — four hits on recruits and
-// one dead. Every one of them from a follower.
-//
 // The cause was one expression written out TWENTY times across elements.js,
-// game.js and traps.js, in four slightly different forms, each of which
-// counted a recruit as hostile. It is now one predicate. (traps.js has since
-// gone with the placeable traps; the files that remain still answer to it.)
+// game.js and the rest, in four slightly different forms, each of which
+// counted a recruit as hostile. It is now one predicate.
 //
-// THE PLAYER. Three paths could damage them: the melee swipe, the ability
-// radius helper, and the abdomen projectile. All three now consult one flag.
-// Hazards are deliberately NOT gated — acid, vent blasts, ground zones and
-// cocoon toxin are not predators, and dodging them is a real decision.
+// THE PLAYER. A creature hurts you one way: the bite, up close. Its shots and
+// specials pass you by. Burning ground (js/firebombs.js) is deliberately NOT
+// gated — it is not a predator, and standing in it is a real decision.
+// The page boots the facility (js/init.js); the fixtures stand on open arena floor (__O: x 26..48 at y 49..52, js/facilitymap.js).
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -39,6 +35,7 @@ const SRC = {
     abilities:fs.readFileSync(path.join(ROOT, 'js/abilities.js'), 'utf8'),
     elements: fs.readFileSync(path.join(ROOT, 'js/elements.js'),  'utf8'),
     game:     fs.readFileSync(path.join(ROOT, 'js/game.js'),      'utf8'),
+    firebombs:fs.readFileSync(path.join(ROOT, 'js/firebombs.js'), 'utf8'),
 };
 
 let failures = 0;
@@ -51,7 +48,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${b}, got 
 function ok(c, m) { if (!c) throw new Error(m); }
 
 async function ready(store) {
-    const sandbox = makeBrowserSandbox(store || { tubecrawler_seed: '305419896' });
+    const sandbox = makeBrowserSandbox(store || {});
     const ctx = vm.createContext(sandbox);
     for (const rel of scriptOrder()) {
         try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); }
@@ -59,13 +56,14 @@ async function ready(store) {
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
-    ok(run('world.length') > 100, 'fixture: the world did not generate');
+    ok(run('world.length') > 100, 'fixture: the facility did not build');
+    run('gameState.running = true; facilityBlackoutSet(false); globalThis.__O = { x: 34, y: 50 };');
     return { run, sandbox };
 }
 
-// A wave with everything in it: recruits coming in, followers, clones of our
-// own, a hostile predator on top of the squad, and the player standing among
-// the recruits. Damage is tallied by victim kind from inside applyDamage.
+// A fight with everything in it: the eggs waiting on their pads (the recruits), followers, clones of our
+// own, a hostile creature on top of the squad at the Crystal, and the player standing beside an egg.
+// Damage is tallied by victim kind from inside applyDamage.
 const SCENE = `(function(){
     globalThis.__tally = {};
     const note = k => { __tally[k] = (__tally[k] || 0) + 1; };
@@ -84,28 +82,14 @@ const SCENE = `(function(){
     const origHP = hurtPlayer;
     hurtPlayer = function() { note('player'); return origHP.apply(this, arguments); };
 
-    gameState.running = true; gameState.nightNumber = 6; activeDayZones = 6;
-    nightEnemiesTarget = 99999;
     for (let k = 0; k < 6; k++) spawnFollowerAtCrystal('fire');
-    for (const sp of ['ant', 'spider']) {
-        const S = SPECIES[sp];
-        const c = new Predator('striker', Object.assign({}, S.striker, {color:S.color}),
-                               crystal.x + 2, 2);
-        c.speciesName = sp; c.className = 'striker'; c.team = 'green'; c.isClone = true;
-        c.state = 'wander'; c.entryDelay = 0;
-        applySpeciesBody(c, sp); if (typeof initAbility === 'function') initAbility(c);
-        actors.push(c);
-    }
+    for (const sp of ['ant', 'spider']) { const c = makeClone(sp, 'striker', crystal.x + 2, crystal.y + 2, 'wander'); c.entryDelay = 0; }
+    // beside an egg, not on it: walking onto one hatches it (js/followerspots.js FP_SPOT.take)
     const r = actors.filter(a => a.isNeutralRecruit && !a.dead)[0];
-    if (r) { player.x = r.x; player.y = r.y; player.visualX = r.x; player.visualY = r.y; }
-    triggerAlarm('facility', 20, 2);
-    const S2 = SPECIES['ant'];
-    const foe = new Predator('striker', Object.assign({}, S2.striker, {color:S2.color}),
-                             crystal.x + 1, 2);
-    foe.speciesName = 'ant'; foe.className = 'striker'; foe.state = 'hunt';
+    if (r) { const c = _fpNearestCell(r.x + 2.5, r.y + 2.5); if (c) { player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; player.fpPath = null; } }
+    triggerAlarm('facility', crystal.x, crystal.y);
+    const foe = spawnCreature({ species: 'ant', className: 'striker', x: crystal.x + 1, y: crystal.y + 1, state: 'hunt' });
     foe.entryDelay = 0; foe.provoked = true; foe.health = 1e6; foe.maxHealth = 1e6;
-    applySpeciesBody(foe, 'ant'); if (typeof initAbility === 'function') initAbility(foe);
-    actors.push(foe);
     return actors.filter(a => a.isNeutralRecruit && !a.dead).length;
 })()`;
 
@@ -117,24 +101,19 @@ const SCENE = `(function(){
     const C3 = await ready();   // the same clone on a real foe
     const K  = await ready();   // kill counting, reset between checks
     const startRecruits = W.run(SCENE);
-    // Cleared every frame: the cocoon toxin is DESIGNED to bite recruits, so
-    // leaving puddles in made this scene's verdict depend on whether one
-    // happened to form near the path — it failed two runs in five. Hazards get
-    // their own checks below; this scene is about who ATTACKS.
-    // Both hazard sources cleared every frame — cocoon toxin AND acid pools.
-    // Hazards are designed to bite recruits, so their presence made this
-    // scene's verdict depend on whether one happened to form on the path.
+    // Ninety seconds of the alarm. The Crystal is kept whole: an unkillable creature chewing it would end
+    // the game (and the frames) long before the ninety seconds are up, and this scene is about who ATTACKS.
     W.run(`for (let i = 0; i < 60 * 90; i++) {
-        alertTimer = 99999; environmentalHazards.length = 0;
+        alertTimer = 99999; crystal.health = crystal.maxHealth;
         render();
     }`);
     const tally = W.run('JSON.parse(JSON.stringify(__tally))');
     const endRecruits = W.run("actors.filter(a => a.isNeutralRecruit && !a.dead).length");
 
     // ─────────────────────────────────────────────────────
-    group('THE REPORTED CASES, in a running wave');
+    group('THE REPORTED CASES, in a running fight');
 
-    check('recruits reach the Crystal unharmed', () => {
+    check('recruits wait in their eggs unharmed', () => {
         ok(startRecruits > 5, 'fixture: there should be recruits, got ' + startRecruits);
         // Attackers only. A hazard hurting a recruit is intended behaviour and
         // has its own check; the reported bug was about things ATTACKING them.
@@ -142,12 +121,12 @@ const SCENE = `(function(){
             .filter(([k]) => /^recruit by (clone|predator|follower|other)$/.test(k));
         same(hits.length, 0, 'recruits were attacked by: ' + JSON.stringify(hits));
         same(endRecruits, startRecruits,
-             `${startRecruits - endRecruits} recruits died on the way in`);
+             `${startRecruits - endRecruits} recruits died in their eggs`);
     });
 
     check('the player\'s health stays a count of hits: 1 to PLAYER_HITS', () => {
-        // Predators hit the player now (three hits, then the Crystal —
-        // tests/threehits.js). Whatever the wave did, the count is whole and
+        // Creatures bite the player (three hits, then the Crystal —
+        // tests/threehits.js). Whatever the fight did, the count is whole and
         // in range: the knockdown refills it, it never sticks at 0.
         const h = W.run('health'), max = W.run('PLAYER_HITS');
         ok(Number.isInteger(h) && h >= 1 && h <= max, 'health ' + h + ' of ' + max);
@@ -165,33 +144,28 @@ const SCENE = `(function(){
     // ─────────────────────────────────────────────────────
     group('contact, guaranteed');
 
-    // The wave above is evidence, not proof: whether the player or a recruit is
+    // The fight above is evidence, not proof: whether the player or a recruit is
     // ever actually reached in ninety seconds is luck. Re-arming predators left
     // "the player is not touched" passing, and ungating the clone melee left
     // every check passing. These put the two units in contact on purpose.
 
-    check('THE ASK (three hits): a hostile predator standing on the player bites — one hit per grace', () => {
+    check('THE ASK (three hits): a hostile creature standing on the player bites — one hit per grace', () => {
         const hp = C1.run(`(function(){
-            gameState.running = true;
             actors = []; followers = []; health = PLAYER_HITS; player.invuln = 0;
-            player.x = 4; player.y = 2; player.visualX = 4; player.visualY = 2;
+            player.x = __O.x; player.y = __O.y; player.visualX = __O.x; player.visualY = __O.y; player.fpPath = null;
             // A follower for it to be attacking, so it is in its melee branch
             // at all — and the swipe at the player is collateral to that.
-            const f = { x: 4.2, y: 2, type: 'virus', team: 'green', isFollower: true,
+            const f = { x: __O.x + 0.2, y: __O.y, type: 'virus', team: 'green', isFollower: true,
                         dead: false, element: 'fire', health: 1e9, maxHealth: 1e9,
                         power: 1, stats: { hp: 1e9, attack: 1, specialAttack: 1, will: 20 },
                         currentWill: 20, moveSpeed: 0, update: () => {} };
             actors.push(f); followers.push(f);
-            const S = SPECIES['ant'];
-            const foe = new Predator('striker', Object.assign({}, S.striker, {color:S.color}), 4, 2);
-            foe.speciesName = 'ant'; foe.className = 'striker'; foe.entryDelay = 0;
-            foe.provoked = true; foe.health = 1e9; foe.maxHealth = 1e9;
+            const foe = spawnCreature({ species: 'ant', className: 'striker', x: __O.x, y: __O.y, state: 'hunt' });
+            foe.entryDelay = 0; foe.provoked = true; foe.health = 1e9; foe.maxHealth = 1e9;
             foe.state = 'attack'; foe.currentTarget = f;
-            applySpeciesBody(foe, 'ant'); if (typeof initAbility === 'function') initAbility(foe);
-            actors.push(foe);
             for (let i = 0; i < 600; i++) {
-                foe.x = 4; foe.y = 2;            // pinned on the player
-                player.x = 4; player.y = 2;
+                foe.x = __O.x; foe.y = __O.y;            // pinned on the player
+                player.x = __O.x; player.y = __O.y;
                 if (player.invuln > 0) player.invuln--;   // as the game loop does
                 foe.state = 'attack'; foe.currentTarget = f;
                 foe.update();
@@ -200,54 +174,44 @@ const SCENE = `(function(){
         })()`);
         // Ten seconds on top of it: all three hits gone (the knockdown that
         // refills them is the game loop's, not run here).
-        same(hp, 0, 'hits left after ten seconds under a predator');
+        same(hp, 0, 'hits left after ten seconds under a creature');
     });
 
-    check('and the same predator IS still mauling the follower', () => {
+    check('and the same creature IS still mauling the follower', () => {
         // Which proves the contact was real and the melee branch ran.
         ok(C1.run('followers[0].health < followers[0].maxHealth'),
-           'the follower took no damage either — the predator never attacked at all');
+           'the follower took no damage either — the creature never attacked at all');
     });
 
     check('THE ASK: a clone standing on a recruit does not bite it', () => {
         const r = C2.run(`(function(){
-            gameState.running = true;
             actors = []; followers = [];
-            const recruit = { x: 4, y: 2, type: 'virus', team: 'red', isNeutralRecruit: true,
+            const recruit = { x: __O.x, y: __O.y, type: 'virus', team: 'red', isNeutralRecruit: true,
                               dead: false, health: 500, maxHealth: 500, moveSpeed: 0,
                               update: () => {} };
             actors.push(recruit);
-            const S = SPECIES['ant'];
-            const c = new Predator('striker', Object.assign({}, S.striker, {color:S.color}), 4, 2);
-            c.speciesName = 'ant'; c.className = 'striker'; c.team = 'green'; c.isClone = true;
+            const c = makeClone('ant', 'striker', __O.x, __O.y, 'hunt');
             c.entryDelay = 0; c.health = 1e9; c.maxHealth = 1e9;
-            applySpeciesBody(c, 'ant'); if (typeof initAbility === 'function') initAbility(c);
-            actors.push(c);
             for (let i = 0; i < 600; i++) {
-                c.x = 4; c.y = 2; recruit.x = 4; recruit.y = 2;
+                c.x = __O.x; c.y = __O.y; recruit.x = __O.x; recruit.y = __O.y;
                 c.update();
             }
             return { health: recruit.health, target: c.currentTarget === recruit };
         })()`);
-        same(r.health, 500, 'a clone chewed on a recruit walking to the Crystal');
+        same(r.health, 500, 'a clone chewed on a recruit waiting in its egg');
         same(r.target, false, 'and it should not even have acquired it as a target');
     });
 
     check('but the same clone DOES bite an ordinary red unit', () => {
         // So the clone is not simply inert.
         const hp = C3.run(`(function(){
-            gameState.running = true;
             actors = []; followers = [];
-            const foe = { x: 4, y: 2, type: 'virus', team: 'red', dead: false,
+            const foe = { x: __O.x, y: __O.y, type: 'virus', team: 'red', dead: false,
                           health: 500, maxHealth: 500, moveSpeed: 0, update: () => {} };
             actors.push(foe);
-            const S = SPECIES['ant'];
-            const c = new Predator('striker', Object.assign({}, S.striker, {color:S.color}), 4, 2);
-            c.speciesName = 'ant'; c.className = 'striker'; c.team = 'green'; c.isClone = true;
+            const c = makeClone('ant', 'striker', __O.x, __O.y, 'hunt');
             c.entryDelay = 0; c.health = 1e9; c.maxHealth = 1e9;
-            applySpeciesBody(c, 'ant'); if (typeof initAbility === 'function') initAbility(c);
-            actors.push(c);
-            for (let i = 0; i < 600; i++) { c.x = 4; c.y = 2; foe.x = 4; foe.y = 2; c.update(); }
+            for (let i = 0; i < 600; i++) { c.x = __O.x; c.y = __O.y; foe.x = __O.x; foe.y = __O.y; c.update(); }
             return foe.health;
         })()`);
         ok(hp < 500, 'the clone did not attack an ordinary red unit either');
@@ -256,7 +220,7 @@ const SCENE = `(function(){
     // ─────────────────────────────────────────────────────
     group('the two predicates');
 
-    check('a recruit is a bystander until it arrives', () => {
+    check('a recruit is a bystander until it joins', () => {
         const r = E.run(`(function(){
             const before = isNeutralBystander({ isNeutralRecruit: true, team: 'red' });
             // npc.js clears the flag and flips the team at the Crystal.
@@ -264,7 +228,7 @@ const SCENE = `(function(){
             const plainRed = isNeutralBystander({ team: 'red' });
             return { before, after, plainRed };
         })()`);
-        same(r.before, true, 'an incoming recruit should be a bystander');
+        same(r.before, true, 'a waiting recruit should be a bystander');
         same(r.after, false, 'once recruited it is one of yours, not a bystander');
         same(r.plainRed, false, 'an ordinary red unit is not a bystander');
     });
@@ -284,9 +248,9 @@ const SCENE = `(function(){
                 follower:  isHostileTarget({ team: 'green', isFollower: true }),
             };
         })()`);
-        same(r.bystander, false, 'a recruit walking in must not be a target');
+        same(r.bystander, false, 'a recruit waiting in its egg must not be a target');
         same(r.red, true, 'an ordinary red unit is');
-        same(r.foe, true, 'so is a hostile predator');
+        same(r.foe, true, 'so is a hostile creature');
         same(r.clone, false, 'your own clone is not');
         same(r.dead, false, 'nor is a corpse');
         same(r.nothing, false, 'nor is nothing at all');
@@ -323,11 +287,10 @@ const SCENE = `(function(){
     // calculated."
     //
     // Folding twenty-five hostility expressions into isHostileTarget swept up
-    // two that were not asking about targeting at all — the two places that
-    // COUNT a kill. isHostileTarget begins `if (a.dead) return false`, so those
-    // conditions became `a.dead && isHostileTarget(a)`, which is
-    // `a.dead && !a.dead`. Never true. Measured at wave 3: six ordinary
-    // predators killed, zero counted on either counter.
+    // the place that COUNTS a kill. isHostileTarget begins `if (a.dead) return
+    // false`, so that condition became `a.dead && isHostileTarget(a)`, which is
+    // `a.dead && !a.dead`. Never true. Measured: six ordinary creatures killed,
+    // zero counted.
     //
     // The drops kept paying out, which is why nothing looked wrong at a glance,
     // and nothing here or anywhere else tested a kill being counted at all.
@@ -365,30 +328,22 @@ const SCENE = `(function(){
         }
     });
 
-    // One world, reset between checks. check() is synchronous and drops a
+    // One facility, reset between checks. check() is synchronous and drops a
     // returned promise on the floor, so an `async () =>` check here would pass
     // no matter what it asserted.
     const killScene = body => K.run(`(function(){
         // running, or render() bails out before it ever reaches the counters
         // and every one of these checks quietly reads zero.
         gameState.running = true;
-        gameState.phase = 'night';
-        actors.length = 0;
-        lifetimeKills = 0; nightKillCount = 0;
-        // Out of reach by default. Left at 0 the wave clears on the first
-        // frame, which changes phase out from under the scene — the checks that
-        // are not about clearing set their own target below.
-        nightEnemiesTarget = 99999;
-        alertActive = true; alertType = 'facility'; alertZone = 1;
-        alertSource = { x: 20, y: 2 };
-        _cacheAge = -999;
+        actors.length = 0; followers.length = 0;
+        lifetimeKills = 0;
+        alertActive = true; alertTimer = 99999; alertSource = { x: __O.x, y: __O.y };
         ${body}
     })()`);
 
-    check('killing an ordinary enemy counts toward the element ladder', () => {
+    check('killing an ordinary enemy counts as a kill, once the sweep has seen the corpse', () => {
         const r = killScene(
-            `const p = spawnPredatorForZone(1, { species: 'ant', className: 'striker' });
-             p.isWanderer = false; p.x = 5; p.y = 2;
+            `const p = spawnCreature({ species: 'ant', className: 'striker', x: __O.x, y: __O.y, state: 'hunt' });
              render();
              p.health = 0; p.dead = true;
              for (let f = 0; f < 5; f++) render();
@@ -397,29 +352,12 @@ const SCENE = `(function(){
         same(r.flagged, true, 'the corpse was never marked as counted');
     });
 
-    check('and toward clearing the wave, or a night can never end', () => {
-        const r = killScene(
-            `nightEnemiesTarget = 3;
-             const made = [];
-             for (let i = 0; i < 3; i++) {
-                 const p = spawnPredatorForZone(1, { species: 'ant', className: 'striker' });
-                 p.isWanderer = false; p.x = 5 + i; p.y = 2;
-                 made.push(p);
-             }
-             render();
-             for (const p of made) { p.health = 0; p.dead = true; }
-             for (let f = 0; f < 5; f++) render();
-             return { night: nightKillCount, target: nightEnemiesTarget };`);
-        same(r.night, 3, 'nightKillCount did not move — the wave could never clear');
-        ok(r.night >= r.target, 'the target should now be reached');
-    });
-
     check('a kill is counted exactly ONCE, end to end', () => {
         // What this actually proves, and what it does not. Two seconds of
         // frames after the death yield one kill — that is the behaviour the
         // player sees, and it is worth pinning.
         //
-        // It is NOT a test of the progressCounted / killCounted flags. The
+        // It is NOT a test of the progressCounted / deathProcessed flags. The
         // cleanup pass splices a corpse out of `actors` on the very first frame
         // after it dies, so the counting loop never sees it twice and the flags
         // are belt-and-braces today: removing them leaves this green. The
@@ -427,43 +365,38 @@ const SCENE = `(function(){
         // retaining bodies — for a death animation, say — the flags become
         // load-bearing and this check starts testing them for real.
         const r = killScene(
-            `const p = spawnPredatorForZone(1, { species: 'ant', className: 'striker' });
-             p.isWanderer = false; p.x = 5; p.y = 2;
+            `const p = spawnCreature({ species: 'ant', className: 'striker', x: __O.x, y: __O.y, state: 'hunt' });
              render();
              p.health = 0; p.dead = true;
              let lingered = 0;
              for (let f = 0; f < 120; f++) { render(); if (actors.includes(p)) lingered++; }
-             return { kills: lifetimeKills, night: nightKillCount, lingered };`);
+             return { kills: lifetimeKills, lingered };`);
         same(r.kills, 1, 'the same corpse was counted more than once');
-        same(r.night, 1, 'and toward the wave more than once');
         same(r.lingered, 0,
              'corpses now linger in actors for ' + r.lingered + ' frames — the '
-             + 'progressCounted/killCounted flags are load-bearing now, not belt-and-braces');
+             + 'progressCounted/deathProcessed flags are load-bearing now, not belt-and-braces');
     });
 
     check('a recruit dying is not a kill won', () => {
-        // It is on the enemy's team until it arrives, so a naive "team red died"
+        // It is on the enemy's team until it joins, so a naive "team red died"
         // would bank it — and the player did nothing to earn it.
         const r = killScene(
-            `const rec = { x: 5, y: 2, team: 'red', isNeutralRecruit: true, dead: true,
+            `const rec = { x: __O.x, y: __O.y, team: 'red', isNeutralRecruit: true, dead: true,
                            health: 0, maxHealth: 60, type: 'virus' };
              actors.push(rec);
              for (let f = 0; f < 5; f++) render();
-             return { kills: lifetimeKills, night: nightKillCount };`);
-        same(r.kills, 0, 'a dead recruit should not earn an element');
-        same(r.night, 0, 'nor advance the wave');
+             return { kills: lifetimeKills };`);
+        same(r.kills, 0, 'a dead recruit should not count as a kill');
     });
 
     check('and neither is one of your own clones dying', () => {
         const r = killScene(
-            `const p = spawnPredatorForZone(1, { species: 'ant', className: 'striker' });
-             p.team = 'green'; p.isClone = true; p.x = 5; p.y = 2;
+            `const p = makeClone('ant', 'striker', __O.x, __O.y);
              render();
              p.health = 0; p.dead = true;
              for (let f = 0; f < 5; f++) render();
-             return { kills: lifetimeKills, night: nightKillCount };`);
+             return { kills: lifetimeKills };`);
         same(r.kills, 0, 'losing a clone should not count as a kill');
-        same(r.night, 0, 'nor advance the wave');
     });
 
     check('chain lightning no longer jumps to your own clone', () => {
@@ -482,7 +415,7 @@ const SCENE = `(function(){
     });
 
     // ─────────────────────────────────────────────────────
-    group('predators attack the player (three hits, js/config.js PLAYER_HITS)');
+    group('creatures attack the player (three hits, js/config.js PLAYER_HITS)');
 
     check('the flag is ON, and it is a named constant', () => {
         ok(/const PREDATORS_ATTACK_PLAYER = true/.test(SRC.config),
@@ -497,10 +430,10 @@ const SCENE = `(function(){
         ok(/!this\.isClone && !this\.untargetable && typeof predatorMayHurtPlayer === \"function\" && predatorMayHurtPlayer\(\)/.test(SRC.predator),
            'the bite is not gated');
         ok(!/predatorMayHurtPlayer|hurtPlayer/.test(SRC.abilities), 'a special can still hurt the player');
-        const at = SRC.game.indexOf('if (!hit && p.targetsGreen && typeof equipmentHitByShot');
+        const at = SRC.game.indexOf('followerProjectiles = followerProjectiles.filter(');
         ok(at > -1, 'fixture: the projectile filter');
         const end = SRC.game.indexOf('return !hit && p.life > 0', at);
-        ok(!/hurtPlayer/.test(SRC.game.slice(at, end)), 'a predator shot can still hurt the player');
+        ok(end > at && !/hurtPlayer/.test(SRC.game.slice(at, end)), 'a creature\'s shot can still hurt the player');
         same((SRC.helpers.match(/function predatorMayHurtPlayer/g) || []).length, 1,
              'the predicate is defined more than once');
     });
@@ -518,19 +451,12 @@ const SCENE = `(function(){
         same(r, E.run('PLAYER_HITS') - 1, 'hurtPlayer should take one hit — hazards depend on it');
     });
 
-    check('acid, vents and ground zones are NOT gated', () => {
-        for (const [what, src, near] of [
-            ['the acid pool',    SRC.elements, 'ACID'],
-            ['the ground zone',  SRC.elements, 'ZAP'],
-            ['the vent blast',   SRC.game,     'BLAST'],
-        ]) {
-            const at = src.indexOf(near);
-            ok(at > -1, 'fixture: could not find ' + what);
-            const body = src.slice(at, at + 500);
-            ok(/hurtPlayer\(/.test(body), what + ' no longer hurts the player at all');
-            ok(!/predatorMayHurtPlayer/.test(body),
-               what + ' is gated as if it were a predator');
-        }
+    check('burning ground is NOT gated', () => {
+        const at = SRC.firebombs.indexOf('function fireBombsTick');
+        ok(at > -1, 'fixture: could not find the burning ground');
+        const body = SRC.firebombs.slice(at, SRC.firebombs.indexOf('\nfunction ', at + 10));
+        ok(/hurtPlayer\(/.test(body), 'burning ground no longer hurts the player at all');
+        ok(!/predatorMayHurtPlayer/.test(body), 'burning ground is gated as if it were a predator');
     });
 
     // ─────────────────────────────────────────────────────
@@ -539,33 +465,24 @@ const SCENE = `(function(){
     check('a long-press cannot pick a bystander', () => {
         const r = E.run(`(function(){
             actors = [];
-            const recruit = { x: 4, y: 2, team: 'red', isNeutralRecruit: true, dead: false };
-            actors.push(recruit);
-            const a = getEnemyAtTile({ x: 4, y: 2 });
-            actors.push({ x: 4, y: 2, team: 'red', dead: false });      // a real foe
-            const b = getEnemyAtTile({ x: 4, y: 2 });
-            return { onlyRecruit: a === null, withFoe: b !== null && !b.isNeutralRecruit };
+            const sc = a => [(a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2,
+                             (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - facilityLiftRel(a.x, a.y) - 55];
+            const recruit = { x: player.x + 1, y: player.y, team: 'red', isNeutralRecruit: true, dead: false };
+            actors.push(recruit); const [sx, sy] = sc(recruit);
+            const a = findEnemyAtScreen(sx, sy);
+            const foe = spawnCreature({ species: 'ant', className: 'scout', x: recruit.x, y: recruit.y });      // a real foe
+            const b = findEnemyAtScreen(sx, sy);
+            return { onlyRecruit: a === null, withFoe: b === foe };
         })()`);
         same(r.onlyRecruit, true, 'a recruit alone should offer no target');
-        same(r.withFoe, true, 'but a real foe on the same tile still does');
-    });
-
-    check('nor can a gesture selection', () => {
-        ok(/a\.dead \|\| isNeutralBystander\(a\)/.test(SRC.helpers),
-           'the gesture selection does not skip bystanders');
-        same((SRC.helpers.match(/isNeutralBystander\(a\)/g) || []).length >= 3, true,
-             'not every selection path skips them');
+        same(r.withFoe, true, 'but a real foe on the same spot still does');
     });
 
     group('the index says so');
 
     check('the rules are written down', () => {
         const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
-        ok(/You can take <span class="cm-stat">3<\/span> hits/.test(HTML) && /knocks you back to the <strong>Crystal<\/strong>/.test(HTML), 'the index does not state the three-hit rule');
-        ok(/an acid pool, a vent blast or a ground zone/.test(HTML), 'nor that hazards cost a hit too');
-        ok(/Recruits are never attacked/i.test(HTML), 'nor the recruit rule');
-        ok(/your own side used to cut them down/i.test(HTML),
-           'nor that it was your own side doing it');
+        ok(/<span class="cm-stat">3<\/span> hits, then you are knocked back to the Crystal/.test(HTML), 'the index does not state the three-hit rule');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

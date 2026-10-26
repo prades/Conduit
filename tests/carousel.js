@@ -1,4 +1,4 @@
-// THE CAROUSEL: the facility's Command Center on a tablet or a desktop (js/commandcenter.js ccCarousel, js/party.js, game.html "THE CAROUSEL"; docs/UI-STYLE.md "The roster"; the classic game and a phone are as they were).
+// THE CAROUSEL: the facility's Command Center on a tablet or a desktop (js/commandcenter.js ccCarousel, js/party.js, game.html "THE CAROUSEL"; docs/UI-STYLE.md "The roster"; a phone is as it was).
 // ASKED: the "Roster 5 · CAROUSEL" layout, "but no recruit button at the top": the squad's three slots across the top (a tap looks at that member, ✕ REMOVE takes it out, DISBAND the lot), the creature in view big in the middle with ◂ ▸ to walk the roster
 // and its settings beside it, the filters and a strip of everyone under that (RECRUIT is the strip's last tile), and one bar at the foot (ADD TO SQUAD, SWAP IN FOR one of the three, REMOVE FROM SQUAD). What is in view is the roster's own focus: looking
 // at a creature does not change who the orders in the world go to (the squad bar's pick). The logic runs in the sandbox, the page in the real browser at three sizes (no Chromium: it says so and passes).
@@ -114,11 +114,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     ccClose(); out.closed = { sel: selectedUnits.size, has: selectedUnits.has(pick), open: $('#ccRoot').classList.contains('open'), focus: _ccFocus === null, filter: ccFilter.squad }; ccOpen('roster'); await wait(200);
     var disb = partyMembers().length; click($('#ccDisband')); await wait(80); out.disband = { members: partyMembers().length, was: disb, names: slotNames(), off: $('#ccDisband').disabled, label: $('#ccSwap .cc-sw-l').textContent, picks: picks(), subs: pickSubs(), summary: $('#ccSummary').textContent, nums: $$('#ccSquadBox .sb-no').filter(shown).length };
     partyAdd(partyPosted().slice(0, 3)); ccRender(); await wait(60);
-    // the SQUADS window still opens over the carousel (it has the squad's orders), and the ZONES page keeps its own layout
+    // the SQUADS window still opens over the carousel (it has the squad's orders)
     click($('#ccSquadsBtn')); await wait(80); out.squads = { shown: getComputedStyle($('#ccSquadWin')).display, title: $('#ccSquadTitle').textContent, cards: $$('#ccSquadBody .cc-yoursquad .cc-card:not(.cc-open)').length, disband: !!$$('#ccSquadBody .cc-btn').find(function(b){ return b.textContent.indexOf('DISBAND SQUAD') === 0; }) };
     click($('#ccSquadsBtn')); await wait(60);
-    ccClose();
-    ccOpen('zones'); await wait(200); out.zones = { root: $('#ccRoot').className, focus: shown('#ccFocus'), swap: shown('#ccSwap'), page: shown('#ccPage'), side: shown('#ccSide'), head: $$('#ccRoot .cc-head button').filter(shown).map(function(b){ return b.textContent; }), title: $('#ccTitle').textContent };
     ccClose();
   } catch (e) { out.err = String(e && e.stack || e); }
   var pre = document.createElement('pre'); pre.id = '__ca'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
@@ -134,21 +132,21 @@ function measure(w, h) {
 }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1180; canvas.height = 820; innerWidth = 1180;');
+    run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1180; canvas.height = 820; innerWidth = 1180;');   // (the page boots the facility: the start returns early; only the tutorial's blackout is lifted)
     run(`globalThis.__cell = (room, k) => { const cs = partyRoomCells(room); return cs[Math.floor(cs.length * (k === undefined ? 0.5 : k))]; };
-        globalThis.__fresh = (n) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); squadMode = 'all'; floatingTexts.length = 0; ccFilter = { element: null, role: null, duty: null, kind: null, squad: null }; _ccFocus = null; const c = __cell('crystal_chamber'); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1];
+        globalThis.__fresh = (n) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); squadMode = 'all'; floatingTexts.length = 0; ccFilter = { element: null, role: null, kind: null, squad: null }; _ccFocus = null; const c = __cell('crystal_chamber'); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1];
             for (let i = 0; i < n; i++) { spawnFollowerAtCrystal(['electric', 'core', 'fire', 'ice', 'toxic', 'flux'][i % 6]); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.health = f.maxHealth = 1e7; f.x = player.x + 0.5 + i * 0.2; f.y = player.y + 0.5; }
             partyTick(); return followers.slice(); };`);
 
     group('THE CAROUSEL: where it applies, and what is in view (js/commandcenter.js)');
-    check('the carousel is the facility\'s roster on a tablet or a desktop (wider than a phone); a phone and the classic game keep the grid of cards', () => {
-        const r = J(`(function(){ const o = {}; innerWidth = 1180; o.wide = ccCarousel(); innerWidth = 701; o.edge = ccCarousel(); innerWidth = 700; o.phone = ccCarousel(); innerWidth = 1180; facilityPlay = false; o.classic = ccCarousel(); facilityPlay = true; return o; })()`);
-        same(r.wide, true, 'a tablet'); same(r.edge, true, 'just over a phone'); same(r.phone, false, 'a phone'); same(r.classic, false, 'the classic game');
+    check('the carousel is the facility\'s roster on a tablet or a desktop (wider than a phone); a phone keeps the grid of cards', () => {
+        const r = J(`(function(){ const o = {}; innerWidth = 1180; o.wide = ccCarousel(); innerWidth = 701; o.edge = ccCarousel(); innerWidth = 700; o.phone = ccCarousel(); innerWidth = 1180; return o; })()`);
+        same(r.wide, true, 'a tablet'); same(r.edge, true, 'just over a phone'); same(r.phone, false, 'a phone');
     });
     check('the strip lists the squad first in its slots, then the rest (the most evolved, then the highest level), then the clones; the filters narrow it', () => {
         const r = J(`(function(){ const fs = __fresh(6), o = {}; const mem = partyOrdered(), post = fs.filter(f => !!f.post); post[0].level = 7; post[1].level = 9; post[2].level = 3; post[2].evolved = 'fake';
@@ -191,8 +189,8 @@ function measure(w, h) {
         ok(/rec\.style\.display = ccOpenTab === "roster" && !car \? "" : "none"/.test(c), 'the header\'s RECRUIT'); ok(/_ccClick\(t, \(\) => \{ const had = new Set\(ccUnits\(\{\}\)\); if \(typeof recruitDo === "function"\) recruitDo\(\);/.test(c), 'the tile recruits'); ok(/car \? "YOUR CRYSTALS"/.test(c), 'the crystals');
         ok(/if \(car\) return;   \/\/ \(the carousel picks one creature at a time: no SELECT SHOWN, no CLEAR\)/.test(c), 'SELECT SHOWN / CLEAR');
     });
-    check('game.html: every rule of the carousel is scoped to #ccRoot.carousel or #ccRoot.slabs (what the classic game and a phone show is not touched), and the parts it adds are hidden until then', () => {
-        const h = rd('game.html'), i = h.indexOf('THE CAROUSEL (docs/UI-STYLE.md'), j = h.indexOf('THE FIRE TURRET AIM RING'); ok(i > 0 && j > i, 'the block'); const rules = h.slice(i, j).split('\n').filter(l => /^\s+(#|\.|@media)/.test(l));
+    check('game.html: every rule of the carousel is scoped to #ccRoot.carousel or #ccRoot.slabs (what a phone shows is not touched), and the parts it adds are hidden until then', () => {
+        const h = rd('game.html'), i = h.indexOf('THE CAROUSEL (docs/UI-STYLE.md'), j = h.indexOf('the move choices on a unit\'s INFO tab'); ok(i > 0 && j > i, 'the block'); const rules = h.slice(i, j).split('\n').filter(l => /^\s+(#|\.|@media)/.test(l));   // (the carousel's rules run up to the unit info's own, which come before THE CORNERS)
         ok(/\.sb-no, \.sb-x, \.cc-disband, \.cc-focus, \.cc-swap, \.cc-no \{ display: none; \}/.test(h), 'the hidden parts'); const loose = rules.filter(l => !/^\s+(#ccRoot\.(carousel|slabs)|@media|\.sb-no, \.sb-x)/.test(l)); same(loose.length, 0, 'unscoped rules: ' + loose.map(l => l.trim().slice(0, 60)).join(' | '));
     });
 
@@ -270,9 +268,6 @@ function measure(w, h) {
             same(r.disband.members, 0, 'the squad'); same(r.disband.names.join(), '-,-,-', 'the slots'); same(r.disband.off, true, 'DISBAND is on'); ok(/^ADD .* TO THE SQUAD$/.test(r.disband.label), 'label ' + r.disband.label); same(r.disband.subs.join(), '3 SLOTS FREE', 'its note'); ok(/^SQUAD 0\/3/.test(r.disband.summary), 'summary ' + r.disband.summary); same(r.disband.nums, 0, 'numbers on open slots');
             same(r.squads.shown, 'flex', 'the SQUADS window'); same(r.squads.title, 'YOUR SQUAD', 'its title'); same(r.squads.cards, 3, 'its cards'); same(r.squads.disband, true, 'DISBAND SQUAD');
             same(r.closed.open, false, 'closed'); same(r.closed.sel, 1, 'the pick after closing'); same(r.closed.has, true, 'the same one'); same(r.closed.focus, true, 'the view is put away');
-        });
-        check(w + ': the ZONES page keeps its own layout (no creature, no bar) with the same slabs at the top', () => {
-            ok(/slabs/.test(r.zones.root) && !/carousel/.test(r.zones.root), 'classes ' + r.zones.root); same(r.zones.focus, false, 'the creature'); same(r.zones.swap, false, 'the bar'); same(r.zones.page, true, 'the page'); same(r.zones.side, false, 'the panel'); same(r.zones.title, 'ZONES', 'title'); ok(r.zones.head.includes('✕ CLOSE'), 'header ' + r.zones.head);
         });
     }
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
