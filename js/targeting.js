@@ -153,7 +153,9 @@ function drawTargetUI() {
 }
 // where the round button comes up, at the top left under the objective's plate (a phone has the menu hub at the left edge, halfway down: the button goes beside it); the ammunition icon shares it
 function _tgAnchor() {
-    const W = canvas.width, narrow = W < 600, R = narrow ? 40 : 52, left = typeof dockHasMenus === "function" && !dockHasMenus() ? 78 : 18, top = typeof _fpObjBottom === "number" && _fpObjBottom > 0 ? _fpObjBottom + 12 : 196;
+    const W = canvas.width, narrow = W < 600, R = narrow ? 40 : 52, left = typeof dockHasMenus === "function" && !dockHasMenus() ? 78 : 18, net = narrow && typeof _fnBottom === "number" ? _fnBottom : 0;
+    // under the objective (a phone's plate is folded into a small mailbox, so that is high up) and, on a phone, under the network panel at the top right (its text runs back to the middle of a narrow screen)
+    const top = Math.max(typeof _fpObjBottom === "number" && _fpObjBottom > 0 ? _fpObjBottom + 12 : 196, net > 0 ? net + 8 : 0);
     return { W, narrow, R, left, top, x: left + R, y: Math.min(top + R + 4, canvas.height - R - 130) };
 }
 // THE AMMUNITION, subtle (ASKED: "move the information where it says ammo or armed up where the old little index UI shows up for the predators [...] make it subtle, like an icon with ammo and have a number on it"):

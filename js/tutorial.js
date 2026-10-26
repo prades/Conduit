@@ -136,21 +136,62 @@ function facilityDirectorTick() {
 function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += TUT.waves[i].who.length; return n; }
 
 // the objective plate: top left, under the FACILITY · EXIT tab. The tutorial's seven steps; then (once a class is chosen) the class's own; then a closing line.
+// ON A PHONE it is a MAILBOX (ASKED: "in the mobile version [...] make it to where the recent task is in a little mailbox thing with a little exclamation point if there's a new objective"): the plate is folded away into a small envelope where it
+// would be, with a gold "!" on it while the objective is one the player has not opened yet. A tap on the envelope unfolds the plate (the objective and its hint); a tap on the plate folds it away again; a new objective (or the closing line)
+// puts the "!" back. A phone is a screen 700 px wide or less (the line js/mixtool.js mixToolWide draws, where the bottom-left tool is a chip and the menus a hub): the plate would cover a third of the picture. On anything else it is the plate, as it was, and takes no taps.
 let _fpObjBottom = 0;   // where the objective plate ends on screen (0: not drawn): the enemy index card (js/targeting.js) goes under it
+const OBJ_BOX = { w: 54, h: 46, fold: 0.16, shake: 50 };   // the mailbox's size; how much of the unfolding each drawn frame does; how long (frames) it rattles when a new objective comes
+const _objHit = { x: 0, y: 0, w: 0, h: 0 };                // where a tap is the objective's now (w 0: nowhere)
+let _objPressed = false;                                   // the press began on it (js/input.js)
+function objectiveCompact() { return typeof innerWidth === "number" && innerWidth <= 700; }
+function _objOn(ex, ey) { const r = _objHit; return r.w > 0 && ex >= r.x && ex <= r.x + r.w && ey >= r.y && ey <= r.y + r.h; }
+function objectivePress(ex, ey) { if (!_objOn(ex, ey)) return false; _objPressed = true; return true; }
+function objectiveRelease(ex, ey) { if (_objOn(ex, ey)) objectiveToggle(); }
+function objectiveToggle(open) { const S = _fp && _fp.tut && _fp.tut.script; if (S) S.objOpen = open === undefined ? !S.objOpen : !!open; }
+// is there an objective the player has not opened (a phone's mailbox shows "!")?
+function objectiveUnread() { const S = _fp && _fp.tut && _fp.tut.script; return !!S && objectiveCompact() && !!S.objKey && S.objSeen !== S.objKey; }
+// a small envelope centred on (cx, cy), rattling by `tilt` radians
+function _objEnvelope(cx, cy, col, tilt, fresh) {
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt); ctx.lineJoin = "round"; ctx.lineWidth = 2; ctx.strokeStyle = col;
+    ctx.fillStyle = fresh ? "rgba(255,231,51,0.2)" : "rgba(255,255,255,0.07)"; ctx.fillRect(-13, -9, 26, 18); ctx.strokeRect(-13, -9, 26, 18);   // the paper
+    ctx.beginPath(); ctx.moveTo(-12, -8); ctx.lineTo(0, 2); ctx.lineTo(12, -8); ctx.stroke();                                                      // the flap
+    ctx.restore();
+}
+// the gold "!" a new objective puts on the mailbox, breathing
+function _objBang(bx, by, f) {
+    const k = 1 + 0.12 * Math.sin(f * 0.12), r = 10 * k;
+    ctx.save(); ctx.fillStyle = "rgba(255,231,51,0.22)"; ctx.beginPath(); ctx.arc(bx, by, r + 5, 0, 6.2832); ctx.fill();   // (the glow is a second, wider, fainter disc: this game uses no shadowBlur)
+    ctx.fillStyle = UI_GOLD; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = UI_INK; ctx.stroke();
+    ctx.fillStyle = UI_INK; ctx.font = "bold " + Math.round(14 * k) + "px " + UI_FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("!", bx, by + 1); ctx.restore();
+}
 function facilityDrawObjective() {
-    _fpObjBottom = 0;
+    _fpObjBottom = 0; _objHit.w = 0;
     const S = _fp && _fp.tut && _fp.tut.script; if (!S || typeof uiSlab !== "function" || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen)) return;
-    const W = canvas.width, tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), w = Math.min(W - 24, 350), x = 12, y = 158;
-    let title, body, hint = "", col = pc ? pc.colour : UI_TEAL;
-    if (!tutDone) { const st = TUT_STEPS[S.step]; title = "OBJECTIVE " + (S.step + 1) + "/" + TUT_STEPS.length + "  ·  " + st.title; body = st.text(); hint = st.hint(); }
+    const W = canvas.width, tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), w = Math.min(W - 24, 350), x = 12, y = 158, f = typeof frame !== "undefined" ? frame : 0;
+    let key, title, body, hint = "", col = pc ? pc.colour : UI_TEAL;
+    if (!tutDone) { const st = TUT_STEPS[S.step]; key = "t" + S.step; title = "OBJECTIVE " + (S.step + 1) + "/" + TUT_STEPS.length + "  ·  " + st.title; body = st.text(); hint = st.hint(); }
     else if (!pc) return;
-    else if (!TUT_CLASS_STEP.done()) { title = pc.name + "  ·  " + TUT_CLASS_STEP.title; body = TUT_CLASS_STEP.text(); hint = TUT_CLASS_STEP.hint(); }
-    else { title = pc.name + "  ·  RANK " + classRank(); body = "YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS."; col = "#9dffb6"; }
-    const chars = Math.max(18, Math.floor((w - 28) / 8)), lines = codexWrap(body, chars).slice(0, 3), hl = hint ? codexWrap(hint, chars).slice(0, 3) : [], h = 44 + lines.length * 17 + (hl.length ? hl.length * 15 + 8 : 0);
-    _fpObjBottom = y + h;
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); uiSlab(x, y, w, h, col, false, "#0b1226");
-    uiTextFit(title, x + 16, y + 20, 15, col, "left", w - 30);
-    let yy = y + 42; for (const l of lines) { uiCaptionFit(l, x + 16, yy, "#e8f0ff", "left", 12, w - 28); yy += 17; }
-    if (hl.length) { yy += 4; for (const l of hl) { uiCaptionFit(l, x + 16, yy, "#8aa0c8", "left", 11, w - 28); yy += 15; } }
+    else if (!TUT_CLASS_STEP.done()) { key = "perk"; title = pc.name + "  ·  " + TUT_CLASS_STEP.title; body = TUT_CLASS_STEP.text(); hint = TUT_CLASS_STEP.hint(); }
+    else { key = "done"; title = pc.name + "  ·  RANK " + classRank(); body = "YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS."; col = "#9dffb6"; }
+    const mail = objectiveCompact(), chars = Math.max(18, Math.floor((w - 28) / 8)), lines = codexWrap(body, chars).slice(0, 3), hl = hint ? codexWrap(hint, chars).slice(0, 3) : [], h = 44 + lines.length * 17 + (hl.length ? hl.length * 15 + 8 : 0);
+    // a phone: the plate is folded into the mailbox until it is opened, and unfolds out of it (S.objK: 0 folded .. 1 open); an objective that is open is read
+    if (S.objKey !== key) { S.objKey = key; S.objNewAt = f; }
+    if (mail) { if (S.objOpen) S.objSeen = key; S.objK = Math.max(0, Math.min(1, (S.objK || 0) + (S.objOpen ? OBJ_BOX.fold : -OBJ_BOX.fold))); } else S.objK = 1;
+    const k = S.objK, e = k * k * (3 - 2 * k), pw = mail ? OBJ_BOX.w + (w - OBJ_BOX.w) * e : w, ph = mail ? OBJ_BOX.h + (h - OBJ_BOX.h) * e : h, unread = mail && S.objSeen !== key;
+    _fpObjBottom = y + ph;
+    if (mail) { _objHit.x = x - 4; _objHit.y = y - 4; _objHit.w = pw + 8; _objHit.h = ph + 8; }
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); uiSlab(x, y, pw, ph, col, false, "#0b1226");
+    if (mail && e < 1) {   // the mailbox: an envelope (it rattles when a new objective has just come), and the "!" while it is not read
+        const age = f - (S.objNewAt || 0), tilt = unread && age >= 0 && age < OBJ_BOX.shake ? Math.sin(age * 0.9) * 0.22 * (1 - age / OBJ_BOX.shake) : 0;
+        ctx.globalAlpha = 1 - e; _objEnvelope(x + pw / 2, y + ph / 2 + 1, col, tilt, unread); ctx.globalAlpha = 1;
+        if (unread) _objBang(x + pw - 4, y + 5, f);
+    }
+    if (!mail || e > 0.04) {   // the plate's writing (as it unfolds the slab uncovers it)
+        if (mail && e < 1) { ctx.beginPath(); ctx.rect(x, y, pw, ph); ctx.clip(); }
+        uiTextFit(title, x + 16, y + 20, 15, col, "left", w - 30 - (mail ? 24 : 0));
+        let yy = y + 42; for (const l of lines) { uiCaptionFit(l, x + 16, yy, "#e8f0ff", "left", 12, w - 28); yy += 17; }
+        if (hl.length) { yy += 4; for (const l of hl) { uiCaptionFit(l, x + 16, yy, "#8aa0c8", "left", 11, w - 28); yy += 15; } }
+        if (mail) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + w - 36, y + 25); ctx.lineTo(x + w - 20, y + 25); ctx.lineTo(x + w - 28, y + 15); ctx.closePath(); ctx.fill(); }   // (the little arrow that says a tap folds it away)
+    }
     ctx.restore();
 }

@@ -367,6 +367,8 @@ canvas.addEventListener('pointerdown', e=>{
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
 
+    // THE OBJECTIVE'S MAILBOX (js/tutorial.js), on a phone: a press on it (or on the plate it unfolds into) is its own: no ring, no move order, no long press
+    _objPressed = false; if (typeof objectivePress === "function" && objectivePress(pressX, pressY)) { isPressing = false; return; }
     // TARGETING (js/targeting.js): a press on the round fire/info buttons, or on a creature that is not the locked one (it takes the lock): no ring, no move order
     _targetPressed = false; _tgBtnDown = null; if (typeof targetPress === "function" && targetPress(pressX, pressY)) return;
     // THE GUN (js/gunfire.js): armed, a press that lands on an enemy is a shot (and holding it keeps firing): no ring, no move order
@@ -409,6 +411,7 @@ canvas.addEventListener('pointermove', e=>{
 canvas.addEventListener('pointerup', e=>{
     if (_gunPressed) { _gunPressed = false; if (typeof gunRelease === "function") gunRelease(); isPressing = false; return; }   // the gun's press ends here (js/gunfire.js)
     if (_targetPressed) { _targetPressed = false; const [_tx, _ty] = toCanvas(e.clientX, e.clientY); if (typeof targetRelease === "function") targetRelease(_tx, _ty); isPressing = false; return; }   // the targeting's press ends here (js/targeting.js)
+    if (_objPressed) { _objPressed = false; const [_ox, _oy] = toCanvas(e.clientX, e.clientY); if (typeof objectiveRelease === "function") objectiveRelease(_ox, _oy); isPressing = false; return; }   // the objective mailbox's press ends here (js/tutorial.js)
     if (!gameState.running) { isPressing=false; return; } // block canvas input during buy screen
     const [upX,upY]=toCanvas(e.clientX,e.clientY);
     // A slide on the clone card strip is not a tap on a card.

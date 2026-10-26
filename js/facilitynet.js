@@ -47,12 +47,14 @@ function _fnDial(cx, cy, N, S) {
     ctx.restore();
     _netText(N.on + "/" + N.zones.length, cx, cy + 1, 18, N.on ? "#fff" : S.col, "center");
 }
+let _fnBottom = 0;   // where the panel ends on screen (0: not drawn): on a phone the round button (js/targeting.js) goes under it
 function drawFacilityNetworkHUD() {
-    _netPanelRect = null;
+    _netPanelRect = null; _fnBottom = 0;
     if (typeof placingHidesUi === "function" && placingHidesUi()) return;
     const N = facilityNetState(), S = FP_NET_STATES[N.state], narrow = canvas.width < 600;
     const W = narrow ? Math.min(canvas.width - 16, 230) : 236, IW = W - 8, DIAL = 104, H = DIAL + 24;
     const zr = narrow ? null : _netZoneRect(), X = zr ? Math.max(8, Math.round(zr.right - W)) : canvas.width - W - 10, Y = zr ? Math.round(zr.bottom - 2) : uiTopSafe(), mx = X + 4, right = X + W - 4;
+    _fnBottom = Y + H;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const dcx = right - 52, dcy = Y + DIAL / 2, lw = dcx - 52 - mx;
     _fnDial(dcx, dcy, N, S);
