@@ -54,7 +54,7 @@ function mixToolComePool() {
 function mixToolTarget(pool) {
     const n = (pool || mixToolPool()).length;
     if (typeof selectedUnits !== "undefined" && selectedUnits.size && ccSelectionList().length) return "SELECTED " + n;
-    if (squadMode === "all") return "EVERYONE " + n;
+    if (squadMode === "all" || mixToolCorners()) return "EVERYONE " + n;   // (the corners layout has no element picker: it is ALL, or the cards that are picked)
     return String(player.selectedElement || "").toUpperCase() + " " + n;
 }
 function mixToolOrder(id) {
@@ -82,7 +82,13 @@ function mixToolPosture(id) {
 }
 function mixToolPostureNow() { const pool = mixToolPool().filter(a => !a.isClone); return pool.length ? ccCommon(pool, a => a.playStyle || "balanced") : null; }
 // A scope chip: ALL, or one element (it also lets go of the selected cards, which would otherwise win).
-function mixToolScope(id) { if (typeof ccClearSelection === "function") ccClearSelection(); if (id === "all") radialSetScope(true); else radialSelectElement(id); mixToolRender(true); }
+// THE CORNERS LAYOUT (js/party.js hudCorners) has no element picker: the tool says ALL, or the member whose card is picked on the squad bar; the ALL button lets go of whoever is picked (and the card beside the bar goes: js/squadfly.js).
+function mixToolCorners() { return typeof hudCorners === "function" && hudCorners(); }
+function mixToolScope(id) {
+    if (typeof ccClearSelection === "function") ccClearSelection();
+    if (id === "all" || mixToolCorners()) radialSetScope(true); else radialSelectElement(id);
+    if (typeof partyBarRender === "function") partyBarRender(true); mixToolRender(true);
+}
 
 // ── THE ENEMY CARD: tap it and the picked units go for that creature ──
 // Who is sent: whoever the tool is set to (the pool the other orders use), but not the work crew (they are at their work: sending them is a duty change, which the roster does).
@@ -128,7 +134,13 @@ const MT_CELLS = [[50, 18.9], [79.2, 34.4], [79.2, 65.6], [50, 81.1], [20.8, 65.
 function mixToolSignature() {
     const tot = typeof followers !== "undefined" ? followers.filter(f => f && !f.dead).length : 0;
     const f0 = typeof frame !== "undefined" ? frame : 0, pool = mixToolPool();
-    return [mixToolIsOpen(), mixToolTabNow(), [...unlockedElements].join(), pendingElements.length, squadMode, player.selectedElement, mixToolTarget(), tot, battleFocus, mixToolPostureNow(), pool.some(a => a.retreatUntil > f0), mixToolFacility()].join("|");
+    return [mixToolIsOpen(), mixToolTabNow(), [...unlockedElements].join(), pendingElements.length, squadMode, player.selectedElement, mixToolTarget(), tot, battleFocus, mixToolPostureNow(), pool.some(a => a.retreatUntil > f0), mixToolFacility(), mixToolCorners() ? mixToolWho() : ""].join("|");
+}
+// who the orders go to, in words, for the corners layout's caption: how many follow, the one member picked, or how many are picked
+function mixToolWho() {
+    const sel = typeof selectedUnits !== "undefined" && selectedUnits.size && typeof ccSelectionList === "function" ? ccSelectionList() : [];
+    if (!sel.length) return (typeof partyMembers === "function" ? partyMembers().length : 0) + " FOLLOWING";
+    return sel.length === 1 ? (typeof unitTypeLabel === "function" ? unitTypeLabel(sel[0]) : "1 SELECTED") : sel.length + " SELECTED";
 }
 function mixToolHTML() {
     const parts = mixToolParts(), pend = pendingElements.length > 0, choices = typeof _modChoices === "function" && pend ? _modChoices() : [], open = mixToolIsOpen();
@@ -152,10 +164,14 @@ function mixToolHTML() {
         if (pend) h += '<div class="mt-hint gold">' + (pendingElements.length > 1 ? pendingElements.length + ' UNLOCKS EARNED' : 'UNLOCK EARNED') + ' \u2014 TAP GOLD</div>';
     } else {
         const sel = typeof selectedUnits !== "undefined" && selectedUnits.size && ccSelectionList().length, post = mixToolPostureNow(), pool = mixToolPool(), going = pool.some(a => a.retreatUntil > f0);
+        if (mixToolCorners()) {   // the corners layout: who the orders go to, and ONE button, ALL (lit while nobody's card is picked)
+            h += '<div class="mt-to"><span>ORDERS TO</span><b>' + _mtEsc(mixToolWho()) + '</b></div><button class="mt-all' + (!sel ? ' on' : '') + '" data-scope="all" aria-label="Orders to all of the squad"><b>ALL</b></button>';
+        } else {
         // WHO: the orders go to ALL, one element, or the selected roster cards (which win)
         h += '<div class="mt-who"><span class="mt-lab">' + (sel ? 'SEL ' + mixToolPool().length : 'WHO') + '</span><button class="mt-chip' + (!sel && squadMode === "all" ? ' on' : '') + '" data-scope="all" style="--c:#fff"><span>ALL</span></button>';
         ELEMENTS.filter(e => unlockedElements.has(e.id)).forEach(e => { h += '<button class="mt-chip gem' + (!sel && squadMode !== "all" && player.selectedElement === e.id ? ' on' : '') + '" data-scope="' + e.id + '" style="--c:' + e.color + '" aria-label="' + e.label + '">' + _MT_GEM(e.color, 14) + '</button>'; });
         h += '</div>';
+        }
         h += '<button class="mt-retreat' + (going ? ' going' : '') + '" data-act="retreat"><b>' + (going ? 'FALLING BACK' : 'RETREAT') + '</b></button>';
         h += '<div class="mt-orders">' + MIXTOOL_ORDERS.map(o => '<button class="mt-ord" data-order="' + o.id + '" style="--c:' + o.col + '"><b>' + o.label + '</b></button>').join('') + '</div>';
     }

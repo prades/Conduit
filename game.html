@@ -918,6 +918,106 @@
     #ccRoot .cc-open-t { font: italic 900 18px var(--neo-font); color: #6d7fa6; } #ccRoot .cc-open-s { font: 700 10px monospace; color: #6d7fa6; letter-spacing: 0.04em; }
     #ccRoot .cc-btn.big { min-height: 54px; } #ccRoot .cc-btn.big .cc-bl { font-size: 17px; } #ccRoot .cc-btn.full { flex: 1 1 100%; }
     #ccRoot .cc-tag.squad { color: #19e6c1; border-color: #19e6c1; }
+    /* ═══ THE CAROUSEL (docs/UI-STYLE.md, "The roster"): the facility's Command Center on a tablet or a desktop (#ccRoot.carousel; .slabs is its look, on the zones page too: js/commandcenter.js ccCarousel). The squad's three slots across the top, the creature in view
+       big in the middle with its settings beside it, the filters and a strip of everyone under that (RECRUIT is the strip's last tile: there is no recruit button at the top), and one bar at the foot. A phone keeps the grid of cards and the side panel ═══ */
+    .sb-no, .sb-x, .cc-disband, .cc-focus, .cc-swap, .cc-no { display: none; } .sb-row { display: contents; }
+    #ccRoot.slabs { padding: 20px 16px 18px; background: linear-gradient(180deg, #080d1c, #04060e); }   /* (the 10 px at each side of the header and the body are room for the slabs' slanted edges, which the body's scroll would cut; opaque, so the plate the canvas draws behind does not show through) */
+    #ccRoot.slabs .cc-body { padding: 0 10px; }
+    #ccRoot.slabs .cc-head { gap: 16px; padding: 0 10px 16px; }
+    #ccRoot.slabs .cc-title { font-size: 40px; line-height: 1; text-shadow: 0 0 18px rgba(25,230,193,0.7); } #ccRoot.slabs .cc-summary { font: 700 11px monospace; letter-spacing: 0.08em; }
+    #ccRoot.slabs .cc-sh-n { font-size: 32px; line-height: 1; } #ccRoot.slabs .cc-sh-c { font-size: 11px; letter-spacing: 0.08em; }
+    #ccRoot.slabs .cc-close { position: relative; isolation: isolate; clip-path: none; border: 0; background: none; box-shadow: none; height: 52px; padding: 0 26px; font-size: 21px; letter-spacing: 0.03em; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    #ccRoot.slabs .cc-close::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--neo-red); box-shadow: 0 0 12px -2px var(--neo-red), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.slabs .cc-sqbtn::before { border-color: var(--neo-teal); box-shadow: 0 0 12px -2px var(--neo-teal), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.slabs .cc-sqbtn.on { background: none; color: #05070f; text-shadow: none; } #ccRoot.slabs .cc-sqbtn.on::before { background: var(--neo-teal); box-shadow: 0 0 16px var(--neo-teal); }
+    #ccRoot.carousel .cc-body { display: grid; grid-template-columns: minmax(0, 1fr) 256px; grid-template-rows: auto minmax(236px, 1fr) auto auto auto; grid-template-areas: "squad squad" "focus side" "filters filters" "strip strip" "swap swap"; gap: 14px 20px; padding: 0 10px; overflow-y: auto; overflow-x: hidden; }
+    #ccRoot.carousel .cc-main { display: contents; }
+    #ccRoot.carousel .cc-sqbox { grid-area: squad; padding: 0; } #ccRoot.carousel .cc-focus { grid-area: focus; } #ccRoot.carousel .cc-side { grid-area: side; } #ccRoot.carousel .cc-filters { grid-area: filters; } #ccRoot.carousel .cc-grid { grid-area: strip; } #ccRoot.carousel .cc-swap { grid-area: swap; }
+    /* the buttons of the panels, as slabs */
+    #ccRoot.carousel .cc-btn { position: relative; isolation: isolate; border: 0; background: none; box-shadow: none; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    #ccRoot.carousel .cc-btn::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.carousel .cc-btn.on { background: none; color: #05070f; text-shadow: none; } #ccRoot.carousel .cc-btn.on::before { background: var(--c); box-shadow: 0 0 16px var(--c); } #ccRoot.carousel .cc-btn.on .cc-bs { color: #05070f; }
+    #ccRoot.carousel .cc-btn.mix { background: none; } #ccRoot.carousel .cc-btn.mix::before { border-style: dashed; } #ccRoot.carousel .cc-btn:disabled::before { box-shadow: none; }
+    /* the squad: three slots and DISBAND */
+    #ccRoot.carousel .cc-sqbox-h { display: none; }
+    #ccRoot.carousel .cc-sqbox-row { display: flex; align-items: stretch; gap: 14px; } #ccRoot.carousel #ccSquadBox { flex: 1; min-width: 0; gap: 14px; }
+    #ccRoot.carousel #ccSquadBox .sb-slot { --c: #19e6c1; flex: 1 1 0; min-width: 0; height: 74px; padding: 0 14px 0 22px; gap: 10px; clip-path: none; border-left: 0; background: none; isolation: isolate; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    #ccRoot.carousel #ccSquadBox .sb-slot::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.carousel #ccSquadBox .sb-slot::after { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 5px; z-index: -1; background: var(--c); transform: skewX(-9deg); box-shadow: 0 0 8px var(--c); }
+    #ccRoot.carousel #ccSquadBox .sb-slot:hover, #ccRoot.carousel #ccSquadBox .sb-slot.sel { background: none; border-left-width: 0; padding-left: 22px; }
+    #ccRoot.carousel #ccSquadBox .sb-slot.sel::before { background: linear-gradient(180deg, #143a44, #08141c); box-shadow: 0 0 18px var(--c), inset 0 0 14px rgba(25,230,193,0.25); }
+    #ccRoot.carousel #ccSquadBox .sb-no { display: flex; align-items: center; justify-content: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--c); color: #05070f; font: italic 900 14px/1 var(--neo-font); text-shadow: none; }
+    #ccRoot.carousel #ccSquadBox .sb-thumb { width: 40px; height: 40px; }
+    #ccRoot.carousel #ccSquadBox .sb-txt { gap: 5px; } #ccRoot.carousel #ccSquadBox .sb-name { font-size: 16px; color: #fff; padding-right: 0; }
+    #ccRoot.carousel #ccSquadBox .sb-row { display: flex; align-items: center; gap: 10px; min-width: 0; } #ccRoot.carousel #ccSquadBox .sb-sub { flex: 1 1 auto; min-width: 0; font-size: 10px; letter-spacing: 0.06em; }
+    #ccRoot.carousel #ccSquadBox .sb-x { display: block; flex: none; position: relative; isolation: isolate; padding: 3px 8px; border: 0; background: none; cursor: pointer; touch-action: manipulation; color: #ffb09a; font: 800 10px/1.2 monospace; letter-spacing: 0.06em; text-shadow: none; }
+    #ccRoot.carousel #ccSquadBox .sb-x::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); border: 1.5px solid var(--neo-red); background: rgba(255,74,28,0.12); } #ccRoot.carousel #ccSquadBox .sb-x:hover::before { background: var(--neo-red); } #ccRoot.carousel #ccSquadBox .sb-x:hover { color: #05070f; }
+    #ccRoot.carousel #ccSquadBox .sb-hp { height: 5px; } #ccRoot.carousel #ccSquadBox .sb-info { display: none; }
+    #ccRoot.carousel #ccSquadBox .sb-slot.empty { justify-content: center; padding: 0 16px; } #ccRoot.carousel #ccSquadBox .sb-slot.empty .sb-no { display: none; } #ccRoot.carousel #ccSquadBox .sb-slot.empty::after { display: none; }
+    #ccRoot.carousel #ccSquadBox .sb-slot.empty::before { border: 2px dashed #3d5a8a; box-shadow: none; background: rgba(5,7,15,0.6); } #ccRoot.carousel #ccSquadBox .sb-slot.empty.call::before { border-color: #19e6c1; background: rgba(4,26,28,0.9); }
+    #ccRoot.carousel #ccSquadBox .sb-open { font-size: 15px; }
+    #ccRoot.carousel .cc-disband { display: block; position: relative; isolation: isolate; flex: none; width: 150px; border: 0; background: none; cursor: pointer; touch-action: manipulation; color: #fff; font: italic 900 17px/1 var(--neo-font); letter-spacing: 0.03em; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    #ccRoot.carousel .cc-disband::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--neo-red); box-shadow: 0 0 12px -2px var(--neo-red), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.carousel .cc-disband:hover::before { background: color-mix(in srgb, var(--neo-red) 30%, #05070f); } #ccRoot.carousel .cc-disband:disabled { opacity: 0.4; cursor: default; } #ccRoot.carousel .cc-disband:disabled::before { box-shadow: none; }
+    /* the creature in view */
+    #ccRoot.carousel .cc-focus { display: flex; align-items: stretch; gap: 14px; min-height: 0; }
+    #ccRoot.carousel .cf-arrow { align-self: center; flex: none; width: 62px; height: 62px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 3px solid var(--neo-teal); background: #0a1022; color: var(--neo-teal); box-shadow: 0 0 16px var(--neo-teal); cursor: pointer; touch-action: manipulation; }
+    #ccRoot.carousel .cf-arrow svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    #ccRoot.carousel .cf-arrow:hover { background: var(--neo-teal); color: #05070f; } #ccRoot.carousel .cf-arrow:disabled { opacity: 0.28; box-shadow: none; cursor: default; background: #0a1022; color: var(--neo-teal); }
+    #ccRoot.carousel .cf-card { --c: #19e6c1; position: relative; isolation: isolate; flex: 1; min-width: 0; display: flex; gap: 24px; padding: 20px 24px; box-sizing: border-box; }
+    #ccRoot.carousel .cf-card::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-2deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 14px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.carousel .cf-art { position: relative; flex: none; height: 100%; aspect-ratio: 224 / 252; max-width: 46%; box-sizing: border-box; border: 2px solid var(--c); background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--c) 52%, #0a1022), #05070f 78%); box-shadow: 0 0 18px -4px var(--c), inset 0 0 24px rgba(0,0,0,0.6); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+    #ccRoot.carousel .cf-cv { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 14px var(--c)); }
+    #ccRoot.carousel .cf-lv { position: absolute; left: 10px; top: 10px; padding: 4px 9px; background: #05070f; border: 2px solid var(--c); font: italic 900 14px/1 var(--neo-font); color: #fff; }
+    #ccRoot.carousel .cf-el { position: absolute; left: 10px; bottom: 10px; padding: 3px 10px; background: var(--c); color: #05070f; font: italic 900 11px/1.1 var(--neo-font); letter-spacing: 0.04em; transform: skewX(-9deg); }
+    #ccRoot.carousel .cf-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+    #ccRoot.carousel .cf-name { font: italic 900 30px/1.05 var(--neo-font); color: var(--c); text-shadow: 0 0 16px color-mix(in srgb, var(--c) 70%, transparent); overflow-wrap: anywhere; }
+    #ccRoot.carousel .cf-state { align-self: flex-start; padding: 3px 10px; background: var(--tc, #19e6c1); color: #05070f; font: italic 900 11px/1.1 var(--neo-font); letter-spacing: 0.04em; transform: skewX(-9deg); white-space: nowrap; }
+    #ccRoot.carousel .cf-bars { display: flex; flex-direction: column; gap: 11px; margin-top: 4px; }
+    #ccRoot.carousel .cf-bar { display: grid; grid-template-columns: 84px minmax(0, 1fr) minmax(70px, max-content); align-items: center; gap: 12px; font: 700 11px/1 monospace; letter-spacing: 0.06em; color: #aebbdc; }
+    #ccRoot.carousel .cf-bar i { display: block; height: 10px; background: #1b2646; transform: skewX(-9deg); } #ccRoot.carousel .cf-bar i b { display: block; height: 100%; background: var(--c); } #ccRoot.carousel .cf-bar.mid i b { background: #ffd34d; } #ccRoot.carousel .cf-bar.low i b { background: #ff5a3a; }
+    #ccRoot.carousel .cf-bar em { font-style: normal; text-align: right; font-size: 13px; color: #fff; white-space: nowrap; }
+    #ccRoot.carousel .cf-none { display: none; flex: 1; align-items: center; justify-content: center; text-align: center; font: 800 13px/1.5 monospace; letter-spacing: 0.06em; color: #8aa0c8; }
+    #ccRoot.carousel .cf-card.none .cf-art, #ccRoot.carousel .cf-card.none .cf-txt { display: none; } #ccRoot.carousel .cf-card.none .cf-none { display: flex; }
+    /* its settings, beside it */
+    #ccRoot.carousel .cc-side { width: auto; min-height: 0; padding: 0 4px 22px 0; gap: 10px; background: none; border: 0; box-shadow: none; clip-path: none; -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 22px), transparent); }   /* (a long list of traits fades out at the foot: it scrolls) */
+    #ccRoot.carousel .cc-dd { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "k a" "v a"; align-items: center; row-gap: 5px; position: relative; isolation: isolate; flex: none; min-height: 54px; padding: 0 16px; border: 0; background: none; box-shadow: none; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    #ccRoot.carousel .cc-dd::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.carousel .cc-dd.open { background: none; box-shadow: none; } #ccRoot.carousel .cc-dd.open::before { background: color-mix(in srgb, var(--c) 20%, #05070f); }
+    #ccRoot.carousel .cc-dd.off .cc-dd-v { font-size: 11.5px; line-height: 1.1; white-space: nowrap; } #ccRoot.carousel .cc-dd .cc-dd-k { grid-area: k; width: auto; font: 700 10px/1 monospace; letter-spacing: 0.08em; color: #8aa0c8; } #ccRoot.carousel .cc-dd .cc-dd-v { grid-area: v; font-size: 16px; line-height: 1; } #ccRoot.carousel .cc-dd .cc-dd-a { grid-area: a; font-size: 13px; }
+    #ccRoot.carousel .cc-dd-list { padding: 4px 0 6px 10px; } #ccRoot.carousel .cc-btn.act { flex: 1 1 0; min-width: 0; min-height: 46px; padding: 0 10px; align-items: center; } #ccRoot.carousel .cc-btn.act .cc-bl { font-size: 13px; }
+    #ccRoot.carousel .cc-stats { margin-top: 4px; } #ccRoot.carousel .cc-stats .cc-sec { margin: 8px 0 2px; } #ccRoot.carousel .cc-stat { padding: 6px 2px; font-size: 12px; letter-spacing: 0.06em; border-bottom-color: #1b2646; }
+    /* the filters and the strip */
+    #ccRoot.carousel .cc-filters { padding: 0; gap: 6px; } #ccRoot.carousel .cc-filters .cc-btn.small { min-height: 30px; height: 30px; padding: 0 12px; align-items: center; } #ccRoot.carousel .cc-filters .cc-btn.small .cc-bl { font-size: 12.5px; letter-spacing: 0.04em; } #ccRoot.carousel .cc-filters .cc-btn.sep { margin-left: 10px; }
+    #ccRoot.carousel .cc-grid { display: flex; flex-wrap: nowrap; grid-template-columns: none; align-items: flex-end; align-content: normal; gap: 8px; flex: none; min-height: 124px; box-sizing: border-box; padding: 14px 6px 10px 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+    #ccRoot.carousel #ccGrid .cc-card { flex: 1 1 128px; min-width: 118px; max-width: 150px; position: relative; isolation: isolate; height: 88px; box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 1fr auto auto; align-items: center; gap: 4px 6px; padding: 10px 8px 9px 18px; border-left: 0; background: none; outline: 0; box-shadow: none; }
+    #ccRoot.carousel #ccGrid .cc-card:hover { background: none; }
+    #ccRoot.carousel #ccGrid .cc-card::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.carousel #ccGrid .cc-card::after { content: ""; position: absolute; left: 5px; top: 5px; bottom: 5px; width: 4px; z-index: -1; background: var(--c); transform: skewX(-9deg); }
+    #ccRoot.carousel #ccGrid .cc-card.sel { height: 100px; background: none; outline: 0; box-shadow: none; } #ccRoot.carousel #ccGrid .cc-card.sel::before { background: linear-gradient(180deg, #143a44, #08141c); box-shadow: 0 0 20px var(--c), inset 0 0 14px rgba(25,230,193,0.25); }
+    #ccRoot.carousel #ccGrid .cc-thumb { grid-column: 1; grid-row: 1; width: 30px; height: 30px; align-self: start; filter: none; } #ccRoot.carousel #ccGrid .cc-card.sel .cc-thumb { width: 34px; height: 34px; }
+    #ccRoot.carousel #ccGrid .cc-mid { display: contents; }
+    #ccRoot.carousel #ccGrid .cc-name { grid-column: 1 / -1; grid-row: 2; align-self: end; padding: 0; font-size: 10px; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #ccRoot.carousel #ccGrid .cc-sub, #ccRoot.carousel #ccGrid .cc-tags, #ccRoot.carousel #ccGrid .cc-info, #ccRoot.carousel #ccGrid .cc-tick { display: none; }
+    #ccRoot.carousel #ccGrid .cc-status { grid-column: 1 / -1; grid-row: 3; align-self: start; margin: 0; padding: 0; background: none; color: var(--c); font: 700 9px/1.1 monospace; letter-spacing: 0.06em; transform: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #ccRoot.carousel #ccGrid .cc-bar { grid-column: 1 / -1; grid-row: 4; height: 4px; border: 0; background: #1b2646; }
+    #ccRoot.carousel #ccGrid .cc-no { display: block; grid-column: 2; grid-row: 1; justify-self: end; align-self: start; width: 18px; height: 18px; border-radius: 50%; background: var(--c); color: #05070f; font: italic 900 10px/18px var(--neo-font); text-align: center; } #ccRoot.carousel #ccGrid .cc-no:empty { display: none; }
+    #ccRoot.carousel #ccGrid .cc-rtile { --c: #ffe733; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px 10px; text-align: center; cursor: pointer; }
+    #ccRoot.carousel #ccGrid .cc-rtile::before { border: 2px dashed var(--c); box-shadow: none; background: rgba(5,7,15,0.6); } #ccRoot.carousel #ccGrid .cc-rtile::after { display: none; } #ccRoot.carousel #ccGrid .cc-rtile:hover::before { background: rgba(255,231,51,0.12); }
+    #ccRoot.carousel .cc-rt-p { font: italic 900 22px/1 var(--neo-font); color: var(--c); } #ccRoot.carousel .cc-rt-t { font: italic 900 11px/1.1 var(--neo-font); color: var(--c); white-space: nowrap; } #ccRoot.carousel .cc-rt-s { font: 700 9px/1.1 monospace; letter-spacing: 0.06em; color: var(--c); white-space: nowrap; }
+    #ccRoot.carousel #ccGrid .cc-rtile.dim { --c: #8a8048; opacity: 0.85; }
+    /* the bar at the foot */
+    #ccRoot.carousel .cc-swap { display: flex; align-items: center; gap: 14px; min-height: 60px; }
+    #ccRoot.carousel .cc-sw-l { flex: 0 1 auto; max-width: 190px; font: italic 900 16px/1.2 var(--neo-font); color: var(--neo-gold); text-shadow: 0 0 10px rgba(255,231,51,0.35); } #ccRoot.carousel .cc-sw-l:only-child { max-width: none; font-size: 13px; letter-spacing: 0.04em; color: #8aa0c8; text-shadow: none; }
+    #ccRoot.carousel .cc-pick { --c: #19e6c1; position: relative; isolation: isolate; flex: 1 1 0; min-width: 0; max-width: 440px; height: 60px; display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 0 16px; border: 0; background: none; cursor: pointer; touch-action: manipulation; color: #fff; text-align: left; font: italic 900 14px/1 var(--neo-font); text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    #ccRoot.carousel .cc-pick::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); } #ccRoot.carousel .cc-pick:hover::before { background: color-mix(in srgb, var(--c) 24%, #05070f); }
+    #ccRoot.carousel .cc-pick .orb { flex: none; width: 26px; height: 26px; border-radius: 50%; background: radial-gradient(circle at 38% 34%, rgba(255,255,255,0.75), var(--c) 36%, rgba(0,0,0,0.55) 100%); box-shadow: 0 0 16px var(--c); }
+    #ccRoot.carousel .cc-pk-t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } #ccRoot.carousel .cc-pk-t small { display: block; margin-top: 5px; font: 700 9px/1 monospace; letter-spacing: 0.06em; color: #8aa0c8; overflow: hidden; text-overflow: ellipsis; }
+    @media (max-width: 1100px) { #ccRoot.carousel #ccSquadBox .sb-thumb { display: none; } #ccRoot.carousel #ccSquadBox .sb-sub { letter-spacing: 0.02em; } #ccRoot.carousel #ccSquadBox .sb-x { padding: 3px 6px; } #ccRoot.carousel #ccSquadBox .sb-name { font-size: 14.5px; } #ccRoot.carousel .cc-filters { gap: 5px; } #ccRoot.carousel .cc-filters .cc-btn.small { padding: 0 9px; } #ccRoot.carousel .cc-filters .cc-btn.small .cc-bl { font-size: 11.5px; letter-spacing: 0.02em; } #ccRoot.carousel .cc-filters .cc-btn.sep { margin-left: 6px; } #ccRoot.carousel .cc-pk-t small { letter-spacing: 0.02em; } #ccRoot.carousel .cc-body { grid-template-columns: minmax(0, 1fr) 232px; gap: 12px 16px; } #ccRoot.carousel .cf-card { gap: 18px; padding: 16px 18px; } #ccRoot.carousel .cf-name { font-size: 26px; } #ccRoot.carousel .cf-bar { grid-template-columns: 70px minmax(0, 1fr) minmax(62px, max-content); } #ccRoot.carousel .cf-arrow { width: 52px; height: 52px; } }
+    @media (max-width: 900px) { #ccRoot.carousel #ccSquadBox .sb-sub { display: none; } }   /* (the card in view says how it is) */
+    @media (max-width: 900px) { #ccRoot.slabs .cc-title { font-size: 28px; white-space: nowrap; } #ccRoot.slabs .cc-head { gap: 10px; } #ccRoot.slabs .cc-close { height: 44px; padding: 0 16px; font-size: 17px; white-space: nowrap; } }
+    @media (max-width: 820px) { #ccRoot.carousel .cc-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: auto; grid-template-areas: "squad" "focus" "side" "filters" "strip" "swap"; flex-direction: initial; } #ccRoot.carousel .cc-focus { height: 270px; min-height: 0; } #ccRoot.carousel .cc-stats { display: none; } #ccRoot.carousel .cc-side { min-height: auto; max-height: none; overflow: visible; padding-bottom: 0; -webkit-mask-image: none; mask-image: none; } #ccRoot.carousel .cc-disband { width: 104px; } #ccRoot.carousel #ccSquadBox .sb-slot { padding-left: 18px; padding-right: 10px; gap: 8px; } #ccRoot.carousel #ccSquadBox .sb-thumb { display: none; } }
+    @media (max-height: 760px) { #ccRoot.slabs { padding-top: 12px; padding-bottom: 12px; } #ccRoot.slabs .cc-head { padding-bottom: 10px; } #ccRoot.slabs .cc-title { font-size: 32px; } #ccRoot.slabs .cc-close { height: 44px; font-size: 18px; } #ccRoot.carousel .cc-body { gap: 10px 16px; } #ccRoot.carousel #ccSquadBox .sb-slot, #ccRoot.carousel .cc-disband { height: 62px; } #ccRoot.carousel .cc-swap { min-height: 52px; } #ccRoot.carousel .cc-pick { height: 52px; } #ccRoot.carousel .cf-card { padding: 14px 20px; } }
     /* ── THE FIRE TURRET AIM RING (js/firebombs.js): tap a fire turret, pick one of eight directions or AUTO ── */
     #unitInfo .ui-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; } #unitInfo .ui-choice { font: italic 900 15px var(--neo-font); padding: 8px 14px; color: #cfe0ff; background: #0b1226; border: 2px solid #8aa0c8; cursor: pointer; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); touch-action: manipulation; } #unitInfo .ui-choice.on { color: #05070f; background: var(--c, #ffe733); border-color: var(--c, #ffe733); }
     #aimRing { position: fixed; z-index: 14; width: 0; height: 0; display: none; } #aimRing.open { display: block; }
@@ -940,6 +1040,71 @@
     body.placing #mixTool, body.ccOpen #mixTool, body.panel-open #mixTool, body.placing #squadBar, body.ccOpen #squadBar, body.panel-open #squadBar { display: none !important; }
     @media (min-width: 701px) { #mixTool { bottom: calc(100px + var(--vv-bottom, 0px)); } #mixTool .mt-pod, #mixTool .mt-x { display: none; } #mixTool .mt-panel { position: static; } }
     @media (max-width: 700px) { #mixTool { left: 8px; } }
+    /* ═══ THE CORNERS (docs/UI-STYLE.md, "The HUD"): the facility on a tablet or a desktop (body.corners: js/party.js hudCorners). Every part of the HUD that works together has a corner: the player's own (crystals, health, ultimate) top left; the place (zone tag,
+       network, objective: js/facilitynet.js, js/tutorial.js) top right; the squad and its orders bottom left (the three cards stacked over RETREAT / HOLD / COME, and a tapped member's card beside them: js/squadfly.js); the target (the dial and the
+       ammunition, js/targeting.js, and the enemy card with its ATTACK) bottom right; the dock where it was. A phone (700 px or less) has none of it: body.corners is never set there, and the classic game keeps what it had. ═══ */
+    :root { --cn-bottom: 100px; --cn-w: 244px; --cn-card: 54px; --cn-tool: 178px; --cn-foe: 260px; --cn-fly: 340px; }
+    @media (max-width: 1100px) { :root { --cn-w: 232px; --cn-foe: 232px; --cn-fly: 318px; } }
+    @media (max-width: 900px) { :root { --cn-w: 214px; --cn-card: 50px; --cn-foe: 214px; --cn-fly: 280px; } }
+    @media (max-height: 640px) { :root { --cn-card: 44px; } }
+    /* me: the crystals and the two bars side by side, at the left; the place at the right */
+    body.corners #hudRow1 { justify-content: flex-start; } body.corners #hudRight { margin-left: auto; } body.corners #hudCentre { flex: 0 1 400px; }
+    @media (max-width: 900px) { body.corners #hudCentre { flex: 0 1 260px; } }
+    /* the orders: one slab, bottom left (the WHO row is gone: ALL, or the member whose card is picked) */
+    body.corners #mixTool { left: 14px; bottom: calc(var(--cn-bottom) + var(--vv-bottom, 0px)); }
+    body.corners #mixTool .mt-panel { position: relative; left: auto; bottom: auto; isolation: isolate; width: var(--cn-w); height: var(--cn-tool); padding: 10px 14px 12px 22px; clip-path: none; border: 0; background: none; box-sizing: border-box; }
+    body.corners #mixTool .mt-panel::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid #ffe733; box-shadow: 0 0 12px -2px #ffe733, inset 0 0 14px rgba(0,0,0,0.5); }
+    body.corners #mixTool .mt-panel::after { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 4px; z-index: -1; background: #ffe733; transform: skewX(-9deg); box-shadow: 0 0 8px #ffe733; }
+    body.corners #mixTool .mt-to { display: flex; justify-content: space-between; gap: 6px; height: 14px; overflow: hidden; white-space: nowrap; font: 700 10px/14px monospace; letter-spacing: 0.06em; color: #9fb2d8; text-transform: uppercase; }
+    body.corners #mixTool .mt-to b { font-weight: 700; color: #7fe9d6; overflow: hidden; text-overflow: ellipsis; }
+    body.corners #mixTool .mt-all, body.corners #mixTool .mt-retreat, body.corners #mixTool .mt-ord { position: relative; isolation: isolate; clip-path: none; border: 0; background: none; cursor: pointer; touch-action: manipulation; color: #fff; font-family: var(--neo-font); font-style: italic; font-weight: 900; letter-spacing: 0.04em; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    body.corners #mixTool .mt-all::before, body.corners #mixTool .mt-retreat::before, body.corners #mixTool .mt-ord::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    body.corners #mixTool .mt-all { --c: #19e6c1; display: block; width: 100%; height: 38px; margin-top: 7px; padding: 0; font-size: 17px; }
+    body.corners #mixTool .mt-all.on { color: #05070f; text-shadow: none; } body.corners #mixTool .mt-all.on::before { background: var(--c); box-shadow: 0 0 16px var(--c); }
+    body.corners #mixTool .mt-retreat { --c: #ff4a1c; display: block; width: 100%; height: 44px; margin-top: 7px; padding: 0; font-size: 18px; letter-spacing: 0.06em; color: #05070f; text-shadow: none; }
+    body.corners #mixTool .mt-retreat::before { background: var(--c); box-shadow: 0 0 16px var(--c); } body.corners #mixTool .mt-retreat:hover { filter: brightness(1.12); }
+    body.corners #mixTool .mt-retreat.going { color: #ff9a7a; } body.corners #mixTool .mt-retreat.going::before { background: #3a1a10; box-shadow: none; }
+    body.corners #mixTool .mt-orders { gap: 6px; margin-top: 7px; } body.corners #mixTool .mt-ord { height: 38px; padding: 0; font-size: 16px; }
+    body.corners #mixTool .mt-ord:hover, body.corners #mixTool .mt-ord:active { color: #05070f; text-shadow: none; } body.corners #mixTool .mt-ord:hover::before, body.corners #mixTool .mt-ord:active::before { background: var(--c); }
+    /* the squad: three cards stacked over the orders */
+    body.corners #squadBar { left: 14px; right: auto; transform: none; bottom: calc(var(--cn-bottom) + var(--cn-tool) + 12px + var(--vv-bottom, 0px)); flex-direction: column; gap: 8px; width: var(--cn-w); }
+    body.corners #squadBar .sb-slot { --c: #19e6c1; width: var(--cn-w); height: var(--cn-card); padding: 5px 12px 5px 20px; clip-path: none; border-left: 0; background: none; isolation: isolate; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    body.corners #squadBar .sb-slot::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    body.corners #squadBar .sb-slot::after { content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 4px; z-index: -1; background: var(--c); transform: skewX(-9deg); box-shadow: 0 0 8px var(--c); }
+    body.corners #squadBar .sb-slot:hover, body.corners #squadBar .sb-slot.sel { background: none; border-left-width: 0; padding-left: 20px; }
+    body.corners #squadBar .sb-slot.sel::before { background: linear-gradient(180deg, #143a44, #08141c); box-shadow: 0 0 18px var(--c), inset 0 0 14px rgba(25,230,193,0.25); }
+    body.corners #squadBar .sb-slot.empty { background: none; border-left: 0; justify-content: center; }
+    body.corners #squadBar .sb-slot.empty::before { border: 2px dashed #6f95d6; box-shadow: none; background: rgba(5,7,15,0.82); } body.corners #squadBar .sb-slot.empty::after { display: none; }
+    body.corners #squadBar .sb-slot.empty.call { background: none; } body.corners #squadBar .sb-slot.empty.call::before { border-color: #19e6c1; background: rgba(4,26,28,0.9); }
+    body.corners #squadBar .sb-thumb { width: 38px; height: 38px; } body.corners #squadBar .sb-name { font-size: 13px; padding-right: 18px; } body.corners #squadBar .sb-sub { display: block; font-size: 9px; } body.corners #squadBar .sb-info { right: 14px; top: 6px; } body.corners #squadBar .sb-open { font-size: 14px; }
+    /* the target: the enemy card at the bottom right (the dial and the ammunition are drawn over it, js/targeting.js) */
+    body.corners #mixTool .mt-foe-slot { position: fixed; right: 14px; bottom: calc(var(--cn-bottom) + var(--vv-bottom, 0px)); width: var(--cn-foe); }
+    body.corners #mixTool .mt-foe { width: 100%; max-width: none; margin: 0; padding: 9px 16px 10px 18px; border: 0; clip-path: none; background: none; isolation: isolate; position: relative; }
+    body.corners #mixTool .mt-foe::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    body.corners #mixTool .mt-foe-go { position: relative; isolation: isolate; margin: 7px 0 0; padding: 8px 6px; background: none; font-size: 14px; color: #05070f; text-shadow: none; }
+    body.corners #mixTool .mt-foe-go::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: #ff4a1c; box-shadow: 0 0 14px #ff4a1c; }
+    body.corners #mixTool .mt-foe.going .mt-foe-go { color: #ff9a7a; } body.corners #mixTool .mt-foe.going .mt-foe-go::before { background: #3a1a10; box-shadow: none; }
+    body.corners #mixTool .mt-foe.idle .mt-foe-go { color: #6d7fa6; } body.corners #mixTool .mt-foe.idle .mt-foe-go::before { background: #1d2540; box-shadow: none; }
+    /* a tapped member's card, beside the stack (js/squadfly.js) */
+    #squadFly { position: fixed; z-index: 14; display: none; width: var(--cn-fly); box-sizing: border-box; font-family: var(--neo-font); pointer-events: none; }
+    body.corners #squadFly.on { display: block; } body.placing #squadFly, body.ccOpen #squadFly, body.panel-open #squadFly { display: none !important; }
+    #squadFly .sf-card { --c: #ffe733; position: relative; isolation: isolate; pointer-events: auto; padding: 14px 16px 14px 20px; display: flex; flex-direction: column; gap: 10px; color: #e8f0ff; }
+    #squadFly .sf-card::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-3deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 14px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    #squadFly .sf-tip { position: absolute; left: -13px; top: 22px; width: 0; height: 0; border: 11px solid transparent; border-left: 0; border-right: 13px solid var(--c); filter: drop-shadow(0 0 5px var(--c)); }
+    #squadFly .sf-head { display: flex; align-items: center; gap: 12px; } #squadFly .sf-ht { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+    #squadFly .sf-thumb { flex: none; width: 54px; height: 54px; background: #0b1226; border: 2px solid var(--c); box-sizing: border-box; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%); }
+    #squadFly .sf-name { font: italic 900 18px/1 var(--neo-font); color: var(--c); text-shadow: 0 0 10px color-mix(in srgb, var(--c) 55%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    #squadFly .sf-sub { font: 700 10.5px/1 monospace; font-style: normal; letter-spacing: 0.06em; color: #cfd9f0; white-space: nowrap; }
+    #squadFly .sf-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    #squadFly .sf-tag { padding: 3px 9px; font: italic 900 11px/1.1 var(--neo-font); color: #05070f; background: #19e6c1; transform: skewX(-9deg); letter-spacing: 0.04em; white-space: nowrap; }
+    #squadFly .sf-rt { padding: 2px 6px; border: 1px solid #4a5a82; font: 700 10px/1.2 monospace; color: #cfd9f0; letter-spacing: 0.06em; }
+    #squadFly .sf-hp { display: flex; align-items: center; gap: 10px; font: 700 10px/1 monospace; color: #9fb2d8; letter-spacing: 0.06em; } #squadFly .sf-hp .sb-hp { flex: 1; display: block; height: 6px; background: rgba(255,255,255,0.14); } #squadFly .sf-hp .sb-hp u { display: block; height: 100%; width: 100%; background: #5fe0a0; text-decoration: none; } #squadFly .sf-hp .sb-hp u.mid { background: #ffd34d; } #squadFly .sf-hp .sb-hp u.low { background: #ff5a3a; } #squadFly .sf-hp em { font-style: normal; color: #fff; }
+    #squadFly .sf-kv { display: flex; gap: 22px; } #squadFly .sf-kv span { flex: 1; display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1b2646; font: 700 11px/1 monospace; color: #aebbdc; letter-spacing: 0.06em; } #squadFly .sf-kv b { color: #fff; font-size: 12px; }
+    #squadFly .sf-btns { display: flex; gap: 8px; margin-top: 2px; }
+    #squadFly .sf-btn { position: relative; isolation: isolate; height: 50px; padding: 0 10px; border: 0; background: none; cursor: pointer; touch-action: manipulation; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: italic 900 14px/1 var(--neo-font); color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
+    #squadFly .sf-btn::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--b); box-shadow: 0 0 12px -2px var(--b); }
+    #squadFly .sf-btn:hover::before { background: color-mix(in srgb, var(--b) 30%, #05070f); } #squadFly .sf-btn small { font: 700 8.5px/1 monospace; letter-spacing: 0.05em; color: #9fb2d8; text-transform: uppercase; }
+    #squadFly .sf-index { --b: #8fe3ff; width: 108px; flex: none; } #squadFly .sf-dismiss { --b: #ff4a1c; flex: 1; min-width: 0; }
     /* ═══ THE GAME INDEX, NEO-FUTURISTIC BLUE ═══
        The ? panel in the layout style: a deep-navy slab with a blue glow, italic headings, slanted tabs and chips. Blue is the accent; element colours stay as they are.
        (Overrides the older green terminal look above it; every selector keeps its #controlsMenu prefix so the cascade is plain.) */
@@ -1039,6 +1204,7 @@
 </div>
 <div id="mixTool" aria-label="Mix selector"></div>
 <div id="squadBar" aria-label="Your squad"></div>
+<div id="squadFly" aria-label="A squad member's card"></div>
 <div id="aimRing" aria-label="Aim the fire turret"></div>
 <div id="wallUnit" aria-label="Wall power unit"></div>
 
@@ -1819,12 +1985,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-27n, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-27o, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-27n";
+window.__PAGE_BUILD = "2026-10-27o";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1860,96 +2026,97 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-27n"></script>
-<script src="js/icons.js?v=2026-10-27n"></script>
-<script src="js/uikit.js?v=2026-10-27n"></script>
-<script src="js/rng.js?v=2026-10-27n"></script>
-<script src="js/traits.js?v=2026-10-27n"></script>
-<script src="js/elements.js?v=2026-10-27n"></script>
-<script src="js/combat.js?v=2026-10-27n"></script>
-<script src="js/species.js?v=2026-10-27n"></script>
-<script src="js/levels.js?v=2026-10-27n"></script>
-<script src="js/status.js?v=2026-10-27n"></script>
-<script src="js/predator_randomizer.js?v=2026-10-27n"></script>
-<script src="js/mass.js?v=2026-10-27n"></script>
-<script src="js/infest.js?v=2026-10-27n"></script>
-<script src="js/power.js?v=2026-10-27n"></script>
-<script src="js/save.js?v=2026-10-27n"></script>
-<script src="js/camp.js?v=2026-10-27n"></script>
-<script src="js/wavedata.js?v=2026-10-27n"></script>
-<script src="js/helpers.js?v=2026-10-27n"></script>
-<script src="js/predator.js?v=2026-10-27n"></script>
-<script src="js/abilities.js?v=2026-10-27n"></script>
-<script src="js/world.js?v=2026-10-27n"></script>
-<script src="js/commands.js?v=2026-10-27n"></script>
-<script src="js/npc.js?v=2026-10-27n"></script>
-<script src="js/codex.js?v=2026-10-27n"></script>
-<script src="js/draw.js?v=2026-10-27n"></script>
-<script src="js/beetle3d.js?v=2026-10-27n"></script>
-<script src="js/bugs3d.js?v=2026-10-27n"></script>
-<script src="js/ui.js?v=2026-10-27n"></script>
-<script src="js/waves.js?v=2026-10-27n"></script>
-<script src="js/drops.js?v=2026-10-27n"></script>
-<script src="js/clone.js?v=2026-10-27n"></script>
-<script src="js/clonework.js?v=2026-10-27n"></script>
-<script src="js/broods.js?v=2026-10-27n"></script>
-<script src="js/raids.js?v=2026-10-27n"></script>
-<script src="js/ultra.js?v=2026-10-27n"></script>
-<script src="js/formations.js?v=2026-10-27n"></script>
-<script src="js/breakout.js?v=2026-10-27n"></script>
-<script src="js/nightraids.js?v=2026-10-27n"></script>
-<script src="js/bonds.js?v=2026-10-27n"></script>
-<script src="js/autoplay.js?v=2026-10-27n"></script>
-<script src="js/indexart.js?v=2026-10-27n"></script>
-<script src="js/modules.js?v=2026-10-27n"></script>
-<script src="js/shieldcells.js?v=2026-10-27n"></script>
-<script src="js/evolution.js?v=2026-10-27n"></script>
-<script src="js/hdsprites.js?v=2026-10-27n"></script>
-<script src="js/firebombs.js?v=2026-10-27n"></script>
-<script src="js/wallunit.js?v=2026-10-27n"></script>
-<script src="js/labwall.js?v=2026-10-27n"></script>
-<script src="js/moves.js?v=2026-10-27n"></script>
-<script src="js/squads.js?v=2026-10-27n"></script>
-<script src="js/buildmenu.js?v=2026-10-27n"></script>
-<script src="js/hudgems.js?v=2026-10-27n"></script>
-<script src="js/nethud.js?v=2026-10-27n"></script>
-<script src="js/commandcenter.js?v=2026-10-27n"></script>
-<script src="js/unitinfo.js?v=2026-10-27n"></script>
-<script src="js/infodex.js?v=2026-10-27n"></script>
-<script src="js/classes.js?v=2026-10-27n"></script>
-<script src="js/playergear.js?v=2026-10-27n"></script>
-<script src="js/inventory.js?v=2026-10-27n"></script>
-<script src="js/weapons.js?v=2026-10-27n"></script>
-<script src="js/stations.js?v=2026-10-27n"></script>
-<script src="js/facilityportals.js?v=2026-10-27n"></script>
-<script src="js/tutorial.js?v=2026-10-27n"></script>
-<script src="js/facilitymap.js?v=2026-10-27n"></script>
-<script src="js/facilitygrow.js?v=2026-10-27n"></script>
-<script src="js/facility.js?v=2026-10-27n"></script>
-<script src="js/attract.js?v=2026-10-27n"></script>
-<script src="js/facilitysave.js?v=2026-10-27n"></script>
-<script src="js/facilityplay.js?v=2026-10-27n"></script>
-<script src="js/facilitydecor.js?v=2026-10-27n"></script>
-<script src="js/propatlas.js?v=2026-10-27n"></script>
-<script src="js/propsprites.js?v=2026-10-27n"></script>
-<script src="js/facilitystyle.js?v=2026-10-27n"></script>
-<script src="js/facilitystyleall.js?v=2026-10-27n"></script>
-<script src="js/facilitynet.js?v=2026-10-27n"></script>
-<script src="js/facilityspawn.js?v=2026-10-27n"></script>
-<script src="js/followerspots.js?v=2026-10-27n"></script>
-<script src="js/party.js?v=2026-10-27n"></script>
-<script src="js/facilitytutorial.js?v=2026-10-27n"></script>
-<script src="js/zones.js?v=2026-10-27n"></script>
-<script src="js/kits.js?v=2026-10-27n"></script>
-<script src="js/kitui.js?v=2026-10-27n"></script>
-<script src="js/toolbox.js?v=2026-10-27n"></script>
-<script src="js/mixtool.js?v=2026-10-27n"></script>
-<script src="js/radialmenu.js?v=2026-10-27n"></script>
-<script src="js/input.js?v=2026-10-27n"></script>
-<script src="js/gunfire.js?v=2026-10-27n"></script>
-<script src="js/targeting.js?v=2026-10-27n"></script>
-<script src="js/game.js?v=2026-10-27n"></script>
-<script src="js/dev.js?v=2026-10-27n"></script>
+<script src="js/config.js?v=2026-10-27o"></script>
+<script src="js/icons.js?v=2026-10-27o"></script>
+<script src="js/uikit.js?v=2026-10-27o"></script>
+<script src="js/rng.js?v=2026-10-27o"></script>
+<script src="js/traits.js?v=2026-10-27o"></script>
+<script src="js/elements.js?v=2026-10-27o"></script>
+<script src="js/combat.js?v=2026-10-27o"></script>
+<script src="js/species.js?v=2026-10-27o"></script>
+<script src="js/levels.js?v=2026-10-27o"></script>
+<script src="js/status.js?v=2026-10-27o"></script>
+<script src="js/predator_randomizer.js?v=2026-10-27o"></script>
+<script src="js/mass.js?v=2026-10-27o"></script>
+<script src="js/infest.js?v=2026-10-27o"></script>
+<script src="js/power.js?v=2026-10-27o"></script>
+<script src="js/save.js?v=2026-10-27o"></script>
+<script src="js/camp.js?v=2026-10-27o"></script>
+<script src="js/wavedata.js?v=2026-10-27o"></script>
+<script src="js/helpers.js?v=2026-10-27o"></script>
+<script src="js/predator.js?v=2026-10-27o"></script>
+<script src="js/abilities.js?v=2026-10-27o"></script>
+<script src="js/world.js?v=2026-10-27o"></script>
+<script src="js/commands.js?v=2026-10-27o"></script>
+<script src="js/npc.js?v=2026-10-27o"></script>
+<script src="js/codex.js?v=2026-10-27o"></script>
+<script src="js/draw.js?v=2026-10-27o"></script>
+<script src="js/beetle3d.js?v=2026-10-27o"></script>
+<script src="js/bugs3d.js?v=2026-10-27o"></script>
+<script src="js/ui.js?v=2026-10-27o"></script>
+<script src="js/waves.js?v=2026-10-27o"></script>
+<script src="js/drops.js?v=2026-10-27o"></script>
+<script src="js/clone.js?v=2026-10-27o"></script>
+<script src="js/clonework.js?v=2026-10-27o"></script>
+<script src="js/broods.js?v=2026-10-27o"></script>
+<script src="js/raids.js?v=2026-10-27o"></script>
+<script src="js/ultra.js?v=2026-10-27o"></script>
+<script src="js/formations.js?v=2026-10-27o"></script>
+<script src="js/breakout.js?v=2026-10-27o"></script>
+<script src="js/nightraids.js?v=2026-10-27o"></script>
+<script src="js/bonds.js?v=2026-10-27o"></script>
+<script src="js/autoplay.js?v=2026-10-27o"></script>
+<script src="js/indexart.js?v=2026-10-27o"></script>
+<script src="js/modules.js?v=2026-10-27o"></script>
+<script src="js/shieldcells.js?v=2026-10-27o"></script>
+<script src="js/evolution.js?v=2026-10-27o"></script>
+<script src="js/hdsprites.js?v=2026-10-27o"></script>
+<script src="js/firebombs.js?v=2026-10-27o"></script>
+<script src="js/wallunit.js?v=2026-10-27o"></script>
+<script src="js/labwall.js?v=2026-10-27o"></script>
+<script src="js/moves.js?v=2026-10-27o"></script>
+<script src="js/squads.js?v=2026-10-27o"></script>
+<script src="js/buildmenu.js?v=2026-10-27o"></script>
+<script src="js/hudgems.js?v=2026-10-27o"></script>
+<script src="js/nethud.js?v=2026-10-27o"></script>
+<script src="js/commandcenter.js?v=2026-10-27o"></script>
+<script src="js/unitinfo.js?v=2026-10-27o"></script>
+<script src="js/infodex.js?v=2026-10-27o"></script>
+<script src="js/classes.js?v=2026-10-27o"></script>
+<script src="js/playergear.js?v=2026-10-27o"></script>
+<script src="js/inventory.js?v=2026-10-27o"></script>
+<script src="js/weapons.js?v=2026-10-27o"></script>
+<script src="js/stations.js?v=2026-10-27o"></script>
+<script src="js/facilityportals.js?v=2026-10-27o"></script>
+<script src="js/tutorial.js?v=2026-10-27o"></script>
+<script src="js/facilitymap.js?v=2026-10-27o"></script>
+<script src="js/facilitygrow.js?v=2026-10-27o"></script>
+<script src="js/facility.js?v=2026-10-27o"></script>
+<script src="js/attract.js?v=2026-10-27o"></script>
+<script src="js/facilitysave.js?v=2026-10-27o"></script>
+<script src="js/facilityplay.js?v=2026-10-27o"></script>
+<script src="js/facilitydecor.js?v=2026-10-27o"></script>
+<script src="js/propatlas.js?v=2026-10-27o"></script>
+<script src="js/propsprites.js?v=2026-10-27o"></script>
+<script src="js/facilitystyle.js?v=2026-10-27o"></script>
+<script src="js/facilitystyleall.js?v=2026-10-27o"></script>
+<script src="js/facilitynet.js?v=2026-10-27o"></script>
+<script src="js/facilityspawn.js?v=2026-10-27o"></script>
+<script src="js/followerspots.js?v=2026-10-27o"></script>
+<script src="js/party.js?v=2026-10-27o"></script>
+<script src="js/squadfly.js?v=2026-10-27o"></script>
+<script src="js/facilitytutorial.js?v=2026-10-27o"></script>
+<script src="js/zones.js?v=2026-10-27o"></script>
+<script src="js/kits.js?v=2026-10-27o"></script>
+<script src="js/kitui.js?v=2026-10-27o"></script>
+<script src="js/toolbox.js?v=2026-10-27o"></script>
+<script src="js/mixtool.js?v=2026-10-27o"></script>
+<script src="js/radialmenu.js?v=2026-10-27o"></script>
+<script src="js/input.js?v=2026-10-27o"></script>
+<script src="js/gunfire.js?v=2026-10-27o"></script>
+<script src="js/targeting.js?v=2026-10-27o"></script>
+<script src="js/game.js?v=2026-10-27o"></script>
+<script src="js/dev.js?v=2026-10-27o"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2002,7 +2169,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-27n"></script>
+<script src="js/init.js?v=2026-10-27o"></script>
 
 </body>
 </html>

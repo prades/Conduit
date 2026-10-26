@@ -866,7 +866,7 @@ function getCommandPool(withHeld) {
     if (uiTab === "clones") return actors.filter(a => a.isClone && !a.dead);
     // The facility (js/party.js): the orders reach the SQUAD, not the followers holding rooms (select those in the roster to order them); COME reaches them too.
     const live = typeof partyOn === "function" && partyOn() && !withHeld ? (a => !a.dead && !a.post) : (a => !a.dead);
-    if (squadMode === "all") return followers.filter(live);
+    if (squadMode === "all" || (typeof hudCorners === "function" && hudCorners())) return followers.filter(live);   // (the corners layout has no element picker: the orders reach the whole squad, or the cards that are picked, above)
     if (selectedRole)        return followers.filter(a => live(a) && a.role === selectedRole);
     return (followerByElement[player.selectedElement] || []).filter(live);
 }

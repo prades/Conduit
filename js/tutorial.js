@@ -142,6 +142,7 @@ function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += 
 let _fpObjBottom = 0;   // where the objective plate ends on screen (0: not drawn): the enemy index card (js/targeting.js) goes under it
 const OBJ_BOX = { w: 54, h: 46, fold: 0.16, shake: 50 };   // the mailbox's size; how much of the unfolding each drawn frame does; how long (frames) it rattles when a new objective comes
 const _objHit = { x: 0, y: 0, w: 0, h: 0 };                // where a tap is the objective's now (w 0: nowhere)
+const _objBox = { x: 0, y: 0, w: 0, h: 0 };                // where the plate is drawn now (the tests read it: the corners layout puts it under the network panel at the top right)
 let _objPressed = false;                                   // the press began on it (js/input.js)
 function objectiveCompact() { return typeof innerWidth === "number" && innerWidth <= 700; }
 function _objOn(ex, ey) { const r = _objHit; return r.w > 0 && ex >= r.x && ex <= r.x + r.w && ey >= r.y && ey <= r.y + r.h; }
@@ -165,9 +166,11 @@ function _objBang(bx, by, f) {
     ctx.fillStyle = UI_INK; ctx.font = "bold " + Math.round(14 * k) + "px " + UI_FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("!", bx, by + 1); ctx.restore();
 }
 function facilityDrawObjective() {
-    _fpObjBottom = 0; _objHit.w = 0;
+    _fpObjBottom = 0; _objHit.w = 0; _objBox.w = 0;
     const S = _fp && _fp.tut && _fp.tut.script; if (!S || typeof uiSlab !== "function" || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen)) return;
-    const W = canvas.width, tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), w = Math.min(W - 24, 350), x = 12, y = 158, f = typeof frame !== "undefined" ? frame : 0;
+    // THE CORNERS (js/party.js hudCorners; a tablet or a desktop): the plate is the place's, under the network panel at the top right (the zone tag, the network, the objective: what is going on where you are); elsewhere it is top left, under the FACILITY · EXIT tab
+    const W = canvas.width, tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), corner = typeof hudCorners === "function" && hudCorners(), zr = corner && typeof _netZoneRect === "function" ? _netZoneRect() : null, f = typeof frame !== "undefined" ? frame : 0;
+    const w = Math.min(W - 24, corner ? 304 : 350), x = corner ? Math.max(12, Math.round((zr ? zr.right : W - 18) - w)) : 12, y = corner ? (typeof _fnBottom === "number" && _fnBottom > 0 ? _fnBottom + 10 : (zr ? Math.round(zr.bottom) + 140 : 190)) : 158;
     let key, title, body, hint = "", col = pc ? pc.colour : UI_TEAL;
     if (!tutDone) { const st = TUT_STEPS[S.step]; key = "t" + S.step; title = "OBJECTIVE " + (S.step + 1) + "/" + TUT_STEPS.length + "  ·  " + st.title; body = st.text(); hint = st.hint(); }
     else if (!pc) return;
@@ -178,7 +181,7 @@ function facilityDrawObjective() {
     if (S.objKey !== key) { S.objKey = key; S.objNewAt = f; }
     if (mail) { if (S.objOpen) S.objSeen = key; S.objK = Math.max(0, Math.min(1, (S.objK || 0) + (S.objOpen ? OBJ_BOX.fold : -OBJ_BOX.fold))); } else S.objK = 1;
     const k = S.objK, e = k * k * (3 - 2 * k), pw = mail ? OBJ_BOX.w + (w - OBJ_BOX.w) * e : w, ph = mail ? OBJ_BOX.h + (h - OBJ_BOX.h) * e : h, unread = mail && S.objSeen !== key;
-    _fpObjBottom = y + ph;
+    _fpObjBottom = y + ph; _objBox.x = x; _objBox.y = y; _objBox.w = pw; _objBox.h = ph;
     if (mail) { _objHit.x = x - 4; _objHit.y = y - 4; _objHit.w = pw + 8; _objHit.h = ph + 8; }
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); uiSlab(x, y, pw, ph, col, false, "#0b1226");
     if (mail && e < 1) {   // the mailbox: an envelope (it rattles when a new objective has just come), and the "!" while it is not read

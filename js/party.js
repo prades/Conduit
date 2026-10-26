@@ -12,6 +12,9 @@
 //   THE ROSTER     each follower's card says what room it holds (js/commandcenter.js, js/status.js).
 const PARTY = { max: 3, patrol: 0.55, rest: [70, 200], hop: [2.5, 9], engage: 9 };   // patrol: how fast it walks the round, a share of its speed; rest: frames it stands at a stop; hop: how far the next stop is (tiles); engage: how far from its room's edge a creature is still its business
 function partyOn() { return typeof facilityPlay !== "undefined" && !!facilityPlay && !(typeof attractOn === "function" && attractOn()); }
+// THE CORNERS (docs/UI-STYLE.md, "The HUD"): the facility on a tablet or a desktop has each part of the HUD that works together in one corner (game.html "THE CORNERS"; js/tutorial.js, js/targeting.js, js/squadfly.js). A phone (the line js/mixtool.js mixToolWide draws,
+// 700 px) keeps the layout it has, and the classic game is as it was.
+function hudCorners() { return partyOn() && (typeof innerWidth === "number" ? innerWidth > 700 : true); }
 
 // ── rooms ──
 function partyRoomAt(x, y) { const r = typeof _fp !== "undefined" && _fp && _fp.F ? facilityRoomAt(x, y, _fp.F) : null; return r ? r.id : null; }
@@ -138,7 +141,7 @@ function partyPatrol(a) {
 // One card for each slot, kept (updated in place: a tap is never lost to a redraw): the unit's picture, its name, `LV 9 · FOLLOWING`, its health. TAP a card to select that follower (the rings under it, WHO says SEL 1, and the enemy card's strip says
 // SELECTED 1: "depending on what followers you have selected"); the i is its INFO; an open slot opens the roster, to call a follower back from its room or to recruit.
 // The same three cards are the SQUAD BOX at the top of the Command Center's roster (js/commandcenter.js): the squad at a glance, without a trip to another menu. partySlotsBuild / partySlotsUpdate draw either.
-let _sbEls = null, _sbxEls = null;
+let _sbEls = null, _sbxEls = null, _sfLast = null;   // _sfLast: the member whose card was tapped last (js/squadfly.js opens that one's card)
 function partyBarEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("squadBar") : null; }
 function partyBoxEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("ccSquadBox") : null; }
 // three slot cards in `root`, built once (they are updated in place afterwards); `onClick` takes a tap on any of them
@@ -146,7 +149,8 @@ function partySlotsBuild(root, onClick) {
     root.textContent = ""; const slots = [];
     for (let i = 0; i < PARTY.max; i++) {
         const el = document.createElement("div"); el.className = "sb-slot empty"; el.setAttribute("data-slot", String(i));
-        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-txt"><b class="sb-name"></b><i class="sb-sub"></i><span class="sb-hp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><span class="sb-open">+ OPEN SLOT</span>';
+        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><span class="sb-open">+ OPEN SLOT</span>';
+        const no = el.querySelector(".sb-no"); if (no) no.textContent = String(i + 1);   // (the number and the ✕ REMOVE are the Command Center carousel's: js/commandcenter.js; game.html hides them on the bar)
         root.appendChild(el); slots.push(el);
     }
     root.addEventListener("click", onClick);
@@ -156,30 +160,31 @@ function partyBarBuild(root) { if (!_sbEls || _sbEls.root !== root) _sbEls = par
 function _partyTapped(ev) {
     const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return null;
     const slot = t.closest(".sb-slot"); if (!slot) return null;
-    return { f: slot._unit, info: !!t.closest(".sb-info"), call: slot._call || null };
+    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), call: slot._call || null };
 }
 function partyBarClick(ev) {
     const hit = _partyTapped(ev); if (!hit) return;
     const f = hit.f;
     if (hit.info) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
     if (!f) { if (hit.call) { partyAdd([hit.call]); if (typeof mixToolRender === "function") mixToolRender(true); } else if (typeof ccShowCandidates === "function") ccShowCandidates(); else if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the one follower that holds a room comes back; else the roster, showing the followers that could fill it
-    if (typeof ccToggle === "function") ccToggle(f);
+    if (typeof ccToggle === "function" && ccToggle(f)) _sfLast = f;   // (the card that opens beside the stack is the last one tapped: js/squadfly.js)
     partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
 }
 function _sbSet(el, prop, v) { if (el[prop] !== v) el[prop] = v; }
 // each slot shows the follower in that card slot of the squad (partySlot), or is open
 // An OPEN slot says what a tap on it does: with exactly one follower holding a room it is "+ CALL <that one>" and a tap brings it back (REPORTED: after HOLD, "whenever I click on that follower [...] it doesn't come"); with none or several it is "+ OPEN SLOT" and a
 // tap lists the followers that could fill it (js/commandcenter.js ccShowCandidates): one must not be picked for you when there is a choice.
-function partySlotsUpdate(E) {
+// `lit`: which member's card is lit (the bar's is the selection; the carousel's squad row lights the creature in view)
+function partySlotsUpdate(E, lit) {
     const mem = partyOrdered(), held = partyPosted(), one = held.length === 1 ? held[0] : null;
     for (let i = 0; i < PARTY.max; i++) {
         const el = E.slots[i], f = mem.find(m => m.partySlot === i) || null;
         if (el._unit !== f) { el._unit = f; el.classList.toggle("empty", !f); el._thumbKey = null; }
-        if (!f) { el._call = one; el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
+        if (!f) { el._call = one; el.classList.remove("sel"); el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
         el._call = null; el.classList.remove("call");
         const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
         if (el._col !== col) { el._col = col; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", col); }
-        el.classList.toggle("sel", typeof selectedUnits !== "undefined" && selectedUnits.has(f));
+        el.classList.toggle("sel", lit ? !!lit(f) : typeof selectedUnits !== "undefined" && selectedUnits.has(f));
         const name = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", sub = "LV " + (f.level || 1) + (st ? " · " + st.text : "");
         const nm = el.querySelector(".sb-name"), sb = el.querySelector(".sb-sub"), hp = el.querySelector(".sb-hp u");
         _sbSet(nm, "textContent", name); _sbSet(sb, "textContent", sub); if (st) sb.style.color = st.col;
@@ -192,22 +197,26 @@ function partySlotsUpdate(E) {
 function partyBarRender(force) {
     const root = partyBarEl(); if (!root) return;
     const on = partyOn(); if (root.classList) root.classList.toggle("on", on);
-    if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("squad-bar", on);   // (a phone moves the battle tool up for it: game.html)
-    if (!on) return;
+    if (typeof document !== "undefined" && document.body && document.body.classList) { document.body.classList.toggle("squad-bar", on); document.body.classList.toggle("corners", hudCorners()); }   // (a phone moves the battle tool up for the bar; a tablet or a desktop puts every group of the HUD in its corner: game.html)
+    if (!on) { if (typeof partyFlyRender === "function") partyFlyRender(); return; }
     partySlotsUpdate(partyBarBuild(root));
+    if (typeof partyFlyRender === "function") partyFlyRender();
 }
 // THE SQUAD BOX (the Command Center's roster, the facility): a tap on a card selects that follower (the side panel then offers REMOVE FROM SQUAD); the i is its INFO; an open slot lists the followers that could fill it (the roster's NOT IN SQUAD)
+// In the carousel (js/commandcenter.js ccCarousel) a tap on a member's card puts that member in view, and its ✕ REMOVE takes it out of the squad (it holds the room it is in); on a phone the card picks the follower, as it does on the bar.
 function partyBoxClick(ev) {
     const hit = _partyTapped(ev); if (!hit) return;
     if (!hit.f) { if (hit.call) partyAdd([hit.call]); else if (typeof ccShowCandidates === "function") ccShowCandidates(); return; }   // an open slot: the one follower that holds a room comes back; else the roster shows the followers that could fill it
+    if (hit.x) { partyRemove([hit.f]); if (typeof ccRender === "function") ccRender(); return; }
     if (hit.info) { if (typeof unitInfoOpen === "function") unitInfoOpen(hit.f); return; }
+    if (typeof ccCarousel === "function" && ccCarousel() && typeof ccFocusSet === "function") { ccFocusSet(hit.f); return; }
     if (typeof ccToggle === "function") ccToggle(hit.f);
     if (typeof ccRender === "function") ccRender();
 }
 function partyBoxRender() {
     const root = partyBoxEl(); if (!root || !partyOn()) return;
     if (!_sbxEls || _sbxEls.root !== root) _sbxEls = partySlotsBuild(root, partyBoxClick);
-    partySlotsUpdate(_sbxEls);
+    partySlotsUpdate(_sbxEls, typeof ccCarousel === "function" && ccCarousel() && typeof ccFocusUnit === "function" ? (f => f === ccFocusUnit()) : null);
 }
 // each few frames (js/game.js render): the squad is kept to three, and its bar follows it
 function partyTick() { partySync(false); partyBarRender(false); }

@@ -193,7 +193,7 @@ function measure(w, h) {
     });
 
     group('THE ROSTER, THE SQUADS WINDOW AND THE PHONE\'S MENU (real browser)');
-    for (const [w, h] of [[1180, 820], [500, 800]]) {
+    for (const [w, h] of [[500, 800]]) {   // (the roster of a tablet or a desktop is the carousel: tests/carousel.js; this is the phone's, with the squad box, the side panel and the phone's menu)
         const r = measure(w, h);
         if (r === null) { console.log('  (no Chromium here: skipped)'); break; }
         check(w + 'x' + h + ': the instrument ran', () => { ok(r, 'the probe produced nothing'); same(r.err, undefined, 'the probe threw'); });

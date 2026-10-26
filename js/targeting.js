@@ -22,6 +22,7 @@ let _targetPressed = false;     // the press is the targeting's (input.js starts
 let _tgBtnDown = null;          // { kind: "info" | "switch", x, y }
 let _tgDial = null;             // where the dial was drawn: { x, y, r, ix, iy, ir }
 const _tgPortraits = {};
+let _tgSlot = null;               // the enemy card's slot in the page (the dial stands over it in the corners layout)
 
 function targetLive(a) { return !!a && !a.dead && a.team !== "green" && !a.isClone; }
 function targetOn() { return typeof facilityPlay !== "undefined" && facilityPlay; }
@@ -153,7 +154,16 @@ function drawTargetUI() {
 }
 // where the round button comes up, at the top left under the objective's plate (a phone has the menu hub at the left edge, halfway down: the button goes beside it); the ammunition icon shares it
 function _tgAnchor() {
-    const W = canvas.width, narrow = W < 600, R = narrow ? 40 : 52, left = typeof dockHasMenus === "function" && !dockHasMenus() ? 78 : 18, net = narrow && typeof _fnBottom === "number" ? _fnBottom : 0;
+    const W = canvas.width, narrow = W < 600, R = narrow ? 40 : 52;
+    // THE CORNERS (js/party.js hudCorners; a tablet or a desktop): the dial stands over the enemy card at the bottom right (the target's corner), the ammunition beside it; the card is where game.html puts it (--cn-foe wide, 14 px from the right, over the dock's line)
+    if (typeof hudCorners === "function" && hudCorners()) {
+        const foeW = W > 1100 ? 260 : W > 900 ? 232 : 214; if (!_tgSlot || _tgSlot.isConnected === false) _tgSlot = typeof document !== "undefined" && document.querySelector ? document.querySelector("#mixTool .mt-foe-slot") : null;
+        const slot = _tgSlot;
+        const r = slot && slot.firstElementChild && slot.getBoundingClientRect ? slot.getBoundingClientRect() : null, cardTop = r && r.height > 0 ? r.top : canvas.height - 100 - 90;
+        const left = W - 14 - foeW, x = left + R + 6, y = Math.max(R + 12, cardTop - 22 - R);
+        return { W, narrow, R, left, top: y - R, x, y, corner: true };
+    }
+    const left = typeof dockHasMenus === "function" && !dockHasMenus() ? 78 : 18, net = narrow && typeof _fnBottom === "number" ? _fnBottom : 0;
     // under the objective (a phone's plate is folded into a small mailbox, so that is high up) and, on a phone, under the network panel at the top right (its text runs back to the middle of a narrow screen)
     const top = Math.max(typeof _fpObjBottom === "number" && _fpObjBottom > 0 ? _fpObjBottom + 12 : 196, net > 0 ? net + 8 : 0);
     return { W, narrow, R, left, top, x: left + R, y: Math.min(top + R + 4, canvas.height - R - 130) };
@@ -183,10 +193,10 @@ function _tgAmmoIcon(x, y, alpha) {
     ctx.restore();
     if (armed) { _ATKCHIP.x = x - 4; _ATKCHIP.y = y - hh / 2 - 4; _ATKCHIP.w = w + 8; _ATKCHIP.h = hh + 8; } else _ATKCHIP.w = 0;
 }
-function _tgAmmoDraw() { const A = _tgAnchor(); _tgAmmoIcon(A.left - 4, A.top + 12, 1); }
+function _tgAmmoDraw() { const A = _tgAnchor(); if (A.corner) _tgAmmoIcon(A.left + 4, A.y + 4, 1); else _tgAmmoIcon(A.left - 4, A.top + 12, 1); }
 function _tgDialDraw(a, f) {
     if (typeof uiSlab !== "function") { _ATKCHIP.w = 0; return; }
-    const { W, narrow, R, left, x, y } = _tgAnchor(), col = _tgColour(a);
+    const { W, narrow, R, left, x, y, corner } = _tgAnchor(), col = _tgColour(a);
     const held = typeof gunHold !== "undefined" && gunHold && gunHold.button && !gunHold.released, dry = typeof weaponDry === "function" ? weaponDry() : false, cool = (player.attackCooldown || 0) > 0;
     const pop = Math.max(0, Math.min(1, (f - _acquireAt) / TARGET.pop)), ease = 1 - Math.pow(1 - pop, 3), s = 0.55 + 0.45 * ease + (held ? 0.04 * Math.sin(f * 0.7) : 0);
     const hp = Math.max(0, a.health), mx = Math.max(1, a.maxHealth || a.health || 1), hf = Math.min(1, hp / mx);
@@ -211,9 +221,9 @@ function _tgDialDraw(a, f) {
     // what it is under it, and the ammunition (the small icon) under that (not scaled: it must read)
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = ease;
     const lx = left - 4, nw = Math.min(230, W - lx - 8);
-    uiCaptionFit(targetName(a), lx, y + R + 16, "#ffd9a0", "left", 12, nw);
+    if (!corner) uiCaptionFit(targetName(a), lx, y + R + 16, "#ffd9a0", "left", 12, nw);   // (the corner's enemy card says what it is)
     ctx.restore();
-    _tgAmmoIcon(lx, y + R + 36, ease);
+    if (corner) _tgAmmoIcon(x + R + 24, y + 4, ease); else _tgAmmoIcon(lx, y + R + 36, ease);
     _tgDial = { x, y, r: R, ix, iy, ir };
     if (infoOpen) _tgInfo(a, x, y, R, col);
 }
@@ -240,8 +250,8 @@ function targetCardInfo(a) {
     };
 }
 function _tgInfo(a, x, y, R, col) {
-    const W = canvas.width, w = Math.min(320, W - (x + R + 24) - 8), lines = targetInfoLines(a), h = 36 + lines.length * 17 + 6;
-    const bx = w >= 200 ? x + R + 18 : 12, by = w >= 200 ? y - R : y + R + 46, bw = w >= 200 ? w : Math.min(320, W - 24);
+    const W = canvas.width, corner = typeof hudCorners === "function" && hudCorners(), w = corner ? Math.min(320, x - R - 24 - 8) : Math.min(320, W - (x + R + 24) - 8), lines = targetInfoLines(a), h = 36 + lines.length * 17 + 6;
+    const bx = corner ? Math.max(8, x - R - 18 - w) : w >= 200 ? x + R + 18 : 12, by = corner ? Math.max(8, y - R - h + 2 * R) : w >= 200 ? y - R : y + R + 46, bw = corner ? w : w >= 200 ? w : Math.min(320, W - 24);   // (at the bottom right it opens to the left of the dial, its foot level with the dial's)
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); uiSlab(bx, by, bw, h, col, false, "#0b1226");
     uiTextFit(targetName(a), bx + 14, by + 20, 15, col, "left", bw - 28);
     lines.forEach((l, i) => uiCaptionFit(l, bx + 14, by + 42 + i * 17, i < 2 ? "#e8f0ff" : "#9fb0d6", "left", 12, bw - 28));

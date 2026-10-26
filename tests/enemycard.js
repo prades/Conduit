@@ -39,8 +39,8 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.noFoe = { card: !!$('#mixTool .mt-foe'), slotEmpty: !!$('#mixTool .mt-foe-slot') && $('#mixTool .mt-foe-slot').children.length === 0 };
     out.tabs = { tabs: $$('#mixTool .mt-tab').length, comb: !!$('#mixTool .mt-comb'), hex: $$('#mixTool .mt-hex').length, title: $('#mixTool .mt-title') ? $('#mixTool .mt-title').textContent : null, x: $('#mixTool .mt-x') ? getComputedStyle($('#mixTool .mt-x')).display : null, pod: $('#mixTool .mt-pod') ? $('#mixTool .mt-pod').textContent : null };
     if (!wide) { click($('#mixTool .mt-pod')); await wait(30); out.tabs.openTitle = $('#mixTool .mt-title') ? $('#mixTool .mt-title').textContent : null; out.tabs.openX = $('#mixTool .mt-x') ? getComputedStyle($('#mixTool .mt-x')).display : null; }   // (a phone: open from here on, closed once to see the card with it shut)
-    out.who = $$('#mixTool .mt-who [data-scope]').map(function(c){ return c.getAttribute('data-scope'); }).join();
-    out.scopeAll = !!$('#mixTool .mt-who .mt-chip.on[data-scope=all]');
+    out.who = $$('#mixTool [data-scope]').map(function(c){ return c.getAttribute('data-scope'); }).join();   // (a phone: the WHO row, ALL and the six elements; a tablet or a desktop, the corners layout: the one ALL button)
+    out.scopeAll = !!$('#mixTool .mt-who .mt-chip.on[data-scope=all]') || !!$('#mixTool .mt-all.on[data-scope=all]');
     // the Crystal's flag on a wide screen is just put down (it used to show the ELEMENTS tab)
     if (wide) { crystalMenuOpen = true; mixToolRender(false); await wait(30); out.flag = { flag: crystalMenuOpen, comb: !!$('#mixTool .mt-comb'), panel: !!$('#mixTool .mt-panel') }; }
     // a squad, and a creature near the player in plain sight
@@ -54,7 +54,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     standDown = false; frame = Math.ceil((frame + 1) / TARGET.every) * TARGET.every; targetTick(); mixToolRender(false); await wait(30);
     var card = $('#mixTool .mt-foe'), r = card ? card.getBoundingClientRect() : null, pn = $('#mixTool .mt-panel') ? $('#mixTool .mt-panel').getBoundingClientRect() : null, pod = $('#mixTool .mt-pod') ? $('#mixTool .mt-pod').getBoundingClientRect() : null, dock = document.getElementById('topToggles'), dr = dock ? dock.getBoundingClientRect() : null;
     out.card = card ? { text: card.textContent, name: $('#mixTool .mt-foe-name').textContent, sub: $('#mixTool .mt-foe-sub').textContent, num: $('#mixTool .mt-foe-num').textContent, go: $('#mixTool .mt-foe-go').textContent, pop: card.classList.contains('pop'), img: !!$('#mixTool .mt-foe-pic img') && $('#mixTool .mt-foe-pic img').src.indexOf('data:image/png') === 0, w: Math.round(r.width), h: Math.round(r.height), hp: $('#mixTool .mt-foe-hp u').style.width, col: card.style.getPropertyValue('--c') } : null;
-    out.place = r ? { aboveControls: pn ? r.bottom <= pn.top + 1 : false, onScreen: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, dock: !!(dr && dr.width && r.right > dr.left && r.left < dr.right && r.bottom > dr.top && r.top < dr.bottom) } : null;
+    out.place = r ? { aboveControls: pn ? r.bottom <= pn.top + 1 : false, corner: wide && r.right >= innerWidth - 20 && r.right <= innerWidth && (dr && dr.width ? r.bottom <= dr.top + 1 : true) && r.left > innerWidth / 2 - 40, onScreen: r.left >= 0 && r.top >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, dock: !!(dr && dr.width && r.right > dr.left && r.left < dr.right && r.bottom > dr.top && r.top < dr.bottom) } : null;   // (a tablet or a desktop: the card is in the bottom right corner, over the dock's line; a phone: above the controls)
     if (!wide) { click($('#mixTool [data-act=close]')); await wait(30); var c2 = $('#mixTool .mt-foe'), r2 = c2 ? c2.getBoundingClientRect() : null, pod2 = $('#mixTool .mt-pod').getBoundingClientRect(); out.closedCard = { panel: !!$('#mixTool .mt-panel'), card: !!c2, abovePod: !!r2 && r2.bottom <= pod2.top + 1, onScreen: !!r2 && r2.left >= 0 && r2.top >= 0 && r2.right <= innerWidth }; click($('#mixTool .mt-pod')); await wait(30); }
     out.locked = targetCurrent() === foe;
     // re-rendering (a tap on WHO) does not make it pop up again; its health bar follows the creature without a rebuild
@@ -62,8 +62,13 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var keep = $('#mixTool .mt-foe'); foe.health = 40; mixToolRender(false); await wait(30); out.hurt = { kept: $('#mixTool .mt-foe') === keep, hp: $('#mixTool .mt-foe-hp u').style.width, cls: $('#mixTool .mt-foe-hp u').className, num: $('#mixTool .mt-foe-num').textContent };
     foe.health = 15; mixToolRender(false); await wait(30); out.low = { hp: $('#mixTool .mt-foe-hp u').style.width, cls: $('#mixTool .mt-foe-hp u').className }; foe.health = 100; mixToolRender(false);
     // the scope names who goes
-    click($('#mixTool [data-scope=ice]')); await wait(30); out.ice = { go: $('#mixTool .mt-foe-go').textContent, who: $('#mixTool .mt-who .mt-chip.on') ? $('#mixTool .mt-who .mt-chip.on').getAttribute('data-scope') : null };
-    click($('#mixTool [data-scope=all]')); await wait(30);
+    if (wide) {   // the corners layout has no element picker: a picked card names who goes, and ALL lets them go
+      selectedUnits.clear(); selectedUnits.add(followers[1]); partyBarRender(true); mixToolRender(true); await wait(30); out.ice = { go: $('#mixTool .mt-foe-go').textContent, who: $('#mixTool .mt-to b') ? $('#mixTool .mt-to b').textContent : null, all: !!$('#mixTool .mt-all.on') };
+      click($('#mixTool [data-scope=all]')); await wait(30); out.ice.after = [selectedUnits.size, $('#mixTool .mt-foe-go').textContent, !!$('#mixTool .mt-all.on')];
+    } else {
+      click($('#mixTool [data-scope=ice]')); await wait(30); out.ice = { go: $('#mixTool .mt-foe-go').textContent, who: $('#mixTool .mt-who .mt-chip.on') ? $('#mixTool .mt-who .mt-chip.on').getAttribute('data-scope') : null };
+      click($('#mixTool [data-scope=all]')); await wait(30);
+    }
     // a tap on the card sends them
     click($('#mixTool .mt-foe')); await wait(30);
     out.sent = { ordered: followers.filter(function(f){ return f.attackOrder && f.attackOrder.target === foe; }).length, go: $('#mixTool .mt-foe-go').textContent, going: $('#mixTool .mt-foe').classList.contains('going'), texts: floatingTexts.slice(-3).map(function(t){ return t.text; }) };
@@ -234,21 +239,23 @@ function measure(w, h) {
         if (!r || r.err) continue;
         const wide = w > 700;
         check(w + ': the facility\'s tool has no ELEMENTS tab or honeycomb and no tab row; WHO has ALL (lit) and six elements; ' + (wide ? 'the Crystal\'s flag is just put down' : 'a phone has a BATTLE pod, a title and a close button'), () => {
-            same(r.tabs.tabs, 0, 'tabs'); same(r.tabs.comb, false, 'the honeycomb'); same(r.tabs.hex, 0, 'cells'); same(r.who, ['all'].concat(ELEMENT_IDS).join(), 'WHO'); same(r.scopeAll, true, 'ALL is not the one lit at the start');
+            same(r.tabs.tabs, 0, 'tabs'); same(r.tabs.comb, false, 'the honeycomb'); same(r.tabs.hex, 0, 'cells'); same(r.who, wide ? 'all' : ['all'].concat(ELEMENT_IDS).join(), wide ? 'the corners layout has the one ALL button and no element picker' : 'WHO'); same(r.scopeAll, true, 'ALL is not the one lit at the start');
             if (wide) { same(r.tabs.title, null, 'a title on a wide screen'); same(r.flag.flag, false, 'the flag stays up'); same(r.flag.comb, false, 'the flag showed the honeycomb'); same(r.flag.panel, true, 'the tool closed'); }
             else { ok(/BATTLE/.test(r.tabs.pod), 'pod ' + r.tabs.pod); same(r.tabs.openTitle, 'BATTLE', 'title'); ok(r.tabs.openX !== 'none', 'close button'); }
         });
         check(w + ': with nobody near there is no card; a creature comes near and the card pops up (once) with its picture, name, level \u00b7 class \u00b7 element, health and the strip "ATTACK \u00b7 EVERYONE 3"; it is above the controls' + (wide ? '' : ' (and above the pod, with the tool closed: a phone sees it without opening anything)') + ', on the screen and clear of the dock', () => {
             same(r.noFoe.card, false, 'a card with nobody near'); same(r.noFoe.slotEmpty, true, 'the slot is not empty'); ok(r.card, 'no card'); same(r.locked, true, 'the gun is not locked on it'); same(r.card.name, 'BEETLE TANK', 'name'); same(r.card.sub, 'LV 4 · FIRE', 'sub');
             ok(/^HP 100\/100/.test(r.card.num), 'num ' + r.card.num); same(r.card.hp, '100%', 'bar'); same(r.card.img, true, 'picture'); same(r.card.pop, true, 'it did not pop up'); same(r.card.go, 'ATTACK · EVERYONE 3', 'strip');
-            same(r.place.aboveControls, true, 'above the controls'); same(r.place.onScreen, true, 'off the screen'); same(r.place.dock, false, 'on the dock');
-            if (!wide) { same(r.closedCard.panel, false, 'the tool did not close'); same(r.closedCard.card, true, 'the card goes when the tool is shut'); same(r.closedCard.abovePod, true, 'the card is not above the pod'); same(r.closedCard.onScreen, true, 'the card is off the screen'); } ok(r.card.w <= 230 && r.card.w >= 150 && r.card.h >= 60 && r.card.h <= 110, 'size ' + r.card.w + 'x' + r.card.h);
+            if (wide) same(r.place.corner, true, 'in the bottom right corner, over the dock\'s line'); else same(r.place.aboveControls, true, 'above the controls'); same(r.place.onScreen, true, 'off the screen'); same(r.place.dock, false, 'on the dock');
+            if (!wide) { same(r.closedCard.panel, false, 'the tool did not close'); same(r.closedCard.card, true, 'the card goes when the tool is shut'); same(r.closedCard.abovePod, true, 'the card is not above the pod'); same(r.closedCard.onScreen, true, 'the card is off the screen'); } ok(r.card.w <= (wide ? 262 : 230) && r.card.w >= 150 && r.card.h >= 60 && r.card.h <= 110, 'size ' + r.card.w + 'x' + r.card.h);
         });
         check(w + ': it is kept, not rebuilt: it does not pop up again when the tool re-renders, and its health bar and numbers (and colour: green, yellow, red) follow the creature', () => {
             same(r.stable.pop, false, 'popped up again'); same(r.hurt.kept, true, 'the card was rebuilt for a health change'); same(r.hurt.hp, '40%', 'bar'); same(r.hurt.cls, 'mid', 'yellow'); ok(/^HP 40\/100/.test(r.hurt.num), 'num ' + r.hurt.num); same(r.low.hp, '15%', 'low bar'); same(r.low.cls, 'low', 'red');
         });
         check(w + ': the strip names who goes (WHO: an element), a tap sends the squad (ATTACKING · 3 OF 3, a message, the orders are on the units), RETREAT takes it back, the creature dying takes the card away, and the classic game has none and keeps its tabs', () => {
-            same(r.ice.go, 'ATTACK · ICE 1', 'WHO'); same(r.ice.who, 'ice', 'the lit chip'); same(r.sent.ordered, 3, 'ordered'); same(r.sent.go, 'ATTACKING · 3 OF 3', 'strip'); same(r.sent.going, true, 'class'); ok(r.sent.texts.some(t => /^ATTACK · 3 AT /.test(t)), 'message ' + r.sent.texts);
+            if (wide) { same(r.ice.go, 'ATTACK · SELECTED 1', 'a picked card names who goes'); ok(/ICE/.test(r.ice.who || ''), 'the tool names the member: ' + r.ice.who); same(r.ice.all, false, 'ALL is lit with a card picked'); same(r.ice.after.join(), '0,ATTACK · EVERYONE 3,true', 'ALL lets them go'); }
+            else { same(r.ice.go, 'ATTACK · ICE 1', 'WHO'); same(r.ice.who, 'ice', 'the lit chip'); }
+            same(r.sent.ordered, 3, 'ordered'); same(r.sent.go, 'ATTACKING · 3 OF 3', 'strip'); same(r.sent.going, true, 'class'); ok(r.sent.texts.some(t => /^ATTACK · 3 AT /.test(t)), 'message ' + r.sent.texts);
             same(r.retreat.ordered, 0, 'RETREAT'); ok(/^ATTACK/.test(r.retreat.go), 'strip after RETREAT ' + r.retreat.go); same(r.gone.card, false, 'the card stays after the creature dies'); same(r.gone.slotEmpty, true, 'the slot'); same(r.classic.card, false, 'a card in the classic game'); ok(/BATTLE,.*ELEMENTS/.test(r.classic.tabs), 'classic tabs ' + r.classic.tabs);
         });
     }

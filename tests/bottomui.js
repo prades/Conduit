@@ -4,6 +4,9 @@
 // --sb-bottom, --sb-h, --sb-w and --sb-cx (game.html): over the dock, its middle kept clear of the tool's column at the left and (a phone) of the round buttons at the right.
 // ASKED, then: "I think the selected little number thing is kind of irrelevant because it shows you which ones you have selected, and you can only have the squad really selected. So just get rid of the little box that says how many are
 // selected and keep the little rostered squad." The facility has no chip (the squad bar lights the selected cards; a tap on one lets it go); the classic game, which has no bar, keeps it.
+// ASKED, last: "the on screen squad roster should shuffle into the nook above the attack menu to the left, remove the element picker and replace with 'all' button [...] pull their card roster information up on the fly" (and the groups
+// of the HUD, one to a corner: docs/UI-STYLE.md "The HUD"). On a tablet or a desktop (701 px and wider) the three cards are STACKED over the battle tool at the bottom left, the enemy card is at the bottom right over the dock's line, the crystals and bars
+// are at the top left and the zone tag at the top right; a picked member's card stands beside the stack. A phone keeps what it had.
 // Real browser (no Chromium: it says so and passes).
 const fs = require('fs');
 const path = require('path');
@@ -31,10 +34,10 @@ function findChromium() {
 // The real page, in the facility: the squad of three, one follower selected (its card is lit; there is no chip), a creature locked on (the enemy card); on a phone the battle tool is shut (its chip) and then open (its panel). Every piece's rectangle.
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
-  var st = document.createElement('style'); st.textContent = '#mixTool, #mixTool *, #squadBar, #squadBar *, #selChip, #selChip * { transition: none !important; animation: none !important }'; document.head.appendChild(st);
+  var st = document.createElement('style'); st.textContent = '#mixTool, #mixTool *, #squadBar, #squadBar *, #squadFly, #squadFly *, #selChip, #selChip * { transition: none !important; animation: none !important }'; document.head.appendChild(st);
   var rect = function(s){ var e = $(s); if (!e) return null; var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden') return null; var b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 ? [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)] : null; };
   var circle = function(c){ return [Math.round(c.x - c.r), Math.round(c.y - c.r), Math.round(c.x + c.r), Math.round(c.y + c.r)]; };
-  var snap = function(){ var o = { dock: rect('#topToggles'), bar: rect('#squadBar'), panel: rect('#mixTool .mt-panel'), pod: rect('#mixTool .mt-pod'), foe: rect('#mixTool .mt-foe'), slots: [] };
+  var snap = function(){ var o = { dock: rect('#topToggles'), bar: rect('#squadBar'), panel: rect('#mixTool .mt-panel'), pod: rect('#mixTool .mt-pod'), foe: rect('#mixTool .mt-foe'), fly: rect('#squadFly.on'), hudl: rect('#hudLeft'), hudc: rect('#hudCentre'), hudr: rect('#zoneLine'), slots: [] };
     var sl = document.querySelectorAll('#squadBar .sb-slot'); for (var i = 0; i < sl.length; i++) { var b = sl[i].getBoundingClientRect(); o.slots.push([Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]); }
     if (!dockHasMenus()) { frameNow(); o.round = [circle(_SETTINGSBTN), circle(_SHOPBTN), circle(_CAMPBTN)]; } return o; };
   var frameNow = function(){ try { render(); } catch (e) {} };
@@ -50,7 +53,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if (!mixToolWide()) { crystalMenuOpen = true; mixToolRender(true); frameNow(); await wait(60); out.open = snap(); crystalMenuOpen = false; mixToolRender(true); }
     // what lets a selection go without it: a tap on the lit card, the battle tool's WHO row (ALL)
     selectedUnits.clear(); partyBarRender(true); var slot0 = $('#squadBar .sb-slot'); var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
-    click(slot0); await wait(30); out.lit = { size: selectedUnits.size, cls: slot0.classList.contains('sel') }; click(slot0); await wait(30); out.lit.after = [selectedUnits.size, slot0.classList.contains('sel')];
+    click(slot0); await wait(30); out.lit = { size: selectedUnits.size, cls: slot0.classList.contains('sel') }; click(slot0); await wait(30); out.lit.after = [selectedUnits.size, slot0.classList.contains('sel')]; out.lit.flyAfter = !!document.querySelector('#squadFly.on');
     selectedUnits.add(followers[0]); selectedUnits.add(followers[2]); partyBarRender(true); out.lit.two = $$('#squadBar .sb-slot.sel').length; mixToolScope('all'); partyBarRender(true); out.lit.scope = [selectedUnits.size, $$('#squadBar .sb-slot.sel').length];
     // an empty slot or two (a follower holding a room): the bar keeps its height
     followers[1].post = partyRoomAt(followers[1].x, followers[1].y); followers[2].post = followers[1].post; partyTick(); await wait(60); out.empty = snap();
@@ -96,6 +99,14 @@ for (const [w, h] of [[360, 740], [390, 844], [421, 800], [560, 800], [561, 800]
     check(w + ': the bar is over the dock (a tablet) and the middle of the screen as far as the tool and the round buttons let it be; it keeps its height whoever is in it, and its three slots are one height', () => {
         const b = r.shut.bar; if (!phone) ok(b[3] <= r.shut.dock[1] + 1, 'the bar ' + b + ' is not over the dock ' + r.shut.dock);
         same(r.empty.bar[3] - r.empty.bar[1], r.shut.bar[3] - r.shut.bar[1], 'the bar changed height with open slots'); same(r.shut.slots.length, 3, 'slots'); ok(r.shut.slots.every(q => q[3] - q[1] === r.shut.slots[0][3] - r.shut.slots[0][1]), 'the slots are not all one height: ' + JSON.stringify(r.shut.slots));
+    });
+    if (!phone) check(w + ': the corners: the three cards are stacked over the battle tool at the bottom left, the enemy card is at the bottom right over the dock\'s line, the crystals and the bars are at the top left and the zone tag at the top right, and a picked member\'s card stands beside the stack, clear of the tool, the dock and the enemy card', () => {
+        const s = r.shut; ok(s.bar && s.panel && s.foe && s.dock && s.fly, 'a piece is missing: ' + JSON.stringify({ bar: s.bar, panel: s.panel, foe: s.foe, dock: s.dock, fly: s.fly }));
+        ok(s.bar[3] <= s.panel[1] + 1, 'the stack ' + s.bar + ' is not over the tool ' + s.panel); ok(s.bar[0] <= 20 && s.panel[0] <= 20, 'not at the left: ' + s.bar + ' ' + s.panel); ok(s.bar[3] - s.bar[1] > (s.bar[2] - s.bar[0]) / 2, 'the cards are not stacked: ' + s.bar);
+        ok(w - s.foe[2] <= 20 && s.foe[2] <= w && s.foe[1] > h / 2 && !cross(s.foe, s.dock), 'the enemy card ' + s.foe + ' is not at the bottom right, clear of the dock ' + s.dock);   // (on a wide screen the dock is narrower than the room: the card may stand beside it)
+        ok(s.hudl && s.hudc && s.hudr && s.hudl[2] <= s.hudc[0] + 1 && s.hudc[0] < w / 2 && w - s.hudr[2] <= 30, 'the top: ' + JSON.stringify([s.hudl, s.hudc, s.hudr]));
+        ok(s.fly[0] >= s.bar[2] && !cross(s.fly, s.panel) && !cross(s.fly, s.dock) && !cross(s.fly, s.foe) && inside(s.fly, w, h), 'the member\'s card ' + s.fly + ' lies over something (bar ' + s.bar + ', tool ' + s.panel + ', dock ' + s.dock + ', enemy card ' + s.foe + ')');
+        ok(r.lit.flyAfter === false, 'the card stays after the member is let go');
     });
     check(w + ': the facility has no "N SELECTED" chip, with one selected, with all three, or with a follower the roster picked that holds a room; the classic game (no squad bar) keeps it', () => {
         same(r.chip.made, true, 'the classic game\'s chip is not made'); same(r.chip.display, 'none', 'the chip\'s display in the facility'); same(r.chip.facility, null, 'a chip with one selected'); same(r.chip.three, null, 'a chip with three selected'); same(r.chip.posted, null, 'a chip for a selected follower that holds a room');

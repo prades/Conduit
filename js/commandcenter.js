@@ -20,6 +20,11 @@
 //
 // PLAY STYLE is an engagement reach (PLAY_STYLES): a DEFENSIVE unit only takes on enemies close to it, an AGGRESSIVE one goes after enemies much
 // further out (npc.js multiplies its role's reach by playReach()). It is saved with the follower.
+//
+// THE CAROUSEL (the facility on a tablet or a desktop: hudCorners(), js/party.js; ASKED: the "Roster 5 · CAROUSEL" layout, "but no recruit button at the top"). The roster is ONE creature at a time: the squad's three slots across the top (a tap
+// looks at that member, ✕ REMOVE takes it out, DISBAND the lot), the creature in view big in the middle with ◂ ▸ to walk the roster and its settings beside it (ATTACK STYLE, PLAY STYLE, RE-ROLL, INFO and its base stats), the filters and a strip
+// of everyone under that (the squad first, a RECRUIT tile at its end), and one bar at the foot: ADD TO SQUAD, SWAP IN FOR one of the three, or REMOVE. What is in view is the roster's own FOCUS (_ccFocus): looking at a creature does not change
+// who the orders in the world go to (that is the squad bar's pick: js/squadfly.js), and the settings and the squad buttons are for the one in view. A phone keeps the grid of cards and the side panel below.
 
 const PLAY_STYLES = [
     { id: "defensive",  label: "DEFENSIVE",  reach: 0.6, blurb: "ONLY FIGHTS WHAT COMES CLOSE" },
@@ -124,8 +129,8 @@ function ccCommon(units, get) {
     const vals = units.map(get); if (!vals.length) return null;
     return vals.every(v => v === vals[0]) ? vals[0] : "mixed";
 }
-function ccSelectionSummary() {
-    const sel = ccSelectionList(), fol = sel.filter(a => !a.isClone);
+function ccSelectionSummary(list) {   // (of the units picked, or of `list`: the carousel's settings are for the creature in view, js/commandcenter.js ccCarousel)
+    const sel = list || ccSelectionList(), fol = sel.filter(a => !a.isClone);
     return {
         count: sel.length, followers: fol.length, clones: sel.length - fol.length,
         role: ccCommon(fol.filter(a => !a.evolved), a => a.role), lockedRole: fol.filter(a => a.evolved).length,
@@ -170,9 +175,49 @@ function _ccClick(el, fn) { el.addEventListener("click", ev => { ev.stopPropagat
 function _ccColour(id) { const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).find(x => x.id === id); return e ? e.color : "#8aa0c8"; }
 function _ccElLabel(id) { const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).find(x => x.id === id); return e ? e.label : String(id || "").toUpperCase(); }
 
+// ── THE CAROUSEL: which creature is in view, and the order the strip and the arrows walk ──
+function ccCarousel() { return typeof hudCorners === "function" && hudCorners(); }
+let _ccFocus = null;   // the creature in view (the roster's own pick: not the selection the orders in the world follow)
+let _ccSwapSig = "", _ccFiltSig = "", _ccUidN = 0;
+function _ccUid(u) { return u._ccUid || (u._ccUid = ++_ccUidN); }
+// the strip's order: the squad in its slots, then the rest (the most evolved, then the highest level, first), then the clones
+function _ccStripSort(a, b) {
+    const ma = partyIsMember(a), mb = partyIsMember(b);
+    if (ma !== mb) return ma ? -1 : 1;
+    if (ma) return (a.partySlot || 0) - (b.partySlot || 0);
+    if (!!a.isClone !== !!b.isClone) return a.isClone ? 1 : -1;
+    return (!!b.evolved - !!a.evolved) || ((b.level || 1) - (a.level || 1));
+}
+function _ccStripUnits() { return ccUnits(ccFilter).sort(_ccStripSort); }
+// the creature in view stays the same one until it is gone (dead, made again): then the one that is picked on its own (the ring's ROSTER CARD), else the first the strip lists (a squad member first), else anyone
+function _ccFocusEnsure() {
+    const all = ccUnits({});
+    if (_ccFocus && all.indexOf(_ccFocus) >= 0) return _ccFocus;
+    const sel = ccSelectionList().filter(a => all.indexOf(a) >= 0);
+    _ccFocus = (sel.length === 1 ? sel[0] : null) || _ccStripUnits()[0] || all.sort(_ccStripSort)[0] || null;
+    return _ccFocus;
+}
+// the next one in the strip's order to the creature in view (`dir` 1), or the one before it (-1), going round; null when it is the only one
+function _ccNeighbour(u, dir) {
+    const list = _ccStripUnits(), n = list.length, i = list.indexOf(u); if (n < 2) return null;
+    return list[i < 0 ? (dir > 0 ? 0 : n - 1) : (i + dir + n) % n];
+}
+// the strip scrolls only far enough to show the card in view (never the page)
+function _ccScrollToFocus() {
+    const grid = document.getElementById("ccGrid"), card = _ccFocus && _ccCards.get(_ccFocus); if (!grid || !card || typeof grid.getBoundingClientRect !== "function" || typeof card.getBoundingClientRect !== "function") return;
+    const g = grid.getBoundingClientRect(), c = card.getBoundingClientRect();
+    if (c.left < g.left + 8) grid.scrollLeft += c.left - g.left - 8; else if (c.right > g.right - 8) grid.scrollLeft += c.right - g.right + 8;
+}
+function ccFocusSet(u) {
+    if (!u || u.dead) return false;
+    _ccFocus = u; _ccDD = null; ccRerollArmed = false; if (ccOpenTab) ccRender(); _ccScrollToFocus(); return true;
+}
+function ccFocusStep(dir) { const nb = _ccNeighbour(_ccFocus, dir); return nb ? ccFocusSet(nb) : false; }
+
 function ccOpen(tab) {
     // Two menus share this overlay: the ROSTER (the creature cards and the command panel) and the ZONES page (opened from the zone plate at the top, js/zones.js).
     // ("command" was a tab of its own: it is the roster's right-hand panel now; "squad" was the old analytics tab.)
+    if (!ccOpenTab) _ccFocus = null;   // (the carousel opens on the creature picked on its own, else the squad's first)
     ccOpenTab = tab === "zones" || tab === "squad" ? "zones" : "roster"; ccRerollArmed = false;
     const root = document.getElementById("ccRoot"); if (!root) return;
     root.classList.add("open"); document.body.classList.add("ccOpen");
@@ -183,16 +228,18 @@ function ccClose() {
     buildOrderPickerClose();
     ccFilter.squad = null;   // (the list of who could fill an open slot is put away with the roster: the next ROSTER shows everyone)
     ccOpenTab = null; ccRerollArmed = false; ccSquadsOpen = false; _ccDD = null; clearInterval(_ccTimer); _ccTimer = 0;
+    _ccFocus = null; _ccSwapSig = ""; _ccFiltSig = "";
     const root = document.getElementById("ccRoot"); if (root) root.classList.remove("open");
     if (document.body) document.body.classList.remove("ccOpen");
     _ccCards.clear();
     const grid = document.getElementById("ccGrid"); if (grid) grid.textContent = "";
     ccRefreshChip();
 }
-// The roster with this unit picked and its card in view (the long-press ring's ROSTER CARD).
+// The roster with this unit picked and its card in view (the long-press ring's ROSTER CARD): the carousel shows it in the middle, the grid scrolls to its card.
 function ccShowUnit(u) {
     if (!u || u.dead) return false;
     ccSetSelection([u]); ccOpen("roster");
+    if (ccCarousel()) { ccFocusSet(u); return true; }
     const card = _ccCards.get(u); if (card && card.scrollIntoView) card.scrollIntoView({ block: "center" });
     return true;
 }
@@ -215,9 +262,13 @@ function ccBuildFrame() {
     const main = _ccEl("div", "cc-main"); main.id = "ccMain";
     // THE SQUAD BOX (the facility; js/party.js partyBoxRender): the squad's three cards at the top of the roster, so the whole squad is in view without opening SQUADS
     const sqx = _ccEl("div", "cc-sqbox"); sqx.id = "ccSquadBoxWrap"; const sqh = _ccEl("div", "cc-sqbox-h"); const sqc = _ccEl("span", null, "YOUR SQUAD"); sqc.id = "ccSquadCount"; sqh.appendChild(sqc); sqh.appendChild(_ccEl("i", null, "SELECT A FOLLOWER BELOW TO ADD, REMOVE OR SWAP IT")); sqx.appendChild(sqh);
-    const sqb2 = _ccEl("div"); sqb2.id = "ccSquadBox"; sqx.appendChild(sqb2); main.appendChild(sqx);
+    const sqr = _ccEl("div", "cc-sqbox-row"), sqb2 = _ccEl("div"); sqb2.id = "ccSquadBox"; sqr.appendChild(sqb2);
+    const dis = _ccEl("button", "cc-disband", "DISBAND"); dis.id = "ccDisband"; _ccClick(dis, () => { if (typeof partyDisband === "function") partyDisband(); ccRender(); }); sqr.appendChild(dis);   // (the carousel's: every member holds the room it is in; the squad's slots are empty)
+    sqx.appendChild(sqr); main.appendChild(sqx);
+    const foc = _ccEl("div", "cc-focus"); foc.id = "ccFocus"; main.appendChild(foc);   // THE CAROUSEL: the creature in view, big (js/commandcenter.js ccCarousel)
     main.appendChild(_ccEl("div", "cc-filters")); main.lastChild.id = "ccFilters";
     const grid = _ccEl("div", "cc-grid"); grid.id = "ccGrid"; main.appendChild(grid);
+    const swp = _ccEl("div", "cc-swap"); swp.id = "ccSwap"; main.appendChild(swp);   // THE CAROUSEL: add it to the squad, swap it in for one of the three, or take it out
     const page = _ccEl("div", "cc-page"); page.id = "ccPage"; main.appendChild(page);
     body.appendChild(main);
     const side = _ccEl("div", "cc-side"); side.id = "ccSide"; body.appendChild(side);
@@ -226,15 +277,23 @@ function ccBuildFrame() {
     const win = _ccEl("div", "cc-sqwin"); win.id = "ccSquadWin"; const card = _ccEl("div", "cc-sqcard"); const hd = _ccEl("div", "cc-sqhead"); const sqt = _ccEl("div", "cc-sel-title", "SQUADS"); sqt.id = "ccSquadTitle"; hd.appendChild(sqt);
     const xs = _ccEl("button", "cc-close", "✕ BACK TO ROSTER"); _ccClick(xs, () => { ccSquadsOpen = false; ccRender(); }); hd.appendChild(xs); card.appendChild(hd);
     const sb = _ccEl("div", "cc-sqbody"); sb.id = "ccSquadBody"; card.appendChild(sb); win.appendChild(card); root.appendChild(win);
-    window.addEventListener("keydown", e => { if (e && e.key === "Escape" && ccOpenTab) { if (ccSquadsOpen) { ccSquadsOpen = false; ccRender(); } else ccClose(); } });
+    window.addEventListener("keydown", e => {
+        if (!e || !ccOpenTab) return;
+        if (e.key === "Escape") { if (ccSquadsOpen) { ccSquadsOpen = false; ccRender(); } else ccClose(); }
+        else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && ccOpenTab === "roster" && !ccSquadsOpen && ccCarousel() && !document.getElementById("unitInfo")) ccFocusStep(e.key === "ArrowRight" ? 1 : -1);   // (the arrows walk the roster)
+    });
 }
 
 // the facility: the squad is THE squad (js/party.js), there are no roster squads (A, B, C) and nobody works
 function _ccParty() { return typeof partyOn === "function" && partyOn(); }
 // An OPEN SLOT (in the roster's squad box, or on the bar over the dock) lists the followers that could fill it: the roster, filtered to NOT IN SQUAD, with nothing selected, so that the next tap picks exactly one.
 function ccShowCandidates() {
-    ccClearSelection(); ccFilter = { element: null, role: null, duty: null, kind: null, squad: "out" };
-    if (ccOpenTab !== "roster") ccOpen("roster"); else ccRender();
+    const car = ccCarousel();
+    if (!car) ccClearSelection();   // (a phone: nothing selected, so the next tap picks exactly one)
+    ccFilter = { element: null, role: null, duty: null, kind: null, squad: "out" };
+    if (ccOpenTab !== "roster") ccOpen("roster");
+    if (car) { const first = ccUnits({ squad: "out" }).sort(_ccStripSort)[0]; if (first) _ccFocus = first; }   // (the carousel puts the first of them in view, ADD TO SQUAD is for it; looking does not change the pick the orders follow)
+    ccRender();
 }
 
 // A chip / button factory for the panels.
@@ -247,15 +306,18 @@ function _ccBtn(label, col, on, fn, cls, sub) {
 function ccRender() {
     const root = document.getElementById("ccRoot"); if (!root || !ccOpenTab) return;
     ccPrune();
+    const slabs = ccCarousel(), car = slabs && ccOpenTab === "roster";   // slabs: the carousel's look (the header's buttons); car: its layout (the roster tab; the zones page keeps its own)
+    if (root.classList) { root.classList.toggle("slabs", slabs); root.classList.toggle("carousel", car); }
+    if (car) _ccFocusEnsure();
     const rec = document.getElementById("ccRecruit");
-    const shp = document.getElementById("ccShards"); if (shp) { shp.style.display = ccOpenTab === "roster" ? "" : "none"; ccShardsUpdate(shp); }
-    if (rec) { rec.style.display = ccOpenTab === "roster" ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }
+    const shp = document.getElementById("ccShards"); if (shp) { shp.style.display = ccOpenTab === "roster" ? "" : "none"; ccShardsUpdate(shp, car); }
+    if (rec) { rec.style.display = ccOpenTab === "roster" && !car ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }   // (the carousel has no recruit button at the top: its RECRUIT is the last tile of the strip)
     const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
     const sum = document.getElementById("ccSummary");
     if (sum) { sum.style.display = ccOpenTab === "roster" ? "" : "none"; if (ccOpenTab === "roster") { const st = radialSquadStats("all"), pt = typeof partyOn === "function" && partyOn(); sum.textContent = pt ? "SQUAD " + partyMembers().length + "/" + PARTY.max + " \u00b7 " + partyPosted().length + " POSTED \u00b7 " + st.total + " UNITS" : st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVG LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"; } }   // (the facility: how full the squad is, and who holds rooms)
     const sqBtn = document.getElementById("ccSquadsBtn"); if (sqBtn) { sqBtn.style.display = ccOpenTab === "roster" ? "" : "none"; sqBtn.classList.toggle("on", ccSquadsOpen); }
     const sqbx = document.getElementById("ccSquadBoxWrap");
-    if (sqbx) { const on = ccOpenTab === "roster" && _ccParty(); sqbx.style.display = on ? "" : "none"; if (on) { partyBoxRender(); const c = document.getElementById("ccSquadCount"); if (c) c.textContent = "YOUR SQUAD \u00b7 " + partyMembers().length + " / " + PARTY.max; } }   // (the facility's squad, at a glance)
+    if (sqbx) { const on = ccOpenTab === "roster" && _ccParty(); sqbx.style.display = on ? "" : "none"; if (on) { partyBoxRender(); const c = document.getElementById("ccSquadCount"); if (c) c.textContent = "YOUR SQUAD \u00b7 " + partyMembers().length + " / " + PARTY.max; const dis = document.getElementById("ccDisband"); if (dis) dis.disabled = !partyMembers().length; } }   // (the facility's squad, at a glance)
     const sqWin = document.getElementById("ccSquadWin"); if (sqWin) {
         const show = ccOpenTab === "roster" && ccSquadsOpen; sqWin.style.display = show ? "flex" : "none";
         const sqt = document.getElementById("ccSquadTitle"); if (sqt) sqt.textContent = _ccParty() ? "YOUR SQUAD" : "SQUADS"; if (sqWin.firstChild && sqWin.firstChild.classList) sqWin.firstChild.classList.toggle("yours", _ccParty());
@@ -263,36 +325,44 @@ function ccRender() {
         if (show && body) { const sg = _ccSqSig() + "|" + squadMode + "|" + (typeof player !== "undefined" ? player.selectedElement : ""); if (sg !== _ccSqWinSig || !body.firstChild) { _ccSqWinSig = sg; const keep = body.scrollTop; try { _ccDrawSquadWindow(body); } catch (e) { /* never take the game down */ } body.scrollTop = keep; } }
         else _ccSqWinSig = "";
     }
-    const filters = document.getElementById("ccFilters"), grid = document.getElementById("ccGrid"), page = document.getElementById("ccPage"), side = document.getElementById("ccSide");
+    const filters = document.getElementById("ccFilters"), grid = document.getElementById("ccGrid"), page = document.getElementById("ccPage"), side = document.getElementById("ccSide"), foc = document.getElementById("ccFocus"), swp = document.getElementById("ccSwap");
     if (!filters || !grid || !page || !side) return;
     const roster = ccOpenTab === "roster";
-    grid.style.display = roster ? "grid" : "none"; filters.style.display = roster ? "flex" : "none"; page.style.display = roster ? "none" : "block";
+    grid.style.display = roster ? (car ? "flex" : "grid") : "none"; filters.style.display = roster ? "flex" : "none"; page.style.display = roster ? "none" : "block";
+    if (foc) foc.style.display = car ? "flex" : "none"; if (swp) swp.style.display = car ? "flex" : "none";
     side.style.display = ccOpenTab === "zones" ? "none" : "flex";
-    if (roster) { _ccDrawFilters(filters); _ccDrawGrid(grid); }
+    if (roster) { _ccDrawFilters(filters); _ccDrawGrid(grid); if (car) { try { _ccFocusDraw(foc); _ccSwapDraw(swp); } catch (e) { /* never take the game down */ } } }
     else { const sig = _ccZonesSig(); if (sig !== _ccPageSig || !page.firstChild) { _ccPageSig = sig; const keep = page.scrollTop; page.textContent = ""; try { _ccDrawSquad(page); } catch (e) { /* never take the game down */ } page.scrollTop = keep; } }
-    if (ccOpenTab !== "zones") { const sg = _ccSideSigNow(); if (sg !== _ccSideSig || !side.firstChild) { _ccSideSig = sg; const keep = side.scrollTop; try { _ccDrawSide(side); } catch (e) {} side.scrollTop = keep; } }
+    if (ccOpenTab !== "zones") { const sg = _ccSideSigNow(); if (sg !== _ccSideSig || !side.firstChild) { _ccSideSig = sg; const keep = side.scrollTop; try { if (car) _ccDrawSettings(side); else _ccDrawSide(side); } catch (e) {} side.scrollTop = keep; } }
     ccRefreshChip();
 }
+function ccFocusUnit() { return _ccFocus; }   // (the squad box lights the slot of the creature in view: js/party.js)
 
 function _ccDrawFilters(box) {
+    // redrawn only when the filters change (a redraw under a finger loses the tap)
+    const unlocked = typeof unlockedElements !== "undefined" ? unlockedElements : new Set(), car = ccCarousel();
+    const sg = JSON.stringify(ccFilter) + "|" + unlocked.size + "|" + _ccParty() + "|" + car; if (sg === _ccFiltSig && box.firstChild) return; _ccFiltSig = sg;
     box.textContent = "";
-    const unlocked = typeof unlockedElements !== "undefined" ? unlockedElements : new Set();
     const add = (label, col, on, fn) => box.appendChild(_ccBtn(label, col, on, fn, "small"));
     add("ALL", "#19e6c1", !ccFilter.element && !ccFilter.role && !ccFilter.duty && !ccFilter.kind && !ccFilter.squad, () => { ccFilter = { element: null, role: null, duty: null, kind: null, squad: null }; });
     (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).forEach(el => { if (unlocked.has(el.id)) add(el.label, el.color, ccFilter.element === el.id, () => { ccFilter.element = ccFilter.element === el.id ? null : el.id; }); });
-    [["BRAWL", "brawler", "#ff4a1c"], ["MAGE", "sniper", "#a64dff"], ["TECH", "camper", "#8fe3ff"]].forEach(r => add(r[0], r[2], ccFilter.role === r[1], () => { ccFilter.role = ccFilter.role === r[1] ? null : r[1]; }));
-    if (_ccParty()) [["IN SQUAD", "in", "#19e6c1"], ["NOT IN SQUAD", "out", "#8fe3ff"]].forEach(r => add(r[0], r[2], ccFilter.squad === r[1], () => { ccFilter.squad = ccFilter.squad === r[1] ? null : r[1]; }));   // (the facility: who is in the squad, and who could be)
+    const gap = () => { if (car && box.lastChild && box.lastChild.classList) box.lastChild.classList.add("sep"); };   // (the carousel sets the groups apart: the elements, the roles, who is in the squad, the clones)
+    [["BRAWL", "brawler", "#ff4a1c"], ["MAGE", "sniper", "#a64dff"], ["TECH", "camper", "#8fe3ff"]].forEach((r, i) => { add(r[0], r[2], ccFilter.role === r[1], () => { ccFilter.role = ccFilter.role === r[1] ? null : r[1]; }); if (!i) gap(); });
+    if (_ccParty()) [["IN SQUAD", "in", "#19e6c1"], ["NOT IN SQUAD", "out", "#8fe3ff"]].forEach((r, i) => { add(r[0], r[2], ccFilter.squad === r[1], () => { ccFilter.squad = ccFilter.squad === r[1] ? null : r[1]; }); if (!i) gap(); });   // (the facility: who is in the squad, and who could be)
     if (!_ccParty()) [["WORKING", "worker", "#19e6c1"], ["FIGHTING", "fighter", "#ffe733"]].forEach(r => add(r[0], r[2], ccFilter.duty === r[1], () => { ccFilter.duty = ccFilter.duty === r[1] ? null : r[1]; }));   // (nobody works in the facility)
-    add("CLONES", "#99ddff", ccFilter.kind === "clone", () => { ccFilter.kind = ccFilter.kind === "clone" ? null : "clone"; });
+    add("CLONES", "#99ddff", ccFilter.kind === "clone", () => { ccFilter.kind = ccFilter.kind === "clone" ? null : "clone"; }); gap();
+    if (car) return;   // (the carousel picks one creature at a time: no SELECT SHOWN, no CLEAR)
     const sp = _ccEl("span", "cc-spacer"); box.appendChild(sp);
     box.appendChild(_ccBtn("SELECT SHOWN", "#ffe733", false, () => ccSetSelection(ccUnits(ccFilter)), "small"));
     box.appendChild(_ccBtn("CLEAR", "#ff4a1c", false, () => ccClearSelection(), "small"));
 }
 
 function _ccDrawGrid(grid) {
-    const rows = ccUnits(ccFilter).map(ccRow).sort((a, b) => (b.evolved - a.evolved) || (b.level - a.level));
+    const car = ccCarousel(), rows = car ? _ccStripUnits().map(ccRow) : ccUnits(ccFilter).map(ccRow).sort((a, b) => (b.evolved - a.evolved) || (b.level - a.level));
+    if (car) for (const r of rows) r.selected = r.unit === _ccFocus;   // (the card lit in the strip is the creature in view)
     const keep = new Set(rows.map(r => r.unit));
     for (const [u, el] of _ccCards) if (!keep.has(u)) { el.remove(); _ccCards.delete(u); }
+    const tile = car ? _ccRecruitTile(grid) : null; if (!car) { const t = grid.querySelector(".cc-rtile"); if (t) t.remove(); }
     let prev = null;
     rows.forEach(r => {
         let card = _ccCards.get(r.unit);
@@ -303,8 +373,22 @@ function _ccDrawGrid(grid) {
         if (card !== want) grid.insertBefore(card, want);
         prev = card;
     });
-    if (!rows.length) { if (!grid.querySelector(".cc-empty")) grid.appendChild(_ccEl("div", "cc-empty", "NOBODY HERE: TAP + RECRUIT ABOVE TO CALL A FOLLOWER")); }
+    if (tile && grid.lastChild !== tile) grid.appendChild(tile);   // (RECRUIT is the strip's last tile)
+    if (!rows.length && !car) { if (!grid.querySelector(".cc-empty")) grid.appendChild(_ccEl("div", "cc-empty", "NOBODY HERE: TAP + RECRUIT ABOVE TO CALL A FOLLOWER")); }
     else { const e = grid.querySelector(".cc-empty"); if (e) e.remove(); }
+}
+// THE CAROUSEL'S RECRUIT: the strip's last tile (the carousel has no recruit button at the top). A follower at the Crystal for RECRUIT_COST shards, as the + RECRUIT button's: its type and element are whatever it turns out to be (js/clone.js). The new one is put in view.
+function _ccRecruitTile(grid) {
+    let t = grid.querySelector(".cc-rtile");
+    if (!t) {
+        t = _ccEl("div", "cc-card cc-rtile"); t.appendChild(_ccEl("div", "cc-rt-p", "+")); t.appendChild(_ccEl("div", "cc-rt-t")); t.appendChild(_ccEl("div", "cc-rt-s"));
+        _ccClick(t, () => { const had = new Set(ccUnits({})); if (typeof recruitDo === "function") recruitDo(); const fresh = ccUnits({}).filter(u => !had.has(u)); if (fresh.length === 1) ccFocusSet(fresh[0]); });
+    }
+    const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, can = have >= cost;
+    t.classList.toggle("dim", !can);
+    const a = t.querySelector(".cc-rt-t"), b = t.querySelector(".cc-rt-s"), ta = "RECRUIT ◆" + cost, tb = can ? Math.floor(have / cost) + " AFFORDABLE" : "NEED " + (cost - have) + " MORE";
+    if (a.textContent !== ta) a.textContent = ta; if (b.textContent !== tb) b.textContent = tb;
+    return t;
 }
 function _ccMakeCard(r) {
     const card = _ccEl("div", "cc-card"); card._unit = r.unit;
@@ -313,14 +397,15 @@ function _ccMakeCard(r) {
     mid.appendChild(_ccEl("div", "cc-name")); mid.appendChild(_ccEl("div", "cc-sub")); mid.appendChild(_ccEl("div", "cc-status"));
     const bar = _ccEl("div", "cc-bar"); bar.appendChild(_ccEl("i")); mid.appendChild(bar);
     mid.appendChild(_ccEl("div", "cc-tags")); card.appendChild(mid);
-    card.appendChild(_ccEl("div", "cc-tick", "✓"));
+    card.appendChild(_ccEl("div", "cc-tick", "✓")); card.appendChild(_ccEl("div", "cc-no"));   // (cc-no: the slot number of a squad member, in the carousel's strip)
     // INFO on the card: this unit's attacks, jobs and stats (js/unitinfo.js). It does not select the card.
     const inf = _ccEl("button", "cc-info", "INFO"); inf.setAttribute("aria-label", "Info"); _ccClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.unit); }); card.appendChild(inf);
-    _ccClick(card, () => { ccToggle(r.unit); ccRender(); });
+    _ccClick(card, () => { if (ccCarousel() && card.parentNode && card.parentNode.id === "ccGrid") ccFocusSet(r.unit); else { ccToggle(r.unit); ccRender(); } });   // (the carousel's strip puts the creature in view; a card in the SQUADS window, and the grid on a phone, pick it)
     return card;
 }
 function _ccUpdateCard(card, r) {
     card.style.setProperty("--c", _ccColour(r.element)); card.classList.toggle("sel", r.selected); card.classList.toggle("clone", r.clone);
+    const no = card.querySelector(".cc-no"); if (no) { const n = !r.clone && typeof partyIsMember === "function" && partyIsMember(r.unit) && r.unit.partySlot !== undefined ? String(r.unit.partySlot + 1) : ""; if (no.textContent !== n) no.textContent = n; }
     card.querySelector(".cc-name").textContent = r.name;
     card.querySelector(".cc-sub").textContent = (r.clone ? "CLONE" : _ccElLabel(r.element)) + " · LV " + r.level;
     card.querySelector(".cc-bar i").style.width = Math.round(r.hp * 100) + "%";
@@ -339,9 +424,14 @@ function _ccThumb(cv, f) {
     const g = cv.getContext && cv.getContext("2d"); if (!g) return; g.clearRect(0, 0, cv.width, cv.height);
     const d = f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] : null, im = d && typeof _evoImg === "function" ? _evoImg(d) : null;
     if (im) { try { g.drawImage(im, 8, 2 * 144 + 6, 128, 128, 0, 0, cv.width, cv.height); return; } catch (e) {} }
+    g.save(); const k = cv.width / 72; if (k !== 1) g.scale(k, k);   // (drawn for 72 px: the carousel's big picture is the same, scaled, and an egg's is a glossy orb)
     g.fillStyle = _ccColour(f.element); g.globalAlpha = 0.85; g.beginPath();
     if (f.isClone) { g.ellipse(36, 44, 22, 14, 0, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; g.fillStyle = "#05070f"; g.font = "900 22px sans-serif"; g.textAlign = "center"; g.fillText(String(f.speciesName || "?").charAt(0).toUpperCase(), 36, 52); }
-    else { g.ellipse(36, 42, 18, 24, 0, 0, Math.PI * 2); g.fill(); }
+    else {
+        if (k > 1 && typeof g.createRadialGradient === "function") { const gr = g.createRadialGradient(30, 32, 1, 36, 42, 26); gr.addColorStop(0, "rgba(255,255,255,0.85)"); gr.addColorStop(0.36, _ccColour(f.element)); gr.addColorStop(1, "rgba(0,0,0,0.55)"); g.globalAlpha = 1; g.fillStyle = gr; }
+        g.ellipse(36, 42, 18, 24, 0, 0, Math.PI * 2); g.fill();
+    }
+    g.restore();
 }
 
 // The right-hand panel: the selected creature as a stat index, and its settings as one-line drop-downs.
@@ -384,16 +474,8 @@ function _ccDrawSide(side) {
     }
     if (_ccParty()) _ccDrawSquadButtons(side, sel);   // (ADD TO SQUAD / REMOVE FROM SQUAD)
     side.appendChild(_ccEl("div", "cc-sec", "SETTINGS"));
-    const lab = (list, id) => (list.find(x => x.id === id) || {}).label;
     const mixed = v => v === "mixed";
-    // ATTACK STYLE (the role) and PLAY STYLE are a follower's; a clone has neither
-    if (S.followers) {
-        const lockedAll = S.followers - S.lockedRole <= 0;
-        _ccDropdown(side, "role", "ATTACK STYLE", mixed(S.role) ? "MIXED" : (lab(ATTACK_STYLES, S.role) || "\u2014"), "#ff4a1c",
-            ATTACK_STYLES.map(x => ({ label: x.label, col: x.col, sub: x.blurb, on: S.role === x.id, fn: () => ccApplyRole(sel, x.id) })), lockedAll ? "EVOLVED KEEPS ITS ROLE" : null);
-        _ccDropdown(side, "play", "PLAY STYLE", mixed(S.playStyle) ? "MIXED" : (lab(PLAY_STYLES, S.playStyle) || "\u2014"), "#ffe733",
-            PLAY_STYLES.map(x => ({ label: x.label, col: "#ffe733", sub: x.blurb, on: S.playStyle === x.id, fn: () => ccApplyPlayStyle(sel, x.id) })));
-    }
+    _ccDrawStyles(side, S, sel);
     if (!_ccParty()) {   // (the facility has the squad buttons above, and nobody works)
         _ccDropdown(side, "stance", "STANCE", mixed(S.stance) ? "MIXED" : S.stance === "hold" ? "HOLD HERE" : "FOLLOW ME", "#19e6c1",
             [["FOLLOW ME", "follow", "#19e6c1", "GOES WHERE YOU GO"], ["HOLD HERE", "hold", "#8fe3ff", "STANDS ITS GROUND"]].map(x => ({ label: x[0], col: x[2], sub: x[3], on: S.stance === x[1], fn: () => ccApplyStance(sel, x[1]) })));
@@ -404,6 +486,96 @@ function _ccDrawSide(side) {
     if (S.followers) row.appendChild(_ccBtn(ccRerollArmed ? "TAP AGAIN: RE-ROLL " + S.followers : "RE-ROLL", "#ff4a1c", ccRerollArmed, () => { if (!ccRerollArmed) ccRerollArmed = true; else { ccApplyReroll(sel); ccRerollArmed = false; } }, "wide", "BACK TO THE CRYSTAL, MADE AGAIN"));
     row.appendChild(_ccBtn("CLEAR SELECTION", "#8aa0c8", false, () => { ccClearSelection(); ccRerollArmed = false; _ccDD = null; }, "wide"));
     if (statIdx) side.appendChild(statIdx);   // the stat index sits under the settings, so the choices are never pushed off the panel
+}
+// ATTACK STYLE (the role) and PLAY STYLE for `sel`: a follower's; a clone has neither
+function _ccDrawStyles(side, S, sel) {
+    if (!S.followers) return;
+    const lab = (list, id) => (list.find(x => x.id === id) || {}).label, mixed = v => v === "mixed", lockedAll = S.followers - S.lockedRole <= 0;
+    _ccDropdown(side, "role", "ATTACK STYLE", mixed(S.role) ? "MIXED" : (lab(ATTACK_STYLES, S.role) || "—"), "#ff4a1c",
+        ATTACK_STYLES.map(x => ({ label: x.label, col: x.col, sub: x.blurb, on: S.role === x.id, fn: () => ccApplyRole(sel, x.id) })), lockedAll ? "EVOLVED KEEPS ITS ROLE" : null);
+    _ccDropdown(side, "play", "PLAY STYLE", mixed(S.playStyle) ? "MIXED" : (lab(PLAY_STYLES, S.playStyle) || "—"), "#ffe733",
+        PLAY_STYLES.map(x => ({ label: x.label, col: "#ffe733", sub: x.blurb, on: S.playStyle === x.id, fn: () => ccApplyPlayStyle(sel, x.id) })));
+}
+
+// ── THE CAROUSEL'S PARTS (see the top of this file) ──
+// The numbers on the card in view, each with how it stands against the best of your roster (a bar's length); the health bar is how much of its own health is left. A clone has no defense or attack.
+function _ccFocusStats(f) {
+    const all = ccUnits({}), top = get => Math.max(1, ...all.map(get)), pw = a => Math.round(a.power || 0), sp = a => Math.round((a.moveSpeed || 0) * 1000), df = a => a.stats ? Math.round(a.stats.defense || 0) : 0, at = a => a.stats ? Math.round(a.stats.attack || 0) : 0;
+    const hp = Math.max(0, Math.round(f.health || 0)), mx = Math.max(1, Math.round(f.maxHealth || 1));
+    const rows = [["HEALTH", hp / mx, hp + " / " + mx], ["POWER", pw(f) / top(pw), String(pw(f))], ["SPEED", sp(f) / top(sp), String(sp(f))]];
+    if (f.stats) rows.push(["DEFENSE", df(f) / top(df), String(df(f))], ["ATTACK", at(f) / top(at), String(at(f))]);
+    return rows;
+}
+// the creature in view: its picture, name, state and numbers, with ◂ ▸ to walk the roster; built once, updated in place
+function _ccFocusBuild(box) {
+    if (box._cf) return box._cf;
+    box.textContent = "";
+    const arrow = d => { const b = _ccEl("button", "cf-arrow " + (d < 0 ? "prev" : "next")); b.setAttribute("aria-label", d < 0 ? "Previous creature" : "Next creature"); b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + (d < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7") + '"/></svg>'; _ccClick(b, () => ccFocusStep(d)); return b; };
+    const card = _ccEl("div", "cf-card"), art = _ccEl("div", "cf-art"), cv = _ccEl("canvas", "cf-cv"); cv.width = 128; cv.height = 128; art.appendChild(cv);
+    const lv = _ccEl("span", "cf-lv"), el = _ccEl("span", "cf-el"); art.appendChild(lv); art.appendChild(el);
+    const txt = _ccEl("div", "cf-txt"), name = _ccEl("div", "cf-name"), state = _ccEl("span", "cf-state"), bars = _ccEl("div", "cf-bars");
+    const rows = ["HEALTH", "POWER", "SPEED", "DEFENSE", "ATTACK"].map(k => { const r = _ccEl("div", "cf-bar"); r.appendChild(_ccEl("span", "cf-k", k)); const i = _ccEl("i"); i.appendChild(_ccEl("b")); r.appendChild(i); r.appendChild(_ccEl("em")); bars.appendChild(r); return r; });
+    txt.appendChild(name); txt.appendChild(state); txt.appendChild(bars);
+    card.appendChild(art); card.appendChild(txt); card.appendChild(_ccEl("div", "cf-none", "NOBODY HERE: TAP RECRUIT, AT THE END OF THE STRIP, TO CALL A FOLLOWER"));
+    const prev = arrow(-1), next = arrow(1); box.appendChild(prev); box.appendChild(card); box.appendChild(next);
+    return box._cf = { card, cv, lv, el, name, state, rows, prev, next, key: null, done: false };
+}
+function _ccFocusDraw(box) {
+    const E = _ccFocusBuild(box), f = _ccFocus, list = _ccStripUnits(), walk = list.length > (f && list.indexOf(f) >= 0 ? 1 : 0);
+    E.card.classList.toggle("none", !f); E.prev.disabled = E.next.disabled = !walk;
+    if (!f) return;
+    const col = _ccColour(f.element), st = typeof unitStatus === "function" ? unitStatus(f) : null, set = (e, p, v) => { if (e[p] !== v) e[p] = v; };
+    E.card.style.setProperty("--c", col);
+    set(E.name, "textContent", typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER");
+    set(E.lv, "textContent", "LV " + (f.level || 1)); set(E.el, "textContent", f.isClone ? "CLONE" : String(_ccElLabel(f.element)).toUpperCase());
+    set(E.state, "textContent", st ? st.text + (st.room ? " · " + st.room : "") : "");
+    E.state.style.display = st ? "" : "none"; if (st) E.state.style.setProperty("--tc", st.col);
+    const rows = _ccFocusStats(f);
+    E.rows.forEach((r, i) => {
+        const v = rows[i]; r.style.display = v ? "" : "none"; if (!v) return;
+        const w = Math.max(4, Math.round(Math.min(1, v[1]) * 100)) + "%", b = r.querySelector("b"), n = r.querySelector("em"), frac = v[1], cls = i === 0 ? (frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low") : "";
+        if (b.style.width !== w) b.style.width = w; if (r.className !== "cf-bar" + (cls ? " " + cls : "")) r.className = "cf-bar" + (cls ? " " + cls : "");
+        set(n, "textContent", v[2]);
+    });
+    const key = _ccUid(f) + "|" + f.evolved + "|" + f.element; if (E.key !== key) { E.key = key; E.done = false; _ccThumb(E.cv, f); }
+    if (!E.done && f.evolved && typeof EVOLUTIONS !== "undefined") { const d = EVOLUTIONS[f.evolved]; if (d && d._img && d._img.complete) { E.done = true; _ccThumb(E.cv, f); } }   // (an evolved form's picture may still have been loading)
+}
+// the settings column: ATTACK STYLE, PLAY STYLE, RE-ROLL and INFO for the creature in view, then its base stats
+function _ccDrawSettings(side) {
+    side.textContent = "";
+    const one = _ccFocus; if (!one) { _ccDD = null; return; }
+    const sel = [one], S = ccSelectionSummary(sel);
+    _ccDrawStyles(side, S, sel);
+    const row = _ccEl("div", "cc-row"); side.appendChild(row);
+    if (S.followers) row.appendChild(_ccBtn(ccRerollArmed ? "TAP AGAIN" : "RE-ROLL", "#ff4a1c", ccRerollArmed, () => {
+        if (!ccRerollArmed) { ccRerollArmed = true; return; }
+        const nb = _ccNeighbour(one, 1); if (ccApplyReroll(sel) && nb) _ccFocus = nb;   // (made again at the Crystal: the next one comes into view)
+        ccRerollArmed = false;
+    }, "act"));
+    row.appendChild(_ccBtn("INFO ▸", "#8fe3ff", false, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(one); }, "act"));
+    if (ccRerollArmed) side.appendChild(_ccEl("div", "cc-note", "BACK TO THE CRYSTAL, MADE AGAIN AS SOMEONE NEW"));
+    const info = typeof unitInfo === "function" ? unitInfo(one) : null;
+    if (info) {   // (the card in view has VITALS, and the DEFENSE and ATTACK bars: the column lists the rest)
+        const idx = _ccEl("div", "cc-stats"), onCard = (sec, rw) => sec.h.indexOf("BASE STATS") === 0 && (rw[0] === "DEFENSE" || rw[0] === "ATTACK");
+        (info.stats || []).filter(sec => sec.h !== "VITALS").forEach(sec => { idx.appendChild(_ccEl("div", "cc-sec", sec.h)); (sec.rows || []).filter(rw => !onCard(sec, rw)).forEach(rw => { const r = _ccEl("div", "cc-stat"); r.appendChild(_ccEl("span", "cc-stat-k", rw[0])); r.appendChild(_ccEl("span", "cc-stat-v", rw[1])); idx.appendChild(r); }); });
+        side.appendChild(idx);
+    }
+}
+// the bar at the foot: what the creature in view can do about the squad, in one tap (ASKED: "SWAP … IN FOR", the three who could make room). Redrawn only when it changes.
+function _ccSwapDraw(bar) {
+    const f = _ccFocus, mem = partyOrdered(), free = PARTY.max - mem.length;
+    const kind = !f ? "none" : f.isClone || f.isFollower !== true ? "clone" : partyIsMember(f) ? "member" : f.post ? (free > 0 ? "add" : "swap") : "away";
+    const sg = kind + "|" + (f ? _ccUid(f) + "|" + f.partySlot : "") + "|" + free + "|" + mem.map(m => _ccUid(m) + ":" + m.partySlot + ":" + m.element).join(",");
+    if (sg === _ccSwapSig && bar.firstChild) return; _ccSwapSig = sg; bar.textContent = "";
+    const nm = u => typeof unitTypeLabel === "function" ? unitTypeLabel(u) : "FOLLOWER";
+    const label = t => bar.appendChild(_ccEl("div", "cc-sw-l", t));
+    const pick = (title, sub, col, fn) => { const b = _ccEl("button", "cc-pick"); b.style.setProperty("--c", col); b.appendChild(_ccEl("span", "orb")); const tx = _ccEl("span", "cc-pk-t", title); if (sub) tx.appendChild(_ccEl("small", null, sub)); b.appendChild(tx); _ccClick(b, () => { fn(); ccRender(); }); bar.appendChild(b); return b; };
+    if (kind === "none") label("RECRUIT A FOLLOWER TO FILL THE SQUAD");
+    else if (kind === "clone") label("A CLONE IS NOT A FOLLOWER: ONLY FOLLOWERS JOIN THE SQUAD");
+    else if (kind === "away") label("NOT IN THE SQUAD, AND NOT HOLDING A ROOM: IT IS ON ITS WAY");
+    else if (kind === "member") { label(nm(f) + " IS IN THE SQUAD · SLOT " + (f.partySlot + 1)); pick("✕ REMOVE FROM SQUAD", "IT HOLDS THE ROOM IT IS IN", "#8fe3ff", () => partyRemove([f])); }
+    else if (kind === "add") { label("ADD " + nm(f) + " TO THE SQUAD"); pick("ADD TO SQUAD", free + (free === 1 ? " SLOT FREE" : " SLOTS FREE"), "#19e6c1", () => partyAdd([f])); }
+    else { label("SWAP " + nm(f) + " IN FOR"); mem.forEach(m => pick(nm(m), "THAT ONE HOLDS ITS ROOM INSTEAD", _ccColour(m.element), () => partySwap(m, f))); }
 }
 // THE SQUAD'S BUTTONS in the side panel (the facility; ASKED: "when you click the creature on the roster, it should show on the side add to party or add to squad"): ADD TO SQUAD for a follower that holds a room, REMOVE FROM SQUAD for one that is
 // in the squad (it holds the room it is in); with the squad full, SWAP WITH one of the three. With more than one selected each button NAMES the follower it is for and acts on exactly that one (REPORTED: "it ends up adding the same follower that was
@@ -453,12 +625,12 @@ function _ccDrawSquadWindow(body) {
 }
 
 // The shard readout beside RECRUIT: "◆ 200" and "30 PER RECRUIT · 6 AFFORDABLE" (or "NEED 10 MORE" in red).
-function ccShardsUpdate(el) {
+function ccShardsUpdate(el, car) {
     const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, have = typeof shardCount !== "undefined" ? shardCount : 0, n = Math.floor(have / cost);
-    const sig = have + "|" + cost; if (el._sig === sig) return; el._sig = sig;
-    el.classList.toggle("short", have < cost);
+    const sig = have + "|" + cost + "|" + !!car; if (el._sig === sig) return; el._sig = sig;
+    el.classList.toggle("short", have < cost && !car);   // (the carousel's total is only what you have: the RECRUIT tile says what a follower costs, and how many you can afford)
     el.querySelector(".cc-sh-n").textContent = "\u25c6 " + have;
-    el.querySelector(".cc-sh-c").textContent = have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
+    el.querySelector(".cc-sh-c").textContent = car ? "YOUR CRYSTALS" : have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
 }
 // What the squad strip shows: each squad, its members and whether each is selected.
 function _ccSqSig() {
@@ -468,6 +640,10 @@ function _ccSqSig() {
 }
 // Everything the side panel shows: the selection summary, the squads, the scope, the element, who would get world orders.
 function _ccSideSigNow() {
+    if (ccCarousel() && ccOpenTab === "roster") {   // the carousel's settings are for the creature in view
+        const f = _ccFocus; if (!f) return "F-";
+        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.duty, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed;
+    }
     const pool = typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0;
     const one = ccSelectionList().length === 1 ? ccSelectionList()[0] : null, snap = one ? [one.level, Math.round((one.health || 0) / 5), one.evolved, one.element].join() : "";
     return JSON.stringify(ccSelectionSummary()) + "|" + snap + "|" + _ccDD + "|" + _ccSqSig() + "|" + squadMode + "|" + (typeof player !== "undefined" ? player.selectedElement : "") + "|" + ccRerollArmed + "|" + pool + "|" + (typeof unlockedElements !== "undefined" ? unlockedElements.size : 0);
@@ -506,7 +682,7 @@ function _ccDrawSquadOrders(side) {
     side.appendChild(_ccEl("div", "cc-sel-title ccs", "SQUAD ORDERS"));
     side.appendChild(_ccEl("div", "cc-sel-sub", (ccSelectionList().length ? ccSelectionList().length + " SELECTED RECEIVE WORLD ORDERS" : (typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0) + " IN THE COMMAND POOL")));
     const grp = (t, kids) => { side.appendChild(_ccEl("div", "cc-sec", t)); const r = _ccEl("div", "cc-row wrap"); kids.forEach(k => r.appendChild(k)); side.appendChild(r); };
-    grp("WHO GETS WORLD ORDERS (WHEN NOBODY IS SELECTED)", [
+    if (!(typeof hudCorners === "function" && hudCorners())) grp("WHO GETS WORLD ORDERS (WHEN NOBODY IS SELECTED)", [   // (the corners layout has no element picker: the orders reach the whole squad, or the cards that are picked on the squad bar)
         _ccBtn("ALL ELEMENTS", "#19e6c1", squadMode === "all", () => radialSetScope(true), "wide", "THE WHOLE SQUAD"),
         _ccBtn("SELECTED ELEMENT: " + _ccElLabel(player.selectedElement), "#19e6c1", squadMode !== "all", () => radialSetScope(false), "wide", "ONE ELEMENT"),
     ]);
