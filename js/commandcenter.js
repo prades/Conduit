@@ -506,7 +506,9 @@ function _ccZoneCard(z) {
     return card;
 }
 
-// A chip while anyone is selected: how many, a way to let them go, and the roster. In the facility it sits over the squad bar (under it on a phone) and the css stacks it there (game.html, --sb-*); the classic game keeps it above the dock.
+// A chip above the dock while anyone is selected: how many, a way to let them go, and the roster. THE FACILITY HAS NONE (ASKED: "the selected little number thing is kind of irrelevant because it shows you which ones you have selected, and you can only
+// have the squad really selected. So just get rid of the little box that says how many are selected and keep the little rostered squad"): its squad bar (js/party.js) lights the selected cards, a tap on a lit card lets it go, the tool's WHO row
+// (ALL, an element) lets the whole selection go, and an open slot or the dock's ROSTER opens the roster. The classic game has no squad bar, and keeps the chip.
 function ccRefreshChip() {
     if (typeof document === "undefined" || !document.body) return;
     let chip = document.getElementById("selChip"); const n = ccSelectionList().length;
@@ -515,7 +517,7 @@ function ccRefreshChip() {
         const b = _ccEl("button", null, "✕"); b.setAttribute("aria-label", "Clear the selection"); _ccClick(b, () => { ccClearSelection(); ccRefreshChip(); if (ccOpenTab) ccRender(); }); chip.appendChild(b);
         const o = _ccEl("button", null, "ROSTER"); _ccClick(o, () => ccOpen("roster")); chip.appendChild(o); document.body.appendChild(chip);
     }
-    chip.style.display = n && !ccOpenTab ? "flex" : "none";
+    chip.style.display = n && !ccOpenTab && !(typeof partyOn === "function" && partyOn()) ? "flex" : "none";   // (the squad check last: nobody is selected while the page boots, before js/party.js is loaded)
     const l = document.getElementById("selChipLabel"); if (l) l.textContent = n + " SELECTED";
 }
 
