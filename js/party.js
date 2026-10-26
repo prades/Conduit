@@ -122,35 +122,39 @@ function partyPatrol(a) {
 // ── THE SQUAD BAR: the three, as small roster cards over the dock, where the ammunition chip was ──
 // One card for each slot, kept (updated in place: a tap is never lost to a redraw): the unit's picture, its name, `LV 9 · FOLLOWING`, its health. TAP a card to select that follower (the rings under it, WHO says SEL 1, and the enemy card's strip says
 // SELECTED 1: "depending on what followers you have selected"); the i is its INFO; an open slot opens the roster, to call a follower back from its room or to recruit.
-let _sbEls = null;
+// The same three cards are the SQUAD BOX at the top of the Command Center's roster (js/commandcenter.js): the squad at a glance, without a trip to another menu. partySlotsBuild / partySlotsUpdate draw either.
+let _sbEls = null, _sbxEls = null;
 function partyBarEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("squadBar") : null; }
-function partyBarBuild(root) {
-    if (_sbEls && _sbEls.root === root) return _sbEls;
+function partyBoxEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("ccSquadBox") : null; }
+// three slot cards in `root`, built once (they are updated in place afterwards); `onClick` takes a tap on any of them
+function partySlotsBuild(root, onClick) {
     root.textContent = ""; const slots = [];
     for (let i = 0; i < PARTY.max; i++) {
         const el = document.createElement("div"); el.className = "sb-slot empty"; el.setAttribute("data-slot", String(i));
         el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-txt"><b class="sb-name"></b><i class="sb-sub"></i><span class="sb-hp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><span class="sb-open">+ OPEN SLOT</span>';
         root.appendChild(el); slots.push(el);
     }
-    root.addEventListener("click", partyBarClick);
-    return (_sbEls = { root, slots });
+    root.addEventListener("click", onClick);
+    return { root, slots };
+}
+function partyBarBuild(root) { if (!_sbEls || _sbEls.root !== root) _sbEls = partySlotsBuild(root, partyBarClick); return _sbEls; }
+function _partyTapped(ev) {
+    const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return null;
+    const slot = t.closest(".sb-slot"); if (!slot) return null;
+    return { f: slot._unit, info: !!t.closest(".sb-info") };
 }
 function partyBarClick(ev) {
-    const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return;
-    const slot = t.closest(".sb-slot"); if (!slot) return;
-    const f = slot._unit;
-    if (t.closest(".sb-info")) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
+    const hit = _partyTapped(ev); if (!hit) return;
+    const f = hit.f;
+    if (hit.info) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
     if (!f) { if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the roster
     if (typeof ccToggle === "function") ccToggle(f);
     partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
 }
 function _sbSet(el, prop, v) { if (el[prop] !== v) el[prop] = v; }
-function partyBarRender(force) {
-    const root = partyBarEl(); if (!root) return;
-    const on = partyOn(); if (root.classList) root.classList.toggle("on", on);
-    if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("squad-bar", on);   // (a phone moves the battle tool up for it: game.html)
-    if (!on) return;
-    const E = partyBarBuild(root), mem = partyOrdered();
+// each slot shows the follower in that card slot of the squad (partySlot), or is open
+function partySlotsUpdate(E) {
+    const mem = partyOrdered();
     for (let i = 0; i < PARTY.max; i++) {
         const el = E.slots[i], f = mem.find(m => m.partySlot === i) || null;
         if (el._unit !== f) { el._unit = f; el.classList.toggle("empty", !f); el._thumbKey = null; }
@@ -167,5 +171,55 @@ function partyBarRender(force) {
         if (!el._thumbDone && f.evolved && typeof EVOLUTIONS !== "undefined" && typeof _ccThumb === "function") { const d = EVOLUTIONS[f.evolved]; if (d && d._img && d._img.complete) { el._thumbDone = true; _ccThumb(el.querySelector(".sb-thumb"), f); } }   // (an evolved form's picture may still have been loading)
     }
 }
+function partyBarRender(force) {
+    const root = partyBarEl(); if (!root) return;
+    const on = partyOn(); if (root.classList) root.classList.toggle("on", on);
+    if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("squad-bar", on);   // (a phone moves the battle tool up for it: game.html)
+    if (!on) return;
+    partySlotsUpdate(partyBarBuild(root));
+}
+// THE SQUAD BOX (the Command Center's roster, the facility): a tap on a card selects that follower (the side panel then offers REMOVE FROM SQUAD); the i is its INFO; an open slot says how to fill it, and does nothing
+function partyBoxClick(ev) {
+    const hit = _partyTapped(ev); if (!hit || !hit.f) return;
+    if (hit.info) { if (typeof unitInfoOpen === "function") unitInfoOpen(hit.f); return; }
+    if (typeof ccToggle === "function") ccToggle(hit.f);
+    if (typeof ccRender === "function") ccRender();
+}
+function partyBoxRender() {
+    const root = partyBoxEl(); if (!root || !partyOn()) return;
+    if (!_sbxEls || _sbxEls.root !== root) _sbxEls = partySlotsBuild(root, partyBoxClick);
+    partySlotsUpdate(_sbxEls);
+}
 // each few frames (js/game.js render): the squad is kept to three, and its bar follows it
 function partyTick() { partySync(false); partyBarRender(false); }
+
+// ── ADD, REMOVE, SWAP, DISBAND: the squad's buttons (the Command Center's side panel and SQUADS window, js/commandcenter.js; the phone's roster, js/radialmenu.js) ──
+// ASKED: "when you click the creature on the roster, it should show on the side add to party or add to squad [...] And here you can disband them." A follower is in the squad or it holds a room: ADD calls the followers that hold a room back into the
+// squad while it has room, REMOVE posts them in the rooms they are in, SWAP does both at once (the card keeps its slot), DISBAND removes the whole squad. Each says what it did, and the bars follow at once.
+function _partyFollower(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green"; }
+function partyAdd(units) {
+    const list = (units || []).filter(f => _partyFollower(f) && !partyIsMember(f)); if (!list.length) return 0;
+    let n = 0, refused = 0; for (const f of list) { if (partyCall(f, true)) n++; else refused++; }
+    if (n) _partySay("ADDED TO THE SQUAD · " + partyMembers().length + " OF " + PARTY.max, "#19e6c1");
+    if (refused) _partySay("SQUAD FULL · " + PARTY.max + " OF " + PARTY.max, "#ff8a6a");
+    partyBarRender(true); return n;
+}
+function partyRemove(units) {
+    const list = (units || []).filter(partyIsMember); let n = 0; const rooms = new Set();
+    for (const f of list) { const room = partyRoomOf(f); if (partyPost(f, room, true)) { n++; rooms.add(room); } }
+    if (n) _partySay("REMOVED FROM THE SQUAD · " + (rooms.size === 1 ? "HOLDING THE " + partyRoomName([...rooms][0]).toUpperCase() : n + " HOLD THEIR ROOMS"), "#8fe3ff");
+    partyBarRender(true); return n;
+}
+// `out` is in the squad and goes to hold the room it is in; `inn` holds a room and takes its card
+function partySwap(out, inn) {
+    if (!partyIsMember(out) || !_partyFollower(inn) || partyIsMember(inn)) return false;
+    if (!partyPost(out, partyRoomOf(out), true)) return false;
+    if (!partyCall(inn, true)) { out.post = null; out.stance = "follow"; out._patrol = null; partySync(false); return false; }   // (cannot happen: a slot has just been freed)
+    _partySay("SWAPPED IN · " + (typeof unitTypeLabel === "function" ? unitTypeLabel(inn) : "FOLLOWER"), "#19e6c1"); partyBarRender(true); return true;
+}
+function partyDisband() {
+    const mem = partyMembers(); if (!mem.length) return 0;
+    let n = 0; const rooms = new Set(); for (const f of mem) { const room = partyRoomOf(f); if (partyPost(f, room, true)) { n++; rooms.add(room); } }
+    _partySay("SQUAD DISBANDED · " + n + " HOLD " + (rooms.size === 1 ? "THE " + partyRoomName([...rooms][0]).toUpperCase() : rooms.size + " ROOMS"), "#ffe733");
+    partyBarRender(true); return n;
+}

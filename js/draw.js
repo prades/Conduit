@@ -94,7 +94,7 @@ function drawRadialMenu() {
         const c = commandFollowerTarget;
         const cUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
         const job = typeof cloneJob === "function" ? cloneJob(c) : null;
-        drawRadialButton(commandX, commandY-RADIAL_RADIUS, c.duty === "worker" ? "TO LINE" : job ? "TO WORK" : "NO JOB YET", cUp && (!!job || c.duty === "worker"));
+        drawRadialButton(commandX, commandY-RADIAL_RADIUS, typeof partyOn === "function" && partyOn() ? "FIGHTER" : c.duty === "worker" ? "TO LINE" : job ? "TO WORK" : "NO JOB YET", cUp && (!!job || c.duty === "worker"));   // (no working in the facility: the ring says FIGHTER)
         if (cUp) selectedRadialAction = "clone_duty";
         const cRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4;
         drawRadialButton(commandX+RADIAL_RADIUS, commandY, "ROSTER CARD", cRight);

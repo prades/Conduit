@@ -673,7 +673,9 @@ function workerElements() {
     return [MASS_NEUTRALISER, MASS_HAULER, PYLON_REPAIRER, CLONE_MENDER, ICE_BLOCKER];
 }
 
+// THERE IS NO WORKING IN THE FACILITY (ASKED: "we're also going to remove working. There is no more working."): a follower there fights, follows or holds a room; the work crew, the roster's DUTY, WORKING and ALL TO WORK are the classic game's.
 function canWorkMass(actor) {
+    if (typeof partyOn === "function" && partyOn()) return false;
     return !!actor && workerElements().indexOf(actor.element) >= 0;
 }
 
@@ -716,6 +718,7 @@ function releaseStandingPost(actor) {
 // of each other is noise — the caller says it once for the whole group instead.
 function setFollowerDuty(actor, duty, quiet) {
     if (!actor) return false;
+    if (duty === 'worker' && typeof partyOn === "function" && partyOn()) return false;   // (no working in the facility)
     if (duty === 'worker' && !canWorkMass(actor)) {
         if (!quiet) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
             text: 'ONLY ' + workerElementsLabel() + ' CAN WORK', color: '#f88', life: 110, vy: -0.25, size: 12 });

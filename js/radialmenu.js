@@ -4,7 +4,7 @@
 // REPORTED: "for mobile it should be a left radial menu with squad analytics and roster and commands." On a phone the top row of buttons
 // is gone; one thumb-sized HUB sits on the left edge. Tapping it fans out five slabs:
 //
-//   SQUAD   analytics: the count, health and role split of the squad, per element (tap a row to select that element)
+//   SQUAD   analytics: the count, health and role split of the squad, per element (tap a row to select that element); in the facility, YOUR SQUAD: its three cards, REMOVE on each, DISBAND SQUAD
 //   ROSTER  every follower as a card: its form, level, health and duty (tap its WORK switch to put it on or take it off the crew)
 //   ORDERS  commands for the squad: all elements or the selected one, a role filter, switch roles, all to work / all to fight
 //   BUILD   toggles build mode (the same as the BUILD button)
@@ -114,7 +114,20 @@ function radialRender() {
     } catch (e) { /* the numbers come from the plain functions above; a drawing fault just leaves the panel empty */ }
 }
 
+// THE SQUAD PETAL IN THE FACILITY (the Command Center's SQUADS window): the squad's three cards (an open slot says so), a REMOVE on each, DISBAND SQUAD (they all hold the rooms they are in)
+function _radialDrawYourSquad(panel) {
+    const mem = partyOrdered(), n = mem.length, rows = radialRosterRows();
+    panel.appendChild(_rEl("div", "rp-title", "YOUR SQUAD"));
+    panel.appendChild(_rEl("div", "rp-sub", n + " / " + PARTY.max + " \u00b7 " + partyPosted().length + " HOLD ROOMS"));
+    for (let i = 0; i < PARTY.max; i++) {
+        const f = mem.find(m => m.partySlot === i) || null, r = f ? rows.find(x => x.f === f) : null;
+        if (r) { panel.appendChild(_radialCard(r)); continue; }
+        const o = _rEl("div", "rp-card rp-open"); o.style.setProperty("--c", "#6d7fa6"); const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", "+ OPEN SLOT")); mid.appendChild(_rEl("div", "rp-csub", "ADD A FOLLOWER FROM THE ROSTER")); o.appendChild(mid); panel.appendChild(o);
+    }
+    const d = _rEl("button", "rp-btn wide", "DISBAND SQUAD"); d.style.setProperty("--c", "#ff4a1c"); if (!n) d.disabled = true; _rClick(d, () => { partyDisband(); radialRender(); }); panel.appendChild(d);
+}
 function _radialDrawSquad(panel) {
+    if (_rParty()) { _radialDrawYourSquad(panel); return; }
     const st = radialSquadStats(radialFilter);
     panel.appendChild(_rEl("div", "rp-title", "SQUAD"));
     { const z = _rEl("button", "rp-btn wide on", "ZONES \u00b7 TELEPORT \u00b7 REPAIR"); z.style.setProperty("--c", "#8fe3ff"); _rClick(z, () => { radialOpen = false; if (typeof radialRender === "function") radialRender(); if (typeof ccOpen === "function") ccOpen("zones"); }); panel.appendChild(z); }
@@ -147,25 +160,46 @@ function _radialDrawRoster(panel) {
       { const have = typeof shardCount !== "undefined" ? shardCount : 0, n = _rEl("div", "rp-sub", "\u25c6 " + have + (have < cost ? " \u00b7 NEED " + (cost - have) + " MORE" : " \u00b7 " + Math.floor(have / cost) + " AFFORDABLE")); if (have < cost) n.style.color = "#ff8a6a"; panel.appendChild(n); }
       panel.appendChild(b); }
     if (!rows.length) panel.appendChild(_rEl("div", "rp-sub", "NONE YET: RECRUIT ONE ABOVE"));
-    // ROSTER SQUADS (js/squads.js): a chip per squad selects it; MAKE SQUAD turns the selection (1 to 3) into one
-    if (typeof squadsLive === "function" && rows.length) {
+    if (_rParty()) _radialSquadStrip(panel);   // (the facility: the squad, at a glance)
+    // ROSTER SQUADS (js/squads.js): a chip per squad selects it; MAKE SQUAD turns the selection (1 to 3) into one (the classic game's: the facility has its one squad)
+    if (!_rParty() && typeof squadsLive === "function" && rows.length) {
         const chips = _rEl("div", "rp-chips"), sel = typeof ccSelectionList === "function" ? ccSelectionList().filter(a => !a.isClone) : [];
         squadsLive().forEach(sq => { const c = _rEl("button", "rp-btn small", "SQUAD " + sq.id + " \u00b7 " + sq.members.length); c.style.setProperty("--c", sq.col); _rClick(c, () => { squadSelect(sq.id); radialRender(); }); chips.appendChild(c); });
         if (sel.length && sel.length <= SQUAD_MAX) { const m = _rEl("button", "rp-btn small on", "MAKE SQUAD"); m.style.setProperty("--c", "#19e6c1"); _rClick(m, () => { squadMake(sel); radialRender(); }); chips.appendChild(m); }
         if (sel.some(a => squadOf(a))) { const l = _rEl("button", "rp-btn small", "LEAVE SQUAD"); l.style.setProperty("--c", "#8aa0c8"); _rClick(l, () => { squadLeave(sel); radialRender(); }); chips.appendChild(l); }
         if (chips.childNodes.length) panel.appendChild(chips);
     }
-    rows.slice(0, 40).forEach(r => {
-        const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));
-        card.style.setProperty("--c", _radialElementColour(r.element));
-        const cv = _rEl("canvas", "rp-thumb"); cv.width = 44; cv.height = 44; cv.style.width = "36px"; cv.style.height = "36px"; _radialThumb(cv, r.f); card.appendChild(cv);
-        const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", (typeof squadOf === "function" && squadOf(r.f) ? squadOf(r.f) + " \u00b7 " : "") + r.name)); { const st = typeof unitStatus === "function" ? unitStatus(r.f) : null; if (st) { const c = _rEl("div", "rp-cstat", st.text); c.setAttribute("style", "--c:" + st.col + ";"); mid.appendChild(c); } } mid.appendChild(_rEl("div", "rp-csub", ({ brawler: "BRAWL", mage: "MAGE", technician: "TECH", worker: "WORK" })[r.role] + " · LV " + r.level));
-        const bar = _rEl("div", "rp-bar"), fill = _rEl("i"); fill.style.width = Math.round(r.hp * 100) + "%"; bar.appendChild(fill); mid.appendChild(bar); card.appendChild(mid);
-        if (r.canWork) { const w = _rEl("button", "rp-btn small wide" + (r.working ? " on" : ""), "WORK"); w.style.setProperty("--c", "#19e6c1"); _rClick(w, () => { toggleFollowerDuty(r.f); radialRender(); }); mid.appendChild(w); }
-        { const inf = _rEl("button", "rp-btn small wide", "INFO"); inf.style.setProperty("--c", "#8fe3ff"); _rClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.f); }); mid.appendChild(inf); }
-        _rClick(card, () => { if (typeof ccToggle === "function") ccToggle(r.f); radialRender(); });   // tap a card: select it (the command pool, js/commandcenter.js)
-        panel.appendChild(card);
-    });
+    rows.slice(0, 40).forEach(r => panel.appendChild(_radialCard(r)));
+}
+// the facility: the squad and the roster's rooms (js/party.js)
+function _rParty() { return typeof partyOn === "function" && partyOn(); }
+// THE SQUAD STRIP at the top of the phone's roster (the facility; the Command Center's squad box): three chips, the follower in each (a tap selects it) or an open slot
+function _radialSquadStrip(panel) {
+    panel.appendChild(_rEl("div", "rp-label", "YOUR SQUAD \u00b7 " + partyMembers().length + " / " + PARTY.max));
+    const strip = _rEl("div", "rp-chips"), mem = partyOrdered();
+    for (let i = 0; i < PARTY.max; i++) {
+        const f = mem.find(m => m.partySlot === i) || null;
+        if (!f) { const o = _rEl("div", "rp-chip rp-open", "OPEN"); o.style.setProperty("--c", "#6d7fa6"); strip.appendChild(o); continue; }
+        const on = typeof selectedUnits !== "undefined" && selectedUnits.has(f), c = _rEl("button", "rp-btn small" + (on ? " on" : ""), typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER"); c.style.setProperty("--c", _radialElementColour(f.element));
+        _rClick(c, () => { if (typeof ccToggle === "function") ccToggle(f); radialRender(); }); strip.appendChild(c);
+    }
+    panel.appendChild(strip);
+}
+// one follower's card: its picture, name, status, level and health, and its buttons (WORK in the classic game; ADD TO / REMOVE FROM SQUAD in the facility; INFO); a tap on the card selects it
+function _radialCard(r) {
+    const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));
+    card.style.setProperty("--c", _radialElementColour(r.element));
+    const cv = _rEl("canvas", "rp-thumb"); cv.width = 44; cv.height = 44; cv.style.width = "36px"; cv.style.height = "36px"; _radialThumb(cv, r.f); card.appendChild(cv);
+    const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", (typeof squadOf === "function" && squadOf(r.f) ? squadOf(r.f) + " \u00b7 " : "") + r.name)); { const st = typeof unitStatus === "function" ? unitStatus(r.f) : null; if (st) { const c = _rEl("div", "rp-cstat", st.text + (st.room ? " \u00b7 " + st.room : "")); c.setAttribute("style", "--c:" + st.col + ";"); mid.appendChild(c); } } mid.appendChild(_rEl("div", "rp-csub", ({ brawler: "BRAWL", mage: "MAGE", technician: "TECH", worker: "WORK" })[r.role] + " · LV " + r.level));
+    const bar = _rEl("div", "rp-bar"), fill = _rEl("i"); fill.style.width = Math.round(r.hp * 100) + "%"; bar.appendChild(fill); mid.appendChild(bar); card.appendChild(mid);
+    if (_rParty() && r.f.isFollower === true && !r.f.isClone) {   // ADD TO SQUAD for a follower holding a room, REMOVE FROM SQUAD for one in it
+        const inSq = partyIsMember(r.f), free = PARTY.max - partyMembers().length;
+        if (inSq || r.f.post) { const b = _rEl("button", "rp-btn small wide" + (!inSq && free ? " on" : ""), inSq ? "REMOVE FROM SQUAD" : free ? "ADD TO SQUAD" : "SQUAD FULL"); b.style.setProperty("--c", inSq ? "#8fe3ff" : "#19e6c1"); if (!inSq && !free) b.disabled = true; _rClick(b, () => { if (inSq) partyRemove([r.f]); else partyAdd([r.f]); radialRender(); }); mid.appendChild(b); }
+    }
+    if (r.canWork) { const w = _rEl("button", "rp-btn small wide" + (r.working ? " on" : ""), "WORK"); w.style.setProperty("--c", "#19e6c1"); _rClick(w, () => { toggleFollowerDuty(r.f); radialRender(); }); mid.appendChild(w); }
+    { const inf = _rEl("button", "rp-btn small wide", "INFO"); inf.style.setProperty("--c", "#8fe3ff"); _rClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.f); }); mid.appendChild(inf); }
+    _rClick(card, () => { if (typeof ccToggle === "function") ccToggle(r.f); radialRender(); });   // tap a card: select it (the command pool, js/commandcenter.js)
+    return card;
 }
 
 // The sprite of an evolved follower, else a plain coloured egg.
@@ -190,8 +224,10 @@ function _radialDrawOrders(panel) {
     panel.appendChild(roleRow);
     panel.appendChild(_rEl("div", "rp-label", "COMMANDS"));
     panel.appendChild(mk("SWITCH ROLES", "#ffe733", false, () => cycleCommandPoolRoles()));
-    panel.appendChild(mk("ALL TO WORK", "#00ccaa", false, () => radialSetAllWork(true)));
-    panel.appendChild(mk("ALL TO FIGHT", "#ff4a1c", false, () => radialSetAllWork(false)));
+    if (!_rParty()) {   // (nobody works in the facility)
+        panel.appendChild(mk("ALL TO WORK", "#00ccaa", false, () => radialSetAllWork(true)));
+        panel.appendChild(mk("ALL TO FIGHT", "#ff4a1c", false, () => radialSetAllWork(false)));
+    }
 }
 
 function initRadialMenu() {

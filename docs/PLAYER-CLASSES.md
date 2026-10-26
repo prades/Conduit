@@ -147,6 +147,8 @@ Each piece is an **effect** (what it does) at a **tier** (where it reaches): the
 
 ### 4.3 Roster squads (what a T2 piece reaches)
 
+**In the facility** there is one squad, the three that follow you (js/party.js, docs/TUTORIAL.md "The squad in the Command Center"): `squadReach` is that squad, and the roster squads below (A, B, C, MAKE SQUAD, letters and colours) are the classic game's.
+
 A **squad** is a small group you set up in the roster: up to **3 followers**, named (SQUAD A, B, C...) and coloured, a follower in at most one. It is a **new roster feature**, separate from the zone worker crews in js/zones.js (those are ants and core workers sent to build a zone). Squads are also useful on their own, so they ship with Track B's first step:
 
 - **Making one:** in the Command Center roster, select up to 3 cards and tap **MAKE SQUAD**; a squad strip across the top shows each squad with its members and the gear they share. Drag or tap a member to remove it; a dead member leaves the squad.

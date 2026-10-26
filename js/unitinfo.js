@@ -82,9 +82,10 @@ function followerInfo(a) {
     const u = ELEMENT_ULTIMATES.find(x => x.el === a.element);
     if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". Double-tap the follower when it is fully charged.", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
     // JOBS
-    out.jobs.push({ h: "RIGHT NOW", rows: [["DUTY", worker ? "WORKING" : "FIGHTING"], ["STANCE", a.post && typeof partyRoomName === "function" ? "HOLDING THE " + partyRoomName(a.post).toUpperCase() : a.stance === "hold" || (a.job && a.job.type === "move") ? "HOLDING A POST" : "FOLLOWING YOU"]] });
+    const pt = typeof partyOn === "function" && partyOn();   // the facility: the squad, or a room it holds; nobody works
+    out.jobs.push({ h: "RIGHT NOW", rows: (pt ? [] : [["DUTY", worker ? "WORKING" : "FIGHTING"]]).concat([["STANCE", a.post && typeof partyRoomName === "function" ? "HOLDING THE " + partyRoomName(a.post).toUpperCase() : pt && typeof partyIsMember === "function" && partyIsMember(a) ? "IN THE SQUAD, FOLLOWING YOU" : a.stance === "hold" || (a.job && a.job.type === "move") ? "HOLDING A POST" : "FOLLOWING YOU"]]) });
     const w = WORK_INFO[a.element];
-    out.jobs.push(canWork && w ? { h: "WORK · " + w.label, note: w.text, rows: [["HOW", "Set it to WORK in the Command Center (it leaves the line)"]] }
+    if (!pt) out.jobs.push(canWork && w ? { h: "WORK · " + w.label, note: w.text, rows: [["HOW", "Set it to WORK in the Command Center (it leaves the line)"]] }
                                : { h: "WORK", note: "A " + _uiLabel(a.element) + " follower has no job: it fights only.", rows: [] });
     if (ev && ev.duty === "worker" && WORKER_MOVE_INFO[ev.move]) out.jobs.push({ h: "JOB BONUS · " + ev.move, note: ev.name + " does its job better:", rows: WORKER_MOVE_INFO[ev.move]() });
     // STATS

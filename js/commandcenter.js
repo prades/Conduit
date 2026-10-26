@@ -210,18 +210,25 @@ function ccBuildFrame() {
     const sqb = _ccEl("button", "cc-close cc-sqbtn", "SQUADS"); sqb.id = "ccSquadsBtn"; _ccClick(sqb, () => { ccSquadsOpen = !ccSquadsOpen; ccRender(); }); head.appendChild(sqb);
     const x = _ccEl("button", "cc-close", "✕ CLOSE"); x.id = "ccClose"; _ccClick(x, ccClose); head.appendChild(x); root.appendChild(head);
     const body = _ccEl("div", "cc-body"); body.id = "ccBody";
-    const main = _ccEl("div", "cc-main"); main.id = "ccMain"; main.appendChild(_ccEl("div", "cc-filters")); main.lastChild.id = "ccFilters";
+    const main = _ccEl("div", "cc-main"); main.id = "ccMain";
+    // THE SQUAD BOX (the facility; js/party.js partyBoxRender): the squad's three cards at the top of the roster, so the whole squad is in view without opening SQUADS
+    const sqx = _ccEl("div", "cc-sqbox"); sqx.id = "ccSquadBoxWrap"; const sqh = _ccEl("div", "cc-sqbox-h"); const sqc = _ccEl("span", null, "YOUR SQUAD"); sqc.id = "ccSquadCount"; sqh.appendChild(sqc); sqh.appendChild(_ccEl("i", null, "SELECT A FOLLOWER BELOW TO ADD, REMOVE OR SWAP IT")); sqx.appendChild(sqh);
+    const sqb2 = _ccEl("div"); sqb2.id = "ccSquadBox"; sqx.appendChild(sqb2); main.appendChild(sqx);
+    main.appendChild(_ccEl("div", "cc-filters")); main.lastChild.id = "ccFilters";
     const grid = _ccEl("div", "cc-grid"); grid.id = "ccGrid"; main.appendChild(grid);
     const page = _ccEl("div", "cc-page"); page.id = "ccPage"; main.appendChild(page);
     body.appendChild(main);
     const side = _ccEl("div", "cc-side"); side.id = "ccSide"; body.appendChild(side);
     root.appendChild(body);
     // THE SQUADS WINDOW (js/squads.js): over the roster, so squads are not crammed into the card area
-    const win = _ccEl("div", "cc-sqwin"); win.id = "ccSquadWin"; const card = _ccEl("div", "cc-sqcard"); const hd = _ccEl("div", "cc-sqhead"); hd.appendChild(_ccEl("div", "cc-sel-title", "SQUADS"));
+    const win = _ccEl("div", "cc-sqwin"); win.id = "ccSquadWin"; const card = _ccEl("div", "cc-sqcard"); const hd = _ccEl("div", "cc-sqhead"); const sqt = _ccEl("div", "cc-sel-title", "SQUADS"); sqt.id = "ccSquadTitle"; hd.appendChild(sqt);
     const xs = _ccEl("button", "cc-close", "✕ BACK TO ROSTER"); _ccClick(xs, () => { ccSquadsOpen = false; ccRender(); }); hd.appendChild(xs); card.appendChild(hd);
     const sb = _ccEl("div", "cc-sqbody"); sb.id = "ccSquadBody"; card.appendChild(sb); win.appendChild(card); root.appendChild(win);
     window.addEventListener("keydown", e => { if (e && e.key === "Escape" && ccOpenTab) { if (ccSquadsOpen) { ccSquadsOpen = false; ccRender(); } else ccClose(); } });
 }
+
+// the facility: the squad is THE squad (js/party.js), there are no roster squads (A, B, C) and nobody works
+function _ccParty() { return typeof partyOn === "function" && partyOn(); }
 
 // A chip / button factory for the panels.
 function _ccBtn(label, col, on, fn, cls, sub) {
@@ -238,10 +245,13 @@ function ccRender() {
     if (rec) { rec.style.display = ccOpenTab === "roster" ? "" : "none"; const cost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30, can = shardCount >= cost; rec.classList.toggle("dim", !can); const rs = rec.querySelector(".cc-rs"); if (rs) rs.textContent = "\u25c6" + cost; }
     const ttl = document.getElementById("ccTitle"); if (ttl) ttl.textContent = ccOpenTab === "zones" ? "ZONES" : "COMMAND CENTER";
     const sum = document.getElementById("ccSummary");
-    if (sum) { sum.style.display = ccOpenTab === "roster" ? "" : "none"; if (ccOpenTab === "roster") { const st = radialSquadStats("all"), pt = typeof partyOn === "function" && partyOn(); sum.textContent = pt ? "SQUAD " + partyMembers().length + "/" + PARTY.max + " \u00b7 " + partyPosted().length + " POSTED \u00b7 " + st.total + " UNITS \u00b7 " + st.working + " WORKING" : st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVG LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"; } }   // (the facility: how full the squad is, and who holds rooms)
+    if (sum) { sum.style.display = ccOpenTab === "roster" ? "" : "none"; if (ccOpenTab === "roster") { const st = radialSquadStats("all"), pt = typeof partyOn === "function" && partyOn(); sum.textContent = pt ? "SQUAD " + partyMembers().length + "/" + PARTY.max + " \u00b7 " + partyPosted().length + " POSTED \u00b7 " + st.total + " UNITS" : st.total + " UNITS \u00b7 " + st.working + " WORKING \u00b7 AVG LEVEL " + st.avgLevel + " \u00b7 " + st.evolved + " EVOLVED"; } }   // (the facility: how full the squad is, and who holds rooms)
     const sqBtn = document.getElementById("ccSquadsBtn"); if (sqBtn) { sqBtn.style.display = ccOpenTab === "roster" ? "" : "none"; sqBtn.classList.toggle("on", ccSquadsOpen); }
+    const sqbx = document.getElementById("ccSquadBoxWrap");
+    if (sqbx) { const on = ccOpenTab === "roster" && _ccParty(); sqbx.style.display = on ? "" : "none"; if (on) { partyBoxRender(); const c = document.getElementById("ccSquadCount"); if (c) c.textContent = "YOUR SQUAD \u00b7 " + partyMembers().length + " / " + PARTY.max; } }   // (the facility's squad, at a glance)
     const sqWin = document.getElementById("ccSquadWin"); if (sqWin) {
         const show = ccOpenTab === "roster" && ccSquadsOpen; sqWin.style.display = show ? "flex" : "none";
+        const sqt = document.getElementById("ccSquadTitle"); if (sqt) sqt.textContent = _ccParty() ? "YOUR SQUAD" : "SQUADS"; if (sqWin.firstChild && sqWin.firstChild.classList) sqWin.firstChild.classList.toggle("yours", _ccParty());
         const body = document.getElementById("ccSquadBody");
         if (show && body) { const sg = _ccSqSig() + "|" + squadMode + "|" + (typeof player !== "undefined" ? player.selectedElement : ""); if (sg !== _ccSqWinSig || !body.firstChild) { _ccSqWinSig = sg; const keep = body.scrollTop; try { _ccDrawSquadWindow(body); } catch (e) { /* never take the game down */ } body.scrollTop = keep; } }
         else _ccSqWinSig = "";
@@ -264,7 +274,7 @@ function _ccDrawFilters(box) {
     add("ALL", "#19e6c1", !ccFilter.element && !ccFilter.role && !ccFilter.duty && !ccFilter.kind, () => { ccFilter = { element: null, role: null, duty: null, kind: null }; });
     (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).forEach(el => { if (unlocked.has(el.id)) add(el.label, el.color, ccFilter.element === el.id, () => { ccFilter.element = ccFilter.element === el.id ? null : el.id; }); });
     [["BRAWL", "brawler", "#ff4a1c"], ["MAGE", "sniper", "#a64dff"], ["TECH", "camper", "#8fe3ff"]].forEach(r => add(r[0], r[2], ccFilter.role === r[1], () => { ccFilter.role = ccFilter.role === r[1] ? null : r[1]; }));
-    [["WORKING", "worker", "#19e6c1"], ["FIGHTING", "fighter", "#ffe733"]].forEach(r => add(r[0], r[2], ccFilter.duty === r[1], () => { ccFilter.duty = ccFilter.duty === r[1] ? null : r[1]; }));
+    if (!_ccParty()) [["WORKING", "worker", "#19e6c1"], ["FIGHTING", "fighter", "#ffe733"]].forEach(r => add(r[0], r[2], ccFilter.duty === r[1], () => { ccFilter.duty = ccFilter.duty === r[1] ? null : r[1]; }));   // (nobody works in the facility)
     add("CLONES", "#99ddff", ccFilter.kind === "clone", () => { ccFilter.kind = ccFilter.kind === "clone" ? null : "clone"; });
     const sp = _ccEl("span", "cc-spacer"); box.appendChild(sp);
     box.appendChild(_ccBtn("SELECT SHOWN", "#ffe733", false, () => ccSetSelection(ccUnits(ccFilter)), "small"));
@@ -310,8 +320,9 @@ function _ccUpdateCard(card, r) {
     const tags = card.querySelector(".cc-tags"), want = [];
     if (!r.clone) want.push(({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[r.role] || "BRAWL");
     if (!r.clone) want.push(r.playStyle === "defensive" ? "DEF" : r.playStyle === "aggressive" ? "AGG" : "BAL");
-    if (r.squad) want.push("SQ " + r.squad);
-    if (r.unit.post) want.push("POST"); else if (r.holding) want.push("HOLD"); if (r.working) want.push("WORK"); if (r.evolved) want.push("EVOLVED");
+    const pt = _ccParty();   // (the facility: the squad's own tag; no roster squads, no work)
+    if (pt) { if (!r.clone && partyIsMember(r.unit)) want.push("SQUAD"); } else if (r.squad) want.push("SQ " + r.squad);
+    if (r.unit.post) want.push("POST"); else if (r.holding) want.push("HOLD"); if (r.working && !pt) want.push("WORK"); if (r.evolved) want.push("EVOLVED");
     const sig = want.join("|"); if (tags._sig !== sig) { tags._sig = sig; tags.textContent = ""; want.forEach(w => { const t = _ccEl("span", "cc-tag " + (w.indexOf("SQ ") === 0 ? "sq" : w.toLowerCase()), w); if (w.indexOf("SQ ") === 0) { const c = squadColour(w.slice(3)); t.style.color = c; t.style.borderColor = c; } tags.appendChild(t); }); }
     const key = r.unit.evolved + "|" + r.unit.element; if (card._thumbKey !== key) { card._thumbKey = key; _ccThumb(card._cv, r.unit); }
     if (!card._thumbDone) { const d = r.unit.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[r.unit.evolved] : null; if (d && d._img && d._img.complete) { card._thumbDone = true; _ccThumb(card._cv, r.unit); } }
@@ -352,7 +363,7 @@ function _ccDrawSide(side) {
     if (one) {
         const r = ccRow(one);
         const t = _ccEl("div", "cc-sel-title", r.name); t.style.color = _ccColour(one.element); t.style.textShadow = "0 0 10px " + _ccColour(one.element); side.appendChild(t);
-        const sub = _ccElLabel(one.element) + " \u00b7 LV " + r.level + (r.squad ? " \u00b7 SQUAD " + r.squad : "") + (r.evolved ? " \u00b7 EVOLVED" : ""); side.appendChild(_ccEl("div", "cc-sel-sub", sub));
+        const sub = _ccElLabel(one.element) + " \u00b7 LV " + r.level + (r.squad && !_ccParty() ? " \u00b7 SQUAD " + r.squad : "") + (_ccParty() && partyIsMember(one) ? " \u00b7 IN THE SQUAD" : "") + (r.evolved ? " \u00b7 EVOLVED" : ""); side.appendChild(_ccEl("div", "cc-sel-sub", sub));
         const bar = _ccEl("div", "cc-bar big"); bar.style.setProperty("--c", _ccColour(one.element)); const fill = _ccEl("i"); fill.style.width = Math.round(r.hp * 100) + "%"; bar.appendChild(fill); side.appendChild(bar);
         // THE STAT INDEX: the same sheet as the unit's INFO card (js/unitinfo.js)
         const info = typeof unitInfo === "function" ? unitInfo(one) : null;
@@ -363,6 +374,7 @@ function _ccDrawSide(side) {
         side.appendChild(_ccEl("div", "cc-sel-title", "SELECTED " + S.count));
         side.appendChild(_ccEl("div", "cc-sel-sub", S.followers + " FOLLOWERS \u00b7 " + S.clones + " CLONES \u00b7 ORDERS IN THE WORLD GO TO THEM"));
     }
+    if (_ccParty()) _ccDrawSquadButtons(side, sel);   // (ADD TO SQUAD / REMOVE FROM SQUAD)
     side.appendChild(_ccEl("div", "cc-sec", "SETTINGS"));
     const lab = (list, id) => (list.find(x => x.id === id) || {}).label;
     const mixed = v => v === "mixed";
@@ -374,19 +386,50 @@ function _ccDrawSide(side) {
         _ccDropdown(side, "play", "PLAY STYLE", mixed(S.playStyle) ? "MIXED" : (lab(PLAY_STYLES, S.playStyle) || "\u2014"), "#ffe733",
             PLAY_STYLES.map(x => ({ label: x.label, col: "#ffe733", sub: x.blurb, on: S.playStyle === x.id, fn: () => ccApplyPlayStyle(sel, x.id) })));
     }
-    const _pt = typeof partyOn === "function" && partyOn();   // the facility: HOLD posts a follower in the room it is in (it walks that room's round and fights what is in it); FOLLOW ME puts it in the squad, which has room for three
-    _ccDropdown(side, "stance", "STANCE", mixed(S.stance) ? "MIXED" : S.stance === "hold" ? (_pt ? "HOLD THIS ROOM" : "HOLD HERE") : "FOLLOW ME", "#19e6c1",
-        [["FOLLOW ME", "follow", "#19e6c1", _pt ? "JOINS THE SQUAD OF " + PARTY.max : "GOES WHERE YOU GO"], [_pt ? "HOLD THIS ROOM" : "HOLD HERE", "hold", "#8fe3ff", _pt ? "PATROLS IT, FIGHTS IN IT" : "STANDS ITS GROUND"]].map(x => ({ label: x[0], col: x[2], sub: x[3], on: S.stance === x[1], fn: () => ccApplyStance(sel, x[1]) })));
-    _ccDropdown(side, "duty", "DUTY", mixed(S.duty) ? "MIXED" : S.duty === "worker" ? "WORK" : "FIGHT", "#ff4a1c",
-        [["FIGHT", "fighter", "#ff4a1c", "ON THE LINE"], ["WORK", "worker", "#00ccaa", S.canWork + " OF " + S.count + " CAN WORK"]].map(x => ({ label: x[0], col: x[2], sub: x[3], on: S.duty === x[1], fn: () => ccApplyDuty(sel, x[1]) })));
+    if (!_ccParty()) {   // (the facility has the squad buttons above, and nobody works)
+        _ccDropdown(side, "stance", "STANCE", mixed(S.stance) ? "MIXED" : S.stance === "hold" ? "HOLD HERE" : "FOLLOW ME", "#19e6c1",
+            [["FOLLOW ME", "follow", "#19e6c1", "GOES WHERE YOU GO"], ["HOLD HERE", "hold", "#8fe3ff", "STANDS ITS GROUND"]].map(x => ({ label: x[0], col: x[2], sub: x[3], on: S.stance === x[1], fn: () => ccApplyStance(sel, x[1]) })));
+        _ccDropdown(side, "duty", "DUTY", mixed(S.duty) ? "MIXED" : S.duty === "worker" ? "WORK" : "FIGHT", "#ff4a1c",
+            [["FIGHT", "fighter", "#ff4a1c", "ON THE LINE"], ["WORK", "worker", "#00ccaa", S.canWork + " OF " + S.count + " CAN WORK"]].map(x => ({ label: x[0], col: x[2], sub: x[3], on: S.duty === x[1], fn: () => ccApplyDuty(sel, x[1]) })));
+    }
     const row = _ccEl("div", "cc-row"); side.appendChild(row);
     if (S.followers) row.appendChild(_ccBtn(ccRerollArmed ? "TAP AGAIN: RE-ROLL " + S.followers : "RE-ROLL", "#ff4a1c", ccRerollArmed, () => { if (!ccRerollArmed) ccRerollArmed = true; else { ccApplyReroll(sel); ccRerollArmed = false; } }, "wide", "BACK TO THE CRYSTAL, MADE AGAIN"));
     row.appendChild(_ccBtn("CLEAR SELECTION", "#8aa0c8", false, () => { ccClearSelection(); ccRerollArmed = false; _ccDD = null; }, "wide"));
     if (statIdx) side.appendChild(statIdx);   // the stat index sits under the settings, so the choices are never pushed off the panel
 }
+// THE SQUAD'S BUTTONS in the side panel (the facility; ASKED: "when you click the creature on the roster, it should show on the side add to party or add to squad"): ADD TO SQUAD for a follower that holds a room, REMOVE FROM SQUAD for one that is
+// in the squad (it holds the room it is in); with the squad full, SWAP WITH one of the three. A selection of several is added as far as the squad has room, and removed all at once.
+function _ccDrawSquadButtons(side, sel) {
+    const fol = sel.filter(a => a.isFollower === true && !a.isClone), mem = fol.filter(partyIsMember), out = fol.filter(a => !partyIsMember(a) && a.post), have = partyMembers().length, free = PARTY.max - have;
+    side.appendChild(_ccEl("div", "cc-sec", "SQUAD \u00b7 " + have + " OF " + PARTY.max));
+    if (!fol.length) { side.appendChild(_ccEl("div", "cc-note", "ONLY FOLLOWERS JOIN THE SQUAD")); return; }
+    const row = _ccEl("div", "cc-row wrap sqrow"); side.appendChild(row); const big = b => { b.classList.add("big", "full"); return b; };
+    if (out.length && free > 0) row.appendChild(big(_ccBtn(out.length > 1 ? "ADD " + Math.min(out.length, free) + " TO SQUAD" : "ADD TO SQUAD", "#19e6c1", false, () => partyAdd(out), "wide", free + (free === 1 ? " SLOT FREE" : " SLOTS FREE") + (out.length > free ? " \u00b7 THE REST KEEP HOLDING" : ""))));
+    else if (out.length === 1) partyOrdered().forEach(m => row.appendChild(big(_ccBtn("SWAP WITH " + (typeof unitTypeLabel === "function" ? unitTypeLabel(m) : "FOLLOWER"), _ccColour(m.element), false, () => partySwap(m, out[0]), "wide", "SQUAD FULL \u00b7 THAT ONE HOLDS ITS ROOM INSTEAD"))));
+    else if (out.length) { const b = big(_ccBtn("ADD TO SQUAD", "#19e6c1", false, () => {}, "wide", "SQUAD FULL \u00b7 REMOVE ONE FIRST")); b.disabled = true; row.appendChild(b); }
+    if (mem.length) row.appendChild(big(_ccBtn(mem.length > 1 ? "REMOVE " + mem.length + " FROM SQUAD" : "REMOVE FROM SQUAD", "#8fe3ff", false, () => partyRemove(mem), "wide", "HOLDS THE ROOM IT IS IN")));
+    if (!out.length && !mem.length) side.appendChild(_ccEl("div", "cc-note", "NOT IN THE SQUAD, AND NOT HOLDING A ROOM: IT IS ON ITS WAY"));
+}
+// THE SQUADS WINDOW IN THE FACILITY (ASKED: "when you go at the top to squads, it should already show all three creatures in your squad [...] a little roster card of each of them. And here you can disband them"): the squad's three cards (an open slot is
+// dashed), a REMOVE on each, DISBAND SQUAD (they all hold the rooms they are in), and the squad's orders.
+function _ccDrawYourSquad(body) {
+    const mem = partyOrdered(), n = mem.length;
+    body.appendChild(_ccEl("div", "cc-sq-hint", n ? "THE SQUAD FOLLOWS YOU, UP TO " + PARTY.max + ". A FOLLOWER TAKEN OUT OF IT HOLDS THE ROOM IT IS IN." : "NOBODY IS IN THE SQUAD. SELECT A FOLLOWER IN THE ROSTER AND TAP ADD TO SQUAD."));
+    const row = _ccEl("div", "cc-yoursquad"); body.appendChild(row);
+    for (let i = 0; i < PARTY.max; i++) {
+        const f = mem.find(m => m.partySlot === i) || null;
+        if (!f) { const e = _ccEl("div", "cc-card cc-open"); e.appendChild(_ccEl("div", "cc-open-t", "+ OPEN SLOT")); e.appendChild(_ccEl("div", "cc-open-s", "SELECT A FOLLOWER IN THE ROSTER, THEN ADD TO SQUAD")); row.appendChild(e); continue; }
+        const r = ccRow(f), card = _ccMakeCard(r); _ccUpdateCard(card, r);
+        card.querySelector(".cc-mid").appendChild(_ccBtn("REMOVE", "#8fe3ff", false, () => partyRemove([f]), "small"));
+        row.appendChild(card);
+    }
+    const dis = _ccBtn("DISBAND SQUAD", "#ff4a1c", false, () => partyDisband(), "wide", n ? "THEY HOLD THE ROOMS THEY ARE IN" : "NOBODY TO DISBAND"); dis.classList.add("big", "full"); if (!n) dis.disabled = true; body.appendChild(dis);
+    _ccDrawSquadOrders(body);
+}
 // THE SQUADS WINDOW: the squads and their members, making and breaking them for the selection, and the squad-wide orders.
 function _ccDrawSquadWindow(body) {
     body.textContent = "";
+    if (_ccParty()) { _ccDrawYourSquad(body); return; }   // (the facility has its one squad: js/party.js)
     const sel = ccSelectionList();
     const strip = _ccEl("div", "cc-squads"); body.appendChild(strip); _ccDrawSquads(strip);
     _ccDrawSquadControls(body, sel);
@@ -403,6 +446,7 @@ function ccShardsUpdate(el) {
 }
 // What the squad strip shows: each squad, its members and whether each is selected.
 function _ccSqSig() {
+    if (_ccParty()) return "P" + partyOrdered().map(m => [m.partySlot, m.level || 1, Math.round((m.health || 0) / Math.max(1, m.maxHealth || 1) * 20), m.evolved || "", m.element, selectedUnits.has(m) ? "*" : "", (typeof unitStatus === "function" && unitStatus(m) || {}).text || ""].join(",")).join("|") + "#" + selectedUnits.size + "/" + partyMembers().length;
     if (typeof squadsLive !== "function") return "";
     return squadsLive().map(s => s.id + ":" + s.members.map(m => (m.level || 1) + (selectedUnits.has(m) ? "*" : "") + (m.evolved || "")).join(",")).join("|") + "#" + selectedUnits.size;
 }
@@ -452,9 +496,10 @@ function _ccDrawSquadOrders(side) {
     ]);
     grp("COMMANDS FOR THE POOL", [
         _ccBtn("SWITCH ROLES", "#ffe733", false, () => cycleCommandPoolRoles(), "wide", "BRAWLER → MAGE → TECHNICIAN"),
+    ].concat(_ccParty() ? [] : [   // (nobody works in the facility)
         _ccBtn("ALL TO WORK", "#00ccaa", false, () => radialSetAllWork(true), "wide", "ELECTRIC, FLUX, CORE, TOXIC, ICE"),
         _ccBtn("ALL TO FIGHT", "#ff4a1c", false, () => radialSetAllWork(false), "wide", "BACK ON THE LINE"),
-    ]);
+    ]));
 }
 
 // ZONES (the tab was ANALYTICS; it is zones, teleports, crews and orders now): the squad at a glance, then every zone: its status, network and equipment, with TELEPORT and CLEAR BROKEN (js/zones.js).

@@ -21,7 +21,8 @@
 // and the index read the table.
 const CLONE_JOBS = {};
 
-function cloneJob(c) { return (c && c.isClone && CLONE_JOBS[c.speciesName]) || null; }
+// (no working in the facility: a clone there has no job; ASKED: "we're also going to remove working. There is no more working.")
+function cloneJob(c) { if (typeof partyOn === "function" && partyOn()) return null; return (c && c.isClone && CLONE_JOBS[c.speciesName]) || null; }
 // Can this clone be put to work at all?
 function canCloneWork(c) { return !!(c && c.isClone && !c.dead && c.team === "green" && cloneJob(c)); }
 
@@ -68,6 +69,7 @@ function cloneWorkTick(c) {
 
 // What the ring and the info panel say about this clone's work.
 function cloneDutyLabel(c) {
+    if (typeof partyOn === "function" && partyOn()) return "FIGHTER";
     const j = cloneJob(c);
     if (c && c.duty === "worker" && j) return "WORKER: " + j.label;
     return j ? "FIGHTER · JOB: " + j.label : "FIGHTER · NO JOB YET";

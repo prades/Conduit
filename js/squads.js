@@ -14,19 +14,23 @@ const SQUADS = [
 ];
 function squadDef(id) { return SQUADS.find(s => s.id === id) || null; }
 function squadColour(id) { const s = squadDef(id); return s ? s.col : "#19e6c1"; }
+// THE FACILITY HAS ONE SQUAD, the three that follow you (js/party.js; ASKED: "when you go at the top to squads, it should already show all three creatures in your squad"): there are no roster squads (A, B, C) there, so nothing here finds one and none can be made.
+function _squadsOff() { return typeof partyOn === "function" && partyOn(); }
 // Only a live follower of yours can be in one (not a clone, an enemy or a worker's egg-less stand-in).
 function _squadEligible(a) { return !!a && !a.dead && a.isFollower === true && !a.isClone && a.team === "green"; }
-function squadOf(a) { return a && a.squadId && squadDef(a.squadId) ? a.squadId : null; }
+function squadOf(a) { return !_squadsOff() && a && a.squadId && squadDef(a.squadId) ? a.squadId : null; }
 function squadMembers(id) {
     return (typeof followers !== "undefined" ? followers : []).filter(a => _squadEligible(a) && a.squadId === id);
 }
 // The squads that exist (have at least one live member), in letter order.
 function squadsLive() {
+    if (_squadsOff()) return [];
     return SQUADS.map(s => ({ id: s.id, col: s.col, members: squadMembers(s.id) })).filter(s => s.members.length);
 }
 function squadFreeId() { const s = SQUADS.find(d => !squadMembers(d.id).length); return s ? s.id : null; }
 // Who a piece of squad-wide gear reaches: the unit and its squad-mates, or just the unit when it is in no squad.
 function squadReach(a) {
+    if (_squadsOff()) return a && typeof partyIsMember === "function" && partyIsMember(a) ? partyMembers() : a ? [a] : [];   // (the facility: the squad of three)
     const id = squadOf(a); if (!id) return a ? [a] : [];
     const m = squadMembers(id); return m.indexOf(a) < 0 ? m.concat([a]) : m;
 }
@@ -35,7 +39,7 @@ function _squadSay(text, col) {
 }
 // Put these units in squad `id`. Refused (nobody moves) if the squad would pass SQUAD_MAX. Returns how many joined, or -1 when refused.
 function squadAssign(id, units) {
-    if (!squadDef(id)) return -1;
+    if (!squadDef(id) || _squadsOff()) return -1;
     const list = (units || []).filter(_squadEligible);
     if (!list.length) return 0;
     const incoming = list.filter(a => a.squadId !== id).length, have = squadMembers(id).length;
@@ -45,6 +49,7 @@ function squadAssign(id, units) {
 }
 // The selection becomes a new squad: 1 to SQUAD_MAX followers, in the first free letter. Returns the letter, or null.
 function squadMake(units) {
+    if (_squadsOff()) return null;
     const list = (units || []).filter(_squadEligible);
     if (!list.length) { _squadSay("SELECT FOLLOWERS FIRST", "#ff8a6a"); return null; }
     if (list.length > SQUAD_MAX) { _squadSay("A SQUAD IS UP TO " + SQUAD_MAX + ": SELECT FEWER", "#ff8a6a"); return null; }

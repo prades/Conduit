@@ -46,6 +46,7 @@ const SUITES = [
     ['squad of three, rooms the rest hold, the ammunition icon', 'party.js'],
     ['the objective is a mailbox on a phone: an envelope with a "!" for a new objective', 'mailbox.js'],
     ['the bottom of the screen: dock, squad bar, tool, enemy card: none over another; no selection chip in the facility', 'bottomui.js'],
+    ['the squad in the Command Center (box, add / remove / swap, SQUADS window, disband, the phone\'s menu); no more working', 'squadui.js'],
     ['fire bombs',              'firebombs.js'],
     ['wall power unit',         'wallunit.js'],
     ['lab wall equipment',      'labwall.js'],
