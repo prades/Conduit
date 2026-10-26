@@ -870,9 +870,18 @@
     #mixTool .mt-foe:hover .mt-foe-go { filter: brightness(1.15); } #mixTool .mt-foe.going .mt-foe-go { background: linear-gradient(180deg, #5a2a1c, #2a0e08); color: #ff9a7a; } #mixTool .mt-foe.idle { cursor: default; } #mixTool .mt-foe.idle .mt-foe-go { background: #1d2540; color: #6d7fa6; }
     @media (max-width: 700px) { #mixTool .mt-foe-slot { position: absolute; left: 0; bottom: calc(38px + var(--mt-lift, 0px)); } #mixTool .mt-foe { margin: 0; } }
     /* ── THE SQUAD BAR (js/party.js): the three followers that are with you, as small roster cards across the top of the dock (where the ammunition chip was); an open slot opens the roster ── */
-    #squadBar { position: fixed; z-index: 12; left: 50%; bottom: calc(104px + var(--vv-bottom, 0px)); transform: translateX(-50%); display: none; gap: 10px; pointer-events: none; font-family: var(--neo-font); }
+    /* where the bar is, once, for everything that is stacked with it (the selection chip over it or under it, the battle tool beside it): --sb-bottom its bottom edge (over the dock), --sb-h its height, --sb-w its width, --sb-cx the middle of it.
+       A tablet keeps it clear of the battle tool's column at the left (14 px + 230 px + 8: the 252 px); a phone keeps it clear of the round buttons down the right edge (46 px). tests/bottomui.js checks it at every width. */
+    :root { --sb-bottom: 112px; --sb-h: 50px; --sb-w: 662px; --sb-cx: max(50%, calc(252px + var(--sb-w) / 2)); }
+    @media (max-width: 1180px) { :root { --sb-bottom: 104px; } }   /* (the dock is 82 px high here, 92 above it) */
+    @media (max-width: 1100px) { :root { --sb-w: 470px; } }   /* (cards 150 px wide) */
+    @media (max-width: 900px) { :root { --sb-bottom: 98px; --sb-h: 44px; --sb-w: 356px; } }   /* (the dock sits lower; cards 112 px) */
+    @media (max-width: 700px) { :root { --sb-bottom: 52px; --sb-cx: min(50%, calc(100% - 46px - var(--sb-w) / 2)); } }
+    @media (max-width: 560px) { :root { --sb-h: 32px; } }
+    @media (max-width: 420px) { :root { --sb-w: 300px; } }   /* (cards 96 px wide) */
+    #squadBar { position: fixed; z-index: 12; left: var(--sb-cx, 50%); bottom: calc(var(--sb-bottom, 104px) + var(--vv-bottom, 0px)); transform: translateX(-50%); display: none; gap: 10px; pointer-events: none; font-family: var(--neo-font); }
     #squadBar.on { display: flex; }
-    #squadBar .sb-slot { --c: #19e6c1; pointer-events: auto; position: relative; display: flex; align-items: center; gap: 7px; width: 214px; box-sizing: border-box; padding: 5px 14px 5px 7px; color: #e8f0ff; background: linear-gradient(100deg, rgba(6,9,20,0.9), rgba(6,9,20,0.62)); border-left: 3px solid var(--c); clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); cursor: pointer; touch-action: manipulation; }
+    #squadBar .sb-slot { --c: #19e6c1; pointer-events: auto; position: relative; display: flex; align-items: center; gap: 7px; width: 214px; height: var(--sb-h, 50px); box-sizing: border-box; padding: 5px 14px 5px 7px; color: #e8f0ff; background: linear-gradient(100deg, rgba(6,9,20,0.9), rgba(6,9,20,0.62)); border-left: 3px solid var(--c); clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); cursor: pointer; touch-action: manipulation; }
     #squadBar .sb-slot:hover { background: linear-gradient(100deg, rgba(14,22,46,0.94), rgba(14,22,46,0.7)); }
     #squadBar .sb-slot.sel { background: linear-gradient(100deg, color-mix(in srgb, var(--c) 38%, #0b1226), rgba(6,9,20,0.7)); border-left-width: 6px; padding-left: 4px; }
     #squadBar .sb-thumb { flex: none; width: 40px; height: 40px; background: #0b1226; border: 2px solid var(--c); box-sizing: border-box; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%); }
@@ -882,13 +891,17 @@
     #squadBar .sb-hp { display: block; height: 5px; background: rgba(255,255,255,0.14); } #squadBar .sb-hp u { display: block; height: 100%; width: 100%; background: #5fe0a0; text-decoration: none; transition: width 0.2s; } #squadBar .sb-hp u.mid { background: #ffd34d; } #squadBar .sb-hp u.low { background: #ff5a3a; }
     #squadBar .sb-info { position: absolute; right: 12px; top: 3px; width: 16px; height: 16px; padding: 0; font: italic 900 11px serif; color: #8fe3ff; background: rgba(6,9,20,0.7); border: 1px solid #8fe3ff; border-radius: 50%; cursor: pointer; line-height: 14px; }
     #squadBar .sb-open { display: none; width: 100%; text-align: center; font: italic 900 12px var(--neo-font); letter-spacing: 0.06em; color: #6d7fa6; }
-    #squadBar .sb-slot.empty { background: rgba(6,9,20,0.4); border-left: 3px dashed rgba(138,160,200,0.45); justify-content: center; min-height: 50px; }
+    #squadBar .sb-slot.empty { background: rgba(6,9,20,0.4); border-left: 3px dashed rgba(138,160,200,0.45); justify-content: center; }
     #squadBar .sb-slot.empty .sb-thumb, #squadBar .sb-slot.empty .sb-txt, #squadBar .sb-slot.empty .sb-info { display: none; } #squadBar .sb-slot.empty .sb-open { display: block; } #squadBar .sb-slot.empty:hover .sb-open { color: #cfe0ff; }
     @media (max-width: 1100px) { #squadBar .sb-slot { width: 150px; } }
-    @media (max-width: 900px) { #squadBar { bottom: calc(78px + var(--vv-bottom, 0px)); } #squadBar .sb-slot { width: 112px; } #squadBar .sb-sub { display: none; } #squadBar .sb-thumb { width: 34px; height: 34px; } }
-    @media (max-width: 700px) { #squadBar { bottom: calc(52px + var(--vv-bottom, 0px)); } body.squad-bar #mixTool { bottom: calc(108px + var(--vv-bottom, 0px)); } }   /* a phone has no dock: the bar takes the place the BATTLE chip had, and the chip (with the enemy card and the controls over it) goes up above it */
+    @media (max-width: 900px) { #squadBar .sb-slot { width: 112px; } #squadBar .sb-sub { display: none; } #squadBar .sb-thumb { width: 34px; height: 34px; } }
+    @media (max-width: 700px) { body.squad-bar #mixTool { bottom: calc(108px + var(--vv-bottom, 0px)); } }   /* a phone has no dock: the bar takes the place the BATTLE chip had, and the chip (with the enemy card and the controls over it) goes up above it */
     @media (max-width: 560px) { #squadBar .sb-thumb { display: none; } #squadBar .sb-name { font-size: 11px; padding-right: 0; } #squadBar .sb-slot { padding-left: 10px; } }
-    @media (max-width: 420px) { #squadBar { gap: 6px; } #squadBar .sb-slot { width: 104px; padding-right: 10px; } #squadBar .sb-info { display: none; } }
+    @media (max-width: 420px) { #squadBar { gap: 6px; } #squadBar .sb-slot { width: 96px; padding-right: 10px; } #squadBar .sb-info { display: none; } }
+    /* THE SELECTION CHIP (js/commandcenter.js ccRefreshChip: "N SELECTED", a cross to let them go, ROSTER) sits over the bar, in the middle of it (it was over the bar's middle card); on a phone, where there is no room over the bar (the battle chip is there),
+       under it, small, at the left (clear of the round buttons at the right). The classic game has no bar: the chip is where it always was. */
+    body.squad-bar #selChip { left: var(--sb-cx, 50%); bottom: calc(var(--sb-bottom, 104px) + var(--sb-h, 50px) + 8px + var(--vv-bottom, 0px)); }
+    @media (max-width: 700px) { body.squad-bar #selChip { left: 8px; bottom: calc(8px + var(--vv-bottom, 0px)); transform: none; gap: 8px; padding: 3px 5px 3px 14px; font-size: 15px; } body.squad-bar #selChip button { padding: 6px 10px; font-size: 13px; } }
     /* ── THE FIRE TURRET AIM RING (js/firebombs.js): tap a fire turret, pick one of eight directions or AUTO ── */
     #unitInfo .ui-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; } #unitInfo .ui-choice { font: italic 900 15px var(--neo-font); padding: 8px 14px; color: #cfe0ff; background: #0b1226; border: 2px solid #8aa0c8; cursor: pointer; clip-path: polygon(8% 0, 100% 0, 92% 100%, 0 100%); touch-action: manipulation; } #unitInfo .ui-choice.on { color: #05070f; background: var(--c, #ffe733); border-color: var(--c, #ffe733); }
     #aimRing { position: fixed; z-index: 14; width: 0; height: 0; display: none; } #aimRing.open { display: block; }
@@ -1790,12 +1803,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-27i, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-27j, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-27i";
+window.__PAGE_BUILD = "2026-10-27j";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1831,96 +1844,96 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-27i"></script>
-<script src="js/icons.js?v=2026-10-27i"></script>
-<script src="js/uikit.js?v=2026-10-27i"></script>
-<script src="js/rng.js?v=2026-10-27i"></script>
-<script src="js/traits.js?v=2026-10-27i"></script>
-<script src="js/elements.js?v=2026-10-27i"></script>
-<script src="js/combat.js?v=2026-10-27i"></script>
-<script src="js/species.js?v=2026-10-27i"></script>
-<script src="js/levels.js?v=2026-10-27i"></script>
-<script src="js/status.js?v=2026-10-27i"></script>
-<script src="js/predator_randomizer.js?v=2026-10-27i"></script>
-<script src="js/mass.js?v=2026-10-27i"></script>
-<script src="js/infest.js?v=2026-10-27i"></script>
-<script src="js/power.js?v=2026-10-27i"></script>
-<script src="js/save.js?v=2026-10-27i"></script>
-<script src="js/camp.js?v=2026-10-27i"></script>
-<script src="js/wavedata.js?v=2026-10-27i"></script>
-<script src="js/helpers.js?v=2026-10-27i"></script>
-<script src="js/predator.js?v=2026-10-27i"></script>
-<script src="js/abilities.js?v=2026-10-27i"></script>
-<script src="js/world.js?v=2026-10-27i"></script>
-<script src="js/commands.js?v=2026-10-27i"></script>
-<script src="js/npc.js?v=2026-10-27i"></script>
-<script src="js/codex.js?v=2026-10-27i"></script>
-<script src="js/draw.js?v=2026-10-27i"></script>
-<script src="js/beetle3d.js?v=2026-10-27i"></script>
-<script src="js/bugs3d.js?v=2026-10-27i"></script>
-<script src="js/ui.js?v=2026-10-27i"></script>
-<script src="js/waves.js?v=2026-10-27i"></script>
-<script src="js/drops.js?v=2026-10-27i"></script>
-<script src="js/clone.js?v=2026-10-27i"></script>
-<script src="js/clonework.js?v=2026-10-27i"></script>
-<script src="js/broods.js?v=2026-10-27i"></script>
-<script src="js/raids.js?v=2026-10-27i"></script>
-<script src="js/ultra.js?v=2026-10-27i"></script>
-<script src="js/formations.js?v=2026-10-27i"></script>
-<script src="js/breakout.js?v=2026-10-27i"></script>
-<script src="js/nightraids.js?v=2026-10-27i"></script>
-<script src="js/bonds.js?v=2026-10-27i"></script>
-<script src="js/autoplay.js?v=2026-10-27i"></script>
-<script src="js/indexart.js?v=2026-10-27i"></script>
-<script src="js/modules.js?v=2026-10-27i"></script>
-<script src="js/shieldcells.js?v=2026-10-27i"></script>
-<script src="js/evolution.js?v=2026-10-27i"></script>
-<script src="js/hdsprites.js?v=2026-10-27i"></script>
-<script src="js/firebombs.js?v=2026-10-27i"></script>
-<script src="js/wallunit.js?v=2026-10-27i"></script>
-<script src="js/labwall.js?v=2026-10-27i"></script>
-<script src="js/moves.js?v=2026-10-27i"></script>
-<script src="js/squads.js?v=2026-10-27i"></script>
-<script src="js/buildmenu.js?v=2026-10-27i"></script>
-<script src="js/hudgems.js?v=2026-10-27i"></script>
-<script src="js/nethud.js?v=2026-10-27i"></script>
-<script src="js/commandcenter.js?v=2026-10-27i"></script>
-<script src="js/unitinfo.js?v=2026-10-27i"></script>
-<script src="js/infodex.js?v=2026-10-27i"></script>
-<script src="js/classes.js?v=2026-10-27i"></script>
-<script src="js/playergear.js?v=2026-10-27i"></script>
-<script src="js/inventory.js?v=2026-10-27i"></script>
-<script src="js/weapons.js?v=2026-10-27i"></script>
-<script src="js/stations.js?v=2026-10-27i"></script>
-<script src="js/facilityportals.js?v=2026-10-27i"></script>
-<script src="js/tutorial.js?v=2026-10-27i"></script>
-<script src="js/facilitymap.js?v=2026-10-27i"></script>
-<script src="js/facilitygrow.js?v=2026-10-27i"></script>
-<script src="js/facility.js?v=2026-10-27i"></script>
-<script src="js/attract.js?v=2026-10-27i"></script>
-<script src="js/facilitysave.js?v=2026-10-27i"></script>
-<script src="js/facilityplay.js?v=2026-10-27i"></script>
-<script src="js/facilitydecor.js?v=2026-10-27i"></script>
-<script src="js/propatlas.js?v=2026-10-27i"></script>
-<script src="js/propsprites.js?v=2026-10-27i"></script>
-<script src="js/facilitystyle.js?v=2026-10-27i"></script>
-<script src="js/facilitystyleall.js?v=2026-10-27i"></script>
-<script src="js/facilitynet.js?v=2026-10-27i"></script>
-<script src="js/facilityspawn.js?v=2026-10-27i"></script>
-<script src="js/followerspots.js?v=2026-10-27i"></script>
-<script src="js/party.js?v=2026-10-27i"></script>
-<script src="js/facilitytutorial.js?v=2026-10-27i"></script>
-<script src="js/zones.js?v=2026-10-27i"></script>
-<script src="js/kits.js?v=2026-10-27i"></script>
-<script src="js/kitui.js?v=2026-10-27i"></script>
-<script src="js/toolbox.js?v=2026-10-27i"></script>
-<script src="js/mixtool.js?v=2026-10-27i"></script>
-<script src="js/radialmenu.js?v=2026-10-27i"></script>
-<script src="js/input.js?v=2026-10-27i"></script>
-<script src="js/gunfire.js?v=2026-10-27i"></script>
-<script src="js/targeting.js?v=2026-10-27i"></script>
-<script src="js/game.js?v=2026-10-27i"></script>
-<script src="js/dev.js?v=2026-10-27i"></script>
+<script src="js/config.js?v=2026-10-27j"></script>
+<script src="js/icons.js?v=2026-10-27j"></script>
+<script src="js/uikit.js?v=2026-10-27j"></script>
+<script src="js/rng.js?v=2026-10-27j"></script>
+<script src="js/traits.js?v=2026-10-27j"></script>
+<script src="js/elements.js?v=2026-10-27j"></script>
+<script src="js/combat.js?v=2026-10-27j"></script>
+<script src="js/species.js?v=2026-10-27j"></script>
+<script src="js/levels.js?v=2026-10-27j"></script>
+<script src="js/status.js?v=2026-10-27j"></script>
+<script src="js/predator_randomizer.js?v=2026-10-27j"></script>
+<script src="js/mass.js?v=2026-10-27j"></script>
+<script src="js/infest.js?v=2026-10-27j"></script>
+<script src="js/power.js?v=2026-10-27j"></script>
+<script src="js/save.js?v=2026-10-27j"></script>
+<script src="js/camp.js?v=2026-10-27j"></script>
+<script src="js/wavedata.js?v=2026-10-27j"></script>
+<script src="js/helpers.js?v=2026-10-27j"></script>
+<script src="js/predator.js?v=2026-10-27j"></script>
+<script src="js/abilities.js?v=2026-10-27j"></script>
+<script src="js/world.js?v=2026-10-27j"></script>
+<script src="js/commands.js?v=2026-10-27j"></script>
+<script src="js/npc.js?v=2026-10-27j"></script>
+<script src="js/codex.js?v=2026-10-27j"></script>
+<script src="js/draw.js?v=2026-10-27j"></script>
+<script src="js/beetle3d.js?v=2026-10-27j"></script>
+<script src="js/bugs3d.js?v=2026-10-27j"></script>
+<script src="js/ui.js?v=2026-10-27j"></script>
+<script src="js/waves.js?v=2026-10-27j"></script>
+<script src="js/drops.js?v=2026-10-27j"></script>
+<script src="js/clone.js?v=2026-10-27j"></script>
+<script src="js/clonework.js?v=2026-10-27j"></script>
+<script src="js/broods.js?v=2026-10-27j"></script>
+<script src="js/raids.js?v=2026-10-27j"></script>
+<script src="js/ultra.js?v=2026-10-27j"></script>
+<script src="js/formations.js?v=2026-10-27j"></script>
+<script src="js/breakout.js?v=2026-10-27j"></script>
+<script src="js/nightraids.js?v=2026-10-27j"></script>
+<script src="js/bonds.js?v=2026-10-27j"></script>
+<script src="js/autoplay.js?v=2026-10-27j"></script>
+<script src="js/indexart.js?v=2026-10-27j"></script>
+<script src="js/modules.js?v=2026-10-27j"></script>
+<script src="js/shieldcells.js?v=2026-10-27j"></script>
+<script src="js/evolution.js?v=2026-10-27j"></script>
+<script src="js/hdsprites.js?v=2026-10-27j"></script>
+<script src="js/firebombs.js?v=2026-10-27j"></script>
+<script src="js/wallunit.js?v=2026-10-27j"></script>
+<script src="js/labwall.js?v=2026-10-27j"></script>
+<script src="js/moves.js?v=2026-10-27j"></script>
+<script src="js/squads.js?v=2026-10-27j"></script>
+<script src="js/buildmenu.js?v=2026-10-27j"></script>
+<script src="js/hudgems.js?v=2026-10-27j"></script>
+<script src="js/nethud.js?v=2026-10-27j"></script>
+<script src="js/commandcenter.js?v=2026-10-27j"></script>
+<script src="js/unitinfo.js?v=2026-10-27j"></script>
+<script src="js/infodex.js?v=2026-10-27j"></script>
+<script src="js/classes.js?v=2026-10-27j"></script>
+<script src="js/playergear.js?v=2026-10-27j"></script>
+<script src="js/inventory.js?v=2026-10-27j"></script>
+<script src="js/weapons.js?v=2026-10-27j"></script>
+<script src="js/stations.js?v=2026-10-27j"></script>
+<script src="js/facilityportals.js?v=2026-10-27j"></script>
+<script src="js/tutorial.js?v=2026-10-27j"></script>
+<script src="js/facilitymap.js?v=2026-10-27j"></script>
+<script src="js/facilitygrow.js?v=2026-10-27j"></script>
+<script src="js/facility.js?v=2026-10-27j"></script>
+<script src="js/attract.js?v=2026-10-27j"></script>
+<script src="js/facilitysave.js?v=2026-10-27j"></script>
+<script src="js/facilityplay.js?v=2026-10-27j"></script>
+<script src="js/facilitydecor.js?v=2026-10-27j"></script>
+<script src="js/propatlas.js?v=2026-10-27j"></script>
+<script src="js/propsprites.js?v=2026-10-27j"></script>
+<script src="js/facilitystyle.js?v=2026-10-27j"></script>
+<script src="js/facilitystyleall.js?v=2026-10-27j"></script>
+<script src="js/facilitynet.js?v=2026-10-27j"></script>
+<script src="js/facilityspawn.js?v=2026-10-27j"></script>
+<script src="js/followerspots.js?v=2026-10-27j"></script>
+<script src="js/party.js?v=2026-10-27j"></script>
+<script src="js/facilitytutorial.js?v=2026-10-27j"></script>
+<script src="js/zones.js?v=2026-10-27j"></script>
+<script src="js/kits.js?v=2026-10-27j"></script>
+<script src="js/kitui.js?v=2026-10-27j"></script>
+<script src="js/toolbox.js?v=2026-10-27j"></script>
+<script src="js/mixtool.js?v=2026-10-27j"></script>
+<script src="js/radialmenu.js?v=2026-10-27j"></script>
+<script src="js/input.js?v=2026-10-27j"></script>
+<script src="js/gunfire.js?v=2026-10-27j"></script>
+<script src="js/targeting.js?v=2026-10-27j"></script>
+<script src="js/game.js?v=2026-10-27j"></script>
+<script src="js/dev.js?v=2026-10-27j"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1973,7 +1986,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-27i"></script>
+<script src="js/init.js?v=2026-10-27j"></script>
 
 </body>
 </html>

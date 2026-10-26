@@ -506,7 +506,7 @@ function _ccZoneCard(z) {
     return card;
 }
 
-// A chip above the dock while anyone is selected: how many, and a way to let them go.
+// A chip while anyone is selected: how many, a way to let them go, and the roster. In the facility it sits over the squad bar (under it on a phone) and the css stacks it there (game.html, --sb-*); the classic game keeps it above the dock.
 function ccRefreshChip() {
     if (typeof document === "undefined" || !document.body) return;
     let chip = document.getElementById("selChip"); const n = ccSelectionList().length;
