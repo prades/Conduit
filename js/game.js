@@ -241,1130 +241,44 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     ctx.restore();
 }
 
-// ─────────────────────────────────────────────────────────
-//  PYLON NETWORK LINKING
-// ─────────────────────────────────────────────────────────
-// Builds a spanning forest per element using union-find: pylons can have
-// multiple connections (chains are fine) but a link is skipped when the two
-// pylons are already reachable through the graph, which prevents
-// cross-connecting meshes and redundant triangle shortcuts.
-//
-// Reach is getPylonRange() tiles centre to centre — 3 by default, so a pylon on
-// tile 1 links to one on tile 4 with two empty tiles between them.
-//
-// Extracted from the render loop's cache block so it can be tested directly.
-// Applies every linked pylon pair's zone effect to the actors inside it.
-// Lifted out of update() so the tests can drive it directly — the
-// stuck-predator behaviour lives in here and is otherwise unreachable.
-function applyPylonZoneEffects(wavePylons) {
-    _wPylonPairs.forEach(pair=>{
-        const {pa, pb, el, col, midX, midY} = pair;
-        // A link runs while either end is awake; both on standby, it rests.
-        if (pa.waveAwake === false && pb.waveAwake === false) return;
 
-            // (No periodic impact discs along the link any more — the link's own
-            // motif shows it working. Conduit effects plan, "Impact".)
-
-            // Apply zone effects every 3 frames — visual / cooldown guards inside handle timing
-            if (frame % 3 !== 0) return;
-
-            // Compute per-element constants once per pair (not once per actor)
-            // OVERCHARGE: a surged link works one tier higher (capped at III).
-            const _surgeUp = typeof pylonSurged === "function" && (pylonSurged(pa) || pylonSurged(pb)) ? 1 : 0;
-            const _pTier = typeof pylonNetworkTier === "function" ? Math.max(pylonNetworkTier(pa), pylonNetworkTier(pb)) : (networkStrength[el] || 0);
-            const _nTier = Math.min(3, (_pTier || 1) + _surgeUp);
-            // The better STATUS of the two ends multiplies the link (MK II ×1.3).
-            const _status = typeof pylonStatusMult === "function" ? Math.max(pylonStatusMult(pa), pylonStatusMult(pb)) : 1;
-            // An overclocked end (js/modules.js) drives the link harder.
-            const _ocLink = (pa._oc || pb._oc) && typeof OC_WAVE_MULT !== "undefined" ? OC_WAVE_MULT : 1;
-            const _seasonBonus = (_seasonBonusCache[el] || 1.0) * _status * _ocLink;
-
-            const {lx, ly, len2, bMinX, bMaxX, bMinY, bMaxY} = pair;
-            // Only the columns the link's box covers (unitsNear, helpers.js).
-            (typeof unitsNear === "function" ? unitsNear((bMinX + bMaxX) / 2, (bMaxX - bMinX) / 2) : actors).forEach(a=>{
-                if (!a||a.dead) return;
-                // Bounding box early-exit (avoids sqrt for distant actors)
-                if (a.x < bMinX || a.x > bMaxX || a.y < bMinY || a.y > bMaxY) return;
-                // Distance from point to line segment pa→pb
-                let t2 = len2>0 ? ((a.x-pa.x)*lx+(a.y-pa.y)*ly)/len2 : 0;
-                t2=Math.max(0,Math.min(1,t2));
-                const cx2=pa.x+t2*lx, cy2=pa.y+t2*ly;
-                const lineDist = Math.hypot(a.x-cx2, a.y-cy2);
-                if (lineDist > 1.5) return;
-
-                const isEnemy = isHostileTarget(a);
-                const isFriend = (a.team==="green"||a.isClone||a.isFollower);
-
-                switch(el) {
-                    case "fire": {
-                        if (isEnemy) {
-                            const dmg  = Math.round((_nTier >= 3 ? 24 : _nTier >= 2 ? 15 : 9) * _seasonBonus);
-                            const intv = _nTier >= 3 ? 12 : _nTier >= 2 ? 18 : 24;
-                            if (frame % intv === 0) {
-                                applyDamage(a, dmg, null, "fire");
-                                // Tier 3: ignite — spread fire to enemies within 1.5 tiles
-                                if (_nTier >= 3 && Math.random() < 0.5) {
-                                    const _ax=a.x, _ay=a.y;
-                                    actors.forEach(other => {
-                                        if (other===a||other.dead||other.team!=="red") return;
-                                        const _odx=other.x-_ax, _ody=other.y-_ay;
-                                        if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
-                                        if (_odx*_odx+_ody*_ody < 2.25) applyDamage(other, 6, null, "fire"); // 1.5²=2.25
-                                    });
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    case "ice": {
-                        if (isEnemy) {
-                            if (_nTier >= 3) {
-                                // Deep freeze — near-zero speed, periodic ice damage
-                                applySlow(a, 60, 0.05);
-                                if (frame % 60 === 0) applyDamage(a, Math.round(6 * _seasonBonus), null, "ice");
-                            } else if (_nTier >= 2) {
-                                // A target already frozen solid is left frozen: this used
-                                // to overwrite the freeze with the 12% slow on the very
-                                // next pass, three frames later.
-                                if (!(a.slowed > 0 && a.slowFactor === 0)) applySlow(a, 50, 0.12);
-                                // Random chance to freeze solid for 60 frames
-                                if (Math.random() < 0.03) applySlow(a, 90, 0.0);
-                            } else {
-                                applySlow(a, 40, 0.25);
-                            }
-                        }
-                        break;
-                    }
-                    case "electric": {
-                        // HASTE: your side runs faster through an electric zone, so
-                        // it is the lane to send followers back to the fight, or
-                        // out for shards. Renewed on every pass (every 3 frames)
-                        // and dropping off a moment after they leave. An enemy's
-                        // slow on the same follower wins, so ice still bites.
-                        if (isFriend && !(a.slowed > 0 && (a.slowFactor ?? 1) < 1)) {
-                            applySlow(a, ELECTRIC_HASTE_FRAMES, _hasteOf(ELECTRIC_HASTE[Math.min(3, _nTier)] || ELECTRIC_HASTE[1]));
-                        }
-                        if (isFriend && frame % 10 === 0) {
-                            const gain = Math.round((_nTier >= 3 ? 10 : _nTier >= 2 ? 6 : 3) * _seasonBonus);
-                            a.currentResonance = Math.min(100, (a.currentResonance||0) + gain);
-                            // Tier 2+: also accelerate ultimate charge for all network allies
-                            if (_nTier >= 2 && typeof a.ultimateCharge === "number") {
-                                a.ultimateCharge = Math.min(100, a.ultimateCharge + (_nTier >= 3 ? 3 : 2));
-                            }
-                        }
-                        break;
-                    }
-                    case "core": {
-                        const coreIntv = _nTier >= 3 ? 20 : _nTier >= 2 ? 30 : 45;
-                        if (isFriend && frame % coreIntv === 0) {
-                            const shGain = Math.round((_nTier >= 3 ? 12 : _nTier >= 2 ? 8 : 5) * _seasonBonus);
-                            const shCap  = _nTier >= 3 ? 75 : _nTier >= 2 ? 50 : 30;
-                            a.shielded = true;
-                            a.shieldAmount = Math.min(shCap, (a.shieldAmount||0) + shGain);
-                            a._shieldMax = shCap;
-                            // Tier 3: auto-repair broken shields (restore up to cap over time)
-                            if (_nTier >= 3 && a.shieldAmount > 0 && a.shieldAmount < shCap) {
-                                a.shieldAmount = Math.min(shCap, a.shieldAmount + 3);
-                            }
-                        }
-                        break;
-                    }
-                    // FLUX: halved ("the vortex's seem too strong"), and nothing
-                    // too heavy to drag is dragged (vortexPullImmune: beetles,
-                    // bosses) — it still takes the tier III damage.
-                    case "flux": {
-                        // A predator that has committed to smashing a pylon is no
-                        // longer dragged. The pull is stronger than it can walk,
-                        // so without this it can never reach the thing it is
-                        // trying to break and just orbits the midpoint forever.
-                        const _heavy = typeof vortexPullImmune === "function" && vortexPullImmune(a);
-                        if (isEnemy && !a.pylonAggro && _heavy && _nTier >= 3 && frame % 20 === 0) applyDamage(a, Math.round(5*_seasonBonus), null, "flux");
-                        if (isEnemy && !a.pylonAggro && !_heavy) {
-                            const pullSpd = (_nTier >= 3 ? 0.14 : _nTier >= 2 ? 0.105 : 0.07) * _seasonBonus;
-                            const dx=midX-a.x, dy=midY-a.y, d=Math.hypot(dx,dy)||1;
-                            a.x+=dx/d*pullSpd; a.y+=dy/d*pullSpd;
-                            // Tier 3: vortex — pulled enemies take continuous damage
-                            if (_nTier >= 3 && frame % 20 === 0) applyDamage(a, Math.round(5*_seasonBonus), null, "flux");
-                            // Tier 2+: chain — pulled actors drag nearby enemies along
-                            if (_nTier >= 2 && frame % 20 === 0) {
-                                const _ax=a.x, _ay=a.y;
-                                actors.forEach(other => {
-                                    if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
-                                    const _odx=other.x-_ax, _ody=other.y-_ay;
-                                    if (Math.abs(_odx)>1.2||Math.abs(_ody)>1.2) return;
-                                    const od2 = _odx*_odx+_ody*_ody;
-                                    if (typeof vortexPullImmune === "function" && vortexPullImmune(other)) return;
-                                    if (od2 < 1.44 && od2 > 0.0001) { other.x+=dx/d*0.04; other.y+=dy/d*0.04; } // 1.2²=1.44 (halved)
-                                });
-                            }
-                        }
-                        break;
-                    }
-                    case "toxic": {
-                        const toxIntv = _nTier >= 3 ? 15 : _nTier >= 2 ? 22 : 30;
-                        if (isEnemy && frame % toxIntv === 0) {
-                            const tdmg = Math.round((_nTier >= 3 ? 22 : _nTier >= 2 ? 15 : 10) * _seasonBonus);
-                            applyDamage(a, tdmg, null, "toxic");
-                            const shredChance  = _nTier >= 3 ? 0.8 : _nTier >= 2 ? 0.65 : 0.45;
-                            const shredFactor  = _nTier >= 3 ? 0.3 : _nTier >= 2 ? 0.4 : 0.5;
-                            if (Math.random() < shredChance) { a.defenseShredded = 90; a.defenseShredFactor = shredFactor; }
-                            // Tier 3: cloud spreads poison debuff to nearby enemies
-                            if (_nTier >= 3) {
-                                const _ax=a.x, _ay=a.y;
-                                actors.forEach(other => {
-                                    if (other===a||other.dead||(other.team!=="red"&&!(other instanceof Predator&&other.team!=="green"&&!other.isClone))) return;
-                                    const _odx=other.x-_ax, _ody=other.y-_ay;
-                                    if (Math.abs(_odx)>1.5||Math.abs(_ody)>1.5) return;
-                                    if (_odx*_odx+_ody*_ody < 2.25) { // 1.5²=2.25
-                                        other.defenseShredded = 60; other.defenseShredFactor = 0.55;
-                                    }
-                                });
-                            }
-                        }
-                        // REPORTED: "toxic wave pylons should heal ally clones
-                        // and damage enemy predators." A clone on the link is
-                        // mended on the same beat the poison lands, plus a
-                        // share of its max HP so a big clone still feels it.
-                        if (a.isClone && a.team === "green" && !a.dead && frame % toxIntv === 0 && a.health < a.maxHealth) {
-                            const theal = Math.round((_nTier >= 3 ? 14 : _nTier >= 2 ? 9 : 6) * _seasonBonus) + (a.maxHealth || 0) * TOXIC_CLONE_HEAL_SHARE;
-                            a.health = Math.min(a.maxHealth, a.health + theal);
-                            if (frame % (toxIntv * 2) === 0) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#66ff66", radius: 0.4, life: 14, element: "toxic" });
-                        }
-                        break;
-                    }
-                }
-                // Predator pylon aggro — how long this predator has been cooked
-                // by a pylon zone before it turns on the pylon itself.
-                //
-                // This block only runs every third frame (see the guard above),
-                // so the old threshold of 300 meant 900 real frames — fifteen
-                // seconds of standing in a zone before a predator would even
-                // consider fighting back. Inside a FLUX zone that is a death
-                // sentence with no way out: the pull is several times stronger
-                // than a predator's own walk speed, so it cannot leave, and it
-                // would not fight either. Hence a far lower threshold, and flux
-                // counting for more because it is the one that actually traps.
-                //
-                // Guard with _lastExposureFrame so multi-pair actors only count once per frame.
-                if (isEnemy && a instanceof Predator) {
-                    if (a._lastExposureFrame !== frame) {
-                        a._lastExposureFrame = frame;
-                        a.pylonExposureFrames = (a.pylonExposureFrames||0) + (el === "flux" ? PYLON_AGGRO_TRAP_RATE : 1);
-                        if (a.pylonExposureFrames > PYLON_AGGRO_EXPOSURE && !a.pylonAggro) {
-                            let nearestPylon=null, bestPD=Infinity;
-                            wavePylons.forEach(wp=>{ const d=Math.hypot(wp.x-a.x,wp.y-a.y); if(d<bestPD){bestPD=d;nearestPylon=wp;} });
-                            if (nearestPylon) {
-                                a.pylonAggro = nearestPylon;
-                                floatingTexts.push({ x:a.x, y:a.y-1.2, text:"BREAKING OUT",
-                                                     color:"#ff8800", life:50, vy:-0.07 });
-                            }
-                        }
-                    }
-                } else if (!isEnemy) {
-                    // Cool down exposure when no longer in zone
-                    if (a.pylonExposureFrames) a.pylonExposureFrames = Math.max(0, a.pylonExposureFrames - 2);
-                }
-            });
-    });
-}
-
-// Generator links are not elemental pairs: a generator reaches every friendly
-// pylon in range regardless of element, and there is no spanning-forest rule
-// because it is mending them, not forming a network that could mesh.
-// The mend links, drawn as steel filaments running generator → pylon. World
-// space, so they sit with the world rather than up with the interface.
-// ── THE POWER CHAIN ──────────────────────────────────────
-// nest → generator → pylon, drawn as wire with charge running along it.
-//
-// REPORTED: "I can't read it. Make it more visually obvious when the power's
-// being drawn, with the little pulses in the wiring."
-//
-// It was a 1.4px grey dashed line at 18-40% alpha with one 2px dot on it, and
-// it was the same line whether the pylon was pulling hard or doing nothing at
-// all. There was no way to look at a base and see what was costing you.
-//
-// Now the wire's brightness and the number of charges on it follow the actual
-// draw, and the charges run in the direction the power goes:
-//
-//   WAVE MODE   never stops drawing, so its line is always full and busy.
-//   ATTACK MODE spikes on each round and fades, so a turret with nothing to
-//               shoot at goes quiet — you can see it costing you nothing.
-//   DARK        no charges at all, and the wire drops to a dim hint so the
-//               layout is still legible.
-const POWER_WIRE_COLOUR = "#8fd6ff";
-const POWER_WIRE_DEAD   = "rgba(120,140,160,0.18)";
-const POWER_WIRE_DASH   = [4, 7];
-const POWER_BEADS       = 4;      // charges in flight per wire at full draw
-const POWER_BEAD_SPEED  = 0.011;  // of the wire's length, per frame
-
-// ── CABLES ARE PIPES ON THE FLOOR ────────────────────────
-// "All the cables that run in the game should run along the ground, and connect
-// like pipes that bend at 90 degree angles."
-//
-// Every cable is routed on the tile grid: from the source tile it runs along the
-// corridor (world x) to the target's column, turns a right angle, and runs
-// across (world y) to the target. It sits on the floor at tile centres, not in
-// the air between the structures' bodies. Projected, the two legs follow the
-// two iso axes, so the bend reads as a pipe elbow laid on the grid. One rule,
-// cablePath(), so every cable in the game routes the same way and two cables
-// between the same pair of things lie exactly on top of each other.
-const CABLE_CASING  = "#0b1118";   // the pipe's dark sleeve
-const CABLE_WIDTH   = 6;           // sleeve width, px
-function cablePath(from, to) {
-    const ax = Math.round(from.x), ay = Math.round(from.y);
-    const bx = Math.round(to.x),   by = Math.round(to.y);
-    const pts = [{ x: ax, y: ay }];
-    if (ax !== bx && ay !== by) pts.push({ x: bx, y: ay });   // the elbow
-    pts.push({ x: bx, y: by });
-    return pts;
-}
-// HOW THEY ARE DRAWN. A cable cannot be an overlay: drawn after the world it
-// paints over every unit and pylon standing on its path, which is the opposite
-// of lying on the floor. So each frame the cables are LAID first — broken into
-// one piece per tile they cross — and every floor tile draws its own pieces in
-// the depth-sorted pass, under whatever stands on it or in front of it. A
-// piece runs from the tile's centre to the middle of each edge it connects
-// through, so a straight run is two half-pieces meeting at the edge, and the
-// elbow is the one tile whose two halves turn.
-const _cableTiles = new Map();
-function _cableCell(x, y, key) {
-    const k = key || (x + "," + y);
-    let c = _cableTiles.get(k);
-    if (!c) { c = { pieces: [], beads: [] }; _cableTiles.set(k, c); }
-    return c;
-}
-// The tiles a cable crosses, in order, from its first end to its last.
-// Remembered per pair of end tiles: every cable is laid again every frame,
-// and its route only changes when an end moves (the performance sweep).
-// The route also carries `cells`: each tile's map key and the shape of its
-// piece (which edges it runs to, whether it is an end or an elbow), worked
-// out once with the route instead of again for every cable every frame.
-const _cableRoutes = new Map();
-function cableTiles(from, to) {
-    const key = Math.round(from.x) + "," + Math.round(from.y) + ">" + Math.round(to.x) + "," + Math.round(to.y);
-    let r = _cableRoutes.get(key);
-    if (!r) {
-        if (_cableRoutes.size > 4000) _cableRoutes.clear();
-        r = _cableTilesFresh(from, to);
-        r.cells = _cableCells(r);
-        _cableRoutes.set(key, r);
-    }
-    return r;
-}
-function _cableTilesFresh(from, to) {
-    const pts = cablePath(from, to), tiles = [{ x: pts[0].x, y: pts[0].y }];
-    for (let i = 1; i < pts.length; i++) {
-        let { x, y } = tiles[tiles.length - 1];
-        const sx = Math.sign(pts[i].x - x), sy = Math.sign(pts[i].y - y);
-        // Capped: a route is never longer than the map is wide, and a bad
-        // input must not be able to spin the frame forever.
-        for (let guard = 0; (x !== pts[i].x || y !== pts[i].y) && guard < 512; guard++) {
-            x += sx; y += sy; tiles.push({ x, y });
-        }
-    }
-    return tiles;
-}
-function _cableCells(tiles) {
-    const last = tiles.length - 1, out = [];
-    for (let i = 0; i <= last; i++) {
-        const dirs = [];
-        if (i > 0)    dirs.push([tiles[i - 1].x - tiles[i].x, tiles[i - 1].y - tiles[i].y]);
-        if (i < last) dirs.push([tiles[i + 1].x - tiles[i].x, tiles[i + 1].y - tiles[i].y]);
-        const elbow = dirs.length === 2 && (dirs[0][0] + dirs[1][0] !== 0 || dirs[0][1] + dirs[1][1] !== 0);
-        // The piece's screen offsets from the tile centre, and a key for its
-        // shape so two cables lying the same way on a tile are drawn once.
-        const seg = dirs.map(([dx, dy]) => [(dx - dy) * TILE_W / 2, (dx + dy) * TILE_H / 2]);
-        const shape = dirs.length ? dirs.map(d => d[0] + "," + d[1]).join(";") : "o";
-        out.push({ k: tiles[i].x + "," + tiles[i].y, dirs, end: i === 0 || i === last, elbow, seg, shape });
-    }
-    return out;
-}
-// Lay one cable. style: { core, width, dash, glow } (cableStyle() hands out
-// shared ones); beads: [{t, r, alpha, colour}], each t 0..1 along the cable
-// from `from` to `to` (style.beads is still read when none are passed).
-function layCable(from, to, style, beads) {
-    const tiles = cableTiles(from, to), cells = tiles.cells;
-    const last = tiles.length - 1;
-    for (let i = 0; i <= last; i++) {
-        const cl = cells[i];
-        _cableCell(0, 0, cl.k).pieces.push({ dirs: cl.dirs, end: cl.end, elbow: cl.elbow, seg: cl.seg, shape: cl.shape, style });
-    }
-    // The charges are placed in world space along the tile run and drawn by the
-    // tile they are over, so they go under a unit standing on the pipe too.
-    // `beads` may be a function of the frame: then the cable is remembered and
-    // its charges are moved on every frame without laying the cable again
-    // (layAllCablesCached).
-    if (typeof beads === "function") { _cableBeadWires.push({ tiles, fn: beads }); _placeBeads(tiles, beads(frame || 0)); }
-    else _placeBeads(tiles, beads || style.beads);
-    return tiles;
-}
-let _cableBeadWires = [];   // cables whose charges move: { tiles, fn(frame) → beads }
-let _beadCells = [];        // the cells holding charges this frame
-function _placeBeads(tiles, bl) {
-    if (!bl || !bl.length) return;
-    const last = tiles.length - 1;
-    for (const b of bl) {
-        const f = b.t * last, i = Math.min(last, Math.floor(f)), k = f - i;
-        const n = tiles[Math.min(last, i + 1)];
-        const wx = tiles[i].x + (n.x - tiles[i].x) * k, wy = tiles[i].y + (n.y - tiles[i].y) * k;
-        const c = _cableCell(Math.round(wx), Math.round(wy));
-        if (!c.beads.length) _beadCells.push(c);
-        c.beads.push({ wx, wy, t: b.t, r: b.r, alpha: b.alpha, colour: b.colour });
-    }
-}
-// Move every cable's charges on to this frame, along the cables as laid.
-function refreshCableBeads() {
-    for (const c of _beadCells) c.beads.length = 0;
-    _beadCells = [];
-    const f = frame || 0;
-    for (const w of _cableBeadWires) _placeBeads(w.tiles, w.fn(f));
-}
-// Shared style objects. A style used to be a new object per cable per frame,
-// with a width that followed the draw continuously — so no two were alike and
-// the per-tile batching below could not group them. The draw is stepped into
-// quarters, which nobody can see, and each step's style is made once.
-const _cableStyles = new Map();
-function cableStyle(core, width, glow, dash) {
-    const k = core + "|" + width + "|" + (glow || 0) + "|" + (dash ? dash.join(",") : "");
-    let st = _cableStyles.get(k);
-    if (!st) {
-        st = { core, width, glow: glow || 0, dash: dash || null, key: k };
-        if (_cableStyles.size > 500) _cableStyles.clear();
-        _cableStyles.set(k, st);
-    }
-    return st;
-}
-// A charge on a cable: a soft halo and a bright core, stamped from a sprite
-// per colour (it was two arcs, two fills and two alpha changes per charge).
-const _beadSprites = new Map();
-const BEAD_SPRITE_R = 8;   // the core radius the sprite is drawn at
-function _beadSprite(colour) {
-    let cv = _beadSprites.get(colour);
-    if (cv !== undefined) return cv;
-    cv = null;
-    try {
-        if (typeof document !== "undefined" && document.createElement) {
-            const el = document.createElement("canvas"), S = Math.ceil(BEAD_SPRITE_R * 2.2) * 2 + 2;
-            el.width = S; el.height = S;
-            const g = el.getContext && el.getContext("2d");
-            if (g && typeof g.arc === "function" && typeof g.drawImage === "function") {
-                g.fillStyle = colour;
-                g.globalAlpha = 0.3; g.beginPath(); g.arc(S / 2, S / 2, BEAD_SPRITE_R * 2.2, 0, Math.PI * 2); g.fill();
-                g.globalAlpha = 1;   g.beginPath(); g.arc(S / 2, S / 2, BEAD_SPRITE_R, 0, Math.PI * 2); g.fill();
-                cv = el;
-            }
-        }
-    } catch (e) { cv = null; }
-    _beadSprites.set(colour, cv);
-    return cv;
-}
-// Called by every floor tile in the sorted pass.
-//
-// STAMPED. A tile's cable pieces — sleeves, cores and collars — depend only on
-// which shapes cross it in which styles, and that changes rarely (a style is a
-// shared, stepped object: cableStyle). So each distinct set is drawn once into
-// a small sprite and stamped: one drawImage for what was ~10 path calls per
-// cable tile, the largest block of strokes in a dense base. The charges
-// moving along it are still drawn live, over the stamp.
-const _cableSprites = new Map();
-const CABLE_SPRITE_CAP = 900;
-const CABLE_SPR_W = TILE_W + 16, CABLE_SPR_H = TILE_H + 16;   // the half-pieces reach the tile's edge midpoints
-function _cableSprite(c) {
-    let key = c.sig;
-    if (key === undefined) {
-        key = "";
-        for (const pc of c.pieces) {
-            const st = pc.style;
-            key += (pc.shape || (pc.dirs.length ? pc.dirs.map(d => d[0] + "," + d[1]).join(";") : "o")) + (pc.end ? "E" : "") + (pc.elbow ? "L" : "") + "#" +
-                   (st.key || (st.key = st.core + "|" + st.width + "|" + (st.glow || 0) + "|" + (st.dash ? st.dash.join(",") : ""))) + "/";
-        }
-        c.sig = key;
-    }
-    let cv = _cableSprites.get(key);
-    if (cv !== undefined) return cv;
-    cv = null;
-    try {
-        if (typeof document !== "undefined" && document.createElement) {
-            const el = document.createElement("canvas");
-            el.width = CABLE_SPR_W; el.height = CABLE_SPR_H;
-            const g = el.getContext && el.getContext("2d");
-            if (g && typeof g.stroke === "function" && typeof g.drawImage === "function") {
-                _drawCablePieces(g, CABLE_SPR_W / 2, CABLE_SPR_H / 2, c.pieces);
-                cv = el;
-            }
-        }
-    } catch (e) { cv = null; }
-    if (_cableSprites.size > CABLE_SPRITE_CAP) _cableSprites.clear();
-    _cableSprites.set(key, cv);
-    return cv;
-}
-function drawCablesOnTile(tile, px, py) {
-    if (_cableTiles.size === 0) return;
-    // The tile's key is made once and kept on it, not built again per frame.
-    const c = _cableTiles.get(tile._ck || (tile._ck = Math.round(tile.x) + "," + Math.round(tile.y)));
-    if (!c) return;
-    const cx = px, cy = py + TILE_H;
-    const _ga = ctx.globalAlpha;
-    if (c.pieces.length) {
-        const spr = _cableSprite(c);
-        if (spr) { ctx.globalAlpha = 1; ctx.drawImage(spr, cx - CABLE_SPR_W / 2, cy - CABLE_SPR_H / 2); }
-        else _drawCablePieces(ctx, cx, cy, c.pieces);
-    }
-    if (!gfxLow) _drawCableBeads(c);   // LOW graphics: the cables, not the charges on them
-    ctx.globalAlpha = _ga;
-}
-// The pieces on one tile, centred on (cx, cy), into context g.
-function _drawCablePieces(g, cx, cy, pieces) {
-    // One world step along +x is (TILE_W, TILE_H) on screen, along +y it is
-    // (-TILE_W, TILE_H); a half step reaches the middle of that edge (the
-    // offsets are kept on the piece: seg).
-    const addPiece = pc => {
-        const sg = pc.seg || pc.dirs.map(([dx, dy]) => [(dx - dy) * TILE_W / 2, (dx + dy) * TILE_H / 2]);
-        if (sg.length === 0) { g.moveTo(cx, cy); g.lineTo(cx, cy); return; }
-        g.moveTo(cx + sg[0][0], cy + sg[0][1]); g.lineTo(cx, cy);
-        if (sg[1]) g.lineTo(cx + sg[1][0], cy + sg[1][1]);
-    };
-    // No shadowBlur, and the strokes are BATCHED — one path per style.
-    // DEDUPE: many cables run along the same tiles (a generator's runs to ten
-    // pylons share their first leg). One piece per distinct shape, in the
-    // strongest style among those sharing it (live beats dead, then the wider
-    // core). A tile holds a handful of pieces, so a short array beats a Map.
-    const uniq = [], score = [];
-    for (const pc of pieces) {
-        const k = pc.shape || (pc.shape = pc.dirs.length ? pc.dirs.map(d => d[0] + "," + d[1]).join(";") : "o");
-        const sc = (pc.style.glow ? 100 : 0) + (pc.style.dash ? 0 : 10) + pc.style.width;
-        let j = 0;
-        while (j < uniq.length && uniq[j].shape !== k) j++;
-        if (j === uniq.length) { uniq.push(pc); score.push(sc); }
-        else if (sc > score[j]) { uniq[j] = pc; score[j] = sc; }
-    }
-    const _ga = g.globalAlpha, _cap = g.lineCap, _join = g.lineJoin;
-    // Flat ends and mitred joins: the pieces meet edge to edge.
-    g.lineCap = "butt"; g.lineJoin = "miter";
-    // Sleeves: one path, one stroke.
-    g.strokeStyle = CABLE_CASING; g.lineWidth = CABLE_WIDTH; g.globalAlpha = 0.85;
-    g.beginPath(); for (const pc of uniq) addPiece(pc); g.stroke();
-    // Cores: grouped by style.
-    for (let i = 0; i < uniq.length; i++) {
-        const st = uniq[i].style;
-        const k = st.key || (st.key = st.core + "|" + st.width + "|" + (st.glow || 0) + "|" + (st.dash ? st.dash.join(",") : ""));
-        let seen = false;
-        for (let j = 0; j < i; j++) if (uniq[j].style.key === k) { seen = true; break; }
-        if (seen) continue;
-        g.beginPath();
-        for (let j = i; j < uniq.length; j++) if (uniq[j].style.key === k || uniq[j].style === st) addPiece(uniq[j]);
-        // A live cable is a touch wider instead of carrying a glow.
-        g.globalAlpha = 1; g.strokeStyle = st.core; g.lineWidth = st.width + (st.glow ? 1 : 0);
-        if (st.dash) g.setLineDash(st.dash);
-        g.stroke();
-        if (st.dash) g.setLineDash([]);
-    }
-    // An elbow collar where it turns, a coupling where it plugs in — once per tile.
-    let end = false, elbow = false, rim = null;
-    for (const pc of pieces) { if (pc.end) end = true; if (pc.elbow) elbow = true; if ((pc.end || pc.elbow) && !rim) rim = pc.style.core; }
-    if (end || elbow) {
-        g.globalAlpha = 1; g.fillStyle = CABLE_CASING;
-        g.beginPath(); g.ellipse(cx, cy, end ? 6 : 5, end ? 3 : 2.5, 0, 0, Math.PI * 2); g.fill();
-        g.strokeStyle = rim; g.lineWidth = 1; g.stroke();
-    }
-    g.globalAlpha = _ga; g.lineCap = _cap; g.lineJoin = _join;
-}
-function _drawCableBeads(c) {
-    // Charges: stamped from a sprite (halo and core), no blur.
-    for (const b of c.beads) {
-        const bx = (b.wx - player.visualX - (b.wy - player.visualY)) * TILE_W + canvas.width / 2;
-        const by = (b.wx - player.visualX + (b.wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H;
-        const spr = _beadSprite(b.colour);
-        if (spr) {
-            const S = spr.width * b.r / BEAD_SPRITE_R;
-            ctx.globalAlpha = b.alpha; ctx.drawImage(spr, bx - S / 2, by - S / 2, S, S);
-        } else {
-            ctx.fillStyle = b.colour;
-            ctx.globalAlpha = b.alpha * 0.3; ctx.beginPath(); ctx.arc(bx, by, b.r * 2.2, 0, Math.PI * 2); ctx.fill();
-            ctx.globalAlpha = b.alpha; ctx.beginPath(); ctx.arc(bx, by, b.r, 0, Math.PI * 2); ctx.fill();
-        }
-    }
-}
-// A world point on the floor, in screen space (tile centre, ground level).
-function cableScreen(o) {
-    return [(o.x - player.visualX - (o.y - player.visualY)) * TILE_W + canvas.width  / 2,
-            (o.x - player.visualX + (o.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H];
-}
-
-// One power cable with its charges. `from` and `to` are WORLD points (the
-// structures themselves); `flow` is 0..1 — how hard this leg is being pulled —
-// and `phase` offsets the charges so two cables from the same relay do not
-// pulse in lockstep. The charges run from `from` to `to`, the way power goes.
-// The core is the readout: dim and dashed when nothing is moving, solid and
-// bright when it is, and a busier cable carries more charges.
-function _drawPowerWire(from, to, flow, phase, colour) {
-    const lit = flow > 0.02;
-    phase = ((phase % 1) + 1) % 1;   // a structure in the back wall (y < 0) gives a negative phase, which would put charges before the cable's start
-    // The charges, as a function of the frame so they keep moving between
-    // layings of the cable (refreshCableBeads).
-    const beads = lit ? (fr => {
-        const out = [], n = Math.max(1, Math.round(POWER_BEADS * flow));
-        for (let i = 0; i < n; i++) {
-            const t = ((fr * POWER_BEAD_SPEED) + phase + i / n) % 1;
-            // Brightest in the middle of its run so each charge reads as
-            // travelling rather than as a row of fixed dots.
-            const fade = Math.sin(t * Math.PI);
-            out.push({ t, r: 2.2 + flow * 1.4, alpha: (0.45 + flow * 0.55) * (0.35 + fade * 0.65), colour });
-        }
-        return out;
-    }) : null;
-    // The draw is stepped into quarters so the style can be a shared one.
-    const fq = Math.round(flow * 4) / 4;
-    return layCable(from, to, lit
-        ? cableStyle(colour, 2 + fq * 0.8, Math.max(1.5, 6 * fq))
-        : cableStyle(POWER_WIRE_DEAD, 1.4, 0, POWER_WIRE_DASH), beads);
-}
-
-// The generator's mending lines: thin steel cables on the floor, routed like
-// every other cable. Where the same generator already runs a POWER cable to a
-// pylon it would lie on exactly the same path, so that one is left to carry it.
-const MENDING_DASH = [5, 6];
-function layMendingCables() {
-    if (typeof _genLinks === "undefined" || _genLinks.length === 0) return;
-    // Only while you build, or hold a generator: in a big base these thin
-    // lines ran to every pylon of every generator, every frame — about a
-    // quarter of all the cable drawing — and say nothing you need mid-fight.
-    const _held = typeof commandMode !== "undefined" && commandMode && commandTarget && commandTarget.isGenerator;
-    if (!(typeof buildMode !== "undefined" && buildMode) && !_held) return;
-    const pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.06);
-    for (const { gen, pylon } of _genLinks) {
-        if (gen.destroyed || pylon.destroyed) continue;
-        if (pylon._ultraOf || pylon._wformOf) continue;   // one cable per structure
-        if (needsPower(pylon) && pylon.powerGen === gen) continue;
-        const ph = pylon.x * 0.13 + pylon.y * 0.29;
-        layCable(gen, pylon, cableStyle(`rgba(205,214,224,${(0.35 + Math.round(pulse * 10) / 10 * 0.3).toFixed(2)})`, 1.4, 0, MENDING_DASH),
-                 fr => [{ t: ((fr * 0.014) + ph) % 1, r: 2, alpha: 0.5 + (0.5 + 0.5 * Math.sin(fr * 0.06)) * 0.3, colour: "#e6f0fa" }]);
-    }
-}
-
-// The structure a pylon is part of: an Ultra's or a formation's anchor, or
-// the pylon itself.
-function _structureOf(o) { return (o && (o._ultraOf || o._wformOf)) || o; }
-
-// Every cable in the game, laid fresh each frame before the world is drawn.
-function layAllCables() {
-    _cableTiles.clear();
-    _cableBeadWires = []; _beadCells = [];
-    drawPowerChain();
-    layMendingCables();
-    // The ties between nest grids: a gold cable between the two relays that
-    // join them (buildNestGrids in power.js).
-    if (typeof _gridLinks !== "undefined")
-        for (const { a, b } of _gridLinks) layCable(a, b, cableStyle(CONNECTOR_COLOR, 2, 3));
-    // Batteries linked into one bank: a cable in their element's colour.
-    // While either end is charging, charge runs along it.
-    for (const { a, b, el } of _batteryLinks) {
-        const def = ELEMENTS.find(e => e.id === el);
-        const live = typeof batteryCharging === "function" && (batteryCharging(a) || batteryCharging(b));
-        const beads = live ? (fr => [0, 0.5].map(o => ({ t: ((fr * 0.02) + o) % 1, r: 2.4, alpha: 0.9, colour: BATTERY_COLOR }))) : null;
-        layCable(a, b, cableStyle(def ? def.color : BATTERY_COLOR, 2, 2), beads);
-    }
-}
-// THE FRAME'S CABLES. Laying them all was the largest single cost of a big
-// base (~15% of the frame with 300 pylons): every cable re-routed into its
-// tiles every frame, though the layout only changes when the base does. Now
-// they are laid again when the pylon caches are rebuilt (_cacheAge), when BUILD
-// or a held generator changes which cables show, and every CABLE_RELAY_FRAMES
-// frames so a cable lighting up or going quiet follows the draw — and in
-// between only the charges are moved along them (refreshCableBeads).
-const CABLE_RELAY_FRAMES = 8;
-let _cableSig = null, _cableLaidAt = -Infinity;
-function layAllCablesCached() {
-    const held = typeof commandMode !== "undefined" && commandMode && commandTarget && commandTarget.isGenerator ? commandTarget : null;
-    const sig = _cacheAge + "|" + (typeof buildMode !== "undefined" && buildMode ? 1 : 0) + "|" + (held ? held.x + "," + held.y : "");
-    const f = frame || 0;
-    if (sig !== _cableSig || f - _cableLaidAt >= CABLE_RELAY_FRAMES || f < _cableLaidAt) {
-        _cableSig = sig; _cableLaidAt = f;
-        layAllCables();
-    } else refreshCableBeads();
-}
-
-// The whole chain, every frame. Each pylon that is drawing gets a cable from
-// the relay feeding it; each relay gets one from its nest. A relay you have
-// LINKED to a nest keeps that cable even while nothing pulls on it (it is the
-// link, and it used to be a separate beam in the air); an unlinked relay only
-// shows its supply cable while something is drawing.
 // ── THE FLOOR TILE ───────────────────────────────────────
 // One floor tile's look at a given distance from the camera, drawn at (px, py)
 // — the tile's top corner. Used to fill the tile sprites below, and directly
 // if a sprite cannot be made.
 const FLOOR_DIST_STEP   = 0.5;   // tiles: distances this close share a look
-const FLOOR_TRACE_STEPS = 8;     // circuit-trace strength levels
 const FLOOR_SPRITE_CAP  = 700;
 let _floorSprites = new Map();
-function _drawFloorTile(c, px, py, isNight, dist, territory, fade) {
+function _drawFloorTile(c, px, py, dist) {
     const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-    // Day: Dexter's Lab steel-blue/teal panels. Night: the same steel, darker and cooler (it was a warm red-orange glow round you: "make the alarm phase lighting not so dramatic").
-    let tR, tG, tB;
-    if (isNight) {
-        tR = (14*amb + 12*glo)|0;
-        tG = (18*amb + 14*glo)|0;
-        tB = (30*amb + 26*glo)|0;
-    } else {
-        tR = (16*amb +  8*glo)|0;
-        tG = (26*amb + 20*glo)|0;
-        tB = (42*amb + 52*glo)|0;
-    }
+    // Dexter's Lab steel-blue/teal panels (the facility's own floors are painted over them: js/facilitydecor.js)
+    const tR = (16*amb +  8*glo)|0, tG = (26*amb + 20*glo)|0, tB = (42*amb + 52*glo)|0;
     c.fillStyle=`rgb(${tR},${tG},${tB})`;
     c.beginPath(); c.moveTo(px,py); c.lineTo(px+TILE_W,py+TILE_H); c.lineTo(px,py+TILE_W); c.lineTo(px-TILE_W,py+TILE_H); c.closePath(); c.fill();
-    // ── TERRITORY TINT — color overlay for player/enemy/contested zones ──
-    if (territory) {
-        c.save();
-        if (territory === 'player')    c.fillStyle = 'rgba(0,120,255,0.15)';
-        else if (territory === 'enemy') c.fillStyle = 'rgba(255,40,40,0.12)';
-        else                               c.fillStyle = 'rgba(200,200,0,0.1)';
-        c.beginPath();
-        c.moveTo(px,py); c.lineTo(px+TILE_W,py+TILE_H);
-        c.lineTo(px,py+TILE_W); c.lineTo(px-TILE_W,py+TILE_H);
-        c.closePath(); c.fill();
-        c.restore();
-    }
-
     // ── Steel panel bevel — highlight top two edges, shadow bottom two ──
-    // Top-left edge highlight
-    c.strokeStyle = isNight ? `rgba(70,95,140,${0.45*amb})` : `rgba(80,130,180,${0.55*amb})`;
+    c.strokeStyle = `rgba(80,130,180,${0.55*amb})`;
     c.lineWidth = 1;
     c.beginPath(); c.moveTo(px,py+1); c.lineTo(px-TILE_W+1,py+TILE_H); c.stroke();
-    // Top-right edge highlight
     c.beginPath(); c.moveTo(px,py+1); c.lineTo(px+TILE_W-1,py+TILE_H); c.stroke();
-    // Bottom-left edge shadow
     c.strokeStyle = `rgba(0,0,0,${0.35*amb})`;
     c.beginPath(); c.moveTo(px-TILE_W+1,py+TILE_H); c.lineTo(px,py+TILE_W-1); c.stroke();
-    // Bottom-right edge shadow
     c.beginPath(); c.moveTo(px+TILE_W-1,py+TILE_H); c.lineTo(px,py+TILE_W-1); c.stroke();
-
-    // ── NETWORK FLOOR INTERCONNECT — PCB traces that appear when player extends the network ──
-    // Tiles within range of any live pylon reveal circuit trace lines on the floor
-    if (fade > 0) {
-        {
-            const cx = px, cy = py + TILE_H; // screen center of tile
-            c.save();
-            c.lineWidth = 0.85;
-            // NW→SE trace segment (follows world x-axis): from (-30,-15) to (+30,+15) rel to center
-            c.globalAlpha = 0.16 * amb * fade;
-            c.strokeStyle = isNight ? "#cc6633" : "#00bb88";
-            c.beginPath();
-            c.moveTo(cx - 30, cy - 15);
-            c.lineTo(cx + 30, cy + 15);
-            c.stroke();
-            // NE→SW trace segment (follows world y-axis): from (+30,-15) to (-30,+15) rel to center
-            c.globalAlpha = 0.13 * amb * fade;
-            c.strokeStyle = isNight ? "#aa4422" : "#0099cc";
-            c.beginPath();
-            c.moveTo(cx + 30, cy - 15);
-            c.lineTo(cx - 30, cy + 15);
-            c.stroke();
-            c.restore();
-        }
-    }
 }
-function _floorTileSprite(isNight, dq, territory, tq) {
-    // A number when there is no territory wash (always, now): no string to
-    // build for each of ~125 tiles a frame.
-    const key = territory ? (isNight ? 1 : 0) + "|" + dq + "|" + territory + "|" + tq : ((isNight ? 1 : 0) * 4096 + dq) * 64 + tq;
-    let cv = _floorSprites.get(key);
+// THE TILE IS A SPRITE: its look depends only on the distance to the camera (in steps of FLOOR_DIST_STEP), so each look is drawn once and stamped.
+function _floorTileSprite(dq) {
+    let cv = _floorSprites.get(dq);
     if (cv !== undefined) return cv;
     cv = null;
     const el = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
     const g = el && el.getContext ? el.getContext("2d") : null;
     if (g && typeof g.drawImage === "function") {
         el.width = TILE_W * 2 + 2; el.height = TILE_W + 2;
-        _drawFloorTile(g, TILE_W + 1, 1, isNight, dq * FLOOR_DIST_STEP, territory, tq / FLOOR_TRACE_STEPS);
+        _drawFloorTile(g, TILE_W + 1, 1, dq * FLOOR_DIST_STEP);
         cv = el;
     }
     if (_floorSprites.size >= FLOOR_SPRITE_CAP) _floorSprites.delete(_floorSprites.keys().next().value);
-    _floorSprites.set(key, cv);
+    _floorSprites.set(dq, cv);
     return cv;
-}
-
-// ── NEAREST PYLON PER TILE (for the floor's circuit traces) ──
-// Built when the pylon cache is rebuilt (every 60 frames, or at once when
-// something forces it), so the floor pass can look a tile's distance up
-// instead of searching every pylon for every tile, every frame.
-const PCB_TRACE_REACH = 4.0;
-let _pylonNear = new Map();
-function _pnKey(x, y) { return Math.round(x) * 32 + (Math.round(y) + 16); }
-// The trace strength under each floor tile — its distance to the nearest
-// pylon. It used to be stamped out from every pylon at every cache rebuild
-// (300 pylons x 81 cells, a share of the once-a-second hitch); now a new map
-// marks the rebuild and each tile asks when it is first drawn (pylonNearDist).
-function rebuildPylonNear() {
-    _pylonNear = new Map();
-}
-// Pylons by team and by tile, rebuilt with _pillarCache. The healing pass and
-// the nearest-pylon search used to walk every pylon for every actor (56 x 160
-// in a late base): by tile, an actor looks at its own few neighbours.
-let _greenPillars = [], _redPillars = [];
-let _pillarAt = new Map();          // x * 64 + (y + 16) → pylons on that tile
-let _pillarIndexOf = null;          // the _pillarCache array it was built from
-let _pillarCol = new Map();         // x → pylons in that column
-function _paKey(x, y) { return x * 64 + (y + 16); }
-// Rebuilt if _pillarCache has been replaced since (anything that sets it).
-function pillarIndexFresh() { if (_pillarIndexOf !== _pillarCache) rebuildPillarIndex(); }
-function rebuildPillarIndex() {
-    _pillarIndexOf = _pillarCache;
-    _greenPillars = []; _redPillars = []; _pillarAt = new Map(); _pillarCol = new Map();
-    for (const t of _pillarCache) {
-        if (t.pillarTeam === "green") _greenPillars.push(t); else if (t.pillarTeam === "red") _redPillars.push(t);
-        const k = _paKey(Math.round(t.x), Math.round(t.y));
-        const l = _pillarAt.get(k);
-        if (l) l.push(t); else _pillarAt.set(k, [t]);
-        const cx = Math.round(t.x), lc = _pillarCol.get(cx);
-        if (lc) lc.push(t); else _pillarCol.set(cx, [t]);
-    }
-}
-function pylonNearDist(x, y) {
-    const k = _pnKey(x, y);
-    let d = _pylonNear.get(k);
-    if (d !== undefined) return d;
-    // The pylons standing within PCB_TRACE_REACH, from the per-tile index.
-    pillarIndexFresh();
-    const R = Math.ceil(PCB_TRACE_REACH), cx = Math.round(x), cy = Math.round(y);
-    d = Infinity;
-    for (let tx = cx - R; tx <= cx + R; tx++) {
-        const l = _pillarCol.get(tx);
-        if (!l) continue;
-        for (const p of l) { if (Math.abs(Math.round(p.y) - cy) > R) continue; const dd = Math.hypot(p.x - cx, p.y - cy); if (dd < PCB_TRACE_REACH && dd < d) d = dd; }
-    }
-    _pylonNear.set(k, d);
-    return d;
-}
-
-// ── THE WALL'S CIRCUIT TRACES, cached per column ─────────
-// The bus lines, jogs, vias and the odd radial node on the south wall face are
-// fixed for a column (seeded by its x), so they are drawn once into a sprite
-// in wall space (x along the wall, y up from its base) at full strength, and
-// stamped each frame through the wall's shear with its light as the alpha.
-// A back-wall tile's top face, south face and the conduit pipe along its base.
-// They depend only on the light (the distance to the camera), so they are
-// drawn once per light step into a sprite (_wallFaceSprite) and stamped.
-function _drawWallFaces(c, px, py, amb, glo, WH) {
-    // Top face
-    c.fillStyle = `rgb(${24*amb+(14*glo)},${21*amb+(10*glo)},${15*amb+(6*glo)})`;   // the lab wall (js/labwall.js): warm beige-black, not blue
-    c.beginPath();
-    c.moveTo(px,          py - WH);
-    c.lineTo(px + TILE_W, py + TILE_H - WH);
-    c.lineTo(px,          py + 2*TILE_H - WH);
-    c.lineTo(px - TILE_W, py + TILE_H - WH);
-    c.fill();
-    // South face — from W→S base up by WH
-    c.fillStyle = `rgb(${16*amb+(8*glo)},${14*amb+(7*glo)},${10*amb+(4*glo)})`;
-    c.beginPath();
-    c.moveTo(px - TILE_W, py + TILE_H);
-    c.lineTo(px,          py + 2*TILE_H);
-    c.lineTo(px,          py + 2*TILE_H - WH);
-    c.lineTo(px - TILE_W, py + TILE_H - WH);
-    c.fill();
-    // 1. Conduit pipe along wall base (every tile)
-    c.save();
-    c.globalAlpha=0.45*amb; c.strokeStyle="#1a1608"; c.lineWidth=3;
-    c.beginPath(); c.moveTo(px-TILE_W,py+TILE_H-3); c.lineTo(px,py+2*TILE_H-3); c.stroke();
-    c.strokeStyle="#4a4020"; c.lineWidth=1; c.globalAlpha=0.25*amb;
-    c.stroke(); c.restore();
-}
-const _wallFaceSprites = new Map();
-function _wallFaceSprite(dq, WH) {
-    const key = dq * 1000 + WH;
-    let cv = _wallFaceSprites.get(key);
-    if (cv !== undefined) return cv;
-    cv = null;
-    const el = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
-    const g = el && el.getContext ? el.getContext("2d") : null;
-    if (g && typeof g.drawImage === "function") {
-        el.width = TILE_W * 2 + 2; el.height = WH + 2 * TILE_H + 2;
-        const dist = dq * FLOOR_DIST_STEP;
-        _drawWallFaces(g, TILE_W + 1, WH + 1, Math.max(0.1, 0.8 - dist / RENDER_DIST), Math.max(0, 1.0 - dist / 5), WH);
-        cv = el;
-    }
-    if (_wallFaceSprites.size >= 200) _wallFaceSprites.delete(_wallFaceSprites.keys().next().value);
-    _wallFaceSprites.set(key, cv);
-    return cv;
-}
-const _wallTraceSprites = new Map();
-const WALL_TRACE_SPRITE_CAP = 400;
-function _wallTraceSprite(xi, WH) {
-    if (_wallTraceSprites.has(xi)) return _wallTraceSprites.get(xi);
-    let cv = null;
-    try {
-        if (typeof document !== "undefined" && document.createElement) {
-            cv = document.createElement("canvas");
-            cv.width = 72; cv.height = Math.ceil(WH + 16);
-            const g = cv.getContext && cv.getContext("2d");
-            if (!g || typeof g.setTransform !== "function") cv = null;
-            else { g.setTransform(1, 0, 0, -1, 6, WH + 8); _drawWallTraces(g, xi, WH, 1); }
-        }
-    } catch (e) { cv = null; }
-    if (_wallTraceSprites.size >= WALL_TRACE_SPRITE_CAP) _wallTraceSprites.delete(_wallTraceSprites.keys().next().value);
-    _wallTraceSprites.set(xi, cv);
-    return cv;
-}
-// Draws the static traces into `g`, already in wall space; `amb` scales them.
-function _drawWallTraces(g, xi, WH, amb) {
-    const rng = _mkCircuitRng(((xi * 0xDEAD + 0xBEEF) >>> 0));
-    const WPAL = ['#ffb43a','#ff8a2a','#ffd870','#d89a30','#ff7a3a','#e8a030','#ffc860'];
-    const _ga = g.globalAlpha;
-    g.lineCap = 'square'; g.lineJoin = 'miter';
-    // ── Main horizontal bus lines — fixed heights, continuous across tiles ──
-    const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
-    const busC = ['#ffb43a', '#ff8a2a', '#d89a30', '#ffd870'];
-    for (let bi = 0; bi < busY.length; bi++) {
-        g.globalAlpha = amb * 0.20;
-        g.strokeStyle = busC[bi];
-        g.lineWidth   = 1.1;
-        g.beginPath();
-        g.moveTo(-2, busY[bi]);   // extend 2px past tile edge for seamless joins
-        g.lineTo(62, busY[bi]);
-        g.stroke();
-    }
-
-    // ── Tile-local jog / zigzag traces (seeded, deterministic) ──
-    const numJogs = 1 + (rng() * 3 | 0);
-    for (let j = 0; j < numJogs; j++) {
-        const jx  = 6 + rng() * 48;
-        const bi0 = rng() * busY.length | 0;
-        const bi1 = ((bi0 + 1 + (rng() * (busY.length - 1) | 0)) % busY.length);
-        const y0  = busY[bi0], y1 = busY[bi1];
-        const col = WPAL[rng() * WPAL.length | 0];
-        const hasZig = rng() > 0.45;
-        g.globalAlpha = amb * (0.14 + rng() * 0.13);
-        g.strokeStyle = col; g.lineWidth = 0.9;
-        g.beginPath(); g.moveTo(jx, y0);
-        if (hasZig) {
-            const midY = y0 + (y1 - y0) * (0.35 + rng() * 0.30);
-            const xOff = (rng() - 0.5) * 18;
-            g.lineTo(jx, midY); g.lineTo(jx + xOff, midY); g.lineTo(jx + xOff, y1);
-        } else { g.lineTo(jx, y1); }
-        g.stroke();
-        // Via pads at endpoints
-        g.globalAlpha = amb * 0.36; g.fillStyle = col;
-        g.beginPath(); g.arc(jx, y0, 2.2, 0, Math.PI*2); g.fill();
-        g.beginPath(); g.arc(hasZig ? jx+(rng()-0.5)*18 : jx, y1, 2.2, 0, Math.PI*2); g.fill();
-        g.globalAlpha = amb * 0.18; g.lineWidth = 0.5;
-        g.beginPath(); g.arc(jx, y0, 4.2, 0, Math.PI*2); g.stroke();
-    }
-
-    // ── Cluster / radial node — one every ~7 tiles ──
-    const rng2 = _mkCircuitRng(((xi * 0xF00BA5 + 0x1EAF) >>> 0));
-    if ((xi % 7) < 1 || rng2() > 0.82) {
-        const cx2 = 14 + rng2() * 32, cy2 = 32 + rng2() * 52;
-        const rad = 7 + rng2() * 10, col2 = WPAL[rng2() * WPAL.length | 0];
-        const arms = 4 + (rng2() * 4 | 0);
-        g.strokeStyle = col2; g.fillStyle = col2;
-        for (let a = 0; a < arms; a++) {
-            const ang = (a / arms) * Math.PI * 2 + rng2() * 0.5;
-            const nx = cx2 + Math.cos(ang) * rad * (0.5 + rng2() * 0.5);
-            const ny = cy2 + Math.sin(ang) * rad * (0.5 + rng2() * 0.5);
-            g.lineWidth = 0.8; g.globalAlpha = amb * 0.16;
-            g.beginPath(); g.moveTo(cx2, cy2); g.lineTo(nx, cy2); g.lineTo(nx, ny); g.stroke();
-            g.globalAlpha = amb * 0.20;
-            g.beginPath(); g.arc(nx, ny, 1.4, 0, Math.PI*2); g.fill();
-        }
-        g.globalAlpha = amb * 0.26;
-        g.beginPath(); g.arc(cx2, cy2, 2.8, 0, Math.PI*2); g.fill();
-        g.lineWidth = 0.5; g.globalAlpha = amb * 0.16;
-        g.beginPath(); g.arc(cx2, cy2, 5.0, 0, Math.PI*2); g.stroke();
-    }
-
-    g.globalAlpha = _ga;
-}
-
-// The glowing diamond under a pylon of yours, drawn once per colour at its
-// brightest; the floor pass fades it with the pulse.
-const _tileGlowSprites = new Map();
-function _tileGlowSprite(col) {
-    if (_tileGlowSprites.has(col)) return _tileGlowSprites.get(col);
-    let cv = null;
-    try {
-        if (typeof document !== "undefined" && document.createElement) {
-            cv = document.createElement("canvas"); cv.width = TILE_W * 2 + 10; cv.height = TILE_H * 2 + 10;
-            const g = cv.getContext && cv.getContext("2d");
-            if (!g || typeof g.setTransform !== "function") cv = null;
-            else {
-                const px = TILE_W + 5, py = 5;
-                g.beginPath(); g.moveTo(px, py); g.lineTo(px + TILE_W, py + TILE_H); g.lineTo(px, py + TILE_W); g.lineTo(px - TILE_W, py + TILE_H); g.closePath();
-                g.globalAlpha = 0.12; g.fillStyle = col; g.fill();
-                g.strokeStyle = col; g.lineWidth = 7; g.globalAlpha = 0.17; g.stroke();
-                g.lineWidth = 2; g.globalAlpha = 0.7; g.stroke();
-            }
-        }
-    } catch (e) { cv = null; }
-    _tileGlowSprites.set(col, cv);
-    return cv;
-}
-
-function drawPowerChain() {
-    if (typeof _pillarCache === "undefined" || _pillarCache.length === 0) return;
-    // Relay → nest is drawn once per relay, at the heaviest flow any of its
-    // pylons is pulling: that leg carries all of them.
-    const genFlow = new Map();
-
-    for (const t of _pillarCache) {
-        if (!needsPower(t) || !t.powerGen) continue;
-        // The wall's power unit is wired inside the wall: no cable runs from it across the floor (js/wallunit.js).
-        const _wallFed = q => typeof isWallUnitTile === "function" && isWallUnitTile(q);
-        if (_wallFed(t.powerGen) || _wallFed(t._supply)) continue;
-        // ONE CABLE PER ULTRA OR FORMATION. "The ultra pylons still have
-        // cables going to all 4 sides — make the ground look cleaner." The
-        // four pylons it absorbed are one structure, so it takes one cable, at
-        // its anchor, from whichever feeder outside the square reaches it; a
-        // cable that would start at one of its parts starts at the anchor.
-        if (t._ultraOf || t._wformOf) continue;
-        let gen = _structureOf(t.powerGen);
-        const S = t._ultra || t._wform;
-        if (S) {
-            const out = S.tiles.find(p => p.powerGen && _structureOf(p.powerGen) !== t);
-            if (!out) continue;
-            gen = _structureOf(out.powerGen);
-        }
-        const flow = powerFlowOf(t);
-        // FED BY A BATTERY (power.js): its cable runs from that battery, in
-        // battery gold, so you can see the charge going out to the pylons.
-        if (t._supply && typeof _liveBattery === "function" && _liveBattery(t._supply)) {
-            _drawPowerWire(t._supply, t, flow, (t.x * 0.17 + t.y * 0.31) % 1, BATTERY_COLOR);
-            continue;
-        }
-        genFlow.set(gen, Math.max(genFlow.get(gen) || 0, flow));
-        _drawPowerWire(gen, t, flow, (t.x * 0.17 + t.y * 0.31) % 1, POWER_WIRE_COLOUR);
-    }
-    // CHARGING. One blue cable from each feeder to the nearest battery of
-    // each element it charges — the bank's own cables carry it on to the rest
-    // — lit while any of them is filling.
-    if (typeof _batteryList !== "undefined") {
-        const legs = new Map();
-        for (const b of _batteryList) {
-            if (!_liveBattery(b) || !b.powerGen || (typeof isWallUnitTile === "function" && isWallUnitTile(b))) continue;   // the unit's cells charge inside the wall: no cable
-            const gen = _structureOf(b.powerGen);
-            const k = gen.x + "," + gen.y + "|" + b.attackModeElement;
-            const d = Math.hypot(b.x - gen.x, b.y - gen.y);
-            let L = legs.get(k);
-            if (!L) { L = { gen, b, d, flow: 0 }; legs.set(k, L); }
-            else if (d < L.d) { L.b = b; L.d = d; }
-            if (batteryCharging(b)) L.flow = 1;
-        }
-        for (const { gen, b, flow } of legs.values()) {
-            genFlow.set(gen, Math.max(genFlow.get(gen) || 0, flow));
-            _drawPowerWire(gen, b, flow, (b.x * 0.19 + b.y * 0.37) % 1, POWER_WIRE_COLOUR);
-        }
-    }
-    for (const r of _pillarCache) {
-        if (!genFlow.has(r) && isRelayPylon(r) && r.nestConnection && nestIsPowerSource(r.nestConnection))
-            genFlow.set(r, 0);
-    }
-
-    for (const [gen, flow] of genFlow) {
-        // A pylon passing power down the chain has no nest leg of its own.
-        if (!isRelayPylon(gen)) continue;
-        // The ONE source rule, not a second copy of it: this used to fall back to
-        // the home portal for every generator, so the wire ran from the Crystal
-        // across the whole map to ones it was not feeding at all.
-        const nest = relaySource(gen);
-        if (!nest) continue;
-        // Nest → relay, so the charges run the same way the power does and the
-        // whole chain reads in one direction. A linked nest's cable is blue,
-        // the colour of a nest you control.
-        _drawPowerWire(nest, gen, flow, (gen.x * 0.23) % 1,
-                       gen.nestConnection === nest ? NEST_COLOUR_CONTROLLED : POWER_WIRE_COLOUR);
-    }
-}
-
-// A unit the generator aura just mended: a small green "+" rising off it.
-function drawHealPluses() {
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#7dffb5";
-    for (const a of actors) {
-        if (!(a._auraFlash > 0) || a.dead) continue;
-        a._auraFlash--;
-        const k = 1 - a._auraFlash / 40;
-        const x = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2;
-        const y = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2;
-        ctx.globalAlpha = 1 - k;
-        ctx.fillText("+", x + 10, y - 34 - k * 14);
-    }
-    ctx.restore();
-}
-
-function drawGeneratorLinks() {
-    if (_genLinks.length === 0) return;
-    const toScreen = o => [
-        (o.x - player.visualX - (o.y - player.visualY)) * TILE_W + canvas.width  / 2,
-        (o.x - player.visualX + (o.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H,
-    ];
-    const pulse = 0.5 + 0.5 * Math.sin(frame * 0.06);
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // A pylon linked to two generators used to get its aura ring drawn twice
-    // (and its heal flash faded twice as fast). Once per pylon.
-    const seen = new Set(), _ringed = new Set();
-    for (const { gen, pylon } of _genLinks) {
-        if (gen.destroyed || pylon.destroyed) continue;
-        if (seen.has(pylon)) continue;
-        seen.add(pylon);
-        const [gx, gy] = toScreen(gen);
-        const [px, py] = toScreen(pylon);
-        // Both ends off screen means the whole filament is too.
-        if (Math.max(gx, px) < -60 || Math.min(gx, px) > canvas.width  + 60) continue;
-        if (Math.max(gy, py) < -60 || Math.min(gy, py) > canvas.height + 60) continue;
-
-        // The reach it mends pylons in, round the GENERATOR — only while you
-        // hold it or build (Conduit effects plan). Once per generator.
-        const _showReach = (typeof buildMode !== "undefined" && buildMode)
-            || (typeof commandMode !== "undefined" && commandMode && (commandTarget === gen || commandTarget === pylon));
-        if (_showReach && !_ringed.has(gen) && gen.circuitOn !== false) {
-            _ringed.add(gen);
-            const _r = getPylonRange(), rx = _r * TILE_W, ry = _r * TILE_H;
-            ctx.globalAlpha = 0.3; ctx.strokeStyle = typeof SHIELD_GEN_COLOR === "string" ? SHIELD_GEN_COLOR : "#dff3ff";
-            ctx.lineWidth = 1.2; ctx.setLineDash([3, 5]);
-            ctx.beginPath(); ctx.ellipse(gx, gy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-            ctx.setLineDash([]); ctx.globalAlpha = 1;
-        }
-
-        // A brief bloom on the pylon the frame it actually gained health.
-        if (pylon._genHealFlash > 0) {
-            pylon._genHealFlash--;
-            ctx.strokeStyle = `rgba(190,255,220,${pylon._genHealFlash / 12 * 0.55})`;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.ellipse(px, py, TILE_W * 0.5, TILE_H * 0.5, 0, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-    }
-    ctx.restore();
-}
-
-function rebuildGeneratorLinks() {
-    _genLinks = [];
-    if (_genPylons.length === 0) return;
-    const r = getPylonRange(), r2 = r * r;
-    for (const gen of _genPylons) {
-        if (gen.circuitOn === false) continue;   // switched off: it mends nothing either
-        for (const t of _pillarCache) {
-            if (t === gen) continue;
-            if (t.pillarTeam !== "green") continue;   // allies only
-            const dx = t.x - gen.x, dy = t.y - gen.y;
-            if (dx*dx + dy*dy > r2) continue;
-            _genLinks.push({ gen, pylon: t });
-        }
-    }
-}
-
-// Mend the pylons standing in a generator's reach. Broken pylons are not
-// touched — wreckage is a CORE worker's job, and letting a generator quietly
-// rebuild it would make that crew pointless.
-function generatorHealTick() {
-    if (frame % GENERATOR_HEAL_INTERVAL !== 0 || _genLinks.length === 0) return;
-    for (const { gen, pylon } of _genLinks) {
-        if (gen.destroyed || gen.health <= 0) continue;
-        if (pylon.destroyed) continue;
-        const cap = pylon.maxHealth || 0;
-        if (pylon.health >= cap) continue;
-        pylon.health = Math.min(cap, pylon.health + GENERATOR_HEAL_AMOUNT);
-        pylon._genHealFlash = 12;
-    }
 }
 
 // THE CLONE RESPAWN TICKER.
@@ -1409,512 +323,13 @@ function drawCloneRespawnTicker(cx, topY) {
     ctx.restore();
 }
 
-// THE HACK ZONE — the patch of floor that hacks a nest, painted on the floor.
-//
-// It used to be a line of text on the wall: "[ HOLD to HACK NEST ]". That was
-// wrong twice over. There is no hold — the hack is proximity, you walk in and
-// wait — and it named no place, so the player had to find the spot by trial.
-// The tiles say where; the word HACKING over the bar says what.
-//
-// Tiles are chosen with the SAME predicate the hack tick uses, so the lit floor
-// cannot promise a tile that would not actually work.
-function drawNestHackZone(nest) {
-    if (!nestIsHackable(nest)) return;
-    const c = nestHackCentre(nest);
-    // Only when the player is near enough for it to be about them.
-    const pdx = player.x - c.x, pdy = player.y - c.y;
-    if (pdx * pdx + pdy * pdy > NEST_HACK_SHOW * NEST_HACK_SHOW) return;
-
-    const standing = canHackNestFrom(nest, player.x, player.y);
-    const pulse = 0.5 + 0.5 * Math.sin(frame * (standing ? 0.18 : 0.06));
-    const R = Math.ceil(NEST_HACK_RANGE);
-
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    for (let ty = c.y - R; ty <= c.y + R; ty++) {
-        for (let tx = c.x - R; tx <= c.x + R; tx++) {
-            if (!canHackNestFrom(nest, tx, ty)) continue;
-            const t = typeof getTile === "function" ? getTile(tx, ty) : null;
-            if (!t || t.type !== "floor") continue;
-            const px = (tx - player.visualX - (ty - player.visualY)) * TILE_W + canvas.width / 2;
-            const py = (tx - player.visualX + (ty - player.visualY)) * TILE_H + canvas.height / 2;
-            ctx.beginPath();
-            ctx.moveTo(px, py);
-            ctx.lineTo(px + TILE_W, py + TILE_H);
-            ctx.lineTo(px, py + TILE_W);
-            ctx.lineTo(px - TILE_W, py + TILE_H);
-            ctx.closePath();
-            // Brighter while the player is actually standing in it, so the
-            // floor confirms the hack has started before the bar has moved.
-            ctx.fillStyle = standing
-                ? `rgba(0,255,136,${0.16 + pulse * 0.16})`
-                : `rgba(0,255,136,${0.06 + pulse * 0.05})`;
-            ctx.fill();
-            ctx.strokeStyle = `rgba(0,255,136,${standing ? 0.55 + pulse * 0.35 : 0.28 + pulse * 0.15})`;
-            ctx.lineWidth = standing ? 2 : 1;
-            ctx.stroke();
-        }
-    }
-    ctx.restore();
-}
-
-// A merged banner that fits a phone: a title, and a line of at most three
-// names then "+N". Pushed together, so the queue shows them together.
-function _bannerPair(title, names, color, life) {
-    const line = names.slice(0, 3).join(" \u00b7 ") + (names.length > 3 ? " +" + (names.length - 3) : "");
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: title, color, life, vy: -0.2, size: 14 });
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: line, color, life, vy: -0.2, size: 10 });
-}
-
-// ── ELEMENT COMBOS (docs/ROADMAP-top5.md §1) ─────────────
-// Built with the pylon pairs, every 60 frames: each lit wave pylon links to
-// its nearest wave pylons of OTHER elements within link range, at most
-// COMBO_MAX_LINKS each. A link's effect runs while either end is awake.
-let _comboLinks = [];
-let _netLit = {};
-let _batteryLinks = [];   // { a, b, el } battery to battery, laid as cables
-let _batteryBanks = [];   // { el, tier, members } — each linked group of one element's batteries
-const COMBO_LABEL_NEAR = 4;
-// A pylon's names and numbers float over it only while you hold or inspect it, or while you build: otherwise the battlefield is bare ("there is other clutter on the battlefield").
-function pylonLabelsOn(o) { return (typeof commandMode !== "undefined" && commandMode && commandTarget === o) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen && typeof infoPanelTarget !== "undefined" && infoPanelTarget === o) || (typeof buildMode !== "undefined" && buildMode); }
-const PYLON_LABEL_NEAR = 4;   // tiles: a pylon's full label shows only this close to you   // tiles: a combo link names itself only this close to you   // lit pylons per element, for the network HUD (see the tier count)
-function rebuildComboLinks() {
-    _comboLinks = [];
-    const r2 = Math.pow(getPylonRange(), 2), count = new Map(), cand = [];
-    for (let i = 0; i < _wPylons.length; i++) {
-        const a = _wPylons[i];
-        for (let j = i + 1; j < _wPylons.length; j++) {
-            const b = _wPylons[j];
-            if (!a.attackModeElement || !b.attackModeElement || a.attackModeElement === b.attackModeElement) continue;
-            const key = comboKey(a.attackModeElement, b.attackModeElement);
-            if (!ELEMENT_COMBOS[key]) continue;
-            const dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
-            if (d2 <= r2) cand.push({ a, b, key, d2 });
-        }
-    }
-    cand.sort((p, q) => p.d2 - q.d2);
-    const _found = [];
-    for (const c of cand) {
-        if ((count.get(c.a) || 0) >= COMBO_MAX_LINKS || (count.get(c.b) || 0) >= COMBO_MAX_LINKS) continue;
-        count.set(c.a, (count.get(c.a) || 0) + 1); count.set(c.b, (count.get(c.b) || 0) + 1);
-        const { a, b } = c, lx = b.x - a.x, ly = b.y - a.y;
-        _comboLinks.push({ a, b, key: c.key, combo: ELEMENT_COMBOS[c.key],
-            colA: a.attackModeColor || "#0f8", colB: b.attackModeColor || "#0f8",
-            lx, ly, len2: lx * lx + ly * ly, midX: (a.x + b.x) / 2, midY: (a.y + b.y) / 2,
-            bMinX: Math.min(a.x, b.x) - COMBO_STRIP, bMaxX: Math.max(a.x, b.x) + COMBO_STRIP,
-            bMinY: Math.min(a.y, b.y) - COMBO_STRIP, bMaxY: Math.max(a.y, b.y) + COMBO_STRIP });
-        if (discoverCombo(c.key)) _found.push(ELEMENT_COMBOS[c.key].name);
-    }
-    // Found together, said once (Conduit effects plan, "Centre banners").
-    if (_found.length === 1)
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110, text: "\u25c6 COMBO DISCOVERED: " + _found[0], color: "#ffe066", life: 200, vy: -0.15, size: 14 });
-    else if (_found.length > 1) {
-        // A title and a short line of names — at most three, then "+N" — so it
-        // fits a phone. Pushed together, they show together.
-        const names = _found.slice(0, 3).join(" \u00b7 ") + (_found.length > 3 ? " +" + (_found.length - 3) : "");
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110, text: "\u25c6 " + _found.length + " COMBOS DISCOVERED", color: "#ffe066", life: 220, vy: -0.15, size: 14 });
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 110, text: names, color: "#ffe066", life: 220, vy: -0.15, size: 10 });
-    }
-}
-
-function comboLinkActive(L) { return !(L.a.waveAwake === false && L.b.waveAwake === false); }
-
-// The effects, every third frame, on everything inside a link's strip.
-function comboTick() {
-    if (frame % 3 !== 0 || _comboLinks.length === 0) return;
-    for (const L of _comboLinks) {
-        if (!comboLinkActive(L)) continue;
-        const tA = Math.min(3, pylonNetworkTier(L.a) + (pylonSurged(L.a) ? 1 : 0));
-        const tB = Math.min(3, pylonNetworkTier(L.b) + (pylonSurged(L.b) ? 1 : 0));
-        const k = 1 + COMBO_TIER_GAIN * (tA + tB) / 2;
-        const foe = L.combo.foe, ally = L.combo.ally;
-        for (const act of actors) {
-            if (!act || act.dead) continue;
-            if (act.x < L.bMinX || act.x > L.bMaxX || act.y < L.bMinY || act.y > L.bMaxY) continue;
-            let t = L.len2 > 0 ? ((act.x - L.a.x) * L.lx + (act.y - L.a.y) * L.ly) / L.len2 : 0;
-            t = Math.max(0, Math.min(1, t));
-            const cx = L.a.x + t * L.lx, cy = L.a.y + t * L.ly;
-            if (Math.hypot(act.x - cx, act.y - cy) > COMBO_STRIP) continue;
-            if (foe && isHostileTarget(act)) applyComboFoe(act, foe, k, L);
-            else if (ally && (act.team === "green" || act.isClone || act.isFollower) && !act.isNeutralRecruit) applyComboAlly(act, ally, k);
-        }
-    }
-}
-
-function applyComboFoe(act, f, k, L) {
-    if (f.dmg && frame % f.every === 0) applyDamage(act, Math.round(f.dmg * k), null, L.a.attackModeElement);
-    if (f.blind) act.blinded = Math.max(act.blinded || 0, f.blind);
-    if (f.stun && frame % f.stunEvery === 0) { applySlow(act, f.stun, 0); act.blinded = Math.max(act.blinded || 0, f.stun); }
-    if (f.slow && !(act.slowed > 0 && act.slowFactor === 0)) applySlow(act, 30, f.slow);
-    if (f.shred) { act.defenseShredded = 60; act.defenseShredFactor = f.shred; }
-    if (f.pull && !act.pylonAggro) {
-        const dx = L.midX - act.x, dy = L.midY - act.y, d = Math.hypot(dx, dy);
-        if (d > 0.3) { const p = Math.min(d, f.pull * k); act.x += dx / d * p; act.y += dy / d * p; }
-    }
-}
-
-function applyComboAlly(act, a, k) {
-    if (a.haste && !(act.slowed > 0 && (act.slowFactor ?? 1) < 1))
-        applySlow(act, ELECTRIC_HASTE_FRAMES, Math.max(act.slowFactor > 1 && act.slowed > 0 ? act.slowFactor : 1, _hasteOf(a.haste)));
-    if (a.shield && frame % a.shieldEvery === 0) {
-        const cap = a.shieldCap;
-        act.shielded = true; act.shieldAmount = Math.min(cap, (act.shieldAmount || 0) + Math.round(a.shield * k));
-        act._shieldMax = Math.max(act._shieldMax || 0, cap);
-    }
-    if (a.heal && frame % a.healEvery === 0 && act.health < act.maxHealth)
-        act.health = Math.min(act.maxHealth, act.health + a.heal * k);
-    if (a.ult && frame % 30 === 0 && typeof act.ultimateCharge === "number")
-        act.ultimateCharge = Math.min(100, act.ultimateCharge + a.ult);
-}
-
-// ── WAVE LINKS (Conduit effects plan, "Wave link") ───────
-// A 1.5 px thread on the floor between two linked pylons — one per network tier
-// — and the element's own small motif moving along it. It used to be a 10-26 px
-// stroke with up to 40 px of blur at up to 0.85 on every pair, all the time.
-// Both ends asleep: a dim thread and no motif.
-const LINK_THREAD_ALPHA = 0.35, LINK_MOTIF_ALPHA = 0.7, LINK_ASLEEP_ALPHA = 0.15;
-function _hexA(h, a) { const n = parseInt(String(h).slice(1, 7), 16) || 0; return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
-function drawWaveLinks() {
-    if (_wPylonPairs.length === 0) return;
-    const W = canvas.width / 2, H = canvas.height / 2, t = frame / 60;
-    for (const { pa, pb, el, col } of _wPylonPairs) {
-        const ax = (pa.x - player.visualX - (pa.y - player.visualY)) * TILE_W + W;
-        const ay = (pa.x - player.visualX + (pa.y - player.visualY)) * TILE_H + H + TILE_H - 4;
-        const bx = (pb.x - player.visualX - (pb.y - player.visualY)) * TILE_W + W;
-        const by = (pb.x - player.visualX + (pb.y - player.visualY)) * TILE_H + H + TILE_H - 4;
-        if (Math.max(ax, bx) < -40 || Math.min(ax, bx) > canvas.width + 40) continue;
-        if (Math.max(ay, by) < -40 || Math.min(ay, by) > canvas.height + 40) continue;
-        const awake = !(pa.waveAwake === false && pb.waveAwake === false);
-        const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
-        const tier = Math.max(1, Math.min(3, Math.max(pylonNetworkTier(pa), pylonNetworkTier(pb))));
-        ctx.save();
-        ctx.lineWidth = 1.5; ctx.lineCap = "round";
-        ctx.strokeStyle = _hexA(col, awake ? LINK_THREAD_ALPHA : LINK_ASLEEP_ALPHA);
-        for (let k = 0; k < tier; k++) {
-            const o = (k - (tier - 1) / 2) * 4;
-            ctx.beginPath(); ctx.moveTo(ax + nx * o, ay + ny * o); ctx.lineTo(bx + nx * o, by + ny * o); ctx.stroke();
-        }
-        if (awake) {
-            const at = u => [ax + dx * u, ay + dy * u];
-            ctx.globalAlpha = LINK_MOTIF_ALPHA;
-            const seg = Math.max(3, Math.round(L / 22));
-            if (el === "fire") for (let i = 1; i < seg; i++) {
-                const [x, y] = at(i / seg), h = 7 + 5 * Math.abs(Math.sin(t * 6 + i * 1.7));
-                ctx.fillStyle = i % 2 ? "#ff6600" : col;
-                ctx.beginPath(); ctx.moveTo(x - 2.5, y); ctx.quadraticCurveTo(x, y - h * 0.6, x, y - h); ctx.quadraticCurveTo(x, y - h * 0.6, x + 2.5, y); ctx.fill();
-            } else if (el === "ice") { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath();
-                for (let i = 1; i < seg; i++) { const [x, y] = at(i / seg), r = 3 + Math.sin(t * 2 + i); ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.moveTo(x, y - r); ctx.lineTo(x, y + r); }
-                ctx.stroke();
-            } else if (el === "electric") { ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(ax, ay);
-                const seed = Math.floor(t * 10), n = seg * 2;
-                for (let i = 1; i < n; i++) { const [x, y] = at(i / n), j = ((seed * 13 + i * 7) % 11) - 5; ctx.lineTo(x + nx * j, y + ny * j); }
-                ctx.lineTo(bx, by); ctx.stroke();
-            } else if (el === "flux") { ctx.fillStyle = col;
-                for (let i = 0; i < seg; i++) { const u = (i / seg + t * 0.25) % 1, [x, y] = at(u), r = Math.max(0.6, 2.2 - Math.abs(u - 0.5) * 2); ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
-            } else if (el === "core") { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath();
-                for (let i = 1; i < seg; i++) { const [x, y] = at(i / seg), r = 3 + Math.sin(t * 3 + i);
-                    for (let q = 0; q <= 6; q++) { const a = q * Math.PI / 3, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r * 0.6; if (q === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); } }
-                ctx.stroke();
-            } else if (el === "toxic") { ctx.strokeStyle = col; ctx.lineWidth = 1;
-                for (let i = 0; i < seg; i++) { const [x, y] = at((i + 0.5) / seg), u = (t * 0.8 + i * 0.3) % 1;
-                    ctx.globalAlpha = LINK_MOTIF_ALPHA * (1 - u); ctx.beginPath(); ctx.arc(x, y - u * 12, 2 + u * 2, 0, Math.PI * 2); ctx.stroke(); }
-            }
-        }
-        ctx.restore();
-    }
-}
-
-// A braided cable of the two element colours, the combo's name at its middle.
-// Bright and moving while it works, dim while both ends sleep.
-function drawComboLinks() {
-    if (_comboLinks.length === 0) return;
-    const W = canvas.width / 2, H = canvas.height / 2;
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round";
-    for (const L of _comboLinks) {
-        const ax = (L.a.x - player.visualX - (L.a.y - player.visualY)) * TILE_W + W;
-        const ay = (L.a.x - player.visualX + (L.a.y - player.visualY)) * TILE_H + H + TILE_H - 4;
-        const bx = (L.b.x - player.visualX - (L.b.y - player.visualY)) * TILE_W + W;
-        const by = (L.b.x - player.visualX + (L.b.y - player.visualY)) * TILE_H + H + TILE_H - 4;
-        if (Math.max(ax, bx) < -60 || Math.min(ax, bx) > canvas.width + 60) continue;
-        const on = comboLinkActive(L), off = on ? (frame * 0.6) % 16 : 0;
-        ctx.lineWidth = 2;
-        ctx.globalAlpha = on ? 0.6 : 0.2;
-        ctx.setLineDash([6, 6]);
-        ctx.strokeStyle = L.colA; ctx.lineDashOffset = -off;
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-        ctx.strokeStyle = L.colB; ctx.lineDashOffset = -off - 8;
-        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
-        ctx.setLineDash([]); ctx.lineDashOffset = 0;
-        // The name only near you (Conduit effects plan, "Combo link").
-        if (Math.abs(L.midX - player.x) <= COMBO_LABEL_NEAR && Math.abs(L.midY - player.y) <= COMBO_LABEL_NEAR) {
-            ctx.globalAlpha = 0.7;
-            cachedText(L.combo.name, "bold 7px monospace", "#ffe066", (ax + bx) / 2, (ay + by) / 2 - 10);
-        }
-    }
-    ctx.restore();
-}
-
-// WAKING. A support or disruption pylon is on STANDBY until a unit it works on
-// — one of yours for SUPPORT, an enemy for DISRUPTION — is within
-// WAVE_WAKE_RADIUS; then it blinks awake (_wakeFrame) and stays up until
-// WAVE_WAKE_LINGER frames after the last one left. waveAwake is what the zone
-// effects, the haste ring and the power draw all ask.
-function waveWakeTick() {
-    const r2 = WAVE_WAKE_RADIUS * WAVE_WAKE_RADIUS;
-    for (const t of _pillarCache) {
-        if (!t.waveMode || isRelayPylon(t)) continue;
-        // Awake is about who is near, not about power: an awake pylon on a flat
-        // pool still has to try to pay, which is what trips it (waveDrainTick).
-        if (t.pillarTeam !== "green") { t.waveAwake = false; continue; }
-        if (frame % 6 === 0 || t.waveAwake === undefined) {
-            const support = waveRole(t.attackModeElement) === "support";
-            let seen = false;
-            if (support) {
-                const pdx = player.x - t.x, pdy = player.y - t.y;
-                seen = pdx * pdx + pdy * pdy <= r2;
-            }
-            const _near = unitsNear(t.x, WAVE_WAKE_RADIUS);
-            for (let i = 0; !seen && i < _near.length; i++) {
-                const a = _near[i];
-                if (!a || a.dead) continue;
-                const mine = support ? ((a.team === "green" || a.isClone || a.isFollower) && !a.isNeutralRecruit)
-                                     : (isHostileTarget(a)
-                                        // A toxic pylon also mends clones: a hurt one wakes it.
-                                        || (t.attackModeElement === "toxic" && a.isClone && a.team === "green" && a.health < a.maxHealth));
-                if (!mine) continue;
-                const dx = a.x - t.x, dy = a.y - t.y;
-                if (dx * dx + dy * dy <= r2) seen = true;
-            }
-            if (seen) {
-                if (!t.waveAwake) t._wakeFrame = frame;
-                t._awakeUntil = frame + WAVE_WAKE_LINGER;
-            }
-        }
-        t.waveAwake = frame < (t._awakeUntil === undefined ? -1 : t._awakeUntil);
-        // An OVERCHARGE wakes the whole grid for its duration.
-        if (!t.waveAwake && pylonSurged(t)) { if (t.waveAwake === false) t._wakeFrame = frame; t.waveAwake = true; }
-    }
-}
-
-// ELECTRIC HASTE AROUND EACH AWAKE ELECTRIC SUPPORT PYLON. The link strips
-// between them haste too (applyPylonZoneEffects); this is the ring around each
-// pylon itself, so standing next to one is enough. Renewed every 3 frames and
-// lingering ELECTRIC_HASTE_FRAMES. An enemy's slow on the same unit still wins.
-function electricHasteTick() {
-    if (frame % 3 !== 0) return;
-    // Each pylon at its own tier (its distance from the electric bank).
-    const src = [];
-    for (const p of _wPylons) if (p.attackModeElement === "electric" && p.waveAwake !== false && (pylonNetworkTier(p) >= 1 || pylonSurged(p))) src.push(p);
-    if (!src.length) return;
-    const r2 = ELECTRIC_HASTE_RADIUS * ELECTRIC_HASTE_RADIUS;
-    for (const a of actors) {
-        if (!a || a.dead || !(a.team === "green" || a.isClone || a.isFollower)) continue;
-        if (a.slowed > 0 && (a.slowFactor ?? 1) < 1) continue;
-        for (const p of src) {
-            const dx = a.x - p.x, dy = a.y - p.y;
-            if (dx * dx + dy * dy > r2) continue;
-            const tier = Math.min(3, pylonNetworkTier(p) + (pylonSurged(p) ? 1 : 0));
-            if (tier >= 1) { applySlow(a, ELECTRIC_HASTE_FRAMES, _hasteOf(ELECTRIC_HASTE[tier])); break; }
-        }
-    }
-}
-
-// THE TURRET'S BOLT. Flies at TURRET_SHOT_SPEED and steers onto its target
-// every frame, so it lands; the damage is applied on arrival. If the target
-// dies first the bolt fizzles where it is.
-function turretShotsTick() {
-    if (!turretShots.length) return;
-    turretShots = turretShots.filter(s => {
-        s.life--;
-        const tg = s.target;
-        if (!tg || tg.dead || s.life <= 0) {
-            elementEffects.push({ type: "impact", x: s.x, y: s.y, color: s.col, radius: 0.2, life: 8, element: s.el });
-            return false;
-        }
-        const dx = tg.x - s.x, dy = tg.y - s.y, d = Math.hypot(dx, dy);
-        if (d <= TURRET_SHOT_SPEED) {
-            applyDamage(tg, s.dmg, s.src, s.el);
-            elementEffects.push({ type: "impact", x: tg.x, y: tg.y, color: s.col, radius: s.charged ? 0.55 : 0.4, life: 14, element: s.el });
-            if (s.splash > 0 && typeof ultraSplash === "function") ultraSplash(s, tg);
-            return false;
-        }
-        // Drop from the muzzle to the target's body over the flight.
-        s.z += (TURRET_HIT_Z - s.z) * Math.min(1, TURRET_SHOT_SPEED / d);
-        s.px = s.x; s.py = s.y;
-        s.x += dx / d * TURRET_SHOT_SPEED; s.y += dy / d * TURRET_SHOT_SPEED;
-        return true;
-    });
-}
-
-function drawTurretShots() {
-    if (!turretShots.length) return;
-    const W = canvas.width / 2, H = canvas.height / 2;
-    const scr = (x, y, z) => [(x - player.visualX - (y - player.visualY)) * TILE_W + W,
-                              (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - z];
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round";
-    for (const s of turretShots) {
-        const [sx, sy] = scr(s.x, s.y, s.z);
-        const [tx, ty] = scr(s.px === undefined ? s.x : s.px, s.py === undefined ? s.y : s.py, s.z);
-        const r = (s.charged ? 6.5 : 5) * (s.big ? 1.7 : 1);
-        // Trail, glow, hot core.
-        ctx.strokeStyle = s.col; ctx.globalAlpha = 0.5; ctx.lineWidth = r * 1.4;
-        ctx.beginPath(); ctx.moveTo(tx - (sx - tx) * 1.5, ty - (sy - ty) * 1.5); ctx.lineTo(sx, sy); ctx.stroke();
-        ctx.globalAlpha = 0.35; ctx.fillStyle = s.col;
-        ctx.beginPath(); ctx.arc(sx, sy, r * 2, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1; ctx.fillStyle = s.col;
-        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = "#fff";
-        ctx.beginPath(); ctx.arc(sx, sy, r * 0.45, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.restore();
-}
-
-// A haste factor through tonight's siege (Static Storm doubles the bonus).
-function _hasteOf(m) { return typeof stormHaste === "function" ? stormHaste(m) : m; }
-
-// One turret round: the pylon's power, the turret multiplier, its network
-// tier, and a bite out of the target's max HP so it counts against big ones.
-function turretRoundDamage(t, target) {
-    const tier = pylonNetworkTier(t);
-    const base = (t.attackPower || TURRET_POWER) * TURRET_DAMAGE_MULT * (1 + TURRET_TIER_BONUS * tier);
-    // Its STATUS multiplies the round: plain ×1, upgraded ×1.15, MK II ×1.3.
-    const st = typeof pylonStatusMult === "function" ? pylonStatusMult(t) : 1;
-    return (base + TURRET_MAXHP_SHARE * ((target && target.maxHealth) || 0)) * st;
-}
-
-// The tier of `el` at a point: the best of that element's battery banks,
-// full within BANK_FULL_RANGE of the bank's nearest battery and a tier lower
-// for every BANK_FALLOFF_STEP tiles beyond (config.js).
-// Remembered per spot until the banks are rebuilt: formations, Ultras and MK II
-// all ask it for the same few spots every frame.
-let _tierMemo = new Map(), _tierMemoBanks = null, _tierMemoLen = -1;
-function networkTierAt(el, x, y) {
-    if (_tierMemoBanks !== _batteryBanks || _tierMemoLen !== _batteryBanks.length) { _tierMemo = new Map(); _tierMemoBanks = _batteryBanks; _tierMemoLen = _batteryBanks.length; }
-    const mk = el + "|" + x + "|" + y;
-    const hit = _tierMemo.get(mk);
-    if (hit !== undefined) return hit;
-    const v = _networkTierAtRaw(el, x, y);
-    if (_tierMemo.size > 4000) _tierMemo.clear();
-    _tierMemo.set(mk, v);
-    return v;
-}
-function _networkTierAtRaw(el, x, y) {
-    let best = 0;
-    for (const b of _batteryBanks) {
-        if (b.el !== el || b.tier <= best) continue;
-        // A bank whose bounding box is already too far to beat `best` is
-        // skipped without measuring each battery in it.
-        if (!b._bb) { const xs = b.members.map(m => m.x), ys = b.members.map(m => m.y);
-                      b._bb = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]; }
-        const bx = Math.max(b._bb[0] - x, 0, x - b._bb[1]), by = Math.max(b._bb[2] - y, 0, y - b._bb[3]);
-        if (Math.hypot(bx, by) >= BANK_FULL_RANGE + (b.tier - best) * BANK_FALLOFF_STEP) continue;
-        let d = Infinity;
-        for (const m of b.members) { const dd = Math.hypot(m.x - x, m.y - y); if (dd < d) d = dd; }
-        const t = b.tier - Math.floor(Math.max(0, d - BANK_FULL_RANGE) / BANK_FALLOFF_STEP + (d > BANK_FULL_RANGE ? 1 : 0));
-        if (t > best) best = t;
-    }
-    return Math.max(0, Math.min(3, best));
-}
-// A pylon's network tier — 0 when it carries no element or no bank reaches
-// it. One place, because the aura, the HUD and the zone effects all ask it.
-// Worked out with the caches (pylon._tier); a pylon built since asks directly.
-function pylonNetworkTier(pylon) {
-    if (!pylon) return 0;
-    const el = pylon.attackModeElement;
-    if (!el) return 0;
-    return pylon._tier !== undefined ? pylon._tier : networkTierAt(el, pylon.x, pylon.y);
-}
-
-// THE AURA. Every pylon linked to a generator mends the squad standing around
-// it, at a rate and a reach multiplied by that pylon's network tier.
-//
-// Generator-linked only: this is what the generator is FOR, and it gives the
-// placement rule (within GENERATOR_NEST_RANGE of a nest) something to buy
-// beyond keeping the linked pylons repaired.
-// THE SHIELD FIELD is gone: shields are fuelled by SHIELD CELLS now
-// (js/shieldcells.js), made by CORE pylons.
-
-// ── PREDATORS GO FOR THE GENERATORS ──────────────────────
-// REPORTED: "more enemies need to attack shield generators." (Now plain
-// GENERATORS — and a zone's tech dies with its generator, so all the more.) At night and in
-// any alarm, SHIELD_GEN_HUNT_SHARE of predators (decided once each) turn on
-// the nearest shield generator within SHIELD_GEN_HUNT_RANGE and bash it (the
-// pylonAggro bash in Predator.update). Machines, thieves, the grub and the
-// tyrant keep their own business.
-function shieldGenHuntTick() {
-    if (frame % 30 !== 0 || typeof _genPylons === "undefined" || !_genPylons.length) return 0;
-    if (!(alertActive || gameState.phase === "night")) return 0;
-    const gens = _genPylons.filter(g => !g.destroyed && g.health > 0 && g.pillarTeam === "green");
-    if (!gens.length) return 0;
-    const r2 = SHIELD_GEN_HUNT_RANGE * SHIELD_GEN_HUNT_RANGE;
-    let n = 0;
-    for (const a of actors) {
-        if (!(a instanceof Predator) || a.dead || a.team === "green" || a.isClone || a.pylonAggro) continue;
-        if (a.isMachine || a.raider || a.isGrub || a.isBrood || a.untargetable) continue;
-        if (a._genHunter === undefined) a._genHunter = Math.random() < SHIELD_GEN_HUNT_SHARE;
-        if (!a._genHunter) continue;
-        let best = null, bd = r2;
-        for (const g of gens) { const d = (g.x - a.x) ** 2 + (g.y - a.y) ** 2; if (d < bd) { bd = d; best = g; } }
-        if (best) { a.pylonAggro = best; n++; }
-    }
-    return n;
-}
-
-function rebuildPylonPairs() {
-    _wPylonPairs = [];
-    const _ufParent = new Map();
-    const _ufFind = p => { let r = p; while (_ufParent.get(r) !== r) r = _ufParent.get(r); while (_ufParent.get(p) !== r) { const n = _ufParent.get(p); _ufParent.set(p, r); p = n; } return r; };
-    const _ufUnion = (a, b) => { _ufParent.set(_ufFind(a), _ufFind(b)); };
-    _wPylons.forEach(p => _ufParent.set(p, p));
-
-    // Collect all candidate pairs sorted closest-first so natural neighbours
-    // are preferred over long-range shortcuts.
-    const _pr = getPylonRange(), _pr2 = _pr * _pr;
-    const _candidates = [];
-    for (let _pi = 0; _pi < _wPylons.length; _pi++) {
-        const pa = _wPylons[_pi];
-        for (let _pj = _pi + 1; _pj < _wPylons.length; _pj++) {
-            const pb = _wPylons[_pj];
-            if (pa.attackModeElement !== pb.attackModeElement) continue;
-            const dx = pa.x-pb.x, dy = pa.y-pb.y, d2 = dx*dx+dy*dy;
-            if (d2 > _pr2) continue;
-            _candidates.push({ pa, pb, d2 });
-        }
-    }
-    _candidates.sort((a, b) => a.d2 - b.d2);
-
-    for (const { pa, pb } of _candidates) {
-        // Skip if already connected through the graph (would create a cycle/mesh)
-        if (_ufFind(pa) === _ufFind(pb)) continue;
-        _ufUnion(pa, pb);
-        const _plx = pb.x-pa.x, _ply = pb.y-pa.y;
-        _wPylonPairs.push({ pa, pb,
-            el: pa.attackModeElement,
-            col: pa.attackModeColor || "#0f8",
-            midX: (pa.x+pb.x)*0.5, midY: (pa.y+pb.y)*0.5,
-            lx: _plx, ly: _ply, len2: _plx*_plx+_ply*_ply,
-            bMinX: Math.min(pa.x,pb.x)-1.5, bMaxX: Math.max(pa.x,pb.x)+1.5,
-            bMinY: Math.min(pa.y,pb.y)-1.5, bMaxY: Math.max(pa.y,pb.y)+1.5 });
-    }
-    // O(1) partner lookup used by solo-flux ring and future checks
-    _pylonsWithPartner = new Set();
-    _wPylonPairs.forEach(({pa, pb}) => { _pylonsWithPartner.add(pa); _pylonsWithPartner.add(pb); });
-}
-
 // ─────────────────────────────────────────────────────────
 //  DRAW DEPTH
 // ─────────────────────────────────────────────────────────
-// One place decides what draws in front of what. See the note at the sort for
-// why a wall nest is not simply x+y.
-const NEST_DRAW_BIAS = 1.01;   // just past the last wall tile of its own face
+// One place decides what draws in front of what: depth is x + y (a bigger sum draws lower and in front).
 function drawDepthOf(o) {
-    if ((o.type === 'fp' || o.type === 'crystal') && o.depth !== undefined) return o.depth;   // facility wall decor sorts just after the wall pieces under it; the crystal after its pad (js/facilitydecor.js, js/facilitystyle.js)
-    const d = o.x + o.y;
-    if (o.type === 'module') return d + 0.1;   // over its own floor tile, which shares its depth
-    // An enemy standing in a black hole's vortex is drawn over it, not under
-    // the floor tile it is painted from (js/formations.js).
-    if (o.actor && o.actor._onVortex === frame) return d + 1.5;
-    return (o.nest && !o._infestNest) ? d + NEST_DRAW_BIAS : d;
+    if ((o.type === 'fp' || o.type === 'crystal') && o.depth !== undefined) return o.depth;   // facility wall decor sorts just after the wall pieces under it; the crystal after its pad (js/facilitydecor.js)
+    return o.x + o.y;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -2108,16 +523,21 @@ function gameLoop() {
     if (now - _simStepsAt >= 1000) { _simStepsShown = Math.round(_simStepsCount * 1000 / Math.max(1, now - _simStepsAt)); _simStepsCount = 0; _simStepsAt = now; }
 }
 
+// The frame's clear: black (the facility's floors, walls and dark are painted over it).
+function clearFrame() { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+
+// ─────────────────────────────────────────────────────────
+//  THE FRAME: one step of the game, and its picture
+// ─────────────────────────────────────────────────────────
+// The order is the order things need: the page's controls first, then the logic (the player, the creatures, the dead, the effects), then the drawing (the floor and everything standing on it, depth-sorted,
+// then the overlays, then the panels). gameLoop runs it 60 times a second; a step with no picture (a slow device catching up) runs the logic into a null context (_simStep).
 function render() {
     if (typeof toolboxTick === "function" && typeof frame !== "undefined" && frame % 30 === 0) toolboxTick();
-    if (typeof mixToolRender === "function" && typeof frame !== "undefined" && frame % 6 === 0) mixToolRender(false);   // the mix selector opens at once when a button or a tap on the Crystal sets its flag (js/mixtool.js)
+    if (typeof mixToolRender === "function" && typeof frame !== "undefined" && frame % 6 === 0) mixToolRender(false);   // the battle tool follows its flag (js/mixtool.js)
     if (typeof partyTick === "function" && typeof frame !== "undefined" && frame % 6 === 0) partyTick();   // the squad of three and its bar (js/party.js)
-    if (typeof ccPrune === "function" && typeof frame !== "undefined" && frame % 30 === 0) { ccPrune(); if (typeof ccRefreshChip === "function") ccRefreshChip(); }   // the dead leave the selection
+    if (typeof ccPrune === "function" && typeof frame !== "undefined" && frame % 30 === 0) ccPrune();   // the dead leave the selection
     if (typeof checkVisibleArea === "function" && (typeof frame === "undefined" || frame % VISIBLE_AREA_POLL_FRAMES === 0)) checkVisibleArea();   // the browser's real visible size, polled (js/config.js)
-    if (typeof placingTick === "function") placingTick();   // zoomed out and the interface away while a build tool is in hand (js/buildmenu.js)
-    // AUTOPLAY presses NEXT WAVE itself — which has to be watched while paused.
-    if (typeof autoplayWatch === "function") autoplayWatch();
-    if (!gameState.running) { return; } // skip all logic while paused (buy screen, game over)
+    if (!gameState.running) { return; } // skip all logic while paused (game over)
     perfFrameStart();
 
     frame++;
@@ -2131,7 +551,7 @@ function render() {
 
     if (typeof ringHintTick === 'function') ringHintTick();
 
-    // Health is a count of hits (PLAYER_HITS); it does not decay — a health pad restores one.
+    // Health is a count of hits (PLAYER_HITS); it does not decay.
     const hpPct=health/PLAYER_HITS;
     // ── HUD updates — only write DOM when values actually change (avoids layout thrashing) ──
     const _hpInt = Math.round(health);
@@ -2145,8 +565,6 @@ function render() {
     // ── PLAYER ULTIMATE ──
     tickArmySurge();
     siphonTick();
-    if (typeof zoneOrderTick === "function") zoneOrderTick();      // the crews' queued build orders (js/zones.js)
-    if (typeof moduleTick === "function") moduleTick();   // med bays, force walls, overclock hubs (js/modules.js)
     const _ultInt = armySurgeTimer > 0
         ? Math.ceil(armySurgeTimer / 60)          // counting the surge down
         : Math.round(playerUltimate);              // filling
@@ -2165,11 +583,11 @@ function render() {
         } else {
             ultBar.style.width = (playerUltimate / PLAYER_ULT_MAX * 100) + "%";
             ultLabel.textContent =
-                  playerUltimateReady()            ? "TAP \u2014 ARMY SURGE"
-                : !siphonEnabled                   ? "SIPHON OFF \u00b7 " + _ultInt + "%"
+                  playerUltimateReady()            ? "TAP — ARMY SURGE"
+                : !siphonEnabled                   ? "SIPHON OFF · " + _ultInt + "%"
                 // The range gate has to announce itself, or a bar that has
                 // stopped filling because the squad is elsewhere reads as broken.
-                : _siphonInRange === 0             ? "NO SQUAD IN RANGE \u00b7 " + _ultInt + "%"
+                : _siphonInRange === 0             ? "NO SQUAD IN RANGE · " + _ultInt + "%"
                                                    : "ULTIMATE " + _ultInt + "%";
         }
         ultWrap.classList.toggle("ready",   _ultState === "ready");
@@ -2184,10 +602,8 @@ function render() {
 
     // ── PLAYER KNOCKDOWN ──
     // No stun. Being dropped to zero puts you back at the Crystal, but control
-    // is never taken away — three seconds of standing frozen while the night
-    // carried on was punishment on top of punishment. A short damage-immune
-    // window takes its place, purely so a predator parked by the Crystal
-    // cannot chain-kill you on arrival.
+    // is never taken away. A short damage-immune window takes its place, purely
+    // so a creature parked by the Crystal cannot chain-kill you on arrival.
     if (player.invuln > 0) player.invuln--;
     if (health <= 0) {
         health = PLAYER_HITS; // knocked back to the Crystal: all three hits again
@@ -2203,334 +619,35 @@ function render() {
     if (player.attackCooldown > 0) player.attackCooldown--;
     if (typeof gunTick === "function") gunTick();   // click or hold to fire: js/gunfire.js
     if (typeof targetTick === "function") targetTick();   // the aim meter and the selection: js/targeting.js
-    // Shards, and your SHIELD CELLS beside them once you have any (js/shieldcells.js).
-    const _cellsNow = typeof shieldCells === "number" ? shieldCells : 0;
-    if (shardCount !== _lastShardCount || _cellsNow !== _lastCellCount) {
-        _lastShardCount = shardCount; _lastCellCount = _cellsNow;
-        shardUI.textContent = shardCount + (_cellsNow > 0 ? "  \u2b21 " + _cellsNow : "");
-    }
-    // The ALARM is a red triangle beside the zone, not a banner (css: body.alarm-on). Only the change touches the page.
-    const _alarmOn = !!alertActive && gameState.phase !== "waveComplete";
+    // The crystals, at the top left: only the change touches the page.
+    if (shardCount !== _lastShardCount) { _lastShardCount = shardCount; shardUI.textContent = String(shardCount); }
+    // The ALARM is a red triangle beside the room tag (css: body.alarm-on). Only the change touches the page.
+    const _alarmOn = !!alertActive;
     if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }
-    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof buildMenuOpen !== "undefined" && buildMenuOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen));
+    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen));
     if (document.body && document.body.classList && document.body.classList.contains("info-open") !== !!infoPanelOpen) document.body.classList.toggle("info-open", !!infoPanelOpen);
     if (_panelOpen !== _lastPanelOpen) { _lastPanelOpen = _panelOpen; if (document.body && document.body.classList) document.body.classList.toggle("panel-open", _panelOpen); }
-    // Zone indicator — cached element, update only on zone change
-    // In the facility the tag names the room the player is in (js/facilitynet.js); in the classic game it is the zone
+    // The room tag names the room the player is in (js/facilitynet.js): cached element, written only on a change.
     const _fpz = typeof facilityZoneName === "function" ? facilityZoneName() : null;
-    if (_fpz !== null) {
-        if (_fpz !== _lastZoneName) { _lastZoneName = _fpz; if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo"); if (_zoneEl) _zoneEl.textContent = _fpz; }
-    } else {
-    const _pz = getZoneIndex(Math.floor(player.x));
-    if (_pz !== _lastZoneIndex) {
-        _lastZoneIndex = _pz;
-        if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo");
-        if (_zoneEl) _zoneEl.textContent = _pz === 0 ? "Zone: Home" : "Zone: " + _pz;
-    }
-    }
-    // Health pad HUD — show pad count and total charges
-    {
-        const _padKey = healthPads.length + ":" + healthPads.reduce((s,p)=>s+p.charges,0);
-        if (_padKey !== _lastPadHudKey) {
-            _lastPadHudKey = _padKey;
-            if (!_padHudEl) _padHudEl = document.getElementById("padHud");
-            if (_padHudEl) {
-                if (healthPads.length > 0) {
-                    const tc = healthPads.reduce((s,p)=>s+p.charges,0);
-                    _padHudEl.textContent = `PAD: ${healthPads.length} (${tc}c)`;
-                    _padHudEl.style.display = "block";
-                } else {
-                    _padHudEl.style.display = "none";
-                }
-            }
-        }
-    }
-
+    if (_fpz !== null && _fpz !== _lastZoneName) { _lastZoneName = _fpz; if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo"); if (_zoneEl) _zoneEl.textContent = _fpz; }
 
     // ── CRYSTAL DEATH CHECK ──
     if (crystal.health<=0) { showGameOver(); return; }
     // Slow recovery while no alarm is up (see CRYSTAL_REGEN).
     if (!alertActive && crystal.health < crystal.maxHealth) crystal.health = Math.min(crystal.maxHealth, crystal.health + CRYSTAL_REGEN);
 
-    // ── WORLD GEN ──
-    if (player.x>lastGenX-10) generateSegment(lastGenX+1);
-    // The ground ahead of the FRONTIER exists too, not only ahead of you:
-    // autoplay's squad walks out to nests the player has never been near.
-    if (frame % 120 === 0 && typeof ensureWorldTo === "function" && typeof nextZoneToTake === "function")
-        ensureWorldTo((nextZoneToTake() + ZONE_SPAWN_AHEAD + 1) * ZONE_LENGTH);
+    // ── THE ALARM runs down, unless something keeps feeding it (the tutorial's assault does: js/tutorial.js) ──
+    if (alertActive) { alertTimer--; if (alertTimer <= 0) clearAlarm(); }
 
-    // ── WORLD CACHE — rebuild pylon/nest subsets every 60 frames ──────────
-    if (frame - _cacheAge >= 60) {
-        _cacheAge    = frame;
-        _pillarCache = world.filter(t => t.pillar && !t.destroyed && t.health > 0);
-        rebuildPylonNear();
-        rebuildPillarIndex();
-        // Generators are excluded from _wPylons on purpose: the elemental
-        // network tiers and integrity are computed from that list, and a
-        // neutral pylon has no element to contribute to either.
-        _genPylons   = _pillarCache.filter(t => t.isGenerator);
-        _conPylons   = _pillarCache.filter(t => t.isConnector);
-        // Who is actually switched on. Must come after _genPylons and _nestCache
-        // — the grid is worked out from the generators that carry it and the
-        // nests that feed it — and BEFORE the two ability lists, which only
-        // carry pylons the grid can keep running.
-        _nestCache   = world.filter(t => t.nest);
-        recomputePower();
-        _wPylons     = _pillarCache.filter(t => t.waveMode && t.attackModeElement && !isRelayPylon(t) && t.powered && t.pillarTeam === "green");
-        // EVERY turret is on the firing list, powered or not: power only
-        // decides whether its rounds are charged (see the attack pass).
-        _aPylons     = _pillarCache.filter(t => t.attackMode && !isRelayPylon(t) && t.pillarTeam === "green");
-        // Four turrets in a square fuse into an ULTRA TURRET (js/ultra.js).
-        _uPylons     = _pillarCache.filter(t => t.upgraded);
-        // ── WALL PANEL MAP — for wall-face panel rendering ──
-        _wallPanelMap = new Map();
-        _wallPanelCache = [];
-        _capturableNodeCache = [];
-        world.forEach(t => {
-            if (t.nodeType === 'wall_panel') {
-                _wallPanelMap.set(Math.round(t.x), t);
-                if (!t.panelActivated) _wallPanelCache.push(t);
-            }
-            if (t.capturable) _capturableNodeCache.push(t);
-        });
-
-        // ── TERRITORY — once a second, but NOT in this frame: it is half a
-        // frame's work in a late base, and landing on top of every other
-        // rebuild here made the once-a-second hitch. It runs 30 frames later
-        // (below); the very first time, now.
-        if (!_territoryVer) updateTerritory();
-
-        // ── NETWORK TIERS — from BATTERIES only (isBatteryPylon, config.js) ──
-        // "Create battery class pylon that is now solely responsible for
-        // powering up the network: connect 2/4/6 together to create tier
-        // 1/2/3. Remove the historic version." An element's tier is the largest
-        // group of its batteries linked within getPylonRange() of each other;
-        // turrets and wave pylons no longer count. (It used to be the largest
-        // linked group of the element's turrets and wave pylons.) The links are
-        // kept to lay as cables (layAllCables).
-        const _batteries = _pillarCache.filter(t => t.isBattery && t.attackModeElement
-            && t.pillarTeam === "green" && !t.destroyed && t.health > 0);
-        _batteryLinks = [];
-        _batteryBanks = [];
-        _batteries.forEach(p => { p._bBanked = false; });
-        const _netPylons = _batteries;
-        _netLit = {};
-        for (const t of _wPylons) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
-        for (const t of _aPylons) if (t.powered) _netLit[t.attackModeElement] = (_netLit[t.attackModeElement] || 0) + 1;
-        const _netUps = [], _netDowns = [];
-        const _bR2 = getPylonRange() * getPylonRange();   // once, not per pair
-        ELEMENTS.forEach(elDef => {
-            const el = elDef.id;
-            const elPylons = _netPylons.filter(p => p.attackModeElement === el);
-            elPylons.forEach(p => { p._bLinked = false; });
-            if (elPylons.length) elPylons[0]._bLinked = true;
-            let maxGroupSize = 0;
-            const visited = new Set();
-            elPylons.forEach(start => {
-                if (visited.has(start)) return;
-                let groupSize = 0;
-                const q = [start];
-                while (q.length) {
-                    const cur = q.pop();
-                    if (visited.has(cur)) continue;
-                    visited.add(cur); groupSize++;
-                    elPylons.forEach(other => {
-                        const _dx = cur.x-other.x, _dy = cur.y-other.y;
-                        if (!visited.has(other) && _dx*_dx + _dy*_dy <= _bR2) {
-                            q.push(other);
-                            if (!other._bLinked) { other._bLinked = true; _batteryLinks.push({ a: cur, b: other, el }); }
-                        }
-                    });
-                }
-                maxGroupSize = Math.max(maxGroupSize, groupSize);
-                const _bt = groupSize >= BATTERY_TIER_SIZES[2] ? 3 : groupSize >= BATTERY_TIER_SIZES[1] ? 2 : groupSize >= BATTERY_TIER_SIZES[0] ? 1 : 0;
-                const _members = elPylons.filter(p => visited.has(p) && !p._bBanked);
-                _members.forEach(p => { p._bBanked = true; });
-                if (_bt > 0) _batteryBanks.push({ el, tier: _bt, members: _members });
-            });
-            const newTier = maxGroupSize >= BATTERY_TIER_SIZES[2] ? 3 : maxGroupSize >= BATTERY_TIER_SIZES[1] ? 2 : maxGroupSize >= BATTERY_TIER_SIZES[0] ? 1 : 0;
-            const prevTier = _prevNetworkTiers[el] || 0;
-            if (newTier > prevTier && newTier > 0) {
-                const tierLabel = ["", "I", "II", "III"][newTier];
-                _netUps.push({ text:`◈ ${elDef.label} NETWORK ${tierLabel}`, short: elDef.label + " " + tierLabel, color: elDef.color });
-                // One pulse from each pylon of this element (it was six each).
-                elPylons.forEach(p => elementEffects.push({type:"impact",x:p.x,y:p.y,color:elDef.color,radius:0.6,life:20,element:el}));
-            }
-            if (newTier < prevTier) {
-                // Going DOWN was silent, which is exactly what a failing wave
-                // network does as it sheds pylons. Say what was lost.
-                _netDowns.push({ text: newTier > 0 ? `\u25c8 ${elDef.label} NETWORK DOWN TO ${["", "I", "II", "III"][newTier]}`
-                                                    : `\u25c8 ${elDef.label} NETWORK LOST`,
-                                 short: elDef.label + " " + (newTier > 0 ? ["", "I", "II", "III"][newTier] : "LOST") });
-            }
-            _prevNetworkTiers[el] = newTier;
-            networkStrength[el]   = newTier;
-            // Integrity builds while connected, decays when no pylons active
-            if (newTier > 0) networkIntegrity[el] = Math.min(100, (networkIntegrity[el]||0) + newTier * 0.5);
-            else             networkIntegrity[el] = Math.max(0,   (networkIntegrity[el]||0) - 2);
-        });
-        // Changes that land together are said once (Conduit effects plan,
-        // "Centre banners") — four elements reaching tier I at once were four
-        // banners stacked over the fight.
-        if (_netUps.length === 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:_netUps[0].text, color:_netUps[0].color, life:240, vy:-0.22, size:14 });
-        else if (_netUps.length > 1) _bannerPair("\u25c8 " + _netUps.length + " NETWORKS UP", _netUps.map(u => u.short), "#9fe8c0", 240);
-        if (_netDowns.length === 1) floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-80, text:_netDowns[0].text, color:"#ff7755", life:150, vy:-0.2, size:13 });
-        else if (_netDowns.length > 1) _bannerPair("\u25c8 " + _netDowns.length + " NETWORKS DOWN", _netDowns.map(u => u.short), "#ff7755", 150);
-
-        // Each pylon's own tier, falling off with its distance from its bank.
-        for (const t of _pillarCache) t._tier = t.attackModeElement && t.pillarTeam === "green" ? networkTierAt(t.attackModeElement, t.x, t.y) : 0;
-        // Four turrets in a square fuse into an ULTRA TURRET (js/ultra.js), and
-        // four flux / fire / ice / toxic wave pylons make a FORMATION
-        // (js/formations.js) — after the tiers, which gate both.
-        if (typeof rebuildUltras === "function") rebuildUltras();
-        if (typeof rebuildFormations === "function") rebuildFormations();
-        // Pylons gone into a formation stop being wave pylons of their own:
-        // no links between them, no combos, no zone effects of their own.
-        _wPylons = _wPylons.filter(t => !t._wform && !t._wformOf);
-
-        // ── PRE-COMPUTE PYLON PAIRS & SEASONED BONUSES (avoids rebuilding every frame) ──
-        rebuildPylonPairs();
-        rebuildComboLinks();
-        rebuildGeneratorLinks();
-
-        ELEMENTS.forEach(elDef => {
-            const el = elDef.id;
-            _seasonBonusCache[el] = _wPylons.some(p => p.attackModeElement === el && p.seasoned > 0) ? 1.25 : 1.0;
-        });
-    }
-
-
-    // Territory, half a second after each cache rebuild (see above).
-    if (frame - _cacheAge === 30) updateTerritory();
-
-    // ── INTRUDER ALERT TIMER ──
-    // Alarm persists until the kill quota is met; only then do predators stand down.
-    if (alertActive) {
-        alertTimer--;
-        if (alertTimer <= 0) {
-            if (nightKillCount >= nightEnemiesTarget) {
-                clearAlarm();
-            } else {
-                alertTimer = ALERT_DURATION; // reload — keep alarm blaring until quota met
-            }
-        }
-    }
-
-    // ── WALL PANEL SIPHON ──
-    // Player must stay near a panel for a few seconds to siphon shards from it.
-    // Only one panel can be siphoned at a time — if the player is close to
-    // multiple panels, only the first (closest) one progresses; others reset.
-    // Uses _wallPanelCache to avoid scanning the entire world array every frame.
-    const SIPHON_FRAMES = 150; // ~2.5 seconds at 60fps
-    let _siphonActive = false; // tracks whether a panel is already being siphoned this frame
-    // The followers on a siphon order, found once — not once per panel.
-    const _siphoners = followers.filter(f => !f.dead && f.siphonOrder);
-    for (let _wpi = _wallPanelCache.length - 1; _wpi >= 0; _wpi--) {
-        const t = _wallPanelCache[_wpi];
-        if (t.panelActivated) { _wallPanelCache.splice(_wpi, 1); continue; }
-        const _pdx=player.x-t.x, _pdy=player.y-t.y;
-        // A follower ORDERED to siphon this panel counts too (autoplay's runner).
-        const playerClose = _pdx*_pdx+_pdy*_pdy < 2.25 // 1.5² — player standing at y=1 in front of y=0 panel
-            || (_siphoners.length > 0 && _siphoners.some(f => f.siphonOrder === t && (f.x - t.x) ** 2 + (f.y - t.y) ** 2 < 2.25));
-        if (playerClose && !_siphonActive) {
-            _siphonActive = true;
-            t.siphonProgress = (t.siphonProgress || 0) + 1;
-            if (t.siphonProgress >= SIPHON_FRAMES) {
-                t.panelActivated = true;
-                _wallPanelCache.splice(_wpi, 1);
-                // A panel in a zone you have already taken is neutralised with
-                // it: there is nobody left in there to raise, so a decoy cannot
-                // trip the alarm, and the wall still has shards in it but fewer
-                // than one you have not cleared.
-                const _neutral = zoneIsNeutralised(zoneOfTile(t));
-                if (t.isDecoy && !_neutral) {
-                    triggerAlarm(t.alarmType, t.x, t.y);
-                } else {
-                    const _pay = _neutral
-                        ? Math.max(1, Math.round(t.shardReward * PANEL_NEUTRAL_SHARD_MULT))
-                        : t.shardReward;
-                    shardCount += _pay;
-                    saveShards();
-                    shardUI.textContent = String(shardCount);
-                    // Ammo used to come from the shop, which is gone. A hacked
-                    // panel is the right source: it is an in-world act, panels
-                    // reset every wave, and it keeps the weapon fed by going
-                    // out into the tunnel rather than by spending.
-                    const _ammoGain = Math.min(PANEL_AMMO_REWARD, PLAYER_AMMO_MAX - playerAmmo);
-                    if (_ammoGain > 0) { playerAmmo += _ammoGain; saveAmmo(); }
-                    floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
-                        text:"+"+_pay+" SHARDS" + (_ammoGain > 0 ? "  +"+_ammoGain+" AMMO" : "")
-                             + (_neutral ? " (Panel \u00b7 zone taken)" : " (Panel)"),
-                        color:_neutral ? NEST_COLOUR_CONTROLLED : "#ff8800", life:120, vy:-0.2 });
-                }
-            }
-        } else {
-            if (t.siphonProgress) t.siphonProgress = 0;
-        }
-    }
-
-    // ── NEST HACK SIPHON ──
-    // Player stands near a live nest to hack it — triggers a zone alarm for that nest's zone.
-    // Cannot hack during an active alarm (one wave at a time).
-    // NEST_HACK_FRAMES and the range are named in js/config.js now: the bar
-    // below divided by a literal 180 while this loop counted to its own local
-    // copy, and the range was a bare 2.25 in both places.
-    if (!alertActive) {
-        for (const nest of _nestCache) {
-            if (!nestIsHackable(nest)) { nest.nestHackProgress = 0; continue; }
-            // FOLLOWERS HACK TOO — but only when ORDERED to (hackOrder, set by
-            // AUTOPLAY in js/autoplay.js), so a squad that merely walks past a
-            // nest never sets an alarm off by accident.
-            const playerNearNest = inNestHackRange(nest, player.x, player.y)
-                || followers.some(f => !f.dead && f.hackOrder === nest && inNestHackRange(nest, f.x, f.y));
-            if (playerNearNest && !_siphonActive) {
-                _siphonActive = true; // block panel siphons while hacking a nest
-                nest.nestHackProgress = (nest.nestHackProgress || 0) + 1;
-                if (nest.nestHackProgress >= NEST_HACK_FRAMES) {
-                    nest.nestHackProgress = 0;
-                    triggerAlarm("zone", nest.x, nest.y);
-                }
-            } else {
-                nest.nestHackProgress = 0;
-            }
-        }
-    } else {
-        // Clear any in-progress hack when alarm fires
-        for (const nest of _nestCache) nest.nestHackProgress = 0;
-    }
-
-    // ── EXPLORED ZONES ──
-    exploredZones.add(getZoneIndex(Math.floor(player.x)));
-
-    // ── AUTOSAVE ──
-    // Pylons were only written at wave transitions, so anything built or
-    // upgraded mid-day was lost on a refresh. Every 5s is cheap next to the
-    // rest of the frame and keeps a reload close to where the player was.
-    if (frame % 300 === 0) { saveSession(); savePylons(); saveNests(); if (typeof saveFollowerRoster === "function") saveFollowerRoster(); if (typeof saveModules === "function") saveModules(); }
-
-    // ── CLEAR SCREEN + CIRCUIT BOARD BACKGROUND ──
-    // One opaque stamp: the faint circuit board is composited onto the black
-    // once (drawCircuitLayer), not a full-screen fill and then a full-screen
-    // blend at 6% every frame.
-    drawCircuitLayer();
+    // ── CLEAR SCREEN ──
+    clearFrame();
     ctx.save();
     if (shake>0) { ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake); shake*=0.9; }
 
-    // ── CAMERA FOLLOW ──
-    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityPlayerStep();   // the facility: a path of waypoints and real walls (js/facilityplay.js)
-    else {
-    player.x+=(player.targetX-player.x)*cfg.playerSpeed;
-    player.y+=(player.targetY-player.y)*cfg.playerSpeed;
-    player.y = Math.max(PLAYER_Y_MIN, Math.min(FLOOR_Y_MAX, player.y));
-    player.visualX+=(player.x-player.visualX)*0.15;
-    player.visualY+=(player.y-player.visualY)*0.15;
-    }
-
-    // ── CHARGED MASS ──
-    updateChargedMass();
+    // ── THE PLAYER: a path of waypoints and real walls (js/facilityplay.js) ──
+    facilityPlayerStep();
 
     // ── UPDATE HAZARDS ──
-    updateHazards();
 
     // ── UPDATE ACTORS ──
     actors.forEach(a=>updateNPC(a));
@@ -2538,19 +655,14 @@ function render() {
     // ── FOLLOWER SEPARATION — push overlapping followers apart ──
     // Uses `followers` (already filtered live followers) instead of actors.filter every frame.
     // Squared-distance early exit avoids sqrt for non-overlapping pairs (the common case).
-    // Swept in x order: two followers further apart along the tunnel than the
-    // push distance cannot overlap, so each one only meets its neighbours (it
-    // was every pair — 1,800 a frame with sixty followers).
+    // Swept in x order: two followers further apart along x than the push distance cannot
+    // overlap, so each one only meets its neighbours.
     const _SEP2 = FOLLOWER_SEP * FOLLOWER_SEP;
     const _fl = followers.slice().sort((p, q) => p.x - q.x);
     for (let _i = 0; _i < _fl.length; _i++) {
         for (let _j = _i+1; _j < _fl.length; _j++) {
             const _a = _fl[_i], _b = _fl[_j], _ax0 = _a.x, _ay0 = _a.y, _bx0 = _b.x, _by0 = _b.y;
             if (_b.x - _a.x >= FOLLOWER_SEP) break;
-            // A frozen block is terrain, not a unit in the crowd: it neither
-            // gives ground to a follower nor jostles one. iceBlockTick below
-            // is what clears the space around it, in both directions.
-            if (_a.iceBlock || _b.iceBlock) continue;
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
             const _d2 = _dx*_dx + _dy*_dy;
             if (_d2 >= _SEP2 || _d2 < 0.000001) continue;
@@ -2558,218 +670,18 @@ function render() {
             const _p = (1/_d) * (FOLLOWER_SEP - _d) * 0.5;
             _a.x -= _dx*_p; _a.y -= _dy*_p;
             _b.x += _dx*_p; _b.y += _dy*_p;
-            // Jostling is still bounded by the floor. This pass runs AFTER the
-            // per-actor clamp in updateNPC, so without this a crowd pressed up
-            // against the back row pushed itself straight through the wall —
-            // one follower stayed put, a squad did not.
-            if (typeof facilityPlay !== "undefined" && facilityPlay) { facilityConstrain(_a, _ax0, _ay0); facilityConstrain(_b, _bx0, _by0); } else { clampToFloor(_a); clampToFloor(_b); }
+            // Jostling is still bounded by the walls. This pass runs AFTER the
+            // per-actor constraint in updateNPC, so without this a crowd pressed up
+            // against a wall pushed itself straight through it.
+            facilityConstrain(_a, _ax0, _ay0); facilityConstrain(_b, _bx0, _by0);
         }
     }
 
-    // ── ICE BLOCKS ──
-    // After every other thing that moves, so a block has the last word on its
-    // own tile. Running it before the separation pass above would let a
-    // follower shove its way back in for a frame at a time.
-    iceBlockTick();
-    // An ULTRA TURRET is solid: nothing stands on its four tiles (js/ultra.js).
-    if (typeof ultraBlockTick === "function") ultraBlockTick();
-    // Black holes drag and crush, fire walls burn (js/formations.js).
-    if (typeof formationTick === "function") formationTick();
-    if (typeof webTick === "function") webTick();   // spider clones' webs (js/clonework.js)
-
-    // ── RED HEALTH DECAY ──
-    // Skips a neutral recruit. The decay is meant to bleed enemies that have
-    // wandered off; a recruit is on team red only for bookkeeping until it
-    // reaches the Crystal, and at 0.01 a frame a long walk in cost it 36 HP —
-    // enough to kill a weak one on the way to a body it never got to use.
-    // Nor a machine (it is armour, not flesh) or a thief on a raid (its walk is long).
-    actors.forEach(a=>{ if(a.team==="red" && !isNeutralBystander(a) && !a.isMachine && !a.raider){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
-
-    // ── PREDATOR SPAWNING — always present (graze by default, hunt when alarm is active) ──
-    if (gameState.phase === "day" || gameState.phase === "night") {
-        // Zone cap scales with night number: natural species fill zones 1-6, then
-        // synthetic deep-zone constructs (XV-09 … QX-z1) fill zones 7-12.
-        // Cap at 12 to populate infinite zones without unbounded actor counts.
-        // Around the FRONTIER, however deep (ZONE_SPAWN_BEHIND / _AHEAD in
-        // config.js) — it used to be zones 1..min(night, 12), and nothing
-        // past zone 12 ever spawned. Early nights still open zones gradually.
-        const _front = typeof nextZoneToTake === "function" ? nextZoneToTake() : 1;
-        const _zLo = Math.max(1, _front - ZONE_SPAWN_BEHIND);
-        const hostileZoneCount = Math.max(Math.min(gameState.nightNumber, _front + ZONE_SPAWN_AHEAD), _front);
-        // A GLOBAL ceiling on top of the per-zone ones.
-        //
-        // The per-zone caps bound where predators are, not how many exist. A
-        // facility alarm makes EVERY zone an alarm zone, each allowing 2+z, so
-        // at wave 9 the zones alone allow 3+4+...+11 = 63 alive at once, and
-        // more at wave 12.
-        //
-        // That is the term the frame time scales on. Measured at wave 9 with
-        // the alarm up, holding everything else fixed: 61 predators cost
-        // 7.02 ms of JS a frame, 29 cost 4.27 and 9 cost 3.33 — a flat
-        // ~0.07 ms each on top of a ~3 ms floor. Nothing else in the frame
-        // grows like that.
-        // Counted by livePredatorCount(), not here: a second copy of the rule
-        // is how the cocoon hatch ended up past the ceiling the spawner
-        // respected, and how "your clones do not count" would drift out of one
-        // of the two.
-        let _livePredators = livePredatorCount();
-        _spawnMouths = { built: false };   // one world pass answers every zone (clone.js)
-        for (let z = _zLo; z <= hostileZoneCount; z++) {
-            if (_livePredators >= MAX_LIVE_PREDATORS) break;
-            // A zone stops producing only when EVERY mouth it has is shut —
-            // its wall nest dead and its vortex sealed. It used to stop on the
-            // nest alone, which would have made the vortex decorative.
-            const mouths = zoneSpawnPoints(z);
-            if (mouths && mouths.length === 0) continue;
-            if (!zonePredators[z]) zonePredators[z] = [];
-            const alivePredators = zonePredators[z].filter(p => !p.dead);
-            zonePredators[z] = alivePredators;
-            // LATERAL ATTACK (js/nightraids.js): every nest sends at full strength.
-            const isAlarmZone = alertActive && (alertType === "facility" || z === alertZone
-                                || (typeof siegeIs === "function" && siegeIs("lateral")));
-            // Higher zones (above alarm zone) keep exactly 1 wanderer — they are never hunters
-            const isHigherZone = alertActive && alertZone !== null && z > alertZone;
-            // During alarm: spawn up to (zone depth + 2) predators in the alarm zone;
-            // higher zones maintain 1 wanderer; non-alarm day keeps 1 wanderer per zone.
-            const maxPredators = isAlarmZone ? (2 + z + (typeof siegeIs === "function" && siegeIs("swarm") ? SIEGE_SWARM_CAP : 0)) : 1;
-            if (alivePredators.length < maxPredators && !(typeof attractOn === "function" && attractOn())) {   // (the website's background is empty of creatures: js/attract.js)
-                if (!zoneRespawnTimers[z]) zoneRespawnTimers[z] = 0;
-                if (zoneRespawnTimers[z] > 0) {
-                    zoneRespawnTimers[z]--;
-                } else {
-                    spawnPredatorForZone(z);
-                    // Recounted, not incremented: a zone-3 nymph arrives with
-                    // its pack (maybeSwarm), so one spawn can be three.
-                    _livePredators = livePredatorCount();
-                    // Alarm zone: stagger spawns scaled by wave number (higher wave = faster spawns); wanderer zones: slow respawn
-                    const _spawnDelay = isAlarmZone ? Math.max(15, 90 - (gameState.nightNumber - 1) * 5) : 240;
-                    zoneRespawnTimers[z] = _spawnDelay;
-                }
-            }
-        }
-        _spawnMouths = null;   // live again outside the loop
-    }
-
-    // ── WAVE FUNCTION PYLONS — link same-element pylons within getPylonRange()
-    //    tiles of each other (3 by default, 5 with Signal Relay), apply zone effects ──
-    // _wPylonPairs is pre-computed every 60 frames in the cache section above
-    // Only the AWAKE ones act: a pylon on standby has nothing to work on.
-    waveWakeTick();
-    const wavePylons = _wPylons.filter(p => p.waveAwake !== false);
-
-    // Apply effects for each pre-computed connected pair
-    applyPylonZoneEffects(wavePylons);
-    electricHasteTick();
-    comboTick();
-
-    // Core triangle/square zone — needs 3+ pylons to form enclosed zone
-    const corePylons = wavePylons.filter(p=>p.attackModeElement==="core");
-    if (corePylons.length >= 3) {
-        // Find centroid
-        const cx = corePylons.reduce((s,p)=>s+p.x,0)/corePylons.length;
-        const cy = corePylons.reduce((s,p)=>s+p.y,0)/corePylons.length;
-        const radius = corePylons.reduce((s,p)=>s+Math.hypot(p.x-cx,p.y-cy),0)/corePylons.length;
-        actors.forEach(a=>{
-            if (!a||a.dead) return;
-            if (Math.hypot(a.x-cx,a.y-cy) > radius*1.2) return;
-            const isFriend = (a.team==="green"||a.isClone||a.isFollower);
-            // Only recharge a shield that exists and hasn't been fully broken
-            if (isFriend && frame%60===0 && a.shielded && a.shieldAmount > 0) {
-                const cap = a._shieldMax || 30;
-                a.shieldAmount = Math.min(cap, a.shieldAmount + 3);
-            }
-        });
-    }
-
-    // ── FLUX SOLO — pulls enemies toward itself with no partner required ──
-    // _pylonsWithPartner was pre-computed in the 60-frame cache block — O(1) lookup.
-    wavePylons.forEach(pv=>{
-        if (pv.attackModeElement!=="flux") return;
-        if (_pylonsWithPartner.has(pv)) return; // already handled by pair logic
-        actors.forEach(a=>{
-            if (!a||a.dead) return;
-            const isEnemy=isHostileTarget(a);
-            if (!isEnemy) return;
-            const dx=a.x-pv.x, dy=a.y-pv.y, d=Math.hypot(dx,dy);
-            if (d>3||d<0.01) return;
-            a.x-=dx/d*0.05; a.y-=dy/d*0.05;
-            // Also track exposure
-            a.pylonExposureFrames=(a.pylonExposureFrames||0)+1;
-            if (a.pylonExposureFrames>PYLON_AGGRO_EXPOSURE&&!a.pylonAggro) a.pylonAggro=pv;
-        });
-    });
-
-    // ── ATTACK MODE PYLON — fire missiles at nearby enemies ──
-    _aPylons.forEach(t=>{
-        // Part of an ULTRA TURRET: its anchor fires for all four (js/ultra.js).
-        if (t._ultraOf) return;
-        // No generator in its zone (zoneHasGenerator, power.js): it does not fire.
-        if (t.zoneDark) return;
-        const _U = t._ultra;
-        // The timer waits at full while nothing is in range, so the first
-        // round goes the moment something steps in rather than up to a full
-        // interval later.
-        // OVERCHARGE: a surged turret fires OVERCHARGE_FIRE_MULT× as often.
-        const _surged = pylonSurged(t);
-        // STATIC STORM (a siege night): electric turrets fire twice as often.
-        const _storm = typeof siegeIs === "function" && siegeIs("storm") && t.attackModeElement === "electric" ? SIEGE_STORM_MULT : 1;
-        // OVERCLOCK HUB in reach (js/modules.js): faster, and dearer per round (payForShot).
-        const _oc = typeof overclockFireMult === "function" ? overclockFireMult(t) : 1;
-        const _every = Math.max(1, Math.round(TURRET_FIRE_FRAMES / (_surged ? OVERCHARGE_FIRE_MULT : 1) / _storm / _oc));
-        t.attackFireTimer = Math.min(_every, (t.attackFireTimer||0) + 1);
-        if (t.attackFireTimer < _every) return;
-        // Find nearest enemy within range — squared distance avoids sqrt for non-targets
-        // Fallback for a turret restored from a save without its range.
-        // An Ultra reaches further, from the centre of its square.
-        const _range = _U ? ultraRange(t) : (t.attackRange || TURRET_RANGE);
-        const _ox = _U ? _U.cx : t.x, _oy = _U ? _U.cy : t.y;
-        let nearest=null, bd2=_range*_range;
-        // Only the units in the columns it can reach (unitsNear, helpers.js).
-        for (const a of unitsNear(_ox, _range)) {
-            if (isHostileTarget(a)) {
-                const dx=a.x-_ox, dy=a.y-_oy, d2=dx*dx+dy*dy;
-                if (d2<bd2) { bd2=d2; nearest=a; }
-            }
-        }
-        if (!nearest) return;
-        t.attackFireTimer = 0;
-        // A turret that is shooting a predator is a pylon that is attacking it,
-        // so that predator turns on it. Nothing else sends one after a pylon.
-        if (nearest instanceof Predator && !nearest.pylonAggro) nearest.pylonAggro = t;
-        // CHARGED OR PLAIN. A round a generator can pay for is charged and
-        // hits in full; with no power in reach, or the pool empty, it is a
-        // plain round at TURRET_PLAIN_MULT. Either way it FIRES — a turret
-        // that silently refused to shoot read as broken.
-        // A surged round is charged and already paid for (the OVERCHARGE cost).
-        // A battery in reach pays first (BATTERY_SUPPLY_RANGE), then the nest.
-        const charged = _surged || payForShot(t);
-        t.charged = charged;
-        t._lastShotFrame = frame;      // the turret's muzzle flash reads this
-        const _dmg = (_U ? ultraRoundDamage(t, nearest) : turretRoundDamage(t, nearest)) * (charged ? 1 : TURRET_PLAIN_MULT);
-        if (_U) t._ultraTarget = nearest;
-        const _el = _U ? _U.el : (t.attackModeElement || null);
-        // FIRE turrets lob a bouncing fire bomb (js/firebombs.js) instead of a straight round: down their aim, or at the nearest enemy on AUTO.
-        if (_el === "fire" && typeof fireTurretThrow === "function") { fireTurretThrow(t, nearest, _ox, _oy, _dmg, !!_U); return; }
-        turretShots.push({ x: _ox, y: _oy, z: _U ? ULTRA_MUZZLE_Z : turretMuzzleZ(t), target: nearest, dmg: _dmg, charged,
-                           el: _el, col: _U ? _U.col : (t.attackModeColor || "#0f8"), life: 120,
-                           splash: _U ? ULTRA_SPLASH : 0, big: !!_U,
-                           src: { x: _ox, y: _oy, team: "green", element: _el || "core" } });
-    });
-    turretShotsTick();
-    if (typeof wallUnitTick === "function") wallUnitTick();   // a hurt power cell mends slowly (js/wallunit.js)
     if (typeof fireBombsTick === "function") fireBombsTick();   // the bouncing fire bombs and the ground they burn (js/firebombs.js)
 
-    // ── COMPLETE RECONSTRUCTION ──
-    // A plain loop: this walks the whole world every frame.
-    for (let i = 0; i < world.length; i++) {
-        const t = world[i];
-        if (t.reconstructing&&t.reconstructProgress>=1) {
-            t.reconstructing=false; t.reconstructProgress=0; t.upgraded=true; t.pulseTimer=0;
-            t.pillarTeam="green"; t.pillarCol="#0f8"; t.health=t.maxHealth;
-            if(t.workers) t.workers.forEach(a=>{ if(a.job&&a.job.type==="reconstruct") a.job=null; });
-            t.workers=[];
-        }
-    }
+    // ── RED HEALTH DECAY ──
+    // Skips a neutral recruit. The decay bleeds enemies that have wandered off; a recruit is on team red only for bookkeeping until it joins.
+    actors.forEach(a=>{ if(a.team==="red" && !isNeutralBystander(a)){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
 
     // ── REMOVE DEAD NPCs, respawn ──
     actors.forEach(a=>{
@@ -2780,216 +692,51 @@ function render() {
             // (js/levels.js); its level scales it back up.
             const oldHp = a.base?.hp ?? a.stats?.hp ?? 1;
             const newHp = oldHp - 1;
-            // The two last-life saves (ghostphage, warden_pact) were crystal
-            // builds and nothing can set one any more, so running out of HP
-            // stat is simply permanent.
-            // A clone has no HP stat to wear down: it always comes back. (It
-            // read a.stats, which a clone does not have, so it never did.)
+            // A clone has no HP stat to wear down: it always comes back. Running out of HP stat is permanent.
             if (newHp<=0 && !a.isClone) return; // permanent death — don't queue
             // A clone takes far longer to come back than a follower: it is
-            // worth three times as much in a fight and cost shards and DNA, so
+            // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid, duty:a.duty === "worker" ? "worker" : null,
+            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid,
                 // Its level comes back with it, less some XP (js/levels.js).
                 base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
                 level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp,
-                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, post: a.post || undefined, playStyle: a.playStyle || undefined, squadId: a.squadId || undefined, move: a.move || undefined });
+                evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, post: a.post || undefined, playStyle: a.playStyle || undefined, move: a.move || undefined });
         }
-        // Progression counts EVERY enemy killed, wanderers included — it is a
-        // record of what you have fought, not of wave quotas. The wave counter
-        // below still ignores wanderers.
-        // isEnemyUnit, NOT isHostileTarget: the latter refuses anything dead,
-        // so `a.dead && isHostileTarget(a)` was never true and neither counter
-        // ever ran. What is being asked here is whose side the corpse was on.
+        // A kill, once: XP to whoever killed it and those fighting near it (js/levels.js).
+        // isEnemyUnit, NOT isHostileTarget: the latter refuses anything dead. What is being asked here is whose side the corpse was on.
         if (a.dead && isEnemyUnit(a) && !a.progressCounted) {
             a.progressCounted = true;
-            noteKillForProgression();
-            // XP to whoever killed it and those fighting near it (js/levels.js).
             if (typeof awardKillXp === "function") awardKillXp(a);
-        }
-        // track kills for wave clear — count dead enemies not clones, wanderers don't count
-        // A nymph is not a kill toward it (drops.js isNymph — no points).
-        if (a.dead && isEnemyUnit(a) && !a.killCounted && !a.isWanderer && typeof isNymph === "function" && isNymph(a)) a.killCounted = true;
-        if (a.dead && isEnemyUnit(a) && !a.killCounted && !a.isWanderer) {
-            a.killCounted = true;
-            nightKillCount++;
-            // Was a seventh hand-written copy of the banner, in a format none of
-            // the other six used ("Zone 2" where the rest say "TAKING ZONE 2").
-            updateKillProgressUI();
         }
     });
 
-    // Single pass — handle ALL dead predators exactly once
+    // Every dead creature exactly once: what it leaves (js/drops.js)
     actors.forEach(a => {
-        if (a instanceof Predator && a.dead && !a.deathProcessed && a.team !== "green") {
-            a.deathProcessed = true;
-            onPredatorDeath(a);
-            // Remove from zone array so slot opens for respawn
-            if (a.homeZone !== undefined && zonePredators[a.homeZone]) {
-                zonePredators[a.homeZone] = zonePredators[a.homeZone].filter(p => p !== a);
-                // Only reset timer when the last predator in that zone dies
-                if (zonePredators[a.homeZone].length === 0) {
-                    zoneRespawnTimers[a.homeZone] = 180;
-                }
-            }
-            // Legacy activePredator cleanup
-            if (a === activePredator) {
-                activePredator = null;
-                predatorRespawnTimer = 120;
-            }
-        }
+        if (a instanceof Predator && a.dead && !a.deathProcessed && a.team !== "green") { a.deathProcessed = true; lifetimeKills++; onPredatorDeath(a); }
     });
     actors=actors.filter(a=>!a.dead);
     const _prevFL=followers.length;
     followers=followers.filter(a=>!a.dead&&a.team==="green");
     if (followers.length!==_prevFL) rebuildFollowerTable();
 
-    // ── PENDING PILLAR DESTRUCTION ──
-    pendingPillarDestruction.forEach(p=>{
-        if(p.destroyed)return; p.destroyed=true;
-        if (typeof fireOnPylonDestroyed === "function") fireOnPylonDestroyed(p);   // a fire pylon's wreck burns for a few seconds (js/firebombs.js)
-        for(let i=0;i<6;i++) shards.push({x:p.x,y:p.y,z:1+Math.random(),vz:-0.05-Math.random()*0.05,color:p.pillarCol});
-        // Clear any nest link pointing to this pylon
-        world.forEach(obj=>{ if(obj.connectedPylon===p){ obj.connectedPylon=null; } });
-        if(p.nestConnection){ p.nestConnection.connectedPylon=null; p.nestConnection=null; }
-    });
-    pendingPillarDestruction.length=0;
-    world.forEach(obj=>{ if(obj.pendingDestroy){pendingPillarDestruction.push(obj);obj.pendingDestroy=false;} });
+    if (typeof evolutionTick === "function") evolutionTick();     // the level-10 egg sheds (js/evolution.js EVOLVE_LEVEL)
 
-    // ── UPGRADED PYLON PULSE ──
-    _uPylons.forEach(t=>{
-        t.pulseTimer++;
-        if(t.pulseTimer>120){ t.pulseTimer=0; actors.forEach(a=>{ if(a.team==="green"){const dx=a.x-t.x,dy=a.y-t.y; if(Math.abs(dx)>3.5||Math.abs(dy)>3.5) return; if(dx*dx+dy*dy<12.25) a.health=Math.min(a.maxHealth,a.health+2);} }); }
-    });
-
-    // ── INFESTATION — a conversion nobody is working on recovers ──
-    decayConversions();
-    // ── THE GRUB — one lives in zone 4 while that zone is hostile ──
-    // ── RAIDS — shard thieves in the quiet, and the machines they pay for ──
-    if (typeof raidTick === "function") raidTick();
-    // ── ELEMENTAL BREAKOUT — elements for every predator on that night ──
-    if (typeof breakoutTick === "function") breakoutTick();
-    // The night raids (js/nightraids.js): leaking held nests, the behemoth.
-    if (typeof lateralTick === "function") { lateralTick(); behemothTick(); behemothDeathCheck(); }
-
-    // ── GENERATOR PYLONS — mend the friendly pylons in reach ──
-    generatorHealTick();
-    if (typeof shieldCellTick === "function") shieldCellTick();
-    if (typeof evolutionTick === "function") evolutionTick();     // the level-10 egg sheds (js/evolution.js EVOLVE_LEVEL)   // CORE pylons make shield cells; shields spend them (js/shieldcells.js)
-    shieldGenHuntTick();
-
-    // ── PILLAR HEALING (every 3 frames; heal 0.15 to match original 0.05/frame) ──
-    // Only the tiles around each actor are looked at (_pillarAt), not every pylon.
-    if (frame % 3 === 0) {
-        pillarIndexFresh();
-        for (const actor of actors) {
-            // THE ENEMY heals at its NESTS only ("enemies heal from the nests only"): never at a pylon, its own or one it took from you.
-            if (actor.team === "red") { if (enemyNearHealingNest(actor)) actor.health = Math.min(actor.maxHealth, actor.health + 0.15); continue; }
-            // Pylons stand on whole tiles: only those within 1.2 can count.
-            const x0 = Math.ceil(actor.x - 1.2), x1 = Math.floor(actor.x + 1.2);
-            const y0 = Math.ceil(actor.y - 1.2), y1 = Math.floor(actor.y + 1.2);
-            for (let tx = x0; tx <= x1; tx++) for (let ty = y0; ty <= y1; ty++) {
-                const list = _pillarAt.get(_paKey(tx, ty));
-                if (!list) continue;
-                for (const t of list) {
-                    if(Math.abs(t.x-actor.x)>1.2||Math.abs(t.y-actor.y)>1.2) continue;
-                    if((actor.team==="green"&&t.pillarTeam!=="green")||(actor.team==="red"&&t.pillarTeam!=="red")) continue;
-                    const dx=t.x-actor.x, dy=t.y-actor.y;
-                    if(dx*dx+dy*dy < 1.44) actor.health=Math.min(actor.maxHealth, actor.health+0.15);
-                }
-            }
-        }
-    }
-
-    // ── PROXIMITY CONVERSION — virus NPCs join team when player walks close ──
-    actors.forEach(a => {
-        if (a.dead || !a.isNeutralRecruit || a.team !== "red" || a instanceof Predator || a.fpSpot) return;   // (a follower spot's egg joins where it is: js/followerspots.js)
-        if (a.spawnProtection > 0) return;
-        if (Math.hypot(player.x - a.x, player.y - a.y) < 1.5) convertNPC(a, "green");
-    });
-
-    updateShards();
-    updateCaptureProgress();
-    if (frame % 6 === 0) applySignalTowerBuff();
     updateStatusEffects();
     if (typeof bondTick === "function") bondTick();
-    // Followers back at home (just respawned) teleport to a fight further out.
-    if (typeof followerRallyTick === "function") followerRallyTick();
-    // Followers far behind you, or sent far off, go by the nests (commands.js).
-    if (typeof followerRouteTick === "function") followerRouteTick();
-    if (typeof autoplayTick === "function") autoplayTick();
     updateElementEffects();
     updateFloatingTexts();
-    // THE BATTERIES. Regen first, then wave mode's constant draw — so a pool
-    // that is exactly keeping up reads as steady rather than flickering.
-    nestEnergyTick();
-    batteryChargeTick();   // nests → batteries (power.js)
-    waveDrainTick();
-    powerFlowTick();
 
-    // ── CRYSTAL ULTIMATE CHARGE RESTORE ──────────────────────────────────
-    // Runs every 60 frames. Rate scales with max pylon zone depth and nest pod links.
+    // ── THE FOLLOWERS' ULTIMATE CHARGE ── every 60 frames: 1 a tick, twice that near the Crystal
     if (frame % 60 === 0 && followers.length > 0) {
-        // Base charge per tick at crystal proximity
-        const crystalDist = Math.hypot(player.x - crystal.x, player.y - crystal.y);
-        const nearCrystal = crystalDist < 3.0;
-
-        // Find deepest zone index of any living green pylon — reuse _pillarCache (already filtered)
-        const greenPylons = _pillarCache.filter(t => t.pillarTeam === "green");
-        let maxPylonZone = 0;
-        greenPylons.forEach(t => { const z = getZoneIndex(t.x); if (z > maxPylonZone) maxPylonZone = z; });
-
-        // Bonus charge if any green pylon is connected to a destroyed nest pod
-        const brokenNests = _nestCache.filter(t => t.nestHealth <= 0);
-        let nestBonus = 0;
-        if (brokenNests.length > 0) {
-            brokenNests.forEach(nest => {
-                greenPylons.forEach(p => {
-                    const dx=p.x-nest.x, dy=p.y-nest.y;
-                    if (dx*dx+dy*dy < 25) nestBonus = Math.max(nestBonus, 3); // 5²=25
-                });
-            });
-        }
-
-        // Base rate: 1/tick always (very slow), +1 per zone depth, +nestBonus, doubled near crystal
-        const baseRate = 1 + maxPylonZone + nestBonus;
-        const chargeGain = nearCrystal ? baseRate * 2 : baseRate;
-
+        const nearCrystal = Math.hypot(player.x - crystal.x, player.y - crystal.y) < 3.0, chargeGain = nearCrystal ? 2 : 1;
         followers.forEach(f => {
             if (f.dead) return;
             if (typeof f.ultimateCharge !== "number") f.ultimateCharge = 0;
             f.ultimateCharge = Math.min(100, f.ultimateCharge + chargeGain);
         });
     }
-
-    // ── FIRE WALL LIFETIME ──
-    // Only while one is burning. This ran every frame and made a NEW world
-    // array each time, which also threw away the draw index (tileColumns
-    // rebuilds when `world` is a different array) — a full rebuild of the
-    // column index, every frame, for something that is almost never there.
-    if (_fireWallCount > 0) {
-        world = world.filter(obj=>{ if(obj.type==="fireWall"){obj.life--;return obj.life>0;} return true; });
-        _fireWallCount = 0;
-        for (const o of world) if (o.type === "fireWall") _fireWallCount++;
-    }
-
-    // ── GROUND ITEM PICKUP ──
-    groundItems=groundItems.filter(item=>{
-        if (Math.abs(player.x-item.x)<0.9 && Math.abs(player.y-item.y)<0.9) {
-            // A SHIELD CELL goes into your store — unless it is full (js/shieldcells.js).
-            if (item.type==="shieldCell") return typeof collectShieldCell === "function" ? !collectShieldCell(item, player) : true;
-            if (item.type==="crystalModulator") {
-                ownedModulators.push({ element: item.element, pair: item.pair || MODULATOR_PAIRS[item.element] || [item.element] });
-                const el=ELEMENTS.find(e=>e.id===item.element);
-                floatingTexts.push({ x:canvas.width/2, y:canvas.height/2-60,
-                    text:`◈ ${(el?.label||item.element).toUpperCase()} MODULATOR ACQUIRED`,
-                    color:"#aaddff", life:180, vy:-0.25 });
-            }
-            return false; // remove
-        }
-        return true;
-    });
 
     // ── TANK SHIELD PULSE — tanks pulse 1 shield to nearby allies every 3s ──
     // ── BOSS SHIELD AURA — bosses continuously shield all nearby allies ──
@@ -3037,120 +784,47 @@ function render() {
         }
     });
 
-    // ── WAVE CLEAR CHECK ──
-    checkWaveClear();
-
     // ── BUILD DRAW LIST ──
-    // Pre-build acid tile lookup so acid pools sort with the depth pass (behind pylons)
-    const acidTiles = new Map(); // "x,y" → {h, bubble seed}
-    environmentalHazards.forEach(h => {
-        if (h.type === 'acid') h.tiles.forEach(([tx,ty]) => acidTiles.set(`${tx},${ty}`, h));
-    });
-    // Pre-build smoke zone lookup for 3D per-tile creeping smoke
-    const smokeTileZones = new Map(); // zone → smokeEffect obj
-    elementEffects.forEach(e => { if (e.type === "smokeScreen") smokeTileZones.set(e.zone, e); });
+    // The toxic ultimate's smoke, drawn per tile in the depth pass (there is rarely more than one)
+    const smokeFx = elementEffects.filter(e => e.type === "smokeScreen");
 
     // Culled in SCREEN space by visibleForDraw — see its comment for why the
     // old column-distance filter kept half the frame's work off screen. The
     // player and the crystal are never culled: the player IS the camera, and
     // the crystal is a fixed landmark other code expects in the list.
     perfDrawStart();   // the logic is done; from here on it is drawing
-    // A step with NO PICTURE (gameLoop, js/game.js: a device that is behind runs several a frame) in the facility draws no floor tile and no item: the walls, doors, props and floors were ~7 ms of drawing into a null context, three
+    // A step with NO PICTURE (gameLoop: a device that is behind runs several a frame) draws no floor tile and no item: the walls, doors, props and floors were ~7 ms of drawing into a null context, three
     // times a frame at 15 fps, which made the frame longer and so owed more of them. Nothing in them is logic (audited): the facility's per-step logic (the light, the tick, the doors) runs in facilityDrawItems (js/facilityplay.js).
-    const _fpGhost = _simGhost && typeof facilityPlay !== "undefined" && facilityPlay;
-    let drawList=_fpGhost?[]:visibleTilesForDraw();
+    let drawList=_simGhost?[]:visibleTilesForDraw();
     drawList.push({type:'player',x:player.visualX,y:player.visualY});
-    shards.forEach(s=>{ if(visibleForDraw(s.x,s.y)) drawList.push({type:'shard',x:s.x,y:s.y,shard:s}); });
-    chargedMass.forEach(m=>{ if(visibleForDraw(m.x,m.y)) drawList.push({type:'mass',x:m.x,y:m.y,mass:m}); });
     // A catch-up step (gameLoop) draws nothing, and drawing a unit changes
     // nothing — so its units are not even laid out: the predators' body maths
     // was the biggest share of a step with no picture.
     if (!_simGhost) actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
-    groundItems.forEach(g=>{ if(visibleForDraw(g.x,g.y)) drawList.push({type:'groundItem',x:g.x,y:g.y,item:g}); });
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
-    if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawItems(drawList);   // walls, props, doors and fixtures (js/facilityplay.js)
-    // Modules (js/modules.js): structures on their tiles, sorted with the rest.
-    if (typeof modules !== "undefined" && !_simGhost) for (const m of modules) if (visibleForDraw(m.x, m.y)) drawList.push({ type: 'module', x: m.x, y: m.y, module: m });
-    // The LAB WALL (js/labwall.js): equipment standing out of each back-wall tile, sorted just in front of its own wall tile so units walk in front of it.
-    if (typeof labModuleAt === "function") { const _n = drawList.length; for (let i = 0; i < _n; i++) { const t = drawList[i]; if (t.type === 'wall_back' && t.y === -2 && (labModuleAt(t.x) || labBulbAt(t.x))) drawList.push({ type: 'labmod', x: t.x, y: -1 + LAB_DEPTH, tile: t }); } }
-    // Depth is x+y: a bigger sum draws lower and in front.
-    //
-    // A WALL NEST is the exception. Its vortex is painted across a four-tile
-    // wall face running from (x-1,-2) to (x+2,-2), but the tile it hangs on
-    // sorts at x-1 — while the deepest wall tile of its own face sorts at
-    // (x+2)+(-2) = x. So the last two wall tiles of the face were drawn AFTER
-    // the nest and painted over its right-hand side: the nest looked half sunk
-    // into the wall. Biasing it past them is enough, and is much narrower than
-    // drawing nests last would be — drawn last, a nest would paint over
-    // anything standing in front of the wall.
-    //
-    // Nothing in the tunnel is lost to the bias: the vortex sits high on the
-    // wall face, well above the y=-1 floor row, so the handful of tiles that
-    // now sort before it do not share pixels with it.
+    facilityDrawItems(drawList);   // walls, props, doors and fixtures (js/facilityplay.js)
     // Each item's depth once, not twice per comparison (n log n calls).
     for (let i = 0; i < drawList.length; i++) drawList[i]._dd = drawDepthOf(drawList[i]);
     drawList.sort((a,b)=>a._dd-b._dd);
 
-    // The cables are laid before anything is drawn, and each floor tile draws
-    // its own pieces, so they lie on the ground under everything standing there.
-    // (Laid again only when the base changes; the charges move every frame.)
-    if (!_fpGhost) layAllCablesCached();
-
     // The pools of material evolved followers stand in (js/evolution.js GROUND): painted by the floor tiles below.
-    if (!_fpGhost && typeof evoGroundBegin === "function") evoGroundBegin();
+    if (!_simGhost && typeof evoGroundBegin === "function") evoGroundBegin();
 
     // ── DRAW EACH OBJECT ──
     drawList.forEach(obj=>{
         const px=(obj.x-player.visualX-(obj.y-player.visualY))*TILE_W+canvas.width/2;
         let py=(obj.x-player.visualX+(obj.y-player.visualY))*TILE_H+canvas.height/2;
-        if (typeof facilityPlay !== "undefined" && facilityPlay && obj.type !== 'fp') py -= facilityLiftRel(obj.x, obj.y);   // the facility's floors rise and fall (js/facilityplay.js)
+        if (obj.type !== 'fp') py -= facilityLiftRel(obj.x, obj.y);   // the facility's floors rise and fall (js/facilityplay.js)
 
         if (obj.type==='player') {
             if (!(typeof attractOn === "function" && attractOn())) drawPlayer({x:px,y:py});   // (the website's background has no one standing in it: the player is only its camera, js/attract.js)
         }
-        else if (obj.type==='module') {
-            drawModule(obj.module, px, py);
-        }
         else if (obj.type==='fp') {
             drawFacilityItem(obj);
         }
-        else if (obj.type==='labmod') {
-            drawLabModule(obj.tile, Math.max(0.1, 0.8 - Math.sqrt((obj.x - player.visualX) ** 2 + (obj.y - player.visualY) ** 2) / RENDER_DIST));
-        }
         else if (obj.type==='npc') {
-            if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityEnemyGlow === "function") facilityEnemyGlow(obj.actor, px, py);   // an enemy in a blackout shows a hostile glow on the floor under it (js/facilitytutorial.js)
+            if (typeof facilityEnemyGlow === "function") facilityEnemyGlow(obj.actor, px, py);   // an enemy in a blackout shows a hostile glow on the floor under it (js/facilitytutorial.js)
             drawNPC(obj.actor,px,py);
-            if (obj.actor.nestMass) drawPredatorNestMass(obj.actor, px, py + TILE_H);
-            if (obj.actor.raider) drawThiefTag(obj.actor, px, py + TILE_H);
-            if ((obj.actor._breakout || obj.actor._zoneElement) && typeof drawBreakoutFlare === "function") drawBreakoutFlare(obj.actor, px, py);
-        }
-        else if (obj.type==='groundItem' && obj.item.type==='shieldCell') {
-            if (typeof drawShieldCellItem === "function") drawShieldCellItem(obj.item, px, py);
-        }
-        else if (obj.type==='groundItem') {
-            const gi=obj.item;
-            const el=ELEMENTS.find(e=>e.id===gi.element);
-            const col=el?el.color:"#aaddff";
-            const bob=Math.sin(frame*0.06+gi.x*1.3)*4;
-            ctx.save();
-            ctx.globalAlpha=0.85+0.15*Math.sin(frame*0.08);
-            ctx.shadowColor=col; ctx.shadowBlur=0;
-            ctx.fillStyle=col;
-            ctx.beginPath();
-            ctx.moveTo(px,       py-18+bob);
-            ctx.lineTo(px+9,     py-10+bob);
-            ctx.lineTo(px,       py-2+bob);
-            ctx.lineTo(px-9,     py-10+bob);
-            ctx.closePath(); ctx.fill();
-            ctx.fillStyle="#fff"; ctx.globalAlpha=0.35;
-            ctx.beginPath();
-            ctx.moveTo(px,     py-18+bob);
-            ctx.lineTo(px+4,   py-12+bob);
-            ctx.lineTo(px,     py-10+bob);
-            ctx.closePath(); ctx.fill();
-            ctx.shadowBlur=0; ctx.restore();
-            ctx.fillStyle=col; ctx.font="8px monospace"; ctx.textAlign="center";
-            ctx.fillText("◈ MOD", px, py-24+bob);
         }
         else if (obj.type==='crystal') {
             // ── FLOATING GEM ──
@@ -3177,7 +851,7 @@ function render() {
             const rs = (v, m) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${v * m})`;
 
             const cx  = px;
-            const gy  = py - 52 - (typeof facilityPlay !== "undefined" && facilityPlay ? 12 : 0) + bob;   // gem centre (a dozen px higher over the facility's taller pad, js/facilitystyle.js FP_PAD)
+            const gy  = py - 64 + bob;   // gem centre (a dozen px higher than it once hovered, over the facility's taller pad, js/facilitystyle.js FP_PAD)
             const rx  = 27, ry = 13.5;               // equator radii (2:1 iso)
             const topY = 42, botY = 32;              // apex heights
 
@@ -3287,1120 +961,63 @@ function render() {
                 ctx.restore();
             }
         }
-        else if (obj.type==='mass') {
-            drawChargedMass(obj.mass, px, py);
-        }
-        else if (obj.type==='shard') {
-            ctx.fillStyle=obj.shard.color;
-            ctx.beginPath(); ctx.arc(px,py-20-obj.shard.z*20,3,0,Math.PI*2); ctx.fill();
-        }
-        else if (obj.type==='fireWall') {   // FIX: fire walls now render
-            ctx.fillStyle="rgba(255,100,0,0.6)";
-            ctx.beginPath(); ctx.arc(px,py-30,14,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle="rgba(255,220,0,0.3)";
-            ctx.beginPath(); ctx.arc(px,py-30,8,0,Math.PI*2); ctx.fill();
-        }
         else if (obj.type==='floor') {
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
-            const amb=Math.max(0.1,0.8-dist/RENDER_DIST), glo=Math.max(0,1.0-dist/5);
-            // Home camp area — circuit board PCB style (x < 0 is behind the Crystal)
-            if (obj.x < 0) { drawCampFloor(obj, px, py, amb); drawCablesOnTile(obj, px, py); if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py); if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py); return; }
-            // THE TILE IS A SPRITE. Fill, territory tint, four bevel edges and
-            // the circuit traces were ~8 canvas paths per tile, ~125 tiles a
-            // frame — the biggest single cost on screen. Its look depends only
-            // on distance to the camera, night, territory and trace strength,
-            // so each look is drawn once (_floorTileSprite) and stamped.
-            // The trace strength only changes when the pylons do (the 60-frame
-            // rebuild makes a new _pylonNear), so it is kept on the tile.
-            if (obj._pnMap !== _pylonNear) {
-                obj._pnMap = _pylonNear;
-                const _nd = _pillarCache.length > 0 ? pylonNearDist(obj.x, obj.y) : Infinity;
-                obj._tq = _nd < PCB_TRACE_REACH ? Math.round(Math.pow(1 - _nd / PCB_TRACE_REACH, 1.4) * FLOOR_TRACE_STEPS) : 0;
-            }
-            const _tq = obj._tq;
-            // No territory wash on the tile any more (Conduit effects plan,
-            // "Territory") — it read as haze over the whole base.
-            const _spr = _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", _tq);
+            // THE TILE IS A SPRITE (_floorTileSprite): its look depends only on the distance to the camera, so each look is drawn once and stamped.
+            const _spr = _floorTileSprite(Math.round(dist / FLOOR_DIST_STEP));
             if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
-            else _drawFloorTile(ctx, px, py, gameState.phase === "night", dist, "", _tq / FLOOR_TRACE_STEPS);
+            else _drawFloorTile(ctx, px, py, dist);
             if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
             if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
-            if (typeof facilityPlay !== "undefined" && facilityPlay) facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
-            // Only the FRONT LINE: a 1 px edge where your ground meets the enemy's.
-            // Which of its edges are a front line: worked out when the
-            // territory changes (_territoryVer), not with two map lookups per
-            // tile per frame.
-            if (obj._tv !== _territoryVer) {
-                obj._tv = _territoryVer; obj._edgeR = false; obj._edgeD = false;
-                if (obj.territory === "player" || obj.territory === "enemy") {
-                    const _tx = Math.round(obj.x), _ty = Math.round(obj.y);
-                    const _other = obj.territory === "player" ? "enemy" : "player";
-                    const _nR = worldTileMap.get((_tx + 1) + "," + _ty), _nD = worldTileMap.get(_tx + "," + (_ty + 1));
-                    obj._edgeR = !!(_nR && _nR.territory === _other);
-                    obj._edgeD = !!(_nD && _nD.territory === _other);
-                }
-            }
-            if (obj._edgeR || obj._edgeD) {
-                const _col = obj.territory === "player" ? "rgba(90,170,255,0.35)" : "rgba(255,90,90,0.35)";
-                const _lw = ctx.lineWidth;
-                ctx.strokeStyle = _col; ctx.lineWidth = 1; ctx.beginPath();
-                if (obj._edgeR) { ctx.moveTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + TILE_W); }
-                if (obj._edgeD) { ctx.moveTo(px, py + TILE_W); ctx.lineTo(px - TILE_W, py + TILE_H); }
-                ctx.stroke(); ctx.lineWidth = _lw;
-            }
-
-            // An ICE GENERATOR's frost, on the floor under everything (js/formations.js).
-            if (typeof drawFrostOnTile === "function") drawFrostOnTile(obj, px, py);
-            if (typeof drawWebOnTile === "function") drawWebOnTile(obj, px, py);
-
-            // Cables run along the floor, under pylons and units (layAllCables).
-            drawCablesOnTile(obj, px, py);
-
-            // Acid pool — drawn here so it sits on the floor but under pylons
-            const acidH = acidTiles.size ? acidTiles.get(obj._ck || (obj._ck = Math.round(obj.x) + "," + Math.round(obj.y))) : undefined;
-            if (acidH) {
-                const bubble = 0.5 + 0.5 * Math.sin(frame * 0.12 + obj.x + obj.y);
-                const seed   = obj.x * 13.7 + obj.y * 7.3;
-                ctx.save();
-                ctx.globalAlpha = (0.72 + bubble * 0.18) * (acidH.alpha ?? 1);
-                ctx.fillStyle = "#00ff44";
-                // Irregular organic puddle — sin-wave distorted oval
-                const cx = px, cy = py + TILE_H;
-                const N  = 24;
-                ctx.beginPath();
-                for (let i = 0; i <= N; i++) {
-                    const t     = (i / N) * Math.PI * 2;
-                    const noise = 1 + 0.18 * Math.sin(t * 3 + seed)
-                                    + 0.10 * Math.sin(t * 5 + seed * 1.7)
-                                    + 0.05 * Math.sin(t * 7 + seed * 0.9);
-                    const x = cx + TILE_W * 0.6 * noise * Math.cos(t);
-                    const y = cy + TILE_H * 0.65 * noise * Math.sin(t);
-                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                ctx.fill();
-                // Inner ripple highlight
-                ctx.globalAlpha *= 0.45;
-                ctx.fillStyle = "#aaffcc";
-                ctx.beginPath();
-                for (let i = 0; i <= N; i++) {
-                    const t     = (i / N) * Math.PI * 2;
-                    const noise = 1 + 0.12 * Math.sin(t * 3 + seed + frame * 0.015);
-                    ctx.lineTo(cx + TILE_W * 0.3 * noise * Math.cos(t),
-                               cy + TILE_H * 0.32 * noise * Math.sin(t));
-                }
-                ctx.closePath();
-                ctx.fill();
-                // Bubbles — drawn per-tile, rise then pop
-                if (acidH.bubbles) {
-                    acidH.bubbles.forEach(b => {
-                        if (b.tx !== Math.round(obj.x) || b.ty !== Math.round(obj.y)) return;
-                        const t   = b.life / b.maxLife; // 1→0 as life runs down
-                        const bpx = cx + b.ox * TILE_W * 0.38;
-                        const bpy = cy + b.oy * TILE_H * 0.38;
-                        const riseY = (1 - t) * 14; // rises 14px over lifetime
-                        ctx.save();
-                        if (t > 0.18) {
-                            // Rising bubble — small outlined circle
-                            const r = 1.5 + (1 - t) * 2.5;
-                            ctx.globalAlpha = Math.min(1, t * 4) * (acidH.alpha ?? 1);
-                            ctx.strokeStyle = "#99ffbb";
-                            ctx.lineWidth = 1;
-                            ctx.beginPath();
-                            ctx.arc(bpx, bpy - riseY, r, 0, Math.PI * 2);
-                            ctx.stroke();
-                            // tiny specular glint
-                            ctx.globalAlpha *= 0.6;
-                            ctx.fillStyle = "#ccffdd";
-                            ctx.beginPath();
-                            ctx.arc(bpx - r * 0.3, bpy - riseY - r * 0.3, r * 0.28, 0, Math.PI * 2);
-                            ctx.fill();
-                        } else {
-                            // Popping — expanding ring that fades
-                            const popT = t / 0.18; // 1→0 during pop
-                            const r    = 2 + (1 - popT) * 10;
-                            ctx.globalAlpha = popT * 0.75 * (acidH.alpha ?? 1);
-                            ctx.strokeStyle = "#ccffdd";
-                            ctx.lineWidth = 1.2;
-                            ctx.beginPath();
-                            ctx.arc(bpx, bpy - 14, r, 0, Math.PI * 2);
-                            ctx.stroke();
-                        }
-                        ctx.restore();
-                    });
-                }
-                ctx.restore();
-            }
+            facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
 
             // ── 3D SMOKE TILES — toxic ultimate: creeping raised slabs + single wisp ──
-            if (smokeTileZones.size > 0) {
-                const tileZone = getZoneIndex(Math.round(obj.x));
-                const sE = smokeTileZones.get(tileZone);
-                if (sE) {
-                    const elapsed        = sE.maxLife - sE.life;
-                    const distFromCaster = Math.hypot(obj.x - sE.x, obj.y - sE.y);
-                    const spreadRadius   = elapsed / 5; // ~1 tile per 5 frames
-                    if (distFromCaster < spreadRadius) {
-                        const arrivalT = Math.min(1, (spreadRadius - distFromCaster) / 4);
-                        const fadeOut  = Math.min(1, sE.life / 90);
-                        const factor   = arrivalT * fadeOut;
-                        // A 0.08 tint on the tile and a slow wisp on one tile in
-                        // three (Conduit effects plan) — it used to raise lavender
-                        // walls at up to 0.32 on every tile of the zone.
-                        const seed     = obj.x * 17.3 + obj.y * 11.7;
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H);
-                        ctx.lineTo(px, py + TILE_W); ctx.lineTo(px - TILE_W, py + TILE_H);
-                        ctx.closePath();
-                        ctx.fillStyle = `rgba(150, 130, 220, ${0.08 * factor})`;
-                        ctx.fill();
-                        if ((Math.round(obj.x) + Math.round(obj.y) * 2) % 3 === 0) {
-                            const u = ((frame * 0.5 + seed * 3) % 90) / 90;
-                            const wy = py + TILE_H - u * 20;
-                            ctx.strokeStyle = `rgba(200, 180, 255, ${0.35 * factor * (1 - u)})`;
-                            ctx.lineWidth = 1.2;
-                            ctx.beginPath(); ctx.moveTo(px - 8, wy);
-                            ctx.bezierCurveTo(px - 2, wy - 8, px + 4, wy + 4, px + 10, wy - 6); ctx.stroke();
-                        }
-                        ctx.restore();
+            for (const sE of smokeFx) {
+                const elapsed        = sE.maxLife - sE.life;
+                const distFromCaster = Math.hypot(obj.x - sE.x, obj.y - sE.y);
+                const spreadRadius   = Math.min(elapsed / 5, SMOKE_SCREEN_REACH); // ~1 tile per 5 frames, out to its reach
+                if (distFromCaster < spreadRadius) {
+                    const arrivalT = Math.min(1, (spreadRadius - distFromCaster) / 4);
+                    const fadeOut  = Math.min(1, sE.life / 90);
+                    const factor   = arrivalT * fadeOut;
+                    // A 0.08 tint on the tile and a slow wisp on one tile in three.
+                    const seed     = obj.x * 17.3 + obj.y * 11.7;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H);
+                    ctx.lineTo(px, py + TILE_W); ctx.lineTo(px - TILE_W, py + TILE_H);
+                    ctx.closePath();
+                    ctx.fillStyle = `rgba(150, 130, 220, ${0.08 * factor})`;
+                    ctx.fill();
+                    if ((Math.round(obj.x) + Math.round(obj.y) * 2) % 3 === 0) {
+                        const u = ((frame * 0.5 + seed * 3) % 90) / 90;
+                        const wy = py + TILE_H - u * 20;
+                        ctx.strokeStyle = `rgba(200, 180, 255, ${0.35 * factor * (1 - u)})`;
+                        ctx.lineWidth = 1.2;
+                        ctx.beginPath(); ctx.moveTo(px - 8, wy);
+                        ctx.bezierCurveTo(px - 2, wy - 8, px + 4, wy + 4, px + 10, wy - 6); ctx.stroke();
                     }
-                }
-            }
-
-            // ── CAPTURABLE NODES (the signal tower) ──
-            // wall_panel is drawn on the wall face in the wall_back pass — skip it here.
-            if (obj.nodeType && obj.nodeType !== 'wall_panel') drawCapturableNode(obj, px, py);
-
-            // ── A ZONE YOU HAVE TAKEN ──
-            // Its nest is out: grey and still while it is merely neutral, blue
-            // once you link it to a generator pylon. Never green — green is
-            // home, and a zone you hold is not home.
-            if (obj.nest && obj.nestHealth <= 0 && !obj._infestNest) {
-                const _held = !!obj.connectedPylon;
-                const sW1x=px, sW1y=py-60, numT=4, WH=110;
-                const wfBL={x:sW1x-TILE_W,y:sW1y+TILE_H};
-                const wfBR={x:sW1x+(numT-1)*TILE_W,y:sW1y+(numT+1)*TILE_H};
-                const wfTR={x:wfBR.x,y:wfBR.y-WH};
-                const wfTL={x:wfBL.x,y:wfBL.y-WH};
-                // The SAME swirl, at the SAME size, as a live nest — only the
-                // colour and the motion differ. It used to paint the whole
-                // four-tile wall face a near-opaque brown first and then put a
-                // half-size circle inside it, which read as a slab bolted to
-                // the wall rather than as the portal it is, and gave no clue
-                // where the thing you connect to actually was.
-                //
-                // The face geometry above is still worked out: the label and
-                // the beam to the generator hang off its top edge.
-                ctx.save();
-                drawNestHackZone(obj);
-                // A controlled nest turns, slowly, and is lit: it is yours and
-                // it is running. A neutral one is dead still.
-                // A neutral ring is DIM, not invisible. At no glow and half
-                // alpha it vanished into the wall, and the player still has to
-                // be able to find the thing they are meant to walk up to and
-                // connect. It stays well under the live nest's glow of 10+ and
-                // does not turn, so it still reads as switched off.
-                drawNestWallVortex(px, py, Math.min(WH*0.42,46),
-                    _held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL,
-                    _held ? (frame||0)*0.012 : 0,
-                    _held ? 7 : 3,
-                    _held ? 0.85 : 0.72);
-                ctx.setTransform(1,0,0,1,0,0);
-                const _bCx=(wfTL.x+wfTR.x)/2;
-                ctx.fillStyle=_held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM;
-                ctx.font="bold 9px monospace"; ctx.textAlign="center";
-                // Above the gauge, which takes the first 20px over the wall.
-                ctx.fillText((_held?"◈ CONTROLLED":"◇ NEUTRAL") + (obj.powerOff ? " · OFF" : ""),_bCx,wfTL.y-30);
-                // ── THE LIFE LEVEL ──
-                // What the pylons are drawing out of it, drawn on the nest
-                // itself as a percentage over a bar that empties. A battery the
-                // player cannot see the level of is a number they have to infer
-                // from their turrets going quiet. See drawNestGauge.
-                drawNestGauge(obj, _bCx, wfTL.y, _held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_NEUTRAL_DIM);
-                ctx.restore();
-
-                // The link to its relay is a cable on the floor now, drawn with
-                // the rest of the power chain (drawPowerChain) rather than as a
-                // beam in the air from the face of the nest.
-            }
-
-            // ── SPAWN NEST — honeycomb hex holes filling 4-tile wall face ──
-            // Only for the generated zone nests, which sit at y=-1 against the
-            // wall. A nest GROWN by an infestation stands on open floor, and
-            // this projection would paint its honeycomb onto a wall that is not
-            // there — which is the flat rug that kept showing up. Those are
-            // drawn as domes instead.
-            // Zone 0's is the HOME PORTAL, not a hive — drawn green on its own
-            // wall face and skipping every honeycomb below.
-            if (isHomePortal(obj)) {
-                drawHomePortal(px, py);
-            }
-            else if (obj.nest && obj.nestHealth > 0 && !obj._infestNest) {
-                obj.nestPulse = (obj.nestPulse || 0) + 1;
-                const hr    = obj.nestHealth / obj.nestMaxHealth;
-                const pulse = 0.5 + 0.5 * Math.sin(obj.nestPulse * 0.06);
-                const WH    = 110;
-
-                // Wall face: 4 tiles from (obj.x-1, -2) to (obj.x+2, -2).
-                // sW1 = toScreen(obj.x-1, -2) relative to nest tile (px, py) at (obj.x, -1):
-                //   Δwx=−1, Δwy=−1 → Δspx=(−1−(−1))×60=0, Δspy=(−1+(−1))×30=−60
-                const sW1x = px,  sW1y = py - 60;
-                const numT = 4;
-                const wfBL = { x: sW1x - TILE_W,           y: sW1y + TILE_H          };
-                const wfBR = { x: sW1x + (numT-1)*TILE_W,  y: sW1y + (numT+1)*TILE_H };
-                const wfTR = { x: wfBR.x,                   y: wfBR.y - WH            };
-                const wfTL = { x: wfBL.x,                   y: wfBL.y - WH            };
-
-                // The same vortex as the floor node, but standing IN THE WALL
-                // FACE rather than lying flat. That plane is a shear — one tile
-                // along the wall moves (TILE_W, TILE_H) on screen while up the
-                // wall is straight up, and those two are not perpendicular — so
-                // it is applied as a matrix rather than as a squashed ellipse.
-                //
-                // It replaces a honeycomb of ~88 hexes, which was around 800
-                // canvas operations a frame for one nest.
-                drawNestWallVortex(px, py,
-                    Math.min(WH * 0.42, 46) * (0.55 + hr * 0.45),
-                    hr > 0.35 ? NEST_COLOUR_HOSTILE : NEST_COLOUR_HOSTILE_HURT,
-                    obj.nestPulse * 0.03, 10 + pulse * 6, 0.65 + hr * 0.35);
-
-                // Health bar centred on the top edge of the face
-                const barCx = (wfTL.x + wfTR.x) / 2;
-                drawHealthBar(barCx - 40, wfTL.y - 10, 80, 5, obj.nestHealth, obj.nestMaxHealth);
-                // What the predators have carried in, toward the next hatch.
-                if (obj.massStock > 0) {
-                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    ctx.fillStyle = "#ff9966"; ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-                    // Low on the wall face, under the vortex, where it stays on screen
-                    // when the camera is down on the floor (the health bar at the top
-                    // of the face does not).
-                    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(barCx - 44, wfTL.y + WH - 22, 88, 13);
-                    ctx.fillStyle = "#ff9966";
-                    ctx.fillText("\u25c6 " + Math.floor(obj.massStock) + "/" + NEST_SPAWN_COST + " TO HATCH", barCx, wfTL.y + WH - 12);
-                    ctx.restore();
-                }
-                // Your stolen shards, toward its next machine (js/raids.js).
-                if (obj.stolenStock > 0 && typeof MACHINE_COST !== "undefined") {
-                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    ctx.font = "bold 9px monospace"; ctx.textAlign = "center";
-                    ctx.fillStyle = "rgba(0,0,0,0.6)"; ctx.fillRect(barCx - 50, wfTL.y + WH - 37, 100, 13);
-                    ctx.fillStyle = RAID_COLOR;
-                    ctx.fillText("\u25c6 " + Math.floor(obj.stolenStock) + "/" + MACHINE_COST + " STOLEN", barCx, wfTL.y + WH - 27);
-                    ctx.restore();
-                }
-
-                // Hack progress — the word only, over the bar. The floor
-                // beneath says WHERE, so the label does not have to.
-                const _hackProg = obj.nestHackProgress || 0;
-                if (_hackProg > 0) {
-                    const _hp = _hackProg / NEST_HACK_FRAMES;
-                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    ctx.fillStyle = "rgba(0,0,0,0.55)";
-                    ctx.fillRect(barCx - 40, wfTL.y - 22, 80, 7);
-                    ctx.fillStyle = `rgba(0,255,136,${0.7 + 0.3 * Math.sin(frame * 0.3)})`;
-                    ctx.fillRect(barCx - 40, wfTL.y - 22, 80 * _hp, 7);
-                    ctx.strokeStyle = "#0f8"; ctx.lineWidth = 1;
-                    ctx.strokeRect(barCx - 40, wfTL.y - 22, 80, 7);
-                    ctx.font = "9px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#0f8";
-                    ctx.fillText("HACKING", barCx, wfTL.y - 26);
                     ctx.restore();
                 }
             }
 
-            // Command tile highlight
+            // The tile a long-press ring was opened on (js/input.js handleLongHold): lit while the ring is up
             if (commandMode&&commandTarget===obj) {
                 ctx.save();
                 ctx.strokeStyle="rgba(0,255,136,0.9)"; ctx.lineWidth=3;
-                ctx.beginPath();
-						ctx.moveTo(px,py); 							ctx.lineTo(px+TILE_W,py+TILE_H); 							 ctx.lineTo(px,py+TILE_W); 							  ctx.lineTo(px-TILE_W,py+TILE_H); 								ctx.closePath();
-								 ctx.stroke();
-                			ctx.strokeStyle="rgba(0,255,136,0.25)"; 							ctx.lineWidth=8;
-						ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+TILE_W,py+TILE_H); ctx.lineTo(px,py+TILE_W); ctx.lineTo(px-TILE_W,py+TILE_H); ctx.closePath(); ctx.stroke();
+                ctx.strokeStyle="rgba(0,255,136,0.25)"; ctx.lineWidth=8; ctx.stroke();
                 ctx.restore();
             }
-
-            // Solo flux pylon — inward-pulling glow ring (only when unpaired)
-            // Connection rendering moved to post-draw _wPylonPairs pass (eliminates O(N²) scan)
-            // (A lone flux wave pylon used to float a little purple vortex over
-            // itself, from before links and the BLACK HOLE had their own look.
-            // REPORTED: "not the black hole on the ground but the mini ones that
-            // were part of the old code should be removed.")
-
-            // Pylon under construction (build mode)
-            if (obj.pillar&&obj.constructing&&obj.constructProgress<1) {
-                const prog=obj.constructProgress||0;
-                const baseY=py+TILE_H; // anchor to tile diamond center, not north vertex
-                const scaffH=75*prog;
-                ctx.save();
-                // Scaffold outline — grows upward as progress increases
-                ctx.globalAlpha=0.55; ctx.strokeStyle="#0f8"; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
-                ctx.strokeRect(px-6,baseY-scaffH,12,scaffH);
-                ctx.setLineDash([]);
-                // Progress fill
-                ctx.globalAlpha=0.22; ctx.fillStyle="#0f8";
-                ctx.fillRect(px-6,baseY-scaffH,12,scaffH);
-                ctx.globalAlpha=1;
-                // Progress bar
-                drawHealthBar(px-14,baseY-scaffH-10,28,5,prog,1);
-                // Timer label
-                const secsLeft=Math.ceil((1-prog)*30);
-                ctx.fillStyle="#0f8"; ctx.font="9px monospace"; ctx.textAlign="center"; ctx.setTransform(1,0,0,1,0,0);
-                ctx.fillText(secsLeft+"s",px,baseY-scaffH-14);
-                ctx.restore();
-            }
-
-
-            // ── CONNECTOR: circuit state + reach ──
-            if (isConnectorPylon(obj) && obj.pillarTeam === "green") {
-                const _on = obj.circuitOn !== false;
-                ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                // The reach, as the ground ellipse a circle of CONNECTOR_RANGE
-                // tiles makes under the projection. Faint when closed.
-                const _cx = (obj.x - player.visualX - (obj.y - player.visualY)) * TILE_W + canvas.width/2;
-                const _cy = (obj.x - player.visualX + (obj.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
-                // REPORTED: "I don't know what the giant circles are that encompass
-                // more than half of the zones." This was it — the connector's
-                // 14-tile reach, drawn all the time. Now it shows only while you
-                // have that connector selected (its ring or its INFO panel open).
-                const _sel = (typeof commandMode !== "undefined" && commandMode && commandTarget === obj) ||
-                             (typeof infoPanelOpen !== "undefined" && infoPanelOpen && typeof infoPanelTarget !== "undefined" && infoPanelTarget === obj);
-                if (_sel) {
-                    ctx.strokeStyle = CONNECTOR_COLOR; ctx.globalAlpha = _on ? 0.35 : 0.12; ctx.lineWidth = 1.5;
-                    ctx.setLineDash([6,8]);
-                    ctx.beginPath();
-                    for (let i = 0; i <= 48; i++) {
-                        const a = i / 48 * Math.PI * 2, dx = Math.cos(a) * CONNECTOR_RANGE, dy = Math.sin(a) * CONNECTOR_RANGE;
-                        const sx = _cx + (dx - dy) * TILE_W, sy = _cy + (dx + dy) * TILE_H;
-                        i ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy);
-                    }
-                    ctx.stroke(); ctx.setLineDash([]);
-                }
-                ctx.globalAlpha = 1;
-                cachedText(_on ? "\u25cf CIRCUIT ON" : "\u25cb CIRCUIT OFF", "bold 9px monospace", _on ? CONNECTOR_COLOR : "#f88", _cx, _cy - 78);
-                ctx.restore();
-            }
-
-            // ── GENERATOR: on/off state ──
-            if (isGeneratorPylon(obj) && obj.pillarTeam === "green") {
-                const _gon = obj.circuitOn !== false;
-                const _gx = (obj.x - player.visualX - (obj.y - player.visualY)) * TILE_W + canvas.width/2;
-                const _gy = (obj.x - player.visualX + (obj.y - player.visualY)) * TILE_H + canvas.height/2 + TILE_H;
-                ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                // It powers its whole zone (power.js zoneHasGenerator): say which.
-                const _gz = getZoneIndex(Math.floor(obj.x)), _zn = _gz === 0 ? "HOME" : "ZONE " + _gz;
-                cachedText(_gon ? "\u25cf " + _zn + " POWERED" : "\u25cb OFF \u00b7 " + _zn + " DARK", "bold 9px monospace", _gon ? "#8fd6ff" : "#f88", _gx, _gy - 92);
-                ctx.restore();
-            }
-
-            // (No lit tile under a pylon any more: the equipment stands on the bare floor.)
-
-            // ── BROKEN PYLON ──
-            // A pylon that loses its health keeps its tile, its element and its
-            // mode — nothing used to draw it, so it simply vanished and looked
-            // gone for good. It is wreckage now, and a CORE worker can put it
-            // back up exactly as it was.
-            if (obj.pillar && obj.destroyed) {
-                const _bb = py + TILE_H;
-                const _bcol = obj.pillarTeam === "green" ? "#0a6" : "#722";
-                ctx.save();
-                // Scorch on the tile
-                ctx.globalAlpha = 0.5 * amb;
-                ctx.fillStyle = "rgba(10,8,6,0.9)";
-                ctx.beginPath();
-                ctx.ellipse(px, _bb - 2, 20, 9, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = 1;
-                // Snapped stump plus two fallen shards, angled off the base
-                ctx.strokeStyle = _bcol; ctx.lineWidth = 3; ctx.lineCap = "round";
-                ctx.beginPath();
-                ctx.moveTo(px - 4, _bb - 2); ctx.lineTo(px - 2, _bb - 16); ctx.lineTo(px + 3, _bb - 11);
-                ctx.stroke();
-                ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.moveTo(px + 6, _bb - 3);  ctx.lineTo(px + 15, _bb - 9);  ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(px - 12, _bb - 1); ctx.lineTo(px - 19, _bb - 7); ctx.stroke();
-                // Rebuild progress, so a repair in flight is visible
-                const _rp = obj.reconstructProgress || 0;
-                if (_rp > 0) {
-                    ctx.strokeStyle = "#00ccaa"; ctx.lineWidth = 2.4;
-                    ctx.beginPath();
-                    ctx.arc(px, _bb - 12, 16, -Math.PI / 2, -Math.PI / 2 + _rp * Math.PI * 2);
-                    ctx.stroke();
-                }
-                // Label only for the player's own wreckage — theirs to fix
-                if (obj.pillarTeam === "green" && pylonLabelsOn(obj)) {
-                    ctx.fillStyle = `rgba(0,204,170,${0.55 + 0.35 * Math.sin(frame * 0.08)})`;
-                    ctx.font = "bold 8px monospace"; ctx.textAlign = "center";
-                    ctx.setTransform(1, 0, 0, 1, 0, 0);
-                    ctx.fillText("BROKEN", px, _bb - 30);
-                }
-                ctx.restore();
-            }
-
-            // ULTRA TURRET: four tiles, one structure (js/ultra.js). It is drawn
-            // once, from its front tile — the last of the four in depth order —
-            // centred on the square; the other three draw nothing of their own.
-            if (obj.pillar&&!obj.destroyed&&obj.health>0&&(obj._ultra||obj._ultraOf)) {
-                const _A = obj._ultra ? obj : obj._ultraOf;
-                if (_A._ultra && _A._ultra.front === obj) drawUltraTurret(_A, px, py);
-            }
-            // A FORMATION (black hole, firewall, ice generator, toxic tower):
-            // its four pylons are gone into it — "the toxic generator or the
-            // ultra pylons should lose the four original pylons" — so only the
-            // structure is drawn, once, from its front tile (js/formations.js).
-            else if (obj.pillar&&!obj.destroyed&&obj.health>0&&(obj._wform||obj._wformOf)) {
-                const _FA = obj._wformOf || obj;
-                if (_FA._wform && _FA._wform.front === obj && typeof drawFormationGround === "function") drawFormationGround(_FA._wform, px, py);
-            }
-            // Pillar — one design, drawn for every pylon and upgrade
-            else if (obj.pillar&&!obj.destroyed&&typeof obj.health==="number"&&obj.health>0) {
-                if(obj.converting){ctx.fillStyle="#ff0";}
-                const _base=py+TILE_H; // anchor to tile center, not north vertex
-                // A level-1 turret is a low emplacement (turretIsLow, config.js).
-                const _lowTurret = turretIsLow(obj) && !isRelayPylon(obj);
-                // Only once it is hurt: a full bar over every pylon was ~170 canvas
-                // calls a frame in a big base, and told you nothing.
-                if (obj.health < obj.maxHealth) drawHealthBar(px-10,_base-(_lowTurret?36:75),20,4,obj.health,obj.maxHealth);
-                const _pulse=0.5+0.5*Math.sin(frame*0.08+(obj.x*0.97+obj.y*1.31));
-                // A pylon with no power is DARK, and the colour is the whole
-                // readout: the element it is set to is still there, it just is
-                // not doing anything. Drawing it lit would say the grid was
-                // fine while the turret quietly refused to fire.
-                // A turret is never dark: it fires plain rounds without power.
-                // ...except in a zone with no generator, where nothing works.
-                const _dark = (obj.powered === false && !obj.attackMode) || !!obj.zoneDark;
-                const _acol = _dark ? POWER_DEAD_COLOUR : (obj.attackModeColor||"#0f8");
-                const _isActive=!!(obj.attackMode||obj.waveMode);
-                const _wTier=obj.waveMode?pylonNetworkTier(obj):0;
-                const _tierMult=1+_wTier*0.4;
-
-                // STANDBY: a support/disruption pylon with nothing to work on
-                // rests unlit; it blinks for WAVE_WAKE_BLINK frames on waking.
-                const _asleep = obj.waveMode && !_dark && obj.waveAwake === false;
-                const _sinceWake = obj._wakeFrame === undefined ? Infinity : frame - obj._wakeFrame;
-                // ── AWAKE WAVE PYLON — a thin floor ring (Conduit effects plan) ──
-                // It was a filled glow disc 20-37 px at up to 0.48 on every awake
-                // wave pylon, plus an outer ring at tier II.
-                if (obj.waveMode && !_dark && !_asleep) {
-                    ctx.save(); ctx.globalAlpha=0.45; ctx.strokeStyle=_acol; ctx.lineWidth=1.5;
-                    ctx.beginPath(); ctx.ellipse(px,_base-2,TILE_W*0.35,TILE_W*0.175,0,0,Math.PI*2); ctx.stroke();
-                    ctx.restore();
-                }
-                // ── TURRET RANGE — only while you hold it or build ──
-                // It was a ring at 0.08-0.16 round every turret, all the time.
-                if (obj.attackMode && !_dark && !isRelayPylon(obj) && (buildMode || (commandMode && commandTarget === obj))) {
-                    const _rr=(obj.attackRange||TURRET_RANGE)*TILE_W*0.5;
-                    ctx.save(); ctx.globalAlpha=0.3; ctx.strokeStyle=_acol; ctx.lineWidth=1.2; ctx.setLineDash([3,5]);
-                    ctx.beginPath(); ctx.ellipse(px,_base-2,_rr,_rr*0.5,0,0,Math.PI*2); ctx.stroke();
-                    ctx.restore();
-                }
-
-                // ── BODY STRUCTURE — one design for every pylon ──
-                // An isometric fortress tower, three visible faces per block.
-                // There used to be a switch over six random bodies here; this
-                // was the only one that read well at this scale, so it is now
-                // the whole set and every upgrade wears it.
-                // A WAVE pylon is the striped Barcode Tablet instead (design 8,
-                // drawWaveMonolith in draw.js); everything else is the tower.
-                const _isWaveMono = obj.waveMode && !isRelayPylon(obj);
-                if (_isWaveMono) {
-                    drawWaveMonolith(px, _base, _acol, _dark, _wTier, _asleep);
-                    if (!gfxLow && !_dark && !_asleep && _sinceWake < WAVE_WAKE_BLINK) drawWaveWakeBlink(px, _base, _acol, _sinceWake);
-                }
-                else if (obj.isBattery) {
-                    // THE BATTERY: its charge cells show what it has stored.
-                    drawBatteryPylon(px, _base, obj.attackModeColor || BATTERY_COLOR, pylonNetworkTier(obj), _pulse, false,
-                                     batteryCharge(obj) / BATTERY_CAPACITY, batteryCharging(obj));
-                }
-                else if (obj.isGenerator && !obj.destroyed) {
-                    // THE GENERATOR: a thicker body and a big pale orb.
-                    drawShieldGenerator(px, _base, obj.circuitOn !== false && obj.pillarTeam === "green", _pulse);
-                }
-                else if (_lowTurret) {
-                    drawTurretEmplacement(px, _base, _acol, _dark);
-                }
-                else {
-                    const sFront=_isActive?SENTINEL_FRONT_ACTIVE:obj.upgraded?SENTINEL_FRONT_UPGRADED:SENTINEL_FRONT_DORMANT;
-                    const sRight=_isActive?SENTINEL_RIGHT_ACTIVE:obj.upgraded?SENTINEL_RIGHT_UPGRADED:SENTINEL_RIGHT_DORMANT;
-                    const sTop=_isActive?SENTINEL_TOP_ACTIVE:obj.upgraded?SENTINEL_TOP_UPGRADED:SENTINEL_TOP_DORMANT;
-                    // Stamped from a pre-rendered sprite (drawSentinelTower in draw.js).
-                    drawSentinelTower(px, _base, sFront, sRight, sTop, _isActive, SENTINEL_SLIT);
-                    // A MK II turret: the tower, with a gold collar under its gun.
-                    if (obj.attackMode && (obj.mk || 0) >= 2) drawMk2Collar(px, _base, _dark);
-                }
-
-                // ── TOP EFFECTS: glows, orbs, labels ──
-                // The orb sits just above the merlons; a level-1 turret's gun
-                // sits on its low emplacement.
-                const _orbY = _lowTurret ? _base - TURRET_L1_TOP : _base-54;
-
-                if (obj.isBattery) {
-                    // Its name and its element's tier, only near you or held.
-                    const _bt = pylonNetworkTier(obj), _bc = obj.attackModeColor || BATTERY_COLOR;
-                    const _bNear = pylonLabelsOn(obj);
-                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    // Its charge, always: a gold gauge over it, the number when near.
-                    const _bf = batteryCharge(obj) / BATTERY_CAPACITY, _bChg = batteryCharging(obj);
-                    const _gy = _base - (_bNear ? 64 : 50);
-                    ctx.fillStyle = "rgba(0,0,0,0.65)"; ctx.fillRect(px - 13, _gy - 1, 26, 5);
-                    ctx.fillStyle = BATTERY_COLOR; ctx.fillRect(px - 12, _gy, 24 * _bf, 3);
-                    if (_bChg) { ctx.globalAlpha = 0.5 + 0.5 * _pulse; ctx.fillStyle = "#fff"; ctx.fillRect(px - 12 + 24 * _bf - 1, _gy, 2, 3); ctx.globalAlpha = 1; }
-                    // Batteries stand side by side in a bank, so the full name
-                    // goes on one — the one held, or the nearest you — and the
-                    // rest show just their charge.
-                    let _bNamed = commandMode && commandTarget === obj;
-                    if (_bNear && !_bNamed && !(commandMode && commandTarget && commandTarget.isBattery)) {
-                        // The nearest battery, found once a frame, not once per battery.
-                        if (_nearBatFrame !== frame) {
-                            _nearBatFrame = frame; _nearBat = null;
-                            let _bd = Infinity;
-                            for (const q of _batteryList) { const d = Math.abs(q.x - player.x) + Math.abs(q.y - player.y); if (d < _bd) { _bd = d; _nearBat = q; } }
-                        }
-                        _bNamed = _nearBat === obj;
-                    }
-                    if (_bNamed) cachedText((obj.attackModeElement||"").toUpperCase() + " BATTERY" + (_bt ? [""," T-I"," T-II"," T-III"][_bt] : ""), "bold 9px monospace", _bc, px, _base-52);
-                    if (_bNear) {
-                        ctx.globalAlpha = 0.85;
-                        cachedText((_bChg ? "\u25b2 " : "") + Math.round(batteryCharge(obj)) + "/" + BATTERY_CAPACITY + (_bt || !_bNamed ? "" : " \u00b7 link 2 for T-I"), "7px monospace", BATTERY_COLOR, px, _base-43);
-                    } else if (_bt > 0) cachedText(["","I","II","III"][_bt], "bold 8px monospace", _bc, px, _base-40);
-                    ctx.restore();
-                }
-                else if (_isActive) {
-                    // Glowing orb at structure top — not on a wave monolith, whose
-                    // stripes are its light.
-                    if (!_isWaveMono && !obj.isGenerator && !_lowTurret) {
-                    const _orbR=obj.waveMode?6+_wTier:5;
-                    ctx.save(); ctx.fillStyle=_acol;
-                    // halo instead of a blur
-                    ctx.globalAlpha=0.18+_pulse*0.12; ctx.beginPath(); ctx.arc(px,_orbY,_orbR*2.2,0,Math.PI*2); ctx.fill();
-                    ctx.globalAlpha=0.7+_pulse*0.3;
-                    ctx.beginPath(); ctx.arc(px,_orbY,_orbR,0,Math.PI*2); ctx.fill();
-                    ctx.restore();
-                    }
-                    // A pylon in turret mode wears a self-aiming gun that tracks
-                    // and locks onto whatever it is about to shoot.
-                    if (obj.attackMode && !isRelayPylon(obj)) drawPylonTurret(obj, px, _orbY, _acol, _dark);
-                    // Element + tier label
-                    const PYLON_FX_TIER={fire:["fire wall","heavy burn","ignite spread"],ice:["ice field","chill zone","deep freeze"],electric:["arc chain","arc boost","max arc"],core:["shield barrier","fast shields","regen shields"],flux:["gravity well","chain pull","vortex"],toxic:["corrodes enemies","shred+plague","plague cloud"]};
-                    const PYLON_FX2={fire:"fire wall",ice:"ice field",electric:"arc chain",core:"shield barrier",flux:"gravity well",toxic:"corrodes enemies"};
-                    const el0=obj.attackModeElement||"";
-                    // Turrets show their network's tier too: it is what boosts their rounds.
-                    const _lblTier=(obj.waveMode||obj.attackMode)&&!isRelayPylon(obj)?pylonNetworkTier(obj):0;
-                    const _wTierBadge=_lblTier>0?[" T-I"," T-II"," T-III"][_lblTier-1]:"";
-                    const _tierDesc=obj.waveMode?(_wTier>0?(PYLON_FX_TIER[el0]?.[_wTier-1]||""):(PYLON_FX_TIER[el0]?.[0]||"")):(PYLON_FX2[el0]||"");
-                    // A wave pylon is named by its ROLE — SUPPORT or DISRUPTION —
-                    // with the element and what it does underneath, or STANDBY.
-                    const _title = obj.waveMode && !isRelayPylon(obj) ? waveRoleLabel(el0)+_wTierBadge
-                                 : obj.isGenerator ? GENERATOR_LABEL : el0.toUpperCase()+_wTierBadge;
-                    const _sub = obj.zoneDark ? "no generator in this zone"
-                        : obj.waveMode && !isRelayPylon(obj)
-                        ? el0 + " \u00b7 " + (_asleep ? "standby" : _tierDesc) : _tierDesc;
-                    // Stamped from a cache (cachedText in draw.js), not re-rendered.
-                    // The full two-line label only near you or while held
-                    // (Conduit effects plan, "Pylon labels"); elsewhere just
-                    // the tier, small.
-                    const _near = pylonLabelsOn(obj);
-                    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-                    // Its STATUS (config.js): MK II or upgraded, and what it multiplies.
-                    const _st = pylonStatusLabel(obj), _mk = (obj.mk||0) >= 2;
-                    if (_near) {
-                        if (_asleep) ctx.globalAlpha=0.6;
-                        cachedText(_title, "bold 9px monospace", _acol, px, _orbY-12);
-                        ctx.globalAlpha=_asleep?0.45:0.7;
-                        cachedText(_sub, "7px monospace", _acol, px, _orbY-3);
-                        if (_st) { ctx.globalAlpha=0.95; cachedText((_mk ? "\u25c6 " : "") + _st + " \u00d7" + pylonStatusMult(obj) + " DMG", "bold 7px monospace", _mk ? "#ffd34d" : "#7ff", px, _orbY-21); }
-                    }
-                    ctx.restore();
-                    // Seasoned gold bands at base
-                    if ((obj.seasoned||0)>0) {
-                        const sLevel=Math.min(3,obj.seasoned);
-                        ctx.save(); ctx.strokeStyle="#ffd700"; ctx.lineWidth=1+sLevel*0.5;
-                        ctx.globalAlpha=0.55+_pulse*0.25; 
-                        for (let _si=0;_si<sLevel;_si++) { ctx.beginPath(); ctx.rect(px-8-_si,_base-12-_si*4,16+_si*2,2); ctx.stroke(); }
-                        ctx.restore();
-                    }
-                } else if (obj.upgraded) {
-                    // Dormant upgraded state — style-specific cyan aura
-                    ctx.save(); ctx.globalAlpha=0.2+_pulse*0.12; ctx.fillStyle="#0ff";
-                    ctx.beginPath(); ctx.arc(px,_orbY,10,0,Math.PI*2); ctx.fill();
-                    ctx.globalAlpha=0.8; ctx.beginPath(); ctx.arc(px,_orbY,3,0,Math.PI*2); ctx.fill();
-                    ctx.restore();
-                    // Upgraded detail — the battlements light up.
-                    ctx.save(); ctx.strokeStyle=SENTINEL_ACCENT; ctx.lineWidth=1;
-                    ctx.globalAlpha=0.5+_pulse*0.3;
-                    ctx.strokeRect(px-7,_base-52,4,4); ctx.strokeRect(px+3,_base-52,4,4);
-                    ctx.restore();
-                } else {
-                    // Base state — team color orb indicator
-                    const dist2=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
-                    const amb2=Math.max(0.1,0.8-dist2/RENDER_DIST);
-                    ctx.fillStyle=obj.pillarCol;
-                    ctx.globalAlpha=0.25*amb2+0.1; ctx.beginPath(); ctx.arc(px,_orbY,6,0,Math.PI*2); ctx.fill();
-                    ctx.globalAlpha=1; ctx.beginPath(); ctx.arc(px,_orbY,3,0,Math.PI*2); ctx.fill();
-                }
-            }
-        }
-        else {
-            // WALLS — isometric faces aligned to tile grid
-            // TILE_W=60, TILE_H=30. Diamond vertices: N=(px,py) E=(px+60,py+30) S=(px,py+60) W=(px-60,py+30)
-            const dist = Math.sqrt((obj.x-player.visualX)**2 + (obj.y-player.visualY)**2);
-            const amb  = Math.max(0.1, 0.8 - dist/RENDER_DIST);
-            const glo  = Math.max(0, 1.0 - dist/5);
-            const WH   = 110; // wall height in pixels
-
-            if (obj.type === 'wall_back') {
-                // The two faces and the conduit pipe depend only on the distance
-                // to the camera: stamped from a sprite (_wallFaceSprite), one
-                // drawImage instead of two fills and two strokes per wall tile.
-                const _wfs = _wallFaceSprite(Math.round(dist / FLOOR_DIST_STEP), WH);
-                if (_wfs) ctx.drawImage(_wfs, px - TILE_W - 1, py - WH - 1);
-                else _drawWallFaces(ctx, px, py, amb, glo, WH);
-
-                // ── WALL ATMOSPHERE DECORATIONS ─────────────────────────────
-                const xi = Math.abs(Math.floor(obj.x));
-
-                // 3. Server rack panels — every 9 tiles (offset from vents)
-                const isRackX=(xi%9===4);
-
-                // 1b. Wall circuit interconnect — background-style PCB traces on the south wall face.
-                // Uses isometric shear so traces lie naturally on the wall plane.
-                // Skip on rack tiles to avoid bleed through the semi-transparent panel.
-                if (!isRackX) {
-                    // W corner of south face — origin of the wall-space coordinate system.
-                    // Wall-space: x ∈ [0..TILE_W], y ∈ [0..WH] (y=0 at base, y=WH at top).
-                    // Transform: screen_x = x + WX,  screen_y = 0.5*x − y + WY
-                    const WX = px - TILE_W, WY = py + TILE_H;
-                    // The traces never change, so each column's are drawn ONCE into a
-                    // sprite (_wallTraceSprite) and stamped, faded by the wall's light.
-                    // They were ~20 canvas calls a wall tile, every frame — the single
-                    // biggest share of the frame in a built-up late game.
-                    const busY = [WH*0.18, WH*0.40, WH*0.65, WH*0.86];
-                    const busC = ['#ffb43a', '#ff8a2a', '#d89a30', '#ffd870'];
-                    const _wspr = gfxLow ? null : _wallTraceSprite(Math.abs(Math.floor(obj.x)), WH);
-                    if (gfxLow) { /* LOW graphics: no circuit traces on the wall */ }
-                    else if (_wspr) {
-                        ctx.save();
-                        ctx.globalAlpha = amb;
-                        ctx.transform(1, 0.5, 0, 1, WX - 6, WY - 3 - WH - 8);
-                        ctx.drawImage(_wspr, 0, 0);
-                        ctx.restore();
-                    } else {
-                        _drawWallTraces(ctx, Math.abs(Math.floor(obj.x)), WH, amb);
-                    }
-
-                    ctx.save();
-                    ctx.transform(1, 0.5, 0, -1, WX, WY); // isometric shear onto wall face
-                    ctx.lineCap = 'square'; ctx.lineJoin = 'miter';
-                    // ── Pulsing tracers — bright packets flowing along bus lines ──
-                    // Each of 4 tracers has a unique speed; global frame gives cross-tile continuity.
-                    for (let ti = 0; ti < 4; ti++) {
-                        const speed    = 0.45 + ti * 0.30;
-                        const tGlobalX = (frame * speed + ti * 1317.5) % (300 * 60); // wrap at 300 tiles wide
-                        const tLocalX  = tGlobalX - Math.abs(Math.floor(obj.x)) * 60;
-                        if (tLocalX > -18 && tLocalX < 78) {
-                            const bi  = ti % busY.length;
-                            const col = busC[bi];
-                            const fade = Math.max(0, 1 - Math.abs(tLocalX - 30) / 48);
-                            ctx.globalAlpha = 0.72 * amb * fade;
-                            ctx.shadowColor = col; ctx.shadowBlur = 0;
-                            ctx.strokeStyle = col; ctx.lineWidth = 2.0;
-                            ctx.beginPath();
-                            ctx.moveTo(tLocalX - 10, busY[bi]);
-                            ctx.lineTo(tLocalX + 3,  busY[bi]);
-                            ctx.stroke();
-                            ctx.shadowBlur =0;
-                        }
-                    }
-
-                    ctx.restore();
-                }
-
-                // 2. Crevasses — jagged fracture on wall face
-                if (Math.sin(xi*43.7+11.3)>0.62) {
-                    const seed2=xi*17.3;
-                    let crx=px-38+(Math.sin(seed2)*12|0), cry=py+TILE_H-WH*0.85;
-                    const crLen=5+(Math.abs(Math.sin(seed2*2.7))*4|0);
-                    ctx.save();
-                    ctx.globalAlpha=0.38*amb; ctx.strokeStyle="#000508"; ctx.lineWidth=1.5;
-                    ctx.beginPath(); ctx.moveTo(crx,cry);
-                    for (let s=0;s<crLen;s++) {
-                        crx+=(Math.sin(seed2+s*7.1)*5)|0;
-                        cry+=7+(Math.abs(Math.sin(seed2+s*3.3))*5|0);
-                        ctx.lineTo(crx,cry);
-                    }
-                    ctx.stroke();
-                    ctx.strokeStyle="#1a4030"; ctx.lineWidth=0.5; ctx.globalAlpha=0.12*amb;
-                    ctx.stroke();
-                    ctx.restore();
-                }
-
-                // Drawn with isometric shear (transform b=0.5) so they lie on the south wall face.
-                if (isRackX) {
-                    // South face center: x = px-TILE_W/2, y = py+TILE_H/2-WH*0.5 (mid-wall)
-                    const rcx = px - TILE_W*0.5;
-                    const rcy = py + TILE_H*0.5 - WH*0.42;
-                    const rw=20, rh=42;
-                    ctx.save();
-                    // Isometric shear to sit on wall face (slope = TILE_H/TILE_W = 0.5)
-                    ctx.transform(1, 0.5, 0, 1, rcx, rcy);
-                    ctx.globalAlpha=0.75*amb; ctx.fillStyle="#0a0d10";
-                    ctx.fillRect(-rw/2,-rh/2,rw,rh);
-                    ctx.strokeStyle=`rgba(0,180,100,${0.45*amb})`; ctx.lineWidth=1;
-                    ctx.strokeRect(-rw/2,-rh/2,rw,rh);
-                    ctx.fillStyle=`rgba(0,40,20,${0.8*amb})`;
-                    for (let row=0;row<4;row++) ctx.fillRect(-rw/2+2,-rh/2+5+row*8,rw-4,3);
-                    // status LEDs
-                    const ledCols=["#00ff88","#ffaa00","#ff3333"];
-                    ledCols.forEach((lc,i)=>{
-                        const blink=(i===1)?(Math.sin(frame*0.04+xi)>0?1:0.2):1;
-                        ctx.globalAlpha=0.9*amb*blink;
-                        ctx.fillStyle=lc; ctx.shadowColor=lc; ctx.shadowBlur=0;
-                        ctx.beginPath(); ctx.arc(-6+i*6, rh/2-6, 1.5, 0, Math.PI*2); ctx.fill();
-                    });
-                    ctx.shadowBlur=0; ctx.restore();
-                }
-
-                // 4. LED indicator strips — every 5 tiles (not on racks)
-                // Apply isometric shear so the 4 lights lie on the south wall face.
-                if (xi%5===2 && !isRackX) {
-                    const lcx = px - TILE_W * 0.5;
-                    const lcy = py + TILE_H * 0.5 - WH * 0.28;
-                    ctx.save();
-                    ctx.transform(1, 0.5, 0, 1, lcx, lcy);
-                    for (let i=0;i<4;i++) {
-                        const on=Math.sin(frame*0.08+xi*3.1+i*1.7)>0.2;
-                        ctx.globalAlpha=(on?0.85:0.15)*amb;
-                        ctx.fillStyle=on?"#00ffaa":"#003322";
-                        ctx.shadowColor="#00ff88"; ctx.shadowBlur=0;
-                        ctx.beginPath(); ctx.arc(-6+i*4, 0, 1.8, 0, Math.PI*2); ctx.fill();
-                    }
-                    ctx.shadowBlur=0; ctx.restore();
-                }
-
-                // 5. Condensation drips — every 6th tile
-                if (xi%6===1) {
-                    if (!obj.drip) obj.drip={y:py+TILE_H-WH*0.7,speed:0.4+Math.sin(xi*5.3)*0.15};
-                    obj.drip.y+=obj.drip.speed;
-                    if (obj.drip.y>py+TILE_H*1.5) obj.drip.y=py+TILE_H-WH*0.7;
-                    ctx.save();
-                    ctx.globalAlpha=0.28*amb; ctx.fillStyle="#3a2c0c";
-                    ctx.beginPath(); ctx.ellipse(px-33,obj.drip.y,1.2,2.2,0,0,Math.PI*2); ctx.fill();
-                    ctx.restore();
-                }
-
-                // ── SHARD PANEL — mounted on south wall face, covers interconnect partially ──
-                if (!isRackX && _wallPanelMap) {
-                    const _panel = _wallPanelMap.get(Math.round(obj.x));
-                    if (_panel) {
-                        // Trimmed to match the sentinel pylons: steel plate,
-                        // a lit bevel rather than a flat green rim, and the
-                        // same near-black slit the towers use for their
-                        // arrow loops.
-                        const activated = _panel.panelActivated;
-                        const _blink    = Math.sin(frame * 0.12 + xi * 1.7);
-                        const rimCol    = activated ? SENTINEL_ACCENT_DIM : SENTINEL_ACCENT;
-                        const screenCol = activated ? SENTINEL_SLIT : '#0a141e';
-                        const ledCol    = activated ? SENTINEL_ACCENT_DIM
-                                                    : (_blink > 0.6 ? '#bfe4ff' : SENTINEL_ACCENT);
-                        // Wall-space origin (same as circuit section)
-                        const WX = px - TILE_W, WY = py + TILE_H;
-                        // Panel center in wall-space: x=30 (center), y=WH*0.52 (mid-height)
-                        const pcx = 30, pcy = WH * 0.52, pw = 24, ph = 36;
-
-                        ctx.save();
-                        ctx.transform(1, 0.5, 0, -1, WX, WY);
-                        ctx.globalAlpha = 0.92 * amb;
-                        ctx.shadowColor = activated ? 'transparent' : SENTINEL_ACCENT;
-                        ctx.shadowBlur  = 0;
-
-                        const pL = pcx - pw/2, pT = pcy - ph/2;
-                        // Plate — sentinel's front face, dimmer when spent
-                        ctx.fillStyle = activated ? SENTINEL_FRONT_DORMANT : SENTINEL_FRONT_ACTIVE;
-                        ctx.fillRect(pL, pT, pw, ph);
-                        // Bevel: a lit top edge and a shadowed bottom, the way
-                        // the tower reads a top face against a right face.
-                        ctx.fillStyle = activated ? SENTINEL_TOP_DORMANT : SENTINEL_TOP_ACTIVE;
-                        ctx.fillRect(pL, pT + ph - 2, pw, 2);          // wall-space y is inverted
-                        ctx.fillStyle = SENTINEL_RIGHT_ACTIVE;
-                        ctx.fillRect(pL, pT, pw, 1.5);
-                        // Frame
-                        ctx.strokeStyle = rimCol; ctx.lineWidth = 1;
-                        ctx.strokeRect(pL, pT, pw, ph);
-                        // Stepped crown — the tower's two merlons, in miniature
-                        ctx.fillStyle = activated ? SENTINEL_TOP_DORMANT : SENTINEL_TOP_ACTIVE;
-                        ctx.fillRect(pL + 3,      pT + ph, 4, 2.5);
-                        ctx.fillRect(pL + pw - 7, pT + ph, 4, 2.5);
-                        // Corner rivets
-                        ctx.fillStyle = rimCol; ctx.globalAlpha = 0.55 * amb;
-                        for (const [rx, ry] of [[pL+2.5,pT+2.5],[pL+pw-2.5,pT+2.5],
-                                                [pL+2.5,pT+ph-2.5],[pL+pw-2.5,pT+ph-2.5]]) {
-                            ctx.beginPath(); ctx.arc(rx, ry, 0.8, 0, Math.PI*2); ctx.fill();
-                        }
-                        ctx.globalAlpha = 0.92 * amb;
-                        // Wall-space y points UP, so small y draws low on screen:
-                        // the readout sits at pT+3 (low) and the slit above it.
-                        // Getting this backwards reads as a keyhole, not a panel.
-                        // Readout recess — the arrow-slit black
-                        ctx.fillStyle = screenCol;
-                        ctx.fillRect(pL + 2, pT + 3, pw - 4, 13);
-
-                        if (!activated) {
-                            // Scrolling scan line, inside the recess
-                            const lineY = pT + 3 + ((frame * 0.6 + xi * 5) % 13);
-                            ctx.globalAlpha = 0.4;
-                            ctx.fillStyle = SENTINEL_ACCENT;
-                            ctx.fillRect(pL + 2, lineY, pw - 4, 1);
-                            ctx.globalAlpha = 0.92 * amb;
-                            // Vertical loop above the readout, mirroring the
-                            // tower's arrow slit.
-                            ctx.fillStyle = SENTINEL_SLIT;
-                            ctx.fillRect(pcx - 1.5, pT + 19, 3, ph - 26);
-                            ctx.fillRect(pcx - 4,   pT + 25, 8, 3);
-                            // LED beside the readout
-                            ctx.fillStyle = ledCol;
-                            ctx.shadowColor = ledCol; ctx.shadowBlur = 0;
-                            ctx.beginPath(); ctx.arc(pL + pw - 4, pT + 9, 2, 0, Math.PI*2); ctx.fill();
-                            ctx.shadowBlur =0;
-                        }
-                        ctx.restore();
-
-                        // Siphon progress wire + label — only shown while player is actively siphoning
-                        const siphonProg0 = _panel.siphonProgress || 0;
-                        const pDist = Math.hypot(player.x - _panel.x, player.y - _panel.y);
-                        if (!activated) {
-                            // Compute screen-space center of panel from wall-space (pcx, pcy)
-                            const spx = pcx + WX;
-                            const spy = 0.5 * pcx - pcy + WY;
-                            // Panel bottom-center in screen space (bottom edge of panel body)
-                            const wbotY = pcy + ph / 2;
-                            const wireSx = spx;
-                            const wireSy = 0.5 * pcx - wbotY + WY;
-
-                            // Only draw the cable/animation when siphon is actively in progress
-                            if (siphonProg0 > 0 && pDist < 2.5) {
-                                const _wPulse = 0.4 + 0.4 * Math.sin(frame * 0.14);
-                                // Stub endpoint: short droop below panel bottom
-                                const stubEndX = wireSx + 5;
-                                const stubEndY = wireSy + 20;
-
-                                ctx.save();
-                                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                                ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-
-                                // Extend wire all the way to the player (always screen-center)
-                                const plx = canvas.width / 2;
-                                const ply = canvas.height / 2 - 18;
-                                const cDist = Math.hypot(plx - stubEndX, ply - stubEndY);
-                                const sag   = Math.min(38, cDist * 0.16);
-                                const midX  = (stubEndX + plx) / 2;
-                                const midY  = (stubEndY + ply) / 2 + sag;
-
-                                // Two cable bundles for physical thickness
-                                const bundles = [
-                                    {ox: -2, oy: -1, w: 2.8, alpha: 0.88},
-                                    {ox:  2, oy:  1, w: 1.8, alpha: 0.70}
-                                ];
-                                bundles.forEach(b => {
-                                    const sx = stubEndX + b.ox, sy = stubEndY + b.oy;
-                                    const ex = plx + b.ox,      ey = ply + b.oy;
-                                    const cmy = midY + b.oy;
-                                    // Dark cable core
-                                    ctx.strokeStyle = '#0d1410'; ctx.lineWidth = b.w + 1.4;
-                                    ctx.globalAlpha = b.alpha; ctx.shadowBlur =0;
-                                    ctx.beginPath();
-                                    ctx.moveTo(sx, sy);
-                                    ctx.bezierCurveTo(midX + b.ox, cmy, midX + b.ox, cmy, ex, ey);
-                                    ctx.stroke();
-                                    // Coloured glow sheath
-                                    ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 0.85;
-                                    ctx.globalAlpha = 0.20 + _wPulse * 0.18;
-                                    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 0;
-                                    ctx.beginPath();
-                                    ctx.moveTo(sx, sy);
-                                    ctx.bezierCurveTo(midX + b.ox, cmy, midX + b.ox, cmy, ex, ey);
-                                    ctx.stroke();
-                                });
-
-                                // Animated energy packets travelling from panel → player
-                                for (let _i = 0; _i < 5; _i++) {
-                                    const _t  = ((frame * 0.022 + _i * 0.2) % 1);
-                                    const _t1 = 1 - _t, _t2 = _t;
-                                    // Cubic bezier interpolation along the main cable path
-                                    const _bx = _t1*_t1*_t1*stubEndX + 3*_t1*_t1*_t2*midX + 3*_t1*_t2*_t2*midX + _t2*_t2*_t2*plx;
-                                    const _by = _t1*_t1*_t1*stubEndY + 3*_t1*_t1*_t2*midY + 3*_t1*_t2*_t2*midY + _t2*_t2*_t2*ply;
-                                    ctx.fillStyle = '#00ff88';
-                                    ctx.globalAlpha = 0.65 + _wPulse * 0.35;
-                                    ctx.shadowColor = '#00ff88'; ctx.shadowBlur = 0;
-                                    ctx.beginPath(); ctx.arc(_bx, _by, 2.2, 0, Math.PI * 2); ctx.fill();
-                                }
-                                // Socket ring at player end
-                                ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.2;
-                                ctx.globalAlpha = 0.55 + _wPulse * 0.35;
-                                ctx.shadowBlur = 0;
-                                ctx.beginPath(); ctx.arc(plx, ply, 5, 0, Math.PI * 2); ctx.stroke();
-
-                                ctx.shadowBlur =0;
-                                ctx.restore();
-
-                                const hint = 0.4 + 0.4 * Math.sin(frame * 0.2);
-                                const barW = 28, barH = 3;
-                                const fill = Math.min(1, siphonProg0 / 150) * barW;
-                                ctx.save();
-                                ctx.globalAlpha = hint;
-                                ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 1.5;
-                                ctx.beginPath(); ctx.ellipse(spx, spy, 16, 7, 0, 0, Math.PI * 2); ctx.stroke();
-                                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                                ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
-                                ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
-                                ctx.fillStyle = '#111'; ctx.globalAlpha = 0.8;
-                                ctx.fillRect(spx - barW / 2, spy - 26, barW, barH);
-                                ctx.fillStyle = '#00ff88'; ctx.globalAlpha = hint;
-                                ctx.fillRect(spx - barW / 2, spy - 26, fill, barH);
-                                ctx.fillStyle = '#00ff88';
-                                ctx.fillText('SIPHON', spx, spy - 30);
-                                ctx.restore();
-                            }
-                        }
-                    }
-                }
-
-                // Exhaust vent — gap-sequence placement: gaps of 7–18 tiles, avg ~12
-                // isVentX walks the deterministic chain from x=0, O(|x|/7) iterations
-                const isVentX = (target) => {
-                    let pos = 0;
-                    while (pos <= target) {
-                        if (pos === target) return true;
-                        const gap = 7 + ((Math.abs(Math.sin(pos * 127.1 + 7.3)) * 10000 | 0) % 12);
-                        pos += gap;
-                    }
-                    return false;
-                };
-                if (xi >= ZONE_LENGTH && isVentX(xi)) {
-                    const flen = Math.hypot(TILE_W, TILE_H);
-                    const fdx = TILE_W / flen, fdy = TILE_H / flen;
-                    const vw = 9, vh = 10;
-                    const vcx = px - 30;
-                    const vcy = py + 45 - WH * 0.62;
-
-                    // ── VENT STATE MACHINE (stored on tile object, lazy init) ──
-                    if (!obj.ventState) {
-                        obj.ventState   = 'idle';
-                        obj.ventTimer   = 0;
-                        obj.ventIdleDur = 200 + ((Math.abs(Math.sin(xi * 37.1)) * 10000 | 0) % 220);
-                    }
-                    obj.ventTimer++;
-                    if (obj.ventState === 'idle' && obj.ventTimer >= obj.ventIdleDur) {
-                        obj.ventState = 'shimmer'; obj.ventTimer = 0;
-                    } else if (obj.ventState === 'shimmer' && obj.ventTimer >= 50) {
-                        obj.ventState = 'blast'; obj.ventTimer = 0;
-                        // Fire hits 3 tiles into the corridor (+y from wall at y=-2)
-                        for (let step = 1; step <= 3; step++) {
-                            const bwx = obj.x, bwy = obj.y + step;
-                            actors.forEach(a => {
-                                if (!a.dead && Math.abs(a.x-bwx)<1.0 && Math.abs(a.y-bwy)<1.0) {
-                                    applyDamage(a, 8, null, "fire");
-                                    floatingTexts.push({x:a.x,y:a.y,text:"BLAST",color:"#ff6600",life:35,vy:-0.05});
-                                }
-                            });
-                            if (Math.abs(player.x-bwx)<1.0 && Math.abs(player.y-bwy)<1.0) {
-                                hurtPlayer(10, 6);
-                            }
-                        }
-                    } else if (obj.ventState === 'blast' && obj.ventTimer >= 30) {
-                        obj.ventState = 'idle'; obj.ventTimer = 0;
-                        obj.ventIdleDur = 200 + ((Math.abs(Math.sin(xi * 53.7 + frame)) * 10000 | 0) % 220);
-                    }
-
-                    // ── DRAW VENT OPENING ──
-                    const glowCol = obj.ventState === 'idle'    ? "rgba(0,200,110,0.45)"
-                                  : obj.ventState === 'shimmer' ? `rgba(255,140,0,${0.4 + obj.ventTimer/50*0.5})`
-                                  :                               "rgba(255,60,0,0.9)";
-                    // Shimmer — orange heat glow building up
-                    if (obj.ventState === 'shimmer') {
-                        const t = obj.ventTimer / 50;
-                        ctx.save();
-                        ctx.globalAlpha = t * 0.55;
-                        ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 0;
-                        ctx.fillStyle = "#ff6600";
-                        ctx.beginPath();
-                        ctx.moveTo(vcx - fdx*vw*1.5, vcy - fdy*vw*1.5);
-                        ctx.lineTo(vcx + fdx*vw*1.5, vcy + fdy*vw*1.5);
-                        ctx.lineTo(vcx + fdx*vw*1.5, vcy + fdy*vw*1.5 - vh*1.6);
-                        ctx.lineTo(vcx - fdx*vw*1.5, vcy - fdy*vw*1.5 - vh*1.6);
-                        ctx.fill(); ctx.restore();
-                    }
-                    // Dark opening
-                    ctx.fillStyle = obj.ventState === 'idle' ? "#010e08" : "#1a0400";
-                    ctx.beginPath();
-                    ctx.moveTo(vcx - fdx*vw, vcy - fdy*vw);
-                    ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw);
-                    ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw - vh);
-                    ctx.lineTo(vcx - fdx*vw, vcy - fdy*vw - vh);
-                    ctx.fill();
-                    ctx.strokeStyle = glowCol; ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(vcx - fdx*vw, vcy - fdy*vw);
-                    ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw);
-                    ctx.lineTo(vcx + fdx*vw, vcy + fdy*vw - vh);
-                    ctx.lineTo(vcx - fdx*vw, vcy - fdy*vw - vh);
-                    ctx.closePath(); ctx.stroke();
-
-                    // Blast fire plume along the 3 corridor tiles
-                    if (obj.ventState === 'blast') {
-                        const fade = 1 - obj.ventTimer / 30;
-                        for (let step = 1; step <= 3; step++) {
-                            const bpx2 = px - step * TILE_W;
-                            const bpy2 = py + step * TILE_H;
-                            ctx.save();
-                            ctx.globalAlpha = fade * Math.max(0, 1 - step * 0.25);
-                            ctx.shadowColor = "#ff4400"; ctx.shadowBlur = 0;
-                            ctx.fillStyle = `rgb(255,${(110 - step*25 + Math.random()*40)|0},0)`;
-                            ctx.beginPath();
-                            ctx.arc(bpx2, bpy2 - 18, 20 - step * 3, 0, Math.PI * 2);
-                            ctx.fill(); ctx.restore();
-                        }
-                    }
-
-                    // Idle smoke
-                    if (obj.ventState === 'idle' && frame % 28 === Math.abs(xi * 13) % 28) {
-                        smoke.push({
-                            wx: obj.x, wy: obj.y,
-                            ox: -30 + (Math.random()-0.5)*3,
-                            oy: 45 - WH*0.62 - vh,
-                            vox: (Math.random()-0.5)*0.3,
-                            voy: -0.5 - Math.random()*0.3,
-                            life: 0.75, size: 3 + Math.random()*4
-                        });
-                    }
-                }
-            }
-            // wall_front not rendered — it hides the action
         }
     });
 
-    drawComboLinks();
-
-    // ── PYLON NETWORK LINKS (drawWaveLinks) ──
-    drawWaveLinks();
-
-    // ── ENVIRONMENTAL HAZARDS ──
-    if (environmentalHazards.length === 0 && gameState.running) spawnHazardsForDay();
-    drawHazards();
-
-    // ── HUD TEXT ──
-    // Deliberately empty. The objective, the alarm and the kill tally used to be
-    // painted here at a hardcoded screen x=230,y=58 — which is inside the HUD
-    // banner's box on anything narrower than a desktop, so the two sentences
-    // overprinted each other and neither could be read. The banner (#waveInfo)
-    // is laid out by the browser, says all three things, and flashes via its
-    // "alarm" class, so there is nothing left for the canvas to say.
-
-    // ── NETWORK STATUS HUD ──
-    drawNetworkStatusHUD();
+    // ── THE NETWORK PANEL: the relays and the rooms with power (js/facilitynet.js) ──
+    drawFacilityNetworkHUD();
 
     // ── SMOKE ──
     // Smoke is stored as world anchor (wx,wy) + screen offset (ox,oy) so particles
-    // stay fixed to their vent position regardless of camera movement.
+    // stay fixed to their position regardless of camera movement.
     // Iterate backwards so splice doesn't skip elements.
     if (gfxLow && smoke.length) smoke.length = 0;          // LOW graphics: no smoke
     for (let i=smoke.length-1; i>=0; i--) {
@@ -4430,40 +1047,22 @@ function render() {
         const entry=respawnQueue[i]; entry.timer--;
         if(entry.timer<=0){
             if (entry.isClone && entry.speciesName) {
-                // Respawn as clone
-                // makeClone, so a respawned clone is the same thing the
-                // summon built. This block used to construct its own and left
-                // off the power multiplier entirely — one death and a clone
-                // was an ordinary predator for the rest of the game.
+                // Respawn as clone: makeClone, so a respawned clone is the same thing the summon built.
                 const clone = makeClone(entry.speciesName, entry.className, crystal.x, crystal.y, undefined, { level: entry.level, xp: entry.xp });
                 if (!clone) { respawnQueue.splice(i,1); continue; }
             } else {
-                // Respawn as regular follower — apply HP stat degradation
+                // Respawn as a follower — apply HP stat degradation
                 const def         = NPC_TYPES["virus"];
                 const personality = entry.personality || PERSONALITY_KEYS[Math.floor(Math.random()*PERSONALITY_KEYS.length)];
                 const stats       = applyPersonality(personality);
                 if (entry.hpStat!==undefined) stats.hp = entry.hpStat;
-                // An EVOLVED follower comes back as the same machine: its element and role are its form's.
-                // The element: the one it died as, unless that element is no longer part of the mix (the Crystal's selected elements, or a boss
-                // modulator): then it takes one from what is. (It used to be re-rolled from the mix on EVERY respawn.)
-                const rPool = activeCrystalModulation
-                    ? activeCrystalModulation.pair
-                    : recruitElementPool();
-                // (an even draw from the mix: js/clone.js modulationPick)
-                const rElement = (entry.element && rPool.indexOf(entry.element) !== -1) ? entry.element : ((activeCrystalModulation ? rPool[Math.floor(Math.random()*rPool.length)] : modulationPick()) || rPool[Math.floor(Math.random()*rPool.length)] || entry.element || "fire");
-                // Its element left the mix, so it is RE-ROLLED, and re-rolling costs it half its level (rounded down, never below 1).
-                const _rerolled = !(entry.element && rPool.indexOf(entry.element) !== -1);
-                const _lvBack   = _rerolled && Number.isFinite(entry.level) ? Math.max(1, Math.floor(entry.level / 2)) : entry.level;
-                const _xpBack   = _rerolled && Number.isFinite(entry.level) ? xpForLevel(_lvBack) : entry.xp;
-                // An evolved follower keeps its form only while it is still that form's element; otherwise it comes back an EGG, and
-                // stays one until its next level-up, which evolves it into its new element's form (js/evolution.js _evoOnLevelUp).
-                const _evoWas     = entry.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[entry.evolved] : null;
-                const _evo        = _evoWas && _evoWas.element === rElement ? _evoWas : null;
+                // The same follower comes back: its element, and an EVOLVED one as the same machine (its element and role are its form's).
+                const rElement    = entry.element || "fire";
+                const _evo        = entry.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[entry.evolved] : null;
                 const role        = _evo && _evo.role ? _evo.role : assignRole(stats);
-                const hp          = entry.ghostphageLife ? 1 : stats.hp;
                 const npc = {
                     type:"virus", element:rElement, x:crystal.x, y:crystal.y, team:"green",
-                    health: hp, maxHealth: hp,
+                    health: stats.hp, maxHealth: stats.hp,
                     moveSpeed: def.moveSpeed + (stats.speed - 10) * 0.001,
                     power: stats.attack,
                     stats, personality, role,
@@ -4471,23 +1070,16 @@ function render() {
                     currentWill: stats.will,
                     walkCycle:0, moveCooldown:0, stance:"follow", isFollower:true, isHealing:false,
                     hitFlash:0, dead:false, attackAnim:0, state:"idle",
-                    combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk,
-                    ghostphageLife: entry.ghostphageLife||false
+                    combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk
                 };
                 // The same person back — same uid — but the bond did not survive.
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
                 if (entry.playStyle) npc.playStyle = entry.playStyle;   // its play style (js/commandcenter.js)
-                if (entry.squadId) npc.squadId = entry.squadId;   // its roster squad (js/squads.js)
                 if (entry.move) npc.move = entry.move;   // the signature move it was given (js/moves.js)
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
-                if (_rerolled || entry.evoWait) npc._evoOnLevelUp = true;   // re-rolled to another element: an egg again until it next levels up
+                if (entry.evoWait) npc._evoOnLevelUp = true;   // an egg again until it next levels up (js/evolution.js)
                 // Its level and XP (less what dying cost) — js/levels.js.
-                if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: _lvBack, xp: _xpBack, hpStat: entry.hpStat });
-                if (_rerolled && typeof floatingTexts !== "undefined") floatingTexts.push({ x: npc.x, y: npc.y - 1.4, text: "↻ " + String(npc.element).toUpperCase() + " · LV " + npc.level, color: "#ffd27a", life: 120, vy: -0.05, size: 11 });
-                if (entry.ghostphageLife) npc.health = 1;
-                // A worker comes back a worker (a toxic medic used to come back
-                // a fighter, and stop tending its clone, after every death).
-                if (entry.duty === "worker" && (typeof canWorkMass !== "function" || canWorkMass(npc))) npc.duty = "worker";
+                if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp, hpStat: entry.hpStat });
                 if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }   // a follower that held a room goes back to it (js/party.js)
                 actors.push(npc); followers.push(npc);
                 if(!followerByElement[rElement]) followerByElement[rElement]=[];
@@ -4531,69 +1123,32 @@ function render() {
                     }
                 }
             });
-            // Predator shots never hit the player — a predator hurts you only by
-            // biting you up close (js/predator.js). The round passes you by.
-            // An enemy round that passes over your equipment first hits IT
-            // (helpers.js, equipmentHitByShot): a turret or battery standing
-            // between a predator and the follower it shot at takes the round.
-            if (!hit && p.targetsGreen && typeof equipmentHitByShot === "function") {
-                const eq = equipmentHitByShot(p);
-                if (eq) { hurtEquipment(eq, p.damage, p.source); if (p.onHit) p.onHit(null); hit = true; }
-            }
+            // A creature's shot never hits the player — it hurts you only by biting you up close (js/predator.js). The round passes you by.
         }
         return !hit && p.life > 0;
     });
-    drawTurretShots();
-    if (typeof drawFireBombs === "function") { drawFireBombs(); drawFireAims(); }   // fire bombs in flight, and the arrows on aimed fire turrets (js/firebombs.js)
-    if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityDrawOverlay === "function") facilityDrawOverlay();   // the monitor lamp's colour, flares, CCTV marks and the station plate (js/facilitytutorial.js)
+    if (typeof drawFireBombs === "function") drawFireBombs();   // fire bombs in flight (js/firebombs.js)
+    if (typeof facilityDrawOverlay === "function") facilityDrawOverlay();   // the monitor lamp's colour, flares, CCTV marks and the station plate (js/facilitytutorial.js)
 
     ctx.restore();
 
     // ── OVERLAYS ──
     drawElementEffects();
-    if (typeof drawModuleFields === "function") drawModuleFields();   // module areas and force walls
-    if (typeof drawBehemothBar === "function") drawBehemothBar();     // the behemoth's health (js/nightraids.js)
-    if (typeof drawOfflinePylons === "function") drawOfflinePylons(); // frames waiting for a core worker (js/mass.js)
     if (!gfxLow) drawSiphonWisps();
-    // The hold line is world geometry, so it draws with the world rather than
-    // up with the interface.
-    drawHoldLine();
-    if (typeof drawBuildGhost === "function") drawBuildGhost();   // the build tool's ghost on the ground
     if (typeof drawSelectedUnitRings === "function") drawSelectedUnitRings();   // the units picked in the Command Center
     if (typeof drawBonds === "function") drawBonds();
-    // The power chain over the mending filament: the mending line is incidental,
-    // the power is the thing the player is managing.
-    drawGeneratorLinks();
-    if (!gfxLow) drawHealPluses();
-    drawConversionBars();
-    if (typeof drawRaidOverlay === "function") drawRaidOverlay();
-    if (typeof drawUltraHints === "function") drawUltraHints();
     drawFloatingTexts();
-    // While a build tool is in hand the interface is hidden (js/buildmenu.js placingHidesUi) so the whole zone can be seen.
-    const _hideUi = typeof placingHidesUi === "function" && placingHidesUi();
-    if (!_hideUi) {
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.
     drawCloneMenu();
     if (!dockHasMenus()) drawClonesBlob();
     drawRadialMenu();
-    drawGestureFeedback();
-    if (!(typeof indexReplaced === "function" && indexReplaced())) drawFollowerElementUI();   // the old ELEM / UNITS / CLONES index: replaced by the Command Center (js/commandcenter.js)
-    if (typeof drawBuildMenu === "function") drawBuildMenu();     // the build window, under the modal panels
-    drawElementPicker();
-    drawPylonConfirm();
     drawInfoPanel();
     if (typeof drawInvPanel === "function") { drawInvPanel(); drawClassPicker(); if (typeof drawArmoryPanel === "function") drawArmoryPanel(); }   // the pack and the class picker (js/inventory.js, js/classes.js)
-    if (!dockHasMenus() && !infoPanelOpen) { drawShopButton(); drawCampButton(); }
-    drawAmmoChip();
     if (typeof drawLockReticle === "function") drawLockReticle();   // the lock-on's corners (js/gunfire.js)
     if (typeof drawTargetUI === "function") drawTargetUI();   // the selection, the aim meter and the index card (js/targeting.js)
-    if (!dockHasMenus() && !infoPanelOpen) drawSettingsButton();
-    if (!(typeof indexReplaced === "function" && indexReplaced())) drawFollowerDutyMenu();
+    if (!dockHasMenus() && !infoPanelOpen) drawSettingsButton();   // a phone has no dock: its round SETTINGS button (js/settings.js)
     drawSettingsPanel();
-    drawCampMenu();
-    }
-    updatePreview();
     perfFrameEnd();
 }
 
@@ -4623,15 +1178,15 @@ function perfFrameEnd() {
 }
 function drawPerfReadout() {
     // Where a frame goes: the game's logic and the drawing of the step that is shown, the steps with no picture a slow refresh owes, and the rest (the browser painting, the page's own controls, waiting for the screen).
-    const gap = _perf.fps > 0 ? 1000 / _perf.fps : 0, other = Math.max(0, gap - _perf.logic - _perf.draw - _perf.ghost), fpOn = typeof facilityPlay !== "undefined" && facilityPlay;
+    const gap = _perf.fps > 0 ? 1000 / _perf.fps : 0, other = Math.max(0, gap - _perf.logic - _perf.draw - _perf.ghost);
     const lines = [
         "FPS " + Math.round(_perf.fps) + "   GAME " + (_simStepsShown || "-") + "/s   GFX " + (gfxLow ? "LOW" : "HIGH"),
         "frame " + gap.toFixed(0) + " ms = logic " + _perf.logic.toFixed(1) + " + draw " + _perf.draw.toFixed(1),
         "      + catch-up " + _perf.ghost.toFixed(1) + " + browser " + other.toFixed(1),
         "steps/frame " + (_simStepsShown && _perf.fps ? (_simStepsShown / _perf.fps).toFixed(1) : "-") + "   canvas " + canvas.width + "x" + canvas.height + "  (" + resizeCount + " sizings)",
-        (fpOn ? (typeof facilityBlackout === "function" && facilityBlackout() ? "DARK" : "LIT") + "   " + (typeof facilityZoneName === "function" ? facilityZoneName() : "") : "classic"),
+        (typeof facilityBlackout === "function" && facilityBlackout() ? "DARK" : "LIT") + "   " + (typeof facilityZoneName === "function" ? facilityZoneName() : ""),
         "worst frame " + _perf.shownWorst.toFixed(0) + " ms",
-        "units " + actors.length + "   pylons " + _pillarCache.length + "   tiles " + world.length,
+        "units " + actors.length + "   tiles " + world.length,
     ];
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const x = 8, y = 96, w = 252, h = 12 * lines.length + 10;
@@ -4641,127 +1196,3 @@ function drawPerfReadout() {
     lines.forEach((l, i) => { ctx.fillStyle = i === 0 ? ctx.strokeStyle : "#bfe"; ctx.fillText(l, x + 6, y + 5 + i * 12); });
     ctx.restore();
 }
-
-// ─────────────────────────────────────────────────────────
-//  TERRITORY / CAPTURE SYSTEM
-// ─────────────────────────────────────────────────────────
-
-// Recalculates tile.territory for all floor tiles.
-// Player territory = within 3 tiles of green pylon OR captured node.
-// Enemy territory  = within 4 tiles of active nest OR uncaptured signal tower.
-// Contested        = overlap of both.
-function updateTerritory() {
-    // Stamped outward from each source onto the tiles in reach, rather than
-    // every floor tile testing every pylon: it was tiles x pylons (1300 x 160
-    // in a late base, every second), the largest single cost in the cache
-    // rebuild and a visible hitch once a second.
-    // Number keys (_paKey), not "x,y" strings: ~15,000 strings a rebuild in a
-    // late base were most of the once-a-second hitch.
-    const player = new Set(), enemy = new Set();
-    const stamp = (set, sx, sy, R) => {
-        const r = Math.ceil(R), x0 = Math.round(sx), y0 = Math.round(sy), R2 = R * R;
-        for (let x = x0 - r; x <= x0 + r; x++) for (let y = y0 - r; y <= y0 + r; y++) {
-            const dx = sx - x, dy = sy - y;
-            if (dx * dx + dy * dy <= R2) set.add(_paKey(x, y));
-        }
-    };
-    for (const p of _pillarCache) if (p.pillarTeam === 'green') stamp(player, p.x, p.y, 3);
-    for (const n of capturedNodes) stamp(player, n.x, n.y, 3);
-    for (const n of _nestCache) if (n.nestHealth > 0) stamp(enemy, n.x, n.y, 4);
-    for (const st of signalTowers) if (!st.captured) stamp(enemy, st.x, st.y, 4);
-    for (const t of world) {
-        if (t.type !== 'floor') continue;
-        const k = _paKey(t.x, t.y), isPlayer = player.has(k), isEnemy = enemy.has(k);
-        t.territory = isPlayer && isEnemy ? 'contested' : isPlayer ? 'player' : isEnemy ? 'enemy' : null;
-    }
-    _territoryVer++;   // the floor's front-line edges are worked out again (render)
-}
-let _territoryVer = 0;
-let _nearBatFrame = -1, _nearBat = null;   // the battery that wears its full name this frame
-
-// Increments capture progress when followers stand on a capturable tile.
-// Progress halts while an enemy is adjacent (within 1.5 tiles).
-function updateCaptureProgress() {
-    _capturableNodeCache.forEach(t => {
-        if (t.captured) {
-            // Reverse capture: predators near a player-controlled node reclaim it
-            let nearPredCount = 0;
-            actors.forEach(a => {
-                if (!a.dead && a instanceof Predator && a.team !== 'green' && !a.isClone &&
-                    Math.hypot(a.x - t.x, a.y - t.y) < 1.2) nearPredCount++;
-            });
-            if (nearPredCount > 0) {
-                t.captureProgress = Math.max(0, t.captureProgress - 0.5 * nearPredCount);
-                if (t.captureProgress <= 0) {
-                    t.captured = false;
-                    const idx = capturedNodes.findIndex(n => n.x === t.x && n.y === t.y);
-                    if (idx >= 0) capturedNodes.splice(idx, 1);
-                    floatingTexts.push({
-                        x: canvas.width / 2, y: canvas.height / 2 - 80,
-                        text: t.nodeType === 'signal_tower' ? '◈ TOWER RECLAIMED' : '◈ NODE RECLAIMED',
-                        color: '#ff4422', life: 200, vy: -0.3
-                    });
-                }
-            }
-            return;
-        }
-
-        // Gather followers assigned to capture this node
-        const onTile = followers.filter(f =>
-            !f.dead && f.job && f.job.type === 'capture_node' && f.job.target === t &&
-            Math.hypot(f.x - t.x, f.y - t.y) < 1.2
-        );
-        t.capturingFollowers = onTile;
-
-        // Halt if an enemy is within 1.5 tiles
-        const interrupted = unitsNear(t.x, 1.5).some(a =>
-            !a.dead &&
-            (a.team === 'red' || (a instanceof Predator && a.team !== 'green' && !a.isClone)) &&
-            Math.hypot(a.x - t.x, a.y - t.y) < 1.5
-        );
-
-        if (onTile.length > 0 && !interrupted) {
-            t.captureProgress = Math.min(100, t.captureProgress + 0.4 * onTile.length);
-        }
-
-        if (t.captureProgress >= 100 && !t.captured) {
-            t.captured = true;
-            t.captureProgress = 100;
-            capturedNodes.push({ type: t.nodeType, x: t.x, y: t.y });
-            // Clear capture jobs
-            followers.forEach(f => { if (f.job && f.job.type === 'capture_node' && f.job.target === t) f.job = null; });
-            floatingTexts.push({
-                x: canvas.width / 2, y: canvas.height / 2 - 80,
-                text: t.nodeType === 'signal_tower' ? '◈ TOWER HACKED' : '◈ NODE CAPTURED',
-                color: '#00ccff', life: 200, vy: -0.3
-            });
-        }
-    });
-}
-
-// Grants +25% ATK to enemy predators within 4 tiles of an uncaptured signal tower.
-// Resets the boost each frame before re-applying so it doesn't stack.
-function applySignalTowerBuff() {
-    // First: restore base power for all predators previously buffed
-    actors.forEach(a => {
-        if (a instanceof Predator && !a.dead && a.team !== 'green' && a._signalBuffed) {
-            a.power = a._baseSignalPower || a.power;
-            a._signalBuffed = false;
-        }
-    });
-    // Then: apply buff for predators in range of uncaptured towers
-    signalTowers.forEach(st => {
-        if (st.captured) return;
-        actors.forEach(a => {
-            if (!(a instanceof Predator) || a.dead || a.team === 'green' || a.isClone) return;
-            if (Math.hypot(a.x - st.x, a.y - st.y) <= 4 && !a._signalBuffed) {
-                a._baseSignalPower = a.power;
-                a.power = a.power * 1.25;
-                a._signalBuffed = true;
-            }
-        });
-    });
-}
-
-// NETWORK STATUS HUD: js/nethud.js
-

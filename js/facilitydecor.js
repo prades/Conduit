@@ -142,7 +142,7 @@ function _fpFillCells(F, solid) {
 function _fpFillItems() { const items = []; for (const [k, f] of _fp.fills) items.push({ type: "fp", fp: "fill", x: f.x, y: f.y, base: f.base, depth: f.x + f.y - 1.5, room: f.room, key: k }); return items; }
 function _fpDrawFill(it) {
     const c = _fpP(it.x, it.y, 0), dist = Math.hypot(it.x - player.visualX, it.y - player.visualY);
-    const spr = typeof _floorTileSprite === "function" ? _floorTileSprite(gameState.phase === "night", Math.round(dist / FLOOR_DIST_STEP), "", 0) : null;
+    const spr = typeof _floorTileSprite === "function" ? _floorTileSprite(Math.round(dist / FLOOR_DIST_STEP)) : null;
     if (spr) ctx.drawImage(spr, c[0] - TILE_W - 1, c[1] - TILE_H - 1); else { ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill(); }
     const ops = _fp.floorOps && _fp.floorOps.get(it.key); if (ops) _fpDrawOps(ops, c[0], c[1], it.key);
     if (typeof _fpTileLight === "function") { const lv = _fpTileLight(it.x, it.y, it.room); if (lv < 0.98) _fpDarkTile(c[0], c[1], lv); }

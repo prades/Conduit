@@ -1,512 +1,22 @@
 // ─────────────────────────────────────────────────────────
-//  COMMAND / RADIAL SYSTEM
+//  THE LONG-PRESS RING'S ORDERS, AND THE INFO PANEL
 // ─────────────────────────────────────────────────────────
-function performElementJob(actor, tile) {
-    switch(actor.element) {
-        case "fire":    spawnFireWall(tile.x, tile.y); break;
-        case "ping":    disruptEnemiesAt(tile.x, tile.y); break;
-        case "psychic": frenzyEnemiesAt(tile.x, tile.y); break;
-    }
-}
+// A press and hold opens a ring (js/input.js handleLongHold; js/draw.js drawRadialMenu draws it and sets selectedRadialAction as the finger crosses a button), and executeCommand does the thing when the press
+// ends. On a FOLLOWER or a CLONE: ROSTER CARD (the Command Center with its card in view, js/commandcenter.js ccShowUnit) and RE-ROLL (made again at the Crystal, js/helpers.js startFollowerReroll); on a
+// CREATURE: ATTACK / STOW (the gun, js/gunfire.js) and INFO; on the ground: POSITION (the command pool holds that tile) and INFO (the INFO panel on the tile, js/infodex.js).
 
-function issueJobCommand(tile) {
-    const pool=getCommandPool().filter(a=>!a.job).slice(0,4);
-    pool.forEach(a => { a.job={ type:"elementJob", target:tile, executed:false, timer:0 }; });
-}
-
+// POSITION: the command pool (js/helpers.js getCommandPool) holds the tile
 function issueMoveCommand(tile) {
     getCommandPool().forEach(a => { a.job={ type:"move", target:tile }; a.stance="hold"; });
 }
 
-const RECLAIM_CREW_MAX = 4;
-
-function _reclaimRefusal(text) {
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
-                         text, color: "#f44", life: 100, vy: -0.2 });
-}
-
-// Who can be sent to take a pylon back.
-//
-// This used to be `followerByElement[player.selectedElement]` and nothing else,
-// which made RECLAIM depend on the element TAB the player happened to have
-// open. For the first round that is invisible — you start on fire and your
-// first recruits are fire. After that a recruit is an even draw of the elements online
-// (js/clone.js), so it may be something else, so the squad is ICE while the tab still says FIRE, the pool
-// comes back empty, and RECLAIM silently does nothing for the rest of the game.
-//
-// So: the selected element first, because that is what the player is looking
-// at, and then anyone who is free. _sendMergeFollower already worked this way.
-function reclaimCrew() {
-    // A standing POSITION order counts as available. It is not a task — it
-    // never finishes on its own — so `!a.job` benched a positioned follower
-    // from reclaiming permanently, the same way it used to bench one from
-    // taking a work duty.
-    const free = a => a && !a.dead && (!a.job || a.job.type === "move");
-    const pref = (followerByElement[player.selectedElement] || []).filter(free);
-    const pool = pref.length ? pref : followers.filter(free);
-    return pool.slice(0, RECLAIM_CREW_MAX);
-}
-
-function issueReconstruct(pylon) {
-    if (!pylon || !pylon.pillar || pylon.destroyed) return;
-    // Reclaiming is for pylons the predators took. A green one is already yours.
-    if (pylon.pillarTeam !== "red") return;
-
-    // A reclaim whose crew was wiped out left `reconstructing` set with the
-    // progress frozen, and the early return below then refused every retry —
-    // one interrupted attempt and that pylon could never be reclaimed again,
-    // with no message to say why. Losing the crew is the ordinary way a reclaim
-    // ends, so this was reachable in the first fight of the first round.
-    if (pylon.reconstructing && Array.isArray(pylon.workers)) {
-        const live = pylon.workers.filter(a => a && !a.dead
-                        && a.job && a.job.type === "reconstruct" && a.job.target === pylon);
-        if (live.length === 0) {
-            pylon.reconstructing = false;
-            pylon.workers = [];
-        } else {
-            pylon.workers = live;       // still under way — prune and fall through
-        }
-    }
-    // Still set means genuinely in progress: a live crew above, or a CORE
-    // worker rebuilding it (which sets the flag without ever filling `workers`).
-    // Either way it must not be restarted, or every press would reset the
-    // progress to zero and it could never finish.
-    if (pylon.reconstructing) return;
-
-    if (!followers || followers.filter(a => !a.dead).length === 0) {
-        _reclaimRefusal("NEED FOLLOWERS TO RECLAIM");
-        return;
-    }
-    const pool = reclaimCrew();
-    if (pool.length === 0) {
-        // Never silent. This is the state the report was about.
-        _reclaimRefusal("NO FOLLOWER FREE TO RECLAIM");
-        return;
-    }
-    pylon.reconstructing = true;
-    pylon.reconstructProgress = 0;
-    pylon.workers = pool;
-    pool.forEach(a => {
-        if (typeof releaseStandingPost === "function") releaseStandingPost(a);
-        a.job = { type: "reconstruct", target: pylon };
-    });
-}
-
-// ── ELEMENT PICKER ────────────────────────────────────────
-function openElementPicker(mode, target) {
-    // An offline frame (js/mass.js) is brought back by a CORE worker, not by
-    // the ring: otherwise an upgrade or convert would switch it on for free.
-    if (target && target.offline && mode !== "build") {
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "OFFLINE \u2014 A CORE WORKER MUST RE-ARM IT", color: "#ff9966", life: 110, vy: -0.2, size: 12 });
-        return;
-    }
-    elementPickerMode   = mode;
-    elementPickerTarget = target;
-    // Every picker starts with WHAT it is (attack / wave / connector /
-    // generator); the element comes second, and only if it applies.
-    elementPickerStage  = "type";
-    elementPickerKind   = null;
-    elementPickerOpen   = true;
-}
-
-function closeElementPicker() {
-    elementPickerOpen   = false;
-    elementPickerMode   = null;
-    elementPickerTarget = null;
-    elementPickerStage  = "type";
-    elementPickerKind   = null;
-}
-
-function _executeBuild(el, t) {
-    if (el && isRelayId(el.id) && !canPlaceGenerator(t).ok) { refuseGenerator(el); return; }
-    if (!t || shardCount < PYLON_BUILD_COST) {
-        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
-        return;
-    }
-    shardCount -= PYLON_BUILD_COST; saveShards();
-    const _baseHP = 80;
-
-    t.pillar=true; t.pillarTeam="green"; t.pillarCol="#0f8"; t.maxHealth=_baseHP; t.demolished=false;
-    t.pylonStyle=PYLON_STYLE;
-    t.upgraded=false; t.mk=0; t.destroyed=false;
-    t.attackMode=false; t.waveMode=false;
-    t.attackModeElement=null; t.attackModeColor=null;
-    t.reconstructing=false; t.workers=[];
-    if (buildMode) {
-        const builderPool=[...getCommandPool().filter(a=>!a.dead&&(!a.job||a.job.type!=="attack")),...followers.filter(a=>!a.dead&&(!a.job||a.job.type!=="attack"))]
-            .filter((a,i,arr)=>arr.indexOf(a)===i).slice(0,4);
-        if (builderPool.length === 0) {
-            // No available followers — abort and refund
-            shardCount += PYLON_BUILD_COST; saveShards();
-            t.pillar=false; t.constructing=false;
-            floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NO FOLLOWERS AVAILABLE TO BUILD",color:"#f44",life:90,vy:-0.2});
-            return;
-        }
-        t.constructing=true; t.constructProgress=0; t.health=0;
-        builderPool.forEach(builder=>{
-            const speedMult=[1,0.6,0.45,0.35][Math.min(builderPool.length-1,3)];
-            const baseBuildTime=(builder.element==="core")?60:1800;
-            builder.job={type:"build_pylon",target:t,buildTime:Math.max(30,Math.round(baseBuildTime*speedMult))};
-        });
-        // Store element to apply once built
-        t.chosenElement = el.id; t.chosenColor = el.color;
-    } else {
-        t.health=20; t.constructing=false; t.constructProgress=1;
-        // Immediately apply element — find a follower to merge
-        _sendMergeFollower(t, el);
-    }
-    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase(),color:"#0f8",life:100,vy:-0.2});
-}
-
-// `kind` is what the player chose FIRST: "attack" (a turret), or "support" /
-// "disruption" (a wave pylon — "wave" still means the same); relays ignore it. Defaults to attack, as before.
-function _applyPylonKind(t, kind) {
-    // A BATTERY holds its element's tier and does nothing else.
-    t.isBattery = kind === "battery" && !isRelayPylon(t);
-    if (isRelayPylon(t)) { t.waveMode = false; t.attackMode = true; return; }
-    if (t.isBattery) { t.attackMode = false; t.waveMode = false; t.waveTripped = false; return; }
-    if (isWaveKind(kind)) { t.waveMode = true; t.attackMode = false; }
-    else                 { t.attackMode = true; t.waveMode = false; }
-    t.waveTripped = false;
-}
-
-function _executeBuildInstant(el, t, kind) {
-    if (el && isRelayId(el.id) && !canPlaceGenerator(t).ok) { refuseGenerator(el); return; }
-    // A module stands there (js/modules.js).
-    if (t && t._module) { floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"A MODULE STANDS THERE",color:"#f44",life:90,vy:-0.2}); return; }
-    if (!t || shardCount < PYLON_BUILD_COST) {
-        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS",color:"#f44",life:90,vy:-0.2});
-        return;
-    }
-    shardCount -= PYLON_BUILD_COST; saveShards();
-    const _iHP = 80;
-
-    t.pillar=true; t.pillarTeam="green"; t.pillarCol=el.color; t.maxHealth=_iHP; t.demolished=false;
-    t.pylonStyle=PYLON_STYLE;
-    t.upgraded=false; t.mk=0; t.destroyed=false;
-    t.reconstructing=false; t.workers=[];
-    t.constructing=false; t.constructProgress=1; t.health=t.maxHealth;
-    // Auto-activate with the chosen element (no follower merge needed)
-    if (isPylonTypeUnlocked(el.id)) {
-        t.attackMode=true; t.waveMode=false;
-        t.attackModeElement=el.id; t.attackModeColor=el.color;
-        t.attackPower=TURRET_POWER; t.attackRange=TURRET_RANGE;
-        t.chosenElement=el.id; t.chosenColor=el.color;
-        t.isGenerator=(el.id===GENERATOR_ID);
-        t.isConnector=(el.id===CONNECTOR_ID); t.circuitOn=true;
-        if (t.isGenerator) { t.maxHealth = SHIELD_GEN_HP; t.health = t.maxHealth; }
-        _applyPylonKind(t, kind);
-    }
-    const _kindLabel = isRelayId(el.id) ? "" : kind === "battery" ? " BATTERY" : (isWaveKind(kind) ? " " + waveRoleLabel(el.id) + " PYLON" : " TURRET");
-    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON BUILT — "+el.label.toUpperCase()+_kindLabel,color:el.color,life:100,vy:-0.2});
-}
-
-// ── DESTROY ──────────────────────────────────────────────
-// "Have a destroy option that automatically destroys pylons and gives you 8
-// shards." Hold one of YOUR pylons in build mode → bottom of the ring:
-// DESTROY. It is gone — no wreckage, the tile is free to build on — and you
-// get DEMOLISH_REFUND shards back. Nothing an enemy holds, nothing mid-build.
-function canDemolishPylon(t) {
-    return !!t && t.pillar && !t.destroyed && t.pillarTeam === "green" && !t.constructing && !(typeof isWallUnitTile === "function" && isWallUnitTile(t));   // the wall's power unit is not demolished
-}
-function demolishPylon(t) {
-    if (!canDemolishPylon(t)) return false;
-    // Anyone walking to it (to merge into it, build it, mend it) stands down.
-    for (const a of actors) if (a.job && a.job.target === t) a.job = null;
-    for (const o of world) if (o.connectedPylon === t) o.connectedPylon = null;
-    if (t.nestConnection) { t.nestConnection.connectedPylon = null; t.nestConnection = null; }
-    const col = t.attackModeColor || t.pillarCol || "#0f8";
-    Object.assign(t, { pillar: false, destroyed: false, pillarTeam: null, health: 0,
-        attackMode: false, waveMode: false, attackModeElement: null, attackModeColor: null,
-        isGenerator: false, isConnector: false, isBattery: false, circuitOn: undefined, upgraded: false, mk: 0, seasoned: 0,
-        pendingUpgrade: false, upgradeFollower: null, chosenElement: null, chosenColor: null, chosenKind: null,
-        reconstructing: false, reconstructProgress: 0, waveTripped: false, powered: undefined,
-        powerSource: null, powerGen: null, waveAwake: undefined, _awakeUntil: undefined,
-        // Remembered, so a reload does not regrow a pylon the world placed here.
-        demolished: true });
-    shardCount += DEMOLISH_REFUND; saveShards();
-    for (let i = 0; i < 8; i++) elementEffects.push({ type: "impact", x: t.x + (Math.random() - 0.5) * 0.6, y: t.y + (Math.random() - 0.5) * 0.6, color: col, radius: 0.4, life: 22, element: "core" });
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "PYLON DESTROYED +" + DEMOLISH_REFUND + " \u25c6", color: "#ffcc44", life: 100, vy: -0.2 });
-    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 4);
-    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
-    return true;
-}
-
-// ── TELEPORT ─────────────────────────────────────────────
-// "Next to each controlled nest, including the home zone, there should be an
-// option saying teleport to zone, and it will teleport to the controlled zone
-// closest to the enemy." Hold a nest you hold (build mode off) → left of the
-// ring: TELEPORT. It takes you, and the squad following you, to your FRONT
-// nest — the held nest furthest toward the enemy. Pressed on the front nest
-// itself, it takes you home instead.
-function teleportHeldNests() {
-    return world.filter(t => t.nest && nestIsPowerSource(t) && (isHomePortal(t) || getZoneIndex(t.x) >= 1));
-}
-function teleportDestination(from) {
-    const held = teleportHeldNests();
-    if (!held.length) return null;
-    const front = held.reduce((a, b) => (b.x > a.x ? b : a));
-    if (from && front === from) {
-        const home = held.find(t => isHomePortal(t));
-        return home && home !== from ? home : null;
-    }
-    return front;
-}
-function teleportLabel(from) {
-    const d = teleportDestination(from);
-    if (!d) return "NO ZONE HELD";
-    return isHomePortal(d) ? "TELEPORT HOME" : "TELEPORT \u00b7 ZONE " + getZoneIndex(d.x);
-}
-// Where you land: the floor in front of the nest's mouth.
-function teleportSpot(n) { return { x: n.x + 1, y: 1.5 }; }
-function teleportToNest(dest) {
-    if (!dest || !dest.nest || !nestIsPowerSource(dest)) return false;
-    const to = teleportSpot(dest), fromX = player.x, fromY = player.y;
-    // The squad that is following you comes too; anyone on a job, holding a
-    // position, hauling or heading home stays where it is.
-    const party = actors.filter(a => !a.dead && a.team === "green" && (a.isFollower || a.isClone)
-        && (a.stance || "follow") === "follow" && !a.job && a.duty !== "worker" && !a.returningToCrystal
-        && Math.hypot(a.x - fromX, a.y - fromY) < 12);
-    player.x = player.targetX = player.visualX = to.x;
-    player.y = player.targetY = player.visualY = to.y;
-    party.forEach((a, i) => {
-        const ang = i / Math.max(1, party.length) * Math.PI * 2;
-        a.x = a.lastX = to.x + Math.cos(ang) * 1.2;
-        a.y = a.lastY = Math.max(0.2, Math.min(3, to.y + Math.sin(ang) * 0.9));
-    });
-    for (const [x, y] of [[fromX, fromY], [to.x, to.y]])
-        elementEffects.push({ type: "impact", x, y, color: "#7fd6ff", radius: 0.9, life: 26 });
-    const z = getZoneIndex(dest.x);
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, color: "#7fd6ff", life: 100, vy: -0.2, size: 13,
-        text: (isHomePortal(dest) ? "TELEPORTED HOME" : "TELEPORTED \u00b7 ZONE " + z) + (party.length ? " \u00b7 SQUAD OF " + party.length : "") });
-    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
-    if (typeof saveSession === "function") { try { saveSession(); } catch (e) {} }
-    return true;
-}
-
-// ── THE SQUAD RALLIES BY TELEPORT ────────────────────────
-// "All followers use this: whenever a follower is attacking another predator
-// in a later zone, they'll all teleport to that zone if they're in the home
-// zone — if they're just respawning." Every RALLY_EVERY frames: if any of your
-// followers is fighting (an enemy within RALLY_FIGHT_REACH) out past the home
-// zone, every follower and clone standing in the home zone — the respawned,
-// the stragglers — teleports to the held nest nearest that fight and joins
-// from there. Not the ones beside you (within RALLY_LEASH), not anyone on a
-// job, holding a spot, hauling or heading home.
-const RALLY_EVERY       = 30;
-const RALLY_FIGHT_REACH = 6;
-const RALLY_LEASH       = 10;
-function rallyFight() {
-    let fight = null;
-    for (const a of actors) {
-        if (a.dead || a.team !== "green" || !(a.isFollower || a.isClone)) continue;
-        if (getZoneIndex(Math.floor(a.x)) < 1) continue;
-        const e = a._nearestEnemy;
-        if (!e || e.dead || Math.hypot(e.x - a.x, e.y - a.y) > RALLY_FIGHT_REACH) continue;
-        if (!fight || a.x > fight.x) fight = a;      // the furthest fight forward
-    }
-    return fight;
-}
-function rallyDestination(fight) {
-    let best = null, bd = Infinity;
-    for (const n of teleportHeldNests()) {
-        if (isHomePortal(n)) continue;
-        const d = Math.abs(n.x - fight.x);
-        if (d < bd) { bd = d; best = n; }
-    }
-    return best;
-}
-function followerRallyTick() {
-    if (frame % RALLY_EVERY !== 0) return 0;
-    const fight = rallyFight();
-    if (!fight) return 0;
-    const dest = rallyDestination(fight);
-    if (!dest) return 0;
-    const party = actors.filter(a => !a.dead && a.team === "green" && (a.isFollower || a.isClone)
-        && getZoneIndex(Math.floor(a.x)) <= 0
-        && (a.stance || "follow") === "follow" && !a.job && a.duty !== "worker" && !a.returningToCrystal
-        && Math.hypot(a.x - player.x, a.y - player.y) > RALLY_LEASH);
-    if (!party.length) return 0;
-    const to = teleportSpot(dest);
-    party.forEach((a, i) => {
-        elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#7fd6ff", radius: 0.5, life: 20 });
-        const ang = i / party.length * Math.PI * 2;
-        a.x = a.lastX = to.x + Math.cos(ang) * 1.2;
-        a.y = a.lastY = Math.max(0.2, Math.min(3, to.y + Math.sin(ang) * 0.9));
-    });
-    elementEffects.push({ type: "impact", x: to.x, y: to.y, color: "#7fd6ff", radius: 0.9, life: 26 });
-    const sx = (to.x - player.visualX - (to.y - player.visualY)) * TILE_W + canvas.width / 2;
-    const sy = (to.x - player.visualX + (to.y - player.visualY)) * TILE_H + canvas.height / 2;
-    floatingTexts.push({ x: sx, y: sy - 60, color: "#7fd6ff", life: 90, vy: -0.4, size: 12,
-        text: "+" + party.length + " TELEPORTED TO THE FIGHT" });
-    return party.length;
-}
-
-// ── FOLLOWERS USE THE TELEPORTERS ────────────────────────
-// "If followers are summoned they must be thinking about using the
-// teleporters to the zone they were positioned to." A follower sent somewhere
-// far — a POSITION order, a hold line, autoplay's hack team, or recalled to
-// you from across the map — works out whether going by nest is quicker: walk
-// to the held nest nearest it, teleport to the held nest nearest where it is
-// going, walk the rest. It does that only when it saves ROUTE_MARGIN tiles.
-const ROUTE_MARGIN      = 6;
-const ROUTE_FOLLOW_MIN  = 15;     // a following follower this far from you takes the nests
-const ROUTE_REACH       = 0.8;    // at the entry nest's spot: through it goes
-function teleportRouteFor(a, tx, ty) {
-    const held = teleportHeldNests();
-    if (held.length < 2) return null;
-    let enter = null, exit = null, de = Infinity, dx = Infinity;
-    for (const n of held) {
-        const s = teleportSpot(n);
-        const d1 = Math.hypot(s.x - a.x, s.y - a.y), d2 = Math.hypot(s.x - tx, s.y - ty);
-        if (d1 < de) { de = d1; enter = n; }
-        if (d2 < dx) { dx = d2; exit = n; }
-    }
-    if (!enter || !exit || enter === exit) return null;
-    const direct = Math.hypot(tx - a.x, ty - a.y);
-    return de + dx + ROUTE_MARGIN < direct ? { enter, exit } : null;
-}
-// Through the entry nest and out of the exit one.
-function routeTeleport(a, route) {
-    const to = teleportSpot(route.exit);
-    elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#7fd6ff", radius: 0.5, life: 20 });
-    a.x = a.lastX = to.x + (Math.random() - 0.5) * 1.6;
-    a.y = a.lastY = Math.max(0.2, Math.min(3, to.y + (Math.random() - 0.5) * 1.4));
-    elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#7fd6ff", radius: 0.5, life: 20 });
-}
-// Followers following you from far off: give them the nest route as a walk.
-function followerRouteTick() {
-    if (frame % RALLY_EVERY !== RALLY_EVERY / 2) return 0;
-    let n = 0;
-    for (const a of actors) {
-        if (a.dead || a.team !== "green" || !(a.isFollower || a.isClone) || a.job) continue;
-        if ((a.stance || "follow") !== "follow" || a.duty === "worker" || a.returningToCrystal) continue;
-        if (Math.hypot(a.x - player.x, a.y - player.y) < ROUTE_FOLLOW_MIN) continue;
-        const route = teleportRouteFor(a, player.x, player.y);
-        if (!route) continue;
-        a.job = { type: "move", target: { x: player.x, y: player.y }, route, follow: true };
-        n++;
-    }
-    return n;
-}
-
-// Can this pylon be upgraded at all? Only one you own.
-//
-// The upgrade path set attackMode, attackModeElement and attackModeColor and
-// never touched pillarTeam, and the attack-pylon and wave-pylon passes do not
-// filter by team — so upgrading an enemy pylon turned it into a working turret
-// of yours that still counted as theirs. It made a converted pylon yours again
-// without the RECLAIM it is supposed to cost, which is the whole counter to the
-// infestation.
-function canUpgradePylon(pylon) {
-    return !!(pylon && pylon.pillar && !pylon.destroyed && pylon.pillarTeam === "green");
-}
-
-function refuseEnemyUpgrade() {
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80,
-                         text: "RECLAIM IT FIRST — NOT YOURS TO UPGRADE",
-                         color: "#f44", life: 110, vy: -0.22, size: 12 });
-}
-
-// ── MK II ────────────────────────────────────────────────
-// A tier of pylon upgrade for a tier I network (config.js, "PYLON STATUS").
-// Your own turret or wave pylon, standing on its element's tier I or better,
-// for MK2_COST shards.
-function mk2Eligible(t) {
-    return !!(t && t.pillar && !t.destroyed && t.health > 0 && t.pillarTeam === "green" && !t.constructing &&
-              (t.attackMode || t.waveMode) && !t.isBattery && !isRelayPylon(t) && t.attackModeElement);
-}
-// Why it cannot be bought right now, or null when it can.
-function mk2Blocker(t) {
-    if (t && t.offline) return "OFFLINE \u2014 NEEDS CORE";
-    if (!mk2Eligible(t)) return "NOT A TURRET OR WAVE PYLON";
-    if ((t.mk || 0) >= 2) return "ALREADY MK II";
-    const tier = typeof networkTierAt === "function" ? networkTierAt(t.attackModeElement, t.x, t.y) : 0;
-    if (tier < MK2_MIN_TIER) return "NEEDS " + t.attackModeElement.toUpperCase() + " TIER I";
-    if (shardCount < MK2_COST) return "NEED " + MK2_COST + "\u25c6";
-    return null;
-}
-function upgradeToMk2(t) {
-    const why = mk2Blocker(t);
-    if (why) {
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "MK II \u2014 " + why, color: "#f88", life: 100, vy: -0.22, size: 12 });
-        return false;
-    }
-    shardCount -= MK2_COST;
-    t.mk = 2;
-    t.upgraded = true;   // it keeps everything an upgraded pylon has
-    t.maxHealth = Math.round((t.maxHealth || 100) * MK2_HP_MULT);
-    t.health = t.maxHealth;
-    if (typeof _cacheAge !== "undefined") _cacheAge = -9999;
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "\u25c6 MK II \u2014 \u00d7" + STATUS_MULT_MK2 + " DAMAGE",
-                         color: t.attackModeColor || "#0f8", life: 120, vy: -0.2, size: 14 });
-    elementEffects.push({ type: "impact", x: t.x + 0.5, y: t.y + 0.5, color: t.attackModeColor || "#0f8", radius: 0.9, life: 26 });
-    return true;
-}
-
-function _executeUpgrade(el, pylon, kind) {
-    if (!pylon || !pylon.pillar || pylon.destroyed) return;
-    if (!canUpgradePylon(pylon)) { refuseEnemyUpgrade(); return; }
-    // Converting a pylon you already own into a generator is still creating
-    // one, so it is held to the same placement rule.
-    if (el && isRelayId(el.id) && !canPlaceGenerator(pylon).ok) { refuseGenerator(el); return; }
-    if (pylon.attackMode || pylon.waveMode) {
-        // Already upgraded — just swap element directly.
-        // isGenerator is set or cleared here, so converting a generator to an
-        // element (or back) leaves no stale flag behind.
-        pylon.attackModeElement = el.id;
-        pylon.attackModeColor   = el.color;
-        pylon.isGenerator       = (el.id === GENERATOR_ID);
-        pylon.isConnector       = (el.id === CONNECTOR_ID);
-        if (pylon.isConnector && pylon.circuitOn === undefined) pylon.circuitOn = true;
-        // A relay has no elemental zone, so it holds no wave network; an
-        // element pylon takes the kind that was chosen first.
-        if (pylon.isGenerator || pylon.isConnector || kind) _applyPylonKind(pylon, kind);
-        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"PYLON → "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
-    } else {
-        // Not yet upgraded — send a follower to merge; store chosen element
-        pylon.chosenElement = el.id;
-        pylon.chosenColor   = el.color;
-        pylon.chosenKind    = kind || "attack";
-        _sendMergeFollower(pylon, el);
-        floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"UPGRADING WITH "+el.label.toUpperCase(),color:el.color,life:100,vy:-0.2});
-    }
-}
-
-function _sendMergeFollower(pylon, el) {
-    // Prefer a follower of the chosen element (camper first), then any idle follower
-    let best = null;
-    const elPool = (followerByElement[el.id]||[]).filter(a=>!a.dead&&!a.job);
-    best = elPool.find(a=>a.role==="camper") || elPool[0] || null;
-    if (!best) {
-        let bd = Infinity;
-        followers.forEach(f=>{ if(!f.dead&&!f.job){const d=Math.hypot(f.x-pylon.x,f.y-pylon.y);if(d<bd){bd=d;best=f;}} });
-    }
-    if (best) {
-        best.job = { type:"merge_pylon", target:pylon };
-        pylon.pendingUpgrade  = true;
-        pylon.upgradeFollower = best;
-    }
-}
-
-// ── INFO PANEL ────────────────────────────────────────────
+// ── INFO PANEL (js/infodex.js draws it) ──
 function openInfoPanel(targetTile, subject) {
     infoPanelTarget = targetTile;
-    infoPanelSubject = subject || null;   // the follower, enemy or nest that was pressed (js/infodex.js)
+    infoPanelSubject = subject || null;   // the follower or enemy that was pressed
     infoPanelOpen   = true;
     infoPanelPage   = null;      // always open on the target readout
 }
-
-// Opens the codex with no target — reachable from Settings, so the rules are
-// readable without having to stand next to something first.
-function openPylonCodex() {
-    infoPanelTarget   = null;
-    infoPanelSubject  = null;
-    infoPanelOpen     = true;
-    infoPanelPage     = 'codex';
-    settingsPanelOpen = false;
-}
-
 function closeInfoPanel() {
     infoPanelOpen   = false;
     infoPanelTarget = null;
@@ -516,7 +26,7 @@ function closeInfoPanel() {
 
 // ── COMMAND EXECUTION ─────────────────────────────────────
 // Cycle the role of every follower in the command pool: brawler → mage ("sniper") → technician ("camper"). An evolved follower's role is its
-// form's (js/evolution.js): it is skipped. Used by the radial menu's SWITCH ROLES and the long-press ring alike. Returns how many it changed.
+// form's (js/evolution.js): it is skipped. The phone menu's SWITCH ROLES and the roster's squad orders use it. Returns how many it changed.
 function cycleCommandPoolRoles() {
     const roles=["brawler","sniper","camper"];
     const pool=getCommandPool().filter(a=>!a.dead);
@@ -531,58 +41,20 @@ function executeCommand() {
     commandMode=false; commandPendingTap=false;
     if (!selectedRadialAction) return;
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
-    const isNestCmd = selectedRadialAction==="attack_nest"||selectedRadialAction==="toggle_nest"||selectedRadialAction==="overcharge"||selectedRadialAction==="teleport"
-                      || selectedRadialAction==="roster_card"
-                      || (selectedRadialAction==="info" && (commandEnemyTarget||commandFollowerTarget||commandNestTarget));   // an enemy or a unit can be pressed where there is no tile
-    if (!commandTarget && !isNestCmd) { commandMode=false; selectedRadialAction=null; return; }
-    if (!commandTarget && commandNestTarget) commandTarget=commandNestTarget;
+    // a unit's order needs no tile under the press: a follower or a creature can be pressed where there is none
+    const isUnitCmd = selectedRadialAction==="roster_card" || selectedRadialAction==="reroll_follower" || selectedRadialAction==="attack_mode" || selectedRadialAction==="stow_weapon"
+                      || (selectedRadialAction==="info" && (commandEnemyTarget||commandFollowerTarget));
+    if (!commandTarget && !isUnitCmd) { commandMode=false; selectedRadialAction=null; return; }
 
     switch(selectedRadialAction) {
-        // ── TOP: BUILD / UPGRADE ──────────────────────────
-        case "build_upgrade": {
-            const pylon = commandTarget;
-            // A constructing pylon with no health is stuck (builder died or none assigned) — reset it so the player can rebuild
-            if (pylon && pylon.pillar && pylon.constructing && pylon.health === 0) {
-                pylon.pillar=false; pylon.constructing=false; pylon.constructProgress=0;
-            }
-            if (pylon && pylon.pillar && !pylon.destroyed) {
-                // Refused before the picker opens, so the player is not asked
-                // to choose an element for something that cannot take one.
-                if (!canUpgradePylon(pylon)) { refuseEnemyUpgrade(); break; }
-                openElementPicker("upgrade", pylon);
-            } else if (commandTarget) {
-                if (shardCount >= PYLON_BUILD_COST) {
-                    openElementPicker("build", commandTarget);
-                } else {
-                    floatingTexts.push({x:canvas.width/2,y:canvas.height/2-80,text:"NEED "+PYLON_BUILD_COST+" SHARDS TO BUILD",color:"#f44",life:90,vy:-0.2});
-                }
-            }
-            break;
-        }
-        // ── DOWN: POSITION ────────────────────────────────
+        // ── DOWN, on the ground: POSITION ──
         case "position": {
             if (commandTarget) issueMoveCommand(commandTarget);
             break;
         }
-        // ── DOWN (capturable tile): CAPTURE ───────────────
-        case "capture": {
-            const capTile = commandTarget;
-            if (!capTile || !capTile.capturable || capTile.captured) break;
-            // Assign up to 4 idle followers to capture this node
-            const pool = getCommandPool().filter(a => !a.dead && !a.job).slice(0, 4);
-            if (pool.length === 0) {
-                floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
-                    text: "NO FOLLOWERS AVAILABLE", color: "#f44", life: 90, vy: -0.2 });
-                break;
-            }
-            pool.forEach(a => { a.job = { type: "capture_node", target: capTile }; });
-            floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
-                text: "CAPTURING NODE…", color: "#0df", life: 90, vy: -0.2 });
-            break;
-        }
-        // ── RIGHT: INFO ───────────────────────────────────
+        // ── RIGHT: INFO ──
         case "info": {
-            openInfoPanel(commandTarget, { follower: commandFollowerTarget, enemy: commandEnemyTarget, nest: commandNestTarget });
+            openInfoPanel(commandTarget, { follower: commandFollowerTarget, enemy: commandEnemyTarget });
             break;
         }
         // ── RIGHT on your follower or clone: its card in the roster (its INFO tab is on the card) ──
@@ -590,7 +62,7 @@ function executeCommand() {
             if (commandFollowerTarget && typeof ccShowUnit === "function") ccShowUnit(commandFollowerTarget);
             break;
         }
-        // ── ARM / STOW ───────────────────────────────────
+        // ── ARM / STOW ──
         case "attack_mode": {
             setPlayerAttackMode(true);
             // Fire straight away at whatever was long-pressed, so arming is one
@@ -602,67 +74,10 @@ function executeCommand() {
             setPlayerAttackMode(false);
             break;
         }
-        // ── FIGHTER / WORKER ─────────────────────────────
-        case "clone_duty": {
-            if (commandFollowerTarget && commandFollowerTarget.isClone && typeof toggleCloneDuty === "function") toggleCloneDuty(commandFollowerTarget);
-            break;
-        }
-        case "toggle_duty": {
-            if (commandFollowerTarget && !commandFollowerTarget.dead) {
-                toggleFollowerDuty(commandFollowerTarget);
-            }
-            break;
-        }
-        // ── BOTTOM (build mode): DESTROY one of your pylons ──
-        case "demolish": {
-            if (commandTarget) demolishPylon(commandTarget);
-            break;
-        }
-        case "toggle_nest": {
-            if (commandNestTarget) toggleNestPower(commandNestTarget);
-            break;
-        }
-        // ── LEFT (build mode off) on a nest you hold: TELEPORT ──
-        case "teleport": {
-            if (commandNestTarget) teleportToNest(teleportDestination(commandNestTarget));
-            break;
-        }
-        // ── TOP (build mode off): OVERCHARGE a nest's grid ──
-        case "overcharge": {
-            if (commandNestTarget) overchargeNest(commandNestTarget);
-            break;
-        }
         case "reroll_follower": {
             if (commandFollowerTarget) startFollowerReroll(commandFollowerTarget);
             break;
         }
-        // ── REMAINING LEGACY CASES (attack, reconstruct, etc.) ──
-        case "job":       issueJobCommand(commandTarget); break;
-        case "reconstruct":
-            issueReconstruct(commandTarget);
-            break;
-        case "attack": {
-            let enemy=getEnemyAtTile(commandTarget);
-            if (!enemy) {
-                let bd=2;
-                actors.forEach(a=>{
-                    if (a instanceof Predator&&!a.dead){
-                        const dx=a.x-commandTarget.x,dy=a.y-commandTarget.y,d=Math.sqrt(dx*dx+dy*dy);
-                        if(d<bd){bd=d;enemy=a;}
-                    }
-                });
-            }
-            if (!enemy) break;
-            getCommandPool().filter(a=>!a.job).slice(0,5).forEach(a=>{a.job={type:"attack",target:enemy};});
-            break;
-        }
-        case "move":   issueMoveCommand(commandTarget); break;
-        case "attack_nest": {
-            if (commandNestTarget) {
-                getCommandPool().filter(a=>!a.job).slice(0,5).forEach(a=>{a.job={type:"move",target:commandNestTarget};a.stance="hold";});
-            }
-            break;
-        }
     }
-    commandMode=false; commandTarget=null; commandNestTarget=null;
+    commandMode=false; commandTarget=null;
 }

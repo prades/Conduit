@@ -1,13 +1,12 @@
 // ─────────────────────────────────────────────────────────
 //  FACILITY PLAY — the authored facility (js/facility.js) as a place you can walk
 // ─────────────────────────────────────────────────────────
-// STAGE 1: a walkable facility. Enter it from the MAP view (PLAY) or with ?facilityplay in the URL. You start in the Crystal Chamber with a small squad; you, your followers and
-// your clones walk the real rooms: walls, glass, the desk, the truck and the liquid vats block, the sliding doors let you through, and tapping the floor finds a path through the doors.
-// The zone strip's own systems (zones, nests, waves, the wall power unit, spawning, saves) are NOT running here yet: they come over one at a time. The strip game is untouched:
-// a facility session writes nothing to the save (storage writes are switched off for it), and leaving it reloads the page into the strip game.
+// THE GAME IS THE FACILITY: the page opens it (js/init.js). You start in the Crystal Chamber with a small squad; you, your followers and your clones walk the real rooms: walls, glass, the desk,
+// the truck and the liquid vats block, the sliding doors let you through, and tapping the floor finds a path through the doors. The arena's creatures (js/facilityspawn.js) and the tutorial
+// (js/facilitytutorial.js, js/tutorial.js) are the game; one save key keeps it (js/facilitysave.js).
 //
-// How it hooks in (each hook is a guarded one-liner where the strip code already decides the thing):
-//   world         the floor tiles are built from the facility's rooms (generateSegment / ensureWorldTo do nothing while it is on)
+// How the engine hooks in (each hook is a guarded one-liner where the engine already decides the thing):
+//   world         the floor tiles are built from the facility's rooms (_fpBuildWorld)
 //   movement      facilityConstrain puts any mover back if it would cross a wall; the player follows a path of waypoints (facilityPlayerStep)
 //   steering      a follower walking toward a target around a wall steers to the next waypoint (_walkStep, _moveToward, followPlayer)
 //   drawing       wall pieces, prop cells, doors and fixtures are depth-sorted into the game's own draw list (facilityDrawItems / drawFacilityItem)
@@ -26,14 +25,7 @@ const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the bui
 const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a" };
 
 // ── the world ──
-function _fpFloorTile(x, y, room) {
-    return {
-        x, y, type: "floor", pillar: false, pillarTeam: "red", pillarCol: "#e02020", destroyed: false, health: 20, maxHealth: 20, converting: false, pendingDestroy: false,
-        pylonStyle: typeof PYLON_STYLE !== "undefined" ? PYLON_STYLE : "sentinel", upgraded: false, pulseTimer: 0, reconstructing: false, reconstructProgress: 0, workers: [],
-        nest: false, nestHealth: 0, nestMaxHealth: 200, nestZone: -1, nestPulse: 0, nodeType: null, capturable: false, captureProgress: 0, capturingFollowers: [], captured: false, territory: null,
-        facility: true, room,
-    };
-}
+function _fpFloorTile(x, y, room) { return { x, y, type: "floor", facility: true, room }; }
 function _fpBuildWorld(F) {
     world = []; worldTileMap = new Map(); const cells = new Map();
     for (let x = Math.floor(F.bounds.minX); x <= Math.ceil(F.bounds.maxX); x++) for (let y = Math.floor(F.bounds.minY); y <= Math.ceil(F.bounds.maxY); y++) {
@@ -143,7 +135,6 @@ function _fpGoals(a) {
     const gs = a.post ? [] : [player]; if (crystal && !a.post) gs.push(crystal);   // (a posted follower's round is its own: the player and the Crystal are not what it is walking to)
     if (a.job && a.job.target && Number.isFinite(a.job.target.x)) gs.push(a.job.target);
     if (a._nearestEnemy && !a._nearestEnemy.dead) gs.push(a._nearestEnemy);
-    if (a.hackOrder && Number.isFinite(a.hackOrder.x)) gs.push(a.hackOrder);
     if (a._fpPortalGoal && typeof facilityPortalGoal === "function") { const g = facilityPortalGoal(a); if (g) gs.push(g); }   // (the doorway it is on its way through: js/facilityportals.js)
     const foes = a.team === "green" ? actors : followers;   // the nearest of the other side, within a chase
     let nb = null, nd = 144; for (const o of foes) { if (!o || o.dead || o === a || (a.team === "green" ? o.team === "green" : false)) continue; const d = (o.x - a.x) ** 2 + (o.y - a.y) ** 2; if (d < nd) { nd = d; nb = o; } }
@@ -152,7 +143,7 @@ function _fpGoals(a) {
 }
 function facilityReroute(a, px, py) {
     if (!_fp || !a || a.dead) return;
-    if (a.team !== "green" && typeof Predator !== "undefined" && a instanceof Predator && (a.state === "wander" || a.state === "hunt") && !a.nodeReconvertTarget && !a.pylonAggro) return;   // (a wandering or hunting creature walks the route by itself, js/predator.js: its goal is its own, not the player or the Crystal)
+    if (a.team !== "green" && typeof Predator !== "undefined" && a instanceof Predator && (a.state === "wander" || a.state === "hunt")) return;   // (a wandering or hunting creature walks the route by itself, js/predator.js: its goal is its own, not the player or the Crystal)
     const dx = a.x - px, dy = a.y - py, d = Math.hypot(dx, dy);
     if (d < 1e-4 || d > 1.5) return;
     // The goal the step points at best. A step that points straight at a goal (within 28 degrees) with a wall in between is rerouted. A step that runs into a wall is a unit pushing at a goal it cannot walk
@@ -165,9 +156,9 @@ function facilityReroute(a, px, py) {
     const wx = w[0] - px, wy = w[1] - py, wl = Math.hypot(wx, wy); if (wl < 1e-6) return;
     a.x = px + wx / wl * d; a.y = py + wy / wl * d;
 }
-// The facility is big: a squad walking at its strip speed would be a minute behind you. A follower or clone far from you (and not on an order of its own) hurries, up to about four times, and eases back to its own speed as it closes in.
+// The facility is big: a squad walking at its own pace would be a minute behind you. A follower or clone far from you (and not on an order of its own) hurries, up to about four times, and eases back to its own speed as it closes in.
 function facilityCatchUp(a, px, py) {
-    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.post || a.returningToCrystal || a.duty === "worker" || (a.role === "camper" && !(typeof partyOn === "function" && partyOn()))) return;   // (a posted follower holds its room; a technician in the squad hurries after you like the rest)
+    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.post || a.returningToCrystal) return;   // (a posted follower holds its room)
     const d = Math.hypot(player.x - a.x, player.y - a.y); if (d <= 8) return;
     const k = Math.min(4, 1 + (d - 8) / 6); a.x = px + (a.x - px) * k; a.y = py + (a.y - py) * k;
 }
@@ -212,24 +203,45 @@ function facilityPlayerStep() {
 }
 
 // ── start / stop ──
-// the facility writes only its own keys (js/facilitysave.js: its save and the choice of game): everything else the classic game saves is left exactly as it was
-const FP_STORE_OK = /^conduit_(fp_|mode$)/;
+// the facility writes only its own keys (js/facilitysave.js): nothing else reaches storage
+const FP_STORE_OK = /^conduit_fp_/;
 let _fpStoreFiltered = false;
 function _fpNoStorage() {
     if (_fpStoreFiltered) return;
     try { if (typeof Storage !== "undefined" && Storage.prototype) { _fpStoreFiltered = true; const set = Storage.prototype.setItem, rm = Storage.prototype.removeItem; const ok = k => FP_STORE_OK.test(String(k)) && !(typeof attractOn === "function" && attractOn()); Storage.prototype.setItem = function (k, v) { if (ok(k)) return set.call(this, k, v); }; Storage.prototype.removeItem = function (k) { if (ok(k)) return rm.call(this, k); }; } } catch (e) {}
 }
+// the state of a game, fresh: every list emptied, every pointer into the last world let go, the player and the Crystal as they begin (the facility itself is built after this)
+function facilityResetState() {
+    world = []; worldTileMap = new Map(); actors = []; followers = []; ELEMENTS.forEach(el => { followerByElement[el.id] = []; });
+    projectiles = []; fragments = []; smoke = []; shards = []; elementEffects = []; floatingTexts = []; followerProjectiles = []; respawnQueue = [];
+    if (typeof clearDNA === "function") clearDNA();
+    if (typeof activeFireEruption !== "undefined") activeFireEruption = null; if (typeof activeEmpEffect !== "undefined") activeEmpEffect = null;
+    if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
+    frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(ELEMENTS.map(e => e.id)); lifetimeKills = 0;
+    playerUltimate = 0; armySurgeTimer = 0; _lastUltInt = -1; _lastUltState = "";
+    siphonEnabled = true; siphonWisps = []; _lastSiphonOn = null; _siphonInRange = 0;
+    crystal = { x: 0, y: 2, health: 300, maxHealth: 300, radius: 0.8 };
+    player = { x: 2, y: 1, visualX: 2, visualY: 1, targetX: 2, targetY: 1, rotY: Math.PI * 0.75, baseRot: Math.PI * 0.75, angryTimer: 0, selectedElement: "fire", siphonHold: 0, attackCooldown: 0, invuln: 0 };
+    gameState = { running: true };
+    alertActive = false; alertTimer = 0; alertType = null; alertSource = null;
+    cloneMenuOpen = false; crystalMenuOpen = false; infoPanelOpen = false; infoPanelTarget = null; infoPanelPage = null; infoPanelSubject = null;
+    commandMode = false; commandPendingTap = false; commandTarget = null; selectedRadialAction = null; commandEnemyTarget = null; commandFollowerTarget = null;
+    playerAttackMode = false; if (typeof gunStow === "function") gunStow();
+    isPressing = false; longHoldFired = false; touchMoved = false;
+    health = PLAYER_HITS; playerAmmo = PLAYER_AMMO_START;
+    if (typeof document !== "undefined") { const ov = document.getElementById("overlay"); if (ov && ov.classList) ov.classList.remove("active"); }
+}
 function facilityPlayStart() {
     if (facilityPlay) return true;
-    _fpNoStorage();                                  // only the facility's own save is written: the classic game's save is left exactly as it was
+    _fpNoStorage();                                  // only the facility's own save is written
     facilityPlay = true;
     if (typeof facilityDebugSet === "function") facilityDebugSet(false);
     const F = facilityBuild({ snap: true, margin: FP_BODY });
     const P = facilityBuild({ snap: true, margin: FP_PLAN });   // the planning copy: the same map, a wider margin
     _fp = { F, P, cells: null, cellsP: null, edges: new Map(), paths: new Map(), gfxSaved: typeof facilityGfxSaved === "function" ? facilityGfxSaved() : null };
     if (_fp.gfxSaved === "low") gfxLow = true; else if (_fp.gfxSaved === "high") gfxLow = false;   // (a slow device was found slow before, or the player chose: js/propsprites.js)
-    restartGame();                                   // the full state reset (its storage writes are off, and generateSegment does nothing now)
-    unlockedElements = new Set(ELEMENTS.map(e => e.id));   // ASKED: "make the crystal have access to all the colors from the beginning": all six are online from the first frame (the classic game keeps its ladder)
+    facilityResetState();                            // a fresh game's state
+    unlockedElements = new Set(ELEMENTS.map(e => e.id));   // ASKED: "make the crystal have access to all the colors from the beginning": all six are online from the first frame
     squadMode = "all";   // the battle tool's orders (RETREAT, HOLD, COME, and the enemy card's ATTACK) go to EVERYONE until the player narrows them (WHO, or selected roster cards); there is no element to "start" with here, and the old default was whichever element came first
     _fp.cells = _fpBuildWorld(F);
     _fp.cellsP = new Map(); for (const [k, c] of _fp.cells) if (facilityWalkable(c[0], c[1], P)) _fp.cellsP.set(k, c);
@@ -251,8 +263,7 @@ function facilityPlayStart() {
     else if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
     if (away) attractStart(F);                       // the background: the camera, and the searchers that come now and again (js/attract.js)
-    else if (typeof facilitySpawnInitial === "function") facilitySpawnInitial(); else _fpSpawnTestEnemies(F);   // the arena's creatures (js/facilityspawn.js)
-    if (typeof updateObjectiveUI === "function") updateObjectiveUI();
+    else facilitySpawnInitial();                     // the arena's creatures (js/facilityspawn.js)
     document.body.classList && document.body.classList.add("facility-play");
     if (typeof facilityPropsPreload === "function") facilityPropsPreload();   // the 3D prop sheets start loading now (js/propsprites.js)
     _fp.saveReady = !away;                           // from here the game is saved as it goes (the background keeps nothing)
@@ -285,19 +296,6 @@ function facilityApproachTile(b, range) {
     }
     return best;
 }
-// leaving the facility is going to the classic game (js/facilitysave.js remembers the choice)
-function facilityPlayStop() { if (typeof facilitySwitchGame === "function") facilitySwitchGame("classic"); else { try { location.reload(); } catch (e) {} } }
-
-// STAGE 1 has no spawning of its own yet (no nests, no waves), so a few ants wander the arena to try combat and the walls on: they are a test, not the facility's enemies.
-function _fpSpawnTestEnemies(F) {
-    if (typeof spawnPredatorForZone !== "function") return;
-    const spots = [[30, 40], [34, 44], [28, 46]];
-    for (const [x, y] of spots) {
-        const before = actors.length; try { spawnPredatorForZone(1, { species: "ant", className: "scout" }); } catch (e) { continue; }
-        const p = actors[actors.length - 1]; if (actors.length > before && p) { p.x = x; p.y = y; p.state = "wander"; p.isFacilityTest = true; }
-    }
-}
-
 // ── the static things to draw: wall pieces, prop cells, doors, fixtures ──
 // the room whose light a wall piece takes: the room on its camera-facing side (the face you see), else its own room
 // a door's header slab runs over the tunnel: towards the side that is walkable
@@ -541,24 +539,18 @@ function _fpDrawFixture(it) {
     for (let i = 0; i < n; i++) { const t0 = (i + 0.15) / n, t1 = (i + 0.85) / n, lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]; _fpQuad([lerp(a0, b0, t0), lerp(a0, b0, t1), lerp(a1, b1, t1), lerp(a1, b1, t0)], "rgba(255,211,77,0.35)", "#ffd34d", 1); }
 }
 
-// ── the controls: chips to change game, and the PLAY entry ──
-// In the facility: CLASSIC GAME (go to the old game) and NEW GAME (throw the save away, after asking). In the classic game: FACILITY (go back).
+// ── the controls: NEW GAME (throw the save away, after asking) ──
+// The page opens the facility (js/init.js boots it); there is no other game to change to.
 function facilityPlayChip() {
     if (typeof document === "undefined" || !document.createElement || !document.body) return;
-    if (document.getElementById("facilityPlayChip") || (typeof attractOn === "function" && attractOn())) return;
-    const classic = typeof facilityMode === "function" && facilityMode() === "classic";
-    const mk = (id, text, fn) => { const c = document.createElement("button"); c.id = id; c.textContent = text; c.addEventListener("click", fn); document.body.appendChild(c); return c; };
-    if (classic) { mk("facilityPlayChip", "\u25b6 FACILITY", () => facilitySwitchGame("facility")); document.body.classList.add("classic-chip"); }
-    else {
-        mk("facilityPlayChip", "CLASSIC GAME \u25b8", () => facilityPlayStop());
-        mk("facilityNewChip", "NEW GAME", () => { let ok = true; try { ok = typeof confirm !== "function" || confirm("Start a new facility game? Your saved progress will be lost."); } catch (e) {} if (ok) facilityNewGame(); });
-    }
+    if (document.getElementById("facilityNewChip") || (typeof attractOn === "function" && attractOn())) return;
+    const c = document.createElement("button"); c.id = "facilityNewChip"; c.textContent = "NEW GAME";
+    c.addEventListener("click", () => { let ok = true; try { ok = typeof confirm !== "function" || confirm("Start a new facility game? Your saved progress will be lost."); } catch (e) {} if (ok) facilityNewGame(); });
+    document.body.appendChild(c);
 }
 function initFacilityPlay() {
     if (typeof window === "undefined" || !window.addEventListener) return;
-    const mode = typeof facilityMode === "function" ? facilityMode() : (/[?&]facilityplay\b/.test((window.location && window.location.search) || "") ? "facility" : "classic");
-    if (mode === "facility") _fpNoStorage();   // before the page boots: the classic game's save is not written to while the facility is what is played
+    _fpNoStorage();   // before the page boots: nothing but the facility's own keys is written
     facilityPlayChip();
-    if (mode === "facility") try { setTimeout(() => { try { facilityPlayStart(); } catch (e) { console.error(e); } }, 800); } catch (e) {}
 }
 try { initFacilityPlay(); } catch (e) { /* no page (the test sandbox) */ }

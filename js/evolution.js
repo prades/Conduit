@@ -36,14 +36,6 @@
 //          enemy within MANTA_RANGE, every MANTA_EVERY frames it dashes to it,
 //          hits it (MANTA_MULT × its power) and shocks two more near it; all
 //          are stunned for a moment.
-//          VOID HAULER (the FLUX WORKER, once the hover hauler, now design No. 689: a flux follower on worker
-//          duty, not a role), HEAVY HAUL: it hauls neutralised lumps
-//          HAULER_SPEED× as fast, picks them up from HAULER_REACH× as far, and
-//          each delivery pays HAULER_PAY× the shards (js/mass.js asks evoHaul).
-//          DYNAMO POD (the ELECTRIC WORKER, No. 71: an electric follower on
-//          worker duty), RAPID DISCHARGE: it bleeds the charge off mass lumps
-//          POD_RATE× as fast and from POD_REACH× as far, and walks to them
-//          POD_SPEED× as fast (js/mass.js asks evoNeutralise).
 //          SERPENT (the flux sniper, design No. 15), SINGULARITY SHOT: with an
 //          enemy within SERPENT_RANGE, every SERPENT_EVERY frames it rears up
 //          and fires a gravity round (SERPENT_MULT × its power) that DRAGS every
@@ -83,10 +75,6 @@
 //          CALDERA_EVERY frames it hunkers and the crater bursts: everything within
 //          CALDERA_RADIUS takes CALDERA_MULT × its power in toxic goo and has its armour
 //          eaten (it takes 1 / CALDERA_SHRED × damage for CALDERA_SHRED_FRAMES).
-//          WORM VESSEL (the CORE WORKER, design No. 144: a solid black jar on its side with a
-//          thick glowing worm looking out of it; a core follower on worker duty), REWIRE: it
-//          re-arms a downed pylon VESSEL_RATE× as fast, from VESSEL_REACH× as far, and walks to
-//          it VESSEL_SPEED× as fast (js/mass.js asks evoRepair).
 //          FROST MAW (the ICE BRAWLER, design No. 156: a dome of frosted shell with a cave
 //          for a mouth and two crystal fangs inside), CHOMP: with an enemy within MAW_RANGE,
 //          every MAW_EVERY frames the fangs slam down: the nearest enemy takes MAW_MULT × its
@@ -122,10 +110,7 @@ const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED
 const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
 const PETAL_RANGE = 6.5, PETAL_EVERY = 330, PETAL_MULT = 1.8, PETAL_SHIELD = 0.35, PETAL_ALLY_R = 7;
 const CALDERA_RADIUS = 2.4, CALDERA_EVERY = 330, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
-const VESSEL_RATE = 3, VESSEL_REACH = 2, VESSEL_SPEED = 1.4;
 const MAW_RANGE = 1.8, MAW_EVERY = 300, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
-const HAULER_SPEED = 1.5, HAULER_REACH = 2, HAULER_PAY = 2;
-const POD_RATE = 3, POD_REACH = 2, POD_SPEED = 1.4;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 
 const EVOLUTIONS = {
@@ -187,9 +172,6 @@ const EVOLUTIONS = {
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "AEGIS BLOOM", sheet: "img/evo/hornshell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4" },
-    // The CORE WORKER (the pylon re-armer): a worker is a duty, so it comes from a core follower on worker duty. The worm moves, so the sheet carries its own light.
-    vessel: { id: "vessel", name: "WORM VESSEL", element: "core",     duty: "worker",  move: "REWIRE",       sheet: "img/evo/vessel.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 52.6], noGlow: true, color: "#33e6c4" },
     // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
     // LEGACY: the first toxic brawler. New evolutions use the Seeper; a follower already evolved into this keeps it.
     caldera:{ id: "caldera", legacy: true, name: "CALDERA", element: "toxic", role: "brawler", move: "ERUPTION", sheet: "img/evo/caldera.png",
@@ -202,27 +184,18 @@ const EVOLUTIONS = {
     // LEGACY: the first core mage. New evolutions use the Hornshell; a follower already evolved into this keeps it.
     petal:  { id: "petal",  legacy: true, name: "PETAL AEGIS",  element: "core",     role: "sniper",  move: "AEGIS BLOOM",  sheet: "img/evo/petal.png",
               cell: 144, anchor: [72, 114.2], core: [72, 66.5], color: "#33e6c4" },
-    // The FLUX BRAWLER: a lump of liquid on the ground (a flux worker is the Hover Hauler instead: a worker is a duty). Its surface moves, so its sheet carries its own light.
+    // The FLUX BRAWLER: a lump of liquid on the ground. Its surface moves, so its sheet carries its own light.
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png" },
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", move: "CORRODE SHOT", sheet: "img/evo/rotshard.png",
               cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
-    // The electric WORKER (the neutraliser): a worker is a duty, so it comes from an electric follower on worker duty.
-    pod:    { id: "pod",    name: "DYNAMO POD",   element: "electric", duty: "worker",  move: "RAPID DISCHARGE", sheet: "img/evo/pod.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 58], noGlow: true, color: "#ffee33" },
-    // The flux ("void") WORKER: no role of its own (a worker is a duty); it comes from a flux follower on worker duty. Design No. 689: a deep black
-    // saucer on jagged-forearm bug legs, violet lights chasing round its rim (it was a hovering tank; the id stays "hauler", so saved followers keep it).
-    hauler: { id: "hauler", name: "VOID HAULER", element: "flux",     duty: "worker",  move: "HEAVY HAUL",   sheet: "img/evo/hauler.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 84.8], noGlow: true, color: "#bb66ff" },
 };
 // Which egg grows into which machine.
 function evolutionFor(f) {
     if (!f || !f.isFollower) return null;
     const role = f.role === "hybrid" ? "brawler" : f.role;
-    // A follower on worker duty can only evolve into a worker form (and the other way round).
-    const worker = f.duty === "worker";
-    for (const k in EVOLUTIONS) { const d = EVOLUTIONS[k]; if (d.legacy || d.element !== f.element) continue; if (worker ? d.duty === "worker" : d.role === role) return d; }
+    for (const k in EVOLUTIONS) { const d = EVOLUTIONS[k]; if (d.legacy || d.element !== f.element) continue; if (d.role === role) return d; }
     return null;
 }
 function evolvedDef(f) { return f && f.evolved ? EVOLUTIONS[f.evolved] || null : null; }
@@ -514,22 +487,6 @@ function staticRush(f) {
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "STATIC RUSH", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
     return true;
 }
-// REWIRE: how fast and far the worm vessel puts a downed pylon back online (js/mass.js asks). null if it is not one.
-function evoRepair(f) {
-    if (!f || f.evolved !== "vessel") return null;
-    return { rate: VESSEL_RATE, reach: VESSEL_REACH, speed: VESSEL_SPEED };
-}
-// RAPID DISCHARGE: how fast and far the dynamo pod neutralises (js/mass.js asks). null if it is not one.
-function evoNeutralise(f) {
-    if (!f || f.evolved !== "pod") return null;
-    return { rate: POD_RATE, reach: POD_REACH, speed: POD_SPEED };
-}
-// HEAVY HAUL: what the hover hauler's hauling is worth (js/mass.js asks). null if it is not one.
-function evoHaul(f) {
-    if (!f || f.evolved !== "hauler") return null;
-    return { speed: HAULER_SPEED, reach: HAULER_REACH, pay: HAULER_PAY };
-}
-
 // ── THE LOOK ───────────────────────────────────────────────
 function _evoImg(d) {
     if (d._img !== undefined) return d._img && d._img.complete && d._img.naturalWidth ? d._img : null;

@@ -4,9 +4,9 @@
 // The arena is where the facility's wild things are. A few are there when the game opens, and every so often another comes out of the dark at a different spot, so it is never empty and never full:
 //   - one at a time, FP_SPAWN.every frames apart, up to FP_SPAWN.cap alive at once;
 //   - at a random spot on the arena floor that is out of sight and out of reach of the player and not on top of another creature;
-//   - always the kind there are fewest of, so they are all different: ants, beetles, spiders, scorpions, mantises and moths (the strip's own species, js/species.js), each in a class of its own;
-//   - they WANDER: pottering about the arena from spot to spot (never out of it), and only hunt when provoked or when an alarm is up (the strip's own rule for a calm creature).
-// js/predator.js asks facilityWanderTarget for its next spot when it is in the facility (the classic game's wander is a strip, y 0 to 3, which is nothing here).
+//   - always the kind there are fewest of, so they are all different: ants, beetles, spiders, scorpions, mantises and moths (js/species.js), each in a class of its own;
+//   - they WANDER: pottering about the arena from spot to spot (never out of it), and only hunt when provoked or when an alarm is up.
+// Each is made by spawnCreature (js/clone.js); js/predator.js asks facilityWanderTarget for its next spot.
 // A creature that dies drops SCRAP METAL where it fell (js/drops.js calls facilityScrapDrop): a case that lies there for a minute, which the Armory's terminal turns into ammunition (js/armory.js).
 const FP_SPAWN = {
     room: "arena", every: 1200, first: 480, start: 4, cap: 7, minFromPlayer: 11, spacing: 4,
@@ -50,13 +50,13 @@ function facilitySpawnSpot() {
 }
 // one creature: of a species there are fewest of, at a spot, wandering
 function facilitySpawnCreature(species, spot) {
-    if (typeof spawnPredatorForZone !== "function") return null;
+    if (typeof spawnCreature !== "function") return null;
     const alive = facilityCreatures(); species = species || _fsPickSpecies(alive); spot = spot || facilitySpawnSpot(); if (!spot) return null;
     const cls = _fsPickClass(species); if (!cls) return null;
-    const before = actors.length; let p = null; try { p = spawnPredatorForZone(1, { species, className: cls }); } catch (e) { return null; }
-    p = actors[actors.length - 1]; if (!p || actors.length <= before) return null;
-    p.x = spot[0]; p.y = spot[1]; p.level = FP_SPAWN.levels[0] + Math.floor(Math.random() * (FP_SPAWN.levels[1] - FP_SPAWN.levels[0] + 1)); if (typeof _applyPredLevel === "function") _applyPredLevel(p, true);
-    p.state = "wander"; p.isWanderer = false; p.wanderTarget = null; p.wanderTimer = Math.random() * 60; p.fpCreature = true; p.homeRoom = FP_SPAWN.room; p.isFacilityTest = true;
+    const level = FP_SPAWN.levels[0] + Math.floor(Math.random() * (FP_SPAWN.levels[1] - FP_SPAWN.levels[0] + 1));
+    let p = null; try { p = spawnCreature({ species, className: cls, x: spot[0], y: spot[1], level, state: "wander" }); } catch (e) { return null; }
+    if (!p) return null;
+    p.wanderTarget = null; p.wanderTimer = Math.random() * 60; p.fpCreature = true; p.homeRoom = FP_SPAWN.room;
     return p;
 }
 // when the game opens: a handful, each a different kind

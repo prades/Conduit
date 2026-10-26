@@ -149,12 +149,6 @@ function drawBeetle3D(actor, px, py, g) {
     legs(nearSide);                                    // the near side's, in front
 
     // ── Elite: a ring round it; a boss: its aura ──
-    if (actor.isElite && !actor.isNymph) {
-        g.globalAlpha = 0.25 + 0.2 * (0.5 + 0.5 * Math.sin((actor.animationPhase || 0) + (frame || 0) * 0.07));
-        g.strokeStyle = actor.color || "#ff8800"; g.lineWidth = 2;
-        _beetlePoly(g, _beetleRing(P, -0.1, 1.9, 1.35, 1)); g.stroke();
-        g.globalAlpha = 1;
-    }
     if ((actor.isBoss || actor.shieldAura) && (actor.team !== "green" || actor.isClone)) {
         const auraR = (actor.shieldAuraRadius || 5) * TILE_W * 0.5;
         g.globalAlpha = 0.12 + 0.08 * (0.5 + 0.5 * Math.sin((actor.shieldAuraPulse || 0) * 0.1));

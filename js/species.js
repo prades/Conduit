@@ -71,12 +71,8 @@ function assignRole(stats) {
 }
 
 // ─────────────────────────────────────────────────────────
-//  PREDATOR TYPES & POOLS
-// ─────────────────────────────────────────────────────────
-// ─────────────────────────────────────────────────────────
 //  SPECIES SYSTEM
-//  Each species has 3 classes: scout, striker, tank
-//  Species rank up as waves progress (front zone first)
+//  Each species has its classes: nymph, worker, scout, striker, tank, boss (the arena's spawner uses worker, scout, striker and tank: js/facilityspawn.js)
 // ─────────────────────────────────────────────────────────
 // reactionSpeed: frames before a hit predator retaliates (lower = faster)
 // abdomenAttack: fires ranged shots from the rear; won't turn when hit from behind
@@ -92,8 +88,7 @@ const SPECIES = {
         tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, dnaDrops:2, shardDrop:8,  reactionSpeed:22 },
         boss:    { width:26, height:12, moveSpeed:0.008, health:500, power:60, dnaDrops:4, shardDrop:20, reactionSpeed:8  }
     },
-    // THE HAULER: three times an ant's health and about two thirds of its bite.
-    // Its job is carrying charged mass to its wall nest (js/broods.js).
+    // THE BEETLE: three times an ant's health and about two thirds of its bite.
     beetle: {
         rank: 2,
         color: "#cc44ff",
@@ -152,12 +147,7 @@ const SPECIES = {
     }
 };
 
-// Legacy pools + types kept for Predator class compatibility
-const PREDATOR_POOLS = {
-    1: ["scout"],
-    2: ["scout","striker"],
-    3: ["scout","striker","tank"]
-};
+// The classes' plain numbers, by class (js/predator.js reads a speed from them when a creature has no def of its own).
 const PREDATOR_TYPES = {
     nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:9,  color:"#aa55ff", reactionSpeed:15 },
     scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, color:"#aa55ff", reactionSpeed:5  },
@@ -167,46 +157,8 @@ const PREDATOR_TYPES = {
     // Spider uses SPECIES lookup directly — no legacy entry needed
 };
 
-// Get species for a given zone — purely zone-based, independent of night number.
-// Zone 1–6: natural species (ant→beetle→scorpion→mantis→moth→spider).
-// Zone 7+:  synthetic deep-zone constructs from predator_randomizer.js.
-function getZoneSpecies(zoneIndex, nightNumber) {
-    const speciesOrder = ["ant","beetle","scorpion","mantis","moth","spider"];
-    if (zoneIndex <= speciesOrder.length) {
-        const rank = Math.max(1, Math.min(zoneIndex, speciesOrder.length));
-        const baseSpecies = speciesOrder[rank - 1];
-        // 15% chance to spawn one tier lower (never below ant)
-        if (rank > 1 && Math.random() < 0.15) return speciesOrder[rank - 2];
-        return baseSpecies;
-    }
-    // Zones 7+ use synthetic chimera species defined in predator_randomizer.js
-    return getSyntheticZoneSpecies(zoneIndex);
-}
-
-// Get class for a zone — scales with nightNumber so individual predators
-// grow stronger over time even when the player re-farms the same zone.
-// Night tier 0 (N1-5): nymphs/scouts dominant.
-// Night tier 1 (N6-10): scouts/strikers dominant.
-// Night tier 2 (N11-15): strikers/tanks dominant.
-// Night tier 3 (N16+): mostly tanks, rarer nymphs.
-// A damaged enemy pylon pulls a worker into that zone, so the player sees
-// repair crews arrive as a consequence of their own attacks rather than at
-// random. Capped at two per zone so a contested zone cannot flood with them.
-function zoneNeedsWorker(zoneIndex) {
-    if (typeof zonePredators === 'undefined' || typeof world === 'undefined') return false;
-    const live = (zonePredators[zoneIndex] || []).filter(p => !p.dead && p.className === 'worker').length;
-    if (live >= 2) return false;
-    const zStart = zoneIndex * ZONE_LENGTH, zEnd = zStart + ZONE_LENGTH;
-    for (const t of world) {
-        if (!t.pillar || t.pillarTeam !== 'red') continue;
-        if (t.x < zStart || t.x >= zEnd) continue;
-        if (t.destroyed || t.health < t.maxHealth) return true;
-    }
-    return false;
-}
-
-// Synthetic deep-zone constructs define no worker block, so derive one from
-// their scout rather than letting speciesDef[className] come back undefined.
+// A species' class block; a species with no block for a class (every natural species has all six, but a table
+// entry can be partial) gets one derived from its scout rather than letting speciesDef[className] come back undefined.
 function getClassDef(speciesDef, className) {
     if (speciesDef && speciesDef[className]) return speciesDef[className];
     if (!speciesDef) return null;
@@ -223,50 +175,6 @@ function getClassDef(speciesDef, className) {
         reactionSpeed: 25,
         abdomenAttack: false, rangeDamage: 0,
     };
-}
-
-function getZoneClass(zoneIndex) {
-    const n    = gameState.nightNumber;
-    const roll = Math.random();
-
-    // Workers are pulled in by damage, with a small ambient trickle besides.
-    // This uses its own roll — reusing `roll` would consume the same 0.08 band
-    // the front-zone boss check below depends on, and bosses would stop spawning.
-    // Zone 1 is plain attackers: no repair crews, no bosses, just bites.
-    if (zoneIndex === 1) return roll < 0.55 ? "scout" : roll < 0.85 ? "striker" : "tank";
-    if (zoneNeedsWorker(zoneIndex)) return "worker";
-    if (Math.random() < 0.08) return "worker";
-    const isFront = zoneIndex >= activeDayZones - 1;
-    const tier = Math.min(3, Math.floor((n - 1) / 5)); // 0→1→2→3
-
-    // Probability ceilings [nymph, scout, striker] per tier
-    // Front zone gets harder classes and rare boss
-    const frontT = [
-        [0.20, 0.46, 0.73], // tier 0
-        [0.12, 0.38, 0.70], // tier 1
-        [0.05, 0.26, 0.64], // tier 2
-        [0.02, 0.16, 0.56], // tier 3
-    ];
-    const backT = [
-        [0.15, 0.55, 0.85], // tier 0
-        [0.08, 0.40, 0.78], // tier 1
-        [0.03, 0.26, 0.70], // tier 2
-        [0.01, 0.14, 0.60], // tier 3
-    ];
-
-    if (isFront) {
-        if (roll < 0.08) return "boss";
-        const t = frontT[tier];
-        if (roll < t[0]) return "nymph";
-        if (roll < t[1]) return "scout";
-        if (roll < t[2]) return "striker";
-        return "tank";
-    }
-    const t = backT[tier];
-    if (roll < t[0]) return "nymph";
-    if (roll < t[1]) return "scout";
-    if (roll < t[2]) return "striker";
-    return "tank";
 }
 
 // ── Clone cost table ─────────────────────────────────────
@@ -294,14 +202,6 @@ const CLONE_COSTS = {
     scorpion: { shards:10, splicesNeeded:8  },
     spider:   { shards:12, splicesNeeded:10 },
     moth:     { shards:14, splicesNeeded:12 },
-    // Synthetic deep-zone constructs — cloning not normally available but
-    // entries prevent crashes if DNA of an unknown species is ever queried
-    "XV-09":  { shards:15, splicesNeeded:20 },
-    "RS-a4":  { shards:16, splicesNeeded:25 },
-    "HG-b2":  { shards:17, splicesNeeded:30 },
-    "NX-w7":  { shards:18, splicesNeeded:36 },
-    "AB-p3":  { shards:19, splicesNeeded:42 },
-    "QX-z1":  { shards:20, splicesNeeded:50 }
 };
 
 // The one place the price is decided. An unknown species costs the maximum

@@ -1,30 +1,13 @@
 // ─────────────────────────────────────────────────────────
-//  THE FACILITY'S SAVE, AND WHICH GAME THE PAGE OPENS (docs/TUTORIAL.md, "Saving, and the two games")
+//  THE FACILITY'S SAVE (docs/TUTORIAL.md, "Saving")
 // ─────────────────────────────────────────────────────────
-// The page opens the FACILITY (the pre-made map and its tutorial) by default; the old strip game is the CLASSIC GAME, one chip away (and `?classic` in the address). The choice is remembered
-// (localStorage "conduit_mode"). The two games do not share a save: the classic game keeps its own keys ("tubecrawler_*"), which the facility never writes (js/facilityplay.js _fpNoStorage lets only
-// the keys below through), and the facility keeps one key of its own, "conduit_fp_save".
+// The facility is the game: the page opens it, and it keeps one key, "conduit_fp_save". (The old strip game, its CLASSIC GAME chip and its "tubecrawler_*" keys are gone.)
 //
 // WHAT IS SAVED: the class and its perks, the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
-// (the director's step and what it has already said), the followers (the strip's own roster record: level, XP, evolution, traits), the Crystal's health and where the player stands.
+// (the director's step and what it has already said), the followers (the roster record: level, XP, evolution, traits), the Crystal's health and where the player stands.
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
 // It is written every few seconds while the game is running, and when the page is hidden or closed. NEW GAME (a chip, with a confirmation) throws it away and starts again.
-const FS = { key: "conduit_fp_save", mode: "conduit_mode", version: 1, every: 180 };
-
-function _fsSearch() { return typeof window !== "undefined" && window.location ? window.location.search || "" : ""; }
-// which game the page opens: "facility" (the default) or "classic"
-function facilityMode() {
-    if (typeof attractOn === "function" && attractOn()) return "facility";   // (the website's background: js/attract.js)
-    if (/[?&]classic\b/.test(_fsSearch())) return "classic";
-    if (/[?&]facilityplay\b/.test(_fsSearch())) return "facility";
-    try { return typeof localStorage !== "undefined" && localStorage.getItem(FS.mode) === "classic" ? "classic" : "facility"; } catch (e) { return "facility"; }
-}
-function facilityModeSet(m) { try { localStorage.setItem(FS.mode, m === "classic" ? "classic" : "facility"); } catch (e) {} }
-// a switch of game is a reload (each game is a whole page's worth of state); the address loses `?classic` / `?facilityplay` so the saved choice rules
-function facilitySwitchGame(m) {
-    facilityModeSet(m); if (_fp) _fp.saveReady = false;
-    try { const u = new URL(window.location.href); u.searchParams.delete("classic"); u.searchParams.delete("facilityplay"); window.location.href = u.toString(); } catch (e) { try { location.reload(); } catch (e2) {} }
-}
+const FS = { key: "conduit_fp_save", version: 1, every: 180 };
 
 function facilitySaveLoad() {
     if (typeof attractOn === "function" && attractOn()) return null;   // (the background starts a fresh facility and keeps nothing)
@@ -38,7 +21,8 @@ function facilitySaveCollect() {
         taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp).map(i => i.id),
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
         script: S ? { step: S.step, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays } : null,
-        followers: typeof followerRosterSnapshot === "function" ? followerRosterSnapshot() : [],
+        followers: followerRosterSnapshot(),
+        dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
@@ -55,8 +39,11 @@ function facilitySaveTick() {
     _fp.saveAt = f; facilitySaveWrite();
 }
 function facilitySaveClear() { try { localStorage.removeItem(FS.key); } catch (e) {} if (_fp) { _fp.saveReady = false; _fp.saveLast = null; } }
-// NEW GAME: throw the save away and open a fresh facility
-function facilityNewGame() { facilitySaveClear(); facilitySwitchGame("facility"); }
+// NEW GAME: throw the save away and open a fresh facility (a reload: a game is a whole page's worth of state; a stale `?facilityplay` or `?classic` in the address is dropped on the way)
+function facilityNewGame() {
+    facilitySaveClear(); if (_fp) _fp.saveReady = false;
+    try { const u = new URL(window.location.href); u.searchParams.delete("classic"); u.searchParams.delete("facilityplay"); window.location.href = u.toString(); } catch (e) { try { location.reload(); } catch (e2) {} }
+}
 
 // put a saved game back, once the facility is built and its tutorial begun (js/facilityplay.js facilityPlayStart; the followers are spawned there from the same record)
 function facilitySaveApply(d) {
@@ -81,13 +68,52 @@ function facilitySaveApply(d) {
         if (S.doneAt && !playerClassKey && typeof classPickerOpen !== "undefined") classPickerOpen = true;   // (the picker was open when it was left)
     }
     if (d.spots && typeof followerSpotsApply === "function") followerSpotsApply(d.spots);
+    if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
     // where the player stood (if that is still floor), and the followers with them
     const at = d.at; if (at && Number.isFinite(at[0]) && Number.isFinite(at[1]) && facilityStandOk(at[0], at[1])) { player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null; }
     for (const f of followers) { f.x = player.x + (Math.random() - 0.5) * 1.2; f.y = player.y + (Math.random() - 0.5) * 1.2; f.returningToCrystal = false; }
     if (typeof partyPlacePosted === "function") partyPlacePosted();   // the followers that held rooms are in them again (js/party.js)
-    if (typeof updateObjectiveUI === "function") updateObjectiveUI();
     return true;
+}
+// ── THE FOLLOWERS' RECORD: what the save keeps of each (and a dead one waiting to come back), and a follower made from it again ──
+function followerRosterSnapshot() {
+    const armyNow = [
+        ...followers.filter(a => !a.dead && !a.sacrificed && a.isFollower && a.personality),
+        ...actors.filter(a => a.team === "green" && a.returningToCrystal && !a.dead && !a.sacrificed && a.personality && !followers.includes(a)),
+        ...respawnQueue.filter(e => !e.isClone && !e.sacrificed && e.personality)
+    ];
+    return armyNow.map(a => ({
+        element: a.element || "fire", personality: a.personality, combatTrait: a.combatTrait, naturalTrait: a.naturalTrait, perk: a.perk, stats: a.stats, role: a.role,
+        uid: a.uid || null, partnerUid: a.partnerUid || null,   // its bond (js/bonds.js)
+        base: a.base || undefined, level: a.level, xp: a.xp,   // its level (js/levels.js); one waiting to respawn carries its own
+        evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined,   // js/evolution.js
+        playStyle: a.playStyle || undefined,   // js/commandcenter.js
+        post: a.post || undefined,             // the room it holds (js/party.js)
+        move: a.move || undefined              // the signature move it was given (js/moves.js)
+    }));
+}
+function spawnFollowerFromSave(entry) {
+    const personality = entry.personality || PERSONALITY_KEYS[Math.floor(Math.random() * PERSONALITY_KEYS.length)];
+    const stats = entry.stats || applyPersonality(personality);
+    const role = entry.role || assignRole(stats);
+    const npc = {
+        type: "virus", element: entry.element || "fire", x: crystal.x + (Math.random() - 0.5) * 2, y: crystal.y + (Math.random() - 0.5) * 2, team: "green",
+        health: (stats.hp || 10), maxHealth: (stats.hp || 10), moveSpeed: NPC_TYPES["virus"].moveSpeed + ((stats.speed || 10) - 10) * 0.001, power: (stats.attack || 5),
+        stats, personality, role, currentResonance: 0, currentWill: stats.will || 20, walkCycle: 0, moveCooldown: 0, stance: "follow", isFollower: true, isHealing: false, hitFlash: 0, dead: false,
+        combatTrait: entry.combatTrait, naturalTrait: entry.naturalTrait, perk: entry.perk
+    };
+    if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
+    if (entry.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[entry.evolved]) npc.evolved = entry.evolved;   // (set before its level, so the evolved stats apply)
+    if (entry.evoWait && !npc.evolved) npc._evoOnLevelUp = true;
+    if (entry.move) npc.move = entry.move;
+    if (entry.playStyle) npc.playStyle = entry.playStyle;
+    if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
+    if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }
+    actors.push(npc); followers.push(npc);
+    if (!followerByElement[npc.element]) followerByElement[npc.element] = [];
+    followerByElement[npc.element].push(npc);
+    if (typeof partyAdmit === "function") partyAdmit(npc);   // (more than the squad's three come back posted where they are)
 }
 function classPicker_off() { if (typeof classPickerOpen !== "undefined") classPickerOpen = false; }
 

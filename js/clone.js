@@ -3,6 +3,14 @@
 // ─────────────────────────────────────────────────────────
 let cloneMenuOpen = false;
 
+// ── DNA: the splices a kill drops (js/drops.js), what a clone costs besides crystals. Kept in memory, and in the facility's save (js/facilitysave.js). ──
+let dnaInventory = {};
+function getDNA() { return dnaInventory; }
+function addDNA(key, amount) { dnaInventory[key] = (dnaInventory[key] || 0) + amount; }
+function deductDNA(key, amount) { dnaInventory[key] = Math.max(0, (dnaInventory[key] || 0) - amount); }
+function clearDNA() { dnaInventory = {}; }
+function dnaApply(obj) { dnaInventory = {}; for (const k of Object.keys(obj || {})) { const n = Number(obj[k]); if (Number.isFinite(n) && n > 0) dnaInventory[k] = Math.round(n); } }
+
 function openCloneMenu() {
     cloneMenuOpen = true;
     drawCloneMenu();
@@ -58,10 +66,7 @@ function cloneBlockedLabel(option) {
     return "—";
 }
 
-// Free a slot. Clones persist across waves — waves.js rebuilds cloneArmy at the
-// start of each one — so four of them stayed out for the rest of the game and
-// the cap sat permanently full with no way to clear it. There was no dismiss
-// anywhere in the game.
+// Free a slot: the oldest clone is dismissed (the cap would otherwise sit full for the rest of the game, with no way to clear it).
 function dismissOldestClone() {
     const live = actors.filter(a => a.isClone && !a.dead);
     if (live.length === 0) return false;
@@ -75,13 +80,10 @@ function dismissOldestClone() {
 }
 
 // ── BUILDING A CLONE ─────────────────────────────────────
-// THE one place a clone is made. There were three — the summon, the respawn
-// and the between-waves restore — and only the summon applied the 3x power
-// multiplier, so a clone that died once came back an ordinary predator for the
-// rest of the game. Every rule about what a clone IS lives here.
+// THE one place a clone is made: the summon, a respawn and a reload all come through it, so every rule about what a clone IS lives here. It is its species' class numbers
+// times CLONE_HEALTH_MULT and CLONE_POWER_MULT (js/config.js), on your side, with its species' body, at the level of what it will fight unless it comes back with its own.
 function makeClone(speciesName, className, x, y, state, lv) {
-    const speciesDef = (typeof SPECIES !== "undefined" && SPECIES[speciesName]) ||
-                       (typeof SYNTHETIC_SPECIES !== "undefined" ? SYNTHETIC_SPECIES[speciesName] : null);
+    const speciesDef = typeof SPECIES !== "undefined" ? SPECIES[speciesName] : null;
     if (!speciesDef) return null;
     const classDef = typeof getClassDef === "function"
         ? getClassDef(speciesDef, className)
@@ -92,9 +94,9 @@ function makeClone(speciesName, className, x, y, state, lv) {
         width:     classDef.width,
         height:    classDef.height,
         moveSpeed: classDef.moveSpeed,
-        // Tripled on the way in, so health AND maxHealth carry it — the
+        // Multiplied on the way in, so health AND maxHealth carry it — the
         // constructor sets both from def.health, and a clone patched after
-        // construction would show a full bar at a third of the length.
+        // construction would show a full bar at a quarter of the length.
         health:    classDef.health * CLONE_HEALTH_MULT,
         power:     classDef.power,
         color:     speciesDef.color
@@ -108,20 +110,12 @@ function makeClone(speciesName, className, x, y, state, lv) {
     clone.power       = Math.round(clone.power * CLONE_POWER_MULT);
     clone.speciesName = speciesName;
     clone.className   = className;
-    // ITS LEVEL (js/levels.js). A new clone comes out at the level of what it
-    // will fight — the frontier's predators — and then grows by its own kills;
+    // ITS LEVEL (js/levels.js). A new clone comes out at the level of the arena's creatures (creatureLevel) and then grows by its own kills;
     // a clone that respawns, or comes back from a save, keeps its own (lv).
     if (typeof setPredatorLevel === "function") {
-        const L = lv && Number.isFinite(lv.level) ? lv.level
-                : (typeof predatorLevelFor === "function" && typeof nextZoneToTake === "function" ? predatorLevelFor(nextZoneToTake(), undefined, false) : 5);
+        const L = lv && Number.isFinite(lv.level) ? lv.level : (typeof creatureLevel === "function" ? creatureLevel() : LEVEL_START);
         setPredatorLevel(clone, L, true);
         clone.xp = lv && Number.isFinite(lv.xp) ? Math.max(xpForLevel(clone.level), lv.xp) : xpForLevel(clone.level);
-    } else if (typeof rampLevel === "function" && typeof nextZoneToTake === "function") {
-        const z = nextZoneToTake(), r = rampLevel(z);
-        const deep = typeof deepZoneScale === "function" ? deepZoneScale(z) : { hp: 1, power: 1 };
-        const kH = (1 + RAMP_HP * r) * deep.hp, kP = (1 + RAMP_POWER * r) * deep.power;
-        clone.maxHealth = Math.round(clone.maxHealth * kH); clone.health = clone.maxHealth;
-        clone.power = Math.round(clone.power * kP);
     }
     if (typeof applySpeciesBody === "function") applySpeciesBody(clone, speciesName);
     actors.push(clone);
@@ -152,7 +146,6 @@ function executeClone(option) {
     // them at the Crystal, which is why nobody used it.
     deductDNA(option.key, option.needed);
     shardCount -= cost;
-    if (typeof saveShards === "function") saveShards();
 
     // Spawn clone at crystal. "hunt", because one you just paid for should go
     // and do something rather than wander off.
@@ -271,12 +264,6 @@ function _clonesTabTap(ex, ey, PX) {
 }
 
 function applySpeciesBody(predator, speciesName) {
-    // Synthetic species — delegate visual body to the base template they were modded from
-    if (SYNTHETIC_SPECIES && SYNTHETIC_SPECIES[speciesName]) {
-        applySpeciesBody(predator, SYNTHETIC_SPECIES[speciesName].bodyStyle);
-        return;
-    }
-
     // Nymph — tiny, translucent, soft rounded
     if (predator.className === "nymph") {
         predator.isNymph = true;
@@ -436,54 +423,21 @@ function spawnFollowerProjectile(actor, target, color, damage, radius, onHit) {
     });
 }
 
-// Where a zone's predators come out: the NEST IN ITS BACK WALL, and nothing
-// else. A nest counts while it still has health, so killing it is what shuts
-// the zone's mouth.
-//
-// There used to be a second one — a vortex in the floor at zone x-offset 3,
-// open until captured. "I want the portals on the wall to be the nests. I don't
-// want the holes on the ground or the floor any more", so the floor vortex is
-// gone and the wall is the only way in.
-//
-// Returns an empty list when a zone HAS a nest and it is dead. A zone with no
-// nest at all returns null instead, so the caller can tell "nothing left to
-// shut" from "nothing was ever there" — the second still spawns from the zone
-// centre, as it always did.
-// While the spawn loop runs (render sets _spawnMouths to { built: false }),
-// the first call answers EVERY zone in the same pass and the rest read it: the
-// loop asks once per zone per frame, and each ask was a scan of the world.
-let _spawnMouths = null;
-function zoneSpawnPoints(zoneIndex) {
-    const all = typeof _spawnMouths !== 'undefined' ? _spawnMouths : null;
-    if (all && all.built) return all.map.has(zoneIndex) ? all.map.get(zoneIndex) : null;
-    const map = all ? new Map() : null;
-    let any = false;
-    const open = [];
-    for (const t of world) {
-        // The home portal is not a mouth. It never produced anything — the
-        // spawn loop starts at zone 1 — but it answered as one here, so
-        // anything that ever counted from zero would have poured predators out
-        // of the player's own doorway.
-        if (t.nest && !(typeof isHomePortal === 'function' && isHomePortal(t))) {
-            if (map) { let l = map.get(t.nestZone); if (!l) { l = []; map.set(t.nestZone, l); } if (t.nestHealth > 0) l.push(t); }
-            if (t.nestZone === zoneIndex) { any = true; if (t.nestHealth > 0) open.push(t); }
-        }
-    }
-    if (map) { all.map = map; all.built = true; }
-    return any ? open : null;
-}
-
-function spawnPredatorForZone(zoneIndex, opts) {
+// ─────────────────────────────────────────────────────────
+//  MAKING A CREATURE
+// ─────────────────────────────────────────────────────────
+// THE one place a hostile creature is made: the arena's spawner (js/facilityspawn.js) and the tutorial's assault (js/tutorial.js) both come through it, saying what they want.
+//   opts.species, opts.className   what it is (js/species.js SPECIES; a species or class the table does not have makes nothing)
+//   opts.x, opts.y                  where (tiles); the Crystal's tile when none is given (the callers move it afterwards)
+//   opts.level                      its level (js/levels.js setPredatorLevel); the arena's (creatureLevel) when none is given
+//   opts.state                      "wander" or "hunt"; by default it hunts while an alarm is up and wanders otherwise
+// It is its class's numbers, its species' body (applySpeciesBody), its charge-up special (js/abilities.js initAbility), and it is worth its class's crystals and DNA
+// when it dies (js/drops.js onPredatorDeath: a kill pays on the spot).
+function spawnCreature(opts) {
     opts = opts || {};
-    // THE WAVE LADDER (js/broods.js): the wave decides what comes out, in every
-    // zone — nymphs first, then ants, beetles and up. (A Swarm Tide night's
-    // nymphs are in the pick too.) A pair partner copies its first.
-    const _pick = opts.species ? { species: opts.species, className: opts.className, rare: false }
-                : ladderPick(gameState.nightNumber, zoneIndex);
-    const speciesName = _pick.species;
-    const className   = opts.className || _pick.className;
-    // Natural species live in SPECIES; synthetic deep-zone constructs live in SYNTHETIC_SPECIES
-    const speciesDef  = SPECIES[speciesName] || SYNTHETIC_SPECIES[speciesName];
+    const speciesName = opts.species, className = opts.className || "scout";
+    const speciesDef  = typeof SPECIES !== "undefined" ? SPECIES[speciesName] : null;
+    if (!speciesDef || !(speciesDef[className] || className === "worker")) return null;   // (a worker block is derived from the scout's when a species has none: getClassDef)
     const classDef    = getClassDef(speciesDef, className);
 
     const def = {
@@ -498,73 +452,19 @@ function spawnPredatorForZone(zoneIndex, opts) {
         rangeDamage:     classDef.rangeDamage     ?? 0,
         abdomenCooldown: classDef.abdomenCooldown ?? 90
     };
-
-    // Elite randomization: later zones spawn increasingly powerful mutant variants
-    const _eliteInstMuts = maybeApplyEliteDef(def, zoneIndex);
-
-    // Out of the zone's wall nest while it is alive. With none, the zone centre,
-    // as before.
-    const mouths = zoneSpawnPoints(zoneIndex);
-    const from   = (mouths && mouths.length)
-        ? mouths[Math.floor(Math.random() * mouths.length)]
-        : null;
-    const spawnX = from ? from.x : zoneIndex * ZONE_LENGTH + Math.floor(ZONE_LENGTH / 2);
-    const spawnY = from ? from.y : 2;
-
-    const predator = new Predator(className, def, spawnX, spawnY);
-    const isAlarmZone = alertActive && (alertType === "facility" || zoneIndex === alertZone);
-    // Predators from zones higher than the alarm zone are always wanderers — they don't aggro on alarm
-    const isHigherZone = alertActive && alertZone !== null && zoneIndex > alertZone;
-    predator.state        = (isAlarmZone && !isHigherZone) ? "hunt" : "wander";
-    predator.isWanderer   = alertActive && (!isAlarmZone || isHigherZone);
+    const x = Number.isFinite(opts.x) ? opts.x : crystal.x, y = Number.isFinite(opts.y) ? opts.y : crystal.y;
+    const predator = new Predator(className, def, x, y);
+    predator.state        = opts.state || (alertActive ? "hunt" : "wander");
     predator.speciesName  = speciesName;
     predator.className    = className;
     predator.dnaDrops     = classDef.dnaDrops;
     predator.shardDrop    = classDef.shardDrop;
-    predator.homeZone     = zoneIndex;
-    // Apply species-specific body shaping
-    applySpeciesBody(predator, speciesName);
-    // Finalize elite mutations (must run after applySpeciesBody)
-    if (_eliteInstMuts !== null) applyEliteInstance(predator, _eliteInstMuts, def);
-    // THE DEEP ZONES (13+): tougher, harder-hitting, bigger and richer with
-    // every zone, without end (deepZoneScale in config.js). After the body
-    // shaping, which would otherwise reset the size.
-    if (typeof applyZoneDifficulty === "function") applyZoneDifficulty(predator, zoneIndex);
-
-    // Capture the final speed after every mutation, so slows scale from the
-    // real base rather than from whatever the AI last parked moveSpeed at.
+    applySpeciesBody(predator, speciesName);   // its species' body (after this, which sets its size)
+    if (typeof setPredatorLevel === "function") setPredatorLevel(predator, Number.isFinite(opts.level) ? opts.level : (typeof creatureLevel === "function" ? creatureLevel() : LEVEL_START), true);
+    // Its final speed, so slows scale from the real base rather than from whatever the AI last parked moveSpeed at.
     predator.baseMoveSpeed = predator.moveSpeed;
-    // SWARM TIDE: more of them, half the health.
-    if (typeof siegeIs === "function" && siegeIs("swarm")) {
-        predator.maxHealth = Math.max(1, Math.round(predator.maxHealth * SIEGE_SWARM_HP));
-        predator.health = Math.min(predator.health, predator.maxHealth);
-    }
-    // Resolve the charge-up special now that species and class are both known.
-    initAbility(predator);
-    // What its species does (js/broods.js): ants plain attackers, beetles haulers.
-    if (typeof applyLadderRole === "function") applyLadderRole(predator);
-    // HUNTER'S MOON (a siege night): every one of them is after your pylons —
-    // set after the zone role, which decides hunting for ordinary nights.
-    if (typeof siegeIs === "function" && siegeIs("hunt")) predator.huntsPylons = true;
-    if (opts.swarmChild) predator._swarmChild = true;
-    // Its own gardening pace, so a batch of spawns does not later finish
-    // converting a batch of pylons on the same frame. Read at call time —
-    // infest.js loads after this file.
-    if (typeof rollInfestSettle === "function") rollInfestSettle(predator);
-
+    initAbility(predator);   // the charge-up special, now that species and class are both known
     actors.push(predator);
-    if (!zonePredators[zoneIndex]) zonePredators[zoneIndex] = [];
-    zonePredators[zoneIndex].push(predator);
-    // The new tier comes as a PAIR (LADDER_RARE_PAIR): the rest of it beside it.
-    if (_pick.rare && !opts.pairChild) {
-        for (let i = 1; i < LADDER_RARE_PAIR; i++) {
-            if (typeof predatorBudgetFull === "function" && predatorBudgetFull()) break;
-            const q = spawnPredatorForZone(zoneIndex, { species: speciesName, className, pairChild: true });
-            if (!q) break;
-            q.x = predator.x + (Math.random() - 0.5) * 1.2;
-            q.y = Math.max(0, Math.min(3, predator.y + (Math.random() - 0.5) * 1.2));
-        }
-    }
     return predator;
 }
 
@@ -658,7 +558,7 @@ function recruitDrawType() { return FOLLOWER_TYPE_ORDER[Math.floor(Math.random()
 // `type`, `element`: for a test or a scripted recruit; none is a draw.
 function recruitFollower(type, element) {
     if (shardCount < RECRUIT_COST) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + RECRUIT_COST + " SHARDS", color: "#f44", life: 90, vy: -0.2 }); return false; }
-    shardCount -= RECRUIT_COST; saveShards();
+    shardCount -= RECRUIT_COST;
     const t = FOLLOWER_TYPES[type] ? type : recruitDrawType(), e = element && unlockedElements.has(element) ? element : modulationPick() || "fire";
     spawnFollowerAtCrystal(e, t);
     const def = ELEMENTS.find(x => x.id === e);
@@ -673,7 +573,7 @@ function recruitDo() {
     return ok;
 }
 
-// What new followers draw their element from: everything brought online (an unlock earned at a cleared wave and chosen at the Crystal, js/wavedata.js). There is no mix to narrow any more.
+// What new followers draw their element from: every element that is online, which is all six from the start (js/facilityplay.js). There is no mix to narrow.
 function recruitElementPool() {
     return ELEMENTS.filter(e => unlockedElements.has(e.id)).map(e => e.id);
 }
@@ -835,9 +735,26 @@ function _drawCloneCard(opt, x, y, w, h, listX, listW, listY, listH) {
     }
 }
 
-// Every element still locked, in the ladder's order: what an earned unlock can be spent on (js/wavedata.js activatePendingElement).
-function _modChoices() {
-    const order = typeof ELEMENT_LADDER !== "undefined" ? ELEMENT_LADDER : ELEMENTS.map(e => e.id);
-    return order.filter(id => !unlockedElements.has(id) && ELEMENTS.some(e => e.id === id));
+// ── GAME INDEX — CLONE SUMMONING (the ? index's clone page, kept for the clones to come) ──
+// Generated from CLONE_COSTS and cloneShardCost() in js/species.js, so the table cannot drift from the prices.
+function renderCloneCostIndex() {
+    if (typeof document === 'undefined') return;
+    const host = document.getElementById('cmCloneCosts');
+    if (!host) return;
+    if (typeof CLONE_COSTS === 'undefined' || typeof cloneShardCost !== 'function') return;
+    const lo = typeof CLONE_SHARD_MIN === 'number' ? CLONE_SHARD_MIN : 5;
+    const hi = typeof CLONE_SHARD_MAX === 'number' ? CLONE_SHARD_MAX : 25;
+    const cap = typeof MAX_CLONES === 'number' ? MAX_CLONES : 4;
+    const natural = ['ant', 'beetle', 'mantis', 'scorpion', 'spider', 'moth'].filter(s => CLONE_COSTS[s]);
+    const classes = ['scout', 'striker', 'tank'];   // the classes the bay offers (getCloneOptions)
+    let rows = '<tr><th>Species</th><th>DNA needed</th>' + classes.map(c => '<th>' + c[0].toUpperCase() + c.slice(1) + '</th>').join('') + '</tr>';
+    for (const s of natural) {
+        const col = (typeof SPECIES !== 'undefined' && SPECIES[s] && SPECIES[s].color) || '#aaa';
+        rows += '<tr><td style="color:' + col + '">' + s[0].toUpperCase() + s.slice(1) + '</td><td>' + CLONE_COSTS[s].splicesNeeded + ' splices</td>' + classes.map(c => '<td>' + cloneShardCost(s, c) + '\u25c6</td>').join('') + '</tr>';
+    }
+    host.innerHTML =
+        '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> (a creature you kill drops them) and <strong>crystals</strong> to summon a creature\'s species as your ally. ' +
+        'Up to <span class="cm-stat">' + cap + ' clones</span> at once.</div>' +
+        '<table class="cm-clone-table">' + rows + '</table>' +
+        '<div class="ctrl-row cm-dim">Prices run from <span class="cm-stat">' + lo + '\u25c6</span> for the lowest grade to <span class="cm-stat">' + hi + '\u25c6</span>.</div>';
 }
-

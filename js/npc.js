@@ -3,16 +3,29 @@
 // ─────────────────────────────────────────────────────────
 // One step toward (dx, dy) at the unit's speed, WALKING: the legs are drawn
 // from walkCycle and it faces the way it goes. These moves (home to the
-// Crystal, a recruit to a pylon to heal, out to a POSITION, onto a capture
-// node, over to a pylon to heal) return before the shared walk-cycle block
-// below, and changed x and y and nothing else — the unit glided on still legs.
+// Crystal, out to a POSITION, a room's round) return before the shared
+// walk-cycle block below, and changed x and y and nothing else — the unit
+// glided on still legs.
 function _walkStep(actor, dx, dy, dist, pace) {   // pace: a share of its speed (a posted follower's round is a stroll), 1 when not given
-    if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, actor.x + dx, actor.y + dy), sx = w[0] - actor.x, sy = w[1] - actor.y, sd = Math.hypot(sx, sy); if (sd > 1e-6) { dx = sx; dy = sy; dist = sd; } }   // round the facility's walls
+    { const w = facilitySteer(actor, actor.x + dx, actor.y + dy), sx = w[0] - actor.x, sy = w[1] - actor.y, sd = Math.hypot(sx, sy); if (sd > 1e-6) { dx = sx; dy = sy; dist = sd; } }   // round the facility's walls
     const k = pace || 1;
     actor.x += (dx / dist) * actor.moveSpeed * k; actor.y += (dy / dist) * actor.moveSpeed * k;
     actor.walkCycle = (actor.walkCycle || 0) + actor.moveSpeed * 40 * k;
     actor.dirX = dx / dist; actor.dirY = dy / dist;
     actor.lastX = actor.x; actor.lastY = actor.y;
+}
+
+// A step toward (tx, ty) at the unit's speed (times speedMult), round the facility's walls; returns how far away it still was.
+function _moveToward(actor, tx, ty, speedMult) {
+    { const w = facilitySteer(actor, tx, ty); tx = w[0]; ty = w[1]; }   // round the facility's walls (js/facilityplay.js)
+    const dx = tx - actor.x, dy = ty - actor.y;
+    const d  = Math.hypot(dx, dy);
+    if (d < 1e-6) return 0;
+    const sp = (actor.moveSpeed || 0.02) * (speedMult || 1);
+    actor.x += (dx / d) * sp;
+    actor.y += (dy / d) * sp;
+    actor.walkCycle = (actor.walkCycle || 0) + sp * 40;
+    return d;
 }
 
 function updateRTSNPC(actor) {
@@ -24,14 +37,6 @@ function updateRTSNPC(actor) {
         actor.attackAnim = (actor.attackAnim||0) + 0.18;
         if (actor.attackAnim >= Math.PI) { actor.attackAnim = 0; actor.state = "idle"; }
     }
-
-    // ── WORK CREW ──
-    // A follower on worker duty runs the charged-mass chain instead of fighting.
-    // An explicit order from the player still wins — followerWorkTick defers
-    // when actor.job is set.
-    if (actor.isFollower && actor.duty === "worker" && followerWorkTick(actor)) return;
-    // A toxic follower on the line mends a hurt clone beside it (js/mass.js).
-    if (actor.isFollower && actor.element === "toxic" && actor.duty !== "worker" && typeof toxicFighterMend === "function") toxicFighterMend(actor);
 
     if (actor.combatTrait) { const t=COMBAT_TRAITS[actor.combatTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
     if (actor.naturalTrait){ const t=NATURAL_TRAITS[actor.naturalTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
@@ -46,12 +51,9 @@ function updateRTSNPC(actor) {
         }
     }
 
-    // A clone on work duty does its species' job (js/clonework.js).
-    if (actor.isClone && actor.duty === "worker" && !actor.dead && typeof cloneWorkTick === "function" && cloneWorkTick(actor)) return;
-
     // A HOLD is a standing move order (stance "hold" + job "move"). When the job is dropped (it was hurt below half and went to heal, its target tile went, a new order
     // replaced it) the stance used to stay "hold" with nothing to hold: the unit stood there for good, ignoring COME and the player. No post, no hold.
-    if (actor.team==="green" && actor.stance==="hold" && !actor.job && !actor.hackOrder && !actor.siphonOrder && !actor.post) actor.stance="follow";   // (a post, js/party.js, is a hold with no job: it holds a room)
+    if (actor.team==="green" && actor.stance==="hold" && !actor.job && !actor.post) actor.stance="follow";   // (a post, js/party.js, is a hold with no job: it holds a room)
 
     // return to crystal
     if (!actor.dead&&actor.team==="green"&&actor.returningToCrystal) {
@@ -64,7 +66,7 @@ function updateRTSNPC(actor) {
             actor.isFollower = true;
             // Assign identity at crystal if not yet assigned
             if (!actor.personality) {
-                actor.personality = personalityForType(actor.wantType);   // (a re-roll asks for a type: js/mass.js; a find is a draw)
+                actor.personality = personalityForType(actor.wantType);   // (a re-roll asks for a type: js/helpers.js startFollowerReroll; a find is a draw)
                 actor.wantType    = null;
                 actor.stats       = applyPersonality(actor.personality);
                 actor.role        = assignRole(actor.stats);
@@ -78,20 +80,11 @@ function updateRTSNPC(actor) {
                 // virus, so the personality's speed did nothing.
                 actor.baseMoveSpeed = actor.moveSpeed; actor.slowed = 0; actor.slowFactor = 1;
             }
-            // Its LEVEL (js/levels.js): the level of the zone it was found in,
-            // a little behind that zone's predators.
-            if (!Number.isFinite(actor.level) && typeof initFollowerLevel === "function")
-                initFollowerLevel(actor, { level: recruitLevel(Number.isFinite(actor.spawnKey) && typeof getZoneIndex === "function" ? getZoneIndex(Math.floor(actor.spawnKey)) : undefined) });
-            // A follower that is made again keeps its element (js/mass.js startFollowerReroll); one that is found or recruited takes an even draw of the elements brought online (its element in the world is
-            // stale and irrelevant). The player does not choose it: the Crystal has no element mix to set. (A boss modulator still overrides it.)
-            if (actor.keepElement) {
-                actor.element = actor.keepElement; actor.keepElement = null;
-            } else if (activeCrystalModulation) {
-                actor.element = activeCrystalModulation.pair[Math.floor(Math.random()*activeCrystalModulation.pair.length)];
-            } else {
-                const pool = recruitElementPool();
-                actor.element = modulationPick() || pool[Math.floor(Math.random()*pool.length)] || "fire";   // an even draw (js/clone.js)
-            }
+            // Its LEVEL (js/levels.js recruitLevel): a little behind the arena's creatures.
+            if (!Number.isFinite(actor.level) && typeof initFollowerLevel === "function") initFollowerLevel(actor, { level: recruitLevel() });
+            // A follower that is made again keeps its element (js/helpers.js startFollowerReroll); one that is found or recruited takes an even draw of the six (its element in the world is stale and irrelevant).
+            if (actor.keepElement) { actor.element = actor.keepElement; actor.keepElement = null; }
+            else { const pool = [...unlockedElements]; actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire"; }
             if (!actor.combatTrait)  actor.combatTrait  = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)];
             if (!actor.naturalTrait) actor.naturalTrait = Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)];
             if (!actor.perk)         actor.perk         = Object.keys(PERKS)[Math.floor(Math.random()*2)];
@@ -106,149 +99,18 @@ function updateRTSNPC(actor) {
         return;
     }
 
-    // red healing
-    if (actor.team==="red"&&actor.health<actor.maxHealth*0.5) {
-        const pillar=findNearestFriendlyPillar(actor);
-        if (pillar) {
-            const dx=pillar.x-actor.x, dy=pillar.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>0.2) _walkStep(actor, dx, dy, dist);
-            return;
-        }
-    }
-
-    if (actor.disrupted>0) { actor.disrupted--; return; }
-    if (actor.frenzied>0) {
-        actor.frenzied--;
-        let nearest=null, bd=Infinity;
-        actors.forEach(other => {
-            if (other===actor) return;
-            const dx=other.x-actor.x, dy=other.y-actor.y, d=dx*dx+dy*dy;
-            if (d<bd) { bd=d; nearest=other; }
-        });
-        if (nearest) {
-            actor.x+=(nearest.x-actor.x)*actor.moveSpeed;
-            actor.y+=(nearest.y-actor.y)*actor.moveSpeed;
-        }
-        return;
-    }
-
-    // element job
-    if (actor.job&&actor.job.type==="elementJob") {
-        const t=actor.job.target;
-        actor.x+=(t.x-actor.x)*actor.moveSpeed; actor.y+=(t.y-actor.y)*actor.moveSpeed;
-        const dx=actor.x-t.x, dy=actor.y-t.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist<0.6) {
-            if (!actor.job.executed) { performElementJob(actor,t); actor.job.executed=true; actor.job.timer=45; }
-            actor.job.timer--;
-            if (actor.job.timer<=0) actor.job=null;
-        }
-        return;
-    }
-
-    // merge into pylon — walk over, disappear, pylon activates attack mode
-    if (actor.job&&actor.job.type==="merge_pylon") {
-        const p=actor.job.target;
-        if (!p||p.destroyed||!p.pendingUpgrade) { actor.job=null; return; }
-        const dx=p.x-actor.x, dy=p.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist>0.5) {
-            // Walk toward pylon
-            actor.x+=dx*actor.moveSpeed*2; actor.y+=dy*actor.moveSpeed*2;
-            actor.walkCycle+=actor.moveSpeed*40;
-        } else {
-            // Arrived — merge: absorb follower into pylon
-            p.attackMode = true;
-            p.attackModeElement = p.chosenElement || actor.element || "core";
-            const _chEl = PYLON_PICKER_TYPES.find(e=>e.id===p.attackModeElement);
-            p.attackModeColor = p.chosenColor || (_chEl ? _chEl.color : actor.color) || "#0f8";
-            // Neutral pylons carry no element, so the flag travels with the choice.
-            p.isGenerator = (p.attackModeElement === GENERATOR_ID);
-            if (p.isGenerator) { p.maxHealth = SHIELD_GEN_HP; p.health = p.maxHealth; }
-            p.isConnector = (p.attackModeElement === CONNECTOR_ID);
-            if (p.isConnector && p.circuitOn === undefined) p.circuitOn = true;
-            if (!p.isGenerator && !p.isConnector && isWaveKind(p.chosenKind)) { p.waveMode = true; p.attackMode = false; }
-            if (!p.isGenerator && !p.isConnector && p.chosenKind === "battery") { p.isBattery = true; p.attackMode = false; p.waveMode = false; }
-            p.chosenElement = null; p.chosenColor = null; p.chosenKind = null;
-            p.attackFireTimer = 0;
-            p.attackRange = TURRET_RANGE;
-            p.attackPower = (actor.stats?.specialAttack||10) * 1.2;
-            p.pendingUpgrade = false;
-            p.upgradeFollower = null;
-            p.pulseTimer = 0;
-            // Visual merge flash
-            for(let i=0;i<8;i++) shards.push({x:p.x,y:p.y,z:1+Math.random(),vz:-0.08-Math.random()*0.06,color:p.attackModeColor});
-            // Remove follower
-            actor.dead = true;
-            actor.sacrificed = true;
-            actor.job = null;
-            // Remove from followers array
-            const fi = followers.indexOf(actor);
-            if (fi >= 0) followers.splice(fi, 1);
-        }
-        return;
-    }
-
-    // build new pylon (build mode)
-    if (actor.job&&actor.job.type==="build_pylon") {
-        const p=actor.job.target;
-        if (!p||p.dead||!p.constructing) { actor.job=null; return; }
-        const dx=p.x-actor.x, dy=p.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist>0.5) {
-            actor.x+=dx*actor.moveSpeed*2; actor.y+=dy*actor.moveSpeed*2;
-            actor.walkCycle+=actor.moveSpeed*40;
-        } else {
-            p.constructProgress=(p.constructProgress||0)+1/actor.job.buildTime;
-            if (p.constructProgress>=1) {
-                p.constructing=false; p.constructProgress=1;
-                p.health=p.maxHealth;
-                // Activate the pylon with its chosen element now that construction is done
-                if (p.chosenElement) {
-                    p.attackMode=true; p.waveMode=false;
-                    p.attackModeElement=p.chosenElement;
-                    const _chEl=PYLON_PICKER_TYPES.find(e=>e.id===p.chosenElement);
-                    p.attackModeColor=p.chosenColor||(_chEl?_chEl.color:"#0f8");
-                    p.isGenerator=(p.chosenElement===GENERATOR_ID);
-                    if (p.isGenerator) { p.maxHealth = SHIELD_GEN_HP; p.health = p.maxHealth; }
-                    p.isConnector=(p.chosenElement===CONNECTOR_ID);
-                    if (p.isConnector && p.circuitOn === undefined) p.circuitOn = true;
-                    p.attackPower=TURRET_POWER; p.attackRange=TURRET_RANGE;
-                    p.attackFireTimer=0; p.pulseTimer=0;
-                    if (!p.isGenerator && !p.isConnector && isWaveKind(p.chosenKind)) { p.waveMode = true; p.attackMode = false; }
-                    if (!p.isGenerator && !p.isConnector && p.chosenKind === "battery") { p.isBattery = true; p.attackMode = false; p.waveMode = false; }
-                    p.chosenElement=null; p.chosenColor=null; p.chosenKind=null;
-                }
-                actor.job=null;
-            }
-        }
-        return;
-    }
-
-    // reconstruct
-    if (actor.job&&actor.job.type==="reconstruct") {
-        const p=actor.job.target;
-        if (!p||p.destroyed||!p.reconstructing) { actor.job=null; return; }
-        actor.x+=(p.x-actor.x)*actor.moveSpeed; actor.y+=(p.y-actor.y)*actor.moveSpeed;
-        const dx=actor.x-p.x, dy=actor.y-p.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist<0.8) p.reconstructProgress+=0.01;
-        return;
-    }
-
     // move / hold — guard position, attack nearby enemies
     if (actor.job&&actor.job.type==="move") {
         if (actor.health<actor.maxHealth*0.5) { actor.job=null; }
         else {
             const t=actor.job.target;
             if (!t) { actor.job=null; return; }
-            // A far order goes by nest when that is quicker (teleportRouteFor in
-            // commands.js): worked out once, then walked to the entry nest.
-            if (actor.job.route === undefined)
-                actor.job.route = typeof teleportRouteFor === "function" ? teleportRouteFor(actor, t.x, t.y) : null;
             // Refresh nearby-enemy cache every 10 frames
             if (!actor._guardCacheFrame || frame-actor._guardCacheFrame>=10 || actor._guardEnemy?.dead) {
                 // Only real enemies (isHostileTarget): a neutral recruit wandering
                 // by is "not green" too, and a follower on a move order locked
-                // onto one it could never hurt and stood there for good. A HACK
-                // team (autoplay) only turns on what is right on top of it.
-                actor._guardEnemy=null; let bd2=actor.hackOrder ? 2.25 : 20.25; // 1.5² / 4.5²
+                // onto one it could never hurt and stood there for good.
+                actor._guardEnemy=null; let bd2=20.25; // 4.5²
                 actors.forEach(a=>{ if(isHostileTarget(a)){const dx=a.x-actor.x,dy=a.y-actor.y,d2=dx*dx+dy*dy;if(d2<bd2){bd2=d2;actor._guardEnemy=a;}} });
                 actor._guardCacheFrame=frame;
             }
@@ -259,29 +121,12 @@ function updateRTSNPC(actor) {
                 if (ed>0.8) { actor.x+=(enemy.x-actor.x)/ed*actor.moveSpeed; actor.y+=(enemy.y-actor.y)/ed*actor.moveSpeed; }
                 followerAttack(actor,enemy);
             } else {
-                // No threat — hold position (by way of the nests, if routed).
-                const _r = actor.job.route;
-                const g = _r ? teleportSpot(_r.enter) : t;
-                const dx=g.x-actor.x, dy=g.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-                if (_r && dist < ROUTE_REACH) {
-                    routeTeleport(actor, _r); actor.job.route = null;
-                    // Recalled to you: through the nests, it follows again.
-                    if (actor.job.follow) actor.job = null;
-                }
-                else if (dist>0.6) _walkStep(actor, dx, dy, dist);
+                // No threat — hold position
+                const dx=t.x-actor.x, dy=t.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
+                if (dist>0.6) _walkStep(actor, dx, dy, dist);
             }
             return;
         }
-    }
-
-    // capture node job — walk to capturable tile and hold position to fill progress
-    if (actor.job&&actor.job.type==="capture_node") {
-        const node=actor.job.target;
-        if (!node||node.captured) { actor.job=null; return; }
-        const dx=node.x-actor.x, dy=node.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-        if (dist>0.7) _walkStep(actor, dx, dy, dist);
-        // Stay at node — job remains active until captured (updateCaptureProgress clears it)
-        return;
     }
 
     // attack job
@@ -305,17 +150,9 @@ function updateRTSNPC(actor) {
         return;
     }
 
-    // healing
+    // healing (the state the roster shows; it mends as it follows)
     if (!actor.isHealing&&actor.health<actor.maxHealth*0.5) actor.isHealing=true;
     if ( actor.isHealing&&actor.health>=actor.maxHealth*0.95) actor.isHealing=false;
-    if (actor.isHealing) {
-        const pillar=findNearestFriendlyPillar(actor);
-        if (pillar) {
-            const dx=pillar.x-actor.x, dy=pillar.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>0.6) _walkStep(actor, dx, dy, dist);
-            return;
-        }
-    }
 
     // ── WALK CYCLE + DIRECTION (before role returns) ──
     const dxM=actor.x-(actor.lastX??actor.x), dyM=actor.y-(actor.lastY??actor.y);
@@ -328,19 +165,6 @@ function updateRTSNPC(actor) {
 
     // ── ROLE-DRIVEN MOVEMENT ──────────────────────────────
     if (actor.team==="green" && ((actor.stance||"follow")==="follow" || actor.post)) {
-
-        // Acid avoidance — applied before role movement so it always wins
-        for (const h of environmentalHazards) {
-            if (h.type !== "acid" || !h.active) continue;
-            for (const [tx, ty] of (h.tiles || [])) {
-                const adx = actor.x - tx, ady = actor.y - ty;
-                if (Math.abs(adx) < 1.0 && Math.abs(ady) < 1.0) {
-                    const alen = Math.hypot(adx, ady) || 1;
-                    actor.x += (adx / alen) * actor.moveSpeed * 5;
-                    actor.y += (ady / alen) * actor.moveSpeed * 5;
-                }
-            }
-        }
 
         // A HYBRID moves like a brawler (it had no branch at all, so the strongest
         // recruits fell through to a passive follow); followerAttack still reads
@@ -448,27 +272,15 @@ function updateRTSNPC(actor) {
                     }
                 }
             } else {
-                const dx=player.x-actor.x, dy=player.y-actor.y, dist=Math.sqrt(dx*dx+dy*dy);
                 if (actor.post) partyPatrol(actor);   // (posted: its room's round, js/party.js)
-                else if (typeof facilityPlay !== "undefined" && facilityPlay) followPlayer(actor);   // the facility: the route round the walls, not a straight line (js/facilityplay.js)
-                else if (dist > FOLLOW_STOP + 1.5) { actor.x+=(dx/dist)*actor.moveSpeed; actor.y+=(dy/dist)*actor.moveSpeed; }
+                else followPlayer(actor);   // the route round the walls, not a straight line (js/facilityplay.js)
             }
             return;
         }
 
-        // ── CAMPER: anchor to nearest friendly pylon or crystal, engage short range only ──
+        // ── CAMPER (the technician): follows the squad like the others and engages at short range only ──
         if (role === "camper") {
-            const _party = typeof partyOn === "function" && partyOn();   // the facility: a technician follows the squad's player, or walks its room's round when posted, like the others; it is not tied to the Crystal
-            const CAMPER_ENGAGE_RADIUS = _party ? 4 : 2.5;
-
-            // Find anchor point — nearest friendly pylon or crystal
-            const pillar = findNearestFriendlyPillar(actor);
-            const anchorX = pillar ? pillar.x : crystal.x;
-            const anchorY = pillar ? pillar.y : crystal.y;
-
-            const dxA=anchorX-actor.x, dyA=anchorY-actor.y;
-            const distAnchor=Math.sqrt(dxA*dxA+dyA*dyA);
-
+            const CAMPER_ENGAGE_RADIUS = 4;
             if (nearestEnemy && nearestEnemyDist < CAMPER_ENGAGE_RADIUS * _reach) {
                 // Enemy close enough — engage
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
@@ -479,12 +291,8 @@ function updateRTSNPC(actor) {
                 } else {
                     followerAttack(actor, nearestEnemy);
                 }
-            } else if (_party) {
+            } else {
                 if (actor.post) partyPatrol(actor); else followPlayer(actor);
-            } else if (distAnchor > 1.0) {
-                // Return to anchor
-                actor.x+=(dxA/distAnchor)*actor.moveSpeed;
-                actor.y+=(dyA/distAnchor)*actor.moveSpeed;
             }
             return;
         }
@@ -528,13 +336,13 @@ function followPlayer(actor) {
             if (Math.hypot(o.x - actor.x, o.y - actor.y) <= EMPATHETIC_RANGE) { sx += o.x; sy += o.y; n++; }
         }
         if (n > 0) { tx = tx * 0.4 + (sx / n) * 0.6; ty = ty * 0.4 + (sy / n) * 0.6; }
-        // The facility: leaning toward the group must not pick a spot behind a wall (inside the lab, say), so a lean only counts where you can see it from where you stand, and only once it is near you.
-        if (typeof facilityPlay !== "undefined" && facilityPlay && (!facilityLosFrom(player.x, player.y, tx, ty) || Math.hypot(player.x - actor.x, player.y - actor.y) > 8)) { tx = player.x; ty = player.y; }   // (and a lean only counts when it is already close: a far group otherwise sits together and never comes to you)
+        // Leaning toward the group must not pick a spot behind a wall (inside the lab, say), so a lean only counts where you can see it from where you stand, and only once it is near you.
+        if (!facilityLosFrom(player.x, player.y, tx, ty) || Math.hypot(player.x - actor.x, player.y - actor.y) > 8) { tx = player.x; ty = player.y; }   // (and a lean only counts when it is already close: a far group otherwise sits together and never comes to you)
     }
-    // The facility: a follower on another stretch of floor than you (you are in an interior) walks to the doorway that comes out beside you and goes through it (js/facilityportals.js)
-    if (typeof facilityPlay !== "undefined" && facilityPlay && actor._fpPortalGoal && typeof facilityPortalGoal === "function") { const g = facilityPortalGoal(actor); if (g) { tx = g.x; ty = g.y; stop = 0.04; } }
-    // The facility: a wall between you and a follower means it is NOT near you however close it measures, so it keeps walking the route until it can see you.
-    if (typeof facilityPlay !== "undefined" && facilityPlay) { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y), seen = !actor._fpPath; if (!seen) { tx = w[0]; ty = w[1]; stop = 0.04; } else if (d0 > stop) { tx = w[0]; ty = w[1]; } }
+    // A follower on another stretch of floor than you (you are in an interior) walks to the doorway that comes out beside you and goes through it (js/facilityportals.js)
+    if (actor._fpPortalGoal && typeof facilityPortalGoal === "function") { const g = facilityPortalGoal(actor); if (g) { tx = g.x; ty = g.y; stop = 0.04; } }
+    // A wall between you and a follower means it is NOT near you however close it measures, so it keeps walking the route until it can see you.
+    { const w = facilitySteer(actor, tx, ty), d0 = Math.hypot(tx - actor.x, ty - actor.y), seen = !actor._fpPath; if (!seen) { tx = w[0]; ty = w[1]; stop = 0.04; } else if (d0 > stop) { tx = w[0]; ty = w[1]; } }
     const dx = tx - actor.x, dy = ty - actor.y, dist = Math.hypot(dx, dy);
     if (dist > stop) { actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed; }
 }
@@ -546,12 +354,6 @@ function updateNPC(actor) {
     } else {
         const _prevX = actor.x, _prevY = actor.y;
         updateRTSNPC(actor);
-        // Back on the floor. This used to pick its own lower bound: -0.5
-        // normally, which is short of the y=-1 row the nests and wall panels
-        // are on, and -1.5 when the job in hand pointed at that row — which is
-        // half a tile INSIDE the back wall. One bound, and it is the real edge
-        // of the floor, so a follower can reach a nest without walking through
-        // the wall behind it.
         // THE NET. Every follower movement above divides by a distance, and
         // the guards are per-branch: a new one that forgets is a NaN that
         // sticks. Put the unit back where it was rather than let it keep a
@@ -562,12 +364,11 @@ function updateNPC(actor) {
             actor.x = Number.isFinite(_prevX) ? _prevX : (crystal ? crystal.x : 0);
             actor.y = Number.isFinite(_prevY) ? _prevY : (crystal ? crystal.y : 2);
         }
-        clampToFloor(actor);
         // Tick walk cycle for clones based on actual movement
         if (actor.isClone) {
             const _moved = Math.hypot(actor.x - _prevX, actor.y - _prevY);
             if (_moved > 0.001) actor.walkCycle = (actor.walkCycle||0) + actor.moveSpeed * 40;
         }
     }
-    if (typeof facilityPlay !== "undefined" && facilityPlay) { const _ix = actor.x, _iy = actor.y; facilityReroute(actor, _fpx, _fpy); facilityCatchUp(actor, _fpx, _fpy); facilityConstrain(actor, _fpx, _fpy); _fpUnstick(actor, _fpx, _fpy, Math.hypot(_ix - _fpx, _iy - _fpy)); if (actor._fpPortalGoal && typeof facilityPortalActorTick === "function") facilityPortalActorTick(actor); }   // route round the facility's walls (js/facilityplay.js); through a doorway it was walking to (js/facilityportals.js)
+    { const _ix = actor.x, _iy = actor.y; facilityReroute(actor, _fpx, _fpy); facilityCatchUp(actor, _fpx, _fpy); facilityConstrain(actor, _fpx, _fpy); _fpUnstick(actor, _fpx, _fpy, Math.hypot(_ix - _fpx, _iy - _fpy)); if (actor._fpPortalGoal && typeof facilityPortalActorTick === "function") facilityPortalActorTick(actor); }   // route round the facility's walls (js/facilityplay.js); through a doorway it was walking to (js/facilityportals.js)
 }

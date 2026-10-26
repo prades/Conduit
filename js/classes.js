@@ -84,7 +84,7 @@ function drawClassPicker() {
         const k = CLASSES[c.id]; uiSlab(c.x, c.y, c.w, c.h, k.colour, false, "#0d1530");
         const small = c.h < 150, cx = c.x + 16, tw = c.w - 32;
         uiTextFit(k.name, cx, c.y + 28, small ? 20 : 24, k.colour, "left", tw); uiCaptionFit(k.tagline, cx, c.y + 54, "#c8d4f0", "left", 12, tw);
-        if (!small) { let y = c.y + 86; for (const line of k.blurb) { for (const l of codexWrap(line, Math.max(16, Math.floor(tw / 8)))) { if (y > c.y + c.h - 78) break; uiCaptionFit(l, cx, y, "#9fb0d6", "left", 12, tw); y += 16; } y += 4; } }
+        if (!small) { let y = c.y + 86; for (const line of k.blurb) { for (const l of uiWrap(line, Math.max(16, Math.floor(tw / 8)))) { if (y > c.y + c.h - 78) break; uiCaptionFit(l, cx, y, "#9fb0d6", "left", 12, tw); y += 16; } y += 4; } }
         uiCaption("YOU START WITH", cx, c.y + c.h - 54, "#6d7fa6", "left", 11);
         k.startKit.forEach(([id, n], i) => { if (typeof invDrawIcon === "function") invDrawIcon(id, cx + 22 + i * 56, c.y + c.h - 30, 36, 0); uiText("×" + n, cx + 40 + i * 56, c.y + c.h - 20, 13, k.colour, "left"); });
         uiButton({ x: c.x + c.w - 112, y: c.y + c.h - 48, w: 100, h: 36 }, "SELECT", k.colour, false, 15);

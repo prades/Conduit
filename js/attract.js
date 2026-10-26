@@ -68,7 +68,7 @@ function attractStart(F) {
     return _at;
 }
 
-// the strip game's stray creature, and any the zones spawn: the halls are abandoned, and a creature would draw the searchers into a fight
+// the arena's creatures: the halls are abandoned, and a creature would draw the searchers into a fight
 function _atSweep() { for (let i = actors.length - 1; i >= 0; i--) if (actors[i].team !== "green") actors.splice(i, 1); }
 
 // is a spot out of the picture (given the camera)? A margin of a tile or two.

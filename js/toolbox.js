@@ -2,12 +2,12 @@
 //  THE SLIDER TOOLBOX — the bottom dock you slide sideways through (tablet and desktop)
 // ─────────────────────────────────────────────────────────
 // REPORTED: "I meant you could slide through the different items horizontally." The bottom dock (game.html #topToggles) is a strip of tools:
-// SEL, BUILD, AUTO | ROSTER, COMMAND, SQUAD | CLONES, SHOP, SETTINGS | ?  There are more than fit, so the strip SLIDES:
+// ROSTER, CLONES, SETTINGS, PACK, MAP, ?  When more are in it than fit, the strip SLIDES:
 //   - swipe it on a touch screen (native scrolling, snapping to the items),
 //   - drag it with a mouse (click-and-drag; a drag never fires the button under it),
 //   - roll the mouse wheel over it (a vertical wheel slides it sideways),
 //   - or press the arrows at its ends. Where more is hidden an edge fades and an arrow shows.
-// The buttons that open the game's older canvas panels (Crystal, Clones, Shop, Settings; the modules are a tab of the BUILD window, not a button of their own) are here too, so every menu is in one place.
+// The buttons that open the game's canvas panels (Clones, Settings) are here too, so every menu is in one place.
 // Phones use the radial menu instead (this is for widths above 700px).
 const TOOLBOX_DRAG = 6;           // pixels of mouse travel before a press is a drag, not a click
 const TOOLBOX_STEP = 0.7;         // an arrow slides this share of the visible width
@@ -15,14 +15,6 @@ const TOOLBOX_STEP = 0.7;         // an arrow slides this share of the visible w
 // ── the buttons for the game's canvas panels (each is what the canvas button does) ──
 function dockClones()    { cloneMenuOpen = !cloneMenuOpen; if (cloneMenuOpen) crystalMenuOpen = false; }
 function dockSettings()  { settingsPanelOpen = !settingsPanelOpen; settingsResetConfirm = false; }
-function dockShop() {
-    // The same conditions as the canvas SHOP button (input.js): not mid-alarm, not between waves.
-    if (alertActive || gameState.phase === "night" || gameState.phase === "waveComplete" || gameState.phase === "gameOver") {
-        if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 70, text: "THE SHOP IS CLOSED RIGHT NOW", color: "#f88", life: 90, vy: -0.2, size: 12 });
-        return false;
-    }
-    openMidGameShop(); return true;
-}
 
 // ── the slider ──
 function toolboxEls() { return typeof document === "undefined" ? {} : { bar: document.getElementById("topToggles"), track: document.getElementById("dockScroll"), prev: document.getElementById("dockPrev"), next: document.getElementById("dockNext") }; }

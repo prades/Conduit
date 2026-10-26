@@ -4,8 +4,8 @@
 // A short list of objectives (TUT_STEPS) that teaches the loop the earlier phases built, WITHOUT CLASSES: find supplies in the dark, restore a relay (with the relay kit and two power cells: anyone can), RECRUIT a follower, POSITION
 // followers, then DEFEND THE CRYSTAL against a first assault, in which followers fight, gain levels and EVOLVE. Only when that is finished are the classes given: the class picker opens, and once a class is chosen the cases for that
 // class enter the facility (facilityClassItemsEnter) and a last objective sends the player to the class's station for its perk. A step is done when its `done()` says so (a step already done when it comes up is skipped). Nothing here is a new system:
-//   recruiting is recruitFollower (js/clone.js), positioning is the roster's HOLD (a.stance, js/commandcenter.js), levels and evolution are gainXp and evolutionTick (js/levels.js, js/evolution.js), the enemies are the
-//   strip game's ants (spawnPredatorForZone), and they hunt the Crystal as they always do when an alarm is up. The director only sets levels, spawns the assault and keeps the alarm on while it lasts.
+//   recruiting is recruitFollower (js/clone.js), positioning is the roster's HOLD (a.stance, js/commandcenter.js), levels and evolution are gainXp and evolutionTick (js/levels.js, js/evolution.js), the enemies are
+//   ants (spawnCreature, js/clone.js), and they hunt the Crystal as every creature does when an alarm is up. The director only sets levels, spawns the assault and keeps the alarm on while it lasts.
 // Levels: the tutorial's followers (the three you start with and every recruit) are level TUT.followerLevel, and the assault's enemies are level TUT.enemyLevel, a little behind, so the assault is enough to take a follower to the evolution level.
 // A crystal that is about to fall is saved: the enemies are called off, the Crystal is mended and the assault comes again (the tutorial is not a loss).
 
@@ -60,8 +60,8 @@ function tutGunTick() {
         if (playerAmmo < TUT_GUN.rounds) playerAmmo = TUT_GUN.rounds;   // (the training rounds)
         if (!tutStray() && S.strays < TUT_GUN.respawns) {
             const spot = typeof facilitySpotIn === "function" ? facilitySpotIn(TUT_GUN.room, player.visualX, player.visualY, TUT_GUN.near[0], TUT_GUN.near[1]) : null;
-            if (spot) { let p = null; try { p = spawnPredatorForZone(1, { species: "ant", className: "scout" }); } catch (e) { p = null; }
-                if (p) { p.x = spot[0]; p.y = spot[1]; p.level = TUT_GUN.level; if (typeof _applyPredLevel === "function") _applyPredLevel(p, true); p.maxHealth = p.health = TUT_GUN.health; if (p.dimensions) { p.dimensions.width = Math.round(p.dimensions.width * TUT_GUN.size); p.dimensions.height = Math.round(p.dimensions.height * TUT_GUN.size); } p.state = "wander"; p.tutStray = true; S.strays++; _tutSay("stray" + S.strays, "A BIG STRAY ANT WANDERS INTO THE MAIN HALLWAY. THIS IS YOUR TARGET.", "#ffb347"); } }
+            if (spot) { let p = null; try { p = spawnCreature({ species: "ant", className: "scout", x: spot[0], y: spot[1], level: TUT_GUN.level, state: "wander" }); } catch (e) { p = null; }
+                if (p) { p.maxHealth = p.health = TUT_GUN.health; if (p.dimensions) { p.dimensions.width = Math.round(p.dimensions.width * TUT_GUN.size); p.dimensions.height = Math.round(p.dimensions.height * TUT_GUN.size); } p.tutStray = true; S.strays++; _tutSay("stray" + S.strays, "A BIG STRAY ANT WANDERS INTO THE MAIN HALLWAY. THIS IS YOUR TARGET.", "#ffb347"); } }
         }
     } else if (S.gunBase !== undefined) { const s = tutStray(); if (s) { s.dead = true; s._xpGiven = true; } }   // (the lesson is over: the stray goes)
 }
@@ -93,10 +93,9 @@ function tutAssaultStart() {
 }
 function tutSpawnWave(w) {
     for (const [cls, x, y] of TUT.waves[w].who) {
-        let p = null; try { p = spawnPredatorForZone(1, { species: "ant", className: cls }); } catch (e) { p = null; }
+        let p = null; try { p = spawnCreature({ species: "ant", className: cls, x, y, level: TUT.enemyLevel, state: "hunt" }); } catch (e) { p = null; }
         if (!p) continue;
-        p.x = x; p.y = y; p.level = TUT.enemyLevel; if (typeof _applyPredLevel === "function") _applyPredLevel(p, true);
-        p.state = "hunt"; p.tutAssault = true; p.isWanderer = false; _fp.tut.script.assault.spawned++;
+        p.tutAssault = true; _fp.tut.script.assault.spawned++;
     }
 }
 // the assault's reward: XP to every living follower (js/levels.js gainXp; a follower that reaches the evolution level evolves in evolutionTick as it always does)
@@ -176,7 +175,7 @@ function facilityDrawObjective() {
     else if (!pc) return;
     else if (!TUT_CLASS_STEP.done()) { key = "perk"; title = pc.name + "  ·  " + TUT_CLASS_STEP.title; body = TUT_CLASS_STEP.text(); hint = TUT_CLASS_STEP.hint(); }
     else { key = "done"; title = pc.name + "  ·  RANK " + classRank(); body = "YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS."; col = "#9dffb6"; }
-    const mail = objectiveCompact(), chars = Math.max(18, Math.floor((w - 28) / 8)), lines = codexWrap(body, chars).slice(0, 3), hl = hint ? codexWrap(hint, chars).slice(0, 3) : [], h = 44 + lines.length * 17 + (hl.length ? hl.length * 15 + 8 : 0);
+    const mail = objectiveCompact(), chars = Math.max(18, Math.floor((w - 28) / 8)), lines = uiWrap(body, chars).slice(0, 3), hl = hint ? uiWrap(hint, chars).slice(0, 3) : [], h = 44 + lines.length * 17 + (hl.length ? hl.length * 15 + 8 : 0);
     // a phone: the plate is folded into the mailbox until it is opened, and unfolds out of it (S.objK: 0 folded .. 1 open); an objective that is open is read
     if (S.objKey !== key) { S.objKey = key; S.objNewAt = f; }
     if (mail) { if (S.objOpen) S.objSeen = key; S.objK = Math.max(0, Math.min(1, (S.objK || 0) + (S.objOpen ? OBJ_BOX.fold : -OBJ_BOX.fold))); } else S.objK = 1;

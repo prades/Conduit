@@ -38,11 +38,9 @@ const BUG_DOME_LITE = [[-0.5, 0.85], [0, 1], [0.6, 0.8], [0.92, 0.4]];
 
 // Which rebuilt body an actor wears, or null (the old renderer draws it).
 function bugBodyStyle(a) {
-    if (!a || a.isMachine) return null;
+    if (!a) return null;
     const sp = a.speciesName;
-    if (BUG_REF_WIDTH[sp]) return sp;
-    const syn = typeof SYNTHETIC_SPECIES !== "undefined" && SYNTHETIC_SPECIES ? SYNTHETIC_SPECIES[sp] : null;
-    return syn && BUG_REF_WIDTH[syn.bodyStyle] ? syn.bodyStyle : null;
+    return BUG_REF_WIDTH[sp] ? sp : null;
 }
 
 // Draw it; returns its height on screen in pixels (for the bars over it).
@@ -196,12 +194,6 @@ function _bugEyes(g, F, pts, r) {
 }
 // Elite ring and boss aura, round its footprint `ring` = [f0, L, W].
 function _bugAuras(actor, g, F, ring) {
-    if (actor.isElite && !actor.isNymph) {
-        g.globalAlpha = 0.25 + 0.2 * (0.5 + 0.5 * Math.sin((actor.animationPhase || 0) + (typeof frame !== "undefined" ? frame : 0) * 0.07));
-        g.strokeStyle = actor.color || "#ff8800"; g.lineWidth = 2;
-        _bugPoly(g, _bugRing(F.P, ring[0], ring[1] * 1.5, ring[2] * 1.6, 1)); g.stroke();
-        g.globalAlpha = 1;
-    }
     if ((actor.isBoss || actor.shieldAura) && (actor.team !== "green" || actor.isClone)) {
         const auraR = (actor.shieldAuraRadius || 5) * TILE_W * 0.5;
         g.globalAlpha = 0.12 + 0.08 * (0.5 + 0.5 * Math.sin((actor.shieldAuraPulse || 0) * 0.1));

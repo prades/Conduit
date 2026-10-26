@@ -2,107 +2,141 @@
 //  THE INFO PANEL — an index of everything, with a description of each (layout style)
 // ─────────────────────────────────────────────────────────
 // REPORTED: "You can make the info tab work again with the new menu. Make it actual index of everything and give it like a description."
-// The long-press ring's INFO opens this. It has three kinds of page, all drawn with the UI kit (js/uikit.js):
-//   the READOUT   (infoPanelPage null)   what you pressed — its live numbers, then a button to read about its kind
-//   the INDEX     (infoPanelPage 'codex') six tabs of everything in the game, one slab per entry
+// The long-press ring's INFO opens this (js/commands.js openInfoPanel), on the readout of what was pressed; its INDEX button turns the pages. Three kinds of page, all drawn with the UI kit (js/uikit.js):
+//   the READOUT   (infoPanelPage null)   what you pressed — a follower, a clone or a creature: its live numbers, then a button to read about its kind
+//   the INDEX     (infoPanelPage 'codex') four tabs of everything in the facility game, one slab per entry
 //   an ENTRY      ('e:<id>')              a description, then its numbers (read off the game's own constants, so it cannot drift)
-//   the old codex pages (an element id, 'rules', 'infest', 'combos', 'generator') are still here, re-set in the same style.
 // A page taller than the panel is split into pages (the middle button turns them): there is no scrolling to find.
-// The press hands in what it hit: a follower, an enemy or a nest as well as the tile (infoPanelSubject).
+// The press hands in what it hit: a follower or an enemy (infoPanelSubject). The old strip game's pages (pylons, power, nests, the work crew, the codex) went with it: there is nothing to build or power here
+// but the relays, and they are an entry under RULES.
 
 const INFO_CATS = [
-    { id: "build",    label: "BUILD",    col: "#ffcc44", blurb: "Everything you can place. Turn BUILD on, then long-press a tile or one of your pylons." },
-    { id: "power",    label: "POWER",    col: "#ffd34d", blurb: "Nothing you build works without power. It starts in a nest and reaches your pylons through the wall." },
-    { id: "allies",   label: "ALLIES",   col: "#7dffb5", blurb: "Your squad, your clones, and the work they do." },
-    { id: "foes",     label: "ENEMIES",  col: "#ff7766", blurb: "The things that come out of the nests." },
-    { id: "elements", label: "ELEMENTS", col: "#19e6c1", blurb: "Six elements. Each one colours a follower, a pylon and a zone effect." },
-    { id: "rules",    label: "RULES",    col: "#8fe3ff", blurb: "How the pieces fit together." },
+    { id: "allies",   label: "ALLIES",   col: "#7dffb5", blurb: "Your squad of three, the rooms the rest hold, and the clones you grow from DNA." },
+    { id: "foes",     label: "ENEMIES",  col: "#ff7766", blurb: "The arena's creatures, six kinds of them, and the alarm that sets them on you." },
+    { id: "elements", label: "ELEMENTS", col: "#19e6c1", blurb: "Six elements in two triangles. Each one colours a follower and decides what its attacks do." },
+    { id: "rules",    label: "RULES",    col: "#8fe3ff", blurb: "How the facility fits together: the Crystal, the relays, your gun and your pack, what a kill pays." },
 ];
 
-const _ELS = (ids) => ids.map(i => { const e = ELEMENTS.find(x => x.id === i); return e ? e.label.toUpperCase() : i.toUpperCase(); }).join(" · ");
+// What each element's follower attacks are called (the attacks themselves are js/elements.js; their names were only ever written down in the GAME INDEX, so they are written down here too).
+const _IP_ATTACKS = {
+    fire:     { physical: "Ring of Fire",    special: "Meteor",        ult: "Meteor Burst", proc: "burn" },
+    electric: { physical: "Chain Lightning", special: "Static Field",  ult: "EMP",          proc: "stun" },
+    ice:      { physical: "Frost Lance",     special: "Ice Burst",     ult: "Blizzard",     proc: "hard freeze" },
+    flux:     { physical: "Volatility Aura", special: "Singularity",   ult: "Disorient",    proc: "disorient" },
+    core:     { physical: "Shield Bash",     special: "Radiant Pulse", ult: "Shield Grant", proc: "knockback" },
+    toxic:    { physical: "Smoke Form",      special: "Toxic Cloud",   ult: "Smoke Screen", proc: "defense shred" },
+};
+const _ipElName = (id) => { const e = ELEMENTS.find(x => x.id === id); return e ? e.label.toUpperCase() : String(id || "?").toUpperCase(); };
 
 // Every entry: { id, cat, name, col, sub (one line, shown on its slab), text: [paragraphs], rows: [[label, value, colour?]] }.
-// A function, so the numbers are read from the constants when it is opened (files loaded after this one are not needed at load).
+// A function, so the numbers are read from the constants when it is opened (files loaded after this one are not needed at load, and a constant that is not there has a plain stand-in).
 function infoEntries() {
-    const sec = f => +(f / 60).toFixed(2) + " s";
+    const sec = f => +(f / 60).toFixed(f % 60 ? 1 : 0) + " s";
     const E = [];
     const add = (id, cat, name, col, sub, text, rows) => E.push({ id, cat, name, col, sub, text, rows: rows || [] });
-
-    // ── BUILD ──
-    add("turret", "build", "ATTACK TURRET", "#ff7755", "Shoots enemies on its own",
-        ["A pylon set to ATTACK mode. It fires at any enemy in range without being told, so long as it has power: a live cell of its zone's wall power unit within " + BATTERY_SUPPLY_RANGE + " tiles.",
-         "Its element decides what its rounds do and how a network of that element helps it. Long-press it to CONVERT it to a wave pylon of the same element, or to buy MK II.",
-         "Four turrets in a 2×2 square fuse into an ULTRA."],
-        [["REACH", TURRET_RANGE + " tiles"], ["ROUND", "one every " + sec(TURRET_FIRE_FRAMES)], ["NETWORK", "+" + Math.round(TURRET_TIER_BONUS * 100) + "% PER TIER"], ["BUILD", PYLON_BUILD_COST + " ◆, then UPGRADE it"]]);
-    add("wave", "build", "WAVE PYLON", "#c08cff", "Support or disruption zones",
-        ["A pylon set to WAVE mode does not shoot. It links to pylons of the same element within 3 tiles and fills the line between them with a zone effect. It wakes only when a unit it works on is near.",
-         "SUPPORT pylons help your side. DISRUPTION pylons hit the enemy. Which one you get is decided by the element, so the element picker only offers the ones that fit."],
-        [["SUPPORT", _ELS(WAVE_SUPPORT_ELEMENTS), "#7fffb0"], ["DISRUPTION", _ELS(ELEMENTS.map(e => e.id).filter(i => !WAVE_SUPPORT_ELEMENTS.includes(i))), "#c08cff"], ["LINKS", "same element, 3 tiles"]]);
-    add("mk2", "build", "MK II", "#ffe733", "A better turret or wave pylon",
-        ["Buy it on one of your own turrets or wave pylons from the TOP of the long-press ring (with BUILD off). It keeps everything the pylon had and adds a stronger body and stronger output.",
-         "It needs the pylon's element network to be at least tier I, and the ring says why when it cannot be bought."],
-        [["PRICE", MK2_COST + " ◆"], ["OUTPUT", "×" + STATUS_MULT_MK2 + " (rebuilt pylon ×" + STATUS_MULT_UPGRADED + ")"], ["HEALTH", "×" + MK2_HP_MULT], ["NEEDS", "tier " + ["", "I", "II", "III"][MK2_MIN_TIER] + " network"]]);
-    add("ultra", "build", "ULTRA TURRET", "#ff4a1c", "Four turrets fused into one",
-        ["Put four finished attack turrets in a 2×2 square and they fuse by themselves. One gun fires for all four: their rounds added together, bigger, further, and bursting on the target.",
-         "Lose any of the four (broken, taken, converted) and the rest are four ordinary turrets again. Your squad walks straight through it; enemies cannot stand on its core.",
-         "It only fuses where the element's network is tier " + ["", "I", "II", "III"][ULTRA_MIN_TIER] + " or better."],
-        [["DAMAGE", "×" + ULTRA_DAMAGE_BONUS + " the four together"], ["REACH", "+" + ULTRA_RANGE_BONUS + " tiles"], ["BURST", ULTRA_SPLASH + " tiles, " + Math.round(ULTRA_SPLASH_SHARE * 100) + "% damage"], ["NEEDS", "tier " + ["", "I", "II", "III"][ULTRA_MIN_TIER] + " network"]]);
-    add("modules", "build", "MODULES", "#66ccff", "Powered structures anywhere",
-        ["Placed from the build window's MODULES tab on any free floor tile the grid reaches. A module works only while it has power, and covers the ground around it. Build as many as you like; demolishing one returns " + Math.round(MODULE_REFUND * 100) + "%."]
-            .concat(MODULE_IDS.map(k => MODULE_DEFS[k].label + ": " + MODULE_DEFS[k].note)),
-        MODULE_IDS.map(k => [MODULE_DEFS[k].label, MODULE_DEFS[k].cost + " ◆", MODULE_DEFS[k].colour]));
-    add("kits", "build", "LAYOUT KITS", "#19e6c1", "A whole layout in one tap",
-        ["In the build window's KITS tab, a kit places a whole layout of turrets and wave pylons in one go. You can move the ghost first, or snap it to the nest.",
-         "A kit says what power unit tier it needs (\"BOOT THE POWER UNIT\" or \"UPGRADE IT\"), and never places a piece the unit cannot reach."],
-        [["KITS", KITS.length]]);
-    add("demolish", "build", "DESTROY", "#ff4a1c", "Take a pylon down for shards",
-        ["With BUILD on, long-press one of your own pylons and pick DESTROY (the bottom of the ring). The pylon goes and you get shards back. The power unit's cells cannot be destroyed."],
-        [["REFUND", DEMOLISH_REFUND + " ◆"]]);
-
-    // ── POWER ──
-    add("unit", "power", "WALL POWER UNIT", "#ffd34d", "Each zone's generator",
-        ["Every zone's back wall carries one power unit: six cells and a machine. Tap the machine (or long-press it) to open its panel. The cells are real pylons, and together they power everything in the zone.",
-         "BOOT it once you hold the zone's nest. UPGRADE adds two cells a time. RECONFIGURE changes its element. A cell that is wrecked goes dark and the unit loses a tier until it is mended.",
-         "There are no loose batteries, generators or connectors any more: this is all of them."],
-        [["BOOT", (2 * PYLON_BUILD_COST) + " ◆, needs the nest"], ["TIER I", "2 cells"], ["TIER II", "4 cells"], ["TIER III", "6 cells"], ["RECONFIGURE", PYLON_BUILD_COST + " ◆"], ["FEEDS", "pylons within " + BATTERY_SUPPLY_RANGE + " tiles"]]);
-    add("cells", "power", "CELLS & REPAIR", "#ff6a4a", "Hunters bash them; mend them",
-        ["Enemy hunters walk to the wall and bash the cells. A cell at no health is WRECKED: dark, out of the bank. A blow also splashes onto the cells beside it in the same segment.",
-         "Cells heal slowly by themselves once left alone, an ANT clone on worker duty rebuilds them, or you can pay at the unit's panel."],
-        [["CELL HEALTH", WALL_CELL_HP + " HP"], ["SPLASH", Math.round(WALL_SPLASH * 100) + "% to its segment"], ["REPAIR", WALL_REPAIR_COST + " ◆ a cell"]]);
-    add("nest", "power", "NESTS", NEST_COLOUR_CONTROLLED, "Hold one to power its zone",
-        ["A hostile nest hatches enemies. Stand in front of it to HACK it; once it is yours it stops hatching and becomes the zone's power source. Its energy pool refills slowly and your pylons and modules draw on it.",
-         "A held nest can be switched off and on in BUILD mode, and from out of BUILD mode its ring teleports you between your front nest and home.",
-         "Deeper nests hold more energy."],
-        [["HACK", "stand there " + (NEST_HACK_FRAMES / 60) + " s"], ["POOL", NEST_ENERGY_BASE + " (zone 0), +" + NEST_ENERGY_BASE * NEST_ENERGY_ZONE + " a zone"], ["HOME", NEST_ENERGY_HOME], ["REGEN", (NEST_ENERGY_REGEN * 60).toFixed(1) + " / s"]]);
-    add("overcharge", "power", "OVERCHARGE", "#ffe733", "A surge from a held nest",
-        ["Long-press a nest you hold (BUILD off) and pick OVERCHARGE from the top of the ring. It spends part of the grid for a short surge: everything on it fires much faster."],
-        [["COST", Math.round(OVERCHARGE_COST * 100) + "% of the grid"], ["NEEDS", Math.round(OVERCHARGE_MIN_FILL * 100) + "% full"], ["LASTS", sec(OVERCHARGE_FRAMES)], ["FIRE RATE", "×" + OVERCHARGE_FIRE_MULT], ["COOLDOWN", sec(OVERCHARGE_COOLDOWN)]]);
+    const party = typeof PARTY !== "undefined" ? PARTY : { max: 3 };
+    const spot = typeof FP_SPOT !== "undefined" ? FP_SPOT : { take: 1.5, refill: 5400, cap: 12 };
+    const spawn = typeof FP_SPAWN !== "undefined" ? FP_SPAWN : { every: 1200, start: 4, cap: 7, levels: [2, 4], species: ["ant", "beetle", "spider", "scorpion", "mantis", "moth"], scrap: { chance: 0.75, life: 3600 } };
+    const relayRule = typeof CLASS_RULES !== "undefined" && CLASS_RULES.relay ? CLASS_RULES.relay : { skillCells: 1, kitCells: 2 };
+    const relays = typeof _fp !== "undefined" && _fp && _fp.F && _fp.F.relays ? _fp.F.relays.length : 6;
+    const recruitCost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30;
+    const evolveAt = typeof EVOLVE_LEVEL !== "undefined" ? EVOLVE_LEVEL : 10, evolveMult = typeof EVOLVE_MULT !== "undefined" ? EVOLVE_MULT : 1.25;
+    const alarmFrames = typeof ALERT_DURATION !== "undefined" ? ALERT_DURATION : 600;
+    const crystalHp = typeof crystal !== "undefined" && crystal && crystal.maxHealth ? crystal.maxHealth : 300;
+    const target = typeof TARGET !== "undefined" ? TARGET : { range: 9 };
+    const ammoMax = typeof PLAYER_AMMO_MAX !== "undefined" ? PLAYER_AMMO_MAX : 60, hits = typeof PLAYER_HITS !== "undefined" ? PLAYER_HITS : 3;
 
     // ── ALLIES ──
-    add("squad", "allies", "YOUR SQUAD", "#7dffb5", "Followers, in six elements",
-        ["Followers come from the Crystal. Each has an element, a role (BRAWLER closes in, MAGE fires from range, TECHNICIAN holds a post), a level and a set of stats, shown over its health bar.",
-         "Long-press one to send it TO WORK or back TO LINE, or to RE-ROLL it at the Crystal. Double-tap one to fire its ultimate once the bar is full.",
-         "The six elements follow two triangles: fire > flux > toxic > fire, and electric > core > ice > electric."],
-        []);
-    add("clones", "allies", "CLONES", "#19e6c1", "Bought from the Clone Bay",
-        ["Summon a clone in the Clone Bay for shards and the DNA you have collected from that kind and class of enemy (at most " + MAX_CLONES + " at once). It is far tougher than a follower and fights beside you; when it falls it comes back after a while.",
-         "A clone can work too: an ANT clone on worker duty goes out and builds and repairs pylons and wall cells."],
-        [["POWER", "×" + CLONE_POWER_MULT], ["HEALTH", "×" + CLONE_HEALTH_MULT], ["COMES BACK", "after " + sec(CLONE_RESPAWN_FRAMES)]]);
-    add("jobs", "allies", "WORK DUTY", "#8fe3ff", "What each element does at work",
-        ["A follower on WORK duty stops fighting and runs the mass chain: mass lumps are neutralised, hauled and paid out in shards."]
-            .concat(Object.keys(WORK_INFO).map(k => k.toUpperCase() + " — " + WORK_INFO[k].label + ": " + WORK_INFO[k].text)),
-        []);
+    add("squad", "allies", "YOUR SQUAD", "#7dffb5", "Three walk with you; the rest hold rooms",
+        ["Up to " + party.max + " followers walk with you: the three small cards over the orders at the bottom left (on a phone, the bar over the dock). Each has an element, a role (BRAWLER closes in, MAGE fires from range, TECHNICIAN holds its ground), a personality, a level and a set of stats.",
+         "The orders go to ALL of them, or to the one whose card you tapped. RETREAT breaks them off to fall back to you for six seconds. HOLD posts each one in the room it is in: it patrols that room and fights what comes into it, and does not follow you. COME calls the held ones back, as long as there is room in the squad.",
+         "Long-press a follower on the floor, or tap its card, for its card: its numbers, INDEX (its attacks, move and stats) and DISMISS, which leaves it holding the room it is in. A follower that joins when the squad is full holds the room it was found in. Double-tap one to fire its ultimate once the bar under its health is full."],
+        [["WITH YOU", party.max + " at once"], ["HOLD", "patrols its room until called"], ["COME", "back to the squad, if there is room"], ["RETREAT", "breaks off for 6 s"]]);
+    add("recruit", "allies", "THE CRYSTAL'S RECRUITS", "#19e6c1", "A new follower for crystals",
+        ["The roster's + RECRUIT (open ROSTER from the dock) buys a follower at the Crystal for " + recruitCost + " ◆. What comes out is a draw: a BRAWLER, a MAGE or a TECHNICIAN, of one of the six elements, with a personality to match its type. You do not choose it, and cannot change it afterwards: you level it and evolve it.",
+         "A follower that falls comes back at the Crystal after a while, as it was, and rejoins the squad if there is room; if there is none it holds the Crystal Chamber."],
+        [["PRICE", recruitCost + " ◆", UI_GOLD], ["TYPE", "brawler, mage or technician"], ["ELEMENT", "one of the six"]]);
+    add("eggs", "allies", "EGGS ON THE PADS", "#c8d4f0", "Followers found around the facility",
+        ["A pad on the floor in an element's colour holds a grey egg, with a label over it saying what hatches: its type and its element, fixed. Walk up to it and it hatches there and then and joins you (or holds the pad's room, if the squad is full).",
+         "The pad fills again with the same egg a while after you have walked away from it, as long as the roster is under its cap, and the wait is part of the saved game."],
+        [["TAKE", "walk within " + spot.take + " tiles"], ["FILLS AGAIN", "after " + sec(spot.refill)], ["ROSTER CAP", spot.cap + " followers"]]);
+    add("evolution", "allies", "EVOLUTION", UI_GOLD, "At level " + evolveAt + " a follower sheds its egg",
+        ["A follower that reaches level " + evolveAt + " and has a form for its element and role evolves on the spot: it molts, the egg cracks and the machine rises out of it. It keeps that form for good, through death and a reload, and its role is fixed from then on.",
+         "An evolved form has a signature MOVE it fires by itself when an enemy is near, and some forms can choose a second one on the INDEX tab of their card. Its health and power are multiplied too."],
+        [["AT", "level " + evolveAt, UI_GOLD], ["HEALTH & POWER", "×" + evolveMult], ["MOVE", "one signature move, fired on its own"]]);
+    add("levels", "allies", "LEVELS & XP", "#9ca8ff", "Every unit levels the same way",
+        ["Every unit has a level and a set of base stats; its real stats are the base scaled by its level (×1 at level " + (typeof LEVEL_START !== "undefined" ? LEVEL_START : 5) + ", ×2 at 20, ×4 at 50, ×" + (typeof levelFactor === "function" ? +levelFactor(typeof LEVEL_CAP !== "undefined" ? LEVEL_CAP : 100).toFixed(1) : 7.3) + " at " + (typeof LEVEL_CAP !== "undefined" ? LEVEL_CAP : 100) + "). The level and type show over the health bar, and the card's INDEX has the full sheet.",
+         "XP comes from kills: the killer takes " + Math.round((typeof XP_KILLER_SHARE !== "undefined" ? XP_KILLER_SHARE : 0.6) * 100) + "% and your units within " + (typeof XP_SHARE_RANGE !== "undefined" ? XP_SHARE_RANGE : 4) + " tiles share the rest. The XP for a level is its cube (level 10 is 1,000). A unit that dies keeps its level but loses part of its progress to the next."],
+        [["CAP", "level " + (typeof LEVEL_CAP !== "undefined" ? LEVEL_CAP : 100)], ["ON A DEATH", "−" + Math.round((typeof XP_DEATH_LOSS !== "undefined" ? XP_DEATH_LOSS : 0.25) * 100) + "% of the progress", "#ff8a7a"], ["EVOLVES", "at level " + evolveAt, UI_GOLD]]);
+    add("bonds", "allies", "BONDS", typeof BOND_COLOUR !== "undefined" ? BOND_COLOUR : "#ff7ab8", "Two who fight side by side",
+        ["Two followers who fight side by side for about " + sec(typeof BOND_TICK !== "undefined" && typeof BOND_POINTS !== "undefined" ? BOND_TICK * BOND_POINTS : 1200) + " bond: a dotted pink line with a heart joins them, one partner each. Close together they hit harder and take less.",
+         "If one dies the other rages for a while, then the bond is over and the fallen one comes back unbonded. With both ultimate bars full and the pair close, double-tap either and both ultimates fire at once."],
+        [["TOGETHER", "+" + Math.round(((typeof BOND_ATTACK_MULT !== "undefined" ? BOND_ATTACK_MULT : 1.15) - 1) * 100) + "% damage, −" + Math.round((1 - (typeof BOND_DEFENSE_MULT !== "undefined" ? BOND_DEFENSE_MULT : 0.9)) * 100) + "% taken, within " + (typeof BOND_TOGETHER !== "undefined" ? BOND_TOGETHER : 3) + " tiles"],
+         ["RAGE", "+" + Math.round(((typeof BOND_RAGE_ATTACK !== "undefined" ? BOND_RAGE_ATTACK : 1.5) - 1) * 100) + "% damage for " + sec(typeof BOND_RAGE_FRAMES !== "undefined" ? BOND_RAGE_FRAMES : 600), "#ff6655"],
+         ["DUO", "×" + (typeof BOND_DUO_MULT !== "undefined" ? BOND_DUO_MULT : 1.3) + " for " + sec(typeof BOND_DUO_FRAMES !== "undefined" ? BOND_DUO_FRAMES : 300)]]);
+    add("clones", "allies", "CLONES", "#19e6c1", "Grown in the Clone Bay from DNA",
+        ["Open the CLONE BAY (CLONES on the dock) and summon a creature's species as your ally, for crystals and the DNA splices its kind drops when you kill it (at most " + MAX_CLONES + " at once). A clone is far tougher than a follower and fights beside you under the same orders; when it falls it comes back after a while.",
+         "The clone prices by species and class are in the GAME INDEX (the ? button, SQUAD tab)."],
+        [["POWER", "×" + CLONE_POWER_MULT], ["HEALTH", "×" + CLONE_HEALTH_MULT], ["AT ONCE", MAX_CLONES], ["COMES BACK", "after " + sec(CLONE_RESPAWN_FRAMES)]]);
 
     // ── ENEMIES ──
     const SP = (k) => SPECIES[k] && SPECIES[k].scout;
-    add("species", "foes", "THE PREDATORS", "#ff7766", "Six kinds, by depth",
-        ["Predators come in six kinds. They get stronger and tougher the deeper the zone, and each of them comes as a scout, a striker or a tank. A boss is rarer and much heavier.",
-         "ANTS are the weakest. BEETLES haul charged mass to the nest. SCORPIONS, SPIDERS, MANTISES and MOTHS from the striker class up also attack at range from the rear."],
-        Object.keys(SPECIES).map(k => [k.toUpperCase(), SP(k) ? "scout " + SP(k).health + " HP · " + SP(k).power + " pwr" : "", SPECIES[k].color]));
-    add("hunter", "foes", "HUNTERS", "#f77", "They chew your pylons over",
-        ["About one predator in four is a hunter. With no alarm up it walks to your nearest pylon and starts converting it to its side; if the pylon is a power cell it bashes it instead.",
-         "A bar shows a conversion under way. Interrupt the hunter and the pylon recovers. A pylon already turned shows red: long-press it and pick RECLAIM, and a crew rebuilds it."],
-        [["CONVERSION", (1 / INFEST_RATE / 60).toFixed(0) + " s of contact"]]);
+    add("species", "foes", "THE CREATURES", "#ff7766", "Six kinds, in four classes",
+        ["The facility's wild things come in six kinds, each in a class of its own: a WORKER, a SCOUT, a STRIKER or a TANK, bigger and tougher down that list. Each has a level, and its stats scale with it the way your units' do.",
+         "ANTS are the weakest and simply walk up and bite. BEETLES are armoured. SCORPIONS, SPIDERS, MANTISES and MOTHS from the striker class up also strike from range: a sting, a venom shot, a foreleg lunge, a cloud of wing-dust.",
+         "Tap one to lock your gun on it; tap the enemy card at the bottom of the screen (or long-press the creature and pick ATTACK) to send the squad at it."],
+        Object.keys(SPECIES).filter(k => SP(k)).map(k => [k.toUpperCase(), "scout " + SP(k).health + " HP · " + SP(k).power + " pwr", SPECIES[k].color]));
+    add("arena", "foes", "THE ARENA", "#ff9a6a", "Where the creatures live",
+        ["The arena is where the facility's creatures are. A few are there when the game opens, and every so often another comes out of the dark at a spot you cannot see, always the kind there are fewest of, so they are all different.",
+         "They potter about the arena from spot to spot, never out of it, and hunt only when provoked or when an alarm is up. One that dies drops a case of scrap metal where it fell, which the Armory's terminal turns into ammunition."],
+        [["AT THE START", spawn.start], ["ANOTHER", "every " + sec(spawn.every)], ["AT MOST", spawn.cap + " alive at once"], ["LEVELS", spawn.levels.join(" to ")], ["SCRAP", Math.round(spawn.scrap.chance * 100) + "% drop, lies " + sec(spawn.scrap.life)]]);
+    add("alarm", "foes", "THE ALARM", UI_RED, "The triangle at the top right",
+        ["An alarm is the state of a fight. While one is up the creatures it reached hunt instead of pottering about, and the red triangle shows beside the room tag. A PROXIMITY ALARM wakes the creatures near whatever raised it; a FACILITY BREACH wakes every creature there is.",
+         "An alarm fades " + sec(alarmFrames) + " after the last thing that fed it, and a creature nobody is fighting goes back to its round."],
+        [["LASTS", sec(alarmFrames) + " after the last trigger"], ["PROXIMITY", "creatures within 6 tiles"], ["BREACH", "every creature", UI_RED]]);
+
+    // ── ELEMENTS ──
+    const mult = (a, d) => typeof getElementMultiplier === "function" ? getElementMultiplier(a, d) : 1;
+    const strong = typeof ELEMENT_STRONG_AGAINST !== "undefined" ? ELEMENT_STRONG_AGAINST : { fire: "flux", flux: "toxic", toxic: "fire", electric: "core", core: "ice", ice: "electric" };
+    const weak = typeof ELEMENT_WEAK_TO !== "undefined" ? ELEMENT_WEAK_TO : { fire: "toxic", flux: "fire", toxic: "flux", electric: "ice", core: "electric", ice: "core" };
+    add("wheel", "elements", "THE WHEEL", UI_GOLD, "Two triangles, on every hit",
+        ["FIRE beats FLUX, FLUX beats TOXIC, TOXIC beats FIRE. ELECTRIC beats CORE, CORE beats ICE, ICE beats ELECTRIC. A hit of the element that beats its target's does ×" + mult("fire", "flux") + "; the one it is beaten by does ×" + mult("flux", "fire") + "; ice does " + (mult("ice", "core") === 0 ? "nothing" : "×" + mult("ice", "core")) + " to core.",
+         "It runs on every hit, your followers' and the creatures' alike, against anything that has an element. A follower's element is the one it was found with: an egg's pad says it, and a recruit draws one."],
+        [["BEATS", "×" + mult("fire", "flux"), "#7fffb0"], ["BEATEN BY", "×" + mult("flux", "fire"), "#ff8a7a"], ["ICE ON CORE", mult("ice", "core") === 0 ? "no damage" : "×" + mult("ice", "core"), "#99ddff"]]);
+    ELEMENTS.forEach(el => {
+        const a = _IP_ATTACKS[el.id] || {}, proc = typeof ELEMENT_PROC_CHANCE !== "undefined" ? ELEMENT_PROC_CHANCE[el.id] : undefined;
+        add("el_" + el.id, "elements", el.label.toUpperCase(), el.color, "Beats " + _ipElName(strong[el.id]).toLowerCase() + ", weak to " + _ipElName(weak[el.id]).toLowerCase(),
+            ["A " + el.label.toUpperCase() + " follower hits " + _ipElName(strong[el.id]) + " for ×" + mult(el.id, strong[el.id]) + " and " + _ipElName(weak[el.id]) + " for ×" + mult(el.id, weak[el.id]) + (el.id === "ice" ? ", and does nothing to CORE" : "") + ".",
+             "Its physical attack is " + (a.physical || "—") + " (1 WILL), its special " + (a.special || "—") + " (4 WILL), and its ultimate, fired by a double-tap once the bar is full, is " + (a.ult || "—") + ". Its hits can " + (a.proc || "proc") + " the target."],
+            [["BEATS", _ipElName(strong[el.id]), ELEMENTS.find(x => x.id === strong[el.id]).color], ["WEAK TO", _ipElName(weak[el.id]), ELEMENTS.find(x => x.id === weak[el.id]).color],
+             ["PHYSICAL", a.physical || "—"], ["SPECIAL", a.special || "—"], ["ULTIMATE", a.ult || "—", UI_GOLD], ["PROC", (proc !== undefined ? Math.round(proc * 100) + "% " : "") + (a.proc || "")]]);
+    });
+
+    // ── RULES ──
+    add("crystal", "rules", "THE CRYSTAL", "#2bff9b", "Home, and the end if it falls",
+        ["The Crystal stands in the Crystal Chamber: it is where you start, where recruits come out and where a fallen follower or clone comes back. It mends slowly on its own.",
+         "The creatures hunt it when an alarm is up. If it is destroyed the game is over: the card says so, with the crystals you had, and NEW GAME starts the facility again (SETTINGS on the dock does the same)."],
+        [["HEALTH", crystalHp + " HP", "#7dffb5"], ["LOST", "game over", UI_RED]]);
+    add("relays", "rules", "RELAYS & THE BLACKOUT", "#ffe733", "Power the rooms back up",
+        ["The facility starts in a blackout: every room dark, your monitor lamp and the emergency lights the only light. " + relays + " relays stand broken, and each one powers a few rooms. Walk up to one (or tap it) to repair it: a Technomancer spends " + relayRule.skillCells + " power cell and starts by itself; anyone else needs the RELAY KIT and " + relayRule.kitCells + " cells. Walk away and the repair stops, nothing spent.",
+         "Once a relay is online its rooms have power: lit while you are in them, their doors throwing light, and whatever it feeds (sentries, the charging station) working. The NETWORK panel at the top right counts the relays online and the rooms powered, and the room tag names the room you are in; with every relay online the blackout is over."],
+        [["RELAYS", relays], ["TECHNOMANCER", relayRule.skillCells + " power cell"], ["ANYONE", "the relay kit + " + relayRule.kitCells + " cells"]]);
+    add("gun", "rules", "YOUR GUN", "#ffb070", "Lock on, then the round dial fires",
+        ["Near a creature the gun takes aim by itself: the nearest one within " + target.range + " tiles that you can see is locked, red corners close on it, and a round DIAL with its picture appears: its health as a ring, its level, an INFO button and the ammunition under it. CLICK the dial for a shot, HOLD it to keep firing at the gun's own rate.",
+         "Tap another creature to lock that one instead; a tap on the locked creature is a shot too. The ammunition chip stands the gun down. Rounds come from AMMO PACKS in the supply cases and from scrap at the Armory's terminal, where weapons are equipped and upgraded as well."],
+        [["LOCKS", "within " + target.range + " tiles, in sight"], ["THE GUN HOLDS", ammoMax + " rounds"], ["YOU", hits + " hits, then back to the Crystal", "#ff8a7a"]]);
+    add("pack", "rules", "THE PACK & THE CLASSES", "#31e8ff", "Press I; a class after the tutorial",
+        ["Press I (or PACK on the dock) for your pack: everything you carry, in tabs, with an INSPECT page and USE for each item. Supply cases glow in the dark; walk over one to take what is in it. Any class may carry another class's gear, but only the right class may use it.",
+         "When the tutorial is finished you choose a class, and its cases arrive in the facility. Each class has a station in the rooms it works in, and earns a perk there."],
+        (typeof CLASSES !== "undefined" && typeof CLASS_ORDER !== "undefined" ? CLASS_ORDER.map(k => [CLASSES[k].name, CLASSES[k].tagline, CLASSES[k].colour]) : []));
+    add("kills", "rules", "WHAT A KILL PAYS", UI_GOLD, "Crystals, DNA and scrap",
+        ["A creature you kill pays its worth in crystals on the spot (◆ n floats over it): the crystals are what recruits and clones cost. It drops DNA splices of its kind and class for the Clone Bay, and in the arena a case of scrap metal where it fell. A nymph is worth nothing.",
+         "Your followers and clones take the kill's XP too (the killer the most, the units near it the rest), which is how they level and evolve."],
+        [["CRYSTALS", "its worth, on the spot", UI_GOLD], ["DNA", "a splice or more, by class", "#0f8"], ["SCRAP", "a case that lies " + sec(spawn.scrap.life)]]);
+    add("surge", "rules", "YOUR ULTIMATE", UI_GOLD, "The bar under your health",
+        ["The bar under your health is your own ultimate, and it is siphoned from the followers near you: anything within " + (typeof SIPHON_RANGE !== "undefined" ? SIPHON_RANGE : 6) + " tiles sends a wisp of static across every couple of seconds, so the more of them are with you the faster it fills. With none in reach it reads NO SQUAD IN RANGE. The ⌁ switch at its end turns the siphon off.",
+         "Tap the bar when it is full for an ARMY SURGE: every follower and clone healed, its will refilled, its own ultimate charged, and more damage for a while."],
+        [["SIPHON", "followers within " + (typeof SIPHON_RANGE !== "undefined" ? SIPHON_RANGE : 6) + " tiles"], ["SURGE", "×" + (typeof ARMY_SURGE_POWER !== "undefined" ? ARMY_SURGE_POWER : 1.6) + " damage for " + sec(typeof ARMY_SURGE_FRAMES !== "undefined" ? ARMY_SURGE_FRAMES : 600), UI_GOLD]]);
 
     return E;
 }
@@ -110,19 +144,10 @@ function infoEntries() {
 function infoEntry(id) { return infoEntries().find(e => e.id === id) || null; }
 
 // What a pressed thing is: the entry that describes its kind.
-function infoEntryForSubject(sub, tile) {
+function infoEntryForSubject(sub) {
     sub = sub || {};
     if (sub.follower) return sub.follower.isClone ? "clones" : "squad";
     if (sub.enemy) return "species";
-    const t = (sub.nest && sub.nest.nest) ? sub.nest : tile;
-    if (t && t.nest && !(typeof isHomePortal === "function" && isHomePortal(t))) return "nest";
-    if (t && t.nest) return "nest";
-    if (t && t.pillar && !t.destroyed) {
-        if (typeof isWallUnitTile === "function" && isWallUnitTile(t)) return "cells";
-        if (t.pillarTeam === "red") return "hunter";
-        if ((t.mk || 0) >= 2) return "mk2";
-        return t.waveMode ? "wave" : "turret";
-    }
     return null;
 }
 
@@ -131,24 +156,10 @@ function infoEntryForSubject(sub, tile) {
 // ─────────────────────────────────────────────────────────
 // An item is { k: 'head' | 'text' | 'pair' | 'nav' | 'gap' | 'line', ... }; its height is _IP_H[k].
 const _IP_H = { head: 36, text: 21, pair: 26, nav: 56, gap: 12, line: 10 };
-let _infoCat = "build";
+let _infoCat = "allies";
 let _infoPageNo = 0;
 
-function _ipWrapItems(text, chars, col) { return codexWrap(text, chars).map(l => ({ k: "text", t: l, c: col })); }
-
-// The old codex pages and their rows (codex.js: {h}, {t}, [label, value, colour, nav], null) in the new item form.
-function _ipRowsToItems(rows, chars) {
-    const out = [];
-    rows.forEach(r => {
-        if (r === null) out.push({ k: "line" });
-        else if (Array.isArray(r)) {
-            if (r[3] && (r[3].codexElement || r[3].codexPage)) out.push({ k: "nav", t: r[0], sub: r[1], c: r[2], page: r[3].codexElement || r[3].codexPage });
-            else out.push({ k: "pair", a: r[0], b: String(r[1]), c: r[2] });
-        } else if (r.h !== undefined) out.push({ k: "head", t: r.h, c: r.c });
-        else _ipWrapItems(r.t, chars, r.c).forEach(i => out.push(i));
-    });
-    return out;
-}
+function _ipWrapItems(text, chars, col) { return uiWrap(text, chars).map(l => ({ k: "text", t: l, c: col })); }
 
 function _ipEntryItems(e, chars) {
     const out = [{ k: "head", t: e.name, c: e.col }, { k: "text", t: e.sub.toUpperCase(), c: "#7f93bd" }, { k: "gap" }];
@@ -161,15 +172,7 @@ function _ipIndexItems(chars) {
     const cat = INFO_CATS.find(c => c.id === _infoCat) || INFO_CATS[0];
     const out = _ipWrapItems(cat.blurb, chars, "#8aa0c8");
     out.push({ k: "gap" });
-    if (cat.id === "elements") {
-        ELEMENTS.forEach(el => { const en = CODEX_ELEMENTS[el.id]; if (en) out.push({ k: "nav", t: el.label.toUpperCase(), sub: en.role, c: el.color, page: el.id }); });
-        out.push({ k: "nav", t: "COMBOS", sub: (typeof comboDiscovered !== "undefined" ? comboDiscovered.size : 0) + " / 15 FOUND", c: "#ffe066", page: "combos" });
-    } else if (cat.id === "rules") {
-        out.push({ k: "nav", t: "HOW PYLONS WORK", sub: "MODES, TIERS, SEASONING", c: cat.col, page: "rules" });
-        out.push({ k: "nav", t: "INFESTATION", sub: "WHAT HUNTERS DO", c: "#f77", page: "infest" });
-    } else {
-        infoEntries().filter(e => e.cat === cat.id).forEach(e => out.push({ k: "nav", t: e.name, sub: e.sub, c: e.col, page: "e:" + e.id }));
-    }
+    infoEntries().filter(e => e.cat === cat.id).forEach(e => out.push({ k: "nav", t: e.name, sub: e.sub, c: e.col, page: "e:" + e.id }));
     return out;
 }
 
@@ -178,8 +181,7 @@ function _ipReadout(chars) {
     const S = infoPanelSubject || {}, tile = infoPanelTarget;
     const out = [], P = (a, b, c) => out.push({ k: "pair", a, b: String(b), c });
     let title = "NOTHING HERE", col = UI_TEAL;
-    const f = S.follower || (!S.enemy && !S.nest && tile ? [...followers, ...actors.filter(a => a.isClone)].filter(a => !a.dead && Math.hypot(a.x - tile.x, a.y - tile.y) < 3)[0] : null);
-    const nest = S.nest || (tile && tile.nest ? tile : null);
+    const f = S.follower || (!S.enemy && tile ? [...followers, ...actors.filter(a => a.isClone)].filter(a => !a.dead && Math.hypot(a.x - tile.x, a.y - tile.y) < 3)[0] : null);
     if (f) {
         const el = ELEMENTS.find(e => e.id === f.element);
         title = (typeof unitTypeLabel === "function" ? unitTypeLabel(f) : (f.speciesName || "UNIT").toUpperCase()); col = el ? el.color : UI_TEAL;
@@ -187,6 +189,7 @@ function _ipReadout(chars) {
         if (Number.isFinite(lv)) P("LEVEL", lv + (lv < LEVEL_CAP ? "  ·  " + xpNext + " XP TO NEXT" : "  ·  MAX"), UI_GOLD);
         P("ELEMENT", (el ? el.label : f.element || "?").toUpperCase(), col);
         P("PERSONALITY", (f.personality || "—").toUpperCase());
+        if (f.post) P("HOLDS", (typeof partyRoomName === "function" ? partyRoomName(f.post) : String(f.post)).toUpperCase(), "#8fe3ff");
         P("HP", Math.ceil(f.health) + " / " + f.maxHealth, "#7dffb5");
         P("SPEED", ((f.moveSpeed || 0) * 1000).toFixed(1) + "‰");
         if (f.stats) { P("ATK / DEF", (f.stats.attack || 0).toFixed(0) + " / " + (f.stats.defense || 0).toFixed(0), "#ff8a7a"); P("SP.ATK / ACC", (f.stats.specialAttack || 0).toFixed(0) + " / " + (f.stats.accuracy || 0).toFixed(0), "#d8a0ff"); P("WILL", (f.stats.will || 0).toFixed(0)); }
@@ -197,40 +200,17 @@ function _ipReadout(chars) {
     } else if (S.enemy && !S.enemy.dead) {
         const e = S.enemy, el = ELEMENTS.find(x => x.id === e.element);
         title = (typeof unitTypeLabel === "function" ? unitTypeLabel(e) : "ENEMY") || "ENEMY"; col = el ? el.color : UI_RED;
+        if (Number.isFinite(e.level)) P("LEVEL", e.level, UI_GOLD);
         if (el) P("ELEMENT", el.label.toUpperCase(), el.color);
         P("HP", Math.ceil(e.health) + " / " + e.maxHealth, "#ff8a7a");
         P("POWER", (e.power || 0).toFixed(0));
         P("SPEED", ((e.moveSpeed || 0) * 1000).toFixed(1) + "‰");
-    } else if (nest) {
-        const home = typeof isHomePortal === "function" && isHomePortal(nest), held = nestIsPowerSource(nest);
-        title = home ? "THE CRYSTAL PORTAL" : "NEST · ZONE " + (Number.isFinite(nest.nestZone) ? nest.nestZone : "?"); col = held ? NEST_COLOUR_CONTROLLED : NEST_COLOUR_HOSTILE;
-        P("STATE", home ? "HOME" : held ? "HELD — YOURS" : "HOSTILE — HACK IT", col);
-        if (held) { P("ENERGY", Math.round(nestEnergy(nest)) + " / " + Math.round(nestEnergyMax(nest)), UI_GOLD); if (nest.powerOff) P("POWER", "SWITCHED OFF", "#ff8a7a"); }
-        else P("HEALTH", Math.max(0, Math.ceil(nest.nestHealth)) + " / " + nest.nestMaxHealth, "#ff8a7a");
-    } else if (tile && tile.pillar && !tile.destroyed) {
-        const el = ELEMENTS.find(e => e.id === tile.attackModeElement), ally = tile.pillarTeam === "green";
-        const unitCell = typeof isWallUnitTile === "function" && isWallUnitTile(tile);
-        title = unitCell ? "POWER UNIT CELL" : tile.attackMode ? "ATTACK TURRET" : tile.waveMode ? waveRoleLabel(tile.attackModeElement) + " PYLON" : "DORMANT PYLON"; col = el ? el.color : UI_TEAL;
-        if ((tile.mk || 0) >= 2) title = "MK II · " + title;
-        P("TEAM", ally ? "ALLY" : "ENEMY", ally ? "#7dffb5" : "#ff6655");
-        P("ELEMENT", el ? el.label.toUpperCase() : "NONE", el ? el.color : "#778");
-        P("MODE", tile.attackMode ? "ATTACK" : tile.waveMode ? waveRoleLabel(tile.attackModeElement) + (tile.waveAwake === false ? " (STANDBY)" : "") : "DORMANT", UI_GOLD);
-        P("HP", Math.ceil(tile.health) + " / " + tile.maxHealth, "#7dffb5");
-        P("STATUS", tile.constructing ? "BUILDING" : tile.reconstructing ? "REPAIRING" : "ACTIVE");
-        if (typeof pylonPowerState === "function") { const ps = pylonPowerState(tile); P("POWER", ps.text, ps.colour); }
-        if (el) { const tier = (typeof networkStrength !== "undefined" && networkStrength[el.id]) || 0; P("NETWORK", tier ? "TIER " + ["", "I", "II", "III"][tier] : "NONE", el.color); }
-    } else out.push({ k: "text", t: "Nothing you can read about is here. Long-press a pylon, a nest, a unit or an enemy.", c: "#8aa0c8" });
-    // Your own turret or wave pylon: MK II and CONVERT live here now (they were on the long-press ring).
-    if (tile && tile.pillar && !tile.destroyed && tile.pillarTeam === "green" && !nest && !f && !S.enemy) {
-        if (typeof mk2Eligible === "function" && mk2Eligible(tile)) { const why = mk2Blocker(tile); out.push({ k: "nav", t: tile.mk >= 2 ? "MK II \u2713" : "BUY MK II  " + MK2_COST + "\u25c6", sub: why || "STRONGER BODY AND OUTPUT", c: UI_GOLD, act: "mk2", dim: !!why }); }
-        if ((tile.attackMode || tile.waveMode) && !isRelayPylon(tile)) out.push({ k: "nav", t: "CONVERT", sub: "TURRET \u21c4 WAVE PYLON, KEEPS ITS ELEMENT", c: UI_VIOLET, act: "convert" });
-    }
-    const eid = infoEntryForSubject({ follower: f, enemy: S.enemy, nest }, tile);
+    } else out.push({ k: "text", t: "Nothing you can read about is here. Long-press a follower, a clone or a creature, or open the INDEX.", c: "#8aa0c8" });
+    const eid = infoEntryForSubject({ follower: f, enemy: S.enemy });
     out.push({ k: "gap" });
     if (eid) { const e = infoEntry(eid); if (e) out.push({ k: "nav", t: "ABOUT: " + e.name, sub: e.sub, c: e.col, page: "e:" + eid }); }
-    const elId = tile && tile.pillar && !tile.destroyed ? tile.attackModeElement : f && f.element;
-    const el2 = elId && ELEMENTS.find(e => e.id === elId);
-    if (el2 && CODEX_ELEMENTS[elId]) out.push({ k: "nav", t: el2.label.toUpperCase() + " NETWORK", sub: CODEX_ELEMENTS[elId].role, c: el2.color, page: elId });
+    const elId = f ? f.element : S.enemy ? S.enemy.element : null, el2 = elId && ELEMENTS.find(e => e.id === elId);
+    if (el2) out.push({ k: "nav", t: el2.label.toUpperCase(), sub: "WHAT IT BEATS, WHAT BEATS IT", c: el2.color, page: "e:el_" + elId });
     return { title, col, items: out };
 }
 
@@ -238,15 +218,9 @@ function _ipReadout(chars) {
 function _ipPage(chars) {
     const p = infoPanelPage;
     if (p === "codex") return { title: "INDEX", col: UI_TEAL, items: _ipIndexItems(chars), back: infoPanelTarget || infoPanelSubject ? "‹ BACK" : null, tabs: true };
-    const legacy = { rules: ["HOW PYLONS WORK", codexRulesRows], infest: ["INFESTATION", codexInfestRows], generator: ["GENERATOR", codexGeneratorRows], combos: ["COMBOS", codexComboRows] };
     if (typeof p === "string" && p.slice(0, 2) === "e:") {
         const e = infoEntry(p.slice(2));
         if (e) return { title: INFO_CATS.find(c => c.id === e.cat).label, col: e.col, items: _ipEntryItems(e, chars), back: "‹ INDEX" };
-    }
-    if (p && legacy[p]) return { title: legacy[p][0], col: UI_TEAL, items: _ipRowsToItems(legacy[p][1](chars), chars), back: "‹ INDEX" };
-    if (p && CODEX_ELEMENTS[p]) {
-        const el = ELEMENTS.find(e => e.id === p);
-        return { title: el.label.toUpperCase(), col: el.color, items: _ipRowsToItems(codexElementRows(p, chars), chars), back: "‹ INDEX" };
     }
     const r = _ipReadout(chars);
     return { title: r.title, col: r.col, items: r.items, back: "INDEX ›" };
@@ -266,9 +240,10 @@ function _ipLayout() {
     const L = { px, py, pw, ph, ix, iw, chars, title: pg.title, col: pg.col, tabs: [], buttons: [], placed: [], page: 0, pages: 1 };
     let y0 = py + 60;
     if (pg.tabs) {
-        const tw = Math.floor((iw - 2 * 6) / 3), th = 40;
-        INFO_CATS.forEach((c, i) => L.tabs.push({ id: c.id, label: c.label, col: c.col, x: ix + (i % 3) * (tw + 6), y: y0 + Math.floor(i / 3) * (th + 6), w: tw, h: th, on: c.id === _infoCat }));
-        y0 += 2 * (th + 6) + 4;
+        // four tabs are a 2 × 2 grid (more would go three to a row)
+        const cols = INFO_CATS.length <= 4 ? 2 : 3, rows = Math.ceil(INFO_CATS.length / cols), tw = Math.floor((iw - (cols - 1) * 6) / cols), th = 40;
+        INFO_CATS.forEach((c, i) => L.tabs.push({ id: c.id, label: c.label, col: c.col, x: ix + (i % cols) * (tw + 6), y: y0 + Math.floor(i / cols) * (th + 6), w: tw, h: th, on: c.id === _infoCat }));
+        y0 += rows * (th + 6) + 4;
     }
     const footY = py + ph - 62, y1 = footY - 8;
     // split the items into pages that fit
@@ -291,9 +266,6 @@ function _ipLayout() {
 function _ipGo(page) {
     infoPanelPage = page; _infoPageNo = 0;
     if (typeof page === "string" && page.slice(0, 2) === "e:") { const e = infoEntry(page.slice(2)); if (e) _infoCat = e.cat; }
-    else if (page && typeof CODEX_ELEMENTS !== "undefined" && CODEX_ELEMENTS[page]) _infoCat = "elements";
-    else if (page === "combos") _infoCat = "elements";
-    else if (page === "rules" || page === "infest" || page === "generator") _infoCat = "rules";
 }
 
 function drawInfoPanel() {
@@ -338,9 +310,6 @@ function _handleInfoPanelTap(tx, ty) {
         return true;
     }
     for (const t of L.tabs) if (inR(t)) { _infoCat = t.id; _infoPageNo = 0; return true; }
-    for (const p of L.placed) if (p.it.k === "nav" && inR({ x: L.ix, y: p.y, w: L.iw, h: p.h })) {
-        if (p.it.act) { const t = infoPanelTarget; if (p.it.act === "mk2") { if (!p.it.dim) { closeInfoPanel(); upgradeToMk2(t); } else upgradeToMk2(t); } else if (p.it.act === "convert") { closeInfoPanel(); openElementPicker("convert", t); } return true; }
-        _ipGo(p.it.page); return true;
-    }
+    for (const p of L.placed) if (p.it.k === "nav" && inR({ x: L.ix, y: p.y, w: L.iw, h: p.h })) { _ipGo(p.it.page); return true; }
     return true;
 }

@@ -3,27 +3,20 @@
 // ─────────────────────────────────────────────────────────
 // REPORTED: "I would like an info tab for each of the followers and their different attacks and jobs", "on each card". Every card (the Command
 // Center's roster cards, the phone roster, the Clone Bay's player cards) has an INFO button that opens this: ATTACKS, JOBS and STATS tabs.
-// The numbers are the game's own constants (evolution.js, mass.js, species.js, clonework.js), read, not retyped, so the page cannot drift from play.
+// The numbers are the game's own constants (evolution.js, species.js, elements.js), read, not retyped, so the page cannot drift from play.
+// The ultimates (js/elements.js FOLLOWER_ULTIMATES): each works within ULT_REACH tiles of the follower.
 const ELEMENT_ULTIMATES = [
-    { el: "fire",     name: "Nova Flare",   desc: "Ring of fire · burns all in 5 tiles" },
-    { el: "electric", name: "Overload",     desc: "Chain stun · 2s paralysis in 6 tiles" },
-    { el: "ice",      name: "Deep Freeze",  desc: "Force-freeze · huge 8-tile radius" },
-    { el: "flux",     name: "Dim. Rift",    desc: "Pull+push+disorient in 5 tiles" },
-    { el: "core",     name: "Bulwark",      desc: "Shield ALL followers + knockback ring" },
-    { el: "toxic",    name: "Plague Bloom", desc: "4 toxic clouds on random enemies" },
+    { el: "fire",     name: "Volcanic Eruption", desc: "A column of fire on the biggest enemy in reach, then a burning crater" },
+    { el: "electric", name: "EMP",               desc: "Strips every enemy shield in reach and speeds up your followers" },
+    { el: "ice",      name: "Blizzard",          desc: "A field of snow that keeps freezing the enemies in it" },
+    { el: "flux",     name: "Disorient",         desc: "The creatures in reach turn on each other" },
+    { el: "core",     name: "Shield Grant",      desc: "A shield on every one of your followers" },
+    { el: "toxic",    name: "Smoke Screen",      desc: "Smoke creeps out: the enemies in it lose their aim" },
 ];
 const ROLE_INFO = {
     brawler: { label: "BRAWLER",    text: "Closes in and fights up close." },
     sniper:  { label: "MAGE",       text: "Fires from a distance." },
     camper:  { label: "TECHNICIAN", text: "Holds a post." },
-};
-// What each element does on WORK duty (mass.js). Fire has no job.
-const WORK_INFO = {
-    electric: { label: "NEUTRALISE / HACK", text: "Bleeds the charge off mass lumps so they can be hauled for shards; with none to bleed, hacks wall panels for their shards." },
-    flux:     { label: "HAUL",              text: "Hauls neutralised lumps back to the Crystal or a nest you hold; each delivery pays shards." },
-    core:     { label: "RE-ARM",            text: "Walks to a downed pylon and re-arms it." },
-    toxic:    { label: "TEND CLONE",        text: "Picks a clone, walks with it and mends it while it fights. Does no damage itself." },
-    ice:      { label: "SET BLOCK",         text: "Freezes where it stands into a solid ice block, one tile wide, that everything is pushed out of." },
 };
 const CLONE_SPECIAL = {
     scorpion: "STINGER", spider: "WEB SHOT", mantis: "AMBUSH", moth: "DUST",
@@ -34,7 +27,7 @@ const CLONE_SPECIAL_TEXT = {
 const _uiSec = f => (f / 60) % 1 === 0 ? (f / 60) + " s" : (f / 60).toFixed(1) + " s";
 const _uiX = n => n + "×";
 
-// A signature move, as rows ([label, value]) read off the constants. A worker form's move is a job bonus (see JOBS).
+// A signature move, as rows ([label, value]) read off the constants.
 const MOVE_INFO = {
     "PETAL BLAZE":     () => [["REACH", BLOOM_RADIUS + " tiles"], ["EVERY", _uiSec(BLOOM_EVERY)], ["DAMAGE", _uiX(BLOOM_MULT) + " power"], ["EFFECT", "A ring of fire hits everything around it and sets it burning for " + _uiSec(BLOOM_BURN)]],
     "QUILL BURST":     () => MOVE_INFO["PETAL BLAZE"](),
@@ -50,12 +43,6 @@ const MOVE_INFO = {
     "ERUPTION":        () => [["REACH", CALDERA_RADIUS + " tiles"], ["EVERY", _uiSec(CALDERA_EVERY)], ["DAMAGE", _uiX(CALDERA_MULT) + " power"], ["EFFECT", "The crater bursts in toxic goo and eats the armour of everything it hits for " + _uiSec(CALDERA_SHRED_FRAMES)]],
     "CHOMP":           () => [["REACH", MAW_RANGE + " tiles"], ["EVERY", _uiSec(MAW_EVERY)], ["DAMAGE", _uiX(MAW_MULT) + " power"], ["EFFECT", "The fangs slam down: the target is frozen stiff for " + _uiSec(MAW_STUN) + " and everything within " + MAW_SLOW_R + " tiles of it is slowed"]],
 };
-// A worker form's move is a bonus to its job.
-const WORKER_MOVE_INFO = {
-    "REWIRE":          () => [["RE-ARMS", _uiX(VESSEL_RATE) + " as fast"], ["FROM", _uiX(VESSEL_REACH) + " as far"], ["WALKS", _uiX(VESSEL_SPEED) + " as fast"]],
-    "HEAVY HAUL":      () => [["HAULS", _uiX(HAULER_SPEED) + " as fast"], ["PICKS UP FROM", _uiX(HAULER_REACH) + " as far"], ["EACH DELIVERY PAYS", _uiX(HAULER_PAY) + " the shards"]],
-    "RAPID DISCHARGE": () => [["BLEEDS CHARGE", _uiX(POD_RATE) + " as fast"], ["FROM", _uiX(POD_REACH) + " as far"], ["WALKS", _uiX(POD_SPEED) + " as fast"]],
-};
 
 const _uiLabel = id => { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === id) : null; return e ? e.label.toUpperCase() : String(id || "").toUpperCase(); };
 const _uiColour = id => { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === id) : null; return e ? e.color : "#8aa0c8"; };
@@ -63,13 +50,12 @@ const _uiColour = id => { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.f
 // ── THE DATA: { title, sub, color, attacks: [section], jobs: [section], stats: [section] }, a section = { h, rows: [[k, v]], note } ──
 function followerInfo(a) {
     const ev = typeof evolvedDef === "function" ? evolvedDef(a) : null, role = a.role === "hybrid" ? "brawler" : a.role, r = ROLE_INFO[role] || ROLE_INFO.brawler;
-    const worker = a.duty === "worker", canWork = typeof canWorkMass === "function" && canWorkMass(a), ps = typeof PLAY_STYLES !== "undefined" ? (PLAY_STYLES.find(p => p.id === a.playStyle) || PLAY_STYLES[1]) : null;
+    const ps = typeof PLAY_STYLES !== "undefined" ? (PLAY_STYLES.find(p => p.id === a.playStyle) || PLAY_STYLES[1]) : null;
     const title = typeof unitTypeLabel === "function" ? unitTypeLabel(a) : _uiLabel(a.element) + " " + r.label;
     const out = { kind: "follower", unit: a, title, sub: _uiLabel(a.element) + " · LV " + (a.level || 1) + (ev ? " · EVOLVED" : ""), color: _uiColour(a.element), attacks: [], jobs: [], stats: [] };
     // ATTACKS
     out.attacks.push({ h: "ATTACK STYLE · " + r.label, note: r.text, rows: ps ? [["PLAY STYLE", ps.label + " (" + ps.blurb.toLowerCase() + ")"], ["ENGAGE REACH", _uiX(ps.reach) + " its usual"]] : [] });
-    if (ev && ev.duty === "worker") out.attacks.push({ h: "SIGNATURE", note: "A worker form: its move is a bonus to its job (see JOBS). It fights with the usual attack.", rows: [] });
-    else if (ev && MOVE_INFO[ev.move]) {
+    if (ev && MOVE_INFO[ev.move]) {
         const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, ev) : null, mv = cur && MOVE_INFO[cur.name] ? cur : { name: ev.move }, ids = typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, ev, id)) : [];
         out.attacks.push({ h: "SIGNATURE · " + mv.name, note: ev.name, rows: MOVE_INFO[mv.name]() });
         // MORE THAN ONE MOVE: pick which it uses (js/moves.js; saved with the follower)
@@ -81,13 +67,8 @@ function followerInfo(a) {
     }
     const u = ELEMENT_ULTIMATES.find(x => x.el === a.element);
     if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". Double-tap the follower when it is fully charged.", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
-    // JOBS
-    const pt = typeof partyOn === "function" && partyOn();   // the facility: the squad, or a room it holds; nobody works
-    out.jobs.push({ h: "RIGHT NOW", rows: (pt ? [] : [["DUTY", worker ? "WORKING" : "FIGHTING"]]).concat([["STANCE", a.post && typeof partyRoomName === "function" ? "HOLDING THE " + partyRoomName(a.post).toUpperCase() : pt && typeof partyIsMember === "function" && partyIsMember(a) ? "IN THE SQUAD, FOLLOWING YOU" : a.stance === "hold" || (a.job && a.job.type === "move") ? "HOLDING A POST" : "FOLLOWING YOU"]]) });
-    const w = WORK_INFO[a.element];
-    if (!pt) out.jobs.push(canWork && w ? { h: "WORK · " + w.label, note: w.text, rows: [["HOW", "Set it to WORK in the Command Center (it leaves the line)"]] }
-                               : { h: "WORK", note: "A " + _uiLabel(a.element) + " follower has no job: it fights only.", rows: [] });
-    if (ev && ev.duty === "worker" && WORKER_MOVE_INFO[ev.move]) out.jobs.push({ h: "JOB BONUS · " + ev.move, note: ev.name + " does its job better:", rows: WORKER_MOVE_INFO[ev.move]() });
+    // JOBS: the squad, or a room it holds (js/party.js)
+    out.jobs.push({ h: "RIGHT NOW", rows: [["STANCE", a.post && typeof partyRoomName === "function" ? "HOLDING THE " + partyRoomName(a.post).toUpperCase() : typeof partyIsMember === "function" && partyIsMember(a) ? "IN THE SQUAD, FOLLOWING YOU" : a.stance === "hold" || (a.job && a.job.type === "move") ? "HOLDING A POST" : "FOLLOWING YOU"]] });
     // STATS
     out.stats.push({ h: "VITALS", rows: [["LEVEL", String(a.level || 1)], ["HEALTH", Math.max(0, Math.round(a.health || 0)) + " / " + Math.round(a.maxHealth || 0)], ["POWER", String(Math.round(a.power || 0))], ["SPEED", ((a.moveSpeed || 0) * 1000).toFixed(0)]] });
     if (a.stats) out.stats.push({ h: "BASE STATS" + (a.personality ? " · " + String(a.personality).toUpperCase() : ""), rows: Object.keys(a.stats).filter(k => k !== "resonance").map(k => [k.replace(/([A-Z])/g, " $1").toUpperCase(), String(a.stats[k])]) });
@@ -100,12 +81,12 @@ function followerInfo(a) {
 // A clone TYPE (a species and class), from a Clone Bay card: what the clone does, its job, its numbers and its price.
 function cloneTypeInfo(species, cls) {
     const S = SPECIES[species], d = (typeof getClassDef === "function" ? getClassDef(S, cls) : S[cls]) || S.scout;
-    const special = d.abdomenAttack || (d.rangeDamage && d.rangeDamage > 0), job = typeof CLONE_JOBS !== "undefined" ? CLONE_JOBS[species] : null;
+    const special = d.abdomenAttack || (d.rangeDamage && d.rangeDamage > 0);
     const out = { kind: "clone", title: species.toUpperCase() + " " + cls.toUpperCase(), sub: "CLONE · " + (typeof CLONE_COSTS !== "undefined" && CLONE_COSTS[species] ? CLONE_COSTS[species].splicesNeeded + " SPLICES · " + cloneShardCost(species, cls) + " SHARDS" : ""), color: S.color, species, cls, attacks: [], jobs: [], stats: [] };
     out.attacks.push({ h: "BITE", note: "Fights up close.", rows: [["POWER", String(d.power)], ["REACTS IN", d.reactionSpeed + " frames when hit"]] });
     out.attacks.push(special ? { h: "SPECIAL · " + (CLONE_SPECIAL[species] || "SPECIAL"), note: CLONE_SPECIAL_TEXT[species] || "A ranged attack from the rear.", rows: [["DAMAGE", String(d.rangeDamage)], ["EVERY", _uiSec(d.abdomenCooldown)], ["NOTE", "It will not turn when hit from behind"]] }
                               : { h: "SPECIAL", note: "None: a " + cls + " has no ranged attack" + (species === "ant" || species === "beetle" ? " (an " + species + " never does)." : " (the striker and tank do)."), rows: [] });
-    out.jobs.push(job ? { h: "WORK · " + job.label, note: job.note, rows: [["HOW", "Long-press it and choose TO WORK"]] } : { h: "WORK", note: "No job yet for a " + species + " clone: it fights only.", rows: [] });
+    out.jobs.push({ h: "RIGHT NOW", note: "A clone fights beside you: it follows, and holds where it is told to.", rows: [] });
     out.stats.push({ h: "VITALS", rows: [["HEALTH", String(d.health)], ["POWER", String(d.power)], ["SPEED", String(Math.round(d.moveSpeed * 1000))], ["SIZE", d.width + " × " + d.height]] });
     if (typeof MAX_CLONES !== "undefined") out.stats.push({ h: "LIMITS", rows: [["CLONES AT ONCE", String(MAX_CLONES)], ["COST", cloneShardCost(species, cls) + " shards and " + (CLONE_COSTS[species] ? CLONE_COSTS[species].splicesNeeded : "?") + " splices"]] });
     return out;

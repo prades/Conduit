@@ -7,7 +7,7 @@
 //   TAKE      walking up to the egg (FP_SPOT.take tiles) makes it a follower there and then (spawnFollowerAtCrystal with the spot's element and type, put on the spot, no walk home to the Crystal first)
 //   REFILL    FP_SPOT.refill frames later (a minute and a half) the spot has another egg of the same type and element, once the player is not standing near it and the squad is under FP_SPOT.cap
 //   SAVED     the delay still to run is part of the saved game (js/facilitysave.js), so reloading the page is not a way to fill every spot again at once
-// The egg is an ordinary neutral recruit (the strip's grey egg: it does nothing, is nobody's target, and the strip's walk-up-and-it-walks-home conversion is skipped for it, js/game.js).
+// The egg is an ordinary neutral recruit (a grey egg: it does nothing, is nobody's target, and the walk-up-and-it-walks-home conversion is skipped for it, js/game.js).
 
 const FP_SPOT = { take: 1.5, refill: 5400, near: 4, cap: 12, label: 8 };   // tiles to take it; frames to fill again; tiles the player must be off; followers the squad may have for a spot to fill; tiles within which its label shows
 

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-//  INSECT ABILITIES — charge-up specials, the WORKER class, the SCOUT leap
+//  INSECT ABILITIES — charge-up specials, and the SCOUT leap
 //
 //  Every ability follows the same four-phase cycle so the player can read and
 //  counter it:
@@ -11,18 +11,13 @@
 //  (name plate + flaring charge ring) — that telegraph is the counterplay.
 //
 //  Abilities are resolved by class first, then species:
-//     worker → SUPER REPAIR      scout → LEAP
+//     scout → LEAP
 //     striker / tank / boss → the species signature special
-//     nymph → none (they stay chaff)
+//     nymph, worker → none (they stay chaff)
 // ─────────────────────────────────────────────────────────
 
 const ABILITY_DEFS = {
     // ── Class abilities ──
-    SUPER_REPAIR: {
-        name: 'SUPER REPAIR', color: '#66ffcc',
-        chargeRate: 0.45, windup: 26, duration: 240,
-        repairMul: 6,            // multiplier on the worker's base repair rate
-    },
     LEAP: {
         name: 'LEAP', color: '#ffdd44',
         chargeRate: 0.55, windup: 20, duration: 26,   // duration = frames in flight
@@ -76,33 +71,22 @@ const SPECIES_ABILITY = {
     moth:     'BLINDING_DUST',
 };
 
-// Deep-zone synthetic constructs have no hand-authored special; they inherit
-// one by rank so they are never simply harmless.
-const SYNTHETIC_FALLBACK = ['MANDIBLE_FRENZY', 'CARAPACE_SLAM', 'VENOM_LANCE',
-                            'WEB_SNARE', 'BLADE_FLURRY', 'BLINDING_DUST'];
-
 function resolveAbilityKey(speciesName, className) {
-    if (className === 'worker') return 'SUPER_REPAIR';
-    if (className === 'scout')  return 'LEAP';
-    if (className === 'nymph')  return null;
-    if (SPECIES_ABILITY[speciesName]) return SPECIES_ABILITY[speciesName];
-    // Synthetic species: pick deterministically from the name so a given
-    // construct always has the same special.
-    let h = 0;
-    for (let i = 0; i < String(speciesName).length; i++) h = (h * 31 + String(speciesName).charCodeAt(i)) | 0;
-    return SYNTHETIC_FALLBACK[Math.abs(h) % SYNTHETIC_FALLBACK.length];
+    if (className === 'worker' || className === 'nymph') return null;
+    if (className === 'scout') return 'LEAP';
+    return SPECIES_ABILITY[speciesName] || null;
 }
 
 // ── Slow plumbing ────────────────────────────────────────
 // slowFactor was written in eight places across the codebase and read in none:
-// nothing ever scaled movement by it, so every slow in the game — ice pylons,
-// web shots, tar traps — was purely cosmetic. Rather than edit ~35 movement
-// sites, the factor is applied to moveSpeed once per frame in
+// nothing ever scaled movement by it, so every slow in the game — web shots,
+// blinding dust, the ice moves — was purely cosmetic. Rather than edit ~35
+// movement sites, the factor is applied to moveSpeed once per frame in
 // updateStatusEffects, mirroring the existing _empBaseSpeed pattern.
 // Last writer wins on the factor, longest duration wins on the timer. Keeping
-// "strongest wins" instead would be worse: an ice pylon refreshes its slow
-// every few frames, so a one-off 0% freeze would latch permanently for as long
-// as the pylon kept topping the timer up.
+// "strongest wins" instead would be worse: a slow that is refreshed every few
+// frames would latch a one-off 0% freeze for as long as it kept topping the
+// timer up.
 function applySlow(actor, frames, factor) {
     if (!actor || actor.dead) return;
     actor.slowFactor = Math.max(0, factor);
@@ -115,8 +99,7 @@ function tickSlowSpeed(actor) {
     // against attack state, which parks moveSpeed at 0. A slow or haste already on it does not block the capture: moveSpeed is
     // only ever scaled HERE, from the base, so before there is a base it is
     // still the unscaled speed. Requiring "not slowed" meant a follower that
-    // first moved inside an electric zone — renewed every 3 frames — never
-    // got a base, and so never went any faster.
+    // first moved while hasted never got a base, and so never went any faster.
     if (actor.baseMoveSpeed === undefined) {
         if (actor.state !== 'attack' && actor.moveSpeed > 0) actor.baseMoveSpeed = actor.moveSpeed;
         else return;
@@ -233,10 +216,6 @@ function _abSay(pred, text, color) {
 // Where this ability is pointed. Recomputed each windup frame so the telegraph
 // tracks a target that is still moving.
 function _abAimPoint(pred, def) {
-    if (pred.abilityKey === 'SUPER_REPAIR') {
-        const t = _abFindRepairTarget(pred);
-        return t ? { x: t.x, y: t.y } : null;
-    }
     const reach = pred.abilityKey === 'LEAP' ? 6
                 : pred.abilityKey === 'CARAPACE_SLAM' ? 5
                 : Math.max(2, def.radius || 2) + 1;
@@ -263,7 +242,6 @@ function initAbility(pred) {
 // has not been provoked stays idle, so the player is never ambushed by an
 // ability from something that was not yet a threat.
 function _abEngaged(pred) {
-    if (pred.className === 'worker') return !!_abFindRepairTarget(pred);
     if (pred.isClone) return true;
     if (pred.provoked) return true;
     if (typeof alertActive !== 'undefined' && alertActive) return true;
@@ -273,11 +251,6 @@ function _abEngaged(pred) {
 // Is the ability worth firing right now?
 function _abShouldFire(pred, def) {
     switch (pred.abilityKey) {
-        case 'SUPER_REPAIR': {
-            const t = _abFindRepairTarget(pred);
-            if (!t) return false;
-            return Math.hypot(t.x - pred.x, t.y - pred.y) < 1.4;
-        }
         case 'LEAP': {
             // Only to get away: low on health with something close enough to
             // be a threat. A healthy scout never leaps, at a foe or otherwise.
@@ -332,7 +305,7 @@ function abilityTick(pred) {
             _abStartActive(pred, def);
         }
         // A winding insect is rooted — that is what makes the telegraph fair.
-        return pred.abilityKey !== 'SUPER_REPAIR';
+        return true;
     }
 
     // ── CHARGING / READY ──
@@ -420,11 +393,6 @@ function _abStartActive(pred, def) {
             _abBurst(pred, def.color, def.radius, 46, 8);
             break;
         }
-        case 'SUPER_REPAIR': {
-            pred.superRepair = true;
-            _abBurst(pred, def.color, 1.2, 34, 4);
-            break;
-        }
     }
 }
 
@@ -443,8 +411,6 @@ function _abRunActive(pred, def) {
         case 'CARAPACE_SLAM': {
             pred.x += pred.slamDX;
             pred.y = Math.max(0, Math.min(3, pred.y + pred.slamDY));
-            // The charge goes through your equipment too, once per pylon a dash.
-            if (typeof hurtEquipmentInRadius === "function") hurtEquipmentInRadius(pred, def.radius, pred.power * def.dmg, pred.slamHit);
             _abForEachFoeInRadius(pred, def.radius, v => {
                 if (pred.slamHit.has(v)) return;   // one hit per victim per slam
                 pred.slamHit.add(v);
@@ -465,7 +431,6 @@ function _abRunActive(pred, def) {
             if (pred.abilityTimer % def.interval === 0) {
                 pred.attackAnim = 0.01;
                 _abForEachFoeInRadius(pred, def.radius, v => _abHurt(pred, v, pred.power * def.dmg));
-                if (typeof hurtEquipmentInRadius === "function") hurtEquipmentInRadius(pred, def.radius, pred.power * def.dmg);
                 _abBurst(pred, def.color, 0.9, 18, 1);
                 pred.abilityHits++;
             }
@@ -484,8 +449,6 @@ function _abRunActive(pred, def) {
                 _abForEachFoeInRadius(pred, def.radius, v => {
                     if (v !== null) applyDamage(v, pred.power * def.dotDmg, pred, 'toxic');
                 });
-                // The dust corrodes what stands in it.
-                if (typeof hurtEquipmentInRadius === "function") hurtEquipmentInRadius(pred, def.radius, pred.power * def.dotDmg);
             }
             return false;
         }
@@ -500,118 +463,7 @@ function _abEndActive(pred, def) {
         // No landing damage: it jumped to get away, not to hit anything.
         _abBurst(pred, def.color, 0.8, 14, 2);
     }
-    if (pred.abilityKey === 'SUPER_REPAIR') pred.superRepair = false;
     if (pred.abilityKey === 'CARAPACE_SLAM') pred.slamHit = null;
-}
-
-// ─────────────────────────────────────────────────────────
-//  WORKER CLASS
-//  Repairs its own team's pylons. Red workers keep enemy pylons standing;
-//  a cloned worker does the same for the player. Avoids fights entirely.
-// ─────────────────────────────────────────────────────────
-const WORKER_REPAIR_RATE   = 0.05;   // pylon HP per frame (maxHealth is 20)
-const WORKER_REBUILD_RATE  = 0.004;  // reconstructProgress per frame (0→1)
-const WORKER_SEEK_RANGE    = 14;
-
-// Scanning `world` for wrecks is O(tiles), so the result is cached per worker
-// and refreshed a few times a second rather than every frame.
-const WORKER_RESCAN_FRAMES = 30;
-
-function _abFindRepairTarget(pred) {
-    const fresh = pred._repairScanFrame !== undefined &&
-                  frame - pred._repairScanFrame < WORKER_RESCAN_FRAMES;
-    // A cached null is a real answer, not a cache miss. Treating it as one meant
-    // a worker with nothing to repair — the common case — rescanned the entire
-    // world array every single frame instead of every 30.
-    if (fresh && (pred._repairScan === null || _abRepairStillValid(pred, pred._repairScan))) {
-        return pred._repairScan;
-    }
-    pred._repairScanFrame = frame;
-    pred._repairScan = _abScanRepairTarget(pred);
-    return pred._repairScan;
-}
-
-function _abScanRepairTarget(pred) {
-    if (typeof world === 'undefined') return null;
-    const myTeam = pred.isClone ? 'green' : 'red';
-    let damaged = null, dBest = WORKER_SEEK_RANGE;
-    let wreck   = null, wBest = WORKER_SEEK_RANGE;
-    for (const t of world) {
-        if (!t.pillar || t.pillarTeam !== myTeam) continue;
-        const d = Math.hypot(t.x - pred.x, t.y - pred.y);
-        if (t.destroyed) {
-            if (d < wBest) { wBest = d; wreck = t; }
-        } else if (t.health < t.maxHealth) {
-            if (d < dBest) { dBest = d; damaged = t; }
-        }
-    }
-    // Keeping a standing pylon alive beats rebuilding a wreck.
-    return damaged || wreck;
-}
-
-// Returns true when the worker has taken control of this frame.
-function workerTick(pred) {
-    if (pred.className !== 'worker' || pred.dead) return false;
-
-    // Workers are support, not soldiers — a hurt one runs rather than trades.
-    if (pred.health < pred.maxHealth * 0.45 && (typeof predatorMayRetreat !== 'function' || predatorMayRetreat(pred))) {
-        pred.state = 'retreat';
-        return false;
-    }
-
-    const t = _abFindRepairTarget(pred);
-    if (!t) {
-        // Nothing to fix — mill around near home instead of joining the attack.
-        if (pred.state === 'hunt' || pred.state === 'attack') pred.state = 'wander';
-        return false;
-    }
-
-    const dx = t.x - pred.x, dy = t.y - pred.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 0.95) {
-        const sp = pred.moveSpeed * 1.25;   // workers hustle
-        pred.dirX += (dx / dist - pred.dirX) * 0.12;
-        pred.dirY += (dy / dist - pred.dirY) * 0.12;
-        const len = Math.hypot(pred.dirX, pred.dirY) || 1;
-        pred.dirX /= len; pred.dirY /= len;
-        pred.x += (dx / dist) * sp;
-        pred.y += (dy / dist) * sp;
-        pred.walkCycle += sp * 40;
-        pred.y = Math.max(0, Math.min(3, pred.y));
-        return true;
-    }
-
-    // ── In range: repair ──
-    faceToward(pred, t.x, t.y, 0.2);   // face the work
-    const mul = pred.superRepair ? (ABILITY_DEFS.SUPER_REPAIR.repairMul || 6) : 1;
-    if (t.destroyed) {
-        t.reconstructing = true;
-        t.reconstructProgress = Math.min(1, (t.reconstructProgress || 0) + WORKER_REBUILD_RATE * mul);
-        if (t.reconstructProgress >= 1) {
-            t.destroyed = false;
-            t.reconstructing = false;
-            t.reconstructProgress = 0;
-            t.health = Math.max(1, Math.round(t.maxHealth * 0.5));
-            _abSay(pred, 'REBUILT', ABILITY_DEFS.SUPER_REPAIR.color);
-            pred._repairScanFrame = undefined;   // force a fresh pick next frame
-        }
-    } else {
-        t.health = Math.min(t.maxHealth, t.health + WORKER_REPAIR_RATE * mul);
-        if (frame % 20 === 0) {
-            elementEffects.push({ type: 'impact', x: t.x, y: t.y, radius: 0.4,
-                                  life: 20, color: ABILITY_DEFS.SUPER_REPAIR.color });
-        }
-        if (t.health >= t.maxHealth) pred._repairScanFrame = undefined;
-    }
-    pred.walkCycle += 0.04;   // fidget while working
-    return true;
-}
-
-function _abRepairStillValid(pred, t) {
-    const myTeam = pred.isClone ? 'green' : 'red';
-    if (!t || t.pillarTeam !== myTeam) return false;
-    if (t.destroyed) return true;                  // still a rebuild job
-    return t.health < t.maxHealth;
 }
 
 // ─────────────────────────────────────────────────────────

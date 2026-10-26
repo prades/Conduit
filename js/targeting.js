@@ -4,7 +4,7 @@
 // ASKED: "whenever you get close to an enemy, it automatically takes aim [...] a little circular menu that shows the creature that you're nearest, and it pops up, and you can hold it or click it to shoot. It also comes
 // with an info button and a little icon that shows a little gun that indicates that you're going to shoot it. [...] and how it automatically locks on to the nearest creature, have it so you can switch it by clicking on
 // another creature." The bottom-left tool keeps RETREAT, HOLD, COME and the element selector (js/mixtool.js).
-// In the facility (the classic game keeps its ring, js/commands.js):
+// In the facility:
 //   AUTO-LOCK   every few frames the nearest creature within TARGET.range tiles that the player can see (no wall between) becomes the TARGET: the gun is armed (js/input.js setPlayerAttackMode), the red corners close in on
 //               it and stay (js/gunfire.js drawLockReticle). A creature that is much nearer takes the lock over; with none in range the gun is put away.
 //   THE DIAL    a round button where the objective's plate ends: the target's picture in a ring that is its health, its level, a small gun (it fires at what is locked), an INFO button (what it is, and its numbers) and
@@ -30,7 +30,7 @@ function targetCurrent() { return typeof playerLockTarget !== "undefined" && tar
 function _tgDist(a) { return Math.hypot(a.x - player.x, a.y - player.y); }
 function _tgSees(a) { return typeof _fpLos === "function" && typeof _fp !== "undefined" && _fp && _fp.F ? _fpLos(player.visualX, player.visualY, a.x, a.y) : true; }
 function targetName(a) { return typeof unitTypeLabel === "function" ? unitTypeLabel(a) : String(a.speciesName || "ENEMY").toUpperCase(); }
-function _tgColour(a) { const el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null; return a.isElite ? "#ffd866" : el ? el.color : "#ff8a6a"; }
+function _tgColour(a) { const el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null; return el ? el.color : "#ff8a6a"; }
 
 // the nearest creature in range that can be seen
 function targetNearest() {
@@ -103,7 +103,7 @@ function targetRelease(ex, ey) {
 // ── the creature's picture ──
 // Drawn once per kind with the game's own creature drawing (js/bugs3d.js) into a small canvas, fitted to the box whatever its size.
 function targetPortrait(a) {
-    if (!a) return null; const key = [a.speciesName, a.className, a.color, a.element, a.isElite ? 1 : 0].join("|"); if (_tgPortraits[key] !== undefined) return _tgPortraits[key];
+    if (!a) return null; const key = [a.speciesName, a.className, a.color, a.element].join("|"); if (_tgPortraits[key] !== undefined) return _tgPortraits[key];
     let c = null;
     try {
         c = document.createElement("canvas"); c.width = c.height = 96; const g = c.getContext("2d"), col = _tgColour(a);
@@ -123,7 +123,7 @@ function targetPortrait(a) {
 // the same picture as a data URL, for the enemy card in the page (js/mixtool.js)
 const _tgPortraitURLs = {};
 function targetPortraitURL(a) {
-    const c = targetPortrait(a); if (!c) return ""; const key = [a.speciesName, a.className, a.color, a.element, a.isElite ? 1 : 0].join("|");
+    const c = targetPortrait(a); if (!c) return ""; const key = [a.speciesName, a.className, a.color, a.element].join("|");
     if (_tgPortraitURLs[key] === undefined) { try { _tgPortraitURLs[key] = c.toDataURL("image/png"); } catch (e) { _tgPortraitURLs[key] = ""; } }
     return _tgPortraitURLs[key];
 }
@@ -244,7 +244,7 @@ function targetInfoLines(a) {
 function targetCardInfo(a) {
     const hp = Math.ceil(Math.max(0, a.health || 0)), mx = Math.max(1, Math.ceil(a.maxHealth || a.health || 1)), el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
     return {
-        name: targetName(a), title: a.speciesName ? (String(a.speciesName) + " " + String(a.className || "")).trim().toUpperCase() + (a.isElite ? " \u2605" : "") : targetName(a),   // (the card's name line: the kind, without the element, which is on the line under it in its colour)
+        name: targetName(a), title: a.speciesName ? (String(a.speciesName) + " " + String(a.className || "")).trim().toUpperCase() : targetName(a),   // (the card's name line: the kind, without the element, which is on the line under it in its colour)
         col: _tgColour(a), level: Number.isFinite(a.level) ? a.level : null, cls: String(a.className || "").toUpperCase(), element: el ? el.label.toUpperCase() : "", hp, max: mx, frac: Math.max(0, Math.min(1, hp / mx)),
         bite: Number.isFinite(a.power) ? Math.round(a.power * 10) / 10 : null, speed: Number.isFinite(a.moveSpeed) ? Math.round(a.moveSpeed * 1000) / 10 : null,
     };

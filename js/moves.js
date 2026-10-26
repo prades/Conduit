@@ -23,10 +23,6 @@ const MOVES = {
     chomp:             { id: "chomp",             name: "CHOMP",             fn: f => chomp(f) },
     // A second move for the fire forms (js/firebombs.js): three bouncing bombs fanned at the nearest foe. Chosen on the unit's INFO tab; a fire form's own move stays its default.
     bomb_lob:          { id: "bomb_lob",          name: "FIRE BOMBS",        fn: f => fireBombBarrage(f) },
-    // The worker forms' moves are job bonuses (js/mass.js asks), not attacks: listed so every form's move has a row, with nothing to fire.
-    rewire:            { id: "rewire",            name: "REWIRE",            fn: null },
-    rapid_discharge:   { id: "rapid_discharge",   name: "RAPID DISCHARGE",   fn: null },
-    heavy_haul:        { id: "heavy_haul",        name: "HEAVY HAUL",        fn: null },
 };
 const MOVE_BY_NAME = {};
 for (const id in MOVES) MOVE_BY_NAME[MOVES[id].name] = MOVES[id];

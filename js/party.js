@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────
-//  THE SQUAD OF THREE, AND THE ROOMS THE REST HOLD (the facility; the classic game is as it was)
+//  THE SQUAD OF THREE, AND THE ROOMS THE REST HOLD
 // ─────────────────────────────────────────────────────────
 // ASKED: "you can only have three followers in your squad, and those three followers will show up their little roster little clip out [...] where we had the ammo or the armed information. That'll layout across the top of the
 // little slider that has the different tools [...] whenever they're in a room, they can have the follower hold that position and the followers will patrol that room until they are called upon again. each follower in your roster
 // will show what room it's holding and a new follower will not follow you unless you have room in your squad."
-//   THE SQUAD      PARTY.max (three) followers FOLLOW the player. A follower is in the squad when it is yours, alive, on the line (not the work crew) and has no post. The squad bar (below) is their three small roster cards.
+//   THE SQUAD      PARTY.max (three) followers FOLLOW the player. A follower is in the squad when it is yours, alive and has no post. The squad bar (below) is their three small roster cards.
 //   A POST         f.post = a room's id. A posted follower stays in its room: it walks a slow round of the room's floor, resting at each stop, and fights what is in the room (js/npc.js); it does not follow you, does not come through a
 //                  doorway after you, and does not count against the squad, so the squad has room for someone new. HOLD (the battle tool, the roster's stance) posts each unit it is given in the room THAT UNIT is in; COME (or FOLLOW
 //                  ME in the roster) calls them back: each leaves its post and joins the squad if it has room (the rest stay posted: SQUAD FULL).
@@ -13,7 +13,7 @@
 const PARTY = { max: 3, patrol: 0.55, rest: [70, 200], hop: [2.5, 9], engage: 9 };   // patrol: how fast it walks the round, a share of its speed; rest: frames it stands at a stop; hop: how far the next stop is (tiles); engage: how far from its room's edge a creature is still its business
 function partyOn() { return typeof facilityPlay !== "undefined" && !!facilityPlay && !(typeof attractOn === "function" && attractOn()); }
 // THE CORNERS (docs/UI-STYLE.md, "The HUD"): the facility on a tablet or a desktop has each part of the HUD that works together in one corner (game.html "THE CORNERS"; js/tutorial.js, js/targeting.js, js/squadfly.js). A phone (the line js/mixtool.js mixToolWide draws,
-// 700 px) keeps the layout it has, and the classic game is as it was.
+// 700 px) keeps the layout it has.
 function hudCorners() { return partyOn() && (typeof innerWidth === "number" ? innerWidth > 700 : true); }
 
 // ── rooms ──
@@ -33,7 +33,7 @@ function partyRoomCells(id) {
 }
 
 // ── who is in the squad ──
-function partyIsMember(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green" && !f.post && f.duty !== "worker" && !f.returningToCrystal; }
+function partyIsMember(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green" && !f.post && !f.returningToCrystal; }
 function partyMembers() { return typeof followers === "undefined" ? [] : followers.filter(partyIsMember); }
 function partyPosted() { return typeof followers === "undefined" ? [] : followers.filter(f => f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green" && !!f.post); }
 // the followers holding a room, the one held last first (COME calls them back in that order)
@@ -82,13 +82,13 @@ function partyCall(f, quiet) {
 // Returns how many it did it for.
 // REPORTED: "I click hold with just one of my followers, which is fine. He starts holding that position. But then [...] I click come, it doesn't come. It still holds." COME reached only the squad (the followers holding rooms were left out of
 // the pool unless they were selected), and nothing said so; now COME with nobody selected reaches them too (js/mixtool.js mixToolComePool), the one held last first, and it says who came back, or why one did not (SQUAD FULL). COME also ends an
-// attack order (the enemy card's), as it does in the classic game. The followers HOLD posts leave the selection (they have left the squad bar: a selection nobody can see steers the next orders; see _partyDone).
+// attack order (the enemy card's). The followers HOLD posts leave the selection (they have left the squad bar: a selection nobody can see steers the next orders; see _partyDone).
 function partyApplyStance(units, stance) {
     let n = 0; const rooms = new Set(), clones = [], posted = [], called = [], kept = [], nm = f => typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER";
     for (const a of units) {
         if (!a || a.dead) continue;
         if (a.isClone || !a.isFollower) { clones.push(a); continue; }
-        if (stance === "hold") { if (a.duty === "worker") continue; const room = partyRoomOf(a); if (partyPost(a, room, true)) { n++; rooms.add(room); posted.push(a); } }
+        if (stance === "hold") { const room = partyRoomOf(a); if (partyPost(a, room, true)) { n++; rooms.add(room); posted.push(a); } }
         else if (stance === "follow") {
             a.attackOrder = null; if (a.job && a.job.type === "move") a.job = null;   // (COME ends an attack order)
             const was = !!a.post;
@@ -221,7 +221,7 @@ function partyBoxRender() {
 // each few frames (js/game.js render): the squad is kept to three, and its bar follows it
 function partyTick() { partySync(false); partyBarRender(false); }
 
-// ── ADD, REMOVE, SWAP, DISBAND: the squad's buttons (the Command Center's side panel and SQUADS window, js/commandcenter.js; the phone's roster, js/radialmenu.js) ──
+// ── ADD, REMOVE, SWAP, DISBAND: the squad's buttons (the Command Center's side panel and its YOUR SQUAD window, js/commandcenter.js; the phone's roster and SQUAD petal, js/radialmenu.js) ──
 // ASKED: "when you click the creature on the roster, it should show on the side add to party or add to squad [...] And here you can disband them." A follower is in the squad or it holds a room: ADD calls the followers that hold a room back into the
 // squad while it has room, REMOVE posts them in the rooms they are in, SWAP does both at once (the card keeps its slot), DISBAND removes the whole squad. Each says what it did, and the bars follow at once.
 function _partyFollower(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green"; }

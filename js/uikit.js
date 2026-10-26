@@ -96,3 +96,11 @@ function uiBottomSafe() {
 // The dock (js/toolbox.js) carries Crystal, Clones, Modules, Shop and Settings on a tablet or desktop, so the old round canvas buttons for them are
 // neither drawn nor tapped there. A phone has no dock and keeps them.
 function dockHasMenus() { return typeof canvas !== "undefined" && canvas.width > 700; }
+
+// Text wrapped to a character budget (the panels are monospace, so a budget is exact rather than a guess).
+function uiWrap(text, maxChars) {
+    const words = String(text).split(/\s+/).filter(Boolean), lines = []; let line = '';
+    for (const w of words) { if (!line.length) { line = w; continue; } if (line.length + 1 + w.length <= maxChars) line += ' ' + w; else { lines.push(line); line = w; } }
+    if (line.length) lines.push(line);
+    return lines.length ? lines : [''];
+}

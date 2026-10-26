@@ -1,24 +1,16 @@
 // ─────────────────────────────────────────────────────────
 //  PREDATOR CLASS
 // ─────────────────────────────────────────────────────────
-// The units within r tiles of column x — the column index (unitsNear,
-// helpers.js) when it is loaded, every actor otherwise. Each predator scans
-// its neighbourhood a few times a step; over every actor, that was the
-// biggest cost of a crowded night.
-// May it fall back to heal? In the strip, always (the retreat state's own rules). The facility has no nests, so a wounded creature there has nowhere to go: it stays in the fight (or in its wandering),
-// where running from its attacker in a straight line only pinned it to the nearest wall, and a state that nothing ever ended left it standing in the open for good.
-function predatorMayRetreat(actor) {
-    return !(typeof facilityPlay !== "undefined" && facilityPlay) || (typeof findNearestHealingNest === "function" && !!findNearestHealingNest(actor));
-}
-
+// The creatures of the arena (js/facilityspawn.js makes them; js/species.js is what each species is). A creature potters about its room until something provokes it or an alarm is up; then it hunts
+// (the Crystal, and whatever of yours it meets), bites what is in reach, and fires from its rear if its species does. A wounded creature does not fall back: there is nowhere for it to heal, so
+// it stays in the fight, or in its wandering.
+// The units within r tiles of column x — the column index (unitsNear, helpers.js) when it is loaded, every actor otherwise. Each creature scans its neighbourhood a few times a step.
 function _predNear(x, r) { return typeof unitsNear === "function" ? unitsNear(x, r) : actors; }
 
 class Predator {
     constructor(typeName, def, x, y) {
         this.type = "predator";
         this.predatorType = typeName;
-        // Decided once, at birth: most predators never go looking for a pylon.
-        this.huntsPylons = typeof PYLON_HUNTER_SHARE !== "undefined" && Math.random() < PYLON_HUNTER_SHARE;
         this.x=x; this.y=y;
         this.dirX=1; this.dirY=0;
         this.facing=0;
@@ -87,7 +79,6 @@ class Predator {
         this.provoked        = false;
         this.team            = "red";
         this.isClone         = false;
-        this.nodeReconvertTarget = null;
     }
 
     // Called by applyDamage whenever this predator takes a hit.
@@ -146,34 +137,27 @@ class Predator {
         const distCrystal=Math.hypot(dxC,dyC);
         const attackScore = this.currentTarget&&!this.currentTarget.dead
             ? 1-Math.min(1,Math.hypot(this.currentTarget.x-this.x,this.currentTarget.y-this.y)/2) : 0;
-        // A wounded one runs to a nest to heal. The facility has none, so there it stands and fights (predatorMayRetreat, above).
-        const retreatScore = predatorMayRetreat(this) ? (1-hr)*0.9 : 0;
         const huntScore    = 0.4+(1-Math.min(1,distCrystal/6))*0.2;
-        return { attack:attackScore, retreat:retreatScore, hunt:huntScore, wander:0.1 };
+        return { attack:attackScore, hunt:huntScore, wander:0.1 };
     }
 
     update() {
         if (this.dead) return;
-        // The grub has its own life (js/broods.js): it eats, it does not fight.
-        if (this.isGrub) { this.dead = true; return; }   // the grub is gone from the game
-        // A machine built from stolen shards (js/raids.js): a gun, not an insect.
-        if (this.isMachine) { machineTick(this); return; }
-        // The tyrant guards, buffs and hatches, then fights as normal.
 
         // ── STATUS TIMERS ──
         if (this.smokeDebuff  > 0) this.smokeDebuff--;
         if (this.disorientFF  > 0) this.disorientFF--;
 
-        // ── BLIND (the STEAM and CRYO-ARC combos) ──
+        // ── BLIND ──
         // It cannot see: no target, no attack, no shot — it staggers about at
-        // half pace until it clears (docs/ROADMAP-top5.md §1).
+        // half pace until it clears.
         if (this.blinded > 0) {
             this.blinded--;
             if (this.state === "attack") this.moveSpeed = (PREDATOR_TYPES[this.predatorType] || this.def || { moveSpeed: 0.02 }).moveSpeed || 0.02;
             this.currentTarget = null; this.state = "wander";
             if (!this._blindDir || frame % 30 === 0) { const a = Math.random() * Math.PI * 2; this._blindDir = { x: Math.cos(a), y: Math.sin(a) }; }
             this.x += this._blindDir.x * this.moveSpeed * 0.5;
-            this.y = typeof facilityPlay !== "undefined" && facilityPlay ? this.y + this._blindDir.y * this.moveSpeed * 0.5 : Math.max(0, Math.min(3, this.y + this._blindDir.y * this.moveSpeed * 0.5));   // (the facility is not a strip)
+            this.y += this._blindDir.y * this.moveSpeed * 0.5;
             return;
         }
 
@@ -190,16 +174,10 @@ class Predator {
             }
         }
 
-        // ── CHARGE-UP ABILITY / WORKER DUTY ──
-        // Either can claim the whole frame: an insect in its windup is rooted
-        // (that is what makes the telegraph fair), a leaping one is mid-flight,
-        // and a worker ignores the combat AI to go fix pylons instead.
-        // A shard thief on a raid (js/raids.js) — to your nest, and home with the loot.
-        if (this.raider && raidUnitTick(this)) return;
+        // ── CHARGE-UP ABILITY ──
+        // It can claim the whole frame: an insect in its windup is rooted
+        // (that is what makes the telegraph fair), a leaping one is mid-flight.
         if (abilityTick(this)) return;
-        if (workerTick(this))  return;
-        // Nothing threatening it? Then it goes to work on your pylons.
-        if (infestTick(this))  return;
 
         // ── THREAT SCAN ──
         let threat=null, bestDist=Infinity;
@@ -233,118 +211,27 @@ class Predator {
         const utils=this.evaluateUtility();
         let bestState=this.state, bestScore=utils[this.state]||0;
         for (const k in utils) {
-            // Wanderers (higher-zone predators unaffected by the current alarm) must never
-            // be promoted to "hunt" by the utility AI — they should stay ambient.
+            // A wanderer is never promoted to "hunt" by the utility AI: it stays ambient.
             if (this.isWanderer && k==="hunt") continue;
-            // The facility's calm creatures (no alarm, not provoked) are not promoted either: the CALM rule below put them back to wandering in the same frame, after the wander had been skipped, so they stood
+            // Nor is a calm creature (no alarm, not provoked): the CALM rule below put them back to wandering in the same frame, after the wander had been skipped, so they stood
             // exactly where they were spawned for good (the arena's creatures never moved).
-            if (k==="hunt" && typeof facilityPlay !== "undefined" && facilityPlay && !alertActive && !this.provoked && this.team !== "green") continue;
+            if (k==="hunt" && !alertActive && !this.provoked && this.team !== "green") continue;
             if (utils[k]>bestScore+0.15) { bestState=k; bestScore=utils[k]; }
         }
         if (this.state!==bestState) {
             if (this.state==="attack") this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
             this.state=bestState;
         }
-        // (a worker's own rule, or an older state, can leave a creature retreating where there is no nest: it goes back to what it was doing)
-        if (this.state==="retreat" && !predatorMayRetreat(this)) { this.state = this.provoked || alertActive ? "hunt" : "wander"; this.isRetreating = false; }
-
-        // ── NODE RECONVERT — high-priority: reclaim any player-captured node nearby ──
-        if (this.nodeReconvertTarget && !this.nodeReconvertTarget.captured) {
-            this.nodeReconvertTarget = null; // node was lost or already uncaptured
-        }
-        if (!this.nodeReconvertTarget && frame % 30 === Math.abs(Math.floor(this.animationPhase * 5)) % 30) {
-            let nearestNode = null, bestND = Infinity;
-            world.forEach(t => {
-                if (!t.capturable || !t.captured) return;
-                const d = Math.hypot(t.x - this.x, t.y - this.y);
-                if (d < 8.0 && d < bestND) { bestND = d; nearestNode = t; }
-            });
-            if (nearestNode) this.nodeReconvertTarget = nearestNode;
-        }
-        if (this.nodeReconvertTarget) {
-            const dx = this.nodeReconvertTarget.x - this.x;
-            const dy = this.nodeReconvertTarget.y - this.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist > 0.9) {
-                this.x += (dx / dist) * this.moveSpeed * 1.2;
-                this.y += (dy / dist) * this.moveSpeed * 1.2;
-                const bodyAngle = Math.atan2(dy, dx);
-                this.dirX += (Math.cos(bodyAngle) - this.dirX) * 0.1;
-                this.dirY += (Math.sin(bodyAngle) - this.dirY) * 0.1;
-            }
-            this.walkCycle += this.moveSpeed * 40;
-            this.lastX = this.x; this.lastY = this.y;
-            return;
-        }
-
-        // ── PYLON AGGRO — overrides normal state when a predator has been fried long enough ──
-        // Exposure only counts while it is still being zapped. applyPylonZoneEffects
-        // stamps _lastExposureFrame every third frame, so anything older than that
-        // means the predator has walked out — let it forget rather than bank the
-        // exposure and turn on some pylon minutes later for no visible reason.
-        if (this.pylonExposureFrames > 0 && !this.pylonAggro &&
-            frame - (this._lastExposureFrame || 0) > 4) {
-            this.pylonExposureFrames = Math.max(0, this.pylonExposureFrames - 1);
-        }
-        if (this.pylonAggro) {
-            // A pylon that has already fallen is no longer a target.
-            if (this.pylonAggro.destroyed) { this.pylonAggro=null; this.pylonExposureFrames=0; }
-            // Give up if the pylon is out of reach — otherwise a predator can be
-            // dragged far enough away to chase one across the map forever.
-            else if (Math.hypot(this.pylonAggro.x-this.x, this.pylonAggro.y-this.y) > PYLON_AGGRO_GIVE_UP) {
-                this.pylonAggro=null; this.pylonExposureFrames=0;
-            }
-            // No longer gated on alertActive or night. A predator held in a zone
-            // during the day was stuck there with no way to fight out of it.
-            else {
-                const dx=this.pylonAggro.x-this.x, dy=this.pylonAggro.y-this.y;
-                const dist=Math.hypot(dx,dy);
-                if (dist>0.9) {
-                    this.x+=(dx/dist)*this.moveSpeed*1.5;
-                    this.y+=(dy/dist)*this.moveSpeed*1.5;
-                    faceToward(this, this.pylonAggro.x, this.pylonAggro.y, 0.2);
-                } else {
-                    // In range and bashing — turn to face the pylon. This branch
-                    // also returns before HEAD CONTROL.
-                    faceToward(this, this.pylonAggro.x, this.pylonAggro.y, 0.3);
-                    if (!this.pylonAttackCooldown) this.pylonAttackCooldown=0;
-                    this.pylonAttackCooldown--;
-                    if (this.pylonAttackCooldown<=0) {
-                        // HUNTER'S MOON: pylons hold out a quarter longer.
-                        const _bash = this.power * 0.6 * (typeof siegeIs === "function" && siegeIs("hunt") ? SIEGE_HUNT_BASH : 1);
-                        this.pylonAggro.health=Math.max(0,(this.pylonAggro.health||0)-_bash);
-                        if (typeof shake!=="undefined") shake=Math.max(shake,2);
-                        floatingTexts.push({x:this.pylonAggro.x,y:this.pylonAggro.y-1,text:"BASH!",color:"#ff8800",life:30,vy:-0.05});
-                        if (this.pylonAggro.health<=0) { this.pylonAggro.pendingDestroy=true; this.pylonAggro=null; this.pylonExposureFrames=0; }
-                        this.pylonAttackCooldown=PYLON_BASH_COOLDOWN;
-                    }
-                }
-                return;
-            }
-        }
-
-        // ── CRAWL IN ──
-        if (this.state==="crawl_in") {
-            if (this.entryDelay>0) { this.entryDelay--; return; }
-            const dy=this.entryTargetY-this.y;
-            if (Math.abs(dy)>0.1) this.y+=dy*0.05;
-            else this.state="hunt";
-            return;
-        }
-
         // ── WANDER ──
         if (this.state==="wander") {
             if (!this.wanderTarget||this.wanderTimer<=0) {
-                const angle=Math.random()*Math.PI*2, radius=3+Math.random()*5;
-                if (typeof facilityPlay !== "undefined" && facilityPlay && typeof facilityWanderTarget === "function") this.wanderTarget=facilityWanderTarget(this);   // the facility is not a strip: a spot of its room (js/facilityspawn.js)
-                else
-                this.wanderTarget={ x:this.x+Math.cos(angle)*radius, y:Math.max(0,Math.min(3,this.y+Math.sin(angle)*radius)) };
+                this.wanderTarget=facilityWanderTarget(this);   // a spot of its room (js/facilityspawn.js)
                 this.wanderTimer=90+Math.random()*120;
             }
             let dx=this.wanderTarget.x-this.x, dy=this.wanderTarget.y-this.y;
             const distT=Math.hypot(dx,dy);   // (to the spot itself)
-            // The facility: a spot the walls hide is walked to by the route (the next waypoint), not into the wall
-            if (distT>0.3 && typeof facilityPlay !== "undefined" && facilityPlay && typeof facilitySteer === "function") { const w=facilitySteer(this, this.wanderTarget.x, this.wanderTarget.y); dx=w[0]-this.x; dy=w[1]-this.y; }
+            // A spot the walls hide is walked to by the route (the next waypoint), not into the wall
+            if (distT>0.3) { const w=facilitySteer(this, this.wanderTarget.x, this.wanderTarget.y); dx=w[0]-this.x; dy=w[1]-this.y; }
             const dist=Math.hypot(dx,dy);
             if (dist>0.001) {
                 const tx=dx/dist, ty=dy/dist, ts=0.12;
@@ -353,8 +240,7 @@ class Predator {
                 this.dirX/=len; this.dirY/=len;
             }
             if (distT>0.2) { if (dist>0.001) { const sp=this.moveSpeed*0.7; this.x+=(dx/dist)*sp; this.y+=(dy/dist)*sp; } }
-            else if (typeof facilityPlay !== "undefined" && facilityPlay) { if (this.wanderTimer>60) this.wanderTimer=20+Math.random()*40; }   // (arrived: a pause of 20 to 60 frames ONCE, then the next spot; set every frame it never ran out, and the creature stood at the first spot it reached for good)
-            else this.wanderTimer=20+Math.random()*40;
+            else if (this.wanderTimer>60) this.wanderTimer=20+Math.random()*40;   // (arrived: a pause of 20 to 60 frames ONCE, then the next spot; set every frame it never ran out, and the creature stood at the first spot it reached for good)
             this.wanderTimer--;
         }
 
@@ -414,21 +300,17 @@ class Predator {
                 });
                 if (nearRed) { this.currentTarget=nearRed; this.state="attack"; return; }
             }
-            // Predators no longer pick on pylons just because an alarm is up or
-            // night has fallen. A pylon only becomes a target when it is ON and
-            // hurting them: the zone exposure in applyPylonZoneEffects and a
-            // turret's shot in the attack-pylon pass are what set pylonAggro.
             const dx=crystal.x-this.x, dy=crystal.y-this.y;
             const dist=Math.sqrt(dx*dx+dy*dy);
             if (dist>0.8) {
-                // The facility has walls: it heads for the next waypoint of the route to the Crystal (js/facilityplay.js facilitySteer) and weaves only where it can see the Crystal, and less (a weave
+                // The facility has walls: it heads for the next waypoint of the route to the Crystal (js/facilityplay.js facilitySteer) and weaves only where it can see the Crystal (a weave
                 // swung it into the wall it was walking along, and the reroute could not tell where it was going).
-                const _fpW = typeof facilityPlay !== "undefined" && facilityPlay && typeof facilitySteer === "function" ? facilitySteer(this, crystal.x, crystal.y) : null;
-                const crystalAngle = _fpW ? Math.atan2(_fpW[1]-this.y, _fpW[0]-this.x) : Math.atan2(dy, dx);
+                const _fpW = facilitySteer(this, crystal.x, crystal.y);
+                const crystalAngle = Math.atan2(_fpW[1]-this.y, _fpW[0]-this.x);
                 // Wobble frequency varies per-predator via animationPhase and moveSpeed
                 // so scouts dart faster/wider than tanks
                 const wobbleFreq = 0.005 + this.moveSpeed * 0.25;
-                const wobbleAmt  = Math.sin(this.animationPhase + frame * wobbleFreq) * (_fpW ? (this._fpPath ? 0 : 0.3) : 0.7);
+                const wobbleAmt  = Math.sin(this.animationPhase + frame * wobbleFreq) * (this._fpPath ? 0 : 0.3);
                 const wobbleFade = Math.min(1, dist / 4); // reduce wobble when nearly at crystal
                 const moveAngle  = crystalAngle + wobbleAmt * wobbleFade;
                 // Smooth steering — avoids snapping, feels like a creature making decisions
@@ -511,31 +393,9 @@ class Predator {
             return;
         }
 
-        // ── RETREAT ──
-        else if (this.state==="retreat") {
-            if (this.health/this.maxHealth>0.75) { this.isRetreating=false; this.state="hunt"; return; }
-            const pillar=findNearestHealingNest(this);   // it heals at a NEST, not at pylons (js/helpers.js)
-            if (pillar) {
-                const dx=pillar.x-this.x, dy=pillar.y-this.y, dist=Math.sqrt(dx*dx+dy*dy)||0.001;
-                this.dirX=dx/dist; this.dirY=dy/dist;
-                if (dist>0.6) { this.x+=this.dirX*this.moveSpeed; this.y+=this.dirY*this.moveSpeed; }
-                else this.health=Math.min(this.maxHealth,this.health+0.15);
-            } else if (this.currentTarget&&!this.currentTarget.dead) {
-                const dx=this.x-this.currentTarget.x, dy=this.y-this.currentTarget.y;
-                const dist=Math.sqrt(dx*dx+dy*dy)||0.001;
-                this.dirX=dx/dist; this.dirY=dy/dist;
-                this.x+=this.dirX*this.moveSpeed; this.y+=this.dirY*this.moveSpeed;
-            }
-            // Keep legs moving during retreat
-            this.walkCycle+=this.moveSpeed*40;
-            return;
-        }
-
         // ── HEAD CONTROL ──
         const bodyAngle=Math.atan2(this.dirY,this.dirX);
-        // During retreat — head snaps to movement direction, no target locking
-        const lookTarget = this.state==="retreat" ? null
-                         : this.currentTarget && !this.currentTarget.dead ? this.currentTarget
+        const lookTarget = this.currentTarget && !this.currentTarget.dead ? this.currentTarget
                          : (crystal && this.state==="hunt" ? crystal : null);
 
         if (lookTarget) {
@@ -547,26 +407,17 @@ class Predator {
             if (diff<-Math.PI) diff+=Math.PI*2;
             this.headAngle+=diff*0.22;
         } else {
-            // No target (or retreating) — snap head to body/movement direction quickly
-            const snapSpeed = this.state==="retreat" ? 0.35 : 0.15;
+            // No target — snap head to body/movement direction quickly
             let diff=bodyAngle-this.headAngle;
             if (diff>Math.PI) diff-=Math.PI*2;
             if (diff<-Math.PI) diff+=Math.PI*2;
-            this.headAngle+=diff*snapSpeed;
-            if (this.state!=="retreat") {
-                this.headAngle+=Math.sin(frame*0.08)*0.01;
-                let offset=this.headAngle-bodyAngle;
-                if (offset>Math.PI) offset-=Math.PI*2;
-                if (offset<-Math.PI) offset+=Math.PI*2;
-                offset=Math.max(-1.05,Math.min(1.05,offset));
-                this.headAngle=bodyAngle+offset;
-            }
-        }
-
-        // ── CORRIDOR BOUNDS — clamp to walkable floor interior (y 0–3, x ≥ 0) ──
-        if (!(typeof facilityPlay !== "undefined" && facilityPlay)) {
-        this.y = Math.max(0, Math.min(3, this.y));
-        this.x = Math.max(0, this.x);
+            this.headAngle+=diff*0.15;
+            this.headAngle+=Math.sin(frame*0.08)*0.01;
+            let offset=this.headAngle-bodyAngle;
+            if (offset>Math.PI) offset-=Math.PI*2;
+            if (offset<-Math.PI) offset+=Math.PI*2;
+            offset=Math.max(-1.05,Math.min(1.05,offset));
+            this.headAngle=bodyAngle+offset;
         }
 
         if (this.state==="hunt"||this.state==="wander") this.walkCycle+=this.moveSpeed*40;
@@ -584,13 +435,6 @@ class Predator {
                 this.y += (sdy / sd) * push;
             }
         });
-        if (!(typeof facilityPlay !== "undefined" && facilityPlay)) {   // (the facility is not a strip: this clamp pinned every creature's y to its row, so it could only ever walk east and west)
-        this.y = Math.max(0, Math.min(3, this.y));
-        this.x = Math.max(0, this.x);
-        }
-
-        // A FORCE WALL across the tunnel holds it on its own side (js/modules.js).
-        if (typeof forceWallBlock === "function") forceWallBlock(this);
         this.lastX=this.x; this.lastY=this.y;
 
         // ── ABDOMEN RANGED ATTACK ──

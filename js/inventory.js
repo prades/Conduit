@@ -11,7 +11,7 @@
 //   use(item)                what using it does: returns { ok: true, msg } or { ok: false, why }. A consumable is used up only when it works.
 // Adding an item is one row here, an icon (or a reuse of one) and, if it does something, one `use`.
 //
-// The pack is `playerInv`: { itemId: quantity }. It is the facility tutorial's own state (nothing here is saved: the strip game's save is untouched).
+// The pack is `playerInv`: { itemId: quantity }. It is the facility tutorial's own state (the facility's save keeps it: js/facilitysave.js).
 
 const INV_CATS = [{ id: "all", label: "ALL" }, { id: "gear", label: "GEAR" }, { id: "tool", label: "TOOLS" }, { id: "part", label: "PARTS" }, { id: "sample", label: "SAMPLES" }];
 const INV_TYPES = { consumable: "CONSUMABLE", tool: "TOOL", component: "COMPONENT" };
@@ -183,7 +183,7 @@ function _ivLayout() {
     L.close = { x: px + pw - gut - 120, y: py + 12, w: 120, h: 38 };
     return L;
 }
-function _ivWrap(lines, text, chars) { for (const l of codexWrap(text, chars)) lines.push(l); }
+function _ivWrap(lines, text, chars) { for (const l of uiWrap(text, chars)) lines.push(l); }
 function drawInvPanel() {
     if (!invPanelOpen) return;
     const L = _ivLayout(), pc = playerClass(), col = pc ? pc.colour : UI_TEAL, f = typeof frame !== "undefined" ? frame : 0;

@@ -2,14 +2,14 @@
 //  THE RADIAL MENU — the phone's menu (docs/UI-STYLE.md)
 // ─────────────────────────────────────────────────────────
 // REPORTED: "for mobile it should be a left radial menu with squad analytics and roster and commands." On a phone the top row of buttons
-// is gone; one thumb-sized HUB sits on the left edge. Tapping it fans out five slabs:
+// is gone; one thumb-sized HUB sits on the left edge. Tapping it fans out three slabs:
 //
-//   SQUAD   analytics: the count, health and role split of the squad, per element (tap a row to select that element); in the facility, YOUR SQUAD: its three cards, REMOVE on each, DISBAND SQUAD
-//   ROSTER  every follower as a card: its form, level, health and duty (tap its WORK switch to put it on or take it off the crew)
-//   ORDERS  commands for the squad: all elements or the selected one, a role filter, switch roles, all to work / all to fight
-//   BUILD   toggles build mode (the same as the BUILD button)
-//   AUTO    toggles autoplay (the same as the AUTO button)
+//   SQUAD   YOUR SQUAD (js/party.js): its three cards (an open slot says so), REMOVE on each, DISBAND SQUAD
+//   ROSTER  RECRUIT, the squad strip (a tap on a chip selects that member), then every follower as a card: its form, level, health and state, with
+//           ADD TO / REMOVE FROM SQUAD and INFO (a tap on the card selects it)
+//   ORDERS  commands for the squad: all elements or the selected one, a role filter, switch roles
 //
+// (The squad analytics, the WORK switches, ALL TO WORK / ALL TO FIGHT, and the BUILD and AUTO petals were the old strip game's, and went with it.)
 // It is DOM, shown only at phone widths (css in game.html); on a desktop the bottom dock does the same job. Everything reads the live game:
 // radialSquadStats() / radialRosterRows() are plain functions of followers[] (no DOM), so the numbers can be tested without a page.
 
@@ -17,23 +17,19 @@ const RADIAL_PETALS = [
     { id: "squad",  label: "SQUAD",  col: "#19e6c1", icon: "◉" },
     { id: "roster", label: "ROSTER", col: "#a64dff", icon: "▦" },
     { id: "orders", label: "ORDERS", col: "#ffe733", icon: "➤" },
-    { id: "build",  label: "BUILD",  col: "#ff4a1c", icon: "⚒" },
-    { id: "auto",   label: "AUTO",   col: "#8fe3ff", icon: "⚙" },
 ];
 const RADIAL_REFRESH_MS = 400;
-let radialOpen = false, radialPanel = null, radialFilter = "all", _radialTimer = 0;
+let radialOpen = false, radialPanel = null, _radialTimer = 0;
 
 // The roles as the player sees them (js/config.js roleLabel): brawler, mage ("sniper" in the code), technician ("camper").
-function _radialRoleKey(f) { return f.duty === "worker" ? "worker" : f.role === "sniper" ? "mage" : f.role === "camper" ? "technician" : "brawler"; }
+function _radialRoleKey(f) { return f.role === "sniper" ? "mage" : f.role === "camper" ? "technician" : "brawler"; }
 
-// A plain summary of the squad, optionally narrowed ("all" | "work" | "fight"). No DOM.
-function radialSquadStats(filter) {
-    const list = (typeof followers !== "undefined" ? followers : []).filter(f => f && !f.dead && f.isFollower !== false && !f.isClone);
-    const keep = list.filter(f => filter === "work" ? f.duty === "worker" : filter === "fight" ? f.duty !== "worker" : true);
-    const out = { total: keep.length, working: 0, evolved: 0, avgLevel: 0, byElement: {}, roles: { brawler: 0, mage: 0, technician: 0, worker: 0 } };
+// A plain summary of your followers: how many (the roster's header line, js/commandcenter.js), how many evolved, the average level, each element's count and health, the role split. No DOM.
+function radialSquadStats() {
+    const keep = (typeof followers !== "undefined" ? followers : []).filter(f => f && !f.dead && f.isFollower !== false && !f.isClone);
+    const out = { total: keep.length, evolved: 0, avgLevel: 0, byElement: {}, roles: { brawler: 0, mage: 0, technician: 0 } };
     let lv = 0;
     for (const f of keep) {
-        if (f.duty === "worker") out.working++;
         if (f.evolved) out.evolved++;
         lv += f.level || 1;
         const e = out.byElement[f.element] || (out.byElement[f.element] = { n: 0, hp: 0 });
@@ -51,7 +47,7 @@ function radialRosterRows() {
     return list.map(f => ({
         f, element: f.element, name: typeof unitTypeLabel === "function" ? unitTypeLabel(f) : (f.evolved ? String(f.evolved).toUpperCase() : "EGG"),
         level: f.level || 1, hp: Math.max(0, Math.min(1, (f.health || 0) / (f.maxHealth || 1))), role: _radialRoleKey(f),
-        evolved: !!f.evolved, working: f.duty === "worker", canWork: typeof canWorkMass === "function" ? canWorkMass(f) : false,
+        evolved: !!f.evolved,
     })).sort((a, b) => (b.evolved - a.evolved) || (b.level - a.level));
 }
 
@@ -59,17 +55,9 @@ function _radialElementColour(id) { const e = (typeof ELEMENTS !== "undefined" ?
 function _radialElementLabel(id) { const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).find(x => x.id === id); return e ? e.label : String(id).toUpperCase(); }
 
 // ── the commands (each is the existing game action, so the menu and the rest of the game cannot disagree) ──
-function radialSetAllWork(on) {
-    const pool = (typeof getCommandPool === "function" ? getCommandPool() : []).filter(f => !f.dead && f.isFollower);
-    let n = 0;
-    for (const f of pool) if (setFollowerDuty(f, on ? "worker" : "fighter", true)) n++;
-    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined")
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: n ? (on ? n + " TO THE WORK CREW" : n + " BACK ON THE LINE") : (on ? "NONE CAN WORK" : "NONE WORKING"), color: on ? "#00ccaa" : "#0f8", life: 100, vy: -0.25, size: 12 });
-    return n;
-}
-function radialSetScope(all) { squadMode = all ? "all" : "selected"; if (typeof updateSquadButton === "function") updateSquadButton(); }
-function radialSetRole(role) { squadMode = "selected"; selectedRole = (selectedRole === role) ? null : role; if (typeof updateSquadButton === "function") updateSquadButton(); }
-function radialSelectElement(id) { player.selectedElement = id; selectedRole = null; squadMode = "selected"; if (typeof updateSquadButton === "function") updateSquadButton(); }
+function radialSetScope(all) { squadMode = all ? "all" : "selected"; }
+function radialSetRole(role) { squadMode = "selected"; selectedRole = (selectedRole === role) ? null : role; }
+function radialSelectElement(id) { player.selectedElement = id; selectedRole = null; squadMode = "selected"; }
 
 // ── the DOM ──
 function _rEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -88,8 +76,6 @@ function radialToggle(open) {
     radialRender();
 }
 function radialPick(id) {
-    if (id === "build") { toggleBuild(); radialToggle(false); return; }
-    if (id === "auto")  { toggleAutoplay(); radialToggle(false); return; }
     radialPanel = radialPanel === id ? null : id;
     radialRender();
     clearInterval(_radialTimer);
@@ -99,10 +85,7 @@ function radialPick(id) {
 function radialRender() {
     const root = document.getElementById("radialRoot"); if (!root) return;
     const hub = document.getElementById("radialHub"); if (hub) hub.classList.toggle("open", radialOpen);
-    root.querySelectorAll("[data-petal]").forEach(p => {
-        const id = p.getAttribute("data-petal"), on = id === radialPanel || (id === "build" && typeof buildMode !== "undefined" && buildMode) || (id === "auto" && typeof autoplayOn !== "undefined" && autoplayOn);
-        p.classList.toggle("on", !!on);
-    });
+    root.querySelectorAll("[data-petal]").forEach(p => p.classList.toggle("on", p.getAttribute("data-petal") === radialPanel));
     const panel = document.getElementById("radialPanel"); if (!panel) return;
     panel.style.display = radialOpen && radialPanel ? "block" : "none";
     if (!(radialOpen && radialPanel)) return;
@@ -114,8 +97,8 @@ function radialRender() {
     } catch (e) { /* the numbers come from the plain functions above; a drawing fault just leaves the panel empty */ }
 }
 
-// THE SQUAD PETAL IN THE FACILITY (the Command Center's SQUADS window): the squad's three cards (an open slot says so), a REMOVE on each, DISBAND SQUAD (they all hold the rooms they are in)
-function _radialDrawYourSquad(panel) {
+// THE SQUAD PETAL: YOUR SQUAD (the Command Center's SQUADS window, js/commandcenter.js _ccDrawYourSquad): the squad's three cards (an open slot says so), a REMOVE on each, DISBAND SQUAD (they all hold the rooms they are in)
+function _radialDrawSquad(panel) {
     const mem = partyOrdered(), n = mem.length, rows = radialRosterRows();
     panel.appendChild(_rEl("div", "rp-title", "YOUR SQUAD"));
     panel.appendChild(_rEl("div", "rp-sub", n + " / " + PARTY.max + " \u00b7 " + partyPosted().length + " HOLD ROOMS"));
@@ -126,31 +109,6 @@ function _radialDrawYourSquad(panel) {
     }
     const d = _rEl("button", "rp-btn wide", "DISBAND SQUAD"); d.style.setProperty("--c", "#ff4a1c"); if (!n) d.disabled = true; _rClick(d, () => { partyDisband(); radialRender(); }); panel.appendChild(d);
 }
-function _radialDrawSquad(panel) {
-    if (_rParty()) { _radialDrawYourSquad(panel); return; }
-    const st = radialSquadStats(radialFilter);
-    panel.appendChild(_rEl("div", "rp-title", "SQUAD"));
-    { const z = _rEl("button", "rp-btn wide on", "ZONES \u00b7 TELEPORT \u00b7 REPAIR"); z.style.setProperty("--c", "#8fe3ff"); _rClick(z, () => { radialOpen = false; if (typeof radialRender === "function") radialRender(); if (typeof ccOpen === "function") ccOpen("zones"); }); panel.appendChild(z); }
-    panel.appendChild(_rEl("div", "rp-sub", st.total + " UNITS · " + st.working + " WORKING · LV " + st.avgLevel));
-    (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).forEach(el => {
-        const e = st.byElement[el.id] || { n: 0, hp: 0 };
-        if (typeof unlockedElements !== "undefined" && !unlockedElements.has(el.id)) return;
-        const row = _rEl("div", "rp-row" + (typeof player !== "undefined" && player.selectedElement === el.id ? " sel" : ""));
-        row.style.setProperty("--c", el.color);
-        row.appendChild(_rEl("span", "rp-name", el.label)); row.appendChild(_rEl("span", "rp-count", String(e.n)));
-        const bar = _rEl("div", "rp-bar"), fill = _rEl("i"); fill.style.width = Math.round(e.hp * 100) + "%"; bar.appendChild(fill); row.appendChild(bar);
-        _rClick(row, () => { radialSelectElement(el.id); radialRender(); });
-        panel.appendChild(row);
-    });
-    panel.appendChild(_rEl("div", "rp-label", "ROLES"));
-    const roles = _rEl("div", "rp-chips");
-    [["BRAWL", "brawler", "#ff4a1c"], ["MAGE", "mage", "#a64dff"], ["TECH", "technician", "#8fe3ff"], ["WORK", "worker", "#19e6c1"]].forEach(r => { const c = _rEl("div", "rp-chip", r[0] + " " + st.roles[r[1]]); c.style.setProperty("--c", r[2]); roles.appendChild(c); });
-    panel.appendChild(roles);
-    panel.appendChild(_rEl("div", "rp-label", "EVOLVED " + st.evolved + " / " + st.total));
-    const filt = _rEl("div", "rp-chips");
-    [["ALL", "all", "#19e6c1"], ["WORKERS", "work", "#ffe733"], ["FIGHTERS", "fight", "#a64dff"]].forEach(f => { const b = _rEl("button", "rp-btn" + (radialFilter === f[1] ? " on" : ""), f[0]); b.style.setProperty("--c", f[2]); _rClick(b, () => { radialFilter = f[1]; radialRender(); }); filt.appendChild(b); });
-    panel.appendChild(filt);
-}
 
 function _radialDrawRoster(panel) {
     const rows = radialRosterRows();
@@ -160,20 +118,10 @@ function _radialDrawRoster(panel) {
       { const have = typeof shardCount !== "undefined" ? shardCount : 0, n = _rEl("div", "rp-sub", "\u25c6 " + have + (have < cost ? " \u00b7 NEED " + (cost - have) + " MORE" : " \u00b7 " + Math.floor(have / cost) + " AFFORDABLE")); if (have < cost) n.style.color = "#ff8a6a"; panel.appendChild(n); }
       panel.appendChild(b); }
     if (!rows.length) panel.appendChild(_rEl("div", "rp-sub", "NONE YET: RECRUIT ONE ABOVE"));
-    if (_rParty()) _radialSquadStrip(panel);   // (the facility: the squad, at a glance)
-    // ROSTER SQUADS (js/squads.js): a chip per squad selects it; MAKE SQUAD turns the selection (1 to 3) into one (the classic game's: the facility has its one squad)
-    if (!_rParty() && typeof squadsLive === "function" && rows.length) {
-        const chips = _rEl("div", "rp-chips"), sel = typeof ccSelectionList === "function" ? ccSelectionList().filter(a => !a.isClone) : [];
-        squadsLive().forEach(sq => { const c = _rEl("button", "rp-btn small", "SQUAD " + sq.id + " \u00b7 " + sq.members.length); c.style.setProperty("--c", sq.col); _rClick(c, () => { squadSelect(sq.id); radialRender(); }); chips.appendChild(c); });
-        if (sel.length && sel.length <= SQUAD_MAX) { const m = _rEl("button", "rp-btn small on", "MAKE SQUAD"); m.style.setProperty("--c", "#19e6c1"); _rClick(m, () => { squadMake(sel); radialRender(); }); chips.appendChild(m); }
-        if (sel.some(a => squadOf(a))) { const l = _rEl("button", "rp-btn small", "LEAVE SQUAD"); l.style.setProperty("--c", "#8aa0c8"); _rClick(l, () => { squadLeave(sel); radialRender(); }); chips.appendChild(l); }
-        if (chips.childNodes.length) panel.appendChild(chips);
-    }
+    _radialSquadStrip(panel);   // (the squad, at a glance)
     rows.slice(0, 40).forEach(r => panel.appendChild(_radialCard(r)));
 }
-// the facility: the squad and the roster's rooms (js/party.js)
-function _rParty() { return typeof partyOn === "function" && partyOn(); }
-// THE SQUAD STRIP at the top of the phone's roster (the facility; the Command Center's squad box): three chips, the follower in each (a tap selects it) or an open slot
+// THE SQUAD STRIP at the top of the phone's roster (the Command Center's squad box, js/party.js): three chips, the follower in each (a tap selects it) or an open slot
 function _radialSquadStrip(panel) {
     panel.appendChild(_rEl("div", "rp-label", "YOUR SQUAD \u00b7 " + partyMembers().length + " / " + PARTY.max));
     const strip = _rEl("div", "rp-chips"), mem = partyOrdered();
@@ -185,18 +133,17 @@ function _radialSquadStrip(panel) {
     }
     panel.appendChild(strip);
 }
-// one follower's card: its picture, name, status, level and health, and its buttons (WORK in the classic game; ADD TO / REMOVE FROM SQUAD in the facility; INFO); a tap on the card selects it
+// one follower's card: its picture, name, status, level and health, and its buttons (ADD TO / REMOVE FROM SQUAD; INFO); a tap on the card selects it
 function _radialCard(r) {
     const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));
     card.style.setProperty("--c", _radialElementColour(r.element));
     const cv = _rEl("canvas", "rp-thumb"); cv.width = 44; cv.height = 44; cv.style.width = "36px"; cv.style.height = "36px"; _radialThumb(cv, r.f); card.appendChild(cv);
-    const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", (typeof squadOf === "function" && squadOf(r.f) ? squadOf(r.f) + " \u00b7 " : "") + r.name)); { const st = typeof unitStatus === "function" ? unitStatus(r.f) : null; if (st) { const c = _rEl("div", "rp-cstat", st.text + (st.room ? " \u00b7 " + st.room : "")); c.setAttribute("style", "--c:" + st.col + ";"); mid.appendChild(c); } } mid.appendChild(_rEl("div", "rp-csub", ({ brawler: "BRAWL", mage: "MAGE", technician: "TECH", worker: "WORK" })[r.role] + " · LV " + r.level));
+    const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", r.name)); { const st = typeof unitStatus === "function" ? unitStatus(r.f) : null; if (st) { const c = _rEl("div", "rp-cstat", st.text + (st.room ? " \u00b7 " + st.room : "")); c.setAttribute("style", "--c:" + st.col + ";"); mid.appendChild(c); } } mid.appendChild(_rEl("div", "rp-csub", ({ brawler: "BRAWL", mage: "MAGE", technician: "TECH" })[r.role] + " · LV " + r.level));
     const bar = _rEl("div", "rp-bar"), fill = _rEl("i"); fill.style.width = Math.round(r.hp * 100) + "%"; bar.appendChild(fill); mid.appendChild(bar); card.appendChild(mid);
-    if (_rParty() && r.f.isFollower === true && !r.f.isClone) {   // ADD TO SQUAD for a follower holding a room, REMOVE FROM SQUAD for one in it
+    if (r.f.isFollower === true && !r.f.isClone) {   // ADD TO SQUAD for a follower holding a room, REMOVE FROM SQUAD for one in it
         const inSq = partyIsMember(r.f), free = PARTY.max - partyMembers().length;
         if (inSq || r.f.post) { const b = _rEl("button", "rp-btn small wide" + (!inSq && free ? " on" : ""), inSq ? "REMOVE FROM SQUAD" : free ? "ADD TO SQUAD" : "SQUAD FULL"); b.style.setProperty("--c", inSq ? "#8fe3ff" : "#19e6c1"); if (!inSq && !free) b.disabled = true; _rClick(b, () => { if (inSq) partyRemove([r.f]); else partyAdd([r.f]); radialRender(); }); mid.appendChild(b); }
     }
-    if (r.canWork) { const w = _rEl("button", "rp-btn small wide" + (r.working ? " on" : ""), "WORK"); w.style.setProperty("--c", "#19e6c1"); _rClick(w, () => { toggleFollowerDuty(r.f); radialRender(); }); mid.appendChild(w); }
     { const inf = _rEl("button", "rp-btn small wide", "INFO"); inf.style.setProperty("--c", "#8fe3ff"); _rClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.f); }); mid.appendChild(inf); }
     _rClick(card, () => { if (typeof ccToggle === "function") ccToggle(r.f); radialRender(); });   // tap a card: select it (the command pool, js/commandcenter.js)
     return card;
@@ -224,10 +171,6 @@ function _radialDrawOrders(panel) {
     panel.appendChild(roleRow);
     panel.appendChild(_rEl("div", "rp-label", "COMMANDS"));
     panel.appendChild(mk("SWITCH ROLES", "#ffe733", false, () => cycleCommandPoolRoles()));
-    if (!_rParty()) {   // (nobody works in the facility)
-        panel.appendChild(mk("ALL TO WORK", "#00ccaa", false, () => radialSetAllWork(true)));
-        panel.appendChild(mk("ALL TO FIGHT", "#ff4a1c", false, () => radialSetAllWork(false)));
-    }
 }
 
 function initRadialMenu() {
@@ -235,7 +178,7 @@ function initRadialMenu() {
     const root = _rEl("div"); root.id = "radialRoot";
     const dim = _rEl("div"); dim.id = "radialDim"; _rClick(dim, () => radialToggle(false)); root.appendChild(dim);
     const hub = _rEl("button"); hub.id = "radialHub"; hub.setAttribute("aria-label", "Menu"); hub.appendChild(_rEl("span", "bars")); _rClick(hub, () => radialToggle()); root.appendChild(hub);
-    // the fan: five petals round the hub, on the right-hand half-circle
+    // the fan: a petal for each of RADIAL_PETALS round the hub, on the right-hand half-circle
     const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"); svg.id = "radialFan"; svg.setAttribute("viewBox", "-10 -170 190 340");
     const a0 = -Math.PI / 2 - 0.02, span = Math.PI + 0.04, n = RADIAL_PETALS.length, gap = 0.05;
     RADIAL_PETALS.forEach((pt, i) => {

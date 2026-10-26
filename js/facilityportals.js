@@ -7,7 +7,7 @@
 // the map of its own, far from everything else, and a pair of PORTALS joins it to the room it is under. A portal is a doorway: an alcove in a wall with a stairwell door at the end of it (the style
 // `portal_door`, js/facilitystyleall.js). Walk into the alcove and the screen fades to black, the other room is loaded round you (you are put in front of the doorway at the other end) and it fades back.
 //   - the followers that are following you come with you (those within FP_PORTAL.carry tiles are put round you at once); the others walk to the doorway by themselves and go through it (`_fpPortalGoal`, which
-//     js/npc.js followPlayer walks to), so a squad scattered over the facility joins you in the armory. Technicians (they hold a post), workers and anyone on an order stay where they are.
+//     js/npc.js followPlayer walks to), so a squad scattered over the facility joins you in the armory. A follower holding a room and anyone on an order stay where they are.
 //   - nothing else uses a portal: the arena's creatures and the assault's cannot go through (an interior has no door onto any other room).
 //   - while it fades the player cannot be told to walk (facilityWalkTo refuses), and for FP_PORTAL.cool frames after arriving the doorway at the arrival end does not take you straight back.
 const FP_PORTAL = { out: 14, hold: 14, in: 18, cool: 70, carry: 16 };
@@ -61,7 +61,7 @@ function _pMove() {
     }
     _fp.zoneRoom = dest.room; _fp.portalCool = frame + FP_PORTAL.cool;
 }
-// who comes through on their own: a follower that is following (no post, no order, not a worker or a technician)
+// who comes through on their own: a follower that is following (no post, no order)
 function _pCarries(a) { return !a.returningToCrystal && !a.job && !a.post && a.stance === "follow" && a.duty !== "worker" && (a.role !== "camper" || (typeof partyOn === "function" && partyOn())); }   // (a technician in the squad comes with you: it is not tied to the Crystal)
 
 // each frame (from facilityTutorialTick)

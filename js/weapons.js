@@ -155,7 +155,7 @@ function drawArmoryPanel() {
         uiSlab(L.px + gut, y, inner, wh, held ? w.col : "#2a3556", false, held ? "#10243a" : "#0b1226", !has);
         uiText(w.name, L.px + gut + 14, y + 26, 20, has ? w.col : "#7a86a6", "left");
         uiCaption(has ? "LEVEL " + Lv + " / " + w.maxLevel + "   ·   DAMAGE " + weaponDamage(id) + "   ·   " + (60 / weaponCooldown(id)).toFixed(1) + " SHOTS/S   ·   " + (w.kind === "fuel" ? "FUEL CELLS" : "AMMUNITION") : id === "machinegun" ? "THE GUNSLINGER'S  ·  FROM THE WEAPON LOCKER" : "NOT ASSEMBLED  ·  " + w.assemble + " SCRAP METAL", L.px + gut + 14, y + 46, has ? "#c8d4f0" : "#8aa0c8", "left", 12);
-        const chars = Math.max(20, Math.floor((inner - (L.wide ? 270 : 28)) / 7.4)), lines = codexWrap(w.desc, chars).slice(0, L.wide ? 2 : 3); lines.forEach((l, i) => uiCaptionFit(l, L.px + gut + 14, y + 64 + i * 15, "#9fb0d6", "left", 11, inner - (L.wide ? 270 : 28)));
+        const chars = Math.max(20, Math.floor((inner - (L.wide ? 270 : 28)) / 7.4)), lines = uiWrap(w.desc, chars).slice(0, L.wide ? 2 : 3); lines.forEach((l, i) => uiCaptionFit(l, L.px + gut + 14, y + 64 + i * 15, "#9fb0d6", "left", 11, inner - (L.wide ? 270 : 28)));
         const bx = L.wide ? L.px + L.pw - gut - 236 : L.px + gut + 14, by = L.wide ? y + 14 : y + wh - 40, bw = 110, bh = L.wide ? 30 : 32;
         if (has) {
             const eq = { x: bx, y: by, w: bw, h: bh }, upb = { x: bx + bw + 10, y: by, w: bw + 6, h: bh };

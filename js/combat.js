@@ -63,7 +63,7 @@ function updateStatusEffects() {
             actor.kbVY = (actor.kbVY || 0) * 0.72;
             if (Math.abs(actor.kbVX) < 0.001) actor.kbVX = 0;
             if (Math.abs(actor.kbVY) < 0.001) actor.kbVY = 0;
-            // Keep within corridor bounds. The facility has no corridor: a push goes as far as its walls let it (facilityConstrain puts a unit back where it was when a wall is in the way). The strip's four rows threw
+            // The facility has no corridor: a push goes as far as its walls let it (facilityConstrain puts a unit back where it was when a wall is in the way).
             // a creature that was knocked back (a core follower's BASH, a flux pull) out of the building, to y = 3, and it walked back through the void; that is the creature an attack order sends the squad at.
             if (typeof facilityPlay !== "undefined" && facilityPlay) { if (typeof facilityConstrain === "function") facilityConstrain(actor, _kx, _ky); }
             else {
