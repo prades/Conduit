@@ -25,6 +25,8 @@ const JOBS = [
   // Nos. 850-852 (forms31.js), the technicians' forms from the user's sheets: the flux GOO PROXY (the goo turns round its ring; its action heaves it up and throws drops), the fire THERMITE BURROWER
   // (it walks on the spot, the drill turning; its action spins the drill white-hot) and the ice IGLOO SKATER (it glides; its action is a spin with a ring of frost).
   { id: 'gooproxy', form: 850, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  // No. 853, the Goo Proxy as a frog (the user's ask on 850): a candidate until approved.
+  { id: 'gooproxy_frog', form: 853, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'thermite', form: 851, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'igloo', form: 852, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 831-836, the clear glass egg on six dark metal leg sets: candidates.

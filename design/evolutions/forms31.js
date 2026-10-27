@@ -51,9 +51,8 @@ const _prog31 = (t, act) => act > 0 ? Math.min(1, Math.max(0, (t - 1) / 0.48 + 1
 const _gpBlack = new T.MeshStandardMaterial({ color: 0x14141c, metalness: 0.85, roughness: 0.26, flatShading: true }); _gpBlack.envMapIntensity = 1.15;
 const _gpInner = new T.MeshStandardMaterial({ color: 0x07060c, metalness: 0.4, roughness: 0.6 }); _gpInner.envMapIntensity = 0.25;
 const _gpSpike = new T.MeshStandardMaterial({ color: 0x0a0a0f, metalness: 0.8, roughness: 0.35, flatShading: true }); _gpSpike.envMapIntensity = 0.32;
-function _gooProxy(o) {
-  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
-  const lc = _c31(EL.color), lcL = lc.clone().convertSRGBToLinear(), lit = lc.clone().lerp(_c31(0xffffff), 0.2).convertSRGBToLinear(), glowM = _hot31(lit), slitM = _hot31(lit);
+// the ring the goo sits in (o.Ro, o.Ri, o.H; its four spikes o.spike*): shared by the first Goo Proxy (850) and the frog (853)
+function _gpRing31(b, o, glowM, slitM) {
   const Ro = o.Ro, Ri = o.Ri, H = o.H, N = 8, h1 = H * 0.5;
   // the ring: eight black segments in two bands (the upper one stepped in), a slit of light low on each, an inner lip, a dark floor
   const ring = G(); b.add(ring);
@@ -69,6 +68,13 @@ function _gooProxy(o) {
     const geo = new T.ConeGeometry(1, 1, 4, 1); geo.rotateX(PI / 2); geo.translate(0, 0, 0.5);
     const sp = new T.Mesh(geo, _gpSpike); sp.scale.set(o.spikeW, o.spikeH, o.spike); tg.add(sp);
     _limb(tg, 0.018, glowM, 6).set(V(0, o.spikeH * 0.9 + 0.013, o.spike * 0.1), V(0, o.spikeH * 0.16 + 0.013, o.spike * 0.84)); }
+  return ring;
+}
+function _gooProxy(o) {
+  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
+  const lc = _c31(EL.color), lcL = lc.clone().convertSRGBToLinear(), lit = lc.clone().lerp(_c31(0xffffff), 0.2).convertSRGBToLinear(), glowM = _hot31(lit), slitM = _hot31(lit);
+  const Ro = o.Ro, Ri = o.Ri, H = o.H;
+  _gpRing31(b, o, glowM, slitM);
   // the goo: a pool filling the ring, the big bulb on a neck with the main diamond in it, a small bulb with a second, a lump, drops on the rim, droplets floating over it
   // (the goo leans bluer than the element's violet, as on the sheet; the big bulb is clearer, so its diamond shows)
   const gooC = lcL.clone().multiply(_c31(0x8cffff)), gooM = new T.MeshStandardMaterial({ color: gooC.clone().multiplyScalar(0.55), emissive: gooC.clone().multiplyScalar(0.42), roughness: 0.1, metalness: 0, transparent: true, opacity: 0.86, depthWrite: false }); gooM.envMapIntensity = 0.55;
@@ -104,6 +110,63 @@ function _gooProxy(o) {
 }
 const _gp0 = { S: 1.35, Ro: 0.6, Ri: 0.4, H: 0.28, spike: 0.44, spikeW: 0.2, spikeH: 0.19, spikeY: 0.16, tilt: 0.22, big: 0.28, bigY: 0.26, small: 0.14, dia: 0.13 };
 fx(850, "The flux technician, the GOO PROXY: a black segmented ring on four long spikes lit along their ridges, a pool of violet goo in it with a big bulb round the main diamond, a small bulb with another, drops and floating droplets.", () => _gooProxy(_gp0));
+
+// ── 853 · THE GOO PROXY AS A FROG ───────────────────────────────────────────────────────────────────────
+// ASKED (on 850): "I was thinking a frog face with diamond eye iris and one is way bigger than the other and smaller ring". The two bulbs of goo are its eyes now, bulging
+// on top of a head of goo, one far bigger than the other, a diamond on the front of each for its iris with a slit of a pupil; a wide mouth across its front. The ring is
+// smaller. Its idle breathes and looks about; its action puffs the head and pops the eyes.
+function _gooFrog(o) {
+  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
+  const lc = _c31(EL.color), lcL = lc.clone().convertSRGBToLinear(), lit = lc.clone().lerp(_c31(0xffffff), 0.2).convertSRGBToLinear(), glowM = _hot31(lit), slitM = _hot31(lit);
+  const H = o.H; _gpRing31(b, o, glowM, slitM);
+  const gooC = lcL.clone().multiply(_c31(0x8cffff));
+  const gooM = new T.MeshStandardMaterial({ color: gooC.clone().multiplyScalar(0.55), emissive: gooC.clone().multiplyScalar(0.42), roughness: 0.1, metalness: 0, transparent: true, opacity: 0.9, depthWrite: false }); gooM.envMapIntensity = 0.55;
+  const eyeM = gooM.clone(); eyeM.color.copy(gooC).multiplyScalar(0.5); eyeM.emissive.copy(gooC).multiplyScalar(0.5); eyeM.opacity = 0.9; eyeM.envMapIntensity = 1.0; eyeM.roughness = 0.06;   // the eyeballs: glossy bulbs, a shade brighter than the head
+  gooM.color.multiplyScalar(0.8); gooM.emissive.multiplyScalar(0.8);
+  const darkM = new T.MeshBasicMaterial({ color: gooC.clone().multiplyScalar(0.05), toneMapped: false });
+  const frog = G(); frog.position.y = H * 0.85; b.add(frog);   // (the head sits up on the ring, so its mouth shows over the lip)
+  const hw = o.headW, hh = o.headH, hd = o.headD, hz = o.headZ;
+  // the head: a dome of goo sitting in the ring, a little over its lip
+  const head = new T.Mesh(new T.SphereGeometry(1, 32, 20), gooM); head.scale.set(hw, hh, hd); head.position.z = hz; head.renderOrder = 6; frog.add(head);
+  const onHead = (u, v, k) => V(Math.sin(u) * Math.cos(v) * hw * k, Math.sin(v) * hh * k, hz + Math.cos(u) * Math.cos(v) * hd * k);   // a point on the head (u round from the front, v up)
+  // the mouth: a wide smile across its front, hugging the head
+  const mouthPts = []; for (let i = 0; i <= 24; i++) { const u = -1.1 + 2.2 * i / 24; mouthPts.push(onHead(u, 0.04 + 0.18 * u * u, 1.015)); }
+  frog.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(mouthPts), 48, 0.022, 5, false), darkM));
+  // the eyes: two bulbs bulging on top of the head, one far bigger than the other; a diamond on the front of each for its iris (tilted up a little to meet the
+  // camera's eye), a slit of a pupil down it
+  const look = V(0, 0.42, 0.91).normalize();
+  const eyes = [[-o.eyeX, o.eyeBig, -0.08], [o.eyeX2, o.eyeSmall, 0.08]].map(([x, r, zf], i) => {
+    const c = V(x, hh * 0.78 + r * 0.42, hz + hd * zf);
+    const ball = new T.Mesh(new T.SphereGeometry(r, 28, 20), eyeM); ball.position.copy(c); ball.renderOrder = 6; frog.add(ball);
+    const iris = _gemLit31(new T.OctahedronGeometry(r * 0.62, 0)); frog.add(iris);
+    const pupil = new T.Mesh(new T.OctahedronGeometry(r * 0.62, 0), darkM); frog.add(pupil);
+    return { c, r, ball, iris, pupil, i };
+  });
+  const q = new T.Quaternion().setFromUnitVectors(V(0, 0, 1), look), tmp = V(0, 0, 0);
+  // goo dripping over the ring's lip
+  const drips = [0.9, 2.6, 4.2].map((a, i) => { const m = new T.Mesh(new T.SphereGeometry(1, 12, 10), gooM); m.renderOrder = 6; m.position.set(Math.cos(a) * (o.Ro - 0.03), -H * 0.45, -Math.sin(a) * (o.Ro - 0.03)); frog.add(m); return { m, i }; });
+  const splash = []; for (let i = 0; i < 6; i++) { const m = new T.Mesh(new T.SphereGeometry(0.034, 10, 8), gooM); m.renderOrder = 6; m.visible = false; frog.add(m); splash.push({ m, a: i * TAU / 6 + 0.3 }); }
+  const fl = _glowPool(o.Ro * 1.5, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(lc); fl.m.material.opacity = 0.28; b.add(fl.g);
+  const Lt = new T.PointLight(0xffffff, 0.8, 4, 2); Lt.color.set(EL.color); Lt.position.set(0, H + 0.6, 0.5); b.add(Lt); LIGHTS.push(Lt);
+  return { g, core: (H * 0.85 + hh * 0.78 + o.eyeBig * 0.42) * (o.S || 1), update(t, act) {
+    const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act), pop = Math.sin(PI * pr), br = Math.sin(ph * 2);
+    // a breath: the head swells a little; the action: the head puffs and the eyes pop
+    head.scale.set(hw * (1 + 0.02 * br + 0.1 * pop), hh * (1 + 0.04 * br + 0.14 * pop), hd * (1 + 0.02 * br + 0.08 * pop));
+    const lookX = 0.16 * Math.sin(ph) * (1 - a), lookY = 0.06 * Math.cos(ph) * (1 - a);   // it looks about
+    eyes.forEach(E => { const k = 1 + 0.2 * pop, y = E.c.y + 0.012 * br + 0.05 * pop;
+      E.ball.position.set(E.c.x, y, E.c.z); E.ball.scale.setScalar(k);
+      tmp.set(lookX, lookY, 0).add(look).normalize();
+      E.iris.position.set(E.c.x + tmp.x * E.r * k * 0.9, y + tmp.y * E.r * k * 0.9, E.c.z + tmp.z * E.r * k * 0.9);
+      E.iris.quaternion.copy(q); E.iris.scale.set(0.85 * k, 1.2 * k, 0.4 * k); E.iris.userData.relight();
+      E.pupil.position.copy(E.iris.position).addScaledVector(look, E.r * k * 0.62 * 0.4 + 0.003); E.pupil.quaternion.copy(q); E.pupil.scale.set(0.1 * k, 0.85 * k, 0.08 * k); });
+    drips.forEach(D => { const s = 0.034 + 0.008 * Math.sin(ph * 2 + D.i * 2); D.m.scale.set(s, s * (1.6 + 0.3 * Math.sin(ph * 2 + D.i)), s); });
+    splash.forEach((S, i) => { S.m.visible = pop > 0.1; const r = 0.1 + 0.4 * pop, h = hh + 0.25 * pop * (0.6 + 0.4 * (i % 2)); S.m.position.set(Math.cos(S.a) * r, h, hz + Math.sin(S.a) * r); S.m.scale.setScalar(0.6 + 0.6 * pop); });
+    glowM.color.copy(lit).multiplyScalar(0.8 + 0.2 * Math.sin(ph * 2) + 0.4 * a); slitM.color.copy(lit).multiplyScalar(0.65 + 0.25 * Math.sin(ph * 2 + 1) + 0.5 * a);
+  } };
+}
+const _gf0 = { S: 1.6, Ro: 0.42, Ri: 0.28, H: 0.24, spike: 0.34, spikeW: 0.16, spikeH: 0.15, spikeY: 0.13, tilt: 0.22,
+  headW: 0.38, headH: 0.26, headD: 0.36, headZ: 0.04, eyeX: 0.13, eyeX2: 0.19, eyeBig: 0.21, eyeSmall: 0.11 };
+fx(853, "The flux technician, the GOO PROXY as a frog (the user's ask): a head of violet goo in a smaller black spiked ring, two bulging eyes on top, one far bigger than the other, each with a diamond for its iris; a wide mouth.", () => _gooFrog(_gf0));
 
 // ── 851 · THE THERMITE BURROWER ────────────────────────────────────────────────────────────────────────
 const _thRust = new T.MeshStandardMaterial({ color: _lin31(0x6b2e0e), metalness: 0.25, roughness: 0.62, flatShading: true, side: T.DoubleSide }); _thRust.envMapIntensity = 0.5;
