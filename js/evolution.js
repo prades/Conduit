@@ -189,10 +189,11 @@ const EVOLUTIONS = {
     hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "AEGIS BURST", sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
     // THE TECHNICIANS' FORMS ("camper" in the code), from the user's sheets. No signature move: the technician's job is the user's exploration tools, to come.
-    // The FLUX TECHNICIAN, design No. 850 (the "GOO PROXY" sheet): a black ring of eight segments on four spikes lit along their ridges, a pool of violet goo
-    // in it round a big diamond. The goo sloshes and the diamonds turn, so the sheet carries its own light.
+    // The FLUX TECHNICIAN, design No. 853 (the "GOO PROXY" sheet, then the user's review: "a frog face with diamond eye iris and one is way bigger than the other and
+    // smaller ring", "thinner diamonds"): a head of violet goo in a small black spiked ring, two bulging eyes on top, one far bigger than the other, a thin diamond for
+    // each iris with a slit of a pupil, a wide smile. It breathes and looks about, so the sheet carries its own light.
     gooproxy:{ id: "gooproxy", name: "GOO PROXY", element: "flux", role: "camper", sheet: "img/evo/gooproxy.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 87.4], noGlow: true, color: "#bb66ff" },
+              cell: 144, anchor: [72, 114.2], core: [72, 85.1], noGlow: true, color: "#bb66ff" },
     // The FIRE TECHNICIAN, design No. 851 (the "THERMITE BU…" sheet, its name cut off on it): a hunched armoured digger on four plated legs, a cone drill
     // for a nose glowing in its grooves, a hot vent on its back. The drill turns, so the sheet carries its own light.
     thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", sheet: "img/evo/thermite.png",

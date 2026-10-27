@@ -22,11 +22,11 @@ const JOBS = [
   { id: 'jellyram', form: 860, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'jellyram_blue', form: 860, color: '#2f6bff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'rimestar', form: 861, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
-  // Nos. 850-852 (forms31.js), the technicians' forms from the user's sheets: the flux GOO PROXY (the goo turns round its ring; its action heaves it up and throws drops), the fire THERMITE BURROWER
-  // (it walks on the spot, the drill turning; its action spins the drill white-hot) and the ice IGLOO SKATER (it glides; its action is a spin with a ring of frost).
-  { id: 'gooproxy', form: 850, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
-  // No. 853, the Goo Proxy as a frog (the user's ask on 850): a candidate until approved.
-  { id: 'gooproxy_frog', form: 853, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  // Nos. 851-853 (forms31.js), the technicians' forms from the user's sheets: the flux GOO PROXY as a frog (No. 853, which replaced No. 850 on the user's review: it breathes and
+  // looks about; its action puffs the head and pops the eyes), the fire THERMITE BURROWER (it walks on the spot, the drill turning; its action spins the drill white-hot) and the
+  // ice IGLOO SKATER (it glides; its action is a spin with a ring of frost).
+  { id: 'gooproxy', form: 853, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'gooproxy_old', form: 850, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Goo Proxy, before the review)
   { id: 'thermite', form: 851, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'igloo', form: 852, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 831-836, the clear glass egg on six dark metal leg sets: candidates.
