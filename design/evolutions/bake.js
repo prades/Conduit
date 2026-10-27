@@ -19,7 +19,8 @@ const JOBS = [
   { id: 'blightspider_old', form: 870, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Blight Spider, before the review)
   // No. 873, the Blight Spider on fine legs, lower to the ground (the user's ask on 870): a candidate until approved.
   { id: 'blightspider_low', form: 873, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
-  { id: 'hovershell', form: 871, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'hovershell', form: 877, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 877, approved on the user's review: little trapezoid wings, angled gently down)
+  { id: 'hovershell_old', form: 871, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Hover Shell, before the review)
   // No. 874, the Hover Shell with a star shuttle's trapezoid wings angled down (the user's ask on 871): a candidate until approved.
   { id: 'hovershell_wings', form: 874, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 875, the shuttle wings short and stubby, still crisp trapezoids; No. 876, no wings at all (the user's "no trapezoid wings", read both ways): candidates until one is approved.

@@ -204,8 +204,10 @@ const EVOLUTIONS = {
     // bubbles and the legs trot, so the sheet carries its own light.
     blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", sheet: "img/evo/blightspider.png",
               cell: 144, anchor: [72, 114.2], core: [72, 79.6], noGlow: true, color: "#66ff66" },
-    // The ELECTRIC TECHNICIAN, design No. 871 (the user's "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet, which has no name): a horseshoe crab's domed black shell with
-    // a yellow underglow, square wings and two launcher prongs, over a six-legged shuttle; its action frames lift the shell off. It glows, so the sheet carries its own light.
+    // The ELECTRIC TECHNICIAN, design No. 877 (the user's "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet, which has no name, then the review: "trapezoidal wings that are
+    // kind of angled downward like a ship, like a shuttle, like a star shuttle", "too long, make 'em cuter", "angled downward. Just make it subtle"): a horseshoe crab's
+    // domed black shell with a yellow underglow, little trapezoid wings tilted gently down and two launcher prongs, over a six-legged shuttle; its action frames lift
+    // the shell off. It glows, so the sheet carries its own light.
     hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", sheet: "img/evo/hovershell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 93.1], noGlow: true, color: "#ffee33" },
     // The ICE TECHNICIAN, design No. 857 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around", then the review:
