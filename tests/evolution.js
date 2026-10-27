@@ -56,9 +56,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a hybrid fights as a brawler');
         mk('flux', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'gooproxy', 'a flux technician is the Goo Proxy');
     });
-    check('THE ASK ("the old core brawler is going to be switched to the technician class"; "Swap it"): a CORE TECHNICIAN becomes the HAMMER SLUG (design No. 467); a core brawler waits for its new form; an ELECTRIC BRAWLER becomes the STATIC ORB', () => {
+    check('THE ASK ("the old core brawler is going to be switched to the technician class"; "Swap it"): a CORE TECHNICIAN becomes the HAMMER SLUG (design No. 467); a core brawler is the Jelly Ram now; an ELECTRIC BRAWLER becomes the STATIC ORB', () => {
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core technician'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); same(run('__f.role'), 'camper', 'its role'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is handed out again');
-        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core brawler evolved (its new form, the Jelly Ram, is to come)');
+        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'jellyram', 'a core brawler (its new form, the Jelly Ram)');
         mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'staticorb', 'electric brawler');
         same(run('unitTypeLabel(__f)'), 'STATIC ORB', 'its tag'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.voltring.legacy === true'), 'the Volt Ring placeholder is no longer handed out'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'thunderhead', 'the electric sniper is the Thunderhead');
@@ -76,13 +76,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('toxic', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'seeper', 'a toxic brawler is the Seeper'); same(run('unitTypeLabel(__f)'), 'SEEPER', 'its tag'); ok(run('EVOLUTIONS.caldera.legacy === true'), 'the Caldera is no longer handed out');
         mk('toxic', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic camper waits');
     });
-    check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the HORNSHELL (design No. 220, which replaced the Petal Aegis); a core technician is the Hammer Slug, a core brawler waits', () => {
+    check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the HORNSHELL (design No. 220, which replaced the Petal Aegis); a core technician is the Hammer Slug, a core brawler the Jelly Ram', () => {
         mk('core', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'hornshell', 'its form'); same(r.tag, 'HORNSHELL', 'its tag'); same(r.role, 'sniper', 'its role id');
         ok(run('EVOLUTIONS.petal.legacy === true'), 'the Petal Aegis is no longer handed out'); same(run('evolutionFor({ isFollower: true, element: "core", role: "sniper" }).id'), 'hornshell', 'evolutionFor');
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'the core technician');
-        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core brawler waits (for the Jelly Ram)');
+        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'jellyram', 'a core brawler is the Jelly Ram');
     });
     check('THE ASK: the ranged role is a MAGE and the post-holding role a TECHNICIAN on screen (their ids stay "sniper" and "camper")', () => {
         same(run('roleLabel("sniper")'), 'MAGE', 'sniper'); same(run('roleLabel("brawler")'), 'BRAWLER', 'brawler'); same(run('roleLabel("camper")'), 'TECHNICIAN', 'camper'); same(run('roleLabel("hybrid")'), 'HYBRID', 'hybrid'); same(run('roleLabel(null)'), '', 'none');
@@ -91,14 +91,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
         ok(!/<strong>Sniper<\/strong>/.test(HTML) && /<strong>Mage<\/strong>/.test(HTML), 'the index still describes a Sniper');
     });
-    check('THE ASK: an ICE BRAWLER becomes the FROST MAW (design No. 156); an ice mage waits (the ice technician is the Igloo Skater)', () => {
+    check('THE ASK: an ICE BRAWLER becomes the FROST MAW (design No. 156) (the ice technician is the Igloo Skater, the ice mage the Rimestar)', () => {
         mk('ice', 'brawler', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'maw', 'its form'); same(r.tag, 'FROST MAW', 'its tag'); same(r.role, 'brawler', 'its role');
         mk('ice', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'maw', 'a hybrid fights as a brawler');
     });
-    check('…and nobody else: not an ice mage, an electric or a toxic technician — nor before level 10', () => {
-        for (const [el, role] of [['ice', 'sniper'], ['electric', 'camper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
+    check('…and nobody else: not an electric or a toxic technician — nor before level 10', () => {
+        for (const [el, role] of [['electric', 'camper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 9); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 9');
         mk('fire', 'brawler', 10); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'a fire brawler at 10');
         same(run('EVOLVE_LEVEL'), 10, 'THE ASK: they evolve at level 10');
@@ -113,11 +113,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "camper").map(d => d.id).sort().join()'), 'gooproxy,hammerslug,igloo,thermite', 'the technicians\' forms');
     });
     check('THE ASK ("they help traverse the battlefield and provide exploration tools [...] I will put them in later"): the new technicians\' forms have NO signature move, and run without one', () => {
-        for (const id of ['gooproxy', 'thermite', 'igloo']) { same(run('EVOLUTIONS.' + id + '.move || null'), null, id + ' has a move'); same(run('EVOLUTIONS.' + id + '.moves || null'), null, id + ' has moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move'); }
+        for (const id of ['gooproxy', 'thermite', 'igloo', 'rimestar']) { same(run('EVOLUTIONS.' + id + '.move || null'), null, id + ' has a move'); same(run('EVOLUTIONS.' + id + '.moves || null'), null, id + ' has moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move'); }
         const r = run(`(function(){ followers.length = 0; spawnFollowerAtCrystal('flux'); const f = followers[0]; f.returningToCrystal = false; f.role = 'camper'; f.evolved = 'gooproxy'; f._moltAt = -1e9; f._sigCd = 0;
             const t0 = floatingTexts.length, fx0 = elementEffects.length; for (let i = 0; i < 400; i++) evolutionTick();
             return { role: f.role, texts: floatingTexts.length - t0, fx: elementEffects.length - fx0, sig: f._sigAt === undefined }; })()`);
         same(r.role, 'camper', 'its role'); same(r.texts, 0, 'a move was announced'); same(r.fx, 0, 'a move went off'); ok(r.sig, 'a move was marked as fired');
+    });
+    check('THE ASK ("do the Jelly Ram and Ice Mage now"): a CORE BRAWLER becomes the JELLY RAM (design No. 860), with the core brawler\'s AEGIS BURST; an ICE MAGE becomes the RIMESTAR (No. 861), with no move, and is still an Ice Mage to the specimens', () => {
+        mk('core', 'brawler', 20); run(lvlUp);
+        let r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role, move: evoMoveOf(__f) && evoMoveOf(__f).id })');
+        same(r.evo, 'jellyram', 'core brawler'); same(r.tag, 'JELLY RAM', 'its tag'); same(r.role, 'brawler', 'its role'); same(r.move, 'aegis_burst', 'its move');
+        mk('ice', 'sniper', 20); run(lvlUp);
+        r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role, move: evoMoveOf(__f), mage: specimenIsMage(__f) })');
+        same(r.evo, 'rimestar', 'ice mage'); same(r.tag, 'RIMESTAR', 'its tag'); same(r.role, 'sniper', 'its role'); same(r.move, null, 'its move'); same(r.mage, true, 'an Ice Mage to the specimens');
+        same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "brawler" && d.element === "core").map(d => d.id).join()'), 'jellyram', 'the core brawler\'s forms');
     });
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
         const r = run(`(function(){ spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.role = 'brawler'; f.level = 34; f.xp = xpForLevel(34); _applyFollowerLevel(f, true);

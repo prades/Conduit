@@ -64,7 +64,7 @@ async function boot(store) {
         same(r.hp, Math.round(r.base.hp * run('FOLLOWER_HP_MULT')), 'max health (the hp stat, and a quarter more: FOLLOWER_HP_MULT)'); same(r.pw, r.base.attack, 'power');
     });
     check('THE ASK: gaining levels raises every levelled stat in proportion — but not its walking speed or its role', () => {
-        const r = run(`(function(){ const f = ${FOL('cunning', 2, 0)}; f.element = 'ice'; /* a fire sniper evolves at 20 (x1.25, js/evolution.js); ice has no form */ const sp = f.moveSpeed, role = f.role, b = Object.assign({}, f.base);
+        const r = run(`(function(){ const f = ${FOL('cunning', 2, 0)}; f.element = 'toxic'; f.role = 'camper'; /* a form evolves at its level (x1.25, js/evolution.js); a toxic technician has none yet */ const sp = f.moveSpeed, role = f.role, b = Object.assign({}, f.base);
             f.health = 5; const h0 = f.health, m0 = f.maxHealth;
             gainXp(f, xpForLevel(20) - f.xp);
             return { lv: f.level, atk: f.stats.attack, def: f.stats.defense, hp: f.maxHealth, health: f.health, h0, m0, b, sp, sp2: f.moveSpeed, role, role2: f.role, speed: f.stats.speed }; })()`);

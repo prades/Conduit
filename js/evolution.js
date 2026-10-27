@@ -28,8 +28,16 @@
 //          cover either side of a spiked spine, a small horn) was the CORE BRAWLER, which replaced the Aegis Warden;
 //          it is the CORE TECHNICIAN now (ASKED: "the old core brawler is going to be switched to the technician
 //          class", then "Swap it"), and a follower already evolved into it is a technician with it (its role is
-//          its form's). It casts the same AEGIS BURST. The core brawler's own new form (the Jelly Ram) is to come:
-//          until it is in, a core brawler does not evolve (one at the level evolves as soon as it is).
+//          its form's). It casts the same AEGIS BURST. The core brawler's own new form is the JELLY RAM, below.
+//          JELLY RAM (the CORE BRAWLER, design No. 860, the user's "CORE BRAWLER · JELLY RAM" sheet: a clear dome
+//          with a big diamond in it under a black helmet band, a horn out of either side, a body of jelly trailing
+//          tentacles; it hovers, and its action frames are the sheet's charge, a ram) casts the core brawler's
+//          AEGIS BURST (ASKED: "do the Jelly Ram and Ice Mage now"). Its sheet is blue; it is baked in the core
+//          element's teal, so it reads as core beside the Crystal and its own card.
+//          RIMESTAR (the ICE MAGE, design No. 861, the user's sheet, which has no name: a white drone of three long
+//          fins round a faceted blue diamond; it hovers) has NO signature move: there was none for an ice mage to
+//          keep, and none was invented. An Ice Mage evolved into it still preserves specimens (js/specimen.js
+//          counts an evolved form by its form's element and role).
 //          THE TECHNICIANS' FORMS (ASKED: "add the new technician forms now"; the user's sheets, design Nos. 850-852):
 //          GOO PROXY (the FLUX technician), THERMITE BURROWER (the FIRE technician) and IGLOO SKATER (the ICE
 //          technician). The technician "helps traverse the battlefield and provides exploration tools to the user";
@@ -140,7 +148,7 @@ const EVOLUTIONS = {
     // turns and bubbles rise, so its sheet carries its own light.
     voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/voidstar.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff" },
-    // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's new form is to come.)
+    // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's form is the Jelly Ram.)
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
     // LEGACY: the first electric brawler. New evolutions use the Prism Hood; a follower already evolved into this keeps it.
@@ -189,6 +197,15 @@ const EVOLUTIONS = {
     // a squat box of cut ice blocks on diamond legs. It glides, so the sheet carries its own light.
     igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", sheet: "img/evo/igloo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 78.7], noGlow: true, color: "#9fe8ff" },
+    // The CORE BRAWLER, design No. 860 (the user's "JELLY RAM" sheet: "a floating brawler that uses its horned shell to ram targets"): a clear dome with a big diamond
+    // in it under a black helmet band, a horn out of either side lit along its top, a body of jelly trailing tentacles that end in drops. It casts the core brawler's
+    // AEGIS BURST. Its sheet is blue; it is in core's teal. The tentacles sway, so the sheet carries its own light.
+    jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", move: "AEGIS BURST", sheet: "img/evo/jellyram.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 74.8], noGlow: true, color: "#33e6c4" },
+    // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
+    // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
+    rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", sheet: "img/evo/rimestar.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 72.1], noGlow: true, color: "#9fe8ff" },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "AEGIS BLOOM", sheet: "img/evo/hornshell.png",

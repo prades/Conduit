@@ -15,7 +15,7 @@ The code is js/specimen.js; the bodies are js/mutator.js's (`cloneBodies`), the 
 | Followers that fall come back at the Crystal after 3 s with one point less of their HP stat; at none left they are **lost for good** (js/game.js) | a follower lost for good is the follower that leaves a body. A follower that comes back needs nothing, and leaves none. |
 | The Mutator's clone leaves its body when it falls (docs/MUTATOR.md, step 4) | the other kind of body |
 | The long-press ring (follower, creature, ground) | a fourth ring, on a body: SALVAGE DNA (a clone's, step 5) and **PRESERVE** |
-| The ICE MAGE: a follower of the ice element with the mage role (the show room's follower spot is one) | the Ice Mage. There is no evolved ice mage form (FROST MAW is a brawler), so an Ice Mage is one that has not evolved. |
+| The ICE MAGE: a follower of the ice element with the mage role (the show room's follower spot is one) | the Ice Mage. An ice mage that has evolved (the RIMESTAR, js/evolution.js) is one too: an evolved form counts by its form's element and role. |
 | The supply cases: walked over, their contents go in the pack | the capsule is taken the same way |
 | The pack (ITEMS, js/inventory.js) | the capsule is an item: SPECIMEN CAPSULE |
 | The Crystal: where the fallen have always come back | the **Resurrection Zone**. The brief names it; the map has no such room, and the brief says not to invent places, so it is the existing resurrection place. |

@@ -30,9 +30,9 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
     check('every form with a move has it in the table (so every move has a row)', () => {
         for (const id of J('Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].move)')) { const n = J(`EVOLUTIONS[${JSON.stringify(id)}].move`); ok(J(`!!MOVE_BY_NAME[${JSON.stringify(n)}]`), id + ': no row for ' + n); }
     });
-    check('the forms with no move are the new technicians\' (their exploration tools are the user\'s, to come), and they fire none', () => {
-        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'gooproxy,igloo,thermite', 'forms without a move');
-        for (const id of ['gooproxy', 'igloo', 'thermite']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
+    check('the forms with no move are the new technicians\' (their exploration tools are the user\'s, to come) and the Rimestar (there was no ice mage move), and they fire none', () => {
+        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'gooproxy,igloo,rimestar,thermite', 'forms without a move');
+        for (const id of ['gooproxy', 'igloo', 'rimestar', 'thermite']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
     });
     check('every row fires a real function', () => {
         for (const id of J('Object.keys(MOVES)')) same(J(`typeof MOVES[${JSON.stringify(id)}].fn`), 'function', id);
@@ -45,6 +45,10 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
             const got = run(`(function(){ const d = EVOLUTIONS[${JSON.stringify(id)}], m = evoMoveOf({ evolved: ${JSON.stringify(id)} }, d); return m && m.fn ? m.fn.toString() : null; })()`);
             ok(got && got.indexOf(fn + '(') >= 0, id + ': ' + got + ' is not ' + fn);
         }
+    });
+    check('the Jelly Ram, the core brawler\'s new form, fires the core brawler\'s move (AEGIS BURST)', () => {
+        const got = run(`(function(){ const m = evoMoveOf({ evolved: 'jellyram' }, EVOLUTIONS.jellyram); return m && m.fn ? m.fn.toString() : null; })()`);
+        ok(got && got.indexOf('aegisBurst(') >= 0, 'jellyram: ' + got);
     });
     check('evolutionTick fires the form\'s move, once its cooldown is up', () => {
         run(`gameState.running = true; followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__f = followers[followers.length - 1]; __f.evolved = 'quillstone'; __f._moltAt = -1e9; __f._sigCd = 0;
