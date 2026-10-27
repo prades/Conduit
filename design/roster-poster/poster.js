@@ -6,29 +6,17 @@ const EL = [
   { id: 'fire', label: 'FIRE', col: '#ff4a1c' }, { id: 'electric', label: 'ELECTRIC', col: '#ffe733' }, { id: 'flux', label: 'FLUX', col: '#a64dff' },
   { id: 'core', label: 'CORE', col: '#19e6c1' }, { id: 'toxic', label: 'TOXIC', col: '#6dff5a' }, { id: 'ice', label: 'ICE', col: '#8fe3ff' },
 ];
-const ROLES = [{ id: 'brawler', label: 'BRAWLER' }, { id: 'mage', label: 'MAGE' }, { id: 'worker', label: 'WORKER' }, { id: 'technician', label: 'TECHNICIAN' }];
-const FIGHTERS = {
-  'fire/brawler': { id: 'quillstone', name: 'QUILLSTONE', move: 'QUILL BURST' },
-  'fire/mage': { id: 'embercowl', name: 'EMBER HOOD', move: 'HEXFIRE' },
-  'electric/brawler': { id: 'voltring', name: 'VOLT RING', move: 'STATIC RUSH', note: 'PLACEHOLDER' },
-  'electric/mage': { id: 'thunderhead', name: 'THUNDERHEAD', move: 'ARC VOLLEY' },
-  'electric/worker': { id: 'pod', name: 'DYNAMO POD', move: 'RAPID DISCHARGE' },
-  'flux/brawler': { id: 'mimic', name: 'RIFT MIMIC', move: 'GRAVITY SLAM', ground: true },
-  'flux/mage': { id: 'serpent', name: 'SERPENT', move: 'SINGULARITY SHOT' },
-  'flux/worker': { id: 'hauler', name: 'HOVER HAULER', move: 'HEAVY HAUL' },
-  'core/brawler': { id: 'hammerslug', name: 'HAMMER SLUG', move: 'AEGIS BURST' },
-  'core/mage': { id: 'hornshell', name: 'HORNSHELL', move: 'AEGIS BLOOM' },
-  'core/worker': { id: 'vessel', name: 'WORM VESSEL', move: 'REWIRE' },
-  'toxic/brawler': { id: 'seeper', name: 'SEEPER', move: 'ERUPTION', ground: true },
-  'toxic/mage': { id: 'rotshard', name: 'ROTSHARD', move: 'CORRODE SHOT' },
-  'ice/brawler': { id: 'maw', name: 'FROST MAW', move: 'CHOMP', ground: true },
-};
-const have = new Set(['rotshard', 'mimic', 'maw', 'seeper']);
+// the rows are the roles (the game's names: brawler, sniper = MAGE, camper = TECHNICIAN); the forms are read from the game's own table (js/evolution.js EVOLUTIONS, legacy forms
+// left out), so the poster follows the game: one form for each element and role, its name, its signature move (if it has one) and its ground layer (pools, puddles)
+const ROLES = [{ id: 'brawler', label: 'BRAWLER' }, { id: 'sniper', label: 'MAGE' }, { id: 'camper', label: 'TECHNICIAN' }];
+const vm = require('vm'), evoCtx = {}; vm.createContext(evoCtx); vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/evolution.js'), 'utf8') + ';this.__E = EVOLUTIONS; this.__L = EVOLVE_LEVEL;', evoCtx);
+const FIGHTERS = {};
+for (const d of Object.values(evoCtx.__E)) if (!d.legacy && !FIGHTERS[d.element + '/' + d.role]) FIGHTERS[d.element + '/' + d.role] = { id: d.id, name: d.name, move: d.move || null, ground: d.ground ? path.basename(d.ground, '.png') : null };
 const rd = f => 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'img/evo', f)).toString('base64');
 const imgs = {};
-for (const f of Object.values(FIGHTERS)) { imgs[f.id] = rd(f.id + '.png'); if (f.ground && fs.existsSync(path.join(ROOT, 'img/evo', f.id + '_g.png'))) imgs[f.id + '_g'] = rd(f.id + '_g.png'); }
-const page = `<!doctype html><body style="margin:0;background:#04060b"><canvas id=c width=2600 height=2040></canvas><script>
-const EL=${JSON.stringify(EL)}, ROLES=${JSON.stringify(ROLES)}, FIGHTERS=${JSON.stringify(FIGHTERS)}, IM=${JSON.stringify(imgs)};
+for (const f of Object.values(FIGHTERS)) { imgs[f.id] = rd(f.id + '.png'); if (f.ground) imgs[f.id + '_g'] = rd(f.ground + '.png'); }
+const page = `<!doctype html><body style="margin:0;background:#04060b"><canvas id=c width=2600 height=1600></canvas><script>
+const EL=${JSON.stringify(EL)}, ROLES=${JSON.stringify(ROLES)}, FIGHTERS=${JSON.stringify(FIGHTERS)}, IM=${JSON.stringify(imgs)}, LEVEL=${evoCtx.__L};
 const L = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = s; });
 (async () => {
   const cv = document.getElementById('c'), g = cv.getContext('2d'), W = cv.width, H = cv.height;
@@ -42,7 +30,7 @@ const L = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); 
   g.save(); g.font = 'italic 900 150px "DejaVu Sans", sans-serif'; g.textBaseline = 'alphabetic'; g.fillStyle = '#0b1226'; g.fillText('CONDUIT', 112, 192);
   const tg = g.createLinearGradient(100, 80, 100, 200); tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.5, '#9fe8ff'); tg.addColorStop(1, '#19e6c1'); g.shadowColor = '#19e6c1'; g.shadowBlur = 36; g.fillStyle = tg; g.fillText('CONDUIT', 100, 180); g.restore();
   g.font = 'italic 700 40px "DejaVu Sans Mono", monospace'; g.fillStyle = '#8aa0c8'; g.fillText('EVOLUTION ROSTER', 108, 238);
-  const n = Object.keys(FIGHTERS).length; g.textAlign = 'right'; g.font = 'italic 900 110px "DejaVu Sans", sans-serif'; g.fillStyle = '#ffffff'; g.shadowColor = '#2a6bff'; g.shadowBlur = 30; g.fillText(n + ' / 24', W - 110, 178); g.shadowBlur = 0;
+  const n = Object.keys(FIGHTERS).length; g.textAlign = 'right'; g.font = 'italic 900 110px "DejaVu Sans", sans-serif'; g.fillStyle = '#ffffff'; g.shadowColor = '#2a6bff'; g.shadowBlur = 30; g.fillText(n + ' / ' + EL.length * ROLES.length, W - 110, 178); g.shadowBlur = 0;
   g.font = '700 30px "DejaVu Sans Mono", monospace'; g.fillStyle = '#8aa0c8'; g.fillText('FIGHTERS UNLOCKED', W - 110, 228); g.textAlign = 'left';
   // slash under the title
   g.fillStyle = '#19e6c1'; g.save(); g.transform(1, 0, -0.4, 1, 0, 0); g.fillRect(150, 262, W - 300, 5); g.restore();
@@ -71,21 +59,20 @@ const L = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); 
         g.save(); card(x, y, CW, CH); g.clip(); const py = y + CH - 92; const pg = g.createLinearGradient(x, py, x, y + CH); pg.addColorStop(0, 'rgba(5,8,16,0.0)'); pg.addColorStop(0.35, 'rgba(5,8,16,0.88)'); pg.addColorStop(1, 'rgba(5,8,16,0.98)'); g.fillStyle = pg; g.fillRect(x, py - 10, CW, 110);
         g.fillStyle = e.col; g.fillRect(x, y + CH - 74, 8, 52);
         let fs = 38; g.font = 'italic 900 ' + fs + 'px "DejaVu Sans", sans-serif'; while (g.measureText(F.name).width > CW - 70 && fs > 24) { fs -= 2; g.font = 'italic 900 ' + fs + 'px "DejaVu Sans", sans-serif'; } g.fillStyle = '#ffffff'; g.shadowColor = e.col; g.shadowBlur = 10; g.fillText(F.name, x + 24, y + CH - 40); g.shadowBlur = 0;
-        g.font = '700 20px "DejaVu Sans Mono", monospace'; g.fillStyle = e.col; g.fillText('▸ ' + F.move, x + 24, y + CH - 14); g.restore();
+        g.font = '700 20px "DejaVu Sans Mono", monospace'; g.fillStyle = F.move ? e.col : '#7f8db0'; g.fillText('▸ ' + (F.move || 'NO SIGNATURE MOVE YET'), x + 24, y + CH - 14); g.restore();
         // role tag top-left
         g.save(); g.font = 'italic 900 20px "DejaVu Sans Mono", monospace'; const tw = g.measureText(r.label).width + 26; g.fillStyle = e.col; g.beginPath(); g.moveTo(x + 40, y + 14); g.lineTo(x + 40 + tw, y + 14); g.lineTo(x + 40 + tw - 10, y + 40); g.lineTo(x + 30, y + 40); g.closePath(); g.fill(); g.fillStyle = '#05070f'; g.fillText(r.label, x + 46, y + 34); g.restore();
-        if (F.note) { g.save(); g.font = '900 17px "DejaVu Sans Mono", monospace'; g.fillStyle = '#ffb347'; g.textAlign = 'right'; g.fillText(F.note, x + CW - 40, y + 32); g.restore(); }
         // border
         g.save(); card(x, y, CW, CH); g.lineWidth = 3; g.strokeStyle = e.col; g.shadowColor = e.col; g.shadowBlur = 18; g.stroke(); g.restore();
       } else {
         g.fillStyle = 'rgba(14,20,38,0.55)'; g.fill(); g.setLineDash([14, 10]); g.lineWidth = 2.5; g.strokeStyle = '#3a4a70'; g.stroke(); g.setLineDash([]);
-        g.save(); g.font = 'italic 900 130px "DejaVu Sans", sans-serif'; g.textAlign = 'center'; g.fillStyle = '#1a2441'; g.fillText('?', x + CW / 2, y + CH / 2 + 50); g.font = '700 22px "DejaVu Sans Mono", monospace'; g.fillStyle = '#4b5d88'; g.fillText(r.id === 'technician' ? 'ROLE ON HOLD' : 'IN DEVELOPMENT', x + CW / 2, y + CH - 40); g.restore();
+        g.save(); g.font = 'italic 900 130px "DejaVu Sans", sans-serif'; g.textAlign = 'center'; g.fillStyle = '#1a2441'; g.fillText('?', x + CW / 2, y + CH / 2 + 50); g.font = '700 22px "DejaVu Sans Mono", monospace'; g.fillStyle = '#4b5d88'; g.fillText('IN DEVELOPMENT', x + CW / 2, y + CH - 40); g.restore();
       }
       g.restore();
     });
   });
   // footer
-  g.font = '700 26px "DejaVu Sans Mono", monospace'; g.fillStyle = '#5d7096'; g.fillText('LEVEL 10: THE EGG SHEDS AND THE FOLLOWER EVOLVES   \\u00B7   RE-ROLLED TO ANOTHER ELEMENT: BACK TO AN EGG UNTIL ITS NEXT LEVEL-UP', 150, H - 50);
+  g.font = '700 26px "DejaVu Sans Mono", monospace'; g.fillStyle = '#5d7096'; g.fillText('LEVEL ' + LEVEL + ': THE EGG SHEDS AND THE FOLLOWER EVOLVES   \\u00B7   ONE FORM FOR EVERY ELEMENT AND ROLE', 150, H - 50);
   // vignette
   const vg = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.95); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
   document.title = 'done';
@@ -93,7 +80,7 @@ const L = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); 
 </script></body>`;
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox'] });
-  const p = await b.newPage({ viewport: { width: 2600, height: 2040 } });
+  const p = await b.newPage({ viewport: { width: 2600, height: 1600 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.setContent(page); await p.waitForFunction(() => document.title === 'done', null, { timeout: 60000 });
   await p.locator('#c').screenshot({ path: process.argv[2] }); console.log(errs.slice(0, 3)); await b.close();
