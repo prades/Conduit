@@ -76,6 +76,7 @@ fx(870, "The toxic technician, the BLIGHT SPIDER: a glass tank of bubbling toxin
 
 // ── 871 · THE HOVER SHELL ──────────────────────────────────────────────────────────────────────────────
 const _hsBlack = new T.MeshStandardMaterial({ color: 0x0e0f12, metalness: 0.85, roughness: 0.55, flatShading: true, side: T.DoubleSide }); _hsBlack.envMapIntensity = 0.25;   // (solid black: metal, so the studio's lights leave it black; brighter reflections read as blue glints)
+const _hsWing = new T.MeshStandardMaterial({ color: 0x0b0c10, metalness: 0.9, roughness: 0.6, flatShading: true, side: T.DoubleSide }); _hsWing.envMapIntensity = 0.15;   // (a big flat wing mirrors the studio grey: rougher and dimmer, it stays black)
 const _hsSteel = new T.MeshStandardMaterial({ color: _lin31(0xb9bcc4), metalness: 0.9, roughness: 0.3, flatShading: true }); _hsSteel.envMapIntensity = 0.9;
 // the carapace: the top of an ellipsoid, narrowed toward its front into the horseshoe crab's point (front: how much narrower at the very front)
 function _domeGeo33(rx, ry, rz, front) {
@@ -93,6 +94,16 @@ function _hoverShell(o) {
   shell.add(new T.Mesh(_domeGeo33(rx, ry, rz, o.front), _hsBlack));
   const rimPts = []; for (let i = 0; i < 48; i++) { const f = i / 48 * TAU, z = Math.sin(f), k = z > 0 ? 1 - o.front * z * z : 1; rimPts.push(V(Math.cos(f) * rx * k * 1.01, 0.012, z * rz * 1.01)); }
   shell.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(rimPts, true), 96, 0.026, 6, true), glowM));
+  if (o.shuttle) {
+    // ... or a shuttle's (the user: "trapezoidal wings that are kind of angled downward like a ship, like a shuttle, like a star shuttle"): each a trapezoid, broad at
+    // the root and narrower at the tip, its front edge swept back, tilted down from the root; a plate of light under it, so its edges glow
+    const W = o.shuttle, wing = (k) => { const sh = new T.Shape(); sh.moveTo(0, -W.root / 2); sh.lineTo(W.span, -W.root / 2 - W.sweep); sh.lineTo(W.span, -W.root / 2 - W.sweep + W.tip); sh.lineTo(0, W.root / 2); sh.closePath();
+      const geo = new T.ExtrudeGeometry(sh, { depth: W.thick * k, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.012, bevelSegments: 1 }); geo.rotateX(PI / 2); return geo; };   // (shape x -> out, y -> along; its thickness hangs down)
+    const glowWM = glowM.clone(); glowWM.side = T.DoubleSide;
+    for (const sx of [-1, 1]) { const wg = G(); wg.position.set(sx * rx * 0.84, 0.13, -rz * 0.1); wg.rotation.z = -sx * W.droop; wg.scale.x = sx; shell.add(wg);
+      wg.add(new T.Mesh(wing(1), _hsWing));
+      const lit = new T.Mesh(wing(0.6), glowWM); lit.scale.set(0.96, 1, 0.96); lit.position.y = -W.thick * 0.75; wg.add(lit); }
+  } else
   for (const sx of [-1, 1]) {
     const top = cbox(o.wingW, 0.06, o.wingL, 0.014, _hsBlack); top.position.set(sx * (rx * 0.86 + o.wingW / 2), 0.115, -rz * 0.12); shell.add(top);
     const under = cbox(o.wingW - 0.03, 0.08, o.wingL - 0.03, 0.012, glowM); under.position.set(sx * (rx * 0.86 + o.wingW / 2), 0.045, -rz * 0.12); shell.add(under);   // (its underside glows: the only light on it)
@@ -125,4 +136,6 @@ function _hoverShell(o) {
   } };
 }
 const _hs0 = { S: 1.8, hover: 0.14, rx: 0.36, ry: 0.36, rz: 0.56, front: 0.5, wingW: 0.34, wingL: 0.5, prong: 0.42, lift: 0.42, shY: 0.24, shW: 0.36, shH: 0.12, shL: 0.5, cry: 0.08 };
+// 874: "instead of square wings that are flat, I want trapezoidal wings that are kind of angled downward like a ship, like a shuttle, like a star shuttle".
+fx(874, "The electric technician, the HOVER SHELL with a star shuttle's wings (the user's ask): trapezoid wings swept back and angled down, their edges glowing yellow from underneath.", () => _hoverShell(Object.assign({}, _hs0, { shuttle: { span: 0.46, root: 0.56, tip: 0.24, sweep: 0.16, thick: 0.05, droop: 0.42 } })));
 fx(871, "The electric technician, the HOVER SHELL: a horseshoe crab's domed black shell with a yellow underglow, square flat wings and two launcher prongs, over a six-legged shuttle with a crystal in its back; the shell lifts off.", () => _hoverShell(_hs0));
