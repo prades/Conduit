@@ -194,8 +194,9 @@ const EVOLUTIONS = {
     // each iris with a slit of a pupil, a wide smile. It breathes and looks about, so the sheet carries its own light.
     gooproxy:{ id: "gooproxy", name: "GOO PROXY", element: "flux", role: "camper", sheet: "img/evo/gooproxy.png",
               cell: 144, anchor: [72, 114.2], core: [72, 85.1], noGlow: true, color: "#bb66ff" },
-    // The FIRE TECHNICIAN, design No. 851 (the "THERMITE BU…" sheet, its name cut off on it): a hunched armoured digger on four plated legs, a cone drill
-    // for a nose glowing in its grooves, a hot vent on its back. The drill turns, so the sheet carries its own light.
+    // The FIRE TECHNICIAN, design No. 855 (the "THERMITE BU…" sheet, its name cut off on it, then the user's review: "a black body with red glowing accents",
+    // "thick armored arms", "more like a bear/zoids style tank animal ... same silhouette", "no ears or any face"): a hunched black armoured digger with seams of
+    // red light and a cone drill for a nose glowing red in its groove, on a bear's thick armoured legs with clawed paws. The drill turns, so the sheet carries its own light.
     thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", sheet: "img/evo/thermite.png",
               cell: 144, anchor: [72, 114.2], core: [72, 74.8], noGlow: true, color: "#ff5a1f" },
     // The TOXIC TECHNICIAN, design No. 870 (the user's card, "BLIGHT SPIDER · TOXIC DEPLOY"): a glass tank of bubbling toxin with black bands and a black front cap

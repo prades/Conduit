@@ -27,10 +27,11 @@ const JOBS = [
   // ice IGLOO SKATER (it glides; its action is a spin with a ring of frost).
   { id: 'gooproxy', form: 853, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'gooproxy_old', form: 850, color: '#9933ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Goo Proxy, before the review)
-  { id: 'thermite', form: 851, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'thermite', form: 855, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 855, approved on the user's review: the bear-like black tank animal)
+  { id: 'thermite_old', form: 851, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Thermite Burrower, before the review)
   // No. 854, the Thermite Burrower in black with red accents (the user's ask on 851): a candidate until approved.
   { id: 'thermite_black', form: 854, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
-  // No. 855, the same as a bear-like tank animal (the user's ask on 854): a candidate until approved.
+  // No. 855 is the game's Thermite Burrower now (above); thermite_bear bakes the same, for comparison.
   { id: 'thermite_bear', form: 855, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'igloo', form: 852, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 831-836, the clear glass egg on six dark metal leg sets: candidates.
