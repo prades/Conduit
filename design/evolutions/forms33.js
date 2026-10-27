@@ -48,8 +48,10 @@ function _blightSpider(o) {
   const puffs = []; for (let i = 0; i < 7; i++) { const m = new T.Mesh(new T.SphereGeometry(1, 12, 8), new T.MeshBasicMaterial({ color: lit, transparent: true, opacity: 0, depthWrite: false, toneMapped: false })); m.renderOrder = 6; m.visible = false; tank.add(m); puffs.push({ m, k: i, a: i * 2.4 }); }
   // the legs: six, three a side; a faceted thigh up and out to a knee, a shin tapering to a point on the floor
   const legs = [];
-  for (const sx of [-1, 1]) for (let i = -1; i <= 1; i++) { const L = { sx, i, A: (sx < 0) === (i !== 0), hip: V(sx * W * 0.42, Y + 0.01, i * Lh * 0.32), knee0: V(sx * (W / 2 + 0.2), Y + 0.22, i * (Lh * 0.32 + 0.09)), foot0: V(sx * (W / 2 + 0.36), 0, i * (Lh * 0.32 + 0.22)) };
-    L.thigh = _segBox33(b, 0.12, 0.14, _bsGrey); L.shin = _segSpike33(b, 0.1, _bsBlack); L.knee = new T.Mesh(new T.IcosahedronGeometry(0.08, 0), _bsMatte); b.add(L.knee); legs.push(L); }
+  // (o.legs, the user's "smaller, thinner, finer legs ... lower to the ground": thinner thighs and shins, smaller knees, the knees lower and the feet nearer; the body sits lower)
+  const lg = o.legs || { thighW: 0.12, thighD: 0.14, shinR: 0.1, knee: 0.08, kneeUp: 0.22, kneeOut: 0.2, footOut: 0.36 };
+  for (const sx of [-1, 1]) for (let i = -1; i <= 1; i++) { const L = { sx, i, A: (sx < 0) === (i !== 0), hip: V(sx * W * 0.42, Y + 0.01, i * Lh * 0.32), knee0: V(sx * (W / 2 + lg.kneeOut), Y + lg.kneeUp, i * (Lh * 0.32 + 0.09)), foot0: V(sx * (W / 2 + lg.footOut), 0, i * (Lh * 0.32 + 0.22)) };
+    L.thigh = _segBox33(b, lg.thighW, lg.thighD, _bsGrey); L.shin = _segSpike33(b, lg.shinR, _bsBlack); L.knee = new T.Mesh(new T.IcosahedronGeometry(lg.knee, 0), _bsMatte); b.add(L.knee); legs.push(L); }
   const fl = _glowPool(0.85, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(lc); fl.m.material.opacity = 0.26; b.add(fl.g);
   const Lt0 = new T.PointLight(0xffffff, 0.8, 4, 2); Lt0.color.copy(lc); Lt0.position.set(0, Y + 0.5, 0.5); b.add(Lt0); LIGHTS.push(Lt0);
   const kp = V(0, 0, 0), fp = V(0, 0, 0), hp = V(0, 0, 0);
@@ -64,10 +66,12 @@ function _blightSpider(o) {
     fluidM.emissive.copy(lcL).multiplyScalar(0.36 + 0.05 * Math.sin(ph * 2) + 0.3 * a);
     lensM.color.copy(lit).multiplyScalar(0.75 + 0.2 * Math.sin(ph * 2) + 0.6 * a); glowM.color.copy(lit).multiplyScalar(0.85 + 0.15 * Math.sin(ph * 2 + 1) + 0.3 * a);
     puffs.forEach(P => { const u = pr * 1.5 - P.k * 0.07; P.m.visible = a > 0.05 && u > 0 && u < 1; if (!P.m.visible) return; const r = 0.05 + 0.13 * u;
-      P.m.position.set(Math.cos(P.a) * 0.1 * u, Math.sin(P.a) * 0.07 * u + 0.05 * u, Lt / 2 + 0.2 + 0.55 * u); P.m.scale.setScalar(r); P.m.material.opacity = 0.7 * (1 - u); });
+      P.m.position.set(Math.cos(P.a) * 0.1 * u, Math.sin(P.a) * 0.07 * u + 0.05 * u, Lt / 2 + 0.2 + (o.puff || 0.55) * u); P.m.scale.setScalar(r); P.m.material.opacity = 0.7 * (1 - u); });
   } };
 }
 const _bs0 = { S: 1.45, y: 0.42, hubW: 0.42, hubH: 0.2, hubL: 0.5, tankR: 0.22, tankL: 0.6 };
+// 873: "smaller, thinner, finer legs, and ... make it lower to the ground".
+fx(873, "The toxic technician, the BLIGHT SPIDER on fine legs, lower to the ground (the user's ask): the tank of toxin on a black chassis, sitting low on six thin spidery legs.", () => _blightSpider(Object.assign({}, _bs0, { y: 0.27, puff: 0.38, legs: { thighW: 0.055, thighD: 0.065, shinR: 0.045, knee: 0.045, kneeUp: 0.13, kneeOut: 0.17, footOut: 0.3 } })));
 fx(870, "The toxic technician, the BLIGHT SPIDER: a glass tank of bubbling toxin with black bands and a black front cap with a lens, on a faceted black six-legged chassis with green eyes.", () => _blightSpider(_bs0));
 
 // ── 871 · THE HOVER SHELL ──────────────────────────────────────────────────────────────────────────────
