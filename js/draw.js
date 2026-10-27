@@ -10,7 +10,8 @@
 // the room at any health.
 // THE STATUS BAR, in the game's layout style (docs/UI-STYLE.md): a slanted slab, dark, with a hi-vis outline and a segment of colour for the health. Whose it is reads from the
 // outline: teal for yours (ally === true), red for an enemy's (false), steel for a structure's (no flag). An enemy's fill runs hot (orange, yellow, red); yours stays in teals; a structure's ramps teal, yellow, red.
-function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx, ally) {
+// `lag` (0..1, optional): the upper edge of a pale segment showing the health just lost (js/combat.js unitLagPct), RuneScape's way of showing a hit's size.
+function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx, ally, lag) {
     if (typeof health!=="number"||typeof maxHealth!=="number"||maxHealth<=0) return;
     const pct=Math.max(0,Math.min(1,health/maxHealth)), sk=Math.max(2,Math.min(5,Math.round(height*0.8))), run=width-sk;
     const col = ally === false ? (pct>0.6?"#ff8a3c":pct>0.3?"#ffe733":"#ff3a2a")
@@ -20,6 +21,7 @@ function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx, ally
     // (few canvas operations: the dark slab and its outline are one path; the fill is a second, left open for fill() to close)
     const slab = (f) => { drawCtx.beginPath(); drawCtx.moveTo(x+sk, y); drawCtx.lineTo(x+sk+run*f, y); drawCtx.lineTo(x+run*f, y+height); drawCtx.lineTo(x, y+height); };
     drawCtx.fillStyle="#05070f"; drawCtx.strokeStyle=edge; drawCtx.lineWidth=1.2; slab(1); drawCtx.closePath(); drawCtx.fill(); drawCtx.stroke();
+    if (lag > pct) { drawCtx.fillStyle = "rgba(255,236,230,0.6)"; drawCtx.beginPath(); drawCtx.moveTo(x+sk+run*pct, y); drawCtx.lineTo(x+sk+run*lag, y); drawCtx.lineTo(x+run*lag, y+height); drawCtx.lineTo(x+run*pct, y+height); drawCtx.closePath(); drawCtx.fill(); }   // the health just lost, draining
     if (pct>0) { drawCtx.fillStyle=col; slab(pct); drawCtx.fill(); }
 }
 
@@ -902,7 +904,7 @@ function _drawPredator(actor, px, py, drawCtx) {
 // shared by every body (the beetle's is js/beetle3d.js).
 function _drawPredatorBars(actor, px, py, drawCtx) {
     const _isAllyPred = actor.team === "green" || actor.isClone;
-    drawHealthBar(px-18, py-85, 36, 6, actor.health, actor.maxHealth, drawCtx, _isAllyPred);
+    drawHealthBar(px-18, py-85, 36, 6, actor.health, actor.maxHealth, drawCtx, _isAllyPred, typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
     // Its level, kind and what it is doing, over the bar (js/levels.js).
     if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 96, drawCtx);
     drawAbilityCharge(actor, px, py, drawCtx);
@@ -1310,7 +1312,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
     _virusesCounting++;
     const _bare = actor.fpSpot || (typeof attractOn === "function" && attractOn());   // (the website's background: a searcher wears no bar and no name, js/attract.js; nor does an egg waiting on a follower spot, js/followerspots.js, which has a label of its own)
-    if (!_bare) drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green");
+    if (!_bare) drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green", typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
     // Its level, kind and what it is doing, over the bar and the ultimate bar (js/levels.js).
     if (!_bare && typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
     _drawFollowerShield(actor, px, py, drawCtx);
@@ -1343,7 +1345,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     const er = parseInt(elementColor.substring(1,3),16);
     const eg = parseInt(elementColor.substring(3,5),16);
     const eb = parseInt(elementColor.substring(5,7),16);
-    const flash = actor.hitFlash > 0 && actor.state !== "retreat";
+    const flash = actor.hitFlash > 0;
 
     // ── GHOSTPHAGE GHOST — translucent white wraith, no element color ──
     if (actor.ghostphageLife) {

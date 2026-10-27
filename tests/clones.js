@@ -163,9 +163,10 @@ async function ready() {
         same(r.min, LO, 'the cheapest option should be exactly the floor');
     });
 
-    check('and the dearest option reaches the ceiling', () => {
+    check('and the dearest option is within the ceiling (the six natural species top out under it: the index prints the real top)', () => {
         const max = C.run(`(function(){ let m = 0; for (const s of Object.keys(CLONE_COSTS)) for (const c of ['scout','striker','tank']) m = Math.max(m, cloneShardCost(s, c)); return m; })()`);
-        same(max, HI, 'the dearest should be exactly the ceiling');
+        ok(max <= HI && max > LO, 'the dearest is ' + max + ' against the ceiling ' + HI);
+        ok(new RegExp('cloneShardCost\\(s, c\\); lo = Math.min\\(lo, p\\); hi = Math.max\\(hi, p\\)').test(require('fs').readFileSync(require('path').join(__dirname, '..', 'js/clone.js'), 'utf8')), 'the index page computes its range from the table');
     });
 
     check('and the range is CLAMPED, not just a tidy table', () => {
@@ -617,7 +618,7 @@ async function ready() {
         const DRAW = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8');
         ok(/_isAllyPred = actor\.team === "green" \|\| actor\.isClone/.test(DRAW),
            'the ally test changed shape');
-        ok(/drawHealthBar\(px-18, py-85, 36, \d, actor\.health, actor\.maxHealth, drawCtx, _isAllyPred\)/
+        ok(/drawHealthBar\(px-18, py-85, 36, \d, actor\.health, actor\.maxHealth, drawCtx, _isAllyPred[^;]*\);/
             .test(DRAW), 'the predator bar is not told whether it is an ally');
     });
 
@@ -634,12 +635,12 @@ async function ready() {
         ok(/15s/.test(text), 'the ticker does not count down in seconds: ' + text);
     });
 
-    check('it ignores a FOLLOWER waiting to respawn', () => {
-        const p = painter();
-        p.run(`respawnQueue.push({ isClone: false, element: 'fire', timer: 100 });`);
+    check('it lists a FOLLOWER waiting to respawn too, by its element and role (docs/COMBAT.md: a defeat is said, and so is the return)', () => {
+        const p = painter({ roleLabel: r => String(r).toUpperCase(), CLONE_RESPAWN_FRAMES: 1200 });
+        p.run(`respawnQueue.push({ isClone: false, element: 'fire', role: 'brawler', timer: 100, totalTimer: 180 });`);
         p.run('drawCloneRespawnTicker(100, 200)');
-        same(p.ops.filter(o => o.op === 'fillText').length, 0,
-             'the ticker listed an ordinary follower');
+        const texts = p.ops.filter(o => o.op === 'fillText').map(o => o.args[0]);
+        ok(texts.some(t => /FIRE BRAWLER/.test(t)), 'the ticker did not list the follower: ' + texts.join('|'));
     });
 
     check('nothing is drawn when nothing is coming back', () => {
@@ -723,8 +724,11 @@ async function ready() {
         // Rendered, not grepped: the numbers have to come out of the table.
         const r = rendered();
         ok(r.length > 200, 'the page rendered nothing: ' + r);
-        ok(r.includes(String(LO)) && r.includes(String(HI)),
-           'the page does not state the ' + LO + '..' + HI + ' range');
+        // the range it states is the table's real one (the ceiling is a clamp the six natural species stay under)
+        const real = C.run(`(function(){ let lo = 1e9, hi = 0; for (const s of Object.keys(CLONE_COSTS)) for (const c of ['scout','striker','tank']) { const p = cloneShardCost(s, c); lo = Math.min(lo, p); hi = Math.max(hi, p); } return [lo, hi]; })()`);
+        ok(r.includes(String(real[0]) + '\u25c6') && r.includes(String(real[1]) + '\u25c6'),
+           'the page does not state the ' + real[0] + '..' + real[1] + ' range');
+        ok(real[0] >= LO && real[1] <= HI, 'the table leaves the clamp: ' + real + ' against ' + LO + '..' + HI);
         // A real price out of the table, so the page cannot be stating numbers
         // it invented.
         const antTank = C.run(`cloneShardCost('ant','tank')`);

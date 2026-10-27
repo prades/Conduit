@@ -742,19 +742,19 @@ function renderCloneCostIndex() {
     const host = document.getElementById('cmCloneCosts');
     if (!host) return;
     if (typeof CLONE_COSTS === 'undefined' || typeof cloneShardCost !== 'function') return;
-    const lo = typeof CLONE_SHARD_MIN === 'number' ? CLONE_SHARD_MIN : 5;
-    const hi = typeof CLONE_SHARD_MAX === 'number' ? CLONE_SHARD_MAX : 25;
     const cap = typeof MAX_CLONES === 'number' ? MAX_CLONES : 4;
     const natural = ['ant', 'beetle', 'mantis', 'scorpion', 'spider', 'moth'].filter(s => CLONE_COSTS[s]);
     const classes = ['scout', 'striker', 'tank'];   // the classes the bay offers (getCloneOptions)
+    let lo = Infinity, hi = 0; for (const s of natural) for (const c of classes) { const p = cloneShardCost(s, c); lo = Math.min(lo, p); hi = Math.max(hi, p); }   // the real range of the table (cloneShardCost clamps it between CLONE_SHARD_MIN and CLONE_SHARD_MAX)
+    if (!isFinite(lo)) lo = typeof CLONE_SHARD_MIN === 'number' ? CLONE_SHARD_MIN : 5;
     let rows = '<tr><th>Species</th><th>DNA needed</th>' + classes.map(c => '<th>' + c[0].toUpperCase() + c.slice(1) + '</th>').join('') + '</tr>';
     for (const s of natural) {
         const col = (typeof SPECIES !== 'undefined' && SPECIES[s] && SPECIES[s].color) || '#aaa';
         rows += '<tr><td style="color:' + col + '">' + s[0].toUpperCase() + s.slice(1) + '</td><td>' + CLONE_COSTS[s].splicesNeeded + ' splices</td>' + classes.map(c => '<td>' + cloneShardCost(s, c) + '\u25c6</td>').join('') + '</tr>';
     }
     host.innerHTML =
-        '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> (a creature you kill drops them) and <strong>crystals</strong> to summon a creature\'s species as your ally. ' +
-        'Up to <span class="cm-stat">' + cap + ' clones</span> at once.</div>' +
+        '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> (a creature you kill drops them) and <strong>crystals</strong> to summon a creature\'s species as your ally: no followers are spent, nothing else is. ' +
+        'Up to <span class="cm-stat">' + cap + ' clones</span> at once; a clone that falls comes back at the Crystal after a wait, and your clones are kept in the save.</div>' +
         '<table class="cm-clone-table">' + rows + '</table>' +
         '<div class="ctrl-row cm-dim">Prices run from <span class="cm-stat">' + lo + '\u25c6</span> for the lowest grade to <span class="cm-stat">' + hi + '\u25c6</span>.</div>';
 }

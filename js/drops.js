@@ -24,10 +24,18 @@ function onPredatorDeath(predator) {
 // ─────────────────────────────────────────────────────────
 //  FLOATING TEXT SYSTEM (floatingTexts is declared in js/config.js)
 // ─────────────────────────────────────────────────────────
+// Two kinds: a SCREEN text ({ x, y } in pixels: the banners at the centre, the HUD's words) and a WORLD text ({ world: true, x, y } in tiles: a hit's number, a move's name, LEVEL, DEFEATED), which is
+// drawn over the unit it was pushed on and rises from there (vy in tiles a frame; its rise is kept in dy) wherever the camera goes. The world texts used to be pushed in tiles and drawn as pixels, which
+// put every one of them in the top-left corner.
+function floatingTextScreen(t) {
+    if (!t.world) return [t.x, t.y];
+    const W = canvas.width / 2, H = canvas.height / 2, lift = typeof facilityLiftRel === "function" ? facilityLiftRel(t.x, t.y) : 0;
+    return [(t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W, (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H + TILE_H - 60 - lift + (t.dy || 0)];
+}
 // ONE VOICE. A banner is a text pushed at the centre of the screen. Only the oldest batch shows and counts down — texts pushed on the same frame are one batch, so a title and its line stay together — and the
 // rest wait their turn. While others wait, a batch gets at most BANNER_QUEUED_LIFE frames. A banner already waiting with the same text is not queued twice.
 const BANNER_QUEUED_LIFE = 90;
-function isBanner(t) { return typeof canvas !== "undefined" && Math.abs(t.x - canvas.width / 2) < 1 && t.y < canvas.height * 0.75; }
+function isBanner(t) { return !t.world && typeof canvas !== "undefined" && Math.abs(t.x - canvas.width / 2) < 1 && t.y < canvas.height * 0.75; }
 function updateFloatingTexts() {
     let head = null;
     const seen = new Set();
@@ -42,7 +50,7 @@ function updateFloatingTexts() {
             if (t._bq !== head) { t._waiting = true; return true; }
             t._waiting = false;
         }
-        t.y += t.vy;
+        if (t.world) t.dy = (t.dy || 0) + t.vy * TILE_H; else t.y += t.vy;
         t.life--;
         return t.life > 0;
     });
@@ -61,16 +69,17 @@ function drawFloatingTexts() {
         if (t._waiting) return;             // queued behind the banner showing now
         const alpha = Math.min(1, t.life / 30);
         const _dy = isBanner(t) ? (_row++) * 18 : 0;   // banners shown together stack, one line under the other
+        const [tx, ty] = floatingTextScreen(t);
         ctx.globalAlpha = alpha;
         const font = t.size ? `bold ${t.size}px monospace` : "bold 13px monospace";
         if (stamp) {
-            cachedText(String(t.text), font, "#000", t.x + 1, t.y + 1 + _dy);
-            cachedText(String(t.text), font, t.color, t.x, t.y + _dy);
+            cachedText(String(t.text), font, "#000", tx + 1, ty + 1 + _dy);
+            cachedText(String(t.text), font, t.color, tx, ty + _dy);
             return;
         }
         ctx.font = font;
-        ctx.fillStyle = "#000"; ctx.fillText(t.text, t.x + 1, t.y + 1);
-        ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y);
+        ctx.fillStyle = "#000"; ctx.fillText(t.text, tx + 1, ty + 1);
+        ctx.fillStyle = t.color; ctx.fillText(t.text, tx, ty);
     });
     ctx.globalAlpha = 1;
     ctx.restore();

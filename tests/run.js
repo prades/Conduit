@@ -26,6 +26,7 @@ const SUITES = [
     ['fire bombs',               'firebombs.js'],
     ['the player\'s ultimate',   'ultimate.js'],
     ['effects plan',             'effects.js'],
+    ['combat readability: the bite in two beats, one bite one unit, the cap, the numbers, the bar, DEFEATED', 'combat.js'],
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],
     ['follower types',           'followertypes.js'],

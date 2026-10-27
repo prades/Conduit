@@ -62,7 +62,7 @@ function _pMove() {
     _fp.zoneRoom = dest.room; _fp.portalCool = frame + FP_PORTAL.cool;
 }
 // who comes through on their own: a follower that is following (no post, no order)
-function _pCarries(a) { return !a.returningToCrystal && !a.job && !a.post && a.stance === "follow" && a.duty !== "worker" && (a.role !== "camper" || (typeof partyOn === "function" && partyOn())); }   // (a technician in the squad comes with you: it is not tied to the Crystal)
+function _pCarries(a) { return !a.returningToCrystal && !a.job && !a.post && a.stance === "follow" && (a.role !== "camper" || (typeof partyOn === "function" && partyOn())); }   // (a technician in the squad comes with you: it is not tied to the Crystal)
 
 // each frame (from facilityTutorialTick)
 function facilityPortalTick() {

@@ -212,7 +212,7 @@ function evoCheck(f) {
     if (typeof _applyFollowerLevel === "function") _applyFollowerLevel(f, false);
     f.health = f.maxHealth;
     if (typeof floatingTexts !== "undefined")
-        floatingTexts.push({ x: f.x, y: f.y - 1.4, text: "◆ EVOLVED · " + d.name, color: d.element === "fire" ? "#ffb066" : d.element === "toxic" ? "#99ff88" : "#fff27a", life: 150, vy: -0.05, size: 13 });
+        floatingTexts.push({ world: true, x: f.x, y: f.y, text: "◆ EVOLVED · " + d.name, color: d.element === "fire" ? "#ffb066" : d.element === "toxic" ? "#99ff88" : "#fff27a", life: 150, vy: -0.05, size: 13 });
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 4);
     return true;
 }
@@ -251,7 +251,7 @@ function petalBlaze(f) {
         elementEffects.push({ type: "fireShockwave", x: f.x, y: f.y, radius: BLOOM_RADIUS, life: 36, maxLife: 36 });
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ff6622", radius: BLOOM_RADIUS * 0.7, life: 26 });
     }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: (evolvedDef(f) || {}).move || "PETAL BLAZE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: (evolvedDef(f) || {}).move || "PETAL BLAZE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 // ARC VOLLEY: a charged arc into the nearest enemy in range, jumping on. True when it fired.
@@ -273,7 +273,7 @@ function arcVolley(f) {
     f._arcPts = hits.map(a => ({ x: a.x, y: a.y })); f._arcUntil = f0 + 20;
     if (f.dirX !== undefined) { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof elementEffects !== "undefined") for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 18 });
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "ARC VOLLEY", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "ARC VOLLEY", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -298,7 +298,7 @@ function singularityShot(f) {
         elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: SERPENT_PULL_R, color: "#bb66ff", life: 40 });
         elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#bb66ff", radius: 0.7, life: 24 });
     }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "SINGULARITY", color: "#cc88ff", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SINGULARITY", color: "#cc88ff", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -321,7 +321,7 @@ function hexfire(f) {
     f._sigAt = f0; f._sigCd = HALO_EVERY;
     f._arcPts = pts; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = true; f._arcCol = [255, 110, 34];
     { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "HEXFIRE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "HEXFIRE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -344,7 +344,7 @@ function corrodeShot(f) {
         elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: ROT_SPLASH_R, color: "#66ff66", life: 36 });
         elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#66ff66", radius: 0.6, life: 22 });
     }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "CORRODE", color: "#88ff88", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "CORRODE", color: "#88ff88", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -374,7 +374,7 @@ function aegisBloom(f) {
     f._arcPts = [{ x: tgt.x, y: tgt.y }]; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = false; f._arcCol = [51, 230, 196];
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#33e6c4", radius: 0.6, life: 22 });
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "AEGIS BLOOM", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "AEGIS BLOOM", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -394,7 +394,7 @@ function chomp(f) {
         elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#cff4ff", radius: 0.7, life: 24 });
     }
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "CHOMP", color: "#bdf0ff", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "CHOMP", color: "#bdf0ff", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -413,7 +413,7 @@ function eruption(f) {
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#66ff66", radius: CALDERA_RADIUS * 0.6, life: 24 });
     }
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "ERUPTION", color: "#88ff88", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "ERUPTION", color: "#88ff88", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -435,7 +435,7 @@ function gravitySlam(f) {
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#bb66ff", radius: MIMIC_RADIUS * 0.6, life: 24 });
     }
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "GRAVITY SLAM", color: "#cc88ff", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "GRAVITY SLAM", color: "#cc88ff", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 
@@ -460,7 +460,7 @@ function aegisBurst(f) {
         elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: WARDEN_RADIUS, color: "#33e6c4", life: 40 });
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#33e6c4", radius: WARDEN_RADIUS * 0.6, life: 24 });
     }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "AEGIS BURST", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "AEGIS BURST", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 // STATIC RUSH: dash to the nearest enemy in range, hit it, shock two more; all stunned. True when it fired.
@@ -484,7 +484,7 @@ function staticRush(f) {
     f._sigAt = f0; f._sigCd = MANTA_EVERY;
     f._arcPts = hits.map(a => ({ x: a.x, y: a.y })); f._arcUntil = f0 + 20; f._arcStraight = false; f._arcCol = [255, 238, 51];
     if (typeof elementEffects !== "undefined") for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 18 });
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "STATIC RUSH", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "STATIC RUSH", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 // ── THE LOOK ───────────────────────────────────────────────

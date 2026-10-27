@@ -137,7 +137,7 @@ function _fpGoals(a) {
     if (a._nearestEnemy && !a._nearestEnemy.dead) gs.push(a._nearestEnemy);
     if (a._fpPortalGoal && typeof facilityPortalGoal === "function") { const g = facilityPortalGoal(a); if (g) gs.push(g); }   // (the doorway it is on its way through: js/facilityportals.js)
     const foes = a.team === "green" ? actors : followers;   // the nearest of the other side, within a chase
-    let nb = null, nd = 144; for (const o of foes) { if (!o || o.dead || o === a || (a.team === "green" ? o.team === "green" : false)) continue; const d = (o.x - a.x) ** 2 + (o.y - a.y) ** 2; if (d < nd) { nd = d; nb = o; } }
+    let nb = null, nd = 144; for (const o of foes) { if (!o || o.dead || o === a || (a.team === "green" ? (o.team === "green" || (typeof isNeutralBystander === "function" && isNeutralBystander(o))) : false)) continue; const d = (o.x - a.x) ** 2 + (o.y - a.y) ** 2; if (d < nd) { nd = d; nb = o; } }   // (an egg waiting on its pad is nobody's enemy: a follower whose route passed one dithered between it and you)
     if (nb) gs.push(nb);
     return gs;
 }

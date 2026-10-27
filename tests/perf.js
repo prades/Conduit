@@ -330,7 +330,7 @@ const SCENE = `(function(){
 
     // Deterministic, unlike timing: this is how much we ask the rasteriser to
     // do. Measured at 14,327 for the old scene after the cull, down from 25,398.
-    const OP_BUDGET = 19000;
+    const OP_BUDGET = 21500;   // 19,000 until the combat readability layer (docs/COMBAT.md): a hit's number over every unit, the bar's pale segment, a bite's telegraph; measured 18,821 to 20,113 across runs since
 
     check(`one frame issues fewer than ${OP_BUDGET} canvas operations`, () => {
         E.run('player.visualX = player.x; player.visualY = player.y;');
@@ -349,7 +349,7 @@ const SCENE = `(function(){
     // of followers". Each follower was ~210 canvas operations a frame, drawn
     // stroke by stroke; the figure is now a sprite (_virusSprite), its
     // bubbles are dropped in a crowd, and its attack effects carry no blur.
-    const PER_FOLLOWER_BUDGET = 145;   // was ~250 before the sprites; 120 until the status bar, ultimate bar and name plate became slanted slabs with a status chip (docs/UI-STYLE.md)
+    const PER_FOLLOWER_BUDGET = 160;   // was ~250 before the sprites; 120 until the status bar, ultimate bar and name plate became slanted slabs with a status chip (docs/UI-STYLE.md); 145 until the bar's pale segment and the numbers over your own units (docs/COMBAT.md)
     check(`each extra follower on screen costs fewer than ${PER_FOLLOWER_BUDGET} canvas operations`, () => {
         const frameOps = n => {
             E.run(`(function(){ followers.forEach(f => { f.dead = true; }); actors = actors.filter(a => !a.isFollower);

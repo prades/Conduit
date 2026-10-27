@@ -24,7 +24,6 @@ class Predator {
         this.baseMoveSpeed=def.moveSpeed;   // stable reference for slow effects
         this.entryDelay=30; this.reactionDelay=0;
         this.floatOffset=0;
-        this.isRetreating=false;
         this.walkCycle=0;
         this.dead=false;
         this.body = {
@@ -139,6 +138,36 @@ class Predator {
             ? 1-Math.min(1,Math.hypot(this.currentTarget.x-this.x,this.currentTarget.y-this.y)/2) : 0;
         const huntScore    = 0.4+(1-Math.min(1,distCrystal/6))*0.2;
         return { attack:attackScore, hunt:huntScore, wander:0.1 };
+    }
+
+    // THE BITE (docs/COMBAT.md). Its target: the unit it turned on while it is still in reach, else the nearest of the other side in reach; with COMBAT.bite.splash, everyone in reach (the old rule).
+    // Disoriented, it bites its own kind. In smoke it misses half the time. The Crystal is bitten the same way (target === crystal). Returns what it hit, or null.
+    bite(target) {
+        const B = COMBAT.bite, reach2 = B.reach * B.reach, pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? 0.6 : 1.0);
+        if (target === crystal) { crystal.health = Math.max(0, crystal.health - pwr); shake = Math.max(shake, 6); return crystal; }
+        const inReach = a => { const dx = a.x - this.x, dy = a.y - this.y; return dx * dx + dy * dy <= reach2; };
+        if (this.disorientFF > 0) { let n = null; actors.forEach(a => { if (a === this || a.dead || a.team !== "red" || a.isClone || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
+        const hitTeam = this.isClone ? "red" : "green";
+        if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: this.x, y: this.y, text: "MISS", color: "#aabb88", life: 30, vy: -0.04 }); return null; }   // the smoke screen: half its bites miss
+        if (B.splash) { let n = null; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
+        let t = target && !target.dead && target.team === hitTeam && !isNeutralBystander(target) && inReach(target) ? target : null;
+        if (!t) { let bd = reach2; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a)) return; const dx = a.x - this.x, dy = a.y - this.y, d2 = dx * dx + dy * dy; if (d2 <= bd) { bd = d2; t = a; } }); }
+        if (t) applyDamage(t, pwr, this);
+        return t;
+    }
+    // The bite's two beats, once a target is in reach: the rest runs down, then it REARS BACK for COMBAT.bite.windup frames (attackWindup counts down; the telegraph is drawn over it, js/combat.js
+    // drawBiteTelegraphs; the body rears: attackAnim goes negative), then the bite lands (bite()) and the body lunges (attackAnim runs 0 to π). A target that got out of reach in the wind-up is missed.
+    _biteTick(target) {
+        if (this.attackWindup > 0) {
+            this.attackWindup--;
+            this.attackAnim = -0.6 * (1 - this.attackWindup / COMBAT.bite.windup);
+            if (this.attackWindup <= 0) { this.bite(this.biteTarget || target); this.attackAnim = 0.01; this.attackCooldown = COMBAT.bite.cooldown; this.biteTarget = null; }
+            return;
+        }
+        if (this.attackAnim > 0) { this.attackAnim += 0.18; if (this.attackAnim >= Math.PI) this.attackAnim = 0; }   // the lunge after a landed bite
+        if (!this.attackCooldown) this.attackCooldown = 0;
+        this.attackCooldown--;
+        if (this.attackCooldown <= 0) { this.attackWindup = COMBAT.bite.windup; this.biteTarget = target; }
     }
 
     update() {
@@ -322,15 +351,8 @@ class Predator {
                 this.x += this.dirX * this.moveSpeed;
                 this.y += this.dirY * this.moveSpeed;
             } else {
-                // ── ATTACK CRYSTAL ──
-                if (!this.attackCooldown) this.attackCooldown=0;
-                this.attackCooldown--;
-                if (this.attackCooldown<=0) {
-                    const _crystalHit = this.power;
-                    crystal.health=Math.max(0, crystal.health-_crystalHit);
-                    shake=6;
-                    this.attackCooldown=60;
-                }
+                // ── ATTACK CRYSTAL ── the same two beats as a bite on a unit (a telegraph, then the bite)
+                this._biteTick(crystal);
                 // Face the Crystal while chewing on it, same as any other target.
                 faceToward(this, crystal.x, crystal.y, 0.3);
                 this.state="attack";
@@ -343,53 +365,21 @@ class Predator {
             const target=this.currentTarget;
             // if no unit target, hunt crystal
             if (!target||target.dead) {
-                this.state="hunt"; this.currentTarget=null;
+                this.state="hunt"; this.currentTarget=null; this.attackWindup = 0; this.biteTarget = null;
                 this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
                 return;
             }
             this.moveSpeed=0;
             const dx=target.x-this.x, dy=target.y-this.y, dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>1.5) {
-                this.state="hunt"; this.currentTarget=null;
+            if (dist>COMBAT.bite.reach) {
+                this.state="hunt"; this.currentTarget=null; this.attackWindup = 0; this.biteTarget = null;
                 this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
                 return;
             }
             // Turn to face what we are biting. This branch returns before the
             // HEAD CONTROL block below ever runs, so this is the only chance.
             faceToward(this, target.x, target.y, 0.3);
-            this.attackAnim+=0.18;
-            if (this.attackAnim>=Math.PI) this.attackAnim=0;
-            if (!this.attackCooldown) this.attackCooldown=0;
-            this.attackCooldown--;
-            if (this.attackCooldown<=0) {
-                const pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? 0.6 : 1.0);
-                if (this.disorientFF > 0) {
-                    // ── FRIENDLY FIRE — attack other red predators ──
-                    actors.forEach(a => {
-                        if (a===this||a.dead||a.team!=="red"||a.isClone) return;
-                        if (isNeutralBystander(a)) return;
-                        const adx=a.x-this.x, ady=a.y-this.y;
-                        if (adx*adx+ady*ady<=2.25) applyDamage(a, pwr, this); // 1.5²=2.25
-                    });
-                } else {
-                    // ── NORMAL — clones hit red; enemies hit green; smoke halves enemy accuracy ──
-                    const hitTeam = this.isClone ? "red" : "green";
-                    actors.forEach(a => {
-                        if (a.dead || a.team !== hitTeam) return;
-                        // A recruit on its way to the Crystal is not a target.
-                        // Clones strike team "red", which is the recruits' team
-                        // until they arrive — so this is what stopped your own
-                        // converted predators killing the reinforcements.
-                        if (isNeutralBystander(a)) return;
-                        const adx=a.x-this.x, ady=a.y-this.y;
-                        if (adx*adx+ady*ady<=2.25) { // 1.5²=2.25
-                            if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) return; // miss
-                            applyDamage(a, pwr, this);
-                        }
-                    });
-                }
-                this.attackCooldown=45;
-            }
+            this._biteTick(target);   // the telegraph, then the bite (docs/COMBAT.md)
             return;
         }
 
@@ -480,11 +470,11 @@ class Predator {
                     const isMothDust     = this.speciesName === "moth";
                     // Mantis ambush — announce visually so the player can read the attack
                     if (isMantisAmbush) {
-                        floatingTexts.push({ x:this.x, y:this.y-1.2, text:"AMBUSH!", color:"#44dd55", life:40, vy:-0.06 });
+                        floatingTexts.push({ world:true, x:this.x, y:this.y, text:"AMBUSH!", color:"#44dd55", life:40, vy:-0.06 });
                     }
                     // Moth dust — announce wing-dust powder burst
                     if (isMothDust) {
-                        floatingTexts.push({ x:this.x, y:this.y-1.2, text:"DUST!", color:"#dd8822", life:36, vy:-0.06 });
+                        floatingTexts.push({ world:true, x:this.x, y:this.y, text:"DUST!", color:"#dd8822", life:36, vy:-0.06 });
                     }
 
                     spawnFollowerProjectile(
@@ -496,7 +486,7 @@ class Predator {
                             // Web Shot — heavy slow (spider spinneret)
                             if (isWebShot) {
                                 applySlow(hit, 300, 0.20);   // 5s at 20% speed — very heavy
-                                floatingTexts.push({ x:hit.x, y:hit.y-1, text:"WEB!", color:"#cceeaa", life:35, vy:-0.05 });
+                                floatingTexts.push({ world:true, x:hit.x, y:hit.y, text:"WEB!", color:"#cceeaa", life:35, vy:-0.05 });
                             }
                             if (chargeElem) applyElementalDamage(hit, shotDamage * 0.5, this, chargeElem);
                         }

@@ -1,4 +1,64 @@
 // ─────────────────────────────────────────────────────────
+//  COMBAT READABILITY (docs/COMBAT.md): the knobs, the hit's record, the bite's telegraph
+// ─────────────────────────────────────────────────────────
+// ASKED: "Combat must be more readable [...] Make it clear to the player which enemy is attacking, when an attack is about to land, when damage is dealt, how much damage was dealt, how much health remains,
+// when a unit is defeated." The audit (docs/COMBAT.md §1) found no double hits and no bug: a bite landed every 45 frames with no warning, on every unit in reach, for up to 45% of a unit's health, so a
+// squad melted in two seconds. These are the rules that make a fight legible; none of the numbers is final.
+const COMBAT = {
+    bite: { windup: 18, cooldown: 45, reach: 1.5, splash: false },   // a creature's bite REARS BACK for `windup` frames (the telegraph), lands on its target (or on everyone in reach with `splash`), then rests `cooldown`
+    hitCap: 0.34,                                                    // the most of a follower's or clone's max health one hit may take (it was 0.45)
+    numbers: { ally: true, heal: true },                             // damage numbers over your own units ("−n", red) and healing ("+n", green); an enemy's numbers were always there
+    lagBar: 36,                                                      // a health bar keeps a pale segment of the health just lost, draining over this many frames
+    defeatText: 90,                                                  // "DEFEATED" over a unit that falls, for this long (0: none)
+};
+// A hit landed: remember the health it was taken from, so the bar can show the hit's size as a pale segment (applyDamage calls it with the health before the hit).
+function noteHit(t, before) {
+    if (!t || !(t.maxHealth > 0)) return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (t._lagHealth === undefined || f0 - (t._lagAt || -1e9) > COMBAT.lagBar) t._lagHealth = before;   // a new burst starts from the health it found; hits that follow close on each other share it
+    t._lagAt = f0;
+}
+// The pale segment's upper edge, as a share of max health (0 when there is none). Pure: it changes nothing (a step with no picture must leave the game exactly as a drawn one would, tests/ghost.js).
+function unitLagPct(a) {
+    if (!a || a._lagHealth === undefined || !(a.maxHealth > 0)) return 0;
+    const u = ((typeof frame !== "undefined" ? frame : 0) - (a._lagAt || 0)) / COMBAT.lagBar;
+    if (u >= 1 || u < 0) return 0;
+    const lag = a._lagHealth + (a.health - a._lagHealth) * u;
+    return Math.max(0, Math.min(1, lag / a.maxHealth));
+}
+// Healing, in one place: the health goes up (never past the max) and a green "+n" says so over the unit. Returns what it gave.
+function healUnit(t, amount, source) {
+    if (!t || t.dead || !(amount > 0) || !(t.maxHealth > 0)) return 0;
+    const before = t.health; t.health = Math.min(t.maxHealth, t.health + amount); const got = t.health - before;
+    if (got >= 0.5 && COMBAT.numbers.heal && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text: "+" + Math.round(got), color: "#7dff9a", size: 13, life: 40, vy: -0.035 });
+    return got;
+}
+// THE TELEGRAPH, over the scene: every creature rearing back to bite wears a ring that closes as the bite comes, a chevron on it pointing at the unit it is biting, and the word BITE.
+function drawBiteTelegraphs() {
+    if (typeof ctx === "undefined" || typeof actors === "undefined" || typeof Predator === "undefined") return;
+    const W = canvas.width / 2, H = canvas.height / 2;
+    const scr = (x, y) => [(x - player.visualX - (y - player.visualY)) * TILE_W + W, (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0)];
+    let drew = false;
+    for (const a of actors) {
+        if (!a || a.dead || !(a.attackWindup > 0) || !(a instanceof Predator)) continue;
+        if (!drew) { drew = true; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round"; ctx.lineJoin = "round"; }
+        const k = Math.max(0, Math.min(1, 1 - a.attackWindup / COMBAT.bite.windup)), [sx, sy] = scr(a.x, a.y), y0 = sy - 146, col = a.team === "green" || a.isClone ? "#19e6c1" : "#ff4a3a";
+        const t = a.biteTarget, tp = t && Number.isFinite(t.x) ? scr(t.x, t.y) : null, ang = tp ? Math.atan2(tp[1] - sy, tp[0] - sx) : Math.PI / 2, r = 13 + 9 * k;
+        ctx.globalAlpha = 0.55 + 0.45 * k; ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(sx, y0, r, 0, Math.PI * 2); ctx.stroke();                                  // the ring, over its plate
+        ctx.globalAlpha = 0.2 + 0.45 * k; ctx.beginPath(); ctx.arc(sx, y0, r * k, 0, Math.PI * 2); ctx.fill();  // filling as the bite comes
+        const cx = sx + Math.cos(ang) * (r + 10), cy = y0 + Math.sin(ang) * (r + 10);                          // the chevron on the ring, toward the target
+        ctx.globalAlpha = 0.95; ctx.beginPath(); ctx.moveTo(cx + Math.cos(ang) * 9, cy + Math.sin(ang) * 9); ctx.lineTo(cx + Math.cos(ang + 2.4) * 8, cy + Math.sin(ang + 2.4) * 8); ctx.lineTo(cx + Math.cos(ang - 2.4) * 8, cy + Math.sin(ang - 2.4) * 8); ctx.closePath(); ctx.fill();
+        if (typeof cachedText === "function") cachedText("BITE", "bold 10px monospace", col, sx, y0 - r - 6);
+        if (tp && t !== crystal) {   // and over the unit it is biting: a mark that drops as the bite comes, so the one in danger is read at a glance
+            const my = tp[1] - 150 + 16 * k; ctx.globalAlpha = 0.5 + 0.5 * k; ctx.beginPath(); ctx.moveTo(tp[0], my + 10); ctx.lineTo(tp[0] - 8, my - 4); ctx.lineTo(tp[0] + 8, my - 4); ctx.closePath(); ctx.fill();
+            ctx.globalAlpha = 0.35 + 0.25 * k; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx, y0 + r + 4); ctx.lineTo(tp[0], my + 14); ctx.stroke();   // a thread from the ring to the mark
+        }
+    }
+    if (drew) ctx.restore();
+}
+
+// ─────────────────────────────────────────────────────────
 //  STATUS EFFECT UPDATES (burn, freeze, slow, disorient etc)
 // ─────────────────────────────────────────────────────────
 function updateStatusEffects() {
@@ -63,13 +123,8 @@ function updateStatusEffects() {
             actor.kbVY = (actor.kbVY || 0) * 0.72;
             if (Math.abs(actor.kbVX) < 0.001) actor.kbVX = 0;
             if (Math.abs(actor.kbVY) < 0.001) actor.kbVY = 0;
-            // The facility has no corridor: a push goes as far as its walls let it (facilityConstrain puts a unit back where it was when a wall is in the way).
-            // a creature that was knocked back (a core follower's BASH, a flux pull) out of the building, to y = 3, and it walked back through the void; that is the creature an attack order sends the squad at.
-            if (typeof facilityPlay !== "undefined" && facilityPlay) { if (typeof facilityConstrain === "function") facilityConstrain(actor, _kx, _ky); }
-            else {
-                actor.y = Math.max(0, Math.min(3, actor.y));
-                actor.x = Math.max(0, actor.x);
-            }
+            // A push goes as far as the facility's walls let it (facilityConstrain puts a unit back where it was when a wall is in the way).
+            if (typeof facilityConstrain === "function") facilityConstrain(actor, _kx, _ky);
         }
 
         // ── EMP GLOW (electric ultimate hit marker) ──

@@ -281,15 +281,11 @@ function _floorTileSprite(dq) {
     return cv;
 }
 
-// THE CLONE RESPAWN TICKER.
-//
-// A clone takes CLONE_RESPAWN_FRAMES to come back — half a minute, against a
-// follower's three seconds — and without this the player has no way to know
-// whether one is coming or whether it is gone for good. Drawn over the Crystal,
-// which is where it will reappear.
+// THE RESPAWN TICKER, over the Crystal: every unit of yours that is coming back, soonest first, with its wait. A clone takes CLONE_RESPAWN_FRAMES (twenty seconds), a follower three;
+// without this the player has no way to know whether one is coming or whether it is gone for good (docs/COMBAT.md: a defeat is said, and so is the return).
 function drawCloneRespawnTicker(cx, topY) {
     if (typeof respawnQueue === "undefined") return;
-    const waiting = respawnQueue.filter(e => e && e.isClone);
+    const waiting = respawnQueue.filter(e => e && (e.isClone || e.element));
     if (waiting.length === 0) return;
     // Soonest first, so the top line is the one about to land.
     waiting.sort((a, b) => a.timer - b.timer);
@@ -305,18 +301,18 @@ function drawCloneRespawnTicker(cx, topY) {
         const secs  = Math.max(0, Math.ceil(e.timer / 60));
         const total = e.totalTimer || CLONE_RESPAWN_FRAMES;
         const done  = Math.max(0, Math.min(1, 1 - e.timer / total));
-        const name  = ((e.speciesName || "clone") + " " + (e.className || "")).toUpperCase().trim();
+        const name  = e.isClone ? ((e.speciesName || "clone") + " " + (e.className || "")).toUpperCase().trim() : ((e.element || "") + " " + (typeof roleLabel === "function" ? roleLabel(e.role || "brawler") : "")).toUpperCase().trim(), col = e.isClone ? "#22ff88" : "#19e6c1";
 
         // A bar that fills as it comes back, so the wait is legible at a glance
         // and the number is the detail rather than the whole message.
         const bw = 56, bh = 3;
         ctx.fillStyle = "rgba(0,0,0,0.55)";
         ctx.fillRect(cx - bw / 2 - 1, y - 9, bw + 2, bh + 2);
-        ctx.fillStyle = "#22ff88";
+        ctx.fillStyle = col;
         ctx.fillRect(cx - bw / 2, y - 8, bw * done, bh);
 
         ctx.font = "bold 8px monospace";
-        ctx.fillStyle = "#22ff88";
+        ctx.fillStyle = col;
         ctx.fillText(name + "  " + secs + "s", cx, y);
         y += rowH;
     }
@@ -698,7 +694,7 @@ function render() {
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid,
+            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid,
                 // Its level comes back with it, less some XP (js/levels.js).
                 base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
                 level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp,
@@ -1137,6 +1133,7 @@ function render() {
     if (!gfxLow) drawSiphonWisps();
     if (typeof drawSelectedUnitRings === "function") drawSelectedUnitRings();   // the units picked in the Command Center
     if (typeof drawBonds === "function") drawBonds();
+    if (typeof drawBiteTelegraphs === "function") drawBiteTelegraphs();   // a creature rearing back to bite, and whom (js/combat.js)
     drawFloatingTexts();
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.

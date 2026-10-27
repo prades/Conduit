@@ -91,7 +91,7 @@ function fireBombsTick() {
                 if (!a || a.dead) continue;
                 const t = hit(a); if (!t) continue;
                 applyDamage(a, t.dmg, null, "fire"); a.burning = Math.max(a.burning || 0, 60); a.burnDamage = Math.max(a.burnDamage || 0, t.dmg * 0.05);
-                if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: a.x, y: a.y, text: "BURN", color: "#ff8a3a", life: 25, vy: -0.04 });
+                if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text: "BURN", color: "#ff8a3a", life: 25, vy: -0.04 });
             }
             const pt = hit({ x: player.x, y: player.y });
             if (pt && typeof hurtPlayer === "function") hurtPlayer(Math.max(2, pt.dmg));
@@ -120,7 +120,7 @@ function fireBombBarrage(f) {
     throwFireBombsAt(f, foes[0], 3, 0.3, (f.power || 10) * 0.9);
     f._sigAt = f0; f._sigCd = FIRE_BARRAGE_EVERY;
     { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: f.x, y: f.y - 1.2, text: "FIRE BOMBS", color: "#ff8a3a", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "FIRE BOMBS", color: "#ff8a3a", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 // ── DRAWING ──

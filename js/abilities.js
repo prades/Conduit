@@ -210,7 +210,7 @@ function _abBurst(pred, color, radius, life, count) {
 }
 
 function _abSay(pred, text, color) {
-    floatingTexts.push({ x: pred.x, y: pred.y - 1.3, text, color, life: 42, vy: -0.06 });
+    floatingTexts.push({ world: true, x: pred.x, y: pred.y, text, color, life: 42, vy: -0.06 });
 }
 
 // Where this ability is pointed. Recomputed each windup frame so the telegraph
@@ -338,8 +338,12 @@ function _abStartActive(pred, def) {
             const len = Math.hypot(ax, ay) || 1;
             const dist = def.distance;
             pred.leapFromX = pred.x; pred.leapFromY = pred.y;
-            pred.leapToX = pred.x + (ax / len) * dist;
-            pred.leapToY = Math.max(0, Math.min(3, pred.y + (ay / len) * dist));
+            // The landing has to be floor with a clear line to it (the facility's walls and props): a shorter leap when it is not, and none at all when there is nowhere to go.
+            let k = 1;
+            if (typeof facilityLosFrom === "function") while (k > 0.19 && !facilityLosFrom(pred.x, pred.y, pred.x + (ax / len) * dist * k, pred.y + (ay / len) * dist * k)) k -= 0.2;
+            if (k <= 0.19) k = 0;
+            pred.leapToX = pred.x + (ax / len) * dist * k;
+            pred.leapToY = pred.y + (ay / len) * dist * k;
             pred.leapT = 0;
             // Snap to the jump vector at take-off and hold it through the arc,
             // so the scout lands facing where it went.
@@ -376,7 +380,7 @@ function _abStartActive(pred, def) {
             _abForEachFoeInRadius(pred, def.radius, v => {
                 if (v === null) return;    // the player is not slowed, only units
                 applySlow(v, def.slowFrames, def.slowFactor);
-                floatingTexts.push({ x: v.x, y: v.y - 1, text: 'SNARED!', color: def.color, life: 34, vy: -0.05 });
+                floatingTexts.push({ world: true, x: v.x, y: v.y, text: 'SNARED!', color: def.color, life: 34, vy: -0.05 });
             });
             _abBurst(pred, def.color, def.radius, 40, 7);
             break;
@@ -409,8 +413,7 @@ function _abRunActive(pred, def) {
             return true;
         }
         case 'CARAPACE_SLAM': {
-            pred.x += pred.slamDX;
-            pred.y = Math.max(0, Math.min(3, pred.y + pred.slamDY));
+            { const _px = pred.x, _py = pred.y; pred.x += pred.slamDX; pred.y += pred.slamDY; if (typeof facilityConstrain === "function") facilityConstrain(pred, _px, _py); }   // (the walls stop the charge)
             _abForEachFoeInRadius(pred, def.radius, v => {
                 if (pred.slamHit.has(v)) return;   // one hit per victim per slam
                 pred.slamHit.add(v);

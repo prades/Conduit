@@ -222,50 +222,44 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // same numbers at level 5.
     if (typeof defenseMult === "function") amount *= defenseMult(target, source);
     else if (target.isFollower && target.stats && target.stats.defense) amount *= 10 / (10 + target.stats.defense * 0.6);
-    if (target && target.isFollower && target.team === "green") {
-        if (typeof bondDefenseMult === "function") amount *= bondDefenseMult(target);   // a partner close by
-        // Hard cap: no single hit can remove more than 45% of max HP
-        amount = Math.min(amount, (target.maxHealth || 20) * 0.45);
-    }
+    if (target && target.isFollower && target.team === "green" && typeof bondDefenseMult === "function") amount *= bondDefenseMult(target);   // a partner close by
+    // THE CAP (docs/COMBAT.md COMBAT.hitCap): no single hit takes more than this share of one of your units' max health, so every one of them survives at least three hits of anything.
+    const _mine = target.team === "green" && (target.isFollower || target.isClone);
+    if (_mine && typeof COMBAT !== "undefined") amount = Math.min(amount, (target.maxHealth || 20) * COMBAT.hitCap);
     let dmg = amount;
     if (target.perk) {
         const pk = PERKS[target.perk];
         if (pk && pk.modifyIncomingDamage) dmg = pk.modifyIncomingDamage(target, dmg, source);
     }
+    const _before = target.health;
     target.health -= dmg;
+    if (typeof noteHit === "function") noteHit(target, _before);   // the bar's pale segment shows the hit's size (js/combat.js)
     if (source) target.lastAttacker = source;
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;
     if (typeof target.hitStun  !== "undefined") target.hitStun  = 6;
-    // ── DAMAGE TICKER ─────────────────────────────────────────
-    if (source && !isReflected && dmg >= 1 &&
-        (target.team === "red" || (target instanceof Predator && target.team !== "green" && !target.isClone))) {
-        const _dtpx = (target.x - player.visualX - (target.y - player.visualY)) * TILE_W + canvas.width  / 2;
-        const _dtpy = (target.x - player.visualX + (target.y - player.visualY)) * TILE_H + canvas.height / 2;
-        const _dcol = element === "fire"     ? "#ff8844"
+    // ── DAMAGE TICKER ───────────────────────────────────────── an enemy's hit in its element's colour; one of yours, red with a minus (COMBAT.numbers.ally). Anchored to the unit (a world text, js/drops.js).
+    const _foe = target.team === "red" || (target instanceof Predator && target.team !== "green" && !target.isClone);
+    if (source && !isReflected && dmg >= 1 && (_foe || (typeof COMBAT !== "undefined" && COMBAT.numbers.ally))) {
+        const _dcol = !_foe ? "#ff7a7a"
+                    : element === "fire"     ? "#ff8844"
                     : element === "electric" ? "#ffff55"
                     : element === "ice"      ? "#aaeeff"
                     : element === "flux"     ? "#dd88ff"
                     : element === "core"     ? "#44ffcc"
                     : element === "toxic"    ? "#88ff44"
                     : "#ffcc88";
-        floatingTexts.push({
-            x: _dtpx + (Math.random() - 0.5) * 24,
-            y: _dtpy - 28 + (Math.random() - 0.5) * 12,
-            text: Math.round(dmg).toString(),
-            color: _dcol,
-            size: 14,
-            life: 36,
-            vy: -0.88 - Math.random() * 0.38
-        });
+        floatingTexts.push({ world: true, x: target.x + (Math.random() - 0.5) * 0.3, y: target.y + (Math.random() - 0.5) * 0.3, text: (_foe ? "" : "\u2212") + Math.round(dmg), color: _dcol, size: _foe ? 14 : 13, life: 36, vy: -0.03 - Math.random() * 0.012 });
     }
     if (typeof target.onHit    === "function")  target.onHit(source);
     // ── BEETLE REFLECT — returns the same damage to attacker, no amplification ──
     if (target.reflectDamage && source && !source.dead && !isReflected) {
         applyDamage(source, dmg, target, null, true);
-        floatingTexts.push({ x:target.x, y:target.y-1, text:"REFLECT", color:"#cc88ff", life:35, vy:-0.05 });
+        floatingTexts.push({ world: true, x:target.x, y:target.y, text:"REFLECT", color:"#cc88ff", life:35, vy:-0.05 });
     }
     if (target.health <= 0) {
         target.health = 0; target.dead = true;
+        // DEFEATED, over it (docs/COMBAT.md): in its side's colour
+        if (typeof COMBAT !== "undefined" && COMBAT.defeatText > 0 && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: target.x, y: target.y, text: "DEFEATED", color: target.team === "green" || target.isClone ? "#19e6c1" : "#ff8a6a", size: 11, life: COMBAT.defeatText, vy: -0.015 });
         // ── ULTIMATE KILL BONUS ───────────────────────────────
         if (source && source.isFollower && source.team === "green") {
             if (typeof source.ultimateCharge !== "number") source.ultimateCharge = 0;
@@ -284,8 +278,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
 function applyElementalDamage(target, amount, source, element) {
     if (!target || target.dead) return;
     const mult = getElementMultiplier(element, target.element);
-    if (mult > 1) floatingTexts.push({x:target.x,y:target.y-1,text:'WEAK!',color:'#ffcc00',life:40,vy:-0.04});
-    else if (mult < 1) floatingTexts.push({x:target.x,y:target.y-1,text:'RESIST',color:'#88aaff',life:40,vy:-0.04});
+    if (mult > 1) floatingTexts.push({world:true,x:target.x,y:target.y,text:'WEAK!',color:'#ffcc00',life:40,vy:-0.04});
+    else if (mult < 1) floatingTexts.push({world:true,x:target.x,y:target.y,text:'RESIST',color:'#88aaff',life:40,vy:-0.04});
     // The multiplier itself is applied inside applyDamage; this only says WEAK / RESIST.
     applyDamage(target, amount, source, element);
 }
@@ -338,7 +332,7 @@ function fireArmySurge() {
 
     const units = armyUnits();
     for (const a of units) {
-        a.health = a.maxHealth;
+        if (typeof healUnit === "function") healUnit(a, a.maxHealth - a.health); else a.health = a.maxHealth;
         // WILL is what gates a follower's real attacks — on empty they fall
         // back to a quarter-strength poke, so refilling it is most of the
         // "powered up".

@@ -241,7 +241,7 @@ const ELEMENT_ATTACKS = {
                 const dist=Math.sqrt(dx*dx+dy*dy)||1;
                 target.kbVX = (dx/dist) * 0.22;
                 target.kbVY = (dy/dist) * 0.22;
-                floatingTexts.push({ x:target.x, y:target.y-1, text:"BASH!", color:"#00ffcc", life:30, vy:-0.06 });
+                floatingTexts.push({ world:true, x:target.x, y:target.y, text:"BASH!", color:"#00ffcc", life:30, vy:-0.06 });
                 spawnElementEffect({ type:"ring", x:target.x, y:target.y, color:"#00ccaa", radius:0.8, life:18, element:"core" });
             }
             return { hit: true };

@@ -115,7 +115,6 @@ function facilityDirectorTick() {
         if (!A.over) {
             if (frame >= A.t0 + (TUT.waves[A.wave] ? TUT.waves[A.wave].at : 0) && A.wave < TUT.waves.length && A.spawned === tutSpawnedBefore(A)) { tutSpawnWave(A.wave); A.wave++; _tutSay("wave" + A.wave, A.wave === 1 ? "⚠ THEY ARE COMING DOWN THE HALLWAY" : "⚠ A SECOND WAVE: STRIKERS", "#ff6a4a"); }
             const alive = tutEnemies().length;
-            for (const a of tutEnemies()) if (a.state === "retreat") { a.state = "hunt"; a.isRetreating = false; }   // (they press on: a wounded one that crept off would never end the assault)
             if (A.wave > 0 || alive) { alertActive = true; alertTimer = ALERT_DURATION; }
             const lastAt = A.t0 + TUT.waves[TUT.waves.length - 1].at;
             if (A.wave >= TUT.waves.length && (alive === 0 || frame > lastAt + TUT.stragglers)) { const routed = alive; tutCallOff(); A.over = true; alertActive = false; alertTimer = 0; tutReward(); _tutSay("won", routed ? "◈ THE REST FLED. THE ASSAULT IS BEATEN" : "◈ THE ASSAULT IS BEATEN", "#9dffb6"); }

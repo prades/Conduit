@@ -158,7 +158,7 @@ function gainXp(u, n) {
     if (ups) {
         if (u.isClone) _applyPredLevel(u, false); else _applyFollowerLevel(u, false);
         if (typeof floatingTexts !== "undefined")
-            floatingTexts.push({ x: u.x, y: u.y - 1.2, text: "▲ LEVEL " + u.level, color: "#ffee66", life: 70, vy: -0.07, size: 12 });
+            floatingTexts.push({ world: true, x: u.x, y: u.y, text: "▲ LEVEL " + u.level, color: "#ffee66", life: 70, vy: -0.07, size: 12 });
         if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: u.x, y: u.y, color: "#ffee66", radius: 0.6, life: 22 });
         if (!u.isClone && typeof evoCheck === "function") evoCheck(u);   // reaching EVOLVE_LEVEL (10): it may evolve (js/evolution.js)
     }
