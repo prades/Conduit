@@ -24,6 +24,7 @@ function facilitySaveCollect() {
         followers: followerRosterSnapshot(),
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
         clones: cloneRosterSnapshot(),   // the clones: alive, or waiting at the Crystal to come back
+        bodies: typeof cloneBodiesSnapshot === "function" ? cloneBodiesSnapshot() : [],   // the Mutator's fallen clone, where it fell (js/mutator.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
@@ -72,6 +73,7 @@ function facilitySaveApply(d) {
     if (d.spots && typeof followerSpotsApply === "function") followerSpotsApply(d.spots);
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);
+    if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function") cloneBodiesApply(d.bodies);
     if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
     // where the player stood (if that is still floor), and the followers with them
@@ -122,7 +124,7 @@ function spawnFollowerFromSave(entry) {
 // ── THE CLONES' RECORD: each live clone (its kind and level), and each one waiting to come back (with the wait still to run); made again from it (js/clone.js makeClone) ──
 function cloneRosterSnapshot() {
     const out = [];
-    for (const a of actors) if (a && a.isClone && !a.dead && !a.dismissed && a.speciesName) out.push({ sp: a.speciesName, cls: a.className || "scout", level: a.level, xp: a.xp });
+    for (const a of actors) if (a && a.isClone && !a.dead && !a.dismissed && a.speciesName) out.push({ sp: a.speciesName, cls: a.className || "scout", level: a.level, xp: a.xp, pr: a.primary ? 1 : undefined });   // pr: the Mutator's own (js/mutator.js)
     for (const e of respawnQueue) if (e && e.isClone && e.speciesName) out.push({ sp: e.speciesName, cls: e.className || "scout", level: e.level, xp: e.xp, wait: Math.max(1, e.timer | 0) });
     return out;
 }
@@ -132,7 +134,7 @@ function cloneRosterApply(list) {
     for (const c of list) {
         if (!c || !c.sp) continue;
         if (c.wait > 0) { respawnQueue.push({ isClone: true, speciesName: c.sp, className: c.cls, level: c.level, xp: c.xp, timer: c.wait, totalTimer: typeof CLONE_RESPAWN_FRAMES === "number" ? CLONE_RESPAWN_FRAMES : c.wait }); n++; continue; }
-        const k = makeClone(c.sp, c.cls, crystal.x + (Math.random() - 0.5) * 2, crystal.y + (Math.random() - 0.5) * 2, "wander", { level: c.level, xp: c.xp }); if (k) n++;
+        const k = makeClone(c.sp, c.cls, crystal.x + (Math.random() - 0.5) * 2, crystal.y + (Math.random() - 0.5) * 2, "wander", { level: c.level, xp: c.xp }); if (k) { if (c.pr) k.primary = true; n++; }
     }
     return n;
 }

@@ -27,6 +27,7 @@ const SUITES = [
     ['the player\'s ultimate',   'ultimate.js'],
     ['effects plan',             'effects.js'],
     ['combat readability: the bite in two beats, one bite one unit, the cap, the numbers, the bar, DEFEATED', 'combat.js'],
+    ['the Mutator: the lash, cloning is the Mutator\'s, the one clone fights as its species and stays fallen', 'mutator.js'],
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],
     ['follower types',           'followertypes.js'],

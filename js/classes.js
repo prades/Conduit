@@ -15,13 +15,18 @@ const CLASSES = {
         blurb: ["Repairs relays and restores the facility's systems.", "Finds power cells and parts in the labs.", "Cannot use the Gunslinger's gear or the Mutator's samples."],
         rooms: ["experiment_lab", "teleport_room_1", "lab_passage"], startKit: [["power_cell", 1]], skills: ["repair", "tech"] },
     mutator: { id: "mutator", name: "MUTATOR", colour: "#c06bff", tagline: "Biological samples, DNA and creature evolution.",
-        blurb: ["Works with samples, DNA and experimentation.", "Feeds samples to followers to push their evolution.", "Cannot use the Gunslinger's gear or the Technomancer's tech."],
-        rooms: ["experiment_lab", "crystal_chamber"], startKit: [["mutagen_sample", 1]], skills: ["bio"] },
+        blurb: ["Fights up close with a tentacle lash, beside one clone it grows from DNA.", "Works with samples, DNA and experimentation.", "Cannot use the Gunslinger's gear or the Technomancer's tech."],
+        rooms: ["experiment_lab", "crystal_chamber"], startKit: [["mutagen_sample", 1]], skills: ["bio"], weapon: "lash" },
 };
+// weapon: the class's own weapon (js/weapons.js), put in its hand when the class is chosen (the Mutator's TENTACLE LASH: docs/MUTATOR.md). A class with none keeps the service gun.
 const CLASS_ORDER = ["gunslinger", "technomancer", "mutator"];
 // relay: how a relay is repaired (js/stations.js). A class with the `skill` repairs with `skillCells` power cells in `skillFrames`, and the classes named in `auto` start the repair by themselves when they stand at a broken relay with the cells and keep still;
 // anyone else needs the `kit` (an item) and `kitCells` cells and takes `kitFrames`. The kit is the explicit rule that lets the other classes restore a relay at all: their cells are spent by the relay, not used by them.
-const CLASS_RULES = { carryOthers: true, useOthers: false, relay: { skill: "repair", skillCells: 1, skillFrames: 100, auto: ["technomancer"], kit: "relay_kit", kitCells: 2, kitFrames: 300 } };
+// clone: who grows clones at the Clone Bay (js/clone.js). ASKED (the brief): the Mutator "uses DNA to create clones" and "normally has only one active primary clone". A class with the `skill` may clone, `max` at
+// once, and with `primary` its clone is a PRIMARY clone: it does not come back by itself, and when it falls its body stays where it fell (js/mutator.js). With no `skill` every class may clone, up to MAX_CLONES,
+// and the clones come back at the Crystal (the rule before the Mutator had the clones to itself).
+const CLASS_RULES = { carryOthers: true, useOthers: false, relay: { skill: "repair", skillCells: 1, skillFrames: 100, auto: ["technomancer"], kit: "relay_kit", kitCells: 2, kitFrames: 300 },
+    clone: { skill: "bio", max: 1, primary: true } };
 
 // PERKS: what a class earns at its stations (js/stations.js). The game asks classStat(name, base) for a number, as docs/PLAYER-CLASSES.md plans: each owned perk may multiply (mul) or add to it.
 //   cls        the class that can earn it    name / desc   what the pack shows     stat   { statName: { mul | add } }
@@ -56,6 +61,7 @@ function classSet(id) {
     if (!CLASSES[id] || playerClassKey) return false;
     playerClassKey = id;
     if (typeof invAdd === "function") for (const [item, n] of CLASSES[id].startKit) invAdd(item, n);
+    if (CLASSES[id].weapon && typeof weaponEquip === "function") weaponEquip(CLASSES[id].weapon);   // its own weapon in hand (the Mutator's lash)
     return true;
 }
 // the class a thing is reserved for ([] or none = every class)

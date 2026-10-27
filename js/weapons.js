@@ -16,25 +16,33 @@ const WEAPONS = {
         desc: "A belt-fed gun held in your tentacles. Four times the rate of fire; each round hits a little softer. The Gunslinger's." },
     laser:      { id: "laser", name: "LASER RIFLE", kind: "fuel", damage: 22, cooldown: 28, maxLevel: 3, upgrade: [14, 28], col: "#31e8ff", assemble: 15, charges: 12, range: 12, pierce: 0.6,
         desc: "An energy rifle: a beam that hits at once and goes through whatever stands behind the target. A fuel cell holds 12 charges." },
+    // THE MUTATOR'S OWN (cls: only that class has it; js/classes.js puts it in hand when the class is chosen). Melee: the targeting's ATTACK walks you into `reach` (tiles) and the lash comes in two beats
+    // (js/mutator.js: MUTATOR.lash.windup, then the hit). It spends nothing. Its numbers are TENTATIVE (docs/MUTATOR.md); it has no scrap levels: the Mutator grows by DNA, not at the bench.
+    lash:       { id: "lash", name: "TENTACLE LASH", kind: "melee", damage: 18, cooldown: 34, reach: 1.45, maxLevel: 1, upgrade: [], col: "#c06bff", cls: "mutator",
+        desc: "The Mutator's own: a tentacle that lashes whatever is in reach. It spends nothing, but you have to be close." },
 };
-const WEAPON_ORDER = ["service", "machinegun", "laser"];
+const WEAPON_ORDER = ["service", "machinegun", "laser", "lash"];
 const WEAPON_RULES = { levelDamage: 0.3, levelCooldown: 0.12, scrapPerAmmoPack: 2, ammoPackRounds: 10, beamFrames: 10 };
 
 let playerWeapon = "service";                                   // the one in hand
 let weaponOwned = { service: true, machinegun: false, laser: false };
-let weaponLevel = { service: 1, machinegun: 1, laser: 1 };
+let weaponLevel = { service: 1, machinegun: 1, laser: 1, lash: 1 };
 let laserCharge = 0;                                            // charges left in the cell in the rifle
-function weaponReset() { playerWeapon = "service"; weaponOwned = { service: true, machinegun: false, laser: false }; weaponLevel = { service: 1, machinegun: 1, laser: 1 }; laserCharge = 0; armoryClose(); }
+function weaponReset() { playerWeapon = "service"; weaponOwned = { service: true, machinegun: false, laser: false }; weaponLevel = { service: 1, machinegun: 1, laser: 1, lash: 1 }; laserCharge = 0; armoryClose(); }
 function weaponDef(id) { return WEAPONS[id || playerWeapon] || WEAPONS.service; }
-// what is owned: the service gun always, the machine gun with its perk, the rifle once assembled
-function weaponHas(id) { const w = WEAPONS[id]; if (!w) return false; if (w.perk) return typeof classHas === "function" && classHas(w.perk); return !!weaponOwned[id] || id === "service"; }
+// what is owned: the service gun always, the machine gun with its perk, a class's own weapon by that class, the rifle once assembled
+function weaponHas(id) { const w = WEAPONS[id]; if (!w) return false; if (w.perk) return typeof classHas === "function" && classHas(w.perk); if (w.cls) return typeof playerClassKey !== "undefined" && playerClassKey === w.cls; return !!weaponOwned[id] || id === "service"; }
+// the class a weapon is reserved for (its own `cls`, or the class of the perk that gives it), or null
+function weaponClassOf(id) { const w = WEAPONS[id]; if (!w) return null; if (w.cls) return w.cls; if (w.perk && typeof CLASS_PERKS !== "undefined" && CLASS_PERKS[w.perk]) return CLASS_PERKS[w.perk].cls; return null; }
+// the rows the Armory terminal lists: a weapon reserved for a class only to that class (with no class yet, the ones a class earns at a station are listed, as before, and a class's own weapon is not)
+function weaponRows() { const k = typeof playerClassKey !== "undefined" ? playerClassKey : null; return WEAPON_ORDER.filter(id => { const c = weaponClassOf(id); return !c || (k ? c === k : !WEAPONS[id].cls); }); }
 function weaponLevelOf(id) { return Math.max(1, Math.min(WEAPONS[id || playerWeapon].maxLevel, weaponLevel[id || playerWeapon] | 0 || 1)); }
 // the numbers in hand: the weapon's own, raised by its level, and the class perks' on top (classStat)
 function weaponDamage(id) { const w = weaponDef(id), L = weaponLevelOf(id || playerWeapon); return Math.round(classStat("shotDamage", w.damage * (1 + WEAPON_RULES.levelDamage * (L - 1))) * 10) / 10; }
 function weaponCooldown(id) { const w = weaponDef(id), L = weaponLevelOf(id || playerWeapon); return Math.max(4, Math.round(classStat("shotCooldown", w.cooldown * (1 - WEAPON_RULES.levelCooldown * (L - 1))))); }
 function weaponEquip(id) {
     if (!WEAPONS[id]) return { ok: false, why: "NO SUCH WEAPON" };
-    if (!weaponHas(id)) return { ok: false, why: id === "machinegun" ? "THE GUNSLINGER'S: FROM THE WEAPON LOCKER" : "ASSEMBLE IT FIRST" };
+    if (!weaponHas(id)) return { ok: false, why: id === "machinegun" ? "THE GUNSLINGER'S: FROM THE WEAPON LOCKER" : WEAPONS[id].cls ? "THE " + (typeof className === "function" ? className(WEAPONS[id].cls) : String(WEAPONS[id].cls).toUpperCase()) + "'S OWN" : "ASSEMBLE IT FIRST" };
     playerWeapon = id; if (typeof playerLockTarget !== "undefined") { /* the lock is kept */ }
     return { ok: true, msg: WEAPONS[id].name + " IN HAND" };
 }
@@ -62,11 +70,13 @@ function weaponConvert(packs) {
     invRemove("scrap_metal", n * per); invAdd("ammo_pack", n);
     return { ok: true, msg: n + " AMMO PACK" + (n > 1 ? "S" : "") + " FOR " + n * per + " SCRAP" };
 }
-// out of what it runs on? (the gunfire hold stops, the HUD says so)
-function weaponDry() { const w = weaponDef(); return w.kind === "fuel" ? laserCharge <= 0 && !invHas("fuel_cell") : playerAmmo <= 0; }
+// out of what it runs on? (the gunfire hold stops, the HUD says so). A melee weapon runs on nothing.
+function weaponDry() { const w = weaponDef(); return w.kind === "melee" ? false : w.kind === "fuel" ? laserCharge <= 0 && !invHas("fuel_cell") : playerAmmo <= 0; }
+function weaponMelee(id) { return weaponDef(id).kind === "melee"; }
 // the HUD's words: { text, dry }
 function weaponHud() {
     const w = weaponDef(), armed = typeof playerAttackMode !== "undefined" && playerAttackMode;
+    if (w.kind === "melee") return { text: armed ? "LASH ◆ IN REACH" : "LASH", dry: false, short: "LASH", kind: "melee", n: "", cells: 0 };   // (the small icon shows a tentacle and no count: js/targeting.js)
     if (w.kind === "fuel") { const cells = invCount("fuel_cell"), dry = laserCharge <= 0 && cells <= 0, t = laserCharge + (cells ? " +" + cells + "▣" : ""); return { text: (armed ? (dry ? "NO FUEL — STOW" : "LASER ◆ " + t) : "FUEL ◆ " + t), dry, short: "FUEL " + t, kind: "fuel", n: laserCharge, cells }; }
     const dry = playerAmmo <= 0; return { text: armed ? (dry ? "NO AMMO — STOW" : "ARMED ◆ " + playerAmmo) : "AMMO ◆ " + playerAmmo, dry, short: "AMMO " + playerAmmo, kind: "ammo", n: playerAmmo, cells: 0 };   // (kind, n and cells: what the little icon in the facility shows, js/targeting.js drawAmmoIcon)
 }
@@ -110,13 +120,16 @@ function facilityDrawBeams() {
 }
 
 // ── what the facility's save keeps of it (js/facilitysave.js) ──
-function weaponSnapshot() { return { w: playerWeapon, owned: { laser: !!weaponOwned.laser }, lv: Object.assign({}, weaponLevel), charge: laserCharge }; }
+// cw: the class's own weapon existed when this was saved (a Mutator's game from before the lash comes back with the lash in hand, not the service gun everyone had then)
+function weaponSnapshot() { return { w: playerWeapon, owned: { laser: !!weaponOwned.laser }, lv: Object.assign({}, weaponLevel), charge: laserCharge, cw: 1 }; }
 function weaponRestore(d) {
     weaponReset(); if (!d) return;
     if (d.owned && d.owned.laser) weaponOwned.laser = true;
     if (d.lv) for (const id of WEAPON_ORDER) if (Number.isFinite(d.lv[id])) weaponLevel[id] = Math.max(1, Math.min(WEAPONS[id].maxLevel, d.lv[id] | 0));
     if (Number.isFinite(d.charge)) laserCharge = Math.max(0, Math.min(WEAPONS.laser.charges, d.charge | 0));
     if (d.w && weaponHas(d.w)) playerWeapon = d.w;
+    const own = typeof playerClass === "function" && playerClass() ? playerClass().weapon : null;
+    if (!d.cw && own && playerWeapon === "service" && weaponHas(own)) playerWeapon = own;
 }
 
 // ── the armory terminal's window ──
@@ -150,11 +163,12 @@ function drawArmoryPanel() {
     y += rowH + 10;
     // the weapons
     const wh = L.wide ? 92 : 112;
-    for (const id of WEAPON_ORDER) {
+    for (const id of weaponRows()) {
         const w = WEAPONS[id], has = weaponHas(id), held = playerWeapon === id, Lv = weaponLevelOf(id), up = weaponUpgradeCost(id);
         uiSlab(L.px + gut, y, inner, wh, held ? w.col : "#2a3556", false, held ? "#10243a" : "#0b1226", !has);
         uiText(w.name, L.px + gut + 14, y + 26, 20, has ? w.col : "#7a86a6", "left");
-        uiCaption(has ? "LEVEL " + Lv + " / " + w.maxLevel + "   ·   DAMAGE " + weaponDamage(id) + "   ·   " + (60 / weaponCooldown(id)).toFixed(1) + " SHOTS/S   ·   " + (w.kind === "fuel" ? "FUEL CELLS" : "AMMUNITION") : id === "machinegun" ? "THE GUNSLINGER'S  ·  FROM THE WEAPON LOCKER" : "NOT ASSEMBLED  ·  " + w.assemble + " SCRAP METAL", L.px + gut + 14, y + 46, has ? "#c8d4f0" : "#8aa0c8", "left", 12);
+        const melee = w.kind === "melee", rate = (60 / (weaponCooldown(id) + (melee && typeof MUTATOR !== "undefined" ? MUTATOR.lash.windup : 0))).toFixed(1);
+        uiCaption(has ? (melee ? "DAMAGE " + weaponDamage(id) + "   ·   " + rate + " STRIKES/S   ·   REACH " + w.reach + " TILES   ·   SPENDS NOTHING" : "LEVEL " + Lv + " / " + w.maxLevel + "   ·   DAMAGE " + weaponDamage(id) + "   ·   " + rate + " SHOTS/S   ·   " + (w.kind === "fuel" ? "FUEL CELLS" : "AMMUNITION")) : id === "machinegun" ? "THE GUNSLINGER'S  ·  FROM THE WEAPON LOCKER" : "NOT ASSEMBLED  ·  " + w.assemble + " SCRAP METAL", L.px + gut + 14, y + 46, has ? "#c8d4f0" : "#8aa0c8", "left", 12);
         const chars = Math.max(20, Math.floor((inner - (L.wide ? 270 : 28)) / 7.4)), lines = uiWrap(w.desc, chars).slice(0, L.wide ? 2 : 3); lines.forEach((l, i) => uiCaptionFit(l, L.px + gut + 14, y + 64 + i * 15, "#9fb0d6", "left", 11, inner - (L.wide ? 270 : 28)));
         const bx = L.wide ? L.px + L.pw - gut - 236 : L.px + gut + 14, by = L.wide ? y + 14 : y + wh - 40, bw = 110, bh = L.wide ? 30 : 32;
         if (has) {

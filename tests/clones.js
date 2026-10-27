@@ -46,7 +46,9 @@ async function ready() {
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the facility did not build');
-    run(`gameState.running = true; facilityBlackoutSet(false);`);
+    // THE BAY'S OWN MECHANICS (the price, the splices, the cap and DISMISS, the ghosts, a clone's numbers, the slow return) are tested under the OPEN rule: every class may clone, up to MAX_CLONES, and the
+    // clones come back at the Crystal. The game's rule is the Mutator's (CLASS_RULES.clone: the Mutator only, one at a time, and its clone stays fallen): tests/mutator.js tests that.
+    run(`gameState.running = true; facilityBlackoutSet(false); CLASS_RULES.clone = { skill: null };`);
     return { run, sandbox };
 }
 

@@ -83,12 +83,13 @@ function cloneTypeInfo(species, cls) {
     const S = SPECIES[species], d = (typeof getClassDef === "function" ? getClassDef(S, cls) : S[cls]) || S.scout;
     const special = d.abdomenAttack || (d.rangeDamage && d.rangeDamage > 0);
     const out = { kind: "clone", title: species.toUpperCase() + " " + cls.toUpperCase(), sub: "CLONE · " + (typeof CLONE_COSTS !== "undefined" && CLONE_COSTS[species] ? CLONE_COSTS[species].splicesNeeded + " SPLICES · " + cloneShardCost(species, cls) + " SHARDS" : ""), color: S.color, species, cls, attacks: [], jobs: [], stats: [] };
-    out.attacks.push({ h: "BITE", note: "Fights up close.", rows: [["POWER", String(d.power)], ["REACTS IN", d.reactionSpeed + " frames when hit"]] });
-    out.attacks.push(special ? { h: "SPECIAL · " + (CLONE_SPECIAL[species] || "SPECIAL"), note: CLONE_SPECIAL_TEXT[species] || "A ranged attack from the rear.", rows: [["DAMAGE", String(d.rangeDamage)], ["EVERY", _uiSec(d.abdomenCooldown)], ["NOTE", "It will not turn when hit from behind"]] }
+    const P = typeof CLONE_POWER_MULT === "number" ? CLONE_POWER_MULT : 1, H = typeof CLONE_HEALTH_MULT === "number" ? CLONE_HEALTH_MULT : 1;   // (a clone's numbers are its species' times these, at level 5: js/config.js)
+    out.attacks.push({ h: "BITE", note: "Fights up close, as its species does: it rears back (the ring over it), then bites.", rows: [["POWER", String(Math.round(d.power * P))], ["REACTS IN", d.reactionSpeed + " frames when hit"]] });
+    out.attacks.push(special ? { h: "SPECIAL · " + (CLONE_SPECIAL[species] || "SPECIAL"), note: CLONE_SPECIAL_TEXT[species] || "A ranged attack from the rear.", rows: [["DAMAGE", String(Math.round(d.rangeDamage * P))], ["EVERY", _uiSec(d.abdomenCooldown)], ["NOTE", "It will not turn when hit from behind"]] }
                               : { h: "SPECIAL", note: "None: a " + cls + " has no ranged attack" + (species === "ant" || species === "beetle" ? " (an " + species + " never does)." : " (the striker and tank do)."), rows: [] });
     out.jobs.push({ h: "RIGHT NOW", note: "A clone fights beside you: it follows, and holds where it is told to.", rows: [] });
-    out.stats.push({ h: "VITALS", rows: [["HEALTH", String(d.health)], ["POWER", String(d.power)], ["SPEED", String(Math.round(d.moveSpeed * 1000))], ["SIZE", d.width + " × " + d.height]] });
-    if (typeof MAX_CLONES !== "undefined") out.stats.push({ h: "LIMITS", rows: [["CLONES AT ONCE", String(MAX_CLONES)], ["COST", cloneShardCost(species, cls) + " shards and " + (CLONE_COSTS[species] ? CLONE_COSTS[species].splicesNeeded : "?") + " splices"]] });
+    out.stats.push({ h: "VITALS", rows: [["HEALTH", String(Math.round(d.health * H))], ["POWER", String(Math.round(d.power * P))], ["SPEED", String(Math.round(d.moveSpeed * 1000))], ["SIZE", d.width + " × " + d.height]] });
+    if (typeof cloneCap === "function") out.stats.push({ h: "LIMITS", rows: [["CLONES AT ONCE", String(cloneCap())], ["WHO GROWS IT", typeof cloneWho === "function" && cloneWho() ? cloneWho() : "ANY CLASS"], ["COST", cloneShardCost(species, cls) + " shards and " + (CLONE_COSTS[species] ? CLONE_COSTS[species].splicesNeeded : "?") + " splices"]] });
     return out;
 }
 // A live clone: its type's info, with its own health.

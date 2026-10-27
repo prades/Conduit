@@ -93,6 +93,7 @@ function followerPickDistance(ex, ey) {
 let playerShotsFired = 0;   // shots the player has fired (the tutorial's gun lesson counts them: js/tutorial.js)
 function firePlayerShot(foe) {
     if (!foe || foe.dead) return false;
+    if (typeof weaponMelee === "function" && weaponMelee() && typeof mutatorLash === "function") return mutatorLash(foe);   // a melee weapon in hand (the Mutator's lash): walk into reach, draw back, strike (js/mutator.js)
     if (typeof playerWeapon !== "undefined" && playerWeapon === "laser" && typeof fireLaserShot === "function") return fireLaserShot(foe);   // the laser rifle: fuel cells, a beam (js/weapons.js)
     if (playerAmmo <= 0) {
         floatingTexts.push({x:canvas.width/2, y:canvas.height/2-60,
@@ -139,6 +140,7 @@ const handleInput=(ex,ey)=>{
     const dx=ex-canvas.width/2, dy=ey+facilityPickLift(ex, ey)-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
+    if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off the Mutator's lash: it would walk the player back to the creature)
     facilityWalkTo(gx, gy);
     player.selectedFollower=null;
 };

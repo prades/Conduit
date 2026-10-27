@@ -53,6 +53,7 @@ function hdPlayerState() {
         if (Math.abs(dx) + Math.abs(dy) > 0.004) { p._hdRow = hdRow(dx, dy); p._hdMoveAt = f0; }
     }
     p._hdX = x; p._hdY = y; p._hdAt = f0;
+    if (typeof mutatorFacing === "function") { const r = mutatorFacing(); if (r !== null) p._hdRow = r; }   // the Mutator turns to what its lash is for (js/mutator.js)
     if (p._hdRow === undefined) p._hdRow = 1;
     return { row: p._hdRow, walking: p._hdMoveAt !== undefined && f0 - p._hdMoveAt < 6, f0 };
 }

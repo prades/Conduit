@@ -614,6 +614,8 @@ function render() {
     // ── PLAYER ATTACK COOLDOWN ──
     if (player.attackCooldown > 0) player.attackCooldown--;
     if (typeof gunTick === "function") gunTick();   // click or hold to fire: js/gunfire.js
+    if (typeof mutatorTick === "function") mutatorTick();   // the Mutator's lash: walk into reach, draw back, strike (js/mutator.js)
+    if (typeof mutatorBodiesTick === "function") mutatorBodiesTick();   // a fallen clone's body (js/mutator.js)
     if (typeof targetTick === "function") targetTick();   // the aim meter and the selection: js/targeting.js
     // The crystals, at the top left: only the change touches the page.
     if (shardCount !== _lastShardCount) { _lastShardCount = shardCount; shardUI.textContent = String(shardCount); }
@@ -684,6 +686,10 @@ function render() {
         if (a.dead&&a.team==="green"&&!a.queuedForRespawn&&!a.sacrificed) {
             a.queuedForRespawn=true;
             if (typeof bondOnDeath === "function") bondOnDeath(a);   // the partner rages; the bond ends
+            // A clone DISMISSED at the Clone Bay is gone: it does not come back (it did, 20 seconds later, and filled the slot DISMISS had just freed).
+            if (a.isClone && a.dismissed) return;
+            // The Mutator's clone does not come back by itself: its body stays where it fell (js/mutator.js).
+            if (a.isClone && a.primary) { if (typeof cloneFallen === "function") cloneFallen(a); return; }
             // The HP stat that wears down with each death is the BASE one
             // (js/levels.js); its level scales it back up.
             const oldHp = a.base?.hp ?? a.stats?.hp ?? 1;
@@ -797,6 +803,7 @@ function render() {
     // nothing — so its units are not even laid out: the predators' body maths
     // was the biggest share of a step with no picture.
     if (!_simGhost) actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
+    if (!_simGhost && typeof cloneBodiesDrawItems === "function") cloneBodiesDrawItems(drawList);   // a fallen clone's body (js/mutator.js)
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     facilityDrawItems(drawList);   // walls, props, doors and fixtures (js/facilityplay.js)
     // Each item's depth once, not twice per comparison (n log n calls).
@@ -821,6 +828,9 @@ function render() {
         else if (obj.type==='npc') {
             if (typeof facilityEnemyGlow === "function") facilityEnemyGlow(obj.actor, px, py);   // an enemy in a blackout shows a hostile glow on the floor under it (js/facilitytutorial.js)
             drawNPC(obj.actor,px,py);
+        }
+        else if (obj.type==='body') {
+            if (typeof drawCloneBody === "function") drawCloneBody(obj.body, px, py);
         }
         else if (obj.type==='crystal') {
             // ── FLOATING GEM ──
@@ -1134,6 +1144,7 @@ function render() {
     if (typeof drawSelectedUnitRings === "function") drawSelectedUnitRings();   // the units picked in the Command Center
     if (typeof drawBonds === "function") drawBonds();
     if (typeof drawBiteTelegraphs === "function") drawBiteTelegraphs();   // a creature rearing back to bite, and whom (js/combat.js)
+    if (typeof drawMutatorFx === "function") drawMutatorFx();   // the Mutator's lash (js/mutator.js)
     drawFloatingTexts();
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.

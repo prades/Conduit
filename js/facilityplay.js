@@ -215,6 +215,7 @@ function facilityResetState() {
     world = []; worldTileMap = new Map(); actors = []; followers = []; ELEMENTS.forEach(el => { followerByElement[el.id] = []; });
     projectiles = []; fragments = []; smoke = []; shards = []; elementEffects = []; floatingTexts = []; followerProjectiles = []; respawnQueue = [];
     if (typeof clearDNA === "function") clearDNA();
+    if (typeof mutatorReset === "function") mutatorReset();   // the lash and any fallen clone's body (js/mutator.js)
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null; if (typeof activeEmpEffect !== "undefined") activeEmpEffect = null;
     if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
     frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(ELEMENTS.map(e => e.id)); lifetimeKills = 0;

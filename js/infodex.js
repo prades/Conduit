@@ -75,9 +75,10 @@ function infoEntries() {
          ["RAGE", "+" + Math.round(((typeof BOND_RAGE_ATTACK !== "undefined" ? BOND_RAGE_ATTACK : 1.5) - 1) * 100) + "% damage for " + sec(typeof BOND_RAGE_FRAMES !== "undefined" ? BOND_RAGE_FRAMES : 600), "#ff6655"],
          ["DUO", "×" + (typeof BOND_DUO_MULT !== "undefined" ? BOND_DUO_MULT : 1.3) + " for " + sec(typeof BOND_DUO_FRAMES !== "undefined" ? BOND_DUO_FRAMES : 300)]]);
     add("clones", "allies", "CLONES", "#19e6c1", "Grown in the Clone Bay from DNA",
-        ["Open the CLONE BAY (CLONES on the dock) and summon a creature's species as your ally, for crystals and the DNA splices its kind drops when you kill it (at most " + MAX_CLONES + " at once). A clone is far tougher than a follower and fights beside you under the same orders; when it falls it comes back after a while.",
+        ["Clones are the MUTATOR's: open the CLONE BAY (CLONES on the dock) and grow a creature's species as your ally, for crystals and the DNA splices its kind drops when you kill it (" + (typeof cloneCap === "function" ? cloneCap() : MAX_CLONES) + " at a time). A clone is far tougher than a follower, fights as its species does (its bite in two beats, its special) and follows you under the squad's orders.",
+         "The Mutator's clone does NOT come back by itself: when it falls its body stays where it fell, and a new one has to be grown. Keep it alive: pull it back (RETREAT, COME) when a fight turns.",
          "The clone prices by species and class are in the GAME INDEX (the ? button, SQUAD tab)."],
-        [["POWER", "×" + CLONE_POWER_MULT], ["HEALTH", "×" + CLONE_HEALTH_MULT], ["AT ONCE", MAX_CLONES], ["COMES BACK", "after " + sec(CLONE_RESPAWN_FRAMES)]]);
+        [["POWER", "×" + CLONE_POWER_MULT], ["HEALTH", "×" + CLONE_HEALTH_MULT], ["AT ONCE", typeof cloneCap === "function" ? cloneCap() : MAX_CLONES], ["WHO", typeof cloneWho === "function" && cloneWho() ? cloneWho() : "ANY CLASS"], ["COMES BACK", typeof cloneRule === "function" && cloneRule() && cloneRule().primary ? "NO: GROW A NEW ONE" : "after " + sec(CLONE_RESPAWN_FRAMES)]]);
 
     // ── ENEMIES ──
     const SP = (k) => SPECIES[k] && SPECIES[k].scout;

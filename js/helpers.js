@@ -546,7 +546,9 @@ function getCommandPool(withHeld) {
     if (typeof selectedUnits !== "undefined" && selectedUnits.size) { const sel = [...selectedUnits].filter(a => a && !a.dead && a.team === "green"); if (sel.length) return sel; }
     // The facility (js/party.js): the orders reach the SQUAD, not the followers holding rooms (select those in the roster to order them); COME reaches them too.
     const live = typeof partyOn === "function" && partyOn() && !withHeld ? (a => !a.dead && !a.post) : (a => !a.dead);
-    if (squadMode === "all" || (typeof hudCorners === "function" && hudCorners())) return followers.filter(live);   // (the corners layout has no element picker: the orders reach the whole squad, or the cards that are picked, above)
+    // THE MUTATOR'S CLONE (js/mutator.js) takes the squad's orders with it: HOLD, COME, RETREAT, the enemy card's ATTACK (the brief: the clone must be protected "through positioning, tactical decisions").
+    const primary = typeof actors !== "undefined" ? actors.filter(a => a && a.isClone && a.primary && a.team === "green" && live(a)) : [];
+    if (squadMode === "all" || (typeof hudCorners === "function" && hudCorners())) return followers.filter(live).concat(primary);   // (the corners layout has no element picker: the orders reach the whole squad, or the cards that are picked, above)
     if (selectedRole)        return followers.filter(a => live(a) && a.role === selectedRole);
     return (followerByElement[player.selectedElement] || []).filter(live);
 }

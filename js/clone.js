@@ -16,11 +16,31 @@ function openCloneMenu() {
     drawCloneMenu();
 }
 
-const MAX_CLONES = 4; // summon cap — no more than 4 clones active at once
+const MAX_CLONES = 4; // summon cap when every class may clone (CLASS_RULES.clone with no skill); the Mutator's is the rule's `max`
+
+// ── WHO GROWS CLONES, AND HOW MANY ───────────────────────
+// CLASS_RULES.clone (js/classes.js): the class with the rule's skill (the Mutator) grows clones, `max` at once (one), and they are PRIMARY clones (js/mutator.js: they do not come back by themselves).
+// With no skill in the rule every class may clone, up to MAX_CLONES, and they come back at the Crystal.
+function cloneRule() { return typeof CLASS_RULES !== "undefined" && CLASS_RULES.clone ? CLASS_RULES.clone : null; }
+function cloneCap() { const r = cloneRule(); return r && r.skill && r.max > 0 ? r.max : MAX_CLONES; }
+function cloneLiveCount() { return actors.filter(a => a && a.isClone && !a.dead).length; }
+// the classes that may clone, by name ("MUTATOR"), or null when every class may
+function cloneWho() {
+    const r = cloneRule(); if (!r || !r.skill || typeof CLASSES === "undefined") return null;
+    return (typeof CLASS_ORDER !== "undefined" ? CLASS_ORDER : Object.keys(CLASSES)).filter(id => (CLASSES[id].skills || []).includes(r.skill)).map(id => CLASSES[id].name).join(" / ") || null;
+}
+// { ok, primary } or { ok: false, why, short }
+function cloneAllowed() {
+    const r = cloneRule(); if (!r || !r.skill) return { ok: true, primary: false };
+    const cls = typeof playerClass === "function" ? playerClass() : null, who = cloneWho() || "CLASS";
+    if (!cls) return { ok: false, why: "CLASSES COME AFTER THE TUTORIAL — A " + who + " GROWS CLONES", short: who + " ONLY" };
+    if (!(cls.skills || []).includes(r.skill)) return { ok: false, why: "ONLY A " + who + " GROWS CLONES", short: who + " ONLY" };
+    return { ok: true, primary: !!r.primary };
+}
 
 function getCloneOptions() {
     const options = [];
-    const liveClones = actors.filter(a => a.isClone && !a.dead).length;
+    const liveClones = cloneLiveCount(), cap = cloneCap(), allowed = cloneAllowed().ok;
     Object.keys(SPECIES).forEach(speciesName => {
         ["scout","striker","tank"].forEach(className => {
             const key = speciesName + "_" + className;
@@ -34,7 +54,7 @@ function getCloneOptions() {
                 key, speciesName, className,
                 have, needed,
                 shardCost,
-                ready: have >= needed && shardCount >= shardCost && liveClones < MAX_CLONES
+                ready: allowed && have >= needed && shardCount >= shardCost && liveClones < cap
             });
         });
     });
@@ -47,9 +67,10 @@ function getCloneOptions() {
 // form for the floating text.
 function cloneBlockedReason(option) {
     if (!option) return null;
-    const live = actors.filter(a => a.isClone && !a.dead).length;
-    if (live >= MAX_CLONES)
-        return "CLONE CAP " + live + "/" + MAX_CLONES + " — DISMISS ONE FIRST";
+    const al = cloneAllowed(); if (!al.ok) return al.why;
+    const live = cloneLiveCount(), cap = cloneCap();
+    if (live >= cap)
+        return cap === 1 ? "ONE CLONE AT A TIME — DISMISS YOURS FIRST" : "CLONE CAP " + live + "/" + cap + " — DISMISS ONE FIRST";
     if (option.have < option.needed)
         return "NEED " + (option.needed - option.have) + " MORE " +
                option.speciesName.toUpperCase() + " DNA";
@@ -59,8 +80,9 @@ function cloneBlockedReason(option) {
 }
 
 function cloneBlockedLabel(option) {
-    const live = actors.filter(a => a.isClone && !a.dead).length;
-    if (live >= MAX_CLONES)                  return "CAP " + live + "/" + MAX_CLONES;
+    const al = cloneAllowed(); if (!al.ok) return al.short;
+    const live = cloneLiveCount(), cap = cloneCap();
+    if (live >= cap)                         return "CAP " + live + "/" + cap;
     if (option.have < option.needed)         return "DNA " + option.have + "/" + option.needed;
     if (shardCount < option.shardCost)       return "NEED " + option.shardCost + "✦";
     return "—";
@@ -72,9 +94,9 @@ function dismissOldestClone() {
     if (live.length === 0) return false;
     const c = live[0];   // actors order is summon order
     c.dead = true;
-    c.dismissed = true;
+    c.dismissed = true;   // (it does not come back: js/game.js queues no return for a dismissed clone, and a primary one leaves no body)
     floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
-        text: (c.speciesName || "CLONE").toUpperCase() + " DISMISSED",
+        text: (c.speciesName || "CLONE").toUpperCase() + (c.primary ? " CLONE RELEASED" : " DISMISSED"),
         color: "#88aacc", life: 100, vy: -0.2 });
     return true;
 }
@@ -99,7 +121,13 @@ function makeClone(speciesName, className, x, y, state, lv) {
         // construction would show a full bar at a quarter of the length.
         health:    classDef.health * CLONE_HEALTH_MULT,
         power:     classDef.power,
-        color:     speciesDef.color
+        color:     speciesDef.color,
+        // Its species' shot from the rear (a striker's or tank's), as strong as its bite is (CLONE_POWER_MULT): the brief, "Clones should use the established designs and characteristics of their
+        // corresponding enemy species". A clone was built without it, so a scorpion striker clone never stung.
+        reactionSpeed:   classDef.reactionSpeed ?? 15,
+        abdomenAttack:   classDef.abdomenAttack ?? false,
+        rangeDamage:     (classDef.rangeDamage || 0) * CLONE_POWER_MULT,
+        abdomenCooldown: classDef.abdomenCooldown ?? 90
     };
 
     const clone = new Predator(className, def, x, y);
@@ -118,8 +146,54 @@ function makeClone(speciesName, className, x, y, state, lv) {
         clone.xp = lv && Number.isFinite(lv.xp) ? Math.max(xpForLevel(clone.level), lv.xp) : xpForLevel(clone.level);
     }
     if (typeof applySpeciesBody === "function") applySpeciesBody(clone, speciesName);
+    if (typeof initAbility === "function") initAbility(clone);   // its species' charge-up special (js/abilities.js), now that species and class are both known
     actors.push(clone);
     return clone;
+}
+
+// ── A CLONE FIGHTS AS THE CREATURE IT IS ─────────────────
+// ASKED (the brief): "Clones should use the established designs and characteristics of their corresponding enemy species." A clone is run by the followers' AI (js/npc.js: it follows you, holds, comes, is
+// sent at a creature by the enemy card), and that AI struck with a follower's plain swing: no element and no stats made every hit 1.25 (js/combat.js followerAttack), whatever the clone's power. An ant scout
+// clone (power 72) took 600 frames to bring an ant scout down to two thirds while the ant bit it for 18 a time (measured: docs/MUTATOR.md). Now it fights the way its species does:
+//   cloneFight   it closes to its reach and BITES in the creature's two beats (js/predator.js _biteTick: it rears back under the telegraph, js/combat.js, then the bite lands for its power), facing what it
+//                bites. A creature roots itself to rear back; a clone keeps after a target that walks on while it rears (the creatures it goes for are often walking to the Crystal: rooted, it missed every
+//                bite at one), so only a target faster than the clone gets out of its reach in the wind-up and is missed.
+//   cloneTick    each step before the AI: its charge-up special (js/abilities.js: an ant striker's MANDIBLE FRENZY, a beetle's CARAPACE SLAM, a scout's LEAP away when it is hurt) and a striker's or tank's
+//                abdomen shot (js/predator.js _abdomenTick). While it is told to RETREAT it starts neither (a special already under way finishes).
+function cloneReach(c) { return (c && c.biteReach) || COMBAT.bite.reach; }
+function cloneFight(c, foe) {
+    if (!c || !foe || foe.dead) return;
+    const d = Math.hypot(foe.x - c.x, foe.y - c.y);
+    if (c.attackWindup > 0 || d <= cloneReach(c) * 0.9) {   // in reach, or already rearing back
+        c.state = "attack"; faceToward(c, foe.x, foe.y, 0.3);
+        if (c.attackWindup > 0 && d > cloneReach(c) * 0.8) _moveToward(c, foe.x, foe.y);   // (it keeps after a target that walks on while it rears back)
+        c._biteTick(foe);
+        return;
+    }
+    c.state = "hunt";   // closing in: the legs walk (js/bugs3d.js draws a still body in "attack")
+    if (c.attackCooldown > 0) c.attackCooldown--;   // (its rest runs down on the way)
+    if (c.attackAnim > 0) { c.attackAnim += 0.18; if (c.attackAnim >= Math.PI) c.attackAnim = 0; } else if (c.attackAnim < 0) c.attackAnim = 0;
+    _moveToward(c, foe.x, foe.y);
+    faceToward(c, foe.x, foe.y, 0.15);
+}
+// Nothing to fight: it puts its jaws away and walks (the bite it was rearing for is let go).
+function cloneCalm(c) {
+    if (!c) return;
+    if (c.state === "attack") c.state = "hunt";
+    c.attackWindup = 0; c.biteTarget = null;
+    if (c.attackAnim > 0) { c.attackAnim += 0.18; if (c.attackAnim >= Math.PI) c.attackAnim = 0; } else if (c.attackAnim < 0) c.attackAnim = 0;
+    if (c.attackCooldown > 0) c.attackCooldown--;
+}
+// true when its special has the step (it is rooted while it winds up, in the air in a leap, charging in a slam): the AI is skipped
+function cloneTick(c) {
+    if (!c || c.dead) return false;
+    const f = typeof frame !== "undefined" ? frame : 0, retreating = c.retreatUntil > f;
+    if (typeof abilityTick === "function" && !(retreating && (c.abilityPhase === "charging" || c.abilityPhase === "ready")) && abilityTick(c)) return true;
+    if (c.abdomenAttack && !retreating && !(c.attackWindup > 0) && typeof c._abdomenTick === "function") {
+        const foe = c._nearestEnemy && !c._nearestEnemy.dead ? c._nearestEnemy : c.lastAttacker && !c.lastAttacker.dead && c.lastAttacker.team === "red" ? c.lastAttacker : null;
+        if (foe && Math.hypot(foe.x - c.x, foe.y - c.y) < 6) c._abdomenTick();
+    }
+    return false;
 }
 
 function executeClone(option) {
@@ -131,7 +205,7 @@ function executeClone(option) {
         }
         return;
     }
-    if (actors.filter(a => a.isClone && !a.dead).length >= MAX_CLONES) return;
+    const _al = cloneAllowed(); if (!_al.ok || cloneLiveCount() >= cloneCap()) return;
 
     // Re-checked here rather than trusting option.ready, which was computed
     // whenever the menu was last built — shards can have been spent since.
@@ -151,12 +225,13 @@ function executeClone(option) {
     // and do something rather than wander off.
     const clone = makeClone(option.speciesName, option.className, crystal.x, crystal.y, "hunt");
     if (!clone) return;
+    if (_al.primary && typeof mutatorCloneMade === "function") mutatorCloneMade(clone, option);   // the Mutator's one clone (js/mutator.js)
     const speciesDef = SPECIES[option.speciesName];
 
-    // Floating text
+    // Floating text (the Mutator's: its one clone, which follows it)
     floatingTexts.push({
         x: canvas.width/2, y: canvas.height/2,
-        text: option.speciesName.toUpperCase() + " " + option.className.toUpperCase() + " CLONED",
+        text: clone.primary ? "YOUR CLONE: " + option.speciesName.toUpperCase() + " " + option.className.toUpperCase() + " · IT FOLLOWS YOU" : option.speciesName.toUpperCase() + " " + option.className.toUpperCase() + " CLONED",
         color: speciesDef.color,
         life: 120, vy: -0.5
     });
@@ -196,7 +271,7 @@ function drawCloneMenu() {
     uiPanel(g.PX, g.PY, g.PW, g.barH + g.contentH, UI_TEAL);
     // Title bar: the last summon, for a moment, in place of the title (the bay stays open).
     const _fl = _cloneBayFlash && (frame || 0) < _cloneBayFlash.until ? _cloneBayFlash : null;
-    const title = _fl ? _fl.text + "  \u00b7  " + actors.filter(a => a.isClone && !a.dead).length + "/" + MAX_CLONES : "CLONE BAY";
+    const title = _fl ? _fl.text + "  \u00b7  " + cloneLiveCount() + "/" + cloneCap() : "CLONE BAY";
     uiTextFit(title, g.PX + 28, g.PY + g.barH / 2 + 2, 30, _fl ? _fl.color : UI_TEAL, "left", g.PW - g.closeW - 50);
     uiButton({ x: g.closeX, y: g.PY + 8, w: g.closeW - 10, h: g.barH - 16 }, "\u2715", UI_RED, false, 24);
     ctx.save();
@@ -606,11 +681,12 @@ function _drawClonesTab(PX, PY, PW, PH) {
     const sortH = 44, sortW = Math.floor(PW / CSORTS.length);
     CSORTS.forEach((s, i) => uiButton({ x: PX + i * sortW + 4, y: PY + 2, w: sortW - 6, h: sortH - 6 }, s.label, UI_TEAL, crystalCloneSort === s.id, 15));
 
-    // Clone cap indicator
-    const liveClones = actors.filter(a => a.isClone && !a.dead).length;
-    const capAtMax = liveClones >= MAX_CLONES;
+    // Clone cap indicator (who may clone, when the player's class may not: CLASS_RULES.clone)
+    const liveClones = cloneLiveCount(), cap = cloneCap(), _al = cloneAllowed();
+    const capAtMax = liveClones >= cap;
     const hdrY = PY + sortH + 4, hdrH = 40;
-    uiText("CLONES " + liveClones + "/" + MAX_CLONES, PX + 22, hdrY + hdrH / 2, 22, capAtMax ? UI_RED : "#fff", "left", false);
+    if (!_al.ok) uiTextFit(_al.why, PX + 22, hdrY + hdrH / 2, 18, typeof CLASSES !== "undefined" && CLASSES.mutator ? CLASSES.mutator.colour : "#c06bff", "left", PW - 44 - (liveClones > 0 ? 150 : 0));
+    else uiText((cap === 1 ? "YOUR CLONE " : "CLONES ") + liveClones + "/" + cap, PX + 22, hdrY + hdrH / 2, 22, capAtMax ? UI_RED : "#fff", "left", false);
     // DISMISS — the only way to free a slot. Clones persist across waves, so
     // without this the cap filled once and stayed full for the rest of the
     // game, which is what made the whole menu look broken.
@@ -625,7 +701,7 @@ function _drawClonesTab(PX, PY, PW, PH) {
     const opts  = _sortedCloneOptions(getCloneOptions(), crystalCloneSort);
 
     if (opts.length === 0) {
-        const msg = capAtMax ? `Clone cap reached (${MAX_CLONES}/${MAX_CLONES})` : crystalCloneSort==="specials" ? "No clones with special attacks" : "No DNA splices available";
+        const msg = capAtMax ? `Clone cap reached (${cap}/${cap})` : crystalCloneSort==="specials" ? "No clones with special attacks" : "No DNA splices available";
         uiText(msg, PX + PW / 2, listY + listH / 2, 22, "#6a7aa0", "center", false);
         window._cloneTabOpts = []; window._cloneScrollArrows = null;
         window._cloneTabBounds = { sortY:PY, sortH, sortW, listY, listH, listX, listW, rowH: 0 };
@@ -742,7 +818,7 @@ function renderCloneCostIndex() {
     const host = document.getElementById('cmCloneCosts');
     if (!host) return;
     if (typeof CLONE_COSTS === 'undefined' || typeof cloneShardCost !== 'function') return;
-    const cap = typeof MAX_CLONES === 'number' ? MAX_CLONES : 4;
+    const cap = typeof cloneCap === 'function' ? cloneCap() : 4, who = typeof cloneWho === 'function' ? cloneWho() : null;
     const natural = ['ant', 'beetle', 'mantis', 'scorpion', 'spider', 'moth'].filter(s => CLONE_COSTS[s]);
     const classes = ['scout', 'striker', 'tank'];   // the classes the bay offers (getCloneOptions)
     let lo = Infinity, hi = 0; for (const s of natural) for (const c of classes) { const p = cloneShardCost(s, c); lo = Math.min(lo, p); hi = Math.max(hi, p); }   // the real range of the table (cloneShardCost clamps it between CLONE_SHARD_MIN and CLONE_SHARD_MAX)
@@ -754,7 +830,8 @@ function renderCloneCostIndex() {
     }
     host.innerHTML =
         '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> (a creature you kill drops them) and <strong>crystals</strong> to summon a creature\'s species as your ally: no followers are spent, nothing else is. ' +
-        'Up to <span class="cm-stat">' + cap + ' clones</span> at once; a clone that falls comes back at the Crystal after a wait, and your clones are kept in the save.</div>' +
+        (who ? 'Only a <strong>' + who + '</strong> grows clones, <span class="cm-stat">' + (cap === 1 ? 'one' : cap) + ' at a time</span>; its clone does not come back by itself (its body stays where it fell), and your clone is kept in the save.</div>'
+             : 'Up to <span class="cm-stat">' + cap + ' clones</span> at once; a clone that falls comes back at the Crystal after a wait, and your clones are kept in the save.</div>') +
         '<table class="cm-clone-table">' + rows + '</table>' +
         '<div class="ctrl-row cm-dim">Prices run from <span class="cm-stat">' + lo + '\u25c6</span> for the lowest grade to <span class="cm-stat">' + hi + '\u25c6</span>.</div>';
 }

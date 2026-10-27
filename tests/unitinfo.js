@@ -72,8 +72,8 @@ function findChromium() {
     });
     check('a clone type: a scorpion striker has the stinger (its damage and rate), an ant scout has no special; its limits and price', () => {
         const s = JSON.parse(run(`JSON.stringify(cloneTypeInfo('scorpion', 'striker'))`)), a = JSON.parse(run(`JSON.stringify(cloneTypeInfo('ant', 'scout'))`));
-        const sp = sec(s, 'attacks', 'SPECIAL'); same(sp.h, 'SPECIAL · STINGER', 'special'); same(rowOf(sp, 'DAMAGE'), String(run("SPECIES.scorpion.striker.rangeDamage")), 'damage'); same(sec(a, 'attacks', 'SPECIAL').h, 'SPECIAL', 'ant special');
-        same(rowOf(sec(a, 'stats', 'LIMITS'), 'CLONES AT ONCE'), String(run('MAX_CLONES')), 'the clone cap'); ok(/shards and \d+ splices/.test(rowOf(sec(a, 'stats', 'LIMITS'), 'COST')), 'the price');
+        const sp = sec(s, 'attacks', 'SPECIAL'); same(sp.h, 'SPECIAL · STINGER', 'special'); same(rowOf(sp, 'DAMAGE'), String(run("Math.round(SPECIES.scorpion.striker.rangeDamage * CLONE_POWER_MULT)")), 'damage (the clone\'s: its species\' times CLONE_POWER_MULT)'); same(sec(a, 'attacks', 'SPECIAL').h, 'SPECIAL', 'ant special');
+        same(rowOf(sec(a, 'stats', 'LIMITS'), 'CLONES AT ONCE'), String(run('cloneCap()')), 'the clone cap (the rule\'s: CLASS_RULES.clone)'); same(rowOf(sec(a, 'stats', 'LIMITS'), 'WHO GROWS IT'), 'MUTATOR', 'who grows it'); ok(/shards and \d+ splices/.test(rowOf(sec(a, 'stats', 'LIMITS'), 'COST')), 'the price');
     });
     check('a live clone\'s info is its type\'s, with its own health', () => {
         const r = JSON.parse(run(`JSON.stringify((function(){ const c = makeClone('ant', 'scout', crystal.x, crystal.y); c.health = 7; const i = unitInfo(c); c.dead = true; actors.splice(actors.indexOf(c), 1); return { kind: i.kind, hp: i.stats[0].rows[0] }; })())`));

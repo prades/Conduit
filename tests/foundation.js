@@ -155,7 +155,8 @@ const OLD_NAMES = ['spawnPredatorForZone', 'generateSegment', 'ensureWorldTo', '
     group('WHAT IS KEPT');
     check('the Clone Bay still prices the six species from CLONE_COSTS (no synthetic entries), and the clone index cards are drawn from it', () => {
         same(J('Object.keys(CLONE_COSTS).sort()').join(), 'ant,beetle,mantis,moth,scorpion,spider', 'the species'); ok(/function renderCloneCostIndex/.test(rd('js/clone.js')) && /cmCloneCosts/.test(rd('game.html')), 'the clone index');
-        same(J('[CLONE_POWER_MULT, CLONE_HEALTH_MULT, MAX_CLONES > 0]').join(), '4,4,true', 'a clone is four times its species');
+        // a clone is a better version of its species: four times the health (an earlier ask), and more power (1.5 since a clone bites with it at all: docs/MUTATOR.md §2.1, a knob)
+        const m = J('[CLONE_POWER_MULT, CLONE_HEALTH_MULT, MAX_CLONES > 0]'); ok(m[0] > 1, 'a clone\'s power is not over its species\': ' + m[0]); same(m[1], 4, 'a clone\'s health'); same(m[2], true, 'MAX_CLONES');
     });
     check('the Crystal heals while no alarm is up; a creature within bite range costs the player one hit and a knockback (no stun)', () => {
         const r = J(`(function(){ const o = {}; crystal.health = 100; alertActive = false; render(); o.healed = crystal.health > 100; alertActive = true; const h = crystal.health; render(); o.notInAlarm = crystal.health === h; alertActive = false;

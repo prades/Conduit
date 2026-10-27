@@ -1249,7 +1249,7 @@
       <div class="cm-stat-row"><span class="cm-stat-name">Resonance</span><span class="cm-stat-abbr">RES</span>0 → 100 — builds from damage dealt (+3/hit, +20/kill). Bursts at max.</div>
 
       <div class="ctrl-title">LEVELS</div>
-      <div class="ctrl-row cm-dim">Every unit has a <strong>level</strong> and <strong>stats</strong>, shown over its health bar as e.g. <span class="cm-stat">Lv 12 FIRE BRAWLER</span>, <span class="cm-stat">Lv 8 ANT SCOUT</span>, <span class="cm-stat">Lv 6 ANT CLONE</span>. A unit's stats are its level-5 <strong>base</strong> scaled by its level (&times;2 at 20, &times;4 at 50, &times;7.3 at 100). A follower's base is the standard stats &times; its <strong>personality</strong>; HP, attack, defense, special attack, accuracy and will grow with level (walking speed does not). A creature's base is its species and class, plus armour by class (beetles have extra). A clone is its species &times;4. <strong>XP</strong> comes from kills: the killer gets 60% and your units within 4 tiles share 40%. Total XP for a level is its cube (Lv 10 = 1,000). A unit that dies keeps its level but loses a quarter of its progress to the next. Cap: level 100. Open a follower's card and press INDEX for its full stat sheet.</div>
+      <div class="ctrl-row cm-dim">Every unit has a <strong>level</strong> and <strong>stats</strong>, shown over its health bar as e.g. <span class="cm-stat">Lv 12 FIRE BRAWLER</span>, <span class="cm-stat">Lv 8 ANT SCOUT</span>, <span class="cm-stat">Lv 6 ANT CLONE</span>. A unit's stats are its level-5 <strong>base</strong> scaled by its level (&times;2 at 20, &times;4 at 50, &times;7.3 at 100). A follower's base is the standard stats &times; its <strong>personality</strong>; HP, attack, defense, special attack, accuracy and will grow with level (walking speed does not). A creature's base is its species and class, plus armour by class (beetles have extra). A clone is its species with &times;4 the health and &times;1.5 the power. <strong>XP</strong> comes from kills: the killer gets 60% and your units within 4 tiles share 40%. Total XP for a level is its cube (Lv 10 = 1,000). A unit that dies keeps its level but loses a quarter of its progress to the next. Cap: level 100. Open a follower's card and press INDEX for its full stat sheet.</div>
 
       <div class="ctrl-title">COMMANDING FOLLOWERS</div>
       <div class="ctrl-row cm-dim"><span class="cm-stat">ALL</span> — the orders go to every follower in the squad; tap a card on the squad bar and they go to that one alone</div>
@@ -1257,12 +1257,13 @@
       <div class="ctrl-row cm-dim"><span class="cm-stat">HOLD</span> — each holds the room it is in (it patrols it and leaves the squad); <span class="cm-stat">COME</span> — the held ones come back while there is room</div>
       <div class="ctrl-row cm-dim">Tap the <strong>enemy card</strong> &rarr; the picked followers attack that creature. The roster's card has the same orders, and FOLLOW ME to call one back.</div>
 </details><details class="cm-more"><summary>In detail &mdash; clones</summary><div class="ctrl-title">CLONE SUMMONING</div>
-      <div class="ctrl-row cm-dim"><strong>A clone is a better version of what you killed.</strong> It fights with <span class="cm-stat">4&times; the health</span> and <span class="cm-stat">4&times; the power</span> of its species and class, levels like a follower, and takes the same orders.</div>
-      <div class="ctrl-row cm-dim"><strong>They come back.</strong> A killed clone respawns at the Crystal after <span class="cm-stat">20 seconds</span>. The Crystal shows a <strong>green countdown</strong> for every clone on its way, soonest first, so you know whether to hold the line or fall back.</div>
+      <div class="ctrl-row cm-dim"><strong>Clones are the Mutator's.</strong> Only a <strong>MUTATOR</strong> grows them (the class you pick after the tutorial), and one at a time: its clone follows it, takes the squad's orders and fights beside it.</div>
+      <div class="ctrl-row cm-dim"><strong>A clone is a better version of what you killed.</strong> It fights with <span class="cm-stat">4&times; the health</span> and <span class="cm-stat">1.5&times; the power</span> of its species and class, as that creature does: its bite in two beats (it rears back, then bites), its special and, for a striker or a tank of the species that have one, its shot. It levels like a follower.</div>
+      <div class="ctrl-row cm-dim"><strong>It does not come back by itself.</strong> When the Mutator's clone falls, its body stays where it fell and a new clone has to be grown. (A clone of the older rule, when every class could clone, respawns at the Crystal after <span class="cm-stat">20 seconds</span>, with a <strong>green countdown</strong> at the Crystal.)</div>
       <div class="ctrl-row cm-dim"><strong>Telling them apart:</strong> an allied creature carries a <span style="color:#22ff88">green health bar</span> with a green outline. On the ordinary bar the colour means health; on the ally bar the <em>colour</em> means whose it is and the <em>length</em> still means health.</div>
       <!-- Built at runtime from CLONE_COSTS in js/species.js (renderCloneCostIndex, js/clone.js) so the prices cannot drift. -->
       <div id="cmCloneCosts"></div>
-      <div class="ctrl-row cm-dim"><strong>Summon them from the CLONE BAY</strong>, opened by <strong>CLONES</strong> on the dock (on a phone, the radial menu). A row is ready when you have the DNA its species needs and the crystals its class costs, and fewer than four clones are out. Once out, a clone is on the roster like a follower: pick it, give it the squad's orders, read its card.</div>
+      <div class="ctrl-row cm-dim"><strong>Summon them from the CLONE BAY</strong>, opened by <strong>CLONES</strong> on the dock (on a phone, the radial menu). A row is ready when you are a Mutator, you have the DNA its species needs and the crystals its class costs, and your clone is not already out. Once out, a clone is on the roster like a follower: pick it, give it the squad's orders, read its card.</div>
 
       </details><details class="cm-more"><summary>In detail &mdash; bonds</summary><div class="ctrl-title">&#9829; BONDS</div>
       <div class="ctrl-row cm-dim">Two followers who fight side by side (within <span class="cm-stat">2.5</span> tiles) for about <span class="cm-stat">20</span>s <strong>bond</strong> &mdash; a dotted pink line with a heart joins them. One partner each.</div>
@@ -1571,12 +1572,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-27p, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-27q, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-27p";
+window.__PAGE_BUILD = "2026-10-27q";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1612,67 +1613,68 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-27p"></script>
-<script src="js/icons.js?v=2026-10-27p"></script>
-<script src="js/uikit.js?v=2026-10-27p"></script>
-<script src="js/traits.js?v=2026-10-27p"></script>
-<script src="js/elements.js?v=2026-10-27p"></script>
-<script src="js/combat.js?v=2026-10-27p"></script>
-<script src="js/species.js?v=2026-10-27p"></script>
-<script src="js/levels.js?v=2026-10-27p"></script>
-<script src="js/status.js?v=2026-10-27p"></script>
-<script src="js/helpers.js?v=2026-10-27p"></script>
-<script src="js/predator.js?v=2026-10-27p"></script>
-<script src="js/abilities.js?v=2026-10-27p"></script>
-<script src="js/commands.js?v=2026-10-27p"></script>
-<script src="js/npc.js?v=2026-10-27p"></script>
-<script src="js/draw.js?v=2026-10-27p"></script>
-<script src="js/beetle3d.js?v=2026-10-27p"></script>
-<script src="js/bugs3d.js?v=2026-10-27p"></script>
-<script src="js/settings.js?v=2026-10-27p"></script>
-<script src="js/alarm.js?v=2026-10-27p"></script>
-<script src="js/drops.js?v=2026-10-27p"></script>
-<script src="js/clone.js?v=2026-10-27p"></script>
-<script src="js/bonds.js?v=2026-10-27p"></script>
-<script src="js/evolution.js?v=2026-10-27p"></script>
-<script src="js/hdsprites.js?v=2026-10-27p"></script>
-<script src="js/firebombs.js?v=2026-10-27p"></script>
-<script src="js/moves.js?v=2026-10-27p"></script>
-<script src="js/hudgems.js?v=2026-10-27p"></script>
-<script src="js/commandcenter.js?v=2026-10-27p"></script>
-<script src="js/unitinfo.js?v=2026-10-27p"></script>
-<script src="js/infodex.js?v=2026-10-27p"></script>
-<script src="js/classes.js?v=2026-10-27p"></script>
-<script src="js/playergear.js?v=2026-10-27p"></script>
-<script src="js/inventory.js?v=2026-10-27p"></script>
-<script src="js/weapons.js?v=2026-10-27p"></script>
-<script src="js/stations.js?v=2026-10-27p"></script>
-<script src="js/facilityportals.js?v=2026-10-27p"></script>
-<script src="js/tutorial.js?v=2026-10-27p"></script>
-<script src="js/facilitymap.js?v=2026-10-27p"></script>
-<script src="js/facilitygrow.js?v=2026-10-27p"></script>
-<script src="js/facility.js?v=2026-10-27p"></script>
-<script src="js/attract.js?v=2026-10-27p"></script>
-<script src="js/facilitysave.js?v=2026-10-27p"></script>
-<script src="js/facilityplay.js?v=2026-10-27p"></script>
-<script src="js/facilitydecor.js?v=2026-10-27p"></script>
-<script src="js/propatlas.js?v=2026-10-27p"></script>
-<script src="js/propsprites.js?v=2026-10-27p"></script>
-<script src="js/facilitystyle.js?v=2026-10-27p"></script>
-<script src="js/facilitystyleall.js?v=2026-10-27p"></script>
-<script src="js/facilitynet.js?v=2026-10-27p"></script>
-<script src="js/facilityspawn.js?v=2026-10-27p"></script>
-<script src="js/followerspots.js?v=2026-10-27p"></script>
-<script src="js/party.js?v=2026-10-27p"></script>
-<script src="js/squadfly.js?v=2026-10-27p"></script>
-<script src="js/facilitytutorial.js?v=2026-10-27p"></script>
-<script src="js/gunfire.js?v=2026-10-27p"></script>
-<script src="js/targeting.js?v=2026-10-27p"></script>
-<script src="js/toolbox.js?v=2026-10-27p"></script>
-<script src="js/mixtool.js?v=2026-10-27p"></script>
-<script src="js/radialmenu.js?v=2026-10-27p"></script>
-<script src="js/input.js?v=2026-10-27p"></script>
-<script src="js/game.js?v=2026-10-27p"></script>
+<script src="js/config.js?v=2026-10-27q"></script>
+<script src="js/icons.js?v=2026-10-27q"></script>
+<script src="js/uikit.js?v=2026-10-27q"></script>
+<script src="js/traits.js?v=2026-10-27q"></script>
+<script src="js/elements.js?v=2026-10-27q"></script>
+<script src="js/combat.js?v=2026-10-27q"></script>
+<script src="js/species.js?v=2026-10-27q"></script>
+<script src="js/levels.js?v=2026-10-27q"></script>
+<script src="js/status.js?v=2026-10-27q"></script>
+<script src="js/helpers.js?v=2026-10-27q"></script>
+<script src="js/predator.js?v=2026-10-27q"></script>
+<script src="js/abilities.js?v=2026-10-27q"></script>
+<script src="js/commands.js?v=2026-10-27q"></script>
+<script src="js/npc.js?v=2026-10-27q"></script>
+<script src="js/draw.js?v=2026-10-27q"></script>
+<script src="js/beetle3d.js?v=2026-10-27q"></script>
+<script src="js/bugs3d.js?v=2026-10-27q"></script>
+<script src="js/settings.js?v=2026-10-27q"></script>
+<script src="js/alarm.js?v=2026-10-27q"></script>
+<script src="js/drops.js?v=2026-10-27q"></script>
+<script src="js/clone.js?v=2026-10-27q"></script>
+<script src="js/bonds.js?v=2026-10-27q"></script>
+<script src="js/evolution.js?v=2026-10-27q"></script>
+<script src="js/hdsprites.js?v=2026-10-27q"></script>
+<script src="js/firebombs.js?v=2026-10-27q"></script>
+<script src="js/moves.js?v=2026-10-27q"></script>
+<script src="js/hudgems.js?v=2026-10-27q"></script>
+<script src="js/commandcenter.js?v=2026-10-27q"></script>
+<script src="js/unitinfo.js?v=2026-10-27q"></script>
+<script src="js/infodex.js?v=2026-10-27q"></script>
+<script src="js/classes.js?v=2026-10-27q"></script>
+<script src="js/playergear.js?v=2026-10-27q"></script>
+<script src="js/inventory.js?v=2026-10-27q"></script>
+<script src="js/weapons.js?v=2026-10-27q"></script>
+<script src="js/mutator.js?v=2026-10-27q"></script>
+<script src="js/stations.js?v=2026-10-27q"></script>
+<script src="js/facilityportals.js?v=2026-10-27q"></script>
+<script src="js/tutorial.js?v=2026-10-27q"></script>
+<script src="js/facilitymap.js?v=2026-10-27q"></script>
+<script src="js/facilitygrow.js?v=2026-10-27q"></script>
+<script src="js/facility.js?v=2026-10-27q"></script>
+<script src="js/attract.js?v=2026-10-27q"></script>
+<script src="js/facilitysave.js?v=2026-10-27q"></script>
+<script src="js/facilityplay.js?v=2026-10-27q"></script>
+<script src="js/facilitydecor.js?v=2026-10-27q"></script>
+<script src="js/propatlas.js?v=2026-10-27q"></script>
+<script src="js/propsprites.js?v=2026-10-27q"></script>
+<script src="js/facilitystyle.js?v=2026-10-27q"></script>
+<script src="js/facilitystyleall.js?v=2026-10-27q"></script>
+<script src="js/facilitynet.js?v=2026-10-27q"></script>
+<script src="js/facilityspawn.js?v=2026-10-27q"></script>
+<script src="js/followerspots.js?v=2026-10-27q"></script>
+<script src="js/party.js?v=2026-10-27q"></script>
+<script src="js/squadfly.js?v=2026-10-27q"></script>
+<script src="js/facilitytutorial.js?v=2026-10-27q"></script>
+<script src="js/gunfire.js?v=2026-10-27q"></script>
+<script src="js/targeting.js?v=2026-10-27q"></script>
+<script src="js/toolbox.js?v=2026-10-27q"></script>
+<script src="js/mixtool.js?v=2026-10-27q"></script>
+<script src="js/radialmenu.js?v=2026-10-27q"></script>
+<script src="js/input.js?v=2026-10-27q"></script>
+<script src="js/game.js?v=2026-10-27q"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1682,7 +1684,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 (function () {
     var need = { "js/config.js": "ELEMENTS", "js/icons.js": "iconSVG", "js/uikit.js": "uiWrap", "js/species.js": "PREDATOR_TYPES", "js/elements.js": "getElementMultiplier",
                  "js/predator.js": "Predator", "js/commands.js": "openInfoPanel", "js/draw.js": "drawNPC", "js/bugs3d.js": "drawBug3D", "js/levels.js": "levelFactor", "js/evolution.js": "evolutionTick",
-                 "js/clone.js": "openCloneMenu", "js/commandcenter.js": "ccOpen", "js/infodex.js": "infoEntries", "js/classes.js": "CLASSES", "js/inventory.js": "invToggle", "js/weapons.js": "WEAPONS",
+                 "js/clone.js": "openCloneMenu", "js/commandcenter.js": "ccOpen", "js/infodex.js": "infoEntries", "js/classes.js": "CLASSES", "js/inventory.js": "invToggle", "js/weapons.js": "WEAPONS", "js/mutator.js": "MUTATOR",
                  "js/stations.js": "facilityStationsStart", "js/tutorial.js": "TUT", "js/facilitymap.js": "FACILITY_MAP", "js/facility.js": "facilityValidate", "js/facilityplay.js": "facilityPlayStart",
                  "js/facilitynet.js": "facilityNetState", "js/facilityspawn.js": "facilitySpawnTick", "js/party.js": "PARTY", "js/mixtool.js": "mixToolRender", "js/targeting.js": "TARGET", "js/game.js": "render" };
     var missing = (window.__bootFailed || []).slice();
@@ -1727,7 +1729,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-27p"></script>
+<script src="js/init.js?v=2026-10-27q"></script>
 
 </body>
 </html>

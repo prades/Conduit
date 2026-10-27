@@ -12,6 +12,7 @@ The facility is the game (`js/facilityplay.js`; the map is docs/FACILITY.md). Th
 | The squad of three and the rooms the rest hold | js/party.js, js/squadfly.js |
 | The roster: the Command Center (a carousel on a tablet or a desktop), the phone's radial menu | js/commandcenter.js, js/radialmenu.js |
 | The Clone Bay, clones, DNA | js/clone.js, js/drops.js |
+| The Mutator's lash and its one clone (docs/MUTATOR.md) | js/mutator.js, js/clone.js (`cloneFight`, `cloneTick`, `CLASS_RULES.clone` in js/classes.js), js/weapons.js (`WEAPONS.lash`) |
 | The creatures: `spawnCreature`, the arena's spawner, species and classes | js/clone.js, js/facilityspawn.js, js/species.js, js/predator.js, js/abilities.js |
 | The Crystal, the alarm, the end | js/alarm.js, js/game.js |
 | Power: the relays, the network panel, the room tag | js/stations.js, js/facilitynet.js, js/facilitymap.js (`relays`) |

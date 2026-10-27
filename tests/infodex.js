@@ -51,7 +51,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(rows('recruit').some(r => r.includes(run('RECRUIT_COST') + ' ◆')), 'the recruit price');
         ok(rows('squad').some(r => r.includes(run('PARTY.max') + ' at once')), 'the squad\'s size');
         ok(rows('evolution').some(r => r.includes('level ' + run('EVOLVE_LEVEL'))), 'the evolution level');
-        ok(rows('clones').some(r => r === 'AT ONCE ' + run('MAX_CLONES')), 'the clone cap');
+        ok(rows('clones').some(r => r === 'AT ONCE ' + run('cloneCap()')), 'the clone cap (the rule\'s: CLASS_RULES.clone)'); ok(rows('clones').some(r => r === 'WHO MUTATOR'), 'who grows them');
         ok(rows('gun').some(r => r.includes('within ' + run('TARGET.range') + ' tiles')), 'the gun\'s reach');
         ok(rows('alarm').some(r => r.includes(run('ALERT_DURATION / 60') + ' s')), 'how long an alarm lasts');
         ok(rows('relays').some(r => r === 'RELAYS ' + run('_fp.F.relays.length')), 'the relay count');

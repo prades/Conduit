@@ -51,7 +51,7 @@ function mixToolOrder(id) {
 }
 // RETREAT: the picked units break off. For BATTLE_RETREAT_FRAMES they see no enemy (npc.js) and fire no signature move (evolution.js); they fall back to the player, who is where they follow.
 function mixToolRetreat() {
-    const pool = mixToolPool().filter(a => !a.isClone && !a.post); if (!pool.length) { mixToolSay("NOBODY TO PULL BACK", "#8aa0c8"); return 0; }   // (not a follower holding a room: it is not in the fight)
+    const pool = mixToolPool().filter(a => (!a.isClone || a.primary) && !a.post); if (!pool.length) { mixToolSay("NOBODY TO PULL BACK", "#8aa0c8"); return 0; }   // (not a follower holding a room: it is not in the fight; the Mutator's clone falls back too, js/mutator.js)
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of pool) { a.retreatUntil = f0 + BATTLE_RETREAT_FRAMES; a.attackOrder = null; if (a.job && a.job.type === "move") a.job = null; a.stance = "follow"; a._nearestEnemy = null; a._enemyCacheFrame = 0; }
     mixToolSay("RETREAT \u00b7 " + pool.length + " FALLING BACK", "#ff7755"); mixToolRender(true); return pool.length;

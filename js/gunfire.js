@@ -21,7 +21,7 @@ function gunTargetAt(ex, ey) {
     return null;
 }
 function gunLock(enemy) { playerLockTarget = _gunLive(enemy) ? enemy : null; }
-function gunStow() { playerLockTarget = null; gunHold = null; }
+function gunStow() { playerLockTarget = null; gunHold = null; if (typeof mutatorCancel === "function") mutatorCancel(); }   // (the Mutator's lash is called off with it: js/mutator.js)
 // a press: true when it is the gun's (the caller then starts nothing else)
 function gunPress(ex, ey) {
     if (!playerAttackMode) return false;

@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-27p";
+const BUILD_VERSION = "2026-10-27q";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -233,11 +233,13 @@ const NPC_MIN_DIST = 0.001;
 
 // ── CLONES (js/clone.js) ──────────────────────────────────
 // A clone is the same creature fighting for you, and it is meant to be a
-// better one: four times the power its species has, and four times the
-// health. It costs crystals and DNA that came from killing one, so it
-// should feel like an upgrade rather than a copy. Every way a clone is made
-// goes through makeClone(), so every one of them gets this.
-const CLONE_POWER_MULT  = 4;
+// better one: four times the health its species has, and more power. It
+// costs crystals and DNA that came from killing one, so it should feel like
+// an upgrade rather than a copy. Every way a clone is made goes through
+// makeClone(), so every one of them gets this.
+// THE POWER WAS NEVER USED until the Mutator's clone (docs/MUTATOR.md): a clone struck with a follower's plain swing (1.25 a hit) whatever its power. Now that it bites with it, four times (the old number)
+// killed a creature of its own kind and level in ONE bite; 1.5 takes three, so a fight can be read (docs/COMBAT.md) and the clone's upgrades have room to make it a "super soldier". TENTATIVE: a knob, not a decision.
+const CLONE_POWER_MULT  = 1.5;
 const CLONE_HEALTH_MULT = 4;
 // Followers respawn in 3 seconds. A clone is worth far more than that, so
 // losing one has to cost something — it comes back, slowly, and the Crystal

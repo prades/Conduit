@@ -33,6 +33,7 @@ function updateRTSNPC(actor) {
     if (actor.dead) return;
     if (actor.spawnProtection>0) { actor.spawnProtection--; }
     if (actor.hitFlash>0) actor.hitFlash--;
+    if (actor.isClone && typeof cloneTick === "function" && cloneTick(actor)) return;   // a clone's special and its abdomen shot (js/clone.js): a special that is winding up or under way has the step
     if (actor.isFollower && actor.state === "attack") {
         actor.attackAnim = (actor.attackAnim||0) + 0.18;
         if (actor.attackAnim >= Math.PI) { actor.attackAnim = 0; actor.state = "idle"; }
@@ -115,6 +116,8 @@ function updateRTSNPC(actor) {
                 actor._guardCacheFrame=frame;
             }
             const enemy=actor._guardEnemy&&!actor._guardEnemy.dead?actor._guardEnemy:null;
+            if (enemy && actor.isClone && typeof cloneFight === "function") { cloneFight(actor, enemy); return; }   // a clone bites as its species does (js/clone.js)
+            if (actor.isClone && typeof cloneCalm === "function") cloneCalm(actor);
             if (enemy) {
                 // Engage enemy — move toward it and attack
                 const ed=Math.hypot(enemy.x-actor.x,enemy.y-actor.y);
@@ -212,6 +215,11 @@ function updateRTSNPC(actor) {
 
         // ── BRAWLER: chase nearest enemy aggressively, circle when in range ──
         if (role === "brawler") {
+            if (actor.isClone && typeof cloneFight === "function") {   // a clone: its species' bite, in two beats (js/clone.js), else it walks with you
+                if (nearestEnemy && nearestEnemyDist < 6 * _reach) cloneFight(actor, nearestEnemy);
+                else { if (typeof cloneCalm === "function") cloneCalm(actor); followPlayer(actor); }
+                return;
+            }
             if (nearestEnemy && nearestEnemyDist < 6 * _reach) {
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 // Floored: standing exactly on the target makes dist 0, and the

@@ -142,8 +142,9 @@ class Predator {
 
     // THE BITE (docs/COMBAT.md). Its target: the unit it turned on while it is still in reach, else the nearest of the other side in reach; with COMBAT.bite.splash, everyone in reach (the old rule).
     // Disoriented, it bites its own kind. In smoke it misses half the time. The Crystal is bitten the same way (target === crystal). Returns what it hit, or null.
+    // Its reach is COMBAT.bite.reach, or its own (biteReach: a clone's, js/clone.js cloneReach).
     bite(target) {
-        const B = COMBAT.bite, reach2 = B.reach * B.reach, pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? 0.6 : 1.0);
+        const B = COMBAT.bite, R = this.biteReach || B.reach, reach2 = R * R, pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? 0.6 : 1.0);
         if (target === crystal) { crystal.health = Math.max(0, crystal.health - pwr); shake = Math.max(shake, 6); return crystal; }
         const inReach = a => { const dx = a.x - this.x, dy = a.y - this.y; return dx * dx + dy * dy <= reach2; };
         if (this.disorientFF > 0) { let n = null; actors.forEach(a => { if (a === this || a.dead || a.team !== "red" || a.isClone || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
@@ -371,7 +372,7 @@ class Predator {
             }
             this.moveSpeed=0;
             const dx=target.x-this.x, dy=target.y-this.y, dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>COMBAT.bite.reach) {
+            if (dist>(this.biteReach || COMBAT.bite.reach)) {
                 this.state="hunt"; this.currentTarget=null; this.attackWindup = 0; this.biteTarget = null;
                 this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
                 return;
@@ -428,7 +429,13 @@ class Predator {
         this.lastX=this.x; this.lastY=this.y;
 
         // ── ABDOMEN RANGED ATTACK ──
-        if (this.abdomenAttack && !this.dead && (this.state !== "wander" || this.provoked)) {
+        if (this.abdomenAttack && !this.dead && (this.state !== "wander" || this.provoked)) this._abdomenTick();
+    }
+
+    // THE ABDOMEN SHOT (strikers and tanks of the species that have one): when its timer is up, a shot from its rear at whatever of the other side is behind it (or what last hit it), within 6 tiles.
+    // A creature's hits your side; a clone's (js/clone.js cloneTick) hits the creatures, and never a recruit walking to the Crystal (team red until it gets there).
+    _abdomenTick() {
+        {
             this.abdomenTimer++;
             if (this.abdomenTimer >= this.abdomenCooldown) {
                 // Find the best target in the rear arc (>90° from facing)
@@ -438,7 +445,7 @@ class Predator {
                 // Within 6 tiles only. (With nothing behind it the timer stays
                 // full and this ran every step, over every actor.)
                 _predNear(this.x, 6).forEach(a => {
-                    if (a.dead || a.team !== abdomenHitTeam) return;
+                    if (a.dead || a.team !== abdomenHitTeam || isNeutralBystander(a) || a.untargetable) return;
                     const dx = a.x - this.x, dy = a.y - this.y;
                     const d  = Math.hypot(dx, dy);
                     let   diff = Math.atan2(dy, dx) - bodyAngle;
@@ -491,8 +498,8 @@ class Predator {
                             if (chargeElem) applyElementalDamage(hit, shotDamage * 0.5, this, chargeElem);
                         }
                     );
-                    // Tag projectile so it hits green team (predator shots target player's side)
-                    if (followerProjectiles.length > 0) {
+                    // Tag projectile so it hits green team (predator shots target player's side); a clone's hits the creatures (untagged: isHostileTarget, js/game.js)
+                    if (followerProjectiles.length > 0 && !this.isClone) {
                         followerProjectiles[followerProjectiles.length - 1].targetsGreen = true;
                     }
 
