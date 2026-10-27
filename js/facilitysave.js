@@ -124,7 +124,7 @@ function spawnFollowerFromSave(entry) {
 // ── THE CLONES' RECORD: each live clone (its kind and level), and each one waiting to come back (with the wait still to run); made again from it (js/clone.js makeClone) ──
 function cloneRosterSnapshot() {
     const out = [];
-    for (const a of actors) if (a && a.isClone && !a.dead && !a.dismissed && a.speciesName) out.push({ sp: a.speciesName, cls: a.className || "scout", level: a.level, xp: a.xp, pr: a.primary ? 1 : undefined });   // pr: the Mutator's own (js/mutator.js)
+    for (const a of actors) if (a && a.isClone && !a.dead && !a.dismissed && a.speciesName) out.push({ sp: a.speciesName, cls: a.className || "scout", level: a.level, xp: a.xp, pr: a.primary ? 1 : undefined, up: a.primary ? a.upgrades || {} : undefined, inv: a.primary ? a.invested || 0 : undefined });   // pr: the Mutator's own, with its upgrades and what it cost (js/mutator.js)
     for (const e of respawnQueue) if (e && e.isClone && e.speciesName) out.push({ sp: e.speciesName, cls: e.className || "scout", level: e.level, xp: e.xp, wait: Math.max(1, e.timer | 0) });
     return out;
 }
@@ -134,7 +134,7 @@ function cloneRosterApply(list) {
     for (const c of list) {
         if (!c || !c.sp) continue;
         if (c.wait > 0) { respawnQueue.push({ isClone: true, speciesName: c.sp, className: c.cls, level: c.level, xp: c.xp, timer: c.wait, totalTimer: typeof CLONE_RESPAWN_FRAMES === "number" ? CLONE_RESPAWN_FRAMES : c.wait }); n++; continue; }
-        const k = makeClone(c.sp, c.cls, crystal.x + (Math.random() - 0.5) * 2, crystal.y + (Math.random() - 0.5) * 2, "wander", { level: c.level, xp: c.xp }); if (k) { if (c.pr) k.primary = true; n++; }
+        const k = makeClone(c.sp, c.cls, crystal.x + (Math.random() - 0.5) * 2, crystal.y + (Math.random() - 0.5) * 2, "wander", { level: c.level, xp: c.xp }); if (k) { if (c.pr && typeof mutatorCloneRestore === "function") mutatorCloneRestore(k, c); else if (c.pr) k.primary = true; n++; }
     }
     return n;
 }

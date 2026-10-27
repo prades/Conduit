@@ -10,11 +10,130 @@
 //   THE CLONE      cloning is the Mutator's (CLASS_RULES.clone, js/classes.js): one at a time, and that one is its PRIMARY clone (c.primary). The Clone Bay makes it as it makes every clone (js/clone.js makeClone); it
 //                  follows the Mutator, takes the battle tool's orders (HOLD, COME, RETREAT, the enemy card's ATTACK) and fights as the creature it is (js/clone.js cloneFight). It does NOT come back by itself:
 //                  when it falls it leaves its BODY where it fell (cloneBodies, below), and a new clone has to be grown.
+//   ITS UPGRADES   (the brief's step 5) DNA buys the clone UPGRADES (CLONE_UPGRADES, data: a row is a new upgrade, nothing else changes), and they are lost when it falls. What it cost is kept on it (c.invested),
+//                  and a share of that can be SALVAGED from its body (MUTATOR.dna.recover): a long press on the body (the ring's SALVAGE DNA) or RELEASE at the Clone Bay.
 // Every number here is a knob, not a decision (docs/MUTATOR.md, "Tentative").
 const MUTATOR = {
     lash: { windup: 9, slack: 0.3, replan: 12, fx: 14 },   // the strike's wind-up (frames); how far past its reach a creature may slip in the wind-up and still be hit (tiles); how often the walk into reach is planned again (frames); how long the lash is drawn (frames)
-    body: { life: 0, near: 2.4 },                          // a fallen clone's body: how long it lies (frames; 0 = until it is dealt with); how near (tiles) the player must be for its plate to say more than its name
+    body: { life: 0, near: 2.4, reach: 2.2 },              // a fallen clone's body: how long it lies (frames; 0 = until it is dealt with); how near (tiles) the player must be for its plate to say more than its name; how near to work on it (salvage, preserve)
+    // DNA: `recover` is the share of what a clone cost (the splices it was grown from and the DNA its upgrades took) that comes back when its body is salvaged, or it is released at the Clone Bay (`releaseRecovers`).
+    // Less than all of it, so "rebuilding repeatedly from scratch should leave the player less effective than successfully maintaining and upgrading a clone" (the brief).
+    dna: { recover: 0.4, releaseRecovers: true },
+    // POUNCE (the jumping attack an upgrade gives): it crouches for `windup` frames (POUNCE! over it), leaps onto a creature that is further than its reach and no further than its pounce range (the upgrade's
+    // `leap` stat), in `air` frames, and bites as it lands for `dmg` times its power; then it rests `cooldown` frames.
+    pounce: { windup: 14, air: 22, dmg: 1.2, cooldown: 300, lift: 34 },
 };
+
+// ── THE UPGRADES (data) ──────────────────────────────────
+// ASKED: "Support upgrades such as: armor plating for improved durability; serrated arms for stronger melee attacks; a longer leap or jumping attack; increased attack radius. Keep the upgrade system data-driven
+// so additional modifications can be added without rewriting the clone system. The exact DNA costs and numerical effects have not yet been finalized. Make these configurable."
+//   id / name / desc     what the Clone Bay shows
+//   max                  how many ranks
+//   cost                 DNA for each rank ([rank 1, rank 2, ...]): any splices (dnaSpend takes the largest stocks first)
+//   stat                 per rank: { statName: { mul } } multiplies by (1 + mul × rank), { add } adds add × rank. The stats a clone reads: health, power (its bite, special and shot), reach (its bite's reach,
+//                        tiles), leap (its pounce range, tiles: the jumping attack; a scout's escape leap goes that much further too)
+// TENTATIVE: every cost and number below.
+const CLONE_UPGRADES = {
+    armor:    { id: "armor",    name: "ARMOR PLATING", desc: "Plates grown over its body: a quarter more health a rank.", max: 3, cost: [4, 7, 10], stat: { health: { mul: 0.25 } } },
+    serrated: { id: "serrated", name: "SERRATED ARMS", desc: "Serrated forelimbs: its bite, special and shot hit a quarter harder a rank.", max: 3, cost: [4, 7, 10], stat: { power: { mul: 0.25 } } },
+    leap:     { id: "leap",     name: "POUNCE",        desc: "It leaps onto a creature from further off and bites as it lands (and a scout's escape leap goes further).", max: 2, cost: [5, 8], stat: { leap: { add: 2.5 } } },
+    reach:    { id: "reach",    name: "LONG REACH",    desc: "A longer strike: its bite reaches further (the attack radius).", max: 2, cost: [4, 7], stat: { reach: { add: 0.35 } } },
+};
+const CLONE_UPGRADE_ORDER = ["armor", "serrated", "leap", "reach"];
+function cloneUpRank(c, id) { return c && c.upgrades ? Math.max(0, c.upgrades[id] | 0) : 0; }
+// a stat through the clone's upgrades: the base, multiplied and added to by every rank it has
+function cloneUpStat(c, name, base) {
+    let v = base; const u = c && c.upgrades; if (!u) return v;
+    for (const id of Object.keys(u)) { const d = CLONE_UPGRADES[id], r = Math.max(0, u[id] | 0), s = d && d.stat && d.stat[name]; if (!s || !r) continue; if (s.mul) v *= 1 + s.mul * r; if (s.add) v += s.add * r; }
+    return v;
+}
+// what its upgrades make of it: its health and power (js/levels.js _applyPredLevel multiplies by these at every level), its reach, its pounce range and a scout's escape leap
+function cloneApplyUpgrades(c) {
+    if (!c || !c.isClone) return c;
+    const base = typeof COMBAT !== "undefined" ? COMBAT.bite.reach : 1.5, r = cloneUpStat(c, "reach", base);
+    c.biteReach = r > base + 1e-6 ? r : undefined;
+    c.pounceRange = cloneUpStat(c, "leap", 0) > 0 ? cloneUpStat(c, "leap", 0) + r : 0;
+    if (c.abilityKey === "LEAP" && typeof ABILITY_DEFS !== "undefined") { const add = cloneUpStat(c, "leap", 0); c.leapDistance = add > 0 ? ABILITY_DEFS.LEAP.distance + add : undefined; }
+    if (typeof _applyPredLevel === "function" && c.base) _applyPredLevel(c, false);
+    return c;
+}
+// the next rank of an upgrade: { ok, cost, rank } or { ok: false, why }
+function cloneUpgradeNext(c, id) {
+    const d = CLONE_UPGRADES[id]; if (!d) return { ok: false, why: "NO SUCH UPGRADE" };
+    if (!c || c.dead) return { ok: false, why: "GROW A CLONE FIRST" };
+    const r = cloneUpRank(c, id); if (r >= d.max) return { ok: false, why: "ALREADY AT THE TOP RANK", top: true, rank: r };
+    const cost = Array.isArray(d.cost) ? d.cost[Math.min(r, d.cost.length - 1)] : d.cost;
+    if (dnaTotal() < cost) return { ok: false, why: "NEEDS " + cost + " DNA (YOU HAVE " + dnaTotal() + ")", cost, rank: r };
+    return { ok: true, cost, rank: r };
+}
+// buy the next rank for the Mutator's clone (the Clone Bay's BUY): the DNA is spent, the rank goes up, the clone is made over, and what it cost is added to what it is worth
+function cloneUpgradeBuy(id, c) {
+    c = c || mutatorClone(); const n = cloneUpgradeNext(c, id); if (!n.ok) { _mxSay(n.why, "#ff9c8a"); return n; }
+    dnaSpend(n.cost); c.upgrades = Object.assign({}, c.upgrades || {}, { [id]: n.rank + 1 }); c.invested = (c.invested || 0) + n.cost; cloneApplyUpgrades(c);
+    _mxSay(CLONE_UPGRADES[id].name + " ▲ RANK " + (n.rank + 1) + " — " + n.cost + " DNA", CLASSES.mutator.colour);
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: c.x, y: c.y, color: "#c06bff", radius: 0.9, life: 24 });
+    return { ok: true, rank: n.rank + 1, cost: n.cost };
+}
+function _mxSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color: col || "#c06bff", life: 110, vy: -0.22, size: 13 }); }
+
+// ── THE CLONE BAY WITH YOUR CLONE OUT: its upgrades (js/clone.js _drawClonesTab draws this in place of the card strip) ──
+// The clone at the top (its picture, kind, level, health, bite, reach, pounce), the DNA you have, RELEASE (a second tap confirms: its upgrades go with it, a share of what it cost comes back); then a row for each
+// upgrade: its name, what it does, its ranks, the next rank's DNA and BUY. At the foot, what is at stake: its upgrades are lost if it falls, and what its body would give back.
+let _mxUpBtns = [], _mxReleaseAt = -1e9;
+function drawCloneUpgradePanel(PX, PY, PW, PH, c) {
+    const f = _mxFrame(), col = CLASSES.mutator.colour, gut = 16, x0 = PX + gut, w = PW - gut * 2, btns = [];
+    // the clone
+    const topH = 96, artW = 100;
+    uiSlab(x0, PY + 6, w, topH, col, false, "#130a22");
+    if (typeof drawCloneArt === "function") { ctx.save(); ctx.beginPath(); ctx.rect(x0 + 6, PY + 10, artW, topH - 8); ctx.clip(); try { drawCloneArt(ctx, { key: c.speciesName + "_" + c.className, speciesName: c.speciesName, className: c.className, ready: true }, x0 + 6 + artW / 2, PY + 6 + topH * 0.8, 1.7); } catch (e) {} ctx.restore(); }
+    const tx = x0 + artW + 16, tw = w - artW - 16 - 150;
+    uiTextFit(String(c.speciesName).toUpperCase() + " " + String(c.className).toUpperCase() + " CLONE · LV " + (c.level || "?"), tx, PY + 30, 20, "#f1e2ff", "left", tw);
+    const hp = Math.max(0, c.health), mx = Math.max(1, c.maxHealth), fr = hp / mx; ctx.fillStyle = "#05070f"; ctx.fillRect(tx, PY + 44, tw, 10); ctx.fillStyle = fr > 0.5 ? "#19e6c1" : fr > 0.25 ? "#ffd34d" : "#ff5a3a"; ctx.fillRect(tx, PY + 44, tw * fr, 10); ctx.strokeStyle = "#2c3656"; ctx.lineWidth = 1.2; ctx.strokeRect(tx, PY + 44, tw, 10);
+    uiCaptionFit("HP " + Math.ceil(hp) + "/" + Math.round(mx) + "   BITE " + Math.round(c.power) + "   REACH " + cloneReach(c).toFixed(2) + "   POUNCE " + (c.pounceRange > 0 ? c.pounceRange.toFixed(1) + " TILES" : "—"), tx, PY + 70, "#c8b6e6", "left", 12, tw);
+    uiCaptionFit("DNA " + dnaTotal() + "  (ANY SPLICES)", tx, PY + 90, "#9dffb6", "left", 12, tw);
+    const confirm = f - _mxReleaseAt < 150, rb = { x: x0 + w - 142, y: PY + 20, w: 130, h: 40 };
+    uiButton(rb, confirm ? "SURE? TAP AGAIN" : "RELEASE", confirm ? UI_RED : "#6a7aa0", confirm, confirm ? 12 : 15); btns.push({ r: rb, act: "release" });
+    // the upgrades
+    const rows = CLONE_UPGRADE_ORDER.filter(id => CLONE_UPGRADES[id]), rowY0 = PY + topH + 16, footH = 40, rowH = Math.max(58, Math.min(84, Math.floor((PH - topH - 16 - footH) / rows.length) - 6));
+    rows.forEach((id, i) => {
+        const d = CLONE_UPGRADES[id], r = cloneUpRank(c, id), n = cloneUpgradeNext(c, id), y = rowY0 + i * (rowH + 6), on = r > 0;
+        uiSlab(x0, y, w, rowH, on ? col : "#3a2a55", false, "#0e0a1a");
+        uiTextFit(d.name, x0 + 14, y + 22, 18, on ? "#f1e2ff" : "#cbb8e8", "left", w - 220);
+        const lines = uiWrap(d.desc, Math.max(24, Math.floor((w - 230) / 7))).slice(0, rowH > 66 ? 2 : 1); lines.forEach((l, k) => uiCaptionFit(l, x0 + 14, y + 40 + k * 14, "#9f8fc0", "left", 11, w - 230));
+        for (let k = 0; k < d.max; k++) { ctx.fillStyle = k < r ? col : "#2a2140"; ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(x0 + w - 196 + k * 16, y + rowH / 2, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+        const bb = { x: x0 + w - 136, y: y + rowH / 2 - 19, w: 124, h: 38 };
+        if (n.top) uiButton(bb, "TOP RANK", "#6a7aa0", false, 13, null, true);
+        else { uiButton(bb, "BUY · " + n.cost + " DNA", n.ok ? col : "#6a5a85", false, 13, null, !n.ok); btns.push({ r: bb, act: "buy", id }); }
+    });
+    uiCaptionFit("IF IT FALLS ITS UPGRADES ARE LOST. ITS BODY GIVES BACK " + Math.round(MUTATOR.dna.recover * 100) + "% OF WHAT IT COST: " + cloneRecoverable(c.invested) + " OF " + (c.invested || 0) + " DNA.", PX + PW / 2, PY + PH - 14, "#c8b6e6", "center", 12, PW - 30);
+    _mxUpBtns = btns;
+}
+// a tap in the panel: true when it was one of its buttons
+function cloneUpgradeTap(ex, ey) {
+    for (const b of _mxUpBtns) {
+        if (ex < b.r.x || ex > b.r.x + b.r.w || ey < b.r.y || ey > b.r.y + b.r.h) continue;
+        if (b.act === "buy") cloneUpgradeBuy(b.id);
+        else if (b.act === "release") { const f = _mxFrame(); if (f - _mxReleaseAt < 150) { _mxReleaseAt = -1e9; if (typeof dismissOldestClone === "function") dismissOldestClone(); } else _mxReleaseAt = f; }
+        return true;
+    }
+    return false;
+}
+
+// ── DNA (the splices: js/clone.js dnaInventory, under "species_class") ──
+// Growing a clone takes ITS species' splices (CLONE_COSTS); an upgrade, and the serum (the brief's step 7), take ANY: dnaSpend takes them from the largest stocks first, so the rare ones are kept for growing.
+function dnaTotal() { const inv = typeof getDNA === "function" ? getDNA() : {}; let n = 0; for (const k of Object.keys(inv)) n += Math.max(0, inv[k] | 0); return n; }
+function dnaSpend(n) {
+    n = Math.max(0, Math.floor(n)); if (dnaTotal() < n || typeof deductDNA !== "function") return false;
+    while (n > 0) { const inv = getDNA(); let best = null, bv = 0; for (const k of Object.keys(inv)) if ((inv[k] | 0) > bv) { bv = inv[k] | 0; best = k; } if (!best) return false; const t = Math.min(n, bv); deductDNA(best, t); n -= t; }
+    return true;
+}
+// what a clone recovers when it is salvaged or released: a share of what it cost, as its own species' and class's splices
+function cloneRecoverable(invested) { return Math.max(0, Math.floor((invested || 0) * MUTATOR.dna.recover)); }
+function _mxRecover(sp, cls, invested, how) {
+    const n = cloneRecoverable(invested); if (n > 0 && typeof addDNA === "function") addDNA(sp + "_" + (cls || "scout"), n);
+    _mxSay("+" + n + " " + String(sp).toUpperCase() + " DNA " + how + " (" + Math.round(MUTATOR.dna.recover * 100) + "% OF " + (invested || 0) + ")", "#9dffb6");
+    return n;
+}
 
 // ── THE LASH ─────────────────────────────────────────────
 // goal: the creature the Mutator is going for (walked to, then struck); target: the one the lash in its wind-up is for; fx: the lash being drawn; face*: the player turns to what it strikes (js/hdsprites.js)
@@ -75,7 +194,7 @@ function mutatorTick() {
     else _mxApproach(g);
 }
 // a tap on the floor (js/input.js), putting the weapon away (js/gunfire.js gunStow): the attack is off, and a lash still drawing back is let go
-function mutatorCancel() { _mx.goal = null; if (_mx.windup > 0) { _mx.windup = 0; _mx.target = null; } }
+function mutatorCancel() { _mx.goal = null; if (_mx.windup > 0) { _mx.windup = 0; _mx.target = null; } if (typeof _bodyGoal !== "undefined") _bodyGoal = null; }   // (and a walk to a fallen clone's body: below)
 // the row of the player's sheet to face while it strikes (js/hdsprites.js hdPlayerState), or null
 function mutatorFacing() {
     const t = _mx.faceTo; if (!t || _mxFrame() - _mx.faceAt > 18 || typeof hdRow !== "function") return null;
@@ -122,27 +241,105 @@ function mutatorClone() { return typeof actors !== "undefined" ? actors.find(a =
 function mutatorCloneMade(c, option) {
     if (!c) return null;
     c.primary = true;   // (the bay says so: js/clone.js executeClone, "YOUR CLONE: ANT SCOUT · IT FOLLOWS YOU")
+    c.upgrades = {}; c.invested = option && option.needed ? option.needed : 0;   // a new clone has no upgrades; what it is worth starts at the splices it was grown from
+    cloneApplyUpgrades(c);
     return c;
+}
+// RELEASE at the Clone Bay (js/clone.js dismissOldestClone): it is let go, its upgrades with it; a share of what it cost comes back (MUTATOR.dna.releaseRecovers), as when its body is salvaged
+function mutatorReleased(c) {
+    if (!c || !c.primary) return 0;
+    return MUTATOR.dna.releaseRecovers ? _mxRecover(c.speciesName, c.className, c.invested, "RECOVERED") : 0;
+}
+
+// ── POUNCE: the jumping attack (the POUNCE upgrade: c.pounceRange) ──
+// A creature further off than its reach and within its pounce range, in sight: it crouches (POUNCE! over it, its body drawn back), leaps (an arc, as a scout's escape leap is drawn), and bites as it lands. While it is told
+// to RETREAT it does not pounce. Returns true while a pounce has the step (js/clone.js cloneTick).
+function clonePounceTick(c) {
+    const P = c.pounce, K = MUTATOR.pounce, f = _mxFrame();
+    if (P) {
+        const t = P.target;
+        if (P.phase === "wind") {
+            if (!t || t.dead) { c.pounce = null; c.attackAnim = 0; return false; }
+            if (typeof faceToward === "function") faceToward(c, t.x, t.y, 0.3); c.state = "attack"; c.attackAnim = -0.55 * (1 - P.t / K.windup);
+            if (--P.t <= 0) {
+                const d = Math.hypot(t.x - c.x, t.y - c.y) || 1, back = Math.min(d, cloneReach(c) * 0.55);
+                P.phase = "air"; P.t = 0; P.fx = c.x; P.fy = c.y; P.tx = t.x + (c.x - t.x) / d * back; P.ty = t.y + (c.y - t.y) / d * back;
+            }
+            return true;
+        }
+        P.t++; const k = Math.min(1, P.t / K.air);
+        c.x = P.fx + (P.tx - P.fx) * k; c.y = P.fy + (P.ty - P.fy) * k; c.leapLift = Math.sin(k * Math.PI) * K.lift; c.walkCycle = (c.walkCycle || 0) + 0.25;
+        if (k >= 1) {
+            c.leapLift = 0; c.pounce = null; c.pounceReady = f + K.cooldown; c.attackAnim = 0.01; c.state = "attack";
+            if (t && !t.dead && Math.hypot(t.x - c.x, t.y - c.y) <= cloneReach(c) + 0.6) { applyDamage(t, c.power * K.dmg, c); if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: c.color || "#c06bff", radius: 0.8, life: 20 }); }
+        }
+        return true;
+    }
+    if (!(c.pounceRange > 0) || (c.pounceReady || 0) > f || c.retreatUntil > f || c.attackWindup > 0 || c.abilityPhase === "winding" || c.abilityPhase === "active") return false;
+    const foe = c._nearestEnemy; if (!foe || foe.dead || foe.untargetable) return false;
+    const d = Math.hypot(foe.x - c.x, foe.y - c.y);
+    if (d <= cloneReach(c) + 0.6 || d > c.pounceRange || (typeof facilityLosFrom === "function" && !facilityLosFrom(c.x, c.y, foe.x, foe.y))) return false;
+    c.pounce = { phase: "wind", t: K.windup, target: foe };
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: c.x, y: c.y, text: "POUNCE!", color: "#c06bff", life: 40, vy: -0.05, size: 12 });
+    return true;
 }
 // ── ITS BODY ──
 // A primary clone that falls (the death sweep, js/game.js) does not come back: its body lies where it fell, with what it was (its kind, level and XP), until it is dealt with (the next steps of docs/MUTATOR.md:
 // what can be recovered from it, and the Ice Mage's preservation) or MUTATOR.body.life runs out. A clone that was DISMISSED leaves none.
 let cloneBodies = [];
 let _bodyN = 0;
+// The body keeps what the clone was (its kind, level, the upgrades it had, what it cost): the upgrades are LOST to the Mutator (a new clone starts without them); what it cost is what SALVAGE recovers a share of.
 function cloneFallen(c) {
     if (!c) return null;
-    const f = _mxFrame(), b = { id: ++_bodyN, sp: c.speciesName, cls: c.className || "scout", level: c.level, xp: c.xp, x: c.x, y: c.y, dirX: c.dirX || 1, dirY: c.dirY || 0, t0: f };
+    const f = _mxFrame(), up = Object.assign({}, c.upgrades || {}), ranks = Object.values(up).reduce((s, r) => s + (r | 0), 0);
+    const b = { id: ++_bodyN, sp: c.speciesName, cls: c.className || "scout", level: c.level, xp: c.xp, x: c.x, y: c.y, dirX: c.dirX || 1, dirY: c.dirY || 0, t0: f, upgrades: up, invested: c.invested || 0 };
     cloneBodies.push(b);
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: "YOUR " + String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE HAS FALLEN", color: CLASSES.mutator.colour, life: 240, vy: -0.05, size: 16 });
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 104, text: "IT DOES NOT COME BACK — GROW A NEW ONE AT THE CLONE BAY", color: "#c8b6e6", life: 240, vy: -0.05, size: 12 });
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: "YOUR " + String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE HAS FALLEN" + (ranks ? " — ITS " + ranks + " UPGRADE" + (ranks > 1 ? "S ARE" : " IS") + " LOST" : ""), color: CLASSES.mutator.colour, life: 240, vy: -0.05, size: 16 });
+        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 104, text: "HOLD ON ITS BODY TO SALVAGE " + cloneRecoverable(b.invested) + " DNA — GROW A NEW ONE AT THE CLONE BAY", color: "#c8b6e6", life: 240, vy: -0.05, size: 12 });
     }
     return b;
 }
-// each step: a body whose time is up goes (with life 0 it stays)
+// SALVAGE DNA (the long press on a body: js/commands.js): the player must be near it (MUTATOR.body.reach): from further off they walk to it and it is done when they arrive. A share of what the clone cost
+// (MUTATOR.dna.recover) comes back as its species' DNA, and the body is gone. Returns how much came back (null while walking to it).
+let _bodyGoal = null;   // { id, act }: a body being walked to, and what to do there
+function cloneBodyNear(b) { return !!b && Math.hypot(b.x - player.x, b.y - player.y) <= MUTATOR.body.reach; }
+function cloneBodyWalk(b, act) {
+    mutatorCancel();   // (the lash is let go; and the walk to the body is what the player now wants)
+    _bodyGoal = { id: b.id, act };
+    if (typeof facilityWalkTo === "function" && !facilityWalkTo(Math.round(b.x), Math.round(b.y))) { const c = typeof _fpNearestCell === "function" ? _fpNearestCell(b.x, b.y) : null; if (c) facilityWalkTo(c[0], c[1]); }
+    return null;
+}
+function cloneSalvage(b) {
+    if (!b || !cloneBodies.includes(b)) return 0;
+    if (!cloneBodyNear(b)) return cloneBodyWalk(b, "salvage");
+    _bodyGoal = null; cloneBodies = cloneBodies.filter(x => x !== b);
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: b.x, y: b.y, color: "#9dffb6", radius: 0.9, life: 26 });
+    return _mxRecover(b.sp, b.cls, b.invested, "SALVAGED");
+}
+// each step: a body whose time is up goes (with life 0 it stays); a body the player was walking to is worked on when they get there (the walk is let go if they are sent somewhere else)
 function mutatorBodiesTick() {
+    if (_bodyGoal) {
+        const b = cloneBodies.find(x => x.id === _bodyGoal.id);
+        if (!b) _bodyGoal = null;
+        else if (cloneBodyNear(b)) { const act = _bodyGoal.act; _bodyGoal = null; if (act === "salvage") cloneSalvage(b); else if (typeof cloneBodyAct === "function") cloneBodyAct(b, act); }
+        else if (!player.fpPath || !player.fpPath.length) _bodyGoal = null;
+    }
     const L = MUTATOR.body.life; if (!(L > 0) || !cloneBodies.length) return;
     const f = _mxFrame(); cloneBodies = cloneBodies.filter(b => f - b.t0 < L);
+}
+// THE BODY'S RING (js/draw.js drawRadialMenu, js/input.js, js/commands.js): UP is SALVAGE DNA; RIGHT is a second order when there is one ({ label, act }, act ending in "_body": cloneBodyAct does it)
+function mutatorBodyRing(b) {
+    const n = cloneRecoverable(b && b.invested), ring = { up: { label: "SALVAGE DNA +" + n }, right: null, caption: String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE · FALLEN · LV " + (b.level || "?") };
+    if (typeof cloneBodyRingMore === "function") cloneBodyRingMore(b, ring);   // (the next orders on a body are added there: the brief's step 6)
+    return ring;
+}
+// the body under a point on the screen (the long press, js/input.js), and how far from it the point is
+function _bodyPickPoint(b) { const [x, y] = _mxScr(b.x, b.y); return { x, y: y - 16 }; }
+function cloneBodyAtScreen(ex, ey) {
+    let best = null, bd = typeof PICK_RADIUS === "number" ? PICK_RADIUS : 45;
+    for (const b of cloneBodies) { const p = _bodyPickPoint(b), d = Math.hypot(ex - p.x, ey - p.y); if (d < bd) { bd = d; best = b; } }
+    return best ? { body: best, d: bd } : null;
 }
 // ── drawing a body: the creature's own drawing (js/bugs3d.js, the Clone Bay's picture: drawCloneArt), dimmed and still, on a ring of the Mutator's colour, with its name ──
 function cloneBodiesDrawItems(drawList) {
@@ -171,18 +368,28 @@ function drawCloneBody(b, px, py) {
     const name = String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE · FALLEN", w = ctx.measureText(name).width + 14, y = py - 54;
     ctx.globalAlpha = 0.9; ctx.fillStyle = "rgba(10,6,20,0.82)"; ctx.fillRect(px - w / 2, y - 9, w, 18); ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.strokeRect(px - w / 2 + 0.5, y - 8.5, w - 1, 17);
     ctx.fillStyle = "#ead9ff"; ctx.fillText(name, px, y + 0.5);
-    if (near) { ctx.font = "10px monospace"; ctx.fillStyle = "#c8b6e6"; ctx.fillText("LV " + (b.level || "?") + " · A NEW ONE IS GROWN AT THE CLONE BAY", px, y + 17); }
+    if (near) { ctx.font = "10px monospace"; ctx.fillStyle = "#c8b6e6"; ctx.fillText("LV " + (b.level || "?") + " · HOLD ON IT: SALVAGE " + cloneRecoverable(b.invested) + " DNA", px, y + 17); }
     ctx.restore();
 }
 // ── saving (js/facilitysave.js) ──
-function cloneBodiesSnapshot() { return cloneBodies.map(b => ({ sp: b.sp, cls: b.cls, level: b.level, xp: b.xp, x: Math.round(b.x * 100) / 100, y: Math.round(b.y * 100) / 100, dx: Math.round((b.dirX || 1) * 100) / 100, dy: Math.round((b.dirY || 0) * 100) / 100 })); }
+function cloneBodiesSnapshot() { return cloneBodies.map(b => ({ sp: b.sp, cls: b.cls, level: b.level, xp: b.xp, x: Math.round(b.x * 100) / 100, y: Math.round(b.y * 100) / 100, dx: Math.round((b.dirX || 1) * 100) / 100, dy: Math.round((b.dirY || 0) * 100) / 100, up: b.upgrades || {}, inv: b.invested || 0 })); }
 function cloneBodiesApply(list) {
     cloneBodies = []; if (!Array.isArray(list)) return 0;
     for (const s of list) {
         if (!s || typeof SPECIES === "undefined" || !SPECIES[s.sp] || !Number.isFinite(s.x) || !Number.isFinite(s.y)) continue;
-        cloneBodies.push({ id: ++_bodyN, sp: s.sp, cls: s.cls || "scout", level: s.level, xp: s.xp, x: s.x, y: s.y, dirX: Number.isFinite(s.dx) ? s.dx : 1, dirY: Number.isFinite(s.dy) ? s.dy : 0, t0: _mxFrame() });
+        cloneBodies.push({ id: ++_bodyN, sp: s.sp, cls: s.cls || "scout", level: s.level, xp: s.xp, x: s.x, y: s.y, dirX: Number.isFinite(s.dx) ? s.dx : 1, dirY: Number.isFinite(s.dy) ? s.dy : 0, t0: _mxFrame(), upgrades: _mxUpClean(s.up), invested: Math.max(0, s.inv | 0) });
     }
     return cloneBodies.length;
 }
+// a saved record of upgrades, kept to the ones the table has and their ranks
+function _mxUpClean(up) { const o = {}; if (up && typeof up === "object") for (const id of Object.keys(up)) if (CLONE_UPGRADES[id]) { const r = Math.max(0, Math.min(CLONE_UPGRADES[id].max, up[id] | 0)); if (r) o[id] = r; } return o; }
+// a clone back from the save (js/facilitysave.js cloneRosterApply): its upgrades and what it cost
+function mutatorCloneRestore(c, rec) {
+    if (!c || !rec) return c;
+    if (rec.pr) c.primary = true;
+    c.upgrades = _mxUpClean(rec.up); c.invested = Math.max(0, rec.inv | 0);
+    cloneApplyUpgrades(c); c.health = c.maxHealth;
+    return c;
+}
 // a fresh game (js/facilityplay.js facilityResetState)
-function mutatorReset() { _mx.goal = null; _mx.target = null; _mx.windup = 0; _mx.fx = null; _mx.faceTo = null; _mx.pathAt = -1e9; cloneBodies = []; }
+function mutatorReset() { _mx.goal = null; _mx.target = null; _mx.windup = 0; _mx.fx = null; _mx.faceTo = null; _mx.pathAt = -1e9; cloneBodies = []; _bodyGoal = null; }

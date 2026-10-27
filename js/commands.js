@@ -43,7 +43,7 @@ function executeCommand() {
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
     // a unit's order needs no tile under the press: a follower or a creature can be pressed where there is none
     const isUnitCmd = selectedRadialAction==="roster_card" || selectedRadialAction==="reroll_follower" || selectedRadialAction==="attack_mode" || selectedRadialAction==="stow_weapon"
-                      || (selectedRadialAction==="info" && (commandEnemyTarget||commandFollowerTarget));
+                      || (selectedRadialAction==="info" && (commandEnemyTarget||commandFollowerTarget)) || /_body$/.test(selectedRadialAction);   // (a body's orders need no tile)
     if (!commandTarget && !isUnitCmd) { commandMode=false; selectedRadialAction=null; return; }
 
     switch(selectedRadialAction) {
@@ -78,6 +78,16 @@ function executeCommand() {
             if (commandFollowerTarget) startFollowerReroll(commandFollowerTarget);
             break;
         }
+        // ── A FALLEN CLONE'S BODY (js/mutator.js): UP = SALVAGE DNA; any other body order goes to the body's handler ──
+        case "salvage_body": {
+            if (commandBodyTarget && typeof cloneSalvage === "function") cloneSalvage(commandBodyTarget);
+            break;
+        }
+        default: {
+            if (/_body$/.test(selectedRadialAction) && commandBodyTarget && typeof cloneBodyAct === "function") cloneBodyAct(commandBodyTarget, selectedRadialAction.replace(/_body$/, ""));
+            break;
+        }
     }
+    commandBodyTarget = null;
     commandMode=false; commandTarget=null;
 }

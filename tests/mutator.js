@@ -84,22 +84,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { first: !!a, live: actors.filter(x => x.isClone && !x.dead).length, cap: cloneCap(), rule: CLASS_RULES.clone.max, why: cloneBlockedReason(opt) }; })()`);
         same(r.first, true, 'the first'); same(r.live, 1, 'clones out'); same(r.cap, r.rule, 'the cap'); same(r.cap, 1, 'the rule\'s max'); ok(/ONE CLONE AT A TIME/.test(r.why), r.why);
     });
-    check('in the bay, at the Mutator\'s cap of one: every card explains itself, DISMISS frees the slot, and the cards can be bought again', () => {
+    check('in the bay, at the Mutator\'s cap of one: the bay is that clone\'s (no card can be bought), RELEASE (two taps) frees the slot, and the cards can be bought again', () => {
         const r = J(`(function(){ __clear(); __class('mutator'); __grow('ant_scout'); dnaApply({ ant_scout: 99, ant_striker: 99 }); cloneMenuOpen = true; crystalCloneSort = 'species'; _crystalScrollX = 0; drawCloneMenu();
-            const tab = () => window._cloneTabOpts || []; const o = { atCap: tab().filter(x => x.ready).length, explains: tab().filter(x => typeof x._nbx === 'number').length, dismiss: !!window._cloneDismissBtn };
-            const db = window._cloneDismissBtn; handleCloneMenuTap(db.x + db.w / 2, db.y + db.h / 2); __frames(2); cloneMenuOpen = true; drawCloneMenu();
+            const tab = () => window._cloneTabOpts || []; const o = { atCap: tab().filter(x => typeof x._bx === 'number').length, panel: !!(window._cloneTabBounds && window._cloneTabBounds.upgrades), release: _mxUpBtns.some(b => b.act === 'release') };
+            const rel = _mxUpBtns.find(b => b.act === 'release'); for (let k = 0; k < 2; k++) { handleCloneMenuTap(rel.r.x + 5, rel.r.y + 5); drawCloneMenu(); } __frames(2); cloneMenuOpen = true; drawCloneMenu();
             o.after = tab().filter(x => x.ready).length; o.live = actors.filter(a => a.isClone && !a.dead).length; o.bodies = cloneBodies.length; cloneMenuOpen = false; return o; })()`);
-        same(r.atCap, 0, 'cards ready at the cap'); ok(r.explains > 0, 'no card explains itself'); same(r.dismiss, true, 'no DISMISS'); same(r.live, 0, 'DISMISS left the clone'); ok(r.after >= 2, 'cards ready after DISMISS: ' + r.after); same(r.bodies, 0, 'a dismissed clone left a body');
+        same(r.atCap, 0, 'cards to buy at the cap'); same(r.panel, true, 'the bay is not the clone\'s'); same(r.release, true, 'no RELEASE'); same(r.live, 0, 'RELEASE left the clone'); ok(r.after >= 2, 'cards ready after RELEASE: ' + r.after); same(r.bodies, 0, 'a released clone left a body');
     });
     check('the rule is data: with no skill in it every class may clone again, up to MAX_CLONES, and those clones are not primary (they come back at the Crystal)', () => {
         const r = J(`(function(){ const keep = CLASS_RULES.clone; CLASS_RULES.clone = { skill: null }; __clear(); __class('gunslinger'); dnaApply({ ant_scout: 99 }); shardCount = 999; const opt = () => getCloneOptions().find(x => x.key === 'ant_scout');
             for (let i = 0; i < 6; i++) executeClone(opt()); const cl = actors.filter(a => a.isClone && !a.dead), o = { n: cl.length, cap: cloneCap(), max: MAX_CLONES, primary: cl.some(a => a.primary) }; CLASS_RULES.clone = keep; return o; })()`);
         same(r.n, r.max, 'clones grown'); same(r.cap, r.max, 'the cap'); same(r.primary, false, 'a clone of the open rule is primary');
     });
-    check('the Mutator\'s clone is its PRIMARY clone (mutatorClone), and the bay says so in its header (YOUR CLONE 1/1)', () => {
-        const r = J(`(function(){ __clear(); __class('mutator'); const c = __grow(); const said = []; const keep = uiText; uiText = (t) => said.push(String(t)); try { cloneMenuOpen = true; drawCloneMenu(); } finally { uiText = keep; cloneMenuOpen = false; }
-            return { primary: !!(c && c.primary), found: mutatorClone() === c, header: said.filter(t => /CLONE/.test(t)) }; })()`);
-        same(r.primary, true, 'primary'); same(r.found, true, 'mutatorClone'); ok(r.header.some(t => /YOUR CLONE 1\/1/.test(t)), 'the header: ' + r.header.join(' | '));
+    check('the Mutator\'s clone is its PRIMARY clone (mutatorClone), the bay told you (YOUR CLONE: ANT SCOUT), and with no clone out the bay\'s header counts YOUR CLONE 0/1', () => {
+        const r = J(`(function(){ __clear(); __class('mutator'); const c = __grow(); const told = floatingTexts.map(t => t.text).join('|'); const said = []; const keep = uiText, keepF = uiTextFit; uiText = (t) => said.push(String(t)); uiTextFit = (t) => said.push(String(t));
+            try { cloneMenuOpen = true; drawCloneMenu(); dismissOldestClone(); __frames(1); drawCloneMenu(); } finally { uiText = keep; uiTextFit = keepF; cloneMenuOpen = false; }
+            return { primary: !!(c && c.primary), told, said }; })()`);
+        same(r.primary, true, 'primary'); ok(/YOUR CLONE: ANT SCOUT/.test(r.told), 'the bay said: ' + r.told); ok(r.said.some(t => /ANT SCOUT CLONE/.test(t)), 'the bay does not name it: ' + r.said.join(' | ')); ok(r.said.some(t => /YOUR CLONE 0\/1/.test(t)), 'the header with none out: ' + r.said.join(' | '));
     });
 
     group('THE ONE CLONE: it follows, it takes the orders, and when it falls it stays fallen');
@@ -196,6 +197,85 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; firePlayerShot(e); const o = { face: mutatorFacing() === hdRow(e.x - player.x, e.y - player.y) }; let err = null;
             try { drawMutatorFx(); __frames(MUTATOR.lash.windup + 1); drawMutatorFx(); } catch (x) { err = x.message; } o.err = err; let lash = 0; const keep = _tgLash; _tgLash = function () { lash++; return keep.apply(this, arguments); }; try { targetSet(e, true); drawTargetUI(); } finally { _tgLash = keep; } o.lash = lash; return o; })()`);
         same(r.face, true, 'the player does not face the creature'); same(r.err, null, 'the lash drawing threw'); ok(r.lash >= 1, 'no tentacle glyph on the HUD');
+    });
+
+    group('STEP 5: DNA COSTS, UPGRADES (data), DEATH LOSES THEM, PART OF THE DNA COMES BACK');
+    run(`globalThis.__mut = (dna) => { __clear(); __class('mutator'); const c = __grow('ant_scout'); dnaApply(Object.assign({ beetle_scout: 0 }, dna || { beetle_scout: 40 })); return c; };`);
+    check('the upgrades are a table (name, ranks, a cost per rank, what each rank does), and a new row works with no other code', () => {
+        const r = J(`(function(){ const rows = CLONE_UPGRADE_ORDER.map(id => { const d = CLONE_UPGRADES[id]; return [id, !!d.name, d.max, Array.isArray(d.cost) && d.cost.length === d.max, Object.keys(d.stat).join()]; });
+            CLONE_UPGRADES.test = { id: 'test', name: 'TEST GLAND', desc: 'a test', max: 1, cost: [2], stat: { health: { mul: 1 } } }; const c = __mut(); const h0 = c.maxHealth; const b = cloneUpgradeBuy('test'); const o = { rows, bought: b.ok, doubled: c.maxHealth === h0 * 2 }; delete CLONE_UPGRADES.test; return o; })()`);
+        same(r.rows.map(x => x[0]).join(), 'armor,serrated,leap,reach', 'the four the brief names'); for (const x of r.rows) { same(x[1], true, x[0] + ' name'); same(x[3], true, x[0] + ' a cost per rank'); }
+        same(r.rows.map(x => x[4]).join('|'), 'health|power|leap|reach', 'what each one changes'); same(r.bought, true, 'the new row could not be bought'); same(r.doubled, true, 'the new row did nothing');
+    });
+    check('BUY: the DNA is spent (any splices, the largest stocks first), the rank goes up, what the clone cost goes up; past the top it says so; without the DNA it says how much', () => {
+        const r = J(`(function(){ const c = __mut({ beetle_scout: 9, spider_tank: 3 }); const inv0 = c.invested, h0 = c.maxHealth, t0 = dnaTotal(); const b1 = cloneUpgradeBuy('armor');
+            const o = { b1: b1.ok, rank: cloneUpRank(c, 'armor'), spent: t0 - dnaTotal(), cost: CLONE_UPGRADES.armor.cost[0], fromLargest: getDNA().beetle_scout, invested: c.invested - inv0, health: c.maxHealth / h0 };
+            dnaApply({ beetle_scout: 99 }); cloneUpgradeBuy('armor'); cloneUpgradeBuy('armor'); o.top = cloneUpgradeBuy('armor').why; dnaApply({}); o.poor = cloneUpgradeBuy('serrated').why; o.poorRank = cloneUpRank(c, 'serrated'); return o; })()`);
+        same(r.b1, true, 'the first rank'); same(r.rank, 1, 'rank'); same(r.spent, r.cost, 'DNA spent'); same(r.fromLargest, 9 - r.cost, 'spent from the largest stock (beetle 9, before the spider\'s 3)');
+        same(r.invested, r.cost, 'what it cost'); ok(Math.abs(r.health - 1.25) < 0.02, 'ARMOR PLATING: health x' + r.health.toFixed(3)); ok(/TOP RANK/.test(r.top), 'past the top: ' + r.top); ok(/NEEDS \d+ DNA/.test(r.poor), 'without the DNA: ' + r.poor); same(r.poorRank, 0, 'it was bought anyway');
+    });
+    check('SERRATED ARMS: its bite hits a quarter harder a rank (and its level-ups keep it); LONG REACH: it bites what it could not reach before', () => {
+        const r = J(`(function(){ const c = __mut(); const p0 = c.power; cloneUpgradeBuy('serrated'); const o = { power: c.power / p0 }; gainXp(c, xpForLevel(c.level + 2) - c.xp + 1); o.afterLevel = c.power / Math.round(c.base.attack * levelFactor(c.level));
+            const e = __creature('ant', 'tank', 4, 0, 0, true); e.health = e.maxHealth = 1e6; const reach = cloneReach(c); c.x = e.x - (reach + 0.25); c.y = e.y; c.attackCooldown = 0; c._biteTick(e); for (let i = 0; i < COMBAT.bite.windup + 1; i++) c._biteTick(e); o.before = 1e6 - e.health;
+            cloneUpgradeBuy('reach'); o.reach = cloneReach(c) - reach; e.health = 1e6; c.attackCooldown = 0; c.attackWindup = 0; for (let i = 0; i < COMBAT.bite.windup + 2; i++) c._biteTick(e); o.after = 1e6 - e.health; return o; })()`);
+        ok(Math.abs(r.power - 1.25) < 0.03, 'SERRATED ARMS: power x' + r.power.toFixed(3)); ok(Math.abs(r.afterLevel - 1.25) < 0.03, 'a level-up lost it: x' + r.afterLevel.toFixed(3));
+        same(r.before, 0, 'it bit out of its reach'); ok(Math.abs(r.reach - 0.35) < 0.01, 'LONG REACH added ' + r.reach); ok(r.after > 0, 'with LONG REACH it still could not bite it');
+    });
+    check('POUNCE: with the upgrade it crouches (POUNCE!), leaps in an arc onto a creature beyond its reach and bites as it lands, then rests; without it, it walks', () => {
+        const r = J(`(function(){ const c = __mut(); const e = __creature('ant', 'tank', 4, 3.6, 0.3, true); e.health = e.maxHealth = 1e6; c.x = player.x + 0.2; c.y = player.y + 0.3; c._nearestEnemy = e;
+            const none = clonePounceTick(c); cloneUpgradeBuy('leap'); c._nearestEnemy = e; floatingTexts.length = 0; const go = clonePounceTick(c); const said = floatingTexts.map(t => t.text).join('|'); let lift = 0, n = 0, h0 = e.health;
+            while (c.pounce && n < 80) { clonePounceTick(c); lift = Math.max(lift, c.leapLift || 0); n++; } return { none, go, said, lift, frames: n, landed: Math.hypot(e.x - c.x, e.y - c.y), reach: cloneReach(c), dealt: h0 - e.health, rest: c.pounceReady > frame, range: c.pounceRange }; })()`);
+        same(r.none, false, 'it pounced without the upgrade'); same(r.go, true, 'it did not pounce'); ok(/POUNCE!/.test(r.said), 'no POUNCE! over it'); ok(r.lift > 10, 'no arc: ' + r.lift);
+        ok(r.landed <= r.reach + 0.05, 'it landed ' + r.landed.toFixed(2) + ' tiles off (reach ' + r.reach + ')'); ok(r.dealt > 0, 'no bite on landing'); same(r.rest, true, 'no rest after it'); ok(r.range > 3.6, 'its range ' + r.range);
+    });
+    check('a scout clone\'s escape LEAP goes further with POUNCE ("a longer leap")', () => {
+        const r = J(`(function(){ const c = __mut(); const d0 = c.leapDistance || ABILITY_DEFS.LEAP.distance; cloneUpgradeBuy('leap'); return { key: c.abilityKey, d0, d1: c.leapDistance }; })()`);
+        same(r.key, 'LEAP', 'an ant scout clone\'s special'); ok(r.d1 > r.d0, 'the leap ' + r.d0 + ' -> ' + r.d1);
+    });
+    check('DEATH LOSES THE UPGRADES: its body keeps what it had and what it cost; the next clone starts with none', () => {
+        const r = J(`(function(){ const c = __mut(); cloneUpgradeBuy('armor'); cloneUpgradeBuy('serrated'); const inv = c.invested; const foe = { x: c.x + 1, y: c.y, team: 'red' }; for (let i = 0; i < 10 && !c.dead; i++) applyDamage(c, c.maxHealth, foe); __frames(2);
+            const b = cloneBodies[0]; dnaApply({ ant_scout: 99 }); shardCount = 999; executeClone(getCloneOptions().find(o => o.key === 'ant_scout')); const n = mutatorClone();
+            return { up: b && b.upgrades, inv: b && b.invested, was: inv, said: floatingTexts.map(t => t.text).join('|'), fresh: n ? Object.keys(n.upgrades || {}).length : -1, freshInv: n ? n.invested : -1, needed: CLONE_COSTS.ant.splicesNeeded }; })()`);
+        same(JSON.stringify(r.up), '{"armor":1,"serrated":1}', 'the body\'s upgrades'); same(r.inv, r.was, 'the body\'s cost'); ok(/UPGRADES ARE LOST/.test(r.said), 'nobody said the upgrades were lost: ' + r.said);
+        same(r.fresh, 0, 'the new clone has upgrades'); same(r.freshInv, r.needed, 'a new clone is worth the splices it was grown from');
+    });
+    check('SALVAGE DNA (the body\'s ring): near it, a share of what it cost comes back as its species\' DNA and the body is gone; from further off the player walks to it first; it is less than it cost', () => {
+        const r = J(`(function(){ const c = __mut(); cloneUpgradeBuy('armor'); cloneUpgradeBuy('reach'); const inv = c.invested; c.x = player.x + 1; c.y = player.y; const foe = { x: c.x + 1, y: c.y, team: 'red' }; for (let i = 0; i < 10 && !c.dead; i++) applyDamage(c, c.maxHealth, foe); __frames(2);
+            const b = cloneBodies[0], ring = mutatorBodyRing(b), dna0 = getDNA().ant_scout || 0; commandBodyTarget = b; selectedRadialAction = 'salvage_body'; commandTarget = null; executeCommand();
+            const o = { label: ring.up.label, inv, back: (getDNA().ant_scout || 0) - dna0, want: Math.floor(inv * MUTATOR.dna.recover), gone: cloneBodies.length === 0 };
+            const c2 = __mut(); c2.x = player.x + 6; c2.y = player.y; for (let i = 0; i < 10 && !c2.dead; i++) applyDamage(c2, c2.maxHealth, { x: c2.x + 1, y: c2.y, team: 'red' }); __frames(2); const b2 = cloneBodies[0]; player.x = player.visualX = b2.x - 6; player.fpPath = null;
+            const far = cloneSalvage(b2); o.far = far; o.walking = !!(player.fpPath && player.fpPath.length); __frames(200); o.arrived = cloneBodies.length === 0; return o; })()`);
+        ok(/SALVAGE DNA \+\d+/.test(r.label), 'the ring: ' + r.label); same(r.back, r.want, 'DNA back'); same(r.gone, true, 'the body is still there'); ok(r.back < r.inv, 'it gave back ' + r.back + ' of ' + r.inv + ': rebuilding must cost more than keeping it');
+        same(r.far, null, 'it was salvaged from afar'); same(r.walking, true, 'the player did not walk to it'); same(r.arrived, true, 'it was not salvaged on arrival');
+    });
+    check('RELEASE at the Clone Bay: two taps (the first asks), its upgrades go, a share of what it cost comes back, and it leaves no body', () => {
+        const r = J(`(function(){ const c = __mut(); cloneUpgradeBuy('armor'); const inv = c.invested, d0 = getDNA().ant_scout || 0; cloneMenuOpen = true; drawCloneMenu(); const rel = _mxUpBtns.find(b => b.act === 'release');
+            const tap = () => { handleCloneMenuTap(rel.r.x + rel.r.w / 2, rel.r.y + rel.r.h / 2); __frames(1); }; tap(); const o = { afterOne: !!mutatorClone() }; drawCloneMenu(); tap(); __frames(2);
+            o.gone = !mutatorClone(); o.back = (getDNA().ant_scout || 0) - d0; o.want = Math.floor(inv * MUTATOR.dna.recover); o.bodies = cloneBodies.length; cloneMenuOpen = false; return o; })()`);
+        same(r.afterOne, true, 'one tap released it'); same(r.gone, true, 'two taps did not'); same(r.back, r.want, 'DNA back'); same(r.bodies, 0, 'a released clone left a body');
+    });
+    check('the bay, with your clone out, is its upgrades: a row for each with its ranks and BUY, the DNA you have, and what a fall would cost; BUY there buys', () => {
+        const r = J(`(function(){ const c = __mut(); cloneMenuOpen = true; const said = []; const keep = uiTextFit, keepC = uiCaptionFit; uiTextFit = function (t) { said.push(String(t)); return keep.apply(this, arguments); }; uiCaptionFit = function (t) { said.push(String(t)); return keepC.apply(this, arguments); };
+            try { drawCloneMenu(); } finally { uiTextFit = keep; uiCaptionFit = keepC; } const buys = _mxUpBtns.filter(b => b.act === 'buy'); const b = buys.find(x => x.id === 'serrated'); handleCloneMenuTap(b.r.x + 5, b.r.y + 5);
+            const o = { names: CLONE_UPGRADE_ORDER.every(id => said.includes(CLONE_UPGRADES[id].name)), buys: buys.length, dna: said.some(t => /^DNA \\d+/.test(t)), stake: said.some(t => /UPGRADES ARE LOST/.test(t)), bought: cloneUpRank(c, 'serrated') }; cloneMenuOpen = false; return o; })()`);
+        same(r.names, true, 'not every upgrade is listed'); same(r.buys, 4, 'BUY buttons'); same(r.dna, true, 'the DNA you have'); same(r.stake, true, 'what a fall costs'); same(r.bought, 1, 'BUY did not buy');
+    });
+    check('ONE PREDATOR AGAINST ONE UPGRADED CLONE (the brief\'s test): in the arena, face to face, a mantis tank kills a fresh ant striker clone (or leaves it near dead); the same clone with three ranks of ARMOR PLATING and SERRATED ARMS kills it with plenty to spare', () => {
+        const r = J(`(function(){ const AC = _fsArenaCells(); let best = AC[0], bd = -1; for (const q of AC) { let free = 0; for (const s of AC) if (Math.abs(s[0] - q[0]) <= 4 && Math.abs(s[1] - q[1]) <= 2) free++; if (free > bd) { bd = free; best = q; } }   // (the arena's most open floor, far from the Crystal: a creature beside the Crystal goes for it instead)
+            const fight = (ups) => { __clear(); __class('mutator'); player.x = player.targetX = player.visualX = best[0] - 1.5; player.y = player.targetY = player.visualY = best[1]; player.fpPath = null;
+                const c = makeClone('ant', 'striker', player.x + 1, player.y + 0.5, 'hunt', { level: 5 }); c.primary = true; c.upgrades = ups; cloneApplyUpgrades(c); c.health = c.maxHealth;   // (level 5 both times: the arena's level, which a new clone takes, rises in a long game)
+                const e = spawnCreature({ species: 'mantis', className: 'tank', level: 4, x: player.x + 2.1, y: player.y + 0.5, state: 'hunt' }); e.provoked = true;   // (face to face: a creature walking to the Crystal turns only on what bites it; a spider would web the clone and walk on)
+                let n = 0; for (; n < 2400 && !c.dead && !e.dead; n++) render(); const o = { won: !!e.dead, lost: !!c.dead, left: c.health / c.maxHealth, n, lv: [c.level, e.level], hp: [Math.round(c.health), Math.round(e.health)], others: actors.filter(a => a instanceof Predator && !a.isClone && a !== e && !a.dead).length, alert: alertActive }; c.dead = true; c.dismissed = true; e.dead = true; __frames(1); return o; };
+            return { fresh: fight({}), upgraded: fight({ armor: 3, serrated: 3 }) }; })()`);
+        same(r.upgraded.won, true, 'the upgraded clone did not win: ' + JSON.stringify(r)); ok(r.upgraded.left > 0.35, 'it won with ' + Math.round(r.upgraded.left * 100) + '% left');
+        ok(r.fresh.lost || r.upgraded.left > r.fresh.left + 0.25, 'the upgrades made no real difference: fresh ' + JSON.stringify(r.fresh) + ', upgraded ' + Math.round(r.upgraded.left * 100) + '% left');
+    });
+    check('the save keeps the clone\'s upgrades and what it cost, and a body\'s; a reload brings them back as they were', () => {
+        const r = J(`(function(){ const c = __mut(); cloneUpgradeBuy('armor'); cloneUpgradeBuy('leap'); const want = [c.maxHealth, c.pounceRange, c.invested]; const d = JSON.parse(JSON.stringify(facilitySaveCollect()));
+            actors = actors.filter(a => !a.isClone); mutatorReset(); cloneRosterApply(d.clones); const n = mutatorClone(); const got = n ? [n.maxHealth, n.pounceRange, n.invested] : null;
+            for (let i = 0; i < 10 && n && !n.dead; i++) applyDamage(n, n.maxHealth, { x: n.x + 1, y: n.y, team: 'red' }); __frames(2); const d2 = JSON.parse(JSON.stringify(facilitySaveCollect())); mutatorReset(); cloneBodiesApply(d2.bodies);
+            return { want, got, body: cloneBodies[0] ? [JSON.stringify(cloneBodies[0].upgrades), cloneBodies[0].invested] : null }; })()`);
+        same(JSON.stringify(r.got), JSON.stringify(r.want), 'the clone came back otherwise'); same(r.body && r.body[0], '{"armor":1,"leap":1}', 'the body\'s upgrades'); same(r.body && r.body[1], r.want[2], 'the body\'s cost');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

@@ -76,6 +76,50 @@ What the body is *for* is the next two steps: the DNA the player can recover fro
 
 The other classes' attacks are unchanged (a Gunslinger's click fires a round as before).
 
+### 2.5 DNA, upgrades, death, recovery (the brief's step 5)
+
+**What a clone costs.** Growing one takes its species' splices (`CLONE_COSTS[species].splicesNeeded`, js/species.js) and crystals (`cloneShardCost`), as before. A clone of a class takes the splices of that species *and class*, so in kills of that class (with the splices each class drops, `dnaDrops`):
+
+| Species | Splices | A scout clone | A striker clone | A tank clone |
+|---|---|---|---|---|
+| ant | 3 | 3 | 3 | 1.5 |
+| beetle | 5 | 5 | 2.5 | 2.5 |
+| mantis | 8 | 4 | 2.7 | 2.7 |
+| scorpion | 8 | 4 | 2.7 | 2.7 |
+| spider | 10 | 3.3 | 3.3 | 2.5 |
+| moth | 12 | 4 | 3 | 3 |
+
+The brief's tentative target is *"DNA equivalent to roughly two or three enemy kills"*. The table is close for the stronger classes and above it for scouts. It is left as it was, because the brief says not to finalise tentative costs; `CLONE_COSTS` is the one place to change it.
+
+**Upgrades** (`CLONE_UPGRADES`, js/mutator.js: a table; a new row is a new upgrade, and a test adds one at run time to prove nothing else has to change):
+
+| Upgrade | Ranks | DNA per rank | Each rank |
+|---|---|---|---|
+| ARMOR PLATING | 3 | 4, 7, 10 | +25% health |
+| SERRATED ARMS | 3 | 4, 7, 10 | +25% power (its bite, special and shot) |
+| POUNCE | 2 | 5, 8 | a jumping attack: it crouches (POUNCE! over it), leaps in an arc onto a creature beyond its reach and up to 2.5 tiles further a rank, and bites as it lands (×1.2 its power), then rests 5 s. A scout's escape leap goes 2.5 tiles further too (*"a longer leap or jumping attack"*). |
+| LONG REACH | 2 | 4, 7 | +0.35 tiles to its bite's reach (*"increased attack radius"*) |
+
+- They are bought at the **Clone Bay**: with the Mutator's clone out, the bay is that clone's panel (its picture, level, health, bite, reach and pounce, the DNA you have), a row for each upgrade (what it does, its ranks, the next rank's DNA, BUY), and at the foot what is at stake.
+- An upgrade costs **any DNA**: `dnaSpend` takes it from the largest splice stocks first, so the rare ones are kept for growing a clone. Growing one still takes its own species' splices.
+- The upgrades last through its level-ups (js/levels.js multiplies its health and power by them at every level) and through a save.
+
+**Death loses them.** When the clone falls, the player is told *ITS 2 UPGRADES ARE LOST*. Its body keeps what it had and what it cost (`invested`: the splices it was grown from plus the DNA its upgrades took). The next clone starts with none.
+
+**Part of the DNA comes back** (`MUTATOR.dna.recover`, 40%):
+- **SALVAGE DNA**: a long press on the body opens its ring; UP is *SALVAGE DNA +n*. Near the body (`MUTATOR.body.reach`, 2.2 tiles) it is done at once. From further off the player walks there first, and a tap elsewhere calls it off. The DNA comes back as the clone's own species' and class's splices, and the body is gone. Its plate says how much it would give.
+- **RELEASE** at the Clone Bay (two taps: the first asks *SURE? TAP AGAIN*) gives back the same share and leaves no body (`MUTATOR.dna.releaseRecovers`). Without it, letting the clone die would pay better than letting it go.
+- 40% is less than all of it, so *"rebuilding repeatedly from scratch should leave the player less effective than successfully maintaining and upgrading a clone"*. A test checks the salvage is less than the investment.
+
+**One predator against one upgraded clone** (the brief's test), measured in the arena, face to face:
+
+| Clone | vs mantis tank L4 | vs spider tank L4 |
+|---|---|---|
+| ant striker, fresh (level 5) | the clone falls (or wins with a fifth of its health left) | the clone falls |
+| ant striker, ARMOR 3 + SERRATED 3 (level 5) | wins with 54% left | wins with 48% left |
+
+Seen while measuring, and not changed: a creature on its way to the Crystal turns only on what bites it. A spider webs a clone that chases it (20% speed for five seconds) and walks on, and once it is more than six tiles off the clone goes back to the Mutator, as every brawler does. The counterplay is the enemy card's ATTACK, which sends the clone after that creature.
+
 ## 3. Tentative: every number is a knob
 
 | Knob | Where | Value | What it does |
@@ -87,6 +131,12 @@ The other classes' attacks are unchanged (a Gunslinger's click fires a round as 
 | `MUTATOR.lash.windup` | js/mutator.js | 9 frames | the lash's first beat |
 | `MUTATOR.lash.slack` | js/mutator.js | 0.3 tiles | how far past its reach a creature may slip in the wind-up and still be hit |
 | `MUTATOR.body.life` | js/mutator.js | 0 (stays) | how long a fallen clone's body lies |
+| `MUTATOR.body.reach` | js/mutator.js | 2.2 tiles | how near the player must be to work on a body |
+| `CLONE_COSTS` | js/species.js | 3 to 12 splices | what growing a clone takes (its species' DNA) |
+| `CLONE_UPGRADES` | js/mutator.js | the table in 2.5 | each upgrade's ranks, DNA per rank and effect |
+| `MUTATOR.dna.recover` | js/mutator.js | 0.4 | the share of what a clone cost that its body or its release gives back |
+| `MUTATOR.dna.releaseRecovers` | js/mutator.js | true | whether RELEASE gives that share back too |
+| `MUTATOR.pounce` | js/mutator.js | wind-up 14, air 22, ×1.2, rest 300 | the jumping attack |
 
 ## 4. Decisions made here (please confirm or change)
 
@@ -94,9 +144,13 @@ The other classes' attacks are unchanged (a Gunslinger's click fires a round as 
 2. **The clone's power is ×1.5**, not ×4 (2.1, with the measured fights).
 3. **The Mutator keeps the guns as a choice** at the Armory terminal; the lash is what it starts with.
 4. **A clone keeps after its target while it rears back**; a creature stays rooted (its telegraph is the player's warning; a clone's is not a threat to the player).
+5. **Upgrades and the serum cost any DNA** (the largest stocks first); growing a clone takes its own species' splices.
+6. **RELEASE gives back the same share as a salvaged body.**
+7. **"A longer leap or jumping attack" is one upgrade, POUNCE:** a jumping attack for every clone, and a longer escape leap for a scout. **"Increased attack radius" is the bite's reach.**
+8. **Salvage is an order on the body's ring** (a long press, the brief's *"holds the interaction input"*), done near it, not automatic at death: the body has to stay for the Ice Mage (step 6).
 
 ## 5. Next (the brief's steps 5 to 7)
 
-- **Step 5:** clone DNA costs (configurable; *"roughly two or three enemy kills"* is tentative), data-driven upgrades (armor plating, serrated arms, a longer leap or jumping attack, a wider attack radius), upgrades lost on death, and **partial DNA recovery** from the fallen clone's body.
+- **Step 5: built** (2.5).
 - **Step 6:** the Ice Mage freezes a fallen ally's body; the player carries the containment capsule to the Resurrection Zone; the capsule is used there to restore the specimen.
 - **Step 7:** the healing serum: crafted with DNA, splashed on the ground, healing the allies in its area; the laboratory makes it over time (every 60 s, configurable), more with the Mutator's level.

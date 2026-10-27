@@ -187,7 +187,11 @@ function handleLongHold(ex,ey) {
     // take every press meant for the follower.
     const _eD = enemyPickDistance(ex, ey);
     const _fD = followerPickDistance(ex, ey);
-    if (_fD <= _eD) {
+    // A FALLEN CLONE'S BODY (js/mutator.js), when it is nearer the finger than any unit: its own ring (SALVAGE DNA)
+    const _bp = typeof cloneBodyAtScreen === "function" ? cloneBodyAtScreen(ex, ey) : null;
+    commandBodyTarget = _bp && _bp.d < _eD && _bp.d < _fD ? _bp.body : null;
+    if (commandBodyTarget) { commandFollowerTarget = null; commandEnemyTarget = null; }
+    else if (_fD <= _eD) {
         commandFollowerTarget = findFollowerAtScreen(ex, ey);
         commandEnemyTarget    = null;
     } else {
@@ -332,6 +336,12 @@ canvas.addEventListener('pointerup', e=>{
             const relDist = Math.hypot(relX, relY);
             const relAngle = Math.atan2(relY, relX);
             if (relDist > 18) {
+                // A fallen clone's body (mirrors its branch in drawRadialMenu): UP is SALVAGE DNA, RIGHT is the body's second order (js/mutator.js mutatorBodyRing)
+                if (commandBodyTarget) {
+                    if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4) selectedRadialAction = "salvage_body";
+                    else if (relAngle > -Math.PI/4 && relAngle < Math.PI/4 && typeof mutatorBodyRing === "function" && mutatorBodyRing(commandBodyTarget).right) selectedRadialAction = mutatorBodyRing(commandBodyTarget).right.act;
+                    commandPendingTap = false; executeCommand(); commandTarget = null; isPressing = false; return;
+                }
                 // Own follower ring (mirrors its branch in drawRadialMenu).
                 if (commandFollowerTarget && !commandFollowerTarget.dead) {
                     const _f = commandFollowerTarget;

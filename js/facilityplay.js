@@ -158,7 +158,7 @@ function facilityReroute(a, px, py) {
 }
 // The facility is big: a squad walking at its own pace would be a minute behind you. A follower or clone far from you (and not on an order of its own) hurries, up to about four times, and eases back to its own speed as it closes in.
 function facilityCatchUp(a, px, py) {
-    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.post || a.returningToCrystal) return;   // (a posted follower holds its room)
+    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.post || a.returningToCrystal || a.pounce || (a.isClone && a.abilityPhase === "active")) return;   // (a posted follower holds its room; a clone in the air, pouncing or leaping, is not hurried along: js/mutator.js)
     const d = Math.hypot(player.x - a.x, player.y - a.y); if (d <= 8) return;
     const k = Math.min(4, 1 + (d - 8) / 6); a.x = px + (a.x - px) * k; a.y = py + (a.y - py) * k;
 }
@@ -226,7 +226,7 @@ function facilityResetState() {
     gameState = { running: true };
     alertActive = false; alertTimer = 0; alertType = null; alertSource = null;
     cloneMenuOpen = false; crystalMenuOpen = false; infoPanelOpen = false; infoPanelTarget = null; infoPanelPage = null; infoPanelSubject = null;
-    commandMode = false; commandPendingTap = false; commandTarget = null; selectedRadialAction = null; commandEnemyTarget = null; commandFollowerTarget = null;
+    commandMode = false; commandPendingTap = false; commandTarget = null; selectedRadialAction = null; commandEnemyTarget = null; commandFollowerTarget = null; commandBodyTarget = null;
     playerAttackMode = false; if (typeof gunStow === "function") gunStow();
     isPressing = false; longHoldFired = false; touchMoved = false;
     health = PLAYER_HITS; playerAmmo = PLAYER_AMMO_START;

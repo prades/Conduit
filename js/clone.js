@@ -95,6 +95,7 @@ function dismissOldestClone() {
     const c = live[0];   // actors order is summon order
     c.dead = true;
     c.dismissed = true;   // (it does not come back: js/game.js queues no return for a dismissed clone, and a primary one leaves no body)
+    if (c.primary && typeof mutatorReleased === "function") mutatorReleased(c);   // the Mutator's: a share of what it cost comes back (js/mutator.js)
     floatingTexts.push({ x: canvas.width/2, y: canvas.height/2 - 80,
         text: (c.speciesName || "CLONE").toUpperCase() + (c.primary ? " CLONE RELEASED" : " DISMISSED"),
         color: "#88aacc", life: 100, vy: -0.2 });
@@ -188,6 +189,7 @@ function cloneCalm(c) {
 function cloneTick(c) {
     if (!c || c.dead) return false;
     const f = typeof frame !== "undefined" ? frame : 0, retreating = c.retreatUntil > f;
+    if (typeof clonePounceTick === "function" && clonePounceTick(c)) return true;   // the POUNCE upgrade's jumping attack (js/mutator.js)
     if (typeof abilityTick === "function" && !(retreating && (c.abilityPhase === "charging" || c.abilityPhase === "ready")) && abilityTick(c)) return true;
     if (c.abdomenAttack && !retreating && !(c.attackWindup > 0) && typeof c._abdomenTick === "function") {
         const foe = c._nearestEnemy && !c._nearestEnemy.dead ? c._nearestEnemy : c.lastAttacker && !c.lastAttacker.dead && c.lastAttacker.team === "red" ? c.lastAttacker : null;
@@ -301,6 +303,7 @@ function handleCloneMenuTap(ex, ey) {
 function _clonesTabTap(ex, ey, PX) {
     const cl = window._cloneTabBounds;
     if (!cl) return true;
+    if (cl.upgrades) { if (typeof cloneUpgradeTap === "function") cloneUpgradeTap(ex, ey); return true; }   // the Mutator's clone is out: its upgrades (js/mutator.js)
     if (ey >= cl.sortY && ey <= cl.sortY + cl.sortH) {
         for (let i = 0; i < CSORTS.length; i++) {
             const tx = PX + i * cl.sortW;
@@ -678,6 +681,12 @@ function _sortedCloneOptions(opts, mode) {
 
 // ── Tab: Clone Bay ────────────────────────────────────────
 function _drawClonesTab(PX, PY, PW, PH) {
+    // THE MUTATOR'S CLONE IS OUT: the bay is its upgrades (js/mutator.js drawCloneUpgradePanel), not the cards it could grow
+    if (typeof mutatorClone === "function" && typeof drawCloneUpgradePanel === "function") {
+        const mc = mutatorClone();
+        if (mc) { drawCloneUpgradePanel(PX, PY, PW, PH, mc); window._cloneTabOpts = []; window._cloneScrollArrows = null; window._cloneDismissBtn = null; window._cloneTabBounds = { sortY: -1e4, sortH: 0, sortW: 0, listY: PY, listH: 0, listX: PX, listW: 0, rowH: 0, upgrades: true }; return; }
+    }
+    if (typeof _mxUpBtns !== "undefined") _mxUpBtns = [];
     const sortH = 44, sortW = Math.floor(PW / CSORTS.length);
     CSORTS.forEach((s, i) => uiButton({ x: PX + i * sortW + 4, y: PY + 2, w: sortW - 6, h: sortH - 6 }, s.label, UI_TEAL, crystalCloneSort === s.id, 15));
 

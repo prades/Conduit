@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-27q";
+const BUILD_VERSION = "2026-10-27r";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -256,6 +256,7 @@ let commandShiftX = 0, commandShiftY = 0;
 let commandTarget = null;
 let commandEnemyTarget = null;  // creature under a long press, if any
 let commandFollowerTarget = null;  // own follower under a long press, if any
+let commandBodyTarget = null;  // a fallen clone's body under a long press, if any (js/mutator.js)
 let selectedRadialAction = null;
 let commandPendingTap    = false;  // true = menu open, waiting for button tap
 

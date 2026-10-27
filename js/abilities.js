@@ -336,7 +336,7 @@ function _abStartActive(pred, def) {
             }
             if (!(Math.hypot(ax, ay) > 1e-6)) { ax = 1; ay = 0; }
             const len = Math.hypot(ax, ay) || 1;
-            const dist = def.distance;
+            const dist = pred.leapDistance || def.distance;   // (a clone's POUNCE upgrade makes its escape leap longer: js/mutator.js)
             pred.leapFromX = pred.x; pred.leapFromY = pred.y;
             // The landing has to be floor with a clear line to it (the facility's walls and props): a shorter leap when it is not, and none at all when there is nowhere to go.
             let k = 1;
