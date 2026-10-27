@@ -120,6 +120,29 @@ The brief's tentative target is *"DNA equivalent to roughly two or three enemy k
 
 Seen while measuring, and not changed: a creature on its way to the Crystal turns only on what bites it. A spider webs a clone that chases it (20% speed for five seconds) and walks on, and once it is more than six tiles off the clone goes back to the Mutator, as every brawler does. The counterplay is the enemy card's ATTACK, which sends the clone after that creature.
 
+### 2.6 The healing serum, the laboratory, and the Mutator's level (the brief's step 7)
+
+ASKED: *"The Mutator can craft healing serums that are splashed onto the ground. Each serum creates an area-of-effect healing zone. Eligible allies within the splash zone receive healing. Healing should be visually readable and clearly communicate which units are being affected."* *"The Mutator has a laboratory where serum becomes available over time. Serum replenishes at configurable 60-second intervals. Higher Mutator levels increase the amount of serum generated automatically. DNA can also be spent whenever the player crafts a serum. The automatic supply and DNA crafting systems should work together."* Code: js/serum.js; tests: tests/serum.js.
+
+**The serum** is an item of the pack, HEALING SERUM (stack 5). Only the Mutator uses it; anyone may carry it.
+- It is used from the pack, from the **SERUM pill** beside the weapon's by the dial (it shows how many), or with **Q**.
+- It is **splashed where the Mutator stands**: a green pool on the floor, `SERUM.splash.radius` (2.6 tiles) wide, for `SERUM.splash.frames` (5 s).
+- Every **ally** in it (a follower or a clone of yours) is healed `SERUM.splash.pct` (6%) of its max health every `SERUM.splash.every` frames (0.5 s): about 60% over the pool's life.
+- **Readable:** the pool is painted on the floor tiles it covers, with bubbles; every ally it is healing wears a pulsing green ring and a rising "+"; each heal floats a green "+n" over the unit (js/combat.js `healUnit`).
+- Creatures in it are not healed. The player is not either (the player has three hits, not health).
+
+**The laboratory** is the Experiment Lab's fume hood: the **SERUM HOOD**, a Mutator's station (js/stations.js, `F.stations` in js/facilitymap.js on the existing `lab_hood` prop).
+- While the player is a Mutator, every `SERUM.lab.every` frames (60 s) it makes `base + perLevel × (Mutator level − 1)` serums (1, plus a quarter a level, the fractions carried to the next round), up to `SERUM.lab.cap` (5) waiting.
+- At the hood, **COLLECT** takes what is waiting into the pack, for free.
+- With nothing waiting, **CRAFT** makes one now for `SERUM.craft.dna` DNA (5, the brief's tentative figure; any splices). Without the DNA it says how much it takes and when the next free one is ready.
+- **They work together:** both fill the same item in the pack; the free supply is slow, DNA buys more; crafting always costs DNA. The formula is exposed, not final: `SERUM.lab` and `SERUM.craft`.
+
+**The Mutator's level.** The player had no level, and the brief asks for *"higher Mutator levels"* and *"a dedicated progression system built around biological experimentation"*. So experiments raise it: every DNA the Mutator spends on biology is a point. That is growing a clone (its splices), buying an upgrade, or crafting a serum.
+- The thresholds are `MUTATOR.level.thresholds` (0, 10, 25, 45, 70, 100, 140, 190, 250, 320 for levels 1 to 10).
+- A level-up is said (*MUTATOR ▲ LEVEL 2, THE LAB MAKES MORE SERUM*); the Clone Bay's panel shows the level and the points to the next.
+- Another class gains none. The points are saved.
+- **What the level does today** is the laboratory's yield. Anything else it should unlock is a decision for later; `mutatorLevel()` is the one function to read.
+
 ## 3. Tentative: every number is a knob
 
 | Knob | Where | Value | What it does |
@@ -137,6 +160,11 @@ Seen while measuring, and not changed: a creature on its way to the Crystal turn
 | `MUTATOR.dna.recover` | js/mutator.js | 0.4 | the share of what a clone cost that its body or its release gives back |
 | `MUTATOR.dna.releaseRecovers` | js/mutator.js | true | whether RELEASE gives that share back too |
 | `MUTATOR.pounce` | js/mutator.js | wind-up 14, air 22, ×1.2, rest 300 | the jumping attack |
+| `SERUM.splash` | js/serum.js | radius 2.6, 300 frames, every 30, 6% | the healing pool |
+| `SERUM.lab` | js/serum.js | every 3600 (60 s), base 1, +0.25 a level, cap 5 | the laboratory's free supply |
+| `SERUM.craft.dna` | js/serum.js | 5 | crafting one at the hood |
+| `ITEMS.healing_serum.stack` | js/inventory.js | 5 | how many the pack holds |
+| `MUTATOR.level.thresholds` | js/mutator.js | 0, 10, 25 ... 320 | the Mutator's levels, in experiment points (DNA spent on biology) |
 
 ## 4. Decisions made here (please confirm or change)
 
@@ -148,9 +176,13 @@ Seen while measuring, and not changed: a creature on its way to the Crystal turn
 6. **RELEASE gives back the same share as a salvaged body.**
 7. **"A longer leap or jumping attack" is one upgrade, POUNCE:** a jumping attack for every clone, and a longer escape leap for a scout. **"Increased attack radius" is the bite's reach.**
 8. **Salvage is an order on the body's ring** (a long press, the brief's *"holds the interaction input"*), done near it, not automatic at death: the body has to stay for the Ice Mage (step 6).
+9. **The serum is splashed where the Mutator stands**, not thrown at a point: the Mutator walks to whoever needs it. A thrown serum is a small change if wanted.
+10. **The laboratory is the Experiment Lab's fume hood**, an existing prop made the Mutator's station; its free serum waits there to be collected.
+11. **The Mutator's level comes from experiments** (DNA spent on biology). The other way would be the class's existing rank (1 plus one a perk, so 3 at most for the Mutator).
+12. **Allies are followers and clones;** the player is not healed by the serum.
 
 ## 5. Next (the brief's steps 5 to 7)
 
 - **Step 5: built** (2.5).
 - **Step 6: built** (docs/SPECIMENS.md): the Ice Mage freezes a fallen ally's body (the Mutator's clone, or a follower lost for good); the player carries the containment capsule to the Resurrection Zone, the Crystal, where it restores the specimen as it was. A clone's body is salvaged OR preserved.
-- **Step 7:** the healing serum: crafted with DNA, splashed on the ground, healing the allies in its area; the laboratory makes it over time (every 60 s, configurable), more with the Mutator's level.
+- **Step 7: built** (2.6).

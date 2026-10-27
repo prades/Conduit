@@ -354,7 +354,8 @@ const SCENE = `(function(){
         const frameOps = n => {
             E.run(`(function(){ followers.forEach(f => { f.dead = true; }); actors = actors.filter(a => !a.isFollower);
                 followers.length = 0; ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
-                for (let i = 0; i < ${n}; i++) { spawnFollowerAtCrystal(ELEMENTS[i % 6].id);
+                for (let i = 0; i < ${n}; i++) { spawnFollowerAtCrystal(ELEMENTS[i % 6].id, FOLLOWER_TYPE_ORDER[i % 3]);   // (each one's type fixed: a random draw made the cost swing by a fifth between runs)
+                   
                     const f = followers[followers.length - 1]; f.x = player.x + (i % 8) - 3.5; f.y = player.y + (i % 4) - 1.5;
                     f.returningToCrystal = false; f.stance = 'hold'; f.job = null; if (f.post) f.post = 'arena'; }
                 for (let i = 0; i < 3; i++) render(); })()`);

@@ -22,7 +22,19 @@ const MUTATOR = {
     // POUNCE (the jumping attack an upgrade gives): it crouches for `windup` frames (POUNCE! over it), leaps onto a creature that is further than its reach and no further than its pounce range (the upgrade's
     // `leap` stat), in `air` frames, and bites as it lands for `dmg` times its power; then it rests `cooldown` frames.
     pounce: { windup: 14, air: 22, dmg: 1.2, cooldown: 300, lift: 34 },
+    // THE MUTATOR'S LEVEL (the brief: "Higher Mutator levels increase the amount of serum generated automatically"; the Mutator "has a dedicated progression system built around biological experimentation").
+    // The player had no level, so EXPERIMENTS raise it: every DNA the Mutator spends on biology (growing a clone, an upgrade, crafting a serum) is a point; `thresholds` are the points for levels 1, 2, 3...
+    level: { thresholds: [0, 10, 25, 45, 70, 100, 140, 190, 250, 320] },
 };
+let mutatorXp = 0;   // the Mutator's experiment points (saved)
+function mutatorLevel() { const T = MUTATOR.level.thresholds; let L = 1; for (let i = 1; i < T.length; i++) if (mutatorXp >= T[i]) L = i + 1; return L; }
+function mutatorNextAt() { const T = MUTATOR.level.thresholds, L = mutatorLevel(); return L < T.length ? T[L] : null; }
+function mutatorGainXp(n) {
+    if (!(n > 0) || typeof playerClassKey === "undefined" || playerClassKey !== "mutator") return 0;
+    const was = mutatorLevel(); mutatorXp += n; const now = mutatorLevel();
+    if (now > was && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 150, text: "MUTATOR ▲ LEVEL " + now + " — THE LAB MAKES MORE SERUM", color: "#c06bff", life: 220, vy: -0.05, size: 16 });
+    return now - was;
+}
 
 // ── THE UPGRADES (data) ──────────────────────────────────
 // ASKED: "Support upgrades such as: armor plating for improved durability; serrated arms for stronger melee attacks; a longer leap or jumping attack; increased attack radius. Keep the upgrade system data-driven
@@ -69,7 +81,7 @@ function cloneUpgradeNext(c, id) {
 // buy the next rank for the Mutator's clone (the Clone Bay's BUY): the DNA is spent, the rank goes up, the clone is made over, and what it cost is added to what it is worth
 function cloneUpgradeBuy(id, c) {
     c = c || mutatorClone(); const n = cloneUpgradeNext(c, id); if (!n.ok) { _mxSay(n.why, "#ff9c8a"); return n; }
-    dnaSpend(n.cost); c.upgrades = Object.assign({}, c.upgrades || {}, { [id]: n.rank + 1 }); c.invested = (c.invested || 0) + n.cost; cloneApplyUpgrades(c);
+    dnaSpend(n.cost); c.upgrades = Object.assign({}, c.upgrades || {}, { [id]: n.rank + 1 }); c.invested = (c.invested || 0) + n.cost; cloneApplyUpgrades(c); mutatorGainXp(n.cost);
     _mxSay(CLONE_UPGRADES[id].name + " ▲ RANK " + (n.rank + 1) + " — " + n.cost + " DNA", CLASSES.mutator.colour);
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: c.x, y: c.y, color: "#c06bff", radius: 0.9, life: 24 });
     return { ok: true, rank: n.rank + 1, cost: n.cost };
@@ -90,7 +102,7 @@ function drawCloneUpgradePanel(PX, PY, PW, PH, c) {
     uiTextFit(String(c.speciesName).toUpperCase() + " " + String(c.className).toUpperCase() + " CLONE · LV " + (c.level || "?"), tx, PY + 30, 20, "#f1e2ff", "left", tw);
     const hp = Math.max(0, c.health), mx = Math.max(1, c.maxHealth), fr = hp / mx; ctx.fillStyle = "#05070f"; ctx.fillRect(tx, PY + 44, tw, 10); ctx.fillStyle = fr > 0.5 ? "#19e6c1" : fr > 0.25 ? "#ffd34d" : "#ff5a3a"; ctx.fillRect(tx, PY + 44, tw * fr, 10); ctx.strokeStyle = "#2c3656"; ctx.lineWidth = 1.2; ctx.strokeRect(tx, PY + 44, tw, 10);
     uiCaptionFit("HP " + Math.ceil(hp) + "/" + Math.round(mx) + "   BITE " + Math.round(c.power) + "   REACH " + cloneReach(c).toFixed(2) + "   POUNCE " + (c.pounceRange > 0 ? c.pounceRange.toFixed(1) + " TILES" : "—"), tx, PY + 70, "#c8b6e6", "left", 12, tw);
-    uiCaptionFit("DNA " + dnaTotal() + "  (ANY SPLICES)", tx, PY + 90, "#9dffb6", "left", 12, tw);
+    uiCaptionFit("DNA " + dnaTotal() + "  (ANY SPLICES)   ·   MUTATOR LV " + mutatorLevel() + (mutatorNextAt() !== null ? " (" + mutatorXp + "/" + mutatorNextAt() + ")" : ""), tx, PY + 90, "#9dffb6", "left", 12, tw);
     const confirm = f - _mxReleaseAt < 150, rb = { x: x0 + w - 142, y: PY + 20, w: 130, h: 40 };
     uiButton(rb, confirm ? "SURE? TAP AGAIN" : "RELEASE", confirm ? UI_RED : "#6a7aa0", confirm, confirm ? 12 : 15); btns.push({ r: rb, act: "release" });
     // the upgrades
@@ -243,6 +255,7 @@ function mutatorCloneMade(c, option) {
     c.primary = true;   // (the bay says so: js/clone.js executeClone, "YOUR CLONE: ANT SCOUT · IT FOLLOWS YOU")
     c.upgrades = {}; c.invested = option && option.needed ? option.needed : 0;   // a new clone has no upgrades; what it is worth starts at the splices it was grown from
     cloneApplyUpgrades(c);
+    mutatorGainXp(c.invested);   // (growing it is an experiment: the Mutator's level)
     return c;
 }
 // RELEASE at the Clone Bay (js/clone.js dismissOldestClone): it is let go, its upgrades with it; a share of what it cost comes back (MUTATOR.dna.releaseRecovers), as when its body is salvaged
@@ -402,4 +415,4 @@ function mutatorCloneRestore(c, rec) {
     return c;
 }
 // a fresh game (js/facilityplay.js facilityResetState)
-function mutatorReset() { _mx.goal = null; _mx.target = null; _mx.windup = 0; _mx.fx = null; _mx.faceTo = null; _mx.pathAt = -1e9; cloneBodies = []; _bodyGoal = null; }
+function mutatorReset() { _mx.goal = null; _mx.target = null; _mx.windup = 0; _mx.fx = null; _mx.faceTo = null; _mx.pathAt = -1e9; cloneBodies = []; _bodyGoal = null; mutatorXp = 0; }

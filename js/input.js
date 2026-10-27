@@ -271,6 +271,8 @@ canvas.addEventListener('pointerup', e=>{
         isPressing=false; return;
     }
 
+    // The Mutator's SERUM pill beside it (js/serum.js): a tap splashes one
+    if (!touchMoved && typeof serumChipTap === "function" && serumChipTap(upX, upY)) { isPressing=false; return; }
     // The ammunition pill (js/targeting.js draws it): a tap while armed stows the weapon again
     if (!touchMoved && playerAttackMode && _ATKCHIP.w > 0
         && upX >= _ATKCHIP.x && upX <= _ATKCHIP.x + _ATKCHIP.w

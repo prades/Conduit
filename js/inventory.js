@@ -62,6 +62,12 @@ const ITEMS = {
         lore: "A glass-and-steel canister with a green glow that does not flicker. The label says THIS SIDE UP and, underneath, in a different hand, YES REALLY.",
         stats: ["LOADED INTO  THE LASER RIFLE", "EACH CELL  12 CHARGES", "FOUND IN  THE COMPUTER LAB, ONCE ITS POWER IS BACK"],
         use: () => ({ ok: false, why: "THE LASER RIFLE LOADS IT BY ITSELF" }) },
+    // the Mutator's HEALING SERUM (js/serum.js): made at the laboratory over time, or crafted there for DNA; used, it is splashed where the Mutator stands and heals the allies in the pool
+    healing_serum: { id: "healing_serum", name: "HEALING SERUM", cat: "sample", type: "consumable", stack: 5, col: "#7dffb0", icon: "vial", classes: ["mutator"],
+        desc: "A green serum. Splashed on the ground, it makes a pool that heals your followers and clones standing in it.",
+        lore: "Brewed under the fume hood from whatever the Mutator has learned. It smells of cut grass and copper.",
+        stats: ["EFFECT  A HEALING POOL WHERE YOU STAND", "MADE AT  THE SERUM HOOD, EXPERIMENT LAB", "QUICK USE  THE SERUM PILL, OR Q"],
+        use: () => typeof serumUse === "function" ? serumUse() : { ok: false, why: "NO SERUM HERE" } },
     // the brief: "The main character handles the specimen's containment capsule and transports it to the Resurrection Zone." What it holds is in specimenCarried (js/specimen.js); this is its place in the pack.
     specimen_capsule: { id: "specimen_capsule", name: "SPECIMEN CAPSULE", cat: "sample", type: "tool", stack: 3, col: "#aeeaff", icon: "fuel", classes: null,
         desc: "A fallen ally, frozen by an Ice Mage and sealed in a containment capsule. Use it at the Resurrection Zone (the Crystal) to bring it back.",
@@ -69,7 +75,7 @@ const ITEMS = {
         stats: ["HOLDS  ONE PRESERVED SPECIMEN", "USED AT  THE RESURRECTION ZONE: THE CRYSTAL", "IT COMES BACK AS IT WAS"],
         use: () => typeof specimenUseItem === "function" ? specimenUseItem() : { ok: false, why: "TAKE IT TO THE CRYSTAL" } },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "specimen_capsule"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule"];
 
 // ── the pack ──
 let playerInv = {};

@@ -201,6 +201,7 @@ function _tgAmmoIcon(x, y, alpha) {
     ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txt, x + 24, y + 1);
     ctx.restore();
     if (armed) { _ATKCHIP.x = x - 4; _ATKCHIP.y = y - hh / 2 - 4; _ATKCHIP.w = w + 8; _ATKCHIP.h = hh + 8; } else _ATKCHIP.w = 0;
+    if (typeof drawSerumChip === "function") drawSerumChip(x + w + 8, y, alpha);   // the Mutator's serum, beside it (js/serum.js)
 }
 function _tgAmmoDraw() { const A = _tgAnchor(); if (A.corner) _tgAmmoIcon(A.left + 4, A.y + 4, 1); else _tgAmmoIcon(A.left - 4, A.top + 12, 1); }
 function _tgDialDraw(a, f) {

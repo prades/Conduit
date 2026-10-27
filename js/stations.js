@@ -26,6 +26,10 @@ const STATION_KINDS = {
     // the mech bay (the show room): the Technomancer builds the spider mech here from four legs and a core. A BUILD takes seven seconds at the pad (a progress bar; walk away and it stops, nothing is spent), and the mech is theirs for good.
     mech_bay: { name: "MECH BAY", verb: "BUILD THE SPIDER MECH", classes: ["technomancer"], perk: "mech", once: true, cost: [["mech_leg", 4], ["mech_core", 1]], build: 420,
         use: () => ({ ok: true, msg: "THE SPIDER MECH IS BUILT" }) },
+    // the Mutator's LABORATORY (the Experiment Lab's fume hood: js/serum.js): COLLECT the serum it has made, or with none waiting CRAFT one for DNA. Its words and whether it can are the serum's (verbFn, canFn).
+    serum_hood: { name: "SERUM HOOD", verb: "COLLECT OR CRAFT SERUM", classes: ["mutator"],
+        verbFn: () => typeof serumHoodVerb === "function" ? serumHoodVerb() : "SERUM", canFn: () => typeof serumHoodCan === "function" ? serumHoodCan() : { ok: false, why: "NO LAB" },
+        use: () => typeof serumHoodUse === "function" ? serumHoodUse() : { ok: false, why: "NO LAB" } },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
         use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
@@ -59,6 +63,7 @@ function stationCan(s) {
     if (k.build && _fp.channel && _fp.channel.station === s.id) return { ok: false, why: "BUILDING \u2014 " + Math.min(99, Math.floor((frame - _fp.channel.t0) / _fp.channel.frames * 100)) + "%" };
     if (k.cooldown && _fp.cctvReadyAt > now && s.kind === "cctv") return { ok: false, why: "CAMERAS RESETTING — " + Math.ceil((_fp.cctvReadyAt - now) / 60) + " S" };
     for (const [id, n] of (k.cost || [])) if (!invHas(id, n)) return { ok: false, why: "NEEDS " + n + " " + itemDef(id).name };
+    if (typeof k.canFn === "function") { const r = k.canFn(s); if (!r || !r.ok) return r || { ok: false, why: "NOT NOW" }; }   // (a station whose readiness is its own: the serum hood)
     return { ok: true };
 }
 function stationUse(s) {
@@ -70,6 +75,7 @@ function stationUse(s) {
     if (k.panel) { if (typeof armoryOpenNow === "function") armoryOpenNow(); return { ok: true, msg: "", panel: true }; }
     for (const [id, n] of (k.cost || [])) invRemove(id, n);
     const r = k.use(s), first = !classHas(k.perk), got = classGrant(k.perk);
+    if (r && r.ok === false) { invSay(r.why, false); return r; }   // (a use that turned out not to work says why)
     if (k.cooldown) _fp.cctvReadyAt = frame + k.cooldown;
     if (r.equip && typeof weaponEquip === "function") weaponEquip(r.equip);   // (a weapon taken is a weapon in hand)
     invSay(r.msg + (got ? "   ▲ RANK " + classRank() : ""), true);
@@ -117,7 +123,7 @@ function facilityDrawStationPrompt() {
     const s = _fp && _fp.stationNear; if (!s || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || typeof uiButton !== "function") return;
     const k = STATION_KINDS[s.kind], can = stationCan(s), r = _stPlate(), mine = playerClassKey && classAllows(k.classes), col = !k.classes ? (s.kind === "relay" ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#6d7fa6";
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const nm = s.kind === "relay" ? _relayName(s) : k.name, verb = s.kind === "relay" ? relayVerb(s, can) : k.verb;
+    const nm = s.kind === "relay" ? _relayName(s) : k.name, verb = s.kind === "relay" ? relayVerb(s, can) : typeof k.verbFn === "function" ? k.verbFn(s) : k.verb;
     uiButton(r, can.ok ? verb : can.done ? nm + " \u2014 DONE" : nm, col, false, can.ok ? 16 : 15, can.ok ? nm + "   \u00b7   TAP OR PRESS E" : can.why, !can.ok);
     ctx.restore();
 }

@@ -340,6 +340,7 @@ const FACILITY_MAP = {
         { id: "st_security_console", room: "security_room", prop: "sec_desk", kind: "cctv" },
         { id: "st_tune_bench", room: "teleport_room_1", prop: "console_2", kind: "tune_bench" },
         { id: "st_sequencer", room: "experiment_lab", prop: "chamber_1", kind: "sequencer" },
+        { id: "st_serum_hood", room: "experiment_lab", prop: "lab_hood", kind: "serum_hood" },   // the Mutator's laboratory: serum (js/serum.js)
         { id: "st_charger", room: "lab_hallway", prop: "charger_hall", kind: "charger" },
         { id: "st_mech_bay", room: "show_room", prop: "mech_bay", kind: "mech_bay" },
         { id: "st_armory_terminal", room: "armory", prop: "armory_terminal", kind: "armory_terminal" },

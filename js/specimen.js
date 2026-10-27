@@ -178,7 +178,7 @@ function drawSpecimenOverlay() {
     if (specimenCarried.length && typeof crystal !== "undefined" && crystal) {
         const [cx, cy] = _spScr(crystal.x, crystal.y), pul = 0.6 + 0.4 * Math.sin(f * 0.06);
         ctx.save(); ctx.translate(cx, cy + TILE_H); ctx.scale(1, TILE_H / TILE_W);
-        ctx.globalAlpha = 0.25 + 0.2 * pul; ctx.strokeStyle = "#aeeaff"; ctx.lineWidth = 6; ctx.setLineDash([16, 10]); ctx.beginPath(); ctx.arc(0, 0, SPECIMEN.zone.radius * TILE_W * 1.05, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+        ctx.globalAlpha = 0.25 + 0.2 * pul; ctx.strokeStyle = "#aeeaff"; ctx.lineWidth = 6; ctx.setLineDash([16, 10]); ctx.beginPath(); ctx.arc(0, 0, SPECIMEN.zone.radius * TILE_W * Math.SQRT2, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);   // (a circle of that many tiles on the iso floor)
         ctx.restore();
         ctx.globalAlpha = 0.9; ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#aeeaff"; ctx.fillText("RESURRECTION ZONE", cx, cy + TILE_H + SPECIMEN.zone.radius * TILE_H + 22);
         ctx.globalAlpha = 1;
