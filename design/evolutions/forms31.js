@@ -247,6 +247,7 @@ fx(851, "The fire technician, the THERMITE BURROWER: a hunched iron body under r
 // armored arms": the legs are thick and angular, armour plates on thigh and shin, a heavy knee, a line of red down each. (Uses forms33.js's _segBox33 and _segSpike33: the bake inlines every forms file into one scope.)
 const _tbBlack = new T.MeshStandardMaterial({ color: 0x0e0f12, metalness: 0.85, roughness: 0.55, flatShading: true, side: T.DoubleSide }); _tbBlack.envMapIntensity = 0.25;   // (rough: a big flat plate mirrors the studio as a white patch)
 const _tbDark = new T.MeshStandardMaterial({ color: 0x08090b, metalness: 0.8, roughness: 0.5, flatShading: true }); _tbDark.envMapIntensity = 0.3;
+const _tbLimb = new T.MeshStandardMaterial({ color: 0x07080a, metalness: 0.9, roughness: 0.6, flatShading: true }); _tbLimb.envMapIntensity = 0.12;   // (the bear's legs: their flat faces mirrored the studio grey)
 const _tbSteel = new T.MeshStandardMaterial({ color: _lin31(0x3a3c42), metalness: 0.9, roughness: 0.32, flatShading: true, side: T.DoubleSide }); _tbSteel.envMapIntensity = 0.7;
 // a box laid along a -> b, w across and d deep, its depth turned as near to `up` as it can (an armour plate's thickness stays upright)
 function _segPlate31(parent, w, d, mat) { const m = new T.Mesh(new T.BoxGeometry(w, 1, d), mat); parent.add(m); const y = V(0, 0, 0), z = V(0, 0, 0), x = V(0, 0, 0), M4 = new T.Matrix4();
@@ -260,12 +261,13 @@ function _thermiteBlack(o) {
   const onBody = (th, k) => V(0, ry * k * Math.sin(th), rz * k * Math.cos(th)), tiltAt = th => Math.atan2(Math.cos(th) / rz, Math.sin(th) / ry);
   // the body: black, hunched, under three black plates along the back, a seam of red light between each and at the plates' ends
   const torso = new T.Mesh(new T.SphereGeometry(1, 14, 10), _tbDark); torso.scale.set(rx, ry, rz); torso.position.y = Y; body.add(torso);
-  [[0.48, 1.12, 1.1], [1.2, 1.9, 1.14], [1.98, 2.58, 1.1]].forEach(([t0, t1, k]) => {
+  const bk = o.bandK || [1.1, 1.14, 1.1];   // how proud each plate stands (the bear's: its front one, the shoulders, the hump)
+  [[0.48, 1.12, bk[0]], [1.2, 1.9, bk[1]], [1.98, 2.58, bk[2]]].forEach(([t0, t1, k]) => {
     const geo = new T.SphereGeometry(1, 12, 4, PI - 0.55, PI + 1.1, t0, t1 - t0); geo.rotateX(PI / 2);
     const m = new T.Mesh(geo, _tbBlack); m.scale.set(rx * k, ry * k, rz * k); m.position.y = Y; body.add(m); });
   const seam = (th, k) => { const pts = []; for (let i = 0; i <= 28; i++) { const f = PI - 0.5 + (PI + 1.0) * i / 28; pts.push(V(-Math.cos(f) * Math.sin(th) * rx * k, Y - Math.sin(f) * Math.sin(th) * ry * k, Math.cos(th) * rz * k)); }
     body.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 56, 0.014, 5, false), seamM)); };
-  seam(1.16, 1.1); seam(1.94, 1.12); seam(0.5, 1.08); seam(2.56, 1.08);
+  seam(1.16, Math.min(bk[0], bk[1])); seam(1.94, Math.min(bk[1], bk[2])); seam(0.5, bk[0] - 0.02); seam(2.56, bk[2] - 0.02);
   // its back: a raised round vent glowing red; over the drill, a red window
   const vent = G(); vent.position.copy(onBody(1.75, 1.15)).add(V(0, Y, 0)); vent.rotation.x = tiltAt(1.75); body.add(vent);
   const collar = cyl(0.14, 0.16, 0.08, _tbBlack, 16); collar.position.y = 0.03; vent.add(collar);
@@ -291,13 +293,30 @@ function _thermiteBlack(o) {
   // the legs ("thick armored arms"): four, splayed wide; a thick black thigh under an armour plate with a line of red along it, a heavy knee, a thick armoured shin with
   // a line of red down it, a claw
   const legs = [];
+  if (o.bear) {
+    // ... or a bear's ("a bear / zoids style tank animal", no face): elbows back and knees forward, thick armoured limbs on big clawed paws, a line of red down each
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const fr = sz > 0;
+      const L = { sx, sz, fr, top: V(sx * rx * 0.72, Y - 0.02, sz * rz * 0.42),
+        mid: fr ? V(sx * (rx + 0.1), Y - 0.2, rz * 0.22) : V(sx * (rx + 0.1), Y - 0.17, -rz * 0.16),
+        low: fr ? V(sx * (rx + 0.14), 0.09, rz * 0.5) : V(sx * (rx + 0.13), 0.16, -rz * 0.64),
+        paw: fr ? V(sx * (rx + 0.14), 0.035, rz * 0.56) : V(sx * (rx + 0.13), 0.035, -rz * 0.5) };
+      L.up = _segPlate31(b, o.thighW, o.thighD, _tbLimb); L.upPl = _segPlate31(b, o.thighW * 1.3, 0.05, _tbLimb); L.upLn = _segPlate31(b, 0.022, 0.012, legM);
+      L.lo = _segPlate31(b, o.shinW, o.shinD, _tbLimb); L.loPl = _segPlate31(b, o.shinW * 1.25, 0.04, _tbLimb); L.loLn = _segPlate31(b, 0.02, 0.012, legM);
+      L.ft = fr ? null : _segPlate31(b, o.shinW * 0.85, o.shinD * 0.85, _tbLimb);   // a hind leg's foot, from the hock forward to the paw
+      L.j1 = new T.Mesh(new T.IcosahedronGeometry(o.knee, 0), _tbDark); b.add(L.j1); L.j2 = new T.Mesh(new T.IcosahedronGeometry(o.knee * 0.75, 0), _tbDark); b.add(L.j2);
+      L.pawM = cbox(o.pawW, 0.07, o.pawL, 0.02, _tbLimb); b.add(L.pawM);
+      L.claws = [-1, 0, 1].map(c => { const m = new T.Mesh(new T.ConeGeometry(0.03, 0.1, 4), _tbDark); m.rotation.x = PI / 2 + 0.5; b.add(m); return { m, c }; });
+      legs.push(L); }
+  } else
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const L = { sx, sz, hip: V(sx * rx * 0.78, Y - 0.04, sz * rz * 0.45), knee0: V(sx * (rx + 0.21), Y + 0.08, sz * (rz * 0.5 + 0.08)), foot0: V(sx * (rx + 0.32), 0, sz * (rz * 0.55 + 0.18)) };
     L.thigh = _segPlate31(b, o.thighW, o.thighD, _tbBlack); L.thPlate = _segPlate31(b, o.thighW * 1.45, 0.05, _tbBlack); L.thLine = _segPlate31(b, 0.022, 0.012, legM);
     L.shin = _segPlate31(b, o.shinW, o.shinD, _tbBlack); L.shPlate = _segPlate31(b, o.shinW * 1.3, 0.04, _tbBlack); L.shLine = _segPlate31(b, 0.02, 0.012, legM);
     L.knee = new T.Mesh(new T.IcosahedronGeometry(o.knee, 0), _tbDark); b.add(L.knee); L.claw = _segSpike33(b, 0.08, _tbDark); legs.push(L); }
   const fl = _glowPool(0.9, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(red); fl.m.material.opacity = 0.2; b.add(fl.g);
   const Lt = new T.PointLight(0xffffff, 0.8, 4, 2); Lt.color.copy(red); Lt.position.set(0, Y + ry + 0.35, rz); b.add(Lt); LIGHTS.push(Lt);
-  const kp = V(0, 0, 0), fp = V(0, 0, 0), hp = V(0, 0, 0), ak = V(0, 0, 0), Up = V(0, 1, 0), out = V(0, 0, 0), tA = V(0, 0, 0), tB = V(0, 0, 0);
+  const kp = V(0, 0, 0), fp = V(0, 0, 0), hp = V(0, 0, 0), ak = V(0, 0, 0), Up = V(0, 1, 0), out = V(0, 0, 0), tA = V(0, 0, 0), tB = V(0, 0, 0), P0 = V(0, 0, 0), P1 = V(0, 0, 0), P2 = V(0, 0, 0), P3 = V(0, 0, 0);
+  const armour = (seg, pl, ln, A, B, d) => { seg.set(A, B, out); tA.copy(A).lerp(B, 0.1).addScaledVector(out, d * 0.55); tB.copy(B).addScaledVector(out, d * 0.55); pl.set(tA, tB, out);
+    tA.addScaledVector(out, 0.026); tB.addScaledVector(out, 0.026); ln.set(tA, tB, out); };   // a limb, its armour plate on its outer side, and the line of red on the plate
   return { g, core: (Y + ry * 1.15 + 0.08) * (o.S || 1), update(t, act) {
     const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act);
     body.position.set(0, 0.012 * Math.sin(ph * 2) - 0.04 * a, 0.08 * a); body.rotation.x = 0.06 * a;
@@ -308,7 +327,12 @@ function _thermiteBlack(o) {
     slots.forEach((S, i) => S.material.color.copy(red).multiplyScalar(0.7 + 0.3 * Math.max(0, Math.sin(ph * 2 - i * 0.8)) + 0.3 * a));
     tipHot.visible = a > 0.12; tipHot.scale.setScalar(0.6 + 1.2 * a);
     sparks.forEach((S, i) => { S.sp.visible = a > 0.12; if (!S.sp.visible) return; const u = (pr * 2 + i * 0.11) % 1, r = 0.06 + 0.45 * u * S.v; S.sp.position.set(Math.cos(S.a) * r, Math.sin(S.a) * r * 0.6 + 0.12 * u, DL + 0.06 + 0.22 * u); S.sp.scale.setScalar(1.2 - u); });
-    legs.forEach(L => { const pair = (L.sx * L.sz > 0) ? 0 : PI, lift = Math.max(0, Math.sin(ph + pair)) * 0.07 * (1 - a), sw = Math.cos(ph + pair) * 0.05 * (1 - a), brace = 0.05 * a;
+    if (o.bear) legs.forEach(L => { const pair = (L.sx * L.sz > 0) ? 0 : PI, lift = Math.max(0, Math.sin(ph + pair)) * 0.06 * (1 - a), sw = Math.cos(ph + pair) * 0.05 * (1 - a), bp = body.position;
+      P0.copy(L.top).add(bp); P1.set(L.mid.x, L.mid.y + bp.y + lift * 0.5, L.mid.z + sw * 0.5 + bp.z * 0.5); P2.set(L.low.x, L.low.y + lift, L.low.z + sw); P3.set(L.paw.x, L.paw.y + lift, L.paw.z + sw);
+      out.set(L.sx, 0, 0); armour(L.up, L.upPl, L.upLn, P0, P1, o.thighD); armour(L.lo, L.loPl, L.loLn, P1, P2, o.shinD); if (L.ft) L.ft.set(P2, P3, out);
+      L.j1.position.copy(P1); L.j2.position.copy(P2); L.pawM.position.set(P3.x, P3.y, P3.z + 0.02);
+      L.claws.forEach(C => C.m.position.set(P3.x + C.c * o.pawW * 0.3, P3.y - 0.005, P3.z + 0.02 + o.pawL * 0.5 + 0.025)); });
+    else legs.forEach(L => { const pair = (L.sx * L.sz > 0) ? 0 : PI, lift = Math.max(0, Math.sin(ph + pair)) * 0.07 * (1 - a), sw = Math.cos(ph + pair) * 0.05 * (1 - a), brace = 0.05 * a;
       hp.copy(L.hip).add(body.position); kp.set(L.knee0.x + L.sx * brace * 0.5, L.knee0.y + lift * 0.6 + body.position.y, L.knee0.z + sw * 0.6 + body.position.z * 0.5); fp.set(L.foot0.x + L.sx * brace, lift, L.foot0.z + sw);
       ak.copy(kp).lerp(fp, 0.72);   // the ankle: the shin's armour ends there and the claw goes on to the floor
       out.set(L.sx, 0, 0);
@@ -319,6 +343,8 @@ function _thermiteBlack(o) {
   } };
 }
 const _thb0 = Object.assign({}, _th0, { red: 0xff2a14, thighW: 0.17, thighD: 0.15, shinW: 0.14, shinD: 0.13, knee: 0.1 });
+const _thbear0 = Object.assign({}, _thb0, { bear: true, bandK: [1.18, 1.13, 1.05], thighW: 0.19, thighD: 0.17, shinW: 0.15, shinD: 0.14, knee: 0.1, pawW: 0.17, pawL: 0.22 });
+fx(855, "The fire technician, the THERMITE BURROWER as a bear-like tank animal (the user's ask: a bear / zoids style tank animal, same silhouette, no face): the black armoured digger with red seams and the drill, a shoulder hump, a bear's legs on clawed paws.", () => _thermiteBlack(_thbear0));
 fx(854, "The fire technician, the THERMITE BURROWER in black (the user's ask): a black armoured digger with seams of red light, a red vent, window and grille, a black drill glowing red in its groove, thick armoured legs lined with red.", () => _thermiteBlack(_thb0));
 
 // ── 852 · THE IGLOO SKATER ─────────────────────────────────────────────────────────────────────────────
