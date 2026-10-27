@@ -118,7 +118,7 @@ function _jellyRam(o) {
       const R0 = (style === 'string' ? (o.strR || 0.032) : style === 'taper' ? 0.085 : 0.09) + 0.02 * mid * (style === 'string' ? 0.3 : 1);   // (o.strR: a string's thickness at its root)
       if (style === 'goo') T0.tb.set(pts, 0, 0, s => R0 * (1 - 0.45 * s) * (1 + 0.2 * Math.sin(PI * (2.4 * s + 0.37 * k))) * (1 - 0.45 * Math.min(1, Math.max(0, (s - 0.76) / 0.16))), 1.45, 0.75);
       else if (style === 'taper') T0.tb.set(pts, 0, 0, s => R0 * Math.pow(1 - s, 0.85) + 0.004);
-      else if (style === 'string') T0.tb.set(pts, 0, 0, s => R0 * (1 - 0.85 * s) + 0.003);
+      else if (style === 'string') T0.tb.set(pts, 0, 0, s => R0 * (1 - (o.strTaper || 0.85) * s) + 0.003);   // (o.strTaper: how much a string narrows to its tip)
       else T0.tb.set(pts, 0.08 + 0.02 * mid, 0.03);
       const tip = pts[N - 1], pre = pts[N - 2]; T0.dir = (T0.dir || V(0, 0, 0)).copy(tip).sub(pre).normalize();
       if (style === 'goo') { T0.drop.position.copy(tip).addScaledVector(T0.dir, 0.03); T0.drop.scale.set(R0 * 0.62, R0 * 0.62, R0 * 1.05); }   // a drip, drawn out along the stream
@@ -139,6 +139,8 @@ fx(864, "The JELLY RAM swimming, its tentacles smooth arms narrowing to a point.
 fx(865, "The JELLY RAM swimming, its tentacles thin wavy strings, more of them.", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'string', tentacles: 12 })));
 // 866: the user chose the strings, "but fewer and thicker": seven of them, about half as thick again.
 fx(866, "The JELLY RAM swimming, its tentacles wavy strings, seven of them and thicker (the user's pick: C, fewer and thicker).", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'string', tentacles: 7, strR: 0.052 })));
+// 867: "fatter tentacles": the seven strings fatter again, and narrowing less toward their tips.
+fx(867, "The JELLY RAM swimming, its tentacles seven fat wavy strings (the user's ask: fatter tentacles).", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'string', tentacles: 7, strR: 0.082, strTaper: 0.72 })));
 fx(860, "The core brawler, the JELLY RAM: a clear dome with a big diamond in it under a black helmet band, a horn out of either side lit along its top, a body of jelly trailing tentacles that end in drops; it hovers and rams.", () => _jellyRam(_jr0));
 
 // ── 861 · THE RIMESTAR ─────────────────────────────────────────────────────────────────────────────────
