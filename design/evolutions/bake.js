@@ -23,6 +23,10 @@ const JOBS = [
   { id: 'jellyram_blue', form: 860, color: '#2f6bff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 862, the Jelly Ram swimming, a little bigger (the user's ask on 860): a candidate until approved.
   { id: 'jellyram_swim', form: 862, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  // Nos. 863-865, the swimming Jelly Ram with three tentacle shapes to choose from (the user: "I don't like tentacles shape"): candidates.
+  { id: 'jellyram_goo', form: 863, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'jellyram_taper', form: 864, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'jellyram_string', form: 865, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'rimestar', form: 861, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 851-853 (forms31.js), the technicians' forms from the user's sheets: the flux GOO PROXY as a frog (No. 853, which replaced No. 850 on the user's review: it breathes and
   // looks about; its action puffs the head and pops the eyes), the fire THERMITE BURROWER (it walks on the spot, the drill turning; its action spins the drill white-hot) and the

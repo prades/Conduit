@@ -15,12 +15,12 @@ function _taper32(parent, mat, n, ring) {
   const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setIndex(idx);
   const m = new T.Mesh(geo, mat); m.renderOrder = 6; parent.add(m);
   const t = new T.Vector3(), nr = new T.Vector3(), bi = new T.Vector3(), up = new T.Vector3(0, 1, 0), ax = new T.Vector3(1, 0, 0);
-  return { m, set(pts, r0, r1) {
+  return { m, set(pts, r0, r1, rf, fx, fy) {   // rf(s): the radius along it (0 at the root, 1 at the tip), if not r0 -> r1; fx, fy: its cross-section drawn out sideways / flattened (a ribbon)
     for (let i = 0; i < n; i++) {
       t.copy(pts[Math.min(n - 1, i + 1)]).sub(pts[Math.max(0, i - 1)]).normalize();
       nr.copy(Math.abs(t.y) > 0.9 ? ax : up).cross(t).normalize(); bi.copy(t).cross(nr).normalize();
-      const r = r0 + (r1 - r0) * i / (n - 1), p = pts[i];
-      for (let j = 0; j < ring; j++) { const a = j / ring * TAU, c = Math.cos(a) * r, s = Math.sin(a) * r, k = (i * ring + j) * 3;
+      const r = rf ? rf(i / (n - 1)) : r0 + (r1 - r0) * i / (n - 1), p = pts[i];
+      for (let j = 0; j < ring; j++) { const a = j / ring * TAU, c = Math.cos(a) * r * (fx || 1), s = Math.sin(a) * r * (fy || 1), k = (i * ring + j) * 3;
         pos[k] = p.x + nr.x * c + bi.x * s; pos[k + 1] = p.y + nr.y * c + bi.y * s; pos[k + 2] = p.z + nr.z * c + bi.z * s; }
     }
     geo.attributes.position.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
@@ -76,11 +76,14 @@ function _jellyRam(o) {
   }
   // the jelly: a body of it behind the band, and tentacles trailing back and down from it, each ending in a drop
   const back = new T.Mesh(new T.SphereGeometry(R * 0.95, 28, 18), jellyM); back.scale.set(1, 0.92, 1.05); back.position.z = -R * 0.62; back.renderOrder = 6; body.add(back);
-  const K = o.tentacles, N = 12, tent = [];
+  const style = o.tent || 'drop', K = o.tentacles, N = style === 'drop' ? 12 : 16, tent = [];
+  // (o.tent, the tentacles' shape: 'drop', the first, tubes with a ball at the end; 'goo', the sheet's thick flat uneven streams pinching into a drip, droplets breaking off;
+  // 'taper', smooth arms narrowing to a point; 'string', thin wavy strings, more of them)
   for (let k = 0; k < K; k++) { const u = K > 1 ? (k / (K - 1)) * 2 - 1 : 0, mid = 1 - Math.abs(u), row = k % 2;   // two rows, the lower one hanging more
     const root = V(u * R * 0.7, -R * (0.3 + 0.22 * row) - 0.04 * mid, -R * (0.95 - 0.25 * row) + 0.06 * Math.abs(u)), L = o.tentL * (0.75 + 0.3 * mid + 0.12 * ((k * 53) % 7) / 7), droop = 0.22 + 0.14 * row + 0.08 * ((k * 37) % 5) / 5;
-    const tb = _taper32(body, jellyM, N, 8), drop = new T.Mesh(new T.SphereGeometry(1, 14, 10), jellyM); drop.renderOrder = 6; body.add(drop);   // (a drop: a sphere drawn out along the tentacle's end)
-    tent.push({ u, mid, root, L, droop, tb, drop, k, pts: Array.from({ length: N }, () => V(0, 0, 0)) }); }
+    const tb = _taper32(body, jellyM, N, style === 'string' ? 6 : 10), drop = new T.Mesh(new T.SphereGeometry(1, 14, 10), jellyM); drop.renderOrder = 6; drop.visible = style === 'drop' || style === 'goo'; body.add(drop);   // (a drop: a sphere drawn out along the tentacle's end)
+    tent.push({ u, mid, root, L: L * (style === 'string' ? 1.08 : style === 'goo' ? 0.94 : 1), droop, tb, drop, k, pts: Array.from({ length: N }, () => V(0, 0, 0)) }); }
+  const droplets = style === 'goo' ? [1, 3, 5, 7].filter(k => k < K).map((k, i) => { const m = new T.Mesh(new T.SphereGeometry(1, 10, 8), jellyM); m.renderOrder = 6; body.add(m); return { m, k, i }; }) : [];
   // the charge's burst: shards and a flash at its front
   const shardM = _hot31(lit.clone().lerp(_c31(0xffffff), 0.4));
   const shards = []; for (let i = 0; i < 8; i++) { const s = new T.Mesh(new T.OctahedronGeometry(0.035, 0), shardM); s.visible = false; body.add(s); shards.push({ s, a: i * TAU / 8 + 0.3 }); }
@@ -104,7 +107,7 @@ function _jellyRam(o) {
     // the tentacles: a wave runs down each; in the charge they stream straight back
     const stream = Math.min(1, a * 1.4);
     tent.forEach(T0 => { const { u, mid, root, L, droop, pts, k } = T0;
-      if (o.swim) for (let i = 0; i < N; i++) { const s = i / (N - 1), ps = pulseAt(U - 0.14 * s) * (1 - a), rip = 0.03 * s * Math.sin(TAU * U - 4 * s) * (1 - a);   // the flick reaches each point a little later than the one before
+      if (o.swim) for (let i = 0; i < N; i++) { const s = i / (N - 1), ps = pulseAt(U - 0.14 * s) * (1 - a), rip = (style === 'string' ? 0.06 : 0.03) * s * Math.sin(TAU * U - (style === 'string' ? 7 : 4) * s + (style === 'string' ? k * 1.3 : 0)) * (1 - a);   // the flick reaches each point a little later than the one before
         pts[i].set(root.x * (1 - 0.35 * ps) + u * 0.3 * s * (1 - 0.8 * ps) + rip * u,
                    root.y - (droop * 1.35 * s + 0.2 * s * s) * (1 - 0.8 * ps) * (1 - 0.7 * stream) + rip,
                    root.z - L * s * (0.72 + 0.32 * ps + 0.15 * stream)); }   // (in the charge they stream straight back, no longer: the cell's edge)
@@ -112,8 +115,17 @@ function _jellyRam(o) {
         pts[i].set(root.x + u * 0.2 * s + 0.05 * s * Math.sin(w) * (1 - 0.6 * stream),
                    root.y - (droop * s + 0.14 * s * s) * (1 - 0.7 * stream) + 0.045 * s * Math.cos(w + 0.7) * (1 - 0.6 * stream),
                    root.z - L * s * (0.85 + 0.45 * stream)); }
-      T0.tb.set(pts, 0.08 + 0.02 * mid, 0.03); const tip = pts[N - 1], pre = pts[N - 2];
-      T0.drop.position.copy(tip); T0.drop.scale.set(0.05 + 0.012 * mid, 0.05 + 0.012 * mid, 0.07 + 0.015 * mid); T0.drop.quaternion.setFromUnitVectors(_zAx32, tip.clone().sub(pre).normalize()); });
+      const R0 = (style === 'string' ? 0.032 : style === 'taper' ? 0.085 : 0.09) + 0.02 * mid * (style === 'string' ? 0.3 : 1);
+      if (style === 'goo') T0.tb.set(pts, 0, 0, s => R0 * (1 - 0.45 * s) * (1 + 0.2 * Math.sin(PI * (2.4 * s + 0.37 * k))) * (1 - 0.45 * Math.min(1, Math.max(0, (s - 0.76) / 0.16))), 1.45, 0.75);
+      else if (style === 'taper') T0.tb.set(pts, 0, 0, s => R0 * Math.pow(1 - s, 0.85) + 0.004);
+      else if (style === 'string') T0.tb.set(pts, 0, 0, s => R0 * (1 - 0.85 * s) + 0.003);
+      else T0.tb.set(pts, 0.08 + 0.02 * mid, 0.03);
+      const tip = pts[N - 1], pre = pts[N - 2]; T0.dir = (T0.dir || V(0, 0, 0)).copy(tip).sub(pre).normalize();
+      if (style === 'goo') { T0.drop.position.copy(tip).addScaledVector(T0.dir, 0.03); T0.drop.scale.set(R0 * 0.62, R0 * 0.62, R0 * 1.05); }   // a drip, drawn out along the stream
+      else T0.drop.position.copy(tip), T0.drop.scale.set(0.05 + 0.012 * mid, 0.05 + 0.012 * mid, 0.07 + 0.015 * mid);
+      T0.drop.quaternion.setFromUnitVectors(_zAx32, T0.dir); });
+    // a few droplets breaking off the drips, falling behind the stroke
+    droplets.forEach(D => { const T0 = tent[D.k], tip = T0.pts[N - 1], f = ((((ph / TAU) + D.i * 0.27) % 1) + 1) % 1; D.m.position.copy(tip).addScaledVector(T0.dir, 0.05 + 0.07 * f); D.m.position.y -= 0.05 * f * f; D.m.scale.setScalar(0.022 * (1 - 0.6 * f)); });
     shards.forEach((S, i) => { S.s.visible = hit > 0.05; const r = 0.12 + 0.45 * hit; S.s.position.set(Math.cos(S.a) * r, Math.sin(S.a) * r * 0.8, R + 0.12 + 0.1 * hit); S.s.scale.setScalar(0.6 + 0.8 * hit); });
     flash.scale.setScalar(0.5 + 0.9 * hit); flashM.opacity = 0.85 * hit;
   } };
@@ -121,6 +133,10 @@ function _jellyRam(o) {
 const _jr0 = { S: 1.45, R: 0.34, y: 0.74, dia: 0.17, hornR: 0.11, hornL: 0.46, hornOut: 0.88, hornFwd: 0.42, tentacles: 9, tentL: 0.62 };
 // 862: the Jelly Ram after the user's review: it swims like a jellyfish (every tentacle flicks at once, the bell squeezes, it bobs up and glides), and it is a little bigger.
 fx(862, "The core brawler, the JELLY RAM swimming (the user's ask): every tentacle flicks back at once like a jellyfish's stroke, the bell squeezes and it bobs up, then glides; a little bigger.", () => _jellyRam(Object.assign({}, _jr0, { swim: true, S: 1.6, tentL: 0.54, ramK: 0.55 })));   // (ramK: a shorter lunge, so the bigger ram stays in its cell)
+const _jrSwim = Object.assign({}, _jr0, { swim: true, S: 1.6, tentL: 0.54, ramK: 0.55 });
+fx(863, "The JELLY RAM swimming, its tentacles as the sheet's: thick flat uneven streams of jelly that pinch into a drip, droplets breaking off.", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'goo' })));
+fx(864, "The JELLY RAM swimming, its tentacles smooth arms narrowing to a point.", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'taper', tentacles: 8 })));
+fx(865, "The JELLY RAM swimming, its tentacles thin wavy strings, more of them.", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'string', tentacles: 12 })));
 fx(860, "The core brawler, the JELLY RAM: a clear dome with a big diamond in it under a black helmet band, a horn out of either side lit along its top, a body of jelly trailing tentacles that end in drops; it hovers and rams.", () => _jellyRam(_jr0));
 
 // ── 861 · THE RIMESTAR ─────────────────────────────────────────────────────────────────────────────────
