@@ -141,7 +141,7 @@ function partyPatrol(a) {
 // One card for each slot, kept (updated in place: a tap is never lost to a redraw): the unit's picture, its name, `LV 9 · FOLLOWING`, its health. TAP a card to select that follower (the rings under it, WHO says SEL 1, and the enemy card's strip says
 // SELECTED 1: "depending on what followers you have selected"); the i is its INFO; an open slot opens the roster, to call a follower back from its room or to recruit.
 // The same three cards are the SQUAD BOX at the top of the Command Center's roster (js/commandcenter.js): the squad at a glance, without a trip to another menu. partySlotsBuild / partySlotsUpdate draw either.
-let _sbEls = null, _sbxEls = null, _sfLast = null;   // _sfLast: the member whose card was tapped last (js/squadfly.js opens that one's card)
+let _sbEls = null, _sbxEls = null, _sfLast = null, _sfAway = false;   // _sfLast: the member whose card was tapped last (js/squadfly.js opens that one's card); _sfAway: the card was put away by a press elsewhere, the member still picked
 function partyBarEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("squadBar") : null; }
 function partyBoxEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("ccSquadBox") : null; }
 // three slot cards in `root`, built once (they are updated in place afterwards); `onClick` takes a tap on any of them
@@ -167,7 +167,7 @@ function partyBarClick(ev) {
     const f = hit.f;
     if (hit.info) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
     if (!f) { if (hit.call) { partyAdd([hit.call]); if (typeof mixToolRender === "function") mixToolRender(true); } else if (typeof ccShowCandidates === "function") ccShowCandidates(); else if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the one follower that holds a room comes back; else the roster, showing the followers that could fill it
-    if (typeof ccToggle === "function" && ccToggle(f)) _sfLast = f;   // (the card that opens beside the stack is the last one tapped: js/squadfly.js)
+    if (typeof ccToggle === "function" && ccToggle(f)) { _sfLast = f; _sfAway = false; }   // (the card that opens beside the stack is the last one tapped, even after it was put away: js/squadfly.js)
     partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
 }
 function _sbSet(el, prop, v) { if (el[prop] !== v) el[prop] = v; }

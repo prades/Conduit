@@ -5,11 +5,14 @@
 // may choose to dismiss from squad from this little side menu and index." The squad's three cards stand over RETREAT / HOLD / COME at the bottom left (js/party.js, game.html "THE CORNERS"); a tap on one picks that member (the orders go to them alone,
 // the battle tool says so, and ALL lets them go) and opens THEIR CARD beside the stack: the picture, the name, element, level and role, how they are (their state, health, power and speed), INDEX (the unit info: attacks, jobs and stats, js/unitinfo.js)
 // and DISMISS FROM SQUAD (they hold the room they are in, as REMOVE does in the roster: js/party.js partyRemove). It is for a tablet or a desktop (hudCorners); a phone keeps the bar it has, with the i on each card for its INFO.
+// REPORTED: "when I select a creature from my squad and it pulls up ... the little index card, when I click away, it should still have that character selected, but the card should go away."
+// A press anywhere but on the card or the stack puts the card away and leaves the member picked (partyFlyPressAway); the next member tapped on the stack opens their card again.
 let _sfEls = null, _sfSig = "";
 function partyFlyEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("squadFly") : null; }
-// the member whose card is open: the last one tapped that is still picked, else the first that is picked; nobody when nothing is picked (or this is not the corners layout)
+// the member whose card is open: the last one tapped that is still picked, else the first that is picked; nobody when nothing is picked, when the card was put away (the member
+// is still picked: partyFlyPressAway), or when this is not the corners layout
 function partyFlySubject() {
-    if (!(typeof hudCorners === "function" && hudCorners()) || typeof ccSelectionList !== "function") return null;
+    if (_sfAway || !(typeof hudCorners === "function" && hudCorners()) || typeof ccSelectionList !== "function") return null;
     const sel = ccSelectionList().filter(partyIsMember); if (!sel.length) return null;
     return sel.indexOf(_sfLast) >= 0 ? _sfLast : sel[0];
 }
@@ -19,6 +22,7 @@ function partyFlyBuild(root) {
         + '<div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
         + '<div class="sf-btns"><button class="sf-btn sf-index" data-act="index">INDEX ▸</button><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>';
     root.addEventListener("click", partyFlyClick);
+    if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("pointerdown", partyFlyPressAway, true);   // (capture: before the floor's own press)
     const q = s => root.querySelector(s);
     _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), pw: q(".sf-pw"), sp: q(".sf-sp"), subject: null, thumbKey: null };
     return _sfEls;
@@ -34,8 +38,18 @@ function partyFlyClick(ev) {
         _sfLast = null; _sfSig = ""; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
     }
 }
+// A press anywhere but on the card or on the stack (the floor, the orders, the enemy card, the dock) puts the card away; the member stays picked, so the orders still go to them
+// alone. A tap on the stack picks or lets go as it did (js/party.js partyBarClick). A press on the unit info (the card's INDEX, the stack's i: js/unitinfo.js) or while the
+// card is hidden (the Command Center) is not one away from it: closing those brings it back.
+function partyFlyPressAway(ev) {
+    const E = _sfEls; if (!E || !E.subject || (typeof E.root.getClientRects === "function" && !E.root.getClientRects().length)) return;
+    const t = ev && ev.target && ev.target.closest ? ev.target : null;
+    if (t && (t.closest(".sf-card") || t.closest("#squadBar") || t.closest("#unitInfo"))) return;
+    _sfAway = true; partyFlyRender(true);
+}
 function _sfSet(el, prop, v) { if (el && el[prop] !== v) el[prop] = v; }
 function partyFlyRender(force) {
+    if (_sfAway && !(typeof ccSelectionList === "function" && ccSelectionList().some(partyIsMember))) _sfAway = false;   // (nobody picked now: the next one picked opens their card)
     const root = partyFlyEl(); if (!root) return;
     const f = partyFlySubject(), bar = typeof _sbEls !== "undefined" ? _sbEls : null, slot = f && bar && f.partySlot !== undefined ? bar.slots[f.partySlot] : null;
     if (!f || !slot) { if (_sfEls) _sfEls.subject = null; if (root.classList) root.classList.remove("on"); _sfSig = ""; return; }

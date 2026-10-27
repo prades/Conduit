@@ -45,7 +45,14 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       tags: f ? $$('#squadFly .sf-tag, #squadFly .sf-rt').map(function(t){ return t.textContent; }).join() : '', hpn: f && f.querySelector('.sf-hpn') ? f.querySelector('.sf-hpn').textContent : null, btns: f ? $$('#squadFly .sf-btn').map(function(b){ return b.textContent; }) : [], thumb: !!(f && f.querySelector('canvas.sf-thumb')),
       fr: rect(f), sr: rect(s0), br: rect($('#squadBar')), tr: rect($('#mixTool .mt-panel')), col: card ? card.style.getPropertyValue('--c') : '', go: $('#mixTool .mt-foe-go') ? $('#mixTool .mt-foe-go').textContent : null };
     // INDEX opens the unit's info (its attacks, jobs and stats)
-    var ix = $('#squadFly [data-act=index]'); if (ix) click(ix); await wait(40); out.index = { open: !!$('#unitInfo'), title: $('#unitInfo .ui-title') ? $('#unitInfo .ui-title').textContent : null }; unitInfoClose();
+    var ix = $('#squadFly [data-act=index]'); if (ix) click(ix); await wait(40); out.index = { open: !!$('#unitInfo'), title: $('#unitInfo .ui-title') ? $('#unitInfo .ui-title').textContent : null };
+    var press = function(el){ el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true })); };
+    if ($('#unitInfo')) press($('#unitInfo')); unitInfoClose(); await wait(40); out.index.back = flyOn();   // (a press on the unit info is not one away from the card: closing it brings the card back)
+    // REPORTED: "when I click away, it should still have that character selected, but the card should go away"
+    if ($('#squadFly .sf-name')) press($('#squadFly .sf-name')); await wait(40); out.away = { onCard: flyOn() };   // (a phone has no card)
+    press(document.body); await wait(60); out.away.fly = flyOn(); out.away.sel = selectedUnits.size; out.away.lit = s0.classList.contains('sel'); out.away.to = txt('#mixTool .mt-to b'); out.away.label = unitTypeLabel(m0);
+    partyTick(); await wait(40); out.away.tick = flyOn();
+    click(s0); await wait(60); out.away.letGo = [selectedUnits.size, flyOn()]; click(s0); await wait(60); out.away.again = [selectedUnits.size, flyOn(), txt('#squadFly .sf-name')];
     // a second card picked: the card is the last one tapped; two picked says so
     var s1 = slots()[1], m1 = s1._unit; click(s1); await wait(60);
     out.two = { fly: flyOn(), sel: selectedUnits.size, name: txt('#squadFly .sf-name'), label1: unitTypeLabel(m1), to: txt('#mixTool .mt-to b') };
@@ -86,7 +93,7 @@ function measure(w, h) {
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run('gameState.running = true; unlockedElements = new Set(ELEMENTS.map(e => e.id)); facilityPlayStart(); facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860; innerWidth = 1100;');   // (the page boots the facility: the start returns early; only the tutorial's blackout is lifted)
     run(`globalThis.__cell = (room, k) => { const cs = partyRoomCells(room); return cs[Math.floor(cs.length * (k === undefined ? 0.5 : k))]; };
-        globalThis.__fresh = (n) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); squadMode = 'all'; floatingTexts.length = 0; _sfLast = null; player.x = player.targetX = player.visualX = __cell('crystal_chamber')[0]; player.y = player.targetY = player.visualY = __cell('crystal_chamber')[1];
+        globalThis.__fresh = (n) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); squadMode = 'all'; floatingTexts.length = 0; _sfLast = null; _sfAway = false; player.x = player.targetX = player.visualX = __cell('crystal_chamber')[0]; player.y = player.targetY = player.visualY = __cell('crystal_chamber')[1];
             for (let i = 0; i < n; i++) { spawnFollowerAtCrystal(['electric', 'core', 'fire', 'ice', 'toxic', 'flux'][i % 6]); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.health = f.maxHealth = 1e7; f.currentWill = 1e5; f.x = player.x + 0.5 + i * 0.2; f.y = player.y + 0.5; } partyTick(); return followers.slice(); };`);
 
     group('THE CORNERS LAYOUT (js/party.js hudCorners)');
@@ -117,6 +124,15 @@ function measure(w, h) {
             selectedUnits.clear(); fs[1].post = 'lab_hallway'; selectedUnits.add(fs[1]); o.held = partyFlySubject() === null; fs[1].post = null; selectedUnits.clear(); selectedUnits.add(fs[0]); innerWidth = 500; o.phone = partyFlySubject() === null; innerWidth = 1100; return o; })()`);
         for (const k of ['none', 'one', 'last', 'fallback', 'held', 'phone']) same(r[k], true, k);
     });
+    check('a press away puts the card away and the member stays picked; the next member tapped on the stack opens theirs, a tap on a picked one lets it go and leaves the card away, and with nobody picked the next pick opens it', () => {
+        const r = J(`(function(){ const fs = __fresh(3), o = {}, tap = f => partyBarClick({ target: { closest: s => s === '.sb-slot' ? { _unit: f, _call: null } : null } }); innerWidth = 1100;
+            tap(fs[0]); o.open = [partyFlySubject() === fs[0], _sfAway]; _sfAway = true; o.away = [partyFlySubject() === null, selectedUnits.has(fs[0])]; partyTick(); o.kept = _sfAway;
+            tap(fs[1]); o.next = [partyFlySubject() === fs[1], _sfAway, selectedUnits.size]; _sfAway = true; tap(fs[1]); o.letGo = [selectedUnits.has(fs[1]), _sfAway, partyFlySubject() === null];
+            selectedUnits.clear(); partyTick(); o.reset = _sfAway; return o; })()`);
+        same(r.open.join(), 'true,false', 'the card of the member tapped'); same(r.away.join(), 'true,true', 'put away: no card, the member still picked'); same(r.kept, true, 'the next tick brought the card back');
+        same(r.next.join(), 'true,false,2', 'the next member tapped opens theirs'); same(r.letGo.join(), 'false,true,true', 'a tap on a picked member lets it go and the card stays away'); same(r.reset, false, 'nobody picked: the next pick opens it');
+        const t = rd('js/squadfly.js'); ok(/addEventListener\("pointerdown", partyFlyPressAway, true\)/.test(t), 'the press away is not heard'); ok(/closest\("\.sf-card"\)/.test(t) && /closest\("#squadBar"\)/.test(t) && /closest\("#unitInfo"\)/.test(t), 'a press on the card, the stack or the unit info counts as away');
+    });
     check('the card\'s code: INDEX opens the unit info, DISMISS is the roster\'s REMOVE (the member holds the room it is in); it follows the card it is for and is hidden with the bar', () => {
         const t = rd('js/squadfly.js'); ok(/unitInfoOpen\(f\)/.test(t) && /partyRemove\(\[f\]\)/.test(t), 'the buttons'); ok(/data-act="index"/.test(t) && /data-act="dismiss"/.test(t), 'the markup'); ok(/getBoundingClientRect\(\)/.test(t), 'it is not placed beside its card');
         ok(/body\.placing #squadFly, body\.ccOpen #squadFly, body\.panel-open #squadFly/.test(rd('game.html')), 'it stays up over the Command Center'); ok(/<div id="squadFly"/.test(rd('game.html')) && /js\/squadfly\.js/.test(rd('game.html')), 'game.html');
@@ -145,6 +161,11 @@ function measure(w, h) {
             same(r.pick.btns.length, 2, 'buttons'); ok(/^INDEX/.test(r.pick.btns[0]) && /^DISMISS FROM SQUAD/.test(r.pick.btns[1]), 'buttons ' + r.pick.btns);
             ok(r.pick.fr[0] >= r.pick.br[2], 'the card ' + r.pick.fr + ' is not beside the stack ' + r.pick.br); ok(Math.abs(r.pick.fr[1] - r.pick.sr[1]) <= 16, 'the card\'s top ' + r.pick.fr[1] + ' is not at its card\'s ' + r.pick.sr[1]); ok(r.pick.fr[3] <= r.pick.tr[1] + 40 || r.pick.fr[0] >= r.pick.tr[2], 'the card ' + r.pick.fr + ' lies over the tool ' + r.pick.tr);
             ok(r.pick.fr[2] <= w && r.pick.fr[3] <= h, 'the card is off the screen: ' + r.pick.fr);
+        });
+        check(w + ': a press on the card keeps it; a press anywhere else puts it away and the member stays picked (its card on the stack lit, the tool still names it), also after a tick; a tap on it then lets it go, and the next tap picks it and opens its card; a press on the unit info is not one away', () => {
+            same(r.index.back, true, 'closing the unit info did not bring the card back'); same(r.away.onCard, true, 'a press on the card put it away');
+            same(r.away.fly, false, 'the card stayed after a press away'); same(r.away.sel, 1, 'the press away let the member go'); same(r.away.lit, true, 'its card on the stack is not lit'); same(r.away.to, r.away.label, 'the tool does not name it'); same(r.away.tick, false, 'a tick brought the card back');
+            same(r.away.letGo.join(), '0,false', 'a tap on the picked member'); same(r.away.again[0], 1, 'the next tap did not pick it'); same(r.away.again[1], true, 'the next tap did not open its card'); same(r.away.again[2], r.away.label, 'the card is not its');
         });
         check(w + ': INDEX opens the unit\'s info; a second member picked makes THEIR card the open one and the tool says 2 SELECTED; letting that one go gives the card back to the first; ALL lets everyone go and the card closes', () => {
             same(r.index.open, true, 'INDEX opened nothing'); ok(/./.test(r.index.title || ''), 'its title'); same(r.two.fly, true, 'card'); same(r.two.sel, 2, 'two picked'); same(r.two.name, r.two.label1, 'the last tapped'); same(r.two.to, '2 SELECTED', 'the caption');
