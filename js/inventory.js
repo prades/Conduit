@@ -62,8 +62,14 @@ const ITEMS = {
         lore: "A glass-and-steel canister with a green glow that does not flicker. The label says THIS SIDE UP and, underneath, in a different hand, YES REALLY.",
         stats: ["LOADED INTO  THE LASER RIFLE", "EACH CELL  12 CHARGES", "FOUND IN  THE COMPUTER LAB, ONCE ITS POWER IS BACK"],
         use: () => ({ ok: false, why: "THE LASER RIFLE LOADS IT BY ITSELF" }) },
+    // the brief: "The main character handles the specimen's containment capsule and transports it to the Resurrection Zone." What it holds is in specimenCarried (js/specimen.js); this is its place in the pack.
+    specimen_capsule: { id: "specimen_capsule", name: "SPECIMEN CAPSULE", cat: "sample", type: "tool", stack: 3, col: "#aeeaff", icon: "fuel", classes: null,
+        desc: "A fallen ally, frozen by an Ice Mage and sealed in a containment capsule. Use it at the Resurrection Zone (the Crystal) to bring it back.",
+        lore: "Frost on the inside of the glass, and something very still behind it. The seal hums. It is lighter than it should be.",
+        stats: ["HOLDS  ONE PRESERVED SPECIMEN", "USED AT  THE RESURRECTION ZONE: THE CRYSTAL", "IT COMES BACK AS IT WAS"],
+        use: () => typeof specimenUseItem === "function" ? specimenUseItem() : { ok: false, why: "TAKE IT TO THE CRYSTAL" } },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "specimen_capsule"];
 
 // ── the pack ──
 let playerInv = {};

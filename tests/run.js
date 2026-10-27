@@ -28,6 +28,7 @@ const SUITES = [
     ['effects plan',             'effects.js'],
     ['combat readability: the bite in two beats, one bite one unit, the cap, the numbers, the bar, DEFEATED', 'combat.js'],
     ['the Mutator: the lash, cloning is the Mutator\'s, the one clone fights as its species and stays fallen', 'mutator.js'],
+    ['the Ice Mage preserves a fallen ally; the player carries its capsule to the Resurrection Zone', 'specimen.js'],
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],
     ['follower types',           'followertypes.js'],

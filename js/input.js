@@ -125,6 +125,8 @@ const handleInput=(ex,ey)=>{
     // Short tap near the Crystal → the battle tool (a phone's; it is always open on a tablet or desktop, js/mixtool.js)
     if (isTapNearCrystal(ex,ey)) { crystalMenuOpen=true; return; }
 
+    // The Resurrection Zone's plate, with a specimen capsule in the pack (js/specimen.js).
+    if (typeof specimenTap === "function" && specimenTap(ex, ey)) return;
     // A tap on a class station (or its plate) uses it (js/stations.js).
     if (typeof facilityStationTap === "function" && facilityStationTap(ex, ey)) return;
 
@@ -338,8 +340,9 @@ canvas.addEventListener('pointerup', e=>{
             if (relDist > 18) {
                 // A fallen clone's body (mirrors its branch in drawRadialMenu): UP is SALVAGE DNA, RIGHT is the body's second order (js/mutator.js mutatorBodyRing)
                 if (commandBodyTarget) {
-                    if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4) selectedRadialAction = "salvage_body";
-                    else if (relAngle > -Math.PI/4 && relAngle < Math.PI/4 && typeof mutatorBodyRing === "function" && mutatorBodyRing(commandBodyTarget).right) selectedRadialAction = mutatorBodyRing(commandBodyTarget).right.act;
+                    const _ring = typeof mutatorBodyRing === "function" ? mutatorBodyRing(commandBodyTarget) : { up: true, right: null };
+                    if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && _ring.up) selectedRadialAction = "salvage_body";
+                    else if (relAngle > -Math.PI/4 && relAngle < Math.PI/4 && _ring.right) selectedRadialAction = _ring.right.act;
                     commandPendingTap = false; executeCommand(); commandTarget = null; isPressing = false; return;
                 }
                 // Own follower ring (mirrors its branch in drawRadialMenu).

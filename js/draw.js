@@ -92,9 +92,7 @@ function drawRadialMenu() {
     // ── A FALLEN CLONE'S BODY (js/mutator.js): UP = SALVAGE DNA (a share of what it cost comes back), RIGHT = the body's second order when there is one (the Ice Mage's, the brief's step 6) ──
     if (commandBodyTarget && typeof cloneBodies !== "undefined" && cloneBodies.includes(commandBodyTarget)) {
         const b = commandBodyTarget, ring = typeof mutatorBodyRing === "function" ? mutatorBodyRing(b) : { up: { label: "SALVAGE DNA" } };
-        const bUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4;
-        drawRadialButton(commandX, commandY-RADIAL_RADIUS, ring.up.label, bUp);
-        if (bUp) selectedRadialAction = "salvage_body";
+        if (ring.up) { const bUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4; drawRadialButton(commandX, commandY-RADIAL_RADIUS, ring.up.label, bUp); if (bUp) selectedRadialAction = "salvage_body"; }   // (a follower's body, or a capsule, has none)
         if (ring.right) { const bRight = dist>RADIAL_RADIUS*0.25&&angle>-Math.PI/4&&angle<Math.PI/4; drawRadialButton(commandX+RADIAL_RADIUS, commandY, ring.right.label, bRight); if (bRight) selectedRadialAction = ring.right.act; }
         _radialCaption(ring.caption || (String(b.sp).toUpperCase() + " CLONE · FALLEN"), "#d6b8ff");
         ctx.restore();

@@ -24,7 +24,8 @@ function facilitySaveCollect() {
         followers: followerRosterSnapshot(),
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
         clones: cloneRosterSnapshot(),   // the clones: alive, or waiting at the Crystal to come back
-        bodies: typeof cloneBodiesSnapshot === "function" ? cloneBodiesSnapshot() : [],   // the Mutator's fallen clone, where it fell (js/mutator.js)
+        bodies: typeof cloneBodiesSnapshot === "function" ? cloneBodiesSnapshot() : [],   // the Mutator's fallen clone, a follower fallen for good, a capsule on the floor (js/mutator.js, js/specimen.js)
+        capsules: typeof specimenSnapshot === "function" ? specimenSnapshot() : [],     // the specimen capsules in the pack (js/specimen.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
@@ -74,6 +75,7 @@ function facilitySaveApply(d) {
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);
     if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function") cloneBodiesApply(d.bodies);
+    if (typeof specimenApply === "function") specimenApply(d.capsules);   // (and the pack's count of them is theirs)
     if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
     // where the player stood (if that is still floor), and the followers with them
@@ -89,7 +91,11 @@ function followerRosterSnapshot() {
         ...actors.filter(a => a.team === "green" && a.returningToCrystal && !a.dead && !a.sacrificed && a.personality && !followers.includes(a)),
         ...respawnQueue.filter(e => !e.isClone && !e.sacrificed && e.personality)
     ];
-    return armyNow.map(a => ({
+    return armyNow.map(followerRecord);
+}
+// one follower's record (a live one, or one waiting to respawn); also what a fallen follower's preserved body keeps (js/specimen.js)
+function followerRecord(a) {
+    return {
         element: a.element || "fire", personality: a.personality, combatTrait: a.combatTrait, naturalTrait: a.naturalTrait, perk: a.perk, stats: a.stats, role: a.role,
         uid: a.uid || null, partnerUid: a.partnerUid || null,   // its bond (js/bonds.js)
         base: a.base || undefined, level: a.level, xp: a.xp,   // its level (js/levels.js); one waiting to respawn carries its own
@@ -97,9 +103,18 @@ function followerRosterSnapshot() {
         playStyle: a.playStyle || undefined,   // js/commandcenter.js
         post: a.post || undefined,             // the room it holds (js/party.js)
         move: a.move || undefined              // the signature move it was given (js/moves.js)
-    }));
+    };
 }
 function spawnFollowerFromSave(entry) {
+    const npc = followerBuild(entry);
+    actors.push(npc); followers.push(npc);
+    if (!followerByElement[npc.element]) followerByElement[npc.element] = [];
+    followerByElement[npc.element].push(npc);
+    if (typeof partyAdmit === "function") partyAdmit(npc);   // (more than the squad's three come back posted where they are)
+    return npc;
+}
+// a follower made from its record, not yet in the world (the save above; a fallen follower's body is drawn from one: js/specimen.js)
+function followerBuild(entry) {
     const personality = entry.personality || PERSONALITY_KEYS[Math.floor(Math.random() * PERSONALITY_KEYS.length)];
     const stats = entry.stats || applyPersonality(personality);
     const role = entry.role || assignRole(stats);
@@ -116,10 +131,7 @@ function spawnFollowerFromSave(entry) {
     if (entry.playStyle) npc.playStyle = entry.playStyle;
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
     if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }
-    actors.push(npc); followers.push(npc);
-    if (!followerByElement[npc.element]) followerByElement[npc.element] = [];
-    followerByElement[npc.element].push(npc);
-    if (typeof partyAdmit === "function") partyAdmit(npc);   // (more than the squad's three come back posted where they are)
+    return npc;
 }
 // ── THE CLONES' RECORD: each live clone (its kind and level), and each one waiting to come back (with the wait still to run); made again from it (js/clone.js makeClone) ──
 function cloneRosterSnapshot() {

@@ -616,6 +616,7 @@ function render() {
     if (typeof gunTick === "function") gunTick();   // click or hold to fire: js/gunfire.js
     if (typeof mutatorTick === "function") mutatorTick();   // the Mutator's lash: walk into reach, draw back, strike (js/mutator.js)
     if (typeof mutatorBodiesTick === "function") mutatorBodiesTick();   // a fallen clone's body (js/mutator.js)
+    if (typeof specimenTick === "function") specimenTick();   // the Ice Mage preserving a body; the capsule taken (js/specimen.js)
     if (typeof targetTick === "function") targetTick();   // the aim meter and the selection: js/targeting.js
     // The crystals, at the top left: only the change touches the page.
     if (shardCount !== _lastShardCount) { _lastShardCount = shardCount; shardUI.textContent = String(shardCount); }
@@ -694,8 +695,8 @@ function render() {
             // (js/levels.js); its level scales it back up.
             const oldHp = a.base?.hp ?? a.stats?.hp ?? 1;
             const newHp = oldHp - 1;
-            // A clone has no HP stat to wear down: it always comes back. Running out of HP stat is permanent.
-            if (newHp<=0 && !a.isClone) return; // permanent death — don't queue
+            // A clone has no HP stat to wear down: it always comes back. Running out of HP stat is permanent: the follower's body stays where it fell, and an Ice Mage can preserve it (js/specimen.js).
+            if (newHp<=0 && !a.isClone) { if (typeof specimenFollowerFell === "function") specimenFollowerFell(a); return; } // permanent death — don't queue
             // A clone takes far longer to come back than a follower: it is
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
@@ -1145,6 +1146,7 @@ function render() {
     if (typeof drawBonds === "function") drawBonds();
     if (typeof drawBiteTelegraphs === "function") drawBiteTelegraphs();   // a creature rearing back to bite, and whom (js/combat.js)
     if (typeof drawMutatorFx === "function") drawMutatorFx();   // the Mutator's lash (js/mutator.js)
+    if (typeof drawSpecimenOverlay === "function") drawSpecimenOverlay();   // the Ice Mage's beam; the Resurrection Zone and its plate (js/specimen.js)
     drawFloatingTexts();
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.

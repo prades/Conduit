@@ -152,5 +152,5 @@ Seen while measuring, and not changed: a creature on its way to the Crystal turn
 ## 5. Next (the brief's steps 5 to 7)
 
 - **Step 5: built** (2.5).
-- **Step 6:** the Ice Mage freezes a fallen ally's body; the player carries the containment capsule to the Resurrection Zone; the capsule is used there to restore the specimen.
+- **Step 6: built** (docs/SPECIMENS.md): the Ice Mage freezes a fallen ally's body (the Mutator's clone, or a follower lost for good); the player carries the containment capsule to the Resurrection Zone, the Crystal, where it restores the specimen as it was. A clone's body is salvaged OR preserved.
 - **Step 7:** the healing serum: crafted with DNA, splashed on the ground, healing the allies in its area; the laboratory makes it over time (every 60 s, configurable), more with the Mutator's level.
