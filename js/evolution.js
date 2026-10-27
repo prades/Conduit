@@ -207,10 +207,11 @@ const EVOLUTIONS = {
     // a yellow underglow, square wings and two launcher prongs, over a six-legged shuttle; its action frames lift the shell off. It glows, so the sheet carries its own light.
     hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", sheet: "img/evo/hovershell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 93.1], noGlow: true, color: "#ffee33" },
-    // The ICE TECHNICIAN, design No. 852 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around"):
-    // a squat box of cut ice blocks on diamond legs. It glides, so the sheet carries its own light.
+    // The ICE TECHNICIAN, design No. 857 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around", then the review:
+    // "only 4 legs", "fitted bricks on the body", "the diamonds are nested under the body", "bigger bricks 2 layers", "moves like a train cart, so that the smaller side is
+    // front facing"): a long box of big fitted ice bricks, narrow end first, on four diamonds nested in sockets under it. It glides, so the sheet carries its own light.
     igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", sheet: "img/evo/igloo.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 78.7], noGlow: true, color: "#9fe8ff" },
+              cell: 144, anchor: [72, 114.2], core: [72, 89], noGlow: true, color: "#9fe8ff" },
     // The CORE BRAWLER, design No. 867 (the user's "JELLY RAM" sheet: "a floating brawler that uses its horned shell to ram targets", then the user's review: "move with
     // flicks from all of its tentacles like the jellyfish from SpongeBob", "a little bit bigger", the wavy strings "but fewer and thicker", "fatter tentacles"): a clear dome
     // with a big diamond in it under a black helmet band, a horn out of either side lit along its top, a bell of jelly with seven fat wavy tentacles; it swims, every tentacle

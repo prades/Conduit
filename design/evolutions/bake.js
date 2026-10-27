@@ -44,7 +44,8 @@ const JOBS = [
   { id: 'thermite_black', form: 854, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 855 is the game's Thermite Burrower now (above); thermite_bear bakes the same, for comparison.
   { id: 'thermite_bear', form: 855, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
-  { id: 'igloo', form: 852, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'igloo', form: 857, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 857, approved on the user's review: fitted bricks, four nested diamonds, runs like a train cart)
+  { id: 'igloo_old', form: 852, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Igloo Skater, before the review)
   // No. 856, the Igloo Skater of fitted bricks on four nested diamonds (the user's ask on 852): a candidate until approved.
   { id: 'igloo_bricks', form: 856, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 857, the same turned to run like a train cart, its narrow end first (the user's ask on 856): a candidate until approved.
