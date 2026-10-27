@@ -47,6 +47,8 @@ const JOBS = [
   { id: 'igloo', form: 852, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 856, the Igloo Skater of fitted bricks on four nested diamonds (the user's ask on 852): a candidate until approved.
   { id: 'igloo_bricks', form: 856, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  // No. 857, the same turned to run like a train cart, its narrow end first (the user's ask on 856): a candidate until approved.
+  { id: 'igloo_cart', form: 857, color: '#7fd6ff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 831-836, the clear glass egg on six dark metal leg sets: candidates.
   { id: 'lg_insect', form: 831, color: '#ff5522', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   { id: 'lg_strut', form: 832, color: '#ff5522', idleAct: 0, action: [0, 1.0], brightCrystal: true },

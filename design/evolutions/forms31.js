@@ -432,11 +432,14 @@ function _iglooBricks(o) {
   return { g, core: (y0 + H * 0.5) * (o.S || 1), update(t, act) {
     const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act), s = Math.sin(ph), c = Math.cos(ph), q = 1 - a;
     // the glide: from side to side on its diamonds, leaning into each stride and turning with it; the spin (action) goes once round on them, with a little hop
-    rig.position.set(0.06 * s * q, 0.03 * Math.sin(PI * pr), 0); rig.rotation.set(0, 0.12 * c * q + TAU * pr, -0.06 * s * q);
-    flecks.forEach(F => { const u = ((ph / TAU) * 2 + F.k) % 1; F.f.position.set(F.sx * (0.26 + 0.12 * u) + rig.position.x * 0.5, 0.02 + 0.1 * u * (1 - u) * 4, -D * 0.35 - 0.5 * u); F.f.scale.setScalar((1 - u) * (0.8 + 0.6 * a)); F.f.rotation.y = u * 6; });
+    if (o.cart) { rig.position.set(0, 0.008 * Math.abs(s) + 0.03 * Math.sin(PI * pr), 0.045 * s * q); rig.rotation.set(-0.025 * c * q, TAU * pr, 0); }   // ("moves like a train cart": glides along its length, rocking a little)
+    else { rig.position.set(0.06 * s * q, 0.03 * Math.sin(PI * pr), 0); rig.rotation.set(0, 0.12 * c * q + TAU * pr, -0.06 * s * q); }
+    flecks.forEach(F => { const u = ((ph / TAU) * 2 + F.k) % 1; F.f.position.set(F.sx * (W * 0.3 + 0.12 * u) + rig.position.x * 0.5, 0.02 + 0.1 * u * (1 - u) * 4, -D * 0.45 - 0.5 * u); F.f.scale.setScalar((1 - u) * (0.8 + 0.6 * a)); F.f.rotation.y = u * 6; });
     frostRing.scale.setScalar(0.6 + 1.6 * a); ringM.opacity = 0.75 * Math.sin(PI * a);
   } };
 }
 const _igb0 = { S: 1.4, W: 1.1, H: 0.58, D: 0.76, y0: 0.2, gap: 0.028, brickT: 0.09, rows: 2, topRows: 2, brick: 0.5, gem: 0.15, legH: 0.42, legX: 0.27, legZ: 0.24,   // ("bigger bricks, 2 layers")
   ice: ['#6aa7d4', '#5a98c8', '#7bb6dd', '#4f8dc0', '#72afd9'] };
+// 857: "when it moves like a train cart, so that the smaller side is front facing": the same box turned to run along its length (narrow end first), gliding like a cart.
+fx(857, "The ice technician, the IGLOO SKATER of fitted bricks running like a train cart (the user's ask): its narrow end first, gliding along its length on four nested diamonds.", () => _iglooBricks(Object.assign({}, _igb0, { W: 0.76, D: 1.1, cart: true, legX: 0.3, legZ: 0.3 })));
 fx(856, "The ice technician, the IGLOO SKATER of fitted bricks (the user's ask): a box of ice bricks in staggered courses, dark mortar in the joints, on four diamonds nested in sockets under it.", () => _iglooBricks(_igb0));
