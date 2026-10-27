@@ -15,7 +15,8 @@ const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src 
 const JOBS = [
   // Nos. 870-871 (forms33.js), the last two technicians from the user's sheets: the BLIGHT SPIDER, toxic (it trots, its toxin bubbling; its action puffs toxin from the lens), and
   // the HOVER SHELL, electric (it hovers, shut; its action is the sheet's separation: the shell lifts, the shuttle's legs unfold, then it shuts).
-  { id: 'blightspider', form: 870, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'blightspider', form: 873, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 873, approved on the user's review: fine legs, lower to the ground)
+  { id: 'blightspider_old', form: 870, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Blight Spider, before the review)
   // No. 873, the Blight Spider on fine legs, lower to the ground (the user's ask on 870): a candidate until approved.
   { id: 'blightspider_low', form: 873, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'hovershell', form: 871, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },

@@ -199,10 +199,11 @@ const EVOLUTIONS = {
     // red light and a cone drill for a nose glowing red in its groove, on a bear's thick armoured legs with clawed paws. The drill turns, so the sheet carries its own light.
     thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", sheet: "img/evo/thermite.png",
               cell: 144, anchor: [72, 114.2], core: [72, 74.8], noGlow: true, color: "#ff5a1f" },
-    // The TOXIC TECHNICIAN, design No. 870 (the user's card, "BLIGHT SPIDER · TOXIC DEPLOY"): a glass tank of bubbling toxin with black bands and a black front cap
-    // with a lens, on a faceted black six-legged chassis. The toxin bubbles and the legs trot, so the sheet carries its own light.
+    // The TOXIC TECHNICIAN, design No. 873 (the user's card, "BLIGHT SPIDER · TOXIC DEPLOY", then the review: "smaller, thinner, finer legs, and ... lower to the
+    // ground"): a glass tank of bubbling toxin with black bands and a black front cap with a lens, on a black chassis riding low on six fine spider legs. The toxin
+    // bubbles and the legs trot, so the sheet carries its own light.
     blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", sheet: "img/evo/blightspider.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 71.6], noGlow: true, color: "#66ff66" },
+              cell: 144, anchor: [72, 114.2], core: [72, 79.6], noGlow: true, color: "#66ff66" },
     // The ELECTRIC TECHNICIAN, design No. 871 (the user's "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet, which has no name): a horseshoe crab's domed black shell with
     // a yellow underglow, square wings and two launcher prongs, over a six-legged shuttle; its action frames lift the shell off. It glows, so the sheet carries its own light.
     hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", sheet: "img/evo/hovershell.png",
