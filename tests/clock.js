@@ -11,9 +11,10 @@
 // often as the screen manages; the catch-up steps run with drawing switched to
 // a canvas that ignores every call.
 //
-// And in a night fight the follower sprite cache built about one new 168x168
+// And in a fight the follower sprite cache built about one new 168x168
 // canvas EVERY frame (a texture upload each on an iPad) and held ~97 MB at its
 // cap. The sprites are 1x now, and a fight's looks fit in the cache.
+// The page boots the facility (js/init.js): the clock is measured over it.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -154,15 +155,6 @@ check('a hit keeps a sprite: the cache drops the least recently USED', () => {
         _virusSprite(f, false, 9999, 0, 0, 0);                   // one more: something must go
         return _virusSprite(f, false, 1, 2, 3, 0) === first; })()`);
     ok(r, 'the sprite in use was evicted and rebuilt');
-});
-
-console.log('\nTHE SHIELD GENERATOR');
-check('it is stamped, not drawn path by path (it was 13 paints each)', () => {
-    run('drawShieldGenerator(100, 100, true, 0.5); drawShieldGenerator(100, 100, false, 0.5);');   // build the sprites
-    const n0 = counts.n;
-    run('drawShieldGenerator(100, 100, true, 0.5);');
-    const on = counts.n - n0;
-    ok(on <= 5, 'a working generator took ' + on + ' paints');
 });
 
 console.log(failures ? `\n${failures} FAILING` : '\nall passing');

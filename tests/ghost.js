@@ -1,6 +1,6 @@
 // GHOST-STEP EQUIVALENCE (tests/ghost.js): a step with no picture must leave the game exactly where a drawn step would.
-// js/game.js gameLoop runs several steps per refresh on a slow device: all but the last are "ghost" steps (_simStep(false): ctx is the null context, _simGhost is true). In FACILITY PLAY a ghost step
-// builds a smaller (or empty) draw list. Everything that lives in the draw pass and that logic reads must still happen in it. This runs two copies of the same facility, in lock step, from the same seed:
+// js/game.js gameLoop runs several steps per refresh on a slow device: all but the last are "ghost" steps (_simStep(false): ctx is the null context, _simGhost is true). A ghost step
+// builds a smaller (or empty) draw list. Everything that lives in the draw pass and that logic reads must still happen in it. This runs two copies of the same facility (the page boots it, js/init.js), in lock step, from the same seed:
 //   A  every step is a normal render() (one picture each)                 [or, in LOOP mode, gameLoop at 60 Hz: one drawn step a refresh]
 //   X  every step is _simStep(false), no picture at all                   [or, in LOOP mode, gameLoop at 15 Hz: three ghost steps and a drawn one a refresh]
 // and compares the game's state: a cheap digest every step (the first step it differs), and a deep snapshot of every module-level variable every EVERY steps.
@@ -24,10 +24,10 @@ const W = 1180, H = 820;                            // an iPad-sized screen: the
 // (1) the clock's and the readout's own counters, and the pen; (2) values that only DRAWING reads. Anything else that differs is a failure.
 // Keep this list short and give every entry a reader check (Grep for the name) before adding it.
 const IGNORE = /^(_virusesOnScreen|_virusesCounting|_virusCountFrame|_perf|_simLast|_simDebt|_simStepsShown|_simStepsCount|_simStepsAt|_simGhost|_nullCtx|_lastDrawScan|_fpCam|_fpBase|_fpDimW|_fpDimFor|ctx|canvas)(\W|$)/;
-// DRAW-ONLY caches that a step with no picture rightly does not fill (each checked with Grep: only the drawing code reads it): the cable layer's timer (_cableLaidAt, js/game.js layAllCablesCached), the tile column index (_colIndex*, built
+// DRAW-ONLY caches that a step with no picture rightly does not fill (each checked with Grep: only the drawing code reads it): the tile column index (_colIndex*, built
 // lazily from `world` by tileColumns for the draw list), the rooms' colour cache (_fpRoomCol), the baked floor sprites (_fp.spr), a wall's bounds cache and the draw-depth cache (_fp.items[].bb and ._dd, _fpWallOnScreen and the sort).
 // `world` itself is followed through worldTileMap and the actors; as a root it is only the same array under another name.
-const IGNORE_PATH = /^(_cableLaidAt|_cableSig|_cableTiles|_cableBeadWires|_beadCells|_cableRoutes|_cableStyles|_colIndex\w*|_fpRoomCol|_fp\.spr|_fp\.doorMids\w*|_fp\.items\[\]\.(bb|_dd)|world)([\W]|$)/;
+const IGNORE_PATH = /^(_colIndex\w*|_fpRoomCol|_fp\.spr|_fp\.doorMids\w*|_fp\.items\[\]\.(bb|_dd)|world)([\W]|$)/;
 // a root that looks like a cache of sprites/measurements: reported separately; it fails the run only with STRICT_CACHES=1 (verify with Grep that only drawing reads it, then add it to IGNORE)
 const CACHEY = /(sprite|cache|atlas|slice|sils|pattern|_img|dim|glyph|memo|tilemap|columns)/i;
 
@@ -112,7 +112,7 @@ function coreDigest() {
     const fo = followers.map(q => [q.x, q.y, q.health, q.state, q.dead ? 1 : 0, q.job ? (q.job.type || 1) : 0].map(f).join(','));
     const lights = _fp && _fp.light ? Array.from(_fp.light.values()).map(v => v.toFixed(6)).join(',') : '';
     const doors = _fp && _fp.doorItems ? Array.from(_fp.doorItems.values()).map(d => (d.st && d.st.open || 0).toFixed(4)).join(',') : '';
-    return [frame, player.x, player.y, crystal.health, actors.length, followers.length, floatingTexts.length, elementEffects.length, turretShots.length, respawnQueue.length, typeof shardCount === 'number' ? shardCount : '', a.join(';'), fo.join(';'), lights].join('|') + '#' + doors;
+    return [frame, player.x, player.y, crystal.health, actors.length, followers.length, floatingTexts.length, elementEffects.length, fireBombs.length, respawnQueue.length, typeof shardCount === 'number' ? shardCount : '', a.join(';'), fo.join(';'), lights].join('|') + '#' + doors;
 }
 
 // ── the module-level variables, found in the sources (not a hand-kept list: a new one is picked up by itself) ──
@@ -163,7 +163,7 @@ const SCENARIOS = {
     attract: { open: '', attract: true, events: {} },                                                                 // the website's background (no player: searchers walk the halls)
 };
 async function bootRun(name, scn, mode, label) {
-    const store = { tubecrawler_seed: '305419896', conduit_fp_gfx: 'high' };   // (the graphics level is pinned: the slow-device switch must not fire in one run and not the other)
+    const store = { conduit_fp_gfx: 'high' };   // (the graphics level is pinned: the slow-device switch must not fire in one run and not the other)
     const sb = makeBrowserSandbox(store);
     const clock = { now: 1000 }; sb.performance = { now: () => clock.now };   // (not 0: gameLoop reads _simLast === 0 as 'no history' and owes only one step the first time)
     sb.innerWidth = W; sb.innerHeight = H;
@@ -245,12 +245,12 @@ async function lockstep(scnName, mode, selftest) {
         ACTIVE = A; const ca = A.core(); ACTIVE = X; const cx = X.core();
         if (ca !== cx && !firstCore) {
             firstCore = step + unit; const pa = ca.split('|'), px = cx.split('|');
-            const names = ['frame', 'player.x', 'player.y', 'crystal.health', 'actors', 'followers', 'floatingTexts', 'elementEffects', 'turretShots', 'respawnQueue', 'shardCount', 'actors[]', 'followers[]', 'lights#doors'];
+            const names = ['frame', 'player.x', 'player.y', 'crystal.health', 'actors', 'followers', 'floatingTexts', 'elementEffects', 'fireBombs', 'respawnQueue', 'shardCount', 'actors[]', 'followers[]', 'lights#doors'];
             const bad = names.filter((n, i) => pa[i] !== px[i]);
             console.log(`  first difference in the core digest after step ${firstCore}: ${bad.join(', ')}`);
             for (const n of bad.slice(0, 4)) { const i = names.indexOf(n); const sa = String(pa[i]).split(';'), sx = String(px[i]).split(';'); let j = 0; while (j < sa.length && sa[j] === sx[j]) j++; console.log(`    ${n}${sa.length > 1 || sx.length > 1 ? '[' + j + ']' : ''}: drawn ${String(sa[j]).slice(0, 120)}   ghost ${String(sx[j]).slice(0, 120)}`); }
         }
-        const sa = A.eval('[floatingTexts.length, elementEffects.length, turretShots.length, respawnQueue.length, actors.length, actors.filter(a => a.dead).length]');
+        const sa = A.eval('[floatingTexts.length, elementEffects.length, fireBombs.length, respawnQueue.length, actors.length, actors.filter(a => a.dead).length]');
         cover.floatMax = Math.max(cover.floatMax, sa[0]); cover.effMax = Math.max(cover.effMax, sa[1]); cover.shotMax = Math.max(cover.shotMax, sa[2]); cover.rqMax = Math.max(cover.rqMax, sa[3]); cover.actorsMax = Math.max(cover.actorsMax, sa[4]); cover.dead = Math.max(cover.dead, sa[5]);
         cover.doorsOpen = Math.max(cover.doorsOpen, A.eval('_fp && _fp.doorItems ? Array.from(_fp.doorItems.values()).filter(d => d.st && d.st.open > 0.5).length : 0'));
         if ((step + unit) % EVERY === 0) {
@@ -266,7 +266,7 @@ async function lockstep(scnName, mode, selftest) {
     const sitesDiff = []; for (const k of new Set([...A.sites.keys(), ...X.sites.keys()])) { const a = A.sites.get(k), x = X.sites.get(k); const na = a ? a.n : 0, nx = x ? x.n : 0; if (na !== nx) sitesDiff.push([k, na, nx]); }
     sitesDiff.sort((p, q) => Math.abs(q[1] - q[2]) - Math.abs(p[1] - p[2]));
     const per = r => (r.ms / Math.max(1, r.nsteps)).toFixed(2);
-    console.log(`  exercised: up to ${cover.actorsMax} actors (${cover.dead} dead), ${cover.floatMax} floating texts, ${cover.effMax} effects, ${cover.shotMax} turret shots, ${cover.rqMax} on the respawn queue, ${cover.doorsOpen} doors open; ${checkpoints} deep snapshots`);
+    console.log(`  exercised: up to ${cover.actorsMax} actors (${cover.dead} dead), ${cover.floatMax} floating texts, ${cover.effMax} effects, ${cover.shotMax} fire bombs, ${cover.rqMax} on the respawn queue, ${cover.doorsOpen} doors open; ${checkpoints} deep snapshots`);
     console.log(`  cost per step in this stub: drawn ${per(A)} ms, ghost ${per(X)} ms; paints on the real pen in the ghost run: ${cover.ghostPaints}`);
     if (VERBOSE) { console.log('  random-number call sites used a different number of times:'); for (const [k, a, x] of sitesDiff.slice(0, 12)) console.log(`    drawn ${a}  ghost ${x}   ${k}`); }
     if (firstFail) {

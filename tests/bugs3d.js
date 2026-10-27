@@ -34,7 +34,7 @@ const SPECIES_REBUILT = ['ant', 'scorpion', 'spider', 'mantis', 'moth'];
     // height is.
     const draw = (sp, dx, dy, cls) => run(`(function(){
         const pts = [], eyes = []; let fill = '';
-        const S = SPECIES[${JSON.stringify(sp)}] || SYNTHETIC_SPECIES[${JSON.stringify(sp)}];
+        const S = SPECIES[${JSON.stringify(sp)}];
         const rec = new Proxy({}, { get(t, k) {
             if (k in t) return t[k];
             if (k === 'arc') return (x, y) => { if (fill === S.color) eyes.push([x, y]); pts.push([x, y]); };
@@ -81,12 +81,10 @@ const SPECIES_REBUILT = ['ant', 'scorpion', 'spider', 'mantis', 'moth'];
     });
 
     console.log('\nWHO WEARS THEM');
-    check('THE ASK: every species is drawn by it — and synthetic ones wear the body they came from', () => {
+    check('THE ASK: every species is drawn by it, and nothing else is', () => {
         for (const sp of SPECIES_REBUILT.concat(['beetle'])) same(run(`bugBodyStyle({ speciesName: '${sp}' })`), sp, sp);
-        const syn = run(`Object.keys(SYNTHETIC_SPECIES).map(k => [k, SYNTHETIC_SPECIES[k].bodyStyle, bugBodyStyle({ speciesName: k })])`);
-        ok(syn.length > 0, 'no synthetic species');
-        for (const [k, style, got] of syn) same(got, style, k);
-        same(run(`bugBodyStyle({ speciesName: 'ant', isMachine: true })`), null, 'a machine');
+        same(run(`bugBodyStyle({ speciesName: 'not-a-species' })`), null, 'a species it does not know');
+        same(run(`bugBodyStyle({})`), null, 'no species at all');
     });
     check('_drawPredator sends them there, and its bars over them', () => {
         const r = run(`(function(){ let called = 0; const real = drawBug3D; drawBug3D = function(){ called++; return real.apply(this, arguments); };
@@ -97,10 +95,6 @@ const SPECIES_REBUILT = ['ant', 'scorpion', 'spider', 'mantis', 'moth'];
             return { called, bar: bars[0] }; })()`);
         same(r.called, 1, 'drawBug3D calls');
         ok(r.bar > 300 && r.bar < 369, 'bars handed py ' + r.bar);
-    });
-    check('their element ring is at their feet', () => {
-        const src = fs.readFileSync(path.join(ROOT, 'js/breakout.js'), 'utf8');
-        same((src.match(/typeof bugBodyStyle === "function" && bugBodyStyle\(a\) \? py :/g) || []).length, 2, 'rings at the feet');
     });
     check('a clone wears its team colour, not its species\'', () => {
         const r = run(`(function(){ const fills = []; const rec = new Proxy({}, { get(t, k) { if (k in t) return t[k]; return () => {}; },

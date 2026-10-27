@@ -3,7 +3,7 @@
 // REPORTED, with an iPad screenshot: "it looks bad on my iPad." The bottom of the page was off the screen: the dock and the
 // element list were cut off. position:fixed and 100dvh are measured against the LAYOUT viewport, which on a tablet browser with its own bars can be
 // taller than what is visible; the VISUAL viewport is the truth. The game now publishes it (--vvw / --vvh) and the gap (--vv-bottom), and every
-// bottom-anchored control adds that gap. This drives the real browser: a window 800px tall whose visual viewport says only 653px are visible.
+// bottom-anchored control adds that gap. This drives the real browser (the page boots the facility): a window 800px tall whose visual viewport says only 653px are visible.
 // If no browser is available the suite says so and passes (it is a measurement, not a parse).
 const fs = require('fs');
 const path = require('path');
@@ -44,7 +44,7 @@ function measure(w, layoutH, visibleH, laterH) {
     const bin = findChromium(); if (!bin) return null;
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'vv-')), file = path.join(dir, 'game.html'); fs.writeFileSync(file, probe(layoutH, visibleH, laterH));
     let dom = '';
-    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + layoutH, '--virtual-time-budget=12000', '--dump-dom', 'file://' + file + '?classic'], { encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + layoutH, '--virtual-time-budget=12000', '--dump-dom', 'file://' + file], { encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e.stdout || '').toString(); }
     const m = dom.match(/<pre id="__vv">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')) : undefined;
 }
 

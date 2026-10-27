@@ -16,6 +16,7 @@
 // Found while rewriting the price: the old sum counted tankExtra TWICE — once
 // folded into baseCost and again on the very next line — so a tank silently
 // cost double what the table said. Nothing tested any of this.
+// The page boots the facility (js/init.js); the Clone Bay is the same bay on its dock.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -24,7 +25,6 @@ const { ROOT, scriptOrder, makeBrowserSandbox, fnSource, configNums } = require(
 const SRC = {
     clone:   fs.readFileSync(path.join(ROOT, 'js/clone.js'),   'utf8'),
     species: fs.readFileSync(path.join(ROOT, 'js/species.js'), 'utf8'),
-    codex:   fs.readFileSync(path.join(ROOT, 'js/codex.js'),   'utf8'),
 };
 
 let failures = 0;
@@ -37,7 +37,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${b}, got 
 function ok(c, m) { if (!c) throw new Error(m); }
 
 async function ready() {
-    const sandbox = makeBrowserSandbox({ tubecrawler_seed: '305419896' });
+    const sandbox = makeBrowserSandbox({});
     const ctx = vm.createContext(sandbox);
     for (const rel of scriptOrder()) {
         try { vm.runInContext(fs.readFileSync(path.join(ROOT, rel), 'utf8'), ctx, { filename: rel }); }
@@ -45,9 +45,8 @@ async function ready() {
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
-    ok(run('world.length') > 100, 'fixture: the world did not generate');
-    run(`gameState.running = true; gameState.phase = 'day'; gameState.nightNumber = 1;`);
-    run(`for (let i = 0; i < 3 * ZONE_LENGTH; i++) { try { generateSegment(i); } catch(e) {} }`);
+    ok(run('world.length') > 100, 'fixture: the facility did not build');
+    run(`gameState.running = true; facilityBlackoutSet(false);`);
     return { run, sandbox };
 }
 
@@ -63,7 +62,7 @@ async function ready() {
         floatingTexts.length = 0;
         for (let i = 0; i < 6; i++) spawnFollowerAtCrystal('fire');
         shardCount = ${shards};
-        setDNA({ ${JSON.stringify(key)}: 99 });
+        dnaApply({ ${JSON.stringify(key)}: 99 });
         const opt = getCloneOptions().find(o => o.key === ${JSON.stringify(key)});
         if (!opt) throw new Error('fixture: ' + ${JSON.stringify(key)} + ' was not offered');
         const before = {
@@ -132,7 +131,7 @@ async function ready() {
         const r = C.run(`(function(){
             actors.length = 0; followers.length = 0;
             ELEMENTS.forEach(e => { followerByElement[e.id] = []; });
-            shardCount = 100; setDNA({ 'ant_scout': 99 });
+            shardCount = 100; dnaApply({ 'ant_scout': 99 });
             const opt = getCloneOptions().find(o => o.key === 'ant_scout');
             if (!opt) throw new Error('fixture: ant_scout was not offered');
             executeClone(opt);
@@ -162,7 +161,11 @@ async function ready() {
         })()`);
         same(r.outside.length, 0, 'outside the range: ' + JSON.stringify(r.outside));
         same(r.min, LO, 'the cheapest option should be exactly the floor');
-        same(r.max, HI, 'the dearest should be exactly the ceiling');
+    });
+
+    check('and the dearest option reaches the ceiling', () => {
+        const max = C.run(`(function(){ let m = 0; for (const s of Object.keys(CLONE_COSTS)) for (const c of ['scout','striker','tank']) m = Math.max(m, cloneShardCost(s, c)); return m; })()`);
+        same(max, HI, 'the dearest should be exactly the ceiling');
     });
 
     check('and the range is CLAMPED, not just a tidy table', () => {
@@ -172,7 +175,7 @@ async function ready() {
             const saveN = CLONE_CLASS_SHARDS.nymph, saveB = CLONE_CLASS_SHARDS.boss;
             CLONE_CLASS_SHARDS.nymph = -999; CLONE_CLASS_SHARDS.boss = 999;
             const lowest  = cloneShardCost('ant', 'nymph');
-            const highest = cloneShardCost('QX-z1', 'boss');
+            const highest = cloneShardCost('moth', 'boss');
             CLONE_CLASS_SHARDS.nymph = saveN; CLONE_CLASS_SHARDS.boss = saveB;
             return { lowest, highest };
         })()`);
@@ -211,8 +214,8 @@ async function ready() {
     });
 
     check('an unknown species is not free', () => {
-        // CLONE_COSTS has synthetic entries precisely so a stray DNA key cannot
-        // crash — it must not be able to buy a clone for nothing either.
+        // A stray DNA key the table has never heard of must not be able to buy
+        // a clone for nothing.
         same(C.run(`cloneShardCost('not-a-species','scout')`), HI,
              'an unknown species should cost the maximum');
         same(C.run(`cloneShardCost(undefined,'scout')`), HI, 'and so should nothing at all');
@@ -255,7 +258,7 @@ async function ready() {
     });
 
     // ─────────────────────────────────────────────────────
-    group('BUYING ONE FROM THE CRYSTAL MENU');
+    group('BUYING ONE FROM THE CLONE BAY');
 
     // REPORTED: "even though I have the money, I'm unable to buy the clone
     // from the crystal menu."
@@ -263,15 +266,14 @@ async function ready() {
     // Not the price. With four clones already out, every row went dim, the
     // CLONE button was simply not drawn, and a tap did nothing and said
     // nothing — so three affordable rows sat there with no way to act on them.
-    // And clones PERSIST across waves (waves.js rebuilds cloneArmy at the start
-    // of each one), so the cap filled once and stayed full for the rest of the
-    // game. There was no way to dismiss one anywhere in the game.
+    // And clones PERSIST, so the cap filled once and stayed full for the rest
+    // of the game. There was no way to dismiss one anywhere in the game.
     //
     // A sweep of every sort mode against five scroll positions also turned up
     // sixteen GHOST buttons: rows scrolled out of the clipped list kept their
     // tappable bounds, so a tap on empty space bought a clone you never chose.
 
-    // Open the crystal clone tab with `live` clones already out, draw it, and
+    // Open the clone bay with `live` clones already out, draw it, and
     // hand back what the player can see and press.
     const menu = (live, body) => C.run(`(function(){
         actors.length = 0; followers.length = 0; floatingTexts.length = 0;
@@ -279,7 +281,7 @@ async function ready() {
         shardCount = 9999;
         const inv = {};
         for (const c of ['scout','striker','tank']) inv['ant_' + c] = 99;
-        setDNA(inv);
+        dnaApply(inv);
         for (let i = 0; i < ${live}; i++) {
             const S = SPECIES['ant'];
             const c = new Predator('scout', Object.assign({}, S.scout, {color:S.color}), 1, 2);
@@ -319,7 +321,6 @@ async function ready() {
     check('and tapping it says exactly what is in the way', () => {
         const r = menu(4, `
             const o = (window._cloneTabOpts||[]).find(x => typeof x._nbx === 'number');
-            crystalMenuOpen = true;
             handleCloneMenuTap(o._nbx + o._nbw/2, o._nby + o._nbh/2);
         `);
         ok(r.said.some(s => /CLONE CAP 4\/4/.test(s)),
@@ -330,11 +331,11 @@ async function ready() {
     check('the reason is specific — DNA and shards each say their own thing', () => {
         const r = C.run(`(function(){
             actors.length = 0; followers.length = 0;
-            shardCount = 9999; setDNA({ ant_scout: 1 });
+            shardCount = 9999; dnaApply({ ant_scout: 1 });
             const short = getCloneOptions().find(o => o.key === 'ant_scout');
             const dnaWhy = cloneBlockedReason(short);
             const dnaLbl = cloneBlockedLabel(short);
-            shardCount = 0; setDNA({ ant_scout: 99 });
+            shardCount = 0; dnaApply({ ant_scout: 99 });
             const poor = getCloneOptions().find(o => o.key === 'ant_scout');
             const shardWhy = cloneBlockedReason(poor);
             const shardLbl = cloneBlockedLabel(poor);
@@ -347,12 +348,11 @@ async function ready() {
     });
 
     check('THE WAY OUT: DISMISS frees a slot and the rows come back', () => {
-        // Clones persist across waves, so without this the cap filled once and
+        // Clones persist, so without this the cap filled once and
         // the whole menu was dead for the rest of the game.
         const r = menu(4, `
             const db = window._cloneDismissBtn;
             if (!db) throw new Error('no DISMISS button was drawn at the cap');
-            crystalMenuOpen = true;
             handleCloneMenuTap(db.x + db.w/2, db.y + db.h/2);
             drawCloneMenu();
         `);
@@ -364,11 +364,9 @@ async function ready() {
     check('and then the purchase actually goes through', () => {
         const r = menu(4, `
             const db = window._cloneDismissBtn;
-            crystalMenuOpen = true;
             handleCloneMenuTap(db.x + db.w/2, db.y + db.h/2);
             drawCloneMenu();
             const o = (window._cloneTabOpts||[]).find(x => typeof x._bx === 'number');
-            crystalMenuOpen = true;
             handleCloneMenuTap(o._bx + o._bw/2, o._by + o._bh/2);
         `);
         same(r.clones, 4, 'the slot freed by DISMISS should have been refilled');
@@ -389,7 +387,7 @@ async function ready() {
             const inv = {};
             for (const s of ['ant','beetle','mantis','scorpion','spider','moth'])
                 for (const c of ['scout','striker','tank']) inv[s + '_' + c] = 99;
-            setDNA(inv);
+            dnaApply(inv);
             cloneMenuOpen = true;
             const bad = [];
             for (const sort of CSORTS.map(s => s.id)) {
@@ -417,7 +415,7 @@ async function ready() {
     check('THE ASK: the bay STAYS OPEN — tap CLONE again and again, up to the cap', () => {
         const r = C.run(`(function(){
             actors.length = 0; followers.length = 0; shardCount = 9999;
-            setDNA({ ant_scout: 99 });
+            dnaApply({ ant_scout: 99 });
             cloneMenuOpen = true; crystalCloneSort = CSORTS[0].id; _crystalScrollX = 0;
             const tapIt = () => { drawCloneMenu(); const o = (window._cloneTabOpts || []).find(o => o.key === 'ant_scout' && o.ready && typeof o._bx === 'number');
                 if (!o) return false; handleCloneMenuTap(o._bx + o._bw / 2, o._by + o._bh / 2); return true; };
@@ -439,16 +437,15 @@ async function ready() {
     // there's a ticker at the crystal showing the respawn time. And make it
     // more noticeable they're on your team — a little green health bar."
     //
-    // The 3x POWER multiplier already existed, at ONE of the three places a
-    // clone is built. The respawn and the between-waves restore each built
-    // their own and left it off, so a clone that died once — or merely
-    // survived a wave — came back an ordinary predator for the rest of the
-    // game. All three go through makeClone() now.
+    // The POWER multiplier already existed, at ONE of the places a clone is
+    // built. The respawn built its own and left it off, so a clone that died
+    // once came back an ordinary predator for the rest of the game. Every way
+    // a clone is made goes through makeClone() now.
     const MUL = configNums(['CLONE_HEALTH_MULT', 'CLONE_POWER_MULT', 'CLONE_RESPAWN_FRAMES']);
 
     const built = (how) => C.run(`(function(){
         actors.length = 0; respawnQueue.length = 0;
-        shardCount = 9999; setDNA({ ant_scout: 99 });
+        shardCount = 9999; dnaApply({ ant_scout: 99 });
         ${how}
         const c = actors.find(a => a && a.isClone);
         const cd = SPECIES['ant'].scout;
@@ -457,7 +454,7 @@ async function ready() {
                      team: c.team, isClone: !!c.isClone } : null;
     })()`);
 
-    check('THE ASK: a summoned clone has 3x the health', () => {
+    check('THE ASK: a summoned clone has the multiplied health', () => {
         const r = built(`executeClone(getCloneOptions().find(o => o.key === 'ant_scout'));`);
         ok(!!r, 'no clone was summoned');
         same(r.hp, r.baseHp * MUL.CLONE_HEALTH_MULT,
@@ -465,7 +462,7 @@ async function ready() {
         same(r.health, r.hp, 'it should arrive at FULL health, not a third of the bar');
     });
 
-    check('and 3x the power, which it always had', () => {
+    check('and the multiplied power, which it always had', () => {
         const r = built(`executeClone(getCloneOptions().find(o => o.key === 'ant_scout'));`);
         same(r.power, r.basePower * MUL.CLONE_POWER_MULT,
              `${r.power} power against a base of ${r.basePower}`);
@@ -474,7 +471,7 @@ async function ready() {
     check('THE BUG: a RESPAWNED clone is just as strong', () => {
         // It was not. This block built its own predator and never multiplied.
         const r = built(`
-            const victim = makeClone('ant', 'scout', 0, 2);
+            const victim = makeClone('ant', 'scout', crystal.x, crystal.y + 2);
             victim.dead = true; victim.stats = { hp: 5 };
             for (let f = 0; f < 5; f++) render();
             const q = respawnQueue.find(e => e.isClone);
@@ -487,23 +484,14 @@ async function ready() {
         same(r.power, r.basePower * MUL.CLONE_POWER_MULT, 'a respawned clone lost its power bonus');
     });
 
-    check('and so is one that merely SURVIVED a wave', () => {
-        // The between-waves restore in waves.js was the third copy.
-        const WAVES = fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8');
-        ok(/makeClone\(/.test(WAVES), 'the wave restore still builds its own clone');
-        ok(!/clone\.isClone\s*=\s*true/.test(WAVES), 'it still assembles one by hand');
-    });
-
-    check('ONE builder, so the three can never disagree again', () => {
+    check('ONE builder, so the summon and the respawn can never disagree again', () => {
         const CLONE = fs.readFileSync(path.join(ROOT, 'js/clone.js'), 'utf8');
         const GAME  = fs.readFileSync(path.join(ROOT, 'js/game.js'),  'utf8');
         same((CLONE.match(/function makeClone/g) || []).length, 1,
              'makeClone is declared more than once');
         // Nothing else may construct a Predator and call it a clone.
-        for (const [name, src] of [['game.js', GAME], ['waves.js',
-                fs.readFileSync(path.join(ROOT, 'js/waves.js'), 'utf8')]]) {
-            ok(!/isClone\s*=\s*true/.test(src), name + ' still hand-builds a clone');
-        }
+        ok(/makeClone\(/.test(GAME), 'the respawn does not use the builder');
+        ok(!/isClone\s*=\s*true/.test(GAME), 'game.js still hand-builds a clone');
     });
 
     check('the multipliers are named constants, not numbers inline', () => {
@@ -516,9 +504,9 @@ async function ready() {
     check('THE SLOW RESPAWN: a clone takes far longer than a follower', () => {
         const r = C.run(`(function(){
             actors.length = 0; respawnQueue.length = 0;
-            const c = makeClone('ant', 'scout', 0, 2);
+            const c = makeClone('ant', 'scout', crystal.x, crystal.y + 2);
             c.dead = true; c.stats = { hp: 5 };
-            const f = { x: 0, y: 2, team: 'green', dead: true, element: 'fire',
+            const f = { x: crystal.x, y: crystal.y + 2, team: 'green', dead: true, element: 'fire',
                         stats: { hp: 5 }, isFollower: true };
             actors.push(f); followers.push(f);
             for (let n = 0; n < 5; n++) render();
@@ -537,7 +525,7 @@ async function ready() {
 
     check('it does come back — slow, not never', () => {
         const r = built(`
-            const victim = makeClone('ant', 'scout', 0, 2);
+            const victim = makeClone('ant', 'scout', crystal.x, crystal.y + 2);
             victim.dead = true; victim.stats = { hp: 5 };
             for (let n = 0; n < 5; n++) render();
             actors.length = 0;
@@ -694,8 +682,8 @@ async function ready() {
         // gone on saying it.
         ok(/id="cmCloneCosts"/.test(HTML), 'the index has no host for the generated table');
         ok(!/>1 follower</.test(HTML), 'the hardcoded follower table is still there');
-        ok(/renderCloneCostIndex/.test(SRC.codex), 'codex.js does not build the clone page');
-        ok(/cloneShardCost\(/.test(SRC.codex), 'the page does not read the price from the function');
+        ok(/function renderCloneCostIndex/.test(SRC.clone), 'clone.js does not build the clone page');
+        ok(/cloneShardCost\(/.test(SRC.clone), 'the page does not read the price from the function');
         // And the boot actually CALLS it. The check below renders the page by
         // hand, so it would pass with the page left blank in the real game —
         // which is exactly what happened when a stray git checkout dropped
@@ -721,19 +709,20 @@ async function ready() {
         ok(r.length > 200, 'the builder did not find #cmCloneCosts — the id does not match');
     });
 
-    check('and it states the range and the no-followers rule', () => {
+    const rendered = () => C.run(`(function(){
+        let html = '';
+        const el = { set innerHTML(v) { html = v; }, get innerHTML() { return html; } };
+        const realGet = document.getElementById;
+        document.getElementById = () => el;
+        renderCloneCostIndex();
+        document.getElementById = realGet;
+        return html;
+    })()`);
+
+    check('and it states the range, the prices and the splices', () => {
         // Rendered, not grepped: the numbers have to come out of the table.
-        const r = C.run(`(function(){
-            let html = '';
-            const el = { set innerHTML(v) { html = v; }, get innerHTML() { return html; } };
-            const realGet = document.getElementById;
-            document.getElementById = () => el;
-            renderCloneCostIndex();
-            document.getElementById = realGet;
-            return html;
-        })()`);
+        const r = rendered();
         ok(r.length > 200, 'the page rendered nothing: ' + r);
-        ok(/no followers/i.test(r), 'the page does not say it costs no followers');
         ok(r.includes(String(LO)) && r.includes(String(HI)),
            'the page does not state the ' + LO + '..' + HI + ' range');
         // A real price out of the table, so the page cannot be stating numbers
@@ -747,18 +736,23 @@ async function ready() {
         ok(/green health bar/i.test(HTML2), 'nor that an ally bar is green');
         ok(new RegExp(Math.round(MUL.CLONE_RESPAWN_FRAMES / 60) + ' seconds').test(HTML2),
            'nor the respawn wait');
-        // Synthetic constructs are not offered, so listing them would be a lie.
-        ok(!/QX-z1/.test(r), 'the page lists a species you cannot clone');
+        // Only what the bay offers: the six natural species.
+        for (const s of ['ant', 'beetle', 'mantis', 'scorpion', 'spider', 'moth']) ok(new RegExp(s, 'i').test(r), 'the page does not list the ' + s);
+    });
+
+    check('and the no-followers rule', () => {
+        ok(/no followers/i.test(rendered()), 'the page does not say it costs no followers');
     });
 
     group('THE CLONE BAY LIVES ON THE HUD');
 
-    // "Make the clone menu only appear on the HUD — the button should be on the
-    // HUD and look like a little rotating 3D DNA icon."
-    check('the Crystal panel no longer has a clone tab', () => {
-        ok(C.run('typeof CTABS') === 'undefined', 'the Crystal still has tabs (it is the mix selector now)');
+    // "Make the clone menu only appear on the HUD — the button to go to the
+    // clone menu should be on the HUD and look like a little rotating 3D DNA icon."
+    check('the Crystal has no clone tab: a tap on it opens the battle tool, not the bay', () => {
+        ok(C.run('typeof CTABS') === 'undefined', 'the Crystal still has tabs');
         ok(!/case "clones":/.test(SRC.clone), 'the Crystal panel still draws the clone bay');
-        ok(C.run('crystalMenuTab') !== 'clones', 'the Crystal still opens on the clone bay');
+        const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
+        ok(/if \(isTapNearCrystal\(ex,ey\)\) \{ crystalMenuOpen=true; return; \}/.test(INPUT), 'a tap on the Crystal does not open the battle tool');
     });
     check('the DNA button on the HUD opens (and closes) the clone bay', () => {
         const INPUT = fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8');
@@ -778,7 +772,7 @@ async function ready() {
     check('a badge counts the clones you could summon right now', () => {
         const r = C.run(`(function(){
             actors.length = 0; shardCount = 9999;
-            const inv = {}; for (const c of ['scout','striker','tank']) inv['ant_' + c] = 99; setDNA(inv);
+            const inv = {}; for (const c of ['scout','striker','tank']) inv['ant_' + c] = 99; dnaApply(inv);
             frame = 300; _BLOB.ready = undefined;
             const said = []; const keep = ctx.fillText;
             ctx.fillText = (t) => said.push(String(t));

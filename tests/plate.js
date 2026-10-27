@@ -13,7 +13,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
 (async () => {
-    const context = vm.createContext(makeBrowserSandbox({ tubecrawler_seed: '305419896' }));
+    const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
@@ -33,10 +33,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(c.col, run(`ELEMENTS.find(e => e.id === 'flux').color`), 'clone colour'); same(c.role, null, 'a clone has no role');
         const e = J(`__tag({ level: 4, team: 'red', element: 'fire', speciesName: 'ant', className: 'scout' })`)[0];
         same(e.role, null, 'an enemy has an emblem');
-    });
-    check('a squad member\'s plate still shows its letter', () => {
-        run(`followers.length = 0; spawnFollowerAtCrystal('fire'); spawnFollowerAtCrystal('ice'); squadMake(followers.slice(0, 2));`);
-        const c = J(`__tag(followers[0])`)[0]; ok(/^A · /.test(c.text), 'text: ' + c.text);
     });
     check('QUIET: the plain FOLLOWING chip is not drawn; any other status still gets its chip', () => {
         const base = "{ level: 4, team: 'green', isFollower: true, element: 'fire', role: 'brawler', x: 5, y: 2, health: 10, maxHealth: 10, job: ";
