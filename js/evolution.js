@@ -24,10 +24,12 @@
 //          REAVER, ARC VOLLEY: with an enemy within REAVER_RANGE, every
 //          REAVER_EVERY frames it fans its blades and fires a charged arc
 //          (REAVER_MULT × its power) that jumps to REAVER_CHAIN more enemies.
-//          HAMMER SLUG (the CORE BRAWLER, design No. 467: a slug with a hammerhead and bobbles at its tips,
-//          a uniform hexagon tile cover either side of a spiked spine, a small horn) replaced the Aegis Warden
-//          for new evolutions and casts the same AEGIS BURST (the Aegis Warden stays defined, marked legacy,
-//          for followers already evolved into it).
+//          HAMMER SLUG (design No. 467: a slug with a hammerhead and bobbles at its tips, a uniform hexagon tile
+//          cover either side of a spiked spine, a small horn) was the CORE BRAWLER, which replaced the Aegis Warden;
+//          it is the CORE TECHNICIAN now (ASKED: "the old core brawler is going to be switched to the technician
+//          class", then "Swap it"), and a follower already evolved into it is a technician with it (its role is
+//          its form's). It casts the same AEGIS BURST. The core brawler's own new form (the Jelly Ram) is to come:
+//          until it is in, a core brawler does not evolve (one at the level evolves as soon as it is).
 //          AEGIS WARDEN (the old core brawler, No. 57), AEGIS BURST: with an enemy
 //          within WARDEN_RADIUS, every WARDEN_EVERY frames its shells fly out in
 //          a blast (WARDEN_MULT × its power) that shoves enemies back and gives
@@ -132,7 +134,7 @@ const EVOLUTIONS = {
     // turns and bubbles rise, so its sheet carries its own light.
     voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/voidstar.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff" },
-    // LEGACY: the first core brawler. New evolutions use the Hammer Slug; a follower already evolved into this keeps it.
+    // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's new form is to come.)
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
     // LEGACY: the first electric brawler. New evolutions use the Prism Hood; a follower already evolved into this keeps it.
@@ -165,8 +167,8 @@ const EVOLUTIONS = {
     // The FIRE MAGE ("sniper" in the code): the hooded pyramid with the hovering gems (design No. 391), recoloured for fire. The gems turn, so its sheet carries its own light.
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire", "bomb_lob"], sheet: "img/evo/embercowl.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f" },
-    // The CORE BRAWLER, design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
-    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "brawler", move: "AEGIS BURST", sheet: "img/evo/hammerslug.png",
+    // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
+    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "AEGIS BURST", sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.

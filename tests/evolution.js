@@ -56,8 +56,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a hybrid fights as a brawler');
         mk('flux', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux camper waits');
     });
-    check('THE ASK: a CORE BRAWLER becomes the HAMMER SLUG (design No. 467, which replaced the Aegis Warden); an ELECTRIC BRAWLER the PRISM HOOD (No. 388, which replaced the Storm Manta)', () => {
-        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core brawler'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is no longer handed out');
+    check('THE ASK ("the old core brawler is going to be switched to the technician class"; "Swap it"): a CORE TECHNICIAN becomes the HAMMER SLUG (design No. 467); a core brawler waits for its new form; an ELECTRIC BRAWLER becomes the STATIC ORB', () => {
+        mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core technician'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); same(run('__f.role'), 'camper', 'its role'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is handed out again');
+        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core brawler evolved (its new form, the Jelly Ram, is to come)');
         mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'staticorb', 'electric brawler');
         same(run('unitTypeLabel(__f)'), 'STATIC ORB', 'its tag'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.voltring.legacy === true'), 'the Volt Ring placeholder is no longer handed out'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'thunderhead', 'the electric sniper is the Thunderhead');
@@ -75,13 +76,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('toxic', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'seeper', 'a toxic brawler is the Seeper'); same(run('unitTypeLabel(__f)'), 'SEEPER', 'its tag'); ok(run('EVOLUTIONS.caldera.legacy === true'), 'the Caldera is no longer handed out');
         mk('toxic', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic camper waits');
     });
-    check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the HORNSHELL (design No. 220, which replaced the Petal Aegis); a core brawler is still the Aegis Warden', () => {
+    check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the HORNSHELL (design No. 220, which replaced the Petal Aegis); a core technician is the Hammer Slug, a core brawler waits', () => {
         mk('core', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'hornshell', 'its form'); same(r.tag, 'HORNSHELL', 'its tag'); same(r.role, 'sniper', 'its role id');
         ok(run('EVOLUTIONS.petal.legacy === true'), 'the Petal Aegis is no longer handed out'); same(run('evolutionFor({ isFollower: true, element: "core", role: "sniper" }).id'), 'hornshell', 'evolutionFor');
-        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'the core brawler');
-        mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core camper waits');
+        mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'the core technician');
+        mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a core brawler waits (for the Jelly Ram)');
     });
     check('THE ASK: the ranged role is a MAGE and the post-holding role a TECHNICIAN on screen (their ids stay "sniper" and "camper")', () => {
         same(run('roleLabel("sniper")'), 'MAGE', 'sniper'); same(run('roleLabel("brawler")'), 'BRAWLER', 'brawler'); same(run('roleLabel("camper")'), 'TECHNICIAN', 'camper'); same(run('roleLabel("hybrid")'), 'HYBRID', 'hybrid'); same(run('roleLabel(null)'), '', 'none');
@@ -349,13 +350,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.outside, 0, 'damage to one outside the blast');
         ok(r.allyShield > 0 && r.ownShield > 0 && !r.farShield, 'the shields: ' + JSON.stringify(r));
     });
-    check('the HAMMER SLUG casts the same AEGIS BURST (a blast that shoves enemies and shields allies) as the Aegis Warden did', () => {
+    check('the HAMMER SLUG (the core technician now) casts the same AEGIS BURST (a blast that shoves enemies and shields allies) as the Aegis Warden did; one evolved while it was the core brawler is a technician now', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'hammerslug'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21.5; al.y = 2; al.shielded = false; al.shieldAmount = 0;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 21.2, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            const x0 = p.x; frame++; f._sigCd = 1; evolutionTick(); const out = { dmg: 1e6 - p.health, pushed: p.x - x0, shield: al.shielded ? al.shieldAmount : 0 }; p.dead = true; return out; })()`);
-        ok(r.dmg > 0 && r.pushed > 0.3 && r.shield > 0, 'the hammer slug did not burst: ' + JSON.stringify(r));
+            const x0 = p.x; frame++; f._sigCd = 1; evolutionTick(); const out = { dmg: 1e6 - p.health, pushed: p.x - x0, shield: al.shielded ? al.shieldAmount : 0, role: f.role }; p.dead = true; return out; })()`);
+        ok(r.dmg > 0 && r.pushed > 0.3 && r.shield > 0, 'the hammer slug did not burst: ' + JSON.stringify(r)); same(r.role, 'camper', 'a hammer slug evolved as a brawler is not a technician now');
     });
     check('THE ASK: STATIC RUSH — it dashes to the nearest enemy, hits it, shocks two more, and stuns them all', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;

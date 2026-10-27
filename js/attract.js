@@ -113,7 +113,7 @@ function attractSpawn() {
         if (len < best) { best = len; s0 = c; }
     }
     if (!s0) return false;
-    spawnFollowerAtCrystal(d.element, d.role === "sniper" ? "sniper" : "brawler");
+    spawnFollowerAtCrystal(d.element, typeof FOLLOWER_TYPES !== "undefined" && FOLLOWER_TYPES[d.role] ? d.role : "brawler");   // (its form's role: a brawler, a mage, or a technician like the Hammer Slug)
     const f = followers[followers.length - 1]; if (!f) return false;
     f.evolved = d.id; f.role = d.role; f.level = typeof EVOLVE_LEVEL === "number" ? EVOLVE_LEVEL : 10; if (typeof xpForLevel === "function") f.xp = xpForLevel(f.level);
     _applyFollowerLevel(f, true); f._moltAt = -1e9; f._sigCd = 1e9; f._fade = 1;
