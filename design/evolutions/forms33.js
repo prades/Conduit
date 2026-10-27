@@ -94,7 +94,8 @@ function _hoverShell(o) {
   shell.add(new T.Mesh(_domeGeo33(rx, ry, rz, o.front), _hsBlack));
   const rimPts = []; for (let i = 0; i < 48; i++) { const f = i / 48 * TAU, z = Math.sin(f), k = z > 0 ? 1 - o.front * z * z : 1; rimPts.push(V(Math.cos(f) * rx * k * 1.01, 0.012, z * rz * 1.01)); }
   shell.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(rimPts, true), 96, 0.026, 6, true), glowM));
-  if (o.shuttle) {
+  if (o.noWings) {}   // (no wings at all: the dome, its glowing rim and the prongs)
+  else if (o.shuttle) {
     // ... or a shuttle's (the user: "trapezoidal wings that are kind of angled downward like a ship, like a shuttle, like a star shuttle"): each a trapezoid, broad at
     // the root and narrower at the tip, its front edge swept back, tilted down from the root; a plate of light under it, so its edges glow
     const W = o.shuttle, wing = (k) => { const sh = new T.Shape(); sh.moveTo(0, -W.root / 2); sh.lineTo(W.span, -W.root / 2 - W.sweep); sh.lineTo(W.span, -W.root / 2 - W.sweep + W.tip); sh.lineTo(0, W.root / 2); sh.closePath();
@@ -138,4 +139,8 @@ function _hoverShell(o) {
 const _hs0 = { S: 1.8, hover: 0.14, rx: 0.36, ry: 0.36, rz: 0.56, front: 0.5, wingW: 0.34, wingL: 0.5, prong: 0.42, lift: 0.42, shY: 0.24, shW: 0.36, shH: 0.12, shL: 0.5, cry: 0.08 };
 // 874: "instead of square wings that are flat, I want trapezoidal wings that are kind of angled downward like a ship, like a shuttle, like a star shuttle".
 fx(874, "The electric technician, the HOVER SHELL with a star shuttle's wings (the user's ask): trapezoid wings swept back and angled down, their edges glowing yellow from underneath.", () => _hoverShell(Object.assign({}, _hs0, { shuttle: { span: 0.46, root: 0.56, tip: 0.24, sweep: 0.16, thick: 0.05, droop: 0.42 } })));
+// 875: "too long, make 'em cuter", then "no, trapezoid wings": still crisp trapezoids at No. 874's angle, but short and stubby, a little thicker.
+fx(875, "The electric technician, the HOVER SHELL with short, stubby shuttle wings (the user's ask: too long, make them cuter): crisp little trapezoids angled down, edges glowing yellow from underneath.", () => _hoverShell(Object.assign({}, _hs0, { shuttle: { span: 0.24, root: 0.46, tip: 0.22, sweep: 0.06, thick: 0.06, droop: 0.42 } })));
+// 876: "no trapezoid wings" read the other way: no wings at all.
+fx(876, "The electric technician, the HOVER SHELL with no wings (the user's ask): the domed black shell with its glowing rim and two launcher prongs, over the six-legged shuttle.", () => _hoverShell(Object.assign({}, _hs0, { noWings: true })));
 fx(871, "The electric technician, the HOVER SHELL: a horseshoe crab's domed black shell with a yellow underglow, square flat wings and two launcher prongs, over a six-legged shuttle with a crystal in its back; the shell lifts off.", () => _hoverShell(_hs0));
