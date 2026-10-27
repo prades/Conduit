@@ -91,14 +91,24 @@ function _jellyRam(o) {
   return { g, core: Y * (o.S || 1), update(t, act) {
     const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act);
     // the charge: draws back, then rams forward and comes back (all of it in the action's frames)
-    const ram = pr < 0.32 ? -0.12 * Math.sin(PI * pr / 0.32) : 0.42 * Math.sin(PI * (pr - 0.32) / 0.68), hit = pr > 0.5 && pr < 0.95 ? Math.sin(PI * (pr - 0.5) / 0.45) : 0;
-    body.position.set(0, Y + 0.035 * Math.sin(ph * 2) * (1 - a), ram); body.rotation.set(0.035 * Math.sin(ph) * (1 - a) + 0.12 * Math.max(0, ram), 0, 0.025 * Math.sin(ph + 1) * (1 - a));
+    const ram = (pr < 0.32 ? -0.12 * Math.sin(PI * pr / 0.32) : 0.42 * Math.sin(PI * (pr - 0.32) / 0.68)) * (o.ramK || 1), hit = pr > 0.5 && pr < 0.95 ? Math.sin(PI * (pr - 0.5) / 0.45) : 0;
+    // the swim (o.swim; "it needs to move with flicks from all of its tentacles like the jellyfish from SpongeBob"): once a loop every tentacle flicks back at once, the
+    // bell of jelly squeezes and it bobs up; then it glides, sinking a little, while the tentacles fan out again. The flick runs from root to tip, so they whip.
+    const U = ((ph / TAU) % 1 + 1) % 1, pulseAt = v => { v = ((v % 1) + 1) % 1; return v < 0.18 ? Math.sin(PI / 2 * v / 0.18) : v < 0.8 ? Math.cos(PI / 2 * (v - 0.18) / 0.62) : 0; };
+    const lift = U < 0.35 ? Math.sin(PI / 2 * U / 0.35) : Math.cos(PI / 2 * (U - 0.35) / 0.65), pulse = pulseAt(U);
+    if (o.swim) { body.position.set(0, Y + (0.09 * lift - 0.03) * (1 - a), ram); body.rotation.set(-0.1 * pulse * (1 - a) + 0.12 * Math.max(0, ram), 0, 0);
+      back.scale.set(1 + 0.16 * pulse * (1 - a), 0.92 * (1 - 0.2 * pulse * (1 - a)), 1.05 * (1 - 0.08 * pulse * (1 - a))); }
+    else body.position.set(0, Y + 0.035 * Math.sin(ph * 2) * (1 - a), ram), body.rotation.set(0.035 * Math.sin(ph) * (1 - a) + 0.12 * Math.max(0, ram), 0, 0.025 * Math.sin(ph + 1) * (1 - a));
     heart.material.opacity = 0.3 + 0.06 * Math.sin(ph * 2) + 0.4 * hit; dia.scale.set(1 + 0.03 * Math.sin(ph * 2) + 0.15 * hit, 1.45 * (1 + 0.03 * Math.sin(ph * 2) + 0.15 * hit), 0.8); dia.userData.relight();
     glowM.color.copy(lit).multiplyScalar(0.8 + 0.2 * Math.sin(ph * 2) + 0.5 * a);
     // the tentacles: a wave runs down each; in the charge they stream straight back
     const stream = Math.min(1, a * 1.4);
     tent.forEach(T0 => { const { u, mid, root, L, droop, pts, k } = T0;
-      for (let i = 0; i < N; i++) { const s = i / (N - 1), w = 2 * ph - 5 * s + k * 0.9;
+      if (o.swim) for (let i = 0; i < N; i++) { const s = i / (N - 1), ps = pulseAt(U - 0.14 * s) * (1 - a), rip = 0.03 * s * Math.sin(TAU * U - 4 * s) * (1 - a);   // the flick reaches each point a little later than the one before
+        pts[i].set(root.x * (1 - 0.35 * ps) + u * 0.3 * s * (1 - 0.8 * ps) + rip * u,
+                   root.y - (droop * 1.35 * s + 0.2 * s * s) * (1 - 0.8 * ps) * (1 - 0.7 * stream) + rip,
+                   root.z - L * s * (0.72 + 0.32 * ps + 0.15 * stream)); }   // (in the charge they stream straight back, no longer: the cell's edge)
+      else for (let i = 0; i < N; i++) { const s = i / (N - 1), w = 2 * ph - 5 * s + k * 0.9;
         pts[i].set(root.x + u * 0.2 * s + 0.05 * s * Math.sin(w) * (1 - 0.6 * stream),
                    root.y - (droop * s + 0.14 * s * s) * (1 - 0.7 * stream) + 0.045 * s * Math.cos(w + 0.7) * (1 - 0.6 * stream),
                    root.z - L * s * (0.85 + 0.45 * stream)); }
@@ -109,6 +119,8 @@ function _jellyRam(o) {
   } };
 }
 const _jr0 = { S: 1.45, R: 0.34, y: 0.74, dia: 0.17, hornR: 0.11, hornL: 0.46, hornOut: 0.88, hornFwd: 0.42, tentacles: 9, tentL: 0.62 };
+// 862: the Jelly Ram after the user's review: it swims like a jellyfish (every tentacle flicks at once, the bell squeezes, it bobs up and glides), and it is a little bigger.
+fx(862, "The core brawler, the JELLY RAM swimming (the user's ask): every tentacle flicks back at once like a jellyfish's stroke, the bell squeezes and it bobs up, then glides; a little bigger.", () => _jellyRam(Object.assign({}, _jr0, { swim: true, S: 1.6, tentL: 0.54, ramK: 0.55 })));   // (ramK: a shorter lunge, so the bigger ram stays in its cell)
 fx(860, "The core brawler, the JELLY RAM: a clear dome with a big diamond in it under a black helmet band, a horn out of either side lit along its top, a body of jelly trailing tentacles that end in drops; it hovers and rams.", () => _jellyRam(_jr0));
 
 // ── 861 · THE RIMESTAR ─────────────────────────────────────────────────────────────────────────────────
