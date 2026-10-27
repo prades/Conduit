@@ -14,6 +14,8 @@ The facility is the game (`js/facilityplay.js`; the map is docs/FACILITY.md). Th
 | The Clone Bay, clones, DNA | js/clone.js, js/drops.js |
 | The Mutator's lash and its one clone (docs/MUTATOR.md) | js/mutator.js, js/clone.js (`cloneFight`, `cloneTick`, `CLASS_RULES.clone` in js/classes.js), js/weapons.js (`WEAPONS.lash`) |
 | The Ice Mage's specimen recovery and the Resurrection Zone (docs/SPECIMENS.md) | js/specimen.js, js/mutator.js (the bodies), js/inventory.js (`specimen_capsule`) |
+| The Mutator's healing serum and its laboratory (docs/MUTATOR.md 2.6) | js/serum.js, js/stations.js (`serum_hood`), js/inventory.js (`healing_serum`) |
+| The Technomancer's arc gauntlet: the punch, the charge, the arc, the grid (docs/TECHNOMANCER.md) | js/technomancer.js, js/mutator.js (the shared melee), js/weapons.js (`WEAPONS.gauntlet`) |
 | The creatures: `spawnCreature`, the arena's spawner, species and classes | js/clone.js, js/facilityspawn.js, js/species.js, js/predator.js, js/abilities.js |
 | The Crystal, the alarm, the end | js/alarm.js, js/game.js |
 | Power: the relays, the network panel, the room tag | js/stations.js, js/facilitynet.js, js/facilitymap.js (`relays`) |

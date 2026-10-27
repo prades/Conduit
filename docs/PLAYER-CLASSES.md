@@ -147,6 +147,8 @@ The decisions about the hack puzzle and its gear are parked with them (§4.1).
 
 ## 9. Done so far
 
+- **The Technomancer's kit (built, docs/TECHNOMANCER.md):** its own hybrid weapon (the ARC GAUNTLET, `CLASSES.technomancer.weapon`, a `hybrid` row in `WEAPONS`): a punch in reach through the Mutator's shared melee that stores a charge, an electric arc out of reach that spends one, jumps to the creatures beside the first and cuts a bite short; a powered room charges it and every relay online makes the arc stronger (`TECHNO`, js/technomancer.js).
+
 - **The Mutator's kit (built, docs/MUTATOR.md):** its own melee weapon (the TENTACLE LASH, `CLASSES.mutator.weapon`, a melee row in `WEAPONS`) aimed through the same targeting as the gun; cloning is the Mutator's (`CLASS_RULES.clone`: the class with the `bio` skill, one at a time), and its clone is a primary clone that follows it, takes the squad's orders, fights as its species and does not come back by itself (its body stays where it fell). A class's own weapon is a new column of the registry: `weapon`.
 
 - **The registry's first rows (built):** GUNSLINGER, TECHNOMANCER and MUTATOR as data in js/classes.js, `CLASS_RULES` (carry anyone's gear, use only your own; how a relay is repaired), `CLASS_PERKS` read through `classStat`, the stations that earn them (js/stations.js), the signature gear (docs/TUTORIAL.md, "Class gear") and the weapons table (js/weapons.js). The class and its perks are saved with the facility.

@@ -20,15 +20,20 @@ const WEAPONS = {
     // (js/mutator.js: MUTATOR.lash.windup, then the hit). It spends nothing. Its numbers are TENTATIVE (docs/MUTATOR.md); it has no scrap levels: the Mutator grows by DNA, not at the bench.
     lash:       { id: "lash", name: "TENTACLE LASH", kind: "melee", damage: 18, cooldown: 34, reach: 1.45, maxLevel: 1, upgrade: [], col: "#c06bff", cls: "mutator",
         desc: "The Mutator's own: a tentacle that lashes whatever is in reach. It spends nothing, but you have to be close." },
+    // THE TECHNOMANCER'S OWN (js/technomancer.js): HYBRID. In reach it PUNCHES (the same two beats as the lash: windup, then the hit), and every punch that lands stores a CHARGE; out of reach, with a charge,
+    // it throws an ELECTRIC ARC that chains to the creatures beside the first and cuts short a bite being wound up. The punch's numbers are here; the arc's are TECHNO.arc. TENTATIVE (docs/TECHNOMANCER.md).
+    gauntlet:   { id: "gauntlet", name: "ARC GAUNTLET", kind: "hybrid", damage: 14, cooldown: 28, reach: 1.4, windup: 8, maxLevel: 1, upgrade: [], col: "#31e8ff", cls: "technomancer", element: "electric", fx: "jab",
+        onHit: () => { if (typeof technoGain === "function") technoGain(TECHNO.charge.perHit); },   // (a punch that lands stores a charge)
+        desc: "The Technomancer's own: a shock punch up close that stores charge, and an electric arc at range that spends it. It draws charge from the facility's powered rooms." },
 };
-const WEAPON_ORDER = ["service", "machinegun", "laser", "lash"];
+const WEAPON_ORDER = ["service", "machinegun", "laser", "lash", "gauntlet"];
 const WEAPON_RULES = { levelDamage: 0.3, levelCooldown: 0.12, scrapPerAmmoPack: 2, ammoPackRounds: 10, beamFrames: 10 };
 
 let playerWeapon = "service";                                   // the one in hand
 let weaponOwned = { service: true, machinegun: false, laser: false };
-let weaponLevel = { service: 1, machinegun: 1, laser: 1, lash: 1 };
+let weaponLevel = { service: 1, machinegun: 1, laser: 1, lash: 1, gauntlet: 1 };
 let laserCharge = 0;                                            // charges left in the cell in the rifle
-function weaponReset() { playerWeapon = "service"; weaponOwned = { service: true, machinegun: false, laser: false }; weaponLevel = { service: 1, machinegun: 1, laser: 1, lash: 1 }; laserCharge = 0; armoryClose(); }
+function weaponReset() { playerWeapon = "service"; weaponOwned = { service: true, machinegun: false, laser: false }; weaponLevel = { service: 1, machinegun: 1, laser: 1, lash: 1, gauntlet: 1 }; laserCharge = 0; armoryClose(); }
 function weaponDef(id) { return WEAPONS[id || playerWeapon] || WEAPONS.service; }
 // what is owned: the service gun always, the machine gun with its perk, a class's own weapon by that class, the rifle once assembled
 function weaponHas(id) { const w = WEAPONS[id]; if (!w) return false; if (w.perk) return typeof classHas === "function" && classHas(w.perk); if (w.cls) return typeof playerClassKey !== "undefined" && playerClassKey === w.cls; return !!weaponOwned[id] || id === "service"; }
@@ -71,11 +76,13 @@ function weaponConvert(packs) {
     return { ok: true, msg: n + " AMMO PACK" + (n > 1 ? "S" : "") + " FOR " + n * per + " SCRAP" };
 }
 // out of what it runs on? (the gunfire hold stops, the HUD says so). A melee weapon runs on nothing.
-function weaponDry() { const w = weaponDef(); return w.kind === "melee" ? false : w.kind === "fuel" ? laserCharge <= 0 && !invHas("fuel_cell") : playerAmmo <= 0; }
-function weaponMelee(id) { return weaponDef(id).kind === "melee"; }
+function weaponDry() { const w = weaponDef(); return w.kind === "melee" || w.kind === "hybrid" ? false : w.kind === "fuel" ? laserCharge <= 0 && !invHas("fuel_cell") : playerAmmo <= 0; }
+// a weapon that strikes in reach (the lash; the gauntlet's punch): js/mutator.js walks the player in and strikes
+function weaponMelee(id) { const k = weaponDef(id).kind; return k === "melee" || k === "hybrid"; }
 // the HUD's words: { text, dry }
 function weaponHud() {
     const w = weaponDef(), armed = typeof playerAttackMode !== "undefined" && playerAttackMode;
+    if (w.kind === "hybrid") { const n = typeof technoCharge !== "undefined" ? technoCharge : 0, m = typeof technoMax === "function" ? technoMax() : 6; return { text: "CHARGE " + n + "/" + m, dry: false, short: "CHARGE " + n + "/" + m, kind: "hybrid", n: n + "/" + m, cells: 0, full: n >= m, grid: typeof technoGridOn === "function" && technoGridOn() }; }   // (the gauntlet: its charges; grid, a powered room is charging it: js/technomancer.js)
     if (w.kind === "melee") return { text: armed ? "LASH ◆ IN REACH" : "LASH", dry: false, short: "LASH", kind: "melee", n: "", cells: 0 };   // (the small icon shows a tentacle and no count: js/targeting.js)
     if (w.kind === "fuel") { const cells = invCount("fuel_cell"), dry = laserCharge <= 0 && cells <= 0, t = laserCharge + (cells ? " +" + cells + "▣" : ""); return { text: (armed ? (dry ? "NO FUEL — STOW" : "LASER ◆ " + t) : "FUEL ◆ " + t), dry, short: "FUEL " + t, kind: "fuel", n: laserCharge, cells }; }
     const dry = playerAmmo <= 0; return { text: armed ? (dry ? "NO AMMO — STOW" : "ARMED ◆ " + playerAmmo) : "AMMO ◆ " + playerAmmo, dry, short: "AMMO " + playerAmmo, kind: "ammo", n: playerAmmo, cells: 0 };   // (kind, n and cells: what the little icon in the facility shows, js/targeting.js drawAmmoIcon)
@@ -167,8 +174,8 @@ function drawArmoryPanel() {
         const w = WEAPONS[id], has = weaponHas(id), held = playerWeapon === id, Lv = weaponLevelOf(id), up = weaponUpgradeCost(id);
         uiSlab(L.px + gut, y, inner, wh, held ? w.col : "#2a3556", false, held ? "#10243a" : "#0b1226", !has);
         uiText(w.name, L.px + gut + 14, y + 26, 20, has ? w.col : "#7a86a6", "left");
-        const melee = w.kind === "melee", rate = (60 / (weaponCooldown(id) + (melee && typeof MUTATOR !== "undefined" ? MUTATOR.lash.windup : 0))).toFixed(1);
-        uiCaption(has ? (melee ? "DAMAGE " + weaponDamage(id) + "   ·   " + rate + " STRIKES/S   ·   REACH " + w.reach + " TILES   ·   SPENDS NOTHING" : "LEVEL " + Lv + " / " + w.maxLevel + "   ·   DAMAGE " + weaponDamage(id) + "   ·   " + rate + " SHOTS/S   ·   " + (w.kind === "fuel" ? "FUEL CELLS" : "AMMUNITION")) : id === "machinegun" ? "THE GUNSLINGER'S  ·  FROM THE WEAPON LOCKER" : "NOT ASSEMBLED  ·  " + w.assemble + " SCRAP METAL", L.px + gut + 14, y + 46, has ? "#c8d4f0" : "#8aa0c8", "left", 12);
+        const melee = w.kind === "melee" || w.kind === "hybrid", rate = (60 / (weaponCooldown(id) + (melee ? w.windup || (typeof MUTATOR !== "undefined" ? MUTATOR.lash.windup : 0) : 0))).toFixed(1);
+        uiCaption(has ? (w.kind === "hybrid" ? "PUNCH " + weaponDamage(id) + "   ·   " + rate + " STRIKES/S   ·   REACH " + w.reach + "   ·   ARC " + (typeof technoArcDamage === "function" ? technoArcDamage() : "?") + " FOR A CHARGE" : melee ? "DAMAGE " + weaponDamage(id) + "   ·   " + rate + " STRIKES/S   ·   REACH " + w.reach + " TILES   ·   SPENDS NOTHING" : "LEVEL " + Lv + " / " + w.maxLevel + "   ·   DAMAGE " + weaponDamage(id) + "   ·   " + rate + " SHOTS/S   ·   " + (w.kind === "fuel" ? "FUEL CELLS" : "AMMUNITION")) : id === "machinegun" ? "THE GUNSLINGER'S  ·  FROM THE WEAPON LOCKER" : "NOT ASSEMBLED  ·  " + w.assemble + " SCRAP METAL", L.px + gut + 14, y + 46, has ? "#c8d4f0" : "#8aa0c8", "left", 12);
         const chars = Math.max(20, Math.floor((inner - (L.wide ? 270 : 28)) / 7.4)), lines = uiWrap(w.desc, chars).slice(0, L.wide ? 2 : 3); lines.forEach((l, i) => uiCaptionFit(l, L.px + gut + 14, y + 64 + i * 15, "#9fb0d6", "left", 11, inner - (L.wide ? 270 : 28)));
         const bx = L.wide ? L.px + L.pw - gut - 236 : L.px + gut + 14, by = L.wide ? y + 14 : y + wh - 40, bw = 110, bh = L.wide ? 30 : 32;
         if (has) {

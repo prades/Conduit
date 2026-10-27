@@ -150,7 +150,14 @@ function _tgLash(x, y, col) {
     ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(7, 1); ctx.quadraticCurveTo(5, 3, 3, 1); ctx.stroke();
     ctx.restore();
 }
+// a lightning bolt, centred on (x, y), about 20 px tall: the badge (and the small icon) when the weapon in hand is the Technomancer's arc gauntlet (js/weapons.js, a hybrid weapon)
+function _tgBolt(x, y, col, s) {
+    ctx.save(); ctx.translate(x, y); if (s) ctx.scale(s, s); ctx.fillStyle = col; ctx.beginPath();
+    ctx.moveTo(2, -10); ctx.lineTo(-6, 1); ctx.lineTo(-1, 1); ctx.lineTo(-3, 10); ctx.lineTo(6, -2); ctx.lineTo(1, -2); ctx.lineTo(3, -10); ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
 function _tgMelee() { return typeof weaponMelee === "function" && weaponMelee(); }
+function _tgHybrid() { return typeof weaponDef === "function" && weaponDef().kind === "hybrid"; }
 function drawTargetUI() {
     _tgDial = null; if (!targetOn() || typeof ctx === "undefined") return;
     if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof infoPanelOpen !== "undefined" && infoPanelOpen)) { _ATKCHIP.w = 0; return; }
@@ -192,12 +199,12 @@ function _tgFuelCell(cx, cy, col) {
 function _tgAmmoIcon(x, y, alpha) {
     const h = typeof weaponHud === "function" ? weaponHud() : null; if (!h) { _ATKCHIP.w = 0; return; }
     const armed = typeof playerAttackMode !== "undefined" && playerAttackMode, dry = !!h.dry, f = typeof frame !== "undefined" ? frame : 0, col = dry ? "#ff7766" : armed ? "#ffb070" : "#b8c8e8";
-    const txt = h.kind === "melee" ? "MELEE" : String(h.n) + (h.cells ? " +" + h.cells : ""), hh = 22;
+    const txt = h.kind === "melee" ? "MELEE" : h.kind === "hybrid" ? String(h.n) + (h.grid && !h.full ? " · GRID" : "") : String(h.n) + (h.cells ? " +" + h.cells : ""), hh = 22;   // (the gauntlet: its charges, and GRID while a powered room is charging it)
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = alpha * (armed && !dry ? 0.82 + 0.18 * Math.sin(f * 0.09) : 0.9); ctx.font = uiMono(13);
     const w = 29 + ctx.measureText(txt).width;
     ctx.fillStyle = "rgba(6,10,24,0.6)"; ctx.strokeStyle = armed || dry ? col : "rgba(138,160,200,0.4)"; ctx.lineWidth = 1;
     ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y - hh / 2, w, hh, 11); else ctx.rect(x, y - hh / 2, w, hh); ctx.fill(); ctx.stroke();
-    if (h.kind === "fuel") _tgFuelCell(x + 12, y, col); else if (h.kind === "melee") _tgLash(x + 12, y, col); else _tgCartridge(x + 12, y, col);
+    if (h.kind === "fuel") _tgFuelCell(x + 12, y, col); else if (h.kind === "melee") _tgLash(x + 12, y, col); else if (h.kind === "hybrid") _tgBolt(x + 12, y, typeof _tc !== "undefined" && f - _tc.gainAt < 20 ? "#eaffff" : col, 0.8); else _tgCartridge(x + 12, y, col);   // (the bolt flashes white as a charge is stored)
     ctx.fillStyle = col; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txt, x + 24, y + 1);
     ctx.restore();
     if (armed) { _ATKCHIP.x = x - 4; _ATKCHIP.y = y - hh / 2 - 4; _ATKCHIP.w = w + 8; _ATKCHIP.h = hh + 8; } else _ATKCHIP.w = 0;
@@ -224,7 +231,7 @@ function _tgDialDraw(a, f) {
     ctx.fillStyle = "#fff"; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(lv, x - R * 0.82 + 5, y - R * 0.86 + 8.5);
     // the gun badge (it fires at what is locked) and the INFO badge
     const gx = x + R * 0.74, gy = y + R * 0.74, gr = narrow ? 15 : 18, ix = x + R * 0.78, iy = y - R * 0.78, ir = narrow ? 11 : 13, gcol = dry ? "#6d7fa6" : held ? "#ffffff" : cool ? "#ffb347" : "#ff4a3a";
-    ctx.fillStyle = held ? "#ff4a3a" : "#0b1226"; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = dry ? "#6d7fa6" : "#ff4a3a"; ctx.stroke(); if (_tgMelee()) _tgLash(gx, gy, gcol); else _tgGun(gx, gy - 2, gcol);
+    ctx.fillStyle = held ? "#ff4a3a" : "#0b1226"; ctx.beginPath(); ctx.arc(gx, gy, gr, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = dry ? "#6d7fa6" : "#ff4a3a"; ctx.stroke(); if (_tgHybrid()) _tgBolt(gx, gy, gcol); else if (_tgMelee()) _tgLash(gx, gy, gcol); else _tgGun(gx, gy - 2, gcol);
     ctx.fillStyle = infoOpen ? "#8fe3ff" : "#0b1226"; ctx.beginPath(); ctx.arc(ix, iy, ir, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#8fe3ff"; ctx.stroke();
     ctx.fillStyle = infoOpen ? "#05070f" : "#8fe3ff"; ctx.font = uiFont(narrow ? 13 : 15); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("i", ix, iy + 1);
     ctx.restore();

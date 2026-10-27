@@ -30,6 +30,7 @@ const SUITES = [
     ['the Mutator: the lash, cloning is the Mutator\'s, the one clone fights as its species and stays fallen', 'mutator.js'],
     ['the Ice Mage preserves a fallen ally; the player carries its capsule to the Resurrection Zone', 'specimen.js'],
     ['the Mutator\'s healing serum: a pool that heals, the laboratory, the Mutator\'s level', 'serum.js'],
+    ['the Technomancer: the arc gauntlet punches in reach and stores charge, the arc spends it out of reach, jumps on and cuts a bite short; the grid charges it', 'technomancer.js'],
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],
     ['follower types',           'followertypes.js'],

@@ -70,6 +70,8 @@ What the body is *for* is the next two steps: the DNA the player can recover fro
 - A creature that **slips out of reach** during the wind-up is missed (*MISS*, no damage).
 - It **spends nothing**: the small icon by the dial shows a tentacle and *MELEE*, and the dial's badge is a tentacle instead of a pistol.
 - **A tap on the floor** calls the attack off and walks there; **stowing** the weapon does too.
+- **Letting go of a hold stops it** (fixed in step 8: it struck once more after the press ended); a strike already drawing back still lands, and a single click is still one strike.
+- The lash's code is the melee any melee weapon in hand uses: the Technomancer's punch runs through it with its own reach, wind-up, damage, element and look (docs/TECHNOMANCER.md 2.2).
 - The Mutator can still take the service gun or the laser rifle at the Armory terminal (EQUIP), and take the lash back the same way. The terminal now lists each class its own: the Mutator sees the lash and not the Gunslinger's machine gun, the Gunslinger the machine gun and not the lash; with no class it lists what it did before.
 - A Mutator's game saved before the lash existed comes back with the lash in hand (`weaponSnapshot().cw`); one saved after keeps whatever was in hand.
 - No new sprite: the player's sheets are unchanged (the brief: *"Do not redesign established character or enemy appearances"*); the lash is drawn over the scene.

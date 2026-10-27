@@ -217,10 +217,12 @@ function facilityResetState() {
     if (typeof clearDNA === "function") clearDNA();
     if (typeof mutatorReset === "function") mutatorReset();   // the lash and any fallen clone's body (js/mutator.js)
     if (typeof specimenReset === "function") specimenReset();   // the capsules carried, a preservation under way (js/specimen.js)
-    if (typeof serumReset === "function") serumReset();   // the serum's pools and the Mutator's laboratory (js/serum.js)
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null; if (typeof activeEmpEffect !== "undefined") activeEmpEffect = null;
     if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
     frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(ELEMENTS.map(e => e.id)); lifetimeKills = 0;
+    // (after the clock is back at 0: these count from it)
+    if (typeof serumReset === "function") serumReset();   // the serum's pools and the Mutator's laboratory (js/serum.js)
+    if (typeof technoReset === "function") technoReset();   // the gauntlet's charges, the arcs (js/technomancer.js)
     playerUltimate = 0; armySurgeTimer = 0; _lastUltInt = -1; _lastUltState = "";
     siphonEnabled = true; siphonWisps = []; _lastSiphonOn = null; _siphonInRange = 0;
     crystal = { x: 0, y: 2, health: 300, maxHealth: 300, radius: 0.8 };

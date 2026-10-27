@@ -618,6 +618,7 @@ function render() {
     if (typeof mutatorBodiesTick === "function") mutatorBodiesTick();   // a fallen clone's body (js/mutator.js)
     if (typeof specimenTick === "function") specimenTick();   // the Ice Mage preserving a body; the capsule taken (js/specimen.js)
     if (typeof serumTick === "function") serumTick();   // the serum's pools heal; the Mutator's laboratory makes serum (js/serum.js)
+    if (typeof technoTick === "function") technoTick();   // the grid charges the Technomancer's gauntlet; its arcs fade (js/technomancer.js)
     if (typeof targetTick === "function") targetTick();   // the aim meter and the selection: js/targeting.js
     // The crystals, at the top left: only the change touches the page.
     if (shardCount !== _lastShardCount) { _lastShardCount = shardCount; shardUI.textContent = String(shardCount); }
@@ -1147,7 +1148,8 @@ function render() {
     if (typeof drawSelectedUnitRings === "function") drawSelectedUnitRings();   // the units picked in the Command Center
     if (typeof drawBonds === "function") drawBonds();
     if (typeof drawBiteTelegraphs === "function") drawBiteTelegraphs();   // a creature rearing back to bite, and whom (js/combat.js)
-    if (typeof drawMutatorFx === "function") drawMutatorFx();   // the Mutator's lash (js/mutator.js)
+    if (typeof drawMutatorFx === "function") drawMutatorFx();   // the Mutator's lash, the Technomancer's punch (js/mutator.js)
+    if (typeof drawTechnoFx === "function") drawTechnoFx();   // the Technomancer's arc (js/technomancer.js)
     if (typeof drawSpecimenOverlay === "function") drawSpecimenOverlay();   // the Ice Mage's beam; the Resurrection Zone and its plate (js/specimen.js)
     if (typeof drawSerumOverlay === "function") drawSerumOverlay();   // the allies a serum's pool is healing (js/serum.js)
     drawFloatingTexts();

@@ -153,7 +153,10 @@ const _mx = { goal: null, target: null, windup: 0, pathAt: -1e9, fx: null, faceT
 function _mxFrame() { return typeof frame !== "undefined" ? frame : 0; }
 function _mxDist(a) { return Math.hypot(a.x - player.x, a.y - player.y); }
 function _mxHeld() { return typeof gunHold !== "undefined" && !!gunHold && !gunHold.released; }
-function lashReach() { const w = typeof WEAPONS !== "undefined" ? WEAPONS.lash : null; return typeof classStat === "function" ? classStat("lashReach", w && w.reach ? w.reach : 1.45) : (w && w.reach) || 1.45; }
+// THE MELEE WEAPON IN HAND (the Mutator's lash; the Technomancer's gauntlet punches the same way: js/technomancer.js): its reach, its wind-up, its colour; the lash's when the weapon in hand has no melee
+function _mxWeapon() { const w = typeof weaponDef === "function" ? weaponDef() : null; return w && (w.kind === "melee" || w.kind === "hybrid") ? w : (typeof WEAPONS !== "undefined" ? WEAPONS.lash : null); }
+function _mxWindup() { const w = _mxWeapon(); return w && w.windup ? w.windup : MUTATOR.lash.windup; }
+function lashReach() { const w = _mxWeapon(); return typeof classStat === "function" ? classStat("lashReach", w && w.reach ? w.reach : 1.45) : (w && w.reach) || 1.45; }
 function mutatorLashing() { return _mx.windup > 0; }
 // the creature the lash is going for or winding up at (the dial, the tests)
 function mutatorLashGoal() { return _mx.target || _mx.goal || null; }
@@ -175,19 +178,20 @@ function mutatorLash(foe) {
     _mx.goal = foe;
     if (_mx.windup > 0) return false;   // (already drawing back)
     if (_mxDist(foe) > lashReach()) { _mxApproach(foe); return false; }
-    _mx.windup = MUTATOR.lash.windup; _mx.target = foe; _mx.faceTo = foe; _mx.faceAt = _mxFrame();
-    player.attackCooldown = MUTATOR.lash.windup + (typeof weaponCooldown === "function" ? weaponCooldown("lash") : 34);
+    const w = _mxWeapon(); _mx.windup = _mxWindup(); _mx.windupOf = _mx.windup; _mx.target = foe; _mx.faceTo = foe; _mx.faceAt = _mxFrame();
+    player.attackCooldown = _mx.windup + (typeof weaponCooldown === "function" ? weaponCooldown(w ? w.id : "lash") : 34);
     _mxStop();
     return true;
 }
 // the lash lands (or misses): the number, the flash on the creature, the lash drawn from the player to it
 function _mxStrike(t) {
     const f = _mxFrame(), hit = !!t && !t.dead && _mxDist(t) <= lashReach() + MUTATOR.lash.slack;
-    _mx.fx = { t0: f, x: t ? t.x : player.x, y: t ? t.y : player.y, hit };
+    const w = _mxWeapon(); _mx.fx = { t0: f, x: t ? t.x : player.x, y: t ? t.y : player.y, hit, col: w && w.col ? w.col : "#c06bff", style: w && w.fx ? w.fx : "whip" };
     if (!t) return false;
     if (!hit) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text: "MISS", color: "#d8c4f0", size: 12, life: 34, vy: -0.035 }); return false; }
-    applyDamage(t, typeof weaponDamage === "function" ? weaponDamage("lash") : 18, { x: player.x, y: player.y, team: "green", element: null, isPlayer: true });
-    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#c06bff", radius: 0.55, life: 16 });
+    applyDamage(t, typeof weaponDamage === "function" ? weaponDamage(w ? w.id : "lash") : 18, { x: player.x, y: player.y, team: "green", element: w && w.element ? w.element : null, isPlayer: true }, w && w.element ? w.element : null);
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: w && w.col ? w.col : "#c06bff", radius: 0.55, life: 16 });
+    if (w && typeof w.onHit === "function") w.onHit(t);   // (the gauntlet's punch charges it: js/technomancer.js)
     if (typeof shake !== "undefined") shake = Math.max(shake, 2);
     return true;
 }
@@ -197,16 +201,17 @@ function mutatorTick() {
         const t = _mx.target;
         if (!t || t.dead) { _mx.windup = 0; _mx.target = null; return; }   // (it died first: nothing to land on)
         _mx.faceAt = _mxFrame();
-        if (--_mx.windup <= 0) { _mx.target = null; _mxStrike(t); if (!_mxHeld()) _mx.goal = null; }
+        if (--_mx.windup <= 0) { _mx.target = null; _mxStrike(t); if (!_mxHeld()) _mx.goal = null; else _mx.heldStruck = true; }
         return;
     }
+    if (_mx.heldStruck && !_mxHeld()) { _mx.heldStruck = false; _mx.goal = null; return; }   // (a hold that has struck is let go: no strike after it; a click is still one strike)
     const g = _mx.goal; if (!g) return;
     if (g.dead || (typeof playerAttackMode !== "undefined" && !playerAttackMode) || _mxDist(g) > (typeof TARGET !== "undefined" ? TARGET.manualKeep : 18) || (typeof weaponMelee === "function" && !weaponMelee())) { _mx.goal = null; return; }
     if (_mxDist(g) <= lashReach()) { _mxStop(); if ((player.attackCooldown || 0) <= 0) mutatorLash(g); }
     else _mxApproach(g);
 }
 // a tap on the floor (js/input.js), putting the weapon away (js/gunfire.js gunStow): the attack is off, and a lash still drawing back is let go
-function mutatorCancel() { _mx.goal = null; if (_mx.windup > 0) { _mx.windup = 0; _mx.target = null; } if (typeof _bodyGoal !== "undefined") _bodyGoal = null; }   // (and a walk to a fallen clone's body: below)
+function mutatorCancel() { _mx.goal = null; _mx.heldStruck = false; if (_mx.windup > 0) { _mx.windup = 0; _mx.target = null; } if (typeof _bodyGoal !== "undefined") _bodyGoal = null; }   // (and a walk to a fallen clone's body: below)
 // the row of the player's sheet to face while it strikes (js/hdsprites.js hdPlayerState), or null
 function mutatorFacing() {
     const t = _mx.faceTo; if (!t || _mxFrame() - _mx.faceAt > 18 || typeof hdRow !== "function") return null;
@@ -221,11 +226,11 @@ function _mxCurve(x0, y0, cx, cy, x1, y1, t) {   // the first t of a quadratic c
 }
 function drawMutatorFx() {
     if (typeof ctx === "undefined" || typeof canvas === "undefined") return;
-    const f = _mxFrame(), col = "#c06bff";
+    const f = _mxFrame(), mw = _mxWeapon(), col = mw && mw.col ? mw.col : "#c06bff";
     const [px, py0] = _mxScr(player.visualX, player.visualY), py = py0 - 46;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round"; ctx.lineJoin = "round";
     if (_mx.windup > 0 && _mx.target && !_mx.target.dead) {   // drawing back
-        const k = 1 - _mx.windup / MUTATOR.lash.windup, [tx, ty0] = _mxScr(_mx.target.x, _mx.target.y), ang = Math.atan2(ty0 - 30 - py, tx - px) + Math.PI, r = 10 + 16 * k;
+        const k = 1 - _mx.windup / (_mx.windupOf || MUTATOR.lash.windup), [tx, ty0] = _mxScr(_mx.target.x, _mx.target.y), ang = Math.atan2(ty0 - 30 - py, tx - px) + Math.PI, r = 10 + 16 * k;
         const ex = px + Math.cos(ang) * r, ey = py + Math.sin(ang) * r * 0.8 - 10 * k;
         ctx.globalAlpha = 0.5 + 0.5 * k; ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(px, py + 6); ctx.quadraticCurveTo(px + Math.cos(ang + 1.2) * r * 0.9, py + Math.sin(ang + 1.2) * r * 0.6, ex, ey); ctx.stroke();
         ctx.strokeStyle = "#f1e2ff"; ctx.lineWidth = 2; ctx.stroke();
@@ -236,11 +241,12 @@ function drawMutatorFx() {
         const age = f - fx.t0;
         if (age < 0 || age > MUTATOR.lash.fx) _mx.fx = null;
         else {
-            const [tx, ty0] = _mxScr(fx.x, fx.y), ty = ty0 - 30, mx = (px + tx) / 2, my = (py + ty) / 2, dx = tx - px, dy = ty - py, dl = Math.hypot(dx, dy) || 1, bend = Math.min(40, dl * 0.35);
-            const cx = mx - dy / dl * bend, cy = my + dx / dl * bend - 18, ext = Math.min(1, (age + 1) / 4), fade = 1 - Math.max(0, age - 3) / (MUTATOR.lash.fx - 3);
-            ctx.globalAlpha = Math.max(0, fade) * 0.55; ctx.strokeStyle = fx.hit ? col : "#8f86a6"; ctx.lineWidth = 9; _mxCurve(px, py + 4, cx, cy, tx, ty, ext); ctx.stroke();
-            ctx.globalAlpha = Math.max(0, fade); ctx.strokeStyle = fx.hit ? "#f1e2ff" : "#c9c3d8"; ctx.lineWidth = 3; ctx.stroke();
-            if (fx.hit && age < 6) { ctx.globalAlpha = 1 - age / 6; ctx.fillStyle = "#f6ecff"; ctx.beginPath(); ctx.arc(tx, ty, 6 + age * 3, 0, Math.PI * 2); ctx.fill(); }
+            const [tx, ty0] = _mxScr(fx.x, fx.y), ty = ty0 - 30, mx = (px + tx) / 2, my = (py + ty) / 2, dx = tx - px, dy = ty - py, dl = Math.hypot(dx, dy) || 1, jab = fx.style === "jab", bend = jab ? 0 : Math.min(40, dl * 0.35);
+            const cx = mx - dy / dl * bend, cy = my + dx / dl * bend - (jab ? 0 : 18), ext = Math.min(1, (age + 1) / (jab ? 2 : 4)), fade = 1 - Math.max(0, age - 3) / (MUTATOR.lash.fx - 3), sc = fx.col || col;
+            ctx.globalAlpha = Math.max(0, fade) * 0.55; ctx.strokeStyle = fx.hit ? sc : "#8f86a6"; ctx.lineWidth = jab ? 7 : 9; _mxCurve(px, py + 4, cx, cy, tx, ty, ext); ctx.stroke();
+            ctx.globalAlpha = Math.max(0, fade); ctx.strokeStyle = fx.hit ? "#f1f8ff" : "#c9c3d8"; ctx.lineWidth = 3; ctx.stroke();
+            if (fx.hit && age < 6) { ctx.globalAlpha = 1 - age / 6; ctx.fillStyle = "#f6f4ff"; ctx.beginPath(); ctx.arc(tx, ty, 6 + age * 3, 0, Math.PI * 2); ctx.fill(); }
+            if (fx.hit && jab && age < 8) { ctx.globalAlpha = 1 - age / 8; ctx.strokeStyle = sc; ctx.lineWidth = 2; for (let k = 0; k < 5; k++) { const a = k * 1.26 + fx.t0, r0 = 6 + age * 2, r1 = r0 + 8; ctx.beginPath(); ctx.moveTo(tx + Math.cos(a) * r0, ty + Math.sin(a) * r0); ctx.lineTo(tx + Math.cos(a + 0.3) * (r0 + 4), ty + Math.sin(a + 0.3) * (r0 + 4)); ctx.lineTo(tx + Math.cos(a) * r1, ty + Math.sin(a) * r1); ctx.stroke(); } }   // (a punch's sparks)
         }
     }
     ctx.restore();
@@ -415,4 +421,4 @@ function mutatorCloneRestore(c, rec) {
     return c;
 }
 // a fresh game (js/facilityplay.js facilityResetState)
-function mutatorReset() { _mx.goal = null; _mx.target = null; _mx.windup = 0; _mx.fx = null; _mx.faceTo = null; _mx.pathAt = -1e9; cloneBodies = []; _bodyGoal = null; mutatorXp = 0; }
+function mutatorReset() { _mx.goal = null; _mx.heldStruck = false; _mx.target = null; _mx.windup = 0; _mx.fx = null; _mx.faceTo = null; _mx.pathAt = -1e9; cloneBodies = []; _bodyGoal = null; mutatorXp = 0; }

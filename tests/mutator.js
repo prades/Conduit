@@ -170,6 +170,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { at, cycle: MUTATOR.lash.windup + weaponCooldown('lash') }; })()`);
         ok(r.at.length >= 3, 'strikes: ' + r.at); const gap = r.at[2] - r.at[1]; ok(Math.abs(gap - r.cycle) <= 2, 'strikes ' + gap + ' frames apart (a cycle is ' + r.cycle + ')');
     });
+    check('letting go of the hold stops it: no strike after the press ends (it struck once more, the attack was still going); let go while it rests after a strike (one already winding up still lands)', () => {
+        const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; playerLockTarget = e;
+            gunHold = { x: 0, y: 0, pending: true, released: false, until: 0, button: true }; const held = __hits(e, MUTATOR.lash.windup + 6).length; gunHold.released = true; gunHold.pending = false; const after = __hits(e, 120).length; gunHold = null;
+            return { held, after, goal: mutatorLashGoal() }; })()`);
+        same(r.held, 1, 'strikes while held'); same(r.after, 0, 'strikes after letting go'); same(r.goal, null, 'the attack goes on');
+    });
     check('a creature that slips out of reach in the wind-up is missed: MISS, and no damage', () => {
         const r = J(`(function(){ __clear(); __class('mutator'); const e = __creature('ant', 'scout', 4, 1.0, 0, true); e.health = e.maxHealth = 1e6; playerAttackMode = true; const h0 = e.health; firePlayerShot(e); render(); e.x += 3;
             __frames(MUTATOR.lash.windup + 2); return { dealt: h0 - e.health, said: floatingTexts.map(t => t.text).join('|') }; })()`);
@@ -185,9 +191,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ __clear(); __class('gunslinger'); const e = __creature('ant', 'scout', 4, 3, 0, true); playerAttackMode = true; const a0 = playerAmmo, p0 = followerProjectiles.length; const fired = firePlayerShot(e); return { fired, spent: a0 - playerAmmo, shots: followerProjectiles.length - p0 }; })()`);
         same(r.fired, true, 'it did not fire'); same(r.spent, 1, 'rounds'); same(r.shots, 1, 'projectiles');
     });
-    check('the Armory terminal lists each class its own: the Mutator the lash and not the machine gun, the Gunslinger the machine gun and not the lash, no class as before', () => {
+    check('the Armory terminal lists each class its own: the Mutator the lash and not the machine gun, the Gunslinger the machine gun and not the lash, the Technomancer its arc gauntlet, no class as before', () => {
         const r = J(`(function(){ const o = {}; for (const id of [null, 'gunslinger', 'technomancer', 'mutator']) { __class(id); o[id || 'none'] = weaponRows().join(); } return o; })()`);
-        same(r.none, 'service,machinegun,laser', 'no class'); same(r.gunslinger, 'service,machinegun,laser', 'the Gunslinger'); same(r.technomancer, 'service,laser', 'the Technomancer'); same(r.mutator, 'service,laser,lash', 'the Mutator');
+        same(r.none, 'service,machinegun,laser', 'no class'); same(r.gunslinger, 'service,machinegun,laser', 'the Gunslinger'); same(r.technomancer, 'service,laser,gauntlet', 'the Technomancer'); same(r.mutator, 'service,laser,lash', 'the Mutator');
     });
     check('a Mutator\'s game saved before the lash comes back with the lash in hand; one saved with it keeps what was in hand', () => {
         const r = J(`(function(){ __class('mutator'); weaponRestore({ w: 'service', owned: {}, lv: {}, charge: 0 }); const old = playerWeapon; weaponRestore({ w: 'service', owned: {}, lv: {}, charge: 0, cw: 1 }); return { old, kept: playerWeapon }; })()`);

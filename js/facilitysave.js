@@ -28,6 +28,7 @@ function facilitySaveCollect() {
         capsules: typeof specimenSnapshot === "function" ? specimenSnapshot() : [],     // the specimen capsules in the pack (js/specimen.js)
         serum: typeof serumSnapshot === "function" ? serumSnapshot() : null,           // the Mutator's laboratory: what it holds and how far through its round (js/serum.js)
         mxp: typeof mutatorXp !== "undefined" ? mutatorXp : 0,                          // the Mutator's experiment points: its level (js/mutator.js)
+        tc: typeof technoSnapshot === "function" ? technoSnapshot() : 0,                // the charges in the Technomancer's gauntlet (js/technomancer.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
@@ -80,6 +81,7 @@ function facilitySaveApply(d) {
     if (typeof specimenApply === "function") specimenApply(d.capsules);   // (and the pack's count of them is theirs)
     if (typeof serumApply === "function") serumApply(d.serum);
     if (Number.isFinite(d.mxp) && typeof mutatorXp !== "undefined") mutatorXp = Math.max(0, d.mxp);
+    if (typeof technoApply === "function") technoApply(d.tc);
     if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
     // where the player stood (if that is still floor), and the followers with them
