@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────
 // A short list of objectives (TUT_STEPS) that teaches the loop the earlier phases built, WITHOUT CLASSES: find supplies in the dark, restore a relay (with the relay kit and two power cells: anyone can), RECRUIT a follower, POSITION
 // followers, then DEFEND THE CRYSTAL against a first assault, in which followers fight, gain levels and EVOLVE. Only when that is finished are the classes given: the class picker opens, and once a class is chosen the cases for that
-// class enter the facility (facilityClassItemsEnter) and a last objective sends the player to the class's station for its perk. A step is done when its `done()` says so (a step already done when it comes up is skipped). Nothing here is a new system:
+// class enter the facility (facilityClassItemsEnter) and the class's own STAGE follows (TUT_CLASS_STAGES: its gear at its station, then its loop). A step is done when its `done()` says so (a step already done when it comes up is skipped). Nothing here is a new system:
 //   recruiting is recruitFollower (js/clone.js), positioning is the roster's HOLD (a.stance, js/commandcenter.js), levels and evolution are gainXp and evolutionTick (js/levels.js, js/evolution.js), the enemies are
 //   ants (spawnCreature, js/clone.js), and they hunt the Crystal as every creature does when an alarm is up. The director only sets levels, spawns the assault and keeps the alarm on while it lasts.
 // Levels: the tutorial's followers (the three you start with and every recruit) are level TUT.followerLevel, and the assault's enemies are level TUT.enemyLevel, a little behind, so the assault is enough to take a follower to the evolution level.
@@ -39,9 +39,74 @@ const TUT_STEPS = [
     { id: "evolve", title: "EVOLVE A FOLLOWER", text: () => "A FOLLOWER EVOLVES AT LEVEL " + EVOLVE_LEVEL + ".", hint: () => "KEEP IT FIGHTING.", done: () => followers.some(f => f && f.evolved) },
 ];
 
-// AFTER the tutorial, once a class is chosen: the class's own objective (earn its perk at its station). Classes are given only when the tutorial is finished.
+// AFTER the tutorial, once a class is chosen: the class's own objective (earn its perk at its station). Classes are given only when the tutorial is finished. It is the first step of the class's stage (below).
 const TUT_CLASS_STEP = { id: "perk", title: "GET YOUR GEAR", text: () => ({ gunslinger: "FIND THE MACHINE GUN: THE WEAPON LOCKER IN THE ARMORY (THE ARENA'S WEST DOOR, OR THE STAIRS FROM THE OBSERVATION DECK).", technomancer: "BUILD THE SPIDER MECH AT THE MECH BAY IN THE SHOW ROOM.", mutator: "WALK THROUGH TELEPORT ROOM 1 AND DOWN THE PASSAGE INTO THE EXPERIMENT LAB." }[playerClassKey] || ""),
     hint: () => ({ gunslinger: "WALK UP TO THE GLOWING LOCKER AND PRESS E (OR TAP IT). THE GUN IS BIG: YOU STAND TALL ON YOUR TENTACLES TO HOLD IT.", technomancer: "COLLECT 4 MECH LEGS (TELEPORT ROOM 1) AND THE CORE (SHOW ROOM), THEN STAND AT THE PAD AND PRESS E.", mutator: "THE LAB COAT AND SAFETY GOGGLES GO ON BY THEMSELVES WHEN YOU WALK IN, AND YOU KEEP THEM." }[playerClassKey] || ""), done: () => !!CLASS_SIGNATURE[playerClassKey] && classHas(CLASS_SIGNATURE[playerClassKey]) };
+
+// THE CLASS'S STAGE (the brief: "Each class should have its own tutorial stage after the initial tutorial"): once a class is chosen, a few objectives that teach what it does with what the game already has. The first is its
+// gear (TUT_CLASS_STEP); the rest are its loop. A step is done when its `done()` says so, and one already done when it comes up is passed, as in the tutorial. What the class does is COUNTED from the moment the
+// stage begins: tutTally (the class's own code says when a strike lands, an arc is thrown, a serum is splashed...), and the kills and relays online from what they were then (S.ck0, S.cr0). A step with `stray`
+// puts the gun lesson's training creature in view while it is up (TUT_STRAY: a big grazing ant near the player, replaced if it dies, taken away after, paying nothing). The plate counts "n/N".
+const TUT_STRAY = { level: 3, health: 400, size: 2.2, near: [4, 7], respawns: 6 };   // (TUT_GUN's stray; `respawns` a step)
+const TUT_CLASS_STAGES = {
+    gunslinger: [TUT_CLASS_STEP,
+        { id: "cctv", title: "SWEEP THE CAMERAS", text: () => "RUN A CCTV SWEEP AT THE SECURITY ROOM'S CONSOLE: EVERY ENEMY IS MARKED FOR 25 SECONDS.",
+            hint: () => "WALK UP TO THE CONSOLE AND PRESS E (OR TAP IT). IT CAN BE RUN AGAIN A MINUTE LATER.", done: () => classHas("cctv") },
+        { id: "flare", title: "LIGHT A FLARE", text: () => "LIGHT A FLARE: OPEN YOUR PACK (I) AND USE ONE.",
+            hint: () => "IT LIGHTS THE GROUND FOR HALF A MINUTE, POWER OR NOT. MORE ARE IN THE ARMORY.", done: () => tutCount("flare") >= 1 },
+        { id: "hunt", title: "HUNT IN THE ARENA", text: () => "DEFEAT 3 CREATURES: " + Math.min(3, tutClassKills()) + "/3. YOUR SQUAD FIGHTS WITH YOU.",
+            hint: () => "A KILL PAYS CRYSTALS, DNA AND SCRAP: THE ARMORY'S TERMINAL MAKES SCRAP INTO ROUNDS.", done: () => tutClassKills() >= 3 } ],
+    technomancer: [TUT_CLASS_STEP,
+        { id: "relay", title: "RESTORE ANOTHER RELAY", text: () => "REPAIR A BROKEN RELAY: STAND AT IT WITH A POWER CELL AND THE REPAIR STARTS BY ITSELF.",
+            hint: () => "A POWERED ROOM CHARGES YOUR GAUNTLET; EACH RELAY ONLINE MAKES YOUR ARC STRONGER.",
+            done: () => tutClassRelays() >= 1 || tutRelaysOnline() >= tutRelaysAll() },
+        { id: "punch", title: "CHARGE YOUR GAUNTLET", stray: true, text: () => "PUNCH THE STRAY ANT: " + Math.min(3, tutCount("gauntlet")) + "/3. EVERY PUNCH THAT LANDS STORES A CHARGE.",
+            hint: () => "TAP IT: YOUR GAUNTLET LOCKS ON. CLICK THE ROUND BUTTON TO PUNCH, OR HOLD IT.", done: () => tutCount("gauntlet") >= 3 },
+        { id: "arc", title: "THROW THE ARC", stray: true, text: () => "STEP AWAY FROM IT AND THROW THE ARC: " + Math.min(2, tutCount("arc")) + "/2. OUT OF REACH, A CHARGE THROWS AN ELECTRIC ARC.",
+            hint: () => "IT JUMPS TO CREATURES NEARBY. AN ARC ON A CREATURE REARING BACK (BITE) STOPS THE BITE.", done: () => tutCount("arc") >= 2 } ],
+    mutator: [TUT_CLASS_STEP,
+        { id: "clone", title: "GROW YOUR CLONE", text: () => "OPEN THE CLONE BAY (CLONES ON THE DOCK) AND GROW A CLONE FROM THE DNA YOUR KILLS DROPPED.",
+            hint: () => "ONE AT A TIME, AND IT DOES NOT COME BACK BY ITSELF. NO DNA? KILLS DROP IT (THE ARENA).",
+            done: () => tutCount("clone") >= 1 || (typeof mutatorClone === "function" && !!mutatorClone()) },
+        { id: "upgrade", title: "UPGRADE YOUR CLONE", text: () => "WITH YOUR CLONE OUT, THE CLONE BAY SELLS ITS UPGRADES: BUY ONE.",
+            hint: () => "ARMOR, SERRATED ARMS, POUNCE OR REACH, FOR ANY DNA. THEY ARE LOST IF IT FALLS.", done: () => tutCount("upgrade") >= 1 },
+        { id: "lash", title: "FIGHT BESIDE IT", stray: true, text: () => "LASH THE STRAY ANT: " + Math.min(3, tutCount("lash")) + "/3. YOUR CLONE FIGHTS IT TOO.",
+            hint: () => "TAP IT: YOUR LASH LOCKS ON. CLICK THE ROUND BUTTON TO STRIKE, OR HOLD IT.", done: () => tutCount("lash") >= 3 },
+        { id: "serum", title: "SPLASH A SERUM", text: () => "TAKE A SERUM FROM THE SERUM HOOD (THE EXPERIMENT LAB) AND SPLASH IT: Q OR THE PILL.",
+            hint: () => "ITS POOL HEALS ALLIES IN IT. THE HOOD MAKES ONE A MINUTE, OR CRAFTS ONE FOR DNA.", done: () => tutCount("serum") >= 1 } ],
+};
+function tutClassStage() { return typeof playerClassKey !== "undefined" && playerClassKey ? TUT_CLASS_STAGES[playerClassKey] || null : null; }
+// the class's code says what the player did (counted only once the tutorial is over and a class is chosen)
+function tutTally(key, n) { const S = _fp && _fp.tut && _fp.tut.script; if (!S || S.step < TUT_STEPS.length || typeof playerClassKey === "undefined" || !playerClassKey) return; S.tally = S.tally || {}; S.tally[key] = (S.tally[key] || 0) + (n || 1); }
+function tutCount(key) { const S = _fp && _fp.tut && _fp.tut.script; return S && S.tally ? S.tally[key] || 0 : 0; }
+function tutRelaysOnline() { const R = _fp && _fp.relays; return R ? Object.keys(R).filter(id => R[id] && R[id].online).length : 0; }
+function tutRelaysAll() { return _fp && _fp.relays ? Object.keys(_fp.relays).length : 0; }
+function tutClassKills() { const S = _fp.tut.script; return S.ck0 === undefined ? 0 : Math.max(0, lifetimeKills - S.ck0); }
+function tutClassRelays() { const S = _fp.tut.script; return S.cr0 === undefined ? 0 : Math.max(0, tutRelaysOnline() - S.cr0); }
+// the step that is up: S.cstep, and past any that are done (the plate asks this; the director moves S.cstep)
+function tutClassCurrent() { const st = tutClassStage(), S = _fp && _fp.tut && _fp.tut.script; if (!st || !S) return -1; let i = S.cstep | 0; while (i < st.length && st[i].done()) i++; return i; }
+// each frame once the tutorial is over and a class is chosen: the stage begins (its counts start), a step that is done is passed (and said), the training creature comes and goes
+function tutClassTick() {
+    const S = _fp.tut.script, st = tutClassStage(); if (!st || !S.doneAt) return;
+    if (S.ck0 === undefined) { S.ck0 = lifetimeKills; S.cr0 = tutRelaysOnline(); S.tally = S.tally || {}; S.cstep = S.cstep | 0; }
+    while (S.cstep < st.length && st[S.cstep].done()) { const d = st[S.cstep]; S.cstep++; _tutSay("c:" + d.id, "◈ " + d.title + " — DONE" + (S.cstep < st.length ? "   NEXT: " + st[S.cstep].title : ""), classColour(playerClassKey)); }
+    if (S.cstep >= st.length) _tutSay("c:stage", "◈ " + className(playerClassKey) + " STAGE COMPLETE — YOUR CLASS IS YOURS", "#9dffb6");
+    tutStrayTick(st[S.cstep] || null);
+}
+// the training creature, for a step that wants one: near the player in the room they are in (else the gun lesson's spot in the main hallway), up to TUT_STRAY.respawns times a step
+function tutClassStray() { return actors.find(a => a && a.classStray && !a.dead) || null; }
+function tutStrayTick(step) {
+    const S = _fp.tut.script, s = tutClassStray();
+    if (!step || !step.stray) { if (s) { s.dead = true; s._xpGiven = true; s.deathProcessed = true; } return; }   // (the lesson is over: the stray goes, and pays nothing)
+    if (S.cstrayFor !== step.id) { S.cstrayFor = step.id; S.cstrays = 0; }
+    if (s || S.cstrays >= TUT_STRAY.respawns) return;
+    const spot = (typeof facilitySpotNear === "function" ? facilitySpotNear(player.visualX, player.visualY, TUT_STRAY.near[0], TUT_STRAY.near[1]) : null) || (typeof facilitySpotIn === "function" ? facilitySpotIn(TUT_GUN.room, player.visualX, player.visualY, TUT_GUN.near[0], TUT_GUN.near[1]) : null);
+    if (!spot) return;
+    let p = null; try { p = spawnCreature({ species: "ant", className: "scout", x: spot[0], y: spot[1], level: TUT_STRAY.level, state: "wander" }); } catch (e) { p = null; }
+    if (!p) return;
+    p.maxHealth = p.health = TUT_STRAY.health; if (p.dimensions) { p.dimensions.width = Math.round(p.dimensions.width * TUT_STRAY.size); p.dimensions.height = Math.round(p.dimensions.height * TUT_STRAY.size); }
+    p.classStray = true; S.cstrays++; _tutSay("cstray:" + step.id + S.cstrays, "A BIG STRAY ANT WANDERS IN: YOUR TRAINING TARGET.", classColour(playerClassKey));
+}
 
 // THE GUN LESSON: a stray ant (level 3, plenty of health, grazing) is put in view; the objective is to shoot it three times with the player's own gun. The player is given the training rounds, and the ant is taken away when the lesson is done.
 const TUT_GUN = { shots: 3, rounds: 8, level: 3, health: 400, respawns: 4, room: "lab_hallway", near: [6, 14], size: 2.2 };   // (it wanders in the main hallway, and is big: easy to see and to hit)
@@ -129,6 +194,7 @@ function facilityDirectorTick() {
         S.doneAt = frame; _tutSay("complete", "◈ TUTORIAL COMPLETE", "#9dffb6");
         if (!playerClassKey && typeof classPickerOpen !== "undefined") classPickerOpen = true;
     }
+    if (S.doneAt && playerClassKey) tutClassTick();   // then the class's own stage
 }
 // the number of enemies spawned before the wave that is due (waves spawn in order, once)
 function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += TUT.waves[i].who.length; return n; }
@@ -172,7 +238,7 @@ function facilityDrawObjective() {
     let key, title, body, hint = "", col = pc ? pc.colour : UI_TEAL;
     if (!tutDone) { const st = TUT_STEPS[S.step]; key = "t" + S.step; title = "OBJECTIVE " + (S.step + 1) + "/" + TUT_STEPS.length + "  ·  " + st.title; body = st.text(); hint = st.hint(); }
     else if (!pc) return;
-    else if (!TUT_CLASS_STEP.done()) { key = "perk"; title = pc.name + "  ·  " + TUT_CLASS_STEP.title; body = TUT_CLASS_STEP.text(); hint = TUT_CLASS_STEP.hint(); }
+    else if (tutClassCurrent() >= 0 && tutClassCurrent() < tutClassStage().length) { const st = tutClassStage(), i = tutClassCurrent(), c = st[i]; key = c.id === "perk" ? "perk" : "c:" + c.id; title = pc.name + "  ·  " + (i + 1) + "/" + st.length + "  ·  " + c.title; body = c.text(); hint = c.hint(); }   // the class's stage
     else { key = "done"; title = pc.name + "  ·  RANK " + classRank(); body = "YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS."; col = "#9dffb6"; }
     const mail = objectiveCompact(), chars = Math.max(18, Math.floor((w - 28) / 8)), lines = uiWrap(body, chars).slice(0, 3), hl = hint ? uiWrap(hint, chars).slice(0, 3) : [], h = 44 + lines.length * 17 + (hl.length ? hl.length * 15 + 8 : 0);
     // a phone: the plate is folded into the mailbox until it is opened, and unfolds out of it (S.objK: 0 folded .. 1 open); an objective that is open is read

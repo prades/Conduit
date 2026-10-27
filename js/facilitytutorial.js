@@ -139,6 +139,7 @@ function facilityFlare() {
     const now = typeof frame !== "undefined" ? frame : 0, T = _fp.tut;
     T.sources = T.sources.filter(s => !s.until || s.until >= now);
     T.sources.push({ x: player.visualX, y: player.visualY, r: FP_TUT.flareR, k: FP_TUT.flareK, room: _fp.here, what: "flare", until: now + FP_TUT.flareFrames, born: now });
+    if (typeof tutTally === "function") tutTally("flare");   // (the class's stage counts it: js/tutorial.js)
     return true;
 }
 function facilityLampBoost(frames) { if (!_fp || !_fp.tut) return false; _fp.tut.boostUntil = (typeof frame !== "undefined" ? frame : 0) + Math.round(frames * (typeof classStat === "function" ? classStat("boostFrames", 1) : 1)); return true; }

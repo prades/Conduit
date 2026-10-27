@@ -31,6 +31,7 @@ function serumSplash(x, y) {
     serumZones.push({ x, y, t0: f, until: f + SERUM.splash.frames, next: f });
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x, y, color: "#7dffb0", radius: 1.2, life: 26 });
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x, y, text: "SERUM", color: "#7dffb0", life: 50, vy: -0.03, size: 13 });
+    if (typeof tutTally === "function") tutTally("serum");   // (the class's stage counts it: js/tutorial.js)
     return true;
 }
 // the allies a pool heals: your followers and clones, alive, standing in it

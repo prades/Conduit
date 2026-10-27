@@ -115,5 +115,5 @@ The punch is about 23 damage a second (14 every 36 frames), between the lash (25
 
 ## 5. Not done here
 
-- **Its tutorial stage** is the brief's step 9 (docs/TUTORIAL.md).
+- **Its tutorial stage: built** in step 9 (docs/TUTORIAL.md, "The class stages"): the mech, a relay, three punches, two arcs.
 - **Further Technomancer abilities** (deployables, turrets, taking over the facility's systems) were not asked for in these words and are not invented here; the existing mech and tuned lamp perks stay as they were.

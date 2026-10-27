@@ -66,6 +66,7 @@ function technoArc(foe) {
         hit.push(best); pts.push([best.x, best.y]); _tcZap(best, dmg * TECHNO.arc.chainPct); last = best;
     }
     _tc.fx.push({ t0: f, pts, seed: (f * 7919) % 1000 });
+    if (typeof tutTally === "function") tutTally("arc");   // (the class's stage counts it: js/tutorial.js)
     if (typeof _mx !== "undefined") { _mx.faceTo = foe; _mx.faceAt = f; }   // (the player turns to it: js/hdsprites.js reads mutatorFacing)
     player.attackCooldown = TECHNO.arc.cooldown;
     if (typeof shake !== "undefined") shake = Math.max(shake, 3);

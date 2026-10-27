@@ -183,8 +183,9 @@ ASKED: *"The Mutator can craft healing serums that are splashed onto the ground.
 11. **The Mutator's level comes from experiments** (DNA spent on biology). The other way would be the class's existing rank (1 plus one a perk, so 3 at most for the Mutator).
 12. **Allies are followers and clones;** the player is not healed by the serum.
 
-## 5. Next (the brief's steps 5 to 7)
+## 5. The brief's later steps
 
 - **Step 5: built** (2.5).
 - **Step 6: built** (docs/SPECIMENS.md): the Ice Mage freezes a fallen ally's body (the Mutator's clone, or a follower lost for good); the player carries the containment capsule to the Resurrection Zone, the Crystal, where it restores the specimen as it was. A clone's body is salvaged OR preserved.
 - **Step 7: built** (2.6).
+- **Step 9, its tutorial stage: built** (docs/TUTORIAL.md, "The class stages"): the lab coat, a clone, an upgrade, three lashes, a serum.

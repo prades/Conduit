@@ -4,7 +4,7 @@
 // The facility is the game: the page opens it, and it keeps one key, "conduit_fp_save". (The old strip game, its CLASSIC GAME chip and its "tubecrawler_*" keys are gone.)
 //
 // WHAT IS SAVED: the class and its perks, the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
-// (the director's step and what it has already said), the followers (the roster record: level, XP, evolution, traits), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands.
+// (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands.
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
 // It is written every few seconds while the game is running, and when the page is hidden or closed. NEW GAME (a chip, with a confirmation) throws it away and starts again.
 const FS = { key: "conduit_fp_save", version: 1, every: 180 };
@@ -20,7 +20,8 @@ function facilitySaveCollect() {
         cls: typeof playerClassKey !== "undefined" ? playerClassKey : null, perks: Array.from(classPerks), inv: playerInv, ammo: playerAmmo, shots: playerShotsFired,
         taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp).map(i => i.id),
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
-        script: S ? { step: S.step, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays } : null,
+        script: S ? { step: S.step, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays,
+            cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0 } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js)
         followers: followerRosterSnapshot(),
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
         clones: cloneRosterSnapshot(),   // the clones: alive, or waiting at the Crystal to come back
@@ -71,6 +72,7 @@ function facilitySaveApply(d) {
     if (S && d.script) {
         S.step = Math.max(0, Math.min(TUT_STEPS.length, d.script.step | 0)); S.baseFollowers = Number.isFinite(d.script.baseFollowers) ? d.script.baseFollowers : S.baseFollowers;
         S.doneAt = d.script.done ? 1 : 0; S.said = d.script.said || {}; S.kills = d.script.kills || 0; S.gunBase = d.script.gunBase; S.strays = d.script.strays || 0; S.assault = null;
+        S.cstep = Math.max(0, d.script.cstep | 0); S.tally = d.script.tally && typeof d.script.tally === "object" ? d.script.tally : {}; S.ck0 = Number.isFinite(d.script.ck0) ? d.script.ck0 : undefined; S.cr0 = Number.isFinite(d.script.cr0) ? d.script.cr0 : undefined;   // the class's stage, as far as it had got
         S.levelled = new Set(followers);
         if (S.doneAt && !playerClassKey && typeof classPickerOpen !== "undefined") classPickerOpen = true;   // (the picker was open when it was left)
     }

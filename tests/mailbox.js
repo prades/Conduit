@@ -111,13 +111,14 @@ function measure(w, h) {
         ok(r.anchorOpen > 300, 'the round button stayed up under the open plate: ' + r.anchorOpen); same(r.on.join(), 'true,true', 'a press on the open plate'); same(r.closing, false, 'a tap on the plate folds it');
         same(r.folded.join(), '0,204,false,false,false', 'folded again, and read');
     });
-    check('a new objective puts the "!" back (and the envelope rattles for a moment): the next step, the class\'s own, and the closing line each come in as unread; an objective that comes while the plate is open is read at once and the plate stays open', () => {
+    check('a new objective puts the "!" back (and the envelope rattles for a moment): the next step, the class\'s own (each step of its stage), and the closing line each come in as unread; an objective that comes while the plate is open is read at once and the plate stays open', () => {
         const r = J(`(function(){ const o = {}; const S = __fresh(390); frame = 1000; __draw(2); objectiveToggle(true); __draw(14); objectiveToggle(false); __draw(14); o.read = objectiveUnread();
             frame = 2000; S.step = 1; let t = __draw(); o.next = [S.objKey, objectiveUnread(), t.includes('!'), S.objNewAt]; objectiveToggle(true); __draw(14); S.step = 2; t = __draw(); o.whileOpen = [S.objKey, S.objSeen, objectiveUnread(), t.includes('!'), !!S.objOpen, _fpObjBottom > 280];
             objectiveToggle(false); __draw(14); classSet('gunslinger'); S.step = TUT_STEPS.length; frame = 3000; t = __draw(); o.perk = [S.objKey, objectiveUnread(), t.includes('!')]; objectiveToggle(true); __draw(14); objectiveToggle(false); __draw(14); o.perkRead = objectiveUnread();
-            classGrant(CLASS_SIGNATURE.gunslinger); frame = 4000; t = __draw(); o.done = [S.objKey, objectiveUnread(), t.includes('!')]; return o; })()`);
+            classGrant(CLASS_SIGNATURE.gunslinger); frame = 4000; t = __draw(); o.stage = [S.objKey, objectiveUnread(), t.includes('!')]; objectiveToggle(true); __draw(14); objectiveToggle(false); __draw(14);
+            classGrant('cctv'); S.tally = { flare: 1 }; S.ck0 = lifetimeKills - 3; frame = 5000; t = __draw(); o.done = [S.objKey, objectiveUnread(), t.includes('!')]; return o; })()`);   // (the rest of the Gunslinger's stage: the cameras, a flare, three kills, js/tutorial.js)
         same(r.read, false, 'read'); same(r.next.join(), 't1,true,true,2000', 'the next objective'); same(r.whileOpen.join(), 't2,t2,false,false,true,true', 'a new objective while the plate is open');
-        same(r.perk.join(), 'perk,true,true', 'the class objective'); same(r.perkRead, false, 'the class objective, read'); same(r.done.join(), 'done,true,true', 'the closing line');
+        same(r.perk.join(), 'perk,true,true', 'the class objective'); same(r.perkRead, false, 'the class objective, read'); same(r.stage.join(), 'c:cctv,true,true', 'the class stage\'s next objective'); same(r.done.join(), 'done,true,true', 'the closing line');
     });
     check('the round button and the ammunition go under the mailbox (12 px), and on a phone not higher than under the network panel; a wide screen ignores the panel and keeps the plate\'s place; no plate drawn: the old default', () => {
         const r = J(`(function(){ const o = {}; const S = __fresh(390); const a = (obj, net) => { _fpObjBottom = obj; _fnBottom = net; return _tgAnchor().top; };

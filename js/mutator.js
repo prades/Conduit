@@ -81,7 +81,7 @@ function cloneUpgradeNext(c, id) {
 // buy the next rank for the Mutator's clone (the Clone Bay's BUY): the DNA is spent, the rank goes up, the clone is made over, and what it cost is added to what it is worth
 function cloneUpgradeBuy(id, c) {
     c = c || mutatorClone(); const n = cloneUpgradeNext(c, id); if (!n.ok) { _mxSay(n.why, "#ff9c8a"); return n; }
-    dnaSpend(n.cost); c.upgrades = Object.assign({}, c.upgrades || {}, { [id]: n.rank + 1 }); c.invested = (c.invested || 0) + n.cost; cloneApplyUpgrades(c); mutatorGainXp(n.cost);
+    dnaSpend(n.cost); c.upgrades = Object.assign({}, c.upgrades || {}, { [id]: n.rank + 1 }); c.invested = (c.invested || 0) + n.cost; cloneApplyUpgrades(c); mutatorGainXp(n.cost); if (typeof tutTally === "function") tutTally("upgrade");
     _mxSay(CLONE_UPGRADES[id].name + " ▲ RANK " + (n.rank + 1) + " — " + n.cost + " DNA", CLASSES.mutator.colour);
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: c.x, y: c.y, color: "#c06bff", radius: 0.9, life: 24 });
     return { ok: true, rank: n.rank + 1, cost: n.cost };
@@ -192,6 +192,7 @@ function _mxStrike(t) {
     applyDamage(t, typeof weaponDamage === "function" ? weaponDamage(w ? w.id : "lash") : 18, { x: player.x, y: player.y, team: "green", element: w && w.element ? w.element : null, isPlayer: true }, w && w.element ? w.element : null);
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: w && w.col ? w.col : "#c06bff", radius: 0.55, life: 16 });
     if (w && typeof w.onHit === "function") w.onHit(t);   // (the gauntlet's punch charges it: js/technomancer.js)
+    if (typeof tutTally === "function") tutTally(w ? w.id : "lash");   // (a strike that landed: the class's stage counts it, js/tutorial.js)
     if (typeof shake !== "undefined") shake = Math.max(shake, 2);
     return true;
 }
@@ -262,6 +263,7 @@ function mutatorCloneMade(c, option) {
     c.upgrades = {}; c.invested = option && option.needed ? option.needed : 0;   // a new clone has no upgrades; what it is worth starts at the splices it was grown from
     cloneApplyUpgrades(c);
     mutatorGainXp(c.invested);   // (growing it is an experiment: the Mutator's level)
+    if (typeof tutTally === "function") tutTally("clone");   // (the class's stage counts it: js/tutorial.js)
     return c;
 }
 // RELEASE at the Clone Bay (js/clone.js dismissOldestClone): it is let go, its upgrades with it; a share of what it cost comes back (MUTATOR.dna.releaseRecovers), as when its body is salvaged

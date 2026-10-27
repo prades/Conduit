@@ -113,7 +113,24 @@ A scripted run through every step (collect, relay, recruit, hold, the gun, the a
 - **The tutorial without a class.** Six objectives: find supplies, restore the Crystal Chamber's relay, recruit, post followers, defend the Crystal, evolve a follower (the gun lesson, below, made it seven). Only five supply cases are in the facility (ammunition in the Armory and the Security Room, power cells in the lab and the lobby, the relay kit in the Crystal Chamber). With no class a relay is repaired with the kit and two power cells, the way every class without the Technomancer's skill does. The class stations show no ring and cannot be used.
 - **The picker** opens by itself when the last objective (evolve) is done, absorbs taps until a class is chosen, and is never shown again.
 - **Class items enter.** Choosing a class gives its start kit and lets that class's cases in: each arrives in a column of light, with the message "SUPPLIES FOR YOUR CLASS HAVE ARRIVED": the Gunslinger's flares in the Armory (2 cases), the Technomancer's cells in Teleport Room 1 (2), the Mutator's samples in the lab and the Crystal Chamber (3). A case for another class never enters (`class` on a `pickups` row in js/facilitymap.js; `facilityClassItemsEnter`).
-- **Then the class objective:** go to the class's station and earn its gear (the objective plate turns to the class's colour), and the class's rules (the Technomancer's repair skill and its auto-repair, the Gunslinger's gun and CCTV, the Mutator's sequencer) apply from then on.
+- **Then the class objective:** go to the class's station and earn its gear (the objective plate turns to the class's colour), and the class's rules (the Technomancer's repair skill and its auto-repair, the Gunslinger's gun and CCTV, the Mutator's sequencer) apply from then on. It is the first step of the class's own stage (below).
+
+## The class stages (the brief's step 9)
+
+ASKED: *"Each class should have its own tutorial stage after the initial tutorial."* *"Integrate each class into its tutorial progression and test the full loops."*
+
+Once a class is chosen, the objective plate runs **the class's stage** (`TUT_CLASS_STAGES`, js/tutorial.js): its gear first (`TUT_CLASS_STEP`, as before), then the class's loop, each step with its words and a hint, counted on the plate (*TECHNOMANCER · 3/4 · CHARGE YOUR GAUNTLET*). Every step uses what the game already has:
+
+| Class | Steps |
+|---|---|
+| Gunslinger | 1. GET YOUR GEAR (the machine gun, the Armory's locker) · 2. SWEEP THE CAMERAS (the Security Room's console) · 3. LIGHT A FLARE (from the pack) · 4. HUNT IN THE ARENA (three creatures defeated, the squad helping) |
+| Technomancer | 1. GET YOUR GEAR (the spider mech, the mech bay) · 2. RESTORE ANOTHER RELAY (one power cell, it starts by itself) · 3. CHARGE YOUR GAUNTLET (three punches) · 4. THROW THE ARC (two arcs from out of reach) |
+| Mutator | 1. GET YOUR GEAR (the lab coat, the walk through the lab) · 2. GROW YOUR CLONE (the Clone Bay) · 3. UPGRADE YOUR CLONE (one rank) · 4. FIGHT BESIDE IT (three lashes) · 5. SPLASH A SERUM (the serum hood, then Q or the pill) |
+
+- **What is counted** is counted from the moment the class is chosen: the class's own code reports it (`tutTally`: a strike that lands, by the weapon that landed it; an arc; a clone grown; an upgrade bought; a serum splashed; a flare lit), and the kills and the relays online are counted from what they were then. A step already done when it comes up is passed, as in the tutorial; each step done is said (*CHARGE YOUR GAUNTLET — DONE   NEXT: THROW THE ARC*), and the end (*TECHNOMANCER STAGE COMPLETE — YOUR CLASS IS YOURS*) gives the closing line the plate had before.
+- **The training creature** (`TUT_STRAY`): a step that teaches a strike (the punch, the arc, the lash) puts the gun lesson's big grazing ant (level 3, 400 health) near the player, in the room they are in (else in the main hallway). One that is killed pays as any kill and is replaced, up to six times a step; when the step is done it goes and pays nothing.
+- **Saved:** the step, what has been counted and where the counts began (`cstep`, `tally`, `ck0`, `cr0` on the tutorial's script record). A game saved before the stages existed starts its stage at the gear and passes what is already done.
+- Tests: tests/classstage.js plays each class's stage through with the game's own functions (the stations, the relay repair, the weapons through the dial, the Clone Bay, the serum hood), from the class picker to the closing line; tests/mailbox.js follows the plate through it.
 
 ## The gun lesson (revision)
 
