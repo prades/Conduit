@@ -43,7 +43,11 @@
 //          technician). The technician "helps traverse the battlefield and provides exploration tools to the user";
 //          the tools are the user's own, to come ("I have already made these, but I will put them in later"), so
 //          these forms have NO signature move (no `move`: js/moves.js gives them none and the INFO says so). They
-//          fight as technicians do, with the evolved stats. The electric and toxic technicians have no form yet.
+//          fight as technicians do, with the evolved stats. Then the last two (the user's sheets, Nos. 870-871): BLIGHT
+//          SPIDER (the TOXIC technician, its card: "BLIGHT SPIDER · TOXIC DEPLOY") and HOVER SHELL (the ELECTRIC
+//          technician; the sheet has no name, so this one is its own words, "Hover Shell + 6-Leg Shuttle"; its
+//          action frames are the sheet's separation, the shell lifting off the shuttle). No move either. Every
+//          element and role has a form now.
 //          AEGIS WARDEN (the old core brawler, No. 57), AEGIS BURST: with an enemy
 //          within WARDEN_RADIUS, every WARDEN_EVERY frames its shells fly out in
 //          a blast (WARDEN_MULT × its power) that shoves enemies back and gives
@@ -193,6 +197,14 @@ const EVOLUTIONS = {
     // for a nose glowing in its grooves, a hot vent on its back. The drill turns, so the sheet carries its own light.
     thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", sheet: "img/evo/thermite.png",
               cell: 144, anchor: [72, 114.2], core: [72, 74.8], noGlow: true, color: "#ff5a1f" },
+    // The TOXIC TECHNICIAN, design No. 870 (the user's card, "BLIGHT SPIDER · TOXIC DEPLOY"): a glass tank of bubbling toxin with black bands and a black front cap
+    // with a lens, on a faceted black six-legged chassis. The toxin bubbles and the legs trot, so the sheet carries its own light.
+    blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", sheet: "img/evo/blightspider.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 71.6], noGlow: true, color: "#66ff66" },
+    // The ELECTRIC TECHNICIAN, design No. 871 (the user's "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet, which has no name): a horseshoe crab's domed black shell with
+    // a yellow underglow, square wings and two launcher prongs, over a six-legged shuttle; its action frames lift the shell off. It glows, so the sheet carries its own light.
+    hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", sheet: "img/evo/hovershell.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 93.1], noGlow: true, color: "#ffee33" },
     // The ICE TECHNICIAN, design No. 852 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around"):
     // a squat box of cut ice blocks on diamond legs. It glides, so the sheet carries its own light.
     igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", sheet: "img/evo/igloo.png",

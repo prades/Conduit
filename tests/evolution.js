@@ -69,12 +69,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.evo, 'embercowl', 'its form'); same(r.tag, 'EMBER HOOD', 'its tag'); ok(run('EVOLUTIONS.halo.legacy === true'), 'the Cinder Halo design went to the electric brawler'); same(r.role, 'sniper', 'its role');
         mk('fire', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'the fire brawler');
     });
-    check('THE ASK: a TOXIC SNIPER becomes the ROTSHARD (design No. 101, the crystal eaten by its pool); a toxic BRAWLER the SEEPER (No. 578, which replaced the Caldera); campers wait', () => {
+    check('THE ASK: a TOXIC SNIPER becomes the ROTSHARD (design No. 101, the crystal eaten by its pool); a toxic BRAWLER the SEEPER (No. 578, which replaced the Caldera); a toxic technician the BLIGHT SPIDER', () => {
         mk('toxic', 'sniper', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'rotshard', 'its form'); same(r.tag, 'ROTSHARD', 'its tag'); same(r.role, 'sniper', 'its role');
         mk('toxic', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'seeper', 'a toxic brawler is the Seeper'); same(run('unitTypeLabel(__f)'), 'SEEPER', 'its tag'); ok(run('EVOLUTIONS.caldera.legacy === true'), 'the Caldera is no longer handed out');
-        mk('toxic', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a toxic camper waits');
+        mk('toxic', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'blightspider', 'a toxic technician is the Blight Spider');
     });
     check('THE ASK: a CORE MAGE (the role id is still "sniper") becomes the HORNSHELL (design No. 220, which replaced the Petal Aegis); a core technician is the Hammer Slug, a core brawler the Jelly Ram', () => {
         mk('core', 'sniper', 20); run(lvlUp);
@@ -97,23 +97,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.evo, 'maw', 'its form'); same(r.tag, 'FROST MAW', 'its tag'); same(r.role, 'brawler', 'its role');
         mk('ice', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'maw', 'a hybrid fights as a brawler');
     });
-    check('…and nobody else: not an electric or a toxic technician — nor before level 10', () => {
-        for (const [el, role] of [['electric', 'camper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
+    check('…every element and role has its form now; nobody evolves before level 10', () => {
+        for (const el of ['fire', 'electric', 'flux', 'core', 'toxic', 'ice']) for (const role of ['brawler', 'sniper', 'camper']) ok(run(`!!evolutionFor({ isFollower: true, element: '${el}', role: '${role}' })`), 'no form for a ' + el + ' ' + role);
         mk('fire', 'brawler', 9); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 9');
         mk('fire', 'brawler', 10); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'a fire brawler at 10');
         same(run('EVOLVE_LEVEL'), 10, 'THE ASK: they evolve at level 10');
     });
     check('THE ASK ("add the new technician forms now"): a FLUX TECHNICIAN becomes the GOO PROXY, a FIRE one the THERMITE BURROWER, an ICE one the IGLOO SKATER; each stays a technician', () => {
-        for (const [el, id, name] of [['flux', 'gooproxy', 'GOO PROXY'], ['fire', 'thermite', 'THERMITE BURROWER'], ['ice', 'igloo', 'IGLOO SKATER']]) {
+        for (const [el, id, name] of [['flux', 'gooproxy', 'GOO PROXY'], ['fire', 'thermite', 'THERMITE BURROWER'], ['ice', 'igloo', 'IGLOO SKATER'], ['toxic', 'blightspider', 'BLIGHT SPIDER'], ['electric', 'hovershell', 'HOVER SHELL']]) {
             mk(el, 'camper', 20); run(lvlUp);
             const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role, molt: __f._moltAt === frame })');
             same(r.evo, id, el + ' technician'); same(r.tag, name, el + ' tag'); same(r.role, 'camper', el + ' role'); ok(r.molt, el + ': no molt');
             same(run(`evolutionFor({ isFollower: true, element: '${el}', role: 'camper' }).id`), id, el + ' evolutionFor');
         }
-        same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "camper").map(d => d.id).sort().join()'), 'gooproxy,hammerslug,igloo,thermite', 'the technicians\' forms');
+        same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "camper").map(d => d.id).sort().join()'), 'blightspider,gooproxy,hammerslug,hovershell,igloo,thermite', 'the technicians\' forms');
     });
     check('THE ASK ("they help traverse the battlefield and provide exploration tools [...] I will put them in later"): the new technicians\' forms have NO signature move, and run without one', () => {
-        for (const id of ['gooproxy', 'thermite', 'igloo', 'rimestar']) { same(run('EVOLUTIONS.' + id + '.move || null'), null, id + ' has a move'); same(run('EVOLUTIONS.' + id + '.moves || null'), null, id + ' has moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move'); }
+        for (const id of ['gooproxy', 'thermite', 'igloo', 'blightspider', 'hovershell', 'rimestar']) { same(run('EVOLUTIONS.' + id + '.move || null'), null, id + ' has a move'); same(run('EVOLUTIONS.' + id + '.moves || null'), null, id + ' has moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move'); }
         const r = run(`(function(){ followers.length = 0; spawnFollowerAtCrystal('flux'); const f = followers[0]; f.returningToCrystal = false; f.role = 'camper'; f.evolved = 'gooproxy'; f._moltAt = -1e9; f._sigCd = 0;
             const t0 = floatingTexts.length, fx0 = elementEffects.length; for (let i = 0; i < 400; i++) evolutionTick();
             return { role: f.role, texts: floatingTexts.length - t0, fx: elementEffects.length - fx0, sig: f._sigAt === undefined }; })()`);
@@ -136,14 +136,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nWHAT IT GAINS');
     check('THE ASK: health and power × EVOLVE_MULT — and they survive the next level-up', () => {
-        // The control is a TOXIC technician, which has no form yet (a plain follower of the same stats; the ice one has the Igloo Skater now); the twin is a fire brawler turned Bunker Bloom.
-        const r = run(`(function(){ mkTwin = (ev) => { spawnFollowerAtCrystal(ev ? 'fire' : 'toxic'); const f = followers[followers.length - 1]; f.role = ev ? 'brawler' : 'camper';
+        // The control is a plain follower of the same stats that cannot evolve (every element and role has a form now, so its form is switched off for the check); the twin is a fire brawler turned Bunker Bloom.
+        const r = run(`(function(){ const evoFor = evolutionFor; evolutionFor = f => f.__control ? null : evoFor(f); try { mkTwin = (ev) => { spawnFollowerAtCrystal(ev ? 'fire' : 'toxic'); const f = followers[followers.length - 1]; f.role = ev ? 'brawler' : 'camper';
                 f.base = { hp: 40, attack: 12, defense: 10, specialAttack: 10, accuracy: 10, will: 20, speed: 10 }; f.level = 22; f.xp = xpForLevel(22); if (ev) f.evolved = 'bloom'; _applyFollowerLevel(f, true); return f; };
-            const a = mkTwin(false), b = mkTwin(true); b._moltAt = -1e9;
+            const a = mkTwin(false), b = mkTwin(true); a.__control = true; b._moltAt = -1e9;
             const r1 = { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power };
             a.xp = xpForLevel(23); b.xp = xpForLevel(23); gainXp(a, 1); gainXp(b, 1);
-            return { r1, r2: { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power, lv: [a.level, b.level] } }; })()`);
-        const M = run('EVOLVE_MULT');
+            return { r1, r2: { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power, lv: [a.level, b.level], ctl: a.evolved || null } }; } finally { evolutionFor = evoFor; } })()`);
+        const M = run('EVOLVE_MULT'); same(r.r2.ctl, null, 'the control evolved');
         ok(Math.abs(r.r1.hp - M) < 0.05 && Math.abs(r.r1.pw - M) < 0.1, 'at evolving: ' + JSON.stringify(r.r1));
         ok(Math.abs(r.r2.hp - M) < 0.05 && Math.abs(r.r2.pw - M) < 0.1 && r.r2.lv[1] === 23, 'after a level-up: ' + JSON.stringify(r.r2));
     });
