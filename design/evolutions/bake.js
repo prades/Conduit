@@ -19,7 +19,8 @@ const JOBS = [
   { id: 'hovershell', form: 871, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 860-861 (forms32.js), from the user's sheets: the JELLY RAM, the core brawler (it hovers, its tentacles sway; its action is the charge: back, then a ram with a burst), in the
   // core element's teal (jellyram_blue: in the sheet's own blue, to compare); the RIMESTAR, the ice mage (it hovers, its fins sway; its action spins them a third of a turn and throws frost).
-  { id: 'jellyram', form: 860, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  { id: 'jellyram', form: 867, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 867, approved on the user's review: it swims like a jellyfish, seven fat wavy tentacles)
+  { id: 'jellyram_old', form: 860, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Jelly Ram, before the review)
   { id: 'jellyram_blue', form: 860, color: '#2f6bff', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 862, the Jelly Ram swimming, a little bigger (the user's ask on 860): a candidate until approved.
   { id: 'jellyram_swim', form: 862, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },

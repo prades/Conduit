@@ -211,11 +211,12 @@ const EVOLUTIONS = {
     // a squat box of cut ice blocks on diamond legs. It glides, so the sheet carries its own light.
     igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", sheet: "img/evo/igloo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 78.7], noGlow: true, color: "#9fe8ff" },
-    // The CORE BRAWLER, design No. 860 (the user's "JELLY RAM" sheet: "a floating brawler that uses its horned shell to ram targets"): a clear dome with a big diamond
-    // in it under a black helmet band, a horn out of either side lit along its top, a body of jelly trailing tentacles that end in drops. It casts the core brawler's
-    // AEGIS BURST. Its sheet is blue; it is in core's teal. The tentacles sway, so the sheet carries its own light.
+    // The CORE BRAWLER, design No. 867 (the user's "JELLY RAM" sheet: "a floating brawler that uses its horned shell to ram targets", then the user's review: "move with
+    // flicks from all of its tentacles like the jellyfish from SpongeBob", "a little bit bigger", the wavy strings "but fewer and thicker", "fatter tentacles"): a clear dome
+    // with a big diamond in it under a black helmet band, a horn out of either side lit along its top, a bell of jelly with seven fat wavy tentacles; it swims, every tentacle
+    // flicking back at once. It casts the core brawler's AEGIS BURST. Its sheet is blue; it is in core's teal. It swims, so the sheet carries its own light.
     jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", move: "AEGIS BURST", sheet: "img/evo/jellyram.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 74.8], noGlow: true, color: "#33e6c4" },
+              cell: 144, anchor: [72, 114.2], core: [72, 70.8], noGlow: true, color: "#33e6c4" },
     // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
     // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
     rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", sheet: "img/evo/rimestar.png",
