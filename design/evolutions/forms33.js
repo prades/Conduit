@@ -48,40 +48,26 @@ function _blightSpider(o) {
   const puffs = []; for (let i = 0; i < 7; i++) { const m = new T.Mesh(new T.SphereGeometry(1, 12, 8), new T.MeshBasicMaterial({ color: lit, transparent: true, opacity: 0, depthWrite: false, toneMapped: false })); m.renderOrder = 6; m.visible = false; tank.add(m); puffs.push({ m, k: i, a: i * 2.4 }); }
   // the legs: six, three a side; a faceted thigh up and out to a knee, a shin tapering to a point on the floor
   const legs = [];
-  // (o.armour, "thicker armored legs": a thick thigh under an armour plate with a line of green along it, a heavy knee, a thick armoured shin with a plate on its outer side,
-  // a pointed foot; the legs set a little wider apart, front to back, to make room)
-  const ar = o.armour, zs = ar ? 1.18 : 1;
-  for (const sx of [-1, 1]) for (let i = -1; i <= 1; i++) { const L = { sx, i, A: (sx < 0) === (i !== 0), hip: V(sx * W * 0.42, Y + 0.01, i * Lh * 0.32 * zs), knee0: V(sx * (W / 2 + 0.2), Y + 0.22, i * (Lh * 0.32 + 0.09) * zs), foot0: V(sx * (W / 2 + 0.36), 0, i * (Lh * 0.32 + 0.22) * zs) };
-    if (ar) { L.thigh = _segPlate31(b, ar.thighW, ar.thighD, _bsMatte); L.thPl = _segPlate31(b, ar.thighW * 1.4, 0.05, _bsBlack); L.thLn = _segPlate31(b, 0.02, 0.012, glowM);
-      L.shin = _segPlate31(b, ar.shinW, ar.shinD, _bsMatte); L.shPl = _segPlate31(b, ar.shinW * 1.25, 0.04, _bsBlack); L.foot = _segSpike33(b, ar.shinW * 0.55, _bsBlack); }
-    else { L.thigh = _segBox33(b, 0.12, 0.14, _bsGrey); L.shin = _segSpike33(b, 0.1, _bsBlack); }
-    L.knee = new T.Mesh(new T.IcosahedronGeometry(ar ? ar.knee : 0.08, 0), _bsMatte); b.add(L.knee); legs.push(L); }
+  for (const sx of [-1, 1]) for (let i = -1; i <= 1; i++) { const L = { sx, i, A: (sx < 0) === (i !== 0), hip: V(sx * W * 0.42, Y + 0.01, i * Lh * 0.32), knee0: V(sx * (W / 2 + 0.2), Y + 0.22, i * (Lh * 0.32 + 0.09)), foot0: V(sx * (W / 2 + 0.36), 0, i * (Lh * 0.32 + 0.22)) };
+    L.thigh = _segBox33(b, 0.12, 0.14, _bsGrey); L.shin = _segSpike33(b, 0.1, _bsBlack); L.knee = new T.Mesh(new T.IcosahedronGeometry(0.08, 0), _bsMatte); b.add(L.knee); legs.push(L); }
   const fl = _glowPool(0.85, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(lc); fl.m.material.opacity = 0.26; b.add(fl.g);
   const Lt0 = new T.PointLight(0xffffff, 0.8, 4, 2); Lt0.color.copy(lc); Lt0.position.set(0, Y + 0.5, 0.5); b.add(Lt0); LIGHTS.push(Lt0);
-  const kp = V(0, 0, 0), fp = V(0, 0, 0), hp = V(0, 0, 0), ak = V(0, 0, 0), Up = V(0, 1, 0), out = V(0, 0, 0), tA = V(0, 0, 0), tB = V(0, 0, 0);
+  const kp = V(0, 0, 0), fp = V(0, 0, 0), hp = V(0, 0, 0);
   return { g, core: (Y + Hh / 2 + 0.06 + Rt) * (o.S || 1), update(t, act) {
     const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act);
     // the trot: three legs at a time (front and back of one side, the middle of the other), once each a loop; the deploy (action) crouches and leans in
     body.position.set(0, 0.012 * Math.sin(ph * 2) - 0.06 * a, 0.03 * a); body.rotation.x = 0.08 * a;
     legs.forEach(L => { const pair = L.A ? 0 : PI, lift = Math.max(0, Math.sin(ph + pair)) * 0.07 * (1 - a), sw = Math.cos(ph + pair) * 0.05 * (1 - a), spread = 0.05 * a;
       hp.copy(L.hip).add(body.position); kp.set(L.knee0.x + L.sx * spread * 0.5, L.knee0.y + lift * 0.7 + body.position.y, L.knee0.z + sw * 0.6); fp.set(L.foot0.x + L.sx * spread, lift, L.foot0.z + sw);
-      L.knee.position.copy(kp);
-      if (!ar) { L.thigh.set(hp, kp); L.shin.set(kp, fp); return; }
-      ak.copy(kp).lerp(fp, 0.7); out.set(L.sx, 0, 0);   // the ankle: the shin's armour ends there, the pointed foot goes on to the floor
-      L.thigh.set(hp, kp, Up); tA.copy(hp).lerp(kp, 0.12).addScaledVector(Up, ar.thighD * 0.55); tB.copy(kp).addScaledVector(Up, ar.thighD * 0.55); L.thPl.set(tA, tB, Up);
-      tA.addScaledVector(Up, 0.03); tB.addScaledVector(Up, 0.03); L.thLn.set(tA, tB, Up);
-      L.shin.set(kp, ak, out); tA.copy(kp).lerp(ak, 0.1).addScaledVector(out, ar.shinD * 0.55); tB.copy(ak).addScaledVector(out, ar.shinD * 0.55); L.shPl.set(tA, tB, out); L.foot.set(ak, fp); });
+      L.thigh.set(hp, kp); L.knee.position.copy(kp); L.shin.set(kp, fp); });
     bubbles.forEach(B => { const u = ((ph / TAU) * 2 + B.k) % 1; B.m.position.set(B.x, -Rt * 0.5 + u * Rt * 1.25, B.z); B.m.scale.setScalar(u < 0.85 ? 1 : (1 - u) / 0.15); });
     fluidM.emissive.copy(lcL).multiplyScalar(0.36 + 0.05 * Math.sin(ph * 2) + 0.3 * a);
     lensM.color.copy(lit).multiplyScalar(0.75 + 0.2 * Math.sin(ph * 2) + 0.6 * a); glowM.color.copy(lit).multiplyScalar(0.85 + 0.15 * Math.sin(ph * 2 + 1) + 0.3 * a);
-    // (the armoured one's puff stops shorter, inside its cell)
     puffs.forEach(P => { const u = pr * 1.5 - P.k * 0.07; P.m.visible = a > 0.05 && u > 0 && u < 1; if (!P.m.visible) return; const r = 0.05 + 0.13 * u;
-      P.m.position.set(Math.cos(P.a) * 0.1 * u, Math.sin(P.a) * 0.07 * u + 0.05 * u, Lt / 2 + 0.2 + (ar ? 0.36 : 0.55) * u); P.m.scale.setScalar(r); P.m.material.opacity = 0.7 * (1 - u); });
+      P.m.position.set(Math.cos(P.a) * 0.1 * u, Math.sin(P.a) * 0.07 * u + 0.05 * u, Lt / 2 + 0.2 + 0.55 * u); P.m.scale.setScalar(r); P.m.material.opacity = 0.7 * (1 - u); });
   } };
 }
 const _bs0 = { S: 1.45, y: 0.42, hubW: 0.42, hubH: 0.2, hubL: 0.5, tankR: 0.22, tankL: 0.6 };
-// 872: "thicker armored legs".
-fx(872, "The toxic technician, the BLIGHT SPIDER on thick armoured legs (the user's ask): the tank of toxin on a black chassis, its six legs thick and plated, a line of green on each thigh.", () => _blightSpider(Object.assign({}, _bs0, { armour: { thighW: 0.16, thighD: 0.15, shinW: 0.14, shinD: 0.13, knee: 0.095 } })));
 fx(870, "The toxic technician, the BLIGHT SPIDER: a glass tank of bubbling toxin with black bands and a black front cap with a lens, on a faceted black six-legged chassis with green eyes.", () => _blightSpider(_bs0));
 
 // ── 871 · THE HOVER SHELL ──────────────────────────────────────────────────────────────────────────────
