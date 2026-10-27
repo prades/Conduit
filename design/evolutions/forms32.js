@@ -115,7 +115,7 @@ function _jellyRam(o) {
         pts[i].set(root.x + u * 0.2 * s + 0.05 * s * Math.sin(w) * (1 - 0.6 * stream),
                    root.y - (droop * s + 0.14 * s * s) * (1 - 0.7 * stream) + 0.045 * s * Math.cos(w + 0.7) * (1 - 0.6 * stream),
                    root.z - L * s * (0.85 + 0.45 * stream)); }
-      const R0 = (style === 'string' ? 0.032 : style === 'taper' ? 0.085 : 0.09) + 0.02 * mid * (style === 'string' ? 0.3 : 1);
+      const R0 = (style === 'string' ? (o.strR || 0.032) : style === 'taper' ? 0.085 : 0.09) + 0.02 * mid * (style === 'string' ? 0.3 : 1);   // (o.strR: a string's thickness at its root)
       if (style === 'goo') T0.tb.set(pts, 0, 0, s => R0 * (1 - 0.45 * s) * (1 + 0.2 * Math.sin(PI * (2.4 * s + 0.37 * k))) * (1 - 0.45 * Math.min(1, Math.max(0, (s - 0.76) / 0.16))), 1.45, 0.75);
       else if (style === 'taper') T0.tb.set(pts, 0, 0, s => R0 * Math.pow(1 - s, 0.85) + 0.004);
       else if (style === 'string') T0.tb.set(pts, 0, 0, s => R0 * (1 - 0.85 * s) + 0.003);
@@ -137,6 +137,8 @@ const _jrSwim = Object.assign({}, _jr0, { swim: true, S: 1.6, tentL: 0.54, ramK:
 fx(863, "The JELLY RAM swimming, its tentacles as the sheet's: thick flat uneven streams of jelly that pinch into a drip, droplets breaking off.", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'goo' })));
 fx(864, "The JELLY RAM swimming, its tentacles smooth arms narrowing to a point.", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'taper', tentacles: 8 })));
 fx(865, "The JELLY RAM swimming, its tentacles thin wavy strings, more of them.", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'string', tentacles: 12 })));
+// 866: the user chose the strings, "but fewer and thicker": seven of them, about half as thick again.
+fx(866, "The JELLY RAM swimming, its tentacles wavy strings, seven of them and thicker (the user's pick: C, fewer and thicker).", () => _jellyRam(Object.assign({}, _jrSwim, { tent: 'string', tentacles: 7, strR: 0.052 })));
 fx(860, "The core brawler, the JELLY RAM: a clear dome with a big diamond in it under a black helmet band, a horn out of either side lit along its top, a body of jelly trailing tentacles that end in drops; it hovers and rams.", () => _jellyRam(_jr0));
 
 // ── 861 · THE RIMESTAR ─────────────────────────────────────────────────────────────────────────────────
