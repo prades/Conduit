@@ -30,6 +30,12 @@
 //          class", then "Swap it"), and a follower already evolved into it is a technician with it (its role is
 //          its form's). It casts the same AEGIS BURST. The core brawler's own new form (the Jelly Ram) is to come:
 //          until it is in, a core brawler does not evolve (one at the level evolves as soon as it is).
+//          THE TECHNICIANS' FORMS (ASKED: "add the new technician forms now"; the user's sheets, design Nos. 850-852):
+//          GOO PROXY (the FLUX technician), THERMITE BURROWER (the FIRE technician) and IGLOO SKATER (the ICE
+//          technician). The technician "helps traverse the battlefield and provides exploration tools to the user";
+//          the tools are the user's own, to come ("I have already made these, but I will put them in later"), so
+//          these forms have NO signature move (no `move`: js/moves.js gives them none and the INFO says so). They
+//          fight as technicians do, with the evolved stats. The electric and toxic technicians have no form yet.
 //          AEGIS WARDEN (the old core brawler, No. 57), AEGIS BURST: with an enemy
 //          within WARDEN_RADIUS, every WARDEN_EVERY frames its shells fly out in
 //          a blast (WARDEN_MULT × its power) that shoves enemies back and gives
@@ -170,6 +176,19 @@ const EVOLUTIONS = {
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
     hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "AEGIS BURST", sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
+    // THE TECHNICIANS' FORMS ("camper" in the code), from the user's sheets. No signature move: the technician's job is the user's exploration tools, to come.
+    // The FLUX TECHNICIAN, design No. 850 (the "GOO PROXY" sheet): a black ring of eight segments on four spikes lit along their ridges, a pool of violet goo
+    // in it round a big diamond. The goo sloshes and the diamonds turn, so the sheet carries its own light.
+    gooproxy:{ id: "gooproxy", name: "GOO PROXY", element: "flux", role: "camper", sheet: "img/evo/gooproxy.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 87.4], noGlow: true, color: "#bb66ff" },
+    // The FIRE TECHNICIAN, design No. 851 (the "THERMITE BU…" sheet, its name cut off on it): a hunched armoured digger on four plated legs, a cone drill
+    // for a nose glowing in its grooves, a hot vent on its back. The drill turns, so the sheet carries its own light.
+    thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", sheet: "img/evo/thermite.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 74.8], noGlow: true, color: "#ff5a1f" },
+    // The ICE TECHNICIAN, design No. 852 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around"):
+    // a squat box of cut ice blocks on diamond legs. It glides, so the sheet carries its own light.
+    igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", sheet: "img/evo/igloo.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 78.7], noGlow: true, color: "#9fe8ff" },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
     hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "AEGIS BLOOM", sheet: "img/evo/hornshell.png",

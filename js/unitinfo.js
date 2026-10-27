@@ -61,9 +61,10 @@ function followerInfo(a) {
         // MORE THAN ONE MOVE: pick which it uses (js/moves.js; saved with the follower)
         if (ids.length > 1) out.attacks.push({ h: "MOVE", note: "This form can use more than one move. Pick one:", choices: ids.map(id => ({ id, label: MOVES[id].name, on: cur ? cur.id === id : false })), unit: a });
     }
+    else if (ev) out.attacks.push({ h: "SIGNATURE", note: "The " + ev.name + " has no signature move yet.", rows: [] });   // (the technicians' forms: their tools are to come)
     else {
         const f = typeof evolutionFor === "function" ? evolutionFor(a) : null;
-        out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health and power), with the move " + f.move + ":" : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]() : [] });
+        out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health and power)" + (f.move ? ", with the move " + f.move + ":" : ". It has no signature move yet.") : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]() : [] });
     }
     const u = ELEMENT_ULTIMATES.find(x => x.el === a.element);
     if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". Double-tap the follower when it is fully charged.", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });

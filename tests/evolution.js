@@ -54,7 +54,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         mk('flux', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a flux brawler is the Rift Mimic');
         same(run('unitTypeLabel(__f)'), 'RIFT MIMIC', 'its tag'); same(run('__f.role'), 'brawler', 'its role');
         mk('flux', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'mimic', 'a hybrid fights as a brawler');
-        mk('flux', 'camper', 20); run(lvlUp); same(run('__f.evolved || null'), null, 'a flux camper waits');
+        mk('flux', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'gooproxy', 'a flux technician is the Goo Proxy');
     });
     check('THE ASK ("the old core brawler is going to be switched to the technician class"; "Swap it"): a CORE TECHNICIAN becomes the HAMMER SLUG (design No. 467); a core brawler waits for its new form; an ELECTRIC BRAWLER becomes the STATIC ORB', () => {
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core technician'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); same(run('__f.role'), 'camper', 'its role'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is handed out again');
@@ -91,17 +91,33 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const HTML = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
         ok(!/<strong>Sniper<\/strong>/.test(HTML) && /<strong>Mage<\/strong>/.test(HTML), 'the index still describes a Sniper');
     });
-    check('THE ASK: an ICE BRAWLER becomes the FROST MAW (design No. 156); an ice mage or camper waits', () => {
+    check('THE ASK: an ICE BRAWLER becomes the FROST MAW (design No. 156); an ice mage waits (the ice technician is the Igloo Skater)', () => {
         mk('ice', 'brawler', 20); run(lvlUp);
         const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role })');
         same(r.evo, 'maw', 'its form'); same(r.tag, 'FROST MAW', 'its tag'); same(r.role, 'brawler', 'its role');
         mk('ice', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'maw', 'a hybrid fights as a brawler');
     });
-    check('…and nobody else: not an ice mage or a camper — nor before level 10', () => {
-        for (const [el, role] of [['ice', 'sniper'], ['ice', 'camper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
+    check('…and nobody else: not an ice mage, an electric or a toxic technician — nor before level 10', () => {
+        for (const [el, role] of [['ice', 'sniper'], ['electric', 'camper'], ['toxic', 'camper']]) { mk(el, role, 20); run(lvlUp); same(run('__f.evolved || null'), null, el + ' ' + role); }
         mk('fire', 'brawler', 9); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 9');
         mk('fire', 'brawler', 10); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'a fire brawler at 10');
         same(run('EVOLVE_LEVEL'), 10, 'THE ASK: they evolve at level 10');
+    });
+    check('THE ASK ("add the new technician forms now"): a FLUX TECHNICIAN becomes the GOO PROXY, a FIRE one the THERMITE BURROWER, an ICE one the IGLOO SKATER; each stays a technician', () => {
+        for (const [el, id, name] of [['flux', 'gooproxy', 'GOO PROXY'], ['fire', 'thermite', 'THERMITE BURROWER'], ['ice', 'igloo', 'IGLOO SKATER']]) {
+            mk(el, 'camper', 20); run(lvlUp);
+            const r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role, molt: __f._moltAt === frame })');
+            same(r.evo, id, el + ' technician'); same(r.tag, name, el + ' tag'); same(r.role, 'camper', el + ' role'); ok(r.molt, el + ': no molt');
+            same(run(`evolutionFor({ isFollower: true, element: '${el}', role: 'camper' }).id`), id, el + ' evolutionFor');
+        }
+        same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "camper").map(d => d.id).sort().join()'), 'gooproxy,hammerslug,igloo,thermite', 'the technicians\' forms');
+    });
+    check('THE ASK ("they help traverse the battlefield and provide exploration tools [...] I will put them in later"): the new technicians\' forms have NO signature move, and run without one', () => {
+        for (const id of ['gooproxy', 'thermite', 'igloo']) { same(run('EVOLUTIONS.' + id + '.move || null'), null, id + ' has a move'); same(run('EVOLUTIONS.' + id + '.moves || null'), null, id + ' has moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move'); }
+        const r = run(`(function(){ followers.length = 0; spawnFollowerAtCrystal('flux'); const f = followers[0]; f.returningToCrystal = false; f.role = 'camper'; f.evolved = 'gooproxy'; f._moltAt = -1e9; f._sigCd = 0;
+            const t0 = floatingTexts.length, fx0 = elementEffects.length; for (let i = 0; i < 400; i++) evolutionTick();
+            return { role: f.role, texts: floatingTexts.length - t0, fx: elementEffects.length - fx0, sig: f._sigAt === undefined }; })()`);
+        same(r.role, 'camper', 'its role'); same(r.texts, 0, 'a move was announced'); same(r.fx, 0, 'a move went off'); ok(r.sig, 'a move was marked as fired');
     });
     check('a follower already past level 20 (an old save) evolves on the next tick', () => {
         const r = run(`(function(){ spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.role = 'brawler'; f.level = 34; f.xp = xpForLevel(34); _applyFollowerLevel(f, true);
@@ -111,8 +127,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nWHAT IT GAINS');
     check('THE ASK: health and power × EVOLVE_MULT — and they survive the next level-up', () => {
-        // The control is an ICE camper, which has no form yet (a plain follower of the same stats); the twin is a fire brawler turned Bunker Bloom.
-        const r = run(`(function(){ mkTwin = (ev) => { spawnFollowerAtCrystal(ev ? 'fire' : 'ice'); const f = followers[followers.length - 1]; f.role = ev ? 'brawler' : 'camper';
+        // The control is a TOXIC technician, which has no form yet (a plain follower of the same stats; the ice one has the Igloo Skater now); the twin is a fire brawler turned Bunker Bloom.
+        const r = run(`(function(){ mkTwin = (ev) => { spawnFollowerAtCrystal(ev ? 'fire' : 'toxic'); const f = followers[followers.length - 1]; f.role = ev ? 'brawler' : 'camper';
                 f.base = { hp: 40, attack: 12, defense: 10, specialAttack: 10, accuracy: 10, will: 20, speed: 10 }; f.level = 22; f.xp = xpForLevel(22); if (ev) f.evolved = 'bloom'; _applyFollowerLevel(f, true); return f; };
             const a = mkTwin(false), b = mkTwin(true); b._moltAt = -1e9;
             const r1 = { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power };

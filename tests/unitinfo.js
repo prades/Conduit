@@ -59,8 +59,15 @@ function findChromium() {
         run('partyCall(__h, true)');
     });
     check('EVERY form in the game has its move described (a new evolution cannot ship without an info entry)', () => {
-        const miss = JSON.parse(run(`JSON.stringify(Object.values(EVOLUTIONS).filter(e => typeof MOVE_INFO[e.move] !== 'function').map(e => e.id + ':' + e.move))`));
+        const miss = JSON.parse(run(`JSON.stringify(Object.values(EVOLUTIONS).filter(e => e.move && typeof MOVE_INFO[e.move] !== 'function').map(e => e.id + ':' + e.move))`));
         same(miss.length, 0, 'forms without an info entry: ' + miss.join(', '));
+    });
+    check('a form with no move yet (the new technicians\') says so, evolved or not', () => {
+        const r = JSON.parse(run(`(function(){ spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.role = 'camper'; f.level = 5;
+            const before = followerInfo(f).attacks.find(s => /^SIGNATURE/.test(s.h)); f.evolved = 'igloo'; f._moltAt = -1e9; const after = followerInfo(f).attacks.find(s => /^SIGNATURE/.test(s.h));
+            followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f); return JSON.stringify({ before, after }); })()`));
+        ok(/into the IGLOO SKATER/.test(r.before.note) && /no signature move yet/.test(r.before.note) && !/undefined/.test(r.before.note), 'before: ' + r.before.note);
+        same(r.after.note, 'The IGLOO SKATER has no signature move yet.', 'after'); same(r.after.rows.length, 0, 'rows');
     });
     check('every element has its ultimate described, and under the name the game gives it (js/elements.js FOLLOWER_ULTIMATES)', () => {
         same(run('ELEMENTS.every(e => ELEMENT_ULTIMATES.some(u => u.el === e.id))'), true, 'an element without an ultimate');

@@ -27,8 +27,12 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
 
     group('THE TABLE');
     check('js/moves.js is loaded by game.html', () => ok(/js\/moves\.js\?v=/.test(rd('game.html')), 'no script tag'));
-    check('every form has its move in the table (so every move has a row)', () => {
-        for (const id of J('Object.keys(EVOLUTIONS)')) { const n = J(`EVOLUTIONS[${JSON.stringify(id)}].move`); ok(J(`!!MOVE_BY_NAME[${JSON.stringify(n)}]`), id + ': no row for ' + n); }
+    check('every form with a move has it in the table (so every move has a row)', () => {
+        for (const id of J('Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].move)')) { const n = J(`EVOLUTIONS[${JSON.stringify(id)}].move`); ok(J(`!!MOVE_BY_NAME[${JSON.stringify(n)}]`), id + ': no row for ' + n); }
+    });
+    check('the forms with no move are the new technicians\' (their exploration tools are the user\'s, to come), and they fire none', () => {
+        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'gooproxy,igloo,thermite', 'forms without a move');
+        for (const id of ['gooproxy', 'igloo', 'thermite']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
     });
     check('every row fires a real function', () => {
         for (const id of J('Object.keys(MOVES)')) same(J(`typeof MOVES[${JSON.stringify(id)}].fn`), 'function', id);
