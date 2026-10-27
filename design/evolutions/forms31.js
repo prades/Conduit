@@ -157,8 +157,8 @@ function _gooFrog(o) {
       E.ball.position.set(E.c.x, y, E.c.z); E.ball.scale.setScalar(k);
       tmp.set(lookX, lookY, 0).add(look).normalize();
       E.iris.position.set(E.c.x + tmp.x * E.r * k * 0.9, y + tmp.y * E.r * k * 0.9, E.c.z + tmp.z * E.r * k * 0.9);
-      E.iris.quaternion.copy(q); E.iris.scale.set(0.85 * k, 1.2 * k, 0.4 * k); E.iris.userData.relight();
-      E.pupil.position.copy(E.iris.position).addScaledVector(look, E.r * k * 0.62 * 0.4 + 0.003); E.pupil.quaternion.copy(q); E.pupil.scale.set(0.1 * k, 0.85 * k, 0.08 * k); });
+      E.iris.quaternion.copy(q); E.iris.scale.set(0.46 * k, 1.25 * k, 0.4 * k); E.iris.userData.relight();   // (thin: "thinner diamonds")
+      E.pupil.position.copy(E.iris.position).addScaledVector(look, E.r * k * 0.62 * 0.4 + 0.003); E.pupil.quaternion.copy(q); E.pupil.scale.set(0.06 * k, 0.88 * k, 0.08 * k); });
     drips.forEach(D => { const s = 0.034 + 0.008 * Math.sin(ph * 2 + D.i * 2); D.m.scale.set(s, s * (1.6 + 0.3 * Math.sin(ph * 2 + D.i)), s); });
     splash.forEach((S, i) => { S.m.visible = pop > 0.1; const r = 0.1 + 0.4 * pop, h = hh + 0.25 * pop * (0.6 + 0.4 * (i % 2)); S.m.position.set(Math.cos(S.a) * r, h, hz + Math.sin(S.a) * r); S.m.scale.setScalar(0.6 + 0.6 * pop); });
     glowM.color.copy(lit).multiplyScalar(0.8 + 0.2 * Math.sin(ph * 2) + 0.4 * a); slitM.color.copy(lit).multiplyScalar(0.65 + 0.25 * Math.sin(ph * 2 + 1) + 0.5 * a);
