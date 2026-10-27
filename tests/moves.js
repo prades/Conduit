@@ -15,8 +15,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
 // What the old chain in evolutionTick called, by form id (copied from it before it was replaced).
 const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley', thunderhead: 'arcVolley', serpent: 'singularityShot', voidstar: 'singularityShot',
-    warden: 'aegisBurst', hammerslug: 'aegisBurst', manta: 'staticRush', prism: 'staticRush', voltring: 'staticRush', staticorb: 'staticRush', halo: 'hexfire', embercowl: 'hexfire',
-    rotshard: 'corrodeShot', mimic: 'gravitySlam', petal: 'aegisBloom', hornshell: 'aegisBloom', caldera: 'eruption', seeper: 'eruption', maw: 'chomp' };
+    manta: 'staticRush', prism: 'staticRush', voltring: 'staticRush', staticorb: 'staticRush', halo: 'hexfire', embercowl: 'hexfire',
+    rotshard: 'corrodeShot', mimic: 'gravitySlam', caldera: 'eruption', seeper: 'eruption', maw: 'chomp' };
 
 (async () => {
     const context = vm.createContext(makeBrowserSandbox({}));
@@ -30,9 +30,9 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
     check('every form with a move has it in the table (so every move has a row)', () => {
         for (const id of J('Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].move)')) { const n = J(`EVOLUTIONS[${JSON.stringify(id)}].move`); ok(J(`!!MOVE_BY_NAME[${JSON.stringify(n)}]`), id + ': no row for ' + n); }
     });
-    check('the forms with no move are the new technicians\' (their exploration tools are the user\'s, to come) and the Rimestar (there was no ice mage move), and they fire none', () => {
-        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'blightspider,gooproxy,hovershell,igloo,rimestar,thermite', 'forms without a move');
-        for (const id of ['blightspider', 'gooproxy', 'hovershell', 'igloo', 'rimestar', 'thermite']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
+    check('the forms with no move are the new technicians\' (their exploration tools are the user\'s, to come), the Rimestar (there was no ice mage move) and the core forms (AEGIS BURST and AEGIS BLOOM went with the followers\' shield), and they fire none', () => {
+        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'blightspider,gooproxy,hammerslug,hornshell,hovershell,igloo,jellyram,petal,rimestar,thermite,warden', 'forms without a move');
+        for (const id of ['blightspider', 'gooproxy', 'hammerslug', 'hornshell', 'hovershell', 'igloo', 'jellyram', 'petal', 'rimestar', 'thermite', 'warden']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
     });
     check('every row fires a real function', () => {
         for (const id of J('Object.keys(MOVES)')) same(J(`typeof MOVES[${JSON.stringify(id)}].fn`), 'function', id);
@@ -46,9 +46,9 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'petalBlaze', reaver: 'arcVolley'
             ok(got && got.indexOf(fn + '(') >= 0, id + ': ' + got + ' is not ' + fn);
         }
     });
-    check('the Jelly Ram, the core brawler\'s new form, fires the core brawler\'s move (AEGIS BURST)', () => {
-        const got = run(`(function(){ const m = evoMoveOf({ evolved: 'jellyram' }, EVOLUTIONS.jellyram); return m && m.fn ? m.fn.toString() : null; })()`);
-        ok(got && got.indexOf('aegisBurst(') >= 0, 'jellyram: ' + got);
+    check('REPORTED ("Remove the bubble shield from the followers and all relevant abilities"): the shield moves are out of the table, and a follower saved with one fires none', () => {
+        same(J('["aegis_burst", "aegis_bloom"].filter(id => MOVES[id]).concat(["AEGIS BURST", "AEGIS BLOOM"].filter(n => MOVE_BY_NAME[n]))').join(), '', 'shield moves in the table');
+        same(run(`evoMoveOf({ evolved: 'jellyram', move: 'aegis_burst' })`), null, 'a Jelly Ram saved with AEGIS BURST'); same(run(`evoMoveOf({ evolved: 'hornshell', move: 'aegis_bloom' })`), null, 'a Hornshell saved with AEGIS BLOOM');
     });
     check('evolutionTick fires the form\'s move, once its cooldown is up', () => {
         run(`gameState.running = true; followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__f = followers[followers.length - 1]; __f.evolved = 'quillstone'; __f._moltAt = -1e9; __f._sigCd = 0;

@@ -196,7 +196,7 @@ function followerAttack(actor, target) {
     let attackTier = "normal";
     if (attacks && hasWill) {
         // Hybrid can use special more freely
-        if (canSpecial && (role==="hybrid" || Math.random() < 0.15)) {
+        if (canSpecial && attacks.special && (role==="hybrid" || Math.random() < 0.15)) {   // (core has no special: its Radiant Pulse went with the followers' shield)
             attackTier = "special";
         } else {
             attackTier = "physical";

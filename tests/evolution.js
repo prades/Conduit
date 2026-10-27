@@ -119,10 +119,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { role: f.role, texts: floatingTexts.length - t0, fx: elementEffects.length - fx0, sig: f._sigAt === undefined }; })()`);
         same(r.role, 'camper', 'its role'); same(r.texts, 0, 'a move was announced'); same(r.fx, 0, 'a move went off'); ok(r.sig, 'a move was marked as fired');
     });
-    check('THE ASK ("do the Jelly Ram and Ice Mage now"): a CORE BRAWLER becomes the JELLY RAM (design No. 860), with the core brawler\'s AEGIS BURST; an ICE MAGE becomes the RIMESTAR (No. 861), with no move, and is still an Ice Mage to the specimens', () => {
+    check('THE ASK ("do the Jelly Ram and Ice Mage now"): a CORE BRAWLER becomes the JELLY RAM (design No. 860), with no move (its AEGIS BURST went with the followers\' shield); an ICE MAGE becomes the RIMESTAR (No. 861), with no move, and is still an Ice Mage to the specimens', () => {
         mk('core', 'brawler', 20); run(lvlUp);
         let r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role, move: evoMoveOf(__f) && evoMoveOf(__f).id })');
-        same(r.evo, 'jellyram', 'core brawler'); same(r.tag, 'JELLY RAM', 'its tag'); same(r.role, 'brawler', 'its role'); same(r.move, 'aegis_burst', 'its move');
+        same(r.evo, 'jellyram', 'core brawler'); same(r.tag, 'JELLY RAM', 'its tag'); same(r.role, 'brawler', 'its role'); same(r.move, null, 'its move');
         mk('ice', 'sniper', 20); run(lvlUp);
         r = run('({ evo: __f.evolved, tag: unitTypeLabel(__f), role: __f.role, move: evoMoveOf(__f), mage: specimenIsMage(__f) })');
         same(r.evo, 'rimestar', 'ice mage'); same(r.tag, 'RIMESTAR', 'its tag'); same(r.role, 'sniper', 'its role'); same(r.move, null, 'its move'); same(r.mage, true, 'an Ice Mage to the specimens');
@@ -259,24 +259,39 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.pushed > 0.3 && r.slowed && r.sf === run('MIMIC_SLOW') && r.sf < 1, 'shoved and slowed: ' + JSON.stringify(r)); ok(!r.beetleMoved, 'a beetle was shoved'); ok(r.cd > 300, 'it did not wait');
     });
 
-    check('THE ASK: AEGIS BLOOM — a bolt into the nearest enemy, and a shield on the worst-hurt ally in reach', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
-            spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'petal'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.health = f.maxHealth; f.shielded = false;
-            const mkA = (x, y, frac) => { spawnFollowerAtCrystal('fire'); const a = followers[followers.length - 1]; a.returningToCrystal = false; a.x = x; a.y = y; a.health = Math.round(a.maxHealth * frac); a.shielded = false; a.shieldAmount = 0; return a; };
-            const early = mkA(21.5, 3, 0.6), hurt = mkA(22, 2, 0.3), fine = mkA(21, 3.5, 0.9), late = mkA(22.5, 3, 0.45), far = mkA(34, 2, 0.1);   // the worst-hurt is neither first nor last
-            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-            const a = mkP(24, 2), b = mkP(25, 2.5), tooFar = mkP(32, 2);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), tooFar: d(tooFar), hurt: hurt.shielded ? hurt.shieldAmount : 0, hurtMax: hurt.maxHealth, fine: !!fine.shielded, early: !!early.shielded, late: !!late.shielded, far: !!far.shielded, self: !!f.shielded, cd: f._sigCd, arcs: (f._arcPts || []).length };
-            [a, b, tooFar].forEach(p => p.dead = true);
-            // an enemy 8 tiles off is out of its reach: it does not cast at it
-            const lone = mkP(28, 2); frame++; f._sigCd = 1; f._sigAt = undefined; evolutionTick(); out.loneHit = 1e6 - lone.health; out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
-        ok(r.a > 0 && r.b === 0, 'one bolt, into the nearest: ' + JSON.stringify(r)); same(r.tooFar, 0, 'damage out of range');
-        ok(r.hurt === Math.round(r.hurtMax * 0.35) && r.hurt > 0, 'the worst-hurt ally\'s shield (35% of its health): ' + JSON.stringify(r));
-        same(r.loneHit, 0, 'a bolt at an enemy out of range'); ok(!r.loneCast, 'it cast at an enemy out of range');
-        ok(!r.fine && !r.early && !r.late && !r.far && !r.self, 'only that one is shielded: ' + JSON.stringify(r)); ok(r.cd > 300, 'it did not wait'); same(r.arcs, 1, 'one bolt drawn');
+    check('REPORTED ("Remove the bubble shield from the followers and all relevant abilities"): nothing puts a shield on a follower now. The core forms (the Jelly Ram, the Hornshell, the Hammer Slug, the old Aegis Warden and Petal Aegis) have no move and cast nothing with an enemy and a hurt ally in reach; core has no special (a core follower\'s attacks are its physical, Shield Bash) and no ultimate; a creature\'s shield still soaks a hit', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; const o = {};
+            o.moves = ['jellyram', 'hornshell', 'hammerslug', 'warden', 'petal'].filter(id => evoMoveOf({ evolved: id }, EVOLUTIONS[id])).join();
+            o.left = ['aegisBurst', 'aegisBloom'].filter(n => typeof globalThis[n] === 'function').join() + (typeof WARDEN_SHIELD !== 'undefined' || typeof PETAL_SHIELD !== 'undefined' ? ',constants' : '');
+            o.special = typeof ELEMENT_ATTACKS.core.special; o.ult = typeof FOLLOWER_ULTIMATES.core; o.otherUlts = ['fire', 'electric', 'ice', 'flux', 'toxic'].filter(e => FOLLOWER_ULTIMATES[e]).length;
+            const S = SPECIES.ant, mkP = (x) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
+            o.cast = [];
+            for (const id of ['jellyram', 'hornshell', 'hammerslug', 'warden', 'petal']) {
+                followers.length = 0; actors = actors.filter(a => !(a instanceof Predator));
+                spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = EVOLUTIONS[id].role; f.evolved = id; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+                spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21; al.y = 2; al.health = Math.round(al.maxHealth * 0.3); al.shielded = false; al.shieldAmount = 0;
+                const p = mkP(21.4); for (let k = 0; k < 3; k++) { frame++; f._sigCd = 1; evolutionTick(); }
+                if (f._sigAt !== undefined || al.shielded || f.shielded || p.health < 1e6) o.cast.push(id);
+                p.dead = true;
+            }
+            // a core follower's attacks, many of them, with a hurt ally beside it: Shield Bash every time, never a shield on anyone
+            followers.length = 0; actors = actors.filter(a => !(a instanceof Predator));
+            spawnFollowerAtCrystal('core'); const c = followers[0]; c.returningToCrystal = false; c.role = 'hybrid'; c.x = 20; c.y = 2;
+            spawnFollowerAtCrystal('fire'); const al2 = followers[1]; al2.returningToCrystal = false; al2.x = 20.5; al2.y = 2.5; al2.shielded = false;
+            const tgt = mkP(21); let bashes = 0;
+            for (let k = 0; k < 200; k++) { c.attackCooldown = 0; c.currentWill = 100; c.invulnerable = 0; const h0 = tgt.health; followerAttack(c, tgt); if (tgt.health < h0) bashes++; if (al2.shielded || c.shielded || c.invulnerable > 0) { o.shieldedBy = k; break; } }
+            o.bashes = bashes;
+            // a creature's shield is the creatures' own and still works: it soaks the hit
+            tgt.shielded = true; tgt.shieldAmount = 50; const h1 = tgt.health; applyDamage(tgt, 10, c, 'core'); o.soak = [tgt.health === h1, tgt.shieldAmount]; tgt.dead = true;
+            return o; })()`);
+        same(r.moves, '', 'core forms with a move'); same(r.left, '', 'the shield moves are still defined'); same(r.cast.join(), '', 'cast with an enemy in reach');
+        same(r.special, 'undefined', 'core still has a special (Radiant Pulse)'); same(r.ult, 'undefined', 'core still has an ultimate (Shield Grant)'); same(r.otherUlts, 5, 'the other elements\' ultimates');
+        same(r.shieldedBy, undefined, 'a core follower\'s attack shielded someone'); same(r.bashes, 200, 'every attack a Shield Bash that hit');
+        same(r.soak.join(), 'true,40', 'a creature\'s shield did not soak the hit');
+        const draw = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8'), helpers = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8');
+        ok(!/_drawFollowerShield|ellipse\(px, py - 32, 17, 22/.test(draw), 'the bubble is still drawn'); ok(!/_shieldHitAt/.test(draw + helpers), 'the bubble\'s hit flash is still kept');
+        ok(/isFollower && typeof actor\.ultimateCharge === "number" && typeof FOLLOWER_ULTIMATES !== "undefined" && FOLLOWER_ULTIMATES\[actor\.element\]/.test(draw), 'a core follower still has an ultimate bar');
     });
-
     check('THE ASK: ERUPTION — the crater bursts over everything close: toxic damage and eaten armour', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('toxic'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'seeper'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
@@ -318,15 +333,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 250, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
 
-    check('the HORNSHELL casts the same AEGIS BLOOM (a bolt into the nearest enemy and a shield on the worst-hurt ally)', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
-            spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'hornshell'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.health = f.maxHealth;
-            spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21.5; al.y = 2; al.health = Math.round(al.maxHealth * 0.3); al.shielded = false; al.shieldAmount = 0;
-            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 24, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            frame++; f._sigCd = 1; evolutionTick(); const out = { dmg: 1e6 - p.health, shield: al.shielded ? al.shieldAmount : 0, cast: f._sigAt !== undefined }; p.dead = true; return out; })()`);
-        ok(r.cast && r.dmg > 0 && r.shield > 0, 'the hornshell did not cast: ' + JSON.stringify(r));
-    });
-
     check('the VOIDSTAR (the void mage) fires SINGULARITY SHOT too', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
             spawnFollowerAtCrystal('flux'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'voidstar'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
@@ -361,27 +367,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.cd > 300, 'it did not wait: ' + r.cd);
     });
 
-    check('THE ASK: AEGIS BURST — a blast that hits and shoves enemies back, and shields it and the allies round it', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
-            spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'warden'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
-            spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21.5; al.y = 2; al.shielded = false; al.shieldAmount = 0;
-            spawnFollowerAtCrystal('fire'); const far = followers[2]; far.returningToCrystal = false; far.x = 30; far.y = 2; far.shielded = false;
-            const S = SPECIES.ant, mkP = (x) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-            const near = mkP(21.2), outside = mkP(25);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            const out = { hit: 1e6 - near.health, pushed: near.x - 21.2, outside: 1e6 - outside.health, allyShield: al.shielded ? al.shieldAmount : 0, ownShield: f.shielded ? f.shieldAmount : 0, farShield: !!far.shielded, allyMax: al.maxHealth };
-            near.dead = outside.dead = true; return out; })()`);
-        ok(r.hit > 0 && r.pushed > 0.3, 'the blast: ' + JSON.stringify(r));
-        same(r.outside, 0, 'damage to one outside the blast');
-        ok(r.allyShield > 0 && r.ownShield > 0 && !r.farShield, 'the shields: ' + JSON.stringify(r));
-    });
-    check('the HAMMER SLUG (the core technician now) casts the same AEGIS BURST (a blast that shoves enemies and shields allies) as the Aegis Warden did; one evolved while it was the core brawler is a technician now', () => {
+    check('the HAMMER SLUG (the core technician now): one evolved while it was the core brawler is a technician now', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'hammerslug'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
-            spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21.5; al.y = 2; al.shielded = false; al.shieldAmount = 0;
-            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 21.2, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            const x0 = p.x; frame++; f._sigCd = 1; evolutionTick(); const out = { dmg: 1e6 - p.health, pushed: p.x - x0, shield: al.shielded ? al.shieldAmount : 0, role: f.role }; p.dead = true; return out; })()`);
-        ok(r.dmg > 0 && r.pushed > 0.3 && r.shield > 0, 'the hammer slug did not burst: ' + JSON.stringify(r)); same(r.role, 'camper', 'a hammer slug evolved as a brawler is not a technician now');
+            frame++; evolutionTick(); return { role: f.role }; })()`);
+        same(r.role, 'camper', 'a hammer slug evolved as a brawler is not a technician now');
     });
     check('THE ASK: STATIC RUSH — it dashes to the nearest enemy, hits it, shocks two more, and stuns them all', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;

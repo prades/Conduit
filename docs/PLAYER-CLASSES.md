@@ -66,7 +66,7 @@ The player is hard to kill (three hits, then back at the Crystal), and the creat
 
 A form had one hard-wired move, chosen by its name in an `if/else` chain. The change, most of it built in stage 0:
 
-- **`MOVES` registry** holds every move as `{ id, name, fn }`. The existing ones (PETAL BLAZE, QUILL BURST, ARC VOLLEY, SINGULARITY SHOT, AEGIS BURST, STATIC RUSH, HEXFIRE, CORRODE SHOT, GRAVITY SLAM, AEGIS BLOOM, ERUPTION, CHOMP) moved out of the chain **unchanged**, and FIRE BOMBS (`bomb_lob`, docs/FIRE-BOMBS.md) was added as a row. *Built.*
+- **`MOVES` registry** holds every move as `{ id, name, fn }`. The existing ones (PETAL BLAZE, QUILL BURST, ARC VOLLEY, SINGULARITY SHOT, STATIC RUSH, HEXFIRE, CORRODE SHOT, GRAVITY SLAM, ERUPTION, CHOMP) moved out of the chain **unchanged**, and FIRE BOMBS (`bomb_lob`, docs/FIRE-BOMBS.md) was added as a row. *Built.* (AEGIS BURST and AEGIS BLOOM, the core forms' moves, were taken out with the followers' shield; the core forms have no move for now.)
 - **Each evolution lists the moves it may use**: `EVOLUTIONS[id].moves = ["petal_blaze", ...]`, the first being its old move (the default, so nothing changes until the player picks). *Built; the fire forms list two.*
 - **A follower has `f.move`** (saved with it). `evolutionTick` fires `evoMoveOf(f).fn(f)`; the cooldown is the move's own. *Built.*
 - **The UI:** a form with more than one move shows them as buttons on the INFO tab of its card (js/unitinfo.js). *Built.* A "set move" for a selected group in the Command Center, like it has for roles, is left.

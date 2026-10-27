@@ -13,12 +13,11 @@ const MOVES = {
     quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       fn: f => petalBlaze(f) },
     arc_volley:        { id: "arc_volley",        name: "ARC VOLLEY",        fn: f => arcVolley(f) },
     singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  fn: f => singularityShot(f) },
-    aegis_burst:       { id: "aegis_burst",       name: "AEGIS BURST",       fn: f => aegisBurst(f) },
     static_rush:       { id: "static_rush",       name: "STATIC RUSH",       fn: f => staticRush(f) },
     hexfire:           { id: "hexfire",           name: "HEXFIRE",           fn: f => hexfire(f) },
     corrode_shot:      { id: "corrode_shot",      name: "CORRODE SHOT",      fn: f => corrodeShot(f) },
     gravity_slam:      { id: "gravity_slam",      name: "GRAVITY SLAM",      fn: f => gravitySlam(f) },
-    aegis_bloom:       { id: "aegis_bloom",       name: "AEGIS BLOOM",       fn: f => aegisBloom(f) },
+    // (AEGIS BURST and AEGIS BLOOM, the core forms' moves, went with the followers' shield: js/evolution.js "THE CORE FORMS HAVE NO MOVE NOW")
     eruption:          { id: "eruption",          name: "ERUPTION",          fn: f => eruption(f) },
     chomp:             { id: "chomp",             name: "CHOMP",             fn: f => chomp(f) },
     // A second move for the fire forms (js/firebombs.js): three bouncing bombs fanned at the nearest foe. Chosen on the unit's INFO tab; a fire form's own move stays its default.

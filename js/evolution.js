@@ -28,12 +28,17 @@
 //          cover either side of a spiked spine, a small horn) was the CORE BRAWLER, which replaced the Aegis Warden;
 //          it is the CORE TECHNICIAN now (ASKED: "the old core brawler is going to be switched to the technician
 //          class", then "Swap it"), and a follower already evolved into it is a technician with it (its role is
-//          its form's). It casts the same AEGIS BURST. The core brawler's own new form is the JELLY RAM, below.
+//          its form's). The core brawler's own new form is the JELLY RAM, below.
 //          JELLY RAM (the CORE BRAWLER, design No. 860, the user's "CORE BRAWLER · JELLY RAM" sheet: a clear dome
 //          with a big diamond in it under a black helmet band, a horn out of either side, a body of jelly trailing
-//          tentacles; it hovers, and its action frames are the sheet's charge, a ram) casts the core brawler's
-//          AEGIS BURST (ASKED: "do the Jelly Ram and Ice Mage now"). Its sheet is blue; it is baked in the core
-//          element's teal, so it reads as core beside the Crystal and its own card.
+//          tentacles; it hovers, and its action frames are the sheet's charge, a ram; ASKED: "do the Jelly Ram and
+//          Ice Mage now"). Its sheet is blue; it is baked in the core element's teal, so it reads as core beside the
+//          Crystal and its own card.
+//          THE CORE FORMS HAVE NO MOVE NOW (REPORTED: "Remove the bubble shield from the followers and all relevant abilities. We'll add a new look and iron out ability information"):
+//          AEGIS BURST (the Jelly Ram's, the Hammer Slug's, the old Aegis Warden's) and AEGIS BLOOM (the Hornshell's,
+//          the old Petal Aegis's) put a shield on the followers round them, so they went with the followers' shield
+//          (and the core element's RADIANT PULSE and SHIELD GRANT with them: js/elements.js). The forms keep their
+//          looks and have no signature move until the new abilities are worked out.
 //          RIMESTAR (the ICE MAGE, design No. 861, the user's sheet, which has no name: a white drone of three long
 //          fins round a faceted blue diamond; it hovers) has NO signature move: there was none for an ice mage to
 //          keep, and none was invented. An Ice Mage evolved into it still preserves specimens (js/specimen.js
@@ -48,10 +53,6 @@
 //          technician; the sheet has no name, so this one is its own words, "Hover Shell + 6-Leg Shuttle"; its
 //          action frames are the sheet's separation, the shell lifting off the shuttle). No move either. Every
 //          element and role has a form now.
-//          AEGIS WARDEN (the old core brawler, No. 57), AEGIS BURST: with an enemy
-//          within WARDEN_RADIUS, every WARDEN_EVERY frames its shells fly out in
-//          a blast (WARDEN_MULT × its power) that shoves enemies back and gives
-//          it and every ally round it a shield (WARDEN_SHIELD of max health).
 //          STORM MANTA (the electric brawler, No. 68), STATIC RUSH: with an
 //          enemy within MANTA_RANGE, every MANTA_EVERY frames it dashes to it,
 //          hits it (MANTA_MULT × its power) and shocks two more near it; all
@@ -78,18 +79,12 @@
 //          MIMIC_MULT × its power, is shoved MIMIC_PUSH back (a beetle, a boss or a machine
 //          is too heavy to move) and slowed by MIMIC_SLOW for MIMIC_SLOW_FRAMES.
 //          HORNSHELL (the CORE MAGE, design No. 220: a black shell-jar on its side dragged along the ground by
-//          fat, irregular tentacles, a shard horn at its mouth) does the same AEGIS BLOOM as the Petal Aegis
-//          below, which it replaced (the Petal Aegis stays defined, marked legacy, for followers already evolved into it).
+//          fat, irregular tentacles, a shard horn at its mouth) replaced the Petal Aegis (No. 120, a rosette of
+//          plate-petals round a crystal), which stays defined, marked legacy, for followers already evolved into it.
 //          QUILLSTONE (the FIRE BRAWLER, design No. 354: a pitch-black cut gem that crawls on little hidden
 //          feet, red shards growing out of it, its two front spikes black like the shell), replaced the Bunker
 //          Bloom for new evolutions and does the same ring of fire, called QUILL BURST (the Bunker Bloom
 //          stays defined, marked legacy, for followers already evolved into it).
-//          PETAL AEGIS (the old CORE MAGE, design No. 120: a rosette of plate-petals round a
-//          crystal; the role is called a mage to the player, its id is still "sniper"),
-//          AEGIS BLOOM: with an enemy within PETAL_RANGE, every PETAL_EVERY frames its petals
-//          fan open: a bolt of core energy (PETAL_MULT × its power) into the nearest enemy,
-//          and a shield (PETAL_SHIELD of max health) on whichever ally within PETAL_ALLY_R
-//          is hurt worst (itself included), if its shield is lower than that.
 //          SEEPER (the TOXIC BRAWLER, design No. 578: a black volcano walking on four pins,
 //          goo oozing from its eye and flanks; it replaced the Caldera), ERUPTION: with an enemy within CALDERA_RADIUS, every
 //          CALDERA_EVERY frames it hunkers and the crater bursts: everything within
@@ -123,12 +118,10 @@ const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) dra
 const BLOOM_RADIUS = 1.8, BLOOM_EVERY = 360, BLOOM_MULT = 2.0, BLOOM_BURN = 180;
 const REAVER_RANGE = 6, REAVER_EVERY = 300, REAVER_MULT = 2.5, REAVER_CHAIN = 2, REAVER_HOP = 2.5, REAVER_CHAIN_SHARE = 0.6;
 const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
-const WARDEN_RADIUS = 2.2, WARDEN_EVERY = 360, WARDEN_MULT = 1.8, WARDEN_PUSH = 0.6, WARDEN_ALLY_R = 3.5, WARDEN_SHIELD = 0.35;
 const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;
 const HALO_RANGE = 7, HALO_EVERY = 330, HALO_ROUNDS = 6, HALO_MULT = 0.8, HALO_BURN = 150;
 const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
-const PETAL_RANGE = 6.5, PETAL_EVERY = 330, PETAL_MULT = 1.8, PETAL_SHIELD = 0.35, PETAL_ALLY_R = 7;
 const CALDERA_RADIUS = 2.4, CALDERA_EVERY = 330, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
 const MAW_RANGE = 1.8, MAW_EVERY = 300, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
@@ -153,7 +146,7 @@ const EVOLUTIONS = {
     voidstar:{ id: "voidstar", name: "VOIDSTAR", element: "flux", role: "sniper", move: "SINGULARITY SHOT", sheet: "img/evo/voidstar.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#bb66ff" },
     // LEGACY: the first core brawler. A follower already evolved into this keeps it. (The Hammer Slug that replaced it is the core technician now; the core brawler's form is the Jelly Ram.)
-    warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", move: "AEGIS BURST",  sheet: "img/evo/warden.png",
+    warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
     // LEGACY: the first electric brawler. New evolutions use the Prism Hood; a follower already evolved into this keeps it.
     manta:  { id: "manta",  legacy: true, name: "STORM MANTA",  element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/manta.png",
@@ -186,7 +179,7 @@ const EVOLUTIONS = {
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire", "bomb_lob"], sheet: "img/evo/embercowl.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f" },
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
-    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "AEGIS BURST", sheet: "img/evo/hammerslug.png",
+    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
     // THE TECHNICIANS' FORMS ("camper" in the code), from the user's sheets. No signature move: the technician's job is the user's exploration tools, to come.
     // The FLUX TECHNICIAN, design No. 853 (the "GOO PROXY" sheet, then the user's review: "a frog face with diamond eye iris and one is way bigger than the other and
@@ -218,8 +211,8 @@ const EVOLUTIONS = {
     // The CORE BRAWLER, design No. 867 (the user's "JELLY RAM" sheet: "a floating brawler that uses its horned shell to ram targets", then the user's review: "move with
     // flicks from all of its tentacles like the jellyfish from SpongeBob", "a little bit bigger", the wavy strings "but fewer and thicker", "fatter tentacles"): a clear dome
     // with a big diamond in it under a black helmet band, a horn out of either side lit along its top, a bell of jelly with seven fat wavy tentacles; it swims, every tentacle
-    // flicking back at once. It casts the core brawler's AEGIS BURST. Its sheet is blue; it is in core's teal. It swims, so the sheet carries its own light.
-    jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", move: "AEGIS BURST", sheet: "img/evo/jellyram.png",
+    // flicking back at once. No signature move (AEGIS BURST went with the followers' shield). Its sheet is blue; it is in core's teal. It swims, so the sheet carries its own light.
+    jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", sheet: "img/evo/jellyram.png",
               cell: 144, anchor: [72, 114.2], core: [72, 70.8], noGlow: true, color: "#33e6c4" },
     // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
     // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
@@ -227,7 +220,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 72.1], noGlow: true, color: "#9fe8ff" },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
-    hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "AEGIS BLOOM", sheet: "img/evo/hornshell.png",
+    hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", sheet: "img/evo/hornshell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4" },
     // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
     // LEGACY: the first toxic brawler. New evolutions use the Seeper; a follower already evolved into this keeps it.
@@ -239,7 +232,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 67.9], noGlow: true, color: "#66ff66", ground: "img/evo/seeper_g.png" },
     // The CORE MAGE ("sniper" in the code): a rosette of plate-petals. The crystal at its middle is the reactor, so it keeps the shared glow.
     // LEGACY: the first core mage. New evolutions use the Hornshell; a follower already evolved into this keeps it.
-    petal:  { id: "petal",  legacy: true, name: "PETAL AEGIS",  element: "core",     role: "sniper",  move: "AEGIS BLOOM",  sheet: "img/evo/petal.png",
+    petal:  { id: "petal",  legacy: true, name: "PETAL AEGIS",  element: "core",     role: "sniper",  sheet: "img/evo/petal.png",
               cell: 144, anchor: [72, 114.2], core: [72, 66.5], color: "#33e6c4" },
     // The FLUX BRAWLER: a lump of liquid on the ground. Its surface moves, so its sheet carries its own light.
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
@@ -405,36 +398,6 @@ function corrodeShot(f) {
     return true;
 }
 
-// AEGIS BLOOM: a bolt into the nearest enemy in range, and a shield on the worst-hurt ally. True when it fired.
-function aegisBloom(f) {
-    const foes = _evoFoes(f.x, f.y, PETAL_RANGE);
-    if (!foes.length) return false;
-    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
-    const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
-    applyDamage(tgt, (f.power || 10) * PETAL_MULT, f, "core");
-    // the ally to cover: lowest health fraction, itself included, whose shield is below what this gives
-    let best = null, bestFrac = 2;
-    const near = typeof unitsNear === "function" ? unitsNear(f.x, PETAL_ALLY_R) : actors;
-    for (const a of near) {
-        if (!a || a.dead || a.team !== "green" || !(a.isFollower || a.isClone) || Math.hypot(a.x - f.x, a.y - f.y) > PETAL_ALLY_R) continue;
-        const cap = Math.round((a.maxHealth || 0) * PETAL_SHIELD), have = a.shielded ? (a.shieldAmount || 0) : 0;
-        if (cap <= have) continue;
-        const frac = (a.health || 0) / Math.max(1, a.maxHealth || 1);
-        if (frac < bestFrac) { best = a; bestFrac = frac; }
-    }
-    if (best) {
-        const cap = Math.round((best.maxHealth || 0) * PETAL_SHIELD);
-        best.shielded = true; best.shieldAmount = cap; best._shieldMax = Math.max(best._shieldMax || 0, cap);
-        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: best.x, y: best.y, radius: 0.9, color: "#33e6c4", life: 36 });
-    }
-    f._sigAt = f0; f._sigCd = PETAL_EVERY;
-    f._arcPts = [{ x: tgt.x, y: tgt.y }]; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = false; f._arcCol = [51, 230, 196];
-    { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
-    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#33e6c4", radius: 0.6, life: 22 });
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "AEGIS BLOOM", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
-    return true;
-}
-
 // CHOMP: the fangs slam down on the nearest enemy: ice damage and frozen stiff; those beside it are slowed. True when it fired.
 function chomp(f) {
     const foes = _evoFoes(f.x, f.y, MAW_RANGE);
@@ -496,30 +459,6 @@ function gravitySlam(f) {
     return true;
 }
 
-// AEGIS BURST: a blast of its shells, shoving enemies back, shielding it and its allies. True when it fired.
-function aegisBurst(f) {
-    const foes = _evoFoes(f.x, f.y, WARDEN_RADIUS);
-    if (!foes.length) return false;
-    const f0 = typeof frame !== "undefined" ? frame : 0;
-    for (const a of foes) {
-        applyDamage(a, (f.power || 10) * WARDEN_MULT, f, "core");
-        const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1;
-        if (!(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { a.x += dx / L * WARDEN_PUSH; a.y += dy / L * WARDEN_PUSH; }
-    }
-    const near = typeof unitsNear === "function" ? unitsNear(f.x, WARDEN_ALLY_R) : actors;
-    for (const a of near) {
-        if (!a || a.dead || a.team !== "green" || !(a.isFollower || a.isClone) || Math.hypot(a.x - f.x, a.y - f.y) > WARDEN_ALLY_R) continue;
-        const cap = Math.round((a.maxHealth || 0) * WARDEN_SHIELD), have = a.shielded ? (a.shieldAmount || 0) : 0;
-        if (cap > have) { a.shielded = true; a.shieldAmount = cap; a._shieldMax = Math.max(a._shieldMax || 0, cap); }
-    }
-    f._sigAt = f0; f._sigCd = WARDEN_EVERY;
-    if (typeof elementEffects !== "undefined") {
-        elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: WARDEN_RADIUS, color: "#33e6c4", life: 40 });
-        elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#33e6c4", radius: WARDEN_RADIUS * 0.6, life: 24 });
-    }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "AEGIS BURST", color: "#66ffe0", life: 50, vy: -0.06, size: 10 });
-    return true;
-}
 // STATIC RUSH: dash to the nearest enemy in range, hit it, shock two more; all stunned. True when it fired.
 function staticRush(f) {
     const foes = _evoFoes(f.x, f.y, MANTA_RANGE);

@@ -69,10 +69,13 @@ function findChromium() {
         ok(/into the IGLOO SKATER/.test(r.before.note) && /no signature move yet/.test(r.before.note) && !/undefined/.test(r.before.note), 'before: ' + r.before.note);
         same(r.after.note, 'The IGLOO SKATER has no signature move yet.', 'after'); same(r.after.rows.length, 0, 'rows');
     });
-    check('every element has its ultimate described, and under the name the game gives it (js/elements.js FOLLOWER_ULTIMATES)', () => {
-        same(run('ELEMENTS.every(e => ELEMENT_ULTIMATES.some(u => u.el === e.id))'), true, 'an element without an ultimate');
-        const off = JSON.parse(run(`JSON.stringify(ELEMENTS.filter(e => !FOLLOWER_ULTIMATES[e.id] || ELEMENT_ULTIMATES.find(u => u.el === e.id).name !== FOLLOWER_ULTIMATES[e.id].name).map(e => e.id))`));
+    check('every element with an ultimate has it described, under the name the game gives it (js/elements.js FOLLOWER_ULTIMATES); core has none (its Shield Grant went with the followers\' shield), and its card shows none', () => {
+        same(run('ELEMENTS.filter(e => FOLLOWER_ULTIMATES[e.id]).every(e => ELEMENT_ULTIMATES.some(u => u.el === e.id))'), true, 'an element with an ultimate the card does not describe');
+        same(run('ELEMENTS.filter(e => !FOLLOWER_ULTIMATES[e.id]).map(e => e.id).join()'), 'core', 'the elements without an ultimate');
+        const off = JSON.parse(run(`JSON.stringify(ELEMENT_ULTIMATES.filter(u => !FOLLOWER_ULTIMATES[u.el] || u.name !== FOLLOWER_ULTIMATES[u.el].name).map(u => u.el))`));
         same(off.length, 0, 'the card names an ultimate the game does not: ' + off.join(', '));
+        const i = run(`(function(){ spawnFollowerAtCrystal('core'); const f = followers[followers.length - 1]; const o = unitInfo(f); followers.pop(); return o; })()`);
+        ok(!i.attacks.some(s => /^ULTIMATE/.test(s.h)), 'a core follower\'s card shows an ultimate: ' + i.attacks.map(s => s.h));
     });
     check('stats: vitals, base stats with the personality, traits with their descriptions', () => {
         const i = JSON.parse(run(`JSON.stringify(followerInfo(__mk('ice', 'brawler', 5)))`)); ok(sec(i, 'stats', 'VITALS') && sec(i, 'stats', 'BASE STATS') && sec(i, 'stats', 'TRAITS'), 'sections ' + i.stats.map(s => s.h));

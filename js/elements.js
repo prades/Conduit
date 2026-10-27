@@ -245,31 +245,8 @@ const ELEMENT_ATTACKS = {
                 spawnElementEffect({ type:"ring", x:target.x, y:target.y, color:"#00ccaa", radius:0.8, life:18, element:"core" });
             }
             return { hit: true };
-        },
-        special(actor, target) {
-            // Radiant pulse — shields allies + brief invulnerability to self
-            spawnElementEffect({ type:"ring", x:actor.x, y:actor.y, color:"#00ccaa", radius:3.0, life:50, element:"core" });
-            actor.invulnerable = 60;
-            // Shield nearby allies
-            followers.forEach(a => {
-                if (a === actor || a.dead) return;
-                const dx=a.x-actor.x, dy=a.y-actor.y;
-                if (dx*dx+dy*dy <= 9.0) { // 3.0²=9.0, no sqrt needed
-                    a.shielded = true;
-                    a.shieldAmount = (actor.stats?.specialAttack||10) * 1.5;
-                }
-            });
-            // Also damage nearby enemies
-            actors.forEach(a => {
-                if (isHostileTarget(a)) {
-                    const dx=a.x-actor.x, dy=a.y-actor.y;
-                    if (dx*dx+dy*dy <= 9.0) { // 3.0²=9.0, no sqrt needed
-                        applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.4, actor, "core");
-                    }
-                }
-            });
-            return { hit: true };
         }
+        // (no special: RADIANT PULSE shielded the followers round it, and the followers' shield is gone; js/combat.js gives core its physical every time)
     },
 
     // ── TOXIC ─────────────────────────────────────────────
@@ -470,27 +447,7 @@ const FOLLOWER_ULTIMATES = {
         }
     },
 
-    // ── CORE: Shield Grant ────────────────────────────────
-    // All followers receive a 10 HP shield that blocks 100% damage.
-    core: {
-        name: "Shield Grant",
-        execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 8);
-            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
-            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
-            floatingTexts.push({x:_px,y:_py-80,text:"⬡ SHIELD GRANT",color:"#00ffcc",life:90,vy:-0.9});
-            spawnElementEffect({type:"ring",x:actor.x,y:actor.y,color:"#00ccaa",radius:6.0,life:60,element:"core"});
-            followers.forEach(f => {
-                if (f.dead) return;
-                f.shielded     = true;
-                f.shieldAmount = 10;
-                f._shieldMax   = 10;
-                spawnElementEffect({type:"impact",x:f.x,y:f.y,color:"#00ffcc",radius:1.0,life:30,element:"core"});
-            });
-        }
-    },
+    // (CORE has no ultimate: SHIELD GRANT put a shield on every follower, and the followers' shield is gone; js/draw.js shows no bar for it)
 
     // ── TOXIC: Smoke Screen ───────────────────────────────
     // A thick smoke cloud creeps out SMOKE_SCREEN_REACH tiles round the

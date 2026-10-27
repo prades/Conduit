@@ -10,7 +10,7 @@ const ELEMENT_ULTIMATES = [
     { el: "electric", name: "EMP",               desc: "Strips every enemy shield in reach and speeds up your followers" },
     { el: "ice",      name: "Blizzard",          desc: "A field of snow that keeps freezing the enemies in it" },
     { el: "flux",     name: "Disorient",         desc: "The creatures in reach turn on each other" },
-    { el: "core",     name: "Shield Grant",      desc: "A shield on every one of your followers" },
+    // (core has none: its Shield Grant put a shield on every follower, and the followers' shield is gone)
     { el: "toxic",    name: "Smoke Screen",      desc: "Smoke creeps out: the enemies in it lose their aim" },
 ];
 const ROLE_INFO = {
@@ -34,12 +34,10 @@ const MOVE_INFO = {
     "FIRE BOMBS":      () => [["REACH", FIRE_BARRAGE_RANGE + " tiles"], ["EVERY", _uiSec(FIRE_BARRAGE_EVERY)], ["BOMBS", "3, fanned"], ["EFFECT", "Three bombs lobbed at the nearest enemy: each lands, bounces up to " + (FIRE_BOUNCES - 1) + " times, splashes what it lands on and sets the ground burning for 10 to 15 seconds. The fire hurts everyone on it, your own side too."]],
     "ARC VOLLEY":      () => [["REACH", REAVER_RANGE + " tiles"], ["EVERY", _uiSec(REAVER_EVERY)], ["DAMAGE", _uiX(REAVER_MULT) + " power"], ["EFFECT", "A charged arc that jumps to " + REAVER_CHAIN + " more enemies"]],
     "SINGULARITY SHOT": () => [["REACH", SERPENT_RANGE + " tiles"], ["EVERY", _uiSec(SERPENT_EVERY)], ["DAMAGE", _uiX(SERPENT_MULT) + " power"], ["EFFECT", "Drags every enemy within " + SERPENT_PULL_R + " tiles of the target in and slows them (a beetle, a boss or a machine is too heavy to drag)"]],
-    "AEGIS BURST":     () => [["REACH", WARDEN_RADIUS + " tiles"], ["EVERY", _uiSec(WARDEN_EVERY)], ["DAMAGE", _uiX(WARDEN_MULT) + " power"], ["EFFECT", "Shoves enemies back and shields itself and allies within " + WARDEN_ALLY_R + " tiles for " + Math.round(WARDEN_SHIELD * 100) + "% of max health"]],
     "STATIC RUSH":     () => [["REACH", MANTA_RANGE + " tiles"], ["EVERY", _uiSec(MANTA_EVERY)], ["DAMAGE", _uiX(MANTA_MULT) + " power"], ["EFFECT", "Dashes to the enemy, hits it and shocks " + MANTA_CHAIN + " more; all are stunned for " + _uiSec(MANTA_STUN)]],
     "HEXFIRE":         () => [["REACH", HALO_RANGE + " tiles"], ["EVERY", _uiSec(HALO_EVERY)], ["DAMAGE", HALO_ROUNDS + " rounds of " + _uiX(HALO_MULT) + " power"], ["EFFECT", "Six crystals fire at once, one at each of the nearest enemies in turn, setting them burning"]],
     "CORRODE SHOT":    () => [["REACH", ROT_RANGE + " tiles"], ["EVERY", _uiSec(ROT_EVERY)], ["DAMAGE", _uiX(ROT_MULT) + " power"], ["EFFECT", "Eats the target's armour for " + _uiSec(ROT_SHRED_FRAMES) + " and splashes the corrosion over " + ROT_SPLASH_R + " tiles"]],
     "GRAVITY SLAM":    () => [["REACH", MIMIC_RADIUS + " tiles"], ["EVERY", _uiSec(MIMIC_EVERY)], ["DAMAGE", _uiX(MIMIC_MULT) + " power"], ["EFFECT", "Flattens and slams: shoves enemies back and slows them for " + _uiSec(MIMIC_SLOW_FRAMES) + " (heavy ones are not moved)"]],
-    "AEGIS BLOOM":     () => [["REACH", PETAL_RANGE + " tiles"], ["EVERY", _uiSec(PETAL_EVERY)], ["DAMAGE", _uiX(PETAL_MULT) + " power"], ["EFFECT", "A bolt of core energy at the nearest enemy, and a " + Math.round(PETAL_SHIELD * 100) + "% shield on the worst-hurt ally within " + PETAL_ALLY_R + " tiles"]],
     "ERUPTION":        () => [["REACH", CALDERA_RADIUS + " tiles"], ["EVERY", _uiSec(CALDERA_EVERY)], ["DAMAGE", _uiX(CALDERA_MULT) + " power"], ["EFFECT", "The crater bursts in toxic goo and eats the armour of everything it hits for " + _uiSec(CALDERA_SHRED_FRAMES)]],
     "CHOMP":           () => [["REACH", MAW_RANGE + " tiles"], ["EVERY", _uiSec(MAW_EVERY)], ["DAMAGE", _uiX(MAW_MULT) + " power"], ["EFFECT", "The fangs slam down: the target is frozen stiff for " + _uiSec(MAW_STUN) + " and everything within " + MAW_SLOW_R + " tiles of it is slowed"]],
 };
@@ -61,7 +59,7 @@ function followerInfo(a) {
         // MORE THAN ONE MOVE: pick which it uses (js/moves.js; saved with the follower)
         if (ids.length > 1) out.attacks.push({ h: "MOVE", note: "This form can use more than one move. Pick one:", choices: ids.map(id => ({ id, label: MOVES[id].name, on: cur ? cur.id === id : false })), unit: a });
     }
-    else if (ev) out.attacks.push({ h: "SIGNATURE", note: "The " + ev.name + " has no signature move yet.", rows: [] });   // (the technicians' forms: their tools are to come)
+    else if (ev) out.attacks.push({ h: "SIGNATURE", note: "The " + ev.name + " has no signature move yet.", rows: [] });   // (the technicians' forms, the Rimestar and the core forms: their moves are to come)
     else {
         const f = typeof evolutionFor === "function" ? evolutionFor(a) : null;
         out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health and power)" + (f.move ? ", with the move " + f.move + ":" : ". It has no signature move yet.") : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]() : [] });

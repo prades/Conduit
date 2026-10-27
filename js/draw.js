@@ -1308,23 +1308,6 @@ function _virusSprite(actor, flash, er, eg, eb, wc) {
     return cv;
 }
 
-// A shielded follower: a thin pale bubble round it, brighter for a moment when
-// it is hit, and a blue bar under its health bar. Lines, not a disc.
-function _drawFollowerShield(actor, px, py, drawCtx) {
-    if (!(actor.shielded && actor.shieldAmount > 0)) return;
-    const max = Math.max(actor._shieldMax || 0, actor.shieldAmount);
-    const hit = actor._shieldHitAt !== undefined && (frame - actor._shieldHitAt) < 10;
-    // No save/restore (it ran for every shielded unit, every frame): the one
-    // piece of state it changes, the alpha, is put back by hand.
-    const ga = drawCtx.globalAlpha;
-    drawCtx.globalAlpha = ga * (hit ? 0.9 : 0.45); drawCtx.strokeStyle = hit ? "#ffffff" : "#9fdcff"; drawCtx.lineWidth = hit ? 2 : 1.2;
-    drawCtx.beginPath(); drawCtx.ellipse(px, py - 32, 17, 22, 0, 0, Math.PI * 2); drawCtx.stroke();
-    drawCtx.globalAlpha = ga;
-    const k = Math.min(1, actor.shieldAmount / max);
-    if (k < 1) { drawCtx.fillStyle = "#000"; drawCtx.fillRect(px - 14, py - 70, 28, 3); }
-    drawCtx.fillStyle = "#3af"; drawCtx.fillRect(px - 14, py - 70, Math.round(28 * k), 3);
-}
-
 function _drawVirus(actor, px, py, drawCtx) {
     // How many were drawn last frame — the crowd test for the bubbles.
     if (_virusCountFrame !== frame) { _virusesOnScreen = _virusesCounting; _virusesCounting = 0; _virusCountFrame = frame; }
@@ -1333,10 +1316,9 @@ function _drawVirus(actor, px, py, drawCtx) {
     if (!_bare) drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green", typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
     // Its level, kind and what it is doing, over the bar and the ultimate bar (js/levels.js).
     if (!_bare && typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
-    _drawFollowerShield(actor, px, py, drawCtx);
 
     // ── ULTIMATE CHARGE BAR ───────────────────────────────
-    if (actor.isFollower && typeof actor.ultimateCharge === "number") {
+    if (actor.isFollower && typeof actor.ultimateCharge === "number" && typeof FOLLOWER_ULTIMATES !== "undefined" && FOLLOWER_ULTIMATES[actor.element]) {   // (none for an element with no ultimate: core)
         const _uc = Math.max(0, Math.min(100, actor.ultimateCharge));
         const _ucFull = _uc >= 100;
         const _elDef = ELEMENTS.find(e => e.id === actor.element);
