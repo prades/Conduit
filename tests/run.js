@@ -27,6 +27,7 @@ const SUITES = [
     ['the player\'s ultimate',   'ultimate.js'],
     ['effects plan',             'effects.js'],
     ['combat readability: the bite in two beats, one bite one unit, the cap, the numbers, the bar, DEFEATED', 'combat.js'],
+    ['whom a creature goes for: the player is prey (hit it and it comes for you), the weak first; spiders lurk behind props with no tag', 'prey.js'],
     ['the Mutator: the lash, cloning is the Mutator\'s, the one clone fights as its species and stays fallen', 'mutator.js'],
     ['the Ice Mage preserves a fallen ally; the player carries its capsule to the Resurrection Zone', 'specimen.js'],
     ['the Mutator\'s healing serum: a pool that heals, the laboratory, the Mutator\'s level', 'serum.js'],

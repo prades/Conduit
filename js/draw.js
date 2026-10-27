@@ -171,7 +171,12 @@ function drawNPC(actor, px, py, drawCtx=ctx) {
     }
 }
 
+// A spider lurking at cover (js/facilityspawn.js spiderLurking) is drawn faint, and its bars not at all.
 function _drawPredator(actor, px, py, drawCtx) {
+    if (typeof spiderLurking === "function" && spiderLurking(actor)) { drawCtx.save(); drawCtx.globalAlpha *= SPIDER_LURK.alpha; try { _drawPredatorBody(actor, px, py, drawCtx); } finally { drawCtx.restore(); } return; }
+    _drawPredatorBody(actor, px, py, drawCtx);
+}
+function _drawPredatorBody(actor, px, py, drawCtx) {
     // UNDERGROUND (the tyrant's burrow): only a moving mound of dirt shows.
     if (actor.untargetable && actor._burrow) {
         const w = 26 + Math.sin((frame || 0) * 0.4) * 3;
@@ -916,9 +921,10 @@ function _drawPredator(actor, px, py, drawCtx) {
 // shared by every body (the beetle's is js/beetle3d.js).
 function _drawPredatorBars(actor, px, py, drawCtx) {
     const _isAllyPred = actor.team === "green" || actor.isClone;
+    if (!_isAllyPred && typeof spiderLurking === "function" && spiderLurking(actor)) return;   // (lurking at cover: nothing over it gives it away)
     drawHealthBar(px-18, py-85, 36, 6, actor.health, actor.maxHealth, drawCtx, _isAllyPred, typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
-    // Its level, kind and what it is doing, over the bar (js/levels.js).
-    if (typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 96, drawCtx);
+    // Its level, kind and what it is doing, over the bar (js/levels.js). A spider of the arena wears no tag (ASKED: "Spiders should have no tag"); one of yours (a clone) does.
+    if (typeof drawUnitTag === "function" && !(actor.speciesName === "spider" && !_isAllyPred)) drawUnitTag(actor, px, py - 96, drawCtx);
     drawAbilityCharge(actor, px, py, drawCtx);
     // Shield bar — blue, drawn above HP bar; drains on damage, no passive regen
     if (actor.shielded && actor.shieldAmount > 0) {

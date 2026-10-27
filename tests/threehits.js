@@ -77,23 +77,27 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const foe = spawnCreature({ species: 'ant', className: 'scout', x: __O.x, y: __O.y, state: 'hunt' });
         foe.entryDelay = 0; foe.health = foe.maxHealth = 1e9; foe.moveSpeed = 0; foe.dirX = -0.6; foe.dirY = 0.8;
         return foe; })()`;
-    check('THE ASK: brush up against a creature and it turns and bites — one hit', () => {
+    // (it bites in the bite's two beats now, the telegraph first: docs/COMBAT.md, COMBAT.prey; it bit on the instant of the touch)
+    check('THE ASK: brush up against a creature and it turns and bites — one hit (after its wind-up: the telegraph first)', () => {
         const r = run(`(function(){ ${fresh} const foe = ${biter};
             ${put('__O.x + 0.6', '__O.y')}
-            foe.update(); const out = { hp: health, dx: foe.dirX }; foe.dead = true; return out; })()`);
+            foe.update(); const turned = foe.currentTarget === player, reared = []; for (let i = 0; i < COMBAT.bite.windup + 12 && health === PLAYER_HITS; i++) { reared.push(foe.attackWindup); player.x = player.targetX = player.visualX = __O.x + 0.6; player.y = player.targetY = player.visualY = __O.y; foe.update(); }
+            const out = { hp: health, dx: foe.dirX, turned, reared: reared.some(w => w > 0) }; foe.dead = true; return out; })()`);
         same(r.hp, 2, 'hits left after brushing a creature');
+        same(r.turned, true, 'it did not turn on you'); same(r.reared, true, 'it bit without rearing back first');
         ok(r.dx > 0, 'it did not turn toward you (dirX ' + r.dx + ')');
     });
     check('THE ASK: …and you are knocked back a little, away from it', () => {
         const r = run(`(function(){ ${fresh} const foe = ${biter};
             ${put('__O.x + 0.6', '__O.y')}
-            foe.update(); foe.dead = true; return { x: player.x - __O.x, tx: player.targetX - __O.x, y: player.y - __O.y }; })()`);
+            for (let i = 0; i < COMBAT.bite.windup + 12 && health === PLAYER_HITS; i++) { player.x = player.targetX = player.visualX = __O.x + 0.6; player.y = player.targetY = player.visualY = __O.y; foe.update(); }
+            foe.dead = true; return { x: player.x - __O.x, tx: player.targetX - __O.x, y: player.y - __O.y }; })()`);
         const kb = run('PLAYER_KNOCKBACK');
         ok(Math.abs(r.x - (0.6 + kb)) < 1e-6 && Math.abs(r.tx - (0.6 + kb)) < 1e-6, 'pushed to ' + r.x + ' (walk target ' + r.tx + ')');
         ok(kb > 0.3 && kb <= 1, 'a little: ' + kb + ' tiles');
         same(r.y, 0, 'y');
     });
-    check('a step away, it leaves you alone (it does not hunt you)', () => {
+    check('a step away, a calm one leaves a healthy player alone (it turns on you if you touch it, hit it, or are down to your last hit: COMBAT.prey)', () => {
         const r = run(`(function(){ ${fresh} const foe = ${biter};
             ${put('__O.x + 1.5', '__O.y')}
             for (let i = 0; i < 300; i++) { foe.x = __O.x; foe.y = __O.y; foe.update(); }

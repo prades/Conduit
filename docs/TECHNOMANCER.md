@@ -87,7 +87,7 @@ One creature, four tiles off, in the arena (nothing else alive, no squad, the gr
 
 The punch is about 23 damage a second (14 every 36 frames), between the lash (25) and the service gun (13); the machine gun is 43. A full gauntlet opens a fight hard.
 
-**Found while measuring (not changed: it needs a decision).** In melee the player took **no hits**: a creature bites the player only by touching them (`PLAYER_BITE_RANGE`, 0.9 tiles), and a creature that is hit turns on its `lastAttacker`, which for the player's hits is a copy of where the player stood (not the player), and bites at that from its bite reach (1.5 tiles) without stepping in; the gauntlet (1.4) and the lash (1.45) strike from outside the 0.9. So melee costs the Technomancer and the Mutator nothing. Making it cost something is a rule about how creatures attack the player (docs/COMBAT.md), so it is left for you to decide.
+**Found while measuring, and since changed** (docs/COMBAT.md §4: creatures hunt and bite the player now, and the same fights cost hits; the table above is from before). In melee the player took **no hits**: a creature bites the player only by touching them (`PLAYER_BITE_RANGE`, 0.9 tiles), and a creature that is hit turns on its `lastAttacker`, which for the player's hits is a copy of where the player stood (not the player), and bites at that from its bite reach (1.5 tiles) without stepping in; the gauntlet (1.4) and the lash (1.45) strike from outside the 0.9. So melee cost the Technomancer and the Mutator nothing. Asked to make creatures dangerous, they now turn on whoever hits them and bite in the bite's two beats (dodge by stepping out while one rears back).
 
 ## 3. Tentative: every number is a knob
 

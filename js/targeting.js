@@ -35,7 +35,7 @@ function _tgColour(a) { const el = a.element && typeof ELEMENTS !== "undefined" 
 // the nearest creature in range that can be seen
 function targetNearest() {
     let best = null, bd = TARGET.range;
-    for (const a of actors) { if (!(a instanceof Predator) || !targetLive(a)) continue; const d = _tgDist(a); if (d < bd && _tgSees(a)) { bd = d; best = a; } }
+    for (const a of actors) { if (!(a instanceof Predator) || !targetLive(a) || (typeof spiderLurking === "function" && spiderLurking(a))) continue; const d = _tgDist(a); if (d < bd && _tgSees(a)) { bd = d; best = a; } }   // (a spider lurking at cover is passed by: js/facilityspawn.js)
     return best;
 }
 function targetSet(foe, manual) {

@@ -10,6 +10,16 @@ const COMBAT = {
     numbers: { ally: true, heal: true },                             // damage numbers over your own units ("−n", red) and healing ("+n", green); an enemy's numbers were always there
     lagBar: 36,                                                      // a health bar keeps a pale segment of the health just lost, draining over this many frames
     defeatText: 90,                                                  // "DEFEATED" over a unit that falls, for this long (0: none)
+    // WHOM A CREATURE GOES FOR (js/predator.js predatorPickPrey; ASKED: "make them target you if you are weak especially. They should target weak targets and the player has a health bar too. They should also
+    // target you if you attack them."). Every `every` frames a creature looks at your followers, your clones and YOU. It goes for (in sight, but the one that hit it is known through walls):
+    //   - the one that hit it last (or touched it), from up to `revenge` tiles: it turns on whoever attacks it, the player too
+    //   - in a fight (an alarm up, or provoked): anything within `close` tiles (in its way), and anything WEAK within `sense` tiles: down to `weakAt` of its health or less (the player: of its three hits)
+    //   - calm (no alarm, not provoked): only what is down to `calmWeakAt` or less within `notice` tiles (the player: one hit left), or what hits or touches it
+    // Of those it takes the best by its score: `near` (1 beside it, 0 at `sense` tiles) + `weak` × the share of its health lost (the PLAYER's share of its hits lost counts `weakPlayer` times: a weak player
+    // is the first choice) + `attacker` if it hit it last + `keep` if it is after it already (it does not flit between two). With none of those it does what it did: the Crystal in a fight, its round when calm.
+    // It CHASES what it picked (by the route round the walls) until it is in reach and bites it in the bite's two beats, or until it is more than `leash` tiles off (then it lets it go, and calms down if no alarm
+    // is up).
+    prey: { every: 12, close: 2.5, sense: 6, weakAt: 0.5, notice: 3, calmWeakAt: 0.34, revenge: 12, leash: 13, near: 1, weak: 1.2, weakPlayer: 2, attacker: 1, keep: 0.35 },
 };
 // A hit landed: remember the health it was taken from, so the bar can show the hit's size as a pale segment (applyDamage calls it with the health before the hit).
 function noteHit(t, before) {

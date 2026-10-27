@@ -76,9 +76,47 @@ function facilitySpawnTick() {
     if (facilityCreatures().length < FP_SPAWN.cap) facilitySpawnCreature();
 }
 
-// where a creature in the facility wanders to next: a spot of its home room in sight of it, 3 to 9 tiles off (or, shut in by props with none in sight, one it can walk to by the route; the nearest floor of the room when it is not in it)
+// SPIDERS LURK (ASKED: "Spiders should have no tag and should hang out near objects that reveal it only partially when idle"). An idle spider of the arena goes from cover to cover: a floor tile just
+// BEHIND a prop (the prop's far side from the camera, its north or west side, so the prop is drawn over part of it: js/draw.js sorts by depth), where it stays SPIDER_LURK.rest frames. Resting at
+// cover it is LURKING (spiderLurking): drawn faint (SPIDER_LURK.alpha), with no health bar and no glow under it in the dark, and the auto-lock passes it by (a tap still locks it, js/targeting.js).
+// A spider never wears a name tag (js/draw.js _drawPredatorBars). Provoked, with an alarm up, or with prey to go for (COMBAT.prey: a weak player passing by), it comes out and is seen like any creature.
+const SPIDER_LURK = {
+    cover: ["crate", "crate_stack", "barrel"],   // the props it hides behind (the arena's middling ones: the truck, the tanks and the generator hid it whole, a barrier hid none of it, and it is to be partly seen)
+    near: 1.3, rest: [480, 900], alpha: 0.6, from: 2,   // how near behind a prop (tiles); how long it stays (frames, after it gets there); how much of it shows; a new cover is at least this far (tiles)
+};
+function _fsCoverCells() {
+    if (!_fp) return [];
+    if (_fp.spiderCover) return _fp.spiderCover;
+    const out = [], N = SPIDER_LURK.near, props = (_fp.F.solids || []).filter(s => s.room === FP_SPAWN.room && s.bb && SPIDER_LURK.cover.includes(s.kind));
+    for (const c of _fsArenaCells()) for (const p of props) {
+        const [x0, y0, x1, y1] = p.bb, west = c[0] < x0 && c[0] >= x0 - N && c[1] >= y0 - 0.3 && c[1] <= y1 + 0.3, north = c[1] < y0 && c[1] >= y0 - N && c[0] >= x0 - 0.3 && c[0] <= x1 + 0.3;
+        if (west || north) { out.push(c); break; }
+    }
+    return (_fp.spiderCover = out);
+}
+// the next cover for a spider: one it can walk to, not the one it is at; null when the arena has none
+function _fsLurkTarget(a) {
+    const C = _fsCoverCells(); if (!C.length) return null;
+    const cm = typeof _fpComps === "function" ? _fpComps() : null, here = typeof _fpNearestCell === "function" ? _fpNearestCell(a.x, a.y) : null, hk = here ? here[0] + "," + here[1] : null;
+    for (let i = 0; i < 40; i++) {
+        const c = C[Math.floor(Math.random() * C.length)], d = Math.hypot(c[0] - a.x, c[1] - a.y); if (d < SPIDER_LURK.from) continue;
+        if (cm && hk && cm.get(c[0] + "," + c[1]) !== cm.get(hk)) continue;
+        const walk = Math.round(d * 1.4 / Math.max(0.004, (a.baseMoveSpeed || a.moveSpeed || 0.02) * 0.7));   // (the time to get there, roughly: the rest begins when it arrives)
+        return { x: c[0], y: c[1], lurk: true, rest: walk + SPIDER_LURK.rest[0] + Math.floor(Math.random() * (SPIDER_LURK.rest[1] - SPIDER_LURK.rest[0])) };
+    }
+    return null;
+}
+// is this a spider lurking at cover (faint, no bar, not auto-locked)?
+function spiderLurking(a) {
+    if (!a || a.dead || a.speciesName !== "spider" || a.team !== "red" || a.isClone || a.provoked || a.state !== "wander" || (typeof alertActive !== "undefined" && alertActive)) return false;
+    const t = a.wanderTarget; return !!t && !!t.lurk && Math.hypot(a.x - t.x, a.y - t.y) < 0.6;
+}
+
+// where a creature in the facility wanders to next: a spot of its home room in sight of it, 3 to 9 tiles off (or, shut in by props with none in sight, one it can walk to by the route; the nearest floor of the room when it is not in it).
+// A spider goes to cover instead (above).
 function facilityWanderTarget(a) {
     const home = a.homeRoom || FP_SPAWN.room, cells = _fp ? _fsArenaCells() : []; if (!cells.length || home !== FP_SPAWN.room) return { x: a.x, y: a.y };
+    if (a.speciesName === "spider" && !a.isClone && !a.provoked && !(typeof alertActive !== "undefined" && alertActive)) { const t = _fsLurkTarget(a); if (t) return t; }
     for (let i = 0; i < 24; i++) {
         const c = cells[Math.floor(Math.random() * cells.length)], d = Math.hypot(c[0] - a.x, c[1] - a.y);
         if (d < FP_SPAWN.wander[0] || d > FP_SPAWN.wander[1]) continue; if (typeof _fpLos === "function" && !_fpLos(a.x, a.y, c[0], c[1])) continue;

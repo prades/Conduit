@@ -234,7 +234,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     const _before = target.health;
     target.health -= dmg;
     if (typeof noteHit === "function") noteHit(target, _before);   // the bar's pale segment shows the hit's size (js/combat.js)
-    if (source) target.lastAttacker = source;
+    if (source) target.lastAttacker = typeof predatorSource === "function" ? predatorSource(source) : source;   // (the player's hit: the player itself, js/predator.js, so a creature turns on the player)
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;
     if (typeof target.hitStun  !== "undefined") target.hitStun  = 6;
     // ── DAMAGE TICKER ───────────────────────────────────────── an enemy's hit in its element's colour; one of yours, red with a minus (COMBAT.numbers.ally). Anchored to the unit (a world text, js/drops.js).

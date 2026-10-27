@@ -103,7 +103,7 @@ function firePlayerShot(foe) {
     }
     const elDef = ELEMENTS.find(e => e.id === player.selectedElement);
     spawnFollowerProjectile(
-        { x: player.x, y: player.y, element: player.selectedElement },
+        { x: player.x, y: player.y, element: player.selectedElement, isPlayer: true },   // (isPlayer: the creature it hits turns on the player, js/predator.js predatorSource)
         foe,
         elDef ? elDef.color : "#ffffff",
         typeof weaponDamage === "function" ? weaponDamage() : 10, 5,

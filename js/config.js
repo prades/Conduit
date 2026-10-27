@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-10-27v";
+const BUILD_VERSION = "2026-10-27w";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -285,11 +285,13 @@ const BATTLE_ATTACK_LEASH = 22;       // tiles from the player
 // won't shoot at you. If you brush up against them or they walk up to you,
 // they hit you — and you get knocked back a little after each hit."
 //
-// A creature within PLAYER_BITE_RANGE of you turns and bites: ONE of your
-// three hits (the grace after it, PLAYER_HIT_GRACE, spaces them out), and you are
-// pushed PLAYER_KNOCKBACK tiles away from it. That is the only way a creature
-// hurts you — its shots and specials pass you by. Burning ground (js/firebombs.js)
-// still costs a hit. Creatures do not hunt you down; they pick their targets among your squad.
+// REPORTED later: "it feels like I'm invulnerable [...] they should feel more dangerous, make them target you if you are weak especially. They should target weak targets
+// and the player has a health bar too. They should also target you if you attack them."
+//
+// You are a creature's PREY like your squad (COMBAT.prey, js/combat.js): one you hit or touch (within PLAYER_BITE_RANGE) turns on you, and one in a fight goes for the weakest
+// near it, a weak player above all (your three hits are your health bar). It chases you and bites in the bite's two beats: it rears back (the telegraph, over you), then
+// the bite is ONE of your three hits (the grace after it, PLAYER_HIT_GRACE, spaces them out), and you are pushed PLAYER_KNOCKBACK tiles away from it. Step out of its reach
+// while it rears back and the bite misses (DODGED). Its shots and specials still pass you by. Burning ground (js/firebombs.js) still costs a hit.
 const PREDATORS_ATTACK_PLAYER = true;
 const PLAYER_BITE_RANGE    = 0.9;   // tiles
 const PLAYER_KNOCKBACK     = 0.7;   // tiles you are pushed per hit

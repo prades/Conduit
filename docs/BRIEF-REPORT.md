@@ -106,7 +106,7 @@ The full run is green.
 
 **Found, and not changed (each needs a rule decided):**
 
-1. **Melee costs the player nothing.** A creature hurts the player only by touching them (0.9 tiles). A creature that is hit turns on a copy of where the player stood. The lash and the gauntlet reach 1.4 to 1.45 tiles, so in every measured fight the melee player took no hits (docs/TECHNOMANCER.md 2.8).
+1. ~~**Melee costs the player nothing.**~~ **Changed since** (docs/COMBAT.md §4): a creature you hit comes for you and bites in two beats, they go for the weak (a weak player above all), and spiders lurk behind props with no tag.
 2. **Spiders web a clone that chases them.**
 3. **A creature walking to the Crystal turns only on what bites it.**
 4. **The Gunslinger's gear objective overflows the objective plate.** Its text and its hint each wrap to four lines at the narrowest plate, so the fourth is cut. This text is older than step 9; every new stage step fits, and a test checks that.

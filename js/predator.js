@@ -7,6 +7,35 @@
 // The units within r tiles of column x — the column index (unitsNear, helpers.js) when it is loaded, every actor otherwise. Each creature scans its neighbourhood a few times a step.
 function _predNear(x, r) { return typeof unitsNear === "function" ? unitsNear(x, r) : actors; }
 
+// ── THE PREY: whom a creature goes for (COMBAT.prey, js/combat.js) ──
+// Your followers, your clones and the PLAYER. A hit by the player names the player itself (applyDamage and onHit are handed a copy of where the player stood: it is the player it turns on).
+function predatorPreyOk(p, a) {
+    if (!a || a.dead) return false;
+    if (typeof player !== "undefined" && a === player) return typeof predatorMayHurtPlayer !== "function" || predatorMayHurtPlayer();
+    return a.team === "green" && !isNeutralBystander(a) && !((a.spawnProtection || 0) > 0) && !a.untargetable && !a.dismissed && Number.isFinite(a.x);
+}
+// how much of it is left: a unit's share of its health; the player's share of its three hits (the bar at the top of the screen)
+function predatorPreyShare(a) { return typeof player !== "undefined" && a === player ? Math.max(0, health) / PLAYER_HITS : Math.max(0, a.health) / Math.max(1, a.maxHealth || 1); }
+// the best prey near it, or null (see COMBAT.prey)
+function predatorPickPrey(p) {
+    const P = COMBAT.prey, calm = !alertActive && !p.provoked, seen = [];
+    for (const a of _predNear(p.x, Math.max(P.sense, P.revenge))) if (a !== p && a.team === "green") seen.push(a);
+    if (typeof player !== "undefined") seen.push(player);
+    let best = null, bs = -Infinity;
+    for (const a of seen) {
+        if (!predatorPreyOk(p, a)) continue;
+        const d = Math.hypot(a.x - p.x, a.y - p.y), hit = p.lastAttacker === a; if (d > (hit ? P.revenge : P.sense)) continue;
+        const share = predatorPreyShare(a);
+        if (!hit && (calm ? !(share <= P.calmWeakAt && d <= P.notice) : !(d <= P.close || share <= P.weakAt))) continue;   // (calm: only what is very weak and close; in a fight: what is in its way, or weak)
+        if (!hit && d > 1.5 && typeof facilityLosFrom === "function" && !facilityLosFrom(p.x, p.y, a.x, a.y)) continue;   // (in sight)
+        const s = P.near * (1 - Math.min(1, d / P.sense)) + (a === player ? P.weakPlayer : P.weak) * (1 - share) + (hit ? P.attacker : 0) + (p.currentTarget === a ? P.keep : 0);
+        if (s > bs) { bs = s; best = a; }
+    }
+    return best;
+}
+// a hit's source as the creature should see it: the player's own copy is the player
+function predatorSource(src) { return src && src.isPlayer && typeof player !== "undefined" ? player : src; }
+
 class Predator {
     constructor(typeName, def, x, y) {
         this.type = "predator";
@@ -85,6 +114,7 @@ class Predator {
     // hit from behind — stay oriented and keep their weapon aimed at the threat.
     onHit(source) {
         if (!source || this.dead) return;
+        source = predatorSource(source);   // (the player's hit: the player, not where the player stood)
 
         const dx = source.x - this.x;
         const dy = source.y - this.y;
@@ -96,8 +126,9 @@ class Predator {
         const fromBehind = Math.abs(diff) > Math.PI * 0.75; // >135° counts as "from behind"
 
         this.lastAttacker  = source;
-        this.currentTarget = source;
         this.provoked      = true;
+        const prey = predatorPreyOk(this, source);   // (a unit of yours, or the player: it goes for it; a sentry's shot is not something it can bite)
+        if (prey) this.currentTarget = source;
 
         if (this.abdomenAttack && fromBehind) {
             // Rear is the weapon — don't rotate; keep butt aimed at the attacker.
@@ -109,6 +140,7 @@ class Predator {
         }
 
         // Normal reaction: turn toward attacker and enter attack state immediately
+        if (!prey) return;
         this.state        = "attack";
         this.reactionDelay = this.reactionSpeed;
     }
@@ -134,8 +166,9 @@ class Predator {
         const hr = this.health/this.maxHealth;
         const dxC=crystal.x-this.x, dyC=crystal.y-this.y;
         const distCrystal=Math.hypot(dxC,dyC);
-        const attackScore = this.currentTarget&&!this.currentTarget.dead
-            ? 1-Math.min(1,Math.hypot(this.currentTarget.x-this.x,this.currentTarget.y-this.y)/2) : 0;
+        // a prey it is after is chased up to COMBAT.prey.leash tiles (it gave up at 2 tiles: nothing was ever chased); anything else, as before
+        const t = this.currentTarget, dT = t && !t.dead ? Math.hypot(t.x - this.x, t.y - this.y) : Infinity;
+        const attackScore = dT === Infinity ? 0 : !(this.disorientFF > 0) && predatorPreyOk(this, t) ? (dT <= COMBAT.prey.leash ? 1 : 0) : 1 - Math.min(1, dT / 2);
         const huntScore    = 0.4+(1-Math.min(1,distCrystal/6))*0.2;
         return { attack:attackScore, hunt:huntScore, wander:0.1 };
     }
@@ -150,6 +183,11 @@ class Predator {
         if (this.disorientFF > 0) { let n = null; actors.forEach(a => { if (a === this || a.dead || a.team !== "red" || a.isClone || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
         const hitTeam = this.isClone ? "red" : "green";
         if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: this.x, y: this.y, text: "MISS", color: "#aabb88", life: 30, vy: -0.04 }); return null; }   // the smoke screen: half its bites miss
+        // THE PLAYER (its prey too, COMBAT.prey): one of its three hits, and a step back (hurtPlayer; the grace after a hit spaces them). Out of reach when it lands: missed.
+        if (typeof player !== "undefined" && target === player) {
+            if (this.isClone || !inReach(player) || (typeof predatorMayHurtPlayer === "function" && !predatorMayHurtPlayer())) return null;
+            return hurtPlayer(pwr, 4, this) ? player : null;
+        }
         if (B.splash) { let n = null; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
         let t = target && !target.dead && target.team === hitTeam && !isNeutralBystander(target) && inReach(target) ? target : null;
         if (!t) { let bd = reach2; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a)) return; const dx = a.x - this.x, dy = a.y - this.y, d2 = dx * dx + dy * dy; if (d2 <= bd) { bd = d2; t = a; } }); }
@@ -192,16 +230,11 @@ class Predator {
         }
 
         // ── THE PLAYER, UP CLOSE ──
-        // Brush against one, or let it walk up to you, and it turns and bites:
-        // one of your three hits, and you are knocked back a step (hurtPlayer).
-        // It is the ONLY way a predator hurts you — no shots, no blasts.
-        // The grace after a hit (PLAYER_HIT_GRACE) is what spaces the bites out.
+        // Brush against one, or let it walk up to you, and it turns on you: you are its prey (COMBAT.prey), and it bites you in the bite's two beats, the telegraph first (it bit at once,
+        // with no warning, and only by touch: from a melee weapon's reach nothing could touch the player at all). Its shots and specials still pass you by.
         if (!this.isClone && !this.untargetable && typeof predatorMayHurtPlayer === "function" && predatorMayHurtPlayer() && typeof player !== "undefined") {
             const pdx = player.x - this.x, pdy = player.y - this.y, _br = typeof PLAYER_BITE_RANGE === "number" ? PLAYER_BITE_RANGE : 0.9;
-            if (pdx * pdx + pdy * pdy <= _br * _br) {
-                faceToward(this, player.x, player.y, 0.5);
-                if (hurtPlayer(this.power, 4, this)) this.attackAnim = Math.PI / 2;
-            }
+            if (pdx * pdx + pdy * pdy <= _br * _br && this.currentTarget !== player) { faceToward(this, player.x, player.y, 0.5); this.lastAttacker = player; this.provoked = true; this._prey = player; }
         }
 
         // ── CHARGE-UP ABILITY ──
@@ -209,29 +242,25 @@ class Predator {
         // (that is what makes the telegraph fair), a leaping one is mid-flight.
         if (abilityTick(this)) return;
 
-        // ── THREAT SCAN ──
-        let threat=null, bestDist=Infinity;
-        if (this.lastAttacker&&!this.lastAttacker.dead) {
-            const dx=this.lastAttacker.x-this.x, dy=this.lastAttacker.y-this.y;
-            const d=Math.sqrt(dx*dx+dy*dy);
-            if (d<6) { threat=this.lastAttacker; bestDist=d; } // extended from 3→6 for ranged hit-back
+        // ── THE PREY (COMBAT.prey, predatorPickPrey above) ──
+        // Every few frames it picks whom to go for among your followers, your clones and YOU: the near, the WEAK (a weak player above all) and whoever hit it. It used to turn only on a unit within
+        // 1.2 tiles, or on the spot a hit came from, and never left that spot for anything but the Crystal. The pick costs a little, so it is spread over COMBAT.prey.every frames (each creature its own phase).
+        if (!this.isClone && !(this.disorientFF > 0)) {
+            const P = COMBAT.prey; if (this._preyPhase === undefined) this._preyPhase = Math.floor(Math.random() * P.every);
+            const due = ((frame || 0) + this._preyPhase) % P.every === 0;
+            if (due) this._prey = predatorPickPrey(this); else if (this._prey && !predatorPreyOk(this, this._prey)) this._prey = null;   // (gone: the next pick finds another)
+            const threat = this._prey;
+            if (threat && !(this.currentTarget === threat && this.state === "attack")) {
+                if (this.reactionDelay <= 0) { this.state = "attack"; this.currentTarget = threat; this.reactionDelay = this.reactionSpeed; this.provoked = true; }
+                else this.reactionDelay--;
+            }
         }
-        if (!threat) {
-            const scanTeam = this.isClone ? "red" : "green";
-            // Only units within reach (1.2 tiles) can be a threat: the column
-            // index, not every actor in the game, for every predator, every step.
-            _predNear(this.x, 1.2).forEach(a => {
-                if (a.team!==scanTeam||a.dead) return;
-                if (isNeutralBystander(a)) return;   // not a threat, not a target
-                if (!this.isClone && (a.spawnProtection||0)>0) return;
-                const dx=a.x-this.x, dy=a.y-this.y, d=Math.sqrt(dx*dx+dy*dy);
-                if (d<1.2&&d<bestDist) { bestDist=d; threat=a; }
-            });
-        }
-        if (threat) {
-            if (this.reactionDelay<=0) { this.state="attack"; this.currentTarget=threat; this.reactionDelay=this.reactionSpeed; }
-            else this.reactionDelay--;
-        }
+
+        // A prey that got away (gone, or further than COMBAT.prey.leash: out-run, or knocked back to the Crystal) is let go, and with no alarm up it calms down: it does not follow you to the Crystal.
+        { const ct = this.currentTarget;
+          if (ct && !(this.disorientFF > 0) && ct !== crystal && (!predatorPreyOk(this, ct) || Math.hypot(ct.x - this.x, ct.y - this.y) > COMBAT.prey.leash)) {
+              this.currentTarget = null; this._prey = null; this.attackWindup = 0; this.biteTarget = null; if (this.lastAttacker === ct) this.lastAttacker = null; if (!alertActive) this.provoked = false;
+          } }
 
         // ── HEAD LOOK ──
         // head tracking handled in HEAD CONTROL below
@@ -256,7 +285,7 @@ class Predator {
         if (this.state==="wander") {
             if (!this.wanderTarget||this.wanderTimer<=0) {
                 this.wanderTarget=facilityWanderTarget(this);   // a spot of its room (js/facilityspawn.js)
-                this.wanderTimer=90+Math.random()*120;
+                this.wanderTimer=this.wanderTarget.rest || 90+Math.random()*120;   // (a spider's cover is a spot it stays at a while: js/facilityspawn.js SPIDER_LURK)
             }
             let dx=this.wanderTarget.x-this.x, dy=this.wanderTarget.y-this.y;
             const distT=Math.hypot(dx,dy);   // (to the spot itself)
@@ -270,7 +299,7 @@ class Predator {
                 this.dirX/=len; this.dirY/=len;
             }
             if (distT>0.2) { if (dist>0.001) { const sp=this.moveSpeed*0.7; this.x+=(dx/dist)*sp; this.y+=(dy/dist)*sp; } }
-            else if (this.wanderTimer>60) this.wanderTimer=20+Math.random()*40;   // (arrived: a pause of 20 to 60 frames ONCE, then the next spot; set every frame it never ran out, and the creature stood at the first spot it reached for good)
+            else if (this.wanderTimer>60 && !this.wanderTarget.rest) this.wanderTimer=20+Math.random()*40;   // (arrived: a pause of 20 to 60 frames ONCE, then the next spot; set every frame it never ran out, and the creature stood at the first spot it reached for good)
             this.wanderTimer--;
         }
 
@@ -361,20 +390,26 @@ class Predator {
             }
         }
 
-        // ── ATTACK UNIT ──
+        // ── ATTACK UNIT (or the player) ──
+        // What it is after (COMBAT.prey): out of reach, it CHASES it by the route round the walls, until it is in reach or more than COMBAT.prey.leash tiles off (then it lets it go, and with no alarm
+        // up it calms down); in reach, it rears back and bites (the two beats). Out of reach while it rears back, the bite is missed: over the player, DODGED.
         else if (this.state==="attack") {
-            const target=this.currentTarget;
-            // if no unit target, hunt crystal
-            if (!target||target.dead) {
-                this.state="hunt"; this.currentTarget=null; this.attackWindup = 0; this.biteTarget = null;
-                this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
-                return;
-            }
+            const target=this.currentTarget, base=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
+            const drop = () => { this.state="hunt"; this.currentTarget=null; this.attackWindup = 0; this.biteTarget = null; this._prey = null; this.moveSpeed=base; };
+            // nothing it can bite (gone, or not a thing it can bite): back to the Crystal
+            if (!target || target.dead || !(this.disorientFF > 0 || predatorPreyOk(this, target))) { drop(); return; }
             this.moveSpeed=0;
             const dx=target.x-this.x, dy=target.y-this.y, dist=Math.sqrt(dx*dx+dy*dy);
             if (dist>(this.biteReach || COMBAT.bite.reach)) {
-                this.state="hunt"; this.currentTarget=null; this.attackWindup = 0; this.biteTarget = null;
-                this.moveSpeed=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
+                if (this.attackWindup > 0 && typeof player !== "undefined" && this.biteTarget === player && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "DODGED", color: "#9be8ff", size: 12, life: 40, vy: -0.03 });
+                this.attackWindup = 0; this.biteTarget = null; this.attackAnim = 0;
+                if (this.disorientFF > 0 || dist > COMBAT.prey.leash) { drop(); if (!alertActive) { this.provoked = false; this.lastAttacker = null; } return; }   // (let go)
+                // THE CHASE, at its own pace (a slow on it still slows it: js/abilities.js tickSlowSpeed parks moveSpeed while it attacks)
+                const sp = (this.baseMoveSpeed || base) * (this.slowed > 0 ? Math.max(0, this.slowFactor ?? 1) : 1);
+                const w = facilitySteer(this, target.x, target.y), wx = w[0] - this.x, wy = w[1] - this.y, wl = Math.hypot(wx, wy) || 1;
+                this.dirX += (wx / wl - this.dirX) * 0.25; this.dirY += (wy / wl - this.dirY) * 0.25; const len = Math.hypot(this.dirX, this.dirY) || 1; this.dirX /= len; this.dirY /= len;
+                this.x += this.dirX * sp; this.y += this.dirY * sp; this.walkCycle += sp * 40;
+                faceToward(this, target.x, target.y, 0.25);
                 return;
             }
             // Turn to face what we are biting. This branch returns before the

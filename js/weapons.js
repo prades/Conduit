@@ -97,7 +97,7 @@ function fireLaserShot(foe) {
         invRemove("fuel_cell", 1); laserCharge = W.charges; _wSay("NEW FUEL CELL — " + W.charges + " CHARGES", "#9be8ff");
     }
     laserCharge--; playerShotsFired++; player.gunShotAt = typeof frame !== "undefined" ? frame : 0;
-    const dmg = weaponDamage("laser"), src = { x: player.x, y: player.y, element: player.selectedElement || null }, f = typeof frame !== "undefined" ? frame : 0;
+    const dmg = weaponDamage("laser"), src = { x: player.x, y: player.y, element: player.selectedElement || null, isPlayer: true }, f = typeof frame !== "undefined" ? frame : 0;
     applyDamage(foe, dmg, src);
     // whatever stands in the line behind it, a little further on, is hit for less
     const ux = (foe.x - player.x) / (d || 1), uy = (foe.y - player.y) / (d || 1), reach = Math.min(W.range, d + 3);

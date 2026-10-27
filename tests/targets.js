@@ -149,7 +149,7 @@ const SCENE = `(function(){
     // "the player is not touched" passing, and ungating the clone melee left
     // every check passing. These put the two units in contact on purpose.
 
-    check('THE ASK (three hits): a hostile creature standing on the player bites — one hit per grace', () => {
+    check('THE ASK (three hits): a creature mauling a follower turns on the player who stands on it, and bites — one hit per grace (COMBAT.prey: it bites what it is after, in two beats)', () => {
         const hp = C1.run(`(function(){
             actors = []; followers = []; health = PLAYER_HITS; player.invuln = 0;
             player.x = __O.x; player.y = __O.y; player.visualX = __O.x; player.visualY = __O.y; player.fpPath = null;
@@ -163,11 +163,12 @@ const SCENE = `(function(){
             const foe = spawnCreature({ species: 'ant', className: 'striker', x: __O.x, y: __O.y, state: 'hunt' });
             foe.entryDelay = 0; foe.provoked = true; foe.health = 1e9; foe.maxHealth = 1e9;
             foe.state = 'attack'; foe.currentTarget = f;
+            // first the player is away (5 tiles): it mauls the follower; then the player stands on it
+            for (let i = 0; i < 160; i++) { foe.x = __O.x; foe.y = __O.y; player.x = __O.x + 5; player.y = __O.y; foe.update(); }
             for (let i = 0; i < 600; i++) {
                 foe.x = __O.x; foe.y = __O.y;            // pinned on the player
                 player.x = __O.x; player.y = __O.y;
                 if (player.invuln > 0) player.invuln--;   // as the game loop does
-                foe.state = 'attack'; foe.currentTarget = f;
                 foe.update();
             }
             return health;
@@ -177,7 +178,7 @@ const SCENE = `(function(){
         same(hp, 0, 'hits left after ten seconds under a creature');
     });
 
-    check('and the same creature IS still mauling the follower', () => {
+    check('and the same creature mauled the follower before the player stood on it', () => {
         // Which proves the contact was real and the melee branch ran.
         ok(C1.run('followers[0].health < followers[0].maxHealth'),
            'the follower took no damage either — the creature never attacked at all');

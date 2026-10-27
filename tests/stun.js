@@ -204,10 +204,10 @@ check('predator shots and specials never reach the player at all', () => {
 
 check('the bite routes through hurtPlayer and carries no immunity check of its own', () => {
     const p = SRC['js/predator.js'];
-    const at = p.indexOf('THE PLAYER, UP CLOSE');
+    const at = p.indexOf('THE PLAYER (its prey too');   // (the bite at the player is the creature's bite, js/predator.js bite())
     ok(at > -1, 'could not find the bite');
-    const slice = p.slice(at, at + 1100);
-    ok(/hurtPlayer\(this\.power, 4, this\)/.test(slice), 'the bite should route through hurtPlayer, with itself as the source');
+    const slice = p.slice(at, at + 600);
+    ok(/hurtPlayer\(pwr, 4, this\)/.test(slice), 'the bite should route through hurtPlayer, with itself as the source');
     ok(!/player\.(stunned|invuln)/.test(slice), 'the bite should not re-check immunity itself');
 });
 
