@@ -25,6 +25,8 @@ const JOBS = [
   // No. 875, the shuttle wings short and stubby, still crisp trapezoids; No. 876, no wings at all (the user's "no trapezoid wings", read both ways): candidates until one is approved.
   { id: 'hovershell_stub', form: 875, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'hovershell_bare', form: 876, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
+  // No. 877, the little trapezoids made even and angled gently down (the user: "I want the trapezoid wings, but I want them angled downward. Just make it subtle"): a candidate until approved.
+  { id: 'hovershell_tilt', form: 877, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 860-861 (forms32.js), from the user's sheets: the JELLY RAM, the core brawler (it hovers, its tentacles sway; its action is the charge: back, then a ram with a burst), in the
   // core element's teal (jellyram_blue: in the sheet's own blue, to compare); the RIMESTAR, the ice mage (it hovers, its fins sway; its action spins them a third of a turn and throws frost).
   { id: 'jellyram', form: 867, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 867, approved on the user's review: it swims like a jellyfish, seven fat wavy tentacles)
