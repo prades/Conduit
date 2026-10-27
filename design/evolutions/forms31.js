@@ -390,3 +390,53 @@ const _ig0 = { S: 1.4, W: 1.1, H: 0.58, D: 0.76, y0: 0.4, gem: 0.16, legH: 0.52,
   ice: ['#5e9fd0', '#4f8fc4', '#6dacd8', '#4482b8', '#64a6d4'],
   cols: [{ w: 0.29, seams: [0.31, 0.58], depth: [0.52, 0.44, 0.58] }, { w: 0.31, seams: [0.2, 0.62], depth: [0.46, 0.56, 0.48] }, { w: 0.4, seams: [0.21, 0.44], depth: [0.55, 0.47, 0.53] }] };
 fx(852, "The ice technician, the IGLOO SKATER (the user's sketch): a squat box of cut ice blocks in three columns with their own seams, standing on diamonds it skates on.", () => _iglooSkater(_ig0));
+
+// ── 856 · THE IGLOO SKATER OF FITTED BRICKS ─────────────────────────────────────────────────────────────
+// ASKED (on 852): "Only 4 legs and it should look like fitted bricks on the body and the diamonds are nested under the body". The body is a box of ice bricks laid in
+// staggered courses on its four walls and its top, dark mortar in the joints; four diamonds sit in sockets under it, only their lower halves showing, and it skates on them.
+function _iglooBricks(o) {
+  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
+  const lc = _c31(EL.color);
+  const rig = G(); b.add(rig);   // body and diamonds: it glides and spins as one
+  const W = o.W, H = o.H, D = o.D, y0 = o.y0, gap = o.gap, t = o.brickT;
+  const mortar = new T.MeshStandardMaterial({ color: _lin31(0x16324a), roughness: 0.7, metalness: 0.05 }); mortar.envMapIntensity = 0.25;
+  const core = cbox(W - 0.03, H - 0.03, D - 0.03, 0.02, mortar); core.position.y = y0 + H / 2; rig.add(core);
+  const iceMats = o.ice.map(hx => { const m = new T.MeshStandardMaterial({ color: _lin31(hx), emissive: _lin31(hx).multiplyScalar(0.06), roughness: 0.38, metalness: 0.02 }); m.envMapIntensity = 0.9; return m; });
+  // lay a face with bricks: centre c, its along-axis U and up-axis Vv (U x Vv is its outward normal), w x h, rows courses of bricks bl long, each course half a brick on from the last
+  const M4 = new T.Matrix4(); let n = 0;
+  const lay = (c, U, Vv, w, h, rows, bl, phase) => { const N = new T.Vector3().crossVectors(U, Vv), q = new T.Quaternion().setFromRotationMatrix(M4.makeBasis(U, Vv, N));
+    for (let r = 0; r < rows; r++) { const v0 = -h / 2 + r * h / rows, v1 = v0 + h / rows, off = ((r + phase) % 2) * bl / 2;
+      for (let u0 = -w / 2 - off; u0 < w / 2 - 0.01; u0 += bl) { const a = Math.max(-w / 2, u0), e = Math.min(w / 2, u0 + bl); if (e - a < 0.05) continue;
+        const k = (n++ * 7 + r * 3) % iceMats.length, bx = cbox(e - a - gap, v1 - v0 - gap, t, 0.022, iceMats[k]); bx.quaternion.copy(q);
+        bx.position.copy(c).addScaledVector(U, (a + e) / 2).addScaledVector(Vv, (v0 + v1) / 2).addScaledVector(N, -t / 2 + 0.004); rig.add(bx); } } };
+  const X = V(1, 0, 0), Yv = V(0, 1, 0), Z = V(0, 0, 1), mid = y0 + H / 2;
+  lay(V(0, mid, D / 2), X, Yv, W, H, o.rows, o.brick, 0);                                    // the front
+  lay(V(0, mid, -D / 2), X.clone().negate(), Yv, W, H, o.rows, o.brick, 1);                  // the back
+  lay(V(W / 2, mid, 0), Z.clone().negate(), Yv, D - 2 * t, H, o.rows, o.brick, 1);           // the right side (inside the front and back's ends)
+  lay(V(-W / 2, mid, 0), Z, Yv, D - 2 * t, H, o.rows, o.brick, 0);                           // the left side
+  lay(V(0, y0 + H, 0), X, Z.clone().negate(), W - 2 * t, D - 2 * t, o.topRows, o.brick, 0);  // the top
+  // the diamonds: four, set in sockets under the body, their upper halves inside it
+  const sockM = new T.MeshStandardMaterial({ color: _lin31(0x0f2133), roughness: 0.6, metalness: 0.2 }); sockM.envMapIntensity = 0.3;
+  const legs = []; for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const gm = _litFacets(_diamond31(o.gem, o.legH, 6).toNonIndexed()); _shadeCrystal(gm, 1, true, 0, o.legH);
+    const lg = new T.Mesh(gm, new T.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); lg.position.set(sx * W * o.legX, y0 - o.legH / 2 + 0.005, sz * D * o.legZ); rig.add(lg);
+    const sock = new T.Mesh(new T.TorusGeometry(o.gem * 1.02, 0.03, 6, 20), sockM); sock.rotation.x = PI / 2; sock.position.set(lg.position.x, y0 - 0.008, lg.position.z); rig.add(sock);
+    legs.push({ lg, sx, sz }); }
+  // frost: flecks kicked off behind by the glide, and a ring of it in the spin
+  const fleckM = new T.MeshBasicMaterial({ color: 0xeefbff, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false });
+  const flecks = []; for (let i = 0; i < 10; i++) { const f = new T.Mesh(new T.OctahedronGeometry(0.02 + 0.008 * (i % 3), 0), fleckM); b.add(f); flecks.push({ f, k: i / 10, sx: i % 2 ? 1 : -1 }); }
+  const ringM = new T.MeshBasicMaterial({ color: lc.clone().lerp(_c31(0xffffff), 0.5), transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
+  const frostRing = new T.Mesh(new T.TorusGeometry(0.5, 0.025, 4, 40), ringM); frostRing.rotation.x = PI / 2; frostRing.position.y = 0.03; b.add(frostRing);
+  const fl = _glowPool(0.8, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(lc); fl.m.material.opacity = 0.25; b.add(fl.g);
+  const Lt = new T.PointLight(0xffffff, 0.6, 4, 2); Lt.color.copy(lc); Lt.position.set(0, y0 * 0.5, D * 0.7); b.add(Lt); LIGHTS.push(Lt);
+  return { g, core: (y0 + H * 0.5) * (o.S || 1), update(t, act) {
+    const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act), s = Math.sin(ph), c = Math.cos(ph), q = 1 - a;
+    // the glide: from side to side on its diamonds, leaning into each stride and turning with it; the spin (action) goes once round on them, with a little hop
+    rig.position.set(0.06 * s * q, 0.03 * Math.sin(PI * pr), 0); rig.rotation.set(0, 0.12 * c * q + TAU * pr, -0.06 * s * q);
+    flecks.forEach(F => { const u = ((ph / TAU) * 2 + F.k) % 1; F.f.position.set(F.sx * (0.26 + 0.12 * u) + rig.position.x * 0.5, 0.02 + 0.1 * u * (1 - u) * 4, -D * 0.35 - 0.5 * u); F.f.scale.setScalar((1 - u) * (0.8 + 0.6 * a)); F.f.rotation.y = u * 6; });
+    frostRing.scale.setScalar(0.6 + 1.6 * a); ringM.opacity = 0.75 * Math.sin(PI * a);
+  } };
+}
+const _igb0 = { S: 1.4, W: 1.1, H: 0.58, D: 0.76, y0: 0.2, gap: 0.028, brickT: 0.09, rows: 2, topRows: 2, brick: 0.5, gem: 0.15, legH: 0.42, legX: 0.27, legZ: 0.24,   // ("bigger bricks, 2 layers")
+  ice: ['#6aa7d4', '#5a98c8', '#7bb6dd', '#4f8dc0', '#72afd9'] };
+fx(856, "The ice technician, the IGLOO SKATER of fitted bricks (the user's ask): a box of ice bricks in staggered courses, dark mortar in the joints, on four diamonds nested in sockets under it.", () => _iglooBricks(_igb0));
