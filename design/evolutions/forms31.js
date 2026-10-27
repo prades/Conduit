@@ -241,6 +241,86 @@ function _thermite(o) {
 const _th0 = { S: 1.25, y: 0.48, rx: 0.38, ry: 0.26, rz: 0.42, drillR: 0.26, drillL: 0.56, turns: 3.5, flight: 0.08 };
 fx(851, "The fire technician, the THERMITE BURROWER: a hunched iron body under rust plates on four armoured legs, a cone drill nose glowing in its grooves, a glowing vent on its back and a hot grille behind.", () => _thermite(_th0));
 
+// ── 854 · THE THERMITE BURROWER IN BLACK ────────────────────────────────────────────────────────────────
+// ASKED (on 851): "I don't like the body or shoulders, it actually needs to have a black body with red glowing accents". The same digger, all black: black armour
+// plates with seams of red light between them, a red vent, window and grille, red in the drill's groove and its collar; the round shoulder plates are gone. Then: "Thick
+// armored arms": the legs are thick and angular, armour plates on thigh and shin, a heavy knee, a line of red down each. (Uses forms33.js's _segBox33 and _segSpike33: the bake inlines every forms file into one scope.)
+const _tbBlack = new T.MeshStandardMaterial({ color: 0x0e0f12, metalness: 0.85, roughness: 0.55, flatShading: true, side: T.DoubleSide }); _tbBlack.envMapIntensity = 0.25;   // (rough: a big flat plate mirrors the studio as a white patch)
+const _tbDark = new T.MeshStandardMaterial({ color: 0x08090b, metalness: 0.8, roughness: 0.5, flatShading: true }); _tbDark.envMapIntensity = 0.3;
+const _tbSteel = new T.MeshStandardMaterial({ color: _lin31(0x3a3c42), metalness: 0.9, roughness: 0.32, flatShading: true, side: T.DoubleSide }); _tbSteel.envMapIntensity = 0.7;
+// a box laid along a -> b, w across and d deep, its depth turned as near to `up` as it can (an armour plate's thickness stays upright)
+function _segPlate31(parent, w, d, mat) { const m = new T.Mesh(new T.BoxGeometry(w, 1, d), mat); parent.add(m); const y = V(0, 0, 0), z = V(0, 0, 0), x = V(0, 0, 0), M4 = new T.Matrix4();
+  return { m, set(a, b, up) { y.copy(b).sub(a); const L = y.length() || 1e-4; y.divideScalar(L); z.copy(up).addScaledVector(y, -up.dot(y)).normalize(); x.crossVectors(y, z);
+    m.quaternion.setFromRotationMatrix(M4.makeBasis(x, y, z)); m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.set(1, L, 1); } }; }
+function _thermiteBlack(o) {
+  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
+  const red = _c31(o.red).convertSRGBToLinear(), red2 = red.clone().lerp(_c31(0xffffff), 0.12), hotM = _hot31(red), coreM = _hot31(red2), grooveM = _hot31(red, 0.8), seamM = _hot31(red, 0.9), legM = _hot31(red, 0.85);
+  const body = G(); b.add(body);
+  const Y = o.y, rx = o.rx, ry = o.ry, rz = o.rz;
+  const onBody = (th, k) => V(0, ry * k * Math.sin(th), rz * k * Math.cos(th)), tiltAt = th => Math.atan2(Math.cos(th) / rz, Math.sin(th) / ry);
+  // the body: black, hunched, under three black plates along the back, a seam of red light between each and at the plates' ends
+  const torso = new T.Mesh(new T.SphereGeometry(1, 14, 10), _tbDark); torso.scale.set(rx, ry, rz); torso.position.y = Y; body.add(torso);
+  [[0.48, 1.12, 1.1], [1.2, 1.9, 1.14], [1.98, 2.58, 1.1]].forEach(([t0, t1, k]) => {
+    const geo = new T.SphereGeometry(1, 12, 4, PI - 0.55, PI + 1.1, t0, t1 - t0); geo.rotateX(PI / 2);
+    const m = new T.Mesh(geo, _tbBlack); m.scale.set(rx * k, ry * k, rz * k); m.position.y = Y; body.add(m); });
+  const seam = (th, k) => { const pts = []; for (let i = 0; i <= 28; i++) { const f = PI - 0.5 + (PI + 1.0) * i / 28; pts.push(V(-Math.cos(f) * Math.sin(th) * rx * k, Y - Math.sin(f) * Math.sin(th) * ry * k, Math.cos(th) * rz * k)); }
+    body.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts), 56, 0.014, 5, false), seamM)); };
+  seam(1.16, 1.1); seam(1.94, 1.12); seam(0.5, 1.08); seam(2.56, 1.08);
+  // its back: a raised round vent glowing red; over the drill, a red window
+  const vent = G(); vent.position.copy(onBody(1.75, 1.15)).add(V(0, Y, 0)); vent.rotation.x = tiltAt(1.75); body.add(vent);
+  const collar = cyl(0.14, 0.16, 0.08, _tbBlack, 16); collar.position.y = 0.03; vent.add(collar);
+  const ventGlow = new T.Mesh(new T.CircleGeometry(0.115, 24), coreM); ventGlow.rotation.x = -PI / 2; ventGlow.position.y = 0.072; vent.add(ventGlow);
+  for (const r of [0, PI / 2]) { const bar = new T.Mesh(new T.BoxGeometry(0.23, 0.018, 0.02), _tbDark); bar.rotation.y = r; bar.position.y = 0.078; vent.add(bar); }
+  const win = new T.Mesh(new T.BoxGeometry(0.18, 0.025, 0.09), coreM); win.position.copy(onBody(0.8, 1.11)).add(V(0, Y, 0)); win.rotation.x = tiltAt(0.8); body.add(win);
+  // behind: a grille of red slots
+  const grille = cbox(rx * 1.1, ry * 1.0, 0.08, 0.02, _tbBlack); grille.position.set(0, Y, -rz * 0.98); body.add(grille);
+  const slots = []; for (let i = 0; i < 4; i++) { const sm = _hot31(red); const sl = new T.Mesh(new T.BoxGeometry(rx * 0.8, 0.026, 0.02), sm); sl.position.set(0, Y - ry * 0.32 + i * ry * 0.21, -rz * 0.98 - 0.045); body.add(sl); slots.push(sl); }
+  // the drill: a black collar of red slots, a black cone with a dark steel flight wound round it and red glowing down its groove, a steel tip
+  const front = G(); front.position.set(0, Y - 0.03, rz * 0.9); body.add(front);
+  front.add(new T.Mesh(new T.TorusGeometry(o.drillR + 0.03, 0.055, 8, 24), _tbBlack));
+  for (let i = 0; i < 6; i++) { const a = i * TAU / 6, sl = new T.Mesh(new T.BoxGeometry(0.06, 0.024, 0.03), hotM); sl.position.set(Math.cos(a) * (o.drillR + 0.03), Math.sin(a) * (o.drillR + 0.03), 0.045); sl.rotation.z = a; front.add(sl); }
+  const drill = G(); drill.position.z = 0.03; front.add(drill);
+  const DL = o.drillL, Dr = o.drillR;
+  const cone = new T.Mesh(new T.CylinderGeometry(0.01, Dr, DL, 18, 1), _tbDark); cone.rotation.x = PI / 2; cone.position.z = DL / 2; drill.add(cone);
+  drill.add(new T.Mesh(_flight31(Dr, DL, o.turns, o.flight, 200), _tbSteel));
+  const groove = []; for (let i = 0; i <= 120; i++) { const s = i / 120 * 0.86, th = s * o.turns * TAU + PI, r = Dr * (1 - s) * 0.98 + 0.006; groove.push(V(Math.cos(th) * r, Math.sin(th) * r, s * DL)); }
+  drill.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(groove), 220, 0.015, 5, false), grooveM));
+  const tip = new T.Mesh(new T.CylinderGeometry(0.004, Dr * 0.3, DL * 0.28, 12, 1), _tbSteel); tip.rotation.x = PI / 2; tip.position.z = DL * 0.86; drill.add(tip);
+  const tipHot = sphere(0.05, coreM, 10); tipHot.position.z = DL + 0.01; tipHot.visible = false; drill.add(tipHot);
+  const sparks = []; for (let i = 0; i < 9; i++) { const sp = new T.Mesh(new T.OctahedronGeometry(0.024, 0), _hot31(_c31(0xffc8a0))); sp.visible = false; front.add(sp); sparks.push({ sp, a: i * 2.39, v: 0.6 + 0.4 * ((i * 37) % 10) / 10 }); }
+  // the legs ("thick armored arms"): four, splayed wide; a thick black thigh under an armour plate with a line of red along it, a heavy knee, a thick armoured shin with
+  // a line of red down it, a claw
+  const legs = [];
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const L = { sx, sz, hip: V(sx * rx * 0.78, Y - 0.04, sz * rz * 0.45), knee0: V(sx * (rx + 0.21), Y + 0.08, sz * (rz * 0.5 + 0.08)), foot0: V(sx * (rx + 0.32), 0, sz * (rz * 0.55 + 0.18)) };
+    L.thigh = _segPlate31(b, o.thighW, o.thighD, _tbBlack); L.thPlate = _segPlate31(b, o.thighW * 1.45, 0.05, _tbBlack); L.thLine = _segPlate31(b, 0.022, 0.012, legM);
+    L.shin = _segPlate31(b, o.shinW, o.shinD, _tbBlack); L.shPlate = _segPlate31(b, o.shinW * 1.3, 0.04, _tbBlack); L.shLine = _segPlate31(b, 0.02, 0.012, legM);
+    L.knee = new T.Mesh(new T.IcosahedronGeometry(o.knee, 0), _tbDark); b.add(L.knee); L.claw = _segSpike33(b, 0.08, _tbDark); legs.push(L); }
+  const fl = _glowPool(0.9, 0.012); fl.m.material = fl.m.material.clone(); fl.m.material.color.copy(red); fl.m.material.opacity = 0.2; b.add(fl.g);
+  const Lt = new T.PointLight(0xffffff, 0.8, 4, 2); Lt.color.copy(red); Lt.position.set(0, Y + ry + 0.35, rz); b.add(Lt); LIGHTS.push(Lt);
+  const kp = V(0, 0, 0), fp = V(0, 0, 0), hp = V(0, 0, 0), ak = V(0, 0, 0), Up = V(0, 1, 0), out = V(0, 0, 0), tA = V(0, 0, 0), tB = V(0, 0, 0);
+  return { g, core: (Y + ry * 1.15 + 0.08) * (o.S || 1), update(t, act) {
+    const ph = 1.6 * t, a = act || 0, pr = _prog31(t, act);
+    body.position.set(0, 0.012 * Math.sin(ph * 2) - 0.04 * a, 0.08 * a); body.rotation.x = 0.06 * a;
+    drill.rotation.z = -ph - pr * TAU * 2;
+    const pulse = 0.85 + 0.15 * Math.sin(ph * 2);
+    grooveM.color.copy(red).multiplyScalar(0.8 * pulse + 0.4 * a); hotM.color.copy(red).lerp(_c31(0xffffff), 0.25 * a); seamM.color.copy(red).multiplyScalar(0.85 * pulse + 0.3 * a); legM.color.copy(red).multiplyScalar(0.8 * pulse + 0.3 * a);
+    ventGlow.material.color.copy(red2).multiplyScalar(pulse + 0.2 * a);
+    slots.forEach((S, i) => S.material.color.copy(red).multiplyScalar(0.7 + 0.3 * Math.max(0, Math.sin(ph * 2 - i * 0.8)) + 0.3 * a));
+    tipHot.visible = a > 0.12; tipHot.scale.setScalar(0.6 + 1.2 * a);
+    sparks.forEach((S, i) => { S.sp.visible = a > 0.12; if (!S.sp.visible) return; const u = (pr * 2 + i * 0.11) % 1, r = 0.06 + 0.45 * u * S.v; S.sp.position.set(Math.cos(S.a) * r, Math.sin(S.a) * r * 0.6 + 0.12 * u, DL + 0.06 + 0.22 * u); S.sp.scale.setScalar(1.2 - u); });
+    legs.forEach(L => { const pair = (L.sx * L.sz > 0) ? 0 : PI, lift = Math.max(0, Math.sin(ph + pair)) * 0.07 * (1 - a), sw = Math.cos(ph + pair) * 0.05 * (1 - a), brace = 0.05 * a;
+      hp.copy(L.hip).add(body.position); kp.set(L.knee0.x + L.sx * brace * 0.5, L.knee0.y + lift * 0.6 + body.position.y, L.knee0.z + sw * 0.6 + body.position.z * 0.5); fp.set(L.foot0.x + L.sx * brace, lift, L.foot0.z + sw);
+      ak.copy(kp).lerp(fp, 0.72);   // the ankle: the shin's armour ends there and the claw goes on to the floor
+      out.set(L.sx, 0, 0);
+      L.thigh.set(hp, kp, Up); tA.copy(hp).lerp(kp, 0.12).addScaledVector(Up, o.thighD * 0.55); tB.copy(kp).addScaledVector(Up, o.thighD * 0.55); L.thPlate.set(tA, tB, Up);
+      tA.addScaledVector(Up, 0.03); tB.addScaledVector(Up, 0.03); L.thLine.set(tA, tB, Up); L.knee.position.copy(kp);
+      L.shin.set(kp, ak, out); tA.copy(kp).lerp(ak, 0.1).addScaledVector(out, o.shinD * 0.55); tB.copy(ak).addScaledVector(out, o.shinD * 0.55); L.shPlate.set(tA, tB, out);
+      tA.addScaledVector(out, 0.025); tB.addScaledVector(out, 0.025); L.shLine.set(tA, tB, out); L.claw.set(ak, fp); });
+  } };
+}
+const _thb0 = Object.assign({}, _th0, { red: 0xff2a14, thighW: 0.17, thighD: 0.15, shinW: 0.14, shinD: 0.13, knee: 0.1 });
+fx(854, "The fire technician, the THERMITE BURROWER in black (the user's ask): a black armoured digger with seams of red light, a red vent, window and grille, a black drill glowing red in its groove, thick armoured legs lined with red.", () => _thermiteBlack(_thb0));
+
 // ── 852 · THE IGLOO SKATER ─────────────────────────────────────────────────────────────────────────────
 // a diamond, ◇: a point at the foot, the widest round its middle (r), a point at the top; h tall, seg sides
 function _diamond31(r, h, seg) { return new T.LatheGeometry([new T.Vector2(0, 0), new T.Vector2(r, h * 0.5), new T.Vector2(0, h)], seg || 6); }
