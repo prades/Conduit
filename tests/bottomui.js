@@ -7,6 +7,8 @@
 // ASKED, last: "the on screen squad roster should shuffle into the nook above the attack menu to the left, remove the element picker and replace with 'all' button [...] pull their card roster information up on the fly" (and the groups
 // of the HUD, one to a corner: docs/UI-STYLE.md "The HUD"). On a tablet or a desktop (701 px and wider) the three cards are STACKED over the battle tool at the bottom left, the enemy card is at the bottom right over the dock's line, the crystals and bars
 // are at the top left and the zone tag at the top right; a picked member's card stands beside the stack. A phone keeps what it had.
+// The member's card keeps clear of the dock and of the enemy card where they lie under it (the third member's card; a narrow screen): it goes up as far as it must, and its tip still
+// points at the member's card on the stack (js/squadfly.js).
 // Real browser (no Chromium: it says so and passes).
 const fs = require('fs');
 const path = require('path');
@@ -50,6 +52,11 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     actors = actors.filter(function(a){ return !(a instanceof Predator); }); var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0;
     targetSet(e, true); mixToolRender(true); frameNow(); await wait(60);
     out.shut = snap();
+    // the third member's card, the lowest on the stack: clear of the dock and the enemy card, its tip at the member's card
+    var s2 = $$('#squadBar .sb-slot')[2];
+    if (hudCorners() && s2 && s2._unit) { selectedUnits.clear(); selectedUnits.add(s2._unit); partyTick(); frameNow(); await wait(60); var b2 = s2.getBoundingClientRect();
+      out.third = { fly: rect('#squadFly.on'), tip: rect('#squadFly .sf-tip'), slot: [Math.round(b2.left), Math.round(b2.top), Math.round(b2.right), Math.round(b2.bottom)], dock: rect('#topToggles'), foe: rect('#mixTool .mt-foe'), panel: rect('#mixTool .mt-panel') };
+      selectedUnits.clear(); selectedUnits.add(followers[0]); partyTick(); }
     if (!mixToolWide()) { crystalMenuOpen = true; mixToolRender(true); frameNow(); await wait(60); out.open = snap(); crystalMenuOpen = false; mixToolRender(true); }
     // what lets a selection go without it: a tap on the lit card, the battle tool's WHO row (ALL)
     selectedUnits.clear(); partyBarRender(true); var slot0 = $('#squadBar .sb-slot'); var click = function(el){ el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
@@ -105,6 +112,11 @@ for (const [w, h] of [[360, 740], [390, 844], [421, 800], [560, 800], [561, 800]
         ok(s.hudl && s.hudc && s.hudr && s.hudl[2] <= s.hudc[0] + 1 && s.hudc[0] < w / 2 && w - s.hudr[2] <= 30, 'the top: ' + JSON.stringify([s.hudl, s.hudc, s.hudr]));
         ok(s.fly[0] >= s.bar[2] && !cross(s.fly, s.panel) && !cross(s.fly, s.dock) && !cross(s.fly, s.foe) && inside(s.fly, w, h), 'the member\'s card ' + s.fly + ' lies over something (bar ' + s.bar + ', tool ' + s.panel + ', dock ' + s.dock + ', enemy card ' + s.foe + ')');
         ok(r.lit.flyAfter === false, 'the card stays after the member is let go');
+    });
+    if (!phone) check(w + ': the third member\'s card (the lowest on the stack) keeps clear of the dock, the enemy card and the tool, on the screen, and its tip points at the member\'s card', () => {
+        const t = r.third; ok(t && t.fly && t.tip && t.slot, 'no card: ' + JSON.stringify(t));
+        ok(!cross(t.fly, t.dock) && !cross(t.fly, t.foe) && !cross(t.fly, t.panel) && inside(t.fly, w, h), 'the member\'s card ' + t.fly + ' lies over something (dock ' + t.dock + ', enemy card ' + t.foe + ', tool ' + t.panel + ')');
+        const mid = (t.tip[1] + t.tip[3]) / 2; ok(mid > t.slot[1] && mid < t.slot[3], 'the tip ' + t.tip + ' does not point at the member\'s card ' + t.slot);
     });
     check(w + ': there is no "N SELECTED" chip, with one selected, with all three, or with a follower the roster picked that holds a room: nothing in the page makes one', () => {
         same(r.chip.made, false, 'a chip is in the page'); same(r.chip.maker, 'undefined', 'the chip\'s code is still there'); same(r.chip.one, null, 'a chip with one selected'); same(r.chip.three, null, 'a chip with three selected'); same(r.chip.posted, null, 'a chip for a selected follower that holds a room'); same(r.chip.madeAfter, false, 'a chip was made along the way');

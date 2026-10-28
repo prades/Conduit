@@ -1,9 +1,10 @@
-// EXILE (js/party.js partyExile, partyExileTap; the buttons in js/commandcenter.js, js/radialmenu.js, js/squadfly.js).
+// EXILE (js/party.js partyExile, partyExileTap; the buttons in js/commandcenter.js, js/radialmenu.js).
 // ASKED: "I need to be able to get rid of followers and exile them in room for other followers that I might find or come across." Chosen with the user: EXILE, the word everywhere (what the forced cases called
-// "retire" too), and nothing back.
+// "retire" too), and nothing back. ASKED, then: "it would not be on the home screen side HUD roster. I think it would be in the main roster with all the creatures in the separate window."
 //   THE ACT       a follower exiled leaves your roster for good: no body, no coming back, out of the save; its squad slot or its room's place is free; nothing is given back
 //   THE ASK       its button asks first: the first tap arms it (TAP AGAIN TO EXILE), the second within PARTY.exileArm does it; the arm lapses; one follower's armed button never exiles another
-//   THE BUTTONS   the Command Center (the carousel's row for the one in view; the side panel for those selected), the phone's roster cards, a squad member's card on the fly: in the real page
+//   THE BUTTONS   in the roster: the Command Center (the carousel's row for the one in view; the side panel for those selected), the phone's ROSTER cards; not on the squad's own cards (a squad
+//                 member's card on the fly beside the HUD's stack, the phone's SQUAD): in the real page
 //   THE WORD      the forced cases say EXILE (a full squad with no room free, the arena over six)
 const fs = require('fs');
 const vm = require('vm');
@@ -42,14 +43,15 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       var b = $('#ccSide .cc-exile'); out.ccLabel0 = b ? b.textContent : null; click(b); await wait(60);
       b = $('#ccSide .cc-exile'); out.ccLabel1 = b ? b.textContent : null; out.ccStill = !held.dead; click(b); await wait(60);
       out.ccGone = [held.dead === true, held.exiled === true, count(), _ccFocus !== held]; ccClose(); await wait(30);
-      // A SQUAD MEMBER'S CARD ON THE FLY
+      // A SQUAD MEMBER'S CARD ON THE FLY (beside the HUD's stack): no EXILE there, it is the roster's
       var m = partyOrdered()[0]; selectedUnits.clear(); ccToggle(m); partyFlyRender(true); await wait(60);
-      var x = $('#squadFly .sf-exile'); out.flyLabel0 = x ? x.firstChild.nodeValue : null; click(x); await wait(30);
-      x = $('#squadFly .sf-exile'); out.flyLabel1 = x ? x.firstChild.nodeValue : null; out.flyStill = !m.dead; click(x); await wait(60);
-      out.flyGone = [m.dead === true, m.exiled === true, count(), partyMembers().length];
+      out.fly = { on: !!$('#squadFly.on'), exile: !!$('#squadFly .sf-exile, #squadFly [data-act=exile]'), btns: $$('#squadFly .sf-btn').map(function(b){ return b.textContent; }), said: /EXILE/.test(($('#squadFly') || {}).textContent || '') };
+      selectedUnits.clear(); partyTick();
     } else {
-      // THE PHONE'S ROSTER CARD
-      radialToggle(true); radialPick('roster'); await wait(80);
+      // THE PHONE'S SQUAD: its cards have no EXILE (it is the roster's)
+      radialToggle(true); radialPick('squad'); await wait(80); out.phoneSquad = { cards: $$('#radialPanel .rp-card:not(.rp-open)').length, exile: $$('#radialPanel .rp-exile').length };
+      // THE PHONE'S ROSTER: every card has EXILE
+      radialPick('roster'); await wait(80); out.phoneRoster = { cards: $$('#radialPanel .rp-card').length, exile: $$('#radialPanel .rp-card .rp-exile').length };
       var card = $$('#radialPanel .rp-card')[0], f0 = radialRosterRows()[0].f, e0 = card ? card.querySelector('.rp-exile') : null; out.phoneLabel0 = e0 ? e0.textContent : null; click(e0); await wait(60);
       card = $$('#radialPanel .rp-card')[0]; e0 = card ? card.querySelector('.rp-exile') : null; out.phoneLabel1 = e0 ? e0.textContent : null; out.phoneStill = !f0.dead; click(e0); await wait(60);
       out.phoneGone = [f0.dead === true, f0.exiled === true, count()]; radialToggle(false); await wait(30);
@@ -111,24 +113,27 @@ function measure(w, h) {
         const P = rd('js/party.js'); ok(!/RETIRE/.test(P) && !/partyRetire/.test(P) && /function partyExile\(/.test(P), 'party.js still says RETIRE');
         ok(/EXILE ' \+ esc\(_ppName\(A\.pick\)\) \+ '\?/.test(P) && /EXILED · NO ROOM HAS A PLACE/.test(P) && /THE ARENA IS FULL · " \+ nm \+ " IS EXILED/.test(P), 'the forced cases do not say EXILE');
         for (const f of ['js/commandcenter.js', 'js/radialmenu.js', 'js/squadfly.js']) ok(!/RETIRE/.test(rd(f)), f + ' says RETIRE');
-        ok(/TAP AGAIN TO EXILE/.test(rd('js/commandcenter.js')) && /TAP AGAIN TO EXILE/.test(rd('js/radialmenu.js')) && /TAP AGAIN TO EXILE/.test(rd('js/squadfly.js')), 'a button does not ask');
+        ok(/TAP AGAIN TO EXILE/.test(rd('js/commandcenter.js')) && /TAP AGAIN TO EXILE/.test(rd('js/radialmenu.js')), 'a button does not ask');
+        ok(!/data-act="exile"|partyExile/.test(rd('js/squadfly.js')), 'the squad\'s card on the fly has EXILE (it is the roster\'s)');
     });
 
     group('THE BUTTONS, IN THE REAL PAGE');
     const W = measure(1280, 860), N = measure(420, 860);
     check('the instrument ran (a wide screen and a phone)', () => { ok(W && !W.err, 'wide: ' + JSON.stringify(W)); ok(N && !N.err, 'phone: ' + JSON.stringify(N)); });
     if (W && !W.err) {
-        check('on a wide screen: the Command Center\'s row for the one in view has EXILE; one tap asks, the second exiles it and the next one comes into view; a squad member\'s card on the fly has EXILE too, and it frees the slot', () => {
+        check('on a wide screen: the Command Center\'s row for the one in view has EXILE; one tap asks, the second exiles it and the next one comes into view; a squad member\'s card on the fly (beside the HUD\'s stack) has no EXILE: INDEX and DISMISS FROM SQUAD', () => {
             same(W.wide, true, 'not the corners layout'); same(W.start, 5, 'followers to start');
             same(W.ccLabel0 && W.ccLabel0.replace(/\s+/g, ' ').trim(), 'EXILE', 'the row\'s button'); same(W.ccLabel1 && W.ccLabel1.replace(/\s+/g, ' ').trim(), 'TAP AGAIN TO EXILE', 'the row\'s button asks'); same(W.ccStill, true, 'the first tap exiled it');
             same(W.ccGone.join(), 'true,true,4,true', 'the row\'s exile');
-            same(W.flyLabel0, 'EXILE', 'the card on the fly'); same(W.flyLabel1, 'TAP AGAIN TO EXILE', 'the card asks'); same(W.flyStill, true, 'the first tap exiled it'); same(W.flyGone.join(), 'true,true,3,' + (W.squad - 1), 'the card\'s exile');
+            same(W.fly.on, true, 'no card on the fly'); same(W.fly.exile, false, 'EXILE on the card on the fly'); same(W.fly.said, false, 'the card on the fly says EXILE');
+            same(W.fly.btns.length, 2, 'the card\'s buttons'); ok(/^INDEX/.test(W.fly.btns[0]) && /^DISMISS FROM SQUAD/.test(W.fly.btns[1]), 'the card\'s buttons: ' + W.fly.btns);
             same(W.saved, W.alive, 'the save keeps the exiled');
         });
     }
     if (N && !N.err) {
-        check('on a phone: each roster card has EXILE (one tap asks, the second exiles it); in the side panel, two selected: one button for both', () => {
-            same(N.wide, false, 'not a phone'); same(N.phoneLabel0, 'EXILE', 'the card\'s button'); same(N.phoneLabel1, 'TAP AGAIN TO EXILE', 'the card asks'); same(N.phoneStill, true, 'the first tap exiled it'); same(N.phoneGone.join(), 'true,true,4', 'the card\'s exile');
+        check('on a phone: each card in the ROSTER has EXILE (one tap asks, the second exiles it), the SQUAD\'s cards have none; in the side panel, two selected: one button for both', () => {
+            same(N.wide, false, 'not a phone'); same(N.phoneSquad.cards, N.squad, 'the SQUAD\'s cards'); same(N.phoneSquad.exile, 0, 'EXILE on the SQUAD\'s cards'); same(N.phoneRoster.cards, N.start, 'the ROSTER\'s cards'); same(N.phoneRoster.exile, N.start, 'a ROSTER card without EXILE');
+            same(N.phoneLabel0, 'EXILE', 'the card\'s button'); same(N.phoneLabel1, 'TAP AGAIN TO EXILE', 'the card asks'); same(N.phoneStill, true, 'the first tap exiled it'); same(N.phoneGone.join(), 'true,true,4', 'the card\'s exile');
             same(N.sideLabel0, 'EXILE 2', 'the side panel\'s button'); same(N.sideLabel1, 'TAP AGAIN TO EXILE 2', 'it asks'); same(N.sideGone.join(), 'true,2', 'both exiled'); same(N.saved, N.alive, 'the save keeps the exiled');
         });
     }

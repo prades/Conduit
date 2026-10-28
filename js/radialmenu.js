@@ -6,7 +6,7 @@
 //
 //   SQUAD   YOUR SQUAD (js/party.js): its three cards (an open slot says so), REMOVE on each, DISBAND SQUAD
 //   ROSTER  RECRUIT, the squad strip (a tap on a chip selects that member), then every follower as a card: its form, level, health and state, with
-//           ADD TO / REMOVE FROM SQUAD and INFO (a tap on the card selects it)
+//           ADD TO / REMOVE FROM SQUAD, INFO and EXILE (a tap on the card selects it; EXILE is the roster's, not the SQUAD's)
 //   ORDERS  commands for the squad: all elements or the selected one, a role filter, switch roles
 //
 // (The squad analytics, the WORK switches, ALL TO WORK / ALL TO FIGHT, and the BUILD and AUTO petals were the old strip game's, and went with it.)
@@ -119,7 +119,7 @@ function _radialDrawRoster(panel) {
       panel.appendChild(b); }
     if (!rows.length) panel.appendChild(_rEl("div", "rp-sub", "NONE YET: RECRUIT ONE ABOVE"));
     _radialSquadStrip(panel);   // (the squad, at a glance)
-    rows.slice(0, 40).forEach(r => panel.appendChild(_radialCard(r)));
+    rows.slice(0, 40).forEach(r => panel.appendChild(_radialCard(r, true)));
 }
 // THE SQUAD STRIP at the top of the phone's roster (the Command Center's squad box, js/party.js): three chips, the follower in each (a tap selects it) or an open slot
 function _radialSquadStrip(panel) {
@@ -133,8 +133,8 @@ function _radialSquadStrip(panel) {
     }
     panel.appendChild(strip);
 }
-// one follower's card: its picture, name, status, level and health, and its buttons (ADD TO / REMOVE FROM SQUAD; INFO; EXILE); a tap on the card selects it
-function _radialCard(r) {
+// one follower's card: its picture, name, status, level and health, and its buttons (ADD TO / REMOVE FROM SQUAD; INFO; in the ROSTER, EXILE); a tap on the card selects it
+function _radialCard(r, roster) {
     const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));
     card.style.setProperty("--c", _radialElementColour(r.element));
     const cv = _rEl("canvas", "rp-thumb"); cv.width = 44; cv.height = 44; cv.style.width = "36px"; cv.style.height = "36px"; _radialThumb(cv, r.f); card.appendChild(cv);
@@ -145,7 +145,7 @@ function _radialCard(r) {
         if (inSq || r.f.post) { const b = _rEl("button", "rp-btn small wide" + (!inSq && free ? " on" : ""), inSq ? "REMOVE FROM SQUAD" : free ? "ADD TO SQUAD" : "SQUAD FULL"); b.style.setProperty("--c", inSq ? "#8fe3ff" : "#19e6c1"); if (!inSq && !free) b.disabled = true; _rClick(b, () => { if (inSq) partyRemove([r.f]); else partyAdd([r.f]); radialRender(); }); mid.appendChild(b); }
     }
     { const inf = _rEl("button", "rp-btn small wide", "INFO"); inf.style.setProperty("--c", "#8fe3ff"); _rClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.f); }); mid.appendChild(inf); }
-    if (r.f.isFollower === true && !r.f.isClone && typeof partyExileTap === "function") {   // EXILE: let it go for good, to make room (js/party.js: the first tap arms it, the second does it)
+    if (roster && r.f.isFollower === true && !r.f.isClone && typeof partyExileTap === "function") {   // EXILE: let it go for good, to make room (js/party.js: the first tap arms it, the second does it)
         const armed = partyExileArmed([r.f]), ex = _rEl("button", "rp-btn small wide rp-exile" + (armed ? " on" : ""), armed ? "TAP AGAIN TO EXILE" : "EXILE"); ex.style.setProperty("--c", "#ff3a4a"); _rClick(ex, () => { partyExileTap([r.f]); radialRender(); }); mid.appendChild(ex);
     }
     _rClick(card, () => { if (typeof ccToggle === "function") ccToggle(r.f); radialRender(); });   // tap a card: select it (the command pool, js/commandcenter.js)

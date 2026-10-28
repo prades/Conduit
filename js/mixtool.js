@@ -112,6 +112,7 @@ function mixToolFoeRender(root, slot, force) {
     const fresh = id !== _mtFoeId; _mtFoeSig = sig; _mtFoeId = id; _mtFoeShown = foe;
     slot.innerHTML = foe ? mixToolFoeHTML(foe, pool, fresh) : "";
     if (foe) mixToolFoeLive(slot, foe);
+    if (typeof partyFlyRender === "function") partyFlyRender();   // (a squad member's card keeps clear of this one: js/squadfly.js)
 }
 
 // ── drawing it ──
