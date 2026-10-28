@@ -268,7 +268,7 @@ canvas.addEventListener('pointermove', e=>{
 });
 
 canvas.addEventListener('pointerup', e=>{
-    if (_techAimPressed) { _techAimPressed = false; const [_ax, _ay] = toCanvas(e.clientX, e.clientY); if (typeof techAimTap === "function") techAimTap(_ax, _ay); isPressing = false; return; }   // the aim's tap: a follower, an enemy (js/techabilities.js)
+    if (_techAimPressed) { _techAimPressed = false; const [_ax, _ay] = toCanvas(e.clientX, e.clientY); if (typeof techAimTap === "function" && techAimTap(_ax, _ay) === false) handleInput(_ax, _ay); isPressing = false; return; }   // the aim's tap: a follower, an enemy (js/techabilities.js); the launcher's aim lets go of a tap that is not on a follower, and it is an ordinary tap
     if (_gunPressed) { _gunPressed = false; if (typeof gunRelease === "function") gunRelease(); isPressing = false; return; }   // the gun's press ends here (js/gunfire.js)
     if (_targetPressed) { _targetPressed = false; const [_tx, _ty] = toCanvas(e.clientX, e.clientY); if (typeof targetRelease === "function") targetRelease(_tx, _ty); isPressing = false; return; }   // the targeting's press ends here (js/targeting.js)
     if (_objPressed) { _objPressed = false; const [_ox, _oy] = toCanvas(e.clientX, e.clientY); if (typeof objectiveRelease === "function") objectiveRelease(_ox, _oy); isPressing = false; return; }   // the objective mailbox's press ends here (js/tutorial.js)

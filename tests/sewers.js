@@ -121,7 +121,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { n: tiles.length, deck: tiles.every(t => t.deck), base: ops.some(o => o.some(q => q.t === 'D')), bars: ops.every(o => o.filter(q => q.t === 'L').length >= 10), lip, lipS, others: world.filter(t => t.deck).length }; })()`);
         same(r.n, 12, 'bridge tiles'); same(r.deck, true, 'a bridge tile has the game\'s tile under it'); same(r.base, false, 'a bridge tile has a floor base'); same(r.bars, true, 'a bridge tile has no bars'); same(r.others, 12, 'other tiles marked as grating');
         same(r.lip, true, 'no lip on the north ledge\'s edge'); same(r.lipS, true, 'no lip on the south ledge\'s edge');
-        ok(/obj\.deck \? null : _floorTileSprite/.test(rd('js/game.js')), 'the game still draws its tile under the grating');
+        ok(/if \(obj\.deck\) \{[^}]*\}\s*else if \(_spr\)/.test(rd('js/game.js')), 'the game still draws its tile under the grating');
     });
     check('everything draws: the water, rails, stumps, gates, grates, sight glasses and mists, the culvert on both sides, the outfall, the collapsed tunnel and the sealed hatch, lit and through the dark room\'s dimmed pen, with no sheet; the long water item is on screen from anywhere along it and off it from the arena', () => {
         const r = J(`(function(){ let err = null, n = 0; const its = _fp.items.filter(i => i.fp === 'sewer' || (i.fp === 'wdecor' && (i.culvert || ['outfall', 'collapse', 'sealed_hatch'].includes(i.kind))));

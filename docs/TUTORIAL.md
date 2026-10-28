@@ -345,6 +345,12 @@ A third interior, brainstormed with the user (mockups of the runoff and two layo
 
 - Tests: tests/sewers.js (the culvert and the grates, the room and its layout, the river and the bridges, the gates sealing what is behind them, the trip, the drawing).
 
+## The launcher keeps out of the way; the squad shares its experience (revision)
+
+- **The Kinetic Launcher is subtle** (ASKED: "Whenever I go near the Kinetic launcher, it shouldn't automatically lock me into jumping up to the next level. It should remain subtle and uninterruptive."). Near a launcher site there is no notice and no bobbing banner: a faint dashed outline where it can stand and a small still tag. Only a tap on the tag is the site's (a tap on the floor round it, walking past, used to set a launcher up or put up its aim); and the launcher's aim ("tap a follower to send up") lets go of any tap that is not on a follower, which is then an ordinary tap (docs/TECHNICIANS.md).
+- **The squad shares its experience** (ASKED: "make it to where the technicians level up faster, or the experience is shared throughout the squad"; chosen: shared). A kill by you or by a member of your squad of three feeds the rest of the squad wherever they are, as if they were beside it: the killer keeps its 60% and the others share the rest (your gun's kills: half of it, shared by the squad). A follower outside the squad (holding a room) is shared with only when it is near, as before (js/levels.js `awardKillXp`). A technician in the squad levels with it.
+- Tests: tests/techabilities.js (the subtle launcher), tests/levels.js (the squad's share).
+
 ## The website's background
 The landing page (`index.html`) shows the facility behind it, dark, with evolved followers now and again walking the halls and searching its rooms: `game.html?attract` (js/attract.js; the design is in docs/FACILITY.md, "The website's background"). It is the same facility and the same followers, with no one playing and nothing saved; the game itself is unchanged and opens as before.
 

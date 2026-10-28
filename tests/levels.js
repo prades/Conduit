@@ -135,14 +135,27 @@ async function boot(store) {
         p.lastAttacker = killer; ${setup || ''}
         const x0 = [killer.xp, ally.xp, far.xp]; p.health = 0; p.dead = true; render();
         return { worth: killXp(p), lv: p.level, k: killer.xp - x0[0], a: ally.xp - x0[1], f: far.xp - x0[2] }; })()`);
-    check('THE ASK: the killer gets 60% and the ally fighting beside it 40%; one far away nothing', () => {
-        const r = KILL('scout');
+    check('THE ASK: the killer gets 60% and the ally fighting beside it 40%; one far away nothing (one outside the squad: a follower holding a room)', () => {
+        const r = KILL('scout', 'far.post = "arena";');
         ok(near(r.k, r.worth * 0.6, 1e-6) && near(r.a, r.worth * 0.4, 1e-6) && r.f === 0, JSON.stringify(r));
         same(r.worth, Math.round(run('XP_YIELD.scout') * r.lv / 5), 'a scout is worth its yield × level / 5');
     });
     check('…alone, the killer gets it all', () => {
-        const r = KILL('scout', 'ally.x = __O.x + 15;');
+        const r = KILL('scout', 'ally.x = __O.x + 15; ally.post = "arena"; far.post = "arena";');
         ok(near(r.k, r.worth, 1e-6), JSON.stringify(r));
+    });
+    check('THE SQUAD SHARES (asked: "the experience is shared throughout the squad"): a kill by a member of the squad of three feeds the rest of it wherever they are: the killer 60%, the ally beside it and the one far away share the rest', () => {
+        const r = KILL('scout');
+        ok(near(r.k, r.worth * 0.6, 1e-6) && near(r.a, r.worth * 0.2, 1e-6) && near(r.f, r.worth * 0.2, 1e-6), JSON.stringify(r));
+    });
+    check('…a kill by you (your gun) feeds the whole squad wherever they are (half of it, shared); a follower outside the squad, far away, gets none of it', () => {
+        const all = KILL('scout', 'p.lastAttacker = player;'), out = KILL('scout', 'p.lastAttacker = player; far.post = "arena";');
+        ok(near(all.k, all.worth * 0.5 / 3, 1e-6) && near(all.a, all.worth * 0.5 / 3, 1e-6) && near(all.f, all.worth * 0.5 / 3, 1e-6), JSON.stringify(all));
+        ok(out.f === 0 && near(out.k + out.a, out.worth * 0.5, 1e-6), JSON.stringify(out));
+    });
+    check('…a kill by a follower outside the squad (holding a room) is shared only with those near it, as before', () => {
+        const r = KILL('scout', 'killer.post = "arena";');
+        ok(near(r.k, r.worth * 0.6, 1e-6) && near(r.a, r.worth * 0.4, 1e-6) && r.f === 0, JSON.stringify(r));
     });
     check('…a kill with no unit\'s last blow (your gun, an effect) goes to the units near it (half of it)', () => {
         const r = KILL('scout', 'p.lastAttacker = { x: __O.x, y: __O.y - 2 };');

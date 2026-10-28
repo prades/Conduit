@@ -167,6 +167,25 @@ function measure(w, h) {
         same(r.stale, null, 'a post up there it cannot walk to');
     });
 
+    check('THE LAUNCHER IS SUBTLE (asked: "it shouldn\'t automatically lock me into jumping up to the next level. It should remain subtle and uninterruptive"): coming near a site says nothing; its tag is small and still; only a tap on the tag is the site\'s (a tap on the floor round it walks); the launcher\'s aim never holds you: a tap that is not on a follower puts it away and is an ordinary tap', () => {
+        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites[0]; techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1]; techAimCancel(true);
+            player.x = player.targetX = player.visualX = s.at[0] - 9; player.y = player.targetY = player.visualY = s.at[1]; __step(2); floatingTexts.length = 0;
+            player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; player.fpPath = null; g.x = player.x + 0.5; g.y = player.y + 0.5; __step(3);
+            o.said = floatingTexts.map(t => t.text).filter(t => /LAUNCHER|SITE|TAP/.test(t)).join(' | ');
+            techDrawOverlay(); const L = _techLabels[s.id], p = _techScr(s.at[0], s.at[1]); o.tag = L ? [L.h, L.w < 200] : null;
+            o.floor = techSiteTap(p.x, p.y - 10); o.floorAim = techAimActive();
+            o.onTag = techSiteTap(L.x + L.w / 2, L.y + L.h / 2); o.aim = techAim && techAim.mode;
+            o.stray = techAimTap(p.x + 300, p.y + 200); o.after = techAimActive();
+            techSiteTap(L.x + L.w / 2, L.y + L.h / 2); const gp = _techScr(g.x, g.y); o.pick = techAimTap(gp.x, gp.y - 30); o.going = !!(g._launchLoad || g._flight || g._siteWork || g._launchGo); techAimCancel(true); return o; })()`);
+        same(r.said, '', 'something was said coming near the site'); same(JSON.stringify(r.tag), '[20,true]', 'the tag is not small');
+        same(r.floor, false, 'a tap on the floor at the site was taken'); same(r.floorAim, false, 'a tap on the floor aimed the launcher');
+        same(r.onTag, true, 'a tap on the tag was not taken'); same(r.aim, 'site', 'the tag does not aim the launcher');
+        same(r.stray, false, 'a stray tap was held by the launcher\'s aim'); same(r.after, false, 'the launcher\'s aim is still up after a stray tap');
+        same(r.pick, true, 'a tap on a follower did not send it'); 
+        ok(/techAimTap\(_ax, _ay\) === false\) handleInput\(_ax, _ay\)/.test(rd('js/input.js')), 'the stray tap is not an ordinary tap afterwards');
+        ok(!/TAP THE MARKED SPOT/.test(rd('js/techabilities.js')), 'the approach notice is still in the code');
+    });
+
     group('THE AIM AND THE CODE THAT CARRIES IT');
     check('the chip aims (a follower, then an enemy); a tap on the chip again, ✕ or Escape calls it off; while it aims, a tap on a squad card picks that follower', () => {
         const r = J(`(function(){ const fs = __fresh(['electric', 'core']), t = fs[0], g = fs[1], o = {}; t._abReadyAt = frame; const e = __foe(t.x + 3, t.y + 0.4);

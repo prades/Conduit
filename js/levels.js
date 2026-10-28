@@ -34,8 +34,11 @@
 // XP_YIELD[its class] × its level / 5. The unit that landed the kill gets
 // XP_KILLER_SHARE of it and your units within XP_SHARE_RANGE share the rest; a
 // kill by your gun or an effect goes to the units nearby (XP_ASSIST_ONLY of
-// it). A unit that dies loses XP_DEATH_LOSS of its progress toward its next
-// level — never a level.
+// it). THE SQUAD SHARES (asked: "make it to where the technicians level up
+// faster, or the experience is shared throughout the squad"; chosen: shared):
+// a kill by you or by a member of your squad of three feeds the rest of the
+// squad wherever they stand, as if they were near it. A unit that dies loses
+// XP_DEATH_LOSS of its progress toward its next level — never a level.
 
 const LEVEL_CAP        = 100;    // followers and clones
 const PRED_LEVEL_MAX   = 999;    // a creature can be set past the cap (the number shown is still its real level)
@@ -178,10 +181,12 @@ function awardKillXp(p) {
     const total = killXp(p);
     if (!(total > 0)) return 0;
     const killer = _xpUnit(p.lastAttacker) ? p.lastAttacker : null;
+    const squad = typeof partyOn === "function" && partyOn() && typeof partyMembers === "function" ? partyMembers() : [];   // the squad of three (js/party.js)
+    const squadKill = (typeof player !== "undefined" && p.lastAttacker === player) || (!!killer && squad.includes(killer));   // yours, or a squad member's: the squad shares it wherever they are
     const near = [];
     for (const a of (typeof actors !== "undefined" ? actors : [])) {
         if (a === killer || !_xpUnit(a)) continue;
-        if (Math.hypot(a.x - p.x, a.y - p.y) <= XP_SHARE_RANGE) near.push(a);
+        if ((squadKill && squad.includes(a)) || Math.hypot(a.x - p.x, a.y - p.y) <= XP_SHARE_RANGE) near.push(a);
     }
     if (killer) {
         gainXp(killer, near.length ? total * XP_KILLER_SHARE : total);

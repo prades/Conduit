@@ -695,10 +695,7 @@ function _techSiteNotices() {
     if (!_fp.siteNear) _fp.siteNear = new Set();
     for (const s of _techSites()) {
         const near = Math.hypot(s.at[0] - player.x, s.at[1] - player.y) <= TECH_AB.launch.near;
-        if (near && !_fp.siteNear.has(s.id)) {
-            _fp.siteNear.add(s.id);
-            _techSay(techLauncherAt(s.id) ? "⚡ KINETIC LAUNCHER · TAP IT TO SEND A FOLLOWER UP TO THE " + String(s.label || s.to).toUpperCase() : "⚡ A KINETIC LAUNCHER CAN BE SET UP HERE · TAP THE MARKED SPOT", "#ffe733");
-        } else if (!near) _fp.siteNear.delete(s.id);
+        if (near) _fp.siteNear.add(s.id); else _fp.siteNear.delete(s.id);   // (ASKED: "it should remain subtle and uninterruptive": nothing is said as you come near; its small tag is all)
     }
 }
 
@@ -756,7 +753,7 @@ function techScreenToWorld(ex, ey) {
 function techAimTap(x, y) {
     if (!techAim) return false;
     const need = techAimNeed();
-    if (need === "follower") { const g = typeof findFollowerAtScreen === "function" ? findFollowerAtScreen(x, y) : null; if (g && !g.isClone) return techAimPickFollower(g); _techSay("TAP A FOLLOWER", "#8aa0c8"); return true; }
+    if (need === "follower") { const g = typeof findFollowerAtScreen === "function" ? findFollowerAtScreen(x, y) : null; if (g && !g.isClone) return techAimPickFollower(g); if (techAim.mode === "site") { techAimCancel(true); return false; } _techSay("TAP A FOLLOWER", "#8aa0c8"); return true; }   // (the launcher's aim never holds you: a tap elsewhere puts it away and walks, js/input.js)
     if (need === "enemy") { const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e); _techSay("TAP AN ENEMY", "#8aa0c8"); return true; }
     if (need === "spot") return techAimPickSpot(techScreenToWorld(x, y));
     if (need === "item") { const g = techItemAtScreen(x, y); if (g) return techAimPickItem(g); _techSay("TAP AN ITEM ON THE FLOOR", "#8aa0c8"); return true; }
@@ -767,9 +764,8 @@ function techSiteTap(ex, ey) {
     if (typeof _fp === "undefined" || !_fp || typeof player === "undefined") return false;
     for (const s of _techSites()) {
         if (Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY) > TECH_AB.launch.near) continue;
-        const p = _techScr(s.at[0], s.at[1]), lr = _techLabels[s.id];
-        const onLabel = lr && ex >= lr.x && ex <= lr.x + lr.w && ey >= lr.y && ey <= lr.y + lr.h;
-        if (!onLabel && Math.hypot(ex - p.x, ey - (p.y - 10)) > 60) continue;
+        const lr = _techLabels[s.id], onLabel = lr && ex >= lr.x && ex <= lr.x + lr.w && ey >= lr.y && ey <= lr.y + lr.h;
+        if (!onLabel) continue;   // (only its tag takes a tap: a tap on the floor round it, to walk past, is a walk)
         if (techLauncherAt(s.id)) {
             if (_techSiteBusy(s)) { _techSay("THE LAUNCHER IS IN USE", "#ff8a6a"); return true; }
             techAim = { mode: "site", f: null, ab: TECH_ABILITIES.electric, site: s.id, step: 0, picks: {} }; _techAimShow();
@@ -979,19 +975,17 @@ function techDrawOverlay() {
     for (const s of _techSites()) {
         const d = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY); if (d > T.near) continue;
         const p = _techScr(s.at[0], s.at[1]), a = Math.min(1, (T.near - d) / 2), on = techLauncherAt(s.id);
-        if (!on) {   // the spot it can stand on, highlighted
-            const k = 0.55 + 0.45 * Math.sin(f0 * 0.1);
-            g.globalAlpha = a * (0.35 + 0.35 * k); g.fillStyle = "#ffe733"; g.beginPath(); g.moveTo(p.x, p.y - TILE_H * 1.4); g.lineTo(p.x + TILE_W * 1.4, p.y); g.lineTo(p.x, p.y + TILE_H * 1.4); g.lineTo(p.x - TILE_W * 1.4, p.y); g.closePath(); g.fill();
-            g.globalAlpha = a; g.strokeStyle = "#ffe733"; g.lineWidth = 2; g.setLineDash([6, 5]); g.stroke(); g.setLineDash([]);
+        if (!on) {   // the spot it can stand on: a faint dashed outline (subtle: no fill, no pulse)
+            g.globalAlpha = a * 0.45; g.strokeStyle = "#ffe733"; g.lineWidth = 1.5; g.setLineDash([5, 6]); g.beginPath(); g.moveTo(p.x, p.y - TILE_H); g.lineTo(p.x + TILE_W, p.y); g.lineTo(p.x, p.y + TILE_H); g.lineTo(p.x - TILE_W, p.y); g.closePath(); g.stroke(); g.setLineDash([]);
         }
         const work = (typeof followers !== "undefined" ? followers : []).find(q => q && !q.dead && q._siteWork && q._siteWork.site === s.id && q._siteWork.workAt !== null);
         if (work) { const k = Math.min(1, (f0 - work._siteWork.workAt) / T.setup); g.globalAlpha = 1; g.strokeStyle = "#ffe733"; g.lineWidth = 4; g.beginPath(); g.arc(p.x, p.y - 30, 16, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); g.stroke(); }
-        // the label: what a tap does here
-        const txt = on ? "⚡ KINETIC LAUNCHER · TAP TO SEND A FOLLOWER UP" : work || _techSettingUp(s) ? "⚡ SETTING UP A KINETIC LAUNCHER" : "⚡ LAUNCHER SITE · TAP TO SET UP";
-        g.globalAlpha = a; g.font = font(14); g.textAlign = "center"; g.textBaseline = "middle";
-        const w = g.measureText(txt).width + 24, y = p.y - 92 + Math.sin(f0 * 0.07) * 3;
-        g.fillStyle = "rgba(5,8,18,0.86)"; g.fillRect(p.x - w / 2, y - 14, w, 28); g.strokeStyle = "#ffe733"; g.lineWidth = 2; g.strokeRect(p.x - w / 2 + 1, y - 13, w - 2, 26); g.fillStyle = "#ffe733"; g.fillText(txt, p.x, y + 1);
-        _techLabels[s.id] = { x: p.x - w / 2, y: y - 14, w, h: 28 };
+        // its TAG: small and quiet (ASKED: "it should remain subtle and uninterruptive"); a tap on it is the only tap the site takes
+        const txt = on ? "⚡ LAUNCHER · SEND UP" : work || _techSettingUp(s) ? "⚡ SETTING UP" : "⚡ LAUNCHER SITE";
+        g.globalAlpha = a * 0.85; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle";
+        const w = g.measureText(txt).width + 16, y = p.y - 70;
+        g.fillStyle = "rgba(5,8,18,0.7)"; g.fillRect(p.x - w / 2, y - 10, w, 20); g.strokeStyle = "rgba(255,231,51,0.55)"; g.lineWidth = 1; g.strokeRect(p.x - w / 2 + 0.5, y - 9.5, w - 1, 19); g.fillStyle = "rgba(255,231,51,0.9)"; g.fillText(txt, p.x, y + 1);
+        _techLabels[s.id] = { x: p.x - w / 2, y: y - 10, w, h: 20 };
     }
     g.globalAlpha = 1;
     const A = techAim;
