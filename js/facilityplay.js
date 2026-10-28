@@ -22,7 +22,7 @@ const FP_WALL_H = 122;            // px: how tall a wall stands on screen (a doo
 const FP_DOOR_H = 108;            // px: how tall a door is
 const FP_WALL_X = FP_WALL_H - 74;
 const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the building was spaced out by (js/facilitygrow.js) // px: how much taller the walls are than when the decor was laid out
-const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a" };
+const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a" };
 
 // ── the world ──
 function _fpFloorTile(x, y, room) { return { x, y, type: "floor", facility: true, room }; }
@@ -358,10 +358,13 @@ function _fpPlaceStatics(F) {
             if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) cells.add(x + "," + y);
         }
         if (s.shape === "circle" && !cells.size) cells.add(Math.round(s.at[0]) + "," + Math.round(s.at[1]));   // a small chamber is at least one cell
+        let whole = null; if (s.tilted) for (const k of cells) { const [x, y] = k.split(",").map(Number); if (!whole || x + y > whole[0] + whole[1]) whole = [x, y]; }   // (a prop lying at an angle: its flat drawing, before its sprite has arrived, is drawn whole from the cell drawn last; its sprite is drawn a tile's column at a time, like any other)
         for (const k of cells) {
             const [x, y] = k.split(",").map(Number);
             // sides are drawn only where no neighbour hides them: the faces toward +y (lower left) and +x (lower right)
-            items.push({ type: "fp", fp: "prop", room: s.room, base: facilityLiftPx(x, y), x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), lf: !cells.has((x - 1) + "," + y), seed: _fpHash(x, y) });
+            const it = { type: "fp", fp: "prop", room: s.room, base: facilityLiftPx(x, y), x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), lf: !cells.has((x - 1) + "," + y), seed: _fpHash(x, y) };
+            if (whole) { if (x === whole[0] && y === whole[1]) it.poly = s.poly; else it.skip = true; }
+            items.push(it);
         }
     }
     if (typeof _psRimItems === "function") { for (const it of _psRimItems(F, items)) items.push(it); for (const it of _psBridgeItems(F)) items.push(it); }   // the 3D tanks' rim cells and the catwalk bridges (js/propsprites.js)
@@ -373,6 +376,8 @@ function _fpPlaceStatics(F) {
         }
     }
     for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", room: f.room, base: facilityRoomHeight(f.room, F) * FP_ELEV_PX, x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
+    // STAIRWELLS: a portal's stairs standing in a floor (not in an alcove): down into it (the main hallway's, to the Cold Storage) or up out of it (the Cold Storage's): drawn after the floor under them (js/facilitydecor.js)
+    for (const d of (F.decor || [])) if (d.kind === "stairwell" && d.rect) items.push({ type: "fp", fp: "stairwell", room: d.room, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, x: (d.rect[0] + d.rect[2]) / 2, y: (d.rect[1] + d.rect[3]) / 2, rect: d.rect, dir: d.dir || "n", up: !!d.up, colour: d.colour, depth: d.rect[2] + d.rect[3] + 0.02, seed: _fpHash(Math.round(d.rect[0] * 2), Math.round(d.rect[1] * 2)) });
     for (const it of _fpWallPlace(F)) items.push(it);   // wall decor (js/facilitydecor.js)
     for (const it of _fpStylePillars(F)) items.push(it);   // the corner posts of a styled room (js/facilitystyle.js)
     for (const it of _fpStyleRigs(F)) items.push(it);      // the crystal's pad machine (js/facilitystyle.js)
@@ -425,7 +430,7 @@ function drawFacilityItem(it) {
     if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
     try {
-        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it);
+        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it);
     } finally { ctx.restore(); ctx = real; }
 }
 // A wall whose camera-facing side looks onto a LOWER floor (the pocket of floor behind the arena's rock, a fill cell) reaches down to it, so no gap shows under it.

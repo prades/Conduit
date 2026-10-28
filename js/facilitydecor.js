@@ -103,6 +103,16 @@ function _fpFloorBuild(F) {
             const a = d.a, b = d.b, len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len, n = Math.max(1, Math.floor(len / 1.6));
             for (let i = 0; i < n; i++) { const cx = a[0] + ux * (i + 0.5) * len / n, cy = a[1] + uy * (i + 0.5) * len / n, wx = -uy * 0.38, wy = ux * 0.38, tx = ux * 0.3, ty = uy * 0.3, c = { c: _fpRgba(col === "#ffffff" ? "#ffd21a" : col, 0.55), w: 2 };
                 _fpSeg(map, cx - tx + wx, cy - ty + wy, cx + tx, cy + ty, c, F); _fpSeg(map, cx - tx - wx, cy - ty - wy, cx + tx, cy + ty, c, F); }
+        } else if (k === "ice_sheet") {   // glassy ice over the floor (the Cold Storage's cave, the frost before its door): a pale blue glaze on every tile inside the outline, a sheen streak, now and then a crack
+            const off = F.snapped ? 0.5 : 0, xs = d.path.map(q => q[0]), ys = d.path.map(q => q[1]);   // (the outline is unsnapped, the tiles are on the snapped grid: half a tile apart)
+            for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)) + 1; x++) for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)) + 1; y++) {
+                if (!_fp.cells.has(x + "," + y) || !facilityPointInPoly(x - off, y - off, d.path)) continue;
+                const o = _fpCellOps(map, x, y), h = _fpHash(x, y);
+                o.push({ t: "D", c: "rgba(165,222,248,0.42)" });
+                if (h % 2) o.push({ t: "P", c: "rgba(255,255,255,0.24)", p: [-0.36, 0.1, -0.08, -0.18, 0.02, -0.08, -0.26, 0.2] });   // a sheen
+                if (h % 5 === 0) o.push({ t: "L", c: "rgba(255,255,255,0.65)", w: 1, p: [-0.25, -0.3, 0.05, 0.02] }, { t: "L", c: "rgba(255,255,255,0.65)", w: 1, p: [0.05, 0.02, 0.3, -0.1] });   // a crack
+                if (h % 7 === 0) o.push({ t: "C", c: "rgba(255,255,255,0.4)", u: ((h >>> 3) % 7 - 3) / 10, v: ((h >>> 6) % 7 - 3) / 10, r: 0.05 });
+            }
         } else if (k === "stain" || k === "puddle" || k === "scorch") {   // an irregular mark: a few overlapping blots
             const R = d.radius, seed = _fpHash(Math.round(d.at[0] * 7), Math.round(d.at[1] * 7)), n = 5 + (seed % 4);
             for (let i = 0; i < n; i++) { const a = ((seed >>> i) % 628) / 100, rr = ((seed >>> (i + 3)) % 100) / 100 * R * 0.7, bx = d.at[0] + Math.cos(a) * rr, by = d.at[1] + Math.sin(a) * rr, br = R * (0.32 + ((seed >>> (i + 5)) % 40) / 100), cx = Math.round(bx), cy = Math.round(by);
@@ -134,13 +144,34 @@ function _fpFillCells(F, solid) {
         const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2, face = facilityRoomAt(mx + nx * 0.4, my + ny * 0.4, F); if (!face || face.id !== "arena") continue;   // the camera sees the arena in front of this wall
         for (let x = Math.floor(Math.min(w.a[0], w.b[0]) - 3.5); x <= Math.ceil(Math.max(w.a[0], w.b[0]) + 3.5); x++) for (let y = Math.floor(Math.min(w.a[1], w.b[1]) - 3.5); y <= Math.ceil(Math.max(w.a[1], w.b[1]) + 3.5); y++) {
             const k = x + "," + y; if (have.has(k) || solid.has(k) || out.has(k) || facilityRoomAt(x, y, F)) continue;
-            const t = (x - w.a[0]) * ux + (y - w.a[1]) * uy, sd = -((x - mx) * nx + (y - my) * ny); if (t > -0.5 && t < L + 0.5 && sd > 0 && sd <= 3) out.set(k, { x, y, room: "arena", base: facilityRoomHeight("arena", F) * PX });
+            const t = (x - w.a[0]) * ux + (y - w.a[1]) * uy, sd = -((x - mx) * nx + (y - my) * ny); if (t > -0.5 && t < L + 0.5 && sd > 0 && sd <= 3) out.set(k, { x, y, room: "arena", base: facilityRoomHeight("arena", F) * PX, pocket: true });
         }
+    }
+    // a cell a room only partly covers is cut to the room's outline, so its floor stops at the edge: past an edge the camera sees side-on (the Cold Storage's cave, south-west) nothing hides it, and a pale
+    // floor would show as teeth in the void. (Not beside the pocket: there the floor goes on behind the rock on purpose.)
+    for (const f of out.values()) {
+        if (f.pocket) continue;
+        let byPocket = false; for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { const n = out.get((f.x + dx) + "," + (f.y + dy)); if (n && n.pocket) byPocket = true; }
+        if (!byPocket) f.clip = _fpClipSquare(F.byId.get(f.room).poly, f.x, f.y, 0.52);   // (a hair over half a tile: it still overlaps the tiles beside it, so no seam shows)
     }
     return out;
 }
-function _fpFillItems() { const items = []; for (const [k, f] of _fp.fills) items.push({ type: "fp", fp: "fill", x: f.x, y: f.y, base: f.base, depth: f.x + f.y - 1.5, room: f.room, key: k }); return items; }
+// the part of a polygon inside the square of half-side h round (cx, cy) (Sutherland-Hodgman, one side of the square at a time)
+function _fpClipSquare(poly, cx, cy, h) {
+    let pts = poly;
+    for (const [ax, sg] of [[0, -1], [0, 1], [1, -1], [1, 1]]) {
+        const lim = (ax ? cy : cx) + sg * h, inside = q => sg < 0 ? q[ax] >= lim : q[ax] <= lim, out = [];
+        for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length], ia = inside(a); if (ia) out.push(a); if (ia !== inside(b)) { const t = (lim - a[ax]) / (b[ax] - a[ax]); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); } }
+        pts = out; if (!pts.length) break;
+    }
+    return pts;
+}
+function _fpFillItems() { const items = []; for (const [k, f] of _fp.fills) items.push({ type: "fp", fp: "fill", x: f.x, y: f.y, base: f.base, depth: f.x + f.y - 1.5, room: f.room, key: k, clip: f.clip }); return items; }
 function _fpDrawFill(it) {
+    if (it.clip) { ctx.save(); ctx.beginPath(); it.clip.forEach((q, i) => { const p = _fpP(q[0], q[1], 0); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); ctx.clip(); _fpDrawFillTile(it); ctx.restore(); return; }
+    _fpDrawFillTile(it);
+}
+function _fpDrawFillTile(it) {
     const c = _fpP(it.x, it.y, 0), dist = Math.hypot(it.x - player.visualX, it.y - player.visualY);
     const spr = typeof _floorTileSprite === "function" ? _floorTileSprite(Math.round(dist / FLOOR_DIST_STEP)) : null;
     if (spr) ctx.drawImage(spr, c[0] - TILE_W - 1, c[1] - TILE_H - 1); else { ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill(); }
@@ -203,6 +234,53 @@ function _fpDrawRock(it, H) {
         _fpQuad([P(u - w, z), P(u + w, z + 2), P(u + w * 0.8, z + hh), P(u, z + hh + 4), P(u - w * 0.8, z + hh - 2)], "rgba(255,240,220,0.07)", null); }
     for (let s2 = 0; s2 < 2; s2++) { const u = (((seed >>> (s2 * 4)) % 90) + 5) / 100, zh = zLow - 6; ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.lineWidth = 2; const p = P(u, 0), q = P(u, Math.min(zh, 120)); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
     ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(10,6,4,0.6)"; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] - 1); ctx.lineTo(m1[0], m1[1] - 1); ctx.lineTo(b1[0], b1[1] - 1); ctx.stroke(); ctx.strokeStyle = "rgba(255,236,212," + (0.3 * lit).toFixed(3) + ")"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 1.5); ctx.lineTo(m1[0], m1[1] + 1.5); ctx.lineTo(b1[0], b1[1] + 1.5); ctx.stroke(); ctx.lineJoin = "miter";   // the rocky lip: a dark crease with a pale lit edge under it
+    _fpRockIce(it, ha, hm, hb);   // (in an ice room: frost over it, icicles off its lip)
+}
+
+// ICE on a rock wall (a room whose style has `ice`: the Cold Storage's cave): a pale frost glazing the rock, and icicles hanging from its lip
+function _fpRockIce(it, ha, hm, hb) {
+    if (typeof _fpRoomStyle !== "function" || !_fpRoomStyle(it.room).ice) return;
+    const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z), zAt = u => u < 0.5 ? ha + (hm - ha) * u * 2 : hm + (hb - hm) * (u - 0.5) * 2;
+    const t0 = P(0, zAt(0)), t1 = P(1, zAt(1)), b0 = P(0, 0), gr = ctx.createLinearGradient(t0[0], Math.min(t0[1], t1[1]), b0[0], b0[1]); gr.addColorStop(0, "rgba(225,245,255,0.42)"); gr.addColorStop(1, "rgba(150,205,235,0.16)");
+    _fpQuad([P(0, 0), P(1, 0), P(1, zAt(1)), P(0.5, zAt(0.5)), P(0, zAt(0))], gr, null);
+    const seed = _fpHash(Math.round(it.a[0] * 3), Math.round(it.a[1] * 3));
+    for (let k = 0; k < 4; k++) {   // icicles off the lip
+        const u = 0.1 + k * 0.24 + ((seed >>> k) % 7) / 100, z = zAt(u) - 2, len = 10 + ((seed >>> (k + 3)) % 14), p = P(u - 0.035, z), q = P(u + 0.035, z), t = P(u, z - len);
+        _fpQuad([p, q, t], "rgba(235,250,255,0.85)", "rgba(110,170,200,0.7)", 1);
+    }
+}
+// A STAIRWELL (js/facilityplay.js places it: a portal's stairs standing in a floor). Down: an opening in the floor, its steps going down out of sight, dark at the bottom with a cold glow, a rail round three sides
+// (open at the end you step in), a hazard stripe at the lip. Up: a flight standing on the floor, its treads rising to a dark doorway at the top, a rail up each side. `dir` is the way the steps go (n: toward smaller y).
+function _fpDrawStairwell(it) {
+    const r = it.rect, x0 = r[0], y0 = r[1], x1 = r[2], y1 = r[3], ink = FP_PAL.ink, col = it.colour || "#9be8ff", f = _fpFrame(), N = 5, L = y1 - y0;
+    const rail = (pts, z) => { ctx.strokeStyle = ink; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.beginPath(); pts.forEach((p, i) => { const q = _fpP(p[0], p[1], z); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.stroke(); ctx.strokeStyle = "#c9d6de"; ctx.lineWidth = 2; ctx.stroke(); ctx.lineCap = "butt"; };
+    const post = (x, y, z) => { const a = _fpP(x, y, 0), b = _fpP(x, y, z); ctx.strokeStyle = ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.strokeStyle = "#c9d6de"; ctx.lineWidth = 2; ctx.stroke(); };
+    if (!it.up) {
+        const mouth = [_fpP(x0, y0, 0), _fpP(x1, y0, 0), _fpP(x1, y1, 0), _fpP(x0, y1, 0)];
+        ctx.save(); ctx.beginPath(); mouth.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.clip();
+        _fpQuad(mouth, "#04070c", null);
+        _fpQuad([_fpP(x0, y0, 0), _fpP(x1, y0, 0), _fpP(x1, y0, -70), _fpP(x0, y0, -70)], "#1a2630", null);   // the far wall of the shaft
+        _fpQuad([_fpP(x0, y0, 0), _fpP(x0, y1, 0), _fpP(x0, y1, -70), _fpP(x0, y0, -70)], "#22303b", null);   // its side wall
+        for (let k = N - 1; k >= 0; k--) {   // the treads, going down to the far end (the deepest drawn first)
+            const ya = y1 - (k + 1) * L / N, yb = y1 - k * L / N, z = -(k + 1) * 11, sh = Math.max(0.12, 0.85 - k * 0.16);
+            _fpQuad([_fpP(x0 + 0.06, ya, z), _fpP(x1 - 0.06, ya, z), _fpP(x1 - 0.06, yb, z), _fpP(x0 + 0.06, yb, z)], "rgba(190,210,222," + sh.toFixed(3) + ")", "rgba(8,26,34,0.6)", 1.5);
+            _fpQuad([_fpP(x0 + 0.06, yb, z), _fpP(x1 - 0.06, yb, z), _fpP(x1 - 0.06, yb, z + 11), _fpP(x0 + 0.06, yb, z + 11)], "rgba(70,95,110," + sh.toFixed(3) + ")", null);   // its riser
+        }
+        const g = _fpP((x0 + x1) / 2, y0 + 0.4, -60); _fpGlow(g[0], g[1], 30, col, 0.25 + 0.1 * Math.sin(f * 0.05 + it.seed));   // the cold coming up from below
+        ctx.restore();
+        ctx.lineJoin = "round"; _fpQuad(mouth, null, ink, 3); ctx.lineJoin = "miter";
+        for (let k = 0; k < 6; k++) { const ua = x0 + (x1 - x0) * k / 6, ub = x0 + (x1 - x0) * (k + 1) / 6; _fpQuad([_fpP(ua, y1, 0), _fpP(ub, y1, 0), _fpP(ub, y1 + 0.14, 0), _fpP(ua, y1 + 0.14, 0)], k & 1 ? ink : "#ffd21a", null); }   // the hazard stripe at the lip
+        for (const [x, y] of [[x0, y0], [x1, y0], [x0, (y0 + y1) / 2], [x1, (y0 + y1) / 2], [x0, y1], [x1, y1]]) post(x, y, 18);
+        rail([[x0, y1], [x0, y0], [x1, y0], [x1, y1]], 18);   // the rail: the two sides and the far end
+        return;
+    }
+    // UP: a flight on the floor, the far (north) end highest; drawn from the top step down to the bottom one
+    const top = N * 12;
+    for (let k = N - 1; k >= 0; k--) { const ya = y1 - (k + 1) * L / N, yb = y1 - k * L / N; _fpSBox(x0, ya, x1, yb, 0, (k + 1) * 12, "#dbe8ee", "#a9bfcc", "#93aab8", 2.5); }
+    _fpQuad([_fpP(x0, y0, top), _fpP(x1, y0, top), _fpP(x1, y0, top + 64), _fpP(x0, y0, top + 64)], "#2f4553", ink, 3);   // the frame at the top
+    _fpQuad([_fpP(x0 + 0.18, y0, top), _fpP(x1 - 0.18, y0, top), _fpP(x1 - 0.18, y0, top + 54), _fpP(x0 + 0.18, y0, top + 54)], "#05080d", null);   // the dark way up
+    const g = _fpP((x0 + x1) / 2, y0, top + 30); _fpGlow(g[0], g[1], 26, col, 0.14);
+    for (const x of [x0, x1]) { post(x, y1, 16); post(x, y0, top + 16); const a = _fpP(x, y1, 16), b = _fpP(x, y0, top + 16); ctx.strokeStyle = ink; ctx.lineWidth = 4; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); ctx.strokeStyle = "#c9d6de"; ctx.lineWidth = 2; ctx.stroke(); ctx.lineCap = "butt"; }
 }
 
 // SCAFFOLDING: the catwalks are not a room but an open steel deck at the top of the arena, on legs, with railings. (The map still has their walls: they are the collision, and they are drawn as railings.)
@@ -351,7 +429,7 @@ function _fpWallPlace(F) {
     for (const d of (F.decor || [])) {
         if (!FP_WALL_KINDS[d.kind]) continue;
         const a = d.a, b = d.b, h = Math.abs(a[1] - b[1]) < 1e-6, end = a[0] + a[1] > b[0] + b[1] ? a : b, mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-        items.push({ type: "fp", fp: "wdecor", room: d.room, kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.02, seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });
+        items.push({ type: "fp", fp: "wdecor", room: d.room, kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, flat: d.flat, up: d.up, cold: d.cold, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.02, seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });   // (flat, up, cold: a portal door's kind of door)
     }
     // the RUBBLE a fire technician can drill (js/techabilities.js), on the face of its room's edge like the decor: the pile, or once it is drilled through, the dark hole
     for (const r of (F.rubble || [])) {
@@ -499,7 +577,7 @@ function _fpDrawWDecor(it) { const fn = (facilityStyleRoom(it.room) && FP_STYLE_
 
 // ═════════════ FURNITURE ═════════════
 // Returns true if it drew the kind. `it` is one tile of a solid prop (sx / sy: whether its +x / +y face is exposed, as for the desks).
-const FP_SMALL_PROPS = new Set(["sentry", "plant", "cooler", "bin", "barrel", "beanbag", "telescope", "floodlight", "cart", "teleporter", "table", "pingpong", "rail", "spool", "toolbox", "chair"]);
+const FP_SMALL_PROPS = new Set(["sentry", "plant", "cooler", "bin", "barrel", "beanbag", "telescope", "floodlight", "cart", "teleporter", "table", "pingpong", "rail", "spool", "toolbox", "chair", "toppled_rack"]);   // (a toppled rack lies at an angle: the floor shows round it in its cells)
 // the floor under a solid piece (its own tile is solid, so the tile itself is not drawn): the plain floor, the decals that lie under props, and the room's darkness
 function _fpFloorUnder(it) {
     const x = it.x, y = it.y, c = _fpP(x, y, 0); ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill();
@@ -557,8 +635,6 @@ function _fpDecorProp(it) {
         _fpPrism(it, 44, "#8a6a2a", "#5a4418", "#483510"); if (it.sy) { _fpFaceY(it, 0.1, 0.9, 6, 38, "rgba(0,0,0,0.25)", "rgba(10,10,10,0.5)"); for (let i = 0; i < 4; i++) _fpFaceY(it, 0.14 + i * 0.2, 0.2 + i * 0.2, 8, 34, "rgba(0,0,0,0.35)", null); _fpFaceY(it, 0.62, 0.88, 28, 36, "#0a1a12", "rgba(200,210,200,0.5)"); }
         const l = _fpP(x - 0.3, y + 0.45, 38); ctx.fillStyle = Math.floor(f / 20 + seed) % 5 ? "#6dff5a" : "#ff4a3a"; ctx.beginPath(); ctx.arc(l[0], l[1], 2.5, 0, 6.2832); ctx.fill();
         if (seed % 2 === 0) { const e = _fpP(x + 0.3, y - 0.3, 44); for (let i = 0; i < 3; i++) { const ph = ((f * 0.5 + i * 12 + seed * 5) % 36) / 36; ctx.fillStyle = "rgba(170,170,180," + 0.3 * (1 - ph) + ")"; ctx.beginPath(); ctx.arc(e[0] + Math.sin(ph * 6 + i) * 4, e[1] - ph * 26, 3 + ph * 5, 0, 6.2832); ctx.fill(); } }
-    } else if (k === "main_generator") {   // the arena's generator, before its 3D sprite (js/propsprites.js, family power) has arrived: a long teal housing with a bright lamp
-        _fpPrism(it, 62, "#4f9aa0", "#2f6a73", "#244f57", "rgba(255,255,255,0.35)"); if (it.sy) _fpFaceY(it, 0.1, 0.9, 8, 30, "rgba(0,0,0,0.3)", "rgba(10,10,10,0.5)"); const l = _fpP(x, y + 0.4, 64); ctx.fillStyle = Math.floor(f / 20 + seed) % 5 ? "#6dff5a" : "#ff4a3a"; ctx.beginPath(); ctx.arc(l[0], l[1], 2.5, 0, 6.2832); ctx.fill();
     } else if (k === "console") {   // a control console: a sloped panel of screens and lit keys, scrolling data
         _fpPrism(it, 28, "#3a4258", "#222a3c", "#1a2030"); const t = _fpP(x, y, 29), c = it.seed % 3 === 0 ? "#ff6a4a" : it.seed % 3 === 1 ? "#6adfff" : "#6dff5a";
         ctx.fillStyle = "#07090e"; ctx.fillRect(t[0] - 13, t[1] - 17, 26, 13); ctx.fillStyle = _fpRgba(c, 0.18 + 0.08 * Math.sin(f * 0.05 + seed)); ctx.fillRect(t[0] - 11, t[1] - 15, 22, 9);

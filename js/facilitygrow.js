@@ -30,7 +30,8 @@
         teleport_room_1: [[165, 500], [350, 500], [350, 550], [290, 550], [290, 760], [165, 760]],
         teleport_stair_room: [[870, 620], [945, 620], [945, 760], [870, 760]],   // one row shorter, so its west wall ends where the hallway's does (no stub of wall beside the steps)
         lab_passage: [[310, 565], [410, 565], [410, 605], [310, 605]],
-        lab_hallway: [[370, 410], [950, 410], [950, 600], [870, 600], [870, 760], [310, 760], [310, 630], [430, 630], [430, 640], [750, 640], [750, 530], [430, 530], [370, 530]],
+        lab_hallway: [[370, 410], [950, 410], [950, 600], [870, 600], [870, 760], [680, 760], [680, 740], [580, 740], [580, 760], [310, 760], [310, 630], [430, 630], [430, 640], [750, 640], [750, 530], [430, 530], [370, 530]],
+        // (the notch in its south side, x 580 to 680: the arena's Cold Storage alcove takes the band of wall below it, so the hallway gives up that tile and a wall of full thickness stands between the two)
     };
     const edgeKinds = (room) => room.edge_kinds;
 
@@ -39,7 +40,7 @@
         if (POLY[r.id]) r.polygon = POLY[r.id].map(p => p.slice()); else r.polygon = r.polygon.map(p => mv(p, t));
         for (const o of (r.objects || [])) if (o.at) o.at = mv(o.at, t);
     }
-    for (const p of M.props) { const t = sh(p.room); if (p.rect) p.rect = [p.rect[0] + t[0] * G, p.rect[1] + t[1] * G, p.rect[2] + t[0] * G, p.rect[3] + t[1] * G]; if (p.at) p.at = mv(p.at, t); }
+    for (const p of M.props) { const t = sh(p.room); if (p.rect) p.rect = [p.rect[0] + t[0] * G, p.rect[1] + t[1] * G, p.rect[2] + t[0] * G, p.rect[3] + t[1] * G]; if (p.at) p.at = mv(p.at, t); if (p.poly) p.poly = p.poly.map(q => mv(q, t)); }
     for (const d of (M.decor || [])) {
         const t = sh(d.room); if (!t[0] && !t[1]) continue;
         if (d.at) d.at = mv(d.at, t); if (Array.isArray(d.a)) d.a = mv(d.a, t); if (Array.isArray(d.b)) d.b = mv(d.b, t);   // (a light's `a` is its strength, a number: only a wall decor's ends are points)

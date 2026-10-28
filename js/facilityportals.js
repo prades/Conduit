@@ -19,7 +19,7 @@ function facilityPortalsStart(F) {
         const cx = (p.rect[0] + p.rect[2]) / 2, cy = (p.rect[1] + p.rect[3]) / 2;
         let a = _fpNearestCell(p.arrive[0], p.arrive[1]); const rm = a ? facilityRoomAt(a[0], a[1], F) : null;
         if (!rm || rm.id !== p.room) a = _fpNearestCell(cx, cy) || [Math.round(cx), Math.round(cy)];
-        _fp.portals.push({ id: p.id, room: p.room, to: p.to, label: p.label, kind: p.kind, rect: p.rect.slice(), x: cx, y: cy, ax: a[0], ay: a[1], up: p.kind === "stairs_up" });
+        _fp.portals.push({ id: p.id, room: p.room, to: p.to, label: p.label, kind: p.kind, rect: p.rect.slice(), x: cx, y: cy, ax: a[0], ay: a[1], up: p.kind === "stairs_up", well: !!p.well });
     }
 }
 function facilityPortal(id) { return (_fp && _fp.portals || []).find(p => p.id === id) || null; }

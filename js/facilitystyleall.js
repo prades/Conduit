@@ -23,6 +23,7 @@ const FP_ROOM_STYLE = {
     arena:               { acc: FP_ACC.amber,  wain: "#3a3532", fa: "#4a4540", fb: "#3f3a36", dark: true },
     catwalks:            { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },
     nest_area:           { acc: FP_ACC.violet, wain: "#3a3532", fa: "#4a4540", fb: "#3f3a36", dark: true },
+    cold_storage:        { acc: "#9be8ff",     wain: "#5f93ad", fa: "#dcedf4", fb: "#c2dbe7", ice: true },   // ICE: frost on the floor and the walls, icicles on the cave's rock (the look only)
 };
 function _fpRoomStyle(id) { return FP_ROOM_STYLE[id] || FP_ROOM_STYLE.crystal_chamber; }
 function _fpAcc(id) { return _fpRoomStyle(id).acc; }
@@ -40,6 +41,11 @@ function _fpStyleFloorFor(id) {
         o.push({ t: "L", c: "rgba(61,120,135,0.2)", w: 1.5, p: [0.5, -0.5, 0.5, 0.5] }, { t: "L", c: "rgba(61,120,135,0.2)", w: 1.5, p: [-0.5, 0.5, 0.5, 0.5] });   // the shaded near edges
         if (h % 7 === 0) o.push({ t: "P", c: "rgba(255,255,255,0.09)", p: [-0.34, 0.12, -0.06, -0.16, 0.04, -0.06, -0.24, 0.22] });   // a streak of reflected light
         if (h % 19 === 0) o.push({ t: "C", c: "rgba(105,135,125,0.14)", u: ((h >>> 3) % 7 - 3) / 10, v: ((h >>> 6) % 7 - 3) / 10, r: 0.22 });   // a faint discoloration
+        if (R.ice) {   // frost: a rime of white specks over the panels, here and there a crust of it and a hairline crack
+            for (let i = 0; i < 3; i++) { const q = _fpHash(h, i + 11); o.push({ t: "C", c: "rgba(255,255,255,0.55)", u: (q % 9 - 4) / 10, v: ((q >>> 4) % 9 - 4) / 10, r: 0.025 + (q % 3) * 0.012 }); }
+            if (h % 3 === 0) o.push({ t: "C", c: "rgba(245,252,255,0.35)", u: ((h >>> 2) % 7 - 3) / 10, v: ((h >>> 5) % 7 - 3) / 10, r: 0.16 + (h % 5) * 0.03 });
+            if (h % 11 === 0) o.push({ t: "L", c: "rgba(90,140,170,0.45)", w: 1, p: [-0.3, -0.1, 0.05, 0.05] }, { t: "L", c: "rgba(90,140,170,0.45)", w: 1, p: [0.05, 0.05, 0.2, 0.32] });
+        }
     } };
 }
 
@@ -169,9 +175,53 @@ function _fpStylePropMore(it) {
         _fpSPrism(it, 46, A.caseLit, A.case, _fpShade(A.caseLit, 0.93), 3.5);
         if (it.sy) { _fpFaceY(it, 0.12, 0.88, 8, 38, A.ink, null); _fpFaceY(it, 0.18, 0.82, 11, 35, on ? _fpRgba("#43e0a8", 0.55 + 0.2 * Math.sin(f * 0.08)) : "#0a1a20", null); const c = P(x, y + 0.5, 24); ctx.fillStyle = on ? "#eafff6" : "#2a3a42"; ctx.beginPath(); ctx.moveTo(c[0] + 2, c[1] - 9); ctx.lineTo(c[0] - 5, c[1] + 1); ctx.lineTo(c[0] - 1, c[1] + 1); ctx.lineTo(c[0] - 3, c[1] + 9); ctx.lineTo(c[0] + 5, c[1] - 2); ctx.lineTo(c[0] + 1, c[1] - 2); ctx.closePath(); ctx.fill(); }
         if (on) { const g = P(x, y, 30); _fpGlow(g[0], g[1], 34, "#43e0a8", 0.2); }
+    } else if (k === "freezer_bank") {   // THE COLD STORAGE'S FREEZERS: a bank of walk-in freezers, pale insulated steel; on the front a door every two tiles (its handle by the seam), a frosted window, a blue readout; frost crusting the foot (the flat drawing, until the sprite has arrived)
+        _fpFootShadow(x, y, 0.5);
+        _fpSPrism(it, 74, "#eef5f8", "#c4d6df", "#a9bfcc", 3.5);
+        if (it.sy) {
+            const left = (x & 1) === 0;   // (two cells to a door: a left leaf and a right leaf)
+            _fpFaceY(it, left ? 0.06 : 0.0, left ? 1.0 : 0.94, 4, 66, "#d8e5ec", A.ink);
+            _fpFaceY(it, left ? 0.16 : 0.1, left ? 0.9 : 0.84, 46, 58, "#2a4655", null); _fpFaceY(it, left ? 0.2 : 0.14, left ? 0.4 : 0.34, 48, 56, "rgba(255,255,255,0.3)", null);   // the frosted window
+            _fpFaceY(it, left ? 0.86 : 0.04, left ? 0.96 : 0.14, 22, 40, "#55707e", A.ink);   // the handle, by the seam
+            if (left) { _fpFaceY(it, 0.3, 0.6, 62, 66, _fpRgba("#9be8ff", 0.55 + 0.3 * Math.sin(f * 0.03 + seed)), null); }   // the readout over the door
+            const g0 = P(x, y + 0.5, 0), g1 = P(x, y + 0.5, 20), gr = ctx.createLinearGradient(g0[0], g0[1], g1[0], g1[1]); gr.addColorStop(0, "rgba(245,252,255,0.8)"); gr.addColorStop(1, "rgba(245,252,255,0)");
+            _fpFaceY(it, 0, 1, 0, 20, gr, null);   // frost crusting the foot
+        }
+        if (it.top) { const c = P(x, y, 74); ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.beginPath(); ctx.ellipse(c[0], c[1], 9, 4, 0, 0, 6.2832); ctx.fill(); }   // a rime of frost on the top
+    } else if (k === "toppled_rack") {   // A STORAGE RACK TOPPLED OVER (the user's plan): lying on its back at an angle, its frame and shelves facing up, a few boxes spilled beside it. Drawn whole from one of its cells (the last drawn). (The flat drawing, until the cold sheet's sprite has arrived: js/propsprites.js)
+        if (it.skip || !it.poly) return true;
+        _fpTiltRack(it.poly, seed, f);
     } else if (k === "rail") { return false;
     } else return false;
     return true;
+}
+// a box standing on a four-cornered outline at any angle (a toppled rack): the sides the camera sees, then the top
+function _fpTiltBox(poly, z0, z1, top, side, side2) {
+    let area = 0; for (let i = 0; i < poly.length; i++) { const p = poly[i], q = poly[(i + 1) % poly.length]; area += p[0] * q[1] - q[0] * p[1]; }
+    const sgn = area > 0 ? 1 : -1;
+    for (let i = 0; i < poly.length; i++) {
+        const p = poly[i], q = poly[(i + 1) % poly.length], nx = (q[1] - p[1]) * sgn, ny = -(q[0] - p[0]) * sgn;   // the outward normal
+        if (nx + ny <= 0) continue;   // (facing away from the camera)
+        _fpQuad([_fpP(p[0], p[1], z0), _fpP(q[0], q[1], z0), _fpP(q[0], q[1], z1), _fpP(p[0], p[1], z1)], nx > ny ? side : side2, FP_PAL.ink, 2.5);
+    }
+    _fpQuad(poly.map(q => _fpP(q[0], q[1], z1)), top, FP_PAL.ink, 3);
+}
+function _fpTiltRack(poly, seed, f) {
+    const [a, b, c, d] = poly, lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    // the spilled boxes first (they lie on the floor beside it)
+    for (let k = 0; k < 3; k++) {
+        const t = 0.25 + k * 0.3, m = lerp(lerp(d, c, t), lerp(a, b, t), 0.5), out = [(b[0] - a[0]) * 0.9, (b[1] - a[1]) * 0.9], cx = m[0] + out[0] * (k === 1 ? -1 : 1), cy = m[1] + out[1] * (k === 1 ? -1 : 1), s = 0.18 + (k % 2) * 0.05;
+        _fpTiltBox([[cx - s, cy - s], [cx + s, cy - s], [cx + s, cy + s], [cx - s, cy + s]], 0, 12 + k * 3, "#e9eef0", "#b9c7cf", "#a3b3bd");
+    }
+    _fpTiltBox(poly, 0, 6, "#5d6b76", "#3e4a54", "#34404a");   // its back panel, on the floor
+    // the frame on top: two long uprights, and the shelves across between them
+    const P = (q, z) => _fpP(q[0], q[1], z);
+    ctx.lineCap = "round";
+    for (const [p, q] of [[lerp(a, b, 0.08), lerp(d, c, 0.08)], [lerp(a, b, 0.92), lerp(d, c, 0.92)]]) { const s0 = P(p, 15), s1 = P(q, 15); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(s0[0], s0[1]); ctx.lineTo(s1[0], s1[1]); ctx.stroke(); ctx.strokeStyle = "#9fb0bb"; ctx.lineWidth = 3.5; ctx.stroke(); }
+    for (let k = 0; k < 5; k++) { const t = 0.08 + k * 0.21, p = P(lerp(lerp(a, d, t), lerp(b, c, t), 0.08), 13), q = P(lerp(lerp(a, d, t), lerp(b, c, t), 0.92), 13); ctx.strokeStyle = FP_PAL.ink; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); ctx.strokeStyle = "#c4d0d8"; ctx.lineWidth = 2.5; ctx.stroke(); }
+    // frost along it
+    const m0 = P(lerp(a, b, 0.5), 15), m1 = P(lerp(d, c, 0.5), 15); ctx.strokeStyle = "rgba(240,250,255,0.45)"; ctx.lineWidth = 2; ctx.setLineDash([3, 7]); ctx.beginPath(); ctx.moveTo(m0[0], m0[1]); ctx.lineTo(m1[0], m1[1]); ctx.stroke(); ctx.setLineDash([]);
+    ctx.lineCap = "butt";
 }
 
 // ── glass: a pale sill, a tinted pane with shine streaks, a rail on top with an ink line, posts every two tiles, a neon seam along the sill ──
@@ -299,6 +349,7 @@ for (const k of ["monitor_bank", "garage_door", "gun_rack"]) FP_WALL_KINDS[k] = 
 // With `flat` it is a level doorway instead of stairs: a steel sliding door with its two leaves drawn back from a dark gap, a lit lamp strip over it, no steps. Stepping into the alcove goes through it. `colour` is the lit sign's.
 Object.assign(FP_STYLE_WALL, {
     portal_door: (it, f) => {
+        if (it.cold) return _fpColdDoor(it, f);   // the Cold Storage's door: its own drawing (below)
         const S = FP_STEEL_DOOR, H = 86, col = it.colour || _FPW.amber, pul = 0.65 + 0.35 * Math.sin(f * 0.07 + it.seed), up = it.up;
         _fpWQuad(it, 0.02, 0.98, 0, H + 14, _FPW.tealDark, _FPW.ink, 4);   // the frame, with a header slab for the sign
         _fpWQuad(it, 0.09, 0.91, 3, H, "#04070d", _FPW.ink, 2);            // the dark stairwell
@@ -317,4 +368,36 @@ Object.assign(FP_STYLE_WALL, {
     },
 });
 FP_WALL_KINDS.portal_door = FP_STYLE_WALL.portal_door;
+// THE COLD STORAGE'S DOOR (the user's drawing, "COLD STORAGE · ICE"): a wide double freezer door in a heavy steel frame, each leaf with a band of window across its top and a latch plate low by the seam, frost creeping up from
+// its foot and a pale cold light leaking under it, set in a formation of boulders (big angular rocks either side and over the frame). The same on both sides: the arena's alcove and the Cold Storage's entrance.
+function _fpColdDoor(it, f) {
+    const P = (u, z) => _fpWP(it, u, z), ink = _FPW.ink, pul = 0.6 + 0.4 * Math.sin(f * 0.05 + it.seed);
+    const poly = (pts, fill, stroke, lw) => _fpQuad(pts.map(q => P(q[0], q[1])), fill, stroke, lw);
+    // the boulders: two big ones at the sides, three over the top, each a lit face and a shadowed one
+    const rocks = [[[0.0, 0], [-0.02, 46], [0.05, 84], [0.13, 92], [0.16, 60], [0.15, 0]], [[0.85, 0], [0.84, 64], [0.88, 94], [0.97, 86], [1.02, 44], [1.0, 0]],
+                   [[0.08, 88], [0.12, 112], [0.3, 120], [0.4, 104], [0.34, 90]], [[0.32, 92], [0.4, 118], [0.6, 124], [0.68, 106], [0.62, 92]], [[0.6, 92], [0.66, 114], [0.84, 118], [0.93, 100], [0.88, 88]]];
+    for (let k = 0; k < rocks.length; k++) {
+        const r = rocks[k]; poly(r, ["#5d5047", "#544840", "#62564c", "#4f443c", "#5a4e45"][k], ink, 3);
+        const top = r.slice(1, 4); poly([r[1], top[1], [top[1][0], top[1][1] - 10], [r[1][0] + 0.02, r[1][1] - 6]], "rgba(255,240,220,0.08)", null);
+        poly([[r[r.length - 2][0], r[r.length - 2][1]], [r[r.length - 1][0], r[r.length - 1][1]], [r[r.length - 1][0] - 0.03, r[r.length - 1][1] + 8]], "rgba(0,0,0,0.25)", null);
+        poly([[r[0][0] + 0.01, r[0][1]], [r[1][0] + 0.02, r[1][1] * 0.5], [r[1][0] + 0.06, r[1][1] * 0.42], [r[0][0] + 0.06, r[0][1]]], "rgba(225,245,255,0.18)", null);   // (frost on the rock near the door)
+    }
+    // the frame and the two leaves, a band of window across the top of each, the seam, the latch plates
+    poly([[0.13, 0], [0.13, 90], [0.87, 90], [0.87, 0]], "#9fb3bf", ink, 3.5);
+    for (const [u0, u1] of [[0.17, 0.495], [0.505, 0.83]]) {
+        poly([[u0, 2], [u0, 84], [u1, 84], [u1, 2]], "#d9e6ec", ink, 2.5);
+        poly([[u0 + 0.03, 58], [u0 + 0.03, 74], [u1 - 0.03, 74], [u1 - 0.03, 58]], "#203845", ink, 2);   // the window band
+        poly([[u0 + 0.05, 62], [u0 + 0.05, 71], [u0 + 0.12, 71], [u0 + 0.09, 62]], "rgba(255,255,255,0.35)", null);   // its glint
+        for (let k = 0; k < 3; k++) _fpWLine(it, u0 + 0.02, 14 + k * 14, u1 - 0.02, 14 + k * 14, "rgba(90,120,140,0.35)", 1.4);   // the insulated panels' ribs
+    }
+    poly([[0.44, 26], [0.44, 36], [0.48, 36], [0.48, 26]], "#3a4a55", ink, 1.5); poly([[0.52, 26], [0.52, 36], [0.56, 36], [0.56, 26]], "#3a4a55", ink, 1.5);   // the latch plates either side of the seam
+    _fpWLine(it, 0.5, 2, 0.5, 84, ink, 2.5);
+    // the cold: frost creeping up from the foot, a pale light under the door, a breath of mist
+    const g0 = P(0.5, 0), g1 = P(0.5, 34), gr = ctx.createLinearGradient(g0[0], g0[1], g1[0], g1[1]); gr.addColorStop(0, "rgba(235,250,255,0.75)"); gr.addColorStop(1, "rgba(235,250,255,0)");
+    poly([[0.17, 2], [0.17, 34], [0.83, 34], [0.83, 2]], gr, null);
+    ctx.globalCompositeOperation = "lighter"; poly([[0.17, 0], [0.17, 4], [0.83, 4], [0.83, 0]], "rgba(155,232,255," + (0.55 * pul).toFixed(3) + ")", null); ctx.globalCompositeOperation = "source-over";
+    const m = P(0.5, 6); _fpGlow(m[0], m[1], 40, it.colour || "#9be8ff", 0.16 * pul);
+    // a small lit plate over the frame
+    poly([[0.4, 92], [0.4, 100], [0.6, 100], [0.6, 92]], "#0d1a22", ink, 1.5); poly([[0.42, 94], [0.42, 98], [0.58, 98], [0.58, 94]], _fpRgba(it.colour || "#9be8ff", 0.5 + 0.4 * pul), null);
+}
    // (these exist only in the style: every room is styled, and this makes them wall decor the dressing places)

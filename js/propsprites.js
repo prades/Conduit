@@ -107,7 +107,8 @@ function _psCentre(id) {
 
 // ── which sheet a kind of prop is on, and which variant of it a given prop is ──
 // The sheets (design/props/models/<family>.js): office (the desks, consoles, server racks), lounge (the sofas, tables, vending machines...), lab (benches, the fume hood, test chambers, the generator...), tech (teleporters,
-// relays, the charger, the mech bay, lockers, cabinets, display cases, the telescope), cargo (crates, barrels, floodlights, barriers, the supply case), power (the arena's big generator), plant, sentry, truck, tank, bridge.
+// relays, the charger, the mech bay, lockers, cabinets, display cases, the telescope), cargo (crates, barrels, floodlights, barriers, the supply case), cold (the Cold Storage's freezers and toppled racks), plant, sentry,
+// truck, tank, bridge.
 // A variant is named  kind[.WxH|.rNN][.on|.off][.sN]  : the size of the prop in tiles (WxH along x and y; rNN a round prop's radius in hundredths), its state (a relay or the charger: online or not), and a look (s0, s1...:
 // a prop picks one by its id, so a row of crates is not a row of the same crate). The most specific variant that exists is used: a kind with one model for every size is just `kind`.
 const PS_FAMILY = {
@@ -116,7 +117,7 @@ const PS_FAMILY = {
     lab_bench: "lab", fume_hood: "lab", test_chamber: "lab", cart: "lab", generator: "lab", toolbox: "lab", speaker: "lab", spool: "lab",
     teleporter: "tech", charger: "tech", relay: "tech", mech_bay: "tech", locker: "tech", cabinet: "tech", display_case: "tech", telescope: "tech",
     crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo",
-    main_generator: "power", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
+    freezer_bank: "cold", toppled_rack: "cold", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
 };
 const _psIndex = {};
 function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, dims, state, style }] }
@@ -180,18 +181,27 @@ function facilityCaseSprite(it) { const fam = "cargo"; if (!_psImg(fam)) return 
 // is this one of the sprite-only cells (a tank's rim) that is nothing without its sprite?
 function facilitySpriteOnly(it) { return !!it.spriteOnly; }
 
-// the cells round a round tank's rim that its circle only grazes, so the sprite is not cut off square where the cells stop (not solid: the prop's own cells are)
+// the cells round a round tank's rim that its circle only grazes, so the sprite is not cut off square where the cells stop (not solid: the prop's own cells are); and the same round a prop lying at an angle
+// (a toppled rack: its outline crosses tiles it does not fill, and the boxes it spilled lie beside it)
 function _psRimItems(F, items) {
     const out = [];
     for (const s of F.solids) {
-        if (s.shape !== "circle" || (s.kind !== "liquid_reserve" && s.kind !== "tank")) continue;
-        const have = new Set(items.filter(i => i.fp === "prop" && i.id === s.id).map(i => i.x + "," + i.y)), R = s.r + 0.9;
-        for (let x = Math.floor(s.at[0] - R); x <= Math.ceil(s.at[0] + R); x++) for (let y = Math.floor(s.at[1] - R); y <= Math.ceil(s.at[1] + R); y++) {
-            if (have.has(x + "," + y) || Math.hypot(x - s.at[0], y - s.at[1]) > R) continue;
+        const round = s.shape === "circle" && (s.kind === "liquid_reserve" || s.kind === "tank"); if (!round && !(s.tilted && PS_FAMILY[s.kind])) continue;
+        const have = new Set(items.filter(i => i.fp === "prop" && i.id === s.id).map(i => i.x + "," + i.y)), R = round ? s.r + 0.9 : 1.2;
+        const near = round ? (x, y) => Math.hypot(x - s.at[0], y - s.at[1]) <= R : (x, y) => _psPolyDist(x, y, s.poly) <= R;
+        const x0 = round ? s.at[0] - R : s.bb[0] - R, x1 = round ? s.at[0] + R : s.bb[2] + R, y0 = round ? s.at[1] - R : s.bb[1] - R, y1 = round ? s.at[1] + R : s.bb[3] + R;
+        for (let x = Math.floor(x0); x <= Math.ceil(x1); x++) for (let y = Math.floor(y0); y <= Math.ceil(y1); y++) {
+            if (have.has(x + "," + y) || !near(x, y)) continue;
             out.push({ type: "fp", fp: "prop", room: s.room, base: facilityLiftPx(x, y), x, y, kind: s.kind, id: s.id, spriteOnly: true, depth: x + y, seed: 0 });
         }
     }
     return out;
+}
+// how far a point is from a polygon (0 inside it)
+function _psPolyDist(x, y, poly) {
+    if (facilityPointInPoly(x, y, poly)) return 0;
+    let d = Infinity; for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length], dx = b[0] - a[0], dy = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy || 1))); d = Math.min(d, Math.hypot(x - a[0] - dx * t, y - a[1] - dy * t)); }
+    return d;
 }
 // the bridges: from each named tank's east edge to the catwalks' west edge at the tank's y, a row of pieces at the arena floor's height (the sprite carries the deck's height)
 function _psBridgeItems(F) {
