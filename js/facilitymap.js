@@ -54,7 +54,7 @@ const FACILITY_MAP = {
           note: "The gridded floor round the lab: it runs from the arena's top-left corner up the lab's west side, along its north edge and down its east side, ending at the Crystal Chamber's door. The lab (and the passage to Teleport Room 1) cuts the ring open on the west, so this is a C, not a closed loop. Its north-west end is a clean dead end at the Crystal Chamber's door (the old nook there now belongs to Teleport Room 1).",
           polygon: [[370, 410], [930, 410], [930, 600], [870, 600], [870, 760], [310, 760], [310, 605], [430, 605], [430, 640], [750, 640], [750, 530], [430, 530], [370, 530]] },
         { id: "experiment_lab", label: "Experiment Lab", level: 0, status: "approximate", wall_material: "glass",
-          note: "The enclosed lab in the middle of the gridded floor: WINDOWED OFF from the hallway round it (glass, not walkable). Its only way out is the narrow passage to Teleport Room 1. The interior furniture is not traced yet.",
+          note: "The enclosed lab in the middle of the gridded floor: WINDOWED OFF from the hallway round it (glass, not walkable). Its only DOOR is the narrow passage to Teleport Room 1; the stairwell in its north-west corner goes down to the Cold Storage (an interior: a doorway you go through, so with the passage shut no walk reaches the lab). The interior furniture is not traced yet.",
           polygon: [[430, 530], [750, 530], [750, 640], [430, 640]] },
         { id: "lab_passage", label: "Narrow passage (lab to Teleport Room 1)", level: 0, status: "approximate",
           note: "The lab's little narrow hallway: it crosses the west side of the gridded floor from the lab's west wall to Teleport Room 1 (the arm of the lab drawn reaching the left wall in the sketch).",
@@ -92,7 +92,7 @@ const FACILITY_MAP = {
           edge_kinds: ["rock", "rock", "wall", "rock", "wall", "rock", "wall", "rock", "rock", "rock", "rock", "railing_wall",
                        "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "rock", "deck_wall"] },
         { id: "cold_storage", label: "Cold Storage", level: -1, status: "placed", wall_material: "solid", interior: true,
-          note: "The cold storage, UNDER the Experiment Lab, at the arena's floor level: an INTERIOR like the armory (drawn here, under the lab, built in a part of the map of its own: `interiors`). Two ways in, each a pair of doorways (`portals`): the double freezer door in the arena's north cave wall (where the generator stood), and the stairwell in the main hallway's floor just south of the lab. Inside, from the user's floor plan: the entrance in the west wall at the top, a bank of freezers along the north wall, the stairs up in the floor at the west side, two storage racks toppled over in the middle, and in the south and east an ice cave with rough walls. ICE: the look only (frost, an icy floor, icicles); it plays like any floor.",
+          note: "The cold storage, UNDER the Experiment Lab, at the arena's floor level: an INTERIOR like the armory (drawn here, under the lab, built in a part of the map of its own: `interiors`). Two ways in, each a pair of doorways (`portals`): the double freezer door in the arena's north cave wall (where the generator stood), and the stairwell in the Experiment Lab's floor, in its north-west corner by its door. Inside, from the user's floor plan: the entrance in the west wall at the top, a bank of freezers along the north wall, the stairs up in the floor at the west side, two storage racks toppled over in the middle, and in the south and east an ice cave with rough walls. ICE: the look only (frost, an icy floor, icicles); it plays like any floor.",
           // the room from the user's plan (20 px to a tile; its top-left at (440, 540)): the built part is twelve tiles wide; its east wall runs seven tiles down and its west wall eleven; between them the ICE CAVE's rough
           // edge bulges out to the south-east. The ENTRANCE is an alcove in the west wall at the top (three tiles, x 420 to 440): the freezer door back out to the arena.
           // (The cave's south-west edge zigzags, two tiles across to one down: a piece running at 45 degrees, north-west to south-east, would be seen exactly side-on and show no rock at all.)
@@ -129,10 +129,10 @@ const FACILITY_MAP = {
           note: "The Cold Storage's double freezer door, set in boulders in an alcove in the arena's north cave wall, where the generator stood." },
         { id: "portal_cold_arena", room: "cold_storage", rect: [420, 560, 440, 620], arrive: [470, 590], to: "portal_arena_cold", label: "ARENA", kind: "door",
           note: "The freezer door back out to the arena: the entrance, an alcove in the cold storage's west wall at the top." },
-        { id: "portal_hall_cold", room: "lab_hallway", rect: [580, 660, 620, 720], arrive: [560, 700], to: "portal_cold_hall", label: "COLD STORAGE", kind: "stairs_down", well: true,
-          note: "A STAIRWELL in the main hallway's floor, just south of the Experiment Lab's glass wall: steps going down under the lab to the Cold Storage. Not an alcove: an opening in the floor with a rail round three sides." },
-        { id: "portal_cold_hall", room: "cold_storage", rect: [490, 660, 530, 720], arrive: [510, 750], to: "portal_hall_cold", label: "MAIN HALLWAY", kind: "stairs_up", well: true,
-          note: "The stairs up to the main hallway: a flight standing in the floor at the cold storage's west side (the plan's STAIRS)." },
+        { id: "portal_lab_cold", room: "experiment_lab", rect: [450, 530, 510, 560], arrive: [470, 600], to: "portal_cold_lab", label: "COLD STORAGE", kind: "stairs_down", well: true,
+          note: "A STAIRWELL in the Experiment Lab's floor, in its north-west corner just inside the door from the passage (the north bench is three tiles shorter for it): steps going down to the north, to the Cold Storage under the lab, entered from the aisle. Not an alcove: an opening in the floor with a rail round three sides." },
+        { id: "portal_cold_lab", room: "cold_storage", rect: [490, 660, 530, 720], arrive: [510, 750], to: "portal_lab_cold", label: "EXPERIMENT LAB", kind: "stairs_up", well: true,
+          note: "The stairs up to the Experiment Lab: a flight standing in the floor at the cold storage's west side (the plan's STAIRS)." },
     ],
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
@@ -151,7 +151,7 @@ const FACILITY_MAP = {
 
         // ── THE SCIENCE LAB (the Experiment Lab): benches along the north and south walls, a fume hood, glass test chambers beside the big tank. A two-and-a-half tile aisle runs between the benches
         //    from the passage door to the tank.
-        { id: "lab_bench_north", room: "experiment_lab", shape: "rect", rect: [450, 530, 610, 560], status: "placed", kind: "lab_bench", note: "A long bench: microscope, glassware, sample racks." },
+        { id: "lab_bench_north", room: "experiment_lab", shape: "rect", rect: [510, 530, 610, 560], status: "placed", kind: "lab_bench", note: "A long bench: microscope, glassware, sample racks. Five tiles: its west end gave way to the Cold Storage's stairwell." },
         { id: "lab_hood", room: "experiment_lab", shape: "rect", rect: [630, 530, 690, 560], status: "placed", kind: "fume_hood", note: "A fume hood on the north wall." },
         { id: "lab_bench_south", room: "experiment_lab", shape: "rect", rect: [450, 612, 610, 640], status: "placed", kind: "lab_bench" },
         { id: "chamber_1", room: "experiment_lab", shape: "circle", at: [668, 622], radius: 17, status: "placed", kind: "test_chamber", note: "A glass test chamber." },
@@ -741,10 +741,10 @@ const FACILITY_MAP = {
         { id: "gun_rack_2", room: "armory", kind: "gun_rack", a: [270, 950], b: [290, 950] },
         { id: "armory_stairs_door", room: "armory", kind: "portal_door", a: [290, 930], b: [330, 930], colour: "#ffb347", up: true },
         { id: "deck_stairs_door", room: "observation_deck", kind: "portal_door", a: [160, 870], b: [160, 910], colour: "#8fe3ff" },
-        // ── the Cold Storage: its freezer door at the entrance (the inside of the arena's), the stairwell down to it in the main hallway's floor and the stairs up inside it, the ice cave's glassy floor, cold lights ──
+        // ── the Cold Storage: its freezer door at the entrance (the inside of the arena's), the stairwell down to it in the Experiment Lab's floor and the stairs up inside it, the ice cave's glassy floor, cold lights ──
         { id: "cold_arena_door", room: "cold_storage", kind: "portal_door", a: [420, 560], b: [420, 620], colour: "#9be8ff", flat: true, cold: true },
-        { id: "hall_cold_stairwell", room: "lab_hallway", kind: "stairwell", rect: [580, 660, 620, 720], dir: "n", colour: "#9be8ff", note: "A stairwell in the hallway's floor: steps going down to the north, under the lab; a rail round three sides, open at the south where you step in." },
-        { id: "cold_hall_stairs", room: "cold_storage", kind: "stairwell", rect: [490, 660, 530, 720], dir: "n", up: true, colour: "#9be8ff", note: "The flight up to the main hallway, standing in the floor: steps rising to the north." },
+        { id: "lab_cold_stairwell", room: "experiment_lab", kind: "stairwell", rect: [450, 530, 510, 560], dir: "n", colour: "#9be8ff", note: "A stairwell in the lab's floor by its door: steps going down to the north, into the Cold Storage under it; a rail round three sides, open at the south where you step in from the aisle." },
+        { id: "cold_lab_stairs", room: "cold_storage", kind: "stairwell", rect: [490, 660, 530, 720], dir: "n", up: true, colour: "#9be8ff", note: "The flight up to the Experiment Lab, standing in the floor: steps rising to the north." },
         { id: "cold_cave_ice", room: "cold_storage", kind: "ice_sheet", path: [[456, 748], [500, 745], [560, 752], [610, 724], [650, 712], [675, 690], [712, 708], [730, 745], [749, 782], [749, 818], [718, 850], [675, 872], [620, 890], [585, 870], [545, 852], [530, 812], [490, 794], [466, 754]],
           note: "The ice cave's floor: glassy ice over the rock (the look only: it plays like any floor)." },
         { id: "cold_light_1", room: "cold_storage", kind: "light", at: [560, 630], radius: 140, colour: "#bfefff", a: 0.16 },
@@ -835,7 +835,7 @@ const FACILITY_MAP = {
         { id: "conn_deck_armory", rooms: ["observation_deck", "armory"], portal: "portal_deck_armory" },
         { id: "conn_arena_armory", rooms: ["arena", "armory"], portal: "portal_arena_armory" },
         { id: "conn_arena_cold", rooms: ["arena", "cold_storage"], portal: "portal_arena_cold" },
-        { id: "conn_hall_cold", rooms: ["lab_hallway", "cold_storage"], portal: "portal_hall_cold" },
+        { id: "conn_lab_cold", rooms: ["experiment_lab", "cold_storage"], portal: "portal_lab_cold" },
     ],
     ramps: [
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).

@@ -37,7 +37,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   try {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; selectedUnits.clear();
-    var t = followers[0]; t.element = 'electric'; t.role = 'camper'; t.evolved = undefined; step(12); partyTick();
+    var t = followers[0]; t.element = 'electric'; t.role = 'camper'; t.evolved = undefined; followers.slice(1).forEach(function(f){ f.role = 'brawler'; }); step(12); partyTick();   // (the squad the page starts with has random roles: one could be a technician with a chip of its own)
     var chip = $('#squadBar .sb-slot.has-ab .sb-ab');
     out.chip0 = chip ? [chip.textContent, chip.className, $$cards()] : null;
     function $$cards(){ return Array.prototype.slice.call(document.querySelectorAll('#squadBar .sb-slot.has-ab')).length; }

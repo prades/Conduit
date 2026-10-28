@@ -1,4 +1,5 @@
 // THE LAB FAMILY (docs: design/props/BRIEF.md). Variants (named kind[.WxH|.rNN][.sN]):
+//   lab_bench.5x2            the north bench cut to five tiles (style 1's things, closer together), making room for the Cold Storage's stairwell by the lab's door
 //   lab_bench.8x2.s0 / .s1   the two long island benches of the Experiment Lab: white solid-surface top, cabinets and drawers on the +z face, a sink with a gooseneck tap, glassware, racks, a microscope, a centrifuge, a monitor
 //   fume_hood                the 3 x 2 fume cupboard: cabinet base, a glass sash front and side, a lit interior with apparatus, a control header, a canopy and a duct up
 //   test_chamber.r85 / .r75  the two round glass specimen chambers (mint / violet liquid, bubbles, a suspended specimen, a steel cap with tubes)
@@ -80,30 +81,32 @@
   const labTop = (par, y, items, k) => { for (const [mk, x, z, ry] of items) { const o = mk(); at(o, x, P(y), z, ry); if (k) o.scale.setScalar(k); par.add(o); } };
 
   // ───────────── THE BENCH ─────────────
-  const bench = (style) => {
-    const g = G(), TOP = 36, X0 = -4, X1 = 4, Z1 = 1;
+  const bench = (style, n) => {   // n: its length in tiles (8 unless given)
+    n = n || 8; const g = G(), TOP = 36, X0 = -n / 2, X1 = n / 2, Z1 = 1;
     // kick plate, carcass, doors and drawers on the +z face, the +x end panel
     B(g, [X0 + 0.04, X1 - 0.04], [0, 4], [-Z1 + 0.08, Z1 - 0.08], L.graphite, 0.01);
     B(g, [X0 + 0.02, X1 - 0.02], [4, 33.2], [-Z1 + 0.06, Z1 - 0.1], L.laminateDk, 0.01);
     const kinds = style === 0 ? ['door', 'drawers', 'door', 'door', 'drawers', 'door', 'drawers', 'door'] : ['drawers', 'door', 'door', 'drawers', 'door', 'drawers', 'door', 'door'];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < n; i++) {
       const x0 = X0 + i + 0.04, x1 = X0 + i + 0.96, zf = Z1 - 0.1;
       if (kinds[i] === 'door') { B(g, [x0, x1], [4.6, 32.8], [zf, zf + 0.05], L.laminate, 0.012); B(g, [x0 + 0.05, x1 - 0.05], [6.2, 31.2], [zf + 0.045, zf + 0.055], L.laminateDk, 0.004); const h = cyl(0.016, 0.016, P(9), L.chrome, 8); h.position.set(x1 - 0.12, P(18), zf + 0.1); g.add(h); for (const yy of [14, 22]) rod(g, [x1 - 0.12, P(yy), zf + 0.05], [x1 - 0.12, P(yy), zf + 0.1], 0.012, L.chrome, 6); }
       else for (let k = 0; k < 3; k++) { const y0 = 5 + k * 9.4, y1 = y0 + 8.6; B(g, [x0, x1], [y0, y1], [zf, zf + 0.05], L.laminate, 0.012); Ca(g, 'x', 0.016, x0 + 0.26, x1 - 0.26, L.chrome, 0, P((y0 + y1) / 2 + 2.4), zf + 0.1, 8); for (const xx of [x0 + 0.26, x1 - 0.26]) rod(g, [xx, P((y0 + y1) / 2 + 2.4), zf + 0.05], [xx, P((y0 + y1) / 2 + 2.4), zf + 0.1], 0.011, L.chrome, 6); B(g, [x0 + 0.04, x0 + 0.1], [y0 + 1.6, y0 + 3.4], [zf + 0.05, zf + 0.06], i % 2 ? L.tealLit : L.amber, 0.002); }
       if (i % 2 === 0 && kinds[i] === 'door') B(g, [x0 + 0.1, x0 + 0.32], [28, 30], [zf + 0.052, zf + 0.06], i % 4 === 0 ? G_.mint : G_.cyan, 0.002);
     }
-    for (let i = 0; i <= 8; i++) B(g, [X0 + i - 0.012, X0 + i + 0.012], [4.4, 33], [Z1 - 0.1, Z1 - 0.04], L.steelDk, 0.003);   // the gaps between the modules
+    for (let i = 0; i <= n; i++) B(g, [X0 + i - 0.012, X0 + i + 0.012], [4.4, 33], [Z1 - 0.1, Z1 - 0.04], L.steelDk, 0.003);   // the gaps between the modules
     // the +x end: a panel with a teal band, a label plate and a lit indicator
     B(g, [X1 - 0.06, X1], [3, 34], [-Z1 + 0.08, Z1 - 0.08], L.laminate, 0.012); B(g, [X1 - 0.07, X1 + 0.005], [8, 10.4], [-0.82, 0.82], L.teal, 0.004); B(g, [X1 - 0.07, X1 + 0.005], [20, 28], [-0.5, 0.1], L.graphite, 0.006); B(g, [X1 - 0.08, X1 + 0.01], [22, 26], [-0.42, 0.0], style ? G_.cyan : G_.mint, 0.002); S(g, 0.03, G_.green, X1, P(30), 0.55);
     // the worktop: a white solid surface with a teal edge and a splash lip at the back
     B(g, [X0, X1], [33.2, TOP], [-Z1, Z1], L.top, 0.03); B(g, [X0 + 0.01, X1 - 0.01], [31.8, 33.2], [Z1 - 0.1, Z1 - 0.045], L.teal, 0.01); B(g, [X1 - 0.075, X1 - 0.02], [31.8, 33.2], [-Z1 + 0.06, Z1 - 0.1], L.teal, 0.01); B(g, [X0, X1], [TOP, TOP + 1.2], [-Z1 + 0.02, -Z1 + 0.1], L.top, 0.012);
     // the reagent riser along the back: a shelf on steel posts with a row of bottles, and a teal strip under it
     { const sy = TOP + 14; B(g, [X0 + 0.1, X1 - 0.1], [sy, sy + 1.6], [-Z1 + 0.02, -Z1 + 0.36], L.top, 0.01); B(g, [X0 + 0.1, X1 - 0.1], [sy - 0.8, sy], [-Z1 + 0.34, -Z1 + 0.36], L.teal, 0.004);
-      for (const x of [X0 + 0.14, -1.9, 0.1, 2.1, X1 - 0.14]) B(g, [x - 0.03, x + 0.03], [TOP + 1.2, sy], [-Z1 + 0.1, -Z1 + 0.16], L.steel, 0.006);
+      for (const x of n === 8 ? [X0 + 0.14, -1.9, 0.1, 2.1, X1 - 0.14] : [X0 + 0.14, -0.8, 0.8, X1 - 0.14]) B(g, [x - 0.03, x + 0.03], [TOP + 1.2, sy], [-Z1 + 0.1, -Z1 + 0.16], L.steel, 0.006);
       const cols = [[L.glassBrown, LQ.amber, L.redPaint], [L.glass, LQ.mint, L.tealDk], [L.glass, LQ.violet, L.dark], [L.glassBrown, LQ.red, L.blueBin], [L.glass, LQ.cyan, L.yellow], [L.glassBrown, LQ.amber, L.dark]];
-      for (let i = 0; i < 21; i++) { if ((i + style * 3) % 7 === 4) continue; const c = cols[(i * 5 + style * 2) % cols.length], h = 11 + rnd(i + style * 9) * 6, b = bottle(0.075 + rnd(i + 3) * 0.02, h, c[0], c[1], c[2]); at(b, X0 + 0.45 + i * 0.37, P(sy + 1.6), -Z1 + 0.19); g.add(b); } }
+      for (let i = 0, nb = n === 8 ? 21 : Math.floor((n - 0.6) / 0.37) + 1; i < nb; i++) { if ((i + style * 3) % 7 === 4) continue; const c = cols[(i * 5 + style * 2) % cols.length], h = 11 + rnd(i + style * 9) * 6, b = bottle(0.075 + rnd(i + 3) * 0.02, h, c[0], c[1], c[2]); at(b, X0 + 0.45 + i * 0.37, P(sy + 1.6), -Z1 + 0.19); g.add(b); } }
     const slots = []; const T0 = TOP + 0.1;
-    if (style === 0) {
+    if (n !== 8) {   // five tiles: style 1's things, closer together
+      labTop(g, T0, [[() => monitor(0.54, 17, ['9be8ff', '2a58c8']), -1.9, -0.5, 0], [keyboard, -1.9, 0.28, 0], [gasTap, -1.3, -0.82, 0], [centrifuge, -0.8, -0.4, deg(40)], [() => tubeRack(7, [LQ.violet, LQ.mint, LQ.cyan]), -0.95, 0.5, 0], [microscope, 0.15, -0.4, deg(-15)], [tipBox, -0.15, 0.55, 0], [sink, 0.6, 0.55, 0], [tablet, 1.1, -0.45, 0.2], [() => flask(0.15, LQ.violet), 1.3, 0.52, 0], [() => erlen(0.15, 16, LQ.mint), 1.65, 0.5, 0], [() => beaker(0.16, 15, LQ.amber, 0.5), 2.0, 0.55, 0], [() => bottle(0.1, 17, L.glassBrown, LQ.amber, L.redPaint), 1.7, -0.45, 0], [() => bottle(0.1, 15, L.glass, LQ.blue, L.tealDk), 1.95, -0.38, 0], [() => bottle(0.1, 16, L.glass, LQ.violet, L.dark), 2.2, -0.46, 0], [washBottle, 2.3, 0.5, -0.5]], 1.25);
+    } else if (style === 0) {
       labTop(g, T0, [[sink, -3.5, 0.55, 0], [() => tubeRack(6, [LQ.mint, LQ.amber, LQ.violet]), -2.3, 0.5, 0.1], [microscope, -1.6, -0.4, deg(20)], [() => flask(0.14, LQ.mint), -0.78, 0.55, 0], [() => erlen(0.17, 18, LQ.amber), -0.38, 0.6, 0], [() => beaker(0.14, 14, LQ.cyan), -0.02, 0.5, 0], [centrifuge, 0.5, -0.45, 0], [() => monitor(0.54, 17, ['8fd0ff', '2a58c8']), 1.55, -0.5, 0], [keyboard, 1.5, 0.3, 0], [() => tubeRack(5, [LQ.red, LQ.cyan]), 2.5, 0.55, -0.1], [gasTap, 2.8, -0.82, 0], [washBottle, 3.15, 0.45, 0.4], [() => bottle(0.1, 16, L.glassBrown, LQ.amber, L.redPaint), 2.75, -0.35, 0], [() => bottle(0.09, 14, L.glass, LQ.green, L.blueBin), 3.0, -0.5, 0], [() => bottle(0.11, 18, L.glassBrown, LQ.red, L.dark), 3.3, -0.4, 0], [sharps, 3.6, 0.55, 0], [tipBox, -3.0, -0.6, 0.2]], 1.25);
     } else {
       labTop(g, T0, [[() => monitor(0.54, 17, ['9be8ff', '2a58c8']), -3.4, -0.5, 0], [keyboard, -3.4, 0.28, 0], [centrifuge, -2.5, -0.4, deg(40)], [() => tubeRack(7, [LQ.violet, LQ.mint, LQ.cyan]), -1.5, 0.5, 0], [microscope, -0.5, -0.4, deg(-15)], [sink, 0.7, 0.55, 0], [() => flask(0.15, LQ.violet), 1.55, 0.52, 0], [() => flask(0.11, LQ.cyan), 1.9, 0.6, 0], [() => erlen(0.15, 16, LQ.mint), 2.25, 0.5, 0], [() => beaker(0.16, 15, LQ.amber, 0.5), 2.6, 0.55, 0], [tablet, 2.3, -0.45, 0.2], [() => bottle(0.1, 17, L.glassBrown, LQ.amber, L.redPaint), 3.0, -0.45, 0], [() => bottle(0.1, 15, L.glass, LQ.blue, L.tealDk), 3.25, -0.38, 0], [() => bottle(0.1, 16, L.glass, LQ.violet, L.dark), 3.5, -0.46, 0], [gasTap, -2.0, -0.82, 0], [washBottle, 3.4, 0.5, -0.5], [tipBox, -0.4, 0.55, 0], [sharps, 3.7, 0.55, 0]], 1.25);
@@ -303,6 +306,7 @@
     'lab_bench.8x2.s0': () => bench(0), 'lab_bench.8x2.s1': () => bench(1), 'fume_hood': hood,
     'test_chamber.r85': () => chamber(0.85, LQ.mint, glow('#b8ffe6'), 'embryo', G_.mint), 'test_chamber.r75': () => chamber(0.75, LQ.violet, glow('#e8c8ff'), 'crystal', G_.violet),
     'cart.1x1': () => cart(0.92, labItems), 'cart.2x1': () => cart(1.92, armoryItems), 'generator.1x2': gen1x2, 'generator.1x1': gen1x1, 'toolbox': toolbox, 'speaker': speaker, 'spool': spool,
+    'lab_bench.5x2': () => bench(1, 5),   // (last, so the other sprites keep their places on the sheet)
   };
   PROPS.lab = { variants: Object.keys(VAR), canvas: [1100, 760], exposure: 0.92, build(name) { return VAR[name](); } };
 }
