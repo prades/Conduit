@@ -779,6 +779,15 @@
     #squadBar .sb-ab.wait { color: #ffe733; background: #23283a; } #squadBar .sb-ab.busy { color: #05070f; background: #b8a52e; } #squadBar .sb-ab.aim { color: #05070f; background: #ffffff; }
     #ccSquadBox .sb-ab { display: none !important; }
     @media (max-width: 560px) { #squadBar .sb-ab { right: 4px; padding: 0 5px; font-size: 9px; } #squadBar .sb-slot.has-ab .sb-sub, #squadBar .sb-slot.has-ab .sb-hp { margin-right: 0; } }
+    /* THE SQUAD IS FULL: WHO MAKES ROOM (js/party.js partyPickOpen): one of the three (it holds a room with a place, or retires after a confirm), or nobody (the new one holds a room), or cancel */
+    #partyPick { position: fixed; inset: 0; z-index: 40; display: none; align-items: center; justify-content: center; background: rgba(2,4,10,0.6); font-family: var(--neo-font); }
+    body.party-pick #partyPick { display: flex; }
+    #partyPick .pp-card { width: min(420px, calc(100% - 32px)); box-sizing: border-box; padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 10px; background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid #ffe733; box-shadow: 0 0 18px -2px #ffe733; }
+    #partyPick .pp-t { font: italic 900 20px var(--neo-font); color: #ffe733; letter-spacing: 0.04em; } #partyPick .pp-s { font: 700 11px monospace; font-style: normal; color: #9fb2d8; letter-spacing: 0.06em; }
+    #partyPick .pp-list { display: flex; flex-direction: column; gap: 8px; }
+    #partyPick .pp-b { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-height: 52px; padding: 8px 14px; border: 2px solid #19e6c1; background: #0b1226; color: #e8f0ff; cursor: pointer; touch-action: manipulation; font: italic 900 15px var(--neo-font); text-align: left; }
+    #partyPick .pp-b small { font: 700 10px monospace; font-style: normal; color: #8fe3ff; letter-spacing: 0.05em; } #partyPick .pp-b:hover:not([disabled]) { background: #14244a; } #partyPick .pp-b[disabled] { opacity: 0.45; cursor: default; }
+    #partyPick .pp-bad { border-color: #ff4a1c; color: #ffb39f; } #partyPick .pp-bad small { color: #ff8a6a; }#partyPick .pp-x { align-self: flex-end; height: 40px; padding: 0 16px; border: 0; background: #1d2540; color: #cfd9f0; cursor: pointer; font: italic 900 13px var(--neo-font); }
     /* AIMING A TECHNICIAN'S ABILITY (js/techabilities.js): what to tap, over the top of the play area, and ✕ to call it off */
     #techAim { position: fixed; z-index: 15; left: 50%; top: 98px; transform: translateX(-50%); display: none; align-items: center; gap: 12px; max-width: calc(100% - 32px); box-sizing: border-box; padding: 8px 10px 8px 18px; font-family: var(--neo-font); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid #ffe733; box-shadow: 0 0 14px -2px #ffe733; }
     body.tech-aiming #techAim { display: flex; }
@@ -1061,6 +1070,7 @@
 <div id="mixTool" aria-label="Mix selector"></div>
 <div id="squadBar" aria-label="Your squad"></div>
 <div id="squadFly" aria-label="A squad member's card"></div>
+<div id="partyPick" role="dialog" aria-label="The squad is full: who makes room"></div>
 <div id="techAim" aria-live="polite"><b class="ta-t"></b><button class="ta-x" type="button" onclick="techAimCancel()">✕ CALL OFF</button></div>
 
 

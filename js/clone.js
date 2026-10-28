@@ -643,11 +643,15 @@ function recruitFollower(type, element) {
     floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: roleLabel(t) + " \u00b7 " + (def ? def.label.toUpperCase() : String(e).toUpperCase()) + " RECRUITED!", color: FOLLOWER_TYPES[t].colour, life: 120, vy: -0.2 });
     return true;
 }
-// The + RECRUIT button: recruit, and bring the roster up to date.
+// The + RECRUIT button: recruit, and bring the roster up to date. With the squad full it asks first who makes room (js/party.js partyPickOpen): nothing is paid until that is chosen, and one question is up at a time.
 function recruitDo() {
-    const ok = recruitFollower();
-    if (typeof ccRender === "function") ccRender();
-    if (typeof radialRender === "function") radialRender();
+    const after = () => { if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); };
+    if (typeof partyPickBusy === "function" && partyPickBusy()) return false;
+    if (shardCount >= RECRUIT_COST && typeof partyOn === "function" && partyOn() && typeof partyFull === "function" && partyFull() && typeof partyPickOpen === "function") {
+        partyPickOpen("A RECRUIT", [crystal.x, crystal.y], () => { recruitFollower(); after(); }, null);
+        return true;
+    }
+    const ok = recruitFollower(); after();
     return ok;
 }
 

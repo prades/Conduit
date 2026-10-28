@@ -48,6 +48,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.tap = { sel: selectedUnits.size, cls: s0.classList.contains('sel'), who: $('#mixTool .mt-lab') ? $('#mixTool .mt-lab').textContent : null, to: $('#mixTool .mt-to b') ? $('#mixTool .mt-to b').textContent : null, name: s0.querySelector('.sb-name').textContent, fly: !!$('#squadFly.on') }; click(s0); await wait(30); out.tap.after = [selectedUnits.size, s0.classList.contains('sel'), $('#mixTool .mt-to b') ? $('#mixTool .mt-to b').textContent : null, !!$('#squadFly.on')];
     // HOLD: all three posted where the player is; the bar's cards are open slots
     squadMode = 'all'; if (!wide) { crystalMenuOpen = true; } mixToolRender(true); await wait(30);
+    var hc = partyRoomCells('lab_hallway'), H = hc[Math.floor(hc.length / 2)]; player.x = player.targetX = player.visualX = H[0]; player.y = player.targetY = player.visualY = H[1]; player.fpPath = null; partyMembers().forEach(function(f, i){ f.x = H[0] + 0.3 * i; f.y = H[1]; });   // (where three can hold: the Crystal Chamber holds two)
     var room = partyRoomAt(player.x, player.y); click($('#mixTool [data-order=hold]')); await wait(60);
     out.hold = { names: names(), posted: partyPosted().length, rooms: partyPosted().map(function(f){ return f.post; }).join(), room: room, open: $$('#squadBar .sb-slot.empty .sb-open').map(function(e){ return getComputedStyle(e).display; }).join(), text: floatingTexts.slice(-2).map(function(t){ return t.text; }) };
     // an open slot opens the roster
@@ -124,11 +125,11 @@ function measure(w, h) {
         same(r.clone[0], 1, 'a clone held'); same(r.clone[1], null, 'a clone was posted'); same(r.clone[2], 'hold', 'a clone\'s stance');
     });
     check('COME calls a posted follower back into the squad while it has room; with the squad full it stays posted and the player is told; with room for some, as many as fit come', () => {
-        const r = J(`(function(){ const fs = __fresh(3), o = {}; ccApplyStance(fs, 'hold'); o.mem0 = partyMembers().length; floatingTexts.length = 0;
+        const r = J(`(function(){ const fs = __fresh(3), o = {}; const h = __cell('lab_hallway'); fs.forEach((f, i) => { f.x = h[0] + i * 0.3; f.y = h[1]; }); ccApplyStance(fs, 'hold'); o.mem0 = partyMembers().length; floatingTexts.length = 0;   // (where three can hold: the Crystal Chamber holds two)
             o.one = [ccApplyStance([fs[0]], 'follow'), !fs[0].post, fs[0].stance, fs[0].partySlot !== undefined, partyMembers().length];
             o.two = ccApplyStance([fs[1], fs[2]], 'follow') + ':' + partyMembers().length; o.said = floatingTexts.map(t => t.text).join('|');
             const g = __fresh(4); const p4 = g.find(f => f.post); floatingTexts.length = 0; o.full = [ccApplyStance([p4], 'follow'), !!p4.post, partyMembers().length, floatingTexts.map(t => t.text).join('|')];
-            ccApplyStance([g[0], g[1]], 'hold'); o.room = [ccApplyStance([p4, g[0], g[1]], 'follow'), !!p4.post, !!g[0].post, !!g[1].post, partyMembers().length]; return o; })()`);
+            g[0].x = g[1].x = h[0]; g[0].y = g[1].y = h[1]; ccApplyStance([g[0], g[1]], 'hold'); o.room = [ccApplyStance([p4, g[0], g[1]], 'follow'), !!p4.post, !!g[0].post, !!g[1].post, partyMembers().length]; return o; })()`);
         same(r.mem0, 0, 'everyone posted'); same(r.one.join(), '1,true,follow,true,1', 'one called'); same(r.two, '2:3', 'two more'); ok(/COME/.test(r.said), 'said ' + r.said);
         same(r.full[0], 0, 'a call with the squad full'); same(r.full[1], true, 'it stayed posted'); same(r.full[2], 3, 'the squad'); ok(/SQUAD FULL/.test(r.full[3]), 'said ' + r.full[3]); same(r.room.join(), '2,false,false,true,3', 'two slots, three called: two come (in order) and the last stays posted; the squad is full again');
     });

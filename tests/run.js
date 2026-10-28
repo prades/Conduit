@@ -58,6 +58,7 @@ const SUITES = [
     ['the bottom of the screen: dock, squad bar, tool, enemy card: none over another', 'bottomui.js'],
     ['the squad in the Command Center (box, add / remove / swap, SQUADS window, disband, the phone\'s menu)', 'squadui.js'],
     ['HOLD one follower, then COME brings it back', 'holdcome.js'],
+    ['room capacity, who makes room, the arena over its six', 'rooms.js'],
     ['the corners: the target\'s dial and ammunition bottom right, the objective under the network panel top right', 'corners.js'],
     ['a squad member\'s card on the fly: ALL instead of the element picker, a tap picks a member, INDEX and DISMISS FROM SQUAD', 'squadfly.js'],
     ['the technicians\' abilities: one table, one way in; the Kinetic Launcher\'s throw, its launcher site, the Arena Catwalk and its broken section', 'techabilities.js'],

@@ -57,6 +57,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     click($$('#squadBar .sb-slot.empty')[0]); await wait(120); out.twoTap = { tab: ccOpenTab, filter: ccFilter.squad, sel: selectedUnits.size, members: partyMembers().length }; ccClose(); await wait(40);
     await order('follow'); out.twoCome = { held: partyPosted().length, members: partyMembers().length, said: said(), slots: partyOrdered().map(function(f){ return f.partySlot; }).join() };
     // HOLD with nobody selected posts the whole squad, and COME with nobody selected brings the whole squad back
+    var hc = partyRoomCells('lab_hallway'), H = hc[Math.floor(hc.length / 2)]; partyMembers().forEach(function(f, i){ f.x = H[0] + 0.3 * i; f.y = H[1]; });   // (where three can hold: the Crystal Chamber holds two)
     selectedUnits.clear(); await order('hold'); out.all = { held: partyPosted().length, members: partyMembers().length, bar: bar() }; await order('follow'); out.allBack = { held: partyPosted().length, members: partyMembers().length };
     // THE SQUAD FULL: one holds, a recruit takes the free slot; COME says so (large), and the follower keeps holding; with it selected the same; a slot freed (another removed) and it comes
     click(slots()[0]); await wait(60); await order('hold'); shardCount = 900; recruitFollower(); partyTick(); await wait(60); floatingTexts.length = 0;

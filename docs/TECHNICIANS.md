@@ -54,6 +54,16 @@ A **launcher site** is map data (`launchSites` in `js/facilitymap.js`): where th
 
 At level 9 a follower has about 31 to 48 health (20 to 38 at level 5), so 10 is a big bite.
 
+## Rooms and recruitment (js/party.js)
+
+ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. Arena Level 2: six followers. These room capacities are separate from the three active squad slots"; then the Main Hallway and the Arena are "automatically a level 2 just because of the amount of space in these areas", every other room is Category 1; the follower replaced "has option to go to a vacancy in the rooms but if not confirm retirement"; the Arena over its six moves its weakest by "roster order" to a "free room, else retired".
+
+- **The caps** (`PARTY_ROOM_CAP`): every room 2, the Main Hallway 3, the Arena 6. A room's count is the followers holding it (posted), one on its way back from the dead included; the squad is not counted. The Arena Catwalk is a room like the rest (2): the launcher will not send a third up.
+- **Posting** goes through `partyPlace`: the room meant if it has a place, else the nearest room with one that the follower can walk to. HOLD in a full room is refused and said; REMOVE, DISBAND, a recruit or an egg with the squad full, and the squad cut back to three, go to the nearest room with a place and say so.
+- **Who makes room** (`partyPickOpen`, the `#partyPick` card): + RECRUIT or an egg taken with the squad full asks first: one of the three (it goes to the nearest room with a place, the new one takes its card), NOBODY (the new one holds a room), or CANCEL. Nothing is paid, and no egg is taken, until the choice; one question is up at a time; an egg asks again only after walking away and back. A member picked when no room has a place: retiring it is asked first (RETIRE / BACK). A retired follower leaves the roster for good (no body, no coming back, not saved).
+- **The Arena over its six** (`partyArenaOverflow`, every few frames): the weakest of the followers holding it (one not evolved before one that is, then the lowest level, then the lowest power) moves to the nearest room with a place, or retires when none has one. It is said either way.
+- Not built yet (as asked: "Not yet, skip them for now"): forward rooms, nests, Crystal energy, equipment, the healing station. Claiming a room later will be "followers holding it".
+
 ## Still to be decided
 
 From the audit of the specs against the game (the report given before any code):
@@ -64,4 +74,4 @@ From the audit of the specs against the game (the report given before any code):
 - **Ice, Frost Patch:** placement, size, duration, slow; what sliding means; ice bridges have nowhere to go (there are no gaps in the facility).
 - **Toxic, Blight Spider:** there is no day cycle (the game state may hold only `running`, the clock restarts on each load); the day length; what the pool does and what "toxin reabsorption" means; the death spill (left unresolved, as asked).
 - **Flux, Telegrab:** shards are paid at the kill, never on the ground; its reach.
-- **Rooms, recruitment, forward rooms, the healing station:** see the audit report (room categories, "Level 2", the replaced follower's fate, the ranking, the nest catacombs and Crystal energy, which were removed earlier at the user's request).
+- **Rooms and recruitment:** decided and built (above). Forward rooms, nests, Crystal energy, equipment and the healing station wait ("Not yet").

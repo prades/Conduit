@@ -32,6 +32,60 @@ function partyRoomCells(id) {
     return _fp.roomCells.get(id) || [];
 }
 
+// ── ROOM CAPACITY (the Level 1 update; docs/TECHNICIANS.md "Rooms and recruitment") ──
+// ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. Arena Level 2: six followers. These room capacities are separate from the three active squad slots", then the Main Hallway and the Arena are "automatically
+// a level 2 just because of the amount of space in these areas", and every other room is Category 1. A room's count is the followers holding it (posted), the ones on their way back from the dead included (they keep their place); the
+// squad is not counted. Every way of posting a follower goes through partyPlace: the room it means if that room has a place, else the nearest room with one that it can walk to. The arena takes one more and moves its weakest out.
+const PARTY_ROOM_CAP = { lab_hallway: 3, arena: 6 }, PARTY_ROOM_CAP_ELSE = 2;
+function partyRoomCap(id) { return PARTY_ROOM_CAP[id] || PARTY_ROOM_CAP_ELSE; }
+function partyRoomCount(id, except) {
+    let n = 0; for (const f of partyPosted()) if (f.post === id && f !== except) n++;
+    if (typeof respawnQueue !== "undefined") for (const e of respawnQueue) if (e && !e.isClone && e.post === id) n++;   // (one on its way back from the dead keeps its place)
+    return n;
+}
+function partyRoomFree(id, except) { return !!id && partyRoomCount(id, except) < partyRoomCap(id); }
+// the nearest room with a place that a follower at (x, y) can walk to (not one on another stretch of floor: the catwalks, the nest area, an interior it is not in); `not`: a room left out. null when every one is full.
+function partyVacancy(x, y, except, not) {
+    if (typeof _fp === "undefined" || !_fp || !_fp.F) return null;
+    const comp = typeof _pComp === "function" ? _pComp(x, y) : undefined; let best = null, bd = Infinity;
+    for (const r of _fp.F.rooms) {
+        if (r.id === not || !partyRoomFree(r.id, except)) continue;
+        let d = Infinity; for (const c of partyRoomCells(r.id)) { if (comp !== undefined && _pComp(c[0], c[1]) !== comp) continue; const q = (c[0] - x) ** 2 + (c[1] - y) ** 2; if (q < d) d = q; }
+        if (d < bd) { bd = d; best = r.id; }
+    }
+    return best;
+}
+// post `f` in `room` if it has a place, else in the nearest room that has one: the room it went to, or null when every room it can walk to is full. The arena takes one more and then moves its weakest out (partyArenaOverflow).
+function partyPlace(f, room, quiet) {
+    if (!f) return null;
+    room = room || partyRoomOf(f);
+    if (room && (room === "arena" || partyRoomFree(room, f))) { if (!partyPost(f, room, quiet)) return null; if (room === "arena") partyArenaOverflow(); return f.post || null; }
+    const v = partyVacancy(f.x, f.y, f, room); if (!v || !partyPost(f, v, true)) return null;
+    if (!quiet) _partySay("THE " + partyRoomName(room).toUpperCase() + " IS FULL · HOLDING THE " + partyRoomName(v).toUpperCase(), "#ffe733");
+    return v;
+}
+// THE ARENA OVER ITS SIX. ASKED: "When the Arena exceeds its permitted follower population, automatically remove the weakest eligible follower according to the game's existing strength or ranking data", then "Roster order", and the one
+// removed goes to a "free room, else retired": the weakest of the followers holding it by the roster's order (one not evolved before one that is, then the lowest level, then the lowest power) holds the nearest room with a place, or
+// retires when no room has one. It says so.
+function partyWeakest(list) { return list.slice().sort((a, b) => ((a.evolved ? 1 : 0) - (b.evolved ? 1 : 0)) || ((a.level || 1) - (b.level || 1)) || ((a.power || 0) - (b.power || 0)))[0] || null; }
+function partyArenaOverflow() {
+    for (let guard = 0; guard < 12 && partyRoomCount("arena") > partyRoomCap("arena"); guard++) {
+        const w = partyWeakest(partyPosted().filter(f => f.post === "arena")); if (!w) return;
+        const v = partyVacancy(w.x, w.y, w, "arena"), nm = typeof unitTypeLabel === "function" ? unitTypeLabel(w) : "FOLLOWER";
+        if (v && partyPost(w, v, true)) _partySay("THE ARENA IS FULL · " + nm + " MOVES TO THE " + partyRoomName(v).toUpperCase(), "#ffe733", true);
+        else { partyRetire(w, true); _partySay("THE ARENA IS FULL · " + nm + " RETIRES", "#ff8a6a", true); }
+    }
+}
+// RETIRING: it leaves your roster for good (a follower replaced when no room has a place, after a confirm; the arena's weakest when no room has one). Not a death: no body, no partner's rage, no coming back; the frame's sweep skips one
+// marked `sacrificed` (js/game.js) and the save leaves it out.
+function partyRetire(f, quiet) {
+    if (!_partyFollower(f)) return false;
+    if (typeof breakBond === "function") breakBond(f);
+    f.post = null; f.partySlot = undefined; f.retired = true; f.sacrificed = true; f.dead = true; if (_sfLast === f) _sfLast = null;
+    _partyDone([f]); if (!quiet) _partySay((typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER") + " RETIRES", "#8aa0c8", true);
+    partySync(false); return true;
+}
+
 // ── who is in the squad ──
 function partyIsMember(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green" && !f.post && !f.returningToCrystal; }
 function partyMembers() { return typeof followers === "undefined" ? [] : followers.filter(partyIsMember); }
@@ -52,7 +106,10 @@ function partySync(say) {
         if (f.partySlot !== undefined) continue;
         let k = 0; while (used.has(k)) k++;
         if (k < PARTY.max) { f.partySlot = k; used.add(k); continue; }
-        const room = partyRoomOf(f); if (room) { partyPost(f, room, true); if (say) _partySay("SQUAD FULL · HOLDING THE " + partyRoomName(room).toUpperCase(), "#ffe733"); }
+        const room = partyRoomOf(f); if (!room) continue;
+        const at = partyPlace(f, room, true);
+        if (at) { if (say) _partySay("SQUAD FULL · HOLDING THE " + partyRoomName(at).toUpperCase(), "#ffe733"); }
+        else { partyPost(f, room, true); if (say) _partySay("SQUAD FULL · EVERY ROOM IS FULL · HOLDING THE " + partyRoomName(room).toUpperCase(), "#ff8a6a"); }   // (every room it can walk to is full: rare, and said)
     }
 }
 // the squad in card order
@@ -84,11 +141,11 @@ function partyCall(f, quiet) {
 // the pool unless they were selected), and nothing said so; now COME with nobody selected reaches them too (js/mixtool.js mixToolComePool), the one held last first, and it says who came back, or why one did not (SQUAD FULL). COME also ends an
 // attack order (the enemy card's). The followers HOLD posts leave the selection (they have left the squad bar: a selection nobody can see steers the next orders; see _partyDone).
 function partyApplyStance(units, stance) {
-    let n = 0; const rooms = new Set(), clones = [], posted = [], called = [], kept = [], nm = f => typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER";
+    let n = 0; const rooms = new Set(), clones = [], posted = [], called = [], kept = [], full = [], nm = f => typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER";
     for (const a of units) {
         if (!a || a.dead) continue;
         if (a.isClone || !a.isFollower) { clones.push(a); continue; }
-        if (stance === "hold") { const room = partyRoomOf(a); if (partyPost(a, room, true)) { n++; rooms.add(room); posted.push(a); } }
+        if (stance === "hold") { const room = partyRoomOf(a); if (!room) continue; if (room !== "arena" && !partyRoomFree(room, a)) { full.push(room); continue; } if (partyPlace(a, room, true)) { n++; rooms.add(a.post); posted.push(a); } }   // (a full room takes nobody else: the arena takes one more and moves its weakest out)
         else if (stance === "follow") {
             a.attackOrder = null; if (a.job && a.job.type === "move") a.job = null;   // (COME ends an attack order)
             const was = !!a.post;
@@ -97,6 +154,7 @@ function partyApplyStance(units, stance) {
     }
     if (clones.length) n += _ccApplyStanceUnits(clones, stance);
     if (stance === "hold" && rooms.size) { _partyDone(posted); _partySay("HOLD · " + (n > 1 ? n + " · " : "") + (rooms.size === 1 ? partyRoomName([...rooms][0]).toUpperCase() : rooms.size + " ROOMS"), "#8fe3ff"); }
+    if (stance === "hold" && full.length) _partySay("THE " + partyRoomName(full[0]).toUpperCase() + " IS FULL · " + partyRoomCap(full[0]) + " OF " + partyRoomCap(full[0]) + (full.length > 1 ? " · " + full.length + " KEEP FOLLOWING" : " · IT KEEPS FOLLOWING"), "#ff8a6a", true);
     else if (stance === "follow") {
         const who = list => list.length === 1 ? nm(list[0]) : list.length + " FOLLOWERS";
         if (kept.length) _partySay("SQUAD FULL · " + PARTY.max + " OF " + PARTY.max + " · " + who(kept) + (kept.length === 1 ? " KEEPS" : " KEEP") + " HOLDING" + (called.length ? " · " + who(called) + " CAME" : ""), "#ff8a6a", true);
@@ -223,8 +281,61 @@ function partyBoxRender() {
     if (!_sbxEls || _sbxEls.root !== root) _sbxEls = partySlotsBuild(root, partyBoxClick);
     partySlotsUpdate(_sbxEls, typeof ccCarousel === "function" && ccCarousel() && typeof ccFocusUnit === "function" ? (f => f === ccFocusUnit()) : null);
 }
-// each few frames (js/game.js render): the squad is kept to three, and its bar follows it
-function partyTick() { partySync(false); partyBarRender(false); }
+// each few frames (js/game.js render): the squad is kept to three, the arena to its six, and the bar follows
+function partyTick() { partySync(false); if (partyOn()) partyArenaOverflow(); partyBarRender(false); }
+
+// ── THE SQUAD IS FULL: WHO MAKES ROOM (the Level 1 update) ──
+// ASKED: "When recruiting a follower requires replacing an existing follower, let the player select which follower to replace", then the one replaced "has option to go to a vacancy in the rooms but if not confirm retirement".
+// A recruit (+ RECRUIT) or an egg taken while the squad is full asks first (#partyPick): one of the three makes room (it holds the nearest room with a place; when no room has one, it retires, after a confirm) and the new one takes its
+// card; or nobody does, and the new one holds a room. Nothing is paid and no egg is taken until the choice is made, and while the question is up no other recruit starts (one at a time).
+let _ppAsk = null;   // { who, at, go, cancel, stage: "pick" | "retire", pick, busy }
+function partyPickBusy() { return !!_ppAsk; }
+function partyPickOpen(who, at, go, cancel) {
+    if (_ppAsk) return false;
+    _ppAsk = { who: String(who || "A NEW FOLLOWER"), at: at || [player.x, player.y], go, cancel, stage: "pick", pick: null, busy: false };
+    _ppRender(); return true;
+}
+function _ppEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("partyPick") : null; }
+function _ppName(f) { return typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER"; }
+function _ppRender() {
+    const root = _ppEl(); if (typeof document !== "undefined" && document.body && document.body.classList) document.body.classList.toggle("party-pick", !!_ppAsk);
+    if (!root || !_ppAsk) return;
+    const A = _ppAsk, esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    let h = "";
+    if (A.stage === "retire") {
+        h = '<b class="pp-t">RETIRE ' + esc(_ppName(A.pick)) + '?</b><i class="pp-s">NO ROOM HAS A PLACE FOR IT</i>'
+          + '<div class="pp-list"><button class="pp-b pp-bad" data-act="retire">RETIRE ' + esc(_ppName(A.pick)) + '<small>IT LEAVES YOUR ROSTER FOR GOOD</small></button><button class="pp-b" data-act="back">BACK<small>PICK ANOTHER</small></button></div>';
+    } else {
+        h = '<b class="pp-t">SQUAD FULL · ' + PARTY.max + ' OF ' + PARTY.max + '</b><i class="pp-s">' + esc(A.who) + ' JOINS · WHO MAKES ROOM?</i><div class="pp-list">';
+        partyOrdered().forEach((m, i) => { const v = partyVacancy(m.x, m.y, m, null); h += '<button class="pp-b" data-pick="' + i + '">' + esc(_ppName(m)) + ' · LV ' + (m.level || 1) + '<small>' + (v ? "HOLDS THE " + esc(partyRoomName(v).toUpperCase()) : "RETIRES · NO ROOM HAS A PLACE") + '</small></button>'; });
+        const nv = partyVacancy(A.at[0], A.at[1], null, null);
+        h += '<button class="pp-b" data-act="nobody"' + (nv ? "" : " disabled") + '>NOBODY<small>' + (nv ? esc(A.who) + " HOLDS THE " + esc(partyRoomName(nv).toUpperCase()) : "NO ROOM HAS A PLACE") + '</small></button>'
+          + '</div><button class="pp-x" data-act="cancel">CANCEL</button>';
+    }
+    root.innerHTML = '<div class="pp-card">' + h + '</div>';
+    if (!root._ppWired) { root._ppWired = true; root.addEventListener("click", _ppClick); }
+}
+function _ppClose() { _ppAsk = null; _ppRender(); const root = _ppEl(); if (root) root.innerHTML = ""; }
+function _ppDone() { const go = _ppAsk && _ppAsk.go; _ppClose(); if (typeof go === "function") go(); partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true); }
+// the choice (a button, or the tests): "nobody", a squad member, "retire" (the confirm), "back", "cancel"
+function partyPickChoose(choice) {
+    const A = _ppAsk; if (!A || A.busy) return false;
+    if (choice === "cancel") { const c = A.cancel; _ppClose(); if (typeof c === "function") c(); return true; }
+    if (choice === "back") { A.stage = "pick"; A.pick = null; _ppRender(); return true; }
+    if (choice === "nobody") { if (!partyVacancy(A.at[0], A.at[1], null, null)) return false; A.busy = true; _ppDone(); return true; }
+    if (choice === "retire") { if (A.stage !== "retire" || !A.pick) return false; A.busy = true; partyRetire(A.pick); _ppDone(); return true; }
+    const m = choice; if (!partyIsMember(m)) return false;
+    const v = partyVacancy(m.x, m.y, m, null);
+    if (!v) { A.stage = "retire"; A.pick = m; _ppRender(); return true; }   // no room has a place: retiring it is asked first
+    A.busy = true; partyPost(m, v, true); _partySay(_ppName(m) + " HOLDS THE " + partyRoomName(v).toUpperCase(), "#8fe3ff"); _ppDone();
+    return true;
+}
+function _ppClick(ev) {
+    const t = ev && ev.target && ev.target.closest ? ev.target.closest("[data-act],[data-pick]") : null; if (!t || t.disabled) return;
+    const pick = t.getAttribute("data-pick"), act = t.getAttribute("data-act");
+    if (pick !== null && pick !== undefined && pick !== "") { const m = partyOrdered()[+pick]; if (m) partyPickChoose(m); }
+    else if (act) partyPickChoose(act);
+}
 
 // ── ADD, REMOVE, SWAP, DISBAND: the squad's buttons (the Command Center's side panel and its YOUR SQUAD window, js/commandcenter.js; the phone's roster and SQUAD petal, js/radialmenu.js) ──
 // ASKED: "when you click the creature on the roster, it should show on the side add to party or add to squad [...] And here you can disband them." A follower is in the squad or it holds a room: ADD calls the followers that hold a room back into the
@@ -242,20 +353,22 @@ function partyAdd(units) {
 }
 function partyRemove(units) {
     const list = (units || []).filter(partyIsMember); let n = 0; const rooms = new Set(), done = [];
-    for (const f of list) { const room = partyRoomOf(f); if (partyPost(f, room, true)) { n++; rooms.add(room); done.push(f); } } _partyDone(done);
+    let none = 0; for (const f of list) { const at = partyPlace(f, partyRoomOf(f), true); if (at) { n++; rooms.add(at); done.push(f); } else none++; } _partyDone(done);
     if (n) _partySay("REMOVED FROM THE SQUAD · " + (rooms.size === 1 ? "HOLDING THE " + partyRoomName([...rooms][0]).toUpperCase() : n + " HOLD THEIR ROOMS"), "#8fe3ff");
+    if (none) _partySay("EVERY ROOM IS FULL · " + (none === 1 ? "IT STAYS" : none + " STAY") + " IN THE SQUAD", "#ff8a6a", true);
     partyBarRender(true); return n;
 }
 // `out` is in the squad and goes to hold the room it is in; `inn` holds a room and takes its card
 function partySwap(out, inn) {
     if (!partyIsMember(out) || !_partyFollower(inn) || partyIsMember(inn)) return false;
-    if (!partyPost(out, partyRoomOf(out), true)) return false;
+    const mine = partyRoomOf(out), theirs = inn.post, to = partyRoomFree(mine, out) || mine === "arena" ? mine : theirs && partyRoomCount(theirs, inn) < partyRoomCap(theirs) ? theirs : partyVacancy(out.x, out.y, out, null);   // (its own room, else the one the follower coming in leaves, else the nearest with a place)
+    if (!to || !partyPost(out, to, true)) return false;
     if (!partyCall(inn, true)) { out.post = null; out.stance = "follow"; out._patrol = null; partySync(false); return false; }   // (cannot happen: a slot has just been freed)
     _partyDone([out, inn]); _partySay("SWAPPED IN · " + (typeof unitTypeLabel === "function" ? unitTypeLabel(inn) : "FOLLOWER"), "#19e6c1"); partyBarRender(true); return true;
 }
 function partyDisband() {
     const mem = partyMembers(); if (!mem.length) return 0;
-    let n = 0; const rooms = new Set(); for (const f of mem) { const room = partyRoomOf(f); if (partyPost(f, room, true)) { n++; rooms.add(room); } } _partyDone(mem);
+    let n = 0; const rooms = new Set(); for (const f of mem) { const at = partyPlace(f, partyRoomOf(f), true); if (at) { n++; rooms.add(at); } } _partyDone(mem);
     _partySay("SQUAD DISBANDED · " + n + " HOLD " + (rooms.size === 1 ? "THE " + partyRoomName([...rooms][0]).toUpperCase() : rooms.size + " ROOMS"), "#ffe733");
     partyBarRender(true); return n;
 }

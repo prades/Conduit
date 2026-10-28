@@ -34,7 +34,7 @@ function facilityFollowerSpotTake(s) {
     spawnFollowerAtCrystal(s.element, s.type);
     const f = followers[followers.length - 1]; if (!f) return null;
     f.x = s.x; f.y = s.y; f.returningToCrystal = false; f.convertFlash = 30; f.fromSpot = s.id;
-    if (f.post) f.post = s.room; else f.stance = "follow";   // (the squad was full: it holds the room the egg was in, js/party.js)
+    if (f.post) { if (typeof partyPlace === "function") partyPlace(f, s.room, true); else f.post = s.room; } else f.stance = "follow";   // (the squad was full: it holds the room the egg was in, or the nearest with a place: js/party.js)
     const def = ELEMENTS.find(e => e.id === s.element);
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: roleLabel(s.type) + " · " + (def ? def.label : String(s.element).toUpperCase()) + (f.post ? " HOLDS THE " + partyRoomName(f.post).toUpperCase() : " JOINED!"), color: def ? def.color : "#fff", life: 120, vy: -0.2, size: 14 });
     return f;
@@ -46,7 +46,13 @@ function facilityFollowerSpotsTick() {
     for (const s of S) {
         if (s.egg) {
             if (s.egg.dead || !actors.includes(s.egg)) { s.egg = null; s.readyAt = now + FP_SPOT.refill; continue; }   // (it was taken or destroyed some other way: the spot fills again all the same)
-            if (Math.hypot(player.x - s.x, player.y - s.y) < FP_SPOT.take) facilityFollowerSpotTake(s);
+            const near = Math.hypot(player.x - s.x, player.y - s.y);
+            if (near < FP_SPOT.take) {
+                // the squad full: asked first who makes room (js/party.js partyPickOpen); the egg is taken once that is chosen, and asked again only after walking away and back
+                if (typeof partyFull === "function" && typeof partyOn === "function" && partyOn() && partyFull() && typeof partyPickOpen === "function") {
+                    if (!s.asked && !partyPickBusy()) { s.asked = true; const def = ELEMENTS.find(e => e.id === s.element); partyPickOpen(roleLabel(s.type) + " · " + (def ? def.label.toUpperCase() : String(s.element).toUpperCase()), [s.x, s.y], () => { if (s.egg) facilityFollowerSpotTake(s); }, null); }
+                } else facilityFollowerSpotTake(s);
+            } else if (s.asked && near > FP_SPOT.take + 1) s.asked = false;
         } else if (now >= s.readyAt && Math.hypot(player.x - s.x, player.y - s.y) > FP_SPOT.near && followers.filter(f => f && !f.dead).length < FP_SPOT.cap) {
             s.egg = _fpSpotEgg(s); actors.push(s.egg); s.arrive = now;
         }

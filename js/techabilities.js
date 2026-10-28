@@ -105,6 +105,7 @@ function techSiteLaunch(s, who) {
     if (_techSiteBusy(s)) return { ok: false, why: "THE LAUNCHER IS IN USE" };
     if (!_techThrowable(who, null)) return { ok: false, why: "PICK A FOLLOWER TO SEND UP" };
     if (_techComp(who.x, who.y) === _techComp(s.land[0], s.land[1])) return { ok: false, why: "IT IS UP THERE ALREADY" };
+    if (typeof partyRoomFree === "function" && !partyRoomFree(s.to)) return { ok: false, why: "THE " + String(s.label || s.to).toUpperCase() + " IS FULL · " + partyRoomCap(s.to) + " OF " + partyRoomCap(s.to) };   // (a room's cap: js/party.js)
     who._launchLoad = { kind: "site", site: s.id, t0: _techFrame() }; who.job = null; who.attackOrder = null;
     _techSay("⚡ " + _techName(who) + " TO THE LAUNCHER", "#ffe733");
     return { ok: true };
