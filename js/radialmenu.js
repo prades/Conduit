@@ -133,7 +133,7 @@ function _radialSquadStrip(panel) {
     }
     panel.appendChild(strip);
 }
-// one follower's card: its picture, name, status, level and health, and its buttons (ADD TO / REMOVE FROM SQUAD; INFO); a tap on the card selects it
+// one follower's card: its picture, name, status, level and health, and its buttons (ADD TO / REMOVE FROM SQUAD; INFO; EXILE); a tap on the card selects it
 function _radialCard(r) {
     const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));
     card.style.setProperty("--c", _radialElementColour(r.element));
@@ -145,6 +145,9 @@ function _radialCard(r) {
         if (inSq || r.f.post) { const b = _rEl("button", "rp-btn small wide" + (!inSq && free ? " on" : ""), inSq ? "REMOVE FROM SQUAD" : free ? "ADD TO SQUAD" : "SQUAD FULL"); b.style.setProperty("--c", inSq ? "#8fe3ff" : "#19e6c1"); if (!inSq && !free) b.disabled = true; _rClick(b, () => { if (inSq) partyRemove([r.f]); else partyAdd([r.f]); radialRender(); }); mid.appendChild(b); }
     }
     { const inf = _rEl("button", "rp-btn small wide", "INFO"); inf.style.setProperty("--c", "#8fe3ff"); _rClick(inf, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(r.f); }); mid.appendChild(inf); }
+    if (r.f.isFollower === true && !r.f.isClone && typeof partyExileTap === "function") {   // EXILE: let it go for good, to make room (js/party.js: the first tap arms it, the second does it)
+        const armed = partyExileArmed([r.f]), ex = _rEl("button", "rp-btn small wide rp-exile" + (armed ? " on" : ""), armed ? "TAP AGAIN TO EXILE" : "EXILE"); ex.style.setProperty("--c", "#ff3a4a"); _rClick(ex, () => { partyExileTap([r.f]); radialRender(); }); mid.appendChild(ex);
+    }
     _rClick(card, () => { if (typeof ccToggle === "function") ccToggle(r.f); radialRender(); });   // tap a card: select it (the command pool, js/commandcenter.js)
     return card;
 }

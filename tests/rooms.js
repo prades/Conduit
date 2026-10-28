@@ -1,7 +1,7 @@
 // ROOM CAPACITY, WHO MAKES ROOM, AND THE ARENA OVER ITS SIX (js/party.js; docs/TECHNICIANS.md "Rooms and recruitment").
 // ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. Arena Level 2: six followers. These room capacities are separate from the three active squad slots", the hallway and the arena "automatically a level 2 just
 // because of the amount of space", every other room Category 1; "When recruiting a follower requires replacing an existing follower, let the player select which follower to replace", the replaced one "has option to go to a vacancy in the
-// rooms but if not confirm retirement"; the arena over its six removes its weakest by "Roster order" to a "free room, else retired".
+// rooms but if not confirm retirement"; the arena over its six removes its weakest by "Roster order" to a "free room, else retired". (Retiring is called EXILE now: tests/exile.js.)
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -56,12 +56,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.member[0] && !r.member[1], 'the member that made room: ' + JSON.stringify(r.member)); same(r.recruit.join(), 'true,true,30,4', 'the recruit takes its card, paid once');
         same(r.nobody.join(), 'true,3,5', 'NOBODY: the recruit holds a room'); same(r.cancel.join(), '0,5,false', 'CANCEL');
     });
-    check('a member that makes room when no room has a place: retiring it is asked first; BACK goes back; RETIRE takes it off the roster for good (no body, not coming back, not saved) and the recruit takes its card', () => {
+    check('a member that makes room when no room has a place: exiling it is asked first; BACK goes back; EXILE takes it off the roster for good (no body, not coming back, not saved) and the recruit takes its card', () => {
         const r = J(`(function(){ const fs = __fresh(3), o = {}; shardCount = 500; partyVacancy = () => null; recruitDo(); const m = partyOrdered()[0], slot = m.partySlot; partyPickChoose(m);
-            o.confirm = document.getElementById('partyPick') && 1; o.stage = (_ppAsk || {}).stage; partyPickChoose('back'); o.back = _ppAsk.stage; partyPickChoose(m); partyPickChoose('retire');
-            o.retired = [m.retired === true, m.sacrificed === true, m.dead === true]; __sweep(); o.gone = !followers.includes(m) && !followerRosterSnapshot().some(e => e.uid === m.uid);
+            o.confirm = document.getElementById('partyPick') && 1; o.stage = (_ppAsk || {}).stage; partyPickChoose('back'); o.back = _ppAsk.stage; partyPickChoose(m); o.asked = (document.getElementById('partyPick') || {}).innerHTML || ''; partyPickChoose('exile');
+            o.exiled = [m.exiled === true, m.sacrificed === true, m.dead === true]; __sweep(); o.gone = !followers.includes(m) && !followerRosterSnapshot().some(e => e.uid === m.uid);
             const newest = followers[followers.length - 1]; o.recruit = [partyIsMember(newest), newest.partySlot === slot]; partyVacancy = __keepVac; return o; })()`);
-        same(r.stage, 'retire', 'retiring was not asked'); same(r.back, 'pick', 'BACK'); same(r.retired.join(), 'true,true,true', 'retired'); same(r.gone, true, 'still on the roster'); same(r.recruit.join(), 'true,true', 'the recruit');
+        same(r.stage, 'exile', 'exiling was not asked'); same(r.back, 'pick', 'BACK'); same(r.exiled.join(), 'true,true,true', 'exiled'); ok(!/RETIRE/.test(r.asked), 'the question still says RETIRE'); same(r.gone, true, 'still on the roster'); same(r.recruit.join(), 'true,true', 'the recruit');
     });
     check('an egg with the squad full: walking up to it asks; it is taken once a choice is made, and asked again only after walking away and back', () => {
         const r = J(`(function(){ const fs = __fresh(3), o = {}; const s = _fp.spots.find(x => x.id === 'spot_lobby'); if (!s.egg) { s.readyAt = 0; player.x = s.x + 10; player.y = s.y; facilityFollowerSpotsTick(); }
@@ -71,13 +71,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE ARENA OVER ITS SIX');
-    check('a seventh in the arena: the weakest by the roster\'s order (not evolved before evolved, then the lowest level, then the lowest power) goes to the nearest room with a place; with none it retires; it says so', () => {
+    check('a seventh in the arena: the weakest by the roster\'s order (not evolved before evolved, then the lowest level, then the lowest power) goes to the nearest room with a place; with none it is exiled; it says so', () => {
         const r = J(`(function(){ const fs = __fresh(7), o = {}; const a = __cell('arena'); fs.forEach((f, i) => { f.x = a[0] + 0.3 * i; f.y = a[1]; f.level = 9; f.evolved = 'quillstone'; f.power = 20; }); fs[3].level = 6; fs[5].level = 6; fs[5].power = 5;
             for (let i = 0; i < 6; i++) partyPost(fs[i], 'arena', true); o.six = partyRoomCount('arena'); floatingTexts.length = 0; partyPlace(fs[6], 'arena', true);
             o.moved = fs[5].post; o.arena = partyRoomCount('arena'); o.said = floatingTexts.map(t => t.text).join('|');
-            fs[6].evolved = undefined; partyVacancy = () => null; partyPost(fs[5], 'arena', true); partyArenaOverflow(); o.retired = [fs[6].retired === true, partyRoomCount('arena')]; partyVacancy = __keepVac; return o; })()`);
+            fs[6].evolved = undefined; partyVacancy = () => null; partyPost(fs[5], 'arena', true); partyArenaOverflow(); o.exiled = [fs[6].exiled === true, partyRoomCount('arena')]; o.said2 = floatingTexts.map(t => t.text).join('|'); partyVacancy = __keepVac; return o; })()`);
         same(r.six, 6, 'six'); ok(r.moved && r.moved !== 'arena', 'the weakest (level 6, power 5) did not move: ' + r.moved); same(r.arena, 6, 'the arena after'); ok(/THE ARENA IS FULL · .* MOVES TO THE /.test(r.said), 'said ' + r.said);
-        same(r.retired.join(), 'true,6', 'with no room: the weakest (not evolved) retires');
+        same(r.exiled.join(), 'true,6', 'with no room: the weakest (not evolved) is exiled'); ok(/THE ARENA IS FULL · .* IS EXILED/.test(r.said2), 'said ' + r.said2);
     });
     check('the catwalks hold two too: the launcher will not send a third up', () => {
         const r = J(`(function(){ const fs = __fresh(4), o = {}, s = _fp.F.launchSites[0]; techLaunchersApply([s.id]); partyPost(fs[0], 'catwalks', true); partyPost(fs[1], 'catwalks', true); o.why = techSiteLaunch(s, fs[2]).why; techLaunchersApply([]); return o; })()`);

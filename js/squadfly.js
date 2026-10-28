@@ -4,7 +4,7 @@
 // ASKED: "the on screen squad roster should shuffle into the nook above the attack menu to the left, remove the element picker and replace with 'all' button the player can select each squad member and pull their card roster information up on the fly and
 // may choose to dismiss from squad from this little side menu and index." The squad's three cards stand over RETREAT / HOLD / COME at the bottom left (js/party.js, game.html "THE CORNERS"); a tap on one picks that member (the orders go to them alone,
 // the battle tool says so, and ALL lets them go) and opens THEIR CARD beside the stack: the picture, the name, element, level and role, how they are (their state, health, power and speed), INDEX (the unit info: attacks, jobs and stats, js/unitinfo.js)
-// and DISMISS FROM SQUAD (they hold the room they are in, as REMOVE does in the roster: js/party.js partyRemove). It is for a tablet or a desktop (hudCorners); a phone keeps the bar it has, with the i on each card for its INFO.
+// and DISMISS FROM SQUAD (they hold the room they are in, as REMOVE does in the roster: js/party.js partyRemove), and EXILE (gone for good, to make room: js/party.js partyExileTap, a second tap does it). It is for a tablet or a desktop (hudCorners); a phone keeps the bar it has, with the i on each card for its INFO.
 // REPORTED: "when I select a creature from my squad and it pulls up ... the little index card, when I click away, it should still have that character selected, but the card should go away."
 // A press anywhere but on the card or the stack puts the card away and leaves the member picked (partyFlyPressAway); the next member tapped on the stack opens their card again.
 let _sfEls = null, _sfSig = "";
@@ -20,7 +20,7 @@ function partyFlyBuild(root) {
     if (_sfEls && _sfEls.root === root) return _sfEls;
     root.innerHTML = '<div class="sf-card"><span class="sf-tip"></span><div class="sf-head"><canvas class="sf-thumb" width="64" height="64"></canvas><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span></div>'
         + '<div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
-        + '<div class="sf-btns"><button class="sf-btn sf-index" data-act="index">INDEX ▸</button><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>';
+        + '<div class="sf-btns"><button class="sf-btn sf-index" data-act="index">INDEX ▸</button><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button><button class="sf-btn sf-exile" data-act="exile">EXILE<small>Gone for good · makes room</small></button></div></div>';
     root.addEventListener("click", partyFlyClick);
     if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("pointerdown", partyFlyPressAway, true);   // (capture: before the floor's own press)
     const q = s => root.querySelector(s);
@@ -36,6 +36,11 @@ function partyFlyClick(ev) {
     if (act === "dismiss") {
         if (typeof partyRemove === "function") partyRemove([f]);
         _sfLast = null; _sfSig = ""; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
+    }
+    if (act === "exile" && typeof partyExileTap === "function") {   // EXILE: the first tap arms it (TAP AGAIN TO EXILE), the second lets it go for good (js/party.js)
+        const r = partyExileTap([f]);
+        if (r === "exiled") { _sfLast = null; _sfSig = ""; partyFlyRender(true); }
+        else { const t = b.firstChild; if (t && t.nodeType === 3) t.nodeValue = "TAP AGAIN TO EXILE"; if (b.classList) b.classList.add("armed"); }
     }
 }
 // A press anywhere but on the card or on the stack (the floor, the orders, the enemy card, the dock) puts the card away; the member stays picked, so the orders still go to them
@@ -53,7 +58,7 @@ function partyFlyRender(force) {
     const root = partyFlyEl(); if (!root) return;
     const f = partyFlySubject(), bar = typeof _sbEls !== "undefined" ? _sbEls : null, slot = f && bar && f.partySlot !== undefined ? bar.slots[f.partySlot] : null;
     if (!f || !slot) { if (_sfEls) _sfEls.subject = null; if (root.classList) root.classList.remove("on"); _sfSig = ""; return; }
-    const E = partyFlyBuild(root); E.subject = f;
+    const E = partyFlyBuild(root); if (E.subject !== f || !partyExileArmed([f])) { const xb = root.querySelector ? root.querySelector(".sf-exile") : null; if (xb && xb.firstChild && xb.firstChild.nodeType === 3 && xb.firstChild.nodeValue !== "EXILE") { xb.firstChild.nodeValue = "EXILE"; if (xb.classList) xb.classList.remove("armed"); } } E.subject = f;
     const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
     if (E.card && E.card.style && typeof E.card.style.setProperty === "function") E.card.style.setProperty("--c", col);
     const role = ({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[f.role === "hybrid" ? "brawler" : f.role] || "BRAWL", style = f.playStyle === "defensive" ? "DEF" : f.playStyle === "aggressive" ? "AGG" : "BAL";

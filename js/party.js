@@ -10,7 +10,7 @@
 //                  ME in the roster) calls them back: each leaves its post and joins the squad if it has room (the rest stay posted: SQUAD FULL).
 //   A NEW FOLLOWER one that is found, recruited, made again or back from the dead joins the squad if there is room; if there is none it is posted where it is (the Crystal Chamber for a recruit, the pad's room for an egg): it does not follow.
 //   THE ROSTER     each follower's card says what room it holds (js/commandcenter.js, js/status.js).
-const PARTY = { max: 3, patrol: 0.55, rest: [70, 200], hop: [2.5, 9], engage: 9 };   // patrol: how fast it walks the round, a share of its speed; rest: frames it stands at a stop; hop: how far the next stop is (tiles); engage: how far from its room's edge a creature is still its business
+const PARTY = { max: 3, patrol: 0.55, rest: [70, 200], hop: [2.5, 9], engage: 9, exileArm: 4000 };   // exileArm: ms an EXILE button stays armed for its second tap   // patrol: how fast it walks the round, a share of its speed; rest: frames it stands at a stop; hop: how far the next stop is (tiles); engage: how far from its room's edge a creature is still its business
 function partyOn() { return typeof facilityPlay !== "undefined" && !!facilityPlay && !(typeof attractOn === "function" && attractOn()); }
 // THE CORNERS (docs/UI-STYLE.md, "The HUD"): the facility on a tablet or a desktop has each part of the HUD that works together in one corner (game.html "THE CORNERS"; js/tutorial.js, js/targeting.js, js/squadfly.js). A phone (the line js/mixtool.js mixToolWide draws,
 // 700 px) keeps the layout it has.
@@ -66,24 +66,39 @@ function partyPlace(f, room, quiet) {
 }
 // THE ARENA OVER ITS SIX. ASKED: "When the Arena exceeds its permitted follower population, automatically remove the weakest eligible follower according to the game's existing strength or ranking data", then "Roster order", and the one
 // removed goes to a "free room, else retired": the weakest of the followers holding it by the roster's order (one not evolved before one that is, then the lowest level, then the lowest power) holds the nearest room with a place, or
-// retires when no room has one. It says so.
+// is EXILED when no room has one (it was "retired": the word is EXILE everywhere now, see EXILE below). It says so.
 function partyWeakest(list) { return list.slice().sort((a, b) => ((a.evolved ? 1 : 0) - (b.evolved ? 1 : 0)) || ((a.level || 1) - (b.level || 1)) || ((a.power || 0) - (b.power || 0)))[0] || null; }
 function partyArenaOverflow() {
     for (let guard = 0; guard < 12 && partyRoomCount("arena") > partyRoomCap("arena"); guard++) {
         const w = partyWeakest(partyPosted().filter(f => f.post === "arena")); if (!w) return;
         const v = partyVacancy(w.x, w.y, w, "arena"), nm = typeof unitTypeLabel === "function" ? unitTypeLabel(w) : "FOLLOWER";
         if (v && partyPost(w, v, true)) _partySay("THE ARENA IS FULL · " + nm + " MOVES TO THE " + partyRoomName(v).toUpperCase(), "#ffe733", true);
-        else { partyRetire(w, true); _partySay("THE ARENA IS FULL · " + nm + " RETIRES", "#ff8a6a", true); }
+        else { partyExile(w, true); _partySay("THE ARENA IS FULL · " + nm + " IS EXILED", "#ff8a6a", true); }
     }
 }
-// RETIRING: it leaves your roster for good (a follower replaced when no room has a place, after a confirm; the arena's weakest when no room has one). Not a death: no body, no partner's rage, no coming back; the frame's sweep skips one
-// marked `sacrificed` (js/game.js) and the save leaves it out.
-function partyRetire(f, quiet) {
+// EXILE: it leaves your roster for good (any follower, from its EXILE button in the roster, after a confirm; a follower replaced when no room has a place, after a confirm; the arena's weakest when no room has one). Not a death: no body,
+// no partner's rage, no coming back, nothing back; the frame's sweep skips one marked `sacrificed` (js/game.js) and the save leaves it out. Its place, a squad slot or a room's, is free for someone new.
+function partyExile(f, quiet) {
     if (!_partyFollower(f)) return false;
     if (typeof breakBond === "function") breakBond(f);
-    f.post = null; f.partySlot = undefined; f.retired = true; f.sacrificed = true; f.dead = true; if (_sfLast === f) _sfLast = null;
-    _partyDone([f]); if (!quiet) _partySay((typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER") + " RETIRES", "#8aa0c8", true);
+    f.post = null; f.partySlot = undefined; f.exiled = true; f.sacrificed = true; f.dead = true; if (_sfLast === f) _sfLast = null;
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#8aa0c8", radius: 0.7, life: 26 });   // (a puff where it stood)
+    _partyDone([f]); if (!quiet) _partySay((typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER") + " IS EXILED", "#8aa0c8", true);
     partySync(false); return true;
+}
+// THE EXILE BUTTON (ASKED: "I need to be able to get rid of followers and exile them in room for other followers that I might find or come across"; chosen with the user: EXILE, the word everywhere, and nothing back): in the
+// Command Center's side panel (the followers selected), on each of the phone roster's cards and on a squad member's card on the fly. It asks first: the first tap arms it (the button says TAP AGAIN TO EXILE), a second
+// tap on the same button within PARTY.exileArm ms exiles; anything else lets it lapse. The same list armed and tapped again, so a button for one follower never exiles another.
+let _pxArmed = null;   // { list, until }
+function _pxNow() { return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now(); }
+function partyExileArmed(list) { const A = _pxArmed; if (!A || _pxNow() > A.until || !list || list.length !== A.list.length) return false; return list.every(f => A.list.includes(f)); }
+function partyExileTap(list) {
+    list = (list || []).filter(_partyFollower); if (!list.length) { _pxArmed = null; return false; }
+    if (!partyExileArmed(list)) { _pxArmed = { list: list.slice(), until: _pxNow() + PARTY.exileArm }; return "armed"; }
+    _pxArmed = null; for (const f of list) partyExile(f, list.length > 1);
+    if (list.length > 1) _partySay(list.length + " FOLLOWERS EXILED", "#8aa0c8", true);
+    partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
+    return "exiled";
 }
 
 // ── who is in the squad ──
@@ -286,9 +301,9 @@ function partyTick() { partySync(false); if (partyOn()) partyArenaOverflow(); pa
 
 // ── THE SQUAD IS FULL: WHO MAKES ROOM (the Level 1 update) ──
 // ASKED: "When recruiting a follower requires replacing an existing follower, let the player select which follower to replace", then the one replaced "has option to go to a vacancy in the rooms but if not confirm retirement".
-// A recruit (+ RECRUIT) or an egg taken while the squad is full asks first (#partyPick): one of the three makes room (it holds the nearest room with a place; when no room has one, it retires, after a confirm) and the new one takes its
+// A recruit (+ RECRUIT) or an egg taken while the squad is full asks first (#partyPick): one of the three makes room (it holds the nearest room with a place; when no room has one, it is exiled, after a confirm) and the new one takes its
 // card; or nobody does, and the new one holds a room. Nothing is paid and no egg is taken until the choice is made, and while the question is up no other recruit starts (one at a time).
-let _ppAsk = null;   // { who, at, go, cancel, stage: "pick" | "retire", pick, busy }
+let _ppAsk = null;   // { who, at, go, cancel, stage: "pick" | "exile", pick, busy }
 function partyPickBusy() { return !!_ppAsk; }
 function partyPickOpen(who, at, go, cancel) {
     if (_ppAsk) return false;
@@ -302,12 +317,12 @@ function _ppRender() {
     if (!root || !_ppAsk) return;
     const A = _ppAsk, esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
     let h = "";
-    if (A.stage === "retire") {
-        h = '<b class="pp-t">RETIRE ' + esc(_ppName(A.pick)) + '?</b><i class="pp-s">NO ROOM HAS A PLACE FOR IT</i>'
-          + '<div class="pp-list"><button class="pp-b pp-bad" data-act="retire">RETIRE ' + esc(_ppName(A.pick)) + '<small>IT LEAVES YOUR ROSTER FOR GOOD</small></button><button class="pp-b" data-act="back">BACK<small>PICK ANOTHER</small></button></div>';
+    if (A.stage === "exile") {
+        h = '<b class="pp-t">EXILE ' + esc(_ppName(A.pick)) + '?</b><i class="pp-s">NO ROOM HAS A PLACE FOR IT</i>'
+          + '<div class="pp-list"><button class="pp-b pp-bad" data-act="exile">EXILE ' + esc(_ppName(A.pick)) + '<small>IT LEAVES YOUR ROSTER FOR GOOD</small></button><button class="pp-b" data-act="back">BACK<small>PICK ANOTHER</small></button></div>';
     } else {
         h = '<b class="pp-t">SQUAD FULL · ' + PARTY.max + ' OF ' + PARTY.max + '</b><i class="pp-s">' + esc(A.who) + ' JOINS · WHO MAKES ROOM?</i><div class="pp-list">';
-        partyOrdered().forEach((m, i) => { const v = partyVacancy(m.x, m.y, m, null); h += '<button class="pp-b" data-pick="' + i + '">' + esc(_ppName(m)) + ' · LV ' + (m.level || 1) + '<small>' + (v ? "HOLDS THE " + esc(partyRoomName(v).toUpperCase()) : "RETIRES · NO ROOM HAS A PLACE") + '</small></button>'; });
+        partyOrdered().forEach((m, i) => { const v = partyVacancy(m.x, m.y, m, null); h += '<button class="pp-b" data-pick="' + i + '">' + esc(_ppName(m)) + ' · LV ' + (m.level || 1) + '<small>' + (v ? "HOLDS THE " + esc(partyRoomName(v).toUpperCase()) : "EXILED · NO ROOM HAS A PLACE") + '</small></button>'; });
         const nv = partyVacancy(A.at[0], A.at[1], null, null);
         h += '<button class="pp-b" data-act="nobody"' + (nv ? "" : " disabled") + '>NOBODY<small>' + (nv ? esc(A.who) + " HOLDS THE " + esc(partyRoomName(nv).toUpperCase()) : "NO ROOM HAS A PLACE") + '</small></button>'
           + '</div><button class="pp-x" data-act="cancel">CANCEL</button>';
@@ -317,16 +332,16 @@ function _ppRender() {
 }
 function _ppClose() { _ppAsk = null; _ppRender(); const root = _ppEl(); if (root) root.innerHTML = ""; }
 function _ppDone() { const go = _ppAsk && _ppAsk.go; _ppClose(); if (typeof go === "function") go(); partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true); }
-// the choice (a button, or the tests): "nobody", a squad member, "retire" (the confirm), "back", "cancel"
+// the choice (a button, or the tests): "nobody", a squad member, "exile" (the confirm), "back", "cancel"
 function partyPickChoose(choice) {
     const A = _ppAsk; if (!A || A.busy) return false;
     if (choice === "cancel") { const c = A.cancel; _ppClose(); if (typeof c === "function") c(); return true; }
     if (choice === "back") { A.stage = "pick"; A.pick = null; _ppRender(); return true; }
     if (choice === "nobody") { if (!partyVacancy(A.at[0], A.at[1], null, null)) return false; A.busy = true; _ppDone(); return true; }
-    if (choice === "retire") { if (A.stage !== "retire" || !A.pick) return false; A.busy = true; partyRetire(A.pick); _ppDone(); return true; }
+    if (choice === "exile") { if (A.stage !== "exile" || !A.pick) return false; A.busy = true; partyExile(A.pick); _ppDone(); return true; }
     const m = choice; if (!partyIsMember(m)) return false;
     const v = partyVacancy(m.x, m.y, m, null);
-    if (!v) { A.stage = "retire"; A.pick = m; _ppRender(); return true; }   // no room has a place: retiring it is asked first
+    if (!v) { A.stage = "exile"; A.pick = m; _ppRender(); return true; }   // no room has a place: exiling it is asked first
     A.busy = true; partyPost(m, v, true); _partySay(_ppName(m) + " HOLDS THE " + partyRoomName(v).toUpperCase(), "#8fe3ff"); _ppDone();
     return true;
 }

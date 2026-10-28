@@ -35,6 +35,7 @@ const SUITES = [
     ['each class\'s own stage after the tutorial, and its loop played through (the Gunslinger, the Technomancer, the Mutator)', 'classstage.js'],
     ['switching class: a confirmation on every pick, the pack\'s SWITCH CLASS, each class keeping its own progress (perks, stage, weapon, kit once, the Mutator\'s clone waiting), saved until the Crystal falls', 'classswitch.js'],
     ['the Sewers: the arena\'s overflow grates and culvert, the room under it (two ledges, the deep river, a bridge and a broken one, gated passages, the boss\'s cistern), the trip, the drawing', 'sewers.js'],
+    ['EXILE: any follower let go for good from the roster (the Command Center, the phone\'s cards, the card on the fly), asked first, nothing back; the word everywhere', 'exile.js'],
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],
     ['follower types',           'followertypes.js'],

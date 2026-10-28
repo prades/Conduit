@@ -515,7 +515,10 @@ function _ccDrawSettings(side) {
         ccRerollArmed = false;
     }, "act"));
     row.appendChild(_ccBtn("INFO ▸", "#8fe3ff", false, () => { if (typeof unitInfoOpen === "function") unitInfoOpen(one); }, "act"));
+    const exArmed = S.followers > 0 && partyExileArmed([one]);   // EXILE (js/party.js partyExileTap): let it go for good, to make room; the first tap arms it, the second does it, and the next one comes into view
+    if (S.followers) row.appendChild(_ccBtn(exArmed ? "TAP AGAIN TO EXILE" : "EXILE", "#ff3a4a", exArmed, () => { const nb = _ccNeighbour(one, 1); if (partyExileTap([one]) === "exiled") _ccFocus = nb && nb !== one && !nb.dead ? nb : null; }, "act cc-exile"));
     if (ccRerollArmed) side.appendChild(_ccEl("div", "cc-note", "BACK TO THE CRYSTAL, MADE AGAIN AS SOMEONE NEW"));
+    if (exArmed) side.appendChild(_ccEl("div", "cc-note", "EXILED: GONE FOR GOOD, NOTHING BACK · ITS PLACE IS FREE FOR SOMEONE NEW"));
     const info = typeof unitInfo === "function" ? unitInfo(one) : null;
     if (info) {   // (the card in view has VITALS, and the DEFENSE and ATTACK bars: the column lists the rest)
         const idx = _ccEl("div", "cc-stats"), onCard = (sec, rw) => sec.h.indexOf("BASE STATS") === 0 && (rw[0] === "DEFENSE" || rw[0] === "ATTACK");
@@ -559,6 +562,9 @@ function _ccDrawSquadButtons(side, sel) {
         if (mem.length) row.appendChild(big(_ccBtn(mem.length > 1 ? "REMOVE " + mem.length + " FROM SQUAD" : many ? "REMOVE " + nm(mem[0]) + " FROM SQUAD" : "REMOVE FROM SQUAD", "#8fe3ff", false, () => partyRemove(mem), "wide", mem.length > 1 ? "THEY HOLD THE ROOMS THEY ARE IN" : "HOLDS THE ROOM IT IS IN")));
     }
     if (!out.length && !mem.length) side.appendChild(_ccEl("div", "cc-note", "NOT IN THE SQUAD, AND NOT HOLDING A ROOM: IT IS ON ITS WAY"));
+    // EXILE (js/party.js partyExileTap): the followers selected let go for good, to make room; the first tap arms it, the second does it
+    const armed = partyExileArmed(fol), ex = _ccBtn(armed ? "TAP AGAIN TO EXILE" + (fol.length > 1 ? " " + fol.length : "") : fol.length > 1 ? "EXILE " + fol.length : many ? "EXILE " + nm(fol[0]) : "EXILE", "#ff3a4a", armed, () => partyExileTap(fol), "wide", armed ? "GONE FOR GOOD \u00b7 NOTHING BACK" : fol.length > 1 ? "LET THEM GO FOR GOOD \u00b7 MAKES ROOM" : "LET IT GO FOR GOOD \u00b7 MAKES ROOM");
+    ex.classList.add("big", "full", "cc-exile"); side.appendChild(ex);
 }
 // THE SQUADS WINDOW: YOUR SQUAD (ASKED: "when you go at the top to squads, it should already show all three creatures in your squad [...] a little roster card of each of them. And here you can disband them"): the squad's three cards (an open slot is
 // dashed), a REMOVE on each, DISBAND SQUAD (they all hold the rooms they are in), and the squad's orders. ccRender empties the body first.
@@ -593,11 +599,11 @@ function _ccSqSig() {
 function _ccSideSigNow() {
     if (ccCarousel()) {   // the carousel's settings are for the creature in view
         const f = _ccFocus; if (!f) return "F-";
-        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed;
+        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed + "|" + partyExileArmed([f]);
     }
     const pool = typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0;
     const one = ccSelectionList().length === 1 ? ccSelectionList()[0] : null, snap = one ? [one.level, Math.round((one.health || 0) / 5), one.evolved, one.element].join() : "";
-    return JSON.stringify(ccSelectionSummary()) + "|" + snap + "|" + _ccDD + "|" + _ccSqSig() + "|" + squadMode + "|" + (typeof player !== "undefined" ? player.selectedElement : "") + "|" + ccRerollArmed + "|" + pool + "|" + (typeof unlockedElements !== "undefined" ? unlockedElements.size : 0);
+    return JSON.stringify(ccSelectionSummary()) + "|" + snap + "|" + _ccDD + "|" + _ccSqSig() + "|" + partyExileArmed(ccSelectionList().filter(a => a.isFollower === true && !a.isClone)) + "|" + squadMode + "|" + (typeof player !== "undefined" ? player.selectedElement : "") + "|" + ccRerollArmed + "|" + pool + "|" + (typeof unlockedElements !== "undefined" ? unlockedElements.size : 0);
 }
 // The squad-wide orders (they were the COMMAND page): who world orders go to, and orders for the whole pool. Appended to the side panel.
 function _ccDrawSquadOrders(side) {
