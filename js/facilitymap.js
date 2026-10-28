@@ -336,6 +336,15 @@ const FACILITY_MAP = {
           note: "The launcher stands on the arena floor under the catwalks' railing, between the two tanks' footbridges, and throws a follower up onto the catwalks; the catwalks' broken section, near their south end, drops it back into the arena." },
     ],
 
+    // RUBBLE (the fire technician's Thermite Drill, js/techabilities.js; docs/TECHNICIANS.md): a pile of broken rock in a room's edge that a fire technician can drill through. ASKED: "Place a distinctive rubble patch at the midpoint
+    // of the southern wall [...] Treat it as a placeholder for a future insect burrow or dungeon entrance"; then the arena's south rock, on its nearest straight stretch (its exact middle is on a slant), the map not changed.
+    // `a`-`b`: the stretch of the room's edge it covers (drawn on the edge's face, like a wall's decor); `work`: where the technician stands to drill it (the middle of a tile, out from under the rock's overhang so it is seen).
+    // Drilled through it leaves a dark hole in the rock, sealed for now: nothing walks in (no wall changes).
+    rubble: [
+        { id: "rubble_arena_south", room: "arena", label: "Rubble", a: [570, 1130], b: [610, 1130], work: [590, 1080],
+          note: "In the arena's south rock, on the west half of its straight stretch (the middle is on a slant; the east half has the red banner, banner_4). Behind it: the future insect burrow." },
+    ],
+
     // BRIDGES: a footbridge from a liquid tank's top to the catwalks' deck (js/propsprites.js draws it, in 3D, at the deck's height: it is decoration, not floor to walk on). `from` is a prop (a circle), `to` a room.
     bridges: [
         { id: "bridge_1", from: "arena_structure_01", to: "catwalks", note: "From the north tank's top to the catwalks' deck." },

@@ -4,7 +4,8 @@
 // The facility is the game: the page opens it, and it keeps one key, "conduit_fp_save". (The old strip game, its CLASSIC GAME chip and its "tubecrawler_*" keys are gone.)
 //
 // WHAT IS SAVED: the class and its perks, the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
-// (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands.
+// (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands;
+// the technicians' work that lasts (js/techabilities.js): the launchers set up, the rubble drilled (and its rocks not yet taken), the play clock and the Blight Spider's pools on it.
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
 // It is written every few seconds while the game is running, and when the page is hidden or closed. NEW GAME (a chip, with a confirmation) throws it away and starts again.
 const FS = { key: "conduit_fp_save", version: 1, every: 180 };
@@ -32,6 +33,8 @@ function facilitySaveCollect() {
         tc: typeof technoSnapshot === "function" ? technoSnapshot() : 0,                // the charges in the Technomancer's gauntlet (js/technomancer.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         launchers: typeof techLaunchersSnapshot === "function" ? techLaunchersSnapshot() : [],   // the launcher sites a Kinetic Launcher has been set up at, for good (js/techabilities.js)
+        rubble: typeof techRubbleSnapshot === "function" ? techRubbleSnapshot() : {},           // the hits the rubble has taken from a Thermite Drill (drilled through: a hole, for good)
+        blight: typeof techBlightSnapshot === "function" ? techBlightSnapshot() : null,          // the play clock, and the Blight Spider's pools on it
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
@@ -68,6 +71,7 @@ function facilitySaveApply(d) {
     for (const id of (d.relays || [])) { const R = _fp.relays && _fp.relays[id], def = typeof _relayDef === "function" ? _relayDef(id) : null; if (!R || !def) continue; R.online = true; for (const room of def.powers) facilityPower(room, true); if (typeof facilityNeedsEnter === "function") facilityNeedsEnter(id, true); }
     // the supply cases: a class's own are there once the class is, and the ones that were taken are gone
     if (playerClassKey) for (const p of (F.pickups || [])) if (p.class === playerClassKey && !_fp.items.some(i => i.fp === "pickup" && i.id === p.id)) _fp.items.push(_fpPickupItem(p));
+    if (typeof techRubbleApply === "function") techRubbleApply(d.rubble);   // the rubble (drilled through: its hole, and its rocks, which `taken` puts away next if they were picked up)
     const taken = new Set(d.taken || []); for (const it of _fp.items) if (it.fp === "pickup" && taken.has(it.id)) it.taken = true;
     // the tutorial: where it had got to (an assault in progress begins again; the followers that are back are not levelled again)
     if (S && d.script) {
@@ -79,6 +83,7 @@ function facilitySaveApply(d) {
     }
     if (d.spots && typeof followerSpotsApply === "function") followerSpotsApply(d.spots);
     if (typeof techLaunchersApply === "function") techLaunchersApply(d.launchers);
+    if (typeof techBlightApply === "function") techBlightApply(d.blight);   // the play clock as it was, and the pools on it
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);
     if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function") cloneBodiesApply(d.bodies);

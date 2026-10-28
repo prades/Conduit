@@ -353,6 +353,11 @@ function _fpWallPlace(F) {
         const a = d.a, b = d.b, h = Math.abs(a[1] - b[1]) < 1e-6, end = a[0] + a[1] > b[0] + b[1] ? a : b, mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
         items.push({ type: "fp", fp: "wdecor", room: d.room, kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.02, seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });
     }
+    // the RUBBLE a fire technician can drill (js/techabilities.js), on the face of its room's edge like the decor: the pile, or once it is drilled through, the dark hole
+    for (const r of (F.rubble || [])) {
+        const a = r.a, b = r.b, end = a[0] + a[1] > b[0] + b[1] ? a : b;
+        items.push({ type: "fp", fp: "wdecor", room: r.room, kind: "rubble", rubble: r.id, x: r.at[0], y: r.at[1], a, b, id: r.id, base: facilityRoomHeight(r.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.03, seed: _fpHash(Math.round(r.at[0] * 4), Math.round(r.at[1] * 4)) });
+    }
     return items;
 }
 const FP_HIGH_DECOR = new Set(["pipe", "wall_light", "exit_sign", "banner", "bulbs", "cable_run", "chain", "ooze_drip", "crack", "window_blind", "lamp", "clock", "vent"]);   // the kinds that hang near the top of the wall: they rise with it
@@ -364,6 +369,7 @@ function _fpWQuad(it, u0, u1, z0, z1, fill, stroke, lw) {
 }
 function _fpWLine(it, u0, z0, u1, z1, col, w) { const p = _fpWP(it, u0, z0), q = _fpWP(it, u1, z1); ctx.strokeStyle = col; ctx.lineWidth = w || 1; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
 const FP_WALL_KINDS = {
+    rubble: (it, f) => { if (typeof techDrawRubbleOn === "function") techDrawRubbleOn(it, f); },   // a fire technician's rubble, or the hole it leaves (js/techabilities.js)
     poster: (it, f) => {   // a framed poster: a faded print, a title bar, a few lines of text
         const z0 = it.z || 26, z1 = z0 + (it.h || 34), pal = [["#2b5a8a", "#ffd34d"], ["#7a2f3f", "#f4e6c8"], ["#2f6a4a", "#e8ffd8"], ["#5a3a8a", "#8fe3ff"], ["#8a5a2a", "#fff1cf"]][it.seed % 5];
         _fpWQuad(it, 0.12, 0.88, z0 - 2, z1 + 2, "#0c0f16", "rgba(200,210,235,0.45)", 1); _fpWQuad(it, 0.17, 0.83, z0 + 1, z1 - 1, pal[0], null);

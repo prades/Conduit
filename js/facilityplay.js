@@ -232,7 +232,7 @@ function facilityResetState() {
     gameState = { running: true };
     alertActive = false; alertTimer = 0; alertType = null; alertSource = null;
     cloneMenuOpen = false; crystalMenuOpen = false; infoPanelOpen = false; infoPanelTarget = null; infoPanelPage = null; infoPanelSubject = null;
-    commandMode = false; commandPendingTap = false; commandTarget = null; selectedRadialAction = null; commandEnemyTarget = null; commandFollowerTarget = null; commandBodyTarget = null;
+    commandMode = false; commandPendingTap = false; commandTarget = null; selectedRadialAction = null; commandEnemyTarget = null; commandFollowerTarget = null; commandBodyTarget = null; if (typeof commandTechTarget !== "undefined") commandTechTarget = null;
     playerAttackMode = false; if (typeof gunStow === "function") gunStow();
     isPressing = false; longHoldFired = false; touchMoved = false;
     health = PLAYER_HITS; playerAmmo = PLAYER_AMMO_START;

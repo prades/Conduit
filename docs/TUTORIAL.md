@@ -259,7 +259,14 @@ ASKED: "you can only have three followers in your squad, and those three followe
 
 ## The technicians' abilities (js/techabilities.js; docs/TECHNICIANS.md)
 
-A technician in the squad has its element's ability, used from the ⚡ chip on its squad card; the chip shows when it is ready (60 s after it joins the squad, then its cooldown). Built so far: the electric technician's **Kinetic Launcher**. Its combat mode throws a follower at an enemy the technician can see. Its exploration mode sets a launcher up for good at a launcher site (one shows, highlighted, when you are near it: the arena, under the catwalks), which throws followers up to the Arena Catwalk; they hold it until COME and come back down through its broken section, one way. The details, the numbers (some provisional) and what is still to be decided for the other five are in docs/TECHNICIANS.md.
+A technician in the squad has its element's ability, used from the chip on its squad card; the chip shows when it is ready (60 s after it joins the squad, then a 60 s cooldown after each use). The six:
+- **Electric, the Kinetic Launcher:** throws a follower at an enemy the technician can see; at a launcher site (the arena, under the catwalks) it sets a launcher up for good, which throws followers up to the Arena Catwalk.
+- **Core, the Photonic Shield:** a wall of light 3 tiles wide between it and a creature, for 20 s: enemies cannot cross it or hit across it; your side walks and shoots through.
+- **Fire, the Thermite Drill:** press and hold the rubble in the arena's south rock and pick THERMITE DRILL: six hits and it is a dark hole, sealed for now, with three rocks in front of it. From the chip it drills an enemy three times.
+- **Ice, the Frost Patch:** 3×3 tiles of ice on a spot it can see, for 10 s: enemies at half speed, your units faster.
+- **Toxic, the Blight Spider:** it walks to a spot and leaves a poison pool (up to three) that hurts enemies in it and fades over two in-game days (a day is 20 minutes of play, on a saved clock).
+- **Flux, Telegrab:** an item on the floor anywhere on the screen flies to you and is picked up.
+The details, the numbers (which were given and which are provisional) and what is still open are in docs/TECHNICIANS.md.
 
 ## The HUD: one group to a corner (the facility on a tablet or a desktop; js/party.js hudCorners)
 

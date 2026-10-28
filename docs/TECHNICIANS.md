@@ -1,16 +1,26 @@
 # The technicians' abilities (the Level 1 update)
 
-`js/techabilities.js`; tests in `tests/techabilities.js`.
+`js/techabilities.js`; tests in `tests/techabilities.js` (the system, the Kinetic Launcher) and `tests/techlevel1.js` (the other five).
 
-A **technician** (role `camper`, shown as TECHNICIAN) of an element has that element's ability, as an egg and evolved alike. Abilities are in one table, `TECH_ABILITIES`, and every way of using one goes through one function, `techAbilityUse`: the ⚡ chip on the technician's card in the squad bar (`js/party.js`), a tap in the world (a launcher site), and the tests. A command from the HUD and one from the world are the same thing, with the same cooldown and the same checks.
+A **technician** (role `camper`, shown as TECHNICIAN) of an element has that element's ability, as an egg and evolved alike. Abilities are in one table, `TECH_ABILITIES`, and every way of using one goes through one function, `techAbilityUse`: the chip on the technician's card in the squad bar (`js/party.js`), the world (a tap on a launcher site, a long press on rubble), and the tests. A command from the HUD and one from the world are the same thing, with the same cooldown and the same checks.
+
+| Element | Ability | Chip | What you pick |
+|---|---|---|---|
+| Electric | Kinetic Launcher | ⚡ LAUNCH | a follower, then an enemy |
+| Core | Photonic Shield | ◈ SHIELD | an enemy (or the enemy card) |
+| Fire | Thermite Drill | ✹ DRILL | an enemy (or the enemy card); rubble from its own long-press ring |
+| Ice | Frost Patch | ❄ FROST | a spot of floor |
+| Toxic | Blight Spider | ☣ POOL | a spot of floor |
+| Flux | Telegrab | ✦ GRAB | an item on the floor |
 
 - **Who:** only a technician in the squad (not one holding a room, not one walking back to the Crystal).
-- **Waits:** a technician that joins the squad waits `TECH_AB.joinWait` (60 s, "the 60-second initial squad wait") before its first use; each use after that waits the ability's cooldown. Leaving the squad and coming back starts the first wait again. Cooldowns are not saved (no cooldown is).
-- **Aiming:** the chip puts up a prompt at the top of the screen saying what to tap. While it is up, a press on the play area is the aim's (no ring, no shot, no walk), and a tap on a squad card picks that follower. ✕ CALL OFF, a second tap on the chip, or Escape calls it off.
-- **The chip:** `⚡ LAUNCH` when ready, `⚡ 42 S` while waiting, `✕ AIMING` while being aimed, `⚡ THROWING` / `⚡ SETTING UP` while busy. It is on the squad bar only, not in the Command Center's squad box.
+- **Waits:** a technician that joins the squad waits `TECH_AB.joinWait` (60 s, "the 60-second initial squad wait") before its first use; each use after that waits the ability's cooldown: 60 s for each of the six (as asked). Leaving the squad and coming back starts the first wait again. Cooldowns are not saved (no cooldown is).
+- **Reach:** anything the technician can see (no aiming through a wall); Telegrab reaches any item on the screen.
+- **Aiming:** the chip puts up a prompt at the top of the screen saying what to tap. While it is up, a press on the play area is the aim's (no ring, no shot, no walk), a tap on a squad card picks that follower, and a tap on the enemy card picks its creature. A pick that cannot be (out of sight, not floor) says why and the aim stays up for another. ✕ CALL OFF, a second tap on the chip, or Escape calls it off.
+- **The chip:** its mark and word when ready (`⚡ LAUNCH`), the seconds while waiting (`⚡ 42 S`), `✕ AIMING` while being aimed, and what it is doing while busy (`THROWING`, `SETTING UP`, `DRILLING`, `LAYING`). It is on the squad bar only, not in the Command Center's squad box.
 - **INFO:** a technician's INFO card has an ABILITY section with its numbers and when it is ready.
 
-Built so far: **ELECTRIC, the Kinetic Launcher** and **CORE, the Photonic Shield.** The others are added to the same table as each one's design is settled (see "Still to be decided" below).
+All six are built.
 
 ## The Kinetic Launcher (electric)
 
@@ -75,6 +85,70 @@ ASKED: "The Core Technician deploys a photonic shield between itself and the pla
 | A creature's body against it (and past its ends) | 0.4 tiles | how it feels |
 | The technician stops holding when you are | 10 tiles away | how it feels |
 
+## The Thermite Drill (fire)
+
+ASKED: "Place a distinctive rubble patch at the midpoint of the southern wall. Keep it visually distinguishable from ordinary indestructible walls [...] Allow the player to long-press the rubble and select Thermite Drill. Have the Fire Technician travel to the target and drill it. Destroy the rubble after six successful drill hits. Spawn collectible rocks exactly once upon destruction. Preserve the resulting opening [...] Allow the ability to target enemies through the Technician HUD. Reuse the same ability framework and cooldown handling for environmental and enemy targets [...] Treat the opening as a future insect-burrow entrance; do not implement an unrequested dungeon system"; then the arena's south rock, its nearest straight stretch, the map not changed; one hit a second; a sealed dark hole, kept; 3 rocks once, a pack item with no use yet; against an enemy 3 hits a second apart, each twice its normal hit.
+
+- **The rubble** (`rubble` in the map, docs/FACILITY.md): broken rock in the arena's south rock, on the west half of its straight stretch (the exact middle is on a slant; the east half carries the red banner). It is drawn on the rock's face: lighter stones than the cliff, a hazard-painted slab across them, seams that glow hotter with each hit and stones that fall away. Near it, a label says what to do, and a notice comes up once as you come near.
+- **Drilling it:** press and hold the rubble; its ring has **THERMITE DRILL** (above), and its caption says how many hits are left. A fire technician in your squad whose drill is ready walks to the spot in front of it and drills: a jet of white-hot thermite, a hit a second, six hits. The cooldown starts at the first hit. With no fire technician in the squad, or one still waiting, it says so. The hits are kept (and saved): a drilling cut short goes on where it stopped.
+- **Drilled through:** the rubble is gone and a **dark hole** is there for good: a black arch going back into the rock, scorched round its mouth, its rim still warm. It is **sealed for now** (it says so): no wall changes and nothing walks in; it is where the insect burrow will be. **Three rocks** lie in front of it, made once: walk over them to take them (ITEMS.rock, ROCK: "no use yet"). The save keeps the hole and the rocks not yet taken; a new game has the rubble back.
+- **An enemy (the HUD):** the ✹ chip, then an enemy it can see (or the enemy card). It closes in and drills it **3 times, a second apart**, each **twice its normal hit**: followerAttack's plain hit is a quarter of its attack, so each drill hit is half its attack, as fire. The cooldown starts at the first hit; one it never reaches costs nothing.
+
+| Number | Value | Status |
+|---|---|---|
+| Hits to drill the rubble through, how fast | 6, one a second | given |
+| Rocks | 3, once | given |
+| Hits on an enemy, how fast, how hard | 3, one a second, 2 × its normal hit | given (the "normal hit" read as followerAttack's plain hit) |
+| Cooldown | 60 s, from the first hit | given |
+| How near an enemy it drills from | 1 tile | how it feels |
+| Time to get there | 20 s to the rubble, 8 s to an enemy | how it feels |
+
+## The Frost Patch (ice)
+
+ASKED: "Implement the Level 1 Frost Patch using existing terrain and status-effect systems. Check the established design for its dimensions, duration, slowing effects, and sliding behavior"; then 3×3, 10 s, half speed, on a spot the player taps that the technician can see, there at once; "sliding" for your own units: they cross faster; ice bridges later ("they'll be like sewer somewhere on the map; we'll find a place to add the sewer system, and you can [cross] the sewer with the ice bridges").
+
+- The ❄ chip, then a spot of floor the technician can see: ice covers the **3×3 tiles** round the tapped tile at once (only floor in sight of its middle: a wall cuts it), for **10 s** (its seconds show over it).
+- **An enemy on it** moves at **half its pace** (the game's own slow, `applySlow`; a stronger slow it already has, a web, is kept). **Your units on it** (followers and clones) move **faster** (the same system, a factor over 1; a slow they have is kept). Off it, and once it is gone, everyone moves as before.
+- **Ice bridges** are for later, when the map has a sewer to cross; nothing of them is built.
+
+| Number | Value | Status |
+|---|---|---|
+| Size, how long | 3 × 3 tiles, 10 s | given |
+| Enemies on it | 50% of their speed | given |
+| Your units on it | 150% of their speed | PROVISIONAL ("they cross faster": how much was not given) |
+| Cooldown | 60 s | given |
+
+## The Blight Spider (toxic) and the play clock
+
+ASKED: "Create contamination pools. Make the pools persist for two complete in-game days. Implement gradual toxin reabsorption according to the established behavior. Use the existing day-cycle system rather than real-world timers. Prevent repeated updates from incorrectly extending pool duration or multiplying toxin reabsorption. Leave the death-spill behavior unresolved until its exact mechanics are confirmed. Do not invent a replacement"; then a tapped spot it can see, the spider walks there and leaves a 2×2 pool; up to 3 (a 4th takes the oldest's place); 2 in-game days, a day being 20 minutes of play, play time only (a saved clock: nothing passes while the game is closed); the toxic cloud's own damage every half second; reabsorption: the pool slowly fades, weaker and smaller, until it is gone.
+
+- **The play clock** (`techClock`): the game had no day; now it counts the frames of play, is saved, and an in-game day is 20 minutes of it. Nothing passes while the game is closed.
+- The ☣ chip, then a spot of floor it can see: the spider **walks there** and leaves a **2×2 pool** (on the 2×2 tiles nearest the spot). The cooldown starts when the pool is down. There are **at most 3**: a 4th takes the oldest's place.
+- **A pool hurts the enemies standing in it** with the toxic cloud's own bite (a smoke bomb's cloud: 0.036 × its special attack), every half second. It does nothing to your side.
+- **Reabsorption:** a pool lasts **2 in-game days** (40 minutes of play). It is taken back in gradually: its bite and its size both shrink with its age, half at one day, and it is gone at two. Its life is fixed when it is laid (when, on the clock), and its strength is worked out from its age each time, so nothing can stretch its life or make it fade twice as fast (putting the same save back twice changes nothing).
+- **The death spill:** not built (unresolved, as asked).
+
+| Number | Value | Status |
+|---|---|---|
+| Pool, how many | 2 × 2 tiles, up to 3 | given |
+| Lasts | 2 in-game days; a day is 20 min of play | given |
+| Its bite | the toxic cloud's, every half second, fading with it | given |
+| Cooldown | 60 s, from when the pool is down | given |
+| Time to get there | 20 s | how it feels |
+
+## Telegrab (flux)
+
+ASKED: "Implement the Level 1 Telegrab ability using existing targeting and item-interaction systems. Check the established design for its range, eligible targets, and retrieval behavior"; then any item on the ground at any distance (supply cases, scrap, capsules, rocks), pulled to the player and collected once through the existing pickup; shards stay paid straight in at the kill.
+
+- The ✦ chip, then an item on the floor anywhere on the screen (the technician need not see it): a supply case, a creature's drop, a rock, a specimen capsule. It **flies to you** in an arc, glowing, on a thread of light from the technician, and is put at your feet, where the pickup you would have made walking over it takes it: once. One your pack has no room for stays at your feet, as it would.
+- Shards are not on the floor: a kill pays them straight in, as before.
+
+| Number | Value | Status |
+|---|---|---|
+| Reach | any item on the screen | given |
+| Cooldown | 60 s | given |
+| Flight | 0.7 s | how it feels |
+
 ## Rooms and recruitment (js/party.js)
 
 ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. Arena Level 2: six followers. These room capacities are separate from the three active squad slots"; then the Main Hallway and the Arena are "automatically a level 2 just because of the amount of space in these areas", every other room is Category 1; the follower replaced "has option to go to a vacancy in the rooms but if not confirm retirement"; the Arena over its six moves its weakest by "roster order" to a "free room, else retired".
@@ -89,10 +163,12 @@ ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. 
 
 From the audit of the specs against the game (the report given before any code):
 
-- **All technicians:** whether evolved forms only, or every technician (built: every technician); the other five abilities' numbers.
-- **Core, Projected Barrier:** decided and built (above).
-- **Fire, Thermite Drill:** which southern wall (most likely the arena's south rock, whose midpoint is on a slanted stretch where an opening cannot be cut cleanly; the nearest straight stretch is 3.5 tiles west); what is behind the opening; the rocks (no rock item exists); drill timing and damage.
-- **Ice, Frost Patch:** placement, size, duration, slow; what sliding means; ice bridges have nowhere to go (there are no gaps in the facility).
-- **Toxic, Blight Spider:** there is no day cycle (the game state may hold only `running`, the clock restarts on each load); the day length; what the pool does and what "toxin reabsorption" means; the death spill (left unresolved, as asked).
-- **Flux, Telegrab:** shards are paid at the kill, never on the ground; its reach.
-- **Rooms and recruitment:** decided and built (above). Forward rooms, nests, Crystal energy, equipment and the healing station wait ("Not yet").
+Decided in the button rounds and built: every technician has its element's ability; 60 s cooldowns; reach by sight (Telegrab: anywhere); the shield's size and that it blocks attacks; the rubble's place and what is behind it, the rocks, the drill's timing and its hits on an enemy; the frost patch's size, time, slow and "they cross faster"; the pool's place, size, number, the day's length and what reabsorption means; Telegrab's targets and reach; the rooms' caps and who makes room.
+
+Still open:
+
+- **Ice, Frost Patch:** how much faster your units cross it (150% is provisional); the ice bridges, when the map has a sewer to cross.
+- **Fire, Thermite Drill:** "twice its normal hit" is read as twice followerAttack's plain hit (a quarter of its attack); what the rocks are for; what is in the hole (the insect burrow).
+- **Toxic, Blight Spider:** the death spill (left unresolved, as asked).
+- **Electric, Kinetic Launcher:** its provisional numbers (above) were confirmed as placeholders.
+- **Rooms:** forward rooms, nests, Crystal energy, equipment and the healing station wait ("Not yet").

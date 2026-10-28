@@ -74,8 +74,14 @@ const ITEMS = {
         lore: "Frost on the inside of the glass, and something very still behind it. The seal hums. It is lighter than it should be.",
         stats: ["HOLDS  ONE PRESERVED SPECIMEN", "USED AT  THE RESURRECTION ZONE: THE CRYSTAL", "IT COMES BACK AS IT WAS"],
         use: () => typeof specimenUseItem === "function" ? specimenUseItem() : { ok: false, why: "TAKE IT TO THE CRYSTAL" } },
+    // the Level 1 update: "Spawn collectible rocks exactly once upon destruction", then "a pack item with no use yet" (js/techabilities.js, the Thermite Drill)
+    rock: { id: "rock", name: "ROCK", cat: "part", type: "component", stack: 9, col: "#c2a888", icon: "rock", classes: null,
+        desc: "A lump of rock from behind the rubble in the arena's south wall. It has no use yet.",
+        lore: "Scorched on one side where the thermite went through. Something has been scratching at the other.",
+        stats: ["FROM  THE RUBBLE IN THE ARENA'S SOUTH ROCK", "THREE, ONCE", "USE  NONE YET"],
+        use: () => ({ ok: false, why: "NO USE FOR IT YET" }) },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock"];
 
 // ── the pack ──
 let playerInv = {};
@@ -124,6 +130,13 @@ function invFeedFollower() {
 
 // ── the icons: each draws centred on (x, y) in a box of `s` pixels (t is a slow clock for the inspect page's shine) ──
 const INV_ICONS = {
+    rock: (c, x, y, s, col) => {   // a rough lump, scorched along one side
+        c.lineJoin = "round"; c.lineWidth = Math.max(2, s * 0.05); c.strokeStyle = "#2a2018";
+        c.fillStyle = "#8a7660"; c.beginPath(); c.moveTo(x - s * 0.32, y + s * 0.18); c.lineTo(x - s * 0.24, y - s * 0.16); c.lineTo(x - s * 0.02, y - s * 0.3); c.lineTo(x + s * 0.26, y - s * 0.18); c.lineTo(x + s * 0.34, y + s * 0.1); c.lineTo(x + s * 0.12, y + s * 0.3); c.lineTo(x - s * 0.18, y + s * 0.3); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = col; c.beginPath(); c.moveTo(x - s * 0.24, y - s * 0.16); c.lineTo(x - s * 0.02, y - s * 0.3); c.lineTo(x + s * 0.26, y - s * 0.18); c.lineTo(x + s * 0.02, y - s * 0.06); c.closePath(); c.fill();
+        c.fillStyle = "rgba(60,30,14,0.75)"; c.beginPath(); c.moveTo(x + s * 0.12, y + s * 0.3); c.lineTo(x + s * 0.34, y + s * 0.1); c.lineTo(x + s * 0.2, y + s * 0.04); c.lineTo(x + s * 0.02, y + s * 0.22); c.closePath(); c.fill();
+        c.strokeStyle = "rgba(255,150,60,0.55)"; c.lineWidth = Math.max(1, s * 0.03); c.beginPath(); c.moveTo(x + s * 0.06, y + s * 0.24); c.lineTo(x + s * 0.26, y + s * 0.08); c.stroke();
+    },
     scrap: (c, x, y, s, col) => {
         c.lineJoin = "round"; c.lineWidth = Math.max(2, s * 0.05); c.strokeStyle = col;
         c.fillStyle = "#3b414c"; c.beginPath(); c.moveTo(x - s * 0.34, y + s * 0.08); c.lineTo(x - s * 0.1, y - s * 0.28); c.lineTo(x + s * 0.14, y - s * 0.12); c.lineTo(x + s * 0.06, y + s * 0.2); c.lineTo(x - s * 0.22, y + s * 0.3); c.closePath(); c.fill(); c.stroke();

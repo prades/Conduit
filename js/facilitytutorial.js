@@ -180,8 +180,13 @@ function facilityClassItemsEnter(classId) {
     return n;
 }
 function _fpDrawPickup(it) {
-    if (it.taken) return;
+    if (it.taken || it.grab) return;   // (one flying to the player on a flux technician's Telegrab is drawn in the air: js/techabilities.js)
     const f = _fpFrame(), first = it.items[0][0], d = typeof itemDef === "function" ? itemDef(first) : null, col = d ? d.col : "#ffe9a0", bob = Math.sin(f * 0.06 + it.seed) * 3, A = FP_PAL;
+    if (it.rock) {   // a rock from the drilled rubble (js/techabilities.js): a rough lump on the floor, not a case
+        const c = _fpP(it.x, it.y, 0), s = 9; ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(c[0], c[1], s * 1.3, s * 0.55, 0, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = "#7a6650"; ctx.strokeStyle = "#1e2a2f"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(c[0] - s, c[1] - 1); ctx.lineTo(c[0] - s * 0.6, c[1] - s); ctx.lineTo(c[0] + s * 0.3, c[1] - s * 1.2); ctx.lineTo(c[0] + s, c[1] - s * 0.4); ctx.lineTo(c[0] + s * 0.7, c[1] + 2); ctx.lineTo(c[0] - s * 0.3, c[1] + 3); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#a99076"; ctx.beginPath(); ctx.moveTo(c[0] - s * 0.6, c[1] - s); ctx.lineTo(c[0] + s * 0.3, c[1] - s * 1.2); ctx.lineTo(c[0] + s * 0.5, c[1] - s * 0.6); ctx.lineTo(c[0] - s * 0.3, c[1] - s * 0.5); ctx.closePath(); ctx.fill();
+    } else
     if (!(typeof facilityCaseSprite === "function" && facilityCaseSprite(it))) {   // (the 3D case, js/propsprites.js, else the flat box)
     _fpSBox(it.x - 0.3, it.y - 0.3, it.x + 0.3, it.y + 0.3, 0, 13, A.caseLit, A.case, A.cap, 3);   // the case
     _fpSBox(it.x - 0.31, it.y - 0.31, it.x + 0.31, it.y + 0.31, 8, 11, col, _fpShade(col, 0.7), _fpShade(col, 0.88), 2);   // a coloured band round it

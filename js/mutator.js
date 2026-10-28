@@ -369,7 +369,7 @@ function cloneBodiesDrawItems(drawList) {
     for (const b of cloneBodies) if (visibleForDraw(b.x, b.y)) drawList.push({ type: "body", x: b.x, y: b.y, body: b });
 }
 function drawCloneBody(b, px, py) {
-    if (!b || typeof ctx === "undefined") return;
+    if (!b || typeof ctx === "undefined" || b.grab) return;   // (a capsule flying to the player on a flux technician's Telegrab is drawn in the air: js/techabilities.js)
     const f = _mxFrame(), col = typeof CLASSES !== "undefined" && CLASSES.mutator ? CLASSES.mutator.colour : "#c06bff", pul = 0.55 + 0.45 * Math.sin(f * 0.06 + b.id);
     ctx.save();
     ctx.translate(px, py + TILE_H); ctx.scale(1, TILE_H / TILE_W);   // the ring on the floor

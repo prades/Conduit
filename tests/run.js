@@ -62,7 +62,7 @@ const SUITES = [
     ['the corners: the target\'s dial and ammunition bottom right, the objective under the network panel top right', 'corners.js'],
     ['a squad member\'s card on the fly: ALL instead of the element picker, a tap picks a member, INDEX and DISMISS FROM SQUAD', 'squadfly.js'],
     ['the technicians\' abilities: one table, one way in; the Kinetic Launcher\'s throw, its launcher site, the Arena Catwalk and its broken section', 'techabilities.js'],
-    ['the other five technicians\' Level 1 abilities: the Photonic Shield', 'techlevel1.js'],
+    ['the other five technicians\' Level 1 abilities: the Photonic Shield, the Thermite Drill and the arena\'s rubble, the Frost Patch, the Blight Spider and the play clock, Telegrab', 'techlevel1.js'],
     ['the Command Center as a carousel', 'carousel.js'],
     ['facility play',            'facilityplay.js'],
     ['facility map',             'facility.js'],

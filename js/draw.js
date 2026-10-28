@@ -99,6 +99,15 @@ function drawRadialMenu() {
         return;
     }
 
+    // ── RUBBLE a fire technician can drill (js/techabilities.js): UP = THERMITE DRILL ──
+    if (commandTechTarget && typeof techRingFor === "function") {
+        const ring = techRingFor(commandTechTarget);
+        if (ring && ring.up) { const tUp = dist>RADIAL_RADIUS*0.25&&angle<-Math.PI/4&&angle>-3*Math.PI/4; drawRadialButton(commandX, commandY-RADIAL_RADIUS, ring.up.label, tUp); if (tUp) selectedRadialAction = ring.up.act + "_tech"; }
+        _radialCaption(ring ? ring.caption : "", "#ffb070");
+        ctx.restore();
+        return;
+    }
+
     // ── YOUR FOLLOWER OR CLONE — its card in the roster (its INFO tab is on the card) ──
     // A follower can also be RE-ROLLED; a clone is summoned, not recruited, so
     // canRerollFollower refuses it and the left slot stays empty.

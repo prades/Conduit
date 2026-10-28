@@ -195,7 +195,10 @@ function handleLongHold(ex,ey) {
     // A FALLEN CLONE'S BODY (js/mutator.js), when it is nearer the finger than any unit: its own ring (SALVAGE DNA)
     const _bp = typeof cloneBodyAtScreen === "function" ? cloneBodyAtScreen(ex, ey) : null;
     commandBodyTarget = _bp && _bp.d < _eD && _bp.d < _fD ? _bp.body : null;
-    if (commandBodyTarget) { commandFollowerTarget = null; commandEnemyTarget = null; }
+    // RUBBLE a fire technician can drill (js/techabilities.js), when it is nearer the finger than any unit: its own ring (THERMITE DRILL)
+    const _rp = !commandBodyTarget && typeof techRubbleAtScreen === "function" ? techRubbleAtScreen(ex, ey) : null;
+    commandTechTarget = _rp && _rp.d < _eD && _rp.d < _fD ? _rp.r : null;
+    if (commandBodyTarget || commandTechTarget) { commandFollowerTarget = null; commandEnemyTarget = null; }
     else if (_fD <= _eD) {
         commandFollowerTarget = findFollowerAtScreen(ex, ey);
         commandEnemyTarget    = null;
@@ -354,6 +357,12 @@ canvas.addEventListener('pointerup', e=>{
                     const _ring = typeof mutatorBodyRing === "function" ? mutatorBodyRing(commandBodyTarget) : { up: true, right: null };
                     if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && _ring.up) selectedRadialAction = "salvage_body";
                     else if (relAngle > -Math.PI/4 && relAngle < Math.PI/4 && _ring.right) selectedRadialAction = _ring.right.act;
+                    commandPendingTap = false; executeCommand(); commandTarget = null; isPressing = false; return;
+                }
+                // Rubble (mirrors its branch in drawRadialMenu): UP is THERMITE DRILL (js/techabilities.js techRingFor)
+                if (commandTechTarget) {
+                    const _ring = typeof techRingFor === "function" ? techRingFor(commandTechTarget) : null;
+                    if (relAngle < -Math.PI/4 && relAngle > -3*Math.PI/4 && _ring && _ring.up) selectedRadialAction = _ring.up.act + "_tech";
                     commandPendingTap = false; executeCommand(); commandTarget = null; isPressing = false; return;
                 }
                 // Own follower ring (mirrors its branch in drawRadialMenu).

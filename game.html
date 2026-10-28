@@ -1293,7 +1293,7 @@
       <div class="cm-build-row"><span class="cm-build-label" style="background:#ff7ab822;color:#ff7ab8">Duo</span>Both ultimate bars full and the pair close: double-tap either and <strong>both</strong> ultimates fire at once, and the pair hits <span class="cm-stat">1.3&times;</span> harder for <span class="cm-stat">5</span>s.</div>
       </details><details class="cm-more"><summary>In detail &mdash; evolution</summary><div class="ctrl-title">&#9670; EVOLUTION &mdash; AT LEVEL 10</div>
       <div class="ctrl-row cm-dim">A follower that reaches level <span class="cm-stat">10</span> and has a form for its element and role <strong>evolves on the spot</strong>: it molts &mdash; the egg shakes and cracks, the glass bursts and its legs drop, and the machine rises out of it. It keeps that form for good, through death and a reload, and its role is fixed from then on. Its health and power are multiplied by <span class="cm-stat">1.25</span>.</div>
-      <div class="ctrl-row cm-dim">An evolved form has a <strong>signature move</strong> it fires by itself when an enemy is near &mdash; a ring of fire, a charged arc that jumps between enemies, a gravity slam &mdash; and some forms can choose a second one on the INDEX tab of their card. The technicians' forms (the Goo Proxy, the Thermite Burrower, the Igloo Skater, the Blight Spider, the Hover Shell), the ice mage's (the Rimestar) and the core forms (the Jelly Ram, the Hornshell, the Hammer Slug) have none yet. A <strong>technician</strong> in your squad has an <strong>ability</strong> you use from the ⚡ chip on its card: the electric technician's <span class="cm-stat">KINETIC LAUNCHER</span> throws a follower you pick at an enemy it can see (the enemy takes 3× the follower's power, the follower a set 10; then 60 s to recharge, and 60 s after it joins the squad). At a <strong>launcher site</strong> (one shows, highlighted, when you are near it: the arena, under the catwalks) a tap has it set a launcher up for good, which throws followers up to the <strong>Arena Catwalk</strong>; they hold it until COME, and come back down through its broken section. The other technicians' abilities are to come. A Mutator's mutagen sample raises a follower a level toward it.</div>
+      <div class="ctrl-row cm-dim">An evolved form has a <strong>signature move</strong> it fires by itself when an enemy is near &mdash; a ring of fire, a charged arc that jumps between enemies, a gravity slam &mdash; and some forms can choose a second one on the INDEX tab of their card. The technicians' forms (the Goo Proxy, the Thermite Burrower, the Igloo Skater, the Blight Spider, the Hover Shell), the ice mage's (the Rimestar) and the core forms (the Jelly Ram, the Hornshell, the Hammer Slug) have none yet. A <strong>technician</strong> in your squad has an <strong>ability</strong> you use from the chip on its card (60 s after it joins the squad, then 60 s to recharge after each use): the electric technician's <span class="cm-stat">KINETIC LAUNCHER</span> throws a follower you pick at an enemy it can see (the enemy takes 3× the follower's power, the follower a set 10), and at a <strong>launcher site</strong> (the arena, under the catwalks) it sets a launcher up for good, which throws followers up to the <strong>Arena Catwalk</strong>; the core technician's <span class="cm-stat">PHOTONIC SHIELD</span> puts a wall of light 3 tiles wide between it and a creature for 20 s (enemies cannot cross it or hit across it; your side walks and shoots through); the fire technician's <span class="cm-stat">THERMITE DRILL</span> drills an enemy three times, and the <strong>rubble</strong> in the arena's south rock (press and hold it) six times, into a dark hole, sealed for now, with three rocks in front of it; the ice technician's <span class="cm-stat">FROST PATCH</span> freezes 3×3 tiles for 10 s (enemies at half speed, your units faster); the toxic technician's <span class="cm-stat">BLIGHT SPIDER</span> leaves a poison pool (up to three) that hurts enemies and fades over two in-game days; the flux technician's <span class="cm-stat">TELEGRAB</span> pulls an item on the floor anywhere on the screen to you. A Mutator's mutagen sample raises a follower a level toward it.</div>
       </details><details class="cm-more"><summary>In detail &mdash; abilities and ultimates</summary>      <div class="cm-intro-box">
         Follower attacks cost <strong>WILL</strong>. Physical = <span style="color:#ff0">1 WILL</span>, Special = <span style="color:#ff0">4 WILL</span>. WILL regens passively at ~0.3/sec. When WILL is empty, follower uses a weak normal strike (0.25× ATK, no element).
       </div>
@@ -1589,12 +1589,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-28j, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-28k, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-28j";
+window.__PAGE_BUILD = "2026-10-28k";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1630,72 +1630,72 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-28j"></script>
-<script src="js/icons.js?v=2026-10-28j"></script>
-<script src="js/uikit.js?v=2026-10-28j"></script>
-<script src="js/traits.js?v=2026-10-28j"></script>
-<script src="js/elements.js?v=2026-10-28j"></script>
-<script src="js/combat.js?v=2026-10-28j"></script>
-<script src="js/species.js?v=2026-10-28j"></script>
-<script src="js/levels.js?v=2026-10-28j"></script>
-<script src="js/status.js?v=2026-10-28j"></script>
-<script src="js/helpers.js?v=2026-10-28j"></script>
-<script src="js/predator.js?v=2026-10-28j"></script>
-<script src="js/abilities.js?v=2026-10-28j"></script>
-<script src="js/commands.js?v=2026-10-28j"></script>
-<script src="js/npc.js?v=2026-10-28j"></script>
-<script src="js/draw.js?v=2026-10-28j"></script>
-<script src="js/beetle3d.js?v=2026-10-28j"></script>
-<script src="js/bugs3d.js?v=2026-10-28j"></script>
-<script src="js/settings.js?v=2026-10-28j"></script>
-<script src="js/alarm.js?v=2026-10-28j"></script>
-<script src="js/drops.js?v=2026-10-28j"></script>
-<script src="js/clone.js?v=2026-10-28j"></script>
-<script src="js/bonds.js?v=2026-10-28j"></script>
-<script src="js/evolution.js?v=2026-10-28j"></script>
-<script src="js/hdsprites.js?v=2026-10-28j"></script>
-<script src="js/firebombs.js?v=2026-10-28j"></script>
-<script src="js/moves.js?v=2026-10-28j"></script>
-<script src="js/hudgems.js?v=2026-10-28j"></script>
-<script src="js/commandcenter.js?v=2026-10-28j"></script>
-<script src="js/unitinfo.js?v=2026-10-28j"></script>
-<script src="js/infodex.js?v=2026-10-28j"></script>
-<script src="js/classes.js?v=2026-10-28j"></script>
-<script src="js/playergear.js?v=2026-10-28j"></script>
-<script src="js/inventory.js?v=2026-10-28j"></script>
-<script src="js/weapons.js?v=2026-10-28j"></script>
-<script src="js/mutator.js?v=2026-10-28j"></script>
-<script src="js/specimen.js?v=2026-10-28j"></script>
-<script src="js/serum.js?v=2026-10-28j"></script>
-<script src="js/technomancer.js?v=2026-10-28j"></script>
-<script src="js/stations.js?v=2026-10-28j"></script>
-<script src="js/facilityportals.js?v=2026-10-28j"></script>
-<script src="js/tutorial.js?v=2026-10-28j"></script>
-<script src="js/facilitymap.js?v=2026-10-28j"></script>
-<script src="js/facilitygrow.js?v=2026-10-28j"></script>
-<script src="js/facility.js?v=2026-10-28j"></script>
-<script src="js/attract.js?v=2026-10-28j"></script>
-<script src="js/facilitysave.js?v=2026-10-28j"></script>
-<script src="js/facilityplay.js?v=2026-10-28j"></script>
-<script src="js/facilitydecor.js?v=2026-10-28j"></script>
-<script src="js/propatlas.js?v=2026-10-28j"></script>
-<script src="js/propsprites.js?v=2026-10-28j"></script>
-<script src="js/facilitystyle.js?v=2026-10-28j"></script>
-<script src="js/facilitystyleall.js?v=2026-10-28j"></script>
-<script src="js/facilitynet.js?v=2026-10-28j"></script>
-<script src="js/facilityspawn.js?v=2026-10-28j"></script>
-<script src="js/followerspots.js?v=2026-10-28j"></script>
-<script src="js/party.js?v=2026-10-28j"></script>
-<script src="js/squadfly.js?v=2026-10-28j"></script>
-<script src="js/techabilities.js?v=2026-10-28j"></script>
-<script src="js/facilitytutorial.js?v=2026-10-28j"></script>
-<script src="js/gunfire.js?v=2026-10-28j"></script>
-<script src="js/targeting.js?v=2026-10-28j"></script>
-<script src="js/toolbox.js?v=2026-10-28j"></script>
-<script src="js/mixtool.js?v=2026-10-28j"></script>
-<script src="js/radialmenu.js?v=2026-10-28j"></script>
-<script src="js/input.js?v=2026-10-28j"></script>
-<script src="js/game.js?v=2026-10-28j"></script>
+<script src="js/config.js?v=2026-10-28k"></script>
+<script src="js/icons.js?v=2026-10-28k"></script>
+<script src="js/uikit.js?v=2026-10-28k"></script>
+<script src="js/traits.js?v=2026-10-28k"></script>
+<script src="js/elements.js?v=2026-10-28k"></script>
+<script src="js/combat.js?v=2026-10-28k"></script>
+<script src="js/species.js?v=2026-10-28k"></script>
+<script src="js/levels.js?v=2026-10-28k"></script>
+<script src="js/status.js?v=2026-10-28k"></script>
+<script src="js/helpers.js?v=2026-10-28k"></script>
+<script src="js/predator.js?v=2026-10-28k"></script>
+<script src="js/abilities.js?v=2026-10-28k"></script>
+<script src="js/commands.js?v=2026-10-28k"></script>
+<script src="js/npc.js?v=2026-10-28k"></script>
+<script src="js/draw.js?v=2026-10-28k"></script>
+<script src="js/beetle3d.js?v=2026-10-28k"></script>
+<script src="js/bugs3d.js?v=2026-10-28k"></script>
+<script src="js/settings.js?v=2026-10-28k"></script>
+<script src="js/alarm.js?v=2026-10-28k"></script>
+<script src="js/drops.js?v=2026-10-28k"></script>
+<script src="js/clone.js?v=2026-10-28k"></script>
+<script src="js/bonds.js?v=2026-10-28k"></script>
+<script src="js/evolution.js?v=2026-10-28k"></script>
+<script src="js/hdsprites.js?v=2026-10-28k"></script>
+<script src="js/firebombs.js?v=2026-10-28k"></script>
+<script src="js/moves.js?v=2026-10-28k"></script>
+<script src="js/hudgems.js?v=2026-10-28k"></script>
+<script src="js/commandcenter.js?v=2026-10-28k"></script>
+<script src="js/unitinfo.js?v=2026-10-28k"></script>
+<script src="js/infodex.js?v=2026-10-28k"></script>
+<script src="js/classes.js?v=2026-10-28k"></script>
+<script src="js/playergear.js?v=2026-10-28k"></script>
+<script src="js/inventory.js?v=2026-10-28k"></script>
+<script src="js/weapons.js?v=2026-10-28k"></script>
+<script src="js/mutator.js?v=2026-10-28k"></script>
+<script src="js/specimen.js?v=2026-10-28k"></script>
+<script src="js/serum.js?v=2026-10-28k"></script>
+<script src="js/technomancer.js?v=2026-10-28k"></script>
+<script src="js/stations.js?v=2026-10-28k"></script>
+<script src="js/facilityportals.js?v=2026-10-28k"></script>
+<script src="js/tutorial.js?v=2026-10-28k"></script>
+<script src="js/facilitymap.js?v=2026-10-28k"></script>
+<script src="js/facilitygrow.js?v=2026-10-28k"></script>
+<script src="js/facility.js?v=2026-10-28k"></script>
+<script src="js/attract.js?v=2026-10-28k"></script>
+<script src="js/facilitysave.js?v=2026-10-28k"></script>
+<script src="js/facilityplay.js?v=2026-10-28k"></script>
+<script src="js/facilitydecor.js?v=2026-10-28k"></script>
+<script src="js/propatlas.js?v=2026-10-28k"></script>
+<script src="js/propsprites.js?v=2026-10-28k"></script>
+<script src="js/facilitystyle.js?v=2026-10-28k"></script>
+<script src="js/facilitystyleall.js?v=2026-10-28k"></script>
+<script src="js/facilitynet.js?v=2026-10-28k"></script>
+<script src="js/facilityspawn.js?v=2026-10-28k"></script>
+<script src="js/followerspots.js?v=2026-10-28k"></script>
+<script src="js/party.js?v=2026-10-28k"></script>
+<script src="js/squadfly.js?v=2026-10-28k"></script>
+<script src="js/techabilities.js?v=2026-10-28k"></script>
+<script src="js/facilitytutorial.js?v=2026-10-28k"></script>
+<script src="js/gunfire.js?v=2026-10-28k"></script>
+<script src="js/targeting.js?v=2026-10-28k"></script>
+<script src="js/toolbox.js?v=2026-10-28k"></script>
+<script src="js/mixtool.js?v=2026-10-28k"></script>
+<script src="js/radialmenu.js?v=2026-10-28k"></script>
+<script src="js/input.js?v=2026-10-28k"></script>
+<script src="js/game.js?v=2026-10-28k"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1750,7 +1750,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-28j"></script>
+<script src="js/init.js?v=2026-10-28k"></script>
 
 </body>
 </html>

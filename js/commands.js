@@ -43,7 +43,7 @@ function executeCommand() {
     if (selectedRadialAction==="noop") { selectedRadialAction=null; return; }
     // a unit's order needs no tile under the press: a follower or a creature can be pressed where there is none
     const isUnitCmd = selectedRadialAction==="roster_card" || selectedRadialAction==="reroll_follower" || selectedRadialAction==="attack_mode" || selectedRadialAction==="stow_weapon"
-                      || (selectedRadialAction==="info" && (commandEnemyTarget||commandFollowerTarget)) || /_body$/.test(selectedRadialAction);   // (a body's orders need no tile)
+                      || (selectedRadialAction==="info" && (commandEnemyTarget||commandFollowerTarget)) || /_body$/.test(selectedRadialAction) || /_tech$/.test(selectedRadialAction);   // (a body's orders, and rubble's, need no tile)
     if (!commandTarget && !isUnitCmd) { commandMode=false; selectedRadialAction=null; return; }
 
     switch(selectedRadialAction) {
@@ -85,9 +85,11 @@ function executeCommand() {
         }
         default: {
             if (/_body$/.test(selectedRadialAction) && commandBodyTarget && typeof cloneBodyAct === "function") cloneBodyAct(commandBodyTarget, selectedRadialAction.replace(/_body$/, ""));
+            // ── RUBBLE (js/techabilities.js): THERMITE DRILL sends a fire technician of the squad to drill it ──
+            if (/_tech$/.test(selectedRadialAction) && commandTechTarget && typeof techRingAct === "function") techRingAct(commandTechTarget, selectedRadialAction.replace(/_tech$/, ""));
             break;
         }
     }
-    commandBodyTarget = null;
+    commandBodyTarget = null; commandTechTarget = null;
     commandMode=false; commandTarget=null;
 }

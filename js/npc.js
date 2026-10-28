@@ -100,8 +100,9 @@ function updateRTSNPC(actor) {
         return;
     }
 
-    // A TECHNICIAN'S ABILITY directs this walk (js/techabilities.js): to the Kinetic Launcher (or the technician) that throws it, to a site its launcher is being set up at, to a broken section it drops through, to its spot behind its Photonic Shield
-    if ((actor._launchLoad || actor._siteWork || actor._dropSite || actor._shieldHold) && typeof techStepOverride === "function" && techStepOverride(actor)) return;
+    // A TECHNICIAN'S ABILITY directs this walk (js/techabilities.js): to the Kinetic Launcher (or the technician) that throws it, to a site its launcher is being set up at, to a broken section it drops through, to its spot behind its Photonic
+    // Shield, to the rubble or the enemy its Thermite Drill is at, to where its Blight Spider leaves a pool
+    if (typeof techStepWants === "function" && techStepWants(actor) && techStepOverride(actor)) return;
 
     // move / hold — guard position, attack nearby enemies
     if (actor.job&&actor.job.type==="move") {
