@@ -360,6 +360,15 @@ ASKED: "I need to be able to get rid of followers and exile them in room for oth
 - **The squad member's card keeps clear**: beside the HUD's stack it no longer lies over the dock or the enemy card (the third member's card, a narrow tablet): it goes up as far as it must, and its tip still points at the member's card (js/squadfly.js).
 - Tests: tests/exile.js (the act, the ask, the word; the buttons in the real page on a wide screen and a phone; none on the squad's own cards); tests/rooms.js; tests/bottomui.js (the third member's card).
 
+## The game bible (revision)
+
+ASKED: "we make some sort of game Bible that can be maybe all one document, and maybe we can put it on the website somewhere." Chosen with the user: a design reference (every system, its numbers, where it lives in the code, the decisions made and what is still open), a card on the home page, story sections left to be written, and pictures from the game.
+
+- **One page, `bible.html`**, in the game's own style, with a "Conduit · Game Bible" card beside Conduit's on the home page (`index.html`). Its parts: the game, the story (seven parts marked TO BE WRITTEN, each with what the game already says underneath), the facility, the player, followers, creatures and combat, the interface, art direction, how it's built, and open questions (what looks like a bug, what waits on a decision, what is not built yet).
+- **Every number on it that comes from the code is checked against the code**: each one carries the expression that gives it (`data-k`), and `tests/bible.js` loads the game and evaluates them all, so a change to a rule that the page does not follow fails the tests. The test also checks the page's pictures and links, the home page's card, and that the page fits a phone.
+- **The pictures** (`img/bible`, WebP) are made from the game by `node design/bible/pictures.js`: the rooms powered and lit, the iPad and phone screens, every creature in every class and the follower eggs (the game's own drawing code, `design/roster-poster/portraits.js`, which no longer draws the removed machines), the 18 forms from their sheets, and the evolution poster.
+- When a rule or a room changes, the page changes with it: the numbers' test says where; the pictures are made again with the script.
+
 ## The website's background
 The landing page (`index.html`) shows the facility behind it, dark, with evolved followers now and again walking the halls and searching its rooms: `game.html?attract` (js/attract.js; the design is in docs/FACILITY.md, "The website's background"). It is the same facility and the same followers, with no one playing and nothing saved; the game itself is unchanged and opens as before.
 

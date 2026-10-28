@@ -1,5 +1,5 @@
 // node design/roster-poster/portraits.js <out-dir> : renders every creature the game draws itself (the player, the follower egg in each element, the six predator species in
-// every class, the machines) with the GAME'S OWN drawing code into <out-dir>/<id>.png (transparent, 360x360), for the roster sheet (roster-all.js). Needs playwright + chromium.
+// every class) with the GAME'S OWN drawing code into <out-dir>/<id>.png (transparent, 360x360), for the roster sheet (roster-all.js). Needs playwright + chromium.
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || '/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '../..'), OUT = process.argv[2] || '/tmp/portraits';
@@ -39,10 +39,8 @@ const SIZE = 360;
       const k = cls === 'boss' ? 1.9 : cls === 'tank' ? 2.6 : cls === 'nymph' ? 4.2 : 3.4;
       shot(sp + '_' + cls, k, () => drawNPC(a, 0, 0, ctx)); ids.push(sp + '_' + cls);
     }
-    // the machines
-    for (const kind of ['sentry', 'strider']) { const m = spawnMachine(kind, null, { x: 40, y: 1 }); m._assemble = 1; shot('machine_' + kind, 3.4, () => drawNPC(m, 0, 0, ctx)); ids.push('machine_' + kind); m.dead = true; }
     // what the sheet says about each (read from the game's own tables)
-    const meta = { species: {}, forms: Object.values(EVOLUTIONS).map(e => ({ id: e.id, name: e.name, element: e.element, role: e.duty === 'worker' ? 'worker' : e.role === 'sniper' ? 'mage' : e.role, move: e.move, legacy: !!e.legacy })), machines: Object.fromEntries(Object.entries(MACHINE_DEFS).map(([k, d]) => [k, { hp: d.health, power: d.power, label: d.label }])) };
+    const meta = { species: {}, forms: Object.values(EVOLUTIONS).map(e => ({ id: e.id, name: e.name, element: e.element, role: e.duty === 'worker' ? 'worker' : e.role === 'sniper' ? 'mage' : e.role, move: e.move, legacy: !!e.legacy })), machines: {} };
     for (const sp of Object.keys(SPECIES)) { meta.species[sp] = { color: SPECIES[sp].color, rank: SPECIES[sp].rank, classes: {} }; for (const cls of ['nymph', 'worker', 'scout', 'striker', 'tank', 'boss']) { const d = SPECIES[sp][cls]; meta.species[sp].classes[cls] = { hp: d.health, power: d.power, special: !!d.abdomenAttack, range: d.rangeDamage || 0 }; } }
     window.__meta = meta;
     return ids;
