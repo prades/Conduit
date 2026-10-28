@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────
 // The facility is the game: the page opens it, and it keeps one key, "conduit_fp_save". (The old strip game, its CLASSIC GAME chip and its "tubecrawler_*" keys are gone.)
 //
-// WHAT IS SAVED: the class and its perks, the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
+// WHAT IS SAVED: the class and its perks (and, as classes switch, every class you have been: its perks, its stage, the weapon it last held, the Mutator's clone while it waits), the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
 // (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands;
 // the technicians' work that lasts (js/techabilities.js): the launchers set up, the rubble drilled (and its rocks not yet taken), the play clock and the Blight Spider's pools on it.
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
@@ -19,10 +19,11 @@ function facilitySaveCollect() {
     return {
         v: FS.version,
         cls: typeof playerClassKey !== "undefined" ? playerClassKey : null, perks: Array.from(classPerks), inv: playerInv, ammo: playerAmmo, shots: playerShotsFired,
+        classes: typeof classSeen !== "undefined" ? { seen: Array.from(classSeen), weapon: classWeapon, clone: classWaitingClone } : null,   // the classes you have been, the weapon each last held, the Mutator's clone waiting (js/classes.js)
         taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp).map(i => i.id),
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
         script: S ? { step: S.step, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays,
-            cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0 } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js)
+            cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away)
         followers: followerRosterSnapshot(),
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
         clones: cloneRosterSnapshot(),   // the clones: alive, or waiting at the Crystal to come back
@@ -64,22 +65,27 @@ function facilitySaveApply(d) {
     // the player: class (no start kit again: the pack is the saved one), perks, pack, ammunition
     invReset(); playerClassKey = CLASSES[d.cls] ? d.cls : null; classPicker_off();
     classPerks = new Set((d.perks || []).filter(id => CLASS_PERKS[id])); playerInv = d.inv && typeof d.inv === "object" ? d.inv : {};
+    // the classes you have been (a game saved before classes switched: the one it had), the weapon each last held, the Mutator's clone if it was waiting
+    const dc = d.classes && typeof d.classes === "object" ? d.classes : {};
+    classSeen = new Set((Array.isArray(dc.seen) ? dc.seen : []).concat(playerClassKey ? [playerClassKey] : []).filter(id => CLASSES[id]));
+    classWeapon = {}; if (dc.weapon && typeof dc.weapon === "object") for (const id of Object.keys(dc.weapon)) if (CLASSES[id] && typeof WEAPONS !== "undefined" && WEAPONS[dc.weapon[id]]) classWeapon[id] = dc.weapon[id];
+    classWaitingClone = dc.clone && typeof dc.clone === "object" && dc.clone.sp ? dc.clone : null;
     if (Number.isFinite(d.ammo)) playerAmmo = d.ammo; if (Number.isFinite(d.shots)) playerShotsFired = d.shots;
     if (typeof invButtonShow === "function") invButtonShow(true);
     if (typeof weaponRestore === "function") weaponRestore(d.weapon);   // the weapon in hand, the rifle if it was assembled, the levels and the charge
     // the relays that were online: their rooms have power (silently: no surge, no message), and what waited for them is there
     for (const id of (d.relays || [])) { const R = _fp.relays && _fp.relays[id], def = typeof _relayDef === "function" ? _relayDef(id) : null; if (!R || !def) continue; R.online = true; for (const room of def.powers) facilityPower(room, true); if (typeof facilityNeedsEnter === "function") facilityNeedsEnter(id, true); }
     // the supply cases: a class's own are there once the class is, and the ones that were taken are gone
-    if (playerClassKey) for (const p of (F.pickups || [])) if (p.class === playerClassKey && !_fp.items.some(i => i.fp === "pickup" && i.id === p.id)) _fp.items.push(_fpPickupItem(p));
+    for (const p of (F.pickups || [])) if (p.class && classSeen.has(p.class) && !_fp.items.some(i => i.fp === "pickup" && i.id === p.id)) _fp.items.push(_fpPickupItem(p));   // (every class you have been: its cases came then)
     if (typeof techRubbleApply === "function") techRubbleApply(d.rubble);   // the rubble (drilled through: its hole, and its rocks, which `taken` puts away next if they were picked up)
     const taken = new Set(d.taken || []); for (const it of _fp.items) if (it.fp === "pickup" && taken.has(it.id)) it.taken = true;
     // the tutorial: where it had got to (an assault in progress begins again; the followers that are back are not levelled again)
     if (S && d.script) {
         S.step = Math.max(0, Math.min(TUT_STEPS.length, d.script.step | 0)); S.baseFollowers = Number.isFinite(d.script.baseFollowers) ? d.script.baseFollowers : S.baseFollowers;
         S.doneAt = d.script.done ? 1 : 0; S.said = d.script.said || {}; S.kills = d.script.kills || 0; S.gunBase = d.script.gunBase; S.strays = d.script.strays || 0; S.assault = null;
-        S.cstep = Math.max(0, d.script.cstep | 0); S.tally = d.script.tally && typeof d.script.tally === "object" ? d.script.tally : {}; S.ck0 = Number.isFinite(d.script.ck0) ? d.script.ck0 : undefined; S.cr0 = Number.isFinite(d.script.cr0) ? d.script.cr0 : undefined;   // the class's stage, as far as it had got
+        S.cstep = Math.max(0, d.script.cstep | 0); S.tally = d.script.tally && typeof d.script.tally === "object" ? d.script.tally : {}; S.ck0 = Number.isFinite(d.script.ck0) ? d.script.ck0 : undefined; S.cr0 = Number.isFinite(d.script.cr0) ? d.script.cr0 : undefined; S.cstages = d.script.cstages && typeof d.script.cstages === "object" ? d.script.cstages : {};   // the class's stage, as far as it had got
         S.levelled = new Set(followers);
-        if (S.doneAt && !playerClassKey && typeof classPickerOpen !== "undefined") classPickerOpen = true;   // (the picker was open when it was left)
+        if (S.doneAt && !playerClassKey && typeof classPickerOpenNow === "function") classPickerOpenNow();   // (the picker was open when it was left)
     }
     if (d.spots && typeof followerSpotsApply === "function") followerSpotsApply(d.spots);
     if (typeof techLaunchersApply === "function") techLaunchersApply(d.launchers);

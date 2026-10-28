@@ -108,7 +108,7 @@ A scripted run through every step (collect, relay, recruit, hold, the gun, the a
 
 ## Classes come after the tutorial (revision)
 
-**The rule.** The tutorial has no classes. Only when its last objective is done does the class picker open ("TUTORIAL COMPLETE — CHOOSE YOUR CLASS"), and only once a class is chosen do that class's items enter the facility.
+**The rule.** The tutorial has no classes. Only when its last objective is done does the class picker open ("TUTORIAL COMPLETE — CHOOSE YOUR CLASS"), and only once a class is chosen do that class's items enter the facility. A card's SELECT asks first ("BECOME A MUTATOR?", CONFIRM or BACK), and after that the class can be switched at any time (below, "Switching class").
 
 - **The tutorial without a class.** Six objectives: find supplies, restore the Crystal Chamber's relay, recruit, post followers, defend the Crystal, evolve a follower (the gun lesson, below, made it seven). Only five supply cases are in the facility (ammunition in the Armory and the Security Room, power cells in the lab and the lobby, the relay kit in the Crystal Chamber). With no class a relay is repaired with the kit and two power cells, the way every class without the Technomancer's skill does. The class stations show no ring and cannot be used.
 - **The picker** opens by itself when the last objective (evolve) is done, absorbs taps until a class is chosen, and is never shown again.
@@ -318,6 +318,22 @@ ASKED: "remove the ability to change the crystal element modulation [...] it sho
 ## The Armory is an interior (revision)
 
 The Armory (the weapon locker, the terminal, the relay, its supply cases) is now under the Observation Deck, in a part of the map of its own (docs/FACILITY.md, "Interiors and portals"): the stairwell door in the alcove in the deck's west wall goes down to it (and its north wall's right-hand alcove goes back up), and the steel door in the alcove in the arena's west wall, just south of the garage doors, is the second way in (the left-hand alcove in its north wall leads back out to the arena). Nothing in it changed but its place (the crates moved out of the way of the stairs) and the way in: the supplies hint and the Gunslinger's gear objective say where it is, and the squad comes down with you. In the same round the arena got its large electrical generator (`main_generator.7x3`, the **power** sheet of the 3D props, `design/props/models/power.js`), standing against the arena's north service wall in a bay cut back from the rock: a prop only for now, solid, lit by its own glow, not part of the power network. (Since removed: the Cold Storage's door stands there now, below.)
+
+## Switching class (revision)
+
+ASKED: "Make it to where whenever you're selecting a class, make it to where there's a confirmation." "Also make a way for the player to be able to switch classes whenever they want to. But their progression in it will be that the current progression of that class, and the progression saves throughout until the crystal is destroyed." Chosen with the user: the switch is in the pack; the Mutator's clone waits for it.
+
+- **A confirmation on every pick** (js/classes.js). A card's SELECT (or a tap on the card) puts up a box over the cards: "BECOME A MUTATOR?" the first time, "SWITCH TO TECHNOMANCER?" after, with what it means (its kit and its cases the first time; "it picks up where it left off: rank 2, 1/4 objectives" for a class you have been; your current class's progress is kept), CONFIRM and BACK. A tap off the box, or Escape, is BACK. The first choice cannot be closed; a switch can (CLOSE, a tap outside, Escape).
+- **SWITCH CLASS** is a button at the top of the pack (beside your class and rank; on a phone, a row of its own under the title), there once you have a class. It opens the picker over the pack: your class is marked CURRENT (no SELECT); each card you have been shows YOUR PROGRESS (its rank and objectives); one you have not, what it starts with. Switching is free and any time.
+- **Each class keeps its own progress**, and finds it again when you switch back:
+  - its **perks** and so its **rank**: they stay earned (`classOwns`: the mech bay stays built) but count only while it is your class (`classHas`, `classStat`): a Technomancer's spider mech is not under a Gunslinger, and the machine gun is the Gunslinger's alone;
+  - its **stage** (its objectives after the tutorial): put away as far as it got (the step, what it counted, and the kills and relays made while you were it, not since it began) and taken out again (`tutClassStash`, `tutClassResume`); each class says its own "DONE" lines;
+  - the **weapon** it last held is put back in hand (its own the first time: the lash, the gauntlet; the service gun if it has none), so another class's own weapon is never left in your hand;
+  - its **start kit** and its **supply cases** come the first time you are it, not again;
+  - the **Mutator's clone** waits: switching away takes it out of the fight (no body, nothing recovered), and switching back puts it beside you with its kind, level, upgrades and its hurt (it is not healed).
+- **Shared, as before:** the pack (any class carries anyone's gear; using it is the class's), crystals, DNA, scrap, the weapons' levels and the laser rifle, the followers, the relays.
+- **Saved until the Crystal falls.** The save keeps the classes you have been, each one's stage, the weapon each last held and the clone waiting (a game saved before classes switched comes back with its one class). The Crystal destroyed is the game over, and NEW GAME begins every class afresh.
+- Tests: tests/classswitch.js (the confirmation, the pack's button on wide and phone screens, perks, kit and cases once, weapons, stages, the clone, the save).
 
 ## The Cold Storage (revision)
 

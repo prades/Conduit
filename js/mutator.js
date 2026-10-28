@@ -422,5 +422,21 @@ function mutatorCloneRestore(c, rec) {
     cloneApplyUpgrades(c); c.health = c.maxHealth;
     return c;
 }
+// THE CLONE WAITS FOR THE MUTATOR (switching class: js/classes.js; asked, it waits for you). When you stop being the Mutator its clone is taken out of the fight with its record (its kind, level, upgrades,
+// what it cost, how hurt it is): no body is left, nothing is recovered. The next time you are the Mutator it is put back beside you as it was (not healed: switching is not a way to mend it).
+function mutatorCloneStash() {
+    const c = mutatorClone(); if (!c || !c.speciesName) return null;
+    const rec = { sp: c.speciesName, cls: c.className || "scout", level: c.level, xp: c.xp, pr: 1, up: c.upgrades || {}, inv: c.invested || 0, hp: c.maxHealth > 0 ? Math.max(0.05, Math.min(1, c.health / c.maxHealth)) : 1 };
+    c.dead = true; c.dismissed = true;   // (gone without a body or a return: js/game.js passes over a dismissed clone)
+    return rec;
+}
+function mutatorCloneReturn(rec) {
+    if (!rec || !rec.sp || typeof makeClone !== "function") return null;
+    let x = player.x, y = player.y;
+    for (const [dx, dy] of [[0.9, 0.5], [-0.9, 0.5], [0.5, -0.9], [0, 1]]) if (typeof facilityStandOk !== "function" || facilityStandOk(player.x + dx, player.y + dy)) { x = player.x + dx; y = player.y + dy; break; }
+    const k = makeClone(rec.sp, rec.cls, x, y, "wander", { level: rec.level, xp: rec.xp }); if (!k) return null;
+    mutatorCloneRestore(k, rec); if (Number.isFinite(rec.hp)) k.health = Math.max(1, Math.round(k.maxHealth * Math.max(0.05, Math.min(1, rec.hp))));
+    return k;
+}
 // a fresh game (js/facilityplay.js facilityResetState)
 function mutatorReset() { _mx.goal = null; _mx.heldStruck = false; _mx.target = null; _mx.windup = 0; _mx.fx = null; _mx.faceTo = null; _mx.pathAt = -1e9; cloneBodies = []; _bodyGoal = null; mutatorXp = 0; }

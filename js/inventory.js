@@ -99,7 +99,7 @@ function invAdd(id, n) {
 }
 function invRemove(id, n) { n = Math.floor(n === undefined ? 1 : n); if (!invHas(id, n)) return false; playerInv[id] -= n; if (playerInv[id] <= 0) { delete playerInv[id]; if (_invSel === id) _invSel = null; } return true; }
 function invItems(cat) { return ITEM_ORDER.filter(id => invCount(id) > 0 && (!cat || cat === "all" || itemDef(id).cat === cat)); }
-function invReset() { if (typeof classPerks !== "undefined") classPerks = new Set(); if (typeof weaponReset === "function") weaponReset(); playerInv = {}; _invSel = null; _invInspect = false; _invMsg = null; invPanelOpen = false; }
+function invReset() { if (typeof classPerks !== "undefined") classPerks = new Set(); if (typeof classReset === "function") classReset(); if (typeof weaponReset === "function") weaponReset(); playerInv = {}; _invSel = null; _invInspect = false; _invMsg = null; invPanelOpen = false; }
 // can the player use it? { ok, why }: the class rule first, then what the item itself needs
 function invCanUse(id) {
     const d = itemDef(id); if (!d) return { ok: false, why: "UNKNOWN ITEM" };
@@ -195,8 +195,12 @@ function _ivLayout() {
     const W = canvas.width, H = canvas.height, wide = W >= 720;
     const pw = Math.min(W - 16, wide ? 900 : 520), px = Math.round((W - pw) / 2), top = typeof uiTopSafe === "function" ? uiTopSafe() : 8, bottom = typeof uiBottomSafe === "function" ? uiBottomSafe() : H - 8;
     const ph = Math.max(300, Math.min(bottom - top, wide ? 560 : 700)), py = Math.max(4, Math.min(top, H - ph - 4)), gut = 22;
-    const L = { W, H, wide, px, py, pw, ph, tabs: [], cells: [], buttons: [], close: null };
-    const tw = Math.floor((pw - gut * 2 - (INV_CATS.length - 1) * 6) / INV_CATS.length), ty = py + 58;
+    const L = { W, H, wide, px, py, pw, ph, tabs: [], cells: [], buttons: [], close: null, swap: null };
+    // SWITCH CLASS (js/classes.js), once there is a class: in the title row when the pack is wide; on a phone a row of its own under the title, and everything below it a row lower
+    const swapRow = !!(typeof playerClassKey !== "undefined" && playerClassKey) && !wide;
+    if (typeof playerClassKey !== "undefined" && playerClassKey) L.swap = wide ? { x: px + pw - gut - 120 - 10 - 170, y: py + 12, w: 170, h: 38 } : { x: px + pw - gut - 160, y: py + 56, w: 160, h: 36 };
+    L.classAt = swapRow ? { x: px + 26, y: py + 70, w: pw - gut - 160 - 36 } : { x: px + 124, y: py + 26, w: wide && L.swap ? L.swap.x - px - 134 : pw - 300 };   // (on a phone the class's line goes in that row, beside the button, out of CLOSE's way)
+    const tw = Math.floor((pw - gut * 2 - (INV_CATS.length - 1) * 6) / INV_CATS.length), ty = py + 58 + (swapRow ? 44 : 0);
     INV_CATS.forEach((c, i) => L.tabs.push({ id: c.id, label: c.label, x: px + gut + i * (tw + 6), y: ty, w: tw, h: 38, on: c.id === _invCat }));
     const gy = ty + 50, listW = wide ? Math.floor((pw - gut * 2) * 0.52) : pw - gut * 2, listH = wide ? ph - (gy - py) - gut - 54 : Math.floor((ph - (gy - py)) * 0.36);
     const cell = wide ? 92 : 78, gap = 8, cols = Math.max(1, Math.floor((listW + gap) / (cell + gap)));
@@ -214,8 +218,9 @@ function drawInvPanel() {
     const L = _ivLayout(), pc = playerClass(), col = pc ? pc.colour : UI_TEAL, f = typeof frame !== "undefined" ? frame : 0;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     uiBackdrop(0.6); uiPanel(L.px, L.py, L.pw, L.ph, col);
-    uiText("PACK", L.px + 26, L.py + 32, 28, col, "left"); if (pc) { uiCaption(pc.name + "  \u00b7  RANK " + classRank(), L.px + 124, L.py + 26, pc.colour, "left", 14); const pl = classPerkList(); uiCaptionFit(pl.length ? pl.map(q => q.name).join("  \u00b7  ") : "NO PERKS YET: FIND YOUR CLASS'S STATION", L.px + 124, L.py + 44, pl.length ? "#9dffb6" : "#6d7fa6", "left", 11, L.pw - 300); }
+    uiText("PACK", L.px + 26, L.py + 32, 28, col, "left"); if (pc) { const A = L.classAt; uiCaptionFit(pc.name + "  \u00b7  RANK " + classRank(), A.x, A.y, pc.colour, "left", 14, A.w); const pl = classPerkList(); uiCaptionFit(pl.length ? pl.map(q => q.name).join("  \u00b7  ") : "NO PERKS YET: FIND YOUR CLASS'S STATION", A.x, A.y + 18, pl.length ? "#9dffb6" : "#6d7fa6", "left", 11, A.w); }
     uiButton(L.close, "CLOSE", UI_RED, false, 16);
+    if (L.swap) uiButton(L.swap, "SWITCH CLASS", col, false, 15);   // (js/classes.js: every class keeps its own progress)
     for (const t of L.tabs) uiButton(t, t.label, col, t.on, 15);
     // the items
     if (!L.cells.length) { uiTextFit("PACK EMPTY", L.list.x + L.list.w / 2, L.list.y + 50, 24, "#8aa0c8", "center", L.list.w); uiCaptionFit("SEARCH THE FACILITY: THE GLOWING CRATES AND LOCKERS", L.list.x + L.list.w / 2, L.list.y + 84, "#6d7fa6", "center", 13, L.list.w); }
@@ -257,6 +262,7 @@ function _handleInvPanelTap(tx, ty) {
     if (!invPanelOpen) return false;
     const L = _ivLayout(), inR = r => tx >= r.x && tx <= r.x + r.w && ty >= r.y && ty <= r.y + r.h;
     if (inR(L.close) || tx < L.px || tx > L.px + L.pw || ty < L.py || ty > L.py + L.ph) { invClose(); return true; }
+    if (L.swap && inR(L.swap)) { if (typeof classSwitchOpen === "function") classSwitchOpen(); return true; }   // the class picker, over the pack (js/classes.js)
     for (const t of L.tabs) if (inR(t)) { _invCat = t.id; const list = invItems(_invCat); if (!list.includes(_invSel)) _invSel = list[0] || null; return true; }
     for (const c of L.cells) if (inR(c)) { _invSel = c.id; _invInspect = false; return true; }
     if (_invSel) {
@@ -266,4 +272,4 @@ function _handleInvPanelTap(tx, ty) {
     return true;
 }
 function invButtonShow(on) { try { const b = document.getElementById("btnPack"); if (b) b.style.display = on ? "" : "none"; } catch (e) {} }
-try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (!e) return; if ((e.key === "i" || e.key === "I") && typeof facilityPlay !== "undefined" && facilityPlay && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || ""))) invToggle(); else if (e.key === "Escape" && invPanelOpen) invClose(); }); } catch (e) { /* no page (the test sandbox) */ }
+try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (!e) return; if ((e.key === "i" || e.key === "I") && typeof facilityPlay !== "undefined" && facilityPlay && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || ""))) invToggle(); else if (e.key === "Escape" && invPanelOpen && !(typeof classPickerOpen !== "undefined" && classPickerOpen)) invClose(); }); } catch (e) { /* no page (the test sandbox) */ }

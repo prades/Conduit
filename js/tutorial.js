@@ -89,9 +89,29 @@ function tutClassCurrent() { const st = tutClassStage(), S = _fp && _fp.tut && _
 function tutClassTick() {
     const S = _fp.tut.script, st = tutClassStage(); if (!st || !S.doneAt) return;
     if (S.ck0 === undefined) { S.ck0 = lifetimeKills; S.cr0 = tutRelaysOnline(); S.tally = S.tally || {}; S.cstep = S.cstep | 0; }
-    while (S.cstep < st.length && st[S.cstep].done()) { const d = st[S.cstep]; S.cstep++; _tutSay("c:" + d.id, "◈ " + d.title + " — DONE" + (S.cstep < st.length ? "   NEXT: " + st[S.cstep].title : ""), classColour(playerClassKey)); }
-    if (S.cstep >= st.length) _tutSay("c:stage", "◈ " + className(playerClassKey) + " STAGE COMPLETE — YOUR CLASS IS YOURS", "#9dffb6");
+    while (S.cstep < st.length && st[S.cstep].done()) { const d = st[S.cstep]; S.cstep++; _tutSay("c:" + playerClassKey + ":" + d.id, "◈ " + d.title + " — DONE" + (S.cstep < st.length ? "   NEXT: " + st[S.cstep].title : ""), classColour(playerClassKey)); }   // (said once for each class: classes switch)
+    if (S.cstep >= st.length) _tutSay("c:" + playerClassKey + ":stage", "◈ " + className(playerClassKey) + " STAGE COMPLETE — YOUR CLASS IS YOURS", "#9dffb6");
     tutStrayTick(st[S.cstep] || null);
+}
+// SWITCHING CLASS (js/classes.js): the stage is the class's. The one you leave is put away as far as it got (the step, what it counted, and the kills and relays it has had, not when it began, so the
+// time spent as another class does not count for it); the one you come to is taken out where it was, or begins when you first are it.
+function tutClassStash(cls) {
+    const S = _fp && _fp.tut && _fp.tut.script; if (!S || !cls) return;
+    S.cstages = S.cstages || {};
+    S.cstages[cls] = { cstep: S.cstep | 0, tally: S.tally || {}, kills: S.ck0 === undefined ? null : Math.max(0, lifetimeKills - S.ck0), relays: S.cr0 === undefined ? null : Math.max(0, tutRelaysOnline() - S.cr0) };
+}
+function tutClassResume(cls) {
+    const S = _fp && _fp.tut && _fp.tut.script; if (!S) return;
+    const r = S.cstages && S.cstages[cls];
+    if (!r) { S.cstep = 0; S.tally = {}; S.ck0 = undefined; S.cr0 = undefined; return; }   // (its stage begins when it does: tutClassTick)
+    S.cstep = Math.max(0, r.cstep | 0); S.tally = r.tally && typeof r.tally === "object" ? r.tally : {};
+    S.ck0 = Number.isFinite(r.kills) ? lifetimeKills - r.kills : undefined; S.cr0 = Number.isFinite(r.relays) ? tutRelaysOnline() - r.relays : undefined;
+}
+// how far a class's stage has got: [done, of] (the picker's cards); the class you are is read live, another from what was put away
+function tutClassProgress(cls) {
+    const st = TUT_CLASS_STAGES[cls], S = _fp && _fp.tut && _fp.tut.script; if (!st || !S) return null;
+    if (cls === playerClassKey) return [Math.min(st.length, Math.max(S.cstep | 0, tutClassCurrent())), st.length];
+    const r = S.cstages && S.cstages[cls]; return [r ? Math.min(st.length, r.cstep | 0) : 0, st.length];
 }
 // the training creature, for a step that wants one: near the player in the room they are in (else the gun lesson's spot in the main hallway), up to TUT_STRAY.respawns times a step
 function tutClassStray() { return actors.find(a => a && a.classStray && !a.dead) || null; }
@@ -192,7 +212,7 @@ function facilityDirectorTick() {
     } else if (st && st.id === "evolve") { /* waits for an evolution */ }
     if (S.step >= TUT_STEPS.length && !S.doneAt) {   // the tutorial is finished: now, and only now, the classes are given
         S.doneAt = frame; _tutSay("complete", "◈ TUTORIAL COMPLETE", "#9dffb6");
-        if (!playerClassKey && typeof classPickerOpen !== "undefined") classPickerOpen = true;
+        if (!playerClassKey && typeof classPickerOpenNow === "function" && !classPickerOpen) classPickerOpenNow();   // (the first choice: it cannot be closed, and it asks before it is made)
     }
     if (S.doneAt && playerClassKey) tutClassTick();   // then the class's own stage
 }

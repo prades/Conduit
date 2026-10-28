@@ -149,7 +149,7 @@ function _fpStylePropMore(it) {
     } else if (k === "desk") { _fpSPrism(it, 28, A.cap, A.case, A.caseLit, 3.5);
     } else if (k === "pallet") { _fpSPrism(it, 26, A.caseLit, A.case, A.cap, 3.5);
     } else if (k === "mech_bay") {   // the mech bay: a low build pad, hazard-edged, with four leg sockets glowing cyan (a bay with a mech built is dark and still)
-        const built = typeof classHas === "function" && classHas("mech"), ac = built ? "#3a5560" : "#31e8ff";
+        const built = typeof classOwns === "function" && classOwns("mech"), ac = built ? "#3a5560" : "#31e8ff";   // (built once, it stays built, whatever class you are now)
         _fpSPrism(it, 9, A.tealLit, A.tealDark, A.teal, 3.5); const c = P(x, y, 9);
         ctx.strokeStyle = A.ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(c[0], c[1], 17, 8, 0, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = _fpRgba(ac, built ? 0.5 : 0.7 + 0.3 * Math.sin(f * 0.08 + seed)); ctx.lineWidth = 2.5; ctx.stroke();
         if (!built) { ctx.fillStyle = _fpRgba("#31e8ff", 0.35 + 0.2 * Math.sin(f * 0.08 + seed)); for (const [dx, dy] of [[-0.3, -0.3], [0.3, -0.3], [0.3, 0.3], [-0.3, 0.3]]) { const q = P(x + dx, y + dy, 9); ctx.beginPath(); ctx.ellipse(q[0], q[1], 4, 2, 0, 0, 6.2832); ctx.fill(); } const g = P(x, y, 14); _fpGlow(g[0], g[1], 26, "#31e8ff", 0.16); }

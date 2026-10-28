@@ -147,6 +147,8 @@ The decisions about the hack puzzle and its gear are parked with them (§4.1).
 
 ## 9. Done so far
 
+- **Switching class (built, docs/TUTORIAL.md "Switching class"):** the class is picked after the tutorial with a confirmation, and switched any time from the pack (SWITCH CLASS, then a confirmation). Each class keeps its own progress until the Crystal falls: its perks (they count only while it is the class: `classHas` / `classStat`; `classOwns` for what stays built), its rank, its stage, the weapon it last held, its kit and cases once, and the Mutator's clone, which waits for it. The save keeps it all (`classes` in the save, `cstages` in the script).
+
 - **The Technomancer's kit (built, docs/TECHNOMANCER.md):** its own hybrid weapon (the ARC GAUNTLET, `CLASSES.technomancer.weapon`, a `hybrid` row in `WEAPONS`): a punch in reach through the Mutator's shared melee that stores a charge, an electric arc out of reach that spends one, jumps to the creatures beside the first and cuts a bite short; a powered room charges it and every relay online makes the arc stronger (`TECHNO`, js/technomancer.js).
 
 - **The Mutator's kit (built, docs/MUTATOR.md):** its own melee weapon (the TENTACLE LASH, `CLASSES.mutator.weapon`, a melee row in `WEAPONS`) aimed through the same targeting as the gun; cloning is the Mutator's (`CLASS_RULES.clone`: the class with the `bio` skill, one at a time), and its clone is a primary clone that follows it, takes the squad's orders, fights as its species and does not come back by itself (its body stays where it fell). A class's own weapon is a new column of the registry: `weapon`.
