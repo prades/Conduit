@@ -21,12 +21,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     run('gameState.running = true;');
 
     group('THE DATA: a few spots, each a fixed type and a fixed element');
-    check('seven spots, every element on at least one and every type on at least two, each in a room with floor under it, two of them in the arena, none within three tiles of another; the map passes every rule', () => {
+    check('eight spots (the eighth the ice technician in the Cold Storage), every element on at least one and every type on at least two, each in a room with floor under it, two of them in the arena, none within three tiles of another; the map passes every rule', () => {
         const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), v = facilityValidate(F); return { errors: v.errors, spots: F.followerSpots.map(p => [p.id, p.room, p.type, p.element, !!facilityRoomAt(p.at[0], p.at[1], F) && facilityRoomAt(p.at[0], p.at[1], F).id === p.room, facilityWalkable(p.at[0], p.at[1], F)]) }; })()`);
-        same(r.errors.length, 0, r.errors.join(' | ')); same(r.spots.length, 7, 'spots'); same([...new Set(r.spots.map(s => s[3]))].sort().join(), 'core,electric,fire,flux,ice,toxic', 'every element');
+        same(r.errors.length, 0, r.errors.join(' | ')); same(r.spots.length, 8, 'spots'); ok(r.spots.some(s => s[0] === 'spot_cold' && s[1] === 'cold_storage' && s[2] === 'camper' && s[3] === 'ice'), 'no ice technician in the Cold Storage'); same([...new Set(r.spots.map(s => s[3]))].sort().join(), 'core,electric,fire,flux,ice,toxic', 'every element');
         for (const t of ['brawler', 'sniper', 'camper']) ok(r.spots.filter(s => s[2] === t).length >= 2, 'spots of type ' + t);
         for (const s of r.spots) ok(s[4] && s[5], s[0] + ' is not on floor of ' + s[1]);
-        same(r.spots.filter(s => s[1] === 'arena').length, 2, 'two in the arena'); same(new Set(r.spots.map(s => s[1])).size, 6, 'spread over six rooms');
+        same(r.spots.filter(s => s[1] === 'arena').length, 2, 'two in the arena'); same(new Set(r.spots.map(s => s[1])).size, 7, 'spread over seven rooms');
     });
     check('the validator refuses a spot with a type or element that does not exist, in no room, or beside another (and lets one stand in the arena)', () => {
         const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }), a = F.followerSpots[0], keep = F.followerSpots.slice(), out = [];
@@ -55,7 +55,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the spots start full: an egg of each type and element on each, neutral, still, nobody\'s target, with its pad as an item of the floor', () => {
         run('frame = 10; facilityFollowerSpotsTick();');
         const r = J(`(function(){ return { spots: _fp.spots.map(s => [s.id, !!s.egg, s.egg && s.egg.element === s.element, s.egg && s.egg.role === s.type, s.egg && s.egg.isNeutralRecruit, s.egg && s.egg.team, s.egg && s.egg.x === s.x && s.egg.y === s.y, s.egg && actors.includes(s.egg)]), items: _fp.items.filter(i => i.fp === 'spot').length, hostile: actors.filter(a => isHostileTarget(a) && a.fpSpot).length }; })()`);
-        same(r.items, 7, 'pads'); same(r.hostile, 0, 'an egg is nobody\'s enemy'); for (const s of r.spots) { ok(s[1] && s[2] && s[3] && s[4] && s[7], s[0] + ' is not a full spot: ' + s); same(s[5], 'red', 'neutral'); same(s[6], true, 'on its spot'); }
+        same(r.items, 8, 'pads'); same(r.hostile, 0, 'an egg is nobody\'s enemy'); for (const s of r.spots) { ok(s[1] && s[2] && s[3] && s[4] && s[7], s[0] + ' is not a full spot: ' + s); same(s[5], 'red', 'neutral'); same(s[6], true, 'on its spot'); }
     });
     check('eggs stay where they are and are not walked home: the player beside one (outside the spot\'s reach) converts nothing and takes it only by the spot\'s rule', () => {
         const r = J(`(function(){ const s = _fp.spots[1], e = s.egg, n = followers.length; player.x = s.x + 1.8; player.y = s.y; for (let i = 0; i < 30; i++) { frame++; facilityFollowerSpotsTick(); const nn = followers.length; if (nn !== n) return { early: true }; }

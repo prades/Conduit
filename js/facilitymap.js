@@ -350,6 +350,7 @@ const FACILITY_MAP = {
         { id: "spot_tele_2",  room: "teleport_room_2",  at: [1030, 710], type: "camper",  element: "flux",     note: "A flux technician in the second teleport room." },
         { id: "spot_arena_w", room: "arena",            at: [390, 1110], type: "brawler", element: "electric", note: "An electric brawler at the arena's west end, by the Armory's steel door." },
         { id: "spot_arena_c", room: "arena",            at: [750, 850],  type: "brawler", element: "core",     note: "A core brawler in the middle of the arena." },
+        { id: "spot_cold",    room: "cold_storage",     at: [660, 800],  type: "camper",  element: "ice",      note: "An ice technician out on the ice in the Cold Storage's cave." },
     ],
 
     // KINETIC LAUNCHER SITES (the electric technician's ability, js/techabilities.js; docs/TECHNICIANS.md): a place where its launcher can be set up for good, to send followers where nobody can walk. ASKED: "you need to have some sort
