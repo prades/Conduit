@@ -208,8 +208,8 @@ function _psBridgeItems(F) {
     const out = [];
     for (const b of (F.bridges || [])) {
         const t = F.solids.find(s => s.id === b.from), cw = F.byId.get(b.to); if (!t || !cw) continue;
-        const y = Math.round(t.at[1] * 2) / 2, x0 = t.at[0] + t.r - 0.35, x1 = cw.bb[0] + 0.5, n = Math.max(2, Math.round(x1 - x0));
-        for (let i = 0; i < n; i++) { const x = x0 + (i + 0.5) * (x1 - x0) / n; out.push({ type: "fp", fp: "prop", room: "arena", base: facilityLiftPx(x, y), x, y, kind: "bridge", variant: i === 0 ? "tank" : i === n - 1 ? "deck" : "mid", id: b.id, depth: x + y + 0.01, seed: i }); }
+        const y = Math.round(t.at[1] * 2) / 2, x0 = t.at[0] + t.r - 0.35, x1 = cw.bb[0] + 0.5, n = Math.max(2, Math.round(x1 - x0)), base = facilityLiftPx(t.at[0], t.at[1]);   // (every piece on the tank's floor: the deck end's centre is just over the catwalks' edge, and their floor lifted it a deck above the rest, a piece standing off on its own)
+        for (let i = 0; i < n; i++) { const x = x0 + (i + 0.5) * (x1 - x0) / n; out.push({ type: "fp", fp: "prop", room: "arena", base, x, y, kind: "bridge", variant: i === 0 ? "tank" : i === n - 1 ? "deck" : "mid", id: b.id, depth: x + y + 0.01, seed: i }); }
     }
     return out;
 }
