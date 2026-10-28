@@ -52,7 +52,7 @@ function infoEntries() {
          "The orders go to ALL of them, or to the one whose card you tapped. RETREAT breaks them off to fall back to you for six seconds. HOLD posts each one in the room it is in: it patrols that room and fights what comes into it, and does not follow you. COME calls the held ones back, as long as there is room in the squad.",
          "Long-press a follower on the floor, or tap its card, for its card: its numbers, INDEX (its attacks, move and stats) and DISMISS, which leaves it holding the room it is in. A follower that joins when the squad is full holds the room it was found in. Double-tap one to fire its ultimate once the bar under its health is full."],
         [["WITH YOU", party.max + " at once"], ["HOLD", "patrols its room until called"], ["COME", "back to the squad, if there is room"], ["RETREAT", "breaks off for 6 s"]]);
-    add("recruit", "allies", "THE CRYSTAL'S RECRUITS", "#19e6c1", "A new follower for crystals",
+    add("recruit", "allies", "THE CRYSTAL'S RECRUITS", "#19e6c1", "A new follower for shards",
         ["The roster's + RECRUIT (open ROSTER from the dock) buys a follower at the Crystal for " + recruitCost + " ◆. What comes out is a draw: a BRAWLER, a MAGE or a TECHNICIAN, of one of the six elements, with a personality to match its type. You do not choose it, and cannot change it afterwards: you level it and evolve it.",
          "A follower that falls comes back at the Crystal after a while, as it was, and rejoins the squad if there is room; if there is none it holds the Crystal Chamber."],
         [["PRICE", recruitCost + " ◆", UI_GOLD], ["TYPE", "brawler, mage or technician"], ["ELEMENT", "one of the six"]]);
@@ -75,7 +75,7 @@ function infoEntries() {
          ["RAGE", "+" + Math.round(((typeof BOND_RAGE_ATTACK !== "undefined" ? BOND_RAGE_ATTACK : 1.5) - 1) * 100) + "% damage for " + sec(typeof BOND_RAGE_FRAMES !== "undefined" ? BOND_RAGE_FRAMES : 600), "#ff6655"],
          ["DUO", "×" + (typeof BOND_DUO_MULT !== "undefined" ? BOND_DUO_MULT : 1.3) + " for " + sec(typeof BOND_DUO_FRAMES !== "undefined" ? BOND_DUO_FRAMES : 300)]]);
     add("clones", "allies", "CLONES", "#19e6c1", "Grown in the Clone Bay from DNA",
-        ["Clones are the MUTATOR's: open the CLONE BAY (CLONES on the dock) and grow a creature's species as your ally, for crystals and the DNA splices its kind drops when you kill it (" + (typeof cloneCap === "function" ? cloneCap() : MAX_CLONES) + " at a time). A clone is far tougher than a follower, fights as its species does (its bite in two beats, its special) and follows you under the squad's orders.",
+        ["Clones are the MUTATOR's: open the CLONE BAY (CLONES on the dock) and grow a creature's species as your ally, for shards and the DNA splices its kind drops when you kill it (" + (typeof cloneCap === "function" ? cloneCap() : MAX_CLONES) + " at a time). A clone is far tougher than a follower, fights as its species does (its bite in two beats, its special) and follows you under the squad's orders.",
          "The Mutator's clone does NOT come back by itself: when it falls its body stays where it fell, and a new one has to be grown. Keep it alive: pull it back (RETREAT, COME) when a fight turns.",
          "The clone prices by species and class are in the GAME INDEX (the ? button, SQUAD tab)."],
         [["POWER", "×" + CLONE_POWER_MULT], ["HEALTH", "×" + CLONE_HEALTH_MULT], ["AT ONCE", typeof cloneCap === "function" ? cloneCap() : MAX_CLONES], ["WHO", typeof cloneWho === "function" && cloneWho() ? cloneWho() : "ANY CLASS"], ["COMES BACK", typeof cloneRule === "function" && cloneRule() && cloneRule().primary ? "NO: GROW A NEW ONE" : "after " + sec(CLONE_RESPAWN_FRAMES)]]);
@@ -116,7 +116,7 @@ function infoEntries() {
     // ── RULES ──
     add("crystal", "rules", "THE CRYSTAL", "#2bff9b", "Home, and the end if it falls",
         ["The Crystal stands in the Crystal Chamber: it is where you start, where recruits come out and where a fallen follower or clone comes back. It mends slowly on its own.",
-         "The creatures hunt it when an alarm is up. If it is destroyed the game is over: the card says so, with the crystals you had, and NEW GAME starts the facility again (SETTINGS on the dock does the same)."],
+         "The creatures hunt it when an alarm is up. If it is destroyed the game is over: the card says so, with the shards you had, and NEW GAME starts the facility again (SETTINGS on the dock does the same)."],
         [["HEALTH", crystalHp + " HP", "#7dffb5"], ["LOST", "game over", UI_RED]]);
     add("relays", "rules", "RELAYS & THE BLACKOUT", "#ffe733", "Power the rooms back up",
         ["The facility starts in a blackout: every room dark, your monitor lamp and the emergency lights the only light. " + relays + " relays stand broken, and each one powers a few rooms. Walk up to one (or tap it) to repair it: a Technomancer spends " + relayRule.skillCells + " power cell and starts by itself; anyone else needs the RELAY KIT and " + relayRule.kitCells + " cells. Walk away and the repair stops, nothing spent.",
@@ -130,10 +130,10 @@ function infoEntries() {
         ["Press I (or PACK on the dock) for your pack: everything you carry, in tabs, with an INSPECT page and USE for each item. Supply cases glow in the dark; walk over one to take what is in it. Any class may carry another class's gear, but only the right class may use it.",
          "When the tutorial is finished you choose a class, and its cases arrive in the facility. Each class has a station in the rooms it works in, and earns a perk there."],
         (typeof CLASSES !== "undefined" && typeof CLASS_ORDER !== "undefined" ? CLASS_ORDER.map(k => [CLASSES[k].name, CLASSES[k].tagline, CLASSES[k].colour]) : []));
-    add("kills", "rules", "WHAT A KILL PAYS", UI_GOLD, "Crystals, DNA and scrap",
-        ["A creature you kill pays its worth in crystals on the spot (◆ n floats over it): the crystals are what recruits and clones cost. It drops DNA splices of its kind and class for the Clone Bay, and in the arena a case of scrap metal where it fell. A nymph is worth nothing.",
+    add("kills", "rules", "WHAT A KILL PAYS", UI_GOLD, "Shards, DNA and scrap",
+        ["A creature you kill pays its worth in shards on the spot (◆ n floats over it): the shards are what recruits and clones cost. It drops DNA splices of its kind and class for the Clone Bay, and in the arena a case of scrap metal where it fell. A nymph is worth nothing.",
          "Your followers and clones take the kill's XP too (the killer the most, the units near it the rest), which is how they level and evolve."],
-        [["CRYSTALS", "its worth, on the spot", UI_GOLD], ["DNA", "a splice or more, by class", "#0f8"], ["SCRAP", "a case that lies " + sec(spawn.scrap.life)]]);
+        [["SHARDS", "its worth, on the spot", UI_GOLD], ["DNA", "a splice or more, by class", "#0f8"], ["SCRAP", "a case that lies " + sec(spawn.scrap.life)]]);
     add("surge", "rules", "YOUR ULTIMATE", UI_GOLD, "The bar under your health",
         ["The bar under your health is your own ultimate, and it is siphoned from the followers near you: anything within " + (typeof SIPHON_RANGE !== "undefined" ? SIPHON_RANGE : 6) + " tiles sends a wisp of static across every couple of seconds, so the more of them are with you the faster it fills. With none in reach it reads NO SQUAD IN RANGE. The ⌁ switch at its end turns the siphon off.",
          "Tap the bar when it is full for an ARMY SURGE: every follower and clone healed, its will refilled, its own ultimate charged, and more damage for a while."],

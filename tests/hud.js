@@ -245,7 +245,7 @@ check('the in-game index describes the HUD the player is actually looking at', (
     ok(at > -1, 'the index never explains the HUD');
     const docs = HTML.slice(at, at + 2500);
     // The pieces the index names are the pieces the page has.
-    for (const [word, id] of [['crystals', 'shards'], ['ULTIMATE', 'ultWrap'], ['room tag', 'zoneInfo'], ['alarm triangle', 'alarmIcon'], ['squad bar', 'squadBar']]) {
+    for (const [word, id] of [['shards', 'shards'], ['ULTIMATE', 'ultWrap'], ['room tag', 'zoneInfo'], ['alarm triangle', 'alarmIcon'], ['squad bar', 'squadBar']]) {
         ok(docs.indexOf(word) > -1, 'the index does not mention the ' + word);
         ok(new RegExp('id="' + id + '"').test(HTML), 'the index promises ' + word + ', which the page has not got');
     }

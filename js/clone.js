@@ -838,7 +838,7 @@ function renderCloneCostIndex() {
         rows += '<tr><td style="color:' + col + '">' + s[0].toUpperCase() + s.slice(1) + '</td><td>' + CLONE_COSTS[s].splicesNeeded + ' splices</td>' + classes.map(c => '<td>' + cloneShardCost(s, c) + '\u25c6</td>').join('') + '</tr>';
     }
     host.innerHTML =
-        '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> (a creature you kill drops them) and <strong>crystals</strong> to summon a creature\'s species as your ally: no followers are spent, nothing else is. ' +
+        '<div class="ctrl-row cm-dim" style="margin-bottom:5px">Spend <strong>DNA splices</strong> (a creature you kill drops them) and <strong>shards</strong> to summon a creature\'s species as your ally: no followers are spent, nothing else is. ' +
         (who ? 'Only a <strong>' + who + '</strong> grows clones, <span class="cm-stat">' + (cap === 1 ? 'one' : cap) + ' at a time</span>; its clone does not come back by itself (its body stays where it fell), and your clone is kept in the save.</div>'
              : 'Up to <span class="cm-stat">' + cap + ' clones</span> at once; a clone that falls comes back at the Crystal after a wait, and your clones are kept in the save.</div>') +
         '<table class="cm-clone-table">' + rows + '</table>' +

@@ -184,9 +184,9 @@ function measure(w, h) {
         same(r.sum.join(), '1,1,balanced', 'a list'); same(r.def, 1, 'the selection by default');
         const p = rd('js/party.js'); ok(/partySlotsUpdate\(_sbxEls, typeof ccCarousel === "function" && ccCarousel\(\) && typeof ccFocusUnit === "function" \? \(f => f === ccFocusUnit\(\)\) : null\)/.test(p), 'the box lights the creature in view'); ok(/if \(typeof ccCarousel === "function" && ccCarousel\(\) && typeof ccFocusSet === "function"\) \{ ccFocusSet\(hit\.f\); return; \}/.test(p), 'a tap on a slot puts that member in view');
     });
-    check('no recruit button at the top of the carousel: the header\'s RECRUIT is hidden there (it stays on a phone), the strip\'s last tile recruits, and the crystals say YOUR CRYSTALS', () => {
+    check('no recruit button at the top of the carousel: the header\'s RECRUIT is hidden there (it stays on a phone), the strip\'s last tile recruits, and the shards say YOUR SHARDS', () => {
         const c = rd('js/commandcenter.js');
-        ok(/rec\.style\.display = ccOpenTab === "roster" && !car \? "" : "none"/.test(c), 'the header\'s RECRUIT'); ok(/_ccClick\(t, \(\) => \{ const had = new Set\(ccUnits\(\{\}\)\); if \(typeof recruitDo === "function"\) recruitDo\(\);/.test(c), 'the tile recruits'); ok(/car \? "YOUR CRYSTALS"/.test(c), 'the crystals');
+        ok(/rec\.style\.display = ccOpenTab === "roster" && !car \? "" : "none"/.test(c), 'the header\'s RECRUIT'); ok(/_ccClick\(t, \(\) => \{ const had = new Set\(ccUnits\(\{\}\)\); if \(typeof recruitDo === "function"\) recruitDo\(\);/.test(c), 'the tile recruits'); ok(/car \? "YOUR SHARDS"/.test(c), 'the shards');
         ok(/if \(car\) return;   \/\/ \(the carousel picks one creature at a time: no SELECT SHOWN, no CLEAR\)/.test(c), 'SELECT SHOWN / CLEAR');
     });
     check('game.html: every rule of the carousel is scoped to #ccRoot.carousel or #ccRoot.slabs (what a phone shows is not touched), and the parts it adds are hidden until then', () => {
@@ -207,8 +207,8 @@ function measure(w, h) {
             });
             continue;
         }
-        check(w + ': the header: COMMAND CENTER, the summary, the crystals (YOUR CRYSTALS), SQUADS and ✕ CLOSE, and NO recruit button; the squad box has no heading line (the summary says it)', () => {
-            same(r.car, true, 'the carousel'); ok(/open slabs carousel/.test(r.layout.root), 'classes ' + r.layout.root); same(r.layout.recruitTop, false, 'a recruit button at the top'); same(r.layout.cap, 'YOUR CRYSTALS', 'the caption'); ok(/^◆ \d+$/.test(r.layout.crystals), 'crystals ' + r.layout.crystals); same(r.layout.title, 'COMMAND CENTER', 'title'); ok(/^SQUAD 3\/3 · 3 POSTED · 6 UNITS$/.test(r.layout.summary), 'summary ' + r.layout.summary);
+        check(w + ': the header: COMMAND CENTER, the summary, the shards (YOUR SHARDS), SQUADS and ✕ CLOSE, and NO recruit button; the squad box has no heading line (the summary says it)', () => {
+            same(r.car, true, 'the carousel'); ok(/open slabs carousel/.test(r.layout.root), 'classes ' + r.layout.root); same(r.layout.recruitTop, false, 'a recruit button at the top'); same(r.layout.cap, 'YOUR SHARDS', 'the caption'); ok(/^◆ \d+$/.test(r.layout.crystals), 'crystals ' + r.layout.crystals); same(r.layout.title, 'COMMAND CENTER', 'title'); ok(/^SQUAD 3\/3 · 3 POSTED · 6 UNITS$/.test(r.layout.summary), 'summary ' + r.layout.summary);
             same(r.layout.head.join('|'), 'SQUADS|✕ CLOSE', 'the header\'s buttons'); same(r.layout.sqHead, false, 'the squad box heading');
         });
         check(w + ': the squad row: three slots numbered 1 to 3 with the member, its state and a ✕ REMOVE (no i, the card in view has INFO), the first member lit, and DISBAND; the state line is not cut', () => {
@@ -260,7 +260,7 @@ function measure(w, h) {
         });
         check(w + ': the RECRUIT tile recruits for its cost and puts the new follower in view; short of crystals it dims, says how many more, does nothing; the filters say who is in the squad and who is not', () => {
             same(r.recruit.cost, 30, 'the price'); same(r.recruit.n, 1, 'new followers'); same(r.recruit.fresh, true, 'the new one is in view'); same(r.recruit.last, true, 'the tile is still last'); ok(/AFFORDABLE/.test(r.recruit.tile), 'tile ' + r.recruit.tile); ok(/^◆ \d+$/.test(r.recruit.crystals), 'crystals ' + r.recruit.crystals);
-            same(r.short.dim, true, 'dim'); ok(/NEED 20 MORE/.test(r.short.text), 'text ' + r.short.text); same(r.short.n, true, 'it recruited with too few'); same(r.short.stays, true, 'the view moved'); same(r.short.cap, 'YOUR CRYSTALS', 'the caption');
+            same(r.short.dim, true, 'dim'); ok(/NEED 20 MORE/.test(r.short.text), 'text ' + r.short.text); same(r.short.n, true, 'it recruited with too few'); same(r.short.stays, true, 'the view moved'); same(r.short.cap, 'YOUR SHARDS', 'the caption');
             ok(!r.filters.chips.includes('SELECT SHOWN'), 'chips ' + r.filters.chips); same(r.narrow.n, r.narrow.members, 'IN SQUAD shows the squad'); same(r.narrow.litNone, true, 'a creature the filter hides is not lit'); same(r.narrow.view, true, 'but it stays in view'); same(r.narrowStep.first, true, 'the arrows walk what is shown'); same(r.narrowStep.member, true, 'a member');
         });
         check(w + ': the roster opens on the creature picked on the squad bar, walking it does not change the pick, closing it leaves the pick as it was, and puts the roster away; DISBAND empties the slots (all hold their rooms) and turns itself off; the SQUADS window still opens', () => {

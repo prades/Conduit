@@ -55,7 +55,7 @@ const TUT_CLASS_STAGES = {
         { id: "flare", title: "LIGHT A FLARE", text: () => "LIGHT A FLARE: OPEN YOUR PACK (I) AND USE ONE.",
             hint: () => "IT LIGHTS THE GROUND FOR HALF A MINUTE, POWER OR NOT. MORE ARE IN THE ARMORY.", done: () => tutCount("flare") >= 1 },
         { id: "hunt", title: "HUNT IN THE ARENA", text: () => "DEFEAT 3 CREATURES: " + Math.min(3, tutClassKills()) + "/3. YOUR SQUAD FIGHTS WITH YOU.",
-            hint: () => "A KILL PAYS CRYSTALS, DNA AND SCRAP: THE ARMORY'S TERMINAL MAKES SCRAP INTO ROUNDS.", done: () => tutClassKills() >= 3 } ],
+            hint: () => "A KILL PAYS SHARDS, DNA AND SCRAP: THE ARMORY'S TERMINAL MAKES SCRAP INTO ROUNDS.", done: () => tutClassKills() >= 3 } ],
     technomancer: [TUT_CLASS_STEP,
         { id: "relay", title: "RESTORE ANOTHER RELAY", text: () => "REPAIR A BROKEN RELAY: STAND AT IT WITH A POWER CELL AND THE REPAIR STARTS BY ITSELF.",
             hint: () => "A POWERED ROOM CHARGES YOUR GAUNTLET; EACH RELAY ONLINE MAKES YOUR ARC STRONGER.",

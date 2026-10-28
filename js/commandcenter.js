@@ -583,7 +583,7 @@ function ccShardsUpdate(el, car) {
     const sig = have + "|" + cost + "|" + !!car; if (el._sig === sig) return; el._sig = sig;
     el.classList.toggle("short", have < cost && !car);   // (the carousel's total is only what you have: the RECRUIT tile says what a follower costs, and how many you can afford)
     el.querySelector(".cc-sh-n").textContent = "\u25c6 " + have;
-    el.querySelector(".cc-sh-c").textContent = car ? "YOUR CRYSTALS" : have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
+    el.querySelector(".cc-sh-c").textContent = car ? "YOUR SHARDS" : have < cost ? "NEED " + (cost - have) + " MORE" : cost + " EACH \u00b7 " + n + " AFFORDABLE";
 }
 // What the squad window shows: the squad in its slots (each one's level, health, form, element and state), and whether each is selected.
 function _ccSqSig() {
