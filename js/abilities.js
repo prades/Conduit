@@ -167,13 +167,15 @@ function faceAbdomenToward(pred, tx, ty, rate) {
 
 // ── Helpers ──────────────────────────────────────────────
 function _abHostileTeam(pred) { return pred.isClone ? 'red' : 'green'; }
+// a creature's special does not reach anything on the far side of a Photonic Shield (js/techabilities.js): it neither aims at it nor hits it
+function _abWalled(pred, a) { return !pred.isClone && typeof techShieldBetween === "function" && !!techShieldBetween(pred.x, pred.y, a.x, a.y); }
 
 function _abNearestFoe(pred, maxDist) {
     const team = _abHostileTeam(pred);
     let best = null, bestD = maxDist;
     for (const a of actors) {
         if (a === pred || a.dead || a.team !== team) continue;
-        if (isNeutralBystander(a)) continue;
+        if (isNeutralBystander(a) || _abWalled(pred, a)) continue;
         const d = Math.hypot(a.x - pred.x, a.y - pred.y);
         if (d < bestD) { bestD = d; best = a; }
     }
@@ -190,7 +192,7 @@ function _abForEachFoeInRadius(pred, radius, fn) {
         if (a === pred || a.dead || a.team !== team) continue;
         if (isNeutralBystander(a)) continue;
         const dx = a.x - pred.x, dy = a.y - pred.y;
-        if (dx * dx + dy * dy <= r2) fn(a);
+        if (dx * dx + dy * dy <= r2 && !_abWalled(pred, a)) fn(a);
     }
 }
 
@@ -340,7 +342,8 @@ function _abStartActive(pred, def) {
             pred.leapFromX = pred.x; pred.leapFromY = pred.y;
             // The landing has to be floor with a clear line to it (the facility's walls and props): a shorter leap when it is not, and none at all when there is nowhere to go.
             let k = 1;
-            if (typeof facilityLosFrom === "function") while (k > 0.19 && !facilityLosFrom(pred.x, pred.y, pred.x + (ax / len) * dist * k, pred.y + (ay / len) * dist * k)) k -= 0.2;
+            const _over = (x, y) => !pred.isClone && typeof techShieldBetween === "function" && !!techShieldBetween(pred.x, pred.y, x, y);   // (nor over a Photonic Shield: js/techabilities.js)
+            if (typeof facilityLosFrom === "function") while (k > 0.19 && (!facilityLosFrom(pred.x, pred.y, pred.x + (ax / len) * dist * k, pred.y + (ay / len) * dist * k) || _over(pred.x + (ax / len) * dist * k, pred.y + (ay / len) * dist * k))) k -= 0.2;
             if (k <= 0.19) k = 0;
             pred.leapToX = pred.x + (ax / len) * dist * k;
             pred.leapToY = pred.y + (ay / len) * dist * k;

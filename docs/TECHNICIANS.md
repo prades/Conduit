@@ -10,7 +10,7 @@ A **technician** (role `camper`, shown as TECHNICIAN) of an element has that ele
 - **The chip:** `⚡ LAUNCH` when ready, `⚡ 42 S` while waiting, `✕ AIMING` while being aimed, `⚡ THROWING` / `⚡ SETTING UP` while busy. It is on the squad bar only, not in the Command Center's squad box.
 - **INFO:** a technician's INFO card has an ABILITY section with its numbers and when it is ready.
 
-Built so far: **ELECTRIC, the Kinetic Launcher.** The other five are added to the same table as each one's design is settled (see "Still to be decided" below).
+Built so far: **ELECTRIC, the Kinetic Launcher** and **CORE, the Photonic Shield.** The others are added to the same table as each one's design is settled (see "Still to be decided" below).
 
 ## The Kinetic Launcher (electric)
 
@@ -54,6 +54,27 @@ A **launcher site** is map data (`launchSites` in `js/facilitymap.js`): where th
 
 At level 9 a follower has about 31 to 48 health (20 to 38 at level 5), so 10 is a big bite.
 
+## The Photonic Shield (core)
+
+ASKED: "The Core Technician deploys a photonic shield between itself and the player-selected creature, creating a defensive barrier that blocks enemy movement while allowing friendly units to pass through and fire through it [...] The shield lasts exactly 20 seconds after activation, then disappears automatically [...] Do not invent additional damage or durability mechanics"; then "3 wide, 3 back" and "Block attacks too".
+
+1. Tap the ◈ chip on the core technician's card.
+2. Tap a creature it can see, or the enemy card (bottom left or right: the locked creature).
+
+- **Where it goes:** across the line from the technician to the creature, 3 tiles in front of the technician. A creature nearer than that has it go up 0.9 tiles in front of the creature, and the technician steps back to hold 3 tiles behind it. It is 3 tiles wide, cut short by a wall. A creature caught on its line is put out on its own side.
+- **What it stops:** an enemy cannot walk, be knocked, be pulled or leap across it, and cannot bite, spit or use a special at anything on the other side (you, your followers, the Crystal). Where it stops something it ripples and says BLOCKED. Your followers, your clones and you walk through it, and your shots and blows go through.
+- **No durability:** it has no health and nothing breaks it; it is gone exactly 20 s after it goes up (its seconds are shown over it; it flickers in its last 3).
+- **The technician** holds its spot behind it (it fights back only what comes right up to it) until the shield is gone, or COME, RETREAT, an attack order, leaving the squad, or you going 10 tiles away.
+
+| Number | Value | Status |
+|---|---|---|
+| Lasts | 20 s exactly | given |
+| Width, and how far behind it the technician holds | 3 tiles, 3 tiles | given |
+| Cooldown | 60 s, from when it goes up | given |
+| In front of a near creature | 0.9 tiles | how it feels |
+| A creature's body against it (and past its ends) | 0.4 tiles | how it feels |
+| The technician stops holding when you are | 10 tiles away | how it feels |
+
 ## Rooms and recruitment (js/party.js)
 
 ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. Arena Level 2: six followers. These room capacities are separate from the three active squad slots"; then the Main Hallway and the Arena are "automatically a level 2 just because of the amount of space in these areas", every other room is Category 1; the follower replaced "has option to go to a vacancy in the rooms but if not confirm retirement"; the Arena over its six moves its weakest by "roster order" to a "free room, else retired".
@@ -69,7 +90,7 @@ ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. 
 From the audit of the specs against the game (the report given before any code):
 
 - **All technicians:** whether evolved forms only, or every technician (built: every technician); the other five abilities' numbers.
-- **Core, Projected Barrier:** the shield's width and the "ranged-support distance"; creatures bite from 1.5 tiles and their shots ignore walls, so they could hit across it.
+- **Core, Projected Barrier:** decided and built (above).
 - **Fire, Thermite Drill:** which southern wall (most likely the arena's south rock, whose midpoint is on a slanted stretch where an opening cannot be cut cleanly; the nearest straight stretch is 3.5 tiles west); what is behind the opening; the rocks (no rock item exists); drill timing and damage.
 - **Ice, Frost Patch:** placement, size, duration, slow; what sliding means; ice bridges have nowhere to go (there are no gaps in the facility).
 - **Toxic, Blight Spider:** there is no day cycle (the game state may hold only `running`, the clock restarts on each load); the day length; what the pool does and what "toxin reabsorption" means; the death spill (left unresolved, as asked).

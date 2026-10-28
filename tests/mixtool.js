@@ -40,8 +40,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if (!wide) { click($('#mixTool .mt-pod')); await wait(50); out.phoneOpen = { flag: crystalMenuOpen, panel: !!$('#mixTool .mt-panel'), title: $('#mixTool .mt-title') ? $('#mixTool .mt-title').textContent : null, x: !!$('#mixTool .mt-x') }; }
     // the controls
     out.controls = { retreat: !!$('#mixTool [data-act=retreat]'), orders: $$('#mixTool .mt-ord').map(function(o){ return o.textContent; }).join(), who: $$('#mixTool [data-scope]').map(function(b){ return b.getAttribute('data-scope'); }), to: $('#mixTool .mt-to') ? $('#mixTool .mt-to').textContent : null, allLit: !!$('#mixTool .mt-all.on') || !!$('#mixTool .mt-chip.on[data-scope=all]'), foeSlot: !!$('#mixTool .mt-foe-slot') };
-    // RETREAT pulls the squad off; HOLD posts each in its room (out of the squad); COME calls them back
-    var fs0 = partyMembers().slice();
+    // RETREAT pulls the squad off; HOLD posts each in its room (out of the squad); COME calls them back. In the Main Hallway, which holds three (js/party.js PARTY_ROOM_CAP: the Crystal Chamber holds two)
+    var fs0 = partyMembers().slice(), hc = partyRoomCells('lab_hallway'), hp = hc[Math.floor(hc.length / 2)];
+    player.x = player.targetX = player.visualX = hp[0]; player.y = player.targetY = player.visualY = hp[1]; player.fpPath = null; fs0.forEach(function(f, i){ f.x = hp[0] + 0.3 * i; f.y = hp[1]; });
     click($('#mixTool [data-act=retreat]')); await wait(50);
     out.retreat = { until: fs0.map(function(f){ return f.retreatUntil > frame; }).join(), stance: fs0.map(function(f){ return f.stance; }).join(), label: $('#mixTool .mt-retreat').textContent };
     click($('#mixTool [data-order=hold]')); await wait(50); out.hold = { post: fs0.map(function(f){ return !!f.post; }).join(), stance: fs0.map(function(f){ return f.stance; }).join(), members: partyMembers().length };

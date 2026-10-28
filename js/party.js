@@ -147,7 +147,7 @@ function partyApplyStance(units, stance) {
         if (a.isClone || !a.isFollower) { clones.push(a); continue; }
         if (stance === "hold") { const room = partyRoomOf(a); if (!room) continue; if (room !== "arena" && !partyRoomFree(room, a)) { full.push(room); continue; } if (partyPlace(a, room, true)) { n++; rooms.add(a.post); posted.push(a); } }   // (a full room takes nobody else: the arena takes one more and moves its weakest out)
         else if (stance === "follow") {
-            a.attackOrder = null; if (a.job && a.job.type === "move") a.job = null;   // (COME ends an attack order)
+            a.attackOrder = null; a._shieldHold = null; if (a.job && a.job.type === "move") a.job = null;   // (COME ends an attack order, and a core technician's hold behind its shield: js/techabilities.js)
             const was = !!a.post;
             if (partyCall(a, true)) { n++; if (was) called.push(a); } else kept.push(a);
         }

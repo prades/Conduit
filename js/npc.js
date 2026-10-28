@@ -100,8 +100,8 @@ function updateRTSNPC(actor) {
         return;
     }
 
-    // A TECHNICIAN'S ABILITY directs this walk (js/techabilities.js): to the Kinetic Launcher (or the technician) that throws it, to a site its launcher is being set up at, to a broken section it drops through
-    if ((actor._launchLoad || actor._siteWork || actor._dropSite) && typeof techStepOverride === "function" && techStepOverride(actor)) return;
+    // A TECHNICIAN'S ABILITY directs this walk (js/techabilities.js): to the Kinetic Launcher (or the technician) that throws it, to a site its launcher is being set up at, to a broken section it drops through, to its spot behind its Photonic Shield
+    if ((actor._launchLoad || actor._siteWork || actor._dropSite || actor._shieldHold) && typeof techStepOverride === "function" && techStepOverride(actor)) return;
 
     // move / hold — guard position, attack nearby enemies
     if (actor.job&&actor.job.type==="move") {
@@ -383,4 +383,5 @@ function updateNPC(actor) {
         }
     }
     { const _ix = actor.x, _iy = actor.y; facilityReroute(actor, _fpx, _fpy); facilityCatchUp(actor, _fpx, _fpy); facilityConstrain(actor, _fpx, _fpy); _fpUnstick(actor, _fpx, _fpy, Math.hypot(_ix - _fpx, _iy - _fpy)); if (actor._fpPortalGoal && typeof facilityPortalActorTick === "function") facilityPortalActorTick(actor); }   // route round the facility's walls (js/facilityplay.js); through a doorway it was walking to (js/facilityportals.js)
+    if (typeof techShieldKeep === "function") techShieldKeep(actor, _fpx, _fpy);   // an enemy does not cross a Photonic Shield (js/techabilities.js)
 }

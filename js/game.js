@@ -1109,6 +1109,7 @@ function render() {
     // ── FOLLOWER PROJECTILES ──
     followerProjectiles = followerProjectiles.filter(p => {
         p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.targetsGreen && typeof techShieldStopsShot === "function" && techShieldStopsShot(p)) return false;   // an enemy's shot stops at a Photonic Shield (js/techabilities.js); yours go through
         p.frame = (p.frame || 0) + 1;
         // Arc height for parabolic bombs (screen-space offset only)
         if (p.arcData) {
@@ -1128,7 +1129,7 @@ function render() {
             actors.forEach(a => {
                 if (hit || a.dead) return;
                 const isTarget = p.targetsGreen
-                    ? a.team === "green"
+                    ? a.team === "green" && !(typeof techShieldBetween === "function" && techShieldBetween(p.x, p.y, a.x, a.y))   // (an enemy's shot hits nothing on the far side of a Photonic Shield: js/techabilities.js)
                     : isHostileTarget(a);
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;

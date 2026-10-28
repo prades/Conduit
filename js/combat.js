@@ -135,6 +135,7 @@ function updateStatusEffects() {
             if (Math.abs(actor.kbVY) < 0.001) actor.kbVY = 0;
             // A push goes as far as the facility's walls let it (facilityConstrain puts a unit back where it was when a wall is in the way).
             if (typeof facilityConstrain === "function") facilityConstrain(actor, _kx, _ky);
+            if (typeof techShieldKeep === "function") techShieldKeep(actor, _kx, _ky);   // (nor through a Photonic Shield, an enemy: js/techabilities.js)
         }
 
         // ── EMP GLOW (electric ultimate hit marker) ──

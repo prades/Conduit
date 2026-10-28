@@ -224,6 +224,7 @@ function facilityResetState() {
     // (after the clock is back at 0: these count from it)
     if (typeof serumReset === "function") serumReset();   // the serum's pools and the Mutator's laboratory (js/serum.js)
     if (typeof technoReset === "function") technoReset();   // the gauntlet's charges, the arcs (js/technomancer.js)
+    if (typeof techReset === "function") techReset();   // the technicians' shields and an aim under way (js/techabilities.js)
     playerUltimate = 0; armySurgeTimer = 0; _lastUltInt = -1; _lastUltState = "";
     siphonEnabled = true; siphonWisps = []; _lastSiphonOn = null; _siphonInRange = 0;
     crystal = { x: 0, y: 2, health: 300, maxHealth: 300, radius: 0.8 };

@@ -339,7 +339,8 @@ function singularityShot(f) {
     for (const a of _evoFoes(tgt.x, tgt.y, SERPENT_PULL_R)) {
         if (typeof applySlow === "function") applySlow(a, SERPENT_SLOW_FRAMES, SERPENT_SLOW);
         if (a === tgt || (typeof vortexPullImmune === "function" && vortexPullImmune(a))) continue;
-        a.x += (tgt.x - a.x) * SERPENT_PULL; a.y += (tgt.y - a.y) * SERPENT_PULL; pulled++;
+        const _px = a.x, _py = a.y; a.x += (tgt.x - a.x) * SERPENT_PULL; a.y += (tgt.y - a.y) * SERPENT_PULL; pulled++;
+        if (typeof techShieldKeep === "function") techShieldKeep(a, _px, _py);   // (not through a Photonic Shield: js/techabilities.js)
     }
     f._sigAt = f0; f._sigCd = SERPENT_EVERY;
     f._arcPts = [{ x: tgt.x, y: tgt.y }]; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcCol = [187, 102, 255];
@@ -446,8 +447,9 @@ function gravitySlam(f) {
         applyDamage(a, (f.power || 10) * MIMIC_MULT, f, "flux");
         if (typeof applySlow === "function") applySlow(a, MIMIC_SLOW_FRAMES, MIMIC_SLOW);
         if (typeof vortexPullImmune === "function" && vortexPullImmune(a)) continue;
-        const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1;
+        const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1, _px = a.x, _py = a.y;
         a.x += dx / L * MIMIC_PUSH; a.y += dy / L * MIMIC_PUSH;
+        if (typeof techShieldKeep === "function") techShieldKeep(a, _px, _py);   // (not through a Photonic Shield: js/techabilities.js)
     }
     f._sigAt = f0; f._sigCd = MIMIC_EVERY;
     if (typeof elementEffects !== "undefined") {

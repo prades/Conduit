@@ -98,12 +98,12 @@ function measure(w, h) {
         globalThis.__foe = (x, y) => { const e = spawnCreature({ species: 'ant', className: 'tank' }); e.x = x; e.y = y; e.update = () => {}; e.health = e.maxHealth = 5000; e.provoked = true; return e; };`);
 
     group('ONE TABLE, ONE WAY IN (js/techabilities.js)');
-    check('a technician (any element\'s, egg or evolved) has its element\'s ability; so far only the electric one is built, the KINETIC LAUNCHER; nobody else has one', () => {
+    check('a technician (any element\'s, egg or evolved) has its element\'s ability: the electric one the KINETIC LAUNCHER (the other five: tests/techlevel1.js); a follower that is not a technician has none', () => {
         const r = J(`(function(){ const fs = __fresh(['electric', 'fire']); const o = {};
             o.built = Object.keys(TECH_ABILITIES).join(); o.tech = (techAbilityOf(fs[0]) || {}).id; o.brawler = techAbilityOf(fs[1]);
             fs[0].evolved = 'hovershell'; o.evolved = (techAbilityOf(fs[0]) || {}).id; fs[0].evolved = undefined;
-            fs[1].role = 'camper'; o.fireTech = techAbilityOf(fs[1]); fs[1].role = 'brawler'; return o; })()`);
-        same(r.built, 'electric', 'the abilities built'); same(r.tech, 'kinetic_launcher', 'the electric technician'); same(r.evolved, 'kinetic_launcher', 'as a Hover Shell'); same(r.brawler, null, 'a brawler'); same(r.fireTech, null, 'a fire technician (not built yet)');
+            return o; })()`);
+        ok(/^electric(,|$)/.test(r.built), 'the abilities built: ' + r.built); same(r.tech, 'kinetic_launcher', 'the electric technician'); same(r.evolved, 'kinetic_launcher', 'as a Hover Shell'); same(r.brawler, null, 'a brawler');
     });
     check('the first wait: a technician that joins the squad waits 60 s ("the 60-second initial squad wait"), and again after leaving and coming back; one not in the squad cannot use it', () => {
         const r = J(`(function(){ const fs = __fresh(['electric']), t = fs[0], o = {}; o.wait = techReadyIn(t); o.can = techAbilityCan(t).why;

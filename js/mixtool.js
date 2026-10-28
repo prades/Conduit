@@ -179,7 +179,9 @@ function mixToolClick(ev) {
     if (q(".mt-pod")) { mixToolSetOpen(!crystalMenuOpen); return; }
     if (q("[data-act=close]")) { mixToolSetOpen(false); return; }
     if (q("[data-act=retreat]")) { mixToolRetreat(); return; }
-    const atk = q("[data-act=attack]"); if (atk) { if (atk.blur) atk.blur(); mixToolAttack(_mtFoeShown && !_mtFoeShown.dead ? _mtFoeShown : null); return; }   // (blurred: a key pressed afterwards does not tap it again)
+    const atk = q("[data-act=attack]");
+    if (atk && typeof techAimNeed === "function" && techAimNeed() === "enemy") { if (atk.blur) atk.blur(); if (_mtFoeShown && !_mtFoeShown.dead) techAimPickEnemy(_mtFoeShown); return; }   // (a technician's ability waiting for an enemy: the card's creature is the pick, js/techabilities.js)
+    if (atk) { if (atk.blur) atk.blur(); mixToolAttack(_mtFoeShown && !_mtFoeShown.dead ? _mtFoeShown : null); return; }   // (blurred: a key pressed afterwards does not tap it again)
     const ord = q("[data-order]"); if (ord) { mixToolOrder(ord.getAttribute("data-order")); return; }
     const po = q("[data-posture]"); if (po) { mixToolPosture(po.getAttribute("data-posture")); return; }
     const fo = q("[data-focus]"); if (fo) { mixToolFocus(fo.getAttribute("data-focus")); return; }

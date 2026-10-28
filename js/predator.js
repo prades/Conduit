@@ -178,17 +178,21 @@ class Predator {
     // Its reach is COMBAT.bite.reach, or its own (biteReach: a clone's, js/clone.js cloneReach).
     bite(target) {
         const B = COMBAT.bite, R = this.biteReach || B.reach, reach2 = R * R, pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? 0.6 : 1.0);
-        if (target === crystal) { crystal.health = Math.max(0, crystal.health - pwr); shake = Math.max(shake, 6); return crystal; }
-        const inReach = a => { const dx = a.x - this.x, dy = a.y - this.y; return dx * dx + dy * dy <= reach2; };
+        // A PHOTONIC SHIELD between it and what it bites (js/techabilities.js): the bite is stopped (walled: and the shield shows where); nothing on the far side is in reach (across)
+        const walled = a => !(this.disorientFF > 0) && typeof techShieldBlocks === "function" && techShieldBlocks(this, a);
+        const across = a => !this.isClone && !(this.disorientFF > 0) && typeof techShieldBetween === "function" && !!techShieldBetween(this.x, this.y, a.x, a.y);
+        if (target === crystal) { if (walled(crystal)) return null; crystal.health = Math.max(0, crystal.health - pwr); shake = Math.max(shake, 6); return crystal; }
+        const inReach = a => { const dx = a.x - this.x, dy = a.y - this.y; return dx * dx + dy * dy <= reach2 && !across(a); };
         if (this.disorientFF > 0) { let n = null; actors.forEach(a => { if (a === this || a.dead || a.team !== "red" || a.isClone || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
         const hitTeam = this.isClone ? "red" : "green";
         if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: this.x, y: this.y, text: "MISS", color: "#aabb88", life: 30, vy: -0.04 }); return null; }   // the smoke screen: half its bites miss
         // THE PLAYER (its prey too, COMBAT.prey): one of its three hits, and a step back (hurtPlayer; the grace after a hit spaces them). Out of reach when it lands: missed.
         if (typeof player !== "undefined" && target === player) {
-            if (this.isClone || !inReach(player) || (typeof predatorMayHurtPlayer === "function" && !predatorMayHurtPlayer())) return null;
+            if (this.isClone || walled(player) || !inReach(player) || (typeof predatorMayHurtPlayer === "function" && !predatorMayHurtPlayer())) return null;
             return hurtPlayer(pwr, 4, this) ? player : null;
         }
         if (B.splash) { let n = null; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
+        if (target && !target.dead && target.team === hitTeam && walled(target)) return null;   // (the one it reared back at is behind a shield: stopped, and the shield shows it)
         let t = target && !target.dead && target.team === hitTeam && !isNeutralBystander(target) && inReach(target) ? target : null;
         if (!t) { let bd = reach2; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a)) return; const dx = a.x - this.x, dy = a.y - this.y, d2 = dx * dx + dy * dy; if (d2 <= bd) { bd = d2; t = a; } }); }
         if (t) applyDamage(t, pwr, this);
