@@ -20,7 +20,7 @@ const FP_PAL = {
     teal: "#4f9aa0", tealLit: "#6cb3bb", tealDark: "#2f6a73", case: "#a9c4cc", caseLit: "#dbeaee",
     cyan: "#31e8ff", blue: "#3a7bff", violet: "#9a5cff", amber: "#f2b13a", white: "#eaffff", leaf: "#4fa58a",
 };
-const FP_STYLE_ROOMS = new Set(["crystal_chamber", "teleport_room_1", "teleport_room_2", "teleport_stair_room", "front_lobby", "security_room", "armory", "show_room", "lab_hallway", "experiment_lab", "lab_passage", "observation_deck", "catwalks", "arena", "nest_area", "cold_storage"]);   // every room
+const FP_STYLE_ROOMS = new Set(["crystal_chamber", "teleport_room_1", "teleport_room_2", "teleport_stair_room", "front_lobby", "security_room", "armory", "show_room", "lab_hallway", "experiment_lab", "lab_passage", "observation_deck", "catwalks", "arena", "nest_area", "cold_storage", "sewers"]);   // every room
 function facilityStyleRoom(id) { return !!id && FP_STYLE_ROOMS.has(id); }
 
 // floor decals keep their kind and place; their colours are brought into the palette
@@ -95,7 +95,7 @@ function _fpCrystal(x, y, h, w, col, f, seed) {   // a faceted crystal shard sta
 const _fpRoomCol = new Map();
 function _fpRoomCols(id) {
     let c = _fpRoomCol.get(id); if (c) return c; const RS = _fpRoomStyle(id);
-    c = { wainLit: RS.wain, wainDark: _fpShade(RS.wain, 0.9), skirt: _fpShade(RS.wain, 0.8), acc: RS.acc }; _fpRoomCol.set(id, c); return c;
+    c = { wainLit: RS.wain, wainDark: _fpShade(RS.wain, 0.9), skirt: _fpShade(RS.wain, 0.8), acc: RS.acc, wallLit: RS.wallLit || FP_PAL.wallLit, wallDark: RS.wallDark || FP_PAL.wallDark, cap: RS.cap || FP_PAL.cap }; _fpRoomCol.set(id, c); return c;   // (a room may have walls of its own colour: the sewers' damp concrete)
 }
 function _fpFlat(pts, col) { ctx.fillStyle = col; ctx.beginPath(); for (let i = 0; i < pts.length; i++) i ? ctx.lineTo(pts[i][0], pts[i][1]) : ctx.moveTo(pts[0][0], pts[0][1]); ctx.closePath(); ctx.fill(); }   // a flat fill: no outline pass
 // ── ARCHITECTURE SHADING (docs/TUTORIAL.md, "Architecture shading") ──
@@ -129,10 +129,10 @@ function _fpWallStops(top, wain) {
     if (top > wain + 6) { st.push([t(wain) - 0.0005, "rgba(255,255,255,0.05)"], [t(wain), ao(0.12)], [t(wain + (top - wain) * 0.16), ao(0.02)], [t(wain + (top - wain) * 0.78), "rgba(255,255,255,0)"], [1, ao(0.16)]); } else st.push([1, "rgba(255,255,255,0.05)"]);
     return _fpWallStopsCache.set(k, r = { stops: st, key: "ws" + k }).get(k);
 }
-function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink) {   // the thick top of a wall: a slab FP_WALL_T deep over the band, running from the piece towards the other side of the wall (out: +1 towards the camera, -1 away). It runs half a tile past both ends (not on a short piece, a tunnel's side, where it would stick out), so the slab of a corner or of a row of pieces is continuous. A soft crease along its far edge (where `ink` allows: the boundary of the whole top), a light bevel along the edge towards the room.
+function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink, cap) {   // the thick top of a wall: a slab FP_WALL_T deep over the band, running from the piece towards the other side of the wall (out: +1 towards the camera, -1 away). It runs half a tile past both ends (not on a short piece, a tunnel's side, where it would stick out), so the slab of a corner or of a row of pieces is continuous. A soft crease along its far edge (where `ink` allows: the boundary of the whole top), a light bevel along the edge towards the room.
     const t = FP_WALL_T, L = Math.hypot(bx - ax, by - ay) || 1, e = L < 1.6 ? 0 : 0.5, ex = (bx - ax) / L * e, ey = (by - ay) / L * e, Q = (x, y) => _fpP(x, y, Hd), mx = nx * (out || -1), my = ny * (out || -1);
     const p0 = Q(ax - ex, ay - ey), p1 = Q(bx + ex, by + ey), p2 = Q(bx + ex + mx * t, by + ey + my * t), p3 = Q(ax - ex + mx * t, ay - ey + my * t);
-    _fpFlat([p0, p1, p2, p3], FP_PAL.cap);
+    _fpFlat([p0, p1, p2, p3], cap || FP_PAL.cap);
     _fpEdge(p0, p1, FP_EDGE.lightSoft, 1.5);   // the bevel on the edge the wall face hangs from
     if (ink === false) return;
     _fpEdge(p3, p2, FP_EDGE.dark, 1.6);        // the far edge of the slab
@@ -140,7 +140,7 @@ function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink) {   // the thick top o
 function _fpStyleWall(it, Hd) {
     const ax = it.a[0], ay = it.a[1], bx = it.b[0], by = it.b[1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
     const lit = nx > ny, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RC = _fpRoomCols(it.room), zb = Hd - capH;
-    _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out, it.inkBack);   // the wall's thickness: a slab over the band (the building is spaced out for it)
+    _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out, it.inkBack, RC.cap);   // the wall's thickness: a slab over the band (the building is spaced out for it)
     if (it.nbBand) return;   // (only the slab: the neighbouring room's own wall face stands in front of this one)
     // the piece's frame on screen: a point at (u along the piece, z up) is (X0 + DX u, Y0 + DY u - z): no arrays per point
     const a0 = _fpP(ax, ay, 0), b0 = _fpP(bx, by, 0), X0 = a0[0], Y0 = a0[1], DX = b0[0] - X0, DY = b0[1] - Y0;
@@ -150,13 +150,14 @@ function _fpStyleWall(it, Hd) {
     if (it.drop > 0) { band(-0.02, 1.02, -it.drop, 0, RC.skirt); _fpWallGrad(it, 0, 1, -it.drop, 0, FP_GS.foot, "skirt" + it.drop); }   // a skirt down to a lower floor beside the wall
     const P = (u, z) => [X0 + DX * u, Y0 + DY * u - z], U0 = -0.02, U1 = 1.02;
     _fpFlat([P(U0, 0), P(U1, 0), P(U1, wain), P(U0, wain)], lit ? RC.wainLit : RC.wainDark);     // the wainscot: a recessed teal band with a skirting board at the floor and a chair rail on top (a flat fill: no outline pass)
-    if (Hd > wain) band(-0.02, 1.02, wain, zb, lit ? FP_PAL.wallLit : FP_PAL.wallDark);           // the wall face
-    if (capH > 0) band(-0.02, 1.02, zb, Hd, FP_PAL.cap);                                          // the cap
+    if (Hd > wain) band(-0.02, 1.02, wain, zb, lit ? RC.wallLit : RC.wallDark);                 // the wall face
+    if (capH > 0) band(-0.02, 1.02, zb, Hd, RC.cap);                                              // the cap
     { const W = _fpWallStops(zb, wain); _fpWallGrad(it, 0, 1, 0, zb, W.stops, W.key); }           // the shading over the wainscot and the face: one gradient
     const h = _fpHash(Math.round(ax * 2), Math.round(ay * 2));
     if (Hd > wain + 10) {
         if (h % 9 === 0) band(0.1, 0.9, wain, wain + 13 + h % 10, "rgba(115,140,128,0.16)");   // a discoloration
         if (h % 13 === 1) band(0.4, 0.46, wain + 4, zb, "rgba(176,132,108,0.24)");             // a rust streak
+        if (_fpRoomStyle(it.room).damp) { if (h % 3 === 0) band(0.2 + (h % 5) * 0.1, 0.26 + (h % 5) * 0.1, wain - 6, zb, "rgba(28,44,32,0.32)"); band(-0.02, 1.02, 0, wain * 0.7, "rgba(18,34,24,0.22)"); }   // DAMP (the sewers): a seep running down, the wet band along the foot
         // a panel joint at every tile: a dark crease and a light edge beside it (a recessed seam)
         const sa = Math.floor((ax + ay) / 2), sb = Math.floor((bx + by) / 2); if (sa !== sb) { const u = (((sa > sb ? sa : sb) * 2) - (ax + ay)) / ((bx + by) - (ax + ay) || 1); if (u > 0 && u < 1) { const u2 = Math.min(1, u + 0.035);
             ctx.lineCap = "butt"; ctx.strokeStyle = "rgba(22,48,58,0.30)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X0 + DX * u, Y0 + DY * u - wain - 1); ctx.lineTo(X0 + DX * u, Y0 + DY * u - zb); ctx.stroke();

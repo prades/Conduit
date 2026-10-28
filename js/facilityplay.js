@@ -22,7 +22,7 @@ const FP_WALL_H = 122;            // px: how tall a wall stands on screen (a doo
 const FP_DOOR_H = 108;            // px: how tall a door is
 const FP_WALL_X = FP_WALL_H - 74;
 const FP_WALL_T = 1.0;            // tiles: a wall's thickness = the gap the building was spaced out by (js/facilitygrow.js) // px: how much taller the walls are than when the decor was laid out
-const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a" };
+const FP_ROOM_COL = { crystal_chamber: "#2b6a8a", teleport_room_1: "#5a3a8a", teleport_room_2: "#5a3a8a", front_lobby: "#8a6a2a", security_room: "#2a7a6a", show_room: "#3a8aa0", lab_hallway: "#2a4a8a", experiment_lab: "#2a8a7a", lab_passage: "#2a8a7a", observation_deck: "#6a5a3a", armory: "#6a5a2a", arena: "#8a3a2a", catwalks: "#7a6a2a", nest_area: "#6a2a4a", teleport_stair_room: "#6a4a9a", cold_storage: "#3a7a9a", sewers: "#4a3a6a" };
 
 // ── the world ──
 function _fpFloorTile(x, y, room) { return { x, y, type: "floor", facility: true, room }; }
@@ -337,6 +337,7 @@ function _fpWallLightRoom(w, a, b, F) {
     for (const t of [0.4, 0.9, 1.5, 2.2, 3.0]) { const r = facilityRoomAt((a[0] + b[0]) / 2 + nx * t, (a[1] + b[1]) / 2 + ny * t, F); if (r) return r.id; }   // (the room that shows its face; the pocket of void behind the arena's rock belongs to the arena)
     return w.room;
 }
+const FP_SELF_SOLIDS = new Set(["river", "pool", "gate", "boss_gate"]);   // solids that are not furniture: they draw themselves (js/facilitysewers.js), and have no sprite
 function _fpPlaceStatics(F) {
     const items = [], seg = 0.5;
     for (const w of F.walls) {
@@ -353,6 +354,7 @@ function _fpPlaceStatics(F) {
         const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2, st = { open: 0 }, base = facilityLiftPx(mx, my), lroom = _fpWallLightRoom({ room: (o.rooms || [])[0] }, o.a, o.b, F), thin = _fpDoorThin(o, F);   // (lroom: the room whose face the wall round the door shows, which the door's header takes its light from; thin: a door in glass)
         for (const [part, d] of [["a", o.a[0] + o.a[1]], ["b", o.b[0] + o.b[1]], ["m", Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.88]]) items.push({ type: "fp", fp: "door", part, st, out: _fpDoorOut(o, F), lroom, thin, id: o.id, depth: d + 0.02, x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base }); }
     for (const s of F.solids) {
+        if (FP_SELF_SOLIDS.has(s.kind)) continue;   // (the sewers' water and gates draw themselves: js/facilitysewers.js)
         const box = s.bb, cells = new Set();
         for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {
             if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) cells.add(x + "," + y);
@@ -378,10 +380,12 @@ function _fpPlaceStatics(F) {
     for (const f of F.fixtures) items.push({ type: "fp", fp: "fixture", room: f.room, base: facilityRoomHeight(f.room, F) * FP_ELEV_PX, x: (f.a[0] + f.b[0]) / 2, y: (f.a[1] + f.b[1]) / 2, a: f.a, b: f.b, kind: f.type });
     // STAIRWELLS: a portal's stairs standing in a floor (not in an alcove): down into it (the main hallway's, to the Cold Storage) or up out of it (the Cold Storage's): drawn after the floor under them (js/facilitydecor.js)
     for (const d of (F.decor || [])) if (d.kind === "stairwell" && d.rect) items.push({ type: "fp", fp: "stairwell", room: d.room, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, x: (d.rect[0] + d.rect[2]) / 2, y: (d.rect[1] + d.rect[3]) / 2, rect: d.rect, dir: d.dir || "n", up: !!d.up, colour: d.colour, depth: d.rect[2] + d.rect[3] + 0.02, seed: _fpHash(Math.round(d.rect[0] * 2), Math.round(d.rect[1] * 2)) });
+    if (typeof facilitySewerItems === "function") for (const it of facilitySewerItems(F)) items.push(it);   // THE SEWERS' water, bridge rails, broken bridge, gates, and the arena's overflow grates (js/facilitysewers.js)
     for (const it of _fpWallPlace(F)) items.push(it);   // wall decor (js/facilitydecor.js)
     for (const it of _fpStylePillars(F)) items.push(it);   // the corner posts of a styled room (js/facilitystyle.js)
     for (const it of _fpStyleRigs(F)) items.push(it);      // the crystal's pad machine (js/facilitystyle.js)
     _fp.floorOps = _fpFloorBuild(F);                     // the floors' coverings and decals, cut into tiles
+    for (const d of (F.decor || [])) if (d.kind === "bridge_deck" && d.rect) for (const k of facilityRectCells(d.rect)) { const t = worldTileMap.get(k); if (t) t.deck = true; }   // (a bridge's grating: the game's tile under it is not drawn, so the water shows through: js/game.js)
     for (const it of _fpFillItems()) items.push(it);     // floor that runs in under the walls (no black where a wall meets the floor)
     _fpSkirts(items);                                    // a wall above a lower floor reaches down to it
     _fp.items = items; _fpRockSides(items); _fpScaffoldMarks(items);   // which rock walls are formations the arena is in front of, and which are behind; which walls are scaffolding
@@ -399,7 +403,7 @@ function facilityDrawItems(drawList) {
     if (typeof _fpLightUpdate === "function") _fpLightUpdate(_fp.F);   // the rooms' light levels and the pools at open doors
     if (typeof facilityTutorialTick === "function") facilityTutorialTick();
     if (typeof _simGhost !== "undefined" && _simGhost) return;   // a step with no picture draws nothing: no item is added to the draw list (see render(), js/game.js)
-    for (const it of _fp.items) if ((visibleForDraw(it.x, it.y) || (it.tall && _fpTallVisible(it))) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);
+    for (const it of _fp.items) if ((visibleForDraw(it.x, it.y) || (it.tall && _fpTallVisible(it)) || (it.span && _fpSpanVisible(it))) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);   // (span: a long item, the sewers' water, on screen anywhere along it)
     if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn after the pad machine it rests in
 }
 
@@ -430,7 +434,7 @@ function drawFacilityItem(it) {
     if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
     try {
-        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it);
+        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it); else if (it.fp === "sewer") facilitySewerDraw(it);
     } finally { ctx.restore(); ctx = real; }
 }
 // A wall whose camera-facing side looks onto a LOWER floor (the pocket of floor behind the arena's rock, a fill cell) reaches down to it, so no gap shows under it.

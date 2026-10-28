@@ -34,6 +34,7 @@ const SUITES = [
     ['the Technomancer: the arc gauntlet punches in reach and stores charge, the arc spends it out of reach, jumps on and cuts a bite short; the grid charges it', 'technomancer.js'],
     ['each class\'s own stage after the tutorial, and its loop played through (the Gunslinger, the Technomancer, the Mutator)', 'classstage.js'],
     ['switching class: a confirmation on every pick, the pack\'s SWITCH CLASS, each class keeping its own progress (perks, stage, weapon, kit once, the Mutator\'s clone waiting), saved until the Crystal falls', 'classswitch.js'],
+    ['the Sewers: the arena\'s overflow grates and culvert, the room under it (two ledges, the deep river, a bridge and a broken one, gated passages, the boss\'s cistern), the trip, the drawing', 'sewers.js'],
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],
     ['follower types',           'followertypes.js'],

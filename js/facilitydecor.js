@@ -68,12 +68,20 @@ function _fpFloorBuild(F) {
     const under = new Map();   // the floor under a solid cell: a small piece of furniture stands on it, and a bare black tile would show
     const fills = _fpFillCells(F, solid); _fp.fills = fills; const wallEdges = _fpWallEdges(F);
     const cellsAll = new Map(_fp.cells); for (const k of solid) { const [x, y] = k.split(",").map(Number); if (facilityRoomAt(x, y, F)) cellsAll.set(k, [x, y]); } for (const [k, f] of fills) cellsAll.set(k, [f.x, f.y]);
+    // THE SEWERS: a bridge's grating has no floor under it (the water shows through: js/facilitysewers.js), and a floor that drops into the water has a lit lip along its edge
+    const deck = new Set(), water = new Set();
+    for (const d of (F.decor || [])) if (d.kind === "bridge_deck" && d.rect) for (const k of facilityRectCells(d.rect)) deck.add(k);
+    for (const s of F.solids) if (s.kind === "river" || s.kind === "pool") { const box = s.bb; for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) water.add(x + "," + y); }
     for (const [k, c] of cellsAll) {
+        if (deck.has(k)) continue;
         const room = fills.has(k) ? F.byId.get(fills.get(k).room) : facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), sty = !!room && facilityStyleRoom(room.id), S = sty ? _fpStyleFloorFor(room.id) : (f && FP_FLOOR_STYLES[f.style]); if (!S) continue;
         const h = _fpHash(c[0], c[1]), o = _fpCellOps(solid.has(k) ? under : map, c[0], c[1]), alt = S.alt && ((c[0] + c[1]) & 1);
         o.push({ t: "D", c: _fpRgba(alt ? S.alt : ((!sty && f.colour) || S.base), (S.a || 0.5) * (sty ? 1 : 0.82 + (h % 7) * 0.05)), x: sty && (S.a || 0.5) >= 1 });   // (x: an opaque base: painted a hair wide, so it covers the fringe of the tile under it)
         S.mark(h, o, c[0], c[1]);
         if (sty) for (const e of "NWSE") if (wallEdges.has(c[0] + "," + c[1] + "," + e)) o.push({ t: "A", e, a: (e === "N" || e === "W" ? 0.34 : 0.16) * (S.ao === undefined ? 1 : S.ao) });   // ambient darkening where a wall meets the floor
+        if (water.size && !solid.has(k)) for (const [dx, dy, p] of [[0, -1, [-0.5, -0.5, 0.5, -0.5]], [0, 1, [-0.5, 0.5, 0.5, 0.5]], [-1, 0, [-0.5, -0.5, -0.5, 0.5]], [1, 0, [0.5, -0.5, 0.5, 0.5]]]) if (water.has((c[0] + dx) + "," + (c[1] + dy))) {
+            o.push({ t: "L", c: "rgba(205,212,220,0.6)", w: 2, p }, { t: "L", c: "rgba(12,16,18,0.35)", w: 1, p: [p[0] - dx * 0.09, p[1] - dy * 0.09, p[2] - dx * 0.09, p[3] - dy * 0.09] });   // the lit lip, and its shadow on the floor
+        }
     }
     // 2. what lies on it
     const rect = (r, fn) => { for (let x = Math.ceil(r[0] - 0.5); x <= r[2] - 0.5; x++) for (let y = Math.ceil(r[1] - 0.5); y <= r[3] - 0.5; y++) if (_fp.cells.has(x + "," + y)) fn(x, y, _fpCellOps(map, x, y), r); };
@@ -103,6 +111,15 @@ function _fpFloorBuild(F) {
             const a = d.a, b = d.b, len = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len, n = Math.max(1, Math.floor(len / 1.6));
             for (let i = 0; i < n; i++) { const cx = a[0] + ux * (i + 0.5) * len / n, cy = a[1] + uy * (i + 0.5) * len / n, wx = -uy * 0.38, wy = ux * 0.38, tx = ux * 0.3, ty = uy * 0.3, c = { c: _fpRgba(col === "#ffffff" ? "#ffd21a" : col, 0.55), w: 2 };
                 _fpSeg(map, cx - tx + wx, cy - ty + wy, cx + tx, cy + ty, c, F); _fpSeg(map, cx - tx - wx, cy - ty - wy, cx + tx, cy + ty, c, F); }
+        } else if (k === "bridge_deck") {   // a steel bridge's grating (the sewers): bars across it, two stringers along it, its edge beams; nothing under them, so the water shows through
+            const r = d.rect, along = (r[3] - r[1]) >= (r[2] - r[0]), L = (a, b, c2, d2, col, w) => along ? { t: "L", c: col, w, p: [a, b, c2, d2] } : { t: "L", c: col, w, p: [b, a, d2, c2] };
+            for (const key of facilityRectCells(r)) { if (!_fp.cells.has(key)) continue; const [x, y] = key.split(",").map(Number), o = _fpCellOps(map, x, y);   // (its own tiles exactly: the tiles whose middles are inside it)
+                for (let i = 0; i < 5; i++) { const t = -0.4 + i * 0.2; o.push(L(-0.5, t, 0.5, t, "rgba(14,18,24,0.96)", 3.2), L(-0.5, t - 0.035, 0.5, t - 0.035, "rgba(160,176,192,0.8)", 1)); }
+                for (const u of [-0.17, 0.17]) o.push(L(u, -0.5, u, 0.5, "rgba(20,26,32,0.9)", 2.2));
+                const side = along ? [x - 0.5 <= r[0] + 0.01, x + 0.5 >= r[2] - 0.01] : [y - 0.5 <= r[1] + 0.01, y + 0.5 >= r[3] - 0.01];
+                if (side[0]) o.push(along ? { t: "P", c: "#4a5560", p: [-0.5, -0.5, -0.34, -0.5, -0.34, 0.5, -0.5, 0.5] } : { t: "P", c: "#4a5560", p: [-0.5, -0.5, 0.5, -0.5, 0.5, -0.34, -0.5, -0.34] });
+                if (side[1]) o.push(along ? { t: "P", c: "#56626e", p: [0.34, -0.5, 0.5, -0.5, 0.5, 0.5, 0.34, 0.5] } : { t: "P", c: "#56626e", p: [-0.5, 0.34, 0.5, 0.34, 0.5, 0.5, -0.5, 0.5] });
+            }
         } else if (k === "ice_sheet") {   // glassy ice over the floor (the Cold Storage's cave, the frost before its door): a pale blue glaze on every tile inside the outline, a sheen streak, now and then a crack
             const off = F.snapped ? 0.5 : 0, xs = d.path.map(q => q[0]), ys = d.path.map(q => q[1]);   // (the outline is unsnapped, the tiles are on the snapped grid: half a tile apart)
             for (let x = Math.floor(Math.min(...xs)); x <= Math.ceil(Math.max(...xs)) + 1; x++) for (let y = Math.floor(Math.min(...ys)); y <= Math.ceil(Math.max(...ys)) + 1; y++) {
@@ -429,7 +446,7 @@ function _fpWallPlace(F) {
     for (const d of (F.decor || [])) {
         if (!FP_WALL_KINDS[d.kind]) continue;
         const a = d.a, b = d.b, h = Math.abs(a[1] - b[1]) < 1e-6, end = a[0] + a[1] > b[0] + b[1] ? a : b, mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-        items.push({ type: "fp", fp: "wdecor", room: d.room, kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, flat: d.flat, up: d.up, cold: d.cold, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.02, seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });   // (flat, up, cold: a portal door's kind of door)
+        items.push({ type: "fp", fp: "wdecor", room: d.room, kind: d.kind, x: mid[0], y: mid[1], a, b, colour: d.colour, text: d.text, z: d.z, h: d.h, id: d.id, flat: d.flat, up: d.up, cold: d.cold, culvert: d.culvert, base: facilityRoomHeight(d.room, F) * FP_ELEV_PX, depth: end[0] + end[1] + 0.02, seed: _fpHash(Math.round(mid[0] * 4), Math.round(mid[1] * 4)) });   // (flat, up, cold, culvert: a portal door's kind of door)
     }
     // the RUBBLE a fire technician can drill (js/techabilities.js), on the face of its room's edge like the decor: the pile, or once it is drilled through, the dark hole
     for (const r of (F.rubble || [])) {

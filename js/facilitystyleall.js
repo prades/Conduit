@@ -24,6 +24,7 @@ const FP_ROOM_STYLE = {
     catwalks:            { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },
     nest_area:           { acc: FP_ACC.violet, wain: "#3a3532", fa: "#4a4540", fb: "#3f3a36", dark: true },
     cold_storage:        { acc: "#9be8ff",     wain: "#5f93ad", fa: "#dcedf4", fb: "#c2dbe7", ice: true },   // ICE: frost on the floor and the walls, icicles on the cave's rock (the look only)
+    sewers:              { acc: "#a64dff",     wain: "#232b29", fa: "#47504c", fb: "#3e4643", dark: true, damp: true, wallLit: "#4d5654", wallDark: "#3c4442", cap: "#2e3533" },   // DAMP: wet concrete, a slick sheen and moss in the cracks, stains down the walls (the look only)
 };
 function _fpRoomStyle(id) { return FP_ROOM_STYLE[id] || FP_ROOM_STYLE.crystal_chamber; }
 function _fpAcc(id) { return _fpRoomStyle(id).acc; }
@@ -35,7 +36,13 @@ function _fpStyleFloorFor(id) {
     // corner, and, in the dark earth floors, a few pits. The walls darken the floor along their foot (js/facilitydecor.js _fpFloorBuild, the "A" marks). No neon seams and no hazard stripes on floors.
     return { base: R.fa, alt: null, a: 1, ao: dark ? 0.7 : 1, mark: (h, o, x, y) => {
         const j = (h % 5) - 2; if (j) o.push({ t: "D", c: j > 0 ? "rgba(255,255,255," + (j * 0.014).toFixed(3) + ")" : "rgba(8,26,34," + (-j * 0.014).toFixed(3) + ")" });   // a hair of tone variation
-        if (dark) { o.push({ t: "S", a: 0.04, b: 0.07 }); if (h % 4 === 0) o.push({ t: "C", c: "rgba(20,16,14,0.28)", u: ((h >>> 2) % 9 - 4) / 10, v: ((h >>> 5) % 9 - 4) / 10, r: 0.06 + (h % 4) * 0.02 }); if (h % 13 === 0) o.push({ t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.35, -0.2, -0.05, 0.1] }, { t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.05, 0.1, 0.25, 0.35] }); o.push({ t: "L", c: "rgba(255,240,220,0.07)", w: 1, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(255,240,220,0.07)", w: 1, p: [-0.5, -0.5, -0.5, 0.5] }, { t: "L", c: "rgba(8,6,4,0.18)", w: 1, p: [0.5, -0.5, 0.5, 0.5] }, { t: "L", c: "rgba(8,6,4,0.18)", w: 1, p: [-0.5, 0.5, 0.5, 0.5] }); return; }
+        if (dark) { o.push({ t: "S", a: 0.04, b: 0.07 });
+            if (R.damp) {   // DAMP (the sewers): a wet sheen here and there, moss in a crack, a dark seep
+                if (h % 3 === 1) o.push({ t: "P", c: "rgba(175,195,205,0.11)", p: [-0.32, 0.2, 0.08, -0.16, 0.22, -0.06, -0.18, 0.3] });
+                if (h % 7 === 2) o.push({ t: "L", c: "rgba(70,112,62,0.55)", w: 2, p: [-0.4, 0.1, -0.05, 0.36] }, { t: "C", c: "rgba(80,125,70,0.4)", u: -0.22, v: 0.24, r: 0.05 });
+                if (h % 11 === 5) o.push({ t: "C", c: "rgba(12,20,16,0.32)", u: ((h >>> 2) % 7 - 3) / 10, v: ((h >>> 5) % 7 - 3) / 10, r: 0.2 });
+            }
+            if (h % 4 === 0) o.push({ t: "C", c: "rgba(20,16,14,0.28)", u: ((h >>> 2) % 9 - 4) / 10, v: ((h >>> 5) % 9 - 4) / 10, r: 0.06 + (h % 4) * 0.02 }); if (h % 13 === 0) o.push({ t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.35, -0.2, -0.05, 0.1] }, { t: "L", c: "rgba(15,12,10,0.4)", w: 2, p: [-0.05, 0.1, 0.25, 0.35] }); o.push({ t: "L", c: "rgba(255,240,220,0.07)", w: 1, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(255,240,220,0.07)", w: 1, p: [-0.5, -0.5, -0.5, 0.5] }, { t: "L", c: "rgba(8,6,4,0.18)", w: 1, p: [0.5, -0.5, 0.5, 0.5] }, { t: "L", c: "rgba(8,6,4,0.18)", w: 1, p: [-0.5, 0.5, 0.5, 0.5] }); return; }
         o.push({ t: "S", a: 0.08, b: 0.06 });
         o.push({ t: "L", c: "rgba(255,255,255,0.5)", w: 1.5, p: [-0.5, -0.5, 0.5, -0.5] }, { t: "L", c: "rgba(255,255,255,0.5)", w: 1.5, p: [-0.5, -0.5, -0.5, 0.5] });   // the lit far edges
         o.push({ t: "L", c: "rgba(61,120,135,0.2)", w: 1.5, p: [0.5, -0.5, 0.5, 0.5] }, { t: "L", c: "rgba(61,120,135,0.2)", w: 1.5, p: [-0.5, 0.5, 0.5, 0.5] });   // the shaded near edges
@@ -350,6 +357,7 @@ for (const k of ["monitor_bank", "garage_door", "gun_rack"]) FP_WALL_KINDS[k] = 
 Object.assign(FP_STYLE_WALL, {
     portal_door: (it, f) => {
         if (it.cold) return _fpColdDoor(it, f);   // the Cold Storage's door: its own drawing (below)
+        if (it.culvert) return _fpCulvertDoor(it, f);   // the sewer culvert: its own drawing (js/facilitysewers.js)
         const S = FP_STEEL_DOOR, H = 86, col = it.colour || _FPW.amber, pul = 0.65 + 0.35 * Math.sin(f * 0.07 + it.seed), up = it.up;
         _fpWQuad(it, 0.02, 0.98, 0, H + 14, _FPW.tealDark, _FPW.ink, 4);   // the frame, with a header slab for the sign
         _fpWQuad(it, 0.09, 0.91, 3, H, "#04070d", _FPW.ink, 2);            // the dark stairwell

@@ -43,7 +43,7 @@
     for (const p of M.props) { const t = sh(p.room); if (p.rect) p.rect = [p.rect[0] + t[0] * G, p.rect[1] + t[1] * G, p.rect[2] + t[0] * G, p.rect[3] + t[1] * G]; if (p.at) p.at = mv(p.at, t); if (p.poly) p.poly = p.poly.map(q => mv(q, t)); }
     for (const d of (M.decor || [])) {
         const t = sh(d.room); if (!t[0] && !t[1]) continue;
-        if (d.at) d.at = mv(d.at, t); if (Array.isArray(d.a)) d.a = mv(d.a, t); if (Array.isArray(d.b)) d.b = mv(d.b, t);   // (a light's `a` is its strength, a number: only a wall decor's ends are points)
+        if (d.at) d.at = mv(d.at, t); if (Array.isArray(d.a)) d.a = mv(d.a, t); if (Array.isArray(d.b)) d.b = mv(d.b, t); if (Array.isArray(d.pipe)) d.pipe = mv(d.pipe, t);   // (a light's `a` is its strength, a number: only a wall decor's ends are points; an overflow grate's pipe moves with it)
         if (d.rect) d.rect = [d.rect[0] + t[0] * G, d.rect[1] + t[1] * G, d.rect[2] + t[0] * G, d.rect[3] + t[1] * G]; if (d.path) d.path = d.path.map(p => mv(p, t));
     }
     // decor that hung on a wall or lay on a floor that has moved: the hallway's north-west corner is one row smaller, and Teleport Room 1 lost the nub

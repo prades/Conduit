@@ -85,11 +85,13 @@ const FACILITY_MAP = {
           // see `interiors`). The door's wall is plain wall, built into the rock, with a tile of rock either side of it; the alcove's two sides are plain wall. It takes the one-tile band of wall between the arena
           // and the hallway above it, so the hallway gives up the tile behind it (a notch in its south side: js/facilitygrow.js) and a wall of full thickness still stands between the two. (Five wide, not three: the
           // camera looks at the north wall from the south-east, and the rock in front of an alcove's east corner hides the last tile of its back wall, so the door stops a tile short of it.)
-          polygon: [[340, 760], [540, 760], [580, 760], [580, 740], [600, 740], [660, 740], [680, 740], [680, 760], [715, 760], [778, 808], [935, 795], [1000, 810],
+          // THE SEWER CULVERT: a second alcove in the north rock, behind the north tank (three tiles wide, x 780 to 840, one deep): an arched concrete culvert with its grating raised, the way down to the Sewers
+          // (a portal: the Sewers are an interior). The tanks' runoff goes down to them through the overflow grates at the tanks' feet (floor decor `overflow_grate`).
+          polygon: [[340, 760], [540, 760], [580, 760], [580, 740], [600, 740], [660, 740], [680, 740], [680, 760], [715, 760], [778, 808], [780, 808], [780, 788], [840, 788], [840, 808], [935, 795], [1000, 810],
                     // THE ARMORY DOOR: an ALCOVE in the west cave wall just south of the two garage doors, where the Armory's own door used to be (two tiles wide at y 1090 to 1130, one deep): the doorway into the Armory
                     // from the arena (a portal: the Armory is an interior, see `interiors`). Its three sides are plain wall, built into the rock.
                     [1000, 1180], [805, 1155], [640, 1135], [560, 1138], [520, 1180], [440, 1215], [380, 1190], [340, 1165], [340, 1130], [320, 1130], [320, 1090], [340, 1090], [340, 950]],
-          edge_kinds: ["rock", "rock", "wall", "rock", "wall", "rock", "wall", "rock", "rock", "rock", "rock", "railing_wall",
+          edge_kinds: ["rock", "rock", "wall", "rock", "wall", "rock", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "railing_wall",
                        "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "rock", "deck_wall"] },
         { id: "cold_storage", label: "Cold Storage", level: -1, status: "placed", wall_material: "solid", interior: true,
           note: "The cold storage, UNDER the Experiment Lab, at the arena's floor level: an INTERIOR like the armory (drawn here, under the lab, built in a part of the map of its own: `interiors`). Two ways in, each a pair of doorways (`portals`): the double freezer door in the arena's north cave wall (where the generator stood), and the stairwell in the Experiment Lab's floor, in its north-west corner by its door. Inside, from the user's floor plan: the entrance in the west wall at the top, a bank of freezers along the north wall, the stairs up in the floor at the west side, two storage racks toppled over in the middle, and in the south and east an ice cave with rough walls. ICE: the look only (frost, an icy floor, icicles); it plays like any floor.",
@@ -99,6 +101,15 @@ const FACILITY_MAP = {
           polygon: [[440, 540], [680, 540], [680, 680], [720, 700], [740, 740], [760, 780], [760, 820], [720, 860], [680, 880], [620, 900], [580, 880], [540, 860], [520, 820], [480, 800], [460, 760],
                     [440, 760], [440, 620], [420, 620], [420, 560], [440, 560]],
           edge_kinds: ["wall", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "wall", "wall"] },
+        { id: "sewers", label: "Sewers", level: -1, status: "placed", wall_material: "solid", interior: true,
+          note: "THE SEWERS, UNDER the arena: an INTERIOR (drawn here, under the arena, built in a part of the map of its own: `interiors`), the way in a culvert in the arena's north rock behind the north tank (a pair of portals). From the user's layout A ('two ledges, the river between'): one long tunnel, a NARROW LEDGE along each side of a DEEP RIVER (the tanks' violet runoff, pouring in from an outfall at its head; nothing walks in it: solids of kind `river`), a bridge across it and a broken one; side passages shut behind GATES (barred grilles you see through: solids of kind `gate`), room for areas later; a collapsed tunnel and a sealed hatch, ways in for later; and at the east end THE CISTERN, where the river drains into a round sump: the boss's room, behind the BOSS GATE (shut, and empty, until the boss is designed). Empty for now: no creatures.",
+          // the tunnel from the user's layout (20 px to a tile; its top-left at (300, 860)): thirty-six tiles long, the north ledge two tiles deep (y 860 to 900), the river six (900 to 1020), the south ledge two
+          // (1020 to 1060). The way up is an alcove at the west end of the north ledge (x 280 to 300): the culvert back to the arena. Two side passages off the north ledge (x 360 to 400 and 620 to 660) and one off the
+          // south ledge (x 600 to 640), each three tiles deep. The north ledge stops at x 1020; the cistern (x 1060 to 1280, y 820 to 1100) is open to the tunnel only where the river runs into it and where the south
+          // ledge does, through the boss gate.
+          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [620, 860], [620, 800], [660, 800], [660, 860], [1020, 860], [1020, 900], [1060, 900],
+                    [1060, 820], [1280, 820], [1280, 1100], [1060, 1100], [1060, 1060], [640, 1060], [640, 1120], [600, 1120], [600, 1060], [300, 1060], [300, 900], [280, 900]],
+          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
         { id: "nest_area", label: "Nest area", level: 0, status: "approximate",
           boundary_type: "outer_edge", boundary_blocks_movement: true,
           note: "One completely open room. The long double lines in the sketch are its OUTSIDE EDGES (walls), not tunnels or a path. The sketch stops drawing at the bottom, so the bottom wall is provisional.",
@@ -113,6 +124,7 @@ const FACILITY_MAP = {
         { id: "armory", under: "observation_deck", offset: [1280, 0] },
         { id: "cold_storage", under: "experiment_lab", offset: [-1280, 0] },   // (64 tiles WEST: east of the building is the armory's, and a room as big as this one there would be in sight of it on a wide screen;
                                                                                 //  out here, beside the crystal chamber's corner of the plan, nothing is within sight of it and the MAP stays as wide as it was)
+        { id: "sewers", under: "arena", offset: [-1280, 1280] },               // (64 tiles west and 64 south: the west is the Cold Storage's and the south the nest area's; down here nothing is in sight of it)
     ],
     // PORTALS come in pairs. `rect` is the doorway's floor (the alcove's end: stepping into it takes you through), `arrive` a spot of the same room in front of the doorway, where you are put when you come out of the OTHER end,
     // `to` the portal at the other end, `label` what the other end is, shown over the doorway. Each pair also has a connection in `connections` (portal: ...), so the rooms count as joined.
@@ -133,6 +145,10 @@ const FACILITY_MAP = {
           note: "A STAIRWELL in the Experiment Lab's floor, in its north-west corner just inside the door from the passage (the north bench is three tiles shorter for it): steps going down to the north, to the Cold Storage under the lab, entered from the aisle. Not an alcove: an opening in the floor with a rail round three sides." },
         { id: "portal_cold_lab", room: "cold_storage", rect: [490, 660, 530, 720], arrive: [510, 750], to: "portal_lab_cold", label: "EXPERIMENT LAB", kind: "stairs_up", well: true,
           note: "The stairs up to the Experiment Lab: a flight standing in the floor at the cold storage's west side (the plan's STAIRS)." },
+        { id: "portal_arena_sewers", room: "arena", rect: [780, 788, 840, 808], arrive: [810, 840], to: "portal_sewers_arena", label: "SEWERS", kind: "door",
+          note: "The sewer culvert: an arched concrete mouth with its grating raised, in an alcove in the arena's north rock behind the north tank." },
+        { id: "portal_sewers_arena", room: "sewers", rect: [280, 860, 300, 900], arrive: [330, 880], to: "portal_arena_sewers", label: "ARENA", kind: "door",
+          note: "The culvert back up to the arena: an alcove at the west end of the north ledge, beside the outfall where the runoff pours in." },
     ],
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
@@ -308,6 +324,17 @@ const FACILITY_MAP = {
         { id: "cold_freezers", room: "cold_storage", shape: "rect", rect: [480, 540, 680, 600], status: "placed", kind: "freezer_bank", note: "A bank of walk-in freezers along the north wall: five frosted doors on its front. Solid." },
         { id: "cold_rack_1", room: "cold_storage", shape: "poly", poly: [[557.4, 647.8], [584.4, 655.0], [562.6, 736.2], [535.6, 729.0]], status: "placed", kind: "toppled_rack", note: "A tall storage rack toppled over on its back, lying at an angle; its spilled boxes beside it." },
         { id: "cold_rack_2", room: "cold_storage", shape: "poly", poly: [[585.8, 640.0], [610.9, 646.7], [590.2, 724.0], [565.1, 717.3]], status: "placed", kind: "toppled_rack", note: "A second rack toppled over beside the first, against it." },
+
+        // ── THE SEWERS: the DEEP RIVER between the two ledges (kind `river`: nothing walks in it; it draws itself, sunk below the ledges and flowing east, js/facilitydecor.js), in two lengths with the bridge's two
+        //    tiles between them (x 460 to 500: there the floor is the bridge's grating, decor `bridge_deck`); it runs on into the cistern and its round SUMP (kind `pool`). The GATES (kind `gate`, the boss's `boss_gate`):
+        //    barred grilles across the side passages' mouths and the south ledge's way into the cistern, thin, on the line of the wall they close (shut for now: a later area opens one by taking it away).
+        { id: "sewer_river_w", room: "sewers", shape: "poly", poly: [[300, 900], [460, 900], [460, 1020], [300, 1020]], status: "placed", kind: "river", note: "The deep river from the outfall at its head to the bridge. Not walkable." },
+        { id: "sewer_river_e", room: "sewers", shape: "poly", poly: [[500, 900], [1110, 900], [1110, 1020], [500, 1020]], status: "placed", kind: "river", note: "The deep river from the bridge, under the broken bridge, into the cistern. Not walkable." },
+        { id: "sewer_sump", room: "sewers", shape: "circle", at: [1170, 960], radius: 80, status: "placed", kind: "pool", note: "The cistern's sump: the round pit the river drains into, a walkway round it. The boss's (later)." },
+        { id: "sewer_gate_n1", room: "sewers", shape: "poly", poly: [[360, 856], [400, 856], [400, 864], [360, 864]], status: "placed", kind: "gate", note: "A barred gate across the first side passage off the north ledge: shut (an area for later)." },
+        { id: "sewer_gate_n2", room: "sewers", shape: "poly", poly: [[620, 856], [660, 856], [660, 864], [620, 864]], status: "placed", kind: "gate", note: "A barred gate across the second side passage off the north ledge: shut (an area for later)." },
+        { id: "sewer_gate_s1", room: "sewers", shape: "poly", poly: [[600, 1056], [640, 1056], [640, 1064], [600, 1064]], status: "placed", kind: "gate", note: "A barred gate across the side passage off the south ledge: shut (an area for later)." },
+        { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1060], [1056, 1060]], status: "placed", kind: "boss_gate", note: "THE BOSS GATE: the south ledge's way into the cistern. Shut, until the boss is designed." },
     ],
 
     // PICKUPS: supply cases standing on the floor (docs/TUTORIAL.md). `at` is the middle of a tile (sketch pixels: 20 to a tile); `items` is [[item id, how many], ...] from the ITEMS table in js/inventory.js. The player walks over one to take
@@ -397,7 +424,7 @@ const FACILITY_MAP = {
         { id: "relay_lobby", name: "LOBBY RELAY", room: "front_lobby", prop: "relay_lobby_box", powers: ["front_lobby", "security_room"], feeds: [] },
         { id: "relay_lab", name: "LAB RELAY", room: "experiment_lab", prop: "relay_lab_box", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage under the lab)
         { id: "relay_show", name: "SHOW ROOM RELAY", room: "show_room", prop: "relay_show_box", powers: ["show_room"], feeds: [] },
-        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", prop: "relay_armory_box", powers: ["armory", "arena", "observation_deck", "catwalks", "nest_area"], feeds: [] },
+        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", prop: "relay_armory_box", powers: ["armory", "arena", "observation_deck", "catwalks", "nest_area", "sewers"], feeds: [] },   // (and the Sewers under the arena)
     ],
 
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.
@@ -417,6 +444,7 @@ const FACILITY_MAP = {
         { room: "arena", style: "sand" },
         { room: "armory", style: "concrete", colour: "#5a5648" },
         { room: "cold_storage", style: "plate", colour: "#cfe6f0" },
+        { room: "sewers", style: "concrete", colour: "#3e4744" },
     ],
 
     // DECOR: paint and light, not solid. Floor kinds: rug, hazard, lane, arrows, cables, ring, stain / puddle / scorch, papers / debris, light, tint. Wall kinds (drawn flat on the wall between a and b, on its visible +y / +x face,
@@ -668,13 +696,13 @@ const FACILITY_MAP = {
         { id: "debris_12", room: "arena", kind: "debris", at: [920, 1000], radius: 28, n: 5 },
         { id: "beam_1", room: "arena", kind: "beam", a: [711.2, 770.8], b: [737.6, 788.4] },
         { id: "ooze_drip_1", room: "arena", kind: "ooze_drip", a: [742.4, 791.6], b: [768.8, 809.2], colour: "#a64dff" },
-        { id: "moss_3", room: "arena", kind: "moss", a: [770.0, 810.0], b: [805.2, 805.6] },
-        { id: "vein_2", room: "arena", kind: "vein", a: [776.4, 809.2], b: [818.0, 804.0], colour: "#ff6a4a" },
-        { id: "lamp_2", room: "arena", kind: "lamp", a: [819.6, 803.8], b: [829.2, 802.6], h: 1 },
-        { id: "scoreboard_1", room: "arena", kind: "scoreboard", a: [830.8, 802.4], b: [869.2, 797.6], z: 12 },
-        { id: "lamp_3", room: "arena", kind: "lamp", a: [870.8, 797.4], b: [880.4, 796.2] },
-        { id: "bulbs_1", room: "arena", kind: "bulbs", a: [819.6, 803.8], b: [880.4, 796.2] },
-        { id: "crack_2", room: "arena", kind: "crack", a: [885.2, 795.6], b: [910.8, 792.4] },
+        { id: "moss_3", room: "arena", kind: "moss", a: [770, 810], b: [790, 810] },   // (the north rock either side of the sewer culvert's alcove, as built: a tile of it west of the alcove, then its slant east of it from (42.5, 40.5) to (46.5, 39.5) before the arena's shift)
+        { id: "vein_2", room: "arena", kind: "vein", a: [772, 810], b: [790, 810], colour: "#ff6a4a" },
+        { id: "lamp_2", room: "arena", kind: "lamp", a: [852, 809.5], b: [860, 807.5], h: 1 },
+        { id: "scoreboard_1", room: "arena", kind: "scoreboard", a: [862, 807], b: [900, 797.5], z: 12 },   // (east of the sewer culvert's alcove, on the rock's slant as built: from (42.5, 40.5) to (46.5, 39.5) before the arena's shift)
+        { id: "lamp_3", room: "arena", kind: "lamp", a: [902, 797], b: [910, 795] },
+        { id: "bulbs_1", room: "arena", kind: "bulbs", a: [852, 809.5], b: [910, 795] },
+        { id: "crack_2", room: "arena", kind: "crack", a: [914, 794], b: [928, 790.5] },
         { id: "plate_1", room: "arena", kind: "plate", a: [914.0, 792.0], b: [928.4, 790.2] },
         { id: "chain_2", room: "arena", kind: "chain", a: [934.8, 791.2], b: [957.2, 796.8] },
         { id: "hazard_sign_7", room: "arena", kind: "hazard_sign", a: [962.0, 798.0], b: [971.6, 800.4] },
@@ -751,6 +779,39 @@ const FACILITY_MAP = {
         { id: "cold_light_1", room: "cold_storage", kind: "light", at: [560, 630], radius: 140, colour: "#bfefff", a: 0.16 },
         { id: "cold_light_2", room: "cold_storage", kind: "light", at: [640, 800], radius: 130, colour: "#8fdcff", a: 0.14, flicker: true },
         { id: "cold_wall_light", room: "cold_storage", kind: "wall_light", a: [440, 540], b: [480, 540], colour: "#dff6ff" },
+        // ── the way down to the Sewers: the culvert in the arena's north rock (portal_door, `culvert`: an arched concrete mouth, its grating raised, a SEWER plate over it), and the tanks' RUNOFF: a small overflow
+        //    grate where each tank's pipe goes into the floor (the north tank's fat manifold, the south tank's small line with its valve), the violet runoff glowing under the bars and seen running down a sight glass in
+        //    the pipe (decor `overflow_grate`: `at` the grate, `pipe` the pipe's foot, `glass` the sight glass's [bottom, top, half-width] in px). Subtle: no words on the floor.
+        { id: "arena_sewer_door", room: "arena", kind: "portal_door", a: [780, 788], b: [840, 788], colour: "#c08aff", culvert: true },
+        { id: "overflow_grate_1", room: "arena", kind: "overflow_grate", at: [835, 962], pipe: [835, 954], glass: [22, 34, 7], note: "Under the north tank's fat manifold, where it goes into the floor." },
+        { id: "overflow_grate_2", room: "arena", kind: "overflow_grate", at: [902, 1076], pipe: [894, 1075], glass: [13, 26, 5], note: "Under the south tank's small line, past its valve." },
+        // ── THE SEWERS: the culvert up to the arena (the inside of the arena's), the OUTFALL where the runoff pours into the head of the river, the bridge's grating and the broken bridge's two stumps, the collapsed
+        //    tunnel and the sealed hatch (ways in for later), pipes, lights, damp ──
+        { id: "sewer_culvert_up", room: "sewers", kind: "portal_door", a: [280, 860], b: [280, 900], colour: "#c08aff", culvert: true },
+        { id: "sewer_outfall", room: "sewers", kind: "outfall", a: [300, 920], b: [300, 1000], colour: "#a64dff", note: "A big pipe in the west wall, the tanks' runoff pouring out of it into the head of the river." },
+        { id: "sewer_bridge", room: "sewers", kind: "bridge_deck", rect: [460, 900, 500, 1020], note: "A steel bridge across the river, two tiles wide: its grating, with the river seen through it, rails either side." },
+        { id: "sewer_bridge_broken", room: "sewers", kind: "bridge_broken", rect: [760, 900, 800, 1020], note: "A bridge fallen in: a stump of it on each bank, bent, the middle gone. Not crossable." },
+        { id: "sewer_collapse", room: "sewers", kind: "collapse", a: [860, 860], b: [900, 860], note: "A tunnel off the north ledge, fallen in: its mouth choked with broken concrete and rock (a way in for later)." },
+        { id: "sewer_hatch", room: "sewers", kind: "sealed_hatch", a: [570, 860], b: [590, 860], note: "Rungs up the wall to a hatch at the top, welded shut, a hazard plate on it (a way in for later)." },
+        { id: "sewer_pipe_1", room: "sewers", kind: "pipe", a: [410, 860], b: [500, 860], colour: "#5d6a72", z: 60 },
+        { id: "sewer_pipe_2", room: "sewers", kind: "pipe", a: [680, 860], b: [760, 860], colour: "#5d6a72", z: 64 },
+        { id: "sewer_pipe_3", room: "sewers", kind: "pipe", a: [920, 860], b: [1000, 860], colour: "#5d6a72", z: 60 },
+        { id: "sewer_drip_1", room: "sewers", kind: "ooze_drip", a: [300, 1010], b: [300, 1040], colour: "#a64dff" },
+        { id: "sewer_moss_1", room: "sewers", kind: "moss", a: [440, 860], b: [480, 860] },
+        { id: "sewer_moss_2", room: "sewers", kind: "moss", a: [940, 860], b: [980, 860] },
+        { id: "sewer_wall_light_1", room: "sewers", kind: "wall_light", a: [520, 860], b: [540, 860], colour: "#d8c8ff" },
+        { id: "sewer_wall_light_2", room: "sewers", kind: "wall_light", a: [780, 860], b: [800, 860], colour: "#d8c8ff" },
+        { id: "sewer_wall_light_3", room: "sewers", kind: "wall_light", a: [1140, 820], b: [1160, 820], colour: "#ff9aa8" },
+        { id: "sewer_light_1", room: "sewers", kind: "light", at: [360, 880], radius: 110, colour: "#b07aff", a: 0.2 },
+        { id: "sewer_light_2", room: "sewers", kind: "light", at: [600, 1040], radius: 110, colour: "#9a5cff", a: 0.14, flicker: true },
+        { id: "sewer_light_3", room: "sewers", kind: "light", at: [780, 880], radius: 110, colour: "#b07aff", a: 0.14 },
+        { id: "sewer_light_4", room: "sewers", kind: "light", at: [1170, 860], radius: 120, colour: "#ff6a7a", a: 0.12, flicker: true },
+        { id: "sewer_puddle_1", room: "sewers", kind: "puddle", at: [520, 880], radius: 14, colour: "#a64dff" },
+        { id: "sewer_puddle_2", room: "sewers", kind: "puddle", at: [700, 1040], radius: 16, colour: "#3a7a90" },
+        { id: "sewer_puddle_3", room: "sewers", kind: "puddle", at: [960, 880], radius: 12, colour: "#a64dff" },
+        { id: "sewer_stain_1", room: "sewers", kind: "stain", at: [420, 1040], radius: 18, colour: "#141a12" },
+        { id: "sewer_stain_2", room: "sewers", kind: "stain", at: [880, 1040], radius: 16, colour: "#141a12" },
+        { id: "sewer_debris_1", room: "sewers", kind: "debris", at: [880, 878], radius: 18, n: 7 },
         { id: "armory_sign_in", room: "armory", kind: "hazard_sign", a: [190, 950], b: [190, 970] },
         { id: "gun_rack_3", room: "armory", kind: "gun_rack", a: [190, 970], b: [190, 1030] },
         { id: "gun_rack_4", room: "armory", kind: "gun_rack", a: [190, 1070], b: [190, 1130] },
@@ -837,6 +898,7 @@ const FACILITY_MAP = {
         { id: "conn_arena_armory", rooms: ["arena", "armory"], portal: "portal_arena_armory" },
         { id: "conn_arena_cold", rooms: ["arena", "cold_storage"], portal: "portal_arena_cold" },
         { id: "conn_lab_cold", rooms: ["experiment_lab", "cold_storage"], portal: "portal_lab_cold" },
+        { id: "conn_arena_sewers", rooms: ["arena", "sewers"], portal: "portal_arena_sewers" },
     ],
     ramps: [
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).

@@ -107,7 +107,7 @@ function _facilityBuild(ex) {
     const floors = (M.floors || []).map(f => ({ room: f.room, style: f.style, colour: f.colour || null }));
     const rawP = p => [p[0] / facilityScale(), p[1] / facilityScale()];   // floor decor is not snapped to the grid (a ring or a cable can lie across it); wall decor and rugs are, to lie on an edge / fill whole tiles
     const decor = (M.decor || []).map(d => { const o = Object.assign({}, d), wall = FAC_WALL_DECOR.has(d.kind), axis = d.a && d.b && (Math.abs(d.a[0] - d.b[0]) < 1e-6 || Math.abs(d.a[1] - d.b[1]) < 1e-6), pt = wall && axis ? _facP : rawP;   // (decor on a diagonal wall is given on the line itself, not snapped)
-        for (const k of ["at", "a", "b"]) if (Array.isArray(d[k])) o[k] = pt(d[k]);   // (a ring or a light also has a number `a`: its alpha)
+        for (const k of ["at", "a", "b", "pipe"]) if (Array.isArray(d[k])) o[k] = pt(d[k]);   // (a ring or a light also has a number `a`: its alpha; an overflow grate has its pipe's foot)
         if (d.rect) { const a = _facP([d.rect[0], d.rect[1]]), b = _facP([d.rect[2], d.rect[3]]); o.rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]; }
         if (d.path) o.path = d.path.map(pt); if (d.radius) o.radius = d.radius / s; return o; });
     const solids = (M.props || []).map(pr => {
@@ -231,7 +231,7 @@ function facilityHeightAt(x, y, F) {
 function facilityRoomHeight(id, F) { F = F || facilityGet(); const r = F.byId.get(id); return r ? (F.levelH.get(r.level) || 0) : 0; }
 
 // the kinds of decor that hang on a wall (the rest lie on the floor)
-const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "bulbs", "monitor_bank", "garage_door", "gun_rack", "portal_door"]);
+const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "bulbs", "monitor_bank", "garage_door", "gun_rack", "portal_door", "outfall", "collapse", "sealed_hatch"]);
 
 // The dressing (floors and decor): floors name a room, floor decor lies inside its room, wall decor is flat on a real solid wall, on the side of it that the camera sees, and (but for signs over a door) not across a doorway.
 function facilityValidateDressing(F) {

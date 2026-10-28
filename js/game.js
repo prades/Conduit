@@ -979,9 +979,9 @@ function render() {
         else if (obj.type==='floor') {
             const dist=Math.sqrt((obj.x-player.visualX)**2+(obj.y-player.visualY)**2);
             // THE TILE IS A SPRITE (_floorTileSprite): its look depends only on the distance to the camera, so each look is drawn once and stamped.
-            const _spr = _floorTileSprite(Math.round(dist / FLOOR_DIST_STEP));
+            const _spr = obj.deck ? null : _floorTileSprite(Math.round(dist / FLOOR_DIST_STEP));
             if (_spr) ctx.drawImage(_spr, px - TILE_W - 1, py - 1);
-            else _drawFloorTile(ctx, px, py, dist);
+            else if (!obj.deck) _drawFloorTile(ctx, px, py, dist);   // (a bridge's grating has nothing under it: the water shows through, js/facilitysewers.js)
             if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
             if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
             facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
