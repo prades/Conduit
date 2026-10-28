@@ -193,7 +193,7 @@ function specimenTap(ex, ey) {
     const r = _spPlate(); if (ex < r.x || ex > r.x + r.w || ey < r.y || ey > r.y + r.h) return false;
     specimenRestore(); return true;
 }
-try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (e && (e.key === "e" || e.key === "E") && typeof facilityPlay !== "undefined" && facilityPlay && specimenReady() && !(typeof _fp !== "undefined" && _fp && _fp.stationNear) && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || ""))) specimenRestore(); }); } catch (e) { /* no page (the test sandbox) */ }
+try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (e && !e.repeat && (e.key === "e" || e.key === "E") && typeof facilityPlay !== "undefined" && facilityPlay && specimenReady() && !(typeof _fp !== "undefined" && _fp && _fp.stationNear) && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || ""))) specimenRestore(); }); } catch (e) { /* no page (the test sandbox) */ }
 
 // ── saving (js/facilitysave.js) ──
 function specimenSnapshot() { return specimenCarried.map(s => Object.assign({}, s)); }

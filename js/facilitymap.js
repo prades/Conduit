@@ -327,6 +327,15 @@ const FACILITY_MAP = {
         { id: "spot_arena_c", room: "arena",            at: [750, 850],  type: "brawler", element: "core",     note: "A core brawler in the middle of the arena." },
     ],
 
+    // KINETIC LAUNCHER SITES (the electric technician's ability, js/techabilities.js; docs/TECHNICIANS.md): a place where its launcher can be set up for good, to send followers where nobody can walk. ASKED: "you need to have some sort
+    // of check for a spot where it can be deployed [...] whenever you enter a spot where it can be deployed, have a little notification or highlighted area near the catwalk, or in the future any sort of secret area".
+    // `at`: where the launcher stands (on `room`'s floor); `land`: where a follower it throws comes down (on `to`'s floor); `drop`: `to`'s BROKEN SECTION, the way back down (one way only, top to bottom), to `dropTo` on the floor
+    // under it. Each is the middle of a tile (sketch pixels: 20 to a tile).
+    launchSites: [
+        { id: "site_arena_catwalk", room: "arena", label: "Arena Catwalk", to: "catwalks", at: [940, 1000], land: [1040, 1000], drop: [1040, 1140], dropTo: [980, 1100],
+          note: "The launcher stands on the arena floor under the catwalks' railing, between the two tanks' footbridges, and throws a follower up onto the catwalks; the catwalks' broken section, near their south end, drops it back into the arena." },
+    ],
+
     // BRIDGES: a footbridge from a liquid tank's top to the catwalks' deck (js/propsprites.js draws it, in 3D, at the deck's height: it is decoration, not floor to walk on). `from` is a prop (a circle), `to` a room.
     bridges: [
         { id: "bridge_1", from: "arena_structure_01", to: "catwalks", note: "From the north tank's top to the catwalks' deck." },

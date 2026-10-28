@@ -100,6 +100,9 @@ function updateRTSNPC(actor) {
         return;
     }
 
+    // A TECHNICIAN'S ABILITY directs this walk (js/techabilities.js): to the Kinetic Launcher (or the technician) that throws it, to a site its launcher is being set up at, to a broken section it drops through
+    if ((actor._launchLoad || actor._siteWork || actor._dropSite) && typeof techStepOverride === "function" && techStepOverride(actor)) return;
+
     // move / hold — guard position, attack nearby enemies
     if (actor.job&&actor.job.type==="move") {
         if (actor.health<actor.maxHealth*0.5) { actor.job=null; }
@@ -356,6 +359,7 @@ function followPlayer(actor) {
 }
 
 function updateNPC(actor) {
+    if (actor._flight && typeof techFlightStep === "function" && techFlightStep(actor)) return;   // thrown by a Kinetic Launcher: in the air, nothing else moves it and no wall stops it (js/techabilities.js)
     const _fpx = actor.x, _fpy = actor.y;   // for the facility's walls (js/facilityplay.js)
     if (actor instanceof Predator && actor.team !== "green") {
         actor.update();

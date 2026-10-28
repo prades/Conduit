@@ -271,7 +271,7 @@ function evolutionTick() {
     if (typeof followers === "undefined") return;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const f of followers) {
-        if (!f || f.dead) continue;
+        if (!f || f.dead || f._flight) continue;   // (thrown by a Kinetic Launcher: nothing until it is down, js/techabilities.js)
         if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); continue; }   // (one re-rolled to another element waits for its next level-up)
         const d = evolvedDef(f); if (!d) continue;
         if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed

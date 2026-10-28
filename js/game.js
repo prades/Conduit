@@ -539,7 +539,7 @@ function render() {
     frame++;
 
     // ── LONG HOLD DETECT ──
-    if (isPressing&&!longHoldFired&&!touchMoved&&!_gunPressed&&!_targetPressed) {
+    if (isPressing&&!longHoldFired&&!touchMoved&&!_gunPressed&&!_targetPressed&&!commandPendingTap) {   // (a ring that is open and waiting for its tap: a slow tap on it is still that tap, not a new long press that closed it with nothing done)
         if (performance.now()-pressStartTime>LONG_HOLD_MS) {
             longHoldFired=true; handleLongHold(pressX,pressY);
         }
@@ -617,6 +617,7 @@ function render() {
     if (typeof mutatorTick === "function") mutatorTick();   // the Mutator's lash: walk into reach, draw back, strike (js/mutator.js)
     if (typeof mutatorBodiesTick === "function") mutatorBodiesTick();   // a fallen clone's body (js/mutator.js)
     if (typeof specimenTick === "function") specimenTick();   // the Ice Mage preserving a body; the capsule taken (js/specimen.js)
+    if (typeof techAbilityTick === "function") techAbilityTick();   // the technicians' abilities: throws, launchers, broken sections (js/techabilities.js)
     if (typeof serumTick === "function") serumTick();   // the serum's pools heal; the Mutator's laboratory makes serum (js/serum.js)
     if (typeof technoTick === "function") technoTick();   // the grid charges the Technomancer's gauntlet; its arcs fade (js/technomancer.js)
     if (typeof targetTick === "function") targetTick();   // the aim meter and the selection: js/targeting.js
@@ -664,6 +665,7 @@ function render() {
         for (let _j = _i+1; _j < _fl.length; _j++) {
             const _a = _fl[_i], _b = _fl[_j], _ax0 = _a.x, _ay0 = _a.y, _bx0 = _b.x, _by0 = _b.y;
             if (_b.x - _a.x >= FOLLOWER_SEP) break;
+            if (_a._flight || _b._flight) continue;   // (one in the air, thrown by a Kinetic Launcher, is not jostled: js/techabilities.js)
             const _dx = _b.x - _a.x, _dy = _b.y - _a.y;
             const _d2 = _dx*_dx + _dy*_dy;
             if (_d2 >= _SEP2 || _d2 < 0.000001) continue;
@@ -807,6 +809,7 @@ function render() {
     // was the biggest share of a step with no picture.
     if (!_simGhost) actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
     if (!_simGhost && typeof cloneBodiesDrawItems === "function") cloneBodiesDrawItems(drawList);   // a fallen clone's body (js/mutator.js)
+    if (!_simGhost && typeof techDrawItems === "function") techDrawItems(drawList);   // a Kinetic Launcher set up at a site, and the broken section the site's room is left by (js/techabilities.js)
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     facilityDrawItems(drawList);   // walls, props, doors and fixtures (js/facilityplay.js)
     // Each item's depth once, not twice per comparison (n log n calls).
@@ -830,7 +833,10 @@ function render() {
         }
         else if (obj.type==='npc') {
             if (typeof facilityEnemyGlow === "function") facilityEnemyGlow(obj.actor, px, py);   // an enemy in a blackout shows a hostile glow on the floor under it (js/facilitytutorial.js)
-            drawNPC(obj.actor,px,py);
+            drawNPC(obj.actor, px, obj.actor._flight && typeof techFlightLift === "function" ? py - techFlightLift(obj.actor) : py);   // (one thrown by a Kinetic Launcher is drawn up in the air: js/techabilities.js)
+        }
+        else if (obj.type==='tech') {
+            if (typeof techDrawItem === "function") techDrawItem(obj, px, py);
         }
         else if (obj.type==='body') {
             if (typeof drawCloneBody === "function") drawCloneBody(obj.body, px, py);
@@ -1152,6 +1158,7 @@ function render() {
     if (typeof drawTechnoFx === "function") drawTechnoFx();   // the Technomancer's arc (js/technomancer.js)
     if (typeof drawSpecimenOverlay === "function") drawSpecimenOverlay();   // the Ice Mage's beam; the Resurrection Zone and its plate (js/specimen.js)
     if (typeof drawSerumOverlay === "function") drawSerumOverlay();   // the allies a serum's pool is healing (js/serum.js)
+    if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)
     drawFloatingTexts();
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.

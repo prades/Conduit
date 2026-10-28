@@ -136,7 +136,7 @@ function serumChipTap(ex, ey) {
     if (typeof invUse === "function" && typeof invCount === "function" && invCount(SERUM.item) > 0) invUse(SERUM.item); else _srSay("NO SERUM: COLLECT OR CRAFT IT AT THE SERUM HOOD (THE EXPERIMENT LAB)", "#ff9c8a");
     return true;
 }
-try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (e && (e.key === "q" || e.key === "Q") && _srMutator() && typeof facilityPlay !== "undefined" && facilityPlay && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || "")) && typeof invCount === "function" && invCount(SERUM.item) > 0) invUse(SERUM.item); }); } catch (e) { /* no page (the test sandbox) */ }
+try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (e && !e.repeat && (e.key === "q" || e.key === "Q") && _srMutator() && typeof facilityPlay !== "undefined" && facilityPlay && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || "")) && typeof invCount === "function" && invCount(SERUM.item) > 0) invUse(SERUM.item); }); } catch (e) { /* no page (the test sandbox) */ }
 
 // ── saving (js/facilitysave.js): what the lab holds and how far through its round it is ──
 function serumSnapshot() { return { stock: serumLab.stock, frac: Math.round(serumLab.frac * 1000) / 1000, left: Math.max(0, serumLab.nextAt - _srFrame()) }; }

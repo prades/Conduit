@@ -31,6 +31,7 @@ function facilitySaveCollect() {
         mxp: typeof mutatorXp !== "undefined" ? mutatorXp : 0,                          // the Mutator's experiment points: its level (js/mutator.js)
         tc: typeof technoSnapshot === "function" ? technoSnapshot() : 0,                // the charges in the Technomancer's gauntlet (js/technomancer.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
+        launchers: typeof techLaunchersSnapshot === "function" ? techLaunchersSnapshot() : [],   // the launcher sites a Kinetic Launcher has been set up at, for good (js/techabilities.js)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
@@ -77,6 +78,7 @@ function facilitySaveApply(d) {
         if (S.doneAt && !playerClassKey && typeof classPickerOpen !== "undefined") classPickerOpen = true;   // (the picker was open when it was left)
     }
     if (d.spots && typeof followerSpotsApply === "function") followerSpotsApply(d.spots);
+    if (typeof techLaunchersApply === "function") techLaunchersApply(d.launchers);
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);
     if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function") cloneBodiesApply(d.bodies);

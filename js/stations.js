@@ -141,7 +141,7 @@ function facilityDrawCctv() {
     }
     ctx.restore();
 }
-try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (e && (e.key === "e" || e.key === "E") && typeof facilityPlay !== "undefined" && facilityPlay && _fp && _fp.stationNear && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || ""))) stationUse(_fp.stationNear); }); } catch (e) { /* no page (the test sandbox) */ }
+try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (e && !e.repeat && (e.key === "e" || e.key === "E") && typeof facilityPlay !== "undefined" && facilityPlay && _fp && _fp.stationNear && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || ""))) stationUse(_fp.stationNear); }); } catch (e) { /* no page (the test sandbox) */ }
 
 // ─────────────────────────────────────────────────────────
 //  THE ELECTRICAL NETWORK (docs/TUTORIAL.md, phase 5)

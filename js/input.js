@@ -130,6 +130,8 @@ const handleInput=(ex,ey)=>{
     if (typeof specimenTap === "function" && specimenTap(ex, ey)) return;
     // A tap on a class station (or its plate) uses it (js/stations.js).
     if (typeof facilityStationTap === "function" && facilityStationTap(ex, ey)) return;
+    // A tap on a launcher site you are near (or its label): set a Kinetic Launcher up there, or send a follower up from the one there (js/techabilities.js).
+    if (typeof techSiteTap === "function" && techSiteTap(ex, ey)) return;
 
     // ── PLAYER ATTACK ──
     // Only while armed. This used to fire on any tap that happened to land near
@@ -205,6 +207,7 @@ function handleLongHold(ex,ey) {
 }
 
 let _gunPressed = false;   // the press began on an enemy while armed: it is the gun's (js/gunfire.js)
+let _techAimPressed = false;   // the press began while a technician's ability was being aimed: it is the aim's (js/techabilities.js)
 let _cloneDrag = null;     // a press that began on the clone card strip: { x0, s0, moved } (it slides the strip; a drag never presses a card)
 canvas.addEventListener('pointerdown', e=>{
     if (!gameState.running) return;
@@ -221,6 +224,9 @@ canvas.addEventListener('pointerdown', e=>{
     // Canvas overlay panels — absorb pointerdown so no game action triggers
     if (infoPanelOpen || settingsPanelOpen
         || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen)) return;
+
+    // AIMING A TECHNICIAN'S ABILITY (js/techabilities.js): the press is the aim's, whatever is under it: no ring, no shot, no walk
+    _techAimPressed = false; if (typeof techAimActive === "function" && techAimActive()) { _techAimPressed = true; isPressing = false; return; }
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
@@ -259,6 +265,7 @@ canvas.addEventListener('pointermove', e=>{
 });
 
 canvas.addEventListener('pointerup', e=>{
+    if (_techAimPressed) { _techAimPressed = false; const [_ax, _ay] = toCanvas(e.clientX, e.clientY); if (typeof techAimTap === "function") techAimTap(_ax, _ay); isPressing = false; return; }   // the aim's tap: a follower, an enemy (js/techabilities.js)
     if (_gunPressed) { _gunPressed = false; if (typeof gunRelease === "function") gunRelease(); isPressing = false; return; }   // the gun's press ends here (js/gunfire.js)
     if (_targetPressed) { _targetPressed = false; const [_tx, _ty] = toCanvas(e.clientX, e.clientY); if (typeof targetRelease === "function") targetRelease(_tx, _ty); isPressing = false; return; }   // the targeting's press ends here (js/targeting.js)
     if (_objPressed) { _objPressed = false; const [_ox, _oy] = toCanvas(e.clientX, e.clientY); if (typeof objectiveRelease === "function") objectiveRelease(_ox, _oy); isPressing = false; return; }   // the objective mailbox's press ends here (js/tutorial.js)
@@ -340,7 +347,8 @@ canvas.addEventListener('pointerup', e=>{
             const relX = upX - (commandX - _rox), relY = upY - (commandY - _roy);
             const relDist = Math.hypot(relX, relY);
             const relAngle = Math.atan2(relY, relX);
-            if (relDist > 18) {
+            const _ringReach = 250 * (typeof _radialK === "function" ? _radialK() : 1);   // the slabs reach about 220 px from the middle (js/draw.js radialMargins): a tap further out is on none of them, so the ring closes and nothing is done (a tap anywhere left of an open follower ring used to RE-ROLL it)
+            if (relDist > 18 && relDist <= _ringReach) {
                 // A fallen clone's body (mirrors its branch in drawRadialMenu): UP is SALVAGE DNA, RIGHT is the body's second order (js/mutator.js mutatorBodyRing)
                 if (commandBodyTarget) {
                     const _ring = typeof mutatorBodyRing === "function" ? mutatorBodyRing(commandBodyTarget) : { up: true, right: null };

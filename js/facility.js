@@ -117,6 +117,7 @@ function _facilityBuild(ex) {
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
     const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));   // (a tile's middle, not snapped, like a pickup)
+    const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: rawP(s.drop), dropTo: rawP(s.dropTo), note: s.note }));   // (tiles' middles, like a follower spot: js/techabilities.js)
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
     // portals (js/facilityportals.js): the doorway's floor as a box of whole tiles, and where you stand when you come out of the other end (a tile's middle: snapped to the floor when it is used)
@@ -142,7 +143,7 @@ function _facilityBuild(ex) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, followerSpots, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, followerSpots, launchSites, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -272,6 +273,15 @@ function facilityValidateDressing(F) {
         if (typeof FOLLOWER_TYPES !== "undefined" && !FOLLOWER_TYPES[p.type]) errors.push("follower spot " + p.id + " is a " + p.type + ", which is not a follower type");
         if (typeof ELEMENTS !== "undefined" && !ELEMENTS.some(e => e.id === p.element)) errors.push("follower spot " + p.id + " is " + p.element + ", which is not an element");
         if ((F.followerSpots || []).some(q => q !== p && Math.hypot(q.at[0] - p.at[0], q.at[1] - p.at[1]) < 3)) errors.push("follower spot " + p.id + " is within three tiles of another");
+    }
+    // the launcher sites: each point on the floor of its room a body can stand on (the launcher's and the landing under the broken section on the site's room, the landing and the broken section on the room it reaches), and two different rooms
+    for (const s of (F.launchSites || [])) {
+        if (!F.byId.get(s.room) || !F.byId.get(s.to)) { errors.push("launcher site " + s.id + " names a room that does not exist"); continue; }
+        if (s.room === s.to) errors.push("launcher site " + s.id + " reaches its own room");
+        for (const [k, pt, room] of [["at", s.at, s.room], ["dropTo", s.dropTo, s.room], ["land", s.land, s.to], ["drop", s.drop, s.to]]) {
+            const r = facilityRoomAt(pt[0], pt[1], F); if (!r || r.id !== room) errors.push("launcher site " + s.id + ": its " + k + " is not in " + room);
+            else if (F.snapped && !facilityWalkable(pt[0], pt[1], F)) errors.push("launcher site " + s.id + ": its " + k + " is not on a tile a body can stand on");
+        }
     }
     for (const r of (F.relays || [])) {   // a relay is a relay box of its room, powering rooms that exist and feeding props that exist
         const pr = F.solids.find(p => p.id === r.prop); if (!pr) errors.push("relay " + r.id + " names a prop that does not exist"); else if (pr.room !== r.room || pr.kind !== "relay") errors.push("relay " + r.id + ": " + r.prop + " is not a relay box of " + r.room);

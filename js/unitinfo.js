@@ -64,6 +64,7 @@ function followerInfo(a) {
         const f = typeof evolutionFor === "function" ? evolutionFor(a) : null;
         out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health and power)" + (f.move ? ", with the move " + f.move + ":" : ". It has no signature move yet.") : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]() : [] });
     }
+    { const ab = typeof techAbilityInfo === "function" ? techAbilityInfo(a) : null; if (ab) out.attacks.push(ab); }   // a technician's ability: what it does, its numbers, when it is ready (js/techabilities.js)
     const u = ELEMENT_ULTIMATES.find(x => x.el === a.element);
     if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". Double-tap the follower when it is fully charged.", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
     // JOBS: the squad, or a room it holds (js/party.js)

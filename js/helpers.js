@@ -145,7 +145,7 @@ function hurtPlayer(amount, shakeAmt, source) {
 
 
 
-function applyDamage(target, amount, source=null, element=null, isReflected=false) {
+function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false) {   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds
     if (!target || target.dead) return;
     // A recruit walking to the Crystal takes NOTHING, from anyone or anything.
     //
@@ -214,18 +214,19 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
             return;
         }
     }
-    if (target.defenseShredded > 0) amount *= 1 / (target.defenseShredFactor||0.5);
+    if (target.defenseShredded > 0 && !fixed) amount *= 1 / (target.defenseShredFactor||0.5);
     // DEFENSE, for every unit (js/levels.js defenseMult): its DEF against the
     // attacker's level. It was followers only, as 10 / (10 + DEF × 0.6) — the
     // same numbers at level 5.
-    if (typeof defenseMult === "function") amount *= defenseMult(target, source);
+    if (fixed) { /* a set amount: no defense */ }
+    else if (typeof defenseMult === "function") amount *= defenseMult(target, source);
     else if (target.isFollower && target.stats && target.stats.defense) amount *= 10 / (10 + target.stats.defense * 0.6);
-    if (target && target.isFollower && target.team === "green" && typeof bondDefenseMult === "function") amount *= bondDefenseMult(target);   // a partner close by
+    if (!fixed && target && target.isFollower && target.team === "green" && typeof bondDefenseMult === "function") amount *= bondDefenseMult(target);   // a partner close by
     // THE CAP (docs/COMBAT.md COMBAT.hitCap): no single hit takes more than this share of one of your units' max health, so every one of them survives at least three hits of anything.
     const _mine = target.team === "green" && (target.isFollower || target.isClone);
     if (_mine && typeof COMBAT !== "undefined") amount = Math.min(amount, (target.maxHealth || 20) * COMBAT.hitCap);
     let dmg = amount;
-    if (target.perk) {
+    if (target.perk && !fixed) {
         const pk = PERKS[target.perk];
         if (pk && pk.modifyIncomingDamage) dmg = pk.modifyIncomingDamage(target, dmg, source);
     }
