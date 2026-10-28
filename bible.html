@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conduit Game Bible</title>
+<meta name="description" content="Conduit's design reference: the facility, the classes, every follower form and creature, the rules and their numbers, the interface, how it is built, and what is still open.">
+<!-- THE GAME BIBLE: the design reference for Conduit, one page (asked for: "some sort of game Bible that can be maybe all one document, and maybe we can put it on the website somewhere";
+     chosen: a design reference, a card on the home page, story sections left to be written, pictures from the game).
+     Every number with a dotted underline is read from the game's code: its data-k is the expression that gives it, and tests/bible.js loads the game and checks each one,
+     so a change in the code that this page does not follow fails the tests. data-f: "pct" (a fraction shown as %), "s" (ms shown as seconds), "f" (frames at 60 fps shown as seconds). -->
+<style>
+  :root {
+    --bg0: #070b16; --bg1: #0b1124; --bg2: #050810; --panel: #0c1428; --panel2: #0f1730;
+    --ink: #eef4ff; --text: #c4d2ec; --dim: #8496bb; --faint: #55658a; --line: #1b2646; --line2: #121a33;
+    --teal: #19e6c1; --gold: #ffcc44; --red: #ff4a1c; --ice: #8fe3ff; --violet: #a64dff; --toxic: #6dff5a; --electric: #ffe733;
+    --font: "DejaVu Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "DejaVu Sans Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 16px; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; color: var(--text); font: 16px/1.65 var(--font);
+    background: var(--bg2) linear-gradient(180deg, var(--bg0), var(--bg1) 30%, var(--bg2)) fixed;
+  }
+  /* the faint hex grid of the game's posters */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97'%3E%3Cpath d='M28 0 56 16v32L28 64 0 48V16zM28 64v33' fill='none' stroke='%2319e6c1' stroke-width='1'/%3E%3C/svg%3E");
+  }
+  a { color: var(--ice); text-decoration-color: rgba(143,227,255,0.35); text-underline-offset: 3px; }
+  a:hover { color: #fff; }
+  code { font: 0.86em var(--mono); color: var(--ice); background: rgba(143,227,255,0.07); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+  strong, b { color: var(--ink); }
+
+  /* ── the cover ── */
+  .cover { position: relative; min-height: 78vh; display: flex; align-items: flex-end; overflow: hidden; border-bottom: 2px solid var(--teal); box-shadow: 0 10px 40px -20px var(--teal); }
+  .cover img.bgshot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }
+  .cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,11,22,0.15), rgba(7,11,22,0.55) 55%, var(--bg0)); }
+  .cover .inner { position: relative; z-index: 1; width: 100%; max-width: 1240px; margin: 0 auto; padding: 40px 24px 44px; }
+  .home { position: absolute; top: 18px; left: 24px; z-index: 2; font: italic 900 13px var(--font); letter-spacing: 0.12em; color: var(--dim); text-decoration: none; }
+  .home:hover { color: var(--teal); }
+  .kicker { font: 700 13px var(--mono); letter-spacing: 0.32em; color: var(--teal); text-transform: uppercase; }
+  h1 { margin: 6px 0 4px; font: italic 900 clamp(56px, 11vw, 132px)/0.92 var(--font); letter-spacing: -0.01em; text-transform: uppercase;
+       background: linear-gradient(100deg, #b9fff0, var(--teal) 45%, var(--ice)); -webkit-background-clip: text; background-clip: text; color: transparent;
+       filter: drop-shadow(0 0 18px rgba(25,230,193,0.35)); }
+  .subtitle { font: italic 900 clamp(22px, 3.6vw, 38px) var(--font); color: var(--ink); text-transform: uppercase; letter-spacing: 0.04em; }
+  .lede { max-width: 760px; margin: 18px 0 0; font-size: 18px; color: #d9e4f8; }
+  .meta { margin-top: 18px; font: 12px/1.7 var(--mono); color: var(--dim); letter-spacing: 0.06em; }
+  .facts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .fact { --c: var(--teal); position: relative; isolation: isolate; padding: 8px 16px 7px 18px; min-width: 116px; }
+  .fact::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, var(--panel2), #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -3px var(--c); }
+  .fact b { display: block; font: italic 900 26px/1.1 var(--font); color: var(--c); }
+  .fact span { font: 700 11px var(--mono); letter-spacing: 0.08em; color: var(--dim); text-transform: uppercase; }
+
+  /* ── the layout: the contents beside the text on a wide screen, above it on a narrow one ── */
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 48px; }
+  nav.toc { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding: 28px 0 40px; font-size: 14px; }
+  nav.toc .t { font: italic 900 13px var(--font); letter-spacing: 0.16em; color: var(--dim); text-transform: uppercase; margin-bottom: 10px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+  nav.toc li { margin: 1px 0; }
+  nav.toc a { display: block; padding: 4px 10px; border-left: 2px solid var(--line); color: var(--dim); text-decoration: none; }
+  nav.toc a:hover { color: var(--ink); border-left-color: var(--faint); }
+  nav.toc a.on { color: var(--teal); border-left-color: var(--teal); }
+  nav.toc ol ol a { padding-left: 22px; font-size: 13px; }
+  nav.toc details summary { display: none; }
+  main { min-width: 0; padding: 28px 0 80px; }
+
+  /* ── sections ── */
+  section.part { --c: var(--teal); margin: 0 0 72px; }
+  h2 { position: relative; isolation: isolate; display: inline-block; margin: 0 0 22px; padding: 6px 22px 6px 20px; font: italic 900 clamp(26px, 3.4vw, 36px)/1.15 var(--font); text-transform: uppercase; color: var(--bg0); }
+  h2::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: var(--c); box-shadow: 0 0 22px -6px var(--c); }
+  h2 small { font: 700 13px var(--mono); letter-spacing: 0.12em; margin-left: 10px; color: rgba(5,7,15,0.7); }
+  h3 { margin: 40px 0 10px; font: italic 900 22px/1.25 var(--font); color: var(--ink); text-transform: uppercase; letter-spacing: 0.01em; }
+  h3::before { content: ""; display: inline-block; width: 10px; height: 18px; margin-right: 10px; transform: skewX(-12deg) translateY(2px); background: var(--c); box-shadow: 0 0 8px var(--c); }
+  h4 { margin: 26px 0 6px; font: italic 800 16px var(--font); color: var(--ink); letter-spacing: 0.04em; text-transform: uppercase; }
+  p, ul, ol { margin: 0 0 14px; }
+  li { margin: 3px 0; }
+  .where { font: 12.5px/1.6 var(--mono); color: var(--faint); margin: 4px 0 14px; }
+  .where code { font-size: 1em; }
+
+  /* a number read from the code (tests/bible.js checks it) */
+  .n { color: var(--ink); font-weight: 700; border-bottom: 1px dotted rgba(25,230,193,0.7); cursor: help; white-space: nowrap; }
+
+  /* tables */
+  .tw { overflow-x: auto; margin: 10px 0 18px; border: 1px solid var(--line); background: rgba(12,20,40,0.6); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.5; }
+  th { text-align: left; padding: 9px 10px; font: italic 800 11.5px var(--font); letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--line); background: rgba(15,23,48,0.8); white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--line2); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .sw { display: inline-block; width: 11px; height: 11px; margin-right: 7px; vertical-align: -1px; transform: skewX(-12deg); background: var(--s); box-shadow: 0 0 6px var(--s); }
+
+  /* the owner's words, quoted */
+  blockquote.asked { margin: 12px 0 16px; padding: 8px 14px 8px 16px; border-left: 3px solid var(--gold); background: rgba(255,204,68,0.05); color: #efe3c0; font-style: italic; }
+  blockquote.asked cite { display: block; margin-top: 4px; font: normal 11.5px var(--mono); color: var(--faint); letter-spacing: 0.04em; }
+  details.dec { margin: 10px 0 18px; border: 1px solid var(--line); background: rgba(12,20,40,0.5); }
+  details.dec > summary { cursor: pointer; padding: 9px 14px; font: italic 800 13px var(--font); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+  details.dec > div { padding: 0 14px 6px; }
+
+  /* still open, or not built yet */
+  .open { margin: 12px 0 18px; padding: 12px 16px 6px; border: 1px dashed #3a4a70; background: rgba(58,74,112,0.08); }
+  .open > b { display: block; margin-bottom: 6px; font: italic 900 13px var(--font); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+  .open ul { padding-left: 20px; }
+
+  /* the story, to be written */
+  .tbw { position: relative; margin: 14px 0 22px; padding: 18px 18px 8px; border: 2px dashed #3a4a70; background: rgba(5,8,16,0.5); }
+  .tbw .stamp { position: absolute; top: -13px; right: 14px; padding: 2px 12px; font: italic 900 12px var(--font); letter-spacing: 0.16em; color: var(--bg0); background: var(--gold); transform: skewX(-9deg); }
+  .tbw h4 { margin-top: 0; }
+  .tbw .q { color: var(--dim); font-size: 14.5px; }
+  .tbw .q em { color: #d8e2f6; }
+
+  /* pictures */
+  figure { margin: 18px 0 24px; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: #05070f; }
+  figure a { display: block; }
+  figcaption { margin-top: 7px; font: 12.5px/1.55 var(--mono); color: var(--dim); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .two figure, .three figure { margin: 8px 0; }
+  .phone-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 260px)); gap: 16px; }
+
+  /* the portraits: a creature, or a follower form */
+  .roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 14px 0 22px; }
+  .card { --c: var(--teal); position: relative; padding: 10px 10px 9px; background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--c) 22%, #16203c), #0b1124 75%); border: 1px solid color-mix(in srgb, var(--c) 55%, #1b2646); }
+  .card img { display: block; width: 100%; height: 118px; object-fit: contain; }
+  .card .nm { margin-top: 6px; font: italic 900 14px/1.2 var(--font); color: var(--ink); text-transform: uppercase; }
+  .card .sb { font: 11px/1.45 var(--mono); color: var(--dim); }
+  .card .tag { position: absolute; top: 8px; left: 8px; padding: 1px 7px; font: italic 900 10px var(--font); letter-spacing: 0.06em; color: #05070f; background: var(--c); transform: skewX(-9deg); }
+
+  /* the element colours */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+  .chip { --c: var(--teal); position: relative; isolation: isolate; padding: 4px 14px; font: italic 900 13px var(--font); letter-spacing: 0.06em; color: var(--c); }
+  .chip::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); border: 2px solid var(--c); background: #070b16; box-shadow: 0 0 10px -3px var(--c); }
+
+  .callout { margin: 14px 0 20px; padding: 12px 16px; border-left: 3px solid var(--teal); background: rgba(25,230,193,0.06); }
+  .muted { color: var(--dim); }
+  hr.sep { border: 0; height: 1px; margin: 34px 0; background: linear-gradient(90deg, transparent, var(--line), transparent); }
+  footer { max-width: 1240px; margin: 0 auto; padding: 30px 24px 50px; font: 12px/1.7 var(--mono); color: var(--faint); border-top: 1px solid var(--line); }
+
+  @media (max-width: 1100px) {
+    .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    nav.toc { position: static; max-height: none; padding: 20px 0 0; }
+    nav.toc details { border: 1px solid var(--line); background: rgba(12,20,40,0.7); }
+    nav.toc details summary { display: block; cursor: pointer; padding: 12px 16px; font: italic 900 14px var(--font); letter-spacing: 0.14em; color: var(--teal); text-transform: uppercase; }
+    nav.toc details > ol { padding: 0 12px 14px; }
+    nav.toc .t { display: none; }
+  }
+  @media (max-width: 700px) {
+    .wrap, .cover .inner, footer { padding-left: 16px; padding-right: 16px; }
+    .home { left: 16px; }
+    .two, .three { grid-template-columns: minmax(0, 1fr); }
+    .phone-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .roster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lede { font-size: 16.5px; }
+    h3 { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <img class="bgshot" src="img/bible/rooms/arena.webp" alt="" width="1400" height="900" fetchpriority="high">
+  <a class="home" href="index.html">◂ DRAGONLORD</a>
+  <div class="inner">
+    <div class="kicker">Design reference</div>
+    <h1>Conduit</h1>
+    <div class="subtitle">The game bible</div>
+    <p class="lede">The facility is dark and its power is down. Find supplies, bring the relays back online room by room, gather a squad of followers, and keep the Crystal alive against what comes out of the arena. <span class="muted">(The game's own one line, from its guide.)</span></p>
+    <div class="facts"><div class="fact" style="--c:var(--teal)"><b><span class="n" data-k="FACILITY_MAP.rooms.length">17</span></b><span>rooms</span></div><div class="fact" style="--c:var(--electric)"><b><span class="n" data-k="FACILITY_MAP.relays.length">6</span></b><span>relays</span></div><div class="fact" style="--c:var(--ice)"><b><span class="n" data-k="(FACILITY_MAP.interiors || []).length">3</span></b><span>interiors</span></div><div class="fact" style="--c:var(--red)"><b><span class="n" data-k="Object.keys(CLASSES).length">3</span></b><span>classes</span></div><div class="fact" style="--c:var(--violet)"><b><span class="n" data-k="ELEMENTS.length">6</span></b><span>elements</span></div><div class="fact" style="--c:var(--toxic)"><b><span class="n" data-k="Object.values(EVOLUTIONS).filter(function (e) { return !e.legacy; }).length">18</span></b><span>follower forms</span></div><div class="fact" style="--c:var(--gold)"><b><span class="n" data-k="Object.keys(SPECIES).length">6</span></b><span>creature species</span></div><div class="fact" style="--c:var(--teal)"><b><span class="n" data-k="PARTY.max">3</span></b><span>in a squad</span></div></div>
+    <div class="meta">Written against build <b>2026-10-28t</b> · 28 October 2026 · a number with a dotted underline is read from the code (hover or long-press it for where) and checked by <code>tests/bible.js</code></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Contents">
+    <div class="t">Contents</div>
+    <details open><summary>Contents</summary>
+      <ol><!--TOC--></ol>
+    </details>
+  </nav>
+  <main>
+    <section class="part" id="overview" style="--c:var(--teal)">
+      <h2>The game <small>01</small></h2>
+      <p><b>Conduit</b> is a browser game in a dark, ruined research facility, seen from above at an angle (isometric) and played mostly on an iPad, by touch;
+        it plays on a desktop with the mouse and keys, and on a phone with its own layout. It is written in plain JavaScript on a 2D canvas, with no engine and nothing to install:
+        <code>game.html</code> is the game, and the home page's Conduit card opens it.</p>
+      <h3 id="loop">How a game goes</h3>
+      <p class="where">The game's own guide (the <b>?</b> in the dock: <code>game.html</code>, "HOW A GAME GOES"), word for word.</p>
+      <ol>
+        <li><b>Find supplies in the dark.</b> The facility opens in a blackout; your monitor lamp is your light. Supply cases glow: walk over one to take it. Press <b>I</b> for your pack.</li>
+        <li><b>Restore a relay.</b> Each relay powers a few rooms. Walk up to a broken one with the relay kit and two power cells (a Technomancer needs one cell and no kit) and it is repaired: its rooms light up.</li>
+        <li><b>Gather a squad.</b> Three followers walk with you. Hatch the eggs on the pads around the facility, or buy a recruit at the Crystal in the ROSTER for <span class="n" data-k="RECRUIT_COST">30</span> ◆. The rest hold rooms.</li>
+        <li><b>Hunt the arena.</b> Tap a creature and your gun locks on; click or hold the round dial to fire. A kill pays <b>shards</b> on the spot and drops <b>DNA</b> for the Clone Bay and scrap for the Armory.</li>
+        <li><b>Level, evolve, clone.</b> Followers level from kills and evolve at level <span class="n" data-k="EVOLVE_LEVEL">10</span>. Spend DNA and shards in the CLONE BAY on a creature of your own.</li>
+        <li><b>Defend the Crystal.</b> An alarm sends the creatures hunting, and they go for the Crystal. HOLD followers near it. If the Crystal falls, the game is over.</li>
+      </ol>
+      <h3 id="moves">The three moves</h3>
+      <div class="tw"><table>
+        <tr><th>Move</th><th>What it does</th></tr>
+        <tr><td><b>Tap the floor</b></td><td>Walk there, through the doors. Tap a station or a case to use it or take it.</td></tr>
+        <tr><td><b>Tap a creature</b></td><td>Lock your gun on it; the round dial fires. Tap the enemy card to send the squad at it.</td></tr>
+        <tr><td><b>Long-press a follower</b></td><td>Its card: numbers, INDEX and DISMISS. Long-press a creature for INFO or ATTACK.</td></tr>
+      </table></div>
+      <figure><a href="img/bible/ui/hud_ipad.webp"><img src="img/bible/ui/hud_ipad.webp" alt="The game on an iPad: the squad's cards and the orders at the bottom left, a beetle tank locked at the bottom right, the shards and bars at the top left, the room and the network at the top right" width="1180" height="820" loading="lazy"></a>
+        <figcaption>On an iPad (1180 × 820): the squad and its orders bottom left, the creature locked bottom right, you top left, the place top right, the dock along the bottom.</figcaption></figure>
+    </section>
+<!--SECTIONS-->
+  </main>
+</div>
+
+<footer><!--FOOTER--></footer>
+
+<script>
+// each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded
+(function () {
+  var ns = document.querySelectorAll('.n[data-k]');
+  for (var i = 0; i < ns.length; i++) ns[i].title = 'From the code: ' + ns[i].getAttribute('data-k');
+  var d = document.querySelector('nav.toc details');
+  if (d && window.matchMedia && window.matchMedia('(max-width: 1100px)').matches) d.open = false;
+  var links = document.querySelectorAll('nav.toc a[href^="#"]'), map = {};
+  for (var j = 0; j < links.length; j++) map[links[j].getAttribute('href').slice(1)] = links[j];
+  if (!('IntersectionObserver' in window)) return;
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (!e.isIntersecting) return; var a = map[e.target.id]; if (!a) return; for (var k = 0; k < links.length; k++) links[k].classList.remove('on'); a.classList.add('on'); });
+  }, { rootMargin: '0px 0px -75% 0px' });
+  for (var id in map) { var el = document.getElementById(id); if (el) io.observe(el); }
+})();
+</script>
+</body>
+</html>
