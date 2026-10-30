@@ -50,6 +50,7 @@ function specimenMage(b) {
 function specimenFollowerFell(a) {
     if (!a || typeof cloneBodies === "undefined") return null;
     const rec = typeof followerRecord === "function" ? followerRecord(a) : { element: a.element, role: a.role, level: a.level };
+    delete rec.cards; if (typeof equipClear === "function") equipClear(a);   // it fell for good: its equip cards are back, and the body, preserved and restored later, has empty slots (js/cards.js)
     const b = { id: ++_bodyN, kind: "follower", rec, actor: a, x: a.x, y: a.y, dirX: a.dirX || 1, dirY: a.dirY || 0, t0: _spFrame(), level: a.level };
     cloneBodies.push(b);
     _spSay(specimenName(b) + " HAS FALLEN FOR GOOD — AN ICE MAGE CAN PRESERVE ITS BODY", "#aeeaff", true);

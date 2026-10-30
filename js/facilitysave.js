@@ -4,7 +4,7 @@
 // The facility is the game: the page opens it, and it keeps one key, "conduit_fp_save". (The old strip game, its CLASSIC GAME chip and its "tubecrawler_*" keys are gone.)
 //
 // WHAT IS SAVED: the class and its perks (and, as classes switch, every class you have been: its perks, its stage, the weapon it last held, the Mutator's clone while it waits), the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
-// (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands;
+// (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits, equip cards), the run's hand of equip cards and the player's two slots (js/cards.js; the COLLECTION of unlocked cards is its own key, "conduit_fp_cards", which NEW GAME keeps), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands;
 // the technicians' work that lasts (js/techabilities.js): the launchers set up, the rubble drilled (and its rocks not yet taken), the play clock and the Blight Spider's pools on it.
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
 // It is written every few seconds while the game is running, and when the page is hidden or closed. NEW GAME (a chip, with a confirmation) throws it away and starts again.
@@ -25,6 +25,7 @@ function facilitySaveCollect() {
         script: S ? { step: S.step, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays,
             cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away)
         followers: followerRosterSnapshot(),
+        cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,   // the run's hand of equip cards and the player's two slots (js/cards.js; the collection is its own key, which NEW GAME leaves alone)
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
         clones: cloneRosterSnapshot(),   // the clones: alive, or waiting at the Crystal to come back
         bodies: typeof cloneBodiesSnapshot === "function" ? cloneBodiesSnapshot() : [],   // the Mutator's fallen clone, a follower fallen for good, a capsule on the floor (js/mutator.js, js/specimen.js)
@@ -91,6 +92,7 @@ function facilitySaveApply(d) {
     if (typeof techLaunchersApply === "function") techLaunchersApply(d.launchers);
     if (typeof techBlightApply === "function") techBlightApply(d.blight);   // the play clock as it was, and the pools on it
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
+    if (typeof equipSaveApply === "function") equipSaveApply(d.cards);   // the hand and the player's slots (a game saved before the cards has none: the hand is empty; the followers' own cards came back with them)
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);
     if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function") cloneBodiesApply(d.bodies);
     if (typeof specimenApply === "function") specimenApply(d.capsules);   // (and the pack's count of them is theirs)
@@ -123,7 +125,8 @@ function followerRecord(a) {
         evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined,   // js/evolution.js
         playStyle: a.playStyle || undefined,   // js/commandcenter.js
         post: a.post || undefined,             // the room it holds (js/party.js)
-        move: a.move || undefined              // the signature move it was given (js/moves.js)
+        move: a.move || undefined,             // the signature move it was given (js/moves.js)
+        cards: typeof equipRecord === "function" ? equipRecord(a) : undefined   // its equip cards (js/cards.js); a fallen follower's preserved body leaves them out (js/specimen.js)
     };
 }
 function spawnFollowerFromSave(entry) {
@@ -150,6 +153,7 @@ function followerBuild(entry) {
     if (entry.evoWait && !npc.evolved) npc._evoOnLevelUp = true;
     if (entry.move) npc.move = entry.move;
     if (entry.playStyle) npc.playStyle = entry.playStyle;
+    if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
     if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }
     return npc;

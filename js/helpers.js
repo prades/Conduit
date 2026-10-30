@@ -532,6 +532,7 @@ function startFollowerReroll(actor, quiet) {
     actor.wantType = typeof FOLLOWER_TYPES !== "undefined" && FOLLOWER_TYPES[actor.role] ? actor.role : null;   // (the arrival block makes it that type, and keeps the element)
     actor.keepElement = actor.element;
     actor.personality = null; actor.combatTrait = null; actor.naturalTrait = null; actor.perk = null; actor.convertFlash = 20;
+    if (typeof equipClear === "function") equipClear(actor);   // someone new: its equip card slots are empty (js/cards.js)
     if (!quiet) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: 'RE-ROLLING AT THE CRYSTAL', color: '#0df', life: 100, vy: -0.25, size: 12 });
     return true;
 }

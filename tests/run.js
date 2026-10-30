@@ -36,6 +36,7 @@ const SUITES = [
     ['switching class: a confirmation on every pick, the pack\'s SWITCH CLASS, each class keeping its own progress (perks, stage, weapon, kit once, the Mutator\'s clone waiting), saved until the Crystal falls', 'classswitch.js'],
     ['the Sewers: the arena\'s overflow grates and culvert, the room under it (two ledges, the deep river, a bridge and a broken one, gated passages, the boss\'s cistern), the trip, the drawing', 'sewers.js'],
     ['EXILE: any follower let go for good from the roster (the Command Center, the phone\'s ROSTER cards; not the squad\'s own cards), asked first, nothing back; the word everywhere', 'exile.js'],
+    ['equip cards: five subclasses on the 18 forms (the user\'s roster chart), two slots on every follower and two Universal on the player, fits, the hand, the ◆1,000 unlock that NEW GAME keeps, lives through respawn / EXILE / falling for good / re-roll, saved additively; the screens; inert test cards behind ?cards', 'cards.js'],
     ['the game bible: every number it quotes is the code\'s, its pictures and links, its card on the home page, a phone\'s width', 'bible.js'],
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],

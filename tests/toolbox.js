@@ -2,7 +2,7 @@
 //
 // REPORTED: "I meant you could slide through the different items horizontally." The bottom dock is a strip of tools that slides sideways
 // when more is in it than fits: swipe, mouse-drag, wheel, or the arrows at its ends. A drag never fires the button under it. Every menu
-// of the facility (ROSTER, CLONES, SETTINGS, PACK, MAP, ?) is in the strip; when it all fits, no fade and no arrow shows. (The Crystal,
+// of the facility (ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ?) is in the strip; when it all fits, no fade and no arrow shows. (The Crystal,
 // Shop, Modules, Build and Auto buttons were the strip game's and went with it.) This drives the real page in the real browser. If no
 // browser is available it says so and passes.
 const fs = require('fs');
@@ -85,10 +85,10 @@ check('the strip, its arrows and the script are in the page; phones do not get t
     ok(/overflow-x: ?auto/.test(HTML), 'the strip does not scroll sideways');
     ok(/@media \(max-width: 700px\)[^}]*#topToggles \{ display: none !important/.test(HTML), 'a phone still gets the dock (it has the radial menu)');
 });
-check('the dock is ROSTER, CLONES, SETTINGS, PACK, MAP, ? and nothing of the strip game (no Crystal, Shop, Modules, Build or Auto button)', () => {
+check('the dock is ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ? and nothing of the strip game (no Crystal, Shop, Modules, Build or Auto button)', () => {
     const dock = HTML.slice(HTML.indexOf('<div id="dockScroll">'), HTML.indexOf('id="dockNext"'));
     const ids = [...dock.matchAll(/<button id="(\w+)"\s+class="top-btn"/g)].map(m => m[1]);
-    same(ids.join(), 'btnRoster,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the buttons');
+    same(ids.join(), 'btnRoster,btnCards,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the buttons');
     for (const id of ['btnCrystal', 'btnShop', 'btnModules', 'btnBuild', 'btnAuto', 'btnSquad', 'btnCommand']) ok(!new RegExp('id="' + id + '"').test(HTML), id + ' is still in the page');
     ok(/onclick="ccToggleOpen\(\)"/.test(dock) && /onclick="dockClones\(\)"/.test(dock) && /onclick="dockSettings\(\)"/.test(dock) && /onclick="invToggle\(\)"/.test(dock) && /onclick="toggleControlsMenu\(\)"/.test(dock), 'a button does not open its menu');
     const tb = fs.readFileSync(path.join(ROOT, 'js/toolbox.js'), 'utf8'); ok(/function dockClones\(\)/.test(tb) && /function dockSettings\(\)/.test(tb) && !/dockShop|dockCrystal|dockModules|toggleBuild|toggleAutoplay/.test(tb), 'toolbox.js still opens a menu that is gone');
@@ -99,8 +99,8 @@ if (r === null) console.log('  (no Chromium here: skipped)');
 else {
     check('the instrument ran', () => { ok(r, 'the probe produced nothing'); same(r.err, undefined, 'the probe threw'); same(r.facility, true, 'the page did not boot the facility'); });
     if (r && !r.err) {
-        check('every menu is in the strip, and shown: ROSTER, CLONES, SETTINGS, PACK, MAP, ?', () => {
-            same(r.ids.join(), 'btnRoster,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.join(), 'a button is hidden');
+        check('every menu is in the strip, and shown: ROSTER, CLONES, SETTINGS, PACK, MAP, ? (CARDS is in the strip too, and shows once there is a card: js/cardsui.js)', () => {
+            same(r.ids.join(), 'btnRoster,btnCards,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.filter(id => id !== 'btnCards').join(), 'a button is hidden (CARDS is, with no card to see)');
         });
         check('when it all fits there is no fade and no arrow; when there is more than fits it slides sideways (right room at the start, an arrow and a fade)', () => {
             if (!r.naturalOver) { same(r.natural.room.left + r.natural.room.right, 0, 'room to slide with everything fitting'); ok(!/fade-|slides/.test(r.natural.cls), 'a fade or an arrow with everything fitting: ' + r.natural.cls); }

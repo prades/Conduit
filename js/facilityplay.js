@@ -218,6 +218,7 @@ function facilityResetState() {
     if (typeof clearDNA === "function") clearDNA();
     if (typeof mutatorReset === "function") mutatorReset();   // the lash and any fallen clone's body (js/mutator.js)
     if (typeof specimenReset === "function") specimenReset();   // the capsules carried, a preservation under way (js/specimen.js)
+    if (typeof equipReset === "function") equipReset();   // the hand of equip cards and the player's slots (the collection of unlocked cards stays: js/cards.js)
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null; if (typeof activeEmpEffect !== "undefined") activeEmpEffect = null;
     if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
     frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(ELEMENTS.map(e => e.id)); lifetimeKills = 0;
@@ -274,6 +275,8 @@ function facilityPlayStart() {
     document.body.classList && document.body.classList.add("facility-play");
     if (typeof facilityPropsPreload === "function") facilityPropsPreload();   // the 3D prop sheets start loading now (js/propsprites.js)
     _fp.saveReady = !away;                           // from here the game is saved as it goes (the background keeps nothing)
+    if (!away && !saved && typeof equipRunStart === "function") equipRunStart();   // a fresh run: the cards screen opens to choose the hand, when the collection has a card in it (js/cards.js)
+    if (typeof cardsButtonSync === "function") cardsButtonSync();   // the CARDS button in the dock shows once there is a card (js/cardsui.js)
     return true;
 }
 // is this a spot a unit can stand on (js/facilitysave.js puts the player back where they were left)

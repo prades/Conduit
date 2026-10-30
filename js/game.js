@@ -531,6 +531,7 @@ function render() {
     if (typeof toolboxTick === "function" && typeof frame !== "undefined" && frame % 30 === 0) toolboxTick();
     if (typeof mixToolRender === "function" && typeof frame !== "undefined" && frame % 6 === 0) mixToolRender(false);   // the battle tool follows its flag (js/mixtool.js)
     if (typeof partyTick === "function" && typeof frame !== "undefined" && frame % 6 === 0) partyTick();   // the squad of three and its bar (js/party.js)
+    if (typeof equipTick === "function") equipTick();   // equip cards that no longer fit come off, every half second (js/cards.js)
     if (typeof ccPrune === "function" && typeof frame !== "undefined" && frame % 30 === 0) ccPrune();   // the dead leave the selection
     if (typeof checkVisibleArea === "function" && (typeof frame === "undefined" || frame % VISIBLE_AREA_POLL_FRAMES === 0)) checkVisibleArea();   // the browser's real visible size, polled (js/config.js)
     if (!gameState.running) { return; } // skip all logic while paused (game over)
@@ -705,7 +706,7 @@ function render() {
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid,
+            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
                 // Its level comes back with it, less some XP (js/levels.js).
                 base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
                 level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp,
@@ -1094,6 +1095,7 @@ function render() {
                 if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
                 if (entry.playStyle) npc.playStyle = entry.playStyle;   // its play style (js/commandcenter.js)
                 if (entry.move) npc.move = entry.move;   // the signature move it was given (js/moves.js)
+                if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
                 if (entry.evoWait) npc._evoOnLevelUp = true;   // an egg again until it next levels up (js/evolution.js)
                 // Its level and XP (less what dying cost) — js/levels.js.

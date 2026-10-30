@@ -474,13 +474,13 @@ function _ccFocusBuild(box) {
     box.textContent = "";
     const arrow = d => { const b = _ccEl("button", "cf-arrow " + (d < 0 ? "prev" : "next")); b.setAttribute("aria-label", d < 0 ? "Previous creature" : "Next creature"); b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + (d < 0 ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7") + '"/></svg>'; _ccClick(b, () => ccFocusStep(d)); return b; };
     const card = _ccEl("div", "cf-card"), art = _ccEl("div", "cf-art"), cv = _ccEl("canvas", "cf-cv"); cv.width = 128; cv.height = 128; art.appendChild(cv);
-    const lv = _ccEl("span", "cf-lv"), el = _ccEl("span", "cf-el"); art.appendChild(lv); art.appendChild(el);
+    const lv = _ccEl("span", "cf-lv"), el = _ccEl("span", "cf-el"), sc = _ccEl("span", "cf-sc"); art.appendChild(lv); art.appendChild(el); art.appendChild(sc);   // (sc: its subclass tag, js/cards.js)
     const txt = _ccEl("div", "cf-txt"), name = _ccEl("div", "cf-name"), state = _ccEl("span", "cf-state"), bars = _ccEl("div", "cf-bars");
     const rows = ["HEALTH", "POWER", "SPEED", "DEFENSE", "ATTACK"].map(k => { const r = _ccEl("div", "cf-bar"); r.appendChild(_ccEl("span", "cf-k", k)); const i = _ccEl("i"); i.appendChild(_ccEl("b")); r.appendChild(i); r.appendChild(_ccEl("em")); bars.appendChild(r); return r; });
     txt.appendChild(name); txt.appendChild(state); txt.appendChild(bars);
     card.appendChild(art); card.appendChild(txt); card.appendChild(_ccEl("div", "cf-none", "NOBODY HERE: TAP RECRUIT, AT THE END OF THE STRIP, TO CALL A FOLLOWER"));
     const prev = arrow(-1), next = arrow(1); box.appendChild(prev); box.appendChild(card); box.appendChild(next);
-    return box._cf = { card, cv, lv, el, name, state, rows, prev, next, key: null, done: false };
+    return box._cf = { card, cv, lv, el, sc, name, state, rows, prev, next, key: null, done: false };
 }
 function _ccFocusDraw(box) {
     const E = _ccFocusBuild(box), f = _ccFocus, list = _ccStripUnits(), walk = list.length > (f && list.indexOf(f) >= 0 ? 1 : 0);
@@ -490,6 +490,7 @@ function _ccFocusDraw(box) {
     E.card.style.setProperty("--c", col);
     set(E.name, "textContent", typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER");
     set(E.lv, "textContent", "LV " + (f.level || 1)); set(E.el, "textContent", f.isClone ? "CLONE" : String(_ccElLabel(f.element)).toUpperCase());
+    { const sc = typeof equipSubclassOf === "function" ? equipSubclassLabel(equipSubclassOf(f)) : ""; set(E.sc, "textContent", sc); E.sc.style.display = sc ? "" : "none"; }   // its SUBCLASS tag, once it has evolved into a form that has one (js/cards.js)
     set(E.state, "textContent", st ? st.text + (st.room ? " · " + st.room : "") : "");
     E.state.style.display = st ? "" : "none"; if (st) E.state.style.setProperty("--tc", st.col);
     const rows = _ccFocusStats(f);
@@ -508,6 +509,7 @@ function _ccDrawSettings(side) {
     const one = _ccFocus; if (!one) { _ccDD = null; return; }
     const sel = [one], S = ccSelectionSummary(sel);
     _ccDrawStyles(side, S, sel);
+    if (typeof equipRosterDraw === "function") equipRosterDraw(side, one);   // its SUBCLASS and, once there is a card, its two equip card slots (js/cardsui.js)
     const row = _ccEl("div", "cc-row"); side.appendChild(row);
     if (S.followers) row.appendChild(_ccBtn(ccRerollArmed ? "TAP AGAIN" : "RE-ROLL", "#ff4a1c", ccRerollArmed, () => {
         if (!ccRerollArmed) { ccRerollArmed = true; return; }
@@ -599,7 +601,7 @@ function _ccSqSig() {
 function _ccSideSigNow() {
     if (ccCarousel()) {   // the carousel's settings are for the creature in view
         const f = _ccFocus; if (!f) return "F-";
-        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed + "|" + partyExileArmed([f]);
+        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed + "|" + partyExileArmed([f]) + "|" + (typeof equipSig === "function" ? equipSig(f) : "");
     }
     const pool = typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0;
     const one = ccSelectionList().length === 1 ? ccSelectionList()[0] : null, snap = one ? [one.level, Math.round((one.health || 0) / 5), one.evolved, one.element].join() : "";

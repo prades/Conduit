@@ -82,6 +82,7 @@ function partyExile(f, quiet) {
     if (!_partyFollower(f)) return false;
     if (typeof breakBond === "function") breakBond(f);
     f.post = null; f.partySlot = undefined; f.exiled = true; f.sacrificed = true; f.dead = true; if (_sfLast === f) _sfLast = null;
+    if (typeof equipClear === "function") equipClear(f);   // its equip cards go back at once (js/cards.js: a card is a type you own, so this only empties the slots)
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#8aa0c8", radius: 0.7, life: 26 });   // (a puff where it stood)
     _partyDone([f]); if (!quiet) _partySay((typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER") + " IS EXILED", "#8aa0c8", true);
     partySync(false); return true;

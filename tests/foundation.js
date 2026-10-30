@@ -48,13 +48,13 @@ const OLD_NAMES = ['spawnPredatorForZone', 'generateSegment', 'ensureWorldTo', '
         for (const f of scriptOrder().concat(['game.html'])) { const src = rd(f); for (const n of OLD_NAMES) if (new RegExp('(?<![\\w$.])' + n.replace(/\$/g, '\\$') + '(?![\\w$])').test(src)) hits.push(f + ':' + n); }
         same(hits.join(' '), '', 'still named');
     });
-    check('the page has no other game to open, no wave line, no build button; the dock is ROSTER, CLONES, SETTINGS, PACK, MAP, ?; the room tag is a plate, not a button', () => {
+    check('the page has no other game to open, no wave line, no build button; the dock is ROSTER, CARDS (hidden until a card exists), CLONES, SETTINGS, PACK, MAP, ?; the room tag is a plate, not a button', () => {
         const H = rd('game.html');
         ok(!/\?classic|CLASSIC GAME|facilityPlayChip/.test(H), 'the classic game is still on the page');
         ok(!/id="waveInfo"|id="btnBuild"|id="btnSquad"|id="padHud"|id="aimRing"/.test(H), 'old chrome is still on the page');
         const dock = H.slice(H.indexOf('id="dockScroll"'), H.indexOf('</div>', H.indexOf('id="dockScroll"')));
         const labels = [...dock.matchAll(/<button[^>]*>([\s\S]*?)<\/button>/g)].map(m => m[1].replace(/<[^>]+>/g, '').trim());
-        same(labels.join('|'), 'ROSTER|CLONES|SETTINGS|PACK|MAP|?', 'the dock');
+        same(labels.join('|'), 'ROSTER|CARDS|CLONES|SETTINGS|PACK|MAP|?', 'the dock');
         const tag = (H.match(/<div id="zoneInfo"[^>]*>/) || [''])[0]; ok(tag && !/onclick|role="button"/.test(tag), 'the room tag is still a button: ' + tag);
     });
     check('every file evaluates, and the game state is the facility\'s: running, and nothing of nights or zones', () => {
