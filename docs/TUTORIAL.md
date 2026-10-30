@@ -383,6 +383,16 @@ ASKED: "Make way for a robust card system that will be used to give followers [.
 - **Not built:** any card's effect, resistances and damage categories, how cards are found in a run, pack prices and odds, the phone's CARDS screen and slots.
 - Tests: tests/cards.js (the tag against the chart, the rules, the unlock, the life of a follower's cards, the save, and the screens in the real page).
 
+## Quill Burst, rebuilt (revision)
+
+ASKED (the Notion "Conduit Game Design Archive"): Quill Burst is "a projectile" with "a 75% hit chance" that "improves as the target gets closer"; the numbers were chosen with the user, 2026-10-30. Until then it was the old ring of fire (the Bunker Bloom's PETAL BLAZE under another name).
+
+- **What it does now** (`quillBurst`, js/evolution.js): the Quillstone fires heated quills at the nearest enemy within **4 tiles**, every **4 seconds**. The hit is a roll made as it fires (no flight to dodge, no spread). The chance is **75% at 4 tiles** and rises in a straight line to **100% within 1 tile**. A hit deals **2.0x its power plus 25%** (2.5x) to the target and to everything within **0.8 tile** of it, and burns nobody. A miss shows MISS over the target and the quills fly on past it. It still spends its 4 seconds on a miss.
+- **The Bunker Bloom** (retired, but still in the world for followers already evolved into it) keeps the ring of fire, PETAL BLAZE.
+- **Still fire-element**: the game has no damage categories yet, so the element wheel treats a quill as it treated the ring.
+- **The look**: three bright streaks from the follower to the target (`quills`, js/elements.js), simple for now. The INFO card's QUILL BURST rows are read off the constants (`QUILL_*`).
+- Tests: tests/evolution.js (the chance, a hit, a miss, the rolls at the reach, the nearest, the splash, INFO, the drawing) and tests/moves.js.
+
 ## The website's background
 The landing page (`index.html`) shows the facility behind it, dark, with evolved followers now and again walking the halls and searching its rooms: `game.html?attract` (js/attract.js; the design is in docs/FACILITY.md, "The website's background"). It is the same facility and the same followers, with no one playing and nothing saved; the game itself is unchanged and opens as before.
 

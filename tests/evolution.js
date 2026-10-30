@@ -160,12 +160,45 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.far, 0, 'damage 4 tiles away');
         ok(r.cd > 300 && r.again === 0, 'it fired again at once: ' + JSON.stringify(r));
     });
-    check('the QUILLSTONE casts the same ring of fire (named QUILL BURST) that the Bunker Bloom did', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; floatingTexts.length = 0;
-            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
-            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 20.8, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            frame++; f._sigCd = 1; evolutionTick(); const out = { dmg: 1e6 - p.health, burn: p.burning > 0, text: floatingTexts.map(t => t.text).join('|') }; p.dead = true; return out; })()`);
-        ok(r.dmg > 0 && r.burn, 'the quillstone did not burst: ' + JSON.stringify(r)); ok(/QUILL BURST/.test(r.text), 'its move is not named: ' + r.text);
+    // QUILL BURST, rebuilt (ASKED, the Notion design archive: a projectile with a 75% hit chance that improves up close; the numbers chosen with the user, 2026-10-30)
+    const QB = `globalThis.__qb = (rolls, foes) => { actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; floatingTexts.length = 0; elementEffects.length = 0;
+        spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.stance = 'hold';
+        const S = SPECIES.ant, ps = foes.map(([x, y]) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 20 + x, 2 + y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; });
+        const twin = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 30, 30); twin.team = 'red'; twin.health = twin.maxHealth = 1e6; twin.update = () => {};
+        applyDamage(twin, f.power * QUILL_MULT, f, 'fire'); const base = 1e6 - twin.health; floatingTexts.length = 0; elementEffects.length = 0;   // (the plain hit the quills are measured against, made before the rolls are set)
+        const keep = Math.random, seq = rolls.slice(); Math.random = () => seq.length ? seq.shift() : 0.5;
+        try { frame++; f._sigCd = 1; evolutionTick();
+              return { dmg: ps.map(p => (1e6 - p.health) / base), burn: ps.map(p => p.burning > 0), cd: f._sigCd, texts: floatingTexts.map(t => t.text).join('|'), fx: elementEffects.map(e => e.type).join('|'), q: elementEffects.find(e => e.type === 'quills'), foes: ps.length }; }
+        finally { Math.random = keep; for (const p of ps) p.dead = true; } };`;
+    check('QUILL BURST (rebuilt): the chance of a hit is 75% at its 4 tiles of reach, rising in a straight line to 100% within 1 tile, and no more than 100% or less than 75% anywhere', () => {
+        run(QB); const r = run(`[QUILL_RANGE, QUILL_SURE, QUILL_CHANCE, QUILL_EVERY, QUILL_MULT, QUILL_BONUS, QUILL_SPLASH, quillChance(4), quillChance(6), quillChance(2.5), quillChance(1), quillChance(0.4), quillChance(0)]`);
+        same(r.slice(0, 7).join(), '4,1,0.75,240,2,0.25,0.8', 'the numbers (reach 4 tiles, a sure hit within 1, 75% at the reach, every 4 s, 2.0x power, +25% on a hit, a splash of 0.8 tile)');
+        same(r[7], 0.75, 'at the reach'); same(r[8], 0.75, 'beyond it'); ok(Math.abs(r[9] - 0.875) < 1e-9, 'half way: ' + r[9]); same(r[10], 1, 'within a tile'); same(r[11], 1, 'point blank'); same(r[12], 1, 'on top of it');
+    });
+    check('QUILL BURST (rebuilt): a hit does 2.0x its power and 25% more (2.5x) to the target and burns nobody; it shows QUILL BURST and an impact; the quills fly to the target; it then waits 4 seconds', () => {
+        run(QB); const r = run(`__qb([0], [[3, 0]])`);
+        ok(Math.abs(r.dmg[0] - 1.25) < 0.01, 'the hit does ' + r.dmg[0] + ' of the base damage, not 1.25'); same(r.burn[0], false, 'it burned'); same(r.cd, 240, 'its cooldown'); ok(/QUILL BURST/.test(r.texts) && !/MISS/.test(r.texts), 'it said: ' + r.texts); same(r.fx, 'quills|impact', 'its effects');
+        ok(Math.abs(r.q.tx - 23) < 1e-9 && Math.abs(r.q.ty - 2) < 1e-9, 'the quills fly to the target: ' + JSON.stringify(r.q));
+    });
+    check('QUILL BURST (rebuilt): a miss does nothing to anyone, says MISS over the target, the quills fly on past it, and it still waits its 4 seconds', () => {
+        run(QB); const r = run(`__qb([0.999], [[3, 0]])`);
+        same(r.dmg[0], 0, 'a miss hurt'); same(r.burn[0], false, 'a miss burned'); same(r.cd, 240, 'a miss skips its cooldown'); ok(/QUILL BURST/.test(r.texts) && /MISS/.test(r.texts), 'it said: ' + r.texts); same(r.fx, 'quills', 'its effects (no impact on a miss)');
+        ok(r.q.tx > 23.5, 'the quills stop at the target instead of flying past: ' + JSON.stringify(r.q));
+    });
+    check('QUILL BURST (rebuilt): the roll is against the chance at the target\'s distance: at the reach 0.74 hits and 0.76 misses; within a tile nothing misses', () => {
+        run(QB); same(run(`__qb([0.74], [[4, 0]])`).dmg[0] > 0, true, '0.74 at 4 tiles'); same(run(`__qb([0.76], [[4, 0]])`).dmg[0], 0, '0.76 at 4 tiles');
+        same(run(`__qb([0.999], [[0.8, 0]])`).dmg[0] > 0, true, '0.999 at 0.8 tile (a sure hit)'); same(run(`__qb([0.874], [[2.5, 0]])`).dmg[0] > 0, true, '0.874 at 2.5 tiles'); same(run(`__qb([0.876], [[2.5, 0]])`).dmg[0], 0, '0.876 at 2.5 tiles');
+    });
+    check('QUILL BURST (rebuilt): it fires at the nearest enemy within 4 tiles and at nobody beyond (no cooldown spent); the splash is 0.8 tile round the target: a neighbour inside it takes the same hit, one outside it, and a farther enemy, take nothing', () => {
+        run(QB); const none = run(`__qb([0], [[4.4, 0]])`); same(none.dmg[0], 0, 'an enemy beyond the reach was hit'); ok(none.cd <= 0, 'it spent its cooldown on nothing: ' + none.cd); same(none.texts, '', 'it spoke with nobody to shoot at');
+        const r = run(`__qb([0], [[2, 0], [2.6, 0.2], [3, 1.4], [3.9, 0]])`);
+        ok(Math.abs(r.dmg[0] - 1.25) < 0.01, 'the nearest: ' + r.dmg[0]); ok(Math.abs(r.dmg[1] - 1.25) < 0.01, 'a neighbour inside the splash took ' + r.dmg[1]); same(r.dmg[2], 0, 'an enemy outside the splash took damage'); same(r.dmg[3], 0, 'a farther enemy took damage');
+    });
+    check('QUILL BURST (rebuilt): the Bunker Bloom keeps its ring of fire (PETAL BLAZE), the Quillstone\'s move is its own function, INFO says what it does (reach, every, hit chance, damage, effect), and the quills are drawn', () => {
+        same(run(`MOVES.petal_blaze.fn.toString().indexOf('petalBlaze(') >= 0 && MOVES.quill_burst.fn.toString().indexOf('quillBurst(') >= 0 && MOVES.quill_burst.fn.toString().indexOf('petalBlaze') < 0`), true, 'the two moves');
+        const rows = JSON.parse(run(`JSON.stringify(MOVE_INFO['QUILL BURST']())`)), by = {}; rows.forEach(x => { by[x[0]] = x[1]; });
+        same(Object.keys(by).join(), 'REACH,EVERY,HIT CHANCE,DAMAGE,EFFECT', 'its INFO rows'); same(by.REACH, '4 tiles', 'reach'); same(by.EVERY, '4 s', 'every'); ok(/75%.*4 tiles.*100%.*1 tile/.test(by['HIT CHANCE']), 'hit chance: ' + by['HIT CHANCE']); ok(/2×.*\+25%/.test(by.DAMAGE), 'damage: ' + by.DAMAGE); ok(/miss/.test(by.EFFECT), 'effect: ' + by.EFFECT);
+        same(run(`(function(){ elementEffects.length = 0; elementEffects.push({ type: 'quills', x: player.x, y: player.y, tx: player.x + 3, ty: player.y, life: 7, maxLife: 14 }); try { drawElementEffects(); return 'drawn'; } catch (e) { return e.message; } finally { elementEffects.length = 0; } })()`), 'drawn', 'drawing the quills');
     });
     check('THE ASK: ARC VOLLEY — a charged arc into the nearest enemy in range, jumping to the ones beside it', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));

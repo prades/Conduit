@@ -10,7 +10,7 @@
 //   classes   (optional) the player classes whose followers may use it; absent = everyone's
 const MOVES = {
     petal_blaze:       { id: "petal_blaze",       name: "PETAL BLAZE",       fn: f => petalBlaze(f) },
-    quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       fn: f => petalBlaze(f) },
+    quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       fn: f => quillBurst(f) },
     arc_volley:        { id: "arc_volley",        name: "ARC VOLLEY",        fn: f => arcVolley(f) },
     singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  fn: f => singularityShot(f) },
     static_rush:       { id: "static_rush",       name: "STATIC RUSH",       fn: f => staticRush(f) },

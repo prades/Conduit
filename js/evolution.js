@@ -83,8 +83,15 @@
 //          plate-petals round a crystal), which stays defined, marked legacy, for followers already evolved into it.
 //          QUILLSTONE (the FIRE BRAWLER, design No. 354: a pitch-black cut gem that crawls on little hidden
 //          feet, red shards growing out of it, its two front spikes black like the shell), replaced the Bunker
-//          Bloom for new evolutions and does the same ring of fire, called QUILL BURST (the Bunker Bloom
-//          stays defined, marked legacy, for followers already evolved into it).
+//          Bloom for new evolutions (the Bunker Bloom stays defined, marked legacy, for followers already evolved into it, with
+//          its ring of fire, PETAL BLAZE). It cast the same ring under the name QUILL BURST until it was rebuilt (ASKED, in the
+//          Notion design archive: a projectile with a 75% hit chance that improves up close; the numbers were chosen with the
+//          user, 2026-10-30): with an enemy within QUILL_RANGE, every QUILL_EVERY frames it fires heated quills at the nearest.
+//          The hit is a roll made as it fires, with no flight to dodge and no spread (a simple attack-resolution modifier, not
+//          projectile physics): the chance is QUILL_CHANCE at the outer range and rises in a straight line to 100% within
+//          QUILL_SURE tiles of the target. A hit deals QUILL_MULT × its power plus QUILL_BONUS (a fixed bonus: it does not grow
+//          with the closeness) to the target and everything within QUILL_SPLASH of it, and burns nobody. A miss shows MISS and
+//          the quills fly on past. The damage is still fire: the game has no damage categories yet.
 //          SEEPER (the TOXIC BRAWLER, design No. 578: a black volcano walking on four pins,
 //          goo oozing from its eye and flanks; it replaced the Caldera), ERUPTION: with an enemy within CALDERA_RADIUS, every
 //          CALDERA_EVERY frames it hunkers and the crater bursts: everything within
@@ -125,6 +132,7 @@ const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5,
 const CALDERA_RADIUS = 2.4, CALDERA_EVERY = 330, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
 const MAW_RANGE = 1.8, MAW_EVERY = 300, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
+const QUILL_RANGE = 4, QUILL_SURE = 1, QUILL_CHANCE = 0.75, QUILL_EVERY = 240, QUILL_MULT = 2.0, QUILL_BONUS = 0.25, QUILL_SPLASH = 0.8;   // QUILL BURST: its reach, the distance of a sure hit, the chance at the reach, the frames between, the base damage, the fixed bonus on a hit, the splash
 
 const EVOLUTIONS = {
     // LEGACY: the first fire brawler. New evolutions use the Quillstone; a follower already evolved into this keeps it.
@@ -302,6 +310,27 @@ function petalBlaze(f) {
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ff6622", radius: BLOOM_RADIUS * 0.7, life: 26 });
     }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: (evolvedDef(f) || {}).move || "PETAL BLAZE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+// QUILL BURST (the Quillstone's): heated quills at the nearest enemy in range. The chance of a hit at distance d: QUILL_CHANCE at QUILL_RANGE, rising in a straight line to 1 within QUILL_SURE.
+function quillChance(d) { return QUILL_CHANCE + (1 - QUILL_CHANCE) * Math.max(0, Math.min(1, (QUILL_RANGE - d) / (QUILL_RANGE - QUILL_SURE))); }
+function quillBurst(f) {
+    const foes = _evoFoes(f.x, f.y, QUILL_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, d = Math.hypot(dx, dy), L = d || 1, hit = Math.random() < quillChance(d);
+    if (hit) for (const a of _evoFoes(t.x, t.y, QUILL_SPLASH)) applyDamage(a, (f.power || 10) * QUILL_MULT * (1 + QUILL_BONUS), f, "fire");   // (the target and what stands against it, the same hit; nobody burns)
+    f._sigAt = f0; f._sigCd = QUILL_EVERY;
+    if (f.dirX !== undefined) { f.dirX = dx / L; f.dirY = dy / L; }
+    if (typeof elementEffects !== "undefined") {
+        const past = hit ? 0 : 1.6;   // (a miss flies on past the target)
+        elementEffects.push({ type: "quills", x: f.x, y: f.y, tx: t.x + dx / L * past, ty: t.y + dy / L * past, life: 14, maxLife: 14 });
+        if (hit) elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#ff7a2e", radius: QUILL_SPLASH, life: 20 });
+    }
+    if (typeof floatingTexts !== "undefined") {
+        floatingTexts.push({ world: true, x: f.x, y: f.y, text: "QUILL BURST", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
+        if (!hit) floatingTexts.push({ world: true, x: t.x, y: t.y, text: "MISS", color: "#c8d4ee", life: 45, vy: -0.06, size: 11 });
+    }
     return true;
 }
 // ARC VOLLEY: a charged arc into the nearest enemy in range, jumping on. True when it fired.

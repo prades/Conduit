@@ -977,6 +977,19 @@ function drawElementEffects() {
                 }
                 break;
             }
+            // QUILL BURST (js/evolution.js): three heated quills streak from the follower to the target (past it, on a miss), a beat apart, fanning in from the sides: each a short bright line, 14 frames.
+            case "quills": {
+                const prog = 1 - e.life / e.maxLife, ex = (e.tx - player.visualX - (e.ty - player.visualY)) * TILE_W + canvas.width / 2, ey = (e.tx - player.visualX + (e.ty - player.visualY)) * TILE_H + canvas.height / 2 - 30;
+                ctx.globalAlpha = 1 - prog * 0.5; ctx.lineCap = "round";
+                for (let qi = -1; qi <= 1; qi++) {
+                    const k = Math.min(1, prog * 1.15 - (qi + 1) * 0.06), k0 = Math.max(0, k - 0.28);
+                    if (k <= 0) continue;
+                    const sx = px, sy = py - 30, dx = ex - sx, dy = ey - sy, side = qi * 5 * (1 - k);
+                    ctx.lineWidth = 3; ctx.strokeStyle = "#ffb15c"; ctx.beginPath(); ctx.moveTo(sx + dx * k0 + side, sy + dy * k0); ctx.lineTo(sx + dx * k + side, sy + dy * k); ctx.stroke();
+                    ctx.lineWidth = 1.5; ctx.strokeStyle = "#ffffff"; ctx.beginPath(); ctx.moveTo(sx + dx * Math.max(0, k - 0.06) + side, sy + dy * Math.max(0, k - 0.06)); ctx.lineTo(sx + dx * k + side, sy + dy * k); ctx.stroke();
+                }
+                break;
+            }
             // A ring stroke on the floor, growing and fading — no wash.
             case "fireShockwave": {
                 const prog  = 1 - e.life / e.maxLife;
