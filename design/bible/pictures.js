@@ -1,8 +1,9 @@
-// node design/bible/pictures.js [rooms] [ui] [creatures] [forms] [poster] : makes the game bible's pictures (bible.html) from the game itself, into img/bible as WebP.
+// node design/bible/pictures.js [rooms] [ui] [cards] [creatures] [forms] [poster] : makes the game bible's pictures (bible.html) from the game itself, into img/bible as WebP.
 // With no argument it makes them all. Needs playwright + chromium, and ImageMagick's `convert` (for the WebP).
 //   rooms      each room of the facility, powered and lit, the HUD hidden, the squad beside you (1400x900): img/bible/rooms/<id>.webp
 //   ui         the screens at an iPad's size (1180x820: the HUD, a member's card, the Command Center, the SQUADS window, the class picker, the pack, the map, the ? guide)
 //              and a phone's (390x844: the HUD, the radial menu's ROSTER): img/bible/ui/<id>.webp
+//   cards      the CARDS screen at an iPad's width, tall enough to show it whole (shards, the hand, a booster pack's cards with a duplicate among them, the market's shelf), from seeded packs and a seeded shelf: img/bible/ui/cards_sheet.webp
 //   creatures  every creature the game draws itself (the player, the egg in each element, six species in six classes), by design/roster-poster/portraits.js, trimmed
 //   forms      the 18 evolved forms, cut from their sheets in img/evo (row 0, a three-quarter view; the ground layer under the four that have one), trimmed
 //   poster     the evolution roster poster, by design/roster-poster/poster.js
@@ -71,6 +72,18 @@ async function openGame(b, w, h) {
     await shot(p, 'phone_hud');
     await p.evaluate(() => { radialToggle(true); radialPick('roster'); }); await shot(p, 'phone_roster');
     await p.close();
+  }
+  if (on('cards')) {
+    const { p, errs } = await openGame(b, 1180, 1500);
+    await p.evaluate(async () => {
+      const wait = ms => new Promise(r => setTimeout(r, ms));
+      shardCount = 5000; equipFound = []; equipHand = []; equipCredits = 0; equipPackLast = null;
+      for (let seed = 1; seed < 30 && !(equipPackLast && equipPackLast.dupes.length); seed++) equipPackOpen(seed);   // packs until one has a duplicate: the same cards each time
+      equipFound.slice(0, 1).forEach(id => { equipUnlock(id); equipHandAdd(id); });                                  // one card kept for good, and in the hand
+      equipShelfDeal(3); cardsOpen(); await wait(400);
+    });
+    await p.waitForTimeout(500); const f = path.join(TMP, 'cards_sheet.png'); await p.screenshot({ path: f }); webp(f, path.join(OUT, 'ui', 'cards_sheet.webp'), 80); console.log('ui/cards_sheet');
+    if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
   }
   await b.close();
   if (on('creatures')) {

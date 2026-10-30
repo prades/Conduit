@@ -20,7 +20,7 @@ The first version of this file listed fifteen choices I had made that the briefs
 | A10, B2 | Attack speed counts in frames | **The rest between ordinary attacks only** | `followerRest`; signature-move timers and technician abilities keep theirs |
 | B1 | "Elemental attack power" | **SP.ATK only** | the Mage's shot and each element's special; not the plain hits or the signature moves |
 | B3 | Same-stat stacking cannot happen with the six | **Fine as it is** | the sum is built and tested with stand-in cards |
-| 14 | The Game Bible | **Not yet** | `bible.html` is untouched (its checked build-stamp number only) |
+| 14 | The Game Bible | **Not yet**; later, on 2026-10-30: update it to reflect everything installed | done: see section 4 |
 | 15 | `docs/CARD-SYSTEM.md` | **Update it and push `design-notes`** | done on the `design-notes` branch only, never on main |
 
 ### 1b. The market (your answer to A3, in your words, and the follow-ups)
@@ -72,14 +72,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 - **Notion.** Its connector failed to connect in this session (an HTTP 400 on every call), so the Archive was never updated, and could not be re-read, for the cards, the Crystalline cards, Pack 1 or the market. It may say something different from the above: please compare, above all on how cards are found, pack contents and odds, whether a pack's cards are permanent, and the poison and paralysis wording (both gone). The text still to be written there is in the session scratchpad: `/tmp/claude-0/-home-user-Conduit/dee5ef54-ced0-50c5-bf19-ef4dca8550bd/scratchpad/notion_status_2026-10-30.md` (sections 1 to 8; the older copy on the `design-notes` branch, `docs/NOTION-UPDATE-PENDING.md`, lacks sections 6 to 8).
 - **`docs/CARD-SYSTEM.md` (on the `design-notes` branch only)** was updated and pushed to `design-notes` in round 2 (never to main): everything built, and every answer above.
-- **Game Bible (`bible.html`).** Untouched except its checked build-stamp number (your standing permission): you said "not yet". It has no subclass or card section, and several sentences are out of date:
-  - a respawn now keeps the role;
-  - the equip cards are in the follower's record;
-  - the dock has seven buttons;
-  - the Quill Burst row still shows the old ring of fire;
-  - "runs 67 suites" is now 72.
-
-  A draft of the new section and of the corrections is in the scratchpad (`bible_draft_cards.md`, `bible_draft_cards_snippet.html`, `bible_draft_quill_rows.html`, same folder as above). **The draft is older than round 2:** it does not know the market, the weakness, the glitch or the real stuns, so it must be brought up to date before it is applied.
+- **Game Bible (`bible.html`)** was brought up to date on 2026-10-30, at your request ("update the game Bible to reflect all of the different installations"), after your earlier "not yet". New in part 05: *Subclasses*, *Equip cards: slots, the hand and the CARDS screen* (with a picture of the screen, `img/bible/ui/cards_sheet.webp`, made by `design/bible/pictures.js cards`), *The cards, and what they do* (all 24, from the code's own tables) and *Booster packs, found cards and the market*. Changed in place: the table of statuses (the weakness, the glitch and the stuns), the signature moves (the rebuilt Quill Burst, and the Frost Maw's and the Manta's stuns, which now work), a respawn keeping the role and the cards, the roster's CARD 1, CARD 2 and SUBCLASS, the dock's CARDS button, the saves (the run's `cards`, the collection at `conduit_fp_cards`), the economy (credits, the pack, the unlock), the file list (70 scripts), the tests (72 suites, 27 in a real browser) and the open lists. Every number it quotes about cards is tagged and checked against the code by `tests/bible.js` (2,273 numbers). The older draft in the session scratchpad is obsolete. The picture of the CARDS screen is the only new one: the older pictures (the HUD's dock, the Command Center) are as they were made, so they do not show the CARDS button or the card slots.
 - **`tests/visiblearea.js`** is a known flaky real-browser timing test (about 1 run in 14 on main).
 - **This file** is committed on the working branch (`claude/start-game-project-HSh7Z`) only; main does not have it. Say so if you want it on main too.
 
