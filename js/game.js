@@ -1075,10 +1075,11 @@ function render() {
                 const personality = entry.personality || PERSONALITY_KEYS[Math.floor(Math.random()*PERSONALITY_KEYS.length)];
                 const stats       = applyPersonality(personality);
                 if (entry.hpStat!==undefined) stats.hp = entry.hpStat;
-                // The same follower comes back: its element, and an EVOLVED one as the same machine (its element and role are its form's).
+                // The same follower comes back: its element, and an EVOLVED one as the same machine (its element and role are its form's). An egg keeps the role it had, one it was switched to in the roster included
+                // (it was worked out from its personality again, which undid the player's pick and took its Class equip cards off: js/cards.js).
                 const rElement    = entry.element || "fire";
                 const _evo        = entry.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[entry.evolved] : null;
-                const role        = _evo && _evo.role ? _evo.role : assignRole(stats);
+                const role        = _evo && _evo.role ? _evo.role : (entry.role || assignRole(stats));
                 const npc = {
                     type:"virus", element:rElement, x:crystal.x, y:crystal.y, team:"green",
                     health: stats.hp, maxHealth: stats.hp,

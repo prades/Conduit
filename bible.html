@@ -717,7 +717,7 @@
   Its names (<code>FP_ROOM_TAG</code>, <span class="n" data-k="Object.keys(FP_ROOM_TAG).length">17</span> of them) differ from the MAP labels for five rooms (see the rooms table). At the start it reads “<span class="n" data-k="facilityZoneName()">Crystal Chamber</span>”.</p>
 <p class="where">Where it lives: <code>js/facilitynet.js</code> <code>FP_ROOM_TAG</code>, <code>facilityZoneName</code> · <code>js/game.js:632-634</code> · <code>game.html:1053</code></p>
 <h3 id="world-save">What is saved</h3>
-<p>One key, <span class="n" data-k="FS.key">conduit_fp_save</span> (version <span class="n" data-k="FS.version">1</span>, <span class="n" data-k="Object.keys(facilitySaveCollect()).length">27</span> fields), written every <span class="n" data-k="FS.every" data-f="f">3 s</span> while you play and when the page is hidden; only keys matching <span class="n" data-k="FP_STORE_OK.source">^conduit_fp_</span> can be written.
+<p>One key, <span class="n" data-k="FS.key">conduit_fp_save</span> (version <span class="n" data-k="FS.version">1</span>, <span class="n" data-k="Object.keys(facilitySaveCollect()).length">28</span> fields), written every <span class="n" data-k="FS.every" data-f="f">3 s</span> while you play and when the page is hidden; only keys matching <span class="n" data-k="FP_STORE_OK.source">^conduit_fp_</span> can be written.
   NEW GAME (a chip at the top left, SETTINGS, or the game-over card) asks (“Start a new facility game? Your saved progress will be lost.”), clears it and reloads.</p>
 <ul>
   <li><b>Kept, for the world</b>: the relays online (their rooms re-powered silently on load, their cases back), the cases taken, each empty pad's delay, the launchers, the rubble's hits, the tutorial's progress,
@@ -3183,7 +3183,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-10-28t</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-10-30a</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development); <code>?facility</code> (open the MAP view at once). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The MAP view</b> (dock MAP, <b>F3</b> or <code>?facility</code>): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −), the layers OUTLINES, COLLISION, OPENINGS, ELEVATION and NAV, the validator's readout, ▶ PLAY and ✕ CLOSE.</li>

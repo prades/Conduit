@@ -280,10 +280,16 @@ function measure(w, h, query, seed) {
     group('5. THE LIFE OF A FOLLOWER\'S CARDS');
     run(`globalThis.__wear = f => { f.element = 'fire'; f.role = 'brawler'; __hand(['test_fire', 'test_brawler', 'test_universal_a']); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); return f; };
          globalThis.__fall = (f, forGood) => { f.spawnProtection = 0; if (forGood) f.base.hp = 1; const foe = { x: f.x + 1, y: f.y, team: 'red' }; for (let i = 0; i < 20 && !f.dead; i++) applyDamage(f, f.maxHealth, foe); render(); render(); };`);
-    await check('a follower that falls and comes back at the Crystal comes back with its cards (the same person, the same uid)', () => {
-        const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; __hand(['test_fire', 'test_universal_a']); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_universal_a'); const uid = followerUid(f); __fall(f, false); const q = respawnQueue.filter(e => !e.isClone)[0]; const queued = q && q.cards ? q.cards.join('|') : null; __frames(260);
-            const back = followers.filter(x => followerUid(x) === uid)[0]; return { queued, back: !!back, cards: back ? equipSlots(back).join('|') : null, old: f.dead }; })()`);
-        same(r.old, true, 'it did not fall'); same(r.queued, 'test_fire|test_universal_a', 'the respawn entry'); same(r.back, true, 'it did not come back'); same(r.cards, 'test_fire|test_universal_a', 'its cards on the way back');
+    await check('a follower that falls and comes back at the Crystal comes back with its cards (the same person, the same uid), and with the role it had: an egg switched to another ATTACK STYLE keeps it, so its Class card stays on', () => {
+        const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; delete f.evolved; const own = assignRole(applyPersonality(f.personality)); f.role = own === 'camper' ? 'brawler' : 'camper'; const picked = f.role; __hand(['test_fire', 'test_brawler', 'test_technician']);
+            equipPut(f, 0, 'test_fire'); equipPut(f, 1, picked === 'camper' ? 'test_technician' : 'test_brawler'); const worn = equipSlots(f).join('|'); const uid = followerUid(f); __fall(f, false); const q = respawnQueue.filter(e => !e.isClone)[0]; const queued = q && q.cards ? q.cards.join('|') : null; __frames(260);
+            equipTick(true); const back = followers.filter(x => followerUid(x) === uid)[0]; return { worn, queued, back: !!back, cards: back ? equipSlots(back).join('|') : null, old: f.dead, picked, role: back ? back.role : null }; })()`);
+        same(r.old, true, 'it did not fall'); same(r.queued, r.worn, 'the respawn entry'); same(r.back, true, 'it did not come back'); same(r.role, r.picked, 'the attack style it was switched to was forgotten'); same(r.cards, r.worn, 'its cards on the way back (the Class card with them)');
+    });
+    await check('an evolved follower comes back as its form (the form\'s role); a follower with no role on record gets one from its personality, as it always did', () => {
+        const game = rd('js/game.js'); ok(/const role        = _evo && _evo\.role \? _evo\.role : \(entry\.role \|\| assignRole\(stats\)\);/.test(game), 'the respawn\'s role is not the form\'s, else the one it had, else its personality\'s');
+        const r = J(`(function(){ const f = __fresh(1)[0]; __form(f, 'quillstone'); f.element = 'fire'; const uid = followerUid(f); __fall(f, false); __frames(260); const back = followers.filter(x => followerUid(x) === uid)[0]; return { role: back && back.role, evolved: back && back.evolved }; })()`);
+        same(r.evolved, 'quillstone', 'the form'); same(r.role, 'brawler', 'the form\'s role');
     });
     await check('falling for good: the slots are empty, the preserved body keeps none, and a body restored later has empty slots', () => {
         const r = J(`(function(){ const f = __wear(__fresh(1)[0]); __fall(f, true); const body = cloneBodies.filter(b => b.kind === 'follower')[0]; const o = { body: !!body, recCards: body ? body.rec.cards : 'no body', worn: equipWorn(f), queued: respawnQueue.filter(e => !e.isClone).length };
