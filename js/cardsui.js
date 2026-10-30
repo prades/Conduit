@@ -8,7 +8,8 @@
 //   CARDS       the dock's button opens a screen over the game, as the Command Center does: YOUR HAND (the card types taken into this run, up to three), YOU (the player's two Universal slots), and THE COLLECTION
 //               (every card: unlocked or locked; UNLOCK for EQUIP.unlockCost shards, two taps; TAKE INTO THE RUN or PUT BACK). Rarity is a CHIP on each card's edge: six segments, one lit for each step (and a small flat one beside a card in a slot or a list).
 //   A NEW RUN   the same screen opens by itself, with a banner and a START button, when a run begins and the collection holds a card (js/cards.js equipRunStart).
-//   PACK 1      BOOSTER PACK (a button: ◆EQUIP_PACK.price, two taps; the cards it dealt last are shown under it) and FOUND THIS RUN (the cards the packs dealt, to wear at once; ◆EQUIP.unlockCost keeps one for good), between YOU and THE COLLECTION.
+//   PACK 1      BOOSTER PACK (a button: ◆EQUIP_PACK.price, two taps; the cards it dealt last are shown under it, a duplicate says what it paid), MARKET (this run's credits; a shelf of six that changes every 5 minutes: each card can be bought, in two taps, with
+//               its value in credits or in shards) and FOUND THIS RUN (the cards the packs and the market gave, to wear at once; ◆EQUIP.unlockCost keeps one for good), between YOU and THE COLLECTION.
 // Nothing here is drawn on the canvas, and nothing runs in a frame: the screen redraws only when what it shows has changed (a redraw under a finger loses the tap).
 
 let cardsPanelOpen = false, _cdOpts = {}, _cdSig = "", _cdTimer = 0, _cdDD = null, _cdArm = null;   // _cdDD: the player's slot whose list is open; _cdArm: { id, until }, a card whose UNLOCK is armed
@@ -94,28 +95,51 @@ function _cdPackBox() {
     if (equipPackLast) {
         box.appendChild(_cdEl("div", "cd-note", "THE LAST PACK"));
         const row = _cdEl("div", "cd-row");
-        equipPackLast.ids.map(equipCard).filter(Boolean).forEach(c => { const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", equipPackLast.fresh.indexOf(c.id) >= 0 ? "NEW · FOUND FOR THIS RUN" : "ALREADY FOUND")); row.appendChild(s); });
+        equipPackLast.ids.map(equipCard).filter(Boolean).forEach(c => { const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", equipPackLast.fresh.indexOf(c.id) >= 0 ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + (Math.round(equipMarketValue(c) * EQUIP_MARKET.share * 10) / 10) + " CREDITS")); row.appendChild(s); });
         box.appendChild(row);
     }
     return box;
 }
 
 // ── the screen: drawn once per change ──
+// ── the market: the shelf, its clock, and two ways to pay for each card ──
+function _cdClock(frames) { const t = Math.max(0, Math.ceil(frames / 60)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); }
+function _cdMarketBox() {
+    const box = _cdEl("div", "cd-market"), ids = equipShelfIds();
+    box.appendChild(_cdEl("div", "cd-note cd-shelf-t", "NEXT SHELF IN " + _cdClock(equipShelf.until - _equipNow()) + " · YOUR CREDITS COME FROM THE DUPLICATES IN YOUR PACKS"));
+    if (!ids.length) { box.appendChild(_cdEl("div", "cd-note", "NOTHING ON THE SHELF: YOU HAVE EVERY CARD THAT IS SOLD, OR THEY ARE ALL BOUGHT")); return box; }
+    const grid = _cdEl("div", "cd-grid");
+    ids.map(equipCard).filter(Boolean).forEach(c => {
+        const s = _cdSlab(c, ""), v = equipMarketValue(c);
+        s.appendChild(_cdEl("div", "cd-worn", equipOwns(c.id) ? "YOURS FOR GOOD · FOUND FOR THIS RUN" : "NEW · KEPT FOR GOOD"));
+        ["credits", "shards"].forEach(pay => {
+            const why = equipMarketWhyNot(c.id, pay), key = "buy:" + c.id + ":" + pay, armed = _cdArm && _cdArm.id === key && _cdNow() < _cdArm.until, sym = pay === "credits" ? "◇" : "◆";
+            s.appendChild(_cdBtn(armed ? "TAP AGAIN TO BUY" : "BUY " + sym + v + " " + pay.toUpperCase(), why || (armed ? sym + v + " OF YOUR " + pay.toUpperCase() : pay === "credits" ? "WITH CREDITS" : "WITH SHARDS"), pay === "credits" ? "#7be3ff" : "#ffe733", () => {
+                if (_cdArm && _cdArm.id === key && _cdNow() < _cdArm.until) { _cdArm = null; equipMarketBuy(c.id, pay); } else _cdArm = { id: key, until: _cdNow() + CARDS_ARM_MS };
+            }, !!why));
+        });
+        grid.appendChild(s);
+    });
+    box.appendChild(grid); return box;
+}
+
 function _cdSigNow() {
     const all = Object.keys(equipCards()), have = typeof shardCount === "number" ? shardCount : 0;
     return [cardsPanelOpen, !!_cdOpts.start, all.map(id => (equipOwns(id) ? "o" : have >= EQUIP.unlockCost ? "a" : "l") + (equipInHand(id) ? "h" : "") + (equipIsFound(id) ? "f" : "") + equipWearers(id)).join(), equipHand.join(), equipPlayer.join(), _cdDD,
-        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPackWhyNot() || "", equipPackLast ? equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : ""].join("|");
+        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPackWhyNot() || "", equipPackLast ? equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), Math.floor(equipCredits)].join("|");
 }
 function cardsRender(force) {
     const root = document.getElementById("cardsRoot"); if (!root || !cardsPanelOpen) return;
     const sh = root.querySelector(".cd-sh-n"); if (sh) { const t = "◆ " + (typeof shardCount === "number" ? shardCount : 0); if (sh.textContent !== t) sh.textContent = t; }
+    const cr = root.querySelector(".cd-cr"); if (cr) { const t = "◇ " + Math.floor(equipCredits) + " CREDITS"; if (cr.textContent !== t) cr.textContent = t; }
+    const sc = root.querySelector(".cd-shelf-t"); if (sc) { const t = "NEXT SHELF IN " + _cdClock(equipShelf.until - _equipNow()) + " · YOUR CREDITS COME FROM THE DUPLICATES IN YOUR PACKS"; if (sc.textContent !== t) sc.textContent = t; }
     const sg = _cdSigNow(); if (!force && sg === _cdSig && root.firstChild) return; _cdSig = sg;
     const keep = root.querySelector(".cd-body") ? root.querySelector(".cd-body").scrollTop : 0;
     root.textContent = "";
     const owned = equipOwnedList().length, all = Object.values(equipCards()), start = !!_cdOpts.start;
     const head = _cdEl("div", "cd-head"), tb = _cdEl("div", "cd-titlebox");
     tb.appendChild(_cdEl("div", "cd-title", "CARDS")); tb.appendChild(_cdEl("div", "cd-summary", "HAND " + equipHand.length + (equipDev === "all" ? "" : " / " + EQUIP.startPick) + " · " + owned + " OF " + all.length + " UNLOCKED" + (equipFound.length ? " · " + equipFound.length + " FOUND" : "") + (equipDev ? " · TEST CARDS (?cards)" : ""))); head.appendChild(tb);
-    const sb = _cdEl("div", "cd-shards"); sb.appendChild(_cdEl("div", "cd-sh-n", "◆ " + (typeof shardCount === "number" ? shardCount : 0))); sb.appendChild(_cdEl("div", "cd-sh-c", "YOUR SHARDS · A CARD COSTS ◆" + EQUIP.unlockCost)); head.appendChild(sb);
+    const sb = _cdEl("div", "cd-shards"); sb.appendChild(_cdEl("div", "cd-sh-n", "◆ " + (typeof shardCount === "number" ? shardCount : 0))); sb.appendChild(_cdEl("div", "cd-cr", "◇ " + Math.floor(equipCredits) + " CREDITS")); sb.appendChild(_cdEl("div", "cd-sh-c", "YOUR SHARDS · A CARD COSTS ◆" + EQUIP.unlockCost)); head.appendChild(sb);
     const x = _cdEl("button", "cd-close", start ? "START THE RUN ▸" : "✕ CLOSE"); _cdClick(x, cardsClose); head.appendChild(x); root.appendChild(head);
     const body = _cdEl("div", "cd-body");
     if (start) body.appendChild(_cdEl("div", "cd-banner", "A NEW RUN · CHOOSE UP TO " + EQUIP.startPick + " CARDS TO TAKE WITH YOU, THEN START"));
@@ -127,6 +151,7 @@ function cardsRender(force) {
     sec("YOU", "THE PLAYER WEARS TWO UNIVERSAL CARDS · EACH FOLLOWER'S TWO ARE ON ITS ROSTER PAGE");
     const you = _cdEl("div", "cd-you"); you.appendChild(_cdPlayerSlot(0)); you.appendChild(_cdPlayerSlot(1)); body.appendChild(you);
     sec("BOOSTER PACK", "◆" + EQUIP_PACK.price + " · " + EQUIP_PACK.size + " ELEMENT CARDS, ONE ALWAYS PRECISION · THEY ARE FOUND FOR THIS RUN · ◆" + EQUIP.unlockCost + " KEEPS ONE FOR GOOD"); body.appendChild(_cdPackBox());
+    sec("MARKET", "◇ CREDITS (DUPLICATES PAY " + Math.round(EQUIP_MARKET.share * 100) + "% OF A CARD'S VALUE) OR THE SAME NUMBER OF ◆ SHARDS BUY A CARD: A NEW ONE IS KEPT FOR GOOD · THE SHELF CHANGES EVERY 5 MINUTES"); body.appendChild(_cdMarketBox());
     if (equipFound.length) {
         sec("FOUND THIS RUN", "WEAR THEM FROM THE ROSTER · THEY GO WITH THE RUN UNLESS YOU KEEP THEM"); const fg = _cdEl("div", "cd-grid");
         equipFound.map(equipCard).filter(Boolean).forEach(c => { const s = _cdCollectionCard(c), w = equipWearers(c.id); s.insertBefore(_cdEl("div", "cd-worn", w ? "WORN BY " + w : "NOT WORN"), s.lastChild); fg.appendChild(s); });

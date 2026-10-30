@@ -293,6 +293,9 @@ function abilityTick(pred) {
         return took;
     }
 
+    // ── GLITCHED (an equip card's Static Lock, js/cards.js): a wind-up it is in fails, and it cannot start one, until the glitch is over ──
+    if (pred.glitched > 0 && pred.abilityPhase === 'winding') { pred.abilityPhase = 'ready'; pred.abilityTimer = 0; return false; }
+
     // ── WINDING (telegraph) ──
     if (pred.abilityPhase === 'winding') {
         pred.abilityTimer--;
@@ -316,7 +319,7 @@ function abilityTick(pred) {
         return false;
     }
     pred.abilityPhase = 'ready';
-    if (_abShouldFire(pred, def)) {
+    if (!(pred.glitched > 0) && _abShouldFire(pred, def)) {
         pred.abilityPhase = 'winding';
         pred.abilityTimer = def.windup;
         _abSay(pred, def.name + '!', def.color);

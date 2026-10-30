@@ -68,7 +68,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       out.plain = { dds: offs.map(function(o){ return o[0]; }), cardDds: offs.filter(function(o){ return /^CARD/.test(o[0]); }), sub: $$('#ccSide .cc-stat').map(function(r){ return [r.querySelector('.cc-stat-k').textContent, r.querySelector('.cc-stat-v').textContent]; }).filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chip: ($('#ccFocus .cf-sc') || {}).textContent, cardsOpen: $('#cardsRoot').className };
       ccClose(); await wait(60);
       click($('#btnCards')); await wait(200);
-      out.emptySheet = { cls: $('#cardsRoot').className, slabs: $$('#cardsRoot .cd-card:not(.cd-empty)').length, empties: $$('#cardsRoot .cd-card.cd-empty').length, pslots: $$('#cardsRoot .cd-pbtn').length, note: ($('#cardsRoot .cd-note') || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent };
+      out.emptySheet = { cls: $('#cardsRoot').className, slabs: $$('#cardsRoot .cd-card:not(.cd-empty)').length, empties: $$('#cardsRoot .cd-card.cd-empty').length, pslots: $$('#cardsRoot .cd-pbtn').length, note: ($$('#cardsRoot .cd-note').filter(function(n){ return /NO CARDS YET/.test(n.textContent); })[0] || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent };
       click($('#cardsRoot .cd-pbtn')); await wait(60); out.emptySheet.pList = $$('#cardsRoot .cd-plist .cd-btn').length + '/' + $$('#cardsRoot .cd-plist .cd-note').map(function(e){ return e.textContent; }).join();
       click($('#cardsRoot .cd-close')); await wait(60); out.emptySheet.closed = $('#cardsRoot').className;
   };
@@ -125,7 +125,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     } else if (out.any && out.wide) {
       // THE REAL CARDS, no switch: the sheet lists the six, all locked (nothing is owned yet), each with its rarity chip; the roster's slots have no card in the hand to offer
       click(btn); await wait(200);
-      var rs = $$('#cardsRoot .cd-grid .cd-card');
+      var grids = $$('#cardsRoot .cd-grid'), rs = Array.prototype.slice.call(grids[grids.length - 1].querySelectorAll('.cd-card'));   // (the collection is the last grid: the market's shelf is one before it)
       out.real = { slabs: rs.length, locked: $$('#cardsRoot .cd-grid .cd-card.locked').length, names: rs.map(function(s){ return s.querySelector('.cd-name').textContent; }), kinds: rs.map(function(s){ return s.querySelector('.cd-kind').textContent; }), texts: rs.map(function(s){ return s.querySelector('.cd-text').textContent; }),
           rars: rs.map(function(s){ return s.querySelector('.cd-rar').textContent; }), lit: rs.map(function(s){ return s.querySelectorAll('.cd-chip i.on').length + '/' + s.querySelectorAll('.cd-chip i').length; }), buttons: rs.map(function(s){ return s.querySelector('.cd-btn .cd-bl').textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent, start: $('#cardsRoot .cd-banner') ? 1 : 0 };
       click($('#cardsRoot .cd-close')); await wait(60);
@@ -256,7 +256,7 @@ function measure(w, h, query, seed) {
             o.off = equipPlayerPut(0, null); o.offAgain = equipPlayerPut(0, null); o.rec = equipSaveCollect(); return o; })()`);
         same(r.n, 2, 'slots'); same(r.fire, false, 'a fire card on the player'); same(r.fireWhy, 'UNIVERSAL CARDS ONLY', 'the reason'); same(r.a, true, 'a Universal card'); same(r.dup, false, 'the same card twice'); same(r.dupWhy, 'ALREADY IN THE OTHER SLOT', 'the reason');
         same(r.b, true, 'a second'); same(r.slots.join(), 'test_universal_a,test_universal_b', 'slots'); same(r.noHand, false, 'a card not in the hand'); same(r.third, false, 'a third slot'); same(r.off, true, 'take off'); same(r.offAgain, false, 'take off an empty slot');
-        same(JSON.stringify(r.rec), JSON.stringify({ hand: ['test_universal_a', 'test_universal_b', 'test_fire'], found: [], player: [null, 'test_universal_b'] }), 'what the save would keep');
+        same(JSON.stringify({ hand: r.rec.hand, found: r.rec.found, player: r.rec.player }), JSON.stringify({ hand: ['test_universal_a', 'test_universal_b', 'test_fire'], found: [], player: [null, 'test_universal_b'] }), 'what the save would keep (the hand, the found, the slots; the credits and the shelf are tests/market.js\'s)');
     });
     await check('the tick takes off what no longer fits: a role switched (a class card), a card put out of the hand, a card that is on both slots, a card the registry does not have; every EQUIP.every frames, and at once when forced', () => {
         const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; f.role = 'brawler'; delete f.evolved; __hand(['test_brawler', 'test_fire', 'test_universal_a']); const o = {};
@@ -335,7 +335,7 @@ function measure(w, h, query, seed) {
     });
     await check('the run\'s save carries the hand and the player\'s slots; FS.version is still 1', () => {
         const r = J(`(function(){ __hand(['test_universal_a', 'test_fire']); equipPlayer = ['test_universal_a', null]; const d = JSON.parse(JSON.stringify(facilitySaveCollect())); return { cards: d.cards, v: d.v, version: FS.version, key: FS.key }; })()`);
-        same(JSON.stringify(r.cards), JSON.stringify({ hand: ['test_universal_a', 'test_fire'], found: [], player: ['test_universal_a', null] }), 'cards'); same(r.v, 1, 'the save\'s version'); same(r.version, 1, 'FS.version'); same(r.key, 'conduit_fp_save', 'FS.key');
+        same(JSON.stringify({ hand: r.cards.hand, found: r.cards.found, player: r.cards.player }), JSON.stringify({ hand: ['test_universal_a', 'test_fire'], found: [], player: ['test_universal_a', null] }), 'cards'); same(r.v, 1, 'the save\'s version'); same(r.version, 1, 'FS.version'); same(r.key, 'conduit_fp_save', 'FS.key');
     });
     await check('a game is saved with its cards and comes back with them: the followers\' cards, the hand, the player\'s slots; the collection stays its own key', async () => {
         const store = {}, A = await boot('?cards', store);
@@ -386,7 +386,7 @@ function measure(w, h, query, seed) {
             await check('the CARDS button is in the dock, shown (there are cards), and opens the sheet over the game: the HUD gives way, the title, the three parts, the count and the shards', () => {
                 same(T.btn.there && T.btn.inDock && T.btn.shown, true, 'the button: ' + JSON.stringify(T.btn)); ok(/CARDS/.test(T.btn.label), 'its label ' + T.btn.label);
                 same(T.open.cls.indexOf('open') >= 0, true, 'the sheet did not open'); same(T.open.body, true, 'body.cardsOpen'); same(T.open.hudHidden, true, 'the HUD stayed over the sheet'); same(T.open.title, 'CARDS', 'the title');
-                same(T.open.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|THE COLLECTION', 'its parts'); same(T.open.slabs, 33, 'the cards'); ok(/HAND 33 · 33 OF 33 UNLOCKED · TEST CARDS \(\?cards\)/.test(T.open.summary), 'the summary: ' + T.open.summary); ok(/^◆ \d+$/.test(T.open.shardsHead), 'the shards: ' + T.open.shardsHead);
+                same(T.open.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|MARKET|THE COLLECTION', 'its parts'); same(T.open.slabs, 33, 'the cards'); ok(/HAND 33 · 33 OF 33 UNLOCKED · TEST CARDS \(\?cards\)/.test(T.open.summary), 'the summary: ' + T.open.summary); ok(/^◆ \d+$/.test(T.open.shardsHead), 'the shards: ' + T.open.shardsHead);
             });
             await check('rarity is a CHIP on each card\'s edge: one notched plate with six segments, one lit for each step (illuminated bars), standing on the right edge of the card, with the name of its tier on the card', () => {
                 same(T.bars.length, 33, 'slabs'); for (const b of T.bars) {
@@ -445,7 +445,7 @@ function measure(w, h, query, seed) {
         same(N.plain.dds.join('|'), 'ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2', 'the roster\'s settings'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
         same(N.plain.sub.join(), 'SUBCLASS,CRUSTACEAN', 'the subclass row'); same(N.plain.chip, 'CRUSTACEAN', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
         ok(N.emptySheet.cls.indexOf('open') >= 0, 'the sheet did not open'); same(N.emptySheet.slabs, 0, 'a card on the sheet'); same(N.emptySheet.empties, 3, 'the hand\'s empty places'); same(N.emptySheet.pslots, 2, 'the player\'s slots');
-        same(N.emptySheet.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|THE COLLECTION', 'its parts'); same(N.emptySheet.note, 'NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED', 'what the collection says'); ok(/HAND 0 \/ 3 · 0 OF 0 UNLOCKED/.test(N.emptySheet.summary) && !/TEST CARDS/.test(N.emptySheet.summary), 'the summary: ' + N.emptySheet.summary);
+        same(N.emptySheet.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|MARKET|THE COLLECTION', 'its parts'); same(N.emptySheet.note, 'NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED', 'what the collection says'); ok(/HAND 0 \/ 3 · 0 OF 0 UNLOCKED/.test(N.emptySheet.summary) && !/TEST CARDS/.test(N.emptySheet.summary), 'the summary: ' + N.emptySheet.summary);
         same(N.emptySheet.pList, '1/NO CARD IN YOUR HAND', 'a player slot\'s list with no card in the hand (EMPTY, off, and the note)'); same(N.emptySheet.closed.indexOf('open') < 0, true, 'close');
     });
     const P = measure(390, 844, '?cards=all');

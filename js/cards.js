@@ -55,18 +55,18 @@ const EQUIP_CARDS = {};
 
 // PACK 1's EIGHTEEN CARDS (ASKED, the "Pack 1" brief, 2026-10-30): three for each element, Unrefined, Refined and Precision, all of the ELEMENT kind: a follower of the element wears one whatever its class. EVERY NUMBER OF AN EFFECT IS IN THIS TABLE and
 // nowhere else, so it is the one place to tune (the text on each card is made from it). An effect is a stat bonus, { bonus: { stat: fraction } } (a key of EQUIP_STATS), or a PROC, { proc: { kind, chance, ... } }: each hit the follower lands rolls once
-// for it. The procs: burn (dps a second for seconds), poison (the same, its own timer), paralyze (seconds), slow (cut: the share of its speed taken, seconds), siphon (share: of the damage dealt, healed to the follower), knockback (push: the
-// velocity, 0.22 as the Core bash's, which carries it about 0.8 tile).
+// for it. The procs: burn (dps a second for seconds), poison (NO damage: cut, the share of its bite power taken, for seconds), glitch (seconds: every wind-up it tries fails), slow (cut: the share of its speed taken, seconds), siphon (share: of
+// the damage dealt, healed to the follower), knockback (push: the velocity, 0.22 as the Core bash's, which carries it about 0.8 tile).
 const EQUIP_PACK1 = [
     ["ember_plating",      "EMBER PLATING",      "fire",     "unrefined", { bonus: { attack: 0.05 } }],
     ["furnace_heart",      "FURNACE HEART",      "fire",     "refined",   { bonus: { attack: 0.10 } }],
     ["cinderbrand",        "CINDERBRAND",        "fire",     "precision", { proc: { kind: "burn", chance: 0.15, dps: 3, seconds: 3 } }],
     ["venom_gland",        "VENOM GLAND",        "toxic",    "unrefined", { bonus: { specialAttack: 0.05 } }],
     ["corrosive_reservoir", "CORROSIVE RESERVOIR", "toxic",   "refined",   { bonus: { specialAttack: 0.10 } }],
-    ["mireblight",         "MIREBLIGHT",         "toxic",    "precision", { proc: { kind: "poison", chance: 0.15, dps: 2, seconds: 4 } }],
+    ["mireblight",         "MIREBLIGHT",         "toxic",    "precision", { proc: { kind: "poison", chance: 0.15, cut: 0.40, seconds: 4 } }],
     ["charged_wiring",     "CHARGED WIRING",     "electric", "unrefined", { bonus: { attackSpeed: 0.05 } }],
     ["arc_capacitor",      "ARC CAPACITOR",      "electric", "refined",   { bonus: { attackSpeed: 0.10 } }],
-    ["static_lock",        "STATIC LOCK",        "electric", "precision", { proc: { kind: "paralyze", chance: 0.10, seconds: 0.5 } }],
+    ["static_lock",        "STATIC LOCK",        "electric", "precision", { proc: { kind: "glitch", chance: 0.10, seconds: 0.5 } }],
     ["frost_lining",       "FROST LINING",       "ice",      "unrefined", { bonus: { defense: 0.05 } }],
     ["permafrost_shell",   "PERMAFROST SHELL",   "ice",      "refined",   { bonus: { defense: 0.10 } }],
     ["rime_snare",         "RIME SNARE",         "ice",      "precision", { proc: { kind: "slow", chance: 0.20, cut: 0.25, seconds: 2 } }],
@@ -86,8 +86,8 @@ function equipEffectText(fx) {
     const p = fx && fx.proc; if (!p) return "";
     const hit = _equipPct(p.chance) + " PER HIT TO ";
     if (p.kind === "burn") return hit + "BURN: " + p.dps + " DAMAGE A SECOND FOR " + _equipSec(p.seconds);
-    if (p.kind === "poison") return hit + "POISON: " + p.dps + " DAMAGE A SECOND FOR " + _equipSec(p.seconds);
-    if (p.kind === "paralyze") return hit + "PARALYZE FOR " + _equipSec(p.seconds);
+    if (p.kind === "poison") return hit + "POISON: IT HITS " + _equipPct(p.cut) + " WEAKER FOR " + _equipSec(p.seconds);
+    if (p.kind === "glitch") return hit + "GLITCH: ITS WIND-UPS FAIL FOR " + _equipSec(p.seconds);
     if (p.kind === "slow") return hit + "SLOW BY " + _equipPct(p.cut) + " FOR " + _equipSec(p.seconds);
     if (p.kind === "siphon") return hit + "HEAL " + _equipPct(p.share) + " OF THE DAMAGE DEALT";
     if (p.kind === "knockback") return hit + "KNOCK THE TARGET BACK";
@@ -168,7 +168,7 @@ let equipFound = [];               // the card types found in packs this run: wo
 let equipPackLast = null;          // the last pack opened this run, for the sheet to show: { ids, fresh } (not saved)
 let equipPlayer = [null, null];    // the player's slots
 function equipReset() {            // a fresh game (js/facilityplay.js facilityResetState): the collection stays, the rest begins empty
-    equipHand = equipDev === "all" ? Object.keys(equipCards()) : []; equipFound = []; equipPackLast = null; equipPlayer = [null, null];
+    equipHand = equipDev === "all" ? Object.keys(equipCards()) : []; equipFound = []; equipPackLast = null; equipPlayer = [null, null]; equipCredits = 0; equipShelf = { ids: [], until: 0 };
 }
 function equipInHand(id) { return equipHand.indexOf(id) >= 0; }
 function equipIsFound(id) { return equipFound.indexOf(id) >= 0; }
@@ -267,7 +267,7 @@ function equipRefresh(f) {
 
 // ── A PROC: an effect on a hit ──
 // js/helpers.js applyDamage calls equipOnHit for every hit a follower of yours lands on an enemy (not a reflected hit, not a set amount, not a burn's or a cloud's own tick: those have no attacker). Each proc card the follower wears rolls once, at its chance, and
-// a success sets a status on the target through the game's own status code (js/combat.js applyBurn, applyPoison, applyParalysis, applyKnockback; js/abilities.js applySlow; healUnit). A status already on is REFRESHED (the longer time and the stronger number win),
+// a success sets a status on the target through the game's own status code (js/combat.js applyBurn, applyWeaken, applyGlitch, applyKnockback; js/abilities.js applySlow; healUnit). A status already on is REFRESHED (the longer time and the stronger number win),
 // never stacked, so a fast hitter keeps one timer going and not many; a status runs out by itself (js/combat.js updateStatusEffects). `dealt` is the health the hit really took.
 function equipOnHit(src, target, dealt) {
     const c = src && src.cards; if (!Array.isArray(c) || !target || target === src) return;
@@ -283,8 +283,8 @@ function _equipProc(src, t, p, dealt) {
     if (!t || t.dead || !(t.health > 0) || t.team === "green") return;   // (every other effect is for an enemy still standing)
     const frames = Math.round((p.seconds || 0) * EQUIP_FPS), tick = typeof DOT_TICK === "number" ? DOT_TICK : 20;
     if (p.kind === "burn" && typeof applyBurn === "function") { if (applyBurn(t, p.dps * tick / EQUIP_FPS, frames)) _equipSay(t, "BURN", "#ff8844"); }
-    else if (p.kind === "poison" && typeof applyPoison === "function") { if (applyPoison(t, p.dps * tick / EQUIP_FPS, frames)) _equipSay(t, "POISON", "#88ff44"); }
-    else if (p.kind === "paralyze" && typeof applyParalysis === "function") { if (applyParalysis(t, frames)) _equipSay(t, "PARALYZED", "#ffee55"); }
+    else if (p.kind === "poison" && typeof applyWeaken === "function") { if (applyWeaken(t, frames, 1 - p.cut)) _equipSay(t, "POISON", "#88ff44"); }
+    else if (p.kind === "glitch" && typeof applyGlitch === "function") { if (applyGlitch(t, frames)) _equipSay(t, "GLITCH", "#ffee55"); }
     else if (p.kind === "slow" && typeof applySlow === "function") {
         const k = 1 - p.cut; if (t.slowed > 0 && t.slowFactor < k) return;   // (a stronger slow it has, a web, is kept: js/techabilities.js does the same)
         if (!(t.slowed > 0)) _equipSay(t, "SLOWED", "#aaeeff"); applySlow(t, frames, k);
@@ -318,6 +318,7 @@ function equipTick(force) {
     if (!force && typeof frame === "number" && frame % EQUIP.every) return;
     if (typeof followers !== "undefined") for (const f of followers) if (f && f.cards) equipValid(f);
     for (let i = 0; i < EQUIP.playerSlots; i++) { const id = equipPlayer[i]; if (id && (equipPlayerWhyNot(id, i) || equipPlayer.indexOf(id) !== i)) equipPlayer[i] = null; }
+    equipShelfTick();   // (the market's shelf: a new one when the time is up)
 }
 
 // ── THE RECORD: what a follower's save entry, and a respawn entry, carry ──
@@ -330,12 +331,15 @@ function equipRestore(f, cards) {   // (not checked against the hand here: the h
     return !!f.cards;
 }
 // the run's save (js/facilitysave.js): the hand, the cards found and the player's slots. The collection is its own key.
-function equipSaveCollect() { return { hand: equipHand.slice(), found: equipFound.slice(), player: equipPlayer.slice() }; }
+function equipSaveCollect() { return { hand: equipHand.slice(), found: equipFound.slice(), player: equipPlayer.slice(), credits: equipCredits, shelf: { ids: equipShelf.ids.slice(), left: Math.max(0, equipShelf.until - _equipNow()) } }; }
 function equipSaveApply(d) {
     if (!d || typeof d !== "object") return false;
     const ids = a => (Array.isArray(a) ? a : []).filter((x, i, all) => typeof x === "string" && equipOwns(x) && all.indexOf(x) === i);
     equipHand = equipDev === "all" ? Object.keys(equipCards()) : ids(d.hand).slice(0, equipHandCap());
     equipFound = (Array.isArray(d.found) ? d.found : []).filter((x, i, all) => typeof x === "string" && !!equipCard(x) && all.indexOf(x) === i);   // (a card the registry has; found needs no ownership)
+    equipCredits = Number.isFinite(d.credits) && d.credits > 0 ? d.credits : 0;
+    const sh = d.shelf && typeof d.shelf === "object" ? d.shelf : null;   // (a save from before the market has none: the first tick deals a shelf)
+    equipShelf = sh && Array.isArray(sh.ids) && Number.isFinite(sh.left) ? { ids: sh.ids.filter((x, i, all) => typeof x === "string" && !!equipCard(x) && all.indexOf(x) === i).slice(0, EQUIP_MARKET.shelf), until: _equipNow() + Math.max(0, Math.min(EQUIP_MARKET.every, sh.left)) } : { ids: [], until: 0 };
     equipPlayer = [null, null];
     (Array.isArray(d.player) ? d.player : []).slice(0, EQUIP.playerSlots).forEach((id, i) => { if (typeof id === "string" && !equipPlayerWhyNot(id, i)) equipPlayer[i] = id; });
     return true;
@@ -345,7 +349,7 @@ function equipSaveApply(d) {
 // ASKED (the "Pack 1" brief, 2026-10-30): "Price: 100 coins [the game's currency is shards]. Exactly 4 cards per pack. Eligible rarities: Unrefined, Refined, Precision only. Initial per-slot rarity weights: Unrefined 60%, Refined 30%,
 // Precision 10%. Guarantee at least one Precision card in every pack: reserve one of the four slots for the guarantee, then roll the remaining slots using the configured weights. Prevent the same card from appearing twice in a single pack."
 // All of it is in EQUIP_PACK, to tune. A pack takes its cards from the cards that name it (c.pack) and are of its kinds and rarities, so no other card can come out of it; a rarity that has run out of cards in this pack is left out of the roll
-// (the weights of the others are used as they are), and a pack that cannot be made (too few cards, none of the reserved rarity) is not sold. A card dealt twice by two packs is dealt: it is found once, and adds nothing the second time.
+// (the weights of the others are used as they are), and a pack that cannot be made (too few cards, none of the reserved rarity) is not sold. A card you already have (in the hand, or found this run) is a DUPLICATE: it pays credits (the market, below) and is not found again.
 const EQUIP_PACK = {
     id: "pack1", price: 100, size: 4,
     kinds: ["element"],
@@ -388,13 +392,62 @@ function equipPackOpen(seed, pack) {
     pack = pack || EQUIP_PACK; if (equipPackWhyNot(pack)) return null;
     const ids = equipPackRoll(seed, pack); if (!ids || ids.length !== pack.size) return null;
     shardCount -= pack.price;
-    const fresh = [];
+    const fresh = [], dupes = []; let credits = 0;
     for (const id of ids) {
-        if (pack.keep === "forever") { if (!equipOwns(id)) { equipOwnedSet().add(id); fresh.push(id); } }
-        else if (!equipIsFound(id)) { equipFound.push(id); fresh.push(id); }
+        if (equipDuplicate(id)) { dupes.push(id); credits += equipMarketValue(equipCard(id)) * EQUIP_MARKET.share; continue; }   // a card you already have pays credits instead of being found again
+        if (pack.keep === "forever") equipOwnedSet().add(id); else equipFound.push(id);
+        fresh.push(id);
     }
     if (pack.keep === "forever") equipWriteOwned();
-    equipPackLast = { ids: ids.slice(), fresh };
+    equipCredits += credits;
+    equipPackLast = { ids: ids.slice(), fresh, dupes, credits };
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "PACK OPENED · " + ids.length + " CARDS", color: "#ffe733", life: 140, vy: -0.25, size: 14 });
     return ids;
+}
+
+// ── THE MARKET: credits, and a shelf that changes ──
+// ASKED (the owner's answers, 2026-10-30): a duplicate goes "into a special buy menu: credits that you use to buy the permanent cards, and a rotating buy menu that refreshes every 5 minutes; cards go from 90 to 650 credits; duplicates cannot be found
+// there; the credits from a duplicate are 25% of the card's market value; you can also buy the cards with actual shards too". So:
+//   CREDITS    this run's. A pack's DUPLICATE (a card already in the hand or already found this run) pays EQUIP_MARKET.share of its value in credits instead of being found again; a card you own for good but did not bring is NOT a duplicate (it is found
+//              for the run, so you can wear it beyond the hand's three). Credits go with the run (equipReset).
+//   THE SHELF  EQUIP_MARKET.shelf cards, none of them in the hand or found this run (so never a duplicate), taken only from the cards a pack deals (the Crystalline six, which no pack deals, are not sold); a new shelf every EQUIP_MARKET.every
+//              frames of play (5 minutes at 60 a second: the game's own clock, saved with the run, so a reload keeps the shelf and the time left). A card bought leaves the shelf.
+//   BUYING     a card costs its value in credits, or the same number of shards. A card new to you is kept for good AND found (worn at once); one you own for good but did not bring is found for the run. The flat unlock of a found card stays.
+const EQUIP_MARKET = {
+    values: { unrefined: 90, refined: 150, precision: 250, prototype: 350, lustrous: 500, crystalline: 650 },   // a card's market value by rarity, in credits (a shard buys the same number)
+    share: 0.25,       // the share of its value a duplicate pays in credits
+    shelf: 6,          // cards on the shelf at a time
+    every: 18000,      // frames between one shelf and the next (5 minutes of play)
+};
+let equipCredits = 0;                      // this run's credits (a half is possible: 25% of 90)
+let equipShelf = { ids: [], until: 0 };    // the cards for sale, and the frame (the game's `frame`) the next shelf comes
+function _equipNow() { return typeof frame === "number" ? frame : 0; }
+function equipMarketValue(c) { return c && EQUIP_MARKET.values[c.rarity] || 0; }
+function equipDuplicate(id) { return equipInHand(id) || equipIsFound(id) || (EQUIP_PACK.keep === "forever" && equipOwns(id)); }   // a card you already have this run
+function equipShelfPool() { return Object.values(equipCards()).filter(c => !c.test && c.pack && equipMarketValue(c) > 0 && !equipInHand(c.id) && !equipIsFound(c.id)); }
+function equipShelfIds() { const ok = new Set(equipShelfPool().map(c => c.id)); return equipShelf.ids.filter(id => ok.has(id)); }   // (on sale now: a card that came into the hand, or was found, has left the shelf)
+// a new shelf: up to EQUIP_MARKET.shelf different cards from the pool (a seed makes it the same twice: the tests)
+function equipShelfDeal(seed) {
+    const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random, pool = equipShelfPool(), ids = [];
+    while (ids.length < EQUIP_MARKET.shelf && pool.length) ids.push(pool.splice(Math.min(pool.length - 1, Math.floor(rnd() * pool.length)), 1)[0].id);
+    equipShelf = { ids, until: _equipNow() + EQUIP_MARKET.every }; return ids.slice();
+}
+function equipShelfTick() { if (_equipNow() >= equipShelf.until) equipShelfDeal(); }
+// why a shelf card cannot be bought now (with "credits" or with "shards"), or null when it can
+function equipMarketWhyNot(id, pay) {
+    const c = equipCard(id); if (!c) return "NO SUCH CARD";
+    if (equipShelfIds().indexOf(id) < 0) return "NOT ON THE SHELF";
+    const v = equipMarketValue(c);
+    if (pay === "credits") return equipCredits < v ? "NEED ◇" + Math.ceil(v - equipCredits) + " MORE" : null;
+    if (pay === "shards") { const have = typeof shardCount === "number" ? shardCount : 0; return have < v ? "NEED ◆" + (v - have) + " MORE" : null; }
+    return "PAY WITH CREDITS OR SHARDS";
+}
+function equipMarketBuy(id, pay) {
+    if (equipMarketWhyNot(id, pay)) return false;
+    const c = equipCard(id), v = equipMarketValue(c);
+    if (pay === "credits") equipCredits -= v; else shardCount -= v;
+    const fresh = !equipOwns(id); if (fresh) { equipOwnedSet().add(id); equipWriteOwned(); }   // new to you: kept for good
+    if (!equipIsFound(id)) equipFound.push(id);                                                 // and found: worn at once
+    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: (fresh ? "BOUGHT, KEPT FOR GOOD · " : "BOUGHT · ") + c.name, color: "#ffe733", life: 140, vy: -0.25, size: 14 });
+    return true;
 }

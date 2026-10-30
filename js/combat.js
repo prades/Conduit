@@ -71,29 +71,41 @@ function drawBiteTelegraphs() {
 // ─────────────────────────────────────────────────────────
 //  STATUS EFFECT UPDATES (burn, freeze, slow, disorient etc)
 // ─────────────────────────────────────────────────────────
-const DOT_TICK = 20;   // frames between the damage ticks of a burn and of a poison (three a second)
-// The statuses the EQUIP CARDS set on a hit (js/cards.js equipOnHit). Each is REFRESHED when it is already on, never stacked: the longer time wins, the stronger tick wins, so a fast hitter keeps one timer going. All run out by themselves in
-// updateStatusEffects below. A burn is the game's own (burning / burnDamage, the tick below); the poison and the paralysis are new, the game having neither. `perTick` is the damage of one tick; each returns true when it was not on before.
-function applyBurn(t, perTick, frames) {
+const DOT_TICK = 20;   // frames between the damage ticks of a burn (three a second)
+// The statuses the EQUIP CARDS set on a hit (js/cards.js equipOnHit), and the stuns of two signature moves (js/evolution.js). Each is REFRESHED when it is already on, never stacked: the longer time wins, the stronger number wins, so a fast
+// hitter keeps one timer going. All run out by themselves in updateStatusEffects below. The burn is the game's own (burning / burnDamage, the tick below) and so is the weakness (toxicWeakened: the creature's bite power, js/predator.js bite);
+// the stun and the glitch are new, the game having neither (its hitStun is set by every hit and read by nothing). Each returns true when it was not on before.
+function applyBurn(t, perTick, frames) {   // `perTick`: the damage of one tick
     if (!t || t.dead || !(frames > 0)) return false;
     const fresh = !(t.burning > 0);
     t.burnDamage = fresh ? perTick : Math.max(t.burnDamage || 0, perTick);   // (one that had run out starts clean: its old tick is not carried over)
     t.burning = Math.max(t.burning || 0, frames);
     return fresh;
 }
-function applyPoison(t, perTick, frames) {
-    if (!t || t.dead || !(frames > 0)) return false;
-    const fresh = !(t.poisoned > 0);
-    t.poisonDamage = fresh ? perTick : Math.max(t.poisonDamage || 0, perTick);
-    t.poisoned = Math.max(t.poisoned || 0, frames);
+// WEAKNESS (the toxic cards' poison: no damage, it only makes the creature weak): its bite lands for `factor` of its power (0.6: the smoke bomb's, js/elements.js) for `frames`. The stronger weakness it has is kept.
+function applyWeaken(t, frames, factor) {
+    if (!t || t.dead || t.isClone || t.team === "green" || !(frames > 0)) return false;
+    const fresh = !(t.toxicWeakened > 0), f = factor > 0 && factor < 1 ? factor : 0.6;
+    t.toxicWeakenFactor = fresh ? f : Math.min(t.toxicWeakenFactor || 1, f);
+    t.toxicWeakened = Math.max(t.toxicWeakened || 0, frames);
     return fresh;
 }
-// PARALYSIS: it cannot move, bite or use an ability until the timer is out (js/predator.js update), and a bite it was winding up is cut short, as the Technomancer's arc cuts one (js/technomancer.js). Creatures only: not a follower, not a clone.
-function applyParalysis(t, frames) {
+// STUN (the Frost Maw's and the Manta's moves): it cannot move, bite or use an ability until the timer is out (js/predator.js update), and a bite it was winding up is cut short, as the Technomancer's arc cuts one (js/technomancer.js).
+// Creatures only: not a follower, not a clone.
+function applyStun(t, frames) {
     if (!t || t.dead || t.isClone || t.team === "green" || !(frames > 0)) return false;
-    const fresh = !(t.paralyzed > 0);
-    t.paralyzed = Math.max(t.paralyzed || 0, frames);
+    const fresh = !(t.stunned > 0);
+    t.stunned = Math.max(t.stunned || 0, frames);
     if (t.attackWindup > 0) { t.attackWindup = 0; t.biteTarget = null; t.attackAnim = 0; t.attackCooldown = Math.max(t.attackCooldown || 0, frames); }
+    return fresh;
+}
+// GLITCH (the electric cards' Static Lock): every wind-up it tries fails (the rear-back before a bite, an ability's charge-up: js/predator.js _biteTick, js/abilities.js abilityTick) until the timer is out; it can still walk. Creatures only.
+function applyGlitch(t, frames) {
+    if (!t || t.dead || t.isClone || t.team === "green" || !(frames > 0)) return false;
+    const fresh = !(t.glitched > 0);
+    t.glitched = Math.max(t.glitched || 0, frames);
+    if (t.attackWindup > 0) { t.attackWindup = 0; t.biteTarget = null; t.attackAnim = 0; }
+    if (t.abilityPhase === "winding") { t.abilityPhase = "ready"; t.abilityTimer = 0; }
     return fresh;
 }
 // KNOCKBACK: a push away from `from`, as the Core bash's (a velocity that decays by itself, each frame, below; the facility's walls stop it). A second push replaces the first: it does not add to it.
@@ -115,15 +127,9 @@ function updateStatusEffects() {
             }
         }
 
-        // ── POISON (the equip cards): the same, with its own timer and its own tick; it clears its tick when it runs out ──
-        if (actor.poisoned > 0) {
-            actor.poisoned--;
-            if (actor.poisoned % DOT_TICK === 0) applyDamage(actor, actor.poisonDamage || 0.5, null);
-            if (actor.poisoned <= 0) actor.poisonDamage = 0;
-        }
-
-        // ── PARALYSIS (the equip cards): the timer runs here; the creature's own update does nothing while it is on (js/predator.js) ──
-        if (actor.paralyzed > 0) actor.paralyzed--;
+        // ── STUN and GLITCH (js/predator.js reads them): the timers run here ──
+        if (actor.stunned > 0) actor.stunned--;
+        if (actor.glitched > 0) actor.glitched--;
 
         // ── FREEZE (probabilistic defrost) ──
         if (actor.frozen) {
@@ -185,6 +191,7 @@ function updateStatusEffects() {
 
         // ── TOXIC WEAKENED (smoke bomb power debuff) ──
         if (actor.toxicWeakened > 0) actor.toxicWeakened--;
+        if (!(actor.toxicWeakened > 0) && actor.toxicWeakenFactor !== undefined) actor.toxicWeakenFactor = undefined;   // (a card's weakness has its own strength: gone with the time)
 
         // ── PHYSICAL ATTACK VISUAL TIMERS (follower) ──
         if (actor.fireOrbitTimer  > 0) actor.fireOrbitTimer--;

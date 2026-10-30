@@ -177,7 +177,7 @@ class Predator {
     // Disoriented, it bites its own kind. In smoke it misses half the time. The Crystal is bitten the same way (target === crystal). Returns what it hit, or null.
     // Its reach is COMBAT.bite.reach, or its own (biteReach: a clone's, js/clone.js cloneReach).
     bite(target) {
-        const B = COMBAT.bite, R = this.biteReach || B.reach, reach2 = R * R, pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? 0.6 : 1.0);
+        const B = COMBAT.bite, R = this.biteReach || B.reach, reach2 = R * R, pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? (this.toxicWeakenFactor || 0.6) : 1.0);
         // A PHOTONIC SHIELD between it and what it bites (js/techabilities.js): the bite is stopped (walled: and the shield shows where); nothing on the far side is in reach (across)
         const walled = a => !(this.disorientFF > 0) && typeof techShieldBlocks === "function" && techShieldBlocks(this, a);
         const across = a => !this.isClone && !(this.disorientFF > 0) && typeof techShieldBetween === "function" && !!techShieldBetween(this.x, this.y, a.x, a.y);
@@ -201,6 +201,7 @@ class Predator {
     // The bite's two beats, once a target is in reach: the rest runs down, then it REARS BACK for COMBAT.bite.windup frames (attackWindup counts down; the telegraph is drawn over it, js/combat.js
     // drawBiteTelegraphs; the body rears: attackAnim goes negative), then the bite lands (bite()) and the body lunges (attackAnim runs 0 to π). A target that got out of reach in the wind-up is missed.
     _biteTick(target) {
+        if (this.glitched > 0) { this.attackWindup = 0; this.biteTarget = null; this.attackAnim = 0; return; }   // GLITCH (an equip card's Static Lock, js/cards.js): the wind-up it tries fails
         if (this.attackWindup > 0) {
             this.attackWindup--;
             this.attackAnim = -0.6 * (1 - this.attackWindup / COMBAT.bite.windup);
@@ -215,8 +216,8 @@ class Predator {
 
     update() {
         if (this.dead) return;
-        // ── PARALYSIS (an equip card's Static Lock, js/cards.js): it cannot move, bite or use an ability until the timer, which updateStatusEffects runs down, is out ──
-        if (this.paralyzed > 0) return;
+        // ── STUN (the Frost Maw's and the Manta's moves, js/evolution.js): it cannot move, bite or use an ability until the timer, which updateStatusEffects runs down, is out ──
+        if (this.stunned > 0) return;
 
         // ── STATUS TIMERS ──
         if (this.smokeDebuff  > 0) this.smokeDebuff--;

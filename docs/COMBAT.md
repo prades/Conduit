@@ -107,16 +107,19 @@ ASKED: *"Spiders should have no tag and should hang out near objects that reveal
 
 Tests: tests/prey.js. The older player-bite tests were changed to the new rule: tests/threehits.js, tests/targets.js, tests/stun.js. They still require one hit per bite, the knockback, and that a calm creature leaves a healthy player alone.
 
-## 6. Statuses the equip cards set (js/combat.js, js/cards.js `equipOnHit`)
+## 6. Statuses the equip cards set, and two real stuns (js/combat.js, js/cards.js `equipOnHit`, js/evolution.js)
 
-Pack 1's Precision cards (docs/TUTORIAL.md, "Equip cards") set a status on a creature when a follower's hit lands (a roll for each proc card the follower wears; none for a reflected hit, a set amount, a hit a shield took, or a burn's or a poison's own tick: those have no attacker). One rule for all of them: **a status already on is refreshed, never stacked**: the longer time wins, the stronger tick wins, so however many hits land the target has one timer of each, and every timer runs out by itself in `updateStatusEffects`.
+Pack 1's Precision cards (docs/TUTORIAL.md, "Equip cards") set a status on a creature when a follower's hit lands. Every direct hit a follower lands can: its plain hit, the element's physical and special, the Mage's shot, a signature move, a fire-bomb's splash, an ultimate, a thrown technician's impact. A follower rolls once for each proc card it wears, once for each creature the hit reaches. None for a reflected hit, a set amount, a hit a shield took, or a burn's own tick (those have no attacker). One rule for all of them: **a status already on is refreshed, never stacked**: the longer time wins, the stronger number wins, so however many hits land the target has one timer of each, and every timer runs out by itself in `updateStatusEffects`.
 
 | status | what it does | how long | the code |
 |---|---|---|---|
-| burn (Cinderbrand) | the game's own: `burning` frames, `burnDamage` a tick, a tick every `DOT_TICK` (20) frames; 3 a second is 1 a tick | 180 frames | `applyBurn` (a burn that had run out starts clean) |
-| poison (Mireblight) | new: `poisoned` frames, `poisonDamage` a tick (2 a second is 2/3 a tick), the same tick; it clears its tick when it runs out | 240 frames | `applyPoison` |
-| paralysis (Static Lock) | new: `paralyzed` frames; `Predator.update` returns at once while it is on (no move, bite or ability), and a bite being wound up is cut short as the Technomancer's arc cuts one; creatures only | 30 frames | `applyParalysis` |
-| slow (Rime Snare) | the game's own `applySlow` (x0.75); a stronger slow it already has, a web, is kept | 120 frames | `applySlow` |
-| knockback (Repulsor Pulse) | the Core bash's push: a velocity (0.22) that decays by itself, about 0.8 tile; a second push replaces the first | | `applyKnockback` |
+| burn (Cinderbrand, 15%) | the game's own: `burning` frames, `burnDamage` a tick, a tick every `DOT_TICK` (20) frames; 3 a second is 1 a tick. It is the only one of these that hurts | 180 frames | `applyBurn` (a burn that had run out starts clean) |
+| poison, the WEAKNESS (Mireblight, 15%) | **no damage.** The creature is weak: its bite power is taken down to x0.6 (40% weaker), the toxic smoke bomb's own `toxicWeakened` status, with the factor kept in `toxicWeakenFactor` so a stronger weakness it has already is kept; the factor is cleared the frame the timer ends | 240 frames | `applyWeaken` |
+| glitch (Static Lock, 10%) | **no damage, no stop.** The creature's wind-ups fail while it lasts: the rear-back before a bite is cancelled as soon as it starts (`_biteTick`), an ability's charge-up is cancelled and a new one cannot begin (`abilityTick`). It still walks. Drawn as a flicker (offset, blinking, three yellow bars) with the word GLITCH. Creatures only | 30 frames | `applyGlitch` |
+| slow (Rime Snare, 20%) | the game's own `applySlow` (x0.75); a stronger slow it already has, a web, is kept | 120 frames | `applySlow` |
+| knockback (Repulsor Pulse, 15%) | the Core bash's push: a velocity (0.22) that decays by itself, about 0.8 tile; a second push replaces the first | | `applyKnockback` |
+| stun (the Frost Maw's and the Manta's moves, not a card) | the creature cannot move, bite or use an ability: `Predator.update` returns at once, and a bite being wound up is cut short as the Technomancer's arc cuts one. Creatures only. These two moves used to write `hitStun`, which every hit writes and nothing reads, so their stun did nothing until now | Maw 75 frames, Manta 45 frames | `applyStun` |
 
-The ticks reach the creature through `applyDamage` with no attacker (as the burn's always did), so a creature's defense takes them down like any hit and a kill by a tick is credited to whoever hit it last. Siphon is not a status: it heals the follower (`healUnit`) by a tenth of the health the hit really took.
+The burn's ticks reach the creature through `applyDamage` with no attacker, so a creature's defense takes them down like any hit and a kill by a tick is credited to whoever hit it last. Siphon is not a status: it heals the follower (`healUnit`) by a tenth of the health the hit really took.
+
+Tests: tests/packs.js (each status alone, refreshed and not stacked, a stronger one kept, the glitch against a bite and an ability, the stun, a fight with every card), tests/evolution.js (the real stuns of the Maw and the Manta).

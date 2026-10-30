@@ -436,6 +436,7 @@ function chomp(f) {
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
     applyDamage(tgt, (f.power || 10) * MAW_MULT, f, "ice");
     tgt.hitStun = Math.max(tgt.hitStun || 0, MAW_STUN);
+    if (typeof applyStun === "function") applyStun(tgt, MAW_STUN);   // (hitStun is read by nothing: the stun is real now, js/combat.js applyStun)
     for (const a of _evoFoes(tgt.x, tgt.y, MAW_SLOW_R)) if (typeof applySlow === "function") applySlow(a, MAW_SLOW_FRAMES, MAW_SLOW);
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     f._sigAt = f0; f._sigCd = MAW_EVERY;
@@ -499,13 +500,13 @@ function staticRush(f) {
     const from = { x: f.x, y: f.y }, dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1, stop = Math.max(0, L - 0.8);
     f.x += dx / L * stop; f.y += dy / L * stop; f.dirX = dx / L; f.dirY = dy / L;
     const hits = [tgt];
-    applyDamage(tgt, (f.power || 10) * MANTA_MULT, f, "electric"); tgt.hitStun = Math.max(tgt.hitStun || 0, MANTA_STUN);
+    applyDamage(tgt, (f.power || 10) * MANTA_MULT, f, "electric"); tgt.hitStun = Math.max(tgt.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(tgt, MANTA_STUN);
     let last = tgt;
     for (let i = 0; i < MANTA_CHAIN; i++) {
         const next = _evoFoes(last.x, last.y, MANTA_HOP).filter(a => !hits.includes(a))
             .sort((a, b) => Math.hypot(a.x - last.x, a.y - last.y) - Math.hypot(b.x - last.x, b.y - last.y))[0];
         if (!next) break;
-        applyDamage(next, (f.power || 10) * MANTA_MULT * MANTA_CHAIN_SHARE, f, "electric"); next.hitStun = Math.max(next.hitStun || 0, MANTA_STUN);
+        applyDamage(next, (f.power || 10) * MANTA_MULT * MANTA_CHAIN_SHARE, f, "electric"); next.hitStun = Math.max(next.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(next, MANTA_STUN);
         hits.push(next); last = next;
     }
     f._sigAt = f0; f._sigCd = MANTA_EVERY;

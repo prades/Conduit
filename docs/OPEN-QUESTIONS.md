@@ -1,76 +1,94 @@
 # Open questions
 
-*Written 2026-10-30, after Pack 1 went onto main (`0f41843`, build 2026-10-30f, 71 suites passing). For the owner and anyone reading along, a second AI included.*
+*Written 2026-10-30 after Pack 1 went onto main (`0f41843`), and rewritten the same day after the owner answered the fifteen questions of the first version and the market follow-ups ("round 2": build 2026-10-30g, 72 suites). For the owner and anyone reading along, a second AI included.*
 
-Everything here is **unanswered or unconfirmed**. Each item says what the game does **now**, why it is open, and where it would change. Items marked ► are choices **I made that the briefs did not ask for**: answer "keep", "change to X" or "ask me later". Every default is already in the code and nothing below blocks the game. Answer by item number (A1, B2, ...).
+The first version of this file listed fifteen choices I had made that the briefs did not ask for. **Every one now has an answer** (section 1) and is built and tested. What is still open (section 2) is new, and small. Nothing here blocks the game: each default is already in the code. Answer by item number (N1, N2, ...).
 
-## A. Pack 1: choices that need your yes or no
+## 1. Answered in round 2 (built and tested)
 
-**A1 ► What a card from a pack becomes.** Now: it is *found* for this run. A follower of the card's element can wear it at once (it needs no place in the hand). NEW GAME clears it, and the run's save keeps it. 1,000 shards keep it for good (the permanent collection, `conduit_fp_cards`). Why open: the brief gives the price of a pack (100) and of a permanent unlock (1,000) but not how the two meet. I read it as "found, then pay to keep" because 100 against 1,000 only makes sense if packs are cheap and run-only. The other reading: a dealt card is owned for good at once. One word flips it: `EQUIP_PACK.keep = "forever"` (js/cards.js).
+| # | the question | the owner's answer | what the game does now |
+|---|---|---|---|
+| A1 | What a card from a pack becomes | **Found for the run.** ◆1,000 keeps one for good | `EQUIP_PACK.keep = "run"`: usable at once by a follower of the element, gone with NEW GAME, kept in the run's save |
+| A2 | A pack card must be found before its ◆1,000 unlock | **Yes** | FIND IT IN A PACK FIRST (`EQUIP_PACK.unlockNeedsFind`). The six Crystalline cards, which no pack deals, are still bought outright |
+| A3 | A card found twice | **A special buy menu** (section 1b) | a duplicate pays credits; a market sells the cards |
+| A4 | Where and when a pack can be bought | **Any time on the CARDS screen** | no pause, no cooldown, no limit but the ◆100 |
+| A5 | "Across all damage categories" (Impact Studs, Bedrock Matrix) | **Every hit a follower lands** | one multiplier in `applyDamage`; a set amount and a burn's tick are not multiplied |
+| A6 | Poison and paralysis did not exist | "Poison has no damage, it just makes the creature weak, and electric makes the affected glitchy and mess up wind-up actions." And **make the Frost Maw's and the Manta's stuns real** | **Poison is a weakness:** no damage, the creature's bite lands for x0.6 (40% weaker) for 4 seconds, at 15% a hit. **Static Lock is a glitch:** every wind-up it tries fails (the rear-back before a bite, an ability's charge-up) for 0.5 seconds, at 10% a hit; it still walks; it flickers and says GLITCH. **The Maw's stun (75 frames) and the Manta's (45) are real:** the creature does nothing, and a bite it was winding up is cut short. The old poison and paralysis are gone |
+| A7 | Burn damage and the target's defense | **Defense still applies** | a burn's tick goes through `applyDamage` with no attacker, as the game's own always did |
+| A8 | Which hits can proc | **Every direct hit** | one roll per proc card, per target the hit reaches; not a reflected hit, a set amount, a hit a shield took, or a tick |
+| A9 | Small bonuses are not rounded | **Keep the exact number** | a stat a card moves is kept to three decimals; maximum health stays whole |
+| A10, B2 | Attack speed counts in frames | **The rest between ordinary attacks only** | `followerRest`; signature-move timers and technician abilities keep theirs |
+| B1 | "Elemental attack power" | **SP.ATK only** | the Mage's shot and each element's special; not the plain hits or the signature moves |
+| B3 | Same-stat stacking cannot happen with the six | **Fine as it is** | the sum is built and tested with stand-in cards |
+| 14 | The Game Bible | **Not yet** | `bible.html` is untouched (its checked build-stamp number only) |
+| 15 | `docs/CARD-SYSTEM.md` | **Update it and push `design-notes`** | done on the `design-notes` branch only, never on main |
 
-**A2 ► A card a pack can deal has to be found before it can be unlocked.** The CARDS screen says FIND IT IN A PACK FIRST. Before Pack 1 any card could be bought outright for 1,000. The six Crystalline cards, which no pack deals, are still bought outright. Switch: `EQUIP_PACK.unlockNeedsFind`.
+### 1b. The market (your answer to A3, in your words, and the follow-ups)
 
-**A3 ► A card found twice.** It is found once; the second copy adds nothing (no refund, no shards). The brief only forbids a card twice *inside one pack*. Open: should a duplicate give something?
+> "Should go into a special buy menu, credits that you use to buy the permanent cards actually and a rotating buy menu that refreshes every 5 mins cards go from 90-650 credits and duplicates cannot be found here and the credits you get from each pack is equivalent to 25% of what the market value of the card is. You can also buy the cards with actual shards too."
 
-**A4 ► Where and when a pack can be bought.** Only on the CARDS sheet (a dock button on a tablet or desktop; phones have no CARDS screen, so a phone cannot buy a pack). At any time, mid-fight included: the sheet does not pause the game. A new run starts with 100 shards, so one pack can be bought straight away. Open: limit it (a place, a cooldown), or pause while the sheet is open?
+| the point | decided with you | where |
+|---|---|---|
+| Credits | ◇, **the run's own** ("reset each run"): NEW GAME clears them; the run's save keeps them | `equipCredits`, `equipReset` |
+| What pays them | **only a duplicate** in a pack: 25% of the card's market value (a half is possible: 22.5) | `equipPackOpen` |
+| What a duplicate is | a card **in your hand or already found this run**. A card you own for good but did **not** bring is **not** a duplicate: it is found for the run and pays no credits (so you can wear it beyond the hand's three) | `equipDuplicate` |
+| Market value by rarity | **90 / 150 / 250 / 350 / 500 / 650** (Unrefined, Refined, Precision, Prototype, Lustrous, Crystalline). Pack 1 deals the first three | `EQUIP_MARKET.values` |
+| The shelf | **six** cards, not in your hand and **not found this run**. It may list a card you own for good but did not bring. **Only cards a pack deals:** the six Crystalline cards are not sold | `equipShelfPool`, `equipShelfDeal` |
+| The clock | a new shelf every **5 minutes** of the **game's own clock** (18,000 frames), saved with the run, so a reload keeps the same six cards and the time left | `EQUIP_MARKET.every`, `equipTick` |
+| Paying | the card's value in **credits, or the same number of shards** | `equipMarketBuy` |
+| Buying | a card **new to you is kept for good and found**; one you already own for good is **found for the run** and nothing new is written | `equipMarketBuy` |
+| The ◆1,000 unlock | **stays beside the market** | `equipUnlock` |
+| The screen | a MARKET section on the CARDS sheet (the shelf, its clock, two prices on each card, two taps to buy); the header shows the run's credits; the pack's reveal tags each card NEW or DUPLICATE · +◇ | js/cardsui.js |
 
-**A5 ► "Across all damage categories" (Impact Studs, Bedrock Matrix).** The game has **no damage categories**. Its attacks are elemental and only sort into the basic hit, the element's "physical" and its "special". So the bonus multiplies every hit a follower lands (`applyDamage`, js/helpers.js), except set amounts and a burn's or poison's own tick. If categories are planned, this needs rewiring when they arrive.
+## 2. Newly open
 
-**A6 ► Poison and paralysis did not exist.** I added the smallest version of each (js/combat.js, js/predator.js).
-- Poison is a damage over time with its own timer, beside the burn.
-- Paralysis makes a creature skip its whole update for the time (no move, bite or ability) and cuts a bite it was winding up. Creatures only.
-- The game's `hitStun` is set on every hit and **read by nothing**, so Frost Maw's and Manta's "stun" does nothing today. I did not touch it.
+Each of these is a choice the answers above left to me. **Defaults are in the code; say "keep" or "change to X".**
 
-Open: should those stuns be made real? Poison and paralysis have no art, only a floating word.
+- **N1. The flat ◆1,000 unlock is now far dearer than the shelf.** A new card on the shelf costs 90, 150 or 250 shards (Pack 1's three rarities) and is kept for good; the ◆1,000 unlock of a card you found in a pack is four to eleven times that. You asked to keep both. Open: keep, lower the ◆1,000, or retire it.
+- **N2. The shelf is not weighted by rarity.** It deals six at random from the cards a pack deals, each equally likely, so on average two Unrefined, two Refined and two Precision. The pack itself is 60 / 30 / 10. Open: weight the shelf the same way (the Precision cards would be rarer), or keep it flat.
+- **N3. A bought card's place stays empty.** A card bought leaves the shelf and nothing replaces it until the next shelf, so a shelf can be bought down to nothing. Open: refill at once, or leave.
+- **N4. Credits come in halves.** A duplicate of an Unrefined card pays 22.5. The header shows the credits rounded down (22.5 reads ◇22); a price in credits is exact, and a short button says how short you are, rounded up. Open: whole credits only (round a duplicate's 22.5), or as it is.
+- **N5. A weakened creature bites 40% weaker, but its abilities do not change.** That is the toxic weakness the game already had (the smoke bomb's), which only a creature's bite reads. Open: weaken its abilities too.
+- **N6. The shelf's five minutes run only while the game runs.** The clock is the game's frame count, so it stops when the game is stopped, and the CARDS sheet does not pause the game (A4), so time passes while you shop. Open: fine as it is, or pause the shelf's clock while the sheet is open.
+- **N7. The market on a phone.** A phone has no CARDS screen, so it can buy neither a pack nor a card. Unchanged from before; phones come later.
+- **N8. The values of the rarities Pack 1 does not deal** (Prototype 350, Lustrous 500, Crystalline 650) are set from your table but unused until a pack deals those cards: the six Crystalline cards are not sold ("no Crystalline").
 
-**A7 ► Burn and poison damage is reduced by the target's defense.** They go through `applyDamage` with no attacker, as the game's own burn always did, and a kill by a tick is credited to whoever hit it last. "3 damage a second" is therefore a nominal figure. Alternative: true damage.
+## 3. Not decided, nothing built
 
-**A8 ► Which hits can proc.** Every direct hit a follower lands: its plain hit, the element's physical and special, the Mage's shot, signature moves, fire-bomb splash, ultimates, a thrown technician's impact. One roll per hit **per target**, so a ring hitting three creatures rolls three times. Not: reflected hits, set amounts, ticks, a hit a shield absorbed. Open: should signature moves or ultimates be left out?
-
-**A9 ► Small bonuses are not rounded.** The game's stats are whole numbers, and a +5% on a stat of 9 would round to +0%. So a stat a card moves is kept to three decimals (the screens round it to show). Maximum health stays a whole number.
-
-**A10 ► Attack speed is counted in frames.** The game runs at 60 a second. +5% on a 45-frame rest is 43 frames and +10% is 41, so the gain is within a frame of the exact share. It covers the plain, elemental and special hits and the Mage's shot. It does not cover signature-move timers or technician abilities.
-
-## B. The Crystalline cards (the earlier brief): readings not yet confirmed
-
-- **B1** "Elemental attack power" is the SP.ATK stat. It drives the Mage's ranged shot and each element's special, not the elements' plain physical hits and not signature moves (those read ATK).
-- **B2** "Attack speed" is the rest between ordinary attacks (see A10).
-- **B3** Same-stat stacking cannot happen with the six. A unit cannot wear one card twice, and the cards that share a stat are on different classes. The additive sum is built and tested with stand-in cards. To have it in play you need a second same-stat card for a class, or to allow a card twice (the approved rule says no).
-- **B4** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because Pack 1 does not deal them. It waits for the pack that does.
-
-## C. Not decided, nothing built
-
+- **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **Pack 2 and later:** where Prototype, Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined, Refined and Precision only.
 - **Other kinds of card:** class cards beyond the Crystalline six, subclass cards, Universal cards (the player's two slots have nothing they can hold), player-class cards.
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
-- **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js). The rarity of each future card.
+- **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.
 - **Card art:** the design asks for low-poly 3D artwork and kanji-inspired graphics. Only the rarity chip exists.
 - **A phone's CARDS screen and slots.**
 - **Jelly's damage profile and the universal attack index:** both listed as missing in the Notion archive.
 
-## D. Documents and records out of step
+## 4. Documents and records out of step
 
-- **Notion.** Its connector failed to connect in this session, so the Archive was never updated, and could not be re-read, for the cards, the Crystalline cards or Pack 1. It may say something different from the above: please compare, above all on how cards are found, pack contents and odds, and whether a pack's cards are permanent. The text still to be written there is in the session scratchpad: `/tmp/claude-0/-home-user-Conduit/dee5ef54-ced0-50c5-bf19-ef4dca8550bd/scratchpad/notion_status_2026-10-30.md` (sections 1 to 7; the older copy on the `design-notes` branch, `docs/NOTION-UPDATE-PENDING.md`, lacks sections 6 and 7).
-- **`docs/CARD-SYSTEM.md` (on the `design-notes` branch only).** §9 and §10 are out of date. In §9, "how cards are found during a run" and "pack prices, contents and odds" are now answered for Pack 1 only (above). "The card list, values and balance" is partly answered (24 real cards, initial values). "How a resistance combines with a subclass's" is still open. §10 still says no real card exists.
-- **Game Bible (`bible.html`).** Untouched except its checked build-stamp number (your standing permission). It has no subclass or card section, and several sentences are out of date:
+- **Notion.** Its connector failed to connect in this session (an HTTP 400 on every call), so the Archive was never updated, and could not be re-read, for the cards, the Crystalline cards, Pack 1 or the market. It may say something different from the above: please compare, above all on how cards are found, pack contents and odds, whether a pack's cards are permanent, and the poison and paralysis wording (both gone). The text still to be written there is in the session scratchpad: `/tmp/claude-0/-home-user-Conduit/dee5ef54-ced0-50c5-bf19-ef4dca8550bd/scratchpad/notion_status_2026-10-30.md` (sections 1 to 8; the older copy on the `design-notes` branch, `docs/NOTION-UPDATE-PENDING.md`, lacks sections 6 to 8).
+- **`docs/CARD-SYSTEM.md` (on the `design-notes` branch only)** was updated and pushed to `design-notes` in round 2 (never to main): everything built, and every answer above.
+- **Game Bible (`bible.html`).** Untouched except its checked build-stamp number (your standing permission): you said "not yet". It has no subclass or card section, and several sentences are out of date:
   - a respawn now keeps the role;
   - the equip cards are in the follower's record;
   - the dock has seven buttons;
   - the Quill Burst row still shows the old ring of fire;
-  - "runs 67 suites" is now 71.
+  - "runs 67 suites" is now 72.
 
-  A draft of the new section and of the corrections is in the scratchpad (`bible_draft_cards.md`, `bible_draft_cards_snippet.html`, `bible_draft_quill_rows.html`, same folder as above). Open: say "apply the Bible draft"?
+  A draft of the new section and of the corrections is in the scratchpad (`bible_draft_cards.md`, `bible_draft_cards_snippet.html`, `bible_draft_quill_rows.html`, same folder as above). **The draft is older than round 2:** it does not know the market, the weakness, the glitch or the real stuns, so it must be brought up to date before it is applied.
 - **`tests/visiblearea.js`** is a known flaky real-browser timing test (about 1 run in 14 on main).
+- **This file** is committed on the working branch (`claude/start-game-project-HSh7Z`) only; main does not have it. Say so if you want it on main too.
 
-## E. Already decided: please do not reopen
+## 5. Already decided: please do not reopen
 
 - Five subclasses (Jelly is the fifth), set by form from the roster chart. An egg and the ten retired forms have none.
 - Two card slots per follower; the player has two Universal slots.
 - A card is a type: any number of units may wear it, never twice on one unit, and it is never used up. Cards move freely between followers. Exile, falling for good and a re-roll empty the slots, and nothing is lost.
-- A permanent unlock is a flat 1,000 shards, paid from the run's shards. The collection survives NEW GAME.
+- A permanent unlock is a flat ◆1,000 shards, paid from the run's shards, for a card found first (a card a pack deals) or outright (the Crystalline six). The collection survives NEW GAME.
 - At the start of a run you pick up to 3 cards from the collection, and the hand can be changed from the CARDS screen during the run.
 - The CARDS screen is a dock button, always shown, on tablet and desktop; phones come later.
 - Rarity names: Unrefined, Refined, Precision, Prototype, Lustrous, Crystalline. A rarity chip of illuminated bars (1 to 6) shows it.
-- Pack 1: 100 shards, exactly 4 cards, Unrefined, Refined and Precision at 60 / 30 / 10, one slot reserved for a Precision, no card twice in a pack; the 18 Element cards and their numbers.
+- Pack 1: ◆100, exactly 4 cards, Unrefined, Refined and Precision at 60 / 30 / 10, one slot reserved for a Precision, no card twice in a pack; the 18 Element cards and their numbers. What it deals is found for the run.
 - The six Crystalline class cards, each +50% to one stat.
 - Quill Burst's numbers (range 4, +25% on a hit, every 4 seconds, no burn).
+- The market: everything in section 1b.

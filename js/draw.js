@@ -163,7 +163,15 @@ function drawPredatorDebug(actor, px, py) {
 // ─────────────────────────────────────────────────────────
 function drawNPC(actor, px, py, drawCtx=ctx) {
     if (actor instanceof Predator) {
-        _drawPredator(actor, px, py, drawCtx);
+        // GLITCH (an equip card's Static Lock, js/cards.js): it flickers and jitters where it stands, with a few bright bars across it, while its wind-ups fail. Made from the frame alone (no random), so a step with no picture is the same step.
+        if (actor.glitched > 0) {
+            const gf = frame || 0, jx = ((gf * 7) % 5) - 2, jy = ((gf * 3) % 3) - 1;
+            drawCtx.save(); drawCtx.globalAlpha *= (gf % 4 < 2) ? 1 : 0.55; drawCtx.translate(jx, jy);
+            try { _drawPredator(actor, px, py, drawCtx); } finally { drawCtx.restore(); }
+            drawCtx.save(); drawCtx.globalAlpha = 0.6; drawCtx.fillStyle = "#ffee55";
+            for (let i = 0; i < 3; i++) drawCtx.fillRect(px - 14 + jx, py - 40 + ((gf * 5 + i * 17) % 40), 28, 1.5);
+            drawCtx.restore();
+        } else _drawPredator(actor, px, py, drawCtx);
         // BLIND (STEAM / CRYO-ARC combos): a grey haze swirling over its head.
         if (actor.blinded > 0) {
             const t = (frame || 0) * 0.15;
