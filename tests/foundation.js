@@ -48,7 +48,7 @@ const OLD_NAMES = ['spawnPredatorForZone', 'generateSegment', 'ensureWorldTo', '
         for (const f of scriptOrder().concat(['game.html'])) { const src = rd(f); for (const n of OLD_NAMES) if (new RegExp('(?<![\\w$.])' + n.replace(/\$/g, '\\$') + '(?![\\w$])').test(src)) hits.push(f + ':' + n); }
         same(hits.join(' '), '', 'still named');
     });
-    check('the page has no other game to open, no wave line, no build button; the dock is ROSTER, CARDS (hidden until a card exists), CLONES, SETTINGS, PACK, MAP, ?; the room tag is a plate, not a button', () => {
+    check('the page has no other game to open, no wave line, no build button; the dock is ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ?; the room tag is a plate, not a button', () => {
         const H = rd('game.html');
         ok(!/\?classic|CLASSIC GAME|facilityPlayChip/.test(H), 'the classic game is still on the page');
         ok(!/id="waveInfo"|id="btnBuild"|id="btnSquad"|id="padHud"|id="aimRing"/.test(H), 'old chrome is still on the page');

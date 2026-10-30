@@ -3,9 +3,9 @@
 // ─────────────────────────────────────────────────────────
 // ASKED (chosen with the user): "The CARDS screen is a new dock button on tablet and desktop. Phones get it in a later update", the card slots on the roster, "Illuminated bars" for the rarity, and a start-of-run choice of up to three cards.
 //
-//   THE ROSTER  (the Command Center's carousel, js/commandcenter.js): under the creature in view, its SUBCLASS (always, a tag), and, once there is a card (equipAny), CARD 1 and CARD 2 as drop-downs listing the hand: what does not fit
-//               says why. A phone's roster has none of this yet.
-//   CARDS       the dock's button (shown once there is a card) opens a screen over the game, as the Command Center does: YOUR HAND (the card types taken into this run, up to three), YOU (the player's two Universal slots), and THE COLLECTION
+//   THE ROSTER  (the Command Center's carousel, js/commandcenter.js): beside the creature in view, CARD 1 and CARD 2 as drop-downs under its styles, listing the hand: what does not fit says why, and with no card in the hand
+//               they say so; its SUBCLASS (a row, and a tag on its picture) is under RE-ROLL / INFO / EXILE, which a small tablet must still show. A phone's roster has none of this yet.
+//   CARDS       the dock's button opens a screen over the game, as the Command Center does: YOUR HAND (the card types taken into this run, up to three), YOU (the player's two Universal slots), and THE COLLECTION
 //               (every card: unlocked or locked; UNLOCK for EQUIP.unlockCost shards, two taps; TAKE INTO THE RUN or PUT BACK). Rarity is a row of six bars, one lit for each step.
 //   A NEW RUN   the same screen opens by itself, with a banner and a START button, when a run begins and the collection holds a card (js/cards.js equipRunStart).
 // Nothing here is drawn on the canvas, and nothing runs in a frame: the screen redraws only when what it shows has changed (a redraw under a finger loses the tap).
@@ -17,10 +17,7 @@ function _cdEl(tag, cls, text) { const e = document.createElement(tag); if (cls)
 function _cdClick(el, fn) { el.addEventListener("click", ev => { ev.stopPropagation(); fn(ev); }); }
 function _cdNow() { return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now(); }
 
-// ── the dock's button: there only when there is a card to see ──
-function cardsButtonSync() {
-    try { const b = document.getElementById("btnCards"); if (b) b.style.display = equipAny() ? "" : "none"; } catch (e) { /* no page */ }
-}
+// ── the dock's button (game.html): always there; with no card to show, the sheet says so ──
 function cardsToggle() { if (cardsPanelOpen) cardsClose(); else cardsOpen(); }
 function cardsOpen(opts) {
     const root = document.getElementById("cardsRoot"); if (!root) return false;
@@ -103,7 +100,7 @@ function cardsRender(force) {
     const body = _cdEl("div", "cd-body");
     if (start) body.appendChild(_cdEl("div", "cd-banner", "A NEW RUN · CHOOSE UP TO " + EQUIP.startPick + " CARDS TO TAKE WITH YOU, THEN START"));
     const sec = (t, sub) => { const h = _cdEl("div", "cd-sec", t); if (sub) h.appendChild(_cdEl("i", null, sub)); body.appendChild(h); };
-    sec("YOUR HAND", equipHand.length ? "THE CARDS YOU CAN WEAR THIS RUN · EACH CAN BE WORN BY ANY NUMBER OF FOLLOWERS" : "EMPTY · TAKE CARDS FROM THE COLLECTION BELOW");
+    sec("YOUR HAND", equipHand.length ? "THE CARDS YOU CAN WEAR THIS RUN · EACH CAN BE WORN BY ANY NUMBER OF FOLLOWERS" : equipAny() ? "EMPTY · TAKE CARDS FROM THE COLLECTION BELOW" : "EMPTY");
     const hand = _cdEl("div", "cd-row"); const cap = equipDev === "all" ? equipHand.length : EQUIP.startPick;
     for (let i = 0; i < Math.max(cap, 0); i++) { const c = equipCard(equipHand[i]); if (c) { const s = _cdSlab(c, "hand"); s.appendChild(_cdEl("div", "cd-worn", equipWearers(c.id) ? "WORN BY " + equipWearers(c.id) : "NOT WORN")); hand.appendChild(s); } else { const e = _cdEl("div", "cd-card cd-empty"); e.appendChild(_cdEl("div", "cd-name", "EMPTY")); hand.appendChild(e); } }
     body.appendChild(hand);
@@ -111,24 +108,26 @@ function cardsRender(force) {
     const you = _cdEl("div", "cd-you"); you.appendChild(_cdPlayerSlot(0)); you.appendChild(_cdPlayerSlot(1)); body.appendChild(you);
     sec("THE COLLECTION", "UNLOCKED FOR GOOD · IT SURVIVES A NEW GAME");
     const grid = _cdEl("div", "cd-grid"); all.forEach(c => grid.appendChild(_cdCollectionCard(c))); body.appendChild(grid);
-    if (!all.length) body.appendChild(_cdEl("div", "cd-note", "NO CARD EXISTS YET"));
+    if (!all.length) body.appendChild(_cdEl("div", "cd-note", "NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED"));
     root.appendChild(body); body.scrollTop = keep;
 }
 
 // ── the roster (js/commandcenter.js _ccDrawSettings): the creature in view's subclass, and its two slots ──
 function equipSig(f) {   // what the settings column must redraw for
     if (!f || f.isClone || f.isFollower !== true) return "";
-    return [equipSubclassOf(f), equipAny() ? equipSlots(f).join(",") + "/" + equipHand.join(",") + "/" + (equipHand.length ? 1 : 0) : ""].join("|");
+    return [equipSubclassOf(f), equipSlots(f).join(","), equipHand.join(",")].join("|");
 }
 function _cdSubclassNote(f) {
     const s = equipSubclassOf(f);
     if (s) return equipSubclassLabel(s);
     return f.evolved ? "NONE · A RETIRED FORM" : "NONE YET · IT HAS NOT EVOLVED";
 }
-function equipRosterDraw(side, f) {
+function equipSubclassRow(side, f) {   // (drawn under the buttons, above the stats)
     if (!f || f.isClone || f.isFollower !== true || typeof _ccEl !== "function") return;
     const idx = _ccEl("div", "cc-stats"), row = _ccEl("div", "cc-stat"); row.appendChild(_ccEl("span", "cc-stat-k", "SUBCLASS")); row.appendChild(_ccEl("span", "cc-stat-v", _cdSubclassNote(f))); idx.appendChild(row); side.appendChild(idx);
-    if (!equipAny()) return;   // (no card exists: nothing to wear)
+}
+function equipRosterDraw(side, f) {   // (drawn under the styles)
+    if (!f || f.isClone || f.isFollower !== true || typeof _ccEl !== "function") return;
     const hand = equipHandCards();
     for (let slot = 0; slot < EQUIP.followerSlots; slot++) {
         const cur = equipSlots(f)[slot], card = equipCard(cur), opts = [];

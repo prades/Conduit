@@ -276,7 +276,6 @@ function facilityPlayStart() {
     if (typeof facilityPropsPreload === "function") facilityPropsPreload();   // the 3D prop sheets start loading now (js/propsprites.js)
     _fp.saveReady = !away;                           // from here the game is saved as it goes (the background keeps nothing)
     if (!away && !saved && typeof equipRunStart === "function") equipRunStart();   // a fresh run: the cards screen opens to choose the hand, when the collection has a card in it (js/cards.js)
-    if (typeof cardsButtonSync === "function") cardsButtonSync();   // the CARDS button in the dock shows once there is a card (js/cardsui.js)
     return true;
 }
 // is this a spot a unit can stand on (js/facilitysave.js puts the player back where they were left)

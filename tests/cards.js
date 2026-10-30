@@ -7,7 +7,7 @@
 //   THE RULES     a card fits by element, role (class), subclass or not at all (universal); in the hand to be worn; one slot each, not twice on a unit, any number of units may wear one; the player takes Universal only;
 //                 a role switched or a card put back takes it off (the tick); unlocking pays the flat price from the run's shards, once, and is kept where NEW GAME does not reach
 //   THE LIFE      a respawn keeps a follower's cards; EXILE, falling for good (its restored body too) and a RE-ROLL empty the slots; the save carries them, additively (FS.version still 1), and a save from before the cards loads
-//   NOTHING ELSE  no card does anything; without ?cards there is no card, no button, no slot; the game's own numbers (the stats, the save's other parts) are as they were
+//   NOTHING ELSE  no card does anything; without ?cards there is no card, and the button, the roster's slots and the sheet are there and say so; the game's own numbers (the stats, the save's other parts) are as they were
 //   THE SCREENS   in the real page: the CARDS button and its sheet (rarity bars, YOUR HAND, YOU, THE COLLECTION, UNLOCK in two taps), the roster's SUBCLASS and CARD 1 / CARD 2, the start-of-run choice; a phone has none
 const fs = require('fs');
 const vm = require('vm');
@@ -112,10 +112,15 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       g.evolved = 'bloom'; g.element = 'fire'; g.role = 'brawler'; _ccFocus = g; ccRender(); await wait(60); out.legacy = { sub: rows().filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chipShown: shown($('#ccFocus .cf-sc')) };
       ccClose();
     } else if (!out.any) {
-      // NO CARD: the tag is there, nothing else is
+      // NO CARD: the button, the sheet and the slots are all there, and say so
       var f0 = followers[0]; f0.evolved = 'quillstone'; f0.role = 'brawler'; f0.element = 'fire'; selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f0; ccRender(); await wait(60);
-      out.plain = { dds: $$('#ccSide .cc-dd .cc-dd-k').map(function(e){ return e.textContent; }), sub: $$('#ccSide .cc-stat').map(function(r){ return [r.querySelector('.cc-stat-k').textContent, r.querySelector('.cc-stat-v').textContent]; }).filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chip: ($('#ccFocus .cf-sc') || {}).textContent, cardsOpen: $('#cardsRoot').className };
-      ccClose();
+      var offs = $$('#ccSide .cc-dd').map(function(d){ return [d.querySelector('.cc-dd-k').textContent, d.querySelector('.cc-dd-v').textContent, d.disabled]; });
+      out.plain = { dds: offs.map(function(o){ return o[0]; }), cardDds: offs.filter(function(o){ return /^CARD/.test(o[0]); }), sub: $$('#ccSide .cc-stat').map(function(r){ return [r.querySelector('.cc-stat-k').textContent, r.querySelector('.cc-stat-v').textContent]; }).filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chip: ($('#ccFocus .cf-sc') || {}).textContent, cardsOpen: $('#cardsRoot').className };
+      ccClose(); await wait(60);
+      click($('#btnCards')); await wait(200);
+      out.emptySheet = { cls: $('#cardsRoot').className, slabs: $$('#cardsRoot .cd-card:not(.cd-empty)').length, empties: $$('#cardsRoot .cd-card.cd-empty').length, pslots: $$('#cardsRoot .cd-pbtn').length, note: ($('#cardsRoot .cd-note') || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent };
+      click($('#cardsRoot .cd-pbtn')); await wait(60); out.emptySheet.pList = $$('#cardsRoot .cd-plist .cd-btn').length + '/' + $$('#cardsRoot .cd-plist .cd-note').map(function(e){ return e.textContent; }).join();
+      click($('#cardsRoot .cd-close')); await wait(60); out.emptySheet.closed = $('#cardsRoot').className;
     } else if (!out.wide) {
       // A PHONE: no dock, and its roster has no slots yet
       out.phone = { dock: shown($('#topToggles')) };
@@ -183,7 +188,7 @@ function measure(w, h, query, seed) {
         same(new Set(t.map(c => c.rarity)).size >= 5, true, 'the test cards spread over the rarities');
     });
     const Q = await boot('', {});
-    await check('without ?cards: the registry is empty, equipAny is false, the CARDS button has nothing to show, and nothing can be unlocked or taken', () => {
+    await check('without ?cards: the registry is empty, equipAny is false, and nothing can be unlocked or taken', () => {
         same(Q.J('Object.keys(equipCards()).length'), 0, 'cards'); same(Q.J('equipAny()'), false, 'any'); same(Q.J('equipDev'), '', 'the switch');
         const r = Q.J(`(function(){ shardCount = 5000; const a = equipUnlock('test_fire'), b = equipHandAdd('test_fire'), f = __mk('fire', 'brawler'); return { a, b, put: equipPut(f, 0, 'test_fire'), why: equipUnlockWhyNot('test_fire'), shards: shardCount, run: equipRunStart(), owned: equipOwnedList().length }; })()`);
         same(r.a, false, 'unlocked a card that does not exist'); same(r.b, false, 'a card that does not exist went into the hand'); same(r.put, false, 'a card that does not exist was put on'); same(r.shards, 5000, 'it cost something'); same(r.run, false, 'a run began with a choice to make'); same(r.owned, 0, 'owned');
@@ -346,13 +351,13 @@ function measure(w, h, query, seed) {
         const f = JSON.parse(run('JSON.stringify(followerRecord(__wear(__fresh(1)[0])))')); for (const k of ['element', 'personality', 'stats', 'role', 'uid', 'level', 'xp', 'cards']) ok(k in f, 'the record lost ' + k);
     });
     await check('the hooks are one line each and guarded (typeof equip... === "function"): the game runs if a card file were missing', () => {
-        const need = { 'js/facilitysave.js': 3, 'js/game.js': 3, 'js/helpers.js': 1, 'js/party.js': 1, 'js/specimen.js': 1, 'js/facilityplay.js': 3, 'js/commandcenter.js': 2 };
-        for (const [f, n] of Object.entries(need)) { const hits = (rd(f).match(/typeof (equip\w+|cardsButtonSync) === "function"/g) || []).length; ok(hits >= n, f + ' has ' + hits + ' guarded hooks, ' + n + ' expected'); }
+        const need = { 'js/facilitysave.js': 3, 'js/game.js': 3, 'js/helpers.js': 1, 'js/party.js': 1, 'js/specimen.js': 1, 'js/facilityplay.js': 2, 'js/commandcenter.js': 2 };
+        for (const [f, n] of Object.entries(need)) { const hits = (rd(f).match(/typeof (equip\w+) === "function"/g) || []).length; ok(hits >= n, f + ' has ' + hits + ' guarded hooks, ' + n + ' expected'); }
         ok(!/equip|cards/i.test(rd('js/combat.js')) && !/\bequip\w*\(/.test(rd('js/elements.js')) && !/\bequip\w*\(/.test(rd('js/levels.js')), 'a card is in the fight or the stats');
     });
-    await check('the files are on the page, in the boot check, and the dock has its button (hidden until a card exists)', () => {
+    await check('the files are on the page, in the boot check, and the dock has its button (always shown)', () => {
         const html = rd('game.html'), order = scriptOrder(); ok(order.includes('js/cards.js') && order.includes('js/cardsui.js'), 'the scripts are not on the page'); ok(order.indexOf('js/cards.js') < order.indexOf('js/game.js') && order.indexOf('js/cardsui.js') > order.indexOf('js/commandcenter.js'), 'their order');
-        ok(/"js\/cards\.js": "EQUIP"/.test(html) && /"js\/cardsui\.js": "cardsOpen"/.test(html), 'the boot check does not probe them'); ok(/id="btnCards" class="top-btn" onclick="cardsToggle\(\)"[^>]*style="display:none"/.test(html), 'the dock button'); ok(/body\.cardsOpen #topToggles/.test(html), 'the HUD stays over the sheet');
+        ok(/"js\/cards\.js": "EQUIP"/.test(html) && /"js\/cardsui\.js": "cardsOpen"/.test(html), 'the boot check does not probe them'); ok(/id="btnCards" class="top-btn" onclick="cardsToggle\(\)"/.test(html) && !/id="btnCards"[^>]*style="display:none"/.test(html), 'the dock button is not there, or is hidden'); ok(/body\.cardsOpen #topToggles/.test(html), 'the HUD stays over the sheet');
     });
 
     group('8. THE SCREENS (real browser)');
@@ -405,9 +410,13 @@ function measure(w, h, query, seed) {
     }
     const N = measure(1180, 820, '');
     if (N === null) console.log('  (no Chromium here: skipped)');
-    else await check('WITHOUT ?cards: no CARDS button (it is there but hidden), no sheet, and the roster has the SUBCLASS tag and no card slots', () => {
-        ok(N && !N.err, 'the probe: ' + (N && N.err)); same(N.dev, '', 'the switch'); same(N.any, false, 'a card exists'); same(N.btn.there, true, 'the button is not in the dock'); same(N.btn.shown, false, 'the button shows with no card to see');
-        same(N.plain.dds.join('|'), 'ATTACK STYLE|PLAY STYLE', 'the roster\'s settings'); same(N.plain.sub.join(), 'SUBCLASS,CRUSTACEAN', 'the subclass row'); same(N.plain.chip, 'CRUSTACEAN', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open');
+    else await check('WITHOUT ?cards: the CARDS button is in the dock and shown, the sheet opens empty and says so, and the roster has the SUBCLASS tag and CARD 1 / CARD 2, off, saying there is no card in the hand', () => {
+        ok(N && !N.err, 'the probe: ' + (N && N.err)); same(N.dev, '', 'the switch'); same(N.any, false, 'a card exists'); same(N.btn.there && N.btn.inDock && N.btn.shown, true, 'the button: ' + JSON.stringify(N.btn));
+        same(N.plain.dds.join('|'), 'ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2', 'the roster\'s settings'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
+        same(N.plain.sub.join(), 'SUBCLASS,CRUSTACEAN', 'the subclass row'); same(N.plain.chip, 'CRUSTACEAN', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
+        ok(N.emptySheet.cls.indexOf('open') >= 0, 'the sheet did not open'); same(N.emptySheet.slabs, 0, 'a card on the sheet'); same(N.emptySheet.empties, 3, 'the hand\'s empty places'); same(N.emptySheet.pslots, 2, 'the player\'s slots');
+        same(N.emptySheet.secs.join('|'), 'YOUR HAND|YOU|THE COLLECTION', 'its parts'); same(N.emptySheet.note, 'NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED', 'what the collection says'); ok(/HAND 0 \/ 3 · 0 OF 0 UNLOCKED/.test(N.emptySheet.summary) && !/TEST CARDS/.test(N.emptySheet.summary), 'the summary: ' + N.emptySheet.summary);
+        same(N.emptySheet.pList, '1/NO CARD IN YOUR HAND', 'a player slot\'s list with no card in the hand (EMPTY, off, and the note)'); same(N.emptySheet.closed.indexOf('open') < 0, true, 'close');
     });
     const P = measure(390, 844, '?cards=all');
     if (P === null) console.log('  (no Chromium here: skipped)');

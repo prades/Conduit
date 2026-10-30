@@ -99,14 +99,18 @@ if (r === null) console.log('  (no Chromium here: skipped)');
 else {
     check('the instrument ran', () => { ok(r, 'the probe produced nothing'); same(r.err, undefined, 'the probe threw'); same(r.facility, true, 'the page did not boot the facility'); });
     if (r && !r.err) {
-        check('every menu is in the strip, and shown: ROSTER, CLONES, SETTINGS, PACK, MAP, ? (CARDS is in the strip too, and shows once there is a card: js/cardsui.js)', () => {
-            same(r.ids.join(), 'btnRoster,btnCards,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.filter(id => id !== 'btnCards').join(), 'a button is hidden (CARDS is, with no card to see)');
+        check('every menu is in the strip, and shown: ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ?', () => {
+            same(r.ids.join(), 'btnRoster,btnCards,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.join(), 'a button is hidden');
         });
         check('when it all fits there is no fade and no arrow; when there is more than fits it slides sideways (right room at the start, an arrow and a fade)', () => {
             if (!r.naturalOver) { same(r.natural.room.left + r.natural.room.right, 0, 'room to slide with everything fitting'); ok(!/fade-|slides/.test(r.natural.cls), 'a fade or an arrow with everything fitting: ' + r.natural.cls); }
             ok(r.over, 'the narrowed strip does not overflow'); same(r.start.room.left, 0, 'nothing hidden on the left at the start'); ok(r.start.room.right > 0, 'nothing hidden on the right');
             ok(/fade-r/.test(r.start.cls) && /slides/.test(r.start.cls), 'no fade/arrow on the right: ' + r.start.cls); ok(!/fade-l/.test(r.start.cls), 'left fade at the start'); same(r.nextVisible, true, 'the right arrow is not shown');
-            same(r.fitsOver, false, 'the strip still overflows at its own width'); ok(!/fade-|slides/.test(r.fitsAgain.cls), 'the fade or the arrow stayed once everything fitted again: ' + r.fitsAgain.cls);
+            same(r.fitsOver, r.naturalOver, 'the strip does not come back to its own width'); same(/fade-|slides/.test(r.fitsAgain.cls), /fade-|slides/.test(r.natural.cls), 'the fade and the arrow after the strip is let go are not what they were when the page came up: ' + r.fitsAgain.cls + ' / ' + r.natural.cls);   // (seven buttons are more than 1080 px has room for: it slides there, by design; the next check has the width where all seven fit)
+        });
+        check('a tablet\'s width (1180x820) has room for all seven: no fade, no arrow, nothing to slide', () => {
+            const t = measure(1180, 820); ok(t && !t.err, 'the probe: ' + (t && t.err)); same(t.naturalOver, false, 'the strip overflows at 1180x820'); same(t.natural.room.left + t.natural.room.right, 0, 'room to slide with everything fitting'); ok(!/fade-|slides/.test(t.natural.cls), 'a fade or an arrow with everything fitting: ' + t.natural.cls);
+            same(t.shown.join(), t.ids.join(), 'a button is hidden');
         });
         check('dragging with the mouse slides it, and the drag does not click the button under it', () => {
             ok(r.afterDrag.room.left > 0, 'the drag did not slide the strip'); ok(/fade-l/.test(r.afterDrag.cls), 'no left fade after sliding'); same(r.dragClicks, 0, 'the drag clicked the button');

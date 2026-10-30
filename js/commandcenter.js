@@ -509,7 +509,7 @@ function _ccDrawSettings(side) {
     const one = _ccFocus; if (!one) { _ccDD = null; return; }
     const sel = [one], S = ccSelectionSummary(sel);
     _ccDrawStyles(side, S, sel);
-    if (typeof equipRosterDraw === "function") equipRosterDraw(side, one);   // its SUBCLASS and, once there is a card, its two equip card slots (js/cardsui.js)
+    if (typeof equipRosterDraw === "function") equipRosterDraw(side, one);   // its two equip card slots (js/cardsui.js)
     const row = _ccEl("div", "cc-row"); side.appendChild(row);
     if (S.followers) row.appendChild(_ccBtn(ccRerollArmed ? "TAP AGAIN" : "RE-ROLL", "#ff4a1c", ccRerollArmed, () => {
         if (!ccRerollArmed) { ccRerollArmed = true; return; }
@@ -521,6 +521,7 @@ function _ccDrawSettings(side) {
     if (S.followers) row.appendChild(_ccBtn(exArmed ? "TAP AGAIN TO EXILE" : "EXILE", "#ff3a4a", exArmed, () => { const nb = _ccNeighbour(one, 1); if (partyExileTap([one]) === "exiled") _ccFocus = nb && nb !== one && !nb.dead ? nb : null; }, "act cc-exile"));
     if (ccRerollArmed) side.appendChild(_ccEl("div", "cc-note", "BACK TO THE CRYSTAL, MADE AGAIN AS SOMEONE NEW"));
     if (exArmed) side.appendChild(_ccEl("div", "cc-note", "EXILED: GONE FOR GOOD, NOTHING BACK · ITS PLACE IS FREE FOR SOMEONE NEW"));
+    if (typeof equipSubclassRow === "function") equipSubclassRow(side, one);   // its SUBCLASS, under the buttons: on a small tablet the buttons must not be pushed out of the column (js/cardsui.js)
     const info = typeof unitInfo === "function" ? unitInfo(one) : null;
     if (info) {   // (the card in view has VITALS, and the DEFENSE and ATTACK bars: the column lists the rest)
         const idx = _ccEl("div", "cc-stats"), onCard = (sec, rw) => sec.h.indexOf("BASE STATS") === 0 && (rw[0] === "DEFENSE" || rw[0] === "ATTACK");

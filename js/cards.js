@@ -8,7 +8,7 @@
 // name here starts with equip / EQUIP so that it cannot be mistaken for those or for the other two things "class" means (the player's CLASSES, js/classes.js; a creature's class, js/species.js; a follower's role is what the cards call its class).
 //
 // WHAT IS BUILT is the plumbing, and nothing that changes a fight. No equip card has an effect yet (the list is not designed): the only cards that exist are the INERT TEST CARDS behind ?cards, which is how the rules, the saving and the
-// screens are played with. Until there is a card the screens do not show (equipAny), and the game is as it was apart from the subclass tag.
+// screens are played with. With no card the screens are there and empty (equipAny): the CARDS sheet says so, and the roster's slots say NO CARDS IN YOUR HAND; the choice at the start of a run opens only when the collection holds a card.
 //   SUBCLASS  a tag on each evolved form (EQUIP_FORM_SUBCLASS, the user's roster chart): crustacean, mollusk, elemental, drone or jelly. An egg has none until it evolves, nor do the ten retired forms. It decides nothing yet: it is for the cards to classify by.
 //   SLOTS     every follower has two (f.cards = [id | null, id | null]); the player has two UNIVERSAL ones (equipPlayer). A unit cannot wear the same card twice; any number of units can wear the same card, because a card is a TYPE you own, never used up.
 //   FITS      a card is one kind: ELEMENT (a follower of that element), CLASS (a follower of that role: brawler, mage or technician), SUBCLASS (a follower of that subclass) or UNIVERSAL (any follower, and the player).
@@ -55,10 +55,10 @@ function _equipFlag() {
 }
 let equipDev = _equipFlag();
 let _equipReg = null, _equipOwned = null;
-function equipDevSet(v) { equipDev = v || ""; _equipReg = null; _equipOwned = null; equipReset(); if (typeof cardsButtonSync === "function") cardsButtonSync(); }   // (for the tests, and a console)
+function equipDevSet(v) { equipDev = v || ""; _equipReg = null; _equipOwned = null; equipReset(); }   // (for the tests, and a console)
 function equipCards() { return _equipReg || (_equipReg = equipDev ? Object.assign({}, EQUIP_CARDS, EQUIP_TEST_CARDS) : EQUIP_CARDS); }
 function equipCard(id) { const c = typeof id === "string" ? equipCards()[id] : null; return c && typeof c === "object" ? c : null; }
-function equipAny() { return Object.keys(equipCards()).length > 0; }   // is there any card at all (when none, no screen shows)
+function equipAny() { return Object.keys(equipCards()).length > 0; }   // is there any card at all (when none, the screens say so)
 function equipRarityBars(c) { return Math.max(1, EQUIP_RARITIES.findIndex(r => r.id === (c && c.rarity)) + 1); }   // lit bars, of six
 function equipRarityLabel(c) { return (EQUIP_RARITIES.find(r => r.id === (c && c.rarity)) || EQUIP_RARITIES[0]).label; }
 
