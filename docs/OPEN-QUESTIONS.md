@@ -1,8 +1,8 @@
 # Open questions
 
-*Written 2026-10-30 after Pack 1 went onto main (`0f41843`), and rewritten the same day after the owner answered the fifteen questions of the first version and the market follow-ups ("round 2": build 2026-10-30g, 72 suites). For the owner and anyone reading along, a second AI included.*
+*Written 2026-10-30 after Pack 1 went onto main (`0f41843`), and rewritten the same day after the owner answered the fifteen questions of the first version and the market follow-ups ("round 2": build 2026-10-30g), then again after the owner answered the eight questions that round left (build 2026-10-30h, 72 suites). For the owner and anyone reading along, a second AI included.*
 
-The first version of this file listed fifteen choices I had made that the briefs did not ask for. **Every one now has an answer** (section 1) and is built and tested. What is still open (section 2) is new, and small. Nothing here blocks the game: each default is already in the code. Answer by item number (N1, N2, ...).
+The first version of this file listed fifteen choices I had made that the briefs did not ask for. **Every one now has an answer** (section 1), and so does each of the eight that the market left (section 1c): all are built and tested. Nothing market-related is open any more (section 2).
 
 ## 1. Answered in round 2 (built and tested)
 
@@ -29,29 +29,33 @@ The first version of this file listed fifteen choices I had made that the briefs
 
 | the point | decided with you | where |
 |---|---|---|
-| Credits | ◇, **the run's own** ("reset each run"): NEW GAME clears them; the run's save keeps them | `equipCredits`, `equipReset` |
+| Credits | ◇, **the run's own** ("reset each run"): NEW GAME clears them; the run's save keeps them. They are shown exactly, halves included (◇22.5), see 1c | `equipCredits`, `equipReset` |
 | What pays them | **only a duplicate** in a pack: 25% of the card's market value (a half is possible: 22.5) | `equipPackOpen` |
 | What a duplicate is | a card **in your hand or already found this run**. A card you own for good but did **not** bring is **not** a duplicate: it is found for the run and pays no credits (so you can wear it beyond the hand's three) | `equipDuplicate` |
 | Market value by rarity | **90 / 150 / 250 / 350 / 500 / 650** (Unrefined, Refined, Precision, Prototype, Lustrous, Crystalline). Pack 1 deals the first three | `EQUIP_MARKET.values` |
-| The shelf | **six** cards, not in your hand and **not found this run**. It may list a card you own for good but did not bring. **Only cards a pack deals:** the six Crystalline cards are not sold | `equipShelfPool`, `equipShelfDeal` |
-| The clock | a new shelf every **5 minutes** of the **game's own clock** (18,000 frames), saved with the run, so a reload keeps the same six cards and the time left | `EQUIP_MARKET.every`, `equipTick` |
+| The shelf | **six** cards, not in your hand and **not found this run**. It may list a card you own for good but did not bring. **Only cards a pack deals:** the six Crystalline cards are not sold. **Dealt with the pack's own odds** (60 / 30 / 10), see 1c | `equipShelfPool`, `equipShelfDeal` |
+| The clock | a new shelf every **5 minutes** of the **game's own clock** (18,000 frames), saved with the run, so a reload keeps the same six cards and the time left. **It waits while the CARDS sheet is open**, see 1c | `EQUIP_MARKET.every`, `equipTick`, `equipShelfSync` |
 | Paying | the card's value in **credits, or the same number of shards** | `equipMarketBuy` |
 | Buying | a card **new to you is kept for good and found**; one you already own for good is **found for the run** and nothing new is written | `equipMarketBuy` |
 | The ◆1,000 unlock | **stays beside the market** | `equipUnlock` |
 | The screen | a MARKET section on the CARDS sheet (the shelf, its clock, two prices on each card, two taps to buy); the header shows the run's credits; the pack's reveal tags each card NEW or DUPLICATE · +◇ | js/cardsui.js |
 
+### 1c. The eight questions the market left (answered, 2026-10-30)
+
+| # | the question | the owner's answer | what the game does now |
+|---|---|---|---|
+| N1 | The flat ◆1,000 unlock is 4 to 11 times a shelf card's price (90 to 250) | **Keep ◆1,000** | unchanged: the premium for keeping a card you already found, since a found card never appears on the shelf |
+| N2 | The shelf is a flat draw; a pack is 60 / 30 / 10 | **Weighted like a pack** | **built:** each place on the shelf rolls a rarity by the pack's own weights (`EQUIP_PACK.rarities`), then takes one of that rarity's cards: mostly Unrefined, a Precision card on about half the shelves (47%), none kept for it; a rarity with no card left is left out of the roll; the shelf follows the pack if the pack's odds are tuned |
+| N3 | A bought card's place stays empty until the next shelf | **Leave it empty** | unchanged |
+| N4 | Credits come in halves (a duplicate of an Unrefined card pays 22.5) and the header rounded down | **Show the half** | **built:** the header reads ◇22.5 (a whole number still shows no decimal), a price says exactly how short you are (NEED ◇67.5 MORE), the pack's reveal says +◇22.5; the sheet draws again for a half |
+| N5 | A weakened creature bites 40% weaker but its abilities do not change | **Bite only** | unchanged: abilities are answered by Static Lock's glitch |
+| N6 | The shelf's clock runs while the CARDS sheet is open | **Hold it while open** | **built:** the time spent with the sheet open is not the shelf's (`equipShelfSync`: the sheet's opening and closing, its redraws, the tick and a save all sync); a shelf that is due when you open the sheet is dealt first; the note says THE CLOCK WAITS WHILE THIS SHEET IS OPEN; the game itself still keeps running |
+| N7 | A phone cannot buy a pack or use the market | **Later, as planned** | unchanged |
+| N8 | The values of Prototype (350), Lustrous (500) and Crystalline (650) are unused | **Keep them** | unchanged: used when a later pack deals those rarities |
+
 ## 2. Newly open
 
-Each of these is a choice the answers above left to me. **Defaults are in the code; say "keep" or "change to X".**
-
-- **N1. The flat ◆1,000 unlock is now far dearer than the shelf.** A new card on the shelf costs 90, 150 or 250 shards (Pack 1's three rarities) and is kept for good; the ◆1,000 unlock of a card you found in a pack is four to eleven times that. You asked to keep both. Open: keep, lower the ◆1,000, or retire it.
-- **N2. The shelf is not weighted by rarity.** It deals six at random from the cards a pack deals, each equally likely, so on average two Unrefined, two Refined and two Precision. The pack itself is 60 / 30 / 10. Open: weight the shelf the same way (the Precision cards would be rarer), or keep it flat.
-- **N3. A bought card's place stays empty.** A card bought leaves the shelf and nothing replaces it until the next shelf, so a shelf can be bought down to nothing. Open: refill at once, or leave.
-- **N4. Credits come in halves.** A duplicate of an Unrefined card pays 22.5. The header shows the credits rounded down (22.5 reads ◇22); a price in credits is exact, and a short button says how short you are, rounded up. Open: whole credits only (round a duplicate's 22.5), or as it is.
-- **N5. A weakened creature bites 40% weaker, but its abilities do not change.** That is the toxic weakness the game already had (the smoke bomb's), which only a creature's bite reads. Open: weaken its abilities too.
-- **N6. The shelf's five minutes run only while the game runs.** The clock is the game's frame count, so it stops when the game is stopped, and the CARDS sheet does not pause the game (A4), so time passes while you shop. Open: fine as it is, or pause the shelf's clock while the sheet is open.
-- **N7. The market on a phone.** A phone has no CARDS screen, so it can buy neither a pack nor a card. Unchanged from before; phones come later.
-- **N8. The values of the rarities Pack 1 does not deal** (Prototype 350, Lustrous 500, Crystalline 650) are set from your table but unused until a pack deals those cards: the six Crystalline cards are not sold ("no Crystalline").
+Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
 
 ## 3. Not decided, nothing built
 
@@ -91,4 +95,4 @@ Each of these is a choice the answers above left to me. **Defaults are in the co
 - Pack 1: ◆100, exactly 4 cards, Unrefined, Refined and Precision at 60 / 30 / 10, one slot reserved for a Precision, no card twice in a pack; the 18 Element cards and their numbers. What it deals is found for the run.
 - The six Crystalline class cards, each +50% to one stat.
 - Quill Burst's numbers (range 4, +25% on a hit, every 4 seconds, no burn).
-- The market: everything in section 1b.
+- The market: everything in sections 1b and 1c.

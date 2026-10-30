@@ -78,8 +78,10 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.dupTags = $$('#cardsRoot .cd-pack .cd-worn').map(function(e){ return e.textContent; });
     out.shelfIds = equipShelfIds();
     out.shelf = slabs().map(function(s){ var c = byName(nameOf(s)); return { id: c.id, value: equipMarketValue(c), tag: (s.querySelector('.cd-worn') || {}).textContent, btns: btns(s) }; });
-    // the clock is written in place: a second later it says so, and the sheet was not drawn again
-    var t0 = $('#cardsRoot .cd-shelf-t'); out.clock = t0.textContent; frame += 61; cardsRender(); out.clock2 = ($('#cardsRoot .cd-shelf-t') || {}).textContent; out.clockInPlace = $('#cardsRoot .cd-shelf-t') === t0;
+    // the clock waits while the sheet is open: 600 frames (ten seconds) pass with it open and the shelf has lost none of them, nor the 30 more that pass before it is closed; closed for 61 frames, it loses exactly those
+    var t0 = $('#cardsRoot .cd-shelf-t'); out.clock = t0.textContent; out.left0 = equipShelf.until - frame;
+    frame += 600; cardsRender(); out.clockHeld = ($('#cardsRoot .cd-shelf-t') || {}).textContent; out.leftHeld = equipShelf.until - frame; out.sameNote = $('#cardsRoot .cd-shelf-t') === t0;
+    frame += 30; cardsClose(); frame += 61; out.leftClosed = equipShelf.until - frame; cardsOpen(); await wait(100); out.clockAfter = ($('#cardsRoot .cd-shelf-t') || {}).textContent;
 
     // a card bought with credits: two taps, the first only arms (the credits are given and the sheet is left to notice by itself: it draws again only when what it shows has changed)
     equipCredits = 400; cardsRender(); await wait(80); out.credited = ($('#cardsRoot .cd-cr') || {}).textContent; out.affordable = slabs().map(function(s){ return btns(s).map(function(b){ return !b.off; }); });
@@ -111,12 +113,19 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.poor2 = slabs().map(function(s){ var c = byName(nameOf(s)); return { value: equipMarketValue(c), sub: btns(s)[0].sub }; });
     shardCount = 120; cardsRender(); await wait(80);   // (the pack comes within reach: a change of its own)
     shardCount = 300; cardsRender(); await wait(80);   // (then plenty for every price here, with the pack still within reach and the ◆1,000 of an unlock still far: only the shelf's own prices change)
-    out.rich =slabs().map(function(s){ var b = btns(s); return { credits: b[0].off, shards: b[1].off, sub: b[1].sub }; });
+    out.rich = slabs().map(function(s){ var b = btns(s); return { credits: b[0].off, shards: b[1].off, sub: b[1].sub }; });
+    // half a credit: shown as it is, and a price says exactly how short you are (22 to 22.5 changes nothing but the half)
+    var readCredits = function(){ return { header: ($('#cardsRoot .cd-cr') || {}).textContent, subs: slabs().map(function(s){ var c = byName(nameOf(s)); return { value: equipMarketValue(c), sub: btns(s)[0].sub }; }) }; };
+    equipCredits = 22; cardsRender(); await wait(80); out.half0 = readCredits();
+    equipCredits = 22.5; cardsRender(); await wait(80); out.half1 = readCredits();
 
     // the sheet opened and closed again and again: the shelf, the credits and what is found do not move
     var snap = function(){ return JSON.stringify([equipShelf.ids, equipShelf.until, equipCredits, equipFound, equipHand]); }, s0 = snap();
     for (var n = 0; n < 6; n++) { cardsClose(); await wait(20); cardsOpen(); await wait(40); cardsRender(true); }
-    out.stable = snap() === s0; out.added = added.slice(); EventTarget.prototype.addEventListener = oa;
+    out.stable = snap() === s0;
+    // a shelf that is due when the sheet opens is dealt first (the clock then waits): closed, the shelf is 5 seconds late; opened, it is a new one with its whole 5 minutes
+    cardsClose(); equipShelf.until = frame - 300; cardsOpen(); await wait(100); out.dueLeft = equipShelf.until - frame; out.dueNote = ($('#cardsRoot .cd-shelf-t') || {}).textContent; out.dueSlabs = slabs().length;
+    out.added = added.slice(); EventTarget.prototype.addEventListener = oa;
   } catch (err) { out.err = String(err && err.stack || err); }
   var pre = document.createElement('pre'); pre.id = '__cd'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2500); });</script></body>`;
@@ -142,6 +151,9 @@ function measure(w, h, query, seed) {
         sameJ(J('EQUIP_RARITIES.map(function(r){ return EQUIP_MARKET.values[r.id]; })'), [90, 150, 250, 350, 500, 650], 'one value for each of the six rarities');
         sameJ(J('[equipMarketValue(null), equipMarketValue({ rarity: "mythic" })]'), [0, 0], 'no card, or a rarity with no value, is worth nothing');
     });
+    await check('credits read as they are, a half included (the owner: "show the half"): 22.5 reads 22.5 and 45 reads 45, never rounded', () => {
+        sameJ(J('[0, 22.5, 45, 62.5, 37.5, 0.25, 90, 67.5].map(equipCreditsText)'), ['0', '22.5', '45', '62.5', '37.5', '0.25', '90', '67.5'], 'credits as text');
+    });
 
     group('2. DUPLICATES PAY CREDITS');
     await check('a card already in the hand, or already found this run, is a DUPLICATE: the pack still costs ◆100, the card is not found again and pays 25% of its value in credits (22.5, 37.5, 62.5); a card new to you pays nothing and is found; four Unrefined duplicates make exactly 90', () => {
@@ -163,13 +175,21 @@ function measure(w, h, query, seed) {
     });
 
     group('3. THE SHELF: six cards you do not have, a new one every 5 minutes');
-    await check('a shelf is six different cards of Pack 1, none in the hand, none found, each with a market value; a card you own for good but did not bring can be on it; the same seed deals the same shelf; over 2,000 deals every card that could come up does, about equally often', () => {
+    await check('a shelf is six different cards of Pack 1, none in the hand, none found, each with a market value; a card you own for good but did not bring can be on it; the same seed deals the same shelf; over 2,000 deals every card that could come up does', () => {
         const o = J(`(function(){ __fresh(0); equipFound = ['frost_lining']; equipHand.length = 0; equipOwnedSet().clear(); equipOwnedSet().add('ember_plating'); equipOwnedSet().add('furnace_heart'); equipHandAdd('ember_plating'); const out = {};
             const a = equipShelfDeal(5), b = equipShelfDeal(5), c = equipShelfDeal(6); out.a = a; out.same = a.join() === b.join(); out.diff = a.join() !== c.join();
             const bad = []; const seen = {}; for (let s = 1; s <= 2000; s++) { const ids = equipShelfDeal(s); if (ids.length !== 6 || new Set(ids).size !== 6) bad.push(['size', s]); for (const id of ids) { seen[id] = (seen[id] || 0) + 1; const card = equipCard(id); if (!card || !card.pack || card.test || equipInHand(id) || equipIsFound(id) || !equipMarketValue(card)) bad.push([id, s]); } }
             out.bad = bad.slice(0, 3); out.seen = Object.keys(seen).sort(); out.counts = Object.values(seen); out.crystalline = Object.keys(seen).filter(id => equipCard(id).rarity === 'crystalline'); return out; })()`);
         same(o.a.length, 6, 'a shelf'); same(o.same, true, 'the same seed'); same(o.diff, true, 'two seeds'); sameJ(o.bad, [], 'a bad shelf'); sameJ(o.seen, PACK1_IDS.filter(id => id !== 'ember_plating' && id !== 'frost_lining').sort(), 'the cards that came up (all of Pack 1 but the one in the hand and the one found; the owned one included)'); sameJ(o.crystalline, [], 'a Crystalline card was sold');
-        const mean = o.counts.reduce((x, y) => x + y, 0) / o.counts.length; ok(o.counts.every(c => Math.abs(c - mean) / mean < 0.12), 'a card comes up more often than the others: ' + o.counts);
+    });
+    await check("the shelf is dealt with the pack's own odds (EQUIP_PACK.rarities, 60 / 30 / 10; the owner: weighted like a pack): over 2,000 shelves of six, about 60% of the cards are Unrefined, 30% Refined and 10% Precision, a Precision card is on about 47% of the shelves (1 - 0.9^6), the cards of one rarity come up about equally often, it follows the pack when the pack's odds change, and a rarity with no card left is left out of the roll", () => {
+        const o = J(`(function(){ __fresh(0); equipFound = []; equipHand.length = 0; const byR = {}, byC = {}; let withP = 0, sixes = 0; for (let s = 1; s <= 2000; s++) { const ids = equipShelfDeal(s); if (ids.length === 6) sixes++; let p = false; for (const id of ids) { const c = equipCard(id); byR[c.rarity] = (byR[c.rarity] || 0) + 1; byC[id] = (byC[id] || 0) + 1; if (c.rarity === 'precision') p = true; } if (p) withP++; }
+            const out = { sixes, shares: {}, withP: withP / 2000, spread: {} }; const total = Object.values(byR).reduce((a, b) => a + b, 0); for (const r of Object.keys(byR)) { out.shares[r] = byR[r] / total; const cs = Object.keys(byC).filter(id => equipCard(id).rarity === r).map(id => byC[id]), mean = byR[r] / cs.length; out.spread[r] = [Math.min.apply(null, cs) / mean, Math.max.apply(null, cs) / mean, cs.length]; }
+            const saved = EQUIP_PACK.rarities; try { EQUIP_PACK.rarities = { unrefined: 0, refined: 1, precision: 0 }; const rs = new Set(); for (let s = 1; s <= 200; s++) equipShelfDeal(s).forEach(id => rs.add(equipCard(id).rarity)); out.tuned = Array.from(rs); } finally { EQUIP_PACK.rarities = saved; }
+            equipFound = UNREFINED; let u = 0, r = 0, p = 0, six = 0; for (let s = 1; s <= 500; s++) { const ids = equipShelfDeal(s); if (ids.length === 6) six++; ids.forEach(id => { const k = equipCard(id).rarity; if (k === 'unrefined') u++; else if (k === 'refined') r++; else p++; }); } out.noUnrefined = { u, moreRefined: r > p, six }; equipFound = []; return out; })()`.replace('UNREFINED', JSON.stringify(PACK1_IDS.filter(id => J(`equipCard(${JSON.stringify(id)}).rarity`) === 'unrefined'))));
+        same(o.sixes, 2000, 'a shelf of six'); near(o.shares.unrefined, 0.6, 'the Unrefined share', 0.02); near(o.shares.refined, 0.3, 'the Refined share', 0.02); near(o.shares.precision, 0.1, 'the Precision share', 0.02); near(o.withP, 0.469, 'the shelves with a Precision card', 0.03);
+        for (const r of ['unrefined', 'refined', 'precision']) { same(o.spread[r][2], 6, 'the ' + r + ' cards'); ok(o.spread[r][0] > 0.85 && o.spread[r][1] < 1.15, 'the ' + r + ' cards are not equally likely: ' + o.spread[r]); }
+        sameJ(o.tuned, ['refined'], "a pack of Refined cards only (weights 0 / 1 / 0) deals a shelf of Refined cards only"); same(o.noUnrefined.u, 0, 'an Unrefined card on the shelf with every one found'); same(o.noUnrefined.moreRefined, true, 'with the Unrefined gone, Refined (30) still beats Precision (10)'); same(o.noUnrefined.six, 500, 'six from the twelve left');
     });
     await check('with the test cards on (?cards) the shelf still sells none of them, nor any card no pack deals (the Crystalline six)', async () => {
         const T = await boot('?cards', {}), o = T.J(`(function(){ __fresh(0); equipFound = []; equipHand.length = 0; const bad = []; let all = 0; for (let s = 1; s <= 500; s++) { for (const id of equipShelfDeal(s)) { all++; const c = equipCard(id); if (c.test || !c.pack || c.kind === 'class' || c.kind === 'subclass' || c.kind === 'universal') bad.push(id); } } return { bad: bad.slice(0, 3), all, tests: Object.values(equipCards()).filter(c => c.test).length, pool: equipShelfPool().length }; })()`);
@@ -186,16 +206,30 @@ function measure(w, h, query, seed) {
         same(o.offBeat, 0, "the game's tick dealt between its half-seconds"); same(o.onBeat, 6, "the game's own tick (every half second) did not deal the due shelf");
     });
 
+    await check("while the CARDS sheet is open the shelf's clock waits (the owner: hold it while open): time that passes with the sheet open is not the shelf's, neither at the tick nor at a save, time with it closed counts as ever, and the shelf is not dealt under the sheet", () => {
+        const o = J(`(function(){ __fresh(0); equipFound = []; equipHand.length = 0; equipReset(); cardsPanelOpen = false; const out = {};
+            try { __at(1000); equipTick(true); const first = equipShelfIds().slice(); out.until = equipShelf.until;                              // dealt at 1000: until 19000
+                __at(3000); cardsPanelOpen = true; equipShelfSync(); out.afterClosed = equipShelf.until - _equipNow();                           // opened 2000 frames later: those count, 16000 left
+                __at(8000); equipShelfSync(); out.a = equipShelf.until - _equipNow();                                                            // 5000 frames open: still 16000
+                __at(33000); equipTick(true); out.b = equipShelf.until - _equipNow(); out.same = equipShelfIds().join() === first.join();         // 25000 more: still 16000, and not dealt
+                __at(33700); out.saved = equipSaveCollect().shelf.left;                                                                          // a save made with the sheet open: 16000
+                cardsPanelOpen = false; equipShelfSync(); __at(33700 + 15999); equipTick(true); out.notYet = equipShelfIds().join() === first.join();
+                __at(33700 + 16000); equipTick(true); out.dealt = equipShelf.until - _equipNow(); out.changedUntil = equipShelf.until;                // closed, it counts: due after the 16000 left
+            } finally { cardsPanelOpen = false; _equipSyncAt = null; } return out; })()`);
+        same(o.until, 19000, 'the first shelf'); same(o.afterClosed, 16000, 'the 2000 frames before it opened count'); same(o.a, 16000, 'after 5000 frames open'); same(o.b, 16000, 'after 30000 frames open, at the tick'); same(o.same, true, 'the shelf was dealt under the sheet'); same(o.saved, 16000, 'a save made with the sheet open');
+        same(o.notYet, true, 'the shelf came due early once the sheet was closed'); same(o.dealt, 18000, 'the shelf after it'); same(o.changedUntil, 33700 + 16000 + 18000, 'its time');
+    });
+
     group('4. BUYING: credits or the same number of shards');
     await check('a card costs its value in credits, or the same number in shards (never both); short of it nothing is spent and it says how short; a card that is not on the shelf (in the hand, found, a Crystalline card, one that does not exist) cannot be bought, nor can anything be paid for with something else', () => {
         const o = J(`(function(){ __fresh(0); equipFound = []; equipHand.length = 0; equipReset(); equipShelfDeal(7); const id = equipShelfIds()[0], v = equipMarketValue(equipCard(id)); const out = { id, v };
             equipCredits = v - 1; shardCount = v - 1; out.short = [equipMarketWhyNot(id, 'credits'), equipMarketWhyNot(id, 'shards'), equipMarketBuy(id, 'credits'), equipMarketBuy(id, 'shards'), equipCredits, shardCount];
-            equipCredits = v + 10; shardCount = 5000; out.byCredits = { bought: equipMarketBuy(id, 'credits'), credits: equipCredits, shards: shardCount, owns: equipOwns(id), found: equipIsFound(id), off: equipShelfIds().indexOf(id) < 0, left: equipShelfIds().length };
+            equipCredits = v - 0.5; out.shortHalf = equipMarketWhyNot(id, 'credits'); equipCredits = v + 10; shardCount = 5000; out.byCredits = { bought: equipMarketBuy(id, 'credits'), credits: equipCredits, shards: shardCount, owns: equipOwns(id), found: equipIsFound(id), off: equipShelfIds().indexOf(id) < 0, left: equipShelfIds().length };
             const id2 = equipShelfIds()[0], v2 = equipMarketValue(equipCard(id2)); equipCredits = 0; out.byShards = { id: id2, v: v2, bought: equipMarketBuy(id2, 'shards'), credits: equipCredits, spent: 5000 - shardCount, owns: equipOwns(id2), found: equipIsFound(id2) };
             const inHand = equipShelfIds()[0]; equipOwnedSet().add(inHand); equipHandAdd(inHand); const found = equipShelfIds()[0]; equipFound.push(found); equipCredits = 9999; shardCount = 9999; const other = equipShelfIds()[0];
             out.refused = [equipMarketBuy('impact_test', 'credits'), equipMarketWhyNot('impact_test', 'credits'), equipMarketBuy(id, 'credits'), equipMarketWhyNot(id, 'credits'), equipMarketBuy(inHand, 'shards'), equipMarketWhyNot(inHand, 'shards'), equipMarketBuy(found, 'credits'), equipMarketWhyNot(found, 'credits'),
                 equipMarketBuy('nope', 'shards'), equipMarketWhyNot('nope', 'shards'), equipMarketBuy(other, 'gold'), equipMarketWhyNot(other, 'gold'), equipMarketWhyNot(other, undefined), equipCredits, shardCount]; return out; })()`);
-        same(o.short[0], 'NEED ◇1 MORE', 'the credits reason'); same(o.short[1], 'NEED ◆1 MORE', 'the shards reason'); same(o.short[2] || o.short[3], false, 'a card was bought short of the price'); sameJ(o.short.slice(4), [o.v - 1, o.v - 1], 'something was spent');
+        same(o.short[0], 'NEED ◇1 MORE', 'the credits reason'); same(o.short[1], 'NEED ◆1 MORE', 'the shards reason'); same(o.short[2] || o.short[3], false, 'a card was bought short of the price'); same(o.shortHalf, 'NEED ◇0.5 MORE', 'half a credit short'); sameJ(o.short.slice(4), [o.v - 1, o.v - 1], 'something was spent');
         sameJ(o.byCredits, { bought: true, credits: 10, shards: 5000, owns: true, found: true, off: true, left: 5 }, 'bought with credits: the credits paid, the shards untouched, kept for good, found, off the shelf (five are left, not six: it is not refilled)');
         sameJ([o.byShards.bought, o.byShards.credits, o.byShards.spent, o.byShards.owns, o.byShards.found], [true, 0, o.byShards.v, true, true], 'bought with shards: the shards paid, the credits untouched, kept for good, found');
         sameJ(o.refused, [false, 'NOT ON THE SHELF', false, 'NOT ON THE SHELF', false, 'NOT ON THE SHELF', false, 'NOT ON THE SHELF', false, 'NO SUCH CARD', false, 'PAY WITH CREDITS OR SHARDS', 'PAY WITH CREDITS OR SHARDS', 9999, 9999], 'what cannot be bought');
@@ -259,8 +293,17 @@ function measure(w, h, query, seed) {
             await check("the game itself deals the first shelf (six cards and the whole 5 minutes, or a little less) within its first moments, through its own tick", () => {
                 same(P.firstShelf, 6, 'the shelf the game dealt'); ok(P.firstLeft > 17000 && P.firstLeft <= 18000, 'the time on it: ' + P.firstLeft);
             });
-            await check("the shelf's clock reads the game's own time (121 seconds is 2:01) and is written in place a second later (2:00) without drawing the sheet again", () => {
-                same(P.clock, 'NEXT SHELF IN 2:01 · YOUR CREDITS COME FROM THE DUPLICATES IN YOUR PACKS', 'the clock'); same(P.clock2, 'NEXT SHELF IN 2:00 · YOUR CREDITS COME FROM THE DUPLICATES IN YOUR PACKS', 'a second later'); same(P.clockInPlace, true, 'the sheet was drawn again for the clock');
+            await check("the shelf's clock reads the game's own time (121 seconds is 2:01) and WAITS while the sheet is open: 630 frames pass with it open and the shelf loses none of them (and the note neither changes nor draws again); closed, time counts as ever (61 closed frames: 2:00)", () => {
+                const note = t => 'NEXT SHELF IN ' + t + ' · THE CLOCK WAITS WHILE THIS SHEET IS OPEN · YOUR CREDITS COME FROM THE DUPLICATES IN YOUR PACKS';
+                same(P.clock, note('2:01'), 'the clock'); same(P.left0, 7260, 'the time on the shelf'); same(P.leftHeld, 7260, 'the time left after 600 frames with the sheet open'); same(P.clockHeld, P.clock, 'the note after 600 frames'); same(P.sameNote, true, 'the sheet was drawn again for the clock');
+                same(P.leftClosed, 7199, 'the time left: only the 61 closed frames count (the 630 open ones do not, the last 30 included, which no redraw had seen when it closed)'); same(P.clockAfter, note('2:00'), 'the note when it opens again');
+            });
+            await check("a shelf that is due when the sheet opens is dealt first, a new one with its whole 5 minutes: it never comes due under your finger", () => {
+                same(P.dueLeft, 18000, 'the time on the new shelf'); ok(/^NEXT SHELF IN 5:00 /.test(P.dueNote), 'the note: ' + P.dueNote); same(P.dueSlabs, 6, 'the shelf on the screen');
+            });
+            await check("credits are shown as they are, halves included (◇22.5, not ◇22), and a price says exactly how short you are: 22 credits are 68 short of 90, 22.5 are 67.5 short (the sheet draws again for a half)", () => {
+                same(P.half0.header, '◇ 22 CREDITS', 'the header at 22'); same(P.half1.header, '◇ 22.5 CREDITS', 'the header at 22.5'); ok(P.half0.subs.length >= 1 && P.half1.subs.length === P.half0.subs.length, 'the shelf was empty');
+                for (const s of P.half0.subs) same(s.sub, 'NEED ◇' + (s.value - 22) + ' MORE', 'the shortfall at 22'); for (const s of P.half1.subs) same(s.sub, 'NEED ◇' + (s.value - 22.5) + ' MORE', 'the shortfall at 22.5');
             });
             await check("the sheet notices by itself that credits came (the header, every price now within reach) and, later, that they ran out: it draws again only when what it shows has changed", () => {
                 same(P.credited, '◇ 400 CREDITS', 'the header'); ok(P.affordable.length === 6 && P.affordable.every(a => a[0] && a[1]), 'a price out of reach with ◇400 and ◆1,500: ' + JSON.stringify(P.affordable));

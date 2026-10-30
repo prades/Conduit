@@ -331,7 +331,7 @@ function equipRestore(f, cards) {   // (not checked against the hand here: the h
     return !!f.cards;
 }
 // the run's save (js/facilitysave.js): the hand, the cards found and the player's slots. The collection is its own key.
-function equipSaveCollect() { return { hand: equipHand.slice(), found: equipFound.slice(), player: equipPlayer.slice(), credits: equipCredits, shelf: { ids: equipShelf.ids.slice(), left: Math.max(0, equipShelf.until - _equipNow()) } }; }
+function equipSaveCollect() { equipShelfSync(); return { hand: equipHand.slice(), found: equipFound.slice(), player: equipPlayer.slice(), credits: equipCredits, shelf: { ids: equipShelf.ids.slice(), left: Math.max(0, equipShelf.until - _equipNow()) } }; }
 function equipSaveApply(d) {
     if (!d || typeof d !== "object") return false;
     const ids = a => (Array.isArray(a) ? a : []).filter((x, i, all) => typeof x === "string" && equipOwns(x) && all.indexOf(x) === i);
@@ -410,8 +410,9 @@ function equipPackOpen(seed, pack) {
 // there; the credits from a duplicate are 25% of the card's market value; you can also buy the cards with actual shards too". So:
 //   CREDITS    this run's. A pack's DUPLICATE (a card already in the hand or already found this run) pays EQUIP_MARKET.share of its value in credits instead of being found again; a card you own for good but did not bring is NOT a duplicate (it is found
 //              for the run, so you can wear it beyond the hand's three). Credits go with the run (equipReset).
-//   THE SHELF  EQUIP_MARKET.shelf cards, none of them in the hand or found this run (so never a duplicate), taken only from the cards a pack deals (the Crystalline six, which no pack deals, are not sold); a new shelf every EQUIP_MARKET.every
-//              frames of play (5 minutes at 60 a second: the game's own clock, saved with the run, so a reload keeps the shelf and the time left). A card bought leaves the shelf.
+//   THE SHELF  EQUIP_MARKET.shelf cards, none of them in the hand or found this run (so never a duplicate), taken only from the cards a pack deals (the Crystalline six, which no pack deals, are not sold), DEALT WITH THE PACK'S OWN ODDS
+//              (EQUIP_PACK.rarities: "weighted like a pack", the owner: mostly Unrefined, a Precision only now and then); a new shelf every EQUIP_MARKET.every frames of play (5 minutes at 60 a second: the game's own clock, saved with the run, so a
+//              reload keeps the shelf and the time left), and THE CLOCK WAITS WHILE THE CARDS SHEET IS OPEN (the owner), so a shelf never changes while you choose. A card bought leaves the shelf, and nothing takes its place until the next one.
 //   BUYING     a card costs its value in credits, or the same number of shards. A card new to you is kept for good AND found (worn at once); one you own for good but did not bring is found for the run. The flat unlock of a found card stays.
 const EQUIP_MARKET = {
     values: { unrefined: 90, refined: 150, precision: 250, prototype: 350, lustrous: 500, crystalline: 650 },   // a card's market value by rarity, in credits (a shard buys the same number)
@@ -422,23 +423,38 @@ const EQUIP_MARKET = {
 let equipCredits = 0;                      // this run's credits (a half is possible: 25% of 90)
 let equipShelf = { ids: [], until: 0 };    // the cards for sale, and the frame (the game's `frame`) the next shelf comes
 function _equipNow() { return typeof frame === "number" ? frame : 0; }
+// While the CARDS sheet is open the shelf's clock waits: each sync made with the sheet open pushes the shelf's time up by the frames since the last one, so the time spent on the sheet is not counted. The sheet's opening and closing, its
+// redraws, the tick and a save all sync; the game itself is not paused (the owner's earlier answer).
+let _equipSyncAt = null;                   // the frame of the last sync made with the sheet open, or null (it is closed)
+function equipShelfSync() {
+    const now = _equipNow(), open = typeof cardsPanelOpen !== "undefined" && cardsPanelOpen === true;
+    if (open && _equipSyncAt !== null) equipShelf.until += Math.max(0, now - _equipSyncAt);
+    _equipSyncAt = open ? now : null;
+}
+function equipCreditsText(n) { return String(Math.round(n * 100) / 100); }   // credits as they are, a half included: 22.5, 45 (the owner: "show the half")
 function equipMarketValue(c) { return c && EQUIP_MARKET.values[c.rarity] || 0; }
 function equipDuplicate(id) { return equipInHand(id) || equipIsFound(id) || (EQUIP_PACK.keep === "forever" && equipOwns(id)); }   // a card you already have this run
-function equipShelfPool() { return Object.values(equipCards()).filter(c => !c.test && c.pack && equipMarketValue(c) > 0 && !equipInHand(c.id) && !equipIsFound(c.id)); }
+function equipShelfPool() { return equipPackPool().filter(c => equipMarketValue(c) > 0 && !equipInHand(c.id) && !equipIsFound(c.id)); }   // (the cards a pack deals, that you do not have this run)
 function equipShelfIds() { const ok = new Set(equipShelfPool().map(c => c.id)); return equipShelf.ids.filter(id => ok.has(id)); }   // (on sale now: a card that came into the hand, or was found, has left the shelf)
-// a new shelf: up to EQUIP_MARKET.shelf different cards from the pool (a seed makes it the same twice: the tests)
+// a new shelf: up to EQUIP_MARKET.shelf different cards from the pool, with the pack's own odds. Each place on the shelf rolls a rarity by EQUIP_PACK.rarities (60 / 30 / 10 for Pack 1; a rarity with no card left is left out of the roll, as in a
+// pack), then takes one of that rarity's cards at random. Unlike a pack it keeps no place for a Precision card. A seed makes it the same twice (the tests).
 function equipShelfDeal(seed) {
-    const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random, pool = equipShelfPool(), ids = [];
-    while (ids.length < EQUIP_MARKET.shelf && pool.length) ids.push(pool.splice(Math.min(pool.length - 1, Math.floor(rnd() * pool.length)), 1)[0].id);
+    const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random, left = {}, ids = [];
+    for (const c of equipShelfPool()) (left[c.rarity] = left[c.rarity] || []).push(c);
+    while (ids.length < EQUIP_MARKET.shelf) {
+        const rs = Object.keys(left).filter(r => left[r].length), total = rs.reduce((n, r) => n + EQUIP_PACK.rarities[r], 0); if (!rs.length) break;
+        let x = rnd() * total, pick = rs[rs.length - 1]; for (const r of rs) { if (x < EQUIP_PACK.rarities[r]) { pick = r; break; } x -= EQUIP_PACK.rarities[r]; }
+        const l = left[pick]; ids.push(l.splice(Math.min(l.length - 1, Math.floor(rnd() * l.length)), 1)[0].id);
+    }
     equipShelf = { ids, until: _equipNow() + EQUIP_MARKET.every }; return ids.slice();
 }
-function equipShelfTick() { if (_equipNow() >= equipShelf.until) equipShelfDeal(); }
+function equipShelfTick() { equipShelfSync(); if (_equipNow() >= equipShelf.until) equipShelfDeal(); }
 // why a shelf card cannot be bought now (with "credits" or with "shards"), or null when it can
 function equipMarketWhyNot(id, pay) {
     const c = equipCard(id); if (!c) return "NO SUCH CARD";
     if (equipShelfIds().indexOf(id) < 0) return "NOT ON THE SHELF";
     const v = equipMarketValue(c);
-    if (pay === "credits") return equipCredits < v ? "NEED ◇" + Math.ceil(v - equipCredits) + " MORE" : null;
+    if (pay === "credits") return equipCredits < v ? "NEED ◇" + equipCreditsText(v - equipCredits) + " MORE" : null;
     if (pay === "shards") { const have = typeof shardCount === "number" ? shardCount : 0; return have < v ? "NEED ◆" + (v - have) + " MORE" : null; }
     return "PAY WITH CREDITS OR SHARDS";
 }
