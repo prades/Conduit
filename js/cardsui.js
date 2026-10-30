@@ -6,7 +6,7 @@
 //   THE ROSTER  (the Command Center's carousel, js/commandcenter.js): beside the creature in view, CARD 1 and CARD 2 as drop-downs under its styles, listing the hand: what does not fit says why, and with no card in the hand
 //               they say so; its SUBCLASS (a row, and a tag on its picture) is under RE-ROLL / INFO / EXILE, which a small tablet must still show. A phone's roster has none of this yet.
 //   CARDS       the dock's button opens a screen over the game, as the Command Center does: YOUR HAND (the card types taken into this run, up to three), YOU (the player's two Universal slots), and THE COLLECTION
-//               (every card: unlocked or locked; UNLOCK for EQUIP.unlockCost shards, two taps; TAKE INTO THE RUN or PUT BACK). Rarity is a row of six bars, one lit for each step.
+//               (every card: unlocked or locked; UNLOCK for EQUIP.unlockCost shards, two taps; TAKE INTO THE RUN or PUT BACK). Rarity is a CHIP on each card's edge: six segments, one lit for each step (and a small flat one beside a card in a slot or a list).
 //   A NEW RUN   the same screen opens by itself, with a banner and a START button, when a run begins and the collection holds a card (js/cards.js equipRunStart).
 // Nothing here is drawn on the canvas, and nothing runs in a frame: the screen redraws only when what it shows has changed (a redraw under a finger loses the tap).
 
@@ -33,15 +33,19 @@ function cardsClose() {
 }
 
 // ── one card, as a slab ──
-function _cdBars(c) {
-    const n = equipRarityBars(c), box = _cdEl("span", "cd-bars"); box.title = equipRarityLabel(c);
-    for (let i = 0; i < EQUIP_RARITIES.length; i++) box.appendChild(_cdEl("i", i < n ? "on" : ""));
-    return box;
+// THE RARITY CHIP (docs/CARD-SYSTEM.md: "a cartridge-inspired rarity indicator" of illuminated bars): a notched plate set into the card's edge, six segments, one lit for each step of the rarity (the lowest at the foot).
+// On a card it stands on the right edge; in a slot or a list it is the same plate laid flat and small (.mini). Its title and label say the tier ("RARITY · PRECISION · 3 OF 6").
+function _cdChip(c, mini) {
+    const n = equipRarityBars(c), chip = _cdEl("span", "cd-chip" + (mini ? " mini" : "")), say = "RARITY · " + equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length;
+    chip.title = say; chip.setAttribute("role", "img"); chip.setAttribute("aria-label", say); chip.style.setProperty("--c", _cdKindCol(c));
+    for (let i = 0; i < EQUIP_RARITIES.length; i++) chip.appendChild(_cdEl("i", i < n ? "on" : ""));
+    return chip;
 }
 function _cdKindCol(c) { return c.kind === "element" ? ((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === c.match)) || {}).color || "#8fe3ff" : c.kind === "universal" ? "#ffe733" : "#8fe3ff"; }
 function _cdSlab(c, extra) {
     const s = _cdEl("div", "cd-card" + (extra ? " " + extra : "")); s.style.setProperty("--c", _cdKindCol(c));
-    const top = _cdEl("div", "cd-top"); top.appendChild(_cdBars(c)); top.appendChild(_cdEl("span", "cd-rar", equipRarityLabel(c))); s.appendChild(top);
+    s.appendChild(_cdChip(c));   // (on the card's edge)
+    const top = _cdEl("div", "cd-top"); top.appendChild(_cdEl("span", "cd-rar", equipRarityLabel(c))); s.appendChild(top);
     s.appendChild(_cdEl("div", "cd-name", c.name)); s.appendChild(_cdEl("div", "cd-kind", equipKindLabel(c)));
     s.appendChild(_cdEl("div", "cd-text", c.text || "")); return s;
 }
@@ -68,7 +72,7 @@ function _cdCollectionCard(c) {
 function _cdPlayerSlot(slot) {
     const box = _cdEl("div", "cd-pslot"), id = equipPlayer[slot], c = equipCard(id), open = _cdDD === slot;
     const head = _cdEl("button", "cd-pbtn" + (c ? " full" : "") + (open ? " open" : "")); head.appendChild(_cdEl("span", "cd-pk", "YOUR SLOT " + (slot + 1))); head.appendChild(_cdEl("span", "cd-pv", c ? c.name : "EMPTY"));
-    if (c) head.appendChild(_cdBars(c));
+    if (c) head.appendChild(_cdChip(c, true));
     _cdClick(head, () => { _cdDD = open ? null : slot; cardsRender(true); }); box.appendChild(head);
     if (open) {
         const list = _cdEl("div", "cd-plist"), hand = equipHandCards();
@@ -132,8 +136,8 @@ function equipRosterDraw(side, f) {   // (drawn under the styles)
     for (let slot = 0; slot < EQUIP.followerSlots; slot++) {
         const cur = equipSlots(f)[slot], card = equipCard(cur), opts = [];
         opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE THE CARD OFF" : "", fn: () => { equipPut(f, slot, null); } });
-        hand.forEach(c => { const why = equipWhyNot(f, c.id, slot); opts.push({ label: c.name, col: "#19e6c1", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), fn: () => { equipPut(f, slot, c.id); } }); });
-        _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND");
+        hand.forEach(c => { const why = equipWhyNot(f, c.id, slot); opts.push({ label: c.name, col: "#19e6c1", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipPut(f, slot, c.id); } }); });
+        _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);
     }
 }
 

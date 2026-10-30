@@ -3183,7 +3183,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-10-30c</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-10-30d</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development); <code>?facility</code> (open the MAP view at once). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The MAP view</b> (dock MAP, <b>F3</b> or <code>?facility</code>): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −), the layers OUTLINES, COLLISION, OPENINGS, ELEVATION and NAV, the validator's readout, ▶ PLAY and ✕ CLOSE.</li>

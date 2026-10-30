@@ -59,7 +59,7 @@ function equipDevSet(v) { equipDev = v || ""; _equipReg = null; _equipOwned = nu
 function equipCards() { return _equipReg || (_equipReg = equipDev ? Object.assign({}, EQUIP_CARDS, EQUIP_TEST_CARDS) : EQUIP_CARDS); }
 function equipCard(id) { const c = typeof id === "string" ? equipCards()[id] : null; return c && typeof c === "object" ? c : null; }
 function equipAny() { return Object.keys(equipCards()).length > 0; }   // is there any card at all (when none, the screens say so)
-function equipRarityBars(c) { return Math.max(1, EQUIP_RARITIES.findIndex(r => r.id === (c && c.rarity)) + 1); }   // lit bars, of six
+function equipRarityBars(c) { return Math.max(1, EQUIP_RARITIES.findIndex(r => r.id === (c && c.rarity)) + 1); }   // the segments lit on its rarity chip, of six
 function equipRarityLabel(c) { return (EQUIP_RARITIES.find(r => r.id === (c && c.rarity)) || EQUIP_RARITIES[0]).label; }
 
 // ── who a follower is: its element and its role (an evolved form's are its form's), its subclass ──

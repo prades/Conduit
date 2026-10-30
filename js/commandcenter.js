@@ -405,15 +405,15 @@ function _ccThumb(cv, f) {
 
 // The right-hand panel: the selected creature as a stat index, and its settings as one-line drop-downs.
 // Each setting shows only what it is now; tap it to see the choices (one open at a time), pick one and it folds shut.
-function _ccDropdown(side, key, title, value, col, options, off) {
+function _ccDropdown(side, key, title, value, col, options, off, chip) {   // (chip: an element shown beside the value, and an option's own `chip` beside its label: the equip cards' rarity, js/cardsui.js)
     const open = _ccDD === key && !off;
     const b = _ccEl("button", "cc-dd" + (open ? " open" : "") + (off ? " off" : "")); b.style.setProperty("--c", col || "#19e6c1");
-    b.appendChild(_ccEl("span", "cc-dd-k", title)); b.appendChild(_ccEl("span", "cc-dd-v", off || value)); b.appendChild(_ccEl("span", "cc-dd-a", open ? "\u25b4" : "\u25be"));
+    b.appendChild(_ccEl("span", "cc-dd-k", title)); b.appendChild(_ccEl("span", "cc-dd-v", off || value)); if (chip && !off) { b.classList.add("chipped"); b.appendChild(chip); } b.appendChild(_ccEl("span", "cc-dd-a", open ? "\u25b4" : "\u25be"));
     if (off) b.disabled = true; else _ccClick(b, () => { _ccDD = open ? null : key; ccRender(); });
     side.appendChild(b);
     if (open) {
         const list = _ccEl("div", "cc-dd-list");
-        options.forEach(o => { const ob = _ccBtn(o.label, o.col, o.on, () => { o.fn(); _ccDD = null; }, "wide", o.sub); if (o.off) ob.disabled = true; list.appendChild(ob); });
+        options.forEach(o => { const ob = _ccBtn(o.label, o.col, o.on, () => { o.fn(); _ccDD = null; }, "wide", o.sub); if (o.chip) { ob.classList.add("chipped"); ob.appendChild(o.chip); } if (o.off) ob.disabled = true; list.appendChild(ob); });
         side.appendChild(list);
     }
 }
