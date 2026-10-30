@@ -117,7 +117,7 @@ Decided 2026-10-30 and approved in chat. No new stat or combat system was added:
 - **Damage dealt, "across all damage categories"** (Impact Studs, Bedrock Matrix): the game has no damage categories, so it is every hit a follower lands. A set amount and a burn's own tick are not multiplied.
 - **On-hit statuses.** Every direct hit a follower lands can set one: its plain hit, the element's physical and special, the Mage's shot, a signature move, a fire-bomb's splash, an ultimate. A follower rolls once for each proc card it wears, once for each creature the hit reaches. A reflected hit, a set amount, a hit a shield took and a tick never do. A status already on is refreshed, never stacked: the longer time and the stronger number win.
   - **Burn** is the game's own burn; the target's defense still takes its ticks down.
-  - **Poison does no damage.** It makes the creature weak: its bite lands for 0.6 of its power.
+  - **Poison does no damage.** It makes the creature weak: its bite lands for 0.6 of its power. Only the bite: its abilities are not weakened (the glitch is what answers an ability).
   - **Glitch** makes every wind-up the creature tries fail (the rear-back before a bite, an ability's charge-up) while it still walks. It flickers and says GLITCH.
   - **Slow**, **siphon** (heals the follower) and **knockback** (the Core bash's push) are as the game has them.
   - The Frost Maw's and the Manta's own stuns are real now (75 and 45 frames: the creature does nothing, and a bite it was winding up is cut short). They used to do nothing.
@@ -135,11 +135,11 @@ Decided 2026-10-30 and approved in chat ("Pack 1").
 
 Decided 2026-10-30. The owner's words: "a special buy menu, credits that you use to buy the permanent cards, and a rotating buy menu that refreshes every 5 mins. Cards go from 90 to 650 credits, and duplicates cannot be found here, and the credits you get from each pack are equivalent to 25% of the market value of the card. You can also buy the cards with actual shards too."
 
-- **Credits** (◇) belong to the run. A new game clears them, and the run's save keeps them. They are not shards.
+- **Credits** (◇) belong to the run. A new game clears them, and the run's save keeps them. They are not shards. They are shown exactly, halves included (◇22.5), and a price says exactly how short the player is (NEED ◇67.5 MORE).
 - **Only a duplicate pays credits:** 25% of the card's market value (section 7), so a half is possible: an Unrefined duplicate pays 22.5.
-- **The shelf** is six different cards, none of them in the player's hand or found this run, so a duplicate is never for sale. Only cards a pack deals are sold (the Crystalline class cards are not), and a card owned for good but not brought may be on it. A new shelf is dealt every **5 minutes** of the game's own clock (18,000 frames, saved with the run, so a reload keeps the same six cards and the time left). A card that comes into the hand or is found leaves the shelf at once; a card bought leaves it, and nothing replaces it until the next shelf.
+- **The shelf** is six different cards, none of them in the player's hand or found this run, so a duplicate is never for sale. Only cards a pack deals are sold (the Crystalline class cards are not), and a card owned for good but not brought may be on it. It is **dealt with the pack's own odds** ("weighted like a pack": 60 / 30 / 10 for Pack 1): each place rolls a rarity and takes one of that rarity's cards, so a shelf is mostly Unrefined and a Precision card is on about half of them, with no place kept for one. A new shelf is dealt every **5 minutes** of the game's own clock (18,000 frames, saved with the run, so a reload keeps the same six cards and the time left). **While the CARDS screen is open the shelf's clock waits:** the time spent on the screen is not counted, so a shelf never changes while the player chooses (the game itself keeps running behind it, and a shelf that is already due when the screen opens is dealt first). A card that comes into the hand or is found leaves the shelf at once; a card bought leaves it, and nothing replaces it until the next shelf.
 - **Buying** costs the card's market value in credits, **or the same number of shards**, never both. A card new to the player is **kept for good and found**; a card the player already owns for good is found for the run, and nothing new is saved.
-- The flat 1,000-shard unlock of a found card stays beside the market.
+- The flat 1,000-shard unlock of a found card stays beside the market. It is four to eleven times the price of a shelf card (90 to 250): the premium for keeping a card already found, since a found card never appears on the shelf. The market values of Prototype, Lustrous and Crystalline cards (350, 500, 650) are kept for the pack that deals them.
 
 ## 13. Open Design Decisions
 
@@ -151,11 +151,10 @@ The following remain undecided. Do not treat them as settled rules until they ar
 - How a resistance granted by a card combines with a subclass's own resistance.
 - Card artwork: only the rarity indicator exists.
 - A phone's CARDS screen and slots (and so the market on a phone).
-- The market, left to defaults: the flat 1,000-shard unlock is now four to eleven times the price of a shelf card (90 to 250); the shelf is not weighted by rarity (a flat draw, where packs are 60 / 30 / 10); a bought card's place stays empty until the next shelf; credits come in halves, and the header shows them rounded down; a weakened creature's abilities, unlike its bite, are not weakened; the shelf's clock stops with the game, and the CARDS screen does not pause it.
 
 ## 14. Status
 
-On 2026-10-30 the plumbing, the twenty-four cards, the booster pack, the credits and the market were built on the working branch (Pack 1 itself reached main the same day): the subclass tag on each evolved form, two slots on every follower and two on the player, the hand, found cards, the permanent unlock, the market, the CARDS screen and the roster's slots. Inert test cards, behind a developer switch (`?cards`), are how the screens and the rules are played with. The game's own tests (tests/cards.js, crystalline.js, packs.js, market.js) cover the rules and the screens.
+On 2026-10-30 the plumbing, the twenty-four cards, the booster pack, the credits and the market were built and put on main: the subclass tag on each evolved form, two slots on every follower and two on the player, the hand, found cards, the permanent unlock, the market, the CARDS screen and the roster's slots. Inert test cards, behind a developer switch (`?cards`), are how the screens and the rules are played with. The game's own tests (tests/cards.js, crystalline.js, packs.js, market.js) cover the rules and the screens.
 
 ## 15. Change Control
 

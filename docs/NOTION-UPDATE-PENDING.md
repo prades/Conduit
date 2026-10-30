@@ -2,9 +2,9 @@
 
 This is text for the Notion page **"Conduit — Game Design Archive"**. It was written on 2026-10-30 when the Notion connection failed to load in the session that built the card system, so it is kept here until it can be applied.
 
-**To apply it:** open a session with Notion connected, say "apply the Notion updater" and point it at this file. Each of the eight additions (sections 1 to 8) goes beside existing text; nothing is deleted or rewritten. After the Notion tool confirms the write and the page has been fetched to check it, mark this file applied or remove it in a commit on this branch.
+**To apply it:** open a session with Notion connected, say "apply the Notion updater" and point it at this file. Each of the nine additions (sections 1 to 9) goes beside existing text; nothing is deleted or rewritten. After the Notion tool confirms the write and the page has been fetched to check it, mark this file applied or remove it in a commit on this branch.
 
-**Status:** NOT applied yet. Updated through round 2 (sections 6 to 8 were added later: the Crystalline cards, Pack 1, then the market, the weakness, the glitch and the real stuns). (Last attempts: the Notion tools were not loaded, although the connector shows as connected and enabled; the session's own connection to it failed at startup.)
+**Status:** NOT applied yet. Updated through round 2 and its follow-ups (sections 6 to 9 were added later: the Crystalline cards, Pack 1, the market with the weakness, the glitch and the real stuns, then the market's follow-ups). (Last attempts: the Notion tools were not loaded, although the connector shows as connected and enabled; the session's own connection to it failed at startup.)
 
 This file belongs on the design-notes branch with the other design documentation. Do not merge it into main.
 
@@ -115,7 +115,7 @@ NOT written to Notion (the Notion tools still fail to connect). Built on the bra
 
 ## 8. (added after the owner's answers to the fifteen open questions) Implementation status — round 2: the market, the weakness, the glitch, the real stuns
 
-NOT written to Notion (the Notion tools still fail to connect: HTTP 400). Built on the branch claude/start-game-project-HSh7Z, build 2026-10-30g. Supersedes the poison / paralysis lines of section 7 and settles its three "interpretations to confirm".
+NOT written to Notion (the Notion tools still fail to connect: HTTP 400). Built on the branch claude/start-game-project-HSh7Z and on main, build 2026-10-30g. Supersedes the poison / paralysis lines of section 7 and settles its three "interpretations to confirm".
 
 **The owner's answers (settled):** a pack's cards are FOUND FOR THE RUN, 1,000 shards keeps one for good; a pack card must be found before the 1,000 unlock (the Crystalline six are still bought outright); a pack can be bought at any time on the CARDS screen (no pause); the Core's "all damage categories" is every hit a follower lands; burn damage is still reduced by defense; every direct hit can proc (one roll per target); a stat a card moves keeps its exact decimals (3); attack speed is the rest between ordinary attacks only; elemental attack power is SP.ATK only; same-stat stacking is fine as it is; the Game Bible: not yet.
 
@@ -133,4 +133,17 @@ NOT written to Notion (the Notion tools still fail to connect: HTTP 400). Built 
 - The CARDS sheet has a MARKET section (the shelf, its clock, two prices on each card, two taps to buy); the header shows the run's credits; the pack's reveal tags each card NEW or DUPLICATE · +◇.
 - Tests: tests/market.js (new, 20+ checks, real-browser probe included), tests/packs.js, tests/evolution.js and tests/cards.js updated.
 
-**Newly open (see docs/OPEN-QUESTIONS.md section 2):** the flat 1,000 unlock is now four to eleven times a shelf card's price; the shelf is not weighted by rarity; a bought card's place stays empty until the next shelf; credits come in halves; a weakened creature's abilities do not change; the shelf's clock stops with the game; a phone cannot use the market; the values of the rarities Pack 1 does not deal are unused.
+**Newly open when this was written (all answered since: see section 9):** the flat 1,000 unlock is now four to eleven times a shelf card's price; the shelf is not weighted by rarity; a bought card's place stays empty until the next shelf; credits come in halves; a weakened creature's abilities do not change; the shelf's clock stops with the game; a phone cannot use the market; the values of the rarities Pack 1 does not deal are unused.
+
+---
+
+## 9. (added after the owner answered the eight questions section 8 left) Implementation status — the market's follow-ups
+
+NOT written to Notion (the Notion tools still fail to connect). Built on the branch claude/start-game-project-HSh7Z and on main, build 2026-10-30h. Settles the "Newly open" paragraph of section 8: all eight questions are answered.
+
+**Answers that change the game (built, tested; tests/market.js):**
+- THE SHELF IS DEALT LIKE A PACK: each place rolls a rarity by the pack's own weights (EQUIP_PACK.rarities, 60 / 30 / 10 for Pack 1), then takes one of that rarity's cards at random; a rarity with no card left is left out of the roll; no place is kept for a Precision card (about 47% of shelves have one). It follows the pack if the pack's odds are tuned.
+- CREDITS ARE SHOWN AS THEY ARE: the header reads 22.5, not 22; a price says exactly how short you are (NEED 67.5 MORE); the pack's reveal says +22.5 (equipCreditsText).
+- THE SHELF'S CLOCK WAITS WHILE THE CARDS SHEET IS OPEN: the time spent with the sheet open is not the shelf's (equipShelfSync, called at the sheet's opening and closing, at each redraw, at the tick and at a save); a shelf that is due when the sheet opens is dealt first; the game itself keeps running behind the sheet.
+
+**Answers that change nothing (keeps):** the flat 1,000 unlock stays; a bought card's place stays empty until the next shelf; a weakened creature is weaker in its bite only; the phone version comes later; the market values of Prototype (350), Lustrous (500) and Crystalline (650) stay (unused until a pack deals those rarities).
