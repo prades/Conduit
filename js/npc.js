@@ -277,7 +277,7 @@ function updateRTSNPC(actor) {
                         const col   = elDef ? elDef.color : "#fff";
                         const dmg   = (actor.stats?.specialAttack||10) * 0.5;
                         spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, null);
-                        actor.attackCooldown = 55;
+                        actor.attackCooldown = followerRest(actor, 55);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
                         if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
                     } else {
                         actor.attackCooldown--;

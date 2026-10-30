@@ -71,6 +71,38 @@ function drawBiteTelegraphs() {
 // ─────────────────────────────────────────────────────────
 //  STATUS EFFECT UPDATES (burn, freeze, slow, disorient etc)
 // ─────────────────────────────────────────────────────────
+const DOT_TICK = 20;   // frames between the damage ticks of a burn and of a poison (three a second)
+// The statuses the EQUIP CARDS set on a hit (js/cards.js equipOnHit). Each is REFRESHED when it is already on, never stacked: the longer time wins, the stronger tick wins, so a fast hitter keeps one timer going. All run out by themselves in
+// updateStatusEffects below. A burn is the game's own (burning / burnDamage, the tick below); the poison and the paralysis are new, the game having neither. `perTick` is the damage of one tick; each returns true when it was not on before.
+function applyBurn(t, perTick, frames) {
+    if (!t || t.dead || !(frames > 0)) return false;
+    const fresh = !(t.burning > 0);
+    t.burnDamage = fresh ? perTick : Math.max(t.burnDamage || 0, perTick);   // (one that had run out starts clean: its old tick is not carried over)
+    t.burning = Math.max(t.burning || 0, frames);
+    return fresh;
+}
+function applyPoison(t, perTick, frames) {
+    if (!t || t.dead || !(frames > 0)) return false;
+    const fresh = !(t.poisoned > 0);
+    t.poisonDamage = fresh ? perTick : Math.max(t.poisonDamage || 0, perTick);
+    t.poisoned = Math.max(t.poisoned || 0, frames);
+    return fresh;
+}
+// PARALYSIS: it cannot move, bite or use an ability until the timer is out (js/predator.js update), and a bite it was winding up is cut short, as the Technomancer's arc cuts one (js/technomancer.js). Creatures only: not a follower, not a clone.
+function applyParalysis(t, frames) {
+    if (!t || t.dead || t.isClone || t.team === "green" || !(frames > 0)) return false;
+    const fresh = !(t.paralyzed > 0);
+    t.paralyzed = Math.max(t.paralyzed || 0, frames);
+    if (t.attackWindup > 0) { t.attackWindup = 0; t.biteTarget = null; t.attackAnim = 0; t.attackCooldown = Math.max(t.attackCooldown || 0, frames); }
+    return fresh;
+}
+// KNOCKBACK: a push away from `from`, as the Core bash's (a velocity that decays by itself, each frame, below; the facility's walls stop it). A second push replaces the first: it does not add to it.
+function applyKnockback(t, from, push) {
+    if (!t || t.dead || t.untargetable || !from || !(push > 0)) return false;
+    const dx = t.x - from.x, dy = t.y - from.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
+    t.kbVX = (dx / d) * push; t.kbVY = (dy / d) * push; return true;
+}
+
 function updateStatusEffects() {
     actors.forEach(actor => {
         if (actor.dead) return;
@@ -78,10 +110,20 @@ function updateStatusEffects() {
         // ── BURN ──
         if (actor.burning > 0) {
             actor.burning--;
-            if (actor.burning % 20 === 0) {
+            if (actor.burning % DOT_TICK === 0) {
                 applyDamage(actor, actor.burnDamage || 0.5, null);
             }
         }
+
+        // ── POISON (the equip cards): the same, with its own timer and its own tick; it clears its tick when it runs out ──
+        if (actor.poisoned > 0) {
+            actor.poisoned--;
+            if (actor.poisoned % DOT_TICK === 0) applyDamage(actor, actor.poisonDamage || 0.5, null);
+            if (actor.poisoned <= 0) actor.poisonDamage = 0;
+        }
+
+        // ── PARALYSIS (the equip cards): the timer runs here; the creature's own update does nothing while it is on (js/predator.js) ──
+        if (actor.paralyzed > 0) actor.paralyzed--;
 
         // ── FREEZE (probabilistic defrost) ──
         if (actor.frozen) {
@@ -176,6 +218,12 @@ function updateStatusEffects() {
 //  FOLLOWER COMBAT DRIVER
 //  Called from role movement blocks when in attack range
 // ─────────────────────────────────────────────────────────
+// The rest after an attack, in frames (the attack's own number, below). EQUIP CARDS (js/cards.js): attack speed x1.5 (+50%) is an attack every 1/1.5 as many frames, x2 (two such cards, +100%) every half. The attack's own frame counts with
+// the rest (45 + 1 = 46 frames from one attack to the next), so 46 become 31 (a rest of 30) and, at +100%, 23 (a rest of 22). A follower with no such card rests as it always did.
+function followerRest(actor, frames) {
+    const k = typeof equipMult === "function" ? equipMult(actor, "attackSpeed") : 1;
+    return k > 0 && k !== 1 ? Math.max(1, Math.round((frames + 1) / k) - 1) : frames;
+}
 function followerAttack(actor, target) {
     if (!actor || !target || target.dead) return;
     if (!actor.attackCooldown) actor.attackCooldown = 0;
@@ -211,19 +259,19 @@ function followerAttack(actor, target) {
         const baseDmg = (actor.stats?.attack||5) * 0.25;
         applyElementalDamage(target, baseDmg, actor, actor.element||null);
         if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor,baseDmg); }
-        actor.attackCooldown = 45;
+        actor.attackCooldown = followerRest(actor, 45);
 
     } else if (attackTier === "physical" && attacks.physical) {
         attacks.physical(actor, target);
         actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_PHYSICAL);
         if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor, actor.stats?.attack||5); }
-        actor.attackCooldown = 40;
+        actor.attackCooldown = followerRest(actor, 40);
 
     } else if (attackTier === "special" && attacks.special) {
         attacks.special(actor, target);
         actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
         if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor, actor.stats?.specialAttack||5); }
-        actor.attackCooldown = 70;
+        actor.attackCooldown = followerRest(actor, 70);
     }
 
     // Resonance builds from damage output

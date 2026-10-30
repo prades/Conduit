@@ -215,6 +215,8 @@ class Predator {
 
     update() {
         if (this.dead) return;
+        // ── PARALYSIS (an equip card's Static Lock, js/cards.js): it cannot move, bite or use an ability until the timer, which updateStatusEffects runs down, is out ──
+        if (this.paralyzed > 0) return;
 
         // ── STATUS TIMERS ──
         if (this.smokeDebuff  > 0) this.smokeDebuff--;

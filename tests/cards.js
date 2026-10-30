@@ -7,7 +7,7 @@
 //   THE RULES     a card fits by element, role (class), subclass or not at all (universal); in the hand to be worn; one slot each, not twice on a unit, any number of units may wear one; the player takes Universal only;
 //                 a role switched or a card put back takes it off (the tick); unlocking pays the flat price from the run's shards, once, and is kept where NEW GAME does not reach
 //   THE LIFE      a respawn keeps a follower's cards; EXILE, falling for good (its restored body too) and a RE-ROLL empty the slots; the save carries them, additively (FS.version still 1), and a save from before the cards loads
-//   NOTHING ELSE  no card does anything; without ?cards there is no card, and the button, the roster's slots and the sheet are there and say so; the game's own numbers (the stats, the save's other parts) are as they were
+//   NOTHING ELSE  the nine test cards do nothing (the six real ones, the Crystalline cards, are tests/crystalline.js's); with no card in the registry the button, the roster's slots and the sheet are there and say so; the game's own numbers (the stats, the save's other parts) are as they were
 //   THE SCREENS   in the real page: the CARDS button and its sheet (a rarity chip on each card's edge, YOUR HAND, YOU, THE COLLECTION, UNLOCK in two taps), the roster's SUBCLASS and CARD 1 / CARD 2, the start-of-run choice; a phone has none
 const fs = require('fs');
 const vm = require('vm');
@@ -61,6 +61,17 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var click = function(el){ if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
   var byText = function(sel, t){ return $$(sel).filter(function(e){ return e.textContent.indexOf(t) === 0; })[0]; };
   var shown = function(el){ return !!el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0; };
+  // the sheet and the roster's slots with NO card in the registry (the contract of js/cardsui.js; the game itself has six real cards now, so a probe empties the registry for the moment)
+  var emptyProbe = async function(){
+      var f0 = followers[0]; f0.evolved = 'quillstone'; f0.role = 'brawler'; f0.element = 'fire'; selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f0; ccRender(); await wait(60);
+      var offs = $$('#ccSide .cc-dd').map(function(d){ return [d.querySelector('.cc-dd-k').textContent, d.querySelector('.cc-dd-v').textContent, d.disabled]; });
+      out.plain = { dds: offs.map(function(o){ return o[0]; }), cardDds: offs.filter(function(o){ return /^CARD/.test(o[0]); }), sub: $$('#ccSide .cc-stat').map(function(r){ return [r.querySelector('.cc-stat-k').textContent, r.querySelector('.cc-stat-v').textContent]; }).filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chip: ($('#ccFocus .cf-sc') || {}).textContent, cardsOpen: $('#cardsRoot').className };
+      ccClose(); await wait(60);
+      click($('#btnCards')); await wait(200);
+      out.emptySheet = { cls: $('#cardsRoot').className, slabs: $$('#cardsRoot .cd-card:not(.cd-empty)').length, empties: $$('#cardsRoot .cd-card.cd-empty').length, pslots: $$('#cardsRoot .cd-pbtn').length, note: ($('#cardsRoot .cd-note') || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent };
+      click($('#cardsRoot .cd-pbtn')); await wait(60); out.emptySheet.pList = $$('#cardsRoot .cd-plist .cd-btn').length + '/' + $$('#cardsRoot .cd-plist .cd-note').map(function(e){ return e.textContent; }).join();
+      click($('#cardsRoot .cd-close')); await wait(60); out.emptySheet.closed = $('#cardsRoot').className;
+  };
   try {
     out.dev = equipDev; out.any = equipAny(); out.wide = typeof hudCorners === 'function' && hudCorners();
     out.startOpen = $('#cardsRoot').className; out.startBanner = !!$('#cardsRoot .cd-banner'); out.startClose = ($('#cardsRoot .cd-close') || {}).textContent;
@@ -73,7 +84,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     gameState.running = true; facilityBlackoutSet(false); if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false;
     shardCount = 2500; for (var i = followers.length; i < 4; i++) recruitFollower(); for (var k = 0; k < followers.length; k++) followers[k].returningToCrystal = false; partyTick(); await wait(50);
     var btn = $('#btnCards'); out.btn = { there: !!btn, shown: shown(btn), inDock: !!btn && !!btn.closest('#dockScroll'), label: btn ? btn.textContent : null, topHud: shown($('#topToggles')) };
-    if (out.any && out.wide) {
+    if (out.any && out.wide && out.dev) {
       // THE SCREEN, from the dock
       click(btn); await wait(200);
       var slabs = $$('#cardsRoot .cd-grid .cd-card');
@@ -111,16 +122,17 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       var g = followers[1]; g.evolved = undefined; _ccFocus = g; ccRender(); await wait(60); out.egg = { sub: rows().filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chipShown: shown($('#ccFocus .cf-sc')) };
       g.evolved = 'bloom'; g.element = 'fire'; g.role = 'brawler'; _ccFocus = g; ccRender(); await wait(60); out.legacy = { sub: rows().filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chipShown: shown($('#ccFocus .cf-sc')) };
       ccClose();
+    } else if (out.any && out.wide) {
+      // THE REAL CARDS, no switch: the sheet lists the six, all locked (nothing is owned yet), each with its rarity chip; the roster's slots have no card in the hand to offer
+      click(btn); await wait(200);
+      var rs = $$('#cardsRoot .cd-grid .cd-card');
+      out.real = { slabs: rs.length, locked: $$('#cardsRoot .cd-grid .cd-card.locked').length, names: rs.map(function(s){ return s.querySelector('.cd-name').textContent; }), kinds: rs.map(function(s){ return s.querySelector('.cd-kind').textContent; }), texts: rs.map(function(s){ return s.querySelector('.cd-text').textContent; }),
+          rars: rs.map(function(s){ return s.querySelector('.cd-rar').textContent; }), lit: rs.map(function(s){ return s.querySelectorAll('.cd-chip i.on').length + '/' + s.querySelectorAll('.cd-chip i').length; }), buttons: rs.map(function(s){ return s.querySelector('.cd-btn .cd-bl').textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent, start: $('#cardsRoot .cd-banner') ? 1 : 0 };
+      click($('#cardsRoot .cd-close')); await wait(60);
+      _equipReg = {}; await emptyProbe(); _equipReg = null; equipReset();
     } else if (!out.any) {
       // NO CARD: the button, the sheet and the slots are all there, and say so
-      var f0 = followers[0]; f0.evolved = 'quillstone'; f0.role = 'brawler'; f0.element = 'fire'; selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f0; ccRender(); await wait(60);
-      var offs = $$('#ccSide .cc-dd').map(function(d){ return [d.querySelector('.cc-dd-k').textContent, d.querySelector('.cc-dd-v').textContent, d.disabled]; });
-      out.plain = { dds: offs.map(function(o){ return o[0]; }), cardDds: offs.filter(function(o){ return /^CARD/.test(o[0]); }), sub: $$('#ccSide .cc-stat').map(function(r){ return [r.querySelector('.cc-stat-k').textContent, r.querySelector('.cc-stat-v').textContent]; }).filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chip: ($('#ccFocus .cf-sc') || {}).textContent, cardsOpen: $('#cardsRoot').className };
-      ccClose(); await wait(60);
-      click($('#btnCards')); await wait(200);
-      out.emptySheet = { cls: $('#cardsRoot').className, slabs: $$('#cardsRoot .cd-card:not(.cd-empty)').length, empties: $$('#cardsRoot .cd-card.cd-empty').length, pslots: $$('#cardsRoot .cd-pbtn').length, note: ($('#cardsRoot .cd-note') || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent };
-      click($('#cardsRoot .cd-pbtn')); await wait(60); out.emptySheet.pList = $$('#cardsRoot .cd-plist .cd-btn').length + '/' + $$('#cardsRoot .cd-plist .cd-note').map(function(e){ return e.textContent; }).join();
-      click($('#cardsRoot .cd-close')); await wait(60); out.emptySheet.closed = $('#cardsRoot').className;
+      await emptyProbe();
     } else if (!out.wide) {
       // A PHONE: no dock, and its roster has no slots yet
       out.phone = { dock: shown($('#topToggles')) };
@@ -174,8 +186,9 @@ function measure(w, h, query, seed) {
     });
 
     group('2. THE CARDS: what exists');
-    await check('the real cards: none yet. The test cards (?cards): nine, one of each kind, every rarity named, none does anything', () => {
-        same(J('Object.keys(EQUIP_CARDS).length'), 0, 'real cards'); const t = J('Object.values(EQUIP_TEST_CARDS)'); same(t.length, 9, 'test cards'); same(J('Object.keys(equipCards()).length'), 9, 'the live registry');
+    await check('the real cards: the six Crystalline ones (tests/crystalline.js) and Pack 1\'s eighteen (tests/packs.js). The test cards (?cards): nine, one of each kind, every rarity named, none does anything', () => {
+        same(J('Object.keys(EQUIP_CARDS).length'), 24, 'real cards'); const t = J('Object.values(EQUIP_TEST_CARDS)'); same(t.length, 9, 'test cards'); same(J('Object.keys(equipCards()).length'), 33, 'the live registry');
+        ok(t.every(c => c.bonus === undefined), 'a test card has a bonus');
         const kinds = new Set(t.map(c => c.kind)); same([...kinds].sort().join(), 'class,element,subclass,universal', 'the kinds');
         const subs = J('EQUIP_SUBCLASSES.map(function(s){ return s.id; })'), roles = ['brawler', 'sniper', 'camper'], els = J('ELEMENTS.map(function(e){ return e.id; })'), rar = J('EQUIP_RARITIES.map(function(r){ return r.id; })');
         for (const c of t) {
@@ -188,15 +201,15 @@ function measure(w, h, query, seed) {
         same(new Set(t.map(c => c.rarity)).size >= 5, true, 'the test cards spread over the rarities');
     });
     const Q = await boot('', {});
-    await check('without ?cards: the registry is empty, equipAny is false, and nothing can be unlocked or taken', () => {
-        same(Q.J('Object.keys(equipCards()).length'), 0, 'cards'); same(Q.J('equipAny()'), false, 'any'); same(Q.J('equipDev'), '', 'the switch');
+    await check('without ?cards: the registry is the real cards (24) and no test card, equipAny is true, and a test card cannot be unlocked, taken or worn', () => {
+        same(Q.J('Object.keys(equipCards()).length'), 24, 'cards'); same(Q.J('equipAny()'), true, 'any'); same(Q.J('equipDev'), '', 'the switch'); same(Q.J('Object.keys(equipCards()).some(function(id){ return /^test_/.test(id); })'), false, 'a test card is in the registry');
         const r = Q.J(`(function(){ shardCount = 5000; const a = equipUnlock('test_fire'), b = equipHandAdd('test_fire'), f = __mk('fire', 'brawler'); return { a, b, put: equipPut(f, 0, 'test_fire'), why: equipUnlockWhyNot('test_fire'), shards: shardCount, run: equipRunStart(), owned: equipOwnedList().length }; })()`);
         same(r.a, false, 'unlocked a card that does not exist'); same(r.b, false, 'a card that does not exist went into the hand'); same(r.put, false, 'a card that does not exist was put on'); same(r.shards, 5000, 'it cost something'); same(r.run, false, 'a run began with a choice to make'); same(r.owned, 0, 'owned');
     });
-    await check('?cards=all: every test card is owned and in the hand, to try the screens by hand; none of that is ever saved', async () => {
+    await check('?cards=all: every card (the 24 real and the nine test) is owned and in the hand, to try the screens by hand; none of that is ever saved', async () => {
         const store = {}, A = await boot('?cards=all', store);
         const r = A.J(`(function(){ shardCount = 5000; const own = equipOwnedList().length, hand = equipHand.length, un = equipUnlock('test_fire'), w = equipWriteOwned(); const off = equipHandRemove('test_fire'), on = equipHandAdd('test_fire'); equipHand.length = 0; equipReset(); return { dev: equipDev, own, hand, un, w, off, on, again: equipHand.length, keys: Object.keys(equipCards()).length, shards: shardCount }; })()`);
-        same(r.dev, 'all', 'the switch'); same(r.own, 9, 'owned'); same(r.hand, 9, 'in the hand'); same(r.un, false, 'it unlocked a card it already owns'); same(r.w, false, 'it wrote the collection'); same(r.again, 9, 'a fresh run\'s hand'); same(r.shards, 5000, 'it cost something'); same(r.off && r.on, true, 'a card put back could not be taken again (the hand has no limit here)');
+        same(r.dev, 'all', 'the switch'); same(r.own, 33, 'owned'); same(r.hand, 33, 'in the hand'); same(r.un, false, 'it unlocked a card it already owns'); same(r.w, false, 'it wrote the collection'); same(r.again, 33, 'a fresh run\'s hand'); same(r.shards, 5000, 'it cost something'); same(r.off && r.on, true, 'a card put back could not be taken again (the hand has no limit here)');
         same(Object.keys(store).filter(k => /cards/.test(k)).length, 0, 'it saved something: ' + Object.keys(store));
     });
 
@@ -243,7 +256,7 @@ function measure(w, h, query, seed) {
             o.off = equipPlayerPut(0, null); o.offAgain = equipPlayerPut(0, null); o.rec = equipSaveCollect(); return o; })()`);
         same(r.n, 2, 'slots'); same(r.fire, false, 'a fire card on the player'); same(r.fireWhy, 'UNIVERSAL CARDS ONLY', 'the reason'); same(r.a, true, 'a Universal card'); same(r.dup, false, 'the same card twice'); same(r.dupWhy, 'ALREADY IN THE OTHER SLOT', 'the reason');
         same(r.b, true, 'a second'); same(r.slots.join(), 'test_universal_a,test_universal_b', 'slots'); same(r.noHand, false, 'a card not in the hand'); same(r.third, false, 'a third slot'); same(r.off, true, 'take off'); same(r.offAgain, false, 'take off an empty slot');
-        same(JSON.stringify(r.rec), JSON.stringify({ hand: ['test_universal_a', 'test_universal_b', 'test_fire'], player: [null, 'test_universal_b'] }), 'what the save would keep');
+        same(JSON.stringify(r.rec), JSON.stringify({ hand: ['test_universal_a', 'test_universal_b', 'test_fire'], found: [], player: [null, 'test_universal_b'] }), 'what the save would keep');
     });
     await check('the tick takes off what no longer fits: a role switched (a class card), a card put out of the hand, a card that is on both slots, a card the registry does not have; every EQUIP.every frames, and at once when forced', () => {
         const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; f.role = 'brawler'; delete f.evolved; __hand(['test_brawler', 'test_fire', 'test_universal_a']); const o = {};
@@ -322,7 +335,7 @@ function measure(w, h, query, seed) {
     });
     await check('the run\'s save carries the hand and the player\'s slots; FS.version is still 1', () => {
         const r = J(`(function(){ __hand(['test_universal_a', 'test_fire']); equipPlayer = ['test_universal_a', null]; const d = JSON.parse(JSON.stringify(facilitySaveCollect())); return { cards: d.cards, v: d.v, version: FS.version, key: FS.key }; })()`);
-        same(JSON.stringify(r.cards), JSON.stringify({ hand: ['test_universal_a', 'test_fire'], player: ['test_universal_a', null] }), 'cards'); same(r.v, 1, 'the save\'s version'); same(r.version, 1, 'FS.version'); same(r.key, 'conduit_fp_save', 'FS.key');
+        same(JSON.stringify(r.cards), JSON.stringify({ hand: ['test_universal_a', 'test_fire'], found: [], player: ['test_universal_a', null] }), 'cards'); same(r.v, 1, 'the save\'s version'); same(r.version, 1, 'FS.version'); same(r.key, 'conduit_fp_save', 'FS.key');
     });
     await check('a game is saved with its cards and comes back with them: the followers\' cards, the hand, the player\'s slots; the collection stays its own key', async () => {
         const store = {}, A = await boot('?cards', store);
@@ -337,11 +350,11 @@ function measure(w, h, query, seed) {
         const B = await boot('?cards', { conduit_fp_save: JSON.stringify(old) }), r = B.J(`({ n: followers.length, worn: followers.reduce((n, f) => n + equipWorn(f), 0), hand: equipHand.length, player: equipPlayer.join(), loaded: !!facilitySaveLoad() })`);
         same(r.loaded, true, 'the old save was refused'); same(r.n, 4, 'its followers'); same(r.worn, 0, 'worn'); same(r.hand, 0, 'hand'); same(r.player, ',', 'slots');
     });
-    await check('a save with cards in a game that has no cards (?cards off): they are dropped, quietly (the collection keeps its ids for when the switch is back on)', async () => {
+    await check('a save with a test card in a game with the switch off (?cards off): it is dropped, quietly (the collection keeps its id for when the switch is back on)', async () => {
         const store = {}, A = await boot('?cards', store);
         A.run(`shardCount = 5000; equipUnlock('test_fire'); equipHandAdd('test_fire'); const f = __fresh(1)[0]; f.element = 'fire'; equipPut(f, 0, 'test_fire'); facilitySaveWrite();`);
         const B = await boot('', store); B.run('equipTick(true)');
-        same(B.J('followers.length >= 1'), true, 'its followers'); same(B.J('equipAny()'), false, 'there is a card'); same(B.J('followers.reduce((n, f) => n + equipWorn(f), 0)'), 0, 'a card that does not exist is worn'); same(B.J('equipHand.length'), 0, 'a hand without cards');
+        same(B.J('followers.length >= 1'), true, 'its followers'); same(B.J('equipCards().test_fire === undefined'), true, 'the test card exists'); same(B.J('followers.reduce((n, f) => n + equipWorn(f), 0)'), 0, 'a card that does not exist is worn'); same(B.J('equipHand.length'), 0, 'a hand without cards');
         same(JSON.parse(store.conduit_fp_cards).owned.join(), 'test_fire', 'the collection lost its ids');
     });
 
@@ -351,9 +364,13 @@ function measure(w, h, query, seed) {
         const f = JSON.parse(run('JSON.stringify(followerRecord(__wear(__fresh(1)[0])))')); for (const k of ['element', 'personality', 'stats', 'role', 'uid', 'level', 'xp', 'cards']) ok(k in f, 'the record lost ' + k);
     });
     await check('the hooks are one line each and guarded (typeof equip... === "function"): the game runs if a card file were missing', () => {
-        const need = { 'js/facilitysave.js': 3, 'js/game.js': 3, 'js/helpers.js': 1, 'js/party.js': 1, 'js/specimen.js': 1, 'js/facilityplay.js': 2, 'js/commandcenter.js': 2 };
+        const need = { 'js/facilitysave.js': 3, 'js/game.js': 3, 'js/helpers.js': 3, 'js/party.js': 1, 'js/specimen.js': 1, 'js/facilityplay.js': 2, 'js/commandcenter.js': 2, 'js/levels.js': 1, 'js/combat.js': 1 };
         for (const [f, n] of Object.entries(need)) { const hits = (rd(f).match(/typeof (equip\w+) === "function"/g) || []).length; ok(hits >= n, f + ' has ' + hits + ' guarded hooks, ' + n + ' expected'); }
-        ok(!/equip|cards/i.test(rd('js/combat.js')) && !/\bequip\w*\(/.test(rd('js/elements.js')) && !/\bequip\w*\(/.test(rd('js/levels.js')), 'a card is in the fight or the stats');
+        // a card reaches the fight in four places, each through a guarded function: the stats are made from the base (js/levels.js, equipMult), the rest after an attack (js/combat.js followerRest, equipMult), the damage a follower deals and the effect on a
+        // hit (js/helpers.js applyDamage: equipMult, equipOnHit); the elements and the Mage's shot are not touched, and the statuses are the combat code's own (applyBurn and the others are not card functions)
+        const calls = f => (rd(f).match(/\bequip\w*\(/g) || []).filter(x => x !== 'equipMult(').join();
+        same(calls('js/levels.js') + calls('js/combat.js'), '', 'levels.js or combat.js calls a card function other than equipMult (guarded)'); ok(/typeof equipMult === "function"/.test(rd('js/levels.js')) && /typeof equipMult === "function"/.test(rd('js/combat.js')), 'the two hooks are not guarded');
+        ok(!/equip|cards/i.test(rd('js/elements.js')) && !/equip|cards/i.test(rd('js/npc.js').replace(/EQUIP CARDS: \+attack speed shortens the rest, js\/combat\.js followerRest/, '')), 'a card is in the elements or the movement');
     });
     await check('the files are on the page, in the boot check, and the dock has its button (always shown)', () => {
         const html = rd('game.html'), order = scriptOrder(); ok(order.includes('js/cards.js') && order.includes('js/cardsui.js'), 'the scripts are not on the page'); ok(order.indexOf('js/cards.js') < order.indexOf('js/game.js') && order.indexOf('js/cardsui.js') > order.indexOf('js/commandcenter.js'), 'their order');
@@ -369,10 +386,10 @@ function measure(w, h, query, seed) {
             await check('the CARDS button is in the dock, shown (there are cards), and opens the sheet over the game: the HUD gives way, the title, the three parts, the count and the shards', () => {
                 same(T.btn.there && T.btn.inDock && T.btn.shown, true, 'the button: ' + JSON.stringify(T.btn)); ok(/CARDS/.test(T.btn.label), 'its label ' + T.btn.label);
                 same(T.open.cls.indexOf('open') >= 0, true, 'the sheet did not open'); same(T.open.body, true, 'body.cardsOpen'); same(T.open.hudHidden, true, 'the HUD stayed over the sheet'); same(T.open.title, 'CARDS', 'the title');
-                same(T.open.secs.join('|'), 'YOUR HAND|YOU|THE COLLECTION', 'its parts'); same(T.open.slabs, 9, 'the cards'); ok(/HAND 9 · 9 OF 9 UNLOCKED · TEST CARDS \(\?cards\)/.test(T.open.summary), 'the summary: ' + T.open.summary); ok(/^◆ \d+$/.test(T.open.shardsHead), 'the shards: ' + T.open.shardsHead);
+                same(T.open.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|THE COLLECTION', 'its parts'); same(T.open.slabs, 33, 'the cards'); ok(/HAND 33 · 33 OF 33 UNLOCKED · TEST CARDS \(\?cards\)/.test(T.open.summary), 'the summary: ' + T.open.summary); ok(/^◆ \d+$/.test(T.open.shardsHead), 'the shards: ' + T.open.shardsHead);
             });
             await check('rarity is a CHIP on each card\'s edge: one notched plate with six segments, one lit for each step (illuminated bars), standing on the right edge of the card, with the name of its tier on the card', () => {
-                same(T.bars.length, 9, 'slabs'); for (const b of T.bars) {
+                same(T.bars.length, 33, 'slabs'); for (const b of T.bars) {
                     same(b[6], 1, b[0] + ' has not one chip'); same(b[2], 6, b[0] + ' segments'); same(b[1], b[3], b[0] + ' lit segments'); ok(b[3] >= 1 && b[3] <= 6, b[0] + ' rarity'); same(b[4], b[5], b[0] + ' rarity name');
                     ok(b[7] && b[7][0] >= 0 && b[7][0] <= 2, b[0] + '\'s chip is not on the card\'s right edge: ' + JSON.stringify(b[7])); ok(b[7][1] >= 4 && b[7][2] >= 50, b[0] + '\'s chip is not a plate set into the edge: ' + JSON.stringify(b[7])); ok(new RegExp('^RARITY · ' + b[5] + ' · ' + b[3] + ' OF 6$').test(b[7][3]), b[0] + '\'s chip says ' + b[7][3]);
                 }
@@ -383,7 +400,7 @@ function measure(w, h, query, seed) {
             });
             await check('YOU: the player has two slots; each lists the hand (the Universal cards the only ones that can be picked, EMPTY off while empty); a card picked shows; the other slot cannot take the same one', () => {
                 same(T.pslots, 2, 'slots'); const en = l => l.filter(x => !x[1]).map(x => x[0]).sort().join('|');
-                same(en(T.pList0), 'TEST · UNIVERSAL A|TEST · UNIVERSAL B', 'what the first slot can take'); same(T.pList0.length, 10, 'the list (EMPTY and the nine)'); same(T.pAfter.join(), 'test_universal_a,', 'slot one'); same(T.pShown, 'TEST · UNIVERSAL A', 'what it shows');
+                same(en(T.pList0), 'TEST · UNIVERSAL A|TEST · UNIVERSAL B', 'what the first slot can take'); same(T.pList0.length, 34, 'the list (EMPTY and the 33)'); same(T.pAfter.join(), 'test_universal_a,', 'slot one'); same(T.pShown, 'TEST · UNIVERSAL A', 'what it shows');
                 same(en(T.pList1), 'TEST · UNIVERSAL B', 'what the second can take once the first has A (EMPTY is off while it is empty)'); same(T.pAfter2.join(), 'test_universal_a,test_universal_b', 'both slots');
             });
             await check('✕ CLOSE and Escape shut the sheet and give the HUD back', () => { same(T.closed.cls.indexOf('open') < 0, true, 'close'); same(T.closed.body, false, 'body.cardsOpen after'); same(T.closed.hud, true, 'the dock did not come back'); same(T.escaped.indexOf('open') < 0, true, 'Escape'); });
@@ -392,7 +409,8 @@ function measure(w, h, query, seed) {
             });
             await check('a slot lists the hand: the cards that fit can be picked, the rest say why not; a pick fills the slot and folds the list; the other slot cannot take the same card; EMPTY takes it off', () => {
                 const en = l => l.filter(x => !x[1]).map(x => x[0]).sort().join('|'), why = (l, n) => (l.find(x => x[0] === n) || [])[2];
-                same(en(T.ro.opts1), 'TEST · BRAWLER|TEST · CRUSTACEAN|TEST · FIRE|TEST · UNIVERSAL A|TEST · UNIVERSAL B', 'what a fire brawler Quillstone can wear'); same(why(T.ro.opts1, 'TEST · ICE'), 'FOR ICE FOLLOWERS', 'ice'); same(why(T.ro.opts1, 'TEST · MAGE'), 'FOR MAGES', 'mage');
+                same(en(T.ro.opts1), 'CINDERBRAND|EMBER PLATING|FURNACE HEART|IMPACT TEST|STRESS TESTED|TEST · BRAWLER|TEST · CRUSTACEAN|TEST · FIRE|TEST · UNIVERSAL A|TEST · UNIVERSAL B', 'what a fire brawler Quillstone can wear (the two Brawler Crystalline cards and the three fire cards of Pack 1 with it)'); same(why(T.ro.opts1, 'FROST LINING'), 'FOR ICE FOLLOWERS', 'an ice card of Pack 1 on a fire follower');
+                same(why(T.ro.opts1, 'POWER SURGE'), 'FOR MAGES', 'a Mage\'s card on a Brawler'); same(why(T.ro.opts1, 'CORE REINFORCEMENT'), 'FOR TECHNICIANS', 'a Technician\'s card on a Brawler'); same(why(T.ro.opts1, 'TEST · ICE'), 'FOR ICE FOLLOWERS', 'ice'); same(why(T.ro.opts1, 'TEST · MAGE'), 'FOR MAGES', 'mage');
                 same(why(T.ro.opts1, 'TEST · TECHNICIAN'), 'FOR TECHNICIANS', 'technician'); same(why(T.ro.opts1, 'TEST · DRONE'), 'FOR DRONES', 'drone'); same(T.ro.cards1.join(), 'test_fire,', 'slot one after the pick'); same(T.ro.closedAfter, 0, 'the list stayed open');
                 ok(T.ro.opts2.find(x => x[0] === 'TEST · FIRE')[1], 'the same card is offered on the other slot'); same(why(T.ro.opts2, 'TEST · FIRE'), 'ALREADY ON ITS OTHER SLOT', 'its reason'); same(T.ro.cards2.join(), 'test_fire,test_brawler', 'slot two after the pick');
                 same(T.ro.values.slice(2).join('|'), 'TEST · FIRE|TEST · BRAWLER', 'what the drop-downs show'); same(T.ro.cards3.join(), ',test_brawler', 'EMPTY');
@@ -408,7 +426,7 @@ function measure(w, h, query, seed) {
     else {
         await check('A NEW RUN with a collection: the sheet opens by itself with a banner and START THE RUN; the owned cards can be taken (up to three), the locked ones cost ◆1,000 and are off while the shards are short; START shuts it and the HUD is back', () => {
             ok(U && !U.err, 'the probe: ' + (U && U.err)); same(U.dev, 'on', 'the switch'); same(U.startOpen.indexOf('open') >= 0, true, 'the sheet did not open'); same(U.startBanner, true, 'no banner'); same(U.startClose, 'START THE RUN ▸', 'its button'); same(U.startHand0, 0, 'the hand began full');
-            same(U.takes, 2, 'cards to take'); same(U.locks, 7, 'cards to unlock'); same(U.locksOff, 7, 'unlocks that were on with ' + 100 + ' shards'); same(U.startHand1.join(), 'test_fire,test_universal_a', 'the hand chosen'); same(U.startAfter.indexOf('open') < 0, true, 'START did not shut it'); same(U.startBodyClass, false, 'body.cardsOpen after');
+            same(U.takes, 2, 'cards to take'); same(U.locks, 31, 'cards to unlock (the 24 real and the seven test cards not owned)'); same(U.locksOff, 31, 'unlocks that were on with ' + 100 + ' shards'); same(U.startHand1.join(), 'test_fire,test_universal_a', 'the hand chosen'); same(U.startAfter.indexOf('open') < 0, true, 'START did not shut it'); same(U.startBodyClass, false, 'body.cardsOpen after');
         });
         await check('?cards (not =all): the button is there, shown; UNLOCK asks twice, the second tap pays ◆1,000 once and the card is owned and kept; the same card is not charged again', () => {
             same(U.btn.shown, true, 'the button'); same(U.arm.label, 'TAP AGAIN TO UNLOCK', 'the first tap'); same(U.arm.shards, 0, 'the first tap spent shards'); same(U.arm.owned, false, 'the first tap unlocked');
@@ -417,12 +435,17 @@ function measure(w, h, query, seed) {
     }
     const N = measure(1180, 820, '');
     if (N === null) console.log('  (no Chromium here: skipped)');
-    else await check('WITHOUT ?cards: the CARDS button is in the dock and shown, the sheet opens empty and says so, and the roster has the SUBCLASS tag and CARD 1 / CARD 2, off, saying there is no card in the hand', () => {
-        ok(N && !N.err, 'the probe: ' + (N && N.err)); same(N.dev, '', 'the switch'); same(N.any, false, 'a card exists'); same(N.btn.there && N.btn.inDock && N.btn.shown, true, 'the button: ' + JSON.stringify(N.btn));
+    else await check('WITHOUT ?cards: the CARDS button is in the dock and shown, the sheet lists the six real cards (locked, a rarity chip on each), and with no card in the registry the sheet is empty and says so, and the roster has the SUBCLASS tag and CARD 1 / CARD 2, off, saying there is no card in the hand', () => {
+        ok(N && !N.err, 'the probe: ' + (N && N.err)); same(N.dev, '', 'the switch'); same(N.any, true, 'a card exists'); same(N.btn.there && N.btn.inDock && N.btn.shown, true, 'the button: ' + JSON.stringify(N.btn));
+        same(N.real.slabs, 24, 'the 24 on the sheet'); same(N.real.locked, 24, 'locked'); same(N.real.names.slice(0, 6).join('|'), 'IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|PROTOTYPE X|CORE REINFORCEMENT', 'their names (the Crystalline six first)'); same(N.real.kinds.slice(0, 6).join('|'), 'CLASS · BRAWLER|CLASS · BRAWLER|CLASS · MAGE|CLASS · MAGE|CLASS · TECHNICIAN|CLASS · TECHNICIAN', 'their classes');
+        same(N.real.lit.slice(0, 6).join(), '6/6,6/6,6/6,6/6,6/6,6/6', 'the rarity chips'); same(N.real.rars.slice(0, 6).join(), 'CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE', 'the rarity names');
+        same(N.real.texts.slice(0, 6).join('|'), '+50% ATTACK DAMAGE|+50% MAXIMUM HEALTH|+50% ELEMENTAL ATTACK POWER|+50% ATTACK SPEED|+50% ATTACK SPEED|+50% MAXIMUM HEALTH', 'what each says'); ok(/^UNLOCK ◆1000$/.test(N.real.buttons[0]) && N.real.buttons.every(b => b === N.real.buttons[0]), 'the buttons: ' + N.real.buttons); same(N.real.start, 0, 'the choice at the start of a run opened with nothing owned');
+        same(N.real.names.slice(6).length, 18, 'Pack 1\'s eighteen follow'); same(N.real.lit.slice(6).join(), '1/6,2/6,3/6,1/6,2/6,3/6,1/6,2/6,3/6,1/6,2/6,3/6,1/6,2/6,3/6,1/6,2/6,3/6', 'their rarity chips: Unrefined, Refined, Precision, six times');
+        ok(/HAND 0 \/ 3 · 0 OF 24 UNLOCKED$/.test(N.real.summary), 'the summary: ' + N.real.summary);
         same(N.plain.dds.join('|'), 'ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2', 'the roster\'s settings'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
         same(N.plain.sub.join(), 'SUBCLASS,CRUSTACEAN', 'the subclass row'); same(N.plain.chip, 'CRUSTACEAN', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
         ok(N.emptySheet.cls.indexOf('open') >= 0, 'the sheet did not open'); same(N.emptySheet.slabs, 0, 'a card on the sheet'); same(N.emptySheet.empties, 3, 'the hand\'s empty places'); same(N.emptySheet.pslots, 2, 'the player\'s slots');
-        same(N.emptySheet.secs.join('|'), 'YOUR HAND|YOU|THE COLLECTION', 'its parts'); same(N.emptySheet.note, 'NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED', 'what the collection says'); ok(/HAND 0 \/ 3 · 0 OF 0 UNLOCKED/.test(N.emptySheet.summary) && !/TEST CARDS/.test(N.emptySheet.summary), 'the summary: ' + N.emptySheet.summary);
+        same(N.emptySheet.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|THE COLLECTION', 'its parts'); same(N.emptySheet.note, 'NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED', 'what the collection says'); ok(/HAND 0 \/ 3 · 0 OF 0 UNLOCKED/.test(N.emptySheet.summary) && !/TEST CARDS/.test(N.emptySheet.summary), 'the summary: ' + N.emptySheet.summary);
         same(N.emptySheet.pList, '1/NO CARD IN YOUR HAND', 'a player slot\'s list with no card in the hand (EMPTY, off, and the note)'); same(N.emptySheet.closed.indexOf('open') < 0, true, 'close');
     });
     const P = measure(390, 844, '?cards=all');

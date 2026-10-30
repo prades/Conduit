@@ -37,6 +37,8 @@ const SUITES = [
     ['the Sewers: the arena\'s overflow grates and culvert, the room under it (two ledges, the deep river, a bridge and a broken one, gated passages, the boss\'s cistern), the trip, the drawing', 'sewers.js'],
     ['EXILE: any follower let go for good from the roster (the Command Center, the phone\'s ROSTER cards; not the squad\'s own cards), asked first, nothing back; the word everywhere', 'exile.js'],
     ['equip cards: five subclasses on the 18 forms (the user\'s roster chart), two slots on every follower and two Universal on the player, fits, the hand, the ◆1,000 unlock that NEW GAME keeps, lives through respawn / EXILE / falling for good / re-roll, saved additively; the screens; inert test cards behind ?cards', 'cards.js'],
+    ['the six Crystalline equip cards: the approved names, classes and +50% (attack damage, maximum health, elemental attack power, attack speed), each alone, in the fight, together (different stats independent, the same stat adds), the health rule, who can wear what, the save, a respawn and a restored body, the screens', 'crystalline.js'],
+    ['Pack 1: the eighteen Element cards, the 100-shard booster pack (4 cards, one Precision at least, 60 / 30 / 10, none twice, seedable), found cards and the 1,000-shard keep, the stat cards and the on-hit statuses (Burn, Poison, Paralyze, Slow, Siphon, Knockback), leaving, saving, a fight with every card, the screens', 'packs.js'],
     ['the game bible: every number it quotes is the code\'s, its pictures and links, its card on the home page, a phone\'s width', 'bible.js'],
     ['follower bonds',           'bonds.js'],
     ['traits + hybrid',          'traits.js'],

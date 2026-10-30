@@ -99,10 +99,18 @@ function _applyFollowerLevel(npc, fresh) {
     npc.stats = levelledStats(npc.base, npc.level);
     // An EVOLVED follower (js/evolution.js) is tougher and hits harder, for good.
     if (npc.evolved && typeof EVOLVE_MULT === "number") { npc.stats.hp = Math.round(npc.stats.hp * EVOLVE_MULT); npc.stats.attack = Math.round(npc.stats.attack * EVOLVE_MULT); }
-    npc.maxHealth = Math.round(npc.stats.hp * FOLLOWER_HP_MULT);
+    // EQUIP CARDS (js/cards.js): what its worn cards add, a share of the numbers above, summed per stat (two +50% are +100%). Made from the base here every time, so a bonus is never added twice and goes with the card.
+    const cardK = typeof equipMult === "function" ? s => equipMult(npc, s) : () => 1, kAtk = cardK("attack"), kSp = cardK("specialAttack"), kDef = cardK("defense"), kHp = cardK("maxHealth");
+    // (a stat a card moves is kept to three places, not rounded to a whole number: a +5% on a stat of 9 is +5%, not +0%; the screens round it to show it. The maximum health is a whole number as it was.)
+    const cardStat = (v, k) => Math.max(1, Math.round(v * k * 1000) / 1000);
+    if (kAtk !== 1) npc.stats.attack = cardStat(npc.stats.attack, kAtk);
+    if (kSp !== 1) npc.stats.specialAttack = cardStat(npc.stats.specialAttack, kSp);
+    if (kDef !== 1) npc.stats.defense = cardStat(npc.stats.defense, kDef);
+    npc.maxHealth = Math.round(npc.stats.hp * FOLLOWER_HP_MULT * kHp);
     npc.power = npc.stats.attack;
+    // Fresh: full health. Else a gain in maximum health is added to the current health (a level-up, an evolution, a card put on) and a loss comes off it the same (a card taken off), never to under 1: a card put on and off again does not heal.
     if (fresh) { npc.health = npc.maxHealth; npc.currentWill = npc.stats.will; }
-    else npc.health = Math.min(npc.maxHealth, (npc.health || 0) + Math.max(0, npc.maxHealth - was));
+    else { const hp = npc.health || 0; npc.health = Math.min(npc.maxHealth, Math.max(Math.min(1, hp), hp + npc.maxHealth - was)); }
 }
 
 // ── PREDATORS AND CLONES ──────────────────────────────────
