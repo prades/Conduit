@@ -177,7 +177,7 @@ function facilityReroute(a, px, py) {
 }
 // The facility is big: a squad walking at its own pace would be a minute behind you. A follower or clone far from you (and not on an order of its own) hurries, up to about four times, and eases back to its own speed as it closes in.
 function facilityCatchUp(a, px, py) {
-    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.post || a.returningToCrystal || a.pounce || (a.isClone && a.abilityPhase === "active")) return;   // (a posted follower holds its room; a clone in the air, pouncing or leaping, is not hurried along: js/mutator.js)
+    if (!_fp || !a || a.team !== "green" || a.dead || a.job || a.post || a.returningToCrystal || a.pounce || a.asleep > 0 || (a.isClone && a.abilityPhase === "active")) return;   // (a posted follower holds its room; one asleep stays where it fell, js/combat.js applySleep; a clone in the air, pouncing or leaping, is not hurried along: js/mutator.js)
     const d = Math.hypot(player.x - a.x, player.y - a.y); if (d <= 8) return;
     const k = Math.min(4, 1 + (d - 8) / 6); a.x = px + (a.x - px) * k; a.y = py + (a.y - py) * k;
 }
@@ -454,7 +454,7 @@ function drawFacilityItem(it) {
     if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
     try {
-        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it); else if (it.fp === "sewer") facilitySewerDraw(it);
+        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it); else if (it.fp === "sewer") facilitySewerDraw(it); else if (it.fp === "sidequest") sqDraw(it);
     } finally { ctx.restore(); ctx = real; }
 }
 // A wall whose camera-facing side looks onto a LOWER floor (the pocket of floor behind the arena's rock, a fill cell) reaches down to it, so no gap shows under it.

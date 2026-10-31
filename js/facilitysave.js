@@ -40,6 +40,8 @@ function facilitySaveCollect() {
         quests: typeof questSnapshot === "function" ? questSnapshot() : null,                     // the Sewer purification: each of its states (js/quests.js)
         bosses: typeof bossSnapshot === "function" ? bossSnapshot() : null,                       // each boss encounter's state and outcome (js/bosses.js)
         puzzles: typeof puzzleSnapshot === "function" ? puzzleSnapshot() : null,                  // each puzzle's solve, and how (js/puzzles.js)
+        potion: typeof potionSnapshot === "function" ? potionSnapshot() : null,                   // the Sleeping Potion in hand and its economy (js/potion.js)
+        sidequest: typeof sqSnapshot === "function" ? sqSnapshot() : null,                        // Side Quest: that he appeared, the talk, the promise (js/sidequest.js)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
@@ -96,7 +98,9 @@ function facilitySaveApply(d) {
     if (typeof techBlightApply === "function") techBlightApply(d.blight);   // the play clock as it was, and the pools on it
     if (typeof puzzleApply === "function") puzzleApply(d.puzzles);   // the puzzles' records (the choke itself is put back by the rubble's hits above)
     if (typeof questApply === "function") questApply(d.quests);   // the quest's states (and the boss gate open again when its seal was broken)
-    if (typeof bossApply === "function") bossApply(d.bosses);     // an armed boss asleep in its lair again, a calm one calm; a defeated one gone
+    if (typeof bossApply === "function") bossApply(d.bosses);     // an armed boss asleep at its post again, a calm one calm; a defeated one gone
+    if (typeof potionApply === "function") potionApply(d.potion);   // the potion in hand (after the pack: one no longer in the pack is not in hand), the discount owed
+    if (typeof sqApply === "function") sqApply(d.sidequest);        // Side Quest back in his passage, the gate open again, the talk where it was
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (typeof equipSaveApply === "function") equipSaveApply(d.cards);   // the hand and the player's slots (a game saved before the cards has none: the hand is empty; the followers' own cards came back with them)
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);

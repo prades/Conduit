@@ -953,10 +953,9 @@ function _drawPredatorBars(actor, px, py, drawCtx) {
     // Its level, kind and what it is doing, over the bar (js/levels.js). A spider of the arena wears no tag (ASKED: "Spiders should have no tag"); one of yours (a clone) does.
     if (typeof drawUnitTag === "function" && !(actor.speciesName === "spider" && !_isAllyPred)) drawUnitTag(actor, px, py - 96, drawCtx);
     drawAbilityCharge(actor, px, py, drawCtx);
-    // Shield bar — blue, drawn above HP bar; drains on damage, no passive regen
+    // Shield bar — blue, drawn above HP bar; drains on damage, no passive regen. (_shieldMax, the most it has held, is kept by whatever grants the shield, js/game.js: the draw pass writes nothing on an actor, so a step with no picture is the same step: tests/ghost.js.)
     if (actor.shielded && actor.shieldAmount > 0) {
-        actor._shieldMax = Math.max(actor._shieldMax || 0, actor.shieldAmount);
-        const shPct = Math.max(0, Math.min(1, actor.shieldAmount / actor._shieldMax));
+        const shPct = Math.max(0, Math.min(1, actor.shieldAmount / Math.max(actor._shieldMax || 0, actor.shieldAmount)));
         drawCtx.fillStyle = "#000"; drawCtx.fillRect(px-18, py-93, 36, 4);
         drawCtx.fillStyle = "#3af"; drawCtx.fillRect(px-18, py-93, Math.round(36 * shPct), 4);
     }

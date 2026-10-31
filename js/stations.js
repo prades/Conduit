@@ -36,10 +36,13 @@ const STATION_KINDS = {
         use: () => typeof questBenchUse === "function" ? questBenchUse() : { ok: false, why: "NO QUEST" } },
     gate_seal: { name: "BOSS GATE", classes: null, verbFn: () => "BREAK THE SEAL ON THE GATE", canFn: () => typeof questGateCan === "function" ? questGateCan() : { ok: false, why: "NO QUEST" },
         use: () => typeof questGateUse === "function" ? questGateUse() : { ok: false, why: "NO QUEST" } },
-    purifier_mount: { name: "PURIFIER MOUNT", classes: null, build: 1200, cost: [["purification_module", 1]], buildMsg: "MOUNTING THE MODULE… STAY AT THE CONSOLE", verbFn: () => typeof questMountVerb === "function" ? questMountVerb() : "INSTALL",
+    purifier_mount: { name: "PURIFIER MOUNT", classes: null, build: 600, cost: [["purification_module", 1]], buildMsg: "MOUNTING THE MODULE… STAY AT THE CONSOLE", verbFn: () => typeof questMountVerb === "function" ? questMountVerb() : "INSTALL",   // (build: QUEST_PURIFY.install, js/quests.js: the archive's "about 10 seconds")
         canFn: () => typeof questMountCan === "function" ? questMountCan() : { ok: false, why: "NO QUEST" }, onStart: () => { if (typeof questMountStart === "function") questMountStart(); },
-        blockFn: () => typeof questMountBlocked === "function" ? questMountBlocked() : null,   // (the boss guards the console: the build's progress holds, js/bosses.js bossInstallBlocked)
+        blockFn: () => typeof questMountBlocked === "function" ? questMountBlocked() : null,   // (the queen at the console: the build's progress holds, js/bosses.js bossInstallBlocked)
         use: () => typeof questMountUse === "function" ? questMountUse() : { ok: false, why: "NO QUEST" } },
+    // SIDE QUEST, the drone in the Sewers' side passage (js/sidequest.js): a talk, a choice, then his shop; a station made at runtime when he appears (sqPlace), not a prop of the map
+    sidequest: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqVerb === "function" ? sqVerb() : "TALK", canFn: () => typeof sqCan === "function" ? sqCan() : { ok: false, why: "NOBODY HERE" },
+        use: () => typeof sqUse === "function" ? sqUse() : { ok: false, why: "NOBODY HERE" } },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
         use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
@@ -88,7 +91,7 @@ function stationUse(s) {
     if (r && r.ok === false) { invSay(r.why, false); return r; }   // (a use that turned out not to work says why)
     if (k.cooldown) _fp.cctvReadyAt = frame + k.cooldown;
     if (r.equip && typeof weaponEquip === "function") weaponEquip(r.equip);   // (a weapon taken is a weapon in hand)
-    invSay(r.msg + (got ? "   ▲ RANK " + classRank() : ""), true);
+    if (!r.quiet) invSay(r.msg + (got ? "   ▲ RANK " + classRank() : ""), true);   // (quiet: a use that says its own piece, Side Quest's talk)
     return Object.assign({ perk: got ? k.perk : null, first }, r);
 }
 
@@ -219,6 +222,8 @@ function facilityRelayTick() {
     const c = _fp.channel;
     if (c) {
         const near = Math.hypot(Math.max(c.bb[0] - player.visualX, 0, player.visualX - c.bb[2]), Math.max(c.bb[1] - player.visualY, 0, player.visualY - c.bb[3]));
+        // A HIT DOES NOT CANCEL A BUILD (the archive, 2026-10-31: "A predator hitting the player does not automatically interrupt or cancel purifier installation"): a bite's step back is not taken while a channel runs (js/helpers.js
+        // hurtPlayer), so only walking away ends one
         if (near > STATION_RANGE + 0.6) { _fp.channel = null; invSay(c.station ? "BUILD INTERRUPTED" : "REPAIR INTERRUPTED", false); }
         else {
             // a build a boss contests (the purifier mount: js/bosses.js bossInstallBlocked through the kind's blockFn) HOLDS while it is blocked: its start is pushed on a frame for every blocked frame, so the progress

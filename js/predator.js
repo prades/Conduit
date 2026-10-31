@@ -21,7 +21,7 @@ function predatorPreyOk(p, a) {
 function predatorPreyShare(a) { return typeof player !== "undefined" && a === player ? Math.max(0, health) / PLAYER_HITS : Math.max(0, a.health) / Math.max(1, a.maxHealth || 1); }
 // the best prey near it, or null (see COMBAT.prey)
 function predatorPickPrey(p) {
-    if ((p.bossAsleep || p.bossCalm || p.bossRetreating) && !p.provoked) return null;   // (a boss asleep or calm in its lair, or backing off in distress, picks no prey: a hit provokes it, js/bosses.js)
+    if ((p.bossAsleep || p.bossCalm) && !p.provoked) return null;   // (a boss asleep or calm in its lair picks no prey: a hit provokes it, js/bosses.js)
     const P = COMBAT.prey, calm = !predatorAlarm(p) && !p.provoked, seen = [];
     for (const a of _predNear(p.x, Math.max(P.sense, P.revenge))) if (a !== p && a.team === "green") seen.push(a);
     if (typeof player !== "undefined") seen.push(player);
@@ -193,7 +193,9 @@ class Predator {
         // THE PLAYER (its prey too, COMBAT.prey): one of its three hits, and a step back (hurtPlayer; the grace after a hit spaces them). Out of reach when it lands: missed.
         if (typeof player !== "undefined" && target === player) {
             if (this.isClone || walled(player) || !inReach(player) || (typeof predatorMayHurtPlayer === "function" && !predatorMayHurtPlayer())) return null;
-            return hurtPlayer(pwr, 4, this) ? player : null;
+            if (!hurtPlayer(pwr, 4, this)) return null;
+            if (this.className === "nymph" && this.element === "toxic" && typeof playerPoison === "function") playerPoison();   // a TOXIC NYMPH's bite (the Toxic Queen's brood, js/bosses.js) poisons you for a moment (js/combat.js)
+            return player;
         }
         if (B.splash) { let n = null; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
         if (target && !target.dead && target.team === hitTeam && walled(target)) return null;   // (the one it reared back at is behind a shield: stopped, and the shield shows it)
@@ -243,7 +245,7 @@ class Predator {
         // ── THE PLAYER, UP CLOSE ──
         // Brush against one, or let it walk up to you, and it turns on you: you are its prey (COMBAT.prey), and it bites you in the bite's two beats, the telegraph first (it bit at once,
         // with no warning, and only by touch: from a melee weapon's reach nothing could touch the player at all). Its shots and specials still pass you by.
-        if (!this.isClone && !this.untargetable && typeof predatorMayHurtPlayer === "function" && predatorMayHurtPlayer() && !this.bossRetreating && typeof player !== "undefined") {   // (a boss backing off in distress passes you by: js/bosses.js)
+        if (!this.isClone && !this.untargetable && typeof predatorMayHurtPlayer === "function" && predatorMayHurtPlayer() && typeof player !== "undefined") {
             const pdx = player.x - this.x, pdy = player.y - this.y, _br = typeof PLAYER_BITE_RANGE === "number" ? PLAYER_BITE_RANGE : 0.9;
             if (pdx * pdx + pdy * pdy <= _br * _br && this.currentTarget !== player) { faceToward(this, player.x, player.y, 0.5); this.lastAttacker = player; this.provoked = true; this._prey = player; }
         }
@@ -277,12 +279,21 @@ class Predator {
         // head tracking handled in HEAD CONTROL below
         if (!this.currentTarget || this.currentTarget.dead) this.headAngle+=Math.sin(frame*0.08)*0.02;
 
+        // ── A BOSS ROOTED AT ITS POST, OR FRANTIC (js/bosses.js: the Toxic Queen): neither ever goes for the Crystal. Sent hunting with prey in hand (a hit, bossWake) it is on that prey at once; with none, a rooted
+        //    one stands at its post and a frantic one roams its room (the wander, below) ──
+        if ((this.bossRooted || this.bossFrantic) && this.state === "hunt") {
+            const ct = this.currentTarget;
+            if (ct && !ct.dead && ct !== crystal && predatorPreyOk(this, ct) && Math.hypot(ct.x - this.x, ct.y - this.y) <= COMBAT.prey.leash) { this.state = "attack"; this.reactionDelay = 0; }
+            else { this.state = "wander"; this.currentTarget = null; this.moveSpeed = this.baseMoveSpeed || this.moveSpeed; if (this.bossFrantic) { this.wanderTimer = 0; this.wanderTarget = null; } }   // (frantic: a fresh roam, not the post it stood at)
+        }
+
         // ── UTILITY AI ──
         const utils=this.evaluateUtility();
         let bestState=this.state, bestScore=utils[this.state]||0;
         for (const k in utils) {
             // A wanderer is never promoted to "hunt" by the utility AI: it stays ambient.
             if (this.isWanderer && k==="hunt") continue;
+            if ((this.bossRooted || this.bossFrantic) && k==="hunt") continue;   // (nor is a rooted or frantic boss)
             // Nor is a calm creature (no alarm, not provoked): the CALM rule below put them back to wandering in the same frame, after the wander had been skipped, so they stood
             // exactly where they were spawned for good (the arena's creatures never moved).
             if (k==="hunt" && !predatorAlarm(this) && !this.provoked && this.team !== "green") continue;
@@ -415,12 +426,14 @@ class Predator {
                 if (this.attackWindup > 0 && typeof player !== "undefined" && this.biteTarget === player && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "DODGED", color: "#9be8ff", size: 12, life: 40, vy: -0.03 });
                 this.attackWindup = 0; this.biteTarget = null; this.attackAnim = 0;
                 if (this.disorientFF > 0 || dist > COMBAT.prey.leash) { drop(); if (!predatorAlarm(this)) { this.provoked = false; this.lastAttacker = null; } return; }   // (let go)
+                // ROOTED (js/bosses.js: the Toxic Queen at her post, the archive's "she does not chase the player"): it turns to face what it is after and takes no step; its projectiles and its brood are the boss's own (bossTick)
+                if (this.bossRooted) { faceToward(this, target.x, target.y, 0.25); return; }
                 // THE CHASE, at its own pace (a slow on it still slows it: js/abilities.js tickSlowSpeed parks moveSpeed while it attacks)
                 const sp = (this.baseMoveSpeed || base) * (this.slowed > 0 ? Math.max(0, this.slowFactor ?? 1) : 1);
                 const w = facilitySteer(this, target.x, target.y), wx = w[0] - this.x, wy = w[1] - this.y, wl = Math.hypot(wx, wy) || 1;
                 this.dirX += (wx / wl - this.dirX) * 0.25; this.dirY += (wy / wl - this.dirY) * 0.25; const len = Math.hypot(this.dirX, this.dirY) || 1; this.dirX /= len; this.dirY /= len;
                 this.x += this.dirX * sp; this.y += this.dirY * sp; this.walkCycle += sp * 40;
-                faceToward(this, target.x, target.y, 0.25);
+                faceToward(this, w[0], w[1], 0.25);   // it faces the way it walks: the route's next waypoint (the prey itself when nothing is between them). Facing the prey behind a wall or the Sewers' sump turned its next step into the obstacle, and it stood pressed against it for good
                 return;
             }
             // Turn to face what we are biting. This branch returns before the

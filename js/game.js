@@ -780,6 +780,7 @@ function render() {
                 if (nearest) {
                     nearest.shielded = true;
                     nearest.shieldAmount = (nearest.shieldAmount||0) + 1;
+                    nearest._shieldMax = Math.max(nearest._shieldMax || 0, nearest.shieldAmount);   // (the most it has held, for its bar: kept here, in the step, not where the bar is drawn)
                 }
             }
         }
@@ -796,6 +797,7 @@ function render() {
                     if (d < (actor.shieldAuraRadius || 5)) {
                         a.shielded = true;
                         a.shieldAmount = Math.min((a.shieldAmount||0) + 3, 15);
+                        a._shieldMax = Math.max(a._shieldMax || 0, a.shieldAmount);
                     }
                 });
             }
@@ -1174,6 +1176,8 @@ function render() {
     if (typeof drawTechnoFx === "function") drawTechnoFx();   // the Technomancer's arc (js/technomancer.js)
     if (typeof drawSpecimenOverlay === "function") drawSpecimenOverlay();   // the Ice Mage's beam; the Resurrection Zone and its plate (js/specimen.js)
     if (typeof drawSerumOverlay === "function") drawSerumOverlay();   // the allies a serum's pool is healing (js/serum.js)
+    if (typeof drawPotionOverlay === "function") drawPotionOverlay();   // a Sleeping Potion in the air, where one shattered, the z z z over the sleepers (js/potion.js)
+    if (typeof bossDrawOverlay === "function") bossDrawOverlay();       // the queen's wind-up ring and her shots in the air (js/bosses.js)
     if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)
     drawFloatingTexts();
     // The clone bay first, then its button over it, so the button that

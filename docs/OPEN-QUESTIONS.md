@@ -62,11 +62,24 @@ Decided with you by buttons before building, and built: the Sewers' boss is **a 
 - **Where the archive and the build differ, by your decision:** the archive's puzzle note wants an Electric Technician **jump pad carrying the player**; the build launches a **fire technician** in, as you chose. Recorded in the status page.
 
 Still open from that work:
-- **The queen's numbers.** Level 6, the ant species' boss block, distress at half health, guard 3 tiles, 6 s backing off and 8 s rushing at three times her pace: all provisional; the archive says to measure the live game before setting them.
+- **The queen's numbers.** Level 6, the ant species' boss block: provisional; the archive says to measure the live game before setting them. (The distress cycle of build `d` is gone: the archive's later rules replaced it, §1e.)
 - **The Nest's encounter.** The row names the Ant Queen with no lair, level or numbers; the nest area has no entrance. The archive's proposed Ant Queen fight (lunge, brood call, nest tremor) is a design, not code.
 - **Series 2 cards.** The list, its effects and numbers, and the pack's price and odds: none exist in the archive. The pack stays off sale until they do.
 - **A reward for sparing the queen.** The archive calls it valuable and undecided; nothing is granted.
 - **After purification:** one straggler ant at a time, one every 100 s, is my number for "a few incidental insects may remain".
+
+## 1e. The Toxic Queen's rules, Side Quest and the Sleeping Potion (built 2026-10-31, build `f`; docs/SEWER-QUEST.md)
+
+Built from the archive's newest sections (the patch frame, the clarifications, the encounter flow, the phase transition, the ant-wave size, the quest-line terminology) and your instruction: the term is **quest line**, and Side Quest's line after the queen's fate is decided is **"…"** for either outcome. What the archive left open was built provisionally and marked so in the code; what it asked to be decided before coding is listed here, undecided:
+
+- **The 50-coin rule.** The archive's older "50 coins for another potion after a use in combat" conflicts with its specific "50 shards for the next potion once it has been used on the sewer boss", and the game has no coins. Built: ◆100 from Side Quest, ◆50 for the next once a potion has put the queen to sleep (spent by that purchase), ◆100 otherwise (a lost potion). A use on an ordinary creature changes no price. **Your call**: drop the coin rule, or make a use on any creature in combat earn the ◆50.
+- **"One-fourth effectiveness"** of the lab's copy: read as a quarter of the sleep (75 frames to the original's 300), the same radius, enemies only. The archive asked for the measure to be defined.
+- **Damage and sleep.** A sleeper is not woken by a hit (your followers must be able to hold a sleeping queen while you install). The archive leaves resistance and immunity open.
+- **The queen's provisional numbers**: her guard 2.5 tiles; her leash and roam 15 tiles (the cistern); the bomb's 12 tiles of reach, 1.6-tile burst, 1 s wind-up and 1 s flight; the spit's 3-tile trigger, 1-tile burst, half a second each way; a wave of 4 nymphs (the archive: start at 4, up to 6), the first 30 s after she wakes, level 2 to 3; her frantic pace at 3 times her own; the sleep of 5 s on every creature (the archive gives only the queen's); the potion's 3-tile area and 4-tile reach. The archive's fixed numbers are built as given: 45 s, 10 s, 30 s, 50%, about 10 s to install, about 5 s of sleep, ◆100 / ◆50 / ◆100.
+- **Poison on you**: the game's poison is a weakness, so yours is too (your hits at 60% for 2 s). The archive says only that it should wear off quickly.
+- **Side Quest's look and lines.** He is drawn in code (a small black saucer with chasing rim lights on four tiny legs); the saucer design family (design/evolutions/forms26.js, Nos. 661–683) is the candidate for a proper sheet once a piece is approved (docs/ART-PROCESS.md). His opening is the archive's word for word; the other lines are mine, to polish. His spot: the south ledge's side passage (the archive: "a safe side passage or maintenance platform roughly halfway"). His "gadgets and gizmos", his later inventory and his progression into the Nests: open, as the archive says.
+- **The name.** The archive's newest notes say "the Toxic Queen"; the game keeps the name you approved this morning, THE TOXIC ANT QUEEN (provisional either way).
+- **Side Quest's reaction to a kill** (disappointment, reduced trust): undecided in the archive; the placeholder stands.
 
 ## 2. Newly open
 

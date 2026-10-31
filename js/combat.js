@@ -108,6 +108,50 @@ function applyGlitch(t, frames) {
     if (t.abilityPhase === "winding") { t.abilityPhase = "ready"; t.abilityTimer = 0; }
     return fresh;
 }
+// SLEEP (the Sleeping Potion, js/potion.js; the archive, 2026-10-31: "puts a valid creature/boss to sleep and interrupts its current action", "cancels its pending attack damage"): for `frames` the unit does nothing. A creature
+// is held as a stun holds it (js/predator.js update returns while `stunned` runs; `asleep` is the sleep's own timer, for the marks over it and for a follower, which honours no stun: js/npc.js updateRTSNPC returns while
+// it runs). The attack it was in is cancelled and nothing of it lands later: a bite's wind-up, an ability winding up or under way (js/abilities.js), and a boss's wind-up and what it has in the air (js/bosses.js
+// bossOnSleep, which also resets the Queen's projectile timers, as the archive asks). Damage does not wake it (the archive leaves resistance open; your followers must be able to hold a sleeping boss). Returns
+// true when the unit sleeps (fresh or longer), false when nothing can put it to sleep.
+function applySleep(t, frames) {
+    if (!t || t.dead || t.untargetable || !(frames > 0)) return false;
+    if (typeof player !== "undefined" && t === player) return false;   // (never you)
+    t.asleep = Math.max(t.asleep || 0, frames);
+    if (typeof Predator !== "undefined" && t instanceof Predator && t.team !== "green") t.stunned = Math.max(t.stunned || 0, frames);
+    if (t.attackWindup > 0) { t.attackWindup = 0; t.biteTarget = null; t.attackAnim = 0; }
+    t.attackCooldown = Math.max(t.attackCooldown || 0, frames);
+    if (t.abilityPhase === "winding" || t.abilityPhase === "active") {
+        if (t.abilityPhase === "active" && t.abilityDef && typeof _abEndActive === "function") { try { _abEndActive(t, t.abilityDef); } catch (e) { /* (an ability's end that needs the world: the sleep still holds) */ } }
+        t.abilityPhase = "charging"; t.abilityCharge = 0; t.abilityTimer = 0; t.abilityHits = 0;
+    }
+    if (t.bossId && typeof bossOnSleep === "function") bossOnSleep(t);
+    return true;
+}
+// POISON ON THE PLAYER (the archive, 2026-10-31: "Toxic Nymphs may poison the player, but the poison should wear off quickly (a couple of seconds or less)"; the Toxic Queen's brood, js/bosses.js, js/predator.js bite):
+// the game's poison is a weakness (applyWeaken above, the toxic cards'), so yours is too: for PLAYER_POISON.frames your own hits land for (1 − cut) of their damage (js/helpers.js applyDamage, a hit whose source is you).
+// Retreat a moment and it is gone. The player had no status at all; this is the first. PROVISIONAL numbers: the archive gives "a couple of seconds or less" and no strength.
+const PLAYER_POISON = { frames: 120, cut: 0.4 };
+function playerPoison(frames) {
+    if (typeof player === "undefined" || !player) return false;
+    const f = typeof frame !== "undefined" ? frame : 0, fresh = !(player.poisonUntil > f);
+    player.poisonUntil = Math.max(player.poisonUntil || 0, f + (frames > 0 ? frames : PLAYER_POISON.frames));
+    if (fresh && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2 + 2, y: canvas.height / 2 - 92, text: "POISONED · YOU HIT WEAKER FOR A MOMENT — BACK OFF", color: "#8cff5a", life: 90, vy: -0.05, size: 11 });
+    return fresh;
+}
+function playerPoisoned() { return typeof player !== "undefined" && !!player && player.poisonUntil > (typeof frame !== "undefined" ? frame : 0); }
+function playerPoisonLeft() { return playerPoisoned() ? player.poisonUntil - (typeof frame !== "undefined" ? frame : 0) : 0; }
+// the POISONED pill beside the ammunition (js/targeting.js _tgAmmoIcon): the seconds left. x: its left edge, y: its middle
+function drawPoisonChip(x, y, alpha) {
+    if (!playerPoisoned() || typeof ctx === "undefined") return 0;
+    const left = Math.ceil(playerPoisonLeft() / 60), txt = "POISONED " + left + " S", hh = 22, col = "#8cff5a", f = typeof frame !== "undefined" ? frame : 0;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = (alpha || 1) * (0.75 + 0.25 * Math.sin(f * 0.25)); ctx.font = typeof uiMono === "function" ? uiMono(13) : "bold 13px monospace";
+    const w = 24 + ctx.measureText(txt).width;
+    ctx.fillStyle = "rgba(10,24,8,0.7)"; ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y - hh / 2, w, hh, 11); else ctx.rect(x, y - hh / 2, w, hh); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + 11, y - 7); ctx.lineTo(x + 16, y + 5); ctx.lineTo(x + 6, y + 5); ctx.closePath(); ctx.fill();   // a drop
+    ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.fillText(txt, x + 20, y + 1);
+    ctx.restore();
+    return w + 8;
+}
 // KNOCKBACK: a push away from `from`, as the Core bash's (a velocity that decays by itself, each frame, below; the facility's walls stop it). A second push replaces the first: it does not add to it.
 function applyKnockback(t, from, push) {
     if (!t || t.dead || t.untargetable || !from || !(push > 0)) return false;
@@ -127,9 +171,10 @@ function updateStatusEffects() {
             }
         }
 
-        // ── STUN and GLITCH (js/predator.js reads them): the timers run here ──
+        // ── STUN and GLITCH (js/predator.js reads them), and SLEEP (applySleep: a creature's runs with its stun; a follower's is its own): the timers run here ──
         if (actor.stunned > 0) actor.stunned--;
         if (actor.glitched > 0) actor.glitched--;
+        if (actor.asleep > 0) actor.asleep--;
 
         // ── FREEZE (probabilistic defrost) ──
         if (actor.frozen) {

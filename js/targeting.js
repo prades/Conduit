@@ -209,6 +209,9 @@ function _tgAmmoIcon(x, y, alpha) {
     ctx.restore();
     if (armed) { _ATKCHIP.x = x - 4; _ATKCHIP.y = y - hh / 2 - 4; _ATKCHIP.w = w + 8; _ATKCHIP.h = hh + 8; } else _ATKCHIP.w = 0;
     if (typeof drawSerumChip === "function") drawSerumChip(x + w + 8, y, alpha);   // the Mutator's serum, beside it (js/serum.js)
+    let px = x + w + 8 + (typeof _SERUMCHIP !== "undefined" && _SERUMCHIP.w ? _SERUMCHIP.w + 4 : 0);
+    if (typeof drawPotionChip === "function") px += drawPotionChip(px, y, alpha) || 0;   // the Sleeping Potion in hand, for every class (js/potion.js)
+    if (typeof drawPoisonChip === "function") drawPoisonChip(px, y, alpha);             // POISONED, while a nymph's bite lasts (js/combat.js)
 }
 function _tgAmmoDraw() { const A = _tgAnchor(); if (A.corner) _tgAmmoIcon(A.left + 4, A.y + 4, 1); else _tgAmmoIcon(A.left - 4, A.top + 12, 1); }
 function _tgDialDraw(a, f) {

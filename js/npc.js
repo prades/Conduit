@@ -33,6 +33,7 @@ function updateRTSNPC(actor) {
     if (actor.dead) return;
     if (actor.spawnProtection>0) { actor.spawnProtection--; }
     if (actor.hitFlash>0) actor.hitFlash--;
+    if (actor.asleep > 0) return;   // ASLEEP (the Sleeping Potion's original takes your followers and clones too: js/combat.js applySleep): it does nothing until the sleep's timer, which updateStatusEffects runs down, is out
     if (actor.isClone && typeof cloneTick === "function" && cloneTick(actor)) return;   // a clone's special and its abdomen shot (js/clone.js): a special that is winding up or under way has the step
     if (actor.isFollower && actor.state === "attack") {
         actor.attackAnim = (actor.attackAnim||0) + 0.18;

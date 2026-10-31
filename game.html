@@ -9,18 +9,18 @@
     <!-- THE PROPS SHEETS THE START WAITS FOR (js/init.js, docs/STARTUP.md) begin to download with the page, alongside the scripts, instead of once the world is built: measured on a slow link (2x CPU, 60 ms, 15 Mbit/s), the start is about half a second sooner (4.1 s to 3.5 s for a new player, 6.4 s to 5.9 s for a returning one).
          They are the addresses the loader asks for (img/props/<family>.png, with the build stamp), so its own requests are answered from these; the stamp changes with the build (tests/startup.js checks both).
          Not here: the player's sheet (the website's background, ?attract, draws no player), the eggs and the evolved forms (which of them the first picture draws depends on the saved game): the start asks for those itself. -->
-    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/tech.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/lab.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/office.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/cold.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/plant.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/tank.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/truck.png?v=2026-10-31e">
-    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/tech.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/lab.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/office.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/cold.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/plant.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/tank.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/truck.png?v=2026-10-31f">
+    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-10-31f">
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -1212,7 +1212,7 @@
       <div class="cm-build-row"><span class="cm-build-label" style="color:#c06bff">MUTATOR</span>Biological samples. Fights up close with the <strong>tentacle lash</strong>, beside <strong>one clone</strong> it grows at the Clone Bay and upgrades with DNA (a fallen clone stays fallen: salvage its body, or have an Ice Mage preserve it and carry the capsule back to the Crystal); the <strong>healing serum</strong> from the Experiment Lab's hood splashes a pool that heals allies. A mutagen sample raises the nearest follower a level (two once the lab's sequencer has been used); the lab coat, put on by walking through the lab.</div>
       <div class="ctrl-row cm-dim">The <strong>Armory's terminal</strong> (once the Armory relay is online) turns scrap metal from the arena into ammunition, equips a weapon you have, and upgrades or assembles one: the service gun everyone starts with, the Gunslinger's machine gun, and a laser rifle that runs on fuel cells.</div>
       <div class="ctrl-title">THE SEWERS</div>
-      <div class="ctrl-row cm-dim">Down the <strong>culvert</strong> behind the arena's north tank. The water-quality reading as you arrive begins <strong>PURIFY THE SEWERS</strong>: three samples from the <strong>toxic ants</strong> down there and the <strong>water sample</strong> at the end of the collapsed tunnel (a flux technician's <strong>Telegrab</strong> pulls it out over the rubble, or an electric technician sets a <strong>launcher</strong> up at the tunnel and a fire technician is sent in to <strong>drill the choke open</strong>); the Experiment Lab's <strong>analysis bench</strong> takes them and sells the <strong>purification module</strong> for <span class="cm-stat">800 &#9670;</span>; the module opens the <strong>boss gate</strong> and is installed at the console by the sump, which wakes the <strong>Toxic Ant Queen</strong>. She guards the console: the install holds while she is on you. Drive her to half her health and she backs off in <strong>distress</strong>, rushing back now and then; a <strong>stun, freeze or glitch</strong> from your squad opens the console too. Or kill her. When the module has run, the water runs clean, the brood thins out, and a living queen <strong>calms</strong> and keeps her lair.</div>
+      <div class="ctrl-row cm-dim">Down the <strong>culvert</strong> behind the arena's north tank. The water-quality reading as you arrive begins <strong>PURIFY THE SEWERS</strong>: three samples from the <strong>toxic ants</strong> down there and the <strong>water sample</strong> at the end of the collapsed tunnel (a flux technician's <strong>Telegrab</strong> pulls it out over the rubble, or an electric technician sets a <strong>launcher</strong> up at the tunnel and a fire technician is sent in to <strong>drill the choke open</strong>); the Experiment Lab's <strong>analysis bench</strong> takes them and sells the <strong>purification module</strong> for <span class="cm-stat">800 &#9670;</span>; the module opens the <strong>boss gate</strong> and is installed at the console by the sump (about ten seconds), which wakes the <strong>Toxic Ant Queen</strong>. She sits rooted beside the console, throws <strong>toxic bombs</strong> (move: they land where you stood), spits when you are close, and calls <strong>toxic nymphs</strong>, four at a time, whose bites poison you for a moment; the install holds while she is at the console. <strong>Asleep, stunned, frozen or glitched</strong> she lets go of it; at half her health she goes <strong>frantic</strong> and roams: lure her off and work. Her bites do not stop the install; walking away does. Or kill her. Once the samples are in and ten of the ants are dead, <strong>Side Quest</strong>, a drone in the side passage off the south ledge, sells a <strong>sleeping potion</strong> (<span class="cm-stat">100 &#9670;</span>; half once it has put her to sleep): EQUIP it in the pack and the POTION pill, or T, throws it; it sleeps everything near where it lands for five seconds, your followers too, never you (the Experiment Lab's bench copies it at a quarter strength, enemies only). When the module has run, the water runs clean, the brood thins out, and a living queen <strong>calms</strong> and keeps her post.</div>
       </details>
     </div>
 
@@ -1699,12 +1699,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-31e, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-31f, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-31e";
+window.__PAGE_BUILD = "2026-10-31f";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1740,78 +1740,80 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-31e"></script>
-<script src="js/icons.js?v=2026-10-31e"></script>
-<script src="js/uikit.js?v=2026-10-31e"></script>
-<script src="js/traits.js?v=2026-10-31e"></script>
-<script src="js/elements.js?v=2026-10-31e"></script>
-<script src="js/combat.js?v=2026-10-31e"></script>
-<script src="js/species.js?v=2026-10-31e"></script>
-<script src="js/levels.js?v=2026-10-31e"></script>
-<script src="js/status.js?v=2026-10-31e"></script>
-<script src="js/helpers.js?v=2026-10-31e"></script>
-<script src="js/predator.js?v=2026-10-31e"></script>
-<script src="js/abilities.js?v=2026-10-31e"></script>
-<script src="js/commands.js?v=2026-10-31e"></script>
-<script src="js/npc.js?v=2026-10-31e"></script>
-<script src="js/draw.js?v=2026-10-31e"></script>
-<script src="js/beetle3d.js?v=2026-10-31e"></script>
-<script src="js/bugs3d.js?v=2026-10-31e"></script>
-<script src="js/settings.js?v=2026-10-31e"></script>
-<script src="js/alarm.js?v=2026-10-31e"></script>
-<script src="js/drops.js?v=2026-10-31e"></script>
-<script src="js/clone.js?v=2026-10-31e"></script>
-<script src="js/bonds.js?v=2026-10-31e"></script>
-<script src="js/evolution.js?v=2026-10-31e"></script>
-<script src="js/cards.js?v=2026-10-31e"></script>
-<script src="js/hdsprites.js?v=2026-10-31e"></script>
-<script src="js/firebombs.js?v=2026-10-31e"></script>
-<script src="js/moves.js?v=2026-10-31e"></script>
-<script src="js/hudgems.js?v=2026-10-31e"></script>
-<script src="js/commandcenter.js?v=2026-10-31e"></script>
-<script src="js/cardsui.js?v=2026-10-31e"></script>
-<script src="js/unitinfo.js?v=2026-10-31e"></script>
-<script src="js/infodex.js?v=2026-10-31e"></script>
-<script src="js/classes.js?v=2026-10-31e"></script>
-<script src="js/playergear.js?v=2026-10-31e"></script>
-<script src="js/inventory.js?v=2026-10-31e"></script>
-<script src="js/weapons.js?v=2026-10-31e"></script>
-<script src="js/mutator.js?v=2026-10-31e"></script>
-<script src="js/specimen.js?v=2026-10-31e"></script>
-<script src="js/serum.js?v=2026-10-31e"></script>
-<script src="js/technomancer.js?v=2026-10-31e"></script>
-<script src="js/stations.js?v=2026-10-31e"></script>
-<script src="js/facilityportals.js?v=2026-10-31e"></script>
-<script src="js/tutorial.js?v=2026-10-31e"></script>
-<script src="js/facilitymap.js?v=2026-10-31e"></script>
-<script src="js/facilitygrow.js?v=2026-10-31e"></script>
-<script src="js/facility.js?v=2026-10-31e"></script>
-<script src="js/attract.js?v=2026-10-31e"></script>
-<script src="js/facilitysave.js?v=2026-10-31e"></script>
-<script src="js/facilityplay.js?v=2026-10-31e"></script>
-<script src="js/facilitydecor.js?v=2026-10-31e"></script>
-<script src="js/propatlas.js?v=2026-10-31e"></script>
-<script src="js/propsprites.js?v=2026-10-31e"></script>
-<script src="js/facilitystyle.js?v=2026-10-31e"></script>
-<script src="js/facilitystyleall.js?v=2026-10-31e"></script>
-<script src="js/facilitysewers.js?v=2026-10-31e"></script>
-<script src="js/facilitynet.js?v=2026-10-31e"></script>
-<script src="js/facilityspawn.js?v=2026-10-31e"></script>
-<script src="js/followerspots.js?v=2026-10-31e"></script>
-<script src="js/party.js?v=2026-10-31e"></script>
-<script src="js/squadfly.js?v=2026-10-31e"></script>
-<script src="js/techabilities.js?v=2026-10-31e"></script>
-<script src="js/puzzles.js?v=2026-10-31e"></script>
-<script src="js/quests.js?v=2026-10-31e"></script>
-<script src="js/bosses.js?v=2026-10-31e"></script>
-<script src="js/facilitytutorial.js?v=2026-10-31e"></script>
-<script src="js/gunfire.js?v=2026-10-31e"></script>
-<script src="js/targeting.js?v=2026-10-31e"></script>
-<script src="js/toolbox.js?v=2026-10-31e"></script>
-<script src="js/mixtool.js?v=2026-10-31e"></script>
-<script src="js/radialmenu.js?v=2026-10-31e"></script>
-<script src="js/input.js?v=2026-10-31e"></script>
-<script src="js/game.js?v=2026-10-31e"></script>
+<script src="js/config.js?v=2026-10-31f"></script>
+<script src="js/icons.js?v=2026-10-31f"></script>
+<script src="js/uikit.js?v=2026-10-31f"></script>
+<script src="js/traits.js?v=2026-10-31f"></script>
+<script src="js/elements.js?v=2026-10-31f"></script>
+<script src="js/combat.js?v=2026-10-31f"></script>
+<script src="js/species.js?v=2026-10-31f"></script>
+<script src="js/levels.js?v=2026-10-31f"></script>
+<script src="js/status.js?v=2026-10-31f"></script>
+<script src="js/helpers.js?v=2026-10-31f"></script>
+<script src="js/predator.js?v=2026-10-31f"></script>
+<script src="js/abilities.js?v=2026-10-31f"></script>
+<script src="js/commands.js?v=2026-10-31f"></script>
+<script src="js/npc.js?v=2026-10-31f"></script>
+<script src="js/draw.js?v=2026-10-31f"></script>
+<script src="js/beetle3d.js?v=2026-10-31f"></script>
+<script src="js/bugs3d.js?v=2026-10-31f"></script>
+<script src="js/settings.js?v=2026-10-31f"></script>
+<script src="js/alarm.js?v=2026-10-31f"></script>
+<script src="js/drops.js?v=2026-10-31f"></script>
+<script src="js/clone.js?v=2026-10-31f"></script>
+<script src="js/bonds.js?v=2026-10-31f"></script>
+<script src="js/evolution.js?v=2026-10-31f"></script>
+<script src="js/cards.js?v=2026-10-31f"></script>
+<script src="js/hdsprites.js?v=2026-10-31f"></script>
+<script src="js/firebombs.js?v=2026-10-31f"></script>
+<script src="js/moves.js?v=2026-10-31f"></script>
+<script src="js/hudgems.js?v=2026-10-31f"></script>
+<script src="js/commandcenter.js?v=2026-10-31f"></script>
+<script src="js/cardsui.js?v=2026-10-31f"></script>
+<script src="js/unitinfo.js?v=2026-10-31f"></script>
+<script src="js/infodex.js?v=2026-10-31f"></script>
+<script src="js/classes.js?v=2026-10-31f"></script>
+<script src="js/playergear.js?v=2026-10-31f"></script>
+<script src="js/inventory.js?v=2026-10-31f"></script>
+<script src="js/weapons.js?v=2026-10-31f"></script>
+<script src="js/mutator.js?v=2026-10-31f"></script>
+<script src="js/specimen.js?v=2026-10-31f"></script>
+<script src="js/serum.js?v=2026-10-31f"></script>
+<script src="js/potion.js?v=2026-10-31f"></script>
+<script src="js/technomancer.js?v=2026-10-31f"></script>
+<script src="js/stations.js?v=2026-10-31f"></script>
+<script src="js/facilityportals.js?v=2026-10-31f"></script>
+<script src="js/tutorial.js?v=2026-10-31f"></script>
+<script src="js/facilitymap.js?v=2026-10-31f"></script>
+<script src="js/facilitygrow.js?v=2026-10-31f"></script>
+<script src="js/facility.js?v=2026-10-31f"></script>
+<script src="js/attract.js?v=2026-10-31f"></script>
+<script src="js/facilitysave.js?v=2026-10-31f"></script>
+<script src="js/facilityplay.js?v=2026-10-31f"></script>
+<script src="js/facilitydecor.js?v=2026-10-31f"></script>
+<script src="js/propatlas.js?v=2026-10-31f"></script>
+<script src="js/propsprites.js?v=2026-10-31f"></script>
+<script src="js/facilitystyle.js?v=2026-10-31f"></script>
+<script src="js/facilitystyleall.js?v=2026-10-31f"></script>
+<script src="js/facilitysewers.js?v=2026-10-31f"></script>
+<script src="js/facilitynet.js?v=2026-10-31f"></script>
+<script src="js/facilityspawn.js?v=2026-10-31f"></script>
+<script src="js/followerspots.js?v=2026-10-31f"></script>
+<script src="js/party.js?v=2026-10-31f"></script>
+<script src="js/squadfly.js?v=2026-10-31f"></script>
+<script src="js/techabilities.js?v=2026-10-31f"></script>
+<script src="js/puzzles.js?v=2026-10-31f"></script>
+<script src="js/quests.js?v=2026-10-31f"></script>
+<script src="js/bosses.js?v=2026-10-31f"></script>
+<script src="js/sidequest.js?v=2026-10-31f"></script>
+<script src="js/facilitytutorial.js?v=2026-10-31f"></script>
+<script src="js/gunfire.js?v=2026-10-31f"></script>
+<script src="js/targeting.js?v=2026-10-31f"></script>
+<script src="js/toolbox.js?v=2026-10-31f"></script>
+<script src="js/mixtool.js?v=2026-10-31f"></script>
+<script src="js/radialmenu.js?v=2026-10-31f"></script>
+<script src="js/input.js?v=2026-10-31f"></script>
+<script src="js/game.js?v=2026-10-31f"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1823,7 +1825,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
                  "js/predator.js": "Predator", "js/commands.js": "openInfoPanel", "js/draw.js": "drawNPC", "js/bugs3d.js": "drawBug3D", "js/levels.js": "levelFactor", "js/evolution.js": "evolutionTick",
                  "js/clone.js": "openCloneMenu", "js/commandcenter.js": "ccOpen", "js/cards.js": "EQUIP", "js/cardsui.js": "cardsOpen", "js/infodex.js": "infoEntries", "js/classes.js": "CLASSES", "js/inventory.js": "invToggle", "js/weapons.js": "WEAPONS", "js/mutator.js": "MUTATOR", "js/specimen.js": "SPECIMEN", "js/serum.js": "SERUM", "js/technomancer.js": "TECHNO",
                  "js/stations.js": "facilityStationsStart", "js/tutorial.js": "TUT", "js/facilitymap.js": "FACILITY_MAP", "js/facility.js": "facilityValidate", "js/facilityplay.js": "facilityPlayStart",
-                 "js/facilitynet.js": "facilityNetState", "js/facilityspawn.js": "facilitySpawnTick", "js/party.js": "PARTY", "js/techabilities.js": "TECH_AB", "js/puzzles.js": "PUZZLES", "js/quests.js": "QUEST_PURIFY", "js/bosses.js": "BOSS_ENCOUNTERS", "js/mixtool.js": "mixToolRender", "js/targeting.js": "TARGET", "js/game.js": "render" };
+                 "js/facilitynet.js": "facilityNetState", "js/facilityspawn.js": "facilitySpawnTick", "js/party.js": "PARTY", "js/techabilities.js": "TECH_AB", "js/puzzles.js": "PUZZLES", "js/quests.js": "QUEST_PURIFY", "js/bosses.js": "BOSS_ENCOUNTERS", "js/potion.js": "POTION", "js/sidequest.js": "SIDEQUEST", "js/mixtool.js": "mixToolRender", "js/targeting.js": "TARGET", "js/game.js": "render" };
     var missing = (window.__bootFailed || []).slice();
     // A stale cached copy of config.js (from another build) is as good as missing.
     try { if ((0, eval)("BUILD_VERSION") !== window.__PAGE_BUILD) missing.push("js/config.js (an old copy from another build)"); }
@@ -1866,7 +1868,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-31e"></script>
+<script src="js/init.js?v=2026-10-31f"></script>
 
 </body>
 </html>

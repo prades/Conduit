@@ -344,8 +344,8 @@ const restOf = (n, k) => Math.max(1, Math.round((n + 1) / k) - 1);   // the rest
         const o = J(`(function(){ __fresh(0); const f = __prep('brawler', 'fire', 6); f.health = f.maxHealth - 5; const miss = f.maxHealth - f.health, max0 = f.maxHealth; gainXp(f, xpForLevel(7) - f.xp + 1); return { miss, now: f.maxHealth - f.health, grew: f.maxHealth > max0 }; })()`);
         same(o.grew, true, 'maximum health did not grow'); same(o.now, o.miss, 'a level-up changed how hurt it is');
     });
-    await check('the save keeps its parts (31 fields) and its version, the follower record its fields, and the collection its shape: nothing was added for the bonuses', () => {
-        same(J('Object.keys(facilitySaveCollect()).length'), 31, 'the save\'s fields'); same(J('FS.version'), 1, 'FS.version'); const f = JSON.parse(run('JSON.stringify(followerRecord(__fresh(1)[0]))')), known = 'element,personality,combatTrait,naturalTrait,perk,stats,role,uid,partnerUid,base,level,xp,evolved,evoWait,playStyle,post,move,cards'.split(',');
+    await check('the save keeps its parts (33 fields) and its version, the follower record its fields, and the collection its shape: nothing was added for the bonuses', () => {
+        same(J('Object.keys(facilitySaveCollect()).length'), 33, 'the save\'s fields'); same(J('FS.version'), 1, 'FS.version'); const f = JSON.parse(run('JSON.stringify(followerRecord(__fresh(1)[0]))')), known = 'element,personality,combatTrait,naturalTrait,perk,stats,role,uid,partnerUid,base,level,xp,evolved,evoWait,playStyle,post,move,cards'.split(',');
         for (const k of Object.keys(f)) ok(known.includes(k), 'a new field in a follower\'s record: ' + k);
     });
 

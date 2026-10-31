@@ -18,21 +18,26 @@
 //   THE STATIONS (js/stations.js STATION_KINDS): the ANALYSIS BENCH (the cabinet at the Experiment Lab's west end, cabinet_1: ANALYSE, then BUY ◆800; not a bench beside the sequencer and the hood, whose plate would show the wrong station), the BOSS GATE's seal (with the module in the pack), the PURIFIER MOUNT (the cistern's console: a build of
 //     QUEST_PURIFY.install frames that the player stays at; starting it wakes the boss; finishing it mounts the module and starts the cycle).
 //   NON-LETHAL: the module's cycle completes whether the boss lives or not; when it does, a living boss is CALMED (js/bosses.js bossCalm: it keeps its lair, alive). Defeating it is the other resolution. The quest records both.
-//   THE INSTALL UNDER PRESSURE (the archive's design, 2026-10-31): the woken boss GUARDS the console: the install's progress holds while it is within its guard of the mount and not controlled (questMountBlocked ←
-//     js/bosses.js bossInstallBlocked); at half its health it is in DISTRESS and backs off to the far side of the sump, rushing the console now and then: its retreats, and the stuns, freezes and glitches your
-//     squad lands on it, are the windows. After the purification the brood thins to a few stragglers (js/facilityspawn.js facilityBroodThin: the major infestation clears, as the archive asks).
+//   THE INSTALL UNDER PRESSURE (the archive's design, 2026-10-31, as its latest notes have it): the woken queen SITS ROOTED at her post beside the console: the install's progress holds while she is within her guard of
+//     the mount and not controlled (questMountBlocked ← js/bosses.js bossInstallBlocked); she throws toxic bombs and calls her brood; at half her health she goes FRANTIC and roams, and the way in is to lure her off,
+//     SLEEP her (Side Quest's potion, js/potion.js, js/sidequest.js) and work while your followers hold her. A hit on you never cancels the install (js/stations.js); walking away does. The install is about 10 s
+//     (`install`), the archive's number. After the purification the brood thins to a few stragglers (js/facilityspawn.js facilityBroodThin: the major infestation clears, as the archive asks).
+//   SIDE QUEST (js/sidequest.js) is OPTIONAL and no step of the quest line: he appears in the Sewers' side passage once the samples have been turned in at the lab AND about `antTarget` toxic ants have been killed
+//     (`antKills`, counted here from the brood's deaths: the archive's "around 10", tunable); the plate's install hint mentions him once he is there.
+//   THE TERM is QUEST LINE for the whole sequence (the archive, 2026-10-31); a step of it is a step or an objective.
 const QUEST_PURIFY = {
     id: "purify", title: "PURIFY THE SEWERS", col: "#8cff5a",
     samples: 3,          // toxic ant samples the bench wants, with one water sample
     modulePrice: 800,    // shards (the brief: "exchanges 800 shards for the module")
-    install: 1200,       // frames the module takes to mount (20 s): the player stays at the mount; the boss is woken when it begins
+    install: 600,        // frames the module takes to mount (the archive's "about 10 seconds"; js/stations.js purifier_mount.build is the same number): the player stays at the mount; the queen is woken when it begins
     cycle: 1800,         // frames the module runs before the water is clean (30 s); then a living boss is calmed
     discoverNear: 6,     // tiles from the outfall where the water-quality reading is taken (the culvert's doorway is 4.7 tiles from it: the reading comes as you arrive)
     dropLife: 18000,     // frames a dropped ant sample lies on the floor (5 minutes of play)
     closing: 1500,       // frames the closing line stays on the plate (25 s)
+    antTarget: 10,       // toxic ants of the Sewers killed before Side Quest appears (with the lab turn-in): the archive's provisional "around 10", "tune to progression pacing"
     boss: "sewer_cistern", gate: "sewer_gate_boss", sample: "pk_sewer_sample", puzzle: "sewer_sample", room: "sewers", outfall: "sewer_outfall",
 };
-const QUEST_FRESH = { purify: () => ({ discoveredAt: 0, puzzleAt: 0, puzzleHow: "", samplesAt: 0, turnedInAt: 0, moduleAt: 0, gateAt: 0, installedAt: 0, purifiedAt: 0, bossStartedAt: 0, bossResolvedAt: 0, bossOutcome: "", bossDefeated: 0, cycleLeft: 0, closeLeft: 0, drops: 0 }) };
+const QUEST_FRESH = { purify: () => ({ discoveredAt: 0, puzzleAt: 0, puzzleHow: "", samplesAt: 0, turnedInAt: 0, moduleAt: 0, gateAt: 0, installedAt: 0, purifiedAt: 0, bossStartedAt: 0, bossResolvedAt: 0, bossOutcome: "", bossDefeated: 0, cycleLeft: 0, closeLeft: 0, drops: 0, antKills: 0 }) };
 
 function _questFrame() { return typeof frame !== "undefined" ? frame : 0; }
 function _questNow() { return typeof techClock === "number" ? techClock : _questFrame(); }   // the play clock (saved; nothing passes while the game is closed)
@@ -67,11 +72,16 @@ const QUEST_STEPS = {
         { id: "module", title: "BUY THE PURIFICATION MODULE", text: Q => "AT THE ANALYSIS BENCH: ◆" + QUEST_PURIFY.modulePrice + ". YOU HAVE ◆" + (typeof shardCount === "number" ? shardCount : 0) + ".", hint: Q => "KILLS PAY SHARDS. THE MODULE GOES IN YOUR PACK.", done: Q => !!Q.moduleAt },
         { id: "install", title: "INSTALL THE MODULE IN THE CISTERN",
           text: Q => Q.gateAt ? "MOUNT THE MODULE ON THE CONSOLE AT THE HEAD OF THE SUMP AND STAY AT IT: " + Math.round(QUEST_PURIFY.install / 60) + " SECONDS." : "TAKE IT DOWN TO THE SEWERS: THE BOSS GATE AT THE EAST END OF THE SOUTH LEDGE. ITS SEAL BREAKS FOR THE MODULE.",
-          hint: Q => _questBossName() + " SLEEPS BY THE SUMP. THE INSTALL WAKES IT, AND IT GUARDS THE CONSOLE: THE INSTALL HOLDS WHILE IT IS ON YOU. DRIVE IT TO HALF ITS HEALTH AND IT BACKS OFF IN DISTRESS, OR STUN, FREEZE OR GLITCH IT; OR KILL IT. STEP AWAY AND THE INSTALL STOPS; THE MODULE IS NOT LOST.", done: Q => !!Q.installedAt },
-        { id: "purify", title: "THE WATER CLEARS", text: Q => "THE MODULE IS RUNNING: " + Math.ceil((Q.cycleLeft || 0) / 60) + " S. THE RIVER CLEARS AS IT GOES.", hint: Q => "THE BOSS NEED NOT DIE: CLEAN WATER CALMS IT, AND IT KEEPS ITS LAIR.", done: Q => !!Q.purifiedAt },
+          hint: Q => _questBossName() + " SLEEPS BESIDE THE CONSOLE. THE INSTALL WAKES HER: SHE SITS ROOTED THERE, THROWS TOXIC BOMBS AND CALLS HER BROOD, AND THE INSTALL HOLDS WHILE SHE IS AT THE CONSOLE. ASLEEP, STUNNED, FROZEN OR GLITCHED SHE LETS GO OF IT; AT HALF HER HEALTH SHE GOES FRANTIC AND ROAMS: LURE HER OFF AND WORK. HER BITES DO NOT STOP THE INSTALL; WALKING AWAY DOES. OR KILL HER." + (typeof sqPresent === "function" && sqPresent() ? " THE DRONE IN THE SIDE PASSAGE OFF THE SOUTH LEDGE SELLS A SLEEPING POTION." : ""), done: Q => !!Q.installedAt },
+        { id: "purify", title: "THE WATER CLEARS", text: Q => "THE MODULE IS RUNNING: " + Math.ceil((Q.cycleLeft || 0) / 60) + " S. THE RIVER CLEARS AS IT GOES.", hint: Q => "THE QUEEN NEED NOT DIE: CLEAN WATER CALMS HER, AND SHE KEEPS HER POST.", done: Q => !!Q.purifiedAt },
     ],
 };
 function _questBossName() { const E = typeof bossEnc === "function" ? bossEnc(QUEST_PURIFY.boss) : null; return E && E.name || "THE BOSS"; }
+// a toxic ant of the Sewers' brood has died (js/drops.js onPredatorDeath): counted toward Side Quest's appearance (js/sidequest.js sqUnlocked); never the queen, never a thinned straggler (those die without a death)
+function questAntKilled(p) {
+    if (!p || !p.sewerBrood || p.bossId || p.team === "green" || p.isClone) return false;
+    const Q = questState("purify"); Q.antKills = (Q.antKills || 0) + 1; return true;
+}
 function questStepIndex(id) { const Q = questState(id), S = QUEST_STEPS[id] || []; for (let i = 0; i < S.length; i++) if (!S[i].done(Q)) return i; return S.length; }
 // what the plate shows for the quest under way: { key, title, body, hint, col }, or null (js/tutorial.js facilityDrawObjective)
 function questObjective() {
@@ -79,7 +89,7 @@ function questObjective() {
         if (!questActive(id)) continue;
         const Q = questState(id), S = QUEST_STEPS[id], i = questStepIndex(id), P = QUEST_PURIFY;
         if (i < S.length) { const st = S[i]; return { key: id + ":" + st.id, title: P.title + "  ·  " + (i + 1) + "/" + S.length + "  ·  " + st.title, body: st.text(Q), hint: st.hint(Q), col: P.col }; }
-        const boss = Q.bossOutcome === "defeated" ? _questBossName() + " IS DEAD." : Q.bossOutcome === "calm" ? _questBossName() + " SLEEPS BY THE SUMP, ALIVE AND CALM." : "";
+        const boss = Q.bossOutcome === "defeated" ? _questBossName() + " IS DEAD." : Q.bossOutcome === "calm" ? _questBossName() + " SITS BY THE CONSOLE, ALIVE AND CALM." : "";
         return { key: id + ":done", title: P.title + "  ·  DONE", body: "THE RUNOFF RUNS CLEAN: THE SEWERS ARE PURIFIED. " + boss, hint: "", col: "#9dffb6" };
     }
     return null;
@@ -122,7 +132,9 @@ function questDropFor(p) {
 }
 
 // ── the stations (js/stations.js STATION_KINDS asks these) ──
-function questBenchVerb() { const Q = questState("purify"); return !Q.turnedInAt ? "ANALYSE THE SAMPLES" : !Q.moduleAt ? "BUY THE PURIFICATION MODULE ◆" + QUEST_PURIFY.modulePrice : "NOTHING MORE TO ANALYSE"; }
+// the bench, in the quest line's order: ANALYSE, then BUY the module; after that, with Side Quest's potion in the pack, it COPIES the potion (the archive's reverse-engineering, js/potion.js: ◆100, a quarter of the effect)
+function _questBenchCopies() { const Q = questState("purify"); return !!Q.moduleAt && typeof potionCopyWanted === "function" && potionCopyWanted(); }
+function questBenchVerb() { const Q = questState("purify"); return !Q.turnedInAt ? "ANALYSE THE SAMPLES" : !Q.moduleAt ? "BUY THE PURIFICATION MODULE ◆" + QUEST_PURIFY.modulePrice : _questBenchCopies() ? potionCopyVerb() : "NOTHING MORE TO ANALYSE"; }
 function questBenchCan() {
     const Q = questState("purify"), P = QUEST_PURIFY;
     if (!Q.turnedInAt) {
@@ -131,6 +143,7 @@ function questBenchCan() {
         return { ok: true };
     }
     if (!Q.moduleAt) { const have = typeof shardCount === "number" ? shardCount : 0; if (have < P.modulePrice) return { ok: false, why: "NEED ◆" + (P.modulePrice - have) + " MORE FOR THE MODULE" }; if (typeof invRoom === "function" && invRoom("purification_module") < 1) return { ok: false, why: "YOUR PACK ALREADY HOLDS A MODULE" }; return { ok: true }; }
+    if (_questBenchCopies()) return potionCopyCan();
     return { ok: false, why: "THE MODULE IS BOUGHT · INSTALL IT IN THE SEWERS' CISTERN", done: true };
 }
 function questBenchUse() {
@@ -140,8 +153,8 @@ function questBenchUse() {
         questMark(Q, "turnedInAt");
         return { ok: true, msg: "SAMPLES ANALYSED — THE RUNOFF IS TOXIC. THE BENCH CAN BUILD A PURIFICATION MODULE: ◆" + P.modulePrice };
     }
-    shardCount -= P.modulePrice; invAdd("purification_module", 1); questMark(Q, "moduleAt");
-    return { ok: true, msg: "PURIFICATION MODULE — IN YOUR PACK. MOUNT IT ON THE CISTERN'S CONSOLE IN THE SEWERS: THE BOSS GATE OPENS FOR IT" };
+    if (!Q.moduleAt) { shardCount -= P.modulePrice; invAdd("purification_module", 1); questMark(Q, "moduleAt"); return { ok: true, msg: "PURIFICATION MODULE — IN YOUR PACK. MOUNT IT ON THE CISTERN'S CONSOLE IN THE SEWERS: THE BOSS GATE OPENS FOR IT" }; }
+    return potionCopyUse();
 }
 function questGateCan() {
     const Q = questState("purify");
@@ -154,7 +167,7 @@ function questGateUse() {
     if (typeof facilitySolidOpen === "function") facilitySolidOpen(P.gate);
     questMark(Q, "gateAt"); if (typeof shake !== "undefined") shake = Math.max(shake || 0, 6);
     if (typeof bossArm === "function") bossArm(P.boss);
-    return { ok: true, msg: "THE SEAL IS BROKEN — THE BOSS GATE GRINDS OPEN. SOMETHING SLEEPS BY THE SUMP" };
+    return { ok: true, msg: "THE SEAL IS BROKEN — THE BOSS GATE GRINDS OPEN. SOMETHING SLEEPS BESIDE THE CISTERN'S CONSOLE" };
 }
 function questMountVerb() { const Q = questState("purify"); return Q.installedAt ? (Q.purifiedAt ? "THE WATER RUNS CLEAN" : "THE MODULE IS RUNNING") : "INSTALL THE PURIFICATION MODULE"; }
 function questMountCan() {
@@ -163,8 +176,8 @@ function questMountCan() {
     if (typeof invHas === "function" && !invHas("purification_module")) return { ok: false, why: "IT TAKES THE PURIFICATION MODULE (THE ANALYSIS BENCH, EXPERIMENT LAB)" };
     return { ok: true };
 }
-function questMountStart() { if (typeof bossWake === "function") bossWake(QUEST_PURIFY.boss, "install"); }   // the install begins: the boss is woken (the pressure)
-// why the install cannot go on this frame (js/stations.js facilityRelayTick, the mount's blockFn): the boss guards the console (js/bosses.js bossInstallBlocked); null when it can
+function questMountStart() { if (typeof bossWake === "function") bossWake(QUEST_PURIFY.boss, "install"); }   // the install begins: the queen is woken (the pressure)
+// why the install cannot go on this frame (js/stations.js facilityRelayTick, the mount's blockFn): the queen sits at the console (js/bosses.js bossInstallBlocked); null when it can
 function questMountBlocked() { return typeof bossInstallBlocked === "function" ? bossInstallBlocked(QUEST_PURIFY.boss) : null; }
 function questMountUse() {   // the install is complete (js/stations.js buildComplete took the module): the cycle begins
     const Q = questState("purify"), P = QUEST_PURIFY; if (Q.installedAt) return { ok: false, why: "IT IS INSTALLED" };

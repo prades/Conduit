@@ -126,8 +126,11 @@ function hurtPlayer(amount, shakeAmt, source) {
     if (!(amount > 0)) return false;
     if (player.invuln > 0) return false;
     health = Math.max(0, health - 1);
-    player.invuln = PLAYER_HIT_GRACE;
-    if (source && Number.isFinite(source.x) && Number.isFinite(source.y) && typeof PLAYER_KNOCKBACK !== "undefined") {
+    player.invuln = PLAYER_HIT_GRACE; player.lastHitAt = typeof frame !== "undefined" ? frame : 0;   // (lastHitAt: a build or repair you are at is not cancelled by the step a hit knocks you: js/stations.js facilityRelayTick)
+    // (no step back while you are at a build or a repair: js/stations.js facilityRelayTick cancels one you walk away from, and a bite must not walk you away from the purifier's console for you: the archive, 2026-10-31,
+    // "a predator hitting the player does not automatically interrupt or cancel purifier installation")
+    const braced = typeof _fp !== "undefined" && _fp && !!_fp.channel;
+    if (!braced && source && Number.isFinite(source.x) && Number.isFinite(source.y) && typeof PLAYER_KNOCKBACK !== "undefined") {
         let kx = player.x - source.x, ky = player.y - source.y;
         const kl = Math.hypot(kx, ky);
         if (kl < 1e-3) { kx = -1; ky = 0; } else { kx /= kl; ky /= kl; }
@@ -170,6 +173,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // BERSERKER: the trait sets damageMultiplier (1.5 under 30% health). It used
     // to be read in one job branch only, so it did nothing in ordinary combat.
     if (source && source.team === "green" && source.damageMultiplier > 1) amount *= source.damageMultiplier;
+    // POISONED (the Toxic Queen's nymphs, js/combat.js playerPoison): your own hits land weaker while it lasts (a hit whose source is you: the gun's, the lash's and the gauntlet's copies carry isPlayer)
+    if (source && (source.isPlayer || (typeof player !== "undefined" && source === player)) && typeof playerPoisoned === "function" && playerPoisoned()) amount *= 1 - PLAYER_POISON.cut;
     // BONDS (js/bonds.js): a fighting pair hits harder together, a bereaved
     // partner rages, a duo ultimate leaves both hitting harder for a while.
     // Both sides of the hit count as being in combat, which is what builds one.

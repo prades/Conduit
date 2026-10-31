@@ -96,8 +96,20 @@ const ITEMS = {
         lore: "A canister of membranes and a pump, and a chalk mark on it: THE DRAIN. Heavier than it looks.",
         stats: ["BOUGHT AT  THE ANALYSIS BENCH, ◆" + 800, "INSTALLED AT  THE PURIFIER MOUNT: THE CISTERN, SEWERS", "THE INSTALL  STAY AT THE MOUNT WHILE IT MOUNTS"],
         use: () => ({ ok: false, why: "INSTALL IT AT THE PURIFIER MOUNT IN THE SEWERS' CISTERN" }) },
+    // THE SLEEPING POTION (js/potion.js; the archive's Side Quest design, 2026-10-31): Side Quest's original, and the Experiment Lab's copy. A TOOL in the pack's terms: its button EQUIPS it (verb), and the throw (the
+    // POTION pill by the ammunition, or the key) takes it from the pack itself. Its numbers are the potion's table (stats is read when the page is drawn, after js/potion.js has loaded).
+    sleeping_potion: { id: "sleeping_potion", name: "SLEEPING POTION", cat: "gear", type: "tool", stack: 1, col: "#bcd0ff", icon: "potion", classes: null,
+        desc: "Side Quest's potion. Equip it and throw it: everything near where it lands sleeps a few seconds, your followers too. Never you.",
+        lore: "A round flask of something blue that settles slowly. The drone would not say where he got it. It smells of cold rain.",
+        get stats() { const P = typeof POTION !== "undefined" ? POTION : null; return P ? ["EFFECT  SLEEP, " + Math.round(P.sleep / 60) + " S, " + P.radius + " TILES ROUND WHERE IT LANDS", "SPARES  ONLY YOU", "THROWN BY  THE POTION PILL, OR " + P.key.toUpperCase() + ", ONCE EQUIPPED", "FROM  SIDE QUEST, ◆" + P.price + " (◆" + P.bossPrice + " THE NEXT, ONCE IT HAS PUT THE QUEEN TO SLEEP)"] : []; },
+        verb: () => typeof potionVerb === "function" ? potionVerb("sleeping_potion") : "EQUIP", use: () => typeof potionUse === "function" ? potionUse("sleeping_potion") : { ok: false, why: "NO POTION HERE" } },
+    sleeping_potion_copy: { id: "sleeping_potion_copy", name: "COPIED POTION", cat: "gear", type: "tool", stack: 2, col: "#dbe3ff", icon: "potion", classes: null,
+        desc: "The Experiment Lab's copy of Side Quest's potion: a quarter of its sleep, and it touches enemies only.",
+        lore: "Paler, and it does not settle. Side Quest never said you could. You did not ask.",
+        get stats() { const P = typeof POTION !== "undefined" ? POTION : null; return P ? ["EFFECT  SLEEP, " + (Math.round(P.sleep * P.copyFactor) / 60).toFixed(2).replace(/\.?0+$/, "") + " S (A QUARTER OF THE ORIGINAL), " + P.radius + " TILES", "SPARES  YOU AND YOURS: ENEMIES ONLY", "THROWN BY  THE POTION PILL, OR " + P.key.toUpperCase() + ", ONCE EQUIPPED", "MADE AT  THE ANALYSIS BENCH, ◆" + P.copyPrice + ", WITH THE ORIGINAL IN YOUR PACK"] : []; },
+        verb: () => typeof potionVerb === "function" ? potionVerb("sleeping_potion_copy") : "EQUIP", use: () => typeof potionUse === "function" ? potionUse("sleeping_potion_copy") : { ok: false, why: "NO POTION HERE" } },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy"];
 
 // ── the pack ──
 let playerInv = {};
@@ -189,6 +201,13 @@ const INV_ICONS = {
         c.fillStyle = col; c.globalAlpha = 0.85; c.beginPath(); c.ellipse(x, y + s * 0.2, s * 0.14, s * 0.07, 0, 0, 6.2832); c.fill(); c.globalAlpha = 1; c.fillRect(x - s * 0.1, y - s * 0.38, s * 0.2, s * 0.06);
         c.fillStyle = "#e9c8ff"; c.beginPath(); c.arc(x - s * 0.04, y + s * 0.06, s * 0.03, 0, 6.2832); c.arc(x + s * 0.06, y + s * 0.14, s * 0.02, 0, 6.2832); c.fill();
     },
+    potion: (c, x, y, s, col, t) => {   // a round flask: a narrow neck, a stopper, the liquid settling, a slow bubble
+        c.strokeStyle = col; c.lineWidth = Math.max(2, s * 0.05); c.fillStyle = "rgba(188,208,255,0.16)";
+        c.beginPath(); c.moveTo(x - s * 0.08, y - s * 0.3); c.lineTo(x - s * 0.08, y - s * 0.1); c.bezierCurveTo(x - s * 0.36, y - s * 0.02, x - s * 0.36, y + s * 0.34, x, y + s * 0.34); c.bezierCurveTo(x + s * 0.36, y + s * 0.34, x + s * 0.36, y - s * 0.02, x + s * 0.08, y - s * 0.1); c.lineTo(x + s * 0.08, y - s * 0.3); c.closePath(); c.fill(); c.stroke();
+        c.save(); c.beginPath(); c.arc(x, y + s * 0.13, s * 0.22, 0, 6.2832); c.clip(); c.fillStyle = col; c.globalAlpha = 0.8; c.fillRect(x - s * 0.3, y + s * 0.08 + Math.sin((t || 0) * 0.05) * s * 0.01, s * 0.6, s * 0.3); c.restore();
+        c.fillStyle = "#2a3350"; c.fillRect(x - s * 0.11, y - s * 0.38, s * 0.22, s * 0.09);
+        c.fillStyle = "#f0f4ff"; c.globalAlpha = 0.9; c.beginPath(); c.arc(x + s * 0.06, y + s * 0.1 - (((t || 0) * 0.3) % (s * 0.14)), s * 0.025, 0, 6.2832); c.fill(); c.globalAlpha = 1;
+    },
     kit: (c, x, y, s, col) => {
         c.fillStyle = "#2b2f3a"; c.strokeStyle = col; c.lineWidth = Math.max(2, s * 0.05); c.beginPath(); c.rect(x - s * 0.36, y - s * 0.12, s * 0.72, s * 0.44); c.fill(); c.stroke();
         c.beginPath(); c.moveTo(x - s * 0.14, y - s * 0.12); c.lineTo(x - s * 0.14, y - s * 0.26); c.lineTo(x + s * 0.14, y - s * 0.26); c.lineTo(x + s * 0.14, y - s * 0.12); c.stroke();
@@ -260,13 +279,14 @@ function drawInvPanel() {
         uiTextFit(d.name, tx, D.y + 32, 24, d.col, "left", D.w - isz - 38);
         uiCaption(INV_CATS.find(c => c.id === d.cat).label.replace(/S$/, "") + "  ·  " + INV_TYPES[d.type] + "  ·  ×" + invCount(d.id), tx, D.y + 56, "#8aa0c8", "left", 12);
         const cls = d.classes && d.classes.length ? d.classes.map(className).join(" / ") + " ONLY" : "ANY CLASS", okc = classAllows(d.classes);
-        uiCaptionFit(cls, tx, D.y + 76, okc ? "#9dffb6" : "#ff9c8a", "left", 12, D.w - isz - 38);
+        const eq = typeof potionEquipped === "function" && potionEquipped() === d.id;   // (the Sleeping Potion in hand: js/potion.js)
+        uiCaptionFit(cls + (eq ? "  ·  EQUIPPED: THE POTION PILL, OR " + (typeof POTION !== "undefined" ? POTION.key.toUpperCase() : "T") + ", THROWS IT" : ""), tx, D.y + 76, okc ? (eq ? "#bcd0ff" : "#9dffb6") : "#ff9c8a", "left", 12, D.w - isz - 38);
         const lines = []; let y = D.y + isz + 34;
         if (_invInspect) { _ivWrap(lines, d.lore, chars); lines.push(""); for (const s of d.stats) lines.push(s); } else _ivWrap(lines, d.desc, chars);
         for (const l of lines) { if (y > D.y + D.h - 16) break; if (l) uiCaptionFit(l, D.x + 16, y, /^[A-Z ]{3,}  /.test(l) ? d.col : "#c8d4f0", "left", 13, D.w - 28); y += 19; }
         if (!ok.ok && _invMsg === null) uiCaptionFit(ok.why, D.x + 16, D.y + D.h - 14, "#ff9c8a", "left", 12, D.w - 28);
         const use = L.buttons[0], ins = L.buttons[1];
-        uiButton(use, d.type === "tool" ? "USE" : "USE", d.col, false, 18, null, !ok.ok); uiButton(ins, _invInspect ? "BACK" : "INSPECT", UI_ICE, _invInspect, 18);
+        uiButton(use, typeof d.verb === "function" ? d.verb(d) : "USE", d.col, false, 18, null, !ok.ok); uiButton(ins, _invInspect ? "BACK" : "INSPECT", UI_ICE, _invInspect, 18);   // (verb: an item whose button is not a use: the potion's EQUIP)
     }
     if (_invMsg && _invMsg.until > f) { const m = _invMsg, bx = L.px + 26, by = L.py + L.ph - 60; uiTextFit(m.text, L.px + L.pw - 26, by + 22, 17, m.good ? "#9dffb6" : "#ff9c8a", "right", L.pw * 0.5); void bx; } else if (_invMsg) _invMsg = null;
     ctx.restore();

@@ -100,7 +100,9 @@ function facilityTutorialTick() {
     if (typeof facilityDirectorTick === "function") facilityDirectorTick();
     if (typeof puzzleTick === "function") puzzleTick();   // the puzzles' records: a solve, and how (js/puzzles.js)
     if (typeof questTick === "function") questTick();   // the Sewer purification: the reading, the samples, the module's cycle (js/quests.js)
-    if (typeof bossTick === "function") bossTick();     // the boss encounters: a death, a hit on a sleeper, the leash (js/bosses.js)
+    if (typeof bossTick === "function") bossTick();     // the boss encounters: a death, a hit on a sleeper, the queen's attacks, waves and frantic turn, the leash (js/bosses.js)
+    if (typeof potionTick === "function") potionTick(); // the Sleeping Potions in the air land (js/potion.js)
+    if (typeof sqTick === "function") sqTick();         // Side Quest appears when he may, and calls you over (js/sidequest.js)
     if (typeof facilityGearTick === "function") facilityGearTick();
     if (typeof facilitySaveTick === "function") facilitySaveTick();
     if (typeof facilitySpawnTick === "function") facilitySpawnTick();
@@ -218,6 +220,7 @@ function facilityDrawOverlay() {
     if (typeof facilityDrawCctv === "function") facilityDrawCctv();
     if (typeof facilityDrawRelays === "function") facilityDrawRelays();
     if (typeof facilityDrawStationPrompt === "function") facilityDrawStationPrompt();
+    if (typeof sqDrawOverlay === "function") sqDrawOverlay();   // what Side Quest is saying, over his plate (js/sidequest.js)
     if (typeof facilityDrawObjective === "function") facilityDrawObjective();
     if (typeof facilityDrawPortals === "function") facilityDrawPortals();   // last: the name over a doorway, and the fade through one covers all
 }

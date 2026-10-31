@@ -128,6 +128,8 @@ const handleInput=(ex,ey)=>{
 
     // The Resurrection Zone's plate, with a specimen capsule in the pack (js/specimen.js).
     if (typeof specimenTap === "function" && specimenTap(ex, ey)) return;
+    // Side Quest's choice buttons, while they are up (js/sidequest.js).
+    if (typeof sqTap === "function" && sqTap(ex, ey)) return;
     // A tap on a class station (or its plate) uses it (js/stations.js).
     if (typeof facilityStationTap === "function" && facilityStationTap(ex, ey)) return;
     // A tap on a launcher site you are near (or its label): set a Kinetic Launcher up there, or send a follower up from the one there (js/techabilities.js).
@@ -284,6 +286,8 @@ canvas.addEventListener('pointerup', e=>{
 
     // The Mutator's SERUM pill beside it (js/serum.js): a tap splashes one
     if (!touchMoved && typeof serumChipTap === "function" && serumChipTap(upX, upY)) { isPressing=false; return; }
+    // The POTION pill beside those (js/potion.js): a tap throws the Sleeping Potion in hand
+    if (!touchMoved && typeof potionChipTap === "function" && potionChipTap(upX, upY)) { isPressing=false; return; }
     // The ammunition pill (js/targeting.js draws it): a tap while armed stows the weapon again
     if (!touchMoved && playerAttackMode && _ATKCHIP.w > 0
         && upX >= _ATKCHIP.x && upX <= _ATKCHIP.x + _ATKCHIP.w

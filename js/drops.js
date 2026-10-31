@@ -7,6 +7,7 @@
 function onPredatorDeath(predator) {
     if (typeof facilityScrapDrop === "function") facilityScrapDrop(predator);
     if (typeof questDropFor === "function") questDropFor(predator);   // a toxic ant of the Sewers: an ANT SAMPLE while the analysis bench wants them (js/quests.js)
+    if (typeof questAntKilled === "function") questAntKilled(predator);   // and it counts toward Side Quest's appearance (js/sidequest.js: about ten of them, the archive's target)
     const px = (predator.x - player.visualX - (predator.y - player.visualY)) * TILE_W + canvas.width / 2;
     const py = (predator.x - player.visualX + (predator.y - player.visualY)) * TILE_H + canvas.height / 2;
     if (!isNymph(predator)) {

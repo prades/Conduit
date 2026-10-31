@@ -74,6 +74,8 @@ const SUITES = [
     ['the other five technicians\' Level 1 abilities: the Photonic Shield, the Thermite Drill and the arena\'s rubble, the Frost Patch, the Blight Spider and the play clock, Telegrab', 'techlevel1.js'],
     ['the Sewer purification: the water-sample puzzle (Telegrab, or the launcher and the drill), the quest\'s states, the toxic brood and its samples, the bench and the ◆800 module, the boss gate, the mount and the cycle, the boss (calm alive, or defeated), the saves', 'sewerquest.js'],
     ['Series 2: the plumbing for the species cards and the class cards (the pack in the list with no numbers, fits, bonuses that add and come off, the ability-cooldown stat, the saves, the roll and the shelf when it is on sale)', 'series2.js'],
+    ['the Sleeping Potion: two rows of the pack, the universal pill and key, the throw (at your feet, or on the creature you have locked), the sleep that cancels a bite and lands nothing, the original on your followers too and never you, the copy on enemies only for a quarter, the prices (◆100, ◆50 after the queen, ◆100 lost), the lab\'s copy, the save', 'potion.js'],
+    ['Side Quest: the drone in the Sewers\' side passage (after the lab turn-in and ten brood kills, not before), the call, the talk and the archive\'s opening, the promise as a choice that changes nothing, "…" once the queen\'s fate is decided, the shop, the save', 'sidequest.js'],
     ['the Command Center as a carousel', 'carousel.js'],
     ['facility play',            'facilityplay.js'],
     ['facility map',             'facility.js'],
