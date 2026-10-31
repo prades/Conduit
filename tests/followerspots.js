@@ -1,7 +1,7 @@
 // FOLLOWER SPOTS, now RECRUITMENT POSTS (js/followerspots.js), and the two small changes that came with them: every element is online from the first frame of the facility, and a follower has a little extra health.
 // ASKED: "give the followers a little bit extra health. Make the crystal have access to all the colors from the beginning, and we're going to put a few spots where the followers exist and will respawn there,
-// and they'll have a fixed type and a fixed element." ("Respawn": the spot refills after a delay.) Then the archive's follow-up scope (2026-10-31): each post is claimed ONCE, for ◆200, and never refills
-// (the claim, the price, the squad-full question and the save in depth: tests/followerprog.js).
+// and they'll have a fixed type and a fixed element." ("Respawn": the spot refills after a delay.) Then the archive's follow-up scope (2026-10-31): each post is claimed ONCE and never refills; the brief's
+// price of ◆200 was built and asked about, and the owner's answer is FREE (the claim, the price machinery, the squad-full question and the save in depth: tests/followerprog.js).
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -63,19 +63,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { moved: e.x !== s.x || e.y !== s.y, team: e.team, home: !!e.returningToCrystal, followers: followers.length - n, still: s.egg === e, shards: shardCount }; })()`);
         same(r.early, undefined, 'taken from outside its reach'); same(r.moved, false, 'it moved'); same(r.team, 'red', 'its team'); same(r.home, false, 'walking home'); same(r.followers, 0, 'followers'); same(r.still, true, 'still there'); same(r.shards, 1000, 'nothing taken');
     });
-    check('walking up to an egg with the price claims it: a follower THERE, of exactly the post\'s type and element, at full health, with the squad one bigger, ◆200 taken, and the post claimed for good (no delay, no refill)', () => {
+    check('walking up to an egg claims it, free: a follower THERE, of exactly the post\'s type and element, at full health, with the squad one bigger, nothing taken, and the post claimed for good (no delay, no refill)', () => {
         const r = J(`(function(){ const s = _fp.spots[2], n = followers.length, e = s.egg; shardCount = 1000; player.x = s.x + 0.6; player.y = s.y; frame += 1; facilityFollowerSpotsTick(); const f = followers[followers.length - 1];
             return { n: followers.length - n, role: f.role, element: f.element, at: [f.x, f.y, s.x, s.y], home: !!f.returningToCrystal, team: f.team, isF: f.isFollower, health: f.health === f.maxHealth, level: f.level, gone: !actors.includes(e), empty: s.egg === null, used: s.used, type: s.type, el: s.element, from: f.fromSpot, shards: shardCount, delay: s.readyAt }; })()`);
         same(r.n, 1, 'one follower'); same(r.role, r.type, 'its type'); same(r.element, r.el, 'its element'); same(r.at[0], r.at[2], 'x'); same(r.at[1], r.at[3], 'y'); same(r.home, false, 'walks home first'); same(r.team, 'green', 'team'); same(r.isF, true, 'a follower'); same(r.health, true, 'full health'); same(r.gone, true, 'the egg is gone'); same(r.empty, true, 'the post is empty');
-        same(r.used, true, 'claimed'); same(r.shards, 800, 'the price'); same(r.from, 'spot_deck', 'it remembers where it is from'); same(r.delay, undefined, 'a refill delay');
+        same(r.used, true, 'claimed'); same(r.shards, 1000, 'nothing taken'); same(r.from, 'spot_deck', 'it remembers where it is from'); same(r.delay, undefined, 'a refill delay');
     });
     check('a claimed post never fills again: not after any wait, not with the player away, not with the roster small; the others are untouched', () => {
         const r = J(`(function(){ const s = _fp.spots[2], o = {}; const step = () => { frame++; facilityFollowerSpotsTick(); };
             player.x = s.x + 20; player.y = s.y; for (let i = 0; i < 6000; i++) step(); o.after = !!s.egg; o.used = s.used; o.others = _fp.spots.filter(q => q !== s && q.egg && !q.used).length; return o; })()`);
         same(r.after, false, 'an egg came back'); same(r.used, true, 'still claimed'); same(r.others, 7, 'the other posts');
     });
-    check('short of the price nothing moves: the egg stays, nothing is taken, no follower is made, and the pad says what it needs', () => {
-        const r = J(`(function(){ const s = _fp.spots[0], o = {}; shardCount = 199; floatingTexts.length = 0; const n = followers.length; player.x = s.x + 0.5; player.y = s.y; for (let i = 0; i < 5; i++) { frame++; facilityFollowerSpotsTick(); } o.n = followers.length - n; o.shards = shardCount; o.egg = !!s.egg; o.used = s.used; o.said = floatingTexts.some(t => /NEED \\u25c6200/.test(t.text)); player.x = s.x + 30; return o; })()`);
+    check('the price machinery is kept: with FP_SPOT.price set (200 for this check), short of it nothing moves: the egg stays, nothing is taken, no follower is made, and the pad says what it needs', () => {
+        const r = J(`(function(){ const s = _fp.spots[0], o = {}; FP_SPOT.price = 200; shardCount = 199; floatingTexts.length = 0; const n = followers.length; player.x = s.x + 0.5; player.y = s.y; for (let i = 0; i < 5; i++) { frame++; facilityFollowerSpotsTick(); } o.n = followers.length - n; o.shards = shardCount; o.egg = !!s.egg; o.used = s.used; o.said = floatingTexts.some(t => /NEED \\u25c6200/.test(t.text)); FP_SPOT.price = 0; player.x = s.x + 30; return o; })()`);
         same(r.n, 0, 'a follower'); same(r.shards, 199, 'shards'); same(r.egg, true, 'the egg'); same(r.used, false, 'claimed'); same(r.said, true, 'said');
     });
     check('an egg that goes some other way (destroyed) on an unclaimed post is put back once the player is away (nothing was paid, nothing is owed)', () => {
@@ -96,7 +96,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the pad is drawn as a floor item lit by itself, the egg wears no bar, and no egg is a hostile glow in a blackout; the pad says the price, and CLAIMED', () => {
         ok(/else if \(it\.fp === "spot"\) _fpDrawSpot\(it\)/.test(rd('js/facilityplay.js')), 'the draw dispatch'); ok(/it\.fp === "spot"\) return 0\.8/.test(rd('js/facilitystyle.js')), 'lit by itself');
         ok(/const _bare = actor\.fpSpot \|\|/.test(rd('js/draw.js')), 'no bar'); ok(/a\.isNeutralRecruit \|\| typeof ctx === "undefined"/.test(rd('js/facilitytutorial.js')), 'no hostile glow');
-        const src = rd('js/followerspots.js'); ok(/CLAIMED/.test(src) && /FP_SPOT\.price/.test(src), 'the pad\'s words');
+        const src = rd('js/followerspots.js'); ok(/CLAIMED/.test(src) && /FREE . ONCE/.test(src), 'the pad\'s words');
         const order = require('./domstub.js').scriptOrder(); ok(order.indexOf('js/followerspots.js') > 0, 'the script is on the page');
         ok(/WALK UP TO A FOLLOWER'S EGG/.test(rd('js/tutorial.js')) && /EVERY ELEMENT IS ONLINE FROM THE START/.test(rd('js/tutorial.js')), 'the recruit step says so');
     });

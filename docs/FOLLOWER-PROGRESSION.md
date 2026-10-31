@@ -14,12 +14,12 @@ The code: `js/followerspots.js` (the posts), `js/breeding.js` (breeding), `js/vi
 
 The eight pads of the map (`FACILITY_MAP.followerSpots`, stable ids `spot_lobby … spot_cold`) are **posts**, each with its egg of a fixed type and element.
 
-- **The claim**: walking within `FP_SPOT.take` (1.5 tiles) of the egg with `FP_SPOT.price` (**◆200**) makes the follower right there (as before: `spawnFollowerAtCrystal`, put on the pad, no walk home) and takes the price in the same synchronous step (`facilityFollowerSpotTake`): one function, one check, one deduction, one follower. Called twice in a frame it claims once.
-- **Short of the price**: nothing moves. The egg stays, nothing is taken, nothing is made; the pad says `NEED ◆200 FOR THIS POST · YOU HAVE ◆n` once, and again after you walk off (2.5 tiles) and back.
-- **The squad full**: who makes room is asked first (`partyPickOpen`, as the quick recruit's); nothing is paid until a choice is made; CANCEL leaves the egg and the shards.
+- **The claim**: walking within `FP_SPOT.take` (1.5 tiles) of the egg makes the follower right there (as before: `spawnFollowerAtCrystal`, put on the pad, no walk home) and claims the post in the same synchronous step (`facilityFollowerSpotTake`): one function, one check, one follower. Called twice in a frame it claims once. **Free**: the owner's decision (2026-10-31) after the brief's ◆200 was built; `FP_SPOT.price` is kept at 0.
+- **The price machinery** (kept, tested with a price set): short of `FP_SPOT.price` nothing moves. The egg stays, nothing is taken, nothing is made; the pad says `NEED ◆n FOR THIS POST · YOU HAVE ◆m` once, and again after you walk off (2.5 tiles) and back. With the price at 0 the pad reads `FREE · ONCE · WALK UP TO IT`.
+- **The squad full**: who makes room is asked first (`partyPickOpen`, as the quick recruit's); the post is claimed once a choice is made; CANCEL leaves the egg.
 - **Exhausted**: a claimed post has `used = true`, no egg, never fills again, and its pad goes dark with a cross; within 8 tiles the label reads `CLAIMED · ITS RECRUIT IS YOURS ALREADY`. The other posts are each their own; there is no limit on how many you claim. An unclaimed egg that goes some other way is put back once you are more than `FP_SPOT.near` (4 tiles) away.
 - **Saved**: `followerSpotsSnapshot` writes the claimed ids (`{ spot_deck: 1 }`); `followerSpotsApply` marks them claimed and removes their eggs. An older save kept a refill delay per empty spot; such a number is read as claimed (the egg had been taken). The refill (`FP_SPOT.refill`, 90 s) and the roster cap (`FP_SPOT.cap`) are gone.
-- **The quick recruit** (js/clone.js, the roster's + RECRUIT button, the carousel's tile, the phone's roster): `RECRUIT_COST` is **◆200** too (it was 30). It is not limited.
+- **The quick recruit** (js/clone.js, the roster's + RECRUIT button, the carousel's tile, the phone's roster): `RECRUIT_COST` is **◆200** (it was 30): the archive's direct purchase. It is not limited.
 
 ## 2. Breeding (`js/breeding.js`)
 

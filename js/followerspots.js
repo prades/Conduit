@@ -1,21 +1,22 @@
 // ─────────────────────────────────────────────────────────
-//  RECRUITMENT POSTS: a follower waits in its egg on its pad, as one type and one element, for ◆FP_SPOT.price, once
+//  RECRUITMENT POSTS: a follower waits in its egg on its pad, as one type and one element, free, once
 // ─────────────────────────────────────────────────────────
 // ASKED: "put a few spots where the followers exist and will respawn there, and they'll have a fixed type and a fixed element." Then (the archive's Next Major Update Framework, the follow-up scope of 2026-10-31):
 // "Each recruit post/location in the facility can yield its available follower only once. Mark the post as exhausted after successful recruitment and preserve that state through revisits, transitions, and save/load";
-// "Directly purchasing a recruit costs exactly 200 shards"; "Insufficient currency must not consume the post"; "Make exhausted posts visibly distinguishable and explain that their recruit has already been claimed."
-// A post (the map's `followerSpots`, js/facilitymap.js) is a pad on the floor in its element's colour, with the follower on it as a grey egg and a label over it: its type (BRAWLER, MAGE, TECHNICIAN), its element and the price.
+// "Make exhausted posts visibly distinguishable and explain that their recruit has already been claimed." The brief's price of ◆200 on a post was built and asked about; the owner's answer (2026-10-31): a post is FREE,
+// once (the archive's Sanctuary page: "a free one-time post"); the roster's RECRUIT is the direct purchase at ◆200 (js/clone.js). FP_SPOT.price is kept at 0: a price set there would be asked for again, said on the pad
+// and refused when short (the egg stays, nothing is taken, nothing is made), as it was.
+// A post (the map's `followerSpots`, js/facilitymap.js) is a pad on the floor in its element's colour, with the follower on it as a grey egg and a label over it: its type (BRAWLER, MAGE, TECHNICIAN) and its element.
 // Both are the post's, never the player's: there is nothing to choose, and the follower that joins is exactly that.
-//   TAKE      walking up to the egg (FP_SPOT.take tiles) with FP_SPOT.price shards makes it a follower there and then (spawnFollowerAtCrystal with the post's element and type, put on the pad, no walk home to the Crystal
-//             first) and takes the price, in one step; short of the price nothing happens (the egg stays, nothing is taken, the pad says what it needs); with the squad full, who makes room is asked first and nothing is
-//             paid until that is chosen (js/party.js partyPickOpen)
+//   TAKE      walking up to the egg (FP_SPOT.take tiles) makes it a follower there and then (spawnFollowerAtCrystal with the post's element and type, put on the pad, no walk home to the Crystal first), and claims the
+//             post, in one step; with the squad full, who makes room is asked first and the post is claimed once that is chosen (js/party.js partyPickOpen)
 //   ONCE      a claimed post is EXHAUSTED: its pad goes dark and says CLAIMED; it never fills again. The other posts are each their own: one claimed changes nothing on the next (there is no limit on how many you claim).
 //   SAVED     the claimed posts are part of the saved game (js/facilitysave.js), so a reload, leaving the room or the facility is not a way to claim one again (a save from before this rule, whose empty spots carried a refill
 //             delay, reads those spots as claimed: the egg was taken)
 // The egg is an ordinary neutral recruit (a grey egg: it does nothing, is nobody's target, and the walk-up-and-it-walks-home conversion is skipped for it, js/game.js). The quick RECRUIT of the roster (js/clone.js, RECRUIT_COST)
-// is the other direct recruitment, at the same price, and is not limited.
+// is the paid way in, and is not limited.
 
-const FP_SPOT = { take: 1.5, price: 200, near: 4, label: 8 };   // tiles to take it; shards it costs; tiles the player must be off for an egg to be put back; tiles within which its label shows
+const FP_SPOT = { take: 1.5, price: 0, near: 4, label: 8 };   // tiles to take it; shards it costs (0: free, the owner's decision of 2026-10-31); tiles the player must be off for an egg to be put back; tiles within which its label shows
 
 function facilityFollowerSpotsStart(F) {
     if (!_fp || !_fp.items) return;
@@ -41,10 +42,10 @@ function facilityFollowerSpotCan(s) {
     if (s.used) return { ok: false, why: "THIS POST'S RECRUIT HAS BEEN CLAIMED" };
     if (!s.egg) return { ok: false, why: "NOTHING WAITS HERE YET" };
     const have = typeof shardCount === "number" ? shardCount : 0;
-    if (have < FP_SPOT.price) return { ok: false, why: "NEED ◆" + FP_SPOT.price + " FOR THIS POST · YOU HAVE ◆" + have };
+    if (FP_SPOT.price > 0 && have < FP_SPOT.price) return { ok: false, why: "NEED ◆" + FP_SPOT.price + " FOR THIS POST · YOU HAVE ◆" + have };
     return { ok: true };
 }
-// the claim, in one step: the egg becomes the follower, the price is taken, the post is exhausted. Returns the follower, or null when nothing was claimed (nothing taken then).
+// the claim, in one step: the egg becomes the follower, the price (if any) is taken, the post is exhausted. Returns the follower, or null when nothing was claimed (nothing taken then).
 function facilityFollowerSpotTake(s) {
     const can = facilityFollowerSpotCan(s); if (!can.ok) { if (!s || !s.said) _fpSpotSay(can.why); if (s) s.said = true; return null; }
     if (typeof spawnFollowerAtCrystal !== "function") return null;
@@ -55,7 +56,7 @@ function facilityFollowerSpotTake(s) {
     f.x = s.x; f.y = s.y; f.returningToCrystal = false; f.convertFlash = 30; f.fromSpot = s.id;
     if (f.post) { if (typeof partyPlace === "function") partyPlace(f, s.room, true); else f.post = s.room; } else f.stance = "follow";   // (the squad was full: it holds the room the egg was in, or the nearest with a place: js/party.js)
     const def = ELEMENTS.find(e => e.id === s.element);
-    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: _fpSpotLabel(s) + (f.post ? " HOLDS THE " + partyRoomName(f.post).toUpperCase() : " JOINED!") + " · ◆" + FP_SPOT.price, color: def ? def.color : "#fff", life: 120, vy: -0.2, size: 14 });
+    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: _fpSpotLabel(s) + (f.post ? " HOLDS THE " + partyRoomName(f.post).toUpperCase() : " JOINED!") + (FP_SPOT.price > 0 ? " · ◆" + FP_SPOT.price : ""), color: def ? def.color : "#fff", life: 120, vy: -0.2, size: 14 });
     return f;
 }
 // each frame (from facilityTutorialTick)
@@ -70,7 +71,7 @@ function facilityFollowerSpotsTick() {
                 if (!facilityFollowerSpotCan(s).ok) { if (!s.said) { facilityFollowerSpotTake(s); } }   // (short of the price: it says so once, nothing is taken, the egg stays; said again after walking away and back)
                 // the squad full: asked first who makes room (js/party.js partyPickOpen); the egg is taken once that is chosen, and asked again only after walking away and back
                 else if (typeof partyFull === "function" && typeof partyOn === "function" && partyOn() && partyFull() && typeof partyPickOpen === "function") {
-                    if (!s.asked && !partyPickBusy()) { s.asked = true; partyPickOpen(_fpSpotLabel(s) + " · ◆" + FP_SPOT.price, [s.x, s.y], () => { if (s.egg && !s.used) facilityFollowerSpotTake(s); }, null); }
+                    if (!s.asked && !partyPickBusy()) { s.asked = true; partyPickOpen(_fpSpotLabel(s) + (FP_SPOT.price > 0 ? " · ◆" + FP_SPOT.price : ""), [s.x, s.y], () => { if (s.egg && !s.used) facilityFollowerSpotTake(s); }, null); }
                 } else facilityFollowerSpotTake(s);
             } else if (near > FP_SPOT.take + 1) { s.asked = false; s.said = false; }
         } else if (near > FP_SPOT.near) { s.egg = _fpSpotEgg(s); actors.push(s.egg); s.arrive = _fpFrame(); }
@@ -94,11 +95,11 @@ function _fpDrawSpot(it) {
     ctx.lineWidth = 3; ctx.strokeStyle = _fpRgba(col, full ? 0.55 + 0.35 * pul : s.used ? 0.14 : 0.22); ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, 6.2832); ctx.stroke();   // a ring in its element's colour
     if (full) { _fpGlow(c[0], c[1] - 10, 42, col, 0.26 * pul); ctx.lineWidth = 1.5; ctx.strokeStyle = _fpRgba(col, 0.5); ctx.beginPath(); ctx.ellipse(c[0], c[1], rx * 0.6, ry * 0.6, 0, 0, 6.2832); ctx.stroke(); }
     else if (s.used) { ctx.lineWidth = 2; ctx.strokeStyle = "rgba(120,130,150,0.35)"; ctx.beginPath(); ctx.moveTo(c[0] - rx * 0.3, c[1] - ry * 0.3); ctx.lineTo(c[0] + rx * 0.3, c[1] + ry * 0.3); ctx.moveTo(c[0] + rx * 0.3, c[1] - ry * 0.3); ctx.lineTo(c[0] - rx * 0.3, c[1] + ry * 0.3); ctx.stroke(); }   // claimed: a cross on the dark pad
-    if ((full || s.used) && Math.hypot(it.x - player.visualX, it.y - player.visualY) < FP_SPOT.label) {   // what it is, and what it costs, or that it is claimed
-        const p = _fpP(it.x, it.y, 92), text = s.used ? "CLAIMED" : _fpSpotLabel(s), have = typeof shardCount === "number" ? shardCount : 0, short = !s.used && have < FP_SPOT.price;
+    if ((full || s.used) && Math.hypot(it.x - player.visualX, it.y - player.visualY) < FP_SPOT.label) {   // what it is, and what it costs (if anything), or that it is claimed
+        const p = _fpP(it.x, it.y, 92), text = s.used ? "CLAIMED" : _fpSpotLabel(s), have = typeof shardCount === "number" ? shardCount : 0, short = !s.used && FP_SPOT.price > 0 && have < FP_SPOT.price;
         ctx.font = "bold 11px monospace"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineWidth = 3; ctx.strokeStyle = "rgba(4,8,16,0.9)";
         ctx.strokeText(text, p[0], p[1]); ctx.fillStyle = s.used ? "rgba(150,160,180,0.8)" : col; ctx.fillText(text, p[0], p[1]);
-        const sub = s.used ? "ITS RECRUIT IS YOURS ALREADY" : "◆" + FP_SPOT.price + (short ? " · YOU HAVE ◆" + have : " · WALK UP TO IT");
+        const sub = s.used ? "ITS RECRUIT IS YOURS ALREADY" : FP_SPOT.price > 0 ? "◆" + FP_SPOT.price + (short ? " · YOU HAVE ◆" + have : " · WALK UP TO IT") : "FREE · ONCE · WALK UP TO IT";
         ctx.font = "bold 9px monospace"; ctx.strokeText(sub, p[0], p[1] + 13); ctx.fillStyle = s.used ? "rgba(150,160,180,0.7)" : short ? "#ff8a6a" : "#ffe733"; ctx.fillText(sub, p[0], p[1] + 13);
     }
 }

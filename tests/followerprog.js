@@ -33,45 +33,45 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
         globalThis.__said = re => floatingTexts.filter(t => re.test(t.text)).length;
         globalThis.__step = () => { frame++; if (typeof _simStep === 'function') _simStep(false); else update(); };`);
 
-    group('1. THE RECRUITMENT POSTS: each claimed once, for ◆200');
-    check('the table: a post costs FP_SPOT.price = 200 and the quick recruit RECRUIT_COST = 200 (the archive: "Directly purchasing a recruit costs exactly 200 shards"); nothing refills (no refill, no cap)', () => {
-        same(J('FP_SPOT.price'), 200, 'the price'); same(J('RECRUIT_COST'), 200, 'the recruit'); same(run('FP_SPOT.refill === undefined && FP_SPOT.cap === undefined'), true, 'a refill or a cap');
+    group('1. THE RECRUITMENT POSTS: each claimed once, free (the owner, 2026-10-31); the roster\'s RECRUIT ◆200');
+    check('the table: a post is free (FP_SPOT.price is kept at 0: a price set there is asked for again) and the quick recruit RECRUIT_COST = 200 (the archive: "Directly purchasing a recruit costs exactly 200 shards"); nothing refills (no refill, no cap)', () => {
+        same(J('FP_SPOT.price'), 0, 'the price'); same(J('RECRUIT_COST'), 200, 'the recruit'); same(run('FP_SPOT.refill === undefined && FP_SPOT.cap === undefined'), true, 'a refill or a cap');
     });
     check('the eight posts start with their eggs (the player at the Crystal), none claimed, each of its own type and element, each with a stable id', () => {
         run('__clearF(); __put(crystal.x, crystal.y); frame = 10; facilityFollowerSpotsTick();');
         const r = J('_fp.spots.map(s => [s.id, !!s.egg, s.used, s.egg && s.egg.element === s.element && s.egg.role === s.type])');
         same(r.length, 8, 'posts'); for (const s of r) ok(s[1] && !s[2] && s[3], s[0] + ': ' + JSON.stringify(s)); same(r.map(s => s[0]).join(), 'spot_lobby,spot_show,spot_deck,spot_lab,spot_tele_2,spot_arena_w,spot_arena_c,spot_cold', 'the ids');
     });
-    check('short of the price: standing on the egg takes nothing, spends nothing, makes nothing; the egg stays; it says what it needs once, and again only after walking off and back', () => {
-        const r = J(`(function(){ const s = __spot(0), o = {}; shardCount = 150; floatingTexts.length = 0; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(5);
-            o.followers = followers.length - n; o.shards = shardCount; o.egg = !!s.egg; o.used = s.used; o.said = __said(/NEED \\u25c6200/); __put(s.x + 3, s.y); __tickSpots(2); __put(s.x + 0.5, s.y); __tickSpots(3); o.saidAgain = __said(/NEED \\u25c6200/); return o; })()`);
+    check('the price machinery, kept: with a price set (200, for this check only), standing on the egg short of it takes nothing, spends nothing, makes nothing; the egg stays; it says what it needs once, and again only after walking off and back', () => {
+        const r = J(`(function(){ const s = __spot(0), o = {}; FP_SPOT.price = 200; shardCount = 150; floatingTexts.length = 0; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(5);
+            o.followers = followers.length - n; o.shards = shardCount; o.egg = !!s.egg; o.used = s.used; o.said = __said(/NEED \\u25c6200/); __put(s.x + 3, s.y); __tickSpots(2); __put(s.x + 0.5, s.y); __tickSpots(3); o.saidAgain = __said(/NEED \\u25c6200/); FP_SPOT.price = 0; __put(s.x + 30, s.y); return o; })()`);
         same(r.followers, 0, 'a follower'); same(r.shards, 150, 'shards'); same(r.egg, true, 'the egg'); same(r.used, false, 'claimed'); same(r.said, 1, 'said'); same(r.saidAgain, 2, 'said again');
     });
-    check('with the price: one step onto the egg claims it: exactly 200 taken, one follower of the post\'s type and element made there (not walked home), the egg gone, the post claimed', () => {
+    check('free: one step onto the egg claims it: nothing taken, one follower of the post\'s type and element made there (not walked home), the egg gone, the post claimed', () => {
         const r = J(`(function(){ const s = __spot(1), o = {}; shardCount = 450; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(1); const f = followers[followers.length - 1];
-            o.n = followers.length - n; o.shards = shardCount; o.used = s.used; o.egg = !!s.egg; o.f = f && [f.role === s.type, f.element === s.element, f.fromSpot, !!f.returningToCrystal, Math.abs(f.x - s.x) < 0.01, f.team]; o.taken = s.taken; return o; })()`);
-        same(r.n, 1, 'one follower'); same(r.shards, 250, 'the price'); same(r.used, true, 'claimed'); same(r.egg, false, 'the egg'); same(JSON.stringify(r.f), JSON.stringify([true, true, 'spot_show', false, true, 'green']), 'the follower'); same(r.taken, 1, 'taken once');
+            o.n = followers.length - n; o.shards = shardCount; o.used = s.used; o.egg = !!s.egg; o.f = f && [f.role === s.type, f.element === s.element, f.fromSpot, !!f.returningToCrystal, Math.abs(f.x - s.x) < 0.01, f.team]; o.taken = s.taken; o.toast = floatingTexts.filter(t => /JOINED|HOLDS THE/.test(t.text)).map(t => t.text).join('|'); return o; })()`);
+        same(r.n, 1, 'one follower'); same(r.shards, 450, 'nothing taken'); same(r.used, true, 'claimed'); same(r.egg, false, 'the egg'); same(JSON.stringify(r.f), JSON.stringify([true, true, 'spot_show', false, true, 'green']), 'the follower'); same(r.taken, 1, 'taken once'); ok(/MAGE · ICE/.test(r.toast) && !/\u25c6/.test(r.toast), 'the toast names no price: ' + r.toast);
     });
     check('claimed is claimed: fifty more steps on it, walking off and back, make nothing and take nothing, and no egg comes back', () => {
         const r = J(`(function(){ const s = __spot(1), o = {}; const n = followers.length, sh = shardCount; __tickSpots(50); __put(s.x + 30, s.y); __tickSpots(10); __put(s.x + 0.5, s.y); __tickSpots(10); o.n = followers.length - n; o.shards = shardCount - sh; o.egg = !!s.egg; o.used = s.used; return o; })()`);
         same(r.n, 0, 'a follower'); same(r.shards, 0, 'shards'); same(r.egg, false, 'an egg came back'); same(r.used, true, 'still claimed');
     });
-    check('the posts are each their own: the next is claimed the same way for another 200 (no limit on how many you claim); a third with 199 shards is not', () => {
-        const r = J(`(function(){ const o = {}; const s = __spot(2); shardCount = 250; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(1); o.second = [followers.length - n, shardCount, s.used];
-            const t = __spot(3); shardCount = 199; __put(t.x + 0.5, t.y); __tickSpots(3); o.third = [followers.length - n, shardCount, t.used, !!t.egg]; return o; })()`);
-        same(r.second.join(), '1,50,true', 'the second post'); same(r.third.join(), '1,199,false,true', 'the third, short by one');
+    check('the posts are each their own: the next is claimed the same way, with no shards at all (no limit on how many you claim); with a price set, a third short by one is not', () => {
+        const r = J(`(function(){ const o = {}; const s = __spot(2); shardCount = 0; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(1); o.second = [followers.length - n, shardCount, s.used];
+            const t = __spot(3); FP_SPOT.price = 200; shardCount = 199; __put(t.x + 0.5, t.y); __tickSpots(3); o.third = [followers.length - n, shardCount, t.used, !!t.egg]; FP_SPOT.price = 0; __put(t.x + 30, t.y); return o; })()`);
+        same(r.second.join(), '1,0,true', 'the second post, with nothing'); same(r.third.join(), '1,199,false,true', 'the third, short by one with a price set');
     });
-    check('the squad full: the egg asks first who makes room and nothing is paid; CANCEL leaves the post with its egg and the shards; walk off and back, it asks again; NOBODY claims it, pays once, and the newcomer holds a room', () => {
+    check('the squad full: the egg asks first who makes room; CANCEL leaves the post with its egg; walk off and back, it asks again; NOBODY claims it, and the newcomer holds a room; the shards never move', () => {
         const r = J(`(function(){ const o = {}; while (partyMembers().length < PARTY.max) __rec(); const s = __spot(4); shardCount = 500; s.asked = false; __put(s.x + 0.5, s.y); __tickSpots(2);
             o.asked = [partyPickBusy(), shardCount, s.used, !!s.egg]; partyPickChoose('cancel'); __tickSpots(2); o.cancel = [partyPickBusy(), shardCount, s.used, !!s.egg];
             __put(s.x + 3, s.y); __tickSpots(2); __put(s.x + 0.5, s.y); __tickSpots(2); o.again = partyPickBusy(); const n = followers.length; partyPickChoose('nobody'); const f = followers[followers.length - 1];
             o.done = [followers.length - n, shardCount, s.used, !!s.egg, !!f.post, partyIsMember(f)]; return o; })()`);
-        same(r.asked.join(), 'true,500,false,true', 'asked'); same(r.cancel.join(), 'false,500,false,true', 'CANCEL'); same(r.again, true, 'asked again'); same(r.done.join(), '1,300,true,false,true,false', 'NOBODY');
+        same(r.asked.join(), 'true,500,false,true', 'asked'); same(r.cancel.join(), 'false,500,false,true', 'CANCEL'); same(r.again, true, 'asked again'); same(r.done.join(), '1,500,true,false,true,false', 'NOBODY');
     });
-    check('a double claim is impossible: the claim called twice in one frame makes one follower and takes 200 once; a post with no egg claims nothing; an unclaimed post whose egg went some other way gets it back', () => {
+    check('a double claim is impossible: the claim called twice in one frame makes one follower; a post with no egg claims nothing; an unclaimed post whose egg went some other way gets it back', () => {
         const r = J(`(function(){ const s = __spot(5), o = {}; shardCount = 1000; const n = followers.length; const a = facilityFollowerSpotTake(s), b = facilityFollowerSpotTake(s); o.made = [!!a, !!b, followers.length - n, shardCount];
             const t = __spot(6); const e = t.egg; actors.splice(actors.indexOf(e), 1); t.egg = null; const c = facilityFollowerSpotTake(t); o.noEgg = [!!c, shardCount, t.used]; __put(t.x + 30, t.y); __tickSpots(1); o.back = !!t.egg && t.egg !== e; return o; })()`);
-        same(r.made.join(), 'true,false,1,800', 'twice'); same(r.noEgg.join(), 'false,800,false', 'no egg'); same(r.back, true, 'the egg back');
+        same(r.made.join(), 'true,false,1,1000', 'twice'); same(r.noEgg.join(), 'false,1000,false', 'no egg'); same(r.back, true, 'the egg back');
     });
     check('saved: the claimed posts are in the save by id and nothing else; a fresh start has every egg; the save puts the claimed ones back claimed, with no egg; an old save\'s refill delay on an empty spot reads as claimed; an unclaimed post keeps its egg', () => {
         const r = J(`(function(){ const o = {}; const snap = followerSpotsSnapshot(); o.snap = Object.keys(snap).sort().join(); o.saved = Object.keys(facilitySaveCollect().spots).sort().join(); o.vals = Object.values(snap).every(v => v === 1);
@@ -81,8 +81,8 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
         same(r.old.join(), 'true,false', 'an old delay'); same(r.kept, 5, 'kept'); same(r.lobby.join(), 'false,true', 'the lobby post, unclaimed');
         ok(/followerSpotsApply\(d\.spots\)/.test(rd('js/facilitysave.js')), 'a loaded game applies it');
     });
-    check('the pad says it: the price on an open post, what you have when short, CLAIMED on one that is spent (the draw code); the draw dispatch is the floor item\'s', () => {
-        const src = rd('js/followerspots.js'); ok(/CLAIMED/.test(src) && /FP_SPOT\.price/.test(src) && /YOU HAVE/.test(src) && /RECRUIT IS YOURS ALREADY/.test(src), 'the pad\'s words'); ok(/else if \(it\.fp === "spot"\) _fpDrawSpot\(it\)/.test(rd('js/facilityplay.js')), 'the draw dispatch');
+    check('the pad says it: FREE · ONCE on an open post (the price, and what you have when short, if a price is set), CLAIMED on one that is spent (the draw code); the draw dispatch is the floor item\'s', () => {
+        const src = rd('js/followerspots.js'); ok(/CLAIMED/.test(src) && /FREE . ONCE/.test(src) && /FP_SPOT\.price > 0/.test(src) && /YOU HAVE/.test(src) && /RECRUIT IS YOURS ALREADY/.test(src), 'the pad\'s words'); ok(/else if \(it\.fp === "spot"\) _fpDrawSpot\(it\)/.test(rd('js/facilityplay.js')), 'the draw dispatch');
     });
 
     group('2. BREEDING: a bonded pair\'s offspring, ◆50, better raised');
