@@ -105,6 +105,32 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.down, 'true,idle>out>hold>in>idle,sewers,true,Sewers', 'down through the culvert'); ok(r.of > 0 && r.came === r.of, 'the followers did not come: ' + r.came + ' of ' + r.of);
         same(r.up.split(',').slice(0, 4).join(), 'true,idle>out>hold>in>idle,arena,true', 'back up to the arena');
     });
+    // REPORTED: "When I enter the sewers with a full squad, the game puts my followers inside of that little gated off section and they get stuck there forever." The first barred stub off the north ledge is two
+    // tiles from the culvert's arrival tile, and the spot a carried follower was put on was any floor of the room within two tiles: 80 of 300 landed behind the gate (js/facilityportals.js _pSpot).
+    check('nobody is put behind a gate: 300 followers carried down the culvert all land on the arrival tile\'s own stretch of floor (none in the first stub behind sewer_gate_n1, which is floor of the room two tiles away), and not all on the one tile', () => {
+        const r = J(`(function(){ const dest = facilityPortal('portal_sewers_arena'), from = facilityPortal('portal_arena_sewers'), cm = _fpComps(), ac = cm.get(dest.ax + ',' + dest.ay), o = { on: 0, off: 0, tiles: new Set(), stub: 0 };
+            const g = _fp.F.solids.find(s => s.id === 'sewer_gate_n1'); o.gateShut = !!(g && !g.open); const inStub = (x, y) => g && x > g.bb[0] && x < g.bb[2] && y < g.bb[1] && y > g.bb[1] - 4;
+            for (let i = 0; i < 300; i++) { const a = { x: 0, y: 0 }; facilityPortalSend(a, from, 1 + (i % 3)); const c = _fpNearestCell(a.x, a.y); if (cm.get(c[0] + ',' + c[1]) === ac) o.on++; else o.off++; o.tiles.add(c.join()); if (inStub(a.x, a.y)) o.stub++; }
+            o.tiles = o.tiles.size; o.near = (function(){ let n = 0; for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) { const k = (dest.ax + dx) + ',' + (dest.ay + dy); if (_fp.cellsP.has(k) && cm.get(k) !== ac) n++; } return n; })(); return o; })()`);
+        same(r.gateShut, true, 'the first gate is shut'); ok(r.near >= 2, 'the stub\'s floor is not within two tiles of the arrival any more (the map moved?): ' + r.near); same(r.off, 0, 'put on another stretch'); same(r.stub, 0, 'put behind the gate'); same(r.on, 300, 'on the ledge'); ok(r.tiles >= 3, 'spread over the tiles: ' + r.tiles);
+    });
+    check('one already behind the gate (a saved game from before) is put beside the player by the second scan in a row that finds it on a stretch with no doorway out and no landing; one on the catwalks (a launcher lands there: it walks to its drop) or in the air is left where it is', () => {
+        const r = J(`(function(){ const dest = facilityPortal('portal_sewers_arena'), cm = _fpComps(), o = {}; const keep = followers.map(f => [f, f.x, f.y, f.stance, f.post, f.job, f._fpPortalAt]);
+            player.x = player.targetX = player.visualX = dest.ax; player.y = player.targetY = player.visualY = dest.ay; const pc = cm.get(dest.ax + ',' + dest.ay);
+            const g = _fp.F.solids.find(s => s.id === 'sewer_gate_n1'); const sx = Math.round((g.bb[0] + g.bb[2]) / 2 - 0.5), sy = Math.round(g.bb[1]) - 1; o.stubCell = [sx, sy, _fp.cellsP.has(sx + ',' + sy), cm.get(sx + ',' + sy) !== pc];
+            const f = followers[0]; f.x = sx; f.y = sy; f.stance = 'follow'; f.post = null; f.job = null; f.returningToCrystal = false; f._fpPortalAt = 0; f._fpSealed = 0; f._flight = null; f._launchLoad = null; f._dropSite = null; frame += 200;
+            _pFollowScan(); o.first = [Math.round(f.x) === sx && Math.round(f.y) === sy, f._fpSealed, f._fpPortalGoal || null];
+            _pFollowScan(); const c = _fpNearestCell(f.x, f.y); o.second = [cm.get(c[0] + ',' + c[1]) === pc, Math.hypot(f.x - player.x, f.y - player.y) <= 3.2, f._fpSealed, f._fpPath];
+            // the catwalks: a follower on a launcher's landing stretch stays (the player in the arena)
+            const site = (_fp.F.launchSites || []).find(s => s.id === 'site_arena_catwalk'); const h = followers[1] || f; const hk = [h.x, h.y];
+            if (site) { const ar = facilityPortal('portal_arena_sewers'); player.x = player.visualX = ar.ax; player.y = player.visualY = ar.ay + 3; h.x = site.land[0]; h.y = site.land[1]; h.stance = 'follow'; h.post = null; h.job = null; h.returningToCrystal = false; h._fpPortalAt = 0; h._fpSealed = 0; h._flight = null; h._launchLoad = null; h._dropSite = null;
+                _pFollowScan(); _pFollowScan(); _pFollowScan(); o.catwalk = [h.x === site.land[0] && h.y === site.land[1], cm.get(site.land[0] + ',' + site.land[1]) !== cm.get(_fpNearestCell(player.x, player.y).join()), h._fpSealed || 0]; }
+            // in the air (a launched follower, mid flight) in the stub: left alone
+            f.x = sx; f.y = sy; f._flight = { x0: sx, y0: sy }; f._fpSealed = 0; _pFollowScan(); _pFollowScan(); _pFollowScan(); o.air = [Math.round(f.x) === sx && Math.round(f.y) === sy, f._fpSealed || 0]; f._flight = null;
+            keep.forEach(([u, x, y, st, po, jb, pa]) => { u.x = x; u.y = y; u.stance = st; u.post = po; u.job = jb; u._fpPortalAt = pa; u._fpSealed = 0; u._fpPath = null; }); player.x = player.targetX = player.visualX = crystal.x + 2; player.y = player.targetY = player.visualY = crystal.y + 1; return o; })()`);
+        ok(r.stubCell[2] && r.stubCell[3], 'the stub cell is not floor on its own stretch: ' + JSON.stringify(r.stubCell)); same(r.first.join(), 'true,1,', 'the first scan counts, moves nothing, finds no doorway'); same(r.second.slice(0, 3).join(), 'true,true,0', 'the second puts it beside the player, on the player\'s stretch'); same(r.second[3], null, 'its route was let go');
+        if (r.catwalk) same(r.catwalk.join(), 'true,true,0', 'the catwalk follower was moved'); same(r.air.join(), 'true,0', 'one in the air was moved');
+    });
 
     group('THE DRAWING');
     check('the items: the water once (a long item, drawn before everything else in the room, its band the river\'s and its pool the sump), the bridge\'s rails a tile at a time on both sides, the broken bridge\'s two stumps, the four gates (the boss\'s marked), each overflow grate in every tile it covers with its sight glass and its mist; the water and gates are no furniture (no prop pieces, no sprite)', () => {

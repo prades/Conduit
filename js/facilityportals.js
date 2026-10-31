@@ -27,11 +27,23 @@ function _pIn(x, y, r) { return x > r[0] && x < r[2] && y > r[1] && y < r[3]; }
 // the portal whose doorway a point is in
 function facilityPortalAt(x, y) { for (const p of (_fp && _fp.portals) || []) if (_pIn(x, y, p.rect)) return p; return null; }
 function _pComp(x, y) { const c = _fpNearestCell(x, y); return c ? _fpComps().get(c[0] + "," + c[1]) : undefined; }
-// a spot in front of a doorway for someone to be put at: the arrival tile itself first, then round it
+// a spot in front of a doorway for someone to be put at: the arrival tile itself first, then round it, on the arrival tile's own stretch of floor (REPORTED: "when I enter the sewers with a full squad, the game
+// puts my followers inside of that little gated off section and they get stuck there forever": the first barred stub off the north ledge is two tiles from the culvert's arrival tile, floor of the room, and
+// nobody put behind its gate could walk out; _fpComps tells the stretches apart)
 function _pSpot(dest, k) {
     if (!k) return [dest.ax, dest.ay];
-    const c = []; for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) { const x = dest.ax + dx, y = dest.ay + dy; if ((dx || dy) && !_pIn(x, y, dest.rect) && _fp.cellsP.has(x + "," + y)) { const rm = facilityRoomAt(x, y, _fp.F); if (rm && rm.id === dest.room) c.push([x, y]); } }
+    const cm = _fpComps(), dc = cm.get(dest.ax + "," + dest.ay);
+    const c = []; for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) { const x = dest.ax + dx, y = dest.ay + dy, key = x + "," + y; if ((dx || dy) && !_pIn(x, y, dest.rect) && _fp.cellsP.has(key) && (dc === undefined || cm.get(key) === dc)) { const rm = facilityRoomAt(x, y, _fp.F); if (rm && rm.id === dest.room) c.push([x, y]); } }
     return c.length ? c[Math.floor(Math.random() * c.length)] : [dest.ax, dest.ay];
+}
+// put a unit beside the player, on the player's own stretch: a cell within two tiles that is on it, else the player's cell
+function _pBeside(a) {
+    const c = _fpNearestCell(player.x, player.y); if (!c) return false;
+    const cm = _fpComps(), pc = cm.get(c[0] + "," + c[1]), opts = [];
+    for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) { if (!dx && !dy) continue; const key = (c[0] + dx) + "," + (c[1] + dy); if (_fp.cellsP.has(key) && cm.get(key) === pc) opts.push([c[0] + dx, c[1] + dy]); }
+    const s = opts.length ? opts[Math.floor(Math.random() * opts.length)] : c;
+    a.x = s[0] + (Math.random() - 0.5) * 0.3; a.y = s[1] + (Math.random() - 0.5) * 0.3; a._fpPath = null; a._fpGoalAt = null; a._fpStuck = 0; a._fpPortalGoal = null; a._fpPortalAt = typeof frame !== "undefined" ? frame : 0;
+    return true;
 }
 // put a unit through a doorway: out of the partner's end
 function facilityPortalSend(a, p, k) {
@@ -75,16 +87,23 @@ function facilityPortalTick() {
     else if (P.phase === "in") { if (f - P.t0 >= FP_PORTAL.in) { P.phase = "idle"; P.from = P.to = null; } }
     if (f % 15 === 7) _pFollowScan();
 }
-// the followers on another stretch of floor than the player's: walk to the doorway that comes out on the player's
+// the followers on another stretch of floor than the player's: walk to the doorway that comes out on the player's. One on a stretch with no doorway out and no landing (a pocket behind a barred gate: it cannot
+// walk out and no route will come; a saved game from before _pSpot kept off the gated stubs may hold one) is put beside the player on the second scan in a row that finds it so. A stretch a launcher lands on (the
+// catwalks: a launched follower walks to its drop, js/techabilities.js) is not a pocket, nor is a follower in the air or carrying a launcher's load.
 function _pFollowScan() {
     const pc = _pComp(player.x, player.y); if (pc === undefined) return;
+    let landings = null;
     for (const a of followers) {
         if (!a || a.dead || a.team !== "green") continue;
-        a._fpPortalGoal = null; if (!_pCarries(a) || (a._fpPortalAt && frame - a._fpPortalAt < 90)) continue;
-        const ac = _pComp(a.x, a.y); if (ac === undefined || ac === pc) continue;
+        a._fpPortalGoal = null; if (!_pCarries(a) || (a._fpPortalAt && frame - a._fpPortalAt < 90)) { a._fpSealed = 0; continue; }
+        const ac = _pComp(a.x, a.y); if (ac === undefined || ac === pc) { a._fpSealed = 0; continue; }
         let best = null, bd = 1e9;   // the nearest doorway on its own floor that comes out on the player's
         for (const p of _fp.portals) { if (_pComp(p.x, p.y) !== ac) continue; const q = facilityPortal(p.to); if (q && _pComp(q.ax, q.ay) === pc) { const d = Math.hypot(p.x - a.x, p.y - a.y); if (d < bd) { bd = d; best = p; } } }
-        if (best) a._fpPortalGoal = best.id;
+        if (best) { a._fpPortalGoal = best.id; a._fpSealed = 0; continue; }
+        if (!landings) { landings = new Set(); for (const s of ((_fp.F && _fp.F.launchSites) || [])) if (s.land) landings.add(_pComp(s.land[0], s.land[1])); }
+        if (landings.has(ac) || a._flight || a._launchLoad || a._dropSite) { a._fpSealed = 0; continue; }
+        a._fpSealed = (a._fpSealed || 0) + 1;
+        if (a._fpSealed >= 2) { _pBeside(a); a._fpSealed = 0; }
     }
 }
 // the point a follower walks to while it is going through a doorway (js/npc.js followPlayer), or null

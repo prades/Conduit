@@ -441,7 +441,7 @@
 <ul>
   <li>Portals come in pairs: a doorway (an alcove's floor, or a stairwell in a floor), an arrival tile in front of it, and a label naming the other end, shown within 9 tiles (▶ a door, ▼ stairs down, ▲ stairs up).</li>
   <li><b>Walk in and you go through</b>: a fade to black (no walking meanwhile), you are put on the other end's arrival tile, the room's name and LOADING show, it fades back; the arrival doorway does not take you straight back.</li>
-  <li><b>The squad comes too</b>: followers that are following within <span class="n" data-k="FP_PORTAL.carry">16 tiles</span> on your stretch of floor are put round you; others walk to the nearest doorway that comes out on yours. Creatures never use a portal.</li>
+  <li><b>The squad comes too</b>: followers that are following within <span class="n" data-k="FP_PORTAL.carry">16 tiles</span> on your stretch of floor are put round you, on the arrival tile's own stretch (never on the room's floor behind a barred gate beside the doorway: the Sewers' first stub is two tiles from the culvert, and a follower put there had no way out, reported and fixed 2026-10-31; one found on a stretch with no doorway out and no launcher's landing is put beside you by the second scan that finds it so); others walk to the nearest doorway that comes out on yours. Creatures never use a portal.</li>
 </ul>
 <div class="tw"><table>
 <tr><th>One end</th><th>Label</th><th>Other end</th><th>Label</th></tr>
@@ -3361,7 +3361,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-10-31h</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-10-31i</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3581,7 +3581,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-10-31h (31 October 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-10-31i (31 October 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded
