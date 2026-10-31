@@ -9,6 +9,9 @@ function _predNear(x, r) { return typeof unitsNear === "function" ? unitsNear(x,
 
 // ── THE PREY: whom a creature goes for (COMBAT.prey, js/combat.js) ──
 // Your followers, your clones and the PLAYER. A hit by the player names the player itself (applyDamage and onHit are handed a copy of where the player stood: it is the player it turns on).
+// Is the alarm this creature's? A BOSS that is asleep or calm (js/bosses.js: armed in its lair, or pacified by the purification) hears none: it picks no prey and does not hunt the Crystal while the facility's alarm is up;
+// a direct hit still provokes it (onHit), and when it loses that prey it is calm again. Every other creature: the alarm as it is.
+function predatorAlarm(p) { return !!alertActive && !(p && (p.bossAsleep || p.bossCalm)); }
 function predatorPreyOk(p, a) {
     if (!a || a.dead) return false;
     if (typeof player !== "undefined" && a === player) return typeof predatorMayHurtPlayer !== "function" || predatorMayHurtPlayer();
@@ -18,7 +21,8 @@ function predatorPreyOk(p, a) {
 function predatorPreyShare(a) { return typeof player !== "undefined" && a === player ? Math.max(0, health) / PLAYER_HITS : Math.max(0, a.health) / Math.max(1, a.maxHealth || 1); }
 // the best prey near it, or null (see COMBAT.prey)
 function predatorPickPrey(p) {
-    const P = COMBAT.prey, calm = !alertActive && !p.provoked, seen = [];
+    if ((p.bossAsleep || p.bossCalm) && !p.provoked) return null;   // (a boss asleep or calm in its lair picks no prey: a hit provokes it, js/bosses.js)
+    const P = COMBAT.prey, calm = !predatorAlarm(p) && !p.provoked, seen = [];
     for (const a of _predNear(p.x, Math.max(P.sense, P.revenge))) if (a !== p && a.team === "green") seen.push(a);
     if (typeof player !== "undefined") seen.push(player);
     let best = null, bs = -Infinity;
@@ -266,7 +270,7 @@ class Predator {
         // A prey that got away (gone, or further than COMBAT.prey.leash: out-run, or knocked back to the Crystal) is let go, and with no alarm up it calms down: it does not follow you to the Crystal.
         { const ct = this.currentTarget;
           if (ct && !(this.disorientFF > 0) && ct !== crystal && (!predatorPreyOk(this, ct) || Math.hypot(ct.x - this.x, ct.y - this.y) > COMBAT.prey.leash)) {
-              this.currentTarget = null; this._prey = null; this.attackWindup = 0; this.biteTarget = null; if (this.lastAttacker === ct) this.lastAttacker = null; if (!alertActive) this.provoked = false;
+              this.currentTarget = null; this._prey = null; this.attackWindup = 0; this.biteTarget = null; if (this.lastAttacker === ct) this.lastAttacker = null; if (!predatorAlarm(this)) this.provoked = false;
           } }
 
         // ── HEAD LOOK ──
@@ -281,7 +285,7 @@ class Predator {
             if (this.isWanderer && k==="hunt") continue;
             // Nor is a calm creature (no alarm, not provoked): the CALM rule below put them back to wandering in the same frame, after the wander had been skipped, so they stood
             // exactly where they were spawned for good (the arena's creatures never moved).
-            if (k==="hunt" && !alertActive && !this.provoked && this.team !== "green") continue;
+            if (k==="hunt" && !predatorAlarm(this) && !this.provoked && this.team !== "green") continue;
             if (utils[k]>bestScore+0.15) { bestState=k; bestScore=utils[k]; }
         }
         if (this.state!==bestState) {
@@ -311,7 +315,7 @@ class Predator {
         }
 
         // ── CALM (no alarm): graze unless provoked by a direct hit ──
-        if (!alertActive && this.team !== "green") {
+        if (!predatorAlarm(this) && this.team !== "green") {
             if (this.state === "hunt" || this.state === "attack") {
                 if (!this.provoked) {
                     this.state = "wander";
@@ -410,7 +414,7 @@ class Predator {
             if (dist>(this.biteReach || COMBAT.bite.reach)) {
                 if (this.attackWindup > 0 && typeof player !== "undefined" && this.biteTarget === player && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "DODGED", color: "#9be8ff", size: 12, life: 40, vy: -0.03 });
                 this.attackWindup = 0; this.biteTarget = null; this.attackAnim = 0;
-                if (this.disorientFF > 0 || dist > COMBAT.prey.leash) { drop(); if (!alertActive) { this.provoked = false; this.lastAttacker = null; } return; }   // (let go)
+                if (this.disorientFF > 0 || dist > COMBAT.prey.leash) { drop(); if (!predatorAlarm(this)) { this.provoked = false; this.lastAttacker = null; } return; }   // (let go)
                 // THE CHASE, at its own pace (a slow on it still slows it: js/abilities.js tickSlowSpeed parks moveSpeed while it attacks)
                 const sp = (this.baseMoveSpeed || base) * (this.slowed > 0 ? Math.max(0, this.slowFactor ?? 1) : 1);
                 const w = facilitySteer(this, target.x, target.y), wx = w[0] - this.x, wy = w[1] - this.y, wl = Math.hypot(wx, wy) || 1;

@@ -248,10 +248,10 @@ function measure(w, h, query, seed) {
     });
 
     group('5. SAVING: the credits and the shelf, with the time left');
-    await check('a saved game comes back with its credits and its shelf and the time left on it (a reload keeps the same six cards and the clock); three saves and loads in a row change nothing; the save has the same 28 fields and version 1', async () => {
+    await check('a saved game comes back with its credits and its shelf and the time left on it (a reload keeps the same six cards and the clock); three saves and loads in a row change nothing; the save has the same 31 fields and version 1', async () => {
         const store = {}, A = await boot('', store);
         const a = A.J(`(function(){ __fresh(1); equipReset(); equipFound = ['frost_lining']; equipCredits = 77.5; __at(500); equipShelfDeal(4); __at(500 + 6000); const wrote = facilitySaveWrite(); return { wrote, ids: equipShelfIds().slice(), left: equipShelf.until - frame, credits: equipCredits }; })()`);
-        same(a.wrote, true, 'the save was written'); const saved = JSON.parse(store.conduit_fp_save); sameJ(saved.cards.shelf.ids, a.ids, 'the shelf in the save'); same(saved.cards.shelf.left, a.left, 'the time left in the save'); same(a.left, 12000, 'the time left'); same(saved.cards.credits, 77.5, 'the credits in the save'); same(saved.v, 1, 'the version'); same(Object.keys(saved).length, 28, 'the fields');
+        same(a.wrote, true, 'the save was written'); const saved = JSON.parse(store.conduit_fp_save); sameJ(saved.cards.shelf.ids, a.ids, 'the shelf in the save'); same(saved.cards.shelf.left, a.left, 'the time left in the save'); same(a.left, 12000, 'the time left'); same(saved.cards.credits, 77.5, 'the credits in the save'); same(saved.v, 1, 'the version'); same(Object.keys(saved).length, 31, 'the fields');
         for (let round = 1; round <= 3; round++) {
             const B = await boot('', store), r = B.J(`(function(){ const out = { ids: equipShelfIds().slice(), until: equipShelf.until, credits: equipCredits, found: equipFound.slice() }; __at(0); facilitySaveWrite(); return out; })()`);   // (saved again at the instant it loaded: a frame or two may have run since)
             sameJ(r.ids, a.ids, 'round ' + round + ': the shelf'); same(r.until, a.left, 'round ' + round + ': the time left (the clock starts again at 0 on a load)'); same(r.credits, 77.5, 'round ' + round + ': the credits'); sameJ(r.found, ['frost_lining'], 'round ' + round + ': the found cards'); same(B.errs.length, 0, 'errors: ' + B.errs.join(' | '));

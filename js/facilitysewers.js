@@ -69,6 +69,12 @@ function facilitySewerDraw(it) {
 const _fpSwLine = (p, q) => { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
 const _fpSwPath = (pts) => { ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); };
 const _fpSwHash = i => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+// THE WATER'S COLOUR: the violet runoff, clearing to a cold blue-green as the purification module's cycle runs (js/quests.js questWaterClean: 0 foul, 1 clean). The river, the sump and their glow clear;
+// the outfall's pour, the arena's grates and the tanks' sight glasses stay violet: the tanks still leak what they leak, the module cleans what is down here.
+const FP_SEWER_CLEAN = { "#6b2cc4": "#2a8aa8", "#4a1f8c": "#1f6079", "#2c1660": "#143d4f", "#8a46e0": "#3aa6c4", "#3c1878": "#1d5b72", "#1c0c38": "#0f2f3d", "#a64dff": "#4fd0e8" };
+function _fpSwClean() { return typeof questWaterClean === "function" ? questWaterClean() : 0; }
+function _fpSwCol(hex) { const t = _fpSwClean(), to = FP_SEWER_CLEAN[hex]; if (!(t > 0) || !to) return hex; const A = parseInt(hex.slice(1), 16), B = parseInt(to.slice(1), 16), ch = s => Math.round(((A >> s) & 255) + (((B >> s) & 255) - ((A >> s) & 255)) * t); return "rgb(" + ch(16) + "," + ch(8) + "," + ch(0) + ")"; }
+function _fpSwRgba(foul, clean, a) { const t = _fpSwClean(), c = foul.map((v, i) => Math.round(v + (clean[i] - v) * (t > 0 ? t : 0))); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
 
 // ── THE WATER: the far banks (the faces the camera sees, going down to it), its surface sunk below the ledges, the current, the sump's slow swirl, a violet glow ──
 function _fpSewerWater(it, f) {
@@ -83,12 +89,12 @@ function _fpSewerWater(it, f) {
     }
     for (const p of it.pools) { const R = _fpRoomStyle(it.room); _fpQuad(circ(p.at[0], p.at[1], p.r + 0.75, 0, 0, Math.PI * 2, 48), R.fa || "#47504c", null); ctx.strokeStyle = "rgba(205,212,220,0.6)"; ctx.lineWidth = 2; _fpSwPath(circ(p.at[0], p.at[1], p.r, 0, 0, Math.PI * 2, 48)); ctx.stroke(); }   // the floor's rim round a pool (the square tiles leave its corners bare against the round edge), and the lit lip
     for (const p of it.pools) { const D = FP_SEWER.poolSink, top = circ(p.at[0], p.at[1], p.r, 0, Math.PI * 0.75, Math.PI * 1.75), bot = circ(p.at[0], p.at[1], p.r, -D, Math.PI * 1.75, Math.PI * 0.75); _fpQuad(top.concat(bot), "#1a1f1e", null); }
-    // the surface: deep violet, lighter down the middle of the current
+    // the surface: deep violet, lighter down the middle of the current (clearing to a cold blue-green as the purification module runs: _fpSwCol)
     const g0 = B ? P(B[0], B[1], -S) : null, g1 = B ? P(B[2], B[1], -S) : null;
     if (B) {
-        const gr = ctx.createLinearGradient(g0[0], g0[1], g1[0], g1[1]); gr.addColorStop(0, "#6b2cc4"); gr.addColorStop(0.35, "#4a1f8c"); gr.addColorStop(1, "#2c1660");
+        const gr = ctx.createLinearGradient(g0[0], g0[1], g1[0], g1[1]); gr.addColorStop(0, _fpSwCol("#6b2cc4")); gr.addColorStop(0.35, _fpSwCol("#4a1f8c")); gr.addColorStop(1, _fpSwCol("#2c1660"));
         _fpQuad([P(B[0], B[1], -S), P(B[2], B[1], -S), P(B[2], B[3], -S), P(B[0], B[3], -S)], gr, null);
-        const m0 = B[1] + (B[3] - B[1]) * 0.32, m1 = B[1] + (B[3] - B[1]) * 0.68; _fpQuad([P(B[0], m0, -S), P(B[2], m0, -S), P(B[2], m1, -S), P(B[0], m1, -S)], "rgba(176,104,255,0.16)", null);
+        const m0 = B[1] + (B[3] - B[1]) * 0.32, m1 = B[1] + (B[3] - B[1]) * 0.68; _fpQuad([P(B[0], m0, -S), P(B[2], m0, -S), P(B[2], m1, -S), P(B[0], m1, -S)], _fpSwRgba([176, 104, 255], [140, 225, 240], 0.16), null);
     }
     // the current: flecks of light drifting east, in lanes, only those on the screen
     if (B) {
@@ -103,14 +109,14 @@ function _fpSewerWater(it, f) {
             }
         }
     }
-    for (const p of it.pools) { const D = FP_SEWER.poolSink, c = P(p.at[0], p.at[1], -D), e = P(p.at[0] + p.r, p.at[1] - p.r, -D), R = Math.abs(e[0] - c[0]) * 1.1, g = ctx.createRadialGradient(c[0], c[1], 2, c[0], c[1], R); g.addColorStop(0, "#8a46e0"); g.addColorStop(0.55, "#3c1878"); g.addColorStop(1, "#1c0c38"); _fpQuad(circ(p.at[0], p.at[1], p.r, -D, 0, Math.PI * 2), g, null); }
+    for (const p of it.pools) { const D = FP_SEWER.poolSink, c = P(p.at[0], p.at[1], -D), e = P(p.at[0] + p.r, p.at[1] - p.r, -D), R = Math.abs(e[0] - c[0]) * 1.1, g = ctx.createRadialGradient(c[0], c[1], 2, c[0], c[1], R); g.addColorStop(0, _fpSwCol("#8a46e0")); g.addColorStop(0.55, _fpSwCol("#3c1878")); g.addColorStop(1, _fpSwCol("#1c0c38")); _fpQuad(circ(p.at[0], p.at[1], p.r, -D, 0, Math.PI * 2), g, null); }
     // the sump: slow arcs going round and down
     for (const p of it.pools) { const D = FP_SEWER.poolSink; for (let k = 0; k < (low ? 3 : 6); k++) { const a0 = -f * 0.01 + k * 1.05, r = p.r * (0.25 + 0.11 * k); ctx.strokeStyle = "rgba(220,190,255," + (0.28 - k * 0.03).toFixed(2) + ")"; ctx.lineWidth = 1.4; _fpSwPath(circ(p.at[0], p.at[1], r, -D + 1, a0, a0 + 1.4, 12)); ctx.stroke(); } }
     // the glow it gives off
     if (!low) {
         ctx.globalCompositeOperation = "lighter";
-        if (B) { const mid = (B[1] + B[3]) / 2; ctx.lineCap = "round"; ctx.strokeStyle = "rgba(166,77,255,0.06)"; ctx.lineWidth = (B[3] - B[1]) * TILE_H * 1.6; _fpSwLine(P(B[0] + 0.5, mid, -S), P(B[2] - 0.5, mid, -S)); }
-        for (const p of it.pools) { const c = P(p.at[0], p.at[1], -FP_SEWER.poolSink); _fpGlow(c[0], c[1], p.r * 70, FP_SEWER.violet, 0.22 + 0.06 * Math.sin(f * 0.03)); }
+        if (B) { const mid = (B[1] + B[3]) / 2; ctx.lineCap = "round"; ctx.strokeStyle = _fpSwRgba([166, 77, 255], [79, 208, 232], 0.06); ctx.lineWidth = (B[3] - B[1]) * TILE_H * 1.6; _fpSwLine(P(B[0] + 0.5, mid, -S), P(B[2] - 0.5, mid, -S)); }
+        for (const p of it.pools) { const c = P(p.at[0], p.at[1], -FP_SEWER.poolSink); _fpGlow(c[0], c[1], p.r * 70, _fpSwCol(FP_SEWER.violet), 0.22 + 0.06 * Math.sin(f * 0.03)); }
         ctx.globalCompositeOperation = "source-over";
     }
 }
@@ -144,17 +150,18 @@ function _fpSewerStump(it, f) {
 // ── a gate: two posts, bars, three cross rails, a chain and padlock; the boss's heavier, with red lamps and a warning plate ──
 function _fpSewerGate(it, f) {
     const P = _fpP, a = it.a, b = it.b, H = FP_SEWER.gateH, boss = !!it.boss, L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(4, Math.round(L * (boss ? 6 : 5)));
+    const open = typeof facilitySolidIsOpen === "function" && facilitySolidIsOpen(it.id), z0 = open ? H * 0.64 : 0;   // OPEN (the boss gate's seal broken, js/quests.js): the grille is raised into the arch, the chain is off, the lamps are green
     const at = (u, z) => P(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, z);
     ctx.lineCap = "butt";
     const bar = (u, z0, z1, w, col) => { ctx.strokeStyle = "#0e1216"; ctx.lineWidth = w + 2; _fpSwLine(at(u, z0), at(u, z1)); ctx.strokeStyle = col; ctx.lineWidth = w; _fpSwLine(at(u, z0), at(u, z1)); };
-    for (let k = 1; k < n; k++) bar(k / n, 0, H - 6, boss ? 3 : 2.2, boss ? "#6b3a40" : "#56636f");
-    for (const z of [6, H * 0.5, H - 8]) { ctx.strokeStyle = "#0e1216"; ctx.lineWidth = boss ? 7 : 5.5; _fpSwLine(at(0, z), at(1, z)); ctx.strokeStyle = boss ? "#8a3a44" : "#6f7d8a"; ctx.lineWidth = boss ? 5 : 3.5; _fpSwLine(at(0, z), at(1, z)); ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 1; _fpSwLine(at(0, z + 1.5), at(1, z + 1.5)); }
+    for (let k = 1; k < n; k++) bar(k / n, z0, H - 6, boss ? 3 : 2.2, boss ? "#6b3a40" : "#56636f");
+    for (const z of (open ? [z0 + 4, H - 8] : [6, H * 0.5, H - 8])) { ctx.strokeStyle = "#0e1216"; ctx.lineWidth = boss ? 7 : 5.5; _fpSwLine(at(0, z), at(1, z)); ctx.strokeStyle = boss ? "#8a3a44" : "#6f7d8a"; ctx.lineWidth = boss ? 5 : 3.5; _fpSwLine(at(0, z), at(1, z)); ctx.strokeStyle = "rgba(255,255,255,0.25)"; ctx.lineWidth = 1; _fpSwLine(at(0, z + 1.5), at(1, z + 1.5)); }
     for (const u of [0, 1]) bar(u, 0, H + 4, boss ? 7 : 5, boss ? "#7a434a" : "#66737f");
-    // a chain round the middle and a padlock
-    const c = at(0.5, H * 0.5); ctx.strokeStyle = "#a9b3bd"; ctx.lineWidth = 1.6; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.ellipse(c[0] + k * 4, c[1] + (k & 1 ? 2 : -2), 3, 2, 0.6, 0, 6.2832); ctx.stroke(); }
-    ctx.fillStyle = "#c8962e"; ctx.fillRect(c[0] - 4, c[1] + 3, 8, 8); ctx.strokeStyle = "#141414"; ctx.lineWidth = 1; ctx.strokeRect(c[0] - 4, c[1] + 3, 8, 8);
-    if (boss) {   // two red lamps on the posts, blinking in turn, and a black and yellow plate with a skull
-        for (const u of [0, 1]) { const q = at(u, H + 9), on = Math.floor(f / 24 + u) % 2 === 0; ctx.fillStyle = on ? "#ff3a4a" : "#5a1018"; ctx.beginPath(); ctx.arc(q[0], q[1], 4, 0, 6.2832); ctx.fill(); if (on) _fpGlow(q[0], q[1], 22, "#ff3a4a", 0.35); }
+    // a chain round the middle and a padlock (off an open gate)
+    const c = at(0.5, H * 0.5); if (!open) { ctx.strokeStyle = "#a9b3bd"; ctx.lineWidth = 1.6; for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.ellipse(c[0] + k * 4, c[1] + (k & 1 ? 2 : -2), 3, 2, 0.6, 0, 6.2832); ctx.stroke(); }
+    ctx.fillStyle = "#c8962e"; ctx.fillRect(c[0] - 4, c[1] + 3, 8, 8); ctx.strokeStyle = "#141414"; ctx.lineWidth = 1; ctx.strokeRect(c[0] - 4, c[1] + 3, 8, 8); }
+    if (boss) {   // two red lamps on the posts, blinking in turn (steady green once it is open), and a black and yellow plate with a skull
+        for (const u of [0, 1]) { const q = at(u, H + 9), on = open || Math.floor(f / 24 + u) % 2 === 0, lc = open ? "#4aff7a" : "#ff3a4a"; ctx.fillStyle = on ? lc : "#5a1018"; ctx.beginPath(); ctx.arc(q[0], q[1], 4, 0, 6.2832); ctx.fill(); if (on) _fpGlow(q[0], q[1], 22, lc, 0.35); }
         const s = at(0.5, H * 0.72); ctx.fillStyle = "#f0b030"; ctx.fillRect(s[0] - 13, s[1] - 9, 26, 18); ctx.strokeStyle = "#141414"; ctx.lineWidth = 1.5; ctx.strokeRect(s[0] - 13, s[1] - 9, 26, 18);
         ctx.fillStyle = "#141414"; ctx.beginPath(); ctx.arc(s[0], s[1] - 1, 5, 0, 6.2832); ctx.fill(); ctx.fillRect(s[0] - 3, s[1] + 2, 6, 4); ctx.fillStyle = "#f0b030"; ctx.fillRect(s[0] - 3, s[1] - 2, 2, 2); ctx.fillRect(s[0] + 1, s[1] - 2, 2, 2);
     }

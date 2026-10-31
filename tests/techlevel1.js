@@ -36,7 +36,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   try {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; selectedUnits.clear(); facilityBlackoutSet(false); actors = actors.filter(function(a){ return !(a instanceof Predator); });
-    var R = _fp.F.rubble[0]; player.x = player.targetX = player.visualX = R.work[0] - 3; player.y = player.targetY = player.visualY = R.work[1] - 1.5; player.fpPath = null;
+    var R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); player.x = player.targetX = player.visualX = R.work[0] - 3; player.y = player.targetY = player.visualY = R.work[1] - 1.5; player.fpPath = null;
     var els = ['fire', 'ice', 'flux']; followers.forEach(function(f, i){ f.element = els[i % 3]; f.role = 'camper'; f.evolved = undefined; f.x = player.x + 0.5 * i; f.y = player.y + 0.6; });
     step(3); partyTick(); followers.forEach(function(f){ f._abReadyAt = frame; }); step(3); partyTick();
     out.chips = Array.prototype.slice.call(document.querySelectorAll('#squadBar .sb-slot.has-ab .sb-ab')).map(function(e){ return e.textContent; });
@@ -168,13 +168,13 @@ function measure(w, h) {
     // rubble after six successful drill hits. Spawn collectible rocks exactly once upon destruction. Preserve the resulting opening [...] Allow the ability to target enemies through the Technician HUD", then one hit a second,
     // a sealed dark hole, 3 rocks once (no use yet), against an enemy 3 hits a second apart, each twice its normal hit.
     check('the rubble is map data on the arena\'s south rock, on its straight stretch: its ends and middle on a wall, its work spot on the arena floor in sight of it; the built map validates', () => {
-        const r = J(`(function(){ const R = _fp.F.rubble[0]; return { n: _fp.F.rubble.length, id: R.id, room: R.room, a: R.a, b: R.b, flat: Math.abs(R.a[1] - R.b[1]) < 1e-6, south: _fp.F.walls.some(w => Math.abs(w.a[1] - w.b[1]) < 1e-6 && Math.abs(w.a[1] - R.a[1]) < 1e-6 && Math.min(w.a[0], w.b[0]) <= R.a[0] && Math.max(w.a[0], w.b[0]) >= R.b[0]),
+        const r = J(`(function(){ const R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); return { n: _fp.F.rubble.length, id: R.id, room: R.room, a: R.a, b: R.b, flat: Math.abs(R.a[1] - R.b[1]) < 1e-6, south: _fp.F.walls.some(w => Math.abs(w.a[1] - w.b[1]) < 1e-6 && Math.abs(w.a[1] - R.a[1]) < 1e-6 && Math.min(w.a[0], w.b[0]) <= R.a[0] && Math.max(w.a[0], w.b[0]) >= R.b[0]),
             work: partyRoomAt(R.work[0], R.work[1]), stand: facilityStandOk(R.work[0], R.work[1]), errs: facilityValidate(_fp.F).errors.filter(e => /rubble/.test(e)), deco: _fp.items.some(i => i.fp === 'wdecor' && i.kind === 'rubble') }; })()`);
-        same(r.n, 1, 'rubble'); same(r.id, 'rubble_arena_south', 'its id'); same(r.room, 'arena', 'its room'); same(r.flat && r.south, true, 'not on the south rock\'s straight stretch: ' + JSON.stringify([r.a, r.b]));
+        same(r.n, 2, 'rubble (the arena\'s, and the Sewers\' choke: tests/sewerquest.js)'); same(r.id, 'rubble_arena_south', 'its id'); same(r.room, 'arena', 'its room'); same(r.flat && r.south, true, 'not on the south rock\'s straight stretch: ' + JSON.stringify([r.a, r.b]));
         same(r.work, 'arena', 'the work spot'); same(r.stand, true, 'the work spot is not floor'); same(r.errs.length, 0, 'the validator: ' + r.errs); same(r.deco, true, 'it is not drawn on the rock');
     });
     check('a long press on it opens its ring (THERMITE DRILL); with no fire technician in the squad, or one still cooling down, it is refused and says why; with one ready it walks to the rubble and drills it, a hit a second; the cooldown starts at the first hit', () => {
-        const r = J(`(function(){ const o = {}, R = _fp.F.rubble[0]; _fp.rubbleHits = {}; _fp.items = _fp.items.filter(i => !i.rock);
+        const r = J(`(function(){ const o = {}, R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); _fp.rubbleHits = {}; _fp.items = _fp.items.filter(i => !i.rock);
             let fs = __fresh(['core']); player.x = player.visualX = R.work[0] + 1; player.y = player.visualY = R.work[1] - 2; const p = _fpP(R.at[0], R.at[1], 25), hit = techRubbleAtScreen(p[0], p[1]);
             o.found = !!hit && hit.r === R; o.ring = techRingFor(R); o.none = techRubbleDrill(R).why;
             fs = __fresh(['fire']); const t = fs[0]; t._abReadyAt = frame + 600; o.cooling = techRubbleDrill(R).why; t._abReadyAt = frame;
@@ -186,7 +186,7 @@ function measure(w, h) {
         same(r.hits, 6, 'hits'); same(r.gaps.join(), '60,60,60,60,60', 'a hit a second'); same(r.coolAtFirst, 3600, 'the cooldown from the first hit'); same(r.open, true, 'not drilled through'); same(r.near, true, 'it did not drill from its spot'); same(r.free, true, 'still busy');
     });
     check('drilled through: a dark hole for good (the ring has nothing more, a second order is refused), 3 rocks in front of it ONCE, each a pack item (ROCK, no use yet) taken by walking over it; the save keeps the hole and the rocks not taken, and a fresh game has the rubble back', () => {
-        const r = J(`(function(){ const o = {}, R = _fp.F.rubble[0]; o.ring = techRingFor(R); o.again = techRubbleDrill(R).why;
+        const r = J(`(function(){ const o = {}, R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); o.ring = techRingFor(R); o.again = techRubbleDrill(R).why;
             o.rocks = _fp.items.filter(i => i.rock && !i.taken).map(i => i.id); _techRocksOut(R, true); o.once = _fp.items.filter(i => i.rock).length;
             const rk = _fp.items.find(i => i.rock && !i.taken), n0 = invCount('rock'); player.x = player.visualX = rk.x; player.y = player.visualY = rk.y; facilityPickupTick(); o.took = [rk.taken, invCount('rock') - n0 === _fp.items.filter(i => i.rock && i.taken).length, ITEMS.rock.name, ITEMS.rock.use().ok];
             const save = facilitySaveCollect(); o.saved = save.rubble; o.takenSaved = save.taken.includes(rk.id);
@@ -224,7 +224,7 @@ function measure(w, h) {
     check('one it cannot see, or a tap that is not floor, is refused and the aim stays up (no cooldown); its tiles are only the floor in sight of its middle', () => {
         const r = J(`(function(){ const fs = __fresh(['ice']), t = fs[0], o = {}; const c = partyRoomCells('lab_hallway')[0];
             techChipTap(t); techAimPickSpot({ x: c[0], y: c[1] }); o.hidden = [techAimActive(), techReadyIn(t), floatingTexts.slice(-1)[0].text]; techAimCancel(true);
-            const R = _fp.F.rubble[0]; o.wall = techAbilityUse(t, { spot: { x: R.at[0], y: R.at[1] + 2 } }).why;
+            const R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); o.wall = techAbilityUse(t, { spot: { x: R.at[0], y: R.at[1] + 2 } }).why;
             t._abReadyAt = frame; t.x = R.work[0]; t.y = R.work[1]; o.edgeOk = techAbilityUse(t, { spot: { x: R.at[0], y: R.at[1] - 0.4 } }).ok; const P = techFrosts[techFrosts.length - 1]; o.edge = P ? [...P.tiles].every(k => { const [x, y] = k.split(',').map(Number); return facilityStandOk(x, y); }) && P.tiles.size < 9 : null; return o; })()`);
         same(r.hidden.join(), 'true,0,THE TECHNICIAN CANNOT SEE THERE', 'out of sight'); same(r.wall, 'TAP THE FLOOR', 'past the wall'); same(r.edgeOk, true, 'a patch by the wall'); same(r.edge, true, 'a patch by the wall is floor only');
     });

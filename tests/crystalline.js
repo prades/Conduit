@@ -144,7 +144,7 @@ const restOf = (n, k) => Math.max(1, Math.round((n + 1) / k) - 1);   // the rest
         same(J('Object.values(EQUIP_CARDS).filter(function(c){ return c.kind === "class"; }).map(function(c){ return equipRarityBars(c); })').join(), '6,6,6,6,6,6', 'the bars lit'); same(J('Object.values(EQUIP_CARDS).filter(function(c){ return c.kind === "class"; }).map(function(c){ return equipRarityLabel(c); })').join(), 'CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE', 'the labels');
     });
     await check('every stat a bonus names is one the game has (EQUIP_STATS), and each is made where the game makes it: no new stat, no new combat system', () => {
-        same(J('Object.keys(EQUIP_STATS)').join(), 'attack,specialAttack,defense,maxHealth,attackSpeed,damage', 'the stats'); const used = new Set(J('Object.values(EQUIP_CARDS).filter(function(c){ return c.kind === "class"; }).map(function(c){ return Object.keys(c.bonus)[0]; })')); sameJ([...used].sort(), ['attack', 'attackSpeed', 'maxHealth', 'specialAttack'], 'the stats the cards name');
+        same(J('Object.keys(EQUIP_STATS)').join(), 'attack,specialAttack,defense,maxHealth,attackSpeed,damage,cooldown', 'the stats (cooldown: a technician\'s ability cooldown, for the Series 2 class cards; js/techabilities.js techCooldown)'); const used = new Set(J('Object.values(EQUIP_CARDS).filter(function(c){ return c.kind === "class"; }).map(function(c){ return Object.keys(c.bonus)[0]; })')); sameJ([...used].sort(), ['attack', 'attackSpeed', 'maxHealth', 'specialAttack'], 'the stats the cards name');
         const lv = rd('js/levels.js'), cb = rd('js/combat.js'), np = rd('js/npc.js');
         ok(/cardK\("attack"\)/.test(lv) && /cardK\("specialAttack"\)/.test(lv) && /cardK\("maxHealth"\)/.test(lv), 'attack, SP.ATK and maximum health are not made in _applyFollowerLevel');
         same((cb.match(/followerRest\(actor, \d+\)/g) || []).join(), 'followerRest(actor, 45),followerRest(actor, 40),followerRest(actor, 70)', 'the three attacks\' rests'); ok(/followerRest\(actor, 55\)/.test(np), 'the Mage\'s shot\'s rest');
@@ -344,8 +344,8 @@ const restOf = (n, k) => Math.max(1, Math.round((n + 1) / k) - 1);   // the rest
         const o = J(`(function(){ __fresh(0); const f = __prep('brawler', 'fire', 6); f.health = f.maxHealth - 5; const miss = f.maxHealth - f.health, max0 = f.maxHealth; gainXp(f, xpForLevel(7) - f.xp + 1); return { miss, now: f.maxHealth - f.health, grew: f.maxHealth > max0 }; })()`);
         same(o.grew, true, 'maximum health did not grow'); same(o.now, o.miss, 'a level-up changed how hurt it is');
     });
-    await check('the save keeps its parts (28 fields) and its version, the follower record its fields, and the collection its shape: nothing was added for the bonuses', () => {
-        same(J('Object.keys(facilitySaveCollect()).length'), 28, 'the save\'s fields'); same(J('FS.version'), 1, 'FS.version'); const f = JSON.parse(run('JSON.stringify(followerRecord(__fresh(1)[0]))')), known = 'element,personality,combatTrait,naturalTrait,perk,stats,role,uid,partnerUid,base,level,xp,evolved,evoWait,playStyle,post,move,cards'.split(',');
+    await check('the save keeps its parts (31 fields) and its version, the follower record its fields, and the collection its shape: nothing was added for the bonuses', () => {
+        same(J('Object.keys(facilitySaveCollect()).length'), 31, 'the save\'s fields'); same(J('FS.version'), 1, 'FS.version'); const f = JSON.parse(run('JSON.stringify(followerRecord(__fresh(1)[0]))')), known = 'element,personality,combatTrait,naturalTrait,perk,stats,role,uid,partnerUid,base,level,xp,evolved,evoWait,playStyle,post,move,cards'.split(',');
         for (const k of Object.keys(f)) ok(known.includes(k), 'a new field in a follower\'s record: ' + k);
     });
 

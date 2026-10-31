@@ -1,0 +1,191 @@
+// THE SEWER PURIFICATION (docs/SEWER-QUEST.md): the water-sample puzzle (js/puzzles.js), the quest (js/quests.js), the Sewers' brood (js/facilityspawn.js FP_SPAWN_SEWERS), the boss (js/bosses.js).
+// ASKED (the "Series 2, Sewers, bosses" brief): a sewer exploration area with a sample puzzle that has "exactly two intended solutions" (a Flux Technician's Telegrab that "actually retrieves the sample", and a
+// traversal by the Kinetic Launcher: the user: "launch a fire technician, and it can break away rubble and create a path"); the purification quest's explicit states; "the sewer boss must not have to die for
+// the player to complete the purification objective"; saves; "Do not award the module without the required cost or allow the player to collect duplicate rewards".
+//   THE PUZZLE     the pocket of floor behind the choke, the vial in it; route A (Telegrab, the vial taken once); route B (the pocket site takes only a fire technician, the drill order from the ledge is refused,
+//                  six hits from inside open the choke for good: the floor joins, the player walks in and takes the vial once); the saves; leaving and coming back
+//   THE QUEST      the reading at the culvert's doorway, the plate; the brood of toxic ants and their samples (three, no fourth); the bench (nothing before the samples, ANALYSE, BUY ◆800: too poor, bought once,
+//                  not twice); the gate (sealed without the module; open for it)
+//   THE BOSS       armed asleep in its lair, passed over by the auto-lock and the squad; a hit wakes it; the leash; the install wakes it and an interruption keeps the module; the cycle, the water clearing, the
+//                  CALM outcome with it alive in its lair; the DEFEATED outcome; the saves (calm boss back, dead boss gone, an interrupted encounter re-armed, a mid-cycle countdown kept); the nest row unassigned
+const fs = require('fs');
+const vm = require('vm');
+const path = require('path');
+const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
+process.on('unhandledRejection', () => {});
+const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+let failures = 0;
+function group(n) { console.log('\n' + n); }
+function check(name, fn) { try { fn(); console.log('  ok   ' + name); } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); } }
+function ok(c, m) { if (!c) throw new Error(m); }
+function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
+
+(async () => {
+    const context = vm.createContext(makeBrowserSandbox({}));
+    for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
+    for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
+    const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
+    run(`facilityBlackoutSet(false); gameState.running = true; alertActive = false; crystal.health = crystal.maxHealth = 1e7; canvas.width = 1280; canvas.height = 860; innerWidth = 1100; health = 1e6;
+        _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; classPickerOpen = false; playerClassKey = 'gunslinger';   // (after the tutorial: the quest shows on the plate)
+        globalThis.__site = () => _fp.F.launchSites.find(x => x.id === 'site_sewer_tunnel'); globalThis.__rub = () => _fp.F.rubble.find(x => x.id === 'rubble_sewer_choke'); globalThis.__pk = () => _fp.items.find(i => i.fp === 'pickup' && i.id === 'pk_sewer_sample');
+        globalThis.__put = (x, y) => { player.x = player.targetX = player.visualX = x; player.y = player.targetY = player.visualY = y; player.fpPath = null; };
+        globalThis.__vialBack = () => { const pk = __pk(), d = _fp.F.pickups.find(p => p.id === 'pk_sewer_sample'); pk.taken = false; pk.grabbed = false; pk.grab = null; pk.x = d.at[0]; pk.y = d.at[1]; pk.depth = pk.x + pk.y; invRemove('sewer_sample', invCount('sewer_sample')); };   // (a test's reset: the vial back where it lay, untaken; the game never does this)
+        globalThis.__clearSquad = () => { actors = actors.filter(a => !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); };
+        // technicians of the elements given, fresh, in the squad, their abilities ready, at the player's side (no creatures: the puzzle alone)
+        globalThis.__fresh = (els) => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); floatingTexts.length = 0; techReset(); followerProjectiles = [];
+            els.forEach((el, i) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.health = f.maxHealth = 400; f.currentWill = 1e5; f.x = player.x - 1 - 0.3 * i; f.y = player.y + (i ? 0.3 : 0); f.role = 'camper'; });
+            partyTick(); techAbilityTick(); followers.forEach(f => f._abReadyAt = frame); return followers.slice(); };
+        globalThis.__step = (n) => { for (let i = 0; i < n; i++) { frame++; techAbilityTick(); facilityPickupTick(); for (const a of actors.slice()) if (!a.dead && a.isFollower) updateNPC(a); } };   // (the abilities and the pickups, the squad)
+        globalThis.__tick = (n) => { for (let i = 0; i < n; i++) { frame++; techAbilityTick(); facilityTutorialTick(); for (const a of actors.slice()) if (!a.dead) updateNPC(a); actors = actors.filter(a => !a.dead || a.isFollower); } };   // (the whole facility tick: the quest, the boss, the brood, everyone)
+        globalThis.__kill = (a) => { a.health = 0; a.dead = true; a.deathProcessed = true; onPredatorDeath(a); actors = actors.filter(q => q !== a); };   // (as js/game.js does a death, once)
+        globalThis.__st = (id) => _fp.stations.find(s => s.id === id);
+        globalThis.__near = (s) => { const g = _stApproach(s) || [s.x, s.y + 1.5]; __put(g[0], g[1]); return stationDist(s) <= STATION_RANGE; };
+        globalThis.__Q = () => questState('purify'); globalThis.__B = () => bossState('sewer_cistern'); globalThis.__boss = () => bossUnit('sewer_cistern'); globalThis.__lair = () => bossLair(BOSS_ENCOUNTERS.sewer_cistern);
+        globalThis.__dl = () => { const b = __boss(), L = __lair(); return b ? Math.round(Math.hypot(b.x - L[0], b.y - L[1]) * 10) / 10 : null; };
+        globalThis.__plate = () => { const said = []; const k = uiTextFit; uiTextFit = function (t) { said.push(String(t)); return k.apply(this, arguments); }; try { facilityDrawObjective(); } finally { uiTextFit = k; } return said[0] || ''; };
+        // a world put back as a load does it: a new facility state, the save applied
+        globalThis.__reload = (sv) => { const F = _fp.F; actors = actors.filter(a => !(a instanceof Predator)); facilityTutorialStart(F); invReset(); facilitySaveApply(sv); _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; };
+        globalThis.__freshRecords = () => { const F = _fp.F; actors = actors.filter(a => !(a instanceof Predator)); facilityTutorialStart(F); invReset(); techReset(); _fp.quests = {}; _fp.bosses = {}; _fp.puzzles = {}; _fp.broodAt = undefined; _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; };`);
+
+    group('THE PUZZLE: THE WATER SAMPLE (js/puzzles.js; the map, js/facilitymap.js)');
+    check('the map: a pocket of floor off the north ledge behind a choke of rubble (its own stretch of floor: nobody walks in), the vial at its end; the pocket launcher site at the tunnel\'s foot takes only a fire technician and lands it inside; the choke is drilled from inside; the built map validates; the table names the same objects', () => {
+        const r = J(`(function(){ const s = __site(), r = __rub(), pk = __pk(), ch = _fp.F.solids.find(q => q.id === 'sewer_choke'), D = PUZZLES.sewer_sample;
+            return { site: [s.pocket, s.only, s.room, s.to, partyRoomAt(s.at[0], s.at[1]), partyRoomAt(s.land[0], s.land[1]), facilityStandOk(s.at[0], s.at[1]), facilityStandOk(s.land[0], s.land[1])], apart: _pComp(s.at[0], s.at[1]) !== _pComp(s.land[0], s.land[1]), vialIn: _pComp(pk.x, pk.y) === _pComp(s.land[0], s.land[1]), vial: [pk.room, pk.items[0][0], pk.taken],
+                walk: facilityPath(s.at[0], s.at[1], pk.x, pk.y) === null, rubble: [r.solid, r.inside, partyRoomAt(r.work[0], r.work[1]), _pComp(r.work[0], r.work[1]) === _pComp(s.land[0], s.land[1])], choke: [ch.kind, !!ch.open], errs: facilityValidate(_fp.F).errors,
+                table: [D.objects.sample.id, D.objects.choke.id, D.objects.choke.solid, D.objects.site.id, D.solutions.map(x => x.id).join(), Object.keys(D.contracts).join()], contractsFns: Object.values(D.contracts).every(c => c.fns && c.fns.length && c.fns.every(n => typeof globalThis[n] === 'function')), state: puzzleState('sewer_sample') }; })()`);
+        same(r.site.join(), 'true,thermite_drill,sewers,sewers,sewers,sewers,true,true', 'the pocket site'); same(r.apart, true, 'the pocket is not shut off from the ledge'); same(r.vialIn, true, 'the vial is not in the pocket'); same(r.vial.join(), 'sewers,sewer_sample,false', 'the vial');
+        same(r.walk, true, 'the player can walk to the vial'); same(r.rubble.join(), 'sewer_choke,true,sewers,true', 'the choke\'s rubble: its solid, drilled from inside, its work spot in the pocket'); same(r.choke.join(), 'rubble,false', 'the choke solid'); same(r.errs.length, 0, 'the validator: ' + r.errs);
+        same(r.table.join('|'), 'pk_sewer_sample|rubble_sewer_choke|sewer_choke|site_sewer_tunnel|telegrab,launch|grab,setup,launch,drill,walk,pickup', 'the table'); same(r.contractsFns, true, 'a contract names no function'); same(JSON.stringify(r.state), JSON.stringify({ id: 'sewer_sample', solved: false, how: '', solvedAt: 0, sampleTaken: false, chokeOpen: false, launcherUp: false, inside: false }), 'the state before');
+    });
+    check('ROUTE A, Telegrab: from the ledge the vial is on the screen, so a flux technician\'s chip takes it: it flies over the rubble to the player\'s feet and the pickup takes it, once; the puzzle is solved "telegrab"; the vial is in the save\'s taken list; it cannot be grabbed again', () => {
+        const r = J(`(function(){ const o = {}; const s = __site(); __put(s.at[0] + 1, s.at[1]); const fs = __fresh(['flux']), t = fs[0], pk = __pk(); o.room = partyRoomAt(player.x, player.y);
+            const scr = _techScr(pk.x, pk.y); o.onScreen = scr.x > 0 && scr.x < canvas.width && scr.y > 0 && scr.y < canvas.height; const g = techItemAtScreen(scr.x, scr.y + TILE_H - 8); o.found = !!g && g.o === pk;
+            const u = techAbilityUse(t, { item: g }); o.use = [u.ok, u.why || null]; o.cool = techReadyIn(t) > 0; let n = 0; for (; n < 400 && !pk.taken; n++) { __step(1); puzzleTick(); } o.frames = n; o.taken = pk.taken; o.inv = invCount('sewer_sample'); __step(5); o.invAgain = invCount('sewer_sample');
+            o.again = techItemAtScreen(scr.x, scr.y + TILE_H - 8); o.state = puzzleState('sewer_sample'); o.sol = puzzleSolution('sewer_sample').id; o.saved = facilitySaveCollect().taken.includes('pk_sewer_sample'); o.chokeStill = !facilitySolidIsOpen('sewer_choke'); return o; })()`);
+        same(r.room, 'sewers', 'the player is not on the ledge'); same(r.onScreen && r.found, true, 'the vial is not found on the screen'); same(r.use.join(), 'true,', 'the grab: ' + r.use[1]); same(r.cool, true, 'no cooldown');
+        ok(r.frames > 5 && r.frames < 200, 'the flight took ' + r.frames); same([r.taken, r.inv, r.invAgain].join(), 'true,1,1', 'taken once'); same(r.again, null, 'it can be grabbed again'); same([r.state.solved, r.state.how, r.sol].join(), 'true,telegrab,telegrab', 'the solve'); same(r.saved && r.chokeStill, true, 'the save, and the choke untouched');
+    });
+    check('ROUTE B, the launcher and the drill: from the ledge the drill order is refused and says how to get in; nothing is launched without a launcher; the electric technician sets it up; a core technician is refused, the fire technician flies in and lands inside, holds there, still a squad member; it drills six hits a second apart; the choke opens for good: the pocket joins the ledge, the player walks in and takes the vial once; the save keeps the hits, the launcher and the vial', () => {
+        const r = J(`(function(){ const o = {}; __vialBack(); const pk = __pk(); _fp.puzzles = {}; _fp.rubbleHits = {}; _fp.comp = null; _fp.edges.clear(); _fp.paths.clear();   // (the vial back where it lay, the records fresh)
+            const fs = __fresh(['electric', 'fire', 'core']), el = fs[0], fi = fs[1], co = fs[2], s = __site(), r = __rub();
+            o.refuseOutside = techRubbleDrill(r).why; o.noLauncher = techSiteLaunch(s, fi).why;
+            const su = techSiteSetup(s); o.setup = su.ok ? su.tech === el : su.why; let n = 0; for (; n < 1500 && !techLauncherAt(s.id); n++) __step(1); o.setupFrames = n; o.installed = techLauncherAt(s.id);
+            o.wrongOne = techSiteLaunch(s, co).why; o.launch = techSiteLaunch(s, fi).ok; o.twice = techSiteLaunch(s, fi).why;
+            let up = 0; for (n = 0; n < 900 && (fi._launchLoad || fi._flight || !up); n++) { __step(1); if (fi._flight) up = Math.max(up, techFlightLift(fi)); } o.flew = up > 50; o.landed = Math.hypot(fi.x - s.land[0], fi.y - s.land[1]) < 0.6; o.hold = fi._pocketHold === s.id; o.member = partyIsMember(fi); o.post = fi.post || null; o.inThere = techSiteLaunch(s, fi).why;
+            __step(120); o.staysPut = Math.hypot(fi.x - s.land[0], fi.y - s.land[1]) < 0.6; o.state1 = puzzleState('sewer_sample');
+            const d = techRingAct(r, 'drill'); o.drillOrder = [d.ok, d.tech === fi]; const at = []; let last = 0; for (n = 0; n < 1500 && !techRubbleOpen(r); n++) { __step(1); const h = _fp.rubbleHits[r.id] || 0; if (h !== last) { at.push(frame); last = h; } }
+            o.hits = at.length; o.gaps = at.slice(1).every((f, i) => f - at[i] >= 50); o.open = [techRubbleOpen(r), facilitySolidIsOpen('sewer_choke')]; o.joined = _pComp(s.at[0], s.at[1]) === _pComp(pk.x, pk.y); o.path = !!facilityPath(player.x, player.y, pk.x, pk.y); o.holdCleared = !fi._pocketHold;
+            __step(90); o.techFollows = Math.hypot(fi.x - player.x, fi.y - player.y) < 3;
+            __put(pk.x, pk.y); __step(1); puzzleTick(); o.taken = [pk.taken, invCount('sewer_sample')]; __step(3); o.invAgain = invCount('sewer_sample'); o.state2 = puzzleState('sewer_sample');
+            const sv = facilitySaveCollect(); o.saved = { rubble: sv.rubble[r.id], launcher: sv.launchers.includes(s.id), taken: sv.taken.includes('pk_sewer_sample'), puzzle: sv.puzzles.sewer_sample.how }; return o; })()`);
+        same(r.refuseOutside, 'IT IS DRILLED FROM INSIDE · SEND A FIRE TECHNICIAN IN WITH THE KINETIC LAUNCHER', 'the drill order from the ledge'); same(r.noLauncher, 'NO LAUNCHER HERE YET', 'a launch with no launcher'); same(r.setup, true, 'the setup: ' + r.setup); ok(r.setupFrames > 30 && r.installed, 'the launcher was not built: ' + r.setupFrames);
+        same(r.wrongOne, 'ONLY A FIRE TECHNICIAN GOES IN THERE · PICK ONE', 'the core technician'); same(r.launch, true, 'the fire technician is not launched'); same(r.twice, 'THE LAUNCHER IS IN USE', 'a second launch while it flies');
+        same([r.flew, r.landed, r.hold, r.member, r.post].join(), 'true,true,true,true,', 'the flight and the landing'); same(r.inThere, 'IT IS IN THERE ALREADY', 'launched again once inside'); same(r.staysPut, true, 'it does not hold inside'); same([r.state1.inside, r.state1.launcherUp, r.state1.chokeOpen, r.state1.solved].join(), 'true,true,false,false', 'the state inside');
+        same(r.drillOrder.join(), 'true,true', 'the drill order goes to the technician inside'); same(r.hits, 6, 'hits'); same(r.gaps, true, 'the hits are not a second apart'); same(r.open.join(), 'true,true', 'the choke is not open'); same([r.joined, r.path, r.holdCleared, r.techFollows].join(), 'true,true,true,true', 'the pocket did not join the ledge');
+        same([r.taken[0], r.taken[1], r.invAgain].join(), 'true,1,1', 'the vial, once'); same([r.state2.solved, r.state2.how].join(), 'true,launch', 'the solve'); same(JSON.stringify(r.saved), JSON.stringify({ rubble: 6, launcher: true, taken: true, puzzle: 'launch' }), 'the save');
+    });
+    check('a load puts the opened choke back (the rubble\'s six hits), the launcher and the taken vial; the player leaves through the culvert and comes back: the choke stays open and the vial stays taken (no second vial)', () => {
+        const r = J(`(function(){ const o = {}; const sv = facilitySaveCollect(); __reload(sv); const s = __site(), pk = __pk();
+            o.loaded = [facilitySolidIsOpen('sewer_choke'), techRubbleOpen(__rub()), techLauncherAt(s.id), pk.taken, puzzleState('sewer_sample').how, _pComp(s.at[0], s.at[1]) === _pComp(pk.x, pk.y)];
+            const down = _fp.portals.find(p => p.room === 'sewers'), up = facilityPortal(down.to); __put(down.x, down.y); _fp.portalCool = 0; __tick(1); o.trip = [_fp.portal.phase]; __tick(FP_PORTAL.out + 1); o.trip.push(partyRoomAt(player.x, player.y)); __tick(FP_PORTAL.hold + FP_PORTAL.in + FP_PORTAL.cool + 2);
+            __put(up.x, up.y); __tick(FP_PORTAL.out + 2); o.trip.push(partyRoomAt(player.x, player.y)); __tick(FP_PORTAL.hold + FP_PORTAL.in + 2);
+            o.after = [facilitySolidIsOpen('sewer_choke'), __pk().taken, _fp.items.filter(i => i.fp === 'pickup' && i.id === 'pk_sewer_sample').length, invCount('sewer_sample')]; return o; })()`);
+        same(r.loaded.join(), 'true,true,true,true,launch,true', 'the load'); same(r.trip.join(), 'out,arena,sewers', 'the trip up and back'); same(r.after.join(), 'true,true,1,1', 'after the trip');
+    });
+
+    group('THE QUEST (js/quests.js): THE READING, THE BROOD, THE SAMPLES, THE BENCH, THE GATE');
+    check('arriving through the culvert the water-quality reading is taken (the quest begins; it is on the plate after the tutorial); the brood: toxic ants of the Sewers, on the floor the player can reach, far from the player; the arena\'s own creatures are not counted against them', () => {
+        const r = J(`(function(){ const o = {}; __freshRecords(); __clearSquad(); facilitySpawnInitial(); const p = _fp.portals.find(q => q.room === 'sewers'); __put(p.ax, p.ay); o.room = partyRoomAt(player.x, player.y);
+            const of = _questOutfall(); o.outfallDist = Math.round(Math.hypot(of[0] - player.x, of[1] - player.y) * 10) / 10; o.before = [questObjective(), __plate(), facilityCreatures('arena').length]; __tick(3);
+            o.discovered = __Q().discoveredAt > 0; o.obj = questObjective().key; o.plate = __plate();
+            const br = facilityCreatures('sewers'); o.brood = br.map(a => [a.speciesName, a.element, !!a.sewerBrood, a.homeRoom, _pComp(a.x, a.y) === _pComp(player.x, player.y), Math.hypot(a.x - player.x, a.y - player.y) >= FP_SPAWN_SEWERS.minFromPlayer - 1].join()); o.label = unitTypeLabel(br[0]);
+            o.arena = facilityCreatures('arena').length; __tick(200); o.wander = facilityCreatures('sewers').every(a => partyRoomAt(a.x, a.y) === 'sewers'); o.n = facilityCreatures('sewers').length; return o; })()`);
+        same(r.room, 'sewers', 'not in the Sewers'); ok(r.outfallDist <= 6, 'the doorway is ' + r.outfallDist + ' from the outfall'); same(JSON.stringify(r.before), JSON.stringify([null, 'GUNSLINGER  ·  1/4  ·  GET YOUR GEAR', 4]), 'before the reading: no quest, the class\'s stage on the plate, the arena\'s four');
+        same([r.discovered, r.obj].join(), 'true,purify:samples', 'the reading'); same(r.plate, 'PURIFY THE SEWERS  ·  1/5  ·  COLLECT THE SAMPLES', 'the plate'); same(r.brood.length, FP_SPAWN_SEWERS_START(), 'the brood'); same(r.brood.every(b => b === 'ant,toxic,true,sewers,true,true'), true, 'the brood: ' + r.brood.join(' | '));
+        same(r.label, 'TOXIC ANT ' + r.label.split(' ').pop(), 'the tag'); same(r.arena, 4, 'the arena\'s count changed'); same(r.wander && r.n >= 3, true, 'the brood left the Sewers or died: ' + r.n);
+        function FP_SPAWN_SEWERS_START() { return J('FP_SPAWN_SEWERS.start'); }
+    });
+    check('the samples: a brood ant killed drops a TOXIC ANT SAMPLE where it fell, which the player picks up; three in all, a fourth kill drops none; the objective counts them', () => {
+        const r = J(`(function(){ const o = {}; o.drops = []; for (let k = 0; k < 3; k++) { let a = facilityCreatures('sewers')[0] || facilitySpawnCreature(null, null, FP_SPAWN_SEWERS); const before = _fp.items.filter(i => i.questSample).length; __kill(a); const it = _fp.items.filter(i => i.questSample).slice(-1)[0]; o.drops.push([_fp.items.filter(i => i.questSample).length - before, it.items[0][0], it.room, it.temp, Math.hypot(it.x - a.x, it.y - a.y) < 0.01]); __put(it.x, it.y); __tick(1); }
+            o.held = invCount('toxic_sample'); const extra = facilitySpawnCreature(null, null, FP_SPAWN_SEWERS); const n1 = _fp.items.filter(i => i.questSample).length; __kill(extra); o.fourth = _fp.items.filter(i => i.questSample).length - n1;
+            o.obj = questObjective().key; o.body = questObjective().body; o.samplesAt = __Q().samplesAt; return o; })()`);
+        same(r.drops.every(d => d.join() === '1,toxic_sample,sewers,true,true'), true, 'the drops: ' + JSON.stringify(r.drops)); same([r.held, r.fourth].join(), '3,0', 'three held, no fourth'); same(r.obj, 'purify:samples', 'the step'); ok(/ANT SAMPLES 3\/3/.test(r.body) && /WATER SAMPLE 0\/1/.test(r.body), 'the count: ' + r.body); same(r.samplesAt, 0, 'not every sample yet');
+    });
+    check('the water sample (Telegrab) completes the samples; the bench refuses before them and the gate refuses without the module; ANALYSE takes the four; BUY ◆800 is refused with too few shards, pays 800 once, puts one module in the pack, and is refused again; the plate follows', () => {
+        const r = J(`(function(){ const o = {}; const s = __site(); __put(s.at[0] + 1, s.at[1]); const b = __st('st_analysis_bench'), g = __st('st_sewer_gate');
+            __near(b); o.early = stationUse(b).why; __near(g); o.gateEarly = stationUse(g).why; __put(s.at[0] + 1, s.at[1]);
+            __vialBack(); const pk = __pk(); const t = __fresh(['flux'])[0]; const scr = _techScr(pk.x, pk.y); techAbilityUse(t, { item: techItemAtScreen(scr.x, scr.y + TILE_H - 8) }); for (let n = 0; n < 400 && !pk.taken; n++) __tick(1); o.water = [pk.taken, __Q().puzzleHow, __Q().samplesAt > 0, questObjective().key];
+            o.benchNear = __near(b); o.room = partyRoomAt(player.x, player.y); o.verb = STATION_KINDS[b.kind].verbFn(b); const r1 = stationUse(b); o.analyse = [r1.ok, invCount('toxic_sample'), invCount('sewer_sample'), __Q().turnedInAt > 0, questObjective().key, STATION_KINDS[b.kind].verbFn(b)];
+            shardCount = 100; o.poor = [stationUse(b).why, shardCount, invCount('purification_module')]; shardCount = 1000; const r2 = stationUse(b); o.buy = [r2.ok, shardCount, invCount('purification_module'), __Q().moduleAt > 0, questObjective().key, __plate()]; o.again = [stationUse(b).why, shardCount, invCount('purification_module')]; return o; })()`);
+        same(r.early, 'IT WANTS 3 ANT SAMPLES AND THE WATER SAMPLE · 3/3 AND 0/1', 'the bench before the water sample'); same(r.gateEarly, 'SEALED · THE PURIFICATION MODULE OPENS IT (THE ANALYSIS BENCH, EXPERIMENT LAB)', 'the gate before the module');
+        same(r.water.join(), 'true,telegrab,true,purify:turnin', 'the water sample'); same(r.benchNear && r.room === 'lab_hallway' || r.benchNear && r.room === 'experiment_lab', true, 'not at the bench: ' + r.room); same(r.verb, 'ANALYSE THE SAMPLES', 'the verb');
+        same(r.analyse.join(), 'true,0,0,true,purify:module,BUY THE PURIFICATION MODULE ◆800', 'the analysis'); same(r.poor.join(), 'NEED ◆700 MORE FOR THE MODULE,100,0', 'too poor'); same(r.buy.join('|'), 'true|200|1|true|purify:install|PURIFY THE SEWERS  ·  4/5  ·  INSTALL THE MODULE IN THE CISTERN', 'the purchase'); same(r.again.join(), 'THE MODULE IS BOUGHT · INSTALL IT IN THE SEWERS\' CISTERN,200,1', 'a second purchase');
+    });
+    check('the gate: its seal breaks for the module (once); the boss is ARMED: a toxic ant boss asleep in its lair in the cistern, which the player can now walk to; the auto-lock passes it by (a tap still locks it), a squad technician beside it does not start on it, and it stays asleep', () => {
+        const r = J(`(function(){ const o = {}; const g = __st('st_sewer_gate'); __near(g); const r = stationUse(g); o.open = [r.ok, facilitySolidIsOpen('sewer_gate_boss'), __Q().gateAt > 0, stationUse(g).why];
+            const S = __B(), b = __boss(), L = __lair(); o.state = S.state; o.boss = [b.speciesName, b.className, b.element, b.level, b.bossAsleep, b.bossCalm, b.provoked, partyRoomAt(b.x, b.y), __dl() <= 1.2, unitTypeLabel(b), b.homeRoom, b.fpCreature];
+            o.path = !!facilityPath(player.x, player.y, L[0], L[1]); o.passive = bossPassive(b); __put(L[0] - 3, L[1]); o.autoLock = targetNearest() === b; o.tapLock = targetSet(b, true); targetDrop();
+            const t = followers[0]; t.x = player.x - 1; t.y = player.y; t._enemyCacheFrame = 0; __tick(30); o.techIgnores = t._nearestEnemy !== b; o.stillAsleep = [b.bossAsleep, __B().state, __dl() <= 1.2, b.health === b.maxHealth]; o.obj = questObjective().key; return o; })()`);
+        same(r.open.join(), 'true,true,true,THE GATE IS OPEN', 'the seal'); same(r.state, 'armed', 'the boss is not armed'); same(r.boss.join(), 'ant,boss,toxic,6,true,false,false,sewers,true,TOXIC ANT BOSS,sewers,true', 'the boss: ' + r.boss.join());
+        same([r.path, r.passive, r.autoLock, r.tapLock, r.techIgnores].join(), 'true,true,false,true,true', 'the way in, the auto-lock, the tap, the technician'); same(r.stillAsleep.join(), 'true,armed,true,true', 'it did not stay asleep'); same(r.obj, 'purify:install', 'the step');
+    });
+
+    group('THE BOSS (js/bosses.js): WAKING, THE LEASH, THE INSTALL, CALM OR DEFEATED, THE SAVES');
+    check('a hit wakes the sleeper (the quest marks the encounter started); with the player gone beyond its leash while it is home, it sleeps again; drawn off its lair and then left, it lets go, walks home and sleeps again there', () => {
+        const r = J(`(function(){ const o = {}; const b = __boss(), L = __lair(); __clearSquad(); applyDamage(b, 5, player); __tick(2); o.woke = [__B().state, b.provoked, b.currentTarget === player, __Q().bossStartedAt > 0];
+            const far = _fpNearestCell(L[0] - 14, L[1]); __put(far[0], far[1]); let n = 0; for (; n < 600 && __B().state !== 'armed'; n++) __tick(1); o.sleptAgain = [__B().state, b.bossAsleep, b.provoked, n < 600];
+            const near = _fpNearestCell(L[0] - 5, L[1]); __put(near[0], near[1]); applyDamage(b, 5, player); for (n = 0; n < 900 && __dl() < 2.5; n++) __tick(1); o.drawnOff = [__B().state, __dl() >= 2.5];
+            __put(far[0], far[1]); for (n = 0; n < 3000 && __B().state !== 'armed'; n++) __tick(1); o.home = [__B().state, b.bossAsleep, b.provoked, __dl() <= BOSS_HOME, n > 10 && n < 3000]; return o; })()`);
+        same(r.woke.join(), 'active,true,true,true', 'the hit did not wake it'); same(r.sleptAgain.join(), 'armed,true,false,true', 'it did not sleep again'); same(r.drawnOff.join(), 'active,true', 'it was not drawn off'); same(r.home.join(), 'armed,true,false,true,true', 'it did not walk home and sleep');
+    });
+    check('the install: starting it wakes the boss on the player; walking away stops the install (the module is kept, nothing installed) and the boss, left, sleeps again; started again it wakes again; done, the module is taken, the cycle runs and the water clears; at its end the water is clean and the living boss is CALMED: alive, in its lair, provoked by nothing, passed over by the auto-lock; the quest records the calm outcome, no death; the plate says so, then the quest closes', () => {
+        const r = J(`(function(){ const o = {}; const m = __st('st_purifier'), b = __boss(); o.near = __near(m); o.verb = STATION_KINDS[m.kind].verbFn(m);
+            const r = stationUse(m); o.start = [r.ok, !!r.channel, _fp.channel && _fp.channel.station, __B().state, b.provoked, b.currentTarget === player];
+            __put(player.x - 6, player.y); __tick(2); o.interrupted = [_fp.channel, invCount('purification_module'), __Q().installedAt, __B().state];
+            __near(m); const r2 = stationUse(m); o.restart = [r2.ok, __B().state, b.provoked]; let n = 0; for (; n < 1500 && !__Q().installedAt; n++) __tick(1); o.installed = [n, __Q().installedAt > 0, invCount('purification_module'), __Q().cycleLeft, questObjective().key, STATION_KINDS[m.kind].verbFn(m)];
+            o.clean0 = questWaterClean() < 0.01; __tick(900); o.cleanHalf = Math.abs(questWaterClean() - 0.5) < 0.01; o.mid = [__B().state, b.dead, __plate()];
+            for (n = 0; n < 1000 && !__Q().purifiedAt; n++) __tick(1); o.purified = [__Q().purifiedAt > 0, questWaterClean(), __B().state, __B().outcome, b.dead, b.bossCalm, b.bossAsleep, b.provoked, __Q().bossOutcome, __Q().bossResolvedAt > 0, __Q().bossDefeated, STATION_KINDS[m.kind].verbFn(m)];
+            o.done = questObjective(); __tick(1500); o.lair = [__dl() <= 1.5, b.state, bossPassive(b)]; __put(__lair()[0] - 3, __lair()[1]); o.autoLock = targetNearest() === b; o.closed = [questObjective(), questActive('purify'), questDone('purify'), __plate()]; return o; })()`);
+        same(r.near && r.verb === 'INSTALL THE PURIFICATION MODULE', true, 'the mount: ' + r.verb); same(r.start.join(), 'true,true,st_purifier,active,true,true', 'the start'); same(JSON.stringify(r.interrupted), JSON.stringify([null, 1, 0, 'armed']), 'the interruption');
+        same(r.restart.join(), 'true,active,true', 'the restart'); same([r.installed[0], r.installed[1], r.installed[2], r.installed[3], r.installed[4], r.installed[5]].join('|'), '1200|true|0|1799|purify:purify|THE MODULE IS RUNNING', 'the install');
+        same(r.clean0 && r.cleanHalf, true, 'the water does not clear with the cycle'); same(r.mid.join('|'), 'active|false|PURIFY THE SEWERS  ·  5/5  ·  THE WATER CLEARS', 'mid-cycle');
+        same(r.purified.join('|'), 'true|1|resolved|calm|false|true|false|false|calm|true|0|THE WATER RUNS CLEAN', 'the purification and the calm'); same(r.done.key + ' / ' + r.done.body, 'purify:done / THE RUNOFF RUNS CLEAN: THE SEWERS ARE PURIFIED. THE ANT BOSS SLEEPS BY THE SUMP, ALIVE AND CALM.', 'the closing line');
+        same(r.lair.join(), 'true,wander,true', 'it does not keep its lair'); same(r.autoLock, false, 'the auto-lock takes the calm boss'); same(JSON.stringify(r.closed), JSON.stringify([null, false, true, 'GUNSLINGER  ·  1/4  ·  GET YOUR GEAR']), 'the quest did not close');
+    });
+    check('the save: the records (the quest\'s states, the boss resolved calm, the puzzle\'s solution); a load puts the gate open and the calm boss back in its lair, whole; hit, it defends itself, then calms again; killed later its death is recorded and the outcome stays calm; a load of that spawns no boss', () => {
+        const r = J(`(function(){ const o = {}; const sv = facilitySaveCollect(); o.saved = { q: Object.keys(sv.quests.purify).filter(k => sv.quests.purify[k]).sort().join(), b: sv.bosses.sewer_cistern, p: sv.puzzles.sewer_sample.how };
+            const b0 = __boss(); __reload(sv); const b = __boss(), L = __lair(); o.loaded = [facilitySolidIsOpen('sewer_gate_boss'), __B().state, __B().outcome, !!b, b !== b0, b.bossCalm, !b.bossAsleep, __dl() <= 1.2, b.health === b.maxHealth, __Q().purifiedAt > 0, puzzleState('sewer_sample').how, questWaterClean()];
+            __put(L[0] - 2, L[1]); applyDamage(b, 5, player); __tick(3); o.defends = [b.provoked, bossPassive(b), b.state, __B().state, __B().outcome];
+            const far = _fpNearestCell(L[0] - 16, L[1]); __put(far[0], far[1]); let n = 0; for (; n < 600 && b.provoked; n++) __tick(1); o.calmAgain = [n < 600, b.provoked, b.bossCalm, __B().state];
+            __kill(b); __tick(2); o.killedLater = [__B().state, __B().outcome, __B().defeated > 0, __Q().bossOutcome, __Q().bossDefeated > 0, !!__boss()];
+            const sv2 = facilitySaveCollect(); __reload(sv2); o.loadedDead = [__B().state, __B().outcome, !!__boss(), __B().defeated > 0]; return o; })()`);
+        same(r.saved.q, 'bossOutcome,bossResolvedAt,bossStartedAt,discoveredAt,drops,gateAt,installedAt,moduleAt,purifiedAt,puzzleAt,puzzleHow,samplesAt,turnedInAt', 'the quest\'s record'); same(JSON.stringify([r.saved.b.state, r.saved.b.outcome, r.saved.b.defeated, r.saved.p]), JSON.stringify(['resolved', 'calm', 0, 'telegrab']), 'the boss\'s and the puzzle\'s');
+        same(r.loaded.join(), 'true,resolved,calm,true,true,true,true,true,true,true,telegrab,1', 'the load'); same(r.defends.join(), 'true,false,attack,resolved,calm', 'it does not defend itself'); same(r.calmAgain.join(), 'true,false,true,resolved', 'it does not calm again');
+        same(r.killedLater.join(), 'resolved,calm,true,calm,true,false', 'the death after the calm'); same(r.loadedDead.join(), 'resolved,calm,false,true', 'a dead boss came back');
+    });
+    check('THE OTHER OUTCOME, from fresh records: killed during the install, the boss is DEFEATED (the quest records it) and the install goes on; the cycle still completes; a save in mid-cycle keeps the countdown and brings no boss back; the closing line says it is dead', () => {
+        const r = J(`(function(){ const o = {}; __freshRecords(); __clearSquad(); const p = _fp.portals.find(q => q.room === 'sewers'); __put(p.ax, p.ay); __tick(2);
+            invAdd('toxic_sample', 3); invAdd('sewer_sample', 1); __tick(1); o.pre = [__Q().discoveredAt > 0, __Q().samplesAt > 0, questObjective().key];
+            const bch = __st('st_analysis_bench'); __near(bch); stationUse(bch); shardCount = 800; const rb = stationUse(bch); o.bought = [rb.ok, shardCount, invCount('purification_module')];
+            const g = __st('st_sewer_gate'); __near(g); stationUse(g); const b = __boss(); o.armed = [__B().state, !!b];
+            const m = __st('st_purifier'); __near(m); stationUse(m); __tick(60); o.active = [__B().state, b.provoked, __Q().bossStartedAt > 0];
+            __kill(b); __tick(2); o.dead = [__B().state, __B().outcome, __B().defeated > 0, __Q().bossOutcome, __Q().bossDefeated > 0, !!__boss(), _fp.channel && _fp.channel.station];
+            let n = 0; for (; n < 1500 && !__Q().installedAt; n++) __tick(1); o.installed = [__Q().installedAt > 0, __Q().cycleLeft];
+            __tick(600); const sv = facilitySaveCollect(); o.midSave = [sv.quests.purify.cycleLeft, sv.bosses.sewer_cistern.state, sv.bosses.sewer_cistern.outcome]; __reload(sv); o.midLoad = [__Q().cycleLeft, __B().state, __B().outcome, !!__boss(), facilitySolidIsOpen('sewer_gate_boss')];
+            for (n = 0; n < 2000 && !__Q().purifiedAt; n++) __tick(1); o.purified = [n, __Q().purifiedAt > 0, __B().state, __B().outcome, __Q().bossOutcome, questObjective().body]; return o; })()`);
+        same(r.pre.join(), 'true,true,purify:turnin', 'the start'); same(r.bought.join(), 'true,0,1', 'the module for exactly 800'); same(r.armed.join(), 'armed,true', 'armed'); same(r.active.join(), 'active,true,true', 'woken by the install');
+        same(r.dead.join(), 'resolved,defeated,true,defeated,true,false,st_purifier', 'the defeat'); same(r.installed.join(), 'true,1799', 'the install did not go on'); same(r.midSave.join(), '1199,resolved,defeated', 'the mid-cycle save'); same(r.midLoad.join(), '1199,resolved,defeated,false,true', 'the mid-cycle load');
+        same(r.purified.slice(1).join('|'), 'true|resolved|defeated|defeated|THE RUNOFF RUNS CLEAN: THE SEWERS ARE PURIFIED. THE ANT BOSS IS DEAD.', 'the end'); same(r.purified[0], 1199, 'the countdown went on from where it was');
+    });
+    check('an interrupted encounter in a save (the boss awake and hurt, the install under way) comes back armed: the boss asleep in its lair, whole; the module still in the pack, nothing installed, no build running; the nest row of the table is unassigned and nothing arms it', () => {
+        const r = J(`(function(){ const o = {}; __freshRecords(); __clearSquad(); const p = _fp.portals.find(q => q.room === 'sewers'); __put(p.ax, p.ay); __tick(2); invAdd('toxic_sample', 3); invAdd('sewer_sample', 1); __tick(1);
+            const bch = __st('st_analysis_bench'); __near(bch); stationUse(bch); shardCount = 800; stationUse(bch); const g = __st('st_sewer_gate'); __near(g); stationUse(g); const b = __boss(); const m = __st('st_purifier'); __near(m); stationUse(m); __tick(30); applyDamage(b, 50, player); __tick(5);
+            o.before = [__B().state, b.health < b.maxHealth, _fp.channel && _fp.channel.station]; const sv = facilitySaveCollect(); o.savedState = sv.bosses.sewer_cistern.state; __reload(sv); const b2 = __boss();
+            o.after = [__B().state, !!b2, b2.bossAsleep, b2.health === b2.maxHealth, __dl() <= 1.2, __Q().installedAt, invCount('purification_module'), __Q().bossStartedAt > 0, _fp.channel];
+            const N = BOSS_ENCOUNTERS.nest; o.nest = [N.domain, N.species, N.quest, bossArm('nest'), bossState('nest').state]; return o; })()`);
+        same(r.before.join(), 'active,true,st_purifier', 'the encounter under way'); same(r.savedState, 'active', 'saved as it was'); same(JSON.stringify(r.after), JSON.stringify(['armed', true, true, true, true, 0, 1, true, null]), 'the load'); same(JSON.stringify(r.nest), JSON.stringify(['nest_area', null, null, false, 'idle']), 'the nest row');
+    });
+
+    console.log(failures ? `\n${failures} FAILING` : '\nall passing');
+    process.exit(failures ? 1 : 0);
+})();

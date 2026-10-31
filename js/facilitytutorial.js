@@ -98,6 +98,9 @@ function facilityTutorialTick() {
     if (typeof facilityPortalTick === "function") facilityPortalTick();
     if (typeof facilityRelayTick === "function") facilityRelayTick();
     if (typeof facilityDirectorTick === "function") facilityDirectorTick();
+    if (typeof puzzleTick === "function") puzzleTick();   // the puzzles' records: a solve, and how (js/puzzles.js)
+    if (typeof questTick === "function") questTick();   // the Sewer purification: the reading, the samples, the module's cycle (js/quests.js)
+    if (typeof bossTick === "function") bossTick();     // the boss encounters: a death, a hit on a sleeper, the leash (js/bosses.js)
     if (typeof facilityGearTick === "function") facilityGearTick();
     if (typeof facilitySaveTick === "function") facilitySaveTick();
     if (typeof facilitySpawnTick === "function") facilitySpawnTick();

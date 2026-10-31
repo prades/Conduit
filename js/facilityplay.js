@@ -67,6 +67,24 @@ function _fpComps() {
     }
     return (_fp.comp = comp);
 }
+// ── A SOLID OPENED IN PLAY: the choke of the Sewers' collapsed tunnel drilled through, the boss gate's seal broken (js/techabilities.js, js/quests.js) ──
+// The solid is no longer in the way, for good (whoever opened it saves why, and opens it again from the save: the rubble's hits, the quest's state). It is marked open in the map and in its planning copy
+// (facilitySolidAt passes an open one by), the floor it stood on becomes floor (new cells, drawn like the rest; the P copy's cells too), and every cache that knew the old shape is let go: the stretches of
+// floor (_fpComps), the sampled edges, the routes, the spawners' cells. Returns true when something changed (false: no such solid, or open already).
+function facilitySolidOpen(id) {
+    if (!_fp || !_fp.F || !_fp.cells) return false;
+    const s = _fp.F.solids.find(q => q.id === id), p = _fp.P ? _fp.P.solids.find(q => q.id === id) : null; if (!s || s.open) return false;
+    s.open = true; if (p) p.open = true;
+    const bb = s.bb, F = _fp.F, P = _fp.P;
+    for (let x = Math.floor(bb[0]) - 1; x <= Math.ceil(bb[2]) + 1; x++) for (let y = Math.floor(bb[1]) - 1; y <= Math.ceil(bb[3]) + 1; y++) {
+        const k = x + "," + y;
+        if (!_fp.cells.has(k) && facilityWalkable(x, y, F)) { const room = facilityRoomAt(x, y, F); if (room) { const t = _fpFloorTile(x, y, room.id); world.push(t); worldTileMap.set(k, t); _fp.cells.set(k, [x, y]); } }
+        if (_fp.cells.has(k) && !_fp.cellsP.has(k) && P && facilityWalkable(x, y, P)) _fp.cellsP.set(k, [x, y]);
+    }
+    _fp.comp = null; _fp.edges.clear(); _fp.paths.clear(); _fp.spawnCells = null; _fp.roomCells = null;
+    return true;
+}
+function facilitySolidIsOpen(id) { const s = _fp && _fp.F && _fp.F.solids.find(q => q.id === id); return !!(s && s.open); }
 // The cells from (x0,y0) to (x1,y1), or null if there is no way.
 function _fpCellPath(sx, sy, gx, gy) {
     const key = sx + "," + sy + ">" + gx + "," + gy; if (_fp.paths.has(key)) return _fp.paths.get(key);
@@ -338,7 +356,7 @@ function _fpWallLightRoom(w, a, b, F) {
     for (const t of [0.4, 0.9, 1.5, 2.2, 3.0]) { const r = facilityRoomAt((a[0] + b[0]) / 2 + nx * t, (a[1] + b[1]) / 2 + ny * t, F); if (r) return r.id; }   // (the room that shows its face; the pocket of void behind the arena's rock belongs to the arena)
     return w.room;
 }
-const FP_SELF_SOLIDS = new Set(["river", "pool", "gate", "boss_gate"]);   // solids that are not furniture: they draw themselves (js/facilitysewers.js), and have no sprite
+const FP_SELF_SOLIDS = new Set(["river", "pool", "gate", "boss_gate", "rubble"]);   // solids that are not furniture: they draw themselves (js/facilitysewers.js; a choke of rubble: js/techabilities.js techDrawRubbleOn), and have no sprite
 function _fpPlaceStatics(F) {
     const items = [], seg = 0.5;
     for (const w of F.walls) {
@@ -355,6 +373,7 @@ function _fpPlaceStatics(F) {
         const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2, st = { open: 0 }, base = facilityLiftPx(mx, my), lroom = _fpWallLightRoom({ room: (o.rooms || [])[0] }, o.a, o.b, F), thin = _fpDoorThin(o, F);   // (lroom: the room whose face the wall round the door shows, which the door's header takes its light from; thin: a door in glass)
         for (const [part, d] of [["a", o.a[0] + o.a[1]], ["b", o.b[0] + o.b[1]], ["m", Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.88]]) items.push({ type: "fp", fp: "door", part, st, out: _fpDoorOut(o, F), lroom, thin, id: o.id, depth: d + 0.02, x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base }); }
     for (const s of F.solids) {
+        if (s.kind === "rubble") continue;   // (a choke of rubble is drawn by the rubble it is the solid of: js/techabilities.js techDrawRubbleOn; no prop piece, no sprite)
         if (FP_SELF_SOLIDS.has(s.kind)) continue;   // (the sewers' water and gates draw themselves: js/facilitysewers.js)
         const box = s.bb, cells = new Set();
         for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {

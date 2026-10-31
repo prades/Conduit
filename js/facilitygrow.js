@@ -55,7 +55,7 @@
     for (const f of (M.fixtures || [])) { const t = sh(f.room); f.a = mv(f.a, t); f.b = mv(f.b, t); }
     for (const p of (M.pickups || [])) p.at = mv(p.at, sh(p.room));
     for (const p of (M.followerSpots || [])) p.at = mv(p.at, sh(p.room));
-    for (const s of (M.launchSites || [])) { s.at = mv(s.at, sh(s.room)); s.dropTo = mv(s.dropTo, sh(s.room)); s.land = mv(s.land, sh(s.to)); s.drop = mv(s.drop, sh(s.to)); }   // (a launcher site's points move with their rooms)
+    for (const s of (M.launchSites || [])) { s.at = mv(s.at, sh(s.room)); s.land = mv(s.land, sh(s.to)); if (s.dropTo) s.dropTo = mv(s.dropTo, sh(s.room)); if (s.drop) s.drop = mv(s.drop, sh(s.to)); }   // (a launcher site's points move with their rooms; a pocket site has no broken section to drop through)
     for (const r of (M.rubble || [])) { const t = sh(r.room); r.a = mv(r.a, t); r.b = mv(r.b, t); r.work = mv(r.work, t); }   // (and rubble with its room's edge)
     for (const p of (M.portals || [])) { const t = sh(p.room); p.rect = [p.rect[0] + t[0] * G, p.rect[1] + t[1] * G, p.rect[2] + t[0] * G, p.rect[3] + t[1] * G]; p.arrive = mv(p.arrive, t); }
     for (const e of (M.external_exits || [])) e.at = mv(e.at, sh(e.room));

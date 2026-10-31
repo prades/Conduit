@@ -58,7 +58,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var lost = Math.round(hp0 - g.health); partyTick();   // (measured as it lands: it mends a little as it goes on)
     out.combat = { foeLost: Math.round(5000 - e.health), followerLost: lost, cooldown: Math.ceil(techReadyIn(t) / 60), chip: chip.textContent };   // (the flight's frames have run off it)
     // THE SITE: near it, its label; a tap on the label and the technician sets a launcher up
-    e.dead = true; var s = _fp.F.launchSites[0]; player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; player.fpPath = null;
+    e.dead = true; var s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; player.fpPath = null;
     for (var k = 0; k < followers.length; k++) { followers[k].x = player.x + 0.4 * k; followers[k].y = player.y + 1; followers[k].attackOrder = null; }
     step(3);
     var L = _techLabels[s.id]; out.label = !!L;
@@ -139,12 +139,12 @@ function measure(w, h) {
 
     group('THE KINETIC LAUNCHER: EXPLORATION (a launcher site, the Arena Catwalk, the broken section)');
     check('the map has a launcher site in the arena that reaches the catwalks: the launcher\'s spot and the landing under the broken section on the arena floor, the landing and the broken section on the catwalks, all on tiles a body can stand on; nobody walks from one to the other', () => {
-        const r = J(`(function(){ const s = _fp.F.launchSites[0], at = (p) => partyRoomAt(p[0], p[1]); return { n: _fp.F.launchSites.length, id: s.id, rooms: [at(s.at), at(s.dropTo), at(s.land), at(s.drop)], stand: [s.at, s.dropTo, s.land, s.drop].every(p => facilityStandOk(p[0], p[1])),
+        const r = J(`(function(){ const s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'), at = (p) => partyRoomAt(p[0], p[1]); return { n: _fp.F.launchSites.length, id: s.id, rooms: [at(s.at), at(s.dropTo), at(s.land), at(s.drop)], stand: [s.at, s.dropTo, s.land, s.drop].every(p => facilityStandOk(p[0], p[1])),
             up: facilityPath(s.at[0], s.at[1], s.land[0], s.land[1]) === null, down: facilityPath(s.land[0], s.land[1], s.at[0], s.at[1]) === null, errs: facilityValidate(_fp.F).errors.filter(x => /launcher site/.test(x)) }; })()`);
-        same(r.n, 1, 'sites'); same(r.id, 'site_arena_catwalk', 'the site'); same(r.rooms.join(), 'arena,arena,catwalks,catwalks', 'where its points are'); same(r.stand, true, 'a point a body cannot stand on'); same(r.up, true, 'a walk up'); same(r.down, true, 'a walk down'); same(r.errs.length, 0, 'the validator: ' + r.errs);
+        same(r.n, 2, 'sites (the arena catwalk, and the Sewers\' collapsed tunnel: tests/sewerquest.js)'); same(r.id, 'site_arena_catwalk', 'the site'); same(r.rooms.join(), 'arena,arena,catwalks,catwalks', 'where its points are'); same(r.stand, true, 'a point a body cannot stand on'); same(r.up, true, 'a walk up'); same(r.down, true, 'a walk down'); same(r.errs.length, 0, 'the validator: ' + r.errs);
     });
     check('setting a launcher up: it takes an electric technician in the squad, which walks to the site and works there; then the launcher is there for good (saved, and put back from a save), its XP given once; a second one is refused', () => {
-        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites[0]; _fp.launchers = new Set();
+        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); _fp.launchers = new Set();
             let fs = __fresh(['core', 'fire']); o.none = techSiteSetup(s).why;
             fs = __fresh(['electric', 'core']); const t = fs[0]; t.x = s.at[0] - 4; t.y = s.at[1]; const xp0 = t.xp || 0; o.use = techSiteSetup(s).ok; o.busyChip = techChipState(t).text;
             for (let i = 0; i < 1500 && !techLauncherAt(s.id); i++) __step(1);
@@ -155,7 +155,7 @@ function measure(w, h) {
         same(r.cleared, false, 'a save without it'); same(r.applied.join(), 'site_arena_catwalk', 'a save with it (and an unknown site left out)');
     });
     check('the launcher sends a follower up: it runs to the launcher and is thrown in an arc up onto the catwalks, where it holds them; called back (COME), it walks to the broken section and drops through into the arena, one way, and follows again; one posted up there that is not (back from the dead) is let go of the post', () => {
-        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites[0]; techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1];
+        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1];
             player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; g.x = player.x + 0.5; g.y = player.y + 0.5;
             o.use = techSiteLaunch(s, g).ok; let up = 0; for (let i = 0; i < 900 && (g._launchLoad || g._flight || !up); i++) { __step(1); if (g._flight) up = Math.max(up, techFlightLift(g)); }
             o.peak = Math.round(up); o.post = g.post; o.room = partyRoomAt(g.x, g.y); o.again = techSiteLaunch(s, g).why;
@@ -168,7 +168,7 @@ function measure(w, h) {
     });
 
     check('THE LAUNCHER IS SUBTLE (asked: "it shouldn\'t automatically lock me into jumping up to the next level. It should remain subtle and uninterruptive"): coming near a site says nothing; its tag is small and still; only a tap on the tag is the site\'s (a tap on the floor round it walks); the launcher\'s aim never holds you: a tap that is not on a follower puts it away and is an ordinary tap', () => {
-        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites[0]; techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1]; techAimCancel(true);
+        const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1]; techAimCancel(true);
             player.x = player.targetX = player.visualX = s.at[0] - 9; player.y = player.targetY = player.visualY = s.at[1]; __step(2); floatingTexts.length = 0;
             player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; player.fpPath = null; g.x = player.x + 0.5; g.y = player.y + 0.5; __step(3);
             o.said = floatingTexts.map(t => t.text).filter(t => /LAUNCHER|SITE|TAP/.test(t)).join(' | ');

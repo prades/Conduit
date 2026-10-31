@@ -116,7 +116,7 @@ function updateRTSNPC(actor) {
                 // by is "not green" too, and a follower on a move order locked
                 // onto one it could never hurt and stood there for good.
                 actor._guardEnemy=null; let bd2=20.25; // 4.5²
-                actors.forEach(a=>{ if(isHostileTarget(a)){const dx=a.x-actor.x,dy=a.y-actor.y,d2=dx*dx+dy*dy;if(d2<bd2){bd2=d2;actor._guardEnemy=a;}} });
+                actors.forEach(a=>{ if(isHostileTarget(a)&&!(typeof bossPassive==="function"&&bossPassive(a))){const dx=a.x-actor.x,dy=a.y-actor.y,d2=dx*dx+dy*dy;if(d2<bd2){bd2=d2;actor._guardEnemy=a;}} });   // (nor a boss asleep or calm in its lair: js/bosses.js)
                 actor._guardCacheFrame=frame;
             }
             const enemy=actor._guardEnemy&&!actor._guardEnemy.dead?actor._guardEnemy:null;

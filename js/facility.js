@@ -118,8 +118,8 @@ function _facilityBuild(ex) {
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
     const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));   // (a tile's middle, not snapped, like a pickup)
-    const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: rawP(s.drop), dropTo: rawP(s.dropTo), note: s.note }));   // (tiles' middles, like a follower spot: js/techabilities.js)
-    const rubble = (M.rubble || []).map(r => { const a = rawP(r.a), b = rawP(r.b); return { id: r.id, room: r.room, label: r.label, a, b, at: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], work: rawP(r.work), note: r.note }; });   // (on the room's edge: js/techabilities.js, the Thermite Drill)
+    const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: s.drop ? rawP(s.drop) : null, dropTo: s.dropTo ? rawP(s.dropTo) : null, pocket: !!s.pocket, only: s.only || null, note: s.note }));   // (tiles' middles, like a follower spot: js/techabilities.js; a pocket site has no broken section)
+    const rubble = (M.rubble || []).map(r => { const a = rawP(r.a), b = rawP(r.b); return { id: r.id, room: r.room, label: r.label, a, b, at: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], work: rawP(r.work), solid: r.solid || null, inside: !!r.inside, note: r.note }; });   // (on the room's edge, or a CHOKE across a passage's mouth (`solid`): js/techabilities.js, the Thermite Drill)
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
     // portals (js/facilityportals.js): the doorway's floor as a box of whole tiles, and where you stand when you come out of the other end (a tile's middle: snapped to the floor when it is used)
@@ -177,7 +177,7 @@ function facilityRoomAt(x, y, F) {
 }
 function facilitySolidAt(x, y, F) {
     F = F || facilityGet();
-    const ix = _facIndex(F); for (const s of _facNear(ix.solids, ix, x, y)) if (_facIn(x, y, s.bb) && (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly))) return s;
+    const ix = _facIndex(F); for (const s of _facNear(ix.solids, ix, x, y)) if (!s.open && _facIn(x, y, s.bb) && (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly))) return s;   // (open: a gate or a choke taken away in play, js/facilityplay.js facilitySolidOpen: no longer in the way)
     return null;
 }
 // Walkable: inside a room, outside every solid, and not ON a wall (a body exactly on a wall line could slip along it into the next room).
@@ -202,7 +202,7 @@ function facilityCanStep(x0, y0, x1, y1, F) {
     }
     for (const w of walls) if (near(w.bb) && facilitySegmentsCross(a, b, w.a, w.b)) return false;
     for (const s of solids) {
-        if (!near(s.bb)) continue;
+        if (s.open || !near(s.bb)) continue;   // (open: taken away in play, js/facilityplay.js facilitySolidOpen)
         if (s.shape === "circle") { if (_facSegPointDist(a, b, s.at[0], s.at[1]) < s.r) return false; }
         else for (let i = 0; i < s.poly.length; i++) if (facilitySegmentsCross(a, b, s.poly[i], s.poly[(i + 1) % s.poly.length])) return false;
     }
@@ -279,8 +279,9 @@ function facilityValidateDressing(F) {
     // the launcher sites: each point on the floor of its room a body can stand on (the launcher's and the landing under the broken section on the site's room, the landing and the broken section on the room it reaches), and two different rooms
     for (const s of (F.launchSites || [])) {
         if (!F.byId.get(s.room) || !F.byId.get(s.to)) { errors.push("launcher site " + s.id + " names a room that does not exist"); continue; }
-        if (s.room === s.to) errors.push("launcher site " + s.id + " reaches its own room");
-        for (const [k, pt, room] of [["at", s.at, s.room], ["dropTo", s.dropTo, s.room], ["land", s.land, s.to], ["drop", s.drop, s.to]]) {
+        if (s.pocket ? s.room !== s.to : s.room === s.to) errors.push("launcher site " + s.id + (s.pocket ? " is a pocket of another room" : " reaches its own room"));   // (a pocket site lands in a cut-off part of its OWN room; any other reaches another room)
+        if (!s.pocket && (!s.drop || !s.dropTo)) { errors.push("launcher site " + s.id + " has no broken section to drop through"); continue; }
+        for (const [k, pt, room] of [["at", s.at, s.room], ["land", s.land, s.to]].concat(s.pocket ? [] : [["dropTo", s.dropTo, s.room], ["drop", s.drop, s.to]])) {
             const r = facilityRoomAt(pt[0], pt[1], F); if (!r || r.id !== room) errors.push("launcher site " + s.id + ": its " + k + " is not in " + room);
             else if (F.snapped && !facilityWalkable(pt[0], pt[1], F)) errors.push("launcher site " + s.id + ": its " + k + " is not on a tile a body can stand on");
         }
@@ -288,7 +289,13 @@ function facilityValidateDressing(F) {
     // rubble: on a wall of its room (its middle on the wall's line), and the spot it is drilled from on that room's floor, a body can stand on, in sight of it
     for (const r of (F.rubble || [])) {
         if (!F.byId.get(r.room)) { errors.push("rubble " + r.id + " names a room that does not exist"); continue; }
-        if (F.snapped && !F.walls.some(w => _facSegPointDist(w.a, w.b, r.at[0], r.at[1]) < 0.05 && _facSegPointDist(w.a, w.b, r.a[0], r.a[1]) < 0.05 && _facSegPointDist(w.a, w.b, r.b[0], r.b[1]) < 0.05)) errors.push("rubble " + r.id + " is not on a wall");   // (the built map's walls: the sketch's are not on the grid)
+        if (r.solid) {   // a CHOKE: its line is the long middle line of the thin solid that fills the mouth (which must be a solid of kind rubble, of its room)
+            const s = F.solids.find(q => q.id === r.solid);
+            if (!s || s.kind !== "rubble" || s.room !== r.room || !s.poly) errors.push("rubble " + r.id + " names " + r.solid + ", which is not a rubble solid of " + r.room);
+            else { const xs = s.poly.map(q => q[0]), ys = s.poly.map(q => q[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), alongX = x1 - x0 >= y1 - y0, la = alongX ? [x0, (y0 + y1) / 2] : [(x0 + x1) / 2, y0], lb = alongX ? [x1, (y0 + y1) / 2] : [(x0 + x1) / 2, y1];
+                   const sn = p => F.snapped ? [Math.round(p[0] - 0.5) + 0.5, Math.round(p[1] - 0.5) + 0.5] : p;   // (the rubble's ends are raw tile coordinates; the solid is snapped to the grid, as a wall is)
+                   if (![r.at, r.a, r.b].map(sn).every(p => _facSegPointDist(la, lb, p[0], p[1]) < 0.3)) errors.push("rubble " + r.id + " is not on its choke's line"); }
+        } else if (F.snapped && !F.walls.some(w => _facSegPointDist(w.a, w.b, r.at[0], r.at[1]) < 0.05 && _facSegPointDist(w.a, w.b, r.a[0], r.a[1]) < 0.05 && _facSegPointDist(w.a, w.b, r.b[0], r.b[1]) < 0.05)) errors.push("rubble " + r.id + " is not on a wall");   // (the built map's walls: the sketch's are not on the grid)
         const wr = facilityRoomAt(r.work[0], r.work[1], F); if (!wr || wr.id !== r.room) errors.push("rubble " + r.id + ": its work spot is not in " + r.room);
         else if (F.snapped && !facilityWalkable(r.work[0], r.work[1], F)) errors.push("rubble " + r.id + ": its work spot is not on a tile a body can stand on");
         else { const dx = r.work[0] - r.at[0], dy = r.work[1] - r.at[1], L = Math.hypot(dx, dy) || 1, fx = r.at[0] + dx / L * 0.5, fy = r.at[1] + dy / L * 0.5; if (F.snapped && !facilityCanStep(r.work[0], r.work[1], fx, fy, F)) errors.push("rubble " + r.id + " cannot be seen from its work spot"); }

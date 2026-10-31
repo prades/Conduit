@@ -1,0 +1,63 @@
+# The Sewer purification: the sample puzzle, the quest, the boss
+
+Built 2026-10-31 (build `2026-10-31c`) from the "Series 2 cards, sewer exploration, puzzle systems, non-lethal gameplay, boss domains and quest integration" brief. Code: `js/puzzles.js` (the puzzle's definition and its interaction contracts), `js/quests.js` (the quest), `js/bosses.js` (the boss encounters), the Sewers' map data in `js/facilitymap.js`, the brood in `js/facilityspawn.js` (`FP_SPAWN_SEWERS`), the three stations in `js/stations.js`, the items in `js/inventory.js`, the water's colour and the open gate in `js/facilitysewers.js`. Tests: `tests/sewerquest.js` (and the counts in `tests/sewers.js`, `tests/techabilities.js`, `tests/techlevel1.js`).
+
+Decided with the user before building (2026-10-31): the Sewers' boss is **a toxic ant boss** (the ant species' boss class, the toxic element: provisional until the design archive confirms it); the puzzle's second solution is **a fire technician launched into the tunnel, which drills the choke open**; the non-lethal end is **the boss calmed, alive, keeping its lair**.
+
+## The Sewers now
+
+What was a `collapse` wall decoration on the north ledge is now a **collapsed tunnel**: a notch of floor off the north ledge (the room's outline carries it: `[660, 860] … [1020, 860]` in the sketch), one tile wide and three deep, shut off by a **choke** of rubble on the line of its mouth (`sewer_choke`, a solid of kind `rubble`, with `rubble_sewer_choke` in the map's `rubble` list: `solid: "sewer_choke"`, `inside: true`, its work spot inside the pocket). Nobody walks in: the pocket is its own stretch of floor until the choke is opened. At its end lies the **WATER SAMPLE** vial (`pk_sewer_sample`). On the ledge at the tunnel's foot is a **pocket launcher site** (`site_sewer_tunnel`: `pocket: true`, `only: "thermite_drill"`, `at` on the ledge, `land` inside the pocket, no drop or return). At the head of the cistern's sump stands the **purifier mount** (`purifier_mount`, a console). The boss gate across the south ledge's way into the cistern is as it was, with a station on it now.
+
+The validator (`facilityValidate`) knows pocket sites (same room, landing in a different component, no `drop`) and chokes (the rubble's ends on the choke solid's long middle line, within 0.3 of a tile after snapping).
+
+## The puzzle (`js/puzzles.js`)
+
+`PUZZLES.sewer_sample` is data: the objects it is made of (by map id), its two solutions, and an **interaction contract** for each step a solution uses: who does it, through which function of the game (`fns`: the names, which the tests check exist), what it needs, the refusals it gives word for word, what it does, and what a retry means. The puzzle has no logic of its own: the technicians' abilities, the pickups and the floor are the game's. `puzzleState(id)` reads the world: `{ solved, how, solvedAt, sampleTaken, chokeOpen, launcherUp, inside }`; the solve and how it was done are a record (`_fp.puzzles`, saved as `puzzles`) and are copied into the quest (`puzzleHow`). `puzzleTick` runs every frame from `facilityTutorialTick`.
+
+- **Solution A, Telegrab.** From the ledge the vial is on the screen, so a flux technician's chip takes it (`techItemAtScreen`, `techAbilityUse(tech, { item })`): it flies over the rubble to the player's feet and the pickup takes it, once. The pickup is marked `grabbed` as it leaves the floor (the pickup can take it before its flight ends), so the record says `telegrab`.
+- **Solution B, the launcher and the drill.** The electric technician sets a Kinetic Launcher up at the tunnel's foot (`techSiteSetup`); a fire technician is sent in (`techSiteLaunch`: the pocket site admits **only a fire technician**, "ONLY A FIRE TECHNICIAN GOES IN THERE · PICK ONE", and once, "IT IS IN THERE ALREADY"); it lands at `land` inside, **holds there** (`_pocketHold`) and stays a squad member (no room post); the player is told to order the drill. The drill order (`techRingAct(rubble, 'drill')`, or the rubble's ring) goes to the technician inside; from the ledge it is refused: "IT IS DRILLED FROM INSIDE · SEND A FIRE TECHNICIAN IN WITH THE KINETIC LAUNCHER" (`_techCanReach`: the same component as the work spot). Six hits a second apart; the sixth opens the choke's solid for good (`_techChokeOpen` → `facilitySolidOpen`: the solid is marked `open`, the walk tests skip it, the cells inside become floor, the path caches are cleared): the pocket **joins the ledge**, the hold is let go, the player walks in and takes the vial once. The hits are saved (`rubble`) and a load opens the choke again from them.
+- **Not a third way.** The choke cannot be drilled from outside, nothing but a fire technician is launched in, nothing else moves the rubble. Leaving and coming back changes nothing: the choke stays open and a taken vial stays taken.
+
+## The quest (`js/quests.js`)
+
+The game's quest system is the tutorial director (`js/tutorial.js`): steps with a `done()`, shown one at a time on the objective plate. The quest is the same shape (`QUEST_STEPS.purify`), with a record of **what happened** (`_fp.quests.purify`, saved as `quests`), each state marked once (`questMark`) at the play clock's time (`techClock`) and never unmarked; a later step never skips an earlier one. `questTick` runs every frame; the plate shows the quest after the tutorial and before the class's stage (`facilityDrawObjective` asks `questObjective()`).
+
+| State | Marked when | Where |
+|---|---|---|
+| `discoveredAt` | the player is within `discoverNear` (6 tiles) of the outfall in the Sewers: the culvert's doorway is 4.7 tiles from it, so the reading comes as you arrive ("◈ WATER-QUALITY READING: TOXIC …") | `questTick` |
+| `puzzleAt`, `puzzleHow` | the puzzle's record says solved (`telegrab` / `launch`) | `questTick` ← `puzzleState` |
+| `samplesAt` | three TOXIC ANT SAMPLES and the WATER SAMPLE are in the pack | `questTick` |
+| `turnedInAt` | the ANALYSIS BENCH (the cabinet at the Experiment Lab's west end, `st_analysis_bench` on `cabinet_1`: away from the sequencer and the hood, whose plate a bench beside them would take over) took all four (ANALYSE) | `questBenchUse` |
+| `moduleAt` | the bench sold the PURIFICATION MODULE for **◆800** (BUY; refused with fewer; once: "THE MODULE IS BOUGHT") | `questBenchUse` |
+| `gateAt` | the boss gate's seal broke for the module (`st_sewer_gate`, on the gate; refused without it); the gate solid opens, the boss is **armed** | `questGateUse` |
+| `installedAt`, `cycleLeft` | the module was mounted on the console at the head of the sump (`st_purifier`: a build of `install` = 1200 frames the player stays at; starting it **wakes the boss**; walking away stops it, "BUILD INTERRUPTED", the module is kept); done, the module is taken from the pack and the cycle of `cycle` = 1800 frames begins | `questMountStart`, `questMountUse` (via `buildStart` / `buildComplete`) |
+| `purifiedAt`, `closeLeft` | the cycle ran out: the water is clean; a living boss is **calmed**; the closing line stays `closing` frames, then the quest leaves the plate | `questTick` |
+| `bossStartedAt` | the encounter began (the install, or a hit on the sleeper) | `questBossStarted` ← `bossWake` |
+| `bossResolvedAt`, `bossOutcome` | the encounter ended: `calm` or `defeated`, once | `questBossResolved` |
+| `bossDefeated` | the boss died, whenever (after a calm too: the outcome stays `calm`) | `questBossResolved` |
+
+**The samples.** The Sewers' **brood** (`FP_SPAWN_SEWERS`): toxic ants (`element: "toxic"`, `sewerBrood`), three the first time the player is in the Sewers and one every 1500 frames while there, up to four, on floor the player can reach (never in the shut pocket or the shut cistern), far from the player; the arena's spawner counts only the arena's creatures. A brood ant killed drops a TOXIC ANT SAMPLE where it fell (`questDropFor`, from `onPredatorDeath`), while the bench still wants them: held plus lying on the floor never pass three. The water sample is the puzzle's vial. The bench refuses before all four are in the pack.
+
+**Non-lethal.** The cycle completes whether the boss lives or not. "Do not simply display a dialogue option claiming that the water is purified": the water itself clears as the cycle runs (`questWaterClean`, 0 to 1: the river's and the sump's violet goes to a cold blue-green in `js/facilitysewers.js`; the outfall's pour and the arena's grates stay violet, the tanks still leak), and the module's install costs the module and twenty seconds at the console with the boss awake.
+
+## The boss encounters (`js/bosses.js`)
+
+`BOSS_ENCOUNTERS` is a table: domain (a room), the creature (a species' boss class at a level), its lair, its leash, what wakes it, what calms it. One state machine for every row: **idle** → **armed** (`bossArm`: the boss is spawned asleep in its lair; `bossAsleep`) → **active** (`bossWake`: the install begins, or it is hit; it hunts whoever is in its domain) → **resolved**, `calm` (`bossCalm`: the purification completed with it alive: it walks home, hunts nothing, keeps its lair, defends itself if hit and calms again when its prey is gone) or `defeated` (it died: the game's own kill pays it). A boss left further than its `leash` from its lair lets go, walks home and sleeps again (armed). The creature is the game's own (`spawnCreature`); three flags are all the framework adds: `bossId`, `bossAsleep`, `bossCalm`. `predatorAlarm` (js/predator.js): a sleeping or calm boss hears no alarm and picks no prey; the auto-lock (`targetNearest`), a follower's guard pick and a squad member's own targeting pass it by (`bossPassive`); a tap on it, or an order, still fights it. A calmed boss must get its walking speed back (`_bossLetGo`: the predator parks `moveSpeed` at 0 while it bites and gives it back only when it calms by itself).
+
+- **`sewer_cistern`**: domain `sewers`, THE ANT BOSS: species ant, class boss, element toxic, level 6 (**provisional**: the ant boss block is 500 health, power 60, mandible frenzy; the archive's numbers, when readable, replace these), lair east of the sump, leash 9 tiles, wakes on `install` or `hit`, calms on `purified`.
+- **`nest`**: domain `nest_area`, **not assigned**: the Nest domain's boss and its encounter are not settled in a document readable this session, and the nest area has no entrance. It is a row so that a nest encounter is data when it is settled. Nothing arms it.
+
+**Saved** as `bosses` (state, outcome, started, defeated; the creature itself is not). A load: armed or active → armed again, asleep in its lair, whole (an interrupted encounter begins again); resolved calm and not defeated → a calm boss in its lair; defeated → nothing. The quest's `cycleLeft` and `closeLeft` are frames still to run, so a mid-cycle load goes on from where it was.
+
+## What a player does, in order
+
+1. Go down the culvert behind the arena's north tank. The reading comes as you arrive: PURIFY THE SEWERS 1/5 on the plate.
+2. Kill three of the toxic ants and pick up their samples. Get the water sample: a flux technician's Telegrab from the ledge at the collapsed tunnel, or an electric technician's launcher there and a fire technician sent in to drill the choke.
+3. Take the four to the analysis bench, the cabinet at the west end of the Experiment Lab: ANALYSE, then BUY THE PURIFICATION MODULE ◆800.
+4. Back down: the boss gate at the east end of the south ledge opens for the module. The boss sleeps by the sump.
+5. INSTALL THE MODULE at the console at the head of the sump and stay there twenty seconds: the boss wakes. Hold it off (or kill it); step away and the install stops, nothing lost.
+6. The module runs thirty seconds; the river clears as it goes. At the end the water is clean, and a living boss settles by the sump, calm: the quest is done either way.
+
+## Still open (docs/OPEN-QUESTIONS.md)
+
+The boss's numbers and its name; whether the archive puts a different boss in the Sewers; the Nest's encounter; the Series 2 card list (the plumbing is built, no card is).

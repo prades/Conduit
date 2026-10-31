@@ -37,6 +37,9 @@ function facilitySaveCollect() {
         launchers: typeof techLaunchersSnapshot === "function" ? techLaunchersSnapshot() : [],   // the launcher sites a Kinetic Launcher has been set up at, for good (js/techabilities.js)
         rubble: typeof techRubbleSnapshot === "function" ? techRubbleSnapshot() : {},           // the hits the rubble has taken from a Thermite Drill (drilled through: a hole, for good)
         blight: typeof techBlightSnapshot === "function" ? techBlightSnapshot() : null,          // the play clock, and the Blight Spider's pools on it
+        quests: typeof questSnapshot === "function" ? questSnapshot() : null,                     // the Sewer purification: each of its states (js/quests.js)
+        bosses: typeof bossSnapshot === "function" ? bossSnapshot() : null,                       // each boss encounter's state and outcome (js/bosses.js)
+        puzzles: typeof puzzleSnapshot === "function" ? puzzleSnapshot() : null,                  // each puzzle's solve, and how (js/puzzles.js)
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
@@ -91,6 +94,9 @@ function facilitySaveApply(d) {
     if (d.spots && typeof followerSpotsApply === "function") followerSpotsApply(d.spots);
     if (typeof techLaunchersApply === "function") techLaunchersApply(d.launchers);
     if (typeof techBlightApply === "function") techBlightApply(d.blight);   // the play clock as it was, and the pools on it
+    if (typeof puzzleApply === "function") puzzleApply(d.puzzles);   // the puzzles' records (the choke itself is put back by the rubble's hits above)
+    if (typeof questApply === "function") questApply(d.quests);   // the quest's states (and the boss gate open again when its seal was broken)
+    if (typeof bossApply === "function") bossApply(d.bosses);     // an armed boss asleep in its lair again, a calm one calm; a defeated one gone
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
     if (typeof equipSaveApply === "function") equipSaveApply(d.cards);   // the hand and the player's slots (a game saved before the cards has none: the hand is empty; the followers' own cards came back with them)
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);

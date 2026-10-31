@@ -80,8 +80,24 @@ const ITEMS = {
         lore: "Scorched on one side where the thermite went through. Something has been scratching at the other.",
         stats: ["FROM  THE RUBBLE IN THE ARENA'S SOUTH ROCK", "THREE, ONCE", "USE  NONE YET"],
         use: () => ({ ok: false, why: "NO USE FOR IT YET" }) },
+    // THE SEWER PURIFICATION QUEST (js/quests.js; docs/SEWER-QUEST.md): the samples the Experiment Lab's analysis bench wants (three from the toxic ants of the Sewers, one of the river's water from the collapsed tunnel) and the module it sells
+    toxic_sample: { id: "toxic_sample", name: "TOXIC ANT SAMPLE", cat: "sample", type: "component", stack: 6, col: "#8cff5a", icon: "vial", classes: null,
+        desc: "A vial swabbed from a toxic ant of the Sewers. The analysis bench in the Experiment Lab wants three.",
+        lore: "Whatever the ants drink down there, it comes out of them green. The vial is warm.",
+        stats: ["DROPPED BY  THE TOXIC ANTS IN THE SEWERS", "NEEDED  3, AT THE ANALYSIS BENCH (EXPERIMENT LAB)", "PART OF  THE SEWER PURIFICATION"],
+        use: () => ({ ok: false, why: "TAKE IT TO THE ANALYSIS BENCH IN THE EXPERIMENT LAB" }) },
+    sewer_sample: { id: "sewer_sample", name: "WATER SAMPLE", cat: "sample", type: "component", stack: 1, col: "#c77dff", icon: "vial", classes: null,
+        desc: "A sealed vial of the sewer river's water, from the collapsed tunnel. The analysis bench wants it with the ant samples.",
+        lore: "Violet, and it will not settle. Somebody sealed it and never came back for it.",
+        stats: ["FROM  THE COLLAPSED TUNNEL IN THE SEWERS", "NEEDED  1, AT THE ANALYSIS BENCH (EXPERIMENT LAB)", "PART OF  THE SEWER PURIFICATION"],
+        use: () => ({ ok: false, why: "TAKE IT TO THE ANALYSIS BENCH IN THE EXPERIMENT LAB" }) },
+    purification_module: { id: "purification_module", name: "PURIFICATION MODULE", cat: "part", type: "tool", stack: 1, col: "#5ff7e0", icon: "core", classes: null,
+        desc: "A filtration module built in the Experiment Lab. It mounts on the cistern's console in the Sewers, and cleans the river while it runs.",
+        lore: "A canister of membranes and a pump, and a chalk mark on it: THE DRAIN. Heavier than it looks.",
+        stats: ["BOUGHT AT  THE ANALYSIS BENCH, ◆" + 800, "INSTALLED AT  THE PURIFIER MOUNT: THE CISTERN, SEWERS", "THE INSTALL  STAY AT THE MOUNT WHILE IT MOUNTS"],
+        use: () => ({ ok: false, why: "INSTALL IT AT THE PURIFIER MOUNT IN THE SEWERS' CISTERN" }) },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module"];
 
 // ── the pack ──
 let playerInv = {};

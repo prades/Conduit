@@ -72,6 +72,8 @@ const SUITES = [
     ['a squad member\'s card on the fly: ALL instead of the element picker, a tap picks a member, INDEX and DISMISS FROM SQUAD', 'squadfly.js'],
     ['the technicians\' abilities: one table, one way in; the Kinetic Launcher\'s throw, its launcher site, the Arena Catwalk and its broken section', 'techabilities.js'],
     ['the other five technicians\' Level 1 abilities: the Photonic Shield, the Thermite Drill and the arena\'s rubble, the Frost Patch, the Blight Spider and the play clock, Telegrab', 'techlevel1.js'],
+    ['the Sewer purification: the water-sample puzzle (Telegrab, or the launcher and the drill), the quest\'s states, the toxic brood and its samples, the bench and the ◆800 module, the boss gate, the mount and the cycle, the boss (calm alive, or defeated), the saves', 'sewerquest.js'],
+    ['Series 2: the plumbing for the species cards and the class cards (the pack in the list with no numbers, fits, bonuses that add and come off, the ability-cooldown stat, the saves, the roll and the shelf when it is on sale)', 'series2.js'],
     ['the Command Center as a carousel', 'carousel.js'],
     ['facility play',            'facilityplay.js'],
     ['facility map',             'facility.js'],

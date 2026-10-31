@@ -20,6 +20,8 @@
 //   THE HAND  the card types taken into a run, up to EQUIP.startPick, chosen from the collection when it begins (js/cardsui.js). A card put back out of the hand comes off everyone, unless it was found as well.
 //   PACK 1    ◆EQUIP_PACK.price buys a BOOSTER PACK: 4 Element cards, one reserved for a Precision, the others rolled over Unrefined, Refined and Precision by weight; none twice in a pack. What a pack deals is FOUND (equipFound): a card
 //             to wear at once, for this run only (NEW GAME clears it) unless EQUIP.unlockCost shards keep it for good. Only the hand and what is found can be worn.
+//   SERIES 2  a second pack (EQUIP_PACK2, in EQUIP_PACKS with Pack 1) for the SPECIES cards (the subclass kind) and CLASS cards of the "Series 2" brief: its plumbing is here (the roll, the sale, the shelf and the sheet take any pack of
+//             the list), its card list (EQUIP_SERIES2) and its numbers are not, so it is not on sale (equipPackOnSale) until they are. A technician's ABILITY COOLDOWN is a stat a card can name (EQUIP_STATS.cooldown).
 //   LEAVING   a respawn keeps a follower's cards; EXILE, falling for good (its body is restored with empty slots) and a RE-ROLL empty the slots. Nothing is lost: the card is still in the hand.
 //   SAVED     additively (js/facilitysave.js, FS.version stays 1, so every save made before the cards still loads): a follower's record carries `cards`, the run's save carries `cards: { hand, player, found }`.
 //   TICK      equipTick takes off, every half second, whatever no longer fits (a role switched, a card out of the hand): nothing else has to know the cards exist.
@@ -78,11 +80,11 @@ const EQUIP_PACK1 = [
     ["repulsor_pulse",     "REPULSOR PULSE",     "core",     "precision", { proc: { kind: "knockback", chance: 0.15, push: 0.22 } }],
 ];
 const EQUIP_FPS = 60;   // the game's frames in a second (every timer in it is in frames: a 3 second burn is 180)
-const _EQUIP_STAT_WORDS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", attackSpeed: "ATTACK SPEED", defense: "DEFENSE", maxHealth: "MAXIMUM HP", damage: "DAMAGE DEALT, ALL ATTACKS" };
+const _EQUIP_STAT_WORDS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", attackSpeed: "ATTACK SPEED", defense: "DEFENSE", maxHealth: "MAXIMUM HP", damage: "DAMAGE DEALT, ALL ATTACKS", cooldown: "ABILITY COOLDOWN" };
 const _equipPct = n => (Math.round(n * 1000) / 10) + "%", _equipSec = n => (Math.round(n * 10) / 10) + (n === 1 ? " SECOND" : " SECONDS");
 // what a card says, made from its numbers (so that tuning a number tunes the words)
 function equipEffectText(fx) {
-    if (fx && fx.bonus) { const k = Object.keys(fx.bonus)[0]; return "+" + _equipPct(fx.bonus[k]) + " " + (_EQUIP_STAT_WORDS[k] || String(k).toUpperCase()); }
+    if (fx && fx.bonus) { const k = Object.keys(fx.bonus)[0]; return (k === "cooldown" ? "−" : "+") + _equipPct(fx.bonus[k]) + " " + (_EQUIP_STAT_WORDS[k] || String(k).toUpperCase()); }   // (a cooldown bonus is a share taken OFF)
     const p = fx && fx.proc; if (!p) return "";
     const hit = _equipPct(p.chance) + " PER HIT TO ";
     if (p.kind === "burn") return hit + "BURN: " + p.dps + " DAMAGE A SECOND FOR " + _equipSec(p.seconds);
@@ -94,6 +96,12 @@ function equipEffectText(fx) {
     return "";
 }
 EQUIP_PACK1.forEach(([id, name, element, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind: "element", match: element, rarity, text: equipEffectText(fx), pack: "pack1" }, fx); });
+// SERIES 2 (ASKED, the "Series 2" brief, 2026-10-31): two categories of card, SPECIES CARDS (the game's `subclass` kind: Jelly, Mollusk, Elemental, Crustacean or Drone, a tag every evolved form has: EQUIP_FORM_SUBCLASS) and CLASS CARDS
+// (the `class` kind: Brawler, Mage or Technician), no hybrid identities, over the six rarities. THE LIST IS NOT HERE YET: the archive that holds it could not be read this session (docs/OPEN-QUESTIONS.md), and no card is invented in its
+// place. A Series 2 card is a row of this table, in the shape of Pack 1's rows with its kind and its match: [id, name, kind ("subclass" | "class"), match (a subclass id | brawler | sniper | camper), rarity, fx]; a row added here is dealt by
+// the Series 2 pack (EQUIP_PACK2, below), worn by what it fits (equipFit: a species card by a follower of that subclass, a class card by one of that role), summed with the others (equipBonus), saved and loaded with nothing else to change.
+const EQUIP_SERIES2 = [];
+EQUIP_SERIES2.forEach(([id, name, kind, match, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind, match, rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
 // The test cards, behind ?cards: one of each kind, a spread of rarities, and none does anything.
 const EQUIP_TEST_CARDS = {};
 [   ["test_fire", "TEST · FIRE", "element", "fire", "unrefined"], ["test_ice", "TEST · ICE", "element", "ice", "refined"],
@@ -151,7 +159,7 @@ function equipWriteOwned() {
 function equipUnlockWhyNot(id) {
     const c = equipCard(id); if (!c) return "NO SUCH CARD";
     if (equipOwns(id)) return "ALREADY UNLOCKED";
-    if (c.pack && EQUIP_PACK.unlockNeedsFind && !equipIsFound(id)) return "FIND IT IN A PACK FIRST";
+    { const pk = equipPackOf(c); if (pk && pk.unlockNeedsFind && !equipIsFound(id)) return "FIND IT IN A PACK FIRST"; }
     const have = typeof shardCount === "number" ? shardCount : 0;
     return have < EQUIP.unlockCost ? "NEED ◆" + (EQUIP.unlockCost - have) + " MORE" : null;
 }
@@ -244,7 +252,9 @@ function equipValid(f) {
 //   attackSpeed    ATTACK SPEED      the rest between its attacks (js/combat.js followerRest: the basic, elemental and special attacks, and the Mage's shot; a signature move and a technician's ability keep their own timers)
 //   damage         DAMAGE DEALT      a share of every hit it deals, whatever the attack (js/helpers.js applyDamage). The game has no damage categories (its attacks are ELEMENTAL and sort only into the basic hit, the element's
 //                                    "physical" and its special), so "across all damage categories" is every hit it lands: a burn's own tick has no attacker, so it is not one.
-const EQUIP_STATS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", defense: "DEFENSE", maxHealth: "MAXIMUM HEALTH", attackSpeed: "ATTACK SPEED", damage: "DAMAGE DEALT" };
+//   cooldown       ABILITY COOLDOWN  the share taken OFF a technician's ability cooldown (js/techabilities.js techCooldown, at every place a cooldown is set): two cards of +0.25 take half off; never more than nine tenths. A card of
+//                                    this stat on a brawler or a mage does nothing (they have no ability cooldown), as the Series 2 class cards for technicians need it. The first wait after joining the squad is not a cooldown.
+const EQUIP_STATS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", defense: "DEFENSE", maxHealth: "MAXIMUM HEALTH", attackSpeed: "ATTACK SPEED", damage: "DAMAGE DEALT", cooldown: "ABILITY COOLDOWN" };
 // a follower's total bonus to one stat: ADDITIVE over the cards it wears (two +50% are +1.0), a card counted once, only a card that exists and fits it. Whether the card is in the hand is not asked here: the stats are made before the
 // hand is put back on a load (equipSaveApply), and a card out of the hand comes off at once or within half a second (equipHandRemove, equipTick), which makes the stats again.
 function equipBonus(f, stat) {
@@ -351,22 +361,38 @@ function equipSaveApply(d) {
 // All of it is in EQUIP_PACK, to tune. A pack takes its cards from the cards that name it (c.pack) and are of its kinds and rarities, so no other card can come out of it; a rarity that has run out of cards in this pack is left out of the roll
 // (the weights of the others are used as they are), and a pack that cannot be made (too few cards, none of the reserved rarity) is not sold. A card you already have (in the hand, or found this run) is a DUPLICATE: it pays credits (the market, below) and is not found again.
 const EQUIP_PACK = {
-    id: "pack1", price: 100, size: 4,
+    id: "pack1", name: "PACK 1", price: 100, size: 4,
     kinds: ["element"],
     rarities: { unrefined: 60, refined: 30, precision: 10 },   // the weight of each eligible rarity for a slot that is rolled
     guaranteed: { rarity: "precision", count: 1 },             // the slots reserved for a rarity, filled first
     keep: "run",                                               // what a dealt card becomes: "run" (FOUND: worn at once, this run only) or "forever" (owned for good at once)
     unlockNeedsFind: true,                                     // a card a pack deals has to be found before EQUIP.unlockCost shards can keep it for good
 };
+// THE SERIES 2 PACK (the "Series 2" brief, 2026-10-31): the pack that deals the Series 2 cards (EQUIP_SERIES2: species cards and class cards), in the same shape as Pack 1. Its price, its odds and its reserved slot are NOT SET
+// (null): the brief gives the two categories and the six rarities and leaves the numbers to the archive, which could not be read this session (docs/OPEN-QUESTIONS.md). A pack that is not on sale (equipPackOnSale: a price, odds and
+// a reserved slot) is not rolled, not sold ("NOT ON SALE YET") and not shown on the CARDS sheet; its cards, when they are rows of EQUIP_SERIES2, are still worn, found, unlocked and saved like any card. Every pack is in EQUIP_PACKS:
+// the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
+const EQUIP_PACK2 = {
+    id: "series2", name: "SERIES 2", price: null, size: 4,
+    kinds: ["subclass", "class"],                              // species cards (the subclass kind) and class cards; never an element card, never a universal one
+    rarities: null,                                            // NOT SET: the weight of each of the six rarities, when the archive gives them
+    guaranteed: null,                                          // NOT SET: the slot reserved for a rarity, if Series 2 has one
+    keep: "run", unlockNeedsFind: true,
+};
+const EQUIP_PACKS = [EQUIP_PACK, EQUIP_PACK2];
+function equipPackById(id) { return EQUIP_PACKS.find(p => p.id === id) || null; }
+function equipPackOf(c) { return c && c.pack ? equipPackById(c.pack) : null; }   // the pack a card is dealt by, or null (the Crystalline six)
+function equipPackOnSale(pack) { return !!pack && Number.isFinite(pack.price) && pack.price >= 0 && !!pack.rarities && !!pack.guaranteed && pack.size > 0; }
+function equipPacksOnSale() { return EQUIP_PACKS.filter(equipPackOnSale); }
 // a small seeded generator (mulberry32), so a pack can be rolled the same twice: the tests give a seed; the game gives none and uses Math.random
 function equipRng(seed) {
     let a = seed >>> 0;
     return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
-function equipPackPool(pack) { pack = pack || EQUIP_PACK; return Object.values(equipCards()).filter(c => !c.test && c.pack === pack.id && pack.kinds.indexOf(c.kind) >= 0 && pack.rarities[c.rarity] > 0); }
-// the ids a pack deals (in no set order), or null when it cannot be made
+function equipPackPool(pack) { pack = pack || EQUIP_PACK; return Object.values(equipCards()).filter(c => !c.test && c.pack === pack.id && pack.kinds.indexOf(c.kind) >= 0 && !!pack.rarities && pack.rarities[c.rarity] > 0); }
+// the ids a pack deals (in no set order), or null when it cannot be made (nor from a pack that is not on sale)
 function equipPackRoll(seed, pack) {
-    pack = pack || EQUIP_PACK; const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random;
+    pack = pack || EQUIP_PACK; if (!equipPackOnSale(pack)) return null; const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random;
     const pool = equipPackPool(pack); if (pool.length < pack.size) return null;
     const left = {}; for (const c of pool) (left[c.rarity] = left[c.rarity] || []).push(c);
     const out = [], take = r => { const l = left[r]; if (!l || !l.length) return false; out.push(l.splice(Math.min(l.length - 1, Math.floor(rnd() * l.length)), 1)[0]); return true; };   // (a card leaves the pool once it is taken: never twice)
@@ -382,6 +408,7 @@ function equipPackRoll(seed, pack) {
 // why a pack cannot be bought now, or null when it can
 function equipPackWhyNot(pack) {
     pack = pack || EQUIP_PACK;
+    if (!equipPackOnSale(pack)) return "NOT ON SALE YET";   // (Series 2, until its numbers are given)
     const have = typeof shardCount === "number" ? shardCount : 0, pool = equipPackPool(pack);
     if (have < pack.price) return "NEED ◆" + (pack.price - have) + " MORE";
     if (pool.length < pack.size || pool.filter(c => c.rarity === pack.guaranteed.rarity).length < pack.guaranteed.count) return "NO CARDS TO FIND";
@@ -400,7 +427,7 @@ function equipPackOpen(seed, pack) {
     }
     if (pack.keep === "forever") equipWriteOwned();
     equipCredits += credits;
-    equipPackLast = { ids: ids.slice(), fresh, dupes, credits };
+    equipPackLast = { pack: pack.id, ids: ids.slice(), fresh, dupes, credits };
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "PACK OPENED · " + ids.length + " CARDS", color: "#ffe733", life: 140, vy: -0.25, size: 14 });
     return ids;
 }
@@ -433,17 +460,19 @@ function equipShelfSync() {
 }
 function equipCreditsText(n) { return String(Math.round(n * 100) / 100); }   // credits as they are, a half included: 22.5, 45 (the owner: "show the half")
 function equipMarketValue(c) { return c && EQUIP_MARKET.values[c.rarity] || 0; }
-function equipDuplicate(id) { return equipInHand(id) || equipIsFound(id) || (EQUIP_PACK.keep === "forever" && equipOwns(id)); }   // a card you already have this run
-function equipShelfPool() { return equipPackPool().filter(c => equipMarketValue(c) > 0 && !equipInHand(c.id) && !equipIsFound(c.id)); }   // (the cards a pack deals, that you do not have this run)
+function equipDuplicate(id) { const pk = equipPackOf(equipCard(id)); return equipInHand(id) || equipIsFound(id) || (!!pk && pk.keep === "forever" && equipOwns(id)); }   // a card you already have this run
+function equipShelfPool() { const seen = new Set(); return equipPacksOnSale().flatMap(p => equipPackPool(p)).filter(c => !seen.has(c.id) && seen.add(c.id) && equipMarketValue(c) > 0 && !equipInHand(c.id) && !equipIsFound(c.id)); }   // (the cards the packs on sale deal, that you do not have this run)
 function equipShelfIds() { const ok = new Set(equipShelfPool().map(c => c.id)); return equipShelf.ids.filter(id => ok.has(id)); }   // (on sale now: a card that came into the hand, or was found, has left the shelf)
-// a new shelf: up to EQUIP_MARKET.shelf different cards from the pool, with the pack's own odds. Each place on the shelf rolls a rarity by EQUIP_PACK.rarities (60 / 30 / 10 for Pack 1; a rarity with no card left is left out of the roll, as in a
+// the shelf's odds: each rarity's weight is the first on-sale pack's that deals it (Pack 1's 60 / 30 / 10 today; a Series 2 rarity Pack 1 has not, its own, when it is on sale)
+function equipShelfWeights() { const w = {}; for (const p of equipPacksOnSale()) for (const r of Object.keys(p.rarities)) if (!(r in w) && p.rarities[r] > 0) w[r] = p.rarities[r]; return w; }
+// a new shelf: up to EQUIP_MARKET.shelf different cards from the pool, with the packs' own odds. Each place on the shelf rolls a rarity by equipShelfWeights (60 / 30 / 10 for Pack 1; a rarity with no card left is left out of the roll, as in a
 // pack), then takes one of that rarity's cards at random. Unlike a pack it keeps no place for a Precision card. A seed makes it the same twice (the tests).
 function equipShelfDeal(seed) {
-    const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random, left = {}, ids = [];
+    const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random, left = {}, ids = [], W = equipShelfWeights();
     for (const c of equipShelfPool()) (left[c.rarity] = left[c.rarity] || []).push(c);
     while (ids.length < EQUIP_MARKET.shelf) {
-        const rs = Object.keys(left).filter(r => left[r].length), total = rs.reduce((n, r) => n + EQUIP_PACK.rarities[r], 0); if (!rs.length) break;
-        let x = rnd() * total, pick = rs[rs.length - 1]; for (const r of rs) { if (x < EQUIP_PACK.rarities[r]) { pick = r; break; } x -= EQUIP_PACK.rarities[r]; }
+        const rs = Object.keys(left).filter(r => left[r].length && W[r] > 0), total = rs.reduce((n, r) => n + W[r], 0); if (!rs.length) break;
+        let x = rnd() * total, pick = rs[rs.length - 1]; for (const r of rs) { if (x < W[r]) { pick = r; break; } x -= W[r]; }
         const l = left[pick]; ids.push(l.splice(Math.min(l.length - 1, Math.floor(rnd() * l.length)), 1)[0].id);
     }
     equipShelf = { ids, until: _equipNow() + EQUIP_MARKET.every }; return ids.slice();

@@ -85,7 +85,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const M = J('FACILITY_MAP'), d = id => M.decor.find(x => x.id === id), S = M.rooms.find(r => r.id === 'sewers'), minX = Math.min(...S.polygon.map(q => q[0]));
         ok(d('sewer_culvert_up').kind === 'portal_door' && d('sewer_culvert_up').culvert && d('sewer_culvert_up').a[0] === minX, 'the culvert up is not at the west end');
         ok(d('sewer_outfall').kind === 'outfall' && d('sewer_outfall').a[0] === minX + 20, 'the outfall is not on the river\'s west wall'); same(d('sewer_bridge').kind, 'bridge_deck', 'the bridge'); same(d('sewer_bridge_broken').kind, 'bridge_broken', 'the broken bridge');
-        same(d('sewer_collapse').kind, 'collapse', 'the collapsed tunnel'); same(d('sewer_hatch').kind, 'sealed_hatch', 'the sealed hatch'); ok(M.props.some(p => p.id === 'sewer_sump' && p.kind === 'pool' && p.shape === 'circle'), 'no sump');
+        ok(!d('sewer_collapse'), 'the collapsed tunnel is no longer a wall decoration: it is a pocket of floor behind a choke of rubble (tests/sewerquest.js)'); ok(M.props.some(p => p.id === 'sewer_choke' && p.kind === 'rubble') && M.rubble.some(r => r.id === 'rubble_sewer_choke' && r.solid === 'sewer_choke' && r.inside), 'the choke');
+        same(d('sewer_hatch').kind, 'sealed_hatch', 'the sealed hatch'); ok(M.props.some(p => p.id === 'sewer_sump' && p.kind === 'pool' && p.shape === 'circle'), 'no sump'); ok(M.props.some(p => p.id === 'purifier_mount' && p.kind === 'console'), 'the purifier mount');
         const mine = M.decor.filter(x => x.room === 'sewers'); ok(mine.filter(x => x.kind === 'light').length >= 3 && mine.some(x => x.kind === 'pipe') && mine.some(x => x.kind === 'wall_light') && mine.some(x => x.kind === 'moss'), 'lights, pipes, damp');
         same(J(`facilityValidateDressing(_fp.F).length`), 0, 'the dressing does not validate');
     });
@@ -113,7 +114,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 grates: by('grate').length, glass: by('glass').length, mist: by('mist').length, props: _fp.items.filter(i => i.fp === 'prop' && FP_SELF_SOLIDS.has(i.kind)).length, self: [...FP_SELF_SOLIDS].sort().join() }; })()`);
         same(r.water, 1, 'water items'); same(r.span, true, 'the water is not a long item'); same(r.low, true, 'the water is not drawn first in its room'); same(r.room, 'sewers', 'its room'); same(r.band && r.band[3] - r.band[1], 6, 'the band'); same(r.pools, 1, 'the sump');
         same(r.rails, r.railLen * 2, 'rail pieces'); same(r.railSides, '-1,1', 'both sides'); same(r.stumps, 2, 'stumps'); same(r.gates, 4, 'gates'); same(r.boss, 1, 'the boss gate'); ok(r.grates >= 2, 'grate pieces ' + r.grates); same(r.glass, 2, 'sight glasses'); same(r.mist, 2, 'mists');
-        same(r.props, 0, 'water or gates drawn as furniture'); same(r.self, 'boss_gate,gate,pool,river', 'the kinds that draw themselves');
+        same(r.props, 0, 'water or gates drawn as furniture'); same(r.self, 'boss_gate,gate,pool,river,rubble', 'the kinds that draw themselves (rubble: a choke, drawn by the rubble it is the solid of: tests/sewerquest.js)');
     });
     check('the bridge\'s tiles are a grating with nothing under it (the game\'s tile is not drawn there, and its floor has no base, only bars), and the ledges have a lit lip where they drop into the water', () => {
         const r = J(`(function(){ const d = _fp.F.decor.find(x => x.id === 'sewer_bridge').rect, tiles = world.filter(t => t.x > d[0] && t.x < d[2] && t.y > d[1] && t.y < d[3]), ops = tiles.map(t => _fp.floorOps.get(t.x + ',' + t.y) || []);
@@ -123,13 +124,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.lip, true, 'no lip on the north ledge\'s edge'); same(r.lipS, true, 'no lip on the south ledge\'s edge');
         ok(/if \(obj\.deck\) \{[^}]*\}\s*else if \(_spr\)/.test(rd('js/game.js')), 'the game still draws its tile under the grating');
     });
-    check('everything draws: the water, rails, stumps, gates, grates, sight glasses and mists, the culvert on both sides, the outfall, the collapsed tunnel and the sealed hatch, lit and through the dark room\'s dimmed pen, with no sheet; the long water item is on screen from anywhere along it and off it from the arena', () => {
-        const r = J(`(function(){ let err = null, n = 0; const its = _fp.items.filter(i => i.fp === 'sewer' || (i.fp === 'wdecor' && (i.culvert || ['outfall', 'collapse', 'sealed_hatch'].includes(i.kind))));
+    check('everything draws: the water, rails, stumps, gates, grates, sight glasses and mists, the culvert on both sides, the outfall, the choked tunnel and the sealed hatch, lit and through the dark room\'s dimmed pen, with no sheet; the long water item is on screen from anywhere along it and off it from the arena', () => {
+        const r = J(`(function(){ let err = null, n = 0; const its = _fp.items.filter(i => i.fp === 'sewer' || (i.fp === 'wdecor' && (i.culvert || (i.room === 'sewers' && ['outfall', 'rubble', 'sealed_hatch'].includes(i.kind)))));
             try { for (const it of its) { drawFacilityItem(it); n++; } facilityPower('sewers', false); for (const it of its) drawFacilityItem(it); facilityPower('sewers', true); } catch (e) { err = e.message + ' @ ' + n; }
             const W = _fp.items.find(i => i.what === 'water'), at = (x, y) => { player.visualX = x; player.visualY = y; return _fpSpanVisible(W); }, keep = [player.visualX, player.visualY], b = W.band;
             const vis = [at(b[0] + 1, (b[1] + b[3]) / 2), at((b[0] + b[2]) / 2, (b[1] + b[3]) / 2), at(b[2] - 1, (b[1] + b[3]) / 2), at(crystal.x, crystal.y)]; player.visualX = keep[0]; player.visualY = keep[1];
             return { err, n, culverts: its.filter(i => i.culvert).map(i => i.room).sort().join(), kinds: [...new Set(its.filter(i => i.fp === 'wdecor').map(i => i.kind))].sort().join(), vis: vis.join() }; })()`);
-        same(r.err, null, 'drawing threw'); ok(r.n >= 30, 'items drawn ' + r.n); same(r.culverts, 'arena,sewers', 'the culverts'); same(r.kinds, 'collapse,outfall,portal_door,sealed_hatch', 'the wall pieces'); same(r.vis, 'true,true,true,false', 'the water on screen along it, and off it from the crystal');
+        same(r.err, null, 'drawing threw'); ok(r.n >= 30, 'items drawn ' + r.n); same(r.culverts, 'arena,sewers', 'the culverts'); same(r.kinds, 'outfall,portal_door,rubble,sealed_hatch', 'the wall pieces (the choke of rubble is drawn as the arena\'s rubble is)'); same(r.vis, 'true,true,true,false', 'the water on screen along it, and off it from the crystal');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

@@ -6,6 +6,7 @@
 // (js/facilityspawn.js facilityScrapDrop), which the Armory's terminal turns into ammunition. A nymph is worth nothing (REPORTED, long ago: "make nymphs not grant any points").
 function onPredatorDeath(predator) {
     if (typeof facilityScrapDrop === "function") facilityScrapDrop(predator);
+    if (typeof questDropFor === "function") questDropFor(predator);   // a toxic ant of the Sewers: an ANT SAMPLE while the analysis bench wants them (js/quests.js)
     const px = (predator.x - player.visualX - (predator.y - player.visualY)) * TILE_W + canvas.width / 2;
     const py = (predator.x - player.visualX + (predator.y - player.visualY)) * TILE_H + canvas.height / 2;
     if (!isNymph(predator)) {

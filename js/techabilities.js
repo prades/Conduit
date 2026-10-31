@@ -109,6 +109,8 @@ function _techMember(f) { return typeof partyIsMember === "function" ? partyIsMe
 // ── who has which ability, and when it can be used ──
 function techAbilityOf(f) { return f && f.isFollower && !f.isClone && f.role === "camper" ? TECH_ABILITIES[f.element] || null : null; }
 function techReadyIn(f) { return Math.max(0, ((f && f._abReadyAt) || 0) - _techFrame()); }   // frames until it can use its ability again
+// a technician's cooldown after its equip cards (js/cards.js EQUIP_STATS.cooldown: the share the cards it wears take off it, added over them; never more than nine tenths off). Every place a cooldown is set goes through here.
+function techCooldown(f, base) { const b = typeof equipBonus === "function" ? equipBonus(f, "cooldown") : 0; return Math.max(1, Math.round(base * (1 - Math.min(0.9, Math.max(0, b || 0))))); }
 function techAbilityCan(f) {
     const ab = techAbilityOf(f); if (!ab) return { ok: false, why: "NO ABILITY" };
     if (f.dead || f.returningToCrystal || f._flight) return { ok: false, why: "NOT HERE" };
@@ -157,12 +159,15 @@ function techSiteSetup(s) {
     tech._abBusy = { kind: "setup", site: s.id }; tech._siteWork = { site: s.id, t0: _techFrame(), workAt: null }; tech.job = null; tech.attackOrder = null;
     return { ok: true, tech };
 }
+// the technician a pocket site is for (its `only` ability): "A FIRE TECHNICIAN"
+function _techOnlyName(s) { const el = s && s.only ? Object.keys(TECH_ABILITIES).find(k => TECH_ABILITIES[k].id === s.only) : null; return el ? "A " + el.toUpperCase() + " TECHNICIAN" : "A FOLLOWER"; }
 function techSiteLaunch(s, who) {
     if (!s || !techLauncherAt(s.id)) return { ok: false, why: "NO LAUNCHER HERE YET" };
     if (_techSiteBusy(s)) return { ok: false, why: "THE LAUNCHER IS IN USE" };
-    if (!_techThrowable(who, null)) return { ok: false, why: "PICK A FOLLOWER TO SEND UP" };
-    if (_techComp(who.x, who.y) === _techComp(s.land[0], s.land[1])) return { ok: false, why: "IT IS UP THERE ALREADY" };
-    if (typeof partyRoomFree === "function" && !partyRoomFree(s.to)) return { ok: false, why: "THE " + String(s.label || s.to).toUpperCase() + " IS FULL · " + partyRoomCap(s.to) + " OF " + partyRoomCap(s.to) };   // (a room's cap: js/party.js)
+    if (!_techThrowable(who, null)) return { ok: false, why: "PICK " + _techOnlyName(s) + " TO SEND " + (s.pocket ? "IN" : "UP") };
+    if (s.only && !(techAbilityOf(who) && techAbilityOf(who).id === s.only)) return { ok: false, why: "ONLY " + _techOnlyName(s) + " GOES IN THERE · PICK ONE" };   // (a pocket is for the ability that opens it: anyone else would be shut in)
+    if (_techComp(who.x, who.y) === _techComp(s.land[0], s.land[1])) return { ok: false, why: s.pocket ? "IT IS IN THERE ALREADY" : "IT IS UP THERE ALREADY" };
+    if (!s.pocket && typeof partyRoomFree === "function" && !partyRoomFree(s.to)) return { ok: false, why: "THE " + String(s.label || s.to).toUpperCase() + " IS FULL · " + partyRoomCap(s.to) + " OF " + partyRoomCap(s.to) };   // (a room's cap: js/party.js; a pocket is no post)
     who._launchLoad = { kind: "site", site: s.id, t0: _techFrame() }; who.job = null; who.attackOrder = null;
     _techSay("⚡ " + _techName(who) + " TO THE LAUNCHER", "#ffe733");
     return { ok: true };
@@ -202,7 +207,7 @@ function techShieldAt(tech, foe) {
     const W = { id: ++_techShieldN, by: tech, x: P.cx, y: P.cy, nx: P.nx, ny: P.ny, u0: P.u0, u1: P.u1, t0: f0, until: f0 + S.life, hits: [] };
     techShields.push(W);
     if (typeof actors !== "undefined") for (const a of actors) if (_techStops(a)) _techShieldOut(W, a);   // (one caught on its line is put out on its own side)
-    tech._abReadyAt = f0 + S.cooldown; tech._shieldHold = { id: W.id, x: P.hx, y: P.hy }; tech.attackOrder = null; tech.job = null;
+    tech._abReadyAt = f0 + techCooldown(tech, S.cooldown); tech._shieldHold = { id: W.id, x: P.hx, y: P.hy }; tech.attackOrder = null; tech.job = null;
     _techSay("◈ PHOTONIC SHIELD · " + Math.round(S.life / 60) + " S", "#5ff7e0");
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: W.x, y: W.y, radius: 1.2, color: "#5ff7e0", life: 26 });
     return { ok: true, shield: W };
@@ -286,8 +291,12 @@ function techRubbleSnapshot() { if (typeof _fp === "undefined" || !_fp) return {
 // a saved game's rubble: the hits it had taken; one drilled through has its hole, and its rocks (the save's `taken` then puts away the ones that were picked up: js/facilitysave.js runs this first)
 function techRubbleApply(o) {
     if (typeof _fp === "undefined" || !_fp) return; _fp.rubbleHits = {};
-    for (const r of _techRubbles()) { const n = o && Number.isFinite(o[r.id]) ? Math.max(0, Math.min(TECH_AB.drill.hits, o[r.id] | 0)) : 0; if (n) _fp.rubbleHits[r.id] = n; if (n >= TECH_AB.drill.hits) _techRocksOut(r, true); }
+    for (const r of _techRubbles()) { const n = o && Number.isFinite(o[r.id]) ? Math.max(0, Math.min(TECH_AB.drill.hits, o[r.id] | 0)) : 0; if (n) _fp.rubbleHits[r.id] = n; if (n >= TECH_AB.drill.hits) { _techChokeOpen(r); _techRocksOut(r, true); } }
 }
+// a CHOKE drilled through (rubble with a `solid`): the solid that filled the passage's mouth is taken out of the way for good (js/facilityplay.js facilitySolidOpen); nothing for rubble against a wall
+function _techChokeOpen(r) { return !!(r && r.solid && typeof facilitySolidOpen === "function" && facilitySolidOpen(r.solid)); }
+// can this technician get to the rubble's work spot from where it stands? A choke drilled from INSIDE has its work spot in the pocket: from the ledge the order is refused, and says how to get in
+function _techCanReach(f, r) { const wc = _techComp(r.work[0], r.work[1]), fc = _techComp(f.x, f.y); return wc === undefined || fc === wc; }
 // where its rocks lie: in front of it, round the spot the technician drills from
 function _techRockSpots(r) {
     const dx = r.work[0] - r.at[0], dy = r.work[1] - r.at[1], L = Math.hypot(dx, dy) || 1, nx = dx / L, ny = dy / L, tx = -ny, ty = nx, out = [];
@@ -315,12 +324,13 @@ function techRubbleDrill(r) {
     if (!r) return { ok: false, why: "NO RUBBLE HERE" };
     if (techRubbleOpen(r)) return { ok: false, why: "IT IS DRILLED THROUGH" };
     const techs = _techFireTechs(); if (!techs.length) return { ok: false, why: "THE THERMITE DRILL NEEDS A FIRE TECHNICIAN IN YOUR SQUAD" };
-    const t = techs.find(f => techAbilityCan(f).ok) || techs[0], res = techAbilityUse(t, { rubble: r }); if (res.ok) res.tech = t;
+    const t = techs.find(f => techAbilityCan(f).ok && _techCanReach(f, r)) || techs.find(f => techAbilityCan(f).ok) || techs[0], res = techAbilityUse(t, { rubble: r }); if (res.ok) res.tech = t;   // (the one that can get there first)
     return res;
 }
 function _techDrillRubble(tech, r) {
     if (techRubbleOpen(r)) return { ok: false, why: "IT IS DRILLED THROUGH" };
     if (_techDrilling(r)) return { ok: false, why: "IT IS BEING DRILLED" };
+    if (!_techCanReach(tech, r)) return { ok: false, why: r.inside ? "IT IS DRILLED FROM INSIDE · SEND A FIRE TECHNICIAN IN WITH THE KINETIC LAUNCHER" : "IT CANNOT GET TO THE RUBBLE FROM HERE" };   // (the choke of a tunnel: the way in is the launcher)
     _techDrillStart(tech, { rubble: r.id }); return { ok: true };
 }
 function techDrillFoe(tech, foe) {
@@ -346,12 +356,12 @@ function _techDrillTick(f, f0) {
             W.workAt = f0; W.next = f0;
         }
         if (f0 < W.next) return;
-        if (!W.hits) f._abReadyAt = f0 + T.cooldown;   // (the cooldown starts at its first hit)
+        if (!W.hits) f._abReadyAt = f0 + techCooldown(f, T.cooldown);   // (the cooldown starts at its first hit)
         W.hits++; W.next = f0 + T.every; const H = _techRubbleHits(); H[r.id] = (H[r.id] || 0) + 1;
         _techDrillFx(r.at[0], r.at[1]);
         if (H[r.id] >= T.hits) {
-            const n = _techRocksOut(r, false); _techDrillStop(f, null);
-            _techSay("✹ THE RUBBLE IS DRILLED THROUGH · A DARK HOLE" + (n ? " · " + n + " ROCKS" : ""), "#ff9a4a");
+            const opened = _techChokeOpen(r), n = _techRocksOut(r, false); _techDrillStop(f, null);
+            _techSay(opened ? "✹ THE CHOKE IS DRILLED THROUGH · THE TUNNEL IS OPEN" + (n ? " · " + n + " ROCKS" : "") : "✹ THE RUBBLE IS DRILLED THROUGH · A DARK HOLE" + (n ? " · " + n + " ROCKS" : ""), "#ff9a4a");
             if (typeof shake !== "undefined") shake = Math.max(shake || 0, 7);
             if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: r.at[0], y: r.at[1], color: "#ffb070", radius: 1.4, life: 30 });
         }
@@ -366,7 +376,7 @@ function _techDrillTick(f, f0) {
     }
     if (f0 - W.next > T.foeWait) return _techDrillStop(f, "THE DRILL IS OFF · IT GOT AWAY");
     if (f0 < W.next || d > T.reach + 0.4) return;   // (out of reach: it closes in again, techStepOverride)
-    if (!W.hits) f._abReadyAt = f0 + T.cooldown;
+    if (!W.hits) f._abReadyAt = f0 + techCooldown(f, T.cooldown);
     W.hits++; W.next = f0 + T.every;
     const dmg = ((f.stats && f.stats.attack) || 5) * 0.25 * T.foeMult;
     if (typeof applyElementalDamage === "function") applyElementalDamage(foe, dmg, f, "fire"); else if (typeof applyDamage === "function") applyDamage(foe, dmg, f, "fire");
@@ -377,7 +387,7 @@ function _techDrillTick(f, f0) {
 function techRingFor(r) {
     if (!r || techRubbleOpen(r)) return null;
     const left = techRubbleLeft(r);
-    return { up: { label: "THERMITE DRILL", act: "drill" }, caption: "RUBBLE · " + left + " HIT" + (left === 1 ? "" : "S") + " TO DRILL THROUGH" };
+    return { up: { label: "THERMITE DRILL", act: "drill" }, caption: (r.solid ? "CHOKED TUNNEL" : "RUBBLE") + " · " + left + " HIT" + (left === 1 ? "" : "S") + " TO DRILL THROUGH" + (r.inside ? " · FROM INSIDE" : "") };
 }
 function techRingAct(r, act) {
     if (act !== "drill") return { ok: false };
@@ -396,7 +406,7 @@ function _techRubbleNotices() {
     if (!_fp.rubbleNear) _fp.rubbleNear = new Set();
     for (const r of _techRubbles()) {
         const near = Math.hypot(r.at[0] - player.x, r.at[1] - player.y) <= TECH_AB.drill.near;
-        if (near && !_fp.rubbleNear.has(r.id)) { _fp.rubbleNear.add(r.id); if (!techRubbleOpen(r)) _techSay("✹ RUBBLE IN THE ROCK · A FIRE TECHNICIAN CAN DRILL IT: PRESS AND HOLD IT", "#ff9a4a"); }
+        if (near && !_fp.rubbleNear.has(r.id)) { _fp.rubbleNear.add(r.id); if (!techRubbleOpen(r)) _techSay(r.inside ? "✹ A COLLAPSED TUNNEL · ITS CHOKE IS DRILLED FROM INSIDE: A FIRE TECHNICIAN LAUNCHED IN CAN OPEN IT" : "✹ RUBBLE IN THE ROCK · A FIRE TECHNICIAN CAN DRILL IT: PRESS AND HOLD IT", "#ff9a4a"); }
         else if (!near) _fp.rubbleNear.delete(r.id);
     }
 }
@@ -415,7 +425,7 @@ function techFrostAt(tech, spot) {
     const T = TECH_AB.frost, f0 = _techFrame(), h = Math.floor(T.size / 2), tiles = new Set();
     for (let dx = -h; dx <= h; dx++) for (let dy = -h; dy <= h; dy++) { const x = cx + dx, y = cy + dy; if ((typeof facilityStandOk !== "function" || facilityStandOk(x, y)) && (typeof facilityLosFrom !== "function" || facilityLosFrom(cx, cy, x, y))) tiles.add(x + "," + y); }
     techFrosts.push({ x: cx, y: cy, tiles, t0: f0, until: f0 + T.life, by: tech });
-    tech._abReadyAt = f0 + T.cooldown;
+    tech._abReadyAt = f0 + techCooldown(tech, T.cooldown);
     _techSay("❄ FROST PATCH · " + Math.round(T.life / 60) + " S", "#9be8ff");
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: cx, y: cy, radius: 1.6, color: "#9be8ff", life: 24 });
     return { ok: true };
@@ -458,7 +468,7 @@ function _techPoolLay(f, x, y) {
     const T = TECH_AB.blight, bite = ((f.stats && f.stats.specialAttack) || 10) * 0.12 * 0.3;   // the toxic cloud's own bite (js/elements.js: a smoke bomb's cloud)
     techPools.push({ id: ++_techPoolN, x, y, born: techClock, bite, by: f.uid || null });
     while (techPools.length > T.max) techPools.shift();   // (a 4th takes the oldest's place)
-    f._abReadyAt = _techFrame() + T.cooldown;
+    f._abReadyAt = _techFrame() + techCooldown(f, T.cooldown);
     _techSay("☣ BLIGHT POOL · " + techPools.length + " OF " + T.max + " · " + T.days + " DAYS", "#7dff4a");
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x, y, color: "#7dff4a", radius: 1.0, life: 24 });
 }
@@ -511,9 +521,9 @@ function techGrabAt(tech, item) {
     if (!item || !item.o) return { ok: false, why: "TAP AN ITEM ON THE FLOOR", again: true };
     const o = item.o, gone = item.kind === "pickup" ? o.taken : !(typeof cloneBodies !== "undefined" && cloneBodies.includes(o));
     if (gone || o.grab) return { ok: false, why: "IT IS GONE", again: true };
-    const f0 = _techFrame(); o.grab = { by: tech, t0: f0 };
+    const f0 = _techFrame(); o.grab = { by: tech, t0: f0 }; if (item.kind === "pickup") o.grabbed = true;   // (grabbed: how a puzzle's item was got, js/puzzles.js; set as it leaves the floor, since the pickup can take it before its flight is over)
     techGrabs.push({ kind: item.kind, o, x0: o.x, y0: o.y, t0: f0, by: tech });
-    tech._abReadyAt = f0 + TECH_AB.grab.cooldown;
+    tech._abReadyAt = f0 + techCooldown(tech, TECH_AB.grab.cooldown);
     _techSay("✦ TELEGRAB · " + _techItemName(item), "#c77dff");
     return { ok: true };
 }
@@ -564,7 +574,7 @@ function _techThrow(a) {
         let lx = foe.x + dx / d * 0.7, ly = foe.y + dy / d * 0.7;   // beside the enemy, on the thrower's side
         if (typeof facilityStandOk === "function" && !facilityStandOk(lx, ly) && typeof _fpNearestCell === "function") { const c = _fpNearestCell(lx, ly); if (c) { lx = c[0]; ly = c[1]; } }
         _techFly(a, lx, ly, T.flight, T.peak, { kind: "combat", by: t, foe });
-        t._abBusy = null; t._abReadyAt = _techFrame() + T.cooldown;   // the cooldown starts as the follower leaves the ground
+        t._abBusy = null; t._abReadyAt = _techFrame() + techCooldown(t, T.cooldown);   // the cooldown starts as the follower leaves the ground
     }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: a.x, y: a.y, radius: 0.9, color: "#ffe733", life: 22 });
 }
@@ -598,14 +608,23 @@ function _techLand(a, F) {
         if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffe733", radius: 0.9, life: 24 });
     } else if (F.kind === "site") {
         const s = _techSite(F.site);
-        if (s && typeof partyPost === "function") partyPost(a, s.to, true);   // it holds the room up there until it is called back
-        if (s) _techSay("⚡ " + _techName(a) + " IS ON THE " + String(s.label || s.to).toUpperCase() + " · COME BRINGS IT BACK", "#ffe733");
+        if (s && s.pocket) { a._pocketHold = s.id; _techSay("⚡ " + _techName(a) + " IS IN THE " + String(s.label || s.to).toUpperCase() + " · ITS DRILL OPENS THE WAY: PRESS AND HOLD THE RUBBLE", "#ffe733"); }   // a pocket: it stays in the squad and waits there (techStepOverride) until the way is open
+        else {
+            if (s && typeof partyPost === "function") partyPost(a, s.to, true);   // it holds the room up there until it is called back
+            if (s) _techSay("⚡ " + _techName(a) + " IS ON THE " + String(s.label || s.to).toUpperCase() + " · COME BRINGS IT BACK", "#ffe733");
+        }
     }
     if (typeof elementEffects !== "undefined" && F.kind !== "combat") elementEffects.push({ type: "ring", x: a.x, y: a.y, radius: 0.7, color: "#ffe733", life: 18 });
 }
 
 // ── a follower walking to the launcher, to a site it is setting up, or to a broken section (js/npc.js updateRTSNPC asks first): true when this moved it ──
-function techStepWants(a) { return !!(a && (a._launchLoad || a._siteWork || a._dropSite || a._shieldHold || a._drill || a._blight)); }
+function techStepWants(a) { return !!(a && (a._launchLoad || a._siteWork || a._dropSite || a._shieldHold || a._drill || a._blight || a._pocketHold)); }
+// a follower thrown into a POCKET (a cut-off part of its room: the Sewers' collapsed tunnel) waits where it landed until the pocket is joined to where the player is (its drill opened the way); then it follows as before
+function _techPocketTick(f) {
+    const s = _techSite(f._pocketHold); if (!s) { f._pocketHold = null; return; }
+    const pc = _techComp(player.x, player.y), lc = _techComp(s.land[0], s.land[1]), fc = _techComp(f.x, f.y);
+    if (lc === undefined || lc === pc || fc !== lc || f.dead || f.returningToCrystal) { f._pocketHold = null; f._fpWalkGoal = null; }
+}
 function _techFace(a, x, y) { const dx = x - a.x, dy = y - a.y, d = Math.hypot(dx, dy); if (d > 1e-6) { a.dirX = dx / d; a.dirY = dy / d; } }
 function techStepOverride(a) {
     let pt = null;
@@ -625,6 +644,7 @@ function techStepOverride(a) {
         else if (W.foe && !W.foe.dead) { if (Math.hypot(W.foe.x - a.x, W.foe.y - a.y) <= TECH_AB.drill.reach * 0.85) { a._fpWalkGoal = null; _techFace(a, W.foe.x, W.foe.y); return true; } pt = [W.foe.x, W.foe.y]; }
     }
     else if (a._blight) pt = [a._blight.x, a._blight.y];   // the Blight Spider, to where it leaves its pool
+    else if (a._pocketHold) { const s = _techSite(a._pocketHold); if (s) { if (Math.hypot(s.land[0] - a.x, s.land[1] - a.y) < 0.3) { a._fpWalkGoal = null; return true; } pt = s.land; } }   // in a pocket: it waits where it landed
     if (!pt) { a._fpWalkGoal = null; return false; }
     a._fpWalkGoal = { x: pt[0], y: pt[1] };   // (the facility's routing walks it round walls to here: js/facilityplay.js _fpGoals)
     const dx = pt[0] - a.x, dy = pt[1] - a.y, d = Math.hypot(dx, dy);
@@ -668,6 +688,7 @@ function techAbilityTick() {
         }
         if (f._drill) _techDrillTick(f, f0);
         if (f._blight) _techBlightWalkTick(f, f0);
+        if (f._pocketHold) _techPocketTick(f);
     }
     if (f0 % 15 === 3) _techDropScan();
     _techSiteNotices(); _techRubbleNotices();
@@ -684,6 +705,7 @@ function _techDropScan() {
         if (!f || f.dead || f.isClone || f._flight || f._launchLoad || f._siteWork) continue;
         const fc = _techComp(f.x, f.y); f._dropSite = null;
         for (const s of sites) {
+            if (s.pocket) continue;   // (a pocket is no post and has no broken section: the way out is the passage its rubble opens)
             const sc = _techComp(s.land[0], s.land[1]); if (sc === undefined) continue;
             if (f.post === s.to && fc !== sc) { if (typeof partyCall === "function" && !partyCall(f, true) && typeof partyPost === "function" && typeof partyRoomOf === "function") partyPost(f, partyRoomOf(f), true); break; }
             if (fc === sc && sc !== pc && !f.post && !f.job && !f.returningToCrystal) { f._dropSite = s.id; break; }
@@ -706,7 +728,7 @@ function techAimActive() { return !!techAim; }
 function techAimNeed() { const A = techAim; if (!A) return null; return A.mode === "site" ? "follower" : A.ab.aim[A.step] || null; }
 function techAimPrompt() {
     const A = techAim; if (!A) return "";
-    if (A.mode === "site") { const s = _techSite(A.site); return "KINETIC LAUNCHER · TAP A FOLLOWER TO SEND UP TO THE " + String(s ? s.label || s.to : "").toUpperCase(); }
+    if (A.mode === "site") { const s = _techSite(A.site); return "KINETIC LAUNCHER · TAP " + (s && s.pocket ? _techOnlyName(s) + " TO SEND INTO THE " : "A FOLLOWER TO SEND UP TO THE ") + String(s ? s.label || s.to : "").toUpperCase(); }
     const need = techAimNeed();
     return A.ab.name + " · " + (need && A.ab.ask ? A.ab.ask(need, A.picks) : "");
 }
@@ -842,6 +864,11 @@ function techDrawRubbleOn(it, f) {
     const r = _techRubble(it.rubble); if (!r) return;
     const P = (u, z) => _fpWP(it, u, z), poly = (pts, fill, stroke, lw) => { ctx.beginPath(); pts.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 2; ctx.lineJoin = "round"; ctx.stroke(); } };
     ctx.save();
+    if (techRubbleOpen(r) && r.solid) {   // A CHOKE drilled through: the passage behind it is open floor now, so only what is left of the pile is drawn: stones at the foot of each side, scorched
+        for (const [u, z, w] of [[0.1, 0, 0.1], [0.19, 0, 0.07], [0.9, 0, 0.11], [0.8, 0, 0.06], [0.14, 8, 0.06], [0.87, 7, 0.07]]) poly([[u - w / 2, z], [u - w / 3, z + 8], [u + w / 3, z + 9], [u + w / 2, z]], "#6a5848", "#0b2a2f", 2);
+        ctx.globalAlpha = 0.3 + 0.1 * Math.sin(f * 0.03); for (const u of [0.06, 0.94]) poly([[u - 0.05, 0], [u, 16], [u + 0.05, 0]], "#ff7a2a", null); ctx.globalAlpha = 1;   // the sides still warm
+        ctx.restore(); return;
+    }
     if (techRubbleOpen(r)) {   // THE HOLE: a black arch going back into the rock, rings of dark inside it, scorched round the mouth, a few stones at its foot
         const arch = (u0, u1, z1, inset) => { const pts = [[u0, inset]]; for (let k = 0; k <= 10; k++) { const t = k / 10, a = Math.PI * t; pts.push([(u0 + u1) / 2 - Math.cos(a) * (u1 - u0) / 2, z1 * 0.55 + Math.sin(a) * z1 * 0.45]); } pts.push([u1, inset]); return pts; };
         poly(arch(0.14, 0.86, 60, 0), "#3a2414", null); poly(arch(0.18, 0.82, 55, 0), "#1a0f08", null);   // the scorch round the mouth
@@ -907,7 +934,7 @@ function techDrawItems(list) {
     if (typeof _fp === "undefined" || !_fp) return;
     for (const s of _techSites()) {
         if (techLauncherAt(s.id)) list.push({ type: "tech", kind: "launcher", x: s.at[0], y: s.at[1], site: s });
-        list.push({ type: "tech", kind: "broken", x: s.drop[0], y: s.drop[1], site: s });
+        if (s.drop) list.push({ type: "tech", kind: "broken", x: s.drop[0], y: s.drop[1], site: s });
     }
     // a Photonic Shield, in pieces half a tile long, so what stands behind it is drawn behind it and what stands in front, in front
     for (const W of techShields) {
@@ -981,7 +1008,7 @@ function techDrawOverlay() {
         const work = (typeof followers !== "undefined" ? followers : []).find(q => q && !q.dead && q._siteWork && q._siteWork.site === s.id && q._siteWork.workAt !== null);
         if (work) { const k = Math.min(1, (f0 - work._siteWork.workAt) / T.setup); g.globalAlpha = 1; g.strokeStyle = "#ffe733"; g.lineWidth = 4; g.beginPath(); g.arc(p.x, p.y - 30, 16, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); g.stroke(); }
         // its TAG: small and quiet (ASKED: "it should remain subtle and uninterruptive"); a tap on it is the only tap the site takes
-        const txt = on ? "⚡ LAUNCHER · SEND UP" : work || _techSettingUp(s) ? "⚡ SETTING UP" : "⚡ LAUNCHER SITE";
+        const txt = on ? (s.pocket ? "⚡ LAUNCHER · SEND IN" : "⚡ LAUNCHER · SEND UP") : work || _techSettingUp(s) ? "⚡ SETTING UP" : "⚡ LAUNCHER SITE";
         g.globalAlpha = a * 0.85; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle";
         const w = g.measureText(txt).width + 16, y = p.y - 70;
         g.fillStyle = "rgba(5,8,18,0.7)"; g.fillRect(p.x - w / 2, y - 10, w, 20); g.strokeStyle = "rgba(255,231,51,0.55)"; g.lineWidth = 1; g.strokeRect(p.x - w / 2 + 0.5, y - 9.5, w - 1, 19); g.fillStyle = "rgba(255,231,51,0.9)"; g.fillText(txt, p.x, y + 1);

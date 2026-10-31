@@ -258,7 +258,9 @@ function facilityDrawObjective() {
     const W = canvas.width, tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), corner = typeof hudCorners === "function" && hudCorners(), zr = corner && typeof _netZoneRect === "function" ? _netZoneRect() : null, f = typeof frame !== "undefined" ? frame : 0;
     const w = Math.min(W - 24, corner ? 304 : 350), x = corner ? Math.max(12, Math.round((zr ? zr.right : W - 18) - w)) : 12, y = corner ? (typeof _fnBottom === "number" && _fnBottom > 0 ? _fnBottom + 10 : (zr ? Math.round(zr.bottom) + 140 : 190)) : 158;
     let key, title, body, hint = "", col = pc ? pc.colour : UI_TEAL;
+    const q = tutDone && typeof questObjective === "function" ? questObjective() : null;   // a quest under way (the Sewer purification, js/quests.js): after the tutorial, before the class's stage
     if (!tutDone) { const st = TUT_STEPS[S.step]; key = "t" + S.step; title = "OBJECTIVE " + (S.step + 1) + "/" + TUT_STEPS.length + "  ·  " + st.title; body = st.text(); hint = st.hint(); }
+    else if (q) { key = "q:" + q.key; title = q.title; body = q.body; hint = q.hint || ""; col = q.col || col; }
     else if (!pc) return;
     else if (tutClassCurrent() >= 0 && tutClassCurrent() < tutClassStage().length) { const st = tutClassStage(), i = tutClassCurrent(), c = st[i]; key = c.id === "perk" ? "perk" : "c:" + c.id; title = pc.name + "  ·  " + (i + 1) + "/" + st.length + "  ·  " + c.title; body = c.text(); hint = c.hint(); }   // the class's stage
     else { key = "done"; title = pc.name + "  ·  RANK " + classRank(); body = "YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS."; col = "#9dffb6"; }

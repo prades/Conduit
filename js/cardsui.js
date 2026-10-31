@@ -88,13 +88,16 @@ function _cdPlayerSlot(slot) {
     return box;
 }
 
-// ── the booster pack: its button (two taps, as an unlock is) and what the last pack dealt ──
-function _cdPackBox() {
-    const box = _cdEl("div", "cd-pack"), why = equipPackWhyNot(), armed = _cdArm && _cdArm.id === "pack" && _cdNow() < _cdArm.until;
-    box.appendChild(_cdBtn(armed ? "TAP AGAIN TO OPEN" : "OPEN A PACK ◆" + EQUIP_PACK.price, why || (armed ? "◆" + EQUIP_PACK.price + " OF YOUR SHARDS · " + EQUIP_PACK.size + " CARDS" : EQUIP_PACK.size + " CARDS · ONE PRECISION AT LEAST"), "#ffe733", () => {
-        if (_cdArm && _cdArm.id === "pack" && _cdNow() < _cdArm.until) { _cdArm = null; equipPackOpen(); } else _cdArm = { id: "pack", until: _cdNow() + CARDS_ARM_MS };
+// ── a booster pack (Pack 1; Series 2 when it is on sale: js/cards.js EQUIP_PACKS): its button (two taps, as an unlock is) and what the last pack of it dealt ──
+function _cdPackKinds(pack) { return pack.kinds.map(k => k === "subclass" ? "SPECIES" : k === "class" ? "CLASS" : k.toUpperCase()).join(" AND ") + " CARDS"; }
+function _cdPackSub(pack) { return "◆" + pack.price + " · " + pack.size + " " + _cdPackKinds(pack) + ", ONE ALWAYS " + equipRarityLabel({ rarity: pack.guaranteed.rarity }) + " · THEY ARE FOUND FOR THIS RUN · ◆" + EQUIP.unlockCost + " KEEPS ONE FOR GOOD"; }
+function _cdPackBox(pack) {
+    pack = pack || EQUIP_PACK;
+    const box = _cdEl("div", "cd-pack"), why = equipPackWhyNot(pack), key = pack === EQUIP_PACK ? "pack" : "pack:" + pack.id, armed = _cdArm && _cdArm.id === key && _cdNow() < _cdArm.until;
+    box.appendChild(_cdBtn(armed ? "TAP AGAIN TO OPEN" : "OPEN A PACK ◆" + pack.price, why || (armed ? "◆" + pack.price + " OF YOUR SHARDS · " + pack.size + " CARDS" : pack.size + " CARDS · ONE " + equipRarityLabel({ rarity: pack.guaranteed.rarity }) + " AT LEAST"), "#ffe733", () => {
+        if (_cdArm && _cdArm.id === key && _cdNow() < _cdArm.until) { _cdArm = null; equipPackOpen(undefined, pack); } else _cdArm = { id: key, until: _cdNow() + CARDS_ARM_MS };
     }, !!why));
-    if (equipPackLast) {
+    if (equipPackLast && (equipPackLast.pack || EQUIP_PACK.id) === pack.id) {
         box.appendChild(_cdEl("div", "cd-note", "THE LAST PACK"));
         const row = _cdEl("div", "cd-row");
         equipPackLast.ids.map(equipCard).filter(Boolean).forEach(c => { const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", equipPackLast.fresh.indexOf(c.id) >= 0 ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS")); row.appendChild(s); });
@@ -129,7 +132,7 @@ function _cdMarketBox() {
 function _cdSigNow() {
     const all = Object.keys(equipCards()), have = typeof shardCount === "number" ? shardCount : 0;
     return [cardsPanelOpen, !!_cdOpts.start, all.map(id => (equipOwns(id) ? "o" : have >= EQUIP.unlockCost ? "a" : "l") + (equipInHand(id) ? "h" : "") + (equipIsFound(id) ? "f" : "") + equipWearers(id)).join(), equipHand.join(), equipPlayer.join(), _cdDD,
-        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPackWhyNot() || "", equipPackLast ? equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
+        _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPacksOnSale().map(p => p.id + ":" + (equipPackWhyNot(p) || "")).join(";"), equipPackLast ? (equipPackLast.pack || "") + ":" + equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
 }
 function cardsRender(force) {
     const root = document.getElementById("cardsRoot"); if (!root || !cardsPanelOpen) return;
@@ -152,7 +155,7 @@ function cardsRender(force) {
     body.appendChild(hand);
     sec("YOU", "THE PLAYER WEARS TWO UNIVERSAL CARDS · EACH FOLLOWER'S TWO ARE ON ITS ROSTER PAGE");
     const you = _cdEl("div", "cd-you"); you.appendChild(_cdPlayerSlot(0)); you.appendChild(_cdPlayerSlot(1)); body.appendChild(you);
-    sec("BOOSTER PACK", "◆" + EQUIP_PACK.price + " · " + EQUIP_PACK.size + " ELEMENT CARDS, ONE ALWAYS PRECISION · THEY ARE FOUND FOR THIS RUN · ◆" + EQUIP.unlockCost + " KEEPS ONE FOR GOOD"); body.appendChild(_cdPackBox());
+    for (const pack of equipPacksOnSale()) { sec(pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name, _cdPackSub(pack)); body.appendChild(_cdPackBox(pack)); }   // (a pack that is not on sale, Series 2 until its numbers are given, is not shown)
     sec("MARKET", "◇ CREDITS (DUPLICATES PAY " + Math.round(EQUIP_MARKET.share * 100) + "% OF A CARD'S VALUE) OR THE SAME NUMBER OF ◆ SHARDS BUY A CARD: A NEW ONE IS KEPT FOR GOOD · THE SHELF CHANGES EVERY 5 MINUTES"); body.appendChild(_cdMarketBox());
     if (equipFound.length) {
         sec("FOUND THIS RUN", "WEAR THEM FROM THE ROSTER · THEY GO WITH THE RUN UNLESS YOU KEEP THEM"); const fg = _cdEl("div", "cd-grid");

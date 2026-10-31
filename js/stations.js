@@ -30,6 +30,15 @@ const STATION_KINDS = {
     serum_hood: { name: "SERUM HOOD", verb: "COLLECT OR CRAFT SERUM", classes: ["mutator"],
         verbFn: () => typeof serumHoodVerb === "function" ? serumHoodVerb() : "SERUM", canFn: () => typeof serumHoodCan === "function" ? serumHoodCan() : { ok: false, why: "NO LAB" },
         use: () => typeof serumHoodUse === "function" ? serumHoodUse() : { ok: false, why: "NO LAB" } },
+    // THE SEWER PURIFICATION QUEST (js/quests.js; docs/SEWER-QUEST.md), for any class: the ANALYSIS BENCH takes the four samples and then sells the module; the BOSS GATE's seal breaks for the module; the PURIFIER MOUNT
+    // is a BUILD (the mech bay's kind: the progress bar, walk away and it stops, nothing spent) that takes the module when it is done, and its start wakes the boss (onStart)
+    analysis_bench: { name: "ANALYSIS BENCH", classes: null, verbFn: () => typeof questBenchVerb === "function" ? questBenchVerb() : "ANALYSE", canFn: () => typeof questBenchCan === "function" ? questBenchCan() : { ok: false, why: "NO QUEST" },
+        use: () => typeof questBenchUse === "function" ? questBenchUse() : { ok: false, why: "NO QUEST" } },
+    gate_seal: { name: "BOSS GATE", classes: null, verbFn: () => "BREAK THE SEAL ON THE GATE", canFn: () => typeof questGateCan === "function" ? questGateCan() : { ok: false, why: "NO QUEST" },
+        use: () => typeof questGateUse === "function" ? questGateUse() : { ok: false, why: "NO QUEST" } },
+    purifier_mount: { name: "PURIFIER MOUNT", classes: null, build: 1200, cost: [["purification_module", 1]], buildMsg: "MOUNTING THE MODULE… STAY AT THE CONSOLE", verbFn: () => typeof questMountVerb === "function" ? questMountVerb() : "INSTALL",
+        canFn: () => typeof questMountCan === "function" ? questMountCan() : { ok: false, why: "NO QUEST" }, onStart: () => { if (typeof questMountStart === "function") questMountStart(); },
+        use: () => typeof questMountUse === "function" ? questMountUse() : { ok: false, why: "NO QUEST" } },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
         use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
@@ -255,7 +264,8 @@ function buildStart(s) {
     const can = stationCan(s); if (!can.ok) { invSay(can.why, false); return can; }
     const k = STATION_KINDS[s.kind]; if (_fp.channel) return { ok: false, why: "BUSY" };
     _fp.channel = { station: s.id, kind: s.kind, t0: frame, frames: k.build, cost: k.cost, x: s.x, y: s.y, bb: s.bb };
-    invSay("BUILDING THE SPIDER MECH\u2026 STAY AT THE PAD", true);
+    invSay(k.buildMsg || "BUILDING THE SPIDER MECH\u2026 STAY AT THE PAD", true);
+    if (typeof k.onStart === "function") k.onStart(s);   // (the purifier mount: the install begins, and the boss is woken: js/quests.js)
     return { ok: true, msg: "BUILD STARTED", channel: true };
 }
 function buildComplete(c) {
