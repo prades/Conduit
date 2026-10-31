@@ -261,7 +261,7 @@ function targetInfoLines(a) {
 function targetCardInfo(a) {
     const hp = Math.ceil(Math.max(0, a.health || 0)), mx = Math.max(1, Math.ceil(a.maxHealth || a.health || 1)), el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
     return {
-        name: targetName(a), title: a.speciesName ? (String(a.speciesName) + " " + String(a.className || "")).trim().toUpperCase() : targetName(a),   // (the card's name line: the kind, without the element, which is on the line under it in its colour)
+        name: targetName(a), title: a.bossName ? a.bossName : a.speciesName ? (String(a.speciesName) + " " + String(a.className || "")).trim().toUpperCase() : targetName(a),   // (a boss is named: js/bosses.js)   // (the card's name line: the kind, without the element, which is on the line under it in its colour)
         col: _tgColour(a), level: Number.isFinite(a.level) ? a.level : null, cls: String(a.className || "").toUpperCase(), element: el ? el.label.toUpperCase() : "", hp, max: mx, frac: Math.max(0, Math.min(1, hp / mx)),
         bite: Number.isFinite(a.power) ? Math.round(a.power * 10) / 10 : null, speed: Number.isFinite(a.moveSpeed) ? Math.round(a.moveSpeed * 1000) / 10 : null,
     };

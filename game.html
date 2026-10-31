@@ -9,18 +9,18 @@
     <!-- THE PROPS SHEETS THE START WAITS FOR (js/init.js, docs/STARTUP.md) begin to download with the page, alongside the scripts, instead of once the world is built: measured on a slow link (2x CPU, 60 ms, 15 Mbit/s), the start is about half a second sooner (4.1 s to 3.5 s for a new player, 6.4 s to 5.9 s for a returning one).
          They are the addresses the loader asks for (img/props/<family>.png, with the build stamp), so its own requests are answered from these; the stamp changes with the build (tests/startup.js checks both).
          Not here: the player's sheet (the website's background, ?attract, draws no player), the eggs and the evolved forms (which of them the first picture draws depends on the saved game): the start asks for those itself. -->
-    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/tech.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/lab.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/office.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/cold.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/plant.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/tank.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/truck.png?v=2026-10-31d">
-    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-10-31d">
+    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/tech.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/lab.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/office.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/cold.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/plant.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/tank.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/truck.png?v=2026-10-31e">
+    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-10-31e">
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -1699,12 +1699,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-10-31d, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-10-31e, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-10-31d";
+window.__PAGE_BUILD = "2026-10-31e";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1740,78 +1740,78 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-10-31d"></script>
-<script src="js/icons.js?v=2026-10-31d"></script>
-<script src="js/uikit.js?v=2026-10-31d"></script>
-<script src="js/traits.js?v=2026-10-31d"></script>
-<script src="js/elements.js?v=2026-10-31d"></script>
-<script src="js/combat.js?v=2026-10-31d"></script>
-<script src="js/species.js?v=2026-10-31d"></script>
-<script src="js/levels.js?v=2026-10-31d"></script>
-<script src="js/status.js?v=2026-10-31d"></script>
-<script src="js/helpers.js?v=2026-10-31d"></script>
-<script src="js/predator.js?v=2026-10-31d"></script>
-<script src="js/abilities.js?v=2026-10-31d"></script>
-<script src="js/commands.js?v=2026-10-31d"></script>
-<script src="js/npc.js?v=2026-10-31d"></script>
-<script src="js/draw.js?v=2026-10-31d"></script>
-<script src="js/beetle3d.js?v=2026-10-31d"></script>
-<script src="js/bugs3d.js?v=2026-10-31d"></script>
-<script src="js/settings.js?v=2026-10-31d"></script>
-<script src="js/alarm.js?v=2026-10-31d"></script>
-<script src="js/drops.js?v=2026-10-31d"></script>
-<script src="js/clone.js?v=2026-10-31d"></script>
-<script src="js/bonds.js?v=2026-10-31d"></script>
-<script src="js/evolution.js?v=2026-10-31d"></script>
-<script src="js/cards.js?v=2026-10-31d"></script>
-<script src="js/hdsprites.js?v=2026-10-31d"></script>
-<script src="js/firebombs.js?v=2026-10-31d"></script>
-<script src="js/moves.js?v=2026-10-31d"></script>
-<script src="js/hudgems.js?v=2026-10-31d"></script>
-<script src="js/commandcenter.js?v=2026-10-31d"></script>
-<script src="js/cardsui.js?v=2026-10-31d"></script>
-<script src="js/unitinfo.js?v=2026-10-31d"></script>
-<script src="js/infodex.js?v=2026-10-31d"></script>
-<script src="js/classes.js?v=2026-10-31d"></script>
-<script src="js/playergear.js?v=2026-10-31d"></script>
-<script src="js/inventory.js?v=2026-10-31d"></script>
-<script src="js/weapons.js?v=2026-10-31d"></script>
-<script src="js/mutator.js?v=2026-10-31d"></script>
-<script src="js/specimen.js?v=2026-10-31d"></script>
-<script src="js/serum.js?v=2026-10-31d"></script>
-<script src="js/technomancer.js?v=2026-10-31d"></script>
-<script src="js/stations.js?v=2026-10-31d"></script>
-<script src="js/facilityportals.js?v=2026-10-31d"></script>
-<script src="js/tutorial.js?v=2026-10-31d"></script>
-<script src="js/facilitymap.js?v=2026-10-31d"></script>
-<script src="js/facilitygrow.js?v=2026-10-31d"></script>
-<script src="js/facility.js?v=2026-10-31d"></script>
-<script src="js/attract.js?v=2026-10-31d"></script>
-<script src="js/facilitysave.js?v=2026-10-31d"></script>
-<script src="js/facilityplay.js?v=2026-10-31d"></script>
-<script src="js/facilitydecor.js?v=2026-10-31d"></script>
-<script src="js/propatlas.js?v=2026-10-31d"></script>
-<script src="js/propsprites.js?v=2026-10-31d"></script>
-<script src="js/facilitystyle.js?v=2026-10-31d"></script>
-<script src="js/facilitystyleall.js?v=2026-10-31d"></script>
-<script src="js/facilitysewers.js?v=2026-10-31d"></script>
-<script src="js/facilitynet.js?v=2026-10-31d"></script>
-<script src="js/facilityspawn.js?v=2026-10-31d"></script>
-<script src="js/followerspots.js?v=2026-10-31d"></script>
-<script src="js/party.js?v=2026-10-31d"></script>
-<script src="js/squadfly.js?v=2026-10-31d"></script>
-<script src="js/techabilities.js?v=2026-10-31d"></script>
-<script src="js/puzzles.js?v=2026-10-31d"></script>
-<script src="js/quests.js?v=2026-10-31d"></script>
-<script src="js/bosses.js?v=2026-10-31d"></script>
-<script src="js/facilitytutorial.js?v=2026-10-31d"></script>
-<script src="js/gunfire.js?v=2026-10-31d"></script>
-<script src="js/targeting.js?v=2026-10-31d"></script>
-<script src="js/toolbox.js?v=2026-10-31d"></script>
-<script src="js/mixtool.js?v=2026-10-31d"></script>
-<script src="js/radialmenu.js?v=2026-10-31d"></script>
-<script src="js/input.js?v=2026-10-31d"></script>
-<script src="js/game.js?v=2026-10-31d"></script>
+<script src="js/config.js?v=2026-10-31e"></script>
+<script src="js/icons.js?v=2026-10-31e"></script>
+<script src="js/uikit.js?v=2026-10-31e"></script>
+<script src="js/traits.js?v=2026-10-31e"></script>
+<script src="js/elements.js?v=2026-10-31e"></script>
+<script src="js/combat.js?v=2026-10-31e"></script>
+<script src="js/species.js?v=2026-10-31e"></script>
+<script src="js/levels.js?v=2026-10-31e"></script>
+<script src="js/status.js?v=2026-10-31e"></script>
+<script src="js/helpers.js?v=2026-10-31e"></script>
+<script src="js/predator.js?v=2026-10-31e"></script>
+<script src="js/abilities.js?v=2026-10-31e"></script>
+<script src="js/commands.js?v=2026-10-31e"></script>
+<script src="js/npc.js?v=2026-10-31e"></script>
+<script src="js/draw.js?v=2026-10-31e"></script>
+<script src="js/beetle3d.js?v=2026-10-31e"></script>
+<script src="js/bugs3d.js?v=2026-10-31e"></script>
+<script src="js/settings.js?v=2026-10-31e"></script>
+<script src="js/alarm.js?v=2026-10-31e"></script>
+<script src="js/drops.js?v=2026-10-31e"></script>
+<script src="js/clone.js?v=2026-10-31e"></script>
+<script src="js/bonds.js?v=2026-10-31e"></script>
+<script src="js/evolution.js?v=2026-10-31e"></script>
+<script src="js/cards.js?v=2026-10-31e"></script>
+<script src="js/hdsprites.js?v=2026-10-31e"></script>
+<script src="js/firebombs.js?v=2026-10-31e"></script>
+<script src="js/moves.js?v=2026-10-31e"></script>
+<script src="js/hudgems.js?v=2026-10-31e"></script>
+<script src="js/commandcenter.js?v=2026-10-31e"></script>
+<script src="js/cardsui.js?v=2026-10-31e"></script>
+<script src="js/unitinfo.js?v=2026-10-31e"></script>
+<script src="js/infodex.js?v=2026-10-31e"></script>
+<script src="js/classes.js?v=2026-10-31e"></script>
+<script src="js/playergear.js?v=2026-10-31e"></script>
+<script src="js/inventory.js?v=2026-10-31e"></script>
+<script src="js/weapons.js?v=2026-10-31e"></script>
+<script src="js/mutator.js?v=2026-10-31e"></script>
+<script src="js/specimen.js?v=2026-10-31e"></script>
+<script src="js/serum.js?v=2026-10-31e"></script>
+<script src="js/technomancer.js?v=2026-10-31e"></script>
+<script src="js/stations.js?v=2026-10-31e"></script>
+<script src="js/facilityportals.js?v=2026-10-31e"></script>
+<script src="js/tutorial.js?v=2026-10-31e"></script>
+<script src="js/facilitymap.js?v=2026-10-31e"></script>
+<script src="js/facilitygrow.js?v=2026-10-31e"></script>
+<script src="js/facility.js?v=2026-10-31e"></script>
+<script src="js/attract.js?v=2026-10-31e"></script>
+<script src="js/facilitysave.js?v=2026-10-31e"></script>
+<script src="js/facilityplay.js?v=2026-10-31e"></script>
+<script src="js/facilitydecor.js?v=2026-10-31e"></script>
+<script src="js/propatlas.js?v=2026-10-31e"></script>
+<script src="js/propsprites.js?v=2026-10-31e"></script>
+<script src="js/facilitystyle.js?v=2026-10-31e"></script>
+<script src="js/facilitystyleall.js?v=2026-10-31e"></script>
+<script src="js/facilitysewers.js?v=2026-10-31e"></script>
+<script src="js/facilitynet.js?v=2026-10-31e"></script>
+<script src="js/facilityspawn.js?v=2026-10-31e"></script>
+<script src="js/followerspots.js?v=2026-10-31e"></script>
+<script src="js/party.js?v=2026-10-31e"></script>
+<script src="js/squadfly.js?v=2026-10-31e"></script>
+<script src="js/techabilities.js?v=2026-10-31e"></script>
+<script src="js/puzzles.js?v=2026-10-31e"></script>
+<script src="js/quests.js?v=2026-10-31e"></script>
+<script src="js/bosses.js?v=2026-10-31e"></script>
+<script src="js/facilitytutorial.js?v=2026-10-31e"></script>
+<script src="js/gunfire.js?v=2026-10-31e"></script>
+<script src="js/targeting.js?v=2026-10-31e"></script>
+<script src="js/toolbox.js?v=2026-10-31e"></script>
+<script src="js/mixtool.js?v=2026-10-31e"></script>
+<script src="js/radialmenu.js?v=2026-10-31e"></script>
+<script src="js/input.js?v=2026-10-31e"></script>
+<script src="js/game.js?v=2026-10-31e"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1866,7 +1866,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-10-31d"></script>
+<script src="js/init.js?v=2026-10-31e"></script>
 
 </body>
 </html>
