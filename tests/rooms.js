@@ -53,7 +53,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             recruitDo(); partyPickChoose('nobody'); const n2 = followers[followers.length - 1]; o.nobody = [!!n2.post, partyMembers().length, followers.length];
             const before = shardCount; recruitDo(); partyPickChoose('cancel'); o.cancel = [before - shardCount, followers.length, partyPickBusy()]; return o; })()`);
         same(r.asked, true, 'asked'); same(r.busy, true, 'the question is up'); same(r.paid, 0, 'paid before the choice'); same(r.again, false, 'a second question at once'); same(r.n, 3, 'a recruit made before the choice');
-        ok(r.member[0] && !r.member[1], 'the member that made room: ' + JSON.stringify(r.member)); same(r.recruit.join(), 'true,true,30,4', 'the recruit takes its card, paid once');
+        ok(r.member[0] && !r.member[1], 'the member that made room: ' + JSON.stringify(r.member)); same(r.recruit.join(), 'true,true,200,4', 'the recruit takes its card, paid once (RECRUIT_COST, 200 since the follow-up scope of 2026-10-31)');
         same(r.nobody.join(), 'true,3,5', 'NOBODY: the recruit holds a room'); same(r.cancel.join(), '0,5,false', 'CANCEL');
     });
     check('a member that makes room when no room has a place: exiling it is asked first; BACK goes back; EXILE takes it off the roster for good (no body, not coming back, not saved) and the recruit takes its card', () => {
@@ -86,7 +86,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the code: every way of posting asks partyPlace (HOLD, REMOVE, DISBAND, the squad over-full, an egg); + RECRUIT and an egg ask who makes room; the picker is in the page', () => {
         const P = rd('js/party.js'), C = rd('js/clone.js'), S = rd('js/followerspots.js'), H = rd('game.html');
         ok(/partyPlace\(a, room, true\)/.test(P) && /partyPlace\(f, partyRoomOf\(f\), true\)/.test(P) && /const at = partyPlace\(f, room, true\);/.test(P), 'party.js');
-        ok(/partyPickOpen\("A RECRUIT"/.test(C), 'the recruit'); ok(/partyPickOpen\(roleLabel\(s\.type\)/.test(S) && /partyPlace\(f, s\.room, true\)/.test(S), 'the egg'); ok(/<div id="partyPick"/.test(H) && /body\.party-pick #partyPick/.test(H), 'the page');
+        ok(/partyPickOpen\("A RECRUIT"/.test(C), 'the recruit'); ok(/partyPickOpen\(_fpSpotLabel\(s\)/.test(S) && /partyPlace\(f, s\.room, true\)/.test(S), 'the egg'); ok(/<div id="partyPick"/.test(H) && /body\.party-pick #partyPick/.test(H), 'the page');
     });
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);

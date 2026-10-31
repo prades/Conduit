@@ -81,6 +81,19 @@ Built from the archive's newest sections (the patch frame, the clarifications, t
 - **The name.** The archive's newest notes say "the Toxic Queen"; the game keeps the name you approved this morning, THE TOXIC ANT QUEEN (provisional either way).
 - **Side Quest's reaction to a kill** (disappointment, reduced trust): undecided in the archive; the placeholder stands.
 
+## 1f. Follower scarcity, breeding and the Vital items (built 2026-10-31, build `g`; docs/FOLLOWER-PROGRESSION.md)
+
+Built from the archive's follow-up scope ("follower scarcity, breeding quality, and Vital Prisms", 2026-10-31) and the brief. What was decided on the way, all provisional:
+
+- **The posts cost ◆200.** The archive's "Directly purchasing a recruit costs exactly 200 shards" is read as both direct ways in: the roster's + RECRUIT (was ◆30) and a post's egg (was free). The archive's Sanctuary page still calls a post "free, one-time"; the brief's "unaffordable: nothing spent, exhausted or created" only makes sense with a price. Say if the eggs should be free.
+- **The roster's RECRUIT is not limited.** Only the posts are finite ("no global one-recruit limit"). If direct recruiting should be scarce too, the button needs a rule of its own.
+- **Breeding has no room, keeper or wait.** The Sanctuary design's chamber, its keeper and the breeding duration are not built; the offspring comes out at the Crystal at once, from the roster's BREED button (two taps). The pair is any two bonded followers; neither is used up or changed.
+- **The formula** (per stat: hp, attack, defense, special attack, accuracy, will): `min(2 × own, max(own, the parents' mean) × 1.05 × (1 ± 3%))`, three places. "No cross-generation stacking" (the Sanctuary page) is read as: the bonus is applied once per follower, at birth, in its base; a bred parent's higher base is inherited through the mean, so a line does climb, bounded by the cap of twice the personality's own number. If climbing across generations should stop altogether, inherit from the personality's own numbers instead of the parents' (one line in js/breeding.js breedBase).
+- **The Vital items restore, up to the born hp.** The archive's section is "permanent follower HP-stat restoration" ("restores a follower's permanently lost base HP stat"); the brief's "permanently increase" is read the same way. A follower that has lost nothing is not a target. If a Vital item should raise a follower past what it was born with, the cap is one line (js/vital.js vitalUse).
+- **Five cases** (+5, +5, +10, +10, +20: 50 hp stat in all across the facility), at the places listed in docs/FOLLOWER-PROGRESSION.md. The count and the places are the implementer's.
+- **The lead parent** decides the offspring's type and element (the higher level; a tie, the one in view). The archive says "offspring inherit one parent's type" without saying which.
+- **The Game Bible** records the formula and the measured outcome (150 offspring: +5% on average on every stat in the list, never under a recruit of the personality), as the archive asked, from the test that measures them (tests/followerprog.js).
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

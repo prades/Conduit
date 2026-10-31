@@ -630,7 +630,9 @@ const CSORTS = [
 // Crystal as it was found: a BRAWLER, a MAGE or a TECHNICIAN (FOLLOWER_TYPES, js/species.js: an even draw of the three) made of one of the elements brought online (an even draw, modulationPick below). The player does
 // not choose either, and cannot change them afterwards ("they have their class already and you just have to evolve them to make them better": js/evolution.js); the toast says what came out.
 // It is offered in the ROSTER only (the Command Center's roster tab and the phone roster): "that needs to be the only way", so the Crystal menu and the dock have none.
-const RECRUIT_COST = 30;
+// The price is the archive's (the Next Major Update Framework's follow-up scope, 2026-10-31: "Directly purchasing a recruit costs exactly 200 shards"); it was 30. The recruitment posts (js/followerspots.js) cost the
+// same and are each claimed once; this button is not limited (open: docs/OPEN-QUESTIONS.md). Breeding a bonded pair's offspring is the cheaper way in (js/breeding.js, BREED.price).
+const RECRUIT_COST = 200;
 // The type of a recruit that is not asked for one: an even draw of the three.
 function recruitDrawType() { return FOLLOWER_TYPE_ORDER[Math.floor(Math.random() * FOLLOWER_TYPE_ORDER.length)]; }
 // `type`, `element`: for a test or a scripted recruit; none is a draw.

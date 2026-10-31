@@ -32,7 +32,7 @@ async function openGame(b, w, h) {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(200);
     gameState.running = true; crystalMenuOpen = false; _fp.gfxSaved = 'high'; gfxLow = false; if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false;
     facilityBlackoutSet(false); for (const r of _fp.F.relays) { try { _fp.relays[r.id].online = true; for (const room of r.powers) facilityPower(room, true); } catch (e) {} }
-    shardCount = 240; for (let i = followers.length; i < 5; i++) recruitFollower(); partyTick(); await wait(100);
+    shardCount = 1200; for (let i = followers.length; i < 5; i++) recruitFollower(); partyTick(); await wait(100);   // (a recruit is RECRUIT_COST, 200)
     window.__near = (x, y) => { const F = _fp.F; if (facilityWalkable(x, y, F)) return [x, y]; for (let d = 0.5; d < 8; d += 0.5) for (let t = 0; t < 16; t++) { const qx = x + Math.cos(t * Math.PI / 8) * d, qy = y + Math.sin(t * Math.PI / 8) * d; if (facilityWalkable(qx, qy, F)) return [qx, qy]; } return [x, y]; };
     window.__stand = (x0, y0) => { const [x, y] = __near(x0, y0); floatingTexts.length = 0; _fp.portalCool = frame + 1e6; player.x = player.targetX = player.visualX = x; player.y = player.targetY = player.visualY = y; player.fpPath = null;
       partyMembers().forEach((f, i) => { const q = __near(x + 1 + (i % 2), y + 0.6 + i * 0.5); f.x = f.targetX = f.visualX = q[0]; f.y = f.targetY = f.visualY = q[1]; f.fpPath = null; }); return (facilityRoomAt(x, y, _fp.F) || {}).id; };

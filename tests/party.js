@@ -59,7 +59,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // an open slot opens the roster
     click($$('#squadBar .sb-slot')[1]); await wait(60); out.openSlot = { roster: ccOpenTab }; ccClose(); await wait(30);
     // a recruit fills a slot, the fourth is posted
-    shardCount = 500; recruitFollower(); recruitFollower(); recruitFollower(); recruitFollower(); partyTick(); await wait(60);
+    shardCount = 1000; recruitFollower(); recruitFollower(); recruitFollower(); recruitFollower(); partyTick(); await wait(60);
     out.recruit = { names: names(), members: partyMembers().length, posted: partyPosted().length, fourth: followers[followers.length - 1].post || null };
     // the roster says which room each follower holds
     ccOpen('roster'); await wait(600);
@@ -168,8 +168,8 @@ function measure(w, h) {
     group('NEW FOLLOWERS (a recruit, an egg, a follower made again, one back from the dead)');
     check('a recruit with room joins the squad; with the squad full it holds the Crystal Chamber; an egg taken with the squad full holds the room the egg was in (and says so); with room it follows', () => {
         const r = J(`(function(){ const fs = __fresh(2), o = {}; shardCount = 500; recruitFollower('brawler', 'fire'); o.join = [partyMembers().length, partyPosted().length]; recruitFollower('brawler', 'ice'); o.full = [partyMembers().length, partyPosted().length, followers[followers.length - 1].post];
-            const s = _fp.spots[0]; const g = __fresh(3); s.egg = _fpSpotEgg(s); actors.push(s.egg); floatingTexts.length = 0; const f = facilityFollowerSpotTake(s); o.egg = [f.post, s.room, f.stance, floatingTexts.map(t => t.text).join('|')];
-            const g2 = __fresh(2); const s2 = _fp.spots[1]; s2.egg = _fpSpotEgg(s2); actors.push(s2.egg); const f2 = facilityFollowerSpotTake(s2); o.eggRoom = [f2.post || null, f2.stance, partyMembers().length]; return o; })()`);
+            const s = _fp.spots[0]; const g = __fresh(3); s.used = false; s.egg = _fpSpotEgg(s); actors.push(s.egg); floatingTexts.length = 0; shardCount = 1000; const f = facilityFollowerSpotTake(s); o.egg = [f.post, s.room, f.stance, floatingTexts.map(t => t.text).join('|')];
+            const g2 = __fresh(2); const s2 = _fp.spots[1]; s2.used = false; s2.egg = _fpSpotEgg(s2); actors.push(s2.egg); shardCount = 1000; const f2 = facilityFollowerSpotTake(s2); o.eggRoom = [f2.post || null, f2.stance, partyMembers().length]; return o; })()`);
         same(r.join.join(), '3,0', 'a recruit with room'); same(r.full.join(), '3,1,crystal_chamber', 'a recruit with the squad full'); same(r.egg[0], r.egg[1], 'the egg holds ITS room'); same(r.egg[2], 'hold', 'stance'); ok(/HOLDS THE/.test(r.egg[3]), 'said ' + r.egg[3]); same(r.eggRoom.join(), ',follow,3', 'an egg with room follows');
     });
     check('a follower made again (RE-ROLL) leaves the squad and is admitted again when it is back', () => {

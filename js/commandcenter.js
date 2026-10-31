@@ -526,6 +526,10 @@ function _ccDrawSettings(side) {
     if (S.followers) row.appendChild(_ccBtn(exArmed ? "TAP AGAIN TO EXILE" : "EXILE", "#ff3a4a", exArmed, () => { const nb = _ccNeighbour(one, 1); if (partyExileTap([one]) === "exiled") _ccFocus = nb && nb !== one && !nb.dead ? nb : null; }, "act cc-exile"));
     if (ccRerollArmed) side.appendChild(_ccEl("div", "cc-note", "BACK TO THE CRYSTAL, MADE AGAIN AS SOMEONE NEW"));
     if (exArmed) side.appendChild(_ccEl("div", "cc-note", "EXILED: GONE FOR GOOD, NOTHING BACK · ITS PLACE IS FREE FOR SOMEONE NEW"));
+    if (S.followers && typeof breedLabel === "function") {   // BREED (js/breeding.js): a bonded pair's offspring at the Crystal for BREED.price, two taps (the first arms it, the second pays); the button says why not when it cannot; unbonded, a line says what bonds
+        if (breedPartner(one)) { const bl = breedLabel(one), brow = _ccEl("div", "cc-row"); side.appendChild(brow); brow.appendChild(_ccBtn(bl.text, "#ff7ab8", breedArmed(one), () => { breedTap(one); ccRender(); }, "wide cc-breed", bl.sub)); }
+        else side.appendChild(_ccEl("div", "cc-note", "BREED ◆" + BREED.price + ": BONDS FIRST · TWO FOLLOWERS THAT FIGHT SIDE BY SIDE BECOME A PAIR"));
+    }
     if (typeof equipSubclassRow === "function") equipSubclassRow(side, one);   // its SUBCLASS, under the buttons: on a small tablet the buttons must not be pushed out of the column (js/cardsui.js)
     const info = typeof unitInfo === "function" ? unitInfo(one) : null;
     if (info) {   // (the card in view has VITALS, and the DEFENSE and ATTACK bars: the column lists the rest)
@@ -607,7 +611,8 @@ function _ccSqSig() {
 function _ccSideSigNow() {
     if (ccCarousel()) {   // the carousel's settings are for the creature in view
         const f = _ccFocus; if (!f) return "F-";
-        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed + "|" + partyExileArmed([f]) + "|" + (typeof equipSig === "function" ? equipSig(f) : "");
+        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed + "|" + partyExileArmed([f]) + "|" + (typeof equipSig === "function" ? equipSig(f) : "")
+            + "|" + (f.partnerUid || "") + "|" + (typeof breedArmed === "function" ? breedArmed(f) : "") + "|" + (typeof BREED !== "undefined" && typeof shardCount === "number" ? shardCount >= BREED.price : "");   // (the BREED button: its partner, its two taps, whether it can pay: js/breeding.js)
     }
     const pool = typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0;
     const one = ccSelectionList().length === 1 ? ccSelectionList()[0] : null, snap = one ? [one.level, Math.round((one.health || 0) / 5), one.evolved, one.element].join() : "";

@@ -76,6 +76,7 @@ const SUITES = [
     ['Series 2: the plumbing for the species cards and the class cards (the pack in the list with no numbers, fits, bonuses that add and come off, the ability-cooldown stat, the saves, the roll and the shelf when it is on sale)', 'series2.js'],
     ['the Sleeping Potion: two rows of the pack, the universal pill and key, the throw (at your feet, or on the creature you have locked), the sleep that cancels a bite and lands nothing, the original on your followers too and never you, the copy on enemies only for a quarter, the prices (◆100, ◆50 after the queen, ◆100 lost), the lab\'s copy, the save', 'potion.js'],
     ['Side Quest: the drone in the Sewers\' side passage (after the lab turn-in and ten brood kills, not before), the call, the talk and the archive\'s opening, the promise as a choice that changes nothing, "…" once the queen\'s fate is decided, the shop, the save', 'sidequest.js'],
+    ['follower progression: the recruitment posts claimed once for ◆200 (short of it nothing moves; the squad-full question; saved), breeding a bonded pair\'s offspring for ◆50 (the formula, deterministic and better raised, applied once through level-ups, loads, respawns and bodies; two taps; the squad-full question), the Vital items (+5 / +10 / +20 of the hp stat deaths took, the target, never the dead, saved) and the five hidden cases', 'followerprog.js'],
     ['the Command Center as a carousel', 'carousel.js'],
     ['facility play',            'facilityplay.js'],
     ['facility map',             'facility.js'],

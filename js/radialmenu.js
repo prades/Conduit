@@ -148,6 +148,9 @@ function _radialCard(r, roster) {
     if (roster && r.f.isFollower === true && !r.f.isClone && typeof partyExileTap === "function") {   // EXILE: let it go for good, to make room (js/party.js: the first tap arms it, the second does it)
         const armed = partyExileArmed([r.f]), ex = _rEl("button", "rp-btn small wide rp-exile" + (armed ? " on" : ""), armed ? "TAP AGAIN TO EXILE" : "EXILE"); ex.style.setProperty("--c", "#ff3a4a"); _rClick(ex, () => { partyExileTap([r.f]); radialRender(); }); mid.appendChild(ex);
     }
+    if (roster && r.f.isFollower === true && !r.f.isClone && typeof breedLabel === "function" && breedPartner(r.f)) {   // BREED (js/breeding.js): an offspring with its bond partner, two taps (the Command Center's button, on the phone)
+        const bl = breedLabel(r.f), b = _rEl("button", "rp-btn small wide rp-breed" + (bl.on ? " on" : ""), bl.text); b.style.setProperty("--c", "#ff7ab8"); b.title = bl.sub; _rClick(b, () => { breedTap(r.f); radialRender(); }); mid.appendChild(b);
+    }
     _rClick(card, () => { if (typeof ccToggle === "function") ccToggle(r.f); radialRender(); });   // tap a card: select it (the command pool, js/commandcenter.js)
     return card;
 }

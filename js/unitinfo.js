@@ -72,7 +72,7 @@ function followerInfo(a) {
     // STATS
     const xpp = typeof xpProgress === "function" ? xpProgress(a) : null;   // its XP, and how far it is from evolving (js/levels.js)
     out.stats.push({ h: "VITALS", rows: [["LEVEL", String(a.level || 1)]].concat(xpp ? [["XP", xpText(xpp)]] : [], xpp && xpp.evo ? [["EVOLVES", xpEvoText(xpp).replace(/^EVOLVES /, "")]] : [],
-        [["HEALTH", Math.max(0, Math.round(a.health || 0)) + " / " + Math.round(a.maxHealth || 0)], ["POWER", String(Math.round(a.power || 0))], ["SPEED", ((a.moveSpeed || 0) * 1000).toFixed(0)]]) });
+        [["HEALTH", Math.max(0, Math.round(a.health || 0)) + " / " + Math.round(a.maxHealth || 0)], ["POWER", String(Math.round(a.power || 0))], ["SPEED", ((a.moveSpeed || 0) * 1000).toFixed(0)]], _uiBirthRows(a)) });
     if (a.stats) out.stats.push({ h: "BASE STATS" + (a.personality ? " · " + String(a.personality).toUpperCase() : ""), rows: Object.keys(a.stats).filter(k => k !== "resonance").map(k => [k.replace(/([A-Z])/g, " $1").toUpperCase(), String(a.stats[k])]) });
     const tr = [], add = (tab, key, label) => { const t = tab && key && tab[key]; if (t) tr.push([label, t.name + " — " + t.description]); };
     if (typeof COMBAT_TRAITS !== "undefined") { add(COMBAT_TRAITS, a.combatTrait, "COMBAT"); add(NATURAL_TRAITS, a.naturalTrait, "NATURE"); add(PERKS, a.perk, "PERK"); }
@@ -96,6 +96,13 @@ function cloneTypeInfo(species, cls) {
 }
 // A live clone: its type's info, with its own health.
 function cloneInfo(a) { const o = cloneTypeInfo(a.speciesName, a.className || "scout"); o.unit = a; o.stats[0].rows[0] = ["HEALTH", Math.max(0, Math.round(a.health || 0)) + " / " + Math.round(a.maxHealth || 0)]; return o; }
+// a follower's birth and its hp stat (js/breeding.js, js/vital.js): where it came from, and what its deaths have cost it so far
+function _uiBirthRows(a) {
+    if (!a || a.isFollower !== true || a.isClone || !a.base) return [];
+    const hp0 = typeof followerHp0 === "function" ? followerHp0(a) : a.base.hp, lost = typeof followerHpLost === "function" ? followerHpLost(a) : 0;
+    const n = v => typeof vitalNum === "function" ? vitalNum(v) : String(v);
+    return [["ORIGIN", a.bred ? "BRED · GEN " + a.bred.gen : "RECRUITED"], ["HP STAT", n(a.base.hp) + " / " + n(hp0) + (lost > 0 ? " · " + n(lost) + " LOST TO DEATHS" : "")]];
+}
 function unitInfo(a) { return a && a.isClone ? cloneInfo(a) : followerInfo(a); }
 
 // ── THE OVERLAY ──

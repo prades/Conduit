@@ -166,8 +166,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('typeof CTABS'), 'undefined', 'the Crystal has no tabs');
     });
     check('a recruit costs RECRUIT_COST shards and a follower comes out at the Crystal', () => {
-        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0; shardCount = 100; floatingTexts.length = 0;');
-        same(run('recruitFollower()'), true, 'recruited'); same(run('shardCount'), 100 - run('RECRUIT_COST'), 'the price'); same(run('followers.filter(f => !f.dead).length'), 1, 'a new follower');
+        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0; shardCount = 1000; floatingTexts.length = 0;');
+        same(run('RECRUIT_COST'), 200, 'the price is the archive\'s (the follow-up scope of 2026-10-31: "Directly purchasing a recruit costs exactly 200 shards")');
+        same(run('recruitFollower()'), true, 'recruited'); same(run('shardCount'), 1000 - run('RECRUIT_COST'), 'the price'); same(run('followers.filter(f => !f.dead).length'), 1, 'a new follower');
         ok(run('followers[0].x !== undefined && Math.hypot(followers[0].x - crystal.x, followers[0].y - crystal.y) < 4'), 'it did not come out at the Crystal');
         ok(run('floatingTexts.some(t => /RECRUITED/.test(t.text))'), 'no confirmation');
     });
@@ -183,7 +184,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run('followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0;');
     });
     check('a scripted recruit can ask for a type and an element; nothing in the UI does: there is no recruit chooser and no element mix', () => {
-        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0; shardCount = 500;');
+        run('followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0; shardCount = 1000;');
         run('recruitFollower("camper", "ice"); recruitFollower("sniper", "ice"); recruitFollower("brawler", "flux");');
         same(run('followers.filter(f => f.element === "ice" && f.role === "camper").length'), 1, 'a technician made of ice'); same(run('followers.filter(f => f.element === "ice" && f.role === "sniper").length'), 1, 'a mage made of ice');
         ok(run('followers.length === 3 && followers[2].role === "brawler" && followers[2].element === "flux"'), 'the asked-for brawler of flux');

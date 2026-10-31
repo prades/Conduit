@@ -372,10 +372,20 @@ const FACILITY_MAP = {
         // THE SEWER SAMPLE (the sample puzzle, docs/SEWER-QUEST.md): a sealed vial of the river's water at the end of the collapsed tunnel, in sight from the north ledge and out of reach behind the choke. Two ways to it: a flux
         // technician's Telegrab (it flies out over the rubble: an item anywhere on the screen), or a fire technician launched into the tunnel by the electric technician's Kinetic Launcher, which drills the choke through from inside.
         { id: "pk_sewer_sample", room: "sewers", at: [880, 800], items: [["sewer_sample", 1]], note: "A water sample at the end of the collapsed tunnel, behind the choke." },
+        // THE VITAL ITEMS (js/vital.js; docs/FOLLOWER-PROGRESSION.md): five, hidden, once each (the archive's follow-up scope, 2026-10-31: "tucked-away corners, secret spaces, behind breakable obstacles where supported,
+        // and/or in dangerous optional routes ... a finite supply rather than an unlimited repeatable farm"). Where: the collapsed tunnel's pocket beside the water sample (behind the choke), the cistern's far corner behind the
+        // boss gate (the Toxic Queen's room), the far end of the Cold Storage's ice cave past the technician's pad, the Armory's north-west corner, the arena's south-west corner. The count and the places are provisional
+        // (docs/OPEN-QUESTIONS.md). (A case must stand a whole tile inside its room's outline in the map as drawn AND as snapped: js/facility.js validates both; a one-tile alcove has no such point.)
+        { id: "pk_vital_tunnel", room: "sewers", at: [880, 820], items: [["vital_fleck", 1]], note: "A Vital Fleck in the collapsed tunnel's pocket, a step south of the water sample, behind the choke." },
+        { id: "pk_vital_cistern", room: "sewers", at: [1080, 840], items: [["vital_core", 1]], note: "A Vital Core in the cistern's far north-west corner, behind the boss gate: the queen's room." },
+        { id: "pk_vital_cave", room: "cold_storage", at: [640, 860], items: [["vital_fleck", 1]], note: "A Vital Fleck at the far end of the ice cave, past the ice technician's pad." },
+        { id: "pk_vital_armory", room: "armory", at: [200, 960], items: [["vital_prism", 1]], note: "A Vital Prism in the Armory's north-west corner, behind the lockers." },
+        { id: "pk_vital_arena", room: "arena", at: [400, 1160], items: [["vital_prism", 1]], note: "A Vital Prism in the arena's south-west corner, below the west pad, against the rock." },
     ],
 
     // FOLLOWER SPOTS (js/followerspots.js): a place where a follower waits, in its egg, as one thing and nothing else: its `type` (brawler, sniper = the MAGE, camper = the TECHNICIAN) and its `element` are fixed,
-    // and so is where it is. Walk up to it and it joins, there, as that type and that element; the spot fills again with another of the same after a delay. `at` is the middle of a tile (sketch pixels: 20 to a tile).
+    // and so is where it is. Walk up to it with FP_SPOT.price shards and it joins, there, as that type and that element, and the post is claimed for good (it does not fill again: the archive's follow-up scope, 2026-10-31).
+    // `at` is the middle of a tile (sketch pixels: 20 to a tile).
     // Seven spots, in the places the player marked on the facility's outline view: the computer lab's north-east corner, the show room's north end, the observation deck, the experiment lab, the second teleport
     // room, and two in the arena (its west end by the Armory's steel door, and its middle). Every element has one; core has two.
     followerSpots: [

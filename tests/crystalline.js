@@ -345,7 +345,7 @@ const restOf = (n, k) => Math.max(1, Math.round((n + 1) / k) - 1);   // the rest
         same(o.grew, true, 'maximum health did not grow'); same(o.now, o.miss, 'a level-up changed how hurt it is');
     });
     await check('the save keeps its parts (33 fields) and its version, the follower record its fields, and the collection its shape: nothing was added for the bonuses', () => {
-        same(J('Object.keys(facilitySaveCollect()).length'), 33, 'the save\'s fields'); same(J('FS.version'), 1, 'FS.version'); const f = JSON.parse(run('JSON.stringify(followerRecord(__fresh(1)[0]))')), known = 'element,personality,combatTrait,naturalTrait,perk,stats,role,uid,partnerUid,base,level,xp,evolved,evoWait,playStyle,post,move,cards'.split(',');
+        same(J('Object.keys(facilitySaveCollect()).length'), 33, 'the save\'s fields'); same(J('FS.version'), 1, 'FS.version'); const f = JSON.parse(run('JSON.stringify(followerRecord(__fresh(1)[0]))')), known = 'element,personality,combatTrait,naturalTrait,perk,stats,role,uid,partnerUid,base,level,xp,evolved,evoWait,playStyle,post,move,cards,hp0,bred'.split(',');   // (hp0 and bred: its birth, js/breeding.js; neither holds a card's bonus)
         for (const k of Object.keys(f)) ok(known.includes(k), 'a new field in a follower\'s record: ' + k);
     });
 

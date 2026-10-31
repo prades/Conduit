@@ -132,6 +132,7 @@ function followerRecord(a) {
         element: a.element || "fire", personality: a.personality, combatTrait: a.combatTrait, naturalTrait: a.naturalTrait, perk: a.perk, stats: a.stats, role: a.role,
         uid: a.uid || null, partnerUid: a.partnerUid || null,   // its bond (js/bonds.js)
         base: a.base || undefined, level: a.level, xp: a.xp,   // its level (js/levels.js); one waiting to respawn carries its own
+        hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // born of a bonded pair: the hp it was born with and its line (js/breeding.js; the Vital items restore to hp0: js/vital.js)
         evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined,   // js/evolution.js
         playStyle: a.playStyle || undefined,   // js/commandcenter.js
         post: a.post || undefined,             // the room it holds (js/party.js)
@@ -164,6 +165,7 @@ function followerBuild(entry) {
     if (entry.move) npc.move = entry.move;
     if (entry.playStyle) npc.playStyle = entry.playStyle;
     if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
+    if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base below already carries what it was born with; nothing is added again
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
     if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }
     return npc;
