@@ -683,9 +683,7 @@ function render() {
 
     if (typeof fireBombsTick === "function") fireBombsTick();   // the bouncing fire bombs and the ground they burn (js/firebombs.js)
 
-    // ── RED HEALTH DECAY ──
-    // Skips a neutral recruit. The decay bleeds enemies that have wandered off; a recruit is on team red only for bookkeeping until it joins.
-    actors.forEach(a=>{ if(a.team==="red" && !isNeutralBystander(a)){a.health-=0.01; if(a.health<=0){a.health=0;a.dead=true;}} });
+    // (A creature loses health only to a hit, a burn or a hazard: it never bleeds on its own. It once lost 0.01 a frame, which killed an idle creature in time and paid shards, DNA and scrap for it.)
 
     // ── REMOVE DEAD NPCs, respawn ──
     actors.forEach(a=>{

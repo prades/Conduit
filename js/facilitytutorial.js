@@ -33,7 +33,7 @@ function facilityBlackout() { return !!(typeof _fp !== "undefined" && _fp && _fp
 function _fpPowered(key) { return !facilityBlackout() || _fp.tut.powered.has(key); }
 function _fpDarkAmt() { return facilityBlackout() ? FP_TUT.dark : (typeof attractOn === "function" && attractOn() ? ATTRACT.dark : FP_DARK); }
 
-function facilityTutorialStart(F) {
+function facilityTutorialStart(F, loaded) {   // loaded: a saved game's followers are already here (they are not levelled by the tutorial)
     const key = (id) => (typeof _fpLightKey === "function" ? _fpLightKey(id) : id), src = [];
     for (const p of (F.solids || [])) if (p.kind === "floodlight" && p.bb) src.push({ x: (p.bb[0] + p.bb[2]) / 2, y: (p.bb[1] + p.bb[3]) / 2, r: FP_TUT.floodR, k: FP_TUT.floodK, room: key(p.room), what: "floodlight" });
     for (const d of (F.decor || [])) {
@@ -44,7 +44,7 @@ function facilityTutorialStart(F) {
     _fp.tut = { blackout: !off, powered: new Set(), sources: src, said: false, boostUntil: 0 };
     facilityPickupsStart(F);
     if (typeof facilityStationsStart === "function") facilityStationsStart(F);
-    if (typeof facilityDirectorStart === "function") facilityDirectorStart();
+    if (typeof facilityDirectorStart === "function") facilityDirectorStart(loaded);
     return _fp.tut;
 }
 // the player's side of the tutorial: an empty pack and NO CLASS. Classes are given when the tutorial is finished, and only then (js/tutorial.js opens the class picker); until a class is chosen the cases for a class

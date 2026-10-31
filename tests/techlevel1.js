@@ -128,8 +128,9 @@ function measure(w, h) {
             h.x = W.x + 1.0; h.y = W.y + 0.3; const hh = h.health; o.sameSide = e.bite(h) === h && h.health < hh;
             h.y = W.y + 2.5; spawnFollowerProjectile({ x: W.x + 2, y: W.y }, g, '#f00', 10, 4, null); const shot = followerProjectiles[followerProjectiles.length - 1]; shot.targetsGreen = true; o.shotHp = 0; shot.onHit = () => { o.shotHp = 1; };
             for (let i = 0; i < 40; i++) render(); o.shot = followerProjectiles.includes(shot) ? 1 : 0;
-            const e2 = __foe(W.x + 2.5, W.y + 0.4); const before = e2.health; spawnFollowerProjectile({ x: W.x - 2, y: W.y, element: 'fire' }, e2, '#f80', 10, 4, null);
-            for (let i = 0; i < 60; i++) render(); o.ours = before - e2.health;
+            // (the creature that bit across the shield stands 0.45 beyond it, inside the shot's reach, so it is taken out of the way: what the shot does is then what it does to the one 2.5 tiles beyond. Only the shot's own damage is counted, whatever the squad does meanwhile)
+            e.y = W.y + 3; const e2 = __foe(W.x + 2.5, W.y + 0.4), from = { x: W.x - 2, y: W.y, element: 'fire' }; o.ours = 0; const _ad = applyDamage; applyDamage = function (tg, am, src) { if (src === from && tg === e2) o.ours += am; return _ad.apply(this, arguments); };
+            try { spawnFollowerProjectile(from, e2, '#f80', 10, 4, null); for (let i = 0; i < 60; i++) render(); } finally { applyDamage = _ad; }
             e.x = W.x + 0.45; e.y = W.y; g.x = W.x - 0.45; g.y = W.y; h.x = W.x + 1.0; h.y = W.y + 0.3; t.x = W.x - 3; t.y = W.y;
             o.nearest = _abNearestFoe(e, 5) === h; let reached = []; _abForEachFoeInRadius(e, 3, v => reached.push(v === g ? 'g' : v === h ? 'h' : '?')); o.reached = reached.join(); return o; })()`);
         same(r.bite, false, 'the bite across landed'); same(r.hp, 0, 'the follower lost health'); same(r.said, true, 'no BLOCKED'); same(r.ripple, true, 'no ripple on the shield');

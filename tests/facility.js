@@ -1,9 +1,11 @@
-// THE FACILITY (js/facilitymap.js = the authored data, js/facility.js = collision, navigation, validation and the debug view).
+// THE FACILITY (js/facilitymap.js = the authored data, js/facility.js = collision, navigation, validation and the inspection map).
 // ASKED: authored fixed geometry from the sketch; the outer path is a boundary only (not walkable, in no navigation link); the arena perimeter is real collision;
-// nothing invented (no doorway, ramp or shortcut that is not confirmed); a debug view; agents cannot walk through the arena walls or use the outer boundary as a route.
+// nothing invented (no doorway, ramp or shortcut that is not confirmed); a map to look the facility over (its debugging features were taken out); agents cannot walk through the arena walls or use the outer boundary as a route.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
+const os = require('os');
+const { execFileSync } = require('child_process');
 const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
 process.on('unhandledRejection', () => {});
 const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
@@ -12,6 +14,43 @@ function group(n) { console.log('\n' + n); }
 function check(name, fn) { try { fn(); console.log('  ok   ' + name); } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); } }
 function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
+
+function findChromium() {
+    const fromEnv = process.env.CHROMIUM_PATH; if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
+    const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers'; let dirs = [];
+    try { dirs = fs.readdirSync(base); } catch (e) { return null; }
+    for (const d of dirs.filter(d => d.startsWith('chromium')).sort().reverse()) for (const rel of ['chrome-linux/chrome', 'chrome-linux/headless_shell']) { const p = path.join(base, d, rel); if (fs.existsSync(p)) return p; }
+    for (const p of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']) if (fs.existsSync(p)) return p;
+    return null;
+}
+// The real page: the MAP button, the bar, the drawing (lit pixels on its canvas), the zoom, CLOSE, F3.
+const PROBE = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
+  var out = { errors: [] }, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); };
+  window.addEventListener('error', function(e){ out.errors.push(String(e.message)); }); var ce = console.error; console.error = function(){ out.errors.push(Array.prototype.slice.call(arguments).join(' ')); ce.apply(console, arguments); };
+  try {
+    gameState.running = true; facilityBlackoutSet(false); if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false; await wait(100);
+    var root0 = document.getElementById('facilityInspect'); out.startedClosed = !root0 || !root0.classList.contains('open');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F3' })); await wait(80); var r1 = document.getElementById('facilityInspect'); out.f3 = !!r1 && r1.classList.contains('open');
+    var btn = document.getElementById('btnFacility'); out.title = btn.getAttribute('title');
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(300);
+    var root = document.getElementById('facilityInspect'); out.open = !!root && root.classList.contains('open');
+    out.buttons = Array.prototype.slice.call(root.querySelectorAll('.fi-bar button')).map(function(b){ return b.textContent; }); out.layers = root.querySelectorAll('[data-layer]').length; out.oldView = !!document.getElementById('facilityDebug');
+    var cv = root.querySelector('canvas'), g = cv.getContext('2d'), d = g.getImageData(0, 0, cv.width, cv.height).data, lit = 0; for (var i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 120) lit++; out.lit = lit;
+    var press = function(label){ var b = Array.prototype.slice.call(root.querySelectorAll('.fi-bar button')).filter(function(x){ return x.textContent === label; })[0]; b.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
+    out.z0 = facilityInspect.cam.z; press('+'); out.zoomIn = facilityInspect.cam.z; press('−'); out.zoomOut = facilityInspect.cam.z; press('+'); press('FIT'); out.fit = facilityInspect.cam.z;
+    press('✕ CLOSE'); await wait(80); out.closed = !root.classList.contains('open');
+  } catch (err) { out.err = String(err && err.stack || err); }
+  var pre = document.createElement('pre'); pre.id = '__fi'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
+}, 2500); });</script></body>`;
+function measure(w, h, query) {
+    const bin = findChromium(); if (!bin) return null;
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fi-')), file = path.join(dir, 'game.html');
+    fs.writeFileSync(file, rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/">').replace(/<\/body>/i, () => PROBE));
+    let dom = '';
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + h, '--virtual-time-budget=30000', '--dump-dom', 'file://' + file + (query || '')], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 120000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = String(e.stdout || ''); }
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+    const m = dom.match(/<pre id="__fi">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')) : undefined;
+}
 
 (async () => {
     const context = vm.createContext(makeBrowserSandbox({}));
@@ -148,7 +187,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.mouth, true, 'the staircase foot does not let a body onto the stairs'); same(r.door, true, 'the sliding door does not let a body into Teleport Room 2'); same(r.wallAboveDoor, false, 'the wall beside the door is open'); same(r.wallBelowMouth, false, 'the wall beside the stair mouth is open');
         ok(r.ids.includes('teleport_stair_room') && r.ids.includes('teleport_room_2') && r.ids.includes('lab_hallway'), 'the flood reached ' + r.ids); ok(!r.ids.some(id => ['catwalks', 'nest_area'].includes(id)), 'the flood reached the blocked-off catwalks or the nest area: ' + r.ids);
     });
-    check('the debug view draws the stair as stepped arcs and its tap text names it', () => { ok(/rp\.centre/.test(rd('js/facility.js')) && /from_deg/.test(rd('js/facility.js')), 'no curved ramp drawing'); run('facilityDebug.on = true; facilityDebugDraw(); facilityDebug.on = false;'); });
 
     group('THE CRYSTAL CHAMBER\'S DOOR AND THE HALLWAY');
     check('a sliding access door joins the Crystal Chamber to the hallway past the experiment lab: a body walks through it, the wall beside it holds', () => {
@@ -169,7 +207,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the lab has windows on every side that faces the hallway, drawn as glass, and they are solid like walls', () => {
         const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(); const glass = F.walls.filter(w => w.window); let through = 0; for (const w of glass) { const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2, dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], l = Math.hypot(dx, dy), nx = -dy / l, ny = dx / l; if (facilityCanStep(mx - nx * 0.6, my - ny * 0.6, mx + nx * 0.6, my + ny * 0.6)) through++; }
             return { n: glass.length, rooms: Array.from(new Set(glass.map(w => w.room))).sort(), ids: Array.from(new Set(glass.map(w => w.window))).sort(), through, windows: F.windows.length }; })()`);
-        ok(r.n >= 4, 'only ' + r.n + ' window pieces'); same(r.through, 0, 'a body walked through a window'); same(r.ids.filter(x => /^lab_/.test(x)).length, 4, 'lab windows ' + r.ids); same(r.windows, 8, 'compiled windows (four on the lab, three on the show room, one on the observation deck)'); ok(/window/.test(rd('js/facility.js')) && /143,227,255/.test(rd('js/facility.js')), 'windows are not drawn as glass');
+        ok(r.n >= 4, 'only ' + r.n + ' window pieces'); same(r.through, 0, 'a body walked through a window'); same(r.ids.filter(x => /^lab_/.test(x)).length, 4, 'lab windows ' + r.ids); same(r.windows, 8, 'compiled windows (four on the lab, three on the show room, one on the observation deck)');   // (the glass is drawn in the game: js/facilitystyle.js; the inspection map draws rooms only)
     });
     check('the lab\'s only DOOR is the narrow passage (its other way in is the Cold Storage\'s stairs, a doorway you go through, not a walk): with the passage shut no walk reaches it, and a flood from inside it never leaves it', () => {
         const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), C = facilityBuild({ closed: ['lab_passage'] }); const L0 = F.byId.get('experiment_lab'), cells = facilityFlood((L0.bb[0] + L0.bb[2]) / 2, (L0.bb[1] + L0.bb[3]) / 2, C), ad = __door('door_arena_hallway', C), out = facilityFlood(ad.mx, ad.my - 2, C);
@@ -352,7 +390,6 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(J('FACILITY_MAP.door_type'), 'sliding_access_door', 'door type');
         const o = J(`facilityBuild({ openings: [{ id: 'd', a: [760, 470], b: [785, 470], rooms: ['front_lobby', 'experiment_lab'] }] }).openings.find(x => x.id === 'd').door`); same(o, 'sliding_access_door', 'compiled opening');
         const D = J(`facilityGet().openings.map(x => [x.id, x.door])`); same(D.find(x => x[0] === 'door_stair_teleport_2')[1], 'sliding_access_door', 'the stair room door'); same(D.find(x => x[0] === 'open_stair_mouth')[1], null, 'the staircase foot has no door');
-        ok(/SLIDING DOOR/.test(rd('js/facility.js')), 'the debug view does not call a candidate a door');
     });
     check('the zone to the right (the catwalks) is blocked off for now: marked so, in no connection, with its exits not walkable', () => {
         const M = J('FACILITY_MAP'), c = M.rooms.find(r => r.id === 'catwalks'); same(c.development, 'blocked_off_for_now', 'marker'); ok(!M.connections.some(x => x.rooms.includes('catwalks')), 'a confirmed connection into it');
@@ -439,16 +476,31 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(Object.keys(r).length >= 11, 'rooms checked: ' + Object.keys(r).length);
     });
 
-    group('THE DEBUG VIEW');
-    check('it toggles, has the five layers, and draws every layer without throwing', () => {
-        same(J('Object.keys(facilityDebug.layers).join()'), 'outlines,collision,openings,elevation,nav', 'layers'); same(run('facilityDebugToggle()'), true, 'on'); same(run('facilityDebugToggle()'), false, 'off');
-        run('facilityDebug.on = true; facilityDebugDraw(); facilityDebug.on = false;');
-        ok(/\bF3\b/.test(rd('js/facility.js')) && /btnFacility/.test(rd('game.html')), 'no key or dock button');
+    group('THE INSPECTION MAP (the dock\'s MAP button)');
+    check('it toggles and draws without throwing, and it has no layers: the builder\'s debug view (layer switches, the readout and rule check, PLAY, F3, ?facility) is gone, and only the dock\'s MAP button opens it', () => {
+        same(J('typeof facilityInspect.layers'), 'undefined', 'layers'); same(run('facilityInspectToggle()'), true, 'on'); same(run('facilityInspectToggle()'), false, 'off');
+        run('facilityInspect.on = true; facilityInspectDraw(); facilityInspect.on = false;');
+        const src = rd('js/facility.js'), html = rd('game.html'), view = src.slice(src.indexOf('THE INSPECTION MAP')).replace(/\/\/.*$/gm, '');   // (its code, without the comments)
+        ok(!/addEventListener\("keydown"/.test(src) && !/location\.search/.test(src), 'a key or an address flag can still open it'); ok(!/facilityDebug/.test(src + html + rd('js/facilityplay.js')), 'the debug view\'s names are still there');
+        ok(!/RULES OK|CONFIRMED OPENINGS|data-layer|"OUTLINES"|"COLLISION"|"OPENINGS"|"NAV"|PLAY|facilityValidate|facilityNavEdges|facilityComponents/.test(view), 'a debug layer, the readout or PLAY is still in the view\'s code');
+        ok(/id="btnFacility"[^>]*onclick="facilityInspectToggle\(\)"/.test(html), 'the dock button does not open it');
     });
     check('it draws on its own canvas with the game\'s isometric projection and does not touch the game canvas', () => {
         const src = rd('js/facility.js'); ok(/TILE_W/.test(src) && /TILE_H/.test(src), 'not the game projection'); ok(!/\bctx\./.test(src), 'it draws on the game canvas');
         const p = J('[facilityProjectProbe = _facProject(20, 30, 0, 800, 600), _facProject(21, 30, 0, 800, 600)]'); ok(p[1][0] > p[0][0] && p[1][1] > p[0][1], 'x does not run down-right on screen');
     });
+
+    group('THE INSPECTION MAP (real browser)');
+    const P = measure(1180, 820, ''), Q = measure(1180, 820, '?facility');
+    if (P === null) console.log('  (no Chromium here: skipped)');
+    else {
+        check('the dock\'s MAP button opens it over the page: a bar of FIT, +, − and ✕ CLOSE and nothing else (no layer switches, no PLAY), the rooms drawn on its canvas; + and − zoom, FIT puts it back, ✕ CLOSE closes it; F3 and ?facility open nothing; no page error', () => {
+            ok(P && !P.err, 'the probe: ' + JSON.stringify(P)); same(P.errors.length, 0, 'page errors: ' + P.errors.join(' | ')); same(P.startedClosed, true, 'it was open at the start'); same(P.f3, false, 'F3 opened it'); same(P.title, 'Facility map: look the facility over', 'the button\'s title');
+            same(P.open, true, 'the MAP button did not open it'); same(P.buttons.join(), 'FIT,+,−,✕ CLOSE', 'the bar'); same(P.layers, 0, 'layer switches'); same(P.oldView, false, 'the old debug view\'s element is there'); ok(P.lit > 3000, 'little is drawn: ' + P.lit + ' lit pixels');
+            ok(Math.abs(P.zoomIn / P.z0 - 1.25) < 1e-6, '+ did not zoom by a quarter: ' + P.zoomIn / P.z0); ok(Math.abs(P.zoomOut / P.zoomIn - 0.8) < 1e-6, '− did not zoom back: ' + P.zoomOut / P.zoomIn); ok(Math.abs(P.fit - P.z0) < 1e-9, 'FIT did not put the zoom back: ' + P.fit + ' vs ' + P.z0); same(P.closed, true, '✕ CLOSE did not close it');
+        });
+        check('?facility on the address opens nothing', () => { ok(Q && !Q.err, 'the probe: ' + JSON.stringify(Q)); same(Q.startedClosed, true, '?facility opened it'); });
+    }
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
     process.exit(failures ? 1 : 0);

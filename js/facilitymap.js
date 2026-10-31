@@ -842,7 +842,7 @@ const FACILITY_MAP = {
     door_type: "sliding_access_door",
 
     // WALL FIXTURES: things mounted on a wall. `wall` names the room and the edge (0 = the edge from its first point to its second, and so on); `span` is where along the wall,
-    // in sketch pixels. Positions are approximate until checked in the debug view.
+    // in sketch pixels. Positions are approximate until the user has checked them in the game.
     fixtures: [
         { id: "power_pack_area", type: "power_pack_area", room: "crystal_chamber", edge: 0, a: [275, 262], b: [360, 262], status: "approximate",
           note: "The power / battery pack area on the Crystal Chamber's north wall (somewhere on the wall: this is a first placement). The wall power unit's cells and machine go here." },
@@ -851,7 +851,7 @@ const FACILITY_MAP = {
     ],
 
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).
-    // The stair room: confirmed by the user. The positions on the walls are APPROXIMATE (centred on the shared wall) until checked in the debug view.
+    // The stair room: confirmed by the user. The positions on the walls are APPROXIMATE (centred on the shared wall) until the user has checked them in the game.
     openings: [
         { id: "door_chamber_teleport_1", a: [225, 500], b: [265, 500], rooms: ["crystal_chamber", "teleport_room_1"], position_status: "approximate",
           note: "A sliding access door between the Crystal Chamber and Teleport Room 1 (at the notch the sketch shows in their dividing wall)." },

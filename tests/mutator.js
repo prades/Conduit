@@ -25,7 +25,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     run(`facilityBlackoutSet(false); gameState.running = true; alertActive = false; _fp.items = _fp.items.filter(i => !(i.fp === 'prop' && i.kind === 'sentry'));   // (no sentries: the chamber's would shoot the creatures)
         // (the fights are staged in the lower half of the Crystal Chamber, five tiles from the Crystal: a creature beside the Crystal chews on it and pays no heed to what bites it, js/predator.js)
         globalThis.__home = () => { player.x = player.targetX = player.visualX = crystal.x - 2; player.y = player.targetY = player.visualY = crystal.y + 5; player.fpPath = null; player.attackCooldown = 0; health = PLAYER_HITS; player.invuln = 0; };
-        // a hit is a DROP of more than a point: every creature bleeds 0.01 a frame (the red decay, js/game.js)
+        // a hit is a DROP of more than a point (a creature loses nothing on its own: js/game.js)
         globalThis.__hits = (u, n, each) => { const at = []; let h = u.health; for (let i = 0; i < n; i++) { render(); if (h - u.health > 1) { at.push(i); if (each) each(i); } h = u.health; } return at; };
         globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone); for (const f of followers) { f.x = crystal.x - 30; f.y = crystal.y; f.stance = 'hold'; f.job = { type: 'move', target: { x: f.x, y: f.y } }; }
             respawnQueue.length = 0; floatingTexts.length = 0; followerProjectiles.length = 0; mutatorReset(); playerAttackMode = false; gunHold = null; playerLockTarget = null; __home(); };

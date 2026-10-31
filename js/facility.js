@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-//  THE FACILITY — compiles the authored map (js/facilitymap.js) into collision and navigation, validates it, and draws the debug overlay
+//  THE FACILITY — compiles the authored map (js/facilitymap.js) into collision and navigation, validates it (the tests run the validator), and draws the inspection map
 // ─────────────────────────────────────────────────────────
 // Data and logic are apart on purpose: this file never names a room. It reads FACILITY_MAP and builds, in WORLD TILES (sketch pixels / px_per_tile):
 //   walls       every edge of every room outline, minus the CONFIRMED openings cut into it
@@ -7,7 +7,7 @@
 //   rooms       the walkable outlines; a point is walkable only inside one, and outside every solid
 //   nav graph   rooms joined by CONFIRMED connections (candidates can be switched in to look at, never by default)
 // The arena's and the nest area's perimeters are real collision, and nothing outside every room is walkable. Nothing here invents a doorway.
-// Nothing in the game calls the movement helpers yet: this is the map, its rules and its debug view, for the facility to be wired into play once its
+// Nothing in the game calls the movement helpers yet: this is the map, its rules and its inspection map, for the facility to be wired into play once its
 // geometry has been confirmed (docs/FACILITY.md).
 
 const FAC_EPS = 1e-6;
@@ -65,7 +65,7 @@ function _facTrim(a, b, openings) {
 }
 
 // ── compile ──
-// `extra` lets a test (or the debug view) add openings/connections WITHOUT touching the authored data: { openings: [...], connections: [...] }.
+// `extra` lets a test add openings/connections WITHOUT touching the authored data: { openings: [...], connections: [...] }.
 function facilityBuild(extra) {
     const ex = extra || {}; _facSnap = !!ex.snap;
     try { return _facilityBuild(ex); } finally { _facSnap = false; }
@@ -84,7 +84,7 @@ function _facilityBuild(ex) {
             for (const seg of _facTrim(a, b, openings)) walls.push({ a: seg[0], b: seg[1], room: r.id, kind, arena: !!r.raw.boundary_blocks_movement });
         }
     }
-    // windows: glass stretches of wall. They stay in `walls` (solid to movement); a piece lying on a window is marked so the debug view can draw it as glass.
+    // windows: glass stretches of wall. They stay in `walls` (solid to movement); a piece lying on a window is marked so that it is drawn as glass.
     const windows = (M.windows || []).map(w => ({ id: w.id, a: _facP(w.a), b: _facP(w.b), rooms: w.rooms || [] }));
     // Split any wall piece a window only partly covers, so the glass part is its own piece (a long wall can be glass along one stretch only).
     for (let i = walls.length - 1; i >= 0; i--) {
@@ -478,137 +478,88 @@ function facilityValidateCached(F) { F = F || facilityGet(); if (!_facValid || _
 function _facCentroid(poly) { let x = 0, y = 0; for (const p of poly) { x += p[0]; y += p[1]; } return [x / poly.length, y / poly.length]; }
 
 // ─────────────────────────────────────────────────────────
-//  THE DEBUG VIEW — an isometric overlay of the facility with its own camera (pan, zoom) and layer switches
+//  THE INSPECTION MAP — an isometric view of the facility with its own camera (pan, zoom)
 // ─────────────────────────────────────────────────────────
-// Draws the authored map with the game's own isometric projection (TILE_W x TILE_H), on its own canvas over the page, so it needs nothing from the game loop.
-// Layers: OUTLINES (rooms, the outer path), COLLISION (walls, solids), OPENINGS (confirmed gaps, and the candidates as ?), ELEVATION (raised rooms lifted),
-// NAV (the connection graph: solid green = confirmed, dashed amber = candidate, and what is joined). Toggle: the MAP button on the dock, F3, or ?facility in the URL.
-const facilityDebug = { on: false, layers: { outlines: true, collision: true, openings: true, elevation: true, nav: true }, cam: { x: 0, y: 0, z: 1 }, note: "", fitted: false, _hits: [] };
+// For looking the facility over, and nothing more: the dock's MAP button opens it. The builder's debug view (layer switches for the walls and props, the doors and the doors nobody has confirmed, the navigation graph, a readout with the rule check, a PLAY
+// button, and F3 and ?facility to open it) was taken out. ASKED: "get rid of the facility maps debugging features and just have it for just the facility inspection"; chosen from a pop-up: rooms, names and levels.
+// It draws the authored map with the game's own isometric projection (TILE_W x TILE_H), on its own canvas over the page, so it needs nothing from the game loop: each room's outline with its name and level (a raised room is lifted by its height), the arena,
+// and the outer boundary. FIT, + and − set the zoom, a drag pans, a wheel or a pinch zooms, CLOSE puts it away.
+const facilityInspect = { on: false, cam: { x: 0, y: 0, z: 1 }, fitted: false };
 const FAC_ELEV_PX = 34;   // how far a room is lifted on screen per tile of height
-const FAC_COLOURS = { ground: "#19e6c1", raised: "#ffe733", solid: "#ff8a5c", wall: "#ff4a1c", arena: "#ff2d95", outer: "#8a94b8", cand: "#ffb020", ok: "#6dff5a" };
+const FAC_COLOURS = { ground: "#19e6c1", raised: "#ffe733", outer: "#8a94b8" };
 
 function _facTW() { return typeof TILE_W === "number" ? TILE_W : 64; }
 function _facTH() { return typeof TILE_H === "number" ? TILE_H : 32; }
-// world (tiles) + level -> screen px
 // a level (or a level part-way between two, on a stair) in screen pixels of height
 function _facLevelPx(F, level) { level = level || 0; const lo = Math.floor(level), hi = Math.ceil(level), a = F.levelH.get(lo) || 0, b = F.levelH.get(hi) || 0; return (a + (b - a) * (level - lo)) * FAC_ELEV_PX; }
+// world (tiles) + level -> screen px
 function _facProject(x, y, level, W, H) {
-    const c = facilityDebug.cam, F = facilityGet(), cx = (F.bounds.minX + F.bounds.maxX) / 2 + c.x, cy = (F.bounds.minY + F.bounds.maxY) / 2 + c.y, z = c.z;
-    return [(x - cx - (y - cy)) * _facTW() * z + W / 2, (x - cx + (y - cy)) * _facTH() * z + H / 2 - (facilityDebug.layers.elevation ? _facLevelPx(F, level) * z : 0)];
+    const c = facilityInspect.cam, F = facilityGet(), cx = (F.bounds.minX + F.bounds.maxX) / 2 + c.x, cy = (F.bounds.minY + F.bounds.maxY) / 2 + c.y, z = c.z;
+    return [(x - cx - (y - cy)) * _facTW() * z + W / 2, (x - cx + (y - cy)) * _facTH() * z + H / 2 - _facLevelPx(F, level) * z];
 }
 function facilityFit(W, H) {
     const F = facilityGet(), b = F.bounds; let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const [x, y] of [[b.minX, b.minY], [b.maxX, b.minY], [b.maxX, b.maxY], [b.minX, b.maxY]]) { const sx = (x - y) * _facTW(), sy = (x + y) * _facTH(); minX = Math.min(minX, sx); maxX = Math.max(maxX, sx); minY = Math.min(minY, sy); maxY = Math.max(maxY, sy); }
-    facilityDebug.cam = { x: 0, y: 0, z: Math.max(0.05, Math.min((W * 0.94) / (maxX - minX), (H - 190) / (maxY - minY))) }; facilityDebug.fitted = true;
+    facilityInspect.cam = { x: 0, y: 0, z: Math.max(0.05, Math.min((W * 0.94) / (maxX - minX), (H - 100) / (maxY - minY))) }; facilityInspect.fitted = true;
 }
-
-function facilityDebugDraw() {
-    const root = typeof document !== "undefined" ? document.getElementById("facilityDebug") : null; if (!root || !facilityDebug.on) return;
+function facilityInspectDraw() {
+    const root = typeof document !== "undefined" ? document.getElementById("facilityInspect") : null; if (!root || !facilityInspect.on) return;
     const cv = root.querySelector("canvas"); if (!cv || !cv.getContext) return;
-    const W = cv.width = Math.max(300, window.innerWidth), H = cv.height = Math.max(300, window.innerHeight), g = cv.getContext("2d"), L = facilityDebug.layers;
-    if (!facilityDebug.fitted) facilityFit(W, H);
-    const F = facilityGet(), P = (p, lv) => _facProject(p[0], p[1], lv, W, H), z = facilityDebug.cam.z;
-    g.fillStyle = "#060914"; g.fillRect(0, 0, W, H); facilityDebug._hits = [];
+    const W = cv.width = Math.max(300, window.innerWidth), H = cv.height = Math.max(300, window.innerHeight), g = cv.getContext("2d");
+    if (!facilityInspect.fitted) facilityFit(W, H);
+    const F = facilityGet(), P = (p, lv) => _facProject(p[0], p[1], lv, W, H), z = facilityInspect.cam.z;
+    g.fillStyle = "#060914"; g.fillRect(0, 0, W, H);
     const path = (pts, lv) => { g.beginPath(); pts.forEach((p, i) => { const q = P(p, lv); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); }); g.closePath(); };
-    // the outer path: drawn, hatched, and labelled as NOT walkable
-    if (F.outer && L.outlines) { path(F.outer.poly, 0); g.fillStyle = "rgba(138,148,184,0.16)"; g.fill(); g.setLineDash([8, 6]); g.lineWidth = 2; g.strokeStyle = FAC_COLOURS.outer; g.stroke(); g.setLineDash([]); const c = P(_facCentroidOfBand(F.outer.poly), 0); _facLabel(g, "OUTER PATH · BOUNDARY ONLY · NOT WALKABLE", c[0], c[1], FAC_COLOURS.outer, 11 * Math.max(0.8, Math.min(1.4, z * 3))); }
+    // the outer boundary: drawn, hatched, and labelled as not walkable
+    if (F.outer) { path(F.outer.poly, 0); g.fillStyle = "rgba(138,148,184,0.16)"; g.fill(); g.setLineDash([8, 6]); g.lineWidth = 2; g.strokeStyle = FAC_COLOURS.outer; g.stroke(); g.setLineDash([]); const c = P(_facCentroidOfBand(F.outer.poly), 0); _facLabel(g, "OUTER PATH · BOUNDARY ONLY · NOT WALKABLE", c[0], c[1], FAC_COLOURS.outer, 11 * Math.max(0.8, Math.min(1.4, z * 3))); }
     // rooms, low to high, so a raised room covers what is behind it
     for (const r of F.rooms.slice().sort((a, b) => a.level - b.level)) {
         const col = r.level ? FAC_COLOURS.raised : FAC_COLOURS.ground;
-        if (L.elevation && r.level) { for (let i = 0; i < r.poly.length; i++) { const a = r.poly[i], b = r.poly[(i + 1) % r.poly.length], a0 = P(a, 0), b0 = P(b, 0), a1 = P(a, r.level), b1 = P(b, r.level); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fillStyle = "rgba(255,231,51,0.10)"; g.fill(); } }
-        if (L.outlines) { path(r.poly, r.level); g.fillStyle = r.id === "arena" ? "rgba(255,45,149,0.08)" : r.level && L.elevation ? "rgba(255,231,51,0.12)" : "rgba(25,230,193,0.09)"; g.fill(); g.lineWidth = 2; g.strokeStyle = col; g.stroke(); }
+        if (r.level) { for (let i = 0; i < r.poly.length; i++) { const a = r.poly[i], b = r.poly[(i + 1) % r.poly.length], a0 = P(a, 0), b0 = P(b, 0), a1 = P(a, r.level), b1 = P(b, r.level); g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(b0[0], b0[1]); g.lineTo(b1[0], b1[1]); g.lineTo(a1[0], a1[1]); g.closePath(); g.fillStyle = "rgba(255,231,51,0.10)"; g.fill(); } }
+        path(r.poly, r.level); g.fillStyle = r.id === "arena" ? "rgba(255,45,149,0.08)" : r.level ? "rgba(255,231,51,0.12)" : "rgba(25,230,193,0.09)"; g.fill(); g.lineWidth = 2; g.strokeStyle = col; g.stroke();
         const c = P(_facCentroid(r.poly), r.level);
-        if (L.outlines) _facLabel(g, r.label.toUpperCase() + (L.elevation ? "  L" + r.level : "") + (r.raw.development === "blocked_off_for_now" ? " \u00b7 BLOCKED OFF" : ""), c[0], c[1], col, 11 * Math.max(0.8, Math.min(1.5, z * 3)));
+        _facLabel(g, r.label.toUpperCase() + "  L" + r.level + (r.raw.development === "blocked_off_for_now" ? " · BLOCKED OFF" : ""), c[0], c[1], col, 11 * Math.max(0.8, Math.min(1.5, z * 3)));
     }
-    if (L.collision) {
-        for (const s of F.solids) { const lv = (F.byId.get(s.room) || {}).level || 0; if (s.shape === "circle") { const pts = []; for (let i = 0; i < 32; i++) pts.push([s.at[0] + Math.cos(i / 32 * 6.2832) * s.r, s.at[1] + Math.sin(i / 32 * 6.2832) * s.r]); path(pts, lv); } else path(s.poly, lv); const liq = s.kind === "liquid_reserve"; g.fillStyle = liq ? "rgba(140,90,255,0.38)" : s.provisional ? "rgba(255,138,92,0.18)" : "rgba(255,138,92,0.34)"; g.fill(); g.lineWidth = 1.5; g.setLineDash(s.provisional ? [4, 4] : []); g.strokeStyle = liq ? "#a64dff" : FAC_COLOURS.solid; g.stroke(); g.setLineDash([]); if (liq && L.outlines) { const q = P(s.at, lv); _facLabel(g, "LIQUID RESERVE", q[0], q[1], "#c9a0ff", 10 * Math.max(0.8, Math.min(1.4, z * 3))); } }
-        for (const s of F.solids) if (s.kind === "semi_truck" && L.outlines) { const lv = (F.byId.get(s.room) || {}).level || 0, q = P(_facCentroid(s.poly), lv); _facLabel(g, "SEMI TRUCK \u00b7 " + (s.cargo ? s.cargo.map(c => c.count + " " + c.type.toUpperCase() + "S").join(", ") : ""), q[0], q[1], "#ffb48a", 9 * Math.max(0.8, Math.min(1.4, z * 3))); }
-        for (const w of F.walls.filter(x => x.window)) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 6; g.strokeStyle = "rgba(143,227,255,0.45)"; g.setLineDash([3, 4]); g.stroke(); g.setLineDash([]); }
-        for (const w of F.walls) { const lv = (F.byId.get(w.room) || {}).level || 0, a = P(w.a, lv), b = P(w.b, lv); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = w.arena ? 4 : 2.5; g.strokeStyle = w.arena ? (w.room === "arena" ? FAC_COLOURS.arena : FAC_COLOURS.outer) : FAC_COLOURS.wall; g.stroke(); }
-    }
-    if (L.collision || L.outlines) {
-        for (const f of F.fixtures) { const lv = (F.byId.get(f.room) || {}).level || 0, a = P(f.a, lv), b = P(f.b, lv), c = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 7; g.strokeStyle = f.type === "power_pack_area" ? "#ffd34d" : "#ff9ad5"; g.stroke(); _facLabel(g, f.type === "power_pack_area" ? "POWER PACK AREA" : f.type === "wall_sign" ? "BIG SIGN" : f.id.toUpperCase(), c[0], c[1] - 9, f.type === "power_pack_area" ? "#ffd34d" : "#ff9ad5", 9 * Math.max(0.8, Math.min(1.4, z * 3))); facilityDebug._hits.push({ x: c[0], y: c[1], text: f.id.toUpperCase() + " \u2014 " + (f.note || "") }); }
-    }
-    if (L.openings) {
-        for (const o of F.openings) { const a = P(o.a, 0), b = P(o.b, 0); g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.lineWidth = 6; g.strokeStyle = FAC_COLOURS.ok; g.stroke(); }
-        for (const c of F.candidates) { const lv = Math.max(...c.rooms.map(id => (F.byId.get(id) || {}).level || 0)), q = P(c.at, lv); g.beginPath(); g.arc(q[0], q[1], 8, 0, 6.2832); g.fillStyle = "rgba(255,176,32,0.25)"; g.fill(); g.lineWidth = 2; g.strokeStyle = FAC_COLOURS.cand; g.stroke(); g.fillStyle = FAC_COLOURS.cand; g.font = "bold 11px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", q[0], q[1] + 0.5); facilityDebug._hits.push({ x: q[0], y: q[1], text: c.rooms.join(" ↔ ").toUpperCase() + " — CANDIDATE SLIDING DOOR, UNCONFIRMED: " + c.evidence }); }
-        // confirmed ramps: a curved staircase is drawn as stepped arcs, the low end heavier, with an arrow down
-        for (const rp of F.ramps) {
-            if (!rp.centre) continue; const from = (F.byId.get(rp.rooms[0]) || {}).level || 0, to = (F.byId.get(rp.rooms[1]) || {}).level || 0, steps = 8;
-            for (let k = 0; k <= steps; k++) { const rad = rp.r_inner + (rp.r_outer - rp.r_inner) * k / steps, pts = [];
-                for (let d = 0; d <= 12; d++) { const a = (rp.from_deg + (rp.to_deg - rp.from_deg) * d / 12) * Math.PI / 180, lv = from + (to - from) * k / steps; pts.push(_facProject(rp.centre[0] + Math.cos(a) * rad, rp.centre[1] + Math.sin(a) * rad, lv, W, H)); }
-                g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.lineWidth = k === steps ? 3 : 1.5; g.strokeStyle = FAC_COLOURS.ok; g.stroke(); }
-            const m = _facProject(rp.centre[0] + Math.cos(Math.PI) * (rp.r_inner + rp.r_outer) / 2, rp.centre[1], to, W, H); facilityDebug._hits.push({ x: m[0], y: m[1], text: rp.id.toUpperCase() + " \u2014 " + rp.note });
-        }
-        for (const r of F.candidateRamps) { const q = P(r.at, 0); g.strokeStyle = FAC_COLOURS.cand; g.lineWidth = 2; g.strokeRect(q[0] - 7, q[1] - 7, 14, 14); g.fillStyle = FAC_COLOURS.cand; g.font = "bold 10px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("R", q[0], q[1] + 0.5); facilityDebug._hits.push({ x: q[0], y: q[1], text: "RAMP / STAIR? " + r.evidence + " (levels " + r.between_levels.join("→") + ")" }); }
-        for (const e of F.exits) { const q = P(e.at, 0); g.fillStyle = e.blocked ? FAC_COLOURS.wall : FAC_COLOURS.outer; g.font = "bold 10px monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(e.blocked ? "✖" : "→", q[0], q[1]); facilityDebug._hits.push({ x: q[0], y: q[1], text: e.id.toUpperCase() + " — " + e.note + " (not a connection)" }); }
-    }
-    if (L.nav) {
-        const node = id => { const r = F.byId.get(id); return r ? P(_facCentroid(r.poly), r.level) : null; };
-        for (const e of facilityNavEdges(F, true)) { const a = node(e.a), b = node(e.b); if (!a || !b) continue; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.setLineDash(e.confirmed ? [] : [5, 6]); g.lineWidth = e.confirmed ? 3 : 1.2; g.strokeStyle = e.confirmed ? FAC_COLOURS.ok : "rgba(255,176,32,0.55)"; g.stroke(); g.setLineDash([]); }
-        for (const r of F.rooms) { const q = node(r.id); g.beginPath(); g.arc(q[0], q[1], 5, 0, 6.2832); g.fillStyle = "#05070f"; g.fill(); g.lineWidth = 2; g.strokeStyle = FAC_COLOURS.ok; g.stroke(); }
-    }
-    // the readout
-    const v = facilityValidateCached(F), comps = facilityComponents(F, false), compsC = facilityComponents(F, true);
-    const lines = ["FACILITY · " + FACILITY_MAP.id + " · " + facilityScale() + " px/tile", "ROOMS " + F.rooms.length + " · CONFIRMED OPENINGS " + F.openings.length + " · CANDIDATES " + F.candidates.length,
-        "NAV: " + comps.length + " separate area" + (comps.length === 1 ? "" : "s") + " (" + compsC.length + " if every candidate were real)", v.errors.length ? "ERRORS: " + v.errors.length + " — " + v.errors[0] : "RULES OK · arena and nest area sealed (" + (v.info.arenaAgents || 0) + " agent walks, " + (v.info.arenaLeaks || 0) + " leaks) "];
-    g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 12px monospace";
-    lines.forEach((t, i) => { g.fillStyle = i === 3 ? (v.errors.length ? "#ff6655" : FAC_COLOURS.ok) : "#9fb0d0"; g.fillText(t.slice(0, Math.floor((W - 24) / 7.3)), 12, H - 106 + i * 16); });
-    if (facilityDebug.note) { g.fillStyle = FAC_COLOURS.cand; g.font = "bold 12px monospace"; g.fillText(facilityDebug.note.slice(0, Math.floor((W - 24) / 7.3)), 12, H - 36); }
 }
 function _facCentroidOfBand(poly) { const b = poly.reduce((m, p) => ({ x0: Math.min(m.x0, p[0]), x1: Math.max(m.x1, p[0]), y0: Math.min(m.y0, p[1]), y1: Math.max(m.y1, p[1]) }), { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity }); return [(b.x0 + b.x1) / 2, b.y0 + 2.2]; }
 function _facLabel(g, text, x, y, col, size) {
     g.save(); g.font = "italic 900 " + Math.round(size) + "px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.lineWidth = 3; g.strokeStyle = "rgba(5,7,15,0.85)"; g.strokeText(text, x, y); g.fillStyle = col; g.fillText(text, x, y); g.restore();
 }
 
-function facilityDebugBuild() {
+function facilityInspectBuild() {
     if (typeof document === "undefined" || !document.createElement || !document.body) return null;
-    let root = document.getElementById("facilityDebug"); if (root && root.getAttribute && root.getAttribute("data-built")) return root;
-    if (!root) { root = document.createElement("div"); root.id = "facilityDebug"; document.body.appendChild(root); }
+    let root = document.getElementById("facilityInspect"); if (root && root.getAttribute && root.getAttribute("data-built")) return root;
+    if (!root) { root = document.createElement("div"); root.id = "facilityInspect"; document.body.appendChild(root); }
     root.setAttribute("data-built", "1");
     const cv = document.createElement("canvas"); root.appendChild(cv);
-    const bar = document.createElement("div"); bar.className = "fd-bar"; root.appendChild(bar);
-    const mk = (label, fn, id) => { const b = document.createElement("button"); b.textContent = label; if (id) b.setAttribute("data-layer", id); b.addEventListener("click", ev => { ev.stopPropagation(); fn(b); facilityDebugRender(); }); bar.appendChild(b); return b; };
-    [["outlines", "OUTLINES"], ["collision", "COLLISION"], ["openings", "OPENINGS"], ["elevation", "ELEVATION"], ["nav", "NAV"]].forEach(([id, label]) => mk(label, () => { facilityDebug.layers[id] = !facilityDebug.layers[id]; }, id));
-    mk("FIT", () => { facilityDebug.fitted = false; }); mk("+", () => { facilityDebug.cam.z *= 1.25; }); mk("−", () => { facilityDebug.cam.z /= 1.25; });
-    mk("\u25b6 PLAY", () => { facilityDebugSet(false); if (typeof facilityPlayStart === "function") facilityPlayStart(); }).className = "fd-play";   // walk it (js/facilityplay.js)
-    const x = mk("✕ CLOSE", () => facilityDebugSet(false)); x.className = "fd-close";
-    // pan (drag), zoom (wheel, pinch), and a tap on a ? or R shows its evidence
-    const ptr = new Map(); let moved = 0, pinch = 0;
-    cv.addEventListener("pointerdown", e => { ptr.set(e.pointerId, [e.clientX, e.clientY]); moved = 0; pinch = 0; if (cv.setPointerCapture) { try { cv.setPointerCapture(e.pointerId); } catch (_) {} } });
+    const bar = document.createElement("div"); bar.className = "fi-bar"; root.appendChild(bar);
+    const mk = (label, fn) => { const b = document.createElement("button"); b.textContent = label; b.addEventListener("click", ev => { ev.stopPropagation(); fn(b); facilityInspectDraw(); }); bar.appendChild(b); return b; };
+    mk("FIT", () => { facilityInspect.fitted = false; }); mk("+", () => { facilityInspect.cam.z *= 1.25; }); mk("−", () => { facilityInspect.cam.z /= 1.25; });
+    const x = mk("✕ CLOSE", () => facilityInspectSet(false)); x.className = "fi-close";
+    // pan (drag) and zoom (wheel, pinch)
+    const ptr = new Map(); let pinch = 0;
+    cv.addEventListener("pointerdown", e => { ptr.set(e.pointerId, [e.clientX, e.clientY]); pinch = 0; if (cv.setPointerCapture) { try { cv.setPointerCapture(e.pointerId); } catch (_) {} } });
     cv.addEventListener("pointermove", e => {
-        if (!ptr.has(e.pointerId)) return; const p = ptr.get(e.pointerId), c = facilityDebug.cam, z = c.z; ptr.set(e.pointerId, [e.clientX, e.clientY]);
+        if (!ptr.has(e.pointerId)) return; const p = ptr.get(e.pointerId), c = facilityInspect.cam, z = c.z; ptr.set(e.pointerId, [e.clientX, e.clientY]);
         if (ptr.size === 2) { const [a, b] = [...ptr.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) c.z = Math.max(0.03, Math.min(6, c.z * d / pinch)); pinch = d; }
-        else { const dx = e.clientX - p[0], dy = e.clientY - p[1]; moved += Math.abs(dx) + Math.abs(dy); const u = dx / (_facTW() * z), v = dy / (_facTH() * z); c.x -= (u + v) / 2; c.y -= (v - u) / 2; }
-        facilityDebugRender();
+        else { const dx = e.clientX - p[0], dy = e.clientY - p[1], u = dx / (_facTW() * z), v = dy / (_facTH() * z); c.x -= (u + v) / 2; c.y -= (v - u) / 2; }
+        facilityInspectDraw();
     });
-    const up = e => { if (ptr.size === 1 && moved < 6) facilityDebugTap(e.clientX, e.clientY); ptr.delete(e.pointerId); pinch = 0; };
-    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", e => { ptr.delete(e.pointerId); pinch = 0; });
-    cv.addEventListener("wheel", e => { e.preventDefault(); facilityDebug.cam.z = Math.max(0.03, Math.min(6, facilityDebug.cam.z * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); facilityDebugRender(); }, { passive: false });
+    const up = e => { ptr.delete(e.pointerId); pinch = 0; };
+    cv.addEventListener("pointerup", up); cv.addEventListener("pointercancel", up);
+    cv.addEventListener("wheel", e => { e.preventDefault(); facilityInspect.cam.z = Math.max(0.03, Math.min(6, facilityInspect.cam.z * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); facilityInspectDraw(); }, { passive: false });
     return root;
 }
-function facilityDebugTap(x, y) {
-    let best = null, bd = 22;
-    for (const h of facilityDebug._hits) { const d = Math.hypot(h.x - x, h.y - y); if (d < bd) { bd = d; best = h; } }
-    facilityDebug.note = best ? best.text : ""; facilityDebugRender();
-}
-function facilityDebugRender() {
-    const root = typeof document !== "undefined" ? document.getElementById("facilityDebug") : null;
-    if (root && root.querySelectorAll) root.querySelectorAll("[data-layer]").forEach(b => { const on = facilityDebug.layers[b.getAttribute("data-layer")]; if (b.classList) b.classList.toggle("on", !!on); });
-    facilityDebugDraw();
-}
-function facilityDebugSet(on) {
-    facilityDebug.on = !!on;
-    const root = on ? facilityDebugBuild() : (typeof document !== "undefined" ? document.getElementById("facilityDebug") : null);
+function facilityInspectSet(on) {
+    facilityInspect.on = !!on;
+    const root = on ? facilityInspectBuild() : (typeof document !== "undefined" ? document.getElementById("facilityInspect") : null);
     if (root && root.classList) root.classList.toggle("open", !!on);
-    if (on) { facilityDebug.fitted = false; facilityDebugRender(); }
-    return facilityDebug.on;
+    if (on) { facilityInspect.fitted = false; facilityInspectDraw(); }
+    return facilityInspect.on;
 }
-function facilityDebugToggle() { return facilityDebugSet(!facilityDebug.on); }
-function initFacilityDebug() {
+function facilityInspectToggle() { return facilityInspectSet(!facilityInspect.on); }
+function initFacilityInspect() {
     if (typeof window === "undefined" || !window.addEventListener) return;
-    window.addEventListener("keydown", e => { if (e && e.key === "F3") { if (e.preventDefault) e.preventDefault(); facilityDebugToggle(); } });
-    window.addEventListener("resize", () => { if (facilityDebug.on) { facilityDebug.fitted = false; facilityDebugRender(); } });
-    try { if (/[?&]facility\b/.test((window.location && window.location.search) || "")) facilityDebugSet(true); } catch (e) {}
+    window.addEventListener("resize", () => { if (facilityInspect.on) { facilityInspect.fitted = false; facilityInspectDraw(); } });
 }
-try { initFacilityDebug(); } catch (e) { /* no page (the test sandbox) */ }
+try { initFacilityInspect(); } catch (e) { /* no page (the test sandbox) */ }

@@ -153,8 +153,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     // and measuring the predator specials proved that holds: all seven
     // offensive abilities land in full on a follower standing beside a recruit
     // and do not scratch the recruit. What was left were the two paths that
-    // never picked a target at all — the red health-decay pass, which bleeds
-    // anything on team red, and the cocoon toxin, which named recruits
+    // never picked a target at all — the red health-decay pass (removed since),
+    // which bled anything on team red, and the cocoon toxin, which named recruits
     // outright. A recruit could arrive dead without a single predator having
     // chosen to hurt it, which is what "attacked before they get an element"
     // actually was. Both are gated at their own site as well, so nothing

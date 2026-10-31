@@ -206,7 +206,10 @@ function measure(w, h) {
     });
     check('a MAGE sent at a creature goes to its firing distance and fires; a TECHNICIAN (which holds a post) goes and fights it', () => {
         run('__fresh(["sniper"]); globalThis.__t = __mk(11, 1, { calm: true }); mixToolAttack(__t);'); frames(700); const dm = run('Math.hypot(followers[0].x - __t.x, followers[0].y - __t.y)'); ok(dm < 5.5 && dm > 2, 'a mage stands ' + dm + ' tiles off'); ok(run('__t.health < __t.maxHealth || followerProjectiles.length > 0'), 'the mage did not fire');
-        run('__fresh(["camper"]); globalThis.__t2 = __mk(9, 1, { calm: true }); mixToolAttack(__t2);'); frames(500); ok(run('Math.hypot(followers[0].x - __t2.x, followers[0].y - __t2.y)') < 2.2, 'the technician did not go'); ok(run('__t2.health < __t2.maxHealth'), 'the technician did not fight it');
+        run('__fresh(["camper"]); globalThis.__t2 = __mk(9, 1, { calm: true }); mixToolAttack(__t2);'); frames(500); ok(run('Math.hypot(followers[0].x - __t2.x, followers[0].y - __t2.y)') < 2.2, 'the technician did not go');
+        // (a creature loses nothing on its own, so only the technician's own blow can hurt this one, and how soon it lands depends on the follower's personality: a cautious walker lands its first at about frame 530, so it is given up to 900)
+        for (let i = 0; i < 400 && run('__t2.health >= __t2.maxHealth'); i++) frames(1);
+        ok(run('__t2.health < __t2.maxHealth'), 'the technician did not fight it');
         run('__fresh(["camper"]); globalThis.__t3 = __mk(9, 1, { calm: true });'); frames(200); ok(run('Math.hypot(followers[0].x - __t3.x, followers[0].y - __t3.y)') > 5, 'an unsent technician left its post');
     });
     check('the order ends when the time is up, when the creature is further from the player than the leash, when the creature is dead or it is told to RETREAT; and an order on a unit that is healing waits for it', () => {

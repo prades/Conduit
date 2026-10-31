@@ -1,8 +1,9 @@
-// node design/bible/pictures.js [rooms] [ui] [cards] [creatures] [forms] [poster] : makes the game bible's pictures (bible.html) from the game itself, into img/bible as WebP.
+// node design/bible/pictures.js [rooms] [ui] [map] [cards] [creatures] [forms] [poster] : makes the game bible's pictures (bible.html) from the game itself, into img/bible as WebP.
 // With no argument it makes them all. Needs playwright + chromium, and ImageMagick's `convert` (for the WebP).
 //   rooms      each room of the facility, powered and lit, the HUD hidden, the squad beside you (1400x900): img/bible/rooms/<id>.webp
-//   ui         the screens at an iPad's size (1180x820: the HUD, a member's card, the Command Center, the SQUADS window, the class picker, the pack, the map, the ? guide)
+//   ui         the screens at an iPad's size (1180x820: the HUD, a member's card, the Command Center, the SQUADS window, the class picker, the pack, the inspection map, the ? guide)
 //              and a phone's (390x844: the HUD, the radial menu's ROSTER): img/bible/ui/<id>.webp
+//   map        the inspection map alone (img/bible/ui/map.webp), for when the other screens are to be left as they are (`ui` makes it too)
 //   cards      the CARDS screen at an iPad's width, tall enough to show it whole (shards, the hand, a booster pack's cards with a duplicate among them, the market's shelf), from seeded packs and a seeded shelf: img/bible/ui/cards_sheet.webp
 //   creatures  every creature the game draws itself (the player, the egg in each element, six species in six classes), by design/roster-poster/portraits.js, trimmed
 //   forms      the 18 evolved forms, cut from their sheets in img/evo (row 0, a three-quarter view; the ground layer under the four that have one), trimmed
@@ -51,8 +52,8 @@ async function openGame(b, w, h) {
     }
     if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
   }
+  const shot = async (p, k) => { await p.waitForTimeout(700); const f = path.join(TMP, k + '.png'); await p.screenshot({ path: f }); webp(f, path.join(OUT, 'ui', k + '.webp'), 80); console.log('ui/' + k); };
   if (on('ui')) {
-    const shot = async (p, k) => { await p.waitForTimeout(700); const f = path.join(TMP, k + '.png'); await p.screenshot({ path: f }); webp(f, path.join(OUT, 'ui', k + '.webp'), 80); console.log('ui/' + k); };
     // the squad by the arena's tanks, a beetle tank locked (it stands still)
     const scene = p => p.evaluate(() => { __stand(30, 50); actors = actors.filter(a => !(a instanceof Predator)); const e = spawnCreature({ species: 'beetle', className: 'tank' }), q = __near(player.x + 4, player.y - 1);
       e.x = q[0]; e.y = q[1]; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0; targetSet(e, true); floatingTexts.length = 0; selectedUnits.clear(); partyTick(); mixToolRender(true); });
@@ -65,13 +66,18 @@ async function openGame(b, w, h) {
     await p.evaluate(() => { ccSquadsOpen = false; ccClose(); }); await p.waitForTimeout(200);
     await p.evaluate(() => { classPickerOpenNow(); }); await shot(p, 'class_picker');
     await p.evaluate(() => { classPickerOpen = false; invOpen(); }); await shot(p, 'pack');
-    await p.evaluate(() => { invPanelOpen = false; facilityDebugToggle(); }); await shot(p, 'map');
-    await p.evaluate(() => { facilityDebugToggle(); toggleControlsMenu(); }); await shot(p, 'guide');
+    await p.evaluate(() => { invPanelOpen = false; facilityInspectToggle(); }); await shot(p, 'map');
+    await p.evaluate(() => { facilityInspectToggle(); toggleControlsMenu(); }); await shot(p, 'guide');
     await p.close();
     ({ p } = await openGame(b, 390, 844)); await scene(p);
     await shot(p, 'phone_hud');
     await p.evaluate(() => { radialToggle(true); radialPick('roster'); }); await shot(p, 'phone_roster');
     await p.close();
+  }
+  if (want.includes('map')) {   // asked for by name only: with no argument the `ui` group has made it
+    const { p, errs } = await openGame(b, 1180, 820);
+    await p.evaluate(() => { facilityInspectToggle(); }); await shot(p, 'map');
+    if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
   }
   if (on('cards')) {
     const { p, errs } = await openGame(b, 1180, 1500);

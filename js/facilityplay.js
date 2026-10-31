@@ -243,7 +243,6 @@ function facilityPlayStart() {
     if (facilityPlay) return true;
     _fpNoStorage();                                  // only the facility's own save is written
     facilityPlay = true;
-    if (typeof facilityDebugSet === "function") facilityDebugSet(false);
     const F = facilityBuild({ snap: true, margin: FP_BODY });
     const P = facilityBuild({ snap: true, margin: FP_PLAN });   // the planning copy: the same map, a wider margin
     _fp = { F, P, cells: null, cellsP: null, edges: new Map(), paths: new Map(), gfxSaved: typeof facilityGfxSaved === "function" ? facilityGfxSaved() : null };
@@ -265,7 +264,7 @@ function facilityPlayStart() {
     for (const f of followers) { f.x = cx + 1 + Math.random(); f.y = cy + 2 + Math.random(); f.returningToCrystal = false; }
     _fpPlaceStatics(F);
     if (typeof facilityPortalsStart === "function") facilityPortalsStart(F);   // the doorways into the interiors (js/facilityportals.js)
-    if (typeof facilityTutorialStart === "function") facilityTutorialStart(F);   // the tutorial opens in a blackout (js/facilitytutorial.js)
+    if (typeof facilityTutorialStart === "function") facilityTutorialStart(F, !!(saved && saved.followers && saved.followers.length));   // the tutorial opens in a blackout (js/facilitytutorial.js); a saved game's followers are left as they were
     if (!away && typeof facilityFollowerSpotsStart === "function") facilityFollowerSpotsStart(F);   // the eggs that wait where they are (js/followerspots.js)
     if (away) facilityBlackoutSet(false);
     else if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)

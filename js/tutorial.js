@@ -6,7 +6,8 @@
 // class enter the facility (facilityClassItemsEnter) and the class's own STAGE follows (TUT_CLASS_STAGES: its gear at its station, then its loop). A step is done when its `done()` says so (a step already done when it comes up is skipped). Nothing here is a new system:
 //   recruiting is recruitFollower (js/clone.js), positioning is the roster's HOLD (a.stance, js/commandcenter.js), levels and evolution are gainXp and evolutionTick (js/levels.js, js/evolution.js), the enemies are
 //   ants (spawnCreature, js/clone.js), and they hunt the Crystal as every creature does when an alarm is up. The director only sets levels, spawns the assault and keeps the alarm on while it lasts.
-// Levels: the tutorial's followers (the three you start with and every recruit) are level TUT.followerLevel, and the assault's enemies are level TUT.enemyLevel, a little behind, so the assault is enough to take a follower to the evolution level.
+// Levels: while the tutorial is being played, its followers (the three you start with and every recruit) are level TUT.followerLevel, and the assault's enemies are level TUT.enemyLevel, a little behind, so the assault is enough to take a follower
+// to the evolution level. When the tutorial is finished that stops: a recruit comes at its own level (js/levels.js recruitLevel) and gains its levels from kills, and a game that is loaded is not lifted at all (its followers come back as they were saved).
 // A crystal that is about to fall is saved: the enemies are called off, the Crystal is mended and the assault comes again (the tutorial is not a loss).
 
 const TUT = {
@@ -160,14 +161,15 @@ function tutAssaultText() {
 }
 function tutEnemies() { return actors.filter(a => a && a.tutAssault && !a.dead); }
 
-function facilityDirectorStart() {
+// `loaded`: a saved game's followers are already here (js/facilityplay.js), and they are left as they were saved: the tutorial's progress is not back yet, so nothing says whether it is over
+function facilityDirectorStart(loaded) {
     if (!_fp || !_fp.tut) return;
-    _fp.tut.script = { step: 0, baseFollowers: followers.length, assault: null, doneAt: 0, said: {}, kills: 0, levelled: new Set() };
+    _fp.tut.script = { step: 0, baseFollowers: followers.length, assault: null, doneAt: 0, said: {}, kills: 0, levelled: new Set(loaded ? followers : []) };
     tutLevelFollowers();
 }
-// the tutorial's followers come in at TUT.followerLevel (the first three, and each recruit as it arrives)
+// the tutorial's followers come in at TUT.followerLevel (the first three, and each recruit as it arrives), for as long as the tutorial lasts
 function tutLevelFollowers() {
-    const S = _fp.tut.script;
+    const S = _fp.tut.script; if (S.step >= TUT_STEPS.length) return;   // the tutorial is over (the objective plate's own test of it): nothing is lifted any more
     for (const f of followers) {
         if (!f || f.dead || !Number.isFinite(f.level) || S.levelled.has(f) || f.evolved) continue;
         S.levelled.add(f); if (f.level < TUT.followerLevel) { f.level = TUT.followerLevel; f.xp = xpForLevel(TUT.followerLevel); if (typeof _applyFollowerLevel === "function") _applyFollowerLevel(f, true); }

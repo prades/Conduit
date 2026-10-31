@@ -1,9 +1,9 @@
 # The permanent facility (authored map)
 
-**Status: traced, validated, shown in a debug view, and THE GAME (`js/facilityplay.js`).** The page opens the facility (js/init.js): its tutorial (docs/TUTORIAL.md), its creatures (see *Play* below) and its one save. There is no other game mode.
+**Status: traced, validated, shown in an inspection map, and THE GAME (`js/facilityplay.js`).** The page opens the facility (js/init.js): its tutorial (docs/TUTORIAL.md), its creatures (see *Play* below) and its one save. There is no other game mode.
 
 Source: the hand-drawn top-down floor plan and `conduit_facility_map_spec.json`. The plan is traced into `js/facilitymap.js` (data only); `js/facility.js` compiles it into collision and
-navigation, validates it, and draws the debug view. Edit the data file to change the facility; no gameplay code names a room or a coordinate.
+navigation, validates it, and draws the inspection map. Edit the data file to change the facility; no gameplay code names a room or a coordinate.
 
 ## Theme
 A **rundown facility that used to be a 2010s tech startup's headquarters**. The **Front Lobby** is the big-headquarters entrance: a big sign on its north wall and a reception desk area that leads (through a sliding door past the desk's east end) to the hallway at the back, which looks onto the glass Experiment Lab. The **Show Room** is a glass case showcasing a range of products (blank for now). The **Crystal Chamber** and both **Teleport Rooms** are walled off (solid, no glass). The Crystal Chamber has the **power pack area** (a wall fixture, `power_pack_area`) on its north wall.
@@ -23,7 +23,7 @@ A **rundown facility that used to be a 2010s tech startup's headquarters**. The 
 - **Every door is a sliding access door** (`door_type`); a confirmed opening is one.
 - The deck to the right of the arena (the **catwalks**) is `blocked_off_for_now`: not being developed; the player can reach its edge, not enter. A follower can be thrown up onto it by a Kinetic Launcher set up at the arena's **launcher site** (`launchSites`), and comes back down through its broken section, one way (docs/TECHNICIANS.md); nobody walks up.
 - **Rubble** (`rubble`): a pile of broken rock in the arena's south rock, on the west half of its straight stretch (its exact middle is on a slant; the east half carries the red banner). It is drawn on the rock's face like the walls' decor (`a`-`b`, js/facilitydecor.js) and a fire technician drills it from `work` (docs/TECHNICIANS.md, the Thermite Drill). Drilled through it is a dark hole, sealed for now: no wall changes and nothing walks in. The validator checks it lies on a wall of its room and its work spot is floor in sight of it.
-- `openings`, `connections`, `ramps`: **confirmed only.** All doors are sliding access doors; wall positions are approximate until checked in the MAP view:
+- `openings`, `connections`, `ramps`: **confirmed only.** All doors are sliding access doors; wall positions are approximate until checked on the inspection map:
   - **Crystal Chamber ↔ Teleport Room 1**, and **Teleport Room 1 ↔ Observation Deck** (the deck is treated as ground level for now, so no ramp is needed);
   - the **Front Lobby** has **two doors to the hallway, one each side of the reception desk**; the **Security Room** (once taken for a bathroom: the room beside the show room) has a door to the lobby and a door to the hallway; it is lined with banks of TV monitors (camera feeds, `monitor_bank` wall decor on the north and west walls), with a console desk, a chair, a run of filing cabinets (three drawers each), a locker, a cooler and a bin;
   - the **Armory** (level -1, the arena's floor) is an **interior** under the **Observation Deck** with two ways in: DOWN the stairs through the stairwell door in an alcove in the deck's west wall, or through the steel door in an alcove in the arena's west cave wall just south of the two garage doors (where the Armory's own door used to be). Inside, two alcoves in its north wall lead back out (see *Interiors and portals* below). The arena's two garage doors stay as scenery;
@@ -43,9 +43,8 @@ no overlapping rooms; nothing outside every room walkable; the arena and the Nes
 that no confirmed connection joins; a connection between two levels needs a ramp; an opening with no connection is flagged.
 Queries the game uses: `facilityWalkable`, `facilityCanStep`, `facilityMove` (slides along walls), `facilityRoomAt`, `facilityComponents`, `facilityReachable`.
 
-## Debug view
-The **MAP** button on the dock, **F3**, or `?facility` in the URL. An isometric overlay with its own camera (drag to pan, wheel or pinch to zoom, FIT) and layers: OUTLINES, COLLISION (the arena perimeter is
-pink, the Nest Area's edges grey-blue, liquid reserves violet), OPENINGS (`?` = an unconfirmed candidate, `R` = a possible ramp; tap one for its evidence), ELEVATION, NAV (green = confirmed link, dashed amber = candidate).
+## Inspection map
+The **MAP** button on the dock opens an isometric map for looking the facility over (ASKED: "get rid of the facility maps debugging features and just have it for just the facility inspection"; chosen from a pop-up: rooms, names and levels). It is the authored map drawn with the game's own projection on its own canvas (`facilityInspectDraw`, js/facility.js): each room's outline with its name and level (a raised room is lifted by its height; one that is blocked off says so), the arena, and the outer boundary. A drag pans, the wheel or a pinch zooms, **FIT** fits the whole facility on the screen and **✕ CLOSE** puts it away. The builder's debug view is gone: its layer switches (walls, props, collision, doors and the doors nobody has confirmed, elevation, the navigation graph), the readout and the rule check, the PLAY button, **F3** and `?facility`. The validator (`facilityValidate`) stays, and the tests run it.
 
 ## Still unconfirmed in the sketch
 see `FACILITY_MAP.unresolved`: the scale, every doorway, elevation heights and ramps, what the liquid reserves contain and whether their stairs lead to a rim, the Nest Area's entrances and bottom wall, the room names. The game plays on the snapped copy of the data regardless (below).
