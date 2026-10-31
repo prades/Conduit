@@ -10,7 +10,7 @@
 //     js/npc.js followPlayer walks to), so a squad scattered over the facility joins you in the armory. A follower holding a room and anyone on an order stay where they are.
 //   - nothing else uses a portal: the arena's creatures and the assault's cannot go through (an interior has no door onto any other room).
 //   - while it fades the player cannot be told to walk (facilityWalkTo refuses), and for FP_PORTAL.cool frames after arriving the doorway at the arrival end does not take you straight back.
-const FP_PORTAL = { out: 14, hold: 14, in: 18, cool: 70, carry: 16 };
+const FP_PORTAL = { out: 14, hold: 14, in: 18, cool: 70, carry: 16, pocket: 30 };   // pocket: a stretch of floor of this many cells or fewer, with no doorway and no landing, is one nobody can walk out of
 
 function facilityPortalsStart(F) {
     if (!_fp) return;
@@ -87,9 +87,10 @@ function facilityPortalTick() {
     else if (P.phase === "in") { if (f - P.t0 >= FP_PORTAL.in) { P.phase = "idle"; P.from = P.to = null; } }
     if (f % 15 === 7) _pFollowScan();
 }
-// the followers on another stretch of floor than the player's: walk to the doorway that comes out on the player's. One on a stretch with no doorway out and no landing (a pocket behind a barred gate: it cannot
-// walk out and no route will come; a saved game from before _pSpot kept off the gated stubs may hold one) is put beside the player on the second scan in a row that finds it so. A stretch a launcher lands on (the
-// catwalks: a launched follower walks to its drop, js/techabilities.js) is not a pocket, nor is a follower in the air or carrying a launcher's load.
+// the followers on another stretch of floor than the player's: walk to the doorway that comes out on the player's. One on a POCKET (a stretch of FP_PORTAL.pocket cells or fewer with no doorway out and no landing:
+// the floor behind a barred gate, which it cannot walk out of and no route will come to; a saved game from before _pSpot kept off the gated stubs may hold one) is put beside the player on the second scan in a
+// row that finds it so. A big stretch cut off for the moment (the building while the arena's door is shut) is not a pocket: its followers wait, as they did. A stretch a launcher lands on (the catwalks: a launched
+// follower walks to its drop, js/techabilities.js) is not one either, nor is a follower in the air or carrying a launcher's load.
 function _pFollowScan() {
     const pc = _pComp(player.x, player.y); if (pc === undefined) return;
     let landings = null;
@@ -101,7 +102,8 @@ function _pFollowScan() {
         for (const p of _fp.portals) { if (_pComp(p.x, p.y) !== ac) continue; const q = facilityPortal(p.to); if (q && _pComp(q.ax, q.ay) === pc) { const d = Math.hypot(p.x - a.x, p.y - a.y); if (d < bd) { bd = d; best = p; } } }
         if (best) { a._fpPortalGoal = best.id; a._fpSealed = 0; continue; }
         if (!landings) { landings = new Set(); for (const s of ((_fp.F && _fp.F.launchSites) || [])) if (s.land) landings.add(_pComp(s.land[0], s.land[1])); }
-        if (landings.has(ac) || a._flight || a._launchLoad || a._dropSite) { a._fpSealed = 0; continue; }
+        const cells = _fp.compSize ? (_fp.compSize.get(ac) || 0) : 0;
+        if (!cells || cells > FP_PORTAL.pocket || landings.has(ac) || a._flight || a._launchLoad || a._dropSite || (typeof actors !== "undefined" && actors.indexOf(a) < 0)) { a._fpSealed = 0; continue; }   // (a follower that is not in the world's list is not simulated: left alone)
         a._fpSealed = (a._fpSealed || 0) + 1;
         if (a._fpSealed >= 2) { _pBeside(a); a._fpSealed = 0; }
     }

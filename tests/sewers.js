@@ -114,7 +114,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             o.tiles = o.tiles.size; o.near = (function(){ let n = 0; for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) { const k = (dest.ax + dx) + ',' + (dest.ay + dy); if (_fp.cellsP.has(k) && cm.get(k) !== ac) n++; } return n; })(); return o; })()`);
         same(r.gateShut, true, 'the first gate is shut'); ok(r.near >= 2, 'the stub\'s floor is not within two tiles of the arrival any more (the map moved?): ' + r.near); same(r.off, 0, 'put on another stretch'); same(r.stub, 0, 'put behind the gate'); same(r.on, 300, 'on the ledge'); ok(r.tiles >= 3, 'spread over the tiles: ' + r.tiles);
     });
-    check('one already behind the gate (a saved game from before) is put beside the player by the second scan in a row that finds it on a stretch with no doorway out and no landing; one on the catwalks (a launcher lands there: it walks to its drop) or in the air is left where it is', () => {
+    check('one already behind the gate (a saved game from before) is put beside the player by the second scan in a row that finds it on a pocket (a few cells, no doorway out, no landing); one on the catwalks (a launcher lands there: it walks to its drop), in the air, or on a big stretch cut off for the moment is left where it is', () => {
         const r = J(`(function(){ const dest = facilityPortal('portal_sewers_arena'), cm = _fpComps(), o = {}; const keep = followers.map(f => [f, f.x, f.y, f.stance, f.post, f.job, f._fpPortalAt]);
             player.x = player.targetX = player.visualX = dest.ax; player.y = player.targetY = player.visualY = dest.ay; const pc = cm.get(dest.ax + ',' + dest.ay);
             const g = _fp.F.solids.find(s => s.id === 'sewer_gate_n1'); const sx = Math.round((g.bb[0] + g.bb[2]) / 2 - 0.5), sy = Math.round(g.bb[1]) - 1; o.stubCell = [sx, sy, _fp.cellsP.has(sx + ',' + sy), cm.get(sx + ',' + sy) !== pc];
@@ -127,9 +127,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 _pFollowScan(); _pFollowScan(); _pFollowScan(); o.catwalk = [h.x === site.land[0] && h.y === site.land[1], cm.get(site.land[0] + ',' + site.land[1]) !== cm.get(_fpNearestCell(player.x, player.y).join()), h._fpSealed || 0]; }
             // in the air (a launched follower, mid flight) in the stub: left alone
             f.x = sx; f.y = sy; f._flight = { x0: sx, y0: sy }; f._fpSealed = 0; _pFollowScan(); _pFollowScan(); _pFollowScan(); o.air = [Math.round(f.x) === sx && Math.round(f.y) === sy, f._fpSealed || 0]; f._flight = null;
+            // a big stretch with no doorway to the player's (the cistern behind its shut boss gate: some sixty cells) is no pocket: a follower there waits
+            const pm = _fp.stations.find(s => s.id === 'st_purifier'); const ck = pm && _fpNearestCell(pm.x - 3, pm.y); o.cistern = [!!ck, ck && _fp.compSize.get(cm.get(ck.join())), ck && cm.get(ck.join()) !== pc];
+            if (ck) { player.x = player.visualX = dest.ax; player.y = player.visualY = dest.ay; f.x = ck[0]; f.y = ck[1]; f._fpSealed = 0; _pFollowScan(); _pFollowScan(); _pFollowScan(); o.big = [Math.round(f.x) === ck[0] && Math.round(f.y) === ck[1], f._fpSealed || 0]; }
+            o.stubSize = _fp.compSize.get(cm.get(sx + ',' + sy));
             keep.forEach(([u, x, y, st, po, jb, pa]) => { u.x = x; u.y = y; u.stance = st; u.post = po; u.job = jb; u._fpPortalAt = pa; u._fpSealed = 0; u._fpPath = null; }); player.x = player.targetX = player.visualX = crystal.x + 2; player.y = player.targetY = player.visualY = crystal.y + 1; return o; })()`);
         ok(r.stubCell[2] && r.stubCell[3], 'the stub cell is not floor on its own stretch: ' + JSON.stringify(r.stubCell)); same(r.first.join(), 'true,1,', 'the first scan counts, moves nothing, finds no doorway'); same(r.second.slice(0, 3).join(), 'true,true,0', 'the second puts it beside the player, on the player\'s stretch'); same(r.second[3], null, 'its route was let go');
         if (r.catwalk) same(r.catwalk.join(), 'true,true,0', 'the catwalk follower was moved'); same(r.air.join(), 'true,0', 'one in the air was moved');
+        ok(r.stubSize > 0 && r.stubSize <= J('FP_PORTAL.pocket'), 'the stub is a pocket of ' + r.stubSize + ' cells'); ok(r.cistern[0] && r.cistern[1] > J('FP_PORTAL.pocket') && r.cistern[2], 'the cistern is not a big stretch of its own: ' + JSON.stringify(r.cistern)); same((r.big || []).join(), 'true,0', 'a follower on the big cut-off stretch was moved');
     });
 
     group('THE DRAWING');

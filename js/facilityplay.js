@@ -60,11 +60,12 @@ function _fpEdgeOk(ax, ay, bx, by) {
 // by searching the whole of one for a way into the other (the nest area is one stretch, the catwalks another).
 function _fpComps() {
     if (_fp.comp) return _fp.comp;
-    const comp = new Map(); let n = 0;
+    const comp = new Map(), size = new Map(); let n = 0;
     for (const [k, c] of _fp.cellsP) {
-        if (comp.has(k)) continue; n++; comp.set(k, n); const q = [c];
-        while (q.length) { const [x, y] = q.pop(); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nk = (x + dx) + "," + (y + dy); if (comp.has(nk) || !_fpEdgeOk(x, y, x + dx, y + dy)) continue; comp.set(nk, n); q.push([x + dx, y + dy]); } }
+        if (comp.has(k)) continue; n++; comp.set(k, n); size.set(n, 1); const q = [c];
+        while (q.length) { const [x, y] = q.pop(); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nk = (x + dx) + "," + (y + dy); if (comp.has(nk) || !_fpEdgeOk(x, y, x + dx, y + dy)) continue; comp.set(nk, n); size.set(n, size.get(n) + 1); q.push([x + dx, y + dy]); } }
     }
+    _fp.compSize = size;   // (how many cells each stretch has: a few means a pocket, js/facilityportals.js)
     return (_fp.comp = comp);
 }
 // ── A SOLID OPENED IN PLAY: the choke of the Sewers' collapsed tunnel drilled through, the boss gate's seal broken (js/techabilities.js, js/quests.js) ──
