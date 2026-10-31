@@ -55,7 +55,9 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if ($('#unitInfo')) press($('#unitInfo')); unitInfoClose(); await wait(40); out.index.back = flyOn();   // (a press on the unit info is not one away from the card: closing it brings the card back)
     // REPORTED: "when I click away, it should still have that character selected, but the card should go away"
     if ($('#squadFly .sf-name')) press($('#squadFly .sf-name')); await wait(40); out.away = { onCard: flyOn() };   // (a phone has no card)
-    press(document.body); await wait(60); out.away.fly = flyOn(); out.away.sel = selectedUnits.size; out.away.lit = s0.classList.contains('sel'); out.away.to = txt('#mixTool .mt-to b'); out.away.label = unitTypeLabel(m0);
+    press(document.body); await wait(60); out.away.fly = flyOn(); out.away.sel = selectedUnits.size; out.away.lit = s0.classList.contains('sel');
+    for (var w = 0; w < 40 && txt('#mixTool .mt-to b') !== unitTypeLabel(m0); w++) { if (typeof mixToolRender === 'function') mixToolRender(false); await wait(25); }   // (the tool's caption is redrawn by the loop every six frames, js/game.js render, when its signature moves: in this page the loop's cadence is not reliable, and the XP step's SEEPER could stay on the caption; the loop's own call is made here until it catches up, up to a second)
+    out.away.to = txt('#mixTool .mt-to b'); out.away.label = unitTypeLabel(m0);
     partyTick(); await wait(40); out.away.tick = flyOn();
     click(s0); await wait(60); out.away.letGo = [selectedUnits.size, flyOn()]; click(s0); await wait(60); out.away.again = [selectedUnits.size, flyOn(), txt('#squadFly .sf-name')];
     // a second card picked: the card is the last one tapped; two picked says so
