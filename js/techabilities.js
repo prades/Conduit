@@ -30,7 +30,7 @@ const TECH_AB = {
         cooldown: 3600,     // PROVISIONAL: 60 s after a throw (as long as the first wait)
         selfDamage: 10,     // PROVISIONAL: the set amount the thrown follower takes
         powerMult: 3,       // PROVISIONAL: the enemy takes this many times the thrown follower's power
-        siteXp: 100,        // PROVISIONAL: the XP for setting a launcher up (a level-5 scout's kill: js/levels.js XP_YIELD)
+        siteXp: 100,        // PROVISIONAL: the XP for setting a launcher up (it was a level-5 scout's kill; kills pay double now, js/levels.js XP_YIELD, and this was not asked to)
         hitReach: 1.6,      // tiles: an enemy this near where the follower comes down is hit (it may have moved while the follower flew)
         loadReach: 1.3,     // tiles: how near the technician (or the launcher) the follower comes to be thrown
         loadWait: 480,      // frames to get there, or the throw is called off

@@ -58,7 +58,7 @@ A **launcher site** is map data (`launchSites` in `js/facilitymap.js`): where th
 | The thrown follower's damage | 10 | provisional |
 | The enemy's damage | 3 × the thrown follower's power | provisional |
 | XP for a throw that hits | as a kill of that enemy | provisional |
-| XP for setting a launcher up | 100 (a level-5 scout's kill) | provisional |
+| XP for setting a launcher up | 100 (it was a level-5 scout's kill; kills pay double now and this was not asked to) | provisional |
 | Set-up time | 2 s | how it feels |
 | Reach to be thrown, time to get there | 1.3 tiles, 8 s | how it feels |
 

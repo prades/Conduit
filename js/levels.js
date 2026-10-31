@@ -47,8 +47,9 @@ const XP_KILLER_SHARE  = 0.6;
 const XP_SHARE_RANGE   = 4;      // tiles
 const XP_ASSIST_ONLY   = 0.5;    // a kill with no unit's last blow: this share to those near
 const XP_DEATH_LOSS    = 0.25;   // of the progress toward the next level
-// (Doubled after a first playtest: the squad has to be able to keep up with what it fights.)
-const XP_YIELD = { nymph: 20, worker: 60, scout: 100, striker: 140, tank: 200, boss: 600 };
+// (Doubled after a first playtest: the squad has to be able to keep up with what it fights. Doubled again when followers seemed never to evolve: a recruit needs 875 XP and a kill was worth 64 on average, about 41 kills by
+// the squad; ASKED, chosen from a pop-up: "Double the XP from every kill". The launcher's set-up XP (js/techabilities.js) and the tutorial's reward are not kills and stay as they were.)
+const XP_YIELD = { nymph: 40, worker: 120, scout: 200, striker: 280, tank: 400, boss: 1200 };
 // A predator's armour at level 5, by class; a beetle's shell adds BEETLE_DEFENSE.
 const PRED_DEFENSE   = { nymph: 0, worker: 0, scout: 0, striker: 2, tank: 5, boss: 8 };
 const BEETLE_DEFENSE = 3;
