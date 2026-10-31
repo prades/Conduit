@@ -20,8 +20,9 @@
 //   THE HAND  the card types taken into a run, up to EQUIP.startPick, chosen from the collection when it begins (js/cardsui.js). A card put back out of the hand comes off everyone, unless it was found as well.
 //   PACK 1    ◆EQUIP_PACK.price buys a BOOSTER PACK: 4 Element cards, one reserved for a Precision, the others rolled over Unrefined, Refined and Precision by weight; none twice in a pack. What a pack deals is FOUND (equipFound): a card
 //             to wear at once, for this run only (NEW GAME clears it) unless EQUIP.unlockCost shards keep it for good. Only the hand and what is found can be worn.
-//   SERIES 2  a second pack (EQUIP_PACK2, in EQUIP_PACKS with Pack 1) for the SPECIES cards (the subclass kind) and CLASS cards of the "Series 2" brief: its plumbing is here (the roll, the sale, the shelf and the sheet take any pack of
-//             the list), its card list (EQUIP_SERIES2) and its numbers are not, so it is not on sale (equipPackOnSale) until they are. A technician's ABILITY COOLDOWN is a stat a card can name (EQUIP_STATS.cooldown).
+//   SERIES 2  a second pack (EQUIP_PACK2, in EQUIP_PACKS with Pack 1), which is the archive's BOOSTER PACK 2, for the SPECIES cards (the subclass kind) and CLASS cards of the "Series 2" brief: its plumbing is here (the roll, the
+//             sale, the shelf and the sheet take any pack of the list) and the archive's approved rules (unlocked after the first boss, all six rarities, one Precision-or-higher card at least); its card list (EQUIP_SERIES2), its
+//             price and its odds are not, so it is not on sale (equipPackOnSale) until they are. A technician's ABILITY COOLDOWN is a stat a card can name (EQUIP_STATS.cooldown).
 //   LEAVING   a respawn keeps a follower's cards; EXILE, falling for good (its body is restored with empty slots) and a RE-ROLL empty the slots. Nothing is lost: the card is still in the hand.
 //   SAVED     additively (js/facilitysave.js, FS.version stays 1, so every save made before the cards still loads): a follower's record carries `cards`, the run's save carries `cards: { hand, player, found }`.
 //   TICK      equipTick takes off, every half second, whatever no longer fits (a role switched, a card out of the hand): nothing else has to know the cards exist.
@@ -368,15 +369,18 @@ const EQUIP_PACK = {
     keep: "run",                                               // what a dealt card becomes: "run" (FOUND: worn at once, this run only) or "forever" (owned for good at once)
     unlockNeedsFind: true,                                     // a card a pack deals has to be found before EQUIP.unlockCost shards can keep it for good
 };
-// THE SERIES 2 PACK (the "Series 2" brief, 2026-10-31): the pack that deals the Series 2 cards (EQUIP_SERIES2: species cards and class cards), in the same shape as Pack 1. Its price, its odds and its reserved slot are NOT SET
-// (null): the brief gives the two categories and the six rarities and leaves the numbers to the archive, which could not be read this session (docs/OPEN-QUESTIONS.md). A pack that is not on sale (equipPackOnSale: a price, odds and
-// a reserved slot) is not rolled, not sold ("NOT ON SALE YET") and not shown on the CARDS sheet; its cards, when they are rows of EQUIP_SERIES2, are still worn, found, unlocked and saved like any card. Every pack is in EQUIP_PACKS:
-// the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
+// THE SERIES 2 PACK, which is BOOSTER PACK 2 (the user, 2026-10-31): the pack that deals the Series 2 cards (EQUIP_SERIES2: species cards and class cards), in the same shape as Pack 1, with the archive's approved rules for Pack 2
+// (the Game Design Archive, 2026-10-30): it UNLOCKS AFTER THE FIRST BOSS (the user: a spared boss counts, so the first encounter resolved either way: js/bosses.js bossAnyResolved), all SIX rarities are eligible, and every pack holds
+// at least one PRECISION-OR-HIGHER card (`guaranteed.orHigher`: the reserved slot is filled from Precision and up, by the pack's own odds among them). Its PRICE and its ODDS are NOT SET (null: the archive leaves them open), and its
+// card list (EQUIP_SERIES2) is empty, so it is not on sale (equipPackOnSale: a price, odds and a reserved slot): not rolled, not sold ("NOT ON SALE YET") and not shown on the CARDS sheet; its cards, when they are rows of
+// EQUIP_SERIES2, are still worn, found, unlocked and saved like any card. Every pack is in EQUIP_PACKS: the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
 const EQUIP_PACK2 = {
     id: "series2", name: "SERIES 2", price: null, size: 4,
     kinds: ["subclass", "class"],                              // species cards (the subclass kind) and class cards; never an element card, never a universal one
-    rarities: null,                                            // NOT SET: the weight of each of the six rarities, when the archive gives them
-    guaranteed: null,                                          // NOT SET: the slot reserved for a rarity, if Series 2 has one
+    eligible: ["unrefined", "refined", "precision", "prototype", "lustrous", "crystalline"],   // APPROVED: all six rarities (Pack 1 is capped at Precision)
+    rarities: null,                                            // NOT SET: the weight of each eligible rarity, when the archive gives them
+    guaranteed: { rarity: "precision", count: 1, orHigher: true },   // APPROVED: at least one Precision-or-higher card in every pack
+    unlock: "first_boss",                                      // APPROVED: on sale once the first boss encounter is resolved (calm or defeated)
     keep: "run", unlockNeedsFind: true,
 };
 const EQUIP_PACKS = [EQUIP_PACK, EQUIP_PACK2];
@@ -384,23 +388,27 @@ function equipPackById(id) { return EQUIP_PACKS.find(p => p.id === id) || null; 
 function equipPackOf(c) { return c && c.pack ? equipPackById(c.pack) : null; }   // the pack a card is dealt by, or null (the Crystalline six)
 function equipPackOnSale(pack) { return !!pack && Number.isFinite(pack.price) && pack.price >= 0 && !!pack.rarities && !!pack.guaranteed && pack.size > 0; }
 function equipPacksOnSale() { return EQUIP_PACKS.filter(equipPackOnSale); }
+// is the pack still locked (its `unlock` not met)? "first_boss": no boss encounter resolved yet (js/bosses.js bossAnyResolved: calm or defeated, the user's rule)
+function equipPackLocked(pack) { return !!pack && pack.unlock === "first_boss" && !(typeof bossAnyResolved === "function" && bossAnyResolved()); }
+// the rarities a guarantee may be filled from: the one named, or that one and every rarer one (`orHigher`), rarest last
+function equipGuaranteeRarities(pack) { const g = pack && pack.guaranteed; if (!g) return []; const order = EQUIP_RARITIES.map(r => r.id), i = order.indexOf(g.rarity); if (i < 0) return []; return g.orHigher ? order.slice(i) : [g.rarity]; }
 // a small seeded generator (mulberry32), so a pack can be rolled the same twice: the tests give a seed; the game gives none and uses Math.random
 function equipRng(seed) {
     let a = seed >>> 0;
     return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
-function equipPackPool(pack) { pack = pack || EQUIP_PACK; return Object.values(equipCards()).filter(c => !c.test && c.pack === pack.id && pack.kinds.indexOf(c.kind) >= 0 && !!pack.rarities && pack.rarities[c.rarity] > 0); }
+function equipPackPool(pack) { pack = pack || EQUIP_PACK; return Object.values(equipCards()).filter(c => !c.test && c.pack === pack.id && pack.kinds.indexOf(c.kind) >= 0 && (!pack.eligible || pack.eligible.indexOf(c.rarity) >= 0) && !!pack.rarities && pack.rarities[c.rarity] > 0); }
 // the ids a pack deals (in no set order), or null when it cannot be made (nor from a pack that is not on sale)
 function equipPackRoll(seed, pack) {
-    pack = pack || EQUIP_PACK; if (!equipPackOnSale(pack)) return null; const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random;
+    pack = pack || EQUIP_PACK; if (!equipPackOnSale(pack) || equipPackLocked(pack)) return null; const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random;
     const pool = equipPackPool(pack); if (pool.length < pack.size) return null;
     const left = {}; for (const c of pool) (left[c.rarity] = left[c.rarity] || []).push(c);
     const out = [], take = r => { const l = left[r]; if (!l || !l.length) return false; out.push(l.splice(Math.min(l.length - 1, Math.floor(rnd() * l.length)), 1)[0]); return true; };   // (a card leaves the pool once it is taken: never twice)
-    for (let i = 0; i < pack.guaranteed.count; i++) if (!take(pack.guaranteed.rarity)) return null;
+    const pickOf = rs => { const total = rs.reduce((n, r) => n + pack.rarities[r], 0); let x = rnd() * total, pick = rs[rs.length - 1]; for (const r of rs) { if (x < pack.rarities[r]) { pick = r; break; } x -= pack.rarities[r]; } return pick; };   // (a rarity by the pack's weights, among those given)
+    for (let i = 0; i < pack.guaranteed.count; i++) { const rs = equipGuaranteeRarities(pack).filter(r => left[r] && left[r].length); if (!rs.length || !take(pickOf(rs))) return null; }   // (the reserved slot: the guaranteed rarity, or any rarer one when the guarantee is "or higher")
     while (out.length < pack.size) {
-        const rs = Object.keys(pack.rarities).filter(r => left[r] && left[r].length), total = rs.reduce((n, r) => n + pack.rarities[r], 0); if (!rs.length) return null;
-        let x = rnd() * total, pick = rs[rs.length - 1]; for (const r of rs) { if (x < pack.rarities[r]) { pick = r; break; } x -= pack.rarities[r]; }
-        take(pick);
+        const rs = Object.keys(pack.rarities).filter(r => left[r] && left[r].length); if (!rs.length) return null;
+        take(pickOf(rs));
     }
     for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = out[i]; out[i] = out[j]; out[j] = t; }   // (the reserved card is not always first)
     return out.map(c => c.id);
@@ -409,9 +417,10 @@ function equipPackRoll(seed, pack) {
 function equipPackWhyNot(pack) {
     pack = pack || EQUIP_PACK;
     if (!equipPackOnSale(pack)) return "NOT ON SALE YET";   // (Series 2, until its numbers are given)
-    const have = typeof shardCount === "number" ? shardCount : 0, pool = equipPackPool(pack);
+    if (equipPackLocked(pack)) return "UNLOCKS AFTER THE FIRST BOSS";   // (Pack 2: the archive's rule; a spared boss counts)
+    const have = typeof shardCount === "number" ? shardCount : 0, pool = equipPackPool(pack), gr = equipGuaranteeRarities(pack);
     if (have < pack.price) return "NEED ◆" + (pack.price - have) + " MORE";
-    if (pool.length < pack.size || pool.filter(c => c.rarity === pack.guaranteed.rarity).length < pack.guaranteed.count) return "NO CARDS TO FIND";
+    if (pool.length < pack.size || pool.filter(c => gr.indexOf(c.rarity) >= 0).length < pack.guaranteed.count) return "NO CARDS TO FIND";
     return null;
 }
 // buy and open a pack: the price is paid from the run's shards, the cards are dealt; returns their ids, or null (nothing is paid)

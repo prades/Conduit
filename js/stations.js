@@ -38,6 +38,7 @@ const STATION_KINDS = {
         use: () => typeof questGateUse === "function" ? questGateUse() : { ok: false, why: "NO QUEST" } },
     purifier_mount: { name: "PURIFIER MOUNT", classes: null, build: 1200, cost: [["purification_module", 1]], buildMsg: "MOUNTING THE MODULE… STAY AT THE CONSOLE", verbFn: () => typeof questMountVerb === "function" ? questMountVerb() : "INSTALL",
         canFn: () => typeof questMountCan === "function" ? questMountCan() : { ok: false, why: "NO QUEST" }, onStart: () => { if (typeof questMountStart === "function") questMountStart(); },
+        blockFn: () => typeof questMountBlocked === "function" ? questMountBlocked() : null,   // (the boss guards the console: the build's progress holds, js/bosses.js bossInstallBlocked)
         use: () => typeof questMountUse === "function" ? questMountUse() : { ok: false, why: "NO QUEST" } },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
@@ -219,7 +220,13 @@ function facilityRelayTick() {
     if (c) {
         const near = Math.hypot(Math.max(c.bb[0] - player.visualX, 0, player.visualX - c.bb[2]), Math.max(c.bb[1] - player.visualY, 0, player.visualY - c.bb[3]));
         if (near > STATION_RANGE + 0.6) { _fp.channel = null; invSay(c.station ? "BUILD INTERRUPTED" : "REPAIR INTERRUPTED", false); }
-        else if (frame - c.t0 >= c.frames) { if (c.station) buildComplete(c); else relayComplete(c); }
+        else {
+            // a build a boss contests (the purifier mount: js/bosses.js bossInstallBlocked through the kind's blockFn) HOLDS while it is blocked: its start is pushed on a frame for every blocked frame, so the progress
+            // made before stays and goes on when the block lifts; the plate says why every two seconds
+            const k = c.kind ? STATION_KINDS[c.kind] : null, why = k && typeof k.blockFn === "function" ? k.blockFn() : null;
+            if (why) { c.t0++; c.held = (c.held || 0) + 1; if (frame - (c.saidAt || -1e9) >= 120) { c.saidAt = frame; invSay(why, false); } }
+            else if (frame - c.t0 >= c.frames) { if (c.station) buildComplete(c); else relayComplete(c); }
+        }
     } else if (playerClassKey && CLASS_RULES.relay.auto.includes(playerClassKey) && (!player.fpPath || !player.fpPath.length)) {
         const s = _fp.stationNear; if (s && s.kind === "relay" && relayCan(s).ok) relayStart(s);
     }
@@ -259,7 +266,7 @@ function facilityDrawRelays() {
     ctx.restore();
 }
 
-// THE BUILD (the mech bay): the cost is checked when it starts and paid when it is done
+// THE BUILD (the mech bay; the purifier mount): the cost is checked when it starts and paid when it is done; a build with a `blockFn` holds while it says why (facilityRelayTick)
 function buildStart(s) {
     const can = stationCan(s); if (!can.ok) { invSay(can.why, false); return can; }
     const k = STATION_KINDS[s.kind]; if (_fp.channel) return { ok: false, why: "BUSY" };

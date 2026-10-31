@@ -21,6 +21,7 @@ const FP_SPAWN_SEWERS = {
     room: "sewers", every: 1500, first: 1500, start: 3, cap: 4, minFromPlayer: 9, spacing: 3,
     species: ["ant"], classes: { worker: 3, scout: 3 }, levels: [3, 5], element: "toxic", brood: true,
     wander: [3, 9],
+    after: { cap: 1, every: 6000 },   // PROVISIONAL: after the purification (js/quests.js) "the major infestation clears; a few incidental insects may remain" (the archive): one straggler at a time, one every 100 s
 };
 
 function _fsArenaCells() {
@@ -94,10 +95,19 @@ function facilitySpawnTick() {
 // the Sewers' brood: the first few the first time the player is in the Sewers, then one at a time while the player is there (none while away: the Sewers are not emptied either)
 function facilityBroodTick(f) {
     const P = FP_SPAWN_SEWERS; if (typeof player === "undefined" || typeof partyRoomAt !== "function" || partyRoomAt(player.x, player.y) !== P.room) return;
-    if (_fp.broodAt === undefined) { _fp.broodAt = f + P.first; for (let i = 0; i < P.start && facilityCreatures(P.room).length < P.cap; i++) facilitySpawnCreature(null, null, P); return; }
+    const after = typeof questDone === "function" && questDone("purify") ? P.after : null, cap = after ? after.cap : P.cap, every = after ? after.every : P.every;   // (purified: a few stragglers, now and then)
+    if (_fp.broodAt === undefined) { _fp.broodAt = f + (after ? every : P.first); for (let i = 0; i < (after ? 0 : P.start) && facilityCreatures(P.room).length < cap; i++) facilitySpawnCreature(null, null, P); return; }
     if (f < _fp.broodAt) return;
-    _fp.broodAt = f + P.every;
-    if (facilityCreatures(P.room).length < P.cap) facilitySpawnCreature(null, null, P);
+    _fp.broodAt = f + every;
+    if (facilityCreatures(P.room).length < cap) facilitySpawnCreature(null, null, P);
+}
+// the purification is done (js/quests.js questTick): the major infestation clears: the brood beyond the stragglers' cap is gone (quietly: no kill, no drop, no XP), and the next comes slowly
+function facilityBroodThin() {
+    const P = FP_SPAWN_SEWERS; let keep = P.after.cap, gone = 0;
+    for (const a of facilityCreatures(P.room)) { if (!a.sewerBrood || a.bossId) continue; if (keep-- > 0) continue; a.dead = true; a.deathProcessed = true; a.progressCounted = true; gone++; }
+    if (_fp) _fp.broodAt = (typeof frame !== "undefined" ? frame : 0) + P.after.every;
+    if (gone && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 105, text: "◈ THE BROOD THINS OUT — A FEW STRAGGLERS REMAIN", color: "#9dffb6", life: 300, vy: -0.04, size: 14 });
+    return gone;
 }
 
 // SPIDERS LURK (ASKED: "Spiders should have no tag and should hang out near objects that reveal it only partially when idle"). An idle spider of the arena goes from cover to cover: a floor tile just

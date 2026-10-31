@@ -21,7 +21,7 @@ function predatorPreyOk(p, a) {
 function predatorPreyShare(a) { return typeof player !== "undefined" && a === player ? Math.max(0, health) / PLAYER_HITS : Math.max(0, a.health) / Math.max(1, a.maxHealth || 1); }
 // the best prey near it, or null (see COMBAT.prey)
 function predatorPickPrey(p) {
-    if ((p.bossAsleep || p.bossCalm) && !p.provoked) return null;   // (a boss asleep or calm in its lair picks no prey: a hit provokes it, js/bosses.js)
+    if ((p.bossAsleep || p.bossCalm || p.bossRetreating) && !p.provoked) return null;   // (a boss asleep or calm in its lair, or backing off in distress, picks no prey: a hit provokes it, js/bosses.js)
     const P = COMBAT.prey, calm = !predatorAlarm(p) && !p.provoked, seen = [];
     for (const a of _predNear(p.x, Math.max(P.sense, P.revenge))) if (a !== p && a.team === "green") seen.push(a);
     if (typeof player !== "undefined") seen.push(player);
@@ -243,7 +243,7 @@ class Predator {
         // ── THE PLAYER, UP CLOSE ──
         // Brush against one, or let it walk up to you, and it turns on you: you are its prey (COMBAT.prey), and it bites you in the bite's two beats, the telegraph first (it bit at once,
         // with no warning, and only by touch: from a melee weapon's reach nothing could touch the player at all). Its shots and specials still pass you by.
-        if (!this.isClone && !this.untargetable && typeof predatorMayHurtPlayer === "function" && predatorMayHurtPlayer() && typeof player !== "undefined") {
+        if (!this.isClone && !this.untargetable && typeof predatorMayHurtPlayer === "function" && predatorMayHurtPlayer() && !this.bossRetreating && typeof player !== "undefined") {   // (a boss backing off in distress passes you by: js/bosses.js)
             const pdx = player.x - this.x, pdy = player.y - this.y, _br = typeof PLAYER_BITE_RANGE === "number" ? PLAYER_BITE_RANGE : 0.9;
             if (pdx * pdx + pdy * pdy <= _br * _br && this.currentTarget !== player) { faceToward(this, player.x, player.y, 0.5); this.lastAttacker = player; this.provoked = true; this._prey = player; }
         }

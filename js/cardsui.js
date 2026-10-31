@@ -90,11 +90,12 @@ function _cdPlayerSlot(slot) {
 
 // ── a booster pack (Pack 1; Series 2 when it is on sale: js/cards.js EQUIP_PACKS): its button (two taps, as an unlock is) and what the last pack of it dealt ──
 function _cdPackKinds(pack) { return pack.kinds.map(k => k === "subclass" ? "SPECIES" : k === "class" ? "CLASS" : k.toUpperCase()).join(" AND ") + " CARDS"; }
-function _cdPackSub(pack) { return "◆" + pack.price + " · " + pack.size + " " + _cdPackKinds(pack) + ", ONE ALWAYS " + equipRarityLabel({ rarity: pack.guaranteed.rarity }) + " · THEY ARE FOUND FOR THIS RUN · ◆" + EQUIP.unlockCost + " KEEPS ONE FOR GOOD"; }
+function _cdPackGuarantee(pack) { return "ONE " + equipRarityLabel({ rarity: pack.guaranteed.rarity }) + (pack.guaranteed.orHigher ? " OR BETTER" : ""); }   // (Pack 2's guarantee is "Precision or higher": js/cards.js)
+function _cdPackSub(pack) { return "◆" + pack.price + " · " + pack.size + " " + _cdPackKinds(pack) + ", ALWAYS " + _cdPackGuarantee(pack) + " · THEY ARE FOUND FOR THIS RUN · ◆" + EQUIP.unlockCost + " KEEPS ONE FOR GOOD"; }
 function _cdPackBox(pack) {
     pack = pack || EQUIP_PACK;
     const box = _cdEl("div", "cd-pack"), why = equipPackWhyNot(pack), key = pack === EQUIP_PACK ? "pack" : "pack:" + pack.id, armed = _cdArm && _cdArm.id === key && _cdNow() < _cdArm.until;
-    box.appendChild(_cdBtn(armed ? "TAP AGAIN TO OPEN" : "OPEN A PACK ◆" + pack.price, why || (armed ? "◆" + pack.price + " OF YOUR SHARDS · " + pack.size + " CARDS" : pack.size + " CARDS · ONE " + equipRarityLabel({ rarity: pack.guaranteed.rarity }) + " AT LEAST"), "#ffe733", () => {
+    box.appendChild(_cdBtn(armed ? "TAP AGAIN TO OPEN" : "OPEN A PACK ◆" + pack.price, why || (armed ? "◆" + pack.price + " OF YOUR SHARDS · " + pack.size + " CARDS" : pack.size + " CARDS · " + _cdPackGuarantee(pack) + " AT LEAST"), "#ffe733", () => {
         if (_cdArm && _cdArm.id === key && _cdNow() < _cdArm.until) { _cdArm = null; equipPackOpen(undefined, pack); } else _cdArm = { id: key, until: _cdNow() + CARDS_ARM_MS };
     }, !!why));
     if (equipPackLast && (equipPackLast.pack || EQUIP_PACK.id) === pack.id) {

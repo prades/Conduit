@@ -18,6 +18,9 @@
 //   THE STATIONS (js/stations.js STATION_KINDS): the ANALYSIS BENCH (the cabinet at the Experiment Lab's west end, cabinet_1: ANALYSE, then BUY ◆800; not a bench beside the sequencer and the hood, whose plate would show the wrong station), the BOSS GATE's seal (with the module in the pack), the PURIFIER MOUNT (the cistern's console: a build of
 //     QUEST_PURIFY.install frames that the player stays at; starting it wakes the boss; finishing it mounts the module and starts the cycle).
 //   NON-LETHAL: the module's cycle completes whether the boss lives or not; when it does, a living boss is CALMED (js/bosses.js bossCalm: it keeps its lair, alive). Defeating it is the other resolution. The quest records both.
+//   THE INSTALL UNDER PRESSURE (the archive's design, 2026-10-31): the woken boss GUARDS the console: the install's progress holds while it is within its guard of the mount and not controlled (questMountBlocked ←
+//     js/bosses.js bossInstallBlocked); at half its health it is in DISTRESS and backs off to the far side of the sump, rushing the console now and then: its retreats, and the stuns, freezes and glitches your
+//     squad lands on it, are the windows. After the purification the brood thins to a few stragglers (js/facilityspawn.js facilityBroodThin: the major infestation clears, as the archive asks).
 const QUEST_PURIFY = {
     id: "purify", title: "PURIFY THE SEWERS", col: "#8cff5a",
     samples: 3,          // toxic ant samples the bench wants, with one water sample
@@ -64,10 +67,11 @@ const QUEST_STEPS = {
         { id: "module", title: "BUY THE PURIFICATION MODULE", text: Q => "AT THE ANALYSIS BENCH: ◆" + QUEST_PURIFY.modulePrice + ". YOU HAVE ◆" + (typeof shardCount === "number" ? shardCount : 0) + ".", hint: Q => "KILLS PAY SHARDS. THE MODULE GOES IN YOUR PACK.", done: Q => !!Q.moduleAt },
         { id: "install", title: "INSTALL THE MODULE IN THE CISTERN",
           text: Q => Q.gateAt ? "MOUNT THE MODULE ON THE CONSOLE AT THE HEAD OF THE SUMP AND STAY AT IT: " + Math.round(QUEST_PURIFY.install / 60) + " SECONDS." : "TAKE IT DOWN TO THE SEWERS: THE BOSS GATE AT THE EAST END OF THE SOUTH LEDGE. ITS SEAL BREAKS FOR THE MODULE.",
-          hint: Q => "THE ANT BOSS SLEEPS BY THE SUMP. THE INSTALL WAKES IT: HOLD IT OFF WITH YOUR SQUAD (A SHIELD, A FROST PATCH, POSTS), OR KILL IT. STEP AWAY AND THE INSTALL STOPS; THE MODULE IS NOT LOST.", done: Q => !!Q.installedAt },
+          hint: Q => _questBossName() + " SLEEPS BY THE SUMP. THE INSTALL WAKES IT, AND IT GUARDS THE CONSOLE: THE INSTALL HOLDS WHILE IT IS ON YOU. DRIVE IT TO HALF ITS HEALTH AND IT BACKS OFF IN DISTRESS, OR STUN, FREEZE OR GLITCH IT; OR KILL IT. STEP AWAY AND THE INSTALL STOPS; THE MODULE IS NOT LOST.", done: Q => !!Q.installedAt },
         { id: "purify", title: "THE WATER CLEARS", text: Q => "THE MODULE IS RUNNING: " + Math.ceil((Q.cycleLeft || 0) / 60) + " S. THE RIVER CLEARS AS IT GOES.", hint: Q => "THE BOSS NEED NOT DIE: CLEAN WATER CALMS IT, AND IT KEEPS ITS LAIR.", done: Q => !!Q.purifiedAt },
     ],
 };
+function _questBossName() { const E = typeof bossEnc === "function" ? bossEnc(QUEST_PURIFY.boss) : null; return E && E.name || "THE BOSS"; }
 function questStepIndex(id) { const Q = questState(id), S = QUEST_STEPS[id] || []; for (let i = 0; i < S.length; i++) if (!S[i].done(Q)) return i; return S.length; }
 // what the plate shows for the quest under way: { key, title, body, hint, col }, or null (js/tutorial.js facilityDrawObjective)
 function questObjective() {
@@ -75,7 +79,7 @@ function questObjective() {
         if (!questActive(id)) continue;
         const Q = questState(id), S = QUEST_STEPS[id], i = questStepIndex(id), P = QUEST_PURIFY;
         if (i < S.length) { const st = S[i]; return { key: id + ":" + st.id, title: P.title + "  ·  " + (i + 1) + "/" + S.length + "  ·  " + st.title, body: st.text(Q), hint: st.hint(Q), col: P.col }; }
-        const boss = Q.bossOutcome === "defeated" ? "THE ANT BOSS IS DEAD." : Q.bossOutcome === "calm" ? "THE ANT BOSS SLEEPS BY THE SUMP, ALIVE AND CALM." : "";
+        const boss = Q.bossOutcome === "defeated" ? _questBossName() + " IS DEAD." : Q.bossOutcome === "calm" ? _questBossName() + " SLEEPS BY THE SUMP, ALIVE AND CALM." : "";
         return { key: id + ":done", title: P.title + "  ·  DONE", body: "THE RUNOFF RUNS CLEAN: THE SEWERS ARE PURIFIED. " + boss, hint: "", col: "#9dffb6" };
     }
     return null;
@@ -93,7 +97,7 @@ function questTick() {
     if (Q.discoveredAt && !Q.samplesAt && questSamplesReady(Q)) questMark(Q, "samplesAt", "◈ EVERY SAMPLE IS IN YOUR PACK — THE ANALYSIS BENCH IN THE EXPERIMENT LAB WANTS THEM");
     if (Q.installedAt && !Q.purifiedAt) {   // THE CYCLE: the module runs, the water clears, then the boss is calmed if it lives
         Q.cycleLeft = Math.max(0, (Q.cycleLeft || 0) - 1);
-        if (!Q.cycleLeft) { questMark(Q, "purifiedAt", "◈ THE RUNOFF RUNS CLEAN — THE SEWERS ARE PURIFIED", "#9dffb6"); Q.closeLeft = P.closing; if (typeof bossCalm === "function") bossCalm(P.boss); }
+        if (!Q.cycleLeft) { questMark(Q, "purifiedAt", "◈ THE RUNOFF RUNS CLEAN — THE SEWERS ARE PURIFIED", "#9dffb6"); Q.closeLeft = P.closing; if (typeof bossCalm === "function") bossCalm(P.boss); if (typeof facilityBroodThin === "function") facilityBroodThin(); }   // (the major infestation clears: js/facilityspawn.js)
     }
     if (Q.purifiedAt && Q.closeLeft > 0) Q.closeLeft--;
 }
@@ -160,6 +164,8 @@ function questMountCan() {
     return { ok: true };
 }
 function questMountStart() { if (typeof bossWake === "function") bossWake(QUEST_PURIFY.boss, "install"); }   // the install begins: the boss is woken (the pressure)
+// why the install cannot go on this frame (js/stations.js facilityRelayTick, the mount's blockFn): the boss guards the console (js/bosses.js bossInstallBlocked); null when it can
+function questMountBlocked() { return typeof bossInstallBlocked === "function" ? bossInstallBlocked(QUEST_PURIFY.boss) : null; }
 function questMountUse() {   // the install is complete (js/stations.js buildComplete took the module): the cycle begins
     const Q = questState("purify"), P = QUEST_PURIFY; if (Q.installedAt) return { ok: false, why: "IT IS INSTALLED" };
     Q.cycleLeft = P.cycle; questMark(Q, "installedAt");
