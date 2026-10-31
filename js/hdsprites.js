@@ -26,13 +26,13 @@ const HD_EGG_CORE_Y = 73;          // where the crystal sits in an egg cell (the
 const _hdImgs = {};
 
 function _hdImg(key) {
-    if (_hdImgs[key] !== undefined) { const e = _hdImgs[key]; return e && e.complete && e.naturalWidth ? e : null; }
+    if (_hdImgs[key] !== undefined) { const e = _hdImgs[key]; if (e && e.complete && e.naturalWidth) return e; if (e && typeof startupWant === "function") startupWant(e); return null; }   // (a sheet that has not arrived: the start screen is told: js/init.js)
     _hdImgs[key] = null;
     if (typeof document === "undefined" || !document.createElement) return null;
     const im = document.createElement("img");
     im.onload = () => { _hdImgs[key] = im; };
     im.src = "img/hd/" + key + ".png" + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
-    _hdImgs[key] = im;
+    _hdImgs[key] = im; if (typeof startupAsset === "function") startupAsset(im, "hd/" + key);
     return null;
 }
 // The row of a sheet for a facing (dirX, dirY in grid steps): row 1 looks at the camera.

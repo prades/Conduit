@@ -49,12 +49,13 @@ const ORDER = scriptOrder();
 // added here is a claim that the host provides it, not the game — keep it
 // short, and never add a game variable to it. (CanvasRenderingContext2D: the
 // facility dims its props through a second context, when the frame's context
-// is a real one; Storage: it filters what reaches localStorage.)
+// is a real one; Storage: it filters what reaches localStorage; HTMLImageElement: the start waits for sheets only when they are real images.)
 const HOST_PROVIDED = new Set([
     'innerWidth', 'innerHeight',
     'webkitAudioContext', 'mozRequestAnimationFrame', 'webkitRequestAnimationFrame',
     'DeviceOrientationEvent', 'ontouchstart', 'chrome', 'opr', 'safari',
     'CanvasRenderingContext2D', 'Storage',
+    'HTMLImageElement',   // (the start lists the sheets only when the page has real images to wait for: js/init.js startupAsset; the sandbox has none)
 ]);
 
 // The facility's save, with a squad in it: the state that crashed is a

@@ -241,7 +241,7 @@
         <div class="q">What the game already says:<ul><li><em>“The arena is where the facility's creatures are. A few are there when the game opens, and every so often another comes out of the dark at a spot you cannot see, always the kind there are fewest of, so they are all different.”</em> <span class="where">the INFO index, js/infodex.js:91</span></li><li><em>“Whatever the arena's creatures are made of, it is mostly good steel. Somebody in the Armory will pay for it in rounds.”</em> <span class="where">scrap metal, js/inventory.js:57</span></li><li><em>“Scorched on one side where the thermite went through. Something has been scratching at the other.”</em> <span class="where">a rock from behind the rubble, js/inventory.js:80</span></li><li><em>“Behind it: the future insect burrow.”</em> <span class="where">the rubble, js/facilitymap.js:398 (not shown on screen)</span></li><li><em>“PROXIMITY ALARM · FACILITY BREACH · ASSAULT · INTRUDER ALERT”</em> <span class="where">the alarms, js/alarm.js:7-8</span></li></ul></div></div>
       <div class="tbw"><span class="stamp">TO BE WRITTEN</span><h4>The goal, and the ending</h4>
         <p>What winning means after the tutorial, and how a game ends other than the Crystal falling.</p>
-        <div class="q">What the game already says:<ul><li><em>“YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS.”</em> <span class="where">the tutorial's last line, js/tutorial.js</span></li><li><em>“Find supplies, bring the relays back online room by room, gather a squad of followers, and keep the Crystal alive against what comes out of the arena.”</em> <span class="where">the guide's one line, game.html:1099</span></li></ul></div></div>
+        <div class="q">What the game already says:<ul><li><em>“YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS.”</em> <span class="where">the tutorial's last line, js/tutorial.js</span></li><li><em>“Find supplies, bring the relays back online room by room, gather a squad of followers, and keep the Crystal alive against what comes out of the arena.”</em> <span class="where">the guide's one line, game.html:1160</span></li></ul></div></div>
       <div class="tbw"><span class="stamp">TO BE WRITTEN</span><h4>Names and words</h4>
         <p>The canon names: the game's own title, the rooms (the screen and the map data disagree), and the wording of the facility's signs.</p>
         <div class="q">What the game already says:<ul><li><em>“Tube Crawler: Peak AI Data-Driven”</em> <span class="where">the game page's browser tab, game.html:8 (left from before Conduit?)</span></li><li><em>“Computer Lab · Main Hallway · Lab Passage · Stair Room”</em> <span class="where">the room tags on screen, js/facilitynet.js:11-13</span></li><li><em>“Front Lobby · Hallway past the Experiment Lab · Narrow passage (lab to Teleport Room 1) · Teleport Stair Room”</em> <span class="where">the same rooms in the map data, js/facilitymap.js</span></li><li><em>“Its wording is not decided.”</em> <span class="where">the lobby's big sign, js/facilitymap.js:850</span></li></ul></div></div>
@@ -273,7 +273,7 @@
 <tr><td>Crystal health / mends a frame while no alarm is up</td><td class="num"><span class="n" data-k="crystal.maxHealth">300 HP</span> / <span class="n" data-k="CRYSTAL_REGEN">0.01 HP</span></td><td><code>js/facilityplay.js:230</code>, <code>js/config.js:167</code></td></tr>
 <tr><td>Followers / creatures at the start</td><td class="num"><span class="n" data-k="followers.length">3</span> / <span class="n" data-k="FP_SPAWN.start">4</span></td><td><code>js/facilityplay.js:262</code>, <code>js/facilityspawn.js:12</code></td></tr>
 </table></div>
-<p class="where">Where it lives: <code>js/facilitymap.js</code> (data) · <code>js/facilitygrow.js</code> · <code>js/facility.js</code> (build, validate, queries) · <code>js/facilityplay.js</code> <code>facilityPlayStart</code> · <code>js/init.js:11</code></p>
+<p class="where">Where it lives: <code>js/facilitymap.js</code> (data) · <code>js/facilitygrow.js</code> · <code>js/facility.js</code> (build, validate, queries) · <code>js/facilityplay.js</code> <code>facilityPlayStart</code> · <code>js/init.js:94</code></p>
 <details class="dec"><summary>Decisions</summary><div>
 <blockquote class="asked">“we need to get rid of the old systems, like the build feature, the different zones, and the nests, and the batteries, and the turrets. The shield generators, all of that stuff from the old system needs to go away, including the tunnel. We need to completely make this game our foundation.”<cite>ASKED · commit 9b7758f</cite></blockquote>
 <p>The theme is only in the data, with no owner quote (<code>theme: { era: "2010s tech startup headquarters", condition: "rundown" }</code>, <code>js/facilitymap.js:25</code>). The stair room: “confirmed by the user” (<code>js/facilitymap.js:854</code>).</p>
@@ -709,14 +709,14 @@
 <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
 <tr><td>Lift per tile of height / zoom range</td><td class="num"><span class="n" data-k="FAC_ELEV_PX">34 px</span> / 0.03 to 6 (literal)</td><td><code>js/facility.js:488, 544</code></td></tr>
 </table></div>
-<p class="where">Where it lives: <code>js/facility.js:480-565</code> <code>facilityInspectDraw</code>, <code>facilityInspectBuild</code>, <code>facilityInspectToggle</code> · <code>game.html:171-177</code> (its style), <code>:1101</code> (the dock's button) · <code>design/bible/pictures.js</code> (the picture)</p>
+<p class="where">Where it lives: <code>js/facility.js:480-565</code> <code>facilityInspectDraw</code>, <code>facilityInspectBuild</code>, <code>facilityInspectToggle</code> · <code>game.html:186-192</code> (its style), <code>:1162</code> (the dock's button) · <code>design/bible/pictures.js</code> (the picture)</p>
 <details class="dec"><summary>Decisions</summary><div>
 <blockquote class="asked">“we need to get rid of the facility maps debugging features and just have it for just the facility inspection”<cite>ASKED, chosen from a pop-up: rooms, names and levels · js/facility.js:483-484</cite></blockquote>
 </div></details>
 <h3 id="world-tag">The room tag</h3>
 <p>The plate at the top right (<code>#zoneInfo</code>) names the room you are in at every moment; a doorway keeps the last room, a portal sets the one arrived in. The red alarm triangle shows beside it during an alarm.
   Its names (<code>FP_ROOM_TAG</code>, <span class="n" data-k="Object.keys(FP_ROOM_TAG).length">17</span> of them) differ from the MAP labels for five rooms (see the rooms table). At the start it reads “<span class="n" data-k="facilityZoneName()">Crystal Chamber</span>”.</p>
-<p class="where">Where it lives: <code>js/facilitynet.js</code> <code>FP_ROOM_TAG</code>, <code>facilityZoneName</code> · <code>js/game.js:632-634</code> · <code>game.html:1052</code></p>
+<p class="where">Where it lives: <code>js/facilitynet.js</code> <code>FP_ROOM_TAG</code>, <code>facilityZoneName</code> · <code>js/game.js:644-646</code> · <code>game.html:1067</code></p>
 <h3 id="world-save">What is saved</h3>
 <p>One key, <span class="n" data-k="FS.key">conduit_fp_save</span> (version <span class="n" data-k="FS.version">1</span>, <span class="n" data-k="Object.keys(facilitySaveCollect()).length">28</span> fields), written every <span class="n" data-k="FS.every" data-f="f">3 s</span> while you play and when the page is hidden; only keys matching <span class="n" data-k="FP_STORE_OK.source">^conduit_fp_</span> can be written.
   NEW GAME (a chip at the top left, SETTINGS, or the game-over card) asks (“Start a new facility game? Your saved progress will be lost.”), clears it and reloads. The equip cards' collection is kept apart, at <span class="n" data-k="EQUIP.key">conduit_fp_cards</span>, and NEW GAME leaves it alone.</p>
@@ -816,7 +816,7 @@
     <tr><td>"Weak" to a calm creature (player: 1 hit left)</td><td class="num"><span class="n" data-k="COMBAT.prey.calmWeakAt" data-f="pct">34%</span> of health</td><td><code>js/combat.js:22</code></td></tr>
     <tr><td>Weight of weakness: player / unit</td><td class="num">×<span class="n" data-k="COMBAT.prey.weakPlayer">2</span> / ×<span class="n" data-k="COMBAT.prey.weak">1.2</span></td><td><code>js/combat.js:22</code></td></tr>
     <tr><td>Leash: prey let go beyond</td><td class="num"><span class="n" data-k="COMBAT.prey.leash">13 tiles</span></td><td><code>js/combat.js:22</code></td></tr>
-    <tr><td>Knockdown spot</td><td class="num">Crystal + (2, 0) tiles</td><td><code>js/game.js:606</code> (literal)</td></tr>
+    <tr><td>Knockdown spot</td><td class="num">Crystal + (2, 0) tiles</td><td><code>js/game.js:618</code> (literal)</td></tr>
   </table></div>
   <p class="where">Where it lives: <code>js/helpers.js</code> <code>hurtPlayer</code> · <code>js/game.js</code> (the knockdown) · <code>js/predator.js</code> <code>predatorPickPrey</code>, <code>bite</code> · <code>js/combat.js</code> <code>COMBAT</code></p>
   <details class="dec"><summary>Decisions</summary><div>
@@ -1191,7 +1191,7 @@
     <tr><td>Scrap drop chance</td><td class="num"><span class="n" data-k="FP_SPAWN.scrap.chance" data-f="pct">75%</span></td><td><code>js/facilityspawn.js:15</code></td></tr>
     <tr><td>Scrap from a scout / striker / tank (a worker: 1)</td><td class="num"><span class="n" data-k="[FP_SPAWN.scrap.byClass.scout, FP_SPAWN.scrap.byClass.striker, FP_SPAWN.scrap.byClass.tank].join(' / ')">1 / 2 / 3</span></td><td><code>js/facilityspawn.js:15</code></td></tr>
     <tr><td>A scrap case lies for</td><td class="num"><span class="n" data-k="FP_SPAWN.scrap.life">3600 frames</span> (60 s)</td><td><code>js/facilityspawn.js:15</code></td></tr>
-    <tr><td>Shortest rest / round speed / round hits within / beam width and overrun</td><td class="num">4 frames / 0.18 tiles a frame / 30 px / 0.75 and 3 tiles</td><td><code>js/weapons.js:47</code>, <code>js/clone.js:492</code>, <code>js/game.js:1136</code>, <code>js/weapons.js:103-107</code> (literals)</td></tr>
+    <tr><td>Shortest rest / round speed / round hits within / beam width and overrun</td><td class="num">4 frames / 0.18 tiles a frame / 30 px / 0.75 and 3 tiles</td><td><code>js/weapons.js:47</code>, <code>js/clone.js:492</code>, <code>js/game.js:1148</code>, <code>js/weapons.js:103-107</code> (literals)</td></tr>
   </table></div>
   <p class="where">Where it lives: <code>js/weapons.js</code> <code>WEAPONS</code>, <code>weaponRows</code>, <code>weaponConvert</code>, <code>fireLaserShot</code>, the terminal · <code>js/input.js</code> <code>firePlayerShot</code> (routes each kind) · <code>js/facilityspawn.js</code> <code>facilityScrapDrop</code></p>
   <details class="dec"><summary>Decisions</summary><div>
@@ -1436,7 +1436,7 @@
 <tr><td>XP for beating the tutorial's assault</td><td class="num"><span class="n" data-k="TUT.reward">400</span></td><td><code>js/tutorial.js:23</code></td></tr>
 <tr><td>Mutagen sample range</td><td class="num">8 tiles</td><td><code>js/inventory.js:123</code> (literal)</td></tr>
 </table></div>
-<p class="where">Where it lives: <code>js/levels.js</code> <code>levelFactor</code>, <code>xpForLevel</code>, <code>_applyFollowerLevel</code>, <code>gainXp</code>, <code>killXp</code>, <code>awardKillXp</code> (178-198), <code>xpAfterDeath</code>, <code>defenseMult</code> · <code>js/game.js:712-717</code> (each kill once) · <code>js/tutorial.js</code> <code>tutLevelFollowers</code>, <code>tutReward</code> · <code>js/inventory.js</code> <code>invFeedFollower</code></p>
+<p class="where">Where it lives: <code>js/levels.js</code> <code>levelFactor</code>, <code>xpForLevel</code>, <code>_applyFollowerLevel</code>, <code>gainXp</code>, <code>killXp</code>, <code>awardKillXp</code> (178-198), <code>xpAfterDeath</code>, <code>defenseMult</code> · <code>js/game.js:724-729</code> (each kill once) · <code>js/tutorial.js</code> <code>tutLevelFollowers</code>, <code>tutReward</code> · <code>js/inventory.js</code> <code>invFeedFollower</code></p>
 <details class="dec"><summary>Decisions</summary><div>
 <blockquote class="asked">“There needs to be a level and stats system like in Pokémon for all entities. All followers have a base stat modified by their personalities, then the predators and clones should have a similar system, and they should have the level and type of npc visible next to their health bars.”<cite>REPORTED · js/levels.js:4-7 · commit 947d301, which also records: Asked: XP from kills; [...] cap 100; a death costs some XP</cite></blockquote>
 <blockquote class="asked">“make it to where the technicians level up faster, or the experience is shared throughout the squad.”<cite>ASKED, chosen with the user: shared · js/levels.js:36-38, docs/TUTORIAL.md:351 · commit 96ebab6</cite></blockquote>
@@ -1757,7 +1757,7 @@
 <tr><td>Distance to its next stop</td><td class="num"><span class="n" data-k="PARTY.hop[0]">2.5</span>–<span class="n" data-k="PARTY.hop[1]">9</span> tiles</td><td><code>js/party.js:13</code></td></tr>
 <tr><td>A stop is given up after</td><td class="num">900 frames</td><td><code>js/party.js:209</code> (literal)</td></tr>
 <tr><td>Capacity: Main Hallway / Arena / every other room</td><td class="num"><span class="n" data-k="PARTY_ROOM_CAP.lab_hallway">3</span> / <span class="n" data-k="PARTY_ROOM_CAP.arena">6</span> / <span class="n" data-k="PARTY_ROOM_CAP_ELSE">2</span></td><td><code>js/party.js:39</code></td></tr>
-<tr><td>The squad and the Arena are checked every</td><td class="num">6 frames</td><td><code>js/game.js:533</code> (literal)</td></tr>
+<tr><td>The squad and the Arena are checked every</td><td class="num">6 frames</td><td><code>js/game.js:545</code> (literal)</td></tr>
 <tr><td>Carried through a doorway within</td><td class="num"><span class="n" data-k="FP_PORTAL.carry">16 tiles</span></td><td><code>js/facilityportals.js:13</code></td></tr>
 </table></div>
 <p class="where">Where it lives: <code>js/party.js</code> <code>partyIsMember</code>, <code>partySync</code>, <code>partyAdmit</code>, <code>partyPost</code>, <code>partyCall</code>, <code>partyPlace</code>, <code>partyVacancy</code>, <code>partyArenaOverflow</code>, <code>partyPatrol</code>, <code>partySlotsUpdate</code> · <code>js/npc.js:194-199</code> (a posted follower fights in its room) · <code>js/facilityplay.js</code> <code>facilityCatchUp</code> · <code>js/facilityportals.js</code> · <code>game.html</code> (THE CORNERS)</p>
@@ -1971,7 +1971,7 @@
 <tr><td>Rage: frames / damage / speed</td><td class="num"><span class="n" data-k="BOND_RAGE_FRAMES">600</span> / ×<span class="n" data-k="BOND_RAGE_ATTACK">1.5</span> / ×<span class="n" data-k="BOND_RAGE_SPEED">1.3</span></td><td><code>js/bonds.js:19-21</code></td></tr>
 <tr><td>Duo: frames / damage</td><td class="num"><span class="n" data-k="BOND_DUO_FRAMES">300</span> / ×<span class="n" data-k="BOND_DUO_MULT">1.3</span></td><td><code>js/bonds.js:22-23</code></td></tr>
 </table></div>
-<p class="where">Where it lives: <code>js/bonds.js</code> <code>bondTick</code>, <code>bondAttackMult</code>, <code>bondDefenseMult</code>, <code>bondOnDeath</code>, <code>tryDuoUltimate</code>, <code>drawBonds</code> · <code>js/helpers.js:176-177, 224</code> · <code>js/game.js:691</code></p>
+<p class="where">Where it lives: <code>js/bonds.js</code> <code>bondTick</code>, <code>bondAttackMult</code>, <code>bondDefenseMult</code>, <code>bondOnDeath</code>, <code>tryDuoUltimate</code>, <code>drawBonds</code> · <code>js/helpers.js:176-177, 224</code> · <code>js/game.js:703</code></p>
 <p class="muted">No owner decision for bonds is in the repository. js/bonds.js cites docs/ROADMAP-top5.md §4, which the Foundation's docs rewrite deleted (e24d7a9).</p>
 <h3 id="followers-traits">Traits, perks, WILL and resonance</h3>
 <p>Each follower has one combat trait, one natural trait and one perk, each drawn 50/50 when it is made (at the start, a recruit, an egg, or a re-roll, which draws them again). They are kept through death and saves.</p>
@@ -2006,12 +2006,12 @@
 </table></div>
 <div class="tw"><table>
 <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
-<tr><td>Charge: per second / by the Crystal / per hit / per kill</td><td class="num">1 / 2 / 3 / 20</td><td><code>js/game.js:736-744, js/helpers.js:265, 272</code> (literal)</td></tr>
+<tr><td>Charge: per second / by the Crystal / per hit / per kill</td><td class="num">1 / 2 / 3 / 20</td><td><code>js/game.js:748-756, js/helpers.js:265, 272</code> (literal)</td></tr>
 <tr><td>Double-tap: window / pick radius</td><td class="num">400 ms / 40 px</td><td><code>js/input.js:318, 325</code> (literal)</td></tr>
 <tr><td>Reach</td><td class="num"><span class="n" data-k="ULT_REACH">12 tiles</span></td><td><code>js/elements.js:320</code></td></tr>
 <tr><td>Volcanic Eruption's crater</td><td class="num"><span class="n" data-k="FX_CRATER_FRAMES">300</span> frames (<span class="n" data-k="FX_CRATER_FRAMES" data-f="f">5 s</span>)</td><td><code>js/config.js:162</code></td></tr>
 </table></div>
-<p class="where">Where it lives: <code>js/elements.js</code> <code>FOLLOWER_ULTIMATES</code> · <code>js/input.js:310-343</code> (the double-tap) · <code>js/helpers.js:262-274</code> (charge), <code>fireArmySurge</code> · <code>js/game.js:736-744</code> · <code>js/bonds.js</code> <code>tryDuoUltimate</code> · <code>js/draw.js:1330-1349</code> (the bar)</p>
+<p class="where">Where it lives: <code>js/elements.js</code> <code>FOLLOWER_ULTIMATES</code> · <code>js/input.js:310-343</code> (the double-tap) · <code>js/helpers.js:262-274</code> (charge), <code>fireArmySurge</code> · <code>js/game.js:748-756</code> · <code>js/bonds.js</code> <code>tryDuoUltimate</code> · <code>js/draw.js:1330-1349</code> (the bar)</p>
 <div class="open"><b>Open / not built</b><ul>
 <li>Core has no ultimate “for now” (docs/TUTORIAL.md:175). The class ultimates in docs/PLAYER-CLASSES.md are the player's, and a plan only.</li>
 </ul></div>
@@ -2055,8 +2055,8 @@
 <p><b>EXILE is not a death:</b> there is no body, no rage and no return. <b>Followers do not regenerate</b>; HEALING is only a status. Health comes back from a level-up (the max-health gain), an evolution, ARMY SURGE (to full), the Mutator's serum (<span class="n" data-k="SERUM.splash.pct" data-f="pct">6%</span> of max health every <span class="n" data-k="SERUM.splash.every">30</span> frames in its pool), the Siphon perk, or coming back.</p>
 <div class="tw"><table>
 <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
-<tr><td>A follower comes back after</td><td class="num">180 frames (3 s)</td><td><code>js/game.js:705</code> (literal)</td></tr>
-<tr><td>HP stat lost per death</td><td class="num">1</td><td><code>js/game.js:699</code> (literal)</td></tr>
+<tr><td>A follower comes back after</td><td class="num">180 frames (3 s)</td><td><code>js/game.js:717</code> (literal)</td></tr>
+<tr><td>HP stat lost per death</td><td class="num">1</td><td><code>js/game.js:711</code> (literal)</td></tr>
 <tr><td>DEFEATED shows for</td><td class="num"><span class="n" data-k="COMBAT.defeatText">90 frames</span></td><td><code>js/combat.js:12</code></td></tr>
 <tr><td>The most of max health one hit takes</td><td class="num"><span class="n" data-k="COMBAT.hitCap" data-f="pct">34%</span></td><td><code>js/combat.js:9</code></td></tr>
 <tr><td>Ice Mage: within / freezes for / from within</td><td class="num"><span class="n" data-k="SPECIMEN.mage.range">14</span> tiles / <span class="n" data-k="SPECIMEN.freeze.frames">120</span> frames / <span class="n" data-k="SPECIMEN.freeze.near">2</span> tiles</td><td><code>js/specimen.js:18-19</code></td></tr>
@@ -2064,7 +2064,7 @@
 <tr><td>The Resurrection Zone's radius</td><td class="num"><span class="n" data-k="SPECIMEN.zone.radius">2.6 tiles</span></td><td><code>js/specimen.js:21</code></td></tr>
 <tr><td>The serum heals / every</td><td class="num"><span class="n" data-k="SERUM.splash.pct" data-f="pct">6%</span> / <span class="n" data-k="SERUM.splash.every">30</span> frames</td><td><code>js/serum.js:16</code></td></tr>
 </table></div>
-<p class="where">Where it lives: <code>js/game.js:687-711</code> (the death sweep), <code>js/game.js:1061-1106</code> (coming back), <code>js/game.js:286-319</code> (the ticker) · <code>js/levels.js</code> <code>xpAfterDeath</code> · <code>js/bonds.js</code> <code>bondOnDeath</code> · <code>js/specimen.js</code> · <code>js/mutator.js</code> (the bodies) · <code>js/facilitysave.js</code> <code>followerRecord</code>, <code>spawnFollowerFromSave</code></p>
+<p class="where">Where it lives: <code>js/game.js:699-723</code> (the death sweep), <code>js/game.js:1073-1118</code> (coming back), <code>js/game.js:286-319</code> (the ticker) · <code>js/levels.js</code> <code>xpAfterDeath</code> · <code>js/bonds.js</code> <code>bondOnDeath</code> · <code>js/specimen.js</code> · <code>js/mutator.js</code> (the bodies) · <code>js/facilitysave.js</code> <code>followerRecord</code>, <code>spawnFollowerFromSave</code></p>
 <details class="dec"><summary>Decisions</summary><div>
 <blockquote class="asked">“A special Ice Mage follower can preserve fallen allied creatures for resurrection. 1. A friendly creature dies and leaves a recoverable body. 2. The player approaches the body and holds the interaction input. 3. The player selects the recovery/revive interaction. 4. The Ice Mage freezes and preserves the fallen specimen. 5. The main character handles the specimen's containment capsule and transports it to the Resurrection Zone. 6. The capsule can then be used at the Resurrection Zone to restore the specimen.”<cite>ASKED (the brief) · docs/SPECIMENS.md:5-6 · commit ba2efa8; also “The main character handles the capsule; do not make the Ice Mage carry it.” “Do not invent additional recovery rules or penalties without approval.”</cite></blockquote>
 <blockquote class="asked">“Combat must be more readable and understandable [...] Most creatures should normally survive several hits, so investigate the actual combat logic before simply increasing health.”<cite>ASKED · docs/COMBAT.md:3 · commit 42fcf0c (the 34% cap comes from this, and is tentative)</cite></blockquote>
@@ -2330,7 +2330,7 @@
     <li><b>In practice</b> it shoots while hunting with your units behind it, never while chasing or biting. Measured: a spider striker biting a follower for 1200 frames fired none.</li>
     <li><b>Dead code:</b> charged shots (×1.8 and an element); nothing charges a creature.</li>
   </ul>
-  <p class="where">Where it lives: <code>js/abilities.js</code> <code>ABILITY_DEFS</code> (19-63), <code>SPECIES_ABILITY</code> (65-72), <code>abilityTick</code>, <code>_abShouldFire</code>, <code>_abStartActive</code>, <code>_abRunActive</code> · <code>js/predator.js</code> <code>_abdomenTick</code> (476-550) · <code>js/game.js:1131-1143</code></p>
+  <p class="where">Where it lives: <code>js/abilities.js</code> <code>ABILITY_DEFS</code> (19-63), <code>SPECIES_ABILITY</code> (65-72), <code>abilityTick</code>, <code>_abShouldFire</code>, <code>_abStartActive</code>, <code>_abRunActive</code> · <code>js/predator.js</code> <code>_abdomenTick</code> (476-550) · <code>js/game.js:1143-1155</code></p>
 
   <h3 id="creatures-spawner">The arena spawner</h3>
   <ul>
@@ -2397,7 +2397,7 @@
     <tr><td>A follower's plain hit / element attack / special (<span class="n" data-k="WILL_COST_PHYSICAL">1</span> and <span class="n" data-k="WILL_COST_SPECIAL">4</span> WILL; WILL regained: <span class="n" data-k="WILL_REGEN_RATE">0.005</span> a frame)</td><td class="num">every 45 / 40 / 70 frames</td><td><code>js/combat.js:200-226</code> (literals)</td></tr>
     <tr><td>A sentry (two in the Crystal Chamber, one in the main hallway, while their relay is online): range, rest, round</td><td class="num"><span class="n" data-k="SENTRY_RANGE">9 tiles</span>, <span class="n" data-k="SENTRY_CD">50 frames</span>, <span class="n" data-k="SENTRY_DAMAGE">8</span></td><td><code>js/stations.js:220</code></td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/combat.js</code> <code>COMBAT</code> (7-23), <code>drawBiteTelegraphs</code>, <code>noteHit</code>, <code>healUnit</code> · <code>js/predator.js</code> <code>bite</code>, <code>_biteTick</code> · <code>js/helpers.js</code> <code>applyDamage</code> (148-275), <code>hurtPlayer</code> · <code>js/draw.js</code> <code>drawHealthBar</code>, <code>_drawPredatorBars</code> · <code>js/game.js:604-639</code> · your weapons: <a href="#player-weapons">The player</a></p>
+  <p class="where">Where it lives: <code>js/combat.js</code> <code>COMBAT</code> (7-23), <code>drawBiteTelegraphs</code>, <code>noteHit</code>, <code>healUnit</code> · <code>js/predator.js</code> <code>bite</code>, <code>_biteTick</code> · <code>js/helpers.js</code> <code>applyDamage</code> (148-275), <code>hurtPlayer</code> · <code>js/draw.js</code> <code>drawHealthBar</code>, <code>_drawPredatorBars</code> · <code>js/game.js:616-651</code> · your weapons: <a href="#player-weapons">The player</a></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“Combat must be more readable and understandable, taking inspiration from the clear feedback of games like RuneScape. Currently, predators can appear to eliminate the player's creatures almost immediately. Most creatures should normally survive several hits, so investigate the actual combat logic before simply increasing health.”<cite>ASKED · docs/COMBAT.md:3 · commit 42fcf0c</cite></blockquote>
     <blockquote class="asked">“the main character can only get hit three times by an insect or a predator, then they get knocked back to the Crystal and it resets to three.”<cite>REPORTED · js/config.js:201-202 · commit f8495d5</cite></blockquote>
@@ -2430,7 +2430,7 @@
     <tr><td>knockback</td><td>core's BASH (<span class="n" data-k="ELEMENT_PROC_CHANCE.core" data-f="pct">30%</span>), the flux pull, CARAPACE SLAM, the Repulsor Pulse card</td><td>a push decaying ×0.72 a frame; walls stop it. Beetles and bosses are not pulled</td></tr>
     <tr><td>shield (creatures)</td><td>a tank: +1 to its nearest creature within 4 tiles every 180 frames. A boss: +3 (max 15) within 5 tiles every 60. EMP strips them</td><td>a hit with no element, or fire / ice / core, is <b>absorbed whole</b>. Toxic passes and leaves it. Electric hits it ×2 and the overflow goes on (10 becomes 19). Flux is absorbed but never wears it</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/elements.js</code> <code>getElementMultiplier</code> (15-22), <code>ELEMENT_PROC_CHANCE</code> (27-34), <code>ELEMENT_ATTACKS</code>, <code>FOLLOWER_ULTIMATES</code> · <code>js/combat.js</code> <code>updateStatusEffects</code>, <code>applyBurn</code>, <code>applyWeaken</code>, <code>applyStun</code>, <code>applyGlitch</code>, <code>applyKnockback</code> · <code>js/cards.js</code> <code>equipOnHit</code> (the cards' statuses) · <code>js/abilities.js</code> <code>applySlow</code> · <code>js/firebombs.js</code> · <code>js/game.js:754-789</code> (shields; literals)</p>
+  <p class="where">Where it lives: <code>js/elements.js</code> <code>getElementMultiplier</code> (15-22), <code>ELEMENT_PROC_CHANCE</code> (27-34), <code>ELEMENT_ATTACKS</code>, <code>FOLLOWER_ULTIMATES</code> · <code>js/combat.js</code> <code>updateStatusEffects</code>, <code>applyBurn</code>, <code>applyWeaken</code>, <code>applyStun</code>, <code>applyGlitch</code>, <code>applyKnockback</code> · <code>js/cards.js</code> <code>equipOnHit</code> (the cards' statuses) · <code>js/abilities.js</code> <code>applySlow</code> · <code>js/firebombs.js</code> · <code>js/game.js:766-801</code> (shields; literals)</p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“make the crystal have access to all the colors from the beginning”<cite>ASKED · js/config.js:25 · commit c6eef42 (the comment adds “a creature carries one too”: no code does)</cite></blockquote>
     <blockquote class="asked">“[...] the fireballs burn the ground where they land. If you get touched by that fire you take a little hit of damage, like the other hazards on the map. The hazard stays on the map for 10 or 15 seconds.”<cite>ASKED · docs/FIRE-BOMBS.md:3 · commit 8ab5164 (answered: the ground fire hurts “Everyone”)</cite></blockquote>
@@ -2453,7 +2453,7 @@
         <li>The killer takes <span class="n" data-k="XP_KILLER_SHARE" data-f="pct">60%</span>. Units within <span class="n" data-k="XP_SHARE_RANGE">4 tiles</span> share the rest, and so does the whole squad when you or a member killed.</li>
         <li>A kill with no unit's blow pays <span class="n" data-k="XP_ASSIST_ONLY" data-f="pct">50%</span>.</li>
       </ul></li>
-    <li><b>No bleeding out.</b> A creature loses health only to a hit, a burn or a hazard. It once lost 0.01 a frame, which killed an idle creature in time and paid for it (ten minutes with nobody fighting paid 151 shards, 32 DNA and 16 kills); that pass is gone (the note where it was: <code>js/game.js:686</code>), and creatures left alone in the arena keep the health they have (<code>tests/facilityplay.js</code>).</li>
+    <li><b>No bleeding out.</b> A creature loses health only to a hit, a burn or a hazard. It once lost 0.01 a frame, which killed an idle creature in time and paid for it (ten minutes with nobody fighting paid 151 shards, 32 DNA and 16 kills); that pass is gone (the note where it was: <code>js/game.js:698</code>), and creatures left alone in the arena keep the health they have (<code>tests/facilityplay.js</code>).</li>
   </ul>
   <p class="where">Where it lives: <code>js/drops.js</code> <code>onPredatorDeath</code> (7-22) · <code>js/game.js</code> <code>render</code> (the sweep 690-726) · <code>js/facilityspawn.js</code> <code>facilityScrapDrop</code> (134-140) · <code>js/levels.js</code> <code>killXp</code>, <code>awardKillXp</code></p>
   <details class="dec"><summary>Decisions</summary><div>
@@ -2559,7 +2559,7 @@
         <li><span class="n" data-k="TUT.stragglers">3600 frames</span> after the last wave, the rest are called off.</li>
       </ol></li>
   </ul>
-  <p class="where">Where it lives: <code>js/alarm.js</code> (<code>triggerAlarm</code> 10-17, <code>clearAlarm</code>, <code>showGameOver</code>) · <code>js/config.js:147-151</code> · <code>js/game.js:627-642</code> · <code>js/tutorial.js</code> <code>TUT</code>, <code>facilityDirectorTick</code></p>
+  <p class="where">Where it lives: <code>js/alarm.js</code> (<code>triggerAlarm</code> 10-17, <code>clearAlarm</code>, <code>showGameOver</code>) · <code>js/config.js:147-151</code> · <code>js/game.js:639-654</code> · <code>js/tutorial.js</code> <code>TUT</code>, <code>facilityDirectorTick</code></p>
   <div class="open"><b>Open / not built</b><ul>
     <li>What raises a proximity alarm or a breach: nothing yet, though the in-game index describes both. No owner quote names the alarm.</li>
   </ul></div>
@@ -2650,7 +2650,7 @@
     <tr><td>Canvas panels' scale (1.0 on a canvas under 600 px)</td><td class="num"><span class="n" data-k="uiScale()">1.15</span></td><td><code>js/uikit.js:16</code></td></tr>
     <tr><td>Visible area measured every</td><td class="num"><span class="n" data-k="VISIBLE_AREA_POLL_FRAMES">30</span> frames (<span class="n" data-k="VISIBLE_AREA_POLL_FRAMES" data-f="f">0.5 s</span>)</td><td><code>js/config.js:88</code></td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>game.html</code> (stylesheet: base HUD <code>:21-107</code>, NEO-FUTURE skin <code>:473-516</code>, dock <code>:517-522</code> <code>:658-672</code>, radial menu <code>:524-558</code>, Command Center <code>:559-640</code>, battle tool <code>:699-742</code>, squad bar <code>:743-780</code>, carousel <code>:810-909</code>, THE CORNERS <code>:915-980</code>; markup <code>:1039-1555</code>) · <code>js/config.js:47-98</code> <code>syncVisibleArea</code> · <code>js/party.js</code> <code>hudCorners</code> <code>partyBarRender</code> · <code>js/game.js</code> <code>render</code> (the body classes)</p>
+  <p class="where">Where it lives: <code>game.html</code> (stylesheet: base HUD <code>:36-122</code>, NEO-FUTURE skin <code>:488-531</code>, dock <code>:532-537</code> <code>:673-687</code>, radial menu <code>:539-573</code>, Command Center <code>:574-655</code>, battle tool <code>:714-757</code>, squad bar <code>:758-795</code>, carousel <code>:825-924</code>, THE CORNERS <code>:930-995</code>; markup <code>:1054-1616</code>) · <code>js/config.js:47-98</code> <code>syncVisibleArea</code> · <code>js/party.js</code> <code>hudCorners</code> <code>partyBarRender</code> · <code>js/game.js</code> <code>render</code> (the body classes)</p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“This is the correct direction for this hud, all parts”<cite>ASKED, after ten HUD layouts were drawn (docs/images/hud-corners.jpg picked) · docs/TUTORIAL.md:273 · commit 70ffb26</cite></blockquote>
     <blockquote class="asked">“it looks bad on my iPad.”<cite>REPORTED, with an iPad screenshot · tests/visiblearea.js:3 → the visible-area variables</cite></blockquote>
@@ -2694,11 +2694,11 @@
     <tr><td>Tutorial steps on the plate</td><td class="num"><span class="n" data-k="TUT_STEPS.length">7</span></td><td><code>js/tutorial.js:28</code></td></tr>
     <tr><td>Objective plate width: corners / other</td><td class="num">304 / 350 px</td><td><code>js/tutorial.js:259</code> (literal)</td></tr>
     <tr><td>Alarm lasts after its last trigger</td><td class="num"><span class="n" data-k="ALERT_DURATION">600</span> frames (<span class="n" data-k="ALERT_DURATION" data-f="f">10 s</span>)</td><td><code>js/config.js:151</code></td></tr>
-    <tr><td>Shard icon; its count's type (≤ 900 px: 46, 26; ≤ 560 px: 38, 22)</td><td class="num">60 px; 36 px</td><td><code>game.html:646-647</code> (css)</td></tr>
-    <tr><td>Health bar; ultimate bar height (≤ 900 px: 32, 24)</td><td class="num">40 px; 30 px</td><td><code>game.html:488</code> <code>:492</code> (css)</td></tr>
-    <tr><td>The bars' column in the corners (260 at ≤ 900 px); the alarm triangle (36 × 33, 30 × 28)</td><td class="num">400 px; 46 × 42 px</td><td><code>game.html:923</code> <code>:649</code> (css)</td></tr>
+    <tr><td>Shard icon; its count's type (≤ 900 px: 46, 26; ≤ 560 px: 38, 22)</td><td class="num">60 px; 36 px</td><td><code>game.html:661-662</code> (css)</td></tr>
+    <tr><td>Health bar; ultimate bar height (≤ 900 px: 32, 24)</td><td class="num">40 px; 30 px</td><td><code>game.html:503</code> <code>:507</code> (css)</td></tr>
+    <tr><td>The bars' column in the corners (260 at ≤ 900 px); the alarm triangle (36 × 33, 30 × 28)</td><td class="num">400 px; 46 × 42 px</td><td><code>game.html:938</code> <code>:664</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>game.html:1043-1069</code> (markup) · <code>js/game.js</code> <code>render</code> (health <code>:551-559</code>, ultimate <code>:561-597</code>, shards <code>:625</code>, alarm <code>:627-628</code>, room tag <code>:633-634</code>) · <code>js/hudgems.js</code> · <code>js/helpers.js</code> <code>fireArmySurge</code> <code>toggleSiphon</code> <code>siphonTick</code> · <code>js/facilitynet.js</code> · <code>js/tutorial.js:224-286</code> <code>facilityDrawObjective</code> · <code>js/facilityplay.js:559-565</code> <code>facilityPlayChip</code></p>
+  <p class="where">Where it lives: <code>game.html:1058-1084</code> (markup) · <code>js/game.js</code> <code>render</code> (health <code>:563-571</code>, ultimate <code>:573-609</code>, shards <code>:637</code>, alarm <code>:639-640</code>, room tag <code>:645-646</code>) · <code>js/hudgems.js</code> · <code>js/helpers.js</code> <code>fireArmySurge</code> <code>toggleSiphon</code> <code>siphonTick</code> · <code>js/facilitynet.js</code> · <code>js/tutorial.js:224-286</code> <code>facilityDrawObjective</code> · <code>js/facilityplay.js:559-565</code> <code>facilityPlayChip</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“the shards count at the top could be a rotating series of crystals that has a number near or around it”, later “change the shard icon look on the main page UI, it looks bad”<cite>REPORTED · js/hudgems.js:4-5 → picked from the option sheets (docs/images/shard-icons.png, shard-cluster.png): the cluster, No. 3 "twin and chip"</cite></blockquote>
     <blockquote class="asked">“the main character can only get hit three times by an insect or a predator, then they get knocked back to the Crystal and it resets to three.”<cite>REPORTED · js/config.js:201-202 → the bar cut in three</cite></blockquote>
@@ -2737,10 +2737,10 @@
     <tr><td>Dial radius (canvas under 600 px: 40); phone: the dial's left edge, beside the hub</td><td class="num">52 px; 78 px</td><td><code>js/targeting.js:173</code> <code>:182</code> (literal)</td></tr>
     <tr><td>Rounds the gun holds; rounds at a new game</td><td class="num"><span class="n" data-k="PLAYER_AMMO_MAX">60</span>; <span class="n" data-k="PLAYER_AMMO_START">12</span></td><td><code>js/config.js:228-229</code></td></tr>
     <tr><td>An attack order: lasts; its leash</td><td class="num"><span class="n" data-k="BATTLE_ATTACK_FRAMES">1800</span> frames (<span class="n" data-k="BATTLE_ATTACK_FRAMES" data-f="f">30 s</span>); <span class="n" data-k="BATTLE_ATTACK_LEASH">22</span> tiles</td><td><code>js/config.js:281-282</code></td></tr>
-    <tr><td>Corners: enemy card width (232 at ≤ 1100 px, 214 at ≤ 900 px; <code>--cn-foe</code>)</td><td class="num">260 px</td><td><code>game.html:918</code> (css)</td></tr>
-    <tr><td>Phone: enemy card width; its pop-in</td><td class="num">230 px; 0.3 s</td><td><code>game.html:731</code> (css)</td></tr>
+    <tr><td>Corners: enemy card width (232 at ≤ 1100 px, 214 at ≤ 900 px; <code>--cn-foe</code>)</td><td class="num">260 px</td><td><code>game.html:933</code> (css)</td></tr>
+    <tr><td>Phone: enemy card width; its pop-in</td><td class="num">230 px; 0.3 s</td><td><code>game.html:746</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/targeting.js</code> (the lock, the dial, the pill, the INFO card) · <code>js/gunfire.js</code> · <code>js/mixtool.js:80-116</code> (the enemy card) · <code>game.html:729-742</code> <code>:952-959</code></p>
+  <p class="where">Where it lives: <code>js/targeting.js</code> (the lock, the dial, the pill, the INFO card) · <code>js/gunfire.js</code> · <code>js/mixtool.js:80-116</code> (the enemy card) · <code>game.html:744-757</code> <code>:967-974</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“whenever you get close to an enemy, it automatically takes aim [...] you can hold it or click it to shoot. It also comes with an info button [...] have it so you can switch it by clicking on another creature.”<cite>ASKED · js/targeting.js:4-6 · commit 6da6ecc</cite></blockquote>
     <blockquote class="asked">“click on an enemy, and once you click attack on it, then you can click it as many times as you want to shoot it. Or hold down to fire repeatedly.”<cite>ASKED · js/gunfire.js:4</cite></blockquote>
@@ -2778,11 +2778,11 @@
     <tr><td><span class="sw" style="--s:#ff4a1c"></span>FIGHTING, ATTACKING</td><td class="num"><span class="n" data-k="STATUS_COL.fight">#ff4a1c</span></td><td><code>js/status.js:8</code></td></tr>
     <tr><td><span class="sw" style="--s:#7dff9a"></span>HEALING</td><td class="num"><span class="n" data-k="STATUS_COL.heal">#7dff9a</span></td><td><code>js/status.js:8</code></td></tr>
     <tr><td><span class="sw" style="--s:#8aa0c8"></span>RETURNING</td><td class="num"><span class="n" data-k="STATUS_COL.away">#8aa0c8</span></td><td><code>js/status.js:8</code></td></tr>
-    <tr><td>Corners: stack width (<code>--cn-w</code>; 232 at ≤ 1100 px, 214 at ≤ 900 px); a card's height (<code>--cn-card</code>; 50 at ≤ 900 px wide, 44 at ≤ 640 px high); the card on the fly (<code>--cn-fly</code>; 318, 280); the stack's foot over the tool</td><td class="num">244; 54; 340; 12 px</td><td><code>game.html:918-921</code> <code>:942</code> (css)</td></tr>
-    <tr><td>Phone: the bar's foot over the screen's (<code>--sb-bottom</code>); a card's width (96 at ≤ 420 px) and height (<code>--sb-h</code>; 32 at ≤ 560 px); kept clear of the right edge (SET)</td><td class="num">52; 112; 44; 46 px</td><td><code>game.html:749-751</code> <code>:771</code> (css)</td></tr>
-    <tr><td>The aim prompt's top</td><td class="num">98 px</td><td><code>game.html:791</code> (css)</td></tr>
+    <tr><td>Corners: stack width (<code>--cn-w</code>; 232 at ≤ 1100 px, 214 at ≤ 900 px); a card's height (<code>--cn-card</code>; 50 at ≤ 900 px wide, 44 at ≤ 640 px high); the card on the fly (<code>--cn-fly</code>; 318, 280); the stack's foot over the tool</td><td class="num">244; 54; 340; 12 px</td><td><code>game.html:933-936</code> <code>:957</code> (css)</td></tr>
+    <tr><td>Phone: the bar's foot over the screen's (<code>--sb-bottom</code>); a card's width (96 at ≤ 420 px) and height (<code>--sb-h</code>; 32 at ≤ 560 px); kept clear of the right edge (SET)</td><td class="num">52; 112; 44; 46 px</td><td><code>game.html:764-766</code> <code>:786</code> (css)</td></tr>
+    <tr><td>The aim prompt's top</td><td class="num">98 px</td><td><code>game.html:806</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/party.js</code> (the bar, who makes room, <code>partyAdd</code> <code>partyRemove</code> <code>partySwap</code> <code>partyDisband</code> <code>partyExileTap</code>) · <code>js/squadfly.js</code> · <code>js/techabilities.js</code> <code>techChipState</code> · <code>js/status.js</code> · <code>game.html:743-794</code> <code>:925-980</code></p>
+  <p class="where">Where it lives: <code>js/party.js</code> (the bar, who makes room, <code>partyAdd</code> <code>partyRemove</code> <code>partySwap</code> <code>partyDisband</code> <code>partyExileTap</code>) · <code>js/squadfly.js</code> · <code>js/techabilities.js</code> <code>techChipState</code> · <code>js/status.js</code> · <code>game.html:758-809</code> <code>:940-995</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“you can only have three followers in your squad [...] they can have the follower hold that position and the followers will patrol that room until they are called upon again. [...] a new follower will not follow you unless you have room in your squad.”<cite>ASKED · docs/TUTORIAL.md:240 · commit 0666312</cite></blockquote>
     <blockquote class="asked">“the on screen squad roster should shuffle into the nook above the attack menu to the left, remove the element picker and replace with 'all' button the player can select each squad member and pull their card roster information up on the fly and may choose to dismiss from squad from this little side menu and index.”<cite>ASKED · docs/TUTORIAL.md:273 · commit 70ffb26</cite></blockquote>
@@ -2808,10 +2808,10 @@
     <tr><td><span class="sw" style="--s:#19e6c1"></span>COME button</td><td class="num"><span class="n" data-k="MIXTOOL_ORDERS[1].col">#19e6c1</span></td><td><code>js/mixtool.js:29</code></td></tr>
     <tr><td>Phone chip's word</td><td class="num"><span class="n" data-k="mixToolPodLabel()">BATTLE</span></td><td><code>js/mixtool.js:25</code></td></tr>
     <tr><td>Orders' pool at a new game</td><td class="num">"all"</td><td><code>js/facilityplay.js:251</code> (literal)</td></tr>
-    <tr><td>Corners: the tool's height (<code>--cn-tool</code>); its foot over the screen's (<code>--cn-bottom</code>); ALL / HOLD / COME; RETREAT</td><td class="num">178; 100; 38; 44 px</td><td><code>game.html:918</code> <code>:934-936</code> (css)</td></tr>
-    <tr><td>Phone: the panel's width; the BATTLE chip raised over the bar to</td><td class="num">230; 108 px</td><td><code>game.html:704</code> <code>:772</code> (css)</td></tr>
+    <tr><td>Corners: the tool's height (<code>--cn-tool</code>); its foot over the screen's (<code>--cn-bottom</code>); ALL / HOLD / COME; RETREAT</td><td class="num">178; 100; 38; 44 px</td><td><code>game.html:933</code> <code>:949-951</code> (css)</td></tr>
+    <tr><td>Phone: the panel's width; the BATTLE chip raised over the bar to</td><td class="num">230; 108 px</td><td><code>game.html:719</code> <code>:787</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/mixtool.js</code> (<code>MIXTOOL_ORDERS</code> <code>mixToolComePool</code> <code>mixToolRetreat</code> <code>mixToolHTML</code> <code>mixToolRender</code> <code>mixToolClick</code>) · <code>js/party.js</code> <code>partyApplyStance</code> · <code>game.html:699-742</code></p>
+  <p class="where">Where it lives: <code>js/mixtool.js</code> (<code>MIXTOOL_ORDERS</code> <code>mixToolComePool</code> <code>mixToolRetreat</code> <code>mixToolHTML</code> <code>mixToolRender</code> <code>mixToolClick</code>) · <code>js/party.js</code> <code>partyApplyStance</code> · <code>game.html:714-757</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“the menu should stay open, it shouldn't close unless it's on mobile. This menu is for quick, decisive decisions in battle, like withdrawing from the fight, selecting certain types to attack. Not too much, not too boxy.”<cite>ASKED · js/mixtool.js:4-5</cite></blockquote>
     <blockquote class="asked">“I click hold with just one of my followers [...] whenever I have it selected and I click come, it doesn't come. It still holds.”<cite>REPORTED · docs/TUTORIAL.md:246 · commit 44ecb56 → COME reaches the held followers; an open slot reads + CALL</cite></blockquote>
@@ -2827,10 +2827,10 @@
     <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
     <tr><td>A mouse drag starts after</td><td class="num"><span class="n" data-k="TOOLBOX_DRAG">6</span> px</td><td><code>js/toolbox.js:12</code></td></tr>
     <tr><td>An arrow slides this share of the visible width</td><td class="num"><span class="n" data-k="TOOLBOX_STEP" data-f="pct">70%</span></td><td><code>js/toolbox.js:13</code></td></tr>
-    <tr><td>Button height (54 from 701 to 1180 px)</td><td class="num">64 px</td><td><code>game.html:520</code> <code>:567</code> (css)</td></tr>
-    <tr><td>The arrows</td><td class="num">34 × 54 px</td><td><code>game.html:669</code> (css)</td></tr>
+    <tr><td>Button height (54 from 701 to 1180 px)</td><td class="num">64 px</td><td><code>game.html:535</code> <code>:582</code> (css)</td></tr>
+    <tr><td>The arrows</td><td class="num">34 × 54 px</td><td><code>game.html:684</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>game.html:1056-1068</code> (markup) · <code>js/toolbox.js</code> (<code>dockClones</code> <code>dockSettings</code> <code>toolboxSync</code> <code>toolboxSlide</code> <code>initToolbox</code>) · <code>game.html:517-522</code> <code>:658-672</code></p>
+  <p class="where">Where it lives: <code>game.html:1071-1083</code> (markup) · <code>js/toolbox.js</code> (<code>dockClones</code> <code>dockSettings</code> <code>toolboxSync</code> <code>toolboxSlide</code> <code>initToolbox</code>) · <code>game.html:532-537</code> <code>:673-687</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“I meant you could slide through the different items horizontally.”<cite>REPORTED · js/toolbox.js:4 · commit a7cb55e</cite></blockquote>
     <blockquote class="asked">“make the iPad and browser version have a menu at the bottom that has all the different menus and rosters and all that. [...] This replaces the current index.”<cite>REPORTED · js/commandcenter.js:4-6</cite></blockquote>
@@ -2860,7 +2860,7 @@
     <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
     <tr><td>Petals</td><td class="num"><span class="n" data-k="RADIAL_PETALS.length">3</span></td><td><code>js/radialmenu.js:16</code></td></tr>
     <tr><td>An open panel redraws every</td><td class="num"><span class="n" data-k="RADIAL_REFRESH_MS">400</span> ms</td><td><code>js/radialmenu.js:21</code></td></tr>
-    <tr><td>The hub; the panel's left edge; its top</td><td class="num">60; 198; 124 px</td><td><code>game.html:529</code> <code>:541</code> (css)</td></tr>
+    <tr><td>The hub; the panel's left edge; its top</td><td class="num">60; 198; 124 px</td><td><code>game.html:544</code> <code>:556</code> (css)</td></tr>
     <tr><td>Follower cards in the ROSTER, at most</td><td class="num">40</td><td><code>js/radialmenu.js:122</code> (literal)</td></tr>
     <tr><td>Recruit price</td><td class="num"><span class="n" data-k="RECRUIT_COST">30</span> shards</td><td><code>js/clone.js:633</code></td></tr>
     <tr><td>SET button radius; CLONES helix radius</td><td class="num"><span class="n" data-k="_SETTINGSBTN.r">20</span>; <span class="n" data-k="_BLOB.r">26</span> px</td><td><code>js/settings.js:56</code> <code>js/clone.js:552</code></td></tr>
@@ -2868,7 +2868,7 @@
     <tr><td>Unfolding done per drawn frame (eased)</td><td class="num"><span class="n" data-k="OBJ_BOX.fold" data-f="pct">16%</span></td><td><code>js/tutorial.js:229</code></td></tr>
     <tr><td>Rattle on a new objective</td><td class="num"><span class="n" data-k="OBJ_BOX.shake">50</span> frames</td><td><code>js/tutorial.js:229</code></td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/radialmenu.js</code> · <code>js/settings.js:55-73</code> (SET) · <code>js/clone.js:549-612</code> <code>drawClonesBlob</code> · <code>js/tutorial.js:224-286</code> (the mailbox) · <code>js/input.js:295-308</code> (taps) · <code>game.html:524-558</code></p>
+  <p class="where">Where it lives: <code>js/radialmenu.js</code> · <code>js/settings.js:55-73</code> (SET) · <code>js/clone.js:549-612</code> <code>drawClonesBlob</code> · <code>js/tutorial.js:224-286</code> (the mailbox) · <code>js/input.js:295-308</code> (taps) · <code>game.html:539-573</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“for mobile it should be a left radial menu with squad analytics and roster and commands.”<cite>REPORTED · js/radialmenu.js:4 · commits e7a6f05 (mock-up), 891b2a9 → the squad analytics and the BUILD and AUTO petals went with the old game</cite></blockquote>
     <blockquote class="asked">“in the mobile version [...] make it to where the recent task is in a little mailbox thing with a little exclamation point if there's a new objective”<cite>ASKED · docs/TUTORIAL.md:101 · commit e450781</cite></blockquote>
@@ -2901,12 +2901,12 @@
     <tr><td>Attack styles "sniper" and "camper" are shown as</td><td class="num"><span class="n" data-k="ATTACK_STYLES[1].label">MAGE</span>; <span class="n" data-k="ATTACK_STYLES[2].label">TECHNICIAN</span></td><td><code>js/commandcenter.js:37-38</code></td></tr>
     <tr><td>Recruit price (the RECRUIT tile)</td><td class="num"><span class="n" data-k="RECRUIT_COST">30</span> shards</td><td><code>js/clone.js:633</code></td></tr>
     <tr><td>EXILE's second tap must come within</td><td class="num"><span class="n" data-k="PARTY.exileArm">4000</span> ms</td><td><code>js/party.js:13</code></td></tr>
-    <tr><td>Carousel: settings column (232 at ≤ 1100 px); squad slot (62 on short screens); ◂ ▸ (52 at ≤ 1100 px); strip card (in view 100); foot bar</td><td class="num">256; 74; 62; 88; 60 px</td><td><code>game.html:822</code> <code>:833</code> <code>:853</code> <code>:882</code> <code>:899</code> (css)</td></tr>
-    <tr><td>Carousel: one column at</td><td class="num">≤ 820 px</td><td><code>game.html:908</code> (css)</td></tr>
-    <tr><td>Phone: a grid card's least width (214 at ≤ 820 px); the side panel under the grid, at most</td><td class="num">230 px; 46 %</td><td><code>game.html:584</code> <code>:637</code> (css)</td></tr>
-    <tr><td>SQUADS window's card width</td><td class="num">min(940 px, 100 %)</td><td><code>game.html:803</code> (css)</td></tr>
+    <tr><td>Carousel: settings column (232 at ≤ 1100 px); squad slot (62 on short screens); ◂ ▸ (52 at ≤ 1100 px); strip card (in view 100); foot bar</td><td class="num">256; 74; 62; 88; 60 px</td><td><code>game.html:837</code> <code>:848</code> <code>:868</code> <code>:897</code> <code>:914</code> (css)</td></tr>
+    <tr><td>Carousel: one column at</td><td class="num">≤ 820 px</td><td><code>game.html:923</code> (css)</td></tr>
+    <tr><td>Phone: a grid card's least width (214 at ≤ 820 px); the side panel under the grid, at most</td><td class="num">230 px; 46 %</td><td><code>game.html:599</code> <code>:652</code> (css)</td></tr>
+    <tr><td>SQUADS window's card width</td><td class="num">min(940 px, 100 %)</td><td><code>game.html:818</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/commandcenter.js</code> (<code>ccOpen</code> :200, <code>ccRender</code> :284; the carousel <code>_ccFocusDraw</code> :485, <code>_ccDrawSettings</code> :506, <code>_ccSwapDraw</code> :530; the phone <code>_ccDrawSide</code> :420; the SQUADS window <code>_ccDrawYourSquad</code> :571) · <code>js/helpers.js:543</code> <code>getCommandPool</code> · <code>js/commands.js:30</code> <code>cycleCommandPoolRoles</code> · <code>game.html:559-640</code> <code>:795-909</code></p>
+  <p class="where">Where it lives: <code>js/commandcenter.js</code> (<code>ccOpen</code> :200, <code>ccRender</code> :284; the carousel <code>_ccFocusDraw</code> :485, <code>_ccDrawSettings</code> :506, <code>_ccSwapDraw</code> :530; the phone <code>_ccDrawSide</code> :420; the SQUADS window <code>_ccDrawYourSquad</code> :571) · <code>js/helpers.js:543</code> <code>getCommandPool</code> · <code>js/commands.js:30</code> <code>cycleCommandPoolRoles</code> · <code>game.html:574-655</code> <code>:810-924</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“Roster 5 · CAROUSEL” · “Yes” · “but no recruit button at the top”<cite>ASKED, after five roster layouts were drawn (docs/images/roster-carousel.jpg picked) · docs/UI-STYLE.md:51 · docs/TUTORIAL.md:283 · commit 70ffb26</cite></blockquote>
     <blockquote class="asked">“the command center and roster are really the same thing”<cite>js/commandcenter.js:9 · commit 54c1ad5</cite></blockquote>
@@ -2945,7 +2945,7 @@
     <tr><td>INFO index tabs</td><td class="num"><span class="n" data-k="INFO_CATS.length">4</span></td><td><code>js/infodex.js:13</code></td></tr>
     <tr><td>INFO index entries</td><td class="num"><span class="n" data-k="infoEntries().length">23</span></td><td><code>js/infodex.js:33</code></td></tr>
     <tr><td>INFO: a link row's height; a text line's</td><td class="num"><span class="n" data-k="_IP_H.nav">56</span>; <span class="n" data-k="_IP_H.text">21</span> px</td><td><code>js/infodex.js:159</code></td></tr>
-    <tr><td>Unit info card width</td><td class="num">min(96vw, 680 px)</td><td><code>game.html:689</code> (css)</td></tr>
+    <tr><td>Unit info card width</td><td class="num">min(96vw, 680 px)</td><td><code>game.html:704</code> (css)</td></tr>
     <tr><td>Unit info tabs</td><td class="num">3</td><td><code>js/unitinfo.js:123</code> (literal)</td></tr>
     <tr><td>Class picker side by side from a canvas of</td><td class="num">760 px</td><td><code>js/classes.js:116</code> (literal)</td></tr>
     <tr><td>Class picker width at 900 px (min(W − 16, 960); stacked: 440)</td><td class="num"><span class="n" data-k="_cpLayout().pw">884</span> px</td><td><code>js/classes.js:117</code></td></tr>
@@ -2956,9 +2956,9 @@
     <tr><td>Pack wide from a canvas of</td><td class="num">720 px</td><td><code>js/inventory.js:195</code> (literal)</td></tr>
     <tr><td>Pack tabs</td><td class="num"><span class="n" data-k="INV_CATS.length">5</span></td><td><code>js/inventory.js:16</code></td></tr>
     <tr><td>Clone Bay width (min(660, W − 12))</td><td class="num">660 px</td><td><code>js/clone.js:257</code> (literal)</td></tr>
-    <tr><td>Game-over card width</td><td class="num">min(92vw, 640 px)</td><td><code>game.html:676</code> (css)</td></tr>
+    <tr><td>Game-over card width</td><td class="num">min(92vw, 640 px)</td><td><code>game.html:691</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/settings.js</code> (<code>handleOverlayPanelTap</code>) · <code>js/config.js:332-345</code> (<code>gfxLow</code> <code>perfReadout</code>) · <code>js/game.js:1183-1221</code> (the readout) · <code>js/infodex.js</code> · <code>js/unitinfo.js</code> · <code>js/classes.js:106-183</code> · <code>js/inventory.js:192-260</code> · <code>js/clone.js:255-299</code> · <code>js/alarm.js:24-33</code> · <code>game.html:674-685</code> <code>:1542-1552</code></p>
+  <p class="where">Where it lives: <code>js/settings.js</code> (<code>handleOverlayPanelTap</code>) · <code>js/config.js:332-345</code> (<code>gfxLow</code> <code>perfReadout</code>) · <code>js/game.js:1195-1247</code> (the readout) · <code>js/infodex.js</code> · <code>js/unitinfo.js</code> · <code>js/classes.js:106-183</code> · <code>js/inventory.js:192-260</code> · <code>js/clone.js:255-299</code> · <code>js/alarm.js:24-33</code> · <code>game.html:689-700</code> <code>:1603-1613</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“make the other menus as clean.”<cite>REPORTED · js/uikit.js:4 · commit d0145e8 → the canvas panels are drawn with the slab kit</cite></blockquote>
     <blockquote class="asked">“the game runs pretty slow still.”<cite>REPORTED · js/config.js:335 → LOW graphics and the PERFORMANCE readout</cite></blockquote>
@@ -2981,12 +2981,12 @@
     <figcaption>The guide on START: the one line, HOW A GAME GOES and THE THREE MOVES (part 01 quotes them).</figcaption></figure>
   <div class="tw"><table>
     <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
-    <tr><td>Tabs</td><td class="num">5</td><td><code>game.html:1087-1093</code> (literal, HTML)</td></tr>
+    <tr><td>Tabs</td><td class="num">5</td><td><code>game.html:1148-1154</code> (literal, HTML)</td></tr>
     <tr><td>Icons in the set</td><td class="num"><span class="n" data-k="ICON_IDS.length">16</span></td><td><code>js/icons.js:90</code></td></tr>
-    <tr><td>Width</td><td class="num">min(760 px, 96vw)</td><td><code>game.html:414</code> (css)</td></tr>
-    <tr><td>The body scrolls at most</td><td class="num">min(68vh, 68dvh)</td><td><code>game.html:250</code> (css)</td></tr>
+    <tr><td>Width</td><td class="num">min(760 px, 96vw)</td><td><code>game.html:429</code> (css)</td></tr>
+    <tr><td>The body scrolls at most</td><td class="num">min(68vh, 68dvh)</td><td><code>game.html:265</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>game.html:1077-1525</code> (the content) · <code>game.html:181-471</code> <code>:981-1029</code> (its stylesheet: the old green look, then the blue over it) · <code>game.html:1527-1538</code> <code>switchCMTab</code> · <code>js/config.js:347-376</code> <code>toggleControlsMenu</code> · <code>js/icons.js</code> <code>fillIconSlots</code> · <code>js/clone.js</code> <code>renderCloneCostIndex</code> · <code>tests/index.js</code> <code>tests/hud.js</code></p>
+  <p class="where">Where it lives: <code>game.html:1092-1586</code> (the content) · <code>game.html:196-486</code> <code>:996-1044</code> (its stylesheet: the old green look, then the blue over it) · <code>game.html:1588-1599</code> <code>switchCMTab</code> · <code>js/config.js:347-376</code> <code>toggleControlsMenu</code> · <code>js/icons.js</code> <code>fillIconSlots</code> · <code>js/clone.js</code> <code>renderCloneCostIndex</code> · <code>tests/index.js</code> <code>tests/hud.js</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“rewrite the information to be as relevant as possible, giving rough information on the different systems. Make the information more intuitive [...] Make more icons for all the elements.”<cite>tests/index.js:1-3</cite></blockquote>
     <blockquote class="asked">“make the information more intuitive by showing pictures of the systems and elements.”<cite>REPORTED · js/icons.js:4-5</cite></blockquote>
@@ -3042,25 +3042,25 @@
     <tr><td>Tap reach of the ring</td><td class="num">250 px × scale</td><td><code>js/input.js:353</code> (literal)</td></tr>
     <tr><td>The player's walking speed</td><td class="num"><span class="n" data-k="FP_PLAYER_SPEED">0.13</span> tiles a frame</td><td><code>js/facilityplay.js:19</code></td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/input.js</code> (<code>handleInput</code> :125, <code>handleLongHold</code> :176, the pointer handlers :215-395, the ring hint :163-174) · <code>js/draw.js:28-144</code> (the ring) · <code>js/commands.js</code> <code>executeCommand</code> · <code>js/game.js:541-546</code> (the long press's timer)</p>
+  <p class="where">Where it lives: <code>js/input.js</code> (<code>handleInput</code> :125, <code>handleLongHold</code> :176, the pointer handlers :215-395, the ring hint :163-174) · <code>js/draw.js:28-144</code> (the ring) · <code>js/commands.js</code> <code>executeCommand</code> · <code>js/game.js:553-558</code> (the long press's timer)</p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“whenever I long hold press on something, it needs to be in that new style menu so that I can see it.”<cite>ASKED · js/draw.js:28 → the ring's faces are slabs</cite></blockquote>
   </div></details>
 
   <div class="open"><b>Found while writing this</b><ul>
-    <li><b>A phone cannot open the PACK, the inspection map or the ? guide</b> (nor SWITCH CLASS). No doc says whether that is meant; the guide says “On a phone the same things are in the radial menu” (<code>game.html:1128</code>), and a stylesheet comment still lists BUILD and AUTO petals (<code>:524</code>).</li>
+    <li><b>A phone cannot open the PACK, the inspection map or the ? guide</b> (nor SWITCH CLASS). No doc says whether that is meant; the guide says “On a phone the same things are in the radial menu” (<code>game.html:1189</code>), and a stylesheet comment still lists BUILD and AUTO petals (<code>:539</code>).</li>
     <li><b>ATTACK STYLE and SWITCH ROLES change a follower's role</b> (one that has not evolved), against “Nothing lets the player change a follower's type or element.” (<code>docs/TUTORIAL.md:315</code>). Is the role change meant to stay? (<code>js/commandcenter.js:82-87</code>, <code>js/commands.js:30-39</code>)</li>
     <li><b>The ring hint comes back every session</b>: <code>noteRingUsed()</code> writes <code>conduit_ring_used</code>, and the storage filter lets only <code>conduit_fp_</code> keys through, so the write is dropped (<code>js/input.js:168</code>, <code>js/facilityplay.js:208-213</code>).</li>
-    <li><b>A long press on a follower</b>: the guide's START and CONTROLS tabs (quoted in part 01) say it opens “Its card: numbers, INDEX and DISMISS”, “the same as tapping it on the squad bar” (<code>game.html:1099</code>, <code>:1116</code>). The code opens the ring with ROSTER CARD and RE-ROLL.</li>
+    <li><b>A long press on a follower</b>: the guide's START and CONTROLS tabs (quoted in part 01) say it opens “Its card: numbers, INDEX and DISMISS”, “the same as tapping it on the squad bar” (<code>game.html:1160</code>, <code>:1177</code>). The code opens the ring with ROSTER CARD and RE-ROLL.</li>
     <li>docs/UI-STYLE.md:58 says the ring offers ROSTER CARD and RE-ROLL “on a follower or a clone”: a clone gets ROSTER CARD only, and the ring also has SALVAGE DNA and THERMITE DRILL faces.</li>
     <li>The game-over card's NEW GAME starts again without asking (<code>js/alarm.js:31</code>), though docs/TUTORIAL.md:159 says the game-over card asks first. SETTINGS (START AGAIN?) and the chip (a confirm) do ask.</li>
-    <li>The guide describes the fire ultimate twice with different numbers (“3.5× SP.ATK dmg in a 5.5-tile radius … burns for 5 s”, <code>game.html:1164</code>; “3.0× SP.ATK in 5.0-tile radius … ~10 seconds”, <code>:1323</code>). For the combat part to settle.</li>
+    <li>The guide describes the fire ultimate twice with different numbers (“3.5× SP.ATK dmg in a 5.5-tile radius … burns for 5 s”, <code>game.html:1225</code>; “3.0× SP.ATK in 5.0-tile radius … ~10 seconds”, <code>:1384</code>). For the combat part to settle.</li>
     <li>js/config.js:336 lists “heal pluses” among what LOW graphics leaves out, but no drawing that could be a heal plus checks <code>gfxLow</code>.</li>
     <li>docs/PLAYER-CLASSES.md §8 says the class is switchable “at the Crystal”; the code (and docs/TUTORIAL.md:324, chosen with the user) puts SWITCH CLASS in the pack.</li>
     <li>The phone's CLONES helix (drawn at W − 38, 72) appears to sit under the health and ultimate bars: in the 390 × 844 shot only its top rim shows. Not checked on a device.</li>
     <li>docs/TUTORIAL.md:226 places the target dial “at the top left, where the objective's plate ends”: true only off the corners (TUTORIAL.md:278 has the corners).</li>
-    <li>Stale comments: the plate “top left, under the NEW GAME chip” (<code>js/tutorial.js:224</code>, <code>:257</code>); EXILE on the card on the fly (<code>js/party.js:89-91</code>); <code>dockHasMenus</code> said to be in js/toolbox.js (<code>js/settings.js:55</code>; it is in js/uikit.js); a phone's “dock” (<code>game.html:1120</code>, <code>js/infodex.js:51</code>).</li>
-    <li>Dead stylesheet rules no code uses: <code>#selChip</code> (<code>game.html:632</code>, <code>:640</code>), <code>body.placing</code> (<code>:912</code>, <code>:962</code>) and the old role badges <code>.ctrl-badge.brawler/.sniper/.camper</code> (<code>:225-227</code>).</li>
+    <li>Stale comments: the plate “top left, under the NEW GAME chip” (<code>js/tutorial.js:224</code>, <code>:257</code>); EXILE on the card on the fly (<code>js/party.js:89-91</code>); <code>dockHasMenus</code> said to be in js/toolbox.js (<code>js/settings.js:55</code>; it is in js/uikit.js); a phone's “dock” (<code>game.html:1181</code>, <code>js/infodex.js:51</code>).</li>
+    <li>Dead stylesheet rules no code uses: <code>#selChip</code> (<code>game.html:647</code>, <code>:655</code>), <code>body.placing</code> (<code>:927</code>, <code>:977</code>) and the old role badges <code>.ctrl-badge.brawler/.sniper/.camper</code> (<code>:240-242</code>).</li>
   </ul></div>
 </section>
     <section class="part" id="art" style="--c:var(--violet)">
@@ -3085,7 +3085,7 @@
     <tr><td><span class="sw" style="--s:#ff4a1c"></span>Red: danger, close</td><td class="num"><span class="n" data-k="UI_RED">#ff4a1c</span></td><td><code>js/uikit.js:11</code></td></tr>
     <tr><td><span class="sw" style="--s:#05070f"></span>Ink: text on a filled slab (the page's <code>--neo-ink</code> is <code>#070b16</code>)</td><td class="num"><span class="n" data-k="UI_INK">#05070f</span></td><td><code>js/uikit.js:11</code></td></tr>
     <tr><td>The UI's font</td><td class="num"><span class="n" data-k="UI_FONT">"DejaVu Sans","Segoe UI",system-ui,sans-serif</span></td><td><code>js/uikit.js:10</code></td></tr>
-    <tr><td>Slab skew: top HUD and dock; corners and carousel</td><td class="num">−12°; −9°</td><td><code>game.html:481</code> <code>:928</code> (css)</td></tr>
+    <tr><td>Slab skew: top HUD and dock; corners and carousel</td><td class="num">−12°; −9°</td><td><code>game.html:496</code> <code>:943</code> (css)</td></tr>
   </table></div>
   <p>The game's element colours (<code>ELEMENTS</code>) are not the poster's. The squad cards, the enemy card, the roster cards and the name plates use the game's; the UI accents use the <code>UI_*</code> set; the bars over units have their own fixed ramps.</p>
   <div class="tw"><table>
@@ -3097,7 +3097,7 @@
     <tr><td>Core</td><td class="num"><span class="sw" style="--s:#00ccaa"></span><span class="n" data-k="ELEMENTS[4].color">#00ccaa</span></td><td class="num"><span class="sw" style="--s:#19e6c1"></span>#19e6c1</td><td><code>js/config.js:22</code></td></tr>
     <tr><td>Toxic</td><td class="num"><span class="sw" style="--s:#66ff66"></span><span class="n" data-k="ELEMENTS[5].color">#66ff66</span></td><td class="num"><span class="sw" style="--s:#6dff5a"></span>#6dff5a</td><td><code>js/config.js:23</code></td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>docs/UI-STYLE.md</code> and <code>docs/images/</code> (made by <code>design/roster-poster/</code>) · <code>game.html:473-516</code> (the NEO-FUTURE skin) · <code>js/uikit.js</code> · <code>js/icons.js</code> · <code>js/draw.js:14</code> <code>drawHealthBar</code> · <code>js/levels.js:219</code> <code>drawUnitTag</code></p>
+  <p class="where">Where it lives: <code>docs/UI-STYLE.md</code> and <code>docs/images/</code> (made by <code>design/roster-poster/</code>) · <code>game.html:488-531</code> (the NEO-FUTURE skin) · <code>js/uikit.js</code> · <code>js/icons.js</code> · <code>js/draw.js:14</code> <code>drawHealthBar</code> · <code>js/levels.js:219</code> <code>drawUnitTag</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“The goal: the game's UI looks like that, with big slanted buttons and big type, and no more 9px monospace labels.”<cite>Chosen · docs/UI-STYLE.md:6-7 · commit e7745fb</cite></blockquote>
     <blockquote class="asked">“make the other menus as clean.”<cite>REPORTED · js/uikit.js:4 · commit d0145e8</cite></blockquote>
@@ -3300,9 +3300,9 @@
   </table></div>
   <ul>
     <li><b>The inline scripts</b>: the <code>attract</code> class before the first paint; the guide's tab switch; the crash panel, the script-failure catcher, the page's build and a <code>roundRect</code> polyfill for older iOS Safari; the boot check.</li>
-    <li><b>Boot</b>: <code>loadConfig()</code> in <code>js/init.js</code> preloads the icons, fills the guide's clone price table, starts the facility (its tutorial and its save) and starts the frame loop. It is synchronous and fetches nothing.</li>
+    <li><b>Boot</b>: the page puts a plain start screen up at once (<code>#startupOverlay</code>, DOM, no canvas) and starts the props sheets downloading (<code>&lt;link rel="preload"&gt;</code>). <code>startupBegin()</code> in <code>js/init.js</code> then runs six stages: it checks the page, builds the facility as before (the icons, the guide's clone price table, the tutorial and the save, synchronously), checks what the first picture needs, draws that picture (which is how the scene says which sprite sheets it wants), waits for exactly those sheets (15 s at most), draws one picture with them in, and only then starts the frame loop, once (<code>gameLoopStart</code>, <code>js/game.js</code>). Nothing the player does reaches the game before that. A stage that fails stops on a screen that says which and why, with RETRY, RELOAD and, when sheets did not arrive, PLAY ANYWAY; nothing retries by itself. It fetches nothing of its own (<code>docs/STARTUP.md</code>).</li>
   </ul>
-  <p class="where">Where it lives: <code>game.html:1635-1701</code> <code>:1756</code> (the script tags) · <code>game.html:7</code> <code>:1527-1538</code> <code>:1557-1632</code> <code>:1702-1755</code> (the inline scripts) · <code>js/init.js</code> · <code>tests/loadorder.js</code> <code>tests/globals.js</code></p>
+  <p class="where">Where it lives: <code>game.html:1696-1762</code> <code>:1817</code> (the script tags) · <code>game.html:7</code> <code>:1588-1599</code> <code>:1618-1693</code> <code>:1763-1816</code> (the inline scripts) · <code>js/init.js</code> · <code>tests/loadorder.js</code> <code>tests/globals.js</code></p>
 
   <h3 id="tech-boot">The boot check and the crash panel</h3>
   <ol>
@@ -3314,23 +3314,23 @@
   <p><b>The crash panel</b>: one full-screen panel for every uncaught error and unhandled promise rejection. The first error stays at the top and later ones are listed under it (<code>— then (n) —</code>), with a RELOAD button. It stays quiet while the boot check is retrying or has already explained.</p>
   <div class="tw"><table>
     <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
-    <tr><td>Script files</td><td class="num">68</td><td><code>game.html:1635-1756</code> (literal)</td></tr>
-    <tr><td>Files the boot check probes</td><td class="num">33</td><td><code>game.html:1709-1713</code> (literal)</td></tr>
-    <tr><td>Automatic reloads</td><td class="num">2</td><td><code>game.html:1734</code> (literal)</td></tr>
+    <tr><td>Script files</td><td class="num">68</td><td><code>game.html:1696-1817</code> (literal)</td></tr>
+    <tr><td>Files the boot check probes</td><td class="num">33</td><td><code>game.html:1770-1774</code> (literal)</td></tr>
+    <tr><td>Automatic reloads</td><td class="num">2</td><td><code>game.html:1795</code> (literal)</td></tr>
   </table></div>
   <details class="dec"><summary>Decisions</summary><div>
-    <blockquote class="asked">“CRASH — Can't find variable: PREDATOR_TYPES”<cite>REPORTED, from a phone · game.html:1559 · tests/boot.js → one panel with the first error on top, and a boot check that reloads by itself and names the file</cite></blockquote>
+    <blockquote class="asked">“CRASH — Can't find variable: PREDATOR_TYPES”<cite>REPORTED, from a phone · game.html:1620 · tests/boot.js → one panel with the first error on top, and a boot check that reloads by itself and names the file</cite></blockquote>
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-10-31a</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-10-31b</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
   </ul>
-  <p class="where">Where it lives: <code>js/config.js:7-9</code> · <code>game.html:1594-1599</code> · <code>js/facilitytutorial.js:43</code> <code>:55</code> (flags) · <code>js/facility.js:480-565</code> (the inspection map) · <code>tests/boot.js</code></p>
+  <p class="where">Where it lives: <code>js/config.js:7-9</code> · <code>game.html:1655-1660</code> · <code>js/facilitytutorial.js:43</code> <code>:55</code> (flags) · <code>js/facility.js:480-565</code> (the inspection map) · <code>tests/boot.js</code></p>
   <details class="dec"><summary>Decisions</summary><div>
-    <blockquote class="asked">“Attempted to assign to readonly property”<cite>REPORTED: an iPad ran the new js/indexart.js against an old cached js/config.js · game.html:1594-1598 → the build stamp on every script</cite></blockquote>
+    <blockquote class="asked">“Attempted to assign to readonly property”<cite>REPORTED: an iPad ran the new js/indexart.js against an old cached js/config.js · game.html:1655-1659 → the build stamp on every script</cite></blockquote>
     <blockquote class="asked">“we need to get rid of the old systems, like the build feature, the different zones, and the nests, and the batteries, and the turrets. The shield generators, all of that stuff from the old system needs to go away, including the tunnel. We need to completely make this game our foundation.”<cite>ASKED · commit 9b7758f · tests/foundation.js → the Foundation pass: 32 files deleted</cite></blockquote>
   </div></details>
 
@@ -3409,7 +3409,7 @@
     <li>The prop work took <code>render()</code> from about 14–20 ms to 8–11 ms in most rooms (the lab stayed at about 16).</li>
     <li>In a fight the follower sprite cache had built a new 168 × 168 canvas about every frame and held about 97 MB; the sprites are 1× now.</li>
   </ul>
-  <p class="where">Where it lives: <code>js/game.js</code> (<code>SIM_*</code> :456-458, <code>_simStep</code> :485, <code>gameLoop</code> :495, <code>render</code> :530) · <code>js/propsprites.js</code> <code>facilityPerfTick</code> · <code>tests/perf.js</code> <code>tests/clock.js</code> <code>tests/ghost.js</code> · the measurements: <code>docs/FACILITY.md:111</code> <code>:166-168</code>, <code>docs/TUTORIAL.md:208-219</code> <code>:305-306</code></p>
+  <p class="where">Where it lives: <code>js/game.js</code> (<code>SIM_*</code> :456-458, <code>_simStep</code> :485, <code>gameLoop</code> :495, <code>render</code> :542) · <code>js/propsprites.js</code> <code>facilityPerfTick</code> · <code>tests/perf.js</code> <code>tests/clock.js</code> <code>tests/ghost.js</code> · the measurements: <code>docs/FACILITY.md:111</code> <code>:166-168</code>, <code>docs/TUTORIAL.md:208-219</code> <code>:305-306</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“Changing the graphics to high does nothing to slow it down, and it is slow. I believe there is something else that is slowing it down.”<cite>REPORTED · tests/clock.js:3-5 → the clock</cite></blockquote>
     <blockquote class="asked">“the game runs really slow”<cite>REPORTED · tests/perf.js:3 → the screen-space cull and the operation budget</cite></blockquote>
@@ -3455,7 +3455,7 @@
     <tr><td>The page: idle wait (else); gives up after</td><td class="num">2500 (600) ms; 45 s</td><td><code>index.html:343-348</code> (literal)</td></tr>
     <tr><td>The page: fade-in</td><td class="num">3.5 s to 0.9</td><td><code>index.html:26-28</code> (css)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>index.html</code> (the background and its scrim <code>:18-34</code>, the cards <code>:252-305</code>, the loader <code>:332-351</code>) · <code>js/attract.js</code> · its hooks, each guarded by <code>attractOn()</code>: <code>js/facilityplay.js</code>, <code>js/facilitysave.js:14</code>, <code>js/facilitytutorial.js:34</code>, <code>js/facilitystyle.js:474</code>, <code>js/game.js:503</code> <code>:827</code>, <code>js/draw.js:1324</code>, <code>js/party.js:14</code> · <code>game.html:7</code> <code>:1030-1033</code> · <code>tests/attract.js</code> (the flag, every hook, the page, then 150 s of game in the real page)</p>
+  <p class="where">Where it lives: <code>index.html</code> (the background and its scrim <code>:18-34</code>, the cards <code>:252-305</code>, the loader <code>:332-351</code>) · <code>js/attract.js</code> · its hooks, each guarded by <code>attractOn()</code>: <code>js/facilityplay.js</code>, <code>js/facilitysave.js:14</code>, <code>js/facilitytutorial.js:34</code>, <code>js/facilitystyle.js:474</code>, <code>js/game.js:503</code> <code>:839</code>, <code>js/draw.js:1324</code>, <code>js/party.js:14</code> · <code>game.html:7</code> <code>:1045-1048</code> · <code>tests/attract.js</code> (the flag, every hook, the page, then 150 s of game in the real page)</p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“in the main website it loads in the map for conduit and it keeps it all dark or dimly lit and has the evolved followers every now and again just rummaging through and searching the abandoned halls”<cite>ASKED · js/attract.js:4 · docs/FACILITY.md:155 · commit 896a073 (it replaced the Stonehenge scene)</cite></blockquote>
     <blockquote class="asked">“we make some sort of game Bible that can be maybe all one document, and maybe we can put it on the website somewhere.”<cite>ASKED · commit 5e075d9 → Chosen with the user: a design reference, a card on the home page, story sections left to be written, pictures from the game</cite></blockquote>
@@ -3464,11 +3464,11 @@
   <p class="muted">The site is Conduit and the ROM Lab only: every other project was removed (commit 406b3dd); the Game Bible's card came with commit 5e075d9.</p>
 
   <div class="open"><b>Found while writing this</b><ul>
-    <li><b>The website's background may show part of the HUD.</b> <code>render()</code> draws the network panel and the target's ammunition pill (shown when nothing is locked), and on a canvas of 700 px or less the round SET and CLONES buttons, with no <code>attractOn()</code> guard (<code>js/game.js:1032</code>, <code>:1167</code>, <code>:1172</code>, <code>:1173</code>); docs/FACILITY.md:160 says “no interface drawn”. Not checked in a browser.</li>
+    <li><b>The website's background may show part of the HUD.</b> <code>render()</code> draws the network panel and the target's ammunition pill (shown when nothing is locked), and on a canvas of 700 px or less the round SET and CLONES buttons, with no <code>attractOn()</code> guard (<code>js/game.js:1044</code>, <code>:1179</code>, <code>:1184</code>, <code>:1185</code>); docs/FACILITY.md:160 says “no interface drawn”. Not checked in a browser.</li>
     <li><code>js/attract.js:9</code> says “any of the twelve forms”; the code picks from every current form, 18 at this build.</li>
     <li><code>game.html</code>'s title is “Tube Crawler: Peak AI Data-Driven” (<code>game.html:8</code>), not Conduit.</li>
     <li><code>index.html</code> keeps CSS for a logo image the page does not have (<code>.hero-logo</code>, <code>:52-73</code>, and “Fallback text title shown only when logo.png is absent”, <code>:75</code>).</li>
-    <li>The boot check's retry count in session storage (<code>conduit_boot_retry</code>) is dropped by the storage filter once <code>js/facilityplay.js</code> has loaded; the count in the address still stops a reload loop (<code>game.html:1723-1727</code>).</li>
+    <li>The boot check's retry count in session storage (<code>conduit_boot_retry</code>) is dropped by the storage filter once <code>js/facilityplay.js</code> has loaded; the count in the address still stops a reload loop (<code>game.html:1784-1788</code>).</li>
     <li><code>js/config.js:339</code> says the settings are “the only keys the page writes”, but <code>js/input.js</code> also tries to write <code>conduit_ring_used</code> (dropped by the filter; see part 07).</li>
   </ul></div>
 </section>
@@ -3542,7 +3542,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-10-31a (31 October 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-10-31b (31 October 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

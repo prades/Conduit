@@ -518,6 +518,18 @@ function gameLoop() {
     _simStepsCount++;
     if (now - _simStepsAt >= 1000) { _simStepsShown = Math.round(_simStepsCount * 1000 / Math.max(1, now - _simStepsAt)); _simStepsCount = 0; _simStepsAt = now; }
 }
+// THE CLOCK STARTS ONCE. gameLoopStart is the only place the page begins the loop (js/init.js calls it when the start screen's work is done); asked again it does nothing, so there is never a second chain of
+// frames (a second chain would run the whole game at double speed, and the readout counts a refusal). The clock's history is cleared first: a loop that begins after a start screen, or any other wait, owes
+// nothing for the time before it. (A tab that was hidden is the same case later on: gameLoop's own `dt > 1000` takes no debt for it.)
+let _loopRunning = false;
+function clockReset() { _simLast = 0; _simDebt = 0; }
+function gameLoopStart() {
+    if (_loopRunning) { _perf.denied++; return false; }
+    _loopRunning = true; _perf.loops++;
+    clockReset();
+    gameLoop();
+    return true;
+}
 
 // The frame's clear: black (the facility's floors, walls and dark are painted over it).
 function clearFrame() { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = "#000"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
@@ -1183,13 +1195,23 @@ function render() {
 // per frame (smoothed), the worst frame in the last second, and how much is
 // on the map. The browser's own painting happens after the frame, so a low
 // FPS with small logic and draw times points at the painting, not the game.
-const _perf = { last: 0, fps: 0, logic: 0, draw: 0, ghost: 0, worst: 0, shownWorst: 0, winAt: 0, t0: 0, tDraw: 0 };   // (ghost: what the steps with no picture cost a refresh)
+const _perf = { last: 0, fps: 0, logic: 0, draw: 0, ghost: 0, worst: 0, shownWorst: 0, winAt: 0, t0: 0, tDraw: 0, loops: 0, denied: 0, gaps: null, gapN: 0, pct: null, pctAt: 0 };   // (ghost: what the steps with no picture cost a refresh; loops, denied: clocks started, and starts refused; gaps: the last PERF_WINDOW refresh gaps, kept only while the readout is on)
+const PERF_WINDOW = 120;
 function _perfNow() { return (typeof performance !== "undefined" && performance.now) ? performance.now() : Date.now(); }
 function perfFrameStart() {
     if (_simGhost) return;       // a step with no picture is not a frame
     const n = _perfNow();
-    if (_perf.last) { const dt = n - _perf.last; if (dt > 0 && dt < 1000) _perf.fps += (1000 / dt - _perf.fps) * 0.05; }
+    if (_perf.last) {
+        const dt = n - _perf.last; if (dt > 0 && dt < 1000) _perf.fps += (1000 / dt - _perf.fps) * 0.05;
+        if (perfReadout && dt > 0 && dt < 5000) (_perf.gaps || (_perf.gaps = new Float32Array(PERF_WINDOW)))[_perf.gapN++ % PERF_WINDOW] = dt;   // (the gaps between pictures, for the readout's percentiles: not recorded while it is off)
+    }
     _perf.last = n; _perf.t0 = n; _perf.tDraw = 0;
+}
+// the median, 95th and 99th percentile and the worst of the last PERF_WINDOW gaps between pictures (ms); null with none
+function _perfPct() {
+    const n = Math.min(_perf.gapN, PERF_WINDOW); if (!n) return null;
+    const s = Array.from(_perf.gaps.subarray(0, n)).sort((a, b) => a - b), at = p => s[Math.min(n - 1, Math.floor(p * n))];
+    return { n, p50: at(0.5), p95: at(0.95), p99: at(0.99), max: s[n - 1] };
 }
 function perfDrawStart() { if (!_simGhost) _perf.tDraw = _perfNow(); }
 function perfFrameEnd() {
@@ -1214,8 +1236,12 @@ function drawPerfReadout() {
         "worst frame " + _perf.shownWorst.toFixed(0) + " ms",
         "units " + actors.length + "   tiles " + world.length,
     ];
+    // the start (js/init.js startupLines: when the clock began, each stage's time, the sheets), and the spread of the last PERF_WINDOW gaps between pictures (worked out once a second)
+    if (typeof startupLines === "function") for (const l of startupLines()) lines.push(l);
+    const nowMs = _perfNow(); if (nowMs - _perf.pctAt > 1000) { _perf.pct = _perfPct(); _perf.pctAt = nowMs; }
+    const pc = _perf.pct; lines.push(pc ? "GAPS p50 " + pc.p50.toFixed(0) + "  p95 " + pc.p95.toFixed(0) + "  p99 " + pc.p99.toFixed(0) + "  max " + pc.max.toFixed(0) + " ms (" + pc.n + ")" : "GAPS -");
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const x = 8, y = 96, w = 252, h = 12 * lines.length + 10;
+    const x = 8, y = 96, w = 262, h = 12 * lines.length + 10;
     ctx.fillStyle = "rgba(0,0,0,0.78)"; ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = _perf.fps >= 50 ? "#0f8" : _perf.fps >= 30 ? "#fd4" : "#f64"; ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     ctx.font = "10px monospace"; ctx.textAlign = "left"; ctx.textBaseline = "top";

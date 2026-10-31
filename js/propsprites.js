@@ -16,13 +16,13 @@
 const PS = { dark: "#060b16", aimSteps: 16 };
 const _psImgs = {}, _psSils = {};
 function _psImg(fam) {
-    if (_psImgs[fam] !== undefined) { const e = _psImgs[fam]; return e && e.complete && e.naturalWidth ? e : null; }
+    if (_psImgs[fam] !== undefined) { const e = _psImgs[fam]; if (e && e.complete && e.naturalWidth) return e; if (e && typeof startupWant === "function") startupWant(e); return null; }   // (a sheet that has not arrived: the start screen is told, while it is still finding out which sheets the first picture wants: js/init.js)
     _psImgs[fam] = null;
     if (typeof document === "undefined" || !document.createElement || typeof PROP_ATLAS === "undefined" || !PROP_ATLAS[fam]) return null;
     const im = document.createElement("img"); im.onload = () => { _psImgs[fam] = im; };   // (decoded off the main thread, so the first frame that draws it does not stall)
     im.decoding = "async";
     im.src = "img/props/" + fam + ".png" + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
-    _psImgs[fam] = im; return null;
+    _psImgs[fam] = im; if (typeof startupAsset === "function") startupAsset(im, "props/" + fam); return null;
 }
 // the whole sheet in the dark navy, same alpha (built once)
 function _psSil(fam, img) {

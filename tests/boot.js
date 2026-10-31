@@ -51,11 +51,19 @@ check('the crash screen is one panel, first error on top, with RELOAD', () => {
     ok(/RELOAD/.test(s), 'no reload button');
     ok(!/window\.onerror\s*=/.test(rd('js/config.js')), 'config.js still replaces the page\'s error handler');
 });
-check('init.js starts the one game the page has, synchronously, and fetches nothing', () => {
-    // The strip game's loadConfig awaited two fetches, so its boot crash lived in an async continuation nobody saw (tests/globals.js).
+check('init.js starts the one game the page has through one entry point, builds the world synchronously, and fetches nothing', () => {
+    // The strip game's loadConfig awaited two fetches, so its boot crash lived in an async continuation nobody saw (tests/globals.js). init.js still fetches nothing and builds the world before it ends; the one
+    // thing it now waits for (the sheets the first picture wanted, js/init.js) is a promise with a failure handler on every continuation, so a crash after the wait lands on the start screen and in the console.
     const init = rd('js/init.js');
-    ok(/function loadConfig\(\)/.test(init) && !/async|await|fetch\(/.test(init), 'loadConfig is async again, or fetches');
-    ok(/facilityPlayStart\(\);/.test(init) && /gameLoop\(\);/.test(init) && /^loadConfig\(\);/m.test(init), 'init.js does not boot the facility and start the clock');
+    ok(!/\basync\b|\bawait\b|fetch\(/.test(init), 'init.js is async/await again, or fetches');
+    ok(/^startupBegin\(\);\s*$/m.test(init) && /function startupBegin\(\)/.test(init), 'init.js has no single entry point called once, at its end');
+    ok(/facilityPlayStart\(\);/.test(init) && /gameLoopStart\(\);/.test(init), 'init.js does not boot the facility and start the clock');
+    ok(!/\bgameLoop\(\)/.test(init) && !/requestAnimationFrame|setInterval/.test(init), 'init.js starts the loop some other way than gameLoopStart, or schedules frames of its own');
+    // Every promise of the start is consumed in one place, the stage runner, with a failure handler; the asset stage only builds a chain and hands it back.
+    const fnAt = n => { const a = init.indexOf('function ' + n + '('); let d = 0, i = init.indexOf('{', a); for (;; i++) { if (init[i] === '{') d++; else if (init[i] === '}' && --d === 0) break; } return init.slice(a, i + 1); };
+    ok(!/\.then\(|\.catch\(/.test(init.replace(fnAt('_suRun'), '').replace(fnAt('_suAssets'), '')), 'a promise of the start is consumed somewhere other than the stage runner');
+    ok(/return _suWait\(need\)\.then\(/.test(fnAt('_suAssets')) && /return r \? r\.then\(_suSettle\) : _suSettle\(\);/.test(fnAt('_suAssets')), 'the asset stage does not hand its chain back to the runner');
+    ok(/r\.then\(\(\) => \{ took\(\); _suRun\(i \+ 1\); \}, e => _suFail\(i, e\)\)/.test(fnAt('_suRun')), 'the stage runner does not send a rejected stage to _suFail');
 });
 
 check('THE ASK: every file is fetched for this build — one ?v= on every script, matching the page and config.js', () => {

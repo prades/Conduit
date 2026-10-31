@@ -517,24 +517,24 @@ function staticRush(f) {
 }
 // ── THE LOOK ───────────────────────────────────────────────
 function _evoImg(d) {
-    if (d._img !== undefined) return d._img && d._img.complete && d._img.naturalWidth ? d._img : null;
+    if (d._img !== undefined) { const e = d._img; if (e && e.complete && e.naturalWidth) return e; if (e && typeof startupWant === "function") startupWant(e); return null; }   // (a sheet that has not arrived: the start screen is told: js/init.js)
     d._img = null;
     if (typeof Image === "undefined") return null;
     const im = new Image();
     im.onload = () => { d._img = im; };
     im.src = d.sheet + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
-    d._img = im;
+    d._img = im; if (typeof startupAsset === "function") startupAsset(im, "evo/" + d.id);
     return null;
 }
 function _evoGroundImg(d) {
     if (!d.ground) return null;
-    if (d._gimg !== undefined) return d._gimg && d._gimg.complete && d._gimg.naturalWidth ? d._gimg : null;
+    if (d._gimg !== undefined) { const e = d._gimg; if (e && e.complete && e.naturalWidth) return e; if (e && typeof startupWant === "function") startupWant(e); return null; }
     d._gimg = null;
     if (typeof Image === "undefined") return null;
     const im = new Image();
     im.onload = () => { d._gimg = im; };
     im.src = d.ground + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : "");
-    d._gimg = im;
+    d._gimg = im; if (typeof startupAsset === "function") startupAsset(im, "evo/" + d.id + "-ground");
     return null;
 }
 // Which frame of its sheets it is on, how big, and how far out of the egg: the body and its ground layer share this.

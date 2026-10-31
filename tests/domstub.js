@@ -84,6 +84,8 @@ function makeBrowserSandbox(store = {}) {
     sandbox.globalThis = sandbox;
     sandbox.window.addEventListener = () => {};
     sandbox.addEventListener = () => {};
+    sandbox.window.removeEventListener = () => {};   // (the start's guard against input puts its listeners up and takes them down: js/init.js)
+    sandbox.removeEventListener = () => {};
     sandbox.window.visualViewport = null;
     sandbox.getComputedStyle = () => ({ height: '0px' });
     sandbox.AudioContext = function () {

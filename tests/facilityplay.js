@@ -1065,7 +1065,7 @@ function measure() {
     });
     check('the page opens the facility and nothing else: no mode, no ?classic, no CLASSIC GAME chip; NEW GAME (#facilityNewChip, js/facilityplay.js facilityPlayChip) asks first and throws the save away; storage is filtered before the page boots; the saved followers are used instead of the three to start; the save is written as the game goes and when the page is hidden or closed', () => {
         const src = rd('js/facilitysave.js') + rd('js/facilityplay.js'), init = rd('js/init.js');
-        ok(/facilityPlayStart\(\);/.test(init) && /gameLoop\(\);/.test(init) && !/facilityMode|classic|conduit_mode/.test(init), 'the page does not boot the facility, or still asks which game');
+        ok(/facilityPlayStart\(\);/.test(init) && /gameLoopStart\(\);/.test(init) && !/facilityMode|classic|conduit_mode/.test(init), 'the page does not boot the facility, or still asks which game');   // (the clock is started by gameLoopStart, js/game.js, which calls gameLoop once: the start's last stage, js/init.js)
         ok(!/function facilityMode|facilityPlayChip", "CLASSIC GAME|facilityPlayStop|facilitySwitchGame|conduit_mode/.test(src), 'a way to the classic game is back');
         ok(/c\.id = "facilityNewChip"; c\.textContent = "NEW GAME";/.test(src) && /confirm\("Start a new facility game\? Your saved progress will be lost\."\)/.test(src) && /if \(ok\) facilityNewGame\(\);/.test(src), 'the NEW GAME chip or its confirmation'); ok(/function facilityNewGame\(\) \{\s*facilitySaveClear\(\);/.test(src), 'NEW GAME does not clear the save');
         ok(/_fpNoStorage\(\);\s*\/\/[^\n]*\n\s*facilityPlayChip\(\);/.test(src), 'storage is not filtered before the page boots');

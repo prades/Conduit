@@ -7,6 +7,7 @@ const SUITES = [
     ['load order + render order', 'loadorder.js'],
     ['declared globals',         'globals.js'],
     ['boot check',               'boot.js'],
+    ['the start: the start screen, the staged start, the sheets it waits for, failures and retries, the clock once, the readout', 'startup.js'],
     ['performance + culling',    'perf.js'],
     ['the clock (game speed)',   'clock.js'],
     ['a step with no picture = a drawn step (lock-step equivalence)', 'ghost.js'],

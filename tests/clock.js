@@ -124,6 +124,18 @@ check('paused, nothing moves — and coming back does not fast-forward', () => {
     run('gameState.running = true;');
     same(tick(1000 / 60).steps, 1, 'steps on the first refresh back');
 });
+check('THE ASK: a refresh after ten minutes away (a hidden tab, a sleeping iPad) is one step and one picture, not a burst; the next is back to a step a refresh', () => {
+    const t = tick(600000);
+    same(t.steps, 1, 'steps on the first refresh back'); ok(t.ops > 20, 'and it drew the picture: ' + t.ops + ' paints');
+    same(tick(1000 / 60).steps, 1, 'steps on the refresh after');
+    same(tick(1001).steps, 1, 'steps after just over a second away (no debt is taken for it)');
+    const u = tick(999); ok(u.steps >= 1 && u.steps <= run('SIM_MAX_STEPS'), 'just under a second away ran ' + u.steps + ' steps');
+});
+check('the clock is started once (gameLoopStart, js/init.js): asked again it is refused, and a restarted clock owes nothing for the time before it', () => {
+    same(run('_loopRunning'), true, 'the page started it'); same(run('gameLoopStart()'), false, 'a second start');
+    run('clockReset();'); same(run('_simLast') + ',' + run('_simDebt'), '0,0', 'the clock\'s history after a reset');
+    NOW += 90000; same(tick(0).steps, 1, 'steps owed on the first refresh after a reset, however long it was since');
+});
 
 console.log('\nTHE FOLLOWER SPRITES');
 run('ctx = __counting;');
