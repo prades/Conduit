@@ -44,6 +44,11 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.pick = { fly: flyOn(), sel: selectedUnits.size, all: !!$('#mixTool .mt-all.on'), to: $('#mixTool .mt-to b') ? $('#mixTool .mt-to b').textContent : null, name: f && f.querySelector('.sf-name') ? f.querySelector('.sf-name').textContent : null, label: unitTypeLabel(m0), sub: f && f.querySelector('.sf-sub') ? f.querySelector('.sf-sub').textContent : null,
       tags: f ? $$('#squadFly .sf-tag, #squadFly .sf-rt').map(function(t){ return t.textContent; }).join() : '', hpn: f && f.querySelector('.sf-hpn') ? f.querySelector('.sf-hpn').textContent : null, btns: f ? $$('#squadFly .sf-btn').map(function(b){ return b.textContent; }) : [], thumb: !!(f && f.querySelector('canvas.sf-thumb')),
       fr: rect(f), sr: rect(s0), br: rect($('#squadBar')), tr: rect($('#mixTool .mt-panel')), col: card ? card.style.getPropertyValue('--c') : '', go: $('#mixTool .mt-foe-go') ? $('#mixTool .mt-foe-go').textContent : null };
+    // ITS XP: how far through its level, and how far it is from evolving (js/levels.js xpProgress)
+    if (card) { var xs = function(){ var b = $('#squadFly .sf-xp .sb-xp u'), e = $('#squadFly .sf-evo'); return { n: txt('#squadFly .sf-xpn'), evo: e ? e.textContent : null, w: b ? b.style.width : null, soon: !!(e && e.classList.contains('soon')), hidden: !!(e && getComputedStyle(e).display === 'none') }; };
+      m0.evolved = undefined; m0.level = 7; m0.xp = xpForLevel(7) + 85; partyTick(); await wait(60); out.xp = { l7: xs() };
+      m0.level = 9; m0.xp = xpForLevel(9) + 100; partyTick(); await wait(60); out.xp.l9 = xs();
+      m0.evolved = 'seeper'; partyTick(); await wait(60); out.xp.evolved = xs(); m0.evolved = undefined; m0.level = 5; m0.xp = xpForLevel(5); partyTick(); await wait(60); out.xp.l5 = xs(); }
     // INDEX opens the unit's info (its attacks, jobs and stats)
     var ix = $('#squadFly [data-act=index]'); if (ix) click(ix); await wait(40); out.index = { open: !!$('#unitInfo'), title: $('#unitInfo .ui-title') ? $('#unitInfo .ui-title').textContent : null };
     var press = function(el){ el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true })); };
@@ -161,6 +166,12 @@ function measure(w, h) {
             same(r.pick.btns.length, 2, 'buttons'); ok(/^INDEX/.test(r.pick.btns[0]) && /^DISMISS FROM SQUAD/.test(r.pick.btns[1]), 'buttons ' + r.pick.btns);
             ok(r.pick.fr[0] >= r.pick.br[2], 'the card ' + r.pick.fr + ' is not beside the stack ' + r.pick.br); ok(Math.abs(r.pick.fr[1] - r.pick.sr[1]) <= 16, 'the card\'s top ' + r.pick.fr[1] + ' is not at its card\'s ' + r.pick.sr[1]); ok(r.pick.fr[3] <= r.pick.tr[1] + 40 || r.pick.fr[0] >= r.pick.tr[2], 'the card ' + r.pick.fr + ' lies over the tool ' + r.pick.tr);
             ok(r.pick.fr[2] <= w && r.pick.fr[3] <= h, 'the card is off the screen: ' + r.pick.fr);
+        });
+        check(w + ': the card has an XP row (a bar as long as the level is done, and the numbers) and says how far the member is from evolving: the levels and the XP to go, in the last level before it evolves lit; an evolved member says EVOLVED', () => {
+            if (!wide) return; ok(r.xp, 'no xp probe');
+            same(r.xp.l7.n, '85 / 169', 'level 7'); same(r.xp.l7.w, Math.round(85 / 169 * 100) + '%', 'the bar'); same(r.xp.l7.evo, 'EVOLVES AT LV 10 · 3 LEVELS · 572 XP TO GO', 'the evolution line'); same(r.xp.l7.soon, false, 'not yet in the last level');
+            same(r.xp.l9.n, '100 / 271', 'level 9'); same(r.xp.l9.evo, 'EVOLVES AT LV 10 · 1 LEVEL · 171 XP TO GO', 'one level'); same(r.xp.l9.soon, true, 'lit in the last level before it evolves');
+            same(r.xp.evolved.evo, 'EVOLVED', 'an evolved member'); same(r.xp.l5.n, '0 / 91', 'a recruit'); same(r.xp.l5.w, '0%', 'an empty bar'); same(r.xp.l5.evo, 'EVOLVES AT LV 10 · 5 LEVELS · 875 XP TO GO', 'five levels');
         });
         check(w + ': a press on the card keeps it; a press anywhere else puts it away and the member stays picked (its card on the stack lit, the tool still names it), also after a tick; a tap on it then lets it go, and the next tap picks it and opens its card; a press on the unit info is not one away', () => {
             same(r.index.back, true, 'closing the unit info did not bring the card back'); same(r.away.onCard, true, 'a press on the card put it away');

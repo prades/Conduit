@@ -70,7 +70,9 @@ function followerInfo(a) {
     // JOBS: the squad, or a room it holds (js/party.js)
     out.jobs.push({ h: "RIGHT NOW", rows: [["STANCE", a.post && typeof partyRoomName === "function" ? "HOLDING THE " + partyRoomName(a.post).toUpperCase() : typeof partyIsMember === "function" && partyIsMember(a) ? "IN THE SQUAD, FOLLOWING YOU" : a.stance === "hold" || (a.job && a.job.type === "move") ? "HOLDING A POST" : "FOLLOWING YOU"]] });
     // STATS
-    out.stats.push({ h: "VITALS", rows: [["LEVEL", String(a.level || 1)], ["HEALTH", Math.max(0, Math.round(a.health || 0)) + " / " + Math.round(a.maxHealth || 0)], ["POWER", String(Math.round(a.power || 0))], ["SPEED", ((a.moveSpeed || 0) * 1000).toFixed(0)]] });
+    const xpp = typeof xpProgress === "function" ? xpProgress(a) : null;   // its XP, and how far it is from evolving (js/levels.js)
+    out.stats.push({ h: "VITALS", rows: [["LEVEL", String(a.level || 1)]].concat(xpp ? [["XP", xpText(xpp)]] : [], xpp && xpp.evo ? [["EVOLVES", xpEvoText(xpp).replace(/^EVOLVES /, "")]] : [],
+        [["HEALTH", Math.max(0, Math.round(a.health || 0)) + " / " + Math.round(a.maxHealth || 0)], ["POWER", String(Math.round(a.power || 0))], ["SPEED", ((a.moveSpeed || 0) * 1000).toFixed(0)]]) });
     if (a.stats) out.stats.push({ h: "BASE STATS" + (a.personality ? " · " + String(a.personality).toUpperCase() : ""), rows: Object.keys(a.stats).filter(k => k !== "resonance").map(k => [k.replace(/([A-Z])/g, " $1").toUpperCase(), String(a.stats[k])]) });
     const tr = [], add = (tab, key, label) => { const t = tab && key && tab[key]; if (t) tr.push([label, t.name + " — " + t.description]); };
     if (typeof COMBAT_TRAITS !== "undefined") { add(COMBAT_TRAITS, a.combatTrait, "COMBAT"); add(NATURAL_TRAITS, a.naturalTrait, "NATURE"); add(PERKS, a.perk, "PERK"); }

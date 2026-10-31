@@ -432,6 +432,8 @@ function _ccDrawSide(side) {
         const t = _ccEl("div", "cc-sel-title", r.name); t.style.color = _ccColour(one.element); t.style.textShadow = "0 0 10px " + _ccColour(one.element); side.appendChild(t);
         const sub = _ccElLabel(one.element) + " \u00b7 LV " + r.level + (partyIsMember(one) ? " \u00b7 IN THE SQUAD" : "") + (r.evolved ? " \u00b7 EVOLVED" : ""); side.appendChild(_ccEl("div", "cc-sel-sub", sub));
         const bar = _ccEl("div", "cc-bar big"); bar.style.setProperty("--c", _ccColour(one.element)); const fill = _ccEl("i"); fill.style.width = Math.round(r.hp * 100) + "%"; bar.appendChild(fill); side.appendChild(bar);
+        { const xp = typeof xpProgress === "function" ? xpProgress(one) : null;   // its XP under the health bar: how far through its level (the stat index below has the numbers and how far it is from evolving)
+          if (xp) { const xb = _ccEl("div", "cc-bar big xp"); xb.style.setProperty("--c", "#9ca8ff"); xb.title = "XP " + xpText(xp) + (xp.evo ? " · " + xpEvoText(xp) : ""); const xf = _ccEl("i"); xf.style.width = Math.round(xp.frac * 100) + "%"; xb.appendChild(xf); side.appendChild(xb); } }
         // THE STAT INDEX: the same sheet as the unit's INFO card (js/unitinfo.js)
         const info = typeof unitInfo === "function" ? unitInfo(one) : null;
         const idx = _ccEl("div", "cc-stats");
@@ -466,6 +468,9 @@ function _ccFocusStats(f) {
     const hp = Math.max(0, Math.round(f.health || 0)), mx = Math.max(1, Math.round(f.maxHealth || 1));
     const rows = [["HEALTH", hp / mx, hp + " / " + mx], ["POWER", pw(f) / top(pw), String(pw(f))], ["SPEED", sp(f) / top(sp), String(sp(f))]];
     if (f.stats) rows.push(["DEFENSE", df(f) / top(df), String(df(f))], ["ATTACK", at(f) / top(at), String(at(f))]);
+    // its XP and how far it is from evolving (js/levels.js xpProgress): ASKED, "I need to see the progress. Add a progress experience bar or something so I know what's going on." The bar is how far through its level it is; EVOLVES is how far along the way from the recruit level to the evolution.
+    const p = typeof xpProgress === "function" ? xpProgress(f) : null;
+    if (p) { rows.push(["XP", p.frac, p.max ? "MAX" : Math.round(p.into) + " / " + Math.round(p.ask)]); if (p.evo) rows.push(["EVOLVES", p.evo.frac, p.evo.toGo + " TO GO"]); }
     return rows;
 }
 // the creature in view: its picture, name, state and numbers, with ◂ ▸ to walk the roster; built once, updated in place
@@ -476,7 +481,7 @@ function _ccFocusBuild(box) {
     const card = _ccEl("div", "cf-card"), art = _ccEl("div", "cf-art"), cv = _ccEl("canvas", "cf-cv"); cv.width = 128; cv.height = 128; art.appendChild(cv);
     const lv = _ccEl("span", "cf-lv"), el = _ccEl("span", "cf-el"), sc = _ccEl("span", "cf-sc"); art.appendChild(lv); art.appendChild(el); art.appendChild(sc);   // (sc: its subclass tag, js/cards.js)
     const txt = _ccEl("div", "cf-txt"), name = _ccEl("div", "cf-name"), state = _ccEl("span", "cf-state"), bars = _ccEl("div", "cf-bars");
-    const rows = ["HEALTH", "POWER", "SPEED", "DEFENSE", "ATTACK"].map(k => { const r = _ccEl("div", "cf-bar"); r.appendChild(_ccEl("span", "cf-k", k)); const i = _ccEl("i"); i.appendChild(_ccEl("b")); r.appendChild(i); r.appendChild(_ccEl("em")); bars.appendChild(r); return r; });
+    const rows = ["HEALTH", "POWER", "SPEED", "DEFENSE", "ATTACK", "XP", "EVOLVES"].map(k => { const r = _ccEl("div", "cf-bar"); r._k = k; r.appendChild(_ccEl("span", "cf-k", k)); const i = _ccEl("i"); i.appendChild(_ccEl("b")); r.appendChild(i); r.appendChild(_ccEl("em")); bars.appendChild(r); return r; });
     txt.appendChild(name); txt.appendChild(state); txt.appendChild(bars);
     card.appendChild(art); card.appendChild(txt); card.appendChild(_ccEl("div", "cf-none", "NOBODY HERE: TAP RECRUIT, AT THE END OF THE STRIP, TO CALL A FOLLOWER"));
     const prev = arrow(-1), next = arrow(1); box.appendChild(prev); box.appendChild(card); box.appendChild(next);
@@ -494,9 +499,9 @@ function _ccFocusDraw(box) {
     set(E.state, "textContent", st ? st.text + (st.room ? " · " + st.room : "") : "");
     E.state.style.display = st ? "" : "none"; if (st) E.state.style.setProperty("--tc", st.col);
     const rows = _ccFocusStats(f);
-    E.rows.forEach((r, i) => {
-        const v = rows[i]; r.style.display = v ? "" : "none"; if (!v) return;
-        const w = Math.max(4, Math.round(Math.min(1, v[1]) * 100)) + "%", b = r.querySelector("b"), n = r.querySelector("em"), frac = v[1], cls = i === 0 ? (frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low") : "";
+    E.rows.forEach(r => {
+        const v = rows.find(x => x[0] === r._k); r.style.display = v ? "" : "none"; if (!v) return;
+        const xp = r._k === "XP" || r._k === "EVOLVES", w = Math.max(xp ? 0 : 4, Math.round(Math.min(1, v[1]) * 100)) + "%", b = r.querySelector("b"), n = r.querySelector("em"), frac = v[1], cls = (xp ? "xp" : "") + (r._k === "HEALTH" ? (frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low") : "");   // (an empty XP bar is empty: the others keep a sliver)
         if (b.style.width !== w) b.style.width = w; if (r.className !== "cf-bar" + (cls ? " " + cls : "")) r.className = "cf-bar" + (cls ? " " + cls : "");
         set(n, "textContent", v[2]);
     });

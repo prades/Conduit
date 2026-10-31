@@ -54,8 +54,9 @@ async function openGame(b, w, h) {
   }
   const shot = async (p, k) => { await p.waitForTimeout(700); const f = path.join(TMP, k + '.png'); await p.screenshot({ path: f }); webp(f, path.join(OUT, 'ui', k + '.webp'), 80); console.log('ui/' + k); };
   if (on('ui')) {
-    // the squad by the arena's tanks, a beetle tank locked (it stands still)
-    const scene = p => p.evaluate(() => { __stand(30, 50); actors = actors.filter(a => !(a instanceof Predator)); const e = spawnCreature({ species: 'beetle', className: 'tank' }), q = __near(player.x + 4, player.y - 1);
+    // the squad by the arena's tanks, a beetle tank locked (it stands still); the squad's XP spread along the way to evolving (the first is in its last level), so the bars have something to show
+    const scene = p => p.evaluate(() => { __stand(30, 50); actors = actors.filter(a => !(a instanceof Predator));
+      const at = (f, L, k) => { f.evolved = undefined; f.level = L; f.xp = xpForLevel(L) + k * (xpForLevel(L + 1) - xpForLevel(L)); _applyFollowerLevel(f, true); }; partyOrdered().forEach((f, i) => at(f, [9, 7, 5][i] || 7, [0.7, 0.45, 0.1][i] || 0.3)); partyPosted().forEach(f => at(f, 8, 0.4)); const e = spawnCreature({ species: 'beetle', className: 'tank' }), q = __near(player.x + 4, player.y - 1);
       e.x = q[0]; e.y = q[1]; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0; targetSet(e, true); floatingTexts.length = 0; selectedUnits.clear(); partyTick(); mixToolRender(true); });
     let { p } = await openGame(b, 1180, 820); await scene(p);
     await shot(p, 'hud_ipad');

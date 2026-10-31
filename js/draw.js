@@ -25,6 +25,16 @@ function drawHealthBar(x, y, width, height, health, maxHealth, drawCtx=ctx, ally
     if (pct>0) { drawCtx.fillStyle=col; slab(pct); drawCtx.fill(); }
 }
 
+// A FOLLOWER'S XP, a thin slab under its health bar in the same slanted style (ASKED: "I need to see the progress. Add a progress experience bar"): how far through its level it is (js/levels.js xpProgress). It is XP_BAR_COL
+// (the colour the INDEX gives LEVELS & XP); in the last level before it evolves it breathes lighter, so a follower about to evolve can be told across the room. A follower at the top level has a full bar.
+const XP_BAR_COL = "#9ca8ff", XP_BAR_SOON = "#e4e8ff";
+function drawXpBar(x, y, width, height, u, drawCtx=ctx) {
+    const p = typeof xpProgress === "function" ? xpProgress(u) : null; if (!p) return;
+    const sk = 2, run = width - sk, soon = !!(p.evo && p.evo.levels <= 1 && !p.max), slab = (f) => { drawCtx.beginPath(); drawCtx.moveTo(x+sk, y); drawCtx.lineTo(x+sk+run*f, y); drawCtx.lineTo(x+run*f, y+height); drawCtx.lineTo(x, y+height); };
+    drawCtx.fillStyle = "#05070f"; slab(1); drawCtx.fill();
+    if (p.frac > 0) { drawCtx.fillStyle = soon && (0.5 + 0.5 * Math.sin((typeof frame === "number" ? frame : 0) * 0.12) > 0.5) ? XP_BAR_SOON : XP_BAR_COL; slab(p.frac); drawCtx.fill(); }
+}
+
 // THE ORDER RING (the long press), in the game's layout style (docs/UI-STYLE.md): ASKED: "whenever I long hold press on something, it needs to be in that new style menu so that I can see it." The choices are big slanted
 // slabs with big italic type, spread out round the press point; the logic is unchanged (RADIAL_RADIUS and the drag angle still decide the choice), only where and how the choices are drawn moved.
 function _radialK() { return Math.max(0.62, Math.min(1, (typeof canvas !== "undefined" ? canvas.width : 900) / 900)); }
@@ -1331,6 +1341,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     _virusesCounting++;
     const _bare = actor.fpSpot || (typeof attractOn === "function" && attractOn());   // (the website's background: a searcher wears no bar and no name, js/attract.js; nor does an egg waiting on a follower spot, js/followerspots.js, which has a label of its own)
     if (!_bare) drawHealthBar(px-14, py-76, 28, 6, actor.health, actor.maxHealth, drawCtx, actor.team === "green", typeof unitLagPct === "function" ? unitLagPct(actor) : 0);
+    if (!_bare && actor.isFollower && actor.team === "green") drawXpBar(px-14, py-69, 28, 3, actor, drawCtx);   // its XP, thin, under the health bar (js/levels.js xpProgress)
     // Its level, kind and what it is doing, over the bar and the ultimate bar (js/levels.js).
     if (!_bare && typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
 

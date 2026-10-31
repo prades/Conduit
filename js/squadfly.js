@@ -21,12 +21,12 @@ function partyFlySubject() {
 function partyFlyBuild(root) {
     if (_sfEls && _sfEls.root === root) return _sfEls;
     root.innerHTML = '<div class="sf-card"><span class="sf-tip"></span><div class="sf-head"><canvas class="sf-thumb" width="64" height="64"></canvas><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span></div>'
-        + '<div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
+        + '<div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
         + '<div class="sf-btns"><button class="sf-btn sf-index" data-act="index">INDEX ▸</button><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>';
     root.addEventListener("click", partyFlyClick);
     if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("pointerdown", partyFlyPressAway, true);   // (capture: before the floor's own press)
     const q = s => root.querySelector(s);
-    _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), pw: q(".sf-pw"), sp: q(".sf-sp"), subject: null, thumbKey: null };
+    _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), xp: q(".sf-xp .sb-xp u"), xpn: q(".sf-xpn"), evo: q(".sf-evo"), pw: q(".sf-pw"), sp: q(".sf-sp"), subject: null, thumbKey: null };
     return _sfEls;
 }
 function partyFlyClick(ev) {
@@ -71,6 +71,10 @@ function partyFlyRender(force) {
     }
     const w = Math.round(frac * 100) + "%", cls = frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low";
     if (E.hp) { if (E.hp.style && E.hp.style.width !== w) E.hp.style.width = w; _sfSet(E.hp, "className", cls); }
+    { const p = typeof xpProgress === "function" ? xpProgress(f) : null;   // its XP: how far through its level, and (until it evolves) how far from evolving (js/levels.js)
+      if (E.xp && E.xp.style && p) { const xw = Math.round(p.frac * 100) + "%"; if (E.xp.style.width !== xw) E.xp.style.width = xw; }
+      if (E.xpn) _sfSet(E.xpn, "textContent", p ? (p.max ? "MAX" : Math.round(p.into) + " / " + Math.round(p.ask)) : "");
+      if (E.evo) { _sfSet(E.evo, "textContent", p ? (p.evo ? xpEvoText(p) : f.evolved ? "EVOLVED" : "") : ""); if (E.evo.classList) E.evo.classList.toggle("soon", !!(p && p.evo && p.evo.levels <= 1)); } }
     _sfSet(E.hpn, "textContent", hp + " / " + mx); _sfSet(E.pw, "textContent", String(Math.round(f.power || 0))); _sfSet(E.sp, "textContent", String(((f.moveSpeed || 0) * 1000).toFixed(0)));
     const key = f.evolved + "|" + f.element + "|" + (f.id || ""); if (E.thumbKey !== key && typeof _ccThumb === "function" && E.thumb) { E.thumbKey = key; _ccThumb(E.thumb, f); }
     // beside the member's own card: its top lines up with the card's, and it stands to the right of the stack; it keeps clear of the dock and of the enemy card where they lie

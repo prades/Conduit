@@ -211,6 +211,30 @@ function xpAfterDeath(u) {
     return Math.round(floor + (xp - floor) * (1 - XP_DEATH_LOSS));
 }
 
+// ── XP PROGRESS: where a unit stands on the XP curve, for the bars and the cards ──
+// ASKED: "they will not evolve. I need to see the progress. Add a progress experience bar or something so I know what's going on." The XP was only ever a line on the INFO page. `into` of `ask` is how far
+// the unit is through its level (the bar); for a follower that has not evolved, `evo` says how far it is from evolving: the level that does it, the levels and the XP still to go, and how far along the
+// way it is from the recruit level (LEVEL_START) to that level. A follower re-rolled to another element evolves on its next level-up whatever its level (js/evolution.js _evoOnLevelUp): its goal is that.
+// Null for something with no level. Read by the world bar (js/draw.js drawXpBar), the squad cards (js/party.js), the member's card (js/squadfly.js), the roster (js/commandcenter.js) and the INFO.
+function xpProgress(u) {
+    if (!u || !Number.isFinite(u.level)) return null;
+    const L = Math.max(1, Math.min(LEVEL_CAP, u.level)), xp = Number.isFinite(u.xp) ? u.xp : xpForLevel(L), lo = xpForLevel(L), maxed = L >= LEVEL_CAP;
+    const ask = maxed ? 0 : xpForLevel(L + 1) - lo, into = maxed ? 0 : Math.max(0, Math.min(ask, xp - lo));
+    const out = { level: L, xp, into, ask, toNext: maxed ? 0 : Math.max(0, Math.ceil(xpForLevel(L + 1) - xp)), frac: maxed ? 1 : into / ask, max: maxed, evo: null };
+    if (u.isFollower && !u.evolved && typeof evolutionFor === "function" && evolutionFor(u)) {
+        const next = !!u._evoOnLevelUp && !maxed, goal = next ? L + 1 : Math.min(LEVEL_CAP, typeof EVOLVE_LEVEL === "number" ? EVOLVE_LEVEL : 10), need = xpForLevel(goal), from = xpForLevel(LEVEL_START);
+        out.evo = { level: goal, levels: Math.max(0, goal - L), toGo: Math.max(0, Math.ceil(need - xp)), next, frac: next ? out.frac : need > from ? Math.max(0, Math.min(1, (xp - from) / (need - from))) : 1 };
+    }
+    return out;
+}
+// the same, in words (the cards say these)
+function xpText(p) { return !p ? "" : p.max ? "MAX LEVEL" : Math.round(p.into) + " / " + Math.round(p.ask) + " XP"; }
+function xpEvoText(p) {
+    if (!p || !p.evo) return "";
+    const e = p.evo;
+    return e.next ? "EVOLVES ON ITS NEXT LEVEL · " + e.toGo + " XP TO GO" : e.toGo <= 0 ? "EVOLVES NOW" : "EVOLVES AT LV " + e.level + " · " + e.levels + (e.levels === 1 ? " LEVEL" : " LEVELS") + " · " + e.toGo + " XP TO GO";
+}
+
 // ── THE LABEL ─────────────────────────────────────────────
 // "the level and type of npc visible next to their health bars".
 function unitTypeLabel(a) {

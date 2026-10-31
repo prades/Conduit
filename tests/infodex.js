@@ -95,6 +95,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE READOUT: what you pressed, then a way into its entry');
+    check('a follower that has not evolved says how far it is from evolving (EVOLVES: the level, the levels and the XP to go) under its LEVEL, and an evolved one says EVOLVED', () => {
+        run('(function(){ const f = followers[0]; f.evolved = undefined; f.level = 7; f.xp = xpForLevel(7) + 85; })()'); open('{ follower: followers[0] }');
+        let L = J('_ipLayout()'), pair = k => (L.placed.find(p => p.it.k === 'pair' && p.it.a === k) || { it: {} }).it.b; same(pair('LEVEL'), '7  ·  84 XP TO NEXT', 'level'); same(pair('EVOLVES'), 'AT LV 10 · 3 LEVELS · 572 XP TO GO', 'evolves');
+        run('(function(){ const f = followers[0]; f.evolved = "seeper"; })()'); L = J('_ipLayout()'); same(pair('EVOLVES'), undefined, 'an evolved one has no EVOLVES'); same(pair('EVOLVED'), 'YES', 'it says it has');
+        run('(function(){ const f = followers[0]; f.evolved = undefined; })()'); run('closeInfoPanel()');
+    });
     check('a follower: its live numbers (level, element, personality, HP, stats, traits), ABOUT its kind and its element', () => {
         open('{ follower: followers[0] }');
         const L = J('_ipLayout()'); same(L.title, run('unitTypeLabel(followers[0])'), 'title');

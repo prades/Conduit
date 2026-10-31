@@ -80,6 +80,12 @@ function findChromium() {
     check('stats: vitals, base stats with the personality, traits with their descriptions', () => {
         const i = JSON.parse(run(`JSON.stringify(followerInfo(__mk('ice', 'brawler', 5)))`)); ok(sec(i, 'stats', 'VITALS') && sec(i, 'stats', 'BASE STATS') && sec(i, 'stats', 'TRAITS'), 'sections ' + i.stats.map(s => s.h));
     });
+    check('the vitals say its XP in this level and how far it is from evolving (js/levels.js xpProgress); an evolved follower has no EVOLVES row', () => {
+        const rows = ev => { const i = JSON.parse(run(`(function(){ const f = __mk('ice', 'brawler', 5); f.level = 7; f.xp = xpForLevel(7) + 85; ${ev || ''} return JSON.stringify(followerInfo(f)); })()`)); return sec(i, 'stats', 'VITALS').rows; };
+        const a = rows(), b = rows("f.evolved = 'seeper';");
+        same(a.map(r => r[0]).join(), 'LEVEL,XP,EVOLVES,HEALTH,POWER,SPEED', 'the rows'); same(a[1][1], '85 / 169 XP', 'XP'); same(a[2][1], 'AT LV 10 · 3 LEVELS · 572 XP TO GO', 'EVOLVES');
+        same(b.map(r => r[0]).join(), 'LEVEL,XP,HEALTH,POWER,SPEED', 'an evolved follower'); same(b[1][1], '85 / 169 XP', 'it still levels');
+    });
     check('a clone type: a scorpion striker has the stinger (its damage and rate), an ant scout has no special; its limits and price', () => {
         const s = JSON.parse(run(`JSON.stringify(cloneTypeInfo('scorpion', 'striker'))`)), a = JSON.parse(run(`JSON.stringify(cloneTypeInfo('ant', 'scout'))`));
         const sp = sec(s, 'attacks', 'SPECIAL'); same(sp.h, 'SPECIAL · STINGER', 'special'); same(rowOf(sp, 'DAMAGE'), String(run("Math.round(SPECIES.scorpion.striker.rangeDamage * CLONE_POWER_MULT)")), 'damage (the clone\'s: its species\' times CLONE_POWER_MULT)'); same(sec(a, 'attacks', 'SPECIAL').h, 'SPECIAL', 'ant special');

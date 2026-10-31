@@ -212,7 +212,7 @@ function partyPatrol(a) {
 }
 
 // ── THE SQUAD BAR: the three, as small roster cards over the dock, where the ammunition chip was ──
-// One card for each slot, kept (updated in place: a tap is never lost to a redraw): the unit's picture, its name, `LV 9 · FOLLOWING`, its health. TAP a card to select that follower (the rings under it, WHO says SEL 1, and the enemy card's strip says
+// One card for each slot, kept (updated in place: a tap is never lost to a redraw): the unit's picture, its name, `LV 9 · FOLLOWING`, its health and, thin under it, its XP (how far it is through its level; the title says how far it is from evolving). TAP a card to select that follower (the rings under it, WHO says SEL 1, and the enemy card's strip says
 // SELECTED 1: "depending on what followers you have selected"); the i is its INFO; an open slot opens the roster, to call a follower back from its room or to recruit.
 // The same three cards are the SQUAD BOX at the top of the Command Center's roster (js/commandcenter.js): the squad at a glance, without a trip to another menu. partySlotsBuild / partySlotsUpdate draw either.
 let _sbEls = null, _sbxEls = null, _sfLast = null, _sfAway = false;   // _sfLast: the member whose card was tapped last (js/squadfly.js opens that one's card); _sfAway: the card was put away by a press elsewhere, the member still picked
@@ -223,7 +223,7 @@ function partySlotsBuild(root, onClick) {
     root.textContent = ""; const slots = [];
     for (let i = 0; i < PARTY.max; i++) {
         const el = document.createElement("div"); el.className = "sb-slot empty"; el.setAttribute("data-slot", String(i));
-        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><span class="sb-open">+ OPEN SLOT</span>';   // (sb-ab: a technician's ability, js/techabilities.js)
+        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><span class="sb-open">+ OPEN SLOT</span>';   // (sb-ab: a technician's ability, js/techabilities.js)
         const no = el.querySelector(".sb-no"); if (no) no.textContent = String(i + 1);   // (the number and the ✕ REMOVE are the Command Center carousel's: js/commandcenter.js; game.html hides them on the bar)
         root.appendChild(el); slots.push(el);
     }
@@ -248,6 +248,17 @@ function partyBarClick(ev) {
     partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
 }
 function _sbSet(el, prop, v) { if (el[prop] !== v) el[prop] = v; }
+// a card's XP bar: its length is how far the unit is through its level, it breathes in the last level before an evolution, and it flashes a moment when XP came in. The card's title says it in words.
+function _partyXpBar(el, f) {
+    const bar = el.querySelector(".sb-xp"), u = bar ? bar.querySelector("u") : null, p = typeof xpProgress === "function" ? xpProgress(f) : null; if (!bar || !u) return;
+    if (!p) { _sbSet(bar, "hidden", true); return; }
+    _sbSet(bar, "hidden", false);
+    const w = Math.round(p.frac * 100) + "%"; if (u.style.width !== w) u.style.width = w;
+    el.classList.toggle("evo-soon", !!(p.evo && p.evo.levels <= 1 && !p.max));
+    if (el._xpSeen !== undefined && p.xp > el._xpSeen && el._xpUnit === f) { el.classList.add("xp-gain"); el._xpGain = Date.now() + 900; }
+    el._xpSeen = p.xp; el._xpUnit = f; if (el._xpGain && Date.now() > el._xpGain) { el._xpGain = 0; el.classList.remove("xp-gain"); }
+    _sbSet(el, "title", "LV " + p.level + " · XP " + xpText(p) + (p.evo ? " · " + xpEvoText(p) : f.evolved ? " · EVOLVED" : ""));
+}
 // each slot shows the follower in that card slot of the squad (partySlot), or is open
 // An OPEN slot says what a tap on it does: with exactly one follower holding a room it is "+ CALL <that one>" and a tap brings it back (REPORTED: after HOLD, "whenever I click on that follower [...] it doesn't come"); with none or several it is "+ OPEN SLOT" and a
 // tap lists the followers that could fill it (js/commandcenter.js ccShowCandidates): one must not be picked for you when there is a choice.
@@ -269,6 +280,7 @@ function partySlotsUpdate(E, lit) {
         _sbSet(nm, "textContent", name); _sbSet(sb, "textContent", sub); if (st) sb.style.color = st.col;
         const frac = Math.max(0, Math.min(1, (f.health || 0) / (f.maxHealth || 1))), w = Math.round(frac * 100) + "%", cls = frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low";
         if (hp.style.width !== w) hp.style.width = w; if (hp.className !== cls) hp.className = cls;
+        _partyXpBar(el, f);
         const key = f.evolved + "|" + f.element; if (el._thumbKey !== key && typeof _ccThumb === "function") { el._thumbKey = key; el._thumbDone = false; _ccThumb(el.querySelector(".sb-thumb"), f); }
         if (!el._thumbDone && f.evolved && typeof EVOLUTIONS !== "undefined" && typeof _ccThumb === "function") { const d = EVOLUTIONS[f.evolved]; if (d && d._img && d._img.complete) { el._thumbDone = true; _ccThumb(el.querySelector(".sb-thumb"), f); } }   // (an evolved form's picture may still have been loading)
     }

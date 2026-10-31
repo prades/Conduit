@@ -184,6 +184,44 @@ async function boot(store) {
         same(r.baseHp2, r.baseHp - 1, 'the HP stat still wears down by one');
     });
 
+    console.log('\nXP PROGRESS (the bars and the cards: js/levels.js xpProgress, js/draw.js drawXpBar)');
+    // ASKED: "they will not evolve. I need to see the progress. Add a progress experience bar or something so I know what's going on." A recruit needs 875 XP to reach level 10 and the XP was only a line on the INFO page.
+    const XP = (lv, into, extra) => run(`(function(){ const f = ${FOL('', 2, 0)}; f.level = ${lv}; f.xp = xpForLevel(${lv}) + ${into}; ${extra || ''} const p = xpProgress(f); f.dead = true; return p; })()`);
+    check('xpProgress: how far through its level a unit is (into of ask), what is left, and for a follower that has not evolved how far it is from evolving (the recruit level to level 10)', () => {
+        const a = XP(5, 0), b = XP(7, 85), c = XP(9, 100);
+        same(a.into, 0, 'a recruit has no XP in its level'); same(a.ask, 91, 'level 5 asks 216 - 125'); same(a.frac, 0, 'frac'); same(a.toNext, 91, 'to next'); same(a.evo.level, 10, 'it evolves at 10'); same(a.evo.levels, 5, 'five levels to go'); same(a.evo.toGo, 875, '1000 - 125'); same(a.evo.frac, 0, 'no way along'); same(a.evo.next, false, 'not on its next level');
+        same(b.into, 85, 'level 7 with 85'); same(b.ask, 169, '512 - 343'); ok(near(b.frac, 85 / 169), 'frac'); same(b.toNext, 84, 'to next'); same(b.evo.levels, 3, 'three levels'); same(b.evo.toGo, 572, '1000 - 428'); ok(near(b.evo.frac, (428 - 125) / 875), 'along the way from level 5 to 10');
+        same(c.evo.levels, 1, 'one level to go: the last before it evolves'); same(c.evo.toGo, 1000 - (729 + 100), '171');
+    });
+    check('…an evolved follower has no evolution to wait for; a follower re-rolled to another element evolves on its next level-up, whatever its level; the top level is a full bar; something with no level has nothing', () => {
+        const ev = XP(12, 50, "f.evolved = 'seeper';"), rr = XP(25, 100, 'f._evoOnLevelUp = true;'), top = run(`(function(){ const f = ${FOL('', 2, 0)}; f.level = 100; f.xp = xpForLevel(100); const p = xpProgress(f); f.dead = true; return p; })()`);
+        same(ev.evo, null, 'an evolved follower'); same(ev.into, 50, 'but it still levels'); same(rr.evo.next, true, 're-rolled: its next level'); same(rr.evo.level, 26, 'the next level'); same(rr.evo.levels, 1, 'one level'); same(rr.evo.toGo, rr.toNext, 'the XP it still needs for it'); ok(near(rr.evo.frac, rr.frac), 'the same bar as its level');
+        same(top.max, true, 'the top level'); same(top.frac, 1, 'a full bar'); same(top.evo.toGo, 0, 'one that has not evolved by then is due now');
+        same(run('xpProgress(null)'), null, 'nobody'); same(run('xpProgress({})'), null, 'no level'); same(run('xpProgress({ level: 5, xp: 125, isClone: true }).evo'), null, 'a clone does not evolve');
+    });
+    check('…the words the cards say: the XP in this level, and what evolving still takes', () => {
+        const t = (lv, into, extra) => run(`(function(){ const f = ${FOL('', 2, 0)}; f.level = ${lv}; f.xp = xpForLevel(${lv}) + ${into}; ${extra || ''} const p = xpProgress(f); f.dead = true; return [xpText(p), xpEvoText(p)]; })()`);
+        same(t(7, 85).join(' | '), '85 / 169 XP | EVOLVES AT LV 10 · 3 LEVELS · 572 XP TO GO', 'level 7'); same(t(9, 100).join(' | '), '100 / 271 XP | EVOLVES AT LV 10 · 1 LEVEL · 171 XP TO GO', 'level 9: one level');
+        same(t(25, 100, 'f._evoOnLevelUp = true;')[1], 'EVOLVES ON ITS NEXT LEVEL · ' + (run('xpForLevel(26)') - run('xpForLevel(25)') - 100) + ' XP TO GO', 're-rolled'); same(t(12, 0, "f.evolved = 'seeper';")[1], '', 'evolved: nothing to say'); same(run('xpText(null) + xpEvoText(null)'), '', 'nobody');
+    });
+    check('the bar in the world: a slab under each follower\'s health bar (3 px), as long as its level is done, and a follower about to evolve breathes lighter; an empty one draws no fill', () => {
+        const r = run(`(function(){ const ops = [], g = { fillStyle: '', beginPath() { ops.push(['b']); }, moveTo(x, y) { ops.push(['m', x, y]); }, lineTo(x, y) { ops.push(['l', x, y]); }, closePath() {}, fill() { ops.push(['f', this.fillStyle]); } };
+            const mk = (lv, into) => { const f = ${FOL('', 2, 0)}; f.level = lv; f.xp = xpForLevel(lv) + into; f.dead = true; return f; }, out = {};
+            drawXpBar(100, 50, 28, 3, mk(7, 84.5), g); out.half = ops.filter(o => o[0] === 'f').map(o => o[1]); out.edge = ops.filter(o => o[0] === 'l').map(o => o[1]).slice(-3);   // the fill's own top right corner is the third from the last point
+            ops.length = 0; drawXpBar(100, 50, 28, 3, mk(7, 0), g); out.empty = ops.filter(o => o[0] === 'f').map(o => o[1]);
+            ops.length = 0; frame = 0; drawXpBar(100, 50, 28, 3, mk(9, 100), g); out.soon0 = ops.filter(o => o[0] === 'f').map(o => o[1]); ops.length = 0; frame = 26; drawXpBar(100, 50, 28, 3, mk(9, 100), g); out.soon1 = ops.filter(o => o[0] === 'f').map(o => o[1]);
+            ops.length = 0; drawXpBar(100, 50, 28, 3, null, g); out.nobody = ops.length; out.col = [XP_BAR_COL, XP_BAR_SOON]; return out; })()`);
+        same(r.half.join(), '#05070f,' + r.col[0], 'the dark slab, then the fill'); ok(near(r.edge[0], 100 + 2 + 26 * 84.5 / 169, 1e-6), 'the fill\'s edge is half way (115): ' + r.edge); same(r.empty.join(), '#05070f', 'an empty bar has no fill'); same(r.nobody, 0, 'nobody: nothing');
+        ok(new Set([r.soon0[1], r.soon1[1]]).size === 2 && [r.soon0[1], r.soon1[1]].includes(r.col[1]), 'a follower one level from evolving breathes: ' + r.soon0 + ' / ' + r.soon1);
+    });
+    check('…it is drawn over every follower that is on show, and over nothing else: not an enemy, not a clone, not an egg waiting on its pad', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); canvas.width = 1280; canvas.height = 860; const fs = [${FOL('', 3, 1)}, ${FOL('', 4, 1)}]; fs.forEach((f, i) => { f.x = player.x + 1 + i; f.y = player.y + 1; });
+            const egg = ${FOL('', 5, 2)}; egg.fpSpot = true; egg.x = player.x + 2; egg.y = player.y - 1; const foe = spawnCreature({ species: 'ant', className: 'scout' }); foe.x = player.x - 1; foe.y = player.y - 1; foe.update = () => {};
+            const seen = []; const was = drawXpBar; drawXpBar = (x, y, w, h, u) => seen.push(u); try { render(); } finally { drawXpBar = was; }
+            const o = { mine: fs.every(f => seen.includes(f)), egg: seen.includes(egg), foe: seen.includes(foe), only: seen.every(u => u.isFollower && u.team === 'green') }; fs.forEach(f => f.dead = true); egg.dead = true; foe.dead = true; return o; })()`);
+        same(r.mine, true, 'a follower has its bar'); same(r.egg, false, 'an egg on a pad has none'); same(r.foe, false, 'an enemy has none'); same(r.only, true, 'only followers');
+    });
+
     console.log('\nCLONES');
     check('a clone comes out at the arena\'s level (creatureLevel), its species × the clone multipliers', () => {
         const r = run(`(function(){ const c = makeClone('ant', 'scout', __O.x, __O.y); c.dead = true;
