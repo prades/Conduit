@@ -81,7 +81,7 @@ async function openGame(b, w, h) {
     if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
   }
   if (on('cards')) {
-    const { p, errs } = await openGame(b, 1180, 1500);
+    const { p, errs } = await openGame(b, 1180, 2100);   // (the cards are 3D slabs of 315 px since 2026-11-01d: the sheet is taller)
     await p.evaluate(async () => {
       const wait = ms => new Promise(r => setTimeout(r, ms));
       shardCount = 5000; equipFound = []; equipHand = []; equipCredits = 0; equipPackLast = null;

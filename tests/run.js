@@ -78,6 +78,7 @@ const SUITES = [
     ['Side Quest: the drone in the Sewers\' side passage (after the lab turn-in and ten brood kills, not before), the call, the talk and the archive\'s opening, the promise as a choice that changes nothing, "…" once the queen\'s fate is decided, the shop, the save', 'sidequest.js'],
     ['follower progression: the recruitment posts claimed once for ◆200 (short of it nothing moves; the squad-full question; saved), breeding a bonded pair\'s offspring for ◆50 (the formula, deterministic and better raised, applied once through level-ups, loads, respawns and bodies; two taps; the squad-full question), the Vital items (+5 / +10 / +20 of the hp stat deaths took, the target, never the dead, saved) and the five hidden cases', 'followerprog.js'],
     ['the Command Center as a carousel', 'carousel.js'],
+    ['the 3D cards and the followers\' backdrops: a texture for each element and class, the tilted slab with its crystal or cube and its hologram, a follower\'s element under its class on every card', 'cardart.js'],
     ['facility play',            'facilityplay.js'],
     ['facility map',             'facility.js'],
     ['attract screen (website background)', 'attract.js'],

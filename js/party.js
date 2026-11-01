@@ -269,6 +269,7 @@ function partySlotsUpdate(E, lit) {
     for (let i = 0; i < PARTY.max; i++) {
         const el = E.slots[i], f = mem.find(m => m.partySlot === i) || null;
         if (el._unit !== f) { el._unit = f; el.classList.toggle("empty", !f); el._thumbKey = null; }
+        if (typeof cardArtUnitClass === "function") cardArtMark(el, f ? cardArtUnitClass(f) : "");   // a member's backdrop: its element's texture under its class's (js/cardart.js); an open slot has none
         if (!f) { el._call = one; el.classList.remove("sel"); el.classList.toggle("call", !!one); const op = el.querySelector(".sb-open"); if (op) _sbSet(op, "textContent", one ? "+ CALL " + (typeof unitTypeLabel === "function" ? unitTypeLabel(one) : "FOLLOWER") : "+ OPEN SLOT"); continue; }
         el._call = null; el.classList.remove("call");
         const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;

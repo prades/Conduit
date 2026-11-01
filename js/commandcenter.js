@@ -376,6 +376,7 @@ function _ccMakeCard(r) {
 }
 function _ccUpdateCard(card, r) {
     card.style.setProperty("--c", _ccColour(r.element)); card.classList.toggle("sel", r.selected); card.classList.toggle("clone", r.clone);
+    if (typeof cardArtUnitClass === "function") cardArtMark(card, cardArtUnitClass(r.unit));   // its backdrop: its element's texture under its class's (js/cardart.js)
     const no = card.querySelector(".cc-no"); if (no) { const n = !r.clone && typeof partyIsMember === "function" && partyIsMember(r.unit) && r.unit.partySlot !== undefined ? String(r.unit.partySlot + 1) : ""; if (no.textContent !== n) no.textContent = n; }
     card.querySelector(".cc-name").textContent = r.name;
     card.querySelector(".cc-sub").textContent = (r.clone ? "CLONE" : _ccElLabel(r.element)) + " · LV " + r.level;
@@ -494,6 +495,7 @@ function _ccFocusBuild(box) {
 function _ccFocusDraw(box) {
     const E = _ccFocusBuild(box), f = _ccFocus, list = _ccStripUnits(), walk = list.length > (f && list.indexOf(f) >= 0 ? 1 : 0);
     E.card.classList.toggle("none", !f); E.prev.disabled = E.next.disabled = !walk;
+    if (typeof cardArtUnitClass === "function") cardArtMark(E.card, f ? cardArtUnitClass(f) : "");   // its backdrop, behind its picture and its numbers (js/cardart.js)
     if (!f) return;
     const col = _ccColour(f.element), st = typeof unitStatus === "function" ? unitStatus(f) : null, set = (e, p, v) => { if (e[p] !== v) e[p] = v; };
     E.card.style.setProperty("--c", col);

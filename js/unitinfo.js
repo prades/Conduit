@@ -125,6 +125,7 @@ function unitInfoShow(info, tab) {
     const card = _uiEl("div", "ui-card"); card.style.setProperty("--c", info.color); card.addEventListener("click", e => e.stopPropagation());
     const head = _uiEl("div", "ui-head");
     const cv = _uiEl("canvas", "ui-art"); cv.width = 96; cv.height = 96; head.appendChild(cv);
+    if (info.unit && typeof cardArtUnitClass === "function") cardArtMark(cv, cardArtUnitClass(info.unit));   // a follower's picture on its backdrop (js/cardart.js)
     const ht = _uiEl("div", "ui-ht"); ht.appendChild(_uiEl("div", "ui-title", info.title)); ht.appendChild(_uiEl("div", "ui-sub", info.sub)); head.appendChild(ht);
     const x = _uiEl("button", "ui-close", "✕"); x.addEventListener("click", () => unitInfoClose()); head.appendChild(x); card.appendChild(head);
     const tabs = _uiEl("div", "ui-tabs"), body = _uiEl("div", "ui-body");

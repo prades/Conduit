@@ -7,6 +7,7 @@
 //               they say so; its SUBCLASS (a row, and a tag on its picture) is under RE-ROLL / INFO / EXILE, which a small tablet must still show. A phone's roster has none of this yet.
 //   CARDS       the dock's button opens a screen over the game, as the Command Center does: YOUR HAND (the card types taken into this run, up to three), YOU (the player's two Universal slots), and THE COLLECTION
 //               (every card: unlocked or locked; UNLOCK for EQUIP.unlockCost shards, two taps; TAKE INTO THE RUN or PUT BACK). Rarity is a CHIP on each card's edge: six segments, one lit for each step (and a small flat one beside a card in a slot or a list).
+//               Each card is a tilted 3D slab (2026-11-01: _cdSlab below; its texture and its crystal or cube are js/cardart.js's), what can be done with it flat under it.
 //   A NEW RUN   the same screen opens by itself, with a banner and a START button, when a run begins and the collection holds a card (js/cards.js equipRunStart).
 //   PACK 1      BOOSTER PACK (a button: ◆EQUIP_PACK.price, two taps; the cards it dealt last are shown under it, a duplicate says what it paid), MARKET (this run's credits; a shelf of six, dealt with the pack's odds, that changes every 5 minutes of play and waits while this sheet is open: each card can
 //               be bought, in two taps, with its value in credits or in shards) and FOUND THIS RUN (the cards the packs and the market gave, to wear at once; ◆EQUIP.unlockCost keeps one for good), between YOU and THE COLLECTION.
@@ -46,12 +47,29 @@ function _cdChip(c, mini) {
     return chip;
 }
 function _cdKindCol(c) { return c.kind === "element" ? ((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === c.match)) || {}).color || "#8fe3ff" : c.kind === "universal" ? "#ffe733" : "#8fe3ff"; }
+// THE 3D CARD (ASKED 2026-11-01: "actual cards that look 3D ... a 3D looking object inside the card, and the card itself is kind of like tilted a little bit on an axis ... the text might be a raised hologram"; the
+// design canvas's chosen board, then "Make an update to implement this style"). The card is a slab tilted in 3D with a little thickness (game.html "THE 3D CARDS"): its face wears the card's texture under a veil
+// (js/cardart.js: its element's, or a class card's class's), the element's crystal or a class card's cube floats over it, the rarity and the card's state are along its top, the rarity chip stands on its right
+// edge, and its name, kind and text are a raised hologram with a blurred copy under it for its shadow. `extra` is its state: "hand", "found", "locked" (or "" for none). The callers put what can be done with it
+// (its buttons, who wears it) under the slab, flat: a tap there is never lost to the tilt.
+const _CD_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED" };
 function _cdSlab(c, extra) {
-    const s = _cdEl("div", "cd-card" + (extra ? " " + extra : "")); s.style.setProperty("--c", _cdKindCol(c));
-    s.appendChild(_cdChip(c));   // (on the card's edge)
-    const top = _cdEl("div", "cd-top"); top.appendChild(_cdEl("span", "cd-rar", equipRarityLabel(c))); s.appendChild(top);
-    s.appendChild(_cdEl("div", "cd-name" + (/\S{12,}/.test(c.name) ? " long" : ""), c.name)); s.appendChild(_cdEl("div", "cd-kind", equipKindLabel(c)));   // (a name with a long word, CORE REINFORCEMENT, is set smaller so that it breaks between words, not inside one)
-    s.appendChild(_cdEl("div", "cd-text", c.text || "")); return s;
+    const s = _cdEl("div", "cd-card" + (extra ? " " + extra : "")), col = _cdKindCol(c); s.style.setProperty("--c", col);
+    const art = _cdEl("div", "cd-art"), slab = _cdEl("div", "cd-slab"), face = _cdEl("div", "cd-face");
+    slab.appendChild(_cdEl("i", "cd-back"));   // (its back plate, which shows along its right edge and its foot: its thickness)
+    const tex = _cdEl("i", "cd-tex"); if (typeof cardArtFaceClass === "function") cardArtMark(tex, cardArtFaceClass(c)); face.appendChild(tex);
+    face.appendChild(_cdEl("i", "cd-frame"));
+    const top = _cdEl("div", "cd-top"); top.appendChild(_cdEl("span", "cd-rar", equipRarityLabel(c))); if (_CD_STATE[extra]) top.appendChild(_cdEl("span", "cd-state", _CD_STATE[extra])); face.appendChild(top);
+    face.appendChild(_cdChip(c));   // (on the card's right edge)
+    face.appendChild(_cdEl("i", "cd-glow")); face.appendChild(_cdEl("i", "cd-shadow"));
+    const gem = _cdEl("i", "cd-gem"); if (typeof cardArtObjectClass === "function") cardArtMark(gem, cardArtObjectClass(c, col), "gem"); face.appendChild(gem);
+    const long = /\S{12,}/.test(c.name) ? " long" : "";   // (a name with a long word, CORE REINFORCEMENT, is set smaller so that it breaks between words, not inside one)
+    const ghost = _cdEl("div", "cd-holo ghost"); ghost.setAttribute("aria-hidden", "true");   // the hologram's shadow: its own class names, so a card has one .cd-name, .cd-kind and .cd-text
+    ghost.appendChild(_cdEl("div", "cd-gn" + long, c.name)); ghost.appendChild(_cdEl("div", "cd-gk", equipKindLabel(c))); ghost.appendChild(_cdEl("div", "cd-gt", c.text || "")); face.appendChild(ghost);
+    const holo = _cdEl("div", "cd-holo"); holo.appendChild(_cdEl("div", "cd-name" + long, c.name)); holo.appendChild(_cdEl("div", "cd-kind", equipKindLabel(c))); holo.appendChild(_cdEl("div", "cd-text", c.text || "")); face.appendChild(holo);
+    face.appendChild(_cdEl("i", "cd-emit l")); face.appendChild(_cdEl("i", "cd-emit r"));
+    slab.appendChild(face); art.appendChild(slab); s.appendChild(art);
+    return s;
 }
 function _cdBtn(label, sub, col, fn, disabled) {
     const b = _cdEl("button", "cd-btn"); b.style.setProperty("--c", col || "#19e6c1"); b.appendChild(_cdEl("span", "cd-bl", label)); if (sub) b.appendChild(_cdEl("span", "cd-bs", sub));
