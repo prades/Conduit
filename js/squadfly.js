@@ -9,7 +9,10 @@
 // (js/commandcenter.js; on a phone, the ROSTER's cards: js/radialmenu.js).
 // REPORTED: "when I select a creature from my squad and it pulls up ... the little index card, when I click away, it should still have that character selected, but the card should go away."
 // A press anywhere but on the card or the stack puts the card away and leaves the member picked (partyFlyPressAway); the next member tapped on the stack opens their card again.
-let _sfEls = null, _sfSig = "";
+// ASKED (2026-11-01): "be able to equip different equipment cards from the on-screen roster open tab, like the active squad bar." ITS TWO EQUIP CARD SLOTS are on the card (CARD 1 and CARD 2, as on the roster's
+// settings column: js/cardsui.js equipRosterDraw): tap a slot for the hand's cards (EMPTY, then each card, the ones that do not fit saying why), tap one and the member wears it at once (js/cards.js equipPut),
+// its rarity chip beside the name; one list is open at a time, and a press away closes the card as before.
+let _sfEls = null, _sfSig = "", _sfDD = null;   // _sfDD: the slot whose list of cards is open on the card (0 or 1), or null
 function partyFlyEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("squadFly") : null; }
 // the member whose card is open: the last one tapped that is still picked, else the first that is picked; nobody when nothing is picked, when the card was put away (the member
 // is still picked: partyFlyPressAway), or when this is not the corners layout
@@ -22,22 +25,28 @@ function partyFlyBuild(root) {
     if (_sfEls && _sfEls.root === root) return _sfEls;
     root.innerHTML = '<div class="sf-card"><span class="sf-tip"></span><div class="sf-head"><canvas class="sf-thumb" width="64" height="64"></canvas><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span></div>'
         + '<div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
+        + '<div class="sf-cards"></div>'
         + '<div class="sf-btns"><button class="sf-btn sf-index" data-act="index">INDEX ▸</button><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>';
     root.addEventListener("click", partyFlyClick);
     if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("pointerdown", partyFlyPressAway, true);   // (capture: before the floor's own press)
     const q = s => root.querySelector(s);
-    _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), xp: q(".sf-xp .sb-xp u"), xpn: q(".sf-xpn"), evo: q(".sf-evo"), pw: q(".sf-pw"), sp: q(".sf-sp"), subject: null, thumbKey: null };
+    _sfEls = { root, card: q(".sf-card"), thumb: q(".sf-thumb"), name: q(".sf-name"), sub: q(".sf-sub"), tags: q(".sf-tags"), hp: q(".sb-hp u"), hpn: q(".sf-hpn"), xp: q(".sf-xp .sb-xp u"), xpn: q(".sf-xpn"), evo: q(".sf-evo"), pw: q(".sf-pw"), sp: q(".sf-sp"), cards: q(".sf-cards"), cardSig: "", subject: null, thumbKey: null };
     return _sfEls;
 }
 function partyFlyClick(ev) {
     const t = ev && ev.target && ev.target.closest ? ev.target : null; if (!t) return;
     const f = _sfEls ? _sfEls.subject : null; if (!f) return;
+    // A CARD SLOT's list: a card picked goes on (EMPTY takes the card off); the slot's own row opens or shuts its list (one open at a time)
+    const o = t.closest(".sf-opt");
+    if (o) { if (o.disabled) return; const slot = +o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (typeof equipPut === "function") equipPut(f, slot, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
+    const s = t.closest(".sf-slot");
+    if (s) { if (s.disabled) return; const slot = +s.getAttribute("data-slot"); _sfDD = _sfDD === slot ? null : slot; partyFlyRender(true); return; }
     const b = t.closest("[data-act]"); if (!b) return;
     const act = b.getAttribute("data-act");
     if (act === "index") { if (typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
     if (act === "dismiss") {
         if (typeof partyRemove === "function") partyRemove([f]);
-        _sfLast = null; _sfSig = ""; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
+        _sfLast = null; _sfSig = ""; _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
     }
 }
 // A press anywhere but on the card or on the stack (the floor, the orders, the enemy card, the dock) puts the card away; the member stays picked, so the orders still go to them
@@ -50,12 +59,38 @@ function partyFlyPressAway(ev) {
     _sfAway = true; partyFlyRender(true);
 }
 function _sfSet(el, prop, v) { if (el && el[prop] !== v) el[prop] = v; }
+// ITS TWO EQUIP CARD SLOTS (js/cards.js; the same rows as the roster's CARD 1 and CARD 2, js/cardsui.js equipRosterDraw): the slot's row names the card it wears (EMPTY when none; NO CARDS IN YOUR HAND, and no list, when the hand
+// is empty), with the card's rarity chip; its list, when it is open, is EMPTY and then every card the hand holds, the ones that do not fit this follower disabled and saying why, the one worn lit. Redrawn only when any of it changes.
+function _sfCardsDraw(E, f) {
+    const box = E.cards; if (!box) return;
+    const can = !!f && f.isFollower === true && !f.isClone && typeof equipSlots === "function" && typeof EQUIP !== "undefined";
+    const sig = can ? [typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || ""].join("|") : "";
+    if (sig === E.cardSig) return;
+    E.cardSig = sig; box.textContent = ""; if (box.style) box.style.display = can ? "" : "none"; if (!can) return;
+    const hand = typeof equipUsableCards === "function" ? equipUsableCards() : [], chip = c => typeof _cdChip === "function" ? _cdChip(c, true) : null;
+    const mk = (tag, cls, txt) => { const e = document.createElement(tag); e.className = cls; if (txt != null) e.textContent = txt; return e; };
+    for (let slot = 0; slot < EQUIP.followerSlots; slot++) {
+        const cur = equipSlots(f)[slot], card = typeof equipCard === "function" ? equipCard(cur) : null, open = _sfDD === slot && hand.length > 0;
+        const b = mk("button", "sf-slot" + (open ? " open" : "") + (hand.length ? "" : " off")); b.type = "button"; b.setAttribute("data-slot", String(slot));
+        b.appendChild(mk("span", "sf-sk", "CARD " + (slot + 1))); b.appendChild(mk("span", "sf-sv", hand.length ? (card ? card.name : "EMPTY") : "NO CARDS IN YOUR HAND"));
+        if (card) { const ch = chip(card); if (ch) b.appendChild(ch); }
+        b.appendChild(mk("span", "sf-sa", open ? "▴" : "▾"));
+        if (!hand.length) b.disabled = true;
+        box.appendChild(b);
+        if (!open) continue;
+        const list = mk("div", "sf-slot-list");
+        const opt = (label, sub, on, off, id, c) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", String(slot)); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); if (sub) el.appendChild(mk("small", "sf-os", sub)); if (c) { const ch = chip(c); if (ch) el.appendChild(ch); } if (off) el.disabled = true; list.appendChild(el); };
+        opt("EMPTY", cur ? "TAKE THE CARD OFF" : "", !cur, !cur, null, null);
+        hand.forEach(c => { const why = equipWhyNot(f, c.id, slot); opt(c.name, why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c), c.id === cur, !!why && c.id !== cur, c.id, c); });
+        box.appendChild(list);
+    }
+}
 function partyFlyRender(force) {
     if (_sfAway && !(typeof ccSelectionList === "function" && ccSelectionList().some(partyIsMember))) _sfAway = false;   // (nobody picked now: the next one picked opens their card)
     const root = partyFlyEl(); if (!root) return;
     const f = partyFlySubject(), bar = typeof _sbEls !== "undefined" ? _sbEls : null, slot = f && bar && f.partySlot !== undefined ? bar.slots[f.partySlot] : null;
-    if (!f || !slot) { if (_sfEls) _sfEls.subject = null; if (root.classList) root.classList.remove("on"); _sfSig = ""; return; }
-    const E = partyFlyBuild(root); E.subject = f;
+    if (!f || !slot) { if (_sfEls) { _sfEls.subject = null; _sfEls.cardSig = ""; } _sfDD = null; if (root.classList) root.classList.remove("on"); _sfSig = ""; return; }
+    const E = partyFlyBuild(root); if (E.subject !== f) { _sfDD = null; E.cardSig = ""; } E.subject = f;   // (another member's card: its own slots, no list open)
     const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
     if (E.card && E.card.style && typeof E.card.style.setProperty === "function") E.card.style.setProperty("--c", col);
     const role = ({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[f.role === "hybrid" ? "brawler" : f.role] || "BRAWL", style = f.playStyle === "defensive" ? "DEF" : f.playStyle === "aggressive" ? "AGG" : "BAL";
@@ -76,6 +111,7 @@ function partyFlyRender(force) {
       if (E.xpn) _sfSet(E.xpn, "textContent", p ? (p.max ? "MAX" : Math.round(p.into) + " / " + Math.round(p.ask)) : "");
       if (E.evo) { _sfSet(E.evo, "textContent", p ? (p.evo ? xpEvoText(p) : f.evolved ? "EVOLVED" : "") : ""); if (E.evo.classList) E.evo.classList.toggle("soon", !!(p && p.evo && p.evo.levels <= 1)); } }
     _sfSet(E.hpn, "textContent", hp + " / " + mx); _sfSet(E.pw, "textContent", String(Math.round(f.power || 0))); _sfSet(E.sp, "textContent", String(((f.moveSpeed || 0) * 1000).toFixed(0)));
+    _sfCardsDraw(E, f);   // its two equip card slots
     const key = f.evolved + "|" + f.element + "|" + (f.id || ""); if (E.thumbKey !== key && typeof _ccThumb === "function" && E.thumb) { E.thumbKey = key; _ccThumb(E.thumb, f); }
     // beside the member's own card: its top lines up with the card's, and it stands to the right of the stack; it keeps clear of the dock and of the enemy card where they lie
     // under it (it goes up as far as it must: a lower member's card, a narrow screen), and its tip still points at the member's card

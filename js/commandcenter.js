@@ -365,7 +365,8 @@ function _ccMakeCard(r) {
     const cv = _ccEl("canvas", "cc-thumb"); cv.width = 72; cv.height = 72; card.appendChild(cv); card._cv = cv;
     const mid = _ccEl("div", "cc-mid");
     mid.appendChild(_ccEl("div", "cc-name")); mid.appendChild(_ccEl("div", "cc-sub")); mid.appendChild(_ccEl("div", "cc-status"));
-    const bar = _ccEl("div", "cc-bar"); bar.appendChild(_ccEl("i")); mid.appendChild(bar);
+    const bar = _ccEl("div", "cc-bar"); bar.appendChild(_ccEl("i")); bar.appendChild(_ccEl("em", "cc-hpn")); mid.appendChild(bar);   // its health: a mini bar with the numbers in it (12/20), yellow under half, red under a quarter (the owner, 2026-11-01)
+    const xp = _ccEl("div", "cc-xp"); xp.appendChild(_ccEl("i")); mid.appendChild(xp);   // and, thin under it, its XP through its level (a clone has none)
     mid.appendChild(_ccEl("div", "cc-tags")); card.appendChild(mid);
     card.appendChild(_ccEl("div", "cc-tick", "✓")); card.appendChild(_ccEl("div", "cc-no"));   // (cc-no: the slot number of a squad member, in the carousel's strip)
     // INFO on the card: this unit's attacks, jobs and stats (js/unitinfo.js). It does not select the card.
@@ -378,7 +379,10 @@ function _ccUpdateCard(card, r) {
     const no = card.querySelector(".cc-no"); if (no) { const n = !r.clone && typeof partyIsMember === "function" && partyIsMember(r.unit) && r.unit.partySlot !== undefined ? String(r.unit.partySlot + 1) : ""; if (no.textContent !== n) no.textContent = n; }
     card.querySelector(".cc-name").textContent = r.name;
     card.querySelector(".cc-sub").textContent = (r.clone ? "CLONE" : _ccElLabel(r.element)) + " · LV " + r.level;
-    card.querySelector(".cc-bar i").style.width = Math.round(r.hp * 100) + "%";
+    { const bar = card.querySelector(".cc-bar"), u = r.unit, hpN = Math.max(0, Math.round(u.health || 0)), mxN = Math.max(1, Math.round(u.maxHealth || 1)), cls = "cc-bar" + (r.hp > 0.5 ? "" : r.hp > 0.25 ? " mid" : " low");
+      bar.querySelector("i").style.width = Math.round(r.hp * 100) + "%"; if (bar.className !== cls) bar.className = cls; const n = bar.querySelector(".cc-hpn"); if (n && n.textContent !== hpN + "/" + mxN) n.textContent = hpN + "/" + mxN;
+      const xb = card.querySelector(".cc-xp"), p = xb && !r.clone && typeof xpProgress === "function" ? xpProgress(u) : null;
+      if (xb) { xb.style.display = p ? "" : "none"; if (p) { const xw = Math.round(p.frac * 100) + "%", xi = xb.querySelector("i"); if (xi.style.width !== xw) xi.style.width = xw; const tt = "XP " + xpText(p) + (p.evo ? " · " + xpEvoText(p) : ""); if (xb.title !== tt) xb.title = tt; } } }
     const st = card.querySelector(".cc-status"); if (st) { st.textContent = r.status ? r.status.text + (r.status.room ? " \u00b7 " + r.status.room : "") : ""; st.setAttribute("style", r.status ? "--c:" + r.status.col + ";" : "display:none;"); }   // (a follower holding a room says which)
     const tags = card.querySelector(".cc-tags"), want = [];
     if (!r.clone) want.push(({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[r.role] || "BRAWL");
