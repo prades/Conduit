@@ -167,6 +167,18 @@ Asked: "The ember plating looks good. Series 2. Pick a price and set the odds fo
 
 Still open, for the owner (playtest): the cards' numbers once played; whether a later pack deals the Crystalline six.
 
+## 1k. Pack 1's other seventeen card items (built 2026-11-01, build `k`; docs/UI-STYLE.md "The card items")
+
+Asked: "we'll design the 3D items for the next 17 pack 1 cards right now". All seventeen are modelled in EMBER PLATING's look and baked; they show only with `?cardart=items` until you approve each (docs/ART-PROCESS.md), and everyone else still sees the crystal.
+
+**For your eye, item by item** (yes to all, yes to some, or notes on any):
+- **VENOM GLAND** was the weakest at first (it read as a glowing leaf or bulb); it is being reworked into a rounder sac with a darker skin and the venom glowing inside.
+- **REPULSOR PULSE**: at the mini card's size its shockwave rings dominate, so it reads as an emitter more than a palm piece.
+- **IMPACT STUDS** is a closed knuckle band (it reads as a studded bracelet), not an open strap: a closed loop keeps the picture upright.
+- **FROST LINING**: the quilted satin catches the light royal blue rather than dark navy.
+- **CINDERBRAND** could pass for a torch at the mini size; the hole in its flame sigil marks it as a brand.
+- **The electric three** are brighter and cleaner steel than Ember's dark bands (chosen so they do not go dark on dark); they can be pulled darker.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

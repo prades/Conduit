@@ -268,7 +268,11 @@ function cardArtObjectClass(c, col) {
 // crystal stays until the owner approves the look. So each item is approved on its own:
 //   ids        every card whose item is baked (its model in design/cards/models, its picture in img/cards)
 //   approved   the ones the owner approved: shown to everyone. The rest show only on a preview (?cardart=items), so the next piece can be looked at while the approved ones stay on.
-const CARD_ITEMS = { ids: ["ember_plating"], approved: ["ember_plating"] };   // EMBER PLATING approved 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j
+const CARD_ITEMS = {
+    ids: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",   // all eighteen of Pack 1, by element (fire, toxic,
+          "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse"],    // electric, ice, flux, core), each Unrefined to Precision
+    approved: ["ember_plating"],   // EMBER PLATING approved 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen (baked in build 2026-11-01k) on preview until approved
+};
 function cardArtItemsPreview() { try { return typeof location !== "undefined" && /[?&]cardart=items\b/.test(location.search || ""); } catch (e) { return false; } }
 // the picture of a card's item, or "" (none baked, or not approved and no preview)
 function cardArtItemUrl(c) {

@@ -97,7 +97,17 @@ On a card, the item stands in front of the tilted card, over its picture, and ri
 
 docs/ART-PROCESS.md applies: one piece first, and **each item is approved on its own**. js/cardart.js `CARD_ITEMS` has two lists: `ids` (every card whose item is baked) and `approved` (the ones the owner approved).
 - **EMBER PLATING is approved** ("The ember plating looks good"), so it is live for everyone since build `j`.
-- **A baked item not yet approved** shows only with `?cardart=items`, while the approved ones stay on. The next pieces (the other seventeen of Pack 1, then Series 2's 32) are modelled one at a time and go this way.
+- **A baked item not yet approved** shows only with `?cardart=items`, while the approved ones stay on. **Pack 1's other seventeen are baked (build `k`) and on preview**, awaiting the owner's look one by one. Series 2's 32 come after.
+- **Pack 1's items** (design/cards/models), each in its element's glow, plainer at Unrefined and busier at Precision, where the card's status shows:
+
+  | Element | Unrefined | Refined | Precision |
+  |---|---|---|---|
+  | Fire | EMBER PLATING: shingled steel bands, ember-hot seams (approved) | FURNACE HEART: a riveted iron heart, a glowing grated door, flaming flues | CINDERBRAND: a branding iron, a white-hot flame sigil, falling cinders |
+  | Toxic | VENOM GLAND: a translucent sac of venom in a steel collar, a dripping needle | CORROSIVE RESERVOIR: a glass acid canister, hazard-banded base, valve, gauge | MIREBLIGHT: bog iron overgrown with glowing spore pods, two burst |
+  | Electric | CHARGED WIRING: a cable spool, its frayed ends arcing | ARC CAPACITOR: a canister with a charge window, an arc between its insulators | STATIC LOCK: a padlock with a crackling energy shackle, breaking into glitch pixels |
+  | Ice | FROST LINING: a quilted pad, frost-crusted, icicles | PERMAFROST SHELL: a buckler of faceted ice in a riveted rim, a glowing boss | RIME SNARE: an open, iced jaw trap with a chain |
+  | Flux | FLUX CELL: a battery, a violet helix behind its window | VORTEX CORE: a sphere with a violet spiral eye in three gimbal rings | SIPHON FIELD: a horn emitter, a whirlpool draining into its throat |
+  | Core | IMPACT STUDS: a leather knuckle band with four steel cones | BEDROCK MATRIX: a stone split open on glowing hex cells | REPULSOR PULSE: an emitter disc on a cuff, three shockwave rings |
 - **A card with no baked item** keeps its crystal or cube.
 
 ## The roster: a carousel (the facility's Command Center, a tablet or a desktop)

@@ -4,7 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-01
 
-- **j · Series 2 on sale: 32 cards, the Prototype rarity, ◆150 by 50 / 30 / 15 / 5; EMBER PLATING's item live** (the owner: "The ember plating looks good. Series 2. Pick a price and set the odds for the pack and make it to where another rarity is unlocked", then "Prototype unlocks"; commit named in git log).
+- **k · Pack 1's other seventeen card items, on preview** (the owner: "we'll design the 3D items for the next 17 pack 1 cards right now"; commit named in git log).
+  - Each of Pack 1's cards now has its own 3D item, modelled in the look of the approved EMBER PLATING and baked like it (design/cards/models, img/cards): from FURNACE HEART and CINDERBRAND to STATIC LOCK, PERMAFROST SHELL, VORTEX CORE and REPULSOR PULSE. They are listed in docs/UI-STYLE.md "The card items".
+  - They show only with `?cardart=items` until the owner approves each (js/cardart.js `CARD_ITEMS.ids` lists all eighteen, `approved` only Ember); everyone else still sees the crystal (docs/ART-PROCESS.md).
+  - The owner kept Series 2's price and odds and the eight Lustrous drafts (4e904ee).
+  - Tests updated: cardart (the eighteen baked and each with its model and picture; the seventeen on preview only). Written up: docs/UI-STYLE.md, docs/OPEN-QUESTIONS.md §1k, the Bible.
+- **j · Series 2 on sale: 32 cards, the Prototype rarity, ◆150 by 50 / 30 / 15 / 5; EMBER PLATING's item live** (the owner: "The ember plating looks good. Series 2. Pick a price and set the odds for the pack and make it to where another rarity is unlocked", then "Prototype unlocks"; c531fe2).
   - **Series 2's cards** (js/cards.js `EQUIP_SERIES2`): four for each of the eight identities (the five species, the three classes), Unrefined to **Prototype**, the fourth tier, which this pack is the first to deal. Unrefined +8% to a stat, Refined +14%, Precision two stats at +10% or a status on a hit (ATTUNED CORE sets its wearer's own element's status), Prototype an ability.
   - **The eight Prototype abilities**: Shell block, Regrowth, Nova, Overclock, Absorb, Cleave, Chain, Double charge. Hooks: js/helpers.js `applyDamage` (a hit about to land on a follower), js/techabilities.js `techCooldown` (the second charge). A Nova, Cleave or Chain strike is an echo that sets off no card.
   - **The pack** (`EQUIP_PACK2`): ◆150 for 4 cards, odds 50 / 30 / 15 / 5, one slot Precision or higher; about one pack in three holds a Prototype (36%). It opens after the purification. Before that its box is on the sheet with the button off, and its cards are not on the market's shelf.

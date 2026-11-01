@@ -186,16 +186,18 @@ function measure(w, h) {
         same(J('cardArtUrl("c:fire", () => "")'), u, 'made again');
     });
 
-    group('THE CARD ITEMS (js/cardart.js CARD_ITEMS; design/cards: each card\'s own 3D object in place of the crystal, ONE piece first; LIVE since build 2026-11-01j, the owner: "The ember plating looks good")');
-    await check('each item is approved on its own: EMBER PLATING (approved) shows its baked picture without any flag; a baked item not yet approved shows only with ?cardart=items while the approved one stays on; a card with none baked keeps its crystal (docs/ART-PROCESS.md: the old art stays until a new look is approved)', () => {
+    group('THE CARD ITEMS (js/cardart.js CARD_ITEMS; design/cards: each card\'s own 3D object in place of the crystal; EMBER PLATING approved and live since build 2026-11-01j, Pack 1\'s other seventeen baked in build k, on preview until approved)');
+    await check('each item is approved on its own: EMBER PLATING (approved) shows its baked picture without any flag; Pack 1\'s other seventeen (baked in build k, not yet approved) show only with ?cardart=items while the approved one stays on; a card with none baked keeps its crystal (docs/ART-PROCESS.md: the old art stays until a new look is approved)', () => {
         const url = id => 'img/cards/' + id + '.png?v=' + J('BUILD_VERSION');
         same(J('CARD_ITEMS.approved').join(), 'ember_plating', 'what is approved'); ok(J('CARD_ITEMS.approved.every(function(id){ return CARD_ITEMS.ids.indexOf(id) >= 0; })'), 'an approved item that is not baked');
-        same(J('cardArtItemUrl(EQUIP_CARDS.ember_plating)'), url('ember_plating'), 'without a flag'); same(J('cardArtItemUrl(EQUIP_CARDS.furnace_heart)'), '', 'a card with no item baked'); same(J('cardArtItemUrl(EQUIP_CARDS.tide_shell)'), '', 'a Series 2 card (none baked yet)');
-        run("CARD_ITEMS.ids.push('furnace_heart')");   // (as if the next piece were baked and not yet approved)
-        same(J('[cardArtItemUrl(EQUIP_CARDS.furnace_heart), cardArtItemUrl(EQUIP_CARDS.ember_plating)]').join('|'), '|' + url('ember_plating'), 'a piece not approved, without the flag (and the approved one still on)');
+        same(J('CARD_ITEMS.ids.slice().sort().join()'), J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).map(function(c){ return c.id; }).sort().join()'), 'the baked items are Pack 1\'s eighteen');
+        const pending = J('CARD_ITEMS.ids.filter(function(id){ return CARD_ITEMS.approved.indexOf(id) < 0; })'); same(pending.length, 17, 'on preview');
+        same(J('cardArtItemUrl(EQUIP_CARDS.ember_plating)'), url('ember_plating'), 'without a flag'); same(J('cardArtItemUrl(EQUIP_CARDS.tide_shell)'), '', 'a Series 2 card (none baked yet)');
+        same(J(JSON.stringify(pending) + '.map(function(id){ return cardArtItemUrl(EQUIP_CARDS[id]); }).join("")'), '', 'a piece not approved shows without the flag');
         run("location.search = '?cardart=items'");
-        same(J('[cardArtItemUrl(EQUIP_CARDS.furnace_heart), cardArtItemUrl(EQUIP_CARDS.ember_plating)]').join('|'), url('furnace_heart') + '|' + url('ember_plating'), 'with the preview flag: both');
-        run("location.search = ''; CARD_ITEMS.ids.pop()");
+        same(JSON.stringify(J(JSON.stringify(pending) + '.map(function(id){ return cardArtItemUrl(EQUIP_CARDS[id]); })')), JSON.stringify(pending.map(url)), 'with the preview flag: every baked piece');
+        same(J('[cardArtItemUrl(EQUIP_CARDS.ember_plating), cardArtItemUrl(EQUIP_CARDS.tide_shell)]').join('|'), url('ember_plating') + '|', 'with the flag: the approved one still on, an unbaked card still its crystal');
+        run("location.search = ''");
     });
     await check('every item on the list has its model (design/cards/models/<id>.js, registering ITEMS.<id>) and its baked picture (img/cards/<id>.png, a PNG), and is a real card', () => {
         for (const id of J('CARD_ITEMS.ids')) {
