@@ -78,14 +78,16 @@ function assignRole(stats) {
 // abdomenAttack: fires ranged shots from the rear; won't turn when hit from behind
 // rangeDamage / abdomenCooldown: dry-shot stats (special shot scales up when charged)
 const SPECIES = {
+    // THE ANTS PAY THE OLD MIX'S WORTH (the owner, 2026-11-01, after playtesting the ants-only arena: shards came "too slow"; asked for "about 11, the old average"): worker 8, scout 9, striker 14,
+    // tank 22 average 11.2 a kill by the arena's class weights (js/population.js SPAWN_TABLES.arena), as the six species did together (11.24). Their DNA is as it was. (They paid 3, 3, 5, 8: 4.0.)
     ant: {
         rank: 1,
         color: "#aa55ff",
         nymph:   { width:14, height:7,  moveSpeed:0.030, health:30,  power:9,  dnaDrops:1, shardDrop:2,  reactionSpeed:15 },
-        worker:  { width:20, height:9,  moveSpeed:0.024, health:45,  power:7,  dnaDrops:1, shardDrop:3,  reactionSpeed:25 },
-        scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, dnaDrops:1, shardDrop:3,  reactionSpeed:5  },
-        striker: { width:28, height:12, moveSpeed:0.018, health:100, power:27, dnaDrops:1, shardDrop:5,  reactionSpeed:10 },
-        tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, dnaDrops:2, shardDrop:8,  reactionSpeed:22 },
+        worker:  { width:20, height:9,  moveSpeed:0.024, health:45,  power:7,  dnaDrops:1, shardDrop:8,  reactionSpeed:25 },
+        scout:   { width:22, height:10, moveSpeed:0.022, health:60,  power:18, dnaDrops:1, shardDrop:9,  reactionSpeed:5  },
+        striker: { width:28, height:12, moveSpeed:0.018, health:100, power:27, dnaDrops:1, shardDrop:14, reactionSpeed:10 },
+        tank:    { width:36, height:16, moveSpeed:0.012, health:180, power:38, dnaDrops:2, shardDrop:22, reactionSpeed:22 },
         boss:    { width:26, height:12, moveSpeed:0.008, health:500, power:60, dnaDrops:4, shardDrop:20, reactionSpeed:8  }
     },
     // THE BEETLE: three times an ant's health and about two thirds of its bite.

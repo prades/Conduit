@@ -3,9 +3,10 @@
 // ─────────────────────────────────────────────────────────
 // In the facility the two readouts at the top right of the screen mean the facility:
 //   THE ROOM TAG (the plate at the top right; its element is still #zoneInfo) names the room the player is in, at each moment (a doorway keeps the room just left).
-//   THE NETWORK PANEL (the dial and the lines under it) is the power grid: each RELAY feeds a few rooms, and is online once it is repaired. The dial's outer ring is the relays online (24 segments lit by the fraction), its inner
-//   ring the ROOMS that have power again, the middle "online / relays". The state is OFFLINE (no relay), PARTIAL (some) or ONLINE (all, and the blackout is over); below it is one line for the room the player stands in
-//   (it has power or it has none). It is not tapped.
+//   THE NETWORK PANEL (the dial and the lines under it) is the power grid: each RELAY feeds a few rooms, and is online once it is repaired. The dial's OUTER RING is THE CRYSTAL'S CHARGE (the owner, 2026-11-01:
+//   "it's tied to the network meter at the top now"; js/crystalpower.js: 24 segments lit by its share, a tick at the reserve, the middle its percent); its inner ring the ROOMS that have power again. The state is
+//   OFFLINE (no relay), PARTIAL (some) or ONLINE (all, and the blackout is over), and the relays and rooms are lines under it; below them one line for the room the player stands in (it has power or it has none).
+//   A TAP on the panel charges the Crystal: ◆50 for +75% (crystalBuyCharge). (The outer ring was the relays online, and the panel was not tapped.)
 // Both read the same data as the rest of the facility: F.relays (js/facilitymap.js), relayOnline (js/stations.js) and the powered rooms (_fp.tut.powered, js/facilitytutorial.js).
 const FP_ROOM_TAG = {
     crystal_chamber: "Crystal Chamber", teleport_room_1: "Teleport Room 1", front_lobby: "Computer Lab", security_room: "Security Room", show_room: "Show Room", lab_hallway: "Main Hallway",
@@ -51,7 +52,7 @@ function facilityNetState() {
     const key = id => (typeof _fpLightKey === "function" ? _fpLightKey(id) : id), lit = id => !facilityBlackout() || _fp.tut.powered.has(key(id));
     const here = _fp.zoneRoom || null, on = zones.filter(z => z.on).length, powered = rooms.filter(lit).length;
     const state = !zones.length || on === 0 ? "offline" : on < zones.length ? "partial" : "online";
-    return { zones, on, rooms: rooms.length, powered, state, here, herePowered: here ? lit(here) : false };
+    return { zones, on, rooms: rooms.length, powered, state, here, herePowered: here ? lit(here) : false, charge: typeof crystalCharge === "function" ? crystalCharge() : 1 };
 }
 
 function _fnDial(cx, cy, N, S) {
@@ -60,21 +61,24 @@ function _fnDial(cx, cy, N, S) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R1 + 18, 0, TAU); ctx.fill();
     ctx.save(); ctx.lineCap = "butt"; ctx.lineWidth = 9; ctx.setLineDash([seg * 0.78, seg * 0.22]);
     ctx.strokeStyle = "rgba(14,22,46,0.85)"; ctx.beginPath(); ctx.arc(cx, cy, R1, top, top + TAU); ctx.stroke();
-    const lit = N.zones.length ? Math.round(SEGS * N.on / N.zones.length) : 0;
-    if (lit > 0) { ctx.strokeStyle = S.col; ctx.beginPath(); ctx.arc(cx, cy, R1, top, top + lit * TAU / SEGS); ctx.stroke(); }
+    const ch = Math.max(0, Math.min(1, N.charge)), lit = Math.ceil(SEGS * ch - 1e-6), rv = typeof CRYSTAL_POWER !== "undefined" ? CRYSTAL_POWER.reserve : 0.1;   // THE CRYSTAL'S CHARGE (js/crystalpower.js)
+    const cc = ch > 0.5 ? "#5fe0c8" : ch > 0.25 ? "#ffd34d" : ch > rv ? "#ff9a4a" : "#ff4a3a";
+    if (lit > 0) { ctx.strokeStyle = cc; ctx.beginPath(); ctx.arc(cx, cy, R1, top, top + lit * TAU / SEGS); ctx.stroke(); }
+    ctx.setLineDash([]); ctx.lineWidth = 2; ctx.strokeStyle = "#ff4a3a"; const ra = top + rv * TAU; ctx.beginPath(); ctx.moveTo(cx + Math.cos(ra) * (R1 - 7), cy + Math.sin(ra) * (R1 - 7)); ctx.lineTo(cx + Math.cos(ra) * (R1 + 7), cy + Math.sin(ra) * (R1 + 7)); ctx.stroke();   // (the reserve)
     ctx.setLineDash([]); ctx.lineWidth = 5; ctx.strokeStyle = "rgba(14,22,46,0.85)"; ctx.beginPath(); ctx.arc(cx, cy, R2, 0, TAU); ctx.stroke();
     const rf = N.rooms ? N.powered / N.rooms : 0; if (rf > 0) { ctx.strokeStyle = "#ffd34d"; ctx.beginPath(); ctx.arc(cx, cy, R2, top, top + rf * TAU); ctx.stroke(); }
     ctx.lineWidth = 1.5; ctx.strokeStyle = S.col; ctx.globalAlpha = 0.55; ctx.beginPath(); ctx.arc(cx, cy, R1 + 6.5, 0, TAU); ctx.stroke(); ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.arc(cx, cy, R2 - 5, 0, TAU); ctx.stroke();
     ctx.restore();
-    _netText(N.on + "/" + N.zones.length, cx, cy + 1, 18, N.on ? "#fff" : S.col, "center");
+    _netText(Math.round(ch * 100) + "%", cx, cy - 3, 17, ch > rv ? "#fff" : "#ff6a4a", "center"); _netText("CRYSTAL", cx, cy + 12, 8, "#9fb4d8", "center", true);
 }
 let _fnBottom = 0;   // where the panel ends on screen (0: not drawn): on a phone the round button (js/targeting.js) goes under it
+let _fnRect = null;   // the panel on screen, for a tap (facilityNetTap)
 function drawFacilityNetworkHUD() {
     _fnBottom = 0;
     const N = facilityNetState(), S = FP_NET_STATES[N.state], narrow = canvas.width < 600;
     const W = narrow ? Math.min(canvas.width - 16, 230) : 236, IW = W - 8, DIAL = 104, H = DIAL + 24;
     const zr = narrow ? null : _netZoneRect(), X = zr ? Math.max(8, Math.round(zr.right - W)) : canvas.width - W - 10, Y = zr ? Math.round(zr.bottom - 2) : uiTopSafe(), mx = X + 4, right = X + W - 4;
-    _fnBottom = Y + H;
+    _fnBottom = Y + H; _fnRect = { x: X, y: Y, w: W, h: H };
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     const dcx = right - 52, dcy = Y + DIAL / 2, lw = dcx - 52 - mx;
     _fnDial(dcx, dcy, N, S);
@@ -88,4 +92,10 @@ function drawFacilityNetworkHUD() {
     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(mx + 5, Y + DIAL + 10, 4, 0, 6.2832); ctx.fill();
     _netTextFit(N.here ? (N.herePowered ? "THIS ROOM HAS POWER" : "THIS ROOM HAS NO POWER") : "NO POWER ANYWHERE", mx + 15, Y + DIAL + 10, 12, col, "left", IW - 16, true);
     ctx.restore();
+}
+// A TAP ON THE NETWORK PANEL (js/input.js): it charges the Crystal (js/crystalpower.js crystalBuyCharge: ◆50 for +75%); true when the tap was the panel's
+function facilityNetTap(tx, ty) {
+    const r = _fnRect; if (!r || !_fnBottom || typeof crystalBuyCharge !== "function") return false;
+    if (tx < r.x || tx > r.x + r.w || ty < r.y || ty > r.y + r.h) return false;
+    crystalBuyCharge(); return true;
 }

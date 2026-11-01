@@ -20,14 +20,14 @@ function clearAlarm() {
     alertActive = false; alertType = null; alertSource = null;
     for (const a of actors) { if (!(a instanceof Predator) || a.dead || a.team === "green") continue; a.provoked = false; a.lastAttacker = null; a.state = "wander"; }
 }
-// the Crystal is destroyed: the game is over (the overlay, with the crystals you had; NEW GAME begins the facility again)
-function showGameOver() {
+// the Crystal is destroyed, or it has no power left to bring you back (js/crystalpower.js): the game is over (the overlay, with the crystals you had; NEW GAME begins the facility again)
+function showGameOver(why) {
     gameState.running = false;
     if (typeof document === "undefined") return;
     const overlay = document.getElementById("overlay"); if (!overlay) return;
     const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-    set("ovr-title", "CRYSTAL DESTROYED"); const t = document.getElementById("ovr-title"); if (t) t.style.color = "#f22";
-    set("ovr-sub", "The facility has gone dark."); set("ovr-shards", String(shardCount)); set("ovr-btn", "NEW GAME");
+    set("ovr-title", why ? "THE CRYSTAL IS SPENT" : "CRYSTAL DESTROYED"); const t = document.getElementById("ovr-title"); if (t) t.style.color = "#f22";
+    set("ovr-sub", why ? String(why).charAt(0) + String(why).slice(1).toLowerCase() + "." : "The facility has gone dark."); set("ovr-shards", String(shardCount)); set("ovr-btn", "NEW GAME");
     const b = document.getElementById("ovr-btn"); if (b) b.onclick = () => { if (typeof facilityNewGame === "function") facilityNewGame(); };
     overlay.classList.add("active");
 }

@@ -1,4 +1,4 @@
-// WHERE A TAP MAY SEND YOU, AND THE FIVE-TILE STEP (js/facilityplay.js facilityTapAllowed, facilityTapRefused, facilityUnderPressure, facilityCapPath, facilityTapCap, FP_MOVE; js/input.js handleInput;
+// WHERE A TAP MAY SEND YOU, AND THE COMBAT STEP (js/facilityplay.js facilityTapAllowed, facilityTapRefused, facilityUnderPressure, facilityCapPath, facilityTapCap, FP_MOVE; js/input.js handleInput;
 // js/settings.js COMBAT STEP).
 // ASKED (2026-11-01): "Fix the issue where clicking outside the player's current room causes the character to pathfind across the map. Prevent movement commands into rooms the player has not entered. Validate
 // movement destinations against the player's current room. Clicking outside the valid movement area should be ignored. Prevent accidental long-distance pathfinding. Preserve legitimate movement through doorways
@@ -82,7 +82,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(a > 0 && w > a && c > w, 'the order: allowed ' + a + ', walk ' + w + ', cap ' + c); ok(/typeof facilityTapAllowed === "function"/.test(h) && /typeof facilityTapCap === "function"/.test(h), 'unguarded (tests/weapon.js loads input.js alone)');
     });
 
-    group('THE FIVE-TILE STEP (a prototype; the owner: "if there\'s no enemies nearby, there\'s no limit. But if they run into an enemy, they stop if they\'re on a run, and then they\'re limited to moving 5 spaces")');
+    group('THE COMBAT STEP (a prototype, FP_MOVE.capTiles tiles a tap: three since the owner\'s playtest; the owner: "if there\'s no enemies nearby, there\'s no limit. But if they run into an enemy, they stop if they\'re on a run, and then they\'re limited to moving 5 spaces")');
     // fixtures: a point a few tiles ahead along the route you are on and in sight of you; your steps, n of them; a hallway cell in sight between lo and hi tiles off; a cell of another room within d tiles and out of sight
     run(`globalThis.__ahead = (k) => { const p = player.fpPath; let x = player.x, y = player.y, left = k, best = null; for (const q of p || []) { const d = Math.hypot(q[0] - x, q[1] - y); for (let t = 0.5; t <= d && left - t >= 0; t += 0.5) { const z = [x + (q[0] - x) * t / d, y + (q[1] - y) * t / d]; if (_fpLos(player.x, player.y, z[0], z[1])) best = z; } left -= d; if (left <= 0) break; x = q[0]; y = q[1]; } return best; };
         globalThis.__steps = (n) => { for (let i = 0; i < n && player.fpPath && player.fpPath.length; i++) { frame++; facilityPlayerStep(); } return !!(player.fpPath && player.fpPath.length); };
@@ -101,20 +101,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.wanderNear, true, 'a wandering creature near and in sight'); same(r.wanderFar, false, 'a wandering one further off than FP_MOVE.near'); same(r.huntFar, true, 'one after you within FP_MOVE.chase');
         same(r.huntBeyond, false, 'one after you beyond FP_MOVE.chase'); same(r.unseen, false, 'one behind a wall'); same(r.asleep, false, 'a sleeping boss'); same(r.calm, false, 'a calm boss'); same(r.ours, false, 'one of yours'); same(r.who, true, 'facilityEnemyNear names it');
     });
-    check('WITH ONE NEAR a tap takes you five tiles along its route at most, ending on the floor; once none is near, a tap goes the whole way again', () => {
+    check('WITH ONE NEAR a tap takes you FP_MOVE.capTiles tiles (three) along its route at most, ending on the floor; once none is near, a tap goes the whole way again', () => {
         const r = J(`(function(){ __noFoes(); __stand(${P.hallDoor[0]}, ${P.hallDoor[1]}); const c = __seen(2, 4); const a = __foe(c[0], c[1], false); __tap(${P.hallFar[0]}, ${P.hallFar[1]});
             const o = { pressure: facilityUnderPressure(), len: __route(), end: player.fpPath ? player.fpPath[player.fpPath.length - 1] : null, free: !!player._tapRun };
             o.walkable = !!o.end && facilityWalkable(o.end[0], o.end[1], _fp.F); __noFoes(); __tap(${P.hallFar[0]}, ${P.hallFar[1]}); o.after = __route(); __noFoes(); return o; })()`);
-        same(r.pressure, true, 'a creature near is not pressure'); ok(r.len > 4.9 && r.len <= 5.01, 'the route is ' + r.len.toFixed(2) + ' tiles'); same(r.walkable, true, 'the step ends off the floor'); same(r.free, false, 'a capped step is a free run');
+        same(r.pressure, true, 'a creature near is not pressure'); same(J('FP_MOVE.capTiles'), 3, 'the step (the owner: three tiles)'); ok(r.len > J('FP_MOVE.capTiles') - 0.1 && r.len <= J('FP_MOVE.capTiles') + 0.01, 'the route is ' + r.len.toFixed(2) + ' tiles'); same(r.walkable, true, 'the step ends off the floor'); same(r.free, false, 'a capped step is a free run');
         ok(r.after > 8, 'none near, the route is still cut: ' + r.after.toFixed(2));
     });
-    check('RUNNING INTO ONE: a free run stops where it is the moment an enemy is near, with a "!" over you, short of where it was going; the tap after it goes five tiles and is not stopped by the same enemy', () => {
+    check('RUNNING INTO ONE: a free run stops where it is the moment an enemy is near, with a "!" over you, short of where it was going; the tap after it goes FP_MOVE.capTiles tiles and is not stopped by the same enemy', () => {
         const r = J(`(function(){ __noFoes(); __stand(${P.hallDoor[0]}, ${P.hallDoor[1]}); __tap(${P.hallFar[0]}, ${P.hallFar[1]}); const o = { free: !!player._tapRun }; o.before = __steps(6);
             const q = __ahead(4.5); o.ahead = !!q; const a = __foe(q[0], q[1], false); floatingTexts.length = 0; const at = [player.x, player.y]; frame++; facilityPlayerStep();
             o.stopped = !(player.fpPath && player.fpPath.length); o.moved = Math.hypot(player.x - at[0], player.y - at[1]); o.cue = floatingTexts.some(t => t.text === '!'); o.short = Math.hypot(player.x - ${P.hallFar[0]}, player.y - ${P.hallFar[1]}) > 3; o.target = [player.targetX === player.x, player.targetY === player.y];
             __tap(${P.hallFar[0]}, ${P.hallFar[1]}); o.next = __route(); o.nextFree = !!player._tapRun; const end = player.fpPath[player.fpPath.length - 1]; o.rest = __steps(200); o.reached = Math.hypot(player.x - end[0], player.y - end[1]) < 0.01; __noFoes(); return o; })()`);
         same(r.free, true, 'the first tap was not a free run'); same(r.before, true, 'the run stopped with nothing near'); same(r.ahead, true, 'no spot ahead in sight'); same(r.stopped, true, 'the run did not stop'); ok(r.moved < 0.01, 'it took a step after the enemy came near: ' + r.moved);
-        same(r.cue, true, 'no "!"'); same(r.short, true, 'it stopped at the end'); same(r.target.join(), 'true,true', 'its destination was not let go'); ok(r.next > 4.9 && r.next <= 5.01, 'the next tap goes ' + r.next.toFixed(2) + ' tiles');
+        same(r.cue, true, 'no "!"'); same(r.short, true, 'it stopped at the end'); same(r.target.join(), 'true,true', 'its destination was not let go'); ok(r.next > J('FP_MOVE.capTiles') - 0.1 && r.next <= J('FP_MOVE.capTiles') + 0.01, 'the next tap goes ' + r.next.toFixed(2) + ' tiles');
         same(r.nextFree, false, 'the capped step is a free run'); same(r.rest, false, 'the capped step did not finish'); same(r.reached, true, 'the capped step was stopped');
     });
     check('a hit on you just now is pressure too (a run stops, a tap is capped); a hit long ago is not', () => {
@@ -132,7 +132,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ __noFoes(); FP_MOVE.cap = true; const row = _spLayout().rows.find(q => q.id === 'step'); const label0 = row && row.label, sub = row && row.sub;
             facilityCombatStepToggle(); const saved = localStorage.getItem(FP_MOVE.key); __stand(${P.hallDoor[0]}, ${P.hallDoor[1]}); const c = __seen(2, 4); __foe(c[0], c[1], true); __tap(${P.hallFar[0]}, ${P.hallFar[1]}); const len = __route(); const running = __steps(2000);
             const label1 = _spLayout().rows.find(q => q.id === 'step').label; facilityCombatStepToggle(); __noFoes(); return { label0, sub, label1, saved, len, running, back: FP_MOVE.cap, saved2: localStorage.getItem(FP_MOVE.key) }; })()`);
-        same(r.label0, 'COMBAT STEP: 5 TILES', 'the row'); ok(/enemy near stops a run/.test(r.sub || ''), 'the row\'s line: ' + r.sub); same(r.label1, 'COMBAT STEP: OFF', 'the row, off'); same(r.saved, 'off', 'kept');
+        same(r.label0, 'COMBAT STEP: ' + J('FP_MOVE.capTiles') + ' TILES', 'the row'); ok(/enemy near stops a run/.test(r.sub || ''), 'the row\'s line: ' + r.sub); same(r.label1, 'COMBAT STEP: OFF', 'the row, off'); same(r.saved, 'off', 'kept');
         ok(r.len > 8, 'off, the route was cut: ' + r.len.toFixed(2)); same(r.running, false, 'off, the run was stopped'); same(r.back, true, 'on again'); same(r.saved2, 'on', 'kept on');
     });
     check('the source: each of the player\'s steps asks facilityRunCheck (after a launcher\'s flight, which nothing stops), and facilityWalkTo lets go of a tap\'s free run', () => {

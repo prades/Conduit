@@ -144,6 +144,15 @@ function facilityBroodThin() {
     return gone;
 }
 
+// THE WATER CLEAN (js/quests.js questTick): the toxic ants of the brood alive now lose the element, TOXIC ANTS BACK TO NORMAL (the owner, 2026-11-01: "lose the element"); the ones that come later have none
+// (js/population.js SPAWN_TABLES.sewers). The queen keeps hers: she is the Toxic Ant Queen. Returns how many changed.
+function facilityBroodCleanse() {
+    let n = 0;
+    for (const a of facilityCreatures(FP_SPAWN_SEWERS.room)) if (a.sewerBrood && !a.bossId && a.element === "toxic") { a.element = null; n++; }
+    if (n && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: "◈ THE ANTS OF THE SEWERS ARE TOXIC NO MORE", color: "#9dffb6", life: 300, vy: -0.04, size: 13 });
+    return n;
+}
+
 // SPIDERS LURK (ASKED: "Spiders should have no tag and should hang out near objects that reveal it only partially when idle"). An idle spider of the arena goes from cover to cover: a floor tile just
 // BEHIND a prop (the prop's far side from the camera, its north or west side, so the prop is drawn over part of it: js/draw.js sorts by depth), where it stays SPIDER_LURK.rest frames. Resting at
 // cover it is LURKING (spiderLurking): drawn faint (SPIDER_LURK.alpha), with no health bar and no glow under it in the dark, and the auto-lock passes it by (a tap still locks it, js/targeting.js).

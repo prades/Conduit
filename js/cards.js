@@ -370,7 +370,7 @@ const EQUIP_PACK = {
     unlockNeedsFind: true,                                     // a card a pack deals has to be found before EQUIP.unlockCost shards can keep it for good
 };
 // THE SERIES 2 PACK, which is BOOSTER PACK 2 (the user, 2026-10-31): the pack that deals the Series 2 cards (EQUIP_SERIES2: species cards and class cards), in the same shape as Pack 1, with the archive's approved rules for Pack 2
-// (the Game Design Archive, 2026-10-30): it UNLOCKS AFTER THE FIRST BOSS (the user: a spared boss counts, so the first encounter resolved either way: js/bosses.js bossAnyResolved), all SIX rarities are eligible, and every pack holds
+// (the Game Design Archive, 2026-10-30): it UNLOCKS AFTER THE PURIFICATION (the owner, 2026-11-01, settling the sources that disagreed; it was "after the first boss", calm or defeated), all SIX rarities are eligible, and every pack holds
 // at least one PRECISION-OR-HIGHER card (`guaranteed.orHigher`: the reserved slot is filled from Precision and up, by the pack's own odds among them). Its PRICE and its ODDS are NOT SET (null: the archive leaves them open), and its
 // card list (EQUIP_SERIES2) is empty, so it is not on sale (equipPackOnSale: a price, odds and a reserved slot): not rolled, not sold ("NOT ON SALE YET") and not shown on the CARDS sheet; its cards, when they are rows of
 // EQUIP_SERIES2, are still worn, found, unlocked and saved like any card. Every pack is in EQUIP_PACKS: the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
@@ -380,7 +380,8 @@ const EQUIP_PACK2 = {
     eligible: ["unrefined", "refined", "precision", "prototype", "lustrous", "crystalline"],   // APPROVED: all six rarities (Pack 1 is capped at Precision)
     rarities: null,                                            // NOT SET: the weight of each eligible rarity, when the archive gives them
     guaranteed: { rarity: "precision", count: 1, orHigher: true },   // APPROVED: at least one Precision-or-higher card in every pack
-    unlock: "first_boss",                                      // APPROVED: on sale once the first boss encounter is resolved (calm or defeated)
+    unlock: "purified",                                        // DECIDED by the owner (2026-11-01, asked to choose between the sources): on sale once the Sewers are PURIFIED (it was "first_boss": the
+                                                               // first boss encounter resolved, calm or defeated, so killing the queen before the water was clean unlocked it)
     keep: "run", unlockNeedsFind: true,
 };
 const EQUIP_PACKS = [EQUIP_PACK, EQUIP_PACK2];
@@ -388,8 +389,13 @@ function equipPackById(id) { return EQUIP_PACKS.find(p => p.id === id) || null; 
 function equipPackOf(c) { return c && c.pack ? equipPackById(c.pack) : null; }   // the pack a card is dealt by, or null (the Crystalline six)
 function equipPackOnSale(pack) { return !!pack && Number.isFinite(pack.price) && pack.price >= 0 && !!pack.rarities && !!pack.guaranteed && pack.size > 0; }
 function equipPacksOnSale() { return EQUIP_PACKS.filter(equipPackOnSale); }
-// is the pack still locked (its `unlock` not met)? "first_boss": no boss encounter resolved yet (js/bosses.js bossAnyResolved: calm or defeated, the user's rule)
-function equipPackLocked(pack) { return !!pack && pack.unlock === "first_boss" && !(typeof bossAnyResolved === "function" && bossAnyResolved()); }
+// is the pack still locked (its `unlock` not met)? "purified": the Sewers' water not yet clean (js/quests.js questDone); "first_boss": no boss encounter resolved yet (js/bosses.js bossAnyResolved)
+function equipPackLocked(pack) {
+    if (!pack || !pack.unlock) return false;
+    if (pack.unlock === "purified") return !(typeof questDone === "function" && questDone("purify"));
+    if (pack.unlock === "first_boss") return !(typeof bossAnyResolved === "function" && bossAnyResolved());
+    return false;
+}
 // the rarities a guarantee may be filled from: the one named, or that one and every rarer one (`orHigher`), rarest last
 function equipGuaranteeRarities(pack) { const g = pack && pack.guaranteed; if (!g) return []; const order = EQUIP_RARITIES.map(r => r.id), i = order.indexOf(g.rarity); if (i < 0) return []; return g.orHigher ? order.slice(i) : [g.rarity]; }
 // a small seeded generator (mulberry32), so a pack can be rolled the same twice: the tests give a seed; the game gives none and uses Math.random
@@ -417,7 +423,7 @@ function equipPackRoll(seed, pack) {
 function equipPackWhyNot(pack) {
     pack = pack || EQUIP_PACK;
     if (!equipPackOnSale(pack)) return "NOT ON SALE YET";   // (Series 2, until its numbers are given)
-    if (equipPackLocked(pack)) return "UNLOCKS AFTER THE FIRST BOSS";   // (Pack 2: the archive's rule; a spared boss counts)
+    if (equipPackLocked(pack)) return pack.unlock === "purified" ? "UNLOCKS AFTER THE PURIFICATION" : "UNLOCKS AFTER THE FIRST BOSS";   // (Series 2: once the Sewers are purified, the owner's rule)
     const have = typeof shardCount === "number" ? shardCount : 0, pool = equipPackPool(pack), gr = equipGuaranteeRarities(pack);
     if (have < pack.price) return "NEED ◆" + (pack.price - have) + " MORE";
     if (pool.length < pack.size || pool.filter(c => gr.indexOf(c.rarity) >= 0).length < pack.guaranteed.count) return "NO CARDS TO FIND";

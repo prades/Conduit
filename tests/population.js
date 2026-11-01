@@ -66,15 +66,28 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE NEST (js/population.js NESTS, nestState: read from the queen\'s encounter and the purification, no second state machine)');
-    check('INFESTED with her gate shut and while she sleeps at her post, STIRRED once she is awake, INFESTED again if she is killed before the water is clean; CALMED with the water clean and her alive; CLEARED with the water clean and her dead (killed before, or after she was calmed)', () => {
+    check('INFESTED with her gate shut and while she sleeps at her post, STIRRED once she is awake; CLEARED once she is dead, the water clean or not (the owner, 2026-11-01: killing her thins the brood too); CALMED with the water clean and her alive; CLEARED if she is killed after she was calmed', () => {
         const r = J(`(function(){ __fresh(); const S = bossState('sewer_cistern'), Q = questState('purify'), o = {};
             o.idle = nestState(); S.state = 'armed'; o.armed = nestState(); S.state = 'active'; o.active = nestState(); S.frantic = true; o.frantic = nestState(); S.frantic = false;
             S.state = 'resolved'; S.outcome = 'defeated'; o.deadFoul = nestState(); Q.purifiedAt = 9; o.deadClean = nestState();
             S.outcome = 'calm'; S.defeated = 0; o.calm = nestState(); S.defeated = 12; o.calmThenKilled = nestState();
             o.inf = [nestInfested(), NEST_STATES.join()]; Q.purifiedAt = 0; S.state = 'idle'; S.outcome = null; S.defeated = 0; o.back = [nestState(), nestInfested()]; return o; })()`);
-        same([r.idle, r.armed, r.active, r.frantic].join(), 'infested,infested,stirred,stirred', 'before and during her encounter'); same(r.deadFoul, 'infested', 'killed, the water still foul');
+        same([r.idle, r.armed, r.active, r.frantic].join(), 'infested,infested,stirred,stirred', 'before and during her encounter'); same(r.deadFoul, 'cleared', 'killed, the water still foul (her death thins the brood)');
         same(r.deadClean, 'cleared', 'killed, then the water clean'); same(r.calm, 'calmed', 'calmed alive'); same(r.calmThenKilled, 'cleared', 'killed after she was calmed'); same(r.inf.join(), 'false,infested,stirred,calmed,cleared', 'the states');
         same(r.back.join(), 'infested,true', 'restored');
+    });
+    check('the owner\'s answers of 2026-11-01: her death thins the brood though the water is still foul (a straggler at a time after it); the water clean makes the brood plain ants: those alive lose the element, the next come with none (SPAWN_TABLES.sewers\' second stage); the queen keeps hers', () => {
+        const r = J(`(function(){ __fresh(); __wild(); __sewers(); const P = FP_SPAWN_SEWERS, Q = questState('purify'), S = bossState('sewer_cistern'), o = {};
+            for (let i = 0; i < 6; i++) facilitySpawnCreature(null, null, P); const brood = () => facilityCreatures('sewers').filter(a => a.sewerBrood && !a.bossId);
+            o.before = [brood().length, brood().every(a => a.element === 'toxic'), spawnWhat(P).stage];
+            S.state = 'resolved'; S.outcome = 'defeated'; questBossResolved('sewer_cistern', 'defeated');
+            o.killed = [brood().length <= P.after.cap, nestState(), nestInfested(), spawnWhat(P).element, spawnWhat(P).stage];
+            Q.purifiedAt = 9; o.clean = [spawnWhat(P).element, spawnWhat(P).stage]; o.cleansed = facilityBroodCleanse(); o.left = brood().map(a => a.element);
+            const q = facilitySpawnCreature(null, null, P); o.next = [q && q.element, q && q.sewerBrood];
+            const qn = spawnCreature({ species: 'ant', className: 'boss', x: player.x + 3, y: player.y, level: 6, state: 'wander' }); qn.fpCreature = true; qn.homeRoom = 'sewers'; qn.bossId = 'sewer_cistern'; qn.sewerBrood = true; qn.element = 'toxic'; facilityBroodCleanse(); o.queen = qn.element; qn.dead = true; actors = actors.filter(a => a !== qn);
+            __fresh(); __wild(); return o; })()`);
+        same(r.before.join(), '6,true,brood', 'the brood before'); same(r.killed.join(), 'true,cleared,false,toxic,brood', 'her death, the water foul: the brood thinned, still toxic until the water is clean');
+        same(r.clean.join(), ',brood_clean', 'the stage after the purification'); ok(r.cleansed >= 0 && r.left.every(e => e === null), 'the ants alive lost the element: ' + r.left.join()); same(r.next.join(), ',true', 'the next ant: no element, still the Nest\'s'); same(r.queen, 'toxic', 'the queen kept hers');
     });
     check('the Sewers\' brood follows the Nest: at its full numbers while the Nest is infested or stirred; a straggler at a time once it is calmed or cleared (the spawner asks nestInfested, not the quest)', () => {
         const r = J(`(function(){ __fresh(); __wild(); __sewers(); const P = FP_SPAWN_SEWERS, o = {}; _fp.broodAt = undefined; frame = 1000; facilityBroodTick(frame); o.first = facilityCreatures('sewers').length;

@@ -37,8 +37,9 @@
 // it). THE SQUAD SHARES (asked: "make it to where the technicians level up
 // faster, or the experience is shared throughout the squad"; chosen: shared):
 // a kill by you or by a member of your squad of three feeds the rest of the
-// squad wherever they stand, as if they were near it. A unit that dies loses
-// XP_DEATH_LOSS of its progress toward its next level — never a level.
+// squad wherever they stand, as if they were near it. A unit that dies keeps all
+// of its XP (the owner, 2026-11-01; it lost a quarter of its progress toward
+// its next level).
 
 const LEVEL_CAP        = 100;    // followers and clones
 const PRED_LEVEL_MAX   = 999;    // a creature can be set past the cap (the number shown is still its real level)
@@ -46,7 +47,6 @@ const LEVEL_START      = 5;
 const XP_KILLER_SHARE  = 0.6;
 const XP_SHARE_RANGE   = 4;      // tiles
 const XP_ASSIST_ONLY   = 0.5;    // a kill with no unit's last blow: this share to those near
-const XP_DEATH_LOSS    = 0.25;   // of the progress toward the next level
 // (Doubled after a first playtest: the squad has to be able to keep up with what it fights. Doubled again when followers seemed never to evolve: a recruit needs 875 XP and a kill was worth 64 on average, about 41 kills by
 // the squad; ASKED, chosen from a pop-up: "Double the XP from every kill". The launcher's set-up XP (js/techabilities.js) and the tutorial's reward are not kills and stay as they were.)
 const XP_YIELD = { nymph: 40, worker: 120, scout: 200, striker: 280, tank: 400, boss: 1200 };
@@ -204,12 +204,6 @@ function awardKillXp(p) {
         for (const a of near) gainXp(a, total * XP_ASSIST_ONLY / near.length);
     }
     return total;
-}
-// A unit that died: back XP_DEATH_LOSS of the way toward its last level.
-function xpAfterDeath(u) {
-    if (!u || !Number.isFinite(u.level)) return undefined;
-    const floor = xpForLevel(u.level), xp = Number.isFinite(u.xp) ? u.xp : floor;
-    return Math.round(floor + (xp - floor) * (1 - XP_DEATH_LOSS));
 }
 
 // ── XP PROGRESS: where a unit stands on the XP curve, for the bars and the cards ──

@@ -162,11 +162,12 @@ function facilitySpriteDraw(it) {
     if (!it.spriteOnly) { _fpFloorUnder(it); if (!S || !S.multi || _psEdgeCell(S, it)) _psShadow(it); }   // (the shadow only on the cells at the prop's edge: the others are under the sprite)   // (a rim cell is ordinary floor, drawn already)
     if (k === "plant") { const dead = seed % 3 === 0; return !!_psBlit("plant", dead ? "d" + (seed % 2) : "p" + (seed % 4), it.x, it.y); }
     if (k === "sentry") {
-        const on = typeof facilityFeedOn === "function" && facilityFeedOn(it.id), step = ((Math.round((it.aim || 0) / (Math.PI * 2 / PS.aimSteps)) % PS.aimSteps) + PS.aimSteps) % PS.aimSteps;
+        const on = typeof sentryOn === "function" ? sentryOn(it) : (typeof facilityFeedOn === "function" && facilityFeedOn(it.id)), step = ((Math.round((it.aim || 0) / (Math.PI * 2 / PS.aimSteps)) % PS.aimSteps) + PS.aimSteps) % PS.aimSteps;   // (on: whole and the Crystal has power: js/antraids.js)
         const r = _psBlit("sentry", "a" + String(step).padStart(2, "0"), it.x, it.y); if (!r) return false;
         const c = r[2], lamp = c.marks && c.marks.lamp, mz = c.marks && c.marks.muzzle;
         if (lamp) { const lx = r[0] + lamp[0], ly = r[1] + lamp[1]; ctx.fillStyle = on ? "#31e8ff" : ((Math.floor(f / 30) + seed) % 3 ? "#3a1410" : "#ff4a3a"); ctx.beginPath(); ctx.arc(lx, ly, 3.2, 0, 6.2832); ctx.fill(); if (on && typeof _fpGlow === "function") _fpGlow(lx, ly, 22, "#31e8ff", 0.16); }
         if (mz && it.flash > 0 && typeof _fpGlow === "function") _fpGlow(r[0] + mz[0], r[1] + mz[1], 28, "#7ff2ff", 0.8);
+        if (typeof drawSentryWear === "function") drawSentryWear(it, r[0] + (lamp ? lamp[0] : 0), r[1] + (lamp ? lamp[1] : 0));   // (its wear: a bar when hurt, smoke and sparks when wrecked: js/antraids.js)
         return true;
     }
     if (!S) return false;

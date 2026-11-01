@@ -228,16 +228,17 @@ function facilityFloorAt(x, y, F) { F = F || (_fp && _fp.F); return !!F && facil
 // A tap on the floor (js/input.js handleInput) may send you anywhere in the room you are in, and through a doorway of that room a little way into the next (within FP_MOVE.doorReach tiles of the doorway's
 // line); a tap anywhere else is ignored, and a small ✕ where it landed says so. A portal's doorway lies in its own room, so it is a tap in this room. What walks you for a reason of its own (a station, a
 // launcher's pad, a broken edge, a body, the lash) calls facilityWalkTo itself: none of this limits it.
-// THE FIVE-TILE STEP, a prototype (ASKED: "Limit movement commands to approximately five spaces per movement interval [...] Make enemies more threatening by requiring deliberate positioning [...] Treat this as
+// THE COMBAT STEP, a prototype (ASKED: "Limit movement commands to approximately five spaces per movement interval [...] Make enemies more threatening by requiring deliberate positioning [...] Treat this as
 // a gameplay prototype [...] Do not make exploration unnecessarily frustrating"; and then the owner, the same day: "I don't want to restrict the player from getting around when there's no enemies nearby. So if
 // there's no enemies nearby, there's no limit. But if they run into an enemy, they stop if they're on a run, and then they're limited to moving 5 spaces or something like that"):
 //   NO ENEMY NEAR   a tap goes the whole way (a FREE RUN).
 //   RUNNING INTO ONE  a free run stops where you are the moment an enemy is near (facilityRunCheck, each step), with a "!" over you: once, not again for the taps that follow.
-//   WITH ONE NEAR   a tap takes you at most FP_MOVE.capTiles tiles along its route, so each move is a choice; once none is near, a tap goes the whole way again.
+//   WITH ONE NEAR   a tap takes you at most FP_MOVE.capTiles tiles along its route, so each move is a choice; once none is near, a tap goes the whole way again. THREE tiles since the owner's playtest
+//                   (2026-11-01: five was "too long"; asked how many: "3").
 // AN ENEMY NEAR (facilityEnemyNear): a creature not of yours, within FP_MOVE.near tiles and in sight; or one that has turned on you or your squad, within FP_MOVE.chase; or a hit on you within FP_MOVE.hitWindow
 // frames. A sleeping or calm boss and a spider lurking at its cover are not (they are not after you). The walks the game makes for its own reasons (facilityWalkTo: a station, a launcher's pad, a body) are never
 // stopped or cut. The Settings' COMBAT STEP turns all of it off (FP_MOVE.cap, kept per browser).
-const FP_MOVE = { doorReach: 2.6, cap: true, capTiles: 5, near: 6, chase: 10, hitWindow: 180, key: "conduit_move_cap" };
+const FP_MOVE = { doorReach: 2.6, cap: true, capTiles: 3, near: 6, chase: 10, hitWindow: 180, key: "conduit_move_cap" };
 try { if (typeof localStorage !== "undefined" && localStorage.getItem(FP_MOVE.key) === "off") FP_MOVE.cap = false; } catch (e) {}
 // the room a point is in (the room of the nearest floor cell, for a point on a wall's margin)
 function facilityRoomIdAt(x, y) {

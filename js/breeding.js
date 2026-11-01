@@ -18,7 +18,7 @@
 //   v         a draw in [−BREED.variation, +BREED.variation] for each stat (controlled variation; a test injects the draw and gets the same offspring every time)
 //   kept to three places, as the equip cards keep a stat they move (a +5% on 10 is 10.5, not 10 or 11); the levelled stats the game plays with are whole numbers as before (levelledStats rounds)
 //   so an offspring is, on average, BREED.upbringing above a recruit of its personality on every stat in the list, at least 1.0185 × (the worst draw), and never past BREED.cap × it however many generations breed.
-// PROVENANCE: f.bred = { gen, parents: [uid, uid] } and f.hp0 (its born hp stat, what the Vital items restore to: js/vital.js), saved with the follower (js/facilitysave.js followerRecord), kept through a respawn
+// PROVENANCE: f.bred = { gen, parents: [uid, uid] } and f.hp0 (its born hp stat: followerHp0 below), saved with the follower (js/facilitysave.js followerRecord), kept through a respawn
 // (js/game.js) and a preserved body (js/specimen.js); a RE-ROLL makes someone new and clears both (js/helpers.js).
 const BREED = { price: 50, upbringing: 1.05, variation: 0.03, cap: 2, stats: ["hp", "attack", "defense", "specialAttack", "accuracy", "will"] };
 
@@ -103,4 +103,13 @@ function breedLabel(f) {
     const nm = typeof unitTypeLabel === "function" ? unitTypeLabel(p) : "ITS PARTNER";
     if (breedArmed(f)) return { text: "TAP AGAIN: BREED ◆" + BREED.price, sub: "WITH " + nm + " · AN OFFSPRING AT THE CRYSTAL", on: true };
     const can = breedCan(f); return { text: "BREED WITH " + nm + " ◆" + BREED.price, sub: can.ok ? "AN OFFSPRING, BETTER RAISED · TWO TAPS" : can.why, on: can.ok };
+}
+
+// a follower's BORN hp stat: bred, the hp it was born with (f.hp0); else what its personality gave it (applyPersonality). A death no longer wears it down (the owner, 2026-11-01), so its hp stat stays this;
+// a saved follower that lost some to deaths before then gets it back on load (js/facilitysave.js). (It lived in js/vital.js with the Vital items, removed the same day.)
+function followerHp0(a) {
+    if (!a) return 1;
+    if (Number.isFinite(a.hp0)) return a.hp0;
+    if (a.personality && typeof applyPersonality === "function") return applyPersonality(a.personality).hp;
+    return (a.base && a.base.hp) || (a.stats && a.stats.hp) || 1;
 }

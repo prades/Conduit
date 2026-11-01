@@ -316,6 +316,8 @@ canvas.addEventListener('pointerup', e=>{
     }
     // QUESTS button tap (a phone only: js/questbox.js drawQuestButton)
     if (!touchMoved && !dockHasMenus() && typeof _QUESTBTN !== "undefined" && Math.hypot(upX-_QUESTBTN.x, upY-_QUESTBTN.y) < _QUESTBTN.r+8) { questBoxToggle(); isPressing=false; return; }
+    // THE NETWORK PANEL (top right): a tap charges the Crystal, ◆50 for +75% (js/facilitynet.js facilityNetTap, js/crystalpower.js)
+    if (!touchMoved && typeof facilityNetTap === "function" && facilityNetTap(upX, upY)) { isPressing=false; return; }
 
     // ── ULTIMATE DOUBLE-TAP DETECTION ────────────────────
     // Not while the radial menu is up or waiting for its tap. This scan swallows any tap landing within 40px of a follower.

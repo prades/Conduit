@@ -171,7 +171,7 @@ async function boot(store) {
     });
 
     console.log('\nDYING');
-    check('THE ASK: a follower that dies keeps its level but loses a quarter of its progress, and comes back with it', () => {
+    check('THE ASK (the owner, 2026-11-01): a follower that dies comes back with its level, ALL its XP and its HP stat, as it fell (it lost a quarter of its progress and one HP stat)', () => {
         const r = run(`(function(){ actors = actors.filter(a => !a.isFollower); followers.length = 0;
             const f = ${FOL('', 2, 0)}; gainXp(f, xpForLevel(12) - f.xp + 400); const lv = f.level, xp = f.xp, baseHp = f.base.hp;
             f.health = 0; f.dead = true;
@@ -180,8 +180,8 @@ async function boot(store) {
             return g ? { lv, xp, lv2: g.level, xp2: g.xp, baseHp, baseHp2: g.base.hp } : null; })()`);
         ok(r, 'it never came back');
         same(r.lv2, r.lv, 'level after dying');
-        same(r.xp2, Math.round(run(`xpForLevel(${r.lv})`) + (r.xp - run(`xpForLevel(${r.lv})`)) * 0.75), 'xp after dying');
-        same(r.baseHp2, r.baseHp - 1, 'the HP stat still wears down by one');
+        same(r.xp2, r.xp, 'xp after dying');
+        same(r.baseHp2, r.baseHp, 'the HP stat wore down');
     });
 
     console.log('\nXP PROGRESS (the bars and the cards: js/levels.js xpProgress, js/draw.js drawXpBar)');

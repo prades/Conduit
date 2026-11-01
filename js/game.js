@@ -298,7 +298,7 @@ function drawCloneRespawnTicker(cx, topY) {
     const rowH = 13;
     let y = topY - (waiting.length - 1) * rowH;
     for (const e of waiting) {
-        const secs  = Math.max(0, Math.ceil(e.timer / 60));
+        const secs  = Math.max(0, Math.ceil(e.timer / 60));   // (0, with e.waitPower: it waits for the Crystal's power, js/crystalpower.js)
         const total = e.totalTimer || CLONE_RESPAWN_FRAMES;
         const done  = Math.max(0, Math.min(1, 1 - e.timer / total));
         const name  = e.isClone ? ((e.speciesName || "clone") + " " + (e.className || "")).toUpperCase().trim() : ((e.element || "") + " " + (typeof roleLabel === "function" ? roleLabel(e.role || "brawler") : "")).toUpperCase().trim(), col = e.isClone ? "#22ff88" : "#19e6c1";
@@ -313,7 +313,7 @@ function drawCloneRespawnTicker(cx, topY) {
 
         ctx.font = "bold 8px monospace";
         ctx.fillStyle = col;
-        ctx.fillText(name + "  " + secs + "s", cx, y);
+        ctx.fillText(name + "  " + (e.waitPower ? "NEEDS POWER" : secs + "s"), cx, y);
         y += rowH;
     }
     ctx.restore();
@@ -615,6 +615,8 @@ function render() {
     // so a creature parked by the Crystal cannot chain-kill you on arrival.
     if (player.invuln > 0) player.invuln--;
     if (health <= 0) {
+        // YOUR RETURN IS PAID FROM THE CRYSTAL (js/crystalpower.js: 5% of its charge); at or below its reserve it cannot bring you back, and the run is over (the owner, 2026-11-01: "Game over")
+        if (typeof crystalDraw === "function" && !crystalDraw("player")) { health = 0; if (typeof showGameOver === "function") showGameOver("THE CRYSTAL HAS NO POWER LEFT TO BRING YOU BACK"); return; }
         health = PLAYER_HITS; // knocked back to the Crystal: all three hits again
         player.x = crystal.x + 2; player.y = crystal.y;
         player.targetX = player.x; player.targetY = player.y;
@@ -637,7 +639,7 @@ function render() {
     // The crystals, at the top left: only the change touches the page.
     if (shardCount !== _lastShardCount) { _lastShardCount = shardCount; shardUI.textContent = String(shardCount); }
     // The ALARM is a red triangle beside the room tag (css: body.alarm-on). Only the change touches the page.
-    const _alarmOn = !!alertActive;
+    const _alarmOn = !!alertActive || (typeof raidActive === "function" && raidActive());   // (an ANT RAID shows it too: js/antraids.js)
     if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }
     const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof questBoxOpen !== "undefined" && questBoxOpen));
     if (document.body && document.body.classList && document.body.classList.contains("info-open") !== !!infoPanelOpen) document.body.classList.toggle("info-open", !!infoPanelOpen);
@@ -649,8 +651,8 @@ function render() {
 
     // ── CRYSTAL DEATH CHECK ──
     if (crystal.health<=0) { showGameOver(); return; }
-    // Slow recovery while no alarm is up (see CRYSTAL_REGEN).
-    if (!alertActive && crystal.health < crystal.maxHealth) crystal.health = Math.min(crystal.maxHealth, crystal.health + CRYSTAL_REGEN);
+    // THE IDLE REFILL: no alarm up and nothing drawn on it for a while, it refills whole in five minutes (js/crystalpower.js; it was CRYSTAL_REGEN while no alarm was up)
+    if (typeof crystalRefillTick === "function") crystalRefillTick();
 
     // ── THE ALARM runs down, unless something keeps feeding it (the tutorial's assault does: js/tutorial.js) ──
     if (alertActive) { alertTimer--; if (alertTimer <= 0) clearAlarm(); }
@@ -707,21 +709,19 @@ function render() {
             if (a.isClone && a.dismissed) return;
             // The Mutator's clone does not come back by itself: its body stays where it fell (js/mutator.js).
             if (a.isClone && a.primary) { if (typeof cloneFallen === "function") cloneFallen(a); return; }
-            // The HP stat that wears down with each death is the BASE one
-            // (js/levels.js); its level scales it back up.
-            const oldHp = a.base?.hp ?? a.stats?.hp ?? 1;
-            const newHp = oldHp - 1;
-            // A clone has no HP stat to wear down: it always comes back. Running out of HP stat is permanent: the follower's body stays where it fell, and an Ice Mage can preserve it (js/specimen.js).
-            if (newHp<=0 && !a.isClone) { if (typeof specimenFollowerFell === "function") specimenFollowerFell(a); return; } // permanent death — don't queue
+            // A DEATH COSTS IT NOTHING (the owner, 2026-11-01: "remove the feature [...] where the followers lose HP every time they get revived. They need to be revived with the same amount of HP"; and asked about
+            // its XP: "Remove it"): it comes back with its HP stat and its XP as they were. (Each death took 1 off its HP stat, the BASE one, and at 0 it fell for good for an Ice Mage to preserve; and a quarter of
+            // its progress toward the next level.) Its return is paid from the Crystal's power (js/crystalpower.js), in the queue below.
+            const keptHp = a.base?.hp ?? a.stats?.hp ?? 1;
             // A clone takes far longer to come back than a follower: it is
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,newHp), uid:a.uid, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
-                // Its level comes back with it, less some XP (js/levels.js).
-                base: a.base ? Object.assign({}, a.base, { hp: Math.max(1, newHp) }) : undefined,
+            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
+                // Its level and its XP come back with it, all of them.
+                base: a.base ? Object.assign({}, a.base) : undefined,
                 hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // its birth (js/breeding.js)
-                level: a.level, xp: typeof xpAfterDeath === "function" ? xpAfterDeath(a) : a.xp,
+                level: a.level, xp: a.xp,
                 evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined, post: a.post || undefined, playStyle: a.playStyle || undefined, move: a.move || undefined });
         }
         // A kill, once: XP to whoever killed it and those fighting near it (js/levels.js).
@@ -1079,13 +1079,15 @@ function render() {
     // ── RESPAWN QUEUE ──
     for(let i=respawnQueue.length-1;i>=0;i--) {
         const entry=respawnQueue[i]; entry.timer--;
+        // ITS RETURN IS PAID FROM THE CRYSTAL (js/crystalpower.js: 3% of its charge); at or below the reserve it WAITS at the Crystal until there is power for it (the owner, 2026-11-01)
+        if (entry.timer <= 0 && typeof crystalDraw === "function") { if (!crystalDraw("follower")) { entry.timer = 0; entry.waitPower = true; continue; } entry.waitPower = false; }
         if(entry.timer<=0){
             if (entry.isClone && entry.speciesName) {
                 // Respawn as clone: makeClone, so a respawned clone is the same thing the summon built.
                 const clone = makeClone(entry.speciesName, entry.className, crystal.x, crystal.y, undefined, { level: entry.level, xp: entry.xp });
                 if (!clone) { respawnQueue.splice(i,1); continue; }
             } else {
-                // Respawn as a follower — apply HP stat degradation
+                // Respawn as a follower: as it fell (a death costs it nothing since 2026-11-01)
                 const def         = NPC_TYPES["virus"];
                 const personality = entry.personality || PERSONALITY_KEYS[Math.floor(Math.random()*PERSONALITY_KEYS.length)];
                 const stats       = applyPersonality(personality);
@@ -1115,7 +1117,7 @@ function render() {
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
                 if (entry.evoWait) npc._evoOnLevelUp = true;   // an egg again until it next levels up (js/evolution.js)
                 if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base carries it; nothing is added again
-                // Its level and XP (less what dying cost) — js/levels.js.
+                // Its level and its XP, all of them — js/levels.js.
                 if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp, hpStat: entry.hpStat });
                 if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }   // a follower that held a room goes back to it (js/party.js)
                 actors.push(npc); followers.push(npc);

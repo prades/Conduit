@@ -11,7 +11,7 @@ function _predNear(x, r) { return typeof unitsNear === "function" ? unitsNear(x,
 // Your followers, your clones and the PLAYER. A hit by the player names the player itself (applyDamage and onHit are handed a copy of where the player stood: it is the player it turns on).
 // Is the alarm this creature's? A BOSS that is asleep or calm (js/bosses.js: armed in its lair, or pacified by the purification) hears none: it picks no prey and does not hunt the Crystal while the facility's alarm is up;
 // a direct hit still provokes it (onHit), and when it loses that prey it is calm again. Every other creature: the alarm as it is.
-function predatorAlarm(p) { return !!alertActive && !(p && (p.bossAsleep || p.bossCalm)); }
+function predatorAlarm(p) { return (!!alertActive || !!(p && p.raid)) && !(p && (p.bossAsleep || p.bossCalm)); }   // (a raider of an ANT RAID is alarmed on its own: js/antraids.js)
 function predatorPreyOk(p, a) {
     if (!a || a.dead) return false;
     if (typeof player !== "undefined" && a === player) return typeof predatorMayHurtPlayer !== "function" || predatorMayHurtPlayer();
@@ -186,6 +186,7 @@ class Predator {
         const walled = a => !(this.disorientFF > 0) && typeof techShieldBlocks === "function" && techShieldBlocks(this, a);
         const across = a => !this.isClone && !(this.disorientFF > 0) && typeof techShieldBetween === "function" && !!techShieldBetween(this.x, this.y, a.x, a.y);
         if (target === crystal) { if (walled(crystal)) return null; crystal.health = Math.max(0, crystal.health - pwr); shake = Math.max(shake, 6); return crystal; }
+        if (target && target.sentry) { if (walled(target)) return null; if (typeof sentryDamage === "function") sentryDamage(target, pwr, this); return target; }   // a TURRET a raider wrecks (js/antraids.js)
         const inReach = a => { const dx = a.x - this.x, dy = a.y - this.y; return dx * dx + dy * dy <= reach2 && !across(a); };
         if (this.disorientFF > 0) { let n = null; actors.forEach(a => { if (a === this || a.dead || a.team !== "red" || a.isClone || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
         const hitTeam = this.isClone ? "red" : "green";
@@ -382,12 +383,14 @@ class Predator {
                 });
                 if (nearRed) { this.currentTarget=nearRed; this.state="attack"; return; }
             }
-            const dx=crystal.x-this.x, dy=crystal.y-this.y;
+            // AN ANT RAID (js/antraids.js): its goal is the nearest turret still standing, then the Crystal; any other hunter's is the Crystal
+            const goal = (this.raid && typeof raidGoal === "function" && raidGoal(this)) || crystal, at = goal.sentry && typeof raidSteerAt === "function" ? raidSteerAt(this, goal) : goal, reach = typeof raidReach === "function" ? raidReach(goal) : 0.8;
+            const dx=goal.x-this.x, dy=goal.y-this.y;
             const dist=Math.sqrt(dx*dx+dy*dy);
-            if (dist>0.8) {
+            if (dist>reach) {
                 // The facility has walls: it heads for the next waypoint of the route to the Crystal (js/facilityplay.js facilitySteer) and weaves only where it can see the Crystal (a weave
                 // swung it into the wall it was walking along, and the reroute could not tell where it was going).
-                const _fpW = facilitySteer(this, crystal.x, crystal.y);
+                const _fpW = facilitySteer(this, at.x, at.y);
                 const crystalAngle = Math.atan2(_fpW[1]-this.y, _fpW[0]-this.x);
                 // Wobble frequency varies per-predator via animationPhase and moveSpeed
                 // so scouts dart faster/wider than tanks
@@ -404,10 +407,10 @@ class Predator {
                 this.x += this.dirX * this.moveSpeed;
                 this.y += this.dirY * this.moveSpeed;
             } else {
-                // ── ATTACK CRYSTAL ── the same two beats as a bite on a unit (a telegraph, then the bite)
-                this._biteTick(crystal);
+                // ── ATTACK CRYSTAL (or a raider's turret) ── the same two beats as a bite on a unit (a telegraph, then the bite)
+                this._biteTick(goal);
                 // Face the Crystal while chewing on it, same as any other target.
-                faceToward(this, crystal.x, crystal.y, 0.3);
+                faceToward(this, goal.x, goal.y, 0.3);
                 this.state="attack";
                 this.currentTarget=null; // attacking crystal, not a unit
             }

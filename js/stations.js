@@ -44,6 +44,10 @@ const STATION_KINDS = {
     sidequest: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqVerb === "function" ? sqVerb() : "TALK", canFn: () => typeof sqCan === "function" ? sqCan() : { ok: false, why: "NOBODY HERE" },
         use: () => typeof sqUse === "function" ? sqUse() : { ok: false, why: "NOBODY HERE" } },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
+    // A BROKEN TURRET (js/antraids.js): a station made on it when a raid wrecks it; the repair is a BUILD (stand by it, the progress bar; walk away and it stops), FREE (the owner, 2026-11-01: "Free, takes time", ten seconds)
+    sentry_repair: { name: "TURRET", classes: null, cost: [], buildMsg: "REPAIRING THE TURRET… STAY BY IT", get build() { return typeof SENTRY !== "undefined" ? SENTRY.repair : 600; },
+        verbFn: () => "REPAIR THE TURRET", canFn: s => typeof sentryRepairCan === "function" ? sentryRepairCan(s) : { ok: false, why: "NOTHING TO REPAIR" },
+        use: s => typeof sentryRepairDone === "function" ? sentryRepairDone(s) : { ok: false, why: "NOTHING TO REPAIR" } },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
         use: () => { const was = playerAmmo; playerAmmo = PLAYER_AMMO_MAX; let cell = 0; if (playerClassKey === "technomancer") cell = invAdd("power_cell", 1); _fp.chargerReady = frame + 5400; return { ok: true, msg: "CHARGED \u2014 " + (PLAYER_AMMO_MAX - was) + " ROUNDS" + (cell ? ", +1 POWER CELL" : "") }; } },
 };
@@ -175,6 +179,7 @@ function facilityRelaysStart(F) {
         _fp.stations.push(s); _fp.items.push({ type: "fp", fp: "station", id: r.id, kind: "relay", room: r.room, bb: s.bb, x: s.x, y: s.y, depth: s.bb[2] + s.bb[3] - 0.45, base: facilityRoomHeight(r.room, F) * FP_ELEV_PX, seed: _fpHash(Math.round(s.x * 3), Math.round(s.y * 7)) });
     }
     for (const it of _fp.items) if (it.fp === "prop" && it.kind === "sentry") { it.cd = 0; it.aim = 0; }
+    if (typeof sentriesStart === "function") sentriesStart();   // (every turret whole: js/antraids.js)
 }
 function relayOnline(id) { return !!(_fp && _fp.relays && _fp.relays[id] && _fp.relays[id].online); }
 // is a prop that a relay feeds (a sentry, the charging station) working? it is when its relay is online, or once the blackout is over
@@ -237,15 +242,20 @@ function facilityRelayTick() {
     }
     facilitySentryTick();
 }
-// a sentry works while its relay feeds it: it fires at the nearest enemy within range
+// a TURRET (an automatic sentry) runs on the CRYSTAL'S POWER alone (the owner, 2026-11-01: "Crystal only"; it ran off its relay): whole, and the Crystal above its reserve, it fires at the nearest enemy in
+// range, each shot paid from the Crystal (js/crystalpower.js, js/antraids.js sentryOn); wrecked by a raid it does nothing until it is repaired.
+// It aims only at what its shot can hit (js/helpers.js isHostileTarget, the shot's own test in js/game.js): never at a RECRUIT WAITING AT ITS POST (js/followerspots.js), whom the shot passes through. (The
+// hallway turret is 7 tiles from the Experiment Lab's post, through the wall: it fired at that recruit every 50 frames for as long as it waited, and since every shot is paid that drained the Crystal and kept
+// its idle refill from ever starting; found measuring build 2026-11-01h.)
 const SENTRY_RANGE = 9, SENTRY_CD = 50, SENTRY_DAMAGE = 8;
 function facilitySentryTick() {
     for (const it of _fp.items) {
         if (it.fp !== "prop" || it.kind !== "sentry") continue;
-        it.on = facilityFeedOn(it.id); if (it.flash > 0) it.flash--; if (!it.on) continue;
+        it.on = typeof sentryOn === "function" ? sentryOn(it) : facilityFeedOn(it.id); if (it.flash > 0) it.flash--; if (!it.on) continue;
         if (it.cd > 0) { it.cd--; continue; }
-        let best = null, bd = SENTRY_RANGE; for (const a of actors) { if (!a || a.dead || a.team !== "red") continue; const d = Math.hypot(a.x - it.x, a.y - it.y); if (d < bd) { bd = d; best = a; } }
+        let best = null, bd = SENTRY_RANGE; for (const a of actors) { if (!a || a.dead || a.team !== "red" || (typeof isHostileTarget === "function" && !isHostileTarget(a))) continue; const d = Math.hypot(a.x - it.x, a.y - it.y); if (d < bd) { bd = d; best = a; } }
         if (!best) continue;
+        if (typeof crystalDraw === "function" && !crystalDraw("shot")) continue;   // (the shot is paid from the Crystal)
         it.aim = Math.atan2(best.y - it.y, best.x - it.x); it.cd = SENTRY_CD; it.flash = 6;
         if (typeof spawnFollowerProjectile === "function") spawnFollowerProjectile({ x: it.x, y: it.y, element: "electric" }, best, "#7ff2ff", SENTRY_DAMAGE, 5, null);
     }

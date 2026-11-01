@@ -1,5 +1,7 @@
 # Specimens: the Ice Mage preserves the fallen, the Resurrection Zone restores them
 
+**2026-11-01, the owner's playtest:** a follower no longer loses HP stat when it falls, so it is never lost for good: it always comes back at the Crystal (its return paid from the Crystal's power, docs/FACILITY.md). The bodies the Ice Mage preserves are now **the Mutator's clone's** (the owner: "perfect for the clone resurrection"), and any follower body or capsule an older save still holds. The rest of this page is the record as built; the follower half of it no longer happens in a new game.
+
 ASKED (the brief, "Ice Mage Follower and Specimen Recovery"):
 
 > *A special Ice Mage follower can preserve fallen allied creatures for resurrection.*

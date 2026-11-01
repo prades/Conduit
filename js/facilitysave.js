@@ -45,6 +45,7 @@ function facilitySaveCollect() {
         weapon: typeof weaponSnapshot === "function" ? weaponSnapshot() : null,
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
+        sentries: typeof sentrySnapshot === "function" ? sentrySnapshot() : undefined,   // the turrets' wear (js/antraids.js)
     };
 }
 function facilitySaveWrite() {
@@ -70,7 +71,7 @@ function facilitySaveApply(d) {
     const F = _fp.F, S = _fp.tut.script;
     // the player: class (no start kit again: the pack is the saved one), perks, pack, ammunition
     invReset(); playerClassKey = CLASSES[d.cls] ? d.cls : null; classPicker_off();
-    classPerks = new Set((d.perks || []).filter(id => CLASS_PERKS[id])); playerInv = d.inv && typeof d.inv === "object" ? d.inv : {};
+    classPerks = new Set((d.perks || []).filter(id => CLASS_PERKS[id])); playerInv = {}; if (d.inv && typeof d.inv === "object") for (const id of Object.keys(d.inv)) if (typeof ITEMS === "undefined" || ITEMS[id]) playerInv[id] = d.inv[id];   // (an item the game no longer has is dropped: the Vital Fleck, Prism and Core, removed 2026-11-01)
     // the classes you have been (a game saved before classes switched: the one it had), the weapon each last held, the Mutator's clone if it was waiting
     const dc = d.classes && typeof d.classes === "object" ? d.classes : {};
     classSeen = new Set((Array.isArray(dc.seen) ? dc.seen : []).concat(playerClassKey ? [playerClassKey] : []).filter(id => CLASSES[id]));
@@ -111,6 +112,7 @@ function facilitySaveApply(d) {
     if (typeof technoApply === "function") technoApply(d.tc);
     if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
+    if (typeof sentryApply === "function") sentryApply(d.sentries);   // the turrets' wear, a wrecked one with its repair station (js/antraids.js)
     // where the player stood (if that is still floor), and the followers with them
     const at = d.at; if (at && Number.isFinite(at[0]) && Number.isFinite(at[1]) && facilityStandOk(at[0], at[1])) { player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null; }
     for (const f of followers) { f.x = player.x + (Math.random() - 0.5) * 1.2; f.y = player.y + (Math.random() - 0.5) * 1.2; f.returningToCrystal = false; }
@@ -133,7 +135,7 @@ function followerRecord(a) {
         element: a.element || "fire", personality: a.personality, combatTrait: a.combatTrait, naturalTrait: a.naturalTrait, perk: a.perk, stats: a.stats, role: a.role,
         uid: a.uid || null, partnerUid: a.partnerUid || null,   // its bond (js/bonds.js)
         base: a.base || undefined, level: a.level, xp: a.xp,   // its level (js/levels.js); one waiting to respawn carries its own
-        hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // born of a bonded pair: the hp it was born with and its line (js/breeding.js; the Vital items restore to hp0: js/vital.js)
+        hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // born of a bonded pair: the hp it was born with and its line (js/breeding.js)
         evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined,   // js/evolution.js
         playStyle: a.playStyle || undefined,   // js/commandcenter.js
         post: a.post || undefined,             // the room it holds (js/party.js)
@@ -167,7 +169,9 @@ function followerBuild(entry) {
     if (entry.playStyle) npc.playStyle = entry.playStyle;
     if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
     if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base below already carries what it was born with; nothing is added again
-    if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp });
+    // A DEATH NO LONGER COSTS HP (the owner, 2026-11-01): a follower saved with hp stat lost to earlier deaths gets it back, up to what it was born with (js/breeding.js followerHp0)
+    let base = entry.base; if (base && Number.isFinite(base.hp) && typeof followerHp0 === "function") { const h0 = followerHp0(npc); if (base.hp < h0) base = Object.assign({}, base, { hp: h0 }); }
+    if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base, level: entry.level, xp: entry.xp });
     if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }
     return npc;
 }

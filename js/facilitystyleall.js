@@ -171,12 +171,13 @@ function _fpStylePropMore(it) {
         }
         if (on) { for (let i = 0; i < 2; i++) { const z = 66 + i * 8, c = P(x, y, z), rr = 12 - i * 3; ctx.strokeStyle = A.ink; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(c[0], c[1], rr, rr * 0.45, 0, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = _fpRgba("#31e8ff", 0.6 + 0.4 * Math.sin(f * 0.09 + i * 2)); ctx.lineWidth = 2.5; ctx.stroke(); } const g = P(x, y, 60); _fpGlow(g[0], g[1], 44, "#43e0a8", 0.26 + 0.08 * Math.sin(f * 0.06)); }
     } else if (k === "sentry") {   // an automatic sentry: a post, an armoured head that turns to its target, a barrel. Dead: a dark lamp. Fed: a cyan lamp, a muzzle flash when it fires
-        const on = typeof facilityFeedOn === "function" && facilityFeedOn(it.id), ang = it.aim || 0, c0 = P(x, y, 0), c1 = P(x, y, 30), hd = P(x, y, 40);
+        const on = typeof sentryOn === "function" ? sentryOn(it) : (typeof facilityFeedOn === "function" && facilityFeedOn(it.id)), ang = it.aim || 0, c0 = P(x, y, 0), c1 = P(x, y, 30), hd = P(x, y, 40);
         _fpStyleCyl(x, y, 0.3, 0, 8, A.tealDark, A.teal, A.tealLit, 3);
         ctx.strokeStyle = A.ink; ctx.lineWidth = 8; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(c0[0], c0[1] - 6); ctx.lineTo(c1[0], c1[1]); ctx.stroke(); ctx.strokeStyle = A.tealLit; ctx.lineWidth = 4; ctx.stroke();
         const bx = P(x + Math.cos(ang) * 0.62, y + Math.sin(ang) * 0.62, 40); ctx.strokeStyle = A.ink; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(hd[0], hd[1]); ctx.lineTo(bx[0], bx[1]); ctx.stroke(); ctx.strokeStyle = A.caseLit; ctx.lineWidth = 3.5; ctx.stroke(); ctx.lineCap = "butt";
         _fpBlob(hd[0], hd[1] - 2, 13, 11, A.caseLit, 3); ctx.fillStyle = on ? "#31e8ff" : ((Math.floor(f / 30) + seed) % 3 ? "#3a1410" : "#ff4a3a"); ctx.beginPath(); ctx.arc(hd[0] - 3, hd[1] - 4, 3, 0, 6.2832); ctx.fill();
         if (it.flash > 0) { _fpGlow(bx[0], bx[1], 28, "#7ff2ff", 0.8); } else if (on) _fpGlow(hd[0], hd[1], 22, "#31e8ff", 0.14);
+        if (typeof drawSentryWear === "function") drawSentryWear(it, hd[0], hd[1] - 4);   // (its wear: js/antraids.js)
     } else if (k === "charger") {   // a charging station: a cabinet with a bay and a bolt. Fed: the bay is lit mint; dead: dark
         const on = typeof facilityFeedOn === "function" && facilityFeedOn(it.id);
         _fpSPrism(it, 46, A.caseLit, A.case, _fpShade(A.caseLit, 0.93), 3.5);

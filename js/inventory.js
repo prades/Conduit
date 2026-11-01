@@ -108,22 +108,8 @@ const ITEMS = {
         lore: "Paler, and it does not settle. Side Quest never said you could. You did not ask.",
         get stats() { const P = typeof POTION !== "undefined" ? POTION : null; return P ? ["EFFECT  SLEEP, " + (Math.round(P.sleep * P.copyFactor) / 60).toFixed(2).replace(/\.?0+$/, "") + " S (A QUARTER OF THE ORIGINAL), " + P.radius + " TILES", "SPARES  YOU AND YOURS: ENEMIES ONLY", "THROWN BY  THE POTION PILL, OR " + P.key.toUpperCase() + ", ONCE EQUIPPED", "MADE AT  THE ANALYSIS BENCH, ◆" + P.copyPrice + ", WITH THE ORIGINAL IN YOUR PACK"] : []; },
         verb: () => typeof potionVerb === "function" ? potionVerb("sleeping_potion_copy") : "EQUIP", use: () => typeof potionUse === "function" ? potionUse("sleeping_potion_copy") : { ok: false, why: "NO POTION HERE" } },
-    // THE VITAL ITEMS (js/vital.js; the archive's follow-up scope, 2026-10-31): a Fleck, a Prism or a Core gives a follower back the hp stat its deaths have cost it, for good (up to what it was born with); hidden in the facility,
-    // a few in all (js/facilitymap.js pickups). Not a card, not a heal. The INSPECT lines are the table's (read when drawn, after js/vital.js has loaded).
-    vital_fleck: { id: "vital_fleck", name: "VITAL FLECK", cat: "sample", type: "consumable", stack: 5, col: "#ffb3c6", icon: "vital", classes: null,
-        desc: "A fleck off a Vital Prism. Given to a follower, it puts back 5 of the HP stat its deaths have cost it, for good.",
-        lore: "A chip of something that was grown, not cut. It is warm, and a little heavier each time you look at it.",
-        get stats() { return typeof vitalStats === "function" ? vitalStats("vital_fleck") : []; }, use: () => typeof vitalUse === "function" ? vitalUse("vital_fleck") : { ok: false, why: "NOTHING HAPPENS" } },
-    vital_prism: { id: "vital_prism", name: "VITAL PRISM", cat: "sample", type: "consumable", stack: 5, col: "#ff8fb0", icon: "vital", classes: null,
-        desc: "A whole Vital Prism. Given to a follower, it puts back 10 of the HP stat its deaths have cost it, for good.",
-        lore: "Six faces and a slow light inside that beats. Whoever grew these in the facility did not write down how.",
-        get stats() { return typeof vitalStats === "function" ? vitalStats("vital_prism") : []; }, use: () => typeof vitalUse === "function" ? vitalUse("vital_prism") : { ok: false, why: "NOTHING HAPPENS" } },
-    vital_core: { id: "vital_core", name: "VITAL CORE", cat: "sample", type: "consumable", stack: 5, col: "#ff5c8a", icon: "vital", classes: null,
-        desc: "The core of a Vital Prism, rare. Given to a follower, it puts back 20 of the HP stat its deaths have cost it, for good.",
-        lore: "The light inside does not beat. It holds. Hold it long enough and you feel your own pulse slow to meet it.",
-        get stats() { return typeof vitalStats === "function" ? vitalStats("vital_core") : []; }, use: () => typeof vitalUse === "function" ? vitalUse("vital_core") : { ok: false, why: "NOTHING HAPPENS" } },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy", "vital_fleck", "vital_prism", "vital_core"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy"];
 
 // ── the pack ──
 let playerInv = {};
@@ -172,14 +158,6 @@ function invFeedFollower() {
 
 // ── the icons: each draws centred on (x, y) in a box of `s` pixels (t is a slow clock for the inspect page's shine) ──
 const INV_ICONS = {
-    vital: (c, x, y, s, col, t) => {   // a Vital Prism: a six-faced crystal standing on its point, a slow light inside (js/vital.js)
-        const k = 0.5 + 0.5 * Math.sin((t || 0) * 0.06), top = y - s * 0.36, bot = y + s * 0.36, w = s * 0.2, sh = y - s * 0.1;
-        c.lineJoin = "round"; c.lineWidth = Math.max(1.5, s * 0.04); c.strokeStyle = "#3a1a26";
-        c.fillStyle = col; c.beginPath(); c.moveTo(x, top); c.lineTo(x + w, sh); c.lineTo(x + w * 0.7, y + s * 0.14); c.lineTo(x, bot); c.lineTo(x - w * 0.7, y + s * 0.14); c.lineTo(x - w, sh); c.closePath(); c.fill(); c.stroke();
-        c.fillStyle = "rgba(255,255,255,0.42)"; c.beginPath(); c.moveTo(x, top); c.lineTo(x - w, sh); c.lineTo(x - w * 0.7, y + s * 0.14); c.lineTo(x - w * 0.15, y - s * 0.02); c.closePath(); c.fill();   // the lit face
-        c.fillStyle = "rgba(90,10,40,0.35)"; c.beginPath(); c.moveTo(x, bot); c.lineTo(x + w * 0.7, y + s * 0.14); c.lineTo(x + w * 0.15, y - s * 0.02); c.closePath(); c.fill();   // the shaded one
-        c.fillStyle = "rgba(255,240,245," + (0.35 + 0.45 * k) + ")"; c.beginPath(); c.arc(x, y - s * 0.04, s * 0.06 + s * 0.03 * k, 0, 6.2832); c.fill();   // the light inside, beating
-    },
     rock: (c, x, y, s, col) => {   // a rough lump, scorched along one side
         c.lineJoin = "round"; c.lineWidth = Math.max(2, s * 0.05); c.strokeStyle = "#2a2018";
         c.fillStyle = "#8a7660"; c.beginPath(); c.moveTo(x - s * 0.32, y + s * 0.18); c.lineTo(x - s * 0.24, y - s * 0.16); c.lineTo(x - s * 0.02, y - s * 0.3); c.lineTo(x + s * 0.26, y - s * 0.18); c.lineTo(x + s * 0.34, y + s * 0.1); c.lineTo(x + s * 0.12, y + s * 0.3); c.lineTo(x - s * 0.18, y + s * 0.3); c.closePath(); c.fill(); c.stroke();

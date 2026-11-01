@@ -384,15 +384,7 @@ const FACILITY_MAP = {
         // Three ways to it, each on its own: a flux technician's Telegrab (it flies out over the rubble: an item anywhere on the screen); the electric technician's Kinetic Launcher set up on the ledge, which carries YOU over the
         // choke onto the floor (you take the vial and jump back down from the broken edge); or a fire technician's Thermite Drill through the choke from the ledge, after which anyone walks in.
         { id: "pk_sewer_sample", room: "sewers", at: [920, 800], items: [["sewer_sample", 1]], note: "A water sample at the far (east) end of the collapsed tunnel's floor, against its back wall, behind the choke." },
-        // THE VITAL ITEMS (js/vital.js; docs/FOLLOWER-PROGRESSION.md): five, hidden, once each (the archive's follow-up scope, 2026-10-31: "tucked-away corners, secret spaces, behind breakable obstacles where supported,
-        // and/or in dangerous optional routes ... a finite supply rather than an unlimited repeatable farm"). Where: the collapsed tunnel's floor, its west end (behind the choke), the cistern's far corner behind the
-        // boss gate (the Toxic Queen's room), the far end of the Cold Storage's ice cave past the technician's pad, the Armory's north-west corner, the arena's south-west corner. The count and the places are provisional
-        // (docs/OPEN-QUESTIONS.md). (A case must stand a whole tile inside its room's outline in the map as drawn AND as snapped: js/facility.js validates both; a one-tile alcove has no such point.)
-        { id: "pk_vital_tunnel", room: "sewers", at: [840, 800], items: [["vital_fleck", 1]], note: "A Vital Fleck at the west end of the collapsed tunnel's floor, against its back wall, behind the choke (the water sample is at the east end)." },
-        { id: "pk_vital_cistern", room: "sewers", at: [1320, 820], items: [["vital_core", 1]], note: "A Vital Core in the Nest's far north-east corner, among the queen's eggs, behind the boss gate (it lay in the cistern's north-west corner, which is the reservoir now)." },
-        { id: "pk_vital_cave", room: "cold_storage", at: [640, 860], items: [["vital_fleck", 1]], note: "A Vital Fleck at the far end of the ice cave, past the ice technician's pad." },
-        { id: "pk_vital_armory", room: "armory", at: [200, 960], items: [["vital_prism", 1]], note: "A Vital Prism in the Armory's north-west corner, behind the lockers." },
-        { id: "pk_vital_arena", room: "arena", at: [400, 1160], items: [["vital_prism", 1]], note: "A Vital Prism in the arena's south-west corner, below the west pad, against the rock." },
+        // (The five hidden VITAL items, a Fleck, a Prism and a Core, were removed 2026-11-01 with the HP a death cost: the owner, "Remove them".)
     ],
 
     // FOLLOWER SPOTS (js/followerspots.js): a place where a follower waits, in its egg, as one thing and nothing else: its `type` (brawler, sniper = the MAGE, camper = the TECHNICIAN) and its `element` are fixed,
@@ -464,8 +456,8 @@ const FACILITY_MAP = {
 
     // RELAYS: the electrical network (docs/TUTORIAL.md, phase 5). Each is a prop (a relay box) that the player repairs at (a station of kind "relay"). When one comes online the rooms it `powers` have power (the blackout lifts there), and what it `feeds` (props: sentries, the charging station) works.
     relays: [
-        { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", prop: "relay_chamber_box", powers: ["crystal_chamber"], feeds: ["sentry_chamber_1", "sentry_chamber_2"] },
-        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", prop: "relay_hall_box", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["sentry_hall", "charger_hall"] },
+        { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", prop: "relay_chamber_box", powers: ["crystal_chamber"], feeds: [] },   // (its two sentries run on the Crystal's power since 2026-11-01: js/crystalpower.js)
+        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", prop: "relay_hall_box", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["charger_hall"] },   // (its sentry runs on the Crystal's power since 2026-11-01)
         { id: "relay_lobby", name: "LOBBY RELAY", room: "front_lobby", prop: "relay_lobby_box", powers: ["front_lobby", "security_room"], feeds: [] },
         { id: "relay_lab", name: "LAB RELAY", room: "experiment_lab", prop: "relay_lab_box", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage under the lab)
         { id: "relay_show", name: "SHOW ROOM RELAY", room: "show_room", prop: "relay_show_box", powers: ["show_room"], feeds: [] },

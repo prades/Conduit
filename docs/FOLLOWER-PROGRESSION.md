@@ -1,4 +1,6 @@
-# Follower progression: the recruitment posts, breeding and the Vital items
+# Follower progression: the recruitment posts and breeding (the Vital items were removed 2026-11-01)
+
+**2026-11-01, the owner's playtest:** a death no longer costs a follower anything: it comes back with its HP stat and all its XP ("They need to be revived with the same amount of HP"; on its XP: "Remove it"), its return paid from the Crystal's power (docs/FACILITY.md "The Crystal's power"). So a follower never falls for good, and the **Vital items are gone** ("Remove them"): `js/vital.js`, the three item rows and the five hidden cases. A follower saved with HP stat lost to earlier deaths gets it back on load, up to its born hp (`followerHp0`, now in js/breeding.js). The sections below are the record of what was built on 2026-10-31; where they say otherwise, this note wins.
 
 Built 2026-10-31 (build `2026-10-31g`) from the Game Design Archive's *Next Major Update Framework*, section "Follow-up patch scope — follower scarcity, breeding quality, and Vital Prisms (2026-10-31)", and the brief that went with it. Three systems, each on the paths the game already had. Everything numeric is provisional and listed in docs/OPEN-QUESTIONS.md §1f.
 
@@ -7,7 +9,7 @@ The code: `js/followerspots.js` (the posts), `js/breeding.js` (breeding), `js/vi
 ## What a follower's numbers are (the audit, unchanged)
 
 - A follower is made from its personality (`applyPersonality`, js/species.js: hp 20 / defense 10 / attack 10 / speed 10 / special attack 10 / accuracy 10 / will 20, each times the personality's factor). Those creation stats are its **base**; its level scales the base into its **stats** (`levelledStats`), the evolved form and the equip cards multiply at apply time, and `maxHealth = round(stats.hp × 1.25 × the cards)` (`_applyFollowerLevel`, js/levels.js). Everything derives from the base, every time.
-- **Every death takes 1 off the base hp** (js/game.js, the death sweep: the respawn queue carries `hpStat = base.hp − 1`). At 0 the follower **falls for good**: its body lies where it fell, an Ice Mage preserves it in a capsule, and the capsule used at the Crystal (the Resurrection Zone) brings it back from its record (js/specimen.js, `spawnFollowerFromSave(rec)`).
+- **Every death took 1 off the base hp** (until 2026-11-01: now it takes nothing, and the respawn queue carries the base as it was). At 0 the follower **fell for good**: its body lies where it fell, an Ice Mage preserves it in a capsule, and the capsule used at the Crystal (the Resurrection Zone) brings it back from its record (js/specimen.js, `spawnFollowerFromSave(rec)`).
 - Shards: `shardCount`; a new game starts with 100; kills pay on the spot.
 
 ## 1. The recruitment posts (`js/followerspots.js`)
@@ -37,7 +39,7 @@ The eight pads of the map (`FACILITY_MAP.followerSpots`, stable ids `spot_lobby 
 - **Applied once**: the bonus lives in the base only. `_applyFollowerLevel` derives stats and health from the base on every level-up, reload (`followerBuild`), respawn (the queue entry's `base`) and restored body (`rec.base`); nothing is added again anywhere.
 - **Provenance**: `f.bred = { gen, parents: [uidA, uidB] }` (gen = the parents' highest + 1) and `f.hp0` (its born hp, what the Vital items restore to). Both are in `followerRecord` (the save, a fallen body's record), restored by `followerBuild`, carried by the respawn queue and its rebuild, and cleared by a RE-ROLL (someone new). A recruit's record writes neither. The INFO's VITALS show `ORIGIN: BRED · GEN n` (or `RECRUITED`).
 
-## 3. The Vital items (`js/vital.js`, `js/inventory.js`)
+## 3. The Vital items (REMOVED 2026-11-01; this was `js/vital.js`, `js/inventory.js`)
 
 | Item | Puts back | Rarity | Stack |
 | --- | --- | --- | --- |

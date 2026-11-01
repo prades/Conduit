@@ -2,7 +2,9 @@
 //
 // The audit: nothing threatened the Crystal between alarms, and its 300 health
 // was an attrition meter that never recovered. Now the crystal heals while no
-// alarm is up (js/config.js CRYSTAL_REGEN, applied in the frame: js/game.js).
+// alarm is up. Since 2026-11-01 that is the Crystal's IDLE REFILL (js/crystalpower.js
+// crystalRefillTick, applied in the frame: js/game.js): whole in five minutes with
+// no alarm up, no ant raid on and nothing drawn on its power for a moment.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -34,22 +36,23 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     await check('it heals while no alarm is up', () => {
         const h = after(false, 600);
-        ok(h > 100 + 600 * run('CRYSTAL_REGEN') * 0.9, 'it only reached ' + h);
+        const rate = run('crystal.maxHealth / CRYSTAL_POWER.refill.fullFrames'), idle = run('CRYSTAL_POWER.refill.idleAfter');
+        ok(h > 100 + (600 - idle) * rate * 0.9, 'it only reached ' + h);
     });
     await check('it does NOT heal during an alarm', () => {
         // The render loop ends an alarm by itself when nothing is left to fight,
         // so a live alarm cannot be held for a frame from outside; the guard is
         // read from the source instead.
-        ok(/if \(!alertActive && crystal\.health < crystal\.maxHealth\)/.test(rd('js/game.js')),
-           'the regeneration is not gated on there being no alarm');
+        ok(/if \(typeof alertActive !== "undefined" && alertActive\) return;/.test(rd('js/crystalpower.js')) && /crystalRefillTick\(\)/.test(rd('js/game.js')),
+           'the refill is not gated on there being no alarm');
     });
     await check('it never heals past its maximum', () => {
         run('crystal.health = crystal.maxHealth - 0.001; alertActive = false; for (let i = 0; i < 50; i++) render();');
         ok(run('crystal.health <= crystal.maxHealth'), 'it overflowed');
     });
     await check('the rate is slow: minutes from empty, not seconds', () => {
-        const secs = run('crystal.maxHealth') / (run('CRYSTAL_REGEN') * 60);
-        ok(secs >= 240, 'it heals fully in ' + Math.round(secs) + 's — that makes it free');
+        const secs = run('CRYSTAL_POWER.refill.fullFrames') / 60;
+        ok(secs >= 240 && secs <= 360, 'it heals fully in ' + Math.round(secs) + 's (the owner: about five minutes)');
     });
     await check('the GAME INDEX says so', () => {
         ok(/heals slowly/i.test(rd('game.html')), 'the index does not mention crystal regeneration');

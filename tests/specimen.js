@@ -23,14 +23,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; respawnQueue.length = 0; floatingTexts.length = 0;
             mutatorReset(); specimenReset(); invReset(); playerClassKey = null; classPerks = new Set(); weaponReset(); player.x = player.targetX = player.visualX = crystal.x - 2; player.y = player.targetY = player.visualY = crystal.y + 5; player.fpPath = null; };
         globalThis.__fol = (el, type, dx, dy) => { spawnFollowerAtCrystal(el, type); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.x = player.x + (dx || 0); f.y = player.y + (dy || 0); return f; };
-        globalThis.__fall = (f, forGood) => { if (forGood) f.base.hp = 1; const foe = { x: f.x + 1, y: f.y, team: 'red' }; for (let i = 0; i < 20 && !f.dead; i++) applyDamage(f, f.maxHealth, foe); render(); render(); return cloneBodies.find(b => b.actor === f) || null; };
+        // a fall: a follower struck down (it always comes back at the Crystal now: a death costs it nothing, the owner's rule of 2026-11-01); FOR GOOD: the body an OLDER save can still hold, from when a
+        // death wore the HP stat down and at 0 the follower fell for good (js/specimen.js specimenFollowerFell, kept for those bodies and their capsules; the game no longer makes one)
+        globalThis.__fall = (f, forGood) => { if (forGood) { f.queuedForRespawn = true; f.dead = true; const b = specimenFollowerFell(f); render(); render(); return b; } const foe = { x: f.x + 1, y: f.y, team: 'red' }; for (let i = 0; i < 20 && !f.dead; i++) applyDamage(f, f.maxHealth, foe); render(); render(); return cloneBodies.find(b => b.actor === f) || null; };
         globalThis.__frames = n => { for (let i = 0; i < n; i++) render(); };`);
 
     group('1. A FRIENDLY CREATURE DIES AND LEAVES A RECOVERABLE BODY');
-    check('a follower that falls FOR GOOD (its HP stat has run out) leaves its body, with what it was; one that falls and comes back at the Crystal leaves none', () => {
-        const r = J(`(function(){ __clear(); const a = __fol('fire', 'brawler', 1.5, 0); const back = __fall(a, false); const queued = respawnQueue.length; const b = __fol('electric', 'sniper', 2, 1); b.level = 12; const lv = b.level; const body = __fall(b, true);
-            return { back: !!back, queued, body: !!body, kind: body && body.kind, rec: body && [body.rec.element, body.rec.role, body.rec.level], lv, said: floatingTexts.map(t => t.text).join('|') }; })()`);
-        same(r.back, false, 'a follower that comes back left a body'); same(r.queued, 1, 'it was not queued to come back'); same(r.body, true, 'no body'); same(r.kind, 'follower', 'its kind');
+    check('a follower that falls always comes back at the Crystal with its HP stat, and leaves no body (the owner, 2026-11-01: a death costs it nothing, even with its HP stat at 1); a follower\'s body an older save still holds is a body with what it was', () => {
+        const r = J(`(function(){ __clear(); const a = __fol('fire', 'brawler', 1.5, 0); a.base.hp = 1; const back = __fall(a, false); const queued = respawnQueue.length; const q = respawnQueue[0]; const kept = !!(q && q.base && q.base.hp === 1); const b = __fol('electric', 'sniper', 2, 1); b.level = 12; const lv = b.level; const body = __fall(b, true);
+            return { back: !!back, queued, kept, body: !!body, kind: body && body.kind, rec: body && [body.rec.element, body.rec.role, body.rec.level], lv, said: floatingTexts.map(t => t.text).join('|') }; })()`);
+        same(r.back, false, 'a follower that comes back left a body'); same(r.queued, 1, 'it was not queued to come back'); same(r.kept, true, 'its HP stat was worn down'); same(r.body, true, 'no body from the older save'); same(r.kind, 'follower', 'its kind');
         same(r.rec.join(), 'electric,sniper,' + r.lv, 'its record'); ok(/FALLEN FOR GOOD/.test(r.said), 'nobody said: ' + r.said);
     });
     check('the Mutator\'s clone leaves its body too (js/mutator.js), and a body is drawn where it fell, a follower\'s as the follower it was', () => {

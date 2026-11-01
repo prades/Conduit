@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-11-01g";
+const BUILD_VERSION = "2026-11-01h";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -162,9 +162,7 @@ const FX_VIGNETTE     = 0.2;   // the eruption's red edges
 const FX_CRATER_FRAMES = 300;  // the eruption's crater lasts 5 s
 const FX_CRATER_ALPHA = 0.35;
 const FX_FROST_ALPHA  = 0.08;  // the blizzard's frost over the floor of its field
-// The crystal heals slowly while no alarm is up, so one bad fight is not a
-// permanent wound: 0.01 a frame is 0.6 a second, about eight minutes from empty.
-const CRYSTAL_REGEN = 0.01;
+// (The crystal's slow healing while no alarm is up, CRYSTAL_REGEN, 0.01 a frame, is now its IDLE REFILL: js/crystalpower.js CRYSTAL_POWER.refill, whole in five minutes, the owner's answer of 2026-11-01.)
 
 let projectiles = [], fragments = [], smoke = [], shards = [];
 let floatingTexts = [];   // { x, y, text, color, life, vy, size } (js/drops.js draws them)

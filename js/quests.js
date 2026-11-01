@@ -108,7 +108,7 @@ function questTick() {
     if (!Q.nestSeenAt && typeof facilityAreaAt === "function") { const a = facilityAreaAt(player.x, player.y, P.room); if (a && a.nest) questMark(Q, "nestSeenAt", "◈ THE NEST: THE QUEEN'S COLONY, BUILT ON A DAM OF TRASH ACROSS THE WATER. HER EGGS ARE EVERYWHERE — THE BROOD COMES FROM HERE", "#8cff5a"); }   // (your note, once, the first time you stand in it: js/population.js NESTS)
     if (Q.installedAt && !Q.purifiedAt) {   // THE CYCLE: the module runs, the water clears, then the boss is calmed if it lives
         Q.cycleLeft = Math.max(0, (Q.cycleLeft || 0) - 1);
-        if (!Q.cycleLeft) { questMark(Q, "purifiedAt", "◈ THE RUNOFF RUNS CLEAN — THE SEWERS ARE PURIFIED", "#9dffb6"); Q.closeLeft = P.closing; if (typeof bossCalm === "function") bossCalm(P.boss); if (typeof facilityBroodThin === "function") facilityBroodThin(); }   // (the major infestation clears: js/facilityspawn.js)
+        if (!Q.cycleLeft) { questMark(Q, "purifiedAt", "◈ THE RUNOFF RUNS CLEAN — THE SEWERS ARE PURIFIED", "#9dffb6"); Q.closeLeft = P.closing; if (typeof bossCalm === "function") bossCalm(P.boss); if (typeof facilityBroodThin === "function") facilityBroodThin(); if (typeof facilityBroodCleanse === "function") facilityBroodCleanse(); }   // (the major infestation clears, and what is left is toxic no more: js/facilityspawn.js)
     }
     if (Q.purifiedAt && Q.closeLeft > 0) Q.closeLeft--;
     // the step that is up is noted once, by you (its words, then its hint: the dialogue box; js/tutorial.js tutSaidOnce keeps the record in the save)
@@ -190,7 +190,11 @@ function questMountUse() {   // the install is complete (js/stations.js buildCom
 
 // ── the boss (js/bosses.js tells the quest) ──
 function questBossStarted(id) { const Q = questState("purify"); if (id === QUEST_PURIFY.boss) questMark(Q, "bossStartedAt"); }
-function questBossResolved(id, outcome) { const Q = questState("purify"); if (id !== QUEST_PURIFY.boss) return; if (outcome === "defeated") Q.bossDefeated = Math.max(1, _questNow()); if (!Q.bossResolvedAt) { Q.bossOutcome = outcome; questMark(Q, "bossResolvedAt"); } }
+function questBossResolved(id, outcome) {
+    const Q = questState("purify"); if (id !== QUEST_PURIFY.boss) return;
+    if (outcome === "defeated") { const first = !Q.bossDefeated; Q.bossDefeated = Math.max(1, _questNow()); if (first && !Q.purifiedAt && typeof facilityBroodThin === "function") facilityBroodThin(); }   // (her death thins the brood, the water clean or not: the owner, 2026-11-01)
+    if (!Q.bossResolvedAt) { Q.bossOutcome = outcome; questMark(Q, "bossResolvedAt"); }
+}
 
 // ── the save (js/facilitysave.js): the records as they are; a load puts the world's part of them back (the gate open) ──
 function questSnapshot() { const out = {}; const q = typeof _fp !== "undefined" && _fp && _fp.quests || {}; for (const id of Object.keys(q)) out[id] = Object.assign({}, q[id]); return out; }
