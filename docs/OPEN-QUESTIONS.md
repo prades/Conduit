@@ -163,7 +163,9 @@ Asked: "The ember plating looks good. Series 2. Pick a price and set the odds fo
   - Regrowth heals only while the follower is hurt.
 - **Fixed on the way:** the market's shelf could sell Series 2 cards before the pack opened; a jelly card's refusal read "FOR JELLYS".
 
-Open, for the owner (playtest): the price and odds; the cards' numbers once played; the eight Lustrous cards (keep the draft's, or change them, before they are built); whether a later pack deals the Crystalline six.
+**Answered the same day:** the price and odds are kept ("Keep the price and odds"), and the eight Lustrous cards stay as drafts in docs/SERIES-2.md, to build later ("They're just drafts, so just keep them around").
+
+Still open, for the owner (playtest): the cards' numbers once played; whether a later pack deals the Crystalline six.
 
 ## 2. Newly open
 

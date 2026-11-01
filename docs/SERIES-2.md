@@ -158,9 +158,12 @@ Tests: tests/series2.js (the pack, the 32 cards, the price and odds, the lock, f
   - Once they are in, the pack's `eligible` list takes Lustrous and its odds get a fifth weight.
 - **The 3D items** for the 32 built cards, after Pack 1's.
 
+## Answered (the owner, 2026-11-01)
+
+- **The price and odds** (◆150; 50 / 30 / 15 / 5): kept ("Keep the price and odds").
+- **Lustrous:** the eight proposed above are kept as drafts, to build later ("Keep the 8 drafted lustrous cards. They're just drafts, so just keep them around").
+
 ## Open, for the owner
 
 1. **The numbers.** All are a first guess, a little above Pack 1's since Series 2 unlocks later (after the purification). Play will say.
-2. **The price and odds** (◆150; 50 / 30 / 15 / 5) were PICKED at your word. Change them freely: they are two lines in `EQUIP_PACK2`.
-3. **Lustrous:** keep the eight proposed above, or change them, before they are built?
-4. **Crystalline:** should a later pack deal the existing six Crystalline class cards as its rarest tier?
+2. **Crystalline:** should a later pack deal the existing six Crystalline class cards as its rarest tier?
