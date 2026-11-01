@@ -128,6 +128,8 @@ Each equip card is to show its **own item**, modelled in 3D and lit as the props
 
 On a card, the item stands in front of the tilted card, over its picture, and rises past its top edge. It hovers (`cdHover`) while its shadow on the card breathes. On the collection's stage it is blown up.
 
+**Its size** (build `m`; the owner, of the eighteen on preview in the new collection: "They're a little bit too big. They're blocking the buttons above it for sorting"): 140 × 176 on a 225 × 315 card (it was 168 × 212), rising 16 px past the card's top edge (it was 48), blown up on the stage to 1.06 (it was 1.2, with a pop to 1.36; now to about 1.12). The stage has 14 px of room above it, so neither the card's arrival nor its item's pop reaches the SHOW / SORT BY bar, which is drawn over a card's art in any case. Measured for all eighteen through the arrival and a whole hover: at least 3 px clear of the bar at 1180 × 820 and at 1024 × 768.
+
 docs/ART-PROCESS.md applies: one piece first, and **each item is approved on its own**. js/cardart.js `CARD_ITEMS` has two lists: `ids` (every card whose item is baked) and `approved` (the ones the owner approved).
 - **EMBER PLATING is approved** ("The ember plating looks good"), so it is live for everyone since build `j`.
 - **A baked item not yet approved** shows only with `?cardart=items`, while the approved ones stay on. **Pack 1's other seventeen are baked (build `k`) and on preview**, awaiting the owner's look one by one. Series 2's 32 come after.

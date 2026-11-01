@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-01
 
+- **m · The card items smaller, clear of the sort bar** (the owner, of Pack 1's eighteen items in the new collection: "They're a little bit too big. They're blocking the buttons above it for sorting"; commit named in git log).
+  - Each item is 140 × 176 (it was 168 × 212) and rises 16 px past its card's top edge (it was 48); on the collection's stage it is blown up to 1.06 (it was 1.2), with a softer pop on arrival.
+  - The stage has 14 px of room above it, and the SHOW / SORT BY bar is drawn over a card's art: no item reaches the bar, through its arrival and its hover (all eighteen measured at 1180 × 820 and 1024 × 768).
+  - The seventeen new items are still on preview (`?cardart=items`) until approved. Tests updated: cards (the item clears the bar), cardart. Written up: docs/UI-STYLE.md "The card items".
 - **l · The CARDS screen in two menus, the cards taken into the run lit gold, YOU on the roster, a pack's reveal** (the owner: "the items in the shop are in a new menu on the card menu called shop", "the player may view all the cards that are in the game with the same scroll mechanics", a pack's cards "in a straight row with the rarest card ... illuminated from the back", then "the hand part should be out of the picture ... an illuminated background that is yellow, matching the purchased button color scheme ... a new player icon and player card in the roster"; commit named in git log).
   - **Two menus** (js/cardsui.js `_cdTabs`): CARDS, the collection; SHOP, the booster packs and the market. The rows of big cards for the hand and the cards found are gone: those cards are on the collection's rail.
   - **The collection** shows OWNED (kept for good and found this run) or ALL (every card in the game, each unlockable from the stage). Nothing is beside its stage: a first draft's notch of the hand and the bordered panel with the player's slots were taken out at the owner's word.

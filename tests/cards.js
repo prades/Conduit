@@ -119,6 +119,10 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
         var s = await pick(minis()[bi]), name = s.querySelector('.cd-name').textContent, c = Object.values(equipCards()).filter(function(x){ return x.name === name; })[0]; var chip = s.querySelector('.cd-chip'), sr = s.getBoundingClientRect(), cr = chip ? chip.getBoundingClientRect() : null;
         out.bars.push([name, s.querySelectorAll('.cd-chip i.on').length, s.querySelectorAll('.cd-chip i').length, c ? equipRarityBars(c) : -1, s.querySelector('.cd-rar').textContent, c ? equipRarityLabel(c) : '', s.querySelectorAll('.cd-chip').length, cr ? [Math.round(sr.right - cr.right), Math.round(cr.top - sr.top), Math.round(cr.height), (chip.getAttribute('aria-label') || '')] : null]);
       }
+      // A CARD'S ITEM on the stage stays clear of the SHOW / SORT BY bar above it (build l, the owner: "They're a little bit too big. They're blocking the buttons above it for sorting"): measured at rest, the stage's blow-up
+      // (1.06, from 80% down) and the hover (8 px) need 17 px; and the bar is drawn over the card's art in any case
+      var emb = miniFind(function(m){ return miniName(m) === 'EMBER PLATING'; }); if (emb) { await pick(emb); var it = $('#cardsRoot .cd-stage .cd-item'), dbar = $('#cardsRoot .cd-deckbar');
+        out.item = it ? { gap: Math.round(it.getBoundingClientRect().top - dbar.getBoundingClientRect().bottom), w: Math.round(it.getBoundingClientRect().width), h: Math.round(it.getBoundingClientRect().height), barZ: getComputedStyle(dbar).zIndex, itemZ: getComputedStyle(it).zIndex } : null; }
       // CLOSE, and the key
       click($('#cardsRoot .cd-close')); await wait(60); out.closed = { cls: $('#cardsRoot').className, body: document.body.classList.contains('cardsOpen'), hud: shown($('#topToggles')) };
       click(btn); await wait(100); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await wait(60); out.escaped = $('#cardsRoot').className;
@@ -482,6 +486,10 @@ function measure(w, h, query, seed) {
                 same(T.you.worn.join('|'), 'TEST · UNIVERSAL A(gold)|EMPTY', 'the player\'s card'); same(T.you.pips, 1, 'the tile\'s lit slots'); same(T.you.tapOpens, 'YOUR SLOT 2', 'a tap on the second card did not open its list');
                 same(en(T.pList1), 'TEST · UNIVERSAL B', 'what the second can take once the first has A (EMPTY is off while it is empty)'); same(T.pAfter2.join(), 'test_universal_a,test_universal_b', 'both slots');
                 same(T.you.next.join('|'), 'false|true|ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2|none', '▸ from the player: the strip\'s first creature, its settings, the player\'s cards put away');
+            });
+            await check('A CARD\'S ITEM is smaller since build l (the owner: "They\'re a little bit too big. They\'re blocking the buttons above it for sorting"): 140 × 176, and on the stage it stays clear of the SHOW / SORT BY bar, which is drawn over it in any case', () => {
+                ok(T.item, 'EMBER PLATING has no item on the stage'); same(T.item.w + ' × ' + T.item.h, '140 × 176', 'its size'); ok(T.item.gap >= 17, 'the item comes within ' + T.item.gap + ' px of the bar (17 needed for the blow-up and the hover)');
+                ok(+T.item.barZ > +T.item.itemZ, 'the bar is not drawn over the item: ' + T.item.barZ + ' / ' + T.item.itemZ);
             });
             await check('✕ CLOSE and Escape shut the sheet and give the HUD back', () => { same(T.closed.cls.indexOf('open') < 0, true, 'close'); same(T.closed.body, false, 'body.cardsOpen after'); same(T.closed.hud, true, 'the dock did not come back'); same(T.escaped.indexOf('open') < 0, true, 'Escape'); });
             await check('THE ROSTER: the creature in view shows its SUBCLASS (a row, and a tag on its picture), and CARD 1 and CARD 2 under its styles', () => {

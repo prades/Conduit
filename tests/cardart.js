@@ -216,7 +216,7 @@ function measure(w, h) {
     });
     await check('on a card the item takes the crystal\'s place, stands in front of the tilted card and rises past its top, hovering; on the collection\'s stage it is blown up', () => {
         const html = rd('game.html'), ui = rd('js/cardsui.js');
-        ok(/#cardsRoot \.cd-card\.itemed \.cd-gem \{ display: none; \}/.test(html), 'the crystal stays under the item'); ok(/#cardsRoot \.cd-item \{[^}]*top: -48px[^}]*animation: cdHover/.test(html), 'the item does not rise past the top, hovering');
+        ok(/#cardsRoot \.cd-card\.itemed \.cd-gem \{ display: none; \}/.test(html), 'the crystal stays under the item'); ok(/#cardsRoot \.cd-item \{[^}]*top: -16px[^}]*animation: cdHover/.test(html), 'the item does not rise past the top (16 px since build l: it was too big), hovering');
         ok(/#cardsRoot \.cd-stage \.cd-item \{[^}]*cdBlowItem/.test(html), 'the stage does not blow it up'); ok(/cardArtItemUrl\(c\)/.test(ui) && /"cd-item"/.test(ui), 'the card does not ask for its item');
     });
 
