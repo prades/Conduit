@@ -246,7 +246,7 @@ class Predator {
         // Brush against one, or let it walk up to you, and it turns on you: you are its prey (COMBAT.prey), and it bites you in the bite's two beats, the telegraph first (it bit at once,
         // with no warning, and only by touch: from a melee weapon's reach nothing could touch the player at all). Its shots and specials still pass you by.
         // (not a CALM boss: it defends itself if HIT, js/bosses.js; a touch re-provoked the Toxic Queen the very frame the clean water calmed her, with you beside her at the console)
-        if (!this.isClone && !this.untargetable && !(this.bossCalm && !this.provoked) && typeof predatorMayHurtPlayer === "function" && predatorMayHurtPlayer() && typeof player !== "undefined") {
+        if (!this.isClone && !this.untargetable && typeof predatorMayHurtPlayer === "function" && predatorMayHurtPlayer() && !(this.bossCalm && !this.provoked) && typeof player !== "undefined") {
             const pdx = player.x - this.x, pdy = player.y - this.y, _br = typeof PLAYER_BITE_RANGE === "number" ? PLAYER_BITE_RANGE : 0.9;
             if (pdx * pdx + pdy * pdy <= _br * _br && this.currentTarget !== player) { faceToward(this, player.x, player.y, 0.5); this.lastAttacker = player; this.provoked = true; this._prey = player; }
         }
