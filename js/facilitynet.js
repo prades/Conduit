@@ -36,7 +36,14 @@ function facilityRoomName(id) { return FP_ROOM_TAG[id] || String(id || "").repla
 function facilityZoneName() {
     if (typeof facilityPlay === "undefined" || !facilityPlay || !_fp || !_fp.F) return null;
     const r = facilityRoomAt(player.visualX, player.visualY, _fp.F); if (r) _fp.zoneRoom = r.id;
-    return _fp.zoneRoom ? facilityRoomName(_fp.zoneRoom) : null;
+    const area = _fp.zoneRoom ? facilityAreaAt(player.visualX, player.visualY, _fp.zoneRoom) : null;   // (a named part of a room: the Sewers' Nest)
+    return area ? area.label : _fp.zoneRoom ? facilityRoomName(_fp.zoneRoom) : null;
+}
+// a named AREA of a room the point is in (decor of kind `area`: a rectangle with a label; the Sewers' east end is THE NEST, js/population.js), or null
+function facilityAreaAt(x, y, room) {
+    if (!_fp || !_fp.F) return null;
+    for (const d of _fp.F.decor || []) if (d.kind === "area" && d.rect && (!room || d.room === room) && x >= d.rect[0] && x <= d.rect[2] && y >= d.rect[1] && y <= d.rect[3]) return d;
+    return null;
 }
 // the grid as numbers: the relays with their state, and the rooms that have power
 function facilityNetState() {

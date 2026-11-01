@@ -109,6 +109,16 @@ function partyPosted() { return typeof followers === "undefined" ? [] : follower
 // the followers holding a room, the one held last first (COME calls them back in that order)
 function partyHeld() { return partyPosted().sort((a, b) => (b.postAt || 0) - (a.postAt || 0)); }
 function partyFull(except) { return partyMembers().filter(m => m !== except).length >= PARTY.max; }
+// THE MUTATOR'S CLONE IN THE SQUAD. ASKED (2026-11-01): "The active clone needs to become a full member of the player's squad [...] Display the clone alongside other squad members [...] Allow the player to select the
+// clone individually [...] participate in squad-wide commands [...] Include the clone in attack selections and other applicable group actions." It is not a follower (no element, role, cards or room to hold) and it does
+// not take one of the three places: it stands with the squad as a card of its own after theirs (_partyCloneCard), a tap on it picks it alone, the orders reach it as they reach the squad (js/helpers.js getCommandPool:
+// RETREAT, HOLD, COME, ALL, the enemy card's ATTACK), it shares the squad's kill XP (js/levels.js awardKillXp) and comes through a doorway with it (js/facilityportals.js _pCarries). Its own life is the Mutator's
+// (js/mutator.js): grown at the Clone Bay, upgraded with DNA, it does not come back when it falls.
+const PARTY_CLONE_COL = "#c06bff";   // the Mutator's colour (js/classes.js)
+function partyClone() { if (!partyOn() || typeof mutatorClone !== "function") return null; const c = mutatorClone(); return c && !c.dead && c.team === "green" ? c : null; }
+// the squad and the clone, in card order (the cards, the counts the battle tool says)
+function partyUnits() { const c = partyClone(); return c ? partyOrdered().concat([c]) : partyOrdered(); }
+function partySquadHas(u) { return !!u && (partyIsMember(u) || u === partyClone()); }
 function _partySay(text, col, big) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color: col || "#19e6c1", life: big ? 150 : 100, vy: -0.25, size: big ? 16 : 12 }); }   // (big: a refusal the player must not miss)
 
 // Every member has a slot (0 to max - 1) that it keeps while it is in the squad, so the three cards on the squad bar do not shuffle. A member that finds no free slot (the squad is full: it is new, or the squad was made over-full some other way)
@@ -293,8 +303,40 @@ function partyBarRender(force) {
     const on = partyOn(); if (root.classList) root.classList.toggle("on", on);
     if (typeof document !== "undefined" && document.body && document.body.classList) { document.body.classList.toggle("squad-bar", on); document.body.classList.toggle("corners", hudCorners()); }   // (a phone moves the battle tool up for the bar; a tablet or a desktop puts every group of the HUD in its corner: game.html)
     if (!on) { if (typeof partyFlyRender === "function") partyFlyRender(); return; }
-    partySlotsUpdate(partyBarBuild(root));
+    const E = partyBarBuild(root); partySlotsUpdate(E); _partyCloneCard(E);
     if (typeof partyFlyRender === "function") partyFlyRender();
+}
+// THE CLONE'S CARD on the bar, after the squad's three: made while the Mutator's clone is alive and taken away when it is not (the bar's own three are always three). The same card as a member's (the picture, the
+// name, LV and how it is, its health with the numbers, its XP), in the Mutator's purple, its picture the creature itself; no ability chip and no REMOVE (it is not a follower: it is released at the Clone Bay).
+// A tap picks it alone (js/party.js partyBarClick, as for a member), its i is its INFO (the creature's index, js/unitinfo.js cloneInfo).
+function _partyCloneCard(E) {
+    const c = partyClone(), body = typeof document !== "undefined" && document.body ? document.body : null;
+    if (body && body.classList) body.classList.toggle("has-clone", !!c);   // (a phone makes room for it: game.html)
+    if (!c) { if (E.clone) { if (E.clone.parentNode) E.clone.parentNode.removeChild(E.clone); E.clone = null; } return; }
+    if (!E.clone || E.clone.parentNode !== E.root) {
+        const el = document.createElement("div"); el.className = "sb-slot sb-clone"; el.setAttribute("data-slot", "clone");
+        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><span class="sb-ctag">CLONE</span>';
+        if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", PARTY_CLONE_COL);
+        E.root.appendChild(el); E.clone = el;
+    }
+    const el = E.clone, st = typeof unitStatus === "function" ? unitStatus(c) : null;
+    if (el._unit !== c) { el._unit = c; el._thumbKey = null; }
+    el.classList.toggle("sel", typeof selectedUnits !== "undefined" && selectedUnits.has(c));
+    const nm = el.querySelector(".sb-name"), sb = el.querySelector(".sb-sub"), hp = el.querySelector(".sb-hp u"), hpn = el.querySelector(".sb-hpn");
+    _sbSet(nm, "textContent", typeof unitTypeLabel === "function" ? unitTypeLabel(c) : "CLONE");
+    _sbSet(sb, "textContent", "LV " + (c.level || 1) + " · " + (st ? st.text : "FOLLOWING")); if (st && sb.style) sb.style.color = st.col;
+    const frac = Math.max(0, Math.min(1, (c.health || 0) / (c.maxHealth || 1))), w = Math.round(frac * 100) + "%", cls = frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low";
+    if (hp && hp.style.width !== w) hp.style.width = w; if (hp && hp.className !== cls) hp.className = cls;
+    if (hpn) _sbSet(hpn, "textContent", Math.max(0, Math.round(c.health || 0)) + "/" + Math.max(1, Math.round(c.maxHealth || 1)));
+    _partyXpBar(el, c);
+    const key = c.speciesName + "|" + c.className;
+    if (el._thumbKey !== key) { el._thumbKey = key; partyCloneThumb(el.querySelector(".sb-thumb"), c); }
+}
+// the clone's picture on a small canvas: the creature itself (js/clone.js drawCloneArt), not a coloured blob
+function partyCloneThumb(cv, c) {
+    const g = cv && cv.getContext ? cv.getContext("2d") : null; if (!g || !c) return;
+    g.clearRect(0, 0, cv.width, cv.height);
+    if (typeof drawCloneArt === "function") drawCloneArt(g, { key: c.speciesName + "_" + (c.className || "scout"), speciesName: c.speciesName, className: c.className || "scout", ready: true }, cv.width / 2, cv.height * 0.66, cv.width / 64);
 }
 // THE SQUAD BOX (the Command Center's roster, the facility): a tap on a card selects that follower (the side panel then offers REMOVE FROM SQUAD); the i is its INFO; an open slot lists the followers that could fill it (the roster's NOT IN SQUAD)
 // In the carousel (js/commandcenter.js ccCarousel) a tap on a member's card puts that member in view, and its ✕ REMOVE takes it out of the squad (it holds the room it is in); on a phone the card picks the follower, as it does on the bar.

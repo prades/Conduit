@@ -107,6 +107,7 @@ function _radialDrawSquad(panel) {
         if (r) { panel.appendChild(_radialCard(r)); continue; }
         const o = _rEl("div", "rp-card rp-open"); o.style.setProperty("--c", "#6d7fa6"); const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", "+ OPEN SLOT")); mid.appendChild(_rEl("div", "rp-csub", "ADD A FOLLOWER FROM THE ROSTER")); o.appendChild(mid); panel.appendChild(o);
     }
+    { const c = typeof partyClone === "function" ? partyClone() : null; if (c) panel.appendChild(_radialCard(_radialCloneRow(c))); }   // the Mutator's clone, with the squad (js/party.js partyClone)
     const d = _rEl("button", "rp-btn wide", "DISBAND SQUAD"); d.style.setProperty("--c", "#ff4a1c"); if (!n) d.disabled = true; _rClick(d, () => { partyDisband(); radialRender(); }); panel.appendChild(d);
 }
 
@@ -131,14 +132,21 @@ function _radialSquadStrip(panel) {
         const on = typeof selectedUnits !== "undefined" && selectedUnits.has(f), c = _rEl("button", "rp-btn small" + (on ? " on" : ""), typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER"); c.style.setProperty("--c", _radialElementColour(f.element));
         _rClick(c, () => { if (typeof ccToggle === "function") ccToggle(f); radialRender(); }); strip.appendChild(c);
     }
+    { const k = typeof partyClone === "function" ? partyClone() : null;   // the Mutator's clone: picked alone with a tap, like a member
+      if (k) { const on = typeof selectedUnits !== "undefined" && selectedUnits.has(k), c = _rEl("button", "rp-btn small" + (on ? " on" : ""), typeof unitTypeLabel === "function" ? unitTypeLabel(k) : "CLONE"); c.style.setProperty("--c", typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : "#c06bff");
+               _rClick(c, () => { if (typeof ccToggle === "function") ccToggle(k); radialRender(); }); strip.appendChild(c); } }
     panel.appendChild(strip);
+}
+// the clone as a row for _radialCard: its name, its health, the Mutator's colour (it has no element)
+function _radialCloneRow(c) {
+    return { f: c, element: null, name: typeof unitTypeLabel === "function" ? unitTypeLabel(c) : "CLONE", level: c.level || 1, hp: Math.max(0, Math.min(1, (c.health || 0) / (c.maxHealth || 1))), role: null, evolved: false, clone: true };
 }
 // one follower's card: its picture, name, status, level and health, and its buttons (ADD TO / REMOVE FROM SQUAD; INFO; in the ROSTER, EXILE); a tap on the card selects it
 function _radialCard(r, roster) {
     const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));
-    card.style.setProperty("--c", _radialElementColour(r.element));
-    if (typeof cardArtUnitClass === "function") cardArtMark(card, cardArtUnitClass(r.f));   // its backdrop (js/cardart.js)
-    const cv = _rEl("canvas", "rp-thumb"); cv.width = 44; cv.height = 44; cv.style.width = "36px"; cv.style.height = "36px"; _radialThumb(cv, r.f); card.appendChild(cv);
+    card.style.setProperty("--c", r.clone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : _radialElementColour(r.element));   // (the Mutator's clone: the Mutator's colour)
+    if (typeof cardArtUnitClass === "function") cardArtMark(card, r.clone ? "" : cardArtUnitClass(r.f));   // its backdrop (js/cardart.js)
+    const cv = _rEl("canvas", "rp-thumb"); cv.width = 44; cv.height = 44; cv.style.width = "36px"; cv.style.height = "36px"; if (r.clone && typeof partyCloneThumb === "function") partyCloneThumb(cv, r.f); else _radialThumb(cv, r.f); card.appendChild(cv);
     const mid = _rEl("div", "rp-mid"); mid.appendChild(_rEl("div", "rp-cname", r.name)); { const st = typeof unitStatus === "function" ? unitStatus(r.f) : null; if (st) { const c = _rEl("div", "rp-cstat", st.text + (st.room ? " \u00b7 " + st.room : "")); c.setAttribute("style", "--c:" + st.col + ";"); mid.appendChild(c); } } mid.appendChild(_rEl("div", "rp-csub", ({ brawler: "BRAWL", mage: "MAGE", technician: "TECH" })[r.role] + " · LV " + r.level));
     const bar = _rEl("div", "rp-bar"), fill = _rEl("i"); fill.style.width = Math.round(r.hp * 100) + "%"; bar.appendChild(fill); mid.appendChild(bar); card.appendChild(mid);
     if (r.f.isFollower === true && !r.f.isClone) {   // ADD TO SQUAD for a follower holding a room, REMOVE FROM SQUAD for one in it

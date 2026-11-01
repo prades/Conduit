@@ -102,16 +102,21 @@ const FACILITY_MAP = {
                     [440, 760], [440, 620], [420, 620], [420, 560], [440, 560]],
           edge_kinds: ["wall", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "wall", "wall"] },
         { id: "sewers", label: "Sewers", level: -1, status: "placed", wall_material: "solid", interior: true,
-          note: "THE SEWERS, UNDER the arena: an INTERIOR (drawn here, under the arena, built in a part of the map of its own: `interiors`), the way in a culvert in the arena's north rock behind the north tank (a pair of portals). From the user's layout A ('two ledges, the river between'): one long tunnel, a NARROW LEDGE along each side of a DEEP RIVER (the tanks' violet runoff, pouring in from an outfall at its head; nothing walks in it: solids of kind `river`), a bridge across it and a broken one; side passages shut behind GATES (barred grilles you see through: solids of kind `gate`), room for areas later; a COLLAPSED TUNNEL off the north ledge: a broken-off stretch of an old side tunnel's floor, open onto the ledge and choked along its whole mouth with the collapse's rubble (a solid of kind `rubble`, drilled through from the ledge; a Kinetic Launcher there carries you over it, and its broken edge drops you back: the sample puzzle, docs/SEWER-QUEST.md) and a sealed hatch, a way in for later; and at the east end THE CISTERN, where the river drains into a round sump: the toxic ant boss's room, behind the BOSS GATE (shut until the purification module is brought to it). Its creatures: toxic ants (js/facilityspawn.js FP_SPAWN_SEWERS).",
-          // the tunnel from the user's layout (20 px to a tile; its top-left at (300, 860)): thirty-six tiles long, the north ledge two tiles deep (y 860 to 900), the river six (900 to 1020), the south ledge two
-          // (1020 to 1060). The way up is an alcove at the west end of the north ledge (x 280 to 300): the culvert back to the arena. Two side passages off the north ledge (x 360 to 400 and 620 to 660) and one off the
-          // south ledge (x 600 to 640), each three tiles deep; and THE COLLAPSED TUNNEL off the north ledge (x 820 to 940: six tiles of floor across, four deep, y 780 to 860), open onto the ledge along its whole
-          // width (so all of it is in sight from the ledge: a wall would hide it) and choked along that whole mouth (the `sewer_choke` solid across it: the floor behind is its own stretch, walked into only once the
-          // choke is drilled through; the launcher site on the ledge throws over it). The north ledge stops at x 1020; the cistern (x 1060 to 1280, y 820 to 1100) is open to the tunnel only where the river runs
-          // into it and where the south ledge does, through the boss gate.
-          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [620, 860], [620, 800], [660, 800], [660, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1020, 900], [1060, 900],
-                    [1060, 820], [1280, 820], [1280, 1100], [1060, 1100], [1060, 1060], [640, 1060], [640, 1120], [600, 1120], [600, 1060], [300, 1060], [300, 900], [280, 900]],
-          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
+          note: "THE SEWERS, UNDER the arena: an INTERIOR (drawn here, under the arena, built in a part of the map of its own: `interiors`), the way in a culvert in the arena's north rock behind the north tank (a pair of portals). From the user's layout A ('two ledges, the river between'): one long tunnel, a LEDGE along each side of a DEEP RIVER (the tanks' violet runoff, pouring in from an outfall at its head; nothing walks in it: solids of kind `river`), a bridge across it, a broken one, and a service bridge by the Nest; side passages shut behind GATES (barred grilles you see through: solids of kind `gate`), one of them SIDE QUEST'S MAINTENANCE PLATFORM; a COLLAPSED TUNNEL off the north ledge: a broken-off stretch of an old side tunnel's floor, open onto the ledge and choked along its whole mouth with the collapse's rubble (a solid of kind `rubble`, drilled through from the ledge; a Kinetic Launcher there carries you over it, and its broken edge drops you back: the sample puzzle, docs/SEWER-QUEST.md) and a sealed hatch, a way in for later; and at the east end THE NEST (js/population.js NESTS): the Toxic Ant Queen's colony, built on a TRASH DAM over the water, behind the BOSS GATE (sealed until the purification module is brought to it). Its creatures: the Nest's toxic ants (js/population.js SPAWN_TABLES.sewers).",
+          // the tunnel from the user's layout (20 px to a tile; its top-left at (300, 860)): thirty-eight tiles long to the Nest, the north ledge two tiles deep (y 860 to 900), the river six (900 to 1020), the south ledge
+          // THREE (1020 to 1080: widened 2026-11-01, "Widen the left-side sewer areas. Open up the river-side sections"; it was two, and it is the way to the Nest). The way up is an alcove at the west end of the north
+          // ledge (x 280 to 300): the culvert back to the arena. Off the north ledge: the first side passage (x 360 to 400, three tiles deep, gated: for later); SIDE QUEST'S MAINTENANCE PLATFORM (x 600 to 700, five
+          // tiles across and three deep, behind a wide gate he opens: its back wall faces the camera, so it is seen from the ledges and the bridges); THE COLLAPSED TUNNEL (x 820 to 940: six tiles of floor across, four
+          // deep, y 780 to 860), open onto the ledge along its whole width and choked along that whole mouth (the `sewer_choke` solid: the floor behind is its own stretch, walked into only once the choke is drilled
+          // through; the launcher site on the ledge throws over it). Off the south ledge: a side passage (x 600 to 640, gated: for later). The north ledge stops at x 1020, where the SERVICE BRIDGE (x 980 to 1020)
+          // crosses to the south ledge, so the two ledges, the two bridges and the Nest's gate make a loop and nobody walks back to the first bridge to reach the Nest. THE NEST (x 1060 to 1360, y 800 to 1120):
+          // its reservoir (west, under the big barred arch in the north wall, where a stream comes out of an old tunnel), the CAUSEWAY from the boss gate east across the water, the DAM itself (a wide flat
+          // platform of trash, nine tiles across and fourteen deep, its console and the queen's post at its north-west corner, the brood's eggs at its north-east), the moat round its south and east, and the
+          // waterfall where the moat spills over the east edge.
+          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [600, 860], [600, 800], [700, 800], [700, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1020, 900],
+                    [1060, 900], [1060, 800], [1360, 800], [1360, 860], [1360, 1120], [1060, 1120], [1060, 1080], [640, 1080], [640, 1140], [600, 1140], [600, 1080], [300, 1080], [300, 900], [280, 900]],
+          // (the Nest's two edges on the camera's side where the moat runs, east and south, are a low SPILL lip, not a wall: the moat is seen over it, and over the east one the water pours: the waterfall)
+          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "spill", "spill", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
         { id: "nest_area", label: "Nest area", level: 0, status: "approximate",
           boundary_type: "outer_edge", boundary_blocks_movement: true,
           note: "One completely open room. The long double lines in the sketch are its OUTSIDE EDGES (walls), not tunnels or a path. The sketch stops drawing at the bottom, so the bottom wall is provisional.",
@@ -327,22 +332,26 @@ const FACILITY_MAP = {
         { id: "cold_rack_1", room: "cold_storage", shape: "poly", poly: [[557.4, 647.8], [584.4, 655.0], [562.6, 736.2], [535.6, 729.0]], status: "placed", kind: "toppled_rack", note: "A tall storage rack toppled over on its back, lying at an angle; its spilled boxes beside it." },
         { id: "cold_rack_2", room: "cold_storage", shape: "poly", poly: [[585.8, 640.0], [610.9, 646.7], [590.2, 724.0], [565.1, 717.3]], status: "placed", kind: "toppled_rack", note: "A second rack toppled over beside the first, against it." },
 
-        // ── THE SEWERS: the DEEP RIVER between the two ledges (kind `river`: nothing walks in it; it draws itself, sunk below the ledges and flowing east, js/facilitydecor.js), in two lengths with the bridge's two
-        //    tiles between them (x 460 to 500: there the floor is the bridge's grating, decor `bridge_deck`); it runs on into the cistern and its round SUMP (kind `pool`). The GATES (kind `gate`, the boss's `boss_gate`):
-        //    barred grilles across the side passages' mouths and the south ledge's way into the cistern, thin, on the line of the wall they close (shut for now: a later area opens one by taking it away).
+        // ── THE SEWERS: the DEEP RIVER between the two ledges (kind `river`: nothing walks in it; it draws itself, sunk below the ledges and flowing east, js/facilitysewers.js), in three lengths with two bridges between
+        //    them: the steel bridge (x 460 to 500) and the service bridge by the Nest (x 980 to 1020, 2026-11-01), where the floor is the bridge's grating (decor `bridge_deck`). It runs on into the NEST's RESERVOIR, the
+        //    water the trash dam holds back (kind `pool`, a rectangle), and round the dam in the MOAT (an L of `pool`), which spills over the Nest's east edge: the WATERFALL. The GATES (kind `gate`, the boss's
+        //    `boss_gate`): barred grilles across the side passages' mouths and the south ledge's way into the Nest, thin, on the line of the wall they close.
         { id: "sewer_river_w", room: "sewers", shape: "poly", poly: [[300, 900], [460, 900], [460, 1020], [300, 1020]], status: "placed", kind: "river", note: "The deep river from the outfall at its head to the bridge. Not walkable." },
-        { id: "sewer_river_e", room: "sewers", shape: "poly", poly: [[500, 900], [1110, 900], [1110, 1020], [500, 1020]], status: "placed", kind: "river", note: "The deep river from the bridge, under the broken bridge, into the cistern. Not walkable." },
-        { id: "sewer_sump", room: "sewers", shape: "circle", at: [1170, 960], radius: 80, status: "placed", kind: "pool", note: "The cistern's sump: the round pit the river drains into, a walkway round it. The boss's (later)." },
+        { id: "sewer_river_e", room: "sewers", shape: "poly", poly: [[500, 900], [980, 900], [980, 1020], [500, 1020]], status: "placed", kind: "river", note: "The deep river from the bridge, under the broken bridge, to the service bridge. Not walkable." },
+        { id: "sewer_river_mouth", room: "sewers", shape: "poly", poly: [[1020, 900], [1060, 900], [1060, 1020], [1020, 1020]], status: "placed", kind: "river", note: "The river's last length, from the service bridge into the Nest's reservoir. Not walkable." },
+        { id: "nest_reservoir", room: "sewers", shape: "poly", poly: [[1060, 800], [1140, 800], [1140, 1020], [1060, 1020]], status: "placed", kind: "pool", note: "THE NEST'S RESERVOIR: the river and the stream from the big barred arch backed up behind the trash dam, west of it. Not walkable." },
+        { id: "nest_moat", room: "sewers", shape: "poly", poly: [[1060, 1080], [1320, 1080], [1320, 860], [1360, 860], [1360, 1120], [1060, 1120]], status: "placed", kind: "pool", note: "THE MOAT round the dam's south and east sides, from under the causeway to the Nest's east edge, where it spills over: the waterfall. Not walkable." },
         { id: "sewer_gate_n1", room: "sewers", shape: "poly", poly: [[360, 856], [400, 856], [400, 864], [360, 864]], status: "placed", kind: "gate", note: "A barred gate across the first side passage off the north ledge: shut (an area for later)." },
-        { id: "sewer_gate_n2", room: "sewers", shape: "poly", poly: [[620, 856], [660, 856], [660, 864], [620, 864]], status: "placed", kind: "gate", note: "A barred gate across the second side passage off the north ledge: shut (an area for later)." },
-        { id: "sewer_gate_s1", room: "sewers", shape: "poly", poly: [[600, 1056], [640, 1056], [640, 1064], [600, 1064]], status: "placed", kind: "gate", note: "A barred gate across the side passage off the south ledge: shut (an area for later)." },
+        { id: "sewer_gate_n2", room: "sewers", shape: "poly", poly: [[600, 856], [700, 856], [700, 864], [600, 864]], status: "placed", kind: "gate", note: "A barred gate, five tiles wide, across SIDE QUEST'S MAINTENANCE PLATFORM off the north ledge (2026-11-01: he was in the south passage, behind walls the camera hides): its back wall faces you, so the platform is seen through the bars from the ledges and the bridge. Opened when he appears (js/sidequest.js)." },
+        { id: "sewer_gate_s1", room: "sewers", shape: "poly", poly: [[600, 1076], [640, 1076], [640, 1084], [600, 1084]], status: "placed", kind: "gate", note: "A barred gate across the side passage off the south ledge: shut (an area for later)." },
         // THE CHOKE: the collapsed tunnel's whole mouth (x 820 to 940), filled with fallen concrete and rock (kind `rubble`: a thin solid across the mouth, like a gate; the rubble entry below is what a fire technician drills, from the
         //   LEDGE: the sample puzzle, docs/SEWER-QUEST.md). It lies a hair inside the mouth's line (y 852 to 858, not 856 to 864: the drill's work spot is on the ledge, and a spot half a tile in front of the pile must be clear
         //   floor for the rubble to be seen from it, js/facility.js). Drilled through it is OPEN for good (js/facilityplay.js facilitySolidOpen) and the tunnel is walked into.
         { id: "sewer_choke", room: "sewers", shape: "poly", poly: [[820, 852], [940, 852], [940, 858], [820, 858]], status: "placed", kind: "rubble", note: "The collapsed tunnel's mouth, choked along its whole width with broken concrete and rock: the way in on foot, once a fire technician has drilled it through from the ledge." },
-        // THE PURIFIER MOUNT: a console at the cistern's edge, north of the sump, where the purification module is installed (a station, js/quests.js; the boss encounter's pressure, js/bosses.js)
-        { id: "purifier_mount", room: "sewers", shape: "rect", rect: [1160, 850, 1200, 870], status: "placed", kind: "console", note: "The cistern's control console, at the head of the sump: the purification module mounts here (the PURIFIER MOUNT station)." },
-        { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1060], [1056, 1060]], status: "placed", kind: "boss_gate", note: "THE BOSS GATE: the south ledge's way into the cistern. Shut, until the boss is designed." },
+        // THE PURIFIER MOUNT: a console on the trash dam, at the reservoir's edge below the big barred arch where the water comes in, where the purification module is installed (a station, js/quests.js; the
+        // boss encounter's pressure, js/bosses.js: the queen's post is beside it)
+        { id: "purifier_mount", room: "sewers", shape: "rect", rect: [1150, 830, 1190, 850], status: "placed", kind: "console", note: "The Nest's control console, on the dam at the head of the reservoir, below the big barred arch: the purification module mounts here (the PURIFIER MOUNT station)." },
+        { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1080], [1056, 1080]], status: "placed", kind: "boss_gate", note: "THE BOSS GATE: the south ledge's way into the Nest, three tiles across the wider ledge. Sealed until the purification module is brought to it." },
     ],
 
     // PICKUPS: supply cases standing on the floor (docs/TUTORIAL.md). `at` is the middle of a tile (sketch pixels: 20 to a tile); `items` is [[item id, how many], ...] from the ITEMS table in js/inventory.js. The player walks over one to take
@@ -380,7 +389,7 @@ const FACILITY_MAP = {
         // boss gate (the Toxic Queen's room), the far end of the Cold Storage's ice cave past the technician's pad, the Armory's north-west corner, the arena's south-west corner. The count and the places are provisional
         // (docs/OPEN-QUESTIONS.md). (A case must stand a whole tile inside its room's outline in the map as drawn AND as snapped: js/facility.js validates both; a one-tile alcove has no such point.)
         { id: "pk_vital_tunnel", room: "sewers", at: [840, 800], items: [["vital_fleck", 1]], note: "A Vital Fleck at the west end of the collapsed tunnel's floor, against its back wall, behind the choke (the water sample is at the east end)." },
-        { id: "pk_vital_cistern", room: "sewers", at: [1080, 840], items: [["vital_core", 1]], note: "A Vital Core in the cistern's far north-west corner, behind the boss gate: the queen's room." },
+        { id: "pk_vital_cistern", room: "sewers", at: [1320, 820], items: [["vital_core", 1]], note: "A Vital Core in the Nest's far north-east corner, among the queen's eggs, behind the boss gate (it lay in the cistern's north-west corner, which is the reservoir now)." },
         { id: "pk_vital_cave", room: "cold_storage", at: [640, 860], items: [["vital_fleck", 1]], note: "A Vital Fleck at the far end of the ice cave, past the ice technician's pad." },
         { id: "pk_vital_armory", room: "armory", at: [200, 960], items: [["vital_prism", 1]], note: "A Vital Prism in the Armory's north-west corner, behind the lockers." },
         { id: "pk_vital_arena", room: "arena", at: [400, 1160], items: [["vital_prism", 1]], note: "A Vital Prism in the arena's south-west corner, below the west pad, against the rock." },
@@ -827,11 +836,12 @@ const FACILITY_MAP = {
         { id: "sewer_outfall", room: "sewers", kind: "outfall", a: [300, 920], b: [300, 1000], colour: "#a64dff", note: "A big pipe in the west wall, the tanks' runoff pouring out of it into the head of the river." },
         { id: "sewer_bridge", room: "sewers", kind: "bridge_deck", rect: [460, 900, 500, 1020], note: "A steel bridge across the river, two tiles wide: its grating, with the river seen through it, rails either side." },
         { id: "sewer_bridge_broken", room: "sewers", kind: "bridge_broken", rect: [760, 900, 800, 1020], note: "A bridge fallen in: a stump of it on each bank, bent, the middle gone. Not crossable." },
+        { id: "sewer_bridge_east", room: "sewers", kind: "bridge_deck", rect: [980, 900, 1020, 1020], note: "THE SERVICE BRIDGE (2026-11-01: \"Improve room connectivity and navigation\"): a second steel grating across the river at the north ledge's east end, to the south ledge just short of the Nest's gate. The ledges, the two bridges and the gate make a loop: nobody walks back to the first bridge to reach the Nest, and the way back to the culvert is either ledge." },
         // (the collapsed tunnel on the north wall is an opening now, x 820 to 940: its fallen-in mouth is the `sewer_choke` solid and the `rubble_sewer_choke` entry, drawn as the pile across the whole mouth: js/techabilities.js
         //  techDrawRubbleOn; the wall decor that hung there moved east of it, and the floor beyond has its own damp and debris)
         { id: "sewer_hatch", room: "sewers", kind: "sealed_hatch", a: [570, 860], b: [590, 860], note: "Rungs up the wall to a hatch at the top, welded shut, a hazard plate on it (a way in for later)." },
         { id: "sewer_pipe_1", room: "sewers", kind: "pipe", a: [410, 860], b: [500, 860], colour: "#5d6a72", z: 60 },
-        { id: "sewer_pipe_2", room: "sewers", kind: "pipe", a: [680, 860], b: [760, 860], colour: "#5d6a72", z: 64 },
+        { id: "sewer_pipe_2", room: "sewers", kind: "pipe", a: [706, 860], b: [746, 860], colour: "#5d6a72", z: 64 },
         { id: "sewer_pipe_3", room: "sewers", kind: "pipe", a: [960, 860], b: [1000, 860], colour: "#5d6a72", z: 60 },
         { id: "sewer_drip_1", room: "sewers", kind: "ooze_drip", a: [300, 1010], b: [300, 1040], colour: "#a64dff" },
         { id: "sewer_moss_1", room: "sewers", kind: "moss", a: [440, 860], b: [480, 860] },
@@ -839,7 +849,7 @@ const FACILITY_MAP = {
         { id: "sewer_moss_3", room: "sewers", kind: "moss", a: [860, 780], b: [900, 780], note: "On the back wall of the collapsed tunnel's floor." },
         { id: "sewer_wall_light_1", room: "sewers", kind: "wall_light", a: [520, 860], b: [540, 860], colour: "#d8c8ff" },
         { id: "sewer_wall_light_2", room: "sewers", kind: "wall_light", a: [780, 860], b: [800, 860], colour: "#d8c8ff" },
-        { id: "sewer_wall_light_3", room: "sewers", kind: "wall_light", a: [1140, 820], b: [1160, 820], colour: "#ff9aa8" },
+        { id: "sewer_wall_light_3", room: "sewers", kind: "wall_light", a: [1200, 800], b: [1220, 800], colour: "#ff9aa8" },
         { id: "sewer_light_1", room: "sewers", kind: "light", at: [360, 880], radius: 110, colour: "#b07aff", a: 0.2 },
         { id: "sewer_light_2", room: "sewers", kind: "light", at: [600, 1040], radius: 110, colour: "#9a5cff", a: 0.14, flicker: true },
         { id: "sewer_light_3", room: "sewers", kind: "light", at: [780, 880], radius: 110, colour: "#b07aff", a: 0.14 },
@@ -854,6 +864,36 @@ const FACILITY_MAP = {
         { id: "sewer_stain_3", room: "sewers", kind: "stain", at: [920, 830], radius: 14, colour: "#141a12", note: "On the collapsed tunnel's floor, under the vial's end." },
         { id: "sewer_debris_1", room: "sewers", kind: "debris", at: [880, 878], radius: 18, n: 7, note: "At the foot of the choke, on the ledge." },
         { id: "sewer_debris_2", room: "sewers", kind: "debris", at: [900, 840], radius: 16, n: 6, note: "On the collapsed tunnel's floor, behind the choke: the collapse's spill." },
+        // SIDE QUEST'S MAINTENANCE PLATFORM: a work lamp on its back wall, in his colour, and the pool of light it throws (seen through the bars before he comes, lit with him in it after)
+        { id: "sewer_sq_lamp", room: "sewers", kind: "wall_light", a: [640, 800], b: [660, 800], colour: "#9fd8ff" },
+        { id: "sewer_sq_light", room: "sewers", kind: "light", at: [650, 830], radius: 90, colour: "#9fd8ff", a: 0.16 },
+        // THE NEST (2026-11-01; js/population.js NESTS): the Toxic Ant Queen's colony at the Sewers' east end. The AREA it is (the zone tag says THE NEST there: js/facilitynet.js facilityZoneName); the BIG BARRED ARCH in
+        // its north wall (the user's sketch: "another big sewer gate tunnel entrance", behind the console, taller than the wall), the stream out of it running into the reservoir; BROOD HOLES (galleries the colony
+        // has bored through the walls: its brood comes up out of them, js/facilityspawn.js FP_SPAWN_SEWERS.from), two along the north ledge and two in the Nest; RESIN on its walls; the EGG clusters; JUNK on the
+        // dam; the dam's RIM of compacted trash along every edge it drops into the water (drawn from the water's own outline: js/facilitysewers.js FP_DAM_POOLS); and the WATERFALL where the moat spills over the east edge (the user's sketch). Drawn in js/facilitysewers.js; the
+        // eggs, holes and resin glow while the Nest is infested and go dark when it is calmed or cleared (js/population.js nestState).
+        { id: "nest_area", room: "sewers", kind: "area", rect: [1060, 800, 1360, 1120], label: "The Nest", nest: "sewer_nest" },
+        { id: "nest_arch", room: "sewers", kind: "sewer_arch", a: [1060, 800], b: [1140, 800], note: "A big arched sewer gate in the Nest's north wall over the reservoir, taller than the wall, its bars down: an old tunnel from somewhere else (a way for later). The stream comes out under the bars." },
+        { id: "nest_resin_1", room: "sewers", kind: "resin", a: [1160, 800], b: [1200, 800] },
+        { id: "nest_resin_2", room: "sewers", kind: "resin", a: [1260, 800], b: [1300, 800] },
+        { id: "nest_resin_3", room: "sewers", kind: "resin", a: [1060, 820], b: [1060, 860] },
+        { id: "brood_hole_1", room: "sewers", kind: "brood_hole", a: [740, 860], b: [760, 860], note: "A gallery the colony has bored through the north ledge's wall." },
+        { id: "brood_hole_2", room: "sewers", kind: "brood_hole", a: [1000, 860], b: [1020, 860], note: "A gallery bored through the wall at the north ledge's east end, by the service bridge." },
+        { id: "brood_hole_3", room: "sewers", kind: "brood_hole", a: [1240, 800], b: [1260, 800], note: "A gallery into the Nest's north wall, among the eggs." },
+        { id: "brood_hole_4", room: "sewers", kind: "brood_hole", a: [1300, 800], b: [1320, 800], note: "A gallery into the Nest's north wall, in the brood corner." },
+        { id: "nest_eggs_1", room: "sewers", kind: "egg_cluster", at: [1300, 832], radius: 28, n: 11 },
+        { id: "nest_eggs_2", room: "sewers", kind: "egg_cluster", at: [1246, 822], radius: 18, n: 6 },
+        { id: "nest_eggs_3", room: "sewers", kind: "egg_cluster", at: [1342, 838], radius: 14, n: 5 },
+        { id: "nest_eggs_4", room: "sewers", kind: "egg_cluster", at: [750, 876], radius: 10, n: 3, note: "A few eggs under the brood hole on the north ledge: the colony reaches out this far." },
+        { id: "nest_junk_1", room: "sewers", kind: "junk", at: [1214, 958], radius: 22, n: 7 },
+        { id: "nest_junk_2", room: "sewers", kind: "junk", at: [1276, 1036], radius: 18, n: 6 },
+        { id: "nest_junk_3", room: "sewers", kind: "junk", at: [1172, 1052], radius: 14, n: 4 },
+        { id: "nest_falls", room: "sewers", kind: "falls", a: [1359, 864], b: [1359, 1118], note: "THE WATERFALL: the moat spilling over the Nest's east edge, down its face into the dark." },
+        { id: "nest_resin_pool_1", room: "sewers", kind: "puddle", at: [1222, 902], radius: 16, colour: "#6fbf3a" },
+        { id: "nest_resin_pool_2", room: "sewers", kind: "puddle", at: [1288, 978], radius: 14, colour: "#6fbf3a" },
+        { id: "nest_light_brood", room: "sewers", kind: "light", at: [1290, 840], radius: 120, colour: "#8cff5a", a: 0.12, flicker: true },
+        { id: "nest_light_arch", room: "sewers", kind: "light", at: [1100, 830], radius: 100, colour: "#b07aff", a: 0.12 },
+        { id: "nest_light_falls", room: "sewers", kind: "light", at: [1300, 1000], radius: 110, colour: "#a64dff", a: 0.1 },
         { id: "armory_sign_in", room: "armory", kind: "hazard_sign", a: [190, 950], b: [190, 970] },
         { id: "gun_rack_3", room: "armory", kind: "gun_rack", a: [190, 970], b: [190, 1030] },
         { id: "gun_rack_4", room: "armory", kind: "gun_rack", a: [190, 1070], b: [190, 1130] },

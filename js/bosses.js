@@ -34,16 +34,16 @@
 const BOSS_ENCOUNTERS = {
     sewer_cistern: { id: "sewer_cistern", domain: "sewers", room: "sewers", name: "THE TOXIC ANT QUEEN",
         species: "ant", cls: "boss", element: "toxic", level: 6,   // PROVISIONAL: the ant species' boss block (js/species.js: 500 health, power 60, mandible frenzy) at level 6; the archive leaves the boss's numbers open ("measure the live game first")
-        lair: F => { const m = F.solids.find(q => q.id === "purifier_mount"); return m && m.bb ? [(m.bb[0] + m.bb[2]) / 2 + 1.6, (m.bb[1] + m.bb[3]) / 2] : null; },   // her POST: beside the cistern's console, east of it (the blockage: she sits on the work)
+        lair: F => { const m = F.solids.find(q => q.id === "purifier_mount"); return m && m.bb ? [(m.bb[0] + m.bb[2]) / 2 + 1.6, (m.bb[1] + m.bb[3]) / 2] : null; },   // her POST: beside the console on the Nest's trash dam, east of it (the blockage: she sits on the work)
         mount: "st_purifier",     // the station she keeps (js/stations.js): the purification module's mount at the head of the sump
         guard: 2.5,               // PROVISIONAL: within this of the console, awake and not controlled, she holds the install (the archive's "a couple of tiles")
-        leash: 15,                // tiles from her post: a player further off is let go (rooted: she sleeps again; frantic: she roams). PROVISIONAL: the whole cistern (its far corner is 14.5 tiles from her post) and the gate's end of the south ledge
+        leash: 15,                // tiles from her post: a player further off is let go (rooted: she sleeps again; frantic: she roams). PROVISIONAL: the whole Nest (its farthest floor, the causeway's end at the gate, is 13.5 tiles from her post since 2026-11-01: facilitySewerMeasures().farFromPost)
         attacks: {
             bomb: { every: 2700, windup: 60, flight: 60, radius: 1.6, range: 12, power: 1.5 },   // the archive's 45 s; PROVISIONAL: a second of wind-up, a second in the air, a 1.6-tile burst, 12 tiles of reach, 1.5 × her power on a follower (you: one hit)
             spit: { trigger: 3, cooldown: 600, windup: 30, flight: 30, radius: 1.0, power: 0.8 },   // the archive's 10 s cooldown, "only while the player is within its close-range trigger"; PROVISIONAL: 3 tiles, half a second each way, a tile's burst
         },
-        waves: { n: 4, first: 1800, every: 1800, levels: [2, 3], classes: { nymph: 1 }, near: [1.5, 3.5] },   // the archive's 30 s and "start at 4"; PROVISIONAL: the first wave 30 s after she wakes, nymphs of level 2 to 3, within a few tiles of her
-        frantic: { at: 0.5, speed: 3, roam: 15 },   // the archive's 50%; PROVISIONAL: three times her pace (her own would never get her anywhere), roaming within 15 tiles of her post (the cistern; the drone's passage is twice as far)
+        waves: { n: 4, first: 1800, every: 1800, table: "queen", near: [1.5, 3.5] },   // the archive's 30 s and "start at 4"; PROVISIONAL: the first wave 30 s after she wakes, within a few tiles of her. WHAT comes is her table's (js/population.js SPAWN_TABLES.queen: toxic nymphs of level 2 to 3)
+        frantic: { at: 0.5, speed: 3, roam: 15 },   // the archive's 50%; PROVISIONAL: three times her pace (her own would never get her anywhere), roaming within 15 tiles of her post (the Nest's trash dam and causeway; Side Quest's platform is twice as far)
         quest: "purify", wakes: ["install", "hit"], calms: ["purified"],
         note: "The Sewers' boss, behind the boss gate: the user's toxic ant boss (2026-10-31), named after the archive's proposed progression (the Toxic Ant Queen of the Sewers, Stage 3); provisional. The purification module's install wakes her; clean water calms her." },
     nest: { id: "nest", domain: "nest_area", room: "nest_area", name: "THE ANT QUEEN", species: "ant", cls: "boss", element: null, level: 0, lair: null, mount: null, guard: 0, leash: 0, attacks: null, waves: null, frantic: null, quest: null, wakes: [], calms: [],   // (level 0, no post: a row, not a boss yet)
@@ -226,13 +226,13 @@ function _bossWavesTick(E, S, b) {
 }
 function _bossWave(E, S, b) {
     const W = E.waves; if (!W || typeof facilitySpawnCreature !== "function" || typeof partyRoomCells !== "function") return 0;
-    const P = { room: E.room, species: [E.species], classes: W.classes, levels: W.levels, element: E.element, brood: true, minFromPlayer: 0, spacing: 0.6, wander: [3, 9] };
+    const P = W.table ? { room: E.room, table: W.table, minFromPlayer: 0, spacing: 0.6, wander: [3, 9] } : { room: E.room, species: [E.species], classes: W.classes, levels: W.levels, element: E.element, brood: true, minFromPlayer: 0, spacing: 0.6, wander: [3, 9] };   // (what comes: the encounter's table, js/population.js; a row with none says it itself)
     const cm = typeof _fpComps === "function" ? _fpComps() : null, here = cm && typeof _fpNearestCell === "function" && typeof player !== "undefined" ? (typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen : _fpNearestCell)(player.visualX, player.visualY) : null, hc = here ? cm.get(here[0] + "," + here[1]) : undefined;
     const spots = partyRoomCells(E.room).filter(c => { const d = Math.hypot(c[0] - b.x, c[1] - b.y); return d >= W.near[0] && d <= W.near[1] && (hc === undefined || cm.get(c[0] + "," + c[1]) === hc); });
     let n = 0;
     for (let i = 0; i < W.n && spots.length; i++) {
         const c = spots[Math.floor(Math.random() * spots.length)];
-        let p = null; try { p = facilitySpawnCreature(E.species, [c[0], c[1]], P); } catch (e) { p = null; }
+        let p = null; try { p = facilitySpawnCreature(W.table ? null : E.species, [c[0], c[1]], P); } catch (e) { p = null; }
         if (!p) continue;
         p.bossWave = E.id; p.provoked = true; p.lastAttacker = typeof player !== "undefined" ? player : null; p.spawnProtection = 0;
         if (typeof player !== "undefined" && typeof predatorPreyOk === "function" && predatorPreyOk(p, player)) { p.currentTarget = player; p._prey = player; p.state = "attack"; }

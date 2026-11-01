@@ -125,7 +125,7 @@ function mixToolSignature() {
 // who the orders go to, in words, for the corners layout's caption: how many follow, the one member picked, or how many are picked
 function mixToolWho() {
     const sel = typeof selectedUnits !== "undefined" && selectedUnits.size && typeof ccSelectionList === "function" ? ccSelectionList() : [];
-    if (!sel.length) return (typeof partyMembers === "function" ? partyMembers().length : 0) + " FOLLOWING";
+    if (!sel.length) return (typeof partyMembers === "function" ? partyMembers().length : 0) + (typeof partyClone === "function" && partyClone() ? 1 : 0) + " FOLLOWING";   // (the Mutator's clone is one of them: js/party.js partyClone)
     return sel.length === 1 ? (typeof unitTypeLabel === "function" ? unitTypeLabel(sel[0]) : "1 SELECTED") : sel.length + " SELECTED";
 }
 function mixToolHTML() {

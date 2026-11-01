@@ -190,7 +190,7 @@ function awardKillXp(p) {
     const total = killXp(p);
     if (!(total > 0)) return 0;
     const killer = _xpUnit(p.lastAttacker) ? p.lastAttacker : null;
-    const squad = typeof partyOn === "function" && partyOn() && typeof partyMembers === "function" ? partyMembers() : [];   // the squad of three (js/party.js)
+    const squad = typeof partyOn === "function" && partyOn() && typeof partyMembers === "function" ? partyMembers().concat(typeof partyClone === "function" && partyClone() ? [partyClone()] : []) : [];   // the squad of three (js/party.js), and the Mutator's clone with it (2026-11-01: a squad member like them)
     const squadKill = (typeof player !== "undefined" && p.lastAttacker === player) || (!!killer && squad.includes(killer));   // yours, or a squad member's: the squad shares it wherever they are
     const near = [];
     for (const a of (typeof actors !== "undefined" ? actors : [])) {

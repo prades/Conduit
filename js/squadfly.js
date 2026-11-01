@@ -18,7 +18,7 @@ function partyFlyEl() { return typeof document !== "undefined" && document.getEl
 // is still picked: partyFlyPressAway), or when this is not the corners layout
 function partyFlySubject() {
     if (_sfAway || !(typeof hudCorners === "function" && hudCorners()) || typeof ccSelectionList !== "function") return null;
-    const sel = ccSelectionList().filter(partyIsMember); if (!sel.length) return null;
+    const sel = ccSelectionList().filter(u => typeof partySquadHas === "function" ? partySquadHas(u) : partyIsMember(u)); if (!sel.length) return null;   // (a member, or the Mutator's clone: js/party.js partyClone)
     return sel.indexOf(_sfLast) >= 0 ? _sfLast : sel[0];
 }
 function partyFlyBuild(root) {
@@ -86,25 +86,28 @@ function _sfCardsDraw(E, f) {
     }
 }
 function partyFlyRender(force) {
-    if (_sfAway && !(typeof ccSelectionList === "function" && ccSelectionList().some(partyIsMember))) _sfAway = false;   // (nobody picked now: the next one picked opens their card)
+    const has = u => typeof partySquadHas === "function" ? partySquadHas(u) : partyIsMember(u);
+    if (_sfAway && !(typeof ccSelectionList === "function" && ccSelectionList().some(has))) _sfAway = false;   // (nobody picked now: the next one picked opens their card)
     const root = partyFlyEl(); if (!root) return;
-    const f = partyFlySubject(), bar = typeof _sbEls !== "undefined" ? _sbEls : null, slot = f && bar && f.partySlot !== undefined ? bar.slots[f.partySlot] : null;
+    const f = partyFlySubject(), bar = typeof _sbEls !== "undefined" ? _sbEls : null, slot = f && bar ? (f.isClone ? bar.clone || null : f.partySlot !== undefined ? bar.slots[f.partySlot] : null) : null;   // (the clone's card is its own: js/party.js _partyCloneCard)
     if (!f || !slot) { if (_sfEls) { _sfEls.subject = null; _sfEls.cardSig = ""; } _sfDD = null; if (root.classList) root.classList.remove("on"); _sfSig = ""; return; }
-    const E = partyFlyBuild(root); if (E.subject !== f) { _sfDD = null; E.cardSig = ""; } E.subject = f;   // (another member's card: its own slots, no list open)
-    const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
+    const E = partyFlyBuild(root); if (E.subject !== f) { _sfDD = null; E.cardSig = ""; E.thumbKey = null; } E.subject = f;   // (another member's card: its own slots, no list open)
+    const clone = !!f.isClone, def = !clone && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = clone ? (typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : "#c06bff") : def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
     if (E.card && E.card.style && typeof E.card.style.setProperty === "function") E.card.style.setProperty("--c", col);
-    if (typeof cardArtUnitClass === "function") cardArtMark(E.card, cardArtUnitClass(f));   // its backdrop (js/cardart.js)
+    if (typeof cardArtUnitClass === "function") cardArtMark(E.card, clone ? "" : cardArtUnitClass(f));   // its backdrop (js/cardart.js); a clone has no element or class to show
     const role = ({ brawler: "BRAWL", sniper: "MAGE", camper: "TECH" })[f.role === "hybrid" ? "brawler" : f.role] || "BRAWL", style = f.playStyle === "defensive" ? "DEF" : f.playStyle === "aggressive" ? "AGG" : "BAL";
     const roleName = ({ brawler: "BRAWLER", sniper: "MAGE", camper: "TECHNICIAN" })[f.role === "hybrid" ? "brawler" : f.role] || "BRAWLER";
     const hp = Math.max(0, Math.round(f.health || 0)), mx = Math.max(1, Math.round(f.maxHealth || 1)), frac = Math.max(0, Math.min(1, hp / mx));
     _sfSet(E.name, "textContent", typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER");
-    _sfSet(E.sub, "textContent", (def ? def.label.toUpperCase() : "") + " · LV " + (f.level || 1) + " · " + roleName + (f.evolved ? " · EVOLVED" : ""));
-    const tags = [st ? st.text : "FOLLOWING", role, style, "SQUAD"].join("|"), tcol = st ? st.col : "#19e6c1";
+    _sfSet(E.sub, "textContent", clone ? String(f.speciesName || "").toUpperCase() + " " + String(f.className || "scout").toUpperCase() + " · LV " + (f.level || 1) + " · THE MUTATOR'S CLONE"
+                                        : (def ? def.label.toUpperCase() : "") + " · LV " + (f.level || 1) + " · " + roleName + (f.evolved ? " · EVOLVED" : ""));
+    const tagList = clone ? [st ? st.text : "FOLLOWING", "CLONE", "SQUAD"] : [st ? st.text : "FOLLOWING", role, style, "SQUAD"], tags = tagList.join("|"), tcol = st ? st.col : "#19e6c1";
     if (_sfSig !== tags + "|" + tcol || force) {
         _sfSig = tags + "|" + tcol; E.tags.innerHTML = "";
         const mk = (cls, txt) => { const s = document.createElement("span"); s.className = cls; s.textContent = txt; return s; };
-        const a = mk("sf-tag", st ? st.text : "FOLLOWING"); if (a.style) a.style.background = tcol; E.tags.appendChild(a); E.tags.appendChild(mk("sf-rt", role)); E.tags.appendChild(mk("sf-rt", style)); E.tags.appendChild(mk("sf-rt", "SQUAD"));
+        const a = mk("sf-tag", tagList[0]); if (a.style) a.style.background = tcol; E.tags.appendChild(a); for (const t of tagList.slice(1)) E.tags.appendChild(mk("sf-rt", t));
     }
+    { const dm = E.root.querySelector ? E.root.querySelector(".sf-dismiss") : null; if (dm && dm.style) { const v = clone ? "none" : ""; if (dm.style.display !== v) dm.style.display = v; } }   // (a clone is not dismissed from the squad: it is released at the Clone Bay)
     const w = Math.round(frac * 100) + "%", cls = frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low";
     if (E.hp) { if (E.hp.style && E.hp.style.width !== w) E.hp.style.width = w; _sfSet(E.hp, "className", cls); }
     { const p = typeof xpProgress === "function" ? xpProgress(f) : null;   // its XP: how far through its level, and (until it evolves) how far from evolving (js/levels.js)
@@ -113,7 +116,8 @@ function partyFlyRender(force) {
       if (E.evo) { _sfSet(E.evo, "textContent", p ? (p.evo ? xpEvoText(p) : f.evolved ? "EVOLVED" : "") : ""); if (E.evo.classList) E.evo.classList.toggle("soon", !!(p && p.evo && p.evo.levels <= 1)); } }
     _sfSet(E.hpn, "textContent", hp + " / " + mx); _sfSet(E.pw, "textContent", String(Math.round(f.power || 0))); _sfSet(E.sp, "textContent", String(((f.moveSpeed || 0) * 1000).toFixed(0)));
     _sfCardsDraw(E, f);   // its two equip card slots
-    const key = f.evolved + "|" + f.element + "|" + (f.id || ""); if (E.thumbKey !== key && typeof _ccThumb === "function" && E.thumb) { E.thumbKey = key; _ccThumb(E.thumb, f); }
+    const key = clone ? "clone|" + f.speciesName + "|" + f.className : f.evolved + "|" + f.element + "|" + (f.id || "");
+    if (E.thumbKey !== key && E.thumb) { if (clone && typeof partyCloneThumb === "function") { E.thumbKey = key; partyCloneThumb(E.thumb, f); } else if (typeof _ccThumb === "function") { E.thumbKey = key; _ccThumb(E.thumb, f); } }
     // beside the member's own card: its top lines up with the card's, and it stands to the right of the stack; it keeps clear of the dock and of the enemy card where they lie
     // under it (it goes up as far as it must: a lower member's card, a narrow screen), and its tip still points at the member's card
     if (root.classList) root.classList.add("on");

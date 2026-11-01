@@ -20,6 +20,7 @@ function _spLayout() {
         ? [{ id: "yes", label: "YES — NEW GAME", sub: "the saved facility is thrown away", col: UI_RED, on: true }, { id: "cancel", label: "CANCEL", col: UI_TEAL }]
         : [{ id: "gfx", label: "GRAPHICS: " + (gfxLow ? "LOW" : "HIGH"), col: UI_GOLD, on: gfxLow },
            { id: "perf", label: "PERFORMANCE: " + (perfReadout ? "ON" : "OFF"), col: UI_ICE, on: perfReadout },
+           ...(typeof FP_MOVE !== "undefined" ? [{ id: "step", label: "COMBAT STEP: " + (FP_MOVE.cap ? FP_MOVE.capTiles + " TILES" : "OFF"), sub: "an enemy near stops a run; then a tap goes this far", col: UI_TEAL, on: FP_MOVE.cap }] : []),   // (a prototype: js/facilityplay.js FP_MOVE)
            { id: "reset", label: "NEW GAME", sub: "starts the facility again", col: UI_RED },
            { id: "close", label: "CLOSE", col: "#6a7aa0" }];
     const w = Math.min(canvas.width - 24, 460), h = _SP_HEAD + rows.length * (_SP_ROW_H + _SP_ROW_GAP) + _SP_PAD - _SP_ROW_GAP + 8;
@@ -45,6 +46,7 @@ function _handleSettingsPanelTap(tx, ty) {
     switch (hit.id) {
         case "gfx":    toggleGfxLow(); break;
         case "perf":   togglePerfReadout(); break;
+        case "step":   if (typeof facilityCombatStepToggle === "function") facilityCombatStepToggle(); break;
         case "reset":  settingsResetConfirm = true; break;
         case "close":  settingsPanelOpen = false; settingsResetConfirm = false; break;
         case "yes":    settingsPanelOpen = false; settingsResetConfirm = false; if (typeof facilityNewGame === "function") facilityNewGame(); break;

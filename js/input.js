@@ -147,8 +147,11 @@ const handleInput=(ex,ey)=>{
     const dx=ex-canvas.width/2, dy=ey+facilityPickLift(ex, ey)-canvas.height/2-TILE_H;
     const gx=Math.round((dy/TILE_H+dx/TILE_W)/2+player.visualX);
     const gy=Math.round((dy/TILE_H-dx/TILE_W)/2+player.visualY);
+    // Only the room you are in, and through its doorways a little way (js/facilityplay.js facilityTapAllowed): a tap anywhere else is ignored, so a stray tap never sends you running across the map.
+    if (typeof facilityTapAllowed === "function" && !facilityTapAllowed(gx, gy)) { if (typeof facilityTapRefused === "function") facilityTapRefused(ex, ey); return; }
     if (typeof mutatorCancel === "function") mutatorCancel();   // (a walk order calls off the Mutator's lash: it would walk the player back to the creature)
     facilityWalkTo(gx, gy);
+    if (typeof facilityTapCap === "function") facilityTapCap();   // (in a fight, five tiles at a time: the prototype, js/facilityplay.js FP_MOVE)
     player.selectedFollower=null;
 };
 

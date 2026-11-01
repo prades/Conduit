@@ -22,7 +22,7 @@
 //     the mount and not controlled (questMountBlocked ← js/bosses.js bossInstallBlocked); she throws toxic bombs and calls her brood; at half her health she goes FRANTIC and roams, and the way in is to lure her off,
 //     SLEEP her (Side Quest's potion, js/potion.js, js/sidequest.js) and work while your followers hold her. A hit on you never cancels the install (js/stations.js); walking away does. The install is about 10 s
 //     (`install`), the archive's number. After the purification the brood thins to a few stragglers (js/facilityspawn.js facilityBroodThin: the major infestation clears, as the archive asks).
-//   SIDE QUEST (js/sidequest.js) is OPTIONAL and no step of the quest line: he appears in the Sewers' side passage once the samples have been turned in at the lab AND about `antTarget` toxic ants have been killed
+//   SIDE QUEST (js/sidequest.js) is OPTIONAL and no step of the quest line: he appears on the Sewers' maintenance platform off the north ledge once the samples have been turned in at the lab AND about `antTarget` toxic ants have been killed
 //     (`antKills`, counted here from the brood's deaths: the archive's "around 10", tunable); the plate's install hint mentions him once he is there.
 //   THE TERM is QUEST LINE for the whole sequence (the archive, 2026-10-31); a step of it is a step or an objective.
 const QUEST_PURIFY = {
@@ -37,7 +37,7 @@ const QUEST_PURIFY = {
     antTarget: 10,       // toxic ants of the Sewers killed before Side Quest appears (with the lab turn-in): the archive's provisional "around 10", "tune to progression pacing"
     boss: "sewer_cistern", gate: "sewer_gate_boss", sample: "pk_sewer_sample", puzzle: "sewer_sample", room: "sewers", outfall: "sewer_outfall",
 };
-const QUEST_FRESH = { purify: () => ({ discoveredAt: 0, puzzleAt: 0, puzzleHow: "", samplesAt: 0, turnedInAt: 0, moduleAt: 0, gateAt: 0, installedAt: 0, purifiedAt: 0, bossStartedAt: 0, bossResolvedAt: 0, bossOutcome: "", bossDefeated: 0, cycleLeft: 0, closeLeft: 0, drops: 0, antKills: 0 }) };
+const QUEST_FRESH = { purify: () => ({ discoveredAt: 0, puzzleAt: 0, puzzleHow: "", samplesAt: 0, turnedInAt: 0, moduleAt: 0, gateAt: 0, installedAt: 0, purifiedAt: 0, bossStartedAt: 0, bossResolvedAt: 0, bossOutcome: "", bossDefeated: 0, cycleLeft: 0, closeLeft: 0, drops: 0, antKills: 0, nestSeenAt: 0 }) };   // (nestSeenAt: the first time you stood in the Nest, js/population.js)
 
 function _questFrame() { return typeof frame !== "undefined" ? frame : 0; }
 function _questNow() { return typeof techClock === "number" ? techClock : _questFrame(); }   // the play clock (saved; nothing passes while the game is closed)
@@ -70,9 +70,9 @@ const QUEST_STEPS = {
           hint: Q => "THE TUNNEL IS CHOKED. A FLUX TECHNICIAN'S TELEGRAB PULLS THE VIAL OUT OVER THE RUBBLE, OR THE ELECTRIC TECHNICIAN SETS A LAUNCHER UP AT THE TUNNEL AND SENDS A FIRE TECHNICIAN IN TO DRILL IT OPEN.", done: Q => questSamplesReady(Q) },
         { id: "turnin", title: "TAKE THE SAMPLES TO THE LAB", text: Q => "THE ANALYSIS BENCH: THE CABINET AT THE WEST END OF THE EXPERIMENT LAB. STAND AT IT AND PRESS E (OR TAP IT).", hint: Q => "IT TAKES THE THREE ANT SAMPLES AND THE WATER SAMPLE TOGETHER.", done: Q => !!Q.turnedInAt },
         { id: "module", title: "BUY THE PURIFICATION MODULE", text: Q => "AT THE ANALYSIS BENCH: ◆" + QUEST_PURIFY.modulePrice + ". YOU HAVE ◆" + (typeof shardCount === "number" ? shardCount : 0) + ".", hint: Q => "KILLS PAY SHARDS. THE MODULE GOES IN YOUR PACK.", done: Q => !!Q.moduleAt },
-        { id: "install", title: "INSTALL THE MODULE IN THE CISTERN",
-          text: Q => Q.gateAt ? "MOUNT THE MODULE ON THE CONSOLE AT THE HEAD OF THE SUMP AND STAY AT IT: " + Math.round(QUEST_PURIFY.install / 60) + " SECONDS." : "TAKE IT DOWN TO THE SEWERS: THE BOSS GATE AT THE EAST END OF THE SOUTH LEDGE. ITS SEAL BREAKS FOR THE MODULE.",
-          hint: Q => _questBossName() + " SLEEPS BESIDE THE CONSOLE. THE INSTALL WAKES HER: SHE SITS ROOTED THERE, THROWS TOXIC BOMBS AND CALLS HER BROOD, AND THE INSTALL HOLDS WHILE SHE IS AT THE CONSOLE. ASLEEP, STUNNED, FROZEN OR GLITCHED SHE LETS GO OF IT; AT HALF HER HEALTH SHE GOES FRANTIC AND ROAMS: LURE HER OFF AND WORK. HER BITES DO NOT STOP THE INSTALL; WALKING AWAY DOES. OR KILL HER." + (typeof sqPresent === "function" && sqPresent() ? " THE DRONE IN THE SIDE PASSAGE OFF THE SOUTH LEDGE SELLS A SLEEPING POTION." : ""), done: Q => !!Q.installedAt },
+        { id: "install", title: "INSTALL THE MODULE IN THE NEST",
+          text: Q => Q.gateAt ? "MOUNT THE MODULE ON THE CONSOLE ON THE TRASH DAM, BELOW THE BIG BARRED ARCH, AND STAY AT IT: " + Math.round(QUEST_PURIFY.install / 60) + " SECONDS." : "TAKE IT DOWN TO THE SEWERS: THE BOSS GATE AT THE EAST END OF THE SOUTH LEDGE. ITS SEAL BREAKS FOR THE MODULE.",
+          hint: Q => _questBossName() + " SLEEPS BESIDE THE CONSOLE. THE INSTALL WAKES HER: SHE SITS ROOTED THERE, THROWS TOXIC BOMBS AND CALLS HER BROOD, AND THE INSTALL HOLDS WHILE SHE IS AT THE CONSOLE. ASLEEP, STUNNED, FROZEN OR GLITCHED SHE LETS GO OF IT; AT HALF HER HEALTH SHE GOES FRANTIC AND ROAMS: LURE HER OFF AND WORK. HER BITES DO NOT STOP THE INSTALL; WALKING AWAY DOES. OR KILL HER." + (typeof sqPresent === "function" && sqPresent() ? " THE DRONE ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE SELLS A SLEEPING POTION." : ""), done: Q => !!Q.installedAt },
         { id: "purify", title: "THE WATER CLEARS", text: Q => "THE MODULE IS RUNNING: " + Math.ceil((Q.cycleLeft || 0) / 60) + " S. THE RIVER CLEARS AS IT GOES.", hint: Q => "THE QUEEN NEED NOT DIE: CLEAN WATER CALMS HER, AND SHE KEEPS HER POST.", done: Q => !!Q.purifiedAt },
     ],
 };
@@ -105,6 +105,7 @@ function questTick() {
     }
     if (!Q.puzzleAt && typeof puzzleState === "function") { const ps = puzzleState(P.puzzle); if (ps && ps.solved) { Q.puzzleHow = ps.how || ""; questMark(Q, "puzzleAt"); } }   // (the puzzle says how the vial was got)
     if (Q.discoveredAt && !Q.samplesAt && questSamplesReady(Q)) questMark(Q, "samplesAt", "◈ EVERY SAMPLE IS IN YOUR PACK — THE ANALYSIS BENCH IN THE EXPERIMENT LAB WANTS THEM");
+    if (!Q.nestSeenAt && typeof facilityAreaAt === "function") { const a = facilityAreaAt(player.x, player.y, P.room); if (a && a.nest) questMark(Q, "nestSeenAt", "◈ THE NEST: THE QUEEN'S COLONY, BUILT ON A DAM OF TRASH ACROSS THE WATER. HER EGGS ARE EVERYWHERE — THE BROOD COMES FROM HERE", "#8cff5a"); }   // (your note, once, the first time you stand in it: js/population.js NESTS)
     if (Q.installedAt && !Q.purifiedAt) {   // THE CYCLE: the module runs, the water clears, then the boss is calmed if it lives
         Q.cycleLeft = Math.max(0, (Q.cycleLeft || 0) - 1);
         if (!Q.cycleLeft) { questMark(Q, "purifiedAt", "◈ THE RUNOFF RUNS CLEAN — THE SEWERS ARE PURIFIED", "#9dffb6"); Q.closeLeft = P.closing; if (typeof bossCalm === "function") bossCalm(P.boss); if (typeof facilityBroodThin === "function") facilityBroodThin(); }   // (the major infestation clears: js/facilityspawn.js)
@@ -155,7 +156,7 @@ function questBenchUse() {
         questMark(Q, "turnedInAt");
         return { ok: true, msg: "SAMPLES ANALYSED — THE RUNOFF IS TOXIC. THE BENCH CAN BUILD A PURIFICATION MODULE: ◆" + P.modulePrice };
     }
-    if (!Q.moduleAt) { shardCount -= P.modulePrice; invAdd("purification_module", 1); questMark(Q, "moduleAt"); return { ok: true, msg: "PURIFICATION MODULE — IN YOUR PACK. MOUNT IT ON THE CISTERN'S CONSOLE IN THE SEWERS: THE BOSS GATE OPENS FOR IT" }; }
+    if (!Q.moduleAt) { shardCount -= P.modulePrice; invAdd("purification_module", 1); questMark(Q, "moduleAt"); return { ok: true, msg: "PURIFICATION MODULE — IN YOUR PACK. MOUNT IT ON THE CONSOLE IN THE NEST, AT THE SEWERS' EAST END: THE BOSS GATE OPENS FOR IT" }; }
     return potionCopyUse();
 }
 function questGateCan() {
@@ -169,7 +170,7 @@ function questGateUse() {
     if (typeof facilitySolidOpen === "function") facilitySolidOpen(P.gate);
     questMark(Q, "gateAt"); if (typeof shake !== "undefined") shake = Math.max(shake || 0, 6);
     if (typeof bossArm === "function") bossArm(P.boss);
-    return { ok: true, msg: "THE SEAL IS BROKEN — THE BOSS GATE GRINDS OPEN. SOMETHING SLEEPS BESIDE THE CISTERN'S CONSOLE" };
+    return { ok: true, msg: "THE SEAL IS BROKEN — THE BOSS GATE GRINDS OPEN. SOMETHING SLEEPS BESIDE THE CONSOLE ON THE DAM" };
 }
 function questMountVerb() { const Q = questState("purify"); return Q.installedAt ? (Q.purifiedAt ? "THE WATER RUNS CLEAN" : "THE MODULE IS RUNNING") : "INSTALL THE PURIFICATION MODULE"; }
 function questMountCan() {

@@ -27,9 +27,11 @@ function closeInfoPanel() {
 // ── COMMAND EXECUTION ─────────────────────────────────────
 // Cycle the role of every follower in the command pool: brawler → mage ("sniper") → technician ("camper"). An evolved follower's role is its
 // form's (js/evolution.js): it is skipped. The phone menu's SWITCH ROLES and the roster's squad orders use it. Returns how many it changed.
+// A CLONE HAS NO ROLE (2026-11-01, found while putting the Mutator's clone in the squad): it fights as its species (js/clone.js cloneFight). SWITCH ROLES used to give it one, and a clone made a "sniper" or a
+// "camper" left the clone's own fight for the followers' plain swing (js/combat.js followerAttack: the 1.25-damage bite docs/MUTATOR.md 1 fixed). It is skipped now.
 function cycleCommandPoolRoles() {
     const roles=["brawler","sniper","camper"];
-    const pool=getCommandPool().filter(a=>!a.dead);
+    const pool=getCommandPool().filter(a=>!a.dead && !a.isClone);
     let n=0;
     pool.forEach(f=>{ if (f.evolved) return; const i=roles.indexOf(f.role); f.role=roles[(i+1)%roles.length]; n++; });
     if (pool.length>0)

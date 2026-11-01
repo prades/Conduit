@@ -3,23 +3,31 @@
 // ─────────────────────────────────────────────────────────
 // The arena is where the facility's wild things are. A few are there when the game opens, and every so often another comes out of the dark at a different spot, so it is never empty and never full:
 //   - one at a time, FP_SPAWN.every frames apart, up to FP_SPAWN.cap alive at once;
-//   - at a random spot on the arena floor that is out of sight and out of reach of the player and not on top of another creature;
-//   - always the kind there are fewest of, so they are all different: ants, beetles, spiders, scorpions, mantises and moths (js/species.js), each in a class of its own;
+//   - at a spot on the arena floor that is out of sight and out of reach of the player and not on top of another creature: up out of one of the tanks' OVERFLOW GRATES when one will do (`from`: the way down to the
+//     Sewers, where the Nest is), else anywhere on the floor that will;
+//   - WHAT it is, its table's (js/population.js SPAWN_TABLES.arena): ANTS, the Nest's (2026-11-01: "The initial arena population should be entirely composed of the Ant race"), each a class by the weights; with more
+//     than one species on the table, always the kind there are fewest of;
 //   - they WANDER: pottering about the arena from spot to spot (never out of it), and only hunt when provoked or when an alarm is up.
 // Each is made by spawnCreature (js/clone.js); js/predator.js asks facilityWanderTarget for its next spot.
 // A creature that dies drops SCRAP METAL where it fell (js/drops.js calls facilityScrapDrop): a case that lies there for a minute, which the Armory's terminal turns into ammunition (js/weapons.js).
+// `species`, `classes` and `levels` are the table's (read through, so the numbers live in one place: js/population.js); the rest are the arena's own rules.
 const FP_SPAWN = {
-    room: "arena", every: 1200, first: 480, start: 4, cap: 7, minFromPlayer: 11, spacing: 4,
-    species: ["ant", "beetle", "spider", "scorpion", "mantis", "moth"], classes: { scout: 3, worker: 3, striker: 2, tank: 1 }, levels: [2, 4],
+    room: "arena", table: "arena", every: 1200, first: 480, start: 4, cap: 7, minFromPlayer: 11, spacing: 4,
+    from: ["overflow_grate_1", "overflow_grate_2"],   // where one comes up when that spot will do (decor ids: the tanks' overflow grates, down to the Sewers)
+    get species() { return spawnWhat(this).species; }, get classes() { return spawnWhat(this).classes; }, get levels() { return spawnWhat(this).levels; },
     wander: [3, 9],
     scrap: { chance: 0.75, byClass: { scout: 1, worker: 1, striker: 2, tank: 3 }, life: 3600 },
 };
-// THE SEWERS' BROOD (docs/SEWER-QUEST.md): the toxic ants of the Sewers, the same spawner with its own numbers. They come when the player is in the Sewers: a few the first time in (`start`, at once), then one
-// every `every` frames while the player is there, up to `cap` alive; on the ledges the player can walk (never in the choked tunnel or behind the boss gate until those are open). Each is an ANT of the toxic
-// element (the type chart: fire beats it) and of the brood (`sewerBrood`): killed, it drops a TOXIC ANT SAMPLE while the analysis bench still wants them (js/quests.js questDropFor), and scrap as any creature does.
+// THE SEWERS' BROOD (docs/SEWER-QUEST.md): the toxic ants of the Nest (js/population.js SPAWN_TABLES.sewers), the same spawner with its own numbers. They come when the player is in the Sewers: a few the first time in
+// (`start`, at once), then one every `every` frames while the player is there, up to `cap` alive; on the floor the player can walk (never in the choked tunnel or behind the boss gate until those are open), up out of
+// one of the Nest's BROOD HOLES in the walls when one will do (`from`: decor of kind `brood_hole`). Each is an ANT of the toxic element (the type chart: fire beats it) and of the brood (`sewerBrood`): killed, it drops
+// a TOXIC ANT SAMPLE while the analysis bench still wants them (js/quests.js questDropFor), and scrap as any creature does. Once the Nest's infestation is over (js/population.js nestState: CALMED or CLEARED, the
+// purification done) it is `after`'s numbers.
 const FP_SPAWN_SEWERS = {
-    room: "sewers", every: 1500, first: 1500, start: 3, cap: 4, minFromPlayer: 9, spacing: 3,
-    species: ["ant"], classes: { worker: 3, scout: 3 }, levels: [3, 5], element: "toxic", brood: true,
+    room: "sewers", table: "sewers", nest: "sewer_nest", every: 1500, first: 1500, start: 3, cap: 4, minFromPlayer: 9, spacing: 3,
+    from: "brood_hole",
+    get species() { return spawnWhat(this).species; }, get classes() { return spawnWhat(this).classes; }, get levels() { return spawnWhat(this).levels; },
+    get element() { return spawnWhat(this).element; }, get brood() { return spawnWhat(this).brood; },
     wander: [3, 9],
     after: { cap: 1, every: 6000 },   // PROVISIONAL: after the purification (js/quests.js) "the major infestation clears; a few incidental insects may remain" (the archive): one straggler at a time, one every 100 s
 };
@@ -33,18 +41,33 @@ function _fsArenaCells() {
 function _fsCells(P) { return P.room === FP_SPAWN.room ? _fsArenaCells() : typeof partyRoomCells === "function" ? partyRoomCells(P.room) : []; }
 // the facility's living creatures: all of them, or those of one home room (the arena's spawner counts the arena's; the Sewers' its own)
 function facilityCreatures(room) { return actors.filter(a => a && a.fpCreature && !a.dead && (!room || a.homeRoom === room)); }
-// a class of the species, by the weights (never a nymph or a boss)
-function _fsPickClass(sp, P) {
-    P = P || FP_SPAWN; const def = SPECIES[sp]; if (!def) return null;
-    const have = Object.keys(P.classes).filter(c => def[c] && def[c].width); if (!have.length) return null;
-    let t = 0; for (const c of have) t += P.classes[c]; let r = Math.random() * t; for (const c of have) { r -= P.classes[c]; if (r <= 0) return c; }
+// a class of the species, by the weights of WHAT a spawner makes (js/population.js spawnWhat: the table's; never a nymph or a boss unless the table says so)
+function _fsPickClass(sp, W) {
+    W = W || spawnWhat(FP_SPAWN); const def = SPECIES[sp]; if (!def) return null;
+    const have = Object.keys(W.classes || {}).filter(c => def[c] && def[c].width); if (!have.length) return null;
+    let t = 0; for (const c of have) t += W.classes[c]; let r = Math.random() * t; for (const c of have) { r -= W.classes[c]; if (r <= 0) return c; }
     return have[0];
 }
 // the kind there are fewest of (a random one of those, so it is not always the same order)
-function _fsPickSpecies(alive, P) {
-    P = P || FP_SPAWN; const n = {}; for (const s of P.species) n[s] = 0; for (const a of alive) if (n[a.speciesName] !== undefined) n[a.speciesName]++;
-    const least = Math.min(...P.species.map(s => n[s])), pool = P.species.filter(s => n[s] === least);
+function _fsPickSpecies(alive, W) {
+    W = W || spawnWhat(FP_SPAWN); const list = W.species || []; if (!list.length) return null;
+    const n = {}; for (const s of list) n[s] = 0; for (const a of alive) if (n[a.speciesName] !== undefined) n[a.speciesName]++;
+    const least = Math.min(...list.map(s => n[s])), pool = list.filter(s => n[s] === least);
     return pool[Math.floor(Math.random() * pool.length)];
+}
+// the floor cells a spawner's creatures come up at when one will do (`from`: decor ids, or a decor kind): a floor decor's own cell (a grate), a wall decor's cell in front of it (a brood hole); kept per spawner
+function _fsFromCells(P) {
+    if (!P || !P.from || !_fp || !_fp.F || typeof _fpNearestCell !== "function") return [];
+    if (!_fp.fromCells) _fp.fromCells = {}; const key = P.room + ":" + [].concat(P.from).join(","); if (_fp.fromCells[key]) return _fp.fromCells[key];
+    const ids = Array.isArray(P.from) ? P.from : null, out = [];
+    for (const d of _fp.F.decor || []) {
+        if (d.room !== P.room || (ids ? !ids.includes(d.id) : d.kind !== P.from)) continue;
+        let p = null;
+        if (d.at) p = d.at;
+        else if (d.a && d.b) { const mx = (d.a[0] + d.b[0]) / 2, my = (d.a[1] + d.b[1]) / 2, dx = d.b[0] - d.a[0], dy = d.b[1] - d.a[1], L = Math.hypot(dx, dy) || 1; for (const s of [1, -1]) { const q = [mx - dy / L * 0.9 * s, my + dx / L * 0.9 * s]; if (facilityFloorAt(q[0], q[1])) { p = q; break; } } }   // (the side of the wall the floor is on)
+        const c = p && _fpNearestCell(p[0], p[1]); if (c && Math.hypot(c[0] - p[0], c[1] - p[1]) <= 1.6 && !out.some(o => o[0] === c[0] && o[1] === c[1])) out.push(c);
+    }
+    return (_fp.fromCells[key] = out);
 }
 // a spot on the room's floor: far enough from the player, out of the player's sight, and away from the other creatures; the farthest of a few tries if none is perfect.
 // In a room other than the arena, one the player can walk to (the same component as the player: not a pocket shut off by rubble or a gate), so a creature is never shut away from the fight
@@ -55,29 +78,35 @@ function facilitySpawnSpot(P) {
     const sq = P.room !== FP_SPAWN.room && typeof sqSpot === "function" ? sqSpot() : null;   // (Side Quest's passage is a safe spot: nothing of the brood comes up within 3 tiles of him, js/sidequest.js)
     // a stretch a launcher lands on while it is still cut off from the launcher's own (the Sewers' collapsed tunnel, its choke shut): nothing comes up on it, with you up there or not (once the choke is drilled the floors are one, and it is floor like the rest)
     const landings = new Set(); if (cm) for (const s of ((_fp && _fp.F && _fp.F.launchSites) || [])) { const lc = cm.get(Math.round(s.land[0]) + "," + Math.round(s.land[1])), ac = cm.get(Math.round(s.at[0]) + "," + Math.round(s.at[1])); if (lc !== undefined && lc !== ac) landings.add(lc); }
+    const fits = (c, strict) => {   // the spot's score (or -1 where nothing may come up); strict: only a spot that meets every rule
+        if (cm && hc !== undefined && cm.get(c[0] + "," + c[1]) !== hc) return -1;
+        if (cm && landings.has(cm.get(c[0] + "," + c[1]))) return -1;
+        if (sq && Math.hypot(c[0] - sq[0], c[1] - sq[1]) < 3) return -1;
+        const dp = Math.hypot(c[0] - player.visualX, c[1] - player.visualY); let dn = 99; for (const o of others) dn = Math.min(dn, Math.hypot(c[0] - o.x, c[1] - o.y));
+        const seen = typeof _fpLos === "function" && _fpLos(player.visualX, player.visualY, c[0], c[1]), good = dp >= P.minFromPlayer && dn >= P.spacing && !seen;
+        if (strict) return good ? 1 : -1;
+        return good ? 1e9 : Math.min(dp, P.minFromPlayer) * 2 + Math.min(dn, P.spacing) * 2 + (seen ? 0 : 6);
+    };
+    // up out of a grate or a brood hole when one meets every rule (a random one of those that do)
+    const from = _fsFromCells(P).filter(c => fits(c, true) > 0); if (from.length) return from[Math.floor(Math.random() * from.length)];
     for (let i = 0; i < 30; i++) {
-        const c = cells[Math.floor(Math.random() * cells.length)], dp = Math.hypot(c[0] - player.visualX, c[1] - player.visualY);
-        if (cm && hc !== undefined && cm.get(c[0] + "," + c[1]) !== hc) continue;
-        if (cm && landings.has(cm.get(c[0] + "," + c[1]))) continue;
-        if (sq && Math.hypot(c[0] - sq[0], c[1] - sq[1]) < 3) continue;
-        let dn = 99; for (const o of others) dn = Math.min(dn, Math.hypot(c[0] - o.x, c[1] - o.y));
-        const seen = typeof _fpLos === "function" && _fpLos(player.visualX, player.visualY, c[0], c[1]);
-        const score = Math.min(dp, P.minFromPlayer) * 2 + Math.min(dn, P.spacing) * 2 + (seen ? 0 : 6);
-        if (dp >= P.minFromPlayer && dn >= P.spacing && !seen) return c;
-        if (score > bs) { bs = score; best = c; }
+        const c = cells[Math.floor(Math.random() * cells.length)], s = fits(c, false); if (s < 0) continue;
+        if (s >= 1e9) return c;
+        if (s > bs) { bs = s; best = c; }
     }
     return best;
 }
-// one creature: of a species there are fewest of, at a spot, wandering; of the arena's spawner, or the one given
+// one creature: WHAT its spawner's table says (a species there are fewest of, a class by the weights, a level in the band, an element; js/population.js spawnWhat), at a spot, wandering; of the arena's spawner, or the one given
 function facilitySpawnCreature(species, spot, P) {
     if (typeof spawnCreature !== "function") return null;
-    P = P || FP_SPAWN; const alive = facilityCreatures(P.room); species = species || _fsPickSpecies(alive, P); spot = spot || facilitySpawnSpot(P); if (!spot) return null;
-    const cls = _fsPickClass(species, P); if (!cls) return null;
-    const level = P.levels[0] + Math.floor(Math.random() * (P.levels[1] - P.levels[0] + 1));
+    P = P || FP_SPAWN; const W = spawnWhat(P), alive = facilityCreatures(P.room); species = species || _fsPickSpecies(alive, W); if (!species) return null; spot = spot || facilitySpawnSpot(P); if (!spot) return null;
+    const cls = _fsPickClass(species, W); if (!cls) return null;
+    const lv = W.levels || [1, 1], level = lv[0] + Math.floor(Math.random() * (lv[1] - lv[0] + 1));
     let p = null; try { p = spawnCreature({ species, className: cls, x: spot[0], y: spot[1], level, state: "wander" }); } catch (e) { return null; }
     if (!p) return null;
     p.wanderTarget = null; p.wanderTimer = Math.random() * 60; p.fpCreature = true; p.homeRoom = P.room;
-    if (P.element) p.element = P.element; if (P.brood) p.sewerBrood = true;
+    if (W.element) p.element = W.element; if (W.brood) p.sewerBrood = true;
+    p.race = speciesRace(species);   // (its race, js/population.js: an ant is the Nest's, its card and INFO say so)
     return p;
 }
 // when the game opens: a handful, each a different kind
@@ -100,7 +129,7 @@ function facilitySpawnTick() {
 // the Sewers' brood: the first few the first time the player is in the Sewers, then one at a time while the player is there (none while away: the Sewers are not emptied either)
 function facilityBroodTick(f) {
     const P = FP_SPAWN_SEWERS; if (typeof player === "undefined" || typeof partyRoomAt !== "function" || partyRoomAt(player.x, player.y) !== P.room) return;
-    const after = typeof questDone === "function" && questDone("purify") ? P.after : null, cap = after ? after.cap : P.cap, every = after ? after.every : P.every;   // (purified: a few stragglers, now and then)
+    const after = typeof nestInfested === "function" && !nestInfested(P.nest) ? P.after : null, cap = after ? after.cap : P.cap, every = after ? after.every : P.every;   // (the Nest calmed or cleared, the water purified: a few stragglers, now and then)
     if (_fp.broodAt === undefined) { _fp.broodAt = f + (after ? every : P.first); for (let i = 0; i < (after ? 0 : P.start) && facilityCreatures(P.room).length < cap; i++) facilitySpawnCreature(null, null, P); return; }
     if (f < _fp.broodAt) return;
     _fp.broodAt = f + every;

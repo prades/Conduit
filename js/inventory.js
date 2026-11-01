@@ -94,7 +94,7 @@ const ITEMS = {
     purification_module: { id: "purification_module", name: "PURIFICATION MODULE", cat: "part", type: "tool", stack: 1, col: "#5ff7e0", icon: "core", classes: null,
         desc: "A filtration module built in the Experiment Lab. It mounts on the cistern's console in the Sewers, and cleans the river while it runs.",
         lore: "A canister of membranes and a pump, and a chalk mark on it: THE DRAIN. Heavier than it looks.",
-        stats: ["BOUGHT AT  THE ANALYSIS BENCH, ◆" + 300, "INSTALLED AT  THE PURIFIER MOUNT: THE CISTERN, SEWERS", "THE INSTALL  STAY AT THE MOUNT WHILE IT MOUNTS"],   // (the price is QUEST_PURIFY.modulePrice, js/quests.js, which loads after this table: tests/sewerquest.js holds the two to one number)
+        stats: ["BOUGHT AT  THE ANALYSIS BENCH, ◆" + 300, "INSTALLED AT  THE PURIFIER MOUNT: THE NEST, SEWERS", "THE INSTALL  STAY AT THE MOUNT WHILE IT MOUNTS"],   // (the price is QUEST_PURIFY.modulePrice, js/quests.js, which loads after this table: tests/sewerquest.js holds the two to one number)
         use: () => ({ ok: false, why: "INSTALL IT AT THE PURIFIER MOUNT IN THE SEWERS' CISTERN" }) },
     // THE SLEEPING POTION (js/potion.js; the archive's Side Quest design, 2026-10-31): Side Quest's original, and the Experiment Lab's copy. A TOOL in the pack's terms: its button EQUIPS it (verb), and the throw (the
     // POTION pill by the ammunition, or the key) takes it from the pack itself. Its numbers are the potion's table (stats is read when the page is drawn, after js/potion.js has loaded).

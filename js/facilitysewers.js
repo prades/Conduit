@@ -40,6 +40,30 @@ function facilitySewerItems(F) {
             for (let x = Math.round(x0); x <= Math.round(x1); x++) for (let y = Math.round(y0); y <= Math.round(y1); y++) items.push({ type: "fp", fp: "sewer", what: "grate", room: d.room, base: base(d.room), x, y, at: d.at, h, cell: [x, y], depth: x + y + 0.004 });
             if (d.pipe && d.glass) items.push({ type: "fp", fp: "sewer", what: "glass", room: d.room, base: base(d.room), x: d.pipe[0], y: d.pipe[1], at: d.pipe, glass: d.glass, depth: d.pipe[0] + d.pipe[1] + 1.5 });
             items.push({ type: "fp", fp: "sewer", what: "mist", room: d.room, base: base(d.room), x: d.at[0], y: d.at[1], at: d.at, r: h, depth: d.at[0] + d.at[1] + 0.9 });
+        } else if ((k === "egg_cluster" || k === "junk") && d.at) {   // THE NEST: eggs, or the dam's junk, a piece at a time (so each sorts with whoever walks among them), on floor only
+            const n = d.n || 5, R = d.radius || 0.8, seed = _fpHash(Math.round(d.at[0] * 7), Math.round(d.at[1] * 7));
+            for (let i = 0; i < n; i++) {
+                const a = _fpSwHash(seed % 997 + i * 3.1) * 6.2832, rr = Math.sqrt(_fpSwHash(seed % 991 + i * 7.7)) * R, x = d.at[0] + Math.cos(a) * rr, y = d.at[1] + Math.sin(a) * rr;
+                if (!facilityFloorAt(x, y, F)) continue;
+                items.push({ type: "fp", fp: "sewer", what: k === "junk" ? "junk" : "egg", room: d.room, base: base(d.room), x, y, s: k === "junk" ? 0.22 + _fpSwHash(seed % 983 + i) * 0.16 : 0.13 + _fpSwHash(seed % 983 + i) * 0.07, seed: (seed % 9973) + i * 17, depth: x + y + 0.04 });
+            }
+        } else if (k === "falls" && d.a && d.b) {   // THE WATERFALL: the moat spilling over the Nest's east edge (on the line of the spill lip nearest it), a tile of it at a time, drawn after the lip
+            const vert = Math.abs(d.b[0] - d.a[0]) < Math.abs(d.b[1] - d.a[1]), lip = F.walls.filter(w => w.kind === "spill" && (vert ? Math.abs(w.a[0] - w.b[0]) < 1e-6 : Math.abs(w.a[1] - w.b[1]) < 1e-6)).sort((p, q) => (vert ? Math.abs(p.a[0] - d.a[0]) - Math.abs(q.a[0] - d.a[0]) : Math.abs(p.a[1] - d.a[1]) - Math.abs(q.a[1] - d.a[1])))[0];
+            let A = d.a, B = d.b; if (lip) { if (vert) { A = [lip.a[0], d.a[1]]; B = [lip.a[0], d.b[1]]; } else { A = [d.a[0], lip.a[1]]; B = [d.b[0], lip.a[1]]; } }   // (the decor itself is left as it is: it is checked inside its room)
+            const L = Math.hypot(B[0] - A[0], B[1] - A[1]), n = Math.max(1, Math.round(L));
+            for (let k2 = 0; k2 < n; k2++) { const p0 = [A[0] + (B[0] - A[0]) * k2 / n, A[1] + (B[1] - A[1]) * k2 / n], p1 = [A[0] + (B[0] - A[0]) * (k2 + 1) / n, A[1] + (B[1] - A[1]) * (k2 + 1) / n];
+                items.push({ type: "fp", fp: "sewer", what: "falls", room: d.room, base: base(d.room), x: (p0[0] + p1[0]) / 2, y: (p0[1] + p1[1]) / 2, a: p0, b: p1, i: k2, n, depth: Math.max(p0[0] + p0[1], p1[0] + p1[1]) + 2.2 }); }
+        }
+    }
+    // THE DAM'S RIM: compacted trash along every edge where the Nest's floor drops into the reservoir or the moat (FP_DAM_POOLS), a piece every half tile; where the water side faces the camera, its face runs down into the water
+    for (const s of F.solids) if (FP_DAM_POOLS.has(s.id) && s.poly) {
+        const P = s.poly;
+        for (let i = 0; i < P.length; i++) {
+            const a = P[i], b = P[(i + 1) % P.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L < 1e-6) continue;
+            const ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L; let wx = -uy, wy = ux; if (!facilityPointInPoly((a[0] + b[0]) / 2 + wx * 0.2, (a[1] + b[1]) / 2 + wy * 0.2, P)) { wx = -wx; wy = -wy; }   // (w: from the floor into the water)
+            const n = Math.max(1, Math.round(L * 2));
+            for (let k2 = 0; k2 < n; k2++) { const t = (k2 + 0.5) / n, x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t; if (!facilityFloorAt(x - wx * 0.7, y - wy * 0.7, F)) continue;   // (only where floor meets it)
+                const face = wx + wy > 0.01; items.push({ type: "fp", fp: "sewer", what: "rim", room: s.room, base: base(s.room), x, y, u: [ux, uy], w: [wx, wy], half: L / n / 2, face, seed: _fpHash(Math.round(x * 9), Math.round(y * 9)), depth: x + y + (face ? 0.45 : 0.02) }); }
         }
     }
     for (const s of F.solids) if (s.kind === "gate" || s.kind === "boss_gate") {   // a gate: on the long middle line of its thin outline
@@ -49,11 +73,29 @@ function facilitySewerItems(F) {
     }
     return items;
 }
-// the water's outline: the river's band (from the west end of the westmost length to the east end of the eastmost: the bridge's gap is water too, under the grating) and the pools
+// the water's outline: the river's band (from the west end of the westmost length to the east end of the eastmost: the bridges' gaps are water too, under the grating), the round pools, and the POOLS OF ANY
+// OUTLINE (the Nest's reservoir and moat, 2026-11-01): each with the banks the camera sees (its edges whose inside faces +x / +y, but not where other water lies beyond the edge) and the way it flows
+const FP_DAM_POOLS = new Set(["nest_reservoir", "nest_moat"]);   // the water the Nest's trash dam stands in: its rim runs along every edge of them that floor drops into
+const FP_POOL_FLOW = { nest_reservoir: [0.35, 1], nest_moat: [1, 0] };   // (the reservoir runs south from the arch's stream and the river's mouth; the moat east, to the falls)
 function facilityWaterShape(list) {
-    const rivers = list.filter(s => s.kind === "river" && s.poly), pools = list.filter(s => s.kind === "pool" && s.shape === "circle");
+    const rivers = list.filter(s => s.kind === "river" && s.poly), pools = list.filter(s => s.kind === "pool" && s.shape === "circle"), polys = list.filter(s => s.kind === "pool" && s.shape !== "circle" && s.poly);
     let band = null; if (rivers.length) { const xs = rivers.flatMap(s => s.poly.map(q => q[0])), ys = rivers.flatMap(s => s.poly.map(q => q[1])); band = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; }
-    return { band, pools: pools.map(p => ({ at: p.at.slice(), r: p.r })) };
+    const wet = (x, y, self) => list.some(s => s !== self && (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : !!s.poly && facilityPointInPoly(x, y, s.poly)));
+    return { band, pools: pools.map(p => ({ at: p.at.slice(), r: p.r })), polys: polys.map(s => _fpWaterPoly(s, wet)) };
+}
+function _fpWaterPoly(s, wet) {
+    const P = s.poly, banks = [];
+    for (let i = 0; i < P.length; i++) {
+        const a = P[i], b = P[(i + 1) % P.length], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy); if (L < 1e-6) continue;
+        let nx = -dy / L, ny = dx / L; if (!facilityPointInPoly((a[0] + b[0]) / 2 + nx * 0.2, (a[1] + b[1]) / 2 + ny * 0.2, P)) { nx = -nx; ny = -ny; }   // (the normal into the water)
+        if (nx + ny <= 0.01) continue;   // a bank facing away from the camera: not seen
+        const n = Math.max(1, Math.round(L * 2)); let run = null;   // (half-tile steps: no bank where more water lies beyond the edge, the river running in)
+        for (let k = 0; k <= n; k++) { const t = k / n, x = a[0] + dx * t, y = a[1] + dy * t, open = k < n && !wet(x + dx / L * 0.25 - nx * 0.3, y + dy / L * 0.25 - ny * 0.3, s);
+            if (open && !run) run = [x, y]; else if (!open && run) { banks.push([run, [x, y], nx, ny]); run = null; } }
+        if (run) banks.push([run, [b[0], b[1]], nx, ny]);
+    }
+    const fl = FP_POOL_FLOW[s.id] || [0, 1], fL = Math.hypot(fl[0], fl[1]) || 1;
+    return { id: s.id, poly: P.map(q => q.slice()), bb: s.bb.slice(), banks, flow: [fl[0] / fL, fl[1] / fL] };
 }
 // is a long item on the screen (its whole box, not its middle)
 function _fpSpanVisible(it) {
@@ -65,6 +107,7 @@ function facilitySewerDraw(it) {
     const f = _fpFrame();
     if (it.what === "water") _fpSewerWater(it, f); else if (it.what === "rail") _fpSewerRail(it); else if (it.what === "stump") _fpSewerStump(it, f);
     else if (it.what === "gate") _fpSewerGate(it, f); else if (it.what === "grate") _fpOverflowGrate(it, f); else if (it.what === "glass") _fpSightGlass(it, f); else if (it.what === "mist") _fpSewerMist(it, f);
+    else if (it.what === "egg") _fpNestEgg(it, f); else if (it.what === "junk") _fpNestJunk(it, f); else if (it.what === "rim") _fpNestRim(it, f); else if (it.what === "falls") _fpNestFalls(it, f);
 }
 const _fpSwLine = (p, q) => { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
 const _fpSwPath = (pts) => { ctx.beginPath(); pts.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); };
@@ -89,6 +132,7 @@ function _fpSewerWater(it, f) {
     }
     for (const p of it.pools) { const R = _fpRoomStyle(it.room); _fpQuad(circ(p.at[0], p.at[1], p.r + 0.75, 0, 0, Math.PI * 2, 48), R.fa || "#47504c", null); ctx.strokeStyle = "rgba(205,212,220,0.6)"; ctx.lineWidth = 2; _fpSwPath(circ(p.at[0], p.at[1], p.r, 0, 0, Math.PI * 2, 48)); ctx.stroke(); }   // the floor's rim round a pool (the square tiles leave its corners bare against the round edge), and the lit lip
     for (const p of it.pools) { const D = FP_SEWER.poolSink, top = circ(p.at[0], p.at[1], p.r, 0, Math.PI * 0.75, Math.PI * 1.75), bot = circ(p.at[0], p.at[1], p.r, -D, Math.PI * 1.75, Math.PI * 0.75); _fpQuad(top.concat(bot), "#1a1f1e", null); }
+    for (const W of it.polys || []) for (const [a, b, nx, ny] of W.banks) { _fpQuad([P(a[0], a[1], 0), P(b[0], b[1], 0), P(b[0], b[1], -S), P(a[0], a[1], -S)], ny >= nx ? "#1d2422" : "#161c1b", null); ctx.strokeStyle = "rgba(170,140,220,0.3)"; ctx.lineWidth = 1.1; _fpSwLine(P(a[0], a[1], -S + 3), P(b[0], b[1], -S + 3)); }   // an outlined pool's far banks, a tide mark
     // the surface: deep violet, lighter down the middle of the current (clearing to a cold blue-green as the purification module runs: _fpSwCol)
     const g0 = B ? P(B[0], B[1], -S) : null, g1 = B ? P(B[2], B[1], -S) : null;
     if (B) {
@@ -109,6 +153,7 @@ function _fpSewerWater(it, f) {
             }
         }
     }
+    for (const W of it.polys || []) _fpSewerPolyWater(W, f, low);
     for (const p of it.pools) { const D = FP_SEWER.poolSink, c = P(p.at[0], p.at[1], -D), e = P(p.at[0] + p.r, p.at[1] - p.r, -D), R = Math.abs(e[0] - c[0]) * 1.1, g = ctx.createRadialGradient(c[0], c[1], 2, c[0], c[1], R); g.addColorStop(0, _fpSwCol("#8a46e0")); g.addColorStop(0.55, _fpSwCol("#3c1878")); g.addColorStop(1, _fpSwCol("#1c0c38")); _fpQuad(circ(p.at[0], p.at[1], p.r, -D, 0, Math.PI * 2), g, null); }
     // the sump: slow arcs going round and down
     for (const p of it.pools) { const D = FP_SEWER.poolSink; for (let k = 0; k < (low ? 3 : 6); k++) { const a0 = -f * 0.01 + k * 1.05, r = p.r * (0.25 + 0.11 * k); ctx.strokeStyle = "rgba(220,190,255," + (0.28 - k * 0.03).toFixed(2) + ")"; ctx.lineWidth = 1.4; _fpSwPath(circ(p.at[0], p.at[1], r, -D + 1, a0, a0 + 1.4, 12)); ctx.stroke(); } }
@@ -117,8 +162,27 @@ function _fpSewerWater(it, f) {
         ctx.globalCompositeOperation = "lighter";
         if (B) { const mid = (B[1] + B[3]) / 2; ctx.lineCap = "round"; ctx.strokeStyle = _fpSwRgba([166, 77, 255], [79, 208, 232], 0.06); ctx.lineWidth = (B[3] - B[1]) * TILE_H * 1.6; _fpSwLine(P(B[0] + 0.5, mid, -S), P(B[2] - 0.5, mid, -S)); }
         for (const p of it.pools) { const c = P(p.at[0], p.at[1], -FP_SEWER.poolSink); _fpGlow(c[0], c[1], p.r * 70, _fpSwCol(FP_SEWER.violet), 0.22 + 0.06 * Math.sin(f * 0.03)); }
+        for (const W of it.polys || []) { const b = W.bb, c = P((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, -S); _fpGlow(c[0], c[1], Math.max(b[2] - b[0], b[3] - b[1]) * 22, _fpSwCol(FP_SEWER.violet), 0.12 + 0.04 * Math.sin(f * 0.03 + b[0])); }
         ctx.globalCompositeOperation = "source-over";
     }
+}
+// ── an outlined pool (the Nest's reservoir and moat): its surface sunk as the river's is, darker where it is deep, flecks of light drifting the way it flows (clipped to its outline), clearing as the river does ──
+function _fpSewerPolyWater(W, f, low) {
+    const P = _fpP, S = FP_SEWER.sink, pts = W.poly.map(q => P(q[0], q[1], -S)), b = W.bb, fl = W.flow;
+    _fpQuad(pts, _fpSwCol("#5a27a8"), null);   // (the river's own violet: an outlined pool is narrow in places, so one even colour, not a gradient across its whole box)
+    _fpQuad(pts, _fpSwRgba([176, 104, 255], [140, 225, 240], 0.12 + 0.04 * Math.sin(f * 0.02 + b[0])), null);   // a slow shimmer
+    ctx.save(); _fpSwPath(pts); ctx.closePath(); ctx.clip(); ctx.lineCap = "round";
+    const w = b[2] - b[0], h = b[3] - b[1], lanes = low ? 4 : 9, sp = 0.012, px = -fl[1], py = fl[0], cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, span = Math.hypot(w, h);
+    for (let l = 0; l < lanes; l++) {
+        const off = (l + 0.5) / lanes - 0.5, gap = 0.9 + _fpSwHash(l + b[0]) * 0.5, n = Math.ceil(span / gap) + 1;
+        for (let k = 0; k < n; k++) {
+            const t = ((k * gap + _fpSwHash(l * 7 + k) * 0.4 + f * sp) % (span + gap)) - span / 2 - gap * 0.5, x = cx + fl[0] * t + px * off * span, y = cy + fl[1] * t + py * off * span;
+            if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) continue;
+            const a = P(x, y, -S), e = P(x + fl[0] * 0.32, y + fl[1] * 0.32, -S); if (a[0] < -40 || a[0] > canvas.width + 40 || a[1] < -40 || a[1] > canvas.height + 40) continue;
+            ctx.strokeStyle = "rgba(226,200,255," + (0.2 + _fpSwHash(k * 1.7 + l) * 0.35).toFixed(2) + ")"; ctx.lineWidth = 1 + _fpSwHash(k + l * 3); _fpSwLine(a, e);
+        }
+    }
+    ctx.restore();
 }
 // ── a piece of the bridge's rail: posts, a top rail in yellow, a mid rail; on the camera's side, the steel girder down to the water ──
 function _fpSewerRail(it) {
@@ -265,3 +329,151 @@ Object.assign(FP_STYLE_WALL, {
     },
 });
 for (const k of ["outfall", "collapse", "sealed_hatch"]) FP_WALL_KINDS[k] = FP_STYLE_WALL[k];
+
+// ═════════════ THE NEST (2026-11-01; js/population.js NESTS; the map: js/facilitymap.js, the Sewers' east end) ═════════════
+// The Toxic Ant Queen's colony on its TRASH DAM over the water: eggs and brood holes that glow toxic green while the Nest is infested (brighter and quicker when her encounter has stirred it), dim once it is
+// calmed and dark once it is cleared (js/population.js nestState); the dam's junk and its rim of compacted trash where it drops into the water; the WATERFALL where the moat spills over the east edge; the BIG
+// BARRED ARCH in the north wall with the stream coming out under its bars (the user's sketch: "Make a waterfall and another big sewer gate tunnel entrance").
+let _fpNestToneF = -1, _fpNestToneV = null;
+function _fpNestTone(f) {
+    if (_fpNestToneF === f && _fpNestToneV) return _fpNestToneV;
+    const s = typeof nestState === "function" ? nestState() : "infested"; _fpNestToneF = f;
+    return (_fpNestToneV = s === "stirred" ? { g: 1, p: 0.11, s } : s === "calmed" ? { g: 0.22, p: 0.02, s } : s === "cleared" ? { g: 0, p: 0, s } : { g: 0.8, p: 0.035, s });
+}
+// a small box on the floor: its top and the two faces the camera sees
+function _fpNestBox(x0, y0, x1, y1, z0, z1, top, sx, sy, ink) {
+    const P = _fpP;
+    _fpQuad([P(x0, y1, z0), P(x1, y1, z0), P(x1, y1, z1), P(x0, y1, z1)], sy, ink, 1);
+    _fpQuad([P(x1, y0, z0), P(x1, y1, z0), P(x1, y1, z1), P(x1, y0, z1)], sx, ink, 1);
+    _fpQuad([P(x0, y0, z1), P(x1, y0, z1), P(x1, y1, z1), P(x0, y1, z1)], top, ink, 1);
+}
+// ── an egg: a pale, leathery shell with the brood's toxic green showing through it; broken open and dark once the Nest is cleared ──
+function _fpNestEgg(it, f) {
+    const T = _fpNestTone(f), s = it.s, H = s * 92, c = _fpP(it.x, it.y, H * 0.5), g = _fpP(it.x, it.y, 0), rx = s * TILE_W * 0.95, ry = H * 0.55, ph = Math.sin(f * T.p * 2 + it.seed);
+    ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(g[0], g[1], rx * 1.1, rx * 0.5, 0, 0, 6.2832); ctx.fill();
+    const gr = ctx.createRadialGradient(c[0] - rx * 0.3, c[1] - ry * 0.35, 1, c[0], c[1], Math.max(rx, ry) * 1.1), core = 0.25 + T.g * (0.45 + 0.2 * ph);
+    gr.addColorStop(0, T.s === "cleared" ? "#8a8f80" : "#eef3dc"); gr.addColorStop(0.55, T.s === "cleared" ? "#5e6356" : "rgba(" + Math.round(150 + 60 * (1 - core)) + "," + Math.round(205 + 20 * core) + ",120,1)"); gr.addColorStop(1, T.s === "cleared" ? "#3a3d35" : "rgba(60,110,40,1)");
+    ctx.fillStyle = gr; ctx.strokeStyle = "rgba(20,26,16,0.85)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, 6.2832); ctx.fill(); ctx.stroke();
+    if (T.s === "cleared") { ctx.fillStyle = "#14160f"; ctx.beginPath(); for (let k = 0; k <= 6; k++) { const a = Math.PI + k / 6 * Math.PI, rr = k & 1 ? 0.62 : 0.9; ctx.lineTo(c[0] + Math.cos(a) * rx * rr, c[1] - ry * 0.35 + Math.sin(a) * ry * 0.45 * rr); } ctx.closePath(); ctx.fill(); return; }   // (hatched or burst: an empty, torn top)
+    ctx.fillStyle = "rgba(255,255,255,0.45)"; ctx.beginPath(); ctx.ellipse(c[0] - rx * 0.35, c[1] - ry * 0.4, rx * 0.25, ry * 0.18, -0.5, 0, 6.2832); ctx.fill();
+    if (T.g > 0.05 && (typeof gfxLow === "undefined" || !gfxLow)) _fpGlow(c[0], c[1], rx * 3, "#8cff5a", 0.14 * T.g * (0.7 + 0.3 * ph));
+}
+// ── a piece of the dam's junk: a crate, a barrel, a tyre, a pipe or a bag, glued with resin ──
+function _fpNestJunk(it, f) {
+    const s = it.s, x = it.x, y = it.y, k = it.seed % 5, ink = "rgba(14,16,12,0.9)", T = _fpNestTone(f), P = _fpP;
+    if (k === 0) { const h = s * 0.5; _fpNestBox(x - h, y - h * 0.8, x + h, y + h * 0.8, 0, s * 46, "#7b6346", "#5a452f", "#6a5238", ink); ctx.strokeStyle = "rgba(30,20,10,0.6)"; ctx.lineWidth = 1; for (const t of [0.33, 0.66]) _fpSwLine(P(x - h, y + h * 0.8, s * 46 * t), P(x + h, y + h * 0.8, s * 46 * t)); }   // a crate
+    else if (k === 1) { const c = P(x, y, 0), t = P(x, y, s * 58), rx = s * TILE_W * 0.55, ry = rx * 0.5; ctx.fillStyle = "#2f5a55"; ctx.strokeStyle = ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(c[0] - rx, c[1]); ctx.lineTo(t[0] - rx, t[1]); ctx.ellipse(t[0], t[1], rx, ry, 0, Math.PI, 0, false); ctx.lineTo(c[0] + rx, c[1]); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, Math.PI, false); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#3f6b66"; ctx.beginPath(); ctx.ellipse(t[0], t[1], rx, ry, 0, 0, 6.2832); ctx.fill(); ctx.stroke(); ctx.strokeStyle = "rgba(160,90,40,0.7)"; ctx.lineWidth = 2; for (const q of [0.3, 0.7]) { const m = P(x, y, s * 58 * q); ctx.beginPath(); ctx.ellipse(m[0], m[1], rx, ry, 0, 0, Math.PI); ctx.stroke(); } }   // a rusty barrel
+    else if (k === 2) { const c = P(x, y, 3), rx = s * TILE_W * 0.7; ctx.strokeStyle = "#141414"; ctx.lineWidth = Math.max(3, rx * 0.45); ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, rx * 0.5, 0, 0, 6.2832); ctx.stroke(); ctx.strokeStyle = "rgba(90,90,90,0.5)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(c[0], c[1] - 1, rx, rx * 0.5, 0, 3.4, 5.9); ctx.stroke(); }   // a tyre, flat
+    else if (k === 3) { const h = s * 0.9, w = s * 0.18; _fpNestBox(x - h, y - w, x + h, y + w, 0, s * 26, "#8a949e", "#5d6670", "#6b7580", ink); }   // a length of pipe
+    else { const c = P(x, y, s * 20), rx = s * TILE_W * 0.6; ctx.fillStyle = "#2b3527"; ctx.strokeStyle = ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, rx * 0.62, 0.2, 0, 6.2832); ctx.fill(); ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,0.18)"; ctx.beginPath(); ctx.ellipse(c[0] - rx * 0.3, c[1] - rx * 0.25, rx * 0.3, rx * 0.15, 0.2, 0, 6.2832); ctx.fill(); }   // a bag
+    const r = P(x + 0.05, y + 0.05, s * 30), a = 0.25 + 0.35 * T.g; ctx.fillStyle = "rgba(140,170,60," + a.toFixed(2) + ")"; ctx.beginPath(); ctx.ellipse(r[0], r[1], s * TILE_W * 0.35, s * TILE_W * 0.18, 0.4, 0, 6.2832); ctx.fill();   // resin over it
+}
+// ── a half tile of the dam's rim: a crest of junk along the edge; where the water side faces the camera, the dam's face of compacted trash running down into the water ──
+function _fpNestRim(it, f) {
+    const P = _fpP, u = it.u, w = it.w, h = it.half, x = it.x, y = it.y, S = FP_SEWER.sink, sd = it.seed, ink = "rgba(12,14,10,0.9)", T = _fpNestTone(f);
+    const at = (t, o, z) => P(x + u[0] * t + w[0] * o, y + u[1] * t + w[1] * o, z);
+    if (it.face) {
+        const cols = ["#4a3c2c", "#3a3f3a", "#55432f", "#33403d", "#4b4a44"];
+        _fpQuad([at(-h - 0.02, 0, 1), at(h + 0.02, 0, 1), at(h + 0.02, 0.12, -S - 5), at(-h - 0.02, 0.12, -S - 5)], cols[sd % 5], ink, 1);   // the face: down past the water line
+        for (let k = 0; k < 3; k++) { const t0 = -h + (2 * h) * ((sd >>> k) % 7) / 8, t1 = t0 + h * 0.5, z0 = -S + 1 + ((sd >>> (k + 3)) % 5) * 1.5, z1 = z0 + 3 + ((sd >>> (k + 5)) % 3); _fpQuad([at(t0, 0.07 + 0.12 * (z0 + S + 5) / (S + 6), z1), at(t1, 0.07 + 0.12 * (z0 + S + 5) / (S + 6), z1), at(t1, 0.07 + 0.12 * (z0 + S + 5) / (S + 6), z0), at(t0, 0.07 + 0.12 * (z0 + S + 5) / (S + 6), z0)], cols[(sd + k + 1) % 5], null); }   // things stuck in it
+        ctx.strokeStyle = _fpSwRgba([200, 160, 255], [150, 230, 240], 0.45); ctx.lineWidth = 1.2; _fpSwLine(at(-h, 0.17, -S + 1), at(h, 0.17, -S + 1));   // where the water meets it
+    }
+    const k = sd % 4, zc = 4 + (sd % 5);   // the crest
+    if (k === 0) _fpNestBox(x - 0.16 + u[0] * 0.05, y - 0.16 + u[1] * 0.05, x + 0.16, y + 0.16, 0, zc + 4, "#7b6346", "#5a452f", "#6a5238", ink);
+    else if (k === 1) { const c = P(x + w[0] * 0.05, y + w[1] * 0.05, zc), rx = TILE_W * 0.18; ctx.fillStyle = "#3f6b66"; ctx.strokeStyle = ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, rx * 0.55, 0.3, 0, 6.2832); ctx.fill(); ctx.stroke(); }
+    else if (k === 2) _fpNestBox(x - Math.abs(u[0]) * h - 0.05, y - Math.abs(u[1]) * h - 0.05, x + Math.abs(u[0]) * h + 0.05, y + Math.abs(u[1]) * h + 0.05, 0, 4, "#6e5a40", "#4e3e2b", "#5d4a33", ink);   // a plank along it
+    else { const c = P(x, y, 3), rx = TILE_W * 0.2; ctx.fillStyle = "#2b3527"; ctx.strokeStyle = ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, rx * 0.6, 0, 0, 6.2832); ctx.fill(); ctx.stroke(); }
+    if (sd % 3 === 0) { const r = at(0, 0.02, 2); ctx.fillStyle = "rgba(140,170,60," + (0.25 + 0.3 * T.g).toFixed(2) + ")"; ctx.beginPath(); ctx.ellipse(r[0], r[1], TILE_W * 0.22, TILE_W * 0.1, 0, 0, 6.2832); ctx.fill(); }   // resin
+}
+// ── a tile of the waterfall: the moat's water over the lip and down the Nest's east face into the dark, streaks falling in it, foam along the lip, spray below ──
+function _fpNestFalls(it, f) {
+    const P = _fpP, a = it.a, b = it.b, x = a[0] + 0.06, D = 170, Z = 9, low = typeof gfxLow !== "undefined" && gfxLow;   // (just outside the spill lip, from its top)
+    const top = P(x, (a[1] + b[1]) / 2, Z), bot = P(x, (a[1] + b[1]) / 2, -D), g = ctx.createLinearGradient(top[0], top[1], bot[0], bot[1]);
+    g.addColorStop(0, _fpSwRgba([214, 170, 255], [170, 236, 248], 0.9)); g.addColorStop(0.3, _fpSwRgba([150, 80, 235], [80, 190, 220], 0.72)); g.addColorStop(1, _fpSwRgba([60, 20, 120], [20, 70, 90], 0));
+    _fpQuad([P(x, a[1], Z), P(x, b[1], Z), P(x, b[1], -D), P(x, a[1], -D)], g, null);
+    ctx.lineCap = "round";
+    for (let k = 0; k < (low ? 3 : 6); k++) { const t = _fpSwHash(it.i * 13 + k), y = a[1] + (b[1] - a[1]) * t, z = Z - ((f * 1.6 + k * 29 + it.i * 11) % (D - 10)), q0 = P(x, y, z), q1 = P(x, y, z - 16 - 8 * _fpSwHash(k + it.i));
+        ctx.strokeStyle = "rgba(244,232,255," + (0.5 * (1 - (Z - z) / D)).toFixed(2) + ")"; ctx.lineWidth = 1.4; _fpSwLine(q0, q1); }
+    ctx.strokeStyle = "rgba(250,240,255,0.8)"; ctx.lineWidth = 2.2; ctx.beginPath(); for (let k = 0; k <= 6; k++) { const y = a[1] + (b[1] - a[1]) * k / 6, q = P(x, y, Z + Math.sin(f * 0.15 + k * 1.7 + it.i) * 1.2); k ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); } ctx.stroke();   // the foam on the lip
+    if (!low) { ctx.globalCompositeOperation = "lighter"; for (let k = 0; k < 2; k++) { const ph = (f * 0.01 + k * 0.5 + it.i * 0.17) % 1, q = P(x + 0.2, (a[1] + b[1]) / 2, -D + 20 + ph * 30), R = 18 + ph * 26; const m = ctx.createRadialGradient(q[0], q[1], 1, q[0], q[1], R); m.addColorStop(0, _fpSwRgba([200, 160, 255], [160, 230, 240], 0.16 * (1 - ph))); m.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = m; ctx.beginPath(); ctx.arc(q[0], q[1], R, 0, 6.2832); ctx.fill(); } ctx.globalCompositeOperation = "source-over"; }   // the spray below
+}
+Object.assign(FP_STYLE_WALL, {
+    // THE BIG BARRED ARCH: a tall concrete arch in the Nest's north wall, rising past the wall's top, an old tunnel dark behind its bars, the stream running out under them and down into the reservoir
+    sewer_arch: (it, f) => {
+        const P = (u, z) => _fpWP(it, u, z), ink = _FPW.ink, H = FP_WALL_H + 46, h0 = 92, S = FP_SEWER.sink, low = typeof gfxLow !== "undefined" && gfxLow;
+        const arch = (u0, u1, zTop, zSide, n) => { const o = [P(u0, 0), P(u0, zSide)]; for (let i = 1; i < n; i++) { const t = Math.PI - i / n * Math.PI; o.push(P((u0 + u1) / 2 + Math.cos(t) * (u1 - u0) / 2, zSide + Math.sin(t) * (zTop - zSide))); } o.push(P(u1, zSide), P(u1, 0)); return o; };
+        const zAt = (u, u0, u1, zTop, zSide) => { const c = (u0 + u1) / 2, r = (u1 - u0) / 2, d = (u - c) / r; return Math.abs(d) >= 1 ? zSide : zSide + Math.sqrt(1 - d * d) * (zTop - zSide); };
+        _fpQuad(arch(-0.04, 1.04, H + 16, h0 + 8, 22), "#61666d", ink, 3.5);   // the headwall
+        for (let i = 1; i < 11; i++) { const t = Math.PI - i / 11 * Math.PI, u = 0.5 + Math.cos(t) * 0.42, z = h0 + Math.sin(t) * (H - h0), uo = 0.5 + Math.cos(t) * 0.54, zo = h0 + 8 + Math.sin(t) * (H + 16 - h0 - 8); _fpWLine(it, u, z, uo, zo, "#44494f", 1.6); }   // its voussoirs
+        _fpWQuad(it, 0.44, 0.56, H - 2, H + 16, "#71767d", ink, 2);   // the keystone
+        const mouth = arch(0.08, 0.92, H, h0, 22), g0 = P(0.5, 0), g1 = P(0.5, H), gr = ctx.createLinearGradient(g0[0], g0[1], g1[0], g1[1]); gr.addColorStop(0, _fpSwCol("#4a1f86")); gr.addColorStop(0.28, "#140a26"); gr.addColorStop(1, "#020103");
+        _fpQuad(mouth, gr, ink, 2.5);
+        ctx.save(); _fpSwPath(mouth); ctx.closePath(); ctx.clip();
+        _fpQuad(arch(0.24, 0.76, H - 34, h0 - 18, 16), "rgba(0,0,0,0.55)", null);   // the tunnel going back
+        for (let k = 0; k < 9; k++) { const u = 0.14 + k * 0.72 / 8, s = P(u, 2 + ((f * 0.5 + k * 7) % 14)); ctx.fillStyle = _fpSwRgba([210, 160, 255], [160, 230, 240], 0.4); ctx.fillRect(s[0] - 1.5, s[1] - 1, 3, 2); }   // the stream on its floor, coming
+        ctx.restore();
+        for (let k = 1; k < 10; k++) { const u = 0.08 + k * 0.84 / 10, zt = zAt(u, 0.08, 0.92, H, h0) - 2; _fpWLine(it, u, 0, u, zt, "#141a20", 5); _fpWLine(it, u, 0, u, zt, "#6f7c89", 2.2); }   // the bars, down
+        for (const z of [26, h0 - 6]) { _fpWLine(it, 0.08, z, 0.92, z, "#141a20", 7); _fpWLine(it, 0.08, z, 0.92, z, "#7d8a97", 3.5); _fpWLine(it, 0.08, z + 1.5, 0.92, z + 1.5, "rgba(255,255,255,0.22)", 1); }
+        _fpWQuad(it, 0.42, 0.58, h0 + 8, h0 + 22, "#c8962e", ink, 1.5); _fpWLine(it, 0.46, h0 + 15, 0.54, h0 + 15, "#141414", 2);   // a rusted plate, its number gone
+        _fpWQuad(it, 0.02, 0.1, 6, 70, "rgba(40,70,40,0.35)", null); _fpWQuad(it, 0.9, 0.97, 10, 52, "rgba(40,70,40,0.3)", null);   // damp
+        // the stream: out under the bars, over the sill and down into the reservoir
+        const L = Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) || 1, dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1]; let nx = dy / L, ny = -dx / L; if (nx + ny < 0) { nx = -nx; ny = -ny; }
+        const on = (u, d, z) => _fpP(it.a[0] + dx * u + nx * d, it.a[1] + dy * u + ny * d, z), u0 = 0.2, u1 = 0.8;
+        const sg = ctx.createLinearGradient(...on(0.5, 0, 2), ...on(0.5, 0.6, -S)); sg.addColorStop(0, _fpSwRgba([214, 170, 255], [170, 236, 248], 0.92)); sg.addColorStop(1, _fpSwRgba([120, 50, 220], [60, 170, 210], 0.8));
+        _fpQuad([on(u0, 0, 2), on(u1, 0, 2), on(u1 + 0.02, 0.62, -S), on(u0 - 0.02, 0.62, -S)], sg, null);
+        ctx.lineCap = "round"; for (let k = 0; k < (low ? 4 : 8); k++) { const u = u0 + (u1 - u0) * _fpSwHash(k * 3.3 + it.seed), t = (f * 0.03 + k / 8) % 1, q0 = on(u, t * 0.6, 2 - t * (S + 2)), q1 = on(u, Math.min(0.62, t * 0.6 + 0.12), 2 - Math.min(1, t + 0.2) * (S + 2)); ctx.strokeStyle = "rgba(248,236,255,0.6)"; ctx.lineWidth = 1.4; _fpSwLine(q0, q1); }
+        for (let k = 0; k < 3; k++) { const ph = (f * 0.025 + k / 3) % 1, c = on(0.5, 0.66 + ph * 0.3, -S); ctx.strokeStyle = _fpSwRgba([230, 205, 255], [200, 240, 250], 0.55 * (1 - ph)); ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(c[0], c[1], 20 + ph * 26, 9 + ph * 12, 0, 0, 6.2832); ctx.stroke(); }   // where it lands
+        if (!low) { const m = on(0.5, 0.3, -S + 2); _fpGlow(m[0], m[1], 60, _fpSwCol(FP_SEWER.violet), 0.28); }
+    },
+    // A BROOD HOLE: a gallery the colony has bored through the wall, ringed with resin, the brood's toxic green glowing deep in it (a pair of feelers in it now and then) while the Nest is infested
+    brood_hole: (it, f) => {
+        const T = _fpNestTone(f), ink = _FPW.ink, sd = it.seed || 1, n = 12, pts = [], ring = [];
+        for (let k = 0; k < n; k++) { const a = k / n * 6.2832, j = 0.78 + 0.22 * _fpSwHash(sd + k * 1.3), u = 0.5 + Math.cos(a) * 0.36 * j, z = 17 + Math.sin(a) * 15 * j; pts.push(_fpWP(it, u, Math.max(0, z))); const jr = j + 0.18; ring.push(_fpWP(it, 0.5 + Math.cos(a) * 0.36 * jr, Math.max(0, 17 + Math.sin(a) * 15 * jr))); }
+        _fpQuad(ring, "rgba(122,140,58," + (0.55 + 0.25 * T.g).toFixed(2) + ")", ink, 1.5);   // the resin round it
+        _fpQuad(pts, "#050604", ink, 1.5);
+        if (T.g > 0.02) { const c = _fpWP(it, 0.5, 14), ph = 0.7 + 0.3 * Math.sin(f * T.p * 2 + sd); _fpGlow(c[0], c[1], 26, "#8cff5a", 0.35 * T.g * ph); ctx.fillStyle = "rgba(140,255,90," + (0.35 * T.g * ph).toFixed(2) + ")"; ctx.beginPath(); ctx.ellipse(c[0], c[1] + 2, 6, 3, 0, 0, 6.2832); ctx.fill(); }
+        if (T.g > 0.5 && Math.floor((f + sd * 37) / 150) % 3 === 0) { const c = _fpWP(it, 0.5, 12); ctx.strokeStyle = "#1a1f12"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(c[0] - 2, c[1]); ctx.quadraticCurveTo(c[0] - 7, c[1] - 9, c[0] - 11 + Math.sin(f * 0.3) * 2, c[1] - 14); ctx.moveTo(c[0] + 2, c[1]); ctx.quadraticCurveTo(c[0] + 6, c[1] - 10, c[0] + 10 + Math.sin(f * 0.27) * 2, c[1] - 13); ctx.stroke(); }   // feelers
+        for (const [u, z] of [[0.1, 30], [0.86, 26], [0.2, 36]]) _fpWLine(it, u, z, u + 0.06, z - 6, "rgba(20,22,16,0.6)", 1.2);   // scratches
+    },
+    // RESIN: the colony's glossy amber-green resin run over the wall in sheets and drips, faintly lit from inside while the Nest is infested
+    resin: (it, f) => {
+        const T = _fpNestTone(f), sd = it.seed || 3;
+        for (let k = 0; k < 5; k++) { const u0 = k / 5 + _fpSwHash(sd + k) * 0.05, u1 = u0 + 0.16 + _fpSwHash(sd + k * 2) * 0.08, z1 = 24 + _fpSwHash(sd + k * 3) * 60;
+            _fpWQuad(it, u0, Math.min(1, u1), 0, z1, "rgba(" + (110 + Math.round(30 * T.g)) + "," + (128 + Math.round(40 * T.g)) + ",52,0.62)", null);
+            _fpWLine(it, u0 + 0.04, z1 - 4, u0 + 0.04, 4, "rgba(230,255,170,0.25)", 1.2);   // its sheen
+            _fpWQuad(it, u0 + 0.05, u0 + 0.08, z1 - 2, z1 + 6 + _fpSwHash(sd + k) * 8, "rgba(120,140,52,0.55)", null); }   // a drip above where it ran down from
+    },
+});
+for (const k of ["sewer_arch", "brood_hole", "resin"]) FP_WALL_KINDS[k] = FP_STYLE_WALL[k];
+// ── A SPILL LIP (an outline edge of kind `spill`: the Nest's east and south edges, where the moat runs): no wall, a low wet concrete lip the camera sees the moat over, its face running down into the dark ──
+function _fpDrawSpillLip(it) {
+    const P = _fpP, a = it.a, b = it.b, top = 8, foot = -54, R = _fpRoomCols ? _fpRoomCols(it.room) : null;
+    _fpQuad([P(a[0], a[1], top), P(b[0], b[1], top), P(b[0], b[1], foot), P(a[0], a[1], foot)], "#2b3331", null);   // its face, down into the dark
+    const g0 = P((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, top), g1 = P((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, foot), g = ctx.createLinearGradient(g0[0], g0[1], g1[0], g1[1]); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,0.75)");
+    _fpQuad([P(a[0], a[1], top), P(b[0], b[1], top), P(b[0], b[1], foot), P(a[0], a[1], foot)], g, null);
+    ctx.strokeStyle = (R && R.cap) || "#4b5552"; ctx.lineWidth = 4; _fpSwLine(P(a[0], a[1], top), P(b[0], b[1], top));   // its top
+    ctx.strokeStyle = "rgba(205,212,220,0.55)"; ctx.lineWidth = 1.2; _fpSwLine(P(a[0], a[1], top + 1.5), P(b[0], b[1], top + 1.5));
+    ctx.strokeStyle = "rgba(60,90,60,0.35)"; ctx.lineWidth = 2; _fpSwLine(P(a[0], a[1], top - 6), P(b[0], b[1], top - 6));   // damp under it
+}
+// ── THE SEWERS MEASURED (for the Game Bible, bible.html, and the tests: by name, not by the outline's vertex numbers): tiles and counts on the grid the game plays on ──
+function facilitySewerMeasures() {
+    const F = _fp && _fp.F; if (!F) return null;
+    const sol = id => F.solids.find(s => s.id === id), walk = (x, y) => facilityFloorAt(x, y, F), riv = F.solids.filter(s => s.room === "sewers" && s.kind === "river");
+    const w = sol("sewer_river_w"), cx = Math.round((w.bb[0] + w.bb[2]) / 2) + 2, run = (x, y, dy) => { let n = 0; while (n < 20 && walk(x, y + dy * n)) n++; return n; };
+    const gateIn = (id, dy) => { const g = sol(id); if (!g) return 0; const gx0 = Math.ceil(g.bb[0]), gx1 = Math.floor(g.bb[2]), gy = dy < 0 ? Math.floor(g.bb[1]) : Math.ceil(g.bb[3]); let n = 0; for (let x = gx0; x <= gx1; x++) for (let k = 0; k < 6; k++) { if (!walk(x, gy + dy * k)) break; n++; } return n; };
+    const A = F.decor.find(d => d.kind === "area" && d.room === "sewers"), cm = typeof _fpComps === "function" ? _fpComps() : null, L = typeof bossLair === "function" ? bossLair(BOSS_ENCOUNTERS.sewer_cistern) : null, Lc = L && _fpNearestCell(L[0], L[1]);
+    const nestCells = A ? [..._fp.cellsP.values()].filter(c => c[0] >= A.rect[0] && c[0] <= A.rect[2] && c[1] >= A.rect[1] && c[1] <= A.rect[3]) : [], dam = cm && Lc ? nestCells.filter(c => cm.get(c[0] + "," + c[1]) === cm.get(Lc[0] + "," + Lc[1])) : [];
+    const wet = s => { let n = 0; if (s) for (let x = Math.ceil(s.bb[0]); x <= s.bb[2]; x++) for (let y = Math.ceil(s.bb[1]); y <= s.bb[3]; y++) if (facilityPointInPoly(x, y, s.poly)) n++; return n; };
+    let far = 0; if (L) for (const c of dam) far = Math.max(far, Math.hypot(c[0] - L[0], c[1] - L[1]));
+    const items = what => (_fp.items || []).filter(i => i.fp === "sewer" && i.what === what).length, deck = d => d ? d.rect[2] - d.rect[0] : 0;
+    return {
+        length: Math.max(...riv.map(s => s.bb[2])) - Math.min(...riv.map(s => s.bb[0])), riverWidth: w.bb[3] - w.bb[1],
+        northLedge: run(cx, Math.floor(w.bb[1]), -1), southLedge: run(cx, Math.ceil(w.bb[3]), 1), passage: run(Math.round((sol("sewer_gate_n1").bb[0] + sol("sewer_gate_n1").bb[2]) / 2), Math.floor(sol("sewer_gate_n1").bb[1]), -1),
+        platform: gateIn("sewer_gate_n2", -1), platformWide: Math.round(sol("sewer_gate_n2").bb[2] - sol("sewer_gate_n2").bb[0]),
+        bridges: F.decor.filter(d => d.room === "sewers" && d.kind === "bridge_deck").length, bridgeWidth: deck(F.decor.find(d => d.id === "sewer_bridge")), serviceWidth: deck(F.decor.find(d => d.id === "sewer_bridge_east")),
+        gates: F.solids.filter(s => s.room === "sewers" && s.kind === "gate").length, bossGates: F.solids.filter(s => s.room === "sewers" && s.kind === "boss_gate").length,
+        nestW: A ? A.rect[2] - A.rect[0] : 0, nestH: A ? A.rect[3] - A.rect[1] : 0, dam: dam.length, reservoir: wet(sol("nest_reservoir")), moat: wet(sol("nest_moat")), farFromPost: Math.round(far * 10) / 10,
+        falls: items("falls"), holes: F.decor.filter(d => d.room === "sewers" && d.kind === "brood_hole").length, eggs: items("egg"), cells: [..._fp.cellsP.values()].filter(c => { const r = facilityRoomAt(c[0], c[1], F); return r && r.id === "sewers"; }).length,
+    };
+}

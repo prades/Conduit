@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-//  SIDE QUEST: the drone in the Sewers' side passage (docs/SEWER-QUEST.md, "Side Quest and the Sleeping Potion")
+//  SIDE QUEST: the drone on the Sewers' maintenance platform (docs/SEWER-QUEST.md, "Side Quest and the Sleeping Potion")
 // ─────────────────────────────────────────────────────────
 // ASKED (the Game Design Archive, 2026-10-31): "Side Quest is a small flying robot drone and nomadic outlander who has left the facility and no longer wants to be part of it. He serves as an optional side-quest giver,
 // merchant, technician, and source of hints [...] Position Side Quest in a safe side passage or maintenance platform roughly halfway along the route toward the sewer boss/dam blockage [...] he appears only after the
@@ -7,23 +7,24 @@
 // to be a way to fix this without killing it.' [...] He asks the player to promise not to destroy the Queen and to give him a chance to solve the problem. He hints that a creature like this is worth understanding
 // [...] The promise should frame a moral choice, not silently invalidate the quest if the player later defeats the Queen [...] Side Quest does not tell the player to reverse-engineer his sleeping potion." And the
 // user (2026-10-31): his post-encounter dialogue, whether the player spares or kills the queen, is the placeholder "…" for now.
-//   WHERE          the side passage off the Sewers' south ledge (js/facilitymap.js: x 600 to 640, three tiles deep, behind the gate `sewer_gate_s1`, "an area for later"): halfway along the south ledge between the bridge
-//                  and the boss gate, out of the queen's reach (she roams within 12 tiles of the cistern's console: js/bosses.js) and out of the brood's spawns (js/facilityspawn.js keeps them 3 tiles off him). When
-//                  he appears the gate opens (facilitySolidOpen: he is a technician) and he hovers at the passage's end, with a STATION on him (js/stations.js STATION_KINDS.sidequest, made here, not a prop of the map):
-//                  the plate, E, a tap, as any station.
+//   WHERE          SIDE QUEST'S MAINTENANCE PLATFORM off the Sewers' north ledge (js/facilitymap.js: x 600 to 700, five tiles across and three deep, behind the wide gate `sewer_gate_n2`), halfway between the
+//                  culvert and the Nest's gate (2026-11-01: "Make Side Quest easier to locate [...] not an NPC hidden behind awkward environmental geometry"; he was in the side passage off the south ledge,
+//                  whose walls the camera hides). Its back wall faces you: the platform is seen through the bars from both ledges and the bridges, its lamp in his colour. Out of the queen's reach (she roams within
+//                  15 tiles of her post in the Nest: js/bosses.js) and out of the brood's spawns (js/facilityspawn.js keeps them 3 tiles off him). When he appears the gate opens (facilitySolidOpen: he is a
+//                  technician) and he hovers two tiles in, with a STATION on him (js/stations.js STATION_KINDS.sidequest, made here, not a prop of the map): the plate, E, a tap, as any station.
 //   WHEN           sqUnlocked: the samples turned in at the lab AND QUEST_PURIFY.antTarget toxic ants of the Sewers killed (js/quests.js antKills). Not location, not the samples alone, not the count alone.
 //   THE TALK       four lines, one a press (the archive's opening verbatim, then his name and the Queen blocking the system, his idea that she only needs to be moved, and the PROMISE he asks for), then a choice of two
 //                  buttons: I PROMISE or NO PROMISES (sqChoose: recorded in `promised`, 1 or −1; it changes nothing of the quest line, and killing her later invalidates nothing: the archive). Either way he sells
 //                  the potion after. Come back and he gives the hint. Once the queen's fate is decided (the quest line's bossResolvedAt), everything he says is "…" (SIDEQUEST.lines.after), and he still sells.
 //   THE SHOP       one thing: the SLEEPING POTION (js/potion.js potionBuy: ◆100, ◆50 the next once it has put the queen to sleep). His "gadgets and gizmos" and his later role are open (the archive).
 //   SAVED          `sidequest` (js/facilitysave.js): that he appeared, how far the talk got, the promise, that he called you over. A load opens the gate again and puts him back.
-//   PROVISIONAL    the passage as his spot, his look (a small black saucer with chasing rim lights on four tiny legs, drawn here: the saucer design family, design/evolutions/forms26.js Nos. 661-683, is the candidate
+//   PROVISIONAL    the platform as his spot, his look (a small black saucer with chasing rim lights on four tiny legs, drawn here: the saucer design family, design/evolutions/forms26.js Nos. 661-683, is the candidate
 //                  for a proper sheet once a piece of it is approved, docs/ART-PROCESS.md), and every line but the archive's opening (its wording "can be polished during implementation").
 const SIDEQUEST = {
-    id: "sidequest", name: "SIDE QUEST", room: "sewers", gate: "sewer_gate_s1", into: 2, col: "#9fd8ff",
+    id: "sidequest", name: "SIDE QUEST", room: "sewers", gate: "sewer_gate_n2", into: -2, col: "#9fd8ff",   // (into: tiles from the gate's line to his spot, north: the platform is behind the north ledge's wall)
     callNear: 8,   // tiles: the first time you come this near, he calls you over (once)
     lines: {
-        call: "PSST. OVER HERE, IN THE SIDE PASSAGE.",
+        call: "PSST. UP HERE, ON THE MAINTENANCE PLATFORM.",
         talk: [
             "OH NO, IT'S CLOGGING EVERYTHING. LOOK, PLEASE, THERE HAS TO BE A WAY TO FIX THIS WITHOUT KILLING IT.",
             "I'M SIDE QUEST. I LEFT THE FACILITY; I DON'T WORK FOR IT ANY MORE. BUT THAT QUEEN IS BLOCKING THE WHOLE SYSTEM, AND THE SYSTEM IS ALL OF US.",
@@ -55,7 +56,7 @@ function sqUnlocked() { const Q = _sqQuest(); return !!Q && Q.turnedInAt > 0 && 
 function sqPresent() { const S = sqState(); return !!(S && S.appearedAt); }
 // the queen's fate is decided (spared or killed): his line is the placeholder
 function sqAfter() { const Q = _sqQuest(); return !!(Q && Q.bossResolvedAt > 0); }
-// his spot: two tiles into the passage from the gate's line (the passage is south of the gate), on floor, once the gate is open
+// his spot: two tiles in from the gate's line (SIDEQUEST.into: the platform is north of it), on floor, once the gate is open
 function sqSpot() {
     if (typeof _fp === "undefined" || !_fp || !_fp.F) return null;
     if (_fp._sqSpot) return _fp._sqSpot;
@@ -64,7 +65,7 @@ function sqSpot() {
     return (_fp._sqSpot = [c[0], c[1]]);
 }
 function _sqStation() { return typeof _fp !== "undefined" && _fp && _fp.stations ? _fp.stations.find(s => s.id === "st_sidequest") || null : null; }
-// he appears (or is put back by a load): the gate opens, he hovers at the passage's end, his station is on him
+// he appears (or is put back by a load): the gate opens, he hovers on the platform, his station is on him
 function sqPlace(announce) {
     const S = sqState(); if (!S || typeof _fp === "undefined" || !_fp || !_fp.items || !_fp.stations) return false;
     if (typeof facilitySolidOpen === "function") facilitySolidOpen(SIDEQUEST.gate);
@@ -76,7 +77,7 @@ function sqPlace(announce) {
     _fp.items.push({ type: "fp", fp: "station", id: st.id, kind: st.kind, room, bb: bb.slice(), x, y, depth: bb[2] + bb[3] - 0.45, base, seed });
     _fp.items.push({ type: "fp", fp: "sidequest", id: "sidequest", room, x, y, depth: x + y + 0.02, base, seed });
     if (!S.appearedAt) S.appearedAt = Math.max(1, _sqNow());
-    if (announce && typeof dialogueSay === "function") dialogueSay("player", "◈ SOMETHING HAS OPENED THE SIDE PASSAGE OFF THE SEWERS' SOUTH LEDGE", { key: "sq:opened" });   // (your note of it: the dialogue box)
+    if (announce && typeof dialogueSay === "function") dialogueSay("player", "◈ SOMETHING HAS OPENED THE MAINTENANCE PLATFORM OFF THE SEWERS' NORTH LEDGE", { key: "sq:opened" });   // (your note of it: the dialogue box)
     return true;
 }
 // each frame (js/facilitytutorial.js facilityTutorialTick): he appears when he may; he is put back if the stations were rebuilt; he calls you over the first time you come near

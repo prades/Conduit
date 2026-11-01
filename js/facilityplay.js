@@ -217,12 +217,106 @@ function facilityWalkTo(gx, gy) {
     const c = _fpNearestCell(gx, gy); if (!c || Math.hypot(c[0] - gx, c[1] - gy) > 1.6) return false;
     const p = facilityPath(player.x, player.y, c[0], c[1]); if (!p) return false;
     player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; player._launchLoad = null; player._dropSite = null;   // (a new destination calls off a walk to a launcher's pad or to a broken edge: js/techabilities.js techSiteRide, techSiteDrop)
+    player._tapRun = null;   // (a walk of the game's own is never stopped by an enemy near; a tap's makes itself a free run after this: facilityTapCap)
     return true;
 }
+// is (x, y) floor a body can stand on? (the map's own check, for the facility's other files: the Sewers' dressing, a spawner's spots; js/facility.js facilityWalkable)
+function facilityFloorAt(x, y, F) { F = F || (_fp && _fp.F); return !!F && facilityWalkable(x, y, F); }
+// ── WHERE A TAP ON THE FLOOR MAY SEND YOU (2026-11-01) ──
+// ASKED: "Fix the issue where clicking outside the player's current room causes the character to pathfind across the map [...] Prevent movement commands into rooms the player has not entered. Validate movement
+// destinations against the player's current room. Clicking outside the valid movement area should be ignored [...] Preserve legitimate movement through doorways and authorized room transitions."
+// A tap on the floor (js/input.js handleInput) may send you anywhere in the room you are in, and through a doorway of that room a little way into the next (within FP_MOVE.doorReach tiles of the doorway's
+// line); a tap anywhere else is ignored, and a small ✕ where it landed says so. A portal's doorway lies in its own room, so it is a tap in this room. What walks you for a reason of its own (a station, a
+// launcher's pad, a broken edge, a body, the lash) calls facilityWalkTo itself: none of this limits it.
+// THE FIVE-TILE STEP, a prototype (ASKED: "Limit movement commands to approximately five spaces per movement interval [...] Make enemies more threatening by requiring deliberate positioning [...] Treat this as
+// a gameplay prototype [...] Do not make exploration unnecessarily frustrating"; and then the owner, the same day: "I don't want to restrict the player from getting around when there's no enemies nearby. So if
+// there's no enemies nearby, there's no limit. But if they run into an enemy, they stop if they're on a run, and then they're limited to moving 5 spaces or something like that"):
+//   NO ENEMY NEAR   a tap goes the whole way (a FREE RUN).
+//   RUNNING INTO ONE  a free run stops where you are the moment an enemy is near (facilityRunCheck, each step), with a "!" over you: once, not again for the taps that follow.
+//   WITH ONE NEAR   a tap takes you at most FP_MOVE.capTiles tiles along its route, so each move is a choice; once none is near, a tap goes the whole way again.
+// AN ENEMY NEAR (facilityEnemyNear): a creature not of yours, within FP_MOVE.near tiles and in sight; or one that has turned on you or your squad, within FP_MOVE.chase; or a hit on you within FP_MOVE.hitWindow
+// frames. A sleeping or calm boss and a spider lurking at its cover are not (they are not after you). The walks the game makes for its own reasons (facilityWalkTo: a station, a launcher's pad, a body) are never
+// stopped or cut. The Settings' COMBAT STEP turns all of it off (FP_MOVE.cap, kept per browser).
+const FP_MOVE = { doorReach: 2.6, cap: true, capTiles: 5, near: 6, chase: 10, hitWindow: 180, key: "conduit_move_cap" };
+try { if (typeof localStorage !== "undefined" && localStorage.getItem(FP_MOVE.key) === "off") FP_MOVE.cap = false; } catch (e) {}
+// the room a point is in (the room of the nearest floor cell, for a point on a wall's margin)
+function facilityRoomIdAt(x, y) {
+    const F = _fp && _fp.F; if (!F) return null;
+    let r = facilityRoomAt(x, y, F); if (!r && _fp.cellsP) { const c = _fpNearestCell(x, y); if (c) r = facilityRoomAt(c[0], c[1], F); }
+    return r ? r.id : null;
+}
+// may a tap at the tile (gx, gy) send the player there? (a tap that is not on the floor at all is facilityWalkTo's to refuse)
+function facilityTapAllowed(gx, gy) {
+    if (!_fp || !_fp.F || !_fp.cellsP) return true;
+    const c = _fpNearestCell(gx, gy); if (!c || Math.hypot(c[0] - gx, c[1] - gy) > 1.6) return true;
+    const here = facilityRoomIdAt(player.x, player.y), there = facilityRoomIdAt(c[0], c[1]);
+    if (!here || !there || here === there) return true;
+    for (const o of _fp.F.openings || []) {   // through a doorway of the room you are in, a little way into the next
+        if (!o || !o.rooms || o.rooms.indexOf(here) < 0 || o.rooms.indexOf(there) < 0 || !o.a || !o.b) continue;
+        const ax = o.a[0], ay = o.a[1], bx = o.b[0], by = o.b[1], L2 = (bx - ax) ** 2 + (by - ay) ** 2, t = L2 > 0 ? Math.max(0, Math.min(1, ((c[0] - ax) * (bx - ax) + (c[1] - ay) * (by - ay)) / L2)) : 0;
+        if (Math.hypot(c[0] - (ax + (bx - ax) * t), c[1] - (ay + (by - ay) * t)) <= FP_MOVE.doorReach) return true;
+    }
+    return false;
+}
+// a refused tap: a small ✕ where it landed (now and then, not for every tap of a flurry)
+function facilityTapRefused(ex, ey) {
+    if (typeof floatingTexts === "undefined") return;
+    const f = typeof frame !== "undefined" ? frame : 0; if (_fp && _fp.tapNoAt && f - _fp.tapNoAt < 8) return; if (_fp) _fp.tapNoAt = f;
+    floatingTexts.push({ x: ex, y: ey, text: "✕", color: "#ff8a7a", life: 30, vy: -0.15, size: 14 });
+}
+// the enemy near the player, if there is one: a creature not of yours within FP_MOVE.near tiles and in sight, or one that has turned on you or your squad within FP_MOVE.chase (the nearest; null for none)
+function facilityEnemyNear() {
+    if (typeof actors === "undefined" || typeof player === "undefined") return null;
+    let best = null, bd = Infinity;
+    for (const a of actors) {
+        if (!a || a.dead || a === player || a.team === "green" || a.isClone || a.isFollower || !Number.isFinite(a.x)) continue;
+        if (a.bossAsleep || a.bossCalm || (typeof spiderLurking === "function" && spiderLurking(a))) continue;   // (not after you: a boss asleep at her post or calm, a spider hidden at its cover)
+        const d = Math.hypot(a.x - player.x, a.y - player.y); if (d >= bd) continue;
+        const chasing = a.provoked && (a.state === "attack" || a.state === "hunt");
+        if ((chasing && d <= FP_MOVE.chase) || (d <= FP_MOVE.near && (typeof _fpLos !== "function" || _fpLos(player.x, player.y, a.x, a.y)))) { best = a; bd = d; }
+    }
+    return best;
+}
+// is the player under pressure? an enemy near, or a hit on you just now
+function facilityUnderPressure() {
+    const f = typeof frame !== "undefined" ? frame : 0;
+    if (typeof player !== "undefined" && Number.isFinite(player.lastHitAt) && player.lastHitAt > 0 && f - player.lastHitAt < FP_MOVE.hitWindow) return true;
+    return !!facilityEnemyNear();
+}
+// cut the player's route to `max` tiles of walking (the last point on the segment it falls in); true if it was cut
+function facilityCapPath(max) {
+    const p = player.fpPath; if (!p || !p.length) return false;
+    let x = player.x, y = player.y, left = max;
+    for (let i = 0; i < p.length; i++) {
+        const d = Math.hypot(p[i][0] - x, p[i][1] - y);
+        if (d > left) { const t = left / d, q = [x + (p[i][0] - x) * t, y + (p[i][1] - y) * t]; p.length = i; p.push(q); player.targetX = q[0]; player.targetY = q[1]; return true; }
+        left -= d; x = p[i][0]; y = p[i][1];
+    }
+    return false;
+}
+// after a tap's walk is set (js/input.js): with an enemy near, the five-tile step; with none, a FREE RUN, which stops if it runs into one (facilityRunCheck). True if the route was cut.
+function facilityTapCap() {
+    player._tapRun = null;
+    if (!FP_MOVE.cap || !player.fpPath || !player.fpPath.length) return false;
+    if (facilityUnderPressure()) return facilityCapPath(FP_MOVE.capTiles);
+    player._tapRun = player.fpPath;   // (this route, and no other: a walk the game sets afterwards is its own)
+    return false;
+}
+// each step of the player's (facilityPlayerStep): a free run that has run into an enemy stops where it is, once, with a "!" over the player; the taps after it take the five-tile step while one is near
+function facilityRunCheck() {
+    const run = player._tapRun; if (!run) return false;
+    if (player.fpPath !== run || !run.length || !FP_MOVE.cap) { player._tapRun = null; return false; }
+    if (!facilityUnderPressure()) return false;
+    player.fpPath = null; player.targetX = player.x; player.targetY = player.y; player._tapRun = null;
+    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 + (typeof TILE_H !== "undefined" ? TILE_H : 16) - 46, text: "!", color: "#ffb347", life: 45, vy: -0.25, size: 20 });
+    return true;
+}
+function facilityCombatStepToggle() { FP_MOVE.cap = !FP_MOVE.cap; try { if (typeof localStorage !== "undefined") localStorage.setItem(FP_MOVE.key, FP_MOVE.cap ? "on" : "off"); } catch (e) {} return FP_MOVE.cap; }
 function facilityPlayerStep() {
     // IN THE AIR (a Kinetic Launcher carrying you over the Sewers' choke, or the drop from the broken edge there: js/techabilities.js techSiteRide): the flight moves you, nothing else does, and no wall or solid stops you
     if (player._flight && typeof techFlightStep === "function") { techFlightStep(player); player.targetX = player.x; player.targetY = player.y; player.fpPath = null; player.visualX += (player.x - player.visualX) * 0.2; player.visualY += (player.y - player.visualY) * 0.2; return; }
     const px = player.x, py = player.y;
+    if (player._tapRun) facilityRunCheck();   // (a free run that has run into an enemy stops here)
     const p = player.fpPath;
     if (p && p.length) {
         const w = p[0], d = Math.hypot(w[0] - player.x, w[1] - player.y);
@@ -484,6 +578,7 @@ function _fpDrawWall(it) {
     const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0));
     // a wall is always drawn at its full height, whatever the player is doing: it never fades, shrinks or reacts when the player comes close
     if (it.kind === "rock") return _fpDrawRock(it, H);   // rock formations (js/facilitydecor.js)
+    if (it.kind === "spill" && typeof _fpDrawSpillLip === "function") return _fpDrawSpillLip(it);   // a low lip the water spills over (the Sewers' Nest: js/facilitysewers.js)
     if (it.scaffold) return _fpDrawRail(it);                   // the catwalks: an open deck with a rail, not a room (js/facilitydecor.js)
     if (it.support) return _fpDrawSupport(it, H - FP_WALL_H);  // the arena's frame under the deck: open steel, you see through it
     const Hd = H;   // walls never react to the player

@@ -145,6 +145,10 @@ ASKED: *"The Mutator can craft healing serums that are splashed onto the ground.
 - Another class gains none. The points are saved.
 - **What the level does today** is the laboratory's yield. Anything else it should unlock is a decision for later; `mutatorLevel()` is the one function to read.
 
+### 2.7 The clone is a squad member (2026-11-01)
+
+ASKED (the phase brief): "The active clone needs to become a full member of the player's squad [...] Display the clone alongside other squad members in the quick-draw tabs. Allow the player to select the clone individually. Allow the clone to participate in squad-wide commands. Include the clone in attack selections". Built (js/party.js `partyClone`, `partyUnits`, `partySquadHas`, `_partyCloneCard`): while the one clone lives it has a fourth card on the squad bar after the three (purple, `ANT CLONE`, level, state, health and XP; a CLONE tag in the corners), picked alone with a tap, with its own card on the fly (THE MUTATOR'S CLONE, no DISMISS: it is not a roster follower and keeps its own lifecycle above). RETREAT, HOLD, COME, ALL and the enemy card's ATTACK reach it; it shares the squad's XP; it follows you through a doorway when it has no order and is put beside you on a load (both were bugs: it was left behind); its card is in the phone's SQUAD petal; SWITCH ROLES no longer gives it a follower's role (a bug). The squad's cap of three followers is unchanged: the clone is the Mutator's fourth. Tested: tests/clonesquad.js.
+
 ## 3. Tentative: every number is a knob
 
 | Knob | Where | Value | What it does |

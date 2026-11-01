@@ -74,7 +74,7 @@ function _pMove() {
     _fp.zoneRoom = dest.room; _fp.portalCool = frame + FP_PORTAL.cool;
 }
 // who comes through on their own: a follower that is following (no post, no order)
-function _pCarries(a) { return !a.returningToCrystal && !a.job && !a.post && a.stance === "follow" && (a.role !== "camper" || (typeof partyOn === "function" && partyOn())); }   // (a technician in the squad comes with you: it is not tied to the Crystal)
+function _pCarries(a) { return !a.returningToCrystal && !a.job && !a.post && (a.stance === "follow" || (a.isClone && !a.stance)) && (a.role !== "camper" || (typeof partyOn === "function" && partyOn())); }   // (a technician in the squad comes with you: it is not tied to the Crystal. A clone that has had no order has no stance: it is following, and it comes too; it used to be left behind at every doorway, found 2026-11-01)
 
 // each frame (from facilityTutorialTick)
 function facilityPortalTick() {
