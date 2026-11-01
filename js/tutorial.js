@@ -92,7 +92,8 @@ function tutClassTick() {
     if (S.ck0 === undefined) { S.ck0 = lifetimeKills; S.cr0 = tutRelaysOnline(); S.tally = S.tally || {}; S.cstep = S.cstep | 0; }
     while (S.cstep < st.length && st[S.cstep].done()) { const d = st[S.cstep]; S.cstep++; _tutSay("c:" + playerClassKey + ":" + d.id, "◈ " + d.title + " — DONE" + (S.cstep < st.length ? "   NEXT: " + st[S.cstep].title : ""), classColour(playerClassKey)); }   // (said once for each class: classes switch)
     if (S.cstep >= st.length) _tutSay("c:" + playerClassKey + ":stage", "◈ " + className(playerClassKey) + " STAGE COMPLETE — YOUR CLASS IS YOURS", "#9dffb6");
-    tutStrayTick(st[S.cstep] || null);
+    const cur = st[S.cstep]; if (cur) _tutSay("cstep:" + playerClassKey + ":" + cur.id, [cur.text(), cur.hint()]);   // the Crystal gives the step as it comes up (its words, then its hint)
+    tutStrayTick(cur || null);
 }
 // SWITCHING CLASS (js/classes.js): the stage is the class's. The one you leave is put away as far as it got (the step, what it counted, and the kills and relays it has had, not when it began, so the
 // time spent as another class does not count for it); the one you come to is taken out where it was, or begins when you first are it.
@@ -188,7 +189,10 @@ function tutSpawnWave(w) {
 // the assault's reward: XP to every living follower (js/levels.js gainXp; a follower that reaches the evolution level evolves in evolutionTick as it always does)
 function tutReward() { for (const f of followers) if (f && !f.dead) gainXp(f, TUT.reward); }
 function tutCallOff() { for (const a of tutEnemies()) { a.dead = true; a._xpGiven = true; } }
-function _tutSay(key, text, col) { const S = _fp.tut.script; if (S.said[key]) return; S.said[key] = true; if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 150, text, color: col || "#ffe733", life: 300, vy: -0.04, size: 14 }); }
+// the Crystal says a thing once (S.said is saved: a loaded game is not told again), through the dialogue box (js/dialogue.js): a step's words as one page and its hint as the next. (col was the floating text's colour; the box is the Crystal's.)
+function _tutSay(key, text, col) { const S = _fp.tut.script; if (S.said[key]) return false; S.said[key] = true; if (typeof dialogueSay === "function") dialogueSay("crystal", text, { key: "tut:" + key }); return true; }
+// true the first time only, for a thing said or shown once a game (the quest line's notes keep their record here too: js/quests.js)
+function tutSaidOnce(key) { const S = _fp && _fp.tut && _fp.tut.script; if (!S) return false; S.said = S.said || {}; if (S.said[key]) return false; S.said[key] = true; return true; }
 
 // each frame
 function facilityDirectorTick() {
@@ -196,6 +200,7 @@ function facilityDirectorTick() {
     tutLevelFollowers(); tutGunTick();
     while (S.step < TUT_STEPS.length && TUT_STEPS[S.step].id !== "assault" && TUT_STEPS[S.step].done()) S.step++;
     const st = TUT_STEPS[S.step];
+    if (st && !(S.step === 0 && _fp.tut.blackout && !_fp.tut.said)) _tutSay("step:" + st.id, [st.text(), st.hint()]);   // the Crystal gives the step as it comes up (the first one after its blackout words: js/facilitytutorial.js)
     if (st && st.id === "assault") {
         if (!S.assault) tutAssaultStart();
         const A = S.assault;
@@ -207,7 +212,7 @@ function facilityDirectorTick() {
             if (A.wave >= TUT.waves.length && (alive === 0 || frame > lastAt + TUT.stragglers)) { const routed = alive; tutCallOff(); A.over = true; alertActive = false; alertTimer = 0; tutReward(); _tutSay("won", routed ? "◈ THE REST FLED. THE ASSAULT IS BEATEN" : "◈ THE ASSAULT IS BEATEN", "#9dffb6"); }
             else if (crystal.maxHealth && crystal.health / crystal.maxHealth < TUT.mercy && alive) {
                 tutCallOff(); crystal.health = Math.round(crystal.maxHealth * TUT.mend); alertActive = false; alertTimer = 0; S.assault = null; tutAssaultStart();
-                if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: "THE CRYSTAL HELD. THEY ARE REGROUPING.", color: "#ffb347", life: 240, vy: -0.05, size: 15 });
+                if (typeof dialogueSay === "function") dialogueSay("crystal", "THE CRYSTAL HELD. THEY ARE REGROUPING.");
             }
         }
         if (A.over) S.step++;
@@ -221,68 +226,28 @@ function facilityDirectorTick() {
 // the number of enemies spawned before the wave that is due (waves spawn in order, once)
 function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += TUT.waves[i].who.length; return n; }
 
-// the objective plate: top left, under the NEW GAME chip. The tutorial's seven steps; then (once a class is chosen) the class's own; then a closing line.
-// ON A PHONE it is a MAILBOX (ASKED: "in the mobile version [...] make it to where the recent task is in a little mailbox thing with a little exclamation point if there's a new objective"): the plate is folded away into a small envelope where it
-// would be, with a gold "!" on it while the objective is one the player has not opened yet. A tap on the envelope unfolds the plate (the objective and its hint); a tap on the plate folds it away again; a new objective (or the closing line)
-// puts the "!" back. A phone is a screen 700 px wide or less (the line js/mixtool.js mixToolWide draws, where the bottom-left tool is a chip and the menus a hub): the plate would cover a third of the picture. On anything else it is the plate, as it was, and takes no taps.
-let _fpObjBottom = 0;   // where the objective plate ends on screen (0: not drawn): the enemy index card (js/targeting.js) goes under it
-const OBJ_BOX = { w: 54, h: 46, fold: 0.16, shake: 50 };   // the mailbox's size; how much of the unfolding each drawn frame does; how long (frames) it rattles when a new objective comes
-const _objHit = { x: 0, y: 0, w: 0, h: 0 };                // where a tap is the objective's now (w 0: nowhere)
-const _objBox = { x: 0, y: 0, w: 0, h: 0 };                // where the plate is drawn now (the tests read it: the corners layout puts it under the network panel at the top right)
-let _objPressed = false;                                   // the press began on it (js/input.js)
-function objectiveCompact() { return typeof innerWidth === "number" && innerWidth <= 700; }
-function _objOn(ex, ey) { const r = _objHit; return r.w > 0 && ex >= r.x && ex <= r.x + r.w && ey >= r.y && ey <= r.y + r.h; }
-function objectivePress(ex, ey) { if (!_objOn(ex, ey)) return false; _objPressed = true; return true; }
-function objectiveRelease(ex, ey) { if (_objOn(ex, ey)) objectiveToggle(); }
-function objectiveToggle(open) { const S = _fp && _fp.tut && _fp.tut.script; if (S) S.objOpen = open === undefined ? !S.objOpen : !!open; }
-// is there an objective the player has not opened (a phone's mailbox shows "!")?
-function objectiveUnread() { const S = _fp && _fp.tut && _fp.tut.script; return !!S && objectiveCompact() && !!S.objKey && S.objSeen !== S.objKey; }
-// a small envelope centred on (cx, cy), rattling by `tilt` radians
-function _objEnvelope(cx, cy, col, tilt, fresh) {
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt); ctx.lineJoin = "round"; ctx.lineWidth = 2; ctx.strokeStyle = col;
-    ctx.fillStyle = fresh ? "rgba(255,231,51,0.2)" : "rgba(255,255,255,0.07)"; ctx.fillRect(-13, -9, 26, 18); ctx.strokeRect(-13, -9, 26, 18);   // the paper
-    ctx.beginPath(); ctx.moveTo(-12, -8); ctx.lineTo(0, 2); ctx.lineTo(12, -8); ctx.stroke();                                                      // the flap
-    ctx.restore();
-}
-// the gold "!" a new objective puts on the mailbox, breathing
-function _objBang(bx, by, f) {
-    const k = 1 + 0.12 * Math.sin(f * 0.12), r = 10 * k;
-    ctx.save(); ctx.fillStyle = "rgba(255,231,51,0.22)"; ctx.beginPath(); ctx.arc(bx, by, r + 5, 0, 6.2832); ctx.fill();   // (the glow is a second, wider, fainter disc: this game uses no shadowBlur)
-    ctx.fillStyle = UI_GOLD; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.2832); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = UI_INK; ctx.stroke();
-    ctx.fillStyle = UI_INK; ctx.font = "bold " + Math.round(14 * k) + "px " + UI_FONT; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("!", bx, by + 1); ctx.restore();
-}
-function facilityDrawObjective() {
-    _fpObjBottom = 0; _objHit.w = 0; _objBox.w = 0;
-    const S = _fp && _fp.tut && _fp.tut.script; if (!S || typeof uiSlab !== "function" || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen)) return;
-    // THE CORNERS (js/party.js hudCorners; a tablet or a desktop): the plate is the place's, under the network panel at the top right (the room tag, the network, the objective: what is going on where you are); elsewhere it is top left, under the FACILITY · EXIT tab
-    const W = canvas.width, tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), corner = typeof hudCorners === "function" && hudCorners(), zr = corner && typeof _netZoneRect === "function" ? _netZoneRect() : null, f = typeof frame !== "undefined" ? frame : 0;
-    const w = Math.min(W - 24, corner ? 304 : 350), x = corner ? Math.max(12, Math.round((zr ? zr.right : W - 18) - w)) : 12, y = corner ? (typeof _fnBottom === "number" && _fnBottom > 0 ? _fnBottom + 10 : (zr ? Math.round(zr.bottom) + 140 : 190)) : 158;
-    let key, title, body, hint = "", col = pc ? pc.colour : UI_TEAL;
+// THE OBJECTIVE, KEPT BUT NOT DRAWN (the owner, 2026-11-01: "still have the objective thing, but hide it. Make a little quest box on the menu"): the tutorial's seven steps; then (once a class is chosen) the class's own; then
+// a closing line; a quest under way (js/quests.js) between the tutorial and the class's stage. objectiveCurrent says which it is now ({ key, title, body, hint, col }); the QUEST BOX shows it (js/questbox.js: QUESTS on the dock,
+// a round button on a phone), and the Crystal says each as it comes up (facilityDirectorTick, through js/dialogue.js). The plate it used to be (top left; under the network panel in THE CORNERS; a mailbox on a phone, 2026-10)
+// is gone: facilityDrawObjective keeps its name (js/facilitytutorial.js calls it each frame) and keeps only the record: which objective is up (S.objKey, S.objNewAt) and whether it has been opened (S.objSeen: the quest box
+// reads it; the "!" on the QUESTS button while it has not been). Nothing of this is saved: a loaded game's objective is new again.
+let _fpObjBottom = 0;   // where the objective plate ended on screen; 0 now that it is not drawn (the round button, js/targeting.js, keeps its old default under it)
+function objectiveCurrent() {
+    const S = _fp && _fp.tut && _fp.tut.script; if (!S) return null;
+    const tutDone = S.step >= TUT_STEPS.length, pc = playerClass(), col = pc ? pc.colour : UI_TEAL;
     const q = tutDone && typeof questObjective === "function" ? questObjective() : null;   // a quest under way (the Sewer purification, js/quests.js): after the tutorial, before the class's stage
-    if (!tutDone) { const st = TUT_STEPS[S.step]; key = "t" + S.step; title = "OBJECTIVE " + (S.step + 1) + "/" + TUT_STEPS.length + "  ·  " + st.title; body = st.text(); hint = st.hint(); }
-    else if (q) { key = "q:" + q.key; title = q.title; body = q.body; hint = q.hint || ""; col = q.col || col; }
-    else if (!pc) return;
-    else if (tutClassCurrent() >= 0 && tutClassCurrent() < tutClassStage().length) { const st = tutClassStage(), i = tutClassCurrent(), c = st[i]; key = c.id === "perk" ? "perk" : "c:" + c.id; title = pc.name + "  ·  " + (i + 1) + "/" + st.length + "  ·  " + c.title; body = c.text(); hint = c.hint(); }   // the class's stage
-    else { key = "done"; title = pc.name + "  ·  RANK " + classRank(); body = "YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS."; col = "#9dffb6"; }
-    const mail = objectiveCompact(), chars = Math.max(18, Math.floor((w - 28) / 8)), lines = uiWrap(body, chars).slice(0, 3), hl = hint ? uiWrap(hint, chars).slice(0, 3) : [], h = 44 + lines.length * 17 + (hl.length ? hl.length * 15 + 8 : 0);
-    // a phone: the plate is folded into the mailbox until it is opened, and unfolds out of it (S.objK: 0 folded .. 1 open); an objective that is open is read
-    if (S.objKey !== key) { S.objKey = key; S.objNewAt = f; }
-    if (mail) { if (S.objOpen) S.objSeen = key; S.objK = Math.max(0, Math.min(1, (S.objK || 0) + (S.objOpen ? OBJ_BOX.fold : -OBJ_BOX.fold))); } else S.objK = 1;
-    const k = S.objK, e = k * k * (3 - 2 * k), pw = mail ? OBJ_BOX.w + (w - OBJ_BOX.w) * e : w, ph = mail ? OBJ_BOX.h + (h - OBJ_BOX.h) * e : h, unread = mail && S.objSeen !== key;
-    _fpObjBottom = y + ph; _objBox.x = x; _objBox.y = y; _objBox.w = pw; _objBox.h = ph;
-    if (mail) { _objHit.x = x - 4; _objHit.y = y - 4; _objHit.w = pw + 8; _objHit.h = ph + 8; }
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); uiSlab(x, y, pw, ph, col, false, "#0b1226");
-    if (mail && e < 1) {   // the mailbox: an envelope (it rattles when a new objective has just come), and the "!" while it is not read
-        const age = f - (S.objNewAt || 0), tilt = unread && age >= 0 && age < OBJ_BOX.shake ? Math.sin(age * 0.9) * 0.22 * (1 - age / OBJ_BOX.shake) : 0;
-        ctx.globalAlpha = 1 - e; _objEnvelope(x + pw / 2, y + ph / 2 + 1, col, tilt, unread); ctx.globalAlpha = 1;
-        if (unread) _objBang(x + pw - 4, y + 5, f);
-    }
-    if (!mail || e > 0.04) {   // the plate's writing (as it unfolds the slab uncovers it)
-        if (mail && e < 1) { ctx.beginPath(); ctx.rect(x, y, pw, ph); ctx.clip(); }
-        uiTextFit(title, x + 16, y + 20, 15, col, "left", w - 30 - (mail ? 24 : 0));
-        let yy = y + 42; for (const l of lines) { uiCaptionFit(l, x + 16, yy, "#e8f0ff", "left", 12, w - 28); yy += 17; }
-        if (hl.length) { yy += 4; for (const l of hl) { uiCaptionFit(l, x + 16, yy, "#8aa0c8", "left", 11, w - 28); yy += 15; } }
-        if (mail) { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x + w - 36, y + 25); ctx.lineTo(x + w - 20, y + 25); ctx.lineTo(x + w - 28, y + 15); ctx.closePath(); ctx.fill(); }   // (the little arrow that says a tap folds it away)
-    }
-    ctx.restore();
+    if (!tutDone) { const st = TUT_STEPS[S.step]; return { key: "t" + S.step, title: "OBJECTIVE " + (S.step + 1) + "/" + TUT_STEPS.length + "  ·  " + st.title, body: st.text(), hint: st.hint(), col }; }
+    if (q) return { key: "q:" + q.key, title: q.title, body: q.body, hint: q.hint || "", col: q.col || col };
+    if (!pc) return null;
+    if (tutClassCurrent() >= 0 && tutClassCurrent() < tutClassStage().length) { const st = tutClassStage(), i = tutClassCurrent(), c = st[i]; return { key: c.id === "perk" ? "perk" : "c:" + c.id, title: pc.name + "  ·  " + (i + 1) + "/" + st.length + "  ·  " + c.title, body: c.text(), hint: c.hint(), col }; }   // the class's stage
+    return { key: "done", title: pc.name + "  ·  RANK " + classRank(), body: "YOU RESTORED POWER, RAISED AN ARMY AND HELD THE CRYSTAL. YOUR CLASS IS YOURS.", hint: "", col: "#9dffb6" };
+}
+// is the objective one the player has not opened the quest box on? (the "!" on the QUESTS button: js/questbox.js)
+function objectiveUnread() { const S = _fp && _fp.tut && _fp.tut.script; return !!S && !!S.objKey && S.objSeen !== S.objKey; }
+// each frame (js/facilitytutorial.js facilityDrawOverlay): the record only; nothing is drawn
+function facilityDrawObjective() {
+    _fpObjBottom = 0;
+    const S = _fp && _fp.tut && _fp.tut.script; if (!S) return;
+    const o = objectiveCurrent(); if (!o) return;
+    if (S.objKey !== o.key) { S.objKey = o.key; S.objNewAt = typeof frame !== "undefined" ? frame : 0; }
 }

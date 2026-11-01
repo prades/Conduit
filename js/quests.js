@@ -55,7 +55,7 @@ function questMark(Q, key, say, col) {
     if (say) questSay(say, col);
     return true;
 }
-function questSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 150, text, color: col || QUEST_PURIFY.col, life: 300, vy: -0.04, size: 14 }); }
+function questSay(text, col) { if (typeof dialogueSay === "function") dialogueSay("player", text); }   // your note of a turn of the quest line, in the dialogue box (js/dialogue.js; col was the floating text's colour)
 function _questInv(id) { return typeof invCount === "function" ? invCount(id) : 0; }
 function questSamplesHeld() { return { ant: _questInv("toxic_sample"), water: _questInv("sewer_sample") }; }
 function questSamplesReady(Q) { const h = questSamplesHeld(); return !!Q.turnedInAt || (h.ant >= QUEST_PURIFY.samples && h.water >= 1); }
@@ -110,6 +110,8 @@ function questTick() {
         if (!Q.cycleLeft) { questMark(Q, "purifiedAt", "◈ THE RUNOFF RUNS CLEAN — THE SEWERS ARE PURIFIED", "#9dffb6"); Q.closeLeft = P.closing; if (typeof bossCalm === "function") bossCalm(P.boss); if (typeof facilityBroodThin === "function") facilityBroodThin(); }   // (the major infestation clears: js/facilityspawn.js)
     }
     if (Q.purifiedAt && Q.closeLeft > 0) Q.closeLeft--;
+    // the step that is up is noted once, by you (its words, then its hint: the dialogue box; js/tutorial.js tutSaidOnce keeps the record in the save)
+    if (Q.discoveredAt && !Q.purifiedAt && typeof dialogueSay === "function" && typeof tutSaidOnce === "function") { const i = questStepIndex("purify"), st = QUEST_STEPS.purify[i]; if (st && tutSaidOnce("quest:purify:" + st.id)) dialogueSay("player", [st.title + ". " + st.text(Q), st.hint(Q)], { key: "quest:purify:" + st.id }); }
 }
 function _questOutfall() {
     if (_fp._questOutfall !== undefined) return _fp._questOutfall;

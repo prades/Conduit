@@ -639,9 +639,10 @@ function render() {
     // The ALARM is a red triangle beside the room tag (css: body.alarm-on). Only the change touches the page.
     const _alarmOn = !!alertActive;
     if (_alarmOn !== _lastAlarmOn) { _lastAlarmOn = _alarmOn; if (document.body && document.body.classList) document.body.classList.toggle("alarm-on", _alarmOn); }
-    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen));
+    const _panelOpen = !!(cloneMenuOpen || settingsPanelOpen || infoPanelOpen || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof questBoxOpen !== "undefined" && questBoxOpen));
     if (document.body && document.body.classList && document.body.classList.contains("info-open") !== !!infoPanelOpen) document.body.classList.toggle("info-open", !!infoPanelOpen);
     if (_panelOpen !== _lastPanelOpen) { _lastPanelOpen = _panelOpen; if (document.body && document.body.classList) document.body.classList.toggle("panel-open", _panelOpen); }
+    if (typeof questBoxBadgeTick === "function") questBoxBadgeTick();   // the QUESTS button's "!" for a new objective (js/questbox.js)
     // The room tag names the room the player is in (js/facilitynet.js): cached element, written only on a change.
     const _fpz = typeof facilityZoneName === "function" ? facilityZoneName() : null;
     if (_fpz !== null && _fpz !== _lastZoneName) { _lastZoneName = _fpz; if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo"); if (_zoneEl) _zoneEl.textContent = _fpz; }
@@ -1183,6 +1184,7 @@ function render() {
     if (typeof bossDrawOverlay === "function") bossDrawOverlay();       // the queen's wind-up ring and her shots in the air (js/bosses.js)
     if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)
     drawFloatingTexts();
+    if (typeof dialogueDraw === "function") dialogueDraw();   // the dialogue box: who is talking, their picture, what they said (js/dialogue.js); the panels below draw over it
     // The clone bay first, then its button over it, so the button that
     // opened the bay (and closes it) is never dimmed by the bay's backdrop.
     drawCloneMenu();
@@ -1192,8 +1194,9 @@ function render() {
     if (typeof drawInvPanel === "function") { drawInvPanel(); drawClassPicker(); if (typeof drawArmoryPanel === "function") drawArmoryPanel(); }   // the pack and the class picker (js/inventory.js, js/classes.js)
     if (typeof drawLockReticle === "function") drawLockReticle();   // the lock-on's corners (js/gunfire.js)
     if (typeof drawTargetUI === "function") drawTargetUI();   // the selection, the aim meter and the index card (js/targeting.js)
-    if (!dockHasMenus() && !infoPanelOpen) drawSettingsButton();   // a phone has no dock: its round SETTINGS button (js/settings.js)
+    if (!dockHasMenus() && !infoPanelOpen) { drawSettingsButton(); if (typeof drawQuestButton === "function") drawQuestButton(); }   // a phone has no dock: its round SETTINGS button (js/settings.js) and its QUESTS button over it (js/questbox.js)
     drawSettingsPanel();
+    if (typeof drawQuestBox === "function") drawQuestBox();   // the quest box: the objective and the steps of what is under way (js/questbox.js)
     perfFrameEnd();
 }
 

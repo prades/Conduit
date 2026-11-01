@@ -88,7 +88,7 @@ check('the strip, its arrows and the script are in the page; phones do not get t
 check('the dock is ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ? and nothing of the strip game (no Crystal, Shop, Modules, Build or Auto button)', () => {
     const dock = HTML.slice(HTML.indexOf('<div id="dockScroll">'), HTML.indexOf('id="dockNext"'));
     const ids = [...dock.matchAll(/<button id="(\w+)"\s+class="top-btn"/g)].map(m => m[1]);
-    same(ids.join(), 'btnRoster,btnCards,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the buttons');
+    same(ids.join(), 'btnRoster,btnCards,btnQuests,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the buttons');
     for (const id of ['btnCrystal', 'btnShop', 'btnModules', 'btnBuild', 'btnAuto', 'btnSquad', 'btnCommand']) ok(!new RegExp('id="' + id + '"').test(HTML), id + ' is still in the page');
     ok(/onclick="ccToggleOpen\(\)"/.test(dock) && /onclick="dockClones\(\)"/.test(dock) && /onclick="dockSettings\(\)"/.test(dock) && /onclick="invToggle\(\)"/.test(dock) && /onclick="toggleControlsMenu\(\)"/.test(dock), 'a button does not open its menu');
     const tb = fs.readFileSync(path.join(ROOT, 'js/toolbox.js'), 'utf8'); ok(/function dockClones\(\)/.test(tb) && /function dockSettings\(\)/.test(tb) && !/dockShop|dockCrystal|dockModules|toggleBuild|toggleAutoplay/.test(tb), 'toolbox.js still opens a menu that is gone');
@@ -100,7 +100,7 @@ else {
     check('the instrument ran', () => { ok(r, 'the probe produced nothing'); same(r.err, undefined, 'the probe threw'); same(r.facility, true, 'the page did not boot the facility'); });
     if (r && !r.err) {
         check('every menu is in the strip, and shown: ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ?', () => {
-            same(r.ids.join(), 'btnRoster,btnCards,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.join(), 'a button is hidden');
+            same(r.ids.join(), 'btnRoster,btnCards,btnQuests,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.join(), 'a button is hidden');
         });
         check('when it all fits there is no fade and no arrow; when there is more than fits it slides sideways (right room at the start, an arrow and a fade)', () => {
             if (!r.naturalOver) { same(r.natural.room.left + r.natural.room.right, 0, 'room to slide with everything fitting'); ok(!/fade-|slides/.test(r.natural.cls), 'a fade or an arrow with everything fitting: ' + r.natural.cls); }

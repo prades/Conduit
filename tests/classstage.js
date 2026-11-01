@@ -35,7 +35,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         // stand beside the training creature (held still) and hold the dial on it
         globalThis.__strike = (n, gap) => { const s = tutClassStray(); s.update = () => {}; player.x = player.targetX = player.visualX = s.x - 1.0; player.y = player.targetY = player.visualY = s.y; player.fpPath = null; playerAttackMode = true; playerLockTarget = s;
             gunHold = { x: 0, y: 0, pending: true, released: false, until: 0, button: true }; __frames(n * gap + 6); gunHold = null; __frames(gap); return s; };
-        globalThis.__plate = () => { const said = []; const k = uiTextFit; uiTextFit = function (t) { said.push(String(t)); return k.apply(this, arguments); }; try { facilityDrawObjective(); } finally { uiTextFit = k; } return said[0] || ''; };`);
+        globalThis.__plate = () => { facilityDrawObjective(); const c = objectiveCurrent(); return c ? c.title : ''; };   // (the objective's title: what the quest box shows at the top, js/questbox.js; the plate it was is hidden)
+        globalThis.__saidLine = (re) => dialogueLines().some(l => re.test(l.text));   // (the Crystal's lines in the dialogue box, js/dialogue.js)`);
 
     group('THE STAGES: after the tutorial, once a class is chosen, the class\'s own objectives (its gear first, then its loop)');
     check('every class has a stage; its first step is its gear (TUT_CLASS_STEP, as before); every step says what to do and how; the Gunslinger\'s has 4 steps, the Technomancer\'s 4, the Mutator\'s 5', () => {
@@ -43,7 +44,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(Object.keys(r).join(), 'gunslinger,technomancer,mutator', 'the stages'); for (const c of Object.keys(r)) { same(r[c].first, true, c + ': the gear first'); same(r[c].words, true, c + ': a step without its words'); }
         same(r.gunslinger.ids, 'perk,cctv,flare,hunt', 'the Gunslinger\'s'); same(r.technomancer.ids, 'perk,relay,punch,arc', 'the Technomancer\'s'); same(r.mutator.ids, 'perk,clone,upgrade,lash,serum', 'the Mutator\'s');
     });
-    check('every step after the gear fits the plate: its words and its hint wrap to three lines or fewer at the narrowest plate (the corner\'s, 304 px: 34 characters a line)', () => {
+    check('every step after the gear fits a page: its words and its hint wrap to three lines or fewer at 34 characters a line (the dialogue box on an iPad held upright, js/dialogue.js; the quest box is wider)', () => {
         const r = J(`(function(){ const out = []; for (const c of CLASS_ORDER) { playerClassKey = c; for (const st of TUT_CLASS_STAGES[c].slice(1)) { const t = uiWrap(st.text(), 34).length, h = uiWrap(st.hint(), 34).length; if (t > 3 || h > 3) out.push(c + ':' + st.id + ' ' + t + '/' + h); } } playerClassKey = null; return out; })()`);
         same(r.join(', '), '', 'too long for the plate (lines of words / hint)');
     });
@@ -53,8 +54,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const S2 = __stage('gunslinger'); o.begun = [S2.ck0 === lifetimeKills, S2.cr0, S2.cstep]; tutTally('arc'); o.counted = tutCount('arc'); return o; })()`);
         same(r.during, 0, 'counted during the tutorial'); same(r.noClass, 0, 'counted with no class'); same(r.noStage, true, 'the stage began with no class'); same(r.begun.join(), 'true,0,0', 'the stage\'s start'); same(r.counted, 1, 'counted in the stage');
     });
-    check('the plate counts the steps in the class\'s colour: "GUNSLINGER · 1/4 · GET YOUR GEAR", then the next; the closing line once they are done', () => {
-        const r = J(`(function(){ __stage('gunslinger'); const o = { first: __plate() }; classGrant('machinegun'); __frames(2); o.second = __plate(); o.step = _fp.tut.script.cstep; o.said = floatingTexts.some(t => /GET YOUR GEAR — DONE/.test(t.text)); return o; })()`);
+    check('the objective counts the steps in the class\'s name: "GUNSLINGER · 1/4 · GET YOUR GEAR", then the next; the Crystal says a step done; the closing line once they are done', () => {
+        const r = J(`(function(){ __stage('gunslinger'); const o = { first: __plate() }; classGrant('machinegun'); __frames(2); o.second = __plate(); o.step = _fp.tut.script.cstep; o.said = __saidLine(/GET YOUR GEAR — DONE/); return o; })()`);
         same(r.first, 'GUNSLINGER  ·  1/4  ·  GET YOUR GEAR', 'the first'); same(r.second, 'GUNSLINGER  ·  2/4  ·  SWEEP THE CAMERAS', 'the second'); same(r.step, 1, 'the step'); same(r.said, true, 'the step done is not said');
     });
 
@@ -65,7 +66,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             __at(__st('cctv')); const C = stationUse(__st('cctv')); __frames(2); o.cctv = [C.ok, _fp.cctvUntil > frame]; step();
             const F = invUse('flare'); __frames(2); o.flare = [!!(F && F.ok !== false), _fp.tut.sources.some(s => s.what === 'flare')]; step();
             for (let i = 0; i < 3; i++) { const e = spawnCreature({ species: 'ant', className: 'scout', level: 3, x: player.x + 2 + i, y: player.y, state: 'wander' }); applyDamage(e, 1e6, { x: player.x, y: player.y, team: 'green' }); __frames(2); step(); }
-            o.plate = __plate(); o.key = S.objKey; o.closing = floatingTexts.some(t => /GUNSLINGER STAGE COMPLETE/.test(t.text)); return o; })()`);
+            o.plate = __plate(); o.key = S.objKey; o.closing = __saidLine(/GUNSLINGER STAGE COMPLETE/); return o; })()`);
         same(r.gun.join(), 'true,machinegun', 'the locker'); same(r.cctv.join(), 'true,true', 'the console'); same(r.flare.join(), 'true,true', 'the flare');
         same(r.steps.join(), '1,2,3,3,3,4', 'the steps after each'); ok(/RANK/.test(r.plate), 'the closing plate: ' + r.plate); same(r.closing, true, 'no closing line');
     });
@@ -77,7 +78,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             __strike(3, WEAPONS.gauntlet.windup + weaponCooldown('gauntlet')); o.punch = [tutCount('gauntlet'), technoCharge]; step();
             const a = tutClassStray(); const c = __spotFrom(a, 3.2, 5.5); player.x = player.targetX = player.visualX = c[0]; player.y = player.targetY = player.visualY = c[1]; player.fpPath = null;
             const k0 = lifetimeKills, sh0 = shardCount; o.arcs = [firePlayerShot(a)]; __frames(TECHNO.arc.cooldown + 1); o.arcs.push(firePlayerShot(a)); __frames(2); step();
-            o.count = tutCount('arc'); o.gone = !tutClassStray() && a.dead; o.paid = [lifetimeKills - k0, shardCount - sh0]; o.plate = __plate(); o.closing = floatingTexts.some(t => /TECHNOMANCER STAGE COMPLETE/.test(t.text)); return o; })()`);
+            o.count = tutCount('arc'); o.gone = !tutClassStray() && a.dead; o.paid = [lifetimeKills - k0, shardCount - sh0]; o.plate = __plate(); o.closing = __saidLine(/TECHNOMANCER STAGE COMPLETE/); return o; })()`);
         same(r.mech.join(), 'true,true', 'the mech'); same(r.relay.join(), 'true,1', 'the relay'); same(r.stray, true, 'no training creature near the player'); same(r.strayHp, 400, 'its health');
         ok(r.punch[0] >= 3 && r.punch[1] >= 2, 'punches and charges: ' + r.punch); same(r.arcs.join(), 'true,true', 'the arcs'); same(r.count, 2, 'arcs counted');
         same(r.steps.join(), '1,2,3,4', 'the steps after each'); same(r.gone, true, 'the training creature stayed'); same(r.paid.join(), '0,0', 'its going paid a kill'); ok(/RANK/.test(r.plate), 'the closing plate: ' + r.plate); same(r.closing, true, 'no closing line');
@@ -89,7 +90,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const u = cloneUpgradeBuy('armor'); __frames(2); o.up = [u.ok, cloneUpRank(cl, 'armor')]; step();
             __frames(2); cl.x = tutClassStray().x - 1.2; cl.y = tutClassStray().y + 0.6; __strike(3, MUTATOR.lash.windup + weaponCooldown('lash')); o.lash = tutCount('lash'); step();
             serumLab.stock = 1; const H = __st('serum_hood'); __at(H); const h = stationUse(H); const sp = invUse('healing_serum'); __frames(2); o.serum = [h.ok, !!(sp && sp.ok !== false), serumZones.length]; step();
-            o.plate = __plate(); o.closing = floatingTexts.some(t => /MUTATOR STAGE COMPLETE/.test(t.text)); o.stray = !!tutClassStray(); cl.dead = true; cl.dismissed = true; __frames(1); return o; })()`);
+            o.plate = __plate(); o.closing = __saidLine(/MUTATOR STAGE COMPLETE/); o.stray = !!tutClassStray(); cl.dead = true; cl.dismissed = true; __frames(1); return o; })()`);
         same(r.coat, true, 'the coat'); same(r.clone, true, 'the clone'); same(r.up.join(), 'true,1', 'the upgrade'); ok(r.lash >= 3, 'lashes: ' + r.lash); same(r.serum.join(), 'true,true,1', 'the serum');
         same(r.steps.join(), '1,2,3,4,5', 'the steps after each'); ok(/RANK/.test(r.plate), 'the closing plate: ' + r.plate); same(r.closing, true, 'no closing line'); same(r.stray, false, 'the training creature stayed');
     });

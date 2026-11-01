@@ -212,6 +212,7 @@ function handleLongHold(ex,ey) {
 }
 
 let _gunPressed = false;   // the press began on an enemy while armed: it is the gun's (js/gunfire.js)
+let _dlgPressed = false;   // the press began on the dialogue box (its words, or a choice button): it is the box's (js/dialogue.js)
 let _techAimPressed = false;   // the press began while a technician's ability was being aimed: it is the aim's (js/techabilities.js)
 let _cloneDrag = null;     // a press that began on the clone card strip: { x0, s0, moved } (it slides the strip; a drag never presses a card)
 canvas.addEventListener('pointerdown', e=>{
@@ -227,7 +228,7 @@ canvas.addEventListener('pointerdown', e=>{
         if (pressX >= cb.listX && pressX <= cb.listX + cb.listW && pressY >= cb.listY && pressY <= cb.listY + cb.listH) { _cloneDrag = { x0: pressX, s0: _crystalScrollX, moved: false }; return; }
     }
     // Canvas overlay panels — absorb pointerdown so no game action triggers
-    if (infoPanelOpen || settingsPanelOpen
+    if (infoPanelOpen || settingsPanelOpen || (typeof questBoxOpen !== "undefined" && questBoxOpen)
         || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen)) return;
 
     // AIMING A TECHNICIAN'S ABILITY (js/techabilities.js): the press is the aim's, whatever is under it: no ring, no shot, no walk
@@ -236,8 +237,8 @@ canvas.addEventListener('pointerdown', e=>{
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
 
-    // THE OBJECTIVE'S MAILBOX (js/tutorial.js), on a phone: a press on it (or on the plate it unfolds into) is its own: no ring, no move order, no long press
-    _objPressed = false; if (typeof objectivePress === "function" && objectivePress(pressX, pressY)) { isPressing = false; return; }
+    // THE DIALOGUE BOX (js/dialogue.js): a press on it (its words, or one of its choice buttons) is its own: no ring, no move order, no long press
+    _dlgPressed = false; if (typeof dialoguePress === "function" && dialoguePress(pressX, pressY)) { _dlgPressed = true; isPressing = false; return; }
     // TARGETING (js/targeting.js): a press on the round fire/info buttons, or on a creature that is not the locked one (it takes the lock): no ring, no move order
     _targetPressed = false; _tgBtnDown = null; if (typeof targetPress === "function" && targetPress(pressX, pressY)) return;
     // THE GUN (js/gunfire.js): armed, a press that lands on an enemy is a shot (and holding it keeps firing): no ring, no move order
@@ -273,7 +274,7 @@ canvas.addEventListener('pointerup', e=>{
     if (_techAimPressed) { _techAimPressed = false; const [_ax, _ay] = toCanvas(e.clientX, e.clientY); if (typeof techAimTap === "function" && techAimTap(_ax, _ay) === false) handleInput(_ax, _ay); isPressing = false; return; }   // the aim's tap: a follower, an enemy (js/techabilities.js); the launcher's aim lets go of a tap that is not on a follower, and it is an ordinary tap
     if (_gunPressed) { _gunPressed = false; if (typeof gunRelease === "function") gunRelease(); isPressing = false; return; }   // the gun's press ends here (js/gunfire.js)
     if (_targetPressed) { _targetPressed = false; const [_tx, _ty] = toCanvas(e.clientX, e.clientY); if (typeof targetRelease === "function") targetRelease(_tx, _ty); isPressing = false; return; }   // the targeting's press ends here (js/targeting.js)
-    if (_objPressed) { _objPressed = false; const [_ox, _oy] = toCanvas(e.clientX, e.clientY); if (typeof objectiveRelease === "function") objectiveRelease(_ox, _oy); isPressing = false; return; }   // the objective mailbox's press ends here (js/tutorial.js)
+    if (_dlgPressed) { _dlgPressed = false; const [_dx, _dy] = toCanvas(e.clientX, e.clientY); if (typeof dialogueTap === "function") dialogueTap(_dx, _dy); isPressing = false; return; }   // the dialogue box's press ends here: the typing finishes, the page turns, a choice is made (js/dialogue.js)
     if (!gameState.running) { isPressing=false; return; } // no canvas input on the game-over screen
     const [upX,upY]=toCanvas(e.clientX,e.clientY);
     // A slide on the clone card strip is not a tap on a card.
@@ -310,6 +311,8 @@ canvas.addEventListener('pointerup', e=>{
     if (!touchMoved && !dockHasMenus() && Math.hypot(upX-_SETTINGSBTN.x, upY-_SETTINGSBTN.y) < _SETTINGSBTN.r+8) {
         settingsPanelOpen=!settingsPanelOpen; settingsResetConfirm=false; isPressing=false; return;
     }
+    // QUESTS button tap (a phone only: js/questbox.js drawQuestButton)
+    if (!touchMoved && !dockHasMenus() && typeof _QUESTBTN !== "undefined" && Math.hypot(upX-_QUESTBTN.x, upY-_QUESTBTN.y) < _QUESTBTN.r+8) { questBoxToggle(); isPressing=false; return; }
 
     // ── ULTIMATE DOUBLE-TAP DETECTION ────────────────────
     // Not while the radial menu is up or waiting for its tap. This scan swallows any tap landing within 40px of a follower.

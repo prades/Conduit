@@ -3,12 +3,13 @@
 // ─────────────────────────────────────────────────────────
 // SETTINGS is the dock's (js/toolbox.js dockSettings) and the phone menu's (js/radialmenu.js): GRAPHICS (high / low: js/config.js toggleGfxLow), PERFORMANCE (the readout: js/game.js), NEW GAME (the saved facility is
 // thrown away, after asking: js/facilitysave.js facilityNewGame) and CLOSE. One layout for the drawing and the tap handler, so they cannot drift apart; the rows are slab buttons (js/uikit.js).
-// handleOverlayPanelTap is where a tap goes first while a canvas panel is open (js/input.js): the class picker (js/classes.js), the Armory's terminal (js/weapons.js), the pack (js/inventory.js), the INFO panel (js/infodex.js), then this one.
+// handleOverlayPanelTap is where a tap goes first while a canvas panel is open (js/input.js): the class picker (js/classes.js), the Armory's terminal (js/weapons.js), the pack (js/inventory.js), the INFO panel (js/infodex.js), the quest box (js/questbox.js), then this one.
 function handleOverlayPanelTap(tx, ty) {
     if (typeof classPickerOpen !== "undefined" && classPickerOpen) return _handleClassPickerTap(tx, ty);
     if (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen) return _handleArmoryTap(tx, ty);
     if (typeof invPanelOpen !== "undefined" && invPanelOpen) return _handleInvPanelTap(tx, ty);
     if (infoPanelOpen)     return _handleInfoPanelTap(tx, ty);
+    if (typeof questBoxOpen !== "undefined" && questBoxOpen) return _handleQuestBoxTap(tx, ty);
     if (settingsPanelOpen) return _handleSettingsPanelTap(tx, ty);
     return false;
 }

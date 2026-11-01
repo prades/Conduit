@@ -9,18 +9,18 @@
     <!-- THE PROPS SHEETS THE START WAITS FOR (js/init.js, docs/STARTUP.md) begin to download with the page, alongside the scripts, instead of once the world is built: measured on a slow link (2x CPU, 60 ms, 15 Mbit/s), the start is about half a second sooner (4.1 s to 3.5 s for a new player, 6.4 s to 5.9 s for a returning one).
          They are the addresses the loader asks for (img/props/<family>.png, with the build stamp), so its own requests are answered from these; the stamp changes with the build (tests/startup.js checks both).
          Not here: the player's sheet (the website's background, ?attract, draws no player), the eggs and the evolved forms (which of them the first picture draws depends on the saved game): the start asks for those itself. -->
-    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-01b">
-    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-01b">
+    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-01c">
+    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-01c">
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -180,6 +180,11 @@
         .top-btn svg { width: 16px; height: 16px; }
         #topToggles { gap: 3px; }
     }
+    /* The QUESTS button's "!": a new objective the quest box has not been opened on (body.quest-new: js/game.js; js/questbox.js) */
+    #btnQuests { position: relative; }
+    .top-bang { display: none; position: absolute; top: -5px; right: -5px; width: 18px; height: 18px; border-radius: 50%; background: #ffe733; color: #05070f; font: 900 13px/18px var(--neo-font, sans-serif); font-style: normal; text-align: center; box-shadow: 0 0 8px rgba(255,231,51,0.75); animation: top-bang 1.2s ease-in-out infinite; }
+    body.quest-new #btnQuests .top-bang { display: block; }
+    @keyframes top-bang { 50% { transform: scale(1.18); } }
     .top-btn.active { background: rgba(0,255,136,0.18); border-color: #0ff; color: #0ff; }
 
 
@@ -579,7 +584,8 @@
     }
     @media (max-width: 1180px) and (min-width: 701px) {
         #ccRoot .cc-side { width: 340px; }
-        #topToggles { gap: 7px; padding: 8px 14px; } #topToggles .top-btn { min-width: 0; padding: 0 12px; font-size: 16px; height: 54px; gap: 6px; } #topToggles .top-btn svg { width: 22px; height: 22px; } .top-tag { font-size: 15px !important; } #btnCtrl { min-width: 46px !important; }
+        #topToggles { gap: 7px; padding: 8px 14px; } #topToggles .top-btn { min-width: 0; padding: 0 8px; font-size: 16px; height: 54px; gap: 4px; } #topToggles .top-btn svg { width: 22px; height: 22px; } .top-tag { font-size: 14px !important; } #btnCtrl { min-width: 46px !important; }
+        #topToggles #dockScroll { gap: 6px; padding: 4px 6px; }   /* (eight buttons since QUESTS came, 2026-11-01: denser, so a tablet's width still shows them all without a slide) */
     }
     #ccRoot { display: none; position: fixed; left: 0; right: 0; top: 0; bottom: var(--vv-bottom, 0px); z-index: 60; flex-direction: column; box-sizing: border-box; padding: 14px 18px 14px; font-family: var(--neo-font); color: #fff;
         background: linear-gradient(180deg, rgba(8,13,28,0.985), rgba(4,6,14,0.99)); }
@@ -976,7 +982,7 @@
     @media (min-width: 701px) { #mixTool { bottom: calc(100px + var(--vv-bottom, 0px)); } #mixTool .mt-pod, #mixTool .mt-x { display: none; } #mixTool .mt-panel { position: static; } }
     @media (max-width: 700px) { #mixTool { left: 8px; } }
     /* ═══ THE CORNERS (docs/UI-STYLE.md, "The HUD"): the facility on a tablet or a desktop (body.corners: js/party.js hudCorners). Every part of the HUD that works together has a corner: the player's own (crystals, health, ultimate) top left; the place (zone tag,
-       network, objective: js/facilitynet.js, js/tutorial.js) top right; the squad and its orders bottom left (the three cards stacked over RETREAT / HOLD / COME, and a tapped member's card beside them: js/squadfly.js); the target (the dial and the
+       network: js/facilitynet.js) top right; the squad and its orders bottom left (the three cards stacked over RETREAT / HOLD / COME, and a tapped member's card beside them: js/squadfly.js); the target (the dial and the
        ammunition, js/targeting.js, and the enemy card with its ATTACK) bottom right; the dock where it was. A phone (700 px or less) has none of it: body.corners is never set there. ═══ */
     :root { --cn-bottom: 100px; --cn-w: 244px; --cn-card: 54px; --cn-tool: 178px; --cn-foe: 260px; --cn-fly: 340px; }
     @media (max-width: 1100px) { :root { --cn-w: 232px; --cn-foe: 232px; --cn-fly: 318px; } }
@@ -1182,6 +1188,7 @@
     <div id="dockScroll">
     <button id="btnRoster" class="top-btn" onclick="ccToggleOpen()" title="Roster and command center: pick your creatures by their cards and give them orders" aria-label="Roster and command center"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg><span class="top-tag">ROSTER</span></button>
     <button id="btnCards" class="top-btn" onclick="cardsToggle()" title="Equip cards: the hand you take into a run, your two slots, and the collection you unlock" aria-label="Equip cards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="6" width="10" height="14" rx="1.6"/><path d="M8 3.5h9a2 2 0 0 1 2 2V16" stroke-linecap="round"/><path d="M6.5 11h4M6.5 14h4" stroke-linecap="round" stroke-width="1.8"/></svg><span class="top-tag">CARDS</span></button>
+    <button id="btnQuests" class="top-btn" onclick="questBoxToggle()" title="Quests: what to do now, and the steps done and to come" aria-label="Quests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 3.5h9l4 4v13h-13z"/><path d="M14.5 3.5v4h4"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/></svg><span class="top-tag">QUESTS</span><i class="top-bang" aria-hidden="true">!</i></button>
     <span class="dock-sep" aria-hidden="true"></span>
     <button id="btnClones" class="top-btn" onclick="dockClones()" title="Clones" aria-label="Clones"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M7 3 C17 8 7 16 17 21"/><path d="M17 3 C7 8 17 16 7 21"/><path d="M9 7h6M9 17h6" stroke-width="1.8"/></svg><span class="top-tag">CLONES</span></button>
     <button id="btnSettings" class="top-btn" onclick="dockSettings()" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.4"/><path d="M12 2v3.2M12 18.8V22M2 12h3.2M18.8 12H22M4.9 4.9l2.3 2.3M16.8 16.8l2.3 2.3M19.1 4.9l-2.3 2.3M7.2 16.8l-2.3 2.3"/></svg><span class="top-tag">SETTINGS</span></button>
@@ -1224,7 +1231,7 @@
 <div class="ix-lede"><strong>Conduit</strong> in one line: the facility is dark and its power is down. Find supplies, bring the <strong>relays</strong> back online room by room, gather a <strong>squad</strong> of followers, and keep the <strong>Crystal</strong> alive against what comes out of the arena.</div><div class="ix-h"><i class="ix-i" data-icon="crystal" data-col="#0f8" data-size="16"></i><span>HOW A GAME GOES</span></div><div class="ix-steps"><div class="ix-step"><b>1</b><i class="ix-i" data-icon="night" data-col="#aab8ff" data-size="22"></i><div><strong>Find supplies in the dark</strong><br>The facility opens in a blackout; your monitor lamp is your light. Supply cases glow: walk over one to take it. Press <span class="cm-stat">I</span> for your pack.</div></div><div class="ix-step"><b>2</b><i class="ix-i" data-icon="power" data-col="#ffe733" data-size="22"></i><div><strong>Restore a relay</strong><br>Each relay powers a few rooms. Walk up to a broken one with the relay kit and two power cells (a Technomancer needs one cell and no kit) and it is repaired: its rooms light up.</div></div><div class="ix-step"><b>3</b><i class="ix-i" data-icon="follower" data-col="#0f8" data-size="22"></i><div><strong>Gather a squad</strong><br>Three followers walk with you. Hatch the eggs on the pads around the facility, or buy a recruit at the Crystal in the ROSTER for <span class="cm-stat">30 &#9670;</span>. The rest hold rooms.</div></div><div class="ix-step"><b>4</b><i class="ix-i" data-icon="shard" data-col="#7fffd4" data-size="22"></i><div><strong>Hunt the arena</strong><br>Tap a creature and your gun locks on; click or hold the round dial to fire. A kill pays <strong>shards</strong> on the spot and drops <strong>DNA</strong> for the Clone Bay and scrap for the Armory.</div></div><div class="ix-step"><b>5</b><i class="ix-i" data-icon="clone" data-col="#22ff88" data-size="22"></i><div><strong>Level, evolve, clone</strong><br>Followers level from kills and evolve at level <span class="cm-stat">10</span>. Spend DNA and shards in the CLONE BAY on a creature of your own.</div></div><div class="ix-step"><b>6</b><i class="ix-i" data-icon="shield" data-col="#ff4a1c" data-size="22"></i><div><strong>Defend the Crystal</strong><br>An alarm sends the creatures hunting, and they go for the Crystal. HOLD followers near it. If the Crystal falls, the game is over.</div></div></div><div class="ix-h"><i class="ix-i" data-icon="controls" data-col="#0ff" data-size="16"></i><span>THE THREE MOVES</span></div><div class="ix-grid"><div class="ix-card" style="--c:#0ff"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#0ff"></i>TAP THE FLOOR</div><div class="ix-card-b">Walk there, through the doors. Tap a station or a case to use it or take it.</div></div><div class="ix-card" style="--c:#f84"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#f84"></i>TAP A CREATURE</div><div class="ix-card-b">Lock your gun on it; the round dial fires. Tap the enemy card to send the squad at it.</div></div><div class="ix-card" style="--c:#ff0"><div class="ix-card-h"><i class="ix-i" data-icon="controls" data-col="#ff0"></i>LONG-PRESS A FOLLOWER</div><div class="ix-card-b">Its card: numbers, INDEX and DISMISS. Long-press a creature for INFO or ATTACK.</div></div></div><details class="cm-more"><summary>In detail &mdash; the tutorial and the classes</summary><div class="ctrl-title">THE OBJECTIVE PLATE</div>
       <div class="ctrl-row cm-dim">The plate at the top right (on a phone, a small envelope that wears a <span class="cm-stat">!</span> when there is something new; tap it to unfold it) says what to do next: find supplies, restore the Crystal Chamber's relay, recruit a follower, post two followers near the Crystal, fire your gun, defend the Crystal against a first assault, evolve a follower. The game is saved every few seconds; SETTINGS &rarr; NEW GAME throws the save away.</div>
       <div class="ctrl-title">THE CLASSES</div>
-      <div class="ctrl-row cm-dim">When the tutorial is done you <strong>choose a class</strong> (it asks you to confirm), its supply cases arrive, and <strong>the class's own stage</strong> follows on the objective plate: its gear at its station, then its loop (the Gunslinger: the cameras, a flare, a hunt; the Technomancer: a relay, punches, arcs; the Mutator: a clone, an upgrade, the lash, a serum). Any class may carry another class's gear, but only the right class may use it.</div>
+      <div class="ctrl-row cm-dim">When the tutorial is done you <strong>choose a class</strong> (it asks you to confirm), its supply cases arrive, and <strong>the class's own stage</strong> follows (the Crystal gives each step in the dialogue box; QUESTS lists them): its gear at its station, then its loop (the Gunslinger: the cameras, a flare, a hunt; the Technomancer: a relay, punches, arcs; the Mutator: a clone, an upgrade, the lash, a serum). Any class may carry another class's gear, but only the right class may use it.</div>
       <div class="ctrl-row cm-dim"><strong>Switch class</strong> any time from your pack (<strong>SWITCH CLASS</strong>, then confirm). Each class keeps its own progress &mdash; its perks and rank, its objectives, the weapon it last held, and the Mutator's clone, which waits for it &mdash; and picks up where it left off when you switch back. Its kit comes the first time only. It all lasts until the Crystal is destroyed.</div>
       <div class="cm-build-row"><span class="cm-build-label" style="color:#ffb347">GUNSLINGER</span>Weapons, ammunition and tactical gear. Flares to light the dark; the Armory's machine gun; CCTV sweeps from the Security Room's console that mark every enemy in the facility for a while.</div>
       <div class="cm-build-row"><span class="cm-build-label" style="color:#31e8ff">TECHNOMANCER</span>Electrical infrastructure. Fights with the <strong>arc gauntlet</strong>: a shock punch up close stores a charge, and out of reach a charge throws an <strong>electric arc</strong> that jumps to the creatures beside it and cuts short a bite being wound up. A powered room charges the gauntlet, and every relay online makes the arc stronger. Repairs a relay with one power cell, by standing at it; a tuned lamp from the console in Teleport Room 1; the spider mech built in the Show Room's mech bay.</div>
@@ -1263,7 +1270,8 @@
       <div class="ctrl-title">THE HUD &mdash; WHAT IS WHERE</div>
       <div class="cm-build-row"><span class="cm-build-label">Top left</span>Your <span class="cm-stat">shards &#9670;</span>: what a kill pays, what recruits and clones cost</div>
       <div class="cm-build-row"><span class="cm-build-label">Centre</span>Your health &mdash; <span class="cm-stat">3</span> hits, then you are knocked back to the Crystal &mdash; and your <span class="cm-stat">ULTIMATE</span> bar under it with its <span class="cm-stat">&#8961;</span> siphon switch</div>
-      <div class="cm-build-row"><span class="cm-build-label">Top right</span>The <strong>room tag</strong> (the room you are in), the <strong>network panel</strong> under it (the relays online and the rooms with power: OFFLINE, PARTIAL or ONLINE), the <strong>objective plate</strong>, and the red <strong>alarm triangle</strong> while an alarm is up</div>
+      <div class="cm-build-row"><span class="cm-build-label">Top right</span>The <strong>room tag</strong> (the room you are in), the <strong>network panel</strong> under it (the relays online and the rooms with power: OFFLINE, PARTIAL or ONLINE), and the red <strong>alarm triangle</strong> while an alarm is up</div>
+      <div class="cm-build-row"><span class="cm-build-label">Bottom centre</span>The <strong>dialogue box</strong>: whoever is talking (the Crystal with the tutorial, you with the quest line, Side Quest at his station) with their picture and their words, typed out; a tap on it, Enter or Space hurries it. <strong>QUESTS</strong> on the dock (a round button on a phone) opens the quest box: the objective now, and the steps done and to come; a gold <strong>!</strong> on the button means a new objective</div>
       <div class="cm-build-row"><span class="cm-build-label">Bottom left</span>The squad bar, the orders and the enemy card</div>
       <div class="cm-build-row"><span class="cm-build-label">Bottom right</span>The round dial and the ammunition, when a creature is locked</div>
 
@@ -1719,12 +1727,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-11-01b, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-11-01c, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-11-01b";
+window.__PAGE_BUILD = "2026-11-01c";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1760,82 +1768,84 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-01b"></script>
-<script src="js/icons.js?v=2026-11-01b"></script>
-<script src="js/uikit.js?v=2026-11-01b"></script>
-<script src="js/traits.js?v=2026-11-01b"></script>
-<script src="js/elements.js?v=2026-11-01b"></script>
-<script src="js/combat.js?v=2026-11-01b"></script>
-<script src="js/species.js?v=2026-11-01b"></script>
-<script src="js/levels.js?v=2026-11-01b"></script>
-<script src="js/status.js?v=2026-11-01b"></script>
-<script src="js/helpers.js?v=2026-11-01b"></script>
-<script src="js/predator.js?v=2026-11-01b"></script>
-<script src="js/abilities.js?v=2026-11-01b"></script>
-<script src="js/commands.js?v=2026-11-01b"></script>
-<script src="js/npc.js?v=2026-11-01b"></script>
-<script src="js/draw.js?v=2026-11-01b"></script>
-<script src="js/beetle3d.js?v=2026-11-01b"></script>
-<script src="js/bugs3d.js?v=2026-11-01b"></script>
-<script src="js/settings.js?v=2026-11-01b"></script>
-<script src="js/alarm.js?v=2026-11-01b"></script>
-<script src="js/drops.js?v=2026-11-01b"></script>
-<script src="js/clone.js?v=2026-11-01b"></script>
-<script src="js/bonds.js?v=2026-11-01b"></script>
-<script src="js/evolution.js?v=2026-11-01b"></script>
-<script src="js/cards.js?v=2026-11-01b"></script>
-<script src="js/hdsprites.js?v=2026-11-01b"></script>
-<script src="js/firebombs.js?v=2026-11-01b"></script>
-<script src="js/moves.js?v=2026-11-01b"></script>
-<script src="js/hudgems.js?v=2026-11-01b"></script>
-<script src="js/commandcenter.js?v=2026-11-01b"></script>
-<script src="js/cardsui.js?v=2026-11-01b"></script>
-<script src="js/unitinfo.js?v=2026-11-01b"></script>
-<script src="js/infodex.js?v=2026-11-01b"></script>
-<script src="js/classes.js?v=2026-11-01b"></script>
-<script src="js/playergear.js?v=2026-11-01b"></script>
-<script src="js/inventory.js?v=2026-11-01b"></script>
-<script src="js/weapons.js?v=2026-11-01b"></script>
-<script src="js/mutator.js?v=2026-11-01b"></script>
-<script src="js/specimen.js?v=2026-11-01b"></script>
-<script src="js/serum.js?v=2026-11-01b"></script>
-<script src="js/potion.js?v=2026-11-01b"></script>
-<script src="js/technomancer.js?v=2026-11-01b"></script>
-<script src="js/stations.js?v=2026-11-01b"></script>
-<script src="js/facilityportals.js?v=2026-11-01b"></script>
-<script src="js/tutorial.js?v=2026-11-01b"></script>
-<script src="js/facilitymap.js?v=2026-11-01b"></script>
-<script src="js/facilitygrow.js?v=2026-11-01b"></script>
-<script src="js/facility.js?v=2026-11-01b"></script>
-<script src="js/attract.js?v=2026-11-01b"></script>
-<script src="js/facilitysave.js?v=2026-11-01b"></script>
-<script src="js/facilityplay.js?v=2026-11-01b"></script>
-<script src="js/facilitydecor.js?v=2026-11-01b"></script>
-<script src="js/propatlas.js?v=2026-11-01b"></script>
-<script src="js/propsprites.js?v=2026-11-01b"></script>
-<script src="js/facilitystyle.js?v=2026-11-01b"></script>
-<script src="js/facilitystyleall.js?v=2026-11-01b"></script>
-<script src="js/facilitysewers.js?v=2026-11-01b"></script>
-<script src="js/facilitynet.js?v=2026-11-01b"></script>
-<script src="js/facilityspawn.js?v=2026-11-01b"></script>
-<script src="js/followerspots.js?v=2026-11-01b"></script>
-<script src="js/breeding.js?v=2026-11-01b"></script>
-<script src="js/vital.js?v=2026-11-01b"></script>
-<script src="js/party.js?v=2026-11-01b"></script>
-<script src="js/squadfly.js?v=2026-11-01b"></script>
-<script src="js/techabilities.js?v=2026-11-01b"></script>
-<script src="js/puzzles.js?v=2026-11-01b"></script>
-<script src="js/quests.js?v=2026-11-01b"></script>
-<script src="js/bosses.js?v=2026-11-01b"></script>
-<script src="js/sidequest.js?v=2026-11-01b"></script>
-<script src="js/facilitytutorial.js?v=2026-11-01b"></script>
-<script src="js/gunfire.js?v=2026-11-01b"></script>
-<script src="js/targeting.js?v=2026-11-01b"></script>
-<script src="js/toolbox.js?v=2026-11-01b"></script>
-<script src="js/mixtool.js?v=2026-11-01b"></script>
-<script src="js/radialmenu.js?v=2026-11-01b"></script>
-<script src="js/input.js?v=2026-11-01b"></script>
-<script src="js/game.js?v=2026-11-01b"></script>
+<script src="js/config.js?v=2026-11-01c"></script>
+<script src="js/icons.js?v=2026-11-01c"></script>
+<script src="js/uikit.js?v=2026-11-01c"></script>
+<script src="js/traits.js?v=2026-11-01c"></script>
+<script src="js/elements.js?v=2026-11-01c"></script>
+<script src="js/combat.js?v=2026-11-01c"></script>
+<script src="js/species.js?v=2026-11-01c"></script>
+<script src="js/levels.js?v=2026-11-01c"></script>
+<script src="js/status.js?v=2026-11-01c"></script>
+<script src="js/helpers.js?v=2026-11-01c"></script>
+<script src="js/predator.js?v=2026-11-01c"></script>
+<script src="js/abilities.js?v=2026-11-01c"></script>
+<script src="js/commands.js?v=2026-11-01c"></script>
+<script src="js/npc.js?v=2026-11-01c"></script>
+<script src="js/draw.js?v=2026-11-01c"></script>
+<script src="js/beetle3d.js?v=2026-11-01c"></script>
+<script src="js/bugs3d.js?v=2026-11-01c"></script>
+<script src="js/settings.js?v=2026-11-01c"></script>
+<script src="js/alarm.js?v=2026-11-01c"></script>
+<script src="js/drops.js?v=2026-11-01c"></script>
+<script src="js/clone.js?v=2026-11-01c"></script>
+<script src="js/bonds.js?v=2026-11-01c"></script>
+<script src="js/evolution.js?v=2026-11-01c"></script>
+<script src="js/cards.js?v=2026-11-01c"></script>
+<script src="js/hdsprites.js?v=2026-11-01c"></script>
+<script src="js/firebombs.js?v=2026-11-01c"></script>
+<script src="js/moves.js?v=2026-11-01c"></script>
+<script src="js/hudgems.js?v=2026-11-01c"></script>
+<script src="js/commandcenter.js?v=2026-11-01c"></script>
+<script src="js/cardsui.js?v=2026-11-01c"></script>
+<script src="js/unitinfo.js?v=2026-11-01c"></script>
+<script src="js/infodex.js?v=2026-11-01c"></script>
+<script src="js/classes.js?v=2026-11-01c"></script>
+<script src="js/playergear.js?v=2026-11-01c"></script>
+<script src="js/inventory.js?v=2026-11-01c"></script>
+<script src="js/weapons.js?v=2026-11-01c"></script>
+<script src="js/mutator.js?v=2026-11-01c"></script>
+<script src="js/specimen.js?v=2026-11-01c"></script>
+<script src="js/serum.js?v=2026-11-01c"></script>
+<script src="js/potion.js?v=2026-11-01c"></script>
+<script src="js/technomancer.js?v=2026-11-01c"></script>
+<script src="js/stations.js?v=2026-11-01c"></script>
+<script src="js/facilityportals.js?v=2026-11-01c"></script>
+<script src="js/tutorial.js?v=2026-11-01c"></script>
+<script src="js/dialogue.js?v=2026-11-01c"></script>
+<script src="js/questbox.js?v=2026-11-01c"></script>
+<script src="js/facilitymap.js?v=2026-11-01c"></script>
+<script src="js/facilitygrow.js?v=2026-11-01c"></script>
+<script src="js/facility.js?v=2026-11-01c"></script>
+<script src="js/attract.js?v=2026-11-01c"></script>
+<script src="js/facilitysave.js?v=2026-11-01c"></script>
+<script src="js/facilityplay.js?v=2026-11-01c"></script>
+<script src="js/facilitydecor.js?v=2026-11-01c"></script>
+<script src="js/propatlas.js?v=2026-11-01c"></script>
+<script src="js/propsprites.js?v=2026-11-01c"></script>
+<script src="js/facilitystyle.js?v=2026-11-01c"></script>
+<script src="js/facilitystyleall.js?v=2026-11-01c"></script>
+<script src="js/facilitysewers.js?v=2026-11-01c"></script>
+<script src="js/facilitynet.js?v=2026-11-01c"></script>
+<script src="js/facilityspawn.js?v=2026-11-01c"></script>
+<script src="js/followerspots.js?v=2026-11-01c"></script>
+<script src="js/breeding.js?v=2026-11-01c"></script>
+<script src="js/vital.js?v=2026-11-01c"></script>
+<script src="js/party.js?v=2026-11-01c"></script>
+<script src="js/squadfly.js?v=2026-11-01c"></script>
+<script src="js/techabilities.js?v=2026-11-01c"></script>
+<script src="js/puzzles.js?v=2026-11-01c"></script>
+<script src="js/quests.js?v=2026-11-01c"></script>
+<script src="js/bosses.js?v=2026-11-01c"></script>
+<script src="js/sidequest.js?v=2026-11-01c"></script>
+<script src="js/facilitytutorial.js?v=2026-11-01c"></script>
+<script src="js/gunfire.js?v=2026-11-01c"></script>
+<script src="js/targeting.js?v=2026-11-01c"></script>
+<script src="js/toolbox.js?v=2026-11-01c"></script>
+<script src="js/mixtool.js?v=2026-11-01c"></script>
+<script src="js/radialmenu.js?v=2026-11-01c"></script>
+<script src="js/input.js?v=2026-11-01c"></script>
+<script src="js/game.js?v=2026-11-01c"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -1846,7 +1856,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     var need = { "js/config.js": "ELEMENTS", "js/icons.js": "iconSVG", "js/uikit.js": "uiWrap", "js/species.js": "PREDATOR_TYPES", "js/elements.js": "getElementMultiplier",
                  "js/predator.js": "Predator", "js/commands.js": "openInfoPanel", "js/draw.js": "drawNPC", "js/bugs3d.js": "drawBug3D", "js/levels.js": "levelFactor", "js/evolution.js": "evolutionTick",
                  "js/clone.js": "openCloneMenu", "js/commandcenter.js": "ccOpen", "js/cards.js": "EQUIP", "js/cardsui.js": "cardsOpen", "js/infodex.js": "infoEntries", "js/classes.js": "CLASSES", "js/inventory.js": "invToggle", "js/weapons.js": "WEAPONS", "js/mutator.js": "MUTATOR", "js/specimen.js": "SPECIMEN", "js/serum.js": "SERUM", "js/technomancer.js": "TECHNO",
-                 "js/stations.js": "facilityStationsStart", "js/tutorial.js": "TUT", "js/facilitymap.js": "FACILITY_MAP", "js/facility.js": "facilityValidate", "js/facilityplay.js": "facilityPlayStart",
+                 "js/stations.js": "facilityStationsStart", "js/tutorial.js": "TUT", "js/dialogue.js": "DIALOGUE", "js/questbox.js": "QUESTBOX", "js/facilitymap.js": "FACILITY_MAP", "js/facility.js": "facilityValidate", "js/facilityplay.js": "facilityPlayStart",
                  "js/facilitynet.js": "facilityNetState", "js/facilityspawn.js": "facilitySpawnTick", "js/party.js": "PARTY", "js/techabilities.js": "TECH_AB", "js/puzzles.js": "PUZZLES", "js/quests.js": "QUEST_PURIFY", "js/bosses.js": "BOSS_ENCOUNTERS", "js/potion.js": "POTION", "js/sidequest.js": "SIDEQUEST", "js/breeding.js": "BREED", "js/vital.js": "VITAL", "js/mixtool.js": "mixToolRender", "js/targeting.js": "TARGET", "js/game.js": "render" };
     var missing = (window.__bootFailed || []).slice();
     // A stale cached copy of config.js (from another build) is as good as missing.
@@ -1890,7 +1900,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-01b"></script>
+<script src="js/init.js?v=2026-11-01c"></script>
 
 </body>
 </html>

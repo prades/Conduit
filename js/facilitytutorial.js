@@ -103,16 +103,14 @@ function facilityTutorialTick() {
     if (typeof bossTick === "function") bossTick();     // the boss encounters: a death, a hit on a sleeper, the queen's attacks, waves and frantic turn, the leash (js/bosses.js)
     if (typeof potionTick === "function") potionTick(); // the Sleeping Potions in the air land (js/potion.js)
     if (typeof sqTick === "function") sqTick();         // Side Quest appears when he may, and calls you over (js/sidequest.js)
+    if (typeof dialogueTick === "function") dialogueTick();   // the dialogue box: the next line comes up, the words type, a typed page turns (js/dialogue.js)
     if (typeof facilityGearTick === "function") facilityGearTick();
     if (typeof facilitySaveTick === "function") facilitySaveTick();
     if (typeof facilitySpawnTick === "function") facilitySpawnTick();
     if (typeof facilityPerfTick === "function") facilityPerfTick();
     const T = _fp && _fp.tut; if (!T || T.said || !T.blackout || (typeof frame !== "undefined" ? frame : 0) < 60) return;
-    T.said = true;
-    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 150, text: FP_TUT.message[0], color: "#ffb347", life: 420, vy: -0.03, size: 15 });
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 126, text: FP_TUT.message[1], color: "#bfe8ff", life: 420, vy: -0.03, size: 12 });
-    }
+    T.said = true;   // the Crystal's first words, in the dialogue box (js/dialogue.js): the blackout, then the lamp; the first objective follows them (js/tutorial.js facilityDirectorTick)
+    if (typeof dialogueSay === "function") dialogueSay("crystal", [FP_TUT.message[0], FP_TUT.message[1]], { key: "blackout" });
 }
 
 // a hostile glow under an enemy that is standing in the dark: a soft ember-red pool and a pulse, fainter the more light there is where it stands. Drawn under the unit, never over it.

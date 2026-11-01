@@ -47,16 +47,14 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.chip.join(), 'true,true,true', 'the ammunition chip alone: ' + r.chip); same(r.dial, null, 'a dial with nothing locked');
     });
 
-    group('THE PLACE\'S CORNER: the objective under the network panel (js/tutorial.js)');
-    check('on a tablet or a desktop the plate is at the top right, its right edge in line with the zone tag\'s (18 px from the edge), under the network panel (10 px under where it ends; with none drawn, under the tag); elsewhere it is top left under the tabs', () => {
-        const r = J(`(function(){ const o = {}; invReset(); playerClassKey = null; classPickerOpen = false; facilityTutorialStart(_fp.F); __size(1180, 820);
-            _fnBottom = 0; facilityDrawObjective(); o.none = [_objBox.w, _objBox.x + _objBox.w, _objBox.y, _fpObjBottom === _objBox.y + _objBox.h]; _fnBottom = 300; facilityDrawObjective(); o.net = [_objBox.x, _objBox.y, _fpObjBottom];
-            __size(1600, 900); _fnBottom = 300; facilityDrawObjective(); o.big = [_objBox.x + _objBox.w, _objBox.y];
-            __size(1180, 820); const keep = partyOn; partyOn = () => false; facilityDrawObjective(); o.old = [_objBox.x, _objBox.y, _objBox.w]; partyOn = keep;
-            __size(390, 800); facilityDrawObjective(); o.phone = [_objBox.x, _objBox.y, _objHit.w > 0]; __size(1180, 820); return o; })()`);
-        same(r.none[0], 304, 'the width'); same(r.none[1], 1180 - 18, 'its right edge'); ok(r.none[2] >= 150, 'under the tag: ' + r.none[2]); same(r.none[3], true, '_fpObjBottom is the plate\'s foot');
-        same(r.net[0], 1180 - 18 - 304, 'x'); same(r.net[1], 310, 'under the network panel'); ok(r.net[2] > 330, 'its foot ' + r.net[2]); same(r.big.join(), (1600 - 18) + ',310', '1600 wide');
-        same(r.old.join(), '12,158,350', 'a wide screen without the corners layout (the website\'s background, where partyOn is false) keeps the old place'); same(r.phone.join(), '12,158,true', 'a phone keeps its mailbox');
+    group('THE PLACE\'S CORNER: the objective is no longer a plate under the network panel (the owner, 2026-11-01: "hide it"; js/tutorial.js objectiveCurrent, js/questbox.js)');
+    check('facilityDrawObjective draws nothing and leaves no foot for the round button (0) at a tablet, under a network panel, at 1600 wide and on a phone (no mailbox either), and keeps the record of which objective is up; objectiveCurrent is the plate\'s old content (the title, the words, the hint, the colour); opening the quest box reads it, the next objective is new again', () => {
+        const r = J(`(function(){ const o = {}; invReset(); playerClassKey = null; classPickerOpen = false; facilityTutorialStart(_fp.F); const S = _fp.tut.script;
+            const drew = (w, h) => { __size(w, h); const said = []; const k = ctx.fillText; ctx.fillText = t => said.push(String(t)); try { facilityDrawObjective(); } finally { ctx.fillText = k; } return [said.length, _fpObjBottom, S.objKey]; };
+            _fnBottom = 0; o.tablet = drew(1180, 820); _fnBottom = 300; o.net = drew(1180, 820); o.big = drew(1600, 900); o.phone = drew(390, 800); __size(1180, 820); _fnBottom = 0;
+            const c = objectiveCurrent(); o.cur = [c.key, c.title, /POWER IS OUT/.test(c.body), /AMMUNITION/.test(c.hint), c.col]; o.unread = objectiveUnread(); questBoxRead(); o.read = objectiveUnread(); S.step = 1; facilityDrawObjective(); o.next = [S.objKey, objectiveUnread()]; S.step = 0; return o; })()`);
+        same(r.tablet.join(), '0,0,t0', 'a tablet'); same(r.net.join(), '0,0,t0', 'under a network panel'); same(r.big.join(), '0,0,t0', '1600 wide'); same(r.phone.join(), '0,0,t0', 'a phone');
+        same(r.cur.join('|'), 't0|OBJECTIVE 1/7  ·  FIND SUPPLIES|true|true|#19e6c1', 'the objective now'); same(r.unread, true, 'a new objective is not new'); same(r.read, false, 'opening the quest box did not read it'); same(r.next.join(), 't1,true', 'the next objective is not new');
     });
 
     group('THE REST OF THE CORNERS (game.html)');

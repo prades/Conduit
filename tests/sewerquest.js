@@ -50,7 +50,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__dm = () => { const b = __boss(), m = bossMount(BOSS_ENCOUNTERS.sewer_cistern); return b && m ? Math.round(Math.hypot(b.x - m.x, b.y - m.y) * 10) / 10 : null; };   // (its distance from the console)
         globalThis.__prog = () => _fp.channel ? frame - _fp.channel.t0 : null;   // (the install's progress, in frames)
         globalThis.__brood = () => facilityCreatures('sewers').filter(a => a.sewerBrood).length;
-        globalThis.__plate = () => { const said = []; const k = uiTextFit; uiTextFit = function (t) { said.push(String(t)); return k.apply(this, arguments); }; try { facilityDrawObjective(); } finally { uiTextFit = k; } return said[0] || ''; };
+        globalThis.__plate = () => { facilityDrawObjective(); const c = objectiveCurrent(); return c ? c.title : ''; };   // (the objective's title: what the quest box shows at the top, js/questbox.js; the plate it was is hidden)
         // a world put back as a load does it: a new facility state, the save applied
         globalThis.__reload = (sv) => { const F = _fp.F; actors = actors.filter(a => !(a instanceof Predator)); facilityTutorialStart(F); invReset(); facilitySaveApply(sv); _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; };
         globalThis.__freshRecords = () => { const F = _fp.F; actors = actors.filter(a => !(a instanceof Predator)); facilityTutorialStart(F); invReset(); techReset(); _fp.quests = {}; _fp.bosses = {}; _fp.puzzles = {}; _fp.potion = null; _fp.sidequest = null; _fp.broodAt = undefined; bossShots = []; _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; };`);

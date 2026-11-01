@@ -37,7 +37,7 @@ const SIDEQUEST = {
     },
     replyFrames: 480,   // how long his answer to the promise stays before the hint takes its place
 };
-let _SQ_BTN = [];   // the two choice buttons, while they are shown (sqDrawOverlay sets them; sqTap reads them)
+// (what he says is said through the dialogue box, js/dialogue.js: sqDrawOverlay feeds it; his two choice buttons are the box's, and sqTap hands a tap on his line to it)
 function _sqFrame() { return typeof frame !== "undefined" ? frame : 0; }
 function _sqNow() { return typeof techClock === "number" ? techClock : _sqFrame(); }
 function sqState() {
@@ -47,7 +47,7 @@ function sqState() {
 }
 function sqReset() {
     if (typeof _fp !== "undefined" && _fp) { _fp.sidequest = null; _fp._sqSpot = null; if (_fp.items) _fp.items = _fp.items.filter(i => !(i.fp === "sidequest" || (i.fp === "station" && i.id === "st_sidequest"))); if (_fp.stations) _fp.stations = _fp.stations.filter(s => s.id !== "st_sidequest"); }   // (a load from before he appeared: nobody there)
-    _SQ_BTN = [];
+    if (typeof dialogueDismiss === "function") dialogueDismiss("sq");
 }
 function _sqQuest() { return typeof questState === "function" ? questState("purify") : null; }
 // may he appear? the lab turn-in done AND about ten toxic ants killed (js/quests.js)
@@ -76,7 +76,7 @@ function sqPlace(announce) {
     _fp.items.push({ type: "fp", fp: "station", id: st.id, kind: st.kind, room, bb: bb.slice(), x, y, depth: bb[2] + bb[3] - 0.45, base, seed });
     _fp.items.push({ type: "fp", fp: "sidequest", id: "sidequest", room, x, y, depth: x + y + 0.02, base, seed });
     if (!S.appearedAt) S.appearedAt = Math.max(1, _sqNow());
-    if (announce && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 105, text: "◈ SOMETHING HAS OPENED THE SIDE PASSAGE OFF THE SEWERS' SOUTH LEDGE", color: SIDEQUEST.col, life: 300, vy: -0.04, size: 14 });
+    if (announce && typeof dialogueSay === "function") dialogueSay("player", "◈ SOMETHING HAS OPENED THE SIDE PASSAGE OFF THE SEWERS' SOUTH LEDGE", { key: "sq:opened" });   // (your note of it: the dialogue box)
     return true;
 }
 // each frame (js/facilitytutorial.js facilityTutorialTick): he appears when he may; he is put back if the stations were rebuilt; he calls you over the first time you come near
@@ -85,7 +85,7 @@ function sqTick() {
     if (!S.appearedAt) { if (sqUnlocked()) sqPlace(true); return; }
     if (!_sqStation()) sqPlace(false);
     if (!S.calledAt && typeof player !== "undefined" && typeof partyRoomAt === "function" && partyRoomAt(player.x, player.y) === SIDEQUEST.room) {
-        const p = sqSpot(); if (p && Math.hypot(p[0] - player.x, p[1] - player.y) <= SIDEQUEST.callNear) { S.calledAt = Math.max(1, _sqNow()); if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 105, text: "A DRONE, FROM THE SIDE PASSAGE: “" + SIDEQUEST.lines.call + "”", color: SIDEQUEST.col, life: 300, vy: -0.04, size: 14 }); }
+        const p = sqSpot(); if (p && Math.hypot(p[0] - player.x, p[1] - player.y) <= SIDEQUEST.callNear) { S.calledAt = Math.max(1, _sqNow()); if (typeof dialogueSay === "function") dialogueSay("sidequest", SIDEQUEST.lines.call, { key: "sq:call" }); }   // (his call, in the dialogue box with his picture)
     }
 }
 // ── the talk, through his station (js/stations.js STATION_KINDS.sidequest) ──
@@ -124,15 +124,11 @@ function sqUse() {
 // the choice: I PROMISE (1) or NO PROMISES (−1); nothing of the quest line changes with it
 function sqChoose(yes) {
     const S = sqState(); if (!S || !sqChoosing()) return false;
-    S.promised = yes ? 1 : -1; S.promisedAt = Math.max(1, _sqNow()); S.replyUntil = _sqFrame() + SIDEQUEST.replyFrames; _SQ_BTN = [];
+    S.promised = yes ? 1 : -1; S.promisedAt = Math.max(1, _sqNow()); S.replyUntil = _sqFrame() + SIDEQUEST.replyFrames;
     return true;
 }
-// a tap on one of the choice buttons (js/input.js, before the stations): true when it was ours
-function sqTap(ex, ey) {
-    if (!_SQ_BTN.length) return false;
-    for (const b of _SQ_BTN) if (ex >= b.x && ex <= b.x + b.w && ey >= b.y && ey <= b.y + b.h) { sqChoose(b.yes); return true; }
-    return false;
-}
+// a tap on his line in the dialogue box (js/input.js, before the stations): one of his choice buttons, or NEXT on the words; true when it was his
+function sqTap(ex, ey) { const L = typeof dialogueCurrent === "function" ? dialogueCurrent() : null; return !!(L && L.group === "sq" && typeof dialogueTap === "function" && dialogueTap(ex, ey)); }
 // ── drawing ──
 // him, in the world (js/facilityplay.js drawFacilityItem): a small black saucer hovering over its shadow, sixteen rim lights chasing two on two off, a glass dome with a beacon, four tiny legs dangling
 function sqDraw(it) {
@@ -140,35 +136,41 @@ function sqDraw(it) {
     const f = _sqFrame(), bob = Math.sin(f * 0.05 + it.seed) * 3, z = 26 + bob, g = _fpP(it.x, it.y, 0), c = _fpP(it.x, it.y, z), col = SIDEQUEST.col;
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.32)"; ctx.beginPath(); ctx.ellipse(g[0], g[1], 16, 7, 0, 0, Math.PI * 2); ctx.fill();   // the shadow on the floor
-    ctx.strokeStyle = "#0b0d12"; ctx.lineWidth = 2; ctx.lineCap = "round";   // the legs
-    for (let i = 0; i < 4; i++) { const lx = c[0] - 9 + i * 6, sw = Math.sin(f * 0.08 + i) * 1.5; ctx.beginPath(); ctx.moveTo(lx, c[1] + 4); ctx.lineTo(lx + sw, c[1] + 11); ctx.lineTo(lx + sw * 1.6, c[1] + 15); ctx.stroke(); }
-    ctx.fillStyle = "#07080c"; ctx.beginPath(); ctx.ellipse(c[0], c[1] + 2, 17, 6.5, 0, 0, Math.PI * 2); ctx.fill();   // the hull, a black lens
-    ctx.fillStyle = "#15181f"; ctx.beginPath(); ctx.ellipse(c[0], c[1] - 1, 15, 5, 0, 0, Math.PI * 2); ctx.fill();     // its lit top face
-    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, on = ((i + (f >> 2)) % 4) < 2; ctx.fillStyle = on ? col : "#2a3140"; ctx.beginPath(); ctx.arc(c[0] + Math.cos(a) * 15, c[1] + 1 + Math.sin(a) * 5.5, on ? 1.6 : 1.1, 0, Math.PI * 2); ctx.fill(); }   // the rim lights
-    ctx.fillStyle = "rgba(159,216,255,0.22)"; ctx.beginPath(); ctx.ellipse(c[0], c[1] - 4, 7, 4.5, 0, Math.PI, 0); ctx.fill(); ctx.strokeStyle = "rgba(159,216,255,0.5)"; ctx.lineWidth = 1; ctx.stroke();   // the dome
-    ctx.fillStyle = (f % 40) < 20 ? "#ffffff" : col; ctx.beginPath(); ctx.arc(c[0], c[1] - 8.5, 1.6, 0, Math.PI * 2); ctx.fill();   // the beacon
+    _sqSaucer(c[0], c[1], f, col, 1);
     if (typeof _fpGlow === "function") _fpGlow(c[0], c[1] + 2, 26, col, 0.22);
     ctx.restore();
     if (typeof drawPlate === "function") drawPlate(SIDEQUEST.name, col, c[0], c[1] - 18);
 }
-// over the scene (js/facilitytutorial.js facilityDrawOverlay, after the station's plate): what he is saying, above the plate, while you are near him; the two choice buttons when it is time to choose
-function sqDrawOverlay() {
-    _SQ_BTN = [];
-    const S = sqState(); if (!S || !S.appearedAt || typeof uiSlab !== "function" || typeof ctx === "undefined" || typeof canvas === "undefined" || !canvas) return;
-    if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen)) return;
-    const st = _sqStation(); if (!st || typeof stationDist !== "function" || stationDist(st) > STATION_RANGE + 1.2) return;
-    const text = sqSpeech(); if (!text) return;
-    const r = typeof _stPlate === "function" ? _stPlate() : { x: canvas.width / 2 - 190, y: canvas.height / 2 + 74, w: 380, h: 56 }, W = canvas.width, w = Math.min(W - 24, 540), x = Math.round(W / 2 - w / 2);
-    const chars = Math.max(20, Math.floor((w - 28) / 8.2)), lines = typeof uiWrap === "function" ? uiWrap(text, chars) : [text], lh = 18, h = 34 + lines.length * lh, choosing = sqChoosing(), y = r.y - 12 - h - (choosing ? 54 : 0);
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    uiSlab(x, y, w, h, SIDEQUEST.col, false, "#0b1226");
-    if (typeof uiCaption === "function") uiCaption(SIDEQUEST.name, x + 14, y + 14, SIDEQUEST.col, "left", 11);
-    lines.forEach((l, i) => { if (typeof uiCaptionFit === "function") uiCaptionFit(l, x + 14, y + 34 + i * lh, "#e6f2ff", "left", 13, w - 28); });
-    if (choosing && typeof uiButton === "function") {
-        const bw = Math.floor((w - 10) / 2), by = y + h + 8, A = { x, y: by, w: bw, h: 44, yes: true }, B = { x: x + bw + 10, y: by, w: bw, h: 44, yes: false };
-        uiButton(A, "I PROMISE", "#9dffb6", false, 16); uiButton(B, "NO PROMISES", "#ff9c8a", false, 16); _SQ_BTN = [A, B];
-    }
+// the saucer itself, centred on (cx, cy) at scale k: four tiny legs dangling, the black hull (a lens), its lit top face, sixteen rim lights chasing two on two off, the glass dome, the beacon (sqDraw in the world; sqPortrait in the dialogue box)
+function _sqSaucer(cx, cy, f, col, k) {
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k);
+    ctx.strokeStyle = "#0b0d12"; ctx.lineWidth = 2; ctx.lineCap = "round";
+    for (let i = 0; i < 4; i++) { const lx = -9 + i * 6, sw = Math.sin(f * 0.08 + i) * 1.5; ctx.beginPath(); ctx.moveTo(lx, 4); ctx.lineTo(lx + sw, 11); ctx.lineTo(lx + sw * 1.6, 15); ctx.stroke(); }
+    ctx.fillStyle = "#07080c"; ctx.beginPath(); ctx.ellipse(0, 2, 17, 6.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#15181f"; ctx.beginPath(); ctx.ellipse(0, -1, 15, 5, 0, 0, Math.PI * 2); ctx.fill();
+    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, on = ((i + (f >> 2)) % 4) < 2; ctx.fillStyle = on ? col : "#2a3140"; ctx.beginPath(); ctx.arc(Math.cos(a) * 15, 1 + Math.sin(a) * 5.5, on ? 1.6 : 1.1, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = "rgba(159,216,255,0.22)"; ctx.beginPath(); ctx.ellipse(0, -4, 7, 4.5, 0, Math.PI, 0); ctx.fill(); ctx.strokeStyle = "rgba(159,216,255,0.5)"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = (f % 40) < 20 ? "#ffffff" : col; ctx.beginPath(); ctx.arc(0, -8.5, 1.6, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
+}
+// his picture in the dialogue box (js/dialogue.js _dlgPortrait): the saucer, bigger, bobbing over its shadow
+function sqPortrait(cx, cy, s, f) {
+    const bob = Math.sin(f * 0.05) * 2;
+    ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.36, s * 0.26, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+    _sqSaucer(cx, cy - 2 + bob, f, SIDEQUEST.col, s / 46);
+    if (typeof _fpGlow === "function") _fpGlow(cx, cy + bob, s * 0.4, SIDEQUEST.col, 0.25);
+}
+// each frame (js/facilitytutorial.js facilityDrawOverlay; the name stays from when it drew a slab over his plate): what he is saying, while you are at his station, is a HELD line of the dialogue box (js/dialogue.js) with his
+// picture: a tap on it is NEXT while the talk is going (the station's use), the two choice buttons are in the box when it is time to choose, and away from him his line goes. Nothing is drawn here: the box draws itself.
+function sqDrawOverlay() {
+    const S = sqState(); if (!S || !S.appearedAt || typeof dialogueSay !== "function") return;
+    if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen)) return;
+    const st = _sqStation(), near = !!st && typeof stationDist === "function" && stationDist(st) <= STATION_RANGE + 1.2, text = near ? sqSpeech() : null;
+    if (!text) { if (typeof dialogueDismiss === "function") dialogueDismiss("sq"); return; }
+    const choosing = sqChoosing(), next = !sqAfter() && S.talk < SIDEQUEST.lines.talk.length;
+    dialogueSay("sidequest", text, { key: "sq:" + S.talk + ":" + (choosing ? "choose" : S.promised) + ":" + text, group: "sq", hold: true, now: true,
+        onTap: next ? () => { if (typeof stationUse === "function") stationUse(st); else sqUse(); } : null,
+        choices: choosing ? [{ label: "I PROMISE", col: "#9dffb6", yes: true, fn: () => sqChoose(true) }, { label: "NO PROMISES", col: "#ff9c8a", yes: false, fn: () => sqChoose(false) }] : null });
 }
 // ── saving (js/facilitysave.js) ──
 function sqSnapshot() { const S = sqState(); return S ? { at: S.appearedAt, talk: S.talk, promised: S.promised, pAt: S.promisedAt, called: S.calledAt, met: S.metAt } : null; }

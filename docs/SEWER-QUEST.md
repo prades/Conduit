@@ -24,7 +24,7 @@ What was a `collapse` wall decoration on the north ledge is a **collapsed tunnel
 
 ## The quest line (`js/quests.js`)
 
-The game's quest system is the tutorial director (`js/tutorial.js`): steps with a `done()`, shown one at a time on the objective plate. The quest line is the same shape (`QUEST_STEPS.purify`), with a record of **what happened** (`_fp.quests.purify`, saved as `quests`), each state marked once (`questMark`) at the play clock's time and never unmarked; a later step never skips an earlier one.
+The game's quest system is the tutorial director (`js/tutorial.js`): steps with a `done()`, one at a time; each is noted in the dialogue box as it comes up (the player's own note, `js/dialogue.js`) and listed in the QUESTS box (`js/questbox.js`; the objective plate they were on is gone since 2026-11-01). The quest line is the same shape (`QUEST_STEPS.purify`), with a record of **what happened** (`_fp.quests.purify`, saved as `quests`), each state marked once (`questMark`) at the play clock's time and never unmarked; a later step never skips an earlier one.
 
 | State | Marked when | Where |
 |---|---|---|
@@ -80,7 +80,7 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 
 ## What a player does, in order
 
-1. Go down the culvert behind the arena's north tank. The reading comes as you arrive: PURIFY THE SEWERS 1/5 on the plate.
+1. Go down the culvert behind the arena's north tank. The reading comes as you arrive (your note in the dialogue box): PURIFY THE SEWERS 1/5 in the QUESTS box.
 2. Kill the toxic ants (three samples; ten kills in all before the drone comes) and get the water sample from the collapsed tunnel's broken-off floor, any one way: a flux technician's Telegrab from the ledge; an electric technician's launcher by the mouth, which you ride over (tap its tag twice), take the vial, and jump back down from the broken edge; or a fire technician drilling the choke through from the ledge, and you walk in.
 3. Take the four to the analysis bench, the cabinet at the west end of the Experiment Lab: ANALYSE, then BUY THE PURIFICATION MODULE ◆300.
 4. Back down: once the samples are in and ten ants are dead, the side passage off the south ledge is open and Side Quest calls you over: talk, promise or not, buy the SLEEPING POTION ◆100 and EQUIP it in the pack.
