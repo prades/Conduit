@@ -118,7 +118,7 @@ function _facilityBuild(ex) {
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
     const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));   // (a tile's middle, not snapped, like a pickup)
-    const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: s.drop ? rawP(s.drop) : null, dropTo: s.dropTo ? rawP(s.dropTo) : null, pocket: !!s.pocket, only: s.only || null, note: s.note }));   // (tiles' middles, like a follower spot: js/techabilities.js; a pocket site has no broken section)
+    const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: s.drop ? rawP(s.drop) : null, dropTo: s.dropTo ? rawP(s.dropTo) : null, pocket: !!s.pocket, rider: !!s.rider, only: s.only || null, note: s.note }));   // (tiles' middles, like a follower spot: js/techabilities.js; a pocket site may have no broken section; `rider`: the launcher carries the player too)
     const rubble = (M.rubble || []).map(r => { const a = rawP(r.a), b = rawP(r.b); return { id: r.id, room: r.room, label: r.label, a, b, at: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], work: rawP(r.work), solid: r.solid || null, inside: !!r.inside, note: r.note }; });   // (on the room's edge, or a CHOKE across a passage's mouth (`solid`): js/techabilities.js, the Thermite Drill)
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
@@ -281,7 +281,8 @@ function facilityValidateDressing(F) {
         if (!F.byId.get(s.room) || !F.byId.get(s.to)) { errors.push("launcher site " + s.id + " names a room that does not exist"); continue; }
         if (s.pocket ? s.room !== s.to : s.room === s.to) errors.push("launcher site " + s.id + (s.pocket ? " is a pocket of another room" : " reaches its own room"));   // (a pocket site lands in a cut-off part of its OWN room; any other reaches another room)
         if (!s.pocket && (!s.drop || !s.dropTo)) { errors.push("launcher site " + s.id + " has no broken section to drop through"); continue; }
-        for (const [k, pt, room] of [["at", s.at, s.room], ["land", s.land, s.to]].concat(s.pocket ? [] : [["dropTo", s.dropTo, s.room], ["drop", s.drop, s.to]])) {
+        if (!!s.drop !== !!s.dropTo) { errors.push("launcher site " + s.id + " has a broken section with no floor under it (or the other way about)"); continue; }   // (a pocket site may have none, or both: the Sewers' broken edge)
+        for (const [k, pt, room] of [["at", s.at, s.room], ["land", s.land, s.to]].concat(s.drop ? [["dropTo", s.dropTo, s.room], ["drop", s.drop, s.to]] : [])) {
             const r = facilityRoomAt(pt[0], pt[1], F); if (!r || r.id !== room) errors.push("launcher site " + s.id + ": its " + k + " is not in " + room);
             else if (F.snapped && !facilityWalkable(pt[0], pt[1], F)) errors.push("launcher site " + s.id + ": its " + k + " is not on a tile a body can stand on");
         }

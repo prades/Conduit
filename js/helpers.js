@@ -129,7 +129,7 @@ function hurtPlayer(amount, shakeAmt, source) {
     player.invuln = PLAYER_HIT_GRACE; player.lastHitAt = typeof frame !== "undefined" ? frame : 0;   // (lastHitAt: a build or repair you are at is not cancelled by the step a hit knocks you: js/stations.js facilityRelayTick)
     // (no step back while you are at a build or a repair: js/stations.js facilityRelayTick cancels one you walk away from, and a bite must not walk you away from the purifier's console for you: the archive, 2026-10-31,
     // "a predator hitting the player does not automatically interrupt or cancel purifier installation")
-    const braced = typeof _fp !== "undefined" && _fp && !!_fp.channel;
+    const braced = (typeof _fp !== "undefined" && _fp && !!_fp.channel) || !!player._flight;   // (nor in the air: a Kinetic Launcher carrying you is not knocked off its arc, js/techabilities.js)
     if (!braced && source && Number.isFinite(source.x) && Number.isFinite(source.y) && typeof PLAYER_KNOCKBACK !== "undefined") {
         let kx = player.x - source.x, ky = player.y - source.y;
         const kl = Math.hypot(kx, ky);

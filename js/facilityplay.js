@@ -111,7 +111,7 @@ function _fpCellPath(sx, sy, gx, gy) {
 // Waypoints from the mover's exact position to the exact target: the cell path pulled tight wherever the line of sight allows it.
 function facilityPath(x0, y0, x1, y1) {
     if (!_fp) return null;
-    const s = _fpNearestCell(x0, y0), e = _fpNearestCell(x1, y1); if (!s || !e) return null;
+    const s = _fpNearestCellOpen(x0, y0), e = _fpNearestCellOpen(x1, y1); if (!s || !e) return null;   // (each end's cell is one a body there can step to: a start or a goal pressed against a thin solid is on its own side of it)
     const cp = _fpCellPath(s[0], s[1], e[0], e[1]); if (!cp) return null;
     const pts = [[x0, y0]].concat(cp).concat([[x1, y1]]), out = []; let i = 0;   // (the start cell's centre too: the mover is rarely exactly on it, and a door's edge is tight)
     while (i < pts.length - 1) { let j = pts.length - 1; while (j > i + 1 && !_fpLos(pts[i][0], pts[i][1], pts[j][0], pts[j][1])) j--; out.push(pts[j]); i = j; }
@@ -182,13 +182,22 @@ function facilityCatchUp(a, px, py) {
     const d = Math.hypot(player.x - a.x, player.y - a.y); if (d <= 8) return;
     const k = Math.min(4, 1 + (d - 8) / 6); a.x = px + (a.x - px) * k; a.y = py + (a.y - py) * k;
 }
-// A unit that keeps being put back (it is trying to go somewhere and the walls say no) for a second: replan; for two: move it onto the nearest open cell of its route.
+// The nearest open cell a body at (x, y) can step straight to without crossing a wall or a solid: ITS OWN side of a thin solid. (FOUND 2026-10-31 in the Sewers: a follower pressing on the collapsed tunnel's choke, a solid a
+// third of a tile thick lying a hair past the mouth's line, stood nearer to the cell beyond the choke than to its own, so by the plain nearest cell it was "on" the floor beyond: the launcher refused to send it ("IT IS IN
+// THERE ALREADY"), a route for it began on the wrong side, and the nearest-floor fallbacks below would have put it through; a gate is the same shape.) It is the cell the stretch lookup (_pComp, js/facilityportals.js), a
+// route's two ends and the fallbacks use. When no cell can be stepped to (the body is inside a solid), the nearest cell as before.
+function _fpNearestCellOpen(x, y) {
+    const c = _fp.cellsP, F = _fp.F, rx = Math.round(x), ry = Math.round(y);
+    for (let r = 0; r <= 4; r++) { let best = null, bd = Infinity; for (let dx = -r; dx <= r; dx++) for (let dy = -r; dy <= r; dy++) { if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !c.has((rx + dx) + "," + (ry + dy))) continue; const d = (rx + dx - x) ** 2 + (ry + dy - y) ** 2; if (d < bd && facilityCanStep(x, y, rx + dx, ry + dy, F)) { bd = d; best = [rx + dx, ry + dy]; } } if (best) return best; }
+    return _fpNearestCell(x, y);
+}
+// A unit that keeps being put back (it is trying to go somewhere and the walls say no) for a second: replan; for two: move it onto the nearest open cell it can step to (never through a thin solid: _fpNearestCellOpen).
 function _fpUnstick(a, px, py, intended) {
     const moved = Math.hypot(a.x - px, a.y - py);
     if (intended > 0.004 && moved < intended * 0.25) {
         a._fpStuck = (a._fpStuck || 0) + 1;
         if (a._fpStuck === 40) { a._fpPath = null; a._fpAt = 0; a._fpGoalAt = null; }
-        if (a._fpStuck >= 100) { const c = _fpNearestCell(a.x, a.y); if (c) { a.x = c[0]; a.y = c[1]; } a._fpStuck = 0; a._fpPath = null; }
+        if (a._fpStuck >= 100) { const c = _fpNearestCellOpen(a.x, a.y); if (c) { a.x = c[0]; a.y = c[1]; } a._fpStuck = 0; a._fpPath = null; }
     } else if (moved > intended * 0.6) a._fpStuck = 0;
 }
 // A mover that moved from (px,py) to (a.x,a.y): back it up, or slide it along the wall.
@@ -198,18 +207,21 @@ function facilityConstrain(a, px, py) {
     if (facilityWalkable(a.x, py, _fp.F) && facilityCanStep(px, py, a.x, py, _fp.F)) { a.y = py; return a; }
     if (facilityWalkable(px, a.y, _fp.F) && facilityCanStep(px, py, px, a.y, _fp.F)) { a.x = px; return a; }
     if (facilityWalkable(px, py, _fp.F)) { a.x = px; a.y = py; return a; }
-    const c = _fpNearestCell(px, py); if (c) { a.x = c[0]; a.y = c[1]; }   // it was somewhere impossible (a spawn on a wall): onto the nearest floor
+    const c = _fpNearestCellOpen(px, py); if (c) { a.x = c[0]; a.y = c[1]; }   // it was somewhere impossible (a spawn on a wall): onto the nearest floor it can step to (its own side of a thin solid)
     return a;
 }
 
 // ── the player ──
 function facilityWalkTo(gx, gy) {
-    if (!_fp || (typeof facilityPortalBusy === "function" && facilityPortalBusy())) return false;   // (nobody is told where to walk while the screen fades through a doorway)
+    if (!_fp || (typeof facilityPortalBusy === "function" && facilityPortalBusy()) || player._flight) return false;   // (nobody is told where to walk while the screen fades through a doorway, nor while a Kinetic Launcher has you in the air)
     const c = _fpNearestCell(gx, gy); if (!c || Math.hypot(c[0] - gx, c[1] - gy) > 1.6) return false;
     const p = facilityPath(player.x, player.y, c[0], c[1]); if (!p) return false;
-    player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; return true;
+    player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; player._launchLoad = null; player._dropSite = null;   // (a new destination calls off a walk to a launcher's pad or to a broken edge: js/techabilities.js techSiteRide, techSiteDrop)
+    return true;
 }
 function facilityPlayerStep() {
+    // IN THE AIR (a Kinetic Launcher carrying you over the Sewers' choke, or the drop from the broken edge there: js/techabilities.js techSiteRide): the flight moves you, nothing else does, and no wall or solid stops you
+    if (player._flight && typeof techFlightStep === "function") { techFlightStep(player); player.targetX = player.x; player.targetY = player.y; player.fpPath = null; player.visualX += (player.x - player.visualX) * 0.2; player.visualY += (player.y - player.visualY) * 0.2; return; }
     const px = player.x, py = player.y;
     const p = player.fpPath;
     if (p && p.length) {

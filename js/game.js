@@ -840,6 +840,7 @@ function render() {
         if (obj.type !== 'fp') py -= facilityLiftRel(obj.x, obj.y);   // the facility's floors rise and fall (js/facilityplay.js)
 
         if (obj.type==='player') {
+            if (player._flight && typeof techFlightLift === "function") py -= techFlightLift(player);   // (carried by a Kinetic Launcher you are drawn up in the air: js/techabilities.js)
             if (!(typeof attractOn === "function" && attractOn())) drawPlayer({x:px,y:py});   // (the website's background has no one standing in it: the player is only its camera, js/attract.js)
         }
         else if (obj.type==='fp') {

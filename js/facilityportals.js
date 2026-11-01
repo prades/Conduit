@@ -26,7 +26,7 @@ function facilityPortal(id) { return (_fp && _fp.portals || []).find(p => p.id =
 function _pIn(x, y, r) { return x > r[0] && x < r[2] && y > r[1] && y < r[3]; }
 // the portal whose doorway a point is in
 function facilityPortalAt(x, y) { for (const p of (_fp && _fp.portals) || []) if (_pIn(x, y, p.rect)) return p; return null; }
-function _pComp(x, y) { const c = _fpNearestCell(x, y); return c ? _fpComps().get(c[0] + "," + c[1]) : undefined; }
+function _pComp(x, y) { const c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(x, y) : _fpNearestCell(x, y); return c ? _fpComps().get(c[0] + "," + c[1]) : undefined; }   // (the cell the body can step to: one pressed against a thin solid is on its own side of it, not the nearer cell beyond: js/facilityplay.js)
 // a spot in front of a doorway for someone to be put at: the arrival tile itself first, then round it, on the arrival tile's own stretch of floor (REPORTED: "when I enter the sewers with a full squad, the game
 // puts my followers inside of that little gated off section and they get stuck there forever": the first barred stub off the north ledge is two tiles from the culvert's arrival tile, floor of the room, and
 // nobody put behind its gate could walk out; _fpComps tells the stretches apart)
@@ -38,7 +38,7 @@ function _pSpot(dest, k) {
 }
 // put a unit beside the player, on the player's own stretch: a cell within two tiles that is on it, else the player's cell
 function _pBeside(a) {
-    const c = _fpNearestCell(player.x, player.y); if (!c) return false;
+    const c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(player.x, player.y) : _fpNearestCell(player.x, player.y); if (!c) return false;   // (the player's own side of a thin solid)
     const cm = _fpComps(), pc = cm.get(c[0] + "," + c[1]), opts = [];
     for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) { if (!dx && !dy) continue; const key = (c[0] + dx) + "," + (c[1] + dy); if (_fp.cellsP.has(key) && cm.get(key) === pc) opts.push([c[0] + dx, c[1] + dy]); }
     const s = opts.length ? opts[Math.floor(Math.random() * opts.length)] : c;

@@ -51,11 +51,14 @@ function _fsPickSpecies(alive, P) {
 function facilitySpawnSpot(P) {
     P = P || FP_SPAWN; const cells = _fsCells(P); if (!cells.length) return null;
     const others = facilityCreatures(); let best = null, bs = -1;
-    const cm = P.room !== FP_SPAWN.room && typeof _fpComps === "function" ? _fpComps() : null, here = cm && typeof _fpNearestCell === "function" ? _fpNearestCell(player.visualX, player.visualY) : null, hc = here ? cm.get(here[0] + "," + here[1]) : undefined;
+    const cm = P.room !== FP_SPAWN.room && typeof _fpComps === "function" ? _fpComps() : null, here = cm && typeof _fpNearestCell === "function" ? (typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen : _fpNearestCell)(player.visualX, player.visualY) : null, hc = here ? cm.get(here[0] + "," + here[1]) : undefined;   // (the player's own side of a thin solid: js/facilityplay.js _fpNearestCellOpen)
     const sq = P.room !== FP_SPAWN.room && typeof sqSpot === "function" ? sqSpot() : null;   // (Side Quest's passage is a safe spot: nothing of the brood comes up within 3 tiles of him, js/sidequest.js)
+    // a stretch a launcher lands on while it is still cut off from the launcher's own (the Sewers' collapsed tunnel, its choke shut): nothing comes up on it, with you up there or not (once the choke is drilled the floors are one, and it is floor like the rest)
+    const landings = new Set(); if (cm) for (const s of ((_fp && _fp.F && _fp.F.launchSites) || [])) { const lc = cm.get(Math.round(s.land[0]) + "," + Math.round(s.land[1])), ac = cm.get(Math.round(s.at[0]) + "," + Math.round(s.at[1])); if (lc !== undefined && lc !== ac) landings.add(lc); }
     for (let i = 0; i < 30; i++) {
         const c = cells[Math.floor(Math.random() * cells.length)], dp = Math.hypot(c[0] - player.visualX, c[1] - player.visualY);
         if (cm && hc !== undefined && cm.get(c[0] + "," + c[1]) !== hc) continue;
+        if (cm && landings.has(cm.get(c[0] + "," + c[1]))) continue;
         if (sq && Math.hypot(c[0] - sq[0], c[1] - sq[1]) < 3) continue;
         let dn = 99; for (const o of others) dn = Math.min(dn, Math.hypot(c[0] - o.x, c[1] - o.y));
         const seen = typeof _fpLos === "function" && _fpLos(player.visualX, player.visualY, c[0], c[1]);

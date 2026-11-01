@@ -21,7 +21,10 @@
 //   EXPLORATION: a LAUNCHER SITE (the map's `launchSites`, js/facilitymap.js) shows only when you are near it: a highlighted patch on the floor, a label, and a notice as you come near. Tap it and an electric technician in your squad walks
 //     over and sets a launcher up there FOR GOOD (it is saved, and the setting up gives its XP once). Tap the launcher: the arc it throws on is drawn, to where a follower comes down; tap a follower and it runs to the launcher and is thrown
 //     up into the site's room (the Arena Catwalk), where it holds the room until it is called back (COME). The way down is the room's BROKEN SECTION: a follower that is not holding the room walks to it and drops through to the floor
-//     under it, one way only. Nobody walks up: the catwalks stay shut to walking (tests/facility.js); the launcher is the only way up, and only a follower goes.
+//     under it, one way only. Nobody walks up: the catwalks stay shut to walking (tests/facility.js); the launcher is the only way up, and at the catwalks only a follower goes.
+//   THE RIDE (2026-10-31, the Sewers' collapsed tunnel: docs/SEWER-QUEST.md): a site with `rider` has its launcher carry YOU as well. Tap its tag once for the aim and again to ride it: you walk to the pad and are thrown up the
+//     same arc a follower flies (in the air nothing else moves you and no wall or solid stops you: js/facilityplay.js facilityPlayerStep draws on techFlightStep), and you land on the site's landing. The way back is the site's
+//     BROKEN EDGE (`drop`, its tag ▼ JUMP DOWN): one way, to the floor under it (`dropTo`). A follower sent up there waits for you (a POCKET site: _pocketHold) and, once you are not up there with it, drops after you.
 
 // THE NUMBERS. PROVISIONAL marks a number that was not given and waits to be confirmed (docs/TECHNICIANS.md); the rest are how it looks and feels.
 const TECH_AB = {
@@ -133,7 +136,11 @@ function techLauncherAt(id) { return typeof _fp !== "undefined" && !!_fp && _tec
 function techLaunchersSnapshot() { return typeof _fp !== "undefined" && _fp ? Array.from(_techInstalled()) : []; }
 function techLaunchersApply(list) { if (typeof _fp === "undefined" || !_fp) return; const S = _techInstalled(); S.clear(); for (const id of (Array.isArray(list) ? list : [])) if (_techSite(id)) S.add(id); }
 function _techComp(x, y) { return typeof _pComp === "function" ? _pComp(x, y) : undefined; }   // which stretch of floor a point is on (js/facilityportals.js)
-function _techSiteBusy(s) { return typeof followers !== "undefined" && followers.some(a => a && !a.dead && ((a._launchLoad && a._launchLoad.site === s.id) || (a._flight && a._flight.site === s.id && a._flight.kind === "site"))); }
+function _techSiteBusy(s) {
+    const p = _techRider();
+    if (p && ((p._launchLoad && p._launchLoad.site === s.id) || (p._flight && p._flight.site === s.id && p._flight.kind === "site"))) return true;   // (you, on your way to its pad or in its arc)
+    return typeof followers !== "undefined" && followers.some(a => a && !a.dead && ((a._launchLoad && a._launchLoad.site === s.id) || (a._flight && a._flight.site === s.id && a._flight.kind === "site")));
+}
 function _techSettingUp(s) { return typeof followers !== "undefined" && followers.some(a => a && !a.dead && a._siteWork && a._siteWork.site === s.id); }
 
 // ── COMBAT: throw a follower at an enemy ──
@@ -171,6 +178,55 @@ function techSiteLaunch(s, who) {
     who._launchLoad = { kind: "site", site: s.id, t0: _techFrame() }; who.job = null; who.attackOrder = null;
     _techSay("⚡ " + _techName(who) + " TO THE LAUNCHER", "#ffe733");
     return { ok: true };
+}
+
+// ── THE RIDE: a launcher at a site with `rider` carries the player too (the Sewers' collapsed tunnel, docs/SEWER-QUEST.md) ──
+// techSiteRide: you walk to the pad (facilityWalkTo; a tap elsewhere calls it off, as it does a walk to a station) and _techRiderTick throws you when you are within loadReach of it: the same flight as a follower's, to the
+// site's landing. techSiteDrop: from the landing's stretch you walk to the site's broken edge and drop to the floor under it, one way. Both refuse, and say why, when they cannot. Nothing of this is saved: a game left in
+// the air comes back on the floor (js/facilitysave.js puts you where you stood if that is floor, else at the Crystal).
+function _techRider() { return typeof player !== "undefined" && player && typeof player.x === "number" ? player : null; }
+function _techRiderBusy(p) { return !!(p._flight || (typeof facilityPortalBusy === "function" && facilityPortalBusy())); }
+function techSiteRide(s) {
+    const p = _techRider(); if (!p) return { ok: false, why: "NOBODY TO RIDE" };
+    if (!s) return { ok: false, why: "NO SITE" };
+    if (!s.rider) return { ok: false, why: "IT THROWS FOLLOWERS ONLY" };   // (the Arena Catwalk: nobody walks it, and you do not go up; said first, whatever stands there)
+    if (!techLauncherAt(s.id)) return { ok: false, why: "NO LAUNCHER HERE YET" };
+    if (_techRiderBusy(p)) return { ok: false, why: "NOT NOW" };
+    if (_techSiteBusy(s)) return { ok: false, why: "THE LAUNCHER IS IN USE" };
+    if (_techComp(p.x, p.y) === _techComp(s.land[0], s.land[1])) return { ok: false, why: "YOU ARE UP THERE ALREADY" };
+    if (Math.hypot(s.at[0] - p.x, s.at[1] - p.y) > TECH_AB.launch.loadReach && !(typeof facilityWalkTo === "function" && facilityWalkTo(s.at[0], s.at[1]))) return { ok: false, why: "NO WAY TO THE LAUNCHER FROM HERE" };
+    p._dropSite = null; p._launchLoad = { kind: "site", site: s.id, t0: _techFrame() };   // (set after the walk: a new destination clears it, js/facilityplay.js facilityWalkTo)
+    _techSay("⚡ TO THE LAUNCHER · IT THROWS YOU OVER", "#ffe733");
+    return { ok: true };
+}
+function techSiteDrop(s) {
+    const p = _techRider(); if (!p) return { ok: false, why: "NOBODY TO DROP" };
+    if (!s || !s.drop || !s.dropTo) return { ok: false, why: "NO BROKEN EDGE HERE" };
+    if (_techRiderBusy(p)) return { ok: false, why: "NOT NOW" };
+    if (_techComp(p.x, p.y) !== _techComp(s.drop[0], s.drop[1])) return { ok: false, why: "YOU ARE NOT UP THERE" };
+    if (_techComp(s.drop[0], s.drop[1]) === _techComp(s.dropTo[0], s.dropTo[1])) return { ok: false, why: "THE WAY DOWN IS OPEN · WALK" };   // (the choke drilled through: the floors are one)
+    if (Math.hypot(s.drop[0] - p.x, s.drop[1] - p.y) > 0.5 && !(typeof facilityWalkTo === "function" && facilityWalkTo(s.drop[0], s.drop[1]))) return { ok: false, why: "NO WAY TO THE EDGE FROM HERE" };
+    p._launchLoad = null; p._dropSite = s.id; p._dropT0 = _techFrame();
+    _techSay("▼ TO THE BROKEN EDGE · YOU JUMP DOWN FROM IT", "#ffe733");
+    return { ok: true };
+}
+// each frame: you on your way to a launcher's pad, or to a broken edge; at it, the flight
+function _techRiderTick(f0) {
+    const p = _techRider(); if (!p) return;
+    const T = TECH_AB.launch, fx = () => { if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: p.x, y: p.y, radius: 0.9, color: "#ffe733", life: 22 }); };
+    const L = p._launchLoad;
+    if (L && !p._flight) {
+        const s = _techSite(L.site);
+        if (!s || !techLauncherAt(s.id)) { p._launchLoad = null; _techSay("THE RIDE IS OFF", "#ff8a6a"); }
+        else if (f0 - L.t0 > T.loadWait) { p._launchLoad = null; _techSay("THE RIDE IS OFF · YOU DID NOT GET TO THE LAUNCHER", "#ff8a6a"); }
+        else if (Math.hypot(s.at[0] - p.x, s.at[1] - p.y) <= T.loadReach) { p._launchLoad = null; _techFly(p, s.land[0], s.land[1], T.siteFlight, T.sitePeak, { kind: "site", site: s.id, rider: true }); fx(); }
+    }
+    if (p._dropSite && !p._flight) {
+        const s = _techSite(p._dropSite);
+        if (!s || !s.drop || !s.dropTo) p._dropSite = null;
+        else if (f0 - (p._dropT0 || 0) > T.loadWait) { p._dropSite = null; _techSay("THE JUMP IS OFF · YOU DID NOT GET TO THE EDGE", "#ff8a6a"); }
+        else if (Math.hypot(s.drop[0] - p.x, s.drop[1] - p.y) <= 0.5) { p._dropSite = null; _techFly(p, s.dropTo[0], s.dropTo[1], T.dropFlight, 14, { kind: "drop", site: s.id, rider: true }); fx(); }
+    }
 }
 
 // ── THE PHOTONIC SHIELD (core) ──
@@ -406,7 +462,7 @@ function _techRubbleNotices() {
     if (!_fp.rubbleNear) _fp.rubbleNear = new Set();
     for (const r of _techRubbles()) {
         const near = Math.hypot(r.at[0] - player.x, r.at[1] - player.y) <= TECH_AB.drill.near;
-        if (near && !_fp.rubbleNear.has(r.id)) { _fp.rubbleNear.add(r.id); if (!techRubbleOpen(r)) _techSay(r.inside ? "✹ A COLLAPSED TUNNEL · ITS CHOKE IS DRILLED FROM INSIDE: A FIRE TECHNICIAN LAUNCHED IN CAN OPEN IT" : "✹ RUBBLE IN THE ROCK · A FIRE TECHNICIAN CAN DRILL IT: PRESS AND HOLD IT", "#ff9a4a"); }
+        if (near && !_fp.rubbleNear.has(r.id)) { _fp.rubbleNear.add(r.id); if (!techRubbleOpen(r)) _techSay(r.inside ? "✹ A COLLAPSED TUNNEL · ITS CHOKE IS DRILLED FROM INSIDE: A FIRE TECHNICIAN LAUNCHED IN CAN OPEN IT" : r.solid ? "✹ A COLLAPSED TUNNEL, CHOKED WITH RUBBLE · A FIRE TECHNICIAN CAN DRILL IT THROUGH FROM HERE: PRESS AND HOLD IT" : "✹ RUBBLE IN THE ROCK · A FIRE TECHNICIAN CAN DRILL IT: PRESS AND HOLD IT", "#ff9a4a"); }
         else if (!near) _fp.rubbleNear.delete(r.id);
     }
 }
@@ -564,7 +620,8 @@ function _techCancel(a, why) {
 function _techFly(a, x1, y1, dur, peak, info) {
     const lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0;
     a._flight = Object.assign({ x0: a.x, y0: a.y, x1, y1, t0: _techFrame(), dur, peak, z0: lift(a.x, a.y), z1: lift(x1, y1) }, info);
-    a.job = null; a._fpPath = null; a._fpWalkGoal = null; a.state = "idle";
+    if (a === _techRider()) { a.fpPath = null; a.targetX = a.x; a.targetY = a.y; }   // you: the walk is over (js/facilityplay.js facilityPlayerStep flies you)
+    else { a.job = null; a._fpPath = null; a._fpWalkGoal = null; a.state = "idle"; }
 }
 function _techThrow(a) {
     const L = a._launchLoad; a._launchLoad = null; a._fpWalkGoal = null; const T = TECH_AB.launch;
@@ -607,23 +664,25 @@ function _techLand(a, F) {
         if (typeof shake !== "undefined") shake = Math.max(shake || 0, hit ? 6 : 3);
         if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffe733", radius: 0.9, life: 24 });
     } else if (F.kind === "site") {
-        const s = _techSite(F.site);
-        if (s && s.pocket) { a._pocketHold = s.id; _techSay("⚡ " + _techName(a) + " IS IN THE " + String(s.label || s.to).toUpperCase() + " · ITS DRILL OPENS THE WAY: PRESS AND HOLD THE RUBBLE", "#ffe733"); }   // a pocket: it stays in the squad and waits there (techStepOverride) until the way is open
+        const s = _techSite(F.site), where = s ? String(s.label || s.to).toUpperCase() : "";
+        if (F.rider || a === _techRider()) { a.fpPath = null; a.targetX = a.x; a.targetY = a.y; if (s) _techSay("⚡ YOU ARE ON THE " + where + (s.drop ? " · ITS BROKEN EDGE (▼) DROPS YOU BACK DOWN" : ""), "#ffe733"); }   // you, carried over
+        else if (s && s.pocket) { a._pocketHold = s.id; _techSay("⚡ " + _techName(a) + " IS ON THE " + where + " · IT WAITS THERE FOR YOU" + (s.drop ? " · COME BRINGS IT DOWN THE BROKEN EDGE" : " UNTIL THE WAY IS OPEN"), "#ffe733"); }   // a pocket: it stays in the squad and waits there (techStepOverride) until you are up there too, the way is open, or it is called
         else {
             if (s && typeof partyPost === "function") partyPost(a, s.to, true);   // it holds the room up there until it is called back
-            if (s) _techSay("⚡ " + _techName(a) + " IS ON THE " + String(s.label || s.to).toUpperCase() + " · COME BRINGS IT BACK", "#ffe733");
+            if (s) _techSay("⚡ " + _techName(a) + " IS ON THE " + where + " · COME BRINGS IT BACK", "#ffe733");
         }
-    }
+    } else if (F.kind === "drop" && a === _techRider()) { a.fpPath = null; a.targetX = a.x; a.targetY = a.y; }   // you, down on the ledge again
     if (typeof elementEffects !== "undefined" && F.kind !== "combat") elementEffects.push({ type: "ring", x: a.x, y: a.y, radius: 0.7, color: "#ffe733", life: 18 });
 }
 
 // ── a follower walking to the launcher, to a site it is setting up, or to a broken section (js/npc.js updateRTSNPC asks first): true when this moved it ──
 function techStepWants(a) { return !!(a && (a._launchLoad || a._siteWork || a._dropSite || a._shieldHold || a._drill || a._blight || a._pocketHold)); }
-// a follower thrown into a POCKET (a cut-off part of its room: the Sewers' collapsed tunnel) waits where it landed until the pocket is joined to where the player is (its drill opened the way); then it follows as before
+// a follower thrown onto a POCKET site's landing (a cut-off part of its room: the Sewers' collapsed tunnel) waits where it landed until the player is on that stretch too (rode over, or the choke was drilled and the floors are
+// one), or it is ordered elsewhere (an attack, a retreat, a post; COME clears the hold itself: js/commandcenter.js); then it follows as before, and without the player up there it drops from the broken edge (_techDropScan)
 function _techPocketTick(f) {
     const s = _techSite(f._pocketHold); if (!s) { f._pocketHold = null; return; }
     const pc = _techComp(player.x, player.y), lc = _techComp(s.land[0], s.land[1]), fc = _techComp(f.x, f.y);
-    if (lc === undefined || lc === pc || fc !== lc || f.dead || f.returningToCrystal) { f._pocketHold = null; f._fpWalkGoal = null; }
+    if (lc === undefined || lc === pc || fc !== lc || f.dead || f.returningToCrystal || f.post || f.attackOrder || f.retreatUntil > _techFrame()) { f._pocketHold = null; f._fpWalkGoal = null; }
 }
 function _techFace(a, x, y) { const dx = x - a.x, dy = y - a.y, d = Math.hypot(dx, dy); if (d > 1e-6) { a.dirX = dx / d; a.dirY = dy / d; } }
 function techStepOverride(a) {
@@ -690,6 +749,7 @@ function techAbilityTick() {
         if (f._blight) _techBlightWalkTick(f, f0);
         if (f._pocketHold) _techPocketTick(f);
     }
+    _techRiderTick(f0);   // you, to a launcher's pad or a broken edge
     if (f0 % 15 === 3) _techDropScan();
     _techSiteNotices(); _techRubbleNotices();
     _techShieldTick();
@@ -697,7 +757,8 @@ function techAbilityTick() {
     _techFrostTick(f0); _techPoolTick(); _techGrabTick(f0);
 }
 // THE BROKEN SECTIONS: a follower on a site's room that is not holding it (it was called back) walks to the room's broken section and drops through; one posted to that room that is not up there (it came back from the dead at the
-// Crystal) is let go of its post, since nobody walks up
+// Crystal) is let go of its post, since nobody walks up. On a POCKET site's landing with a broken edge (the Sewers' collapsed tunnel) a follower that is not waiting there for you (_pocketHold) and is up there without you
+// drops the same way; a pocket with no broken edge has no way out but the passage its rubble opens.
 function _techDropScan() {
     const sites = _techSites(); if (!sites.length) return;
     const pc = _techComp(player.x, player.y);
@@ -705,10 +766,10 @@ function _techDropScan() {
         if (!f || f.dead || f.isClone || f._flight || f._launchLoad || f._siteWork) continue;
         const fc = _techComp(f.x, f.y); f._dropSite = null;
         for (const s of sites) {
-            if (s.pocket) continue;   // (a pocket is no post and has no broken section: the way out is the passage its rubble opens)
             const sc = _techComp(s.land[0], s.land[1]); if (sc === undefined) continue;
-            if (f.post === s.to && fc !== sc) { if (typeof partyCall === "function" && !partyCall(f, true) && typeof partyPost === "function" && typeof partyRoomOf === "function") partyPost(f, partyRoomOf(f), true); break; }
-            if (fc === sc && sc !== pc && !f.post && !f.job && !f.returningToCrystal) { f._dropSite = s.id; break; }
+            if (!s.pocket && f.post === s.to && fc !== sc) { if (typeof partyCall === "function" && !partyCall(f, true) && typeof partyPost === "function" && typeof partyRoomOf === "function") partyPost(f, partyRoomOf(f), true); break; }   // (a pocket is no post: its room is the follower's own)
+            if (!s.drop || !s.dropTo) continue;
+            if (fc === sc && sc !== pc && !f.post && !f.job && !f.returningToCrystal && !f._pocketHold) { f._dropSite = s.id; break; }
         }
     }
 }
@@ -728,7 +789,7 @@ function techAimActive() { return !!techAim; }
 function techAimNeed() { const A = techAim; if (!A) return null; return A.mode === "site" ? "follower" : A.ab.aim[A.step] || null; }
 function techAimPrompt() {
     const A = techAim; if (!A) return "";
-    if (A.mode === "site") { const s = _techSite(A.site); return "KINETIC LAUNCHER · TAP " + (s && s.pocket ? _techOnlyName(s) + " TO SEND INTO THE " : "A FOLLOWER TO SEND UP TO THE ") + String(s ? s.label || s.to : "").toUpperCase(); }
+    if (A.mode === "site") { const s = _techSite(A.site); return "KINETIC LAUNCHER · " + (s && s.rider ? "TAP ITS TAG AGAIN TO RIDE IT · OR A FOLLOWER TO SEND OVER TO THE " : s && s.pocket ? "TAP " + _techOnlyName(s) + " TO SEND INTO THE " : "TAP A FOLLOWER TO SEND UP TO THE ") + String(s ? s.label || s.to : "").toUpperCase(); }
     const need = techAimNeed();
     return A.ab.name + " · " + (need && A.ab.ask ? A.ab.ask(need, A.picks) : "");
 }
@@ -775,21 +836,28 @@ function techScreenToWorld(ex, ey) {
 function techAimTap(x, y) {
     if (!techAim) return false;
     const need = techAimNeed();
-    if (need === "follower") { const g = typeof findFollowerAtScreen === "function" ? findFollowerAtScreen(x, y) : null; if (g && !g.isClone) return techAimPickFollower(g); if (techAim.mode === "site") { techAimCancel(true); return false; } _techSay("TAP A FOLLOWER", "#8aa0c8"); return true; }   // (the launcher's aim never holds you: a tap elsewhere puts it away and walks, js/input.js)
+    if (need === "follower") {
+        const g = typeof findFollowerAtScreen === "function" ? findFollowerAtScreen(x, y) : null; if (g && !g.isClone) return techAimPickFollower(g);
+        if (techAim.mode === "site") { const s = _techSite(techAim.site); techAimCancel(true); if (s && s.rider && _techOnLabel(s.id, x, y)) { const r = techSiteRide(s); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; } return false; }   // (the launcher's aim never holds you: a tap elsewhere puts it away and walks, js/input.js; its own tag again: you ride it)
+        _techSay("TAP A FOLLOWER", "#8aa0c8"); return true;
+    }
     if (need === "enemy") { const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e); _techSay("TAP AN ENEMY", "#8aa0c8"); return true; }
     if (need === "spot") return techAimPickSpot(techScreenToWorld(x, y));
     if (need === "item") { const g = techItemAtScreen(x, y); if (g) return techAimPickItem(g); _techSay("TAP AN ITEM ON THE FLOOR", "#8aa0c8"); return true; }
     return true;
 }
-// a tap on a site (js/input.js handleInput): set a launcher up there, or send a follower up from the one there; true when it was a site's
+// is a point of the screen on a tag drawn last frame (a site's, or its broken edge's: key site id, or site id + ":drop")
+function _techOnLabel(key, ex, ey) { const lr = _techLabels[key]; return !!lr && ex >= lr.x && ex <= lr.x + lr.w && ey >= lr.y && ey <= lr.y + lr.h; }
+// a tap on a site (js/input.js handleInput): set a launcher up there, send a follower up from the one there, or (its tag again, with its aim up) ride it yourself; a tap on a broken edge's tag: jump down. True when it was a site's
 function techSiteTap(ex, ey) {
     if (typeof _fp === "undefined" || !_fp || typeof player === "undefined") return false;
     for (const s of _techSites()) {
-        if (Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY) > TECH_AB.launch.near) continue;
-        const lr = _techLabels[s.id], onLabel = lr && ex >= lr.x && ex <= lr.x + lr.w && ey >= lr.y && ey <= lr.y + lr.h;
-        if (!onLabel) continue;   // (only its tag takes a tap: a tap on the floor round it, to walk past, is a walk)
+        const nearAt = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY) <= TECH_AB.launch.near, nearDrop = !!s.drop && Math.hypot(s.drop[0] - player.visualX, s.drop[1] - player.visualY) <= TECH_AB.launch.near;
+        if (nearDrop && _techOnLabel(s.id + ":drop", ex, ey)) { const r = techSiteDrop(s); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // the broken edge's tag (▼ JUMP DOWN): you drop from it
+        if (!nearAt || !_techOnLabel(s.id, ex, ey)) continue;   // (only its tag takes a tap: a tap on the floor round it, to walk past, is a walk)
         if (techLauncherAt(s.id)) {
             if (_techSiteBusy(s)) { _techSay("THE LAUNCHER IS IN USE", "#ff8a6a"); return true; }
+            if (s.rider && techAim && techAim.mode === "site" && techAim.site === s.id) { techAimCancel(true); const r = techSiteRide(s); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // (its tag again, with its aim up: you ride it)
             techAim = { mode: "site", f: null, ab: TECH_ABILITIES.electric, site: s.id, step: 0, picks: {} }; _techAimShow();
             return true;
         }
@@ -817,7 +885,7 @@ function techAbilityInfo(f) {
     const w = techReadyIn(f), ready = f._abBusy ? "BUSY" : w > 0 ? "IN " + Math.ceil(w / 60) + " S" : _techMember(f) ? "NOW" : "IN THE SQUAD ONLY";
     if (ab.id === "kinetic_launcher") {
         const T = TECH_AB.launch;
-        return { h: "ABILITY · " + ab.name, note: "From the ⚡ chip on its squad card: throw a follower at an enemy it can see. At a launcher site it sets a launcher up for good, which sends followers up to where nobody can walk (the Arena Catwalk).",
+        return { h: "ABILITY · " + ab.name, note: "From the ⚡ chip on its squad card: throw a follower at an enemy it can see. At a launcher site it sets a launcher up for good, which sends followers up to where nobody can walk (the Arena Catwalk); the one at the Sewers' collapsed tunnel carries you too (tap its tag twice).",
                  rows: [["DAMAGE", T.powerMult + "× the thrown follower's power"], ["THE THROWN FOLLOWER TAKES", String(T.selfDamage)], ["COOLDOWN", Math.round(T.cooldown / 60) + " s"], ["FIRST WAIT", Math.round(TECH_AB.joinWait / 60) + " s after it joins the squad"], ["READY", ready]] };
     }
     if (ab.id === "photonic_shield") {
@@ -862,11 +930,14 @@ const _TECH_RUBBLE = [[0.2, 0, 0.2, 22], [0.44, 0, 0.24, 26], [0.7, 0, 0.22, 24]
 function techDrawRubbleOn(it, f) {
     if (typeof _fpWP !== "function" || typeof ctx === "undefined") return;
     const r = _techRubble(it.rubble); if (!r) return;
-    const P = (u, z) => _fpWP(it, u, z), poly = (pts, fill, stroke, lw) => { ctx.beginPath(); pts.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 2; ctx.lineJoin = "round"; ctx.stroke(); } };
+    const len = Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]), segs = Math.max(1, Math.round(len / 2));   // a long choke (the Sewers' six-tile mouth) is the pile over and over, two tiles to a pile, each a little its own
+    const polyW = (P, pts, fill, stroke, lw) => { ctx.beginPath(); pts.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 2; ctx.lineJoin = "round"; ctx.stroke(); } };
+    const PW = (u, z) => _fpWP(it, u, z), poly = (pts, fill, stroke, lw) => polyW(PW, pts, fill, stroke, lw);   // (u over the whole stretch)
     ctx.save();
-    if (techRubbleOpen(r) && r.solid) {   // A CHOKE drilled through: the passage behind it is open floor now, so only what is left of the pile is drawn: stones at the foot of each side, scorched
-        for (const [u, z, w] of [[0.1, 0, 0.1], [0.19, 0, 0.07], [0.9, 0, 0.11], [0.8, 0, 0.06], [0.14, 8, 0.06], [0.87, 7, 0.07]]) poly([[u - w / 2, z], [u - w / 3, z + 8], [u + w / 3, z + 9], [u + w / 2, z]], "#6a5848", "#0b2a2f", 2);
-        ctx.globalAlpha = 0.3 + 0.1 * Math.sin(f * 0.03); for (const u of [0.06, 0.94]) poly([[u - 0.05, 0], [u, 16], [u + 0.05, 0]], "#ff7a2a", null); ctx.globalAlpha = 1;   // the sides still warm
+    if (techRubbleOpen(r) && r.solid) {   // A CHOKE drilled through: the passage behind it is open floor now, so only what is left of the pile is drawn: stones at the foot of each side (and where the piles met), scorched
+        for (const [u, z, w] of [[0.1, 0, 0.1], [0.19, 0, 0.07], [0.9, 0, 0.11], [0.8, 0, 0.06], [0.14, 8, 0.06], [0.87, 7, 0.07]].map(([u, z, w]) => [u < 0.5 ? u / segs : 1 - (1 - u) / segs, z, w / segs])) poly([[u - w / 2, z], [u - w / 3, z + 8], [u + w / 3, z + 9], [u + w / 2, z]], "#6a5848", "#0b2a2f", 2);
+        for (let sg = 1; sg < segs; sg++) for (const [du, w] of [[-0.04, 0.05], [0.05, 0.035]]) { const u = (sg + du) / segs, hw = w / segs; poly([[u - hw / 2, 0], [u - hw / 3, 7], [u + hw / 3, 8], [u + hw / 2, 0]], "#6a5848", "#0b2a2f", 2); }
+        ctx.globalAlpha = 0.3 + 0.1 * Math.sin(f * 0.03); for (const u of [0.06 / segs, 1 - 0.06 / segs]) poly([[u - 0.05 / segs, 0], [u, 16], [u + 0.05 / segs, 0]], "#ff7a2a", null); ctx.globalAlpha = 1;   // the sides still warm
         ctx.restore(); return;
     }
     if (techRubbleOpen(r)) {   // THE HOLE: a black arch going back into the rock, rings of dark inside it, scorched round the mouth, a few stones at its foot
@@ -879,22 +950,28 @@ function techDrawRubbleOn(it, f) {
         ctx.restore(); return;
     }
     const hits = (_techRubbleHits()[r.id] || 0), heat = hits / TECH_AB.drill.hits, show = _TECH_RUBBLE.length - Math.floor(hits * _TECH_RUBBLE.length / (TECH_AB.drill.hits + 1));
-    poly([[0.08, 0], [0.12, 30], [0.3, 52], [0.55, 58], [0.8, 48], [0.94, 26], [0.95, 0]], "#2a1e18", null);   // the dark gap the pile fills
     const shades = ["#a8967e", "#8e7c66", "#bba98f", "#9a8670"];
-    for (let k = 0; k < Math.min(show, _TECH_RUBBLE.length); k++) {
-        const [uc, zb, w, h] = _TECH_RUBBLE[k], j = ((it.seed >>> k) % 5) * 0.012, pts = [[uc - w / 2, zb + h * 0.1], [uc - w * 0.42, zb + h * 0.7], [uc - w * 0.1 + j, zb + h], [uc + w * 0.32, zb + h * 0.86], [uc + w / 2, zb + h * 0.3], [uc + w * 0.22, zb]];
-        poly(pts, shades[(k + it.seed) % shades.length], "#0b2a2f", 2.5);
-        poly([pts[1], pts[2], pts[3], [uc, zb + h * 0.62]], "rgba(255,255,255,0.13)", null);   // the lit top
+    for (let sg = 0; sg < segs; sg++) {   // one pile (two tiles of it), then the next
+        const P = (u, z) => _fpWP(it, (sg + u) / segs, z), pl = (pts, fill, stroke, lw) => polyW(P, pts, fill, stroke, lw), seed = (it.seed + sg * 7919) >>> 0;
+        const u0 = sg ? 0 : 0.08, u1 = sg === segs - 1 ? 0.95 : 1;   // (the piles of a long choke butt against one another: no floor shows between them)
+        pl([[u0, 0], [u0 + 0.04, 30], [0.3, 52], [0.55, 58], [0.8, 48], [u1 - 0.01, 26], [u1, 0]], "#2a1e18", null);   // the dark gap the pile fills
+        const rock = (uc, zb, w, h, k) => {
+            const j = ((seed >>> k) % 5) * 0.012, pts = [[uc - w / 2, zb + h * 0.1], [uc - w * 0.42, zb + h * 0.7], [uc - w * 0.1 + j, zb + h], [uc + w * 0.32, zb + h * 0.86], [uc + w / 2, zb + h * 0.3], [uc + w * 0.22, zb]];
+            pl(pts, shades[(k + seed) % shades.length], "#0b2a2f", 2.5);
+            pl([pts[1], pts[2], pts[3], [uc, zb + h * 0.62]], "rgba(255,255,255,0.13)", null);   // the lit top
+        };
+        for (let k = 0; k < Math.min(show, _TECH_RUBBLE.length); k++) { const [uc, zb, w, h] = _TECH_RUBBLE[k]; rock(uc, zb, w, h, k); }
+        if (sg && show > 2) rock(0.02, 0, 0.18, 20, 11);   // (a boulder across the joint with the pile before it)
+        if (show > 4 && (segs === 1 || (sg + (it.seed & 1)) % 2 === 0)) { pl([[0.28, 6], [0.3, 13], [0.72, 23], [0.7, 16]], "#c9c2b4", "#0b2a2f", 2); for (let s = 0; s < 4; s++) pl([[0.34 + s * 0.09, 7.4 + s * 2.3], [0.37 + s * 0.09, 14.2 + s * 2.3], [0.4 + s * 0.09, 14.9 + s * 2.3], [0.37 + s * 0.09, 8.1 + s * 2.3]], "#ffd21a", null); }   // a cracked slab across it, hazard-painted (every other pile of a long choke)
+        // the seams between the stones: dull at first, glowing hotter with each hit
+        ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+        const glow = 0.25 + 0.75 * heat, pul = 0.75 + 0.25 * Math.sin(f * 0.15 + sg);
+        for (const seam of [[[0.32, 0], [0.33, 14], [0.46, 26], [0.5, 40]], [[0.58, 0], [0.6, 18], [0.7, 30]], [[0.2, 20], [0.36, 36], [0.44, 50]]]) {
+            ctx.strokeStyle = "rgba(255,120,40," + (0.22 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 7; ctx.beginPath(); seam.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke();
+            ctx.strokeStyle = "rgba(255,190,90," + (0.5 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 2; ctx.stroke();
+        }
+        ctx.globalCompositeOperation = "source-over"; ctx.lineCap = "butt";
     }
-    if (show > 4) { poly([[0.28, 6], [0.3, 13], [0.72, 23], [0.7, 16]], "#c9c2b4", "#0b2a2f", 2); for (let s = 0; s < 4; s++) poly([[0.34 + s * 0.09, 7.4 + s * 2.3], [0.37 + s * 0.09, 14.2 + s * 2.3], [0.4 + s * 0.09, 14.9 + s * 2.3], [0.37 + s * 0.09, 8.1 + s * 2.3]], "#ffd21a", null); }   // a cracked slab across it, hazard-painted
-    // the seams between the stones: dull at first, glowing hotter with each hit
-    ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
-    const glow = 0.25 + 0.75 * heat, pul = 0.75 + 0.25 * Math.sin(f * 0.15);
-    for (const seam of [[[0.32, 0], [0.33, 14], [0.46, 26], [0.5, 40]], [[0.58, 0], [0.6, 18], [0.7, 30]], [[0.2, 20], [0.36, 36], [0.44, 50]]]) {
-        ctx.strokeStyle = "rgba(255,120,40," + (0.22 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 7; ctx.beginPath(); seam.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke();
-        ctx.strokeStyle = "rgba(255,190,90," + (0.5 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 2; ctx.stroke();
-    }
-    ctx.globalCompositeOperation = "source-over"; ctx.lineCap = "butt";
     ctx.restore();
 }
 // ── on each floor tile (js/game.js draws it with the tile, like the serum's pools): the FROST PATCH's ice, the BLIGHT SPIDER's pools ──
@@ -1000,7 +1077,15 @@ function techDrawOverlay() {
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
     const font = n => typeof uiFont === "function" ? uiFont(n) : "bold " + n + "px sans-serif";
     for (const s of _techSites()) {
-        const d = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY); if (d > T.near) continue;
+        const d = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY), dd = s.drop ? Math.hypot(s.drop[0] - player.visualX, s.drop[1] - player.visualY) : Infinity;
+        // THE BROKEN EDGE's tag (a site that carries you, while you are up there and the floors are still apart): ▼ JUMP DOWN; a tap on it is the jump (techSiteTap)
+        if (s.rider && s.drop && dd <= T.near && _techComp(player.x, player.y) === _techComp(s.drop[0], s.drop[1]) && _techComp(s.drop[0], s.drop[1]) !== _techComp(s.dropTo[0], s.dropTo[1])) {
+            const q = _techScr(s.drop[0], s.drop[1]), a2 = Math.min(1, (T.near - dd) / 2), txt2 = "▼ JUMP DOWN · TAP IT";
+            g.globalAlpha = a2 * 0.9; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle"; const w2 = g.measureText(txt2).width + 16, y2 = q.y - 52;
+            g.fillStyle = "rgba(5,8,18,0.7)"; g.fillRect(q.x - w2 / 2, y2 - 10, w2, 20); g.strokeStyle = "rgba(255,210,26,0.6)"; g.lineWidth = 1; g.strokeRect(q.x - w2 / 2 + 0.5, y2 - 9.5, w2 - 1, 19); g.fillStyle = "#ffd21a"; g.fillText(txt2, q.x, y2 + 1);
+            _techLabels[s.id + ":drop"] = { x: q.x - w2 / 2, y: y2 - 10, w: w2, h: 20 };
+        }
+        if (d > T.near) continue;
         const p = _techScr(s.at[0], s.at[1]), a = Math.min(1, (T.near - d) / 2), on = techLauncherAt(s.id);
         if (!on) {   // the spot it can stand on: a faint dashed outline (subtle: no fill, no pulse)
             g.globalAlpha = a * 0.45; g.strokeStyle = "#ffe733"; g.lineWidth = 1.5; g.setLineDash([5, 6]); g.beginPath(); g.moveTo(p.x, p.y - TILE_H); g.lineTo(p.x + TILE_W, p.y); g.lineTo(p.x, p.y + TILE_H); g.lineTo(p.x - TILE_W, p.y); g.closePath(); g.stroke(); g.setLineDash([]);
@@ -1008,7 +1093,7 @@ function techDrawOverlay() {
         const work = (typeof followers !== "undefined" ? followers : []).find(q => q && !q.dead && q._siteWork && q._siteWork.site === s.id && q._siteWork.workAt !== null);
         if (work) { const k = Math.min(1, (f0 - work._siteWork.workAt) / T.setup); g.globalAlpha = 1; g.strokeStyle = "#ffe733"; g.lineWidth = 4; g.beginPath(); g.arc(p.x, p.y - 30, 16, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2); g.stroke(); }
         // its TAG: small and quiet (ASKED: "it should remain subtle and uninterruptive"); a tap on it is the only tap the site takes
-        const txt = on ? (s.pocket ? "⚡ LAUNCHER · SEND IN" : "⚡ LAUNCHER · SEND UP") : work || _techSettingUp(s) ? "⚡ SETTING UP" : "⚡ LAUNCHER SITE";
+        const txt = on ? (s.rider ? "⚡ LAUNCHER · RIDE IT · SEND A FOLLOWER" : s.pocket ? "⚡ LAUNCHER · SEND IN" : "⚡ LAUNCHER · SEND UP") : work || _techSettingUp(s) ? "⚡ SETTING UP" : "⚡ LAUNCHER SITE";
         g.globalAlpha = a * 0.85; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle";
         const w = g.measureText(txt).width + 16, y = p.y - 70;
         g.fillStyle = "rgba(5,8,18,0.7)"; g.fillRect(p.x - w / 2, y - 10, w, 20); g.strokeStyle = "rgba(255,231,51,0.55)"; g.lineWidth = 1; g.strokeRect(p.x - w / 2 + 0.5, y - 9.5, w - 1, 19); g.fillStyle = "rgba(255,231,51,0.9)"; g.fillText(txt, p.x, y + 1);
@@ -1039,8 +1124,8 @@ function techDrawOverlay() {
         for (let i = 0; i <= 16; i++) { const q = _techArcScr(L.by.x, L.by.y, L.foe.x, L.foe.y, lift(L.by.x, L.by.y), lift(L.foe.x, L.foe.y), T.peak, i / 16); if (i) g.lineTo(q.x, q.y); else g.moveTo(q.x, q.y); }
         g.stroke(); g.setLineDash([]);
     }
-    // the flyers' shadows on the floor under them
-    for (const a of (typeof followers !== "undefined" ? followers : [])) {
+    // the flyers' shadows on the floor under them (you too, carried by a launcher)
+    for (const a of (typeof followers !== "undefined" ? followers : []).concat(_techRider() ? [_techRider()] : [])) {
         const F = a && !a.dead ? a._flight : null; if (!F) continue;
         const t = Math.min(1, Math.max(0, (f0 - F.t0) / F.dur)), q = _techArcScr(F.x0, F.y0, F.x1, F.y1, F.z0, F.z1, 0, t);
         g.globalAlpha = 0.35; g.fillStyle = "#000"; g.beginPath(); g.ellipse(q.x, q.y, 14 - 6 * Math.sin(Math.PI * t), 6 - 2 * Math.sin(Math.PI * t), 0, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
@@ -1050,7 +1135,7 @@ function techDrawOverlay() {
     for (const r of _techRubbles()) {
         const d = Math.hypot(r.at[0] - player.visualX, r.at[1] - player.visualY); if (d > TECH_AB.drill.near) continue;
         const a = Math.min(1, (TECH_AB.drill.near - d) / 2), open = techRubbleOpen(r), p = rP(r, 0);
-        const txt = open ? "A DARK HOLE IN THE ROCK · SEALED FOR NOW" : _techDrilling(r) ? "✹ THERMITE DRILL · " + techRubbleLeft(r) + " TO GO" : "✹ RUBBLE · PRESS AND HOLD IT: THERMITE DRILL";
+        const txt = open ? (r.solid ? "THE CHOKE IS DRILLED THROUGH · THE WAY IN IS OPEN" : "A DARK HOLE IN THE ROCK · SEALED FOR NOW") : _techDrilling(r) ? "✹ THERMITE DRILL · " + techRubbleLeft(r) + " TO GO" : (r.solid ? "✹ CHOKED TUNNEL" : "✹ RUBBLE") + " · PRESS AND HOLD IT: THERMITE DRILL";
         g.globalAlpha = a; g.font = font(13); g.textAlign = "center"; g.textBaseline = "middle";
         const w = g.measureText(txt).width + 22, y = p[1] - 96 + Math.sin(f0 * 0.07) * 2, col = open ? "#9aa4b4" : "#ff9a4a";
         g.fillStyle = "rgba(5,8,18,0.82)"; g.fillRect(p[0] - w / 2, y - 12, w, 24); g.strokeStyle = col; g.lineWidth = 1.5; g.strokeRect(p[0] - w / 2 + 0.5, y - 11.5, w - 1, 23); g.fillStyle = col; g.fillText(txt, p[0], y + 1);

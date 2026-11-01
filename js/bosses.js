@@ -227,7 +227,7 @@ function _bossWavesTick(E, S, b) {
 function _bossWave(E, S, b) {
     const W = E.waves; if (!W || typeof facilitySpawnCreature !== "function" || typeof partyRoomCells !== "function") return 0;
     const P = { room: E.room, species: [E.species], classes: W.classes, levels: W.levels, element: E.element, brood: true, minFromPlayer: 0, spacing: 0.6, wander: [3, 9] };
-    const cm = typeof _fpComps === "function" ? _fpComps() : null, here = cm && typeof _fpNearestCell === "function" && typeof player !== "undefined" ? _fpNearestCell(player.visualX, player.visualY) : null, hc = here ? cm.get(here[0] + "," + here[1]) : undefined;
+    const cm = typeof _fpComps === "function" ? _fpComps() : null, here = cm && typeof _fpNearestCell === "function" && typeof player !== "undefined" ? (typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen : _fpNearestCell)(player.visualX, player.visualY) : null, hc = here ? cm.get(here[0] + "," + here[1]) : undefined;
     const spots = partyRoomCells(E.room).filter(c => { const d = Math.hypot(c[0] - b.x, c[1] - b.y); return d >= W.near[0] && d <= W.near[1] && (hc === undefined || cm.get(c[0] + "," + c[1]) === hc); });
     let n = 0;
     for (let i = 0; i < W.n && spots.length; i++) {

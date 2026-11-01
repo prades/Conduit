@@ -102,13 +102,14 @@ const FACILITY_MAP = {
                     [440, 760], [440, 620], [420, 620], [420, 560], [440, 560]],
           edge_kinds: ["wall", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "wall", "wall"] },
         { id: "sewers", label: "Sewers", level: -1, status: "placed", wall_material: "solid", interior: true,
-          note: "THE SEWERS, UNDER the arena: an INTERIOR (drawn here, under the arena, built in a part of the map of its own: `interiors`), the way in a culvert in the arena's north rock behind the north tank (a pair of portals). From the user's layout A ('two ledges, the river between'): one long tunnel, a NARROW LEDGE along each side of a DEEP RIVER (the tanks' violet runoff, pouring in from an outfall at its head; nothing walks in it: solids of kind `river`), a bridge across it and a broken one; side passages shut behind GATES (barred grilles you see through: solids of kind `gate`), room for areas later; a COLLAPSED TUNNEL off the north ledge, its mouth choked with rubble (a solid of kind `rubble`, drilled through from inside: the sample puzzle, docs/SEWER-QUEST.md) and a sealed hatch, a way in for later; and at the east end THE CISTERN, where the river drains into a round sump: the toxic ant boss's room, behind the BOSS GATE (shut until the purification module is brought to it). Its creatures: toxic ants (js/facilityspawn.js FP_SPAWN_SEWERS).",
+          note: "THE SEWERS, UNDER the arena: an INTERIOR (drawn here, under the arena, built in a part of the map of its own: `interiors`), the way in a culvert in the arena's north rock behind the north tank (a pair of portals). From the user's layout A ('two ledges, the river between'): one long tunnel, a NARROW LEDGE along each side of a DEEP RIVER (the tanks' violet runoff, pouring in from an outfall at its head; nothing walks in it: solids of kind `river`), a bridge across it and a broken one; side passages shut behind GATES (barred grilles you see through: solids of kind `gate`), room for areas later; a COLLAPSED TUNNEL off the north ledge: a broken-off stretch of an old side tunnel's floor, open onto the ledge and choked along its whole mouth with the collapse's rubble (a solid of kind `rubble`, drilled through from the ledge; a Kinetic Launcher there carries you over it, and its broken edge drops you back: the sample puzzle, docs/SEWER-QUEST.md) and a sealed hatch, a way in for later; and at the east end THE CISTERN, where the river drains into a round sump: the toxic ant boss's room, behind the BOSS GATE (shut until the purification module is brought to it). Its creatures: toxic ants (js/facilityspawn.js FP_SPAWN_SEWERS).",
           // the tunnel from the user's layout (20 px to a tile; its top-left at (300, 860)): thirty-six tiles long, the north ledge two tiles deep (y 860 to 900), the river six (900 to 1020), the south ledge two
           // (1020 to 1060). The way up is an alcove at the west end of the north ledge (x 280 to 300): the culvert back to the arena. Two side passages off the north ledge (x 360 to 400 and 620 to 660) and one off the
-          // south ledge (x 600 to 640), each three tiles deep; and THE COLLAPSED TUNNEL off the north ledge (x 860 to 900), four tiles deep (y 780 to 860), its mouth choked (the `sewer_choke` solid across it: the
-          // one walkable column behind it, x 880, is reached only once the choke is drilled through). The north ledge stops at x 1020; the cistern (x 1060 to 1280, y 820 to 1100) is open to the tunnel only where the
-          // river runs into it and where the south ledge does, through the boss gate.
-          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [620, 860], [620, 800], [660, 800], [660, 860], [860, 860], [860, 780], [900, 780], [900, 860], [1020, 860], [1020, 900], [1060, 900],
+          // south ledge (x 600 to 640), each three tiles deep; and THE COLLAPSED TUNNEL off the north ledge (x 820 to 940: six tiles of floor across, four deep, y 780 to 860), open onto the ledge along its whole
+          // width (so all of it is in sight from the ledge: a wall would hide it) and choked along that whole mouth (the `sewer_choke` solid across it: the floor behind is its own stretch, walked into only once the
+          // choke is drilled through; the launcher site on the ledge throws over it). The north ledge stops at x 1020; the cistern (x 1060 to 1280, y 820 to 1100) is open to the tunnel only where the river runs
+          // into it and where the south ledge does, through the boss gate.
+          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [620, 860], [620, 800], [660, 800], [660, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1020, 900], [1060, 900],
                     [1060, 820], [1280, 820], [1280, 1100], [1060, 1100], [1060, 1060], [640, 1060], [640, 1120], [600, 1120], [600, 1060], [300, 1060], [300, 900], [280, 900]],
           edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
         { id: "nest_area", label: "Nest area", level: 0, status: "approximate",
@@ -335,9 +336,10 @@ const FACILITY_MAP = {
         { id: "sewer_gate_n1", room: "sewers", shape: "poly", poly: [[360, 856], [400, 856], [400, 864], [360, 864]], status: "placed", kind: "gate", note: "A barred gate across the first side passage off the north ledge: shut (an area for later)." },
         { id: "sewer_gate_n2", room: "sewers", shape: "poly", poly: [[620, 856], [660, 856], [660, 864], [620, 864]], status: "placed", kind: "gate", note: "A barred gate across the second side passage off the north ledge: shut (an area for later)." },
         { id: "sewer_gate_s1", room: "sewers", shape: "poly", poly: [[600, 1056], [640, 1056], [640, 1064], [600, 1064]], status: "placed", kind: "gate", note: "A barred gate across the side passage off the south ledge: shut (an area for later)." },
-        // THE CHOKE: the collapsed tunnel's mouth, filled with fallen concrete and rock (kind `rubble`: a thin solid across the mouth, like a gate; the rubble entry below is what a fire technician drills, from INSIDE: the sample
-        //   puzzle, docs/SEWER-QUEST.md). Drilled through it is OPEN for good (js/facilityplay.js facilitySolidOpen) and the tunnel is walked into.
-        { id: "sewer_choke", room: "sewers", shape: "poly", poly: [[860, 856], [900, 856], [900, 864], [860, 864]], status: "placed", kind: "rubble", note: "The collapsed tunnel's mouth, choked with broken concrete and rock: the one way into the tunnel, once a fire technician has drilled it through from the inside." },
+        // THE CHOKE: the collapsed tunnel's whole mouth (x 820 to 940), filled with fallen concrete and rock (kind `rubble`: a thin solid across the mouth, like a gate; the rubble entry below is what a fire technician drills, from the
+        //   LEDGE: the sample puzzle, docs/SEWER-QUEST.md). It lies a hair inside the mouth's line (y 852 to 858, not 856 to 864: the drill's work spot is on the ledge, and a spot half a tile in front of the pile must be clear
+        //   floor for the rubble to be seen from it, js/facility.js). Drilled through it is OPEN for good (js/facilityplay.js facilitySolidOpen) and the tunnel is walked into.
+        { id: "sewer_choke", room: "sewers", shape: "poly", poly: [[820, 852], [940, 852], [940, 858], [820, 858]], status: "placed", kind: "rubble", note: "The collapsed tunnel's mouth, choked along its whole width with broken concrete and rock: the way in on foot, once a fire technician has drilled it through from the ledge." },
         // THE PURIFIER MOUNT: a console at the cistern's edge, north of the sump, where the purification module is installed (a station, js/quests.js; the boss encounter's pressure, js/bosses.js)
         { id: "purifier_mount", room: "sewers", shape: "rect", rect: [1160, 850, 1200, 870], status: "placed", kind: "console", note: "The cistern's control console, at the head of the sump: the purification module mounts here (the PURIFIER MOUNT station)." },
         { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1060], [1056, 1060]], status: "placed", kind: "boss_gate", note: "THE BOSS GATE: the south ledge's way into the cistern. Shut, until the boss is designed." },
@@ -369,14 +371,15 @@ const FACILITY_MAP = {
         { id: "pk_lab_mutagen", room: "experiment_lab", at: [500, 580], items: [["mutagen_sample", 2]], class: "mutator", note: "Samples in the lab (Mutator)." },
         { id: "pk_chamber_mutagen", room: "crystal_chamber", at: [280, 400], items: [["mutagen_sample", 1]], class: "mutator", note: "A sample left by the crystal (Mutator)." },
         { id: "pk_chamber_mutagen_2", room: "crystal_chamber", at: [320, 320], items: [["mutagen_sample", 1]], class: "mutator", note: "Another sample in the chamber (Mutator)." },
-        // THE SEWER SAMPLE (the sample puzzle, docs/SEWER-QUEST.md): a sealed vial of the river's water at the end of the collapsed tunnel, in sight from the north ledge and out of reach behind the choke. Two ways to it: a flux
-        // technician's Telegrab (it flies out over the rubble: an item anywhere on the screen), or a fire technician launched into the tunnel by the electric technician's Kinetic Launcher, which drills the choke through from inside.
-        { id: "pk_sewer_sample", room: "sewers", at: [880, 800], items: [["sewer_sample", 1]], note: "A water sample at the end of the collapsed tunnel, behind the choke." },
+        // THE SEWER SAMPLE (the sample puzzle, docs/SEWER-QUEST.md): a sealed vial of the river's water at the far end of the collapsed tunnel's broken-off floor, in sight from the north ledge and out of reach behind the choke.
+        // Three ways to it, each on its own: a flux technician's Telegrab (it flies out over the rubble: an item anywhere on the screen); the electric technician's Kinetic Launcher set up on the ledge, which carries YOU over the
+        // choke onto the floor (you take the vial and jump back down from the broken edge); or a fire technician's Thermite Drill through the choke from the ledge, after which anyone walks in.
+        { id: "pk_sewer_sample", room: "sewers", at: [920, 800], items: [["sewer_sample", 1]], note: "A water sample at the far (east) end of the collapsed tunnel's floor, against its back wall, behind the choke." },
         // THE VITAL ITEMS (js/vital.js; docs/FOLLOWER-PROGRESSION.md): five, hidden, once each (the archive's follow-up scope, 2026-10-31: "tucked-away corners, secret spaces, behind breakable obstacles where supported,
-        // and/or in dangerous optional routes ... a finite supply rather than an unlimited repeatable farm"). Where: the collapsed tunnel's pocket beside the water sample (behind the choke), the cistern's far corner behind the
+        // and/or in dangerous optional routes ... a finite supply rather than an unlimited repeatable farm"). Where: the collapsed tunnel's floor, its west end (behind the choke), the cistern's far corner behind the
         // boss gate (the Toxic Queen's room), the far end of the Cold Storage's ice cave past the technician's pad, the Armory's north-west corner, the arena's south-west corner. The count and the places are provisional
         // (docs/OPEN-QUESTIONS.md). (A case must stand a whole tile inside its room's outline in the map as drawn AND as snapped: js/facility.js validates both; a one-tile alcove has no such point.)
-        { id: "pk_vital_tunnel", room: "sewers", at: [880, 820], items: [["vital_fleck", 1]], note: "A Vital Fleck in the collapsed tunnel's pocket, a step south of the water sample, behind the choke." },
+        { id: "pk_vital_tunnel", room: "sewers", at: [840, 800], items: [["vital_fleck", 1]], note: "A Vital Fleck at the west end of the collapsed tunnel's floor, against its back wall, behind the choke (the water sample is at the east end)." },
         { id: "pk_vital_cistern", room: "sewers", at: [1080, 840], items: [["vital_core", 1]], note: "A Vital Core in the cistern's far north-west corner, behind the boss gate: the queen's room." },
         { id: "pk_vital_cave", room: "cold_storage", at: [640, 860], items: [["vital_fleck", 1]], note: "A Vital Fleck at the far end of the ice cave, past the ice technician's pad." },
         { id: "pk_vital_armory", room: "armory", at: [200, 960], items: [["vital_prism", 1]], note: "A Vital Prism in the Armory's north-west corner, behind the lockers." },
@@ -406,10 +409,11 @@ const FACILITY_MAP = {
     launchSites: [
         { id: "site_arena_catwalk", room: "arena", label: "Arena Catwalk", to: "catwalks", at: [940, 1000], land: [1040, 1000], drop: [1040, 1140], dropTo: [980, 1100],
           note: "The launcher stands on the arena floor under the catwalks' railing, between the two tanks' footbridges, and throws a follower up onto the catwalks; the catwalks' broken section, near their south end, drops it back into the arena." },
-        // A POCKET SITE (`pocket`): the landing is a cut-off pocket of the SAME room, not another room, so the follower keeps its place in the squad (no room post) and there is no broken section to drop through: the way back is the
-        //   passage the pocket's rubble opens. `only`: the one ability the pocket is for (the follower sent in must have it: here the Thermite Drill, since the choke is drilled from inside: docs/SEWER-QUEST.md).
-        { id: "site_sewer_tunnel", room: "sewers", label: "Collapsed tunnel", to: "sewers", pocket: true, only: "thermite_drill", at: [840, 880], land: [880, 820],
-          note: "On the north ledge two tiles west of the collapsed tunnel's mouth: it throws a fire technician over the choke into the tunnel, where it drills the choke through from the inside." },
+        // A POCKET SITE (`pocket`): the landing is a cut-off part of the SAME room, not another room, so a follower sent there keeps its place in the squad (no room post) and waits there for you. `rider`: the launcher carries
+        //   YOU as well (tap its tag once for its aim and again to ride it: js/techabilities.js techSiteRide); `drop`/`dropTo`: the BROKEN EDGE of the floor up there, which drops you (and a follower up there without you)
+        //   back to the ledge under it, one way (techSiteDrop). (`only`, one ability the site is for, is no longer set here: anyone may be sent over: docs/SEWER-QUEST.md.)
+        { id: "site_sewer_tunnel", room: "sewers", label: "Collapsed tunnel", to: "sewers", pocket: true, rider: true, at: [800, 880], land: [880, 820], drop: [840, 840], dropTo: [800, 900],
+          note: "On the north ledge a tile west of the collapsed tunnel's mouth: it throws you, or a follower, over the choke onto the tunnel's broken-off floor; the floor's broken edge at its west end drops you back to the ledge by the launcher." },
     ],
 
     // RUBBLE (the fire technician's Thermite Drill, js/techabilities.js; docs/TECHNICIANS.md): a pile of broken rock in a room's edge that a fire technician can drill through. ASKED: "Place a distinctive rubble patch at the midpoint
@@ -419,10 +423,11 @@ const FACILITY_MAP = {
     rubble: [
         { id: "rubble_arena_south", room: "arena", label: "Rubble", a: [570, 1130], b: [610, 1130], work: [590, 1080],
           note: "In the arena's south rock, on the west half of its straight stretch (the middle is on a slant; the east half has the red banner, banner_4). Behind it: the future insect burrow." },
-        // A CHOKE (`solid`): rubble that fills a passage's mouth instead of lying against a wall: the solid named is in the way until the rubble is drilled through, then it is open for good (the tunnel is walked into). `inside`: its work spot
-        //   is on the far side of the choke, so it is drilled from INSIDE the pocket (a fire technician launched in, js/techabilities.js); from the ledge the order is refused and says so.
-        { id: "rubble_sewer_choke", room: "sewers", label: "Collapsed tunnel", a: [860, 860], b: [900, 860], work: [880, 840], solid: "sewer_choke", inside: true,
-          note: "The collapsed tunnel's mouth on the Sewers' north ledge: drilled through from inside the tunnel, the way in to the sample and, later, further." },
+        // A CHOKE (`solid`): rubble that fills a passage's mouth instead of lying against a wall: the solid named is in the way until the rubble is drilled through, then it is open for good (the tunnel is walked into). Its work spot
+        //   is on the LEDGE, in front of the pile's middle: a fire technician in the squad drills it from there, with nothing else needed (an `inside: true` choke, with its work spot behind it, would be drilled from the far side
+        //   instead, and the order from outside refused: js/techabilities.js _techCanReach; none is so now).
+        { id: "rubble_sewer_choke", room: "sewers", label: "Collapsed tunnel", a: [820, 860], b: [940, 860], work: [880, 880], solid: "sewer_choke",
+          note: "The collapsed tunnel's mouth on the Sewers' north ledge, six tiles of fallen concrete and rock: drilled through from the ledge, the way in on foot to the sample and, later, further." },
     ],
 
     // BRIDGES: a footbridge from a liquid tank's top to the catwalks' deck (js/propsprites.js draws it, in 3D, at the deck's height: it is decoration, not floor to walk on). `from` is a prop (a circle), `to` a room.
@@ -822,14 +827,16 @@ const FACILITY_MAP = {
         { id: "sewer_outfall", room: "sewers", kind: "outfall", a: [300, 920], b: [300, 1000], colour: "#a64dff", note: "A big pipe in the west wall, the tanks' runoff pouring out of it into the head of the river." },
         { id: "sewer_bridge", room: "sewers", kind: "bridge_deck", rect: [460, 900, 500, 1020], note: "A steel bridge across the river, two tiles wide: its grating, with the river seen through it, rails either side." },
         { id: "sewer_bridge_broken", room: "sewers", kind: "bridge_broken", rect: [760, 900, 800, 1020], note: "A bridge fallen in: a stump of it on each bank, bent, the middle gone. Not crossable." },
-        // (the collapsed tunnel on the north wall is a passage now, x 860 to 900: its fallen-in mouth is the `sewer_choke` solid and the `rubble_sewer_choke` entry, drawn as the pile across the mouth: js/techabilities.js techDrawRubbleOn)
+        // (the collapsed tunnel on the north wall is an opening now, x 820 to 940: its fallen-in mouth is the `sewer_choke` solid and the `rubble_sewer_choke` entry, drawn as the pile across the whole mouth: js/techabilities.js
+        //  techDrawRubbleOn; the wall decor that hung there moved east of it, and the floor beyond has its own damp and debris)
         { id: "sewer_hatch", room: "sewers", kind: "sealed_hatch", a: [570, 860], b: [590, 860], note: "Rungs up the wall to a hatch at the top, welded shut, a hazard plate on it (a way in for later)." },
         { id: "sewer_pipe_1", room: "sewers", kind: "pipe", a: [410, 860], b: [500, 860], colour: "#5d6a72", z: 60 },
         { id: "sewer_pipe_2", room: "sewers", kind: "pipe", a: [680, 860], b: [760, 860], colour: "#5d6a72", z: 64 },
-        { id: "sewer_pipe_3", room: "sewers", kind: "pipe", a: [920, 860], b: [1000, 860], colour: "#5d6a72", z: 60 },
+        { id: "sewer_pipe_3", room: "sewers", kind: "pipe", a: [960, 860], b: [1000, 860], colour: "#5d6a72", z: 60 },
         { id: "sewer_drip_1", room: "sewers", kind: "ooze_drip", a: [300, 1010], b: [300, 1040], colour: "#a64dff" },
         { id: "sewer_moss_1", room: "sewers", kind: "moss", a: [440, 860], b: [480, 860] },
-        { id: "sewer_moss_2", room: "sewers", kind: "moss", a: [940, 860], b: [980, 860] },
+        { id: "sewer_moss_2", room: "sewers", kind: "moss", a: [970, 860], b: [1000, 860] },
+        { id: "sewer_moss_3", room: "sewers", kind: "moss", a: [860, 780], b: [900, 780], note: "On the back wall of the collapsed tunnel's floor." },
         { id: "sewer_wall_light_1", room: "sewers", kind: "wall_light", a: [520, 860], b: [540, 860], colour: "#d8c8ff" },
         { id: "sewer_wall_light_2", room: "sewers", kind: "wall_light", a: [780, 860], b: [800, 860], colour: "#d8c8ff" },
         { id: "sewer_wall_light_3", room: "sewers", kind: "wall_light", a: [1140, 820], b: [1160, 820], colour: "#ff9aa8" },
@@ -837,12 +844,16 @@ const FACILITY_MAP = {
         { id: "sewer_light_2", room: "sewers", kind: "light", at: [600, 1040], radius: 110, colour: "#9a5cff", a: 0.14, flicker: true },
         { id: "sewer_light_3", room: "sewers", kind: "light", at: [780, 880], radius: 110, colour: "#b07aff", a: 0.14 },
         { id: "sewer_light_4", room: "sewers", kind: "light", at: [1170, 860], radius: 120, colour: "#ff6a7a", a: 0.12, flicker: true },
+        { id: "sewer_light_5", room: "sewers", kind: "light", at: [880, 810], radius: 90, colour: "#b07aff", a: 0.12, flicker: true, note: "A failing lamp over the collapsed tunnel's floor: the vial is seen by it from the ledge." },
         { id: "sewer_puddle_1", room: "sewers", kind: "puddle", at: [520, 880], radius: 14, colour: "#a64dff" },
         { id: "sewer_puddle_2", room: "sewers", kind: "puddle", at: [700, 1040], radius: 16, colour: "#3a7a90" },
         { id: "sewer_puddle_3", room: "sewers", kind: "puddle", at: [960, 880], radius: 12, colour: "#a64dff" },
+        { id: "sewer_puddle_4", room: "sewers", kind: "puddle", at: [860, 830], radius: 12, colour: "#3a7a90", note: "On the collapsed tunnel's floor." },
         { id: "sewer_stain_1", room: "sewers", kind: "stain", at: [420, 1040], radius: 18, colour: "#141a12" },
         { id: "sewer_stain_2", room: "sewers", kind: "stain", at: [880, 1040], radius: 16, colour: "#141a12" },
-        { id: "sewer_debris_1", room: "sewers", kind: "debris", at: [880, 878], radius: 18, n: 7 },
+        { id: "sewer_stain_3", room: "sewers", kind: "stain", at: [920, 830], radius: 14, colour: "#141a12", note: "On the collapsed tunnel's floor, under the vial's end." },
+        { id: "sewer_debris_1", room: "sewers", kind: "debris", at: [880, 878], radius: 18, n: 7, note: "At the foot of the choke, on the ledge." },
+        { id: "sewer_debris_2", room: "sewers", kind: "debris", at: [900, 840], radius: 16, n: 6, note: "On the collapsed tunnel's floor, behind the choke: the collapse's spill." },
         { id: "armory_sign_in", room: "armory", kind: "hazard_sign", a: [190, 950], b: [190, 970] },
         { id: "gun_rack_3", room: "armory", kind: "gun_rack", a: [190, 970], b: [190, 1030] },
         { id: "gun_rack_4", room: "armory", kind: "gun_rack", a: [190, 1070], b: [190, 1130] },
