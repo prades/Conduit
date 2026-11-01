@@ -133,10 +133,11 @@ Use existing documents first; add new ones only with a clear owner.
 
 | Area | Canonical starting point |
 |---|---|
-| Agent instructions | `../AGENTS.md` |
+| Agent instructions | `../AGENTS.md` (Claude Code loads it through `../CLAUDE.md`) |
 | Design/development process | This document |
 | Change history/build notes | `CHANGELOG.md` |
 | Unresolved questions | `OPEN-QUESTIONS.md` |
+| Decision index | `DECISION-LOG.md` |
 | Combat | `COMBAT.md` |
 | Facility/core systems | `FACILITY.md` |
 | Followers/recruitment/breeding | `FOLLOWER-PROGRESSION.md` |
