@@ -61,6 +61,12 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var click = function(el){ if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
   var byText = function(sel, t){ return $$(sel).filter(function(e){ return e.textContent.indexOf(t) === 0; })[0]; };
   var shown = function(el){ return !!el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0; };
+  // THE COLLECTION (js/cardsui.js _cdDeckBox): a rail of mini cards; the one picked (a tap on it) is the card shown on the stage above, in full, its labels and its buttons beside it. Measured at rest, without
+  // the stage's animations (the card's change of form, the blown-up picture, the rarity's light) or the rail's slide
+  var still = document.createElement('style'); still.textContent = '#cardsRoot *, #cardsRoot *::before, #cardsRoot *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }'; document.head.appendChild(still);
+  var minis = function(){ return $$('#cardsRoot .cd-rail .cd-mini'); }, miniName = function(m){ return m.querySelector('.cd-mn').textContent; }, miniFind = function(pred){ return minis().filter(pred)[0]; };
+  var stageCard = function(){ return $('#cardsRoot .cd-stage .cd-card'); }, stageBtn = function(){ return $('#cardsRoot .cd-info .cd-btn'); }, stageName = function(){ var c = stageCard(); return c ? c.querySelector('.cd-name').textContent : null; };
+  var pick = async function(m){ click(m); await wait(30); return stageCard(); };
   // the sheet and the roster's slots with NO card in the registry (the contract of js/cardsui.js; the game itself has six real cards now, so a probe empties the registry for the moment)
   var emptyProbe = async function(){
       var f0 = followers[0]; f0.evolved = 'quillstone'; f0.role = 'brawler'; f0.element = 'fire'; selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f0; ccRender(); await wait(60);
@@ -76,9 +82,13 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.dev = equipDev; out.any = equipAny(); out.wide = typeof hudCorners === 'function' && hudCorners();
     out.startOpen = $('#cardsRoot').className; out.startBanner = !!$('#cardsRoot .cd-banner'); out.startClose = ($('#cardsRoot .cd-close') || {}).textContent;
     if (out.startOpen.indexOf('open') >= 0) {   // A NEW RUN: the screen opened by itself, to choose the hand
-      out.startHand0 = equipHand.length; out.takes = $$('#cardsRoot .cd-grid .cd-btn').filter(function(b){ return /^TAKE INTO THE RUN/.test(b.textContent); }).length;
-      out.locks = $$('#cardsRoot .cd-grid .cd-btn').filter(function(b){ return /^UNLOCK/.test(b.textContent); }).length; out.locksOff = $$('#cardsRoot .cd-grid .cd-btn').filter(function(b){ return /^UNLOCK/.test(b.textContent) && b.disabled; }).length;
-      click(byText('#cardsRoot .cd-grid .cd-btn', 'TAKE INTO THE RUN')); await wait(60); click(byText('#cardsRoot .cd-grid .cd-btn', 'TAKE INTO THE RUN')); await wait(60);
+      out.startHand0 = equipHand.length; out.takes = minis().filter(function(m){ return !m.classList.contains('locked') && !m.classList.contains('hand'); }).length; out.locks = 0; out.locksOff = 0;
+      var lockedM = minis().filter(function(m){ return m.classList.contains('locked'); });
+      for (var lk = 0; lk < lockedM.length; lk++) { await pick(minis().filter(function(m){ return m.classList.contains('locked'); })[lk]); var ub = stageBtn(); if (ub && /^UNLOCK/.test(ub.textContent)) { out.locks++; if (ub.disabled) out.locksOff++; } }   // (each locked card picked: its UNLOCK, off while the shards are short)
+      for (var tk = 0; tk < 2; tk++) {   // a card is taken as a player takes it: picked on the rail, then its button beside it on the stage
+        var tm = miniFind(function(m){ return !m.classList.contains('locked') && !m.classList.contains('hand'); });
+        if (tm) { await pick(tm); var tb = stageBtn(); out['takeShown' + tk] = shown(tb) && /^TAKE INTO THE RUN/.test(tb.textContent); click(tb); await wait(60); }
+      }
       out.startHand1 = equipHand.slice(); click($('#cardsRoot .cd-close')); await wait(60); out.startAfter = $('#cardsRoot').className; out.startBodyClass = document.body.classList.contains('cardsOpen');
     }
     gameState.running = true; facilityBlackoutSet(false); if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false;
@@ -87,9 +97,13 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if (out.any && out.wide && out.dev) {
       // THE SCREEN, from the dock
       click(btn); await wait(200);
-      var slabs = $$('#cardsRoot .cd-grid .cd-card');
-      out.open = { cls: $('#cardsRoot').className, body: document.body.classList.contains('cardsOpen'), hudHidden: !shown($('#topHud')) && !shown($('#topToggles')), slabs: slabs.length, title: ($('#cardsRoot .cd-title') || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent, shardsHead: ($('#cardsRoot .cd-sh-n') || {}).textContent };
-      out.bars = slabs.map(function(s){ var name = s.querySelector('.cd-name').textContent, c = Object.values(equipCards()).filter(function(x){ return x.name === name; })[0]; var chip = s.querySelector('.cd-chip'), sr = s.getBoundingClientRect(), cr = chip ? chip.getBoundingClientRect() : null; return [name, s.querySelectorAll('.cd-chip i.on').length, s.querySelectorAll('.cd-chip i').length, c ? equipRarityBars(c) : -1, s.querySelector('.cd-rar').textContent, c ? equipRarityLabel(c) : '', s.querySelectorAll('.cd-chip').length, cr ? [Math.round(sr.right - cr.right), Math.round(cr.top - sr.top), Math.round(cr.height), (chip.getAttribute('aria-label') || '')] : null]; });
+      var ms = minis();
+      out.open = { cls: $('#cardsRoot').className, body: document.body.classList.contains('cardsOpen'), hudHidden: !shown($('#topHud')) && !shown($('#topToggles')), slabs: ms.length, title: ($('#cardsRoot .cd-title') || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent, shardsHead: ($('#cardsRoot .cd-sh-n') || {}).textContent };
+      out.bars = [];
+      for (var bi = 0; bi < ms.length; bi++) {   // each card picked in its turn, and its chip measured on the stage
+        var s = await pick(minis()[bi]), name = s.querySelector('.cd-name').textContent, c = Object.values(equipCards()).filter(function(x){ return x.name === name; })[0]; var chip = s.querySelector('.cd-chip'), sr = s.getBoundingClientRect(), cr = chip ? chip.getBoundingClientRect() : null;
+        out.bars.push([name, s.querySelectorAll('.cd-chip i.on').length, s.querySelectorAll('.cd-chip i').length, c ? equipRarityBars(c) : -1, s.querySelector('.cd-rar').textContent, c ? equipRarityLabel(c) : '', s.querySelectorAll('.cd-chip').length, cr ? [Math.round(sr.right - cr.right), Math.round(cr.top - sr.top), Math.round(cr.height), (chip.getAttribute('aria-label') || '')] : null]);
+      }
       // THE PLAYER'S TWO SLOTS: Universal cards only; not the same twice
       var ps = $$('#cardsRoot .cd-pbtn'); out.pslots = ps.length; click(ps[0]); await wait(60);
       var lst = function(){ return $$('#cardsRoot .cd-plist .cd-btn').map(function(b){ return [b.querySelector('.cd-bl').textContent, b.disabled]; }); };
@@ -100,11 +114,11 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       click($('#cardsRoot .cd-close')); await wait(60); out.closed = { cls: $('#cardsRoot').className, body: document.body.classList.contains('cardsOpen'), hud: shown($('#topToggles')) };
       click(btn); await wait(100); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await wait(60); out.escaped = $('#cardsRoot').className;
       // UNLOCK: two taps, the flat price, kept
-      cardsOpen(); await wait(60); var locked = $$('#cardsRoot .cd-grid .cd-card.locked');
-      if (locked.length) {
-        var before = shardCount, lc = $$('#cardsRoot .cd-grid .cd-card.locked')[0], nm = lc.querySelector('.cd-name').textContent, id = Object.values(equipCards()).filter(function(x){ return x.name === nm; })[0].id;
-        click(lc.querySelector('.cd-btn')); await wait(60); lc = $$('#cardsRoot .cd-grid .cd-card').filter(function(s){ return s.querySelector('.cd-name').textContent === nm; })[0]; out.arm = { label: lc.querySelector('.cd-bl').textContent, shards: shardCount - before, owned: equipOwns(id) };
-        click(lc.querySelector('.cd-btn')); await wait(60); out.unlock = { shards: before - shardCount, owned: equipOwns(id), stored: localStorage.getItem('conduit_fp_cards') };
+      cardsOpen(); await wait(60); var locked = minis().filter(function(m){ return m.classList.contains('locked'); });
+      if (locked.length) {   // picked on the rail first, then its UNLOCK twice; the card stays the one on the stage while the sheet is drawn again
+        var before = shardCount, nm = miniName(locked[0]); await pick(locked[0]); var id = Object.values(equipCards()).filter(function(x){ return x.name === nm; })[0].id;
+        click(stageBtn()); await wait(60); out.arm = { label: stageBtn().querySelector('.cd-bl').textContent, shards: shardCount - before, owned: equipOwns(id), still: stageName() === nm };
+        click(stageBtn()); await wait(60); out.unlock = { shards: before - shardCount, owned: equipOwns(id), stored: localStorage.getItem('conduit_fp_cards') };
       }
       cardsClose();
       // THE ROSTER: the creature in view's SUBCLASS and its two slots
@@ -125,9 +139,25 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     } else if (out.any && out.wide) {
       // THE REAL CARDS, no switch: the sheet lists the six, all locked (nothing is owned yet), each with its rarity chip; the roster's slots have no card in the hand to offer
       click(btn); await wait(200);
-      var grids = $$('#cardsRoot .cd-grid'), rs = Array.prototype.slice.call(grids[grids.length - 1].querySelectorAll('.cd-card'));   // (the collection is the last grid: the market's shelf is one before it)
-      out.real = { slabs: rs.length, locked: $$('#cardsRoot .cd-grid .cd-card.locked').length, names: rs.map(function(s){ return s.querySelector('.cd-name').textContent; }), kinds: rs.map(function(s){ return s.querySelector('.cd-kind').textContent; }), texts: rs.map(function(s){ return s.querySelector('.cd-text').textContent; }),
-          rars: rs.map(function(s){ return s.querySelector('.cd-rar').textContent; }), lit: rs.map(function(s){ return s.querySelectorAll('.cd-chip i.on').length + '/' + s.querySelectorAll('.cd-chip i').length; }), buttons: rs.map(function(s){ return s.querySelector('.cd-btn .cd-bl').textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent, start: $('#cardsRoot .cd-banner') ? 1 : 0 };
+      // THE COLLECTION: every card picked on the rail in its turn and read off the stage (the card in full, and its button beside it)
+      var rs = []; out.minis = minis().map(function(m){ return [miniName(m), m.classList.contains('locked'), m.querySelectorAll('.cd-chip i.on').length + '/' + m.querySelectorAll('.cd-chip i').length]; });
+      for (var ri = 0; ri < minis().length; ri++) { var sc = await pick(minis()[ri]); rs.push({ name: sc.querySelector('.cd-name').textContent, kind: sc.querySelector('.cd-kind').textContent, text: sc.querySelector('.cd-text').textContent, rar: sc.querySelector('.cd-rar').textContent, lit: sc.querySelectorAll('.cd-chip i.on').length + '/' + sc.querySelectorAll('.cd-chip i').length, locked: sc.classList.contains('locked'), button: stageBtn().querySelector('.cd-bl').textContent }); }
+      out.real = { slabs: rs.length, locked: rs.filter(function(r){ return r.locked; }).length, names: rs.map(function(r){ return r.name; }), kinds: rs.map(function(r){ return r.kind; }), texts: rs.map(function(r){ return r.text; }),
+          rars: rs.map(function(r){ return r.rar; }), lit: rs.map(function(r){ return r.lit; }), buttons: rs.map(function(r){ return r.button; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent, start: $('#cardsRoot .cd-banner') ? 1 : 0 };
+      // THE RAIL AND THE STAGE: the mini picked is the card on the stage and is raised on the rail; its parts are labelled beside it; a tap, ▶, the wheel and the arrow keys step through; a slide that settles
+      // picks the card in the middle; SORT BY ELEMENT orders the rail by element and keeps the card on the stage
+      var rail = $('#cardsRoot .cd-rail'), onMini = function(){ return minis().filter(function(m){ return m.classList.contains('on'); }).map(miniName); };
+      await pick(minis()[0]); out.rail = { first: [stageName(), onMini().join(), ($('#cardsRoot .cd-dpos') || {}).textContent, $$('#cardsRoot .cd-stage .cd-card').length, !!$('#cardsRoot .cd-stage .cd-card.feat')],
+        labels: $$('#cardsRoot .cd-info .cd-ik').map(function(e){ return e.textContent; }), values: $$('#cardsRoot .cd-info .cd-irow').map(function(r){ return r.querySelector('.cd-iv').textContent; }), meter: $$('#cardsRoot .cd-info .cd-imeter i.on').length + '/' + $$('#cardsRoot .cd-info .cd-imeter i').length,
+        prevOff: $$('#cardsRoot .cd-rnav')[0].disabled, sorts: $$('#cardsRoot .cd-sort').map(function(b){ return b.textContent + (b.classList.contains('on') ? '*' : ''); }).join() };
+      click(minis()[5]); await wait(30); out.rail.tapped = [stageName(), miniName(minis()[5]), onMini().join()];
+      click($$('#cardsRoot .cd-rnav')[1]); await wait(30); out.rail.next = stageName();
+      rail.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true })); await wait(30); out.rail.wheel = stageName();
+      rail.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })); await wait(30); out.rail.key = stageName();
+      var m3 = minis()[3]; rail.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); rail.scrollLeft = m3.offsetLeft + m3.offsetWidth / 2 - rail.clientWidth / 2; rail.dispatchEvent(new Event('scroll')); await wait(1200); out.rail.slid = [stageName(), miniName(m3)];   // (a slide: the rail scrolled by hand, then left to settle)
+      var keep = stageName(); click(byText('#cardsRoot .cd-sort', 'ELEMENT')); await wait(80);
+      out.rail.byElement = { names: minis().map(miniName), stage: stageName(), keep: keep, on: $$('#cardsRoot .cd-sort.on').map(function(b){ return b.textContent; }).join() };
+      click(byText('#cardsRoot .cd-sort', 'RARITY')); await wait(80); out.rail.back = minis().map(miniName).slice(0, 6).join('|');
       click($('#cardsRoot .cd-close')); await wait(60);
       _equipReg = {}; await emptyProbe(); _equipReg = null; equipReset();
     } else if (!out.any) {
@@ -426,10 +456,10 @@ function measure(w, h, query, seed) {
     else {
         await check('A NEW RUN with a collection: the sheet opens by itself with a banner and START THE RUN; the owned cards can be taken (up to three), the locked ones cost ◆1,000 and are off while the shards are short; START shuts it and the HUD is back', () => {
             ok(U && !U.err, 'the probe: ' + (U && U.err)); same(U.dev, 'on', 'the switch'); same(U.startOpen.indexOf('open') >= 0, true, 'the sheet did not open'); same(U.startBanner, true, 'no banner'); same(U.startClose, 'START THE RUN ▸', 'its button'); same(U.startHand0, 0, 'the hand began full');
-            same(U.takes, 2, 'cards to take'); same(U.locks, 31, 'cards to unlock (the 24 real and the seven test cards not owned)'); same(U.locksOff, 31, 'unlocks that were on with ' + 100 + ' shards'); same(U.startHand1.join(), 'test_fire,test_universal_a', 'the hand chosen'); same(U.startAfter.indexOf('open') < 0, true, 'START did not shut it'); same(U.startBodyClass, false, 'body.cardsOpen after');
+            same(U.takes, 2, 'cards to take'); same(U.locks, 31, 'cards to unlock (the 24 real and the seven test cards not owned)'); same(U.locksOff, 31, 'unlocks that were on with ' + 100 + ' shards'); same(U.startHand1.slice().sort().join(), 'test_fire,test_universal_a', 'the hand chosen'); same([U.takeShown0, U.takeShown1].join(), 'true,true', 'TAKE INTO THE RUN was not beside the card picked'); same(U.startAfter.indexOf('open') < 0, true, 'START did not shut it'); same(U.startBodyClass, false, 'body.cardsOpen after');
         });
         await check('?cards (not =all): the button is there, shown; UNLOCK asks twice, the second tap pays ◆1,000 once and the card is owned and kept; the same card is not charged again', () => {
-            same(U.btn.shown, true, 'the button'); same(U.arm.label, 'TAP AGAIN TO UNLOCK', 'the first tap'); same(U.arm.shards, 0, 'the first tap spent shards'); same(U.arm.owned, false, 'the first tap unlocked');
+            same(U.btn.shown, true, 'the button'); same(U.arm.label, 'TAP AGAIN TO UNLOCK', 'the first tap'); same(U.arm.still, true, 'the card left the stage when the sheet was drawn again'); same(U.arm.shards, 0, 'the first tap spent shards'); same(U.arm.owned, false, 'the first tap unlocked');
             same(U.unlock.shards, 1000, 'the price'); same(U.unlock.owned, true, 'owned'); ok(JSON.parse(U.unlock.stored).owned.length === 3, 'kept: ' + U.unlock.stored);
         });
     }
@@ -437,16 +467,28 @@ function measure(w, h, query, seed) {
     if (N === null) console.log('  (no Chromium here: skipped)');
     else await check('WITHOUT ?cards: the CARDS button is in the dock and shown, the sheet lists the six real cards (locked, a rarity chip on each), and with no card in the registry the sheet is empty and says so, and the roster has the SUBCLASS tag and CARD 1 / CARD 2, off, saying there is no card in the hand', () => {
         ok(N && !N.err, 'the probe: ' + (N && N.err)); same(N.dev, '', 'the switch'); same(N.any, true, 'a card exists'); same(N.btn.there && N.btn.inDock && N.btn.shown, true, 'the button: ' + JSON.stringify(N.btn));
-        same(N.real.slabs, 24, 'the 24 on the sheet'); same(N.real.locked, 24, 'locked'); same(N.real.names.slice(0, 6).join('|'), 'IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|PROTOTYPE X|CORE REINFORCEMENT', 'their names (the Crystalline six first)'); same(N.real.kinds.slice(0, 6).join('|'), 'CLASS · BRAWLER|CLASS · BRAWLER|CLASS · MAGE|CLASS · MAGE|CLASS · TECHNICIAN|CLASS · TECHNICIAN', 'their classes');
+        same(N.real.slabs, 24, 'the 24 on the sheet'); same(N.real.locked, 24, 'locked'); same(N.real.names.slice(0, 6).join('|'), 'IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|CORE REINFORCEMENT|PROTOTYPE X', 'their names (by rarity: the Crystalline six first, by class, then by name)'); same(N.real.kinds.slice(0, 6).join('|'), 'CLASS · BRAWLER|CLASS · BRAWLER|CLASS · MAGE|CLASS · MAGE|CLASS · TECHNICIAN|CLASS · TECHNICIAN', 'their classes');
         same(N.real.lit.slice(0, 6).join(), '6/6,6/6,6/6,6/6,6/6,6/6', 'the rarity chips'); same(N.real.rars.slice(0, 6).join(), 'CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE', 'the rarity names');
-        same(N.real.texts.slice(0, 6).join('|'), '+50% ATTACK DAMAGE|+50% MAXIMUM HEALTH|+50% ELEMENTAL ATTACK POWER|+50% ATTACK SPEED|+50% ATTACK SPEED|+50% MAXIMUM HEALTH', 'what each says'); ok(/^UNLOCK ◆1000$/.test(N.real.buttons[0]) && N.real.buttons.every(b => b === N.real.buttons[0]), 'the buttons: ' + N.real.buttons); same(N.real.start, 0, 'the choice at the start of a run opened with nothing owned');
-        same(N.real.names.slice(6).length, 18, 'Pack 1\'s eighteen follow'); same(N.real.lit.slice(6).join(), '1/6,2/6,3/6,1/6,2/6,3/6,1/6,2/6,3/6,1/6,2/6,3/6,1/6,2/6,3/6,1/6,2/6,3/6', 'their rarity chips: Unrefined, Refined, Precision, six times');
+        same(N.real.texts.slice(0, 6).join('|'), '+50% ATTACK DAMAGE|+50% MAXIMUM HEALTH|+50% ELEMENTAL ATTACK POWER|+50% ATTACK SPEED|+50% MAXIMUM HEALTH|+50% ATTACK SPEED', 'what each says'); ok(/^UNLOCK ◆1000$/.test(N.real.buttons[0]) && N.real.buttons.every(b => b === N.real.buttons[0]), 'the buttons: ' + N.real.buttons); same(N.real.start, 0, 'the choice at the start of a run opened with nothing owned');
+        same(N.real.names.slice(6).length, 18, 'Pack 1\'s eighteen follow'); same(N.real.lit.slice(6).join(), '3/6,3/6,3/6,3/6,3/6,3/6,2/6,2/6,2/6,2/6,2/6,2/6,1/6,1/6,1/6,1/6,1/6,1/6', 'their rarity chips: the six Precision, the six Refined, the six Unrefined');
+        same(N.real.names.slice(6, 12).join('|'), 'CINDERBRAND|MIREBLIGHT|STATIC LOCK|RIME SNARE|SIPHON FIELD|REPULSOR PULSE', 'the Precision six, by element (fire, toxic, electric, ice, flux, core)');
+        same(JSON.stringify(N.minis.map(m => m[0])), JSON.stringify(N.real.names), 'the rail\'s mini cards are not the stage\'s cards in the same order'); same(N.minis.map(m => m[2]).join(), N.real.lit.join(), 'a mini card\'s rarity chip'); same(N.minis.every(m => m[1]), true, 'a mini card not locked');
         ok(/HAND 0 \/ 3 · 0 OF 24 UNLOCKED$/.test(N.real.summary), 'the summary: ' + N.real.summary);
         same(N.plain.dds.join('|'), 'ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2', 'the roster\'s settings'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
         same(N.plain.sub.join(), 'SUBCLASS,CRUSTACEAN', 'the subclass row'); same(N.plain.chip, 'CRUSTACEAN', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
         ok(N.emptySheet.cls.indexOf('open') >= 0, 'the sheet did not open'); same(N.emptySheet.slabs, 0, 'a card on the sheet'); same(N.emptySheet.empties, 3, 'the hand\'s empty places'); same(N.emptySheet.pslots, 2, 'the player\'s slots');
         same(N.emptySheet.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|MARKET|THE COLLECTION', 'its parts'); same(N.emptySheet.note, 'NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED', 'what the collection says'); ok(/HAND 0 \/ 3 · 0 OF 0 UNLOCKED/.test(N.emptySheet.summary) && !/TEST CARDS/.test(N.emptySheet.summary), 'the summary: ' + N.emptySheet.summary);
         same(N.emptySheet.pList, '1/NO CARD IN YOUR HAND', 'a player slot\'s list with no card in the hand (EMPTY, off, and the note)'); same(N.emptySheet.closed.indexOf('open') < 0, true, 'close');
+    });
+    if (N !== null) await check('THE COLLECTION: a rail of mini cards (sorted by rarity, or by element) and the card picked on it shown on the stage above, in full, its parts labelled beside it (name, kind, rarity with a meter lit to its step, effect, state); a tap, ▶, the wheel and the arrow keys step through; a slide that settles picks the card in the middle', () => {
+        const R = N.rail; ok(R, 'no probe of the rail'); same(R.first.slice(0, 5).join('|'), 'IMPACT TEST|IMPACT TEST|1 OF 24|1|true', 'the first card: on the stage, raised on the rail, where it is, one card on the stage, featured');
+        same(R.labels.join('|'), 'NAME|KIND|RARITY|EFFECT|STATE', 'the labels'); same(R.values.join('|'), 'IMPACT TEST|CLASS · BRAWLER|CRYSTALLINE · 6 OF 6|+50% ATTACK DAMAGE|LOCKED', 'what they say'); same(R.meter, '6/6', 'the rarity meter'); same(R.prevOff, true, '◀ was on at the first card');
+        same(R.sorts, 'RARITY*,ELEMENT', 'the sort buttons'); same(R.tapped.join('|'), [R.tapped[1], R.tapped[1], R.tapped[1]].join('|'), 'a tap on the sixth mini card'); same(R.next, N.real.names[6], '▶'); same(R.wheel, N.real.names[8], 'the wheel (120: two steps)'); same(R.key, N.real.names[7], 'the arrow key');
+        same(R.slid[0], R.slid[1], 'the card in the middle after a slide');
+        same(R.byElement.names.join('|'), 'EMBER PLATING|FURNACE HEART|CINDERBRAND|VENOM GLAND|CORROSIVE RESERVOIR|MIREBLIGHT|CHARGED WIRING|ARC CAPACITOR|STATIC LOCK|FROST LINING|PERMAFROST SHELL|RIME SNARE|FLUX CELL|VORTEX CORE|SIPHON FIELD|IMPACT STUDS|BEDROCK MATRIX|REPULSOR PULSE|IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|CORE REINFORCEMENT|PROTOTYPE X', 'by element (each element Unrefined to Precision, then the class cards)');
+        same(R.byElement.stage, R.byElement.keep, 'the card on the stage changed with the sort'); same(R.byElement.on, 'ELEMENT', 'the sort button lit'); same(R.back, 'IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|CORE REINFORCEMENT|PROTOTYPE X', 'back to rarity');
+        const css = rd('game.html'); for (const k of ['cdMorph', 'cdBlow', 'cdBlowItem', 'cdBar']) ok(new RegExp('@keyframes ' + k + ' ').test(css), 'no ' + k + ' (the card changing form, the picture blown up, the rarity lighting up)');
+        ok(/\.cd-stage > \.cd-card\.feat \{[^}]*animation: cdMorph/.test(css) && /\.cd-stage \.cd-gem \{ animation: cdBlow/.test(css) && /\.cd-stage \.cd-chip i\.on, #cardsRoot \.cd-imeter i\.on \{ animation: cdBar/.test(css), 'the stage does not play them');
     });
     const P = measure(390, 844, '?cards=all');
     if (P === null) console.log('  (no Chromium here: skipped)');

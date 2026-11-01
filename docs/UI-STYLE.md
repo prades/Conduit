@@ -62,6 +62,41 @@ The owner, of the board picked on the design canvas ("Conduit 3D card concepts")
 
 How it is built: each picture is a small standalone SVG used as a CSS background (a data: URL, made once), through a class js/cardart.js writes into one `<style id="cardArtCss">` the first time it is wanted: `cat-c-<texture>` an equip card's face, `cat-f-<element>-<class>` a follower's backdrop, `cag-<colour>` the crystal, `cac-<colour>` the cube, each setting one CSS variable (`--tex` or `--gem`). The css lays `var(--tex)` under its veils (game.html: the block "THE 3D CARDS", and each follower card's background). The crystal and the cube are drawn already turned (the canvas's turns), so a card has no 3D parts of its own.
 
+## The collection: a featured card over a rail of mini cards (2026-11-01, build `i`)
+
+The owner: "make it sortable by rarity or by the element", then "I want the cards at the bottom in the slider to be mini cards that the player can slide through, and the main card that would be in the middle of the slider is the card that is displayed at the top. When the card is selected, perhaps its description and card elements are labeled on the side of the card, and the card itself actually changes form and blows up the image and the rarity meters highlight."
+
+THE COLLECTION, at the foot of the CARDS screen (js/cardsui.js `_cdDeckBox`), is three parts.
+
+**The bar.** SORT BY RARITY or ELEMENT (the lit one teal), and where the shown card is ("3 OF 24").
+- By rarity, the rarest come first; within a rarity, by element and then class, then by name.
+- By element: fire, toxic, electric, ice, flux, core, then the class cards, the species cards and the universal ones. Within each, Unrefined to Precision.
+
+**The stage.** The card picked, in full, as any equip card. As it arrives:
+- It **changes form**: it grows up out of a mini card (from a third of its size, turned away, bright) into its place (`cdMorph`).
+- Its **picture is blown up**: the crystal, the cube or the item, scaled up and kept so (`cdBlow`, on the CSS `scale` property, so an item's own hover keeps its `transform`).
+- Its **rarity chip lights up** one lit segment after another, then glows (`cdBar`, `cdBarGlow`).
+
+Beside the card, behind a leader line, its parts are **labelled**: NAME (large, in the card's colour), KIND, RARITY (a large meter lit to its step, with its name and "n OF 6"), EFFECT, STATE (IN YOUR HAND, FOUND THIS RUN, LOCKED or YOURS FOR GOOD, and who wears it). Its buttons (UNLOCK, TAKE INTO THE RUN, PUT IT BACK) are under the labels.
+
+**The rail.** Every card as a **mini card** (82 × 114): its texture, its crystal, cube or item, its name and a small rarity chip, with ✓ for in your hand and ★ for found.
+- They sit in a row the browser scrolls sideways (a finger, a trackpad), each snapping to the middle.
+- The mini in the middle is raised and lit, and when the slide settles it is the card on the stage.
+- A tap brings a mini to the middle. ◀ ▶, the wheel and the arrow keys step one.
+- Sliding redraws only the stage, never the rail under the finger.
+
+On a phone the card is smaller (zoom 0.6) with its labels still beside it, so the rail stays in view.
+
+## The card items (2026-11-01, build `i`; a preview until approved)
+
+The owner asked: "give 3D item looks instead of crystal for the first packs designs ... the item itself needs to be a 3D object that hovers out of the picture of the card itself", in the game-model look.
+
+Each equip card is to show its **own item**, modelled in 3D and lit as the props and the followers are, in place of the element's crystal. The models are in design/cards/models; design/cards/bake_items.js bakes each to img/cards/<card id>.png with the props' lights and a hero camera from the front-right.
+
+On a card, the item stands in front of the tilted card, over its picture, and rises past its top edge. It hovers (`cdHover`) while its shadow on the card breathes. On the collection's stage it is blown up.
+
+docs/ART-PROCESS.md applies: one piece first. EMBER PLATING is modelled; js/cardart.js `CARD_ITEMS` lists it, and it shows only with `?cardart=items` until the owner approves the look (`CARD_ITEMS.live` then turns the items on for everyone). The other seventeen of Pack 1 come after that.
+
 ## The roster: a carousel (the facility's Command Center, a tablet or a desktop)
 
 Five layouts of the roster and the squad viewer were drawn on the same parts (docs/images/roster-carousel.jpg is the one picked: "Roster 5 · CAROUSEL", "but no recruit button at the top"). **The squad** (three numbered slots, each with a ✕ REMOVE, and DISBAND) stands across the top; **the creature in view** is big in the middle with ◂ ▸, its name in its colour, a state tag and five bars; **its settings** (ATTACK STYLE, PLAY STYLE, RE-ROLL, INFO, base stats) stand beside it; **the filters and a strip of everyone** (the squad first, the creature in view raised, **RECRUIT** as the last tile, dashed gold) are under that; **one bar at the foot** adds, swaps in or removes. Everything is a slab from the kit above (a skewed `::before` with a 2 px outline and a glow in the piece's colour, the text upright): the header's buttons, the squad's slots, the settings, the filter chips, the strip's cards, the bar's buttons; the card in view is a slab with a straighter slant (2°) and its picture in a frame. The numbers' bars are against the best of the roster; every bar is in the creature's colour, and HEALTH turns amber, then red, as it falls. Each strip card's health bar is the same mini bar as the squad's cards, the numbers in it and an XP hairline under it (2026-11-01). A phone keeps the grid of cards and the side panel. The details and what each tap does are in docs/TUTORIAL.md ("The roster: a carousel"); the css is the block "THE CAROUSEL" in game.html.

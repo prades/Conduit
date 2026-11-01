@@ -72,7 +72,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       return { name: nm && nm.textContent, kind: c ? c.kind : null, match: c ? c.match : null, face: !!face, parts: ['.cd-tex', '.cd-frame', '.cd-top .cd-rar', '.cd-glow', '.cd-shadow', '.cd-gem', '.cd-holo.ghost', '.cd-holo:not(.ghost)', '.cd-emit.l', '.cd-emit.r', '.cd-back'].filter(function(s){ return !el.querySelector(s); }),
         names: el.querySelectorAll('.cd-name').length, kinds: el.querySelectorAll('.cd-kind').length, texts: el.querySelectorAll('.cd-text').length, chips: el.querySelectorAll('.cd-chip').length, ghost: (el.querySelector('.cd-holo.ghost .cd-gn') || {}).textContent, ghostHidden: (el.querySelector('.cd-holo.ghost') || { getAttribute: function(){ return null; } }).getAttribute('aria-hidden'),
         tex: art(t), gem: art(g), state: (el.querySelector('.cd-state') || {}).textContent || '', cls: el.className, chipAt: cr ? [Math.round((cr.left + cr.width / 2 - ar.left) / ar.width * 100), Math.round((cr.top + cr.height / 2 - ar.top) / ar.height * 100)] : null,
-        btns: Array.prototype.slice.call(el.querySelectorAll(':scope > .cd-btn')).map(function(b){ b.scrollIntoView({ block: 'center' }); return hit(b); }) };
+        btns: Array.prototype.slice.call(el.closest('.cd-stage') ? document.querySelectorAll('#cardsRoot .cd-info .cd-btn') : el.querySelectorAll(':scope > .cd-btn')).map(function(b){ b.scrollIntoView({ block: 'center' }); return hit(b); }) };   // (the collection's card on its stage has its buttons beside it, with its labels)
     });
     var sl = $('#cardsRoot .cd-slab'), sa = $('#cardsRoot .cd-art');
     out.tilt = { transform: getComputedStyle(sl).transform.slice(0, 9), style: getComputedStyle(sl).transformStyle, perspective: getComputedStyle(sa).perspective, sides: $$('#cardsRoot .cd-side').length };
@@ -186,6 +186,25 @@ function measure(w, h) {
         same(J('cardArtUrl("c:fire", () => "")'), u, 'made again');
     });
 
+    group('THE CARD ITEMS (js/cardart.js CARD_ITEMS; design/cards: each card\'s own 3D object in place of the crystal, ONE piece first, shown only on a preview until the owner approves the look)');
+    await check('without ?cardart=items no card shows an item (the crystal stays, docs/ART-PROCESS.md); with it, EMBER PLATING shows its baked picture and a card with none baked keeps its crystal', () => {
+        same(J('[CARD_ITEMS.live, cardArtItemUrl(EQUIP_CARDS.ember_plating)]').join('|'), 'false|', 'without the preview');
+        run("location.search = '?cardart=items'");
+        same(J('cardArtItemUrl(EQUIP_CARDS.ember_plating)'), 'img/cards/ember_plating.png?v=' + J('BUILD_VERSION'), 'with the preview'); same(J('cardArtItemUrl(EQUIP_CARDS.furnace_heart)'), '', 'a card with no item baked');
+        run("location.search = ''");
+    });
+    await check('every item on the list has its model (design/cards/models/<id>.js, registering ITEMS.<id>) and its baked picture (img/cards/<id>.png, a PNG), and is a real card', () => {
+        for (const id of J('CARD_ITEMS.ids')) {
+            ok(J('!!EQUIP_CARDS[' + JSON.stringify(id) + ']'), id + ' is not a card'); const model = path.join(ROOT, 'design', 'cards', 'models', id + '.js'), png = path.join(ROOT, 'img', 'cards', id + '.png');
+            ok(fs.existsSync(model) && new RegExp('ITEMS\\.' + id + ' = ').test(fs.readFileSync(model, 'utf8')), id + ': no model'); ok(fs.existsSync(png) && fs.readFileSync(png).slice(1, 4).toString() === 'PNG', id + ': no picture');
+        }
+    });
+    await check('on a card the item takes the crystal\'s place, stands in front of the tilted card and rises past its top, hovering; on the collection\'s stage it is blown up', () => {
+        const html = rd('game.html'), ui = rd('js/cardsui.js');
+        ok(/#cardsRoot \.cd-card\.itemed \.cd-gem \{ display: none; \}/.test(html), 'the crystal stays under the item'); ok(/#cardsRoot \.cd-item \{[^}]*top: -48px[^}]*animation: cdHover/.test(html), 'the item does not rise past the top, hovering');
+        ok(/#cardsRoot \.cd-stage \.cd-item \{[^}]*cdBlowItem/.test(html), 'the stage does not blow it up'); ok(/cardArtItemUrl\(c\)/.test(ui) && /"cd-item"/.test(ui), 'the card does not ask for its item');
+    });
+
     group('THE PAGE');
     await check('game.html loads js/cardart.js after js/cards.js and before the screens that use it, the boot check knows it, and the cards\' CSS has the tilt, the texture under a veil, the hologram and its shadow, and the backdrops on every follower card', () => {
         const html = rd('game.html'), order = scriptOrder();
@@ -223,7 +242,7 @@ function measure(w, h) {
             }
             ok(T.cards.some(c => c.kind === 'element') && T.cards.some(c => c.kind === 'class') && T.cards.some(c => c.kind === 'universal'), 'not every kind was shown');
         });
-        await check('its state is written along its top (IN YOUR HAND, FOUND THIS RUN, LOCKED, or nothing), the rarity chip stands on its right edge (the right fifth of the card, its upper half), and its buttons are under it where a tap reaches them', () => {
+        await check('its state is written along its top (IN YOUR HAND, FOUND THIS RUN, LOCKED, or nothing), the rarity chip stands on its right edge (the right fifth of the card, its upper half), and its buttons are under it (beside it, for the collection\'s card on its stage) where a tap reaches them', () => {
             const st = { hand: 'IN YOUR HAND', found: 'FOUND THIS RUN', locked: 'LOCKED' };
             for (const c of T.cards) {
                 const k = Object.keys(st).find(s => (' ' + c.cls + ' ').indexOf(' ' + s + ' ') >= 0); same(c.state, k ? st[k] : '', c.name + ' (' + c.cls + ')');

@@ -138,6 +138,14 @@ The owner played build `g` and answered the questions put to them; what they sai
 
 Open, for the owner (playtest): the turret's health and the raid's pace (in the measured raids the turrets never let one reach the Crystal; but three ants that do reach it bite about 45 a second together, its 300 in about seven seconds, so once the turrets are wrecked and left unrepaired a raid can end a run fast); whether the first raid should come at once when the Sewers are found; the raid clock is not saved (a load starts it again); whether the queen should lose her element too; whether the turrets should still need their relays in the tutorial (they run on the Crystal from the start now, so they fire in the tutorial's assault).
 
+## 1i. The collection, the first card item, the Series 2 draft (built 2026-11-01, build `i`; docs/UI-STYLE.md, docs/SERIES-2.md)
+
+Asked: "sketch out the items for series pack 2", "give 3D item looks instead of crystal for the first packs designs ... a 3D object that hovers out of the picture of the card itself", "make it sortable by rarity or by the element", then "mini cards that the player can slide through, and the main card that would be in the middle of the slider is the card that is displayed at the top ... its description and card elements are labeled on the side of the card, and the card itself actually changes form and blows up the image and the rarity meters highlight". The owner's answers, asked the same day: the items in the **game-model look**; Series 2 is **40 cards** (5 per identity, Unrefined to Lustrous); **stats low, abilities high**; the slider replaces **the collection**.
+
+- **Built:** the collection as a featured card over a rail of mini cards, sortable by rarity or element (docs/UI-STYLE.md).
+- **A preview, awaiting approval:** EMBER PLATING's 3D item. It shows only with `?cardart=items`; the crystal stays for everyone until the owner says yes (docs/ART-PROCESS.md). The other seventeen Pack 1 items come after that.
+- **A draft, awaiting approval:** the 40 Series 2 items (docs/SERIES-2.md). Names, effects and numbers are PROPOSED, and nothing is in the game. Still open there: the pack's price and odds, whether Series 2 deals the Crystalline six as its rarest tier, and the order of the work.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

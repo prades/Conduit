@@ -43,7 +43,7 @@ function cardsClose() {
 function _cdChip(c, mini) {
     const n = equipRarityBars(c), chip = _cdEl("span", "cd-chip" + (mini ? " mini" : "")), say = "RARITY · " + equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length;
     chip.title = say; chip.setAttribute("role", "img"); chip.setAttribute("aria-label", say); chip.style.setProperty("--c", _cdKindCol(c));
-    for (let i = 0; i < EQUIP_RARITIES.length; i++) chip.appendChild(_cdEl("i", i < n ? "on" : ""));
+    for (let i = 0; i < EQUIP_RARITIES.length; i++) { const seg = _cdEl("i", i < n ? "on" : ""); seg.style.setProperty("--i", String(i)); chip.appendChild(seg); }   // (--i: its place, so a lit chip can light up one segment after another)
     return chip;
 }
 function _cdKindCol(c) { return c.kind === "element" ? ((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === c.match)) || {}).color || "#8fe3ff" : c.kind === "universal" ? "#ffe733" : "#8fe3ff"; }
@@ -63,33 +63,37 @@ function _cdSlab(c, extra) {
     face.appendChild(_cdChip(c));   // (on the card's right edge)
     face.appendChild(_cdEl("i", "cd-glow")); face.appendChild(_cdEl("i", "cd-shadow"));
     const gem = _cdEl("i", "cd-gem"); if (typeof cardArtObjectClass === "function") cardArtMark(gem, cardArtObjectClass(c, col), "gem"); face.appendChild(gem);
+    // THE CARD'S ITEM (js/cardart.js CARD_ITEMS, on a preview until approved): the card's own 3D object, in place of the crystal, standing in front of the tilted card and rising past its top edge, hovering
+    const item = typeof cardArtItemUrl === "function" ? cardArtItemUrl(c) : "";
     const long = /\S{12,}/.test(c.name) ? " long" : "";   // (a name with a long word, CORE REINFORCEMENT, is set smaller so that it breaks between words, not inside one)
     const ghost = _cdEl("div", "cd-holo ghost"); ghost.setAttribute("aria-hidden", "true");   // the hologram's shadow: its own class names, so a card has one .cd-name, .cd-kind and .cd-text
     ghost.appendChild(_cdEl("div", "cd-gn" + long, c.name)); ghost.appendChild(_cdEl("div", "cd-gk", equipKindLabel(c))); ghost.appendChild(_cdEl("div", "cd-gt", c.text || "")); face.appendChild(ghost);
     const holo = _cdEl("div", "cd-holo"); holo.appendChild(_cdEl("div", "cd-name" + long, c.name)); holo.appendChild(_cdEl("div", "cd-kind", equipKindLabel(c))); holo.appendChild(_cdEl("div", "cd-text", c.text || "")); face.appendChild(holo);
     face.appendChild(_cdEl("i", "cd-emit l")); face.appendChild(_cdEl("i", "cd-emit r"));
-    slab.appendChild(face); art.appendChild(slab); s.appendChild(art);
+    slab.appendChild(face); art.appendChild(slab);
+    if (item) { s.classList.add("itemed"); const im = _cdEl("i", "cd-item"); im.style.backgroundImage = 'url("' + item + '")'; im.setAttribute("aria-hidden", "true"); art.appendChild(im); }
+    s.appendChild(art);
     return s;
 }
 function _cdBtn(label, sub, col, fn, disabled) {
     const b = _cdEl("button", "cd-btn"); b.style.setProperty("--c", col || "#19e6c1"); b.appendChild(_cdEl("span", "cd-bl", label)); if (sub) b.appendChild(_cdEl("span", "cd-bs", sub));
     if (disabled) b.disabled = true; else _cdClick(b, () => { fn(); cardsRender(true); }); return b;
 }
-// the collection's slab, with what can be done with it
-function _cdCollectionCard(c) {
-    const own = equipOwns(c.id), inHand = equipInHand(c.id), s = _cdSlab(c, own ? (inHand ? "hand" : "") : equipIsFound(c.id) ? "found" : "locked");
-    if (!own) {
+// what can be done with a card of the collection: UNLOCK (two taps) while it is not yours, else TAKE INTO THE RUN or PUT IT BACK
+function _cdCollectionActions(c) {
+    if (!equipOwns(c.id)) {
         const why = equipUnlockWhyNot(c.id), armed = _cdArm && _cdArm.id === c.id && _cdNow() < _cdArm.until;
-        s.appendChild(_cdBtn(armed ? "TAP AGAIN TO UNLOCK" : "UNLOCK ◆" + EQUIP.unlockCost, why || (armed ? "◆" + EQUIP.unlockCost + " OF YOUR SHARDS, FOR GOOD" : "FOR GOOD, EVERY RUN"), "#ffe733", () => {
+        return [_cdBtn(armed ? "TAP AGAIN TO UNLOCK" : "UNLOCK ◆" + EQUIP.unlockCost, why || (armed ? "◆" + EQUIP.unlockCost + " OF YOUR SHARDS, FOR GOOD" : "FOR GOOD, EVERY RUN"), "#ffe733", () => {
             if (_cdArm && _cdArm.id === c.id && _cdNow() < _cdArm.until) { _cdArm = null; equipUnlock(c.id); } else _cdArm = { id: c.id, until: _cdNow() + CARDS_ARM_MS };
-        }, !!why));
-        return s;
+        }, !!why)];
     }
     const worn = equipWearers(c.id);
-    if (inHand) s.appendChild(_cdBtn("IN YOUR HAND ✓", "PUT IT BACK" + (worn ? " · COMES OFF " + worn : ""), "#19e6c1", () => equipHandRemove(c.id)));
-    else { const full = equipHand.length >= equipHandCap(); s.appendChild(_cdBtn("TAKE INTO THE RUN", full ? "YOUR HAND IS FULL (" + EQUIP.startPick + ")" : "", "#19e6c1", () => equipHandAdd(c.id), full)); }
-    return s;
+    if (equipInHand(c.id)) return [_cdBtn("IN YOUR HAND ✓", "PUT IT BACK" + (worn ? " · COMES OFF " + worn : ""), "#19e6c1", () => equipHandRemove(c.id))];
+    const full = equipHand.length >= equipHandCap(); return [_cdBtn("TAKE INTO THE RUN", full ? "YOUR HAND IS FULL (" + EQUIP.startPick + ")" : "", "#19e6c1", () => equipHandAdd(c.id), full)];
 }
+function _cdStateOf(c) { return equipOwns(c.id) ? (equipInHand(c.id) ? "hand" : "") : equipIsFound(c.id) ? "found" : "locked"; }
+// a card of the collection as a slab with its buttons under it (FOUND THIS RUN)
+function _cdCollectionCard(c) { const s = _cdSlab(c, _cdStateOf(c)); _cdCollectionActions(c).forEach(b => s.appendChild(b)); return s; }
 // the player's two slots: each opens a list of the Universal cards in the hand
 function _cdPlayerSlot(slot) {
     const box = _cdEl("div", "cd-pslot"), id = equipPlayer[slot], c = equipCard(id), open = _cdDD === slot;
@@ -148,6 +152,124 @@ function _cdMarketBox() {
     box.appendChild(grid); return box;
 }
 
+// ── THE COLLECTION: A FEATURED CARD OVER A RAIL OF MINI CARDS (ASKED 2026-11-01: "make it sortable by rarity or by the element ... the player can swipe through, and the card that is selected in the slider is
+// revealed"; then, revised: "I want the cards at the bottom in the slider to be mini cards that the player can slide through, and the main card that would be in the middle of the slider is the card that is
+// displayed at the top. When the card is selected, perhaps its description and card elements are labeled on the side of the card, and the card itself actually changes form and blows up the image and the
+// rarity meters highlight").
+//   THE RAIL     every card of the collection as a MINI CARD (its texture, its crystal or cube or item, its name, its rarity chip, a mark for in your hand or found), in a row the player slides through
+//                (a native scroll, snapping each card to the middle); the one in the MIDDLE is the card selected. A tap on a mini card brings it to the middle; ◀ ▶, the wheel and the arrow keys step one.
+//   THE STAGE    the selected card, at the top: the full card (js/cardsui.js _cdSlab), which CHANGES FORM as it arrives (it grows out of a mini card), its picture BLOWN UP (the crystal, cube or item scaled
+//                up and kept so), its RARITY METER lighting up one segment after another and then glowing; beside it its parts LABELLED (name, kind, rarity with a large meter, effect, state) and its buttons.
+//   SORT         by rarity (the rarest first) or by element (fire, toxic, electric, ice, flux, core, then the class cards, the species cards, the universal ones), the lower rarity first within each.
+// The order and the card selected are kept while the sheet is open and between openings (_cdSort, _cdSel). Sliding the rail redraws only the stage, never the rail under the finger.
+let _cdSort = "rarity", _cdSel = null;
+const CD_RAIL = { settle: 110, wheel: 60 };
+const _CD_EL_ORDER = ["fire", "toxic", "electric", "ice", "flux", "core"], _CD_ROLE_ORDER = ["brawler", "sniper", "camper"];
+const _CD_INFO_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED", "": "YOURS FOR GOOD" };
+function _cdRarityIdx(c) { return EQUIP_RARITIES.findIndex(r => r.id === c.rarity); }
+function _cdGroupIdx(c) { return c.kind === "element" ? _CD_EL_ORDER.indexOf(c.match) : c.kind === "class" ? 10 + _CD_ROLE_ORDER.indexOf(c.match) : c.kind === "subclass" ? 20 + EQUIP_SUBCLASSES.findIndex(s => s.id === c.match) : 40; }
+// the collection in the rail's order ("rarity" or "element")
+function equipCollectionOrder(cards, by) {
+    return cards.slice().sort((a, b) => by === "element" ? (_cdGroupIdx(a) - _cdGroupIdx(b) || _cdRarityIdx(a) - _cdRarityIdx(b) || a.name.localeCompare(b.name))
+                                                         : (_cdRarityIdx(b) - _cdRarityIdx(a) || _cdGroupIdx(a) - _cdGroupIdx(b) || a.name.localeCompare(b.name)));
+}
+// a mini card on the rail
+function _cdMini(c) {
+    const st = _cdStateOf(c), col = _cdKindCol(c), m = _cdEl("button", "cd-mini" + (st ? " " + st : "")); m.type = "button"; m._id = c.id; m.setAttribute("data-id", c.id); m.style.setProperty("--c", col);
+    const tex = _cdEl("i", "cd-mtex"); if (typeof cardArtFaceClass === "function") cardArtMark(tex, cardArtFaceClass(c)); m.appendChild(tex);
+    const gem = _cdEl("i", "cd-mgem"), item = typeof cardArtItemUrl === "function" ? cardArtItemUrl(c) : "";
+    if (item) { gem.classList.add("item"); gem.style.backgroundImage = 'url("' + item + '")'; } else if (typeof cardArtObjectClass === "function") cardArtMark(gem, cardArtObjectClass(c, col), "gem");
+    m.appendChild(gem); m.appendChild(_cdEl("span", "cd-mn", c.name)); m.appendChild(_cdChip(c, true));
+    m.setAttribute("aria-label", c.name + " · " + equipKindLabel(c) + " · " + equipRarityLabel(c) + " · " + _CD_INFO_STATE[st]);
+    return m;
+}
+// the stage's labels: what the card is, beside it
+function _cdInfo(c) {
+    const st = _cdStateOf(c), box = _cdEl("div", "cd-info"); box.style.setProperty("--c", _cdKindCol(c));
+    const row = (k, v, cls) => { const r = _cdEl("div", "cd-irow" + (cls ? " " + cls : "")); r.appendChild(_cdEl("span", "cd-ik", k)); r.appendChild(typeof v === "string" ? _cdEl("span", "cd-iv", v) : v); box.appendChild(r); return r; };
+    row("NAME", c.name, "nm"); row("KIND", equipKindLabel(c), "kd");
+    const n = equipRarityBars(c), meter = _cdEl("span", "cd-iv cd-imeter"); meter.setAttribute("role", "img"); meter.setAttribute("aria-label", "RARITY · " + equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length);
+    for (let i = 0; i < EQUIP_RARITIES.length; i++) { const seg = _cdEl("i", i < n ? "on" : ""); seg.style.setProperty("--i", String(i)); meter.appendChild(seg); }
+    meter.appendChild(_cdEl("b", null, equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length)); row("RARITY", meter, "rr");
+    row("EFFECT", c.text || "NONE YET", "fx");
+    const worn = st === "hand" || st === "found" ? equipWearers(c.id) : 0; row("STATE", _CD_INFO_STATE[st] + (worn ? " · WORN BY " + worn : ""), "sn");
+    const acts = _cdEl("div", "cd-iacts"); _cdCollectionActions(c).forEach(b => acts.appendChild(b)); box.appendChild(acts);
+    return box;
+}
+// the stage: the selected card in full, changing form as it arrives, and its labels
+function _cdStageFill(stage, c) {
+    if (!stage) return; stage.textContent = ""; if (!c) return;
+    const card = _cdSlab(c, _cdStateOf(c)); card.classList.add("feat"); stage.appendChild(card); stage.appendChild(_cdInfo(c));
+}
+function _cdRailIndex(rail) { return (rail && rail._minis || []).findIndex(m => m._id === _cdSel); }
+// the rail's marks: the mini selected, where it is in the collection, the ends
+function _cdRailMark(rail) {
+    const minis = rail && rail._minis || [], i = _cdRailIndex(rail);
+    minis.forEach((m, k) => { if (m.classList) m.classList.toggle("on", k === i); if (m.setAttribute) m.setAttribute("aria-selected", k === i ? "true" : "false"); });
+    if (rail._pos) rail._pos.textContent = (i + 1) + " OF " + minis.length;
+    if (rail._prev) rail._prev.disabled = i <= 0; if (rail._next) rail._next.disabled = i >= minis.length - 1;
+}
+// bring the selected mini to the rail's middle (smoothly, or at once)
+function _cdRailCenter(rail, smooth) {
+    const m = (rail && rail._minis || [])[_cdRailIndex(rail)]; if (!m || !Number.isFinite(m.offsetLeft) || !Number.isFinite(rail.clientWidth)) return;
+    const x = m.offsetLeft + (m.offsetWidth || 0) / 2 - rail.clientWidth / 2;
+    rail._seek = smooth ? _cdNow() : 0;
+    if (smooth && typeof rail.scrollTo === "function") rail.scrollTo({ left: x, behavior: "smooth" }); else rail.scrollLeft = x;
+}
+// select a card of the rail: the stage shows it (only if it changed), the rail marks it and brings it to the middle
+function _cdRailGo(rail, id, smooth) {
+    if (!id) return false;
+    const changed = _cdSel !== id; _cdSel = id; _cdDD = null;
+    if (changed) _cdStageFill(rail._stage, equipCard(id));
+    _cdRailMark(rail); _cdRailCenter(rail, smooth); return changed;
+}
+function _cdRailStep(rail, dir) { const minis = rail && rail._minis || [], i = _cdRailIndex(rail), j = Math.max(0, Math.min(minis.length - 1, i + dir)); return j !== i && minis[j] ? _cdRailGo(rail, minis[j]._id, true) : false; }
+// the mini nearest the rail's middle
+function _cdRailMiddle(rail) {
+    const minis = rail && rail._minis || [], mid = (rail.scrollLeft || 0) + (rail.clientWidth || 0) / 2; let best = null, bd = Infinity;
+    for (const m of minis) { const d = Math.abs((m.offsetLeft || 0) + (m.offsetWidth || 0) / 2 - mid); if (d < bd) { bd = d; best = m; } }
+    return best;
+}
+// the rail's slide (the browser's own scroll: a finger, a trackpad), its settling on a card, the wheel and the keys
+function _cdRailInput(rail) {
+    let t = 0, acc = 0, raf = 0;
+    rail.addEventListener("scroll", () => {
+        if (!raf && typeof requestAnimationFrame === "function") raf = requestAnimationFrame(() => { raf = 0; const m = _cdRailMiddle(rail); (rail._minis || []).forEach(x => x.classList.toggle("mid", x === m)); });
+        clearTimeout(t); t = setTimeout(() => {   // the slide has settled: the card in the middle is the one selected
+            const m = _cdRailMiddle(rail); if (!m || m._id === _cdSel) return;
+            if (rail._seek && _cdNow() - rail._seek < 900) return;   // (still on its way to a card it was sent to)
+            _cdRailGo(rail, m._id, false);
+        }, CD_RAIL.settle);
+    }, { passive: true });
+    rail.addEventListener("scrollend", () => { rail._seek = 0; });
+    const takeOver = () => { rail._seek = 0; };   // (a finger on the rail takes over from a card it was sent to: its slide is followed at once)
+    rail.addEventListener("pointerdown", takeOver, { passive: true }); rail.addEventListener("touchstart", takeOver, { passive: true });
+    rail.addEventListener("wheel", ev => {
+        if (Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) return;   // (a sideways swipe on a trackpad scrolls the rail itself)
+        const dir = ev.deltaY > 0 ? 1 : -1, i = _cdRailIndex(rail), n = (rail._minis || []).length;
+        if ((dir > 0 && i >= n - 1) || (dir < 0 && i <= 0)) { acc = 0; return; }   // (at an end the sheet scrolls on)
+        ev.preventDefault(); acc += ev.deltaY;
+        while (acc >= CD_RAIL.wheel) { acc -= CD_RAIL.wheel; _cdRailStep(rail, 1); } while (acc <= -CD_RAIL.wheel) { acc += CD_RAIL.wheel; _cdRailStep(rail, -1); }
+    }, { passive: false });
+    rail.addEventListener("keydown", ev => { if (ev.key === "ArrowRight" || ev.key === "ArrowLeft") { ev.preventDefault(); _cdRailStep(rail, ev.key === "ArrowRight" ? 1 : -1); } });
+}
+function _cdDeckBox(all) {
+    const box = _cdEl("div", "cd-deckbox"), order = equipCollectionOrder(all, _cdSort);
+    if (!order.some(c => c.id === _cdSel)) _cdSel = order.length ? order[0].id : null;
+    const bar = _cdEl("div", "cd-deckbar"); bar.appendChild(_cdEl("span", "cd-dlab", "SORT BY"));
+    [["rarity", "RARITY"], ["element", "ELEMENT"]].forEach(([k, t]) => { const b = _cdEl("button", "cd-sort" + (_cdSort === k ? " on" : ""), t); b.setAttribute("aria-pressed", _cdSort === k ? "true" : "false"); _cdClick(b, () => { if (_cdSort !== k) { _cdSort = k; cardsRender(true); } }); bar.appendChild(b); });
+    const pos = _cdEl("span", "cd-dpos"); bar.appendChild(pos); box.appendChild(bar);
+    const stage = _cdEl("div", "cd-stage"); box.appendChild(stage);
+    const rbox = _cdEl("div", "cd-railbox"), prev = _cdEl("button", "cd-rnav", "◀"), next = _cdEl("button", "cd-rnav", "▶"), rail = _cdEl("div", "cd-rail");
+    prev.setAttribute("aria-label", "THE CARD BEFORE"); next.setAttribute("aria-label", "THE NEXT CARD"); rail.tabIndex = 0; rail.setAttribute("role", "listbox"); rail.setAttribute("aria-label", "THE COLLECTION · SLIDE THROUGH IT");
+    rail._minis = []; rail._stage = stage; rail._pos = pos; rail._prev = prev; rail._next = next;
+    order.forEach(c => { const m = _cdMini(c); _cdClick(m, () => _cdRailGo(rail, c.id, true)); rail.appendChild(m); rail._minis.push(m); });
+    _cdClick(prev, () => _cdRailStep(rail, -1)); _cdClick(next, () => _cdRailStep(rail, 1));
+    rbox.appendChild(prev); rbox.appendChild(rail); rbox.appendChild(next); box.appendChild(rbox);
+    _cdRailInput(rail); _cdRailMark(rail); _cdStageFill(stage, equipCard(_cdSel));
+    return box;
+}
+
 function _cdSigNow() {
     const all = Object.keys(equipCards()), have = typeof shardCount === "number" ? shardCount : 0;
     return [cardsPanelOpen, !!_cdOpts.start, all.map(id => (equipOwns(id) ? "o" : have >= EQUIP.unlockCost ? "a" : "l") + (equipInHand(id) ? "h" : "") + (equipIsFound(id) ? "f" : "") + equipWearers(id)).join(), equipHand.join(), equipPlayer.join(), _cdDD,
@@ -181,10 +303,11 @@ function cardsRender(force) {
         equipFound.map(equipCard).filter(Boolean).forEach(c => { const s = _cdCollectionCard(c), w = equipWearers(c.id); s.insertBefore(_cdEl("div", "cd-worn", w ? "WORN BY " + w : "NOT WORN"), s.lastChild); fg.appendChild(s); });
         body.appendChild(fg);
     }
-    sec("THE COLLECTION", "UNLOCKED FOR GOOD · IT SURVIVES A NEW GAME");
-    const grid = _cdEl("div", "cd-grid"); all.forEach(c => grid.appendChild(_cdCollectionCard(c))); body.appendChild(grid);
-    if (!all.length) body.appendChild(_cdEl("div", "cd-note", "NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED"));
+    sec("THE COLLECTION", "UNLOCKED FOR GOOD · IT SURVIVES A NEW GAME · SLIDE THROUGH THE CARDS BELOW: THE ONE IN THE MIDDLE IS SHOWN");
+    if (all.length) body.appendChild(_cdDeckBox(all));
+    else body.appendChild(_cdEl("div", "cd-note", "NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED"));
     root.appendChild(body); body.scrollTop = keep;
+    const rl = root.querySelector && root.querySelector(".cd-rail"); if (rl && rl._minis) _cdRailCenter(rl, false);   // (now that it is on the page: the selected mini to the middle of the rail)
 }
 
 // ── the roster (js/commandcenter.js _ccDrawSettings): the creature in view's subclass, and its two slots ──

@@ -82,10 +82,12 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.before = read();
     // UNLOCK in two taps, then take it into the run
     cardsOpen(); await wait(80);
-    var slab = function(n){ return $$('#cardsRoot .cd-grid .cd-card').filter(function(s){ return s.querySelector('.cd-name').textContent === n; })[0]; };
-    var s1 = slab('IMPACT TEST'); out.lockedAtFirst = !!s1 && s1.className.indexOf('locked') >= 0; shardCount = 5000; click(s1.querySelector('.cd-btn')); await wait(60); var armed = slab('IMPACT TEST').querySelector('.cd-bl').textContent, s0 = shardCount; click(slab('IMPACT TEST').querySelector('.cd-btn')); await wait(80);
+    // THE COLLECTION (js/cardsui.js): the card picked on the rail of mini cards is shown on the stage, its buttons beside it
+    var pickCard = async function(n){ var m = $$('#cardsRoot .cd-rail .cd-mini').filter(function(x){ return x.querySelector('.cd-mn').textContent === n; })[0]; if (m) { click(m); await wait(40); } return $('#cardsRoot .cd-stage .cd-card'); };
+    var stageBtn = function(){ return $('#cardsRoot .cd-info .cd-btn'); };
+    var s1 = await pickCard('IMPACT TEST'); out.lockedAtFirst = !!s1 && s1.className.indexOf('locked') >= 0 && s1.querySelector('.cd-name').textContent === 'IMPACT TEST'; shardCount = 5000; click(stageBtn()); await wait(60); var armed = stageBtn().querySelector('.cd-bl').textContent, s0 = shardCount; click(stageBtn()); await wait(80);
     out.unlock = { armed: armed, owned: equipOwns('impact_test'), spent: s0 - shardCount, stored: localStorage.getItem('conduit_fp_cards') };
-    click(byText('#cardsRoot .cd-grid .cd-btn', 'TAKE INTO THE RUN')); await wait(60); out.hand = equipHand.slice(); var nb = read(); out.noBonusYet = nb.atk === nb.plainAtk && nb.max === nb.plainMax; cardsClose(); await wait(60);
+    click(byText('#cardsRoot .cd-info .cd-btn', 'TAKE INTO THE RUN')); await wait(60); out.hand = equipHand.slice(); var nb = read(); out.noBonusYet = nb.atk === nb.plainAtk && nb.max === nb.plainMax; cardsClose(); await wait(60);
     // THE ROSTER: CARD 1 offers IMPACT TEST to a Brawler and says why not for a Mage's card
     selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f; ccRender(); await wait(60);
     click(byText('#ccSide .cc-dd', 'CARD 1')); await wait(60);
