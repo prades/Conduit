@@ -1,0 +1,31 @@
+# Changelog
+
+What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
+
+## 2026-11-01
+
+- **c · The dialogue box, the Crystal gives the tutorial, the quest box** (0290c55; a test fix in 50c2797). RPG-style text: whoever is talking pops up at the bottom with their picture and their words, typed out; the Crystal gives the blackout words, every tutorial step as it comes up and the class's stage; the player notes the quest line; Side Quest talks through it at his station, his choice buttons in the box. The objective plate (and the phone's mailbox) is hidden, its record kept; QUESTS on the dock (a gold "!" for a new objective; a round button on a phone) opens the quest box with the objective now and the steps done and to come. New: js/dialogue.js, js/questbox.js, tests/dialogue.js. Written up: docs/TUTORIAL.md "The Crystal speaks", docs/UI-STYLE.md "The dialogue box and the quest box", docs/SEWER-QUEST.md.
+- **b · HP mini bars on every follower card, and the squad card's equip slots** (d230911). The squad bar's cards, the Command Center's squad box and the roster strip carry the member's health as a bar with HP and the numbers in it (amber under half, red under a quarter) over the thin XP bar; the member's card beside the squad stack has CARD 1 / CARD 2, the roster's equip slots, listing the hand. Written up: docs/TUTORIAL.md (the HUD: the member's card), docs/UI-STYLE.md (The HUD; The roster).
+- **a · The purification module costs ◆300** (469022b), by the owner's word (the brief had ◆800). Written up: docs/SEWER-QUEST.md, docs/OPEN-QUESTIONS.md.
+- **The launcher's ride costs nothing** (744a98d), by the owner's answer. docs/OPEN-QUESTIONS.md.
+
+## 2026-10-31
+
+- **j · The collapsed tunnel redone** (2ea9f57): a wide broken-off floor behind a six-tile choke, and three ways to the water sample, each on its own: a flux technician's Telegrab; the electric technician's launcher carrying the player over the choke (ride up, take the vial, jump down to the ledge); a fire technician drilling the choke from the ledge. Written up: docs/SEWER-QUEST.md, docs/TECHNICIANS.md ("The ride"), docs/FACILITY.md.
+- **A squad carried through a doorway lands on the arrival tile's own stretch of floor** (f133a59, be2c906): never behind a gate; a follower found sealed in a small pocket is put beside the player. docs/FACILITY.md.
+- **h · The recruitment posts are free, once** (f44b941), the owner's answer; the roster's + RECRUIT is the ◆200 purchase. docs/FOLLOWER-PROGRESSION.md, docs/OPEN-QUESTIONS.md.
+- **g · Follower progression** (2e3d5d7): the eight recruitment posts claimed once each; breeding a bonded pair's offspring for ◆50 with a better base (deterministic, under a cap); the Vital Fleck, Prism and Core (+5 / +10 / +20 of the hp stat that deaths took); five hidden cases. New: js/breeding.js, js/vital.js, tests/followerprog.js. docs/FOLLOWER-PROGRESSION.md (new).
+- **f · The archive's latest decisions built** (b371c5b): the Toxic Queen rooted at the console with her bombs, her spit and her brood, frantic at half her health; Side Quest, the drone in the side passage, his talk and his promise; the Sleeping Potion (the original, and the lab's copy at a quarter). New: js/sidequest.js, js/potion.js. docs/SEWER-QUEST.md ("Side Quest and the Sleeping Potion", the queen's rules), docs/OPEN-QUESTIONS.md.
+- **The enemy card names a boss** (5f813c1): the queen's card reads her name, not ANT BOSS.
+- **d · The archive read** (3fceb99): the Toxic Ant Queen guards the console and backs off in distress, the brood thins after the purification, Series 2 is Booster Pack 2 (unlocked once the first boss encounter is resolved; its cards still awaited), the analysis bench moved to the Experiment Lab's west cabinet. docs/SEWER-QUEST.md, docs/OPEN-QUESTIONS.md.
+- **c · The Sewers' purification** (2262ce8): the water-sample puzzle, the quest's states (js/quests.js), the toxic brood and its samples, the analysis bench and the module, the boss gate, the mount and the cycle, the boss framework (js/bosses.js: calmed alive, or defeated), Series 2's plumbing. docs/SEWER-QUEST.md (new), docs/TECHNICIANS.md, docs/FACILITY.md.
+- **The start** (3363944): a start screen, a staged start that waits for the sheets the first picture wants, and a clock that begins once. docs/STARTUP.md (new).
+- **Kills pay double XP** (889c8cc), the owner's choice for the pace of evolution: a recruit evolves in about 21 kills by the squad. docs/TUTORIAL.md ("Followers show their XP"), docs/TECHNICIANS.md.
+- **Followers show their XP** (f298498): a bar in the world, on the squad's cards, the member's card, the roster and the INFO, with how far each is from evolving. docs/TUTORIAL.md.
+- **Three fixes** (ffed4b4): the tutorial's level lift stops with the tutorial, creatures no longer bleed when idle, the MAP is an inspection map only. docs/TUTORIAL.md, docs/COMBAT.md, docs/FACILITY.md.
+
+## 2026-10-30
+
+- **The game bible reflects what was installed** (83c625b): subclasses, equip cards, the Crystalline cards, Pack 1, the market, the statuses. bible.html.
+
+Earlier builds are in the commit log and in the revision sections of the documents in this folder.
