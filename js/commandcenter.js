@@ -555,9 +555,9 @@ function _ccFocusDraw(box) {
     const key = _ccUid(f) + "|" + f.evolved + "|" + f.element; if (E.key !== key) { E.key = key; E.done = false; _ccThumb(E.cv, f); }
     if (!E.done && f.evolved && typeof EVOLUTIONS !== "undefined") { const d = EVOLUTIONS[f.evolved]; if (d && d._img && d._img.complete) { E.done = true; _ccThumb(E.cv, f); } }   // (an evolved form's picture may still have been loading)
 }
-// THE PLAYER'S CARD in view (CC_YOU, build 2026-11-01l): its picture, YOU, its class and rank, its health (its hits), and YOUR CARDS (its two slots as mini cards: a tap opens that slot's list beside it, js/cardsui.js equipPlayerSlotsBox)
 // the player's health: a count of hits (js/config.js PLAYER_HITS, js/init.js health), not hit points
 function _ccYouHits() { const mx = typeof PLAYER_HITS !== "undefined" ? PLAYER_HITS : 3, hp = typeof health === "number" ? Math.max(0, Math.min(mx, Math.round(health))) : mx; return { hp, mx }; }
+// THE PLAYER'S CARD in view (CC_YOU, build 2026-11-01l): its picture, YOU, its class and rank, its health (its hits), and YOUR CARDS (its two slots as mini cards: a tap opens that slot's list beside it, js/cardsui.js equipPlayerSlotsBox)
 function _ccFocusYou(E) {
     const cls = typeof playerClass === "function" ? playerClass() : null, set = (e, k, v) => { if (e[k] !== v) e[k] = v; };
     E.card.style.setProperty("--c", "#ffe733");
