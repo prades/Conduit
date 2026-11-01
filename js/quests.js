@@ -2,7 +2,7 @@
 //  THE QUESTS: the Sewer purification (docs/SEWER-QUEST.md)
 // ─────────────────────────────────────────────────────────
 // ASKED (the "Series 2, Sewers, bosses" brief): "Implement the documented sewer purification quest as an integrated progression sequence: discover an unexpected water-quality reading; collect samples (toxic ants and hidden
-// locations); solve the sewer sample puzzle (Telegrab, or the launcher); return the materials to the Experiment Lab; purchase the purification module (800 shards); return to the sewer and install the module in the dam-like
+// locations); solve the sewer sample puzzle (Telegrab, or the launcher); return the materials to the Experiment Lab; purchase the purification module (800 shards; 300 now, QUEST_PURIFY.modulePrice); return to the sewer and install the module in the dam-like
 // area; resolve the boss encounter [...] Represent each major progression step explicitly [...] Adapt these states to the existing quest system instead of creating a competing quest manager [...] The sewer boss must not
 // have to die for the player to complete the purification objective."
 // THE QUEST SYSTEM the game has is the tutorial director (js/tutorial.js): a list of steps, each done when its `done()` says so, shown one at a time on the objective plate. A quest here is the same shape (QUEST_STEPS: title,
@@ -15,7 +15,7 @@
 //     goes on where it was). A step is never skipped by a later one: buying the module does not install it, installing it does not purify the water, purifying it does not kill the boss.
 //   THE SAMPLES: three TOXIC ANT SAMPLES, dropped by the toxic ants of the Sewers (js/facilityspawn.js FP_SPAWN_SEWERS; questDropFor from js/drops.js: one a kill, only while the bench still wants them), and the WATER SAMPLE
 //     at the end of the collapsed tunnel (the puzzle: docs/SEWER-QUEST.md). The bench takes all four at once.
-//   THE STATIONS (js/stations.js STATION_KINDS): the ANALYSIS BENCH (the cabinet at the Experiment Lab's west end, cabinet_1: ANALYSE, then BUY ◆800; not a bench beside the sequencer and the hood, whose plate would show the wrong station), the BOSS GATE's seal (with the module in the pack), the PURIFIER MOUNT (the cistern's console: a build of
+//   THE STATIONS (js/stations.js STATION_KINDS): the ANALYSIS BENCH (the cabinet at the Experiment Lab's west end, cabinet_1: ANALYSE, then BUY ◆300; not a bench beside the sequencer and the hood, whose plate would show the wrong station), the BOSS GATE's seal (with the module in the pack), the PURIFIER MOUNT (the cistern's console: a build of
 //     QUEST_PURIFY.install frames that the player stays at; starting it wakes the boss; finishing it mounts the module and starts the cycle).
 //   NON-LETHAL: the module's cycle completes whether the boss lives or not; when it does, a living boss is CALMED (js/bosses.js bossCalm: it keeps its lair, alive). Defeating it is the other resolution. The quest records both.
 //   THE INSTALL UNDER PRESSURE (the archive's design, 2026-10-31, as its latest notes have it): the woken queen SITS ROOTED at her post beside the console: the install's progress holds while she is within her guard of
@@ -28,7 +28,7 @@
 const QUEST_PURIFY = {
     id: "purify", title: "PURIFY THE SEWERS", col: "#8cff5a",
     samples: 3,          // toxic ant samples the bench wants, with one water sample
-    modulePrice: 800,    // shards (the brief: "exchanges 800 shards for the module")
+    modulePrice: 300,    // shards (the brief: "exchanges 800 shards for the module"; 300 since build 2026-11-01a, the owner's word: "make the purify the sewers purification module require only 300 shards")
     install: 600,        // frames the module takes to mount (the archive's "about 10 seconds"; js/stations.js purifier_mount.build is the same number): the player stays at the mount; the queen is woken when it begins
     cycle: 1800,         // frames the module runs before the water is clean (30 s); then a living boss is calmed
     discoverNear: 6,     // tiles from the outfall where the water-quality reading is taken (the culvert's doorway is 4.7 tiles from it: the reading comes as you arrive)

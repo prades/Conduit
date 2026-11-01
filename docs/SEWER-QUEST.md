@@ -32,7 +32,7 @@ The game's quest system is the tutorial director (`js/tutorial.js`): steps with 
 | `puzzleAt`, `puzzleHow` | the puzzle's record says solved (`telegrab` / `ride` / `drill`) | `questTick` ← `puzzleState` |
 | `samplesAt` | three TOXIC ANT SAMPLES and the WATER SAMPLE are in the pack | `questTick` |
 | `turnedInAt` | the ANALYSIS BENCH (the cabinet at the Experiment Lab's west end, `st_analysis_bench`) took all four (ANALYSE) | `questBenchUse` |
-| `moduleAt` | the bench sold the PURIFICATION MODULE for **◆800** (refused with fewer; once) | `questBenchUse` |
+| `moduleAt` | the bench sold the PURIFICATION MODULE for **◆300** (refused with fewer; once; `QUEST_PURIFY.modulePrice`: the brief's 800 until build `2026-11-01a`, 300 since, at the owner's word) | `questBenchUse` |
 | `gateAt` | the boss gate's seal broke for the module; the gate solid opens, the queen is **armed** asleep at her post | `questGateUse` |
 | `installedAt`, `cycleLeft` | the module was mounted on the console (`st_purifier`: a build of `install` = **600 frames, about 10 s**, the archive's number, that the player stays at; starting it **wakes the queen**; walking away stops it, the module is kept); the cycle of `cycle` = 1800 frames begins | `questMountStart`, `questMountUse` |
 | `purifiedAt`, `closeLeft` | the cycle ran out: the water is clean; a living queen is **calmed**; the closing line stays `closing` frames | `questTick` |
@@ -43,7 +43,7 @@ The game's quest system is the tutorial director (`js/tutorial.js`): steps with 
 
 **The samples.** The Sewers' **brood** (`FP_SPAWN_SEWERS`): toxic ants, three the first time the player is in the Sewers and one every 1500 frames while there, up to four, on floor the player can reach, far from the player and never within 3 tiles of Side Quest. A brood ant killed drops a TOXIC ANT SAMPLE while the bench still wants them (`questDropFor`). The water sample is the puzzle's vial.
 
-**The bench**, in the quest line's order: ANALYSE, then BUY THE PURIFICATION MODULE ◆800; after that, with Side Quest's potion in the pack, COPY THE SLEEPING POTION ◆100 (below).
+**The bench**, in the quest line's order: ANALYSE, then BUY THE PURIFICATION MODULE ◆300; after that, with Side Quest's potion in the pack, COPY THE SLEEPING POTION ◆100 (below).
 
 **Non-lethal.** The cycle completes whether the queen lives or not; the water itself clears as the cycle runs (`questWaterClean`, 0 to 1, in `js/facilitysewers.js`). The plate's install hint says what she does and never that she must die; it names Side Quest once he is there.
 
@@ -82,7 +82,7 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 
 1. Go down the culvert behind the arena's north tank. The reading comes as you arrive: PURIFY THE SEWERS 1/5 on the plate.
 2. Kill the toxic ants (three samples; ten kills in all before the drone comes) and get the water sample from the collapsed tunnel's broken-off floor, any one way: a flux technician's Telegrab from the ledge; an electric technician's launcher by the mouth, which you ride over (tap its tag twice), take the vial, and jump back down from the broken edge; or a fire technician drilling the choke through from the ledge, and you walk in.
-3. Take the four to the analysis bench, the cabinet at the west end of the Experiment Lab: ANALYSE, then BUY THE PURIFICATION MODULE ◆800.
+3. Take the four to the analysis bench, the cabinet at the west end of the Experiment Lab: ANALYSE, then BUY THE PURIFICATION MODULE ◆300.
 4. Back down: once the samples are in and ten ants are dead, the side passage off the south ledge is open and Side Quest calls you over: talk, promise or not, buy the SLEEPING POTION ◆100 and EQUIP it in the pack.
 5. The boss gate at the east end of the south ledge opens for the module. The queen sleeps beside the console.
 6. INSTALL THE MODULE at the console: she wakes, rooted, throwing toxic bombs and calling her brood; the install holds while she sits there. Sleep her (the POTION pill, or T), or have your squad stun, freeze or glitch her, and the install runs; at half her health she goes frantic and roams: lure her off, sleep her, install. Her bites do not stop the install; walking away does. Or kill her.
