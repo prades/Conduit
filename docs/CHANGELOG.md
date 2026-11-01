@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-01
 
+- **n · Pack 1's eighteen card items for everyone** (the owner: "Yes push the card art for everyone"; commit named in git log).
+  - The seventeen items baked in build k are approved (js/cardart.js `CARD_ITEMS.approved` lists all eighteen): every Pack 1 card shows its own 3D item, without the preview flag, in the collection, the shop, the market, a pack's reveal and the roster's card lists.
+  - Series 2's 32 cards and the six Crystalline cards keep their crystal or cube until their own items are made. The preview flag (`?cardart=items`) still works for any piece baked later.
+  - Tests updated: cardart (all eighteen approved and shown without the flag; the preview rule kept). Written up: docs/UI-STYLE.md "The card items", docs/OPEN-QUESTIONS.md §1k (answered), the Bible (and its card pictures).
 - **m · The card items smaller, clear of the sort bar** (the owner, of Pack 1's eighteen items in the new collection: "They're a little bit too big. They're blocking the buttons above it for sorting"; commit named in git log).
   - Each item is 140 × 176 (it was 168 × 212) and rises 16 px past its card's top edge (it was 48); on the collection's stage it is blown up to 1.06 (it was 1.2), with a softer pop on arrival.
   - The stage has 14 px of room above it, and the SHOW / SORT BY bar is drawn over a card's art: no item reaches the bar, through its arrival and its hover (all eighteen measured at 1180 × 820 and 1024 × 768).

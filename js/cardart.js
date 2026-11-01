@@ -271,7 +271,9 @@ function cardArtObjectClass(c, col) {
 const CARD_ITEMS = {
     ids: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",   // all eighteen of Pack 1, by element (fire, toxic,
           "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse"],    // electric, ice, flux, core), each Unrefined to Precision
-    approved: ["ember_plating"],   // EMBER PLATING approved 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen (baked in build 2026-11-01k) on preview until approved
+    // approved: all eighteen of Pack 1. EMBER PLATING 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen 2026-11-01 ("Yes push the card art for everyone"), live since build 2026-11-01n
+    approved: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",
+               "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse"],
 };
 function cardArtItemsPreview() { try { return typeof location !== "undefined" && /[?&]cardart=items\b/.test(location.search || ""); } catch (e) { return false; } }
 // the picture of a card's item, or "" (none baked, or not approved and no preview)

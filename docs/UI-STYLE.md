@@ -132,7 +132,8 @@ On a card, the item stands in front of the tilted card, over its picture, and ri
 
 docs/ART-PROCESS.md applies: one piece first, and **each item is approved on its own**. js/cardart.js `CARD_ITEMS` has two lists: `ids` (every card whose item is baked) and `approved` (the ones the owner approved).
 - **EMBER PLATING is approved** ("The ember plating looks good"), so it is live for everyone since build `j`.
-- **A baked item not yet approved** shows only with `?cardart=items`, while the approved ones stay on. **Pack 1's other seventeen are baked (build `k`) and on preview**, awaiting the owner's look one by one. Series 2's 32 come after.
+- **Pack 1's other seventeen** (baked in build `k`) **are approved** ("Yes push the card art for everyone"), live for everyone since build `n`: all eighteen of Pack 1 show their items.
+- **A baked item not yet approved** shows only with `?cardart=items`, while the approved ones stay on (none is waiting now). Series 2's 32 and the Crystalline six come after.
 - **Pack 1's items** (design/cards/models), each in its element's glow, plainer at Unrefined and busier at Precision, where the card's status shows:
 
   | Element | Unrefined | Refined | Precision |

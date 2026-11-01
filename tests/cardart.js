@@ -195,18 +195,19 @@ function measure(w, h) {
         same(J('cardArtUrl("c:fire", () => "")'), u, 'made again');
     });
 
-    group('THE CARD ITEMS (js/cardart.js CARD_ITEMS; design/cards: each card\'s own 3D object in place of the crystal; EMBER PLATING approved and live since build 2026-11-01j, Pack 1\'s other seventeen baked in build k, on preview until approved)');
-    await check('each item is approved on its own: EMBER PLATING (approved) shows its baked picture without any flag; Pack 1\'s other seventeen (baked in build k, not yet approved) show only with ?cardart=items while the approved one stays on; a card with none baked keeps its crystal (docs/ART-PROCESS.md: the old art stays until a new look is approved)', () => {
-        const url = id => 'img/cards/' + id + '.png?v=' + J('BUILD_VERSION');
-        same(J('CARD_ITEMS.approved').join(), 'ember_plating', 'what is approved'); ok(J('CARD_ITEMS.approved.every(function(id){ return CARD_ITEMS.ids.indexOf(id) >= 0; })'), 'an approved item that is not baked');
+    group('THE CARD ITEMS (js/cardart.js CARD_ITEMS; design/cards: each card\'s own 3D object in place of the crystal; EMBER PLATING approved in build 2026-11-01j, Pack 1\'s other seventeen baked in build k and approved in build n: "Yes push the card art for everyone")');
+    await check('each item is approved on its own, and all of Pack 1\'s eighteen are: each shows its baked picture without any flag; a baked piece not approved would show only with ?cardart=items (none is waiting now); a card with none baked keeps its crystal, flag or not (docs/ART-PROCESS.md)', () => {
+        const url = id => 'img/cards/' + id + '.png?v=' + J('BUILD_VERSION'), ids = J('CARD_ITEMS.ids');
+        same(J('CARD_ITEMS.approved.slice().sort().join()'), ids.slice().sort().join(), 'what is approved: all eighteen'); ok(J('CARD_ITEMS.approved.every(function(id){ return CARD_ITEMS.ids.indexOf(id) >= 0; })'), 'an approved item that is not baked');
         same(J('CARD_ITEMS.ids.slice().sort().join()'), J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).map(function(c){ return c.id; }).sort().join()'), 'the baked items are Pack 1\'s eighteen');
-        const pending = J('CARD_ITEMS.ids.filter(function(id){ return CARD_ITEMS.approved.indexOf(id) < 0; })'); same(pending.length, 17, 'on preview');
-        same(J('cardArtItemUrl(EQUIP_CARDS.ember_plating)'), url('ember_plating'), 'without a flag'); same(J('cardArtItemUrl(EQUIP_CARDS.tide_shell)'), '', 'a Series 2 card (none baked yet)');
-        same(J(JSON.stringify(pending) + '.map(function(id){ return cardArtItemUrl(EQUIP_CARDS[id]); }).join("")'), '', 'a piece not approved shows without the flag');
+        same(J('CARD_ITEMS.ids.filter(function(id){ return CARD_ITEMS.approved.indexOf(id) < 0; })').length, 0, 'on preview');
+        same(JSON.stringify(J(JSON.stringify(ids) + '.map(function(id){ return cardArtItemUrl(EQUIP_CARDS[id]); })')), JSON.stringify(ids.map(url)), 'without a flag: every approved piece');
+        same(J('cardArtItemUrl(EQUIP_CARDS.tide_shell)'), '', 'a Series 2 card (none baked yet)');
+        run("CARD_ITEMS.approved = CARD_ITEMS.approved.filter(function(id){ return id !== 'venom_gland'; })");   // (the preview's rule, with one piece taken off the approved list for the moment)
+        same(J('cardArtItemUrl(EQUIP_CARDS.venom_gland)'), '', 'a piece not approved shows without the flag');
         run("location.search = '?cardart=items'");
-        same(JSON.stringify(J(JSON.stringify(pending) + '.map(function(id){ return cardArtItemUrl(EQUIP_CARDS[id]); })')), JSON.stringify(pending.map(url)), 'with the preview flag: every baked piece');
-        same(J('[cardArtItemUrl(EQUIP_CARDS.ember_plating), cardArtItemUrl(EQUIP_CARDS.tide_shell)]').join('|'), url('ember_plating') + '|', 'with the flag: the approved one still on, an unbaked card still its crystal');
-        run("location.search = ''");
+        same(J('[cardArtItemUrl(EQUIP_CARDS.venom_gland), cardArtItemUrl(EQUIP_CARDS.ember_plating), cardArtItemUrl(EQUIP_CARDS.tide_shell)]').join('|'), url('venom_gland') + '|' + url('ember_plating') + '|', 'with the flag: the piece not approved, the approved ones still on, an unbaked card still its crystal');
+        run("location.search = ''; CARD_ITEMS.approved.push('venom_gland')");
     });
     await check('every item on the list has its model (design/cards/models/<id>.js, registering ITEMS.<id>) and its baked picture (img/cards/<id>.png, a PNG), and is a real card', () => {
         for (const id of J('CARD_ITEMS.ids')) {
