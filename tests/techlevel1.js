@@ -40,6 +40,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var els = ['fire', 'ice', 'flux']; followers.forEach(function(f, i){ f.element = els[i % 3]; f.role = 'camper'; f.evolved = undefined; f.x = player.x + 0.5 * i; f.y = player.y + 0.6; });
     step(3); partyTick(); followers.forEach(function(f){ f._abReadyAt = frame; }); step(3); partyTick();
     out.chips = Array.prototype.slice.call(document.querySelectorAll('#squadBar .sb-slot.has-ab .sb-ab')).map(function(e){ return e.textContent; });
+    if (typeof dialogueClear === 'function') dialogueClear(); step(1);   // (the Crystal's words stand at the bottom of the screen, where the rubble is from here: a press on the box is the box's, js/dialogue.js; put away first, as a player would with a tap)
     var q = _fpP(R.at[0], R.at[1], 25); ev('pointerdown', q[0], q[1]); await wait(650); step(2);
     out.ring = { mode: commandMode, tech: !!commandTechTarget };
     ev('pointermove', q[0], q[1] - 70); ev('pointerup', q[0], q[1] - 70); step(1);
