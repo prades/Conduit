@@ -53,8 +53,9 @@
 //          fight as technicians do, with the evolved stats. Then the last two (the user's sheets, Nos. 870-871): BLIGHT
 //          SPIDER (the TOXIC technician, its card: "BLIGHT SPIDER · TOXIC DEPLOY") and HOVER SHELL (the ELECTRIC
 //          technician; the sheet has no name, so this one is its own words, "Hover Shell + 6-Leg Shuttle"; its
-//          action frames are the sheet's separation, the shell lifting off the shuttle). No move either. Every
-//          element and role has a form now.
+//          action frames were the sheet's separation, the shell lifting off the shuttle). No move either. Every
+//          element and role has a form now. The HOVER SHELL was REDONE from the user's pencil sketch (2026-11-01,
+//          design No. 882): a manta of a hover craft, no shuttle now; the entry below says what it is.
 //          STORM MANTA (the electric brawler, No. 68), STATIC RUSH: with an
 //          enemy within MANTA_RANGE, every MANTA_EVERY frames it dashes to it,
 //          hits it (MANTA_MULT × its power) and shocks two more near it; all
@@ -207,13 +208,14 @@ const EVOLUTIONS = {
     // bubbles and the legs trot, so the sheet carries its own light.
     blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", sheet: "img/evo/blightspider.png",
               cell: 144, anchor: [72, 114.2], core: [72, 79.6], noGlow: true, color: "#66ff66" },
-    // The ELECTRIC TECHNICIAN, design No. 877 (the user's "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet, which has no name, then the review: "trapezoidal wings that are
-    // kind of angled downward like a ship, like a shuttle, like a star shuttle", "too long, make 'em cuter", "angled downward. Just make it subtle"): a horseshoe crab's
-    // domed black shell with a yellow underglow, little trapezoid wings tilted gently down and two launcher prongs, over a six-legged shuttle; its action frames lift
-    // the shell off. It glows, so the sheet carries its own light. (Its redesign from the user's pencil sketch of 2026-11-01, No. 882 in design/evolutions/forms34.js,
-    // is a candidate until the user approves it; this sheet stays till then.)
+    // The ELECTRIC TECHNICIAN, design No. 882 (the user's pencil sketch of 2026-11-01, "sleek redesign of the electric technician", then on No. 880: "the hover shell
+    // should have wings trapezoidal and a manta ray like mouth open and long and straight", and on No. 882: "Yes to all"): a manta of a hover craft, a long low black
+    // dome, square at its front; two long straight trapezoid wings out of its sides, flat and ribbed, their edges lit yellow from underneath; a manta's mouth open across
+    // its whole front, a long straight slot with a jutting jaw and gill plates lit yellow inside; two tall launcher prongs on top. Its action frames fire the launcher:
+    // an arc between the prongs and a ring of light out of its mouth. It was No. 877 (the "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet's horseshoe-crab shell over a
+    // six-legged shuttle, whose action frames lifted the shell off). It glows, so the sheet carries its own light.
     hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", sheet: "img/evo/hovershell.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 93.1], noGlow: true, color: "#ffee33" },
+              cell: 144, anchor: [72, 114.2], core: [72, 91.1], noGlow: true, color: "#ffee33" },
     // The ICE TECHNICIAN, design No. 857 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around", then the review:
     // "only 4 legs", "fitted bricks on the body", "the diamonds are nested under the body", "bigger bricks 2 layers", "moves like a train cart, so that the smaller side is
     // front facing"): a long box of big fitted ice bricks, narrow end first, on four diamonds nested in sockets under it. It glides, so the sheet carries its own light.

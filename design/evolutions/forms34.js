@@ -13,7 +13,7 @@
 //        and straight"): the sketch read again, its flat hatched ends are two wings. A black dome, long and low, square at its front; two long straight trapezoid wings
 //        out of its sides, flat, ribbed, cut off square at their tips, their edges lit yellow from underneath; a manta's mouth open across its whole front, a long
 //        straight slot with a jutting jaw and gill plates lit yellow deep inside; the two prongs on top. It hovers, banking; its action is No. 880's shot, the ring of
-//        light going out of its mouth. No. 881 was approved as it is. No. 880 stays on record.
+//        light going out of its mouth. Approved: "Yes to all". No. 881 was approved as it is. No. 880 stays on record.
 // Uses forms21/29/31/32/33's helpers (_glowPool, _limb, _lin31, _c31, _hot31, _prog31, _taper32, _aim32, _hsBlack, _hsSteel). +z is the front; ph = 1.6 t runs once round the idle loop.
 
 // ── 880 · THE HOVER SHELL, SLEEK ───────────────────────────────────────────────────────────────────────

@@ -18,7 +18,7 @@ const JOBS = [
   // approved ("The brawler looks good") and replaces the game's sheet of its name; the form it replaces bakes as jellyram_867, to compare.
   { id: 'hovershell_sleek', form: 880, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 882, the user's ask on No. 880 ("wings trapezoidal and a manta ray like mouth open and long and straight"): the dome with long straight trapezoid wings and an open
-  // manta mouth. A candidate until approved; the game keeps No. 877 till then.
+  // manta mouth. Approved ("Yes to all"): it is the game's hovershell; this id bakes the same form, as it was reviewed.
   { id: 'hovershell_manta', form: 882, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'jellyram_glass', form: 881, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   { id: 'jellyram_867', form: 867, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
@@ -28,7 +28,8 @@ const JOBS = [
   { id: 'blightspider_old', form: 870, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Blight Spider, before the review)
   // No. 873, the Blight Spider on fine legs, lower to the ground (the user's ask on 870): a candidate until approved.
   { id: 'blightspider_low', form: 873, color: '#33dd55', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
-  { id: 'hovershell', form: 877, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 877, approved on the user's review: little trapezoid wings, angled gently down; the sketch's redesign, No. 882, waits for the user's yes)
+  { id: 'hovershell', form: 882, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (No. 882, the sketch's manta, approved: "Yes to all"; it was No. 877, approved on the user's review: little trapezoid wings, angled gently down)
+  { id: 'hovershell_877', form: 877, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the Hover Shell No. 882 replaced, to compare)
   { id: 'hovershell_old', form: 871, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },   // (the first Hover Shell, before the review)
   // No. 874, the Hover Shell with a star shuttle's trapezoid wings angled down (the user's ask on 871): a candidate until approved.
   { id: 'hovershell_wings', form: 874, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
