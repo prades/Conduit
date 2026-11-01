@@ -179,6 +179,15 @@ Asked: "we'll design the 3D items for the next 17 pack 1 cards right now". All s
 - **CINDERBRAND** could pass for a torch at the mini size; the hole in its flame sigil marks it as a brand.
 - **The electric three** are brighter and cleaner steel than Ember's dark bands (chosen so they do not go dark on dark); they can be pulled darker.
 
+## 1l. The CARDS screen's two menus, the gold of the cards taken into the run, YOU on the roster, a pack's reveal (built 2026-11-01, build `l`; docs/UI-STYLE.md)
+
+Asked: the shop "in a new menu on the card menu called shop"; the hand and the cards found "consolidated into this rotating thing at the bottom ... sorted under a new assortment of owned cards", and every card viewable "with the same scroll mechanics", unlockable from there; a pack opened "in a straight row with the rarest card ... illuminated from the back"; then "the hand part should be out of the picture", the cards "permanently unlocked and that the player brought along with them" lit "yellow, matching the purchased button color scheme", "a new player icon and player card in the roster that the player can equip their cards to their own player", and "remove the entire bordered in menu". All built as asked. **Chosen by us, for your eye:**
+- **Found cards are now teal** (their ★, outline and state), so the gold is the hand's alone. Until now the hand was teal and the found cards gold.
+- **TAKE INTO THE RUN and IN YOUR HAND ✓** are gold too, like the buttons that buy.
+- **YOU is pinned first in the strip**, before the squad, whatever the filters; ◂ ▸ still walk the creatures only (from YOU they go to the first or the last).
+- **The player's card shows its hits** (3 / 3 HITS: the player's health is a count of hits, not hit points), its class and rank once chosen, and its two cards as mini cards.
+- **Open: the player's slots take Universal cards only** (the rule chosen on 2026-10-30), and **no real card is Universal yet**: Pack 1 is element cards, Series 2 species and class cards, the Crystalline six class cards. Only the test cards (`?cards`) can be worn by the player today. Should some cards fit the player (a Universal series, or any card), or does the player wait for Universal cards?
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

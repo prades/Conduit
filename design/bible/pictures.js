@@ -4,7 +4,8 @@
 //   ui         the screens at an iPad's size (1180x820: the HUD, a member's card, the Command Center, the SQUADS window, the class picker, the pack, the inspection map, the ? guide)
 //              and a phone's (390x844: the HUD, the radial menu's ROSTER): img/bible/ui/<id>.webp
 //   map        the inspection map alone (img/bible/ui/map.webp), for when the other screens are to be left as they are (`ui` makes it too)
-//   cards      the CARDS screen at an iPad's width, tall enough to show it whole (shards, the hand, a booster pack's cards with a duplicate among them, the market's shelf), from seeded packs and a seeded shelf: img/bible/ui/cards_sheet.webp
+//   cards      the CARDS screen at an iPad's size, its two menus and a pack's reveal (since build 2026-11-01l: cards_sheet, the CARDS menu; cards_shop, the SHOP, taller; cards_reveal), from seeded packs and a seeded shelf,
+//              and the roster's YOU (roster_you: the player's card in view, YOUR SLOT 1's list open): img/bible/ui/cards_sheet.webp and the rest
 //   creatures  every creature the game draws itself (the player, the egg in each element, six species in six classes), by design/roster-poster/portraits.js, trimmed
 //   forms      the 18 evolved forms, cut from their sheets in img/evo (row 0, a three-quarter view; the ground layer under the four that have one), trimmed
 //   poster     the evolution roster poster, by design/roster-poster/poster.js
@@ -81,15 +82,23 @@ async function openGame(b, w, h) {
     if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
   }
   if (on('cards')) {
-    const { p, errs } = await openGame(b, 1180, 2100);   // (the cards are 3D slabs of 315 px since 2026-11-01d: the sheet is taller)
+    // (build 2026-11-01l: two menus) the CARDS menu at an iPad's size (the collection's stage and rail, OWNED, the two cards taken into the run lit gold, one of them on the stage), the SHOP taller (the packs, the
+    // last pack's cards with a duplicate among them, the market's shelf), a pack's reveal once its cards are all out (the rarest lit from behind), and the roster's YOU (the player's card, YOUR SLOT 1's list open)
+    const { p, errs } = await openGame(b, 1180, 820);
     await p.evaluate(async () => {
       const wait = ms => new Promise(r => setTimeout(r, ms));
       shardCount = 5000; equipFound = []; equipHand = []; equipCredits = 0; equipPackLast = null;
       for (let seed = 1; seed < 30 && !(equipPackLast && equipPackLast.dupes.length); seed++) equipPackOpen(seed);   // packs until one has a duplicate: the same cards each time
-      equipFound.slice(0, 1).forEach(id => { equipUnlock(id); equipHandAdd(id); });                                  // one card kept for good, and in the hand
-      equipShelfDeal(3); cardsOpen(); await wait(400);
+      equipFound.slice(0, 2).forEach(id => { equipUnlock(id); equipHandAdd(id); });                                  // two cards kept for good, and taken into the run (lit gold)
+      equipShelfDeal(3); _cdTab = 'cards'; _cdView = 'owned'; _cdSort = 'rarity'; _cdSel = equipHand[0] || null; cardsOpen(); await wait(400);
     });
-    await p.waitForTimeout(500); const f = path.join(TMP, 'cards_sheet.png'); await p.screenshot({ path: f }); webp(f, path.join(OUT, 'ui', 'cards_sheet.webp'), 80); console.log('ui/cards_sheet');
+    const snap = async (name) => { const f = path.join(TMP, name + '.png'); await p.screenshot({ path: f }); webp(f, path.join(OUT, 'ui', name + '.webp'), 80); console.log('ui/' + name); };
+    await p.waitForTimeout(1600); await snap('cards_sheet');
+    await p.setViewportSize({ width: 1180, height: 1560 }); await p.evaluate(() => { _cdTab = 'shop'; cardsRender(true); }); await p.waitForTimeout(700); await snap('cards_shop');
+    await p.setViewportSize({ width: 1180, height: 820 }); await p.evaluate(() => { _cdReveal = { pack: equipPackLast.pack, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice() }; cardsRender(true); });
+    await p.waitForTimeout(4400); await snap('cards_reveal');
+    await p.evaluate(async () => { _cdReveal = null; cardsClose(); selectedUnits.clear(); ccOpen('roster'); await new Promise(r => setTimeout(r, 300)); ccFocusYou(); _ccDD = 'pslot0'; ccRender(); });
+    await p.waitForTimeout(900); await snap('roster_you');
     if (errs.length) console.log('page errors', errs.slice(0, 3)); await p.close();
   }
   await b.close();

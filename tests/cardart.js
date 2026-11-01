@@ -66,17 +66,26 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if (!hudCorners() && typeof radialToggle === 'function') { radialToggle(true); radialPick('roster'); await wait(80); out.radial = $$('#radialPanel .rp-card:not(.rp-open)').slice(0, 6).map(function(el){ return art(el); }); radialToggle(false); }
     // THE CARDS SCREEN (?cards=all: every card, the test cards with them, all in the hand); a pack's cards (found) and the market's shelf are on it too
     equipFound = []; equipCredits = 0; equipPackLast = null; for (var s = 1; s < 30 && !(equipPackLast && equipPackLast.dupes.length); s++) equipPackOpen(s); equipShelfDeal(3); cardsOpen(); await wait(300);
-    var cards = $$('#cardsRoot .cd-card:not(.cd-empty)');
-    out.cards = cards.map(function(el){
+    // the cards on the sheet (build l): the CARDS menu's stage, shown for one card of each kind picked on the rail; the SHOP's (the last pack under its box, the shelf); a pack's reveal
+    var click = function(el){ if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
+    var measureCards = function(sel){ return $$(sel || '#cardsRoot .cd-card:not(.cd-empty)').map(measureCard); }, pickMini = async function(n){ var m = $$('#cardsRoot .cd-rail .cd-mini').filter(function(x){ return x.querySelector('.cd-mn').textContent === n; })[0]; if (m) { click(m); await wait(60); } return !!m; };
+    var measureCard = function(el){
       var nm = el.querySelector('.cd-name'), c = Object.values(equipCards()).filter(function(x){ return nm && x.name === nm.textContent; })[0], face = el.querySelector('.cd-art > .cd-slab > .cd-face'), t = el.querySelector('.cd-tex'), g = el.querySelector('.cd-gem'), chip = el.querySelector('.cd-face > .cd-chip'), ar = el.querySelector('.cd-art').getBoundingClientRect(), cr = chip ? chip.getBoundingClientRect() : null;
       return { name: nm && nm.textContent, kind: c ? c.kind : null, match: c ? c.match : null, face: !!face, parts: ['.cd-tex', '.cd-frame', '.cd-top .cd-rar', '.cd-glow', '.cd-shadow', '.cd-gem', '.cd-holo.ghost', '.cd-holo:not(.ghost)', '.cd-emit.l', '.cd-emit.r', '.cd-back'].filter(function(s){ return !el.querySelector(s); }),
         names: el.querySelectorAll('.cd-name').length, kinds: el.querySelectorAll('.cd-kind').length, texts: el.querySelectorAll('.cd-text').length, chips: el.querySelectorAll('.cd-chip').length, ghost: (el.querySelector('.cd-holo.ghost .cd-gn') || {}).textContent, ghostHidden: (el.querySelector('.cd-holo.ghost') || { getAttribute: function(){ return null; } }).getAttribute('aria-hidden'),
         tex: art(t), gem: art(g), state: (el.querySelector('.cd-state') || {}).textContent || '', cls: el.className, chipAt: cr ? [Math.round((cr.left + cr.width / 2 - ar.left) / ar.width * 100), Math.round((cr.top + cr.height / 2 - ar.top) / ar.height * 100)] : null,
         btns: Array.prototype.slice.call(el.closest('.cd-stage') ? document.querySelectorAll('#cardsRoot .cd-info .cd-btn') : el.querySelectorAll(':scope > .cd-btn')).map(function(b){ b.scrollIntoView({ block: 'center' }); return hit(b); }) };   // (the collection's card on its stage has its buttons beside it, with its labels)
-    });
+    };
+    out.cards = measureCards();   // the stage's card as the sheet opens (the rarest first: a Crystalline CLASS card)
+    var picks = ['TEST · UNIVERSAL A', 'TEST · CRUSTACEAN', 'EMBER PLATING']; out.picked = [];   // a UNIVERSAL, a SUBCLASS and an ELEMENT card, each on the stage
+    for (var pi = 0; pi < picks.length; pi++) { if (await pickMini(picks[pi])) { out.picked.push(picks[pi]); out.cards = out.cards.concat(measureCards()); } }
     var sl = $('#cardsRoot .cd-slab'), sa = $('#cardsRoot .cd-art');
     out.tilt = { transform: getComputedStyle(sl).transform.slice(0, 9), style: getComputedStyle(sl).transformStyle, perspective: getComputedStyle(sa).perspective, sides: $$('#cardsRoot .cd-side').length };
     var body = $('#cardsRoot .cd-body'); out.overflow = { sw: body.scrollWidth, cw: body.clientWidth };
+    click($$('#cardsRoot .cd-tab').filter(function(b){ return b.textContent.indexOf('SHOP') === 0; })[0]); await wait(200);
+    out.shopCards = measureCards().length; out.cards = out.cards.concat(measureCards()); body = $('#cardsRoot .cd-body'); out.overflowShop = { sw: body.scrollWidth, cw: body.clientWidth };
+    _cdReveal = { pack: equipPackLast.pack, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice() }; cardsRender(true); await wait(200);   // a pack's reveal: its cards are cards too
+    var rc = measureCards('#cardsRoot .cr-overlay .cd-card'); out.revealCards = rc.length; out.cards = out.cards.concat(rc); _cdReveal = null; cardsRender(true); await wait(60);
     // every picture is one the browser can draw (the nine card faces, the eighteen backdrops, the crystal in each colour and the cube)
     var urls = []; ['fire', 'electric', 'ice', 'flux', 'core', 'toxic', 'brawler', 'mage', 'technician'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
     ['fire', 'electric', 'ice', 'flux', 'core', 'toxic'].forEach(function(e){ ['brawler', 'mage', 'technician'].forEach(function(c){ urls.push(['f:' + e + ':' + c, cardArtUrl('f:' + e + ':' + c, function(){ return cardArtMixSvg(e, c); })]); }); urls.push(['gem:' + e, 'data:image/svg+xml,' + encodeURIComponent(cardArtGemSvg(cardArtElementColour(e)))]); });
@@ -234,8 +243,8 @@ function measure(w, h) {
             same(T.images.length, 34, 'pictures'); for (const [k, s] of T.images) { ok(s && s[0] > 0 && s[1] > 0, k + ' did not load'); if (/^c:/.test(k)) same(s.join('x'), '300x420', k); if (/^f:/.test(k)) same(s.join('x'), '300x175', k); }
             ok(T.css.sheet && T.css.rules >= 10, 'the page has no art classes: ' + JSON.stringify(T.css));
         });
-        await check('THE CARDS: each a tilted slab (a 3D transform under a perspective, one flat layer, no 3D edge) with its back, its face (the texture, the frame, the rarity, the chip, the crystal and its glow and shadow, the hologram and its shadow, the emitters); one name, kind and text each; the shadow\'s copy hidden from a reader', () => {
-            ok(T.cards.length >= 30, 'cards: ' + T.cards.length);
+        await check('THE CARDS (the stage\'s, for a card of each kind; the SHOP\'s; a pack\'s reveal): each a tilted slab (a 3D transform under a perspective, one flat layer, no 3D edge) with its back, its face (the texture, the frame, the rarity, the chip, the crystal and its glow and shadow, the hologram and its shadow, the emitters); one name, kind and text each; the shadow\'s copy hidden from a reader', () => {
+            same(T.picked.join('|'), 'TEST · UNIVERSAL A|TEST · CRUSTACEAN|EMBER PLATING', 'the cards picked on the rail'); ok(T.shopCards >= 4, 'the SHOP\'s cards: ' + T.shopCards); same(T.revealCards, 4, 'the reveal\'s cards'); ok(T.cards.length >= 12, 'cards: ' + T.cards.length);
             same(T.tilt.transform, 'matrix3d(', 'the tilt'); same(T.tilt.style, 'flat', 'one layer'); ok(T.tilt.perspective !== 'none', 'no perspective'); same(T.tilt.sides, 0, '3D edges');
             for (const c of T.cards) { ok(c.face, c.name + ' has no face'); same(c.parts.join(), '', c.name + ' lacks'); same([c.names, c.kinds, c.texts, c.chips].join(), '1,1,1,1', c.name + '\'s name, kind, text and chip'); same(c.ghost, c.name, c.name + '\'s shadow'); same(c.ghostHidden, 'true', c.name + '\'s shadow is read out'); }
         });
@@ -255,7 +264,7 @@ function measure(w, h) {
                 ok(c.chipAt && c.chipAt[0] >= 80 && c.chipAt[0] <= 106 && c.chipAt[1] > 5 && c.chipAt[1] < 50, c.name + '\'s chip is at ' + JSON.stringify(c.chipAt) + ' (% of the card)');
                 for (const b of c.btns) ok(b, c.name + ': a button a tap does not reach');
             }
-            ok(T.cards.some(c => c.btns.length), 'no buttons were checked'); ok(T.overflow.sw <= T.overflow.cw + 1, 'the sheet scrolls sideways: ' + JSON.stringify(T.overflow));
+            ok(T.cards.some(c => c.btns.length), 'no buttons were checked'); ok(T.overflow.sw <= T.overflow.cw + 1, 'the sheet scrolls sideways: ' + JSON.stringify(T.overflow)); ok(T.overflowShop.sw <= T.overflowShop.cw + 1, 'the SHOP scrolls sideways: ' + JSON.stringify(T.overflowShop));
         });
         await check('THE FOLLOWERS: each squad slot wears its member\'s backdrop (an open slot none), with a texture in it', () => {
             ok(T.bar.length === 3, 'slots: ' + T.bar.length);

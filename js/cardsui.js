@@ -5,17 +5,28 @@
 //
 //   THE ROSTER  (the Command Center's carousel, js/commandcenter.js): beside the creature in view, CARD 1 and CARD 2 as drop-downs under its styles, listing the hand: what does not fit says why, and with no card in the hand
 //               they say so; its SUBCLASS (a row, and a tag on its picture) is under RE-ROLL / INFO / EXILE, which a small tablet must still show. A phone's roster has none of this yet.
-//   CARDS       the dock's button opens a screen over the game, as the Command Center does: YOUR HAND (the card types taken into this run, up to three), YOU (the player's two Universal slots), and THE COLLECTION
-//               (every card: unlocked or locked; UNLOCK for EQUIP.unlockCost shards, two taps; TAKE INTO THE RUN or PUT BACK). Rarity is a CHIP on each card's edge: six segments, one lit for each step (and a small flat one beside a card in a slot or a list).
+//   YOU         (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player") the strip's first tile is the player; in view, the player's card
+//               shows its two cards, and YOUR SLOT 1 and YOUR SLOT 2 are its drop-downs (Universal cards only: equipPlayerRosterDraw below).
+//   CARDS       the dock's button opens a screen over the game, as the Command Center does: THE COLLECTION (every card: unlocked or locked; UNLOCK for EQUIP.unlockCost shards, two taps; TAKE INTO THE RUN or PUT BACK).
+//               Rarity is a CHIP on each card's edge: six segments, one lit for each step (and a small flat one beside a card in a slot or a list).
 //               Each card is a tilted 3D slab (2026-11-01: _cdSlab below; its texture and its crystal or cube are js/cardart.js's), what can be done with it flat under it.
 //   A NEW RUN   the same screen opens by itself, with a banner and a START button, when a run begins and the collection holds a card (js/cards.js equipRunStart).
 //   PACK 1      BOOSTER PACK (a button: ◆EQUIP_PACK.price, two taps; the cards it dealt last are shown under it, a duplicate says what it paid), MARKET (this run's credits; a shelf of six, dealt with the pack's odds, that changes every 5 minutes of play and waits while this sheet is open: each card can
-//               be bought, in two taps, with its value in credits or in shards) and FOUND THIS RUN (the cards the packs and the market gave, to wear at once; ◆EQUIP.unlockCost keeps one for good), between YOU and THE COLLECTION.
+//               be bought, in two taps, with its value in credits or in shards). The cards the packs and the market gave are FOUND for the run: worn at once; ◆EQUIP.unlockCost keeps one for good.
 //   SERIES 2    BOOSTER PACK · SERIES 2 under Pack 1's box (build 2026-11-01j): the same box for EQUIP_PACK2 (◆150), its button off and saying "UNLOCKS AFTER THE PURIFICATION" until the Sewers are purified.
+//   TWO MENUS   (build 2026-11-01l; the owner: "make it to where the items in the shop are in a new menu on the card menu called shop", and "your hand and the cards you found this run should be consolidated into
+//               this rotating thing at the bottom ... sorted under a new assortment of owned cards, and the player may view all the cards that are in the game with the same scroll mechanics"): CARDS (THE COLLECTION's
+//               stage and rail, showing OWNED, the cards kept for good and found this run, or ALL) and SHOP (the booster packs and the market). The YOUR HAND and FOUND THIS RUN rows of big cards are gone: those cards
+//               are on the rail. Then: "the hand part should be out of the picture. Cards that have been permanently unlocked and that the player brought along with them should be in their collection ... with an
+//               illuminated background that is yellow, matching the purchased button color scheme ... remove the entire bordered in menu": nothing is beside the stage; a card taken into the run is lit gold from
+//               behind, on the rail and on the stage, and the player's slots are on the roster (YOU, above).
+//   A PACK      opened, its cards rise out of it one by one into a straight row over the sheet, the rarest lit from behind (_cdRevealBox below).
 // Nothing here is drawn on the canvas, and nothing runs in a frame: the screen redraws only when what it shows has changed (a redraw under a finger loses the tap).
 
-let cardsPanelOpen = false, _cdOpts = {}, _cdSig = "", _cdTimer = 0, _cdDD = null, _cdArm = null;   // _cdDD: the player's slot whose list is open; _cdArm: { id, until }, a card whose UNLOCK is armed
+let cardsPanelOpen = false, _cdOpts = {}, _cdSig = "", _cdTimer = 0, _cdArm = null;   // _cdArm: { id, until }, a card whose UNLOCK (or a pack, or a market buy) is armed
 const CARDS_ARM_MS = 3000;
+// the menu shown ("cards" or "shop") and the collection's view ("owned" or "all"), kept between openings; _cdReveal: the pack whose cards are being revealed, or null
+let _cdTab = "cards", _cdView = "owned", _cdReveal = null;
 
 function _cdEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function _cdClick(el, fn) { el.addEventListener("click", ev => { ev.stopPropagation(); fn(ev); }); }
@@ -26,14 +37,15 @@ function cardsToggle() { if (cardsPanelOpen) cardsClose(); else cardsOpen(); }
 function cardsOpen(opts) {
     const root = document.getElementById("cardsRoot"); if (!root) return false;
     equipShelfTick();   // (a shelf that is due comes first: while the sheet is open the shelf's clock waits)
-    _cdOpts = opts || {}; _cdDD = null; _cdArm = null; _cdSig = ""; cardsPanelOpen = true;
+    _cdOpts = opts || {}; _cdArm = null; _cdSig = ""; _cdReveal = null; cardsPanelOpen = true;
+    if (_cdOpts.start) _cdTab = "cards";   // (the start of a run: the hand is chosen from the collection)
     root.classList.add("open"); if (document.body) document.body.classList.add("cardsOpen");
     clearInterval(_cdTimer); _cdTimer = setInterval(cardsRender, 400);
     cardsRender(); return true;
 }
 function cardsClose() {
     equipShelfSync();   // (the time the sheet was open is not the shelf's)
-    cardsPanelOpen = false; _cdOpts = {}; _cdDD = null; _cdArm = null; _cdSig = ""; clearInterval(_cdTimer); _cdTimer = 0;
+    cardsPanelOpen = false; _cdOpts = {}; _cdArm = null; _cdSig = ""; _cdReveal = null; clearInterval(_cdTimer); _cdTimer = 0;
     const root = document.getElementById("cardsRoot"); if (root) { root.classList.remove("open"); root.textContent = ""; }
     if (document.body) document.body.classList.remove("cardsOpen");
 }
@@ -81,7 +93,7 @@ function _cdBtn(label, sub, col, fn, disabled) {
     const b = _cdEl("button", "cd-btn"); b.style.setProperty("--c", col || "#19e6c1"); b.appendChild(_cdEl("span", "cd-bl", label)); if (sub) b.appendChild(_cdEl("span", "cd-bs", sub));
     if (disabled) b.disabled = true; else _cdClick(b, () => { fn(); cardsRender(true); }); return b;
 }
-// what can be done with a card of the collection: UNLOCK (two taps) while it is not yours, else TAKE INTO THE RUN or PUT IT BACK
+// what can be done with a card of the collection: UNLOCK (two taps) while it is not yours, else TAKE INTO THE RUN or PUT IT BACK (gold, as the buttons that buy: a card taken into the run is lit gold, build 2026-11-01l)
 function _cdCollectionActions(c) {
     if (!equipOwns(c.id)) {
         const why = equipUnlockWhyNot(c.id), armed = _cdArm && _cdArm.id === c.id && _cdNow() < _cdArm.until;
@@ -90,27 +102,12 @@ function _cdCollectionActions(c) {
         }, !!why)];
     }
     const worn = equipWearers(c.id);
-    if (equipInHand(c.id)) return [_cdBtn("IN YOUR HAND ✓", "PUT IT BACK" + (worn ? " · COMES OFF " + worn : ""), "#19e6c1", () => equipHandRemove(c.id))];
-    const full = equipHand.length >= equipHandCap(); return [_cdBtn("TAKE INTO THE RUN", full ? "YOUR HAND IS FULL (" + EQUIP.startPick + ")" : "", "#19e6c1", () => equipHandAdd(c.id), full)];
+    if (equipInHand(c.id)) return [_cdBtn("IN YOUR HAND ✓", "PUT IT BACK" + (worn ? " · COMES OFF " + worn : ""), "#ffe733", () => equipHandRemove(c.id))];
+    const full = equipHand.length >= equipHandCap(); return [_cdBtn("TAKE INTO THE RUN", full ? "YOUR HAND IS FULL (" + EQUIP.startPick + ")" : "", "#ffe733", () => equipHandAdd(c.id), full)];
 }
 function _cdStateOf(c) { return equipOwns(c.id) ? (equipInHand(c.id) ? "hand" : "") : equipIsFound(c.id) ? "found" : "locked"; }
-// a card of the collection as a slab with its buttons under it (FOUND THIS RUN)
-function _cdCollectionCard(c) { const s = _cdSlab(c, _cdStateOf(c)); _cdCollectionActions(c).forEach(b => s.appendChild(b)); return s; }
-// the player's two slots: each opens a list of the Universal cards in the hand
-function _cdPlayerSlot(slot) {
-    const box = _cdEl("div", "cd-pslot"), id = equipPlayer[slot], c = equipCard(id), open = _cdDD === slot;
-    const head = _cdEl("button", "cd-pbtn" + (c ? " full" : "") + (open ? " open" : "")); head.appendChild(_cdEl("span", "cd-pk", "YOUR SLOT " + (slot + 1))); head.appendChild(_cdEl("span", "cd-pv", c ? c.name : "EMPTY"));
-    if (c) head.appendChild(_cdChip(c, true));
-    _cdClick(head, () => { _cdDD = open ? null : slot; cardsRender(true); }); box.appendChild(head);
-    if (open) {
-        const list = _cdEl("div", "cd-plist"), hand = equipUsableCards();
-        list.appendChild(_cdBtn("EMPTY", id ? "TAKE THE CARD OFF" : "", "#8aa0c8", () => { equipPlayerPut(slot, null); _cdDD = null; }, !id));
-        hand.forEach(h => { const why = equipPlayerWhyNot(h.id, slot); list.appendChild(_cdBtn(h.name, why || equipRarityLabel(h), "#19e6c1", () => { equipPlayerPut(slot, h.id); _cdDD = null; }, !!why)); });
-        if (!hand.length) list.appendChild(_cdEl("div", "cd-note", "NO CARD IN YOUR HAND"));
-        box.appendChild(list);
-    }
-    return box;
-}
+// the player's own cards (THE COLLECTION's OWNED view): those kept for good and those found this run; the hand is among them
+function _cdOwnedCards() { return Object.values(equipCards()).filter(c => equipOwns(c.id) || equipIsFound(c.id)); }
 
 // ── a booster pack (Pack 1; Series 2 when it is on sale: js/cards.js EQUIP_PACKS): its button (two taps, as an unlock is) and what the last pack of it dealt ──
 function _cdPackKinds(pack) { return pack.kinds.map(k => k === "subclass" ? "SPECIES" : k === "class" ? "CLASS" : k.toUpperCase()).join(" AND ") + " CARDS"; }
@@ -120,7 +117,10 @@ function _cdPackBox(pack) {
     pack = pack || EQUIP_PACK;
     const box = _cdEl("div", "cd-pack"), why = equipPackWhyNot(pack), key = pack === EQUIP_PACK ? "pack" : "pack:" + pack.id, armed = _cdArm && _cdArm.id === key && _cdNow() < _cdArm.until;
     box.appendChild(_cdBtn(armed ? "TAP AGAIN TO OPEN" : "OPEN A PACK ◆" + pack.price, why || (armed ? "◆" + pack.price + " OF YOUR SHARDS · " + pack.size + " CARDS" : pack.size + " CARDS · " + _cdPackGuarantee(pack) + " AT LEAST"), "#ffe733", () => {
-        if (_cdArm && _cdArm.id === key && _cdNow() < _cdArm.until) { _cdArm = null; equipPackOpen(undefined, pack); } else _cdArm = { id: key, until: _cdNow() + CARDS_ARM_MS };
+        if (_cdArm && _cdArm.id === key && _cdNow() < _cdArm.until) {
+            _cdArm = null;
+            if (equipPackOpen(undefined, pack) && equipPackLast) _cdReveal = { pack: equipPackLast.pack || pack.id, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice() };   // (its cards come out of it: _cdRevealBox)
+        } else _cdArm = { id: key, until: _cdNow() + CARDS_ARM_MS };
     }, !!why));
     if (equipPackLast && (equipPackLast.pack || EQUIP_PACK.id) === pack.id) {
         box.appendChild(_cdEl("div", "cd-note", "THE LAST PACK"));
@@ -163,7 +163,9 @@ function _cdMarketBox() {
 //   THE STAGE    the selected card, at the top: the full card (js/cardsui.js _cdSlab), which CHANGES FORM as it arrives (it grows out of a mini card), its picture BLOWN UP (the crystal, cube or item scaled
 //                up and kept so), its RARITY METER lighting up one segment after another and then glowing; beside it its parts LABELLED (name, kind, rarity with a large meter, effect, state) and its buttons.
 //   SORT         by rarity (the rarest first) or by element (fire, toxic, electric, ice, flux, core, then the class cards, the species cards, the universal ones), the lower rarity first within each.
-// The order and the card selected are kept while the sheet is open and between openings (_cdSort, _cdSel). Sliding the rail redraws only the stage, never the rail under the finger.
+//   SHOW         (build 2026-11-01l) OWNED, the player's own cards (kept for good, and found this run, marked ★), or ALL, every card in the game (the locked ones too, each unlockable from the stage as before).
+//                With nothing owned, ALL is shown. A card taken into the run (kept for good and brought along) is LIT GOLD FROM BEHIND, on its mini card and on the stage: the gold of the buttons that buy.
+// The view, the order and the card selected are kept while the sheet is open and between openings (_cdView, _cdSort, _cdSel). Sliding the rail redraws only the stage, never the rail under the finger.
 let _cdSort = "rarity", _cdSel = null;
 const CD_RAIL = { settle: 110, wheel: 60 };
 const _CD_EL_ORDER = ["fire", "toxic", "electric", "ice", "flux", "core"], _CD_ROLE_ORDER = ["brawler", "sniper", "camper"];
@@ -221,7 +223,7 @@ function _cdRailCenter(rail, smooth) {
 // select a card of the rail: the stage shows it (only if it changed), the rail marks it and brings it to the middle
 function _cdRailGo(rail, id, smooth) {
     if (!id) return false;
-    const changed = _cdSel !== id; _cdSel = id; _cdDD = null;
+    const changed = _cdSel !== id; _cdSel = id;
     if (changed) _cdStageFill(rail._stage, equipCard(id));
     _cdRailMark(rail); _cdRailCenter(rail, smooth); return changed;
 }
@@ -255,13 +257,19 @@ function _cdRailInput(rail) {
     }, { passive: false });
     rail.addEventListener("keydown", ev => { if (ev.key === "ArrowRight" || ev.key === "ArrowLeft") { ev.preventDefault(); _cdRailStep(rail, ev.key === "ArrowRight" ? 1 : -1); } });
 }
-function _cdDeckBox(all) {
-    const box = _cdEl("div", "cd-deckbox"), order = equipCollectionOrder(all, _cdSort);
+// THE COLLECTION: `list` the cards of the view shown ("owned" or "all"), with the counts of both for its buttons
+function _cdDeckBox(list, view, nOwned, nAll) {
+    const box = _cdEl("div", "cd-deckbox"), order = equipCollectionOrder(list, _cdSort);
     if (!order.some(c => c.id === _cdSel)) _cdSel = order.length ? order[0].id : null;
-    const bar = _cdEl("div", "cd-deckbar"); bar.appendChild(_cdEl("span", "cd-dlab", "SORT BY"));
+    const bar = _cdEl("div", "cd-deckbar"); bar.appendChild(_cdEl("span", "cd-dlab", "SHOW"));
+    [["owned", "OWNED " + nOwned, !nOwned], ["all", "ALL " + nAll, false]].forEach(([k, t, off]) => {
+        const b = _cdEl("button", "cd-view" + (view === k ? " on" : ""), t); b.setAttribute("aria-pressed", view === k ? "true" : "false");
+        if (off) b.disabled = true; else _cdClick(b, () => { if (view !== k) { _cdView = k; cardsRender(true); } }); bar.appendChild(b);
+    });
+    bar.appendChild(_cdEl("span", "cd-dlab sep", "SORT BY"));
     [["rarity", "RARITY"], ["element", "ELEMENT"]].forEach(([k, t]) => { const b = _cdEl("button", "cd-sort" + (_cdSort === k ? " on" : ""), t); b.setAttribute("aria-pressed", _cdSort === k ? "true" : "false"); _cdClick(b, () => { if (_cdSort !== k) { _cdSort = k; cardsRender(true); } }); bar.appendChild(b); });
     const pos = _cdEl("span", "cd-dpos"); bar.appendChild(pos); box.appendChild(bar);
-    const stage = _cdEl("div", "cd-stage"); box.appendChild(stage);
+    const stage = _cdEl("div", "cd-stage"); box.appendChild(stage);   // (nothing beside it: the hand's notch and the player's slots are gone from here, build 2026-11-01l)
     const rbox = _cdEl("div", "cd-railbox"), prev = _cdEl("button", "cd-rnav", "◀"), next = _cdEl("button", "cd-rnav", "▶"), rail = _cdEl("div", "cd-rail");
     prev.setAttribute("aria-label", "THE CARD BEFORE"); next.setAttribute("aria-label", "THE NEXT CARD"); rail.tabIndex = 0; rail.setAttribute("role", "listbox"); rail.setAttribute("aria-label", "THE COLLECTION · SLIDE THROUGH IT");
     rail._minis = []; rail._stage = stage; rail._pos = pos; rail._prev = prev; rail._next = next;
@@ -272,44 +280,89 @@ function _cdDeckBox(all) {
     return box;
 }
 
+// ── THE TWO MENUS: CARDS (the collection) and SHOP (the packs, the market) ──
+function _cdTabs(nOwned) {
+    const bar = _cdEl("div", "cd-tabs"); bar.setAttribute("role", "tablist");
+    [["cards", "CARDS", "THE COLLECTION · " + nOwned + " OWNED"], ["shop", "SHOP", "PACKS · MARKET"]].forEach(([k, t, sub]) => {
+        const b = _cdEl("button", "cd-tab" + (_cdTab === k ? " on" : "")); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", _cdTab === k ? "true" : "false");
+        b.appendChild(_cdEl("span", "cd-tl", t)); b.appendChild(_cdEl("small", null, sub));
+        _cdClick(b, () => { if (_cdTab !== k) { _cdTab = k; _cdArm = null; cardsRender(true); } }); bar.appendChild(b);
+    });
+    return bar;
+}
+
+// ── A PACK OPENED (build 2026-11-01l; the owner: "when a player opens a pack ... make a new transparent menu pop up where the cards come up out of the pack one by one to fill the screen in a straight row with
+// the rarest card highlighted from the back, or illuminated from the back"): an overlay over the sheet (it shows through); the pack drops in, shakes and bursts, and its cards rise out of it one after another
+// into a straight row across the screen (scaled to fill it), each tagged NEW or DUPLICATE with the credits it paid; the rarest (every card of the pack's highest rarity) is lit from behind once all are out.
+// CONTINUE, a tap once they are all out, or Escape closes it. While it is up the sheet under it is not drawn again, so the reveal never starts over.
+const CD_REVEAL = { first: 0.85, gap: 0.5, rise: 0.75, slot: 250, space: 24 };   // seconds (the first card leaves the pack, the next one after, each card's rise) and the row's px (a card's place, the room between)
+function _cdRevealBox(rv) {
+    const pack = equipPackById(rv.pack) || EQUIP_PACK, cards = rv.ids.map(equipCard).filter(Boolean), n = cards.length, step = CD_REVEAL.slot + CD_REVEAL.space;
+    const still = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const top = Math.max.apply(null, cards.map(equipRarityBars).concat([0])), end = still ? 0 : CD_REVEAL.first + Math.max(0, n - 1) * CD_REVEAL.gap + CD_REVEAL.rise;
+    const ov = _cdEl("div", "cr-overlay"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "A PACK OPENED");
+    ov.style.setProperty("--n", String(n)); ov.style.setProperty("--end", end + "s"); ov.style.setProperty("--pc", pack === EQUIP_PACK ? "#ffe733" : "#b57bff");
+    ov.appendChild(_cdEl("div", "cr-title", (pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name) + " · " + n + " CARDS"));
+    const stage = _cdEl("div", "cr-stage"), row = _cdEl("div", "cr-row");
+    cards.forEach((c, k) => {
+        const rare = equipRarityBars(c) === top, at = (k - (n - 1) / 2) * step, fresh = rv.fresh.indexOf(c.id) >= 0;
+        if (rare) { const b = _cdEl("i", "cr-back"); b.style.setProperty("--x", at + "px"); b.style.setProperty("--c", _cdKindCol(c)); stage.appendChild(b); }   // (the light behind the rarest, under the row)
+        const slot = _cdEl("div", "cr-slot" + (rare ? " rarest" : "")); slot.style.setProperty("--k", String(k)); slot.style.setProperty("--fx", (-at) + "px"); slot.setAttribute("data-id", c.id);
+        slot.appendChild(_cdSlab(c, ""));
+        slot.appendChild(_cdEl("div", "cd-worn cr-tag" + (fresh ? " new" : ""), fresh ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS"));
+        row.appendChild(slot);
+    });
+    stage.appendChild(row);
+    const pk = _cdEl("div", "cr-pack"); pk.appendChild(_cdEl("i", "cr-flap")); pk.appendChild(_cdEl("span", "cr-pname", pack.name)); pk.appendChild(_cdEl("span", "cr-psub", n + " CARDS")); stage.appendChild(pk);
+    ov.appendChild(stage);
+    const go = _cdEl("button", "cr-go", "CONTINUE ▸"); go.type = "button"; _cdClick(go, _cdRevealClose); ov.appendChild(go);
+    const t0 = _cdNow(); _cdClick(ov, () => { if (_cdNow() - t0 >= end * 1000) _cdRevealClose(); });   // (a tap anywhere, once every card is out)
+    try {   // fill the screen: the row scaled to the room it has, never past 1.25
+        const W = (window.innerWidth || 1180) - 48, H = (window.innerHeight || 820) - 190, z = Math.max(0.4, Math.min(1.25, W / Math.max(1, n * CD_REVEAL.slot + (n - 1) * CD_REVEAL.space), H / 470));
+        stage.style.zoom = String(Math.round(z * 100) / 100);
+    } catch (e) { /* no window: the row at its own size */ }
+    return ov;
+}
+function _cdRevealClose() { if (!_cdReveal) return; _cdReveal = null; cardsRender(true); }
+function cardsRevealOpen() { return !!_cdReveal; }   // (is a pack's reveal up: the tests, and the Escape key)
+
 function _cdSigNow() {
     const all = Object.keys(equipCards()), have = typeof shardCount === "number" ? shardCount : 0;
-    return [cardsPanelOpen, !!_cdOpts.start, all.map(id => (equipOwns(id) ? "o" : have >= EQUIP.unlockCost ? "a" : "l") + (equipInHand(id) ? "h" : "") + (equipIsFound(id) ? "f" : "") + equipWearers(id)).join(), equipHand.join(), equipPlayer.join(), _cdDD,
+    return [cardsPanelOpen, !!_cdOpts.start, _cdTab, _cdView, !!_cdReveal, all.map(id => (equipOwns(id) ? "o" : have >= EQUIP.unlockCost ? "a" : "l") + (equipInHand(id) ? "h" : "") + (equipIsFound(id) ? "f" : "") + equipWearers(id)).join(), equipHand.join(), equipPlayer.join(),
         _cdArm && _cdNow() < _cdArm.until ? _cdArm.id : "", equipPacksOnSale().map(p => p.id + ":" + (equipPackWhyNot(p) || "")).join(";"), equipPackLast ? (equipPackLast.pack || "") + ":" + equipPackLast.ids.join() + "/" + equipPackLast.fresh.join() : "", equipShelfIds().map(id => id + (equipMarketWhyNot(id, "credits") ? 0 : 1) + (equipMarketWhyNot(id, "shards") ? 0 : 1)).join(), equipCredits].join("|");
 }
 function cardsRender(force) {
     const root = document.getElementById("cardsRoot"); if (!root || !cardsPanelOpen) return;
     equipShelfSync();   // (the shelf's clock waits while this sheet is open, so its note never changes under a finger)
     const sh = root.querySelector(".cd-sh-n"); if (sh) { const t = "◆ " + (typeof shardCount === "number" ? shardCount : 0); if (sh.textContent !== t) sh.textContent = t; }
+    if (_cdReveal && !force && root.querySelector(".cr-overlay")) return;   // (a pack's cards are being revealed: the sheet under it waits, so the reveal never starts over)
     const sg = _cdSigNow(); if (!force && sg === _cdSig && root.firstChild) return; _cdSig = sg;
-    const keep = root.querySelector(".cd-body") ? root.querySelector(".cd-body").scrollTop : 0;
+    const keep = root._tab === _cdTab && root.querySelector(".cd-body") ? root.querySelector(".cd-body").scrollTop : 0;   // (the place in the list, kept; a menu switched to starts at its top)
     root.textContent = "";
-    const owned = equipOwnedList().length, all = Object.values(equipCards()), start = !!_cdOpts.start;
+    const owned = equipOwnedList().length, all = Object.values(equipCards()), start = !!_cdOpts.start, mine = _cdOwnedCards();
     const head = _cdEl("div", "cd-head"), tb = _cdEl("div", "cd-titlebox");
     tb.appendChild(_cdEl("div", "cd-title", "CARDS")); tb.appendChild(_cdEl("div", "cd-summary", "HAND " + equipHand.length + (equipDev === "all" ? "" : " / " + EQUIP.startPick) + " · " + owned + " OF " + all.length + " UNLOCKED" + (equipFound.length ? " · " + equipFound.length + " FOUND" : "") + (equipDev ? " · TEST CARDS (?cards)" : ""))); head.appendChild(tb);
     const sb = _cdEl("div", "cd-shards"); sb.appendChild(_cdEl("div", "cd-sh-n", "◆ " + (typeof shardCount === "number" ? shardCount : 0))); sb.appendChild(_cdEl("div", "cd-cr", "◇ " + equipCreditsText(equipCredits) + " CREDITS")); sb.appendChild(_cdEl("div", "cd-sh-c", "YOUR SHARDS · A CARD COSTS ◆" + EQUIP.unlockCost)); head.appendChild(sb);
     const x = _cdEl("button", "cd-close", start ? "START THE RUN ▸" : "✕ CLOSE"); _cdClick(x, cardsClose); head.appendChild(x); root.appendChild(head);
-    const body = _cdEl("div", "cd-body");
-    if (start) body.appendChild(_cdEl("div", "cd-banner", "A NEW RUN · CHOOSE UP TO " + EQUIP.startPick + " CARDS TO TAKE WITH YOU, THEN START"));
+    root.appendChild(_cdTabs(mine.length));
+    const body = _cdEl("div", "cd-body " + _cdTab);
     const sec = (t, sub) => { const h = _cdEl("div", "cd-sec", t); if (sub) h.appendChild(_cdEl("i", null, sub)); body.appendChild(h); };
-    sec("YOUR HAND", equipHand.length ? "THE CARDS YOU CAN WEAR THIS RUN · EACH CAN BE WORN BY ANY NUMBER OF FOLLOWERS" : equipAny() ? "EMPTY · TAKE CARDS FROM THE COLLECTION BELOW" : "EMPTY");
-    const hand = _cdEl("div", "cd-row"); const cap = equipDev === "all" ? equipHand.length : EQUIP.startPick;
-    for (let i = 0; i < Math.max(cap, 0); i++) { const c = equipCard(equipHand[i]); if (c) { const s = _cdSlab(c, "hand"); s.appendChild(_cdEl("div", "cd-worn", equipWearers(c.id) ? "WORN BY " + equipWearers(c.id) : "NOT WORN")); hand.appendChild(s); } else { const e = _cdEl("div", "cd-card cd-empty"); e.appendChild(_cdEl("div", "cd-name", "EMPTY")); hand.appendChild(e); } }
-    body.appendChild(hand);
-    sec("YOU", "THE PLAYER WEARS TWO UNIVERSAL CARDS · EACH FOLLOWER'S TWO ARE ON ITS ROSTER PAGE");
-    const you = _cdEl("div", "cd-you"); you.appendChild(_cdPlayerSlot(0)); you.appendChild(_cdPlayerSlot(1)); body.appendChild(you);
-    for (const pack of equipPacksOnSale()) { sec(pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name, _cdPackSub(pack)); body.appendChild(_cdPackBox(pack)); }   // (a pack that is not on sale, one without its price or odds, is not shown; a locked one is, its button saying when it opens)
-    sec("MARKET", "◇ CREDITS (DUPLICATES PAY " + Math.round(EQUIP_MARKET.share * 100) + "% OF A CARD'S VALUE) OR THE SAME NUMBER OF ◆ SHARDS BUY A CARD: A NEW ONE IS KEPT FOR GOOD · THE SHELF CHANGES EVERY 5 MINUTES"); body.appendChild(_cdMarketBox());
-    if (equipFound.length) {
-        sec("FOUND THIS RUN", "WEAR THEM FROM THE ROSTER · THEY GO WITH THE RUN UNLESS YOU KEEP THEM"); const fg = _cdEl("div", "cd-grid");
-        equipFound.map(equipCard).filter(Boolean).forEach(c => { const s = _cdCollectionCard(c), w = equipWearers(c.id); s.insertBefore(_cdEl("div", "cd-worn", w ? "WORN BY " + w : "NOT WORN"), s.lastChild); fg.appendChild(s); });
-        body.appendChild(fg);
+    if (_cdTab === "shop") {
+        // THE SHOP: the booster packs (a pack not on sale, one without its price or odds, is not shown; a locked one is, its button saying when it opens) and the market
+        for (const pack of equipPacksOnSale()) { sec(pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name, _cdPackSub(pack)); body.appendChild(_cdPackBox(pack)); }
+        sec("MARKET", "◇ CREDITS (DUPLICATES PAY " + Math.round(EQUIP_MARKET.share * 100) + "% OF A CARD'S VALUE) OR THE SAME NUMBER OF ◆ SHARDS BUY A CARD: A NEW ONE IS KEPT FOR GOOD · THE SHELF CHANGES EVERY 5 MINUTES"); body.appendChild(_cdMarketBox());
+    } else {
+        // THE CARDS: the collection (OWNED or ALL) on its stage and rail; a card taken into the run is lit gold
+        if (start) body.appendChild(_cdEl("div", "cd-banner", "A NEW RUN · CHOOSE UP TO " + EQUIP.startPick + " CARDS TO TAKE WITH YOU, THEN START"));
+        const view = _cdView === "owned" && mine.length ? "owned" : "all";
+        sec("THE COLLECTION", view === "owned" ? "YOUR CARDS: KEPT FOR GOOD, AND FOUND THIS RUN (★) · LIT GOLD: TAKEN INTO THE RUN · SLIDE THROUGH THEM: THE ONE IN THE MIDDLE IS SHOWN · ALL SHOWS EVERY CARD IN THE GAME"
+                                               : "EVERY CARD IN THE GAME · UNLOCK ONE FOR GOOD FROM HERE · LIT GOLD: TAKEN INTO THE RUN · SLIDE THROUGH THEM: THE ONE IN THE MIDDLE IS SHOWN");
+        if (all.length) body.appendChild(_cdDeckBox(view === "owned" ? mine : all, view, mine.length, all.length));
+        else body.appendChild(_cdEl("div", "cd-note", "NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED"));
     }
-    sec("THE COLLECTION", "UNLOCKED FOR GOOD · IT SURVIVES A NEW GAME · SLIDE THROUGH THE CARDS BELOW: THE ONE IN THE MIDDLE IS SHOWN");
-    if (all.length) body.appendChild(_cdDeckBox(all));
-    else body.appendChild(_cdEl("div", "cd-note", "NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED"));
-    root.appendChild(body); body.scrollTop = keep;
+    root.appendChild(body); body.scrollTop = keep; root._tab = _cdTab;
     const rl = root.querySelector && root.querySelector(".cd-rail"); if (rl && rl._minis) _cdRailCenter(rl, false);   // (now that it is on the page: the selected mini to the middle of the rail)
+    if (_cdReveal) root.appendChild(_cdRevealBox(_cdReveal));   // (a pack just opened: its cards come out of it, over the sheet)
 }
 
 // ── the roster (js/commandcenter.js _ccDrawSettings): the creature in view's subclass, and its two slots ──
@@ -336,10 +389,39 @@ function equipRosterDraw(side, f) {   // (drawn under the styles)
         _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);
     }
 }
+// ── YOU, ON THE ROSTER (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the player's card in view (js/commandcenter.js
+// _ccFocusDraw) shows its two cards, each a mini card as the collection's (a tap opens its list); the settings column has YOUR SLOT 1 and YOUR SLOT 2, drop-downs as a follower's CARD 1 and CARD 2, listing the hand
+// (Universal cards only: the rest say why not, js/cards.js equipPlayerWhyNot)
+function equipPlayerSig() { return [equipPlayer.join(","), equipHand.join(","), equipFound.join(","), equipUsableCards().length].join("|"); }   // (what the player's card and its column must redraw for)
+function equipPlayerRosterDraw(side) {
+    if (typeof _ccEl !== "function") return;
+    const hand = equipUsableCards(), uni = hand.filter(c => c.kind === "universal").length;
+    side.appendChild(_ccEl("div", "cc-sec", "YOUR CARDS · " + EQUIP.playerSlots + " SLOTS · UNIVERSAL CARDS ONLY"));
+    for (let slot = 0; slot < EQUIP.playerSlots; slot++) {
+        const cur = equipPlayer[slot], card = equipCard(cur), opts = [];
+        opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE THE CARD OFF" : "", fn: () => { equipPlayerPut(slot, null); } });
+        hand.forEach(c => { const why = equipPlayerWhyNot(c.id, slot); opts.push({ label: c.name, col: "#ffe733", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipPlayerPut(slot, c.id); } }); });
+        _ccDropdown(side, "pslot" + slot, "YOUR SLOT " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);
+    }
+    side.appendChild(_ccEl("div", "cc-note", !hand.length ? "TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN: THEY ARE LISTED HERE" : !uni ? "NO UNIVERSAL CARD IN YOUR HAND: ONLY THOSE FIT YOU" : "EACH FOLLOWER'S TWO CARDS ARE ON ITS OWN PAGE OF THE ROSTER"));
+}
+// the player's two cards on its card in view: a mini card for each (or an empty place); `onTap(slot)` opens that slot's list
+function equipPlayerSlotsBox(onTap) {
+    const box = _cdEl("div", "cf-pcards");
+    for (let slot = 0; slot < EQUIP.playerSlots; slot++) {
+        const c = equipCard(equipPlayer[slot]), cell = _cdEl("div", "cf-pslot"); cell.appendChild(_cdEl("span", "cf-pk", "SLOT " + (slot + 1)));
+        let m;
+        if (c) { m = _cdMini(c); m.classList.add("worn"); }
+        else { m = _cdEl("button", "cd-mini cf-pempty"); m.type = "button"; m.appendChild(_cdEl("span", null, "EMPTY")); m.setAttribute("aria-label", "YOUR SLOT " + (slot + 1) + " · EMPTY"); }
+        _cdClick(m, () => { if (typeof onTap === "function") onTap(slot); });
+        cell.appendChild(m); box.appendChild(cell);
+    }
+    return box;
+}
 
 function initCardsUi() {
     if (typeof document === "undefined" || !document.body || document.getElementById("cardsRoot")) return;
     const root = _cdEl("div"); root.id = "cardsRoot"; document.body.appendChild(root);
-    window.addEventListener("keydown", e => { if (e && e.key === "Escape" && cardsPanelOpen) cardsClose(); });
+    window.addEventListener("keydown", e => { if (e && e.key === "Escape" && cardsPanelOpen) { if (_cdReveal) _cdRevealClose(); else cardsClose(); } });   // (a pack's reveal first, then the sheet)
 }
 try { initCardsUi(); } catch (e) { /* no page (the test sandbox): the rules in js/cards.js still work */ }

@@ -9,18 +9,18 @@
     <!-- THE PROPS SHEETS THE START WAITS FOR (js/init.js, docs/STARTUP.md) begin to download with the page, alongside the scripts, instead of once the world is built: measured on a slow link (2x CPU, 60 ms, 15 Mbit/s), the start is about half a second sooner (4.1 s to 3.5 s for a new player, 6.4 s to 5.9 s for a returning one).
          They are the addresses the loader asks for (img/props/<family>.png, with the build stamp), so its own requests are answered from these; the stamp changes with the build (tests/startup.js checks both).
          Not here: the player's sheet (the website's background, ?attract, draws no player), the eggs and the evolved forms (which of them the first picture draws depends on the saved game): the start asks for those itself. -->
-    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-01k">
-    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-01k">
+    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-01l">
+    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-01l">
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -679,7 +679,7 @@
     #cardsRoot .cd-frame { position: absolute; inset: 7px 9px; border: 2px solid var(--c); transform: skewX(-6deg); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 45%, transparent), inset 0 0 18px rgba(0,0,0,0.45); pointer-events: none; }
     #cardsRoot .cd-frame::before { content: ""; position: absolute; inset: -6px; border: 5px solid var(--c); opacity: 0.14; }
     #cardsRoot .cd-top { position: absolute; left: 27px; right: 36px; top: 18px; display: flex; justify-content: space-between; gap: 6px; } #cardsRoot .cd-rar, #cardsRoot .cd-state { font: 800 8.5px/1 monospace; letter-spacing: 0.1em; color: #9fb0d0; white-space: nowrap; }
-    #cardsRoot .cd-state { color: var(--neo-teal); } #cardsRoot .cd-card.found .cd-state { color: var(--neo-gold); } #cardsRoot .cd-card.locked .cd-state { color: #6d7fa6; }
+    #cardsRoot .cd-state { color: var(--neo-teal); } #cardsRoot .cd-card.hand .cd-state { color: var(--neo-gold); text-shadow: 0 0 6px rgba(255,231,51,0.6); } #cardsRoot .cd-card.locked .cd-state { color: #6d7fa6; }
     #cardsRoot .cd-glow { position: absolute; left: 69px; top: 70px; width: 87px; height: 87px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 50%, transparent), transparent 70%); filter: blur(3px); }
     #cardsRoot .cd-shadow { position: absolute; left: 78px; top: 150px; width: 69px; height: 16px; border-radius: 50%; background: rgba(0,0,0,0.6); filter: blur(4px); }
     #cardsRoot .cd-gem { position: absolute; left: 52px; top: 52px; width: 121px; height: 121px; background: var(--gem, none) center / auto no-repeat; }   /* (the crystal or the cube: js/cardart.js draws it at the card's size, round the middle of this box) */
@@ -692,9 +692,12 @@
     #cardsRoot :is(.cd-text, .cd-gt) { font: 700 9.5px/1.4 monospace; color: #d4deff; text-shadow: 0 0 6px rgba(159,176,208,0.55); }
     #cardsRoot .cd-holo.ghost > * { color: var(--c); text-shadow: none; }
     #cardsRoot .cd-emit { position: absolute; bottom: 20px; width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px var(--c), 0 0 16px var(--c); } #cardsRoot .cd-emit.l { left: 24px; } #cardsRoot .cd-emit.r { right: 24px; }
-    /* its state: in your hand (a teal outline), found this run (gold), locked (a dashed frame, its texture and its crystal dulled) */
-    #cardsRoot .cd-card.hand .cd-face { outline: 2px solid var(--neo-teal); box-shadow: 0 0 18px rgba(25,230,193,0.45); }
-    #cardsRoot .cd-card.found .cd-face { outline: 2px solid var(--neo-gold); box-shadow: 0 0 18px rgba(255,231,51,0.4); }
+    /* its state: taken into the run (LIT GOLD FROM BEHIND, build 2026-11-01l, the owner: "an illuminated background that is yellow, matching the purchased button color scheme": a gold light behind its picture, a gold glow
+       round it and from behind its slab), found this run (a teal outline), locked (a dashed frame, its texture and its crystal dulled) */
+    #cardsRoot .cd-card.hand .cd-face { outline: 2px solid var(--neo-gold); box-shadow: 0 0 22px rgba(255,231,51,0.6); }
+    #cardsRoot .cd-card.hand .cd-tex { background: radial-gradient(ellipse at 50% 30%, rgba(255,246,190,0.8) 0%, rgba(255,231,51,0.5) 22%, rgba(255,231,51,0.12) 48%, transparent 64%), linear-gradient(180deg, rgba(46,36,0,0.2) 0%, rgba(30,24,0,0.5) 46%, rgba(16,12,0,0.9) 70%, rgba(10,8,0,0.97) 100%), var(--tex, none) center / 100% 100% no-repeat; }
+    #cardsRoot .cd-card.hand .cd-back { box-shadow: 0 0 46px rgba(255,231,51,0.55), 0 26px 50px rgba(0,0,0,0.65); }
+    #cardsRoot .cd-card.found .cd-face { outline: 2px solid var(--neo-teal); box-shadow: 0 0 18px rgba(25,230,193,0.45); }
     #cardsRoot .cd-card.locked .cd-face { opacity: 0.84; } #cardsRoot .cd-card.locked .cd-frame { border-style: dashed; } #cardsRoot .cd-card.locked :is(.cd-tex, .cd-gem, .cd-glow) { filter: saturate(0.35) brightness(0.7); }
     /* THE CARD'S ITEM (js/cardart.js CARD_ITEMS, js/cardsui.js _cdSlab; ASKED 2026-11-01: "the item itself needs to be a 3D object that hovers out of the picture of the card itself"): the card's own object, baked
        in 3D (design/cards), in place of the crystal: it stands in front of the tilted card, over its picture, and rises past its top edge, hovering; its shadow on the card breathes with it. */
@@ -711,13 +714,13 @@
        actually changes form and blows up the image and the rarity meters highlight"). THE STAGE: the selected card, which grows out of a mini card as it arrives (cdMorph), its picture blown up and kept so
        (cdBlow, on the `scale` property, so the item's own hover keeps its `transform`), its rarity chip lit one segment after another (cdBar) and then glowing (cdBarGlow); beside it its parts labelled.
        THE RAIL: the mini cards in a row that scrolls sideways (a finger, a trackpad), each snapping to the middle; the one in the middle is raised and lit. */
-    #cardsRoot .cd-deckbox { max-width: 760px; }
-    #cardsRoot .cd-deckbar { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px; }
+    #cardsRoot .cd-deckbox { max-width: 1180px; }
+    #cardsRoot .cd-deckbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 2px 0 8px; }   /* (it wraps on a narrow screen: SHOW, then SORT BY) */
     #cardsRoot .cd-dlab { font: 800 10px monospace; color: #8aa0c8; letter-spacing: 0.1em; white-space: nowrap; }
     #cardsRoot .cd-sort { font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 12px; color: #9fb0d0; background: #0a1022; border: 2px solid #26365e; padding: 6px 12px; cursor: pointer; touch-action: manipulation; transform: skewX(-8deg); }
     #cardsRoot .cd-sort.on { color: #05070f; background: var(--neo-teal); border-color: var(--neo-teal); box-shadow: 0 0 8px rgba(25,230,193,0.5); }
     #cardsRoot .cd-dpos { margin-left: auto; font: 800 11px monospace; color: #ffcc44; letter-spacing: 0.08em; white-space: nowrap; }
-    #cardsRoot .cd-stage { display: flex; align-items: flex-start; gap: 26px; min-height: 380px; }
+    #cardsRoot .cd-stage { display: flex; align-items: flex-start; justify-content: center; gap: 26px; min-height: 380px; }   /* (in the middle: nothing is beside it since build 2026-11-01l) */
     #cardsRoot .cd-stage > .cd-card.feat { flex: none; animation: cdMorph 0.55s cubic-bezier(.2,.9,.25,1.12) both; transform-origin: 50% 100%; }
     #cardsRoot .cd-stage .cd-gem { animation: cdBlow 0.7s 0.18s cubic-bezier(.2,.9,.3,1.35) both; }
     #cardsRoot .cd-stage .cd-item { transform-origin: 50% 80%; animation: cdBlowItem 0.7s 0.18s cubic-bezier(.2,.9,.3,1.35) both, cdHover 3.4s 0.9s ease-in-out infinite; }
@@ -744,39 +747,84 @@
     #cardsRoot .cd-railbox { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
     #cardsRoot .cd-rail { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; padding: 16px calc(50% - 41px) 12px; scrollbar-width: none; outline: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
     #cardsRoot .cd-rail::-webkit-scrollbar { display: none; } #cardsRoot .cd-rail:focus-visible { box-shadow: inset 0 0 0 2px rgba(25,230,193,0.5); }
-    #cardsRoot .cd-mini { --c: #8fe3ff; position: relative; flex: none; width: 82px; height: 114px; padding: 0; scroll-snap-align: center; border: 2px solid var(--c); background: #0b1226; overflow: hidden; cursor: pointer; touch-action: manipulation; opacity: 0.68; transform: scale(0.9); transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease; box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
+    :is(#cardsRoot, #ccRoot) .cd-mini { --c: #8fe3ff; position: relative; flex: none; width: 82px; height: 114px; padding: 0; scroll-snap-align: center; border: 2px solid var(--c); background: #0b1226; overflow: hidden; cursor: pointer; touch-action: manipulation; opacity: 0.68; transform: scale(0.9); transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease; box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
     #cardsRoot .cd-mini.mid { opacity: 0.9; } #cardsRoot .cd-mini.on { opacity: 1; transform: scale(1.12) translateY(-5px); box-shadow: 0 0 16px var(--c), 0 10px 18px rgba(0,0,0,0.6); }
-    #cardsRoot .cd-mtex { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,22,46,0.2), rgba(8,12,26,0.92) 72%), var(--tex, none) center / 100% 100% no-repeat; }
-    #cardsRoot .cd-mgem { position: absolute; left: 8px; right: 8px; top: 7px; height: 58px; background: var(--gem, none) center / contain no-repeat; } #cardsRoot .cd-mgem.item { top: 3px; height: 64px; background-position: center bottom; background-size: contain; background-repeat: no-repeat; }
-    #cardsRoot .cd-mn { position: absolute; left: 4px; right: 4px; bottom: 21px; font: italic 900 8.5px/1.05 var(--neo-font); color: #fff; text-align: center; text-shadow: 0 0 4px var(--c); overflow-wrap: anywhere; }
-    #cardsRoot .cd-mini > .cd-chip.mini { position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%) scale(0.82); }
-    #cardsRoot .cd-mini.locked { border-style: dashed; } #cardsRoot .cd-mini.locked :is(.cd-mtex, .cd-mgem) { filter: saturate(0.35) brightness(0.7); }
-    #cardsRoot .cd-mini.hand::after, #cardsRoot .cd-mini.found::after { position: absolute; top: 2px; right: 4px; font: 900 11px sans-serif; } #cardsRoot .cd-mini.hand::after { content: "✓"; color: var(--neo-teal); text-shadow: 0 0 6px var(--neo-teal); } #cardsRoot .cd-mini.found::after { content: "★"; color: var(--neo-gold); text-shadow: 0 0 6px var(--neo-gold); }
+    :is(#cardsRoot, #ccRoot) .cd-mtex { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,22,46,0.2), rgba(8,12,26,0.92) 72%), var(--tex, none) center / 100% 100% no-repeat; }
+    :is(#cardsRoot, #ccRoot) .cd-mgem { position: absolute; left: 8px; right: 8px; top: 7px; height: 58px; background: var(--gem, none) center / contain no-repeat; } :is(#cardsRoot, #ccRoot) .cd-mgem.item { top: 3px; height: 64px; background-position: center bottom; background-size: contain; background-repeat: no-repeat; }
+    :is(#cardsRoot, #ccRoot) .cd-mn { position: absolute; left: 4px; right: 4px; bottom: 21px; font: italic 900 8.5px/1.05 var(--neo-font); color: #fff; text-align: center; text-shadow: 0 0 4px var(--c); overflow-wrap: anywhere; }
+    :is(#cardsRoot, #ccRoot) .cd-mini > .cd-chip.mini { position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%) scale(0.82); }
+    :is(#cardsRoot, #ccRoot) .cd-mini.locked { border-style: dashed; } :is(#cardsRoot, #ccRoot) .cd-mini.locked :is(.cd-mtex, .cd-mgem) { filter: saturate(0.35) brightness(0.7); }
+    :is(#cardsRoot, #ccRoot) .cd-mini.hand::after, :is(#cardsRoot, #ccRoot) .cd-mini.found::after { position: absolute; top: 2px; right: 4px; font: 900 11px sans-serif; } :is(#cardsRoot, #ccRoot) .cd-mini.hand::after { content: "✓"; color: var(--neo-gold); text-shadow: 0 0 6px var(--neo-gold); } :is(#cardsRoot, #ccRoot) .cd-mini.found::after { content: "★"; color: var(--neo-teal); text-shadow: 0 0 6px var(--neo-teal); }
+    /* a card taken into the run, LIT GOLD FROM BEHIND (build 2026-11-01l): a gold light behind its crystal or its item, the gold of the buttons that buy, and a gold glow round it */
+    :is(#cardsRoot, #ccRoot) .cd-mini.hand { background: #2a2000; box-shadow: inset 0 0 16px rgba(255,231,51,0.5), 0 0 16px rgba(255,231,51,0.65), 0 6px 12px rgba(0,0,0,0.5); }
+    :is(#cardsRoot, #ccRoot) .cd-mini.hand .cd-mtex { background: radial-gradient(ellipse at 50% 34%, rgba(255,250,210,0.98) 0%, rgba(255,231,51,0.78) 26%, rgba(255,231,51,0.3) 56%, rgba(255,231,51,0.08) 80%), linear-gradient(180deg, rgba(46,36,0,0.1), rgba(24,18,0,0.88) 76%), var(--tex, none) center / 100% 100% no-repeat; }
+    #cardsRoot .cd-mini.hand { opacity: 0.95; } #cardsRoot .cd-mini.hand.on { box-shadow: inset 0 0 18px rgba(255,231,51,0.55), 0 0 26px rgba(255,231,51,0.9), 0 10px 18px rgba(0,0,0,0.6); }   /* (it stays bright on the rail, where the others are dimmed) */
     #cardsRoot .cd-rnav { flex: none; width: 34px; height: 70px; font-size: 13px; color: #fff; background: #0a1022; border: 2px solid #26365e; cursor: pointer; touch-action: manipulation; } #cardsRoot .cd-rnav:disabled { opacity: 0.35; cursor: default; }
     /* a phone: the card smaller (zoom, so its room shrinks with it), its labels still beside it, smaller, so the rail stays in view under them */
-    @media (max-width: 640px) { #cardsRoot .cd-stage { gap: 10px; min-height: 0; } #cardsRoot .cd-stage > .cd-card.feat { zoom: 0.6; } #cardsRoot .cd-info { margin-top: 14px; padding: 10px 10px 10px 12px; gap: 7px; } #cardsRoot .cd-info::before { display: none; }
+    @media (max-width: 640px) { #cardsRoot .cd-stage { justify-content: flex-start; gap: 10px; min-height: 0; } #cardsRoot .cd-stage > .cd-card.feat { zoom: 0.6; } #cardsRoot .cd-info { margin-top: 14px; padding: 10px 10px 10px 12px; gap: 7px; } #cardsRoot .cd-info::before { display: none; }
         #cardsRoot .cd-irow.nm .cd-iv { font-size: 16px; } #cardsRoot .cd-iv { font-size: 12px; } #cardsRoot .cd-irow.fx .cd-iv { font-size: 10px; } #cardsRoot .cd-imeter i { width: 13px; height: 9px; } #cardsRoot .cd-imeter b { display: none; } #cardsRoot .cd-iacts .cd-btn { min-height: 34px; padding: 5px 8px; } #cardsRoot .cd-rnav { display: none; } }
     @media (prefers-reduced-motion: reduce) { #cardsRoot :is(.cd-stage > .cd-card.feat, .cd-stage .cd-gem, .cd-stage .cd-glow, .cd-info) { animation: none; } #cardsRoot .cd-stage .cd-gem { scale: 1.32; } #cardsRoot .cd-stage .cd-item { animation: none; scale: 1.2; } }
     #cardsRoot .cd-card.cd-empty { width: 225px; height: 315px; margin: 6px 0 10px; justify-content: center; border: 2px dashed rgba(138,160,200,0.45); background: rgba(6,9,20,0.4); transform: skewX(-4deg); }
     #cardsRoot .cd-card.cd-empty .cd-name { font-size: 16px; font-style: italic; font-weight: 900; color: #6d7fa6; }
     #cardsRoot .cd-card > :is(.cd-btn, .cd-worn) { width: 225px; } #cardsRoot .cd-worn { text-align: center; }
+    /* THE TWO MENUS (js/cardsui.js _cdTabs; build 2026-11-01l, the owner: "the items in the shop are in a new menu on the card menu called shop"): CARDS (the collection) and SHOP (the packs, the market) */
+    #cardsRoot .cd-tabs { display: flex; gap: 10px; flex: none; margin: 0 0 10px 6px; }
+    #cardsRoot .cd-tab { display: flex; flex-direction: column; align-items: flex-start; min-width: 168px; padding: 7px 18px 6px; font-family: var(--neo-font); font-style: italic; font-weight: 900; color: #9fb0d0; background: #0a1022; border: 2px solid #26365e; cursor: pointer; touch-action: manipulation; transform: skewX(-8deg); }
+    #cardsRoot .cd-tab > * { transform: skewX(8deg); } #cardsRoot .cd-tl { font-size: 19px; letter-spacing: 0.04em; } #cardsRoot .cd-tab small { font: 700 9px monospace; font-style: normal; color: #6d7fa6; letter-spacing: 0.08em; margin-top: 1px; white-space: nowrap; }
+    #cardsRoot .cd-tab.on { color: #05070f; background: var(--neo-gold); border-color: var(--neo-gold); box-shadow: 0 0 14px rgba(255,231,51,0.45); } #cardsRoot .cd-tab.on small { color: #4a3f00; }
+    @media (hover: hover) { #cardsRoot .cd-tab:not(.on):hover { border-color: var(--neo-gold); color: #fff; } }
+    @media (max-width: 640px) { #cardsRoot .cd-tabs { margin-left: 4px; } #cardsRoot .cd-tab { flex: 1 1 0; min-width: 0; padding: 6px 12px 5px; } #cardsRoot .cd-tl { font-size: 16px; } #cardsRoot .cd-tab small { white-space: normal; } #cardsRoot .cd-dlab.sep { margin-left: 0; } }
+    /* THE COLLECTION's view (OWNED or ALL; js/cardsui.js _cdDeckBox) */
+    #cardsRoot .cd-view { font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 12px; color: #9fb0d0; background: #0a1022; border: 2px solid #26365e; padding: 6px 12px; cursor: pointer; touch-action: manipulation; white-space: nowrap; }
+    #cardsRoot .cd-view.on { color: #05070f; background: var(--neo-gold); border-color: var(--neo-gold); box-shadow: 0 0 8px rgba(255,231,51,0.45); } #cardsRoot .cd-view:disabled { opacity: 0.4; cursor: default; }
+    #cardsRoot .cd-dlab.sep { margin-left: 14px; }
+    /* A PACK OPENED (js/cardsui.js _cdRevealBox; build 2026-11-01l, the owner: "a new transparent menu pop up where the cards come up out of the pack one by one to fill the screen in a straight row with the rarest
+       card ... illuminated from the back"): an overlay the sheet shows through; the pack drops in, shakes and bursts; the cards rise out of it one after another (--k) into their places in the row (each starts
+       --fx to the side, over the pack); once every card is out (--end) the rarest is lit from behind, rays turning. The row is scaled to fill the screen (zoom, set by the script). */
+    #cardsRoot .cr-overlay { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; overflow: hidden; background: radial-gradient(ellipse at 50% 55%, rgba(16,24,52,0.62), rgba(2,4,10,0.86) 75%); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: crFade 0.3s ease-out both; }
+    #cardsRoot .cr-title { font: italic 900 22px var(--neo-font); color: var(--pc, var(--neo-gold)); letter-spacing: 0.05em; text-shadow: 0 0 14px color-mix(in srgb, var(--pc, #ffe733) 60%, transparent); }
+    #cardsRoot .cr-stage { position: relative; display: flex; flex-direction: column; align-items: center; }
+    #cardsRoot .cr-row { position: relative; z-index: 1; display: flex; align-items: flex-end; gap: 24px; }
+    #cardsRoot .cr-slot { position: relative; width: 250px; display: flex; flex-direction: column; align-items: center; animation: crRise 0.75s cubic-bezier(.2,.85,.3,1.12) both; animation-delay: calc(0.85s + var(--k, 0) * 0.5s); }
+    #cardsRoot .cr-slot .cd-card { width: 236px; }
+    #cardsRoot .cr-tag { font: 800 11px monospace; letter-spacing: 0.06em; color: #8aa0c8; margin-top: -4px; } #cardsRoot .cr-tag.new { color: var(--neo-gold); text-shadow: 0 0 8px rgba(255,231,51,0.5); }
+    #cardsRoot .cr-slot.rarest .cd-face { outline: 2px solid #fff6c8; box-shadow: 0 0 22px rgba(255,246,200,0.75), 0 0 46px color-mix(in srgb, var(--c) 70%, transparent); animation: crRareCard 0.6s var(--end, 3s) ease-out both; }
+    #cardsRoot .cr-back { position: absolute; left: calc(50% + var(--x, 0px)); top: 47%; z-index: 0; width: 560px; height: 560px; margin: -280px 0 0 -280px; border-radius: 50%; pointer-events: none;
+        background: radial-gradient(circle, rgba(255,250,225,0.95) 0%, color-mix(in srgb, var(--c, #ffe733) 70%, #fff6c8) 14%, color-mix(in srgb, var(--c, #ffe733) 45%, transparent) 34%, transparent 66%);
+        animation: crBackOn 0.9s calc(var(--end, 3s) + 0.05s) ease-out both, crBackPulse 2.6s calc(var(--end, 3s) + 1s) ease-in-out infinite; }
+    #cardsRoot .cr-back::before { content: ""; position: absolute; inset: -40px; border-radius: 50%; background: repeating-conic-gradient(from 0deg, rgba(255,248,214,0.32) 0deg 5deg, transparent 5deg 22deg); -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 68%); mask-image: radial-gradient(circle, #000 18%, transparent 68%); animation: crRays 16s linear infinite; }
+    #cardsRoot .cr-pack { position: absolute; left: 50%; bottom: -36px; z-index: 2; width: 176px; height: 246px; margin-left: -88px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+        background: linear-gradient(155deg, #33447a 0%, #151d3c 38%, #26346a 52%, #0b1024 100%); border: 2px solid var(--pc, #ffe733); box-shadow: 0 0 26px color-mix(in srgb, var(--pc, #ffe733) 45%, transparent), inset 0 0 30px rgba(0,0,0,0.5);
+        clip-path: polygon(0 4%, 6% 0, 12% 4%, 18% 0, 24% 4%, 30% 0, 36% 4%, 42% 0, 48% 4%, 54% 0, 60% 4%, 66% 0, 72% 4%, 78% 0, 84% 4%, 90% 0, 96% 4%, 100% 0, 100% 100%, 0 100%);
+        animation: crPackIn 0.45s ease-out both, crPackShake 0.36s 0.42s ease-in-out both, crPackOut 0.5s calc(0.85s + (var(--n, 4) - 1) * 0.5s + 0.25s) ease-in both; }
+    #cardsRoot .cr-flap { position: absolute; left: 6%; right: 6%; top: 9%; height: 3px; background: var(--pc, #ffe733); box-shadow: 0 0 12px var(--pc, #ffe733), 0 0 26px var(--pc, #ffe733); animation: crTear 0.4s 0.6s ease-out both; }
+    #cardsRoot .cr-pname { font: italic 900 24px var(--neo-font); color: var(--pc, #ffe733); letter-spacing: 0.04em; text-shadow: 0 0 12px color-mix(in srgb, var(--pc, #ffe733) 55%, transparent); } #cardsRoot .cr-psub { font: 800 10px monospace; color: #cfd8f0; letter-spacing: 0.12em; }
+    #cardsRoot .cr-go { font-family: var(--neo-font); font-style: italic; font-weight: 900; font-size: 18px; color: #05070f; background: var(--neo-gold); border: 0; padding: 10px 30px; cursor: pointer; touch-action: manipulation; transform: skewX(-8deg); box-shadow: 0 0 18px rgba(255,231,51,0.45); animation: crFade 0.4s var(--end, 3s) ease-out both; }
+    @keyframes crFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes crRise { 0% { opacity: 0; transform: translate(var(--fx, 0px), 300px) scale(0.28) rotate(-7deg); } 22% { opacity: 1; } 72% { transform: translate(0, -18px) scale(1.04) rotate(0.5deg); } 100% { opacity: 1; transform: none; } }
+    @keyframes crPackIn { from { opacity: 0; transform: translateY(80px) scale(0.8); } to { opacity: 1; transform: none; } }
+    @keyframes crPackShake { 0%, 100% { transform: none; } 20% { transform: rotate(-4deg) translateX(-4px); } 45% { transform: rotate(4deg) translateX(4px); } 70% { transform: rotate(-2deg) translateX(-2px); } }
+    @keyframes crPackOut { to { opacity: 0; transform: translateY(70px) scale(0.85); } }
+    @keyframes crTear { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes crBackOn { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
+    @keyframes crBackPulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+    @keyframes crRays { to { transform: rotate(360deg); } }
+    @keyframes crRareCard { from { outline-color: transparent; box-shadow: none; } }
+    @media (prefers-reduced-motion: reduce) { #cardsRoot :is(.cr-overlay, .cr-slot, .cr-go, .cr-back, .cr-slot.rarest .cd-face) { animation: none; } #cardsRoot .cr-back::before { animation: none; } #cardsRoot .cr-pack { display: none; } }
     /* THE RARITY CHIP (js/cardsui.js; docs/CARD-SYSTEM.md "a cartridge-inspired rarity indicator" of illuminated bars): a notched plate set into the card's right edge with six segments, one lit for each step of the rarity (the lowest at the foot);
        in a slot or a list it is the same plate laid flat and small. Not scoped to #cardsRoot: the roster's drop-downs wear it too. */
     .cd-chip { display: flex; flex-direction: column-reverse; gap: 3px; box-sizing: border-box; padding: 6px 5px 6px 8px; background: #05070f; border: 2px solid var(--c, #8fe3ff); border-right: 0; box-shadow: 0 0 8px color-mix(in srgb, var(--c, #8fe3ff) 45%, transparent); clip-path: polygon(0 7px, 7px 0, 100% 0, 100% 100%, 7px 100%, 0 calc(100% - 7px)); }
     .cd-chip i { display: block; width: 16px; height: 7px; background: #1a2238; } .cd-chip i.on { background: var(--neo-teal); box-shadow: 0 0 7px var(--neo-teal), 0 0 2px #fff; }
     .cd-chip.mini { flex: none; flex-direction: row; gap: 2px; padding: 3px 5px; border: 1px solid var(--c, #8fe3ff); box-shadow: none; clip-path: polygon(0 4px, 4px 0, 100% 0, 100% 100%, 4px 100%, 0 calc(100% - 4px)); } .cd-chip.mini i { width: 6px; height: 11px; }
-    #cardsRoot .cd-face > .cd-chip { position: absolute; right: -4px; top: 48px; } #cardsRoot .cd-pbtn > .cd-chip { margin-left: auto; }
+    #cardsRoot .cd-face > .cd-chip { position: absolute; right: -4px; top: 48px; }
     #ccRoot.carousel .cc-dd > .cd-chip.mini { position: absolute; right: 42px; top: 50%; transform: translateY(-50%); } #ccRoot.carousel .cc-dd.chipped .cc-dd-v { padding-right: 76px; } #ccRoot .cc-btn.chipped { position: relative; padding-right: 64px; } #ccRoot .cc-btn.chipped > .cd-chip.mini { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
     #cardsRoot .cd-worn { color: #8aa0c8; font: 800 11px monospace; letter-spacing: 0.06em; }
     #cardsRoot .cd-pack { display: flex; flex-direction: column; gap: 10px; } #cardsRoot .cd-pack > .cd-btn { max-width: 340px; }
     #cardsRoot .cd-cr { font: 800 12px monospace; color: #7be3ff; letter-spacing: 0.06em; margin-top: 2px; white-space: nowrap; } #cardsRoot .cd-market { display: flex; flex-direction: column; gap: 8px; } #cardsRoot .cd-market .cd-card .cd-btn { margin-top: 4px; }
     #cardsRoot .cd-btn { --c: #19e6c1; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; width: 100%; box-sizing: border-box; min-height: 40px; padding: 7px 10px; font-family: var(--neo-font); font-style: italic; font-weight: 900; color: #fff; background: #0a1022; border: 2px solid var(--c); box-shadow: 0 0 8px var(--c); cursor: pointer; touch-action: manipulation; text-align: left; }
     #cardsRoot .cd-btn .cd-bl { font-size: 13px; } #cardsRoot .cd-btn .cd-bs { font: 700 9px monospace; font-style: normal; color: #9fb0d0; margin-top: 2px; letter-spacing: 0.3px; } #cardsRoot .cd-btn:disabled { opacity: 0.4; cursor: default; box-shadow: none; }
-    #cardsRoot .cd-you { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 640px; } #cardsRoot .cd-pslot { display: flex; flex-direction: column; gap: 6px; }
-    #cardsRoot .cd-pbtn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 8px 12px; box-sizing: border-box; font-family: var(--neo-font); font-style: italic; font-weight: 900; color: #fff; background: #0a1022; border: 2px dashed rgba(138,160,200,0.5); cursor: pointer; touch-action: manipulation; text-align: left; }
-    #cardsRoot .cd-pbtn.full { border: 2px solid var(--neo-teal); box-shadow: 0 0 8px rgba(25,230,193,0.35); } #cardsRoot .cd-pbtn.open { background: rgba(25,230,193,0.14); } #cardsRoot .cd-pk { flex: none; font: 800 11px monospace; font-style: normal; color: #ffcc44; letter-spacing: 0.4px; } #cardsRoot .cd-pv { flex: 1; font-size: 15px; }
-    #cardsRoot .cd-plist { display: flex; flex-direction: column; gap: 5px; padding: 4px 0 6px 12px; border-left: 3px solid #1a2850; } #cardsRoot .cd-note { color: #8aa0c8; font: 700 11px monospace; margin: 4px 0; }
-    @media (max-width: 820px) { #cardsRoot { padding: 8px 10px; } #cardsRoot .cd-title { font-size: 20px; } #cardsRoot .cd-head { gap: 8px; padding-bottom: 8px; flex-wrap: wrap; } #cardsRoot .cd-close { font-size: 14px; padding: 8px 12px; } #cardsRoot .cd-you { grid-template-columns: 1fr; } #cardsRoot .cd-sh-c { display: none; } #cardsRoot :is(.cd-row, .cd-grid) { justify-content: center; } }
+    #cardsRoot .cd-note { color: #8aa0c8; font: 700 11px monospace; margin: 4px 0; }
+    @media (max-width: 820px) { #cardsRoot { padding: 8px 10px; } #cardsRoot .cd-title { font-size: 20px; } #cardsRoot .cd-head { gap: 8px; padding-bottom: 8px; flex-wrap: wrap; } #cardsRoot .cd-close { font-size: 14px; padding: 8px 12px; } #cardsRoot .cd-sh-c { display: none; } #cardsRoot :is(.cd-row, .cd-grid) { justify-content: center; } }
     #ccRoot .cc-table { display: flex; flex-direction: column; gap: 6px; max-width: 720px; margin-top: 8px; }
     #ccRoot .cc-trow { display: grid; grid-template-columns: 150px 50px 1fr; align-items: center; gap: 12px; padding: 10px 14px; border-left: 6px solid var(--c); background: rgba(20,30,58,0.7); cursor: pointer; } #ccRoot .cc-trow.sel { background: rgba(25,230,193,0.16); }
     #ccRoot .cc-tname { font-size: 18px; font-style: italic; font-weight: 900; } #ccRoot .cc-tcount { color: var(--c); font-size: 26px; font-style: italic; font-weight: 900; text-align: right; }
@@ -1044,7 +1092,7 @@
     #ccRoot.carousel .cc-stats { margin-top: 4px; } #ccRoot.carousel .cc-stats .cc-sec { margin: 8px 0 2px; } #ccRoot.carousel .cc-stat { padding: 6px 2px; font-size: 12px; letter-spacing: 0.06em; border-bottom-color: #1b2646; }
     /* the filters and the strip */
     #ccRoot.carousel .cc-filters { padding: 0; gap: 6px; } #ccRoot.carousel .cc-filters .cc-btn.small { min-height: 30px; height: 30px; padding: 0 12px; align-items: center; } #ccRoot.carousel .cc-filters .cc-btn.small .cc-bl { font-size: 12.5px; letter-spacing: 0.04em; } #ccRoot.carousel .cc-filters .cc-btn.sep { margin-left: 10px; }
-    #ccRoot.carousel .cc-grid { display: flex; flex-wrap: nowrap; grid-template-columns: none; align-items: flex-end; align-content: normal; gap: 8px; flex: none; min-height: 124px; box-sizing: border-box; padding: 14px 6px 10px 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+    #ccRoot.carousel .cc-grid { display: flex; flex-wrap: nowrap; grid-template-columns: none; align-items: flex-end; align-content: normal; gap: 8px; flex: none; min-height: 124px; box-sizing: border-box; padding: 14px 10px 10px 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }   /* (10 px at its right: the last tile's slant stays inside it, so a full strip does not scroll) */
     #ccRoot.carousel #ccGrid .cc-card { flex: 1 1 128px; min-width: 118px; max-width: 150px; position: relative; isolation: isolate; height: 96px; box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 1fr auto auto auto; align-items: center; gap: 4px 6px; padding: 10px 8px 9px 18px; border-left: 0; background: none; outline: 0; box-shadow: none; }
     #ccRoot.carousel #ccGrid .cc-card:hover { background: none; }
     #ccRoot.carousel #ccGrid .cc-card::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, rgba(10,16,34,0.3), rgba(5,7,15,0.86) 72%), var(--tex, none) center / cover no-repeat, linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
@@ -1062,6 +1110,25 @@
     #ccRoot.carousel #ccGrid .cc-rtile::before { border: 2px dashed var(--c); box-shadow: none; background: rgba(5,7,15,0.6); } #ccRoot.carousel #ccGrid .cc-rtile::after { display: none; } #ccRoot.carousel #ccGrid .cc-rtile:hover::before { background: rgba(255,231,51,0.12); }
     #ccRoot.carousel .cc-rt-p { font: italic 900 22px/1 var(--neo-font); color: var(--c); } #ccRoot.carousel .cc-rt-t { font: italic 900 11px/1.1 var(--neo-font); color: var(--c); white-space: nowrap; } #ccRoot.carousel .cc-rt-s { font: 700 9px/1.1 monospace; letter-spacing: 0.06em; color: var(--c); white-space: nowrap; }
     #ccRoot.carousel #ccGrid .cc-rtile.dim { --c: #8a8048; opacity: 0.85; }
+    /* YOU (js/commandcenter.js _ccYouTile, _ccFocusYou; build 2026-11-01l, the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the strip's first tile, the
+       player in gold (its picture, YOU, its class, a plate for each of its two card slots: lit with a card in it), and, in view, the player's card: its picture lit gold, its health, and YOUR CARDS, a mini card for each slot */
+    #ccRoot.carousel #ccGrid .cc-ytile { --c: var(--neo-gold); flex: 0 0 80px; position: relative; isolation: isolate; height: 96px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; margin-right: 4px; padding: 6px 8px 9px 15px; border: 0; background: none; color: #fff; font: inherit; cursor: pointer; touch-action: manipulation; }   /* (an icon: narrow, so the creatures' cards keep the room for their names) */
+    #ccRoot.carousel #ccGrid .cc-ytile::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: radial-gradient(ellipse at 28% 34%, rgba(255,231,51,0.34), transparent 62%), linear-gradient(180deg, #2a2408, #0b0a04); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    #ccRoot.carousel #ccGrid .cc-ytile::after { content: ""; position: absolute; left: 5px; top: 5px; bottom: 5px; width: 4px; z-index: -1; background: var(--c); transform: skewX(-9deg); }
+    #ccRoot.carousel #ccGrid .cc-ytile:hover::before { background: radial-gradient(ellipse at 28% 34%, rgba(255,231,51,0.46), transparent 64%), linear-gradient(180deg, #332c0a, #0f0d05); }
+    #ccRoot.carousel #ccGrid .cc-ytile.sel { height: 108px; } #ccRoot.carousel #ccGrid .cc-ytile.sel::before { background: radial-gradient(ellipse at 28% 34%, rgba(255,231,51,0.55), transparent 66%), linear-gradient(180deg, #3a3208, #120f04); box-shadow: 0 0 22px var(--c), inset 0 0 14px rgba(255,231,51,0.25); }
+    #ccRoot.carousel .cc-ythumb { width: 46px; height: 46px; flex: none; } #ccRoot.carousel #ccGrid .cc-ytile.sel .cc-ythumb { width: 52px; height: 52px; }
+    #ccRoot.carousel .cc-yname { font: italic 900 15px/1 var(--neo-font); color: var(--c); text-shadow: 0 0 10px rgba(255,231,51,0.5); }
+    #ccRoot.carousel .cc-ysub { display: none; }   /* (the class: on the player's card in view, and in the tile's tooltip) */
+    #ccRoot.carousel .cc-ypips { align-self: stretch; display: flex; gap: 5px; margin-top: 2px; } #ccRoot.carousel .cc-ypips i { flex: 1; height: 6px; border: 1px dashed rgba(255,231,51,0.55); transform: skewX(-9deg); } #ccRoot.carousel .cc-ypips i.on { border: 1px solid var(--c); background: var(--c); box-shadow: 0 0 8px var(--c); }
+    #ccRoot.carousel .cf-card.you::before { background: radial-gradient(ellipse at 16% 46%, rgba(255,231,51,0.3), transparent 46%), linear-gradient(90deg, rgba(30,24,4,0.4) 0%, rgba(12,10,6,0.8) 40%, rgba(8,10,20,0.95) 60%), linear-gradient(180deg, #1c1806, #05070f); }
+    #ccRoot.carousel .cf-card.you .cf-art { background: radial-gradient(circle at 50% 50%, rgba(255,244,170,0.6), rgba(255,231,51,0.24) 36%, rgba(5,7,15,0.7) 76%), #0b0a04; } #ccRoot.carousel .cf-card.you .cf-cv { filter: drop-shadow(0 0 16px rgba(255,231,51,0.65)); }
+    #ccRoot.carousel .cf-card.you .cf-lv { color: var(--neo-gold); }
+    #ccRoot.carousel .cf-pcwrap { display: flex; flex-direction: column; gap: 7px; } #ccRoot.carousel .cf-pch { font: 700 10px/1 monospace; letter-spacing: 0.08em; color: #8aa0c8; }
+    #ccRoot.carousel .cf-pcards { display: flex; gap: 16px; } #ccRoot.carousel .cf-pslot { display: flex; flex-direction: column; align-items: center; gap: 5px; } #ccRoot.carousel .cf-pk { font: 700 9px/1 monospace; letter-spacing: 0.1em; color: #e8dca0; }
+    #ccRoot.carousel .cf-pslot .cd-mini { opacity: 1; transform: none; scroll-snap-align: none; } @media (hover: hover) { #ccRoot.carousel .cf-pslot .cd-mini:hover { transform: translateY(-3px); box-shadow: 0 0 18px var(--c), 0 8px 14px rgba(0,0,0,0.55); } }
+    #ccRoot.carousel .cf-pslot .cd-mini.hand:hover { box-shadow: 0 0 22px rgba(255,231,51,0.85), 0 8px 14px rgba(0,0,0,0.55); }
+    #ccRoot.carousel .cf-pempty { display: flex; align-items: center; justify-content: center; border: 2px dashed rgba(255,231,51,0.5); background: rgba(20,16,0,0.45); box-shadow: none; font: italic 900 11px var(--neo-font); color: #b8a85a; }
     /* the bar at the foot */
     #ccRoot.carousel .cc-swap { display: flex; align-items: center; gap: 14px; min-height: 60px; }
     #ccRoot.carousel .cc-sw-l { flex: 0 1 auto; max-width: 190px; font: italic 900 16px/1.2 var(--neo-font); color: var(--neo-gold); text-shadow: 0 0 10px rgba(255,231,51,0.35); } #ccRoot.carousel .cc-sw-l:only-child { max-width: none; font-size: 13px; letter-spacing: 0.04em; color: #8aa0c8; text-shadow: none; }
@@ -1825,12 +1892,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-11-01k, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-11-01l, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-11-01k";
+window.__PAGE_BUILD = "2026-11-01l";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1866,87 +1933,87 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-01k"></script>
-<script src="js/icons.js?v=2026-11-01k"></script>
-<script src="js/uikit.js?v=2026-11-01k"></script>
-<script src="js/traits.js?v=2026-11-01k"></script>
-<script src="js/elements.js?v=2026-11-01k"></script>
-<script src="js/combat.js?v=2026-11-01k"></script>
-<script src="js/species.js?v=2026-11-01k"></script>
-<script src="js/levels.js?v=2026-11-01k"></script>
-<script src="js/status.js?v=2026-11-01k"></script>
-<script src="js/helpers.js?v=2026-11-01k"></script>
-<script src="js/predator.js?v=2026-11-01k"></script>
-<script src="js/abilities.js?v=2026-11-01k"></script>
-<script src="js/commands.js?v=2026-11-01k"></script>
-<script src="js/npc.js?v=2026-11-01k"></script>
-<script src="js/draw.js?v=2026-11-01k"></script>
-<script src="js/beetle3d.js?v=2026-11-01k"></script>
-<script src="js/bugs3d.js?v=2026-11-01k"></script>
-<script src="js/settings.js?v=2026-11-01k"></script>
-<script src="js/alarm.js?v=2026-11-01k"></script>
-<script src="js/drops.js?v=2026-11-01k"></script>
-<script src="js/clone.js?v=2026-11-01k"></script>
-<script src="js/bonds.js?v=2026-11-01k"></script>
-<script src="js/evolution.js?v=2026-11-01k"></script>
-<script src="js/cards.js?v=2026-11-01k"></script>
-<script src="js/cardart.js?v=2026-11-01k"></script>
-<script src="js/hdsprites.js?v=2026-11-01k"></script>
-<script src="js/firebombs.js?v=2026-11-01k"></script>
-<script src="js/moves.js?v=2026-11-01k"></script>
-<script src="js/hudgems.js?v=2026-11-01k"></script>
-<script src="js/commandcenter.js?v=2026-11-01k"></script>
-<script src="js/cardsui.js?v=2026-11-01k"></script>
-<script src="js/unitinfo.js?v=2026-11-01k"></script>
-<script src="js/infodex.js?v=2026-11-01k"></script>
-<script src="js/classes.js?v=2026-11-01k"></script>
-<script src="js/playergear.js?v=2026-11-01k"></script>
-<script src="js/inventory.js?v=2026-11-01k"></script>
-<script src="js/weapons.js?v=2026-11-01k"></script>
-<script src="js/mutator.js?v=2026-11-01k"></script>
-<script src="js/specimen.js?v=2026-11-01k"></script>
-<script src="js/serum.js?v=2026-11-01k"></script>
-<script src="js/potion.js?v=2026-11-01k"></script>
-<script src="js/technomancer.js?v=2026-11-01k"></script>
-<script src="js/stations.js?v=2026-11-01k"></script>
-<script src="js/facilityportals.js?v=2026-11-01k"></script>
-<script src="js/tutorial.js?v=2026-11-01k"></script>
-<script src="js/dialogue.js?v=2026-11-01k"></script>
-<script src="js/questbox.js?v=2026-11-01k"></script>
-<script src="js/facilitymap.js?v=2026-11-01k"></script>
-<script src="js/facilitygrow.js?v=2026-11-01k"></script>
-<script src="js/facility.js?v=2026-11-01k"></script>
-<script src="js/attract.js?v=2026-11-01k"></script>
-<script src="js/facilitysave.js?v=2026-11-01k"></script>
-<script src="js/facilityplay.js?v=2026-11-01k"></script>
-<script src="js/facilitydecor.js?v=2026-11-01k"></script>
-<script src="js/propatlas.js?v=2026-11-01k"></script>
-<script src="js/propsprites.js?v=2026-11-01k"></script>
-<script src="js/facilitystyle.js?v=2026-11-01k"></script>
-<script src="js/facilitystyleall.js?v=2026-11-01k"></script>
-<script src="js/facilitysewers.js?v=2026-11-01k"></script>
-<script src="js/facilitynet.js?v=2026-11-01k"></script>
-<script src="js/population.js?v=2026-11-01k"></script>
-<script src="js/facilityspawn.js?v=2026-11-01k"></script>
-<script src="js/crystalpower.js?v=2026-11-01k"></script>
-<script src="js/antraids.js?v=2026-11-01k"></script>
-<script src="js/followerspots.js?v=2026-11-01k"></script>
-<script src="js/breeding.js?v=2026-11-01k"></script>
-<script src="js/party.js?v=2026-11-01k"></script>
-<script src="js/squadfly.js?v=2026-11-01k"></script>
-<script src="js/techabilities.js?v=2026-11-01k"></script>
-<script src="js/puzzles.js?v=2026-11-01k"></script>
-<script src="js/quests.js?v=2026-11-01k"></script>
-<script src="js/bosses.js?v=2026-11-01k"></script>
-<script src="js/sidequest.js?v=2026-11-01k"></script>
-<script src="js/facilitytutorial.js?v=2026-11-01k"></script>
-<script src="js/gunfire.js?v=2026-11-01k"></script>
-<script src="js/targeting.js?v=2026-11-01k"></script>
-<script src="js/toolbox.js?v=2026-11-01k"></script>
-<script src="js/mixtool.js?v=2026-11-01k"></script>
-<script src="js/radialmenu.js?v=2026-11-01k"></script>
-<script src="js/input.js?v=2026-11-01k"></script>
-<script src="js/game.js?v=2026-11-01k"></script>
+<script src="js/config.js?v=2026-11-01l"></script>
+<script src="js/icons.js?v=2026-11-01l"></script>
+<script src="js/uikit.js?v=2026-11-01l"></script>
+<script src="js/traits.js?v=2026-11-01l"></script>
+<script src="js/elements.js?v=2026-11-01l"></script>
+<script src="js/combat.js?v=2026-11-01l"></script>
+<script src="js/species.js?v=2026-11-01l"></script>
+<script src="js/levels.js?v=2026-11-01l"></script>
+<script src="js/status.js?v=2026-11-01l"></script>
+<script src="js/helpers.js?v=2026-11-01l"></script>
+<script src="js/predator.js?v=2026-11-01l"></script>
+<script src="js/abilities.js?v=2026-11-01l"></script>
+<script src="js/commands.js?v=2026-11-01l"></script>
+<script src="js/npc.js?v=2026-11-01l"></script>
+<script src="js/draw.js?v=2026-11-01l"></script>
+<script src="js/beetle3d.js?v=2026-11-01l"></script>
+<script src="js/bugs3d.js?v=2026-11-01l"></script>
+<script src="js/settings.js?v=2026-11-01l"></script>
+<script src="js/alarm.js?v=2026-11-01l"></script>
+<script src="js/drops.js?v=2026-11-01l"></script>
+<script src="js/clone.js?v=2026-11-01l"></script>
+<script src="js/bonds.js?v=2026-11-01l"></script>
+<script src="js/evolution.js?v=2026-11-01l"></script>
+<script src="js/cards.js?v=2026-11-01l"></script>
+<script src="js/cardart.js?v=2026-11-01l"></script>
+<script src="js/hdsprites.js?v=2026-11-01l"></script>
+<script src="js/firebombs.js?v=2026-11-01l"></script>
+<script src="js/moves.js?v=2026-11-01l"></script>
+<script src="js/hudgems.js?v=2026-11-01l"></script>
+<script src="js/commandcenter.js?v=2026-11-01l"></script>
+<script src="js/cardsui.js?v=2026-11-01l"></script>
+<script src="js/unitinfo.js?v=2026-11-01l"></script>
+<script src="js/infodex.js?v=2026-11-01l"></script>
+<script src="js/classes.js?v=2026-11-01l"></script>
+<script src="js/playergear.js?v=2026-11-01l"></script>
+<script src="js/inventory.js?v=2026-11-01l"></script>
+<script src="js/weapons.js?v=2026-11-01l"></script>
+<script src="js/mutator.js?v=2026-11-01l"></script>
+<script src="js/specimen.js?v=2026-11-01l"></script>
+<script src="js/serum.js?v=2026-11-01l"></script>
+<script src="js/potion.js?v=2026-11-01l"></script>
+<script src="js/technomancer.js?v=2026-11-01l"></script>
+<script src="js/stations.js?v=2026-11-01l"></script>
+<script src="js/facilityportals.js?v=2026-11-01l"></script>
+<script src="js/tutorial.js?v=2026-11-01l"></script>
+<script src="js/dialogue.js?v=2026-11-01l"></script>
+<script src="js/questbox.js?v=2026-11-01l"></script>
+<script src="js/facilitymap.js?v=2026-11-01l"></script>
+<script src="js/facilitygrow.js?v=2026-11-01l"></script>
+<script src="js/facility.js?v=2026-11-01l"></script>
+<script src="js/attract.js?v=2026-11-01l"></script>
+<script src="js/facilitysave.js?v=2026-11-01l"></script>
+<script src="js/facilityplay.js?v=2026-11-01l"></script>
+<script src="js/facilitydecor.js?v=2026-11-01l"></script>
+<script src="js/propatlas.js?v=2026-11-01l"></script>
+<script src="js/propsprites.js?v=2026-11-01l"></script>
+<script src="js/facilitystyle.js?v=2026-11-01l"></script>
+<script src="js/facilitystyleall.js?v=2026-11-01l"></script>
+<script src="js/facilitysewers.js?v=2026-11-01l"></script>
+<script src="js/facilitynet.js?v=2026-11-01l"></script>
+<script src="js/population.js?v=2026-11-01l"></script>
+<script src="js/facilityspawn.js?v=2026-11-01l"></script>
+<script src="js/crystalpower.js?v=2026-11-01l"></script>
+<script src="js/antraids.js?v=2026-11-01l"></script>
+<script src="js/followerspots.js?v=2026-11-01l"></script>
+<script src="js/breeding.js?v=2026-11-01l"></script>
+<script src="js/party.js?v=2026-11-01l"></script>
+<script src="js/squadfly.js?v=2026-11-01l"></script>
+<script src="js/techabilities.js?v=2026-11-01l"></script>
+<script src="js/puzzles.js?v=2026-11-01l"></script>
+<script src="js/quests.js?v=2026-11-01l"></script>
+<script src="js/bosses.js?v=2026-11-01l"></script>
+<script src="js/sidequest.js?v=2026-11-01l"></script>
+<script src="js/facilitytutorial.js?v=2026-11-01l"></script>
+<script src="js/gunfire.js?v=2026-11-01l"></script>
+<script src="js/targeting.js?v=2026-11-01l"></script>
+<script src="js/toolbox.js?v=2026-11-01l"></script>
+<script src="js/mixtool.js?v=2026-11-01l"></script>
+<script src="js/radialmenu.js?v=2026-11-01l"></script>
+<script src="js/input.js?v=2026-11-01l"></script>
+<script src="js/game.js?v=2026-11-01l"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2001,7 +2068,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-01k"></script>
+<script src="js/init.js?v=2026-11-01l"></script>
 
 </body>
 </html>

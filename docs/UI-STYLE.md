@@ -54,7 +54,7 @@ The owner: "I want the text in this game to be like an RPG or a JRPG, where the 
 
 The owner, of the board picked on the design canvas ("Conduit 3D card concepts"): "a cooler looking card system that has actual cards that look 3D ... a 3D looking object inside the card, and the card itself is kind of like tilted a little bit on an axis ... the text might be a raised hologram, but all the stuff from the concept should still show like the rarity chips and the slanted style, italicized, bold"; then a subtle texture for each element under a gradient, a texture for each class, the two mixed behind every follower; then "Make an update to implement this style".
 
-**An equip card** (the CARDS screen, js/cardsui.js `_cdSlab`) is a slab of 225 × 315 (the canvas's 300 × 420 card at three quarters), tilted (6° on its width, −16° on its height, under an 825 px perspective; a mouse over it turns it a little toward you), with a back plate showing along its right edge and its foot for its thickness. Its face: the card's **texture** under a dark veil (lighter at the top, near black under the text); a frame in the card's colour, slanted 6°; the rarity and the card's state along its top (IN YOUR HAND teal, FOUND THIS RUN gold, LOCKED dim, with a dashed frame and the texture and the crystal dulled); the **rarity chip** on its right edge; the element's **crystal** (an octahedron in its colour) or a class card's **cube**, floating in a glow over a soft shadow; and its name, kind and text as a **raised hologram** (the name in italic 900 with a split-colour fringe, the kind and the text in the mono face, scan lines, a blurred copy below it for its shadow), two emitter dots at its foot. What can be done with a card (its buttons, who wears it) is flat under it, where a tap is never lost to the tilt. The card is one flat layer, tilted: a real edge turned 90°, as the canvas had, is drawn wrong by Chrome once the list's scrolling cuts the card.
+**An equip card** (the CARDS screen, js/cardsui.js `_cdSlab`) is a slab of 225 × 315 (the canvas's 300 × 420 card at three quarters), tilted (6° on its width, −16° on its height, under an 825 px perspective; a mouse over it turns it a little toward you), with a back plate showing along its right edge and its foot for its thickness. Its face: the card's **texture** under a dark veil (lighter at the top, near black under the text); a frame in the card's colour, slanted 6°; the rarity and the card's state along its top (IN YOUR HAND gold, FOUND THIS RUN teal, LOCKED dim, with a dashed frame and the texture and the crystal dulled; until build `l` the hand was teal and the found gold); the **rarity chip** on its right edge; the element's **crystal** (an octahedron in its colour) or a class card's **cube**, floating in a glow over a soft shadow; and its name, kind and text as a **raised hologram** (the name in italic 900 with a split-colour fringe, the kind and the text in the mono face, scan lines, a blurred copy below it for its shadow), two emitter dots at its foot. What can be done with a card (its buttons, who wears it) is flat under it, where a tap is never lost to the tilt. The card is one flat layer, tilted: a real edge turned 90°, as the canvas had, is drawn wrong by Chrome once the list's scrolling cuts the card.
 
 **The textures** (js/cardart.js), each a drawing on the 300 × 420 card, seeded so it is the same on every load: FIRE crisp flame tongues in three rows (red, orange, gold, a smaller flame nested in each, embers above); TOXIC bubbles; FLUX a vortex; CORE hexagons; ICE cut ice (the mage's facets made finer, light caught on some edges, glints, frost at the top); ELECTRIC forked lightning. The classes, a follower's role: BRAWLER impact cracks; MAGE broad facets; TECHNICIAN circuit traces. An element card wears its element's texture; a class card its class's, in the class colour (`#8fe3ff`); a Universal or a Subclass card (only test cards so far) none, as none was designed. The brawler's cracks and the electric lightning are our designs; the owner named the other seven.
 
@@ -62,13 +62,46 @@ The owner, of the board picked on the design canvas ("Conduit 3D card concepts")
 
 How it is built: each picture is a small standalone SVG used as a CSS background (a data: URL, made once), through a class js/cardart.js writes into one `<style id="cardArtCss">` the first time it is wanted: `cat-c-<texture>` an equip card's face, `cat-f-<element>-<class>` a follower's backdrop, `cag-<colour>` the crystal, `cac-<colour>` the cube, each setting one CSS variable (`--tex` or `--gem`). The css lays `var(--tex)` under its veils (game.html: the block "THE 3D CARDS", and each follower card's background). The crystal and the cube are drawn already turned (the canvas's turns), so a card has no 3D parts of its own.
 
+## The CARDS screen's two menus, the gold of the cards taken into the run, YOU on the roster and a pack's reveal (2026-11-01, build `l`)
+
+The owner: "make it to where the items in the shop are in a new menu on the card menu called shop", "your hand and the cards you found this run should be consolidated into this rotating thing at the bottom ... sorted under a new assortment of owned cards, and the player may view all the cards that are in the game with the same scroll mechanics. And still be able to unlock cards from this menu", and "when a player opens a pack ... a new transparent menu pop up where the cards come up out of the pack one by one to fill the screen in a straight row with the rarest card ... illuminated from the back". Then, of a first draft that kept the hand as a small notch beside the stage: "the hand part should be out of the picture. Cards that have been permanently unlocked and that the player brought along with them should be in their collection slash card index with an illuminated background that is yellow, matching the purchased button color scheme. And I want a new player icon and player card in the roster that the player can equip their cards to their own player and remove the entire bordered in menu on the card collection".
+
+**Two menus** (js/cardsui.js `_cdTabs`), two skewed tabs under the header, the lit one gold:
+- **CARDS**: THE COLLECTION (below), with the start of a run's banner when the hand is chosen.
+- **SHOP**: the booster packs (Pack 1, then SERIES 2) and the MARKET's shelf, as they were.
+- The menu shown is kept between openings; the start of a run always opens CARDS.
+
+**The collection's view** (beside SORT BY): **OWNED** (the player's own cards: kept for good, and found this run, marked ★) or **ALL** (every card in the game, the locked ones too, each unlockable from the stage as before). OWNED is the default; with nothing owned it is off and ALL is shown. The rows of big cards for YOUR HAND and FOUND THIS RUN are gone: those cards are on the rail. **Nothing is beside the stage**: the card and its labels stand in the middle of the collection's width.
+
+**A card taken into the run is lit gold from behind** (kept for good and brought along: the hand), in the gold of the buttons that buy (`--neo-gold`, `#ffe733`):
+- its **mini card**: a gold light behind its crystal, cube or item, a gold glow round it, a gold ✓; it stays bright on the rail where the others are dimmed;
+- the **stage's card**: a gold outline and glow, a gold light behind its picture and from behind its slab, IN YOUR HAND in gold along its top;
+- its buttons, TAKE INTO THE RUN and IN YOUR HAND ✓ · PUT IT BACK, are gold too.
+- A card found this run is marked teal (its ★, its outline, its state), so the gold is the hand's alone.
+
+**YOU, on the roster** (js/commandcenter.js `_ccYouTile`, `_ccFocusYou`; js/cardsui.js `equipPlayerRosterDraw`): the player's two Universal slots moved off the CARDS screen onto the Command Center's carousel.
+- The strip's **first tile** is the player: its own picture (the 3D cube, facing you), YOU, its class (or THE PLAYER), and a plate for each card slot, lit gold with a card in it. It is always there, whatever the filters, and is not a creature card.
+- A tap puts **the player's card** in view, in gold: its picture lit from behind, YOU, its class and rank, THE PLAYER · YOU LEAD THE SQUAD, its health (a count of hits: 3 / 3 HITS), and YOUR CARDS, a mini card for each slot (as on the rail; a dashed EMPTY for an empty one). A tap on one opens its slot's list.
+- Beside it, **YOUR SLOT 1** and **YOUR SLOT 2**, drop-downs as a follower's CARD 1 and CARD 2 (the rarity chip beside the card worn), listing the hand: only Universal cards fit, the rest say why not, and one card is not worn twice. Under them a line says what to do (no card in the hand: take some from the CARDS screen), then the player's class, rank, health and squad.
+- The bar at the foot says YOU LEAD THE SQUAD: ONLY FOLLOWERS JOIN IT. ◂ ▸ walk the creatures: from the player they go to the first or the last of the strip.
+
+**A pack opened** (`_cdRevealBox`): an overlay over the sheet, which shows through it, blurred.
+- The pack drops in and shakes, and its tear line lights, all in its first second; it falls away once the last card has left it.
+- Its cards rise out of it one by one (from 0.85 s, half a second apart, 0.75 s each) into a straight row, each card starting over the pack (`--fx`) and overshooting a little.
+- The row is scaled to fill the screen: four cards at 1180 × 820, never past 1.25×.
+- Each is tagged NEW · FOUND FOR THIS RUN (gold) or DUPLICATE · +◇n CREDITS.
+- Once every card is out, **the rarest** (each card of the pack's highest rarity) is **lit from behind**: a glow in its colour and slow-turning rays, its frame lit white.
+- CONTINUE, a tap anywhere once all are out, or Escape closes it.
+- While it is up the sheet under it is not drawn again, so it never starts over.
+- With reduced motion the cards are simply there and the pack is not shown.
+
 ## The collection: a featured card over a rail of mini cards (2026-11-01, build `i`)
 
 The owner: "make it sortable by rarity or by the element", then "I want the cards at the bottom in the slider to be mini cards that the player can slide through, and the main card that would be in the middle of the slider is the card that is displayed at the top. When the card is selected, perhaps its description and card elements are labeled on the side of the card, and the card itself actually changes form and blows up the image and the rarity meters highlight."
 
-THE COLLECTION, at the foot of the CARDS screen (js/cardsui.js `_cdDeckBox`), is three parts.
+THE COLLECTION, the CARDS menu of the CARDS screen (js/cardsui.js `_cdDeckBox`; build `l` added the OWNED / ALL view and the gold of the cards taken into the run, above), is three parts.
 
-**The bar.** SORT BY RARITY or ELEMENT (the lit one teal), and where the shown card is ("3 OF 56").
+**The bar.** SHOW OWNED or ALL (the lit one gold), SORT BY RARITY or ELEMENT (the lit one teal), and where the shown card is ("3 OF 56").
 - By rarity, the rarest come first (the Crystalline six, then Series 2's eight Prototype cards, then Precision and down). Within a rarity: the element cards (fire to core), then the class cards (Brawler, Mage, Technician), then the species cards (crustacean, mollusk, elemental, drone, jelly), then by name.
 - By element: fire, toxic, electric, ice, flux, core, then the class cards, the species cards and the universal ones. Within each, the lowest rarity first (Unrefined up to Crystalline).
 
@@ -79,7 +112,7 @@ THE COLLECTION, at the foot of the CARDS screen (js/cardsui.js `_cdDeckBox`), is
 
 Beside the card, behind a leader line, its parts are **labelled**: NAME (large, in the card's colour), KIND, RARITY (a large meter lit to its step, with its name and "n OF 6"), EFFECT, STATE (IN YOUR HAND, FOUND THIS RUN, LOCKED or YOURS FOR GOOD, and who wears it). Its buttons (UNLOCK, TAKE INTO THE RUN, PUT IT BACK) are under the labels.
 
-**The rail.** Every card as a **mini card** (82 × 114): its texture, its crystal, cube or item, its name and a small rarity chip, with ✓ for in your hand and ★ for found.
+**The rail.** Every card as a **mini card** (82 × 114): its texture, its crystal, cube or item, its name and a small rarity chip; a card in your hand is lit gold with a gold ✓, a card found has a teal ★.
 - They sit in a row the browser scrolls sideways (a finger, a trackpad), each snapping to the middle.
 - The mini in the middle is raised and lit, and when the slide settles it is the card on the stage.
 - A tap brings a mini to the middle. ◀ ▶, the wheel and the arrow keys step one.

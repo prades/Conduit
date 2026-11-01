@@ -26,6 +26,9 @@
 // looks at that member, ✕ REMOVE takes it out, DISBAND the lot), the creature in view big in the middle with ◂ ▸ to walk the roster and its settings beside it (ATTACK STYLE, PLAY STYLE, RE-ROLL, INFO and its base stats), the filters and a strip
 // of everyone under that (the squad first, a RECRUIT tile at its end), and one bar at the foot: ADD TO SQUAD, SWAP IN FOR one of the three, or REMOVE. What is in view is the roster's own FOCUS (_ccFocus): looking at a creature does not change
 // who the orders in the world go to (that is the squad bar's pick: js/squadfly.js), and the settings and the squad buttons are for the one in view. A phone keeps the grid of cards and the side panel below.
+// YOU (build 2026-11-01l; the owner: "I want a new player icon and player card in the roster that the player can equip their cards to their own player"): the strip's FIRST tile is the player (its own picture, gold), always
+// there whatever the filters; a tap puts the PLAYER'S CARD in view (CC_YOU: its picture, its class, its health and its two cards, each a mini card that opens its slot's list), with YOUR SLOT 1 and YOUR SLOT 2 beside it
+// (Universal cards only: js/cardsui.js equipPlayerRosterDraw). ◂ ▸ walk the creatures: from the player they go to the first or the last of the strip.
 
 const PLAY_STYLES = [
     { id: "defensive",  label: "DEFENSIVE",  reach: 0.6, blurb: "ONLY FIGHTS WHAT COMES CLOSE" },
@@ -160,7 +163,9 @@ function _ccElLabel(id) { const e = (typeof ELEMENTS !== "undefined" ? ELEMENTS 
 
 // ── THE CAROUSEL: which creature is in view, and the order the strip and the arrows walk ──
 function ccCarousel() { return typeof hudCorners === "function" && hudCorners(); }
-let _ccFocus = null;   // the creature in view (the roster's own pick: not the selection the orders in the world follow)
+let _ccFocus = null;   // the creature in view (the roster's own pick: not the selection the orders in the world follow), or CC_YOU: the player's card
+const CC_YOU = { ccYou: true };   // (the player's place in the carousel: not a unit, never in ccUnits)
+function ccFocusIsYou() { return _ccFocus === CC_YOU; }
 let _ccSwapSig = "", _ccFiltSig = "", _ccUidN = 0;
 function _ccUid(u) { return u._ccUid || (u._ccUid = ++_ccUidN); }
 // the strip's order: the squad in its slots, then the rest (the most evolved, then the highest level, first), then the clones
@@ -174,6 +179,7 @@ function _ccStripSort(a, b) {
 function _ccStripUnits() { return ccUnits(ccFilter).sort(_ccStripSort); }
 // the creature in view stays the same one until it is gone (dead, made again): then the one that is picked on its own (the ring's ROSTER CARD), else the first the strip lists (a squad member first), else anyone
 function _ccFocusEnsure() {
+    if (_ccFocus === CC_YOU) return _ccFocus;   // (the player's card stays in view until something else is picked)
     const all = ccUnits({});
     if (_ccFocus && all.indexOf(_ccFocus) >= 0) return _ccFocus;
     const sel = ccSelectionList().filter(a => all.indexOf(a) >= 0);
@@ -187,7 +193,7 @@ function _ccNeighbour(u, dir) {
 }
 // the strip scrolls only far enough to show the card in view (never the page)
 function _ccScrollToFocus() {
-    const grid = document.getElementById("ccGrid"), card = _ccFocus && _ccCards.get(_ccFocus); if (!grid || !card || typeof grid.getBoundingClientRect !== "function" || typeof card.getBoundingClientRect !== "function") return;
+    const grid = document.getElementById("ccGrid"), card = !grid ? null : _ccFocus === CC_YOU ? grid.querySelector(".cc-ytile") : _ccFocus && _ccCards.get(_ccFocus); if (!grid || !card || typeof grid.getBoundingClientRect !== "function" || typeof card.getBoundingClientRect !== "function") return;
     const g = grid.getBoundingClientRect(), c = card.getBoundingClientRect();
     if (c.left < g.left + 8) grid.scrollLeft += c.left - g.left - 8; else if (c.right > g.right - 8) grid.scrollLeft += c.right - g.right + 8;
 }
@@ -196,6 +202,7 @@ function ccFocusSet(u) {
     _ccFocus = u; _ccDD = null; ccRerollArmed = false; if (ccOpenTab) ccRender(); _ccScrollToFocus(); return true;
 }
 function ccFocusStep(dir) { const nb = _ccNeighbour(_ccFocus, dir); return nb ? ccFocusSet(nb) : false; }
+function ccFocusYou() { return ccFocusSet(CC_YOU); }   // (the strip's first tile: the player's card in view)
 
 function ccOpen() {
     // The overlay has one page, the ROSTER (the creature cards and the command panel); the callers still say ccOpen("roster"). "command" was a tab of its own (it is the
@@ -333,7 +340,9 @@ function _ccDrawGrid(grid) {
     const keep = new Set(rows.map(r => r.unit));
     for (const [u, el] of _ccCards) if (!keep.has(u)) { el.remove(); _ccCards.delete(u); }
     const tile = car ? _ccRecruitTile(grid) : null; if (!car) { const t = grid.querySelector(".cc-rtile"); if (t) t.remove(); }
-    let prev = null;
+    const you = car ? _ccYouTile(grid) : null; if (!car) { const t = grid.querySelector(".cc-ytile"); if (t) t.remove(); }
+    if (you && grid.firstChild !== you && typeof grid.insertBefore === "function") grid.insertBefore(you, grid.firstChild);   // (YOU is the strip's first tile: the creatures follow it)
+    let prev = you;
     rows.forEach(r => {
         let card = _ccCards.get(r.unit);
         if (!card) { card = _ccMakeCard(r); _ccCards.set(r.unit, card); }
@@ -359,6 +368,36 @@ function _ccRecruitTile(grid) {
     const a = t.querySelector(".cc-rt-t"), b = t.querySelector(".cc-rt-s"), ta = "RECRUIT ◆" + cost, tb = can ? Math.floor(have / cost) + " AFFORDABLE" : "NEED " + (cost - have) + " MORE";
     if (a.textContent !== ta) a.textContent = ta; if (b.textContent !== tb) b.textContent = tb;
     return t;
+}
+// THE CAROUSEL'S YOU (build 2026-11-01l): the strip's first tile, the player's icon (its own picture, YOU, its two cards as two small plates: gold with a card in it, dashed without; its class in its tooltip). A tap puts the
+// player's card in view. It is not a .cc-card: the strip's creature cards are counted and walked without it. It is narrow, so the creatures' cards keep the room for their names.
+function _ccYouTile(grid) {
+    let t = grid.querySelector(".cc-ytile");
+    if (!t) {
+        t = _ccEl("button", "cc-ytile"); t.type = "button"; t.setAttribute("aria-label", "YOU · YOUR CARD AND YOUR TWO CARD SLOTS");
+        const cv = _ccEl("canvas", "cc-ythumb"); cv.width = cv.height = 72; t.appendChild(cv);
+        t.appendChild(_ccEl("span", "cc-yname", "YOU")); t.appendChild(_ccEl("span", "cc-ysub")); t.appendChild(_ccEl("span", "cc-ypips"));
+        _ccClick(t, () => ccFocusYou());
+    }
+    const on = _ccFocus === CC_YOU, cls = typeof playerClass === "function" ? playerClass() : null, sub = cls ? cls.name : "THE PLAYER";
+    t.classList.toggle("sel", on); t.setAttribute("aria-pressed", on ? "true" : "false");
+    const s = t.querySelector(".cc-ysub"); if (s && s.textContent !== sub) s.textContent = sub;
+    const worn = typeof equipPlayer !== "undefined" ? equipPlayer.slice(0, typeof EQUIP !== "undefined" ? EQUIP.playerSlots : 2) : [], sig = worn.join(","), pips = t.querySelector(".cc-ypips"), nameOf = id => { const c = id && typeof equipCard === "function" ? equipCard(id) : null; return c ? c.name : ""; };
+    if (pips && pips._sig !== sig) { pips._sig = sig; pips.textContent = ""; worn.forEach(id => { const n = nameOf(id), p = _ccEl("i", n ? "on" : ""); if (n) p.title = n; pips.appendChild(p); }); t._worn = worn.map(id => nameOf(id) || "EMPTY").join(" · "); }
+    { const tt = "YOU · " + sub + " · " + (t._worn || ""); if (t.title !== tt) t.title = tt; }   // (the tooltip: the class, and the two cards worn)
+    if (!t._done) { const cv = t.querySelector(".cc-ythumb"); t._done = cv ? _ccYouThumb(cv) : false; }   // (the player's sheet may still be arriving: drawn again until it has)
+    return t;
+}
+// the player's picture (the 3D cube facing you, js/hdsprites.js), drawn on a canvas; false while its sheet has not arrived (a gold disc stands in, and it is drawn again on the next redraw)
+function _ccYouThumb(cv) {
+    const g = cv && cv.getContext && cv.getContext("2d"); if (!g) return false; g.clearRect(0, 0, cv.width, cv.height);
+    const img = typeof _hdImg === "function" ? _hdImg("player") : null;
+    if (img && typeof _hdBlit === "function" && typeof HD_BOX !== "undefined") {   // (its cell is 105 tall above its anchor at 114.18, js/hdsprites.js: scaled to 86% of the canvas, its top 5% down)
+        try { const W = cv.width, H = cv.height, s = H * 0.86 / 105, ay = H * 0.05 + 113.18 * s; g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(W / 2, ay - 12 * s, W * 0.24, H * 0.06, 0, 0, Math.PI * 2); g.fill(); _hdBlit(g, img, HD_BOX.player, 0, typeof hdRow === "function" ? hdRow(1, 1) : 1, W / 2, ay, s); return true; } catch (e) { /* the disc below */ }
+    }
+    const k = cv.width / 72, gr = typeof g.createRadialGradient === "function" ? g.createRadialGradient(30 * k, 30 * k, 1, 36 * k, 38 * k, 26 * k) : null;
+    if (gr) { gr.addColorStop(0, "rgba(255,255,255,0.85)"); gr.addColorStop(0.4, "#ffe733"); gr.addColorStop(1, "rgba(0,0,0,0.55)"); g.fillStyle = gr; } else g.fillStyle = "#ffe733";
+    g.beginPath(); g.arc(36 * k, 38 * k, 22 * k, 0, Math.PI * 2); g.fill(); return false;
 }
 function _ccMakeCard(r) {
     const card = _ccEl("div", "cc-card"); card._unit = r.unit;
@@ -490,17 +529,19 @@ function _ccFocusBuild(box) {
     txt.appendChild(name); txt.appendChild(state); txt.appendChild(bars);
     card.appendChild(art); card.appendChild(txt); card.appendChild(_ccEl("div", "cf-none", "NOBODY HERE: TAP RECRUIT, AT THE END OF THE STRIP, TO CALL A FOLLOWER"));
     const prev = arrow(-1), next = arrow(1); box.appendChild(prev); box.appendChild(card); box.appendChild(next);
-    return box._cf = { card, cv, lv, el, sc, name, state, rows, prev, next, key: null, done: false };
+    return box._cf = { card, cv, lv, el, sc, name, state, rows, prev, next, txt, pc: null, pcSig: null, key: null, done: false };
 }
 function _ccFocusDraw(box) {
     const E = _ccFocusBuild(box), f = _ccFocus, list = _ccStripUnits(), walk = list.length > (f && list.indexOf(f) >= 0 ? 1 : 0);
     E.card.classList.toggle("none", !f); E.prev.disabled = E.next.disabled = !walk;
-    if (typeof cardArtUnitClass === "function") cardArtMark(E.card, f ? cardArtUnitClass(f) : "");   // its backdrop, behind its picture and its numbers (js/cardart.js)
+    const you = f === CC_YOU; E.card.classList.toggle("you", you); if (E.pc) E.pc.style.display = you ? "" : "none";
+    if (typeof cardArtUnitClass === "function") cardArtMark(E.card, f && !you ? cardArtUnitClass(f) : "");   // its backdrop, behind its picture and its numbers (js/cardart.js); the player's card has none (it is gold)
+    if (you) { _ccFocusYou(E); return; }
     if (!f) return;
     const col = _ccColour(f.element), st = typeof unitStatus === "function" ? unitStatus(f) : null, set = (e, p, v) => { if (e[p] !== v) e[p] = v; };
     E.card.style.setProperty("--c", col);
     set(E.name, "textContent", typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER");
-    set(E.lv, "textContent", "LV " + (f.level || 1)); set(E.el, "textContent", f.isClone ? "CLONE" : String(_ccElLabel(f.element)).toUpperCase());
+    set(E.lv, "textContent", "LV " + (f.level || 1)); E.lv.style.display = ""; set(E.el, "textContent", f.isClone ? "CLONE" : String(_ccElLabel(f.element)).toUpperCase());
     { const sc = typeof equipSubclassOf === "function" ? equipSubclassLabel(equipSubclassOf(f)) : ""; set(E.sc, "textContent", sc); E.sc.style.display = sc ? "" : "none"; }   // its SUBCLASS tag, once it has evolved into a form that has one (js/cards.js)
     set(E.state, "textContent", st ? st.text + (st.room ? " · " + st.room : "") : "");
     E.state.style.display = st ? "" : "none"; if (st) E.state.style.setProperty("--tc", st.col);
@@ -514,10 +555,33 @@ function _ccFocusDraw(box) {
     const key = _ccUid(f) + "|" + f.evolved + "|" + f.element; if (E.key !== key) { E.key = key; E.done = false; _ccThumb(E.cv, f); }
     if (!E.done && f.evolved && typeof EVOLUTIONS !== "undefined") { const d = EVOLUTIONS[f.evolved]; if (d && d._img && d._img.complete) { E.done = true; _ccThumb(E.cv, f); } }   // (an evolved form's picture may still have been loading)
 }
+// THE PLAYER'S CARD in view (CC_YOU, build 2026-11-01l): its picture, YOU, its class and rank, its health (its hits), and YOUR CARDS (its two slots as mini cards: a tap opens that slot's list beside it, js/cardsui.js equipPlayerSlotsBox)
+// the player's health: a count of hits (js/config.js PLAYER_HITS, js/init.js health), not hit points
+function _ccYouHits() { const mx = typeof PLAYER_HITS !== "undefined" ? PLAYER_HITS : 3, hp = typeof health === "number" ? Math.max(0, Math.min(mx, Math.round(health))) : mx; return { hp, mx }; }
+function _ccFocusYou(E) {
+    const cls = typeof playerClass === "function" ? playerClass() : null, set = (e, k, v) => { if (e[k] !== v) e[k] = v; };
+    E.card.style.setProperty("--c", "#ffe733");
+    set(E.name, "textContent", "YOU"); set(E.lv, "textContent", cls && typeof classRank === "function" ? "RANK " + classRank() : ""); E.lv.style.display = E.lv.textContent ? "" : "none"; set(E.el, "textContent", cls ? cls.name : "THE PLAYER");   // (its rank once it has a class)
+    E.sc.style.display = "none";
+    set(E.state, "textContent", "THE PLAYER · YOU LEAD THE SQUAD"); E.state.style.display = ""; E.state.style.setProperty("--tc", "#ffe733");
+    const H = _ccYouHits(), frac = H.hp / H.mx;
+    E.rows.forEach(r => {
+        const show = r._k === "HEALTH"; r.style.display = show ? "" : "none"; if (!show) return;
+        const w = Math.max(4, Math.round(Math.min(1, frac) * 100)) + "%", b = r.querySelector("b"), cls2 = "cf-bar" + (frac > 0.5 ? "" : frac > 0.25 ? " mid" : " low");
+        if (b.style.width !== w) b.style.width = w; if (r.className !== cls2) r.className = cls2; set(r.querySelector("em"), "textContent", H.hp + " / " + H.mx + " HITS");
+    });
+    if (typeof equipPlayerSlotsBox === "function") {
+        if (!E.pc) { E.pc = _ccEl("div", "cf-pcwrap"); E.txt.appendChild(E.pc); }
+        const sig = typeof equipPlayerSig === "function" ? equipPlayerSig() : "";
+        if (E.pcSig !== sig || !E.pc.firstChild) { E.pcSig = sig; E.pc.textContent = ""; E.pc.appendChild(_ccEl("div", "cf-pch", "YOUR CARDS · TAP ONE TO CHANGE IT")); E.pc.appendChild(equipPlayerSlotsBox(slot => { _ccDD = "pslot" + slot; ccRender(); })); }
+    }
+    if (E.key !== "you") { E.key = "you"; E.done = _ccYouThumb(E.cv); } else if (!E.done) E.done = _ccYouThumb(E.cv);   // (the player's sheet may still have been loading)
+}
 // the settings column: ATTACK STYLE, PLAY STYLE, RE-ROLL and INFO for the creature in view, then its base stats
 function _ccDrawSettings(side) {
     side.textContent = "";
     const one = _ccFocus; if (!one) { _ccDD = null; return; }
+    if (one === CC_YOU) { _ccDrawYouSettings(side); return; }
     const sel = [one], S = ccSelectionSummary(sel);
     _ccDrawStyles(side, S, sel);
     if (typeof equipRosterDraw === "function") equipRosterDraw(side, one);   // its two equip card slots (js/cardsui.js)
@@ -544,9 +608,21 @@ function _ccDrawSettings(side) {
         side.appendChild(idx);
     }
 }
+// the settings column for the player's card (CC_YOU): YOUR SLOT 1 and YOUR SLOT 2 (js/cardsui.js), then what the player is (its class, its rank, its health)
+function _ccDrawYouSettings(side) {
+    if (typeof equipPlayerRosterDraw === "function") equipPlayerRosterDraw(side);
+    const cls = typeof playerClass === "function" ? playerClass() : null, H = _ccYouHits(), idx = _ccEl("div", "cc-stats");
+    idx.appendChild(_ccEl("div", "cc-sec", "YOU"));
+    const row = (k, v) => { const r = _ccEl("div", "cc-stat"); r.appendChild(_ccEl("span", "cc-stat-k", k)); r.appendChild(_ccEl("span", "cc-stat-v", v)); idx.appendChild(r); };
+    row("CLASS", cls ? cls.name : "NOT CHOSEN YET"); if (cls && typeof classRank === "function") row("RANK", String(classRank()));
+    row("HEALTH", H.hp + " OF " + H.mx + " HITS");
+    row("SQUAD", (typeof partyMembers === "function" ? partyMembers().length : 0) + " OF " + (typeof PARTY !== "undefined" ? PARTY.max : 3) + " FOLLOW YOU");
+    side.appendChild(idx);
+}
 // the bar at the foot: what the creature in view can do about the squad, in one tap (ASKED: "SWAP … IN FOR", the three who could make room). Redrawn only when it changes.
 function _ccSwapDraw(bar) {
     const f = _ccFocus, mem = partyOrdered(), free = PARTY.max - mem.length;
+    if (f === CC_YOU) { const sg = "you|" + mem.length; if (sg === _ccSwapSig && bar.firstChild) return; _ccSwapSig = sg; bar.textContent = ""; bar.appendChild(_ccEl("div", "cc-sw-l", "YOU LEAD THE SQUAD: ONLY FOLLOWERS JOIN IT · " + mem.length + " OF " + PARTY.max + " FOLLOW YOU")); return; }
     const kind = !f ? "none" : f.isClone || f.isFollower !== true ? "clone" : partyIsMember(f) ? "member" : f.post ? (free > 0 ? "add" : "swap") : "away";
     const sg = kind + "|" + (f ? _ccUid(f) + "|" + f.partySlot : "") + "|" + free + "|" + mem.map(m => _ccUid(m) + ":" + m.partySlot + ":" + m.element).join(",");
     if (sg === _ccSwapSig && bar.firstChild) return; _ccSwapSig = sg; bar.textContent = "";
@@ -617,6 +693,7 @@ function _ccSqSig() {
 function _ccSideSigNow() {
     if (ccCarousel()) {   // the carousel's settings are for the creature in view
         const f = _ccFocus; if (!f) return "F-";
+        if (f === CC_YOU) return "Y|" + (typeof equipPlayerSig === "function" ? equipPlayerSig() : "") + "|" + _ccDD + "|" + (typeof playerClassId === "function" ? playerClassId() : "") + "|" + (typeof classRank === "function" ? classRank() : "") + "|" + _ccYouHits().hp + "|" + (typeof partyMembers === "function" ? partyMembers().length : 0);   // (the player's card: its slots, the hand, its class, its health)
         return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed + "|" + partyExileArmed([f]) + "|" + (typeof equipSig === "function" ? equipSig(f) : "")
             + "|" + (f.partnerUid || "") + "|" + (typeof breedArmed === "function" ? breedArmed(f) : "") + "|" + (typeof BREED !== "undefined" && typeof shardCount === "number" ? shardCount >= BREED.price : "");   // (the BREED button: its partner, its two taps, whether it can pay: js/breeding.js)
     }

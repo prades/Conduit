@@ -8,7 +8,8 @@
 //                 a role switched or a card put back takes it off (the tick); unlocking pays the flat price from the run's shards, once, and is kept where NEW GAME does not reach
 //   THE LIFE      a respawn keeps a follower's cards; EXILE, falling for good (its restored body too) and a RE-ROLL empty the slots; the save carries them, additively (FS.version still 1), and a save from before the cards loads
 //   NOTHING ELSE  the nine test cards do nothing (the 56 real ones are tests/crystalline.js's, tests/packs.js's and tests/series2.js's); with no card in the registry the button, the roster's slots and the sheet are there and say so; the game's own numbers (the stats, the save's other parts) are as they were
-//   THE SCREENS   in the real page: the CARDS button and its sheet (a rarity chip on each card's edge, YOUR HAND, YOU, THE COLLECTION, UNLOCK in two taps), the roster's SUBCLASS and CARD 1 / CARD 2, the start-of-run choice; a phone has none
+//   THE SCREENS   in the real page: the CARDS button and its sheet (a rarity chip on each card's edge, THE COLLECTION with the cards taken into the run lit gold, nothing beside its stage, UNLOCK in two taps), the roster's
+//                 YOU (the strip's first tile: the player's card and YOUR SLOT 1 / YOUR SLOT 2, build 2026-11-01l), its SUBCLASS and CARD 1 / CARD 2, the start-of-run choice; a phone has none
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -67,15 +68,19 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var minis = function(){ return $$('#cardsRoot .cd-rail .cd-mini'); }, miniName = function(m){ return m.querySelector('.cd-mn').textContent; }, miniFind = function(pred){ return minis().filter(pred)[0]; };
   var stageCard = function(){ return $('#cardsRoot .cd-stage .cd-card'); }, stageBtn = function(){ return $('#cardsRoot .cd-info .cd-btn'); }, stageName = function(){ var c = stageCard(); return c ? c.querySelector('.cd-name').textContent : null; };
   var pick = async function(m){ click(m); await wait(30); return stageCard(); };
+  var texts = function(s){ return $$(s).map(function(e){ return e.textContent; }); };
+  // a card taken into the run is LIT GOLD FROM BEHIND (build 2026-11-01l): a gold glow round its mini card, and a gold light in its picture (the buttons' gold, #ffe733)
+  var goldLit = function(el, part){ var cs = getComputedStyle(el), bg = getComputedStyle(el.querySelector(part)).backgroundImage; return /255, 231, 51/.test(cs.boxShadow) && /radial-gradient.*255, 2(31|46|50)/.test(bg); };
   // the sheet and the roster's slots with NO card in the registry (the contract of js/cardsui.js; the game itself has six real cards now, so a probe empties the registry for the moment)
   var emptyProbe = async function(){
       var f0 = followers[0]; f0.evolved = 'quillstone'; f0.role = 'brawler'; f0.element = 'fire'; selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f0; ccRender(); await wait(60);
       var offs = $$('#ccSide .cc-dd').map(function(d){ return [d.querySelector('.cc-dd-k').textContent, d.querySelector('.cc-dd-v').textContent, d.disabled]; });
       out.plain = { dds: offs.map(function(o){ return o[0]; }), cardDds: offs.filter(function(o){ return /^CARD/.test(o[0]); }), sub: $$('#ccSide .cc-stat').map(function(r){ return [r.querySelector('.cc-stat-k').textContent, r.querySelector('.cc-stat-v').textContent]; }).filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chip: ($('#ccFocus .cf-sc') || {}).textContent, cardsOpen: $('#cardsRoot').className };
+      click($('#ccGrid .cc-ytile')); await wait(60);   // YOU: the player's two slots, with no card in the hand
+      out.plain.you = { you: ccFocusIsYou(), dds: $$('#ccSide .cc-dd').map(function(d){ return [d.querySelector('.cc-dd-k').textContent, d.querySelector('.cc-dd-v').textContent, d.disabled]; }), slots: $$('#ccFocus .cf-pslot').map(function(e){ return e.textContent; }), note: texts('#ccSide .cc-note') };
       ccClose(); await wait(60);
       click($('#btnCards')); await wait(200);
-      out.emptySheet = { cls: $('#cardsRoot').className, slabs: $$('#cardsRoot .cd-card:not(.cd-empty)').length, empties: $$('#cardsRoot .cd-card.cd-empty').length, pslots: $$('#cardsRoot .cd-pbtn').length, note: ($$('#cardsRoot .cd-note').filter(function(n){ return /NO CARDS YET/.test(n.textContent); })[0] || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent };
-      click($('#cardsRoot .cd-pbtn')); await wait(60); out.emptySheet.pList = $$('#cardsRoot .cd-plist .cd-btn').length + '/' + $$('#cardsRoot .cd-plist .cd-note').map(function(e){ return e.textContent; }).join();
+      out.emptySheet = { cls: $('#cardsRoot').className, slabs: $$('#cardsRoot .cd-card:not(.cd-empty)').length, empties: $$('#cardsRoot .cd-card.cd-empty').length, side: $$('#cardsRoot :is(.cd-aside, .cd-hand, .cd-pbtn, .cd-you)').length, note: ($$('#cardsRoot .cd-note').filter(function(n){ return /NO CARDS YET/.test(n.textContent); })[0] || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent };
       click($('#cardsRoot .cd-close')); await wait(60); out.emptySheet.closed = $('#cardsRoot').className;
   };
   try {
@@ -83,13 +88,16 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.startOpen = $('#cardsRoot').className; out.startBanner = !!$('#cardsRoot .cd-banner'); out.startClose = ($('#cardsRoot .cd-close') || {}).textContent;
     if (out.startOpen.indexOf('open') >= 0) {   // A NEW RUN: the screen opened by itself, to choose the hand
       out.startHand0 = equipHand.length; out.takes = minis().filter(function(m){ return !m.classList.contains('locked') && !m.classList.contains('hand'); }).length; out.locks = 0; out.locksOff = 0;
+      out.startView = $$('#cardsRoot .cd-view').map(function(b){ return b.textContent + (b.classList.contains('on') ? '*' : ''); }).join('|'); out.startMinis = minis().length;   // (OWNED: the collection's two)
+      click(byText('#cardsRoot .cd-view', 'ALL')); await wait(80);   // ALL: every card of the game, the locked ones with them
       var lockedM = minis().filter(function(m){ return m.classList.contains('locked'); });
       for (var lk = 0; lk < lockedM.length; lk++) { await pick(minis().filter(function(m){ return m.classList.contains('locked'); })[lk]); var ub = stageBtn(); if (ub && /^UNLOCK/.test(ub.textContent)) { out.locks++; if (ub.disabled) out.locksOff++; } }   // (each locked card picked: its UNLOCK, off while the shards are short)
       for (var tk = 0; tk < 2; tk++) {   // a card is taken as a player takes it: picked on the rail, then its button beside it on the stage
         var tm = miniFind(function(m){ return !m.classList.contains('locked') && !m.classList.contains('hand'); });
         if (tm) { await pick(tm); var tb = stageBtn(); out['takeShown' + tk] = shown(tb) && /^TAKE INTO THE RUN/.test(tb.textContent); click(tb); await wait(60); }
       }
-      out.startHand1 = equipHand.slice(); click($('#cardsRoot .cd-close')); await wait(60); out.startAfter = $('#cardsRoot').className; out.startBodyClass = document.body.classList.contains('cardsOpen');
+      out.startHand1 = equipHand.slice(); out.startGold = minis().filter(function(m){ return m.classList.contains('hand'); }).map(function(m){ return miniName(m) + (goldLit(m, '.cd-mtex') ? '' : '(not lit)'); }).sort().join('|'); out.startSide = $$('#cardsRoot :is(.cd-aside, .cd-hand, .cd-pbtn)').length;
+      click($('#cardsRoot .cd-close')); await wait(60); out.startAfter = $('#cardsRoot').className; out.startBodyClass = document.body.classList.contains('cardsOpen');
     }
     gameState.running = true; facilityBlackoutSet(false); if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false;
     shardCount = 2500; for (var i = followers.length; i < 4; i++) recruitFollower(); for (var k = 0; k < followers.length; k++) followers[k].returningToCrystal = false; partyTick(); await wait(50);
@@ -97,19 +105,20 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if (out.any && out.wide && out.dev) {
       // THE SCREEN, from the dock
       click(btn); await wait(200);
-      var ms = minis();
-      out.open = { cls: $('#cardsRoot').className, body: document.body.classList.contains('cardsOpen'), hudHidden: !shown($('#topHud')) && !shown($('#topToggles')), slabs: ms.length, title: ($('#cardsRoot .cd-title') || {}).textContent, secs: $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }), summary: ($('#cardsRoot .cd-summary') || {}).textContent, shardsHead: ($('#cardsRoot .cd-sh-n') || {}).textContent };
+      var ms = minis(), secs = function(){ return $$('#cardsRoot .cd-sec').map(function(e){ return e.childNodes[0].textContent; }); }, tab = function(t){ click(byText('#cardsRoot .cd-tab', t)); return wait(80); };
+      out.open = { cls: $('#cardsRoot').className, body: document.body.classList.contains('cardsOpen'), hudHidden: !shown($('#topHud')) && !shown($('#topToggles')), slabs: ms.length, title: ($('#cardsRoot .cd-title') || {}).textContent, secs: secs(), summary: ($('#cardsRoot .cd-summary') || {}).textContent, shardsHead: ($('#cardsRoot .cd-sh-n') || {}).textContent,
+        tabs: $$('#cardsRoot .cd-tab').map(function(b){ return b.querySelector('.cd-tl').textContent + (b.classList.contains('on') ? '*' : ''); }).join('|'), views: $$('#cardsRoot .cd-view').map(function(b){ return b.textContent + (b.classList.contains('on') ? '*' : ''); }).join('|'),
+        side: $$('#cardsRoot :is(.cd-aside, .cd-hand, .cd-pbtn, .cd-you, .cd-stagewrap)').length, tabSubs: texts('#cardsRoot .cd-tab small').join('|'),
+        gold: ms.filter(function(m){ return m.classList.contains('hand'); }).length + '/' + ms.filter(function(m){ return m.classList.contains('hand') && goldLit(m, '.cd-mtex'); }).length,
+        stageGold: (function(){ var c = stageCard(); return !!c && c.classList.contains('hand') && /255, 231, 51/.test(getComputedStyle(c.querySelector('.cd-face')).outlineColor + getComputedStyle(c.querySelector('.cd-face')).boxShadow) && /radial-gradient/.test(getComputedStyle(c.querySelector('.cd-tex')).backgroundImage); })(),
+        stageBtn: (function(){ var b = stageBtn(); return b ? b.querySelector('.cd-bl').textContent + ' ' + getComputedStyle(b).borderTopColor : null; })() };
+      await tab('SHOP'); out.shop = { secs: secs(), packs: $$('#cardsRoot .cd-pack').length, market: !!$('#cardsRoot .cd-market'), rail: minis().length, tabs: $$('#cardsRoot .cd-tab.on').map(function(b){ return b.querySelector('.cd-tl').textContent; }).join() };
+      await tab('CARDS'); out.back = { secs: secs(), rail: minis().length };
       out.bars = [];
       for (var bi = 0; bi < ms.length; bi++) {   // each card picked in its turn, and its chip measured on the stage
         var s = await pick(minis()[bi]), name = s.querySelector('.cd-name').textContent, c = Object.values(equipCards()).filter(function(x){ return x.name === name; })[0]; var chip = s.querySelector('.cd-chip'), sr = s.getBoundingClientRect(), cr = chip ? chip.getBoundingClientRect() : null;
         out.bars.push([name, s.querySelectorAll('.cd-chip i.on').length, s.querySelectorAll('.cd-chip i').length, c ? equipRarityBars(c) : -1, s.querySelector('.cd-rar').textContent, c ? equipRarityLabel(c) : '', s.querySelectorAll('.cd-chip').length, cr ? [Math.round(sr.right - cr.right), Math.round(cr.top - sr.top), Math.round(cr.height), (chip.getAttribute('aria-label') || '')] : null]);
       }
-      // THE PLAYER'S TWO SLOTS: Universal cards only; not the same twice
-      var ps = $$('#cardsRoot .cd-pbtn'); out.pslots = ps.length; click(ps[0]); await wait(60);
-      var lst = function(){ return $$('#cardsRoot .cd-plist .cd-btn').map(function(b){ return [b.querySelector('.cd-bl').textContent, b.disabled]; }); };
-      out.pList0 = lst(); click(byText('#cardsRoot .cd-plist .cd-btn', 'TEST · UNIVERSAL A')); await wait(60);
-      out.pAfter = equipPlayer.slice(); out.pShown = ($$('#cardsRoot .cd-pbtn .cd-pv')[0] || {}).textContent; out.pChips = $$('#cardsRoot .cd-pbtn').map(function(b){ var c = b.querySelector('.cd-chip.mini'); return c ? c.querySelectorAll('i.on').length : -1; });
-      click($$('#cardsRoot .cd-pbtn')[1]); await wait(60); out.pList1 = lst(); click(byText('#cardsRoot .cd-plist .cd-btn', 'TEST · UNIVERSAL B')); await wait(60); out.pAfter2 = equipPlayer.slice();
       // CLOSE, and the key
       click($('#cardsRoot .cd-close')); await wait(60); out.closed = { cls: $('#cardsRoot').className, body: document.body.classList.contains('cardsOpen'), hud: shown($('#topToggles')) };
       click(btn); await wait(100); window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await wait(60); out.escaped = $('#cardsRoot').className;
@@ -121,6 +130,23 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
         click(stageBtn()); await wait(60); out.unlock = { shards: before - shardCount, owned: equipOwns(id), stored: localStorage.getItem('conduit_fp_cards') };
       }
       cardsClose();
+      // THE ROSTER'S YOU (build 2026-11-01l): the strip's first tile; a tap puts the player's card in view, YOUR SLOT 1 and YOUR SLOT 2 beside it: Universal cards only, not the same twice
+      selectedUnits.clear(); ccOpen('roster'); await wait(300);
+      var ytile = $('#ccGrid .cc-ytile'), slotDds = function(){ return $$('#ccSide .cc-dd').filter(function(d){ return /^YOUR SLOT/.test(d.querySelector('.cc-dd-k').textContent); }); };
+      out.you = { first: $('#ccGrid').firstElementChild === ytile, tile: ytile ? ytile.textContent : null, notCard: !!ytile && !ytile.classList.contains('cc-card'), strip: $$('#ccGrid .cc-card:not(.cc-rtile)').length === _ccStripUnits().length, shownBefore: ccFocusIsYou() };
+      click(ytile); await wait(80);
+      out.you.inView = ccFocusIsYou(); out.you.lit = ytile.classList.contains('sel'); out.you.name = $('#ccFocus .cf-name').textContent; out.you.el = $('#ccFocus .cf-el').textContent; out.you.cardClass = $('#ccFocus .cf-card').classList.contains('you');
+      out.you.bars = $$('#ccFocus .cf-bar').filter(function(r){ return getComputedStyle(r).display !== 'none'; }).map(function(r){ return r.querySelector('.cf-k').textContent + ' ' + r.querySelector('em').textContent; });
+      out.you.dds = $$('#ccSide .cc-dd .cc-dd-k').map(function(e){ return e.textContent; }); out.you.slotsShown = $$('#ccFocus .cf-pslot').map(function(e){ return e.textContent; }); out.you.swap = $('#ccSwap').textContent;
+      click(slotDds()[0]); await wait(60);
+      var lst = function(){ return $$('#ccSide .cc-dd-list .cc-btn').map(function(b){ return [b.querySelector('.cc-bl').textContent, b.disabled]; }); };
+      out.pList0 = lst(); click(byText('#ccSide .cc-dd-list .cc-btn', 'TEST · UNIVERSAL A')); await wait(60);
+      out.pAfter = equipPlayer.slice(); out.pShown = slotDds()[0].querySelector('.cc-dd-v').textContent; out.pChips = slotDds().map(function(d){ var c = d.querySelector('.cd-chip.mini'); return c ? c.querySelectorAll('i.on').length : -1; });
+      out.you.worn = $$('#ccFocus .cf-pslot').map(function(e){ var m = e.querySelector('.cd-mini'); return (m && m.querySelector('.cd-mn') ? m.querySelector('.cd-mn').textContent + (m.classList.contains('hand') ? '(gold)' : '') : 'EMPTY'); }); out.you.pips = $$('#ccGrid .cc-ytile .cc-ypips i.on').length;
+      click($$('#ccFocus .cf-pslot .cd-mini')[1]); await wait(60); out.you.tapOpens = $$('#ccSide .cc-dd.open .cc-dd-k').map(function(e){ return e.textContent; }).join();   // (a tap on a slot's card on the player's card opens its list)
+      out.pList1 = lst(); click(byText('#ccSide .cc-dd-list .cc-btn', 'TEST · UNIVERSAL B')); await wait(60); out.pAfter2 = equipPlayer.slice();
+      click($('#ccFocus .cf-arrow.next')); await wait(60); out.you.next = [ccFocusIsYou(), _ccFocus === _ccStripUnits()[0], $$('#ccSide .cc-dd .cc-dd-k').map(function(e){ return e.textContent; }).join('|'), getComputedStyle($('#ccFocus .cf-pcwrap')).display];
+      ccClose(); await wait(60);
       // THE ROSTER: the creature in view's SUBCLASS and its two slots
       var f = followers[0]; f.evolved = 'quillstone'; f.role = 'brawler'; f.element = 'fire'; f.cards = undefined;
       selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f; ccRender(); await wait(60);
@@ -149,7 +175,8 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       var rail = $('#cardsRoot .cd-rail'), onMini = function(){ return minis().filter(function(m){ return m.classList.contains('on'); }).map(miniName); };
       await pick(minis()[0]); out.rail = { first: [stageName(), onMini().join(), ($('#cardsRoot .cd-dpos') || {}).textContent, $$('#cardsRoot .cd-stage .cd-card').length, !!$('#cardsRoot .cd-stage .cd-card.feat')],
         labels: $$('#cardsRoot .cd-info .cd-ik').map(function(e){ return e.textContent; }), values: $$('#cardsRoot .cd-info .cd-irow').map(function(r){ return r.querySelector('.cd-iv').textContent; }), meter: $$('#cardsRoot .cd-info .cd-imeter i.on').length + '/' + $$('#cardsRoot .cd-info .cd-imeter i').length,
-        prevOff: $$('#cardsRoot .cd-rnav')[0].disabled, sorts: $$('#cardsRoot .cd-sort').map(function(b){ return b.textContent + (b.classList.contains('on') ? '*' : ''); }).join() };
+        prevOff: $$('#cardsRoot .cd-rnav')[0].disabled, sorts: $$('#cardsRoot .cd-sort').map(function(b){ return b.textContent + (b.classList.contains('on') ? '*' : ''); }).join(),
+        views: $$('#cardsRoot .cd-view').map(function(b){ return b.textContent + (b.classList.contains('on') ? '*' : '') + (b.disabled ? '(off)' : ''); }).join() };
       click(minis()[5]); await wait(30); out.rail.tapped = [stageName(), miniName(minis()[5]), onMini().join()];
       click($$('#cardsRoot .cd-rnav')[1]); await wait(30); out.rail.next = stageName();
       rail.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true })); await wait(30); out.rail.wheel = stageName();
@@ -414,10 +441,24 @@ function measure(w, h, query, seed) {
     else {
         await check('the instrument ran (a tablet, ?cards=all)', () => { ok(T, 'the probe produced nothing'); same(T.err, undefined, 'the probe threw'); same(T.dev, 'all', 'the switch'); same(T.wide, true, 'the tablet layout'); same(T.startOpen.indexOf('open') < 0, true, '?cards=all opened the start screen'); });
         if (T && !T.err) {
-            await check('the CARDS button is in the dock, shown (there are cards), and opens the sheet over the game: the HUD gives way, the title, the three parts, the count and the shards', () => {
+            await check('the CARDS button is in the dock, shown (there are cards), and opens the sheet over the game: the HUD gives way, the title, the count and the shards', () => {
                 same(T.btn.there && T.btn.inDock && T.btn.shown, true, 'the button: ' + JSON.stringify(T.btn)); ok(/CARDS/.test(T.btn.label), 'its label ' + T.btn.label);
                 same(T.open.cls.indexOf('open') >= 0, true, 'the sheet did not open'); same(T.open.body, true, 'body.cardsOpen'); same(T.open.hudHidden, true, 'the HUD stayed over the sheet'); same(T.open.title, 'CARDS', 'the title');
-                same(T.open.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|BOOSTER PACK · SERIES 2|MARKET|THE COLLECTION', 'its parts'); same(T.open.slabs, 65, 'the cards'); ok(/HAND 65 · 65 OF 65 UNLOCKED · TEST CARDS \(\?cards\)/.test(T.open.summary), 'the summary: ' + T.open.summary); ok(/^◆ \d+$/.test(T.open.shardsHead), 'the shards: ' + T.open.shardsHead);
+                same(T.open.slabs, 65, 'the cards'); ok(/HAND 65 · 65 OF 65 UNLOCKED · TEST CARDS \(\?cards\)/.test(T.open.summary), 'the summary: ' + T.open.summary); ok(/^◆ \d+$/.test(T.open.shardsHead), 'the shards: ' + T.open.shardsHead);
+            });
+            await check('TWO MENUS (build l, the owner: "the items in the shop are in a new menu on the card menu called shop"): CARDS (THE COLLECTION, OWNED or ALL, and nothing beside its stage: "the hand part should be out of the picture ... remove the entire bordered in menu") and SHOP (the two booster packs and the market); the rows of big cards for the hand and the cards found are gone', () => {
+                same(T.open.tabs, 'CARDS*|SHOP', 'the menus'); same(T.open.tabSubs, 'THE COLLECTION · 65 OWNED|PACKS · MARKET', 'what each menu holds'); same(T.open.secs.join('|'), 'THE COLLECTION', 'the CARDS menu\'s parts'); same(T.open.views, 'OWNED 65*|ALL 65', 'the views (every card is owned with ?cards=all)');
+                same(T.open.side, 0, 'the hand\'s notch, the player\'s slots or the panel beside the stage is still drawn');
+                same(T.shop.tabs, 'SHOP', 'the menu lit'); same(T.shop.secs.join('|'), 'BOOSTER PACK|BOOSTER PACK · SERIES 2|MARKET', 'the SHOP\'s parts'); same(T.shop.packs, 2, 'the packs\' boxes'); same(T.shop.market, true, 'the market'); same(T.shop.rail, 0, 'the collection is in the SHOP too');
+                same(T.back.secs.join('|'), 'THE COLLECTION', 'back to CARDS'); same(T.back.rail, 65, 'its rail');
+                const css = rd('game.html'), ui = rd('js/cardsui.js'); ok(!/sec\("YOUR HAND"|sec\("FOUND THIS RUN"|sec\("YOU",/.test(ui), 'a row of the old sheet is still drawn'); ok(/#cardsRoot \.cd-tab\.on \{/.test(css), 'the menus are not styled'); ok(!/#cardsRoot \.cd-side\b/.test(css), 'the old 3D edge\'s class is in use again');
+                ok(!/\.cd-(aside|asideh|hand|hslot|hmore|stagewrap|pbtn|pslot|plist|you)\b/.test(css + ui), 'the notch, the bordered panel or the sheet\'s player slots are still in the page or the script'); ok(!/function _cdSide\b|function _cdPlayerSlot\b|_cdDD\b/.test(ui), 'the side panel\'s code is still there');
+            });
+            await check('A CARD TAKEN INTO THE RUN IS LIT GOLD FROM BEHIND (build l, the owner: "an illuminated background that is yellow, matching the purchased button color scheme"): on the rail (a gold glow and a gold light behind its picture), on the stage (a gold outline and light), and its button gold; a card found this run is marked teal', () => {
+                same(T.open.gold, '65/65', 'the mini cards in the hand (all 65 with ?cards=all) / those lit gold'); same(T.open.stageGold, true, 'the stage\'s card in the hand is not lit gold'); ok(/^IN YOUR HAND ✓ rgb\(255, 231, 51\)$/.test(T.open.stageBtn), 'its button: ' + T.open.stageBtn);
+                const css = rd('game.html'), buy = (css.match(/--neo-gold: (#[0-9a-f]{6})/i) || [])[1]; same(buy, '#ffe733', 'the buttons\' gold');
+                ok(/:is\(#cardsRoot, #ccRoot\) \.cd-mini\.hand \.cd-mtex \{ background: radial-gradient\(/.test(css) && /#cardsRoot \.cd-card\.hand \.cd-tex \{ background: radial-gradient\(/.test(css), 'the gold light behind the picture');
+                ok(/\.cd-mini\.found::after \{ content: "★"; color: var\(--neo-teal\)/.test(css) && /\.cd-card\.found \.cd-face \{ outline: 2px solid var\(--neo-teal\)/.test(css), 'a found card is not marked teal (gold is the hand\'s)');
             });
             await check('rarity is a CHIP on each card\'s edge: one notched plate with six segments, one lit for each step (illuminated bars), standing on the right edge of the card, with the name of its tier on the card', () => {
                 same(T.bars.length, 65, 'slabs'); for (const b of T.bars) {
@@ -427,12 +468,20 @@ function measure(w, h, query, seed) {
                 same(new Set(T.bars.map(b => b[1])).size, 6, 'every step is shown by some card'); const css = rd('game.html'); ok(css.includes('.cd-chip i.on { background: var(--neo-teal); box-shadow'), 'a lit segment is not lit'); ok(/\.cd-chip \{[^}]*clip-path: polygon/.test(css), 'the chip is not a notched plate'); ok(!/cd-bars/.test(css + rd('js/cardsui.js')), 'the old row of bars is still there');
             });
             await check('a slot with a card in it wears the small chip too, and an empty one none', () => {
-                same(T.pChips.join(), '2,-1', 'the player\'s slots (a card with two steps, and an empty one)');
+                same(T.pChips.join(), '2,-1', 'the player\'s slots on the roster (a card with two steps, and an empty one)');
             });
-            await check('YOU: the player has two slots; each lists the hand (the Universal cards the only ones that can be picked, EMPTY off while empty); a card picked shows; the other slot cannot take the same one', () => {
-                same(T.pslots, 2, 'slots'); const en = l => l.filter(x => !x[1]).map(x => x[0]).sort().join('|');
+            await check('YOU ON THE ROSTER (build l, the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the strip\'s first tile (not a creature card); a tap puts the player\'s card in view, its hits, YOUR CARDS, and YOUR SLOT 1 / YOUR SLOT 2 beside it', () => {
+                same(T.you.first, true, 'YOU is not the strip\'s first tile'); ok(/^YOU/.test(T.you.tile), 'the tile says ' + T.you.tile); same(T.you.notCard, true, 'YOU is counted as a creature card'); same(T.you.strip, true, 'the strip\'s creature cards'); same(T.you.shownBefore, false, 'the roster opened on the player');
+                same(T.you.inView, true, 'a tap did not put the player in view'); same(T.you.lit, true, 'the tile is not lit'); same(T.you.name, 'YOU', 'the card\'s name'); same(T.you.cardClass, true, 'the card in view is not the player\'s');
+                same(T.you.bars.join(), 'HEALTH 3 / 3 HITS', 'its numbers (its health is a count of hits: js/config.js PLAYER_HITS)'); same(T.you.dds.join('|'), 'YOUR SLOT 1|YOUR SLOT 2', 'its settings'); same(T.you.slotsShown.join('|'), 'SLOT 1EMPTY|SLOT 2EMPTY', 'its cards before');
+                ok(/YOU LEAD THE SQUAD/.test(T.you.swap), 'the bar at the foot: ' + T.you.swap);
+            });
+            await check('YOU: two slots; each lists the hand (the Universal cards the only ones that can be picked, EMPTY off while empty); a card picked shows (on the player\'s card too, lit gold, and on its tile); the other slot cannot take the same one; ▸ goes on to the first creature', () => {
+                const en = l => l.filter(x => !x[1]).map(x => x[0]).sort().join('|');
                 same(en(T.pList0), 'TEST · UNIVERSAL A|TEST · UNIVERSAL B', 'what the first slot can take'); same(T.pList0.length, 66, 'the list (EMPTY and the 65)'); same(T.pAfter.join(), 'test_universal_a,', 'slot one'); same(T.pShown, 'TEST · UNIVERSAL A', 'what it shows');
+                same(T.you.worn.join('|'), 'TEST · UNIVERSAL A(gold)|EMPTY', 'the player\'s card'); same(T.you.pips, 1, 'the tile\'s lit slots'); same(T.you.tapOpens, 'YOUR SLOT 2', 'a tap on the second card did not open its list');
                 same(en(T.pList1), 'TEST · UNIVERSAL B', 'what the second can take once the first has A (EMPTY is off while it is empty)'); same(T.pAfter2.join(), 'test_universal_a,test_universal_b', 'both slots');
+                same(T.you.next.join('|'), 'false|true|ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2|none', '▸ from the player: the strip\'s first creature, its settings, the player\'s cards put away');
             });
             await check('✕ CLOSE and Escape shut the sheet and give the HUD back', () => { same(T.closed.cls.indexOf('open') < 0, true, 'close'); same(T.closed.body, false, 'body.cardsOpen after'); same(T.closed.hud, true, 'the dock did not come back'); same(T.escaped.indexOf('open') < 0, true, 'Escape'); });
             await check('THE ROSTER: the creature in view shows its SUBCLASS (a row, and a tag on its picture), and CARD 1 and CARD 2 under its styles', () => {
@@ -459,7 +508,9 @@ function measure(w, h, query, seed) {
     else {
         await check('A NEW RUN with a collection: the sheet opens by itself with a banner and START THE RUN; the owned cards can be taken (up to three), the locked ones cost ◆1,000 and are off while the shards are short; START shuts it and the HUD is back', () => {
             ok(U && !U.err, 'the probe: ' + (U && U.err)); same(U.dev, 'on', 'the switch'); same(U.startOpen.indexOf('open') >= 0, true, 'the sheet did not open'); same(U.startBanner, true, 'no banner'); same(U.startClose, 'START THE RUN ▸', 'its button'); same(U.startHand0, 0, 'the hand began full');
-            same(U.takes, 2, 'cards to take'); same(U.locks, 63, 'cards to unlock (the 56 real and the seven test cards not owned)'); same(U.locksOff, 63, 'unlocks that were on with ' + 100 + ' shards'); same(U.startHand1.slice().sort().join(), 'test_fire,test_universal_a', 'the hand chosen'); same([U.takeShown0, U.takeShown1].join(), 'true,true', 'TAKE INTO THE RUN was not beside the card picked'); same(U.startAfter.indexOf('open') < 0, true, 'START did not shut it'); same(U.startBodyClass, false, 'body.cardsOpen after');
+            same(U.takes, 2, 'cards to take'); same(U.startView, 'OWNED 2*|ALL 65', 'the view it opens on: the cards you own'); same(U.startMinis, 2, 'the rail of the cards you own');
+            same(U.locks, 63, 'cards to unlock in ALL (the 56 real and the seven test cards not owned)'); same(U.locksOff, 63, 'unlocks that were on with ' + 100 + ' shards'); same(U.startHand1.slice().sort().join(), 'test_fire,test_universal_a', 'the hand chosen'); same([U.takeShown0, U.takeShown1].join(), 'true,true', 'TAKE INTO THE RUN was not beside the card picked'); same(U.startAfter.indexOf('open') < 0, true, 'START did not shut it'); same(U.startBodyClass, false, 'body.cardsOpen after');
+            same(U.startGold, U.startHand1.map(id => ({ test_fire: 'TEST · FIRE', test_universal_a: 'TEST · UNIVERSAL A' })[id]).sort().join('|'), 'the two taken are lit gold on the rail'); same(U.startSide, 0, 'the hand\'s notch or the bordered panel is back');
         });
         await check('?cards (not =all): the button is there, shown; UNLOCK asks twice, the second tap pays ◆1,000 once and the card is owned and kept; the same card is not charged again', () => {
             same(U.btn.shown, true, 'the button'); same(U.arm.label, 'TAP AGAIN TO UNLOCK', 'the first tap'); same(U.arm.still, true, 'the card left the stage when the sheet was drawn again'); same(U.arm.shards, 0, 'the first tap spent shards'); same(U.arm.owned, false, 'the first tap unlocked');
@@ -474,7 +525,7 @@ function measure(w, h, query, seed) {
     const REAL = Q.J('Object.values(EQUIP_CARDS).map(function(c){ return { name: c.name, kind: c.kind, match: c.match, rarity: c.rarity }; })'), BY_RARITY = railOrder(REAL, 'rarity'), BY_ELEMENT = railOrder(REAL, 'element');
     const N = measure(1180, 820, '');
     if (N === null) console.log('  (no Chromium here: skipped)');
-    else await check('WITHOUT ?cards: the CARDS button is in the dock and shown, the sheet lists the 56 real cards (locked, a rarity chip on each), and with no card in the registry the sheet is empty and says so, and the roster has the SUBCLASS tag and CARD 1 / CARD 2, off, saying there is no card in the hand', () => {
+    else await check('WITHOUT ?cards: the CARDS button is in the dock and shown, the sheet lists the 56 real cards (locked, a rarity chip on each), and with no card in the registry the sheet is empty and says so, and the roster has the SUBCLASS tag and CARD 1 / CARD 2, off, saying there is no card in the hand, and the player\'s card YOUR SLOT 1 / YOUR SLOT 2, off too', () => {
         ok(N && !N.err, 'the probe: ' + (N && N.err)); same(N.dev, '', 'the switch'); same(N.any, true, 'a card exists'); same(N.btn.there && N.btn.inDock && N.btn.shown, true, 'the button: ' + JSON.stringify(N.btn));
         same(N.real.slabs, 56, 'the 56 on the sheet'); same(N.real.locked, 56, 'locked'); same(N.real.names.slice(0, 6).join('|'), 'IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|CORE REINFORCEMENT|PROTOTYPE X', 'their names (by rarity: the Crystalline six first, by class, then by name)'); same(N.real.kinds.slice(0, 6).join('|'), 'CLASS · BRAWLER|CLASS · BRAWLER|CLASS · MAGE|CLASS · MAGE|CLASS · TECHNICIAN|CLASS · TECHNICIAN', 'their classes');
         same(N.real.lit.slice(0, 6).join(), '6/6,6/6,6/6,6/6,6/6,6/6', 'the rarity chips'); same(N.real.rars.slice(0, 6).join(), 'CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE', 'the rarity names');
@@ -487,14 +538,16 @@ function measure(w, h, query, seed) {
         ok(/HAND 0 \/ 3 · 0 OF 56 UNLOCKED$/.test(N.real.summary), 'the summary: ' + N.real.summary);
         same(N.plain.dds.join('|'), 'ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2', 'the roster\'s settings'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
         same(N.plain.sub.join(), 'SUBCLASS,CRUSTACEAN', 'the subclass row'); same(N.plain.chip, 'CRUSTACEAN', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
-        ok(N.emptySheet.cls.indexOf('open') >= 0, 'the sheet did not open'); same(N.emptySheet.slabs, 0, 'a card on the sheet'); same(N.emptySheet.empties, 3, 'the hand\'s empty places'); same(N.emptySheet.pslots, 2, 'the player\'s slots');
-        same(N.emptySheet.secs.join('|'), 'YOUR HAND|YOU|BOOSTER PACK|BOOSTER PACK · SERIES 2|MARKET|THE COLLECTION', 'its parts (both packs\' boxes: a pack on sale is shown, its button saying why it cannot be bought)'); same(N.emptySheet.note, 'NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED', 'what the collection says'); ok(/HAND 0 \/ 3 · 0 OF 0 UNLOCKED/.test(N.emptySheet.summary) && !/TEST CARDS/.test(N.emptySheet.summary), 'the summary: ' + N.emptySheet.summary);
-        same(N.emptySheet.pList, '1/NO CARD IN YOUR HAND', 'a player slot\'s list with no card in the hand (EMPTY, off, and the note)'); same(N.emptySheet.closed.indexOf('open') < 0, true, 'close');
+        same(N.plain.you.you, true, 'YOU did not come into view'); same(JSON.stringify(N.plain.you.dds), JSON.stringify([['YOUR SLOT 1', 'NO CARDS IN YOUR HAND', true], ['YOUR SLOT 2', 'NO CARDS IN YOUR HAND', true]]), 'the player\'s slots with no card to put in them');
+        same(N.plain.you.slots.join('|'), 'SLOT 1EMPTY|SLOT 2EMPTY', 'the player\'s card'); ok(N.plain.you.note.some(t => /TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN/.test(t)), 'what the column says: ' + N.plain.you.note);
+        ok(N.emptySheet.cls.indexOf('open') >= 0, 'the sheet did not open'); same(N.emptySheet.slabs, 0, 'a card on the sheet'); same(N.emptySheet.side, 0, 'something beside the stage (the notch, the slots)');
+        same(N.emptySheet.secs.join('|'), 'THE COLLECTION', 'its parts (the CARDS menu; the packs and the market are in the SHOP)'); same(N.emptySheet.note, 'NO CARDS YET · THE FIRST ONES ARE STILL BEING DESIGNED', 'what the collection says'); ok(/HAND 0 \/ 3 · 0 OF 0 UNLOCKED/.test(N.emptySheet.summary) && !/TEST CARDS/.test(N.emptySheet.summary), 'the summary: ' + N.emptySheet.summary);
+        same(N.emptySheet.closed.indexOf('open') < 0, true, 'close');
     });
     if (N !== null) await check('THE COLLECTION: a rail of mini cards (sorted by rarity, or by element) and the card picked on it shown on the stage above, in full, its parts labelled beside it (name, kind, rarity with a meter lit to its step, effect, state); a tap, ▶, the wheel and the arrow keys step through; a slide that settles picks the card in the middle', () => {
         const R = N.rail; ok(R, 'no probe of the rail'); same(R.first.slice(0, 5).join('|'), 'IMPACT TEST|IMPACT TEST|1 OF 56|1|true', 'the first card: on the stage, raised on the rail, where it is, one card on the stage, featured');
         same(R.labels.join('|'), 'NAME|KIND|RARITY|EFFECT|STATE', 'the labels'); same(R.values.join('|'), 'IMPACT TEST|CLASS · BRAWLER|CRYSTALLINE · 6 OF 6|+50% ATTACK DAMAGE|LOCKED', 'what they say'); same(R.meter, '6/6', 'the rarity meter'); same(R.prevOff, true, '◀ was on at the first card');
-        same(R.sorts, 'RARITY*,ELEMENT', 'the sort buttons'); same(R.tapped.join('|'), [R.tapped[1], R.tapped[1], R.tapped[1]].join('|'), 'a tap on the sixth mini card'); same(R.next, N.real.names[6], '▶'); same(R.wheel, N.real.names[8], 'the wheel (120: two steps)'); same(R.key, N.real.names[7], 'the arrow key');
+        same(R.sorts, 'RARITY*,ELEMENT', 'the sort buttons'); same(R.views, 'OWNED 0(off),ALL 56*', 'the views with nothing owned: ALL, and OWNED off'); same(R.tapped.join('|'), [R.tapped[1], R.tapped[1], R.tapped[1]].join('|'), 'a tap on the sixth mini card'); same(R.next, N.real.names[6], '▶'); same(R.wheel, N.real.names[8], 'the wheel (120: two steps)'); same(R.key, N.real.names[7], 'the arrow key');
         same(R.slid[0], R.slid[1], 'the card in the middle after a slide');
         same(R.byElement.names.join('|'), BY_ELEMENT.map(c => c.name).join('|'), 'by element (worked out here from the registry: each element Unrefined to Precision, then the class cards, then the species cards)');
         same(R.byElement.names.slice(0, 3).join('|'), 'EMBER PLATING|FURNACE HEART|CINDERBRAND', 'fire first, Unrefined to Precision'); same(R.byElement.names.slice(18, 24).join('|'), 'KNUCKLE WRAPS|IRON GUARD|HAYMAKER GAUNTLET|CLEAVER ARM|IMPACT TEST|STRESS TESTED', 'the Brawler cards after the elements, Series 2\'s four then the Crystalline two');
