@@ -143,3 +143,34 @@ None.
 
 ### Supersedes / superseded by
 None.
+
+## DECISION: Universal and Player cards: the names and the slots
+
+- **Date:** 2026-11-01
+- **Status:** Approved (design); not implemented
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` (the specification), `OPEN-QUESTIONS.md` §1l and §3
+
+### Context
+The player's two slots took Universal cards only, and no real one existed. The owner asked for Universal card concepts ("go out on a limb with them and also make some basic ones") and for "player universal cards that change the player's class into really hyper-specific roles, like elemental classes".
+
+### Decision
+The class-changing cards are **Player cards**, worn by the player only. **Universal cards** fit the player's slots and a follower's slots. What a Universal card does is still open.
+
+### Exact rules
+In `UNIVERSAL-AND-PLAYER-CARDS.md` section 2: the player's two slots take Player cards and Universal cards; a follower's two slots take Universal cards (as before) besides its Element, Class and Subclass cards.
+
+### Alternatives considered
+A first Universal card giving the whole squad +25% attack damage (and +25% attack speed from Prototype, copies stacking) was set and then withdrawn the same day. The owner: "it's not for the entire squad ... I don't want to make them affect the entire squad like that."
+
+### Rationale and trade-offs
+Player cards give the player's own slots a kind of their own; Universal cards stay the one kind anyone can wear.
+
+### Impact
+When built: js/cards.js (a Player kind, what the player's slots take), js/cardsui.js (the slots' lists), js/cardart.js (the cards' look), the card tests.
+
+### Follow-up
+The open questions in the specification (section 11): what Universal cards are for and the first one's effect, the Player cards' roles, names, tiers, sources and looks.
+
+### Supersedes / superseded by
+Supersedes the 2026-10-30 rule that the player's two slots take Universal cards only.

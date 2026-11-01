@@ -187,6 +187,7 @@ Asked: the shop "in a new menu on the card menu called shop"; the hand and the c
 - **YOU is pinned first in the strip**, before the squad, whatever the filters; ◂ ▸ still walk the creatures only (from YOU they go to the first or the last).
 - **The player's card shows its hits** (3 / 3 HITS: the player's health is a count of hits, not hit points), its class and rank once chosen, and its two cards as mini cards.
 - **Open: the player's slots take Universal cards only** (the rule chosen on 2026-10-30), and **no real card is Universal yet**: Pack 1 is element cards, Series 2 species and class cards, the Crystalline six class cards. Only the test cards (`?cards`) can be worn by the player today. Should some cards fit the player (a Universal series, or any card), or does the player wait for Universal cards?
+  - **Designed 2026-11-01** (not built): the class-changing cards are **Player cards** (the player only), and **Universal cards** fit the player's slots and a follower's. **What a Universal card does is open**: a squad-wide boost was set and withdrawn the same day. The rules and the open questions: `UNIVERSAL-AND-PLAYER-CARDS.md`.
 
 ## 2. Newly open
 
@@ -196,7 +197,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
-- **Other kinds of card:** Universal cards (the player's two slots have nothing they can hold) and player-class cards. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
+- **Other kinds of card:** Universal cards and Player cards (the cards for the player's class) are designed in part since 2026-11-01, not built: `UNIVERSAL-AND-PLAYER-CARDS.md` (its open questions, section 11). (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
 - **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.
 - **Card art:** the design asks for low-poly 3D artwork and kanji-inspired graphics. One card has its 3D item (EMBER PLATING, live since build `j`); the other Pack 1 items are next, then Series 2's. No kanji.
