@@ -237,6 +237,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         const pk = PERKS[target.perk];
         if (pk && pk.modifyIncomingDamage) dmg = pk.modifyIncomingDamage(target, dmg, source);
     }
+    // EQUIP CARDS (js/cards.js, the Series 2 abilities): a follower of yours that an enemy hits may block it whole (SHELL BLOCK) or take less of it (ABSORB)
+    if (!fixed && target.isFollower && target.team === "green" && target.cards && typeof equipOnHurt === "function") dmg = equipOnHurt(target, dmg, source);
     const _before = target.health;
     target.health -= dmg;
     if (typeof noteHit === "function") noteHit(target, _before);   // the bar's pale segment shows the hit's size (js/combat.js)

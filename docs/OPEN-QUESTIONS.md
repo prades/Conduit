@@ -64,7 +64,7 @@ Decided with you by buttons before building, and built: the Sewers' boss is **a 
 Still open from that work:
 - **The queen's numbers.** Level 6, the ant species' boss block: provisional; the archive says to measure the live game before setting them. (The distress cycle of build `d` is gone: the archive's later rules replaced it, §1e.)
 - **The Nest's encounter.** The row names the Ant Queen with no lair, level or numbers; the nest area has no entrance. The archive's proposed Ant Queen fight (lunge, brood call, nest tremor) is a design, not code.
-- **Series 2 cards.** The list, its effects and numbers, and the pack's price and odds: none exist in the archive. The pack stays off sale until they do.
+- **Series 2 cards.** The list, its effects and numbers, and the pack's price and odds: none exist in the archive. The pack stays off sale until they do. **Settled in build `2026-11-01j` (§1j):** 32 cards from the owner-approved draft, the price and odds picked at the owner's word.
 - **A reward for sparing the queen.** The archive calls it valuable and undecided; nothing is granted.
 - **After purification:** one straggler ant at a time, one every 100 s, is my number for "a few incidental insects may remain".
 
@@ -144,7 +144,26 @@ Asked: "sketch out the items for series pack 2", "give 3D item looks instead of 
 
 - **Built:** the collection as a featured card over a rail of mini cards, sortable by rarity or element (docs/UI-STYLE.md).
 - **A preview, awaiting approval:** EMBER PLATING's 3D item. It shows only with `?cardart=items`; the crystal stays for everyone until the owner says yes (docs/ART-PROCESS.md). The other seventeen Pack 1 items come after that.
-- **A draft, awaiting approval:** the 40 Series 2 items (docs/SERIES-2.md). Names, effects and numbers are PROPOSED, and nothing is in the game. Still open there: the pack's price and odds, whether Series 2 deals the Crystalline six as its rarest tier, and the order of the work.
+- **A draft, awaiting approval:** the 40 Series 2 items (docs/SERIES-2.md). Names, effects and numbers are PROPOSED, and nothing is in the game. Still open there: the pack's price and odds, whether Series 2 deals the Crystalline six as its rarest tier, and the order of the work. **Settled in build `j` (§1j).**
+
+## 1j. Series 2 on sale, the Prototype rarity, EMBER PLATING's item live (built 2026-11-01, build `j`; docs/SERIES-2.md)
+
+Asked: "The ember plating looks good. Series 2. Pick a price and set the odds for the pack and make it to where another rarity is unlocked, and that means we should make and push to main." Asked which rarity, the owner picked **"Prototype unlocks"**: Series 2 deals Unrefined to Prototype, and Lustrous comes in a later update.
+
+- **Built:** the 32 cards of the draft's first four rarities, as drafted (one card per identity and rarity; js/cards.js `EQUIP_SERIES2`), with the eight Prototype abilities (Shell block, Regrowth, Nova, Overclock, Absorb, Cleave, Chain, Double charge) and ATTUNED CORE.
+- **Built:** the pack on sale after the purification: ◆150, 4 cards, odds 50 / 30 / 15 / 5, one slot Precision or higher (about one pack in three holds a Prototype).
+- **Live:** EMBER PLATING's 3D item, without the preview flag. The other cards keep the crystal or cube until their pieces are approved.
+- **PICKED by us, at your word** (all provisional, unplayed): the price (half again Pack 1's ◆100, for a pack that opens later and deals stronger cards) and the odds (Prototype rare at 5%, Precision a little above Pack 1's 10%). Every card number is the draft's.
+- **The implementer's readings, for your eye:**
+  - Nova counts the follower's **hits landed** (not attacks swung).
+  - Chain jumps from **every hit** the Mage lands, its shots included.
+  - Cleave and Chain deal a share of what the hit took after the target's defense. Nova deals a share of the wearer's SP.ATK.
+  - None of the three strikes sets off another card (one hit never chains into many).
+  - Shell block and Absorb count only an enemy's hit.
+  - Regrowth heals only while the follower is hurt.
+- **Fixed on the way:** the market's shelf could sell Series 2 cards before the pack opened; a jelly card's refusal read "FOR JELLYS".
+
+Open, for the owner (playtest): the price and odds; the cards' numbers once played; the eight Lustrous cards (keep the draft's, or change them, before they are built); whether a later pack deals the Crystalline six.
 
 ## 2. Newly open
 
@@ -153,11 +172,11 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 ## 3. Not decided, nothing built
 
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
-- **Pack 2 and later:** where Prototype, Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined, Refined and Precision only.
-- **Other kinds of card:** class cards beyond the Crystalline six, subclass cards, Universal cards (the player's two slots have nothing they can hold), player-class cards.
+- **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
+- **Other kinds of card:** Universal cards (the player's two slots have nothing they can hold) and player-class cards. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
 - **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.
-- **Card art:** the design asks for low-poly 3D artwork and kanji-inspired graphics. Only the rarity chip exists.
+- **Card art:** the design asks for low-poly 3D artwork and kanji-inspired graphics. One card has its 3D item (EMBER PLATING, live since build `j`); the other Pack 1 items are next, then Series 2's. No kanji.
 - **A phone's CARDS screen and slots.**
 - **Jelly's damage profile and the universal attack index:** both listed as missing in the Notion archive.
 
@@ -169,7 +188,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **`docs/CARD-SYSTEM.md` (on the `design-notes` branch only)** was updated and pushed to `design-notes` in round 2 (never to main): everything built, and every answer above.
 - **Game Bible (`bible.html`)** was brought up to date on 2026-10-30, at your request ("update the game Bible to reflect all of the different installations"), after your earlier "not yet". New in part 05: *Subclasses*, *Equip cards: slots, the hand and the CARDS screen* (with a picture of the screen, `img/bible/ui/cards_sheet.webp`, made by `design/bible/pictures.js cards`), *The cards, and what they do* (all 24, from the code's own tables) and *Booster packs, found cards and the market*. Changed in place: the table of statuses (the weakness, the glitch and the stuns), the signature moves (the rebuilt Quill Burst, and the Frost Maw's and the Manta's stuns, which now work), a respawn keeping the role and the cards, the roster's CARD 1, CARD 2 and SUBCLASS, the dock's CARDS button, the saves (the run's `cards`, the collection at `conduit_fp_cards`), the economy (credits, the pack, the unlock), the file list (70 scripts), the tests (72 suites, 27 in a real browser) and the open lists. Every number it quotes about cards is tagged and checked against the code by `tests/bible.js` (2,273 numbers). The older draft in the session scratchpad is obsolete. The picture of the CARDS screen is the only new one: the older pictures (the HUD's dock, the Command Center) are as they were made, so they do not show the CARDS button or the card slots.
 - **`tests/visiblearea.js`** is a known flaky real-browser timing test (about 1 run in 14 on main).
-- **This file** is committed on the working branch (`claude/start-game-project-HSh7Z`) only; main does not have it. Say so if you want it on main too.
+- **This file** is on the working branch (`claude/start-game-project-HSh7Z`) and goes to main with the builds the owner sends there (main has had it since build `h`).
 
 ## 5. Already decided: please do not reopen
 

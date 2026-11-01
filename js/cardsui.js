@@ -11,6 +11,7 @@
 //   A NEW RUN   the same screen opens by itself, with a banner and a START button, when a run begins and the collection holds a card (js/cards.js equipRunStart).
 //   PACK 1      BOOSTER PACK (a button: ◆EQUIP_PACK.price, two taps; the cards it dealt last are shown under it, a duplicate says what it paid), MARKET (this run's credits; a shelf of six, dealt with the pack's odds, that changes every 5 minutes of play and waits while this sheet is open: each card can
 //               be bought, in two taps, with its value in credits or in shards) and FOUND THIS RUN (the cards the packs and the market gave, to wear at once; ◆EQUIP.unlockCost keeps one for good), between YOU and THE COLLECTION.
+//   SERIES 2    BOOSTER PACK · SERIES 2 under Pack 1's box (build 2026-11-01j): the same box for EQUIP_PACK2 (◆150), its button off and saying "UNLOCKS AFTER THE PURIFICATION" until the Sewers are purified.
 // Nothing here is drawn on the canvas, and nothing runs in a frame: the screen redraws only when what it shows has changed (a redraw under a finger loses the tap).
 
 let cardsPanelOpen = false, _cdOpts = {}, _cdSig = "", _cdTimer = 0, _cdDD = null, _cdArm = null;   // _cdDD: the player's slot whose list is open; _cdArm: { id, until }, a card whose UNLOCK is armed
@@ -63,7 +64,8 @@ function _cdSlab(c, extra) {
     face.appendChild(_cdChip(c));   // (on the card's right edge)
     face.appendChild(_cdEl("i", "cd-glow")); face.appendChild(_cdEl("i", "cd-shadow"));
     const gem = _cdEl("i", "cd-gem"); if (typeof cardArtObjectClass === "function") cardArtMark(gem, cardArtObjectClass(c, col), "gem"); face.appendChild(gem);
-    // THE CARD'S ITEM (js/cardart.js CARD_ITEMS, on a preview until approved): the card's own 3D object, in place of the crystal, standing in front of the tilted card and rising past its top edge, hovering
+    // THE CARD'S ITEM (js/cardart.js CARD_ITEMS: EMBER PLATING's is live since build 2026-11-01j; a new piece is on a preview until approved): the card's own 3D object, in place of the crystal (still made, hidden under it),
+    // standing in front of the tilted card and rising past its top edge, hovering
     const item = typeof cardArtItemUrl === "function" ? cardArtItemUrl(c) : "";
     const long = /\S{12,}/.test(c.name) ? " long" : "";   // (a name with a long word, CORE REINFORCEMENT, is set smaller so that it breaks between words, not inside one)
     const ghost = _cdEl("div", "cd-holo ghost"); ghost.setAttribute("aria-hidden", "true");   // the hologram's shadow: its own class names, so a card has one .cd-name, .cd-kind and .cd-text
@@ -296,7 +298,7 @@ function cardsRender(force) {
     body.appendChild(hand);
     sec("YOU", "THE PLAYER WEARS TWO UNIVERSAL CARDS · EACH FOLLOWER'S TWO ARE ON ITS ROSTER PAGE");
     const you = _cdEl("div", "cd-you"); you.appendChild(_cdPlayerSlot(0)); you.appendChild(_cdPlayerSlot(1)); body.appendChild(you);
-    for (const pack of equipPacksOnSale()) { sec(pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name, _cdPackSub(pack)); body.appendChild(_cdPackBox(pack)); }   // (a pack that is not on sale, Series 2 until its numbers are given, is not shown)
+    for (const pack of equipPacksOnSale()) { sec(pack === EQUIP_PACK ? "BOOSTER PACK" : "BOOSTER PACK · " + pack.name, _cdPackSub(pack)); body.appendChild(_cdPackBox(pack)); }   // (a pack that is not on sale, one without its price or odds, is not shown; a locked one is, its button saying when it opens)
     sec("MARKET", "◇ CREDITS (DUPLICATES PAY " + Math.round(EQUIP_MARKET.share * 100) + "% OF A CARD'S VALUE) OR THE SAME NUMBER OF ◆ SHARDS BUY A CARD: A NEW ONE IS KEPT FOR GOOD · THE SHELF CHANGES EVERY 5 MINUTES"); body.appendChild(_cdMarketBox());
     if (equipFound.length) {
         sec("FOUND THIS RUN", "WEAR THEM FROM THE ROSTER · THEY GO WITH THE RUN UNLESS YOU KEEP THEM"); const fg = _cdEl("div", "cd-grid");

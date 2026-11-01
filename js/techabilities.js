@@ -113,7 +113,11 @@ function _techMember(f) { return typeof partyIsMember === "function" ? partyIsMe
 function techAbilityOf(f) { return f && f.isFollower && !f.isClone && f.role === "camper" ? TECH_ABILITIES[f.element] || null : null; }
 function techReadyIn(f) { return Math.max(0, ((f && f._abReadyAt) || 0) - _techFrame()); }   // frames until it can use its ability again
 // a technician's cooldown after its equip cards (js/cards.js EQUIP_STATS.cooldown: the share the cards it wears take off it, added over them; never more than nine tenths off). Every place a cooldown is set goes through here.
-function techCooldown(f, base) { const b = typeof equipBonus === "function" ? equipBonus(f, "cooldown") : 0; return Math.max(1, Math.round(base * (1 - Math.min(0.9, Math.max(0, b || 0))))); }
+// With DOUBLE CHARGE (js/cards.js, a Series 2 card) and its second charge held, that charge is spent instead of the wait: the ability is ready again at once (equipChargeSpend), and the charge comes back one cooldown later.
+function techCooldown(f, base) {
+    const b = typeof equipBonus === "function" ? equipBonus(f, "cooldown") : 0, cd = Math.max(1, Math.round(base * (1 - Math.min(0.9, Math.max(0, b || 0)))));
+    return typeof equipChargeSpend === "function" && equipChargeSpend(f, cd) ? 1 : cd;
+}
 function techAbilityCan(f) {
     const ab = techAbilityOf(f); if (!ab) return { ok: false, why: "NO ABILITY" };
     if (f.dead || f.returningToCrystal || f._flight) return { ok: false, why: "NOT HERE" };

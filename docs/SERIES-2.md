@@ -1,6 +1,10 @@
-# Series 2: the items (DRAFT, for the owner to approve)
+# Series 2: the items
 
-**Status: PROPOSED. Nothing here is in the game.** The Series 2 pack's code exists (js/cards.js `EQUIP_PACK2`, `EQUIP_SERIES2`), but its card list has been empty. Your design notes in Notion (the archive) have no list either (docs/OPEN-QUESTIONS.md §1d). This draft is the first list, made from the owner's answers of 2026-11-01:
+**Status (build 2026-11-01j): 32 cards BUILT and on sale after the purification; the 8 Lustrous cards PROPOSED (a later update).**
+
+The owner's word (2026-11-01): "Series 2. Pick a price and set the odds for the pack and make it to where another rarity is unlocked". Asked which rarity, the owner picked "Prototype unlocks". So Series 2 deals **Unrefined, Refined, Precision and Prototype**: Prototype is the fourth tier (four lit segments), the first rarity beyond Pack 1's Precision. Lustrous comes in a later update.
+
+The list came from the owner's answers of 2026-11-01:
 
 - **40 cards**: the eight identities × five rarities.
   - Identities: the five species (Crustacean, Mollusk, Elemental, Drone, Jelly) and the three classes (Brawler, Mage, Technician).
@@ -8,123 +12,155 @@
   - The six Crystalline class cards stay as they are.
 - **"Stats low, abilities high"**: the three lower rarities give stat boosts or a Pack 1 style on-hit status; the two upper ones give something new.
 
-Every name, number and ability below is a proposal. Approve, cut or rename freely. As with Pack 1, all the numbers will sit in one table in js/cards.js, so tuning stays one edit.
+All 32 built cards are rows of one table, js/cards.js `EQUIP_SERIES2`, so tuning stays one edit. **Every number is PICKED by us (a first setting); nobody has played Series 2 yet.**
 
-Each card is an **item** with its own 3D look (the "3D look" column). The looks will be modelled like EMBER PLATING (design/cards), one piece at a time, once its look is approved (docs/ART-PROCESS.md).
+Each card is an **item** with its own 3D look (the "3D look" column). The looks will be modelled like EMBER PLATING (design/cards), one piece at a time, once its look is approved (docs/ART-PROCESS.md). No Series 2 item is modelled yet: its cards show the crystal (species) or the cube (class).
+
+## The pack (BUILT: js/cards.js `EQUIP_PACK2`)
+
+| | Series 2 | Pack 1, for comparison |
+|---|---|---|
+| Price | ◆150 (PICKED) | ◆100 |
+| Cards a pack | 4 | 4 |
+| Odds a slot: Unrefined / Refined / Precision / Prototype | 50 / 30 / 15 / 5 (PICKED) | 60 / 30 / 10 / none |
+| Reserved slot | 1, Precision or higher, drawn among Precision and Prototype by the same odds (15 to 5) | 1, Precision |
+| Deals | the 32 species and class cards | the 18 element cards |
+| Opens | after the purification (the owner's rule) | from the start |
+
+- **About one pack in three holds a Prototype card**: 1 − 0.75 × 0.95³ ≈ 36% (the reserved slot draws Prototype 5 times in 20, each other slot 5 in 100). Measured: 35.5% of 20,000 seeded packs.
+- **Before the purification** the pack's box is on the CARDS screen, under Pack 1's, with its button off and saying UNLOCKS AFTER THE PURIFICATION. Its cards are not on the market's shelf either (js/cards.js `equipPacksOpen`).
+- **Once open**, the market's shelf can sell its cards too (by Pack 1's odds for the first three rarities, Series 2's 5 for Prototype). A Prototype card's market value is ◇350.
+- Its cards are found, worn, unlocked (◆1,000 once found) and saved like every card.
 
 ## Who wears what
 
-- A **species card** is worn by a follower of that species. Every evolved form has its species (js/cards.js `EQUIP_FORM_SUBCLASS`): Quillstone and Seeper are Crustaceans, for example, and Jelly Ram, Mimic and Goo Proxy are Jellies.
+- A **species card** is worn by a follower of that species. Every evolved form has its species (js/cards.js `EQUIP_FORM_SUBCLASS`): Quillstone and Seeper are Crustaceans, for example, and Jelly Ram, Rift Mimic and Goo Proxy are Jellies.
 - A **class card** is worn by a follower of that class.
-- An egg has no species until it evolves, so it can wear class cards only.
+- An egg has no species until it evolves, so it can wear class cards only. A species card says why it does not fit ("FOR JELLIES · EVOLVE FIRST").
 
-## The rarity ladder (proposed)
+## The rarity ladder
 
-| Rarity | What it gives | Pack 1, for comparison |
-|---|---|---|
-| Unrefined | +8% to one stat | +5% |
-| Refined | +14% to one stat | +10% |
-| Precision | an on-hit status, or two stats at +10% | an on-hit status |
-| Prototype | an **ability**: a new mechanic, modest | (none) |
-| Lustrous | the identity's **signature ability**, strong | (none) |
+| Rarity | What it gives | Pack 1, for comparison | Status |
+|---|---|---|---|
+| Unrefined | +8% to one stat | +5% | BUILT |
+| Refined | +14% to one stat | +10% | BUILT |
+| Precision | an on-hit status, or two stats at +10% | an on-hit status | BUILT |
+| Prototype | an **ability**: a new mechanic, modest | (none) | BUILT |
+| Lustrous | the identity's **signature ability**, strong | (none) | PROPOSED |
 
-The on-hit statuses are Pack 1's existing six: burn, poison (the target hits weaker), glitch (its wind-ups fail), slow, siphon (heal from the damage dealt) and knockback. A Precision card with a status reuses them, so it needs no new combat code.
+The on-hit statuses are Pack 1's existing six: burn, poison (the target hits weaker), glitch (its wind-ups fail), slow, siphon (heal from the damage dealt) and knockback.
 
 ## The 40
 
+The Effect column says what the built card does; a Lustrous row is still a proposal.
+
 ### Crustacean: the shell (defense, health)
 
-| Rarity | Item | Effect (proposed) | 3D look |
+| Rarity | Item | Effect | 3D look |
 |---|---|---|---|
 | Unrefined | CHITIN SCALE | +8% defense | a single curved ridged chitin plate, pale coral with darker banding |
 | Refined | BARNACLE BRACER | +14% maximum HP | a forearm guard crusted with barnacles and a strap |
 | Precision | PINCER CLAMP | 15% per hit to SLOW the target by 30% for 2 s (the claw grips) | a hinged mechanical claw, its jaw half open |
-| Prototype | TIDE SHELL | **Shell block**: the next hit it takes is blocked completely; it recharges 8 s after a block | a spiral conch shell shield, glowing at its seams |
-| Lustrous | LEVIATHAN CARAPACE | **Bristling**: when hit in melee, spines strike back for 25% of the damage taken | a heavy spined carapace plate, spikes catching light |
+| Prototype | TIDE SHELL | **Shell block**: the next enemy hit it takes is blocked whole; ready again 8 s after a block | a spiral conch shell shield, glowing at its seams |
+| Lustrous | LEVIATHAN CARAPACE | *(proposed)* **Bristling**: when hit in melee, spines strike back for 25% of the damage taken | a heavy spined carapace plate, spikes catching light |
 
 ### Mollusk: the sustain (health, healing)
 
-| Rarity | Item | Effect (proposed) | 3D look |
+| Rarity | Item | Effect | 3D look |
 |---|---|---|---|
 | Unrefined | MANTLE GEL | +8% maximum HP | a stoppered jar of iridescent gel |
 | Refined | NACRE PEARL | +14% defense | a large pearl set in a steel claw mount |
 | Precision | SIPHON SLIME | 15% per hit to SIPHON: heal 12% of the damage dealt | a dripping vial of glowing slime |
-| Prototype | REGROWTH SAC | **Regrowth**: regains 0.5% of its maximum HP every second | a pulsing translucent sac with veins |
-| Lustrous | VOID SHELL | **Withdraw**: a hit that would make it fall instead pulls it into its shell; for 3 s it cannot be hurt, and it heals 30%. Once every 60 s. | a dark spiral shell with a star-field lustre (after the Voidstar) |
+| Prototype | REGROWTH SAC | **Regrowth**: regains 0.5% of its maximum HP every second while it is hurt | a pulsing translucent sac with veins |
+| Lustrous | VOID SHELL | *(proposed)* **Withdraw**: a hit that would make it fall instead pulls it into its shell; for 3 s it cannot be hurt, and it heals 30%. Once every 60 s. | a dark spiral shell with a star-field lustre (after the Voidstar) |
 
 ### Elemental: the element (special attack, its element)
 
-| Rarity | Item | Effect (proposed) | 3D look |
+| Rarity | Item | Effect | 3D look |
 |---|---|---|---|
 | Unrefined | RAW SHARD | +8% special attack | a rough crystal shard that takes the wearer's element colour |
 | Refined | FOCUSING PRISM | +14% special attack | a cut prism in a brass cradle, light split through it |
-| Precision | ATTUNED CORE | 12% per hit to apply **its own element's** Pack 1 status (fire burns, toxic poisons, electric glitches, ice slows, flux siphons, core knocks back) | a small reactor core in a cage, its colour the wearer's |
-| Prototype | STORM HEART | **Nova**: every 6th attack bursts on every enemy within 1.5 tiles, for 60% of its special attack | a crackling orb in a ring of fins |
-| Lustrous | PRIMORDIAL SPARK | **Never resisted**: its element's weakness never applies (no ×0.7 against the element it is weak to, and an ice attack reaches core: js/elements.js) | a floating spark inside a glass teardrop, slowly turning |
+| Precision | ATTUNED CORE | 12% per hit to set **its own element's** status: the one Pack 1's Precision card of that element sets, with that card's numbers (fire burns, toxic poisons, electric glitches, ice slows, flux siphons, core knocks back) | a small reactor core in a cage, its colour the wearer's |
+| Prototype | STORM HEART | **Nova**: every 6th hit it lands bursts on every enemy within 1.5 tiles of its target (the target too), for 60% of its special attack | a crackling orb in a ring of fins |
+| Lustrous | PRIMORDIAL SPARK | *(proposed)* **Never resisted**: its element's weakness never applies (no ×0.7 against the element it is weak to, and an ice attack reaches core: js/elements.js) | a floating spark inside a glass teardrop, slowly turning |
 
-### Drone: the machine (attack speed, ability cooldown)
+### Drone: the machine (attack speed, damage)
 
-| Rarity | Item | Effect (proposed) | 3D look |
+| Rarity | Item | Effect | 3D look |
 |---|---|---|---|
 | Unrefined | SERVO OIL | +8% attack speed | an oil can with a long nozzle |
 | Refined | GYRO STABILIZER | +14% attack speed | a spinning gyroscope in a gimbal frame |
 | Precision | HUNTER OPTICS | +10% damage dealt and +10% attack speed | a targeting lens array with a red reticle |
 | Prototype | OVERCLOCK CHIP | **Overclock**: every 12 s, +50% attack speed for 3 s | a circuit chip with heat sinks, glowing hot |
-| Lustrous | WINGMAN DRONE | **Wingman**: a small drone orbits it and fires at its target (4 damage a shot, as a turret's half) | a palm-sized quad drone, rotors spinning |
+| Lustrous | WINGMAN DRONE | *(proposed)* **Wingman**: a small drone orbits it and fires at its target (4 damage a shot, as a turret's half) | a palm-sized quad drone, rotors spinning |
 
 ### Jelly: the sting (health, statuses)
 
-| Rarity | Item | Effect (proposed) | 3D look |
+| Rarity | Item | Effect | 3D look |
 |---|---|---|---|
 | Unrefined | GEL MEMBRANE | +8% maximum HP | a wobbling translucent membrane stretched on a hoop |
 | Refined | STINGER TENDRIL | +14% attack | a coiled tendril, its tip glowing |
 | Precision | NEMATOCYST | 18% per hit to POISON: the target hits 30% weaker for 3 s | a cluster of glowing stinging cells in a capsule |
 | Prototype | AMORPHOUS BODY | **Absorb**: after 5 s without being hit, the next hit does 40% less | a blob of gel holding its shape inside a ring field |
-| Lustrous | BLOOM SPLIT | **Split**: when it falls, it splits into two small jellies that fight for 8 s at 30% of its power | a jelly dome mid-division, two bells joined |
+| Lustrous | BLOOM SPLIT | *(proposed)* **Split**: when it falls, it splits into two small jellies that fight for 8 s at 30% of its power | a jelly dome mid-division, two bells joined |
 
 ### Brawler: the fight up close (attack, defense)
 
-| Rarity | Item | Effect (proposed) | 3D look |
+| Rarity | Item | Effect | 3D look |
 |---|---|---|---|
 | Unrefined | KNUCKLE WRAPS | +8% attack | taped hand wraps with steel studs |
 | Refined | IRON GUARD | +14% defense | a riveted iron shoulder guard |
 | Precision | HAYMAKER GAUNTLET | +10% attack and +10% defense | a heavy hydraulic gauntlet |
-| Prototype | CLEAVER ARM | **Cleave**: its attacks also hit every other enemy within 1 tile, for 50% | a broad cleaver blade mounted on a forearm brace |
-| Lustrous | WAR BANNER | **Rally**: each kill it lands gives the whole squad +15% attack for 6 s | a torn battle banner on a short pole, its emblem glowing |
+| Prototype | CLEAVER ARM | **Cleave**: its hits also strike every other enemy within 1 tile of the target, for 50% of what the hit took | a broad cleaver blade mounted on a forearm brace |
+| Lustrous | WAR BANNER | *(proposed)* **Rally**: each kill it lands gives the whole squad +15% attack for 6 s | a torn battle banner on a short pole, its emblem glowing |
 
 ### Mage: the shot from range (special attack, attack speed)
 
-| Rarity | Item | Effect (proposed) | 3D look |
+| Rarity | Item | Effect | 3D look |
 |---|---|---|---|
 | Unrefined | FOCUS LENS | +8% special attack | a monocle lens on a chain |
 | Refined | CHANNELING ROD | +14% attack speed | a short rod wrapped in coils, its tip lit |
 | Precision | SPELLWEAVE CIRCLET | +10% special attack and +10% attack speed | a thin circlet with three floating gems |
-| Prototype | CHAIN CONDUIT | **Chain**: each shot jumps to a second enemy within 3 tiles, for 50% | a forked conductor rod, arcs between its prongs |
-| Lustrous | ASTRAL FOCUS | **Pierce**: every 4th shot passes through every enemy in a line | an orb of stars held in a ring of runes |
+| Prototype | CHAIN CONDUIT | **Chain**: each hit it lands, its shots included, jumps to the nearest other enemy within 3 tiles, for 50% | a forked conductor rod, arcs between its prongs |
+| Lustrous | ASTRAL FOCUS | *(proposed)* **Pierce**: every 4th shot passes through every enemy in a line | an orb of stars held in a ring of runes |
 
 ### Technician: the tool (ability cooldown, health)
 
-| Rarity | Item | Effect (proposed) | 3D look |
+| Rarity | Item | Effect | 3D look |
 |---|---|---|---|
 | Unrefined | SPARE PARTS KIT | −8% ability cooldown | an open tool case of parts |
 | Refined | CAPACITOR BANK | −14% ability cooldown | a block of capacitors with a charge gauge |
 | Precision | FIELD MULTITOOL | −10% ability cooldown and +10% maximum HP | a folding multitool with glowing bits |
 | Prototype | DOUBLE CELL | **Double charge**: its ability holds two charges | a twin power cell in a clip |
-| Lustrous | MASTER BLUEPRINT | **Amplify**: its ability is 50% stronger (radius, duration or power, by ability) | a glowing holographic blueprint scroll |
+| Lustrous | MASTER BLUEPRINT | *(proposed)* **Amplify**: its ability is 50% stronger (radius, duration or power, by ability) | a glowing holographic blueprint scroll |
 
-## What it would take to build
+## How the abilities work (BUILT)
 
-- **Unrefined, Refined and Precision (24 cards)** use what Pack 1 already has: the stat bonuses (`EQUIP_STATS`, including the technicians' ability cooldown) and the six statuses. The one new piece is ATTUNED CORE choosing its status from the wearer's element, which is small.
-- **Prototype and Lustrous (16 cards)** are each a new mechanic in the combat code.
-  - A few are small: Regrowth, Overclock, Absorb, Rally, Double charge.
-  - Some are medium: Shell block, Bristling, Nova, Cleave, Chain, Pierce, Never resisted, Withdraw, Amplify.
+A card's ability works only on a follower the card fits, as a bonus does (js/cards.js `equipAbilities`).
+
+- **Shell block** and **Absorb** act on a hit about to land on the follower, after its defense (`equipOnHurt`, called from js/helpers.js `applyDamage`).
+  - Only an enemy's hit counts: not a hazard's, not a friend's.
+  - A hit Shell block takes whole does not reach Absorb, and it counts as a hit for Absorb's 5 seconds.
+- **Regrowth** heals on the card tick, every 30 frames, while the follower is up and hurt.
+- **Overclock** keeps its own clock on the same tick. While it runs, its +50% is added to attack speed like any card's, and the rest between attacks (js/combat.js `followerRest`) reads it at each attack.
+- **Nova**, **Cleave** and **Chain** strike other enemies after a hit lands. Each of those strikes is an **echo** (`_equipEcho`): it sets off no card, so one hit never chains into many.
+- **Double charge**: a technician's ability holds a second charge (js/techabilities.js `techCooldown`, then `equipChargeSpend`). Used with the charge held, the ability is ready again at once, and the charge refills one cooldown later.
+- **Two stats on one card** (the drone's and the three classes' Precision cards): each stat is a bonus like any other and adds to the same stat on the other slot.
+- **Ability cooldown** shortens a technician's ability wait: never below one frame, and never by more than 90% in all.
+
+Tests: tests/series2.js (the pack, the 32 cards, the price and odds, the lock, fits, the saves, the shelf) and tests/series2abilities.js (each ability, Attuned Core and the two-stat cards, on real followers).
+
+## What is left
+
+- **Lustrous (8 cards)**, each a new mechanic in the combat code:
+  - Some are medium: Bristling, Never resisted, Withdraw, Amplify, Pierce, Rally.
   - Two are large because they add a unit: Wingman and Split.
-  - They can come in batches, each with its own tests.
+  - Once they are in, the pack's `eligible` list takes Lustrous and its odds get a fifth weight.
+- **The 3D items** for the 32 built cards, after Pack 1's.
 
 ## Open, for the owner
 
-1. **The list itself:** cut, rename or change any card.
-2. **The numbers.** They are a first guess, a little above Pack 1's since Series 2 unlocks later (after the purification).
-3. **The pack's price and odds** are still open in the code (`EQUIP_PACK2.price` and `.rarities` are not set, so it is not on sale). Its approved rules: all six rarities, and at least one Precision or better in every pack.
-4. **Crystalline:** should Series 2 deal the existing six Crystalline class cards as its rarest tier?
-5. **Order of work:** the stat and status cards first (quick), then the abilities in batches?
+1. **The numbers.** All are a first guess, a little above Pack 1's since Series 2 unlocks later (after the purification). Play will say.
+2. **The price and odds** (◆150; 50 / 30 / 15 / 5) were PICKED at your word. Change them freely: they are two lines in `EQUIP_PACK2`.
+3. **Lustrous:** keep the eight proposed above, or change them, before they are built?
+4. **Crystalline:** should a later pack deal the existing six Crystalline class cards as its rarest tier?

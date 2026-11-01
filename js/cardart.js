@@ -265,11 +265,16 @@ function cardArtObjectClass(c, col) {
 }
 // THE CARD ITEMS (ASKED 2026-11-01: "give 3D item looks instead of crystal for the first packs designs ... the item itself needs to be a 3D object that hovers out of the picture of the card itself"; the owner's
 // pick: the game-model look, modelled in 3D and lit like the followers and props). Each is a model baked by design/cards/bake_items.js to img/cards/<card id>.png. docs/ART-PROCESS.md: ONE piece first, and the
-// crystal stays until the owner approves the look, so an item shows only on a preview (?cardart=items); CARD_ITEMS.live turns them on for everyone once they are approved.
-const CARD_ITEMS = { live: false, ids: ["ember_plating"] };
-function cardArtItemsOn() { if (CARD_ITEMS.live) return true; try { return typeof location !== "undefined" && /[?&]cardart=items\b/.test(location.search || ""); } catch (e) { return false; } }
-// the picture of a card's item, or "" (none baked, or not shown yet)
-function cardArtItemUrl(c) { return c && CARD_ITEMS.ids.indexOf(c.id) >= 0 && cardArtItemsOn() ? "img/cards/" + c.id + ".png?v=" + (typeof BUILD_VERSION !== "undefined" ? BUILD_VERSION : "") : ""; }
+// crystal stays until the owner approves the look. So each item is approved on its own:
+//   ids        every card whose item is baked (its model in design/cards/models, its picture in img/cards)
+//   approved   the ones the owner approved: shown to everyone. The rest show only on a preview (?cardart=items), so the next piece can be looked at while the approved ones stay on.
+const CARD_ITEMS = { ids: ["ember_plating"], approved: ["ember_plating"] };   // EMBER PLATING approved 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j
+function cardArtItemsPreview() { try { return typeof location !== "undefined" && /[?&]cardart=items\b/.test(location.search || ""); } catch (e) { return false; } }
+// the picture of a card's item, or "" (none baked, or not approved and no preview)
+function cardArtItemUrl(c) {
+    if (!c || CARD_ITEMS.ids.indexOf(c.id) < 0 || !(CARD_ITEMS.approved.indexOf(c.id) >= 0 || cardArtItemsPreview())) return "";
+    return "img/cards/" + c.id + ".png?v=" + (typeof BUILD_VERSION !== "undefined" ? BUILD_VERSION : "");
+}
 // put `cls` on `el` in place of whatever art class it wore under `slot` (one per slot; "" takes it off); cheap when nothing changed, so a card updated in place every redraw can call it
 function cardArtMark(el, cls, slot) {
     if (!el || !el.classList) return;

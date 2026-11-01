@@ -68,9 +68,9 @@ The owner: "make it sortable by rarity or by the element", then "I want the card
 
 THE COLLECTION, at the foot of the CARDS screen (js/cardsui.js `_cdDeckBox`), is three parts.
 
-**The bar.** SORT BY RARITY or ELEMENT (the lit one teal), and where the shown card is ("3 OF 24").
-- By rarity, the rarest come first; within a rarity, by element and then class, then by name.
-- By element: fire, toxic, electric, ice, flux, core, then the class cards, the species cards and the universal ones. Within each, Unrefined to Precision.
+**The bar.** SORT BY RARITY or ELEMENT (the lit one teal), and where the shown card is ("3 OF 56").
+- By rarity, the rarest come first (the Crystalline six, then Series 2's eight Prototype cards, then Precision and down). Within a rarity: the element cards (fire to core), then the class cards (Brawler, Mage, Technician), then the species cards (crustacean, mollusk, elemental, drone, jelly), then by name.
+- By element: fire, toxic, electric, ice, flux, core, then the class cards, the species cards and the universal ones. Within each, the lowest rarity first (Unrefined up to Crystalline).
 
 **The stage.** The card picked, in full, as any equip card. As it arrives:
 - It **changes form**: it grows up out of a mini card (from a third of its size, turned away, bright) into its place (`cdMorph`).
@@ -87,7 +87,7 @@ Beside the card, behind a leader line, its parts are **labelled**: NAME (large, 
 
 On a phone the card is smaller (zoom 0.6) with its labels still beside it, so the rail stays in view.
 
-## The card items (2026-11-01, build `i`; a preview until approved)
+## The card items (2026-11-01, build `i`; EMBER PLATING live since build `j`)
 
 The owner asked: "give 3D item looks instead of crystal for the first packs designs ... the item itself needs to be a 3D object that hovers out of the picture of the card itself", in the game-model look.
 
@@ -95,7 +95,10 @@ Each equip card is to show its **own item**, modelled in 3D and lit as the props
 
 On a card, the item stands in front of the tilted card, over its picture, and rises past its top edge. It hovers (`cdHover`) while its shadow on the card breathes. On the collection's stage it is blown up.
 
-docs/ART-PROCESS.md applies: one piece first. EMBER PLATING is modelled; js/cardart.js `CARD_ITEMS` lists it, and it shows only with `?cardart=items` until the owner approves the look (`CARD_ITEMS.live` then turns the items on for everyone). The other seventeen of Pack 1 come after that.
+docs/ART-PROCESS.md applies: one piece first, and **each item is approved on its own**. js/cardart.js `CARD_ITEMS` has two lists: `ids` (every card whose item is baked) and `approved` (the ones the owner approved).
+- **EMBER PLATING is approved** ("The ember plating looks good"), so it is live for everyone since build `j`.
+- **A baked item not yet approved** shows only with `?cardart=items`, while the approved ones stay on. The next pieces (the other seventeen of Pack 1, then Series 2's 32) are modelled one at a time and go this way.
+- **A card with no baked item** keeps its crystal or cube.
 
 ## The roster: a carousel (the facility's Command Center, a tablet or a desktop)
 

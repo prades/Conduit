@@ -282,7 +282,7 @@ function measure(w, h, query, seed) {
         await check('the instrument ran (a tablet, the plain page): no page error, no listener added on the window or the document by the market', () => { ok(P, 'the probe produced nothing'); same(P.err, undefined, 'the probe threw'); sameJ(P.errors, [], 'page errors'); sameJ(P.added, [], 'a listener was added'); });
         if (P && !P.err) {
             await check("the header shows the run's credits, the pack shows each duplicate with what it paid (+◇22.5 for an Unrefined) and each new card as new, and the MARKET lists the shelf: six cards, none found, each with its value as a price in credits and in shards", () => {
-                near(P.credits, 45, 'the credits from two Unrefined duplicates'); same(P.header, '◇ 45 CREDITS', 'the header'); sameJ(P.secs, ['YOUR HAND', 'YOU', 'BOOSTER PACK', 'MARKET', 'FOUND THIS RUN', 'THE COLLECTION'], 'the sections');
+                near(P.credits, 45, 'the credits from two Unrefined duplicates'); same(P.header, '◇ 45 CREDITS', 'the header'); sameJ(P.secs, ['YOUR HAND', 'YOU', 'BOOSTER PACK', 'BOOSTER PACK · SERIES 2', 'MARKET', 'FOUND THIS RUN', 'THE COLLECTION'], 'the sections');
                 same(P.dupTags.filter(t => /^DUPLICATE · \+◇22\.5 CREDITS$/.test(t)).length, 2, "the duplicates' tags: " + P.dupTags); same(P.dupTags.filter(t => /^NEW · FOUND FOR THIS RUN$/.test(t)).length, 2, "the new cards' tags");
                 same(P.shelf.length, 6, 'the shelf on the screen'); sameJ(P.shelf.map(s => s.id), P.shelfIds, 'the screen shows what is on sale'); ok(P.shelf.every(s => ['ember_plating', 'venom_gland', 'flux_cell', 'siphon_field'].indexOf(s.id) < 0), 'a found card is for sale');
                 for (const s of P.shelf) {

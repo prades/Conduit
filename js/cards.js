@@ -85,8 +85,10 @@ const _EQUIP_STAT_WORDS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", a
 const _equipPct = n => (Math.round(n * 1000) / 10) + "%", _equipSec = n => (Math.round(n * 10) / 10) + (n === 1 ? " SECOND" : " SECONDS");
 // what a card says, made from its numbers (so that tuning a number tunes the words)
 function equipEffectText(fx) {
-    if (fx && fx.bonus) { const k = Object.keys(fx.bonus)[0]; return (k === "cooldown" ? "−" : "+") + _equipPct(fx.bonus[k]) + " " + (_EQUIP_STAT_WORDS[k] || String(k).toUpperCase()); }   // (a cooldown bonus is a share taken OFF)
+    if (fx && fx.bonus) return Object.keys(fx.bonus).map(k => (k === "cooldown" ? "−" : "+") + _equipPct(fx.bonus[k]) + " " + (_EQUIP_STAT_WORDS[k] || String(k).toUpperCase())).join(" · ");   // (a cooldown bonus is a share taken OFF; a card of two stats names both)
+    if (fx && fx.ability) return equipAbilityText(fx.ability);
     const p = fx && fx.proc; if (!p) return "";
+    if (p.kind === "attuned") return _equipPct(p.chance) + " PER HIT: ITS OWN ELEMENT'S STATUS (BURN, POISON, GLITCH, SLOW, SIPHON OR KNOCKBACK)";
     const hit = _equipPct(p.chance) + " PER HIT TO ";
     if (p.kind === "burn") return hit + "BURN: " + p.dps + " DAMAGE A SECOND FOR " + _equipSec(p.seconds);
     if (p.kind === "poison") return hit + "POISON: IT HITS " + _equipPct(p.cut) + " WEAKER FOR " + _equipSec(p.seconds);
@@ -101,7 +103,57 @@ EQUIP_PACK1.forEach(([id, name, element, rarity, fx]) => { EQUIP_CARDS[id] = Obj
 // (the `class` kind: Brawler, Mage or Technician), no hybrid identities, over the six rarities. THE LIST IS NOT HERE YET: the archive that holds it could not be read this session (docs/OPEN-QUESTIONS.md), and no card is invented in its
 // place. A Series 2 card is a row of this table, in the shape of Pack 1's rows with its kind and its match: [id, name, kind ("subclass" | "class"), match (a subclass id | brawler | sniper | camper), rarity, fx]; a row added here is dealt by
 // the Series 2 pack (EQUIP_PACK2, below), worn by what it fits (equipFit: a species card by a follower of that subclass, a class card by one of that role), summed with the others (equipBonus), saved and loaded with nothing else to change.
-const EQUIP_SERIES2 = [];
+// THE LIST (the owner, 2026-11-01: the draft docs/SERIES-2.md; "Prototype unlocks": Series 2 deals Unrefined to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous comes in a later update). Eight
+// identities (the five species and the three classes), four cards each: UNREFINED +8% to one stat, REFINED +14%, PRECISION a Pack 1 status on a hit or two stats at +10%, PROTOTYPE an ABILITY (`ability`, below:
+// equipAbilityText says what each does, and the hooks that make it happen are under "THE SERIES 2 ABILITIES"). Every number is here and PROPOSED (docs/SERIES-2.md), so tuning stays one edit.
+const EQUIP_SERIES2 = [
+    ["chitin_scale",      "CHITIN SCALE",      "subclass", "crustacean", "unrefined", { bonus: { defense: 0.08 } }],
+    ["barnacle_bracer",   "BARNACLE BRACER",   "subclass", "crustacean", "refined",   { bonus: { maxHealth: 0.14 } }],
+    ["pincer_clamp",      "PINCER CLAMP",      "subclass", "crustacean", "precision", { proc: { kind: "slow", chance: 0.15, cut: 0.30, seconds: 2 } }],
+    ["tide_shell",        "TIDE SHELL",        "subclass", "crustacean", "prototype", { ability: { kind: "shellBlock", every: 8 } }],
+    ["mantle_gel",        "MANTLE GEL",        "subclass", "mollusk",    "unrefined", { bonus: { maxHealth: 0.08 } }],
+    ["nacre_pearl",       "NACRE PEARL",       "subclass", "mollusk",    "refined",   { bonus: { defense: 0.14 } }],
+    ["siphon_slime",      "SIPHON SLIME",      "subclass", "mollusk",    "precision", { proc: { kind: "siphon", chance: 0.15, share: 0.12 } }],
+    ["regrowth_sac",      "REGROWTH SAC",      "subclass", "mollusk",    "prototype", { ability: { kind: "regrowth", perSecond: 0.005 } }],
+    ["raw_shard",         "RAW SHARD",         "subclass", "elemental",  "unrefined", { bonus: { specialAttack: 0.08 } }],
+    ["focusing_prism",    "FOCUSING PRISM",    "subclass", "elemental",  "refined",   { bonus: { specialAttack: 0.14 } }],
+    ["attuned_core",      "ATTUNED CORE",      "subclass", "elemental",  "precision", { proc: { kind: "attuned", chance: 0.12 } }],
+    ["storm_heart",       "STORM HEART",       "subclass", "elemental",  "prototype", { ability: { kind: "nova", every: 6, radius: 1.5, share: 0.6 } }],
+    ["servo_oil",         "SERVO OIL",         "subclass", "drone",      "unrefined", { bonus: { attackSpeed: 0.08 } }],
+    ["gyro_stabilizer",   "GYRO STABILIZER",   "subclass", "drone",      "refined",   { bonus: { attackSpeed: 0.14 } }],
+    ["hunter_optics",     "HUNTER OPTICS",     "subclass", "drone",      "precision", { bonus: { damage: 0.10, attackSpeed: 0.10 } }],
+    ["overclock_chip",    "OVERCLOCK CHIP",    "subclass", "drone",      "prototype", { ability: { kind: "overclock", every: 12, lasts: 3, attackSpeed: 0.5 } }],
+    ["gel_membrane",      "GEL MEMBRANE",      "subclass", "jelly",      "unrefined", { bonus: { maxHealth: 0.08 } }],
+    ["stinger_tendril",   "STINGER TENDRIL",   "subclass", "jelly",      "refined",   { bonus: { attack: 0.14 } }],
+    ["nematocyst",        "NEMATOCYST",        "subclass", "jelly",      "precision", { proc: { kind: "poison", chance: 0.18, cut: 0.30, seconds: 3 } }],
+    ["amorphous_body",    "AMORPHOUS BODY",    "subclass", "jelly",      "prototype", { ability: { kind: "absorb", after: 5, cut: 0.4 } }],
+    ["knuckle_wraps",     "KNUCKLE WRAPS",     "class",    "brawler",    "unrefined", { bonus: { attack: 0.08 } }],
+    ["iron_guard",        "IRON GUARD",        "class",    "brawler",    "refined",   { bonus: { defense: 0.14 } }],
+    ["haymaker_gauntlet", "HAYMAKER GAUNTLET", "class",    "brawler",    "precision", { bonus: { attack: 0.10, defense: 0.10 } }],
+    ["cleaver_arm",       "CLEAVER ARM",       "class",    "brawler",    "prototype", { ability: { kind: "cleave", radius: 1, share: 0.5 } }],
+    ["focus_lens",        "FOCUS LENS",        "class",    "sniper",     "unrefined", { bonus: { specialAttack: 0.08 } }],
+    ["channeling_rod",    "CHANNELING ROD",    "class",    "sniper",     "refined",   { bonus: { attackSpeed: 0.14 } }],
+    ["spellweave_circlet", "SPELLWEAVE CIRCLET", "class",  "sniper",     "precision", { bonus: { specialAttack: 0.10, attackSpeed: 0.10 } }],
+    ["chain_conduit",     "CHAIN CONDUIT",     "class",    "sniper",     "prototype", { ability: { kind: "chain", radius: 3, share: 0.5 } }],
+    ["spare_parts_kit",   "SPARE PARTS KIT",   "class",    "camper",     "unrefined", { bonus: { cooldown: 0.08 } }],
+    ["capacitor_bank",    "CAPACITOR BANK",    "class",    "camper",     "refined",   { bonus: { cooldown: 0.14 } }],
+    ["field_multitool",   "FIELD MULTITOOL",   "class",    "camper",     "precision", { bonus: { cooldown: 0.10, maxHealth: 0.10 } }],
+    ["double_cell",       "DOUBLE CELL",       "class",    "camper",     "prototype", { ability: { kind: "doubleCharge" } }],
+];
+// what an ability does, in the card's words, made from its numbers
+function equipAbilityText(a) {
+    if (!a) return "";
+    const sec = n => (Math.round(n * 10) / 10) + (n === 1 ? " SECOND" : " SECONDS"), tiles = n => n + (n === 1 ? " TILE" : " TILES");
+    if (a.kind === "shellBlock") return "SHELL BLOCK: THE NEXT HIT IT TAKES IS BLOCKED; READY AGAIN " + sec(a.every) + " AFTER A BLOCK";
+    if (a.kind === "regrowth") return "REGROWTH: REGAINS " + _equipPct(a.perSecond) + " OF ITS MAXIMUM HP EVERY SECOND";
+    if (a.kind === "nova") return "NOVA: EVERY " + a.every + "TH HIT BURSTS ON EVERY ENEMY WITHIN " + tiles(a.radius) + " OF ITS TARGET FOR " + _equipPct(a.share) + " OF ITS SPECIAL ATTACK";
+    if (a.kind === "overclock") return "OVERCLOCK: EVERY " + sec(a.every) + ", +" + _equipPct(a.attackSpeed) + " ATTACK SPEED FOR " + sec(a.lasts);
+    if (a.kind === "absorb") return "ABSORB: AFTER " + sec(a.after) + " WITHOUT BEING HIT, THE NEXT HIT DOES " + _equipPct(a.cut) + " LESS";
+    if (a.kind === "cleave") return "CLEAVE: ITS HITS ALSO STRIKE EVERY OTHER ENEMY WITHIN " + tiles(a.radius) + " FOR " + _equipPct(a.share);
+    if (a.kind === "chain") return "CHAIN: EACH HIT JUMPS TO ONE MORE ENEMY WITHIN " + tiles(a.radius) + " FOR " + _equipPct(a.share);
+    if (a.kind === "doubleCharge") return "DOUBLE CHARGE: ITS ABILITY HOLDS TWO CHARGES";
+    return "";
+}
 EQUIP_SERIES2.forEach(([id, name, kind, match, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind, match, rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
 // The test cards, behind ?cards: one of each kind, a spread of rarities, and none does anything.
 const EQUIP_TEST_CARDS = {};
@@ -204,12 +256,13 @@ function equipRunStart() {
 function equipSlots(f) { const c = f && f.cards; return [c && c[0] || null, c && c[1] || null]; }   // (a copy)
 function equipWorn(f) { return equipSlots(f).filter(Boolean).length; }
 // does the card fit this follower (null), or why not
+function _equipPlural(w) { return /[^AEIOU]Y$/.test(w) ? w.slice(0, -1) + "IES" : w + "S"; }   // (JELLY: JELLIES; the others take an S)
 function equipFit(f, c) {
     if (!c) return "NO SUCH CARD";
     if (c.kind === "universal") return null;
     if (c.kind === "element") return equipElementOf(f) === c.match ? null : "FOR " + _equipElementLabel(c.match) + " FOLLOWERS";
-    if (c.kind === "class") return equipRoleOf(f) === c.match ? null : "FOR " + _equipRoleLabel(c.match) + "S";
-    if (c.kind === "subclass") { const s = equipSubclassOf(f); return s === c.match ? null : "FOR " + equipSubclassLabel(c.match) + "S" + (s ? "" : " · EVOLVE FIRST"); }
+    if (c.kind === "class") return equipRoleOf(f) === c.match ? null : "FOR " + _equipPlural(_equipRoleLabel(c.match));
+    if (c.kind === "subclass") { const s = equipSubclassOf(f); return s === c.match ? null : "FOR " + _equipPlural(equipSubclassLabel(c.match)) + (s ? "" : " · EVOLVE FIRST"); }
     return "NOT A CARD";
 }
 // why this card cannot go in this slot of this follower, or null when it can: a follower (not a clone), the card in the hand or found, a fit, and not already on its other slot
@@ -266,6 +319,7 @@ function equipBonus(f, stat) {
         const card = equipCard(id); if (!card || !card.bonus || equipFit(f, card)) continue;
         const b = card.bonus[stat]; if (typeof b === "number" && isFinite(b)) sum += b;
     }
+    if (stat === "attackSpeed" && _equipNow() < (f._ocUntil || 0)) { const oc = equipAbility(f, "overclock"); if (oc) sum += oc.attackSpeed; }   // (OVERCLOCK while it runs: the Series 2 abilities, below)
     return sum;
 }
 function equipMult(f, stat) { return 1 + equipBonus(f, stat); }   // (1 for a follower with no card)
@@ -281,15 +335,86 @@ function equipRefresh(f) {
 // a success sets a status on the target through the game's own status code (js/combat.js applyBurn, applyWeaken, applyGlitch, applyKnockback; js/abilities.js applySlow; healUnit). A status already on is REFRESHED (the longer time and the stronger number win),
 // never stacked, so a fast hitter keeps one timer going and not many; a status runs out by itself (js/combat.js updateStatusEffects). `dealt` is the health the hit really took.
 function equipOnHit(src, target, dealt) {
+    if (_equipEcho) return;   // (a hit an ability made, below: no card answers it, so one hit never sets off a chain of them)
     const c = src && src.cards; if (!Array.isArray(c) || !target || target === src) return;
     for (let i = 0; i < EQUIP.followerSlots; i++) {
         const id = c[i]; if (!id || c.indexOf(id) !== i) continue;
         const card = equipCard(id), p = card && card.proc; if (!p || equipFit(src, card)) continue;
         if (Math.random() < p.chance) _equipProc(src, target, p, dealt);
     }
+    _equipAbilitiesOnHit(src, target, dealt);
+}
+
+// ── THE SERIES 2 ABILITIES (the PROTOTYPE cards; docs/SERIES-2.md; the owner, 2026-11-01: "Prototype unlocks") ──
+// A card's `ability` ({ kind, ...its numbers }) works only on a follower the card fits (equipFit), as a bonus does. Where each acts:
+//   shellBlock    js/helpers.js applyDamage → equipOnHurt: an enemy's hit is blocked whole while the shell is ready; ready again `every` seconds after a block
+//   absorb        equipOnHurt: an enemy's hit that comes `after` seconds or more since the last one does `cut` less
+//   regrowth      equipTick: `perSecond` of its maximum HP back every second, while it is up and hurt
+//   overclock     equipTick starts it every `every` seconds, for `lasts`; while it runs equipBonus adds its `attackSpeed` (js/combat.js followerRest reads the attack speed at each attack)
+//   nova, cleave, chain   equipOnHit: a hit it lands strikes others as well, each an ECHO (_equipEcho): an echo sets off no card, so one hit never chains into many
+//   doubleCharge  js/techabilities.js techCooldown → equipChargeSpend: a technician's ability holds a second charge; used, the ability is ready again at once, and the charge refills one cooldown later
+function equipAbilities(f) {
+    const out = [], c = f && f.cards; if (!Array.isArray(c)) return out;
+    for (let i = 0; i < EQUIP.followerSlots; i++) { const id = c[i]; if (!id || c.indexOf(id) !== i) continue; const card = equipCard(id); if (card && card.ability && !equipFit(f, card)) out.push(card.ability); }
+    return out;
+}
+function equipAbility(f, kind) { return equipAbilities(f).find(a => a.kind === kind) || null; }
+let _equipEcho = false;
+function _equipStrike(src, t, dmg, word, col) {
+    if (!t || t.dead || !(dmg > 0)) return;
+    _equipEcho = true; try { if (typeof applyDamage === "function") applyDamage(t, dmg, src, src.element || null); } finally { _equipEcho = false; }
+    if (word) _equipSay(t, word, col);
+}
+function _equipFoesNear(x, y, r, but) {
+    return (typeof actors !== "undefined" ? actors : []).filter(a => a && a !== but && !a.dead && a.health > 0 && a.team !== "green" && !a.isClone && (typeof isHostileTarget !== "function" || isHostileTarget(a)) && Math.hypot(a.x - x, a.y - y) <= r);
+}
+function _equipAbilitiesOnHit(src, target, dealt) {
+    for (const a of equipAbilities(src)) {
+        if (a.kind === "nova") {   // every `every`th hit: a burst on every enemy within `radius` of the target (the target too), for `share` of its special attack
+            src._novaN = (src._novaN || 0) + 1; if (src._novaN % a.every) continue;
+            const sp = (src.stats && src.stats.specialAttack) || src.power || 5;
+            for (const e of _equipFoesNear(target.x, target.y, a.radius, null)) _equipStrike(src, e, sp * a.share);
+            _equipSay(target, "NOVA", "#ffe733"); if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: target.x, y: target.y, color: "#ffe733", radius: a.radius, life: 30 });
+        } else if (a.kind === "cleave") {   // every other enemy within `radius` of the target, for `share` of what the hit took
+            const near = _equipFoesNear(target.x, target.y, a.radius, target); if (!near.length) continue;
+            for (const e of near) _equipStrike(src, e, dealt * a.share); _equipSay(target, "CLEAVE", "#ff9a4a");
+        } else if (a.kind === "chain") {   // the nearest other enemy within `radius` of the target, for `share`
+            const near = _equipFoesNear(target.x, target.y, a.radius, target); if (!near.length) continue;
+            near.sort((p, q) => Math.hypot(p.x - target.x, p.y - target.y) - Math.hypot(q.x - target.x, q.y - target.y));
+            _equipStrike(src, near[0], dealt * a.share, "CHAIN", "#8fe3ff");
+        }
+    }
+}
+// a hit about to land on a follower of yours (js/helpers.js applyDamage, after its defense and the cap): Shell block and Absorb. Returns what lands. Only an enemy's hit counts (not a hazard's, not a friend's).
+function equipOnHurt(f, dmg, source) {
+    if (!f || !(dmg > 0) || !source || source === f || source.team === "green") return dmg;
+    const now = _equipNow(), sh = equipAbility(f, "shellBlock");
+    if (sh && now >= (f._shellAt || 0)) { f._shellAt = now + Math.round(sh.every * EQUIP_FPS); f._hurtAt = now; _equipSay(f, "BLOCKED", "#8fe3ff"); return 0; }
+    const ab = equipAbility(f, "absorb");
+    if (ab && now - (Number.isFinite(f._hurtAt) ? f._hurtAt : -1e9) >= ab.after * EQUIP_FPS) { dmg *= 1 - ab.cut; _equipSay(f, "ABSORBED", "#c77dff"); }
+    f._hurtAt = now;
+    return dmg;
+}
+// each card tick (equipTick): Regrowth's healing, Overclock's clock, Double charge's spare refilled
+function _equipAbilityTick(f) {
+    const now = _equipNow(), secs = EQUIP.every / EQUIP_FPS;
+    const rg = equipAbility(f, "regrowth");
+    if (rg && f.health > 0 && f.health < f.maxHealth) f.health = Math.min(f.maxHealth, f.health + f.maxHealth * rg.perSecond * secs);
+    const oc = equipAbility(f, "overclock");
+    if (oc) { if (!(f._ocNext > 0)) f._ocNext = now + Math.round(oc.every * EQUIP_FPS); if (now >= f._ocNext) { f._ocUntil = now + Math.round(oc.lasts * EQUIP_FPS); f._ocNext = now + Math.round(oc.every * EQUIP_FPS); _equipSay(f, "OVERCLOCK", "#ffe733"); } }
+    else { f._ocNext = 0; f._ocUntil = 0; }
+    if (equipAbility(f, "doubleCharge")) { if (f._abSpare !== 1 && now >= (f._abSpareAt || 0)) f._abSpare = 1; } else { f._abSpare = 0; f._abSpareAt = 0; }
+}
+// a technician has just used its ability (js/techabilities.js techCooldown, `cd` the wait it would have): with DOUBLE CHARGE and the second charge held, the charge is spent instead; true when it was
+function equipChargeSpend(f, cd) {
+    if (!f || f._abSpare !== 1 || !equipAbility(f, "doubleCharge")) return false;
+    f._abSpare = 0; f._abSpareAt = _equipNow() + cd; return true;
 }
 function _equipSay(t, text, col) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text, color: col, size: 11, life: 40, vy: -0.03 }); }
+// ATTUNED CORE (Series 2): its wearer's own element's status, the one Pack 1's Precision card of that element sets (its numbers), at the Attuned Core's own chance
+const _EQUIP_ATTUNED = { fire: "cinderbrand", toxic: "mireblight", electric: "static_lock", ice: "rime_snare", flux: "siphon_field", core: "repulsor_pulse" };
 function _equipProc(src, t, p, dealt) {
+    if (p.kind === "attuned") { const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[equipElementOf(src)]]; if (tpl && tpl.proc) _equipProc(src, t, tpl.proc, dealt); return; }
     if (p.kind === "siphon") { if (typeof healUnit === "function") healUnit(src, dealt * p.share, src); return; }   // (to the follower, whatever the hit killed or not)
     if (!t || t.dead || !(t.health > 0) || t.team === "green") return;   // (every other effect is for an enemy still standing)
     const frames = Math.round((p.seconds || 0) * EQUIP_FPS), tick = typeof DOT_TICK === "number" ? DOT_TICK : 20;
@@ -327,7 +452,7 @@ function equipWearers(id) {
 // ── EACH FRAME (js/game.js, beside partyTick): every EQUIP.every frames, whatever no longer fits comes off ──
 function equipTick(force) {
     if (!force && typeof frame === "number" && frame % EQUIP.every) return;
-    if (typeof followers !== "undefined") for (const f of followers) if (f && f.cards) equipValid(f);
+    if (typeof followers !== "undefined") for (const f of followers) if (f && f.cards) { equipValid(f); if (!f.dead) _equipAbilityTick(f); }
     for (let i = 0; i < EQUIP.playerSlots; i++) { const id = equipPlayer[i]; if (id && (equipPlayerWhyNot(id, i) || equipPlayer.indexOf(id) !== i)) equipPlayer[i] = null; }
     equipShelfTick();   // (the market's shelf: a new one when the time is up)
 }
@@ -371,14 +496,16 @@ const EQUIP_PACK = {
 };
 // THE SERIES 2 PACK, which is BOOSTER PACK 2 (the user, 2026-10-31): the pack that deals the Series 2 cards (EQUIP_SERIES2: species cards and class cards), in the same shape as Pack 1, with the archive's approved rules for Pack 2
 // (the Game Design Archive, 2026-10-30): it UNLOCKS AFTER THE PURIFICATION (the owner, 2026-11-01, settling the sources that disagreed; it was "after the first boss", calm or defeated), all SIX rarities are eligible, and every pack holds
-// at least one PRECISION-OR-HIGHER card (`guaranteed.orHigher`: the reserved slot is filled from Precision and up, by the pack's own odds among them). Its PRICE and its ODDS are NOT SET (null: the archive leaves them open), and its
-// card list (EQUIP_SERIES2) is empty, so it is not on sale (equipPackOnSale: a price, odds and a reserved slot): not rolled, not sold ("NOT ON SALE YET") and not shown on the CARDS sheet; its cards, when they are rows of
-// EQUIP_SERIES2, are still worn, found, unlocked and saved like any card. Every pack is in EQUIP_PACKS: the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
+// at least one PRECISION-OR-HIGHER card (`guaranteed.orHigher`: the reserved slot is filled from Precision and up, by the pack's own odds among them). ON SALE since build 2026-11-01j (the owner: "Series 2. Pick a price and set the
+// odds for the pack and make it to where another rarity is unlocked"): ◆150, odds 50/30/15/5, and its 32 cards (EQUIP_SERIES2: one per identity and rarity, Unrefined to PROTOTYPE, the rarity it unlocks). Before the purification it
+// is on the sheet with its button off ("UNLOCKS AFTER THE PURIFICATION"), not rolled, and its cards are not on the market's shelf (equipPacksOpen). Its cards are worn, found, unlocked and saved like any card. Every pack is in
+// EQUIP_PACKS: the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
 const EQUIP_PACK2 = {
-    id: "series2", name: "SERIES 2", price: null, size: 4,
+    id: "series2", name: "SERIES 2", price: 150, size: 4,     // PICKED by us at the owner's word ("Pick a price and set the odds", 2026-11-01): half again Pack 1's ◆100, for stronger cards that come later
     kinds: ["subclass", "class"],                              // species cards (the subclass kind) and class cards; never an element card, never a universal one
-    eligible: ["unrefined", "refined", "precision", "prototype", "lustrous", "crystalline"],   // APPROVED: all six rarities (Pack 1 is capped at Precision)
-    rarities: null,                                            // NOT SET: the weight of each eligible rarity, when the archive gives them
+    eligible: ["unrefined", "refined", "precision", "prototype"],   // THE OWNER (2026-11-01): "Prototype unlocks": Series 2 deals up to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous joins in a
+                                                               // later update (the archive's rule was all six rarities: it is where this is going)
+    rarities: { unrefined: 50, refined: 30, precision: 15, prototype: 5 },   // PICKED (as the price): a slot rolled over the four; with the reserved Precision-or-better slot (Prototype 5 in 20) a pack holds a Prototype about 1 time in 3 (1 − 0.75 × 0.95³ ≈ 36%)
     guaranteed: { rarity: "precision", count: 1, orHigher: true },   // APPROVED: at least one Precision-or-higher card in every pack
     unlock: "purified",                                        // DECIDED by the owner (2026-11-01, asked to choose between the sources): on sale once the Sewers are PURIFIED (it was "first_boss": the
                                                                // first boss encounter resolved, calm or defeated, so killing the queen before the water was clean unlocked it)
@@ -389,6 +516,8 @@ function equipPackById(id) { return EQUIP_PACKS.find(p => p.id === id) || null; 
 function equipPackOf(c) { return c && c.pack ? equipPackById(c.pack) : null; }   // the pack a card is dealt by, or null (the Crystalline six)
 function equipPackOnSale(pack) { return !!pack && Number.isFinite(pack.price) && pack.price >= 0 && !!pack.rarities && !!pack.guaranteed && pack.size > 0; }
 function equipPacksOnSale() { return EQUIP_PACKS.filter(equipPackOnSale); }
+// the packs on sale whose cards can be had now: not one still locked (Series 2 before the purification is on the sheet, its button saying when it opens, but its cards are not on the market's shelf yet)
+function equipPacksOpen() { return equipPacksOnSale().filter(p => !equipPackLocked(p)); }
 // is the pack still locked (its `unlock` not met)? "purified": the Sewers' water not yet clean (js/quests.js questDone); "first_boss": no boss encounter resolved yet (js/bosses.js bossAnyResolved)
 function equipPackLocked(pack) {
     if (!pack || !pack.unlock) return false;
@@ -422,7 +551,7 @@ function equipPackRoll(seed, pack) {
 // why a pack cannot be bought now, or null when it can
 function equipPackWhyNot(pack) {
     pack = pack || EQUIP_PACK;
-    if (!equipPackOnSale(pack)) return "NOT ON SALE YET";   // (Series 2, until its numbers are given)
+    if (!equipPackOnSale(pack)) return "NOT ON SALE YET";   // (a pack without its price, odds or reserved slot)
     if (equipPackLocked(pack)) return pack.unlock === "purified" ? "UNLOCKS AFTER THE PURIFICATION" : "UNLOCKS AFTER THE FIRST BOSS";   // (Series 2: once the Sewers are purified, the owner's rule)
     const have = typeof shardCount === "number" ? shardCount : 0, pool = equipPackPool(pack), gr = equipGuaranteeRarities(pack);
     if (have < pack.price) return "NEED ◆" + (pack.price - have) + " MORE";
@@ -476,10 +605,10 @@ function equipShelfSync() {
 function equipCreditsText(n) { return String(Math.round(n * 100) / 100); }   // credits as they are, a half included: 22.5, 45 (the owner: "show the half")
 function equipMarketValue(c) { return c && EQUIP_MARKET.values[c.rarity] || 0; }
 function equipDuplicate(id) { const pk = equipPackOf(equipCard(id)); return equipInHand(id) || equipIsFound(id) || (!!pk && pk.keep === "forever" && equipOwns(id)); }   // a card you already have this run
-function equipShelfPool() { const seen = new Set(); return equipPacksOnSale().flatMap(p => equipPackPool(p)).filter(c => !seen.has(c.id) && seen.add(c.id) && equipMarketValue(c) > 0 && !equipInHand(c.id) && !equipIsFound(c.id)); }   // (the cards the packs on sale deal, that you do not have this run)
+function equipShelfPool() { const seen = new Set(); return equipPacksOpen().flatMap(p => equipPackPool(p)).filter(c => !seen.has(c.id) && seen.add(c.id) && equipMarketValue(c) > 0 && !equipInHand(c.id) && !equipIsFound(c.id)); }   // (the cards the packs on sale deal, that you do not have this run)
 function equipShelfIds() { const ok = new Set(equipShelfPool().map(c => c.id)); return equipShelf.ids.filter(id => ok.has(id)); }   // (on sale now: a card that came into the hand, or was found, has left the shelf)
 // the shelf's odds: each rarity's weight is the first on-sale pack's that deals it (Pack 1's 60 / 30 / 10 today; a Series 2 rarity Pack 1 has not, its own, when it is on sale)
-function equipShelfWeights() { const w = {}; for (const p of equipPacksOnSale()) for (const r of Object.keys(p.rarities)) if (!(r in w) && p.rarities[r] > 0) w[r] = p.rarities[r]; return w; }
+function equipShelfWeights() { const w = {}; for (const p of equipPacksOpen()) for (const r of Object.keys(p.rarities)) if (!(r in w) && p.rarities[r] > 0) w[r] = p.rarities[r]; return w; }
 // a new shelf: up to EQUIP_MARKET.shelf different cards from the pool, with the packs' own odds. Each place on the shelf rolls a rarity by equipShelfWeights (60 / 30 / 10 for Pack 1; a rarity with no card left is left out of the roll, as in a
 // pack), then takes one of that rarity's cards at random. Unlike a pack it keeps no place for a Precision card. A seed makes it the same twice (the tests).
 function equipShelfDeal(seed) {
