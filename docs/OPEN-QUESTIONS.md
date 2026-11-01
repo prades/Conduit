@@ -172,7 +172,7 @@ Still open, for the owner (playtest): the cards' numbers once played; whether a 
 Asked: "we'll design the 3D items for the next 17 pack 1 cards right now". All seventeen are modelled in EMBER PLATING's look and baked; they show only with `?cardart=items` until you approve each (docs/ART-PROCESS.md), and everyone else still sees the crystal.
 
 **For your eye, item by item** (yes to all, yes to some, or notes on any):
-- **VENOM GLAND** was the weakest at first (it read as a glowing leaf or bulb); it is being reworked into a rounder sac with a darker skin and the venom glowing inside.
+- **VENOM GLAND** was the weakest at first (it read as a glowing leaf or bulb); it was reworked into a plump sac with two budding lobes, a dark wet membrane and the venom glowing inside it.
 - **REPULSOR PULSE**: at the mini card's size its shockwave rings dominate, so it reads as an emitter more than a palm piece.
 - **IMPACT STUDS** is a closed knuckle band (it reads as a studded bracelet), not an open strap: a closed loop keeps the picture upright.
 - **FROST LINING**: the quilted satin catches the light royal blue rather than dark navy.
