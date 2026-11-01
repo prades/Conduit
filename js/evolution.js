@@ -33,7 +33,9 @@
 //          with a big diamond in it under a black helmet band, a horn out of either side, a body of jelly trailing
 //          tentacles; it hovers, and its action frames are the sheet's charge, a ram; ASKED: "do the Jelly Ram and
 //          Ice Mage now"). Its sheet is blue; it is baked in the core element's teal, so it reads as core beside the
-//          Crystal and its own card.
+//          Crystal and its own card. REDONE from the user's pencil sketch (2026-11-01, design No. 881): "a hard
+//          redesign of the jelly ram, [glass] head with bubble inside lit up blue white and a swirly collar that orbits
+//          his neck"; the entry below says what it is now.
 //          THE CORE FORMS HAVE NO MOVE NOW (REPORTED: "Remove the bubble shield from the followers and all relevant abilities. We'll add a new look and iron out ability information"):
 //          AEGIS BURST (the Jelly Ram's, the Hammer Slug's, the old Aegis Warden's) and AEGIS BLOOM (the Hornshell's,
 //          the old Petal Aegis's) put a shield on the followers round them, so they went with the followers' shield
@@ -208,7 +210,8 @@ const EVOLUTIONS = {
     // The ELECTRIC TECHNICIAN, design No. 877 (the user's "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet, which has no name, then the review: "trapezoidal wings that are
     // kind of angled downward like a ship, like a shuttle, like a star shuttle", "too long, make 'em cuter", "angled downward. Just make it subtle"): a horseshoe crab's
     // domed black shell with a yellow underglow, little trapezoid wings tilted gently down and two launcher prongs, over a six-legged shuttle; its action frames lift
-    // the shell off. It glows, so the sheet carries its own light.
+    // the shell off. It glows, so the sheet carries its own light. (Its redesign from the user's pencil sketch of 2026-11-01, No. 882 in design/evolutions/forms34.js,
+    // is a candidate until the user approves it; this sheet stays till then.)
     hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", sheet: "img/evo/hovershell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 93.1], noGlow: true, color: "#ffee33" },
     // The ICE TECHNICIAN, design No. 857 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around", then the review:
@@ -216,12 +219,14 @@ const EVOLUTIONS = {
     // front facing"): a long box of big fitted ice bricks, narrow end first, on four diamonds nested in sockets under it. It glides, so the sheet carries its own light.
     igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", sheet: "img/evo/igloo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 89], noGlow: true, color: "#9fe8ff" },
-    // The CORE BRAWLER, design No. 867 (the user's "JELLY RAM" sheet: "a floating brawler that uses its horned shell to ram targets", then the user's review: "move with
-    // flicks from all of its tentacles like the jellyfish from SpongeBob", "a little bit bigger", the wavy strings "but fewer and thicker", "fatter tentacles"): a clear dome
-    // with a big diamond in it under a black helmet band, a horn out of either side lit along its top, a bell of jelly with seven fat wavy tentacles; it swims, every tentacle
-    // flicking back at once. No signature move (AEGIS BURST went with the followers' shield). Its sheet is blue; it is in core's teal. It swims, so the sheet carries its own light.
+    // The CORE BRAWLER, design No. 881 (the user's pencil sketch of 2026-11-01: "a hard redesign of the jelly ram, [glass] head with bubble inside lit up blue white and a
+    // swirly collar that orbits his neck", then "The brawler looks good"): a faceted glass head, a dodecahedron with its edges picked out, a bubble inside it lit blue white
+    // (small bubbles rise off it), a neck of jelly with a swirly collar of three wavy bands orbiting it, seven fat wavy tentacles, one curled up behind. It swims as No. 867
+    // did (the user's review of the "JELLY RAM" sheet: "move with flicks from all of its tentacles like the jellyfish from SpongeBob"), every tentacle flicking back at once;
+    // its action frames are the ram, head first, the bubble flaring. It was No. 867 (a clear dome with a big diamond under a black helmet band, a horn out of either side).
+    // No signature move (AEGIS BURST went with the followers' shield). It is in core's teal, its bubble blue white. It swims, so the sheet carries its own light.
     jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", sheet: "img/evo/jellyram.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 70.8], noGlow: true, color: "#33e6c4" },
+              cell: 144, anchor: [72, 114.2], core: [72, 64.7], noGlow: true, color: "#33e6c4" },
     // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
     // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
     rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", sheet: "img/evo/rimestar.png",
