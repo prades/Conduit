@@ -47,6 +47,8 @@ The game's quest system is the tutorial director (`js/tutorial.js`): steps with 
 
 **Non-lethal.** The cycle completes whether the queen lives or not; the water itself clears as the cycle runs (`questWaterClean`, 0 to 1, in `js/facilitysewers.js`). The plate's install hint says what she does and never that she must die; it names Side Quest once he is there.
 
+**What the completed quest opens** (designed 2026-11-02, not built): the **conversion apparatus** can then be installed. It filters the toxin out, so a toxic + fire pair can breed an offspring of **BLOOM**, a new life-giving element, half the time, and a toxic follower can be converted into BLOOM (`CONVERSION.md`).
+
 ## The Nest (2026-11-01; `js/population.js` `NESTS`, the map's east end)
 
 ASKED (the phase brief): "Implement the Nest as a dedicated world location that houses the Queen Ant [...] the central origin point for the initial Ant population [...] Connect Queen Ant progression to the Nest's infestation state [...] Avoid duplicating the existing Queen Ant implementation"; and the owner: **"Only one queen in sewers for now."** So there is one Nest and one queen: the Sewers' east end (the old cistern) rebuilt as the **Toxic Ant Queen's colony**, and her encounter unchanged in its rules.

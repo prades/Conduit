@@ -460,3 +460,52 @@ Mockups of the themes, textures and icons for the owner's approval.
 
 ### Supersedes / superseded by
 None. Side Quest's earlier candidate look (the saucer design family, Nos. 661–683) is set aside.
+
+## DECISION: The conversion apparatus and BLOOM; breeding draws the element and the class
+
+- **Date:** 2026-11-02
+- **Status:** Approved (design); not implemented.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `CONVERSION.md` (the specification), `FOLLOWER-PROGRESSION.md` §2, `SEWER-QUEST.md`, `TUTORIAL.md` ("Follower types (revision)")
+
+### Context
+The owner: "when we create the conversion ... the breeding system will allow the offspring to be the one of the conversions that is possible with the the bonding pair that takes into account one of the parents' converted elements". Then, asked: "If the player has a toxic and a fire Greenshire follower in the sanctuary and they have an offspring there is going to be a chance for it to be a life follower offspring ... only if the purification module has been installed in the quest is completed, and the conversion apparatus has been installed".
+
+### Decision
+- **BLOOM** is a seventh element, life-giving and medical.
+- **The conversion apparatus** can be installed after the purification quest. With it, a toxic + fire pair's offspring is BLOOM half the time, and a toxic follower can be converted into BLOOM.
+- **An offspring's element** is a random draw between its parents' current elements.
+- **An offspring's class** is a random draw among the three.
+
+### Exact rules
+In `CONVERSION.md` section 2.
+
+### Alternatives considered
+- For the name: VITAL, ELIXIR, LIFE.
+- For the chance: 10%, 25%.
+- For conversion: breeding only; more conversions later.
+- For the draw: choosing before paying; the lead parent deciding.
+- For the class: the lead parent's (today); either parent's at random.
+
+### Rationale and trade-offs
+The purification quest's reward reaches the followers: clean water makes new life. A seventh element touches every per-element table: cards, auras, Player cards, technicians, forms, art, the damage chart. That is open work (`CONVERSION.md` section 11).
+
+### Impact
+When built:
+- js/breeding.js, js/elements.js and every per-element table;
+- js/quests.js and an install site (js/stations.js);
+- the forms (js/evolution.js), the art, the saves;
+- the breeding tests.
+
+### Follow-up
+`CONVERSION.md` section 11:
+- the apparatus's place, price and look;
+- the conversion's terms;
+- BLOOM's forms, place in the triangles, status, colour and cards;
+- whether recruits come as BLOOM;
+- the Sanctuary;
+- "Greenshire".
+
+### Supersedes / superseded by
+- Supersedes in part the breeding rule "the lead parent's type and element" (`FOLLOWER-PROGRESSION.md` §2; built, so it stands until this is built).
+- Supersedes in part the rule that a follower's element never changes (`TUTORIAL.md`, "Follower types (revision)"): a toxic follower can be converted into BLOOM.

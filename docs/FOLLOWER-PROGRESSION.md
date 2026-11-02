@@ -29,6 +29,7 @@ The eight pads of the map (`FACILITY_MAP.followerSpots`, stable ids `spot_lobby 
 - **Where**: the roster. The Command Center's settings column for the creature in view has `BREED WITH <partner> ◆50`; the phone's roster card has the same button when the follower is bonded. Two taps: the first arms it (4 s), the second pays, so a double tap makes one offspring and pays once (`breedTap`). With the squad full, who makes room is asked first and nothing is paid until it is chosen (`breedStart`).
 - **The price**: `BREED.price` = **◆50**, taken after the offspring exists (`breedMake`: parents checked, offspring made, price taken, in one synchronous step).
 - **What comes out**: the **lead** parent's type and element (the higher level; a tie: the one in view), a personality of that type (so its role is the type's, as a recruit's), at the recruit level, unbonded, no cards, at the Crystal, and a base of its own.
+  - **Designed 2026-11-02, not built** (`CONVERSION.md`): the element becomes **a random draw between the two parents' current elements**, a converted parent passing on its converted one. The class becomes **a random draw among the three**, not tied to the parents. Once the conversion apparatus is installed, a **toxic + fire** pair's offspring is **BLOOM**, the new seventh element, half the time.
 - **The formula** (`breedBase`), for each stat `s` in `BREED.stats` = hp, attack, defense, specialAttack, accuracy, will:
 
       base[s] = min( BREED.cap × own[s],  max( own[s], (A[s] + B[s]) / 2 ) × BREED.upbringing × (1 + v) )

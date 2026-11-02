@@ -141,6 +141,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Combat | `COMBAT.md` |
 | Facility/core systems | `FACILITY.md` |
 | Followers/recruitment/breeding | `FOLLOWER-PROGRESSION.md` |
+| The conversion apparatus and BLOOM | `CONVERSION.md` |
 | Sewer quest/purification | `SEWER-QUEST.md` |
 | Player classes | `PLAYER-CLASSES.md` |
 | Technicians | `TECHNICIANS.md` |

@@ -209,6 +209,17 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - the Universal kind retired.
   - **Being drafted for you:** the 18 Player cards' kits.
   - Still open (section 11): the refunds' timing for a player with no run, Side Quest's stock beyond the Sewers, the cards' looks.
+- **The conversion apparatus and BLOOM** (designed 2026-11-02, not built; `CONVERSION.md`):
+  - BLOOM is a seventh, life-giving element.
+  - Once the purification quest is done, the apparatus can be installed. A toxic + fire pair's offspring is then BLOOM half the time, and a toxic follower can be converted into BLOOM.
+  - An offspring's element becomes a random draw between its parents' current elements, and its class a random draw among the three.
+  - **Open** (its section 11):
+    - the apparatus's place, price and look;
+    - the conversion's terms;
+    - BLOOM's forms ("a limited amount of evolutions"), its place in the triangles, status, colour and cards;
+    - whether recruits come as BLOOM;
+    - the Sanctuary;
+    - what "Greenshire" meant.
 - **Side Quest's look, and the subclass art** (designed 2026-11-02, not built):
   - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`).
   - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).
