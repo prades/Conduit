@@ -1,9 +1,9 @@
 # The conversion apparatus and BLOOM, the seventh element
 
-- **Status:** Designed (the owner's rules of 2026-11-02); nothing implemented. Open: section 11.
+- **Status:** Designed (the owner's rules of 2026-11-02). **The breeding draws are implemented** in build `2026-11-02f` (Build C of `NEXT-UPDATE.md`): an offspring's element is drawn between its parents' current elements and its class among the three. The apparatus, BLOOM and conversion are not implemented. Open: section 11.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-02
-- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`; no code.
+- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. The breeding draws are code since build `2026-11-02f` (that branch); nothing else is.
 - **Related docs:**
   - `FOLLOWER-PROGRESSION.md` §2 (breeding)
   - `SEWER-QUEST.md` (the purification quest)
@@ -76,7 +76,8 @@ The owner chose these in prompts. The names are working names; the bodies are to
 ### Where breeding happens
 At the roster, as today. The archive's Sanctuary room can come later.
 
-### Breeding, once conversion exists (replaces today's "the lead parent's type and element")
+### Breeding, once conversion exists (replaced "the lead parent's type and element")
+- **Built in build `2026-11-02f`:** the element draw and the class draw below (js/breeding.js `breedElement`, `breedClass`; `FOLLOWER-PROGRESSION.md` §2). BLOOM's half chance waits for BLOOM and the apparatus.
 - **The offspring's element: a random draw between the two parents' current elements.** A converted parent passes on its converted element: a parent converted to BLOOM passes on BLOOM.
 - **A toxic + fire pair with the apparatus installed:** 50% BLOOM, 25% toxic, 25% fire (the owner confirmed the other half is the normal draw).
 - **The offspring's class: a random draw among Brawler, Mage and Technician, not tied to the parents' classes.** The owner: "The parents type doesn't matter ... The offspring will not ... correlate to the role of the parents." A BLOOM offspring's draw skips a class that has no BLOOM form yet.
@@ -90,8 +91,8 @@ Until now a follower kept the type and element it was found with for good. The o
 
 - [ ] The apparatus can be installed only once the purification quest is complete.
 - [ ] With it installed, a toxic + fire pair's offspring is BLOOM half the time; before it, never.
-- [ ] Any other pair's offspring takes one of its parents' current elements at random (so BLOOM only if a parent is BLOOM).
-- [ ] An offspring's class is a random draw among the three.
+- [x] Any other pair's offspring takes one of its parents' current elements at random (so BLOOM only if a parent is BLOOM). *(Build `2026-11-02f`; no BLOOM exists yet.)*
+- [x] An offspring's class is a random draw among the three. *(Build `2026-11-02f`.)*
 - [ ] A toxic follower converted at the apparatus becomes BLOOM, for free, keeping its level, XP, bond and stats. It takes its class's BLOOM form if evolved; its toxic cards come off. It stays BLOOM through respawns, saves and loads.
 - [ ] The apparatus is handed over, free, when the purification quest is finished, and sits beside the purification module.
 - [ ] BLOOM never comes from a recruit, a post's egg or an enemy.
@@ -135,13 +136,14 @@ Until now a follower kept the type and element it was found with for good. The o
 ## 8. Acceptance criteria
 
 - [ ] Seeded: of 1,000 toxic + fire offspring with the apparatus, about half are BLOOM; without it, none.
-- [ ] Seeded: an ordinary pair's offspring takes each parent's element about half the time, and each class about a third of the time.
+- [x] Seeded: an ordinary pair's offspring takes each parent's element about half the time, and each class about a third of the time. *(tests/followerprog.js, 600 seeded offspring, build `2026-11-02f`.)*
 - [ ] A converted follower is BLOOM after a save and a load; an old save loads with nothing changed.
-- [ ] The existing breeding tests (price, double tap, stats, provenance) still pass, with the element and class rule updated.
+- [x] The existing breeding tests (price, double tap, stats, provenance) still pass, with the element and class rule updated. *(Build `2026-11-02f`.)*
 
 ## 9. Implementation notes
 
-Not implemented.
+- **The breeding draws** (build `2026-11-02f`): js/breeding.js `breedElement(a, b, draw)` (under 0.5 the first parent's element, else the second's) and `breedClass(draw)` (an even draw over `FOLLOWER_TYPE_ORDER`). `breedMake(f, rnd)` takes every draw from one source, in the order element, class, then the stats' variations, so a test's seeded `rnd` gives the same offspring's element and class every time. The lead-parent rule (`breedLead`, `breedType`) is gone.
+- **Not implemented:** the apparatus, BLOOM, conversion, and BLOOM's half chance in the element draw. When BLOOM comes, the element draw is where it goes.
 
 Naming care: `bloom` is already the id of the retired BUNKER BLOOM form (js/evolution.js `EVOLUTIONS.bloom`, its sheet img/evo/bloom.png). PETAL BLAZE's numbers are the `BLOOM_*` constants. The element's id and its constants must not collide with them.
 
@@ -149,7 +151,8 @@ Naming care: `bloom` is already the id of the retired BUNKER BLOOM form (js/evol
 
 | Check | Result | Evidence / notes |
 |---|---|---|
-| Nothing to check yet | Not run | no code |
+| The breeding draws (build `2026-11-02f`) | Passed | tests/followerprog.js: the draws as pure functions (the toss, the even class draw, out-of-range draws held to the ends); 600 seeded offspring of a fire Brawler and an ice Mage (300 ± 45 of each element, nothing else; 200 ± 40 of each class; the same seed, the same sequence); the act with the draw injected |
+| The apparatus, BLOOM, conversion | Not run | not built |
 
 ## 11. Open questions
 
@@ -185,6 +188,7 @@ Answered last (2026-11-02):
 
 ## 12. History
 
+- 2026-11-02, build `2026-11-02f` (Build C of `NEXT-UPDATE.md`): the breeding draws built, the element between the parents' current elements and the class among the three. The lead-parent rule is superseded.
 - 2026-11-02, BLOOM's creatures (a run through design ideas, words only). The owner picked:
   - MEND at 2% every hit (over 4% every hit, or 6% on a third of hits);
   - no extra traits;

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────
-//  SIDE QUEST: the drone on the Sewers' maintenance platform (docs/SEWER-QUEST.md, "Side Quest and the Sleeping Potion")
+//  SIDE QUEST: the void walker on the Sewers' maintenance platform (docs/SEWER-QUEST.md, "Side Quest and the Sleeping Potion")
 // ─────────────────────────────────────────────────────────
 // ASKED (the Game Design Archive, 2026-10-31): "Side Quest is a small flying robot drone and nomadic outlander who has left the facility and no longer wants to be part of it. He serves as an optional side-quest giver,
 // merchant, technician, and source of hints [...] Position Side Quest in a safe side passage or maintenance platform roughly halfway along the route toward the sewer boss/dam blockage [...] he appears only after the
@@ -18,8 +18,8 @@
 //                  the potion after. Come back and he gives the hint. Once the queen's fate is decided (the quest line's bossResolvedAt), everything he says is "…" (SIDEQUEST.lines.after), and he still sells.
 //   THE SHOP       one thing: the SLEEPING POTION (js/potion.js potionBuy: ◆100, ◆50 the next once it has put the queen to sleep). His "gadgets and gizmos" and his later role are open (the archive).
 //   SAVED          `sidequest` (js/facilitysave.js): that he appeared, how far the talk got, the promise, that he called you over. A load opens the gate again and puts him back.
-//   PROVISIONAL    the platform as his spot, his look (a small black saucer with chasing rim lights on four tiny legs, drawn here: the saucer design family, design/evolutions/forms26.js Nos. 661-683, is the candidate
-//                  for a proper sheet once a piece of it is approved, docs/ART-PROCESS.md), and every line but the archive's opening (its wording "can be polished during implementation").
+//   HIS LOOK       the void walker, the old flux worker's form (the owner, 2026-11-02): see "drawing" below. (Until build 2026-11-02f he was a small black saucer drawn here in code.)
+//   PROVISIONAL    the platform as his spot, and every line but the archive's opening (its wording "can be polished during implementation").
 const SIDEQUEST = {
     id: "sidequest", name: "SIDE QUEST", room: "sewers", gate: "sewer_gate_n2", into: -2, col: "#9fd8ff",   // (into: tiles from the gate's line to his spot, north: the platform is behind the north ledge's wall)
     callNear: 8,   // tiles: the first time you come this near, he calls you over (once)
@@ -74,8 +74,10 @@ function sqPlace(announce) {
     _fp.items = _fp.items.filter(i => !(i.fp === "sidequest" || (i.fp === "station" && i.id === "st_sidequest"))); _fp.stations = _fp.stations.filter(s => s.id !== "st_sidequest");
     const bb = [x - 0.45, y - 0.45, x + 0.45, y + 0.45], st = { id: "st_sidequest", kind: "sidequest", room, prop: null, bb, x, y };
     _fp.stations.push(st);
-    _fp.items.push({ type: "fp", fp: "station", id: st.id, kind: st.kind, room, bb: bb.slice(), x, y, depth: bb[2] + bb[3] - 0.45, base, seed });
+    // (his station's ring is a mark on the floor under his feet: it sorts just before him, so the void walker stands on it rather than behind its film; a unit nearer the camera still sorts after both)
+    _fp.items.push({ type: "fp", fp: "station", id: st.id, kind: st.kind, room, bb: bb.slice(), x, y, depth: x + y + 0.01, base, seed });
     _fp.items.push({ type: "fp", fp: "sidequest", id: "sidequest", room, x, y, depth: x + y + 0.02, base, seed });
+    sqSheet();   // (his sheet starts on its way now, so it is in by the time you reach him: js/evolution.js _evoImg)
     if (!S.appearedAt) S.appearedAt = Math.max(1, _sqNow());
     if (announce && typeof dialogueSay === "function") dialogueSay("player", "◈ SOMETHING HAS OPENED THE MAINTENANCE PLATFORM OFF THE SEWERS' NORTH LEDGE", { key: "sq:opened" });   // (your note of it: the dialogue box)
     return true;
@@ -131,35 +133,44 @@ function sqChoose(yes) {
 // a tap on his line in the dialogue box (js/input.js, before the stations): one of his choice buttons, or NEXT on the words; true when it was his
 function sqTap(ex, ey) { const L = typeof dialogueCurrent === "function" ? dialogueCurrent() : null; return !!(L && L.group === "sq" && typeof dialogueTap === "function" && dialogueTap(ex, ey)); }
 // ── drawing ──
-// him, in the world (js/facilityplay.js drawFacilityItem): a small black saucer hovering over its shadow, sixteen rim lights chasing two on two off, a glass dome with a beacon, four tiny legs dangling
+// HIS LOOK, the void walker (the owner, 2026-11-02: "he's a recycled asset from before ... he should be the void walker character ... that used to be the flux worker"; confirmed from a picture of the sheet): the old
+// flux worker's form, a dark saucer with violet lights on four jointed legs, from its sheet img/evo/hauler.png (the HOVER HAULER's; its numbers are img/evo/hauler.json's: 8 facings × 16 frames of 144 px, 8 idle then
+// 8 action). He is drawn as an evolved follower is (js/evolution.js: _evoImg loads the sheet, EVO_SCALE, the same idle beat, the same facings), standing on his legs on the platform and turned toward you. It
+// replaced the small black saucer that was drawn here (build 2026-11-02f). The sheet is asked for when he appears (sqPlace); until it has arrived, his shadow and his plate stand there alone.
+const SQ_LOOK = { id: "sidequest", sheet: "img/evo/hauler.png", cell: 144, anchor: [72, 114.2], core: [72, 84.8],
+    plate: 52,         // px over his feet for his plate, at game size (the sheet's top is 46 px over them)
+    portrait: 0.84 };  // his width in the dialogue box's square, as a share of it (the sheet's legs reach the cell's edges)
+const _sqFace = { dirX: 1, dirY: 1 };   // his facing, kept between frames: toward you ((1, 1) faces the screen, as the dialogue box shows him)
+const _SQ_FRONT = { dirX: 1, dirY: 1 };
+function sqSheet() { return typeof _evoImg === "function" ? _evoImg(SQ_LOOK) : null; }
+function _sqIdleCol(f) { return Math.floor(f / 7) % 8; }   // the idle beat of an evolved follower (js/evolution.js _evoFrame)
+function _sqRow(dx, dy) {
+    if (Math.abs(dx) + Math.abs(dy) > 0.05) { _sqFace.dirX = dx; _sqFace.dirY = dy; }   // (standing on him: the last facing)
+    return typeof _evoFacing === "function" ? _evoFacing(_sqFace) : 1;
+}
+// one frame of the sheet with its feet (the anchor) on (gx, gy), at scale s
+function _sqBlit(img, col, row, gx, gy, s) { const C = SQ_LOOK.cell; ctx.drawImage(img, col * C, row * C, C, C, gx - SQ_LOOK.anchor[0] * s, gy - SQ_LOOK.anchor[1] * s, C * s, C * s); }
+// him, in the world (js/facilityplay.js drawFacilityItem): his shadow on the floor, the void walker over it turned toward you, a soft glow in his colour at his core, his plate over him
 function sqDraw(it) {
     if (typeof ctx === "undefined" || typeof _fpP !== "function") return;
-    const f = _sqFrame(), bob = Math.sin(f * 0.05 + it.seed) * 3, z = 26 + bob, g = _fpP(it.x, it.y, 0), c = _fpP(it.x, it.y, z), col = SIDEQUEST.col;
+    const f = _sqFrame(), g = _fpP(it.x, it.y, 0), col = SIDEQUEST.col, s = typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144, img = sqSheet();
     ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.32)"; ctx.beginPath(); ctx.ellipse(g[0], g[1], 16, 7, 0, 0, Math.PI * 2); ctx.fill();   // the shadow on the floor
-    _sqSaucer(c[0], c[1], f, col, 1);
-    if (typeof _fpGlow === "function") _fpGlow(c[0], c[1] + 2, 26, col, 0.22);
+    ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(g[0], g[1], 22, 9, 0, 0, Math.PI * 2); ctx.fill();   // the shadow on the floor (an evolved follower's)
+    if (img) {
+        const P = typeof player !== "undefined" && player ? player : null;
+        _sqBlit(img, _sqIdleCol(f), _sqRow(P ? P.x - it.x : 0, P ? P.y - it.y : 0), g[0], g[1], s);
+        if (typeof _fpGlow === "function") _fpGlow(g[0], g[1] + (SQ_LOOK.core[1] - SQ_LOOK.anchor[1]) * s, 26, col, 0.22);
+    }
     ctx.restore();
-    if (typeof drawPlate === "function") drawPlate(SIDEQUEST.name, col, c[0], c[1] - 18);
+    if (typeof drawPlate === "function") drawPlate(SIDEQUEST.name, col, g[0], g[1] - SQ_LOOK.plate);
 }
-// the saucer itself, centred on (cx, cy) at scale k: four tiny legs dangling, the black hull (a lens), its lit top face, sixteen rim lights chasing two on two off, the glass dome, the beacon (sqDraw in the world; sqPortrait in the dialogue box)
-function _sqSaucer(cx, cy, f, col, k) {
-    ctx.save(); ctx.translate(cx, cy); ctx.scale(k, k);
-    ctx.strokeStyle = "#0b0d12"; ctx.lineWidth = 2; ctx.lineCap = "round";
-    for (let i = 0; i < 4; i++) { const lx = -9 + i * 6, sw = Math.sin(f * 0.08 + i) * 1.5; ctx.beginPath(); ctx.moveTo(lx, 4); ctx.lineTo(lx + sw, 11); ctx.lineTo(lx + sw * 1.6, 15); ctx.stroke(); }
-    ctx.fillStyle = "#07080c"; ctx.beginPath(); ctx.ellipse(0, 2, 17, 6.5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#15181f"; ctx.beginPath(); ctx.ellipse(0, -1, 15, 5, 0, 0, Math.PI * 2); ctx.fill();
-    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2, on = ((i + (f >> 2)) % 4) < 2; ctx.fillStyle = on ? col : "#2a3140"; ctx.beginPath(); ctx.arc(Math.cos(a) * 15, 1 + Math.sin(a) * 5.5, on ? 1.6 : 1.1, 0, Math.PI * 2); ctx.fill(); }
-    ctx.fillStyle = "rgba(159,216,255,0.22)"; ctx.beginPath(); ctx.ellipse(0, -4, 7, 4.5, 0, Math.PI, 0); ctx.fill(); ctx.strokeStyle = "rgba(159,216,255,0.5)"; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = (f % 40) < 20 ? "#ffffff" : col; ctx.beginPath(); ctx.arc(0, -8.5, 1.6, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-}
-// his picture in the dialogue box (js/dialogue.js _dlgPortrait): the saucer, bigger, bobbing over its shadow
+// his picture in the dialogue box (js/dialogue.js _dlgPortrait, the square s wide centred on (cx, cy)): the same void walker facing you, as wide as SQ_LOOK.portrait of the square and centred in it, over his shadow, with his glow
 function sqPortrait(cx, cy, s, f) {
-    const bob = Math.sin(f * 0.05) * 2;
-    ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.36, s * 0.26, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
-    _sqSaucer(cx, cy - 2 + bob, f, SIDEQUEST.col, s / 46);
-    if (typeof _fpGlow === "function") _fpGlow(cx, cy + bob, s * 0.4, SIDEQUEST.col, 0.25);
+    const C = SQ_LOOK.cell, k = s * SQ_LOOK.portrait / C, top = SQ_LOOK.anchor[1] - 45, below = C - 1 - SQ_LOOK.anchor[1], gy = cy + (top - below) / 2 * k;   // (the sheet's sprite runs from y 45 to the cell's foot)
+    ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(cx, gy, 33 * k, 13.5 * k, 0, 0, Math.PI * 2); ctx.fill();
+    const img = sqSheet(); if (!img) return;
+    _sqBlit(img, _sqIdleCol(f), typeof _evoFacing === "function" ? _evoFacing(_SQ_FRONT) : 1, cx, gy, k);
+    if (typeof _fpGlow === "function") _fpGlow(cx, gy + (SQ_LOOK.core[1] - SQ_LOOK.anchor[1]) * k, s * 0.4, SIDEQUEST.col, 0.25);
 }
 // each frame (js/facilitytutorial.js facilityDrawOverlay; the name stays from when it drew a slab over his plate): what he is saying, while you are at his station, is a HELD line of the dialogue box (js/dialogue.js) with his
 // picture: a tap on it is NEXT while the talk is going (the station's use), the two choice buttons are in the box when it is time to choose, and away from him his line goes. Nothing is drawn here: the box draws itself.

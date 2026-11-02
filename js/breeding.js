@@ -9,8 +9,12 @@
 // WHERE: the roster (the Command Center's settings column for the creature in view, js/commandcenter.js; the phone's card, js/radialmenu.js): BREED WITH <its partner> ◆50, two taps (the first arms it, the second
 // pays, as RE-ROLL and EXILE are), so a double tap makes one offspring and pays once. The offspring comes out at the Crystal as a recruit does; with the squad full, who makes room is asked first and nothing is paid
 // until that is chosen (js/party.js partyPickOpen, as the quick recruit's). The archive's Sanctuary room, its keeper and the breeding wait are NOT built: this is the first, modest version (docs/OPEN-QUESTIONS.md).
-// WHAT COMES OUT: the LEAD parent's type and element (the higher level; a tie: the one in view), a personality of that type (so its role is the type's, as a recruit's is: js/species.js), at the recruit's level, unbonded,
-// with no cards, and a BASE of its own. Everything else the game derives from the base (js/levels.js _applyFollowerLevel: the level, the evolved form, the cards), so the advantage is applied exactly once, at birth, and
+// WHAT COMES OUT: an ELEMENT drawn between its parents' current elements, an even toss (breedElement), and a CLASS drawn among the three, an even draw, not tied to the parents' (breedClass): the owner, 2026-11-02
+// ("The parents type doesn't matter ... The offspring will not ... correlate to the role of the parents", docs/CONVERSION.md "Breeding, once conversion exists"; it replaced "the lead parent's type and element").
+// Then a personality of that class (so its role is the class's, as a recruit's is: js/species.js; that pick is the Crystal's own, as a recruit's), at the recruit's level, unbonded, with no cards, and a BASE of its own.
+// THE DRAWS come from one source, `rnd` (a function giving [0, 1); none: Math.random), in this order: the element, the class, then each stat's variation (breedBase); a test passes a seeded one and gets the same
+// element, class and variations every time. (BLOOM's half chance for a toxic + fire pair comes with BLOOM and its apparatus: not built.)
+// THE BASE: everything else the game derives from it (js/levels.js _applyFollowerLevel: the level, the evolved form, the cards), so the advantage is applied exactly once, at birth, and
 // never again on a level-up, a reload, a respawn or a restored body. For each stat in BREED.stats:
 //     base[s] = min( BREED.cap × own[s],  max( own[s], (A[s] + B[s]) / 2 ) × BREED.upbringing × (1 + v) )
 //   own[s]    what its own personality gives a recruit (applyPersonality): the floor, so an offspring is never under a recruit of its personality
@@ -41,9 +45,13 @@ function breedCan(f) {
     if ((typeof shardCount === "number" ? shardCount : 0) < BREED.price) return { ok: false, why: "NEED ◆" + BREED.price + " TO BREED" };
     return { ok: true, partner: p };
 }
-function breedLead(a, b) { return (b.level || 1) > (a.level || 1) ? b : a; }
-// the type the offspring is made as: the lead's type (a hybrid fights as a brawler; an evolved form's role is its form's)
-function breedType(lead) { return typeof FOLLOWER_TYPES !== "undefined" && FOLLOWER_TYPES[lead.role] ? lead.role : "brawler"; }
+// the offspring's element: one of its two parents' current elements, an even toss (below 0.5 the first's, else the second's; a parent with none gives the other's)
+function breedElement(a, b, draw) { const ea = (a && a.element) || null, eb = (b && b.element) || null; return draw() < 0.5 ? ea || eb : eb || ea; }
+// the offspring's class: one of the three (brawler, sniper = MAGE, camper = TECHNICIAN), an even draw; the parents' classes play no part
+function breedClass(draw) {
+    const cs = typeof FOLLOWER_TYPE_ORDER !== "undefined" && FOLLOWER_TYPE_ORDER.length ? FOLLOWER_TYPE_ORDER : ["brawler", "sniper", "camper"];
+    return cs[Math.max(0, Math.min(cs.length - 1, Math.floor((Number(draw()) || 0) * cs.length)))];
+}
 // a parent's base as the line carries it: its base, with its BORN hp in place of what deaths have worn it down to
 function breedParentBase(a) {
     const b = Object.assign({}, a.base || a.stats || {});
@@ -66,13 +74,13 @@ function breedBase(own, A, B, rnd) {
 // the paid act, in one step: the parents checked, the offspring made at the Crystal, the price taken (nothing is taken when nothing is made). Returns the offspring or null (and says why).
 function breedMake(f, rnd) {
     const can = breedCan(f); if (!can.ok) { _brSay(can.why); return null; }
-    const p = can.partner, lead = breedLead(f, p), type = breedType(lead), element = lead.element;
     if (typeof spawnFollowerAtCrystal !== "function" || typeof followers === "undefined") return null;
+    const p = can.partner, draw = typeof rnd === "function" ? rnd : Math.random, element = breedElement(f, p, draw), type = breedClass(draw);
     const n0 = followers.length; spawnFollowerAtCrystal(element, type);
     const c = followers[followers.length - 1]; if (!c || followers.length === n0) { _brSay("NOTHING CAME OF IT"); return null; }
     shardCount -= BREED.price;
     const own = typeof applyPersonality === "function" ? applyPersonality(c.personality) : Object.assign({}, c.base);
-    c.base = breedBase(own, breedParentBase(f), breedParentBase(p), rnd);
+    c.base = breedBase(own, breedParentBase(f), breedParentBase(p), draw);
     c.hp0 = c.base.hp;
     c.bred = { gen: Math.max(f.bred && f.bred.gen || 0, p.bred && p.bred.gen || 0) + 1, parents: [typeof followerUid === "function" ? followerUid(f) : f.uid || 0, typeof followerUid === "function" ? followerUid(p) : p.uid || 0] };
     if (typeof _applyFollowerLevel === "function") _applyFollowerLevel(c, true);   // its numbers from its base, once (every later recalculation starts from the same base)

@@ -77,7 +77,7 @@ Built from the archive's newest sections (the patch frame, the clarifications, t
 - **Damage and sleep.** A sleeper is not woken by a hit (your followers must be able to hold a sleeping queen while you install). The archive leaves resistance and immunity open.
 - **The queen's provisional numbers**: her guard 2.5 tiles; her leash and roam 15 tiles (the cistern); the bomb's 12 tiles of reach, 1.6-tile burst, 1 s wind-up and 1 s flight; the spit's 3-tile trigger, 1-tile burst, half a second each way; a wave of 4 nymphs (the archive: start at 4, up to 6), the first 30 s after she wakes, level 2 to 3; her frantic pace at 3 times her own; the sleep of 5 s on every creature (the archive gives only the queen's); the potion's 3-tile area and 4-tile reach. The archive's fixed numbers are built as given: 45 s, 10 s, 30 s, 50%, about 10 s to install, about 5 s of sleep, ◆100 / ◆50 / ◆100.
 - **Poison on you**: the game's poison is a weakness, so yours is too (your hits at 60% for 2 s). The archive says only that it should wear off quickly.
-- **Side Quest's look and lines.** He is drawn in code (a small black saucer with chasing rim lights on four tiny legs); the saucer design family (design/evolutions/forms26.js, Nos. 661–683) is the candidate for a proper sheet once a piece is approved (docs/ART-PROCESS.md). His opening is the archive's word for word; the other lines are mine, to polish. His spot: the south ledge's side passage (the archive: "a safe side passage or maintenance platform roughly halfway"). His "gadgets and gizmos", his later inventory and his progression into the Nests: open, as the archive says.
+- **Side Quest's look and lines.** *His look is answered:* the void walker (your decision of 2026-11-02), built in `2026-11-02f`; until then he was a small black saucer drawn in code, and the saucer design family (Nos. 661–683) is set aside. His opening is the archive's word for word; the other lines are mine, to polish. His spot: the maintenance platform off the north ledge since 2026-11-01 (first the south ledge's side passage; the archive: "a safe side passage or maintenance platform roughly halfway"). His "gadgets and gizmos", his later inventory and his progression into the Nests: open, as the archive says.
 - **The name.** The archive's newest notes say "the Toxic Queen"; the game keeps the name you approved this morning, THE TOXIC ANT QUEEN (provisional either way).
 - **Side Quest's reaction to a kill** (disappointment, reduced trust): undecided in the archive; the placeholder stands.
 
@@ -92,7 +92,7 @@ Built from the archive's follow-up scope ("follower scarcity, breeding quality, 
 - **The formula** (per stat: hp, attack, defense, special attack, accuracy, will): `min(2 × own, max(own, the parents' mean) × 1.05 × (1 ± 3%))`, three places. "No cross-generation stacking" (the Sanctuary page) is read as: the bonus is applied once per follower, at birth, in its base; a bred parent's higher base is inherited through the mean, so a line does climb, bounded by the cap of twice the personality's own number. If climbing across generations should stop altogether, inherit from the personality's own numbers instead of the parents' (one line in js/breeding.js breedBase).
 - **The Vital items restore, up to the born hp.** The archive's section is "permanent follower HP-stat restoration" ("restores a follower's permanently lost base HP stat"); the brief's "permanently increase" is read the same way. A follower that has lost nothing is not a target. If a Vital item should raise a follower past what it was born with, the cap is one line (js/vital.js vitalUse).
 - **Five cases** (+5, +5, +10, +10, +20: 50 hp stat in all across the facility), at the places listed in docs/FOLLOWER-PROGRESSION.md. The count and the places are the implementer's.
-- **The lead parent** decides the offspring's type and element (the higher level; a tie, the one in view). The archive says "offspring inherit one parent's type" without saying which.
+- **The lead parent** decided the offspring's type and element (the higher level; a tie, the one in view). The archive says "offspring inherit one parent's type" without saying which. **Superseded** by your design of 2026-11-02 (`CONVERSION.md`), built in `2026-11-02f`: the element is drawn between the parents', the class among the three.
 - **The Game Bible** records the formula and the measured outcome (150 offspring: +5% on average on every stat in the list, never under a recruit of the personality), as the archive asked, from the test that measures them (tests/followerprog.js).
 
 ## 1g. The Nest, the ants, the opened-up Sewers, the clone in the squad and the movement rules (built 2026-11-01, build `g`; docs/SEWER-QUEST.md "The Nest", docs/FACILITY.md)
@@ -210,7 +210,20 @@ Asked (the owner, 2026-11-02): "mages get aura cards, and the brawlers get oppor
 
 - **The following update** (`FOLLOWING-UPDATE.md`): "Approve as drafted". Its gates are still open: the 18 Player card kits, the looks' mockups, each card item.
 - **STORMCALLER** was both the electric Technomancer's Player card role and a planned player class. The owner: "Rename the Player card". **Open:** the role's new name, drafted with the kits.
-- **Build C's open point:** whether Side Quest's picture in the dialogue box changes with his sprite. Read in Build C as part of "drawn as the void walker" (see the changelog); the owner's to change.
+- **Build C's open point:** whether Side Quest's picture in the dialogue box changes with his sprite. **Read in Build C (`2026-11-02f`) as yes:** the box shows the void walker's sheet facing you, as part of "drawn as the void walker". Yours to change.
+
+## 1o. Build C's readings (build `2026-11-02f`)
+
+Build C followed the approved design (`NEXT-UPDATE.md` Build C). Where it did not say, these readings were taken, each easy to change:
+- **The dialogue box's picture** is the void walker too (§1n above).
+- **He stands on his legs**, at the evolved followers' size, and no longer hovers: the sheet is a walker. His idle frames play; the action frames are unused.
+- **He turns toward you**, to the nearest of his eight facings, wherever you are in the Sewers.
+- **His colour stays** (#9fd8ff): his plate and the soft glow at his core, as before.
+- **His station's ring is drawn under his feet.** It was drawn after him, so it lay over the walker's body. The saucer had hovered above it.
+- **The game's words still call him a drone** in one place: the install step's hint ("THE DRONE ON THE MAINTENANCE PLATFORM ... SELLS A SLEEPING POTION"). That is the archive's description of him ("a small flying robot drone"), so it was left. The in-game guide now calls him the void walker.
+- **The class draw meets the stat cap more often.** An offspring of another class than its parents can inherit a mean above twice its own number, and that stat is then capped. For example, two Brawlers' cautious Mage gets ATK 16, not about 20. The formula is as approved; only how often the cap applies changed (`FOLLOWER-PROGRESSION.md` §2).
+- **The offspring's personality** within its class is still the Crystal's own pick, as a recruit's: it is not one of the seeded draws.
+- **Two stale lines in the in-game guide were corrected** with Build C's own lines: the Vital items (removed 2026-11-01) and Side Quest's old spot.
 
 ## 2. Newly open
 
@@ -236,7 +249,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **The conversion apparatus and BLOOM** (designed 2026-11-02, not built; `CONVERSION.md`):
   - BLOOM is a seventh, life-giving element.
   - Once the purification quest is done, the apparatus can be installed. A toxic + fire pair's offspring is then BLOOM half the time, and a toxic follower can be converted into BLOOM.
-  - An offspring's element becomes a random draw between its parents' current elements, and its class a random draw among the three.
+  - An offspring's element becomes a random draw between its parents' current elements, and its class a random draw among the three. *(Built in `2026-11-02f`, Build C.)*
   - **Your answers, second round:**
     - outside the triangles; MEND heals the most hurt ally nearby; blossom pink;
     - three forms over time;
@@ -260,8 +273,8 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - the coral crab Technician, whose REEF grows coral the player can climb to new areas.
 
     These are drafts and mockups for your approval. Confirmed last: the other 50% is toxic or fire; Series 2's BLOOM cards wait for the apparatus; an evolved toxic follower waits for its class's BLOOM form.
-- **Side Quest's look, and the subclass art** (designed 2026-11-02, not built):
-  - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`).
+- **Side Quest's look, and the subclass art** (designed 2026-11-02; Side Quest's look built in `2026-11-02f`, the subclass art not built):
+  - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`). *(Built in `2026-11-02f`; readings in §1o.)*
   - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).
   - Mockups come first, for your approval.
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).

@@ -8,6 +8,7 @@
 //   THE CALL       the first time you come near, once
 //   THE TALK       four lines a press, the archive's opening first; the choice of two buttons; I PROMISE or NO PROMISES recorded; his answer, then the hint; the quest line untouched by any of it; the shop after
 //   AFTER          the queen's fate decided (calm, or defeated): "…", and the shop
+//   HIS LOOK       the void walker (the owner, 2026-11-02; build 2026-11-02f): the old flux worker's sheet, in the world turned toward you and in the dialogue box facing you
 //   THE SAVE       he comes back where he was, the gate open, the talk and the promise kept; the plate's install hint names him once he is there
 const fs = require('fs');
 const vm = require('vm');
@@ -80,6 +81,35 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const o = {}; const st = __st('st_sidequest'), S = __S(); S.talk = 0; S.promised = 0; const Q = __Q(); Q.bossResolvedAt = 1; Q.bossOutcome = 'calm'; __near(st); shardCount = 100; invRemove('sleeping_potion', invCount('sleeping_potion')); o.after = [sqSpeech(), STATION_KINDS.sidequest.verbFn(st), stationCan(st).ok, sqChoosing()]; const b = stationUse(st); o.buys = [b.ok, invCount('sleeping_potion'), S.talk];
             Q.bossResolvedAt = 0; Q.bossOutcome = ''; Q.discoveredAt = 1; Q.samplesAt = 1; Q.turnedInAt = 1; Q.moduleAt = 1; const ob = questObjective(); o.plate = [ob.key, /THE DRONE ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE SELLS A SLEEPING POTION/.test(ob.hint)]; return o; })()`);
         same(r.after.join('|'), '…|BUY A SLEEPING POTION ◆100|true|false', 'after the encounter, unmet'); same(r.buys.join(), 'true,1,0', 'the shop without a talk'); same(r.plate.join(), 'purify:install,true', 'the plate\'s hint');
+    });
+
+    group('HIS LOOK: the void walker (the owner, 2026-11-02: "he should be the void walker character ... that used to be the flux worker"; js/sidequest.js sqDraw, sqPortrait)');
+    check('drawn from the void walker\'s sheet (img/evo/hauler.png, the old flux worker\'s, with hauler.json\'s numbers), asked for when he appears: in the world one 144-px cell of the idle beat, its feet on his spot at the evolved followers\' scale, turned toward you (east, south-east, north; standing on him keeps the last), over his shadow, his plate over him; in the dialogue box the same sheet facing you, inside the square; the sheet not in yet: only the shadow and the plate, nothing thrown; the saucer drawn in code is gone', () => {
+        const js = JSON.parse(rd('img/evo/hauler.json')); ok(fs.existsSync(path.join(ROOT, 'img/evo/hauler.png')), 'the sheet is not in the repository');
+        const r = J(`(function(){ const o = {}; const it = _fp.items.find(i => i.fp === 'sidequest'); if (!it) return { none: true }; o.look = [SQ_LOOK.sheet, SQ_LOOK.cell, SQ_LOOK.anchor, SQ_LOOK.core, SQ_LOOK.plate];
+            delete SQ_LOOK._img; sqPlace(false); o.asked = SQ_LOOK._img !== undefined; const it2 = _fp.items.find(i => i.fp === 'sidequest');
+            const calls = [], plates = [], keep = ctx.drawImage, dp = drawPlate, px = player.x, py = player.y, pvx = player.visualX, pvy = player.visualY, f0 = frame;
+            ctx.drawImage = function(){ calls.push(Array.prototype.slice.call(arguments, 1)); }; drawPlate = function(t, c, x, y){ plates.push([t, c, x, y]); return true; };
+            const at = (dx, dy) => { player.x = it2.x + dx; player.y = it2.y + dy; }, look = () => { calls.length = 0; plates.length = 0; drawFacilityItem(it2); const g = _fpP(it2.x, it2.y, 0); return { c: calls.slice(), p: plates.slice(), g }; };
+            try {
+                SQ_LOOK._img = null; at(3, 0); const none = look(); let threw = null; try { sqPortrait(200, 200, 90, 3); } catch (e) { threw = e.message; } o.unloaded = [none.c.length, none.p.length, threw];
+                SQ_LOOK._img = { complete: true, naturalWidth: 2304, naturalHeight: 1152 }; frame = 7 * 3 + 2;
+                at(3, 0); const e = look(); at(2, 2); const se = look(); at(0, -3); const n = look(); at(0, 0); const on = look();
+                o.world = { e: e.c, se: se.c, n: n.c, on: on.c, g: e.g, plate: e.p, s: EVO_SCALE };
+                calls.length = 0; sqPortrait(200, 300, 90, 7 * 5); o.portrait = calls.slice();
+            } finally { ctx.drawImage = keep; drawPlate = dp; player.x = px; player.y = py; player.visualX = pvx; player.visualY = pvy; frame = f0; SQ_LOOK._img = null; }
+            return o; })()`);
+        ok(!r.none, 'he is not in the world'); same(r.look[0], 'img/evo/hauler.png', 'the sheet'); same(r.look[1], js.cell, 'the cell');
+        ok(Math.abs(r.look[2][0] - js.anchor.x) < 0.05 && Math.abs(r.look[2][1] - js.anchor.y) < 0.05, 'the anchor is not hauler.json\'s: ' + r.look[2]); ok(Math.abs(r.look[3][0] - js.core.x) < 0.05 && Math.abs(r.look[3][1] - js.core.y) < 0.05, 'the core is not hauler.json\'s: ' + r.look[3]);
+        same(r.asked, true, 'his sheet was not asked for when he appeared'); same(r.unloaded.join('|'), '0|1|', 'the sheet not in: a frame drawn, no plate, or a throw');
+        const W = r.world, s = W.s, C = 144, A = r.look[2]; same(W.e.length, 1, 'one frame in the world');
+        const [sx, sy, sw, sh, dx, dy, dw, dh] = W.e[0]; same([sx, sy, sw, sh].join(), [3 * C, 0, C, C].join(), 'the idle beat\'s fourth frame, facing east (you to the east)');
+        ok(Math.abs(dx - (W.g[0] - A[0] * s)) < 0.01 && Math.abs(dy - (W.g[1] - A[1] * s)) < 0.01 && Math.abs(dw - C * s) < 0.01 && Math.abs(dh - C * s) < 0.01, 'its feet are not on his spot at the followers\' scale: ' + W.e[0].join() + ' at ' + W.g.join());
+        same(W.se[0][1], C, 'you to the south-east: the row facing the screen'); same(W.n[0][1], 6 * C, 'you to the north: the north row'); same(W.on[0][1], 6 * C, 'standing on him: the last facing kept');
+        same(JSON.stringify(W.plate), JSON.stringify([['SIDE QUEST', '#9fd8ff', W.g[0], W.g[1] - r.look[4]]]), 'his plate over him');
+        same(r.portrait.length, 1, 'one frame in the dialogue box'); const P = r.portrait[0], k = 90 * 0.84 / C; same([P[0], P[1], P[2], P[3]].join(), [5 * C, C, C, C].join(), 'the idle beat, facing you');
+        ok(Math.abs(P[6] - C * k) < 0.01 && P[5] + 45 * k >= 300 - 45 - 0.01 && P[5] + 143 * k <= 300 + 45 + 0.01 && P[4] >= 200 - 45 - 0.01 && P[4] + P[6] <= 200 + 45 + 0.01, 'the picture is not inside its square: ' + P.join());
+        ok(!/_sqSaucer|ctx\.ellipse\(0, 2, 17/.test(rd('js/sidequest.js')), 'the saucer is still drawn in code');
     });
 
     group('THE SAVE (js/facilitysave.js)');

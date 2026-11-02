@@ -1,11 +1,11 @@
 # The following update: Player cards, the class and species looks, the first card items
 
 - **Status:** Approved by the owner, 2026-11-02 ("Approve as drafted"): the scope, Parts 1 to 4 in that order, BLOOM for the update after. Asked for the same day: "draft a new update that covers a good portion of the necessary updates".
-  - **Not started.** Build C of the current update comes first (the owner: "Build C first").
+  - **Not started.** Build C of the current update came first (the owner: "Build C first"): implemented in build `2026-11-02f`, on the branch.
   - **Each part's gate is still the owner's:** the kits, the mockups, each card item.
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-02e`.
   - It follows the update in `NEXT-UPDATE.md`.
-  - That update's last step, Build C (the breeding draws, Side Quest drawn as the void walker), is approved and comes first.
+  - That update's last step, Build C (the breeding draws, Side Quest drawn as the void walker), came first: implemented in build `2026-11-02f`.
   - When that update closes, this one becomes `NEXT-UPDATE.md`.
 - **Last updated:** 2026-11-02
 - **How the scope was chosen:** from every item the documents mark designed but not built, proposed or open (a sweep of `docs/`, 2026-11-02).
@@ -25,8 +25,8 @@
 
 ## 2. Before it starts
 
-- **Build C** of the current update (`NEXT-UPDATE.md`, approved): an offspring's element is drawn from its parents' and its class is drawn at random; Side Quest is drawn as the void walker.
-  - One small point to settle: whether Side Quest's picture in the dialogue box changes too. The docs name only his sprite.
+- **Build C** of the current update (`NEXT-UPDATE.md`, approved): an offspring's element is drawn from its parents' and its class is drawn at random; Side Quest is drawn as the void walker. **Implemented** in build `2026-11-02f`, on the branch; it goes to main at the owner's word.
+  - One small point to settle: whether Side Quest's picture in the dialogue box changes too. The docs name only his sprite. Read as yes in build `f` (`OPEN-QUESTIONS.md` §1o); the owner's to change.
 - **Builds `2026-11-02d` and `e`** (the owner's answers on Build B) go to main at the owner's word.
 
 ## 3. In this update: four parts, in order
@@ -163,7 +163,7 @@ The BLOOM build itself would come in the update after this one, or late in this 
 2. **Gate 1:** the 18 Player card kits (the draft comes first), the player's elemental part, the electric Technomancer role's new name.
 3. **Gate 2:** the looks' mockups.
 4. **Gate 3:** the first card item, then each batch.
-5. **Build C's open point:** whether Side Quest's picture in the dialogue box changes too.
+5. **Build C's open point:** whether Side Quest's picture in the dialogue box changes too. *(Read as yes in build `2026-11-02f`; put to the owner with Build C's handoff.)*
 
 ## 7. Acceptance for the whole update
 

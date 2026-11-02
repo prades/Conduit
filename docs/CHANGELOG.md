@@ -4,6 +4,30 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **f · Build C: breeding draws the element and the class; Side Quest drawn as the void walker** (the owner's design of 2026-11-02, NEXT-UPDATE.md Build C, CONVERSION.md and SEWER-QUEST.md; the owner, in a prompt: "Push d and e to main", "Build C first"; on the branch only; commit named in git log).
+  - **Main:** builds d and e and the following update's draft (commit 55309c0) went to main at the owner's word.
+  - **An offspring's element** is an even toss between its two parents' current elements (js/breeding.js `breedElement`).
+  - **Its class** is an even draw among the three, Brawler, Mage and Technician, whatever its parents are (`breedClass`). Its personality is then one of that class's, picked at the Crystal as a recruit's is.
+  - **The draws are seedable:** `breedMake(f, rnd)` takes every draw from one source, in the order element, class, then the stats' variations.
+  - **The lead parent no longer decides** (`breedLead` and `breedType` are gone). The price, the roster's two taps, the formula and the provenance are unchanged.
+  - **The cap meets more offspring:** a child of another class than its parents can inherit a mean past twice its own number, and that stat is then the cap (two Brawlers' cautious Mage: ATK 16). The formula is as before.
+  - **Side Quest is drawn as the void walker,** the old flux worker's form, from `img/evo/hauler.png`, in place of the small saucer drawn in code (js/sidequest.js):
+    - in the world, standing on his platform, turned toward you, at the evolved followers' scale and idle beat, over his shadow, with his glow and plate in his colour;
+    - in the dialogue box, the same sheet facing you (a reading: the design named only his sprite);
+    - his station's ring now sorts under his feet, so it no longer films over his body;
+    - the sheet is asked for when he appears; until it arrives, his shadow and plate stand alone.
+  - **The in-game guide** says the new breeding rule and calls him the void walker on the north ledge's platform. Its sentence on the Vital items, removed on 2026-11-01, is gone.
+  - **Tests:**
+    - tests/followerprog.js:
+      - the draws as pure functions;
+      - 600 seeded offspring of a fire Brawler and an ice Mage: half and half by element, nothing else, a third of each class, and the same seed giving the same sequence;
+      - "better raised" measured where the cap cannot bind, and exact where it always binds;
+      - "the act" with the parent in view two levels up, so the lead no longer decides.
+    - tests/sidequest.js: his look in the world and the dialogue box, with the sheet in and not in.
+  - **The full run:** all 86 suites passed, first time (the frame budgets in tests/perf.js included).
+  - **Written up:** docs/FOLLOWER-PROGRESSION.md, docs/CONVERSION.md, docs/SEWER-QUEST.md, docs/NEXT-UPDATE.md, docs/FOLLOWING-UPDATE.md, docs/OPEN-QUESTIONS.md (§1o, the readings), docs/DECISION-LOG.md, docs/UI-STYLE.md, docs/TUTORIAL.md, docs/UNIVERSAL-AND-PLAYER-CARDS.md, the Bible.
+  - Not playtested.
+
 - **e · The aura's ring on the floor, off the walls** (the owner, in a prompt: "It shouldn't show up on the walls either"; on the branch only; commit named in git log).
   - **The ring is drawn on the floor of the Mage's room:**
     - It is drawn tile by tile in the floor's own pass (js/cards.js `equipAuraOnTile`, called by js/game.js beside the Frost Patch's).

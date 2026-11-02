@@ -425,8 +425,8 @@ When built:
 ## DECISION: Side Quest becomes the void walker; the subclass themes, textures and icons
 
 - **Date:** 2026-11-02
-- **Status:** Approved (scope); the looks are to be proposed and approved before anything changes in the game. Not implemented.
-- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Status:** Approved (scope). **Side Quest's look is implemented** in build `2026-11-02f` (Build C; its readings: `OPEN-QUESTIONS.md` §1o). The subclass themes, textures and icons are to be proposed and approved before anything changes in the game: not implemented.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code); Side Quest's look in `2026-11-02f`
 - **Related feature/docs:** `SEWER-QUEST.md` ("Side Quest and the Sleeping Potion"), `UI-STYLE.md` ("The subclass themes, textures and icons"), `ART-PROCESS.md`
 
 ### Context
@@ -464,7 +464,7 @@ None. Side Quest's earlier candidate look (the saucer design family, Nos. 661–
 ## DECISION: The conversion apparatus and BLOOM; breeding draws the element and the class
 
 - **Date:** 2026-11-02
-- **Status:** Approved (design); not implemented.
+- **Status:** Approved (design). **The breeding draws are implemented** in build `2026-11-02f` (Build C): the element between the parents' current elements, the class among the three. The apparatus, BLOOM and conversion: not implemented.
 - **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
 - **Related feature/docs:** `CONVERSION.md` (the specification), `FOLLOWER-PROGRESSION.md` §2, `SEWER-QUEST.md`, `TUTORIAL.md` ("Follower types (revision)")
 
@@ -507,7 +507,7 @@ When built:
 - "Greenshire".
 
 ### Supersedes / superseded by
-- Supersedes in part the breeding rule "the lead parent's type and element" (`FOLLOWER-PROGRESSION.md` §2; built, so it stands until this is built).
+- Supersedes in part the breeding rule "the lead parent's type and element" (`FOLLOWER-PROGRESSION.md` §2). It stood until the draws were built, in build `2026-11-02f`; it is now superseded in the code too.
 - Supersedes in part the rule that a follower's element never changes (`TUTORIAL.md`, "Follower types (revision)"): a toxic follower can be converted into BLOOM.
 - Filled in by "BLOOM and the apparatus filled in" (2026-11-02, below).
 
@@ -572,7 +572,7 @@ Confirmed in a last prompt the same day:
 ## DECISION: The next update's scope and order
 
 - **Date:** 2026-11-02
-- **Status:** Approved; in progress.
+- **Status:** Approved; all three builds implemented: A (`2026-11-02a`) and B (`2026-11-02c`) on main, C (`2026-11-02f`) on the branch waiting on the owner's word for main.
 - **Branch/build:** `claude/start-game-project-HSh7Z`, from build `2026-11-01n`
 - **Related feature/docs:** `NEXT-UPDATE.md`
 
@@ -815,7 +815,7 @@ The owner asked for "a new update that covers a good portion of the necessary up
 - `UNIVERSAL-AND-PLAYER-CARDS.md` marks the electric Technomancer role "to be renamed".
 
 ### Follow-up
-1. Build C.
+1. Build C. *(Implemented in build `2026-11-02f`, on the branch; its readings are in `OPEN-QUESTIONS.md` §1o.)*
 2. Then the following update's Part 1 gate: the 18 kits and the new role name, for approval.
 
 ### Supersedes / superseded by

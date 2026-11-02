@@ -40,7 +40,7 @@ const STATION_KINDS = {
         canFn: () => typeof questMountCan === "function" ? questMountCan() : { ok: false, why: "NO QUEST" }, onStart: () => { if (typeof questMountStart === "function") questMountStart(); },
         blockFn: () => typeof questMountBlocked === "function" ? questMountBlocked() : null,   // (the queen at the console: the build's progress holds, js/bosses.js bossInstallBlocked)
         use: () => typeof questMountUse === "function" ? questMountUse() : { ok: false, why: "NO QUEST" } },
-    // SIDE QUEST, the drone in the Sewers' side passage (js/sidequest.js): a talk, a choice, then his shop; a station made at runtime when he appears (sqPlace), not a prop of the map
+    // SIDE QUEST, the void walker on the Sewers' maintenance platform (js/sidequest.js): a talk, a choice, then his shop; a station made at runtime when he appears (sqPlace), not a prop of the map
     sidequest: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqVerb === "function" ? sqVerb() : "TALK", canFn: () => typeof sqCan === "function" ? sqCan() : { ok: false, why: "NOBODY HERE" },
         use: () => typeof sqUse === "function" ? sqUse() : { ok: false, why: "NOBODY HERE" } },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },

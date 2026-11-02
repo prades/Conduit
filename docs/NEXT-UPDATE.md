@@ -10,12 +10,15 @@
     - Its before-and-after numbers are in `COMBAT.md` §7.10.
     - It is not playtested.
   - **Build `2026-11-02b`** (the owner's answers on Build A: the hit words beside the creature, BLINDING DUST's ticks kept) is on main too (commit e43e599; the owner: "Push b to main").
-  - **Build B is implemented** in build `2026-11-02c` and is on main (commit 2fc7518; the owner: "Start Build B", then "Push to main"). **Build `2026-11-02d`**, on the branch, is the owner's answers on it: the CROWN's chance 10%, the aura kept to its room.
+  - **Build B is implemented** in build `2026-11-02c` and is on main (commit 2fc7518; the owner: "Start Build B", then "Push to main"). **Builds `2026-11-02d` and `e`**, the owner's answers on it (the CROWN's chance 10%, the aura and its ring kept to its room and off the walls), are on main too (the owner: "Push d and e to main").
     - Its tests are new and updated, and a full run is in its commit (`CHANGELOG.md`).
-    - Two approvals wait on it (section 4), with the readings it took (`OPEN-QUESTIONS.md` §1m).
+    - Its approvals were answered (section 4), with the readings it took (`OPEN-QUESTIONS.md` §1m).
     - It is not playtested.
-  - **Build C** is not started.
-- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 55309c0 (builds `2026-11-02d` and `e` and the following update's draft; the owner: "Push d and e to main"). Build C is next (the owner: "Build C first"); the update after this one is approved in `FOLLOWING-UPDATE.md`.
+  - **Build C is implemented** in build `2026-11-02f`, on the branch (the owner: "Build C first"). It waits on the owner's word for main.
+    - Its tests are new and updated, and a full run is in its commit (`CHANGELOG.md`).
+    - Its readings are in `OPEN-QUESTIONS.md` §1o.
+    - It is not playtested.
+- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 55309c0 (builds `2026-11-02d` and `e` and the following update's draft). Build C (`2026-11-02f`) is on the branch. The update after this one is approved in `FOLLOWING-UPDATE.md`; it becomes the next update when this one closes.
 - **Last updated:** 2026-11-02
 - **What decides the scope:**
   - **In:** everything with an approved design and its numbers.
@@ -141,6 +144,14 @@ Each build is its own commit with its own tests and a full green run before the 
 
 - **Files:** js/breeding.js, js/sidequest.js (`sqDraw`).
 - **Tests:** followerprog (the draws, over many seeded offspring), sidequest (his sprite; the rest unchanged).
+- **Implemented** in build `2026-11-02f` (on the branch):
+  - **Breeding** (js/breeding.js): `breedElement` (an even toss between the parents' elements) and `breedClass` (an even draw over the three); `breedMake(f, rnd)` takes every draw from one source, in the order element, class, then the stats' variations. The lead-parent rule (`breedLead`, `breedType`) is gone. The roster, price, formula and provenance are unchanged.
+  - **Side Quest** (js/sidequest.js): `sqDraw` draws the void walker from `img/evo/hauler.png` with the evolved followers' loader, scale and idle beat, turned toward you, his shadow under him, his glow and plate in his colour. The sheet is asked for when he appears. `sqPortrait` shows the same sheet facing you in the dialogue box. His station's ring sorts under his feet. The saucer drawn in code is gone.
+  - **Also:** the in-game guide's breeding line and its line on Side Quest (look and spot); its stale Vital items sentence (removed 2026-11-01) went with them.
+  - **Tests:**
+    - followerprog: two new checks and two rewritten. New: the draws as pure functions; 600 seeded offspring (half and half by element, a third of each class, the same seed giving the same sequence). Rewritten: "better raised", measured where the cap cannot bind and exact where it always binds; "the act", with the parent in view leading by two levels, so the lead no longer decides.
+    - sidequest: his look, in the world and in the dialogue box, with the sheet in and not in.
+  - **Readings** taken where the design did not say: `OPEN-QUESTIONS.md` §1o. The open point (his picture in the dialogue box) was read as yes.
 
 ## 3. Not in this update, and what each waits on
 
@@ -158,13 +169,14 @@ Each build is its own commit with its own tests and a full green run before the 
 - **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval. Drafted 2026-11-02 (`UNIVERSAL-AND-PLAYER-CARDS.md`, "The 21 new cards' names"). **Approved** the same day: "Approve all 21".
 - **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints. Both are put to the owner with Build B's handoff (2026-11-02), with the readings in `OPEN-QUESTIONS.md` §1m. **Answered:** "Raise to 10%"; the aura and its ring stay in the Mage's room ("It shouldn't be displayed or affected in other rooms"); two auras of one element "Both count" (build `2026-11-02d`).
 - **During Build A:** a screenshot of the words per part. Taken and sent with Build A's handoff. **Answered:** "Move beside the creature" (done in build `2026-11-02b`).
+- **During Build C:** whether Side Quest's picture in the dialogue box changes too (read as yes in build `2026-11-02f`), and a screenshot of him in the Sewers and in the box. Both are put to the owner with Build C's handoff, with the readings in `OPEN-QUESTIONS.md` §1o.
 
 ## 5. Acceptance for the whole update
 
 - [ ] Each build's tests and a full run pass. The one known flaky suite (`tests/visiblearea.js`) is noted if it trips.
 - [x] `COMBAT.md` §1's six fights are measured before and after Build A, and the numbers reported (`COMBAT.md` §7.10, 2026-11-02).
 - [x] Old saves load. A save holding cut Series 2 cards is cleaned once, with its refunds. *(Build B: tests/classcards.js, malformed collections included.)*
-- [ ] The frame budgets in tests/perf.js still hold. *(Builds A and B: held in their full runs.)*
+- [ ] The frame budgets in tests/perf.js still hold. *(Builds A, B and C: held in their full runs.)*
 - [ ] The docs, `CHANGELOG.md` and the Bible match what was built. `OPEN-QUESTIONS.md` and `DECISION-LOG.md` are updated.
 - [ ] Nothing goes to main without the owner's yes.
 

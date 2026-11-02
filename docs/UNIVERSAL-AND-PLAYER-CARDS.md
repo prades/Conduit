@@ -178,7 +178,7 @@ Technician ideas not chosen (2026-11-02): kills refunding part of the wait; one 
   - js/techabilities.js `techCooldown`: the technicians' waits.
   - The world's drawing for the rings and glints; js/cardsui.js and js/cardart.js for the cards' words and look.
 - **Data/save:** the slots save their cards by id. The cut Series 2 cards need a one-time clean-up of saved collections, hands and slots, with the refunds. It must survive old or malformed saves and must not pay twice.
-- **Also:** js/sidequest.js (his shop, and his look: the void walker, `SEWER-QUEST.md`), the Series 2 table in js/cards.js (`EQUIP_SERIES2`, `SERIES-2.md`), js/classes.js (a class switch).
+- **Also:** js/sidequest.js (his shop; his look, the void walker, was built in build `2026-11-02f`, `SEWER-QUEST.md`), the Series 2 table in js/cards.js (`EQUIP_SERIES2`, `SERIES-2.md`), js/classes.js (a class switch).
 - **Performance:** an aura's reach is checked every few frames (as `equipTick` runs every 30), and a follower's stats are remade only when the auras around it change. The rings are a few thin ellipses each frame.
 - **Art/assets:** each family needs its own look on its cards (the design notes: "Class, subclass, and Universal cards should have their own recognizable visual identities").
 

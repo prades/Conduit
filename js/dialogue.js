@@ -134,7 +134,7 @@ function dialogueTap(ex, ey) {
 }
 
 // ── the picture ──
-// the speaker, in the portrait square (cx, cy, s wide): the Crystal's shard (js/facilitystyle.js), the player's own sheet facing you (js/hdsprites.js), Side Quest's saucer (js/sidequest.js), a follower's roster picture (js/commandcenter.js)
+// the speaker, in the portrait square (cx, cy, s wide): the Crystal's shard (js/facilitystyle.js), the player's own sheet facing you (js/hdsprites.js), Side Quest's void walker facing you (js/sidequest.js sqPortrait), a follower's roster picture (js/commandcenter.js)
 function _dlgPortrait(L, cx, cy, s, f) {
     const who = L.id === "unit" ? L.who : L.id;
     if (who === "crystal" && typeof _fpCrystal === "function") { _fpCrystal(cx, cy + s * 0.36, s * 0.72, s * 0.27, L.col, f, 3); return; }
