@@ -1,6 +1,11 @@
 # The next update (draft): damage, class cards, breeding, Side Quest
 
-- **Status:** Proposed: a draft for the owner's approval. Nothing in it is implemented.
+- **Status:** Approved by the owner on 2026-11-02:
+  - the scope as drafted;
+  - the order A, B, C ("Damage first");
+  - names for the 21 new cards drafted by the agent for the owner's approval.
+
+  Build A in progress; nothing is implemented yet.
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at `8a056dd` (the framework docs); the branch is ten design-doc commits ahead, and code is unchanged. The update's builds would be stamped from `2026-11-02a` on (or the date they are built).
 - **Last updated:** 2026-11-02
 - **What decides the scope:**

@@ -569,6 +569,45 @@ Confirmed in a last prompt the same day:
 - Series 2's BLOOM cards are dealt only once the apparatus is in;
 - the apparatus refuses an evolved toxic follower until its class's BLOOM form exists.
 
+## DECISION: The next update's scope and order
+
+- **Date:** 2026-11-02
+- **Status:** Approved; in progress.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, from build `2026-11-01n`
+- **Related feature/docs:** `NEXT-UPDATE.md`
+
+### Context
+The owner: "Can we go ahead and draft a new update that covers a good portion of the necessary updates?" The draft was approved in a prompt.
+
+### Decision
+The next update is three builds, in this order:
+- **A:** the damage system.
+- **B:** the class card families and Series 2 reshaped, with the save clean-up and refunds and the Universal kind retired.
+- **C:** breeding's element and class draws, and Side Quest as the void walker.
+
+Player cards, BLOOM, the new art and the cards' 3D items wait for their designs. The agent drafts the 21 new cards' names for approval before Build B.
+
+### Exact rules
+In `NEXT-UPDATE.md` and the documents it names.
+
+### Alternatives considered
+- Adding BLOOM's first slice (the apparatus, egg conversion, the breeding chance).
+- Shipping the damage system alone first.
+- Quick wins first.
+- Plain working names for the cards, or names from the owner.
+
+### Rationale and trade-offs
+Everything in it is designed down to its numbers. The damage rules come first because the Brawler and Mage cards depend on them.
+
+### Impact
+`NEXT-UPDATE.md` lists the files, tests and risks of each build.
+
+### Follow-up
+Build A; the card names; Builds B and C.
+
+### Supersedes / superseded by
+None.
+
 ## DECISION: BLOOM's creatures: SUNDEW, the lotus lantern, the coral crab; MEND's strength
 
 - **Date:** 2026-11-02
