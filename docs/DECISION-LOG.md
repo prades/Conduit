@@ -655,3 +655,47 @@ When built:
 
 ### Supersedes / superseded by
 None.
+
+## DECISION: Build A to main; the hit words beside the creature; BLINDING DUST keeps its ticks; the 21 card names
+
+- **Date:** 2026-11-02
+- **Status:** Approved (in a prompt, after Build A's handoff)
+- **Branch/build:**
+  - Build A, `2026-11-02a` (commit 2583f5a), fast-forwarded to `main`.
+  - The words, the docs and the names: build `2026-11-02b` on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `COMBAT.md` §7.8 and §7.10, `UNIVERSAL-AND-PLAYER-CARDS.md` ("The 21 new cards' names"), `NEXT-UPDATE.md` section 4, `OPEN-QUESTIONS.md`, `CHANGELOG.md` (2026-11-02 a, b)
+
+### Context
+Build A's handoff asked four questions: main or not yet; where the hit words go (they could overlap the creature's name plate, a screenshot was sent); BLINDING DUST's ticks; and the 21 card names Build B needs (the owner: "You draft, I approve").
+
+### Decision
+- **Main:** "Push to main". Build A went to main as committed.
+- **The hit words:** "Move beside the creature". They sit to its right at its body's height, clear of its name plate (build `2026-11-02b`).
+- **BLINDING DUST:** "Keep the ticks". The moth's special keeps its small toxic ticks; the enemy table is corrected.
+- **The names:** "Approve all 21":
+  - auras: BAND, SIGIL, CROWN by tier;
+  - opportunity cards: PRESSURE SPUR, FAULTLINE TALON, RUPTURE FANG.
+
+### Exact rules
+- The words: `COMBAT.md` §7.10, "The words on screen".
+- The names: `UNIVERSAL-AND-PLAYER-CARDS.md`.
+
+### Alternatives considered
+- The words: keep them over the hit's number (as built in `a`).
+- BLINDING DUST: remove the ticks, as the enemy table had said ("no damage").
+- The names: approve with changes, or redraft.
+
+### Rationale and trade-offs
+- Beside the creature the words never cover its name or level.
+- Kept ticks leave the moth's special as it played before the damage system.
+
+### Impact
+- js/damage.js (`_dmgWords`) and js/drops.js (a text's pixel offset, `dx`).
+- tests/damage.js checks the placement.
+- Build B can start.
+
+### Follow-up
+Build B (`NEXT-UPDATE.md`), using these names.
+
+### Supersedes / superseded by
+Supersedes the enemy table's "BLINDING DUST: no damage" (`COMBAT.md` §7.8, 2026-11-02).

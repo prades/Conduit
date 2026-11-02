@@ -4,6 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **b · The hit words beside the creature; the owner's answers on Build A** (the owner, in a prompt: "Push to main", "Move beside the creature", "Keep the ticks", "Approve all 21"; on the branch only; commit named in git log).
+  - **Main:** Build A (`a`, commit 2583f5a) went to main at the owner's word.
+  - **The hit words** (SLASHING WEAK!, FIRE RESIST) now sit beside the creature: to its right at its body's height, the physical part's word over the elemental part's, clear of its name plate. They drift up slowly (about 18 px in their 40 frames).
+    - js/damage.js `_dmgWords`.
+    - js/drops.js: a world text can be offset sideways in pixels (`dx`), as it could be upward (`dy`).
+  - **BLINDING DUST** keeps its small toxic ticks; COMBAT.md §7.8's enemy table, which said "no damage", is corrected.
+  - **The 21 new card names** for Build B are approved as drafted (UNIVERSAL-AND-PLAYER-CARDS.md).
+  - **Tests:** tests/damage.js checks the words' place.
+    - The full run: 84 of 85 suites passed.
+    - The 85th, tests/carousel.js, failed one check at 1180 px ("a name is cut"). Its recruits get random names, and a long one is cut. It passed both full runs of build a and two of three re-runs alone. It touches nothing this build changed (docs/OPEN-QUESTIONS.md §4).
+  - **Written up:** docs/COMBAT.md §7.8 and §7.10, docs/OPEN-QUESTIONS.md, docs/NEXT-UPDATE.md, docs/DECISION-LOG.md, docs/UNIVERSAL-AND-PLAYER-CARDS.md.
 - **a · The damage system: six damage types, weaknesses and resistances, every follower hit part physical and part elemental** (the owner's design of 2026-11-02, approved in prompts, docs/COMBAT.md §7; docs/NEXT-UPDATE.md Build A, "Damage first"; on the branch only; commit named in git log).
   - **Six types:** Slashing, Piercing, Projectile, Crushing, Earthquake, Elemental. Every attack in the game says which it is (COMBAT.md §7.10 lists them): a follower's by its form (§7.4), a creature's by its race (§7.8), yours and the turrets' by the weapon (§7.8).
   - **Weak ×1.3, resists ×0.7:**

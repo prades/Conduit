@@ -187,8 +187,10 @@ function _dmgWords(t, ptype, pm, el, em) {
     if (t._dmgWordAt !== undefined && f - t._dmgWordAt < 12 && f >= t._dmgWordAt) return;
     t._dmgWordAt = f;
     let n = 0;
-    // stacked straight up over the hit's number (dy is in pixels): the physical part's word, then the elemental part's above it
-    const put = (text, good) => { floatingTexts.push({ world: true, x: t.x, y: t.y, dy: -16 - 13 * n, text, color: good ? "#ffcc00" : "#88aaff", size: 11, life: 40, vy: -0.04 }); n++; };
+    // BESIDE the creature, clear of its name plate (the owner, 2026-11-02): to its right at its body's height (dx, dy in pixels), each word starting a little past its side
+    // (centred text: half its width, about 3.3 px a letter at 11 px, plus the gap), the physical part's word over the elemental part's; they drift up slowly (about 18 px
+    // in their 40 frames), so they stay beside the body and never climb into the name plate
+    const put = (text, good) => { floatingTexts.push({ world: true, x: t.x, y: t.y, dx: 28 + String(text).length * 3.3, dy: 10 + 13 * n, text, color: good ? "#ffcc00" : "#88aaff", size: 11, life: 40, vy: -0.015 }); n++; };
     if (ptype && pm !== 1) put(DMG_LABEL[ptype] + (pm > 1 ? " WEAK!" : " RESIST"), pm > 1);
     if (el && em !== 1) put(String(el).toUpperCase() + (em > 1 ? " WEAK!" : em === 0 ? " IMMUNE" : " RESIST"), em > 1);
 }

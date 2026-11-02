@@ -52,9 +52,9 @@ Each follower class has a card family of its own; the player has Player cards.
 - **Several openings on one hit add up** (the owner, 2026-11-02): each weakness the hit meets adds the card's bonus again. A hit can meet four kinds: an element match-up, a race weak to its physical type, a race weak to Elemental, and a stunned or sleeping target. So a Prototype card can add up to +160% on one hit.
 - **Three tiers** (2026-11-02): Refined +20%, Precision +30%, Prototype +40%: three opportunity cards.
 
-### The 21 new cards' names (Proposed, 2026-11-02: drafted by the agent for the owner's approval)
+### The 21 new cards' names (Approved 2026-11-02)
 
-The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). None is approved yet.
+The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). The agent drafted them; the owner answered "Approve all 21" (`DECISION-LOG.md`).
 
 - **The auras** climb a worn item, tier by tier: a BAND at Refined, a SIGIL at Precision, a CROWN at Prototype (the one that also spreads the element's status). The rarity chip shows the tier too.
 - **The opportunity cards** climb a Brawler's weapon: a SPUR, a TALON, a FANG. Each one presses, splits, then breaks open a weakness.

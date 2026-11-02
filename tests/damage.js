@@ -179,13 +179,16 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     });
 
     group('THE WORDS, AND WHAT KEEPS THE OLD RULE');
-    check('a word for each part that met a weakness or a resistance; ice on core says IMMUNE; one set every 12 frames', () => {
+    check('a word for each part that met a weakness or a resistance, beside the creature (the owner, 2026-11-02); ice on core says IMMUNE; one set every 12 frames', () => {
         const r = J(`(function(){ __noWords(); frame = 1000; const s = __src(); const t = __tgt({ speciesName: 'scorpion', element: 'toxic' });
-            dmgApply(t, 10, s, 'fire', DMG_HIT_MAIN); const first = floatingTexts.map(x => x.text);
+            dmgApply(t, 10, s, 'fire', DMG_HIT_MAIN); const first = floatingTexts.map(x => x.text), place = floatingTexts.map(x => [x.dx, x.dy, x.text.length]);
             dmgApply(t, 10, s, 'fire', DMG_HIT_MAIN); const again = floatingTexts.length;
             __noWords(); frame = 2000; dmgApply(__tgt({ element: 'core' }), 10, __src({ element: 'ice', evolved: 'maw' }), 'ice', DMG_HIT_MAIN);
-            return { first, again, ice: floatingTexts.map(x => x.text) }; })()`);
+            return { first, place, again, ice: floatingTexts.map(x => x.text) }; })()`);
         sameJSON(r.first, ['PIERCING RESIST', 'FIRE RESIST'], 'QUILLSTONE on a toxic scorpion: Piercing resisted; fire on toxic ×0.7 × Elemental weak ×1.3 = 0.91');
+        // beside it: to its right, each word's left edge (its centre less half its width, about 3.3 px a letter) past the creature's side; the elemental part's word under the physical part's
+        ok(r.place.every(p => p[0] - p[2] * 3.3 >= 24), 'a word reaches over the creature: ' + JSON.stringify(r.place));
+        ok(r.place[1][1] > r.place[0][1], 'the elemental part\'s word is not under the physical part\'s: ' + JSON.stringify(r.place));
         ok(r.again === 2, 'no second set within 12 frames');
         sameJSON(r.ice, ['ICE IMMUNE'], 'ice on core');
     });

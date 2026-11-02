@@ -3,10 +3,15 @@
 - **Status:** Approved by the owner on 2026-11-02:
   - the scope as drafted;
   - the order A, B, C ("Damage first");
-  - names for the 21 new cards drafted by the agent for the owner's approval.
+  - names for the 21 new cards drafted by the agent for the owner's approval (approved as drafted, 2026-11-02: "Approve all 21").
 
-  **Build A is implemented** in build `2026-11-02a`, on the branch only. Its tests and a full run are in its commit, and its before-and-after numbers are in `COMBAT.md` §7.10. It is not playtested. Builds B and C are not started; B waits on the 21 card names (section 4).
-- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at `8a056dd` (the framework docs). The branch is twelve design-doc commits ahead, plus Build A's commit (`2026-11-02a`). The update's later builds are stamped from `2026-11-02b` on (or the date they are built).
+  - **Build A is implemented** in build `2026-11-02a` and is on main (commit 2583f5a; the owner: "Push to main").
+    - Its tests and a full run are in its commit.
+    - Its before-and-after numbers are in `COMBAT.md` §7.10.
+    - It is not playtested.
+  - **Build `2026-11-02b`, on the branch:** the owner's answers on it. The hit words now sit beside the creature; BLINDING DUST keeps its ticks.
+  - **Builds B and C** are not started. B's names are approved, so it can start.
+- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 2583f5a (Build A, `2026-11-02a`). The branch adds build `2026-11-02b`. Build B will be stamped `2026-11-02c` (or the date it is built).
 - **Last updated:** 2026-11-02
 - **What decides the scope:**
   - **In:** everything with an approved design and its numbers.
@@ -128,14 +133,14 @@ Each build is its own commit with its own tests and a full green run before the 
 ## 4. Approvals needed before or during the builds
 
 - **This scope and order** (A, then B, then C).
-- **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval. Drafted 2026-11-02 (`UNIVERSAL-AND-PLAYER-CARDS.md`, "The 21 new cards' names"); waiting on the owner.
+- **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval. Drafted 2026-11-02 (`UNIVERSAL-AND-PLAYER-CARDS.md`, "The 21 new cards' names"). **Approved** the same day: "Approve all 21".
 - **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints.
-- **During Build A:** a screenshot of the words per part. Taken and sent with Build A's handoff; waiting on the owner.
+- **During Build A:** a screenshot of the words per part. Taken and sent with Build A's handoff. **Answered:** "Move beside the creature" (done in build `2026-11-02b`).
 
 ## 5. Acceptance for the whole update
 
 - [ ] Each build's tests and a full run pass. The one known flaky suite (`tests/visiblearea.js`) is noted if it trips.
-- [ ] `COMBAT.md` §1's six fights are measured before and after Build A, and the numbers reported.
+- [x] `COMBAT.md` §1's six fights are measured before and after Build A, and the numbers reported (`COMBAT.md` §7.10, 2026-11-02).
 - [ ] Old saves load. A save holding cut Series 2 cards is cleaned once, with its refunds.
 - [ ] The frame budgets in tests/perf.js still hold.
 - [ ] The docs, `CHANGELOG.md` and the Bible match what was built. `OPEN-QUESTIONS.md` and `DECISION-LOG.md` are updated.

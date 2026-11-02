@@ -241,7 +241,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
   - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`).
   - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).
   - Mockups come first, for your approval.
-- **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a` on the branch, not on main; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
+- **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;
     - the triangle on the elemental part only;
@@ -256,12 +256,14 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - a word per part on screen;
     - bosses use their race's row.
   - Answered later on 2026-11-02: the retired forms take their replacement's row when hit.
-  - **Built in 2026-11-02a (Build A).** Readings made while building it, for you to confirm (docs/COMBAT.md §7.10):
-    - **BLINDING DUST deals small toxic ticks in the code.** The approved enemy table said "no damage"; the ticks were kept as they are, like other ticks. Remove them?
-    - **An egg Mage's shot** is typed Projectile. The rule "an egg hits with its scythe legs: Slashing" is read as its melee.
-    - **A player's weapon with an element** (the laser on a selected element) still sets the triangle on the whole hit, as before; the player's hits are not split.
-    - **These stay as they were:** a Series 2 card's echo (cleave, chain, nova), and the poison and dust ticks.
-    - **The words' look** (`NEXT-UPDATE.md` section 4): a screenshot was sent with Build A. The words stack over the hit's number, where they can meet the creature's name plate. Keep them there, or move them?
+  - **Built in 2026-11-02a (Build A).** Readings made while building it (docs/COMBAT.md §7.10):
+    - **Answered 2026-11-02:**
+      - BLINDING DUST's small toxic ticks: "Keep the ticks". The enemy table is corrected.
+      - The words' look: "Move beside the creature". They sit to its right at body height, clear of the name plate (build `2026-11-02b`).
+    - **Standing unless you say otherwise:**
+      - **An egg Mage's shot** is typed Projectile. The rule "an egg hits with its scythe legs: Slashing" is read as its melee.
+      - **A player's weapon with an element** (the laser on a selected element) still sets the triangle on the whole hit, as before; the player's hits are not split.
+      - **These stay as they were:** a Series 2 card's echo (cleave, chain, nova), and the poison and dust ticks.
   - Still open (§7.9): the later quest lines' elements, the Player cards' elemental part, the icons.
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
 - **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.
@@ -277,6 +279,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **`docs/CARD-SYSTEM.md` (on the `design-notes` branch only)** was updated and pushed to `design-notes` in round 2 (never to main): everything built, and every answer above.
 - **Game Bible (`bible.html`)** was brought up to date on 2026-10-30, at your request ("update the game Bible to reflect all of the different installations"), after your earlier "not yet". New in part 05: *Subclasses*, *Equip cards: slots, the hand and the CARDS screen* (with a picture of the screen, `img/bible/ui/cards_sheet.webp`, made by `design/bible/pictures.js cards`), *The cards, and what they do* (all 24, from the code's own tables) and *Booster packs, found cards and the market*. Changed in place: the table of statuses (the weakness, the glitch and the stuns), the signature moves (the rebuilt Quill Burst, and the Frost Maw's and the Manta's stuns, which now work), a respawn keeping the role and the cards, the roster's CARD 1, CARD 2 and SUBCLASS, the dock's CARDS button, the saves (the run's `cards`, the collection at `conduit_fp_cards`), the economy (credits, the pack, the unlock), the file list (70 scripts), the tests (72 suites, 27 in a real browser) and the open lists. Every number it quotes about cards is tagged and checked against the code by `tests/bible.js` (2,273 numbers). The older draft in the session scratchpad is obsolete. The picture of the CARDS screen is the only new one: the older pictures (the HUD's dock, the Command Center) are as they were made, so they do not show the CARDS button or the card slots.
 - **`tests/visiblearea.js`** is a known flaky real-browser timing test (about 1 run in 14 on main).
+- **`tests/carousel.js`** (found 2026-11-02): its 1180 px check "a name is cut" fails now and then, because its three recruits get random names and a long one is cut on the strip. It failed 1 run in 4 that day. A fix would seed the test's names, or have the strip fit any name; neither is done yet.
 - **This file** is on the working branch (`claude/start-game-project-HSh7Z`) and goes to main with the builds the owner sends there (main has had it since build `h`).
 
 ## 5. Already decided: please do not reopen

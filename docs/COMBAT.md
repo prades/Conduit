@@ -298,7 +298,7 @@ The owner asked for a draft of the enemy side and approved it as drafted; the re
 | Scorpion | Piercing (stinger) | VENOM LANCE: Piercing |
 | Spider | Piercing (fangs); its shot: Projectile | WEB SNARE: no damage |
 | Mantis | Slashing (scythes) | BLADE FLURRY: Slashing |
-| Moth | Crushing (wing buffet) | BLINDING DUST: no damage |
+| Moth | Crushing (wing buffet) | BLINDING DUST: small toxic ticks, left on the old rule (the owner kept them, 2026-11-02; this table first said "no damage") |
 
 - **The Toxic Queen** fights as an ant; her bomb is Earthquake and her spit Projectile. **A boss uses its race's row** in §7.3.
 - A scout's LEAP does no damage.
@@ -397,12 +397,18 @@ PETAL BLAZE, the one move of their own, is Elemental.
 - So a follower at its class's average stats does exactly what it did before, evolved or not, whatever its lean. tests/damage.js checks this on eight forms.
 - A follower whose stats differ from its class's average gains or loses with them: that is the skew of §7.6, item 3.
 
-**Readings made while building it, for the owner to confirm** (`OPEN-QUESTIONS.md`):
-- BLINDING DUST deals small toxic ticks in the code, though §7.8 says "no damage". They were kept.
-- An egg Mage's shot is Projectile ("an egg hits with its scythe legs" read as its melee).
-- A player's weapon with an element (the laser on a selected element) keeps the triangle on the whole hit.
+**Readings made while building it** (`OPEN-QUESTIONS.md`):
+- **Answered (2026-11-02):** BLINDING DUST deals small toxic ticks in the code, though §7.8 said "no damage". The owner kept them ("Keep the ticks").
+- **Standing unless the owner says otherwise:**
+  - An egg Mage's shot is Projectile ("an egg hits with its scythe legs" read as its melee).
+  - A player's weapon with an element (the laser on a selected element) keeps the triangle on the whole hit.
 
-**The words on screen:** each word stacks straight up over the hit's number, the physical part's first: SLASHING WEAK! in gold, FIRE RESIST in blue, ICE IMMUNE for ice on core. A target shows one set every 12 frames, so a flurry does not pile them up. They replace the old WEAK! and RESIST for every hit that says what it is.
+**The words on screen** (placed beside the creature in build `2026-11-02b`; the owner: "Move beside the creature"):
+- **What they say:** a word for each part that met a weakness or a resistance. SLASHING WEAK! is gold, FIRE RESIST is blue, and ICE IMMUNE marks ice on core.
+- **Where they sit:** to the creature's right, at its body's height, the physical part's word over the elemental part's. Each starts a little past the creature's side, clear of its name plate. They drift up slowly (about 18 px in their 40 frames), so they never climb into the plate.
+- **How often:** one set per target every 12 frames, so a flurry does not pile them up.
+- **What they replace:** the old WEAK! and RESIST, for every hit that says what it is.
+- In build `2026-11-02a` the words stacked over the hit's number, where they could cover the name plate.
 
 **Measured before and after** (`NEXT-UPDATE.md` Build A, item 8). tests/measure_damage.js (run by hand, not in the full run) measures three things:
 - each follower class's damage in 15 s at level 10 (evolved), against a still creature of each race;

@@ -32,7 +32,7 @@ function onPredatorDeath(predator) {
 function floatingTextScreen(t) {
     if (!t.world) return [t.x, t.y];
     const W = canvas.width / 2, H = canvas.height / 2, lift = typeof facilityLiftRel === "function" ? facilityLiftRel(t.x, t.y) : 0;
-    return [(t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W, (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H + TILE_H - 60 - lift + (t.dy || 0)];
+    return [(t.x - player.visualX - (t.y - player.visualY)) * TILE_W + W + (t.dx || 0), (t.x - player.visualX + (t.y - player.visualY)) * TILE_H + H + TILE_H - 60 - lift + (t.dy || 0)];   // (dx, dy: pixels off the unit, e.g. a hit's words beside it, js/damage.js)
 }
 // ONE VOICE. A banner is a text pushed at the centre of the screen. Only the oldest batch shows and counts down — texts pushed on the same frame are one batch, so a title and its line stay together — and the
 // rest wait their turn. While others wait, a batch gets at most BANNER_QUEUED_LIFE frames. A banner already waiting with the same text is not queued twice.
