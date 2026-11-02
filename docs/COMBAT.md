@@ -123,3 +123,112 @@ Pack 1's Precision cards (docs/TUTORIAL.md, "Equip cards") set a status on a cre
 The burn's ticks reach the creature through `applyDamage` with no attacker, so a creature's defense takes them down like any hit and a kill by a tick is credited to whoever hit it last. Siphon is not a status: it heals the follower (`healUnit`) by a tenth of the health the hit really took.
 
 Tests: tests/packs.js (each status alone, refreshed and not stacked, a stronger one kept, the glitch against a bite and an ability, the stun, a fight with every card), tests/evolution.js (the real stuns of the Maw and the Manta).
+
+## 7. Damage types, race weaknesses, and the physical and elemental parts of a hit (designed 2026-11-02; nothing built)
+
+- **Status:** Designed: the six damage types, what each race is weak to and resists, each follower attack's type, and the owner's rule that every hit is part physical and part elemental (§7.2 to §7.5). **Proposed**, awaiting the owner's approval: how the two parts are worked out (§7.6). Not implemented.
+- **Branch/build:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`.
+- **Decision:** `DECISION-LOG.md`, "Damage types, race weaknesses, and every hit part physical, part elemental". The Brawler's opportunity cards use this chart (`UNIVERSAL-AND-PLAYER-CARDS.md`).
+
+ASKED (2026-11-02): *"category 1 is slashing, piercing, and projectiles ... the next damage category is crushing slash earthquake damage. And then the third category is elemental damage. And each of these ... races has their own weakness and resistance to each of these."* Then: *"We can separate it into basically six different types of damage, if the game can handle it. Now, we need to basically make attack types for each of our followers and their alternate attacks, and talk about what each species is weak to."* Of the draft of §7.3 and §7.4: *"That looks really good."*
+
+### 7.1 What the code does today (build `2026-11-01n`)
+
+- **No damage types.** A hit carries one element, its own or its attacker's, and the element triangle multiplies the whole hit: ×1.3, ×0.7, or ×0 for ice on core (js/helpers.js `applyDamage`, js/elements.js `getElementMultiplier`).
+- **No race weaknesses.** A beetle differs only by extra defense (`BEETLE_DEFENSE`, js/levels.js).
+- **Each attack reads one stat:**
+  - a Brawler's or Technician's plain hit: ATK × 0.25 (js/combat.js `followerAttack`);
+  - its element's physical move: ATK × 0.35 to 0.6; its element's special: SP.ATK × 0.12 to 0.7 (js/elements.js);
+  - a Mage's shot: SP.ATK × 0.5 (js/npc.js);
+  - every signature move, the Mages' included: `power`, which is ATK (js/evolution.js, js/firebombs.js);
+  - THERMITE DRILL reads ATK, the blight pools SP.ATK (js/techabilities.js).
+- **Class shows in the stats through personality** (js/species.js `PERSONALITIES`; the numbers are in §7.6). A level raises every stat alike. Evolving multiplies health and ATK by 1.25, not SP.ATK (js/levels.js `_applyFollowerLevel`).
+
+### 7.2 The six damage types
+
+Slashing, Piercing and Projectile (the owner's category 1); Crushing and Earthquake (category 2); Elemental (category 3).
+
+### 7.3 What each race is weak to and resists
+
+Weak: ×1.3. Resists: ×0.7. Anything else: ×1. Every form of a race, nymph to boss, uses its race's row.
+
+| Race | Weak to | Resists |
+|---|---|---|
+| Ant | Crushing, Earthquake | Elemental |
+| Beetle | Crushing, Earthquake, Piercing ✦ | Slashing, Projectile |
+| Scorpion | Elemental | Slashing, Piercing, Projectile |
+| Spider | Slashing, Piercing, Projectile | Elemental |
+| Mantis | Slashing, Piercing, Projectile | Crushing, Earthquake |
+| Moth | Elemental, Projectile ✦ | Crushing, Earthquake |
+
+✦ Added when the three categories became six: drills and spikes crack a beetle's shell; a moth is shot out of the air.
+
+### 7.4 The followers' attacks
+
+A follower's **main attack** is its everyday hit: a Brawler's or Technician's plain hit and its element's physical move, or a Mage's shot. Its **alternates** are its signature move and, for a Technician, its ability. The types follow each creature's body.
+
+| Form | Class · element | Main attack | Alternates |
+|---|---|---|---|
+| QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST: Projectile |
+| FROST MAW | Brawler · ice | Slashing (ice jaws) | CHOMP: Piercing |
+| STATIC ORB | Brawler · electric | Crushing (rams) | STATIC RUSH: Crushing |
+| JELLY RAM | Brawler · core | Crushing (ram) | none yet |
+| SEEPER | Brawler · toxic | Slashing (lash) | ERUPTION: Earthquake |
+| RIFT MIMIC | Brawler · flux | Slashing (claws) | GRAVITY SLAM: Earthquake |
+| THUNDERHEAD | Mage · electric | Elemental | ARC VOLLEY: Elemental |
+| VOIDSTAR | Mage · flux | Elemental | SINGULARITY SHOT: Elemental |
+| EMBER HOOD | Mage · fire | Elemental | HEXFIRE: Elemental |
+| RIMESTAR | Mage · ice | Projectile (ice shards) | none yet |
+| HORNSHELL | Mage · core | Projectile (horn spines) | none yet |
+| ROTSHARD | Mage · toxic | Projectile (rot shards) | CORRODE SHOT: Elemental |
+| HAMMER SLUG | Technician · core | Crushing (hammer) | PHOTONIC SHIELD: no damage |
+| GOO PROXY | Technician · flux | Crushing (goo slam) | TELEGRAB: no damage |
+| THERMITE BURROWER | Technician · fire | Piercing (drill) | THERMITE DRILL: Piercing |
+| BLIGHT SPIDER | Technician · toxic | Piercing (fangs) | BLIGHT pools: Elemental |
+| HOVER SHELL | Technician · electric | Crushing (ram) | KINETIC LAUNCHER: Earthquake (the landing) |
+| IGLOO SKATER | Technician · ice | Slashing (skate blades) | FROST PATCH: Elemental |
+
+- **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS too), the static field, the ice burst, the singularity, the smoke bomb.
+- **An egg** (not yet evolved) hits with its scythe legs: Slashing.
+- **The player's guns and the turrets:** Projectile.
+
+### 7.5 Every hit is part physical, part elemental (the owner's rule)
+
+ASKED (2026-11-02), of the tables above: *"each element or each creature is more elemental than the others. And that should be reflected in their stats. So, and that means every single one of their attacks is half special and half physical, meaning that, and it's skewed depending on how it's laid out. And special attack is basically elemental damage. So that way, whenever we have a something that increases special attack, that's how it's calculated on, like, a brawler who probably has less elemental power."*
+
+- Every attack is part physical and part special, and **special attack is elemental damage**.
+- **Creatures differ in how elemental they are, and their stats show it.**
+- So **anything that raises SP.ATK raises only the elemental part of a hit**, and a Brawler, with less elemental power, gains less from it.
+
+### 7.6 How the two parts are worked out (Proposed: first guesses for the owner to approve)
+
+1. **Two parts.** The physical part comes from ATK and has the attack's type (§7.4). The elemental part comes from SP.ATK: it is Elemental, in the creature's element.
+2. **Half and half.** An attack does its own number × (½ ATK + ½ SP.ATK). An attack §7.4 types Elemental leans elemental: × (¼ ATK + ¾ SP.ATK), and its physical quarter has no type (no race is weak to it or resists it).
+3. **The stats skew it.** On a half-and-half attack the elemental share is SP.ATK ÷ (ATK + SP.ATK). A follower's card shows the share with its stats (for example ELEMENTAL 25%). With today's personalities, at level 1 (a level raises both stats alike; a bred follower's stats differ by a few percent):
+
+| Class | Personality | ATK | SP.ATK | Elemental share, half-and-half attack | Elemental share, Elemental attack |
+|---|---|---|---|---|---|
+| Brawler | wild | 18 | 6 | 25% | 50% |
+| Brawler | aggressive | 20 | 10 | 33% | 60% |
+| Technician | stoic | 10 | 8 | 44% | 71% |
+| Mage | cautious | 8 | 8 | 50% | 75% |
+| Mage | cunning | 10 | 15 | 60% | 82% |
+
+4. **What each multiplier touches:**
+   - **The race chart (§7.3):** the physical part by its type; the elemental part by the Elemental column.
+   - **The element triangle:** the elemental part only. Ice on core: the elemental part does nothing and the physical part lands (today the whole hit does nothing).
+   - The race chart and the triangle on one elemental part multiply (×1.69 at most).
+   - **Defense:** the whole hit, as today.
+   - **Cards:** +ATK lifts the physical part, +SP.ATK the elemental part, +DAMAGE DEALT the whole hit. A Brawler's opportunity bonus: the whole hit.
+   - A burn's tick, a pool's tick and a set amount (a thrown technician) stay as they are.
+5. **Evolving** multiplies SP.ATK by 1.25 as well as health and ATK, so an evolved creature is no less elemental.
+6. **Each attack's own number is retuned** when this is built, so a creature's damage stays about where it is. With today's numbers a wild Brawler's main attack would lose a third and its element special would gain half.
+
+**What it does, for example.** A +10% SP.ATK card gives a wild Brawler's Slashing main attack +2.5% damage, and a cunning Mage's Elemental main attack +8%. Element match-ups matter less to Brawlers (a fire Brawler on a flux creature: about ×1.1, today ×1.3) and still matter to Mages (about ×1.25). The Mage auras' +5% ATK (`UNIVERSAL-AND-PLAYER-CARDS.md`) lifts physical parts only: about +4% on a Brawler's hit, +1% on a Mage's.
+
+### 7.7 Not covered yet (open)
+
+- The owner's approval of §7.6. Whether each form should tilt its stats further than its personality does (THUNDERHEAD more elemental than RIMESTAR, for example).
+- Enemies' attacks: do they have types, and are followers or the player weak to any? Neither has a race in this chart.
+- The player's melee (the gauntlet, the lash, the arc), the Mutator's clone's bite and the serum: their types. The player has no SP.ATK: do Player cards give the player's attacks an elemental part?
+- How a weakness shows on screen: WEAK! and RESIST speak for the element triangle only today.

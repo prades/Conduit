@@ -216,7 +216,7 @@ Supersedes, in part, "Universal and Player cards: the names and the slots" (2026
 ## DECISION: Card families by class: Mage auras, Brawler opportunity, Technician cooldowns
 
 - **Date:** 2026-11-02
-- **Status:** Approved (design); not implemented. The Brawler cards wait on a damage-type chart that is not in this repository.
+- **Status:** Approved (design); not implemented. The Brawler cards wait on a damage-type chart that is not in this repository. (The chart was designed on 2026-11-02: "Damage types, race weaknesses, and every hit part physical, part elemental", below.)
 - **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
 - **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` (the specification, section 2), `OPEN-QUESTIONS.md` §1l and §3
 
@@ -249,3 +249,49 @@ The specification's open questions (section 11), first of all the damage-type ch
 
 ### Supersedes / superseded by
 Supersedes, in part, "Universal cards as auras; the player wears Player cards only" (2026-11-02): auras are now the Mages' cards, the element auras only.
+
+## DECISION: Damage types, race weaknesses, and every hit part physical, part elemental
+
+- **Date:** 2026-11-02
+- **Status:** Approved (design): the six damage types, the race chart, each follower attack's type, and the rule that every hit is part physical and part elemental. **Proposed:** how the two parts are worked out (`COMBAT.md` §7.6). Not implemented.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `COMBAT.md` §7 (the rules), `UNIVERSAL-AND-PLAYER-CARDS.md` (the Brawler's opportunity cards use the chart), `OPEN-QUESTIONS.md` §3
+
+### Context
+The Brawler's opportunity cards needed the chart the owner described: "category 1 is slashing, piercing, and projectiles ... the next damage category is crushing slash earthquake damage. And then the third category is elemental damage. And each of these ... races has their own weakness and resistance to each of these." Then: "We can separate it into basically six different types of damage, if the game can handle it. Now, we need to basically make attack types for each of our followers and their alternate attacks." Of the draft chart and attack table: "That looks really good." Then: "every single one of their attacks is half special and half physical ... and it's skewed depending on how it's laid out. And special attack is basically elemental damage."
+
+### Decision
+Six damage types. Each enemy race is weak to some (×1.3) and resists some (×0.7). Every follower attack has a type that follows the creature's body. Every hit is part physical (from ATK, in its type) and part elemental (from SP.ATK, in the creature's element). Creatures differ in how elemental they are, and their stats show it. Raising SP.ATK raises only the elemental part.
+
+### Exact rules
+In `COMBAT.md` §7: the types (§7.2), the race chart (§7.3), the followers' attacks (§7.4), the owner's rule (§7.5). How the parts are worked out (§7.6) is a proposal, not yet approved:
+- half from ATK and half from SP.ATK, or a quarter and three quarters for an Elemental attack;
+- the element triangle on the elemental part only;
+- evolving raises SP.ATK too.
+
+### Alternatives considered
+- Three damage categories, as first described, instead of six types.
+- Each attack keeping one stat, and the element triangle on the whole hit (today's code).
+- The triangle on Elemental hits only, with no split. This was asked before the owner's rule, which answers it.
+- A set elemental share per class or per form, instead of one read from each creature's ATK and SP.ATK.
+
+### Rationale and trade-offs
+Bodies against races and elements against elements give each class its own weakness to exploit: a Brawler's hits lean on the race chart, a Mage's on the triangle. Reading the split from ATK and SP.ATK uses the stats a creature already has, so how elemental it is shows there. The cost: every attack's damage shifts and needs retuning, and element match-ups matter less to Brawlers.
+
+### Impact
+When built:
+- js/helpers.js `applyDamage` and js/elements.js;
+- js/combat.js, and js/npc.js (the Mage's shot);
+- the signature moves: js/evolution.js, js/firebombs.js;
+- js/techabilities.js, and js/levels.js (evolving);
+- the enemy races (js/predator.js);
+- the roster card and INFO;
+- the combat and card tests.
+
+### Follow-up
+- The owner's approval of `COMBAT.md` §7.6.
+- The open items in §7.7.
+- The two card questions the split raises (`UNIVERSAL-AND-PLAYER-CARDS.md` section 11, questions 12 and 13).
+
+### Supersedes / superseded by
+None. It answers the first open question of "Card families by class" (the chart).

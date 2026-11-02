@@ -187,7 +187,7 @@ Asked: the shop "in a new menu on the card menu called shop"; the hand and the c
 - **YOU is pinned first in the strip**, before the squad, whatever the filters; ◂ ▸ still walk the creatures only (from YOU they go to the first or the last).
 - **The player's card shows its hits** (3 / 3 HITS: the player's health is a count of hits, not hit points), its class and rank once chosen, and its two cards as mini cards.
 - **Open: the player's slots take Universal cards only** (the rule chosen on 2026-10-30), and **no real card is Universal yet**: Pack 1 is element cards, Series 2 species and class cards, the Crystalline six class cards. Only the test cards (`?cards`) can be worn by the player today. Should some cards fit the player (a Universal series, or any card), or does the player wait for Universal cards?
-  - **Designed 2026-11-01 and 2026-11-02** (not built): each follower class gets a card family. **Mages** wear their element's aura (+5% to +10% attack damage to every follower near). **Brawlers'** opportunity cards add +20% to +40% to a hit that exploits a weakness. **Technicians'** cards shorten waits and add charges. The player's two slots take **Player cards** only, for now: 18 elemental roles. The rules and the open questions, first of all the damage-type chart the Brawlers need: `UNIVERSAL-AND-PLAYER-CARDS.md`.
+  - **Designed 2026-11-01 and 2026-11-02** (not built): each follower class gets a card family. **Mages** wear their element's aura (+5% to +10% attack damage to every follower near). **Brawlers'** opportunity cards add +20% to +40% to a hit that exploits a weakness. **Technicians'** cards shorten waits and add charges. The player's two slots take **Player cards** only, for now: 18 elemental roles. The rules and the open questions: `UNIVERSAL-AND-PLAYER-CARDS.md`. The damage-type chart the Brawlers need was designed on 2026-11-02: `COMBAT.md` §7.
 
 ## 2. Newly open
 
@@ -198,11 +198,14 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
 - **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) and Player cards (the player's elemental roles) are designed, not built: `UNIVERSAL-AND-PLAYER-CARDS.md` (its open questions, section 11). (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
+- **Damage types, race weaknesses, and every hit part physical, part elemental** (designed 2026-11-02, not built; `COMBAT.md` §7). Six types, each race's weaknesses and resistances, and each follower attack's type are approved, and so is your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
+  - **Waiting on you:** how the two parts are worked out (§7.6). The proposal: half from ATK and half from SP.ATK, or a quarter and three quarters for an Elemental attack; the element triangle on the elemental part only; evolving raises SP.ATK too.
+  - Still open: §7.7, and two card questions the split raises (`UNIVERSAL-AND-PLAYER-CARDS.md` section 11, questions 12 and 13).
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
 - **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.
 - **Card art:** the design asks for low-poly 3D artwork and kanji-inspired graphics. One card has its 3D item (EMBER PLATING, live since build `j`); the other Pack 1 items are next, then Series 2's. No kanji.
 - **A phone's CARDS screen and slots.**
-- **Jelly's damage profile and the universal attack index:** both listed as missing in the Notion archive.
+- **Jelly's damage profile and the universal attack index:** both listed as missing in the Notion archive. The followers' attack table (`COMBAT.md` §7.4, 2026-11-02) may cover part of the attack index. It was not compared with the archive, because the Notion connector failed to connect this session.
 
 ## 4. Documents and records out of step
 
