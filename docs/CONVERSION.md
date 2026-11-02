@@ -29,9 +29,32 @@ Then, asked what "Greenshire" meant: "what I meant to say there was kind of be i
 - **A seventh element**, beside fire, toxic, electric, ice, flux and core: life-giving, a medical substance made from toxin with the poison filtered out.
 - **Where it comes from:** only the conversion apparatus, by breeding and by converting a toxic follower. Never from recruits, the posts' eggs or enemies.
 - **Its match-ups:** outside the two triangles. No element beats it and it beats none: ×1 both ways (`COMBAT.md` §7).
-- **Its status, MEND:** a BLOOM hit heals the most hurt ally nearby a little. How much and how near are to tune.
+- **Its status, MEND:** every BLOOM hit heals the most hurt ally within 4 tiles by 2% of that ally's max health. BLOOM creatures have no other trait: the owner passed over Regrowth, Seed on fall, Purify and Thorns.
 - **Its colour:** blossom pink, `#ff7ab8`.
 - **Its forms:** a BLOOM Brawler, Mage and Technician, designed one at a time for the owner's approval. Until a class has its BLOOM form, the class draw skips that class (below).
+
+### BLOOM's creatures (concepts in words, 2026-11-02; pictures come later)
+
+The owner chose these in prompts. The names are working names; the bodies are to be modelled for approval (`ART-PROCESS.md`).
+
+| Form | Class | Body | Subclass | Main attack | Its move or ability |
+|---|---|---|---|---|---|
+| **SUNDEW** | Brawler | A black pitcher-shaped shell holding a pool of pink nectar | Mollusk | Slashing (its barbed lip) | **CONSUME** (below) |
+| **Lotus lantern** (name to come) | Mage | A floating black lotus, its petals pink crystal round a glowing heart | Elemental | Elemental (seed-light) | **SEEDFALL**: glowing seeds rain on an area; enemies there are hurt, allies there are mended |
+| **Coral crab** (name to come) | Technician | A black crab carrying a living pink coral on its back | Crustacean | Crushing (its claws clamp) | **REEF**, 60-second wait (below) |
+
+- **SUNDEW's CONSUME:** the owner: it "takes 75% [less] damage whenever it has consume[d] somebody when it uses its ability in the brawler form".
+  - Every 15 seconds, it swallows an enemy whole: anything but a boss.
+  - For 5 seconds the catch is out of the fight and takes damage every second inside, then is spat out if alive.
+  - While SUNDEW holds a catch, it takes 75% less damage.
+- **The coral crab's REEF:** it fires little coral shards, and coral grows where they land.
+  - **In a fight:** a coral outcrop for 20 seconds. Allies beside it are mended, enemies cannot pass it, and it can be stood on to cross a gap.
+  - **Getting around:** the owner: "The little shards that the new crustacean shoots should be able to allow players to climb up in new areas". The coral lets the player climb up to new, higher areas.
+  - The owner chose a crustacean because "Crustaceans are under represented in the technician class": no technician was one.
+- **Their leans** (`COMBAT.md` §7.7's rule):
+  - SUNDEW: mollusk, −1;
+  - the lotus lantern: elemental, plus an Elemental main attack, +2;
+  - the coral crab: crustacean, −1.
 
 ### The conversion apparatus
 - **Where:** in the Sewers, beside the purification module at the head of the sump.
@@ -142,10 +165,18 @@ Answered on 2026-11-02 (section 2):
 
 Still open:
 1. **The apparatus's look.**
-2. **BLOOM's forms:** their designs (which comes first?), a BLOOM egg's look, and each form's subclass and lean (`COMBAT.md` §7.7).
-3. **MEND's numbers:** how much it heals, and how near.
-4. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), the three Player roles' names and themes, the Technician ability.
-5. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
+2. **BLOOM's forms:**
+   - the pictures of the three concepts, and which form is built first (BLOOM breeding needs one);
+   - names for the lotus lantern and the coral crab;
+   - a BLOOM egg's look.
+3. **CONSUME's numbers:** the digestion's damage a second, and its type. SEEDFALL's and REEF's numbers.
+4. **The climbing:**
+   - where the coral can be climbed: marked sites, as the Kinetic Launcher's deploy spots are, or any wall;
+   - how long the coral lasts;
+   - the new high areas it reaches (map design).
+5. **The coral crab's main attack:** read as its clamping claws, with the shards fired by REEF. Should its everyday attack fire shards instead?
+6. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), and the three Player roles' names and themes. The Technician's ability is REEF.
+7. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
 
 Answered last (2026-11-02):
 - the 50%'s other half (toxic or fire);
@@ -154,6 +185,15 @@ Answered last (2026-11-02):
 
 ## 12. History
 
+- 2026-11-02, BLOOM's creatures (a run through design ideas, words only). The owner picked:
+  - MEND at 2% every hit (over 4% every hit, or 6% on a third of hits);
+  - no extra traits;
+  - the 75% as SUNDEW's while it holds a catch (over DETOXED, rooted, a bud shell, or always);
+  - the enemy, not an ally, as its catch;
+  - every 15 seconds (over 10 or 20);
+  - the pitcher shell (over a flytrap pod and a sap hulk), named SUNDEW (over NECTAR PITCHER and GULLET);
+  - the lotus lantern (over a spore censer and a nectar jelly);
+  - for the Technician, after asking for more ideas and then a crustacean: the coral crab's REEF (over a vine weaver, a field medic, a moss gardener, a hive drone, a vine lobster, a hermit nurse and a barnacle crab).
 - 2026-11-02, second round of prompts. The alternatives passed over:
   - for the match-ups: strong against toxic, or strong against toxic and weak to fire;
   - for the status: Regrowth, Root;

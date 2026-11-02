@@ -568,3 +568,51 @@ Confirmed in a last prompt the same day:
 - a toxic + fire pair's offspring is 50% BLOOM, 25% toxic, 25% fire;
 - Series 2's BLOOM cards are dealt only once the apparatus is in;
 - the apparatus refuses an evolved toxic follower until its class's BLOOM form exists.
+
+## DECISION: BLOOM's creatures: SUNDEW, the lotus lantern, the coral crab; MEND's strength
+
+- **Date:** 2026-11-02
+- **Status:** Approved (concepts in words; working names); not modelled, not implemented.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `CONVERSION.md` ("BLOOM's creatures"), `COMBAT.md` §7.4 and §7.7, `TECHNICIANS.md`
+
+### Context
+The owner: "Let's run through some design elements. No pictures, just ideas for concepts and attributes for the bloom creature." Then: "like take 75% less damage". It was settled in prompts.
+
+### Decision
+- **MEND:** every BLOOM hit heals the most hurt ally within 4 tiles by 2% of its max health. There are no other BLOOM traits.
+- **The Brawler, SUNDEW:**
+  - a pitcher shell (mollusk), whose barbed lip slashes;
+  - its CONSUME swallows an enemy, anything but a boss, every 15 seconds;
+  - it holds the catch for 5 seconds, digesting it, then spits it out;
+  - while holding it, it takes 75% less damage.
+- **The Mage:** a lotus lantern (elemental) whose seed-light is Elemental. SEEDFALL hurts enemies and mends allies in an area.
+- **The Technician:** a coral crab (crustacean) whose claws clamp. REEF fires coral shards that grow a mending, blocking outcrop in a fight, and coral the player can climb to new, higher areas.
+
+### Exact rules
+In `CONVERSION.md`, "BLOOM's creatures".
+
+### Alternatives considered
+Listed in `CONVERSION.md` section 12 (the 2026-11-02 run through design ideas).
+
+### Rationale and trade-offs
+- SUNDEW's 75% is tied to a moment the player can see (a catch inside), not a constant wall.
+- The coral crab fills the technicians' missing subclass, and adds a new way to get around (climbing), as the launcher and the drill did.
+- The cost: a climbing system and new high areas on the map.
+
+### Impact
+When built:
+- js/evolution.js (three forms), js/moves.js (CONSUME, SEEDFALL);
+- js/techabilities.js (REEF);
+- the map (climb sites, high areas);
+- the art (three models), the tests.
+
+### Follow-up
+`CONVERSION.md` section 11:
+- pictures, names and which form comes first;
+- CONSUME's, SEEDFALL's and REEF's numbers;
+- the climbing's sites and the new areas;
+- the coral crab's everyday attack.
+
+### Supersedes / superseded by
+None.

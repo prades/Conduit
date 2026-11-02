@@ -225,10 +225,16 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - "Greenshire" a slip.
   - **Open** (its section 11):
     - the apparatus's look;
-    - BLOOM's forms and an egg;
-    - MEND's numbers;
+    - BLOOM's forms: pictures, two names, which comes first, an egg;
+    - CONSUME's, SEEDFALL's and REEF's numbers, and where the coral can be climbed;
     - BLOOM's cards' designs;
     - BLOOM's texture and icon.
+
+    Designed since, in words (2026-11-02):
+    - MEND heals 2% every hit;
+    - SUNDEW, the pitcher-shell Brawler, whose CONSUME swallows an enemy and takes 75% less damage while holding it;
+    - the lotus lantern Mage, with SEEDFALL;
+    - the coral crab Technician, whose REEF grows coral the player can climb to new areas.
 
     These are drafts and mockups for your approval. Confirmed last: the other 50% is toxic or fire; Series 2's BLOOM cards wait for the apparatus; an evolved toxic follower waits for its class's BLOOM form.
 - **Side Quest's look, and the subclass art** (designed 2026-11-02, not built):

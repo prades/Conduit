@@ -166,6 +166,14 @@ ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. 
 - **EXILE, any time** (ASKED: "I need to be able to get rid of followers and exile them in room for other followers that I might find or come across"; chosen with the user: EXILE, the word everywhere, and nothing back): every follower has an EXILE button in the roster, the window with all the creatures: in the Command Center (the row of the one in view on a tablet or a desktop; the side panel for those selected on a phone, one button for all of them) and on each card of the phone menu's ROSTER. It is not on the squad's own cards (ASKED: "it would not be on the home screen side HUD roster. I think it would be in the main roster with all the creatures in the separate window"): a squad member's card on the fly beside the HUD's stack has INDEX and DISMISS FROM SQUAD only, and the phone menu's SQUAD has none. It asks first: the first tap arms it (TAP AGAIN TO EXILE), a second within 4 s (`PARTY.exileArm`) exiles (`partyExileTap`, `partyExile`). It leaves for good, nothing is given back, and its squad slot or its room's place is free for someone new.
 - Not built yet (as asked: "Not yet, skip them for now"): forward rooms, nests, Crystal energy, equipment, the healing station. Claiming a room later will be "followers holding it".
 
+## Designed 2026-11-02, not built: the BLOOM Technician's REEF
+
+BLOOM is a seventh element. Its Technician is a coral crab, the first crustacean technician (the owner: "Crustaceans are under represented in the technician class"). Its ability is **REEF**, on the usual 60-second wait. REEF fires little coral shards, and coral grows where they land:
+- **In a fight:** a coral outcrop for 20 seconds. Allies beside it are mended, enemies cannot pass it, and it can be stood on to cross a gap.
+- **Getting around:** the owner: "The little shards that the new crustacean shoots should be able to allow players to climb up in new areas". The coral lets the player climb up to new, higher areas.
+
+Its numbers, where the coral can be climbed, and the new high areas are open. The full design is in `CONVERSION.md`.
+
 ## Still to be decided
 
 From the audit of the specs against the game (the report given before any code):

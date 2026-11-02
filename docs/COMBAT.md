@@ -194,6 +194,9 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 | BLIGHT SPIDER | Technician · toxic | Piercing (fangs) | BLIGHT pools: Elemental |
 | HOVER SHELL | Technician · electric | Crushing (ram) | KINETIC LAUNCHER: Earthquake (the landing) |
 | IGLOO SKATER | Technician · ice | Slashing (skate blades) | FROST PATCH: Elemental |
+| SUNDEW (designed 2026-11-02) | Brawler · bloom | Slashing (barbed lip) | CONSUME: the digestion's type to set (`CONVERSION.md`) |
+| Lotus lantern (designed, name to come) | Mage · bloom | Elemental (seed-light) | SEEDFALL: Elemental |
+| Coral crab (designed, name to come) | Technician · bloom | Crushing (claws) | REEF: to set (`CONVERSION.md`) |
 
 - **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS too), the static field, the ice burst, the singularity, the smoke bomb.
 - **An egg** (not yet evolved) hits with its scythe legs: Slashing.
@@ -276,6 +279,9 @@ The elemental share of each form's main attack (the range runs from a wild to an
 | RIFT MIMIC | Brawler · flux | Jelly | 0 | 25–33% |
 | QUILLSTONE | Brawler · fire | Crustacean | −1 | 21–29% |
 | SEEPER | Brawler · toxic | Crustacean | −1 | 21–29% |
+| Lotus lantern (designed) | Mage · bloom | Elemental | +2 | 82–87% |
+| Coral crab (designed) | Technician · bloom | Crustacean | −1 | 40% |
+| SUNDEW (designed) | Brawler · bloom | Mollusk | −1 | 21–29% |
 
 Alternatives the owner passed over: species alone, without the +1 for an Elemental main attack (THUNDERHEAD and EMBER HOOD at +1, VOIDSTAR at −1); and steps of 20%.
 
