@@ -195,15 +195,15 @@ Asked: the shop "in a new menu on the card menu called shop"; the hand and the c
 Asked (the owner, 2026-11-02): "mages get aura cards, and the brawlers get opportunity bonuses ... And then technicians get cool down management"; the tiers, the reach, the openings, the clone, the cut and the refund as answered that day; the 21 names approved ("Approve all 21"); then "Start Build B". All built as designed. Tested; not playtested.
 
 **For your approval:**
-- **The Prototype aura's status chance:** 5%, the first guess in the design. Built so; one number in js/cards.js `EQUIP_AURAS`.
-- **The rings and glints:** a screenshot went with the handoff. `UI-STYLE.md` "The Mage auras in the world" has the numbers.
+- **The Prototype aura's status chance: answered.** "Raise to 10%" (build `2026-11-02d`).
+- **The rings and glints: answered.** "It shouldn't be displayed or affected in other rooms": the ring is cut to the Mage's room, and the aura reaches no unit in another room (build `2026-11-02d`).
 
 **Readings we took where the design did not say** (each easy to change):
-- **"The same aura counts once" is read as the same card.** Two Mages wearing KINDLING BAND give +5% once. One fire Mage wearing KINDLING BAND and HEARTH SIGIL gives both (+12.5%), as two different cards always add up. The other reading, the best tier of each element only, would be one line.
+- **"The same aura counts once" is read as the same card.** Two Mages wearing KINDLING BAND give +5% once. One fire Mage wearing KINDLING BAND and HEARTH SIGIL gives both (+12.5%), as two different cards always add up. **Confirmed:** "Both count" (2026-11-02).
 - **Two opportunity cards on one Brawler add their shares** (PRESSURE SPUR and RUPTURE FANG: +60% an opening), as every card adds.
 - **A Prototype aura's status uses the numbers of Pack 1's Precision card of its element** (a 3-second burn of 3 a second, a 4-second weakness of 40%, and so on), as ATTUNED CORE does.
 - **The clone's whole hit grows by the aura's share:** its damage all comes from its power, its one attack stat. A follower's ATK is the physical part only.
-- **The ring is drawn over the floor and, faintly, over the units,** not under them. The floor is drawn tile by tile among the units, so a ring under them would need a new drawing pass.
+- **The ring is drawn over the floor and, faintly, over the units,** not under them. The floor is drawn tile by tile among the units, so a ring under them would need a new drawing pass. Since build `2026-11-02d` it is cut to the Mage's room (the owner's answer); inside the room it still draws over the room's front wall blocks.
 - **The refund shows a line when it is paid** ("◆3000 BACK · 3 SERIES 2 CARDS YOU OWNED WERE CUT"), and the run is saved at once.
 
 ## 2. Newly open

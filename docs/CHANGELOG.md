@@ -4,6 +4,22 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **d · The owner's answers on Build B: the CROWN's chance 10%; an aura stays in its room** (the owner, in a prompt: "Push to main", "Raise to 10%", "It shouldn't be displayed or affected in other rooms", "Both count"; on the branch only; commit named in git log).
+  - **Main:** Build B (`c`, commit 2fc7518) went to main at the owner's word.
+  - **A CROWN's status chance** is 10% (it was the first guess, 5%). The cards' words say so.
+  - **An aura stays in its Mage's room:** a follower or the clone within 4 tiles but through a wall, in another room, gets nothing.
+    - js/cards.js `_equipAuraTick` asks js/facility.js `facilityRoomAt`.
+    - Two units outside every room count as one space.
+    - The cards now read "WITHIN 4 TILES IN ITS ROOM".
+  - **The ring is cut to the Mage's room** (its floor's outline), so it is no longer drawn over the corridor or the next room. Inside its room it still draws over the room's front wall blocks, as any overlay does.
+  - **Two different auras of one element on one Mage both count**, as built (confirmed).
+  - **Tests:**
+    - tests/classcards.js puts every unit in one room (a spot in the arena) and checks the 10%.
+    - Two checks are new: a wall stops an aura (a follower and the clone in the next room get nothing), and the ring is clipped to its room's outline.
+    - The Bible's numbers follow. The full run: all 86 suites passed.
+  - **Written up:** docs/UNIVERSAL-AND-PLAYER-CARDS.md, docs/UI-STYLE.md, docs/TUTORIAL.md, docs/NEXT-UPDATE.md, docs/OPEN-QUESTIONS.md §1m, docs/DECISION-LOG.md, the Bible.
+  - Not playtested.
+
 - **c · Build B: the class card families; Series 2 reshaped; the Universal kind retired** (the owner's design of 2026-11-02, UNIVERSAL-AND-PLAYER-CARDS.md section 2 and NEXT-UPDATE.md Build B; the owner, in a prompt: "Push b to main", "Start Build B"; on the branch only; commit named in git log).
   - **Main:** build b (commit e43e599) went to main at the owner's word.
   - **Mage auras (18):** each element's BAND (Refined, +5%), SIGIL (Precision, +7.5%) and CROWN (Prototype, +10%).

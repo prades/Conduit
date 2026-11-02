@@ -10,12 +10,12 @@
     - Its before-and-after numbers are in `COMBAT.md` §7.10.
     - It is not playtested.
   - **Build `2026-11-02b`** (the owner's answers on Build A: the hit words beside the creature, BLINDING DUST's ticks kept) is on main too (commit e43e599; the owner: "Push b to main").
-  - **Build B is implemented** in build `2026-11-02c`, on the branch only (the owner: "Start Build B").
+  - **Build B is implemented** in build `2026-11-02c` and is on main (commit 2fc7518; the owner: "Start Build B", then "Push to main"). **Build `2026-11-02d`**, on the branch, is the owner's answers on it: the CROWN's chance 10%, the aura kept to its room.
     - Its tests are new and updated, and a full run is in its commit (`CHANGELOG.md`).
     - Two approvals wait on it (section 4), with the readings it took (`OPEN-QUESTIONS.md` §1m).
     - It is not playtested.
   - **Build C** is not started.
-- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at e43e599 (build `2026-11-02b`). The branch adds build `2026-11-02c` (Build B).
+- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 2fc7518 (Build B, `2026-11-02c`). The branch adds build `2026-11-02d`.
 - **Last updated:** 2026-11-02
 - **What decides the scope:**
   - **In:** everything with an approved design and its numbers.
@@ -78,7 +78,7 @@ Each build is its own commit with its own tests and a full green run before the 
 
 1. **Mage auras** (18 cards: six elements × Refined, Precision, Prototype):
    - **The bonus:** +5%, +7.5% or +10% ATK to every follower, and the clone, within 4 tiles of a Mage of that element.
-   - **The Prototype extra:** the element's status, at a first-guess 5% chance.
+   - **The Prototype extra:** the element's status, at a 10% chance (the owner raised the first guess of 5%, 2026-11-02).
    - **Stacking:** different auras stack; the same one counts once.
    - **The look:** a subtle ring on the ground and a glint on each follower in it.
 2. **Brawler opportunity cards** (3: Refined, Precision, Prototype): +20%, +30% or +40% for each opening a hit meets. The openings are an element match-up, a race weak to the hit's physical type, a race weak to Elemental, and a stunned or sleeping target.
@@ -156,7 +156,7 @@ Each build is its own commit with its own tests and a full green run before the 
 
 - **This scope and order** (A, then B, then C).
 - **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval. Drafted 2026-11-02 (`UNIVERSAL-AND-PLAYER-CARDS.md`, "The 21 new cards' names"). **Approved** the same day: "Approve all 21".
-- **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints. Both are put to the owner with Build B's handoff (2026-11-02), with the readings in `OPEN-QUESTIONS.md` §1m.
+- **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints. Both are put to the owner with Build B's handoff (2026-11-02), with the readings in `OPEN-QUESTIONS.md` §1m. **Answered:** "Raise to 10%"; the aura and its ring stay in the Mage's room ("It shouldn't be displayed or affected in other rooms"); two auras of one element "Both count" (build `2026-11-02d`).
 - **During Build A:** a screenshot of the words per part. Taken and sent with Build A's handoff. **Answered:** "Move beside the creature" (done in build `2026-11-02b`).
 
 ## 5. Acceptance for the whole update

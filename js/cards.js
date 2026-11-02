@@ -91,7 +91,7 @@ function equipEffectText(fx) {
     if (fx && fx.ability) return equipAbilityText(fx.ability);
     if (fx && fx.aura) {   // a Mage's aura: its ATK, its reach, and at Prototype its element's status (named by the Pack 1 card whose numbers it uses)
         const a = fx.aura, tpl = EQUIP_CARDS[_EQUIP_ATTUNED[a.el]], st = tpl && tpl.proc ? _EQUIP_STATUS_WORDS[tpl.proc.kind] : "";
-        return "AURA: +" + _equipPct(a.attack) + " ATTACK TO EVERY FOLLOWER WITHIN " + EQUIP_AURA.reach + " TILES, AND THE CLONE" + (a.status > 0 && st ? " · EACH OF THEIR HITS: " + _equipPct(a.status) + " TO " + st : "");
+        return "AURA: +" + _equipPct(a.attack) + " ATTACK TO EVERY FOLLOWER WITHIN " + EQUIP_AURA.reach + " TILES IN ITS ROOM, AND THE CLONE" + (a.status > 0 && st ? " · EACH OF THEIR HITS: " + _equipPct(a.status) + " TO " + st : "");
     }
     if (fx && fx.opportunity) return "OPPORTUNITY: +" + _equipPct(fx.opportunity) + " ON A HIT FOR EACH WEAKNESS IT EXPLOITS: AN ELEMENT MATCH-UP, A RACE WEAK TO ITS TYPE, A RACE WEAK TO ELEMENTAL, A STUNNED OR SLEEPING TARGET";
     const p = fx && fx.proc; if (!p) return "";
@@ -161,31 +161,31 @@ function equipAbilityText(a) {
 EQUIP_SERIES2.forEach(([id, name, kind, match, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind, match, rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
 // THE CLASS CARD FAMILIES (Build B, 2026-11-02c; docs/UNIVERSAL-AND-PLAYER-CARDS.md section 2, the owner, 2026-11-02: "mages get aura cards, and the brawlers get opportunity bonuses ... and then technicians get cool down management").
 // Each is a CLASS card, dealt by Series 2. The names are the owner's approval of the agent's draft ("Approve all 21"). Every number is in these two tables.
-//   MAGE AURAS   six elements × Refined, Precision, Prototype. A Mage of the aura's element wears it (equipFit); every follower within EQUIP_AURA.reach tiles of it, the Mage included, and the Mutator's clone, gets `aura.attack` more
-//                ATK (equipBonus; the clone's hits: js/helpers.js applyDamage). At Prototype, each hit of one of them has `aura.status` chance (a first guess, to tune) to set the element's own status (_EQUIP_ATTUNED, with its
-//                Pack 1 numbers: equipOnHit). Different auras stack; THE SAME AURA (the same card) counts once, even from two Mages. Who is in reach is worked out on the card tick (_equipAuraTick); the look is equipAuraDraw.
+//   MAGE AURAS   six elements × Refined, Precision, Prototype. A Mage of the aura's element wears it (equipFit); every follower within EQUIP_AURA.reach tiles of it AND IN ITS ROOM (the owner, 2026-11-02: "It shouldn't be displayed
+//                or affected in other rooms"), the Mage included, and the Mutator's clone, gets `aura.attack` more ATK (equipBonus; the clone's hits: js/helpers.js applyDamage). At Prototype, each hit of one of them has
+//                `aura.status` chance (10%: the owner raised the first guess of 5%, 2026-11-02) to set the element's own status (_EQUIP_ATTUNED, with its Pack 1 numbers: equipOnHit). Different auras stack; THE SAME AURA (the same card) counts once, even from two Mages. Who is in reach is worked out on the card tick (_equipAuraTick); the look is equipAuraDraw.
 //   OPPORTUNITY  a Brawler's: each OPENING a hit meets adds `opportunity` to the whole hit (js/damage.js dmgApply, through equipOpportunity): an element match-up, a race weak to the hit's physical type, a race weak to Elemental,
 //                a stunned or sleeping target. A hit that meets none is unchanged.
 const EQUIP_AURA = { reach: 4 };   // tiles from the Mage (the owner, 2026-11-02)
 const EQUIP_AURAS = [
     ["kindling_band",    "KINDLING BAND",    "fire",     "refined",   { aura: { attack: 0.05 } }],
     ["hearth_sigil",     "HEARTH SIGIL",     "fire",     "precision", { aura: { attack: 0.075 } }],
-    ["inferno_crown",    "INFERNO CROWN",    "fire",     "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["inferno_crown",    "INFERNO CROWN",    "fire",     "prototype", { aura: { attack: 0.10, status: 0.10 } }],
     ["spore_band",       "SPORE BAND",       "toxic",    "refined",   { aura: { attack: 0.05 } }],
     ["miasma_sigil",     "MIASMA SIGIL",     "toxic",    "precision", { aura: { attack: 0.075 } }],
-    ["pestilence_crown", "PESTILENCE CROWN", "toxic",    "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["pestilence_crown", "PESTILENCE CROWN", "toxic",    "prototype", { aura: { attack: 0.10, status: 0.10 } }],
     ["ionic_band",       "IONIC BAND",       "electric", "refined",   { aura: { attack: 0.05 } }],
     ["voltaic_sigil",    "VOLTAIC SIGIL",    "electric", "precision", { aura: { attack: 0.075 } }],
-    ["tempest_crown",    "TEMPEST CROWN",    "electric", "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["tempest_crown",    "TEMPEST CROWN",    "electric", "prototype", { aura: { attack: 0.10, status: 0.10 } }],
     ["chill_band",       "CHILL BAND",       "ice",      "refined",   { aura: { attack: 0.05 } }],
     ["glacial_sigil",    "GLACIAL SIGIL",    "ice",      "precision", { aura: { attack: 0.075 } }],
-    ["winter_crown",     "WINTER CROWN",     "ice",      "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["winter_crown",     "WINTER CROWN",     "ice",      "prototype", { aura: { attack: 0.10, status: 0.10 } }],
     ["phase_band",       "PHASE BAND",       "flux",     "refined",   { aura: { attack: 0.05 } }],
     ["warp_sigil",       "WARP SIGIL",       "flux",     "precision", { aura: { attack: 0.075 } }],
-    ["eclipse_crown",    "ECLIPSE CROWN",    "flux",     "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["eclipse_crown",    "ECLIPSE CROWN",    "flux",     "prototype", { aura: { attack: 0.10, status: 0.10 } }],
     ["lodestone_band",   "LODESTONE BAND",   "core",     "refined",   { aura: { attack: 0.05 } }],
     ["keystone_sigil",   "KEYSTONE SIGIL",   "core",     "precision", { aura: { attack: 0.075 } }],
-    ["monolith_crown",   "MONOLITH CROWN",   "core",     "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["monolith_crown",   "MONOLITH CROWN",   "core",     "prototype", { aura: { attack: 0.10, status: 0.10 } }],
 ];
 const EQUIP_OPPORTUNITY = [
     ["pressure_spur",    "PRESSURE SPUR",    "refined",   { opportunity: 0.20 }],
@@ -532,7 +532,7 @@ function equipWearers(id) {
 
 // ── THE MAGE AURAS: who stands in which (each card tick) ──
 // A SOURCE is a Mage of yours that is up (not falling, not walking back to be re-rolled) wearing aura cards that fit it. A UNIT in reach is any follower of yours that is up, or the Mutator's clone, within EQUIP_AURA.reach tiles of a
-// source (the source too). A unit's auras are `_aura` ({ attack: the ATK share, extras: the Prototype auras, cols: their colours } or null) and `_auraSig` (the card ids, sorted): never saved, worked out again a tick after a load or
+// source (the source too) AND IN THE SAME ROOM (js/facility.js facilityRoomAt: a wall stops an aura; two units outside every room count as one space; with no facility, as in a test's bare sandbox, the distance alone). A unit's auras are `_aura` ({ attack: the ATK share, extras: the Prototype auras, cols: their colours } or null) and `_auraSig` (the card ids, sorted): never saved, worked out again a tick after a load or
 // a respawn. When a follower's auras change its stats are made again (equipRefresh; equipBonus adds the ATK), so the bonus comes on as it walks in and goes as it walks out, within a tick (half a second). Enemies never get one.
 let _equipAuraHeld = [];    // the units in an aura now (so an aura that ends is taken off them without looking at everyone)
 let _equipAuraRings = [];   // the sources and their colours, for the drawing: [{ f, cols }]
@@ -542,11 +542,13 @@ function equipAurasOf(f) {   // the aura cards a follower gives off: worn, fitti
     return out;
 }
 function _equipAuraColour(el) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === el) : null; return e ? e.color : "#8fe3ff"; }
+// the room a unit stands in (null: outside every room), or undefined where there is no facility (a test's bare sandbox): an aura stays in its Mage's room
+function _equipRoomOf(u) { return typeof facilityRoomAt === "function" && typeof _fp !== "undefined" && _fp && _fp.F ? facilityRoomAt(u.x, u.y, _fp.F) : undefined; }
 function _equipAuraTick() {
     const src = [], rings = [];
     if (typeof followers !== "undefined") for (const f of followers) {
         const cards = equipAurasOf(f); if (!cards.length) continue;
-        const cols = []; for (const card of cards) { src.push({ f, card }); const col = _equipAuraColour(card.aura.el); if (cols.indexOf(col) < 0) cols.push(col); }
+        const cols = [], room = _equipRoomOf(f); for (const card of cards) { src.push({ f, card, room }); const col = _equipAuraColour(card.aura.el); if (cols.indexOf(col) < 0) cols.push(col); }
         rings.push({ f, cols });
     }
     _equipAuraRings = rings;
@@ -556,8 +558,8 @@ function _equipAuraTick() {
         for (const f of followers) if (f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green" && !f.returningToCrystal && f.health > 0) units.push(f);
         if (typeof actors !== "undefined") for (const a of actors) if (a && a.isClone && !a.dead && a.team === "green" && a.health > 0) units.push(a);
         for (const u of units) {
-            let ids = null;
-            for (const s of src) { const dx = u.x - s.f.x, dy = u.y - s.f.y; if (dx * dx + dy * dy <= R2 && !(ids && ids.indexOf(s.card.id) >= 0)) (ids || (ids = [])).push(s.card.id); }   // (the same aura from two Mages: once)
+            let ids = null; const room = _equipRoomOf(u);
+            for (const s of src) { const dx = u.x - s.f.x, dy = u.y - s.f.y; if (dx * dx + dy * dy <= R2 && room === s.room && !(ids && ids.indexOf(s.card.id) >= 0)) (ids || (ids = [])).push(s.card.id); }   // (in reach and in its room; the same aura from two Mages: once)
             if (ids) { _equipAuraSet(u, ids); held.add(u); }
         }
     }
@@ -579,7 +581,7 @@ function _equipAuraSet(u, ids) {
 }
 // THE LOOK (the owner: "some minimal way to show a aura ... It should be really subtle as well and reflect the different elements"; docs/UNIVERSAL-AND-PLAYER-CARDS.md): a faint, thin dashed ring on the ground round each Mage giving off
 // an aura, at its reach (EQUIP_AURA.reach tiles: an ellipse, the floor being drawn on the slant), in the element's colour, slowly turning; and a tiny glint of that colour beside each unit in it. Several colours: a ring and a glint
-// each. Drawn each frame with the world's overlays (js/game.js), from what the tick found: a few strokes and nothing allocated.
+// each. THE RING IS CUT TO THE MAGE'S ROOM (its floor's outline: the owner, 2026-11-02, "It shouldn't be displayed or affected in other rooms"). Drawn each frame with the world's overlays (js/game.js), from what the tick found.
 const EQUIP_AURA_LOOK = { alpha: 0.22, width: 1.5, dash: [14, 10], turn: 0.3, glint: 3.5 };
 function equipAuraDraw() {
     if ((!_equipAuraRings.length && !_equipAuraHeld.length) || typeof ctx === "undefined" || !ctx || typeof player === "undefined" || typeof canvas === "undefined") return;
@@ -590,7 +592,15 @@ function equipAuraDraw() {
     for (const r of _equipAuraRings) {
         const f = r.f; if (!f || f.dead) continue;
         scr(f.x, f.y, p); if (p.x + rx < 0 || p.x - rx > canvas.width || p.y + ry < 0 || p.y - ry > canvas.height) continue;
+        const room = _equipRoomOf(f), poly = room && Array.isArray(room.poly) && room.poly.length > 2 ? room.poly : null;
+        if (poly) {   // (the room's outline on the Mage's floor: the same slant as the units', at the Mage's height)
+            const lift = typeof facilityLiftRel === "function" ? facilityLiftRel(f.x, f.y) : 0, cx = player.visualX, cy = player.visualY;
+            ctx.save(); ctx.beginPath();
+            for (let i = 0; i < poly.length; i++) { const qx = (poly[i][0] - cx - (poly[i][1] - cy)) * TILE_W + W, qy = (poly[i][0] - cx + (poly[i][1] - cy)) * TILE_H + H + TILE_H - lift; if (i) ctx.lineTo(qx, qy); else ctx.moveTo(qx, qy); }
+            ctx.closePath(); ctx.clip();
+        }
         for (let i = 0; i < r.cols.length; i++) { ctx.globalAlpha = L.alpha; ctx.strokeStyle = r.cols[i]; ctx.lineDashOffset = -(t * L.turn + i * 12); ctx.beginPath(); ctx.ellipse(p.x, p.y, rx - i * 5, ry - i * 2.5, 0, 0, Math.PI * 2); ctx.stroke(); }
+        if (poly) ctx.restore();
     }
     ctx.setLineDash([]);
     for (const u of _equipAuraHeld) {

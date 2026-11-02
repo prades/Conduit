@@ -34,10 +34,15 @@ async function boot(search, store) {
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run(`facilityBlackoutSet(false); gameState.running = true; alertActive = false; canvas.width = 1280; canvas.height = 860; if (typeof facilitySpawnTick === 'function') facilitySpawnTick = () => {};
         globalThis.__fresh = () => { actors = actors.filter(a => !a.isFollower && !(a instanceof Predator)); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); equipReset(); floatingTexts.length = 0; };
-        // a follower of a form at (x, y), level 10, wearing up to two cards (found for the run, so the tick keeps them on)
+        // A SPOT: a point whose 13 × 13 tiles round it are all one room (the arena, as the map is today), so every unit below is in the Mage's room unless a check puts it in another (an aura stays in its room)
+        globalThis.__P = (function(){ const F = _fp.F; for (const r of F.rooms) for (let x = Math.ceil(r.bb[0]); x <= r.bb[2]; x++) for (let y = Math.ceil(r.bb[1]); y <= r.bb[3]; y++) { let ok = true;
+            for (let dx = -6.5; dx <= 6.5 && ok; dx += 0.5) for (let dy = -6.5; dy <= 6.5 && ok; dy += 0.5) if (facilityRoomAt(x + dx, y + dy, F) !== r) ok = false; if (ok) return [x, y, r.id]; } return null; })();
+        globalThis.__at = (u, x, y) => { u.x = __P[0] + x; u.y = __P[1] + y; return u; };
+        // a follower of a form at (x, y) from the spot, level 10, wearing up to two cards (found for the run, so the tick keeps them on)
         globalThis.__wear = (form, cards, x, y) => { const E = EVOLUTIONS[form]; spawnFollowerAtCrystal(E.element, E.role); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.role = E.role; f.evolved = form; f.element = E.element;
-            initFollowerLevel(f, { level: 10 }); f.x = x; f.y = y; const cs = (Array.isArray(cards) ? cards : [cards]).filter(Boolean); if (cs.length) { for (const c of cs) if (equipFound.indexOf(c) < 0) equipFound.push(c); f.cards = [cs[0], cs[1] || null]; equipRefresh(f); } f.health = f.maxHealth; return f; };
-        globalThis.__foe = (species, x, y) => { const p = spawnCreature({ species, className: 'tank', x, y, level: 5, state: 'wander' }); p.fpCreature = true; p.homeRoom = 'arena'; p.spawnProtection = 0; p.health = p.maxHealth = 50000; p.element = null; p.reflectDamage = false; return p; };
+            initFollowerLevel(f, { level: 10 }); __at(f, x, y); const cs = (Array.isArray(cards) ? cards : [cards]).filter(Boolean); if (cs.length) { for (const c of cs) if (equipFound.indexOf(c) < 0) equipFound.push(c); f.cards = [cs[0], cs[1] || null]; equipRefresh(f); } f.health = f.maxHealth; return f; };
+        globalThis.__clone = (x, y) => { const c = makeClone('ant', 'scout', __P[0] + x, __P[1] + y); c.health = c.maxHealth; return c; };
+        globalThis.__foe = (species, x, y) => { const p = spawnCreature({ species, className: 'tank', x: __P[0] + x, y: __P[1] + y, level: 5, state: 'wander' }); p.fpCreature = true; p.homeRoom = 'arena'; p.spawnProtection = 0; p.health = p.maxHealth = 50000; p.element = null; p.reflectDamage = false; return p; };
         globalThis.__lost = (t, fn) => { const h = t.health; fn(); const d = h - t.health; t.health = t.maxHealth; return d; };
         globalThis.__said = w => floatingTexts.some(t => t.text === w);`);
     return { run, J, store: sb.localStorage, sb };
@@ -48,13 +53,13 @@ async function boot(search, store) {
     const { run, J } = A;
 
     group('THE 21 NEW CARDS (their names approved: "Approve all 21")');
-    check('18 Mage auras: six elements × Refined +5%, Precision +7.5%, Prototype +10% ATK; each a CLASS card for Mages that names its element; only the Prototype adds the element\'s status, at 5%; all dealt by Series 2', () => {
+    check('18 Mage auras: six elements × Refined +5%, Precision +7.5%, Prototype +10% ATK; each a CLASS card for Mages that names its element; only the Prototype adds the element\'s status, at 10% (the owner raised the first guess of 5%); all dealt by Series 2', () => {
         const rows = J(`EQUIP_AURAS.map(r => { const c = EQUIP_CARDS[r[0]]; return [c.name, c.kind, c.match, c.aura.el, c.rarity, c.aura.attack, c.aura.status || 0, c.pack]; })`);
         same(rows.length, 18, 'the auras');
         AURAS.forEach(([el, a, b, p], i) => {
             same(rows[3 * i].join(), [a, 'class', 'sniper', el, 'refined', 0.05, 0, 'series2'].join(), el + ' Refined');
             same(rows[3 * i + 1].join(), [b, 'class', 'sniper', el, 'precision', 0.075, 0, 'series2'].join(), el + ' Precision');
-            same(rows[3 * i + 2].join(), [p, 'class', 'sniper', el, 'prototype', 0.1, 0.05, 'series2'].join(), el + ' Prototype');
+            same(rows[3 * i + 2].join(), [p, 'class', 'sniper', el, 'prototype', 0.1, 0.1, 'series2'].join(), el + ' Prototype');
         });
     });
     check('3 Brawler opportunity cards: PRESSURE SPUR +20% (Refined), FAULTLINE TALON +30% (Precision), RUPTURE FANG +40% (Prototype); CLASS cards for Brawlers, dealt by Series 2', () => {
@@ -63,9 +68,9 @@ async function boot(search, store) {
     });
     check('their words are made from their numbers: an aura names its share, its reach and (at Prototype) its status; an opportunity card its share and the four openings; an aura\'s kind reads CLASS · FIRE MAGE', () => {
         const r = J(`[EQUIP_CARDS.kindling_band.text, EQUIP_CARDS.inferno_crown.text, EQUIP_CARDS.eclipse_crown.text, EQUIP_CARDS.monolith_crown.text, EQUIP_CARDS.faultline_talon.text, equipKindLabel(EQUIP_CARDS.kindling_band), equipKindLabel(EQUIP_CARDS.pressure_spur)]`);
-        same(r[0], 'AURA: +5% ATTACK TO EVERY FOLLOWER WITHIN 4 TILES, AND THE CLONE', 'a Refined aura');
-        same(r[1], 'AURA: +10% ATTACK TO EVERY FOLLOWER WITHIN 4 TILES, AND THE CLONE · EACH OF THEIR HITS: 5% TO BURN', 'the fire Prototype');
-        ok(/5% TO SIPHON$/.test(r[2]) && /5% TO KNOCK BACK$/.test(r[3]), 'the flux and core Prototypes: ' + r[2] + ' / ' + r[3]);
+        same(r[0], 'AURA: +5% ATTACK TO EVERY FOLLOWER WITHIN 4 TILES IN ITS ROOM, AND THE CLONE', 'a Refined aura');
+        same(r[1], 'AURA: +10% ATTACK TO EVERY FOLLOWER WITHIN 4 TILES IN ITS ROOM, AND THE CLONE · EACH OF THEIR HITS: 10% TO BURN', 'the fire Prototype');
+        ok(/ 10% TO SIPHON$/.test(r[2]) && / 10% TO KNOCK BACK$/.test(r[3]), 'the flux and core Prototypes: ' + r[2] + ' / ' + r[3]);
         ok(/^OPPORTUNITY: \+30% ON A HIT FOR EACH WEAKNESS IT EXPLOITS/.test(r[4]) && /ELEMENT MATCH-UP/.test(r[4]) && /STUNNED OR SLEEPING/.test(r[4]), 'the opportunity words: ' + r[4]);
         same(r[5], 'CLASS · FIRE MAGE', 'an aura\'s kind'); same(r[6], 'CLASS · BRAWLER', 'an opportunity card\'s kind');
     });
@@ -123,23 +128,23 @@ async function boot(search, store) {
     });
     check('leaving the reach takes the bonus off at the next card tick (half a second), coming back puts it on; the Mage falling, or taking the card off, ends it; nothing is added twice', () => {
         const r = J(`(function(){ __fresh(); const m = __wear('embercowl', 'kindling_band', 0, 0), a = __base(__wear('maw', null, 2, 0)), o = {}; equipTick(true); o.in = a.stats.attack;
-            a.x = 6; equipTick(true); o.out = a.stats.attack; a.x = 2; equipTick(true); equipTick(true); o.back = a.stats.attack;
+            __at(a, 6, 0); equipTick(true); o.out = a.stats.attack; __at(a, 2, 0); equipTick(true); equipTick(true); o.back = a.stats.attack;
             m.dead = true; equipTick(true); o.fell = a.stats.attack; m.dead = false; equipTick(true); o.up = a.stats.attack; equipPut(m, 0, null); equipTick(true); o.off = [a.stats.attack, a._aura, m.stats.attack === m.__atk0 || !m.__atk0]; o.base = a.__atk0; o.want = __atkWith(a, 1.05); return o; })()`);
         same(r.in, r.want, 'in reach'); same(r.out, r.base, 'out of reach'); same(r.back, r.want, 'back in (twice ticked)'); same(r.fell, r.base, 'with its Mage down'); same(r.up, r.want, 'its Mage back'); same(r.off[0], r.base, 'the card taken off'); same(r.off[1], null, 'the aura it held');
     });
     check('the Mutator\'s clone in reach gets it: its hits do +5% (+10% under a Prototype aura) against the same hit out of reach; an enemy in reach never gets an aura', () => {
-        const r = J(`(function(){ __fresh(); __wear('embercowl', 'kindling_band', 0, 0); const c = makeClone('ant', 'scout', 2, 0), t = __foe('ant', 2.5, 0.5), e = __foe('beetle', 1, 1); c.health = c.maxHealth; equipTick(true);
-            const hit = () => __lost(t, () => applyDamage(t, 20, c, null, false, false, DMG_HIT_CLONE)); const o = { held: c._aura && c._aura.attack, foe: e._aura || null }; o.in = hit(); c.x = 9; equipTick(true); o.out = hit(); o.gone = c._aura;
-            __fresh(); __wear('embercowl', 'inferno_crown', 0, 0); const c2 = makeClone('ant', 'scout', 1, 0), t2 = __foe('ant', 1.5, 0.5); c2.health = c2.maxHealth; equipTick(true); o.proto = __lost(t2, () => applyDamage(t2, 20, c2, null, false, false, DMG_HIT_CLONE)); return o; })()`);
+        const r = J(`(function(){ __fresh(); __wear('embercowl', 'kindling_band', 0, 0); const c = __clone(2, 0), t = __foe('ant', 2.5, 0.5), e = __foe('beetle', 1, 1); equipTick(true);
+            const hit = () => __lost(t, () => applyDamage(t, 20, c, null, false, false, DMG_HIT_CLONE)); const o = { held: c._aura && c._aura.attack, foe: e._aura || null }; o.in = hit(); __at(c, 6.4, 0); equipTick(true); o.out = hit(); o.gone = c._aura;
+            __fresh(); __wear('embercowl', 'inferno_crown', 0, 0); const c2 = __clone(1, 0), t2 = __foe('ant', 1.5, 0.5); equipTick(true); o.proto = __lost(t2, () => applyDamage(t2, 20, c2, null, false, false, DMG_HIT_CLONE)); return o; })()`);
         same(r.held, 0.05, 'the clone\'s aura'); same(r.foe, null, 'an enemy holds an aura'); same(r.gone, null, 'the clone kept it out of reach'); ok(r.out > 0 && close(r.in / r.out, 1.05, 1e-9), 'the clone\'s hit in reach / out: ' + r.in + ' / ' + r.out);
         ok(close(r.proto / r.out, 1.1, 1e-9), 'under a Prototype aura: ' + r.proto + ' / ' + r.out);
     });
-    check('a Prototype aura\'s status: a follower in reach of INFERNO CROWN burns what it hits on a winning roll (5%), not on a losing one; one out of reach, and one under KINDLING BAND, never; the clone in reach does', () => {
-        const r = J(`(function(){ const keep = Math.random; try { __fresh(); __wear('embercowl', 'inferno_crown', 0, 0); const a = __wear('maw', null, 2, 0), far = __wear('maw', null, 9, 0), c = makeClone('ant', 'scout', 1, 1); c.health = c.maxHealth; equipTick(true);
-                const t = __foe('ant', 2.5, 0), t2 = __foe('ant', 9.5, 0), t3 = __foe('ant', 1.5, 1), o = {};
-                Math.random = () => 0.049; applyDamage(t, 10, a, null, false, false, DMG_HIT_MAIN); o.win = t.burning > 0 || __said('BURN'); applyDamage(t2, 10, far, null, false, false, DMG_HIT_MAIN); o.far = t2.burning > 0;
+    check('a Prototype aura\'s status: a follower in reach of INFERNO CROWN burns what it hits on a winning roll (10%), not on a losing one; one out of reach, and one under KINDLING BAND, never; the clone in reach does', () => {
+        const r = J(`(function(){ const keep = Math.random; try { __fresh(); __wear('embercowl', 'inferno_crown', 0, 0); const a = __wear('maw', null, 2, 0), far = __wear('maw', null, 6, 0), c = __clone(1, 1); equipTick(true);
+                const t = __foe('ant', 2.5, 0), t2 = __foe('ant', 6.4, 0), t3 = __foe('ant', 1.5, 1), o = {};
+                Math.random = () => 0.099; applyDamage(t, 10, a, null, false, false, DMG_HIT_MAIN); o.win = t.burning > 0 || __said('BURN'); applyDamage(t2, 10, far, null, false, false, DMG_HIT_MAIN); o.far = t2.burning > 0;
                 applyDamage(t3, 10, c, null, false, false, DMG_HIT_CLONE); o.clone = t3.burning > 0;
-                Math.random = () => 0.051; const t4 = __foe('ant', 2.4, 0.4); applyDamage(t4, 10, a, null, false, false, DMG_HIT_MAIN); o.lose = t4.burning > 0;
+                Math.random = () => 0.101; const t4 = __foe('ant', 2.4, 0.4); applyDamage(t4, 10, a, null, false, false, DMG_HIT_MAIN); o.lose = t4.burning > 0;
                 __fresh(); __wear('embercowl', 'kindling_band', 0, 0); const b = __wear('maw', null, 2, 0); equipTick(true); const t5 = __foe('ant', 2.5, 0); Math.random = () => 0; applyDamage(t5, 10, b, null, false, false, DMG_HIT_MAIN); o.refined = t5.burning > 0; return o;
             } finally { Math.random = keep; } })()`);
         same(r.win, true, 'no burn on a winning roll'); same(r.lose, false, 'a burn on a losing roll'); same(r.far, false, 'a burn out of reach'); same(r.clone, true, 'the clone did not burn'); same(r.refined, false, 'a Refined aura burned');
@@ -152,13 +157,29 @@ async function boot(search, store) {
                 } return o; } finally { Math.random = keep; } })()`);
         same(r.pestilence_crown[0], true, 'toxic did not poison'); same(r.tempest_crown[1], true, 'electric did not glitch'); same(r.winter_crown[2], true, 'ice did not slow'); same(r.eclipse_crown[3], true, 'flux did not siphon'); same(r.monolith_crown[4], true, 'core did not knock back');
     });
-    check('THE LOOK: a faint, thin dashed ring at the reach (an ellipse of 4√2 tiles on the slant) round the Mage, in its element\'s colour at alpha 0.22, turning; a tiny glint on each unit in it; nothing drawn with no aura', () => {
-        const r = J(`(function(){ __fresh(); const calls = [], k = ctx.ellipse, s = ctx.stroke, fl = ctx.fill; let el = null; ctx.ellipse = function(x, y, rx, ry){ el = [x, y, rx, ry]; return k && k.apply(this, arguments); };
+    check('THE LOOK: a faint, thin dashed ring at the reach (an ellipse of 4√2 tiles on the slant) round the Mage, in its element\'s colour at alpha 0.22, turning, CUT TO THE MAGE\'S ROOM (its floor\'s outline); a tiny glint on each unit in it; nothing drawn with no aura', () => {
+        const r = J(`(function(){ __fresh(); player.x = player.visualX = __P[0]; player.y = player.visualY = __P[1];   // (the camera on the spot)
+            const calls = [], k = ctx.ellipse, s = ctx.stroke, fl = ctx.fill, cl = ctx.clip, bp = ctx.beginPath, mt = ctx.moveTo, lt = ctx.lineTo; let el = null, pts = 0; const clips = [];
+            ctx.beginPath = function(){ pts = 0; return bp && bp.apply(this, arguments); }; ctx.moveTo = function(){ pts++; return mt && mt.apply(this, arguments); }; ctx.lineTo = function(){ pts++; return lt && lt.apply(this, arguments); }; ctx.clip = function(){ clips.push(pts); return cl && cl.apply(this, arguments); };
+            ctx.ellipse = function(x, y, rx, ry){ el = [x, y, rx, ry]; return k && k.apply(this, arguments); };
             ctx.stroke = function(){ if (el) calls.push({ rx: el[2], ry: el[3], col: ctx.strokeStyle, a: ctx.globalAlpha, w: ctx.lineWidth, off: ctx.lineDashOffset }); el = null; return s && s.apply(this, arguments); }; let fills = 0; ctx.fill = function(){ fills++; return fl && fl.apply(this, arguments); };
-            try { equipAuraDraw(); const none = calls.length + fills; const m = __wear('embercowl', 'kindling_band', player.x, player.y); __wear('maw', null, player.x + 1, player.y); equipTick(true); frame = 100; equipAuraDraw(); const first = calls.slice(); calls.length = 0; frame = 200; equipAuraDraw();
-                return { none, rings: first, glints: fills, turned: calls[0] && first[0] && calls[0].off !== first[0].off, want: [4 * Math.SQRT2 * TILE_W, 4 * Math.SQRT2 * TILE_H] }; } finally { ctx.ellipse = k; ctx.stroke = s; ctx.fill = fl; } })()`);
+            try { equipAuraDraw(); const none = calls.length + fills; const m = __wear('embercowl', 'kindling_band', 0, 0); __wear('maw', null, 1, 0); equipTick(true); frame = 100; equipAuraDraw(); const first = calls.slice(), firstClips = clips.slice(); calls.length = 0; frame = 200; equipAuraDraw();
+                return { none, rings: first, glints: fills, turned: calls[0] && first[0] && calls[0].off !== first[0].off, want: [4 * Math.SQRT2 * TILE_W, 4 * Math.SQRT2 * TILE_H], clips: firstClips, roomPts: facilityRoomAt(m.x, m.y, _fp.F).poly.length }; } finally { ctx.ellipse = k; ctx.stroke = s; ctx.fill = fl; ctx.clip = cl; ctx.beginPath = bp; ctx.moveTo = mt; ctx.lineTo = lt; } })()`);
         same(r.none, 0, 'drawn with no aura'); same(r.rings.length, 1, 'rings for one Mage of one colour'); ok(close(r.rings[0].rx, r.want[0], 1e-6) && close(r.rings[0].ry, r.want[1], 1e-6), 'the ring\'s size: ' + JSON.stringify(r.rings[0]));
         same(String(r.rings[0].col).toLowerCase(), '#ff3300', 'its colour (fire)'); same(r.rings[0].a, 0.22, 'its alpha'); same(r.rings[0].w, 1.5, 'its width'); same(r.turned, true, 'it does not turn'); same(r.glints, 4, 'glints (two units, drawn twice)');
+        same(r.clips.join(), String(r.roomPts), 'the ring is not cut to its room\'s outline (a clip of the room\'s ' + r.roomPts + ' corners)');
+    });
+    check('AN AURA STAYS IN ITS ROOM (the owner, 2026-11-02: "It shouldn\'t be displayed or affected in other rooms"): a follower and the clone 3 tiles from the Mage but through a wall, in the next room, get nothing; one in its room as far gets it', () => {
+        const r = J(`(function(){ const F = _fp.F; let pair = null;   // a point in one room and one within 3 tiles in another (both rooms real)
+            for (const ra of F.rooms) { if (pair) break; for (let x = Math.ceil(ra.bb[0]) + 1; x < ra.bb[2] && !pair; x++) for (let y = Math.ceil(ra.bb[1]) + 1; y < ra.bb[3] && !pair; y++) { if (facilityRoomAt(x, y, F) !== ra) continue;
+                let other = null, same = null; for (let a = 0; a < 16; a++) { const qx = x + Math.cos(a * Math.PI / 8) * 3, qy = y + Math.sin(a * Math.PI / 8) * 3, q = facilityRoomAt(qx, qy, F); if (q && q !== ra && !other) other = [qx, qy, q.id]; if (q === ra && !same) same = [qx, qy]; }
+                if (other && same) pair = { p: [x, y, ra.id], other, same }; } }
+            if (!pair) return { none: true };
+            __fresh(); const m = __wear('embercowl', 'kindling_band', 0, 0); m.x = pair.p[0]; m.y = pair.p[1]; const out = __wear('maw', null, 0, 0); out.x = pair.other[0]; out.y = pair.other[1]; const inn = __wear('quillstone', null, 0, 0); inn.x = pair.same[0]; inn.y = pair.same[1];
+            const c = __clone(0, 0); c.x = pair.other[0]; c.y = pair.other[1]; equipTick(true);
+            return { rooms: [pair.p[2], pair.other[2]], out: out._aura || null, clone: c._aura || null, inn: inn._aura && inn._aura.attack, mage: m._aura && m._aura.attack }; })()`);
+        ok(!r.none, 'no two rooms within 3 tiles of each other were found');
+        same(r.out, null, 'a follower in the next room (' + r.rooms.join(' / ') + ') got the aura'); same(r.clone, null, 'the clone in the next room got it'); same(r.inn, 0.05, 'a follower in its room 3 tiles off'); same(r.mage, 0.05, 'the Mage');
     });
 
     group('THE BRAWLER\'S OPPORTUNITY');

@@ -735,3 +735,46 @@ Build B's code, tests and docs (`CHANGELOG.md`, 2026-11-02 c).
 
 ### Supersedes / superseded by
 None.
+
+## DECISION: Build B to main; the CROWN's chance 10%; an aura stays in its room; two auras of one element both count
+
+- **Date:** 2026-11-02
+- **Status:** Approved (in a prompt, after Build B's handoff)
+- **Branch/build:**
+  - Build B, `2026-11-02c` (commit 2fc7518), fast-forwarded to `main`.
+  - The answers: build `2026-11-02d` on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` (section 2, Mage cards: auras), `UI-STYLE.md` ("The Mage auras in the world"), `OPEN-QUESTIONS.md` §1m, `CHANGELOG.md` (2026-11-02 c, d)
+
+### Context
+Build B's handoff asked four things: main or not yet; the CROWN's status chance (built at the design's first guess, 5%); the rings' look (a screenshot was sent: the rings crossed walls into the corridor and the next rooms); and whether two different auras of one element on one Mage both count.
+
+### Decision
+- **Main:** "Push to main". Build B went to main as committed.
+- **The CROWN's chance:** "Raise to 10%".
+- **The look:** "It shouldn't be displayed or affected in other rooms." An aura reaches only units in its Mage's room, and its ring is drawn only inside that room.
+- **Two auras of one element:** "Both count" (as built).
+
+### Exact rules
+`UNIVERSAL-AND-PLAYER-CARDS.md` section 2:
+- the reach is 4 tiles, in the Mage's own room;
+- the CROWN's extra is at 10%.
+
+### Alternatives considered
+- The chance: keep 5%, or lower it to 3%.
+- The look: as it was, stronger, or fainter.
+- Two auras of one element: only the stronger one counts.
+
+### Rationale and trade-offs
+- An aura that reached through walls, and a ring drawn over other rooms, read as wrong in the facility's rooms.
+- A room is the game's own unit of space (`facilityRoomAt`), so a wall now stops an aura.
+
+### Impact
+- js/cards.js: `EQUIP_AURAS` (the six CROWNs' `status`), `_equipAuraTick` (the room), `equipAuraDraw` (the ring clipped to the room), and the card words ("WITHIN 4 TILES IN ITS ROOM").
+- tests/classcards.js: the units stand in one room, plus checks of a wall stopping an aura and of the ring's clip.
+- The Bible.
+
+### Follow-up
+Build `d` on main once the owner says so; then Build C.
+
+### Supersedes / superseded by
+Supersedes the 5% first guess and the reach without walls (Build B, `2026-11-02c`).
