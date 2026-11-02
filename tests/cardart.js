@@ -71,13 +71,13 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var measureCards = function(sel){ return $$(sel || '#cardsRoot .cd-card:not(.cd-empty)').map(measureCard); }, pickMini = async function(n){ var m = $$('#cardsRoot .cd-rail .cd-mini').filter(function(x){ return x.querySelector('.cd-mn').textContent === n; })[0]; if (m) { click(m); await wait(60); } return !!m; };
     var measureCard = function(el){
       var nm = el.querySelector('.cd-name'), c = Object.values(equipCards()).filter(function(x){ return nm && x.name === nm.textContent; })[0], face = el.querySelector('.cd-art > .cd-slab > .cd-face'), t = el.querySelector('.cd-tex'), g = el.querySelector('.cd-gem'), chip = el.querySelector('.cd-face > .cd-chip'), ar = el.querySelector('.cd-art').getBoundingClientRect(), cr = chip ? chip.getBoundingClientRect() : null;
-      return { name: nm && nm.textContent, kind: c ? c.kind : null, match: c ? c.match : null, face: !!face, parts: ['.cd-tex', '.cd-frame', '.cd-top .cd-rar', '.cd-glow', '.cd-shadow', '.cd-gem', '.cd-holo.ghost', '.cd-holo:not(.ghost)', '.cd-emit.l', '.cd-emit.r', '.cd-back'].filter(function(s){ return !el.querySelector(s); }),
+      return { name: nm && nm.textContent, kind: c ? c.kind : null, match: c ? c.match : null, aura: c && c.aura ? c.aura.el : null, face: !!face, parts: ['.cd-tex', '.cd-frame', '.cd-top .cd-rar', '.cd-glow', '.cd-shadow', '.cd-gem', '.cd-holo.ghost', '.cd-holo:not(.ghost)', '.cd-emit.l', '.cd-emit.r', '.cd-back'].filter(function(s){ return !el.querySelector(s); }),
         names: el.querySelectorAll('.cd-name').length, kinds: el.querySelectorAll('.cd-kind').length, texts: el.querySelectorAll('.cd-text').length, chips: el.querySelectorAll('.cd-chip').length, ghost: (el.querySelector('.cd-holo.ghost .cd-gn') || {}).textContent, ghostHidden: (el.querySelector('.cd-holo.ghost') || { getAttribute: function(){ return null; } }).getAttribute('aria-hidden'),
         tex: art(t), gem: art(g), state: (el.querySelector('.cd-state') || {}).textContent || '', cls: el.className, chipAt: cr ? [Math.round((cr.left + cr.width / 2 - ar.left) / ar.width * 100), Math.round((cr.top + cr.height / 2 - ar.top) / ar.height * 100)] : null,
         btns: Array.prototype.slice.call(el.closest('.cd-stage') ? document.querySelectorAll('#cardsRoot .cd-info .cd-btn') : el.querySelectorAll(':scope > .cd-btn')).map(function(b){ b.scrollIntoView({ block: 'center' }); return hit(b); }) };   // (the collection's card on its stage has its buttons beside it, with its labels)
     };
     out.cards = measureCards();   // the stage's card as the sheet opens (the rarest first: a Crystalline CLASS card)
-    var picks = ['TEST · UNIVERSAL A', 'TEST · CRUSTACEAN', 'EMBER PLATING']; out.picked = [];   // a UNIVERSAL, a SUBCLASS and an ELEMENT card, each on the stage
+    var picks = ['TEST · PLAYER A', 'TEST · CRUSTACEAN', 'EMBER PLATING', 'KINDLING BAND']; out.picked = [];   // a PLAYER, a SUBCLASS, an ELEMENT card and a Mage's AURA (a class card), each on the stage
     for (var pi = 0; pi < picks.length; pi++) { if (await pickMini(picks[pi])) { out.picked.push(picks[pi]); out.cards = out.cards.concat(measureCards()); } }
     var sl = $('#cardsRoot .cd-slab'), sa = $('#cardsRoot .cd-art');
     out.tilt = { transform: getComputedStyle(sl).transform.slice(0, 9), style: getComputedStyle(sl).transformStyle, perspective: getComputedStyle(sa).perspective, sides: $$('#cardsRoot .cd-side').length };
@@ -167,11 +167,11 @@ function measure(w, h) {
     });
 
     group('WHO WEARS WHAT: the classes on the page');
-    await check('an ELEMENT card wears its element\'s texture and the crystal in its colour; a CLASS card its class\'s texture and the cube; a Universal or a Subclass card no texture (none was designed), the crystal in its colour', () => {
+    await check('an ELEMENT card wears its element\'s texture and the crystal in its colour; a CLASS card its class\'s texture and the cube (a Mage\'s aura, the cube in its element\'s colour); a Player or a Subclass card no texture (none was designed), the crystal in its colour', () => {
         same(J('cardArtFaceClass({ kind: "element", match: "fire" })'), 'cat-c-fire', 'an element card');
         same(J('cardArtFaceClass({ kind: "class", match: "sniper" })'), 'cat-c-mage', 'a mage card'); same(J('cardArtFaceClass({ kind: "class", match: "camper" })'), 'cat-c-technician', 'a technician card'); same(J('cardArtFaceClass({ kind: "class", match: "brawler" })'), 'cat-c-brawler', 'a brawler card');
-        same(J('cardArtFaceClass({ kind: "universal" })'), '', 'a universal card'); same(J('cardArtFaceClass({ kind: "subclass", match: "drone" })'), '', 'a subclass card'); same(J('cardArtFaceClass(null)'), '', 'no card');
-        same(J('cardArtObjectClass({ kind: "class" }, "#8fe3ff")'), 'cac-8fe3ff', 'a class card\'s cube'); same(J('cardArtObjectClass({ kind: "element" }, "#ff3300")'), 'cag-ff3300', 'an element card\'s crystal');
+        same(J('cardArtFaceClass({ kind: "player" })'), '', 'a Player card'); same(J('cardArtFaceClass({ kind: "subclass", match: "drone" })'), '', 'a subclass card'); same(J('cardArtFaceClass(null)'), '', 'no card');
+        same(J('cardArtObjectClass({ kind: "class" }, "#8fe3ff")'), 'cac-8fe3ff', 'a class card\'s cube'); same(J('cardArtFaceClass(EQUIP_CARDS.winter_crown) + "|" + cardArtObjectClass(EQUIP_CARDS.winter_crown, _cdKindCol(EQUIP_CARDS.winter_crown)) + "|" + _cdKindCol(EQUIP_CARDS.pressure_spur) + "|" + _cdKindCol({ kind: "player" })'), 'cat-c-mage|cac-99ddff|#8fe3ff|#ffe733', 'an ice aura (the Mage\'s texture, the cube in ice), an opportunity card (cyan), a Player card (gold)'); same(J('cardArtObjectClass({ kind: "element" }, "#ff3300")'), 'cag-ff3300', 'an element card\'s crystal');
         for (const c of J('Object.values(EQUIP_CARDS).map(c => [c.id, c.kind, c.match])')) if (c[1] === 'element' || c[1] === 'class') ok(J(`cardArtFaceClass(EQUIP_CARDS[${JSON.stringify(c[0])}])`), c[0] + ' has no texture');
     });
     await check('a follower wears its element\'s texture under its class\'s (a hybrid a brawler\'s); a clone, something that is not a follower, or one with no element or role, none', () => {
@@ -245,18 +245,18 @@ function measure(w, h) {
             ok(T.css.sheet && T.css.rules >= 10, 'the page has no art classes: ' + JSON.stringify(T.css));
         });
         await check('THE CARDS (the stage\'s, for a card of each kind; the SHOP\'s; a pack\'s reveal): each a tilted slab (a 3D transform under a perspective, one flat layer, no 3D edge) with its back, its face (the texture, the frame, the rarity, the chip, the crystal and its glow and shadow, the hologram and its shadow, the emitters); one name, kind and text each; the shadow\'s copy hidden from a reader', () => {
-            same(T.picked.join('|'), 'TEST · UNIVERSAL A|TEST · CRUSTACEAN|EMBER PLATING', 'the cards picked on the rail'); ok(T.shopCards >= 4, 'the SHOP\'s cards: ' + T.shopCards); same(T.revealCards, 4, 'the reveal\'s cards'); ok(T.cards.length >= 12, 'cards: ' + T.cards.length);
+            same(T.picked.join('|'), 'TEST · PLAYER A|TEST · CRUSTACEAN|EMBER PLATING|KINDLING BAND', 'the cards picked on the rail'); ok(T.shopCards >= 4, 'the SHOP\'s cards: ' + T.shopCards); same(T.revealCards, 4, 'the reveal\'s cards'); ok(T.cards.length >= 12, 'cards: ' + T.cards.length);
             same(T.tilt.transform, 'matrix3d(', 'the tilt'); same(T.tilt.style, 'flat', 'one layer'); ok(T.tilt.perspective !== 'none', 'no perspective'); same(T.tilt.sides, 0, '3D edges');
             for (const c of T.cards) { ok(c.face, c.name + ' has no face'); same(c.parts.join(), '', c.name + ' lacks'); same([c.names, c.kinds, c.texts, c.chips].join(), '1,1,1,1', c.name + '\'s name, kind, text and chip'); same(c.ghost, c.name, c.name + '\'s shadow'); same(c.ghostHidden, 'true', c.name + '\'s shadow is read out'); }
         });
-        await check('an element card wears its element\'s texture and the crystal, a class card its class\'s and the cube, a Universal or a Subclass card no texture and the crystal', () => {
+        await check('an element card wears its element\'s texture and the crystal, a class card its class\'s and the cube (an aura\'s in its element\'s colour), a Player or a Subclass card no texture and the crystal', () => {
             const role = { brawler: 'brawler', sniper: 'mage', camper: 'technician' };
             for (const c of T.cards) {
                 if (c.kind === 'element') { same(c.tex, 'cat-c-' + c.match, c.name); ok(/^cag-/.test(c.gem), c.name + ' has no crystal: ' + c.gem); }
-                else if (c.kind === 'class') { same(c.tex, 'cat-c-' + role[c.match], c.name); same(c.gem, 'cac-8fe3ff', c.name + '\'s cube'); }
+                else if (c.kind === 'class') { same(c.tex, 'cat-c-' + role[c.match], c.name); same(c.gem, 'cac-' + (c.aura ? { fire: 'ff3300', electric: 'ffee33', ice: '99ddff', flux: '9933ff', core: '00ccaa', toxic: '66ff66' }[c.aura] : '8fe3ff'), c.name + '\'s cube'); }
                 else { same(c.tex, '', c.name + ' (' + c.kind + ') has a texture'); ok(/^cag-/.test(c.gem), c.name + ' has no crystal'); }
             }
-            ok(T.cards.some(c => c.kind === 'element') && T.cards.some(c => c.kind === 'class') && T.cards.some(c => c.kind === 'universal'), 'not every kind was shown');
+            ok(T.cards.some(c => c.kind === 'element') && T.cards.some(c => c.kind === 'class' && !c.aura) && T.cards.some(c => c.aura) && T.cards.some(c => c.kind === 'player'), 'not every kind was shown');
         });
         await check('its state is written along its top (IN YOUR HAND, FOUND THIS RUN, LOCKED, or nothing), the rarity chip stands on its right edge (the right fifth of the card, its upper half), and its buttons are under it (beside it, for the collection\'s card on its stage) where a tap reaches them', () => {
             const st = { hand: 'IN YOUR HAND', found: 'FOUND THIS RUN', locked: 'LOCKED' };

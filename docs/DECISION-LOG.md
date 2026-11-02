@@ -699,3 +699,39 @@ Build B (`NEXT-UPDATE.md`), using these names.
 
 ### Supersedes / superseded by
 Supersedes the enemy table's "BLINDING DUST: no damage" (`COMBAT.md` §7.8, 2026-11-02).
+
+## DECISION: Build b to main; Build B starts
+
+- **Date:** 2026-11-02
+- **Status:** Approved (in a prompt, after build b's handoff)
+- **Branch/build:**
+  - Build `2026-11-02b` (commit e43e599), fast-forwarded to `main`.
+  - Build B: build `2026-11-02c` on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `NEXT-UPDATE.md` (Build B), `UNIVERSAL-AND-PLAYER-CARDS.md`, `SERIES-2.md`, `CHANGELOG.md` (2026-11-02 b, c)
+
+### Context
+Build b's handoff asked whether b goes to main, and whether Build B (the class card families, Series 2 reshaped) starts now that its 21 names were approved.
+
+### Decision
+- **Main:** "Push b to main". Build b went to main as committed (e43e599).
+- **Build B:** "Start Build B". It was built as designed in `UNIVERSAL-AND-PLAYER-CARDS.md` section 2 and `NEXT-UPDATE.md`.
+
+### Exact rules
+Unchanged: the design's own documents. The readings Build B took where the design did not say are listed for the owner in `OPEN-QUESTIONS.md` §1m; none is an approved decision until the owner says so.
+
+### Alternatives considered
+- Keep b on the branch until Build B is ready.
+- Hold Build B for more design.
+
+### Rationale and trade-offs
+b changed only the hit words' place and the docs, and its tests passed (one known flaky check aside).
+
+### Impact
+Build B's code, tests and docs (`CHANGELOG.md`, 2026-11-02 c).
+
+### Follow-up
+- The owner's answers on Build B: main or not yet; the Prototype aura's 5% chance; the rings' look; the readings.
+- Then Build C.
+
+### Supersedes / superseded by
+None.

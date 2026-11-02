@@ -6,7 +6,7 @@
 //   THE ROSTER  (the Command Center's carousel, js/commandcenter.js): beside the creature in view, CARD 1 and CARD 2 as drop-downs under its styles, listing the hand: what does not fit says why, and with no card in the hand
 //               they say so; its SUBCLASS (a row, and a tag on its picture) is under RE-ROLL / INFO / EXILE, which a small tablet must still show. A phone's roster has none of this yet.
 //   YOU         (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player") the strip's first tile is the player; in view, the player's card
-//               shows its two cards, and YOUR SLOT 1 and YOUR SLOT 2 are its drop-downs (Universal cards only: equipPlayerRosterDraw below).
+//               shows its two cards, and YOUR SLOT 1 and YOUR SLOT 2 are its drop-downs (Player cards only: equipPlayerRosterDraw below).
 //   CARDS       the dock's button opens a screen over the game, as the Command Center does: THE COLLECTION (every card: unlocked or locked; UNLOCK for EQUIP.unlockCost shards, two taps; TAKE INTO THE RUN or PUT BACK).
 //               Rarity is a CHIP on each card's edge: six segments, one lit for each step (and a small flat one beside a card in a slot or a list).
 //               Each card is a tilted 3D slab (2026-11-01: _cdSlab below; its texture and its crystal or cube are js/cardart.js's), what can be done with it flat under it.
@@ -59,7 +59,10 @@ function _cdChip(c, mini) {
     for (let i = 0; i < EQUIP_RARITIES.length; i++) { const seg = _cdEl("i", i < n ? "on" : ""); seg.style.setProperty("--i", String(i)); chip.appendChild(seg); }   // (--i: its place, so a lit chip can light up one segment after another)
     return chip;
 }
-function _cdKindCol(c) { return c.kind === "element" ? ((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === c.match)) || {}).color || "#8fe3ff" : c.kind === "universal" ? "#ffe733" : "#8fe3ff"; }
+function _cdKindCol(c) {   // a card's colour: its element's (an element card, a Mage's aura), gold for a Player card, else the class and species cyan
+    const el = c.kind === "element" ? c.match : c.aura ? c.aura.el : null;
+    return el ? ((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === el)) || {}).color || "#8fe3ff" : c.kind === "player" ? "#ffe733" : "#8fe3ff";
+}
 // THE 3D CARD (ASKED 2026-11-01: "actual cards that look 3D ... a 3D looking object inside the card, and the card itself is kind of like tilted a little bit on an axis ... the text might be a raised hologram"; the
 // design canvas's chosen board, then "Make an update to implement this style"). The card is a slab tilted in 3D with a little thickness (game.html "THE 3D CARDS"): its face wears the card's texture under a veil
 // (js/cardart.js: its element's, or a class card's class's), the element's crystal or a class card's cube floats over it, the rarity and the card's state are along its top, the rarity chip stands on its right
@@ -162,7 +165,7 @@ function _cdMarketBox() {
 //                (a native scroll, snapping each card to the middle); the one in the MIDDLE is the card selected. A tap on a mini card brings it to the middle; ◀ ▶, the wheel and the arrow keys step one.
 //   THE STAGE    the selected card, at the top: the full card (js/cardsui.js _cdSlab), which CHANGES FORM as it arrives (it grows out of a mini card), its picture BLOWN UP (the crystal, cube or item scaled
 //                up and kept so), its RARITY METER lighting up one segment after another and then glowing; beside it its parts LABELLED (name, kind, rarity with a large meter, effect, state) and its buttons.
-//   SORT         by rarity (the rarest first) or by element (fire, toxic, electric, ice, flux, core, then the class cards, the species cards, the universal ones), the lower rarity first within each.
+//   SORT         by rarity (the rarest first) or by element (fire, toxic, electric, ice, flux, core, then the class cards, a Mage's auras by their element, the species cards, the Player cards), the lower rarity first within each.
 //   SHOW         (build 2026-11-01l) OWNED, the player's own cards (kept for good, and found this run, marked ★), or ALL, every card in the game (the locked ones too, each unlockable from the stage as before).
 //                With nothing owned, ALL is shown. A card taken into the run (kept for good and brought along) is LIT GOLD FROM BEHIND, on its mini card and on the stage: the gold of the buttons that buy.
 // The view, the order and the card selected are kept while the sheet is open and between openings (_cdView, _cdSort, _cdSel). Sliding the rail redraws only the stage, never the rail under the finger.
@@ -171,7 +174,7 @@ const CD_RAIL = { settle: 110, wheel: 60 };
 const _CD_EL_ORDER = ["fire", "toxic", "electric", "ice", "flux", "core"], _CD_ROLE_ORDER = ["brawler", "sniper", "camper"];
 const _CD_INFO_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED", "": "YOURS FOR GOOD" };
 function _cdRarityIdx(c) { return EQUIP_RARITIES.findIndex(r => r.id === c.rarity); }
-function _cdGroupIdx(c) { return c.kind === "element" ? _CD_EL_ORDER.indexOf(c.match) : c.kind === "class" ? 10 + _CD_ROLE_ORDER.indexOf(c.match) : c.kind === "subclass" ? 20 + EQUIP_SUBCLASSES.findIndex(s => s.id === c.match) : 40; }
+function _cdGroupIdx(c) { return c.kind === "element" ? _CD_EL_ORDER.indexOf(c.match) : c.kind === "class" ? 10 + _CD_ROLE_ORDER.indexOf(c.match) + (c.aura ? (1 + _CD_EL_ORDER.indexOf(c.aura.el)) / 10 : 0) : c.kind === "subclass" ? 20 + EQUIP_SUBCLASSES.findIndex(s => s.id === c.match) : 40; }   // (a Mage's auras after its other cards, by their element; the Player cards last)
 // the collection in the rail's order ("rarity" or "element")
 function equipCollectionOrder(cards, by) {
     return cards.slice().sort((a, b) => by === "element" ? (_cdGroupIdx(a) - _cdGroupIdx(b) || _cdRarityIdx(a) - _cdRarityIdx(b) || a.name.localeCompare(b.name))
@@ -391,19 +394,19 @@ function equipRosterDraw(side, f) {   // (drawn under the styles)
 }
 // ── YOU, ON THE ROSTER (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the player's card in view (js/commandcenter.js
 // _ccFocusDraw) shows its two cards, each a mini card as the collection's (a tap opens its list); the settings column has YOUR SLOT 1 and YOUR SLOT 2, drop-downs as a follower's CARD 1 and CARD 2, listing the hand
-// (Universal cards only: the rest say why not, js/cards.js equipPlayerWhyNot)
+// (Player cards only since Build B, the Universal kind retired: the rest say why not, js/cards.js equipPlayerWhyNot)
 function equipPlayerSig() { return [equipPlayer.join(","), equipHand.join(","), equipFound.join(","), equipUsableCards().length].join("|"); }   // (what the player's card and its column must redraw for)
 function equipPlayerRosterDraw(side) {
     if (typeof _ccEl !== "function") return;
-    const hand = equipUsableCards(), uni = hand.filter(c => c.kind === "universal").length;
-    side.appendChild(_ccEl("div", "cc-sec", "YOUR CARDS · " + EQUIP.playerSlots + " SLOTS · UNIVERSAL CARDS ONLY"));
+    const hand = equipUsableCards(), mine = hand.filter(c => c.kind === "player").length;
+    side.appendChild(_ccEl("div", "cc-sec", "YOUR CARDS · " + EQUIP.playerSlots + " SLOTS · PLAYER CARDS ONLY"));
     for (let slot = 0; slot < EQUIP.playerSlots; slot++) {
         const cur = equipPlayer[slot], card = equipCard(cur), opts = [];
         opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE THE CARD OFF" : "", fn: () => { equipPlayerPut(slot, null); } });
         hand.forEach(c => { const why = equipPlayerWhyNot(c.id, slot); opts.push({ label: c.name, col: "#ffe733", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipPlayerPut(slot, c.id); } }); });
         _ccDropdown(side, "pslot" + slot, "YOUR SLOT " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);
     }
-    side.appendChild(_ccEl("div", "cc-note", !hand.length ? "TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN: THEY ARE LISTED HERE" : !uni ? "NO UNIVERSAL CARD IN YOUR HAND: ONLY THOSE FIT YOU" : "EACH FOLLOWER'S TWO CARDS ARE ON ITS OWN PAGE OF THE ROSTER"));
+    side.appendChild(_ccEl("div", "cc-note", !hand.length ? "TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN: THEY ARE LISTED HERE" : !mine ? "NO PLAYER CARD IN YOUR HAND: ONLY THOSE FIT YOU" : "EACH FOLLOWER'S TWO CARDS ARE ON ITS OWN PAGE OF THE ROSTER"));
 }
 // the player's two cards on its card in view: a mini card for each (or an empty place); `onTap(slot)` opens that slot's list
 function equipPlayerSlotsBox(onTap) {

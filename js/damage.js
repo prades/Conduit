@@ -177,6 +177,20 @@ function dmgApply(target, amount, source, element, hit) {
     // a player's weapon with an element (the laser on a selected element, an elemental lash) still sets the triangle on the whole hit, as it did
     let whole = 1;
     if (player && phys > 0 && el && target.element && typeof getElementMultiplier === "function") whole = getElementMultiplier(el, target.element);
+    // OPPORTUNITY (a Brawler's cards, js/cards.js equipOpportunity; docs/UNIVERSAL-AND-PLAYER-CARDS.md): each weakness the hit exploits adds the card's share to the whole hit, the openings adding up (the owner, 2026-11-02).
+    // The four: the target's race weak to the hit's physical type, weak to Elemental (both parts count), an element match-up (the triangle's ×1.3), a stunned or sleeping target (not a glitched one). On ice against core the
+    // elemental part is nothing, and the bonus falls on the physical part that lands.
+    if (source && source.isFollower && !source.isClone && source.cards && typeof equipOpportunity === "function") {
+        const op = equipOpportunity(source);
+        if (op > 0) {
+            let n = 0;
+            if (phys > 0 && pm > 1) n++;
+            if (elem > 0 && dmgRowMult(row, "elemental") > 1) n++;
+            if (elem > 0 && el && target.element && typeof getElementMultiplier === "function" && getElementMultiplier(el, target.element) > 1) n++;
+            if (target.stunned > 0 || target.asleep > 0) n++;
+            if (n) whole *= 1 + op * n;
+        }
+    }
     _dmgWords(target, ptype, pm, elem > 0 ? el : null, em);
     return (phys * pm + elem * em) * whole;
 }

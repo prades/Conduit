@@ -1,13 +1,13 @@
 // EQUIP CARDS, AND THE SUBCLASS TAG (js/cards.js, js/cardsui.js; the hooks in js/facilitysave.js, js/game.js, js/helpers.js, js/party.js, js/specimen.js, js/commandcenter.js).
 // ASKED: "Make way for a robust card system that will be used to give followers [...] a equip card and actually have a slot for another equip card. So two equip cards per follower. [...] there also needs to be a new sub
 // archetype for each of the followers [...] a tag for later classification when it comes to giving buffs to creatures. So just make it to where there's not going to be any conflict, and this new system can rest
-// peacefully within our infrastructure." Chosen with the user (the Notion "Conduit Game Design Archive", 2026-10-30): five subclasses, two slots on each follower and two Universal ones on the player, a card is a type
+// peacefully within our infrastructure." Chosen with the user (the Notion "Conduit Game Design Archive", 2026-10-30): five subclasses, two slots on each follower and two Universal ones on the player (Player cards only since Build B, 2026-11-02c: the Universal kind is retired), a card is a type
 // (never used up), unlocked for good for 1,000 shards, a hand of up to three chosen at the start of a run, a CARDS dock button on a tablet or a desktop, inert test cards behind a developer switch (?cards).
 //   THE TAG       each of the 18 forms has the subclass the user's roster chart gives it (by name); an egg, and the ten retired forms, have none; it decides nothing
-//   THE RULES     a card fits by element, role (class), subclass or not at all (universal); in the hand to be worn; one slot each, not twice on a unit, any number of units may wear one; the player takes Universal only;
+//   THE RULES     a card fits by element, role (class), subclass, or is the player's (a Player card); in the hand to be worn; one slot each, not twice on a unit, any number of units may wear one; the player takes Player cards only;
 //                 a role switched or a card put back takes it off (the tick); unlocking pays the flat price from the run's shards, once, and is kept where NEW GAME does not reach
 //   THE LIFE      a respawn keeps a follower's cards; EXILE, falling for good (its restored body too) and a RE-ROLL empty the slots; the save carries them, additively (FS.version still 1), and a save from before the cards loads
-//   NOTHING ELSE  the nine test cards do nothing (the 56 real ones are tests/crystalline.js's, tests/packs.js's and tests/series2.js's); with no card in the registry the button, the roster's slots and the sheet are there and say so; the game's own numbers (the stats, the save's other parts) are as they were
+//   NOTHING ELSE  the nine test cards do nothing (the 69 real ones are tests/crystalline.js's, tests/packs.js's, tests/series2.js's and tests/classcards.js's); with no card in the registry the button, the roster's slots and the sheet are there and say so; the game's own numbers (the stats, the save's other parts) are as they were
 //   THE SCREENS   in the real page: the CARDS button and its sheet (a rarity chip on each card's edge, THE COLLECTION with the cards taken into the run lit gold, nothing beside its stage, UNLOCK in two taps), the roster's
 //                 YOU (the strip's first tile: the player's card and YOUR SLOT 1 / YOUR SLOT 2, build 2026-11-01l), its SUBCLASS and CARD 1 / CARD 2, the start-of-run choice; a phone has none
 const fs = require('fs');
@@ -134,7 +134,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
         click(stageBtn()); await wait(60); out.unlock = { shards: before - shardCount, owned: equipOwns(id), stored: localStorage.getItem('conduit_fp_cards') };
       }
       cardsClose();
-      // THE ROSTER'S YOU (build 2026-11-01l): the strip's first tile; a tap puts the player's card in view, YOUR SLOT 1 and YOUR SLOT 2 beside it: Universal cards only, not the same twice
+      // THE ROSTER'S YOU (build 2026-11-01l): the strip's first tile; a tap puts the player's card in view, YOUR SLOT 1 and YOUR SLOT 2 beside it: Player cards only, not the same twice
       selectedUnits.clear(); ccOpen('roster'); await wait(300);
       var ytile = $('#ccGrid .cc-ytile'), slotDds = function(){ return $$('#ccSide .cc-dd').filter(function(d){ return /^YOUR SLOT/.test(d.querySelector('.cc-dd-k').textContent); }); };
       out.you = { first: $('#ccGrid').firstElementChild === ytile, tile: ytile ? ytile.textContent : null, notCard: !!ytile && !ytile.classList.contains('cc-card'), strip: $$('#ccGrid .cc-card:not(.cc-rtile)').length === _ccStripUnits().length, shownBefore: ccFocusIsYou() };
@@ -144,11 +144,11 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       out.you.dds = $$('#ccSide .cc-dd .cc-dd-k').map(function(e){ return e.textContent; }); out.you.slotsShown = $$('#ccFocus .cf-pslot').map(function(e){ return e.textContent; }); out.you.swap = $('#ccSwap').textContent;
       click(slotDds()[0]); await wait(60);
       var lst = function(){ return $$('#ccSide .cc-dd-list .cc-btn').map(function(b){ return [b.querySelector('.cc-bl').textContent, b.disabled]; }); };
-      out.pList0 = lst(); click(byText('#ccSide .cc-dd-list .cc-btn', 'TEST · UNIVERSAL A')); await wait(60);
+      out.pList0 = lst(); click(byText('#ccSide .cc-dd-list .cc-btn', 'TEST · PLAYER A')); await wait(60);
       out.pAfter = equipPlayer.slice(); out.pShown = slotDds()[0].querySelector('.cc-dd-v').textContent; out.pChips = slotDds().map(function(d){ var c = d.querySelector('.cd-chip.mini'); return c ? c.querySelectorAll('i.on').length : -1; });
       out.you.worn = $$('#ccFocus .cf-pslot').map(function(e){ var m = e.querySelector('.cd-mini'); return (m && m.querySelector('.cd-mn') ? m.querySelector('.cd-mn').textContent + (m.classList.contains('hand') ? '(gold)' : '') : 'EMPTY'); }); out.you.pips = $$('#ccGrid .cc-ytile .cc-ypips i.on').length;
       click($$('#ccFocus .cf-pslot .cd-mini')[1]); await wait(60); out.you.tapOpens = $$('#ccSide .cc-dd.open .cc-dd-k').map(function(e){ return e.textContent; }).join();   // (a tap on a slot's card on the player's card opens its list)
-      out.pList1 = lst(); click(byText('#ccSide .cc-dd-list .cc-btn', 'TEST · UNIVERSAL B')); await wait(60); out.pAfter2 = equipPlayer.slice();
+      out.pList1 = lst(); click(byText('#ccSide .cc-dd-list .cc-btn', 'TEST · PLAYER B')); await wait(60); out.pAfter2 = equipPlayer.slice();
       click($('#ccFocus .cf-arrow.next')); await wait(60); out.you.next = [ccFocusIsYou(), _ccFocus === _ccStripUnits()[0], $$('#ccSide .cc-dd .cc-dd-k').map(function(e){ return e.textContent; }).join('|'), getComputedStyle($('#ccFocus .cf-pcwrap')).display];
       ccClose(); await wait(60);
       // THE ROSTER: the creature in view's SUBCLASS and its two slots
@@ -247,31 +247,31 @@ function measure(w, h, query, seed) {
     });
 
     group('2. THE CARDS: what exists');
-    await check('the real cards: the six Crystalline ones (tests/crystalline.js), Pack 1\'s eighteen (tests/packs.js) and Series 2\'s thirty-two (tests/series2.js). The test cards (?cards): nine, one of each kind, every rarity named, none does anything', () => {
-        same(J('Object.keys(EQUIP_CARDS).length'), 56, 'real cards'); const t = J('Object.values(EQUIP_TEST_CARDS)'); same(t.length, 9, 'test cards'); same(J('Object.keys(equipCards()).length'), 65, 'the live registry');
-        same(J('Object.values(EQUIP_CARDS).filter(function(c){ return !c.pack; }).length') + '/' + J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).length') + '/' + J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "series2"; }).length'), '6/18/32', 'no pack (the Crystalline six) / Pack 1 / Series 2');
+    await check('the real cards: the six Crystalline ones (tests/crystalline.js), Pack 1\'s eighteen (tests/packs.js) and Series 2\'s forty-five (tests/series2.js, tests/classcards.js). The test cards (?cards): nine, one of each kind (two of them Player cards), every rarity named, none does anything', () => {
+        same(J('Object.keys(EQUIP_CARDS).length'), 69, 'real cards'); const t = J('Object.values(EQUIP_TEST_CARDS)'); same(t.length, 9, 'test cards'); same(J('Object.keys(equipCards()).length'), 78, 'the live registry');
+        same(J('Object.values(EQUIP_CARDS).filter(function(c){ return !c.pack; }).length') + '/' + J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).length') + '/' + J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "series2"; }).length'), '6/18/45', 'no pack (the Crystalline six) / Pack 1 / Series 2');
         ok(t.every(c => c.bonus === undefined), 'a test card has a bonus');
-        const kinds = new Set(t.map(c => c.kind)); same([...kinds].sort().join(), 'class,element,subclass,universal', 'the kinds');
+        const kinds = new Set(t.map(c => c.kind)); same([...kinds].sort().join(), 'class,element,player,subclass', 'the kinds (no Universal: retired)');
         const subs = J('EQUIP_SUBCLASSES.map(function(s){ return s.id; })'), roles = ['brawler', 'sniper', 'camper'], els = J('ELEMENTS.map(function(e){ return e.id; })'), rar = J('EQUIP_RARITIES.map(function(r){ return r.id; })');
         for (const c of t) {
             ok(/^test_/.test(c.id) && c.id === Object.keys(J('EQUIP_TEST_CARDS')).find(k => k === c.id) && c.test === true, c.id + ' is not marked a test card'); ok(rar.includes(c.rarity), c.id + ' has a rarity that is not named');
             if (c.kind === 'element') ok(els.includes(c.match), c.id + ' matches an element that is not'); if (c.kind === 'class') ok(roles.includes(c.match), c.id + ' matches a role that is not');
-            if (c.kind === 'subclass') ok(subs.includes(c.match), c.id + ' matches a subclass that is not'); if (c.kind === 'universal') ok(c.match === null, c.id + ' matches something');
+            if (c.kind === 'subclass') ok(subs.includes(c.match), c.id + ' matches a subclass that is not'); if (c.kind === 'player') ok(c.match === null, c.id + ' matches something');
             ok(/NOTHING/.test(c.text), c.id + ' does not say it does nothing');
         }
         same(rar.join(), 'unrefined,refined,precision,prototype,lustrous,crystalline', 'the rarity names, lowest first');
         same(new Set(t.map(c => c.rarity)).size >= 5, true, 'the test cards spread over the rarities');
     });
     const Q = await boot('', {});
-    await check('without ?cards: the registry is the real cards (56) and no test card, equipAny is true, and a test card cannot be unlocked, taken or worn', () => {
-        same(Q.J('Object.keys(equipCards()).length'), 56, 'cards'); same(Q.J('equipAny()'), true, 'any'); same(Q.J('equipDev'), '', 'the switch'); same(Q.J('Object.keys(equipCards()).some(function(id){ return /^test_/.test(id); })'), false, 'a test card is in the registry');
+    await check('without ?cards: the registry is the real cards (69) and no test card, equipAny is true, and a test card cannot be unlocked, taken or worn', () => {
+        same(Q.J('Object.keys(equipCards()).length'), 69, 'cards'); same(Q.J('equipAny()'), true, 'any'); same(Q.J('equipDev'), '', 'the switch'); same(Q.J('Object.keys(equipCards()).some(function(id){ return /^test_/.test(id); })'), false, 'a test card is in the registry');
         const r = Q.J(`(function(){ shardCount = 5000; const a = equipUnlock('test_fire'), b = equipHandAdd('test_fire'), f = __mk('fire', 'brawler'); return { a, b, put: equipPut(f, 0, 'test_fire'), why: equipUnlockWhyNot('test_fire'), shards: shardCount, run: equipRunStart(), owned: equipOwnedList().length }; })()`);
         same(r.a, false, 'unlocked a card that does not exist'); same(r.b, false, 'a card that does not exist went into the hand'); same(r.put, false, 'a card that does not exist was put on'); same(r.shards, 5000, 'it cost something'); same(r.run, false, 'a run began with a choice to make'); same(r.owned, 0, 'owned');
     });
-    await check('?cards=all: every card (the 56 real and the nine test) is owned and in the hand, to try the screens by hand; none of that is ever saved', async () => {
+    await check('?cards=all: every card (the 69 real and the nine test) is owned and in the hand, to try the screens by hand; none of that is ever saved', async () => {
         const store = {}, A = await boot('?cards=all', store);
         const r = A.J(`(function(){ shardCount = 5000; const own = equipOwnedList().length, hand = equipHand.length, un = equipUnlock('test_fire'), w = equipWriteOwned(); const off = equipHandRemove('test_fire'), on = equipHandAdd('test_fire'); equipHand.length = 0; equipReset(); return { dev: equipDev, own, hand, un, w, off, on, again: equipHand.length, keys: Object.keys(equipCards()).length, shards: shardCount }; })()`);
-        same(r.dev, 'all', 'the switch'); same(r.own, 65, 'owned'); same(r.hand, 65, 'in the hand'); same(r.un, false, 'it unlocked a card it already owns'); same(r.w, false, 'it wrote the collection'); same(r.again, 65, 'a fresh run\'s hand'); same(r.shards, 5000, 'it cost something'); same(r.off && r.on, true, 'a card put back could not be taken again (the hand has no limit here)');
+        same(r.dev, 'all', 'the switch'); same(r.own, 78, 'owned'); same(r.hand, 78, 'in the hand'); same(r.un, false, 'it unlocked a card it already owns'); same(r.w, false, 'it wrote the collection'); same(r.again, 78, 'a fresh run\'s hand'); same(r.shards, 5000, 'it cost something'); same(r.off && r.on, true, 'a card put back could not be taken again (the hand has no limit here)');
         same(Object.keys(store).filter(k => /cards/.test(k)).length, 0, 'it saved something: ' + Object.keys(store));
     });
 
@@ -281,14 +281,14 @@ function measure(w, h, query, seed) {
         const r = J(`(function(){ const fs = __fresh(3); const k = { slots: fs.map(f => equipSlots(f).length), empty: fs.every(f => equipSlots(f).every(x => x === null)), worn: fs.map(equipWorn).join(), n: EQUIP.followerSlots, pn: EQUIP.playerSlots }; return k; })()`);
         same(r.slots.join(), '2,2,2', 'slots'); same(r.empty, true, 'not empty'); same(r.worn, '0,0,0', 'worn'); same(r.n, 2, 'EQUIP.followerSlots'); same(r.pn, 2, 'EQUIP.playerSlots');
     });
-    await check('a card fits by its kind: ELEMENT (that element), CLASS (that role), SUBCLASS (that subclass, so an egg takes none), UNIVERSAL (anyone); the reason is said', () => {
+    await check('a card fits by its kind: ELEMENT (that element), CLASS (that role), SUBCLASS (that subclass, so an egg takes none), PLAYER (no follower: the player\'s slots); the reason is said', () => {
         const r = J(`(function(){ __fresh(0); __hand(Object.keys(equipCards())); const f = __form(__mk('fire', 'brawler'), 'quillstone'), egg = __mk('fire', 'brawler'), ice = __mk('ice', 'sniper'), t = __form(__mk('fire', 'camper'), 'thermite'); const w = (u, id) => equipWhyNot(u, id, 0);
             return { fire: [w(f, 'test_fire'), w(ice, 'test_fire')], iceCard: [w(f, 'test_ice'), w(ice, 'test_ice')], cls: [w(f, 'test_brawler'), w(f, 'test_mage'), w(ice, 'test_mage'), w(t, 'test_technician'), w(ice, 'test_technician')],
-              sub: [w(f, 'test_crustacean'), w(f, 'test_drone'), w(t, 'test_drone'), w(egg, 'test_crustacean'), w(egg, 'test_drone')], uni: [w(f, 'test_universal_a'), w(egg, 'test_universal_a'), w(ice, 'test_universal_b')] }; })()`);
+              sub: [w(f, 'test_crustacean'), w(f, 'test_drone'), w(t, 'test_drone'), w(egg, 'test_crustacean'), w(egg, 'test_drone')], uni: [w(f, 'test_player_a'), w(egg, 'test_player_a'), w(ice, 'test_player_b')] }; })()`);
         same(r.fire[0], null, 'a fire card on a fire follower'); same(r.fire[1], 'FOR FIRE FOLLOWERS', 'a fire card on an ice one'); same(r.iceCard[0], 'FOR ICE FOLLOWERS', 'an ice card on a fire follower'); same(r.iceCard[1], null, 'an ice card on an ice one');
         same(r.cls[0], null, 'a brawler card on a brawler'); same(r.cls[1], 'FOR MAGES', 'a mage card on a brawler'); same(r.cls[2], null, 'a mage card on a mage (the code\'s "sniper")'); same(r.cls[3], null, 'a technician card on a technician (the "camper")'); same(r.cls[4], 'FOR TECHNICIANS', 'a technician card on a mage');
         same(r.sub[0], null, 'a crustacean card on a Quillstone'); same(r.sub[1], 'FOR DRONES', 'a drone card on a Quillstone'); same(r.sub[2], null, 'a drone card on a Thermite Burrower'); same(r.sub[3], 'FOR CRUSTACEANS · EVOLVE FIRST', 'a subclass card on an egg'); same(r.sub[4], 'FOR DRONES · EVOLVE FIRST', 'a drone card on an egg');
-        same(r.uni.join(), ',,', 'a universal card is for anyone');
+        same(r.uni.join(), 'FOR THE PLAYER,FOR THE PLAYER,FOR THE PLAYER', 'a Player card on a follower');
     });
     await check('a card is worn from the hand only; the same card cannot be on both of one follower\'s slots; any number of followers can wear the same card (it is a type, never used up)', () => {
         const r = J(`(function(){ const fs = __fresh(3); fs.forEach(f => { f.element = 'fire'; f.role = 'brawler'; }); __hand([]); const o = {}; o.outOfHand = equipPut(fs[0], 0, 'test_fire'); __hand(['test_fire', 'test_brawler']);
@@ -306,24 +306,24 @@ function measure(w, h, query, seed) {
     });
     await check('the hand: up to three, from the collection only; a card put back comes off everyone at once (the tick would do it a half second later)', () => {
         const r = J(`(function(){ const fs = __fresh(2); fs.forEach(f => { f.element = 'fire'; f.role = 'brawler'; }); equipHand.length = 0; const o = {}; o.notOwned = equipHandAdd('test_fire');
-            ['test_fire', 'test_brawler', 'test_universal_a', 'test_universal_b'].forEach(id => equipOwnedSet().add(id)); o.add = ['test_fire', 'test_brawler', 'test_universal_a', 'test_universal_b'].map(id => equipHandAdd(id)); o.hand = equipHand.slice(); o.twice = equipHandAdd('test_fire'); o.max = EQUIP.startPick;
-            equipPut(fs[0], 0, 'test_fire'); equipPut(fs[1], 1, 'test_fire'); equipPlayerPut(0, 'test_universal_a'); o.before = equipWearers('test_fire'); o.back = equipHandRemove('test_fire'); o.after = equipWearers('test_fire'); o.f0 = equipSlots(fs[0]).join('|'); o.backAgain = equipHandRemove('test_fire');
-            equipHandRemove('test_universal_a'); o.player = equipPlayer.slice(); return o; })()`);
+            ['test_fire', 'test_brawler', 'test_player_a', 'test_player_b'].forEach(id => equipOwnedSet().add(id)); o.add = ['test_fire', 'test_brawler', 'test_player_a', 'test_player_b'].map(id => equipHandAdd(id)); o.hand = equipHand.slice(); o.twice = equipHandAdd('test_fire'); o.max = EQUIP.startPick;
+            equipPut(fs[0], 0, 'test_fire'); equipPut(fs[1], 1, 'test_fire'); equipPlayerPut(0, 'test_player_a'); o.before = equipWearers('test_fire'); o.back = equipHandRemove('test_fire'); o.after = equipWearers('test_fire'); o.f0 = equipSlots(fs[0]).join('|'); o.backAgain = equipHandRemove('test_fire');
+            equipHandRemove('test_player_a'); o.player = equipPlayer.slice(); return o; })()`);
         same(r.notOwned, false, 'a card not owned went into the hand'); same(r.add.join(), 'true,true,true,false', 'the hand holds ' + r.max); same(r.hand.length, 3, 'hand'); same(r.twice, false, 'twice'); same(r.max, 3, 'EQUIP.startPick');
         same(r.before, 2, 'before'); same(r.back, true, 'put back'); same(r.after, 0, 'a card out of the hand is still worn'); same(r.f0, '|', 'the slot'); same(r.backAgain, false, 'put back twice'); same(r.player.join(), ',', 'the player\'s slot kept a card that left the hand');
     });
-    await check('the player: two slots, Universal cards only, from the hand, not the same one twice', () => {
-        const r = J(`(function(){ __hand(['test_universal_a', 'test_universal_b', 'test_fire']); equipPlayer = [null, null]; const o = {}; o.n = equipPlayer.length; o.fire = equipPlayerPut(0, 'test_fire'); o.fireWhy = equipPlayerWhyNot('test_fire', 0); o.a = equipPlayerPut(0, 'test_universal_a');
-            o.dup = equipPlayerPut(1, 'test_universal_a'); o.dupWhy = equipPlayerWhyNot('test_universal_a', 1); o.b = equipPlayerPut(1, 'test_universal_b'); o.slots = equipPlayer.slice(); o.noHand = equipPlayerPut(0, 'test_ice'); o.third = equipPlayerPut(2, 'test_universal_a');
+    await check('the player: two slots, Player cards only (the Universal kind retired in Build B), from the hand, not the same one twice', () => {
+        const r = J(`(function(){ __hand(['test_player_a', 'test_player_b', 'test_fire']); equipPlayer = [null, null]; const o = {}; o.n = equipPlayer.length; o.fire = equipPlayerPut(0, 'test_fire'); o.fireWhy = equipPlayerWhyNot('test_fire', 0); o.a = equipPlayerPut(0, 'test_player_a');
+            o.dup = equipPlayerPut(1, 'test_player_a'); o.dupWhy = equipPlayerWhyNot('test_player_a', 1); o.b = equipPlayerPut(1, 'test_player_b'); o.slots = equipPlayer.slice(); o.noHand = equipPlayerPut(0, 'test_ice'); o.third = equipPlayerPut(2, 'test_player_a');
             o.off = equipPlayerPut(0, null); o.offAgain = equipPlayerPut(0, null); o.rec = equipSaveCollect(); return o; })()`);
-        same(r.n, 2, 'slots'); same(r.fire, false, 'a fire card on the player'); same(r.fireWhy, 'UNIVERSAL CARDS ONLY', 'the reason'); same(r.a, true, 'a Universal card'); same(r.dup, false, 'the same card twice'); same(r.dupWhy, 'ALREADY IN THE OTHER SLOT', 'the reason');
-        same(r.b, true, 'a second'); same(r.slots.join(), 'test_universal_a,test_universal_b', 'slots'); same(r.noHand, false, 'a card not in the hand'); same(r.third, false, 'a third slot'); same(r.off, true, 'take off'); same(r.offAgain, false, 'take off an empty slot');
-        same(JSON.stringify({ hand: r.rec.hand, found: r.rec.found, player: r.rec.player }), JSON.stringify({ hand: ['test_universal_a', 'test_universal_b', 'test_fire'], found: [], player: [null, 'test_universal_b'] }), 'what the save would keep (the hand, the found, the slots; the credits and the shelf are tests/market.js\'s)');
+        same(r.n, 2, 'slots'); same(r.fire, false, 'a fire card on the player'); same(r.fireWhy, 'PLAYER CARDS ONLY', 'the reason'); same(r.a, true, 'a Player card'); same(r.dup, false, 'the same card twice'); same(r.dupWhy, 'ALREADY IN THE OTHER SLOT', 'the reason');
+        same(r.b, true, 'a second'); same(r.slots.join(), 'test_player_a,test_player_b', 'slots'); same(r.noHand, false, 'a card not in the hand'); same(r.third, false, 'a third slot'); same(r.off, true, 'take off'); same(r.offAgain, false, 'take off an empty slot');
+        same(JSON.stringify({ hand: r.rec.hand, found: r.rec.found, player: r.rec.player }), JSON.stringify({ hand: ['test_player_a', 'test_player_b', 'test_fire'], found: [], player: [null, 'test_player_b'] }), 'what the save would keep (the hand, the found, the slots; the credits and the shelf are tests/market.js\'s)');
     });
     await check('the tick takes off what no longer fits: a role switched (a class card), a card put out of the hand, a card that is on both slots, a card the registry does not have; every EQUIP.every frames, and at once when forced', () => {
-        const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; f.role = 'brawler'; delete f.evolved; __hand(['test_brawler', 'test_fire', 'test_universal_a']); const o = {};
+        const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; f.role = 'brawler'; delete f.evolved; __hand(['test_brawler', 'test_fire', 'test_player_a']); const o = {};
             equipPut(f, 0, 'test_brawler'); equipPut(f, 1, 'test_fire'); f.role = 'sniper'; frame = 1; equipTick(); o.notYet = equipSlots(f).join('|'); frame = EQUIP.every * 4; equipTick(); o.afterTick = equipSlots(f).join('|');
-            f.cards = ['test_fire', 'test_fire']; equipTick(true); o.dup = equipSlots(f).join('|'); f.cards = ['gone_card', 'test_fire']; equipTick(true); o.unknown = equipSlots(f).join('|'); f.cards = ['test_universal_a', null]; __hand([]); frame = EQUIP.every * 5; equipTick(); o.outOfHand = f.cards === undefined;
+            f.cards = ['test_fire', 'test_fire']; equipTick(true); o.dup = equipSlots(f).join('|'); f.cards = ['gone_card', 'test_fire']; equipTick(true); o.unknown = equipSlots(f).join('|'); f.cards = ['test_player_a', null]; __hand([]); frame = EQUIP.every * 5; equipTick(); o.outOfHand = f.cards === undefined;
             return o; })()`);
         same(r.notYet, 'test_brawler|test_fire', 'it ran between its beats'); same(r.afterTick, '|test_fire', 'a brawler card stayed on a mage'); same(r.dup, 'test_fire|', 'the same card on both slots'); same(r.unknown, '|test_fire', 'a card the registry does not have'); same(r.outOfHand, true, 'a card left the hand and stayed on');
     });
@@ -340,11 +340,11 @@ function measure(w, h, query, seed) {
     });
     await check('NEW GAME throws the run away and not the collection: the save goes, conduit_fp_cards stays; a game that is started again is a fresh run with an empty hand and the same collection', async () => {
         const store = {}, B = await boot('?cards', store);
-        B.run(`shardCount = 3000; equipUnlock('test_fire'); equipUnlock('test_universal_a'); equipHandAdd('test_fire'); equipHandAdd('test_universal_a'); equipPlayerPut(0, 'test_universal_a'); facilitySaveWrite();`);
+        B.run(`shardCount = 3000; equipUnlock('test_fire'); equipUnlock('test_player_a'); equipHandAdd('test_fire'); equipHandAdd('test_player_a'); equipPlayerPut(0, 'test_player_a'); facilitySaveWrite();`);
         ok(store.conduit_fp_save && store.conduit_fp_cards, 'the save and the collection were not both written: ' + Object.keys(store));
         B.run('facilitySaveClear()'); same(store.conduit_fp_save, undefined, 'the save stayed'); ok(JSON.parse(store.conduit_fp_cards).owned.length === 2, 'the collection did not stay');
         const C = await boot('?cards', store), r = C.J('({ owned: equipOwnedList().map(c => c.id), hand: equipHand, player: equipPlayer })');
-        same(r.owned.join(), 'test_fire,test_universal_a', 'the collection after NEW GAME'); same(r.hand.length, 0, 'the hand carried over'); same(r.player.join(), ',', 'the slots carried over');
+        same(r.owned.join(), 'test_fire,test_player_a', 'the collection after NEW GAME'); same(r.hand.length, 0, 'the hand carried over'); same(r.player.join(), ',', 'the slots carried over');
     });
     await check('a collection is not the run: a game that starts fresh with a collection asks for the hand (equipRunStart); one with none asks nothing; ?cards=all asks nothing', async () => {
         const store = { conduit_fp_cards: JSON.stringify({ v: 1, owned: ['test_fire', 'test_ice'] }) }, B = await boot('?cards', store);
@@ -358,7 +358,7 @@ function measure(w, h, query, seed) {
     });
 
     group('5. THE LIFE OF A FOLLOWER\'S CARDS');
-    run(`globalThis.__wear = f => { f.element = 'fire'; f.role = 'brawler'; __hand(['test_fire', 'test_brawler', 'test_universal_a']); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); return f; };
+    run(`globalThis.__wear = f => { f.element = 'fire'; f.role = 'brawler'; __hand(['test_fire', 'test_brawler', 'test_player_a']); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); return f; };
          globalThis.__fall = (f, forGood) => { f.spawnProtection = 0; if (forGood) { f.queuedForRespawn = true; f.dead = true; specimenFollowerFell(f); render(); render(); return; } const foe = { x: f.x + 1, y: f.y, team: 'red' }; for (let i = 0; i < 20 && !f.dead; i++) applyDamage(f, f.maxHealth, foe); render(); render(); };   // (FOR GOOD: the body an older save can hold; a death no longer wears the HP stat down, the owner's rule of 2026-11-01)`);
     await check('a follower that falls and comes back at the Crystal comes back with its cards (the same person, the same uid), and with the role it had: an egg switched to another ATTACK STYLE keeps it, so its Class card stays on', () => {
         const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; delete f.evolved; const own = assignRole(applyPersonality(f.personality)); f.role = own === 'camper' ? 'brawler' : 'camper'; const picked = f.role; __hand(['test_fire', 'test_brawler', 'test_technician']);
@@ -396,15 +396,15 @@ function measure(w, h, query, seed) {
         same(r.rec.join('|'), 'test_fire|test_brawler', 'the record'); same(r.back, 'test_fire|test_brawler', 'the follower built from it'); same(r.bare, true, 'a record for nothing worn carries cards');
     });
     await check('the run\'s save carries the hand and the player\'s slots; FS.version is still 1', () => {
-        const r = J(`(function(){ __hand(['test_universal_a', 'test_fire']); equipPlayer = ['test_universal_a', null]; const d = JSON.parse(JSON.stringify(facilitySaveCollect())); return { cards: d.cards, v: d.v, version: FS.version, key: FS.key }; })()`);
-        same(JSON.stringify({ hand: r.cards.hand, found: r.cards.found, player: r.cards.player }), JSON.stringify({ hand: ['test_universal_a', 'test_fire'], found: [], player: ['test_universal_a', null] }), 'cards'); same(r.v, 1, 'the save\'s version'); same(r.version, 1, 'FS.version'); same(r.key, 'conduit_fp_save', 'FS.key');
+        const r = J(`(function(){ __hand(['test_player_a', 'test_fire']); equipPlayer = ['test_player_a', null]; const d = JSON.parse(JSON.stringify(facilitySaveCollect())); return { cards: d.cards, v: d.v, version: FS.version, key: FS.key }; })()`);
+        same(JSON.stringify({ hand: r.cards.hand, found: r.cards.found, player: r.cards.player }), JSON.stringify({ hand: ['test_player_a', 'test_fire'], found: [], player: ['test_player_a', null] }), 'cards'); same(r.v, 1, 'the save\'s version'); same(r.version, 1, 'FS.version'); same(r.key, 'conduit_fp_save', 'FS.key');
     });
     await check('a game is saved with its cards and comes back with them: the followers\' cards, the hand, the player\'s slots; the collection stays its own key', async () => {
         const store = {}, A = await boot('?cards', store);
-        A.run(`shardCount = 5000; ['test_fire', 'test_brawler', 'test_universal_a'].forEach(id => equipUnlock(id)); const f = __fresh(2)[0]; f.element = 'fire'; f.role = 'brawler'; ['test_fire', 'test_brawler', 'test_universal_a'].forEach(id => equipHandAdd(id)); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); equipPlayerPut(1, 'test_universal_a'); facilitySaveWrite();`);
-        ok(store.conduit_fp_save, 'no save was written'); const saved = JSON.parse(store.conduit_fp_save); same(saved.cards.hand.join(), 'test_fire,test_brawler,test_universal_a', 'the hand in the save'); ok(saved.followers.some(e => e.cards && e.cards.join() === 'test_fire,test_brawler'), 'a follower\'s cards are not in the save');
+        A.run(`shardCount = 5000; ['test_fire', 'test_brawler', 'test_player_a'].forEach(id => equipUnlock(id)); const f = __fresh(2)[0]; f.element = 'fire'; f.role = 'brawler'; ['test_fire', 'test_brawler', 'test_player_a'].forEach(id => equipHandAdd(id)); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); equipPlayerPut(1, 'test_player_a'); facilitySaveWrite();`);
+        ok(store.conduit_fp_save, 'no save was written'); const saved = JSON.parse(store.conduit_fp_save); same(saved.cards.hand.join(), 'test_fire,test_brawler,test_player_a', 'the hand in the save'); ok(saved.followers.some(e => e.cards && e.cards.join() === 'test_fire,test_brawler'), 'a follower\'s cards are not in the save');
         const B = await boot('?cards', store), r = B.J(`({ hand: equipHand, player: equipPlayer, worn: followers.map(f => equipSlots(f).join('|')), n: followers.length, owned: equipOwnedList().length })`);
-        same(r.hand.join(), 'test_fire,test_brawler,test_universal_a', 'the hand after'); same(r.player.join(), ',test_universal_a', 'the player\'s slots after'); ok(r.worn.includes('test_fire|test_brawler'), 'the follower\'s cards after: ' + r.worn); same(r.owned, 3, 'the collection');
+        same(r.hand.join(), 'test_fire,test_brawler,test_player_a', 'the hand after'); same(r.player.join(), ',test_player_a', 'the player\'s slots after'); ok(r.worn.includes('test_fire|test_brawler'), 'the follower\'s cards after: ' + r.worn); same(r.owned, 3, 'the collection');
     });
     await check('a save made before the cards (no cards anywhere in it) loads as it did: its followers are all there, nothing is worn, the hand is empty, and nothing throws', async () => {
         const store = {}, A = await boot('?cards', store);
@@ -448,24 +448,24 @@ function measure(w, h, query, seed) {
             await check('the CARDS button is in the dock, shown (there are cards), and opens the sheet over the game: the HUD gives way, the title, the count and the shards', () => {
                 same(T.btn.there && T.btn.inDock && T.btn.shown, true, 'the button: ' + JSON.stringify(T.btn)); ok(/CARDS/.test(T.btn.label), 'its label ' + T.btn.label);
                 same(T.open.cls.indexOf('open') >= 0, true, 'the sheet did not open'); same(T.open.body, true, 'body.cardsOpen'); same(T.open.hudHidden, true, 'the HUD stayed over the sheet'); same(T.open.title, 'CARDS', 'the title');
-                same(T.open.slabs, 65, 'the cards'); ok(/HAND 65 · 65 OF 65 UNLOCKED · TEST CARDS \(\?cards\)/.test(T.open.summary), 'the summary: ' + T.open.summary); ok(/^◆ \d+$/.test(T.open.shardsHead), 'the shards: ' + T.open.shardsHead);
+                same(T.open.slabs, 78, 'the cards'); ok(/HAND 78 · 78 OF 78 UNLOCKED · TEST CARDS \(\?cards\)/.test(T.open.summary), 'the summary: ' + T.open.summary); ok(/^◆ \d+$/.test(T.open.shardsHead), 'the shards: ' + T.open.shardsHead);
             });
             await check('TWO MENUS (build l, the owner: "the items in the shop are in a new menu on the card menu called shop"): CARDS (THE COLLECTION, OWNED or ALL, and nothing beside its stage: "the hand part should be out of the picture ... remove the entire bordered in menu") and SHOP (the two booster packs and the market); the rows of big cards for the hand and the cards found are gone', () => {
-                same(T.open.tabs, 'CARDS*|SHOP', 'the menus'); same(T.open.tabSubs, 'THE COLLECTION · 65 OWNED|PACKS · MARKET', 'what each menu holds'); same(T.open.secs.join('|'), 'THE COLLECTION', 'the CARDS menu\'s parts'); same(T.open.views, 'OWNED 65*|ALL 65', 'the views (every card is owned with ?cards=all)');
+                same(T.open.tabs, 'CARDS*|SHOP', 'the menus'); same(T.open.tabSubs, 'THE COLLECTION · 78 OWNED|PACKS · MARKET', 'what each menu holds'); same(T.open.secs.join('|'), 'THE COLLECTION', 'the CARDS menu\'s parts'); same(T.open.views, 'OWNED 78*|ALL 78', 'the views (every card is owned with ?cards=all)');
                 same(T.open.side, 0, 'the hand\'s notch, the player\'s slots or the panel beside the stage is still drawn');
                 same(T.shop.tabs, 'SHOP', 'the menu lit'); same(T.shop.secs.join('|'), 'BOOSTER PACK|BOOSTER PACK · SERIES 2|MARKET', 'the SHOP\'s parts'); same(T.shop.packs, 2, 'the packs\' boxes'); same(T.shop.market, true, 'the market'); same(T.shop.rail, 0, 'the collection is in the SHOP too');
-                same(T.back.secs.join('|'), 'THE COLLECTION', 'back to CARDS'); same(T.back.rail, 65, 'its rail');
+                same(T.back.secs.join('|'), 'THE COLLECTION', 'back to CARDS'); same(T.back.rail, 78, 'its rail');
                 const css = rd('game.html'), ui = rd('js/cardsui.js'); ok(!/sec\("YOUR HAND"|sec\("FOUND THIS RUN"|sec\("YOU",/.test(ui), 'a row of the old sheet is still drawn'); ok(/#cardsRoot \.cd-tab\.on \{/.test(css), 'the menus are not styled'); ok(!/#cardsRoot \.cd-side\b/.test(css), 'the old 3D edge\'s class is in use again');
                 ok(!/\.cd-(aside|asideh|hand|hslot|hmore|stagewrap|pbtn|pslot|plist|you)\b/.test(css + ui), 'the notch, the bordered panel or the sheet\'s player slots are still in the page or the script'); ok(!/function _cdSide\b|function _cdPlayerSlot\b|_cdDD\b/.test(ui), 'the side panel\'s code is still there');
             });
             await check('A CARD TAKEN INTO THE RUN IS LIT GOLD FROM BEHIND (build l, the owner: "an illuminated background that is yellow, matching the purchased button color scheme"): on the rail (a gold glow and a gold light behind its picture), on the stage (a gold outline and light), and its button gold; a card found this run is marked teal', () => {
-                same(T.open.gold, '65/65', 'the mini cards in the hand (all 65 with ?cards=all) / those lit gold'); same(T.open.stageGold, true, 'the stage\'s card in the hand is not lit gold'); ok(/^IN YOUR HAND ✓ rgb\(255, 231, 51\)$/.test(T.open.stageBtn), 'its button: ' + T.open.stageBtn);
+                same(T.open.gold, '78/78', 'the mini cards in the hand (all 78 with ?cards=all) / those lit gold'); same(T.open.stageGold, true, 'the stage\'s card in the hand is not lit gold'); ok(/^IN YOUR HAND ✓ rgb\(255, 231, 51\)$/.test(T.open.stageBtn), 'its button: ' + T.open.stageBtn);
                 const css = rd('game.html'), buy = (css.match(/--neo-gold: (#[0-9a-f]{6})/i) || [])[1]; same(buy, '#ffe733', 'the buttons\' gold');
                 ok(/:is\(#cardsRoot, #ccRoot\) \.cd-mini\.hand \.cd-mtex \{ background: radial-gradient\(/.test(css) && /#cardsRoot \.cd-card\.hand \.cd-tex \{ background: radial-gradient\(/.test(css), 'the gold light behind the picture');
                 ok(/\.cd-mini\.found::after \{ content: "★"; color: var\(--neo-teal\)/.test(css) && /\.cd-card\.found \.cd-face \{ outline: 2px solid var\(--neo-teal\)/.test(css), 'a found card is not marked teal (gold is the hand\'s)');
             });
             await check('rarity is a CHIP on each card\'s edge: one notched plate with six segments, one lit for each step (illuminated bars), standing on the right edge of the card, with the name of its tier on the card', () => {
-                same(T.bars.length, 65, 'slabs'); for (const b of T.bars) {
+                same(T.bars.length, 78, 'slabs'); for (const b of T.bars) {
                     same(b[6], 1, b[0] + ' has not one chip'); same(b[2], 6, b[0] + ' segments'); same(b[1], b[3], b[0] + ' lit segments'); ok(b[3] >= 1 && b[3] <= 6, b[0] + ' rarity'); same(b[4], b[5], b[0] + ' rarity name');
                     ok(b[7] && b[7][0] >= 0 && b[7][0] <= 2, b[0] + '\'s chip is not on the card\'s right edge: ' + JSON.stringify(b[7])); ok(b[7][1] >= 4 && b[7][2] >= 50, b[0] + '\'s chip is not a plate set into the edge: ' + JSON.stringify(b[7])); ok(new RegExp('^RARITY · ' + b[5] + ' · ' + b[3] + ' OF 6$').test(b[7][3]), b[0] + '\'s chip says ' + b[7][3]);
                 }
@@ -480,11 +480,11 @@ function measure(w, h, query, seed) {
                 same(T.you.bars.join(), 'HEALTH 3 / 3 HITS', 'its numbers (its health is a count of hits: js/config.js PLAYER_HITS)'); same(T.you.dds.join('|'), 'YOUR SLOT 1|YOUR SLOT 2', 'its settings'); same(T.you.slotsShown.join('|'), 'SLOT 1EMPTY|SLOT 2EMPTY', 'its cards before');
                 ok(/YOU LEAD THE SQUAD/.test(T.you.swap), 'the bar at the foot: ' + T.you.swap);
             });
-            await check('YOU: two slots; each lists the hand (the Universal cards the only ones that can be picked, EMPTY off while empty); a card picked shows (on the player\'s card too, lit gold, and on its tile); the other slot cannot take the same one; ▸ goes on to the first creature', () => {
+            await check('YOU: two slots; each lists the hand (the Player cards the only ones that can be picked, EMPTY off while empty); a card picked shows (on the player\'s card too, lit gold, and on its tile); the other slot cannot take the same one; ▸ goes on to the first creature', () => {
                 const en = l => l.filter(x => !x[1]).map(x => x[0]).sort().join('|');
-                same(en(T.pList0), 'TEST · UNIVERSAL A|TEST · UNIVERSAL B', 'what the first slot can take'); same(T.pList0.length, 66, 'the list (EMPTY and the 65)'); same(T.pAfter.join(), 'test_universal_a,', 'slot one'); same(T.pShown, 'TEST · UNIVERSAL A', 'what it shows');
-                same(T.you.worn.join('|'), 'TEST · UNIVERSAL A(gold)|EMPTY', 'the player\'s card'); same(T.you.pips, 1, 'the tile\'s lit slots'); same(T.you.tapOpens, 'YOUR SLOT 2', 'a tap on the second card did not open its list');
-                same(en(T.pList1), 'TEST · UNIVERSAL B', 'what the second can take once the first has A (EMPTY is off while it is empty)'); same(T.pAfter2.join(), 'test_universal_a,test_universal_b', 'both slots');
+                same(en(T.pList0), 'TEST · PLAYER A|TEST · PLAYER B', 'what the first slot can take'); same(T.pList0.length, 79, 'the list (EMPTY and the 78)'); same(T.pAfter.join(), 'test_player_a,', 'slot one'); same(T.pShown, 'TEST · PLAYER A', 'what it shows');
+                same(T.you.worn.join('|'), 'TEST · PLAYER A(gold)|EMPTY', 'the player\'s card'); same(T.you.pips, 1, 'the tile\'s lit slots'); same(T.you.tapOpens, 'YOUR SLOT 2', 'a tap on the second card did not open its list');
+                same(en(T.pList1), 'TEST · PLAYER B', 'what the second can take once the first has A (EMPTY is off while it is empty)'); same(T.pAfter2.join(), 'test_player_a,test_player_b', 'both slots');
                 same(T.you.next.join('|'), 'false|true|ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2|none', '▸ from the player: the strip\'s first creature, its settings, the player\'s cards put away');
             });
             await check('A CARD\'S ITEM is smaller since build l (the owner: "They\'re a little bit too big. They\'re blocking the buttons above it for sorting"): 140 × 176, and on the stage it stays clear of the SHOW / SORT BY bar, which is drawn over it in any case', () => {
@@ -497,9 +497,9 @@ function measure(w, h, query, seed) {
             });
             await check('a slot lists the hand: the cards that fit can be picked, the rest say why not; a pick fills the slot and folds the list; the other slot cannot take the same card; EMPTY takes it off', () => {
                 const en = l => l.filter(x => !x[1]).map(x => x[0]).sort().join('|'), why = (l, n) => (l.find(x => x[0] === n) || [])[2];
-                same(en(T.ro.opts1), 'BARNACLE BRACER|CHITIN SCALE|CINDERBRAND|CLEAVER ARM|EMBER PLATING|FURNACE HEART|HAYMAKER GAUNTLET|IMPACT TEST|IRON GUARD|KNUCKLE WRAPS|PINCER CLAMP|STRESS TESTED|TEST · BRAWLER|TEST · CRUSTACEAN|TEST · FIRE|TEST · UNIVERSAL A|TEST · UNIVERSAL B|TIDE SHELL',
-                    'what a fire brawler Quillstone can wear (the two Brawler Crystalline cards, the three fire cards of Pack 1, and Series 2\'s four crustacean cards and four Brawler cards with it)'); same(why(T.ro.opts1, 'FROST LINING'), 'FOR ICE FOLLOWERS', 'an ice card of Pack 1 on a fire follower');
-                same(why(T.ro.opts1, 'NACRE PEARL'), 'FOR MOLLUSKS', 'a Series 2 mollusk card on a crustacean'); same(why(T.ro.opts1, 'GEL MEMBRANE'), 'FOR JELLIES', 'a jelly card (the plural)'); same(why(T.ro.opts1, 'FOCUS LENS'), 'FOR MAGES', 'a Series 2 Mage card on a Brawler');
+                same(en(T.ro.opts1), 'BARNACLE BRACER|CHITIN SCALE|CINDERBRAND|EMBER PLATING|FAULTLINE TALON|FURNACE HEART|IMPACT TEST|PINCER CLAMP|PRESSURE SPUR|RUPTURE FANG|STRESS TESTED|TEST · BRAWLER|TEST · CRUSTACEAN|TEST · FIRE|TIDE SHELL',
+                    'what a fire brawler Quillstone can wear (the two Brawler Crystalline cards, the three fire cards of Pack 1, Series 2\'s four crustacean cards and its three Brawler opportunity cards; not a Player card)'); same(why(T.ro.opts1, 'FROST LINING'), 'FOR ICE FOLLOWERS', 'an ice card of Pack 1 on a fire follower');
+                same(why(T.ro.opts1, 'NACRE PEARL'), 'FOR MOLLUSKS', 'a Series 2 mollusk card on a crustacean'); same(why(T.ro.opts1, 'GEL MEMBRANE'), 'FOR JELLIES', 'a jelly card (the plural)'); same(why(T.ro.opts1, 'KINDLING BAND'), 'FOR FIRE MAGES', 'a Mage\'s aura on a Brawler'); same(why(T.ro.opts1, 'TEST · PLAYER A'), 'FOR THE PLAYER', 'a Player card on a follower');
                 same(why(T.ro.opts1, 'POWER SURGE'), 'FOR MAGES', 'a Mage\'s card on a Brawler'); same(why(T.ro.opts1, 'CORE REINFORCEMENT'), 'FOR TECHNICIANS', 'a Technician\'s card on a Brawler'); same(why(T.ro.opts1, 'TEST · ICE'), 'FOR ICE FOLLOWERS', 'ice'); same(why(T.ro.opts1, 'TEST · MAGE'), 'FOR MAGES', 'mage');
                 same(why(T.ro.opts1, 'TEST · TECHNICIAN'), 'FOR TECHNICIANS', 'technician'); same(why(T.ro.opts1, 'TEST · DRONE'), 'FOR DRONES', 'drone'); same(T.ro.cards1.join(), 'test_fire,', 'slot one after the pick'); same(T.ro.closedAfter, 0, 'the list stayed open');
                 ok(T.ro.opts2.find(x => x[0] === 'TEST · FIRE')[1], 'the same card is offered on the other slot'); same(why(T.ro.opts2, 'TEST · FIRE'), 'ALREADY ON ITS OTHER SLOT', 'its reason'); same(T.ro.cards2.join(), 'test_fire,test_brawler', 'slot two after the pick');
@@ -511,14 +511,14 @@ function measure(w, h, query, seed) {
             });
         }
     }
-    const U = measure(1180, 820, '?cards', { conduit_fp_cards: JSON.stringify({ v: 1, owned: ['test_fire', 'test_universal_a'] }) });
+    const U = measure(1180, 820, '?cards', { conduit_fp_cards: JSON.stringify({ v: 1, owned: ['test_fire', 'test_player_a'] }) });
     if (U === null) console.log('  (no Chromium here: skipped)');
     else {
         await check('A NEW RUN with a collection: the sheet opens by itself with a banner and START THE RUN; the owned cards can be taken (up to three), the locked ones cost ◆1,000 and are off while the shards are short; START shuts it and the HUD is back', () => {
             ok(U && !U.err, 'the probe: ' + (U && U.err)); same(U.dev, 'on', 'the switch'); same(U.startOpen.indexOf('open') >= 0, true, 'the sheet did not open'); same(U.startBanner, true, 'no banner'); same(U.startClose, 'START THE RUN ▸', 'its button'); same(U.startHand0, 0, 'the hand began full');
-            same(U.takes, 2, 'cards to take'); same(U.startView, 'OWNED 2*|ALL 65', 'the view it opens on: the cards you own'); same(U.startMinis, 2, 'the rail of the cards you own');
-            same(U.locks, 63, 'cards to unlock in ALL (the 56 real and the seven test cards not owned)'); same(U.locksOff, 63, 'unlocks that were on with ' + 100 + ' shards'); same(U.startHand1.slice().sort().join(), 'test_fire,test_universal_a', 'the hand chosen'); same([U.takeShown0, U.takeShown1].join(), 'true,true', 'TAKE INTO THE RUN was not beside the card picked'); same(U.startAfter.indexOf('open') < 0, true, 'START did not shut it'); same(U.startBodyClass, false, 'body.cardsOpen after');
-            same(U.startGold, U.startHand1.map(id => ({ test_fire: 'TEST · FIRE', test_universal_a: 'TEST · UNIVERSAL A' })[id]).sort().join('|'), 'the two taken are lit gold on the rail'); same(U.startSide, 0, 'the hand\'s notch or the bordered panel is back');
+            same(U.takes, 2, 'cards to take'); same(U.startView, 'OWNED 2*|ALL 78', 'the view it opens on: the cards you own'); same(U.startMinis, 2, 'the rail of the cards you own');
+            same(U.locks, 76, 'cards to unlock in ALL (the 69 real and the seven test cards not owned)'); same(U.locksOff, 76, 'unlocks that were on with ' + 100 + ' shards'); same(U.startHand1.slice().sort().join(), 'test_fire,test_player_a', 'the hand chosen'); same([U.takeShown0, U.takeShown1].join(), 'true,true', 'TAKE INTO THE RUN was not beside the card picked'); same(U.startAfter.indexOf('open') < 0, true, 'START did not shut it'); same(U.startBodyClass, false, 'body.cardsOpen after');
+            same(U.startGold, U.startHand1.map(id => ({ test_fire: 'TEST · FIRE', test_player_a: 'TEST · PLAYER A' })[id]).sort().join('|'), 'the two taken are lit gold on the rail'); same(U.startSide, 0, 'the hand\'s notch or the bordered panel is back');
         });
         await check('?cards (not =all): the button is there, shown; UNLOCK asks twice, the second tap pays ◆1,000 once and the card is owned and kept; the same card is not charged again', () => {
             same(U.btn.shown, true, 'the button'); same(U.arm.label, 'TAP AGAIN TO UNLOCK', 'the first tap'); same(U.arm.still, true, 'the card left the stage when the sheet was drawn again'); same(U.arm.shards, 0, 'the first tap spent shards'); same(U.arm.owned, false, 'the first tap unlocked');
@@ -526,24 +526,24 @@ function measure(w, h, query, seed) {
         });
     }
     // THE RAIL'S ORDER, worked out here from the registry by the rule js/cardsui.js documents (equipCollectionOrder), not read from the page: BY RARITY the rarest first, then the group (the elements fire to core, the classes
-    // Brawler, Mage, Technician, the subclasses in their order), then the name; BY ELEMENT the group first, then the rarity (lowest first), then the name
+    // Brawler, Mage (its auras after its other cards, by their element), Technician, the subclasses in their order), then the name; BY ELEMENT the group first, then the rarity (lowest first), then the name
     const RAR = ['unrefined', 'refined', 'precision', 'prototype', 'lustrous', 'crystalline'], ELS = ['fire', 'toxic', 'electric', 'ice', 'flux', 'core'], ROLES = ['brawler', 'sniper', 'camper'], SUBS = ['crustacean', 'mollusk', 'elemental', 'drone', 'jelly'];
-    const grp = c => c.kind === 'element' ? ELS.indexOf(c.match) : c.kind === 'class' ? 10 + ROLES.indexOf(c.match) : c.kind === 'subclass' ? 20 + SUBS.indexOf(c.match) : 40;
+    const grp = c => c.kind === 'element' ? ELS.indexOf(c.match) : c.kind === 'class' ? 10 + ROLES.indexOf(c.match) + (c.aura ? (1 + ELS.indexOf(c.aura)) / 10 : 0) : c.kind === 'subclass' ? 20 + SUBS.indexOf(c.match) : 40;
     const railOrder = (cards, by) => cards.slice().sort((a, b) => by === 'element' ? (grp(a) - grp(b) || RAR.indexOf(a.rarity) - RAR.indexOf(b.rarity) || a.name.localeCompare(b.name)) : (RAR.indexOf(b.rarity) - RAR.indexOf(a.rarity) || grp(a) - grp(b) || a.name.localeCompare(b.name)));
-    const REAL = Q.J('Object.values(EQUIP_CARDS).map(function(c){ return { name: c.name, kind: c.kind, match: c.match, rarity: c.rarity }; })'), BY_RARITY = railOrder(REAL, 'rarity'), BY_ELEMENT = railOrder(REAL, 'element');
+    const REAL = Q.J('Object.values(EQUIP_CARDS).map(function(c){ return { name: c.name, kind: c.kind, match: c.match, rarity: c.rarity, aura: c.aura ? c.aura.el : null }; })'), BY_RARITY = railOrder(REAL, 'rarity'), BY_ELEMENT = railOrder(REAL, 'element');
     const N = measure(1180, 820, '');
     if (N === null) console.log('  (no Chromium here: skipped)');
-    else await check('WITHOUT ?cards: the CARDS button is in the dock and shown, the sheet lists the 56 real cards (locked, a rarity chip on each), and with no card in the registry the sheet is empty and says so, and the roster has the SUBCLASS tag and CARD 1 / CARD 2, off, saying there is no card in the hand, and the player\'s card YOUR SLOT 1 / YOUR SLOT 2, off too', () => {
+    else await check('WITHOUT ?cards: the CARDS button is in the dock and shown, the sheet lists the 69 real cards (locked, a rarity chip on each), and with no card in the registry the sheet is empty and says so, and the roster has the SUBCLASS tag and CARD 1 / CARD 2, off, saying there is no card in the hand, and the player\'s card YOUR SLOT 1 / YOUR SLOT 2, off too', () => {
         ok(N && !N.err, 'the probe: ' + (N && N.err)); same(N.dev, '', 'the switch'); same(N.any, true, 'a card exists'); same(N.btn.there && N.btn.inDock && N.btn.shown, true, 'the button: ' + JSON.stringify(N.btn));
-        same(N.real.slabs, 56, 'the 56 on the sheet'); same(N.real.locked, 56, 'locked'); same(N.real.names.slice(0, 6).join('|'), 'IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|CORE REINFORCEMENT|PROTOTYPE X', 'their names (by rarity: the Crystalline six first, by class, then by name)'); same(N.real.kinds.slice(0, 6).join('|'), 'CLASS · BRAWLER|CLASS · BRAWLER|CLASS · MAGE|CLASS · MAGE|CLASS · TECHNICIAN|CLASS · TECHNICIAN', 'their classes');
+        same(N.real.slabs, 69, 'the 69 on the sheet'); same(N.real.locked, 69, 'locked'); same(N.real.names.slice(0, 6).join('|'), 'IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|CORE REINFORCEMENT|PROTOTYPE X', 'their names (by rarity: the Crystalline six first, by class, then by name)'); same(N.real.kinds.slice(0, 6).join('|'), 'CLASS · BRAWLER|CLASS · BRAWLER|CLASS · MAGE|CLASS · MAGE|CLASS · TECHNICIAN|CLASS · TECHNICIAN', 'their classes');
         same(N.real.lit.slice(0, 6).join(), '6/6,6/6,6/6,6/6,6/6,6/6', 'the rarity chips'); same(N.real.rars.slice(0, 6).join(), 'CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE,CRYSTALLINE', 'the rarity names');
         same(N.real.texts.slice(0, 6).join('|'), '+50% ATTACK DAMAGE|+50% MAXIMUM HEALTH|+50% ELEMENTAL ATTACK POWER|+50% ATTACK SPEED|+50% MAXIMUM HEALTH|+50% ATTACK SPEED', 'what each says'); ok(/^UNLOCK ◆1000$/.test(N.real.buttons[0]) && N.real.buttons.every(b => b === N.real.buttons[0]), 'the buttons: ' + N.real.buttons); same(N.real.start, 0, 'the choice at the start of a run opened with nothing owned');
         same(N.real.names.join('|'), BY_RARITY.map(c => c.name).join('|'), 'the rail\'s order (by rarity, the rarest first: worked out here from the registry)'); same(N.real.lit.join(), BY_RARITY.map(c => (RAR.indexOf(c.rarity) + 1) + '/6').join(), 'their rarity chips');
-        const tally = {}; for (const l of N.real.lit) tally[l] = (tally[l] || 0) + 1; same(JSON.stringify(tally), JSON.stringify({ '6/6': 6, '4/6': 8, '3/6': 14, '2/6': 14, '1/6': 14 }), 'how many of each rarity (Crystalline 6; Prototype 8; Precision, Refined and Unrefined 6 of Pack 1 and 8 of Series 2 each)');
-        same(N.real.names.slice(6, 14).join('|'), 'CLEAVER ARM|CHAIN CONDUIT|DOUBLE CELL|TIDE SHELL|REGROWTH SAC|STORM HEART|OVERCLOCK CHIP|AMORPHOUS BODY', 'Series 2\'s eight PROTOTYPE cards after the Crystalline six (the class cards Brawler, Mage, Technician, then the species in their order)');
-        same(N.real.names.slice(14, 20).join('|'), 'CINDERBRAND|MIREBLIGHT|STATIC LOCK|RIME SNARE|SIPHON FIELD|REPULSOR PULSE', 'then the Precision cards, Pack 1\'s six first, by element (fire, toxic, electric, ice, flux, core)');
+        const tally = {}; for (const l of N.real.lit) tally[l] = (tally[l] || 0) + 1; same(JSON.stringify(tally), JSON.stringify({ '6/6': 6, '4/6': 13, '3/6': 19, '2/6': 19, '1/6': 12 }), 'how many of each rarity (Crystalline 6; Prototype 13; Precision and Refined 6 of Pack 1 and 13 of Series 2; Unrefined 6 and 6)');
+        same(N.real.names.slice(6, 19).join('|'), 'RUPTURE FANG|INFERNO CROWN|PESTILENCE CROWN|TEMPEST CROWN|WINTER CROWN|ECLIPSE CROWN|MONOLITH CROWN|DOUBLE CELL|TIDE SHELL|REGROWTH SAC|STORM HEART|OVERCLOCK CHIP|AMORPHOUS BODY', 'Series 2\'s thirteen PROTOTYPE cards after the Crystalline six (the class cards Brawler, Mage (its auras by element), Technician, then the species in their order)');
+        same(N.real.names.slice(19, 25).join('|'), 'CINDERBRAND|MIREBLIGHT|STATIC LOCK|RIME SNARE|SIPHON FIELD|REPULSOR PULSE', 'then the Precision cards, Pack 1\'s six first, by element (fire, toxic, electric, ice, flux, core)');
         same(JSON.stringify(N.minis.map(m => m[0])), JSON.stringify(N.real.names), 'the rail\'s mini cards are not the stage\'s cards in the same order'); same(N.minis.map(m => m[2]).join(), N.real.lit.join(), 'a mini card\'s rarity chip'); same(N.minis.every(m => m[1]), true, 'a mini card not locked');
-        ok(/HAND 0 \/ 3 · 0 OF 56 UNLOCKED$/.test(N.real.summary), 'the summary: ' + N.real.summary);
+        ok(/HAND 0 \/ 3 · 0 OF 69 UNLOCKED$/.test(N.real.summary), 'the summary: ' + N.real.summary);
         same(N.plain.dds.join('|'), 'ATTACK STYLE|PLAY STYLE|CARD 1|CARD 2', 'the roster\'s settings'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
         same(N.plain.sub.join(), 'SUBCLASS,CRUSTACEAN', 'the subclass row'); same(N.plain.chip, 'CRUSTACEAN', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
         same(N.plain.you.you, true, 'YOU did not come into view'); same(JSON.stringify(N.plain.you.dds), JSON.stringify([['YOUR SLOT 1', 'NO CARDS IN YOUR HAND', true], ['YOUR SLOT 2', 'NO CARDS IN YOUR HAND', true]]), 'the player\'s slots with no card to put in them');
@@ -553,12 +553,12 @@ function measure(w, h, query, seed) {
         same(N.emptySheet.closed.indexOf('open') < 0, true, 'close');
     });
     if (N !== null) await check('THE COLLECTION: a rail of mini cards (sorted by rarity, or by element) and the card picked on it shown on the stage above, in full, its parts labelled beside it (name, kind, rarity with a meter lit to its step, effect, state); a tap, ▶, the wheel and the arrow keys step through; a slide that settles picks the card in the middle', () => {
-        const R = N.rail; ok(R, 'no probe of the rail'); same(R.first.slice(0, 5).join('|'), 'IMPACT TEST|IMPACT TEST|1 OF 56|1|true', 'the first card: on the stage, raised on the rail, where it is, one card on the stage, featured');
+        const R = N.rail; ok(R, 'no probe of the rail'); same(R.first.slice(0, 5).join('|'), 'IMPACT TEST|IMPACT TEST|1 OF 69|1|true', 'the first card: on the stage, raised on the rail, where it is, one card on the stage, featured');
         same(R.labels.join('|'), 'NAME|KIND|RARITY|EFFECT|STATE', 'the labels'); same(R.values.join('|'), 'IMPACT TEST|CLASS · BRAWLER|CRYSTALLINE · 6 OF 6|+50% ATTACK DAMAGE|LOCKED', 'what they say'); same(R.meter, '6/6', 'the rarity meter'); same(R.prevOff, true, '◀ was on at the first card');
-        same(R.sorts, 'RARITY*,ELEMENT', 'the sort buttons'); same(R.views, 'OWNED 0(off),ALL 56*', 'the views with nothing owned: ALL, and OWNED off'); same(R.tapped.join('|'), [R.tapped[1], R.tapped[1], R.tapped[1]].join('|'), 'a tap on the sixth mini card'); same(R.next, N.real.names[6], '▶'); same(R.wheel, N.real.names[8], 'the wheel (120: two steps)'); same(R.key, N.real.names[7], 'the arrow key');
+        same(R.sorts, 'RARITY*,ELEMENT', 'the sort buttons'); same(R.views, 'OWNED 0(off),ALL 69*', 'the views with nothing owned: ALL, and OWNED off'); same(R.tapped.join('|'), [R.tapped[1], R.tapped[1], R.tapped[1]].join('|'), 'a tap on the sixth mini card'); same(R.next, N.real.names[6], '▶'); same(R.wheel, N.real.names[8], 'the wheel (120: two steps)'); same(R.key, N.real.names[7], 'the arrow key');
         same(R.slid[0], R.slid[1], 'the card in the middle after a slide');
         same(R.byElement.names.join('|'), BY_ELEMENT.map(c => c.name).join('|'), 'by element (worked out here from the registry: each element Unrefined to Precision, then the class cards, then the species cards)');
-        same(R.byElement.names.slice(0, 3).join('|'), 'EMBER PLATING|FURNACE HEART|CINDERBRAND', 'fire first, Unrefined to Precision'); same(R.byElement.names.slice(18, 24).join('|'), 'KNUCKLE WRAPS|IRON GUARD|HAYMAKER GAUNTLET|CLEAVER ARM|IMPACT TEST|STRESS TESTED', 'the Brawler cards after the elements, Series 2\'s four then the Crystalline two');
+        same(R.byElement.names.slice(0, 3).join('|'), 'EMBER PLATING|FURNACE HEART|CINDERBRAND', 'fire first, Unrefined to Precision'); same(R.byElement.names.slice(18, 25).join('|'), 'PRESSURE SPUR|FAULTLINE TALON|RUPTURE FANG|IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL', 'the Brawler cards after the elements (Series 2\'s three opportunity cards, then the Crystalline two), then the Mage\'s Crystalline two before its auras');
         same(R.byElement.names.slice(-4).join('|'), 'GEL MEMBRANE|STINGER TENDRIL|NEMATOCYST|AMORPHOUS BODY', 'the jelly cards last');
         same(R.byElement.stage, R.byElement.keep, 'the card on the stage changed with the sort'); same(R.byElement.on, 'ELEMENT', 'the sort button lit'); same(R.back, 'IMPACT TEST|STRESS TESTED|POWER SURGE|SPEED TRIAL|CORE REINFORCEMENT|PROTOTYPE X', 'back to rarity');
         const css = rd('game.html'); for (const k of ['cdMorph', 'cdBlow', 'cdBlowItem', 'cdBar']) ok(new RegExp('@keyframes ' + k + ' ').test(css), 'no ' + k + ' (the card changing form, the picture blown up, the rarity lighting up)');

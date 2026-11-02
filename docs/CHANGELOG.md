@@ -4,6 +4,43 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **c · Build B: the class card families; Series 2 reshaped; the Universal kind retired** (the owner's design of 2026-11-02, UNIVERSAL-AND-PLAYER-CARDS.md section 2 and NEXT-UPDATE.md Build B; the owner, in a prompt: "Push b to main", "Start Build B"; on the branch only; commit named in git log).
+  - **Main:** build b (commit e43e599) went to main at the owner's word.
+  - **Mage auras (18):** each element's BAND (Refined, +5%), SIGIL (Precision, +7.5%) and CROWN (Prototype, +10%).
+    - A Mage of the element wears one. Every follower within 4 tiles of it, of any element and class, the Mage and the Mutator's clone included, gets that much more ATK.
+    - A CROWN also gives each of their hits a 5% chance (a first guess) of the element's own status.
+    - Different auras add up; the same card counts once, even from two Mages.
+    - Who is in reach is worked out every 30 frames; enemies never get one.
+  - **The look** (for the owner's approval): a faint, thin dashed ring in the element's colour turns slowly round the Mage at its reach, and a tiny glint of that colour shows beside each unit in it.
+  - **Brawler opportunity cards (3):** PRESSURE SPUR +20%, FAULTLINE TALON +30%, RUPTURE FANG +40% for each weakness a hit exploits, added up. The four kinds: an element match-up, a race weak to the hit's physical type, a race weak to Elemental, a stunned or sleeping target.
+  - **The Technician's family:** Series 2's four cooldown cards, unchanged.
+  - **Series 2 deals 45:** the 20 species cards, the Technician's 4 and the 21 new ones. Its price and odds stay.
+    - Its eight Brawler and Mage class cards are cut, and Cleave and Chain with them (their code stays, worn by no card).
+  - **The clean-up:**
+    - A collection drops its cut cards in the same write that keeps ◆1,000 owed for each (◆8,000 at most).
+    - The refund is paid into the next run's shards, at once if one is in play, with a line on the screen, once.
+    - A run's hand, its cards found, the market's shelf and every slot drop the cut cards as they load.
+  - **The Universal kind is retired:** the player's two slots take Player cards only (PLAYER CARDS ONLY), so they stay empty until the Player cards come. The two test cards that were Universal are Player cards.
+  - **On the CARDS screen:** an aura's kind reads CLASS · FIRE MAGE and its cube is in its element's colour; a Player card is gold; sorting by element puts a Mage's auras after its other cards.
+  - **Readings for the owner to confirm** (docs/OPEN-QUESTIONS.md §1m):
+    - the same aura is the same card;
+    - two opportunity cards add;
+    - the CROWN's status uses Pack 1's Precision numbers;
+    - the clone's whole hit grows;
+    - the ring is drawn over the floor and the units;
+    - the refund shows a line.
+  - **Files and tests:**
+    - js/cards.js: the cards, who wears them, the aura tick and its drawing, the opportunity share, the clean-up and the refund.
+    - js/damage.js: the openings. js/helpers.js: the clone's aura, and who reaches the on-hit effects. js/game.js: the drawing's call.
+    - js/cardsui.js, js/cardart.js and js/commandcenter.js: words and colours.
+    - New: tests/classcards.js (30 checks). Updated: cards, series2, series2abilities, packs, crystalline, cardart, bible, squadfly and market (the retired Universal test card). tests/run.js registers the new suite (86 suites).
+    - Full runs: the second passed all 86 suites. The first had 83 of 86:
+      - tests/squadfly.js wore the retired Universal test card, so it was fixed to wear the first card that fits;
+      - tests/packs.js's two-tap unlock on the stage failed once (it passed alone twice and in the second run);
+      - tests/sewerquest.js's FRANTIC "let go" check failed once (it passed alone and in the second run).
+  - **Written up:** docs/UNIVERSAL-AND-PLAYER-CARDS.md (status, must-haves, acceptance, implementation notes, verification), docs/SERIES-2.md, docs/NEXT-UPDATE.md, docs/OPEN-QUESTIONS.md §1m, docs/DECISION-LOG.md, docs/TUTORIAL.md, docs/UI-STYLE.md ("The Mage auras in the world"), and the Bible (the class card families, the counts).
+  - Not playtested.
+
 - **b · The hit words beside the creature; the owner's answers on Build A** (the owner, in a prompt: "Push to main", "Move beside the creature", "Keep the ticks", "Approve all 21"; on the branch only; commit named in git log).
   - **Main:** Build A (`a`, commit 2583f5a) went to main at the owner's word.
   - **The hit words** (SLASHING WEAK!, FIRE RESIST) now sit beside the creature: to its right at its body's height, the physical part's word over the elemental part's, clear of its name plate. They drift up slowly (about 18 px in their 40 frames).

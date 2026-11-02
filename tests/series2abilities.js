@@ -6,8 +6,7 @@
 //   STORM HEART     (elemental)  NOVA: every 6th hit bursts on every enemy within 1.5 tiles of the target, for 60% of its special attack
 //   OVERCLOCK CHIP  (drone)      OVERCLOCK: every 12 s, +50% attack speed for 3 s
 //   AMORPHOUS BODY  (jelly)      ABSORB: a hit after 5 s without one does 40% less
-//   CLEAVER ARM     (brawler)    CLEAVE: every other enemy within 1 tile struck for 50% of the hit
-//   CHAIN CONDUIT   (mage)       CHAIN: the nearest other enemy within 3 tiles struck for 50% (an echo never chains on)
+//   CLEAVER ARM and CHAIN CONDUIT (brawler, mage): CUT in Build B (2026-11-02c) with the other Brawler and Mage class cards; their code stays, worn by no card (tests/classcards.js)
 //   DOUBLE CELL     (technician) DOUBLE CHARGE: a second charge of its ability, refilled one cooldown after it is spent
 // And the Precision cards that are new kinds: ATTUNED CORE (its own element's status) and the two-stat cards (HUNTER OPTICS).
 const fs = require('fs');
@@ -36,10 +35,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__said = w => floatingTexts.some(t => t.text === w);`);
 
     group('THE PROTOTYPE CARDS: one ability for each species and class');
-    check('every Prototype card of Series 2 has an ability its words describe, and a fixed set of kinds: shell block, regrowth, nova, overclock, absorb, cleave, chain, double charge', () => {
-        const r = J(`Object.values(EQUIP_CARDS).filter(c => c.pack === 'series2' && c.rarity === 'prototype').map(c => [c.match, c.ability && c.ability.kind, c.text.split(':')[0]])`);
-        same(r.map(x => x[0] + '=' + x[1]).join(), 'crustacean=shellBlock,mollusk=regrowth,elemental=nova,drone=overclock,jelly=absorb,brawler=cleave,sniper=chain,camper=doubleCharge', 'the abilities');
-        same(r.map(x => x[2]).join(), 'SHELL BLOCK,REGROWTH,NOVA,OVERCLOCK,ABSORB,CLEAVE,CHAIN,DOUBLE CHARGE', 'their words');
+    check('every Prototype species card of Series 2, and the Technician\'s, has an ability its words describe: shell block, regrowth, nova, overclock, absorb, double charge (the Mage\'s and the Brawler\'s Prototypes are an aura and an opportunity card since Build B)', () => {
+        const r = J(`Object.values(EQUIP_CARDS).filter(c => c.pack === 'series2' && c.rarity === 'prototype' && c.ability).map(c => [c.match, c.ability && c.ability.kind, c.text.split(':')[0]])`);
+        same(r.map(x => x[0] + '=' + x[1]).join(), 'crustacean=shellBlock,mollusk=regrowth,elemental=nova,drone=overclock,jelly=absorb,camper=doubleCharge', 'the abilities');
+        same(r.map(x => x[2]).join(), 'SHELL BLOCK,REGROWTH,NOVA,OVERCLOCK,ABSORB,DOUBLE CHARGE', 'their words');
+        same(J(`Object.values(EQUIP_CARDS).filter(c => c.pack === 'series2' && c.rarity === 'prototype' && !c.ability).map(c => c.aura ? 'aura' : c.opportunity ? 'opportunity' : c.id).join()`), 'aura,aura,aura,aura,aura,aura,opportunity', 'the Prototypes without an ability');
     });
     check('TIDE SHELL on a Crustacean (a Quillstone): an enemy\'s hit is BLOCKED whole; the next one lands; 8 s after the block the shell is ready again; on a follower it does not fit (a Jelly Ram) it blocks nothing', () => {
         const r = J(`(function(){ __fresh(); frame = 1000; const q = __wear('quillstone', 'tide_shell', 0, 0), a = __ant(1, 0), o = {};
@@ -72,17 +72,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             o.burst = Math.round((b5[1] - a6[1]) * 10) / 10; o.sp = e.stats.specialAttack; return o; })()`);
         same(r.fifth, true, 'a burst before the 6th hit'); same(r.sixth.join(), 'true,0,true', 'the burst (near, far, the word)'); ok(r.burst > 0 && r.burst <= r.sp * 0.6 + 0.01, 'the burst\'s damage: ' + r.burst + ' for a special attack of ' + r.sp);
     });
-    check('CLEAVER ARM on a Brawler: its hit also strikes every other enemy within 1 tile, for 50% of what the hit took (CLEAVE); one 2 tiles off is untouched; on a Mage it does nothing', () => {
-        const r = J(`(function(){ __fresh(); const b = __wear('quillstone', 'cleaver_arm', 0, 0), t = __ant(1, 0), n = __ant(1.6, 0.4), far = __ant(3, 0), o = {};
-            applyDamage(t, 20, b); o.hit = [5000 - t.health, 5000 - n.health, 5000 - far.health, __said('CLEAVE')];
-            const m = __wear('embercowl', 'cleaver_arm', 0, 5), t2 = __ant(1, 5), n2 = __ant(1.5, 5.3); applyDamage(t2, 20, m); o.mage = 5000 - n2.health; return o; })()`);
-        ok(Math.abs(r.hit[1] - r.hit[0] * 0.5) < 1.5, 'the cleave: ' + JSON.stringify(r.hit)); same(r.hit[2], 0, 'one 2 tiles off was struck'); same(r.hit[3], true, 'no CLEAVE'); same(r.mage, 0, 'a Mage cleaved');
-    });
-    check('CHAIN CONDUIT on a Mage: its hit jumps to the nearest other enemy within 3 tiles, for 50% (CHAIN), and no further (an echo does not chain on); none beyond 3 tiles', () => {
-        const r = J(`(function(){ __fresh(); const m = __wear('embercowl', 'chain_conduit', 0, 0), t = __ant(2, 0), n = __ant(4, 0), n2 = __ant(6, 0), o = {};
-            applyDamage(t, 20, m); o.hit = [5000 - t.health, 5000 - n.health, 5000 - n2.health, __said('CHAIN')];
-            const t3 = __ant(0, 20), lone = __ant(4.5, 20); applyDamage(t3, 20, m); o.lone = 5000 - lone.health; return o; })()`);
-        ok(Math.abs(r.hit[1] - r.hit[0] * 0.5) < 1.5, 'the chain: ' + JSON.stringify(r.hit)); same(r.hit[2], 0, 'the chain went on'); same(r.hit[3], true, 'no CHAIN'); same(r.lone, 0, 'it jumped beyond 3 tiles');
+    check('CLEAVER ARM and CHAIN CONDUIT were cut (Build B, the owner, 2026-11-02): no card cleaves or chains, so a Brawler\'s and a Mage\'s hits strike their target alone', () => {
+        const r = J(`(function(){ __fresh(); const b = __wear('quillstone', null, 0, 0), t = __ant(1, 0), n = __ant(1.6, 0.4); applyDamage(t, 20, b); return [!!EQUIP_CARDS.cleaver_arm, !!EQUIP_CARDS.chain_conduit, 5000 - n.health, __said('CLEAVE') || __said('CHAIN')]; })()`);
+        same(r.join(), 'false,false,0,false', 'the cut cards, the one beside struck, the words');
     });
     check('DOUBLE CELL on a Technician (a flux one\'s Telegrab): the card tick fills a second charge; the first use spends it (ready again at once), the second waits the whole cooldown; the charge is back one cooldown after it was spent', () => {
         const r = J(`(function(){ __fresh(); frame = 40000; const f = __wear('gooproxy', 'double_cell', 0, 0), o = {}; equipTick(true); o.spare = f._abSpare;

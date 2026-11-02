@@ -7,22 +7,23 @@
 // (FIVE subclasses: the user's own roster chart, in the Archive, has a fifth, JELLY, beside the four.) "Card" is also the interface's word for a roster card or a panel (cc-card, the squad bar's slots): these are EQUIP CARDS, and every
 // name here starts with equip / EQUIP so that it cannot be mistaken for those or for the other two things "class" means (the player's CLASSES, js/classes.js; a creature's class, js/species.js; a follower's role is what the cards call its class).
 //
-// WHAT IS BUILT is the plumbing and the real cards: the six CRYSTALLINE class cards (each a flat +50% to one stat of a follower's class) and PACK 1's eighteen ELEMENT cards (below). The rest of the list is not designed; the INERT TEST CARDS behind
-// ?cards are how the rules, the saving and the screens are played with. A card added to EQUIP_CARDS appears in every screen. With no card the screens are there and empty (equipAny): the CARDS sheet says so, and the roster's slots say NO CARDS
-// IN YOUR HAND; the choice at the start of a run opens only when the collection holds a card.
+// WHAT IS BUILT is the plumbing and the real cards: the six CRYSTALLINE class cards (each a flat +50% to one stat of a follower's class), PACK 1's eighteen ELEMENT cards, SERIES 2's species cards and THE CLASS CARD FAMILIES (below: the Mage
+// auras, the Brawler opportunity cards and the Technician's cooldown cards; Build B, 2026-11-02c). The INERT TEST CARDS behind ?cards are how the rules, the saving and the screens are played with. A card added to EQUIP_CARDS appears in every
+// screen. With no card the screens are there and empty (equipAny): the CARDS sheet says so, and the roster's slots say NO CARDS IN YOUR HAND; the choice at the start of a run opens only when the collection holds a card.
 //   EFFECTS   a real card has `bonus` ({ stat: fraction }, a key of EQUIP_STATS) or `proc` (an effect on a hit). A follower's bonus to a stat is the SUM over what it wears (equipBonus: two +50% make +100% of the base, never +125%). It is applied
 //             where the follower's numbers are made from its base (js/levels.js _applyFollowerLevel: attack, SP.ATK, defense, maximum health; js/combat.js followerRest: the rest between attacks; js/helpers.js applyDamage: the damage it deals),
 //             so it is never saved, never added twice, and comes off with the card (equipRefresh). A proc (equipOnHit, from applyDamage) rolls once for each hit a follower lands and sets a status on the target (js/combat.js) that is refreshed, never stacked.
 //   SUBCLASS  a tag on each evolved form (EQUIP_FORM_SUBCLASS, the user's roster chart): crustacean, mollusk, elemental, drone or jelly. An egg has none until it evolves, nor do the ten retired forms. It decides nothing yet: it is for the cards to classify by.
-//   SLOTS     every follower has two (f.cards = [id | null, id | null]); the player has two UNIVERSAL ones (equipPlayer). A unit cannot wear the same card twice; any number of units can wear the same card, because a card is a TYPE you own, never used up.
-//   FITS      a card is one kind: ELEMENT (a follower of that element), CLASS (a follower of that role: brawler, mage or technician), SUBCLASS (a follower of that subclass) or UNIVERSAL (any follower, and the player).
+//   SLOTS     every follower has two (f.cards = [id | null, id | null]); the player has two, for PLAYER cards (equipPlayer). A unit cannot wear the same card twice; any number of units can wear the same card, because a card is a TYPE you own, never used up.
+//   FITS      a card is one kind: ELEMENT (a follower of that element), CLASS (a follower of that role: brawler, mage or technician; a Mage's AURA names an element too, and is worn by a Mage of that element), SUBCLASS (a follower of that
+//             subclass) or PLAYER (the player's slots, and nothing else). The UNIVERSAL kind (any follower, and the player) is retired (the owner, 2026-11-02; docs/UNIVERSAL-AND-PLAYER-CARDS.md).
 //   OWNED     the permanent COLLECTION: a card is unlocked for good for EQUIP.unlockCost shards (flat, paid from the run's), kept at EQUIP.key, which NEW GAME does not touch and the run's save does not hold.
 //   THE HAND  the card types taken into a run, up to EQUIP.startPick, chosen from the collection when it begins (js/cardsui.js). A card put back out of the hand comes off everyone, unless it was found as well.
 //   PACK 1    ◆EQUIP_PACK.price buys a BOOSTER PACK: 4 Element cards, one reserved for a Precision, the others rolled over Unrefined, Refined and Precision by weight; none twice in a pack. What a pack deals is FOUND (equipFound): a card
 //             to wear at once, for this run only (NEW GAME clears it) unless EQUIP.unlockCost shards keep it for good. Only the hand and what is found can be worn.
-//   SERIES 2  a second pack (EQUIP_PACK2, in EQUIP_PACKS with Pack 1), which is the archive's BOOSTER PACK 2, for the SPECIES cards (the subclass kind) and CLASS cards of the "Series 2" brief: its plumbing is here (the roll, the
-//             sale, the shelf and the sheet take any pack of the list) and the archive's approved rules (unlocked after the first boss, all six rarities, one Precision-or-higher card at least); its card list (EQUIP_SERIES2), its
-//             price and its odds are not, so it is not on sale (equipPackOnSale) until they are. A technician's ABILITY COOLDOWN is a stat a card can name (EQUIP_STATS.cooldown).
+//   SERIES 2  a second pack (EQUIP_PACK2, in EQUIP_PACKS with Pack 1), which is the archive's BOOSTER PACK 2 (the roll, the sale, the shelf and the sheet take any pack of the list). Since Build B it deals 45 cards: the 20 SPECIES cards
+//             (the subclass kind) and the Technician's 4 cooldown cards (EQUIP_SERIES2), the 18 Mage AURAS and the 3 Brawler OPPORTUNITY cards (EQUIP_AURAS, EQUIP_OPPORTUNITY). Its eight Brawler and Mage class cards were cut (EQUIP_CUT):
+//             a copy unlocked for good is refunded (equipRefundTick). A technician's ABILITY COOLDOWN is a stat a card can name (EQUIP_STATS.cooldown).
 //   LEAVING   a respawn keeps a follower's cards; EXILE, falling for good (its body is restored with empty slots) and a RE-ROLL empty the slots. Nothing is lost: the card is still in the hand.
 //   SAVED     additively (js/facilitysave.js, FS.version stays 1, so every save made before the cards still loads): a follower's record carries `cards`, the run's save carries `cards: { hand, player, found }`.
 //   TICK      equipTick takes off, every half second, whatever no longer fits (a role switched, a card out of the hand): nothing else has to know the cards exist.
@@ -46,7 +47,8 @@ const EQUIP_RARITIES = [
     { id: "prototype", label: "PROTOTYPE" }, { id: "lustrous", label: "LUSTROUS" }, { id: "crystalline", label: "CRYSTALLINE" },
 ];
 
-// THE CARDS. { id, name, kind, match, rarity, text, bonus? }: kind is "element" (match: an element id), "class" (match: a follower's role: brawler, sniper = MAGE, camper = TECHNICIAN), "subclass" (match: a subclass id) or "universal" (no match).
+// THE CARDS. { id, name, kind, match, rarity, text, bonus? }: kind is "element" (match: an element id), "class" (match: a follower's role: brawler, sniper = MAGE, camper = TECHNICIAN), "subclass" (match: a subclass id) or "player" (no match;
+// the player's slots). The "universal" kind is retired (Build B).
 // `bonus` ({ stat: fraction }) is what a real card adds to its wearer; a test card has none.
 // The real cards: the six CRYSTALLINE ones (the rarest tier; ASKED in the "Crystalline Card Implementation" brief), each a CLASS card with one flat +50% and no other effect. The rest of the list is still being designed; a card added here appears
 // in every screen, saves and unlocks with nothing else to change. The names are in the interface's capitals.
@@ -87,6 +89,11 @@ const _equipPct = n => (Math.round(n * 1000) / 10) + "%", _equipSec = n => (Math
 function equipEffectText(fx) {
     if (fx && fx.bonus) return Object.keys(fx.bonus).map(k => (k === "cooldown" ? "−" : "+") + _equipPct(fx.bonus[k]) + " " + (_EQUIP_STAT_WORDS[k] || String(k).toUpperCase())).join(" · ");   // (a cooldown bonus is a share taken OFF; a card of two stats names both)
     if (fx && fx.ability) return equipAbilityText(fx.ability);
+    if (fx && fx.aura) {   // a Mage's aura: its ATK, its reach, and at Prototype its element's status (named by the Pack 1 card whose numbers it uses)
+        const a = fx.aura, tpl = EQUIP_CARDS[_EQUIP_ATTUNED[a.el]], st = tpl && tpl.proc ? _EQUIP_STATUS_WORDS[tpl.proc.kind] : "";
+        return "AURA: +" + _equipPct(a.attack) + " ATTACK TO EVERY FOLLOWER WITHIN " + EQUIP_AURA.reach + " TILES, AND THE CLONE" + (a.status > 0 && st ? " · EACH OF THEIR HITS: " + _equipPct(a.status) + " TO " + st : "");
+    }
+    if (fx && fx.opportunity) return "OPPORTUNITY: +" + _equipPct(fx.opportunity) + " ON A HIT FOR EACH WEAKNESS IT EXPLOITS: AN ELEMENT MATCH-UP, A RACE WEAK TO ITS TYPE, A RACE WEAK TO ELEMENTAL, A STUNNED OR SLEEPING TARGET";
     const p = fx && fx.proc; if (!p) return "";
     if (p.kind === "attuned") return _equipPct(p.chance) + " PER HIT: ITS OWN ELEMENT'S STATUS (BURN, POISON, GLITCH, SLOW, SIPHON OR KNOCKBACK)";
     const hit = _equipPct(p.chance) + " PER HIT TO ";
@@ -99,13 +106,17 @@ function equipEffectText(fx) {
     return "";
 }
 EQUIP_PACK1.forEach(([id, name, element, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind: "element", match: element, rarity, text: equipEffectText(fx), pack: "pack1" }, fx); });
+// EACH ELEMENT'S OWN STATUS: the one Pack 1's Precision card of that element sets, with its numbers (fire burns, toxic poisons, electric glitches, ice slows, flux siphons, core knocks back). ATTUNED CORE (Series 2) and the Prototype Mage auras set it.
+const _EQUIP_ATTUNED = { fire: "cinderbrand", toxic: "mireblight", electric: "static_lock", ice: "rime_snare", flux: "siphon_field", core: "repulsor_pulse" };
+const _EQUIP_STATUS_WORDS = { burn: "BURN", poison: "POISON", glitch: "GLITCH", slow: "SLOW", siphon: "SIPHON", knockback: "KNOCK BACK" };
 // SERIES 2 (ASKED, the "Series 2" brief, 2026-10-31): two categories of card, SPECIES CARDS (the game's `subclass` kind: Jelly, Mollusk, Elemental, Crustacean or Drone, a tag every evolved form has: EQUIP_FORM_SUBCLASS) and CLASS CARDS
 // (the `class` kind: Brawler, Mage or Technician), no hybrid identities, over the six rarities. THE LIST IS NOT HERE YET: the archive that holds it could not be read this session (docs/OPEN-QUESTIONS.md), and no card is invented in its
 // place. A Series 2 card is a row of this table, in the shape of Pack 1's rows with its kind and its match: [id, name, kind ("subclass" | "class"), match (a subclass id | brawler | sniper | camper), rarity, fx]; a row added here is dealt by
 // the Series 2 pack (EQUIP_PACK2, below), worn by what it fits (equipFit: a species card by a follower of that subclass, a class card by one of that role), summed with the others (equipBonus), saved and loaded with nothing else to change.
-// THE LIST (the owner, 2026-11-01: the draft docs/SERIES-2.md; "Prototype unlocks": Series 2 deals Unrefined to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous comes in a later update). Eight
-// identities (the five species and the three classes), four cards each: UNREFINED +8% to one stat, REFINED +14%, PRECISION a Pack 1 status on a hit or two stats at +10%, PROTOTYPE an ABILITY (`ability`, below:
-// equipAbilityText says what each does, and the hooks that make it happen are under "THE SERIES 2 ABILITIES"). Every number is here and PROPOSED (docs/SERIES-2.md), so tuning stays one edit.
+// THE LIST (the owner, 2026-11-01: the draft docs/SERIES-2.md; "Prototype unlocks": Series 2 deals Unrefined to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous comes in a later update). The five species
+// and the Technician, four cards each: UNREFINED +8% to one stat, REFINED +14%, PRECISION a Pack 1 status on a hit or two stats at +10%, PROTOTYPE an ABILITY (`ability`, below: equipAbilityText says what each does, and the hooks
+// that make it happen are under "THE SERIES 2 ABILITIES"). Every number is here and PROPOSED (docs/SERIES-2.md), so tuning stays one edit. The Brawler's and the Mage's four were CUT in Build B (EQUIP_CUT, below): the class
+// families took their place.
 const EQUIP_SERIES2 = [
     ["chitin_scale",      "CHITIN SCALE",      "subclass", "crustacean", "unrefined", { bonus: { defense: 0.08 } }],
     ["barnacle_bracer",   "BARNACLE BRACER",   "subclass", "crustacean", "refined",   { bonus: { maxHealth: 0.14 } }],
@@ -127,14 +138,7 @@ const EQUIP_SERIES2 = [
     ["stinger_tendril",   "STINGER TENDRIL",   "subclass", "jelly",      "refined",   { bonus: { attack: 0.14 } }],
     ["nematocyst",        "NEMATOCYST",        "subclass", "jelly",      "precision", { proc: { kind: "poison", chance: 0.18, cut: 0.30, seconds: 3 } }],
     ["amorphous_body",    "AMORPHOUS BODY",    "subclass", "jelly",      "prototype", { ability: { kind: "absorb", after: 5, cut: 0.4 } }],
-    ["knuckle_wraps",     "KNUCKLE WRAPS",     "class",    "brawler",    "unrefined", { bonus: { attack: 0.08 } }],
-    ["iron_guard",        "IRON GUARD",        "class",    "brawler",    "refined",   { bonus: { defense: 0.14 } }],
-    ["haymaker_gauntlet", "HAYMAKER GAUNTLET", "class",    "brawler",    "precision", { bonus: { attack: 0.10, defense: 0.10 } }],
-    ["cleaver_arm",       "CLEAVER ARM",       "class",    "brawler",    "prototype", { ability: { kind: "cleave", radius: 1, share: 0.5 } }],
-    ["focus_lens",        "FOCUS LENS",        "class",    "sniper",     "unrefined", { bonus: { specialAttack: 0.08 } }],
-    ["channeling_rod",    "CHANNELING ROD",    "class",    "sniper",     "refined",   { bonus: { attackSpeed: 0.14 } }],
-    ["spellweave_circlet", "SPELLWEAVE CIRCLET", "class",  "sniper",     "precision", { bonus: { specialAttack: 0.10, attackSpeed: 0.10 } }],
-    ["chain_conduit",     "CHAIN CONDUIT",     "class",    "sniper",     "prototype", { ability: { kind: "chain", radius: 3, share: 0.5 } }],
+    // THE TECHNICIAN'S FAMILY: cooldown management (docs/UNIVERSAL-AND-PLAYER-CARDS.md: the owner, 2026-11-02, "Series 2's four Technician cards", unchanged)
     ["spare_parts_kit",   "SPARE PARTS KIT",   "class",    "camper",     "unrefined", { bonus: { cooldown: 0.08 } }],
     ["capacitor_bank",    "CAPACITOR BANK",    "class",    "camper",     "refined",   { bonus: { cooldown: 0.14 } }],
     ["field_multitool",   "FIELD MULTITOOL",   "class",    "camper",     "precision", { bonus: { cooldown: 0.10, maxHealth: 0.10 } }],
@@ -155,12 +159,52 @@ function equipAbilityText(a) {
     return "";
 }
 EQUIP_SERIES2.forEach(([id, name, kind, match, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind, match, rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
-// The test cards, behind ?cards: one of each kind, a spread of rarities, and none does anything.
+// THE CLASS CARD FAMILIES (Build B, 2026-11-02c; docs/UNIVERSAL-AND-PLAYER-CARDS.md section 2, the owner, 2026-11-02: "mages get aura cards, and the brawlers get opportunity bonuses ... and then technicians get cool down management").
+// Each is a CLASS card, dealt by Series 2. The names are the owner's approval of the agent's draft ("Approve all 21"). Every number is in these two tables.
+//   MAGE AURAS   six elements × Refined, Precision, Prototype. A Mage of the aura's element wears it (equipFit); every follower within EQUIP_AURA.reach tiles of it, the Mage included, and the Mutator's clone, gets `aura.attack` more
+//                ATK (equipBonus; the clone's hits: js/helpers.js applyDamage). At Prototype, each hit of one of them has `aura.status` chance (a first guess, to tune) to set the element's own status (_EQUIP_ATTUNED, with its
+//                Pack 1 numbers: equipOnHit). Different auras stack; THE SAME AURA (the same card) counts once, even from two Mages. Who is in reach is worked out on the card tick (_equipAuraTick); the look is equipAuraDraw.
+//   OPPORTUNITY  a Brawler's: each OPENING a hit meets adds `opportunity` to the whole hit (js/damage.js dmgApply, through equipOpportunity): an element match-up, a race weak to the hit's physical type, a race weak to Elemental,
+//                a stunned or sleeping target. A hit that meets none is unchanged.
+const EQUIP_AURA = { reach: 4 };   // tiles from the Mage (the owner, 2026-11-02)
+const EQUIP_AURAS = [
+    ["kindling_band",    "KINDLING BAND",    "fire",     "refined",   { aura: { attack: 0.05 } }],
+    ["hearth_sigil",     "HEARTH SIGIL",     "fire",     "precision", { aura: { attack: 0.075 } }],
+    ["inferno_crown",    "INFERNO CROWN",    "fire",     "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["spore_band",       "SPORE BAND",       "toxic",    "refined",   { aura: { attack: 0.05 } }],
+    ["miasma_sigil",     "MIASMA SIGIL",     "toxic",    "precision", { aura: { attack: 0.075 } }],
+    ["pestilence_crown", "PESTILENCE CROWN", "toxic",    "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["ionic_band",       "IONIC BAND",       "electric", "refined",   { aura: { attack: 0.05 } }],
+    ["voltaic_sigil",    "VOLTAIC SIGIL",    "electric", "precision", { aura: { attack: 0.075 } }],
+    ["tempest_crown",    "TEMPEST CROWN",    "electric", "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["chill_band",       "CHILL BAND",       "ice",      "refined",   { aura: { attack: 0.05 } }],
+    ["glacial_sigil",    "GLACIAL SIGIL",    "ice",      "precision", { aura: { attack: 0.075 } }],
+    ["winter_crown",     "WINTER CROWN",     "ice",      "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["phase_band",       "PHASE BAND",       "flux",     "refined",   { aura: { attack: 0.05 } }],
+    ["warp_sigil",       "WARP SIGIL",       "flux",     "precision", { aura: { attack: 0.075 } }],
+    ["eclipse_crown",    "ECLIPSE CROWN",    "flux",     "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+    ["lodestone_band",   "LODESTONE BAND",   "core",     "refined",   { aura: { attack: 0.05 } }],
+    ["keystone_sigil",   "KEYSTONE SIGIL",   "core",     "precision", { aura: { attack: 0.075 } }],
+    ["monolith_crown",   "MONOLITH CROWN",   "core",     "prototype", { aura: { attack: 0.10, status: 0.05 } }],
+];
+const EQUIP_OPPORTUNITY = [
+    ["pressure_spur",    "PRESSURE SPUR",    "refined",   { opportunity: 0.20 }],
+    ["faultline_talon",  "FAULTLINE TALON",  "precision", { opportunity: 0.30 }],
+    ["rupture_fang",     "RUPTURE FANG",     "prototype", { opportunity: 0.40 }],
+];
+EQUIP_AURAS.forEach(([id, name, el, rarity, fx]) => { fx.aura.el = el; EQUIP_CARDS[id] = Object.assign({ id, name, kind: "class", match: "sniper", rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
+EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind: "class", match: "brawler", rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
+// THE CUT CARDS (the owner, 2026-11-02: Series 2 reshaped): its eight Brawler and Mage class cards are no longer cards. The registry does not know them, so every place that reads a saved id already drops them (the hand, the cards
+// found, the shelf, the player's slots: equipSaveApply; a follower's slots: equipValid on the tick, and the bonuses skip them before that). The COLLECTION keeps ids it does not know (?cards on and off loses nothing), so it drops these
+// by name, and each one it held (unlocked for good) pays back EQUIP.unlockCost shards, once (equipOwnedSet, equipRefundTick). Their abilities' code (Cleave, Chain) is kept, worn by no card.
+const EQUIP_CUT = ["knuckle_wraps", "iron_guard", "haymaker_gauntlet", "cleaver_arm", "focus_lens", "channeling_rod", "spellweave_circlet", "chain_conduit"];
+const EQUIP_REFUND_CAP = EQUIP_CUT.length * EQUIP.unlockCost;   // the most a refund can be (every cut card owned): a saved number above it is not believed
+// The test cards, behind ?cards: one of each kind, a spread of rarities, and none does anything. The two PLAYER ones were the Universal kind's until it was retired (Build B): the only cards the player's slots take until the Player cards come.
 const EQUIP_TEST_CARDS = {};
 [   ["test_fire", "TEST · FIRE", "element", "fire", "unrefined"], ["test_ice", "TEST · ICE", "element", "ice", "refined"],
     ["test_brawler", "TEST · BRAWLER", "class", "brawler", "precision"], ["test_mage", "TEST · MAGE", "class", "sniper", "prototype"], ["test_technician", "TEST · TECHNICIAN", "class", "camper", "lustrous"],
     ["test_crustacean", "TEST · CRUSTACEAN", "subclass", "crustacean", "unrefined"], ["test_drone", "TEST · DRONE", "subclass", "drone", "crystalline"],
-    ["test_universal_a", "TEST · UNIVERSAL A", "universal", null, "refined"], ["test_universal_b", "TEST · UNIVERSAL B", "universal", null, "precision"],
+    ["test_player_a", "TEST · PLAYER A", "player", null, "refined"], ["test_player_b", "TEST · PLAYER B", "player", null, "precision"],
 ].forEach(([id, name, kind, match, rarity]) => { EQUIP_TEST_CARDS[id] = { id, name, kind, match, rarity, test: true, text: "A TEST CARD: IT DOES NOTHING" }; });
 
 // THE DEVELOPER SWITCH, read once from the address (as js/attract.js does): "" the real cards only (none yet), "on" (?cards) the test cards exist, "all" (?cards=all) and every one is owned and in the hand, to try the screens by hand (that is never saved).
@@ -185,27 +229,52 @@ function equipSubclassOf(f) { const s = f && f.evolved ? EQUIP_FORM_SUBCLASS[f.e
 function equipSubclassLabel(id) { const s = EQUIP_SUBCLASSES.find(x => x.id === id); return s ? s.label : ""; }
 function _equipElementLabel(id) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === id) : null; return e ? e.label : String(id || "").toUpperCase(); }
 function _equipRoleLabel(id) { return typeof roleLabel === "function" ? roleLabel(id) : String(id || "").toUpperCase(); }
-// what a card is for, in words: "FIRE FOLLOWERS", "BRAWLERS", "DRONES", "ANY FOLLOWER AND THE PLAYER"
+// what a card is for, in words: "ELEMENT · FIRE", "CLASS · BRAWLER", "CLASS · FIRE MAGE" (a Mage's aura), "SUBCLASS · DRONE", "PLAYER"
 function equipKindLabel(c) {
     if (!c) return "";
     if (c.kind === "element") return "ELEMENT · " + _equipElementLabel(c.match);
-    if (c.kind === "class") return "CLASS · " + _equipRoleLabel(c.match);
+    if (c.kind === "class") return "CLASS · " + (c.aura ? _equipElementLabel(c.aura.el) + " " : "") + _equipRoleLabel(c.match);
     if (c.kind === "subclass") return "SUBCLASS · " + equipSubclassLabel(c.match);
-    return "UNIVERSAL";
+    if (c.kind === "player") return "PLAYER";
+    return "";
 }
 
-// ── THE COLLECTION: the cards unlocked for good (kept at EQUIP.key) ──
+// ── THE COLLECTION: the cards unlocked for good (kept at EQUIP.key as { v: 1, owned: [ids], refund?: shards }) ──
+// `refund`: the shards owed for CUT cards the collection held (EQUIP_CUT), kept here until a run's shards take them (equipRefundTick). The cut ids leave the record IN THE SAME WRITE that adds their refund, so a refund is counted
+// once however often the page loads, and paid once: the write that pays it sets it to nothing. A refund that is not a positive number is not believed, nor one above EQUIP_REFUND_CAP.
+let _equipRefund = 0;
 function equipOwnedSet() {
     if (_equipOwned) return _equipOwned;
-    let ids = [];
-    try { const d = JSON.parse(localStorage.getItem(EQUIP.key) || "null"); if (d && d.v === 1 && Array.isArray(d.owned)) ids = d.owned.filter(x => typeof x === "string"); } catch (e) { /* no storage, or not ours: an empty collection */ }
-    return _equipOwned = new Set(ids);   // (an id the registry does not know stays: ?cards on and then off loses nothing)
+    let ids = [], owed = 0;
+    try {
+        const d = JSON.parse(localStorage.getItem(EQUIP.key) || "null");
+        if (d && d.v === 1 && Array.isArray(d.owned)) ids = d.owned.filter(x => typeof x === "string");
+        if (d && d.v === 1 && Number.isFinite(d.refund) && d.refund > 0) owed = Math.floor(d.refund);
+    } catch (e) { /* no storage, or not ours: an empty collection */ }
+    const set = new Set(ids);   // (an id the registry does not know stays: ?cards on and then off loses nothing; the cut cards are the exception, by name)
+    let cut = 0; for (const id of EQUIP_CUT) if (set.delete(id)) cut++;
+    _equipOwned = set; _equipRefund = Math.min(EQUIP_REFUND_CAP, owed + cut * EQUIP.unlockCost);
+    if (cut) equipWriteOwned();   // (at once: gone from the record, and their refund kept, in one write)
+    return _equipOwned;
+}
+// the shards owed for cut cards, not yet paid
+function equipRefundDue() { equipOwnedSet(); return _equipRefund; }
+// THE REFUND IS PAID (the owner, 2026-11-02: "added when the next run starts, at once if one is in progress"): on the first card tick of play, into the run's shards; the collection's record forgets it in the same moment, and the run is
+// saved at once so the shards are kept. Not on the website's background, not before the run has begun (the facility saves from then), not after it is over, never with ?cards=all (nothing it does is the player's).
+function equipRefundTick() {
+    if (equipDev === "all" || !(equipRefundDue() > 0) || typeof shardCount !== "number") return 0;
+    if ((typeof attractOn === "function" && attractOn()) || typeof _fp === "undefined" || !_fp || !_fp.saveReady || (typeof gameState !== "undefined" && gameState && gameState.running === false)) return 0;
+    const r = _equipRefund, n = Math.round(r / EQUIP.unlockCost);
+    shardCount += r; _equipRefund = 0; equipWriteOwned();
+    if (typeof facilitySaveWrite === "function") facilitySaveWrite();
+    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "◆" + r + " BACK · " + n + (n === 1 ? " SERIES 2 CARD YOU OWNED WAS CUT" : " SERIES 2 CARDS YOU OWNED WERE CUT"), color: "#ffe733", life: 200, vy: -0.2, size: 14 });
+    return r;
 }
 function equipOwns(id) { return !!equipCard(id) && (equipDev === "all" || equipOwnedSet().has(id)); }
 function equipOwnedList() { return Object.values(equipCards()).filter(c => equipOwns(c.id)); }
 function equipWriteOwned() {
     if (equipDev === "all") return false;   // (everything is owned for the look of it: that is not the player's)
-    try { localStorage.setItem(EQUIP.key, JSON.stringify({ v: 1, owned: [...equipOwnedSet()] })); return true; } catch (e) { return false; }
+    try { const d = { v: 1, owned: [...equipOwnedSet()] }; if (_equipRefund > 0) d.refund = _equipRefund; localStorage.setItem(EQUIP.key, JSON.stringify(d)); return true; } catch (e) { return false; }
 }
 // the price of a card: flat. Why a card cannot be unlocked now, or null when it can. A card a pack deals (c.pack) is unlocked from the ones FOUND: it has to be found first (EQUIP_PACK.unlockNeedsFind); the others (the Crystalline six,
 // which no pack deals yet) are unlocked as they were.
@@ -230,6 +299,7 @@ let equipPackLast = null;          // the last pack opened this run, for the she
 let equipPlayer = [null, null];    // the player's slots
 function equipReset() {            // a fresh game (js/facilityplay.js facilityResetState): the collection stays, the rest begins empty
     equipHand = equipDev === "all" ? Object.keys(equipCards()) : []; equipFound = []; equipPackLast = null; equipPlayer = [null, null]; equipCredits = 0; equipShelf = { ids: [], until: 0 };
+    _equipAuraHeld = []; _equipAuraRings = [];   // (the auras: the next tick finds them again)
 }
 function equipInHand(id) { return equipHand.indexOf(id) >= 0; }
 function equipIsFound(id) { return equipFound.indexOf(id) >= 0; }
@@ -259,10 +329,10 @@ function equipWorn(f) { return equipSlots(f).filter(Boolean).length; }
 function _equipPlural(w) { return /[^AEIOU]Y$/.test(w) ? w.slice(0, -1) + "IES" : w + "S"; }   // (JELLY: JELLIES; the others take an S)
 function equipFit(f, c) {
     if (!c) return "NO SUCH CARD";
-    if (c.kind === "universal") return null;
     if (c.kind === "element") return equipElementOf(f) === c.match ? null : "FOR " + _equipElementLabel(c.match) + " FOLLOWERS";
-    if (c.kind === "class") return equipRoleOf(f) === c.match ? null : "FOR " + _equipPlural(_equipRoleLabel(c.match));
+    if (c.kind === "class") return equipRoleOf(f) === c.match && (!c.aura || equipElementOf(f) === c.aura.el) ? null : "FOR " + (c.aura ? _equipElementLabel(c.aura.el) + " " : "") + _equipPlural(_equipRoleLabel(c.match));   // (a Mage's aura: a Mage of its element)
     if (c.kind === "subclass") { const s = equipSubclassOf(f); return s === c.match ? null : "FOR " + _equipPlural(equipSubclassLabel(c.match)) + (s ? "" : " · EVOLVE FIRST"); }
+    if (c.kind === "player") return "FOR THE PLAYER";
     return "NOT A CARD";
 }
 // why this card cannot go in this slot of this follower, or null when it can: a follower (not a clone), the card in the hand or found, a fit, and not already on its other slot
@@ -312,8 +382,10 @@ const EQUIP_STATS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", defense
 // a follower's total bonus to one stat: ADDITIVE over the cards it wears (two +50% are +1.0), a card counted once, only a card that exists and fits it. Whether the card is in the hand is not asked here: the stats are made before the
 // hand is put back on a load (equipSaveApply), and a card out of the hand comes off at once or within half a second (equipHandRemove, equipTick), which makes the stats again.
 function equipBonus(f, stat) {
-    const c = f && f.cards; if (!Array.isArray(c)) return 0;
+    if (!f) return 0;
     let sum = 0;
+    const au = f._aura; if (stat === "attack" && au && au.attack > 0) sum += au.attack;   // (THE MAGE AURAS it stands in, worn or not: their ATK, below)
+    const c = f.cards; if (!Array.isArray(c)) return sum;
     for (let i = 0; i < EQUIP.followerSlots; i++) {
         const id = c[i]; if (!id || c.indexOf(id) !== i) continue;
         const card = equipCard(id); if (!card || !card.bonus || equipFit(f, card)) continue;
@@ -334,15 +406,25 @@ function equipRefresh(f) {
 // js/helpers.js applyDamage calls equipOnHit for every hit a follower of yours lands on an enemy (not a reflected hit, not a set amount, not a burn's or a cloud's own tick: those have no attacker). Each proc card the follower wears rolls once, at its chance, and
 // a success sets a status on the target through the game's own status code (js/combat.js applyBurn, applyWeaken, applyGlitch, applyKnockback; js/abilities.js applySlow; healUnit). A status already on is REFRESHED (the longer time and the stronger number win),
 // never stacked, so a fast hitter keeps one timer going and not many; a status runs out by itself (js/combat.js updateStatusEffects). `dealt` is the health the hit really took.
+// A unit in reach of a PROTOTYPE MAGE AURA (a follower or the clone, worn cards or none) rolls each such aura once a hit, at its `status` chance, for that element's own status (_EQUIP_ATTUNED: the Pack 1 Precision card's numbers).
 function equipOnHit(src, target, dealt) {
-    if (_equipEcho) return;   // (a hit an ability made, below: no card answers it, so one hit never sets off a chain of them)
-    const c = src && src.cards; if (!Array.isArray(c) || !target || target === src) return;
-    for (let i = 0; i < EQUIP.followerSlots; i++) {
+    if (_equipEcho || !src || !target || target === src) return;   // (a hit an ability made, below: no card answers it, so one hit never sets off a chain of them)
+    const c = src.cards, worn = Array.isArray(c) && src.isFollower === true && !src.isClone;   // (cards are a follower's: the clone only ever comes for an aura)
+    if (worn) for (let i = 0; i < EQUIP.followerSlots; i++) {
         const id = c[i]; if (!id || c.indexOf(id) !== i) continue;
         const card = equipCard(id), p = card && card.proc; if (!p || equipFit(src, card)) continue;
         if (Math.random() < p.chance) _equipProc(src, target, p, dealt);
     }
-    _equipAbilitiesOnHit(src, target, dealt);
+    const au = src._aura;
+    if (au && au.extras.length) for (const a of au.extras) if (Math.random() < a.status) { const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[a.el]]; if (tpl && tpl.proc) _equipProc(src, target, tpl.proc, dealt); }
+    if (worn) _equipAbilitiesOnHit(src, target, dealt);
+}
+// OPPORTUNITY (a Brawler's cards): the share each opening adds to a hit, over the opportunity cards it wears that fit it (js/damage.js dmgApply counts the openings); 0 for anyone else
+function equipOpportunity(f) {
+    const c = f && f.cards; if (!Array.isArray(c)) return 0;
+    let sum = 0;
+    for (let i = 0; i < EQUIP.followerSlots; i++) { const id = c[i]; if (!id || c.indexOf(id) !== i) continue; const card = equipCard(id); if (card && card.opportunity > 0 && !equipFit(f, card)) sum += card.opportunity; }
+    return sum;
 }
 
 // ── THE SERIES 2 ABILITIES (the PROTOTYPE cards; docs/SERIES-2.md; the owner, 2026-11-01: "Prototype unlocks") ──
@@ -411,8 +493,7 @@ function equipChargeSpend(f, cd) {
     f._abSpare = 0; f._abSpareAt = _equipNow() + cd; return true;
 }
 function _equipSay(t, text, col) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text, color: col, size: 11, life: 40, vy: -0.03 }); }
-// ATTUNED CORE (Series 2): its wearer's own element's status, the one Pack 1's Precision card of that element sets (its numbers), at the Attuned Core's own chance
-const _EQUIP_ATTUNED = { fire: "cinderbrand", toxic: "mireblight", electric: "static_lock", ice: "rime_snare", flux: "siphon_field", core: "repulsor_pulse" };
+// ATTUNED CORE (Series 2): its wearer's own element's status, the one Pack 1's Precision card of that element sets (its numbers: _EQUIP_ATTUNED, above), at the Attuned Core's own chance
 function _equipProc(src, t, p, dealt) {
     if (p.kind === "attuned") { const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[equipElementOf(src)]]; if (tpl && tpl.proc) _equipProc(src, t, tpl.proc, dealt); return; }
     if (p.kind === "siphon") { if (typeof healUnit === "function") healUnit(src, dealt * p.share, src); return; }   // (to the follower, whatever the hit killed or not)
@@ -428,12 +509,12 @@ function _equipProc(src, t, p, dealt) {
     else if (p.kind === "knockback" && typeof applyKnockback === "function") applyKnockback(t, src, p.push);
 }
 
-// ── THE PLAYER'S SLOTS: Universal cards only ──
+// ── THE PLAYER'S SLOTS: Player cards only (the owner, 2026-11-02: the Universal kind is retired; the player cannot wear auras). Until the Player cards come only the two test cards are of the kind, so the slots stay empty. ──
 function equipPlayerWhyNot(id, slot) {
     const c = equipCard(id);
     if (!c) return "NO SUCH CARD";
     if (!equipUsable(id)) return "NOT IN YOUR HAND";
-    if (c.kind !== "universal") return "UNIVERSAL CARDS ONLY";
+    if (c.kind !== "player") return "PLAYER CARDS ONLY";
     return equipPlayer.some((x, i) => i !== slot && x === id) ? "ALREADY IN THE OTHER SLOT" : null;
 }
 function equipPlayerPut(slot, id) {
@@ -449,11 +530,89 @@ function equipWearers(id) {
     return n;
 }
 
-// ── EACH FRAME (js/game.js, beside partyTick): every EQUIP.every frames, whatever no longer fits comes off ──
+// ── THE MAGE AURAS: who stands in which (each card tick) ──
+// A SOURCE is a Mage of yours that is up (not falling, not walking back to be re-rolled) wearing aura cards that fit it. A UNIT in reach is any follower of yours that is up, or the Mutator's clone, within EQUIP_AURA.reach tiles of a
+// source (the source too). A unit's auras are `_aura` ({ attack: the ATK share, extras: the Prototype auras, cols: their colours } or null) and `_auraSig` (the card ids, sorted): never saved, worked out again a tick after a load or
+// a respawn. When a follower's auras change its stats are made again (equipRefresh; equipBonus adds the ATK), so the bonus comes on as it walks in and goes as it walks out, within a tick (half a second). Enemies never get one.
+let _equipAuraHeld = [];    // the units in an aura now (so an aura that ends is taken off them without looking at everyone)
+let _equipAuraRings = [];   // the sources and their colours, for the drawing: [{ f, cols }]
+function equipAurasOf(f) {   // the aura cards a follower gives off: worn, fitting, each once (none for anyone not up and yours)
+    const out = [], c = f && f.cards; if (!Array.isArray(c) || f.dead || f.isClone || f.isFollower !== true || f.team !== "green" || f.returningToCrystal || !(f.health > 0)) return out;
+    for (let i = 0; i < EQUIP.followerSlots; i++) { const id = c[i]; if (!id || c.indexOf(id) !== i) continue; const card = equipCard(id); if (card && card.aura && !equipFit(f, card)) out.push(card); }
+    return out;
+}
+function _equipAuraColour(el) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === el) : null; return e ? e.color : "#8fe3ff"; }
+function _equipAuraTick() {
+    const src = [], rings = [];
+    if (typeof followers !== "undefined") for (const f of followers) {
+        const cards = equipAurasOf(f); if (!cards.length) continue;
+        const cols = []; for (const card of cards) { src.push({ f, card }); const col = _equipAuraColour(card.aura.el); if (cols.indexOf(col) < 0) cols.push(col); }
+        rings.push({ f, cols });
+    }
+    _equipAuraRings = rings;
+    const held = new Set();
+    if (src.length) {
+        const R2 = EQUIP_AURA.reach * EQUIP_AURA.reach, units = [];
+        for (const f of followers) if (f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green" && !f.returningToCrystal && f.health > 0) units.push(f);
+        if (typeof actors !== "undefined") for (const a of actors) if (a && a.isClone && !a.dead && a.team === "green" && a.health > 0) units.push(a);
+        for (const u of units) {
+            let ids = null;
+            for (const s of src) { const dx = u.x - s.f.x, dy = u.y - s.f.y; if (dx * dx + dy * dy <= R2 && !(ids && ids.indexOf(s.card.id) >= 0)) (ids || (ids = [])).push(s.card.id); }   // (the same aura from two Mages: once)
+            if (ids) { _equipAuraSet(u, ids); held.add(u); }
+        }
+    }
+    for (const u of _equipAuraHeld) if (!held.has(u)) _equipAuraSet(u, null);
+    _equipAuraHeld = [...held];
+}
+function _equipAuraSet(u, ids) {
+    const sig = ids ? ids.slice().sort().join(",") : "";
+    if ((u._auraSig || "") === sig) return false;
+    u._auraSig = sig;
+    if (!ids) u._aura = null;
+    else {
+        const au = { attack: 0, extras: [], cols: [] };
+        for (const id of ids) { const a = equipCard(id).aura; au.attack += a.attack; if (a.status > 0) au.extras.push(a); const col = _equipAuraColour(a.el); if (au.cols.indexOf(col) < 0) au.cols.push(col); }
+        u._aura = au;
+    }
+    if (u.isFollower === true && !u.isClone) equipRefresh(u);   // (its ATK made again; the clone's is read at each hit: js/helpers.js)
+    return true;
+}
+// THE LOOK (the owner: "some minimal way to show a aura ... It should be really subtle as well and reflect the different elements"; docs/UNIVERSAL-AND-PLAYER-CARDS.md): a faint, thin dashed ring on the ground round each Mage giving off
+// an aura, at its reach (EQUIP_AURA.reach tiles: an ellipse, the floor being drawn on the slant), in the element's colour, slowly turning; and a tiny glint of that colour beside each unit in it. Several colours: a ring and a glint
+// each. Drawn each frame with the world's overlays (js/game.js), from what the tick found: a few strokes and nothing allocated.
+const EQUIP_AURA_LOOK = { alpha: 0.22, width: 1.5, dash: [14, 10], turn: 0.3, glint: 3.5 };
+function equipAuraDraw() {
+    if ((!_equipAuraRings.length && !_equipAuraHeld.length) || typeof ctx === "undefined" || !ctx || typeof player === "undefined" || typeof canvas === "undefined") return;
+    const L = EQUIP_AURA_LOOK, W = canvas.width / 2, H = canvas.height / 2, t = _equipNow(), R = EQUIP_AURA.reach * Math.SQRT2, rx = R * TILE_W, ry = R * TILE_H;
+    const scr = (x, y, o) => { o.x = (x - player.visualX - (y - player.visualY)) * TILE_W + W; o.y = (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0); return o; };
+    const p = _equipAuraPt;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineWidth = L.width; ctx.setLineDash(L.dash);
+    for (const r of _equipAuraRings) {
+        const f = r.f; if (!f || f.dead) continue;
+        scr(f.x, f.y, p); if (p.x + rx < 0 || p.x - rx > canvas.width || p.y + ry < 0 || p.y - ry > canvas.height) continue;
+        for (let i = 0; i < r.cols.length; i++) { ctx.globalAlpha = L.alpha; ctx.strokeStyle = r.cols[i]; ctx.lineDashOffset = -(t * L.turn + i * 12); ctx.beginPath(); ctx.ellipse(p.x, p.y, rx - i * 5, ry - i * 2.5, 0, 0, Math.PI * 2); ctx.stroke(); }
+    }
+    ctx.setLineDash([]);
+    for (const u of _equipAuraHeld) {
+        const au = u && u._aura; if (!au || u.dead) continue;
+        scr(u.x, u.y, p); if (p.x < -40 || p.x > canvas.width + 40 || p.y < -40 || p.y > canvas.height + 40) continue;
+        for (let i = 0; i < au.cols.length; i++) {
+            const a = t * 0.04 + i * 2.1 + u.x + u.y, gx = p.x + Math.cos(a) * 16, gy = p.y - 6 + Math.sin(a) * 6, g = L.glint;
+            ctx.globalAlpha = 0.45 + 0.35 * Math.sin(t * 0.15 + i + u.x); ctx.fillStyle = au.cols[i];
+            ctx.beginPath(); ctx.moveTo(gx, gy - g); ctx.lineTo(gx + 1, gy - 1); ctx.lineTo(gx + g, gy); ctx.lineTo(gx + 1, gy + 1); ctx.lineTo(gx, gy + g); ctx.lineTo(gx - 1, gy + 1); ctx.lineTo(gx - g, gy); ctx.lineTo(gx - 1, gy - 1); ctx.closePath(); ctx.fill();   // a four-pointed glint
+        }
+    }
+    ctx.restore();
+}
+const _equipAuraPt = { x: 0, y: 0 };
+
+// ── EACH FRAME (js/game.js, beside partyTick): every EQUIP.every frames, whatever no longer fits comes off; who stands in an aura is worked out; a refund owed is paid ──
 function equipTick(force) {
     if (!force && typeof frame === "number" && frame % EQUIP.every) return;
     if (typeof followers !== "undefined") for (const f of followers) if (f && f.cards) { equipValid(f); if (!f.dead) _equipAbilityTick(f); }
     for (let i = 0; i < EQUIP.playerSlots; i++) { const id = equipPlayer[i]; if (id && (equipPlayerWhyNot(id, i) || equipPlayer.indexOf(id) !== i)) equipPlayer[i] = null; }
+    _equipAuraTick();   // (after the cards that no longer fit came off)
+    equipRefundTick();
     equipShelfTick();   // (the market's shelf: a new one when the time is up)
 }
 
@@ -497,12 +656,13 @@ const EQUIP_PACK = {
 // THE SERIES 2 PACK, which is BOOSTER PACK 2 (the user, 2026-10-31): the pack that deals the Series 2 cards (EQUIP_SERIES2: species cards and class cards), in the same shape as Pack 1, with the archive's approved rules for Pack 2
 // (the Game Design Archive, 2026-10-30): it UNLOCKS AFTER THE PURIFICATION (the owner, 2026-11-01, settling the sources that disagreed; it was "after the first boss", calm or defeated), all SIX rarities are eligible, and every pack holds
 // at least one PRECISION-OR-HIGHER card (`guaranteed.orHigher`: the reserved slot is filled from Precision and up, by the pack's own odds among them). ON SALE since build 2026-11-01j (the owner: "Series 2. Pick a price and set the
-// odds for the pack and make it to where another rarity is unlocked"): ◆150, odds 50/30/15/5, and its 32 cards (EQUIP_SERIES2: one per identity and rarity, Unrefined to PROTOTYPE, the rarity it unlocks). Before the purification it
-// is on the sheet with its button off ("UNLOCKS AFTER THE PURIFICATION"), not rolled, and its cards are not on the market's shelf (equipPacksOpen). Its cards are worn, found, unlocked and saved like any card. Every pack is in
-// EQUIP_PACKS: the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
+// odds for the pack and make it to where another rarity is unlocked"): ◆150, odds 50/30/15/5, Unrefined to PROTOTYPE (the rarity it unlocks). Its cards since Build B: 45 (the 20 species cards, the Technician's 4, the 18 Mage
+// auras and the 3 Brawler opportunity cards; its eight Brawler and Mage class cards were cut, EQUIP_CUT); the price and the odds stay (the owner, 2026-11-02). Before the purification it is on the sheet with its button off
+// ("UNLOCKS AFTER THE PURIFICATION"), not rolled, and its cards are not on the market's shelf (equipPacksOpen). Its cards are worn, found, unlocked and saved like any card. Every pack is in EQUIP_PACKS: the roll, the sale, the
+// shelf and the sheet take a pack and ask nothing of which one it is.
 const EQUIP_PACK2 = {
     id: "series2", name: "SERIES 2", price: 150, size: 4,     // PICKED by us at the owner's word ("Pick a price and set the odds", 2026-11-01): half again Pack 1's ◆100, for stronger cards that come later
-    kinds: ["subclass", "class"],                              // species cards (the subclass kind) and class cards; never an element card, never a universal one
+    kinds: ["subclass", "class"],                              // species cards (the subclass kind) and class cards (the class families); never an element card, never a Player card (yet: they come at Prototype in a later update)
     eligible: ["unrefined", "refined", "precision", "prototype"],   // THE OWNER (2026-11-01): "Prototype unlocks": Series 2 deals up to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous joins in a
                                                                // later update (the archive's rule was all six rarities: it is where this is going)
     rarities: { unrefined: 50, refined: 30, precision: 15, prototype: 5 },   // PICKED (as the price): a slot rolled over the four; with the reserved Precision-or-better slot (Prototype 5 in 20) a pack holds a Prototype about 1 time in 3 (1 − 0.75 × 0.95³ ≈ 36%)

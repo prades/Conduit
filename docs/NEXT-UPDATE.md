@@ -9,9 +9,13 @@
     - Its tests and a full run are in its commit.
     - Its before-and-after numbers are in `COMBAT.md` §7.10.
     - It is not playtested.
-  - **Build `2026-11-02b`, on the branch:** the owner's answers on it. The hit words now sit beside the creature; BLINDING DUST keeps its ticks.
-  - **Builds B and C** are not started. B's names are approved, so it can start.
-- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 2583f5a (Build A, `2026-11-02a`). The branch adds build `2026-11-02b`. Build B will be stamped `2026-11-02c` (or the date it is built).
+  - **Build `2026-11-02b`** (the owner's answers on Build A: the hit words beside the creature, BLINDING DUST's ticks kept) is on main too (commit e43e599; the owner: "Push b to main").
+  - **Build B is implemented** in build `2026-11-02c`, on the branch only (the owner: "Start Build B").
+    - Its tests are new and updated, and a full run is in its commit (`CHANGELOG.md`).
+    - Two approvals wait on it (section 4), with the readings it took (`OPEN-QUESTIONS.md` §1m).
+    - It is not playtested.
+  - **Build C** is not started.
+- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at e43e599 (build `2026-11-02b`). The branch adds build `2026-11-02c` (Build B).
 - **Last updated:** 2026-11-02
 - **What decides the scope:**
   - **In:** everything with an approved design and its numbers.
@@ -107,6 +111,24 @@ Each build is its own commit with its own tests and a full green run before the 
 - **Risks:**
   - The save clean-up removes owned content (approved by the owner). It must be idempotent and defensive.
   - Frame cost: aura reach is checked every 30 frames (as `equipTick` already runs), and the rings are a few thin ellipses.
+- **As built (build `2026-11-02c`):**
+  - **The cards:** js/cards.js holds the 21 cards (`EQUIP_AURAS`, `EQUIP_OPPORTUNITY`), each a CLASS card; an aura also names its element. The rest of the as-built account is in `UNIVERSAL-AND-PLAYER-CARDS.md` section 9.
+    - **The aura's reach:** worked out on the card tick (`_equipAuraTick`).
+    - **The ATK:** comes through `equipBonus`.
+    - **The clone:** its hits grow in js/helpers.js `applyDamage`.
+    - **The Prototype's status:** `equipOnHit`.
+  - **The openings:** js/damage.js `dmgApply`.
+  - **The look:** `equipAuraDraw`, with the world's overlays (js/game.js).
+  - **The clean-up and refund:** `EQUIP_CUT`, `equipOwnedSet`, `equipRefundTick`.
+  - **The CARDS screen:** js/cardsui.js gives an aura its element's colour and a Player card gold.
+  - **js/cardart.js:** comments only (an aura's cube takes its element's colour from the CARDS screen's colour for the card).
+  - **js/levels.js is unchanged:** it already read the cards' ATK through `equipMult`.
+  - **Tests:**
+    - **New:** tests/classcards.js (30 checks).
+    - **Updated:** cards, series2, series2abilities (Cleave and Chain cut), packs, crystalline, cardart, bible; squadfly and market lost the retired Universal test card.
+    - **Unchanged and passing:** damage.
+    - **The full run:** 86 of 86 (a first run's three failures: `CHANGELOG.md`).
+  - **Readings** taken where the design did not say: `OPEN-QUESTIONS.md` §1m.
 
 ### Build C: breeding and Side Quest (`CONVERSION.md`, `FOLLOWER-PROGRESSION.md`, `SEWER-QUEST.md`)
 
@@ -134,15 +156,15 @@ Each build is its own commit with its own tests and a full green run before the 
 
 - **This scope and order** (A, then B, then C).
 - **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval. Drafted 2026-11-02 (`UNIVERSAL-AND-PLAYER-CARDS.md`, "The 21 new cards' names"). **Approved** the same day: "Approve all 21".
-- **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints.
+- **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints. Both are put to the owner with Build B's handoff (2026-11-02), with the readings in `OPEN-QUESTIONS.md` §1m.
 - **During Build A:** a screenshot of the words per part. Taken and sent with Build A's handoff. **Answered:** "Move beside the creature" (done in build `2026-11-02b`).
 
 ## 5. Acceptance for the whole update
 
 - [ ] Each build's tests and a full run pass. The one known flaky suite (`tests/visiblearea.js`) is noted if it trips.
 - [x] `COMBAT.md` §1's six fights are measured before and after Build A, and the numbers reported (`COMBAT.md` §7.10, 2026-11-02).
-- [ ] Old saves load. A save holding cut Series 2 cards is cleaned once, with its refunds.
-- [ ] The frame budgets in tests/perf.js still hold.
+- [x] Old saves load. A save holding cut Series 2 cards is cleaned once, with its refunds. *(Build B: tests/classcards.js, malformed collections included.)*
+- [ ] The frame budgets in tests/perf.js still hold. *(Builds A and B: held in their full runs.)*
 - [ ] The docs, `CHANGELOG.md` and the Bible match what was built. `OPEN-QUESTIONS.md` and `DECISION-LOG.md` are updated.
 - [ ] Nothing goes to main without the owner's yes.
 

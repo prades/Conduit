@@ -28,7 +28,7 @@
 // who the orders in the world go to (that is the squad bar's pick: js/squadfly.js), and the settings and the squad buttons are for the one in view. A phone keeps the grid of cards and the side panel below.
 // YOU (build 2026-11-01l; the owner: "I want a new player icon and player card in the roster that the player can equip their cards to their own player"): the strip's FIRST tile is the player (its own picture, gold), always
 // there whatever the filters; a tap puts the PLAYER'S CARD in view (CC_YOU: its picture, its class, its health and its two cards, each a mini card that opens its slot's list), with YOUR SLOT 1 and YOUR SLOT 2 beside it
-// (Universal cards only: js/cardsui.js equipPlayerRosterDraw). ◂ ▸ walk the creatures: from the player they go to the first or the last of the strip.
+// (Player cards only: js/cardsui.js equipPlayerRosterDraw). ◂ ▸ walk the creatures: from the player they go to the first or the last of the strip.
 
 const PLAY_STYLES = [
     { id: "defensive",  label: "DEFENSIVE",  reach: 0.6, blurb: "ONLY FIGHTS WHAT COMES CLOSE" },

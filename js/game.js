@@ -1173,6 +1173,7 @@ function render() {
     ctx.restore();
 
     // ── OVERLAYS ──
+    if (typeof equipAuraDraw === "function") equipAuraDraw();   // the Mage auras: a faint ring round each Mage that gives one off, a glint on each unit in it, under the other overlays (js/cards.js)
     drawElementEffects();
     if (!gfxLow) drawSiphonWisps();
     if (typeof drawSelectedUnitRings === "function") drawSelectedUnitRings();   // the units picked in the Command Center

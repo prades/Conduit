@@ -187,7 +187,24 @@ Asked: the shop "in a new menu on the card menu called shop"; the hand and the c
 - **YOU is pinned first in the strip**, before the squad, whatever the filters; ◂ ▸ still walk the creatures only (from YOU they go to the first or the last).
 - **The player's card shows its hits** (3 / 3 HITS: the player's health is a count of hits, not hit points), its class and rank once chosen, and its two cards as mini cards.
 - **Open: the player's slots take Universal cards only** (the rule chosen on 2026-10-30), and **no real card is Universal yet**: Pack 1 is element cards, Series 2 species and class cards, the Crystalline six class cards. Only the test cards (`?cards`) can be worn by the player today. Should some cards fit the player (a Universal series, or any card), or does the player wait for Universal cards?
-  - **Designed 2026-11-01 and 2026-11-02** (not built): each follower class gets a card family. **Mages** wear their element's aura (+5% to +10% attack damage to every follower near). **Brawlers'** opportunity cards add +20% to +40% to a hit that exploits a weakness. **Technicians'** cards shorten waits and add charges. The player's two slots take **Player cards** only, for now: 18 elemental roles. The rules and the open questions: `UNIVERSAL-AND-PLAYER-CARDS.md`. The damage-type chart the Brawlers need was designed on 2026-11-02: `COMBAT.md` §7.
+  - **Answered by the design, and built in build `2026-11-02c`** (Build B, §1m): the Universal kind is retired and the player's slots take Player cards only, so they stay empty until the Player cards come.
+  - **Designed 2026-11-01 and 2026-11-02:** each follower class gets a card family. **Mages** wear their element's aura (+5% to +10% attack damage to every follower near). **Brawlers'** opportunity cards add +20% to +40% to a hit that exploits a weakness. **Technicians'** cards shorten waits and add charges. The player's two slots take **Player cards** only, for now: 18 elemental roles. The rules and the open questions: `UNIVERSAL-AND-PLAYER-CARDS.md`. The damage-type chart the Brawlers need was designed on 2026-11-02: `COMBAT.md` §7.
+
+## 1m. Build B: the class card families, Series 2 reshaped (built 2026-11-02, build `2026-11-02c`, on the branch; `UNIVERSAL-AND-PLAYER-CARDS.md`, `SERIES-2.md`)
+
+Asked (the owner, 2026-11-02): "mages get aura cards, and the brawlers get opportunity bonuses ... And then technicians get cool down management"; the tiers, the reach, the openings, the clone, the cut and the refund as answered that day; the 21 names approved ("Approve all 21"); then "Start Build B". All built as designed. Tested; not playtested.
+
+**For your approval:**
+- **The Prototype aura's status chance:** 5%, the first guess in the design. Built so; one number in js/cards.js `EQUIP_AURAS`.
+- **The rings and glints:** a screenshot went with the handoff. `UI-STYLE.md` "The Mage auras in the world" has the numbers.
+
+**Readings we took where the design did not say** (each easy to change):
+- **"The same aura counts once" is read as the same card.** Two Mages wearing KINDLING BAND give +5% once. One fire Mage wearing KINDLING BAND and HEARTH SIGIL gives both (+12.5%), as two different cards always add up. The other reading, the best tier of each element only, would be one line.
+- **Two opportunity cards on one Brawler add their shares** (PRESSURE SPUR and RUPTURE FANG: +60% an opening), as every card adds.
+- **A Prototype aura's status uses the numbers of Pack 1's Precision card of its element** (a 3-second burn of 3 a second, a 4-second weakness of 40%, and so on), as ATTUNED CORE does.
+- **The clone's whole hit grows by the aura's share:** its damage all comes from its power, its one attack stat. A follower's ATK is the physical part only.
+- **The ring is drawn over the floor and, faintly, over the units,** not under them. The floor is drawn tile by tile among the units, so a ring under them would need a new drawing pass.
+- **The refund shows a line when it is paid** ("◆3000 BACK · 3 SERIES 2 CARDS YOU OWNED WERE CUT"), and the run is saved at once.
 
 ## 2. Newly open
 
@@ -197,7 +214,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
-- **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) and Player cards (the player's elemental roles) are designed, not built: `UNIVERSAL-AND-PLAYER-CARDS.md`. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
+- **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) are built (build `2026-11-02c`, §1m); the Player cards (the player's elemental roles) are designed, not built: `UNIVERSAL-AND-PLAYER-CARDS.md`. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
   - **Your answers of 2026-11-02:**
     - openings add up; a stun or sleep counts;
     - auras reach 4 tiles, the clone included;

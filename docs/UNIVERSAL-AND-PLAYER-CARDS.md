@@ -2,18 +2,20 @@
 
 (This document began as the Universal cards' specification; its file name is kept so links stay whole.)
 
-- **Status:** Designed, nothing implemented:
-  - the three class families: Mage auras, Brawler opportunity cards, and the Technician's cooldown cards (Series 2's four);
-  - their tiers, the aura's reach, and what counts as an opening;
-  - Series 2 reshaped to deal the new cards;
-  - the Player cards: their 18 roles, where they come from, Side Quest's sale, a switch of class;
-  - the Universal kind retired;
-  - the damage-type chart the Brawler cards need, in `COMBAT.md` §7.
-
-  Being drafted: the Player cards' kits. Open: section 11.
+- **Status:**
+  - **Implemented in build `2026-11-02c` (Build B, on the branch), and tested** (tests/classcards.js and the updated card suites; section 10). Not playtested.
+    - The three class families: the 18 Mage auras, the 3 Brawler opportunity cards, and the Technician's cooldown cards (Series 2's four, unchanged).
+    - Their tiers, the aura's reach, and what counts as an opening.
+    - Series 2 reshaped: 45 cards for now (63 once the Player cards come).
+    - The cut cards' clean-up and refund.
+    - The Universal kind retired.
+    - The rings and glints. Their look waits for the owner's approval.
+  - **Designed, not implemented:** the Player cards (their 18 roles, where they come from, Side Quest's sale, a switch of class).
+  - **Being drafted:** the Player cards' kits.
+  - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-02
-- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`; no code yet. In that build the player's two slots take Universal cards only, and only test cards are Universal.
+- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (not on main until the owner says so). Since that build the player's two slots take Player cards only, and only two test cards are Player cards.
 - **Related docs:** `TUTORIAL.md` (the equip cards), `UI-STYLE.md` (the CARDS screen; YOU on the roster), `COMBAT.md` §7 (the damage types and race weaknesses), `SERIES-2.md`, `TECHNICIANS.md`, `OPEN-QUESTIONS.md` §1l and §3, `DECISION-LOG.md`
 
 ## 1. Intent
@@ -132,15 +134,15 @@ Every card is now an element, class, species (subclass) or Player card. The Univ
 
 ## 3. Must-have requirements
 
-- [ ] A Mage's aura works only on a Mage of its element; any other follower, and the player's slots, refuse it with the reason.
-- [ ] Every follower within 4 tiles of a Mage's aura, and the Mutator's clone, gets its ATK bonus (Refined +5%, Precision +7.5%, Prototype +10%), and at Prototype its element's extra; different auras stack, the same aura counts once; leaving the reach removes it at once.
-- [ ] A Brawler's opportunity card adds its bonus (Refined +20%, Precision +30%, Prototype +40%) once for each weakness a hit exploits: an element match-up, a race weak to the hit's physical type or to Elemental (`COMBAT.md` §7), a stunned or sleeping target. Any other hit is unchanged.
-- [ ] The Technician's cooldown cards are Series 2's four, unchanged.
-- [ ] The player's slots take Player cards only, one at a time, the role matching the player's class; a role for the other class sleeps until the player switches back.
-- [ ] Series 2 deals the 63 cards of section 2, and no longer deals the eight cut Brawler and Mage cards. Copies already owned leave collections, hands and slots, with ◆1,000 back for each permanently unlocked copy.
-- [ ] After each quest, Side Quest sells that quest line's element's three Player cards, ◆1,000 each, kept for good.
-- [ ] No card is of the Universal kind.
-- [ ] The subtle aura rings and glints.
+- [x] A Mage's aura works only on a Mage of its element; any other follower, and the player's slots, refuse it with the reason. *(Build B: FOR FIRE MAGES; PLAYER CARDS ONLY.)*
+- [x] Every follower within 4 tiles of a Mage's aura, and the Mutator's clone, gets its ATK bonus (Refined +5%, Precision +7.5%, Prototype +10%), and at Prototype its element's extra; different auras stack, the same aura counts once; leaving the reach removes it at once. *(Build B; "at once" is within the card tick, half a second.)*
+- [x] A Brawler's opportunity card adds its bonus (Refined +20%, Precision +30%, Prototype +40%) once for each weakness a hit exploits: an element match-up, a race weak to the hit's physical type or to Elemental (`COMBAT.md` §7), a stunned or sleeping target. Any other hit is unchanged. *(Build B.)*
+- [x] The Technician's cooldown cards are Series 2's four, unchanged.
+- [ ] The player's slots take Player cards only, one at a time, the role matching the player's class; a role for the other class sleeps until the player switches back. *(Build B: Player cards only. The rest comes with the Player cards.)*
+- [ ] Series 2 deals the 63 cards of section 2, and no longer deals the eight cut Brawler and Mage cards. Copies already owned leave collections, hands and slots, with ◆1,000 back for each permanently unlocked copy. *(Build B: 45 of the 63, the 18 Player cards to come; the cut, the clean-up and the refund are built.)*
+- [ ] After each quest, Side Quest sells that quest line's element's three Player cards, ◆1,000 each, kept for good. *(With the Player cards.)*
+- [x] No card is of the Universal kind. *(Build B.)*
+- [x] The subtle aura rings and glints. *(Build B; the look waits for the owner's approval.)*
 
 ## 4. Non-goals
 
@@ -194,25 +196,74 @@ Technician ideas not chosen (2026-11-02): kills refunding part of the wait; one 
 
 ## 8. Acceptance criteria
 
-- [ ] A follower in reach of a Mage's aura has its ATK raised by the aura's tier, added to its own cards' bonuses; out of reach, not.
-- [ ] A Brawler's opportunity hit deals its tier's bonus more than the same hit without the card; any other hit is unchanged.
-- [ ] A Technician with a cooldown card waits less, or holds an extra charge.
-- [ ] The player's slots refuse every family's card but Player cards; after a class switch, a role for the other class shows asleep and does nothing.
-- [ ] A Series 2 pack never deals a cut card; it can deal every one of the 63.
-- [ ] A save holding cut cards (in the collection, the hand, a slot) loads without them, refunds ◆1,000 for each permanently unlocked copy once, and a second load pays nothing.
-- [ ] Before a quest is finished Side Quest sells none of its element's Player cards; after it, all three, at ◆1,000, kept for good.
-- [ ] The rings and glints show and stay subtle; no frame-rate cost on an iPad.
-- [ ] The existing card tests still pass.
+- [x] A follower in reach of a Mage's aura has its ATK raised by the aura's tier, added to its own cards' bonuses; out of reach, not. *(tests/classcards.js)*
+- [x] A Brawler's opportunity hit deals its tier's bonus more than the same hit without the card; any other hit is unchanged. *(tests/classcards.js: each opening, openings adding up, none.)*
+- [x] A Technician with a cooldown card waits less, or holds an extra charge. *(tests/series2.js, tests/series2abilities.js; unchanged.)*
+- [ ] The player's slots refuse every family's card but Player cards; after a class switch, a role for the other class shows asleep and does nothing. *(The first half: tests/classcards.js, tests/cards.js. The second waits for the Player cards.)*
+- [ ] A Series 2 pack never deals a cut card; it can deal every one of the 63. *(For the 45 built: 20,000 seeded packs deal all 45 and never a cut card, tests/classcards.js.)*
+- [x] A save holding cut cards (in the collection, the hand, a slot) loads without them, refunds ◆1,000 for each permanently unlocked copy once, and a second load pays nothing. *(tests/classcards.js, with malformed collections.)*
+- [ ] Before a quest is finished Side Quest sells none of its element's Player cards; after it, all three, at ◆1,000, kept for good. *(With the Player cards.)*
+- [ ] The rings and glints show and stay subtle; no frame-rate cost on an iPad. *(They show: tests/classcards.js checks what is drawn, and a screenshot went to the owner. Subtle: the owner's call. The frame cost is a few strokes a frame and the reach every 30 frames; tests/perf.js holds in the full run. Not measured on an iPad.)*
+- [x] The existing card tests still pass. *(Updated where the cards changed; section 10.)*
 
 ## 9. Implementation notes
 
-Not implemented.
+Build `2026-11-02c` (Build B), on `claude/start-game-project-HSh7Z`. The 21 cards are in two tables in js/cards.js, `EQUIP_AURAS` and `EQUIP_OPPORTUNITY`; every number is there, and the words on each card are made from it.
+
+- **What a card is.** An aura is a CLASS card for Mages (`match: "sniper"`) that also names its element (`aura.el`). An opportunity card is a CLASS card for Brawlers. So every card is still an element, class, species or Player card (section 2). The Player kind is `"player"`: the two test cards that were Universal are `test_player_a` and `test_player_b`.
+- **Fits.** `equipFit`: an aura needs a Mage of its element ("FOR FIRE MAGES"); a Player card fits no follower ("FOR THE PLAYER"). `equipPlayerWhyNot`: the player's slots take Player cards only ("PLAYER CARDS ONLY").
+- **The aura's reach.** `_equipAuraTick` runs on the card tick (every 30 frames, as `equipTick` already ran).
+  - **Sources:** each living Mage of yours wearing fitting aura cards. A Mage that has fallen, or is walking back to be re-rolled, gives none.
+  - **Units in reach:** every follower of yours that is up, and the Mutator's clone, within 4 tiles (straight-line, in tiles).
+  - **What a unit holds:** its auras, as `_aura` (the ATK share, the Prototype extras, the colours) and `_auraSig`. Neither is saved; both are worked out again a tick after a load.
+  - **The ATK:** when a follower's auras change, its stats are made again (`equipRefresh`), and `equipBonus(f, "attack")` adds the auras' share. So the ATK goes up and down with no drift, and the signature moves (which read ATK) get it too.
+  - **The clone:** its whole hit grows by the share (js/helpers.js `applyDamage`), its damage being all from its power.
+- **The Prototype's status.** `equipOnHit` rolls each Prototype aura a unit stands in, once a hit, at `aura.status` (5%). It is reached by a follower with cards or an aura, and by the clone with an aura (never for cards). On a win it sets the element's own status with the numbers of Pack 1's Precision card of that element (`_EQUIP_ATTUNED`, as ATTUNED CORE does): fire burns, toxic poisons, electric glitches, ice slows, flux siphons (heals the hitter), core knocks back. An ability's echo rolls nothing.
+- **The openings.** js/damage.js `dmgApply` asks `equipOpportunity` (the shares of the fitting opportunity cards a follower wears) and counts the hit's openings:
+  - the physical part met a weakness;
+  - the target's row is weak to Elemental;
+  - the element triangle gives more than ×1;
+  - the target is stunned or asleep.
+
+  The whole hit is multiplied by 1 + share × openings. A hit with no type (a burn's tick, an echo, a set amount) never comes there.
+- **The look.** `equipAuraDraw`, with the world's overlays (js/game.js). Its numbers are in `EQUIP_AURA_LOOK`; `UI-STYLE.md` describes it.
+- **The cut cards and the refund.**
+  - `EQUIP_CUT` names the eight.
+  - **The collection:** `equipOwnedSet` drops them from the collection's record. It adds ◆1,000 each to `refund` in that record, in the same write (no more than ◆8,000 is believed).
+  - **The payment:** `equipRefundTick`, on the card tick, pays the refund into the run's shards once a run is in play (the facility saving, the game not over, not the website's background, not `?cards=all`). It shows the line "◆N BACK · N SERIES 2 CARDS YOU OWNED WERE CUT", writes the record without the refund, and saves the run at once.
+  - **The run's own records:** the hand, the cards found, the shelf and the player's slots drop the cut ids as they load (the registry does not know them). A follower's slots lose them on the first tick, and their bonuses are skipped before that.
+  - **Their code:** Cleave and Chain's code stays, worn by no card.
+- **The CARDS screen.**
+  - **Colour:** an aura shows the cube in its element's colour (js/cardsui.js `_cdKindCol`); a Player card is gold.
+  - **Sort:** sorting by element puts a Mage's auras after its other cards, by their element.
+  - **Kind line:** "CLASS · FIRE MAGE".
+
+**Readings taken where the design did not say (for the owner to confirm or change; `OPEN-QUESTIONS.md` §1m):**
+1. **"The same aura" is the same card.** Two Mages wearing KINDLING BAND give it once. A fire Mage wearing KINDLING BAND and HEARTH SIGIL gives both (+12.5%), as any two different cards add up.
+2. **Two opportunity cards on one Brawler add their shares** (PRESSURE SPUR and RUPTURE FANG: +60% an opening), as all cards add.
+3. **The Prototype's status uses Pack 1's Precision numbers** for its element (a 3-second burn of 3 a second, and so on).
+4. **The clone's whole hit grows by the aura's share**, its damage being all from its one attack stat.
+5. **The ring is drawn over the floor and, faintly, over the units**, not under them: the floor is drawn tile by tile among the units.
+6. **The refund comes with a line on the screen**, so the shards are not a mystery.
+
+## 9a. Frame cost
+
+The reach is checked every 30 frames: one pass over the followers and the clones for each aura worn. A unit's stats are made again only when its auras change. The drawing is a dashed ellipse for each Mage and colour, and a small glint for each unit in reach, each frame; nothing is allocated per frame. Measured: not on an iPad. tests/perf.js's frame budgets hold in the full run (section 10).
 
 ## 10. Verification record
 
 | Check | Result | Evidence / notes |
 |---|---|---|
-| Nothing to check yet | Not run | no code |
+| The 21 cards, their numbers and words; the Technician's four unchanged | Passed | tests/classcards.js |
+| Who wears what: an aura on a Mage of its element only; opportunity on a Brawler only; the player's slots take Player cards only | Passed | tests/classcards.js, tests/cards.js, tests/packs.js, tests/crystalline.js |
+| The auras: reach (in at 3.9 tiles, out at 4.1), each tier, stacking, the same aura once, leaving and coming back, the Mage falling, the card off, the clone, enemies never | Passed | tests/classcards.js |
+| The Prototype's status: each element's, a winning and a losing roll, out of reach, a Refined aura, the clone | Passed | tests/classcards.js (Math.random fixed) |
+| The ring and the glints: drawn at the reach in the element's colour, alpha 0.22, turning; nothing with no aura | Passed | tests/classcards.js (what is drawn); a screenshot went to the owner |
+| The openings: each alone, none, a glitched target, a resisting race, an element the hitter is weak against, two, all four (+160%), ice on core, a Mage wearing it | Passed | tests/classcards.js |
+| Series 2: 45 cards, price and odds unchanged; 20,000 packs never deal a cut card and deal all 45; the shelf never offers a cut card | Passed | tests/classcards.js, tests/series2.js |
+| The clean-up and refund: dropped in one write, owed once, paid once on a run in play, not before or after, not with ?cards=all, safe on malformed records; a run's save loads without the cut cards | Passed | tests/classcards.js |
+| The rest of the game | Passed | the full run, 86 suites, on build `2026-11-02c` (tests/perf.js's frame budgets included); a first run's three failures are in the changelog |
+| Played by a person | Not done | not playtested |
 
 ## 11. Open questions
 
@@ -231,6 +282,9 @@ Not implemented.
 13. **The Mage auras and the split: answered 2026-11-02. The aura stays on ATK**, the physical part (the alternatives were the whole hit, or SP.ATK).
 14. **The refunds' timing: answered 2026-11-02.** The shards wait in the collection and are added when the next run starts, at once if a run is in progress. (The alternative was a free unlock for each refund.)
 15. **Side Quest's stock beyond the Sewers:** which element each later quest line has.
+16. **The Prototype aura's status chance:** 5%, a first guess (built so), for the owner to approve or change.
+17. **The rings and glints:** built; their look is for the owner's approval (a screenshot went with Build B's handoff).
+18. **Readings taken in Build B** (section 9): the same aura is the same card; two opportunity cards add; the Prototype's status uses Pack 1's Precision numbers; the clone's whole hit grows; the ring is drawn over the floor and the units; the refund shows a line. Each is the owner's to confirm or change.
 
 ## 12. History
 
@@ -238,6 +292,7 @@ Not implemented.
 - 2026-11-01: a first Universal card was set to give **the whole squad** +25% attack damage, then **withdrawn**: "it's not for the entire squad".
 - 2026-11-02: **Universal cards became auras**, one per element, class and species, worn by a matching follower (+5% to +10% attack damage to every follower near it; the owner's first +10% to +20% was cut once the stacking was costed). **The player cannot wear auras**; the player's slots take Player cards only.
 - 2026-11-02: **auras became the Mages' cards**, the six element auras only, each worn by a Mage of its element; the class and species auras were dropped. **Brawlers** got opportunity cards (+20% to +40% on a hit that exploits a weakness), **Technicians** cooldown cards (shorter waits, extra charges).
+- 2026-11-02, build `2026-11-02c` (Build B): **the three families built**, with Series 2 reshaped (45 cards; the eight Brawler and Mage cards cut and refunded) and the Universal kind retired. The Player cards are not built.
 - 2026-11-02: **the damage-type chart** the Brawler cards needed was designed: six types and each race's weaknesses, with every hit part physical and part elemental (`COMBAT.md` §7).
 - 2026-11-02: under that split, **the auras stay on ATK** and **the opportunity card counts a weakness of either part** of a hit.
 - 2026-11-02: the owner's answers in prompts:

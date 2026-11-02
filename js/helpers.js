@@ -182,6 +182,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (typeof bondAttackMult === "function") amount *= bondAttackMult(source);
     // EQUIP CARDS (js/cards.js): the share of every hit a follower deals that its cards add (the Core cards' DAMAGE DEALT); a set amount is left as it is
     if (!fixed && source && source.isFollower && source.team === "green" && source.cards && typeof equipMult === "function") amount *= equipMult(source, "damage");
+    // THE MAGE AURAS (js/cards.js): the Mutator's clone in reach of one hits harder by their ATK share (its every hit is made from its power, its one attack stat; a follower's ATK is raised in its stats instead)
+    if (!fixed && source && source.isClone && source.team === "green" && source._aura && source._aura.attack > 0) amount *= 1 + source._aura.attack;
     // ARMY SURGE. Applied here rather than at each attack because the twelve
     // damage expressions in js/elements.js all funnel through this one
     // function — patching them individually would have missed one.
@@ -267,8 +269,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         applyDamage(source, dmg, target, null, true);
         floatingTexts.push({ world: true, x:target.x, y:target.y, text:"REFLECT", color:"#cc88ff", life:35, vy:-0.05 });
     }
-    // EQUIP CARDS (js/cards.js): an effect on the hit, from a follower of yours that landed it (not a reflected hit, not a set amount: a burn's or a cloud's own tick has no attacker, so no card answers it)
-    if (source && source.isFollower && source.team === "green" && source.cards && !isReflected && !fixed && dmg > 0 && typeof equipOnHit === "function") equipOnHit(source, target, Math.min(dmg, _before));
+    // EQUIP CARDS (js/cards.js): an effect on the hit, from a follower of yours that landed it, or the Mutator's clone in a Mage's aura (not a reflected hit, not a set amount: a burn's or a cloud's own tick has no attacker, so no card answers it)
+    if (source && source.team === "green" && ((source.isFollower && (source.cards || source._aura)) || (source.isClone && source._aura)) && !isReflected && !fixed && dmg > 0 && typeof equipOnHit === "function") equipOnHit(source, target, Math.min(dmg, _before));
     if (target.health <= 0) {
         target.health = 0; target.dead = true;
         // DEFEATED, over it (docs/COMBAT.md): in its side's colour

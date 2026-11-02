@@ -13,7 +13,7 @@
 //                 circuit traces. The brawler's cracks and the electric lightning are designs of ours, not the owner's (the owner named the other seven). Each is a drawing on a 300 x 420 box (an equip card's
 //                 face), seeded, so it is the same on every load.
 //   AN EQUIP CARD  its face wears its element's texture (an ELEMENT card) or its class's (a CLASS card), under a dark veil (game.html), with the element's CRYSTAL (an octahedron in its colour) or, on a class
-//                 card, the CUBE floating over it. A Universal or a Subclass card (only test cards so far) has no texture: none was designed.
+//                 card, the CUBE floating over it (a Mage's aura: the cube in its element's colour). A Player or a Subclass card has no texture: none was designed.
 //   A FOLLOWER    its backdrop is its element's texture with its class's laid over it in a paler shade of the element's colour (CARD_ART.tint of the way to white, at CARD_ART.tintAlpha), each cropped to a
 //                 band of it (CARD_ART.band) so a wide card shows the part worth seeing. A brawler is a "hybrid" too. The egg carries it before the form does, so the backdrop stays through an evolution. A clone
 //                 has none.
@@ -246,7 +246,7 @@ function _caRule(cls, prop, url) {
 }
 // a follower's role, as a class texture (null for none)
 function cardArtClassOfRole(role) { return CARD_ART.roles[role] || null; }
-// the class that gives an equip card's face its texture: "" for a card with none (a Universal or a Subclass card)
+// the class that gives an equip card's face its texture: "" for a card with none (a Player or a Subclass card)
 function cardArtFaceClass(c) {
     if (!c) return "";
     const key = c.kind === "element" && CARD_ART_ELEMENTS.indexOf(c.match) >= 0 ? c.match : c.kind === "class" ? cardArtClassOfRole(c.match) : null;
