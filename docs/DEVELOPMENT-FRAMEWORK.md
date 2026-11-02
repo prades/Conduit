@@ -136,6 +136,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Agent instructions | `../AGENTS.md` (Claude Code loads it through `../CLAUDE.md`) |
 | Design/development process | This document |
 | Change history/build notes | `CHANGELOG.md` |
+| The next update (draft, active work) | `NEXT-UPDATE.md` |
 | Unresolved questions | `OPEN-QUESTIONS.md` |
 | Decision index | `DECISION-LOG.md` |
 | Combat | `COMBAT.md` |

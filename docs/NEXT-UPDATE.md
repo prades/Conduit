@@ -1,0 +1,135 @@
+# The next update (draft): damage, class cards, breeding, Side Quest
+
+- **Status:** Proposed: a draft for the owner's approval. Nothing in it is implemented.
+- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at `8a056dd` (the framework docs); the branch is ten design-doc commits ahead, and code is unchanged. The update's builds would be stamped from `2026-11-02a` on (or the date they are built).
+- **Last updated:** 2026-11-02
+- **What decides the scope:**
+  - **In:** everything with an approved design and its numbers.
+  - **Out (section 3):** anything still waiting on a design, numbers or art the owner has not approved.
+
+## 1. What the player gets
+
+- **Fights play and read differently.**
+  - Every hit is part physical and part elemental.
+  - Enemy races and follower subclasses have weaknesses and resistances.
+  - Each hit says what it met: SLASHING WEAK!, FIRE RESIST.
+- **Each follower class has its own cards.** Mages wear element auras that power up followers around them; Brawlers wear opportunity cards that hit harder on a weakness; Technicians keep their cooldown cards.
+- **Series 2 is rebuilt around those families.** Its Brawler and Mage stat cards give way to the new ones, and copies already owned are refunded.
+- **Breeding is less predictable.** An offspring takes either parent's element and any class.
+- **Side Quest looks like the void walker.**
+
+## 2. In this update: three builds, in order
+
+Each build is its own commit with its own tests and a full green run before the next starts. That is the project's way since the Foundation.
+
+### Build A: the damage system (`COMBAT.md` §7)
+
+1. **Six damage types,** and every attack's type:
+   - the followers' table (§7.4), the enemies' (§7.8) and the player's and clone's attacks;
+   - the ten retired forms copy their replacements.
+2. **The split** (§7.6): every follower hit does its number × (½ ATK + ½ SP.ATK). An attack typed Elemental takes ¼ and ¾, and its physical quarter has no type.
+3. **Weaknesses** (×1.3) and **resistances** (×0.7):
+   - **enemies** by race (§7.3), a boss by its race's row;
+   - **followers** by subclass (§7.8), the clone by its race's row; an egg and the player have none.
+4. **Elemental enemies** (the toxic brood, the Queen) split each hit half and half.
+5. **The element triangle** acts on the elemental part only. Ice on core lets the physical part land.
+6. **Stats:**
+   - Evolving raises SP.ATK by 1.25 too.
+   - Each form's lean (§7.7), applied where stats are worked out.
+7. **The words:** a word for each part of a hit (SLASHING WEAK!, FIRE RESIST).
+8. **The retune:** each attack's own number is tuned so a creature's overall damage stays about where it is. It is measured before and after on `COMBAT.md` §1's six fights and reported.
+
+- **Files:**
+  - js/helpers.js (`applyDamage`, `applyElementalDamage`), js/elements.js;
+  - js/combat.js (`followerAttack`), js/npc.js (the Mage's shot);
+  - js/evolution.js and js/firebombs.js (the signature moves), js/techabilities.js;
+  - js/levels.js (`_applyFollowerLevel`: evolving, the leans);
+  - js/predator.js, js/abilities.js, js/bosses.js (the enemies' attacks);
+  - js/technomancer.js, js/mutator.js, js/clone.js (the player's and the clone's).
+- **Data/save:** nothing new. The split, leans and rows are worked out from what is already saved.
+- **Tests:**
+  - **New:** tests/damage.js. It checks every type against every row, the split's shares (§7.6's table), the triangle on the elemental part, ice on core, the leans, the retired forms and the words.
+  - **Updated:** combat, threehits, prey, evolution, techabilities, clones, series2abilities, packs (the statuses' procs) and bible (the numbers the Bible quotes).
+- **Risks:**
+  - Every fight's numbers move; the retune and the before-and-after measurement keep that in sight.
+  - Frame cost: two parts per hit and a table lookup, nothing per frame.
+
+### Build B: the class card families, and Series 2 reshaped (`UNIVERSAL-AND-PLAYER-CARDS.md`, `SERIES-2.md`)
+
+1. **Mage auras** (18 cards: six elements × Refined, Precision, Prototype):
+   - **The bonus:** +5%, +7.5% or +10% ATK to every follower, and the clone, within 4 tiles of a Mage of that element.
+   - **The Prototype extra:** the element's status, at a first-guess 5% chance.
+   - **Stacking:** different auras stack; the same one counts once.
+   - **The look:** a subtle ring on the ground and a glint on each follower in it.
+2. **Brawler opportunity cards** (3: Refined, Precision, Prototype): +20%, +30% or +40% for each opening a hit meets. The openings are an element match-up, a race weak to the hit's physical type, a race weak to Elemental, and a stunned or sleeping target.
+3. **The Technician's family:** Series 2's four cooldown cards, unchanged.
+4. **Series 2 deals 45 cards:** the 20 species cards, the Technician's 4, 18 auras and 3 opportunity cards. The eight Brawler and Mage class cards are cut. Its price and odds stay. (It reaches 63 with Player cards, and 69 with BLOOM's, in later updates.)
+5. **The old saves' clean-up:**
+   - cut cards leave collections, hands and slots;
+   - each permanently unlocked copy refunds ◆1,000, kept in the collection and added when the next run starts (at once if one is in progress);
+   - it is paid once, and it is safe on old or malformed saves.
+6. **The Universal kind is retired:**
+   - Its two test cards change kind.
+   - The player's two slots take Player cards only, so they stay empty until the Player-card update.
+7. **Names and looks:** the 21 new cards need names, approved before this build (section 4). They show the crystal or the cube until their 3D items are made, as Series 2's cards do now.
+
+- **Files:**
+  - js/cards.js (the tables, who wears what, the bonuses, the openings, the save);
+  - js/levels.js (an aura's bonus in the stats);
+  - js/helpers.js (the opening bonus on a hit);
+  - the world's drawing (the rings and glints);
+  - js/cardsui.js;
+  - bible.html.
+- **Tests:**
+  - **New:** tests/classcards.js. It covers:
+    - each aura: its reach, stacking, leaving reach and the clone;
+    - each opening, and openings adding up;
+    - the Series 2 deal;
+    - the clean-up and refund, paid once;
+    - the retired kind.
+  - **Updated:** cards, series2, series2abilities, packs, market, crystalline, cardart and bible.
+- **Risks:**
+  - The save clean-up removes owned content (approved by the owner). It must be idempotent and defensive.
+  - Frame cost: aura reach is checked every 30 frames (as `equipTick` already runs), and the rings are a few thin ellipses.
+
+### Build C: breeding and Side Quest (`CONVERSION.md`, `FOLLOWER-PROGRESSION.md`, `SEWER-QUEST.md`)
+
+1. **Breeding:**
+   - An offspring's element is a random draw between its parents' elements.
+   - Its class is a random draw among the three, not tied to the parents.
+   - The draws are seedable for tests.
+   - BLOOM's 50% chance comes with BLOOM (section 3).
+2. **Side Quest is drawn as the void walker,** from the existing sheet `img/evo/hauler.png`, in place of the drone. Nothing else about him changes.
+
+- **Files:** js/breeding.js, js/sidequest.js (`sqDraw`).
+- **Tests:** followerprog (the draws, over many seeded offspring), sidequest (his sprite; the rest unchanged).
+
+## 3. Not in this update, and what each waits on
+
+| Item | Waiting on |
+|---|---|
+| **Player cards** (21 roles) and their use of the player's slots; Side Quest's card stock | The 18 kits (a draft is being written for the owner's review), then BLOOM's three |
+| **BLOOM and the conversion apparatus** | Its forms' pictures and two names, its cards' designs, CONSUME's, SEEDFALL's and REEF's numbers, the climbing sites and new areas, its texture and icon (`CONVERSION.md` section 11) |
+| **The subclass themes, textures and icons**; the element and race icons; the enemy card's weaknesses | Mockups for approval (`UI-STYLE.md`) |
+| **3D items** for the new cards and Series 2's | Each look approved, one at a time (`ART-PROCESS.md`) |
+| **Later quest lines** | Not designed |
+
+## 4. Approvals needed before or during the builds
+
+- **This scope and order** (A, then B, then C).
+- **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval.
+- **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints.
+- **During Build A:** a screenshot of the words per part.
+
+## 5. Acceptance for the whole update
+
+- [ ] Each build's tests and a full run pass. The one known flaky suite (`tests/visiblearea.js`) is noted if it trips.
+- [ ] `COMBAT.md` §1's six fights are measured before and after Build A, and the numbers reported.
+- [ ] Old saves load. A save holding cut Series 2 cards is cleaned once, with its refunds.
+- [ ] The frame budgets in tests/perf.js still hold.
+- [ ] The docs, `CHANGELOG.md` and the Bible match what was built. `OPEN-QUESTIONS.md` and `DECISION-LOG.md` are updated.
+- [ ] Nothing goes to main without the owner's yes.
+
+## 6. Size
+
+Build A is the largest (it touches every attack in the game), Build B next (cards, a save clean-up, a new visual), Build C small.
