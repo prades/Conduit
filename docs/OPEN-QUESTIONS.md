@@ -206,6 +206,12 @@ Asked (the owner, 2026-11-02): "mages get aura cards, and the brawlers get oppor
 - **The ring is drawn over the floor and, faintly, over the units,** not under them. The floor is drawn tile by tile among the units, so a ring under them would need a new drawing pass. Since build `2026-11-02d` it is cut to the Mage's room (the owner's answer), and since build `2026-11-02e` it is drawn on the floor itself, so no wall shows it ("It shouldn't show up on the walls either").
 - **The refund shows a line when it is paid** ("◆3000 BACK · 3 SERIES 2 CARDS YOU OWNED WERE CUT"), and the run is saved at once.
 
+## 1n. The following update approved; STORMCALLER (2026-11-02)
+
+- **The following update** (`FOLLOWING-UPDATE.md`): "Approve as drafted". Its gates are still open: the 18 Player card kits, the looks' mockups, each card item.
+- **STORMCALLER** was both the electric Technomancer's Player card role and a planned player class. The owner: "Rename the Player card". **Open:** the role's new name, drafted with the kits.
+- **Build C's open point:** whether Side Quest's picture in the dialogue box changes with his sprite. Read in Build C as part of "drawn as the void walker" (see the changelog); the owner's to change.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

@@ -15,7 +15,7 @@
     - Two approvals wait on it (section 4), with the readings it took (`OPEN-QUESTIONS.md` §1m).
     - It is not playtested.
   - **Build C** is not started.
-- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 2fc7518 (Build B, `2026-11-02c`). The branch adds build `2026-11-02d`.
+- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 55309c0 (builds `2026-11-02d` and `e` and the following update's draft; the owner: "Push d and e to main"). Build C is next (the owner: "Build C first"); the update after this one is approved in `FOLLOWING-UPDATE.md`.
 - **Last updated:** 2026-11-02
 - **What decides the scope:**
   - **In:** everything with an approved design and its numbers.

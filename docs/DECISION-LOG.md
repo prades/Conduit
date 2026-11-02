@@ -781,3 +781,42 @@ Supersedes the 5% first guess and the reach without walls (Build B, `2026-11-02c
 
 ### Addendum (2026-11-02, build `2026-11-02e`)
 On build d's screenshot the ring, clipped to its room, still crossed the room's front wall blocks. The owner: "It shouldn't show up on the walls either." The ring is now drawn on the floor of the Mage's room, tile by tile, so the walls and units in front cover it (`UI-STYLE.md`, "The Mage auras in the world").
+
+## DECISION: Builds d and e to main; the following update approved; Build C next; the STORMCALLER Player card renamed
+
+- **Date:** 2026-11-02
+- **Status:** Approved (in a prompt, after build e's handoff and the following update's draft)
+- **Branch/build:** builds `2026-11-02d` and `e` and the draft's commit (55309c0) fast-forwarded to `main`; on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `FOLLOWING-UPDATE.md`, `NEXT-UPDATE.md` (Build C), `UNIVERSAL-AND-PLAYER-CARDS.md` (the Player cards' table), `PLAYER-CLASSES.md` §2.2
+
+### Context
+The owner asked for "a new update that covers a good portion of the necessary updates". The draft (`FOLLOWING-UPDATE.md`) came from a sweep of every designed-but-not-built, proposed and open item in `docs/`. The sweep found STORMCALLER used twice: an electric Player card role and a planned player class.
+
+### Decision
+- **Main:** "Push d and e to main".
+- **The following update:** "Approve as drafted":
+  - Part 1, the Player cards (the 18 kits drafted for approval first);
+  - Part 2, the species, element and race looks (mockups first);
+  - Part 3, the class-card 3D items (one piece first);
+  - Part 4, the squad setter for signature moves.
+
+  BLOOM stays for the update after.
+- **Next:** "Build C first" (the current update's last build).
+- **STORMCALLER:** "Rename the Player card". The planned class keeps the name; the agent drafts a new name for the electric Technomancer role, with the kits.
+
+### Alternatives considered
+- Not yet to main.
+- BLOOM's drafts inside this update.
+- The kits drafted before Build C.
+- Renaming the planned class, or calling the two the same idea.
+
+### Impact
+- `FOLLOWING-UPDATE.md` is approved, not started.
+- `UNIVERSAL-AND-PLAYER-CARDS.md` marks the electric Technomancer role "to be renamed".
+
+### Follow-up
+1. Build C.
+2. Then the following update's Part 1 gate: the 18 kits and the new role name, for approval.
+
+### Supersedes / superseded by
+None.

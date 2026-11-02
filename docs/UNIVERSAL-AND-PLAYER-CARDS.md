@@ -116,7 +116,7 @@ The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). The agent drafte
 |---|---|---|---|
 | **Fire** | INCENDIARY GUNNER: rounds ignite | FORGEMASTER: sentries fire burning rounds; repairs twice as fast | ASH SURGEON: the serum heals the squad and burns enemies in the splash |
 | **Toxic** | BLIGHT SHOOTER: rounds weaken | SMOG ENGINEER: relays vent weakening clouds | PLAGUE DOCTOR: the clone's bite weakens; the serum poisons enemies |
-| **Electric** | ARC SLINGER: rounds chain to a second target | STORMCALLER: the lamp's overcharge zaps everything in its beam | SPARK GENETICIST: the clone glitches what it hits |
+| **Electric** | ARC SLINGER: rounds chain to a second target | *(to be renamed: STORMCALLER is a planned player class, `PLAYER-CLASSES.md` §2.2; the owner, 2026-11-02: "Rename the Player card")*: the lamp's overcharge zaps everything in its beam | SPARK GENETICIST: the clone glitches what it hits |
 | **Ice** | CRYO MARKSMAN: slower shots that slow; a charged shot freezes | CRYO TECH: enemies near powered relays are slowed | CRYO GENETICIST: fallen followers are preserved for free |
 | **Flux** | RIFT RUNNER: shots pull enemies toward you | GRAVITY ENGINEER: swap places with a squad member | SPLICER: the clone takes a trait from the last creature it killed |
 | **Core** | BREACH GUNNER: knockback rounds | BULWARK ENGINEER: the overcharge shields the squad | CORE SHAPER: the clone becomes a heavy tank |
