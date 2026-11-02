@@ -126,13 +126,14 @@ Tests: tests/packs.js (each status alone, refreshed and not stacked, a stronger 
 
 ## 7. Damage types, race weaknesses, and the physical and elemental parts of a hit (designed 2026-11-02; nothing built)
 
-- **Status:** Designed, every part approved by the owner on 2026-11-02 (§7.2 to §7.7):
+- **Status:** Designed, every part approved by the owner on 2026-11-02 (§7.2 to §7.8):
   - the six damage types, and what each race is weak to and resists;
   - each follower attack's type;
   - the owner's rule that every hit is part physical and part elemental, and how the two parts are worked out;
-  - each form's lean.
+  - each form's lean;
+  - the enemies' attack types, your followers' weaknesses by subclass, your own attacks' types, the retired forms, and the words on screen.
 
-  Open items: §7.8. Not implemented.
+  Open items: §7.9. Not implemented.
 - **Branch/build:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`.
 - **Decision:** `DECISION-LOG.md`, "Damage types, race weaknesses, and every hit part physical, part elemental". The Brawler's opportunity cards use this chart (`UNIVERSAL-AND-PLAYER-CARDS.md`).
 
@@ -243,7 +244,7 @@ The other lines below keep today's behavior or follow from those choices.
 
 The owner wanted *"each creature"* to differ in how elemental it is, asked for a draft for every form, and approved it as drafted.
 
-- **When:** a creature takes its form's lean when it evolves. An egg has none: its class and personality alone set its split. The ten retired forms have no species, so no lean.
+- **When:** a creature takes its form's lean when it evolves. An egg has none: its class and personality alone set its split. The ten retired forms take the lean of the form that replaced each (§7.8).
 - **The steps:** each step moves 10% between ATK and SP.ATK. +2 is ATK ×0.8 and SP.ATK ×1.2; +1 is ×0.9 and ×1.1; −1 is ×1.1 and ×0.9. No form is at −2.
 - **The rule:** it uses the owner's species chart (js/cards.js `EQUIP_FORM_SUBCLASS`) and §7.4.
   - Elemental species: +1.
@@ -278,9 +279,65 @@ The elemental share of each form's main attack (the range runs from a wild to an
 
 Alternatives the owner passed over: species alone, without the +1 for an Elemental main attack (THUNDERHEAD and EMBER HOOD at +1, VOIDSTAR at −1); and steps of 20%.
 
-### 7.8 Not covered yet (open)
+### 7.8 The enemy side, your own attacks, the retired forms, the words on screen (approved 2026-11-02)
 
-- Enemies' attacks: do they have types, and are followers or the player weak to any? Neither has a race in this chart.
-- The player's melee (the gauntlet, the lash, the arc), the Mutator's clone's bite and the serum: their types. The player has no SP.ATK: do Player cards give the player's attacks an elemental part?
-- The ten retired forms' attack types (a follower already evolved into one keeps it).
-- How a weakness shows on screen: WEAK! and RESIST speak for the element triangle only today.
+The owner asked for a draft of the enemy side and approved it as drafted; the rest was chosen in prompts.
+
+**Each enemy attack's type:**
+
+| Race | Bite | Special |
+|---|---|---|
+| Ant | Slashing (mandibles) | MANDIBLE FRENZY: Slashing |
+| Beetle | Crushing (horn) | CARAPACE SLAM: Earthquake |
+| Scorpion | Piercing (stinger) | VENOM LANCE: Piercing |
+| Spider | Piercing (fangs); its shot: Projectile | WEB SNARE: no damage |
+| Mantis | Slashing (scythes) | BLADE FLURRY: Slashing |
+| Moth | Crushing (wing buffet) | BLINDING DUST: no damage |
+
+- **The Toxic Queen** fights as an ant; her bomb is Earthquake and her spit Projectile. **A boss uses its race's row** in §7.3.
+- A scout's LEAP does no damage.
+- **An enemy with an element** (today the toxic brood and the Toxic Queen): every hit is half its type and half Elemental in its element, and the element triangle falls on the elemental half. An enemy without one: all physical.
+
+**What your followers are weak to and resist, by subclass** (weak ×1.3, resists ×0.7; the subclass is the form's tag, js/cards.js `EQUIP_FORM_SUBCLASS`):
+
+| Subclass | Weak to | Resists |
+|---|---|---|
+| Crustacean | Crushing, Earthquake | Slashing, Piercing |
+| Mollusk | Slashing, Piercing | Crushing, Earthquake |
+| Elemental | Earthquake, Projectile | Slashing, Elemental |
+| Drone | Crushing, Elemental | Piercing, Projectile |
+| Jelly | Slashing, Elemental | Crushing, Projectile |
+
+- An egg (no subclass yet) has no row.
+- The Mutator's clone takes hits by its race's row (§7.3).
+- The player has no row: a hit is one of the player's three hits, whatever its type.
+- The turrets and the Crystal have no row.
+
+**Your own attacks:**
+- Guns and turrets: Projectile.
+- The Technomancer's gauntlet punch: Crushing. The arc: Elemental (electric).
+- The Mutator's lash: Slashing. The clone's bite: Piercing.
+- The serum heals: no type.
+
+The player has no SP.ATK, so these hits are not split.
+
+**The ten retired forms** (a follower already evolved into one keeps it) copy the form that replaced each: its attack types (§7.4) and its lean (§7.7).
+- BUNKER BLOOM → QUILLSTONE
+- REAVER → THUNDERHEAD
+- SERPENT → VOIDSTAR
+- AEGIS WARDEN → JELLY RAM
+- STORM MANTA, PRISM HOOD and VOLT RING → STATIC ORB
+- CINDER HALO → EMBER HOOD
+- CALDERA → SEEPER
+- PETAL AEGIS → HORNSHELL
+
+PETAL BLAZE, the one move of their own, is Elemental.
+
+**On screen, a word per part:** a hit says what each part met, for example SLASHING WEAK! and FIRE RESIST on the same hit. Today WEAK! and RESIST speak for the element triangle only.
+
+### 7.9 Not covered yet (open)
+
+- The retired forms' row when they are hit: they have no subclass. Should they take their replacement's?
+- Which element each future quest line has (Side Quest's stock follows it, `SEWER-QUEST.md`).
+- Whether a Player card gives the player's attacks an elemental part (the Player cards' kits, `UNIVERSAL-AND-PLAYER-CARDS.md`).
+- The icons beside the words (the subclass, element and race icons, `UI-STYLE.md`).

@@ -2,6 +2,21 @@
 
 **Status (build 2026-11-01j): 32 cards BUILT and on sale after the purification; the 8 Lustrous cards PROPOSED (a later update).**
 
+**Designed 2026-11-02, not built: Series 2 reshaped** (the owner, in prompts; the rules are in `UNIVERSAL-AND-PLAYER-CARDS.md`).
+- **Cut:** the eight Brawler and Mage class cards (the two tables below, marked CUT). Their two proposed Lustrous cards, WAR BANNER and ASTRAL FOCUS, go with them.
+- **Added:** the Mage auras (6 elements × Refined, Precision, Prototype: 18), the Brawler opportunity cards (Refined, Precision, Prototype: 3) and the 18 Player cards (Prototype). The Technician's four stay: they are its cooldown family.
+- **Series 2 then deals 63 cards:**
+
+  | Rarity | Cards |
+  |---|---|
+  | Unrefined | 6 (5 species + 1 Technician) |
+  | Refined | 13 |
+  | Precision | 13 |
+  | Prototype | 31 (5 species + 1 Technician + 6 auras + 1 opportunity + 18 Player cards) |
+
+  Its price and odds stay as they are. With the same odds, each Unrefined card comes up more often than today and each Prototype card far less often.
+- **Owned copies of the cut cards are removed** from collections, hands and slots. Each permanently unlocked copy refunds ◆1,000.
+
 The owner's word (2026-11-01): "Series 2. Pick a price and set the odds for the pack and make it to where another rarity is unlocked". Asked which rarity, the owner picked "Prototype unlocks". So Series 2 deals **Unrefined, Refined, Precision and Prototype**: Prototype is the fourth tier (four lit segments), the first rarity beyond Pack 1's Precision. Lustrous comes in a later update.
 
 The list came from the owner's answers of 2026-11-01:
@@ -104,7 +119,7 @@ The Effect column says what the built card does; a Lustrous row is still a propo
 | Prototype | AMORPHOUS BODY | **Absorb**: after 5 s without being hit, the next hit does 40% less | a blob of gel holding its shape inside a ring field |
 | Lustrous | BLOOM SPLIT | *(proposed)* **Split**: when it falls, it splits into two small jellies that fight for 8 s at 30% of its power | a jelly dome mid-division, two bells joined |
 
-### Brawler: the fight up close (attack, defense)
+### Brawler: the fight up close (attack, defense) — CUT (designed 2026-11-02, not built: the Brawler's opportunity cards take its place)
 
 | Rarity | Item | Effect | 3D look |
 |---|---|---|---|
@@ -114,7 +129,7 @@ The Effect column says what the built card does; a Lustrous row is still a propo
 | Prototype | CLEAVER ARM | **Cleave**: its hits also strike every other enemy within 1 tile of the target, for 50% of what the hit took | a broad cleaver blade mounted on a forearm brace |
 | Lustrous | WAR BANNER | *(proposed)* **Rally**: each kill it lands gives the whole squad +15% attack for 6 s | a torn battle banner on a short pole, its emblem glowing |
 
-### Mage: the shot from range (special attack, attack speed)
+### Mage: the shot from range (special attack, attack speed) — CUT (designed 2026-11-02, not built: the Mage auras take its place)
 
 | Rarity | Item | Effect | 3D look |
 |---|---|---|---|

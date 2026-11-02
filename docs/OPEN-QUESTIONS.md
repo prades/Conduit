@@ -197,7 +197,22 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
-- **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) and Player cards (the player's elemental roles) are designed, not built: `UNIVERSAL-AND-PLAYER-CARDS.md` (its open questions, section 11). (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
+- **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) and Player cards (the player's elemental roles) are designed, not built: `UNIVERSAL-AND-PLAYER-CARDS.md`. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
+  - **Your answers of 2026-11-02:**
+    - openings add up; a stun or sleep counts;
+    - auras reach 4 tiles, the clone included;
+    - the Technician's family is Series 2's four;
+    - three tiers, Refined to Prototype;
+    - Series 2 reshaped: its eight Brawler and Mage class cards cut, owned copies removed and refunded ◆1,000, the new cards added (63 in all, `SERIES-2.md`);
+    - Player cards found in Series 2 at Prototype, and sold by Side Quest after each quest for that line's element, ◆1,000, kept for good;
+    - a class switch puts a Player card to sleep;
+    - the Universal kind retired.
+  - **Being drafted for you:** the 18 Player cards' kits.
+  - Still open (section 11): the refunds' timing for a player with no run, Side Quest's stock beyond the Sewers, the cards' looks.
+- **Side Quest's look, and the subclass art** (designed 2026-11-02, not built):
+  - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`).
+  - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).
+  - Mockups come first, for your approval.
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02, not built; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;
@@ -206,7 +221,13 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - the 18 forms' leans as drafted;
     - the Mage auras stay on ATK;
     - the opportunity card counts both parts of a hit.
-  - Still open: §7.8 (enemies' attack types, the player's and the clone's attacks, the retired forms, how a weakness shows on screen).
+  - **Second round, 2026-11-02 (§7.8):**
+    - the enemy attack types and your followers' subclass weaknesses, approved as drafted;
+    - your own attacks: punch Crushing, lash Slashing, arc Elemental, clone's bite Piercing;
+    - the retired forms copy their replacements;
+    - a word per part on screen;
+    - bosses use their race's row.
+  - Still open (§7.9): the retired forms' row when hit, the later quest lines' elements, the Player cards' elemental part, the icons.
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
 - **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.
 - **Card art:** the design asks for low-poly 3D artwork and kanji-inspired graphics. One card has its 3D item (EMBER PLATING, live since build `j`); the other Pack 1 items are next, then Series 2's. No kanji.
@@ -226,7 +247,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 ## 5. Already decided: please do not reopen
 
 - Five subclasses (Jelly is the fifth), set by form from the roster chart. An egg and the ten retired forms have none.
-- Two card slots per follower; the player has two Universal slots.
+- Two card slots per follower; the player has two Universal slots. (Superseded by you on 2026-11-02: the player's two slots take Player cards only, and the Universal kind is retired; `UNIVERSAL-AND-PLAYER-CARDS.md`.)
 - A card is a type: any number of units may wear it, never twice on one unit, and it is never used up. Cards move freely between followers. Exile, falling for good and a re-roll empty the slots, and nothing is lost.
 - A permanent unlock is a flat ◆1,000 shards, paid from the run's shards, for a card found first (a card a pack deals) or outright (the Crystalline six). The collection survives NEW GAME.
 - At the start of a run you pick up to 3 cards from the collection, and the hand can be changed from the CARDS screen during the run.

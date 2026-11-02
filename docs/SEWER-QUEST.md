@@ -88,6 +88,10 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 
 **Saved**: `potion` (which is in hand, the counts, the discount owed) and `sidequest` (that he appeared, the talk, the promise, the call); 33 fields in all.
 
+**Designed 2026-11-02, not built:**
+- **His look:** the owner: "he's a recycled asset from before ... he should be the void walker character ... that used to be the flux worker". He becomes the void walker, replacing today's small drone: the old flux worker's form, a dark saucer with violet lights on four jointed legs. Its sheet is still in the repository and no form uses it now: `img/evo/hauler.png`, the HOVER HAULER's, with its `hauler.json`. The owner confirmed it from a picture of the sheet.
+- **His cards:** the owner: "side quest should sell them after each quest for the quest lines elements". After each quest, he sells the Player cards of that quest line's element, ◆1,000 each, kept for good. This line is toxic, so once it is done he sells BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR. The rules are in `UNIVERSAL-AND-PLAYER-CARDS.md`.
+
 ## What a player does, in order
 
 1. Go down the culvert behind the arena's north tank. The reading comes as you arrive (your note in the dialogue box): PURIFY THE SEWERS 1/5 in the QUESTS box.
@@ -100,4 +104,4 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 
 ## Still open (docs/OPEN-QUESTIONS.md)
 
-The Nest (§1f): what a later stage of the arena's population is, if any, once the Nest is calmed or cleared; a second queen (the archive's Ant Queen) waits for the owner. The queen's numbers (her level and the ant boss block; the guard, the leash, the bomb's and the spit's reach, radii and times, the wave's size and its first delay, her frantic pace and roam); the potion's radius, reach and its sleep on other creatures; what "one-fourth effectiveness" should measure; whether damage should wake a sleeper; the 50-coin rule; Side Quest's spot, look (the saucer design family, design/evolutions/forms26.js Nos. 661–683, is the candidate for a sheet once a piece is approved, docs/ART-PROCESS.md) and every line of his but the archive's opening; a reward for sparing the queen (the archive: undecided); the Nest's encounter; the Series 2 card list and the pack's price and odds.
+The Nest (§1f): what a later stage of the arena's population is, if any, once the Nest is calmed or cleared; a second queen (the archive's Ant Queen) waits for the owner. The queen's numbers (her level and the ant boss block; the guard, the leash, the bomb's and the spit's reach, radii and times, the wave's size and its first delay, her frantic pace and roam); the potion's radius, reach and its sleep on other creatures; what "one-fourth effectiveness" should measure; whether damage should wake a sleeper; the 50-coin rule; Side Quest's spot and every line of his but the archive's opening (his look was decided on 2026-11-02: the void walker, above; the saucer design family, design/evolutions/forms26.js Nos. 661–683, was the earlier candidate); which element each later quest line has, for his card stock; a reward for sparing the queen (the archive: undecided); the Nest's encounter; the Series 2 card list and the pack's price and odds.

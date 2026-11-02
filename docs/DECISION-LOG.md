@@ -248,7 +248,7 @@ When built: js/cards.js, js/levels.js, js/helpers.js, js/elements.js, js/combat.
 The specification's open questions (section 11), first of all the damage-type chart: which attacks are piercing, slashing, elemental and crushing, and each one's opportunity targets.
 
 ### Supersedes / superseded by
-Supersedes, in part, "Universal cards as auras; the player wears Player cards only" (2026-11-02): auras are now the Mages' cards, the element auras only. Refined by "Damage types, race weaknesses, and every hit part physical, part elemental" (2026-11-02): under the split, the auras stay on ATK, and the opportunity card counts a weakness of either part of a hit.
+Supersedes, in part, "Universal cards as auras; the player wears Player cards only" (2026-11-02): auras are now the Mages' cards, the element auras only. Refined by "Damage types, race weaknesses, and every hit part physical, part elemental" (2026-11-02): under the split, the auras stay on ATK, and the opportunity card counts a weakness of either part of a hit. Refined again by "Class cards and Player cards filled in; Series 2 reshaped; the Universal kind retired" (2026-11-02).
 
 ## DECISION: Damage types, race weaknesses, and every hit part physical, part elemental
 
@@ -306,7 +306,157 @@ When built:
 
 ### Follow-up
 - Build it when the owner asks.
-- The open items in `COMBAT.md` §7.8.
+- The open items in `COMBAT.md` §7.8 at the time (answered in the second round; what is left is §7.9).
 
 ### Supersedes / superseded by
-None. It answers the first open question of "Card families by class" (the chart) and refines that decision's auras and opportunity cards for the split.
+None. It answers the first open question of "Card families by class" (the chart) and refines that decision's auras and opportunity cards for the split. Extended by "The damage system's second round" (2026-11-02, below).
+
+## DECISION: The damage system's second round: enemy attack types, your followers' weaknesses, your own attacks, the retired forms, the words on screen
+
+- **Date:** 2026-11-02
+- **Status:** Approved (design); not implemented.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `COMBAT.md` §7.8 and §7.9
+
+### Context
+Asked whether more holes in the design could be filled, the owner answered the open points in prompts and asked for a draft of the enemy side ("Yes, draft it"), which was then approved as drafted.
+
+### Decision
+Enemy attacks get types, and your followers are weak to some and resist some by their subclass. Your own attacks get types. The retired forms copy the form that replaced each. A hit's words on screen say what each part met. A boss uses its race's row.
+
+### Exact rules
+In `COMBAT.md` §7.8:
+- **Each race's bite and special have a type.** An enemy with an element splits each hit half physical, half Elemental. LEAP, WEB SNARE and BLINDING DUST deal no damage.
+- **Each follower subclass is weak to two types and resists two.** An egg has no row; the clone uses its race's row; the player has none.
+- **Your own attacks:** the gauntlet punch is Crushing, the lash Slashing, the arc Elemental (electric), the clone's bite Piercing.
+- **A word per part** on screen.
+
+### Alternatives considered
+- Enemy hits untyped, with the triangle only (not for now).
+- Enemy hits typed but not split.
+- Weaknesses without resistances.
+- Your melee untyped until Player cards come.
+- The retired forms keeping the old one-stat damage.
+- One word per hit, or the number's colour only.
+- Each boss with its own row.
+
+### Rationale and trade-offs
+Typing both sides makes the subclass and race of every unit matter, in attack and in defence. It costs a second chart to tune and more words on screen.
+
+### Impact
+When built:
+- js/predator.js, js/abilities.js, js/bosses.js (the enemy attacks);
+- js/helpers.js `applyDamage`;
+- js/technomancer.js, js/mutator.js, js/clone.js;
+- js/evolution.js (the retired forms);
+- the damage words (js/helpers.js `applyElementalDamage`);
+- the combat tests.
+
+### Follow-up
+`COMBAT.md` §7.9: the retired forms' row when hit, the later quest lines' elements, the Player cards' elemental part, the icons.
+
+### Supersedes / superseded by
+Extends "Damage types, race weaknesses, and every hit part physical, part elemental" (2026-11-02).
+
+## DECISION: Class cards and Player cards filled in; Series 2 reshaped; the Universal kind retired
+
+- **Date:** 2026-11-02
+- **Status:** Approved (design); not implemented. The Player cards' kits are being drafted for the owner's review.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` (section 2 and section 11), `SERIES-2.md`, `SEWER-QUEST.md`
+
+### Context
+The owner answered the class cards' and Player cards' open questions in prompts. For the new cards' source the owner wrote "Part of series 2 after cutting some cards", then picked which.
+
+### Decision
+- **Brawler openings add up**, each one adding the bonus again; a stun or sleep counts.
+- **Mage auras** reach 4 tiles, the clone included.
+- **The Technician's family** is Series 2's four cards.
+- **Three tiers**, Refined to Prototype.
+- **Series 2 deals the new cards**, after its eight Brawler and Mage class cards are cut; owned copies are removed and refunded.
+- **Player cards** come from Series 2 at Prototype, and Side Quest sells them after each quest.
+- **A class switch** puts a Player card to sleep.
+- **The Universal kind** is retired.
+- **The 18 kits** are to be drafted for review.
+
+### Exact rules
+In `UNIVERSAL-AND-PLAYER-CARDS.md` section 2 and `SERIES-2.md`.
+- **Aura cards:** Refined +5%, Precision +7.5%, Prototype +10% with the element's extra (18 cards).
+- **Opportunity cards:** +20%, +30%, +40% (3 cards).
+- **Series 2** deals 63 cards. Its price and odds stay as they are.
+- **Refunds:** ◆1,000 for each permanently unlocked copy of a cut card.
+- **Side Quest:** that quest line's element's three Player cards, ◆1,000 each, kept for good.
+
+### Alternatives considered
+- One bonus per hit, however many openings.
+- Stun only; stun, sleep and glitch.
+- Reach of 3 or 6 tiles; no auras for the clone.
+- A new Technician set.
+- Four or five tiers.
+- For the source: a new pack, rewards, the market only.
+- Cutting only the Unrefined class cards; keeping owned copies.
+- For the Player cards: a Player pack, Pack 1, Precision, mixed rarities, a class-rank unlock, a SHOP price.
+- For a class switch: the card returning to the collection.
+- Keeping the Universal kind.
+
+### Rationale and trade-offs
+Each class's Series 2 cards become its family. The Brawler and Mage stat cards give way to the opportunity cards and the auras, and the Technician's cooldown cards already were one. Series 2 grows to 63 cards with the same odds, so any one Prototype card is rare. Removing owned cards needs a careful one-time clean-up of old saves.
+
+### Impact
+When built:
+- js/cards.js (`EQUIP_SERIES2`, the kinds, who may wear what, the openings);
+- the save clean-up and refunds;
+- js/sidequest.js (his shop);
+- js/classes.js (a class switch);
+- the CARDS screen;
+- the card tests.
+
+### Follow-up
+- The 18 kits (being drafted).
+- The refunds' timing.
+- Side Quest's stock beyond the Sewers.
+- The cards' looks.
+
+### Supersedes / superseded by
+- Refines "Card families by class" (2026-11-02).
+- Supersedes in part "Universal and Player cards: the names and the slots" (2026-11-01) and "Universal cards as auras; the player wears Player cards only" (2026-11-02): no card is Universal now.
+- Supersedes the class families' earlier non-goal of no change to the existing class cards.
+
+## DECISION: Side Quest becomes the void walker; the subclass themes, textures and icons
+
+- **Date:** 2026-11-02
+- **Status:** Approved (scope); the looks are to be proposed and approved before anything changes in the game. Not implemented.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `SEWER-QUEST.md` ("Side Quest and the Sleeping Potion"), `UI-STYLE.md` ("The subclass themes, textures and icons"), `ART-PROCESS.md`
+
+### Context
+The owner: "he's a recycled asset from before ... he should be the void walker character ... that used to be the flux worker", and "We also need to make themes for the different species and give textures for the different species, and then icons for every different element and subclass and species." Asked, the owner said "species" and "subclass" both mean the five follower subclasses.
+
+### Decision
+- **Side Quest takes the void walker's look:** `img/evo/hauler.png`, the old flux worker's form, confirmed by the owner from a picture.
+- **The five subclasses** each get a theme, a texture and an icon, and the six elements get icons.
+- **They show** on the cards, on followers' backdrops, and on the enemy card (its race's icon and weaknesses).
+
+### Exact rules
+In `SEWER-QUEST.md` and `UI-STYLE.md`.
+
+### Alternatives considered
+- For the meaning of "species": the six enemy races.
+- Also showing the icons in the weakness words and the CARDS screen's filters (not picked).
+
+### Rationale and trade-offs
+The subclass already decides cards and now damage, so it needs a look of its own. A third layer on follower cards risks clutter, which the mockups must settle.
+
+### Impact
+When built:
+- js/cardart.js (the textures and icons);
+- the card and follower CSS in game.html;
+- the enemy card;
+- js/sidequest.js (his sprite);
+- the card-art tests.
+
+### Follow-up
+Mockups of the themes, textures and icons for the owner's approval.
+
+### Supersedes / superseded by
+None. Side Quest's earlier candidate look (the saucer design family, Nos. 661–683) is set aside.
