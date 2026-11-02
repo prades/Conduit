@@ -77,9 +77,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.tap, true, 'the tap'); same(r.promised.join('|'), '1|true|BUY A SLEEPING POTION ◆100', 'I PROMISE'); same(r.hint, true, 'the hint'); same(r.quest, true, 'the quest line changed');
         same(r.killedLater.join('|'), '…|1|false|BUY A SLEEPING POTION ◆100', 'after a kill: the placeholder, the promise kept as it was, the shop'); same(r.spared, '…', 'after a sparing: the placeholder');
     });
-    check('met only after the queen\'s fate is decided: no talk, "…", and the shop; the plate\'s install hint names him once he is there', () => {
+    check('met only after the queen\'s fate is decided: no talk, "…", and the shop; the plate\'s install hint names him once he is there (by his name, SIDE QUEST, not "THE DRONE": the owner, 2026-11-02)', () => {
         const r = J(`(function(){ const o = {}; const st = __st('st_sidequest'), S = __S(); S.talk = 0; S.promised = 0; const Q = __Q(); Q.bossResolvedAt = 1; Q.bossOutcome = 'calm'; __near(st); shardCount = 100; invRemove('sleeping_potion', invCount('sleeping_potion')); o.after = [sqSpeech(), STATION_KINDS.sidequest.verbFn(st), stationCan(st).ok, sqChoosing()]; const b = stationUse(st); o.buys = [b.ok, invCount('sleeping_potion'), S.talk];
-            Q.bossResolvedAt = 0; Q.bossOutcome = ''; Q.discoveredAt = 1; Q.samplesAt = 1; Q.turnedInAt = 1; Q.moduleAt = 1; const ob = questObjective(); o.plate = [ob.key, /THE DRONE ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE SELLS A SLEEPING POTION/.test(ob.hint)]; return o; })()`);
+            Q.bossResolvedAt = 0; Q.bossOutcome = ''; Q.discoveredAt = 1; Q.samplesAt = 1; Q.turnedInAt = 1; Q.moduleAt = 1; const ob = questObjective(); o.plate = [ob.key, /SIDE QUEST, ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE, SELLS A SLEEPING POTION\./.test(ob.hint) && !/DRONE/.test(ob.hint)]; return o; })()`);
         same(r.after.join('|'), '…|BUY A SLEEPING POTION ◆100|true|false', 'after the encounter, unmet'); same(r.buys.join(), 'true,1,0', 'the shop without a talk'); same(r.plate.join(), 'purify:install,true', 'the plate\'s hint');
     });
 

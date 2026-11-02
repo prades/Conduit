@@ -14,11 +14,11 @@
     - Its tests are new and updated, and a full run is in its commit (`CHANGELOG.md`).
     - Its approvals were answered (section 4), with the readings it took (`OPEN-QUESTIONS.md` §1m).
     - It is not playtested.
-  - **Build C is implemented** in build `2026-11-02f`, on the branch (the owner: "Build C first"). It waits on the owner's word for main.
+  - **Build C is implemented** in build `2026-11-02f` and is on main (commit 80c323d; the owner: "Build C first", then "Push to main"). **Build `2026-11-02g`**, on the branch, is the owner's answers on it: his dialogue picture kept, the install hint naming him.
     - Its tests are new and updated, and a full run is in its commit (`CHANGELOG.md`).
     - Its readings are in `OPEN-QUESTIONS.md` §1o.
     - It is not playtested.
-- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 55309c0 (builds `2026-11-02d` and `e` and the following update's draft). Build C (`2026-11-02f`) is on the branch. The update after this one is approved in `FOLLOWING-UPDATE.md`; it becomes the next update when this one closes.
+- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at 80c323d (Build C, `2026-11-02f`; the owner: "Push to main"). Build `2026-11-02g` is on the branch. The update after this one is approved in `FOLLOWING-UPDATE.md`; it becomes the next update when this one closes.
 - **Last updated:** 2026-11-02
 - **What decides the scope:**
   - **In:** everything with an approved design and its numbers.
@@ -169,7 +169,7 @@ Each build is its own commit with its own tests and a full green run before the 
 - **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval. Drafted 2026-11-02 (`UNIVERSAL-AND-PLAYER-CARDS.md`, "The 21 new cards' names"). **Approved** the same day: "Approve all 21".
 - **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints. Both are put to the owner with Build B's handoff (2026-11-02), with the readings in `OPEN-QUESTIONS.md` §1m. **Answered:** "Raise to 10%"; the aura and its ring stay in the Mage's room ("It shouldn't be displayed or affected in other rooms"); two auras of one element "Both count" (build `2026-11-02d`).
 - **During Build A:** a screenshot of the words per part. Taken and sent with Build A's handoff. **Answered:** "Move beside the creature" (done in build `2026-11-02b`).
-- **During Build C:** whether Side Quest's picture in the dialogue box changes too (read as yes in build `2026-11-02f`), and a screenshot of him in the Sewers and in the box. Both are put to the owner with Build C's handoff, with the readings in `OPEN-QUESTIONS.md` §1o.
+- **During Build C:** whether Side Quest's picture in the dialogue box changes too (read as yes in build `2026-11-02f`), and a screenshot of him in the Sewers and in the box. Both are put to the owner with Build C's handoff, with the readings in `OPEN-QUESTIONS.md` §1o. **Answered:** "Push to main", "Keep as built" (the picture), "Say SIDE QUEST" (the install hint, which had called him THE DRONE; build `2026-11-02g`).
 
 ## 5. Acceptance for the whole update
 

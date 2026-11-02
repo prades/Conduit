@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **g · The owner's answers on Build C: his dialogue picture kept; the install hint names him** (the owner, in a prompt: "Push to main", "Keep as built", "Say SIDE QUEST"; on the branch only; commit named in git log).
+  - **Main:** Build C (`f`, commit 80c323d) and the answers' docs before it (ce2ff75) went to main at the owner's word.
+  - **Side Quest's picture in the dialogue box** stays the void walker's sheet, facing you, as built.
+  - **The install step's hint** (the QUESTS box, once he is there) reads "SIDE QUEST, ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE, SELLS A SLEEPING POTION." It said "THE DRONE ..." (js/quests.js).
+  - **Tests:** tests/sidequest.js checks the new words, with no "DRONE" left in the hint. The Bible's stamp follows.
+  - **The full run:** 85 of 86 suites passed. The 86th, tests/carousel.js, failed its known check at 1180 px ("a name is cut": its recruits get random names, and a long one is cut; docs/OPEN-QUESTIONS.md §4). Run alone afterwards it failed once more, then passed twice in three runs. It touches nothing this build changed.
+  - **Written up:** docs/OPEN-QUESTIONS.md (§1n, §1o answered), docs/DECISION-LOG.md, docs/NEXT-UPDATE.md, docs/FOLLOWING-UPDATE.md, docs/SEWER-QUEST.md, the Bible.
+  - Not playtested.
+
 - **f · Build C: breeding draws the element and the class; Side Quest drawn as the void walker** (the owner's design of 2026-11-02, NEXT-UPDATE.md Build C, CONVERSION.md and SEWER-QUEST.md; the owner, in a prompt: "Push d and e to main", "Build C first"; on the branch only; commit named in git log).
   - **Main:** builds d and e and the following update's draft (commit 55309c0) went to main at the owner's word.
   - **An offspring's element** is an even toss between its two parents' current elements (js/breeding.js `breedElement`).

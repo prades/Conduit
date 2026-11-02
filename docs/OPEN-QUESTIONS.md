@@ -210,17 +210,17 @@ Asked (the owner, 2026-11-02): "mages get aura cards, and the brawlers get oppor
 
 - **The following update** (`FOLLOWING-UPDATE.md`): "Approve as drafted". Its gates are still open: the 18 Player card kits, the looks' mockups, each card item.
 - **STORMCALLER** was both the electric Technomancer's Player card role and a planned player class. The owner: "Rename the Player card". **Open:** the role's new name, drafted with the kits.
-- **Build C's open point:** whether Side Quest's picture in the dialogue box changes with his sprite. **Read in Build C (`2026-11-02f`) as yes:** the box shows the void walker's sheet facing you, as part of "drawn as the void walker". Yours to change.
+- **Build C's open point:** whether Side Quest's picture in the dialogue box changes with his sprite. **Read in Build C (`2026-11-02f`) as yes:** the box shows the void walker's sheet facing you, as part of "drawn as the void walker". **Answered:** "Keep as built" (2026-11-02).
 
 ## 1o. Build C's readings (build `2026-11-02f`)
 
 Build C followed the approved design (`NEXT-UPDATE.md` Build C). Where it did not say, these readings were taken, each easy to change:
-- **The dialogue box's picture** is the void walker too (§1n above).
+- **The dialogue box's picture** is the void walker too (§1n above). **Confirmed:** "Keep as built".
 - **He stands on his legs**, at the evolved followers' size, and no longer hovers: the sheet is a walker. His idle frames play; the action frames are unused.
 - **He turns toward you**, to the nearest of his eight facings, wherever you are in the Sewers.
 - **His colour stays** (#9fd8ff): his plate and the soft glow at his core, as before.
 - **His station's ring is drawn under his feet.** It was drawn after him, so it lay over the walker's body. The saucer had hovered above it.
-- **The game's words still call him a drone** in one place: the install step's hint ("THE DRONE ON THE MAINTENANCE PLATFORM ... SELLS A SLEEPING POTION"). That is the archive's description of him ("a small flying robot drone"), so it was left. The in-game guide now calls him the void walker.
+- **The game's words still called him a drone** in one place: the install step's hint ("THE DRONE ON THE MAINTENANCE PLATFORM ... SELLS A SLEEPING POTION"). That is the archive's description of him ("a small flying robot drone"), so it was left. The in-game guide calls him the void walker. **Answered:** "Say SIDE QUEST". Since build `2026-11-02g` the hint reads "SIDE QUEST, ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE, SELLS A SLEEPING POTION."
 - **The class draw meets the stat cap more often.** An offspring of another class than its parents can inherit a mean above twice its own number, and that stat is then capped. For example, two Brawlers' cautious Mage gets ATK 16, not about 20. The formula is as approved; only how often the cap applies changed (`FOLLOWER-PROGRESSION.md` §2).
 - **The offspring's personality** within its class is still the Crystal's own pick, as a recruit's: it is not one of the seeded draws.
 - **Two stale lines in the in-game guide were corrected** with Build C's own lines: the Vital items (removed 2026-11-01) and Side Quest's old spot.

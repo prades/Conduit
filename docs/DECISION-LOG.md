@@ -815,8 +815,38 @@ The owner asked for "a new update that covers a good portion of the necessary up
 - `UNIVERSAL-AND-PLAYER-CARDS.md` marks the electric Technomancer role "to be renamed".
 
 ### Follow-up
-1. Build C. *(Implemented in build `2026-11-02f`, on the branch; its readings are in `OPEN-QUESTIONS.md` §1o.)*
+1. Build C. *(Implemented in build `2026-11-02f`; on main since the owner's "Push to main", below; its readings are in `OPEN-QUESTIONS.md` §1o.)*
 2. Then the following update's Part 1 gate: the 18 kits and the new role name, for approval.
+
+### Supersedes / superseded by
+None.
+
+## DECISION: Build C to main; Side Quest's dialogue picture kept; the install hint names him
+
+- **Date:** 2026-11-02
+- **Status:** Approved (in a prompt, after Build C's handoff)
+- **Branch/build:** Build C (`2026-11-02f`, commit 80c323d) and the answers' docs (ce2ff75) fast-forwarded to `main`; the hint's words in build `2026-11-02g`, on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `NEXT-UPDATE.md` (Build C), `SEWER-QUEST.md` ("Side Quest and the Sleeping Potion"), `OPEN-QUESTIONS.md` §1n, §1o
+
+### Context
+Build C drew Side Quest as the void walker and showed the same sheet in the dialogue box, a reading the design did not name. The install step's hint still called him "THE DRONE".
+
+### Decision
+- **Main:** "Push to main" (Build C and ce2ff75).
+- **His picture in the dialogue box:** "Keep as built": the void walker's sheet, facing you, the whole of him in the square.
+- **The install step's hint:** "Say SIDE QUEST". It reads "SIDE QUEST, ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE, SELLS A SLEEPING POTION." (js/quests.js).
+
+### Alternatives considered
+- Not yet to main.
+- A bigger picture, his saucer body filling the square with his legs cut off.
+- Keeping "THE DRONE" (the archive calls him a robot drone).
+
+### Impact
+- js/quests.js (the hint), tests/sidequest.js (its check).
+- `OPEN-QUESTIONS.md` §1n and §1o marked answered.
+
+### Follow-up
+The following update's Part 1 gate: the 18 Player card kits and the electric Technomancer role's new name, drafted for approval.
 
 ### Supersedes / superseded by
 None.

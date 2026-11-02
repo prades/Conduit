@@ -97,7 +97,8 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 
 **His look** (designed 2026-11-02; **implemented in build `2026-11-02f`**, Build C): the owner: "he's a recycled asset from before ... he should be the void walker character ... that used to be the flux worker". He is the void walker, in place of the small drone that was drawn in code: the old flux worker's form, a dark saucer with violet lights on four jointed legs, from its sheet `img/evo/hauler.png` (the HOVER HAULER's, with its `hauler.json`; no follower form uses it). The owner confirmed it from a picture of the sheet.
 - **In the world** (`sqDraw`): drawn as an evolved follower is (js/evolution.js: the same loader, scale and idle beat), standing on his platform and turned toward you, over his shadow, with a soft glow in his colour at his core and his plate over him. His station's ring is drawn under his feet. The sheet is asked for when he appears; until it has arrived, his shadow and plate stand alone.
-- **In the dialogue box** (`sqPortrait`): the same sheet, facing you. The design named only his sprite, so this is a reading (`OPEN-QUESTIONS.md` §1n).
+- **In the dialogue box** (`sqPortrait`): the same sheet, facing you. The design named only his sprite, so this was a reading; the owner kept it ("Keep as built", 2026-11-02).
+- **The install step's hint names him** since build `2026-11-02g` (the owner: "Say SIDE QUEST"): "SIDE QUEST, ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE, SELLS A SLEEPING POTION." It had said "THE DRONE".
 - **Nothing else about him changed:** his spot, lines, shop and save.
 
 **Designed 2026-11-02, not built:**
