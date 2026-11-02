@@ -509,3 +509,57 @@ When built:
 ### Supersedes / superseded by
 - Supersedes in part the breeding rule "the lead parent's type and element" (`FOLLOWER-PROGRESSION.md` §2; built, so it stands until this is built).
 - Supersedes in part the rule that a follower's element never changes (`TUTORIAL.md`, "Follower types (revision)"): a toxic follower can be converted into BLOOM.
+- Filled in by "BLOOM and the apparatus filled in" (2026-11-02, below).
+
+## DECISION: BLOOM and the apparatus filled in; the refunds' timing; the retired forms' row
+
+- **Date:** 2026-11-02
+- **Status:** Approved (design); not implemented.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `CONVERSION.md` section 2, `UNIVERSAL-AND-PLAYER-CARDS.md`, `SERIES-2.md`, `SEWER-QUEST.md`, `COMBAT.md` §7.8, `UI-STYLE.md`
+
+### Context
+Asked "What questions do you have?", the owner answered the open points in four prompts. Of "Greenshire": "kind of be irrelevant ... The parents type doesn't matter ... The offspring will not ... correlate to the role of the parents."
+
+### Decision
+- **BLOOM:**
+  - it sits outside the element triangles;
+  - its status is MEND (a hit heals the most hurt ally nearby);
+  - its colour is blossom pink;
+  - it gets three forms over time, one per class;
+  - it comes only from breeding and conversion;
+  - it gets the full card set.
+- **The apparatus** is a free reward for the purification quest, beside the purifier in the Sewers.
+- **A conversion** is free and keeps everything.
+- **Pack 1 and Side Quest** offer BLOOM's cards once the apparatus is in.
+- **Breeding** stays at the roster.
+- **The cut Series 2 cards' refunds** arrive at the next run's start.
+- **The retired forms** take their replacement's row when hit.
+
+### Exact rules
+In `CONVERSION.md` section 2, `UNIVERSAL-AND-PLAYER-CARDS.md` (the BLOOM row, question 14) and `COMBAT.md` §7.8.
+
+### Alternatives considered
+The alternatives passed over are listed in `CONVERSION.md` section 12. Also:
+- for the refunds, a free unlock each;
+- for the retired forms, no row.
+
+### Rationale and trade-offs
+BLOOM stays special (earned through the quest), supportive (MEND) and simple (no new match-ups). The cost: a seventh entry in every per-element table, and three forms and a card set to design.
+
+### Impact
+As "The conversion apparatus and BLOOM", plus Pack 1's and Series 2's tables, Side Quest's shop, and the save clean-up's refund timing.
+
+### Follow-up
+`CONVERSION.md` section 11:
+- the apparatus's look;
+- BLOOM's forms and an egg;
+- converting an evolved toxic follower before its class's form exists;
+- MEND's numbers;
+- BLOOM's cards' designs;
+- Series 2's BLOOM timing;
+- BLOOM's texture and icon;
+- the 50%'s other half.
+
+### Supersedes / superseded by
+Fills in "The conversion apparatus and BLOOM" (2026-11-02). Answers "Class cards and Player cards filled in" follow-up (the refunds' timing) and the second damage round's open question (the retired forms' row).

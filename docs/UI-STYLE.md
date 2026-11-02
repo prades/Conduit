@@ -73,6 +73,7 @@ The owner: "We also need to make themes for the different species and give textu
   - **On enemies:** the enemy card shows its race's icon and what it is weak to (`COMBAT.md` §7.3). This needs an icon for each of the six enemy races and a way to show the six damage types. That need follows from this pick; it is to be confirmed with the looks.
 - **How:** the looks are proposed as mockups for the owner's approval first (`ART-PROCESS.md`). The game keeps today's art until they are approved.
 - **Open:** the themes themselves (colours, motifs), the icon style, and how three layers stay readable on a follower card.
+- **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop.
 
 How it is built: each picture is a small standalone SVG used as a CSS background (a data: URL, made once), through a class js/cardart.js writes into one `<style id="cardArtCss">` the first time it is wanted: `cat-c-<texture>` an equip card's face, `cat-f-<element>-<class>` a follower's backdrop, `cag-<colour>` the crystal, `cac-<colour>` the cube, each setting one CSS variable (`--tex` or `--gem`). The css lays `var(--tex)` under its veils (game.html: the block "THE 3D CARDS", and each follower card's background). The crystal and the cube are drawn already turned (the canvas's turns), so a card has no 3D parts of its own.
 

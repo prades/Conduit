@@ -35,7 +35,7 @@ Each follower class has a card family of its own; the player has Player cards.
 
 - **The six element auras**, one per element (fire, toxic, electric, ice, flux, core). **A Mage wears the aura of its own element**: a fire Mage the fire aura.
 - **What it gives:** every follower **near the Mage**, of any element, the Mage included, gets **+5% attack damage** at the aura's lowest tier and **+10%** at its rarest. Attack damage is ATK, the POWER on a follower's roster card. Every hit is now part physical (ATK) and part elemental (SP.ATK) (`COMBAT.md` §7.6), so an aura lifts the physical part and helps Brawlers most: about +4% on a Brawler's hit and +1% on a Mage's, at the lowest tier. The owner kept it on ATK (2026-11-02).
-- **Three tiers** (2026-11-02): each element's aura comes as three cards, Refined +5%, Precision +7.5% and Prototype +10% with the element's extra: 18 aura cards in all.
+- **Three tiers** (2026-11-02): each element's aura comes as three cards, Refined +5%, Precision +7.5% and Prototype +10% with the element's extra: 18 aura cards in all. BLOOM's aura makes 21; its extra is MEND (`CONVERSION.md`).
 - **Reach** (2026-11-02): 4 tiles from the Mage. The Mutator's clone in reach gets the aura too.
 - **The rarest tier adds the element's extra:** each hit of a follower in reach has a small chance to apply the element's own status: fire burns, toxic weakens, electric glitches, ice slows, flux siphons, core knocks back. The chance (a first guess of 5%) is to tune.
 - **Stacking:** different auras stack. A second copy of the same aura adds nothing, even worn by another Mage.
@@ -75,8 +75,8 @@ Each follower class has a card family of its own; the player has Player cards.
   - the 18 auras and the 3 opportunity cards;
   - the 18 Player cards.
 
-  Its price and rarity odds stay as they are.
-- **Copies of the cut cards already owned are removed** from collections, hands and slots. Each permanently unlocked copy refunds its ◆1,000.
+  Its price and rarity odds stay as they are. BLOOM's aura and three roles make it 69, once the conversion apparatus is in (`CONVERSION.md`).
+- **Copies of the cut cards already owned are removed** from collections, hands and slots. Each permanently unlocked copy refunds its ◆1,000, added when the next run starts (at once if a run is in progress).
 
 ### Player cards
 
@@ -84,7 +84,7 @@ Each follower class has a card family of its own; the player has Player cards.
 - **A Player card** turns the player's class into a hyper-specific elemental role while worn. Rules: player only; one at a time; it needs the matching class; it lasts while worn. Each role reuses its element's existing status.
 - **Where they come from** (2026-11-02):
   - **Series 2**, at **Prototype** rarity.
-  - **Side Quest's shop**: after each quest, he sells the Player cards of that quest line's element, ◆1,000 each, kept for good. The Sewers' line is toxic, so BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR (`SEWER-QUEST.md`).
+  - **Side Quest's shop**: after each quest, he sells the Player cards of that quest line's element, ◆1,000 each, kept for good. The Sewers' line is toxic, so BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR (`SEWER-QUEST.md`). Once the conversion apparatus is in, he sells BLOOM's three roles too (`CONVERSION.md`).
 - **Switching class** (2026-11-02): a Player card for the other class sleeps in its slot, greyed out and inactive, until the player switches back.
 - **The kits:** the owner asked for a draft of all 18 to review; it is being written.
 - **The 18 roles** (their names and themes are approved; their kits and numbers are still to design):
@@ -97,6 +97,9 @@ Each follower class has a card family of its own; the player has Player cards.
 | **Ice** | CRYO MARKSMAN: slower shots that slow; a charged shot freezes | CRYO TECH: enemies near powered relays are slowed | CRYO GENETICIST: fallen followers are preserved for free |
 | **Flux** | RIFT RUNNER: shots pull enemies toward you | GRAVITY ENGINEER: swap places with a squad member | SPLICER: the clone takes a trait from the last creature it killed |
 | **Core** | BREACH GUNNER: knockback rounds | BULWARK ENGINEER: the overcharge shields the squad | CORE SHAPER: the clone becomes a heavy tank |
+| **Bloom** (designed 2026-11-02, `CONVERSION.md`) | to design | to design | to design |
+
+With BLOOM, the seventh element, there are 21 roles. BLOOM's three are named and designed later, for the owner's approval.
 
 ### Names kept apart
 
@@ -205,7 +208,7 @@ Not implemented.
 11. **The cards' look** for each family and the Player cards: open. The species (subclass) textures and icons are designed in `UI-STYLE.md`.
 12. **The opportunity card and the split: answered 2026-11-02. Both parts count**, a race weak to the hit's physical type or to Elemental. (The question: every hit has an elemental part, so every hit on a scorpion or a moth exploits a weakness; count only the physical type, or both?)
 13. **The Mage auras and the split: answered 2026-11-02. The aura stays on ATK**, the physical part (the alternatives were the whole hit, or SP.ATK).
-14. **The refunds' timing:** the cut cards' refunds are paid in shards, which belong to a run. When does a player with no run in progress get them?
+14. **The refunds' timing: answered 2026-11-02.** The shards wait in the collection and are added when the next run starts, at once if a run is in progress. (The alternative was a free unlock for each refund.)
 15. **Side Quest's stock beyond the Sewers:** which element each later quest line has.
 
 ## 12. History

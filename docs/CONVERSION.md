@@ -21,22 +21,42 @@ The owner, 2026-11-02:
 
 The owner's answers in prompts: the conversion changes a follower's **element**; the new element is called **BLOOM**; the chance is **50%**; the apparatus also converts an existing **toxic** follower into BLOOM; the offspring's element is **a random draw**.
 
+Then, asked what "Greenshire" meant: "what I meant to say there was kind of be irrelevant, but it brings up a good point when it comes to bonding and breeding. The parents type doesn't matter it could be whatever type parents and they will. The offspring will not be the class of the offspring will not correlate to the role of the parents." The owner's second round of answers filled in BLOOM, the apparatus and the conversion (section 2).
+
 ## 2. Approved design (2026-11-02)
 
 ### BLOOM
 - **A seventh element**, beside fire, toxic, electric, ice, flux and core: life-giving, a medical substance made from toxin with the poison filtered out.
-- **Where it comes from**, so far: the conversion apparatus, by breeding and by converting a toxic follower.
+- **Where it comes from:** only the conversion apparatus, by breeding and by converting a toxic follower. Never from recruits, the posts' eggs or enemies.
+- **Its match-ups:** outside the two triangles. No element beats it and it beats none: ×1 both ways (`COMBAT.md` §7).
+- **Its status, MEND:** a BLOOM hit heals the most hurt ally nearby a little. How much and how near are to tune.
+- **Its colour:** blossom pink, `#ff7ab8`.
+- **Its forms:** a BLOOM Brawler, Mage and Technician, designed one at a time for the owner's approval. Until a class has its BLOOM form, the class draw skips that class (below).
 
 ### The conversion apparatus
-- **It is installed in the facility** once the Sewers' purification quest is complete: the purification module installed and the quest done.
+- **Where:** in the Sewers, beside the purification module at the head of the sump.
+- **How it is got:** a free reward for finishing the Sewers' purification quest (the purification module installed and the quest done).
 - **It filters the toxin out** ("detox can be filtered out and create new life creatures"). With it installed:
   - **Breeding:** a bonded toxic + fire pair's offspring is BLOOM **half the time** (50%).
   - **Conversion:** a **toxic** follower can be converted into a **BLOOM** follower at the apparatus.
+- **A conversion is free and keeps everything:** the follower's level, XP, bond and stats.
+  - An evolved follower takes its class's BLOOM form.
+  - Its toxic cards come off.
+  - It cannot be undone.
+
+### BLOOM's cards (the full set, each to be designed for the owner's approval)
+- **Pack 1:** three BLOOM element cards. Pack 1 deals them only once the apparatus is in.
+- **Series 2:** a BLOOM Mage aura in three tiers, and three BLOOM Player roles. Series 2 then deals 69 cards (21 auras, 21 Player cards).
+- **Side Quest:** sells the three BLOOM roles once the apparatus is in, beside the toxic roles, ◆1,000 each.
+- **A BLOOM Technician ability**, as each element's technician has one.
+
+### Where breeding happens
+At the roster, as today. The archive's Sanctuary room can come later.
 
 ### Breeding, once conversion exists (replaces today's "the lead parent's type and element")
 - **The offspring's element: a random draw between the two parents' current elements.** A converted parent passes on its converted element: a parent converted to BLOOM passes on BLOOM.
 - **A toxic + fire pair with the apparatus installed:** BLOOM half the time. The other half is read as the normal draw, toxic or fire.
-- **The offspring's class: a random draw among Brawler, Mage and Technician, not tied to the parents' classes.**
+- **The offspring's class: a random draw among Brawler, Mage and Technician, not tied to the parents' classes.** The owner: "The parents type doesn't matter ... The offspring will not ... correlate to the role of the parents." A BLOOM offspring's draw skips a class that has no BLOOM form yet.
 - Everything else stays as built: the ◆50 price, the stats' upbringing, the provenance (`FOLLOWER-PROGRESSION.md` §2).
 
 ### The rule this changes
@@ -49,13 +69,18 @@ Until now a follower kept the type and element it was found with for good. The o
 - [ ] With it installed, a toxic + fire pair's offspring is BLOOM half the time; before it, never.
 - [ ] Any other pair's offspring takes one of its parents' current elements at random (so BLOOM only if a parent is BLOOM).
 - [ ] An offspring's class is a random draw among the three.
-- [ ] A toxic follower converted at the apparatus becomes BLOOM, and stays BLOOM through respawns, saves and loads.
+- [ ] A toxic follower converted at the apparatus becomes BLOOM, for free, keeping its level, XP, bond and stats. It takes its class's BLOOM form if evolved; its toxic cards come off. It stays BLOOM through respawns, saves and loads.
+- [ ] The apparatus is handed over, free, when the purification quest is finished, and sits beside the purification module.
+- [ ] BLOOM never comes from a recruit, a post's egg or an enemy.
+- [ ] A BLOOM hit sets MEND: the most hurt ally nearby is healed a little. BLOOM is ×1 against every element and every element ×1 against it.
+- [ ] Pack 1 deals BLOOM's three element cards only once the apparatus is in. Side Quest sells the BLOOM roles from then on.
 - [ ] Saves keep the apparatus's state and every converted follower; old saves load unchanged.
 
 ## 4. Non-goals
 
 - No conversion but toxic into BLOOM, for now (the owner chose that one over "more conversions later").
-- No change to the recruitment posts or the quick recruit, for now (section 11, question 6).
+- No BLOOM recruits, eggs at the posts or enemies (the owner, 2026-11-02).
+- No Sanctuary room for now: breeding stays at the roster.
 
 ## 5. Optional / future ideas
 
@@ -80,9 +105,9 @@ Until now a follower kept the type and element it was found with for good. The o
 
 - **A parent already BLOOM:** the draw is between BLOOM and the other parent's element.
 - **Toxic + fire before the apparatus:** the plain draw, toxic or fire.
-- **Converting an evolved toxic follower:** which form it takes is open (section 11).
-- **Converting a follower that wears toxic element cards:** they no longer fit it. They go back as when any card stops fitting.
-- **A drawn class with no BLOOM form:** open. The owner: "There may only be a limited amount of evolutions".
+- **Converting an evolved toxic follower:** it takes its class's BLOOM form. Until that form exists: open (section 11).
+- **Converting a follower that wears toxic element cards:** they come off. They go back as when any card stops fitting.
+- **A BLOOM offspring's class draw** skips any class without a BLOOM form. With no BLOOM form yet, BLOOM breeding cannot go live, so at least one form comes first.
 
 ## 8. Acceptance criteria
 
@@ -105,25 +130,38 @@ Naming care: `bloom` is already the id of the retired BUNKER BLOOM form (js/evol
 
 ## 11. Open questions
 
-1. **The apparatus:**
-   - where it is installed;
-   - how it is obtained (bought like the purification module at the analysis bench?) and its price;
-   - its look.
-2. **Converting a follower:**
-   - its price or time, and whether it can be undone;
-   - whether it keeps its level, XP, bond and cards;
-   - what an evolved toxic follower (SEEPER, ROTSHARD, BLIGHT SPIDER) becomes.
-3. **BLOOM's forms:** which classes get one ("There may only be a limited amount of evolutions"), their designs, and a BLOOM egg's look.
-4. **BLOOM in combat:**
-   - its place in the element triangles (two triangles of three today);
-   - its status (each element has one: fire burns, toxic weakens and so on);
-   - its colour.
-5. **BLOOM's cards:** element cards (Pack 1 has three per element), a Mage aura, Player cards (three roles per element today), and a technician ability (each element's technician has one).
-6. Do recruits, the eggs at the posts, or enemies ever come as BLOOM?
-7. **"In the sanctuary":** breeding happens from the roster today, and the offspring appears at the Crystal; the archive's Sanctuary room is not built. Should breeding move to a Sanctuary?
-8. **"Greenshire"** in the owner's message ("a toxic and a fire Greenshire follower"): what it refers to.
-9. **The 50%'s other half:** read as the normal draw, toxic or fire. To confirm.
+Answered on 2026-11-02 (section 2):
+- the apparatus's place and how it is got;
+- the conversion's terms;
+- which classes get a BLOOM form;
+- BLOOM's match-ups, status and colour;
+- its cards;
+- recruits;
+- the Sanctuary;
+- "Greenshire", a slip.
+
+Still open:
+1. **The apparatus's look.**
+2. **BLOOM's forms:** their designs (which comes first?), a BLOOM egg's look, and each form's subclass and lean (`COMBAT.md` §7.7).
+3. **Converting an evolved toxic follower** (SEEPER, ROTSHARD, BLIGHT SPIDER) whose class has no BLOOM form yet: refuse until the form exists, or convert and keep its form's look?
+4. **MEND's numbers:** how much it heals, and how near.
+5. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), the three Player roles' names and themes, the Technician ability.
+6. **Series 2's BLOOM cards:** read as dealt only once the apparatus is in, like Pack 1's. To confirm.
+7. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
+8. **The 50%'s other half:** read as the normal draw, toxic or fire. To confirm.
 
 ## 12. History
 
+- 2026-11-02, second round of prompts. The alternatives passed over:
+  - for the match-ups: strong against toxic, or strong against toxic and weak to fire;
+  - for the status: Regrowth, Root;
+  - for the colour: pearl white, spring lime;
+  - for the forms: Mage and Technician only, or one form to start;
+  - for the apparatus: the Experiment Lab or the Crystal, bought at the bench for ◆500 or ◆300;
+  - for the conversion: ◆100, or becoming an egg again;
+  - for BLOOM elsewhere: rare recruits, enemies later;
+  - for the cards: no Player roles, or later;
+  - for Pack 1: from the start;
+  - for the BLOOM roles: Series 2 only;
+  - building the Sanctuary next.
 - 2026-11-02: designed from the owner's message and two rounds of prompts. The element's name was chosen from VITAL, BLOOM, ELIXIR and LIFE. The chance was chosen from 10%, 25% and 50%. For the class, the alternatives were either parent's class or the lead parent's (today's rule).

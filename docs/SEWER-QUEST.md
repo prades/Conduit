@@ -47,7 +47,12 @@ The game's quest system is the tutorial director (`js/tutorial.js`): steps with 
 
 **Non-lethal.** The cycle completes whether the queen lives or not; the water itself clears as the cycle runs (`questWaterClean`, 0 to 1, in `js/facilitysewers.js`). The plate's install hint says what she does and never that she must die; it names Side Quest once he is there.
 
-**What the completed quest opens** (designed 2026-11-02, not built): the **conversion apparatus** can then be installed. It filters the toxin out, so a toxic + fire pair can breed an offspring of **BLOOM**, a new life-giving element, half the time, and a toxic follower can be converted into BLOOM (`CONVERSION.md`).
+**What the completed quest opens** (designed 2026-11-02, not built): the **conversion apparatus**, handed over free when the quest is finished and set beside the purification module at the head of the sump. It filters the toxin out, so:
+- a toxic + fire pair can breed an offspring of **BLOOM**, a new life-giving element, half the time;
+- a toxic follower can be converted into BLOOM, free and keeping everything;
+- Side Quest starts selling BLOOM's three Player roles.
+
+The details are in `CONVERSION.md`.
 
 ## The Nest (2026-11-01; `js/population.js` `NESTS`, the map's east end)
 

@@ -208,18 +208,30 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - a class switch puts a Player card to sleep;
     - the Universal kind retired.
   - **Being drafted for you:** the 18 Player cards' kits.
-  - Still open (section 11): the refunds' timing for a player with no run, Side Quest's stock beyond the Sewers, the cards' looks.
+  - Answered later on 2026-11-02: the refunds arrive at the next run's start.
+  - Still open (section 11): Side Quest's stock beyond the Sewers, the cards' looks.
 - **The conversion apparatus and BLOOM** (designed 2026-11-02, not built; `CONVERSION.md`):
   - BLOOM is a seventh, life-giving element.
   - Once the purification quest is done, the apparatus can be installed. A toxic + fire pair's offspring is then BLOOM half the time, and a toxic follower can be converted into BLOOM.
   - An offspring's element becomes a random draw between its parents' current elements, and its class a random draw among the three.
+  - **Your answers, second round:**
+    - outside the triangles; MEND heals the most hurt ally nearby; blossom pink;
+    - three forms over time;
+    - only from breeding and conversion;
+    - the full card set, with Pack 1 and Side Quest offering it once the apparatus is in;
+    - the apparatus a free reward beside the purifier;
+    - conversion free, keeping everything;
+    - breeding stays at the roster;
+    - "Greenshire" a slip.
   - **Open** (its section 11):
-    - the apparatus's place, price and look;
-    - the conversion's terms;
-    - BLOOM's forms ("a limited amount of evolutions"), its place in the triangles, status, colour and cards;
-    - whether recruits come as BLOOM;
-    - the Sanctuary;
-    - what "Greenshire" meant.
+    - the apparatus's look;
+    - BLOOM's forms and an egg;
+    - converting an evolved toxic follower before its class's form exists;
+    - MEND's numbers;
+    - BLOOM's cards' designs;
+    - Series 2's BLOOM timing (to confirm);
+    - BLOOM's texture and icon;
+    - the 50%'s other half (to confirm).
 - **Side Quest's look, and the subclass art** (designed 2026-11-02, not built):
   - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`).
   - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).
@@ -238,7 +250,8 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - the retired forms copy their replacements;
     - a word per part on screen;
     - bosses use their race's row.
-  - Still open (§7.9): the retired forms' row when hit, the later quest lines' elements, the Player cards' elemental part, the icons.
+  - Answered later on 2026-11-02: the retired forms take their replacement's row when hit.
+  - Still open (§7.9): the later quest lines' elements, the Player cards' elemental part, the icons.
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
 - **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.
 - **Card art:** the design asks for low-poly 3D artwork and kanji-inspired graphics. One card has its 3D item (EMBER PLATING, live since build `j`); the other Pack 1 items are next, then Series 2's. No kanji.

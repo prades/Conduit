@@ -321,7 +321,7 @@ The owner asked for a draft of the enemy side and approved it as drafted; the re
 
 The player has no SP.ATK, so these hits are not split.
 
-**The ten retired forms** (a follower already evolved into one keeps it) copy the form that replaced each: its attack types (§7.4) and its lean (§7.7).
+**The ten retired forms** (a follower already evolved into one keeps it) copy the form that replaced each: its attack types (§7.4), its lean (§7.7) and, when hit, its subclass's row (the owner, 2026-11-02).
 - BUNKER BLOOM → QUILLSTONE
 - REAVER → THUNDERHEAD
 - SERPENT → VOIDSTAR
@@ -335,9 +335,13 @@ PETAL BLAZE, the one move of their own, is Elemental.
 
 **On screen, a word per part:** a hit says what each part met, for example SLASHING WEAK! and FIRE RESIST on the same hit. Today WEAK! and RESIST speak for the element triangle only.
 
+**BLOOM, a seventh element** (designed 2026-11-02, `CONVERSION.md`):
+- It sits outside the two triangles: ×1 against every element, and every element ×1 against it.
+- Its hits set MEND: the most hurt ally nearby is healed a little.
+- A BLOOM follower's hits split like any follower's, the elemental part in BLOOM. Its forms' subclasses and leans come with their designs.
+
 ### 7.9 Not covered yet (open)
 
-- The retired forms' row when they are hit: they have no subclass. Should they take their replacement's?
 - Which element each future quest line has (Side Quest's stock follows it, `SEWER-QUEST.md`).
 - Whether a Player card gives the player's attacks an elemental part (the Player cards' kits, `UNIVERSAL-AND-PLAYER-CARDS.md`).
 - The icons beside the words (the subclass, element and race icons, `UI-STYLE.md`).
