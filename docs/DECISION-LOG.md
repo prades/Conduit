@@ -920,3 +920,25 @@ Part 1a built the Player card rules and the Gunslinger's six roles, as approved 
 
 ### Impact
 None beyond build `2026-11-02h`: it was built this way. Parts 1b and 1c follow the same rules; Part 1d adds "player" to Series 2's kinds.
+
+## DECISION: Part 1b's relays by distance; SWAP on tablets and desktops for now; build i to main
+
+- **Date:** 2026-11-02
+- **Status:** Approved (in a prompt, after build `2026-11-02i`). Implemented and tested in build `2026-11-02i`.
+- **Branch/build:** build `2026-11-02i` (commit 3b875f2) and the answers' docs before it (8dcec34) fast-forwarded to `main`; on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` section 9 ("Part 1b"), `OPEN-QUESTIONS.md` §1q, `UI-STYLE.md` (the SWAP row), `CHANGELOG.md` (i)
+
+### Context
+Part 1b built the Technomancer's six roles as approved. Two readings shaped how they play and were put to the owner.
+
+### Decision
+- **SMOG ENGINEER and CRYO TECH:** "Distance alone". An online relay weakens or slows every creature within 3 tiles of it, through walls, as the sleeping potion's area does.
+- **GRAVITY ENGINEER's SWAP:** "Tablet/desktop only for now". It is a row on a squad member's card. A phone gets SWAP when it gets that card.
+- **Main:** "Push to main".
+
+### Alternatives considered
+- The relays' area kept to the relay's own room, as the Mage auras are.
+- A way to SWAP on a phone now, in its squad controls.
+
+### Impact
+None beyond build `2026-11-02i`: it was built this way.

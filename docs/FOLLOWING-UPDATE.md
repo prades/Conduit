@@ -3,7 +3,7 @@
 - **Status:** Approved by the owner, 2026-11-02 ("Approve as drafted"): the scope, Parts 1 to 4 in that order, BLOOM for the update after. Asked for the same day: "draft a new update that covers a good portion of the necessary updates".
   - **In progress.** Build C of the current update came first (the owner: "Build C first"): implemented in build `2026-11-02f`, on main since the owner's "Push to main".
   - **Part 1a** (the Player card rules and the Gunslinger's six) is implemented and tested in build `2026-11-02h`, on main since the owner's "Push to main". Its three main readings were confirmed as built (`OPEN-QUESTIONS.md` §1p).
-  - **Part 1b** (the Technomancer's six) is implemented and tested in build `2026-11-02i`, on the branch. Parts 1c and 1d are next (Part 1, below).
+  - **Part 1b** (the Technomancer's six) is implemented and tested in build `2026-11-02i`, on main since the owner's "Push to main"; two readings confirmed as built (`OPEN-QUESTIONS.md` §1q). Parts 1c and 1d are next (Part 1, below).
   - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Still open: gate 2 (the mockups) and gate 3 (each card item).
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-02e`.
   - It follows the update in `NEXT-UPDATE.md`.

@@ -250,13 +250,13 @@ Part 1a followed the approved kits and rules ("Approve as drafted", "The role's 
 
 ## 1q. Part 1b's readings: the Technomancer's six (build `2026-11-02i`, on the branch; `UNIVERSAL-AND-PLAYER-CARDS.md` section 9, "Part 1b")
 
-Part 1b followed the approved kits. Where they did not say, these readings were taken, each easy to change. **For the owner to confirm or change:**
+Part 1b followed the approved kits. Where they did not say, these readings were taken, each easy to change. The owner answered two in a prompt (2026-11-02), both as built; the rest stand as readings.
 1. **Rule 2 for the Technomancer.** The punch and the arc take the role's element. The arc stays all Elemental, so a role's arc meets the triangle in its element; it keeps the arc's blue look.
 2. **FORGEMASTER:**
    - the sentries' rounds stay electric and only add the burn;
    - "your repairs" are the turret's (600 → 300 frames) and the relay's (100 → 50).
 3. **SMOG ENGINEER and CRYO TECH:**
-   - "within 3 tiles" is by distance alone, through walls, as the sleeping potion's area is;
+   - "within 3 tiles" is by distance alone, through walls, as the sleeping potion's area is. **Confirmed:** "Distance alone";
    - "online" is a relay that has been repaired;
    - "for as long as they stay": the status is set again every half second while a creature is in the area, with Pack 1's numbers, so it wears off 4 s (the weakness) or 2 s (the slow) after the creature leaves.
 4. **ARC WARDEN:**
@@ -265,7 +265,7 @@ Part 1b followed the approved kits. Where they did not say, these readings were 
    - the zap costs no charge;
    - each zap is drawn as the arc's bolt from your hand.
 5. **GRAVITY ENGINEER:**
-   - SWAP is a row on a squad member's card, the card a tablet or a desktop opens from the squad stack. A phone has no such card yet, so no SWAP on a phone (open).
+   - SWAP is a row on a squad member's card, the card a tablet or a desktop opens from the squad stack. A phone has no such card yet, so no SWAP on a phone. **Confirmed:** "Tablet/desktop only for now"; a phone gets it with that card.
    - It works only with a member that follows you (not one holding a room), and only on your stretch of floor: not across a doorway into another part of the map.
    - The minute's wait starts at the swap and is not saved.
 6. **BULWARK ENGINEER:**

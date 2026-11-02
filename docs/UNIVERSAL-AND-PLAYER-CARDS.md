@@ -13,7 +13,7 @@
   - **Implemented in build `2026-11-02h` (the following update's Part 1a, on the branch), and tested** (tests/playercards.js, 24 checks; section 10). Not playtested.
     - The Player card rules: a role needs its class; one role of a class at a time; a role for another class sleeps in its slot after a switch, greyed and marked ASLEEP, and wakes on switching back.
     - The Gunslinger's six roles, on every round that hits from any gun.
-  - **Implemented in build `2026-11-02i` (Part 1b, on the branch), and tested:** the Technomancer's six roles (tests/playercards.js; section 9, "Part 1b"). Not playtested.
+  - **Implemented in build `2026-11-02i` (Part 1b; on main at the owner's word), and tested:** the Technomancer's six roles (tests/playercards.js; section 9, "Part 1b"). Not playtested.
   - **Designed and approved, not implemented:** the Mutator's six kits (section 2, "The 18 kits": approved 2026-11-02, "Approve as drafted"): Part 1c. Series 2's deal of the eighteen and Side Quest's sale: Part 1d.
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
@@ -424,7 +424,7 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 17. **The rings and glints: answered 2026-11-02.** "It shouldn't be displayed or affected in other rooms": the ring is cut to the Mage's room and the aura stays in it (build `2026-11-02d`). Then "It shouldn't show up on the walls either": the ring is drawn on the floor (build `2026-11-02e`). The strength was left as built.
 18. **Readings taken in Build B** (section 9): the same aura is the same card (**confirmed**: "Both count"); two opportunity cards add; the Prototype's status uses Pack 1's Precision numbers; the clone's whole hit grows; the ring is drawn over the floor and the units (now within its room); the refund shows a line. The open ones are the owner's to confirm or change.
 19. **Part 1a's readings** (build `2026-11-02h`): "one at a time" with two slots, when the class is asked, the guns' "20% slower", ARC SLINGER's jump, CRYO MARKSMAN's freeze, the pull's and the push's directions, where the cards come from until Part 1d, and the look of a role asleep. `OPEN-QUESTIONS.md` §1p. **Confirmed 2026-11-02, as built:** "One per class", "Rate × 0.8", "All 18 together". The others stand as readings.
-20. **Part 1b's readings** (build `2026-11-02i`): the sentries' rounds stay electric; the relays' area by distance alone; the first zap at once; SWAP on a tablet's squad card only, on your stretch of floor; the shield toward a locked creature or the way you face. `OPEN-QUESTIONS.md` §1q, for the owner to confirm or change.
+20. **Part 1b's readings** (build `2026-11-02i`): the sentries' rounds stay electric; the relays' area by distance alone; the first zap at once; SWAP on a tablet's squad card only, on your stretch of floor; the shield toward a locked creature or the way you face. `OPEN-QUESTIONS.md` §1q. **Confirmed 2026-11-02, as built:** "Distance alone", "Tablet/desktop only for now". The others stand as readings.
 
 ## 12. History
 
