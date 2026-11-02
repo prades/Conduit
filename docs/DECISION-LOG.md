@@ -896,3 +896,27 @@ Part 1's build, in the order `FOLLOWING-UPDATE.md` gives.
 
 ### Supersedes / superseded by
 - Fills in "Class cards and Player cards filled in" (2026-11-02): the kits were the open part.
+
+## DECISION: Part 1a's readings confirmed; build h to main
+
+- **Date:** 2026-11-02
+- **Status:** Approved (in a prompt, after build `2026-11-02h`). Implemented and tested in build `2026-11-02h`.
+- **Branch/build:** build `2026-11-02h` (commit 8a770d8) and the answers' docs before it (272183c) fast-forwarded to `main`; on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` section 9 ("Part 1a"), `OPEN-QUESTIONS.md` §1p, `FOLLOWING-UPDATE.md` Part 1, `CHANGELOG.md` (h)
+
+### Context
+Part 1a built the Player card rules and the Gunslinger's six roles, as approved ("Approve as drafted"). Where the kits did not say, readings were taken and put to the owner (`OPEN-QUESTIONS.md` §1p). Three of them shape the rest of Part 1.
+
+### Decision
+- **"One at a time", with two slots:** "One per class". The two slots never hold two roles of one class. A role for each of two classes can be worn; the one for the class you are is awake, the other asleep.
+- **CRYO MARKSMAN's "20% slower":** "Rate × 0.8". The guns fire 20% fewer shots a second: the wait between shots is divided by 0.8 (the service gun 45 → 56 frames, the machine gun 11 → 14, the laser 28 → 35).
+- **When Series 2 deals the Player cards:** "All 18 together". Series 2 deals them from Part 1d, with Side Quest's sale of the Sewers' three (45 → 63 cards). Until then only `?cards=all` has them.
+- **Main:** "Push to main".
+
+### Alternatives considered
+- One Player card in the two slots at all.
+- The wait between shots × 1.2 (45 → 54 frames).
+- Series 2 dealing each class's six as it is built (the odds changing three times).
+
+### Impact
+None beyond build `2026-11-02h`: it was built this way. Parts 1b and 1c follow the same rules; Part 1d adds "player" to Series 2's kinds.

@@ -2,7 +2,7 @@
 
 - **Status:** Approved by the owner, 2026-11-02 ("Approve as drafted"): the scope, Parts 1 to 4 in that order, BLOOM for the update after. Asked for the same day: "draft a new update that covers a good portion of the necessary updates".
   - **In progress.** Build C of the current update came first (the owner: "Build C first"): implemented in build `2026-11-02f`, on main since the owner's "Push to main".
-  - **Part 1a** (the Player card rules and the Gunslinger's six) is implemented and tested in build `2026-11-02h`, on the branch. Parts 1b, 1c and 1d are next (Part 1, below).
+  - **Part 1a** (the Player card rules and the Gunslinger's six) is implemented and tested in build `2026-11-02h`, on main since the owner's "Push to main". Its three main readings were confirmed as built (`OPEN-QUESTIONS.md` §1p). Parts 1b, 1c and 1d are next (Part 1, below).
   - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Still open: gate 2 (the mockups) and gate 3 (each card item).
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-02e`.
   - It follows the update in `NEXT-UPDATE.md`.
@@ -53,7 +53,7 @@ Each part is its own commit, with its own tests and a full green run before the 
   - **a name clash, answered 2026-11-02:** STORMCALLER was both the electric Technomancer's Player card role and one of the six player classes planned in `PLAYER-CLASSES.md` §2.2. The owner: "Rename the Player card". The class keeps STORMCALLER. The card's role is **ARC WARDEN** (the owner's choice from three drafted names).
 
 **Built in four steps** (the agent's sequencing, 2026-11-02, so every card registered works when it lands; each step its own build, commit and full run):
-- **Part 1a, build `2026-11-02h`: implemented and tested.** The slots' rules (its class, one role of a class at a time, asleep after a switch) and the Gunslinger's six, on every round of any gun. The Player cards are registered as Series 2's (found before kept), but Series 2 does not deal them yet. Readings taken: `OPEN-QUESTIONS.md` §1p.
+- **Part 1a, build `2026-11-02h`: implemented and tested; on main.** The slots' rules (its class, one role of a class at a time, asleep after a switch) and the Gunslinger's six, on every round of any gun. The Player cards are registered as Series 2's (found before kept), but Series 2 does not deal them yet ("All 18 together"). Readings taken: `OPEN-QUESTIONS.md` §1p.
 - **Part 1b:** the Technomancer's six (the punch and the arc take the role's element; FORGEMASTER, SMOG ENGINEER, ARC WARDEN, CRYO TECH, GRAVITY ENGINEER, BULWARK ENGINEER).
 - **Part 1c:** the Mutator's six (the lash, the clone and the serum; ASH SURGEON to CORE SHAPER).
 - **Part 1d:** Series 2 deals the eighteen at Prototype (45 → 63), and Side Quest sells the Sewers' three. Both wait for all eighteen: the pack's odds and pool change once, and the Sewers' three span all three classes.

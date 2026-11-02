@@ -228,10 +228,10 @@ Build C followed the approved design (`NEXT-UPDATE.md` Build C). Where it did no
 
 ## 1p. Part 1a's readings: the Player card rules and the Gunslinger's six (build `2026-11-02h`, on the branch; `UNIVERSAL-AND-PLAYER-CARDS.md` section 9)
 
-Part 1a followed the approved kits and rules ("Approve as drafted", "The role's element"). Where they did not say, these readings were taken, each easy to change. **For the owner to confirm or change:**
-1. **"One at a time", with two slots.** The two slots never hold two roles of one class, so one role at most is awake. A role for each of two classes can be worn: the one for the class you are is awake, the other asleep. *(The other reading: one Player card in the two slots at all.)*
+Part 1a followed the approved kits and rules ("Approve as drafted", "The role's element"). Where they did not say, these readings were taken, each easy to change. The owner answered three of them in a prompt (2026-11-02), all as built; the rest stand as readings.
+1. **"One at a time", with two slots.** The two slots never hold two roles of one class, so one role at most is awake. A role for each of two classes can be worn: the one for the class you are is awake, the other asleep. *(The other reading: one Player card in the two slots at all.)* **Confirmed:** "One per class".
 2. **"It needs the matching class"** is asked when a card goes in: a role goes in only while you are its class (FOR THE GUNSLINGER otherwise). A role already in a slot stays there whatever the class, asleep, through the card tick and a save.
-3. **"The gun fires 20% slower"** (CRYO MARKSMAN) is read as 20% fewer shots a second: the wait between shots is divided by 0.8. The service gun goes from 45 frames to 56, the machine gun from 11 to 14, the laser from 28 to 35. That is the convention of the cards' attack speed. *(The other reading, the wait × 1.2, gives 54, 13 and 34.)*
+3. **"The gun fires 20% slower"** (CRYO MARKSMAN) is read as 20% fewer shots a second: the wait between shots is divided by 0.8. The service gun goes from 45 frames to 56, the machine gun from 11 to 14, the laser from 28 to 35. That is the convention of the cards' attack speed. *(The other reading, the wait × 1.2, gives 54, 13 and 34.)* **Confirmed:** "Rate × 0.8".
 4. **ARC SLINGER's jump:**
    - It is once a shot, from the first creature hit, to the nearest other creature within 2.6 tiles.
    - It deals 60% of the round's damage before defense, as the arc's jump does, and is the round's own kind of hit (Projectile, electric).
@@ -244,7 +244,7 @@ Part 1a followed the approved kits and rules ("Approve as drafted", "The role's 
    - FROZEN shows over the creature.
 6. **Directions.** RIFT RUNNER pulls toward where you stand when the round lands. BREACH GUNNER pushes away from where the round was fired.
 7. **A round that kills** sets nothing on the creature (a status on the dead does nothing).
-8. **Where they come from, for now.** The six are Series 2's cards, so like every Series 2 card one is found before it can be kept for good (no outright ◆1,000 unlock). Series 2 deals them, and Side Quest sells the Sewers' three, once all eighteen are built (Part 1d). Until then only `?cards=all` has them. Why: the pack's odds and pool then change once, not three times, and the Sewers' three span all three classes. *(The other way: Series 2 deals each class's six as soon as they are built.)*
+8. **Where they come from, for now.** The six are Series 2's cards, so like every Series 2 card one is found before it can be kept for good (no outright ◆1,000 unlock). Series 2 deals them, and Side Quest sells the Sewers' three, once all eighteen are built (Part 1d). Until then only `?cards=all` has them. Why: the pack's odds and pool then change once, not three times, and the Sewers' three span all three classes. *(The other way: Series 2 deals each class's six as soon as they are built.)* **Confirmed:** "All 18 together".
 9. **The words.** BLIGHT SHOOTER's card says POISON, the game's word for the weakness, as on MIREBLIGHT. The card's kind line reads PLAYER · GUNSLINGER · FIRE.
 10. **The look.** A Player card stays gold with no texture: the cards' look is still open (`UNIVERSAL-AND-PLAYER-CARDS.md` §11, item 11). A role asleep is greyed (grayscale, a dashed edge) and marked ASLEEP on the player's card and its slot. The column says when it wakes: "… IS ASLEEP: IT WAKES WHEN YOU ARE A GUNSLINGER AGAIN".
 

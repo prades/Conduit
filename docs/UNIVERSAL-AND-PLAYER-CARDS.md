@@ -17,7 +17,7 @@
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-02
-- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on the branch, not on main until the owner says so) the Gunslinger's six are Player cards too, beside the two test cards.
+- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on main too, at the owner's word) the Gunslinger's six are Player cards too, beside the two test cards.
 - **Related docs:** `TUTORIAL.md` (the equip cards), `UI-STYLE.md` (the CARDS screen; YOU on the roster), `COMBAT.md` §7 (the damage types and race weaknesses), `SERIES-2.md`, `TECHNICIANS.md`, `OPEN-QUESTIONS.md` §1l and §3, `DECISION-LOG.md`
 
 ## 1. Intent
@@ -381,7 +381,7 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 6. **The aura's reach: answered 2026-11-02.** 4 tiles.
 7. **Sources: answered 2026-11-02.** Series 2, reshaped. Player cards: Series 2 at Prototype, and Side Quest's shop after each quest.
 8. **Player cards: answered 2026-11-02.** Switching class: the card sleeps. Each role's kit and numbers: drafted and approved ("Approve as drafted"; section 2, "The 18 kits"). The hit's element: the role's element, for the triangle only (`COMBAT.md` §7.9). The electric Technomancer role's name: ARC WARDEN.
-19. **Part 1a's readings** (build `2026-11-02h`): "one at a time" with two slots, when the class is asked, the guns' "20% slower", ARC SLINGER's jump, CRYO MARKSMAN's freeze, the pull's and the push's directions, where the cards come from until Part 1d, and the look of a role asleep. `OPEN-QUESTIONS.md` §1p, for the owner to confirm or change.
+19. **Part 1a's readings** (build `2026-11-02h`): "one at a time" with two slots, when the class is asked, the guns' "20% slower", ARC SLINGER's jump, CRYO MARKSMAN's freeze, the pull's and the push's directions, where the cards come from until Part 1d, and the look of a role asleep. `OPEN-QUESTIONS.md` §1p. **Confirmed 2026-11-02, as built:** "One per class", "Rate × 0.8", "All 18 together". The others stand as readings.
 9. **The Universal kind: answered 2026-11-02.** Retired.
 10. **The clone: answered 2026-11-02.** It gets auras.
 11. **The cards' look** for each family and the Player cards: open. The species (subclass) textures and icons are designed in `UI-STYLE.md`.
