@@ -99,7 +99,10 @@ function _applyFollowerLevel(npc, fresh) {
     const was = npc.maxHealth || 0;
     npc.stats = levelledStats(npc.base, npc.level);
     // An EVOLVED follower (js/evolution.js) is tougher and hits harder, for good.
-    if (npc.evolved && typeof EVOLVE_MULT === "number") { npc.stats.hp = Math.round(npc.stats.hp * EVOLVE_MULT); npc.stats.attack = Math.round(npc.stats.attack * EVOLVE_MULT); }
+    // Evolving raises SP.ATK as well (docs/COMBAT.md §7.6: so an evolved creature is no less elemental), and the form leans its stats toward ATK or SP.ATK
+    // (§7.7, js/damage.js dmgLean: each step moves 10% from one to the other; a retired form takes its replacement's lean).
+    if (npc.evolved && typeof EVOLVE_MULT === "number") { npc.stats.hp = Math.round(npc.stats.hp * EVOLVE_MULT); npc.stats.attack = Math.round(npc.stats.attack * EVOLVE_MULT); npc.stats.specialAttack = Math.round(npc.stats.specialAttack * EVOLVE_MULT); }
+    if (npc.evolved && typeof dmgLean === "function") { const L = dmgLean(npc); if (L) { npc.stats.attack = Math.max(1, Math.round(npc.stats.attack * (1 - DMG_LEAN_STEP * L))); npc.stats.specialAttack = Math.max(1, Math.round(npc.stats.specialAttack * (1 + DMG_LEAN_STEP * L))); } }
     // EQUIP CARDS (js/cards.js): what its worn cards add, a share of the numbers above, summed per stat (two +50% are +100%). Made from the base here every time, so a bonus is never added twice and goes with the card.
     const cardK = typeof equipMult === "function" ? s => equipMult(npc, s) : () => 1, kAtk = cardK("attack"), kSp = cardK("specialAttack"), kDef = cardK("defense"), kHp = cardK("maxHealth");
     // (a stat a card moves is kept to three places, not rounded to a whole number: a +5% on a stat of 9 is +5%, not +0%; the screens round it to show it. The maximum health is a whole number as it was.)

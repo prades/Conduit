@@ -455,8 +455,10 @@ function measure(w, h, query, seed) {
     });
     await check('evolving keeps an element card (the form keeps the element), and a card whose element the follower no longer has comes off at the next tick, with its bonus', () => {
         const o = J(`(function(){ __fresh(0); equipFound = ['ember_plating']; const f = __prep('fire', 'brawler', 6); equipPut(f, 0, 'ember_plating'); const lv = levelledStats(f.base, f.level);
-            const fire = Object.values(EVOLUTIONS).find(e => !e.legacy && e.element === 'fire'), other = Object.values(EVOLUTIONS).find(e => !e.legacy && e.element !== 'fire'); __form(f, fire.id); _applyFollowerLevel(f, false); equipTick(true); const kept = f.cards ? f.cards.slice() : null, atk = f.stats.attack, expect = Math.max(1, Math.round(Math.round(lv.attack * EVOLVE_MULT) * 1.05 * 1000) / 1000);
-            __form(f, other.id); equipTick(true); const gone = f.cards === undefined, atk2 = f.stats.attack, expect2 = Math.round(Math.round(lv.attack * EVOLVE_MULT)); return { kept, atk, expect, gone, atk2, expect2 }; })()`);
+            const fire = Object.values(EVOLUTIONS).find(e => !e.legacy && e.element === 'fire'), other = Object.values(EVOLUTIONS).find(e => !e.legacy && e.element !== 'fire'); __form(f, fire.id); _applyFollowerLevel(f, false); equipTick(true);
+            const leaned = a => { const L = dmgLean(f); return L ? Math.max(1, Math.round(a * (1 - DMG_LEAN_STEP * L))) : a; };   // the form's lean (docs/COMBAT.md §7.7), as js/levels.js applies it
+            const kept = f.cards ? f.cards.slice() : null, atk = f.stats.attack, expect = Math.max(1, Math.round(leaned(Math.round(lv.attack * EVOLVE_MULT)) * 1.05 * 1000) / 1000);
+            __form(f, other.id); equipTick(true); const gone = f.cards === undefined, atk2 = f.stats.attack, expect2 = leaned(Math.round(lv.attack * EVOLVE_MULT)); return { kept, atk, expect, gone, atk2, expect2 }; })()`);
         sameJ(o.kept, ['ember_plating', null], 'evolving into a fire form'); same(o.atk, o.expect, 'its ATK with the card'); same(o.gone, true, 'a form of another element kept the card'); same(o.atk2, o.expect2, 'its ATK without it');
     });
 

@@ -140,12 +140,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ const evoFor = evolutionFor; evolutionFor = f => f.__control ? null : evoFor(f); try { mkTwin = (ev) => { spawnFollowerAtCrystal(ev ? 'fire' : 'toxic'); const f = followers[followers.length - 1]; f.role = ev ? 'brawler' : 'camper';
                 f.base = { hp: 40, attack: 12, defense: 10, specialAttack: 10, accuracy: 10, will: 20, speed: 10 }; f.level = 22; f.xp = xpForLevel(22); if (ev) f.evolved = 'bloom'; _applyFollowerLevel(f, true); return f; };
             const a = mkTwin(false), b = mkTwin(true); a.__control = true; b._moltAt = -1e9;
-            const r1 = { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power };
+            const r1 = { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power, lean: dmgLean(b) };
             a.xp = xpForLevel(23); b.xp = xpForLevel(23); gainXp(a, 1); gainXp(b, 1);
             return { r1, r2: { hp: b.maxHealth / a.maxHealth, pw: b.power / a.power, lv: [a.level, b.level], ctl: a.evolved || null } }; } finally { evolutionFor = evoFor; } })()`);
         const M = run('EVOLVE_MULT'); same(r.r2.ctl, null, 'the control evolved');
-        ok(Math.abs(r.r1.hp - M) < 0.05 && Math.abs(r.r1.pw - M) < 0.1, 'at evolving: ' + JSON.stringify(r.r1));
-        ok(Math.abs(r.r2.hp - M) < 0.05 && Math.abs(r.r2.pw - M) < 0.1 && r.r2.lv[1] === 23, 'after a level-up: ' + JSON.stringify(r.r2));
+        ok(Math.abs(r.r1.hp - M) < 0.05 && Math.abs(r.r1.pw - M * (1 - run('DMG_LEAN_STEP') * r.r1.lean)) < 0.1, 'at evolving (power: × EVOLVE_MULT, then its form\'s lean, docs/COMBAT.md §7.7): ' + JSON.stringify(r.r1));
+        ok(Math.abs(r.r2.hp - M) < 0.05 && Math.abs(r.r2.pw - M * (1 - run('DMG_LEAN_STEP') * r.r1.lean)) < 0.1 && r.r2.lv[1] === 23, 'after a level-up: ' + JSON.stringify(r.r2));
     });
     check('THE ASK: PETAL BLAZE — a ring of fire that hits and burns everything close, then waits', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
@@ -165,7 +165,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.stance = 'hold';
         const S = SPECIES.ant, ps = foes.map(([x, y]) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 20 + x, 2 + y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; });
         const twin = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 30, 30); twin.team = 'red'; twin.health = twin.maxHealth = 1e6; twin.update = () => {};
-        applyDamage(twin, f.power * QUILL_MULT, f, 'fire'); const base = 1e6 - twin.health; floatingTexts.length = 0; elementEffects.length = 0;   // (the plain hit the quills are measured against, made before the rolls are set)
+        applyDamage(twin, f.power * QUILL_MULT, f, 'fire', false, false, DMG_HIT_ALT); const base = 1e6 - twin.health; floatingTexts.length = 0; elementEffects.length = 0;   // (the plain hit the quills are measured against, made before the rolls are set)
         const keep = Math.random, seq = rolls.slice(); Math.random = () => seq.length ? seq.shift() : 0.5;
         try { frame++; f._sigCd = 1; evolutionTick();
               return { dmg: ps.map(p => (1e6 - p.health) / base), burn: ps.map(p => p.burning > 0), cd: f._sigCd, texts: floatingTexts.map(t => t.text).join('|'), fx: elementEffects.map(e => e.type).join('|'), q: elementEffects.find(e => e.type === 'quills'), foes: ps.length }; }
@@ -233,7 +233,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const fire = () => { frame++; f._sigCd = 1; evolutionTick(); };
             const a = mkP(24, 2), b = mkP(25, 3), c = mkP(26, 1), far = mkP(40, 2);
             fire();
-            const d = p => 1e6 - p.health, shot = d(a) + d(b) + d(c), per = f.power * HALO_MULT;
+            const d = p => 1e6 - p.health, shot = d(a) + d(b) + d(c), per = dmgApply({ speciesName: a.speciesName, element: a.element }, f.power * HALO_MULT, f, 'fire', DMG_HIT_ALT);   // (a round through the damage system, docs/COMBAT.md §7, against a target like these)
             const out = { rounds: (f._arcPts || []).length, shot, per, a: d(a), b: d(b), c: d(c), far: d(far), burn: a.burning > 0 && b.burning > 0 && c.burning > 0, fan: f._arcFan, cd: f._sigCd };
             [a, b, c, far].forEach(p => p.dead = true);
             // Alone, all six go into the one.
@@ -252,7 +252,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const fire = () => { frame++; f._sigCd = 1; evolutionTick(); };
             const a = mkP(24, 2), b = mkP(25, 3), c = mkP(26, 1), far = mkP(40, 2);
             fire();
-            const d = p => 1e6 - p.health, shot = d(a) + d(b) + d(c), per = f.power * HALO_MULT;
+            const d = p => 1e6 - p.health, shot = d(a) + d(b) + d(c), per = dmgApply({ speciesName: a.speciesName, element: a.element }, f.power * HALO_MULT, f, 'fire', DMG_HIT_ALT);   // (a round through the damage system, docs/COMBAT.md §7, against a target like these)
             const out = { rounds: (f._arcPts || []).length, shot, per, a: d(a), b: d(b), c: d(c), far: d(far), burn: a.burning > 0 && b.burning > 0 && c.burning > 0, fan: f._arcFan, cd: f._sigCd };
             [a, b, c, far].forEach(p => p.dead = true);
             // Alone, all six go into the one.

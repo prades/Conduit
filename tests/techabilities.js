@@ -116,7 +116,7 @@ function measure(w, h) {
     group('THE KINETIC LAUNCHER: COMBAT');
     check('a throw: the follower runs to the technician and is thrown in an arc at the enemy; the enemy takes 3× its power (through the game\'s damage, armour and element and all), the follower a set 10, it lands beside the enemy and fights it; the technician gets the XP of a kill of it, once; the cooldown is 60 s from the throw', () => {
         const r = J(`(function(){ const fs = __fresh(['electric', 'core']), t = fs[0], g = fs[1]; t._abReadyAt = frame; const e = __foe(t.x + 3, t.y + 0.4);
-            const ref = __foe(t.x + 3.2, t.y + 0.8); applyDamage(ref, g.power * TECH_AB.launch.powerMult, g); const want = Math.round(5000 - ref.health); ref.dead = true; actors.splice(actors.indexOf(ref), 1);
+            const ref = __foe(t.x + 3.2, t.y + 0.8); applyDamage(ref, g.power * TECH_AB.launch.powerMult, g, null, false, false, DMG_HIT_LAUNCH); const want = Math.round(5000 - ref.health); ref.dead = true; actors.splice(actors.indexOf(ref), 1);
             g.spawnProtection = 0; const hp0 = g.health, xp0 = t.xp || 0, o = {}; o.use = techAbilityUse(t, { follower: g, enemy: e });
             let flew = false, peak = 0; for (let i = 0; i < 400 && (g._launchLoad || g._flight || !flew); i++) { __step(1); if (g._flight) { flew = true; peak = Math.max(peak, techFlightLift(g)); } }
             o.flew = flew; o.peak = Math.round(peak); o.foeLost = Math.round(5000 - e.health); o.want = want; o.followerLost = Math.round(hp0 - g.health); o.near = Math.hypot(g.x - e.x, g.y - e.y) < 1.7; o.order = !!(g.attackOrder && g.attackOrder.target === e);

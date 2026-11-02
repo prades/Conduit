@@ -107,7 +107,7 @@ function firePlayerShot(foe) {
         foe,
         elDef ? elDef.color : "#ffffff",
         typeof weaponDamage === "function" ? weaponDamage() : 10, 5,
-        null
+        null, DMG_HIT_GUN   // (Projectile: js/damage.js)
     );
     playerAmmo = Math.max(0, playerAmmo - 1); playerShotsFired++; player.gunShotAt = typeof frame !== "undefined" ? frame : 0;   // (the gunslinger's machine gun fires: js/playergear.js)
     player.attackCooldown = typeof weaponCooldown === "function" ? weaponCooldown() : 45;

@@ -199,7 +199,7 @@ function measure(w, h) {
     });
     check('from the chip, at an enemy it can see (or the enemy card): it closes in and drills it 3 times a second apart, each twice its normal hit (followerAttack\'s plain hit: a quarter of its attack), as fire; the cooldown starts at the first hit; one it cannot see is refused', () => {
         const r = J(`(function(){ const fs = __fresh(['fire']), t = fs[0], o = {}; const e = __foe(t.x + 3, t.y); const ref = __foe(t.x + 3, t.y + 2);
-            applyElementalDamage(ref, (t.stats.attack || 5) * 0.25 * 2, t, 'fire'); o.want = Math.round((5000 - ref.health) * 100) / 100; ref.dead = true;
+            applyElementalDamage(ref, (t.stats.attack || 5) * 0.25 * 2, t, 'fire', DMG_HIT_ALT); o.want = Math.round((5000 - ref.health) * 100) / 100; ref.dead = true;   // (the drill is the technician's alternate attack, Piercing: js/damage.js)
             techChipTap(t); o.prompt = techAimPrompt(); techAimPickEnemy(e); o.aiming = techAimActive(); const hp = []; let last = e.health;
             for (let i = 0; i < 600 && t._drill; i++) { __step(1); if (e.health !== last) { hp.push([frame, Math.round((last - e.health) * 100) / 100]); if (hp.length === 1) o.cool = techReadyIn(t); last = e.health; } }
             o.hits = hp.length; o.each = hp.map(h => h[1]); o.gaps = hp.slice(1).map((h, i) => h[0] - hp[i][0]);

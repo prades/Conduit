@@ -197,7 +197,7 @@ function _abForEachFoeInRadius(pred, radius, fn) {
 }
 
 function _abHurt(pred, victim, amount) {
-    applyDamage(victim, amount, pred);
+    applyDamage(victim, amount, pred, null, false, false, dmgAbilityHit(pred));   // (the special's type: js/damage.js)
 }
 
 function _abBurst(pred, color, radius, life, count) {
@@ -372,7 +372,7 @@ function _abStartActive(pred, def) {
             const foe = _abNearestFoe(pred, def.radius);
             if (foe) {
                 faceToward(pred, foe.x, foe.y, 1);
-                applyDamage(foe, pred.power * def.dmg, pred);
+                applyDamage(foe, pred.power * def.dmg, pred, null, false, false, DMG_HIT_ENEMY.piercing);   // (VENOM LANCE: Piercing)
                 foe.defenseShredded   = Math.max(foe.defenseShredded || 0, def.duration);
                 foe.defenseShredFactor = def.shred;
                 _abBurst(pred, def.color, 1.2, 30, 4);

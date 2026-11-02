@@ -211,7 +211,7 @@ function _bossShotsTick() {
 }
 function _bossImpact(s) {
     const x = s.x1, y = s.y1, R = s.radius;
-    if (typeof actors !== "undefined") for (const a of actors) { if (!a || a.dead || a.team !== "green" || !(a.isFollower || a.isClone) || a.untargetable) continue; if (Math.hypot(a.x - x, a.y - y) > R) continue; if (typeof applyDamage === "function") applyDamage(a, s.dmg, s.by, "toxic"); }
+    if (typeof actors !== "undefined") for (const a of actors) { if (!a || a.dead || a.team !== "green" || !(a.isFollower || a.isClone) || a.untargetable) continue; if (Math.hypot(a.x - x, a.y - y) > R) continue; if (typeof applyDamage === "function") applyDamage(a, s.dmg, s.by, "toxic", false, false, s.kind === "spit" ? DMG_HIT_ENEMY.projectile : DMG_HIT_ENEMY.earthquake); }
     if (typeof player !== "undefined" && Math.hypot(player.x - x, player.y - y) <= R && typeof hurtPlayer === "function" && (typeof predatorMayHurtPlayer !== "function" || predatorMayHurtPlayer())) { if (hurtPlayer(1, 7, { x, y })) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "TOXIC BURST", color: BOSS_COL, life: 40, vy: -0.05, size: 12 }); } }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x, y, color: BOSS_COL, radius: Math.max(0.6, R * 0.6), life: 22, element: "toxic" });
     if (typeof shake !== "undefined" && s.kind === "bomb") shake = Math.max(shake || 0, 5);

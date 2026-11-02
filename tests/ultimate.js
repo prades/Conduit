@@ -552,7 +552,7 @@ async function boot(store) {
         ok(/ARMY_SURGE_POWER/.test(body), 'the multiplier is not in the damage funnel');
         // The wheel's multiplier is applied inside applyDamage, so
         // applyElementalDamage hands on the plain amount.
-        ok(/function applyElementalDamage[\s\S]{0,600}applyDamage\(target, amount, source, element\)/.test(SRC.helpers),
+        ok(/function applyElementalDamage[\s\S]{0,1000}applyDamage\(target, amount, source, element[,)]/.test(SRC.helpers),   // (and what the hit is after, js/damage.js)
            'applyElementalDamage no longer funnels into applyDamage');
     });
 

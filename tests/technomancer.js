@@ -51,7 +51,7 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
     check('a click on a creature in reach: the gauntlet winds up for its windup frames, then lands for its damage, ELECTRIC (a number over it), and stores one charge; no round is spent', () => {
         const r = J(`(function(){ __tc(0); const e = __dummy(1.0, 0); playerAttackMode = true; const ammo = playerAmmo, h0 = e.health;
             const began = firePlayerShot(e); const o = { began, winding: mutatorLashing(), c0: technoCharge }; let land = null; for (let i = 0; i < 40 && land === null; i++) { render(); if (h0 - e.health > 1) land = i; }
-            o.land = land; o.dealt = h0 - e.health; o.dmg = weaponDamage('gauntlet') * defenseMult(e, { x: player.x, y: player.y }); o.ammo = playerAmmo - ammo; o.windup = WEAPONS.gauntlet.windup; o.charge = technoCharge;
+            o.land = land; o.dealt = h0 - e.health; o.dmg = weaponDamage('gauntlet') * defenseMult(e, { x: player.x, y: player.y }) * dmgRowMult(dmgRow(e), DMG_HIT_PUNCH.type) /* (the punch is Crushing, and an ant is weak to it: js/damage.js) */; o.ammo = playerAmmo - ammo; o.windup = WEAPONS.gauntlet.windup; o.charge = technoCharge;
             o.num = floatingTexts.find(t => t.world && /^\\d+$/.test(t.text)); o.num = o.num ? o.num.color : null; o.arcs = _tc.fx.length; return o; })()`);
         same(r.began, true, 'the punch did not begin'); same(r.winding, true, 'it did not wind up'); same(r.c0, 0, 'a charge before it landed');
         ok(r.land !== null && r.land >= r.windup - 2, 'it landed at frame ' + r.land + ' (wind-up ' + r.windup + ')'); near(r.dealt, r.dmg, 1.5, 'the punch took');
@@ -71,7 +71,7 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
     group('THE ARC: out of reach, with a charge; at once, jumping on, never to yours');
     check('a click on a creature out of reach with a charge throws the arc: at once, for the punch\'s damage × TECHNO.arc.mult, one charge spent, the player stays where it is, the arc\'s rest after it', () => {
         const r = J(`(function(){ __tc(1); const e = __dummy(4, 0); playerAttackMode = true; const x0 = player.x, y0 = player.y, h0 = e.health;
-            const fired = firePlayerShot(e); const o = { fired, dealt: h0 - e.health, want: technoArcDamage() * defenseMult(e, { x: player.x, y: player.y }), base: weaponDamage('gauntlet') * TECHNO.arc.mult, arc: technoArcDamage(), relays: technoRelays() };
+            const fired = firePlayerShot(e); const o = { fired, dealt: h0 - e.health, want: technoArcDamage() * defenseMult(e, { x: player.x, y: player.y }) * dmgRowMult(dmgRow(e), 'elemental'), base: weaponDamage('gauntlet') * TECHNO.arc.mult, arc: technoArcDamage(), relays: technoRelays() };
             o.charge = technoCharge; o.cd = player.attackCooldown; o.fx = _tc.fx.length; o.goal = mutatorLashGoal(); __frames(20); o.moved = Math.hypot(player.x - x0, player.y - y0); return o; })()`);
         same(r.fired, true, 'no arc'); near(r.dealt, r.want, 1.5, 'the arc took'); near(r.arc, r.base * (1 + TECHNO_PER_RELAY * r.relays), 0.06, 'the arc\'s damage');
         same(r.charge, 0, 'charges left'); same(r.cd, TECHNO_ARC_CD, 'the rest after it'); same(r.fx, 1, 'the arc drawn'); same(r.goal, null, 'the player was sent walking'); ok(r.moved < 0.01, 'the player moved ' + r.moved);
@@ -80,7 +80,7 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
         const r = J(`(function(){ __tc(1); const e1 = __dummy(4, 0), e2 = __dummy(5.5, 0.5), e3 = __dummy(6.5, 1.5), far = __dummy(9.5, 3.5);
             const f = followers[0]; f.x = e1.x + 0.9; f.y = e1.y - 0.6; const c = makeClone('ant', 'scout', e1.x + 0.6, e1.y + 0.8, 'hunt'); const nr = { x: e1.x - 0.8, y: e1.y + 0.5, team: 'red', isNeutralRecruit: true, dead: false, health: 10, maxHealth: 10 }; actors.push(nr);
             const H = [e1, e2, e3, far, f, c, nr].map(a => a.health); technoArc(e1); const d = [e1, e2, e3, far, f, c, nr].map((a, i) => Math.round((H[i] - a.health) * 10) / 10);
-            const o = { d, first: technoArcDamage() * defenseMult(e1, { x: player.x, y: player.y }), pts: _tc.fx[0] ? _tc.fx[0].pts.length : 0 }; c.dead = true; c.dismissed = true; actors = actors.filter(a => a !== nr); __frames(1); return o; })()`);
+            const o = { d, first: technoArcDamage() * defenseMult(e1, { x: player.x, y: player.y }) * dmgRowMult(dmgRow(e1), 'elemental'), pts: _tc.fx[0] ? _tc.fx[0].pts.length : 0 }; c.dead = true; c.dismissed = true; actors = actors.filter(a => a !== nr); __frames(1); return o; })()`);
         near(r.d[0], r.first, 1.5, 'the first creature'); near(r.d[1], r.first * TECHNO_CHAIN_PCT, 1.5, 'the second'); near(r.d[2], r.first * TECHNO_CHAIN_PCT, 1.5, 'the third');
         same(r.d[3], 0, 'the creature out of the jump\'s reach'); same(r.d[4], 0, 'the follower'); same(r.d[5], 0, 'the clone'); same(r.d[6], 0, 'the recruit'); same(r.pts, 4, 'the arc drawn through the player and three creatures');
     });
@@ -110,7 +110,7 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
     check('the punches fill the gauntlet and the arcs spend it: two punches at the creature in reach store two charges; two arcs at one out of reach spend them; a third click, with none left, walks in', () => {
         const r = J(`(function(){ __tc(0); const near = __dummy(1.0, 0), far = __dummy(0.5, -4); playerAttackMode = true; const hf = far.health;
             playerLockTarget = near; gunHold = { x: 0, y: 0, pending: true, released: false, until: 0, button: true }; const punches = __hits(near, 2 * (WEAPONS.gauntlet.windup + weaponCooldown('gauntlet')) - 4).length; gunHold = null; __frames(40);
-            const o = { punches, after: technoCharge }; o.a1 = firePlayerShot(far); __frames(TECHNO.arc.cooldown + 1); o.a2 = firePlayerShot(far); o.spent = technoCharge; o.farHit = Math.round(hf - far.health); o.two = Math.round(2 * technoArcDamage() * defenseMult(far, { x: player.x, y: player.y }));
+            const o = { punches, after: technoCharge }; o.a1 = firePlayerShot(far); __frames(TECHNO.arc.cooldown + 1); o.a2 = firePlayerShot(far); o.spent = technoCharge; o.farHit = Math.round(hf - far.health); o.two = Math.round(2 * technoArcDamage() * defenseMult(far, { x: player.x, y: player.y }) * dmgRowMult(dmgRow(far), 'elemental'));   // (the arc is Elemental, and an ant resists it: js/damage.js)
             __frames(TECHNO.arc.cooldown + 1); o.a3 = firePlayerShot(far); o.walk = mutatorLashGoal() === far; mutatorCancel(); return o; })()`);
         same(r.punches, 2, 'punches'); same(r.after, 2, 'charges after two punches'); same(r.a1, true, 'the first arc'); same(r.a2, true, 'the second arc'); same(r.spent, 0, 'charges after two arcs');
         near(r.farHit, r.two, 2, 'the creature out of reach took'); same(r.a3, false, 'a third arc with no charge'); same(r.walk, true, 'with no charge the gauntlet did not walk in');

@@ -47,12 +47,12 @@ function throwFireBomb(x, y, dx, dy, dist, opts) {
     const o = opts || {}, len = Math.hypot(dx, dy) || 1, vz = 0.2, z0 = FIRE_MUZZLE_Z;
     const T = (vz + Math.sqrt(vz * vz + 2 * FIRE_GRAVITY * z0)) / FIRE_GRAVITY;   // frames until it first lands
     const sp = Math.max(0.02, dist) / T;
-    const b = { x, y, z: z0, vx: dx / len * sp, vy: dy / len * sp, vz, bounces: o.bounces === undefined ? FIRE_BOUNCES : o.bounces, dmg: o.dmg || 8, burn: o.burn || 3, big: !!o.big, src: o.src || null, life: 420, walls: 0, px: x, py: y };
+    const b = { x, y, z: z0, vx: dx / len * sp, vy: dy / len * sp, vz, bounces: o.bounces === undefined ? FIRE_BOUNCES : o.bounces, dmg: o.dmg || 8, burn: o.burn || 3, big: !!o.big, src: o.src || null, hit: o.hit || null, life: 420, walls: 0, px: x, py: y };
     fireBombs.push(b); return b;
 }
 function _fireSplash(b) {
     const near = typeof unitsNear === "function" ? unitsNear(b.x, FIRE_SPLASH_R + 1) : actors;
-    for (const a of near) { if (!a || a.dead || !(typeof isHostileTarget === "function" && isHostileTarget(a))) continue; if (Math.hypot(a.x - b.x, a.y - b.y) <= FIRE_SPLASH_R) { applyDamage(a, b.dmg, b.src, "fire"); a.burning = Math.max(a.burning || 0, 90); a.burnDamage = Math.max(a.burnDamage || 0, b.burn * 0.1); } }
+    for (const a of near) { if (!a || a.dead || !(typeof isHostileTarget === "function" && isHostileTarget(a))) continue; if (Math.hypot(a.x - b.x, a.y - b.y) <= FIRE_SPLASH_R) { applyDamage(a, b.dmg, b.src, "fire", false, false, b.hit); a.burning = Math.max(a.burning || 0, 90); a.burnDamage = Math.max(a.burnDamage || 0, b.burn * 0.1); } }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: b.x, y: b.y, color: "#ff7a1a", radius: b.big ? 0.8 : 0.5, life: 14, element: "fire" });
 }
 function _fireBurst(b) {
@@ -100,12 +100,12 @@ function fireBombsTick() {
 }
 // ── FIRE FOLLOWERS ──
 // `n` bombs from a follower at a target, fanned `spread` radians apart, landing at (or just short of) it. `dmg` is each landing's splash; the little hit of the fire it leaves is a tenth of it.
-function throwFireBombsAt(actor, target, n, spread, dmg) {
+function throwFireBombsAt(actor, target, n, spread, dmg, hit) {   // hit: what each splash is (js/damage.js): an element special's, or the FIRE BOMBS move's
     if (!actor || !target) return 0;
     const dx = target.x - actor.x, dy = target.y - actor.y, d = Math.hypot(dx, dy) || 1, dist = Math.max(1.5, Math.min(8, d)), L = n > 1 ? spread : 0;
     for (let i = 0; i < n; i++) {
         const th = (i - (n - 1) / 2) * L, c = Math.cos(th), s = Math.sin(th);
-        throwFireBomb(actor.x, actor.y, (dx * c - dy * s) / d, (dx * s + dy * c) / d, dist, { dmg, burn: Math.max(2, Math.min(10, dmg * 0.1)), bounces: FIRE_BOUNCES - 1, src: actor });
+        throwFireBomb(actor.x, actor.y, (dx * c - dy * s) / d, (dx * s + dy * c) / d, dist, { dmg, burn: Math.max(2, Math.min(10, dmg * 0.1)), bounces: FIRE_BOUNCES - 1, src: actor, hit: hit || null });
     }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: actor.x, y: actor.y, color: "#ff7a1a", radius: 0.4, life: 10, element: "fire" });
     actor.fireOrbitTimer = 30; return n;
@@ -117,7 +117,7 @@ function fireBombBarrage(f) {
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const f0 = typeof frame !== "undefined" ? frame : 0;
-    throwFireBombsAt(f, foes[0], 3, 0.3, (f.power || 10) * 0.9);
+    throwFireBombsAt(f, foes[0], 3, 0.3, (f.power || 10) * 0.9, DMG_HIT_SPECIAL_ATK);
     f._sigAt = f0; f._sigCd = FIRE_BARRAGE_EVERY;
     { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "FIRE BOMBS", color: "#ff8a3a", life: 50, vy: -0.06, size: 10 });

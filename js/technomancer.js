@@ -75,7 +75,7 @@ function technoArc(foe) {
 // one creature in the arc: the damage, and a bite being wound up is cut short
 function _tcZap(a, dmg) {
     const src = { x: player.x, y: player.y, team: "green", element: "electric", isPlayer: true };
-    if (typeof applyElementalDamage === "function") applyElementalDamage(a, dmg, src, "electric"); else applyDamage(a, dmg, src, "electric");
+    if (typeof applyElementalDamage === "function") applyElementalDamage(a, dmg, src, "electric", DMG_HIT_ARC); else applyDamage(a, dmg, src, "electric", false, false, DMG_HIT_ARC);
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#7ff2ff", radius: 0.6, life: 14 });
     if (!a.dead && TECHNO.arc.stagger > 0 && a.attackWindup > 0) {
         a.attackWindup = 0; a.biteTarget = null; a.attackAnim = 0; a.attackCooldown = Math.max(a.attackCooldown || 0, TECHNO.arc.stagger);

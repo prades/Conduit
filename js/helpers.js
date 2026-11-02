@@ -148,7 +148,7 @@ function hurtPlayer(amount, shakeAmt, source) {
 
 
 
-function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false) {   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds
+function applyDamage(target, amount, source=null, element=null, isReflected=false, fixed=false, hit=null) {   // fixed: a set amount (a Kinetic Launcher's thrown follower, js/techabilities.js): no defense, bond or perk changes it; the cap still holds. hit: what the hit is (js/damage.js): its two parts meet the target's row and the element triangle
     if (!target || target.dead) return;
     // A recruit walking to the Crystal takes NOTHING, from anyone or anything.
     //
@@ -195,8 +195,11 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (target instanceof Predator && target.team !== "green") {
         target.provoked = true; target.state = "hunt";
     }
-    // THE ELEMENT WHEEL: every hit whose element is known (the hit's own, or its attacker's) against any target with an element (js/elements.js getElementMultiplier).
-    { const _el = element || (source && source.element); if (_el && target.element) amount *= getElementMultiplier(_el, target.element); }
+    // THE DAMAGE SYSTEM (js/damage.js, docs/COMBAT.md §7): a hit that says what it is splits into a physical part (its type, against the target's row) and an
+    // elemental part (against the row's Elemental and the element triangle). A hit that says nothing keeps THE ELEMENT WHEEL: the triangle on the whole hit
+    // (a burn's or a pool's tick, a reflected hit, a card's echo).
+    if (hit && !fixed && !isReflected && typeof dmgApply === "function") amount = dmgApply(target, amount, source, element, hit);
+    else { const _el = element || (source && source.element); if (_el && target.element) amount *= getElementMultiplier(_el, target.element); }
     if (target.untargetable) return;   // underground: nothing reaches it
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
@@ -285,13 +288,16 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     }
 }
 
-function applyElementalDamage(target, amount, source, element) {
+function applyElementalDamage(target, amount, source, element, hit) {
     if (!target || target.dead) return;
-    const mult = getElementMultiplier(element, target.element);
-    if (mult > 1) floatingTexts.push({world:true,x:target.x,y:target.y,text:'WEAK!',color:'#ffcc00',life:40,vy:-0.04});
-    else if (mult < 1) floatingTexts.push({world:true,x:target.x,y:target.y,text:'RESIST',color:'#88aaff',life:40,vy:-0.04});
-    // The multiplier itself is applied inside applyDamage; this only says WEAK / RESIST.
-    applyDamage(target, amount, source, element);
+    // A hit that says what it is (js/damage.js) gets a word for each of its parts there; one that does not keeps the old WEAK! / RESIST for the element.
+    if (!hit) {
+        const mult = getElementMultiplier(element, target.element);
+        if (mult > 1) floatingTexts.push({world:true,x:target.x,y:target.y,text:'WEAK!',color:'#ffcc00',life:40,vy:-0.04});
+        else if (mult < 1) floatingTexts.push({world:true,x:target.x,y:target.y,text:'RESIST',color:'#88aaff',life:40,vy:-0.04});
+    }
+    // The multiplier itself is applied inside applyDamage.
+    applyDamage(target, amount, source, element, false, false, hit || null);
 }
 
 // ──────────────────────────────────────────────────────

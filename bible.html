@@ -1020,7 +1020,7 @@
         <li>out of reach, with a charge, within arc range and in sight: an arc;</li>
         <li>otherwise you walk in to punch.</li>
       </ul></li>
-    <li><b>The punch</b> is the Mutator's melee: walk in, wind up, hit. It deals electric damage, so the element wheel applies. A slip is a MISS.</li>
+    <li><b>The punch</b> is the Mutator's melee: walk in, wind up, hit. It is Crushing (the damage types); its electric charge still sets the element wheel on the whole hit. A slip is a MISS.</li>
     <li><b>The arc</b> hits at once for punch × multiplier × (1 + bonus × relays online), then jumps to the nearest creature within jump reach of the last, for a share. It never jumps to your side, a recruit or you. A creature it hits while rearing to bite loses the bite (INTERRUPTED) and cannot rear again for a while. It costs a charge, then a rest; you stay put.</li>
     <li><b>The grid.</b> In a powered room, a charge comes every interval until full (the pill: <code>n/6 · GRID</code>). It repairs relays with one cell, starting by itself, and the charger gives it a cell.</li>
   </ul>
@@ -1375,7 +1375,8 @@
 <h3 id="followers-elements">Elements</h3>
 <p>The element sets the follower's colour, its attacks, its ultimate, its technician ability and its evolved form. It is fixed for life: a pad's egg says it, a recruit draws it, and a re-roll keeps it. Every element is online from the first frame, so there is nothing to unlock.</p>
 <ul>
-<li><b>The wheel</b> is two triangles: FIRE beats FLUX, FLUX beats TOXIC, TOXIC beats FIRE; ELECTRIC beats CORE, CORE beats ICE, ICE beats ELECTRIC. A hit of the element that beats the target's does ×<span class="n" data-k="getElementMultiplier('fire', 'flux')">1.3</span>, the reverse ×<span class="n" data-k="getElementMultiplier('flux', 'fire')">0.7</span>, and ice on core ×<span class="n" data-k="getElementMultiplier('ice', 'core')">0</span> (no damage). It applies to every hit, by either side, on anything with an element. A hit's element is the attack's own, else its attacker's, so a mage's shot, a plain hit and a signature move all carry the follower's element; WEAK! or RESIST floats over the target.</li>
+<li><b>The wheel</b> is two triangles: FIRE beats FLUX, FLUX beats TOXIC, TOXIC beats FIRE; ELECTRIC beats CORE, CORE beats ICE, ICE beats ELECTRIC. A hit of the element that beats the target's does ×<span class="n" data-k="getElementMultiplier('fire', 'flux')">1.3</span>, the reverse ×<span class="n" data-k="getElementMultiplier('flux', 'fire')">0.7</span>, and ice on core ×<span class="n" data-k="getElementMultiplier('ice', 'core')">0</span> (no damage). Since build 2026-11-02a it acts on a hit's <b>elemental part</b> only (the damage types, next): a follower's hit is part physical and part elemental, an enemy's half and half when the enemy has an element. A hit that says nothing, such as a burn's or a pool's tick, still meets it whole. A word for each part of a hit floats over the target: SLASHING WEAK!, FIRE RESIST, ICE IMMUNE.</li>
+<li><b>Damage types</b> (<code>js/damage.js</code>, docs/COMBAT.md §7). Six: Slashing, Piercing, Projectile, Crushing, Earthquake, Elemental. A follower's hit does its number × (<span class="n" data-k="1 - DMG_PHYSICAL_W">0.5</span> ATK + <span class="n" data-k="DMG_PHYSICAL_W">0.5</span> SP.ATK): the ATK share is physical, of its form's type, and the SP.ATK share elemental, in its element. An attack typed Elemental takes <span class="n" data-k="1 - DMG_ELEMENTAL_W">0.25</span> and <span class="n" data-k="DMG_ELEMENTAL_W">0.75</span>. Each creature race, and each follower subclass, is weak to some types (×<span class="n" data-k="DMG_WEAK">1.3</span>) and resists others (×<span class="n" data-k="DMG_RESIST">0.7</span>). The player's and the turrets' hits are all of their type. Each evolved form leans its stats toward ATK or SP.ATK, a step of <span class="n" data-k="DMG_LEAN_STEP">0.1</span>. Each attack's number is retuned (<code>dmgNorm</code>), so a follower at its class's average stats does what it did before the split, its form's lean included.</li>
 <li><b>A follower's attacks</b> (<code>followerAttack</code>). With at least <span class="n" data-k="WILL_COST_PHYSICAL">1</span> WILL it uses its element's <b>physical</b>. With at least <span class="n" data-k="WILL_COST_SPECIAL">4</span> WILL there is a 15% chance of its <b>special</b> instead; core has no special. With less than 1 WILL it lands a plain hit of 0.25 × attack, and its element still counts. The cooldowns are 45 frames after a plain hit, 40 after a physical and 70 after a special. WILL comes back by <span class="n" data-k="WILL_REGEN_RATE">0.005</span> a frame.</li>
 <li><b>Who uses them:</b> a brawler in striking range, a technician at contact, any role under a POSITION order, and a core technician behind its shield. A mage in its normal behaviour fires a plain shot instead (see Roles).</li>
 </ul>
@@ -1518,7 +1519,7 @@
 <li>The combat numbers are “a first pass so a fight can be read; they are not balance” (docs/COMBAT.md §3). The first assault is “tuned by feel” (docs/TUTORIAL.md:107).</li>
 </ul></div>
 <h3 id="followers-forms">Evolution and the forms</h3>
-<p>At level <span class="n" data-k="EVOLVE_LEVEL">10</span> a follower with a form for its element and role <b>evolves</b> on the spot. It sheds the egg and becomes a machine, and it keeps that form for good: through death, respawn, a reload and a re-roll. Its role becomes the form's, its health and power are ×<span class="n" data-k="EVOLVE_MULT">1.25</span>, and it may have a <b>signature move</b> that it fires by itself. There are <span class="n" data-k="Object.values(EVOLUTIONS).filter(function (e) { return !e.legacy; }).length">18</span> forms, one for each element and role, so every follower evolves at 10.</p>
+<p>At level <span class="n" data-k="EVOLVE_LEVEL">10</span> a follower with a form for its element and role <b>evolves</b> on the spot. It sheds the egg and becomes a machine, and it keeps that form for good: through death, respawn, a reload and a re-roll. Its role becomes the form's, its health, ATK and SP.ATK are ×<span class="n" data-k="EVOLVE_MULT">1.25</span> (and its form leans its stats toward ATK or SP.ATK), and it may have a <b>signature move</b> that it fires by itself. There are <span class="n" data-k="Object.values(EVOLUTIONS).filter(function (e) { return !e.legacy; }).length">18</span> forms, one for each element and role, so every follower evolves at 10.</p>
 <ul>
 <li><b>When.</b> At every level-up, and every 30 frames for a follower that has not evolved, <code>evoCheck</code> looks up <code>evolutionFor(f)</code>: the form, not legacy, with its element and role (a hybrid counts as a brawler).</li>
 <li><b>The molt</b> takes <span class="n" data-k="EVO_MOLT">120</span> frames. In the first 30% the egg shakes and cracks; then the glass bursts, the legs drop and the machine rises. “◆ EVOLVED · NAME” floats over it, the screen shakes, and its health is set to full.</li>
@@ -1612,7 +1613,7 @@
 <div class="tw"><table>
 <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
 <tr><td>Evolution level</td><td class="num"><span class="n" data-k="EVOLVE_LEVEL">10</span></td><td><code>js/evolution.js:114</code></td></tr>
-<tr><td>Health and power of a form</td><td class="num">×<span class="n" data-k="EVOLVE_MULT">1.25</span></td><td><code>js/evolution.js:115</code></td></tr>
+<tr><td>Health, ATK and SP.ATK of a form</td><td class="num">×<span class="n" data-k="EVOLVE_MULT">1.25</span></td><td><code>js/evolution.js:115</code></td></tr>
 <tr><td>The molt</td><td class="num"><span class="n" data-k="EVO_MOLT">120</span> frames (<span class="n" data-k="EVO_MOLT" data-f="f">2 s</span>)</td><td><code>js/evolution.js:116</code></td></tr>
 <tr><td>A move's action frames</td><td class="num"><span class="n" data-k="EVO_ACT_FRAMES">40 frames</span></td><td><code>js/evolution.js:127</code></td></tr>
 <tr><td>First move after the molt</td><td class="num">90 frames</td><td><code>js/evolution.js:261</code> (literal)</td></tr>
@@ -2518,7 +2519,7 @@
   <p><b>The wheel.</b> Fire beats Flux beats Toxic beats Fire; Electric beats Core beats Ice beats Electric. The element that beats the target's does ×<span class="n" data-k="getElementMultiplier('fire','flux')">1.3</span>, the one it beats ×<span class="n" data-k="getElementMultiplier('flux','fire')">0.7</span>, and ice does <span class="n" data-k="getElementMultiplier('ice','core')">0</span> to core.</p>
   <ul>
     <li><b>It almost never applies:</b> no creature has an element.</li>
-    <li><b>The one live case:</b> a creature's toxic ticks on your followers, ×<span class="n" data-k="getElementMultiplier('toxic','fire')">1.3</span> on a fire follower.</li>
+    <li><b>The live cases:</b> the toxic brood's and the Toxic Queen's hits, half of each toxic since build 2026-11-02a, and a creature's toxic ticks on your followers, ×<span class="n" data-k="getElementMultiplier('toxic','fire')">1.3</span> on a fire follower.</li>
     <li><b>Projectiles</b> carry no element to the shield check.</li>
   </ul>
   <div class="tw"><table>
@@ -3435,7 +3436,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-01n</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-02a</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3655,7 +3656,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-01n (1 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-02a (2 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

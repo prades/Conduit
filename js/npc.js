@@ -151,7 +151,7 @@ function updateRTSNPC(actor) {
         else {
             let dmg=actor.power*0.3;
             if (actor.damageMultiplier) dmg*=actor.damageMultiplier;
-            applyDamage(enemy,dmg,actor);
+            applyDamage(enemy,dmg,actor,null,false,false,DMG_HIT_MAIN);   // (its main attack: js/damage.js)
             if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor,dmg); }
             if (enemy.health<=0) { enemy.dead=true; actor.job=null; actor.firstStrikeUsed=false; }
         }
@@ -277,7 +277,7 @@ function updateRTSNPC(actor) {
                         const elDef = ELEMENTS.find(e=>e.id===actor.element);
                         const col   = elDef ? elDef.color : "#fff";
                         const dmg   = (actor.stats?.specialAttack||10) * 0.5;
-                        spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, null);
+                        spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, null, DMG_HIT_SHOT);   // (a Mage's shot reads SP.ATK: js/damage.js)
                         actor.attackCooldown = followerRest(actor, 55);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
                         if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
                     } else {

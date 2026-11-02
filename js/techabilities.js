@@ -439,7 +439,7 @@ function _techDrillTick(f, f0) {
     if (!W.hits) f._abReadyAt = f0 + techCooldown(f, T.cooldown);
     W.hits++; W.next = f0 + T.every;
     const dmg = ((f.stats && f.stats.attack) || 5) * 0.25 * T.foeMult;
-    if (typeof applyElementalDamage === "function") applyElementalDamage(foe, dmg, f, "fire"); else if (typeof applyDamage === "function") applyDamage(foe, dmg, f, "fire");
+    if (typeof applyElementalDamage === "function") applyElementalDamage(foe, dmg, f, "fire", DMG_HIT_ALT); else if (typeof applyDamage === "function") applyDamage(foe, dmg, f, "fire", false, false, DMG_HIT_ALT);
     _techDrillFx(foe.x, foe.y);
     if (W.hits >= T.foeHits || foe.dead) _techDrillStop(f, null);
 }
@@ -659,7 +659,7 @@ function _techLand(a, F) {
     if (F.kind === "combat") {
         const foe = F.foe, hit = !!foe && !foe.dead && Math.hypot(foe.x - a.x, foe.y - a.y) <= T.hitReach;
         if (hit) {
-            if (typeof applyDamage === "function") applyDamage(foe, (a.power || 10) * T.powerMult, a);
+            if (typeof applyDamage === "function") applyDamage(foe, (a.power || 10) * T.powerMult, a, null, false, false, DMG_HIT_LAUNCH);   // (the landing: Earthquake, js/damage.js)
             if (!F.xpDone && F.by && !F.by.dead && typeof gainXp === "function" && typeof killXp === "function") { F.xpDone = true; gainXp(F.by, killXp(foe)); }   // a throw that hits: the technician's XP, once
             if (!foe.dead) a.attackOrder = { target: foe, until: _techFrame() + 600 };   // (it fights the one it was thrown at)
             if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text: "⚡ KINETIC IMPACT", color: "#ffe733", life: 60, vy: -0.06, size: 12 });

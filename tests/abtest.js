@@ -40,7 +40,7 @@ const _helpers = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8')
 if (!_helpers) { console.log('  FAIL could not find hurtPlayer in js/helpers.js'); process.exit(1); }
 vm.runInContext(_helpers[0], ctx, { filename: 'helpers.js:hurtPlayer' });
 
-for (const f of ['js/species.js', 'js/abilities.js']) {
+for (const f of ['js/species.js', 'js/damage.js', 'js/abilities.js']) {   // (damage.js: what each special's hit is, js/abilities.js _abHurt)
     vm.runInContext(fs.readFileSync(ROOT + '/' + f, 'utf8'), ctx, { filename: f });
 }
 const run = s => vm.runInContext(s, ctx);

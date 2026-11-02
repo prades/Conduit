@@ -5,8 +5,8 @@
   - the order A, B, C ("Damage first");
   - names for the 21 new cards drafted by the agent for the owner's approval.
 
-  Build A in progress; nothing is implemented yet.
-- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at `8a056dd` (the framework docs); the branch is ten design-doc commits ahead, and code is unchanged. The update's builds would be stamped from `2026-11-02a` on (or the date they are built).
+  **Build A is implemented** in build `2026-11-02a`, on the branch only. Its tests and a full run are in its commit, and its before-and-after numbers are in `COMBAT.md` §7.10. It is not playtested. Builds B and C are not started; B waits on the 21 card names (section 4).
+- **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-01n`. Main is at `8a056dd` (the framework docs). The branch is twelve design-doc commits ahead, plus Build A's commit (`2026-11-02a`). The update's later builds are stamped from `2026-11-02b` on (or the date they are built).
 - **Last updated:** 2026-11-02
 - **What decides the scope:**
   - **In:** everything with an approved design and its numbers.
@@ -55,6 +55,12 @@ Each build is its own commit with its own tests and a full green run before the 
 - **Tests:**
   - **New:** tests/damage.js. It checks every type against every row, the split's shares (§7.6's table), the triangle on the elemental part, ice on core, the leans, the retired forms and the words.
   - **Updated:** combat, threehits, prey, evolution, techabilities, clones, series2abilities, packs (the statuses' procs) and bible (the numbers the Bible quotes).
+  - **As built:**
+    - Worked out by the new rules: evolution, techabilities, crystalline, packs, technomancer and techlevel1 (evolving's SP.ATK, the leans, the split, the rows).
+    - abtest, facing and weapon load js/damage.js into their own sandboxes; ultimate's source check allows the hit argument.
+    - combat, threehits, prey, clones and series2abilities pass unchanged.
+    - The Bible's new numbers are tagged, and tests/bible.js checks them.
+    - The full run (85 suites) passes.
 - **Risks:**
   - Every fight's numbers move; the retune and the before-and-after measurement keep that in sight.
   - Frame cost: two parts per hit and a table lookup, nothing per frame.
@@ -122,9 +128,9 @@ Each build is its own commit with its own tests and a full green run before the 
 ## 4. Approvals needed before or during the builds
 
 - **This scope and order** (A, then B, then C).
-- **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval.
+- **Before Build B:** names for the 21 new cards (18 auras, 3 opportunity cards). The agent drafts them for approval. Drafted 2026-11-02 (`UNIVERSAL-AND-PLAYER-CARDS.md`, "The 21 new cards' names"); waiting on the owner.
 - **During Build B:** the aura's Prototype extra (a first-guess 5% chance); a screenshot of the rings and glints.
-- **During Build A:** a screenshot of the words per part.
+- **During Build A:** a screenshot of the words per part. Taken and sent with Build A's handoff; waiting on the owner.
 
 ## 5. Acceptance for the whole update
 

@@ -2,6 +2,38 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-02
+
+- **a · The damage system: six damage types, weaknesses and resistances, every follower hit part physical and part elemental** (the owner's design of 2026-11-02, approved in prompts, docs/COMBAT.md §7; docs/NEXT-UPDATE.md Build A, "Damage first"; on the branch only; commit named in git log).
+  - **Six types:** Slashing, Piercing, Projectile, Crushing, Earthquake, Elemental. Every attack in the game says which it is (COMBAT.md §7.10 lists them): a follower's by its form (§7.4), a creature's by its race (§7.8), yours and the turrets' by the weapon (§7.8).
+  - **Weak ×1.3, resists ×0.7:**
+    - each creature race by its row (§7.3), a boss by its race's;
+    - each follower by its subclass (§7.8), the clone by its race;
+    - an egg, the player, the turrets and the Crystal have no row.
+  - **A follower's hit is part physical, part elemental:** its number × (½ ATK + ½ SP.ATK). An Elemental attack takes ¼ and ¾, and its physical quarter has no type.
+    - The physical part meets the row by its type.
+    - The elemental part meets the row's Elemental and the element triangle.
+    - Ice on core: the elemental part does nothing, the physical part lands (it did nothing at all).
+  - **Enemies' hits** are all physical; the toxic brood's and the Queen's are half and half. **Your hits** are all of their type.
+  - **Stats:** evolving raises SP.ATK by 1.25 too, and each evolved form leans its stats 10% a step (§7.7). Nothing new is saved.
+  - **The retune:** each attack's number is scaled so a follower at its class's average stats does what it did before, its form's lean included.
+  - **On screen, a word per part:** SLASHING WEAK! in gold, FIRE RESIST in blue, ICE IMMUNE. They stack over the hit's number, one set per target every 12 frames. A hit that says nothing (a tick, a card's echo) keeps the old WEAK! and RESIST.
+  - **Measured before and after** (COMBAT.md §7.10, tests/measure_damage.js):
+    - Class damage holds: Brawler 475 → 477, Mage 254 → 259, Technician 159 → 168 (the race chart favours their Crushing and Piercing).
+    - A Mage now swings with the race (moth +27%, scorpion +18%, spider −17%, ant −22%).
+    - Of §1's six fights, four end the same. The fire Technician (a drone, weak to the beetle's Crushing) falls 1.9 s sooner. The flux Mage (a mollusk, resisting the moth's Crushing) lasts 3.7 s longer.
+    - The measuring harness was made leak-free first (§7.10).
+  - **Readings for the owner to confirm** (docs/OPEN-QUESTIONS.md): BLINDING DUST's ticks were kept; an egg Mage's shot is Projectile; a player's elemental weapon keeps the triangle on the whole hit; the words' place on screen.
+  - **Files and tests:**
+    - New: js/damage.js, tests/damage.js (25 checks), tests/measure_damage.js (a measurement, run by hand).
+    - Tests updated:
+      - evolution, techabilities, crystalline, packs, technomancer (the punch is Crushing, the arc Elemental) and techlevel1 (the drill) work their references out by the new rules;
+      - abtest, facing and weapon load js/damage.js into their hand-built sandboxes;
+      - ultimate's check that `applyElementalDamage` still funnels into `applyDamage` allows the hit argument.
+    - The full run (85 suites) passes.
+    - Written up: docs/COMBAT.md §7 (§7.10 new), docs/NEXT-UPDATE.md, docs/OPEN-QUESTIONS.md, and the Bible (the damage types, the punch, evolving).
+    - The INFO and the game index say evolving raises special attack too.
+
 ## 2026-11-01
 
 - **n · Pack 1's eighteen card items for everyone** (the owner: "Yes push the card art for everyone"; commit named in git log).

@@ -98,13 +98,13 @@ function fireLaserShot(foe) {
     }
     laserCharge--; playerShotsFired++; player.gunShotAt = typeof frame !== "undefined" ? frame : 0;
     const dmg = weaponDamage("laser"), src = { x: player.x, y: player.y, element: player.selectedElement || null, isPlayer: true }, f = typeof frame !== "undefined" ? frame : 0;
-    applyDamage(foe, dmg, src);
+    applyDamage(foe, dmg, src, null, false, false, DMG_HIT_GUN);
     // whatever stands in the line behind it, a little further on, is hit for less
     const ux = (foe.x - player.x) / (d || 1), uy = (foe.y - player.y) / (d || 1), reach = Math.min(W.range, d + 3);
     for (const a of actors) {
         if (!a || a.dead || a === foe || !isHostileTarget(a)) continue;
         const ax = a.x - player.x, ay = a.y - player.y, t = ax * ux + ay * uy; if (t < 0 || t > reach) continue;
-        if (Math.abs(ax * uy - ay * ux) < 0.75) applyDamage(a, dmg * W.pierce, src);
+        if (Math.abs(ax * uy - ay * ux) < 0.75) applyDamage(a, dmg * W.pierce, src, null, false, false, DMG_HIT_GUN);
     }
     const ex = player.x + ux * reach, ey = player.y + uy * reach;
     (_fp.beams = _fp.beams || []).push({ x0: player.x, y0: player.y, x1: ex, y1: ey, t0: f });

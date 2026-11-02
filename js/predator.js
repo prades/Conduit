@@ -188,7 +188,7 @@ class Predator {
         if (target === crystal) { if (walled(crystal)) return null; crystal.health = Math.max(0, crystal.health - pwr); shake = Math.max(shake, 6); return crystal; }
         if (target && target.sentry) { if (walled(target)) return null; if (typeof sentryDamage === "function") sentryDamage(target, pwr, this); return target; }   // a TURRET a raider wrecks (js/antraids.js)
         const inReach = a => { const dx = a.x - this.x, dy = a.y - this.y; return dx * dx + dy * dy <= reach2 && !across(a); };
-        if (this.disorientFF > 0) { let n = null; actors.forEach(a => { if (a === this || a.dead || a.team !== "red" || a.isClone || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
+        if (this.disorientFF > 0) { let n = null; actors.forEach(a => { if (a === this || a.dead || a.team !== "red" || a.isClone || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this, null, false, false, dmgBiteHit(this)); n = a; }); return n; }
         const hitTeam = this.isClone ? "red" : "green";
         if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: this.x, y: this.y, text: "MISS", color: "#aabb88", life: 30, vy: -0.04 }); return null; }   // the smoke screen: half its bites miss
         // THE PLAYER (its prey too, COMBAT.prey): one of its three hits, and a step back (hurtPlayer; the grace after a hit spaces them). Out of reach when it lands: missed.
@@ -198,11 +198,11 @@ class Predator {
             if (this.className === "nymph" && this.element === "toxic" && typeof playerPoison === "function") playerPoison();   // a TOXIC NYMPH's bite (the Toxic Queen's brood, js/bosses.js) poisons you for a moment (js/combat.js)
             return player;
         }
-        if (B.splash) { let n = null; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this); n = a; }); return n; }
+        if (B.splash) { let n = null; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a) || !inReach(a)) return; applyDamage(a, pwr, this, null, false, false, dmgBiteHit(this)); n = a; }); return n; }
         if (target && !target.dead && target.team === hitTeam && walled(target)) return null;   // (the one it reared back at is behind a shield: stopped, and the shield shows it)
         let t = target && !target.dead && target.team === hitTeam && !isNeutralBystander(target) && inReach(target) ? target : null;
         if (!t) { let bd = reach2; actors.forEach(a => { if (a.dead || a.team !== hitTeam || isNeutralBystander(a)) return; const dx = a.x - this.x, dy = a.y - this.y, d2 = dx * dx + dy * dy; if (d2 <= bd) { bd = d2; t = a; } }); }
-        if (t) applyDamage(t, pwr, this);
+        if (t) applyDamage(t, pwr, this, null, false, false, dmgBiteHit(this));   // (its race's bite type, or a clone's Piercing: js/damage.js)
         return t;
     }
     // The bite's two beats, once a target is in reach: the rest runs down, then it REARS BACK for COMBAT.bite.windup frames (attackWindup counts down; the telegraph is drawn over it, js/combat.js
@@ -558,8 +558,9 @@ class Predator {
                                 applySlow(hit, 300, 0.20);   // 5s at 20% speed — very heavy
                                 floatingTexts.push({ world:true, x:hit.x, y:hit.y, text:"WEB!", color:"#cceeaa", life:35, vy:-0.05 });
                             }
-                            if (chargeElem) applyElementalDamage(hit, shotDamage * 0.5, this, chargeElem);
-                        }
+                            if (chargeElem) applyElementalDamage(hit, shotDamage * 0.5, this, chargeElem, DMG_HIT_ELEMENTAL);
+                        },
+                        DMG_HIT_ENEMY.projectile   // (the shot itself: Projectile, js/damage.js)
                     );
                     // Tag projectile so it hits green team (predator shots target player's side); a clone's hits the creatures (untagged: isHostileTarget, js/game.js)
                     if (followerProjectiles.length > 0 && !this.isClone) {

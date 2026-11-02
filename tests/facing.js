@@ -32,7 +32,7 @@ const sandbox = {
 };
 sandbox.globalThis = sandbox;
 const ctx = vm.createContext(sandbox);
-for (const f of ['js/species.js', 'js/combat.js', 'js/abilities.js', 'js/predator.js']) {   // (combat.js: the COMBAT table the bite reads)
+for (const f of ['js/species.js', 'js/combat.js', 'js/damage.js', 'js/abilities.js', 'js/predator.js']) {   // (combat.js: the COMBAT table the bite reads; damage.js: what a bite's and a special's hit is)
     vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), ctx, { filename: f });
 }
 const run = s => vm.runInContext(s, ctx);

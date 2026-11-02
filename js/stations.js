@@ -257,7 +257,7 @@ function facilitySentryTick() {
         if (!best) continue;
         if (typeof crystalDraw === "function" && !crystalDraw("shot")) continue;   // (the shot is paid from the Crystal)
         it.aim = Math.atan2(best.y - it.y, best.x - it.x); it.cd = SENTRY_CD; it.flash = 6;
-        if (typeof spawnFollowerProjectile === "function") spawnFollowerProjectile({ x: it.x, y: it.y, element: "electric" }, best, "#7ff2ff", SENTRY_DAMAGE, 5, null);
+        if (typeof spawnFollowerProjectile === "function") spawnFollowerProjectile({ x: it.x, y: it.y, element: "electric" }, best, "#7ff2ff", SENTRY_DAMAGE, 5, null, DMG_HIT_GUN);   // (a turret's shot: Projectile, js/damage.js)
     }
 }
 // over the scene: the progress bar of a repair, the ring of light from a relay that has just come online

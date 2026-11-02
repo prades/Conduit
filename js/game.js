@@ -1157,7 +1157,7 @@ function render() {
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
                     if (Math.hypot(dx,dy) < 30) {
-                        applyDamage(a, p.damage, p.source);
+                        applyDamage(a, p.damage, p.source, null, false, false, p.hit || null);
                         if (p.onHit) p.onHit(a);
                         hit = true;
                     }

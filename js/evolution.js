@@ -308,7 +308,7 @@ function petalBlaze(f) {
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of foes) {
-        applyDamage(a, (f.power || 10) * BLOOM_MULT, f, "fire");
+        applyDamage(a, (f.power || 10) * BLOOM_MULT, f, "fire", false, false, DMG_HIT_ALT);
         a.burning = Math.max(a.burning || 0, BLOOM_BURN); a.burnDamage = Math.max(a.burnDamage || 0, (f.power || 10) * 0.1);
     }
     f._sigAt = f0; f._sigCd = BLOOM_EVERY;
@@ -326,7 +326,7 @@ function quillBurst(f) {
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, d = Math.hypot(dx, dy), L = d || 1, hit = Math.random() < quillChance(d);
-    if (hit) for (const a of _evoFoes(t.x, t.y, QUILL_SPLASH)) applyDamage(a, (f.power || 10) * QUILL_MULT * (1 + QUILL_BONUS), f, "fire");   // (the target and what stands against it, the same hit; nobody burns)
+    if (hit) for (const a of _evoFoes(t.x, t.y, QUILL_SPLASH)) applyDamage(a, (f.power || 10) * QUILL_MULT * (1 + QUILL_BONUS), f, "fire", false, false, DMG_HIT_ALT);   // (the target and what stands against it, the same hit; nobody burns)
     f._sigAt = f0; f._sigCd = QUILL_EVERY;
     if (f.dirX !== undefined) { f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof elementEffects !== "undefined") {
@@ -346,13 +346,13 @@ function arcVolley(f) {
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const hits = [foes[0]], f0 = typeof frame !== "undefined" ? frame : 0;
-    applyDamage(foes[0], (f.power || 10) * REAVER_MULT, f, "electric");
+    applyDamage(foes[0], (f.power || 10) * REAVER_MULT, f, "electric", false, false, DMG_HIT_ALT);
     let from = foes[0];
     for (let i = 0; i < REAVER_CHAIN; i++) {
         const next = _evoFoes(from.x, from.y, REAVER_HOP).filter(a => !hits.includes(a))
             .sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
         if (!next) break;
-        applyDamage(next, (f.power || 10) * REAVER_MULT * REAVER_CHAIN_SHARE, f, "electric");
+        applyDamage(next, (f.power || 10) * REAVER_MULT * REAVER_CHAIN_SHARE, f, "electric", false, false, DMG_HIT_ALT);
         hits.push(next); from = next;
     }
     f._sigAt = f0; f._sigCd = REAVER_EVERY;
@@ -370,7 +370,7 @@ function singularityShot(f) {
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
-    applyDamage(tgt, (f.power || 10) * SERPENT_MULT, f, "flux");
+    applyDamage(tgt, (f.power || 10) * SERPENT_MULT, f, "flux", false, false, DMG_HIT_ALT);
     let pulled = 0;
     for (const a of _evoFoes(tgt.x, tgt.y, SERPENT_PULL_R)) {
         if (typeof applySlow === "function") applySlow(a, SERPENT_SLOW_FRAMES, SERPENT_SLOW);
@@ -400,7 +400,7 @@ function hexfire(f) {
         const live = foes.filter(a => !a.dead);
         if (!live.length) break;
         const a = live[i % live.length];
-        applyDamage(a, dmg, f, "fire");
+        applyDamage(a, dmg, f, "fire", false, false, DMG_HIT_ALT);
         if (!a.dead) { a.burning = Math.max(a.burning || 0, HALO_BURN); a.burnDamage = Math.max(a.burnDamage || 0, (f.power || 10) * 0.08); }
         pts.push({ x: a.x, y: a.y, hex: i });
         if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ff6622", radius: 0.45, life: 18 });
@@ -418,7 +418,7 @@ function corrodeShot(f) {
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
-    applyDamage(tgt, (f.power || 10) * ROT_MULT, f, "toxic");
+    applyDamage(tgt, (f.power || 10) * ROT_MULT, f, "toxic", false, false, DMG_HIT_ALT);
     tgt.defenseShredded = Math.max(tgt.defenseShredded || 0, ROT_SHRED_FRAMES); tgt.defenseShredFactor = Math.min(tgt.defenseShredFactor || 1, ROT_SHRED);
     for (const a of _evoFoes(tgt.x, tgt.y, ROT_SPLASH_R)) {
         if (a === tgt) continue;
@@ -441,7 +441,7 @@ function chomp(f) {
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
-    applyDamage(tgt, (f.power || 10) * MAW_MULT, f, "ice");
+    applyDamage(tgt, (f.power || 10) * MAW_MULT, f, "ice", false, false, DMG_HIT_ALT);
     tgt.hitStun = Math.max(tgt.hitStun || 0, MAW_STUN);
     if (typeof applyStun === "function") applyStun(tgt, MAW_STUN);   // (hitStun is read by nothing: the stun is real now, js/combat.js applyStun)
     for (const a of _evoFoes(tgt.x, tgt.y, MAW_SLOW_R)) if (typeof applySlow === "function") applySlow(a, MAW_SLOW_FRAMES, MAW_SLOW);
@@ -462,7 +462,7 @@ function eruption(f) {
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of foes) {
-        applyDamage(a, (f.power || 10) * CALDERA_MULT, f, "toxic");
+        applyDamage(a, (f.power || 10) * CALDERA_MULT, f, "toxic", false, false, DMG_HIT_ALT);
         a.defenseShredded = Math.max(a.defenseShredded || 0, CALDERA_SHRED_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, CALDERA_SHRED);
     }
     f._sigAt = f0; f._sigCd = CALDERA_EVERY;
@@ -481,7 +481,7 @@ function gravitySlam(f) {
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of foes) {
-        applyDamage(a, (f.power || 10) * MIMIC_MULT, f, "flux");
+        applyDamage(a, (f.power || 10) * MIMIC_MULT, f, "flux", false, false, DMG_HIT_ALT);
         if (typeof applySlow === "function") applySlow(a, MIMIC_SLOW_FRAMES, MIMIC_SLOW);
         if (typeof vortexPullImmune === "function" && vortexPullImmune(a)) continue;
         const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1, _px = a.x, _py = a.y;
@@ -507,13 +507,13 @@ function staticRush(f) {
     const from = { x: f.x, y: f.y }, dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1, stop = Math.max(0, L - 0.8);
     f.x += dx / L * stop; f.y += dy / L * stop; f.dirX = dx / L; f.dirY = dy / L;
     const hits = [tgt];
-    applyDamage(tgt, (f.power || 10) * MANTA_MULT, f, "electric"); tgt.hitStun = Math.max(tgt.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(tgt, MANTA_STUN);
+    applyDamage(tgt, (f.power || 10) * MANTA_MULT, f, "electric", false, false, DMG_HIT_ALT); tgt.hitStun = Math.max(tgt.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(tgt, MANTA_STUN);
     let last = tgt;
     for (let i = 0; i < MANTA_CHAIN; i++) {
         const next = _evoFoes(last.x, last.y, MANTA_HOP).filter(a => !hits.includes(a))
             .sort((a, b) => Math.hypot(a.x - last.x, a.y - last.y) - Math.hypot(b.x - last.x, b.y - last.y))[0];
         if (!next) break;
-        applyDamage(next, (f.power || 10) * MANTA_MULT * MANTA_CHAIN_SHARE, f, "electric"); next.hitStun = Math.max(next.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(next, MANTA_STUN);
+        applyDamage(next, (f.power || 10) * MANTA_MULT * MANTA_CHAIN_SHARE, f, "electric", false, false, DMG_HIT_ALT); next.hitStun = Math.max(next.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(next, MANTA_STUN);
         hits.push(next); last = next;
     }
     f._sigAt = f0; f._sigCd = MANTA_EVERY;

@@ -65,7 +65,7 @@ const ELEMENT_ATTACKS = {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 2.25) { // 1.5²=2.25, no sqrt needed
                         const dmg = (actor.stats?.attack||10) * 0.4;
-                        applyElementalDamage(a, dmg, actor, "fire");
+                        applyElementalDamage(a, dmg, actor, "fire", DMG_HIT_MAIN);
                         hits++;
                         // Burn proc
                         if (Math.random() < ELEMENT_PROC_CHANCE.fire) {
@@ -83,7 +83,7 @@ const ELEMENT_ATTACKS = {
             // FIRE BOMBS (js/firebombs.js, docs/FIRE-BOMBS.md): the special was a meteor on the target; it is now a pair of bouncing bombs lobbed at it. Each lands, bounces, splashes the hostile it lands on
             // and sets the ground burning for 10 to 15 seconds.
             if (!target) return { hit: false };
-            if (typeof throwFireBombsAt === "function") { throwFireBombsAt(actor, target, 2, 0.16, (actor.stats?.specialAttack||10) * 0.7); return { hit: true }; }
+            if (typeof throwFireBombsAt === "function") { throwFireBombsAt(actor, target, 2, 0.16, (actor.stats?.specialAttack||10) * 0.7, DMG_HIT_SPECIAL); return { hit: true }; }
             return { hit: false };
         }
     },
@@ -99,7 +99,7 @@ const ELEMENT_ATTACKS = {
                 if (!current) break;
                 chainTargets.push(current);
                 const dmg = (actor.stats?.attack||10) * 0.35 * (1 - c*0.2);
-                applyElementalDamage(current, dmg, actor, "electric");
+                applyElementalDamage(current, dmg, actor, "electric", DMG_HIT_MAIN);
                 if (Math.random() < ELEMENT_PROC_CHANCE.electric) {
                     current.chainArcFlash = 12;
                 }
@@ -140,7 +140,7 @@ const ELEMENT_ATTACKS = {
                 if (isHostileTarget(a)) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 9.0) { // 3.0²=9.0, no sqrt needed
-                        applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.7, actor, "electric");
+                        applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.7, actor, "electric", DMG_HIT_SPECIAL);
                         if (Math.random() < ELEMENT_PROC_CHANCE.electric) {
                             a.chainArcFlash = 20;
                         }
@@ -158,7 +158,7 @@ const ELEMENT_ATTACKS = {
             // Frost lance — single target, high accuracy
             const hitChance = Math.min(0.98, 0.6 + (actor.stats?.accuracy||10) / 50);
             if (Math.random() > hitChance) return { hit: false };
-            applyElementalDamage(target, (actor.stats?.attack||10)*0.55, actor, "ice");
+            applyElementalDamage(target, (actor.stats?.attack||10)*0.55, actor, "ice", DMG_HIT_MAIN);
             spawnElementEffect({ type:"impact", x:target.x, y:target.y, color:"#99ddff", radius:0.6, life:20, element:"ice" });
             // Hard freeze proc — blocked by shields
             if (Math.random() < ELEMENT_PROC_CHANCE.ice && !(target.shielded && target.shieldAmount > 0)) {
@@ -176,7 +176,7 @@ const ELEMENT_ATTACKS = {
                 if (isHostileTarget(a)) {
                     const dx=a.x-actor.x, dy=a.y-actor.y;
                     if (dx*dx+dy*dy <= 6.25) { // 2.5²=6.25, no sqrt needed
-                        applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.6, actor, "ice");
+                        applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.6, actor, "ice", DMG_HIT_SPECIAL);
                         // Slow and freeze blocked by shields
                         if (!(a.shielded && a.shieldAmount > 0)) applySlow(a, 180, 0.4);
                     }
@@ -192,7 +192,7 @@ const ELEMENT_ATTACKS = {
             if (!target) return { hit: false };
             // Disorient always lands even through shields
             if (Math.random() < ELEMENT_PROC_CHANCE.flux) target.disoriented = 120;
-            applyElementalDamage(target, (actor.stats?.attack||10)*0.6, actor, "flux");
+            applyElementalDamage(target, (actor.stats?.attack||10)*0.6, actor, "flux", DMG_HIT_MAIN);
             spawnElementEffect({ type:"impact", x:target.x, y:target.y, color:"#9933ff", radius:0.8, life:25, element:"flux" });
             // Flux aura visual — opaque element-color aura around follower
             actor.fluxAura = 50;
@@ -216,7 +216,7 @@ const ELEMENT_ATTACKS = {
                         }
                         // Pull and disorient pierce shields
                         if (Math.random() < ELEMENT_PROC_CHANCE.flux) a.disoriented = 90;
-                        applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.5, actor, "flux");
+                        applyElementalDamage(a, (actor.stats?.specialAttack||10)*0.5, actor, "flux", DMG_HIT_SPECIAL);
                     }
                 }
             });
@@ -229,7 +229,7 @@ const ELEMENT_ATTACKS = {
         physical(actor, target) {
             if (!target) return { hit: false };
             // Shield bash — knockback + self defense boost
-            applyElementalDamage(target, (actor.stats?.attack||10)*0.45, actor, "core");
+            applyElementalDamage(target, (actor.stats?.attack||10)*0.45, actor, "core", DMG_HIT_MAIN);
             spawnElementEffect({ type:"impact", x:target.x, y:target.y, color:"#00ccaa", radius:0.7, life:20, element:"core" });
             // Self defense boost
             actor.defenseBoost = 90;
@@ -256,7 +256,7 @@ const ELEMENT_ATTACKS = {
             // Smoke form — self evasion buff + attack
             actor.smokeForm = 45;  // frames in smoke
             actor.smokeEvasion = 0.75; // 75% chance to dodge incoming hits
-            applyElementalDamage(target, (actor.stats?.attack||10)*0.4, actor, "toxic");
+            applyElementalDamage(target, (actor.stats?.attack||10)*0.4, actor, "toxic", DMG_HIT_MAIN);
             spawnElementEffect({ type:"smoke", x:actor.x, y:actor.y, color:"#66ff66", radius:0.8, life:45, element:"toxic" });
             // Defense shred proc
             if (Math.random() < ELEMENT_PROC_CHANCE.toxic) {
@@ -296,7 +296,7 @@ const ELEMENT_ATTACKS = {
                         if (isHostileTarget(a)) {
                             const ddx=a.x-lx, ddy=a.y-ly;
                             if (ddx*ddx+ddy*ddy <= r2) {
-                                applyDamage(a, dmg, caster, "toxic");
+                                applyDamage(a, dmg, caster, "toxic", false, false, DMG_HIT_SPECIAL);
                                 a.toxicWeakened = 240; // 4s: reduces attack power
                                 a.smokeDebuff = Math.max(a.smokeDebuff||0, 180); // 3s: reduces accuracy
                                 const _tpx=(a.x-player.visualX-(a.y-player.visualY))*TILE_W+canvas.width/2;
@@ -537,7 +537,7 @@ function updateElementEffects() {
                 if(isHostileTarget(a)){
                     const d=Math.hypot(a.x-tx, a.y-ty);
                     if(d<=5.5){
-                        applyElementalDamage(a, dmg*(1-d*0.1), caster, "fire");
+                        applyElementalDamage(a, dmg*(1-d*0.1), caster, "fire", DMG_HIT_SPECIAL);
                         a.burning=400; a.burnDamage=dmg*0.04;
                     }
                 }

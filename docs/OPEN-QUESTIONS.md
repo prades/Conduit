@@ -241,7 +241,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
   - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`).
   - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).
   - Mockups come first, for your approval.
-- **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02, not built; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
+- **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a` on the branch, not on main; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;
     - the triangle on the elemental part only;
@@ -256,6 +256,12 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - a word per part on screen;
     - bosses use their race's row.
   - Answered later on 2026-11-02: the retired forms take their replacement's row when hit.
+  - **Built in 2026-11-02a (Build A).** Readings made while building it, for you to confirm (docs/COMBAT.md §7.10):
+    - **BLINDING DUST deals small toxic ticks in the code.** The approved enemy table said "no damage"; the ticks were kept as they are, like other ticks. Remove them?
+    - **An egg Mage's shot** is typed Projectile. The rule "an egg hits with its scythe legs: Slashing" is read as its melee.
+    - **A player's weapon with an element** (the laser on a selected element) still sets the triangle on the whole hit, as before; the player's hits are not split.
+    - **These stay as they were:** a Series 2 card's echo (cleave, chain, nova), and the poison and dust ticks.
+    - **The words' look** (`NEXT-UPDATE.md` section 4): a screenshot was sent with Build A. The words stack over the hit's number, where they can meet the creature's name plate. Keep them there, or move them?
   - Still open (§7.9): the later quest lines' elements, the Player cards' elemental part, the icons.
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
 - **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.

@@ -52,6 +52,27 @@ Each follower class has a card family of its own; the player has Player cards.
 - **Several openings on one hit add up** (the owner, 2026-11-02): each weakness the hit meets adds the card's bonus again. A hit can meet four kinds: an element match-up, a race weak to its physical type, a race weak to Elemental, and a stunned or sleeping target. So a Prototype card can add up to +160% on one hit.
 - **Three tiers** (2026-11-02): Refined +20%, Precision +30%, Prototype +40%: three opportunity cards.
 
+### The 21 new cards' names (Proposed, 2026-11-02: drafted by the agent for the owner's approval)
+
+The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). None is approved yet.
+
+- **The auras** climb a worn item, tier by tier: a BAND at Refined, a SIGIL at Precision, a CROWN at Prototype (the one that also spreads the element's status). The rarity chip shows the tier too.
+- **The opportunity cards** climb a Brawler's weapon: a SPUR, a TALON, a FANG. Each one presses, splits, then breaks open a weakness.
+- Every name was checked against the game's cards, forms, moves, roles and ultimates; none is taken.
+
+| Aura | Refined (+5%) | Precision (+7.5%) | Prototype (+10% and the status) |
+|---|---|---|---|
+| Fire | KINDLING BAND | HEARTH SIGIL | INFERNO CROWN |
+| Toxic | SPORE BAND | MIASMA SIGIL | PESTILENCE CROWN |
+| Electric | IONIC BAND | VOLTAIC SIGIL | TEMPEST CROWN |
+| Ice | CHILL BAND | GLACIAL SIGIL | WINTER CROWN |
+| Flux | PHASE BAND | WARP SIGIL | ECLIPSE CROWN |
+| Core | LODESTONE BAND | KEYSTONE SIGIL | MONOLITH CROWN |
+
+| Opportunity | Refined (+20%) | Precision (+30%) | Prototype (+40%) |
+|---|---|---|---|
+| Brawler | PRESSURE SPUR | FAULTLINE TALON | RUPTURE FANG |
+
 ### Technician cards: cooldown management
 
 - **Shorter waits:** the wait between ability uses is cut (every technician ability waits 60 s today; cards can already take up to 90% off it, js/techabilities.js `techCooldown`).

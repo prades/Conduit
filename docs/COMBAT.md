@@ -124,7 +124,7 @@ The burn's ticks reach the creature through `applyDamage` with no attacker, so a
 
 Tests: tests/packs.js (each status alone, refreshed and not stacked, a stronger one kept, the glitch against a bite and an ability, the stun, a fight with every card), tests/evolution.js (the real stuns of the Maw and the Manta).
 
-## 7. Damage types, race weaknesses, and the physical and elemental parts of a hit (designed 2026-11-02; nothing built)
+## 7. Damage types, race weaknesses, and the physical and elemental parts of a hit (designed 2026-11-02; built in `2026-11-02a`)
 
 - **Status:** Designed, every part approved by the owner on 2026-11-02 (§7.2 to §7.8):
   - the six damage types, and what each race is weak to and resists;
@@ -133,13 +133,13 @@ Tests: tests/packs.js (each status alone, refreshed and not stacked, a stronger 
   - each form's lean;
   - the enemies' attack types, your followers' weaknesses by subclass, your own attacks' types, the retired forms, and the words on screen.
 
-  Open items: §7.9. Not implemented.
-- **Branch/build:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`.
+  Open items: §7.9. **Implemented in build `2026-11-02a`** (`NEXT-UPDATE.md`, Build A); how, and what was measured: §7.10.
+- **Branch/build:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`; built on the same branch as build `2026-11-02a` (not on main).
 - **Decision:** `DECISION-LOG.md`, "Damage types, race weaknesses, and every hit part physical, part elemental". The Brawler's opportunity cards use this chart (`UNIVERSAL-AND-PLAYER-CARDS.md`).
 
 ASKED (2026-11-02): *"category 1 is slashing, piercing, and projectiles ... the next damage category is crushing slash earthquake damage. And then the third category is elemental damage. And each of these ... races has their own weakness and resistance to each of these."* Then: *"We can separate it into basically six different types of damage, if the game can handle it. Now, we need to basically make attack types for each of our followers and their alternate attacks, and talk about what each species is weak to."* Of the draft of §7.3 and §7.4: *"That looks really good."*
 
-### 7.1 What the code does today (build `2026-11-01n`)
+### 7.1 What the code did before the damage system (build `2026-11-01n`)
 
 - **No damage types.** A hit carries one element, its own or its attacker's, and the element triangle multiplies the whole hit: ×1.3, ×0.7, or ×0 for ice on core (js/helpers.js `applyDamage`, js/elements.js `getElementMultiplier`).
 - **No race weaknesses.** A beetle differs only by extra defense (`BEETLE_DEFENSE`, js/levels.js).
@@ -351,3 +351,105 @@ PETAL BLAZE, the one move of their own, is Elemental.
 - Which element each future quest line has (Side Quest's stock follows it, `SEWER-QUEST.md`).
 - Whether a Player card gives the player's attacks an elemental part (the Player cards' kits, `UNIVERSAL-AND-PLAYER-CARDS.md`).
 - The icons beside the words (the subclass, element and race icons, `UI-STYLE.md`).
+
+### 7.10 As built (build `2026-11-02a`)
+
+- **Status:** Implemented on `claude/start-game-project-HSh7Z` as build `2026-11-02a` (`NEXT-UPDATE.md`, Build A).
+  - **Verified** by tests/damage.js (25 checks) and the full run (85 suites); the suites whose references moved are listed in `CHANGELOG.md`, `2026-11-02a`.
+  - **Measured** before and after (below).
+  - **Not playtested.** The words' look waits on the owner (a screenshot, `NEXT-UPDATE.md` section 4).
+
+**Where it lives:**
+- **js/damage.js** (new): the tables of §7.3, §7.4 and §7.8, the split, the rows, the leans' rule, the retune and the words.
+- **js/helpers.js `applyDamage`** takes what a hit is as a seventh argument and hands it to `dmgApply` before defense.
+  - A hit is a frozen constant (`DMG_HIT_MAIN`, `DMG_HIT_SHOT`, …), so nothing is made per hit.
+  - A hit that says nothing keeps the old rule: the element triangle on the whole hit.
+- **js/levels.js `_applyFollowerLevel`:** evolving multiplies SP.ATK by 1.25 too (§7.6, item 5), then applies the form's lean (§7.7). Nothing new is saved.
+
+**What each attack says it is:**
+
+| Who | Attack | Its part | Its number reads |
+|---|---|---|---|
+| Follower | the plain hit, a job's attack, its element's physical move | main (§7.4) | ATK |
+| Follower | a Mage's shot | main | SP.ATK |
+| Follower | the twelve signature moves, THERMITE DRILL | alternate | ATK |
+| Follower | a follower thrown by the Kinetic Launcher, landing | Earthquake | ATK |
+| Follower | the element specials, the toxic impact, the fire eruption, the fire special's bombs | special (Elemental) | SP.ATK |
+| Follower | the fire forms' FIRE BOMBS move | special (Elemental) | ATK |
+| Creature | its bite (js/predator.js, three places) | its race's (§7.8) | — |
+| Creature | MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE's first hit, BLADE FLURRY | its own (§7.8) | — |
+| Creature | the spider's shot; its charged extra | Projectile; Elemental | — |
+| Creature | the Toxic Queen's spit; her bomb | Projectile; Earthquake (toxic) | — |
+| You | guns, the laser and its pierce, the turrets | Projectile | — |
+| You | the Mutator's lash; the gauntlet; the arc | Slashing; Crushing; Elemental (electric) | — |
+| You | the clone's pounce | Piercing | — |
+
+**Left on the old rule, as §7.6 item 4 says:**
+- a burn's tick;
+- a pool's tick (the blight pools, VENOM LANCE's and BLINDING DUST's ticks);
+- a reflected hit;
+- a Series 2 card's echo (Nova, Cleave, Chain);
+- a set amount (a thrown technician, the fixed self-damage).
+
+**The retune (§7.6, item 6), as built:**
+- An attack's number still reads the stat it read, so a level or a card lifts it as before.
+- `dmgNorm` then scales it: the class's average of that stat over the class's average blend, the form's lean included. The averages come from the class's personalities (js/species.js).
+- So a follower at its class's average stats does exactly what it did before, evolved or not, whatever its lean. tests/damage.js checks this on eight forms.
+- A follower whose stats differ from its class's average gains or loses with them: that is the skew of §7.6, item 3.
+
+**Readings made while building it, for the owner to confirm** (`OPEN-QUESTIONS.md`):
+- BLINDING DUST deals small toxic ticks in the code, though §7.8 says "no damage". They were kept.
+- An egg Mage's shot is Projectile ("an egg hits with its scythe legs" read as its melee).
+- A player's weapon with an element (the laser on a selected element) keeps the triangle on the whole hit.
+
+**The words on screen:** each word stacks straight up over the hit's number, the physical part's first: SLASHING WEAK! in gold, FIRE RESIST in blue, ICE IMMUNE for ice on core. A target shows one set every 12 frames, so a flurry does not pile them up. They replace the old WEAK! and RESIST for every hit that says what it is.
+
+**Measured before and after** (`NEXT-UPDATE.md` Build A, item 8). tests/measure_damage.js (run by hand, not in the full run) measures three things:
+- each follower class's damage in 15 s at level 10 (evolved), against a still creature of each race;
+- each race's bite on a held follower of five subclasses, in 10 s;
+- §1's six fights, both sides fighting.
+
+"Before" is the code of build `2026-11-01n`; "after" is this build. Both ran on the same harness.
+
+The first tries were thrown out because their runs leaked into each other. These carried over from one run to the next:
+- leftover fire and pools;
+- the player's lock on the last creature;
+- the arena's spawner;
+- a cache kept by frame and count;
+- the recruits' wandering clocks;
+- the screen's shake, whose jitter draws random numbers.
+
+Also, the bite test's "held" follower still fired its signature move and killed the creature early.
+
+The harness now starts every run clean. Thirteen mixed runs give the same numbers forward and in reverse order.
+
+**A follower's damage in 15 s** at level 10 (evolved), on a still creature. Each class is the mean over its personalities, the six elements and the six races:
+
+| Class | Before | After | Change | After vs before, by race |
+|---|---|---|---|---|
+| Brawler | 475 | 477 | 0% | ant −1%, beetle −1%, scorpion −4%, spider +3%, mantis +3%, moth +2% |
+| Mage | 254 | 259 | +2% | ant −22%, beetle −1%, scorpion +18%, spider −17%, mantis +5%, moth +27% |
+| Technician | 159 | 168 | +6% | ant −3%, beetle +16%, scorpion +11%, spider −3%, mantis +4%, moth +11% |
+
+- **The class averages hold.**
+- **The Technicians' +6% comes from the race chart, not the retune.** Their Crushing and Piercing main attacks meet more weaknesses than resistances across the six races; a beetle is weak to both.
+- **A Mage now swings with a race's Elemental column:** ants and spiders resist it, scorpions and moths are weak to it.
+- **The personalities skew as §7.6 item 3 says:** aggressive +4%, wild −4%, cautious −2%, cunning +5%, stoic +6%.
+
+**A race's bite on a held follower, in 10 s.** The five followers are QUILLSTONE, FROST MAW, STATIC ORB, JELLY RAM and HAMMER SLUG.
+- Each moves by its subclass's row: ×0.7 where it resists the bite's type, ×1.3 where it is weak.
+- It moves a little less where a special's ticks stay as they were (VENOM LANCE, BLINDING DUST).
+- The mean over the five, by race: ant −2%, beetle +3%, scorpion −8%, spider −9%, mantis −2%, moth +2%.
+
+**§1's six fights**, both sides fighting (f = frames, 60 a second):
+
+| Fight | Before | After |
+|---|---|---|
+| ant scout L3 vs fire brawler L5 | the ant fell at 154 f; the follower took 3 hits, 7 health left | the same: each hit is about 4% weaker (an ant resists the elemental third), and a fire bomb's landing ends it at the same frame |
+| mantis scout L3 vs wild brawler L5 | the follower fell at 216 f after 4 hits; the mantis had 52 left | the same fall; the mantis had 46 left (it is weak to the follower's Slashing) |
+| spider striker L4 vs electric mage L5 | the follower fell at 570 f after 4 hits; the spider had 256 left | the same; 258 left |
+| scorpion striker L4 vs core brawler L9 | the follower fell at 216 f after 4 hits; the scorpion had 167 left | the same; 169 left |
+| beetle scout L4 vs fire technician L10 | the follower fell at 529 f after 19 hits; the beetle had 70 left | at 417 f after 16 hits; the beetle had 77 left. THERMITE BURROWER is a drone, weak to the beetle's Crushing |
+| moth striker L4 vs flux mage L10 | the follower fell at 619 f after 8 hits; the moth had 240 left | at 838 f after 9 hits; the moth had 190 left. VOIDSTAR, a mollusk, resists the moth's Crushing, and a moth is weak to its Elemental shots |
+
+These fights are not §1's audit runs (the setup differs); they compare the two builds on one harness. Every follower still takes several hits before it falls.

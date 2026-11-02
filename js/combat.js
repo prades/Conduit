@@ -309,7 +309,7 @@ function followerAttack(actor, target) {
     if (attackTier === "normal") {
         // Plain hit — no aura, no element
         const baseDmg = (actor.stats?.attack||5) * 0.25;
-        applyElementalDamage(target, baseDmg, actor, actor.element||null);
+        applyElementalDamage(target, baseDmg, actor, actor.element||null, DMG_HIT_MAIN);   // (its main attack: js/damage.js)
         if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor,baseDmg); }
         actor.attackCooldown = followerRest(actor, 45);
 

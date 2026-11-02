@@ -485,7 +485,7 @@ function applySpeciesBody(predator, speciesName) {
     }
 }
 
-function spawnFollowerProjectile(actor, target, color, damage, radius, onHit) {
+function spawnFollowerProjectile(actor, target, color, damage, radius, onHit, hit) {   // hit: what the shot is (js/damage.js)
     if (!target || target.dead) return;
     const dx = target.x - actor.x, dy = target.y - actor.y;
     const dist = Math.hypot(dx, dy) || 1;
@@ -495,7 +495,7 @@ function spawnFollowerProjectile(actor, target, color, damage, radius, onHit) {
         vx: (dx/dist)*speed, vy: (dy/dist)*speed,
         color, damage, radius: radius||4,
         life: Math.ceil(dist/speed) + 10,
-        source: actor, onHit,
+        source: actor, onHit, hit: hit || null,
         element: actor.element || null,
         frame: 0
     });

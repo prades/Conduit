@@ -43,6 +43,7 @@ function makeEnv() {
     sandbox.Predator = class Predator {};
     sandbox.globalThis = sandbox;
     const ctx = vm.createContext(sandbox);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/damage.js'), 'utf8'), ctx, { filename: 'js/damage.js' });   // (what a shot is: DMG_HIT_GUN)
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js/input.js'), 'utf8'), ctx, { filename: 'js/input.js' });
     return { sandbox, shots, run: s => vm.runInContext(s, ctx) };
 }
