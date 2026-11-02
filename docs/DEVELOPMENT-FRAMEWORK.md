@@ -141,6 +141,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Unresolved questions | `OPEN-QUESTIONS.md` |
 | Decision index | `DECISION-LOG.md` |
 | Combat | `COMBAT.md` |
+| The fire and electric followers' attack redesign | `FOLLOWER-COMBAT-REDESIGN.md` |
 | Facility/core systems | `FACILITY.md` |
 | Followers/recruitment/breeding | `FOLLOWER-PROGRESSION.md` |
 | The conversion apparatus and BLOOM | `CONVERSION.md` |

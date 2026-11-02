@@ -942,3 +942,45 @@ Part 1b built the Technomancer's six roles as approved. Two readings shaped how 
 
 ### Impact
 None beyond build `2026-11-02i`: it was built this way.
+
+## DECISION: The fire and electric followers' attacks redesigned (the follower combat brief)
+
+- **Date:** 2026-11-02
+- **Status:** Approved by the owner, in the brief "CONDUIT — FOLLOWER COMBAT REDESIGN · Fire & Electric Follower Attack Implementation Brief" ("Design approval date: November 2, 2026"). **Designed**, not implemented. Phase 1, the audit, is finished; the conflicts it found wait on the owner's answers.
+- **Branch/build:** written on `claude/start-game-project-HSh7Z` against build `2026-11-02j`.
+- **Related feature/docs:** `FOLLOWER-COMBAT-REDESIGN.md` (the spec: the approved design, the audit, the conflicts, the provisional values), `COMBAT.md` §7, `OPEN-QUESTIONS.md` §5 (Quill Burst's numbers, superseded)
+
+### Context
+The owner: "We are refining the combat identities, main attacks, and alternate attacks of five existing followers. The goal is to make each creature mechanically distinctive." It is not a general combat overhaul.
+
+### Decision
+Five followers get new or reshaped attacks. The sixth, HOVER SHELL, and its KINETIC LAUNCHER stay exactly as they are.
+
+### Exact rules
+- **QUILLSTONE:** its main attack is kept. QUILL BURST becomes exactly five quills, launched at once in a forward fan. Each stops at its first enemy: no piercing, explosion or splash. FIRE BOMBS stays selectable.
+- **EMBER HOOD:** FIREBALL is its main attack. HEXFIRE is a projectile that leaves a stationary burning circle, which never grows or moves.
+- **THERMITE BURROWER:**
+  - BURROW STRIKE is its main attack: it dives, travels underground and erupts beneath the target.
+  - FAULTLINE: the player freely draws a path; the Burrower follows it underground, and molten spikes erupt along it.
+- **STATIC ORB:** SONIC ROLL ("already exists") is kept. PINBALL is an automatic ricochet to the nearest unhit enemy, with no fixed count; each enemy is hit once, and it ends cleanly.
+- **THUNDERHEAD:** CHAIN LIGHTNING is its main attack, a conduction that depends on the distance between enemies. STATIC VORTEX is a stationary pull that deals continuous electric damage.
+- **The damage system stays as it is:** no parallel damage calculation, and no balance numbers invented to finish the work. The fan's angle, range, cooldowns and multipliers are all open.
+
+### Alternatives considered
+The brief rejected:
+- HEXFIRE as a seeking projectile, or as an expanding or moving hazard;
+- FAULTLINE as a straight drag-to-aim line, a directional charge, or taps on separate waypoints;
+- a chain of fixed length that ignores the spacing;
+- rebuilding SONIC ROLL.
+
+### Rationale and trade-offs
+Each attack should reflect the creature's physical design, its element and its role (the brief, section 1).
+
+### Impact
+Nothing is built yet. The audit found 15 places where the brief and the code do not meet cleanly (`FOLLOWER-COMBAT-REDESIGN.md` §11.1); among them, no move named SONIC ROLL exists in the code. Implementation waits on the owner's answers.
+
+### Follow-up
+The owner's answers to §11.1, then the brief's Phases 2 to 5 (build, tests, docs and UI, final report).
+
+### Supersedes / superseded by
+Supersedes Quill Burst's earlier rules (`OPEN-QUESTIONS.md` §5): one volley with a hit chance and a splash becomes five quills that each stop at their first enemy. Its numbers are open again.

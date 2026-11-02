@@ -410,5 +410,5 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - Rarity names: Unrefined, Refined, Precision, Prototype, Lustrous, Crystalline. A rarity chip of illuminated bars (1 to 6) shows it.
 - Pack 1: ◆100, exactly 4 cards, Unrefined, Refined and Precision at 60 / 30 / 10, one slot reserved for a Precision, no card twice in a pack; the 18 Element cards and their numbers. What it deals is found for the run.
 - The six Crystalline class cards, each +50% to one stat.
-- Quill Burst's numbers (range 4, +25% on a hit, every 4 seconds, no burn).
+- Quill Burst's numbers (range 4, +25% on a hit, every 4 seconds, no burn). (**Superseded** by your follower combat brief, 2026-11-02: QUILL BURST becomes five quills fired at once, each stopping at its first enemy, with no splash; its numbers are open again, `FOLLOWER-COMBAT-REDESIGN.md`. The code still runs the old rules until that is built.)
 - The market: everything in sections 1b and 1c.
