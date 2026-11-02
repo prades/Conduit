@@ -2,7 +2,7 @@
 
 - **Status:** Approved by the owner, 2026-11-02 ("Approve as drafted"): the scope, Parts 1 to 4 in that order, BLOOM for the update after. Asked for the same day: "draft a new update that covers a good portion of the necessary updates".
   - **Not started.** Build C of the current update came first (the owner: "Build C first"): implemented in build `2026-11-02f`, on main since the owner's "Push to main".
-  - **Each part's gate is still the owner's:** the kits, the mockups, each card item.
+  - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Still open: gate 2 (the mockups) and gate 3 (each card item).
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-02e`.
   - It follows the update in `NEXT-UPDATE.md`.
   - That update's last step, Build C (the breeding draws, Side Quest drawn as the void walker), came first: implemented in build `2026-11-02f`.
@@ -35,21 +35,21 @@ Each part is its own commit, with its own tests and a full green run before the 
 
 ### Part 1: Player cards (`UNIVERSAL-AND-PLAYER-CARDS.md`, `SEWER-QUEST.md`, `SERIES-2.md`)
 
-**Gate 1, for the owner's approval before any code: the 18 kits.**
+**Gate 1, for the owner's approval before any code: the 18 kits. Approved 2026-11-02** ("Approve as drafted").
 - **What is approved (2026-11-02):**
   - each role's name and theme (the table in `UNIVERSAL-AND-PLAYER-CARDS.md` section 2; for example INCENDIARY GUNNER, "rounds ignite");
   - "Each role reuses its element's existing status".
 - **What is missing:** each role's kit and numbers.
   - The owner asked for a draft of all 18 to review.
-  - **Drafted 2026-11-02:** `UNIVERSAL-AND-PLAYER-CARDS.md` section 2, "Draft: the 18 kits". It gives each role's effect and numbers in the game's existing terms, for approval or changes. It also marks where an approved theme needs something the game does not have:
+  - **Drafted and approved 2026-11-02:** `UNIVERSAL-AND-PLAYER-CARDS.md` section 2, "The 18 kits". It gives each role's effect and numbers in the game's existing terms. It also marks where an approved theme needs something the game does not have:
     - the Technomancer places no sentries of its own;
     - the lamp has no beam;
     - followers no longer fall for good;
     - there is no charged shot;
     - nothing pulls toward the player.
 - **Decided with the kits:**
-  - whether a Player card gives the player's hits an elemental part (`COMBAT.md` §7.9: open; the player has no SP.ATK today);
-  - **a name clash, answered 2026-11-02:** STORMCALLER was both the electric Technomancer's Player card role and one of the six player classes planned in `PLAYER-CLASSES.md` §2.2. The owner: "Rename the Player card". The class keeps STORMCALLER; the agent drafts a new name for the card's role with the kits, for approval.
+  - whether a Player card gives the player's hits an elemental part (`COMBAT.md` §7.9). **Answered:** "The role's element". The class's hits take the role's element for the triangle only; no elemental part is added;
+  - **a name clash, answered 2026-11-02:** STORMCALLER was both the electric Technomancer's Player card role and one of the six player classes planned in `PLAYER-CLASSES.md` §2.2. The owner: "Rename the Player card". The class keeps STORMCALLER. The card's role is **ARC WARDEN** (the owner's choice from three drafted names).
 
 **Then the build (rules approved 2026-11-02):**
 1. **The slots and their rules:**
@@ -165,7 +165,7 @@ The BLOOM build itself would come in the update after this one, or late in this 
 ## 6. Approvals needed
 
 1. **This scope and order:** Parts 1 to 4, and whether BLOOM's drafts come in this update. **Approved** 2026-11-02 ("Approve as drafted": BLOOM's drafts are not in this update).
-2. **Gate 1:** the 18 Player card kits (the draft comes first), the player's elemental part, the electric Technomancer role's new name.
+2. **Gate 1:** the 18 Player card kits (the draft comes first), the player's elemental part, the electric Technomancer role's new name. **Approved** 2026-11-02: "Approve as drafted"; "The role's element"; "ARC WARDEN".
 3. **Gate 2:** the looks' mockups.
 4. **Gate 3:** the first card item, then each batch.
 5. **Build C's open point:** whether Side Quest's picture in the dialogue box changes too. **Answered** 2026-11-02: "Keep as built".

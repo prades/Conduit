@@ -846,7 +846,53 @@ Build C drew Side Quest as the void walker and showed the same sheet in the dial
 - `OPEN-QUESTIONS.md` §1n and §1o marked answered.
 
 ### Follow-up
-The following update's Part 1 gate: the 18 Player card kits and the electric Technomancer role's new name, drafted for approval.
+The following update's Part 1 gate: the 18 Player card kits and the electric Technomancer role's new name, drafted for approval. *(Drafted and approved the same day: below.)*
 
 ### Supersedes / superseded by
 None.
+
+## DECISION: The 18 Player card kits; ARC WARDEN; the player's hits take the role's element; g to main
+
+- **Date:** 2026-11-02
+- **Status:** Approved (in a prompt, after the kits' draft). Designed, not implemented: the kits are built in the following update's Part 1.
+- **Branch/build:** drafted in docs commit 69b3a70; build `2026-11-02g` (107a8f9) and the draft fast-forwarded to `main`; on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` section 2 ("The 18 kits"), `COMBAT.md` §7.9, `FOLLOWING-UPDATE.md` (gate 1), `PLAYER-CLASSES.md` §2.2
+
+### Context
+The owner asked for a draft of all 18 kits to review. The draft worked from the approved names and themes and the game's existing numbers. A research pass of the code found five themes that need things the game does not have:
+- no sentries of the Technomancer's own;
+- no lamp beam;
+- no charged shot;
+- no pull toward the player;
+- followers that no longer fall for good.
+
+The draft read each one in existing terms and said so.
+
+### Decision
+- **The 18 kits:** "Approve as drafted". The rules for all 18:
+  - each role works on its class's own attacks;
+  - a status lands on every hit, at Pack 1's Precision numbers;
+  - one card is worn at a time, it needs its class, and it sleeps after a switch.
+
+  CRYO MARKSMAN's slower fire, marked optional, is in as drafted.
+- **The player's hits** (`COMBAT.md` §7.9): "The role's element". The class's hits take the role's element for the triangle only, and no elemental part is added.
+- **The electric Technomancer role:** "ARC WARDEN" (the planned class keeps STORMCALLER).
+- **Main:** "Push to main" (build g and the draft).
+
+### Alternatives considered
+- For the hits: no change to their element; a half-elemental split like a follower's (it needs a SP.ATK the player does not have).
+- For the name: SURGE ENGINEER, LAMPLIGHTER.
+- Reviewing the doc before approving.
+
+### Impact
+When built (Part 1):
+- js/cards.js (the 18 cards, the kind's rules, the deal);
+- the classes' attacks: js/input.js (the gun), js/technomancer.js, js/mutator.js, js/serum.js, js/clone.js, js/stations.js (the sentries, the relays), js/facilitytutorial.js (the lamp);
+- js/sidequest.js (the shop);
+- the roster and CARDS screens.
+
+### Follow-up
+Part 1's build, in the order `FOLLOWING-UPDATE.md` gives.
+
+### Supersedes / superseded by
+- Fills in "Class cards and Player cards filled in" (2026-11-02): the kits were the open part.
