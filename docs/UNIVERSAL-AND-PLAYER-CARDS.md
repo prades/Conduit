@@ -14,11 +14,12 @@
     - The Player card rules: a role needs its class; one role of a class at a time; a role for another class sleeps in its slot after a switch, greyed and marked ASLEEP, and wakes on switching back.
     - The Gunslinger's six roles, on every round that hits from any gun.
   - **Implemented in build `2026-11-02i` (Part 1b; on main at the owner's word), and tested:** the Technomancer's six roles (tests/playercards.js; section 9, "Part 1b"). Not playtested.
-  - **Designed and approved, not implemented:** the Mutator's six kits (section 2, "The 18 kits": approved 2026-11-02, "Approve as drafted"): Part 1c. Series 2's deal of the eighteen and Side Quest's sale: Part 1d.
+  - **Implemented in build `2026-11-02j` (Part 1c, on the branch), and tested:** the Mutator's six roles, on the lash, the clone and the serum (tests/playercards.js, 42 checks; section 9, "Part 1c"). Not playtested.
+  - **Designed and approved, not implemented:** Series 2's deal of the eighteen and Side Quest's sale: Part 1d.
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-02
-- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on main too, at the owner's word) the Gunslinger's six are Player cards too, beside the two test cards.
+- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on main too, at the owner's word) the Gunslinger's six are Player cards too, beside the two test cards; the Technomancer's six since build `2026-11-02i` (on main), the Mutator's six since build `2026-11-02j` (on the branch).
 - **Related docs:** `TUTORIAL.md` (the equip cards), `UI-STYLE.md` (the CARDS screen; YOU on the roster), `COMBAT.md` §7 (the damage types and race weaknesses), `SERIES-2.md`, `TECHNICIANS.md`, `OPEN-QUESTIONS.md` §1l and §3, `DECISION-LOG.md`
 
 ## 1. Intent
@@ -130,8 +131,7 @@ With BLOOM, the seventh element, there are 21 roles. BLOOM's three are named and
 ### The 18 kits (drafted 2026-11-02; approved the same day)
 
 - **Status:** **Approved** 2026-11-02 ("Approve as drafted"), with rule 2 ("The role's element") and the electric Technomancer role's name (ARC WARDEN).
-  - **Implemented and tested:** the four rules and the Gunslinger's six (build `2026-11-02h`, Part 1a; section 9, "Part 1a"); the Technomancer's six (build `2026-11-02i`, Part 1b; section 9, "Part 1b"). The readings taken where the kits did not say are in `OPEN-QUESTIONS.md` §1p and §1q.
-  - **Designed, not built:** the Mutator's six (Part 1c).
+  - **Implemented and tested:** the four rules and the Gunslinger's six (build `2026-11-02h`, Part 1a; section 9, "Part 1a"); the Technomancer's six (build `2026-11-02i`, Part 1b; section 9, "Part 1b"); the Mutator's six (build `2026-11-02j`, Part 1c; section 9, "Part 1c"). The readings taken where the kits did not say are in `OPEN-QUESTIONS.md` §1p, §1q and §1r.
 - **Numbers:** every number below is one the game already has, unless it is marked **new**. CRYO MARKSMAN's slower fire, marked optional in the draft, is in as drafted.
 - **Why it exists:** the owner asked for a draft of all 18 to review (`FOLLOWING-UPDATE.md`, gate 1).
 
@@ -216,7 +216,7 @@ Every card is now an element, class, species (subclass) or Player card. The Univ
 - [x] A Brawler's opportunity card adds its bonus (Refined +20%, Precision +30%, Prototype +40%) once for each weakness a hit exploits: an element match-up, a race weak to the hit's physical type or to Elemental (`COMBAT.md` §7), a stunned or sleeping target. Any other hit is unchanged. *(Build B.)*
 - [x] The Technician's cooldown cards are Series 2's four, unchanged.
 - [x] The player's slots take Player cards only, one at a time, the role matching the player's class; a role for the other class sleeps until the player switches back. *(Build B: Player cards only. The rest since build `2026-11-02h`, Part 1a: tests/playercards.js.)*
-- [ ] Each of the 18 roles' kits works on its class's own attacks, as approved. *(The Gunslinger's six since build `2026-11-02h`, the Technomancer's six since build `2026-11-02i`: tests/playercards.js. The Mutator's: Part 1c.)*
+- [x] Each of the 18 roles' kits works on its class's own attacks, as approved. *(The Gunslinger's six since build `2026-11-02h`, the Technomancer's six since build `2026-11-02i`, the Mutator's six since build `2026-11-02j`: tests/playercards.js. Not playtested.)*
 - [ ] Series 2 deals the 63 cards of section 2, and no longer deals the eight cut Brawler and Mage cards. Copies already owned leave collections, hands and slots, with ◆1,000 back for each permanently unlocked copy. *(Build B: 45 of the 63, the 18 Player cards to come; the cut, the clean-up and the refund are built.)*
 - [ ] After each quest, Side Quest sells that quest line's element's three Player cards, ◆1,000 each, kept for good. *(With the Player cards.)*
 - [x] No card is of the Universal kind. *(Build B.)*
@@ -372,6 +372,35 @@ On `claude/start-game-project-HSh7Z`, not on main until the owner says so. Six m
 - **Frame cost:** the relays' areas and ARC WARDEN's beat run on the card tick (every 30 frames): one pass over the creatures for each online relay, one for the lamp. Nothing per frame.
 - **Readings taken where the kits did not say:** `OPEN-QUESTIONS.md` §1q.
 
+### Part 1c: the Mutator's six (build `2026-11-02j`)
+
+On `claude/start-game-project-HSh7Z`, not on main until the owner says so. Six more rows of `EQUIP_PLAYER_CARDS` (`match: "mutator"`), with their numbers and their words; the kits are in js/playercards.js. Only the Mutator's own clone (the one its Clone Bay grows) is touched.
+
+- **Rule 2, the lash and the clone's bites:**
+  - The lash (js/mutator.js `_mxStrike`, through `playerHitElement`) takes the role's element, as since Part 1b. It stays Slashing.
+  - The clone's bites take it too (js/damage.js `dmgBiteHit` → `playerCloneElement` → `dmgCloneHit`, one frozen hit for each element). A bite stays Piercing and all physical; the element sets the triangle on the whole bite, as on your own hits.
+  - The bites are its bite (js/predator.js `bite`) and its POUNCE's bite as it lands (js/mutator.js `clonePounceTick`). Its special and a striker's shot are not bites: they keep no element.
+- **The clone's bites' statuses** (`playerCloneBit`, on every bite that lands, with Pack 1's numbers; a bite that kills sets nothing):
+  - PLAGUE DOCTOR (toxic) WEAKENS;
+  - SPARK GENETICIST (electric) GLITCHES;
+  - CORE SHAPER (core) KNOCKS BACK, away from the clone.
+
+  ASH SURGEON's and CRYO GENETICIST's bites take their element only.
+- **ASH SURGEON** (fire) **and PLAGUE DOCTOR** (toxic), the serum's pool: on each heal beat (js/serum.js `serumTick` → `playerSerumBeat`: every 30 frames, the first at once), every creature within the pool's 2.6 tiles BURNS / is WEAKENED. The pool still heals your followers and clone.
+- **CRYO GENETICIST** (ice):
+  - a fallen follower comes back at no cost to the Crystal (js/game.js's respawn queue asks `playerReviveFree`): nothing is drawn, and it does not wait at the reserve;
+  - the clone, when it falls, is preserved at once with no Ice Mage (js/mutator.js `cloneFallen` asks `playerClonePreserved`): its body is a specimen capsule with its level, upgrades and cost. You take it by walking over it, and restore it at the Crystal (`SPECIMENS.md`). The screen says "… HAS FALLEN — PRESERVED AT ONCE, ITS 2 UPGRADES KEPT".
+- **SPLICER** (flux): the lash is flux. The clone's bites take the element of the last creature it killed, with that element's status (js/game.js's kill sweep → `playerCloneKill`):
+  - the element stays until its next kill of a creature with an element; a creature with none leaves it as it was;
+  - "SPLICED: TOXIC" shows over the clone when it changes;
+  - before any such kill the bites have no element;
+  - the element is the clone's (`_pcSplice`) and is not saved.
+- **CORE SHAPER** (core): the clone has 50% more health, added as two ARMOR PLATING ranks add (js/levels.js `_applyPredLevel` → `playerCloneHealth`), and walks 20% slower (its `paceMult`, read where every slow is: js/abilities.js `tickSlowSpeed`).
+  - Both follow the role on the card tick (`_pcCloneTick`).
+  - The clone's share of health is kept when the card goes on or off, so wearing it heals nothing.
+- **Frame cost:** nothing per frame. A bite asks for the role once (two slots); the pool's beat is one pass over the creatures for each pool every 30 frames; the clone's health is made again only when the role changes.
+- **Readings taken where the kits did not say:** `OPEN-QUESTIONS.md` §1r.
+
 ## 9a. Frame cost
 
 The reach is checked every 30 frames: one pass over the followers and the clones for each aura worn. A unit's stats are made again only when its auras change. The drawing is a dashed ellipse for each Mage and colour, and a small glint for each unit in reach, each frame; nothing is allocated per frame. Measured: not on an iPad. tests/perf.js's frame budgets hold in the full run (section 10).
@@ -401,6 +430,11 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 | Part 1b: FORGEMASTER (a sentry fires, its round lands and burns; the repairs 300 and 50 frames), SMOG ENGINEER and CRYO TECH (near a relay, not 3.5 tiles off, nothing while it is down), ARC WARDEN (in the light, out of it, the beat, the overcharge over), GRAVITY ENGINEER (the swap, the wait, not with one holding a room, not across a doorway, no role), BULWARK ENGINEER (toward a locked creature, ahead, no role) | Passed | tests/playercards.js |
 | Part 1b: SWAP on the squad member's card in the real page (shown with the role, trades places, then counts down; gone without the role) | Passed | tests/playercards.js (Chromium); tests/squadfly.js and tests/exile.js count the card's shown buttons |
 | Part 1b: the rest of the game | Passed, but for a known flake | the full run on build `2026-11-02i`: 85 of 87, then tests/exile.js passed once it counted shown buttons; tests/carousel.js's known random-name check failed (passed once and failed once alone) |
+| Part 1c (build `2026-11-02j`): the six cards, their numbers (CORE SHAPER's health tied to two ARMOR ranks) and words | Passed | tests/playercards.js |
+| Part 1c: the lash and the clone's bite in the role's element (×1.3 on a flux creature with ASH SURGEON; the same on a creature with no element; the bite Piercing; no element with no role, from a clone not yours, or on its special) | Passed | tests/playercards.js |
+| Part 1c: the bites' statuses (each role, none, a killing bite), a bite in the real game loop and a pounce's bite; the pool's beats (the burn and the weakness, renewed, not 3 tiles off, the heal kept); CRYO GENETICIST (a follower back with the Crystal under its reserve and nothing drawn; the clone a capsule, its upgrades kept, taken by walking over it); SPLICER (none before a kill, toxic after a toxic ant's, kept through a plain kill, fire after a fire one, nothing under another role); CORE SHAPER (×1.5 health, ×2 with two ARMOR ranks, its share kept, the pace ×0.8 and a slow on top, all undone off); a role asleep doing nothing | Passed | tests/playercards.js |
+| Part 1c: the suites whose counts moved with six more cards | Passed | tests/cards.js, tests/classcards.js, tests/series2.js, tests/series2abilities.js, tests/packs.js |
+| Part 1c: the rest of the game | Passed | the full run, 87 suites, on build `2026-11-02j`, the first time (tests/perf.js's frame budgets and tests/carousel.js included) |
 | Played by a person | Not done | not playtested |
 
 ## 11. Open questions
@@ -425,6 +459,7 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 18. **Readings taken in Build B** (section 9): the same aura is the same card (**confirmed**: "Both count"); two opportunity cards add; the Prototype's status uses Pack 1's Precision numbers; the clone's whole hit grows; the ring is drawn over the floor and the units (now within its room); the refund shows a line. The open ones are the owner's to confirm or change.
 19. **Part 1a's readings** (build `2026-11-02h`): "one at a time" with two slots, when the class is asked, the guns' "20% slower", ARC SLINGER's jump, CRYO MARKSMAN's freeze, the pull's and the push's directions, where the cards come from until Part 1d, and the look of a role asleep. `OPEN-QUESTIONS.md` §1p. **Confirmed 2026-11-02, as built:** "One per class", "Rate × 0.8", "All 18 together". The others stand as readings.
 20. **Part 1b's readings** (build `2026-11-02i`): the sentries' rounds stay electric; the relays' area by distance alone; the first zap at once; SWAP on a tablet's squad card only, on your stretch of floor; the shield toward a locked creature or the way you face. `OPEN-QUESTIONS.md` §1q. **Confirmed 2026-11-02, as built:** "Distance alone", "Tablet/desktop only for now". The others stand as readings.
+21. **Part 1c's readings** (build `2026-11-02j`): the clone's "bites" are its bite and its pounce's (not its special or shot); the pool's area by distance, its status on each heal beat; CRYO GENETICIST takes both readings, (a) and (b); SPLICER's element from any kill of the clone's, kept until the next kill with an element, not saved; CORE SHAPER's health added as ARMOR's ranks add, its share kept, its walk × 0.8. `OPEN-QUESTIONS.md` §1r, for the owner to confirm or change.
 
 ## 12. History
 
@@ -451,4 +486,5 @@ The reach is checked every 30 frames: one pass over the followers and the clones
   The owner first chose "found in packs" for the Player cards over a class-rank unlock or a SHOP price.
 - 2026-11-02: **the 18 kits drafted and approved** ("Approve as drafted"), with the hit taking the role's element for the triangle only and the electric Technomancer role named ARC WARDEN.
 - 2026-11-02, build `2026-11-02h` (the following update's Part 1a): **the Player card rules and the Gunslinger's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1p. On main at the owner's word, its three main readings confirmed as built ("One per class", "Rate × 0.8", "All 18 together").
-- 2026-11-02, build `2026-11-02i` (Part 1b): **the Technomancer's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1q.
+- 2026-11-02, build `2026-11-02i` (Part 1b): **the Technomancer's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1q. On main at the owner's word, two readings confirmed as built ("Distance alone", "Tablet/desktop only for now").
+- 2026-11-02, build `2026-11-02j` (Part 1c): **the Mutator's six built**, on the branch: all eighteen kits are in. The readings taken are in `OPEN-QUESTIONS.md` §1r.

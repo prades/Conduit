@@ -108,6 +108,7 @@ The owner: "make it to where the items in the shop are in a new menu on the card
   - It is one purple button, SWAP PLACES ⇄, with a small line: YOU TAKE ITS PLACE, IT TAKES YOURS, or why not (SWAP READY IN 60 S, NOT ON YOUR STRETCH OF FLOOR).
   - It is off while it cannot be used. Without the role the row is not shown.
   - A tablet or a desktop only, as the card is. Its look is the agent's (`OPEN-QUESTIONS.md` §1q).
+- **The Mutator's roles' words in the world** (since build `2026-11-02j`; js/playercards.js, js/mutator.js): SPLICER's clone shows SPLICED: TOXIC over itself, in the element's colour, when its bites take a new element. With CRYO GENETICIST, the clone's fall reads "YOUR ANT SCOUT CLONE HAS FALLEN — PRESERVED AT ONCE, ITS 2 UPGRADES KEPT" in ice blue, over "CRYO GENETICIST: WALK OVER ITS CAPSULE, THEN TAKE IT TO THE RESURRECTION ZONE (THE CRYSTAL)". The statuses' own words (BURN, POISON, GLITCH) float as for every card.
 - The bar at the foot says YOU LEAD THE SQUAD: ONLY FOLLOWERS JOIN IT. ◂ ▸ walk the creatures: from the player they go to the first or the last of the strip.
 
 **A pack opened** (`_cdRevealBox`): an overlay over the sheet, which shows through it, blurred.

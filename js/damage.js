@@ -90,14 +90,18 @@ const DMG_HIT_ARC = Object.freeze({ type: "elemental", element: "electric", play
 const _DMG_HIT_ARC_OF = {};
 function dmgArcHit(el) { if (!el || el === "electric") return DMG_HIT_ARC; return _DMG_HIT_ARC_OF[el] || (_DMG_HIT_ARC_OF[el] = Object.freeze({ type: "elemental", element: el, player: true })); }
 const DMG_HIT_CLONE = Object.freeze({ type: "piercing" });                   // the Mutator's clone's bite
+// the clone's bite with a Mutator's role awake (a Player card, js/playercards.js playerCloneElement): Piercing still and all physical, the role's element setting the triangle on the whole hit as the player's
+// own hits do (`player`; rule 2: for the triangle only), each made once
+const _DMG_HIT_CLONE_OF = {};
+function dmgCloneHit(el) { if (!el) return DMG_HIT_CLONE; return _DMG_HIT_CLONE_OF[el] || (_DMG_HIT_CLONE_OF[el] = Object.freeze({ type: "piercing", element: el, player: true })); }
 const DMG_HIT_ELEMENTAL = Object.freeze({ type: "elemental" });              // an enemy's elemental extra (a charged shot); the element comes with the hit
 const DMG_HIT_ENEMY = {};                                                    // an enemy's hit by its type: { slashing: {type}, ... }
 for (const t of DMG_TYPES) DMG_HIT_ENEMY[t] = Object.freeze({ type: t });
 
-// A creature's bite (its race's type), or the Mutator's clone's (Piercing)
-function dmgBiteHit(p) { return p && p.isClone ? DMG_HIT_CLONE : DMG_HIT_ENEMY[(p && DMG_RACE_BITE[p.speciesName]) || "slashing"]; }
-// A creature's special (MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE, BLADE FLURRY), else its bite's type
-function dmgAbilityHit(p) { const n = p && p.abilityDef && p.abilityDef.name; return n && DMG_ABILITY[n] ? DMG_HIT_ENEMY[DMG_ABILITY[n]] : dmgBiteHit(p); }
+// A creature's bite (its race's type), or the Mutator's clone's (Piercing; in the element of a Mutator's role while one is awake: js/playercards.js)
+function dmgBiteHit(p) { return p && p.isClone ? dmgCloneHit(typeof playerCloneElement === "function" ? playerCloneElement(p) : null) : DMG_HIT_ENEMY[(p && DMG_RACE_BITE[p.speciesName]) || "slashing"]; }
+// A creature's special (MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE, BLADE FLURRY), else its bite's type (a clone's special is not a bite: no role's element)
+function dmgAbilityHit(p) { const n = p && p.abilityDef && p.abilityDef.name; return n && DMG_ABILITY[n] ? DMG_HIT_ENEMY[DMG_ABILITY[n]] : p && p.isClone ? DMG_HIT_CLONE : dmgBiteHit(p); }
 
 // ── LOOKUPS ───────────────────────────────────────────────
 // The form that decides a follower's attacks, lean and row: its own, or the one that replaced a retired form; null for an egg

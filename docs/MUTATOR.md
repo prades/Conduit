@@ -149,6 +149,18 @@ ASKED: *"The Mutator can craft healing serums that are splashed onto the ground.
 
 ASKED (the phase brief): "The active clone needs to become a full member of the player's squad [...] Display the clone alongside other squad members in the quick-draw tabs. Allow the player to select the clone individually. Allow the clone to participate in squad-wide commands. Include the clone in attack selections". Built (js/party.js `partyClone`, `partyUnits`, `partySquadHas`, `_partyCloneCard`): while the one clone lives it has a fourth card on the squad bar after the three (purple, `ANT CLONE`, level, state, health and XP; a CLONE tag in the corners), picked alone with a tap, with its own card on the fly (THE MUTATOR'S CLONE, no DISMISS: it is not a roster follower and keeps its own lifecycle above). RETREAT, HOLD, COME, ALL and the enemy card's ATTACK reach it; it shares the squad's XP; it follows you through a doorway when it has no order and is put beside you on a load (both were bugs: it was left behind); its card is in the phone's SQUAD petal; SWITCH ROLES no longer gives it a follower's role (a bug). The squad's cap of three followers is unchanged: the clone is the Mutator's fourth. Tested: tests/clonesquad.js.
 
+### 2.8 The Mutator's Player cards (build `2026-11-02j`)
+
+The Mutator's six roles (`UNIVERSAL-AND-PLAYER-CARDS.md` section 9, "Part 1c"; the kits approved by the owner, "Approve as drafted") work on the lash, the clone and the serum, and only on the Mutator's own clone:
+- the lash and the clone's bites (its bite, and its POUNCE's bite as it lands) take the role's element, for the triangle only;
+- ASH SURGEON and PLAGUE DOCTOR: creatures in the serum's pool burn, or are weakened, on each heal beat;
+- PLAGUE DOCTOR, SPARK GENETICIST and CORE SHAPER: the clone's bites weaken, glitch, or knock back;
+- CRYO GENETICIST: a fallen follower comes back at no cost to the Crystal, and the fallen clone is preserved at once with no Ice Mage, its upgrades kept (`SPECIMENS.md`);
+- SPLICER: the clone's bites take the element, and its status, of the last creature it killed;
+- CORE SHAPER: the clone has 50% more health (as two ARMOR PLATING ranks add, on top of those bought) and walks 20% slower.
+
+The readings taken are in `OPEN-QUESTIONS.md` §1r. Tested: tests/playercards.js. Not playtested.
+
 ## 3. Tentative: every number is a knob
 
 | Knob | Where | Value | What it does |

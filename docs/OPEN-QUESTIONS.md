@@ -275,9 +275,40 @@ Part 1b followed the approved kits. Where they did not say, these readings were 
    - nobody holds behind it.
 7. **SWAP's look:** a purple row, SWAP PLACES ⇄, above INDEX and DISMISS, with a line saying what it does or why not. It is the agent's, for the owner to keep or change.
 
+## 1r. Part 1c's readings: the Mutator's six (build `2026-11-02j`, on the branch; `UNIVERSAL-AND-PLAYER-CARDS.md` section 9, "Part 1c")
+
+Part 1c followed the approved kits. Where they did not say, these readings were taken, each easy to change; they are the owner's to confirm or change.
+1. **Rule 2 for the Mutator.** The lash and the clone's bites take the role's element, for the triangle only. The bite stays Piercing and all physical, with the triangle on the whole bite, as on your own hits.
+   - "The clone" is the Mutator's own clone, the one the Clone Bay grows for it.
+   - Its "bites" are its bite and its POUNCE's bite as it lands. Its special (an ant striker's MANDIBLE FRENZY, a beetle's CARAPACE SLAM) and a striker's or tank's shot are not bites: they take no element and set nothing. *(The other reading: all of the clone's attacks.)*
+2. **ASH SURGEON and PLAGUE DOCTOR, the serum's pool:**
+   - "in it" is within the pool's 2.6 tiles, by distance, as for the allies it heals;
+   - the status lands on each heal beat (every 30 frames, the first at once on the splash), with Pack 1's numbers: the burn lasts up to 3 s after a creature leaves the pool, the weakness 4 s;
+   - PLAGUE DOCTOR's "poisons enemies" is the weakness, as its kit says.
+3. **CRYO GENETICIST: both readings, as proposed.**
+   - (a) A follower's return costs the Crystal nothing while the role is awake when it comes back. With nothing to pay, it does not wait at the Crystal's 10% reserve either.
+   - (b) The clone, when it falls, is preserved at once: its body is a specimen capsule, as an Ice Mage leaves one, with its level, its upgrades and what it cost. You take it by walking over it and restore it at the Crystal (`SPECIMENS.md`). A capsule gives no DNA to salvage.
+4. **SPLICER:**
+   - "the last creature it killed" is any kill of the clone's: a bite, its special, its shot;
+   - the element and its status stay the clone's until its next kill of a creature with an element;
+   - it is not saved: after a load, or after the clone waited out a switch of class, the clone starts with none;
+   - it is kept while SPLICER is off, and works again when SPLICER is back;
+   - "SPLICED: TOXIC" shows over the clone when it changes.
+
+   Today only the Sewers' toxic brood and the Toxic Queen have an element, so in play it is toxic or nothing.
+5. **CORE SHAPER:**
+   - +50% health is added as two ARMOR PLATING ranks add, on top of any bought: with two ranks bought, ×1.5 becomes ×2. It goes beyond ARMOR's top rank.
+   - Putting the card on or taking it off keeps the clone's share of health (half stays half), so wearing it heals nothing.
+   - "Moves 20% slower" is its walking pace × 0.8, a slow on top of it; its pounce's leap is not slowed.
+   - Its knock back is Pack 1's push (0.22), away from the clone.
+   - Its health and pace follow the role on the card tick, within half a second.
+6. **The words.** "EVERY BITE OF YOUR CLONE TO POISON: …", "ENEMIES IN YOUR SERUM'S POOL, ON EVERY HEAL BEAT, TO BURN: …". SPLICER's first line names the lash only ("YOUR LASH IS FLUX"). When CRYO GENETICIST preserves the clone, the screen says "… HAS FALLEN — PRESERVED AT ONCE, ITS 2 UPGRADES KEPT".
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
+
+- **A card's words are cut on its face** (seen 2026-11-02, build `2026-11-02j`, on the CARDS screen at 1180 × 820). The face's box shows about five lines, so the longer words run past it and are cut. That is 23 cards: the six Mage CROWNs, the three opportunity cards and 14 of the 18 Player cards (PLAGUE DOCTOR's words are the longest). The EFFECT line beside the stage always shows the whole text. It is not new: the auras and the opportunity cards have been cut this way since Build B. Ways to mend it, for the owner: smaller type on the face for long words; a short line on the face (the role's theme) with the full words in EFFECT; or a taller box. Nothing is changed until the owner picks.
 
 ## 3. Not decided, nothing built
 

@@ -5,7 +5,7 @@
 //   OPPORTUNITY   3 (Refined +20%, Precision +30%, Prototype +40%), for each opening a Brawler's hit meets, added up: an element match-up, a race weak to its physical type, a race weak to Elemental, a stunned or sleeping
 //                 target (js/damage.js dmgApply)
 //   SERIES 2      deals 45 (the 20 species cards, the Technician's 4, the 21 new ones); its eight Brawler and Mage class cards are cut, gone from saves, and each owned for good refunds ◆1,000, paid once
-//   THE PLAYER    the Universal kind is retired: the player's slots take Player cards only (the Gunslinger's six since build 2026-11-02h, and two test cards: tests/playercards.js)
+//   THE PLAYER    the Universal kind is retired: the player's slots take Player cards only (the Gunslinger's six since build 2026-11-02h, the Technomancer's since i, the Mutator's since j, and two test cards: tests/playercards.js)
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -87,7 +87,7 @@ async function boot(search, store) {
     });
     check('no card is of the Universal kind, the test cards included; the two that were are PLAYER cards now (test_player_a, test_player_b), beside the Gunslinger\'s six roles (build 2026-11-02h) and the Technomancer\'s six (build 2026-11-02i)', () => {
         const B = J(`(function(){ equipDevSet('on'); const r = Object.values(equipCards()).map(c => c.id + ':' + c.kind); equipDevSet(''); return r; })()`);
-        same(B.filter(x => /:universal$/.test(x)).length, 0, 'a Universal card'); same(B.filter(x => /:player$/.test(x)).join(), 'incendiary_gunner:player,blight_shooter:player,arc_slinger:player,cryo_marksman:player,rift_runner:player,breach_gunner:player,forgemaster:player,smog_engineer:player,arc_warden:player,cryo_tech:player,gravity_engineer:player,bulwark_engineer:player,test_player_a:player,test_player_b:player', 'the Player cards');
+        same(B.filter(x => /:universal$/.test(x)).length, 0, 'a Universal card'); same(B.filter(x => /:player$/.test(x)).join(), 'incendiary_gunner:player,blight_shooter:player,arc_slinger:player,cryo_marksman:player,rift_runner:player,breach_gunner:player,forgemaster:player,smog_engineer:player,arc_warden:player,cryo_tech:player,gravity_engineer:player,bulwark_engineer:player,ash_surgeon:player,plague_doctor:player,spark_geneticist:player,cryo_geneticist:player,splicer:player,core_shaper:player,test_player_a:player,test_player_b:player', 'the Player cards');
     });
 
     group('WHO WEARS WHAT');

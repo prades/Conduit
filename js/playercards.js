@@ -8,7 +8,7 @@
 //      as they were (a gun's round is Projectile: js/damage.js DMG_HIT_GUN, whose triangle falls on the whole hit).
 //   3. A STATUS a kit sets lands on EVERY hit, with Pack 1's Precision numbers (js/cards.js equipElementStatus): a status refreshes and never stacks, so every hit keeps it up without adding more.
 // BUILT (the following update's Part 1a, build 2026-11-02h): the rules and THE GUNSLINGER'S SIX, on every round that hits (js/input.js firePlayerShot: the round, as it lands; js/weapons.js fireLaserShot: the beam, on the
-// creature aimed at and on each it goes through). THE TECHNOMANCER'S SIX: Part 1b, build 2026-11-02i (below). The Mutator's six come in Part 1c; until then its roles do nothing here.
+// creature aimed at and on each it goes through). THE TECHNOMANCER'S SIX: Part 1b, build 2026-11-02i (below). THE MUTATOR'S SIX: Part 1c, build 2026-11-02j (at the end).
 //   INCENDIARY GUNNER  fire rounds that BURN                BLIGHT SHOOTER   toxic rounds that WEAKEN (the game's POISON)        BREACH GUNNER  core rounds that KNOCK BACK
 //   ARC SLINGER        electric rounds: each shot jumps on to the nearest other creature within kit.jump.radius tiles of the first, for kit.jump.share of its damage (the Technomancer arc's jump); one jump a shot,
 //                      never to a creature the shot already hit (the laser's beam goes through some), and the jump sets nothing off
@@ -70,9 +70,9 @@ const _pc = { wardenAt: null, swapAt: 0 };
 function _pcSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 60, text, color: col || "#fff", life: 90, vy: -0.25, size: 13 }); }
 // the Technomancer's role, when it is the role awake; null otherwise
 function playerTechRole() { const r = playerRole(); return r && r.match === "technomancer" && r.kit ? r : null; }
-// THE ELEMENT OF ONE OF THE CLASS'S OWN HITS (rule 2): "gun" (the Gunslinger's), "punch" and "arc" (the Technomancer's), "lash" and "clone" (the Mutator's) take the role's element while a role of that class
-// is awake; `base` otherwise (the selector's for a gun, electric for the gauntlet, none for the lash)
-const _PC_HIT_CLASS = { gun: "gunslinger", punch: "technomancer", arc: "technomancer", lash: "mutator", clone: "mutator" };
+// THE ELEMENT OF ONE OF THE CLASS'S OWN HITS (rule 2): "gun" (the Gunslinger's), "punch" and "arc" (the Technomancer's), "lash" (the Mutator's) take the role's element while a role of that class is awake;
+// `base` otherwise (the selector's for a gun, electric for the gauntlet, none for the lash). The clone's bites: playerCloneElement (below), for SPLICER's sake.
+const _PC_HIT_CLASS = { gun: "gunslinger", punch: "technomancer", arc: "technomancer", lash: "mutator" };
 function playerHitElement(kind, base) { const r = playerRole(); return r && r.kit && r.kit.el && r.match === _PC_HIT_CLASS[kind] ? r.kit.el : base; }
 // FORGEMASTER: what a sentry's round does when it lands (js/stations.js), or null
 function playerSentryHit(src) { const r = playerTechRole(); return r && r.kit.sentries ? (t => { if (t && !t.dead && typeof equipElementStatus === "function") equipElementStatus(src, t, r.kit.el); }) : null; }
@@ -83,6 +83,7 @@ function playerRolesTick() {
     const r = playerTechRole();
     if (r && r.kit.relays) _pcRelays(r);
     if (r && r.kit.lamp) _pcWarden(r); else _pc.wardenAt = null;
+    _pcCloneTick();   // CORE SHAPER's clone (below): its health and its pace follow the role, worn or not
 }
 function _pcFoes() { return (typeof actors !== "undefined" ? actors : []).filter(a => a && !a.dead && a.health > 0 && (typeof isHostileTarget !== "function" || isHostileTarget(a))); }
 function _pcRelays(r) {
@@ -142,4 +143,66 @@ function playerCellShield() {
     const res = techShieldRaise(player, player.x + Math.cos(a) * 5, player.y + Math.sin(a) * 5, r.kit.shield.frames, foe);
     if (!res.ok) _pcSay(res.why, "#ff9c8a");
     return res;
+}
+
+// ── THE MUTATOR'S SIX (the following update's Part 1c, build 2026-11-02j) ──
+//   (rule 2)           its LASH (js/mutator.js _mxStrike, playerHitElement) and its CLONE'S BITES take the role's element, for the triangle only: they stay Slashing and Piercing, all physical (js/damage.js dmgBiteHit →
+//                      playerCloneElement → dmgCloneHit). The clone's bites are its bite (js/predator.js bite) and its POUNCE's bite as it lands (js/mutator.js clonePounceTick). Its special and a striker's shot are
+//                      not bites: they keep no element and set nothing.
+//   ASH SURGEON        fire: on every heal beat of the serum's pool (js/serum.js serumTick → playerSerumBeat), every creature in the pool BURNS
+//   PLAGUE DOCTOR      toxic: the clone's bites WEAKEN (the game's POISON; playerCloneBit), and so does the pool, on its beats
+//   SPARK GENETICIST   electric: the clone's bites GLITCH
+//   CRYO GENETICIST    ice: a fallen follower comes back at no cost to the Crystal (js/game.js's respawn queue → playerReviveFree); your clone, when it falls, is preserved at once with no Ice Mage, its upgrades
+//                      kept (js/mutator.js cloneFallen → playerClonePreserved: its body is a specimen capsule to take to the Crystal, js/specimen.js)
+//   SPLICER            flux: the clone's bites take the element of the last creature it killed (js/game.js's kill sweep → playerCloneKill), with that element's status, until its next kill; a creature with no element
+//                      leaves it as it was. This replaces rule 2 for the clone (the lash is flux). The element is the clone's (c._pcSplice), not saved: a load, or a clone that waited out a switch of class, starts
+//                      with none.
+//   CORE SHAPER        core: the clone's bites KNOCK BACK; the clone has kit.tank.health more health, added as two ranks of ARMOR PLATING add (js/levels.js _applyPredLevel → playerCloneHealth), and moves
+//                      kit.tank.slower slower (its paceMult: js/abilities.js tickSlowSpeed). Both follow the role on the card tick (_pcCloneTick), its share of health kept, so wearing it heals nothing.
+// Only the Mutator's own clone (its primary clone) is touched.
+function playerMutRole() { const r = playerRole(); return r && r.match === "mutator" && r.kit ? r : null; }
+function _pcMyClone(c) { return !!c && c.isClone === true && !!c.primary && c.team === "green" && !c.dead; }
+// THE ELEMENT OF THE CLONE'S BITE (rule 2; SPLICER's: its last kill's), or null (no role: none, as before)
+function playerCloneElement(c) { if (!_pcMyClone(c)) return null; const r = playerMutRole(); return !r ? null : r.kit.splice ? (c._pcSplice || null) : r.kit.el; }
+// THE CLONE'S BITE HAS LANDED on `t` (`dealt` of it): the status its role's kit sets (PLAGUE DOCTOR, SPARK GENETICIST, CORE SHAPER: the role's element's; SPLICER: its last kill's element's). A creature the bite
+// killed takes nothing. True when a status was asked for.
+function playerCloneBit(c, t, dealt) {
+    if (!t || !_pcMyClone(c) || typeof equipElementStatus !== "function") return false;
+    const r = playerMutRole(), el = !r ? null : r.kit.splice ? c._pcSplice : r.kit.bite ? r.kit.el : null; if (!el) return false;
+    equipElementStatus(c, t, el, dealt || 0); return true;
+}
+// SPLICER: a creature has died (js/game.js, once a creature): if your clone killed it and it had an element, the clone's bites take that element from now on
+function playerCloneKill(a) {
+    const c = a && a.lastAttacker; if (!_pcMyClone(c) || !a.element) return null;
+    const r = playerMutRole(); if (!r || !r.kit.splice) return null;
+    if (c._pcSplice !== a.element) {
+        c._pcSplice = a.element;
+        const E = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: c.x, y: c.y, text: "SPLICED: " + (E ? E.label : String(a.element).toUpperCase()), color: E ? E.color : "#dd88ff", size: 12, life: 60, vy: -0.03 });
+    }
+    return c._pcSplice;
+}
+// ASH SURGEON, PLAGUE DOCTOR: a heal beat of the serum's pool `z` (js/serum.js): every creature in it takes the role's status. How many did.
+function playerSerumBeat(z) {
+    const r = playerMutRole(); if (!r || !r.kit.pool || !z || typeof equipElementStatus !== "function") return 0;
+    const R = typeof SERUM !== "undefined" ? SERUM.splash.radius : 2.6; let n = 0;
+    for (const a of _pcFoes()) if (Math.hypot(a.x - z.x, a.y - z.y) <= R) { equipElementStatus(z, a, r.kit.el); n++; }
+    return n;
+}
+// CRYO GENETICIST: does a fallen follower come back at no cost to the Crystal now? Is the clone that has just fallen preserved at once?
+function playerReviveFree() { const r = playerMutRole(); return !!(r && r.kit.freeRevive); }
+function playerClonePreserved() { const r = playerMutRole(); return !!(r && r.kit.preserve); }
+// CORE SHAPER: the clone's extra health, a share of its health added as ARMOR's ranks add (0 with no such role)
+function playerCloneHealth(c) { if (!_pcMyClone(c)) return 0; const r = playerMutRole(); return r && r.kit.tank ? r.kit.tank.health : 0; }
+// on the card tick: the clone's health and pace follow the role. Its health is made again only when the role's share changes, keeping the share of its health it had (so putting the card on and off heals nothing).
+function _pcCloneTick() {
+    const c = typeof mutatorClone === "function" ? mutatorClone() : null; if (!c) return;
+    const t = (playerMutRole() || { kit: {} }).kit.tank, hp = t ? t.health : 0;
+    if ((c._pcHp || 0) !== hp) {
+        const share = c.maxHealth > 0 ? Math.max(0, Math.min(1, c.health / c.maxHealth)) : 1;
+        c._pcHp = hp; if (typeof cloneApplyUpgrades === "function") cloneApplyUpgrades(c);
+        c.health = Math.min(c.maxHealth, share * c.maxHealth);
+    }
+    const pace = t && t.slower > 0 ? 1 - t.slower : 1;
+    c.paceMult = pace < 1 ? pace : undefined;
 }

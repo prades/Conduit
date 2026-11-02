@@ -35,6 +35,8 @@ The code is js/specimen.js; the bodies are js/mutator.js's (`cloneBodies`), the 
 
 **The body is one thing:** salvaged (a clone's DNA, step 5) or preserved, not both. A capsule has nothing to salvage; a salvaged body is gone.
 
+**With CRYO GENETICIST worn** (a Mutator's Player card, build `2026-11-02j`, `UNIVERSAL-AND-PLAYER-CARDS.md`), the clone's body is preserved the moment it falls, with no Ice Mage: steps 2 to 4 are skipped, and it is a capsule on the floor at once, with its level, upgrades and cost. The screen says *… CLONE HAS FALLEN — PRESERVED AT ONCE, ITS 2 UPGRADES KEPT*. Steps 5 and 6 are as above.
+
 **The save** keeps the capsules in the pack and on the floor; the pack's count is the capsules'.
 
 ## Knobs (`SPECIMEN`, js/specimen.js): none is a decision

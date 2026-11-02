@@ -105,11 +105,12 @@ function tickSlowSpeed(actor) {
         else return;
     }
     if (actor.state === 'attack') return;   // deliberately parked at 0
+    const pace = actor.paceMult > 0 ? actor.paceMult : 1;   // a lasting pace of its own (the clone of a CORE SHAPER, a Player card: js/playercards.js); 1 for everyone else
     if (actor.slowed > 0) {
-        actor.moveSpeed = actor.baseMoveSpeed * Math.max(0, actor.slowFactor ?? 1);
-    } else if (actor.slowFactor !== 1 || actor.moveSpeed !== actor.baseMoveSpeed) {
+        actor.moveSpeed = actor.baseMoveSpeed * Math.max(0, actor.slowFactor ?? 1) * pace;
+    } else if (actor.slowFactor !== 1 || actor.moveSpeed !== actor.baseMoveSpeed * pace) {
         actor.slowFactor = 1;
-        actor.moveSpeed  = actor.baseMoveSpeed;
+        actor.moveSpeed  = actor.baseMoveSpeed * pace;
     }
 }
 

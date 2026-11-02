@@ -4,6 +4,25 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **j · Player cards, Part 1c: the Mutator's six roles** (the following update's Part 1, `FOLLOWING-UPDATE.md`; the kits approved by the owner, "Approve as drafted"; on the branch only; commit named in git log). All eighteen kits are now in.
+  - **Main:** build i (3b875f2) and the answers' docs before it (8dcec34) went to main at the owner's word ("Push to main"). Two of its readings were confirmed as built: "Distance alone", "Tablet/desktop only for now" (`DECISION-LOG.md`).
+  - **Six Player cards for the Mutator**, PROTOTYPE, in js/cards.js `EQUIP_PLAYER_CARDS`. The lash and the clone's bites take the role's element, for the triangle only. A bite stays Piercing and all physical. The bites are the clone's bite and its POUNCE's bite as it lands (js/damage.js `dmgCloneHit`). And:
+    - **ASH SURGEON:** on each heal beat of your serum's pool (every half second), every creature in it BURNS.
+    - **PLAGUE DOCTOR:** the clone's bites WEAKEN, and so does the pool.
+    - **SPARK GENETICIST:** the clone's bites GLITCH.
+    - **CRYO GENETICIST:** a fallen follower comes back at no cost to the Crystal, and does not wait at its reserve. Your clone, when it falls, is preserved at once with no Ice Mage: a specimen capsule with its upgrades, to take to the Crystal.
+    - **SPLICER:** the lash is flux. The clone's bites take the element of the last creature it killed, with that element's status, until its next kill ("SPLICED: TOXIC" over it).
+    - **CORE SHAPER:** the clone's bites KNOCK BACK. It has 50% more health (as two ARMOR ranks add) and walks 20% slower. Its share of health is kept when the card goes on or off.
+  - **Hooks:** js/predator.js `bite` and js/mutator.js `clonePounceTick` (the bites); js/serum.js `serumTick` (the pool's beat); js/game.js (the respawn queue's draw, the kill sweep); js/mutator.js `cloneFallen` (the clone preserved); js/levels.js `_applyPredLevel` (the clone's health); js/abilities.js `tickSlowSpeed` (a lasting pace, `paceMult`: 1 for every other unit); js/cards.js (the card tick runs the clone's health and pace).
+  - **Readings taken** where the kits did not say: `OPEN-QUESTIONS.md` §1r, for the owner to confirm or change. Among them: the clone's special and shot are not "bites"; CRYO GENETICIST does both of its proposed readings; SPLICER's element is not saved.
+  - **Tests:**
+    - tests/playercards.js grows to 42 checks. New: the six cards, their numbers and words; the lash and the bite in the role's element; each role's bite; a bite in the real game loop and a pounce's; the pool's beats; the free return and the preserved clone; SPLICER's kills; CORE SHAPER's health and pace; a role asleep.
+    - Counts updated for six more cards: tests/cards.js, classcards.js, series2.js, series2abilities.js, packs.js.
+  - **The Bible:** the Mutator's table in "Player cards: the roles", the counts (87 real cards, 18 Player cards).
+  - **The full run:** all 87 suites passed, the first time (1,836 checks; tests/perf.js's frame budgets and tests/carousel.js included).
+  - **Written up:** docs/UNIVERSAL-AND-PLAYER-CARDS.md (section 9 "Part 1c", the checks), docs/OPEN-QUESTIONS.md §1r, docs/FOLLOWING-UPDATE.md, docs/COMBAT.md §7.9, docs/MUTATOR.md, docs/SPECIMENS.md, docs/FACILITY.md (the Crystal's power), docs/UI-STYLE.md (the words over the clone), docs/SERIES-2.md, docs/TUTORIAL.md, the Bible.
+  - Not playtested.
+
 - **i · Player cards, Part 1b: the Technomancer's six roles** (the following update's Part 1, `FOLLOWING-UPDATE.md`; the kits approved by the owner, "Approve as drafted"; on the branch only; commit named in git log).
   - **Main:** build h (8a770d8) and the answers' docs before it (272183c) went to main at the owner's word ("Push to main"). Its three readings were confirmed as built: "One per class", "Rate × 0.8", "All 18 together" (`DECISION-LOG.md`).
   - **Six Player cards for the Technomancer**, PROTOTYPE, in js/cards.js `EQUIP_PLAYER_CARDS`. Their punch and arc take the role's element, for the triangle only: the punch stays Crushing, and the arc stays Elemental in the role's element (js/damage.js `dmgArcHit`). And:

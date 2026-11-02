@@ -130,8 +130,8 @@ function _predBase(p) {
 }
 function _applyPredLevel(p, fresh) {
     const b = _predBase(p), k = levelFactor(p.level), was = p.maxHealth || 0;
-    // a clone's upgrades (js/mutator.js CLONE_UPGRADES: ARMOR PLATING, SERRATED ARMS) multiply its health and power at every level
-    const uh = p.isClone && typeof cloneUpStat === "function" ? cloneUpStat(p, "health", 1) : 1, up = p.isClone && typeof cloneUpStat === "function" ? cloneUpStat(p, "power", 1) : 1;
+    // a clone's upgrades (js/mutator.js CLONE_UPGRADES: ARMOR PLATING, SERRATED ARMS) multiply its health and power at every level; CORE SHAPER (a Player card: js/playercards.js) adds to its health as two ranks of ARMOR do
+    const uh = (p.isClone && typeof cloneUpStat === "function" ? cloneUpStat(p, "health", 1) : 1) + (p.isClone && typeof playerCloneHealth === "function" ? playerCloneHealth(p) : 0), up = p.isClone && typeof cloneUpStat === "function" ? cloneUpStat(p, "power", 1) : 1;
     p.maxHealth = Math.max(1, Math.round(b.hp * k * uh));
     p.power     = Math.max(1, Math.round(b.attack * k * up));
     p.def       = Math.round(b.defense * k);

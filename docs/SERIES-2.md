@@ -1,6 +1,6 @@
 # Series 2: the items
 
-**Status (build 2026-11-02c, Build B, on the branch): 45 cards implemented and on sale after the purification** (the 20 species cards, the Technician's 4, the 18 Mage auras and the 3 Brawler opportunity cards); tested (tests/series2.js, tests/series2abilities.js, tests/classcards.js), not playtested. The 18 Player cards come in a later update; the 8 Lustrous cards are PROPOSED (a later update). Built in build 2026-11-01j with 32 cards.
+**Status (build 2026-11-02c, Build B, on the branch): 45 cards implemented and on sale after the purification** (the 20 species cards, the Technician's 4, the 18 Mage auras and the 3 Brawler opportunity cards); tested (tests/series2.js, tests/series2abilities.js, tests/classcards.js), not playtested. The 18 Player cards are built (builds `2026-11-02h`, `i` and `j`, the following update's Parts 1a to 1c) and are Series 2's cards, but it does not deal them until Part 1d ("All 18 together"; `UNIVERSAL-AND-PLAYER-CARDS.md`); the 8 Lustrous cards are PROPOSED (a later update). Built in build 2026-11-01j with 32 cards.
 
 **Series 2 reshaped: designed 2026-11-02, implemented in build 2026-11-02c, except the Player cards** (the owner, in prompts; the rules are in `UNIVERSAL-AND-PLAYER-CARDS.md`).
 - **Cut:** the eight Brawler and Mage class cards (the two tables below, marked CUT). Their two proposed Lustrous cards, WAR BANNER and ASTRAL FOCUS, go with them.

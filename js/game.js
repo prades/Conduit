@@ -729,6 +729,7 @@ function render() {
         if (a.dead && isEnemyUnit(a) && !a.progressCounted) {
             a.progressCounted = true;
             if (typeof awardKillXp === "function") awardKillXp(a);
+            if (typeof playerCloneKill === "function") playerCloneKill(a);   // SPLICER (a Player card: js/playercards.js): a kill of your clone's gives it the creature's element
         }
     });
 
@@ -1081,7 +1082,8 @@ function render() {
     for(let i=respawnQueue.length-1;i>=0;i--) {
         const entry=respawnQueue[i]; entry.timer--;
         // ITS RETURN IS PAID FROM THE CRYSTAL (js/crystalpower.js: 3% of its charge); at or below the reserve it WAITS at the Crystal until there is power for it (the owner, 2026-11-01)
-        if (entry.timer <= 0 && typeof crystalDraw === "function") { if (!crystalDraw("follower")) { entry.timer = 0; entry.waitPower = true; continue; } entry.waitPower = false; }
+        // (CRYO GENETICIST, a Player card: a follower's return costs the Crystal nothing while it is awake, js/playercards.js playerReviveFree)
+        if (entry.timer <= 0 && typeof crystalDraw === "function") { if (!(!entry.isClone && typeof playerReviveFree === "function" && playerReviveFree()) && !crystalDraw("follower")) { entry.timer = 0; entry.waitPower = true; continue; } entry.waitPower = false; }
         if(entry.timer<=0){
             if (entry.isClone && entry.speciesName) {
                 // Respawn as clone: makeClone, so a respawned clone is the same thing the summon built.

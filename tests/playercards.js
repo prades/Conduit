@@ -6,6 +6,8 @@
 //   THE RULES     a role goes in only while you are its class; one role of a class at a time; after a switch of class it sleeps in its slot, greyed, doing nothing, and wakes when you switch back; kept through a save
 //   THE KITS      on every round that hits, from any gun (the service gun, the machine gun, the laser's beam): the role's element for the triangle only (the hit stays physical: no elemental share), the status with
 //                 Pack 1's Precision numbers on every hit (refreshed, never stacked)
+// Part 1b (build 2026-11-02i): THE TECHNOMANCER'S SIX (the punch and the arc, the sentries, the relays, the lamp, SWAP, the shield). Part 1c (build 2026-11-02j): THE MUTATOR'S SIX (the lash and the clone's bites in
+// the role's element; the clone's bites' statuses; the serum's pool; the free return and the clone preserved; SPLICER's last kill; CORE SHAPER's health and pace).
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -53,7 +55,13 @@ async function boot(search, store) {
         // a punch that lands on a creature in reach: the health it took (the two beats: a wind-up, then the hit)
         globalThis.__punch = foe => { player.attackCooldown = 0; const h = foe.health; firePlayerShot(foe); let k = 0; while (h - foe.health < 0.001 && k < 90) { render(); k++; } return h - foe.health; };
         // the first relay and its box's spot
-        globalThis.__relay = () => _fp.stations.find(s => s.kind === 'relay');`);
+        globalThis.__relay = () => _fp.stations.find(s => s.kind === 'relay');
+        // a Mutator with the lash, these roles found for the run, the first worn
+        globalThis.__mx = (...ids) => { __clear(); __class('mutator'); equipReset(); for (const id of ids) equipFound.push(id); if (ids[0]) equipPlayerPut(0, ids[0]); return equipPlayer.slice(); };
+        // the Mutator's own clone (its primary clone, as the Clone Bay makes it: js/mutator.js mutatorCloneMade), an ant scout beside you
+        globalThis.__mclone = () => { const c = makeClone('ant', 'scout', player.x + 1, player.y, 'hunt'); c.primary = true; c.upgrades = {}; c.invested = 0; cloneApplyUpgrades(c); c.health = c.maxHealth; c.attackCooldown = 0; return c; };
+        // a creature (that does not move) a tile from the clone: in its bite's reach
+        globalThis.__byClone = (c, dy) => { const e = __dummy(0, 0); e.x = c.x + 1; e.y = c.y + (dy || 0); return e; };`);
     return { run, J, store: sb.localStorage };
 }
 
@@ -115,7 +123,7 @@ function page(w, h, query) {
     await check('six PLAYER cards for the Gunslinger, one per element, each PROTOTYPE and Series 2\'s: INCENDIARY GUNNER, BLIGHT SHOOTER, ARC SLINGER, CRYO MARKSMAN, RIFT RUNNER, BREACH GUNNER', () => {
         const r = J(`EQUIP_PLAYER_CARDS.filter(row => row[2] === 'gunslinger').map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); })`);
         same(r.length, 6, 'the Gunslinger\'s roles'); SIX.forEach(([id, name, el], i) => same(r[i], [id, name, 'player', 'gunslinger', el, 'prototype', 'series2'].join(), name));
-        same(J(`Object.values(EQUIP_CARDS).filter(c => c.kind === 'player').length`), 12, 'Player cards in the game (the Gunslinger\'s six and the Technomancer\'s six; the two test cards are behind ?cards)');
+        same(J(`Object.values(EQUIP_CARDS).filter(c => c.kind === 'player').length`), 18, 'Player cards in the game (the Gunslinger\'s, the Technomancer\'s and the Mutator\'s six; the two test cards are behind ?cards)');
     });
     await check('every number is one the game already has, or the approved new ones: the jump is the Technomancer arc\'s (2.6 tiles, 60%), the freeze the Frost Maw\'s stun (75 frames = 1.25 s), not again for 5 s (new), the guns 20% slower (new), the pull Pack 1\'s knockback (0.22) reversed; the statuses Pack 1\'s Precision cards\'', () => {
         const r = J(`({ jump: EQUIP_CARDS.arc_slinger.kit.jump, arc: [TECHNO.arc.chainRange, TECHNO.arc.chainPct], freeze: EQUIP_CARDS.cryo_marksman.kit.freeze, maw: MAW_STUN, slower: EQUIP_CARDS.cryo_marksman.kit.slower,
@@ -147,7 +155,7 @@ function page(w, h, query) {
             equipDevSet('all'); o.all = EQUIP_PLAYER_CARDS.filter(r => equipInHand(r[0])).length + '/' + EQUIP_PLAYER_CARDS.length; equipDevSet(''); return o; })()`);
         same(r.pool, 45, 'Series 2\'s pool'); same(r.poolPlayer, 0, 'Player cards in its pool'); same(r.dealt, 0, 'Player cards dealt'); same(r.shelf, 0, 'Player cards on the shelf');
         same(r.why, 'FIND IT IN A PACK FIRST', 'an outright unlock'); same(r.whyFound, null, 'the unlock once found'); same(r.unlock, true, 'kept for good'); same(r.owned, true, 'owned'); same(r.shards, 4000, 'the shards after');
-        same(r.all, '12/12', 'every Player card in the hand with ?cards=all');
+        same(r.all, '18/18', 'every Player card in the hand with ?cards=all');
     });
 
     group('THE RULES: it needs its class; one role of a class at a time; it sleeps after a switch of class');
@@ -271,9 +279,9 @@ function page(w, h, query) {
     group('THE TECHNOMANCER\'S SIX (Part 1b, build 2026-11-02i)');
     const TECH = [['forgemaster', 'FORGEMASTER', 'fire'], ['smog_engineer', 'SMOG ENGINEER', 'toxic'], ['arc_warden', 'ARC WARDEN', 'electric'], ['cryo_tech', 'CRYO TECH', 'ice'], ['gravity_engineer', 'GRAVITY ENGINEER', 'flux'], ['bulwark_engineer', 'BULWARK ENGINEER', 'core']];
     await check('six PLAYER cards for the Technomancer, one per element, PROTOTYPE and Series 2\'s; their numbers are the game\'s own (the relays\' area the sleeping potion\'s, the lamp\'s beat the grid\'s, the swap\'s wait and the shield the core technician\'s; repairs at half the time); their words made from them', () => {
-        const r = J(`({ rows: EQUIP_PLAYER_CARDS.slice(6).map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); }), texts: EQUIP_PLAYER_CARDS.slice(6).map(row => EQUIP_CARDS[row[0]].text),
+        const r = J(`({ rows: EQUIP_PLAYER_CARDS.slice(6, 12).map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); }), texts: EQUIP_PLAYER_CARDS.slice(6, 12).map(row => EQUIP_CARDS[row[0]].text),
             nums: [EQUIP_CARDS.smog_engineer.kit.relays.radius, EQUIP_CARDS.cryo_tech.kit.relays.radius, POTION.radius, EQUIP_CARDS.arc_warden.kit.lamp.every, TECHNO.charge.gridEvery, EQUIP_CARDS.gravity_engineer.kit.swap.every, TECH_AB.shield.cooldown,
-                EQUIP_CARDS.bulwark_engineer.kit.shield.width, TECH_AB.shield.width, EQUIP_CARDS.bulwark_engineer.kit.shield.frames, TECH_AB.shield.life, EQUIP_CARDS.forgemaster.kit.repair], kinds: EQUIP_PLAYER_CARDS.slice(6).map(row => equipKindLabel(EQUIP_CARDS[row[0]])) })`);
+                EQUIP_CARDS.bulwark_engineer.kit.shield.width, TECH_AB.shield.width, EQUIP_CARDS.bulwark_engineer.kit.shield.frames, TECH_AB.shield.life, EQUIP_CARDS.forgemaster.kit.repair], kinds: EQUIP_PLAYER_CARDS.slice(6, 12).map(row => equipKindLabel(EQUIP_CARDS[row[0]])) })`);
         same(r.rows.length, 6, 'the roles'); TECH.forEach(([id, name, el], i) => same(r.rows[i], [id, name, 'player', 'technomancer', el, 'prototype', 'series2'].join(), name));
         const n = r.nums; same([n[0], n[1]].join(), [n[2], n[2]].join(), 'the relays\' area against the potion\'s'); same(n[3], n[4], 'the lamp\'s beat against the grid\'s'); same(n[5], n[6], 'the swap\'s wait against the technicians\''); same(n[7] + ',' + n[9], n[8] + ',' + n[10], 'the shield against the core technician\'s'); same(n[11], 0.5, 'the repairs');
         same(r.texts[0], 'YOUR PUNCH AND ARC ARE FIRE · EVERY SENTRY HIT TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS · YOUR REPAIRS ARE TWICE AS FAST', 'FORGEMASTER');
@@ -339,6 +347,99 @@ function page(w, h, query) {
         ok(r.locked[4] > 0 && r.locked[4] <= 3.01, 'its width: ' + r.locked[4]); same(r.locked[5], null, 'it is nobody\'s to hold');
         ok(r.ahead[0] === 1 || r.ahead[0] === 0, 'shields with no lock: ' + r.ahead[0]); if (r.ahead[0] === 1) ok(r.ahead[1] >= 0.99 && r.ahead[1] <= 3.01 && r.ahead[2] === 1, 'not ahead (facing east): ' + JSON.stringify(r.ahead));
         same(r.none.join(), 'LAMP OVERCHARGED,0', 'with no role');
+    });
+
+    group('THE MUTATOR\'S SIX (Part 1c, build 2026-11-02j)');
+    const MUT = [['ash_surgeon', 'ASH SURGEON', 'fire'], ['plague_doctor', 'PLAGUE DOCTOR', 'toxic'], ['spark_geneticist', 'SPARK GENETICIST', 'electric'], ['cryo_geneticist', 'CRYO GENETICIST', 'ice'], ['splicer', 'SPLICER', 'flux'], ['core_shaper', 'CORE SHAPER', 'core']];
+    await check('six PLAYER cards for the Mutator, one per element, PROTOTYPE and Series 2\'s; their numbers are the game\'s own (CORE SHAPER\'s +50% health is two ranks of ARMOR PLATING; its 20% slower is new, approved); their words made from them', () => {
+        const r = J(`({ rows: EQUIP_PLAYER_CARDS.slice(12).map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); }), texts: EQUIP_PLAYER_CARDS.slice(12).map(row => EQUIP_CARDS[row[0]].text),
+            tank: EQUIP_CARDS.core_shaper.kit.tank, armor: CLONE_UPGRADES.armor.stat.health.mul, kinds: EQUIP_PLAYER_CARDS.slice(12).map(row => equipKindLabel(EQUIP_CARDS[row[0]])) })`);
+        same(r.rows.length, 6, 'the roles'); MUT.forEach(([id, name, el], i) => same(r.rows[i], [id, name, 'player', 'mutator', el, 'prototype', 'series2'].join(), name));
+        same(r.tank.health, r.armor * 2, 'CORE SHAPER\'s health against two ranks of ARMOR'); same(r.tank.slower, 0.2, 'its pace');
+        same(r.texts[0], "YOUR LASH AND YOUR CLONE'S BITES ARE FIRE · ENEMIES IN YOUR SERUM'S POOL, ON EVERY HEAL BEAT, TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS", 'ASH SURGEON');
+        same(r.texts[1], "YOUR LASH AND YOUR CLONE'S BITES ARE TOXIC · EVERY BITE OF YOUR CLONE TO POISON: IT HITS 40% WEAKER FOR 4 SECONDS · ENEMIES IN YOUR SERUM'S POOL, ON EVERY HEAL BEAT, TO POISON: IT HITS 40% WEAKER FOR 4 SECONDS", 'PLAGUE DOCTOR');
+        same(r.texts[2], "YOUR LASH AND YOUR CLONE'S BITES ARE ELECTRIC · EVERY BITE OF YOUR CLONE TO GLITCH: ITS WIND-UPS FAIL FOR 0.5 SECONDS", 'SPARK GENETICIST');
+        same(r.texts[3], "YOUR LASH AND YOUR CLONE'S BITES ARE ICE · A FALLEN FOLLOWER COMES BACK AT NO COST TO THE CRYSTAL · IF YOUR CLONE FALLS, IT IS PRESERVED AT ONCE (NO ICE MAGE), ITS UPGRADES KEPT", 'CRYO GENETICIST');
+        same(r.texts[4], "YOUR LASH IS FLUX · YOUR CLONE'S BITES TAKE THE ELEMENT OF THE LAST ENEMY IT KILLED, AND THAT ELEMENT'S STATUS, UNTIL ITS NEXT KILL", 'SPLICER');
+        same(r.texts[5], "YOUR LASH AND YOUR CLONE'S BITES ARE CORE · EVERY BITE OF YOUR CLONE TO KNOCK THE TARGET BACK · YOUR CLONE HAS 50% MORE HEALTH AND MOVES 20% SLOWER", 'CORE SHAPER');
+        same(r.kinds.join('|'), 'PLAYER · MUTATOR · FIRE|PLAYER · MUTATOR · TOXIC|PLAYER · MUTATOR · ELECTRIC|PLAYER · MUTATOR · ICE|PLAYER · MUTATOR · FLUX|PLAYER · MUTATOR · CORE', 'the kind lines');
+    });
+    await check('rule 2 for the Mutator: with ASH SURGEON the lash and the clone\'s bite are fire, for the triangle only: ×1.3 on a flux creature, and on a creature with no element the same as without a role; the bite stays Piercing, all physical; with no role, or from a clone not the Mutator\'s own, as before (no element)', () => {
+        const r = J(`(function(){ const o = {}; const bite = (role, flux) => { __mx(role); const c = __mclone(), e = __byClone(c); if (flux) e.element = 'flux'; const h = e.health; c.bite(e); const d = h - e.health; e.dead = true; actors = actors.filter(x => x !== e); return d; };
+            const lash = (role, flux) => { __mx(role); const e = __dummy(1, 0); if (flux) e.element = 'flux'; const d = __punch(e); e.dead = true; actors = actors.filter(x => x !== e); return d; };
+            o.bite = [bite(null, true), bite('ash_surgeon', true), bite(null, false), bite('ash_surgeon', false)]; o.lash = [lash(null, true), lash('ash_surgeon', true), lash(null, false), lash('ash_surgeon', false)];
+            __mx('ash_surgeon'); const c = __mclone(), h = dmgBiteHit(c); o.hit = [h.type, h.element, h.player, playerHitElement('lash', null), dmgAbilityHit(c) === DMG_HIT_CLONE]; o.notMine = dmgBiteHit({ isClone: true }) === DMG_HIT_CLONE;
+            __mx(); const c0 = __mclone(); o.none = dmgBiteHit(c0) === DMG_HIT_CLONE; return o; })()`);
+        same(r.hit.join(), 'piercing,fire,true,fire,true', 'the bite\'s hit, the lash\'s element, the clone\'s special (no element)'); same(r.none, true, 'the bite with no role'); same(r.notMine, true, 'a clone that is not the Mutator\'s own');
+        ok(r.bite[0] > 0 && r.lash[0] > 0, 'a hit took nothing: ' + JSON.stringify(r)); near(r.bite[1] / r.bite[0], 1.3, 1e-6, 'the bite on a flux creature'); near(r.lash[1] / r.lash[0], 1.3, 1e-6, 'the lash on a flux creature');
+        near(r.bite[3], r.bite[2], 1e-6, 'the bite on a creature with no element'); near(r.lash[3], r.lash[2], 1e-6, 'the lash on a creature with no element');
+    });
+    await check('the clone\'s bites: PLAGUE DOCTOR\'s WEAKEN (40% for 4 s), SPARK GENETICIST\'s GLITCH (0.5 s), CORE SHAPER\'s KNOCK the creature BACK, away from the clone (0.22); ASH SURGEON\'s and CRYO GENETICIST\'s set nothing (their element only); no role, nothing; a bite that kills sets nothing', () => {
+        const r = J(`(function(){ const o = {}; const bite = role => { __mx(role); const c = __mclone(), e = __byClone(c), h = e.health; c.bite(e); const away = (e.kbVX || 0) * (e.x - c.x) + (e.kbVY || 0) * (e.y - c.y) > 0;
+                return [h - e.health > 0, e.toxicWeakened || 0, e.glitched || 0, Math.round(Math.hypot(e.kbVX || 0, e.kbVY || 0) * 1000) / 1000, away, e.burning || 0, e.slowed || 0].join(); };
+            for (const role of [null, 'plague_doctor', 'spark_geneticist', 'core_shaper', 'ash_surgeon', 'cryo_geneticist']) o[role || 'none'] = bite(role);
+            __mx('plague_doctor'); const c = __mclone(), k = __byClone(c); k.health = 1; c.bite(k); o.kill = [k.dead === true, k.toxicWeakened || 0].join(); return o; })()`);
+        same(r.none, 'true,0,0,0,false,0,0', 'no role'); same(r.plague_doctor, 'true,240,0,0,false,0,0', 'PLAGUE DOCTOR'); same(r.spark_geneticist, 'true,0,30,0,false,0,0', 'SPARK GENETICIST');
+        same(r.core_shaper, 'true,0,0,0.22,true,0,0', 'CORE SHAPER'); same(r.ash_surgeon, 'true,0,0,0,false,0,0', 'ASH SURGEON'); same(r.cryo_geneticist, 'true,0,0,0,false,0,0', 'CRYO GENETICIST'); same(r.kill, 'true,0', 'a killing bite');
+    });
+    await check('in the real game loop: the clone, left to fight a creature by itself, bites it, and with PLAGUE DOCTOR the creature it bit is WEAKENED; its POUNCE\'s bite as it lands is a bite too', () => {
+        const r = J(`(function(){ __mx('plague_doctor'); const c = __mclone(), e = __dummy(2.1, 0); let k = 0; const h = e.health; for (; k < 300 && h - e.health < 1; k++) render(); const o = { frames: k, bit: h - e.health > 0, weak: e.toxicWeakened || 0 };
+            __mx('plague_doctor'); const p = __mclone(), t = __dummy(5, 0); p.pounce = { phase: 'air', t: MUTATOR.pounce.air - 1, fx: p.x, fy: p.y, tx: t.x - 1, ty: t.y, target: t }; const h2 = t.health; clonePounceTick(p); o.pounce = [h2 - t.health > 0, t.toxicWeakened || 0].join(); return o; })()`);
+        same(r.bit, true, 'the clone never bit (' + r.frames + ' frames)'); ok(r.weak >= 235, 'the creature it bit is not weakened: ' + r.weak); same(r.pounce, 'true,240', 'the pounce\'s bite');
+    });
+    await check('ASH SURGEON and PLAGUE DOCTOR: on every heal beat of the serum\'s pool (half a second) every creature in it BURNS / is WEAKENED, renewed on each beat; one 3 tiles off takes nothing (the pool is 2.6); the pool still heals your follower; with no role it only heals', () => {
+        const r = J(`(function(){ const o = {}; const pool = role => { __mx(role); serumZones = []; spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.x = player.x - 1; f.y = player.y; f.health = f.maxHealth * 0.5; const h0 = f.health;
+                const a = __dummy(1.5, 0), b = __dummy(3, 0.2); serumSplash(player.x, player.y); serumTick(); const first = [a.burning || 0, a.toxicWeakened || 0, b.burning || 0, b.toxicWeakened || 0]; __frames(30);
+                const res = { first: first.join(), renewed: [a.burning || 0, a.toxicWeakened || 0], healed: f.health > h0 }; for (const e of [a, b]) e.dead = true; actors = actors.filter(x => !x.dead); serumZones = []; return res; };
+            o.ash = pool('ash_surgeon'); o.plague = pool('plague_doctor'); o.none = pool(null); return o; })()`);
+        same(r.ash.first, '180,0,0,0', 'ASH SURGEON\'s first beat (in the pool, and 3 tiles off)'); ok(r.ash.renewed[0] >= 175, 'the burn was not renewed on the next beat: ' + r.ash.renewed[0]);
+        same(r.plague.first, '0,240,0,0', 'PLAGUE DOCTOR\'s first beat'); ok(r.plague.renewed[1] >= 235, 'the weakness was not renewed on the next beat: ' + r.plague.renewed[1]);
+        same(r.none.first, '0,0,0,0', 'no role'); same([r.ash.healed, r.plague.healed, r.none.healed].join(), 'true,true,true', 'the pool healed your follower');
+    });
+    await check('CRYO GENETICIST: a fallen follower comes back at no cost to the Crystal (with the Crystal under its 10% reserve it does not wait, and nothing is drawn); with no role it waits for power, as before', () => {
+        const r = J(`(function(){ const o = {}; const dn = _fp.tut.script.doneAt, cm = crystal.maxHealth, ch = crystal.health; _fp.tut.script.doneAt = 3;
+            const fall = role => { __mx(role); respawnQueue.length = 0; spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; const uid = f.uid;
+                crystal.maxHealth = 300; crystal.health = 20; _crystalDrawnAt = -1e9; f.dead = true; f.health = 0; let k = 0; for (; k < 400 && !followers.some(x => x.uid === uid && !x.dead); k++) render();
+                return [followers.some(x => x.uid === uid && !x.dead), !!(respawnQueue[0] && respawnQueue[0].waitPower), _crystalDrawnAt === -1e9, playerReviveFree()].join(); };
+            o.cryo = fall('cryo_geneticist'); o.none = fall(null); _fp.tut.script.doneAt = dn; crystal.maxHealth = cm; crystal.health = ch; respawnQueue.length = 0; return o; })()`);
+        same(r.cryo, 'true,false,true,true', 'with CRYO GENETICIST (back; not waiting; nothing drawn; free)'); same(r.none, 'false,true,true,false', 'with no role (it waits at the reserve; nothing drawn)');
+    });
+    await check('CRYO GENETICIST: your clone, when it falls, is preserved at once with no Ice Mage: its body is a capsule with its upgrades kept, taken by walking over it; with no role its body lies as before, its upgrades lost', () => {
+        const r = J(`(function(){ const o = {}; const fall = role => { __mx(role); const c = __mclone(); c.upgrades = { armor: 2 }; cloneApplyUpgrades(c); floatingTexts.length = 0; c.health = 0; c.dead = true; render();
+                const b = cloneBodies[cloneBodies.length - 1]; return { b, info: b ? [b.frozen === true, JSON.stringify(b.upgrades)].join() : null, said: floatingTexts.map(t => t.text).join(' | ') }; };
+            const a = fall('cryo_geneticist'); o.cryo = [a.info, /PRESERVED AT ONCE, ITS 2 UPGRADES KEPT/.test(a.said), /UPGRADES ARE LOST/.test(a.said)].join('|');
+            player.x = player.targetX = player.visualX = a.b.x; player.y = player.targetY = player.visualY = a.b.y; player.fpPath = null; render(); o.taken = [specimenCarried.length, specimenCarried.length ? JSON.stringify(specimenCarried[0].upgrades) : null, cloneBodies.length].join('|');
+            specimenReset(); const n = fall(null); o.none = [n.info, /UPGRADES ARE LOST/.test(n.said)].join('|'); cloneBodies = []; return o; })()`);
+        same(r.cryo, 'true,{"armor":2}|true|false', 'with CRYO GENETICIST (a capsule, its upgrades; what is said)'); same(r.taken, '1|{"armor":2}|0', 'the capsule taken by walking over it');
+        same(r.none, 'false,{"armor":2}|true', 'with no role');
+    });
+    await check('SPLICER: the clone\'s bites take the element of the last creature it killed, with that element\'s status (a toxic ant: POISON), until its next kill; before any such kill, none; a creature with no element leaves it as it was; the lash is flux; with another role awake a kill gives nothing', () => {
+        const r = J(`(function(){ const o = {}; __mx('splicer'); const c = __mclone(); o.before = [dmgBiteHit(c) === DMG_HIT_CLONE, playerCloneElement(c), playerHitElement('lash', null)];
+            const e0 = __byClone(c); c.bite(e0); o.before.push(e0.toxicWeakened || 0, e0.glitched || 0); o.before = o.before.join(); e0.dead = true; actors = actors.filter(x => x !== e0);
+            const t = __byClone(c); t.element = 'toxic'; t.health = 1; floatingTexts.length = 0; c.bite(t); render(); o.kill = [t.dead === true, c._pcSplice, floatingTexts.some(x => x.text === 'SPLICED: TOXIC')].join();
+            const e1 = __byClone(c); c.bite(e1); const h = dmgBiteHit(c); o.after = [h.type, h.element, h.player, e1.toxicWeakened || 0].join(); e1.dead = true; actors = actors.filter(x => x !== e1);
+            const p = __byClone(c); p.health = 1; c.bite(p); render(); o.plain = [p.dead === true, c._pcSplice].join();
+            const f = __byClone(c); f.element = 'fire'; f.health = 1; c.bite(f); render(); o.fire = c._pcSplice;
+            __mx('plague_doctor'); const c2 = __mclone(), t2 = __byClone(c2); t2.element = 'toxic'; t2.health = 1; c2.bite(t2); render(); o.other = [t2.dead === true, c2._pcSplice || null].join(); return o; })()`);
+        same(r.before, 'true,,flux,0,0', 'before any kill (no element, nothing set; the lash flux)');
+        same(r.kill, 'true,toxic,true', 'a toxic ant killed'); same(r.after, 'piercing,toxic,true,240', 'its next bite: toxic, and the weakness');
+        same(r.plain, 'true,toxic', 'a creature with no element killed'); same(r.fire, 'fire', 'the next kill with an element'); same(r.other, 'true,', 'a kill with PLAGUE DOCTOR awake');
+    });
+    await check('CORE SHAPER: the clone has 50% more health (added as two more ranks of ARMOR: with two bought, ×1.5 becomes ×2), its share of health kept (wearing it heals nothing), and moves 20% slower (a slow on it still slows it); taken off, both as before', () => {
+        const r = J(`(function(){ const o = {}; __mx(); equipFound.push('core_shaper'); const c = __mclone(); equipTick(true); const base = c.maxHealth, sp = c.baseMoveSpeed; c.health = base / 2; c.state = 'hunt';
+            equipPlayerPut(0, 'core_shaper'); equipTick(true); tickSlowSpeed(c); o.on = [c.maxHealth / base, c.health / c.maxHealth, c.moveSpeed / sp, c.paceMult];
+            applySlow(c, 60, 0.75); tickSlowSpeed(c); o.slowed = c.moveSpeed / sp; c.slowed = 0; tickSlowSpeed(c);
+            equipPlayerPut(0, null); equipTick(true); tickSlowSpeed(c); o.off = [c.maxHealth === base, c.health / c.maxHealth, c.moveSpeed / sp, c.paceMult === undefined];
+            c.upgrades = { armor: 2 }; cloneApplyUpgrades(c); const a2 = c.maxHealth; equipPlayerPut(0, 'core_shaper'); equipTick(true); o.armor = [a2 / base, c.maxHealth / base]; return o; })()`);
+        near(r.on[0], 1.5, 0.02, 'its health worn'); near(r.on[1], 0.5, 1e-9, 'its share of health worn'); near(r.on[2], 0.8, 1e-9, 'its pace worn'); same(r.on[3], 0.8, 'its pace');
+        near(r.slowed, 0.6, 1e-9, 'slowed by 25% on top'); same(r.off[0], true, 'its health taken off'); near(r.off[1], 0.5, 1e-9, 'its share taken off'); near(r.off[2], 1, 1e-9, 'its pace taken off'); same(r.off[3], true, 'no pace left on it');
+        near(r.armor[0], 1.5, 0.02, 'two ranks of ARMOR'); near(r.armor[1], 2, 0.02, 'two ranks of ARMOR and CORE SHAPER');
+    });
+    await check('a Mutator role asleep (you are another class) does nothing: the pool sets nothing, a follower\'s return is paid, a fallen clone is not preserved', () => {
+        const r = J(`(function(){ __mx('plague_doctor'); classSet('gunslinger'); equipTick(true); serumZones = []; const a = __dummy(1, 0); serumSplash(player.x, player.y); serumTick();
+            const o = [equipPlayer.join(), equipPlayerAwake('plague_doctor'), playerMutRole(), a.toxicWeakened || 0, playerReviveFree(), playerClonePreserved()].join(); serumZones = [];
+            __mx('cryo_geneticist'); classSet('technomancer'); const o2 = [playerReviveFree(), playerClonePreserved()].join(); return [o, o2]; })()`);
+        same(r[0], 'plague_doctor,,false,,0,false,false', 'PLAGUE DOCTOR asleep'); same(r[1], 'false,false', 'CRYO GENETICIST asleep');
     });
 
     group('THE ROSTER, IN THE REAL PAGE: a role asleep is greyed, marked ASLEEP, and says when it wakes');

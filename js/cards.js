@@ -203,7 +203,7 @@ EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object
 // THE PLAYER CARDS (the following update's Part 1; docs/UNIVERSAL-AND-PLAYER-CARDS.md section 2, "The 18 kits": drafted, then approved by the owner 2026-11-02, "Approve as drafted"). Each is a ROLE: while it is worn and AWAKE (the player is
 // its class: equipPlayerRole, below) it turns that class into an elemental role. A row: [id, name, class (js/classes.js CLASSES: the class it is for, its `match`), element (the role's), kit]. Every one is PROTOTYPE and is
 // SERIES 2's (the owner, 2026-11-02: Series 2 deals them at Prototype), so like every Series 2 card it is found before it can be kept for good (equipUnlockWhyNot). Series 2 deals them once all eighteen are in (Part 1d,
-// with Side Quest's sale): until then only ?cards=all has them. What a kit does is js/playercards.js; EVERY NUMBER IS HERE, and the words on each card are made from it (equipPlayerKitText). Built so far: the Gunslinger's six.
+// with Side Quest's sale): until then only ?cards=all has them. What a kit does is js/playercards.js; EVERY NUMBER IS HERE, and the words on each card are made from it (equipPlayerKitText). Built: all eighteen (Parts 1a to 1c).
 //   (every kit)  its class's hits take the role's ELEMENT, for the element triangle only (docs/COMBAT.md §7.9; the owner: "The role's element"): no SP.ATK, no elemental share
 //   status       true: EVERY hit sets the role element's own status with Pack 1's Precision numbers (_EQUIP_ATTUNED, as the Prototype auras use them): fire burns, toxic weakens (the game's POISON), ice slows, core knocks back
 //   jump         { radius, share }: each shot jumps on to the nearest other creature within `radius` tiles, for `share` of its damage (the Technomancer arc's jump: js/technomancer.js TECHNO.arc chainRange, chainPct)
@@ -217,6 +217,13 @@ EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object
 //                arc's zap and the role element's status
 //   swap         { every }: SWAP on a squad member's card trades places with it, once in `every` frames (the technicians' ability wait: js/techabilities.js TECH_AB)
 //   shield       { width, frames }: a POWER CELL also raises a PHOTONIC SHIELD in front of you (the core technician's wall: TECH_AB.shield width and life)
+//   bite         true: EVERY BITE of your clone (its bite, and its POUNCE's bite as it lands) sets the role element's status, with Pack 1's numbers
+//   pool         true: on every heal beat of your serum's pool (js/serum.js SERUM.splash.every), every creature in the pool gets the role element's status
+//   freeRevive   true: a fallen follower comes back at no cost to the Crystal (js/crystalpower.js CRYSTAL_POWER.cost.follower is not drawn)
+//   preserve     true: your clone, when it falls, is preserved at once, without an Ice Mage: its body is a specimen capsule, its upgrades kept (js/specimen.js)
+//   splice       true: your clone's bites take the element of the last creature it killed, and that element's status, until its next kill; a creature with no element leaves it as it was (it replaces the
+//                role's element for the clone)
+//   tank         { health, slower }: your clone has `health` more health (two ranks of ARMOR PLATING: js/mutator.js CLONE_UPGRADES.armor) and moves `slower` slower (new, approved)
 const EQUIP_PLAYER_CARDS = [
     ["incendiary_gunner", "INCENDIARY GUNNER", "gunslinger", "fire",     { status: true }],
     ["blight_shooter",    "BLIGHT SHOOTER",    "gunslinger", "toxic",    { status: true }],
@@ -231,12 +238,19 @@ const EQUIP_PLAYER_CARDS = [
     ["cryo_tech",         "CRYO TECH",         "technomancer", "ice",      { relays: { radius: 3 } }],
     ["gravity_engineer",  "GRAVITY ENGINEER",  "technomancer", "flux",     { swap: { every: 3600 } }],
     ["bulwark_engineer",  "BULWARK ENGINEER",  "technomancer", "core",     { shield: { width: 3, frames: 1200 } }],
+    // THE MUTATOR'S SIX (the following update's Part 1c): its lash and its clone's bites take the role's element (SPLICER's clone: its last kill's); the rest is the kit
+    ["ash_surgeon",       "ASH SURGEON",       "mutator",      "fire",     { pool: true }],
+    ["plague_doctor",     "PLAGUE DOCTOR",     "mutator",      "toxic",    { bite: true, pool: true }],
+    ["spark_geneticist",  "SPARK GENETICIST",  "mutator",      "electric", { bite: true }],
+    ["cryo_geneticist",   "CRYO GENETICIST",   "mutator",      "ice",      { freeRevive: true, preserve: true }],
+    ["splicer",           "SPLICER",           "mutator",      "flux",     { splice: true }],
+    ["core_shaper",       "CORE SHAPER",       "mutator",      "core",     { bite: true, tank: { health: 0.5, slower: 0.2 } }],
 ];
 // what a role does, in the card's words, made from its kit's numbers
-const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"], technomancer: ["YOUR PUNCH AND ARC ARE ", "EACH ARC"] };   // (whose hits a class's role works on: rule 1)
+const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"], technomancer: ["YOUR PUNCH AND ARC ARE ", "EACH ARC"], mutator: ["YOUR LASH AND YOUR CLONE'S BITES ARE ", "EVERY BITE OF YOUR CLONE"] };   // (whose hits a class's role works on: rule 1)
 function equipPlayerKitText(cls, k) {
     const h = _EQUIP_KIT_HITS[cls]; if (!h || !k) return "";
-    const sec2 = n => (Math.round(n * 100) / 100) + (n === 1 ? " SECOND" : " SECONDS"), tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], st = tpl && tpl.proc ? _equipStatusText(tpl.proc) : "", out = [h[0] + _equipElementLabel(k.el)];
+    const sec2 = n => (Math.round(n * 100) / 100) + (n === 1 ? " SECOND" : " SECONDS"), tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], st = tpl && tpl.proc ? _equipStatusText(tpl.proc) : "", out = [(k.splice ? "YOUR LASH IS " : h[0]) + _equipElementLabel(k.el)];
     if (k.status && st) out.push("EVERY HIT TO " + st);
     if (k.jump) out.push(h[1] + " JUMPS TO ONE MORE ENEMY WITHIN " + k.jump.radius + " TILES FOR " + _equipPct(k.jump.share));
     if (k.freeze) out.push("A HIT ON AN ENEMY ALREADY SLOWED FREEZES IT FOR " + sec2(k.freeze.frames / EQUIP_FPS) + ", ONCE IN " + sec2(k.freeze.again / EQUIP_FPS));
@@ -248,6 +262,12 @@ function equipPlayerKitText(cls, k) {
     if (k.lamp && st) out.push("WHILE YOUR LAMP IS OVERCHARGED, EVERY " + sec2(k.lamp.every / EQUIP_FPS) + ": YOUR ARC'S ZAP ON EVERY ENEMY IN ITS LIGHT, AND " + st);
     if (k.swap) out.push("SWAP: TRADE PLACES WITH A SQUAD MEMBER FROM ITS CARD, ONCE IN " + sec2(k.swap.every / EQUIP_FPS));
     if (k.shield) out.push("A POWER CELL ALSO RAISES A PHOTONIC SHIELD IN FRONT OF YOU: " + k.shield.width + " TILES WIDE, " + sec2(k.shield.frames / EQUIP_FPS));
+    if (k.bite && st) out.push(h[1] + " TO " + st);
+    if (k.pool && st) out.push("ENEMIES IN YOUR SERUM'S POOL, ON EVERY HEAL BEAT, TO " + st);
+    if (k.freeRevive) out.push("A FALLEN FOLLOWER COMES BACK AT NO COST TO THE CRYSTAL");
+    if (k.preserve) out.push("IF YOUR CLONE FALLS, IT IS PRESERVED AT ONCE (NO ICE MAGE), ITS UPGRADES KEPT");
+    if (k.splice) out.push("YOUR CLONE'S BITES TAKE THE ELEMENT OF THE LAST ENEMY IT KILLED, AND THAT ELEMENT'S STATUS, UNTIL ITS NEXT KILL");
+    if (k.tank) out.push("YOUR CLONE HAS " + _equipPct(k.tank.health) + " MORE HEALTH AND MOVES " + _equipPct(k.tank.slower) + " SLOWER");
     return out.join(" · ");
 }
 EQUIP_PLAYER_CARDS.forEach(([id, name, cls, el, kit]) => { const k = Object.assign({ el }, kit); EQUIP_CARDS[id] = { id, name, kind: "player", match: cls, rarity: "prototype", pack: "series2", kit: k, text: equipPlayerKitText(cls, k) }; });

@@ -293,7 +293,11 @@ function clonePounceTick(c) {
         c.x = P.fx + (P.tx - P.fx) * k; c.y = P.fy + (P.ty - P.fy) * k; c.leapLift = Math.sin(k * Math.PI) * K.lift; c.walkCycle = (c.walkCycle || 0) + 0.25;
         if (k >= 1) {
             c.leapLift = 0; c.pounce = null; c.pounceReady = f + K.cooldown; c.attackAnim = 0.01; c.state = "attack";
-            if (t && !t.dead && Math.hypot(t.x - c.x, t.y - c.y) <= cloneReach(c) + 0.6) { applyDamage(t, c.power * K.dmg, c, null, false, false, DMG_HIT_CLONE); if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: c.color || "#c06bff", radius: 0.8, life: 20 }); }
+            if (t && !t.dead && Math.hypot(t.x - c.x, t.y - c.y) <= cloneReach(c) + 0.6) {
+                const h0 = t.health; applyDamage(t, c.power * K.dmg, c, null, false, false, dmgBiteHit(c));   // a bite: a Mutator's role's element and kit on it too (a Player card: js/playercards.js)
+                if (typeof playerCloneBit === "function") playerCloneBit(c, t, Math.max(0, h0 - Math.max(0, t.health)));
+                if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: c.color || "#c06bff", radius: 0.8, life: 20 });
+            }
         }
         return true;
     }
@@ -315,10 +319,19 @@ function cloneFallen(c) {
     if (!c) return null;
     const f = _mxFrame(), up = Object.assign({}, c.upgrades || {}), ranks = Object.values(up).reduce((s, r) => s + (r | 0), 0);
     const b = { id: ++_bodyN, sp: c.speciesName, cls: c.className || "scout", level: c.level, xp: c.xp, x: c.x, y: c.y, dirX: c.dirX || 1, dirY: c.dirY || 0, t0: f, upgrades: up, invested: c.invested || 0 };
+    // CRYO GENETICIST (a Player card: js/playercards.js): preserved at once, with no Ice Mage: its body is a specimen capsule (js/specimen.js), its upgrades kept in it
+    const kept = typeof playerClonePreserved === "function" && playerClonePreserved();
+    if (kept) { b.frozen = true; b.frozenAt = f; if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: b.x, y: b.y, color: "#aeeaff", radius: 1.0, life: 30 }); }
     cloneBodies.push(b);
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: "YOUR " + String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE HAS FALLEN" + (ranks ? " — ITS " + ranks + " UPGRADE" + (ranks > 1 ? "S ARE" : " IS") + " LOST" : ""), color: CLASSES.mutator.colour, life: 240, vy: -0.05, size: 16 });
-        floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 104, text: "HOLD ON ITS BODY TO SALVAGE " + cloneRecoverable(b.invested) + " DNA — GROW A NEW ONE AT THE CLONE BAY", color: "#c8b6e6", life: 240, vy: -0.05, size: 12 });
+        const who = "YOUR " + String(b.sp).toUpperCase() + " " + String(b.cls).toUpperCase() + " CLONE HAS FALLEN";
+        if (kept) {
+            floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: who + " — PRESERVED AT ONCE" + (ranks ? ", ITS " + ranks + " UPGRADE" + (ranks > 1 ? "S" : "") + " KEPT" : ""), color: "#aeeaff", life: 240, vy: -0.05, size: 16 });
+            floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 104, text: "CRYO GENETICIST: WALK OVER ITS CAPSULE, THEN TAKE IT TO THE RESURRECTION ZONE (THE CRYSTAL)", color: "#c8b6e6", life: 240, vy: -0.05, size: 12 });
+        } else {
+            floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 130, text: who + (ranks ? " — ITS " + ranks + " UPGRADE" + (ranks > 1 ? "S ARE" : " IS") + " LOST" : ""), color: CLASSES.mutator.colour, life: 240, vy: -0.05, size: 16 });
+            floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 104, text: "HOLD ON ITS BODY TO SALVAGE " + cloneRecoverable(b.invested) + " DNA — GROW A NEW ONE AT THE CLONE BAY", color: "#c8b6e6", life: 240, vy: -0.05, size: 12 });
+        }
     }
     return b;
 }
