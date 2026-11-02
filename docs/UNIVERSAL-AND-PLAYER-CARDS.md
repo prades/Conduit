@@ -26,7 +26,7 @@ Each follower class has a card family of its own; the player has Player cards.
 ### Mage cards: auras
 
 - **The six element auras**, one per element (fire, toxic, electric, ice, flux, core). **A Mage wears the aura of its own element**: a fire Mage the fire aura.
-- **What it gives:** every follower **near the Mage**, of any element, the Mage included, gets **+5% attack damage** at the aura's lowest tier and **+10%** at its rarest. Attack damage is ATK, the POWER on a follower's roster card.
+- **What it gives:** every follower **near the Mage**, of any element, the Mage included, gets **+5% attack damage** at the aura's lowest tier and **+10%** at its rarest. Attack damage is ATK, the POWER on a follower's roster card. Every hit is now part physical (ATK) and part elemental (SP.ATK) (`COMBAT.md` §7.6), so an aura lifts the physical part and helps Brawlers most: about +4% on a Brawler's hit and +1% on a Mage's, at the lowest tier. The owner kept it on ATK (2026-11-02).
 - **The rarest tier adds the element's extra:** each hit of a follower in reach has a small chance to apply the element's own status: fire burns, toxic weakens, electric glitches, ice slows, flux siphons, core knocks back. The chance (a first guess of 5%) is to tune.
 - **Stacking:** different auras stack. A second copy of the same aura adds nothing, even worn by another Mage.
 - **The look, in the world:** subtle. A faint, thin ring on the ground around the Mage in the element's colour, slowly turning, marks the reach. A follower inside shows a tiny glint of the same colour. Several auras show as thin rings, one per colour.
@@ -36,9 +36,9 @@ Each follower class has a card family of its own; the player has Player cards.
 
 - **When a Brawler exploits a weakness, its hit deals more damage: +20% at the card's lowest tier, +40% at its rarest.** It is more power, not double.
 - **What counts as exploiting a weakness:**
-  - **An element match-up:** the target is weak to the Brawler's element. The game's two triangles: fire beats flux, flux beats toxic, toxic beats fire; electric beats core, core beats ice, ice beats electric. Such a hit already does ×1.3 (js/elements.js `getElementMultiplier`); the card's bonus comes on top. (Under the proposed split of every hit into a physical and an elemental part, `COMBAT.md` §7.6, the ×1.3 falls on the elemental part only.)
+  - **An element match-up:** the target is weak to the Brawler's element. The game's two triangles: fire beats flux, flux beats toxic, toxic beats fire; electric beats core, core beats ice, ice beats electric. Such a hit already does ×1.3 (js/elements.js `getElementMultiplier`); the card's bonus comes on top. (Every hit is now part physical and part elemental, approved 2026-11-02, `COMBAT.md` §7.6: the ×1.3 falls on the elemental part only.)
   - **A stunned target.**
-  - **The damage-type chart** (`COMBAT.md` §7): the target's race is weak to the hit's damage type. The six types and each race's weaknesses are in §7.3, each follower attack's type in §7.4.
+  - **The damage-type chart** (`COMBAT.md` §7): the target's race is weak to the hit's physical type or to Elemental. Both parts of a hit count (the owner, 2026-11-02), so every hit on a scorpion or a moth exploits a weakness. The six types and each race's weaknesses are in §7.3, each follower attack's type in §7.4.
 
 ### Technician cards: cooldown management
 
@@ -116,7 +116,7 @@ Technician ideas not chosen (2026-11-02): kills refunding part of the wait; one 
 - **A follower holding a room** gets an aura if a Mage is within reach of it.
 - **A Mage falls:** its aura stops until it is back; a respawned follower keeps its cards (existing rule).
 - **A Brawler's hit that is both a match-up and on a stunned target:** whether the bonuses add up is open (section 11).
-- **Ice on core does no damage** (×0): a Brawler's bonus on a zero hit is still zero. Under the proposed split (`COMBAT.md` §7.6) only the hit's elemental part is zero, and the bonus applies to the physical part that lands.
+- **Ice on core does no damage** (×0): a Brawler's bonus on a zero hit is still zero. Under the split (`COMBAT.md` §7.6, approved 2026-11-02) only the hit's elemental part is zero, and the bonus applies to the physical part that lands.
 - **Enemies** never get an aura.
 - **The player's class switches** while wearing a Player card for another class: open.
 - **Save and load:** the bonuses are remade from the cards worn.
@@ -153,8 +153,8 @@ Not implemented.
 9. **The Universal kind:** with every new card tied to a class or to the player, does a Universal kind (fits anyone) stay?
 10. **The clone:** does it get auras?
 11. **The cards' look** for each family and the Player cards.
-12. **The opportunity card and the split** (`COMBAT.md` §7.5): every hit now has an elemental part, so every hit on a race weak to Elemental (the scorpion, the moth) would exploit a weakness. Count only the hit's physical type, or both parts?
-13. **The Mage auras and the split:** an aura gives +ATK, which under the split lifts only the physical part (about +4% on a Brawler's hit, +1% on a Mage's, at the lowest tier). Keep it so, or have the aura lift the whole hit?
+12. **The opportunity card and the split: answered 2026-11-02. Both parts count**, a race weak to the hit's physical type or to Elemental. (The question: every hit has an elemental part, so every hit on a scorpion or a moth exploits a weakness; count only the physical type, or both?)
+13. **The Mage auras and the split: answered 2026-11-02. The aura stays on ATK**, the physical part (the alternatives were the whole hit, or SP.ATK).
 
 ## 12. History
 
@@ -163,3 +163,4 @@ Not implemented.
 - 2026-11-02: **Universal cards became auras**, one per element, class and species, worn by a matching follower (+5% to +10% attack damage to every follower near it; the owner's first +10% to +20% was cut once the stacking was costed). **The player cannot wear auras**; the player's slots take Player cards only.
 - 2026-11-02: **auras became the Mages' cards**, the six element auras only, each worn by a Mage of its element; the class and species auras were dropped. **Brawlers** got opportunity cards (+20% to +40% on a hit that exploits a weakness), **Technicians** cooldown cards (shorter waits, extra charges).
 - 2026-11-02: **the damage-type chart** the Brawler cards needed was designed: six types and each race's weaknesses, with every hit part physical and part elemental (`COMBAT.md` §7).
+- 2026-11-02: under that split, **the auras stay on ATK** and **the opportunity card counts a weakness of either part** of a hit.

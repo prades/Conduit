@@ -126,7 +126,13 @@ Tests: tests/packs.js (each status alone, refreshed and not stacked, a stronger 
 
 ## 7. Damage types, race weaknesses, and the physical and elemental parts of a hit (designed 2026-11-02; nothing built)
 
-- **Status:** Designed: the six damage types, what each race is weak to and resists, each follower attack's type, and the owner's rule that every hit is part physical and part elemental (§7.2 to §7.5). **Proposed**, awaiting the owner's approval: how the two parts are worked out (§7.6). Not implemented.
+- **Status:** Designed, every part approved by the owner on 2026-11-02 (§7.2 to §7.7):
+  - the six damage types, and what each race is weak to and resists;
+  - each follower attack's type;
+  - the owner's rule that every hit is part physical and part elemental, and how the two parts are worked out;
+  - each form's lean.
+
+  Open items: §7.8. Not implemented.
 - **Branch/build:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`.
 - **Decision:** `DECISION-LOG.md`, "Damage types, race weaknesses, and every hit part physical, part elemental". The Brawler's opportunity cards use this chart (`UNIVERSAL-AND-PLAYER-CARDS.md`).
 
@@ -200,11 +206,18 @@ ASKED (2026-11-02), of the tables above: *"each element or each creature is more
 - **Creatures differ in how elemental they are, and their stats show it.**
 - So **anything that raises SP.ATK raises only the elemental part of a hit**, and a Brawler, with less elemental power, gains less from it.
 
-### 7.6 How the two parts are worked out (Proposed: first guesses for the owner to approve)
+### 7.6 How the two parts are worked out (approved 2026-11-02)
+
+These were proposed as first guesses. The owner chose them in a prompt, over the alternatives in brackets:
+- the half-and-half split, with Elemental attacks at a quarter and three quarters (over the same split for every attack, or a set share per class);
+- the triangle on the elemental part only, with an ice hit's physical part landing on core (over ice on core still doing nothing, or the triangle on the whole hit);
+- evolving raising SP.ATK too (over evolving as today).
+
+The other lines below keep today's behavior or follow from those choices.
 
 1. **Two parts.** The physical part comes from ATK and has the attack's type (§7.4). The elemental part comes from SP.ATK: it is Elemental, in the creature's element.
 2. **Half and half.** An attack does its own number × (½ ATK + ½ SP.ATK). An attack §7.4 types Elemental leans elemental: × (¼ ATK + ¾ SP.ATK), and its physical quarter has no type (no race is weak to it or resists it).
-3. **The stats skew it.** On a half-and-half attack the elemental share is SP.ATK ÷ (ATK + SP.ATK). A follower's card shows the share with its stats (for example ELEMENTAL 25%). With today's personalities, at level 1 (a level raises both stats alike; a bred follower's stats differ by a few percent):
+3. **The stats skew it.** On a half-and-half attack the elemental share is SP.ATK ÷ (ATK + SP.ATK). A follower's card shows the share with its stats (for example ELEMENTAL 25%). An evolved form's lean tilts it further (§7.7). With today's personalities, at level 1 (a level raises both stats alike; a bred follower's stats differ by a few percent):
 
 | Class | Personality | ATK | SP.ATK | Elemental share, half-and-half attack | Elemental share, Elemental attack |
 |---|---|---|---|---|---|
@@ -219,16 +232,55 @@ ASKED (2026-11-02), of the tables above: *"each element or each creature is more
    - **The element triangle:** the elemental part only. Ice on core: the elemental part does nothing and the physical part lands (today the whole hit does nothing).
    - The race chart and the triangle on one elemental part multiply (×1.69 at most).
    - **Defense:** the whole hit, as today.
-   - **Cards:** +ATK lifts the physical part, +SP.ATK the elemental part, +DAMAGE DEALT the whole hit. A Brawler's opportunity bonus: the whole hit.
+   - **Cards:** +ATK lifts the physical part, +SP.ATK the elemental part, +DAMAGE DEALT the whole hit. A Brawler's opportunity bonus: the whole hit, on a weakness of either part (the owner, 2026-11-02: `UNIVERSAL-AND-PLAYER-CARDS.md`).
    - A burn's tick, a pool's tick and a set amount (a thrown technician) stay as they are.
 5. **Evolving** multiplies SP.ATK by 1.25 as well as health and ATK, so an evolved creature is no less elemental.
 6. **Each attack's own number is retuned** when this is built, so a creature's damage stays about where it is. With today's numbers a wild Brawler's main attack would lose a third and its element special would gain half.
 
-**What it does, for example.** A +10% SP.ATK card gives a wild Brawler's Slashing main attack +2.5% damage, and a cunning Mage's Elemental main attack +8%. Element match-ups matter less to Brawlers (a fire Brawler on a flux creature: about ×1.1, today ×1.3) and still matter to Mages (about ×1.25). The Mage auras' +5% ATK (`UNIVERSAL-AND-PLAYER-CARDS.md`) lifts physical parts only: about +4% on a Brawler's hit, +1% on a Mage's.
+**What it does, for example.** A +10% SP.ATK card gives a wild Brawler's Slashing main attack +2.5% damage, and a cunning Mage's Elemental main attack +8%. Element match-ups matter less to Brawlers (a fire Brawler on a flux creature: about ×1.1, today ×1.3) and still matter to Mages (about ×1.25). The Mage auras' +5% ATK (`UNIVERSAL-AND-PLAYER-CARDS.md`) lifts physical parts only: about +4% on a Brawler's hit, +1% on a Mage's. The owner kept the auras on ATK (2026-11-02).
 
-### 7.7 Not covered yet (open)
+### 7.7 Each form's lean (approved 2026-11-02)
 
-- The owner's approval of §7.6. Whether each form should tilt its stats further than its personality does (THUNDERHEAD more elemental than RIMESTAR, for example).
+The owner wanted *"each creature"* to differ in how elemental it is, asked for a draft for every form, and approved it as drafted.
+
+- **When:** a creature takes its form's lean when it evolves. An egg has none: its class and personality alone set its split. The ten retired forms have no species, so no lean.
+- **The steps:** each step moves 10% between ATK and SP.ATK. +2 is ATK ×0.8 and SP.ATK ×1.2; +1 is ×0.9 and ×1.1; −1 is ×1.1 and ×0.9. No form is at −2.
+- **The rule:** it uses the owner's species chart (js/cards.js `EQUIP_FORM_SUBCLASS`) and §7.4.
+  - Elemental species: +1.
+  - Shelled species (crustacean, mollusk): −1.
+  - Drones and jellies: 0.
+  - A main attack typed Elemental: +1 more.
+- **Nothing new is saved:** the lean is applied where a follower's stats are worked out, as evolving's ×1.25 is.
+- **Damage:** a lean moves stat from one side to the other. A creature whose ATK and SP.ATK differ gains or loses a little overall damage (a wild QUILLSTONE about +5%, a wild FROST MAW about −5%), and the retune (§7.6, item 6) evens it out.
+
+The elemental share of each form's main attack (the range runs from a wild to an aggressive Brawler, from a cautious to a cunning Mage):
+
+| Form | Class · element | Species | Lean | Elemental share of its main attack |
+|---|---|---|---|---|
+| THUNDERHEAD | Mage · electric | Elemental | +2 | 82–87% |
+| EMBER HOOD | Mage · fire | Elemental | +2 | 82–87% |
+| VOIDSTAR | Mage · flux | Mollusk | 0 | 75–82% |
+| ROTSHARD | Mage · toxic | Elemental | +1 | 55–65% |
+| RIMESTAR | Mage · ice | Drone | 0 | 50–60% |
+| HORNSHELL | Mage · core | Mollusk | −1 | 45–55% |
+| IGLOO SKATER | Technician · ice | Elemental | +1 | 49% |
+| GOO PROXY | Technician · flux | Jelly | 0 | 44% |
+| THERMITE BURROWER | Technician · fire | Drone | 0 | 44% |
+| BLIGHT SPIDER | Technician · toxic | Drone | 0 | 44% |
+| HOVER SHELL | Technician · electric | Drone | 0 | 44% |
+| HAMMER SLUG | Technician · core | Mollusk | −1 | 40% |
+| FROST MAW | Brawler · ice | Elemental | +1 | 29–38% |
+| STATIC ORB | Brawler · electric | Drone | 0 | 25–33% |
+| JELLY RAM | Brawler · core | Jelly | 0 | 25–33% |
+| RIFT MIMIC | Brawler · flux | Jelly | 0 | 25–33% |
+| QUILLSTONE | Brawler · fire | Crustacean | −1 | 21–29% |
+| SEEPER | Brawler · toxic | Crustacean | −1 | 21–29% |
+
+Alternatives the owner passed over: species alone, without the +1 for an Elemental main attack (THUNDERHEAD and EMBER HOOD at +1, VOIDSTAR at −1); and steps of 20%.
+
+### 7.8 Not covered yet (open)
+
 - Enemies' attacks: do they have types, and are followers or the player weak to any? Neither has a race in this chart.
 - The player's melee (the gauntlet, the lash, the arc), the Mutator's clone's bite and the serum: their types. The player has no SP.ATK: do Player cards give the player's attacks an elemental part?
+- The ten retired forms' attack types (a follower already evolved into one keeps it).
 - How a weakness shows on screen: WEAK! and RESIST speak for the element triangle only today.

@@ -198,9 +198,15 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
 - **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) and Player cards (the player's elemental roles) are designed, not built: `UNIVERSAL-AND-PLAYER-CARDS.md` (its open questions, section 11). (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
-- **Damage types, race weaknesses, and every hit part physical, part elemental** (designed 2026-11-02, not built; `COMBAT.md` §7). Six types, each race's weaknesses and resistances, and each follower attack's type are approved, and so is your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
-  - **Waiting on you:** how the two parts are worked out (§7.6). The proposal: half from ATK and half from SP.ATK, or a quarter and three quarters for an Elemental attack; the element triangle on the elemental part only; evolving raises SP.ATK too.
-  - Still open: §7.7, and two card questions the split raises (`UNIVERSAL-AND-PLAYER-CARDS.md` section 11, questions 12 and 13).
+- **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02, not built; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
+  - **Your answers of 2026-11-02:**
+    - half and half, with an Elemental attack at a quarter and three quarters;
+    - the triangle on the elemental part only;
+    - evolving raises SP.ATK too;
+    - the 18 forms' leans as drafted;
+    - the Mage auras stay on ATK;
+    - the opportunity card counts both parts of a hit.
+  - Still open: §7.8 (enemies' attack types, the player's and the clone's attacks, the retired forms, how a weakness shows on screen).
 - **Resistances:** how a resistance from a card combines with a subclass's own (CARD-SYSTEM §9).
 - **The card list, final values and balance:** every Pack 1 number is an initial setting, in one table (`EQUIP_PACK1`, js/cards.js); the market's in `EQUIP_MARKET`. The rarity of each future card.
 - **Card art:** the design asks for low-poly 3D artwork and kanji-inspired graphics. One card has its 3D item (EMBER PLATING, live since build `j`); the other Pack 1 items are next, then Series 2's. No kanji.

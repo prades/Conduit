@@ -248,32 +248,48 @@ When built: js/cards.js, js/levels.js, js/helpers.js, js/elements.js, js/combat.
 The specification's open questions (section 11), first of all the damage-type chart: which attacks are piercing, slashing, elemental and crushing, and each one's opportunity targets.
 
 ### Supersedes / superseded by
-Supersedes, in part, "Universal cards as auras; the player wears Player cards only" (2026-11-02): auras are now the Mages' cards, the element auras only.
+Supersedes, in part, "Universal cards as auras; the player wears Player cards only" (2026-11-02): auras are now the Mages' cards, the element auras only. Refined by "Damage types, race weaknesses, and every hit part physical, part elemental" (2026-11-02): under the split, the auras stay on ATK, and the opportunity card counts a weakness of either part of a hit.
 
 ## DECISION: Damage types, race weaknesses, and every hit part physical, part elemental
 
 - **Date:** 2026-11-02
-- **Status:** Approved (design): the six damage types, the race chart, each follower attack's type, and the rule that every hit is part physical and part elemental. **Proposed:** how the two parts are worked out (`COMBAT.md` §7.6). Not implemented.
+- **Status:** Approved (design), all of it, on 2026-11-02:
+  - the six damage types, the race chart, and each follower attack's type;
+  - the rule that every hit is part physical and part elemental, and how the two parts are worked out;
+  - each form's lean.
+
+  Not implemented.
 - **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
 - **Related feature/docs:** `COMBAT.md` §7 (the rules), `UNIVERSAL-AND-PLAYER-CARDS.md` (the Brawler's opportunity cards use the chart), `OPEN-QUESTIONS.md` §3
 
 ### Context
-The Brawler's opportunity cards needed the chart the owner described: "category 1 is slashing, piercing, and projectiles ... the next damage category is crushing slash earthquake damage. And then the third category is elemental damage. And each of these ... races has their own weakness and resistance to each of these." Then: "We can separate it into basically six different types of damage, if the game can handle it. Now, we need to basically make attack types for each of our followers and their alternate attacks." Of the draft chart and attack table: "That looks really good." Then: "every single one of their attacks is half special and half physical ... and it's skewed depending on how it's laid out. And special attack is basically elemental damage."
+The Brawler's opportunity cards needed the chart the owner described: "category 1 is slashing, piercing, and projectiles ... the next damage category is crushing slash earthquake damage. And then the third category is elemental damage. And each of these ... races has their own weakness and resistance to each of these." Then: "We can separate it into basically six different types of damage, if the game can handle it. Now, we need to basically make attack types for each of our followers and their alternate attacks." Of the draft chart and attack table: "That looks really good." Then: "every single one of their attacks is half special and half physical ... and it's skewed depending on how it's laid out. And special attack is basically elemental damage." The owner then chose the open points in a prompt (2026-11-02) and asked for a lean for every form, approved as drafted.
 
 ### Decision
-Six damage types. Each enemy race is weak to some (×1.3) and resists some (×0.7). Every follower attack has a type that follows the creature's body. Every hit is part physical (from ATK, in its type) and part elemental (from SP.ATK, in the creature's element). Creatures differ in how elemental they are, and their stats show it. Raising SP.ATK raises only the elemental part.
+Six damage types. Each enemy race is weak to some (×1.3) and resists some (×0.7). Every follower attack has a type that follows the creature's body. Every hit is part physical (from ATK, in its type) and part elemental (from SP.ATK, in the creature's element). Creatures differ in how elemental they are, and their stats show it; each evolved form leans further by its species and its main attack. Raising SP.ATK raises only the elemental part. Under the split, the Mage auras stay on ATK, and the Brawler's opportunity card counts a weakness of either part.
 
 ### Exact rules
-In `COMBAT.md` §7: the types (§7.2), the race chart (§7.3), the followers' attacks (§7.4), the owner's rule (§7.5). How the parts are worked out (§7.6) is a proposal, not yet approved:
-- half from ATK and half from SP.ATK, or a quarter and three quarters for an Elemental attack;
-- the element triangle on the elemental part only;
-- evolving raises SP.ATK too.
+In `COMBAT.md` §7: the types (§7.2), the race chart (§7.3), the followers' attacks (§7.4), the owner's rule (§7.5). The owner's choices:
+- **The split (§7.6):** half from ATK and half from SP.ATK; an Elemental attack takes a quarter and three quarters. Each attack's number is retuned so a creature's damage stays about where it is.
+- **The triangle:** the element triangle boosts the elemental part only. An ice hit's physical part lands on core.
+- **Evolving** raises SP.ATK too.
+- **Each form's lean (§7.7):**
+  - Elemental species +1, shelled species −1.
+  - An Elemental main attack +1 more.
+  - A step moves 10% between ATK and SP.ATK.
+- **The cards under the split** (`UNIVERSAL-AND-PLAYER-CARDS.md`): the auras stay on ATK, and the opportunity card counts a weakness of either part.
 
 ### Alternatives considered
 - Three damage categories, as first described, instead of six types.
 - Each attack keeping one stat, and the element triangle on the whole hit (today's code).
 - The triangle on Elemental hits only, with no split. This was asked before the owner's rule, which answers it.
-- A set elemental share per class or per form, instead of one read from each creature's ATK and SP.ATK.
+- Offered in the prompt and passed over:
+  - for the split: half and half for every attack, or a set share per class;
+  - for the triangle: ice on core still doing nothing, or the triangle on the whole hit;
+  - evolving as today;
+  - for the leans: species alone, or steps of 20%;
+  - for the auras: the whole hit, or SP.ATK;
+  - for the opportunity card: the physical type only.
 
 ### Rationale and trade-offs
 Bodies against races and elements against elements give each class its own weakness to exploit: a Brawler's hits lean on the race chart, a Mage's on the triangle. Reading the split from ATK and SP.ATK uses the stats a creature already has, so how elemental it is shows there. The cost: every attack's damage shifts and needs retuning, and element match-ups matter less to Brawlers.
@@ -289,9 +305,8 @@ When built:
 - the combat and card tests.
 
 ### Follow-up
-- The owner's approval of `COMBAT.md` §7.6.
-- The open items in §7.7.
-- The two card questions the split raises (`UNIVERSAL-AND-PLAYER-CARDS.md` section 11, questions 12 and 13).
+- Build it when the owner asks.
+- The open items in `COMBAT.md` §7.8.
 
 ### Supersedes / superseded by
-None. It answers the first open question of "Card families by class" (the chart).
+None. It answers the first open question of "Card families by class" (the chart) and refines that decision's auras and opportunity cards for the split.
