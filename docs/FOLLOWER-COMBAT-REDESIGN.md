@@ -2,7 +2,8 @@
 
 - **Status:** **Designed** (approved by the owner, 2026-11-02, in the brief "CONDUIT — FOLLOWER COMBAT REDESIGN · Fire & Electric Follower Attack Implementation Brief").
   - **Phase 1 (the audit): finished, 2026-11-02.** What the code does today is in section 6.
-  - The conflicts it found, each with a recommended way through, and the recommended starting values are in section 11. **Nothing is implemented.** No code changes until the owner answers (the brief: "If any requirement conflicts with the current architecture, stop and explain the conflict").
+  - The conflicts it found, each with a recommended way through, and the recommended starting values are in section 11. **Nothing is implemented yet.**
+  - **The owner's answers, 2026-11-02:** SONIC ROLL is STATIC RUSH; CHAIN LIGHTNING is the Thunderhead's everyday shot; the Thermite Burrower keeps both buttons (the THERMITE DRILL and FAULTLINE). The other points of section 11.1 follow their recommendations. Section 11.1 marks each.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-02
 - **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-02j`.
@@ -184,15 +185,17 @@ The brief's Phase 3 tests, per follower:
 
 ### 11.1 Conflicts between the brief and the code (for the owner)
 
-1. **STATIC ORB: which move is SONIC ROLL?** The brief says SONIC ROLL "already exists", but no such name or move is in the code. The move that best fits "a direct high-speed charge" is **STATIC RUSH**: an instant dash to the nearest enemy, a stun, and a shock jumping to 2 more. It is Static Orb's signature move, not its everyday hit. **Recommended:** STATIC RUSH is SONIC ROLL. It is renamed SONIC ROLL and kept as it is (not rebuilt). PINBALL becomes a second move, chosen on the INFO tab as FIRE BOMBS is. Nothing is removed.
-2. **THUNDERHEAD: what becomes of ARC VOLLEY, and is CHAIN LIGHTNING its everyday shot?** Today its main attack is the Mages' plain shot. Its move ARC VOLLEY already chains by distance (2 jumps, each within 2.5 tiles of the last).
+Items 1, 2 and 3 (and 7 with 3) were put to the owner on 2026-11-02 and answered; each answer is marked below. The rest are taken as recommended: the owner was told they would be followed unless said otherwise.
+
+1. **Answered (the owner, 2026-11-02): "STATIC RUSH".** STATIC RUSH is SONIC ROLL, renamed and kept as it is; PINBALL is a second move on INFO. **STATIC ORB: which move is SONIC ROLL?** The brief says SONIC ROLL "already exists", but no such name or move is in the code. The move that best fits "a direct high-speed charge" is **STATIC RUSH**: an instant dash to the nearest enemy, a stun, and a shock jumping to 2 more. It is Static Orb's signature move, not its everyday hit. **Recommended:** STATIC RUSH is SONIC ROLL. It is renamed SONIC ROLL and kept as it is (not rebuilt). PINBALL becomes a second move, chosen on the INFO tab as FIRE BOMBS is. Nothing is removed.
+2. **Answered (the owner, 2026-11-02): (a), "Its everyday shot".** **THUNDERHEAD: what becomes of ARC VOLLEY, and is CHAIN LIGHTNING its everyday shot?** Today its main attack is the Mages' plain shot. Its move ARC VOLLEY already chains by distance (2 jumps, each within 2.5 tiles of the last).
    - (a) **As the brief reads:** its everyday shot becomes CHAIN LIGHTNING: it conducts on from the enemy it hits, with no fixed cap, while the next enemy is near enough. STATIC VORTEX becomes its move, and ARC VOLLEY retires (its chain lives on in CHAIN LIGHTNING).
    - (b) ARC VOLLEY becomes CHAIN LIGHTNING, uncapped. STATIC VORTEX is a second move chosen on INFO. The everyday shot stays plain.
    - **Recommended: (a)**, the brief's main and alternate. It does raise its everyday damage against clusters, with each jump at 60% of the one before.
    - Whichever is chosen, the electric element's melee move is also called "Chain Lightning" (section 6.5). It is left as it is.
-3. **THERMITE BURROWER: FAULTLINE in the THERMITE DRILL's place.** The fire technician's ability is the THERMITE DRILL, and the Sewers' drill puzzle route uses it on rubble. **Recommended:** FAULTLINE becomes the fire technician's ability (its button and its aim: draw a path). Drilling rubble stays as it is, from the rubble's long-press ring, so the puzzle route keeps working. BURROW STRIKE replaces its everyday hit, in a branch for this form only: the other technicians' plain hit, Hover Shell's included, is untouched.
+3. **Answered (the owner, 2026-11-02): "Keep both buttons".** The evolved Burrower keeps the THERMITE DRILL as it is (its chip, enemies and rubble) and gets FAULTLINE beside it, on a second ability chip on its squad card (new UI). The recommendation below, FAULTLINE in the drill's place, is **not taken**; BURROW STRIKE replacing only the Burrower's everyday hit, and the input, stand. **THERMITE BURROWER: FAULTLINE in the THERMITE DRILL's place.** The fire technician's ability is the THERMITE DRILL, and the Sewers' drill puzzle route uses it on rubble. **Recommended (not taken):** FAULTLINE becomes the fire technician's ability (its button and its aim: draw a path). Drilling rubble stays as it is, from the rubble's long-press ring, so the puzzle route keeps working. BURROW STRIKE replaces its everyday hit, in a branch for this form only: the other technicians' plain hit, Hover Shell's included, is untouched.
    - **The input, the same on a mouse and a finger:**
-     - after a tap on FAULTLINE on its squad card, the next press-drag-release on the floor is the path;
+     - after a tap on FAULTLINE's chip on its squad card, the next press-drag-release on the floor is the path;
      - a glowing line follows the pointer as it is drawn, and letting go sends it;
      - ✕ CALL OFF or Escape cancels it, and so does a touch the system cancels;
      - a stroke under a tile long sends nothing;
@@ -202,7 +205,7 @@ The brief's Phase 3 tests, per follower:
 4. **QUILL BURST was decided before.** "Quill Burst's numbers (range 4, +25% on a hit, every 4 seconds, no burn)" are in `OPEN-QUESTIONS.md` §5, "already decided", and the code adds a hit chance and a 0.8-tile splash. **The brief supersedes them**: five real quills, each stopping at its first enemy, no splash, no chance roll. The old entry is marked superseded, not deleted.
 5. **FIREBALL already exists in all but name:** EMBER HOOD's everyday hit is the Mages' shot, a fire-coloured projectile. **Recommended:** call it FIREBALL (on INFO and in the guide) and give the fire Mage's shot a fireball's look. Its behaviour and numbers stay.
 6. **HEXFIRE is rebuilt.** Today it is six instant rounds, not a projectile and a circle. **Recommended:** a projectile at the nearest enemy that, where it lands, leaves a circle that hurts enemies only, not your followers or you, unlike FIRE BOMBS' burning ground. The circle never moves or grows.
-7. **Who gets FAULTLINE.**
+7. **Answered with item 3:** the evolved THERMITE BURROWER has both the THERMITE DRILL and FAULTLINE; a fire technician egg has the drill alone. **Who gets FAULTLINE.**
    - The THERMITE DRILL belongs to **every fire technician, an egg included**: the abilities are by element, not by form (js/techabilities.js ~line 113).
    - The brief is about the evolved THERMITE BURROWER.
    - **Recommended:** the THERMITE BURROWER gets FAULTLINE; a fire technician egg keeps the THERMITE DRILL. Both can still drill rubble from its ring.
@@ -254,4 +257,5 @@ The brief's open balance values (none is final; recommendations come only after 
 ## 12. History
 
 - 2026-11-02: the owner's brief, "Design approval date: November 2, 2026". Phase 1 (the audit) finished on build `2026-11-02j`: no code changed; the conflicts and the recommended values went to the owner (section 11).
+- 2026-11-02: the owner's answers (`DECISION-LOG.md`): SONIC ROLL is STATIC RUSH; CHAIN LIGHTNING is the Thunderhead's everyday shot, STATIC VORTEX its move, ARC VOLLEY left to the Reaver; the Thermite Burrower keeps both buttons, the THERMITE DRILL and FAULTLINE. Build j went to main.
 - Superseded by the brief: QUILL BURST's earlier rules (`OPEN-QUESTIONS.md` §5, "Quill Burst's numbers"): one roll with a hit chance and a splash become five quills that each stop at the first enemy, with no splash.
