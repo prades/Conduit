@@ -4,6 +4,31 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **h · Player cards, Part 1a: the rules and the Gunslinger's six roles** (the following update's Part 1, `FOLLOWING-UPDATE.md`; the kits approved by the owner, "Approve as drafted", with "The role's element"; on the branch only; commit named in git log).
+  - **Six Player cards for the Gunslinger**, PROTOTYPE, in js/cards.js `EQUIP_PLAYER_CARDS`. Each card's words are made from its numbers. On every round that hits, from any gun (the service gun, the machine gun, the laser's beam):
+    - **INCENDIARY GUNNER:** the round is fire and BURNS (3 a second for 3 s).
+    - **BLIGHT SHOOTER:** toxic, and WEAKENS (the game's POISON: its bite 40% weaker for 4 s).
+    - **ARC SLINGER:** electric; each shot jumps to the nearest other creature within 2.6 tiles for 60% of its damage (the Technomancer arc's jump), drawn as the arc's bolt.
+    - **CRYO MARKSMAN:** ice, and SLOWS (25% for 2 s). A round on a creature already slowed FREEZES it for 1.25 s (the Frost Maw's stun), not again for 5 s. The guns fire 20% slower.
+    - **RIFT RUNNER:** flux, and PULLS the creature toward you (a knockback of 0.22, reversed); never a beetle or a boss.
+    - **BREACH GUNNER:** core, and KNOCKS BACK (0.22).
+  - **The hit's element** (`COMBAT.md` §7.9): a round takes the role's element in place of the selector's, for the triangle only. The hit stays Projectile, with no elemental share.
+  - **The rules** (js/cards.js `equipPlayerWhyNot`):
+    - a role goes in only while you are its class (FOR THE GUNSLINGER);
+    - one role of a class at a time (ONE GUNSLINGER ROLE AT A TIME);
+    - after a switch of class a role stays in its slot, asleep, and does nothing until you switch back. The card tick and a save keep it.
+  - **The roster:** a role asleep is greyed and marked ASLEEP on the player's card and its slot. The column says when it wakes.
+  - **Where they come from, for now:** they are Series 2's, so one must be found before ◆1,000 keeps it. Series 2 deals them, and Side Quest sells the toxic three, once all eighteen are built (Part 1d). Until then only `?cards=all` has them.
+  - **New file:** js/playercards.js (the kits). Hooks in js/input.js `firePlayerShot`, js/weapons.js `fireLaserShot` and `weaponCooldown`, js/technomancer.js `technoBolt`, js/cardsui.js, game.html (the script tag, the boot check, the asleep look).
+  - **Readings taken** where the kits did not say: `OPEN-QUESTIONS.md` §1p, ten of them, for the owner to confirm or change. Among them: "one at a time" with two slots, and "20% slower" as the rate × 0.8.
+  - **Tests:**
+    - **New:** tests/playercards.js, 24 checks: the cards, their numbers and words; the rules; a save in one boot loaded in another; each kit on a round flown and landed in the real game loop, on all three guns; the asleep look in the real page.
+    - **Updated for six more cards:** tests/cards.js, tests/classcards.js, tests/series2.js, tests/series2abilities.js, tests/packs.js.
+  - **The Bible:** a new section, "Player cards: the roles". It also corrects two stale counts: 84 script tags (it said 73; there were 83 before this build) and 87 suites.
+  - **The full run:** all 87 suites passed, the first time (tests/perf.js's frame budgets included).
+  - **Written up:** docs/UNIVERSAL-AND-PLAYER-CARDS.md (status, section 9 "Part 1a", the checks), docs/FOLLOWING-UPDATE.md (Part 1 in four steps), docs/OPEN-QUESTIONS.md §1p, docs/COMBAT.md §7.9, docs/UI-STYLE.md, docs/TUTORIAL.md, the Bible.
+  - Not playtested.
+
 - **g · The owner's answers on Build C: his dialogue picture kept; the install hint names him** (the owner, in a prompt: "Push to main", "Keep as built", "Say SIDE QUEST"; on the branch only; commit named in git log).
   - **Main:** Build C (`f`, commit 80c323d) and the answers' docs before it (ce2ff75) went to main at the owner's word.
   - **Side Quest's picture in the dialogue box** stays the void walker's sheet, facing you, as built.

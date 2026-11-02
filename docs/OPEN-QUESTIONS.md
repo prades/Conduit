@@ -226,6 +226,28 @@ Build C followed the approved design (`NEXT-UPDATE.md` Build C). Where it did no
 - **The offspring's personality** within its class is still the Crystal's own pick, as a recruit's: it is not one of the seeded draws.
 - **Two stale lines in the in-game guide were corrected** with Build C's own lines: the Vital items (removed 2026-11-01) and Side Quest's old spot.
 
+## 1p. Part 1a's readings: the Player card rules and the Gunslinger's six (build `2026-11-02h`, on the branch; `UNIVERSAL-AND-PLAYER-CARDS.md` section 9)
+
+Part 1a followed the approved kits and rules ("Approve as drafted", "The role's element"). Where they did not say, these readings were taken, each easy to change. **For the owner to confirm or change:**
+1. **"One at a time", with two slots.** The two slots never hold two roles of one class, so one role at most is awake. A role for each of two classes can be worn: the one for the class you are is awake, the other asleep. *(The other reading: one Player card in the two slots at all.)*
+2. **"It needs the matching class"** is asked when a card goes in: a role goes in only while you are its class (FOR THE GUNSLINGER otherwise). A role already in a slot stays there whatever the class, asleep, through the card tick and a save.
+3. **"The gun fires 20% slower"** (CRYO MARKSMAN) is read as 20% fewer shots a second: the wait between shots is divided by 0.8. The service gun goes from 45 frames to 56, the machine gun from 11 to 14, the laser from 28 to 35. That is the convention of the cards' attack speed. *(The other reading, the wait × 1.2, gives 54, 13 and 34.)*
+4. **ARC SLINGER's jump:**
+   - It is once a shot, from the first creature hit, to the nearest other creature within 2.6 tiles.
+   - It deals 60% of the round's damage before defense, as the arc's jump does, and is the round's own kind of hit (Projectile, electric).
+   - On the laser it never goes to a creature the beam went through.
+   - It sets nothing else off, and it is drawn with the arc's bolt, from creature to creature.
+5. **CRYO MARKSMAN's freeze:**
+   - "Already slowed" is slowed by anything before this round: a web, a Frost Patch, the round before.
+   - The 5 seconds count from the freeze.
+   - A boss can be frozen, as by the Frost Maw's bite.
+   - FROZEN shows over the creature.
+6. **Directions.** RIFT RUNNER pulls toward where you stand when the round lands. BREACH GUNNER pushes away from where the round was fired.
+7. **A round that kills** sets nothing on the creature (a status on the dead does nothing).
+8. **Where they come from, for now.** The six are Series 2's cards, so like every Series 2 card one is found before it can be kept for good (no outright ◆1,000 unlock). Series 2 deals them, and Side Quest sells the Sewers' three, once all eighteen are built (Part 1d). Until then only `?cards=all` has them. Why: the pack's odds and pool then change once, not three times, and the Sewers' three span all three classes. *(The other way: Series 2 deals each class's six as soon as they are built.)*
+9. **The words.** BLIGHT SHOOTER's card says POISON, the game's word for the weakness, as on MIREBLIGHT. The card's kind line reads PLAYER · GUNSLINGER · FIRE.
+10. **The look.** A Player card stays gold with no texture: the cards' look is still open (`UNIVERSAL-AND-PLAYER-CARDS.md` §11, item 11). A role asleep is greyed (grayscale, a dashed edge) and marked ASLEEP on the player's card and its slot. The column says when it wakes: "… IS ASLEEP: IT WAKES WHEN YOU ARE A GUNSLINGER AGAIN".
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
@@ -234,7 +256,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
-- **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) are built (build `2026-11-02c`, §1m); the Player cards (the player's elemental roles) are designed, not built: `UNIVERSAL-AND-PLAYER-CARDS.md`. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
+- **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) are built (build `2026-11-02c`, §1m); the Player cards (the player's elemental roles) are designed and approved, and the rules and the Gunslinger's six are built (build `2026-11-02h`, §1p): `UNIVERSAL-AND-PLAYER-CARDS.md`. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
   - **Your answers of 2026-11-02:**
     - openings add up; a stun or sleep counts;
     - auras reach 4 tiles, the clone included;

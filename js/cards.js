@@ -16,7 +16,8 @@
 //   SUBCLASS  a tag on each evolved form (EQUIP_FORM_SUBCLASS, the user's roster chart): crustacean, mollusk, elemental, drone or jelly. An egg has none until it evolves, nor do the ten retired forms. It decides nothing yet: it is for the cards to classify by.
 //   SLOTS     every follower has two (f.cards = [id | null, id | null]); the player has two, for PLAYER cards (equipPlayer). A unit cannot wear the same card twice; any number of units can wear the same card, because a card is a TYPE you own, never used up.
 //   FITS      a card is one kind: ELEMENT (a follower of that element), CLASS (a follower of that role: brawler, mage or technician; a Mage's AURA names an element too, and is worn by a Mage of that element), SUBCLASS (a follower of that
-//             subclass) or PLAYER (the player's slots, and nothing else). The UNIVERSAL kind (any follower, and the player) is retired (the owner, 2026-11-02; docs/UNIVERSAL-AND-PLAYER-CARDS.md).
+//             subclass) or PLAYER (the player's slots, and nothing else: a ROLE for one of the player's classes, awake while you are that class, asleep in its slot while you are another; EQUIP_PLAYER_CARDS, js/playercards.js).
+//             The UNIVERSAL kind (any follower, and the player) is retired (the owner, 2026-11-02; docs/UNIVERSAL-AND-PLAYER-CARDS.md).
 //   OWNED     the permanent COLLECTION: a card is unlocked for good for EQUIP.unlockCost shards (flat, paid from the run's), kept at EQUIP.key, which NEW GAME does not touch and the run's save does not hold.
 //   THE HAND  the card types taken into a run, up to EQUIP.startPick, chosen from the collection when it begins (js/cardsui.js). A card put back out of the hand comes off everyone, unless it was found as well.
 //   PACK 1    ◆EQUIP_PACK.price buys a BOOSTER PACK: 4 Element cards, one reserved for a Precision, the others rolled over Unrefined, Refined and Precision by weight; none twice in a pack. What a pack deals is FOUND (equipFound): a card
@@ -85,6 +86,17 @@ const EQUIP_PACK1 = [
 const EQUIP_FPS = 60;   // the game's frames in a second (every timer in it is in frames: a 3 second burn is 180)
 const _EQUIP_STAT_WORDS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", attackSpeed: "ATTACK SPEED", defense: "DEFENSE", maxHealth: "MAXIMUM HP", damage: "DAMAGE DEALT, ALL ATTACKS", cooldown: "ABILITY COOLDOWN" };
 const _equipPct = n => (Math.round(n * 1000) / 10) + "%", _equipSec = n => (Math.round(n * 10) / 10) + (n === 1 ? " SECOND" : " SECONDS");
+// a status in words, from its numbers: what follows "15% PER HIT TO " on a Pack 1 card (and "EVERY HIT TO " on a Player card); "" for a kind it does not know
+function _equipStatusText(p) {
+    if (!p) return "";
+    if (p.kind === "burn") return "BURN: " + p.dps + " DAMAGE A SECOND FOR " + _equipSec(p.seconds);
+    if (p.kind === "poison") return "POISON: IT HITS " + _equipPct(p.cut) + " WEAKER FOR " + _equipSec(p.seconds);
+    if (p.kind === "glitch") return "GLITCH: ITS WIND-UPS FAIL FOR " + _equipSec(p.seconds);
+    if (p.kind === "slow") return "SLOW BY " + _equipPct(p.cut) + " FOR " + _equipSec(p.seconds);
+    if (p.kind === "siphon") return "HEAL " + _equipPct(p.share) + " OF THE DAMAGE DEALT";
+    if (p.kind === "knockback") return "KNOCK THE TARGET BACK";
+    return "";
+}
 // what a card says, made from its numbers (so that tuning a number tunes the words)
 function equipEffectText(fx) {
     if (fx && fx.bonus) return Object.keys(fx.bonus).map(k => (k === "cooldown" ? "−" : "+") + _equipPct(fx.bonus[k]) + " " + (_EQUIP_STAT_WORDS[k] || String(k).toUpperCase())).join(" · ");   // (a cooldown bonus is a share taken OFF; a card of two stats names both)
@@ -96,14 +108,8 @@ function equipEffectText(fx) {
     if (fx && fx.opportunity) return "OPPORTUNITY: +" + _equipPct(fx.opportunity) + " ON A HIT FOR EACH WEAKNESS IT EXPLOITS: AN ELEMENT MATCH-UP, A RACE WEAK TO ITS TYPE, A RACE WEAK TO ELEMENTAL, A STUNNED OR SLEEPING TARGET";
     const p = fx && fx.proc; if (!p) return "";
     if (p.kind === "attuned") return _equipPct(p.chance) + " PER HIT: ITS OWN ELEMENT'S STATUS (BURN, POISON, GLITCH, SLOW, SIPHON OR KNOCKBACK)";
-    const hit = _equipPct(p.chance) + " PER HIT TO ";
-    if (p.kind === "burn") return hit + "BURN: " + p.dps + " DAMAGE A SECOND FOR " + _equipSec(p.seconds);
-    if (p.kind === "poison") return hit + "POISON: IT HITS " + _equipPct(p.cut) + " WEAKER FOR " + _equipSec(p.seconds);
-    if (p.kind === "glitch") return hit + "GLITCH: ITS WIND-UPS FAIL FOR " + _equipSec(p.seconds);
-    if (p.kind === "slow") return hit + "SLOW BY " + _equipPct(p.cut) + " FOR " + _equipSec(p.seconds);
-    if (p.kind === "siphon") return hit + "HEAL " + _equipPct(p.share) + " OF THE DAMAGE DEALT";
-    if (p.kind === "knockback") return hit + "KNOCK THE TARGET BACK";
-    return "";
+    const st = _equipStatusText(p);
+    return st ? _equipPct(p.chance) + " PER HIT TO " + st : "";
 }
 EQUIP_PACK1.forEach(([id, name, element, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind: "element", match: element, rarity, text: equipEffectText(fx), pack: "pack1" }, fx); });
 // EACH ELEMENT'S OWN STATUS: the one Pack 1's Precision card of that element sets, with its numbers (fire burns, toxic poisons, electric glitches, ice slows, flux siphons, core knocks back). ATTUNED CORE (Series 2) and the Prototype Mage auras set it.
@@ -194,6 +200,37 @@ const EQUIP_OPPORTUNITY = [
 ];
 EQUIP_AURAS.forEach(([id, name, el, rarity, fx]) => { fx.aura.el = el; EQUIP_CARDS[id] = Object.assign({ id, name, kind: "class", match: "sniper", rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
 EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind: "class", match: "brawler", rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
+// THE PLAYER CARDS (the following update's Part 1; docs/UNIVERSAL-AND-PLAYER-CARDS.md section 2, "The 18 kits": drafted, then approved by the owner 2026-11-02, "Approve as drafted"). Each is a ROLE: while it is worn and AWAKE (the player is
+// its class: equipPlayerRole, below) it turns that class into an elemental role. A row: [id, name, class (js/classes.js CLASSES: the class it is for, its `match`), element (the role's), kit]. Every one is PROTOTYPE and is
+// SERIES 2's (the owner, 2026-11-02: Series 2 deals them at Prototype), so like every Series 2 card it is found before it can be kept for good (equipUnlockWhyNot). Series 2 deals them once all eighteen are in (Part 1d,
+// with Side Quest's sale): until then only ?cards=all has them. What a kit does is js/playercards.js; EVERY NUMBER IS HERE, and the words on each card are made from it (equipPlayerKitText). Built so far: the Gunslinger's six.
+//   (every kit)  its class's hits take the role's ELEMENT, for the element triangle only (docs/COMBAT.md §7.9; the owner: "The role's element"): no SP.ATK, no elemental share
+//   status       true: EVERY hit sets the role element's own status with Pack 1's Precision numbers (_EQUIP_ATTUNED, as the Prototype auras use them): fire burns, toxic weakens (the game's POISON), ice slows, core knocks back
+//   jump         { radius, share }: each shot jumps on to the nearest other creature within `radius` tiles, for `share` of its damage (the Technomancer arc's jump: js/technomancer.js TECHNO.arc chainRange, chainPct)
+//   freeze       { frames, again }: a hit on a creature ALREADY slowed freezes it, a stun of `frames` (the Frost Maw's bite: js/evolution.js MAW_STUN), and not again on that creature for `again` frames (new, approved)
+//   slower       the share of the guns' rate of fire taken off (new, approved): their wait between shots is divided by (1 − slower)
+//   pull         the push of a knockback, reversed: the creature hit is pulled toward you (js/helpers.js vortexPullImmune: a beetle or a boss is not)
+const EQUIP_PLAYER_CARDS = [
+    ["incendiary_gunner", "INCENDIARY GUNNER", "gunslinger", "fire",     { status: true }],
+    ["blight_shooter",    "BLIGHT SHOOTER",    "gunslinger", "toxic",    { status: true }],
+    ["arc_slinger",       "ARC SLINGER",       "gunslinger", "electric", { jump: { radius: 2.6, share: 0.6 } }],
+    ["cryo_marksman",     "CRYO MARKSMAN",     "gunslinger", "ice",      { status: true, freeze: { frames: 75, again: 300 }, slower: 0.2 }],
+    ["rift_runner",       "RIFT RUNNER",       "gunslinger", "flux",     { pull: 0.22 }],
+    ["breach_gunner",     "BREACH GUNNER",     "gunslinger", "core",     { status: true }],
+];
+// what a role does, in the card's words, made from its kit's numbers
+const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"] };   // (whose hits a class's role works on: rule 1)
+function equipPlayerKitText(cls, k) {
+    const h = _EQUIP_KIT_HITS[cls]; if (!h || !k) return "";
+    const sec2 = n => (Math.round(n * 100) / 100) + (n === 1 ? " SECOND" : " SECONDS"), tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], out = [h[0] + _equipElementLabel(k.el)];
+    if (k.status && tpl && tpl.proc) out.push("EVERY HIT TO " + _equipStatusText(tpl.proc));
+    if (k.jump) out.push(h[1] + " JUMPS TO ONE MORE ENEMY WITHIN " + k.jump.radius + " TILES FOR " + _equipPct(k.jump.share));
+    if (k.freeze) out.push("A HIT ON AN ENEMY ALREADY SLOWED FREEZES IT FOR " + sec2(k.freeze.frames / EQUIP_FPS) + ", ONCE IN " + sec2(k.freeze.again / EQUIP_FPS));
+    if (k.pull > 0) out.push("EVERY HIT PULLS THE TARGET TOWARD YOU (NOT A BEETLE OR A BOSS)");
+    if (k.slower > 0) out.push("YOUR GUNS FIRE " + _equipPct(k.slower) + " SLOWER");
+    return out.join(" · ");
+}
+EQUIP_PLAYER_CARDS.forEach(([id, name, cls, el, kit]) => { const k = Object.assign({ el }, kit); EQUIP_CARDS[id] = { id, name, kind: "player", match: cls, rarity: "prototype", pack: "series2", kit: k, text: equipPlayerKitText(cls, k) }; });
 // THE CUT CARDS (the owner, 2026-11-02: Series 2 reshaped): its eight Brawler and Mage class cards are no longer cards. The registry does not know them, so every place that reads a saved id already drops them (the hand, the cards
 // found, the shelf, the player's slots: equipSaveApply; a follower's slots: equipValid on the tick, and the bonuses skip them before that). The COLLECTION keeps ids it does not know (?cards on and off loses nothing), so it drops these
 // by name, and each one it held (unlocked for good) pays back EQUIP.unlockCost shards, once (equipOwnedSet, equipRefundTick). Their abilities' code (Cleave, Chain) is kept, worn by no card.
@@ -229,13 +266,14 @@ function equipSubclassOf(f) { const s = f && f.evolved ? EQUIP_FORM_SUBCLASS[f.e
 function equipSubclassLabel(id) { const s = EQUIP_SUBCLASSES.find(x => x.id === id); return s ? s.label : ""; }
 function _equipElementLabel(id) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === id) : null; return e ? e.label : String(id || "").toUpperCase(); }
 function _equipRoleLabel(id) { return typeof roleLabel === "function" ? roleLabel(id) : String(id || "").toUpperCase(); }
-// what a card is for, in words: "ELEMENT · FIRE", "CLASS · BRAWLER", "CLASS · FIRE MAGE" (a Mage's aura), "SUBCLASS · DRONE", "PLAYER"
+// what a card is for, in words: "ELEMENT · FIRE", "CLASS · BRAWLER", "CLASS · FIRE MAGE" (a Mage's aura), "SUBCLASS · DRONE", "PLAYER · GUNSLINGER · FIRE" (a Player card's role), "PLAYER" (a test card)
+function _equipClassLabel(id) { return typeof className === "function" ? className(id) : String(id || "").toUpperCase(); }   // (the player's classes: js/classes.js)
 function equipKindLabel(c) {
     if (!c) return "";
     if (c.kind === "element") return "ELEMENT · " + _equipElementLabel(c.match);
     if (c.kind === "class") return "CLASS · " + (c.aura ? _equipElementLabel(c.aura.el) + " " : "") + _equipRoleLabel(c.match);
     if (c.kind === "subclass") return "SUBCLASS · " + equipSubclassLabel(c.match);
-    if (c.kind === "player") return "PLAYER";
+    if (c.kind === "player") return "PLAYER" + (c.match ? " · " + _equipClassLabel(c.match) : "") + (c.kit && c.kit.el ? " · " + _equipElementLabel(c.kit.el) : "");
     return "";
 }
 
@@ -292,7 +330,7 @@ function equipUnlock(id) {
     return true;
 }
 
-// ── THE RUN'S STATE: the hand, the cards found in packs, and the player's two Universal slots ──
+// ── THE RUN'S STATE: the hand, the cards found in packs, and the player's two slots (Player cards) ──
 let equipHand = [];                // the card types in this run's hand
 let equipFound = [];               // the card types found in packs this run: worn at once, and gone with the run unless EQUIP.unlockCost shards unlock one for good
 let equipPackLast = null;          // the last pack opened this run, for the sheet to show: { ids, fresh } (not saved)
@@ -509,20 +547,42 @@ function _equipProc(src, t, p, dealt) {
     else if (p.kind === "knockback" && typeof applyKnockback === "function") applyKnockback(t, src, p.push);
 }
 
-// ── THE PLAYER'S SLOTS: Player cards only (the owner, 2026-11-02: the Universal kind is retired; the player cannot wear auras). Until the Player cards come only the two test cards are of the kind, so the slots stay empty. ──
-function equipPlayerWhyNot(id, slot) {
+// ── THE PLAYER'S SLOTS: Player cards only (the owner, 2026-11-02: the Universal kind is retired; the player cannot wear auras) ──
+// A Player card is a ROLE for one class (its `match`: EQUIP_PLAYER_CARDS, above; the two test cards have none, and fit whatever you are). The rules (approved 2026-11-02, docs/UNIVERSAL-AND-PLAYER-CARDS.md):
+//   ITS CLASS      a role goes into a slot only while you are its class ("it needs the matching class"): FOR THE GUNSLINGER
+//   ONE AT A TIME  the two slots never hold two roles of one class ("one at a time"), so one role at most is awake: ONE GUNSLINGER ROLE AT A TIME. (Two slots and three classes: a role for each of two classes can be worn, one
+//                  awake, the other asleep.)
+//   ASLEEP         after a switch of class, a role for the other class stays in its slot, greyed out, and does nothing until you switch back (the owner, 2026-11-02). Asleep is not saved: it is what the class is now
+//                  (equipPlayerAwake). So the tick and a load KEEP a role whatever the class (_equipPlayerWhy with `keep`), and only putting one in asks for its class.
+function _equipPlayerClass() { return typeof playerClassKey !== "undefined" ? playerClassKey : null; }
+// why `id` cannot be in `slot` beside the other slot of `slots`, or null: `keep` asks only what a slot may keep (the tick, a load), not the class you are now
+function _equipPlayerWhy(id, slot, slots, keep) {
     const c = equipCard(id);
     if (!c) return "NO SUCH CARD";
     if (!equipUsable(id)) return "NOT IN YOUR HAND";
     if (c.kind !== "player") return "PLAYER CARDS ONLY";
-    return equipPlayer.some((x, i) => i !== slot && x === id) ? "ALREADY IN THE OTHER SLOT" : null;
+    if (slots.some((x, i) => i !== slot && x === id)) return "ALREADY IN THE OTHER SLOT";
+    if (!keep && c.match && c.match !== _equipPlayerClass()) return "FOR THE " + _equipClassLabel(c.match);
+    if (c.match && slots.some((x, i) => { const o = i !== slot && x ? equipCard(x) : null; return !!o && o.match === c.match; })) return "ONE " + _equipClassLabel(c.match) + " ROLE AT A TIME";
+    return null;
 }
+function equipPlayerWhyNot(id, slot) { return _equipPlayerWhy(id, slot, equipPlayer, false); }
 function equipPlayerPut(slot, id) {
     if (slot !== 0 && slot !== 1) return false;
     if (id == null) { if (!equipPlayer[slot]) return false; equipPlayer[slot] = null; return true; }
     if (equipPlayerWhyNot(id, slot) || equipPlayer[slot] === id) return false;
     equipPlayer[slot] = id; return true;
 }
+// is the card in a slot awake (a role of the class you are, or a test card), or asleep (a role of another class)?
+function equipPlayerAwake(id) { const c = equipCard(id); return !!c && c.kind === "player" && (!c.match || c.match === _equipPlayerClass()); }
+// THE ROLE AWAKE NOW: the Player card in your slots for the class you are (one at most), or null. js/playercards.js asks it at each attack. (Not whether it is still in the hand: a card out of the hand is off the slot by the next tick.)
+function equipPlayerRole() {
+    const k = _equipPlayerClass(); if (!k) return null;
+    for (let i = 0; i < EQUIP.playerSlots; i++) { const c = equipCard(equipPlayer[i]); if (c && c.kind === "player" && c.kit && c.match === k) return c; }
+    return null;
+}
+// a hit's element's own status, with Pack 1's Precision numbers (_EQUIP_ATTUNED): what a role's kit sets on every hit (js/playercards.js)
+function equipElementStatus(src, t, el, dealt) { const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[el]]; if (tpl && tpl.proc) _equipProc(src, t, tpl.proc, dealt || 0); }
 // how many units wear a card right now (the player's slots count)
 function equipWearers(id) {
     let n = equipPlayer.filter(x => x === id).length;
@@ -627,7 +687,7 @@ const _equipAuraPt = { x: 0, y: 0 };
 function equipTick(force) {
     if (!force && typeof frame === "number" && frame % EQUIP.every) return;
     if (typeof followers !== "undefined") for (const f of followers) if (f && f.cards) { equipValid(f); if (!f.dead) _equipAbilityTick(f); }
-    for (let i = 0; i < EQUIP.playerSlots; i++) { const id = equipPlayer[i]; if (id && (equipPlayerWhyNot(id, i) || equipPlayer.indexOf(id) !== i)) equipPlayer[i] = null; }
+    { const kept = [null, null]; for (let i = 0; i < EQUIP.playerSlots; i++) { const id = equipPlayer[i]; if (id && !_equipPlayerWhy(id, i, kept, true)) kept[i] = id; } for (let i = 0; i < EQUIP.playerSlots; i++) if (equipPlayer[i] !== kept[i]) equipPlayer[i] = kept[i]; }   // (each slot against those before it: of two that clash the first stays; a role asleep stays)
     _equipAuraTick();   // (after the cards that no longer fit came off)
     equipRefundTick();
     equipShelfTick();   // (the market's shelf: a new one when the time is up)
@@ -653,7 +713,7 @@ function equipSaveApply(d) {
     const sh = d.shelf && typeof d.shelf === "object" ? d.shelf : null;   // (a save from before the market has none: the first tick deals a shelf)
     equipShelf = sh && Array.isArray(sh.ids) && Number.isFinite(sh.left) ? { ids: sh.ids.filter((x, i, all) => typeof x === "string" && !!equipCard(x) && all.indexOf(x) === i).slice(0, EQUIP_MARKET.shelf), until: _equipNow() + Math.max(0, Math.min(EQUIP_MARKET.every, sh.left)) } : { ids: [], until: 0 };
     equipPlayer = [null, null];
-    (Array.isArray(d.player) ? d.player : []).slice(0, EQUIP.playerSlots).forEach((id, i) => { if (typeof id === "string" && !equipPlayerWhyNot(id, i)) equipPlayer[i] = id; });
+    (Array.isArray(d.player) ? d.player : []).slice(0, EQUIP.playerSlots).forEach((id, i) => { if (typeof id === "string" && !_equipPlayerWhy(id, i, equipPlayer, true)) equipPlayer[i] = id; });   // (a role asleep is kept: the class may be put back after the cards)
     return true;
 }
 
@@ -679,7 +739,8 @@ const EQUIP_PACK = {
 // shelf and the sheet take a pack and ask nothing of which one it is.
 const EQUIP_PACK2 = {
     id: "series2", name: "SERIES 2", price: 150, size: 4,     // PICKED by us at the owner's word ("Pick a price and set the odds", 2026-11-01): half again Pack 1's ◆100, for stronger cards that come later
-    kinds: ["subclass", "class"],                              // species cards (the subclass kind) and class cards (the class families); never an element card, never a Player card (yet: they come at Prototype in a later update)
+    kinds: ["subclass", "class"],                              // species cards (the subclass kind) and class cards (the class families); never an element card. The Player cards name this pack (they are found before they are kept)
+                                                               // and come into its deal at Prototype once all eighteen are built (the following update's Part 1d): "player" joins these kinds then
     eligible: ["unrefined", "refined", "precision", "prototype"],   // THE OWNER (2026-11-01): "Prototype unlocks": Series 2 deals up to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous joins in a
                                                                // later update (the archive's rule was all six rarities: it is where this is going)
     rarities: { unrefined: 50, refined: 30, precision: 15, prototype: 5 },   // PICKED (as the price): a slot rolled over the four; with the reserved Precision-or-better slot (Prototype 5 in 20) a pack holds a Prototype about 1 time in 3 (1 − 0.75 × 0.95³ ≈ 36%)

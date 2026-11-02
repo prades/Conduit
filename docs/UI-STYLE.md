@@ -98,6 +98,12 @@ The owner: "make it to where the items in the shop are in a new menu on the card
 - The strip's **first tile** is the player: its own picture (the 3D cube, facing you), YOU, its class (or THE PLAYER), and a plate for each card slot, lit gold with a card in it. It is always there, whatever the filters, and is not a creature card.
 - A tap puts **the player's card** in view, in gold: its picture lit from behind, YOU, its class and rank, THE PLAYER · YOU LEAD THE SQUAD, its health (a count of hits: 3 / 3 HITS), and YOUR CARDS, a mini card for each slot (as on the rail; a dashed EMPTY for an empty one). A tap on one opens its slot's list.
 - Beside it, **YOUR SLOT 1** and **YOUR SLOT 2**, drop-downs as a follower's CARD 1 and CARD 2 (the rarity chip beside the card worn), listing the hand: only Player cards fit (since Build B; Universal cards before), the rest say PLAYER CARDS ONLY, and one card is not worn twice. Under them a line says what to do (no card in the hand: take some from the CARDS screen), then the player's class, rank, health and squad.
+- **A role asleep** (since build `2026-11-02h`; the owner, 2026-11-02: "greyed out and inactive, until the player switches back"): a Player card for a class you are not now.
+  - On the player's card, its mini card is greyed (grayscale, darker, a dashed edge, no glow), with ASLEEP under it in small grey letters; the two slots' cards stay level.
+  - Its slot's drop-down is grey, and its small label reads YOUR SLOT 1 · ASLEEP over the card's name, so the name keeps its lines.
+  - The line under the slots says when it wakes: "INCENDIARY GUNNER IS ASLEEP: IT WAKES WHEN YOU ARE A GUNSLINGER AGAIN".
+  - In a slot's list, a role for another class is off and says FOR THE GUNSLINGER; a second role of one class says ONE GUNSLINGER ROLE AT A TIME.
+  - (game.html `.cf-pslot .cd-mini.asleep`, `.cf-pzz`; js/cardsui.js `equipPlayerSlotsBox`, `equipPlayerRosterDraw`.) Its look is the agent's, for the owner to keep or change (`OPEN-QUESTIONS.md` §1p).
 - The bar at the foot says YOU LEAD THE SQUAD: ONLY FOLLOWERS JOIN IT. ◂ ▸ walk the creatures: from the player they go to the first or the last of the strip.
 
 **A pack opened** (`_cdRevealBox`): an overlay over the sheet, which shows through it, blurred.

@@ -44,7 +44,10 @@ function weaponRows() { const k = typeof playerClassKey !== "undefined" ? player
 function weaponLevelOf(id) { return Math.max(1, Math.min(WEAPONS[id || playerWeapon].maxLevel, weaponLevel[id || playerWeapon] | 0 || 1)); }
 // the numbers in hand: the weapon's own, raised by its level, and the class perks' on top (classStat)
 function weaponDamage(id) { const w = weaponDef(id), L = weaponLevelOf(id || playerWeapon); return Math.round(classStat("shotDamage", w.damage * (1 + WEAPON_RULES.levelDamage * (L - 1))) * 10) / 10; }
-function weaponCooldown(id) { const w = weaponDef(id), L = weaponLevelOf(id || playerWeapon); return Math.max(4, Math.round(classStat("shotCooldown", w.cooldown * (1 - WEAPON_RULES.levelCooldown * (L - 1))))); }
+function weaponCooldown(id) {   // (a CRYO MARKSMAN awake fires the guns slower: js/playercards.js playerGunSlower)
+    const w = weaponDef(id), L = weaponLevelOf(id || playerWeapon), s = typeof playerGunSlower === "function" ? playerGunSlower(id) : 0;
+    return Math.max(4, Math.round(classStat("shotCooldown", w.cooldown * (1 - WEAPON_RULES.levelCooldown * (L - 1))) / (1 - s)));
+}
 function weaponEquip(id) {
     if (!WEAPONS[id]) return { ok: false, why: "NO SUCH WEAPON" };
     if (!weaponHas(id)) return { ok: false, why: id === "machinegun" ? "THE GUNSLINGER'S: FROM THE WEAPON LOCKER" : WEAPONS[id].cls ? "THE " + (typeof className === "function" ? className(WEAPONS[id].cls) : String(WEAPONS[id].cls).toUpperCase()) + "'S OWN" : "ASSEMBLE IT FIRST" };
@@ -97,15 +100,19 @@ function fireLaserShot(foe) {
         invRemove("fuel_cell", 1); laserCharge = W.charges; _wSay("NEW FUEL CELL — " + W.charges + " CHARGES", "#9be8ff");
     }
     laserCharge--; playerShotsFired++; player.gunShotAt = typeof frame !== "undefined" ? frame : 0;
-    const dmg = weaponDamage("laser"), src = { x: player.x, y: player.y, element: player.selectedElement || null, isPlayer: true }, f = typeof frame !== "undefined" ? frame : 0;
+    // A GUNSLINGER ROLE awake (a Player card, js/playercards.js): the beam is the role's element (for the triangle only), and its kit acts on each creature it hits; the shot's one jump (ARC SLINGER) comes last, to one it missed
+    const role = typeof playerGunRole === "function" ? playerGunRole() : null;
+    const dmg = weaponDamage("laser"), src = { x: player.x, y: player.y, element: role ? role.kit.el : (player.selectedElement || null), isPlayer: true }, f = typeof frame !== "undefined" ? frame : 0;
     applyDamage(foe, dmg, src, null, false, false, DMG_HIT_GUN);
+    if (role) playerRoundHit(role, foe, src);
     // whatever stands in the line behind it, a little further on, is hit for less
-    const ux = (foe.x - player.x) / (d || 1), uy = (foe.y - player.y) / (d || 1), reach = Math.min(W.range, d + 3);
+    const ux = (foe.x - player.x) / (d || 1), uy = (foe.y - player.y) / (d || 1), reach = Math.min(W.range, d + 3), through = role ? [] : null;
     for (const a of actors) {
         if (!a || a.dead || a === foe || !isHostileTarget(a)) continue;
         const ax = a.x - player.x, ay = a.y - player.y, t = ax * ux + ay * uy; if (t < 0 || t > reach) continue;
-        if (Math.abs(ax * uy - ay * ux) < 0.75) applyDamage(a, dmg * W.pierce, src, null, false, false, DMG_HIT_GUN);
+        if (Math.abs(ax * uy - ay * ux) < 0.75) { applyDamage(a, dmg * W.pierce, src, null, false, false, DMG_HIT_GUN); if (role) { playerRoundHit(role, a, src); through.push(a); } }
     }
+    if (role) playerRoundJump(role, foe, src, dmg, through);
     const ex = player.x + ux * reach, ey = player.y + uy * reach;
     (_fp.beams = _fp.beams || []).push({ x0: player.x, y0: player.y, x1: ex, y1: ey, t0: f });
     player.attackCooldown = weaponCooldown("laser");

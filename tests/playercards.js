@@ -1,0 +1,271 @@
+// THE PLAYER CARDS: the rules and the Gunslinger's six roles (the following update's Part 1a, build 2026-11-02h; docs/UNIVERSAL-AND-PLAYER-CARDS.md section 2, "The 18 kits", approved by the owner 2026-11-02:
+// "Approve as drafted"; docs/FOLLOWING-UPDATE.md Part 1). js/cards.js (the table, the words, the slots' rules), js/playercards.js (the kits), js/input.js (the gun's round), js/weapons.js (the laser, the guns' rate),
+// js/technomancer.js (the jump's bolt), js/cardsui.js and game.html (a role asleep on the roster).
+//   THE SIX       INCENDIARY GUNNER (fire, BURN), BLIGHT SHOOTER (toxic, WEAKNESS), ARC SLINGER (electric, a jump of 60% within 2.6 tiles), CRYO MARKSMAN (ice, SLOW; a FREEZE of 1.25 s on a creature already slowed, once in
+//                 5 s; the guns 20% slower), RIFT RUNNER (flux, a PULL toward you; never a beetle or a boss), BREACH GUNNER (core, KNOCK BACK). Prototype, Series 2's (found before kept), not dealt until all 18 are in.
+//   THE RULES     a role goes in only while you are its class; one role of a class at a time; after a switch of class it sleeps in its slot, greyed, doing nothing, and wakes when you switch back; kept through a save
+//   THE KITS      on every round that hits, from any gun (the service gun, the machine gun, the laser's beam): the role's element for the triangle only (the hit stays physical: no elemental share), the status with
+//                 Pack 1's Precision numbers on every hit (refreshed, never stacked)
+const fs = require('fs');
+const vm = require('vm');
+const path = require('path');
+const os = require('os');
+const { execFileSync } = require('child_process');
+const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
+process.on('unhandledRejection', () => {});
+const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+let failures = 0;
+function group(n) { console.log('\n' + n); }
+async function check(name, fn) { try { await fn(); console.log('  ok   ' + name); } catch (e) { failures++; console.log('  FAIL ' + name + ' — ' + e.message); } }
+function ok(c, m) { if (!c) throw new Error(m); }
+function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
+function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${m}: expected about ${b}, got ${a}`); }
+
+// the approved six (UNIVERSAL-AND-PLAYER-CARDS.md, the Gunslinger's table): id, name, element
+const SIX = [['incendiary_gunner', 'INCENDIARY GUNNER', 'fire'], ['blight_shooter', 'BLIGHT SHOOTER', 'toxic'], ['arc_slinger', 'ARC SLINGER', 'electric'],
+             ['cryo_marksman', 'CRYO MARKSMAN', 'ice'], ['rift_runner', 'RIFT RUNNER', 'flux'], ['breach_gunner', 'BREACH GUNNER', 'core']];
+
+async function boot(search, store) {
+    const sb = makeBrowserSandbox(store || {}); sb.location.search = search || '';
+    const context = vm.createContext(sb);
+    for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) { /* the page's own boot check says */ } }
+    for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
+    const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
+    run(`facilityBlackoutSet(false); gameState.running = true; alertActive = false; _fp.items = _fp.items.filter(i => !(i.fp === 'prop' && i.kind === 'sentry'));   // (no sentries: they would shoot the creatures)
+        if (typeof facilitySpawnTick === 'function') facilitySpawnTick = () => {};
+        // staged in the lower half of the Crystal Chamber, as tests/technomancer.js: open floor all round
+        globalThis.__home = () => { player.x = player.targetX = player.visualX = crystal.x - 2; player.y = player.targetY = player.visualY = crystal.y + 5; player.fpPath = null; player.attackCooldown = 0; health = PLAYER_HITS; player.invuln = 0; };
+        globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isNeutralRecruit); for (const f of followers) { f.x = crystal.x - 30; f.y = crystal.y; f.stance = 'hold'; f.job = { type: 'move', target: { x: f.x, y: f.y } }; }
+            respawnQueue.length = 0; floatingTexts.length = 0; followerProjectiles.length = 0; elementEffects.length = 0; _tc.fx.length = 0; mutatorReset(); playerAttackMode = false; gunHold = null; playerLockTarget = null; __home(); };
+        globalThis.__class = id => { invReset(); playerClassKey = null; classPerks = new Set(); weaponReset(); if (id) classSet(id); };
+        // a Gunslinger with the service gun, the selector on ICE (so a round's element is seen to be the role's), and these roles found for the run, the first worn
+        globalThis.__gs = (...ids) => { __clear(); __class('gunslinger'); equipReset(); for (const id of ids) equipFound.push(id); if (ids[0]) equipPlayerPut(0, ids[0]); playerAmmo = 99; player.selectedElement = 'ice'; return equipPlayer.slice(); };
+        globalThis.__creature = (sp, cl, dx, dy) => { const p = spawnCreature({ species: sp, className: cl, level: 3, x: player.x + dx, y: player.y + dy, state: 'hunt' }); p.provoked = true; p.element = null; p.spawnProtection = 0; p.update = () => {}; p.health = p.maxHealth = 1e6; return p; };
+        globalThis.__dummy = (dx, dy) => __creature('ant', 'scout', dx, dy);
+        globalThis.__frames = n => { for (let i = 0; i < n; i++) render(); };
+        // fire at a creature and step the game until the round has landed (the round flies at 0.18 tiles a frame): the health it took, the round (its element and damage), and the frames it flew
+        globalThis.__shoot = foe => { player.attackCooldown = 0; const h = foe.health, n0 = followerProjectiles.length, fired = firePlayerShot(foe); const p = followerProjectiles.length > n0 ? followerProjectiles[followerProjectiles.length - 1] : null, cd = player.attackCooldown;
+            let k = 0; while (p && followerProjectiles.indexOf(p) >= 0 && k < 120) { render(); k++; }
+            return { fired, lost: h - foe.health, el: p ? p.element : null, dmg: p ? p.damage : null, onHit: !!(p && p.onHit), frames: k, cd }; };
+        globalThis.__said = w => floatingTexts.some(t => t.text === w);`);
+    return { run, J, store: sb.localStorage };
+}
+
+// ── the real page, for the roster (a role asleep is greyed) ──
+function findChromium() {
+    const fromEnv = process.env.CHROMIUM_PATH; if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
+    const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers'; let dirs = [];
+    try { dirs = fs.readdirSync(base); } catch (e) { return null; }
+    for (const d of dirs.filter(d => d.startsWith('chromium')).sort().reverse()) for (const rel of ['chrome-linux/chrome', 'chrome-linux/headless_shell']) { const p = path.join(base, d, rel); if (fs.existsSync(p)) return p; }
+    for (const p of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']) if (fs.existsSync(p)) return p;
+    return null;
+}
+const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
+  var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  var click = function(el){ if (el) el.dispatchEvent(new MouseEvent('click', { bubbles: true })); };
+  try {
+    gameState.running = true; facilityBlackoutSet(false); if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false;
+    playerClassKey = null; classSet('gunslinger'); equipPlayer = [null, null]; out.put = equipPlayerPut(0, 'incendiary_gunner');
+    selectedUnits.clear(); ccOpen('roster'); await wait(300); click($('#ccGrid .cc-ytile')); await wait(120);
+    var slot = function(n){ return $$('#ccSide .cc-dd').filter(function(d){ return d.querySelector('.cc-dd-k').textContent.indexOf('YOUR SLOT ' + n) === 0; })[0]; };
+    var look = function(){ var ms = $$('#ccFocus .cf-pslot .cd-mini'), m = ms[0], zzEl = $('#ccFocus .cf-pzz'); return { asleep: !!m && m.classList.contains('asleep'), zz: $$('#ccFocus .cf-pzz').map(function(e){ return e.textContent; }).join(), filter: m ? getComputedStyle(m).filter : '',
+        k: slot(1) ? slot(1).querySelector('.cc-dd-k').textContent : null, v: slot(1) ? slot(1).querySelector('.cc-dd-v').textContent : null, note: $$('#ccSide .cc-note').map(function(e){ return e.textContent; }).join('|'), label: m ? m.getAttribute('aria-label') : '',
+        level: ms.length === 2 ? Math.abs(ms[0].getBoundingClientRect().top - ms[1].getBoundingClientRect().top) : -1, under: !!(zzEl && m) && zzEl.getBoundingClientRect().top >= m.getBoundingClientRect().bottom - 1,
+        fits: slot(1) ? slot(1).scrollHeight <= slot(1).clientHeight + 1 : false }; };
+    out.awake = look();
+    classSet('technomancer'); ccRender(); await wait(150); out.asleep = look();
+    click(slot(2)); await wait(80);
+    out.list2 = $$('#ccSide .cc-dd-list .cc-btn').filter(function(b){ return /GUNNER|SHOOTER|SLINGER|MARKSMAN|RUNNER/.test(b.querySelector('.cc-bl').textContent); }).map(function(b){ return [b.querySelector('.cc-bl').textContent, b.disabled, (b.querySelector('.cc-bs') || {}).textContent || '']; });
+    classSet('gunslinger'); ccRender(); await wait(150); out.back = look();
+    ccClose();
+  } catch (err) { out.err = String(err && err.stack || err); }
+  var pre = document.createElement('pre'); pre.id = '__pc'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
+}, 2500); });</script></body>`;
+function page(w, h, query) {
+    const bin = findChromium(); if (!bin) return null;
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pc-')), file = path.join(dir, 'game.html');
+    fs.writeFileSync(file, rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/">').replace(/<\/body>/i, () => SCRIPT));
+    let dom = '';
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + h, '--virtual-time-budget=60000', '--dump-dom', 'file://' + file + (query || '')], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 120000 }); } catch (e) { dom = String(e.stdout || ''); }
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+    const m = dom.match(/<pre id="__pc">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')) : undefined;
+}
+
+(async () => {
+    const A = await boot('');
+    const { run, J } = A;
+
+    group('THE GUNSLINGER\'S SIX (their names, themes and kits approved: "Approve as drafted")');
+    await check('six PLAYER cards for the Gunslinger, one per element, each PROTOTYPE and Series 2\'s: INCENDIARY GUNNER, BLIGHT SHOOTER, ARC SLINGER, CRYO MARKSMAN, RIFT RUNNER, BREACH GUNNER', () => {
+        const r = J(`EQUIP_PLAYER_CARDS.map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); })`);
+        same(r.length, 6, 'the roles built'); SIX.forEach(([id, name, el], i) => same(r[i], [id, name, 'player', 'gunslinger', el, 'prototype', 'series2'].join(), name));
+        same(J(`Object.values(EQUIP_CARDS).filter(c => c.kind === 'player').length`), 6, 'Player cards in the game (the two test cards are behind ?cards)');
+    });
+    await check('every number is one the game already has, or the approved new ones: the jump is the Technomancer arc\'s (2.6 tiles, 60%), the freeze the Frost Maw\'s stun (75 frames = 1.25 s), not again for 5 s (new), the guns 20% slower (new), the pull Pack 1\'s knockback (0.22) reversed; the statuses Pack 1\'s Precision cards\'', () => {
+        const r = J(`({ jump: EQUIP_CARDS.arc_slinger.kit.jump, arc: [TECHNO.arc.chainRange, TECHNO.arc.chainPct], freeze: EQUIP_CARDS.cryo_marksman.kit.freeze, maw: MAW_STUN, slower: EQUIP_CARDS.cryo_marksman.kit.slower,
+            pull: EQUIP_CARDS.rift_runner.kit.pull, push: EQUIP_CARDS.repulsor_pulse.proc.push, status: EQUIP_PLAYER_CARDS.map(r => [r[0], !!EQUIP_CARDS[r[0]].kit.status]), att: _EQUIP_ATTUNED })`);
+        same([r.jump.radius, r.jump.share].join(), r.arc.join(), 'the jump against the arc\'s'); same(r.freeze.frames, r.maw, 'the freeze against the Frost Maw\'s stun'); same(r.freeze.again, 300, 'once in 5 s');
+        same(r.slower, 0.2, 'the guns\' rate'); same(r.pull, r.push, 'the pull against Pack 1\'s knockback');
+        same(r.status.filter(s => s[1]).map(s => s[0]).join(), 'incendiary_gunner,blight_shooter,cryo_marksman,breach_gunner', 'the roles that set their element\'s status (ARC SLINGER and RIFT RUNNER set none: their kits say so)');
+        same([r.att.fire, r.att.toxic, r.att.ice, r.att.core].join(), 'cinderbrand,mireblight,rime_snare,repulsor_pulse', 'whose numbers');
+    });
+    await check('their words are made from their numbers; the kind line reads PLAYER · GUNSLINGER · FIRE (a test card still PLAYER); Pack 1\'s words are as they were', () => {
+        const r = J(`({ t: EQUIP_PLAYER_CARDS.map(r => EQUIP_CARDS[r[0]].text), k: EQUIP_PLAYER_CARDS.map(r => equipKindLabel(EQUIP_CARDS[r[0]])), test: equipKindLabel({ kind: 'player', match: null }),
+            p1: ['cinderbrand', 'mireblight', 'static_lock', 'rime_snare', 'siphon_field', 'repulsor_pulse'].map(id => EQUIP_CARDS[id].text) })`);
+        same(r.t[0], 'YOUR ROUNDS ARE FIRE · EVERY HIT TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS', 'INCENDIARY GUNNER');
+        same(r.t[1], 'YOUR ROUNDS ARE TOXIC · EVERY HIT TO POISON: IT HITS 40% WEAKER FOR 4 SECONDS', 'BLIGHT SHOOTER');
+        same(r.t[2], 'YOUR ROUNDS ARE ELECTRIC · EACH SHOT JUMPS TO ONE MORE ENEMY WITHIN 2.6 TILES FOR 60%', 'ARC SLINGER');
+        same(r.t[3], 'YOUR ROUNDS ARE ICE · EVERY HIT TO SLOW BY 25% FOR 2 SECONDS · A HIT ON AN ENEMY ALREADY SLOWED FREEZES IT FOR 1.25 SECONDS, ONCE IN 5 SECONDS · YOUR GUNS FIRE 20% SLOWER', 'CRYO MARKSMAN');
+        same(r.t[4], 'YOUR ROUNDS ARE FLUX · EVERY HIT PULLS THE TARGET TOWARD YOU (NOT A BEETLE OR A BOSS)', 'RIFT RUNNER');
+        same(r.t[5], 'YOUR ROUNDS ARE CORE · EVERY HIT TO KNOCK THE TARGET BACK', 'BREACH GUNNER');
+        same(r.k.join('|'), 'PLAYER · GUNSLINGER · FIRE|PLAYER · GUNSLINGER · TOXIC|PLAYER · GUNSLINGER · ELECTRIC|PLAYER · GUNSLINGER · ICE|PLAYER · GUNSLINGER · FLUX|PLAYER · GUNSLINGER · CORE', 'the kind lines'); same(r.test, 'PLAYER', 'a test card');
+        same(r.p1.join('|'), ['15% PER HIT TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS', '15% PER HIT TO POISON: IT HITS 40% WEAKER FOR 4 SECONDS', '10% PER HIT TO GLITCH: ITS WIND-UPS FAIL FOR 0.5 SECONDS', '20% PER HIT TO SLOW BY 25% FOR 2 SECONDS',
+            '15% PER HIT TO HEAL 10% OF THE DAMAGE DEALT', '15% PER HIT TO KNOCK THE TARGET BACK'].join('|'), 'Pack 1\'s Precision words');
+    });
+    await check('where they come from, for now: they are Series 2\'s, so found before they are kept (no outright ◆1,000 unlock); Series 2 does not deal them yet (its pool is still its 45; 2,000 seeded packs and 300 shelves never hold one); found, ◆1,000 keeps one for good; ?cards=all has all six to hand', () => {
+        const r = J(`(function(){ __gs(); questDone = id => id === 'purify'; shardCount = 5000; const o = {};
+            o.pool = equipPackPool(EQUIP_PACK2).length; o.poolPlayer = equipPackPool(EQUIP_PACK2).filter(c => c.kind === 'player').length; let dealt = 0, shelf = 0;
+            for (let s = 1; s <= 2000; s++) for (const id of (equipPackRoll(s, EQUIP_PACK2) || [])) if (EQUIP_CARDS[id].kind === 'player') dealt++;
+            for (let s = 1; s <= 300; s++) for (const id of equipShelfDeal(s)) if (EQUIP_CARDS[id].kind === 'player') shelf++;
+            o.dealt = dealt; o.shelf = shelf; o.why = equipUnlockWhyNot('incendiary_gunner'); equipFound.push('incendiary_gunner'); o.whyFound = equipUnlockWhyNot('incendiary_gunner'); o.unlock = equipUnlock('incendiary_gunner'); o.owned = equipOwns('incendiary_gunner'); o.shards = shardCount;
+            equipDevSet('all'); o.all = EQUIP_PLAYER_CARDS.filter(r => equipInHand(r[0])).length; equipDevSet(''); return o; })()`);
+        same(r.pool, 45, 'Series 2\'s pool'); same(r.poolPlayer, 0, 'Player cards in its pool'); same(r.dealt, 0, 'Player cards dealt'); same(r.shelf, 0, 'Player cards on the shelf');
+        same(r.why, 'FIND IT IN A PACK FIRST', 'an outright unlock'); same(r.whyFound, null, 'the unlock once found'); same(r.unlock, true, 'kept for good'); same(r.owned, true, 'owned'); same(r.shards, 4000, 'the shards after');
+        same(r.all, 6, 'the six in the hand with ?cards=all');
+    });
+
+    group('THE RULES: it needs its class; one role of a class at a time; it sleeps after a switch of class');
+    await check('a role goes in only while you are its class: before a class, as a Technomancer or a Mutator it says FOR THE GUNSLINGER and will not go in; as a Gunslinger it does; a follower is told FOR THE PLAYER', () => {
+        const r = J(`(function(){ __gs(); equipFound.push('incendiary_gunner'); const o = {}; const why = () => equipPlayerWhyNot('incendiary_gunner', 0);
+            playerClassKey = null; o.none = [why(), equipPlayerPut(0, 'incendiary_gunner')]; __class('technomancer'); o.tech = [why(), equipPlayerPut(0, 'incendiary_gunner')]; __class('mutator'); o.mut = [why(), equipPlayerPut(0, 'incendiary_gunner')];
+            __class('gunslinger'); o.gs = [why(), equipPlayerPut(0, 'incendiary_gunner'), equipPlayer[0]]; o.follower = equipFit({ isFollower: true, element: 'fire', role: 'brawler' }, EQUIP_CARDS.incendiary_gunner); return o; })()`);
+        same(r.none.join('|'), 'FOR THE GUNSLINGER|false', 'with no class'); same(r.tech.join('|'), 'FOR THE GUNSLINGER|false', 'a Technomancer'); same(r.mut.join('|'), 'FOR THE GUNSLINGER|false', 'a Mutator');
+        same(r.gs.join('|'), '|true|incendiary_gunner', 'a Gunslinger'); same(r.follower, 'FOR THE PLAYER', 'a follower');
+    });
+    await check('one at a time: a second Gunslinger role is refused in the other slot (ONE GUNSLINGER ROLE AT A TIME), the same card twice too; another role takes the first one\'s own slot; only one role is ever awake', () => {
+        const r = J(`(function(){ __gs('incendiary_gunner', 'blight_shooter'); const o = {}; o.second = [equipPlayerWhyNot('blight_shooter', 1), equipPlayerPut(1, 'blight_shooter')]; o.twice = equipPlayerWhyNot('incendiary_gunner', 1);
+            o.swap = [equipPlayerWhyNot('blight_shooter', 0), equipPlayerPut(0, 'blight_shooter'), equipPlayer.join(), equipPlayerRole().id]; return o; })()`);
+        same(r.second.join('|'), 'ONE GUNSLINGER ROLE AT A TIME|false', 'a second role'); same(r.twice, 'ALREADY IN THE OTHER SLOT', 'the same card twice');
+        same(r.swap.join('|'), '|true|blight_shooter,|blight_shooter', 'a role in place of another');
+    });
+    await check('the test cards (no class) still go anywhere, with a role or each other, and are no role', () => {
+        const r = J(`(function(){ equipDevSet('on'); __gs('incendiary_gunner', 'test_player_a', 'test_player_b'); const o = {}; o.withRole = [equipPlayerPut(1, 'test_player_a'), equipPlayer.join(), equipPlayerRole().id, equipPlayerAwake('test_player_a')];
+            equipPlayer = [null, null]; __class('mutator'); o.both = [equipPlayerPut(0, 'test_player_a'), equipPlayerPut(1, 'test_player_b'), equipPlayer.join(), equipPlayerRole()]; equipDevSet(''); return o; })()`);
+        same(r.withRole.join('|'), 'true|incendiary_gunner,test_player_a|incendiary_gunner|true', 'beside a role'); same(r.both.slice(0, 3).join('|'), 'true|true|test_player_a,test_player_b', 'two test cards, any class'); same(r.both[3], null, 'a test card is a role');
+    });
+    await check('a switch of class puts the role to sleep: it stays in its slot through the card tick, is not awake, and the gun\'s rounds are the selector\'s again with nothing on them; switching back wakes it', () => {
+        const r = J(`(function(){ __gs('blight_shooter'); const o = {}; o.on = [equipPlayerRole().id, equipPlayerAwake('blight_shooter')];
+            classSet('technomancer'); equipTick(true); weaponEquip('service'); o.asleep = [equipPlayer.join(), equipPlayerAwake('blight_shooter'), equipPlayerRole(), playerGunRole()];
+            const e = __dummy(3, 0), s = __shoot(e); o.shot = [s.fired, s.el, s.onHit, e.toxicWeakened || 0];
+            classSet('gunslinger'); equipTick(true); weaponEquip('service'); o.back = [equipPlayer.join(), equipPlayerAwake('blight_shooter'), equipPlayerRole().id]; const e2 = __dummy(3, 1), s2 = __shoot(e2); o.shot2 = [s2.el, e2.toxicWeakened > 0]; return o; })()`);
+        same(r.on.join('|'), 'blight_shooter|true', 'worn and awake'); same(r.asleep.join('|'), 'blight_shooter,|false||', 'after the switch: kept, asleep, no role');
+        same(r.shot.join('|'), 'true|ice|false|0', 'a round while asleep (the selector\'s ice, no kit, nothing on the creature)'); same(r.back.join('|'), 'blight_shooter,|true|blight_shooter', 'switched back'); same(r.shot2.join('|'), 'toxic|true', 'a round once awake');
+    });
+    await check('a role for each of two classes (two slots, three classes): each wakes with its class, the other sleeps; as the third class both sleep (a stand-in Technomancer role, for this check only)', () => {
+        const r = J(`(function(){ EQUIP_CARDS.__tech_role = { id: '__tech_role', name: 'STAND-IN', kind: 'player', match: 'technomancer', rarity: 'prototype', kit: { el: 'electric' }, text: '' };
+            __gs('incendiary_gunner', '__tech_role'); const o = {}; classSet('technomancer'); o.put = [equipPlayerWhyNot('__tech_role', 1), equipPlayerPut(1, '__tech_role')]; equipTick(true);
+            o.tech = [equipPlayer.join(), equipPlayerRole().id, equipPlayerAwake('incendiary_gunner'), equipPlayerAwake('__tech_role')]; classSet('gunslinger'); equipTick(true); o.gs = [equipPlayerRole().id, equipPlayerAwake('__tech_role')];
+            classSet('mutator'); equipTick(true); o.mut = [equipPlayer.join(), equipPlayerRole()]; delete EQUIP_CARDS.__tech_role; equipPlayer = [null, null]; return o; })()`);
+        same(r.put.join('|'), '|true', 'the Technomancer\'s role beside the sleeping Gunslinger\'s'); same(r.tech.join('|'), 'incendiary_gunner,__tech_role|__tech_role|false|true', 'as a Technomancer');
+        same(r.gs.join('|'), 'incendiary_gunner|false', 'as a Gunslinger'); same(r.mut.join('|'), 'incendiary_gunner,__tech_role|', 'as a Mutator');
+    });
+    await check('the slots keep what they may whatever the class, and drop the rest: a role out of the hand and not found goes on the tick; a load keeps a role asleep, keeps the first of two roles of one class, drops what is not a Player card or not a card', () => {
+        const r = J(`(function(){ __gs('incendiary_gunner'); const o = {}; equipFound = []; equipTick(true); o.gone = equipPlayer.join();
+            playerClassKey = 'mutator'; const ap = d => { equipSaveApply(d); return equipPlayer.join(); };
+            o.asleep = ap({ hand: [], found: ['incendiary_gunner'], player: ['incendiary_gunner', null] }); o.two = ap({ hand: [], found: ['incendiary_gunner', 'blight_shooter'], player: ['incendiary_gunner', 'blight_shooter'] });
+            o.bad = ap({ hand: [], found: ['incendiary_gunner', 'cinderbrand'], player: ['cinderbrand', 'nope'] }); o.junk = ap({ hand: [], found: [], player: 'x' }); o.notFound = ap({ hand: [], found: [], player: ['incendiary_gunner', null] }); return o; })()`);
+        same(r.gone, ',', 'a role no longer found'); same(r.asleep, 'incendiary_gunner,', 'a role asleep on a load'); same(r.two, 'incendiary_gunner,', 'two roles of one class'); same(r.bad, ',', 'a Pack 1 card, an unknown id'); same(r.junk, ',', 'a slot list that is not one'); same(r.notFound, ',', 'a role not in the run');
+    });
+    await check('a game saved with a role asleep comes back with it asleep in its slot, and it wakes when you switch back', async () => {
+        const store = {}, S = await boot('', store);
+        S.run(`__gs('incendiary_gunner'); classSet('mutator'); facilitySaveWrite();`);
+        const saved = JSON.parse(store.conduit_fp_save || 'null'); ok(saved && saved.cards, 'no save was written'); same(saved.cards.player.join(), 'incendiary_gunner,', 'the slots in the save'); same(saved.cls, 'mutator', 'the class in the save');
+        const B = await boot('', store), r = B.J(`(function(){ const o = { cls: playerClassKey, slots: equipPlayer.join(), awake: equipPlayerAwake('incendiary_gunner'), role: equipPlayerRole() }; classSet('gunslinger'); o.after = [equipPlayerAwake('incendiary_gunner'), equipPlayerRole() && equipPlayerRole().id]; return o; })()`);
+        same(r.cls, 'mutator', 'the class'); same(r.slots, 'incendiary_gunner,', 'the slots'); same(r.awake, false, 'awake as a Mutator'); same(r.role, null, 'a role as a Mutator'); same(r.after.join('|'), 'true|incendiary_gunner', 'a Gunslinger again');
+    });
+
+    group('THE KITS: on every round that hits (the real game loop: the round flies and lands)');
+    await check('no role: a round is the selector\'s element and sets nothing, as before', () => {
+        const r = J(`(function(){ __gs(); const e = __dummy(3, 0), s = __shoot(e); return [s.fired, s.el, s.onHit, s.lost > 0, e.burning || 0, e.toxicWeakened || 0, e.slowed || 0, e.stunned || 0, e.kbVX || 0]; })()`);
+        same(r.join('|'), 'true|ice|false|true|0|0|0|0|0', 'a plain round');
+    });
+    await check('rule 2, the triangle only: INCENDIARY GUNNER\'s round is fire whatever the selector, ×' + '1.3 on a flux creature (fire beats flux), and on a creature with no element it takes exactly what a plain round takes (no elemental share is added: the hit stays Projectile)', () => {
+        const r = J(`(function(){ __gs(); const a = __dummy(3, 0), sa = __shoot(a); a.dead = true; actors = actors.filter(x => x !== a);
+            __gs('incendiary_gunner'); const b = __dummy(3, 0), sb = __shoot(b); b.dead = true; actors = actors.filter(x => x !== b);
+            const c = __dummy(3, 0); c.element = 'flux'; const sc = __shoot(c); return { plain: sa.lost, role: sb.lost, flux: sc.lost, el: [sb.el, sc.el], mult: getElementMultiplier('fire', 'flux') }; })()`);
+        same(r.el.join(), 'fire,fire', 'the rounds\' element'); near(r.role, r.plain, 1e-9, 'a role\'s round on a creature with no element against a plain one'); near(r.flux / r.role, r.mult, 1e-9, 'the triangle on a flux creature'); same(r.mult, 1.3, 'fire on flux');
+    });
+    await check('INCENDIARY GUNNER: every round that hits sets BURN (3 a second for 3 s: 1 a tick, 180 frames); a second round refreshes it, never stacks', () => {
+        const r = J(`(function(){ __gs('incendiary_gunner'); const e = __dummy(3, 0); __shoot(e); const o = { a: [e.burning, e.burnDamage, __said('BURN')] }; __frames(30); __shoot(e); o.b = [e.burning, e.burnDamage]; return o; })()`);
+        same(r.a.join('|'), '180|1|true', 'after one round'); same(r.b.join('|'), '180|1', 'after a second (refreshed, not stacked)');
+    });
+    await check('BLIGHT SHOOTER: every round that hits WEAKENS (the game\'s POISON: its bite 40% weaker for 4 s)', () => {
+        const r = J(`(function(){ __gs('blight_shooter'); const e = __dummy(3, 0), s = __shoot(e); return [s.el, e.toxicWeakened, e.toxicWeakenFactor, __said('POISON')]; })()`);
+        same(r.join('|'), 'toxic|240|0.6|true', 'the weakness');
+    });
+    await check('BREACH GUNNER: every round that hits KNOCKS the creature BACK, away from where it was fired (Pack 1\'s push, 0.22: about 0.8 tiles)', () => {
+        const r = J(`(function(){ __gs('breach_gunner'); const e = __dummy(3, 0), d0 = Math.hypot(e.x - player.x, e.y - player.y), s = __shoot(e); const kb = Math.hypot(e.kbVX, e.kbVY), away = e.kbVX * (e.x - player.x) + e.kbVY * (e.y - player.y) > 0;
+            __frames(40); return [s.el, Math.round(kb * 1000) / 1000, away, Math.round((Math.hypot(e.x - player.x, e.y - player.y) - d0) * 100) / 100]; })()`);
+        same(r.slice(0, 3).join('|'), 'core|0.22|true', 'the push'); near(r[3], 0.79, 0.06, 'how far it went');
+    });
+    await check('RIFT RUNNER: every round that hits PULLS the creature toward you (the knockback reversed, 0.22); a beetle and a boss are never pulled; nothing else is set (no siphon)', () => {
+        const r = J(`(function(){ __gs('rift_runner'); const e = __dummy(3, 0), d0 = Math.hypot(e.x - player.x, e.y - player.y), s = __shoot(e); const toward = e.kbVX * (player.x - e.x) + e.kbVY * (player.y - e.y) > 0, kb = Math.hypot(e.kbVX, e.kbVY);
+            __frames(40); const o = { a: [s.el, Math.round(kb * 1000) / 1000, toward, e.burning || 0, e.toxicWeakened || 0, e.slowed || 0], moved: Math.round((d0 - Math.hypot(e.x - player.x, e.y - player.y)) * 100) / 100 };
+            const b = __creature('beetle', 'worker', 3, 1); __shoot(b); o.beetle = [b.kbVX || 0, b.kbVY || 0]; const q = __dummy(3, -1); q.isBoss = true; __shoot(q); o.boss = [q.kbVX || 0, q.kbVY || 0]; return o; })()`);
+        same(r.a.join('|'), 'flux|0.22|true|0|0|0', 'the pull, and nothing else'); near(r.moved, 0.79, 0.06, 'how far it came'); same(r.beetle.join(), '0,0', 'a beetle pulled'); same(r.boss.join(), '0,0', 'a boss pulled');
+    });
+    await check('CRYO MARKSMAN: every round SLOWS (25% for 2 s); a round on a creature ALREADY slowed FREEZES it (a stun of 75 frames, FROZEN), and not again for 5 s; after that the next round on a slowed creature freezes it again', () => {
+        const r = J(`(function(){ __gs('cryo_marksman'); const e = __dummy(3, 0), o = {}; const s1 = __shoot(e); o.first = [s1.el, e.slowed, e.slowFactor, e.stunned || 0];
+            const s2 = __shoot(e); o.second = [e.stunned, __said('FROZEN'), e.slowed]; const at = frame; __frames(80); o.thawed = e.stunned || 0; floatingTexts.length = 0; __shoot(e); o.third = [e.slowed > 0, e.stunned || 0, __said('FROZEN')];
+            __frames(Math.max(0, at + 300 - frame)); __shoot(e); __shoot(e); o.again = [e.stunned > 0, __said('FROZEN')]; return o; })()`);
+        same(r.first.join('|'), 'ice|120|0.75|0', 'a first round: slowed, not frozen'); same(r.second.join('|'), '75|true|120', 'a round on the slowed creature: frozen'); same(r.thawed, 0, 'the stun ran out');
+        same(r.third.join('|'), 'true|0|false', 'within 5 s: slowed, not frozen again'); same(r.again.join('|'), 'true|true', '5 s after the freeze');
+    });
+    await check('CRYO MARKSMAN fires every gun 20% slower (its rate × 0.8: the wait between shots ÷ 0.8): the service gun 45 → 56 frames, the machine gun 11 → 14, the laser 28 → 35; a shot rests that long; with no role, as before', () => {
+        const r = J(`(function(){ __gs(); classGrant('machinegun'); weaponOwned.laser = true; const ids = ['service', 'machinegun', 'laser']; const o = { before: ids.map(id => weaponCooldown(id)) };
+            equipFound.push('cryo_marksman'); equipPlayerPut(0, 'cryo_marksman'); o.after = ids.map(id => weaponCooldown(id)); const e = __dummy(3, 0); o.rest = __shoot(e).cd; equipPlayerPut(0, null); o.off = ids.map(id => weaponCooldown(id)); return o; })()`);
+        same(r.before.join(), '45,11,28', 'the waits before'); same(r.after.join(), '56,14,35', 'the waits with CRYO MARKSMAN'); same(r.rest, 56, 'the rest after a shot'); same(r.off.join(), '45,11,28', 'the card off');
+    });
+    await check('ARC SLINGER: each shot jumps on to the nearest other creature within 2.6 tiles of the first, for 60% of the round\'s damage (Projectile, electric); one jump a shot (no chain); none out of reach; the arc\'s bolt is drawn from creature to creature', () => {
+        const r = J(`(function(){ __gs('arc_slinger'); const e1 = __dummy(3, 0), e2 = __dummy(3, 2), e3 = __dummy(3, -2.7), e4 = __dummy(3, 4.2);
+            const H = [e1, e2, e3, e4].map(a => a.health), s = __shoot(e1), lost = [e1, e2, e3, e4].map((a, i) => H[i] - a.health); const bolt = _tc.fx.filter(z => z.low).map(z => z.pts.map(p => p.map(v => Math.round(v * 10) / 10)));
+            const o = { el: s.el, dmg: s.dmg, lost, bolt, want: [[Math.round(e1.x * 10) / 10, Math.round(e1.y * 10) / 10], [Math.round(e2.x * 10) / 10, Math.round(e2.y * 10) / 10]] };
+            e2.dead = true; actors = actors.filter(a => a !== e2); const h3 = e3.health; __shoot(e1); o.out = h3 - e3.health; return o; })()`);
+        same(r.el, 'electric', 'the round'); ok(r.lost[0] > 0, 'the first took nothing'); near(r.lost[1] / r.lost[0], 0.6, 1e-9, 'the jump against the hit');
+        same(r.lost[2], 0, 'a creature 2.7 tiles away'); same(r.lost[3], 0, 'a second jump (to the creature 2.2 tiles beyond the one jumped to)');
+        same(r.bolt.length, 1, 'the bolts drawn'); same(JSON.stringify(r.bolt[0]), JSON.stringify(r.want), 'the bolt from the first creature to the second'); same(r.out, 0, 'no creature in reach: a jump to one out of it');
+    });
+    await check('ARC SLINGER never jumps to one of yours: with only a unit of your team within reach of the first creature, the shot jumps nowhere', () => {
+        const r = J(`(function(){ __gs('arc_slinger'); const e1 = __dummy(3, 0), g = __dummy(3, 1); g.team = 'green'; const hg = g.health; __shoot(e1); return [hg - g.health, _tc.fx.filter(z => z.low).length]; })()`);
+        same(r.join('|'), '0|0', 'what your unit took, and the bolts drawn');
+    });
+    await check('a role works on every gun (rule 1): the machine gun\'s rounds and the laser\'s beam; on the laser the creature aimed at and the one the beam goes through both burn; ARC SLINGER\'s laser shot jumps to a creature the beam missed, not to one it went through', () => {
+        const r = J(`(function(){ __gs('incendiary_gunner'); classGrant('machinegun'); weaponEquip('machinegun'); const m = __dummy(3, 0), sm = __shoot(m); const o = { mg: [playerWeapon, sm.el, m.burning] };
+            __gs('incendiary_gunner'); weaponOwned.laser = true; weaponEquip('laser'); laserCharge = 12; const a = __dummy(3, 0), b = __dummy(5, 0), c = __dummy(3, 2); player.attackCooldown = 0; firePlayerShot(a); o.laser = [a.burning, b.burning, c.burning || 0];
+            __gs('arc_slinger'); weaponOwned.laser = true; weaponEquip('laser'); laserCharge = 12; const p = __dummy(3, 0), q = __dummy(4.5, 0), s = __dummy(3, 2); const H = [p, q, s].map(x => x.health); player.attackCooldown = 0; firePlayerShot(p);
+            const L = [p, q, s].map((x, i) => H[i] - x.health); o.arc = [L[1] / L[0], L[2] / L[0]]; return o; })()`);
+        same(r.mg.join('|'), 'machinegun|fire|180', 'the machine gun'); same(r.laser.join('|'), '180|180|0', 'the laser: aimed, behind, beside');
+        near(r.arc[0], 0.6, 1e-9, 'the creature the beam went through (its pierce, 60%, and no jump)'); near(r.arc[1], 0.6, 1e-9, 'the creature beside (the jump, 60%)');
+    });
+    await check('a round that kills sets nothing on the dead; nothing throws', () => {
+        const r = J(`(function(){ __gs('incendiary_gunner'); const e = __dummy(3, 0); e.health = 1; const s = __shoot(e); return [s.fired, e.dead === true || e.health <= 0, e.burning || 0]; })()`);
+        same(r.join('|'), 'true|true|0', 'a killing round');
+    });
+
+    group('THE ROSTER, IN THE REAL PAGE: a role asleep is greyed, marked ASLEEP, and says when it wakes');
+    await check('as a Gunslinger INCENDIARY GUNNER is lit on YOUR SLOT 1; as a Technomancer it is greyed (grayscale), ASLEEP on the card and in the slot, the note says it wakes when you are a Gunslinger, and the other slot\'s list refuses every Gunslinger role (FOR THE GUNSLINGER); back as a Gunslinger it is lit', () => {
+        const P = page(1180, 820, '?cards=all');
+        if (P === null) { console.log('       (no Chromium here: skipped)'); return; }
+        ok(P, 'the page did not report'); ok(!P.err, P.err); same(P.put, true, 'put in');
+        same([P.awake.asleep, P.awake.zz, P.awake.k, P.awake.v].join('|'), 'false||YOUR SLOT 1|INCENDIARY GUNNER', 'awake');
+        same([P.asleep.asleep, P.asleep.zz, P.asleep.k, P.asleep.v].join('|'), 'true|ASLEEP|YOUR SLOT 1 · ASLEEP|INCENDIARY GUNNER', 'asleep'); ok(/grayscale\(1\)/.test(P.asleep.filter), 'greyed: ' + P.asleep.filter);
+        ok(P.asleep.level <= 1, 'the two slots\' cards are not level while one sleeps: ' + P.asleep.level); same(P.asleep.under, true, 'ASLEEP is not under the card'); same(P.asleep.fits, true, 'the slot\'s drop-down overflows while its card sleeps');
+        ok(/INCENDIARY GUNNER IS ASLEEP: IT WAKES WHEN YOU ARE A GUNSLINGER AGAIN/.test(P.asleep.note), 'the note: ' + P.asleep.note); ok(/ASLEEP$/.test(P.asleep.label), 'its label: ' + P.asleep.label);
+        same(P.list2.length, 6, 'the roles listed for the other slot'); ok(P.list2.every(x => x[1] === true), 'a role could be picked: ' + JSON.stringify(P.list2));
+        same(P.list2.map(x => x[0] + ':' + x[2]).join('|'), ['INCENDIARY GUNNER:ALREADY IN THE OTHER SLOT', 'BLIGHT SHOOTER:FOR THE GUNSLINGER', 'ARC SLINGER:FOR THE GUNSLINGER', 'CRYO MARKSMAN:FOR THE GUNSLINGER', 'RIFT RUNNER:FOR THE GUNSLINGER', 'BREACH GUNNER:FOR THE GUNSLINGER'].join('|'), 'the other slot\'s list, as a Technomancer');
+        same([P.back.asleep, P.back.zz, P.back.k, P.back.v].join('|'), 'false||YOUR SLOT 1|INCENDIARY GUNNER', 'awake again');
+    });
+
+    console.log(failures ? `\n${failures} failure(s)` : '\nall passed');
+    process.exit(failures ? 1 : 0);
+})();

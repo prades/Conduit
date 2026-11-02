@@ -101,13 +101,15 @@ function firePlayerShot(foe) {
             text:"OUT OF AMMO", color:"#ff5555", life:90, vy:-0.25, size:13});
         return false;
     }
-    const elDef = ELEMENTS.find(e => e.id === player.selectedElement);
+    // A GUNSLINGER ROLE awake (a Player card, js/playercards.js): the round is the role's element (for the triangle only), and its kit acts on what it hits. With none, the element selector's, as before.
+    const role = typeof playerGunRole === "function" ? playerGunRole() : null, el = role ? role.kit.el : player.selectedElement;
+    const elDef = ELEMENTS.find(e => e.id === el), dmg = typeof weaponDamage === "function" ? weaponDamage() : 10;
+    const src = { x: player.x, y: player.y, element: el, isPlayer: true };   // (isPlayer: the creature it hits turns on the player, js/predator.js predatorSource)
     spawnFollowerProjectile(
-        { x: player.x, y: player.y, element: player.selectedElement, isPlayer: true },   // (isPlayer: the creature it hits turns on the player, js/predator.js predatorSource)
-        foe,
+        src, foe,
         elDef ? elDef.color : "#ffffff",
-        typeof weaponDamage === "function" ? weaponDamage() : 10, 5,
-        null, DMG_HIT_GUN   // (Projectile: js/damage.js)
+        dmg, 5,
+        role ? a => { playerRoundHit(role, a, src); playerRoundJump(role, a, src, dmg); } : null, DMG_HIT_GUN   // (Projectile: js/damage.js)
     );
     playerAmmo = Math.max(0, playerAmmo - 1); playerShotsFired++; player.gunShotAt = typeof frame !== "undefined" ? frame : 0;   // (the gunslinger's machine gun fires: js/playergear.js)
     player.attackCooldown = typeof weaponCooldown === "function" ? weaponCooldown() : 45;

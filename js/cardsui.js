@@ -395,29 +395,33 @@ function equipRosterDraw(side, f) {   // (drawn under the styles)
 // ── YOU, ON THE ROSTER (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the player's card in view (js/commandcenter.js
 // _ccFocusDraw) shows its two cards, each a mini card as the collection's (a tap opens its list); the settings column has YOUR SLOT 1 and YOUR SLOT 2, drop-downs as a follower's CARD 1 and CARD 2, listing the hand
 // (Player cards only since Build B, the Universal kind retired: the rest say why not, js/cards.js equipPlayerWhyNot)
-function equipPlayerSig() { return [equipPlayer.join(","), equipHand.join(","), equipFound.join(","), equipUsableCards().length].join("|"); }   // (what the player's card and its column must redraw for)
+// A ROLE ASLEEP (a Player card for a class you are not now: js/cards.js equipPlayerAwake; the owner, 2026-11-02: "greyed out and inactive, until the player switches back") is greyed in both, marked ASLEEP, and says whose it is.
+function equipPlayerSig() { return [equipPlayer.join(","), equipHand.join(","), equipFound.join(","), equipUsableCards().length, typeof playerClassKey !== "undefined" ? playerClassKey : ""].join("|"); }   // (what the player's card and its column must redraw for: the class too, which wakes a role or puts it to sleep)
+function _cdAsleep(c) { return !!c && typeof equipPlayerAwake === "function" && !equipPlayerAwake(c.id); }
 function equipPlayerRosterDraw(side) {
     if (typeof _ccEl !== "function") return;
     const hand = equipUsableCards(), mine = hand.filter(c => c.kind === "player").length;
     side.appendChild(_ccEl("div", "cc-sec", "YOUR CARDS · " + EQUIP.playerSlots + " SLOTS · PLAYER CARDS ONLY"));
+    let asleep = null;
     for (let slot = 0; slot < EQUIP.playerSlots; slot++) {
-        const cur = equipPlayer[slot], card = equipCard(cur), opts = [];
+        const cur = equipPlayer[slot], card = equipCard(cur), opts = [], zz = _cdAsleep(card); if (zz) asleep = card;
         opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE THE CARD OFF" : "", fn: () => { equipPlayerPut(slot, null); } });
         hand.forEach(c => { const why = equipPlayerWhyNot(c.id, slot); opts.push({ label: c.name, col: "#ffe733", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipPlayerPut(slot, c.id); } }); });
-        _ccDropdown(side, "pslot" + slot, "YOUR SLOT " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);
+        _ccDropdown(side, "pslot" + slot, "YOUR SLOT " + (slot + 1) + (zz ? " · ASLEEP" : ""), card ? card.name : "EMPTY", zz ? "#8a8f9e" : "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);   // (ASLEEP in the slot's small label: the name keeps its lines)
     }
-    side.appendChild(_ccEl("div", "cc-note", !hand.length ? "TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN: THEY ARE LISTED HERE" : !mine ? "NO PLAYER CARD IN YOUR HAND: ONLY THOSE FIT YOU" : "EACH FOLLOWER'S TWO CARDS ARE ON ITS OWN PAGE OF THE ROSTER"));
+    side.appendChild(_ccEl("div", "cc-note", asleep ? asleep.name + " IS ASLEEP: IT WAKES WHEN YOU ARE A " + _equipClassLabel(asleep.match) + " AGAIN" : !hand.length ? "TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN: THEY ARE LISTED HERE" : !mine ? "NO PLAYER CARD IN YOUR HAND: ONLY THOSE FIT YOU" : "EACH FOLLOWER'S TWO CARDS ARE ON ITS OWN PAGE OF THE ROSTER"));
 }
 // the player's two cards on its card in view: a mini card for each (or an empty place); `onTap(slot)` opens that slot's list
 function equipPlayerSlotsBox(onTap) {
     const box = _cdEl("div", "cf-pcards");
     for (let slot = 0; slot < EQUIP.playerSlots; slot++) {
         const c = equipCard(equipPlayer[slot]), cell = _cdEl("div", "cf-pslot"); cell.appendChild(_cdEl("span", "cf-pk", "SLOT " + (slot + 1)));
-        let m;
-        if (c) { m = _cdMini(c); m.classList.add("worn"); }
+        let m; const zz = !!c && _cdAsleep(c);
+        if (c) { m = _cdMini(c); m.classList.add("worn"); if (zz) { m.classList.add("asleep"); m.setAttribute("aria-label", (m.getAttribute("aria-label") || c.name) + " · ASLEEP"); } }
         else { m = _cdEl("button", "cd-mini cf-pempty"); m.type = "button"; m.appendChild(_cdEl("span", null, "EMPTY")); m.setAttribute("aria-label", "YOUR SLOT " + (slot + 1) + " · EMPTY"); }
         _cdClick(m, () => { if (typeof onTap === "function") onTap(slot); });
-        cell.appendChild(m); box.appendChild(cell);
+        cell.appendChild(m); if (zz) cell.appendChild(_cdEl("span", "cf-pzz", "ASLEEP"));   // (under the card, so the two slots' cards stay level)
+        box.appendChild(cell);
     }
     return box;
 }

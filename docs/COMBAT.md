@@ -350,6 +350,7 @@ PETAL BLAZE, the one move of their own, is Elemental.
 
 - Which element each future quest line has (Side Quest's stock follows it, `SEWER-QUEST.md`).
 - Whether a Player card gives the player's attacks an elemental part (the Player cards' kits, `UNIVERSAL-AND-PLAYER-CARDS.md`). **Answered 2026-11-02** ("The role's element"; that document's "The 18 kits", rule 2): no elemental part; the class's hits take the role's element for the triangle only.
+  - **Implemented for the Gunslinger** in build `2026-11-02h` (Part 1a): with a Gunslinger role awake, a round of any gun (`DMG_HIT_GUN`, Projectile) carries the role's element in place of the selector's, and js/damage.js sets the triangle on the whole hit, as for any player's weapon. Tested: tests/playercards.js (×1.3 on a flux creature for a fire round; exactly a plain round's damage on a creature with no element). The Technomancer's punch and arc and the Mutator's lash and clone: Parts 1b and 1c.
 - The icons beside the words (the subclass, element and race icons, `UI-STYLE.md`).
 
 ### 7.10 As built (build `2026-11-02a`)

@@ -5,7 +5,7 @@
 //   OPPORTUNITY   3 (Refined +20%, Precision +30%, Prototype +40%), for each opening a Brawler's hit meets, added up: an element match-up, a race weak to its physical type, a race weak to Elemental, a stunned or sleeping
 //                 target (js/damage.js dmgApply)
 //   SERIES 2      deals 45 (the 20 species cards, the Technician's 4, the 21 new ones); its eight Brawler and Mage class cards are cut, gone from saves, and each owned for good refunds ◆1,000, paid once
-//   THE PLAYER    the Universal kind is retired: the player's slots take Player cards only (none yet but two test cards)
+//   THE PLAYER    the Universal kind is retired: the player's slots take Player cards only (the Gunslinger's six since build 2026-11-02h, and two test cards: tests/playercards.js)
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -85,9 +85,9 @@ async function boot(search, store) {
         same(J(`Object.values(EQUIP_CARDS).filter(c => c.ability && (c.ability.kind === 'cleave' || c.ability.kind === 'chain')).length`), 0, 'a card still cleaves or chains');
         ok(/^CLEAVE:/.test(J(`equipAbilityText({ kind: 'cleave', radius: 1, share: 0.5 })`)), 'the Cleave words went');
     });
-    check('no card is of the Universal kind, the test cards included; the two that were are PLAYER cards now (test_player_a, test_player_b)', () => {
+    check('no card is of the Universal kind, the test cards included; the two that were are PLAYER cards now (test_player_a, test_player_b), beside the Gunslinger\'s six roles (build 2026-11-02h)', () => {
         const B = J(`(function(){ equipDevSet('on'); const r = Object.values(equipCards()).map(c => c.id + ':' + c.kind); equipDevSet(''); return r; })()`);
-        same(B.filter(x => /:universal$/.test(x)).length, 0, 'a Universal card'); same(B.filter(x => /:player$/.test(x)).join(), 'test_player_a:player,test_player_b:player', 'the Player cards');
+        same(B.filter(x => /:universal$/.test(x)).length, 0, 'a Universal card'); same(B.filter(x => /:player$/.test(x)).join(), 'incendiary_gunner:player,blight_shooter:player,arc_slinger:player,cryo_marksman:player,rift_runner:player,breach_gunner:player,test_player_a:player,test_player_b:player', 'the Player cards');
     });
 
     group('WHO WEARS WHAT');

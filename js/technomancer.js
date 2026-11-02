@@ -72,6 +72,8 @@ function technoArc(foe) {
     if (typeof shake !== "undefined") shake = Math.max(shake, 3);
     return true;
 }
+// a bolt from one creature to another, in the arc's look (the ARC SLINGER's jump: js/playercards.js); `low`: it starts at a creature, not at your hand
+function technoBolt(a, b) { if (!a || !b) return; const f = _tcFrame(); _tc.fx.push({ t0: f, pts: [[a.x, a.y], [b.x, b.y]], seed: (f * 7919 + 17) % 1000, low: true }); }
 // one creature in the arc: the damage, and a bite being wound up is cut short
 function _tcZap(a, dmg) {
     const src = { x: player.x, y: player.y, team: "green", element: "electric", isPlayer: true };
@@ -99,7 +101,7 @@ function drawTechnoFx() {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round"; ctx.lineJoin = "round";
     for (const z of _tc.fx) {
         const age = f - z.t0, k = Math.max(0, 1 - age / TECHNO.arc.fx), flick = Math.floor(f / 2);
-        const P = z.pts.map((p, i) => { const s = _mxScr(p[0], p[1]); return [s[0], s[1] - (i === 0 ? 46 : 30)]; });
+        const P = z.pts.map((p, i) => { const s = _mxScr(p[0], p[1]); return [s[0], s[1] - (i === 0 && !z.low ? 46 : 30)]; });
         for (let i = 0; i + 1 < P.length; i++) {
             const [x0, y0] = P[i], [x1, y1] = P[i + 1], dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, n = Math.max(3, Math.min(9, Math.round(L / 22)));
             const path = [[x0, y0]]; for (let j = 1; j < n; j++) { const t = j / n, off = (_tcHash(z.seed * 131 + i * 17 + j * 7 + flick * 3) - 0.5) * Math.min(26, L * 0.22); path.push([x0 + dx * t + nx * off, y0 + dy * t + ny * off]); } path.push([x1, y1]);

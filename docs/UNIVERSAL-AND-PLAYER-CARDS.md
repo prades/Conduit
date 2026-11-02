@@ -10,12 +10,14 @@
     - The cut cards' clean-up and refund.
     - The Universal kind retired.
     - The rings and glints. Their look waits for the owner's approval.
-  - **Designed, not implemented:** the Player cards (their 18 roles, where they come from, Side Quest's sale, a switch of class).
-  - **Designed and approved, not implemented:** the Player cards' kits (section 2, "The 18 kits": drafted and approved 2026-11-02, "Approve as drafted"). They are built in the following update's Part 1.
+  - **Implemented in build `2026-11-02h` (the following update's Part 1a, on the branch), and tested** (tests/playercards.js, 24 checks; section 10). Not playtested.
+    - The Player card rules: a role needs its class; one role of a class at a time; a role for another class sleeps in its slot after a switch, greyed and marked ASLEEP, and wakes on switching back.
+    - The Gunslinger's six roles, on every round that hits from any gun.
+  - **Designed and approved, not implemented:** the Technomancer's six and the Mutator's six kits (section 2, "The 18 kits": approved 2026-11-02, "Approve as drafted"): Parts 1b and 1c. Series 2's deal of the eighteen and Side Quest's sale: Part 1d.
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-02
-- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (not on main until the owner says so). Since that build the player's two slots take Player cards only, and only two test cards are Player cards.
+- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on the branch, not on main until the owner says so) the Gunslinger's six are Player cards too, beside the two test cards.
 - **Related docs:** `TUTORIAL.md` (the equip cards), `UI-STYLE.md` (the CARDS screen; YOU on the roster), `COMBAT.md` §7 (the damage types and race weaknesses), `SERIES-2.md`, `TECHNICIANS.md`, `OPEN-QUESTIONS.md` §1l and §3, `DECISION-LOG.md`
 
 ## 1. Intent
@@ -126,11 +128,13 @@ With BLOOM, the seventh element, there are 21 roles. BLOOM's three are named and
 
 ### The 18 kits (drafted 2026-11-02; approved the same day)
 
-- **Status:** **Approved** 2026-11-02 ("Approve as drafted"), with rule 2 ("The role's element") and the electric Technomancer role's name (ARC WARDEN). **Designed, not built:** they are built in the following update's Part 1.
+- **Status:** **Approved** 2026-11-02 ("Approve as drafted"), with rule 2 ("The role's element") and the electric Technomancer role's name (ARC WARDEN).
+  - **Implemented and tested:** the four rules and the Gunslinger's six (build `2026-11-02h`, Part 1a; section 9, "Part 1a"). The readings taken where the kits did not say are in `OPEN-QUESTIONS.md` §1p.
+  - **Designed, not built:** the Technomancer's six (Part 1b) and the Mutator's six (Part 1c).
 - **Numbers:** every number below is one the game already has, unless it is marked **new**. CRYO MARKSMAN's slower fire, marked optional in the draft, is in as drafted.
 - **Why it exists:** the owner asked for a draft of all 18 to review (`FOLLOWING-UPDATE.md`, gate 1).
 
-**What the code has today** (read 2026-11-02, build `2026-11-02g`):
+**What the code had when the kits were drafted** (read 2026-11-02, build `2026-11-02g`; Part 1a changed the first and third points for the Gunslinger, section 9):
 - No Player card does anything: nothing reads the player's slots.
 - The player's hits are physical: the gun is Projectile, the lash Slashing, the punch Crushing. The one exception is the Technomancer's arc, which is Elemental (electric).
 - The gun's rounds take the element of the squad's element selector.
@@ -210,7 +214,8 @@ Every card is now an element, class, species (subclass) or Player card. The Univ
 - [x] Every follower within 4 tiles of a Mage's aura and in its room, and the Mutator's clone, gets its ATK bonus (Refined +5%, Precision +7.5%, Prototype +10%), and at Prototype its element's extra (10%); different auras stack, the same aura counts once; leaving the reach removes it at once. *(Build B; the room and 10% since build `2026-11-02d`; "at once" is within the card tick, half a second.)*
 - [x] A Brawler's opportunity card adds its bonus (Refined +20%, Precision +30%, Prototype +40%) once for each weakness a hit exploits: an element match-up, a race weak to the hit's physical type or to Elemental (`COMBAT.md` §7), a stunned or sleeping target. Any other hit is unchanged. *(Build B.)*
 - [x] The Technician's cooldown cards are Series 2's four, unchanged.
-- [ ] The player's slots take Player cards only, one at a time, the role matching the player's class; a role for the other class sleeps until the player switches back. *(Build B: Player cards only. The rest comes with the Player cards.)*
+- [x] The player's slots take Player cards only, one at a time, the role matching the player's class; a role for the other class sleeps until the player switches back. *(Build B: Player cards only. The rest since build `2026-11-02h`, Part 1a: tests/playercards.js.)*
+- [ ] Each of the 18 roles' kits works on its class's own attacks, as approved. *(The Gunslinger's six since build `2026-11-02h`: tests/playercards.js. The Technomancer's and the Mutator's: Parts 1b and 1c.)*
 - [ ] Series 2 deals the 63 cards of section 2, and no longer deals the eight cut Brawler and Mage cards. Copies already owned leave collections, hands and slots, with ◆1,000 back for each permanently unlocked copy. *(Build B: 45 of the 63, the 18 Player cards to come; the cut, the clean-up and the refund are built.)*
 - [ ] After each quest, Side Quest sells that quest line's element's three Player cards, ◆1,000 each, kept for good. *(With the Player cards.)*
 - [x] No card is of the Universal kind. *(Build B.)*
@@ -271,7 +276,7 @@ Technician ideas not chosen (2026-11-02): kills refunding part of the wait; one 
 - [x] A follower in reach of a Mage's aura has its ATK raised by the aura's tier, added to its own cards' bonuses; out of reach, or in another room, not. *(tests/classcards.js)*
 - [x] A Brawler's opportunity hit deals its tier's bonus more than the same hit without the card; any other hit is unchanged. *(tests/classcards.js: each opening, openings adding up, none.)*
 - [x] A Technician with a cooldown card waits less, or holds an extra charge. *(tests/series2.js, tests/series2abilities.js; unchanged.)*
-- [ ] The player's slots refuse every family's card but Player cards; after a class switch, a role for the other class shows asleep and does nothing. *(The first half: tests/classcards.js, tests/cards.js. The second waits for the Player cards.)*
+- [x] The player's slots refuse every family's card but Player cards; after a class switch, a role for the other class shows asleep and does nothing. *(The first half: tests/classcards.js, tests/cards.js. The second: tests/playercards.js, build `2026-11-02h`: kept in its slot through the tick and a save, its rounds the selector's with nothing on them, greyed and marked ASLEEP on the roster in the real page.)*
 - [ ] A Series 2 pack never deals a cut card; it can deal every one of the 63. *(For the 45 built: 20,000 seeded packs deal all 45 and never a cut card, tests/classcards.js.)*
 - [x] A save holding cut cards (in the collection, the hand, a slot) loads without them, refunds ◆1,000 for each permanently unlocked copy once, and a second load pays nothing. *(tests/classcards.js, with malformed collections.)*
 - [ ] Before a quest is finished Side Quest sells none of its element's Player cards; after it, all three, at ◆1,000, kept for good. *(With the Player cards.)*
@@ -318,6 +323,28 @@ Build `2026-11-02c` (Build B), on `claude/start-game-project-HSh7Z`. The 21 card
 5. **Where the ring is drawn: answered by the owner, 2026-11-02:** "It shouldn't be displayed or affected in other rooms", then "It shouldn't show up on the walls either". Since build `2026-11-02e` it is drawn on the floor of the Mage's room, tile by tile, under the units and the walls in front.
 6. **The refund comes with a line on the screen**, so the shards are not a mystery.
 
+### Part 1a: the Player card rules and the Gunslinger's six (build `2026-11-02h`)
+
+On `claude/start-game-project-HSh7Z`, not on main until the owner says so. Every number is in js/cards.js `EQUIP_PLAYER_CARDS`; the words on each card are made from it (`equipPlayerKitText`).
+
+- **The cards.** Six rows of `EQUIP_PLAYER_CARDS`: kind `"player"`, `match` the class (`"gunslinger"`), rarity Prototype, `pack: "series2"`, and a `kit` (`el` the role's element; `status`, `jump`, `freeze`, `slower`, `pull`). The kind line reads PLAYER · GUNSLINGER · FIRE. A Player card is gold with no texture (the look is item 11, open).
+- **Where they come from, for now.** They are Series 2's, so one has to be found before ◆1,000 keeps it for good (no outright unlock). Series 2 does not deal them yet: its `kinds` take "player" once all eighteen are built (Part 1d, with Side Quest's sale). Until then only `?cards=all` has them. A reading, `OPEN-QUESTIONS.md` §1p, item 8.
+- **The rules** (js/cards.js `_equipPlayerWhy`):
+  - Putting a card in (`equipPlayerWhyNot`) asks, in order: a card; in the hand or found; a Player card; not already in the other slot; **its class** (FOR THE GUNSLINGER); **one role of a class** (ONE GUNSLINGER ROLE AT A TIME).
+  - The card tick and a load ask the same without the class, so a role asleep stays. Of two that clash, the first slot's stays.
+  - **Awake** is worked out, never saved (`equipPlayerAwake`, `equipPlayerRole`): a role is awake while you are its class. The test cards (no class) fit any class and are no role.
+- **The kits** (js/playercards.js), on every round of the Gunslinger's that hits:
+  - **The gun's round** (js/input.js `firePlayerShot`): with a Gunslinger role awake when it is fired, the round is the role's element (its colour too) and lands its kit when it hits (`playerRoundHit`, then `playerRoundJump`). With none, the element selector's and nothing else, as before.
+  - **The laser's beam** (js/weapons.js `fireLaserShot`): the role's element, and the kit on the creature aimed at and on each the beam goes through; the shot's one jump comes last, to a creature the beam missed.
+  - **The hit stays Projectile:** no SP.ATK and no elemental share (rule 2). js/damage.js already sets a player's weapon's triangle on the whole hit; only the element changed.
+  - **The status** is the element's own with Pack 1's Precision numbers, through the cards' own status code (js/cards.js `equipElementStatus` → `_equipProc`): refreshed, never stacked. A creature the round killed takes nothing.
+  - **CRYO MARKSMAN:** the freeze is asked before the round's own slow, so it needs a slow from before this round. It is the game's stun (js/combat.js `applyStun`, 75 frames = MAW_STUN), FROZEN over the creature, and `_pcFreezeNext` holds it off that creature for 300 frames. Its guns' wait between shots is divided by 0.8 (js/weapons.js `weaponCooldown`, through `playerGunSlower`; the gauntlet and the lash are not guns).
+  - **ARC SLINGER:** the nearest other hostile creature within 2.6 tiles of the first takes 60% of the round's damage, as a Projectile hit of the role's element. It is drawn with the Technomancer arc's bolt (js/technomancer.js `technoBolt`, from creature to creature).
+  - **RIFT RUNNER:** a knockback of 0.22 from the point beyond the creature, so toward you; never a beetle or a boss (js/helpers.js `vortexPullImmune`).
+- **The roster** (js/cardsui.js): a role asleep is greyed (grayscale, a dashed edge) and marked ASLEEP under its card on the player's card and in its slot's label (YOUR SLOT 1 · ASLEEP, over INCENDIARY GUNNER). The column says "INCENDIARY GUNNER IS ASLEEP: IT WAKES WHEN YOU ARE A GUNSLINGER AGAIN". The player's card redraws when the class changes (`equipPlayerSig`).
+- **Frame cost:** nothing per frame. A shot asks for the role once (two slots); a jump looks over the creatures once.
+- **Readings taken where the kits did not say:** `OPEN-QUESTIONS.md` §1p (ten, for the owner to confirm or change).
+
 ## 9a. Frame cost
 
 The reach is checked every 30 frames: one pass over the followers and the clones for each aura worn. A unit's stats are made again only when its auras change. The drawing is a dashed ellipse for each Mage and colour, and a small glint for each unit in reach, each frame; nothing is allocated per frame. Measured: not on an iPad. tests/perf.js's frame budgets hold in the full run (section 10).
@@ -336,6 +363,12 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 | The clean-up and refund: dropped in one write, owed once, paid once on a run in play, not before or after, not with ?cards=all, safe on malformed records; a run's save loads without the cut cards | Passed | tests/classcards.js |
 | The rest of the game | Passed | the full run, 86 suites, on build `2026-11-02c` (tests/perf.js's frame budgets included); a first run's three failures are in the changelog |
 | Build `2026-11-02d`: the CROWN at 10%; a wall stops an aura (a follower and the clone in the next room get nothing); the ring clipped to its room's outline | Passed | tests/classcards.js; the full run, 86 suites; a screenshot went to the owner |
+| Part 1a (build `2026-11-02h`): the six cards, their numbers (tied to the arc's jump, the Frost Maw's stun and Pack 1's statuses) and words; not dealt by Series 2 yet, found before kept | Passed | tests/playercards.js |
+| Part 1a: the rules (its class, one of a class at a time, asleep after a switch and awake again, two classes' roles, the tick and a load keeping a role asleep, a save and a load in two boots) | Passed | tests/playercards.js |
+| Part 1a: each kit on a round that lands in the real game loop (the triangle only and no elemental share; BURN, WEAKNESS, KNOCK BACK, the pull and its immunities, the slow, the freeze and its 5 s, the slower guns, the jump and its limits), on the service gun, the machine gun and the laser | Passed | tests/playercards.js |
+| Part 1a: a role asleep greyed and marked ASLEEP on the roster, in the real page (Chromium) | Passed | tests/playercards.js |
+| Part 1a: the suites whose counts moved with six more cards | Passed | tests/cards.js, tests/classcards.js, tests/series2.js, tests/series2abilities.js, tests/packs.js, tests/bible.js |
+| Part 1a: the rest of the game | Passed | the full run, 87 suites, on build `2026-11-02h`, the first time (tests/perf.js's frame budgets included) |
 | Played by a person | Not done | not playtested |
 
 ## 11. Open questions
@@ -348,6 +381,7 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 6. **The aura's reach: answered 2026-11-02.** 4 tiles.
 7. **Sources: answered 2026-11-02.** Series 2, reshaped. Player cards: Series 2 at Prototype, and Side Quest's shop after each quest.
 8. **Player cards: answered 2026-11-02.** Switching class: the card sleeps. Each role's kit and numbers: drafted and approved ("Approve as drafted"; section 2, "The 18 kits"). The hit's element: the role's element, for the triangle only (`COMBAT.md` §7.9). The electric Technomancer role's name: ARC WARDEN.
+19. **Part 1a's readings** (build `2026-11-02h`): "one at a time" with two slots, when the class is asked, the guns' "20% slower", ARC SLINGER's jump, CRYO MARKSMAN's freeze, the pull's and the push's directions, where the cards come from until Part 1d, and the look of a role asleep. `OPEN-QUESTIONS.md` §1p, for the owner to confirm or change.
 9. **The Universal kind: answered 2026-11-02.** Retired.
 10. **The clone: answered 2026-11-02.** It gets auras.
 11. **The cards' look** for each family and the Player cards: open. The species (subclass) textures and icons are designed in `UI-STYLE.md`.
@@ -382,3 +416,5 @@ The reach is checked every 30 frames: one pass over the followers and the clones
   - **the 18 kits to be drafted** for review.
 
   The owner first chose "found in packs" for the Player cards over a class-rank unlock or a SHOP price.
+- 2026-11-02: **the 18 kits drafted and approved** ("Approve as drafted"), with the hit taking the role's element for the triangle only and the electric Technomancer role named ARC WARDEN.
+- 2026-11-02, build `2026-11-02h` (the following update's Part 1a): **the Player card rules and the Gunslinger's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1p.
