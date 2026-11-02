@@ -147,7 +147,7 @@ None.
 ## DECISION: Universal and Player cards: the names and the slots
 
 - **Date:** 2026-11-01
-- **Status:** Approved (design); not implemented
+- **Status:** Approved (design); not implemented. **Partly superseded** 2026-11-02: Universal cards no longer fit the player's slots (see "Universal cards as auras" below); the name Player cards stands.
 - **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
 - **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` (the specification), `OPEN-QUESTIONS.md` §1l and §3
 
@@ -173,4 +173,42 @@ When built: js/cards.js (a Player kind, what the player's slots take), js/cardsu
 The open questions in the specification (section 11): what Universal cards are for and the first one's effect, the Player cards' roles, names, tiers, sources and looks.
 
 ### Supersedes / superseded by
-Supersedes the 2026-10-30 rule that the player's two slots take Universal cards only.
+Supersedes the 2026-10-30 rule that the player's two slots take Universal cards only. Partly superseded by "Universal cards as auras; the player wears Player cards only" (2026-11-02).
+
+## DECISION: Universal cards as auras; the player wears Player cards only
+
+- **Date:** 2026-11-02
+- **Status:** Approved (design); not implemented
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` (the specification, section 2), `OPEN-QUESTIONS.md` §1l and §3
+
+### Context
+After withdrawing a squad-wide Universal card, the owner: "how about universal cards are like auras that you can unlock for your creatures", a set for each element, each class and (rare) each species, and Player cards that turn the player's class into elemental roles.
+
+### Decision
+Universal cards are auras, worn by a matching follower, boosting every follower near the wearer. The player cannot wear auras; the player's two slots take Player cards only, for now. The 18 Player card roles (three classes by six elements) are the role list.
+
+### Exact rules
+In the specification's section 2. In short:
+- An aura gives +5% attack damage (ATK) at its lowest tier, +10% at its rarest, which adds the aura's extra (each element's status at a small chance, a class stat, a species team benefit).
+- It reaches every follower near the wearer, of any element.
+- Different auras stack; the same aura counts once.
+- Its look is subtle: a faint ring in its colour around the wearer, a glint on each follower in reach.
+
+### Alternatives considered
+- +10% to +20% per aura (the owner's first numbers): with different auras stacking, six on a squad would give +60% to +120%, more than a Crystalline card gives one follower.
+- The attack bonus not stacking, only the extras; or one aura per follower. The owner chose smaller numbers.
+- An aura boosting only its own type; the squad alone or every follower anywhere (the owner chose nearby followers); worn in any slot, or always on (the owner chose a matching wearer).
+- The player wearing auras through a Player card's element (the owner: the player cannot wear auras).
+
+### Rationale and trade-offs
+Auras make a follower's type matter to the whole team without a flat squad-wide boost; nearness keeps them tactical. Smaller numbers keep stacked auras below the specialized cards' strength.
+
+### Impact
+When built: js/cards.js, js/levels.js, js/combat.js, js/helpers.js, the world's drawing, js/cardsui.js, js/cardart.js, and the card tests.
+
+### Follow-up
+The specification's open questions (section 11): the tiers and in-between values, the species auras' attack bonus, the reach, the extras' numbers, the sources and unlocking, the Player cards' kits, the clone, the cards' look.
+
+### Supersedes / superseded by
+Supersedes, in part, "Universal and Player cards: the names and the slots" (2026-11-01): Universal cards no longer fit the player's slots.
