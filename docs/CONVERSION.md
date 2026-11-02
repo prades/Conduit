@@ -46,7 +46,7 @@ Then, asked what "Greenshire" meant: "what I meant to say there was kind of be i
 
 ### BLOOM's cards (the full set, each to be designed for the owner's approval)
 - **Pack 1:** three BLOOM element cards. Pack 1 deals them only once the apparatus is in.
-- **Series 2:** a BLOOM Mage aura in three tiers, and three BLOOM Player roles. Series 2 then deals 69 cards (21 auras, 21 Player cards).
+- **Series 2:** a BLOOM Mage aura in three tiers, and three BLOOM Player roles. Like Pack 1's, they are dealt only once the apparatus is in (the owner confirmed). Series 2 then deals 69 cards (21 auras, 21 Player cards).
 - **Side Quest:** sells the three BLOOM roles once the apparatus is in, beside the toxic roles, ◆1,000 each.
 - **A BLOOM Technician ability**, as each element's technician has one.
 
@@ -55,7 +55,7 @@ At the roster, as today. The archive's Sanctuary room can come later.
 
 ### Breeding, once conversion exists (replaces today's "the lead parent's type and element")
 - **The offspring's element: a random draw between the two parents' current elements.** A converted parent passes on its converted element: a parent converted to BLOOM passes on BLOOM.
-- **A toxic + fire pair with the apparatus installed:** BLOOM half the time. The other half is read as the normal draw, toxic or fire.
+- **A toxic + fire pair with the apparatus installed:** 50% BLOOM, 25% toxic, 25% fire (the owner confirmed the other half is the normal draw).
 - **The offspring's class: a random draw among Brawler, Mage and Technician, not tied to the parents' classes.** The owner: "The parents type doesn't matter ... The offspring will not ... correlate to the role of the parents." A BLOOM offspring's draw skips a class that has no BLOOM form yet.
 - Everything else stays as built: the ◆50 price, the stats' upbringing, the provenance (`FOLLOWER-PROGRESSION.md` §2).
 
@@ -105,7 +105,7 @@ Until now a follower kept the type and element it was found with for good. The o
 
 - **A parent already BLOOM:** the draw is between BLOOM and the other parent's element.
 - **Toxic + fire before the apparatus:** the plain draw, toxic or fire.
-- **Converting an evolved toxic follower:** it takes its class's BLOOM form. Until that form exists: open (section 11).
+- **Converting an evolved toxic follower:** it takes its class's BLOOM form. Until that form exists, the apparatus refuses, saying the form is not ready. A toxic egg, or a follower whose class has its BLOOM form, can always convert (the owner, 2026-11-02).
 - **Converting a follower that wears toxic element cards:** they come off. They go back as when any card stops fitting.
 - **A BLOOM offspring's class draw** skips any class without a BLOOM form. With no BLOOM form yet, BLOOM breeding cannot go live, so at least one form comes first.
 
@@ -143,12 +143,14 @@ Answered on 2026-11-02 (section 2):
 Still open:
 1. **The apparatus's look.**
 2. **BLOOM's forms:** their designs (which comes first?), a BLOOM egg's look, and each form's subclass and lean (`COMBAT.md` §7.7).
-3. **Converting an evolved toxic follower** (SEEPER, ROTSHARD, BLIGHT SPIDER) whose class has no BLOOM form yet: refuse until the form exists, or convert and keep its form's look?
-4. **MEND's numbers:** how much it heals, and how near.
-5. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), the three Player roles' names and themes, the Technician ability.
-6. **Series 2's BLOOM cards:** read as dealt only once the apparatus is in, like Pack 1's. To confirm.
-7. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
-8. **The 50%'s other half:** read as the normal draw, toxic or fire. To confirm.
+3. **MEND's numbers:** how much it heals, and how near.
+4. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), the three Player roles' names and themes, the Technician ability.
+5. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
+
+Answered last (2026-11-02):
+- the 50%'s other half (toxic or fire);
+- Series 2's BLOOM cards (once the apparatus is in);
+- an evolved toxic follower without its BLOOM form (it waits).
 
 ## 12. History
 

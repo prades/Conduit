@@ -226,12 +226,11 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
   - **Open** (its section 11):
     - the apparatus's look;
     - BLOOM's forms and an egg;
-    - converting an evolved toxic follower before its class's form exists;
     - MEND's numbers;
     - BLOOM's cards' designs;
-    - Series 2's BLOOM timing (to confirm);
-    - BLOOM's texture and icon;
-    - the 50%'s other half (to confirm).
+    - BLOOM's texture and icon.
+
+    These are drafts and mockups for your approval. Confirmed last: the other 50% is toxic or fire; Series 2's BLOOM cards wait for the apparatus; an evolved toxic follower waits for its class's BLOOM form.
 - **Side Quest's look, and the subclass art** (designed 2026-11-02, not built):
   - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`).
   - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).

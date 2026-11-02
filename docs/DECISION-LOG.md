@@ -563,3 +563,8 @@ As "The conversion apparatus and BLOOM", plus Pack 1's and Series 2's tables, Si
 
 ### Supersedes / superseded by
 Fills in "The conversion apparatus and BLOOM" (2026-11-02). Answers "Class cards and Player cards filled in" follow-up (the refunds' timing) and the second damage round's open question (the retired forms' row).
+
+Confirmed in a last prompt the same day:
+- a toxic + fire pair's offspring is 50% BLOOM, 25% toxic, 25% fire;
+- Series 2's BLOOM cards are dealt only once the apparatus is in;
+- the apparatus refuses an evolved toxic follower until its class's BLOOM form exists.

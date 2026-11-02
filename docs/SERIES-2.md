@@ -15,7 +15,7 @@
   | Prototype | 31 (5 species + 1 Technician + 6 auras + 1 opportunity + 18 Player cards) |
 
   Its price and odds stay as they are. With the same odds, each Unrefined card comes up more often than today and each Prototype card far less often.
-- **With BLOOM** (the seventh element, `CONVERSION.md`), its aura (Refined, Precision, Prototype) and its three Player roles (Prototype) join. That makes 69 cards: Refined 14, Precision 14, Prototype 35. They are read as dealt only once the conversion apparatus is in, as Pack 1's BLOOM cards are (to confirm).
+- **With BLOOM** (the seventh element, `CONVERSION.md`), its aura (Refined, Precision, Prototype) and its three Player roles (Prototype) join. That makes 69 cards: Refined 14, Precision 14, Prototype 35. They are dealt only once the conversion apparatus is in, as Pack 1's BLOOM cards are (the owner, 2026-11-02).
 - **Owned copies of the cut cards are removed** from collections, hands and slots. Each permanently unlocked copy refunds ◆1,000, added when the next run starts (at once if a run is in progress).
 
 The owner's word (2026-11-01): "Series 2. Pick a price and set the odds for the pack and make it to where another rarity is unlocked". Asked which rarity, the owner picked "Prototype unlocks". So Series 2 deals **Unrefined, Refined, Precision and Prototype**: Prototype is the fourth tier (four lit segments), the first rarity beyond Pack 1's Precision. Lustrous comes in a later update.
