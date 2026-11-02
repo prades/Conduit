@@ -189,7 +189,8 @@ function _mxStrike(t) {
     const w = _mxWeapon(); _mx.fx = { t0: f, x: t ? t.x : player.x, y: t ? t.y : player.y, hit, col: w && w.col ? w.col : "#c06bff", style: w && w.fx ? w.fx : "whip" };
     if (!t) return false;
     if (!hit) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text: "MISS", color: "#d8c4f0", size: 12, life: 34, vy: -0.035 }); return false; }
-    applyDamage(t, typeof weaponDamage === "function" ? weaponDamage(w ? w.id : "lash") : 18, { x: player.x, y: player.y, team: "green", element: w && w.element ? w.element : null, isPlayer: true }, w && w.element ? w.element : null, false, false, w && w.id === "gauntlet" ? DMG_HIT_PUNCH : DMG_HIT_LASH);   // (the punch Crushing, the lash Slashing: js/damage.js)
+    const el0 = w && w.element ? w.element : null, el = typeof playerHitElement === "function" ? playerHitElement(w && w.id === "gauntlet" ? "punch" : "lash", el0) : el0;   // (a role of the class, a Player card, gives the strike its element, for the triangle only: js/playercards.js)
+    applyDamage(t, typeof weaponDamage === "function" ? weaponDamage(w ? w.id : "lash") : 18, { x: player.x, y: player.y, team: "green", element: el, isPlayer: true }, el, false, false, w && w.id === "gauntlet" ? DMG_HIT_PUNCH : DMG_HIT_LASH);   // (the punch Crushing, the lash Slashing: js/damage.js)
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: w && w.col ? w.col : "#c06bff", radius: 0.55, life: 16 });
     if (w && typeof w.onHit === "function") w.onHit(t);   // (the gauntlet's punch charges it: js/technomancer.js)
     if (typeof tutTally === "function") tutTally(w ? w.id : "lash");   // (a strike that landed: the class's stage counts it, js/tutorial.js)

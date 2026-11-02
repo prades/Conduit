@@ -8,7 +8,7 @@
 //      as they were (a gun's round is Projectile: js/damage.js DMG_HIT_GUN, whose triangle falls on the whole hit).
 //   3. A STATUS a kit sets lands on EVERY hit, with Pack 1's Precision numbers (js/cards.js equipElementStatus): a status refreshes and never stacks, so every hit keeps it up without adding more.
 // BUILT (the following update's Part 1a, build 2026-11-02h): the rules and THE GUNSLINGER'S SIX, on every round that hits (js/input.js firePlayerShot: the round, as it lands; js/weapons.js fireLaserShot: the beam, on the
-// creature aimed at and on each it goes through). The Technomancer's six and the Mutator's six come in Parts 1b and 1c; until then their roles do nothing here.
+// creature aimed at and on each it goes through). THE TECHNOMANCER'S SIX: Part 1b, build 2026-11-02i (below). The Mutator's six come in Part 1c; until then its roles do nothing here.
 //   INCENDIARY GUNNER  fire rounds that BURN                BLIGHT SHOOTER   toxic rounds that WEAKEN (the game's POISON)        BREACH GUNNER  core rounds that KNOCK BACK
 //   ARC SLINGER        electric rounds: each shot jumps on to the nearest other creature within kit.jump.radius tiles of the first, for kit.jump.share of its damage (the Technomancer arc's jump); one jump a shot,
 //                      never to a creature the shot already hit (the laser's beam goes through some), and the jump sets nothing off
@@ -53,4 +53,93 @@ function playerRoundJump(role, from, src, dmg, skip) {
     if (typeof applyDamage === "function") applyDamage(best, dmg * j.share, src, null, false, false, typeof DMG_HIT_GUN !== "undefined" ? DMG_HIT_GUN : null);
     if (typeof technoBolt === "function") technoBolt(from, best);   // (the arc's look: js/technomancer.js)
     return best;
+}
+
+// ── THE TECHNOMANCER'S SIX (the following update's Part 1b, build 2026-11-02i) ──
+//   (rule 2)           its PUNCH (js/mutator.js _mxStrike, the gauntlet) and its ARC (js/technomancer.js _tcZap) take the role's element, for the triangle only (playerHitElement; the arc's hit: js/damage.js dmgArcHit)
+//   FORGEMASTER        fire: the facility's three sentries' rounds BURN (js/stations.js, playerSentryHit); your repairs take kit.repair of the time, a sentry's and a relay's (playerRepairShare)
+//   SMOG ENGINEER      toxic: every ONLINE relay WEAKENS every creature within kit.relays.radius tiles of it, on every card tick while it stays (js/cards.js equipTick → playerRolesTick)
+//   CRYO TECH          ice: the same, and it SLOWS
+//   ARC WARDEN         electric: while your lamp is OVERCHARGED (a POWER CELL), every kit.lamp.every frames every creature in its light (js/facilitytutorial.js facilityLampReach), in sight, takes the arc's zap
+//                      (js/technomancer.js _tcZap: its damage, technoArcDamage, more with relays online) and GLITCHES; drawn as the arc's bolt from your hand. Light or dark.
+//   GRAVITY ENGINEER   flux: SWAP on a squad member's card (js/squadfly.js) trades places with it, once in kit.swap.every frames, on the same stretch of floor (not across a doorway into another part of the map)
+//   BULWARK ENGINEER   core: a POWER CELL also raises a PHOTONIC SHIELD in front of you (js/inventory.js → playerCellShield → js/techabilities.js techShieldRaise): toward the creature you have locked, if you can see
+//                      it, else the way you face; kit.shield.frames long
+// The swap's wait and ARC WARDEN's beat are not saved: a load starts them over.
+const _pc = { wardenAt: null, swapAt: 0 };
+function _pcSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 60, text, color: col || "#fff", life: 90, vy: -0.25, size: 13 }); }
+// the Technomancer's role, when it is the role awake; null otherwise
+function playerTechRole() { const r = playerRole(); return r && r.match === "technomancer" && r.kit ? r : null; }
+// THE ELEMENT OF ONE OF THE CLASS'S OWN HITS (rule 2): "gun" (the Gunslinger's), "punch" and "arc" (the Technomancer's), "lash" and "clone" (the Mutator's) take the role's element while a role of that class
+// is awake; `base` otherwise (the selector's for a gun, electric for the gauntlet, none for the lash)
+const _PC_HIT_CLASS = { gun: "gunslinger", punch: "technomancer", arc: "technomancer", lash: "mutator", clone: "mutator" };
+function playerHitElement(kind, base) { const r = playerRole(); return r && r.kit && r.kit.el && r.match === _PC_HIT_CLASS[kind] ? r.kit.el : base; }
+// FORGEMASTER: what a sentry's round does when it lands (js/stations.js), or null
+function playerSentryHit(src) { const r = playerTechRole(); return r && r.kit.sentries ? (t => { if (t && !t.dead && typeof equipElementStatus === "function") equipElementStatus(src, t, r.kit.el); }) : null; }
+// FORGEMASTER: the share of the time your repairs take (1 with no such role)
+function playerRepairShare() { const r = playerTechRole(); return r && r.kit.repair > 0 && r.kit.repair < 1 ? r.kit.repair : 1; }
+// ON THE CARD TICK (js/cards.js equipTick, every EQUIP.every frames): the relays' areas and ARC WARDEN's beat
+function playerRolesTick() {
+    const r = playerTechRole();
+    if (r && r.kit.relays) _pcRelays(r);
+    if (r && r.kit.lamp) _pcWarden(r); else _pc.wardenAt = null;
+}
+function _pcFoes() { return (typeof actors !== "undefined" ? actors : []).filter(a => a && !a.dead && a.health > 0 && (typeof isHostileTarget !== "function" || isHostileTarget(a))); }
+function _pcRelays(r) {
+    const k = r.kit.relays; if (typeof _fp === "undefined" || !_fp || !_fp.stations || typeof equipElementStatus !== "function") return 0;
+    let n = 0; const foes = _pcFoes();
+    for (const s of _fp.stations) {
+        if (s.kind !== "relay" || !(typeof relayOnline === "function" && relayOnline(s.relay))) continue;
+        for (const a of foes) if (Math.hypot(a.x - s.x, a.y - s.y) <= k.radius) { equipElementStatus(s, a, r.kit.el); n++; }
+    }
+    return n;
+}
+function _pcWarden(r) {
+    const k = r.kit.lamp, now = _pcFrame(), T = typeof _fp !== "undefined" && _fp && _fp.tut;
+    if (!T || !(T.boostUntil > now) || typeof player === "undefined" || !player) { _pc.wardenAt = null; return 0; }   // (not overcharged: the beat starts again with the next cell)
+    if (_pc.wardenAt !== null && now < _pc.wardenAt) return 0;
+    _pc.wardenAt = now + k.every;
+    const R = typeof facilityLampReach === "function" ? facilityLampReach() : 7, dmg = typeof technoArcDamage === "function" ? technoArcDamage() : 18;
+    let n = 0;
+    for (const a of _pcFoes()) {
+        if (Math.hypot(a.x - player.x, a.y - player.y) > R || (typeof facilityLosFrom === "function" && !facilityLosFrom(player.x, player.y, a.x, a.y))) continue;
+        if (typeof _tcZap === "function") _tcZap(a, dmg);
+        if (typeof equipElementStatus === "function") equipElementStatus(player, a, r.kit.el);
+        if (typeof technoBolt === "function") technoBolt(player, a, true);
+        n++;
+    }
+    return n;
+}
+// GRAVITY ENGINEER: the swap's state for the squad member's card (null with no such role): { ready, left (frames) }
+function playerSwapState() { const r = playerTechRole(); if (!r || !r.kit.swap) return null; const left = Math.max(0, _pc.swapAt - _pcFrame()); return { ready: left <= 0, left }; }
+function _pcComp(x, y) { if (typeof _fpComps !== "function") return null; const c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(x, y) : typeof _fpNearestCell === "function" ? _fpNearestCell(x, y) : null; return c ? _fpComps().get(c[0] + "," + c[1]) : null; }
+// why a swap with `f` cannot be made now, or null
+function playerSwapWhyNot(f) {
+    const r = playerTechRole(); if (!r || !r.kit.swap) return "NO GRAVITY ENGINEER WORN";
+    if (!f || f.dead || f.team !== "green" || !(typeof partySquadHas === "function" ? partySquadHas(f) : f.isFollower)) return "SQUAD MEMBERS ONLY";
+    const left = _pc.swapAt - _pcFrame(); if (left > 0) return "SWAP READY IN " + Math.ceil(left / 60) + " S";
+    if (typeof facilityPortalBusy === "function" && facilityPortalBusy()) return "NOT THROUGH A DOORWAY";
+    if (_pcComp(player.x, player.y) !== _pcComp(f.x, f.y)) return "NOT ON YOUR STRETCH OF FLOOR";   // (across a doorway into another part of the map: a swap would skip the doorway)
+    return null;
+}
+// trade places with a squad member: you go where it stood, it goes where you stood; once in kit.swap.every frames
+function playerSwap(f) {
+    const why = playerSwapWhyNot(f); if (why) return { ok: false, why };
+    const r = playerTechRole(), px = player.x, py = player.y, fx = f.x, fy = f.y;
+    if (typeof mutatorCancel === "function") mutatorCancel();   // (a strike being walked to is let go)
+    player.x = player.targetX = player.visualX = fx; player.y = player.targetY = player.visualY = fy; player.fpPath = null;
+    if (typeof _fp !== "undefined" && _fp) _fp.stationGoal = null;
+    f.x = px; f.y = py; f._fpPath = null; f._fpGoalAt = null; f._fpStuck = 0; f._fpPortalGoal = null;
+    _pc.swapAt = _pcFrame() + r.kit.swap.every;
+    if (typeof elementEffects !== "undefined") for (const [x, y] of [[px, py], [fx, fy]]) elementEffects.push({ type: "ring", x, y, radius: 0.9, color: "#9933ff", life: 24 });
+    _pcSay("SWAPPED", "#c38cff");
+    return { ok: true, msg: "SWAPPED" };
+}
+// BULWARK ENGINEER: after a POWER CELL overcharges the lamp (js/inventory.js), a Photonic Shield in front of you: toward the creature locked, if you can see it, else the way you face. null with no such role
+function playerCellShield() {
+    const r = playerTechRole(); if (!r || !r.kit.shield || typeof techShieldRaise !== "function" || typeof player === "undefined" || !player) return null;
+    const foe = typeof targetCurrent === "function" ? targetCurrent() : null, row = Number.isFinite(player._hdRow) ? player._hdRow : 1, a = row * Math.PI / 4;   // (the facing: js/hdsprites.js hdRow, eight ways)
+    const res = techShieldRaise(player, player.x + Math.cos(a) * 5, player.y + Math.sin(a) * 5, r.kit.shield.frames, foe);
+    if (!res.ok) _pcSay(res.why, "#ff9c8a");
+    return res;
 }

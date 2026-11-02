@@ -45,7 +45,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       out.ccGone = [held.dead === true, held.exiled === true, count(), _ccFocus !== held]; ccClose(); await wait(30);
       // A SQUAD MEMBER'S CARD ON THE FLY (beside the HUD's stack): no EXILE there, it is the roster's
       var m = partyOrdered()[0]; selectedUnits.clear(); ccToggle(m); partyFlyRender(true); await wait(60);
-      out.fly = { on: !!$('#squadFly.on'), exile: !!$('#squadFly .sf-exile, #squadFly [data-act=exile]'), btns: $$('#squadFly .sf-btn').map(function(b){ return b.textContent; }), said: /EXILE/.test(($('#squadFly') || {}).textContent || '') };
+      out.fly = { on: !!$('#squadFly.on'), exile: !!$('#squadFly .sf-exile, #squadFly [data-act=exile]'), btns: $$('#squadFly .sf-btn').filter(function(b){ return b.getClientRects().length > 0; }).map(function(b){ return b.textContent; }), said: /EXILE/.test(($('#squadFly') || {}).textContent || '') };
       selectedUnits.clear(); partyTick();
     } else {
       // THE PHONE'S SQUAD: its cards have no EXILE (it is the roster's)

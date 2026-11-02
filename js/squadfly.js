@@ -26,6 +26,7 @@ function partyFlyBuild(root) {
     root.innerHTML = '<div class="sf-card"><span class="sf-tip"></span><div class="sf-head"><canvas class="sf-thumb" width="64" height="64"></canvas><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span></div>'
         + '<div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
         + '<div class="sf-cards"></div>'
+        + '<div class="sf-btns sf-swaprow"><button class="sf-btn sf-swap" data-act="swap">SWAP PLACES ⇄<small class="sf-swapw"></small></button></div>'   // (GRAVITY ENGINEER's SWAP: shown only while that role is awake, js/playercards.js)
         + '<div class="sf-btns"><button class="sf-btn sf-index" data-act="index">INDEX ▸</button><button class="sf-btn sf-dismiss" data-act="dismiss">DISMISS FROM SQUAD<small>Holds the room it is in</small></button></div></div>';
     root.addEventListener("click", partyFlyClick);
     if (typeof document !== "undefined" && document.addEventListener) document.addEventListener("pointerdown", partyFlyPressAway, true);   // (capture: before the floor's own press)
@@ -44,6 +45,7 @@ function partyFlyClick(ev) {
     const b = t.closest("[data-act]"); if (!b) return;
     const act = b.getAttribute("data-act");
     if (act === "index") { if (typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
+    if (act === "swap") { if (typeof playerSwap === "function") { const r = playerSwap(f); if (!r.ok && typeof _pcSay === "function") _pcSay(r.why, "#ff9c8a"); } partyFlyRender(true); return; }   // (GRAVITY ENGINEER: js/playercards.js)
     if (act === "dismiss") {
         if (typeof partyRemove === "function") partyRemove([f]);
         _sfLast = null; _sfSig = ""; _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); if (typeof mixToolRender === "function") mixToolRender(true);
@@ -59,6 +61,13 @@ function partyFlyPressAway(ev) {
     _sfAway = true; partyFlyRender(true);
 }
 function _sfSet(el, prop, v) { if (el && el[prop] !== v) el[prop] = v; }
+// GRAVITY ENGINEER's SWAP (a Player card: js/playercards.js): its row is on the card only while that role is awake; it says when it is ready, or why it cannot be used with this member, and is off until it can
+function _sfSwapDraw(E, f) {
+    const row = E.root.querySelector ? E.root.querySelector(".sf-swaprow") : null, b = row && row.querySelector ? row.querySelector(".sf-swap") : null, w = row && row.querySelector ? row.querySelector(".sf-swapw") : null; if (!row) return;
+    const st = typeof playerSwapState === "function" ? playerSwapState() : null, v = st ? "" : "none"; if (row.style && row.style.display !== v) row.style.display = v; if (!st) return;
+    const why = typeof playerSwapWhyNot === "function" ? playerSwapWhyNot(f) : null;
+    if (w) _sfSet(w, "textContent", why || "YOU TAKE ITS PLACE, IT TAKES YOURS"); if (b) _sfSet(b, "disabled", !!why);
+}
 // ITS TWO EQUIP CARD SLOTS (js/cards.js; the same rows as the roster's CARD 1 and CARD 2, js/cardsui.js equipRosterDraw): the slot's row names the card it wears (EMPTY when none; NO CARDS IN YOUR HAND, and no list, when the hand
 // is empty), with the card's rarity chip; its list, when it is open, is EMPTY and then every card the hand holds, the ones that do not fit this follower disabled and saying why, the one worn lit. Redrawn only when any of it changes.
 function _sfCardsDraw(E, f) {
@@ -116,6 +125,7 @@ function partyFlyRender(force) {
       if (E.evo) { _sfSet(E.evo, "textContent", p ? (p.evo ? xpEvoText(p) : f.evolved ? "EVOLVED" : "") : ""); if (E.evo.classList) E.evo.classList.toggle("soon", !!(p && p.evo && p.evo.levels <= 1)); } }
     _sfSet(E.hpn, "textContent", hp + " / " + mx); _sfSet(E.pw, "textContent", String(Math.round(f.power || 0))); _sfSet(E.sp, "textContent", String(((f.moveSpeed || 0) * 1000).toFixed(0)));
     _sfCardsDraw(E, f);   // its two equip card slots
+    _sfSwapDraw(E, f);    // GRAVITY ENGINEER's SWAP, while that role is awake
     const key = clone ? "clone|" + f.speciesName + "|" + f.className : f.evolved + "|" + f.element + "|" + (f.id || "");
     if (E.thumbKey !== key && E.thumb) { if (clone && typeof partyCloneThumb === "function") { E.thumbKey = key; partyCloneThumb(E.thumb, f); } else if (typeof _ccThumb === "function") { E.thumbKey = key; _ccThumb(E.thumb, f); } }
     // beside the member's own card: its top lines up with the card's, and it stands to the right of the stack; it keeps clear of the dock and of the enemy card where they lie

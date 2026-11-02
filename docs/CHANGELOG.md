@@ -4,6 +4,26 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **i · Player cards, Part 1b: the Technomancer's six roles** (the following update's Part 1, `FOLLOWING-UPDATE.md`; the kits approved by the owner, "Approve as drafted"; on the branch only; commit named in git log).
+  - **Main:** build h (8a770d8) and the answers' docs before it (272183c) went to main at the owner's word ("Push to main"). Its three readings were confirmed as built: "One per class", "Rate × 0.8", "All 18 together" (`DECISION-LOG.md`).
+  - **Six Player cards for the Technomancer**, PROTOTYPE, in js/cards.js `EQUIP_PLAYER_CARDS`. Their punch and arc take the role's element, for the triangle only: the punch stays Crushing, and the arc stays Elemental in the role's element (js/damage.js `dmgArcHit`). And:
+    - **FORGEMASTER:** the facility's sentries' rounds BURN; your repairs are twice as fast (a turret 300 frames, not 600; a relay 50, not 100).
+    - **SMOG ENGINEER:** every online relay WEAKENS every creature within 3 tiles of it while it stays.
+    - **ARC WARDEN:** while a POWER CELL overcharges your lamp, every 2 s every creature in its light (6.96 tiles) and in sight takes the arc's zap and GLITCHES.
+    - **CRYO TECH:** every online relay SLOWS every creature within 3 tiles of it while it stays.
+    - **GRAVITY ENGINEER:** SWAP, a new row on a squad member's card, trades places with it once a minute, on your stretch of floor.
+    - **BULWARK ENGINEER:** a POWER CELL also raises a Photonic Shield in front of you (toward the creature locked, else the way you face): 3 tiles wide, 20 s.
+  - **Hooks:** js/technomancer.js `_tcZap` (the arc) and `technoBolt`; js/mutator.js `_mxStrike` (the punch); js/stations.js (the sentries' rounds, the repairs); js/inventory.js (the power cell); js/techabilities.js `techShieldRaise` (new); js/facilitytutorial.js `facilityLampReach` (new, one formula for the lamp's light); js/squadfly.js and game.html (the SWAP row); js/cards.js `equipTick` (the relays' areas and ARC WARDEN's beat, every card tick).
+  - **Readings taken** where the kits did not say: `OPEN-QUESTIONS.md` §1q, for the owner to confirm or change. Among them: SWAP only on a tablet's squad card (a phone has none yet), and the relays' area by distance alone.
+  - **Tests:**
+    - tests/playercards.js grows to 32 checks: the six cards, their numbers and words; the punch and the arc in the role's element; a sentry's round landing and burning; the repairs; the relays' areas; ARC WARDEN's light and beat; the swap and its limits; the shield, locked and ahead; and SWAP on the squad card in the real page.
+    - Counts updated for six more cards: tests/cards.js, classcards.js, series2.js, series2abilities.js, packs.js.
+    - tests/squadfly.js and tests/exile.js now count the card's shown buttons: the SWAP row is on the card, hidden, without the role.
+  - **The Bible:** the Technomancer's table in "Player cards: the roles", the counts (81 real cards, 12 Player cards).
+  - **The full run:** 85 of 87 suites passed the first time. tests/exile.js also counted the squad card's buttons and saw the hidden SWAP row: it now counts the shown buttons, as tests/squadfly.js does, and passed when run again. tests/carousel.js failed its known check at 1180 px ("a name is cut": its recruits get random names; docs/OPEN-QUESTIONS.md §4); run alone afterwards it passed once and failed once. It touches nothing this build changed.
+  - **Written up:** docs/UNIVERSAL-AND-PLAYER-CARDS.md (section 9 "Part 1b", the checks), docs/OPEN-QUESTIONS.md §1q, docs/FOLLOWING-UPDATE.md, docs/COMBAT.md §7.9, docs/UI-STYLE.md (the SWAP row), docs/TECHNICIANS.md (the shield for the player), docs/TUTORIAL.md, the Bible.
+  - Not playtested.
+
 - **h · Player cards, Part 1a: the rules and the Gunslinger's six roles** (the following update's Part 1, `FOLLOWING-UPDATE.md`; the kits approved by the owner, "Approve as drafted", with "The role's element"; on the branch only; commit named in git log).
   - **Six Player cards for the Gunslinger**, PROTOTYPE, in js/cards.js `EQUIP_PLAYER_CARDS`. Each card's words are made from its numbers. On every round that hits, from any gun (the service gun, the machine gun, the laser's beam):
     - **INCENDIARY GUNNER:** the round is fire and BURNS (3 a second for 3 s).

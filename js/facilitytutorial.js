@@ -68,8 +68,10 @@ function facilityBlackoutSet(on) { if (_fp && _fp.tut) _fp.tut.blackout = !!on; 
 
 // the lamp's light on a spot (0 to 1): full near the player, a smooth fall to nothing at lampR
 function _fpLampBoost() { const T = _fp && _fp.tut; return T && T.boostUntil > (typeof frame !== "undefined" ? frame : 0) ? FP_TUT.boost : 1; }   // a power cell overcharges the lamp (facilityLampBoost)
+// how far the lamp's light reaches now (tiles): wider while it is overcharged, and with the class's perks (ARC WARDEN's zap reaches as far: js/playercards.js)
+function facilityLampReach() { return FP_TUT.lampR * (_fpLampBoost() > 1 ? FP_TUT.boostReach : 1) * (typeof classStat === "function" ? classStat("lampReach", 1) : 1); }
 function _fpLampAt(x, y) {
-    const b = _fpLampBoost(), R = FP_TUT.lampR * (b > 1 ? FP_TUT.boostReach : 1) * (typeof classStat === "function" ? classStat("lampReach", 1) : 1), d = Math.hypot(x - player.visualX, y - player.visualY); if (d >= R) return 0;
+    const b = _fpLampBoost(), R = facilityLampReach(), d = Math.hypot(x - player.visualX, y - player.visualY); if (d >= R) return 0;
     const t = d <= FP_TUT.lampCore ? 1 : 1 - (d - FP_TUT.lampCore) / (R - FP_TUT.lampCore);
     return Math.min(1, FP_TUT.lampK * (b > 1 ? FP_TUT.boostK : 1) * Math.pow(t * t * (3 - 2 * t), 1.3));
 }

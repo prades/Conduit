@@ -85,9 +85,9 @@ async function boot(search, store) {
         same(J(`Object.values(EQUIP_CARDS).filter(c => c.ability && (c.ability.kind === 'cleave' || c.ability.kind === 'chain')).length`), 0, 'a card still cleaves or chains');
         ok(/^CLEAVE:/.test(J(`equipAbilityText({ kind: 'cleave', radius: 1, share: 0.5 })`)), 'the Cleave words went');
     });
-    check('no card is of the Universal kind, the test cards included; the two that were are PLAYER cards now (test_player_a, test_player_b), beside the Gunslinger\'s six roles (build 2026-11-02h)', () => {
+    check('no card is of the Universal kind, the test cards included; the two that were are PLAYER cards now (test_player_a, test_player_b), beside the Gunslinger\'s six roles (build 2026-11-02h) and the Technomancer\'s six (build 2026-11-02i)', () => {
         const B = J(`(function(){ equipDevSet('on'); const r = Object.values(equipCards()).map(c => c.id + ':' + c.kind); equipDevSet(''); return r; })()`);
-        same(B.filter(x => /:universal$/.test(x)).length, 0, 'a Universal card'); same(B.filter(x => /:player$/.test(x)).join(), 'incendiary_gunner:player,blight_shooter:player,arc_slinger:player,cryo_marksman:player,rift_runner:player,breach_gunner:player,test_player_a:player,test_player_b:player', 'the Player cards');
+        same(B.filter(x => /:universal$/.test(x)).length, 0, 'a Universal card'); same(B.filter(x => /:player$/.test(x)).join(), 'incendiary_gunner:player,blight_shooter:player,arc_slinger:player,cryo_marksman:player,rift_runner:player,breach_gunner:player,forgemaster:player,smog_engineer:player,arc_warden:player,cryo_tech:player,gravity_engineer:player,bulwark_engineer:player,test_player_a:player,test_player_b:player', 'the Player cards');
     });
 
     group('WHO WEARS WHAT');

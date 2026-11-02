@@ -86,6 +86,9 @@ const DMG_HIT_GUN = Object.freeze({ type: "projectile", player: true });     // 
 const DMG_HIT_LASH = Object.freeze({ type: "slashing", player: true });      // the Mutator's lash
 const DMG_HIT_PUNCH = Object.freeze({ type: "crushing", player: true });     // the Technomancer's gauntlet
 const DMG_HIT_ARC = Object.freeze({ type: "elemental", element: "electric", player: true });   // the Technomancer's arc
+// the arc of a Technomancer's role (a Player card, js/playercards.js): the same hit in the role's element (rule 2: for the triangle), each made once
+const _DMG_HIT_ARC_OF = {};
+function dmgArcHit(el) { if (!el || el === "electric") return DMG_HIT_ARC; return _DMG_HIT_ARC_OF[el] || (_DMG_HIT_ARC_OF[el] = Object.freeze({ type: "elemental", element: el, player: true })); }
 const DMG_HIT_CLONE = Object.freeze({ type: "piercing" });                   // the Mutator's clone's bite
 const DMG_HIT_ELEMENTAL = Object.freeze({ type: "elemental" });              // an enemy's elemental extra (a charged shot); the element comes with the hit
 const DMG_HIT_ENEMY = {};                                                    // an enemy's hit by its type: { slashing: {type}, ... }

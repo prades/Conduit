@@ -45,7 +45,7 @@ const STATION_KINDS = {
         use: () => typeof sqUse === "function" ? sqUse() : { ok: false, why: "NOBODY HERE" } },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
     // A BROKEN TURRET (js/antraids.js): a station made on it when a raid wrecks it; the repair is a BUILD (stand by it, the progress bar; walk away and it stops), FREE (the owner, 2026-11-01: "Free, takes time", ten seconds)
-    sentry_repair: { name: "TURRET", classes: null, cost: [], buildMsg: "REPAIRING THE TURRET… STAY BY IT", get build() { return typeof SENTRY !== "undefined" ? SENTRY.repair : 600; },
+    sentry_repair: { name: "TURRET", classes: null, cost: [], buildMsg: "REPAIRING THE TURRET… STAY BY IT", get build() { return Math.round((typeof SENTRY !== "undefined" ? SENTRY.repair : 600) * (typeof playerRepairShare === "function" ? playerRepairShare() : 1)); },   // (FORGEMASTER halves it: js/playercards.js)
         verbFn: () => "REPAIR THE TURRET", canFn: s => typeof sentryRepairCan === "function" ? sentryRepairCan(s) : { ok: false, why: "NOTHING TO REPAIR" },
         use: s => typeof sentryRepairDone === "function" ? sentryRepairDone(s) : { ok: false, why: "NOTHING TO REPAIR" } },
     charger: { name: "CHARGING STATION", classes: null, cooldown: 5400, powered: true,
@@ -195,6 +195,7 @@ function relayPlan() {
     if (cls && cls.skills.includes(R.skill)) plan = { mode: "skill", cost: [["power_cell", R.skillCells]], frames: R.skillFrames };
     else if (invHas(R.kit)) plan = { mode: "kit", cost: [["power_cell", R.kitCells]], frames: R.kitFrames };
     else return { ok: false, why: "NEEDS A RELAY KIT (OR A TECHNOMANCER)" };
+    if (typeof playerRepairShare === "function") plan.frames = Math.max(1, Math.round(plan.frames * playerRepairShare()));   // (FORGEMASTER: your repairs take half the time, js/playercards.js)
     for (const [id, n] of plan.cost) if (!invHas(id, n)) return { ok: false, why: "NEEDS " + n + " " + itemDef(id).name + (n > 1 ? "S" : ""), plan };
     plan.ok = true; return plan;
 }
@@ -257,7 +258,7 @@ function facilitySentryTick() {
         if (!best) continue;
         if (typeof crystalDraw === "function" && !crystalDraw("shot")) continue;   // (the shot is paid from the Crystal)
         it.aim = Math.atan2(best.y - it.y, best.x - it.x); it.cd = SENTRY_CD; it.flash = 6;
-        if (typeof spawnFollowerProjectile === "function") spawnFollowerProjectile({ x: it.x, y: it.y, element: "electric" }, best, "#7ff2ff", SENTRY_DAMAGE, 5, null, DMG_HIT_GUN);   // (a turret's shot: Projectile, js/damage.js)
+        if (typeof spawnFollowerProjectile === "function") { const src = { x: it.x, y: it.y, element: "electric" }; spawnFollowerProjectile(src, best, "#7ff2ff", SENTRY_DAMAGE, 5, typeof playerSentryHit === "function" ? playerSentryHit(src) : null, DMG_HIT_GUN); }   // (a turret's shot: Projectile, js/damage.js; FORGEMASTER's rounds burn: js/playercards.js)
     }
 }
 // over the scene: the progress bar of a repair, the ring of light from a relay that has just come online

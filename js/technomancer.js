@@ -72,12 +72,13 @@ function technoArc(foe) {
     if (typeof shake !== "undefined") shake = Math.max(shake, 3);
     return true;
 }
-// a bolt from one creature to another, in the arc's look (the ARC SLINGER's jump: js/playercards.js); `low`: it starts at a creature, not at your hand
-function technoBolt(a, b) { if (!a || !b) return; const f = _tcFrame(); _tc.fx.push({ t0: f, pts: [[a.x, a.y], [b.x, b.y]], seed: (f * 7919 + 17) % 1000, low: true }); }
-// one creature in the arc: the damage, and a bite being wound up is cut short
+// a bolt in the arc's look, from `a` to `b` (the ARC SLINGER's jump, from a creature; ARC WARDEN's zap, from your hand: js/playercards.js)
+function technoBolt(a, b, hand) { if (!a || !b) return; const f = _tcFrame(); _tc.fx.push({ t0: f, pts: [[a.x, a.y], [b.x, b.y]], seed: (f * 7919 + 17 + _tc.fx.length * 31) % 1000, low: !hand }); }
+// one creature in the arc: the damage, and a bite being wound up is cut short. A Technomancer's role (a Player card) makes the arc its element, for the triangle only (js/playercards.js playerHitElement)
 function _tcZap(a, dmg) {
-    const src = { x: player.x, y: player.y, team: "green", element: "electric", isPlayer: true };
-    if (typeof applyElementalDamage === "function") applyElementalDamage(a, dmg, src, "electric", DMG_HIT_ARC); else applyDamage(a, dmg, src, "electric", false, false, DMG_HIT_ARC);
+    const el = typeof playerHitElement === "function" ? playerHitElement("arc", "electric") : "electric", hit = typeof dmgArcHit === "function" ? dmgArcHit(el) : DMG_HIT_ARC;
+    const src = { x: player.x, y: player.y, team: "green", element: el, isPlayer: true };
+    if (typeof applyElementalDamage === "function") applyElementalDamage(a, dmg, src, el, hit); else applyDamage(a, dmg, src, el, false, false, hit);
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#7ff2ff", radius: 0.6, life: 14 });
     if (!a.dead && TECHNO.arc.stagger > 0 && a.attackWindup > 0) {
         a.attackWindup = 0; a.biteTarget = null; a.attackAnim = 0; a.attackCooldown = Math.max(a.attackCooldown || 0, TECHNO.arc.stagger);

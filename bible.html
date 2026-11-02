@@ -1014,7 +1014,7 @@
   <p class="where">Where it lives: <code>js/stations.js</code> <code>weapon_locker</code>, <code>cctv</code> · <code>js/playergear.js</code> · <code>js/facilitytutorial.js</code> <code>facilityFlare</code></p>
 
   <h3 id="player-technomancer">Technomancer: the arc gauntlet</h3>
-  <p>Hybrid melee and ranged, tied to the power. The <b>ARC GAUNTLET</b> punches, and every punch that lands stores a <b>charge</b>. A charge throws an electric <b>arc</b>, and powered rooms recharge the gauntlet.</p>
+  <p>Hybrid melee and ranged, tied to the power. The <b>ARC GAUNTLET</b> punches, and every punch that lands stores a <b>charge</b>. A charge throws an electric <b>arc</b>, and powered rooms recharge the gauntlet. Its six roles (Player cards, since build <code>2026-11-02i</code>) make the punch and the arc their element and add a kit: see <a href="#player-cards">Player cards: the roles</a>.</p>
   <ul>
     <li><b>A click</b> (<code>technoAttack</code>, through the dial):
       <ul>
@@ -1141,7 +1141,7 @@
   </ul></div>
 
   <h3 id="player-cards">Player cards: the roles</h3>
-  <p>A <b>Player card</b> turns your class into an elemental <b>role</b> while it is worn, in YOUR SLOT 1 or YOUR SLOT 2 on the roster's YOU (the player's two slots take nothing else). There are 18, three classes by six elements; their names and kits are approved. Built in build <code>2026-11-02h</code>: the rules and <b>the Gunslinger's six</b>. The Technomancer's six and the Mutator's six come next (the following update's Parts 1b and 1c).</p>
+  <p>A <b>Player card</b> turns your class into an elemental <b>role</b> while it is worn, in YOUR SLOT 1 or YOUR SLOT 2 on the roster's YOU (the player's two slots take nothing else). There are 18, three classes by six elements; their names and kits are approved. Built: the rules and <b>the Gunslinger's six</b> (build <code>2026-11-02h</code>), <b>the Technomancer's six</b> (build <code>2026-11-02i</code>). The Mutator's six come next (the following update's Part 1c).</p>
   <ul>
     <li><b>Its class.</b> A role goes in only while you are its class; any other time its line says FOR THE GUNSLINGER.</li>
     <li><b>One at a time.</b> The two slots never hold two roles of one class (ONE GUNSLINGER ROLE AT A TIME), so one role at most is awake. A role for each of two classes can be worn: the one for the class you are is awake.</li>
@@ -1159,13 +1159,23 @@
     <tr><td><span class="n" data-k="EQUIP_CARDS.rift_runner.name">RIFT RUNNER</span></td><td>flux</td><td>PULLS the creature toward you (a knockback of <span class="n" data-k="EQUIP_CARDS.rift_runner.kit.pull">0.22</span>, reversed); never a beetle or a boss</td></tr>
     <tr><td><span class="n" data-k="EQUIP_CARDS.breach_gunner.name">BREACH GUNNER</span></td><td>core</td><td>KNOCK BACK (<span class="n" data-k="EQUIP_CARDS.repulsor_pulse.proc.push">0.22</span>, about 0.8 tiles)</td></tr>
   </table></div>
-  <p class="where">Where it lives: <code>js/cards.js</code> <code>EQUIP_PLAYER_CARDS</code>, <code>equipPlayerWhyNot</code>, <code>equipPlayerRole</code>, <code>equipPlayerAwake</code> · <code>js/playercards.js</code> (the kits) · <code>js/input.js</code> <code>firePlayerShot</code> · <code>js/weapons.js</code> <code>fireLaserShot</code>, <code>weaponCooldown</code> · <code>js/cardsui.js</code> (a role asleep on the roster)</p>
+  <div class="tw"><table>
+    <tr><th>Technomancer role</th><th>Element</th><th>Its punch and arc take the element; and</th></tr>
+    <tr><td><span class="n" data-k="EQUIP_CARDS.forgemaster.name">FORGEMASTER</span></td><td>fire</td><td>the facility's sentries' rounds BURN; your repairs take <span class="n" data-k="EQUIP_CARDS.forgemaster.kit.repair" data-f="pct">50%</span> of the time (a sentry <span class="n" data-k="SENTRY.repair * EQUIP_CARDS.forgemaster.kit.repair" data-f="f">5</span> s, a relay <span class="n" data-k="CLASS_RULES.relay.skillFrames * EQUIP_CARDS.forgemaster.kit.repair">50</span> frames)</td></tr>
+    <tr><td><span class="n" data-k="EQUIP_CARDS.smog_engineer.name">SMOG ENGINEER</span></td><td>toxic</td><td>every online relay WEAKENS every creature within <span class="n" data-k="EQUIP_CARDS.smog_engineer.kit.relays.radius">3</span> tiles of it, while it stays (the sleeping potion's area)</td></tr>
+    <tr><td><span class="n" data-k="EQUIP_CARDS.arc_warden.name">ARC WARDEN</span></td><td>electric</td><td>while your lamp is overcharged (a POWER CELL), every <span class="n" data-k="EQUIP_CARDS.arc_warden.kit.lamp.every" data-f="f">2</span> s every creature in its light and in sight takes the arc's zap and GLITCHES</td></tr>
+    <tr><td><span class="n" data-k="EQUIP_CARDS.cryo_tech.name">CRYO TECH</span></td><td>ice</td><td>every online relay SLOWS every creature within <span class="n" data-k="EQUIP_CARDS.cryo_tech.kit.relays.radius">3</span> tiles of it, while it stays</td></tr>
+    <tr><td><span class="n" data-k="EQUIP_CARDS.gravity_engineer.name">GRAVITY ENGINEER</span></td><td>flux</td><td>SWAP on a squad member's card trades places with it, once in <span class="n" data-k="EQUIP_CARDS.gravity_engineer.kit.swap.every" data-f="f">60</span> s, on your stretch of floor</td></tr>
+    <tr><td><span class="n" data-k="EQUIP_CARDS.bulwark_engineer.name">BULWARK ENGINEER</span></td><td>core</td><td>a POWER CELL also raises a PHOTONIC SHIELD in front of you (toward the creature locked, else the way you face): <span class="n" data-k="EQUIP_CARDS.bulwark_engineer.kit.shield.width">3</span> tiles wide, <span class="n" data-k="EQUIP_CARDS.bulwark_engineer.kit.shield.frames" data-f="f">20</span> s</td></tr>
+  </table></div>
+  <p class="where">Where it lives: <code>js/cards.js</code> <code>EQUIP_PLAYER_CARDS</code>, <code>equipPlayerWhyNot</code>, <code>equipPlayerRole</code>, <code>equipPlayerAwake</code> · <code>js/playercards.js</code> (the kits) · <code>js/input.js</code> <code>firePlayerShot</code> · <code>js/weapons.js</code> <code>fireLaserShot</code>, <code>weaponCooldown</code> · <code>js/technomancer.js</code> <code>_tcZap</code> and <code>js/mutator.js</code> <code>_mxStrike</code> (the arc and the punch) · <code>js/stations.js</code> (the sentries, the repairs) · <code>js/techabilities.js</code> <code>techShieldRaise</code> · <code>js/squadfly.js</code> (SWAP) · <code>js/cardsui.js</code> (a role asleep on the roster)</p>
 <details class="dec"><summary>Decisions</summary><div>
 <blockquote class="asked">“I also want to come up with player universal cards that change the player's class into really hyper-specific roles, like elemental classes.” Then: “Maybe we'll just call these cards player cards instead”<cite>ASKED · docs/UNIVERSAL-AND-PLAYER-CARDS.md section 1</cite></blockquote>
 <p class="muted">The 18 kits were drafted for the owner and approved as drafted (2026-11-02), with the hit taking the role's element for the triangle only (“The role's element”) and the electric Technomancer role named ARC WARDEN. One at a time, its class needed, asleep after a switch: approved 2026-11-02.</p>
 </div></details>
   <div class="open"><b>Open / not built</b><ul>
-    <li>The Technomancer's six and the Mutator's six: Parts 1b and 1c. Series 2's deal and Side Quest's sale: Part 1d.</li>
+    <li>The Mutator's six: Part 1c. Series 2's deal and Side Quest's sale: Part 1d.</li>
+    <li>On a phone there is no squad member's card yet, so no SWAP.</li>
     <li>A Player card's look: gold, with no texture (none was designed).</li>
     <li>Not played by a person yet.</li>
   </ul></div>
@@ -1730,11 +1740,11 @@
 <div class="open"><b>Open / not built</b><ul>
 <li>Each card's own artwork: the design asks for low-poly 3D item artwork and kanji-inspired graphics. All eighteen of Pack 1's 3D items are approved and shown (since build <code>2026-11-01n</code>); Series 2's and the Crystalline cards' come after. The rest show their element's crystal or a class card's cube on its element's or class's texture (a Mage's aura, the cube in its element's colour), and there is no kanji. A Player or a Subclass card has no texture: none was designed.</li>
 <li>A phone's CARDS screen and card slots.</li>
-<li>The Player cards beyond the Gunslinger's six (the Technomancer's and the Mutator's, approved): <a href="#player-cards">Player cards: the roles</a>. (Subclass cards came with Series 2; the Universal kind was retired in build <code>2026-11-02c</code>.)</li>
+<li>The Player cards beyond the Gunslinger's and the Technomancer's twelve (the Mutator's six, approved): <a href="#player-cards">Player cards: the roles</a>. (Subclass cards came with Series 2; the Universal kind was retired in build <code>2026-11-02c</code>.)</li>
 </ul></div>
 
 <h3 id="followers-cardlist">The cards, and what they do</h3>
-<p><span class="n" data-k="Object.keys(EQUIP_CARDS).length">75</span> real cards exist: 6 Crystalline class cards, Pack 1's 18 Element cards, Series 2's <span class="n" data-k="Object.values(EQUIP_CARDS).filter(function (c) { return c.pack === 'series2' &amp;&amp; c.kind !== 'player'; }).length">45</span> (since build <code>2026-11-02c</code>): its <span class="n" data-k="EQUIP_SERIES2.length">24</span> species and Technician cards, the <span class="n" data-k="EQUIP_AURAS.length">18</span> Mage auras and the <span class="n" data-k="EQUIP_OPPORTUNITY.length">3</span> Brawler opportunity cards; and the Gunslinger's <span class="n" data-k="Object.values(EQUIP_CARDS).filter(function (c) { return c.kind === 'player'; }).length">6</span> Player cards (since build <code>2026-11-02h</code>: <a href="#player-cards">Player cards: the roles</a>; Series 2's, but not dealt yet). Every number of an effect is in one table in the code (<code>EQUIP_CARDS</code>, with Pack 1's in <code>EQUIP_PACK1</code>, Series 2's in <code>EQUIP_SERIES2</code>, the class families' in <code>EQUIP_AURAS</code> and <code>EQUIP_OPPORTUNITY</code>), and the words on a card are made from it.</p>
+<p><span class="n" data-k="Object.keys(EQUIP_CARDS).length">81</span> real cards exist: 6 Crystalline class cards, Pack 1's 18 Element cards, Series 2's <span class="n" data-k="Object.values(EQUIP_CARDS).filter(function (c) { return c.pack === 'series2' &amp;&amp; c.kind !== 'player'; }).length">45</span> (since build <code>2026-11-02c</code>): its <span class="n" data-k="EQUIP_SERIES2.length">24</span> species and Technician cards, the <span class="n" data-k="EQUIP_AURAS.length">18</span> Mage auras and the <span class="n" data-k="EQUIP_OPPORTUNITY.length">3</span> Brawler opportunity cards; and <span class="n" data-k="Object.values(EQUIP_CARDS).filter(function (c) { return c.kind === 'player'; }).length">12</span> Player cards, the Gunslinger's six (since build <code>2026-11-02h</code>) and the Technomancer's six (since build <code>2026-11-02i</code>): <a href="#player-cards">Player cards: the roles</a>; Series 2's, but not dealt yet. Every number of an effect is in one table in the code (<code>EQUIP_CARDS</code>, with Pack 1's in <code>EQUIP_PACK1</code>, Series 2's in <code>EQUIP_SERIES2</code>, the class families' in <code>EQUIP_AURAS</code> and <code>EQUIP_OPPORTUNITY</code>), and the words on a card are made from it.</p>
 <p><b>The Crystalline class cards</b> are the rarest tier, six lit segments. Each is a CLASS card with one flat bonus and no other effect, worn from the hand by a follower of its class only (a hybrid fights as a brawler, and an evolved form has its form's class). No pack deals them yet, so they are unlocked outright, for ◆<span class="n" data-k="EQUIP.unlockCost">1,000</span>.</p>
 <div class="tw"><table>
 <tr><th>Card</th><th>Class</th><th>What it adds</th></tr>
@@ -1807,7 +1817,7 @@
 <p class="muted">Also chosen from pop-ups (2026-10-30): the bonus “across all damage categories” is every hit a follower lands; every direct hit can proc, one roll per target; a stat a card moves keeps its exact decimals; attack speed is the rest between ordinary attacks only; elemental attack power is SP.ATK only; a burn is still reduced by the target's defense; two cards on one stat add.</p>
 </div></details>
 <div class="open"><b>Open / not built</b><ul>
-<li>Every card beyond these <span class="n" data-k="Object.keys(EQUIP_CARDS).length">75</span>: the other twelve Player cards (the Technomancer's and the Mutator's; BLOOM's three later), and Series 2's eight LUSTROUS cards, come in later updates (drafted in <code>docs/SERIES-2.md</code>), and the design has more proposed concepts. Their final values and balance are not decided; every number above is an initial setting, and Series 2's have not been played by a person yet.</li>
+<li>Every card beyond these <span class="n" data-k="Object.keys(EQUIP_CARDS).length">81</span>: the Mutator's six Player cards (BLOOM's three later), and Series 2's eight LUSTROUS cards, come in later updates (drafted in <code>docs/SERIES-2.md</code>), and the design has more proposed concepts. Their final values and balance are not decided; every number above is an initial setting, and Series 2's have not been played by a person yet.</li>
 <li>Resistances from a card, and how one would combine with a subclass's own row of weaknesses and resistances (<code>COMBAT.md</code> §7).</li>
 <li>A weakened creature's specials are not weakened, only its bite: the weakness is the one the toxic smoke bomb already had.</li>
 </ul></div>
@@ -3491,7 +3501,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-02h</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-02i</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3698,7 +3708,7 @@
         <li><b>Behind the arena's rubble</b>: the insect burrow, once the Fire technician has drilled through.</li>
         <li><b>From the Level 1 update</b>: forward rooms, nests, Crystal energy, equipment, the healing station. <span class="muted">docs/TECHNICIANS.md</span></li>
         <li><b>The Technomancer's further abilities</b> (deployables, turrets, taking over the facility's systems) were never asked for, and are not invented here.</li>
-        <li><b>Cards beyond the 75</b>: the Technomancer's and the Mutator's Player cards (their kits approved; the following update's Parts 1b and 1c), Series 2's Lustrous cards, packs after Series 2, resistances from a card, and Series 2's 3D items. <span class="muted">docs/OPEN-QUESTIONS.md</span></li>
+        <li><b>Cards beyond the 81</b>: the Mutator's Player cards (their kits approved; the following update's Part 1c), Series 2's Lustrous cards, packs after Series 2, resistances from a card, and Series 2's 3D items. <span class="muted">docs/OPEN-QUESTIONS.md</span></li>
         <li><b>Words and pictures still to come</b>: the signs' wording, a player's map, and one webfont so every device shows the same type.</li>
       </ul>
 
@@ -3711,7 +3721,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-02h (2 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-02i (2 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

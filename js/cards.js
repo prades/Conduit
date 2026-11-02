@@ -210,6 +210,13 @@ EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object
 //   freeze       { frames, again }: a hit on a creature ALREADY slowed freezes it, a stun of `frames` (the Frost Maw's bite: js/evolution.js MAW_STUN), and not again on that creature for `again` frames (new, approved)
 //   slower       the share of the guns' rate of fire taken off (new, approved): their wait between shots is divided by (1 − slower)
 //   pull         the push of a knockback, reversed: the creature hit is pulled toward you (js/helpers.js vortexPullImmune: a beetle or a boss is not)
+//   sentries     true: the facility's sentries' rounds set the role element's status (the Technomancer places no sentries of its own: the kits' reading, approved)
+//   repair       the share of the time your repairs take: a sentry's (js/antraids.js SENTRY.repair) and a relay's (js/classes.js CLASS_RULES.relay.skillFrames)
+//   relays       { radius }: every ONLINE relay sets the role element's status on every creature within `radius` tiles of it, on every card tick while it stays (the sleeping potion's area: js/potion.js POTION.radius)
+//   lamp         { every }: while your lamp is overcharged (a POWER CELL), every `every` frames (the grid's charge beat: js/technomancer.js TECHNO.charge.gridEvery) every creature in its light, in sight, takes the
+//                arc's zap and the role element's status
+//   swap         { every }: SWAP on a squad member's card trades places with it, once in `every` frames (the technicians' ability wait: js/techabilities.js TECH_AB)
+//   shield       { width, frames }: a POWER CELL also raises a PHOTONIC SHIELD in front of you (the core technician's wall: TECH_AB.shield width and life)
 const EQUIP_PLAYER_CARDS = [
     ["incendiary_gunner", "INCENDIARY GUNNER", "gunslinger", "fire",     { status: true }],
     ["blight_shooter",    "BLIGHT SHOOTER",    "gunslinger", "toxic",    { status: true }],
@@ -217,17 +224,30 @@ const EQUIP_PLAYER_CARDS = [
     ["cryo_marksman",     "CRYO MARKSMAN",     "gunslinger", "ice",      { status: true, freeze: { frames: 75, again: 300 }, slower: 0.2 }],
     ["rift_runner",       "RIFT RUNNER",       "gunslinger", "flux",     { pull: 0.22 }],
     ["breach_gunner",     "BREACH GUNNER",     "gunslinger", "core",     { status: true }],
+    // THE TECHNOMANCER'S SIX (the following update's Part 1b): its punch and its arc take the role's element; the rest is the kit
+    ["forgemaster",       "FORGEMASTER",       "technomancer", "fire",     { sentries: true, repair: 0.5 }],
+    ["smog_engineer",     "SMOG ENGINEER",     "technomancer", "toxic",    { relays: { radius: 3 } }],
+    ["arc_warden",        "ARC WARDEN",        "technomancer", "electric", { lamp: { every: 120 } }],
+    ["cryo_tech",         "CRYO TECH",         "technomancer", "ice",      { relays: { radius: 3 } }],
+    ["gravity_engineer",  "GRAVITY ENGINEER",  "technomancer", "flux",     { swap: { every: 3600 } }],
+    ["bulwark_engineer",  "BULWARK ENGINEER",  "technomancer", "core",     { shield: { width: 3, frames: 1200 } }],
 ];
 // what a role does, in the card's words, made from its kit's numbers
-const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"] };   // (whose hits a class's role works on: rule 1)
+const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"], technomancer: ["YOUR PUNCH AND ARC ARE ", "EACH ARC"] };   // (whose hits a class's role works on: rule 1)
 function equipPlayerKitText(cls, k) {
     const h = _EQUIP_KIT_HITS[cls]; if (!h || !k) return "";
-    const sec2 = n => (Math.round(n * 100) / 100) + (n === 1 ? " SECOND" : " SECONDS"), tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], out = [h[0] + _equipElementLabel(k.el)];
-    if (k.status && tpl && tpl.proc) out.push("EVERY HIT TO " + _equipStatusText(tpl.proc));
+    const sec2 = n => (Math.round(n * 100) / 100) + (n === 1 ? " SECOND" : " SECONDS"), tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], st = tpl && tpl.proc ? _equipStatusText(tpl.proc) : "", out = [h[0] + _equipElementLabel(k.el)];
+    if (k.status && st) out.push("EVERY HIT TO " + st);
     if (k.jump) out.push(h[1] + " JUMPS TO ONE MORE ENEMY WITHIN " + k.jump.radius + " TILES FOR " + _equipPct(k.jump.share));
     if (k.freeze) out.push("A HIT ON AN ENEMY ALREADY SLOWED FREEZES IT FOR " + sec2(k.freeze.frames / EQUIP_FPS) + ", ONCE IN " + sec2(k.freeze.again / EQUIP_FPS));
     if (k.pull > 0) out.push("EVERY HIT PULLS THE TARGET TOWARD YOU (NOT A BEETLE OR A BOSS)");
     if (k.slower > 0) out.push("YOUR GUNS FIRE " + _equipPct(k.slower) + " SLOWER");
+    if (k.sentries && st) out.push("EVERY SENTRY HIT TO " + st);
+    if (k.repair > 0 && k.repair < 1) out.push(k.repair === 0.5 ? "YOUR REPAIRS ARE TWICE AS FAST" : "YOUR REPAIRS TAKE " + _equipPct(k.repair) + " OF THE TIME");
+    if (k.relays && st) out.push("ENEMIES WITHIN " + k.relays.radius + " TILES OF AN ONLINE RELAY, WHILE THEY STAY, TO " + st);
+    if (k.lamp && st) out.push("WHILE YOUR LAMP IS OVERCHARGED, EVERY " + sec2(k.lamp.every / EQUIP_FPS) + ": YOUR ARC'S ZAP ON EVERY ENEMY IN ITS LIGHT, AND " + st);
+    if (k.swap) out.push("SWAP: TRADE PLACES WITH A SQUAD MEMBER FROM ITS CARD, ONCE IN " + sec2(k.swap.every / EQUIP_FPS));
+    if (k.shield) out.push("A POWER CELL ALSO RAISES A PHOTONIC SHIELD IN FRONT OF YOU: " + k.shield.width + " TILES WIDE, " + sec2(k.shield.frames / EQUIP_FPS));
     return out.join(" · ");
 }
 EQUIP_PLAYER_CARDS.forEach(([id, name, cls, el, kit]) => { const k = Object.assign({ el }, kit); EQUIP_CARDS[id] = { id, name, kind: "player", match: cls, rarity: "prototype", pack: "series2", kit: k, text: equipPlayerKitText(cls, k) }; });
@@ -691,6 +711,7 @@ function equipTick(force) {
     _equipAuraTick();   // (after the cards that no longer fit came off)
     equipRefundTick();
     equipShelfTick();   // (the market's shelf: a new one when the time is up)
+    if (typeof playerRolesTick === "function") playerRolesTick();   // (the Player cards' roles that act on a beat: the relays' areas, ARC WARDEN: js/playercards.js)
 }
 
 // ── THE RECORD: what a follower's save entry, and a respawn entry, carry ──

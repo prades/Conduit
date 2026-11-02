@@ -248,6 +248,33 @@ Part 1a followed the approved kits and rules ("Approve as drafted", "The role's 
 9. **The words.** BLIGHT SHOOTER's card says POISON, the game's word for the weakness, as on MIREBLIGHT. The card's kind line reads PLAYER · GUNSLINGER · FIRE.
 10. **The look.** A Player card stays gold with no texture: the cards' look is still open (`UNIVERSAL-AND-PLAYER-CARDS.md` §11, item 11). A role asleep is greyed (grayscale, a dashed edge) and marked ASLEEP on the player's card and its slot. The column says when it wakes: "… IS ASLEEP: IT WAKES WHEN YOU ARE A GUNSLINGER AGAIN".
 
+## 1q. Part 1b's readings: the Technomancer's six (build `2026-11-02i`, on the branch; `UNIVERSAL-AND-PLAYER-CARDS.md` section 9, "Part 1b")
+
+Part 1b followed the approved kits. Where they did not say, these readings were taken, each easy to change. **For the owner to confirm or change:**
+1. **Rule 2 for the Technomancer.** The punch and the arc take the role's element. The arc stays all Elemental, so a role's arc meets the triangle in its element; it keeps the arc's blue look.
+2. **FORGEMASTER:**
+   - the sentries' rounds stay electric and only add the burn;
+   - "your repairs" are the turret's (600 → 300 frames) and the relay's (100 → 50).
+3. **SMOG ENGINEER and CRYO TECH:**
+   - "within 3 tiles" is by distance alone, through walls, as the sleeping potion's area is;
+   - "online" is a relay that has been repaired;
+   - "for as long as they stay": the status is set again every half second while a creature is in the area, with Pack 1's numbers, so it wears off 4 s (the weakness) or 2 s (the slow) after the creature leaves.
+4. **ARC WARDEN:**
+   - "in the lamp's light" is within its reach and in sight (walls stop it);
+   - the first zap comes at once when the overcharge begins, then every 2 s;
+   - the zap costs no charge;
+   - each zap is drawn as the arc's bolt from your hand.
+5. **GRAVITY ENGINEER:**
+   - SWAP is a row on a squad member's card, the card a tablet or a desktop opens from the squad stack. A phone has no such card yet, so no SWAP on a phone (open).
+   - It works only with a member that follows you (not one holding a room), and only on your stretch of floor: not across a doorway into another part of the map.
+   - The minute's wait starts at the swap and is not saved.
+6. **BULWARK ENGINEER:**
+   - "in front of you": toward the creature you have locked, when you can see it; otherwise the way you face;
+   - it is placed as the core technician places its wall: 3 tiles out, or just in front of a nearer creature;
+   - with less than a tile of floor ahead, no shield goes up ("NO ROOM FOR A SHIELD"), and the cell still overcharges the lamp;
+   - nobody holds behind it.
+7. **SWAP's look:** a purple row, SWAP PLACES ⇄, above INDEX and DISMISS, with a line saying what it does or why not. It is the agent's, for the owner to keep or change.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
@@ -256,7 +283,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
-- **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) are built (build `2026-11-02c`, §1m); the Player cards (the player's elemental roles) are designed and approved, and the rules and the Gunslinger's six are built (build `2026-11-02h`, §1p): `UNIVERSAL-AND-PLAYER-CARDS.md`. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
+- **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) are built (build `2026-11-02c`, §1m); the Player cards (the player's elemental roles) are designed and approved, and the rules and the Gunslinger's six are built (build `2026-11-02h`, §1p), and the Technomancer's six (build `2026-11-02i`, §1q): `UNIVERSAL-AND-PLAYER-CARDS.md`. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)
   - **Your answers of 2026-11-02:**
     - openings add up; a stun or sleep counts;
     - auras reach 4 tiles, the clone included;

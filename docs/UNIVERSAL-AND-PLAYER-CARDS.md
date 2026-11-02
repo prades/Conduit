@@ -13,7 +13,8 @@
   - **Implemented in build `2026-11-02h` (the following update's Part 1a, on the branch), and tested** (tests/playercards.js, 24 checks; section 10). Not playtested.
     - The Player card rules: a role needs its class; one role of a class at a time; a role for another class sleeps in its slot after a switch, greyed and marked ASLEEP, and wakes on switching back.
     - The Gunslinger's six roles, on every round that hits from any gun.
-  - **Designed and approved, not implemented:** the Technomancer's six and the Mutator's six kits (section 2, "The 18 kits": approved 2026-11-02, "Approve as drafted"): Parts 1b and 1c. Series 2's deal of the eighteen and Side Quest's sale: Part 1d.
+  - **Implemented in build `2026-11-02i` (Part 1b, on the branch), and tested:** the Technomancer's six roles (tests/playercards.js; section 9, "Part 1b"). Not playtested.
+  - **Designed and approved, not implemented:** the Mutator's six kits (section 2, "The 18 kits": approved 2026-11-02, "Approve as drafted"): Part 1c. Series 2's deal of the eighteen and Side Quest's sale: Part 1d.
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-02
@@ -129,8 +130,8 @@ With BLOOM, the seventh element, there are 21 roles. BLOOM's three are named and
 ### The 18 kits (drafted 2026-11-02; approved the same day)
 
 - **Status:** **Approved** 2026-11-02 ("Approve as drafted"), with rule 2 ("The role's element") and the electric Technomancer role's name (ARC WARDEN).
-  - **Implemented and tested:** the four rules and the Gunslinger's six (build `2026-11-02h`, Part 1a; section 9, "Part 1a"). The readings taken where the kits did not say are in `OPEN-QUESTIONS.md` §1p.
-  - **Designed, not built:** the Technomancer's six (Part 1b) and the Mutator's six (Part 1c).
+  - **Implemented and tested:** the four rules and the Gunslinger's six (build `2026-11-02h`, Part 1a; section 9, "Part 1a"); the Technomancer's six (build `2026-11-02i`, Part 1b; section 9, "Part 1b"). The readings taken where the kits did not say are in `OPEN-QUESTIONS.md` §1p and §1q.
+  - **Designed, not built:** the Mutator's six (Part 1c).
 - **Numbers:** every number below is one the game already has, unless it is marked **new**. CRYO MARKSMAN's slower fire, marked optional in the draft, is in as drafted.
 - **Why it exists:** the owner asked for a draft of all 18 to review (`FOLLOWING-UPDATE.md`, gate 1).
 
@@ -215,7 +216,7 @@ Every card is now an element, class, species (subclass) or Player card. The Univ
 - [x] A Brawler's opportunity card adds its bonus (Refined +20%, Precision +30%, Prototype +40%) once for each weakness a hit exploits: an element match-up, a race weak to the hit's physical type or to Elemental (`COMBAT.md` §7), a stunned or sleeping target. Any other hit is unchanged. *(Build B.)*
 - [x] The Technician's cooldown cards are Series 2's four, unchanged.
 - [x] The player's slots take Player cards only, one at a time, the role matching the player's class; a role for the other class sleeps until the player switches back. *(Build B: Player cards only. The rest since build `2026-11-02h`, Part 1a: tests/playercards.js.)*
-- [ ] Each of the 18 roles' kits works on its class's own attacks, as approved. *(The Gunslinger's six since build `2026-11-02h`: tests/playercards.js. The Technomancer's and the Mutator's: Parts 1b and 1c.)*
+- [ ] Each of the 18 roles' kits works on its class's own attacks, as approved. *(The Gunslinger's six since build `2026-11-02h`, the Technomancer's six since build `2026-11-02i`: tests/playercards.js. The Mutator's: Part 1c.)*
 - [ ] Series 2 deals the 63 cards of section 2, and no longer deals the eight cut Brawler and Mage cards. Copies already owned leave collections, hands and slots, with ◆1,000 back for each permanently unlocked copy. *(Build B: 45 of the 63, the 18 Player cards to come; the cut, the clean-up and the refund are built.)*
 - [ ] After each quest, Side Quest sells that quest line's element's three Player cards, ◆1,000 each, kept for good. *(With the Player cards.)*
 - [x] No card is of the Universal kind. *(Build B.)*
@@ -345,6 +346,32 @@ On `claude/start-game-project-HSh7Z`, not on main until the owner says so. Every
 - **Frame cost:** nothing per frame. A shot asks for the role once (two slots); a jump looks over the creatures once.
 - **Readings taken where the kits did not say:** `OPEN-QUESTIONS.md` §1p (ten, for the owner to confirm or change).
 
+### Part 1b: the Technomancer's six (build `2026-11-02i`)
+
+On `claude/start-game-project-HSh7Z`, not on main until the owner says so. Six more rows of `EQUIP_PLAYER_CARDS` (`match: "technomancer"`), with their numbers and their words (`equipPlayerKitText`); the kits are in js/playercards.js.
+
+- **Rule 2, the punch and the arc** (`playerHitElement`): with a Technomancer role awake, the gauntlet's punch (js/mutator.js `_mxStrike`) and the arc (js/technomancer.js `_tcZap`) take the role's element. The punch stays Crushing, with the triangle on the whole hit, as before. The arc stays Elemental, in the role's element (js/damage.js `dmgArcHit`: one frozen hit for each element). Its look stays the arc's blue.
+- **FORGEMASTER** (fire):
+  - The facility's sentries' rounds BURN: each round carries the burn when it is fired (js/stations.js `facilitySentryTick` → `playerSentryHit`). The rounds stay electric.
+  - Your repairs take half the time (`playerRepairShare`): a turret's (js/stations.js `STATION_KINDS.sentry_repair.build`, 600 → 300 frames) and a relay's (`relayPlan`, 100 → 50).
+- **SMOG ENGINEER** (toxic) **and CRYO TECH** (ice): on every card tick (every 30 frames: js/cards.js `equipTick` → `playerRolesTick`), every creature within 3 tiles of an ONLINE relay (a repaired one: js/stations.js `relayOnline`) gets the role's status with Pack 1's numbers. It is refreshed while the creature stays, and wears off after it leaves (4 s for the weakness, 2 s for the slow). The area is the sleeping potion's: distance alone, as the potion's.
+- **ARC WARDEN** (electric): while the lamp is overcharged (`_fp.tut.boostUntil`), the card tick zaps at once, then every 120 frames:
+  - who: every creature within the lamp's light (js/facilitytutorial.js `facilityLampReach`: 4.8 × 1.45 = 6.96 tiles overcharged, more with the lamp's perks) and in sight;
+  - what: the arc's zap (`_tcZap`, `technoArcDamage`: 18, more with relays online; a bite being wound up is cut short) and GLITCH (0.5 s);
+  - the look: a bolt from your hand to each.
+
+  It spends no charge, and works in light or dark.
+- **GRAVITY ENGINEER** (flux): SWAP, a row on a squad member's card (js/squadfly.js; shown only while the role is awake), trades places with that member (`playerSwap`):
+  - it says what it does, or why not ("SWAP READY IN 60 S", "NOT ON YOUR STRETCH OF FLOOR", "SQUAD MEMBERS ONLY");
+  - it works only with a member that follows you, on your stretch of floor: not across a doorway into another part of the map;
+  - the wait is 3600 frames from the swap, and is not saved.
+- **BULWARK ENGINEER** (core): a POWER CELL (js/inventory.js) overcharges the lamp and also raises a PHOTONIC SHIELD (js/techabilities.js `techShieldRaise`):
+  - where: placed as the core technician places its own, toward the creature you have locked if you can see it, else the way you face (one of eight);
+  - how far: 3 tiles out at most, or just in front of a nearer creature; with less than a tile of floor ahead, none goes up, and you are told so;
+  - how long: 1200 frames. Nobody holds behind it, and no technician's wait is spent.
+- **Frame cost:** the relays' areas and ARC WARDEN's beat run on the card tick (every 30 frames): one pass over the creatures for each online relay, one for the lamp. Nothing per frame.
+- **Readings taken where the kits did not say:** `OPEN-QUESTIONS.md` §1q.
+
 ## 9a. Frame cost
 
 The reach is checked every 30 frames: one pass over the followers and the clones for each aura worn. A unit's stats are made again only when its auras change. The drawing is a dashed ellipse for each Mage and colour, and a small glint for each unit in reach, each frame; nothing is allocated per frame. Measured: not on an iPad. tests/perf.js's frame budgets hold in the full run (section 10).
@@ -369,6 +396,11 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 | Part 1a: a role asleep greyed and marked ASLEEP on the roster, in the real page (Chromium) | Passed | tests/playercards.js |
 | Part 1a: the suites whose counts moved with six more cards | Passed | tests/cards.js, tests/classcards.js, tests/series2.js, tests/series2abilities.js, tests/packs.js, tests/bible.js |
 | Part 1a: the rest of the game | Passed | the full run, 87 suites, on build `2026-11-02h`, the first time (tests/perf.js's frame budgets included) |
+| Part 1b (build `2026-11-02i`): the six cards, their numbers (tied to the potion's area, the grid's beat, the technicians' wait and the core technician's wall) and words | Passed | tests/playercards.js |
+| Part 1b: the punch and the arc in the role's element (×1.3 on a flux creature with FORGEMASTER; the same on a creature with no element) | Passed | tests/playercards.js |
+| Part 1b: FORGEMASTER (a sentry fires, its round lands and burns; the repairs 300 and 50 frames), SMOG ENGINEER and CRYO TECH (near a relay, not 3.5 tiles off, nothing while it is down), ARC WARDEN (in the light, out of it, the beat, the overcharge over), GRAVITY ENGINEER (the swap, the wait, not with one holding a room, not across a doorway, no role), BULWARK ENGINEER (toward a locked creature, ahead, no role) | Passed | tests/playercards.js |
+| Part 1b: SWAP on the squad member's card in the real page (shown with the role, trades places, then counts down; gone without the role) | Passed | tests/playercards.js (Chromium); tests/squadfly.js and tests/exile.js count the card's shown buttons |
+| Part 1b: the rest of the game | Passed, but for a known flake | the full run on build `2026-11-02i`: 85 of 87, then tests/exile.js passed once it counted shown buttons; tests/carousel.js's known random-name check failed (passed once and failed once alone) |
 | Played by a person | Not done | not playtested |
 
 ## 11. Open questions
@@ -381,7 +413,6 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 6. **The aura's reach: answered 2026-11-02.** 4 tiles.
 7. **Sources: answered 2026-11-02.** Series 2, reshaped. Player cards: Series 2 at Prototype, and Side Quest's shop after each quest.
 8. **Player cards: answered 2026-11-02.** Switching class: the card sleeps. Each role's kit and numbers: drafted and approved ("Approve as drafted"; section 2, "The 18 kits"). The hit's element: the role's element, for the triangle only (`COMBAT.md` §7.9). The electric Technomancer role's name: ARC WARDEN.
-19. **Part 1a's readings** (build `2026-11-02h`): "one at a time" with two slots, when the class is asked, the guns' "20% slower", ARC SLINGER's jump, CRYO MARKSMAN's freeze, the pull's and the push's directions, where the cards come from until Part 1d, and the look of a role asleep. `OPEN-QUESTIONS.md` §1p. **Confirmed 2026-11-02, as built:** "One per class", "Rate × 0.8", "All 18 together". The others stand as readings.
 9. **The Universal kind: answered 2026-11-02.** Retired.
 10. **The clone: answered 2026-11-02.** It gets auras.
 11. **The cards' look** for each family and the Player cards: open. The species (subclass) textures and icons are designed in `UI-STYLE.md`.
@@ -392,6 +423,8 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 16. **The Prototype aura's status chance: answered 2026-11-02.** 10% ("Raise to 10%"; it was built at the first guess of 5%).
 17. **The rings and glints: answered 2026-11-02.** "It shouldn't be displayed or affected in other rooms": the ring is cut to the Mage's room and the aura stays in it (build `2026-11-02d`). Then "It shouldn't show up on the walls either": the ring is drawn on the floor (build `2026-11-02e`). The strength was left as built.
 18. **Readings taken in Build B** (section 9): the same aura is the same card (**confirmed**: "Both count"); two opportunity cards add; the Prototype's status uses Pack 1's Precision numbers; the clone's whole hit grows; the ring is drawn over the floor and the units (now within its room); the refund shows a line. The open ones are the owner's to confirm or change.
+19. **Part 1a's readings** (build `2026-11-02h`): "one at a time" with two slots, when the class is asked, the guns' "20% slower", ARC SLINGER's jump, CRYO MARKSMAN's freeze, the pull's and the push's directions, where the cards come from until Part 1d, and the look of a role asleep. `OPEN-QUESTIONS.md` §1p. **Confirmed 2026-11-02, as built:** "One per class", "Rate × 0.8", "All 18 together". The others stand as readings.
+20. **Part 1b's readings** (build `2026-11-02i`): the sentries' rounds stay electric; the relays' area by distance alone; the first zap at once; SWAP on a tablet's squad card only, on your stretch of floor; the shield toward a locked creature or the way you face. `OPEN-QUESTIONS.md` §1q, for the owner to confirm or change.
 
 ## 12. History
 
@@ -417,4 +450,5 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 
   The owner first chose "found in packs" for the Player cards over a class-rank unlock or a SHOP price.
 - 2026-11-02: **the 18 kits drafted and approved** ("Approve as drafted"), with the hit taking the role's element for the triangle only and the electric Technomancer role named ARC WARDEN.
-- 2026-11-02, build `2026-11-02h` (the following update's Part 1a): **the Player card rules and the Gunslinger's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1p.
+- 2026-11-02, build `2026-11-02h` (the following update's Part 1a): **the Player card rules and the Gunslinger's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1p. On main at the owner's word, its three main readings confirmed as built ("One per class", "Rate × 0.8", "All 18 together").
+- 2026-11-02, build `2026-11-02i` (Part 1b): **the Technomancer's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1q.

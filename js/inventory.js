@@ -31,7 +31,7 @@ const ITEMS = {
         desc: "A charged cell. Overcharges your monitor lamp for a minute.",
         lore: "A lab-grade cell, still holding most of its charge. The Technomancer knows where it wants to be plugged in.",
         stats: ["EFFECT  LAMP BRIGHTER AND 45% WIDER", "LASTS  60 SECONDS"],
-        use: () => (typeof facilityLampBoost === "function" && facilityLampBoost(3600)) ? { ok: true, msg: "LAMP OVERCHARGED" } : { ok: false, why: "NOT IN THE FACILITY" } },
+        use: () => { if (!(typeof facilityLampBoost === "function" && facilityLampBoost(3600))) return { ok: false, why: "NOT IN THE FACILITY" }; const sh = typeof playerCellShield === "function" ? playerCellShield() : null; return { ok: true, msg: "LAMP OVERCHARGED" + (sh && sh.ok ? " · PHOTONIC SHIELD UP" : "") }; } },   // (BULWARK ENGINEER: a cell raises a Photonic Shield too, js/playercards.js)
     mutagen_sample: { id: "mutagen_sample", name: "MUTAGEN SAMPLE", cat: "sample", type: "consumable", stack: 6, col: "#c06bff", icon: "vial", classes: ["mutator"],
         desc: "A vial of unstable DNA. Feed it to a follower to push it up a level.",
         lore: "Cloudy, warm and faintly alive. The Mutator reads it like a letter from a creature that has not been born yet.",

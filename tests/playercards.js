@@ -31,7 +31,7 @@ async function boot(search, store) {
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) { /* the page's own boot check says */ } }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
-    run(`facilityBlackoutSet(false); gameState.running = true; alertActive = false; _fp.items = _fp.items.filter(i => !(i.fp === 'prop' && i.kind === 'sentry'));   // (no sentries: they would shoot the creatures)
+    run(`facilityBlackoutSet(false); gameState.running = true; alertActive = false; globalThis.__sentries = _fp.items.filter(i => i.fp === 'prop' && i.kind === 'sentry'); _fp.items = _fp.items.filter(i => !(i.fp === 'prop' && i.kind === 'sentry'));   // (no sentries: they would shoot the creatures; FORGEMASTER's check puts one back)
         if (typeof facilitySpawnTick === 'function') facilitySpawnTick = () => {};
         // staged in the lower half of the Crystal Chamber, as tests/technomancer.js: open floor all round
         globalThis.__home = () => { player.x = player.targetX = player.visualX = crystal.x - 2; player.y = player.targetY = player.visualY = crystal.y + 5; player.fpPath = null; player.attackCooldown = 0; health = PLAYER_HITS; player.invuln = 0; };
@@ -47,7 +47,13 @@ async function boot(search, store) {
         globalThis.__shoot = foe => { player.attackCooldown = 0; const h = foe.health, n0 = followerProjectiles.length, fired = firePlayerShot(foe); const p = followerProjectiles.length > n0 ? followerProjectiles[followerProjectiles.length - 1] : null, cd = player.attackCooldown;
             let k = 0; while (p && followerProjectiles.indexOf(p) >= 0 && k < 120) { render(); k++; }
             return { fired, lost: h - foe.health, el: p ? p.element : null, dmg: p ? p.damage : null, onHit: !!(p && p.onHit), frames: k, cd }; };
-        globalThis.__said = w => floatingTexts.some(t => t.text === w);`);
+        globalThis.__said = w => floatingTexts.some(t => t.text === w);
+        // a Technomancer with the gauntlet, these roles found for the run, the first worn
+        globalThis.__tm = (...ids) => { __clear(); __class('technomancer'); equipReset(); for (const id of ids) equipFound.push(id); if (ids[0]) equipPlayerPut(0, ids[0]); technoCharge = 6; return equipPlayer.slice(); };
+        // a punch that lands on a creature in reach: the health it took (the two beats: a wind-up, then the hit)
+        globalThis.__punch = foe => { player.attackCooldown = 0; const h = foe.health; firePlayerShot(foe); let k = 0; while (h - foe.health < 0.001 && k < 90) { render(); k++; } return h - foe.health; };
+        // the first relay and its box's spot
+        globalThis.__relay = () => _fp.stations.find(s => s.kind === 'relay');`);
     return { run, J, store: sb.localStorage };
 }
 
@@ -77,7 +83,17 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     click(slot(2)); await wait(80);
     out.list2 = $$('#ccSide .cc-dd-list .cc-btn').filter(function(b){ return /GUNNER|SHOOTER|SLINGER|MARKSMAN|RUNNER/.test(b.querySelector('.cc-bl').textContent); }).map(function(b){ return [b.querySelector('.cc-bl').textContent, b.disabled, (b.querySelector('.cc-bs') || {}).textContent || '']; });
     classSet('gunslinger'); ccRender(); await wait(150); out.back = look();
-    ccClose();
+    ccClose(); await wait(60);
+    // GRAVITY ENGINEER's SWAP on a squad member's card (the corners layout: a tap on the member's card on the squad stack opens its card beside it)
+    shardCount = 2500; for (var i = followers.length; i < 2; i++) recruitFollower(); for (var k = 0; k < followers.length; k++) followers[k].returningToCrystal = false;
+    classSet('technomancer'); equipPlayer = [null, null]; out.gput = equipPlayerPut(0, 'gravity_engineer'); selectedUnits.clear(); partyTick(); await wait(80);
+    var s0 = $$('#squadBar .sb-slot')[0], m0 = s0 ? s0._unit : null; if (m0) { m0.post = null; m0.x = player.x + 0.6; m0.y = player.y; }   // (beside you, on your stretch of floor)
+    click(s0); await wait(80); partyFlyRender(true); await wait(40);
+    var row = $('#squadFly .sf-swaprow'), sb = function(){ return $('#squadFly .sf-swap'); }, sw = function(){ return ($('#squadFly .sf-swapw') || {}).textContent; };
+    out.swap = { member: !!m0, shown: !!row && getComputedStyle(row).display !== 'none', text: sw(), disabled: !!(sb() && sb().disabled) };
+    var p0 = [player.x, player.y], q0 = m0 ? [m0.x, m0.y] : [0, 0]; click(sb()); await wait(60); partyFlyRender(true); await wait(40);
+    out.swap.moved = !!m0 && player.x === q0[0] && player.y === q0[1] && m0.x === p0[0] && m0.y === p0[1]; out.swap.after = sw(); out.swap.offAfter = !!(sb() && sb().disabled);
+    equipPlayerPut(0, null); partyFlyRender(true); await wait(40); out.swap.hidden = !!row && getComputedStyle(row).display === 'none';
   } catch (err) { out.err = String(err && err.stack || err); }
   var pre = document.createElement('pre'); pre.id = '__pc'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2500); });</script></body>`;
@@ -97,9 +113,9 @@ function page(w, h, query) {
 
     group('THE GUNSLINGER\'S SIX (their names, themes and kits approved: "Approve as drafted")');
     await check('six PLAYER cards for the Gunslinger, one per element, each PROTOTYPE and Series 2\'s: INCENDIARY GUNNER, BLIGHT SHOOTER, ARC SLINGER, CRYO MARKSMAN, RIFT RUNNER, BREACH GUNNER', () => {
-        const r = J(`EQUIP_PLAYER_CARDS.map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); })`);
-        same(r.length, 6, 'the roles built'); SIX.forEach(([id, name, el], i) => same(r[i], [id, name, 'player', 'gunslinger', el, 'prototype', 'series2'].join(), name));
-        same(J(`Object.values(EQUIP_CARDS).filter(c => c.kind === 'player').length`), 6, 'Player cards in the game (the two test cards are behind ?cards)');
+        const r = J(`EQUIP_PLAYER_CARDS.filter(row => row[2] === 'gunslinger').map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); })`);
+        same(r.length, 6, 'the Gunslinger\'s roles'); SIX.forEach(([id, name, el], i) => same(r[i], [id, name, 'player', 'gunslinger', el, 'prototype', 'series2'].join(), name));
+        same(J(`Object.values(EQUIP_CARDS).filter(c => c.kind === 'player').length`), 12, 'Player cards in the game (the Gunslinger\'s six and the Technomancer\'s six; the two test cards are behind ?cards)');
     });
     await check('every number is one the game already has, or the approved new ones: the jump is the Technomancer arc\'s (2.6 tiles, 60%), the freeze the Frost Maw\'s stun (75 frames = 1.25 s), not again for 5 s (new), the guns 20% slower (new), the pull Pack 1\'s knockback (0.22) reversed; the statuses Pack 1\'s Precision cards\'', () => {
         const r = J(`({ jump: EQUIP_CARDS.arc_slinger.kit.jump, arc: [TECHNO.arc.chainRange, TECHNO.arc.chainPct], freeze: EQUIP_CARDS.cryo_marksman.kit.freeze, maw: MAW_STUN, slower: EQUIP_CARDS.cryo_marksman.kit.slower,
@@ -110,7 +126,7 @@ function page(w, h, query) {
         same([r.att.fire, r.att.toxic, r.att.ice, r.att.core].join(), 'cinderbrand,mireblight,rime_snare,repulsor_pulse', 'whose numbers');
     });
     await check('their words are made from their numbers; the kind line reads PLAYER · GUNSLINGER · FIRE (a test card still PLAYER); Pack 1\'s words are as they were', () => {
-        const r = J(`({ t: EQUIP_PLAYER_CARDS.map(r => EQUIP_CARDS[r[0]].text), k: EQUIP_PLAYER_CARDS.map(r => equipKindLabel(EQUIP_CARDS[r[0]])), test: equipKindLabel({ kind: 'player', match: null }),
+        const r = J(`({ t: EQUIP_PLAYER_CARDS.slice(0, 6).map(r => EQUIP_CARDS[r[0]].text), k: EQUIP_PLAYER_CARDS.slice(0, 6).map(r => equipKindLabel(EQUIP_CARDS[r[0]])), test: equipKindLabel({ kind: 'player', match: null }),
             p1: ['cinderbrand', 'mireblight', 'static_lock', 'rime_snare', 'siphon_field', 'repulsor_pulse'].map(id => EQUIP_CARDS[id].text) })`);
         same(r.t[0], 'YOUR ROUNDS ARE FIRE · EVERY HIT TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS', 'INCENDIARY GUNNER');
         same(r.t[1], 'YOUR ROUNDS ARE TOXIC · EVERY HIT TO POISON: IT HITS 40% WEAKER FOR 4 SECONDS', 'BLIGHT SHOOTER');
@@ -122,16 +138,16 @@ function page(w, h, query) {
         same(r.p1.join('|'), ['15% PER HIT TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS', '15% PER HIT TO POISON: IT HITS 40% WEAKER FOR 4 SECONDS', '10% PER HIT TO GLITCH: ITS WIND-UPS FAIL FOR 0.5 SECONDS', '20% PER HIT TO SLOW BY 25% FOR 2 SECONDS',
             '15% PER HIT TO HEAL 10% OF THE DAMAGE DEALT', '15% PER HIT TO KNOCK THE TARGET BACK'].join('|'), 'Pack 1\'s Precision words');
     });
-    await check('where they come from, for now: they are Series 2\'s, so found before they are kept (no outright ◆1,000 unlock); Series 2 does not deal them yet (its pool is still its 45; 2,000 seeded packs and 300 shelves never hold one); found, ◆1,000 keeps one for good; ?cards=all has all six to hand', () => {
+    await check('where they come from, for now: they are Series 2\'s, so found before they are kept (no outright ◆1,000 unlock); Series 2 does not deal them yet (its pool is still its 45; 2,000 seeded packs and 300 shelves never hold one); found, ◆1,000 keeps one for good; ?cards=all has every Player card to hand', () => {
         const r = J(`(function(){ __gs(); questDone = id => id === 'purify'; shardCount = 5000; const o = {};
             o.pool = equipPackPool(EQUIP_PACK2).length; o.poolPlayer = equipPackPool(EQUIP_PACK2).filter(c => c.kind === 'player').length; let dealt = 0, shelf = 0;
             for (let s = 1; s <= 2000; s++) for (const id of (equipPackRoll(s, EQUIP_PACK2) || [])) if (EQUIP_CARDS[id].kind === 'player') dealt++;
             for (let s = 1; s <= 300; s++) for (const id of equipShelfDeal(s)) if (EQUIP_CARDS[id].kind === 'player') shelf++;
             o.dealt = dealt; o.shelf = shelf; o.why = equipUnlockWhyNot('incendiary_gunner'); equipFound.push('incendiary_gunner'); o.whyFound = equipUnlockWhyNot('incendiary_gunner'); o.unlock = equipUnlock('incendiary_gunner'); o.owned = equipOwns('incendiary_gunner'); o.shards = shardCount;
-            equipDevSet('all'); o.all = EQUIP_PLAYER_CARDS.filter(r => equipInHand(r[0])).length; equipDevSet(''); return o; })()`);
+            equipDevSet('all'); o.all = EQUIP_PLAYER_CARDS.filter(r => equipInHand(r[0])).length + '/' + EQUIP_PLAYER_CARDS.length; equipDevSet(''); return o; })()`);
         same(r.pool, 45, 'Series 2\'s pool'); same(r.poolPlayer, 0, 'Player cards in its pool'); same(r.dealt, 0, 'Player cards dealt'); same(r.shelf, 0, 'Player cards on the shelf');
         same(r.why, 'FIND IT IN A PACK FIRST', 'an outright unlock'); same(r.whyFound, null, 'the unlock once found'); same(r.unlock, true, 'kept for good'); same(r.owned, true, 'owned'); same(r.shards, 4000, 'the shards after');
-        same(r.all, 6, 'the six in the hand with ?cards=all');
+        same(r.all, '12/12', 'every Player card in the hand with ?cards=all');
     });
 
     group('THE RULES: it needs its class; one role of a class at a time; it sleeps after a switch of class');
@@ -252,9 +268,83 @@ function page(w, h, query) {
         same(r.join('|'), 'true|true|0', 'a killing round');
     });
 
+    group('THE TECHNOMANCER\'S SIX (Part 1b, build 2026-11-02i)');
+    const TECH = [['forgemaster', 'FORGEMASTER', 'fire'], ['smog_engineer', 'SMOG ENGINEER', 'toxic'], ['arc_warden', 'ARC WARDEN', 'electric'], ['cryo_tech', 'CRYO TECH', 'ice'], ['gravity_engineer', 'GRAVITY ENGINEER', 'flux'], ['bulwark_engineer', 'BULWARK ENGINEER', 'core']];
+    await check('six PLAYER cards for the Technomancer, one per element, PROTOTYPE and Series 2\'s; their numbers are the game\'s own (the relays\' area the sleeping potion\'s, the lamp\'s beat the grid\'s, the swap\'s wait and the shield the core technician\'s; repairs at half the time); their words made from them', () => {
+        const r = J(`({ rows: EQUIP_PLAYER_CARDS.slice(6).map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); }), texts: EQUIP_PLAYER_CARDS.slice(6).map(row => EQUIP_CARDS[row[0]].text),
+            nums: [EQUIP_CARDS.smog_engineer.kit.relays.radius, EQUIP_CARDS.cryo_tech.kit.relays.radius, POTION.radius, EQUIP_CARDS.arc_warden.kit.lamp.every, TECHNO.charge.gridEvery, EQUIP_CARDS.gravity_engineer.kit.swap.every, TECH_AB.shield.cooldown,
+                EQUIP_CARDS.bulwark_engineer.kit.shield.width, TECH_AB.shield.width, EQUIP_CARDS.bulwark_engineer.kit.shield.frames, TECH_AB.shield.life, EQUIP_CARDS.forgemaster.kit.repair], kinds: EQUIP_PLAYER_CARDS.slice(6).map(row => equipKindLabel(EQUIP_CARDS[row[0]])) })`);
+        same(r.rows.length, 6, 'the roles'); TECH.forEach(([id, name, el], i) => same(r.rows[i], [id, name, 'player', 'technomancer', el, 'prototype', 'series2'].join(), name));
+        const n = r.nums; same([n[0], n[1]].join(), [n[2], n[2]].join(), 'the relays\' area against the potion\'s'); same(n[3], n[4], 'the lamp\'s beat against the grid\'s'); same(n[5], n[6], 'the swap\'s wait against the technicians\''); same(n[7] + ',' + n[9], n[8] + ',' + n[10], 'the shield against the core technician\'s'); same(n[11], 0.5, 'the repairs');
+        same(r.texts[0], 'YOUR PUNCH AND ARC ARE FIRE · EVERY SENTRY HIT TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS · YOUR REPAIRS ARE TWICE AS FAST', 'FORGEMASTER');
+        same(r.texts[1], 'YOUR PUNCH AND ARC ARE TOXIC · ENEMIES WITHIN 3 TILES OF AN ONLINE RELAY, WHILE THEY STAY, TO POISON: IT HITS 40% WEAKER FOR 4 SECONDS', 'SMOG ENGINEER');
+        same(r.texts[2], 'YOUR PUNCH AND ARC ARE ELECTRIC · WHILE YOUR LAMP IS OVERCHARGED, EVERY 2 SECONDS: YOUR ARC\'S ZAP ON EVERY ENEMY IN ITS LIGHT, AND GLITCH: ITS WIND-UPS FAIL FOR 0.5 SECONDS', 'ARC WARDEN');
+        same(r.texts[3], 'YOUR PUNCH AND ARC ARE ICE · ENEMIES WITHIN 3 TILES OF AN ONLINE RELAY, WHILE THEY STAY, TO SLOW BY 25% FOR 2 SECONDS', 'CRYO TECH');
+        same(r.texts[4], 'YOUR PUNCH AND ARC ARE FLUX · SWAP: TRADE PLACES WITH A SQUAD MEMBER FROM ITS CARD, ONCE IN 60 SECONDS', 'GRAVITY ENGINEER');
+        same(r.texts[5], 'YOUR PUNCH AND ARC ARE CORE · A POWER CELL ALSO RAISES A PHOTONIC SHIELD IN FRONT OF YOU: 3 TILES WIDE, 20 SECONDS', 'BULWARK ENGINEER');
+        same(r.kinds[0], 'PLAYER · TECHNOMANCER · FIRE', 'a kind line');
+    });
+    await check('rule 2 for the Technomancer: with FORGEMASTER the punch and the arc are fire, for the triangle only: ×1.3 on a flux creature (fire beats flux; electric does nothing to flux), and on a creature with no element the same as without a role', () => {
+        const r = J(`(function(){ const o = {}; const arc = (role, flux) => { __tm(role); const e = __dummy(5, 0); if (flux) e.element = 'flux'; const h = e.health; technoArc(e); const d = h - e.health; e.dead = true; actors = actors.filter(x => x !== e); return d; };
+            const punch = (role, flux) => { __tm(role); const e = __dummy(1, 0); if (flux) e.element = 'flux'; const d = __punch(e); e.dead = true; actors = actors.filter(x => x !== e); return d; };
+            o.arc = [arc(null, true), arc('forgemaster', true), arc(null, false), arc('forgemaster', false)]; o.punch = [punch(null, true), punch('forgemaster', true), punch(null, false), punch('forgemaster', false)];
+            o.el = (__tm('forgemaster'), [playerHitElement('arc', 'electric'), playerHitElement('punch', 'electric'), playerHitElement('gun', 'ice')]); o.m = [getElementMultiplier('fire', 'flux'), getElementMultiplier('electric', 'flux')]; return o; })()`);
+        same(r.el.join(), 'fire,fire,ice', 'the elements'); same(r.m.join(), '1.3,1', 'the triangle');
+        ok(r.arc[0] > 0 && r.punch[0] > 0, 'a hit took nothing: ' + JSON.stringify(r)); near(r.arc[1] / r.arc[0], 1.3, 1e-6, 'the arc on a flux creature'); near(r.punch[1] / r.punch[0], 1.3, 1e-6, 'the punch on a flux creature');
+        near(r.arc[3], r.arc[2], 1e-6, 'the arc on a creature with no element'); near(r.punch[3], r.punch[2], 1e-6, 'the punch on a creature with no element');
+    });
+    await check('FORGEMASTER: the sentries\' rounds BURN (a sentry fires, its round lands: 3 a second for 3 s); your repairs take half the time (a sentry 600 → 300 frames, a relay 100 → 50); with no role, as before', () => {
+        const r = J(`(function(){ const o = {}; const shoot = role => { __tm(role); const it = __sentries[0]; _fp.items.push(it); it.cd = 0; it.broken = false; it.hp = it.maxHp || 500; const e = __creature('ant', 'scout', 0, 0); e.x = it.x + 3; e.y = it.y; e.team = 'red';
+                const n0 = followerProjectiles.length; facilitySentryTick(); const p = followerProjectiles[n0] || null; let k = 0; while (p && followerProjectiles.indexOf(p) >= 0 && k < 90) { render(); k++; }
+                const res = [!!p, !!(p && p.onHit), e.burning || 0]; _fp.items = _fp.items.filter(x => x !== it); e.dead = true; actors = actors.filter(x => x !== e); return res; };
+            o.with = shoot('forgemaster'); o.without = shoot(null);
+            __tm('forgemaster'); o.times = [STATION_KINDS.sentry_repair.build, relayPlan().frames, playerRepairShare()]; __tm(null); o.before = [STATION_KINDS.sentry_repair.build, relayPlan().frames, playerRepairShare()]; return o; })()`);
+        same(r.with.join(), 'true,true,180', 'a sentry\'s round with FORGEMASTER (fired, carries the burn, the creature burns)'); same(r.without.join(), 'true,false,0', 'with no role');
+        same(r.times.join(), '300,50,0.5', 'the repairs with FORGEMASTER'); same(r.before.join(), '600,100,1', 'the repairs with no role');
+    });
+    await check('SMOG ENGINEER and CRYO TECH: an online relay WEAKENS / SLOWS every creature within 3 tiles of it on the card tick (40% for 4 s; 25% for 2 s), not one 3.5 tiles off, and nothing while the relay is down', () => {
+        const r = J(`(function(){ const o = {}; const s = __relay(); const at = (dx) => { const e = __dummy(0, 0); e.x = s.x + dx; e.y = s.y; return e; };
+            for (const [role, key] of [['smog_engineer', 'smog'], ['cryo_tech', 'cryo']]) {
+                __tm(role); _fp.relays[s.relay].online = true; const a = at(2.5), b = at(3.5); equipTick(true); o[key] = [a.toxicWeakened || 0, a.toxicWeakenFactor || 0, a.slowed || 0, a.slowFactor || 0, b.toxicWeakened || 0, b.slowed || 0];
+                _fp.relays[s.relay].online = false; const c = at(1); equipTick(true); o[key + 'Down'] = [c.toxicWeakened || 0, c.slowed || 0]; for (const e of [a, b, c]) { e.dead = true; } actors = actors.filter(x => !x.dead); }
+            return o; })()`);
+        same(r.smog.join(), '240,0.6,0,0,0,0', 'SMOG ENGINEER: near, and 3.5 tiles off'); same(r.cryo.join(), '0,0,120,0.75,0,0', 'CRYO TECH: near, and 3.5 tiles off');
+        same(r.smogDown.join() + '|' + r.cryoDown.join(), '0,0|0,0', 'with the relay down');
+    });
+    await check('ARC WARDEN: while the lamp is overcharged, on the card tick every creature in its light (within 6.96 tiles: 4.8 × 1.45) and in sight takes the arc\'s zap and GLITCHES, one 8 tiles off nothing; again only after 120 frames; nothing once the overcharge is over; drawn as the arc\'s bolt from your hand', () => {
+        const r = J(`(function(){ __tm('arc_warden'); const o = {}; const a = __dummy(3, 0), b = __dummy(8, 0), H = () => [a.health, b.health]; facilityLampBoost(3600); o.reach = Math.round(facilityLampReach() * 100) / 100;
+            let h = H(); equipTick(true); o.first = [h[0] - a.health, h[1] - b.health, a.glitched || 0, b.glitched || 0, _tc.fx.filter(z => !z.low).length]; o.dmg = technoArcDamage();
+            h = H(); equipTick(true); o.again = h[0] - a.health; frame += 120; h = H(); equipTick(true); o.later = h[0] - a.health;
+            _fp.tut.boostUntil = 0; frame += 120; h = H(); equipTick(true); o.off = h[0] - a.health; return o; })()`);
+        same(r.reach, 6.96, 'the overcharged lamp\'s reach'); ok(r.first[0] > 0, 'the creature in the light took nothing'); same(r.first[1], 0, 'the creature out of the light'); same(r.first[2] + ',' + r.first[3], '30,0', 'the glitch (0.5 s), on the near one only');
+        ok(r.first[4] >= 1, 'no bolt drawn from your hand'); same(r.again, 0, 'a second zap within 120 frames'); ok(r.later > 0, 'no zap 120 frames later'); same(r.off, 0, 'a zap with the overcharge over');
+    });
+    await check('GRAVITY ENGINEER: SWAP trades places with a squad member on your stretch of floor; then not again for 60 s (it says when); never with one not in the squad, nor across a doorway into another part of the map; nothing without the role', () => {
+        const r = J(`(function(){ const o = {}; __tm('gravity_engineer'); spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.post = null; f.stance = 'follow'; f.x = player.x + 2; f.y = player.y; f.health = f.maxHealth;
+            const p0 = [player.x, player.y], f0 = [f.x, f.y]; o.state = playerSwapState(); o.why0 = playerSwapWhyNot(f); o.swap = playerSwap(f); o.after = [player.x === f0[0] && player.y === f0[1], f.x === p0[0] && f.y === p0[1]]; o.again = playerSwapWhyNot(f);
+            const g = { x: player.x + 1, y: player.y, team: 'green', isFollower: true, post: 'arena', dead: false }; o.notSquad = (_pc.swapAt = 0, playerSwapWhyNot(g));
+            const pc = _pcComp(player.x, player.y); let far = null; for (const key of Array.from(_fp.cellsP.keys())) { const [x, y] = String(key).split(',').map(Number); if (_pcComp(x, y) !== pc) { far = [x, y]; break; } }
+            const fx = [f.x, f.y]; if (far) { f.x = far[0]; f.y = far[1]; } o.far = far ? playerSwapWhyNot(f) : 'NO OTHER PART'; f.x = fx[0]; f.y = fx[1];
+            equipPlayerPut(0, null); o.none = [playerSwapState(), playerSwapWhyNot(f)]; return o; })()`);
+        same(JSON.stringify(r.state), JSON.stringify({ ready: true, left: 0 }), 'ready at first'); same(r.why0, null, 'why not'); same(r.swap.ok, true, 'the swap'); same(r.after.join(), 'true,true', 'places traded');
+        same(r.again, 'SWAP READY IN 60 S', 'again at once'); same(r.notSquad, 'SQUAD MEMBERS ONLY', 'one holding a room'); same(r.far, 'NOT ON YOUR STRETCH OF FLOOR', 'across a doorway'); same(r.none[0], null, 'its state with no role'); same(r.none[1], 'NO GRAVITY ENGINEER WORN', 'why not with no role');
+    });
+    await check('BULWARK ENGINEER: a POWER CELL also raises a Photonic Shield for 20 s, between you and the creature you have locked (or, with none, the way you face), 3 tiles out at most and no wider than 3; with no role the cell only overcharges the lamp', () => {
+        const r = J(`(function(){ const o = {}; const cell = () => { invAdd('power_cell', 1); return itemDef('power_cell').use(); };
+            __tm('bulwark_engineer'); techShields.length = 0; const e = __dummy(5, 0); playerLockTarget = e; const u = cell(); const W = techShields[0];
+            o.locked = [u.msg, techShields.length, W ? W.until - W.t0 : 0, W ? Math.round(((W.x - player.x) * (e.x - player.x) + (W.y - player.y) * (e.y - player.y)) / Math.hypot(e.x - player.x, e.y - player.y) * 100) / 100 : -1, W ? Math.round((W.u1 - W.u0) * 100) / 100 : -1, W ? W.by : 'none'];
+            playerLockTarget = null; e.dead = true; actors = actors.filter(x => x !== e); techShields.length = 0; player._hdRow = 0; const u2 = cell(); const W2 = techShields[0]; o.ahead = [techShields.length, W2 ? Math.round(Math.hypot(W2.x - player.x, W2.y - player.y) * 100) / 100 : -1, W2 ? Math.sign(W2.x - player.x) : 0];
+            __tm(null); techShields.length = 0; const u3 = cell(); o.none = [u3.msg, techShields.length]; return o; })()`);
+        same(r.locked[0], 'LAMP OVERCHARGED · PHOTONIC SHIELD UP', 'the cell\'s words'); same(r.locked[1], 1, 'shields up'); same(r.locked[2], 1200, 'its life'); ok(r.locked[3] > 0.5 && r.locked[3] <= 3.01, 'not between you and the creature, 3 tiles out at most: ' + r.locked[3]);
+        ok(r.locked[4] > 0 && r.locked[4] <= 3.01, 'its width: ' + r.locked[4]); same(r.locked[5], null, 'it is nobody\'s to hold');
+        ok(r.ahead[0] === 1 || r.ahead[0] === 0, 'shields with no lock: ' + r.ahead[0]); if (r.ahead[0] === 1) ok(r.ahead[1] >= 0.99 && r.ahead[1] <= 3.01 && r.ahead[2] === 1, 'not ahead (facing east): ' + JSON.stringify(r.ahead));
+        same(r.none.join(), 'LAMP OVERCHARGED,0', 'with no role');
+    });
+
     group('THE ROSTER, IN THE REAL PAGE: a role asleep is greyed, marked ASLEEP, and says when it wakes');
+    const PAGE = page(1180, 820, '?cards=all');
     await check('as a Gunslinger INCENDIARY GUNNER is lit on YOUR SLOT 1; as a Technomancer it is greyed (grayscale), ASLEEP on the card and in the slot, the note says it wakes when you are a Gunslinger, and the other slot\'s list refuses every Gunslinger role (FOR THE GUNSLINGER); back as a Gunslinger it is lit', () => {
-        const P = page(1180, 820, '?cards=all');
+        const P = PAGE;
         if (P === null) { console.log('       (no Chromium here: skipped)'); return; }
         ok(P, 'the page did not report'); ok(!P.err, P.err); same(P.put, true, 'put in');
         same([P.awake.asleep, P.awake.zz, P.awake.k, P.awake.v].join('|'), 'false||YOUR SLOT 1|INCENDIARY GUNNER', 'awake');
@@ -264,6 +354,12 @@ function page(w, h, query) {
         same(P.list2.length, 6, 'the roles listed for the other slot'); ok(P.list2.every(x => x[1] === true), 'a role could be picked: ' + JSON.stringify(P.list2));
         same(P.list2.map(x => x[0] + ':' + x[2]).join('|'), ['INCENDIARY GUNNER:ALREADY IN THE OTHER SLOT', 'BLIGHT SHOOTER:FOR THE GUNSLINGER', 'ARC SLINGER:FOR THE GUNSLINGER', 'CRYO MARKSMAN:FOR THE GUNSLINGER', 'RIFT RUNNER:FOR THE GUNSLINGER', 'BREACH GUNNER:FOR THE GUNSLINGER'].join('|'), 'the other slot\'s list, as a Technomancer');
         same([P.back.asleep, P.back.zz, P.back.k, P.back.v].join('|'), 'false||YOUR SLOT 1|INCENDIARY GUNNER', 'awake again');
+    });
+    await check('GRAVITY ENGINEER\'s SWAP, in the real page: a row on the squad member\'s card while the role is awake, saying what it does; a tap trades places with the member; then it is off and says when it is ready; without the role the row is gone', () => {
+        const P = PAGE; if (P === null) { console.log('       (no Chromium here: skipped)'); return; }
+        ok(P && !P.err, 'the page: ' + (P && P.err)); same(P.gput, true, 'put in'); ok(P.swap, 'no swap probe'); same(P.swap.member, true, 'a squad member to tap');
+        same([P.swap.shown, P.swap.text, P.swap.disabled].join('|'), 'true|YOU TAKE ITS PLACE, IT TAKES YOURS|false', 'the row before'); same(P.swap.moved, true, 'places traded');
+        same([P.swap.after, P.swap.offAfter].join('|'), 'SWAP READY IN 60 S|true', 'the row after'); same(P.swap.hidden, true, 'the row without the role');
     });
 
     console.log(failures ? `\n${failures} failure(s)` : '\nall passed');

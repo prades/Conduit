@@ -272,6 +272,27 @@ function techShieldAt(tech, foe) {
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: W.x, y: W.y, radius: 1.2, color: "#5ff7e0", life: 26 });
     return { ok: true, shield: W };
 }
+// A PHOTONIC SHIELD RAISED FOR THE PLAYER (BULWARK ENGINEER, a Player card: js/playercards.js playerCellShield): the core technician's wall, placed as the technician places its own, between `from` (the player)
+// and the point (tx, ty) (a creature locked, or a point straight ahead), for `life` frames. Nobody holds behind it, and it costs no technician its wait. Straight ahead, it goes up as far out as the floor in sight
+// allows (TECH_AB.shield.back at most); with less than a tile of floor in front, none goes up. Returns { ok, shield } or { ok: false, why }.
+function techShieldRaise(from, tx, ty, life, foe) {
+    if (!from) return { ok: false, why: "NOBODY TO RAISE IT" };
+    const S = TECH_AB.shield, f0 = _techFrame(), los = (x0, y0, x1, y1) => typeof facilityLosFrom !== "function" || facilityLosFrom(x0, y0, x1, y1), stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
+    let aim = foe && _techFoeOk(foe) && los(from.x, from.y, foe.x, foe.y) ? foe : null;
+    if (!aim) {
+        const dx = tx - from.x, dy = ty - from.y, D = Math.hypot(dx, dy) || 1, nx = dx / D, ny = dy / D; let k = 0;
+        for (let s = 0.5; s <= S.back + 1e-6; s += 0.25) { const x = from.x + nx * s, y = from.y + ny * s; if (!los(from.x, from.y, x, y) || !stand(x, y)) break; k = s; }
+        if (k < 1) return { ok: false, why: "NO ROOM FOR A SHIELD" };
+        aim = { x: from.x + nx * (k + S.gap), y: from.y + ny * (k + S.gap) };   // (the technician's rule then puts it k tiles out: at its full reach, or just short of what is in the way)
+    }
+    const P = _techShieldPlace(from, aim);
+    const W = { id: ++_techShieldN, by: null, x: P.cx, y: P.cy, nx: P.nx, ny: P.ny, u0: P.u0, u1: P.u1, t0: f0, until: f0 + (life > 0 ? life : S.life), hits: [] };
+    techShields.push(W);
+    if (typeof actors !== "undefined") for (const a of actors) if (_techStops(a)) _techShieldOut(W, a);   // (one caught on its line is put out on its own side)
+    _techSay("◈ PHOTONIC SHIELD · " + Math.round((W.until - f0) / 60) + " S", "#5ff7e0");
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: W.x, y: W.y, radius: 1.2, color: "#5ff7e0", life: 26 });
+    return { ok: true, shield: W };
+}
 function _techShieldOn(W) { return _techFrame() < W.until; }
 function _techShieldS(W, x, y) { return (x - W.x) * W.nx + (y - W.y) * W.ny; }   // which side of it, and how far (+: the side the technician faced)
 function _techShieldU(W, x, y) { return -(x - W.x) * W.ny + (y - W.y) * W.nx; }   // where along it

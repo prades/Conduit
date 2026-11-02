@@ -90,6 +90,8 @@ ASKED: "The Core Technician deploys a photonic shield between itself and the pla
 | A creature's body against it (and past its ends) | 0.4 tiles | how it feels |
 | The technician stops holding when you are | 10 tiles away | how it feels |
 
+**For the player too** (since build `2026-11-02i`): with BULWARK ENGINEER worn (a Technomancer's Player card, `UNIVERSAL-AND-PLAYER-CARDS.md`), a POWER CELL also raises this wall (js/techabilities.js `techShieldRaise`). It goes toward the creature you have locked, or the way you face, placed by the same rule. It lasts 20 s, nobody holds behind it, and no technician's cooldown is spent.
+
 ## The Thermite Drill (fire)
 
 ASKED: "Place a distinctive rubble patch at the midpoint of the southern wall. Keep it visually distinguishable from ordinary indestructible walls [...] Allow the player to long-press the rubble and select Thermite Drill. Have the Fire Technician travel to the target and drill it. Destroy the rubble after six successful drill hits. Spawn collectible rocks exactly once upon destruction. Preserve the resulting opening [...] Allow the ability to target enemies through the Technician HUD. Reuse the same ability framework and cooldown handling for environmental and enemy targets [...] Treat the opening as a future insect-burrow entrance; do not implement an unrequested dungeon system"; then the arena's south rock, its nearest straight stretch, the map not changed; one hit a second; a sealed dark hole, kept; 3 rocks once, a pack item with no use yet; against an enemy 3 hits a second apart, each twice its normal hit.

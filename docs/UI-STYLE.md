@@ -104,6 +104,10 @@ The owner: "make it to where the items in the shop are in a new menu on the card
   - The line under the slots says when it wakes: "INCENDIARY GUNNER IS ASLEEP: IT WAKES WHEN YOU ARE A GUNSLINGER AGAIN".
   - In a slot's list, a role for another class is off and says FOR THE GUNSLINGER; a second role of one class says ONE GUNSLINGER ROLE AT A TIME.
   - (game.html `.cf-pslot .cd-mini.asleep`, `.cf-pzz`; js/cardsui.js `equipPlayerSlotsBox`, `equipPlayerRosterDraw`.) Its look is the agent's, for the owner to keep or change (`OPEN-QUESTIONS.md` §1p).
+- **SWAP on a squad member's card** (since build `2026-11-02i`; GRAVITY ENGINEER, a Player card: js/squadfly.js `_sfSwapDraw`): while that role is awake, the squad member's card has a row above INDEX and DISMISS FROM SQUAD.
+  - It is one purple button, SWAP PLACES ⇄, with a small line: YOU TAKE ITS PLACE, IT TAKES YOURS, or why not (SWAP READY IN 60 S, NOT ON YOUR STRETCH OF FLOOR).
+  - It is off while it cannot be used. Without the role the row is not shown.
+  - A tablet or a desktop only, as the card is. Its look is the agent's (`OPEN-QUESTIONS.md` §1q).
 - The bar at the foot says YOU LEAD THE SQUAD: ONLY FOLLOWERS JOIN IT. ◂ ▸ walk the creatures: from the player they go to the first or the last of the strip.
 
 **A pack opened** (`_cdRevealBox`): an overlay over the sheet, which shows through it, blurred.
