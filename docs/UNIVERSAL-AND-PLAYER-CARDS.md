@@ -11,7 +11,7 @@
     - The Universal kind retired.
     - The rings and glints. Their look waits for the owner's approval.
   - **Designed, not implemented:** the Player cards (their 18 roles, where they come from, Side Quest's sale, a switch of class).
-  - **Being drafted:** the Player cards' kits.
+  - **Drafted, for the owner's approval (Proposed):** the Player cards' kits (section 2, "Draft: the 18 kits", 2026-11-02).
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-02
@@ -109,7 +109,7 @@ The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). The agent drafte
   - **Series 2**, at **Prototype** rarity.
   - **Side Quest's shop**: after each quest, he sells the Player cards of that quest line's element, ◆1,000 each, kept for good. The Sewers' line is toxic, so BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR (`SEWER-QUEST.md`). Once the conversion apparatus is in, he sells BLOOM's three roles too (`CONVERSION.md`).
 - **Switching class** (2026-11-02): a Player card for the other class sleeps in its slot, greyed out and inactive, until the player switches back.
-- **The kits:** the owner asked for a draft of all 18 to review; it is being written.
+- **The kits:** the owner asked for a draft of all 18 to review. It is below ("Draft: the 18 kits"), Proposed, for approval.
 - **The 18 roles** (their names and themes are approved; their kits and numbers are still to design):
 
 | | Gunslinger | Technomancer | Mutator |
@@ -123,6 +123,78 @@ The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). The agent drafte
 | **Bloom** (designed 2026-11-02, `CONVERSION.md`) | to design | to design | to design |
 
 With BLOOM, the seventh element, there are 21 roles. BLOOM's three are named and designed later, for the owner's approval.
+
+### Draft: the 18 kits (Proposed 2026-11-02, for the owner's approval)
+
+- **Status:** Proposed. Nothing is built.
+- **Numbers:** every number below is one the game already has, unless it is marked **new**.
+- **Why it exists:** the owner asked for a draft of all 18 to review (`FOLLOWING-UPDATE.md`, gate 1).
+
+**What the code has today** (read 2026-11-02, build `2026-11-02g`):
+- No Player card does anything: nothing reads the player's slots.
+- The player's hits are physical: the gun is Projectile, the lash Slashing, the punch Crushing. The one exception is the Technomancer's arc, which is Elemental (electric).
+- The gun's rounds take the element of the squad's element selector.
+- The player has no SP.ATK and no health points (3 hits).
+
+**Rules for all 18 (proposed):**
+1. **A role works on its class's own attacks:**
+   - the Gunslinger's rounds, from any gun (service, machine gun, laser);
+   - the Technomancer's punch and arc;
+   - the Mutator's lash, clone and serum.
+2. **The hit's element** (`COMBAT.md` §7.9, open): the class's hits take the role's element, for the triangle only.
+   - That is the Gunslinger's rounds (today the selector's element), the Mutator's lash and clone bites (today none), and the Technomancer's punch and arc (today electric).
+   - No SP.ATK and no elemental share are added: the hits stay physical, as today.
+   - The other ways: no change to the hit's element; or a half-elemental split like a follower's, which would need a SP.ATK the player does not have.
+3. **The status:**
+   - Where a kit sets its element's status, it uses Pack 1's Precision numbers, as the Prototype CROWN auras do.
+   - It lands on **every** hit, not on a chance: a status refreshes and never stacks, so every hit keeps it up without adding more.
+   - The numbers:
+
+     | Status | Numbers |
+     |---|---|
+     | Burn | 3 a second for 3 s (9 in all) |
+     | Weakness | 40% for 4 s |
+     | Glitch | 0.5 s |
+     | Slow | 25% for 2 s |
+     | Knockback | 0.22, about 0.8 tiles |
+4. **Approved already:** one worn at a time; it needs its class; it sleeps after a switch of class.
+
+**The Gunslinger** (on every round that hits):
+
+| Role | Theme (approved) | Kit (proposed) |
+|---|---|---|
+| INCENDIARY GUNNER (fire) | rounds ignite | Rounds are fire and set BURN. |
+| BLIGHT SHOOTER (toxic) | rounds weaken | Rounds are toxic and set WEAKNESS. |
+| ARC SLINGER (electric) | rounds chain to a second target | Rounds are electric. Each one jumps to one more creature within 2.6 tiles, for 60% of its damage (the Technomancer arc's jump). |
+| CRYO MARKSMAN (ice) | slower shots that slow; a charged shot freezes | Rounds are ice and SLOW. **There is no charged shot**, and the code's "freeze" makes a creature take no damage at all. So: a round that hits a creature already slowed FREEZES it as the Frost Maw's bite does (a stun of 1.25 s), and that creature is not frozen again for 5 s (**new**). "Slower shots": the gun fires 20% slower (**new**; optional). |
+| RIFT RUNNER (flux) | shots pull enemies toward you | Rounds are flux and pull the creature hit toward you: the knockback reversed (0.22). Beetles and bosses are immune, as they are to every pull. (Nothing pulls toward the player today.) |
+| BREACH GUNNER (core) | knockback rounds | Rounds are core and KNOCK BACK. |
+
+**The Technomancer:**
+
+| Role | Theme (approved) | Kit (proposed) |
+|---|---|---|
+| FORGEMASTER (fire) | sentries fire burning rounds; repairs twice as fast | **The Technomancer places no sentries**, so this reads them as the facility's three. While worn, their rounds set BURN, and your repairs take half the time: a sentry 5 s, not 10; a relay 50 frames, not 100. |
+| SMOG ENGINEER (toxic) | relays vent weakening clouds | While worn, every online relay WEAKENS creatures within 3 tiles of it (the sleeping potion's area), for as long as they stay. |
+| *new name, to choose* (electric) | the lamp's overcharge zaps everything in its beam | **The lamp has no beam.** It is a light around you, and its overcharge (a POWER CELL) only makes it brighter and wider, in a blackout. So: while overcharged, every 2 s (the grid's charge beat), every creature in the lamp's light (7 tiles overcharged) takes the arc's zap (18, more with relays online) and GLITCHES. It works in light or dark. |
+| CRYO TECH (ice) | enemies near powered relays are slowed | While worn, every online relay SLOWS creatures within 3 tiles of it. |
+| GRAVITY ENGINEER (flux) | swap places with a squad member | A **new** action: SWAP on a squad member's card trades places with it, once a minute (the technicians' ability wait). |
+| BULWARK ENGINEER (core) | the overcharge shields the squad | The followers' bubble shield was removed on 2026-11-01. So: a POWER CELL also raises a PHOTONIC SHIELD in front of you (the core technician's wall: 3 tiles wide, 20 s). |
+
+**The Mutator:**
+
+| Role | Theme (approved) | Kit (proposed) |
+|---|---|---|
+| ASH SURGEON (fire) | the serum heals the squad and burns enemies in the splash | The serum's pool already heals your followers and clone. While worn, creatures in it BURN, renewed on each heal beat (half a second). |
+| PLAGUE DOCTOR (toxic) | the clone's bite weakens; the serum poisons enemies | The clone's bites set WEAKNESS, and creatures in the serum's pool are WEAKENED. ("Poison" has been the weakness since round 2.) |
+| SPARK GENETICIST (electric) | the clone glitches what it hits | The clone's bites set GLITCH. |
+| CRYO GENETICIST (ice) | fallen followers are preserved for free | **Followers no longer fall for good:** since 2026-11-01 they come back whole at the Crystal for 3% of its power, and only the clone leaves a body. Two readings: (a) a fallen follower comes back at no cost to the Crystal; (b) the fallen clone is preserved at once, without an Ice Mage, its upgrades kept. Proposed: both. |
+| SPLICER (flux) | the clone takes a trait from the last creature it killed | The trait is read as the creature's element. The clone's bites take the element of the last creature it killed, with that element's status (weakness after a toxic ant), until its next kill. A creature with no element leaves it as it was. This replaces rule 2 for the clone. |
+| CORE SHAPER (core) | the clone becomes a heavy tank | The clone gets +50% health (two ranks of ARMOR) and its bites KNOCK BACK. It moves 20% slower (**new**). |
+
+**BLOOM's three roles** come later, with BLOOM (`CONVERSION.md`).
+
+**The electric Technomancer's new name** (the planned class keeps STORMCALLER). Proposed: SURGE ENGINEER, LAMPLIGHTER or ARC WARDEN.
 
 ### Names kept apart
 
@@ -275,7 +347,7 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 5. **Tiers: answered 2026-11-02.** Refined, Precision, Prototype (auras +5%, +7.5%, +10%; opportunity +20%, +30%, +40%).
 6. **The aura's reach: answered 2026-11-02.** 4 tiles.
 7. **Sources: answered 2026-11-02.** Series 2, reshaped. Player cards: Series 2 at Prototype, and Side Quest's shop after each quest.
-8. **Player cards:** switching class answered 2026-11-02 (the card sleeps). **Still open: each role's kit and numbers** (being drafted for the owner's review).
+8. **Player cards:** switching class answered 2026-11-02 (the card sleeps). **Still open: each role's kit and numbers.** Drafted 2026-11-02 for the owner's review (section 2, "Draft: the 18 kits"), with the hit's element (`COMBAT.md` §7.9) and the electric Technomancer role's new name.
 9. **The Universal kind: answered 2026-11-02.** Retired.
 10. **The clone: answered 2026-11-02.** It gets auras.
 11. **The cards' look** for each family and the Player cards: open. The species (subclass) textures and icons are designed in `UI-STYLE.md`.

@@ -349,7 +349,7 @@ PETAL BLAZE, the one move of their own, is Elemental.
 ### 7.9 Not covered yet (open)
 
 - Which element each future quest line has (Side Quest's stock follows it, `SEWER-QUEST.md`).
-- Whether a Player card gives the player's attacks an elemental part (the Player cards' kits, `UNIVERSAL-AND-PLAYER-CARDS.md`).
+- Whether a Player card gives the player's attacks an elemental part (the Player cards' kits, `UNIVERSAL-AND-PLAYER-CARDS.md`). **Proposed 2026-11-02** (that document's "Draft: the 18 kits", rule 2): no elemental part; the class's hits take the role's element for the triangle only. Waiting on the owner.
 - The icons beside the words (the subclass, element and race icons, `UI-STYLE.md`).
 
 ### 7.10 As built (build `2026-11-02a`)

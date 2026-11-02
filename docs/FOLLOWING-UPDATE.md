@@ -40,8 +40,13 @@ Each part is its own commit, with its own tests and a full green run before the 
   - each role's name and theme (the table in `UNIVERSAL-AND-PLAYER-CARDS.md` section 2; for example INCENDIARY GUNNER, "rounds ignite");
   - "Each role reuses its element's existing status".
 - **What is missing:** each role's kit and numbers.
-  - The owner asked for a draft of all 18 to review. None exists yet (an earlier attempt wrote nothing).
-  - The agent drafts all 18, one page, each role's effect and numbers in the game's existing terms, for approval or changes.
+  - The owner asked for a draft of all 18 to review.
+  - **Drafted 2026-11-02:** `UNIVERSAL-AND-PLAYER-CARDS.md` section 2, "Draft: the 18 kits". It gives each role's effect and numbers in the game's existing terms, for approval or changes. It also marks where an approved theme needs something the game does not have:
+    - the Technomancer places no sentries of its own;
+    - the lamp has no beam;
+    - followers no longer fall for good;
+    - there is no charged shot;
+    - nothing pulls toward the player.
 - **Decided with the kits:**
   - whether a Player card gives the player's hits an elemental part (`COMBAT.md` §7.9: open; the player has no SP.ATK today);
   - **a name clash, answered 2026-11-02:** STORMCALLER was both the electric Technomancer's Player card role and one of the six player classes planned in `PLAYER-CLASSES.md` §2.2. The owner: "Rename the Player card". The class keeps STORMCALLER; the agent drafts a new name for the card's role with the kits, for approval.

@@ -209,7 +209,7 @@ Asked (the owner, 2026-11-02): "mages get aura cards, and the brawlers get oppor
 ## 1n. The following update approved; STORMCALLER (2026-11-02)
 
 - **The following update** (`FOLLOWING-UPDATE.md`): "Approve as drafted". Its gates are still open: the 18 Player card kits, the looks' mockups, each card item.
-- **STORMCALLER** was both the electric Technomancer's Player card role and a planned player class. The owner: "Rename the Player card". **Open:** the role's new name, drafted with the kits.
+- **STORMCALLER** was both the electric Technomancer's Player card role and a planned player class. The owner: "Rename the Player card". **Open:** the role's new name, drafted with the kits. Proposed: SURGE ENGINEER, LAMPLIGHTER, ARC WARDEN (`UNIVERSAL-AND-PLAYER-CARDS.md`, "Draft: the 18 kits").
 - **Build C's open point:** whether Side Quest's picture in the dialogue box changes with his sprite. **Read in Build C (`2026-11-02f`) as yes:** the box shows the void walker's sheet facing you, as part of "drawn as the void walker". **Answered:** "Keep as built" (2026-11-02).
 
 ## 1o. Build C's readings (build `2026-11-02f`)
