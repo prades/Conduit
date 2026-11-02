@@ -145,7 +145,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Player classes | `PLAYER-CLASSES.md` |
 | Technicians | `TECHNICIANS.md` |
 | Series 2 cards | `SERIES-2.md` |
-| Universal and Player cards | `UNIVERSAL-AND-PLAYER-CARDS.md` |
+| Class card families and Player cards | `UNIVERSAL-AND-PLAYER-CARDS.md` |
 | Specimens | `SPECIMENS.md` |
 | Startup/loading | `STARTUP.md` |
 | UI presentation | `UI-STYLE.md` |

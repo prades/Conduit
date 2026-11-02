@@ -178,7 +178,7 @@ Supersedes the 2026-10-30 rule that the player's two slots take Universal cards 
 ## DECISION: Universal cards as auras; the player wears Player cards only
 
 - **Date:** 2026-11-02
-- **Status:** Approved (design); not implemented
+- **Status:** Approved (design); not implemented. **Partly superseded** the same day: auras became the Mages' cards, the six element auras only (see "Card families by class" below); the player's Player cards stand.
 - **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
 - **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` (the specification, section 2), `OPEN-QUESTIONS.md` §1l and §3
 
@@ -211,4 +211,41 @@ When built: js/cards.js, js/levels.js, js/combat.js, js/helpers.js, the world's 
 The specification's open questions (section 11): the tiers and in-between values, the species auras' attack bonus, the reach, the extras' numbers, the sources and unlocking, the Player cards' kits, the clone, the cards' look.
 
 ### Supersedes / superseded by
-Supersedes, in part, "Universal and Player cards: the names and the slots" (2026-11-01): Universal cards no longer fit the player's slots.
+Supersedes, in part, "Universal and Player cards: the names and the slots" (2026-11-01): Universal cards no longer fit the player's slots. Partly superseded by "Card families by class: Mage auras, Brawler opportunity, Technician cooldowns" (2026-11-02).
+
+## DECISION: Card families by class: Mage auras, Brawler opportunity, Technician cooldowns
+
+- **Date:** 2026-11-02
+- **Status:** Approved (design); not implemented. The Brawler cards wait on a damage-type chart that is not in this repository.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-01n` (no code)
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` (the specification, section 2), `OPEN-QUESTIONS.md` §1l and §3
+
+### Context
+The owner: "How about mages get aura cards, and the brawlers get opportunity bonuses. Whenever they exploit a weakness, they get ... not double, but more power. And then technicians get cool down management."
+
+### Decision
+Each follower class has a card family of its own. Mages wear auras: the six element auras, each worn by a Mage of its element. Brawlers' opportunity cards add damage to a hit that exploits a weakness. Technicians' cards manage their ability's cooldown. The player keeps Player cards.
+
+### Exact rules
+In the specification's section 2. In short:
+- **Mage auras:** +5% to +10% attack damage to every follower near the Mage; the element's status at a small chance at the rarest tier; different auras stack; a subtle ring.
+- **Brawler opportunity:** +20% to +40% on a hit that exploits a weakness. That is an element match-up (on top of the existing ×1.3), a stunned target, or the damage-type chart's opportunity targets (piercing, slashing, elemental, crushing).
+- **Technician cooldowns:** shorter waits, and extra charges.
+
+### Alternatives considered
+- For auras: Mages wearing any element or species aura, or keeping the aura sets for every follower as well.
+- For a weakness: element match-ups only, or status openings only.
+- For the bonus: +30% to +60%, or +50% to +75%.
+- For Technicians: kills refunding part of the wait; one ability recharging the other technicians.
+
+### Rationale and trade-offs
+Each class's cards play to its role: the Mage supports from range, the Brawler punishes openings, the Technician uses its ability more.
+
+### Impact
+When built: js/cards.js, js/levels.js, js/helpers.js, js/elements.js, js/combat.js, js/techabilities.js, the world's drawing, js/cardsui.js, js/cardart.js, and the card tests.
+
+### Follow-up
+The specification's open questions (section 11), first of all the damage-type chart: which attacks are piercing, slashing, elemental and crushing, and each one's opportunity targets.
+
+### Supersedes / superseded by
+Supersedes, in part, "Universal cards as auras; the player wears Player cards only" (2026-11-02): auras are now the Mages' cards, the element auras only.
