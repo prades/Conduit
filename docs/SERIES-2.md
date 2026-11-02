@@ -168,8 +168,8 @@ Tests: tests/series2.js (the pack, its 45 cards, the price and odds, the lock, f
 
 ## What is left
 
-- **Lustrous (8 cards)**, each a new mechanic in the combat code:
-  - Some are medium: Bristling, Never resisted, Withdraw, Amplify, Pierce, Rally.
+- **Lustrous (6 drafts since build 2026-11-02c**: WAR BANNER and ASTRAL FOCUS went with the cut Brawler and Mage cards), each a new mechanic in the combat code:
+  - Some are medium: Bristling, Never resisted, Withdraw, Amplify (Pierce and Rally went with their cut cards).
   - Two are large because they add a unit: Wingman and Split.
   - Once they are in, the pack's `eligible` list takes Lustrous and its odds get a fifth weight.
 - **The 3D items** for the built cards (the 24 species and Technician cards, and the 21 new ones), after Pack 1's.
