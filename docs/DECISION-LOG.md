@@ -778,3 +778,6 @@ Build `d` on main once the owner says so; then Build C.
 
 ### Supersedes / superseded by
 Supersedes the 5% first guess and the reach without walls (Build B, `2026-11-02c`).
+
+### Addendum (2026-11-02, build `2026-11-02e`)
+On build d's screenshot the ring, clipped to its room, still crossed the room's front wall blocks. The owner: "It shouldn't show up on the walls either." The ring is now drawn on the floor of the Mage's room, tile by tile, so the walls and units in front cover it (`UI-STYLE.md`, "The Mage auras in the world").

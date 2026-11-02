@@ -1749,7 +1749,7 @@
 </table></div>
 <ul>
 <li><b>An aura</b> is worn by a Mage of its element. Every follower within <span class="n" data-k="EQUIP_AURA.reach">4</span> tiles of that Mage <b>and in its room</b> (a wall stops an aura: the owner, “It shouldn't be displayed or affected in other rooms”), of any element and class, the Mage itself and the Mutator's clone included, has that much more ATK, the stat behind the physical part of its hits (so an aura helps a Brawler most). The clone's hits grow by the same share, its damage being all from its power. Different auras add up; <b>the same aura counts once</b>, even from two Mages (two different cards of one element are two auras). A Prototype aura also gives each hit of the units in its reach a chance of its element's own status, the one Pack 1's Precision card of that element sets, with that card's numbers; the owner raised the first guess of 5% to 10%. Who stands in reach is worked out every <span class="n" data-k="EQUIP.every">30</span> frames, so walking out takes the bonus off within half a second. Enemies never get one, and the player cannot wear one.</li>
-<li><b>Its look:</b> a faint, thin dashed ring in the element's colour turns slowly round the Mage at its reach, cut to the Mage's room (it is not drawn over the next room or its walls), and a tiny glint of that colour shows beside each unit in it. Several auras, several colours.</li>
+<li><b>Its look:</b> a faint, thin dashed ring in the element's colour turns slowly round the Mage at its reach, drawn on the floor of the Mage's room only (the owner: not in other rooms, and “It shouldn't show up on the walls either”): walls and units in front of it cover it. A tiny glint of that colour shows beside each unit in it. Several auras, several colours.</li>
 </ul>
 <div class="tw"><table>
 <tr><th>Brawler opportunity card</th><th>Each opening a hit meets adds</th></tr>
@@ -3459,7 +3459,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-02d</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-02e</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3679,7 +3679,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-02d (2 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-02e (2 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

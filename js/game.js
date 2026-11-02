@@ -1004,6 +1004,7 @@ function render() {
             facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
             if (typeof drawSerumOnTile === "function") drawSerumOnTile(obj.x, obj.y, px, py);   // a healing serum's pool (js/serum.js)
             if (typeof techDrawOnTile === "function") techDrawOnTile(obj.x, obj.y, px, py);   // a Frost Patch's ice, a Blight Spider's pool (js/techabilities.js)
+            if (typeof equipAuraOnTile === "function") equipAuraOnTile(obj.x, obj.y, px, py);   // a Mage's aura ring, on the floor of its room (js/cards.js): the walls and units in front cover it
 
             // ── 3D SMOKE TILES — toxic ultimate: creeping raised slabs + single wisp ──
             for (const sE of smokeFx) {
@@ -1173,7 +1174,7 @@ function render() {
     ctx.restore();
 
     // ── OVERLAYS ──
-    if (typeof equipAuraDraw === "function") equipAuraDraw();   // the Mage auras: a faint ring round each Mage that gives one off, a glint on each unit in it, under the other overlays (js/cards.js)
+    if (typeof equipAuraDraw === "function") equipAuraDraw();   // the Mage auras' glints, beside each unit in one, under the other overlays (the rings are on the floor: equipAuraOnTile; js/cards.js)
     drawElementEffects();
     if (!gfxLow) drawSiphonWisps();
     if (typeof drawSelectedUnitRings === "function") drawSelectedUnitRings();   // the units picked in the Command Center

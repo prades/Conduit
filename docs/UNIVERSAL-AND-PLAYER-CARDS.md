@@ -41,7 +41,7 @@ Each follower class has a card family of its own; the player has Player cards.
 - **Reach** (2026-11-02): 4 tiles from the Mage, **in its own room** (the owner, 2026-11-02, of the first build: "It shouldn't be displayed or affected in other rooms"). A wall stops an aura. The Mutator's clone in reach gets the aura too.
 - **The rarest tier adds the element's extra:** each hit of a follower in reach has a small chance to apply the element's own status: fire burns, toxic weakens, electric glitches, ice slows, flux siphons, core knocks back. The chance is **10%** (the owner raised the first guess of 5%, 2026-11-02: "Raise to 10%").
 - **Stacking:** different auras stack. A second copy of the same aura adds nothing, even worn by another Mage. Two different cards of one element on one Mage (KINDLING BAND and HEARTH SIGIL) both count (the owner, 2026-11-02: "Both count").
-- **The look, in the world:** subtle. A faint, thin ring on the ground around the Mage in the element's colour, slowly turning, marks the reach, cut to the Mage's room (it is not shown in other rooms: the owner, 2026-11-02). A follower inside shows a tiny glint of the same colour. Several auras show as thin rings, one per colour.
+- **The look, in the world:** subtle. A faint, thin ring on the ground around the Mage in the element's colour, slowly turning, marks the reach, on the floor of the Mage's room only (the owner, 2026-11-02: not in other rooms, and not on the walls). A follower inside shows a tiny glint of the same colour. Several auras show as thin rings, one per colour.
 - **The player cannot wear auras.**
 
 ### Brawler cards: opportunity
@@ -226,7 +226,7 @@ Build `2026-11-02c` (Build B), on `claude/start-game-project-HSh7Z`. The 21 card
   - the target is stunned or asleep.
 
   The whole hit is multiplied by 1 + share × openings. A hit with no type (a burn's tick, an echo, a set amount) never comes there.
-- **The look.** `equipAuraDraw`, with the world's overlays (js/game.js). Its numbers are in `EQUIP_AURA_LOOK`; `UI-STYLE.md` describes it. Since build `2026-11-02d` the ring is clipped to the Mage's room: its floor's outline, at the Mage's height.
+- **The look.** Its numbers are in `EQUIP_AURA_LOOK`; `UI-STYLE.md` describes it. The ring is drawn on the floor (`equipAuraOnTile`, in the floor's pass in js/game.js, since build `2026-11-02e`): each floor tile of the Mage's room that it crosses draws its piece, so walls and units in front cover it. The glints are drawn with the world's overlays (`equipAuraDraw`). (Build `d` clipped an overlay ring to the room's outline.)
 - **The cut cards and the refund.**
   - `EQUIP_CUT` names the eight.
   - **The collection:** `equipOwnedSet` drops them from the collection's record. It adds ◆1,000 each to `refund` in that record, in the same write (no more than ◆8,000 is believed).
@@ -243,7 +243,7 @@ Build `2026-11-02c` (Build B), on `claude/start-game-project-HSh7Z`. The 21 card
 2. **Two opportunity cards on one Brawler add their shares** (PRESSURE SPUR and RUPTURE FANG: +60% an opening), as all cards add.
 3. **The Prototype's status uses Pack 1's Precision numbers** for its element (a 3-second burn of 3 a second, and so on).
 4. **The clone's whole hit grows by the aura's share**, its damage being all from its one attack stat.
-5. **The ring is drawn over the floor and, faintly, over the units**, not under them: the floor is drawn tile by tile among the units. *(The owner, 2026-11-02: "It shouldn't be displayed or affected in other rooms". Since build `2026-11-02d` the ring is cut to the Mage's room and the aura reaches no other room; inside its room it still draws over the room's front wall blocks.)*
+5. **Where the ring is drawn: answered by the owner, 2026-11-02:** "It shouldn't be displayed or affected in other rooms", then "It shouldn't show up on the walls either". Since build `2026-11-02e` it is drawn on the floor of the Mage's room, tile by tile, under the units and the walls in front.
 6. **The refund comes with a line on the screen**, so the shards are not a mystery.
 
 ## 9a. Frame cost
@@ -284,7 +284,7 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 14. **The refunds' timing: answered 2026-11-02.** The shards wait in the collection and are added when the next run starts, at once if a run is in progress. (The alternative was a free unlock for each refund.)
 15. **Side Quest's stock beyond the Sewers:** which element each later quest line has.
 16. **The Prototype aura's status chance: answered 2026-11-02.** 10% ("Raise to 10%"; it was built at the first guess of 5%).
-17. **The rings and glints: answered 2026-11-02.** "It shouldn't be displayed or affected in other rooms": the ring is cut to the Mage's room and the aura stays in it (build `2026-11-02d`). The strength was left as built.
+17. **The rings and glints: answered 2026-11-02.** "It shouldn't be displayed or affected in other rooms": the ring is cut to the Mage's room and the aura stays in it (build `2026-11-02d`). Then "It shouldn't show up on the walls either": the ring is drawn on the floor (build `2026-11-02e`). The strength was left as built.
 18. **Readings taken in Build B** (section 9): the same aura is the same card (**confirmed**: "Both count"); two opportunity cards add; the Prototype's status uses Pack 1's Precision numbers; the clone's whole hit grows; the ring is drawn over the floor and the units (now within its room); the refund shows a line. The open ones are the owner's to confirm or change.
 
 ## 12. History
@@ -295,6 +295,7 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 - 2026-11-02: **auras became the Mages' cards**, the six element auras only, each worn by a Mage of its element; the class and species auras were dropped. **Brawlers** got opportunity cards (+20% to +40% on a hit that exploits a weakness), **Technicians** cooldown cards (shorter waits, extra charges).
 - 2026-11-02, build `2026-11-02c` (Build B): **the three families built**, with Series 2 reshaped (45 cards; the eight Brawler and Mage cards cut and refunded) and the Universal kind retired. The Player cards are not built. On main (commit 2fc7518) at the owner's word.
 - 2026-11-02, build `2026-11-02d`: the owner's answers on Build B. The CROWN's status chance is **10%** (was 5%); **an aura stays in its Mage's room**, and its ring is not shown in other rooms; two different auras of one element both count (as built).
+- 2026-11-02, build `2026-11-02e`: "It shouldn't show up on the walls either": the ring is drawn on the floor of the Mage's room, under the walls and units in front.
 - 2026-11-02: **the damage-type chart** the Brawler cards needed was designed: six types and each race's weaknesses, with every hit part physical and part elemental (`COMBAT.md` §7).
 - 2026-11-02: under that split, **the auras stay on ATK** and **the opportunity card counts a weakness of either part** of a hit.
 - 2026-11-02: the owner's answers in prompts:

@@ -203,7 +203,7 @@ Asked (the owner, 2026-11-02): "mages get aura cards, and the brawlers get oppor
 - **Two opportunity cards on one Brawler add their shares** (PRESSURE SPUR and RUPTURE FANG: +60% an opening), as every card adds.
 - **A Prototype aura's status uses the numbers of Pack 1's Precision card of its element** (a 3-second burn of 3 a second, a 4-second weakness of 40%, and so on), as ATTUNED CORE does.
 - **The clone's whole hit grows by the aura's share:** its damage all comes from its power, its one attack stat. A follower's ATK is the physical part only.
-- **The ring is drawn over the floor and, faintly, over the units,** not under them. The floor is drawn tile by tile among the units, so a ring under them would need a new drawing pass. Since build `2026-11-02d` it is cut to the Mage's room (the owner's answer); inside the room it still draws over the room's front wall blocks.
+- **The ring is drawn over the floor and, faintly, over the units,** not under them. The floor is drawn tile by tile among the units, so a ring under them would need a new drawing pass. Since build `2026-11-02d` it is cut to the Mage's room (the owner's answer), and since build `2026-11-02e` it is drawn on the floor itself, so no wall shows it ("It shouldn't show up on the walls either").
 - **The refund shows a line when it is paid** ("◆3000 BACK · 3 SERIES 2 CARDS YOU OWNED WERE CUT"), and the run is saved at once.
 
 ## 2. Newly open

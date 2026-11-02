@@ -543,7 +543,8 @@ function equipAurasOf(f) {   // the aura cards a follower gives off: worn, fitti
 }
 function _equipAuraColour(el) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === el) : null; return e ? e.color : "#8fe3ff"; }
 // the room a unit stands in (null: outside every room), or undefined where there is no facility (a test's bare sandbox): an aura stays in its Mage's room
-function _equipRoomOf(u) { return typeof facilityRoomAt === "function" && typeof _fp !== "undefined" && _fp && _fp.F ? facilityRoomAt(u.x, u.y, _fp.F) : undefined; }
+function _equipRoomAt(x, y) { return typeof facilityRoomAt === "function" && typeof _fp !== "undefined" && _fp && _fp.F ? facilityRoomAt(x, y, _fp.F) : undefined; }
+function _equipRoomOf(u) { return _equipRoomAt(u.x, u.y); }
 function _equipAuraTick() {
     const src = [], rings = [];
     if (typeof followers !== "undefined") for (const f of followers) {
@@ -581,28 +582,34 @@ function _equipAuraSet(u, ids) {
 }
 // THE LOOK (the owner: "some minimal way to show a aura ... It should be really subtle as well and reflect the different elements"; docs/UNIVERSAL-AND-PLAYER-CARDS.md): a faint, thin dashed ring on the ground round each Mage giving off
 // an aura, at its reach (EQUIP_AURA.reach tiles: an ellipse, the floor being drawn on the slant), in the element's colour, slowly turning; and a tiny glint of that colour beside each unit in it. Several colours: a ring and a glint
-// each. THE RING IS CUT TO THE MAGE'S ROOM (its floor's outline: the owner, 2026-11-02, "It shouldn't be displayed or affected in other rooms"). Drawn each frame with the world's overlays (js/game.js), from what the tick found.
+// each. THE RING IS ON THE FLOOR OF THE MAGE'S ROOM ONLY (the owner, 2026-11-02: "It shouldn't be displayed or affected in other rooms", then "It shouldn't show up on the walls either"): equipAuraOnTile draws it tile by tile in the
+// floor's own pass (js/game.js, beside the Frost Patch's), each floor tile of the Mage's room that the ring crosses drawing its piece, cut to the tile; the walls, the props and the units, drawn after the floor in front of them, cover
+// it. The glints are drawn with the world's overlays (equipAuraDraw), beside their units.
 const EQUIP_AURA_LOOK = { alpha: 0.22, width: 1.5, dash: [14, 10], turn: 0.3, glint: 3.5 };
-function equipAuraDraw() {
-    if ((!_equipAuraRings.length && !_equipAuraHeld.length) || typeof ctx === "undefined" || !ctx || typeof player === "undefined" || typeof canvas === "undefined") return;
-    const L = EQUIP_AURA_LOOK, W = canvas.width / 2, H = canvas.height / 2, t = _equipNow(), R = EQUIP_AURA.reach * Math.SQRT2, rx = R * TILE_W, ry = R * TILE_H;
-    const scr = (x, y, o) => { o.x = (x - player.visualX - (y - player.visualY)) * TILE_W + W; o.y = (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0); return o; };
-    const p = _equipAuraPt;
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineWidth = L.width; ctx.setLineDash(L.dash);
+const _EQUIP_AURA_BAND = [EQUIP_AURA.reach - 0.71 - 0.4, EQUIP_AURA.reach + 0.71 + 0.1];   // the tiles the ring can cross: a tile's centre within these tiles of the Mage (a tile reaches 0.71 from its centre; the inner colours sit a little inside)
+function equipAuraOnTile(tx, ty, px, py) {
+    if (!_equipAuraRings.length || typeof ctx === "undefined" || !ctx) return;
+    const L = EQUIP_AURA_LOOK, t = _equipNow(), lo = _EQUIP_AURA_BAND[0] * _EQUIP_AURA_BAND[0], hi = _EQUIP_AURA_BAND[1] * _EQUIP_AURA_BAND[1], R = EQUIP_AURA.reach * Math.SQRT2, rx = R * TILE_W, ry = R * TILE_H;
+    let room = null, roomKnown = false;
     for (const r of _equipAuraRings) {
         const f = r.f; if (!f || f.dead) continue;
-        scr(f.x, f.y, p); if (p.x + rx < 0 || p.x - rx > canvas.width || p.y + ry < 0 || p.y - ry > canvas.height) continue;
-        const room = _equipRoomOf(f), poly = room && Array.isArray(room.poly) && room.poly.length > 2 ? room.poly : null;
-        if (poly) {   // (the room's outline on the Mage's floor: the same slant as the units', at the Mage's height)
-            const lift = typeof facilityLiftRel === "function" ? facilityLiftRel(f.x, f.y) : 0, cx = player.visualX, cy = player.visualY;
-            ctx.save(); ctx.beginPath();
-            for (let i = 0; i < poly.length; i++) { const qx = (poly[i][0] - cx - (poly[i][1] - cy)) * TILE_W + W, qy = (poly[i][0] - cx + (poly[i][1] - cy)) * TILE_H + H + TILE_H - lift; if (i) ctx.lineTo(qx, qy); else ctx.moveTo(qx, qy); }
-            ctx.closePath(); ctx.clip();
-        }
-        for (let i = 0; i < r.cols.length; i++) { ctx.globalAlpha = L.alpha; ctx.strokeStyle = r.cols[i]; ctx.lineDashOffset = -(t * L.turn + i * 12); ctx.beginPath(); ctx.ellipse(p.x, p.y, rx - i * 5, ry - i * 2.5, 0, 0, Math.PI * 2); ctx.stroke(); }
-        if (poly) ctx.restore();
+        const dx = tx - f.x, dy = ty - f.y, d2 = dx * dx + dy * dy; if (d2 < lo || d2 > hi) continue;
+        if (r.rf !== t) { r.rf = t; r.room = _equipRoomAt(f.x, f.y); }   // (the Mage's room, once a frame)
+        if (!roomKnown) { room = _equipRoomAt(tx, ty); roomKnown = true; }
+        if (room !== r.room) continue;   // (a tile of another room shows none of it)
+        const cx = px + ((f.x - tx) - (f.y - ty)) * TILE_W, cy = py + TILE_H + ((f.x - tx) + (f.y - ty)) * TILE_H;   // the Mage's ground point, from this tile
+        ctx.save(); ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
+        ctx.lineWidth = L.width; ctx.setLineDash(L.dash); ctx.globalAlpha = L.alpha;
+        for (let i = 0; i < r.cols.length; i++) { ctx.strokeStyle = r.cols[i]; ctx.lineDashOffset = -(t * L.turn + i * 12); ctx.beginPath(); ctx.ellipse(cx, cy, rx - i * 5, ry - i * 2.5, 0, 0, Math.PI * 2); ctx.stroke(); }
+        ctx.restore();
     }
-    ctx.setLineDash([]);
+}
+function equipAuraDraw() {   // the glints, over the world
+    if (!_equipAuraHeld.length || typeof ctx === "undefined" || !ctx || typeof player === "undefined" || typeof canvas === "undefined") return;
+    const L = EQUIP_AURA_LOOK, W = canvas.width / 2, H = canvas.height / 2, t = _equipNow();
+    const scr = (x, y, o) => { o.x = (x - player.visualX - (y - player.visualY)) * TILE_W + W; o.y = (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(x, y) : 0); return o; };
+    const p = _equipAuraPt;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const u of _equipAuraHeld) {
         const au = u && u._aura; if (!au || u.dead) continue;
         scr(u.x, u.y, p); if (p.x < -40 || p.x > canvas.width + 40 || p.y < -40 || p.y > canvas.height + 40) continue;

@@ -157,17 +157,26 @@ async function boot(search, store) {
                 } return o; } finally { Math.random = keep; } })()`);
         same(r.pestilence_crown[0], true, 'toxic did not poison'); same(r.tempest_crown[1], true, 'electric did not glitch'); same(r.winter_crown[2], true, 'ice did not slow'); same(r.eclipse_crown[3], true, 'flux did not siphon'); same(r.monolith_crown[4], true, 'core did not knock back');
     });
-    check('THE LOOK: a faint, thin dashed ring at the reach (an ellipse of 4√2 tiles on the slant) round the Mage, in its element\'s colour at alpha 0.22, turning, CUT TO THE MAGE\'S ROOM (its floor\'s outline); a tiny glint on each unit in it; nothing drawn with no aura', () => {
-        const r = J(`(function(){ __fresh(); player.x = player.visualX = __P[0]; player.y = player.visualY = __P[1];   // (the camera on the spot)
-            const calls = [], k = ctx.ellipse, s = ctx.stroke, fl = ctx.fill, cl = ctx.clip, bp = ctx.beginPath, mt = ctx.moveTo, lt = ctx.lineTo; let el = null, pts = 0; const clips = [];
-            ctx.beginPath = function(){ pts = 0; return bp && bp.apply(this, arguments); }; ctx.moveTo = function(){ pts++; return mt && mt.apply(this, arguments); }; ctx.lineTo = function(){ pts++; return lt && lt.apply(this, arguments); }; ctx.clip = function(){ clips.push(pts); return cl && cl.apply(this, arguments); };
-            ctx.ellipse = function(x, y, rx, ry){ el = [x, y, rx, ry]; return k && k.apply(this, arguments); };
-            ctx.stroke = function(){ if (el) calls.push({ rx: el[2], ry: el[3], col: ctx.strokeStyle, a: ctx.globalAlpha, w: ctx.lineWidth, off: ctx.lineDashOffset }); el = null; return s && s.apply(this, arguments); }; let fills = 0; ctx.fill = function(){ fills++; return fl && fl.apply(this, arguments); };
-            try { equipAuraDraw(); const none = calls.length + fills; const m = __wear('embercowl', 'kindling_band', 0, 0); __wear('maw', null, 1, 0); equipTick(true); frame = 100; equipAuraDraw(); const first = calls.slice(), firstClips = clips.slice(); calls.length = 0; frame = 200; equipAuraDraw();
-                return { none, rings: first, glints: fills, turned: calls[0] && first[0] && calls[0].off !== first[0].off, want: [4 * Math.SQRT2 * TILE_W, 4 * Math.SQRT2 * TILE_H], clips: firstClips, roomPts: facilityRoomAt(m.x, m.y, _fp.F).poly.length }; } finally { ctx.ellipse = k; ctx.stroke = s; ctx.fill = fl; ctx.clip = cl; ctx.beginPath = bp; ctx.moveTo = mt; ctx.lineTo = lt; } })()`);
-        same(r.none, 0, 'drawn with no aura'); same(r.rings.length, 1, 'rings for one Mage of one colour'); ok(close(r.rings[0].rx, r.want[0], 1e-6) && close(r.rings[0].ry, r.want[1], 1e-6), 'the ring\'s size: ' + JSON.stringify(r.rings[0]));
-        same(String(r.rings[0].col).toLowerCase(), '#ff3300', 'its colour (fire)'); same(r.rings[0].a, 0.22, 'its alpha'); same(r.rings[0].w, 1.5, 'its width'); same(r.turned, true, 'it does not turn'); same(r.glints, 4, 'glints (two units, drawn twice)');
-        same(r.clips.join(), String(r.roomPts), 'the ring is not cut to its room\'s outline (a clip of the room\'s ' + r.roomPts + ' corners)');
+    // A RECORDER of what is drawn: each stroked ellipse (its size, colour, alpha, width, dash offset), each clip (its corners), each fill (a glint)
+    run(`globalThis.__rec = () => { const o = { calls: [], clips: [], fills: 0 }, keep = {}; let el = null, pts = 0;
+        const wrap = (k, fn) => { keep[k] = ctx[k]; ctx[k] = function(){ const r = fn.apply(this, arguments); return keep[k] ? keep[k].apply(this, arguments) : r; }; };
+        wrap('beginPath', () => { pts = 0; }); wrap('moveTo', () => { pts++; }); wrap('lineTo', () => { pts++; }); wrap('clip', () => { o.clips.push(pts); });
+        wrap('ellipse', function(x, y, rx, ry){ el = [x, y, rx, ry]; }); wrap('stroke', () => { if (el) o.calls.push({ x: el[0], y: el[1], rx: el[2], ry: el[3], col: ctx.strokeStyle, a: ctx.globalAlpha, w: ctx.lineWidth, off: ctx.lineDashOffset }); el = null; }); wrap('fill', () => { o.fills++; });
+        o.done = () => { for (const k in keep) ctx[k] = keep[k]; }; o.clear = () => { o.calls.length = 0; o.clips.length = 0; o.fills = 0; }; return o; };`);
+    check('THE LOOK (the owner: "It shouldn\'t show up on the walls either"): the ring is drawn ON THE FLOOR, tile by tile in the floor\'s pass (equipAuraOnTile), so the walls, props and units in front cover it: a tile it crosses draws its piece of a faint, thin dashed ellipse (4√2 tiles on the slant, the element\'s colour, alpha 0.22, turning), cut to the tile\'s diamond; a tile it does not cross draws nothing; the overlay draws only the glints; nothing at all with no aura', () => {
+        const r = J(`(function(){ __fresh(); player.x = player.visualX = __P[0]; player.y = player.visualY = __P[1]; const R = __rec(); try {   // (the camera on the spot, for the glints)
+                equipAuraOnTile(Math.round(__P[0] + 4), Math.round(__P[1]), 500, 300); equipAuraDraw(); const none = R.calls.length + R.fills;
+                const m = __wear('embercowl', 'kindling_band', 0, 0); __wear('maw', null, 1, 0); equipTick(true); const T = (x, y) => equipAuraOnTile(Math.round(m.x + x), Math.round(m.y + y), 500, 300);
+                frame = 100; R.clear(); T(4, 0); const first = R.calls.slice(), clips = R.clips.slice();
+                R.clear(); T(1, 0); T(0, 2); T(6, 0); T(0, -6); const off = R.calls.length;
+                frame = 200; R.clear(); T(4, 0); const turned = R.calls[0] && first[0] && R.calls[0].off !== first[0].off;
+                R.clear(); equipAuraDraw(); const overlay = { ellipses: R.calls.length, glints: R.fills };
+                return { none, first, clips, off, turned, overlay, want: [4 * Math.SQRT2 * TILE_W, 4 * Math.SQRT2 * TILE_H] }; } finally { R.done(); } })()`);
+        same(r.none, 0, 'drawn with no aura');
+        same(r.first.length, 1, 'strokes on a tile the ring crosses (one Mage, one colour)'); ok(close(r.first[0].rx, r.want[0], 1e-6) && close(r.first[0].ry, r.want[1], 1e-6), 'the ring\'s size: ' + JSON.stringify(r.first[0]));
+        same(String(r.first[0].col).toLowerCase(), '#ff3300', 'its colour (fire)'); same(r.first[0].a, 0.22, 'its alpha'); same(r.first[0].w, 1.5, 'its width'); same(r.clips.join(), '4', 'it is not cut to the tile\'s diamond (four corners)');
+        same(r.off, 0, 'a tile the ring does not cross drew it'); same(r.turned, true, 'it does not turn');
+        same(r.overlay.ellipses, 0, 'the overlay still draws a ring (over the walls)'); same(r.overlay.glints, 2, 'the glints (two units)');
     });
     check('AN AURA STAYS IN ITS ROOM (the owner, 2026-11-02: "It shouldn\'t be displayed or affected in other rooms"): a follower and the clone 3 tiles from the Mage but through a wall, in the next room, get nothing; one in its room as far gets it', () => {
         const r = J(`(function(){ const F = _fp.F; let pair = null;   // a point in one room and one within 3 tiles in another (both rooms real)
@@ -177,9 +186,14 @@ async function boot(search, store) {
             if (!pair) return { none: true };
             __fresh(); const m = __wear('embercowl', 'kindling_band', 0, 0); m.x = pair.p[0]; m.y = pair.p[1]; const out = __wear('maw', null, 0, 0); out.x = pair.other[0]; out.y = pair.other[1]; const inn = __wear('quillstone', null, 0, 0); inn.x = pair.same[0]; inn.y = pair.same[1];
             const c = __clone(0, 0); c.x = pair.other[0]; c.y = pair.other[1]; equipTick(true);
-            return { rooms: [pair.p[2], pair.other[2]], out: out._aura || null, clone: c._aura || null, inn: inn._aura && inn._aura.attack, mage: m._aura && m._aura.attack }; })()`);
+            // the ring's tiles round the Mage: one in the next room draws nothing, one in its own room draws its piece
+            let tOther = null, tSame = null; for (let a = 0; a < 64; a++) { const tx = Math.round(m.x + Math.cos(a * Math.PI / 32) * 4), ty = Math.round(m.y + Math.sin(a * Math.PI / 32) * 4), q = facilityRoomAt(tx, ty, F);
+                if (q && q !== facilityRoomAt(m.x, m.y, F) && !tOther) tOther = [tx, ty]; if (q === facilityRoomAt(m.x, m.y, F) && !tSame) tSame = [tx, ty]; }
+            const R = __rec(); let ring = null; try { if (tOther) equipAuraOnTile(tOther[0], tOther[1], 500, 300); const o = R.calls.length; R.clear(); if (tSame) equipAuraOnTile(tSame[0], tSame[1], 500, 300); ring = { other: tOther ? o : null, same: tSame ? R.calls.length : null }; } finally { R.done(); }
+            return { rooms: [pair.p[2], pair.other[2]], out: out._aura || null, clone: c._aura || null, inn: inn._aura && inn._aura.attack, mage: m._aura && m._aura.attack, ring }; })()`);
         ok(!r.none, 'no two rooms within 3 tiles of each other were found');
         same(r.out, null, 'a follower in the next room (' + r.rooms.join(' / ') + ') got the aura'); same(r.clone, null, 'the clone in the next room got it'); same(r.inn, 0.05, 'a follower in its room 3 tiles off'); same(r.mage, 0.05, 'the Mage');
+        ok(r.ring && r.ring.other !== null, 'no tile of the next room on the ring was found'); same(r.ring.other, 0, 'the ring was drawn on a tile of the next room'); ok(r.ring.same === null || r.ring.same > 0, 'the ring was not drawn on a tile of its own room');
     });
 
     group('THE BRAWLER\'S OPPORTUNITY');
@@ -263,7 +277,7 @@ async function boot(search, store) {
 
     group('THE PAGE');
     check('the hooks are where the game makes the numbers: the overlays draw the auras; applyDamage gives the clone its aura and lets the aura\'s holders reach equipOnHit; dmgApply asks equipOpportunity; the card tick works out the auras and pays the refund', () => {
-        ok(/equipAuraDraw\(\)/.test(rd('js/game.js')), 'the overlays'); ok(/source\.isClone && source\.team === "green" && source\._aura/.test(rd('js/helpers.js')), 'the clone\'s aura');
+        ok(/equipAuraDraw\(\)/.test(rd('js/game.js')), 'the overlays (the glints)'); ok(/obj\.type==='floor'[\s\S]{0,1800}equipAuraOnTile\(obj\.x, obj\.y, px, py\)/.test(rd('js/game.js')), 'the floor pass does not draw the ring'); ok(/source\.isClone && source\.team === "green" && source\._aura/.test(rd('js/helpers.js')), 'the clone\'s aura');
         ok(/\(source\.isFollower && \(source\.cards \|\| source\._aura\)\) \|\| \(source\.isClone && source\._aura\)/.test(rd('js/helpers.js')), 'equipOnHit\'s door (a follower with cards or an aura; the clone with an aura only)'); ok(/equipOpportunity\(source\)/.test(rd('js/damage.js')), 'dmgApply');
         ok(/_equipAuraTick\(\);[\s\S]{0,120}equipRefundTick\(\);/.test(rd('js/cards.js')), 'the tick');
     });

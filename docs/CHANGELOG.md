@@ -4,6 +4,22 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-02
 
+- **e · The aura's ring on the floor, off the walls** (the owner, in a prompt: "It shouldn't show up on the walls either"; on the branch only; commit named in git log).
+  - **The ring is drawn on the floor of the Mage's room:**
+    - It is drawn tile by tile in the floor's own pass (js/cards.js `equipAuraOnTile`, called by js/game.js beside the Frost Patch's).
+    - Each floor tile of the room that the ring crosses draws its piece, cut to the tile.
+    - The walls, props and units in front of it cover it, so it shows on no wall and in no other room.
+    - Build d clipped an overlay ring to the room's outline, which still crossed the room's front walls.
+  - **The glints** stay with the world's overlays, beside their units (js/cards.js `equipAuraDraw`).
+  - **Tests:** tests/classcards.js checks three things:
+    - a tile the ring crosses draws its piece, cut to the tile, and a tile it does not cross draws nothing;
+    - a ring tile in the next room draws nothing;
+    - the overlay draws only the glints, and the floor pass calls the ring's drawing.
+
+  - **The full run:** 85 of 86 suites passed. The 86th, tests/carousel.js, failed its known check at 1180 px ("a name is cut": its recruits have random names, and a long one is cut; docs/OPEN-QUESTIONS.md §4). It passed when run alone. It touches nothing this build changed.
+  - **Written up:** docs/UI-STYLE.md, docs/UNIVERSAL-AND-PLAYER-CARDS.md, docs/OPEN-QUESTIONS.md, docs/TUTORIAL.md, docs/DECISION-LOG.md, the Bible.
+  - Not playtested.
+
 - **d · The owner's answers on Build B: the CROWN's chance 10%; an aura stays in its room** (the owner, in a prompt: "Push to main", "Raise to 10%", "It shouldn't be displayed or affected in other rooms", "Both count"; on the branch only; commit named in git log).
   - **Main:** Build B (`c`, commit 2fc7518) went to main at the owner's word.
   - **A CROWN's status chance** is 10% (it was the first guess, 5%). The cards' words say so.
