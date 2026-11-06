@@ -83,7 +83,8 @@ The owner: "We also need to make themes for the different species and give textu
   - the four other themes as written ("They stand");
   - the mollusk texture, a pearly sheen ("Approve as drawn"; after "I'm not big on it" of a first try, then "Mollusk: pearly sheen");
   - the four other species emblems ("Approve all four").
-- **Still to draw, each for a yes:** the three other textures (elemental, drone, jelly), one at a time, and the ten element and race icons, a set at a time. Then the build.
+- **Drawn, waiting on a yes** (2026-11-06): the elemental texture (crystal growth), and the five other element emblems.
+- **Still to draw, each for a yes:** the drone and jelly textures, one at a time, and the five other race emblems. Then the build.
 - The block below is the current proposal. The earlier rounds are at its end.
 - **Where to see it:** the Part 2 boards on the design canvas "Conduit 3D card concepts": the approved crustacean row, and above it the mollusk and the species emblems. The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
 - **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
@@ -94,18 +95,19 @@ The owner: "We also need to make themes for the different species and give textu
 |---|---|---|---|---|
 | Crustacean | CHITIN AMBER `#e7ad78` | A crab shell's bumpy crust: rounded knobs packed close in patches, fine granules between. Each knob is a low matte dome with a shadow where it rises from the shell. Small and faint | A crab | The texture and the icon: **approved** |
 | Mollusk | NACRE `#e3d6ff` | A pearly sheen, as the inside of a shell: soft bands of mother-of-pearl (pale pink, lilac, sky, mint, a little gold), each with a paler core where the light catches, fine wavy growth lines running with them and two soft glows of lustre. No shells drawn. Faint | A spiral (snail) shell | The texture and the icon: **approved** |
-| Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: clustered prisms and rising motes. On a follower it takes its element's colour | A cluster of prisms | The icon: **approved** |
+| Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: little clusters of crystal prisms fanning up from their roots, small diamond motes rising between them. Small and faint. On a card in PRISM WHITE; on a follower in its element's colour | A cluster of prisms | The icon: **approved**; the texture: for a yes |
 | Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | The icon: **approved** |
 | Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | The icon: **approved** |
 
-- **On a species card** (shown on TIDE SHELL and NACRE PEARL):
+- **On a species card** (shown on TIDE SHELL, NACRE PEARL and FOCUSING PRISM):
   - its texture on the face, faint, in its colour;
   - its colour for the frame, the crystal and the kind line;
   - its icon before the kind, on the face and in the details beside it.
   - Today such a card wears no texture and the class cards' cyan.
-- **On a follower** (shown on QUILLSTONE and SEEPER, VOIDSTAR and HAMMER SLUG):
+- **On a follower** (shown on QUILLSTONE and SEEPER, VOIDSTAR and HAMMER SLUG, FROST MAW and THUNDERHEAD):
   - the species' texture is a third layer, over the element's and the class's, in the species' colour at 38%, so the element and the class still lead;
-  - the crust is drawn at half its size on a card (the drawing twice across the 300 × 175 band);
+  - the crust and the elemental's crystals are drawn at half their size on a card (the drawing twice across the 300 × 175 band);
+  - the elemental's crystals take the follower's element colour (shown on FROST MAW in ice blue and THUNDERHEAD in yellow);
   - the mollusk's sheen is laid once at its own size, since a broad sheen laid twice across would show a seam;
   - on a flux mollusk (VOIDSTAR) the sheen sits over FLUX's vortex and is hardest to see;
   - the roster's subclass tag carries the icon.
@@ -121,9 +123,15 @@ The owner: "We also need to make themes for the different species and give textu
     - the crystal cluster: three prisms from one root, each front edge cut;
     - the drone: a round body, a visor with one eye, two antennae, two feet;
     - the jellyfish: a bell with a scalloped rim, four tendrils, a sheen cut into the bell.
+  - Drawn, for a yes (the other five elements):
+    - TOXIC: four bubbles, a glint cut into each of the two big ones;
+    - ELECTRIC: a bolt;
+    - ICE: a snowflake, six arms with twigs round a small hexagon;
+    - FLUX: a vortex, three arms round an eye;
+    - CORE: a hexagon cell, a ring cut out of it and a hexagon at its heart.
   - Proposed subjects for the rest:
-    - the elements: TOXIC bubbles, ELECTRIC a bolt, ICE a snowflake, FLUX a vortex, CORE a hexagon (BLOOM a blossom, later);
-    - the races: the beetle, the scorpion, the spider, the mantis and the moth themselves.
+    - the races: the beetle, the scorpion, the spider, the mantis and the moth themselves;
+    - BLOOM a blossom, when it comes.
 - **The enemy card:**
   - the race's icon before its name;
   - under its numbers, a row from the game's own table (js/damage.js `DMG_RACE`, `COMBAT.md` §7.3): WEAK and its types in green chips, then RESISTS and its types in grey ones;

@@ -74,8 +74,32 @@
             + '<g fill="url(#moL)"><ellipse cx="96" cy="120" rx="120" ry="90"/><ellipse cx="220" cy="318" rx="110" ry="84"/></g>'
             + '<g fill="none" stroke="currentColor" stroke-opacity=".1" stroke-width=".55">' + lines + "</g></g>";
     }
-    const TEX = { crustacean, mollusk }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
-    const TEX_HALF = { crustacean: true };   // laid at half size on a follower (the crust, "Smaller texture"); the others once, at their own size (a broad sheen laid twice across would show a seam)
+    // THE ELEMENTAL TEXTURE (proposed after the mollusk's approval, 2026-11-06; the theme as written: "crystal growth: clustered prisms and rising motes; on a follower it takes its element's colour").
+    // Little clusters of crystal prisms, each cluster fanning up from one root, and small diamond motes rising between them. One prism is drawn once and laid many times (turned and sized), its lines
+    // keeping their width. Small and faint, as the crust and the sheen are.
+    function elemental() {
+        seed = 57;
+        const W = 300, H = 420, roots = [];
+        for (let t = 0; t < 3000 && roots.length < 27; t++) {
+            const x = -8 + rnd() * (W + 16), y = 10 + rnd() * (H + 6);
+            if (roots.every(q => Math.hypot(q.x - x, q.y - y) > 42)) roots.push({ x, y });
+        }
+        let laid = "", motes = "";
+        roots.forEach(q => {
+            const n = 4 + Math.floor(rnd() * 5), lean = (rnd() - .5) * 30;
+            for (let i = 0; i < n; i++) {
+                const a = lean + (i - (n - 1) / 2) * (100 / n) + (rnd() - .5) * 12, k = R(3.2 + rnd() * 3.6) * (i === Math.floor(n / 2) ? 1.35 : 1);
+                laid += '<use href="#elP" transform="translate(' + Math.round(q.x + (rnd() - .5) * 6) + " " + Math.round(q.y) + ") rotate(" + Math.round(a) + ") scale(" + R(k) + ')"/>';
+            }
+        });
+        for (let i = 0; i < 46; i++) { const x = rnd() * W, y = rnd() * H, m = .8 + rnd() * 1.4; motes += "M" + R(x) + " " + R(y - m * 1.6) + "l" + R(m) + " " + R(m * 1.6) + "l" + R(-m) + " " + R(m * 1.6) + "l" + R(-m) + " " + R(-m * 1.6) + "z"; }
+        return '<defs><g id="elP"><path d="M0 -3.4L.55 -2.75L.55 -.3L0 0L-.55 -.3L-.55 -2.75Z" fill="currentColor" fill-opacity=".09" stroke="currentColor" stroke-opacity=".38" stroke-width=".8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'
+            + '<path d="M0 -3.3L0 -.1" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width=".7" vector-effect="non-scaling-stroke"/></g></defs>'
+            + '<g id="elAll">' + laid + '<path fill="currentColor" fill-opacity=".3" d="' + motes + '"/></g>';
+    }
+    const TEX = { crustacean, mollusk, elemental }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll", elemental: "elAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
+    const TEX_HALF = { crustacean: true, elemental: true };
+    const TEX_ELEMENT_COLOUR = { elemental: true };   // on a follower, laid in its element's colour (the theme as written), not the species' own   // laid at half size on a follower (the crust, "Smaller texture"); the others once, at their own size (a broad sheen laid twice across would show a seam)
 
     // THE THEMES (proposed, for the owner): a colour and a motif each. Element colours (fire, electric, ice, flux, core, toxic, BLOOM's pink) and the class cyan are taken, so a species is a MATERIAL, not a hue.
     // The other four stand as written (the owner, 2026-11-06: "They stand"); each is drawn after the crustacean is approved, one at a time.
@@ -127,6 +151,30 @@
             for (let a = 252; a >= 200; a -= 4) band.push([16 + 8 * Math.cos(a * Math.PI / 180), 16.5 + 8 * Math.sin(a * Math.PI / 180)]);
             return d + poly(band, false);
         })() },
+        toxic: { col: "#66ff66", d: (() => {   // bubbles: a big one, a middle one, two small, each big one with a glint cut into it
+            const glint = (cx, cy, r0, r1) => { const p = []; for (let a = 196; a <= 256; a += 6) p.push([cx + r1 * Math.cos(a * Math.PI / 180), cy + r1 * Math.sin(a * Math.PI / 180)]); for (let a = 256; a >= 196; a -= 6) p.push([cx + r0 * Math.cos(a * Math.PI / 180), cy + r0 * Math.sin(a * Math.PI / 180)]); return poly(p, false); };
+            return disc(12.5, 19, 8.5) + disc(23.5, 10.5, 5.2) + disc(25, 23.5, 3.2) + disc(7.6, 6.6, 2.2) + glint(12.5, 19, 4.6, 6.4) + glint(23.5, 10.5, 2.6, 3.8);
+        })() },
+        electric: { col: "#ffee33", d: poly([[13.5, 1.5], [22.5, 1.5], [17, 12.5], [24.5, 12.5], [10.5, 30.5], [14.5, 17.5], [7.5, 17.5]], true) },   // a bolt
+        ice: { col: "#99ddff", d: (() => {   // a snowflake: six arms, each with a pair of twigs, round a small hexagon
+            let d = poly([0, 1, 2, 3, 4, 5].map(i => [16 + 3.4 * Math.cos((i * 60 - 90) * Math.PI / 180), 16 + 3.4 * Math.sin((i * 60 - 90) * Math.PI / 180)]), true);
+            for (let i = 0; i < 6; i++) { const a = (i * 60 - 90) * Math.PI / 180, b0 = [16 + 8 * Math.cos(a), 16 + 8 * Math.sin(a)];
+                d += bar([[16 + 2 * Math.cos(a), 16 + 2 * Math.sin(a)], [16 + 13.6 * Math.cos(a), 16 + 13.6 * Math.sin(a)]], 2.4);
+                [-1, 1].forEach(sg => { const b = a + sg * 0.8; d += bar([b0, [b0[0] + 4.6 * Math.cos(b), b0[1] + 4.6 * Math.sin(b)]], 2); }); }
+            return d;
+        })() },
+        flux: { col: "#9933ff", d: (() => {   // a vortex: three arms swirling round an eye
+            let d = disc(16, 16, 3.6);
+            for (let k = 0; k < 3; k++) { const o = [], inn = [];
+                for (let t = 0; t <= 1.0001; t += .08) { const a = (k * 120 + 165 * t) * Math.PI / 180, r = 4 + 10.5 * t, w = t < .4 ? 1.6 + 7 * t : 4.4 * (1 - t) / .6 + .4;
+                    o.push([16 + r * Math.cos(a), 16 + r * Math.sin(a)]); inn.push([16 + (r - w) * Math.cos(a - .12), 16 + (r - w) * Math.sin(a - .12)]); }
+                d += poly(o.concat(inn.reverse()), true); }
+            return d + ell(16, 16, 1.6, 1.6, false);   // cut: the eye
+        })() },
+        core: { col: "#00ccaa", d: (() => {   // a hexagon cell: an outer hexagon, a ring cut out of it, a hexagon at its heart
+            const hex = (r, cw) => poly([0, 1, 2, 3, 4, 5].map(i => [16 + r * Math.cos((i * 60 - 90) * Math.PI / 180), 16 + r * Math.sin((i * 60 - 90) * Math.PI / 180)]), cw);
+            return hex(14, true) + hex(9.6, false) + hex(5.8, true);
+        })() },
         fire: { col: "#ff3d14", d: "M16 30C9 30 6 25 6.5 20C7 15 10.5 12.5 11.5 8.5C13 11 13.5 12.5 13.5 14.5C15.5 11.5 16.5 7 15.5 2.5C20.5 5.5 25.5 11.5 25.5 19.5C25.5 25.5 21.5 30 16 30Z"
             + "M16 27C19 27 21 25 21 22.5C21 21 20.5 19.5 19 17.5C19 19 18.5 20 17.5 21C17.5 19.5 16.5 18 14.5 16C14 18.5 12 19.5 11.5 22C11 24.5 12.5 27 16 27Z" },   // cut: the heart of the flame
         ant: { col: "#ff8a6a", d: (() => {
@@ -149,10 +197,10 @@
         const W = 300, H = 175, band = (inner, top, extra) => '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="0 ' + top + " " + W + " " + H + '" preserveAspectRatio="xMidYMid slice"' + (extra || "") + ">" + inner + "</svg>";
         const elBand = band(cardArtTexture(el), CARD_ART.band[el] || 0), clsBand = band(cardArtTexture(cls), CARD_ART.band[cls] || 0, ' color="' + cardArtMix(cardArtElementColour(el), "#ffffff", CARD_ART.tint) + '" opacity="' + CARD_ART.tintAlpha + '"');
         if (!sp) return _caDoc(W, H, elBand + clsBand);
-        const spTex = TEX[sp] ? TEX[sp]() : "", T = THEMES[sp];
+        const spTex = TEX[sp] ? TEX[sp]() : "", T = THEMES[sp], col = TEX_ELEMENT_COLOUR[sp] ? cardArtElementColour(el) : T.col;
         let third = "";
-        if ((!mode || mode === "small") && TEX_HALF[sp]) third = '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="0 60 600 350" preserveAspectRatio="xMidYMid slice" color="' + T.col + '" opacity=".38">' + spTex + '<use href="#' + TEX_ID[sp] + '" x="300"/></svg>';   // half its size: the drawing twice across
-        else if (!mode || mode === "small") third = band(spTex, 60, ' color="' + T.col + '" opacity=".38"');   // once, at its own size
+        if ((!mode || mode === "small") && TEX_HALF[sp]) third = '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="0 60 600 350" preserveAspectRatio="xMidYMid slice" color="' + col + '" opacity=".38">' + spTex + '<use href="#' + TEX_ID[sp] + '" x="300"/></svg>';   // half its size: the drawing twice across
+        else if (!mode || mode === "small") third = band(spTex, 60, ' color="' + col + '" opacity=".38"');   // once, at its own size
         else if (mode === "full") third = band(spTex, 60, ' color="' + T.col + '" opacity=".8"');
         else if (mode === "white") third = band(spTex, 60, ' color="#ffffff" opacity=".55"');
         else if (mode === "edge") third = '<defs><linearGradient id="spFade" x1="0" y1="0" x2="1" y2="0"><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset=".78" stop-color="#fff" stop-opacity="1"/></linearGradient><mask id="spMask"><rect width="300" height="175" fill="url(#spFade)"/></mask></defs><g mask="url(#spMask)">' + band(spTex, 60, ' color="' + T.col + '"') + "</g>";
@@ -160,5 +208,5 @@
         else if (mode === "big") third = '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="40 40 150 88" preserveAspectRatio="xMidYMid slice" color="' + T.col + '" opacity=".75">' + spTex + "</svg>";
         return _caDoc(W, H, elBand + clsBand + third);
     }
-    root.PART2 = { crustacean, mollusk, TEX, THEMES, ICONS, iconSvg, backdrop3 };
+    root.PART2 = { crustacean, mollusk, elemental, TEX, THEMES, ICONS, iconSvg, backdrop3 };
 })(typeof window !== "undefined" ? window : globalThis);
