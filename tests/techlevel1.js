@@ -222,7 +222,7 @@ function measure(w, h) {
             _techFrostTick(frame); updateStatusEffects(); o.on = [Math.round(e.moveSpeed * 1000), Math.round(g.moveSpeed * 1000), Math.round(w.moveSpeed * 1000)];
             applySlow(e, 100, 0.2); _techFrostTick(frame); updateStatusEffects(); o.web = Math.round(e.moveSpeed * 1000);
             e.slowed = 0; e.slowFactor = 1; __step(600); for (let i = 0; i < 6; i++) updateStatusEffects(); o.gone = techFrosts.length; e.x = P.x; e.y = P.y; _techFrostTick(frame); updateStatusEffects(); o.after = Math.round(e.moveSpeed * 1000); return o; })()`);
-        ok(/FROST PATCH · TAP THE FLOOR/.test(r.prompt), r.prompt); same(r.ok, true, 'the pick'); ok(r.patch && r.patch[2] === 9 && r.patch[3] === 600, 'the patch: ' + JSON.stringify(r.patch)); same(r.cool, 3600, 'the cooldown');
+        ok(/FROST PATCH · TAP FLOOR FOR A PATCH, OR WATER FOR A BRIDGE/.test(r.prompt), r.prompt); same(r.ok, true, 'the pick'); ok(r.patch && r.patch[2] === 9 && r.patch[3] === 600, 'the patch: ' + JSON.stringify(r.patch)); same(r.cool, 3600, 'the cooldown');
         same(r.on.join(), '20,75,40', 'speeds on and off it (enemy, follower, an enemy off it)'); same(r.web, 8, 'a web\'s slow on it was weakened'); same(r.gone, 0, 'still there after 10 s'); same(r.after, 40, 'an enemy where it was');
     });
     check('one it cannot see, or a tap that is not floor, is refused and the aim stays up (no cooldown); its tiles are only the floor in sight of its middle', () => {
@@ -231,6 +231,25 @@ function measure(w, h) {
             const R = _fp.F.rubble.find(q => q.id === 'rubble_arena_south'); o.wall = techAbilityUse(t, { spot: { x: R.at[0], y: R.at[1] + 2 } }).why;
             t._abReadyAt = frame; t.x = R.work[0]; t.y = R.work[1]; o.edgeOk = techAbilityUse(t, { spot: { x: R.at[0], y: R.at[1] - 0.4 } }).ok; const P = techFrosts[techFrosts.length - 1]; o.edge = P ? [...P.tiles].every(k => { const [x, y] = k.split(',').map(Number); return facilityStandOk(x, y); }) && P.tiles.size < 9 : null; return o; })()`);
         same(r.hidden.join(), 'true,0,THE TECHNICIAN CANNOT SEE THERE', 'out of sight'); same(r.wall, 'TAP THE FLOOR', 'past the wall'); same(r.edgeOk, true, 'a patch by the wall'); same(r.edge, true, 'a patch by the wall is floor only');
+    });
+
+    check('ICE BRIDGE (the owner, 2026-11-06: "One ability", "Straight, 30 s"): the same chip aimed at the Sewers\' river freezes a straight bridge 2 tiles wide, bank to bank, at once: floor on the map and its planning copy, a route straight across it; one 60 s wait; after 30 s it thaws, the water as it was and the player on it put on floor; too wide (the Nest\'s reservoir lengthways, 11 tiles): refused, nothing changed', () => {
+        const r = J(`(function(){ const fs = __fresh(['ice']), t = fs[0], o = {}, F = _fp.F, S = F.solids.find(q => q.id === 'sewer_river_w'), bb = S.bb, y0 = Math.ceil(bb[1]), y1 = Math.floor(bb[3]);
+            let cx = null; for (let x = Math.ceil(bb[0]) + 1; x < Math.floor(bb[2]); x++) if (facilityStandOk(x, y0 - 1) && facilityStandOk(x, y1 + 1) && facilityStandOk(x + 1, y0 - 1) && facilityStandOk(x + 1, y1 + 1)) { cx = x; break; }
+            o.fixture = cx; if (cx === null) return o; const mid = Math.round((y0 + y1) / 2);
+            t.x = cx; t.y = y0 - 1; o.waterBefore = facilityWalkable(cx, mid, F);
+            techChipTap(t); o.prompt = techAimPrompt(); o.ok = techAimPickSpot({ x: cx + 0.2, y: mid }); const B = techBridges[0]; o.rect = B ? B.rect : null; o.cool = techReadyIn(t);
+            o.walk = [facilityWalkable(cx, mid, F), facilityWalkable(cx + 1, mid, F), facilityWalkable(cx, mid, _fp.P), facilityWalkable(cx + 2, mid, F)];
+            const path = facilityPath(cx, y0 - 1, cx, y1 + 1); o.path = path ? path.length : 0; o.span = y1 - y0 + 1;
+            player.x = cx; player.y = mid; player.targetX = cx; player.targetY = mid; __step(1801);
+            o.gone = techBridges.length; o.ice = (F.ice || []).length; o.waterAfter = facilityWalkable(cx, mid, F); o.playerOk = facilityStandOk(player.x, player.y);
+            const R = F.solids.find(q => q.id === 'nest_reservoir').bb, rx = Math.ceil(R[0]) + 1, ice0 = (F.ice || []).length, wide = techIceBridgePlan({ x: rx, y: R[1] - 10 }, { x: rx + 0.2, y: Math.round((R[1] + R[3]) / 2) }); o.wide = wide.why || 'built'; o.after = [techBridges.length, (F.ice || []).length === ice0];
+            return o; })()`);
+        ok(r.fixture !== null, 'fixture: no column of the river with floor on both banks'); same(r.waterBefore, false, 'the river was walkable before');
+        ok(/FROST PATCH · TAP FLOOR FOR A PATCH, OR WATER FOR A BRIDGE/.test(r.prompt), r.prompt); same(r.ok, true, 'the pick'); ok(r.rect && Math.round(r.rect[2] - r.rect[0]) === 2 && Math.round(r.rect[3] - r.rect[1]) === r.span, 'the bridge: ' + JSON.stringify(r.rect) + ' (span ' + r.span + ')'); same(r.cool, 3600, 'the wait');
+        same(r.walk.join(), 'true,true,true,false', 'walkable on the bridge (both lanes, the planning copy), not beside it'); ok(r.path > 0 && r.path <= r.span + 3, 'a route straight across: ' + r.path);
+        same(r.gone, 0, 'thawed after 30 s'); same(r.ice, 0, 'the ice list'); same(r.waterAfter, false, 'the water as it was'); same(r.playerOk, true, 'the player on floor after the thaw');
+        ok(/TOO WIDE TO BRIDGE · 8 TILES/.test(r.wide), 'the reservoir lengthways: ' + r.wide); same(r.after.join(), '0,true', 'nothing changed by the refusal');
     });
 
     group('THE BLIGHT SPIDER (toxic) and THE PLAY CLOCK');

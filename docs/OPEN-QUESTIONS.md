@@ -456,6 +456,21 @@ Where nothing said, these readings were taken. Each stands as built until the ow
 4. **A long name** is one of 17 characters or more: ELECTRIC TECHNICIAN and THERMITE BURROWER, the two that were cut (125 and 126 px of text in a 113 px box at 1180 px wide). As built: on the carousel's strip only, every name too wide for its card gets smaller type, just enough to fit (10 px otherwise): those two shrink as the strip fills, to about 7.2 px on a card's narrowest (118 px, a 92 px name box); on a full strip six shorter names shrink a little too. The card in view, the phone's cards and the SQUADS window are unchanged.
 5. **Still open:** the creatures' specials (LEAP, MANDIBLE FRENZY, CARAPACE SLAM up to 5 tiles, VENOM LANCE, WEB SNARE, BLADE FLURRY, BLINDING DUST) and the player's own jumps (ARC SLINGER's jump; the Technomancer's arc jumping on to the next creature) still reach through walls. Should they need sight too? **Answered 2026-11-06: "Both need sight"** (built in `2026-11-06j`, `COMBAT.md` §8.5).
 
+## 1z. Build k's readings: TOXIC PODS, ice bridges (build `2026-11-06k`, on the branch; `TECHNICIANS.md`)
+
+The owner, 2026-11-06: pods "Shorter life"; the ice "One ability", "Straight, 30 s"; and on where: "I want players to be able to sneak in before the gate opens. I never wanted a gate. I wanted rubble. So it works out. Test it if you want but make the sewer have access points in troves."
+
+Readings taken (each stands until the owner says otherwise):
+1. **Any water freezes now** (the Sewers' river, the Nest's reservoir and moat), as "sneak in before the gate opens" asks.
+2. **The Queen is at her post, asleep, once the player comes within 10 tiles of it** (`QUEST_PURIFY.queenNear`), not only when her gate opens, so sneaking onto her dam over the ice does not skip her: the install still wakes her.
+3. **The bridge's second lane** is on the side of the tapped tile the tap is nearer; a tap too near the bank (the second lane on floor) is refused ("TAP FURTHER INTO THE WATER").
+4. **The pod's field is round**, shrinking as it runs down (the pools' fade, kept).
+
+**Still to do or to ask:**
+- **"I wanted rubble"**: the Queen's boss gate becomes rubble (drilled through by the fire technician, as the arena's rubble and the tunnel's choke are). Not built yet: what opens her encounter and what the module is then for need the owner's word.
+- **"Access points in troves"**: read as many ways into the Sewers' parts across the water. Not built: what the owner means is to be confirmed.
+- **MAGMA VENT** (the Thermite Burrower's alternate): next, with its numbers.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

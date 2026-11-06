@@ -92,6 +92,35 @@ function facilitySolidOpen(id) {
     _fp.comp = null; _fp.edges.clear(); _fp.paths.clear(); _fp.spawnCells = null; _fp.roomCells = null;
     return true;
 }
+// ── ICE ON WATER SET IN PLAY: the ice technician's bridges (js/techabilities.js techIceBridgeAt) made or thawed. `rects` is every bridge standing now ([x0, y0, x1, y1] each).
+// The map and its planning copy share the list (js/facility.js facilityIced: water under ice is floor). The floor under new ice becomes cells (drawn as ice: js/techabilities.js); the floor of ice that thawed
+// is taken away again, and anyone standing on it is put on the nearest floor. The stretches of floor are labelled again (once a bridge) and every cached route and route in flight is let go.
+function _fpIceCells(list) { const out = []; for (const r of list || []) for (let x = Math.ceil(r[0]); x <= Math.floor(r[2]); x++) for (let y = Math.ceil(r[1]); y <= Math.floor(r[3]); y++) out.push(x + "," + y); return out; }
+function facilityIceSet(rects) {
+    if (!_fp || !_fp.F || !_fp.cells) return false;
+    const F = _fp.F, P = _fp.P, before = new Set(_fpIceCells(F.ice)), list = (rects || []).map(r => r.slice());
+    F.ice = list; if (P) P.ice = list;
+    const after = new Set(_fpIceCells(list)), gone = new Set();
+    for (const k of after) {
+        if (before.has(k)) continue; const [x, y] = k.split(",").map(Number);
+        if (!_fp.cells.has(k) && facilityWalkable(x, y, F)) { const room = facilityRoomAt(x, y, F); if (room) { const t = _fpFloorTile(x, y, room.id); t.ice = true; world.push(t); worldTileMap.set(k, t); _fp.cells.set(k, [x, y]); } }
+        if (_fp.cells.has(k) && !_fp.cellsP.has(k) && P && facilityWalkable(x, y, P)) _fp.cellsP.set(k, [x, y]);
+    }
+    for (const k of before) {
+        if (after.has(k)) continue; const [x, y] = k.split(",").map(Number); if (facilityWalkable(x, y, F)) continue;   // (floor that was floor anyway stays)
+        if (_fp.cells.has(k)) { _fp.cells.delete(k); gone.add(k); } _fp.cellsP.delete(k);
+    }
+    if (gone.size) { world = world.filter(t => !gone.has(t.x + "," + t.y)); for (const k of gone) worldTileMap.delete(k); }
+    _fp.comp = null; _fp.edges.clear(); _fp.paths.clear(); _fp.spawnCells = null; _fp.roomCells = null; _fp.fromCells = null;
+    const units = (typeof actors !== "undefined" ? actors : []).concat(typeof player !== "undefined" && player ? [player] : []);
+    for (const a of units) {
+        if (!a || a.dead) continue;
+        if (a._fpPath) { a._fpPath = null; a._fpAt = 0; a._fpFail = 0; }
+        if (gone.size && gone.has(Math.round(a.x) + "," + Math.round(a.y))) { const c = _fpNearestCellOpen(a.x, a.y); if (c) { a.x = c[0]; a.y = c[1]; if (a === player) { player.targetX = c[0]; player.targetY = c[1]; player.fpPath = null; } } }
+    }
+    if (typeof player !== "undefined" && player && player.fpPath && player.fpPath.length) { const np = facilityPath(player.x, player.y, player.targetX, player.targetY); player.fpPath = np || null; if (!np) { player.targetX = player.x; player.targetY = player.y; } }
+    return true;
+}
 function facilitySolidIsOpen(id) { const s = _fp && _fp.F && _fp.F.solids.find(q => q.id === id); return !!(s && s.open); }
 // ── A SOLID MOVED IN PLAY: the Flux technician's FLUX MOVE (js/fluxmove.js checks the move first, every rule of it: this only carries it out; docs/FLUX-MOVEMENT.md) ──
 // ONE TRANSACTION: the solid's outline in the map and in its planning copy (and both bucket indexes), the floor it leaves and the floor it covers (the walkable cells, the floor tiles and their paint), its draw

@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **k · TOXIC PODS; ice bridges** (Milestone Three's technician utilities; the owner, 2026-11-06: "Technician utilities", "Shorter life", "One ability", "Straight, 30 s"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06j` went to main at the owner's word ("Push to main").
+  - **TOXIC PODS** replace the Blight Spider's pools: a small pod with a round toxic field 2 tiles across, up to 3, biting every 0.5 s, running down in 2 minutes of play (was 2 in-game days).
+  - **Ice bridges:** the ice technician's chip aimed at water freezes a straight bridge, 2 tiles wide, bank to bank, up to 8 tiles, for 30 s; anyone can cross; on floor it is still FROST PATCH; one 60 s wait. Any water can freeze.
+  - **The Toxic Queen** is at her post, asleep, once you come within 10 tiles of it **[reading]**, so a bridge onto her dam does not skip her (`OPEN-QUESTIONS.md` §1z).
+  - Tests: tests/techlevel1.js (23 checks; the bridge's new check: made, crossed, thawed, refused), and the nearest suites: techabilities, bible, sewers, sewerquest, facilityplay, fluxmove, fluxlab, globals, loadorder, cover, boot. No full run. Not playtested.
+
 - **j · Creature specials and the player's own jumps need sight** (the owner, 2026-11-06: "Both need sight"; on the branch; commit named in git log).
   - **Main:** build `2026-11-06i` went to main at the owner's word ("Push to main"), with its strip fix (every name whole; 15f4f45). Its full run was stopped at suite 31, none failing, at the owner's word (too much testing); only the suites nearest each change were run.
   - A creature's special neither aims at nor reaches what the creature cannot see. ARC SLINGER's jump and the Technomancer's arc jump only to a creature seen from the last one (`COMBAT.md` §8.5).

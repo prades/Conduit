@@ -71,6 +71,10 @@ const TECH_AB = {
         life: 600,          // 10 s (given)
         slow: 0.5,          // enemies on it move at half speed (given)
         boost: 1.5,         // PROVISIONAL: your units on it move this much faster ("they cross faster": how much faster was not given)
+        // ICE BRIDGES: the same chip aimed at water (the owner, 2026-11-06: "One ability"; "Straight, 30 s": straight, 2 tiles wide, bank to bank, up to 8 tiles; one 60 s wait for patch or bridge)
+        bridgeWide: 2,      // tiles across
+        bridgeMax: 8,       // tiles of water at most, bank to bank
+        bridgeLife: 1800,   // 30 s, then it thaws
     },
     blight: {
         cooldown: 3600,     // 60 s from when its pool is down
@@ -108,9 +112,9 @@ const TECH_ABILITIES = {
     fire:     { id: "thermite_drill", name: "THERMITE DRILL", short: "DRILL", icon: "✹", col: "#ff8a3a", aim: ["enemy"], use: (f, p) => p.rubble ? _techDrillRubble(f, p.rubble) : techDrillFoe(f, p.enemy),
                 ask: () => "TAP AN ENEMY IT CAN SEE (OR ITS CARD) TO DRILL" },
     ice:      { id: "frost_patch", name: "FROST PATCH", short: "FROST", icon: "❄", col: "#9be8ff", aim: ["spot"], use: (f, p) => techFrostAt(f, p.spot),
-                ask: () => "TAP THE FLOOR WHERE IT CAN SEE" },
+                ask: () => "TAP FLOOR FOR A PATCH, OR WATER FOR A BRIDGE, WHERE IT CAN SEE" },
     toxic:    { id: "blight_spider", name: "TOXIC PODS", short: "POD", icon: "☣", col: "#7dff4a", aim: ["spot"], use: (f, p) => techBlightAt(f, p.spot),
-                ask: () => "TAP THE FLOOR WHERE IT CAN SEE: IT LEAVES A POOL THERE" },
+                ask: () => "TAP THE FLOOR WHERE IT CAN SEE: IT SETS A TOXIC POD THERE" },
     flux:     { id: "flux_move", name: "FLUX MOVE", short: "MOVE", icon: "✦", col: "#c77dff", aim: ["object", "place"], use: (f, p) => techFluxMoveAt(f, p.object, p.place),
                 ask: () => "" },   // (its prompt says more as it goes: techAimPrompt)
 };
@@ -533,6 +537,7 @@ let techFrosts = [];   // { x, y (the middle tile), tiles (Set of "x,y"), t0, un
 function techFrostAt(tech, spot) {
     if (!spot || !Number.isFinite(spot.x) || !Number.isFinite(spot.y)) return { ok: false, why: "TAP THE FLOOR", again: true };
     const cx = Math.round(spot.x), cy = Math.round(spot.y);
+    if (_techWaterAt(cx, cy)) return techIceBridgeAt(tech, spot);   // water: a bridge (the same chip, the same wait)
     if (typeof facilityStandOk === "function" && !facilityStandOk(cx, cy)) return { ok: false, why: "TAP THE FLOOR", again: true };
     if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, cx, cy)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
     const T = TECH_AB.frost, f0 = _techFrame(), h = Math.floor(T.size / 2), tiles = new Set();
@@ -542,6 +547,45 @@ function techFrostAt(tech, spot) {
     _techSay("❄ FROST PATCH · " + Math.round(T.life / 60) + " S", "#9be8ff");
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: cx, y: cy, radius: 1.6, color: "#9be8ff", life: 24 });
     return { ok: true };
+}
+// ── ICE BRIDGES (the ice technician's utility on water; the owner, 2026-11-06: "One ability", "Straight, 30 s"; docs/NEXT-PHASE-ROADMAP.md §14.2) ──
+// The FROST PATCH chip aimed at water the technician can see freezes a straight bridge across it, there at once: TECH_AB.frost.bridgeWide tiles wide, along the axis nearer the line from the technician to the spot,
+// from bank to bank (both ends must be floor), at most bridgeMax tiles of water. It is floor while it stands (js/facilityplay.js facilityIceSet; everyone may cross it) and thaws after bridgeLife; anyone on it
+// then is put on the nearest floor. Several may stand at once. Nothing is saved (a save loads with the water as it was).
+let techBridges = [];   // { rect: [x0, y0, x1, y1], t0, until, by }
+function _techWaterAt(x, y) { if (typeof _fp === "undefined" || !_fp || !_fp.F || typeof facilitySolidAt !== "function") return false; if (typeof facilityIced === "function" && facilityIced(_fp.F, x, y)) return false; const s = facilitySolidAt(x, y, _fp.F); return !!(s && s.water); }
+function _techFloorAt(x, y) { return typeof facilityStandOk === "function" ? facilityStandOk(x, y) : false; }
+function techIceBridgePlan(tech, spot) {
+    const T = TECH_AB.frost, cx = Math.round(spot.x), cy = Math.round(spot.y), alongX = Math.abs(cx - tech.x) >= Math.abs(cy - tech.y);
+    const side = alongX ? (spot.y >= cy ? 1 : -1) : (spot.x >= cx ? 1 : -1), lanes = [];
+    for (let w = 0; w < T.bridgeWide; w++) lanes.push(w === 0 ? 0 : side * w);
+    const at = (lane, t) => alongX ? [cx + t, cy + lane] : [cx + lane, cy + t], tiles = [];
+    for (const lane of lanes) {
+        const [x0, y0] = at(lane, 0); if (!_techWaterAt(x0, y0)) return { ok: false, why: "TOO NEAR THE BANK: TAP FURTHER INTO THE WATER", again: true };
+        let lo = 0, hi = 0; while (_techWaterAt(...at(lane, lo - 1)) && hi - lo < T.bridgeMax + 1) lo--; while (_techWaterAt(...at(lane, hi + 1)) && hi - lo < T.bridgeMax + 1) hi++;
+        if (hi - lo + 1 > T.bridgeMax) return { ok: false, why: "TOO WIDE TO BRIDGE · " + T.bridgeMax + " TILES OF WATER AT MOST", again: true };
+        if (!_techFloorAt(...at(lane, lo - 1)) || !_techFloorAt(...at(lane, hi + 1))) return { ok: false, why: "NO BANK TO REACH THERE", again: true };
+        for (let t = lo; t <= hi; t++) tiles.push(at(lane, t));
+    }
+    const xs = tiles.map(p => p[0]), ys = tiles.map(p => p[1]);
+    return { ok: true, rect: [Math.min(...xs) - 0.5, Math.min(...ys) - 0.5, Math.max(...xs) + 0.5, Math.max(...ys) + 0.5], tiles: tiles.length, alongX };
+}
+function techIceBridgeAt(tech, spot) {
+    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, spot.x, spot.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
+    const plan = techIceBridgePlan(tech, spot); if (!plan.ok) return plan;
+    const T = TECH_AB.frost, f0 = _techFrame();
+    techBridges.push({ rect: plan.rect, t0: f0, until: f0 + T.bridgeLife, by: tech });
+    if (typeof facilityIceSet === "function") facilityIceSet(techBridges.map(b => b.rect));
+    tech._abReadyAt = f0 + techCooldown(tech, T.cooldown);
+    _techSay("❄ ICE BRIDGE · " + Math.round(T.bridgeLife / 60) + " S", "#9be8ff");
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: (plan.rect[0] + plan.rect[2]) / 2, y: (plan.rect[1] + plan.rect[3]) / 2, radius: 1.6, color: "#9be8ff", life: 24 });
+    return { ok: true };
+}
+function _techBridgeTick(f0) {
+    if (!techBridges.length) return;
+    const keep = techBridges.filter(b => f0 < b.until); if (keep.length === techBridges.length) return;
+    techBridges = keep; if (typeof facilityIceSet === "function") facilityIceSet(techBridges.map(b => b.rect));
+    _techSay("❄ AN ICE BRIDGE THAWED", "#9be8ff");
 }
 function techOnFrost(a) { if (!techFrosts.length || !a) return null; const k = Math.round(a.x) + "," + Math.round(a.y); for (const P of techFrosts) if (_techFrame() < P.until && P.tiles.has(k)) return P; return null; }
 function _techFrostTick(f0) {
@@ -810,7 +854,7 @@ function _techDrawFaultStroke(g, A, f0) {
 }
 
 // everything the abilities keep for a game, let go when a new one starts or one is loaded (js/facilityplay.js facilityResetState). Saved and put back by the facility's save: the launchers, the rubble, the clock and the pools.
-function techReset() { techShields = []; techFrosts = []; techPools = []; techClock = 0; techAim = null; _techLabels = {}; }
+function techReset() { if (techBridges.length && typeof facilityIceSet === "function") facilityIceSet([]); techBridges = []; techShields = []; techFrosts = []; techPools = []; techClock = 0; techAim = null; _techLabels = {}; }
 
 // ── the throw and the flight ──
 function _techLoadPoint(a) {
@@ -960,7 +1004,7 @@ function techAbilityTick() {
     _techSiteNotices(); _techRubbleNotices();
     _techShieldTick();
     techClock++;   // THE PLAY CLOCK: a frame of play
-    _techFrostTick(f0); _techPoolTick();
+    _techFrostTick(f0); _techBridgeTick(f0); _techPoolTick();
 }
 // THE BROKEN SECTIONS: a follower on a site's room that is not holding it (it was called back) walks to the room's broken section and drops through; one posted to that room that is not up there (it came back from the dead at the
 // Crystal) is let go of its post, since nobody walks up. On a POCKET site's landing with a broken edge (the Sewers' collapsed tunnel) a follower that is not waiting there for you (_pocketHold) and is up there without you
@@ -1128,8 +1172,8 @@ function techAbilityInfo(f) {
     }
     if (ab.id === "frost_patch") {
         const R = TECH_AB.frost;
-        return { h: "ABILITY · " + ab.name, note: "From the ❄ chip on its squad card: a patch of ice on a spot of floor it can see, there at once. Enemies on it are slowed; your units cross it faster.",
-                 rows: [["SIZE", R.size + " × " + R.size + " tiles"], ["LASTS", Math.round(R.life / 60) + " s"], ["ENEMIES ON IT", Math.round(R.slow * 100) + "% of their speed"], ["YOUR UNITS ON IT", Math.round(R.boost * 100) + "% of their speed"]].concat(wait) };
+        return { h: "ABILITY · " + ab.name, note: "From the ❄ chip on its squad card: on a spot of floor it can see, a patch of ice, there at once (enemies on it are slowed; your units cross it faster). On water it can see, an ICE BRIDGE: straight across, bank to bank, that anyone can walk on until it thaws.",
+                 rows: [["PATCH", R.size + " × " + R.size + " tiles, " + Math.round(R.life / 60) + " s"], ["ENEMIES ON IT", Math.round(R.slow * 100) + "% of their speed"], ["YOUR UNITS ON IT", Math.round(R.boost * 100) + "% of their speed"], ["BRIDGE", R.bridgeWide + " tiles wide, up to " + R.bridgeMax + " tiles of water, " + Math.round(R.bridgeLife / 60) + " s"]].concat(wait) };
     }
     if (ab.id === "blight_spider") {
         const B = TECH_AB.blight, bite = Math.round(((f.stats && f.stats.specialAttack) || 10) * 0.12 * 0.3 * 100) / 100;
@@ -1204,7 +1248,7 @@ function techDrawRubbleOn(it, f) {
 // ── on each floor tile (js/game.js draws it with the tile, like the serum's pools): the FROST PATCH's ice, the TOXIC PODS' fields ──
 function techDrawOnTile(tx, ty, px, py) {
     const FX = techAim && techAim.flux && techAim.flux.s && typeof fluxDrawOnTile === "function" ? techAim : null;   // FLUX MOVE's grid, on the floor (js/fluxmove.js): drawn last on the tile
-    if (!techFrosts.length && !techPools.length) { if (FX) fluxDrawOnTile(FX, tx, ty, px, py); return; }
+    if (!techFrosts.length && !techPools.length && !techBridges.length) { if (FX) fluxDrawOnTile(FX, tx, ty, px, py); return; }
     const g = ctx, f0 = _techFrame(), W = TILE_W, H = TILE_H, S = (x, y) => [px + ((x - tx) - (y - ty)) * W, py + H + ((x - tx) + (y - ty)) * H];   // a point of the floor near this tile, on the screen
     const tile = () => { g.beginPath(); g.moveTo(px, py); g.lineTo(px + W, py + H); g.lineTo(px, py + 2 * H); g.lineTo(px - W, py + H); g.closePath(); };
     const key = tx + "," + ty;
@@ -1217,6 +1261,20 @@ function techDrawOnTile(tx, ty, px, py) {
         g.strokeStyle = "rgba(255,255,255," + (0.55 * a).toFixed(3) + ")"; g.lineWidth = 1;   // cracks in the ice
         for (let k = 0; k < 3; k++) { const u = ((seed >>> (k * 4)) % 13) / 13, v = ((seed >>> (k * 4 + 2)) % 11) / 11, p = S(tx - 0.5 + u, ty - 0.5 + v); g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(p[0] + 9 - k * 6, p[1] + 3 + k); g.lineTo(p[0] + 13 - k * 4, p[1] - 4); g.stroke(); }
         if ((f0 + seed) % 90 < 8) { const p = S(tx + ((seed % 7) - 3) / 10, ty + ((seed % 5) - 2) / 10); g.fillStyle = "rgba(255,255,255," + a.toFixed(3) + ")"; g.fillRect(p[0] - 1, p[1] - 3, 2, 6); g.fillRect(p[0] - 3, p[1] - 1, 6, 2); }   // a glint
+        g.restore();
+    }
+    for (const B of techBridges) {   // an ICE BRIDGE: its tiles are floor while it stands (js/facilityplay.js facilityIceSet), drawn as pale ice with cracks and a white rim; it flickers in its last 3 s
+        const r = B.rect; if (tx < r[0] || tx > r[2] || ty < r[1] || ty > r[3]) continue;
+        const left = B.until - f0, a = Math.min(1, (f0 - B.t0 + 1) / 10) * (left < 180 ? 0.55 + 0.45 * Math.abs(Math.sin(f0 * 0.25)) : 1), seed = ((tx * 73856093) ^ (ty * 19349663)) >>> 0;
+        g.save(); tile(); g.clip();
+        const gr = g.createLinearGradient(px - W, py, px + W, py + 2 * H); gr.addColorStop(0, "rgba(236,250,255," + (0.97 * a).toFixed(3) + ")"); gr.addColorStop(1, "rgba(140,205,238," + (0.95 * a).toFixed(3) + ")");
+        g.fillStyle = gr; g.fillRect(px - W, py, 2 * W, 2 * H);
+        g.strokeStyle = "rgba(70,140,185," + (0.5 * a).toFixed(3) + ")"; g.lineWidth = 1;   // cracks
+        for (let k = 0; k < 2; k++) { const u = ((seed >>> (k * 4)) % 13) / 13, v = ((seed >>> (k * 4 + 2)) % 11) / 11, p = S(tx - 0.5 + u, ty - 0.5 + v); g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(p[0] + 9 - k * 6, p[1] + 3 + k); g.lineTo(p[0] + 13 - k * 4, p[1] - 4); g.stroke(); }
+        g.strokeStyle = "rgba(255,255,255," + (0.95 * a).toFixed(3) + ")"; g.lineWidth = 3;   // the rim, on the bridge's outer edges
+        const e = (x0, y0, x1, y1) => { const p0 = S(x0, y0), p1 = S(x1, y1); g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke(); };
+        if (tx - 0.5 <= r[0] + 1e-6) e(tx - 0.5, ty - 0.5, tx - 0.5, ty + 0.5); if (tx + 0.5 >= r[2] - 1e-6) e(tx + 0.5, ty - 0.5, tx + 0.5, ty + 0.5);
+        if (ty - 0.5 <= r[1] + 1e-6) e(tx - 0.5, ty - 0.5, tx + 0.5, ty - 0.5); if (ty + 0.5 >= r[3] - 1e-6) e(tx - 0.5, ty + 0.5, tx + 0.5, ty + 0.5);
         g.restore();
     }
     for (const P of techPools) {   // a TOXIC POD's field: a round green haze on the floor, brightest at the pod, with a faint rim, weaker and smaller as the pod runs down

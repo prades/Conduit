@@ -32,6 +32,7 @@ const QUEST_PURIFY = {
     install: 600,        // frames the module takes to mount (the archive's "about 10 seconds"; js/stations.js purifier_mount.build is the same number): the player stays at the mount; the queen is woken when it begins
     cycle: 1800,         // frames the module runs before the water is clean (30 s); then a living boss is calmed
     discoverNear: 6,     // tiles from the outfall where the water-quality reading is taken (the culvert's doorway is 4.7 tiles from it: the reading comes as you arrive)
+    queenNear: 10,       // tiles from the Queen's post at which she is there, asleep, before her gate opens (a player can reach her dam over an ice bridge: questTick) [reading]
     dropLife: 18000,     // frames a dropped ant sample lies on the floor (5 minutes of play)
     closing: 1500,       // frames the closing line stays on the plate (25 s)
     antTarget: 10,       // toxic ants of the Sewers killed before Side Quest appears (with the lab turn-in): the archive's provisional "around 10", "tune to progression pacing"
@@ -104,6 +105,12 @@ function questTick() {
         if (room === P.room) { const o = _questOutfall(); if (o && Math.hypot(o[0] - player.x, o[1] - player.y) <= P.discoverNear) questMark(Q, "discoveredAt", "◈ WATER-QUALITY READING: TOXIC. THE RUNOFF IS CONTAMINATED — SAMPLES WILL SAY HOW", "#ffb347"); }
     }
     if (!Q.puzzleAt && typeof puzzleState === "function") { const ps = puzzleState(P.puzzle); if (ps && ps.solved) { Q.puzzleHow = ps.how || ""; questMark(Q, "puzzleAt"); } }   // (the puzzle says how the vial was got)
+    // THE QUEEN ASLEEP AT HER POST when the player comes near it, not only when the gate opens: an ice bridge (js/techabilities.js) can reach her dam before the gate opens, and sneaking in past her is the
+    // owner's (2026-11-06: "I want players to be able to sneak in before the gate opens"); the install still wakes her (js/bosses.js). [reading: within P.queenNear tiles of her post, so she is there before she is seen]
+    if (Q.discoveredAt && !Q.bossResolvedAt && typeof bossArm === "function" && typeof bossState === "function" && typeof bossLair === "function") {
+        const S = bossState(P.boss), at = S && S.state === "idle" ? bossLair(bossEnc(P.boss)) : null;
+        if (at && Math.hypot(at[0] - player.x, at[1] - player.y) <= P.queenNear) bossArm(P.boss);
+    }
     if (Q.discoveredAt && !Q.samplesAt && questSamplesReady(Q)) questMark(Q, "samplesAt", "◈ EVERY SAMPLE IS IN YOUR PACK — THE ANALYSIS BENCH IN THE EXPERIMENT LAB WANTS THEM");
     if (!Q.nestSeenAt && typeof facilityAreaAt === "function") { const a = facilityAreaAt(player.x, player.y, P.room); if (a && a.nest) questMark(Q, "nestSeenAt", "◈ THE NEST: THE QUEEN'S COLONY, BUILT ON A DAM OF TRASH ACROSS THE WATER. HER EGGS ARE EVERYWHERE — THE BROOD COMES FROM HERE", "#8cff5a"); }   // (your note, once, the first time you stand in it: js/population.js NESTS)
     if (Q.installedAt && !Q.purifiedAt) {   // THE CYCLE: the module runs, the water clears, then the boss is calmed if it lives

@@ -116,7 +116,7 @@ function _facilityBuild(ex) {
         const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null,
             flux: pr.flux ? { range: Math.max(1, pr.flux.range | 0 || 2), turn: !!pr.flux.turn, turned: false } : null };   // (flux: the Flux technician can move it, js/fluxmove.js; `turned` is its state in play, along the other axis)
     });
-    for (const so of solids) { so.cover = FAC_COVER.has(so.kind); so.low = FAC_LOW.has(so.kind); }   // (what it does besides blocking walking: FAC_COVER, FAC_LOW below)
+    for (const so of solids) { so.cover = FAC_COVER.has(so.kind); so.low = FAC_LOW.has(so.kind); so.water = so.kind === "river" || so.kind === "pool"; }   // (what it does besides blocking walking: FAC_COVER, FAC_LOW below; water can freeze: facilityIced)
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
     const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));   // (a tile's middle, not snapped, like a pickup)
@@ -179,7 +179,7 @@ function facilityRoomAt(x, y, F) {
 }
 function facilitySolidAt(x, y, F) {
     F = F || facilityGet();
-    const ix = _facIndex(F); for (const s of _facNear(ix.solids, ix, x, y)) if (!s.open && _facIn(x, y, s.bb) && (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly))) return s;   // (open: a gate or a choke taken away in play, js/facilityplay.js facilitySolidOpen: no longer in the way)
+    const ix = _facIndex(F); for (const s of _facNear(ix.solids, ix, x, y)) if (!s.open && !(s.water && facilityIced(F, x, y)) && _facIn(x, y, s.bb) && (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly))) return s;   // (open: a gate or a choke taken away in play, js/facilityplay.js facilitySolidOpen: no longer in the way)
     return null;
 }
 // Walkable: inside a room, outside every solid, and not ON a wall (a body exactly on a wall line could slip along it into the next room).
@@ -206,9 +206,21 @@ function facilityCanStep(x0, y0, x1, y1, F) {
     for (const s of solids) {
         if (s.open || !near(s.bb)) continue;   // (open: taken away in play, js/facilityplay.js facilitySolidOpen)
         if (s.shape === "circle") { if (_facSegPointDist(a, b, s.at[0], s.at[1]) < s.r) return false; }
-        else for (let i = 0; i < s.poly.length; i++) if (facilitySegmentsCross(a, b, s.poly[i], s.poly[(i + 1) % s.poly.length])) return false;
+        else for (let i = 0; i < s.poly.length; i++) {
+            const c = s.poly[i], d = s.poly[(i + 1) % s.poly.length]; if (!facilitySegmentsCross(a, b, c, d)) continue;
+            if (s.water && F.ice && F.ice.length) { const q = _facSegHit(a, b, c, d); if (q && facilityIced(F, q[0], q[1])) continue; }   // (onto the ice from the bank: water frozen there is floor)
+            return false;
+        }
     }
     return true;
+}
+// ICE ON WATER (the ice technician's bridge, js/techabilities.js techIceBridge): rectangles [x0, y0, x1, y1] of frozen water, shared by the map and its planning copy (js/facilityplay.js facilityIceSet).
+// Water under them is floor: it is walked on (facilityWalkable, facilityCanStep) and nothing else changes (water is low: seen over, shot over). Gone when it thaws.
+function facilityIced(F, x, y) { const L = F && F.ice; if (!L || !L.length) return false; for (const r of L) if (x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]) return true; return false; }
+function _facSegHit(a, b, c, d) {   // where segment ab crosses segment cd, or null
+    const rx = b[0] - a[0], ry = b[1] - a[1], sx = d[0] - c[0], sy = d[1] - c[1], den = rx * sy - ry * sx; if (!den) return null;
+    const t = ((c[0] - a[0]) * sy - (c[1] - a[1]) * sx) / den, u = ((c[0] - a[0]) * ry - (c[1] - a[1]) * rx) / den;
+    return t >= -1e-9 && t <= 1 + 1e-9 && u >= -1e-9 && u <= 1 + 1e-9 ? [a[0] + t * rx, a[1] + t * ry] : null;
 }
 // WHAT A KIND OF PROP DOES BESIDES BLOCKING WALKING (Milestone Two; the owner, 2026-11-06: docs/FLUX-MOVEMENT.md §13, docs/DECISION-LOG.md). Every solid still blocks walking for everyone.
 //   COVER  a shot that reaches it stops there ("Stops shots"): "Barriers", "Crates and stacks", "Barrels", "Desks and consoles" (the desks, consoles and lab benches); a shot fired from right behind

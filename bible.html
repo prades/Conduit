@@ -2117,6 +2117,7 @@
 <tr><td>Enemies' speed on it</td><td class="num"><span class="n" data-k="TECH_AB.frost.slow" data-f="pct">50%</span></td><td><code>js/techabilities.js:69</code></td></tr>
 <tr><td>Your units' speed on it (PROVISIONAL)</td><td class="num"><span class="n" data-k="TECH_AB.frost.boost" data-f="pct">150%</span></td><td><code>js/techabilities.js:70</code></td></tr>
 </table></div>
+<p><b>Ice bridges</b> (build <code>2026-11-06k</code>; the owner: "One ability", "Straight, 30 s"). The same chip aimed at water the technician can see freezes a straight bridge across it, there at once: <span class="n" data-k="TECH_AB.frost.bridgeWide">2</span> tiles wide, bank to bank, at most <span class="n" data-k="TECH_AB.frost.bridgeMax">8</span> tiles of water. Anyone can walk on it. It thaws after <span class="n" data-k="TECH_AB.frost.bridgeLife">1800</span> frames (30 s); anyone still on it is put on the nearest floor. Patch and bridge share the one 60 s wait. Any water can be frozen: the Sewers' river, the Nest's reservoir and its moat. The Toxic Queen is at her post, asleep, once you come within <span class="n" data-k="QUEST_PURIFY.queenNear">10</span> tiles of it, so a bridge onto her dam does not skip her.</p>
 <h4>Toxic Pods (the toxic technician) and the play clock</h4>
 <p><b>The play clock</b> (<code>techClock</code>) counts frames of play and is saved. An in-game day is <span class="n" data-k="TECH_AB.day">72000</span> frames (20 minutes of play), and nothing passes while the game is closed.</p>
 <p>TOXIC PODS replaced the poison pools in build <code>2026-11-06k</code> (the owner: "Shorter life"). Tap the chip, then a spot of floor it can see. The technician walks there and sets down a small toxic pod; its field is round, <span class="n" data-k="TECH_AB.blight.size">2</span> tiles across, and the cooldown starts when the pod is down. There are at most <span class="n" data-k="TECH_AB.blight.max">3</span> pods; a 4th takes the oldest's place. Every <span class="n" data-k="TECH_AB.blight.every">30</span> frames of play, a pod's field bites the enemies standing in it with the toxic cloud's bite, 0.036 × the technician's special attack. It does nothing to your side. A pod runs down in <span class="n" data-k="techPoolLife()">7200</span> frames of play (2 minutes). Its bite and its field both shrink as it runs down, half at one minute, and both are worked out from its age so nothing can stretch it. Pods are saved.</p>
@@ -3561,7 +3562,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-06j</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-06k</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3782,7 +3783,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-06j (6 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-06k (6 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

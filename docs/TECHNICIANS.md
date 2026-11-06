@@ -131,6 +131,8 @@ The follower combat redesign (`FOLLOWER-COMBAT-REDESIGN.md`, the owner's brief, 
 
 ## The Frost Patch (ice)
 
+> **Build `2026-11-06k`: one ability, patch or bridge** (the owner, 2026-11-06: "One ability"; "Straight, 30 s"). Aimed at floor the chip lays the patch below. Aimed at water the technician can see, it freezes an **ICE BRIDGE**: straight across, 2 tiles wide, bank to bank, up to 8 tiles of water, there at once; anyone can walk on it; it thaws after 30 s and anyone on it is put on the nearest floor. One 60 s wait for either. Any water can freeze (the Sewers' river, the Nest's reservoir and moat). Code: js/techabilities.js `techIceBridgeAt`, js/facilityplay.js `facilityIceSet`, js/facility.js `facilityIced`. Test: tests/techlevel1.js.
+
 ASKED: "Implement the Level 1 Frost Patch using existing terrain and status-effect systems. Check the established design for its dimensions, duration, slowing effects, and sliding behavior"; then 3×3, 10 s, half speed, on a spot the player taps that the technician can see, there at once; "sliding" for your own units: they cross faster; ice bridges later ("they'll be like sewer somewhere on the map; we'll find a place to add the sewer system, and you can [cross] the sewer with the ice bridges").
 
 - The ❄ chip, then a spot of floor the technician can see: ice covers the **3×3 tiles** round the tapped tile at once (only floor in sight of its middle: a wall cuts it), for **10 s** (its seconds show over it).
@@ -145,6 +147,8 @@ ASKED: "Implement the Level 1 Frost Patch using existing terrain and status-effe
 | Cooldown | 60 s | given |
 
 ## The Blight Spider (toxic) and the play clock
+
+> **Build `2026-11-06k`: TOXIC PODS replace the pools** (the owner, 2026-11-06: "Shorter life"; roadmap §12.3). A small pod with a round toxic field 2 tiles across, up to 3, the same bite every 0.5 s; it runs down in **2 minutes of play** (the pools lasted 2 in-game days). The rest below (walk there, a 4th takes the oldest's place, saved, the play clock) is unchanged. Code: js/techabilities.js (the pools' names kept: `techPools`, `TECH_AB.blight.life`).
 
 ASKED: "Create contamination pools. Make the pools persist for two complete in-game days. Implement gradual toxin reabsorption according to the established behavior. Use the existing day-cycle system rather than real-world timers. Prevent repeated updates from incorrectly extending pool duration or multiplying toxin reabsorption. Leave the death-spill behavior unresolved until its exact mechanics are confirmed. Do not invent a replacement"; then a tapped spot it can see, the spider walks there and leaves a 2×2 pool; up to 3 (a 4th takes the oldest's place); 2 in-game days, a day being 20 minutes of play, play time only (a saved clock: nothing passes while the game is closed); the toxic cloud's own damage every half second; reabsorption: the pool slowly fades, weaker and smaller, until it is gone.
 

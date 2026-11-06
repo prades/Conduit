@@ -1736,3 +1736,18 @@ Build `2026-11-06h` stopped every shot that travels at walls and cover. The move
 
 ### Also said
 The owner: too much time goes into testing and side checks. From here on, only the suites nearest a change are run, and docs are kept short.
+
+## DECISION: Milestone Three starts with the technician utilities; TOXIC PODS; ice bridges; sneaking in
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Pods and bridges implemented and tested in build `2026-11-06k`, on the branch; not playtested. The rubble and the access points: not built (`OPEN-QUESTIONS.md` §1z).
+- **Branch/build:** after build `2026-11-06j` (on main at the owner's word).
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.3, §14.2; `TECHNICIANS.md`; `OPEN-QUESTIONS.md` §1z
+
+### Decision
+1. Milestone Three starts with "Technician utilities" (TOXIC PODS, ice bridges, then MAGMA VENT).
+2. Pods: "Shorter life" (the pools' numbers; a pod runs down in 2 minutes of play).
+3. FROST PATCH: "One ability" (floor: the patch; water: a bridge).
+4. The bridge: "Straight, 30 s" (2 tiles wide, bank to bank, up to 8 tiles, 60 s wait).
+5. Where: "I want players to be able to sneak in before the gate opens. I never wanted a gate. I wanted rubble. So it works out. Test it if you want but make the sewer have access points in troves."
+
