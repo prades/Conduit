@@ -80,11 +80,10 @@ The owner: "We also need to make themes for the different species and give textu
   - the crustacean texture as drawn in round 3 ("Approve as drawn");
   - the icon style, flat one-colour emblems ("Yes, this style");
   - the enemy row's short words;
-  - the four other themes as written ("They stand").
-- **Drawn, waiting on a yes** (2026-11-06):
-  - the mollusk texture, a pearly sheen ("Mollusk: pearly sheen", after "I'm not big on it" of a first try);
-  - the four other species emblems.
-- **Still to draw, each for a yes:** the three other textures, one at a time, and the ten element and race icons, a set at a time. Then the build.
+  - the four other themes as written ("They stand");
+  - the mollusk texture, a pearly sheen ("Approve as drawn"; after "I'm not big on it" of a first try, then "Mollusk: pearly sheen");
+  - the four other species emblems ("Approve all four").
+- **Still to draw, each for a yes:** the three other textures (elemental, drone, jelly), one at a time, and the ten element and race icons, a set at a time. Then the build.
 - The block below is the current proposal. The earlier rounds are at its end.
 - **Where to see it:** the Part 2 boards on the design canvas "Conduit 3D card concepts": the approved crustacean row, and above it the mollusk and the species emblems. The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
 - **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
@@ -94,10 +93,10 @@ The owner: "We also need to make themes for the different species and give textu
 | Species | Colour | Texture (its motif) | Icon | Drawn |
 |---|---|---|---|---|
 | Crustacean | CHITIN AMBER `#e7ad78` | A crab shell's bumpy crust: rounded knobs packed close in patches, fine granules between. Each knob is a low matte dome with a shadow where it rises from the shell. Small and faint | A crab | The texture and the icon: **approved** |
-| Mollusk | NACRE `#e3d6ff` | A pearly sheen, as the inside of a shell: soft bands of mother-of-pearl (pale pink, lilac, sky, mint, a little gold), each with a paler core where the light catches, fine wavy growth lines running with them and two soft glows of lustre. No shells drawn. Faint | A spiral (snail) shell | The texture and the icon: for a yes |
-| Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: clustered prisms and rising motes. On a follower it takes its element's colour | A cluster of prisms | The icon: for a yes |
-| Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | The icon: for a yes |
-| Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | The icon: for a yes |
+| Mollusk | NACRE `#e3d6ff` | A pearly sheen, as the inside of a shell: soft bands of mother-of-pearl (pale pink, lilac, sky, mint, a little gold), each with a paler core where the light catches, fine wavy growth lines running with them and two soft glows of lustre. No shells drawn. Faint | A spiral (snail) shell | The texture and the icon: **approved** |
+| Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: clustered prisms and rising motes. On a follower it takes its element's colour | A cluster of prisms | The icon: **approved** |
+| Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | The icon: **approved** |
+| Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | The icon: **approved** |
 
 - **On a species card** (shown on TIDE SHELL and NACRE PEARL):
   - its texture on the face, faint, in its colour;
@@ -117,7 +116,7 @@ The owner: "We also need to make themes for the different species and give textu
     - the crab (species): open claws on raised arms, eyes on stalks, an arched ridge cut across the shell;
     - the flame (fire), its heart cut out;
     - the ant (enemy race): head, waist and banded abdomen, bent legs, feelers.
-  - Drawn, for a yes (the other four species):
+  - Approved (the other four species, "Approve all four"):
     - the snail shell: the coil with a spiral groove, the flared lip with its mouth;
     - the crystal cluster: three prisms from one root, each front edge cut;
     - the drone: a round body, a visor with one eye, two antennae, two feet;

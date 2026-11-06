@@ -130,6 +130,7 @@ Each part is its own commit, with its own tests and a full green run before the 
   - the mollusk texture as a pearly sheen ("Mollusk: pearly sheen", after "I'm not big on it" of a first try with little shells);
   - the four other species emblems.
   - Both are on the design canvas, in a row above the approved crustacean.
+  - **Approved:** "Approve as drawn" (the sheen) and "Approve all four" (the emblems). Next: the elemental texture and the element emblems.
 
 **Then the build:**
 - the species textures on species cards and follower cards;

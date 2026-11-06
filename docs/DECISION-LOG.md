@@ -1267,3 +1267,34 @@ After the crustacean was approved, the mollusk texture was drawn as the theme wa
 - The pearly sheen is drawn and on the design canvas, on NACRE PEARL and on VOIDSTAR and HAMMER SLUG. On a follower it is laid once, at its own size.
 - It waits on the owner's yes, together with the four other species emblems (snail shell, crystal cluster, drone, jellyfish).
 - The first try was never committed. It is described in `UI-STYLE.md` as the record.
+
+## DECISION: Part 2's gate 2: the mollusk's pearly sheen and the species emblems approved
+
+- **Date:** 2026-11-06
+- **Status:** Approved (designed, not built). Gate 2 stays open for the rest.
+- **Branch/build:** mockups at commit 3a4d3f8 on `claude/start-game-project-HSh7Z`; the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3, the entries before this one
+
+### Context
+Two pieces were put to the owner:
+- the mollusk texture as a pearly sheen, on NACRE PEARL and behind VOIDSTAR and HAMMER SLUG;
+- the four other species emblems (snail shell, crystal prisms, drone, jellyfish).
+
+### Decision
+- **The mollusk texture:** "Approve as drawn".
+- **The four species emblems:** "Approve all four". The species set of five is complete.
+
+### Alternatives considered
+- The sheen: fainter, or more pearly colour.
+- The emblems: change some, or simpler shapes.
+
+### Impact
+- Approved for gate 2 so far:
+  - the crustacean and mollusk textures;
+  - the five species emblems;
+  - the flame and ant emblems (with the style);
+  - the enemy row's short words;
+  - the three other themes as written.
+- Next, each for a yes: the elemental texture (PRISM WHITE), and the element emblems (toxic, electric, ice, flux, core).
+- After those: the drone and jelly textures, the five other race emblems, BLOOM's when it comes.
+- Nothing is built until gate 2 closes.
