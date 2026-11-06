@@ -75,7 +75,14 @@ The owner: "We also need to make themes for the different species and give textu
 - **Open:** the themes themselves (colours, motifs), the icon style, and how three layers stay readable on a follower card.
 - **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop.
 
-**Proposed for gate 2** (drafted 2026-11-06, for the owner; **not approved, and nothing in the game changed**). This is round 3, after the owner's corrections (`DECISION-LOG.md`). The earlier rounds are at the end of this block.
+**Gate 2, in progress** (2026-11-06; nothing in the game has changed).
+- **Approved so far** (`DECISION-LOG.md`):
+  - the crustacean texture as drawn in round 3 ("Approve as drawn");
+  - the icon style, flat one-colour emblems ("Yes, this style");
+  - the enemy row's short words;
+  - the four other themes as written ("They stand").
+- **Still to draw, each for a yes:** the four other textures, one at a time; the fourteen other icons, a set at a time. Then the build.
+- The block below is the current proposal (round 3). The earlier rounds are at its end.
 - **Where to see it:** four Part 2 boards on the design canvas "Conduit 3D card concepts". The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
 - **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
 - **A species is a material, not a hue.** These colours are taken: the six element colours, BLOOM's pink, the class cards' cyan and the Player cards' gold.
@@ -83,7 +90,7 @@ The owner: "We also need to make themes for the different species and give textu
 
 | Species | Colour | Texture (its motif) | Icon | Drawn |
 |---|---|---|---|---|
-| Crustacean | CHITIN AMBER `#e7ad78` | A crab shell's bumpy crust: rounded knobs packed close in patches, fine granules between. Each knob is a low matte dome with a shadow where it rises from the shell. Small and faint | A crab | The texture and the icon |
+| Crustacean | CHITIN AMBER `#e7ad78` | A crab shell's bumpy crust: rounded knobs packed close in patches, fine granules between. Each knob is a low matte dome with a shadow where it rises from the shell. Small and faint | A crab | The texture and the icon: **approved** |
 | Mollusk | NACRE `#e3d6ff` | Spiral whorls and growth lines, as a shell's, with a mother-of-pearl sheen | A spiral shell | No |
 | Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: clustered prisms and rising motes. On a follower it takes its element's colour | A cluster of prisms | No |
 | Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | No |

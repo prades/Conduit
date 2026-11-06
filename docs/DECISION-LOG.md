@@ -1213,3 +1213,32 @@ The owner's words, verbatim:
   - the crab, the flame and the ant as flat one-colour emblems.
 - Still waiting on the owner's yes or correction. After a yes, the rest is drawn one family at a time: the other four textures, fourteen icons, BLOOM's when it comes.
 - The round-2 sticker icons were never committed. They are described in `UI-STYLE.md` as the record.
+
+## DECISION: Part 2's gate 2: the crustacean look and the emblem style approved
+
+- **Date:** 2026-11-06
+- **Status:** Approved (designed, not built). Gate 2 stays open until the rest is drawn and approved.
+- **Branch/build:** mockups at commit 423b270 on `claude/start-game-project-HSh7Z`; the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3, the two entries before this one
+
+### Context
+Round 3 of the gate-2 mockups was put to the owner:
+- the crustacean's bumpy shell crust, faint, at half size on followers;
+- the crab, flame and ant as flat one-colour emblems after Super Smash Bros.' series symbols.
+
+### Decision
+- **The crustacean texture:** "Approve as drawn". The other four species' textures are drawn next, one at a time.
+- **The icon style:** "Yes, this style". The other fourteen icons (four species, five elements, five races) are drawn as flat emblems, a set at a time, each set for the owner's yes.
+
+### Alternatives considered
+- The crust: fainter still, or a little stronger.
+- The icons: simpler, chunkier silhouettes; each emblem in a round badge.
+
+### Impact
+- Approved for gate 2 so far:
+  - the crustacean texture and its place on cards and followers;
+  - the icon style;
+  - the enemy row's short words;
+  - the four other themes as written.
+- Next: the mollusk texture (NACRE), and the four species emblems.
+- Nothing is built until gate 2 closes.

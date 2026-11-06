@@ -124,7 +124,8 @@ Each part is its own commit, with its own tests and a full green run before the 
   - The crustacean background became a bumpy shell crust ("Bumpy shell crust"), then fainter ("The design needs to be fainter").
   - The icons were tried after Persona 5 and set aside. They are now flat one-colour emblems after Super Smash Bros.' series symbols ("Just make it like Super Smash Bros.").
   - The other four themes stand ("They stand").
-  - Round 3 is on the design canvas and waits on the owner.
+  - Round 3 is on the design canvas.
+- **Approved** (2026-11-06): the crustacean texture as drawn ("Approve as drawn"), and the emblem style for all the icons ("Yes, this style"). Gate 2 stays open while the rest is drawn, each for a yes: four textures, one at a time, and fourteen icons, a set at a time.
 
 **Then the build:**
 - the species textures on species cards and follower cards;
