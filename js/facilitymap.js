@@ -1025,3 +1025,56 @@ const FACILITY_MAP = {
         "The CARRIER NPC drawn beside the map is a creature design, not map geometry: it is not part of this file",
     ],
 };
+
+// ─────────────────────────────────────────────────────────
+//  THE FLUX TEST ROOM (docs/FLUX-MOVEMENT.md §9.1, Build 2; the owner, 2026-11-06: "Test room + arena"): a room of its own for proving FLUX MOVE, in the map ONLY when the address carries ?fluxlab
+// ─────────────────────────────────────────────────────────
+// Not part of FACILITY_MAP: js/facilitygrow.js adds it, before the building pass, when the address says ?fluxlab, so the normal game's map is exactly as it was. js/fluxlab.js is the mode (the start in the room,
+// nothing kept, its creatures). The roadmap's test room (docs/NEXT-PHASE-ROADMAP.md §3.5): a one-tile movable object, a two-tile one, a rotatable one, an immovable one, objects that block movement, several enemies,
+// a narrow passage and an objective behind an obstruction (the object that gives cover waits for Milestone Two: there is no cover yet). THE LAYOUT IS A READING, the owner's to change (docs/OPEN-QUESTIONS.md §1w).
+// Drawn here under the Crystal Chamber (sketch pixels, as every room) and carried to a part of the map of its own; its tiles, from its top-left floor tile (0, 0), eighteen across and thirteen deep:
+//   - THE DOORWAY BACK: an alcove in the north wall (x 2-3), stairs up to a stairwell in the Crystal Chamber's floor (its north-east corner), the way back into the room from the facility;
+//   - THE OBJECTS TO TRY, near the doorway: a crate and an immovable generator; a crate, a barrier and a barrel by the divider's two ways;
+//   - THE DIVIDER: a row of consoles and a desk (immovable) across the room (y 6, x 1-14), with a NARROW PASSAGE one tile wide at its west end (x 0) and a way three wide at its east end (x 15-17): a crate set in
+//     the narrow passage sends anything coming round to the wide way; the last piece that would shut the wide way as well is refused (FLUX MOVE never cuts the floor in two);
+//   - THE OBJECTIVE BEHIND AN OBSTRUCTION: a pocket in the east wall (y 2-3, three deep: x 18-20) with an ammunition pack in it, its mouth shut by a barrier standing along it: move or turn the barrier
+//     to get in (in the east wall, not the north, so the walls in front of it do not hide it: the camera looks from the south-east);
+//   - THE CREATURES: three ants on the far side of the divider (js/fluxlab.js puts them there).
+const FLUX_LAB_MAP = {
+    room: { id: "flux_lab", label: "Flux Test Room", level: -1, status: "placed", wall_material: "solid", interior: true,
+            note: "The Flux test room (?fluxlab only): a neutral room for proving FLUX MOVE. Reached only with the flag, through the stairwell in the Crystal Chamber's floor; nothing in it is saved.",
+            polygon: [[190, 270], [230, 270], [230, 250], [270, 250], [270, 270], [550, 270], [550, 310], [610, 310], [610, 350], [550, 350], [550, 530], [190, 530]] },
+    interior: { id: "flux_lab", under: "crystal_chamber", offset: [1280, 1920] },   // (64 tiles east and 96 south: east of the Sewers, south of the armory, out of sight of every room)
+    portals: [
+        { id: "portal_lab_crystal", room: "flux_lab", rect: [230, 250, 270, 270], arrive: [250, 300], to: "portal_crystal_lab", label: "CRYSTAL CHAMBER", kind: "stairs_up",
+          note: "The stairs up to the Crystal Chamber, in an alcove in the test room's north wall." },
+        { id: "portal_crystal_lab", room: "crystal_chamber", rect: [330, 270, 370, 310], arrive: [350, 340], to: "portal_lab_crystal", label: "FLUX TEST ROOM", kind: "stairs_down", well: true,
+          note: "A stairwell in the Crystal Chamber's floor, in its north-east corner beside the relay (?fluxlab only): steps going down to the north, to the test room." },
+    ],
+    connections: [{ id: "conn_crystal_lab", rooms: ["crystal_chamber", "flux_lab"], portal: "portal_crystal_lab" }],
+    props: [
+        // the objects that move (FLUX MOVE: js/fluxmove.js reads `flux`), as the arena's are
+        { id: "lab_crate_1", room: "flux_lab", shape: "rect", rect: [310, 310, 330, 330], status: "placed", kind: "crate", flux: { range: 2 }, note: "A crate on the open floor by the doorway." },
+        { id: "lab_crate_2", room: "flux_lab", shape: "rect", rect: [210, 350, 230, 370], status: "placed", kind: "crate", flux: { range: 2 }, note: "A crate two tiles from the narrow passage: it fits in it." },
+        { id: "lab_barrel_1", room: "flux_lab", shape: "rect", rect: [530, 350, 550, 370], status: "placed", kind: "barrel", flux: { range: 2 }, note: "A barrel two tiles from the wide way (not one: standing in front of the way's east tile it would shut it from the north)." },
+        { id: "lab_barrier_1", room: "flux_lab", shape: "rect", rect: [550, 310, 570, 350], status: "placed", kind: "barrier", flux: { range: 2, turn: true }, note: "The obstruction: the barrier standing across the pocket's mouth (along y: the barrier turned)." },
+        { id: "lab_barrier_2", room: "flux_lab", shape: "rect", rect: [470, 350, 510, 370], status: "placed", kind: "barrier", flux: { range: 2, turn: true }, note: "A barrier two tiles from the wide way." },
+        // the objects that do not
+        { id: "lab_generator", room: "flux_lab", shape: "rect", rect: [370, 310, 390, 330], status: "placed", kind: "generator", note: "An immovable machine on the open floor (FLUX MOVE: it does not move)." },
+        { id: "lab_console_1", room: "flux_lab", shape: "rect", rect: [210, 390, 290, 410], status: "placed", kind: "console", note: "The divider, west: the narrow passage is between it and the west wall." },
+        { id: "lab_console_2", room: "flux_lab", shape: "rect", rect: [290, 390, 370, 410], status: "placed", kind: "console", note: "The divider, middle." },
+        { id: "lab_desk", room: "flux_lab", shape: "rect", rect: [370, 390, 490, 410], status: "placed", kind: "computer_desk", note: "The divider, east: the way three tiles wide is beyond its end." },
+    ],
+    pickups: [
+        { id: "pk_lab_objective", room: "flux_lab", at: [580, 320], items: [["ammo_pack", 1]], note: "The objective: in the pocket, two tiles behind the barrier's front (a pickup is taken within 1.25 tiles), clear of its back wall (a near wall: low, but it hides what lies right against it)." },
+    ],
+    floors: [{ room: "flux_lab", style: "plate", colour: "#3a2f5a" }],
+    decor: [
+        { id: "lab_crystal_door", room: "flux_lab", kind: "portal_door", a: [230, 250], b: [270, 250], colour: "#c77dff", up: true },
+        { id: "crystal_lab_stairwell", room: "crystal_chamber", kind: "stairwell", rect: [330, 270, 370, 310], dir: "n", colour: "#c77dff", note: "The stairwell down to the test room (?fluxlab only)." },
+        { id: "lab_wall_light_1", room: "flux_lab", kind: "wall_light", a: [290, 270], b: [330, 270], colour: "#e0c8ff" },
+        { id: "lab_wall_light_2", room: "flux_lab", kind: "wall_light", a: [190, 430], b: [190, 470], colour: "#e0c8ff" },
+        { id: "lab_light_1", room: "flux_lab", kind: "light", at: [300, 330], radius: 120, colour: "#e0c8ff", a: 0.22 },
+        { id: "lab_light_2", room: "flux_lab", kind: "light", at: [420, 470], radius: 120, colour: "#e0c8ff", a: 0.2 },
+    ],
+};

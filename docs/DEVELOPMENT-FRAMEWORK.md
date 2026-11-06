@@ -139,7 +139,7 @@ Use existing documents first; add new ones only with a clear owner.
 | The next update (draft, active work) | `NEXT-UPDATE.md` |
 | The update after it (proposed, for approval) | `FOLLOWING-UPDATE.md` |
 | Next development phase roadmap (Flux movement, follower abilities and Ultimates, Series 2 combat cards → sewer redesign; plan, not implemented) | `NEXT-PHASE-ROADMAP.md` |
-| The Flux Technician's object movement, FLUX MOVE (replacing Telegrab; built in the arena in `2026-11-06f`, the test room next; the code audit) | `FLUX-MOVEMENT.md` |
+| The Flux Technician's object movement, FLUX MOVE (replacing Telegrab; built in the arena in `2026-11-06f` and its test room, `?fluxlab`, in `2026-11-06g`; the code audit) | `FLUX-MOVEMENT.md` |
 | Unresolved questions | `OPEN-QUESTIONS.md` |
 | Decision index | `DECISION-LOG.md` |
 | Combat | `COMBAT.md` |

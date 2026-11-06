@@ -392,7 +392,7 @@ const FP_STORE_OK = /^conduit_fp_/;
 let _fpStoreFiltered = false;
 function _fpNoStorage() {
     if (_fpStoreFiltered) return;
-    try { if (typeof Storage !== "undefined" && Storage.prototype) { _fpStoreFiltered = true; const set = Storage.prototype.setItem, rm = Storage.prototype.removeItem; const ok = k => FP_STORE_OK.test(String(k)) && !(typeof attractOn === "function" && attractOn()); Storage.prototype.setItem = function (k, v) { if (ok(k)) return set.call(this, k, v); }; Storage.prototype.removeItem = function (k) { if (ok(k)) return rm.call(this, k); }; } } catch (e) {}
+    try { if (typeof Storage !== "undefined" && Storage.prototype) { _fpStoreFiltered = true; const set = Storage.prototype.setItem, rm = Storage.prototype.removeItem; const ok = k => FP_STORE_OK.test(String(k)) && !(typeof attractOn === "function" && attractOn()) && !(typeof fluxLabOn === "function" && fluxLabOn()); Storage.prototype.setItem = function (k, v) { if (ok(k)) return set.call(this, k, v); }; Storage.prototype.removeItem = function (k) { if (ok(k)) return rm.call(this, k); }; } } catch (e) {}
 }
 // the state of a game, fresh: every list emptied, every pointer into the last world let go, the player and the Crystal as they begin (the facility itself is built after this)
 function facilityResetState() {
@@ -441,8 +441,10 @@ function facilityPlayStart() {
     crystal.x = cx; crystal.y = cy;
     player.x = player.targetX = player.visualX = cx + 2; player.y = player.targetY = player.visualY = cy + 1; player.fpPath = null;
     const away = typeof attractOn === "function" && attractOn();   // the website's background (js/attract.js): no saved game, no squad, no tutorial, no creatures
+    const lab = !away && typeof fluxLabOn === "function" && fluxLabOn();   // the Flux test room (?fluxlab, js/fluxlab.js): no saved game, no tutorial, the start in the room (the background keeps its own rules)
     const saved = typeof facilitySaveLoad === "function" ? facilitySaveLoad() : null;   // a game left earlier (js/facilitysave.js): its followers come back, else the three to start
     if (saved && saved.followers && saved.followers.length && typeof spawnFollowerFromSave === "function") saved.followers.forEach(e => spawnFollowerFromSave(e));
+    else if (lab && typeof fluxLabSquad === "function") fluxLabSquad();   // (the test room's squad: a flux technician)
     else if (!away) for (const el of ["electric", "core", "fire"]) { if (typeof spawnFollowerAtCrystal === "function") spawnFollowerAtCrystal(el); }
     for (const f of followers) { f.x = cx + 1 + Math.random(); f.y = cy + 2 + Math.random(); f.returningToCrystal = false; }
     _fpPlaceStatics(F);
@@ -452,12 +454,13 @@ function facilityPlayStart() {
     if (away) facilityBlackoutSet(false);
     else if (typeof facilityTutorialClass === "function") facilityTutorialClass();   // an empty pack, and the class picker (js/classes.js, js/inventory.js)
     if (saved && typeof facilitySaveApply === "function") { try { facilitySaveApply(saved); } catch (e) { console.error("the saved game could not be put back", e); } }   // (the pack, class, cases, relays, tutorial and place it was left in)
+    if (lab && typeof fluxLabStart === "function") fluxLabStart(F);   // the test room: the tutorial over, the player and the squad in the room, its creatures (js/fluxlab.js)
     if (away) attractStart(F);                       // the background: the camera, and the searchers that come now and again (js/attract.js)
     else facilitySpawnInitial();                     // the arena's creatures (js/facilityspawn.js)
     document.body.classList && document.body.classList.add("facility-play");
     if (typeof facilityPropsPreload === "function") facilityPropsPreload();   // the 3D prop sheets start loading now (js/propsprites.js)
-    _fp.saveReady = !away;                           // from here the game is saved as it goes (the background keeps nothing)
-    if (!away && !saved && typeof equipRunStart === "function") equipRunStart();   // a fresh run: the cards screen opens to choose the hand, when the collection has a card in it (js/cards.js)
+    _fp.saveReady = !away && !lab;                   // from here the game is saved as it goes (the background and the test room keep nothing)
+    if (!away && !lab && !saved && typeof equipRunStart === "function") equipRunStart();   // a fresh run: the cards screen opens to choose the hand, when the collection has a card in it (js/cards.js)
     return true;
 }
 // is this a spot a unit can stand on (js/facilitysave.js puts the player back where they were left)
@@ -755,7 +758,7 @@ function facilityPlayChip() {
     if (typeof document === "undefined" || !document.createElement || !document.body) return;
     if (document.getElementById("facilityNewChip") || (typeof attractOn === "function" && attractOn())) return;
     const c = document.createElement("button"); c.id = "facilityNewChip"; c.textContent = "NEW GAME";
-    c.addEventListener("click", () => { let ok = true; try { ok = typeof confirm !== "function" || confirm("Start a new facility game? Your saved progress will be lost."); } catch (e) {} if (ok) facilityNewGame(); });
+    c.addEventListener("click", () => { let ok = true; try { ok = typeof confirm !== "function" || (typeof fluxLabOn === "function" && fluxLabOn() ? confirm("Start the test room again? (Your own saved game is not touched.)") : confirm("Start a new facility game? Your saved progress will be lost.")); } catch (e) {} if (ok) facilityNewGame(); });   // (the Flux test room keeps nothing and removes nothing: js/fluxlab.js)
     document.body.appendChild(c);
 }
 function initFacilityPlay() {

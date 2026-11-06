@@ -6,7 +6,8 @@
 // "Test room + arena", "60 s cooldown", "Prompt buttons" (⟳ ROTATE, ✓ PLACE), "FLUX MOVE" (its name), "Square" (the reach).
 // This file is the RULES: what can move, where to, and the check of a place; js/facilityplay.js facilitySolidMove carries a move out in one transaction; js/techabilities.js is the ability (the chip, the aim,
 // the prompt's buttons, the cooldown).
-//   WHAT MOVES  a prop with a `flux` field (js/facilitymap.js): the arena's loose crates, barrels and barriers. Nothing else can be picked: a tap on any other prop says it does not move.
+//   WHAT MOVES  a prop with a `flux` field (js/facilitymap.js): the arena's loose crates, barrels and barriers (and, with ?fluxlab, the test room's: FLUX_LAB_MAP, js/fluxlab.js). Nothing else can be picked: a tap on
+//               any other prop says it does not move.
 //   HOW FAR     every tile of where it goes is within `range` tiles (2) of a tile it stands on at the start of that move, a diagonal counting as one step (the owner: "Square"; a 5 x 5 area round a one-tile
 //               object). Measured afresh for each move, so moves never add up, and one move has no steps in it to chain.
 //   WHERE       whole tiles of floor in its own room, at that room's height (never on a stair); not on a doorway's floor or the spot in front of it, a launcher site, a rubble's work spot, a follower

@@ -4,6 +4,34 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **g · The Flux test room: `game.html?fluxlab`** (the next development phase's Milestone One, its second build; the owner: "Test room + arena"; the roadmap's test room, `NEXT-PHASE-ROADMAP.md` §3.5; on the branch only; commit named in git log).
+  - **Main:** build `2026-11-06f` (FLUX MOVE in the arena, Telegrab retired; 33e2f74, its follow-up 6166da5 and its full run's docs 27c0b81) went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
+  - **The room:** with `?fluxlab` the game starts in a room of its own for trying FLUX MOVE. It is an interior under the Crystal Chamber, out of sight of every room, reached by a stairwell in the Crystal Chamber's floor (north-east corner) and left by stairs up in its own north wall. In it:
+    - two crates, a barrel and two barriers that move (the barriers turn);
+    - a generator, two consoles and a desk that do not;
+    - a divider across the room with a narrow passage one tile wide at one end and a way three wide at the other;
+    - an ammunition pack in a pocket of the east wall, behind a barrier filling its mouth;
+    - three ants beyond the divider.
+    The roadmap's object that gives cover waits for Milestone Two: the game has no cover yet.
+  - **The mode:**
+    - The tutorial is over before it starts: no blackout, no lines, no class picker, no cards screen.
+    - The squad is a flux technician whose chip is ready at once, with no squad-join wait. The 60 s wait after a placement is the game's own and stays.
+    - Nothing is read from or written to storage, so a player's own save is left exactly as it was. NEW GAME starts the room again, and its question says so ("Start the test room again? (Your own saved game is not touched.)").
+    - With `?attract` as well, the website's background keeps its own rules.
+    - The rest of the facility is a new game's, power on.
+  - **Without the flag nothing changes:** the map, its tables and a new game's start are as they were. The room's data lives apart from `FACILITY_MAP` and is added only with the flag.
+  - **How:**
+    - js/facilitymap.js `FLUX_LAB_MAP` (the room's data), merged by js/facilitygrow.js only with the flag;
+    - js/fluxlab.js (new: the mode), with hooks guarded by `fluxLabOn()` in js/facilityplay.js (the start, the squad, the storage filter, the save switch, the cards screen, NEW GAME's question) and js/facilitysave.js (no save read);
+    - js/techabilities.js (FLUX MOVE's INFO names the test room's objects while the flag is on);
+    - game.html (the script).
+  - **Readings** taken where nothing said, for the owner: `OPEN-QUESTIONS.md` §1w (the layout; the passage testing the sealing rule both ways; the objective; the way in; the start; the squad; the creatures; nothing kept; the rest of the facility; no cover). Open: whether the wait after a placement should be shorter in the test room.
+  - **Tests:** tests/fluxlab.js (new, 16 checks): without the flag the game as it was; the room (no map errors, out of sight, the doorway pair, the roadmap's objects, the passage and the way round, the objective sealed); the start; nothing kept (spies on storage and on the cards screen, proved on a normal game first); its creatures staying in it; FLUX MOVE played out on the layout (the passage shut, the way round taken, the seal refused, the pocket opened and the pack taken); the doorway both ways; the real page on a tablet and a phone (a player's own save untouched, NEW GAME's question, a move through the chip). tests/run.js (91 suites).
+  - **The full run:** recorded in the commit that follows this one.
+  - **The Bible:** the test room under FLUX MOVE; 91 suites. Its count of the real-browser suites was stale (27): it is 35.
+  - **Written up:** docs/FLUX-MOVEMENT.md (status, §9.1 Build 2, §10, §12), docs/OPEN-QUESTIONS.md (§1w), docs/FACILITY.md (the flag), docs/TECHNICIANS.md, docs/NEXT-PHASE-ROADMAP.md (status), docs/DEVELOPMENT-FRAMEWORK.md (the map).
+  - **Not playtested.**
+
 - **f · FLUX MOVE: the Flux technician moves the arena's objects; Telegrab is retired** (the next development phase's Milestone One, first build; the owner: "Move on to the next phase", "Flux phase", "Retire it now", "Test room + arena", "60 s cooldown", "Prompt buttons", "FLUX MOVE", "Square"; on the branch only; commit named in git log).
   - **Main:** builds `2026-11-06d` and `2026-11-06e`, with Part 2's gate-2 drafts and the full run's docs (c672cd5), went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
   - **The ability:** the flux technician's chip is **✦ MOVE**. Tap it, then an object: the arena's loose crates and crate stack, barrels and barriers (outlined in violet while you pick; any other prop says it does not move). A grid shows its reach, the places it can go and those it cannot, and where it stands. Tap a tile to show it there (a barrier's second tile flashing); **⟳ ROTATE** (R) turns a barrier; **✓ PLACE** (Enter) places it; ✕ CALL OFF, Escape or the chip again leave it where it was. The 60 s wait starts when it is placed, through the cooldown path the cards and DOUBLE CHARGE use.

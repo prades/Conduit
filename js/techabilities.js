@@ -1138,7 +1138,7 @@ function techAbilityInfo(f) {
     if (ab.id === "flux_move") {
         wait[0][1] = Math.round(TECH_AB.flux.cooldown / 60) + " s, from when it is placed";
         return { h: "ABILITY · " + ab.name, note: "From the ✦ chip on its squad card: tap an object on the screen (the ones that move are outlined), tap where it goes on its grid, and ✓ PLACE. A barrier can be turned (⟳ ROTATE). Nothing moves until it is placed; ✕ CALL OFF leaves it where it was.",
-                 rows: [["REACH", "2 tiles from where it stands, any way (a diagonal counts as one)"], ["OBJECTS", "the arena's loose crates, barrels and barriers"], ["IT MAY NOT", "go under anyone, onto a doorway or an item, or shut a way through"]].concat(wait) };
+                 rows: [["REACH", "2 tiles from where it stands, any way (a diagonal counts as one)"], ["OBJECTS", typeof fluxLabOn === "function" && fluxLabOn() ? "the arena's and the test room's loose crates, barrels and barriers" : "the arena's loose crates, barrels and barriers"], ["IT MAY NOT", "go under anyone, onto a doorway or an item, or shut a way through"]].concat(wait) };
     }
     return { h: "ABILITY · " + ab.name, note: "", rows: [["READY", ready]] };
 }

@@ -374,6 +374,23 @@ Built as decided (the owner, 2026-11-06: "Retire it now", "Test room + arena", "
 9. **The Sewers' quest hint** for the water sample now names the two routes left (the launcher that carries you; the drill). It used to name Telegrab and an older form of the launcher route.
 10. **An old save's puzzle record** saying `telegrab` is kept as it is (the quest's record too); it is read as no row of the solution table.
 
+## 1w. The Flux test room's readings (build `2026-11-06g`, on the branch; `FLUX-MOVEMENT.md` §9.1 Build 2)
+
+Built as decided (the owner, 2026-11-06: "Test room + arena": "a small neutral test room reached only by a link flag (`?fluxlab`) proves every rule"; the roadmap's list, `NEXT-PHASE-ROADMAP.md` §3.5). Where nothing said, these readings were taken. Each stands as built until the owner says otherwise.
+
+1. **The layout** (`js/facilitymap.js` FLUX_LAB_MAP): one room, 18 tiles by 13. By its doorway, a crate and a generator (the generator does not move). Across the middle, a divider of two consoles and a desk (none of them move), with a narrow passage one tile wide at its west end and a way three tiles wide at its east end. By the passage, a crate; by the wide way, a barrier and a barrel. In the east wall, a pocket three tiles deep whose mouth a second barrier fills, with the objective in it. Beyond the divider, the creatures. *(The roadmap names what is in the room, not where; any of it can be moved or swapped.)*
+2. **The narrow passage tests the sealing rule both ways**: the crate set in the passage leaves the floor joined by the wide way, so it is allowed; with the passage shut, the barrier fills two of the wide way's three tiles, and the barrel that would shut the third is refused ("IT WOULD SHUT A WAY THROUGH").
+3. **The objective is an ammunition pack** (any class can take it), in the pocket two tiles behind the barrier's front: a pickup is taken within 1.25 tiles, so it cannot be reached past the barrier. The pocket is in the east wall because the camera looks from the south-east: in the north wall, the wall in front of it hid it.
+4. **The way in**: a stairwell in the Crystal Chamber's floor (its north-east corner, beside the relay), which is there only with the flag, and stairs up in an alcove of the room's north wall. The room is an interior under the Crystal Chamber, at the arena's level, out of sight of every room.
+5. **The start**: the game starts in the room. The tutorial is over before it starts: no blackout, none of the Crystal's lines, no class picker, no cards screen. `?class=` still names a class for development.
+6. **The squad is one flux technician**, at the level a new game's squad has (TUT.followerLevel, 9). Its chip is ready at once, with no 60 s squad-join wait. The 60 s wait after each placement is the game's own and stays.
+7. **The creatures are three ants** of the arena's kind (workers and scouts, level 2), beyond the divider. They belong to the room (they wander in it, calm until provoked, and never leave it) and are not replaced: a reload or NEW GAME brings them back.
+8. **Nothing is kept**: no saved game is read or written, and nothing at all is written to storage, as with `?attract`. A player's own save is left exactly as it was. NEW GAME starts the room again (the address keeps `?fluxlab`); its question says so ("Start the test room again? (Your own saved game is not touched.)").
+9. **The rest of the facility is a new game's**, power on. The arena's own creatures and its nine movable objects are there as in any game. The words of FLUX MOVE's INFO name the test room's objects with the arena's while the flag is on.
+10. **No cover object**: the roadmap's "object that provides cover" waits for Milestone Two. There is no cover in the game yet; every solid blocks walking and sight alike (`FLUX-MOVEMENT.md` §6.2).
+
+Open for the owner: whether the wait after a placement should be shorter in the test room, to try more moves in a row (it is the game's 60 s now).
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

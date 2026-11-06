@@ -1,6 +1,6 @@
 # The Flux Technician's object movement (replacing Telegrab)
 
-- **Status:** **Implemented and tested in the arena, build `2026-11-06f`** (FLUX MOVE; on the branch; not playtested). The test room (`?fluxlab`, §9.1 Build 2) and Milestone Two (cover, sight and traversal as properties of their own) are **not built**. Designed by the owner's roadmap (`NEXT-PHASE-ROADMAP.md` §2, §3, §8, §9, §11), registered as a future update on 2026-11-06 and started the same day.
+- **Status:** **Implemented and tested in the arena, build `2026-11-06f`** (FLUX MOVE; on main at the owner's word), **and in its test room, build `2026-11-06g`** (`game.html?fluxlab`, §9.1 Build 2; on the branch). Not playtested. Milestone Two (cover, sight and traversal as properties of their own) is **not built**. Designed by the owner's roadmap (`NEXT-PHASE-ROADMAP.md` §2, §3, §8, §9, §11), registered as a future update on 2026-11-06 and started the same day.
   - This document holds the approved rules in brief, with the roadmap as their source, and **the study of the code** the owner asked for on 2026-11-06 ("do extensive work to understand the flux technician's new mechanic"): what the game already has for this tool, what it lacks, what would break, and what must be decided.
   - Nothing here is a decision unless it is quoted from the owner or the roadmap.
 - **Owner:** User (creative direction); agent (implementation support)
@@ -143,7 +143,7 @@ The neutral test room (§3.5) holds a one-tile, a two-tile, a rotatable, an immo
 
 ### 9.1 The first build's plan (2026-11-06, after the four answers of §11; a second read of the code on `claude/start-game-project-HSh7Z` after build `2026-11-06e`)
 
-**Build 1 is built (`2026-11-06f`); Build 2 is not.** Readings taken where nothing said are marked **[reading]**, for the owner (`OPEN-QUESTIONS.md` §1v lists them all).
+**Build 1 is built (`2026-11-06f`, on main); Build 2 is built (`2026-11-06g`, on the branch).** Readings taken where nothing said are marked **[reading]**, for the owner (`OPEN-QUESTIONS.md` §1v lists them all).
 
 **Build 1: the tool, in the arena; Telegrab retired.** *Built in `2026-11-06f` as planned below.* What the code does:
 - `js/fluxmove.js`: the rules (`fluxObjects`, `fluxRegion`, `fluxCheck`, `_fluxSplits`, `fluxMoveTo`), the save (`fluxSnapshot`, `fluxApply`), the pick on the screen (`fluxPropAtScreen`) and the grid's drawing (`fluxGrid`, `fluxDrawAim`).
@@ -161,7 +161,20 @@ The neutral test room (§3.5) holds a one-tile, a two-tile, a rotatable, an immo
 7. **The save:** an optional key, `moved` (each moved object's place and turn), put back before the player's spot; a malformed or impossible entry is ignored (the object stays where it was authored). NEW GAME puts everything back.
 8. **Tests:** a new suite (`tests/fluxmove.js`); the suites that pin Telegrab moved to the tool (`tests/techlevel1.js`, `tests/sewerquest.js`, `tests/series2.js`, `tests/series2abilities.js`, `tests/bible.js`).
 
-**Build 2: the test room (`?fluxlab`).** A room of its own, in its own part of the map, added only when the address carries `?fluxlab` (the normal game's map is unchanged). In it: a one-tile and a two-tile movable object, a turnable one, an immovable one, a narrow passage, an objective behind an obstruction, a few creatures, and a doorway back. The cover-giving object waits for Milestone Two: no cover exists in the game today (§6.2).
+**Build 2: the test room (`?fluxlab`).** A room of its own, in its own part of the map, added only when the address carries `?fluxlab` (the normal game's map is unchanged). In it: a one-tile and a two-tile movable object, a turnable one, an immovable one, a narrow passage, an objective behind an obstruction, a few creatures, and a doorway back. The cover-giving object waits for Milestone Two: no cover exists in the game today (§6.2). *Built in `2026-11-06g`.* What the code does:
+- `js/facilitymap.js` `FLUX_LAB_MAP`: the room's data, apart from `FACILITY_MAP`. `js/facilitygrow.js` adds it to the map before the building pass, and only when the address carries `?fluxlab`. It is an interior under the Crystal Chamber at the arena's level, carried 64 tiles east and 96 south, out of sight of every room. A pair of doorways joins the two: stairs up in an alcove of its north wall, and a stairwell in the Crystal Chamber's floor (north-east corner) that exists only with the flag.
+- The layout (18 × 13 tiles) **[reading, `OPEN-QUESTIONS.md` §1w]**:
+  - by the doorway, a crate and an immovable generator;
+  - a divider of two consoles and a desk (immovable) with a narrow passage one tile wide at its west end and a way three tiles wide at its east end; a crate by the passage, a barrier and a barrel by the wide way;
+  - a pocket three tiles deep in the east wall, its mouth filled by a barrier standing along it, with an ammunition pack in it (the objective);
+  - three ants beyond the divider.
+- `js/fluxlab.js`, the mode: each piece is a hook guarded by `fluxLabOn()`, as `?attract`'s are.
+  - Nothing is read from or written to storage (`facilitySaveLoad`, `_fpNoStorage`, `_fp.saveReady`).
+  - The tutorial is over before it starts; no cards screen opens.
+  - The player starts in the room. The squad is a flux technician whose chip is ready at once (no squad-join wait).
+  - The room's creatures come from a spawner of their own (`FLUX_LAB.creatures`).
+  - The room's look (the teleport rooms' violet) and its name ("Flux Test Room") go in the facility's tables with the flag only.
+- FLUX MOVE's INFO names the test room's objects with the arena's while the flag is on. Every rule is the tool's own: the room adds nothing but its layout.
 
 **Then Milestone Two** (cover, sight and stepping-over as properties of their own) is designed with the owner once the tool can be tried.
 
@@ -184,6 +197,7 @@ What a build would need, from the study (a plan to approve, not a decision):
 | The ability in the real page | Tested (build `2026-11-06f`) | `tests/fluxmove.js` in headless Chromium at 1180 × 820 and 390 × 844: the chip, a tap on a barrier, the grid in violet, ⟳ ROTATE, ✓ PLACE, R, Enter, Escape, the bar fits; `tests/techlevel1.js` (the flux chip in a squad of three, a barrel moved through the prompt) |
 | Telegrab's removal | Tested | `tests/sewerquest.js` (two routes; the old record loads), `tests/series2.js` and `tests/series2abilities.js` (the cooldown cards and DOUBLE CHARGE on FLUX MOVE), `tests/bible.js` |
 | The rest of the game (regressions) | Passed (build `2026-11-06f`, 6166da5) | the full run: 90 of 90 suites, 1,922 checks (`CHANGELOG.md`) |
+| The test room (`?fluxlab`) | Implemented and tested (build `2026-11-06g`) | `tests/fluxlab.js`, 16 checks: without the flag the game as it was (the map, the tables, a new game's start); with it the room (no map errors, out of sight, the doorway pair), the roadmap's objects, the narrow passage and the way round, the objective sealed behind the barrier; the start (no tutorial, the squad, the chip ready at once), nothing kept (spies on storage and on the cards screen, proved on a normal game first), its creatures staying in it; FLUX MOVE played out (the passage shut, the way round taken, the seal refused, the pocket opened and the pack taken), the doorway both ways; the real page on a tablet and a phone (a player's own save untouched, the chip, a move through the chip, the pack) |
 | Played by a person | Not done | — |
 | The study's claims | Checked against the code | four read-only audits; the stale bucket index and the sealed doors reproduced by re-running their probes (scratch scripts, not in the repo) |
 
@@ -227,4 +241,5 @@ Found by the study:
 
 - 2026-11-06: the owner's roadmap (PR #19, `NEXT-PHASE-ROADMAP.md`) set the design; the owner asked for this study and registered the roadmap as a future update (`DECISION-LOG.md`). Written from four code audits on build `2026-11-06a`.
 - 2026-11-06: the owner chose the Flux phase and answered §11's questions (two rounds); §9.1's plan was written from a second read of the code.
-- 2026-11-06, build `2026-11-06f`: Build 1 built (FLUX MOVE in the arena; Telegrab retired).
+- 2026-11-06, build `2026-11-06f`: Build 1 built (FLUX MOVE in the arena; Telegrab retired); to main at the owner's word.
+- 2026-11-06, build `2026-11-06g`: Build 2 built (the test room, `?fluxlab`).

@@ -14,6 +14,14 @@
     const M = FACILITY_MAP, G = 20;   // G: one tile in sketch pixels, the wall's thickness
     M._grown = true;
 
+    // THE FLUX TEST ROOM (js/facilitymap.js FLUX_LAB_MAP; js/fluxlab.js is the mode): put in the map only when the address carries ?fluxlab, before anything below carries it to its own part of the map. Without the
+    // flag the map is exactly as it was.
+    if (typeof FLUX_LAB_MAP !== "undefined" && typeof window !== "undefined" && window.location && /[?&]fluxlab\b/.test(window.location.search || "")) {
+        const L = FLUX_LAB_MAP; M.rooms.push(L.room); M.interiors.push(L.interior);
+        for (const k of ["portals", "connections", "props", "pickups", "floors", "decor"]) for (const e of L[k]) M[k].push(e);
+        M._fluxLab = true;
+    }
+
     // how far each room slides, in tiles: [x, y]. The hallway, the lab and the passage hold their ground (the hub); the others move away from them.
     const SHIFT = {
         crystal_chamber: [-1, -1], teleport_room_1: [-1, 0], front_lobby: [-1, -1], security_room: [0, -1], show_room: [1, 0],

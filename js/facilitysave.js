@@ -12,6 +12,7 @@ const FS = { key: "conduit_fp_save", version: 1, every: 180 };
 
 function facilitySaveLoad() {
     if (typeof attractOn === "function" && attractOn()) return null;   // (the background starts a fresh facility and keeps nothing)
+    if (typeof fluxLabOn === "function" && fluxLabOn()) return null;   // (nor does the Flux test room, js/fluxlab.js: a player's own save is not read, nor written over)
     try { const d = JSON.parse(localStorage.getItem(FS.key) || "null"); return d && d.v === FS.version ? d : null; } catch (e) { return null; }
 }
 function facilitySaveCollect() {
