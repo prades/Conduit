@@ -1569,3 +1569,22 @@ With the four answers of the first round given, the plan for the first build was
 ### Impact
 - The test room (`?fluxlab`) is the next build; Milestone Two (cover, sight and traversal as properties of their own) after it, designed with the owner once the tool can be tried.
 - The build's readings are listed for the owner in `OPEN-QUESTIONS.md` §1v.
+
+## DECISION: Build 2026-11-06f to main
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06f`: implemented and tested (its full run: 90 of 90 suites, 1,922 checks); not playtested.
+- **Branch/build:** build `2026-11-06f` (33e2f74, the follow-up 6166da5 and the full run's docs 27c0b81), with the record of the last push before it (6e0b1b9), fast-forwarded to `main` from `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `FLUX-MOVEMENT.md`, `TECHNICIANS.md`, `SEWER-QUEST.md`, `OPEN-QUESTIONS.md` §1v, `CHANGELOG.md` (2026-11-06 f)
+
+### Context
+After build `2026-11-06f` (FLUX MOVE in the arena; Telegrab retired) and its full run, the owner was asked whether to push it to main, with screenshots of the grid and of a barrier placed, and told that nobody had played it yet.
+
+### Decision
+- "Push to main".
+
+### Alternatives considered
+- Keep it on the branch until the tool had been tried.
+
+### Impact
+Main has FLUX MOVE as the flux technician's ability, and Telegrab is gone from it; the Sewers' water-sample puzzle has two routes there too. The build's readings (`OPEN-QUESTIONS.md` §1v) stand as built, the owner's to confirm or change. The test room (`?fluxlab`) is the next build, on the branch.
