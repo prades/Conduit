@@ -219,9 +219,14 @@ function handleLongHold(ex,ey) {
 let _gunPressed = false;   // the press began on an enemy while armed: it is the gun's (js/gunfire.js)
 let _dlgPressed = false;   // the press began on the dialogue box (its words, or a choice button): it is the box's (js/dialogue.js)
 let _techAimPressed = false;   // the press began while a technician's ability was being aimed: it is the aim's (js/techabilities.js)
+const _aimIgnored = new Set(); // fingers (pointer ids) that came down while an aim's press was held: each is ignored, its moves and its lift, until it lifts
 let _cloneDrag = null;     // a press that began on the clone card strip: { x0, s0, moved } (it slides the strip; a drag never presses a card)
 canvas.addEventListener('pointerdown', e=>{
     if (!gameState.running) return;
+    // ANOTHER FINGER while an aim's press is held (FAULTLINE's stroke being drawn, js/techabilities.js): ignored until it lifts. The canvas keeps one press, so this finger would
+    // restart the stroke from where it touched, and its lift, falling through to an ordinary tap, would walk you. (The aim called off meanwhile lets the next finger in.)
+    if (_techAimPressed && typeof techAimActive === "function" && techAimActive()) { e.preventDefault(); _aimIgnored.add(e.pointerId); return; }
+    _aimIgnored.delete(e.pointerId);   // a press with an id still set aside is a new one: the old finger's lift never reached the canvas (a mouse let go off it), so the id is let go here
     e.preventDefault(); canvas.setPointerCapture(e.pointerId);
     isPressing=true; longHoldFired=false; touchMoved=false;
     [pressX,pressY]=toCanvas(e.clientX,e.clientY); pressStartTime=performance.now();
@@ -262,6 +267,7 @@ canvas.addEventListener('pointerdown', e=>{
 });
 
 canvas.addEventListener('pointermove', e=>{
+    if (_aimIgnored.has(e.pointerId)) return;   // a finger ignored while an aim's press was held (above)
     if (_techAimPressed) { if (typeof techAimPathMove === "function") { const [_mx, _my] = toCanvas(e.clientX, e.clientY); techAimPathMove(_mx, _my); } return; }   // FAULTLINE's path, drawn while the press is down (js/techabilities.js); any other aim ignores a move
     if (!isPressing) return;
     [pointerX,pointerY]=toCanvas(e.clientX,e.clientY);
@@ -277,6 +283,7 @@ canvas.addEventListener('pointermove', e=>{
 });
 
 canvas.addEventListener('pointerup', e=>{
+    if (_aimIgnored.delete(e.pointerId)) return;   // its lift is nothing: not the aim's tap, not an ordinary tap (above)
     if (_techAimPressed) { _techAimPressed = false; const [_ax, _ay] = toCanvas(e.clientX, e.clientY); if (typeof techAimTap === "function" && techAimTap(_ax, _ay) === false) handleInput(_ax, _ay); isPressing = false; return; }   // the aim's tap: a follower, an enemy (js/techabilities.js); the launcher's aim lets go of a tap that is not on a follower, and it is an ordinary tap
     if (_gunPressed) { _gunPressed = false; if (typeof gunRelease === "function") gunRelease(); isPressing = false; return; }   // the gun's press ends here (js/gunfire.js)
     if (_targetPressed) { _targetPressed = false; const [_tx, _ty] = toCanvas(e.clientX, e.clientY); if (typeof targetRelease === "function") targetRelease(_tx, _ty); isPressing = false; return; }   // the targeting's press ends here (js/targeting.js)
@@ -410,6 +417,7 @@ canvas.addEventListener('pointerup', e=>{
 });
 // A TOUCH THE SYSTEM CANCELS (a call, a system gesture) while a technician's ability is being aimed: FAULTLINE's path being drawn is called off (js/techabilities.js techAimPathCancel). Nothing else listens here.
 canvas.addEventListener('pointercancel', e=>{
+    if (_aimIgnored.delete(e.pointerId)) return;   // an ignored finger's touch cancelled: the aim's own press goes on
     if (!_techAimPressed) return;
     _techAimPressed = false; isPressing = false;
     if (typeof techAimPathCancel === "function") techAimPathCancel();

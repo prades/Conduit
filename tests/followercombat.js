@@ -33,7 +33,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   canvas.setPointerCapture = function(){};   // (a synthetic pointer is not a real one: capturing it throws)
   var rect = function(e){ if (!e) return null; var b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]; };
   var scr = function(wx, wy){ var sx = (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width / 2, sy = (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H; for (var i = 0; i < 8; i++) { var w = techScreenToWorld(sx, sy), ex = wx - w.x, ey = wy - w.y; if (Math.hypot(ex, ey) < 1e-4) break; sx += (ex - ey) * TILE_W; sy += (ex + ey) * TILE_H; } return { x: sx, y: sy }; };
-  var touch = function(type, x, y){ var r = canvas.getBoundingClientRect(); canvas.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: r.left + x * r.width / canvas.width, clientY: r.top + y * r.height / canvas.height, pointerId: 11, pointerType: 'touch', isPrimary: true })); };
+  var touch = function(type, x, y, id){ var r = canvas.getBoundingClientRect(); id = id || 11; canvas.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: r.left + x * r.width / canvas.width, clientY: r.top + y * r.height / canvas.height, pointerId: id, pointerType: 'touch', isPrimary: id === 11 })); };
   try {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; selectedUnits.clear();
@@ -58,6 +58,31 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var on2 = document.body.classList.contains('tech-aiming');
     touch('pointerdown', pts[0].x, pts[0].y); touch('pointermove', pts[6].x, pts[6].y); touch('pointercancel', pts[6].x, pts[6].y); step(1);
     out.cancel = { was: on2, aiming: document.body.classList.contains('tech-aiming'), fault: !!t._fault };
+    // A SECOND FINGER while the path is drawn (build 2026-11-06b): it is ignored, its moves and its lift. Once with the stray finger lifting first, once with the drawing finger lifting first.
+    var two = function(strayFirst){
+      for (var k2 = 0; k2 < 400 && t._fault; k2++) step(1);
+      put(); if (techAim) techAimCancel(); t._ab2ReadyAt = 0; partyTick(); c2.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
+      var bx = t.x, by = t.y, ps = []; for (var i2 = 0; i2 <= 24; i2++) { var th2 = Math.PI * (1 - i2 / 24) / 2; ps.push(scr(bx + 3 - 2.5 * Math.cos(th2), by + 2.5 - 2.5 * Math.sin(th2))); }
+      var st = scr(player.x - 1.5, player.y + 1);   // floor beside you, away from the Burrower: a tap there would walk you
+      player.fpPath = null;
+      touch('pointerdown', ps[0].x, ps[0].y, 11); for (var j3 = 1; j3 <= 10; j3++) touch('pointermove', ps[j3].x, ps[j3].y, 11);
+      touch('pointerdown', st.x, st.y, 12); touch('pointermove', st.x + 6, st.y + 3, 12);
+      if (strayFirst) touch('pointerup', st.x + 6, st.y + 3, 12);
+      for (var j4 = 11; j4 < ps.length; j4++) touch('pointermove', ps[j4].x, ps[j4].y, 11);
+      touch('pointerup', ps[ps.length - 1].x, ps[ps.length - 1].y, 11);
+      if (!strayFirst) { touch('pointermove', st.x + 9, st.y + 5, 12); touch('pointerup', st.x + 9, st.y + 5, 12); }
+      step(1);
+      return { fault: !!t._fault, len: t._fault ? Math.round(t._fault.cum[t._fault.cum.length - 1] * 100) / 100 : 0, start: t._fault ? [Math.round((t._fault.pts[0].x - bx) * 100) / 100, Math.round((t._fault.pts[0].y - by) * 100) / 100] : null, walked: !!player.fpPath, aiming: document.body.classList.contains('tech-aiming'), said: said.slice(-2) };
+    };
+    out.twoA = two(true); out.twoB = two(false);
+    // A finger set aside whose lift the canvas never sees (build 2026-11-06b): its id is not kept, so the next press with it is an ordinary tap and walks you
+    for (var k3 = 0; k3 < 400 && t._fault; k3++) step(1);
+    put(); if (techAim) techAimCancel(); t._ab2ReadyAt = 0; partyTick(); c2.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
+    var st3 = scr(player.x - 1.5, player.y + 1), p3 = scr(t.x + 0.5, t.y + 2.5);
+    touch('pointerdown', p3.x, p3.y, 11); touch('pointerdown', st3.x, st3.y, 13); touch('pointerup', p3.x, p3.y, 11); step(1);
+    var aimed3 = document.body.classList.contains('tech-aiming'); if (techAim) techAimCancel(); step(1);
+    player.fpPath = null; touch('pointerdown', st3.x, st3.y, 13); touch('pointerup', st3.x, st3.y, 13); step(1);
+    out.lost = { aimed: aimed3, walked: !!player.fpPath, aiming: document.body.classList.contains('tech-aiming') };
   } catch (err) { out.err = String(err && err.stack || err); }
   var pre = document.createElement('pre'); pre.id = '__fc'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2000); });</script></body>`;
@@ -376,6 +401,18 @@ function measure(w, h) {
             ok(T.sent.fault && T.sent.n >= 8 && Math.abs(T.sent.len - 2.5 * Math.PI / 2) < 0.2 && !T.sent.aiming, 'the touch path: ' + JSON.stringify(T.sent));
             ok(Math.hypot(T.sent.start[0] - 3, T.sent.start[1]) < 0.1, 'it does not start under the finger (the stroke\'s first point, [3, 0] from the Burrower): ' + JSON.stringify(T.sent.start)); ok(T.run.over && T.run.up, 'the run: ' + JSON.stringify(T.run));
             ok(T.cancel.was && !T.cancel.aiming && !T.cancel.fault, 'the cancelled touch: ' + JSON.stringify(T.cancel));
+        });
+        if (T !== null) check('THE REAL PAGE, A SECOND FINGER (build 2026-11-06b): a finger that touches while the path is drawn is ignored, its moves and its lift: the path is the first finger\'s, whole, from where it started, and nobody walks, whichever finger lifts first; a finger set aside whose lift never came does not keep its id: the next press with it is an ordinary tap', () => {
+            ok(T && !T.err && T.twoA && T.twoB, 'the page: ' + JSON.stringify(T && (T.err || T)));
+            for (const [k, r] of [['the stray finger lifting first', T.twoA], ['the drawing finger lifting first', T.twoB]]) {
+                ok(r.fault && !r.aiming, k + ': the path was not sent: ' + JSON.stringify(r));
+                ok(Math.hypot(r.start[0] - 3, r.start[1]) < 0.1, k + ': the stroke restarted from the second finger: ' + JSON.stringify(r.start));
+                ok(Math.abs(r.len - 2.5 * Math.PI / 2) < 0.2, k + ': the path is not the first finger\'s arc: ' + r.len);
+                ok(!r.walked, k + ': a finger\'s lift walked you');
+            }
+            ok(T.lost && T.lost.walked && !T.lost.aiming, 'a press with the id of a finger set aside, whose lift the canvas never saw, was not an ordinary tap (it did not walk you): ' + JSON.stringify(T.lost));
+            const I = rd('js/input.js');
+            ok(/if \(_techAimPressed && typeof techAimActive === "function" && techAimActive\(\)\) \{ e\.preventDefault\(\); _aimIgnored\.add\(e\.pointerId\); return; \}/.test(I) && /if \(_aimIgnored\.has\(e\.pointerId\)\) return;/.test(I) && (I.match(/if \(_aimIgnored\.delete\(e\.pointerId\)\) return;/g) || []).length === 2, 'the input does not set the other finger aside');
         });
     }
 

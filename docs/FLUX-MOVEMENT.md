@@ -90,8 +90,9 @@ None approved. The options in §11 are for the owner to choose from.
 
 ### 6.6 Input on touch
 
-- **[code]** `js/input.js` keeps **one global press**: no `pointerId` or `isPrimary` tracking beyond `setPointerCapture`.
-- **[inference, from the code; not run]** A second finger re-runs the press handler. During a FAULTLINE stroke that restarts the stroke, and the other finger's release then falls through to an ordinary tap (`handleInput`). This touches the build now on main, not only the future tool. A likely small fix: follow only the pointer that started an aim's press.
+- **[code]** `js/input.js` keeps **one global press**: no `pointerId` or `isPrimary` tracking beyond `setPointerCapture`, except during an aim (next point).
+- **[code, build `2026-11-06b`]** An aim's press follows only the finger that started it: another finger that comes down while it is held is set aside by its `pointerId` (`_aimIgnored`), and its moves and its lift do nothing until it lifts. A later press with an id still set aside (a lift the canvas never saw) is an ordinary press.
+- **Fixed in build `2026-11-06b`** (the owner: "Fix it now"): before it, as read from the code when this study was written, a second finger re-ran the press handler: during a FAULTLINE stroke it restarted the stroke, and the other finger's release fell through to an ordinary tap (`handleInput`). A check with synthetic touch events confirmed it (no path sent, the player walked) and now passes (tests/followercombat.js; `OPEN-QUESTIONS.md` §1t, item 12). A future tool built as an aim gets the same rule.
 - For the tool, the rotate options (§11) avoid gestures unless the input learns to track pointers.
 
 ### 6.7 Telegrab today, and what retiring it touches

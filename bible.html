@@ -2031,7 +2031,7 @@
 <li><b>Waits.</b> The first use waits <span class="n" data-k="TECH_AB.joinWait">3600</span> frames (<span class="n" data-k="TECH_AB.joinWait" data-f="f">60 s</span>) after the technician joins the squad, and leaving and coming back starts the wait again. After each use, the ability's own cooldown of 60 s applies, less the share its equip cards take off it (the ABILITY COOLDOWN stat, <code>techCooldown</code>: added over the two cards, nine tenths at most; no card of the game names it yet). Cooldowns are not saved.</li>
 <li><b>Reach:</b> anything the technician can see, never through a wall; Telegrab reaches anything on the screen.</li>
 <li><b>The chip</b> is only on the squad's cards, not in the Command Center's squad box. It shows its mark and word when ready (⚡ LAUNCH), the seconds while waiting (⚡ 42 S), ✕ AIMING while aiming, and THROWING / SETTING UP / DRILLING / LAYING while busy. The INFO card has an ABILITY section with the numbers.</li>
-<li><b>Aiming.</b> A prompt says what to tap, in order: a follower, an enemy (or its card), a spot on the floor, an item. While aiming, a press on the play area is the aim's (no ring, no shot, no walk); a tap on a squad card picks that follower, and a tap on the enemy card picks its creature. A pick that cannot be used says why, and the aim stays up. ✕ CALL OFF, the chip again, or Escape cancels.</li>
+<li><b>Aiming.</b> A prompt says what to tap, in order: a follower, an enemy (or its card), a spot on the floor, an item. While aiming, a press on the play area is the aim's (no ring, no shot, no walk); a tap on a squad card picks that follower, and a tap on the enemy card picks its creature. A pick that cannot be used says why, and the aim stays up. While the aim's press is held, another finger on the play area is ignored until it lifts: it does not move the press, and its lift does not walk you (build 2026-11-06b). ✕ CALL OFF, the chip again, or Escape cancels.</li>
 </ul>
 <div class="tw"><table>
 <tr><th>Element</th><th>Ability</th><th>Chip</th><th>What you pick</th></tr>
@@ -3526,7 +3526,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-06a</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-06b</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3746,7 +3746,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-06a (6 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-06b (6 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded
