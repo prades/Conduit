@@ -365,7 +365,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 - **tests/perf.js's frame budget fails at random** (seen 2026-11-06, build `2026-11-06a`; for whoever keeps the tests, not a design question).
   - The check: one frame of a busy arena (ten eggs, twelve creatures) must draw fewer than 21,500 canvas operations.
-  - Six runs on each build measured 20,731 to 21,674 on `2026-11-06a` and 21,209 to 21,514 on `2026-11-03a`; both builds went over the budget at times. It passed in the full run of build `2026-11-06b`, which changed nothing it draws. Earlier full runs measured up to 21,499.
+  - Six runs on each build measured 20,731 to 21,674 on `2026-11-06a` and 21,209 to 21,514 on `2026-11-03a`; both builds went over the budget at times. It passed in the full runs of builds `2026-11-06b` and `2026-11-06c`, which changed nothing it draws. Earlier full runs measured up to 21,499.
   - Its scene draws each egg's type at random. The per-follower check beside it fixes the types for this reason ("a random draw made the cost swing by a fifth between runs").
   - Ways to steady it: fix the scene's types the same way, then set the budget from what it measures; or raise the budget a little, with the reason written beside it. Nothing is changed until someone picks.
 
