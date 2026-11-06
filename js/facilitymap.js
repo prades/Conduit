@@ -1031,7 +1031,8 @@ const FACILITY_MAP = {
 // ─────────────────────────────────────────────────────────
 // Not part of FACILITY_MAP: js/facilitygrow.js adds it, before the building pass, when the address says ?fluxlab, so the normal game's map is exactly as it was. js/fluxlab.js is the mode (the start in the room,
 // nothing kept, its creatures). The roadmap's test room (docs/NEXT-PHASE-ROADMAP.md §3.5): a one-tile movable object, a two-tile one, a rotatable one, an immovable one, objects that block movement, several enemies,
-// a narrow passage and an objective behind an obstruction (the object that gives cover waits for Milestone Two: there is no cover yet). THE LAYOUT IS A READING, the owner's to change (docs/OPEN-QUESTIONS.md §1w).
+// a narrow passage and an objective behind an obstruction, and (since Milestone Two, build 2026-11-06h) objects that give cover: its crates, barrel, barriers, desk and consoles (js/facility.js FAC_COVER). THE LAYOUT IS A
+// READING, the owner's to change (docs/OPEN-QUESTIONS.md §1w).
 // Drawn here under the Crystal Chamber (sketch pixels, as every room) and carried to a part of the map of its own; its tiles, from its top-left floor tile (0, 0), eighteen across and thirteen deep:
 //   - THE DOORWAY BACK: an alcove in the north wall (x 2-3), stairs up to a stairwell in the Crystal Chamber's floor (its north-east corner), the way back into the room from the facility;
 //   - THE OBJECTS TO TRY, near the doorway: a crate and an immovable generator; a crate, a barrier and a barrel by the divider's two ways;

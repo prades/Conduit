@@ -164,8 +164,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     // splash, no roll (docs/FOLLOWER-COMBAT-REDESIGN.md). The quills' own checks are in tests/followercombat.js; here, that the Quillstone fires it and the Bunker Bloom keeps its own move.
     check('QUILL BURST (the redesign): the Quillstone fires five quills at once at the nearest enemy in reach, then waits; the Bunker Bloom keeps its ring of fire (PETAL BLAZE)', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; followerProjectiles.length = 0;
-            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.stance = 'hold';
-            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            const c = [..._fp.cellsP.values()].find(q => _fp.cellsP.has((q[0] + 5) + ',' + q[1]) && facilitySeesFrom(q[0], q[1], q[0] + 5, q[1]));   // (on the floor, in sight: a move that flies is aimed only at what the follower sees, Milestone Two)
+            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = c[0]; f.y = c[1]; f.stance = 'hold';
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), c[0] + 3, c[1]); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
             frame++; f._sigCd = 1; evolutionTick();
             const q = followerProjectiles.filter(x => x.kind === 'quill'), out = { n: q.length, cd: f._sigCd, src: q.every(x => x.source === f) };
             followerProjectiles.length = 0; p.dead = true; return out; })()`);
@@ -202,8 +203,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('HEXFIRE (the redesign): the Ember Hood and the retired Cinder Halo fire one HEXFIRE shot (no damage of its own) at the nearest enemy in reach, then wait', () => {
         const r = run(`(function(){ const out = {};
             for (const evo of ['embercowl', 'halo']) { actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; followerProjectiles.length = 0;
-                spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = evo; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
-                const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 25, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+                const c = [..._fp.cellsP.values()].find(q => _fp.cellsP.has((q[0] + 5) + ',' + q[1]) && facilitySeesFrom(q[0], q[1], q[0] + 5, q[1]));   // (on the floor, in sight: Milestone Two)
+                spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = evo; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = c[0]; f.y = c[1];
+                const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), c[0] + 5, c[1]); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
                 frame++; f._sigCd = 1; evolutionTick();
                 const h = followerProjectiles.filter(x => x.kind === 'hex'); out[evo] = { n: h.length, dmg: h.length ? h[0].damage : null, cd: f._sigCd };
                 followerProjectiles.length = 0; p.dead = true; }

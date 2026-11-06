@@ -1,7 +1,7 @@
 // THE FLUX TEST ROOM (?fluxlab): js/facilitymap.js FLUX_LAB_MAP (the room), js/facilitygrow.js (put in the map only with the flag), js/fluxlab.js (the mode); docs/FLUX-MOVEMENT.md §9.1, Build 2
 // ASKED (the owner, 2026-11-06: "Test room + arena"; the roadmap, docs/NEXT-PHASE-ROADMAP.md §3.5): "Create a neutral test room containing: One-tile movable object. Two-tile movable object. Rotatable object.
-// Immovable object. Object that blocks movement. Object that provides cover. Multiple enemy actors. A narrow passage. An objective behind an obstruction." The object that gives cover waits for Milestone Two:
-// there is no cover in the game yet (docs/FLUX-MOVEMENT.md §6.2). What is a reading (the layout, the squad, the creatures, no join wait, nothing kept): docs/OPEN-QUESTIONS.md §1w.
+// Immovable object. Object that blocks movement. Object that provides cover. Multiple enemy actors. A narrow passage. An objective behind an obstruction." The object that gives cover came with Milestone Two
+// (build 2026-11-06h): the room's crates, barrel, barriers, desk and consoles (tests/cover.js). What is a reading (the layout, the squad, the creatures, no join wait, nothing kept): docs/OPEN-QUESTIONS.md §1w.
 // Without the flag nothing of the game changes; with it the room is in the map, the game starts in it, and nothing is read from or written to storage. FLUX MOVE's rules are its own (tests/fluxmove.js): here they are
 // played out on the room's layout. The real page on a tablet and a phone (no Chromium: it says so and passes).
 const fs = require('fs');

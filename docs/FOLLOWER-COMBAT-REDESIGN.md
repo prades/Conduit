@@ -163,8 +163,8 @@ Read on `claude/start-game-project-HSh7Z`, build `2026-11-02j`, 2026-11-02. Noth
 ## 7. Edge cases and failure behavior
 
 As built in build `2026-11-03a` (the readings taken are in `OPEN-QUESTIONS.md` §1s):
-- **QUILL BURST:** no enemy in reach, no quills and no wait spent. A quill that touches nobody flies its reach and is gone. A quill is not stopped by a wall, like every follower shot.
-- **HEXFIRE:** a shot that touches nobody lands where it was aimed and leaves its circle there. A shot that touches an enemy on its last frame lands once. A new circle from the same Ember Hood takes the last one's place. The circle keeps burning if the Ember Hood falls.
+- **QUILL BURST:** no enemy in reach, no quills and no wait spent. A quill that touches nobody flies its reach and is gone. A quill is not stopped by a wall, like every follower shot. *(Superseded by build `2026-11-06h`, Milestone Two: a quill stops at a wall, at cover or at a tall object, and QUILL BURST is aimed only at an enemy the follower can see; with none in sight it is not fired and no wait is spent. `COMBAT.md` §8.)*
+- **HEXFIRE:** a shot that touches nobody lands where it was aimed and leaves its circle there. A shot that touches an enemy on its last frame lands once. A new circle from the same Ember Hood takes the last one's place. The circle keeps burning if the Ember Hood falls. *(Since build `2026-11-06h`: it is aimed only at an enemy the Ember Hood can see, and a shot stopped by a wall, cover or a tall object lands its circle on its own side of it. `COMBAT.md` §8.)*
 - **PINBALL:**
   - a target killed before the collision: the next nearest unhit enemy it can see is taken from where it is;
   - nobody left within reach: it stops;

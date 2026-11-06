@@ -462,3 +462,105 @@ The harness now starts every run clean. Thirteen mixed runs give the same number
 | moth striker L4 vs flux mage L10 | the follower fell at 619 f after 8 hits; the moth had 240 left | at 838 f after 9 hits; the moth had 190 left. VOIDSTAR, a mollusk, resists the moth's Crushing, and a moth is weak to its Elemental shots |
 
 These fights are not §1's audit runs (the setup differs); they compare the two builds on one harness. Every follower still takes several hits before it falls.
+
+## 8. Walls, cover and sight (Milestone Two; built in `2026-11-06h`)
+
+- **Status:** Implemented and tested in build `2026-11-06h` (branch `claude/start-game-project-HSh7Z`). **Not playtested.**
+- **Source:** the owner's answers of 2026-11-06 (`DECISION-LOG.md`), from the study in `FLUX-MOVEMENT.md` §13 (the roadmap's Milestone Two, `NEXT-PHASE-ROADMAP.md`). This section is the canonical statement of the rules.
+- **Readings:** what nothing said is marked **[reading]**; each one is listed for the owner in `OPEN-QUESTIONS.md` §1x.
+
+### 8.1 The owner's rules (quoted)
+
+1. Cover: "Stops shots".
+2. What gives cover: "Barriers", "Crates and stacks", "Barrels", "Desks and consoles" (the desks, the consoles and the lab benches).
+3. "Walls stop shots".
+4. "See over low ones".
+5. "Shoot over own cover": a shot fired from right behind an object passes over that object, within about a tile of the shooter.
+6. Stepping over an object: "Not yet". Every solid still blocks walking for everyone.
+7. Tall objects (the ones not seen over): "Yes, they stop shots".
+
+### 8.2 What each kind of object does (`js/facility.js` `FAC_COVER`, `FAC_LOW`)
+
+Each solid gets two traits from its kind when the map is built: `cover` (it stops a shot) and `low` (sight passes over it).
+
+| Kind | Stops a shot | Seen over | On the main map |
+|---|---|---|---|
+| Barrier, crate, barrel, desk, computer desk, reception desk, lab bench | yes (cover) | yes | 34 |
+| Crate stack, console **[reading: too high to see over]** | yes (cover) | no | 8 |
+| Table, couch, cart, turret (sentry), the Sewers' river and pools, barred gates, the boss gate **[reading]** | no: passed over | yes | 17 |
+| Everything else: generator, locker, vending machine, cabinet, cooler, server rack, teleporter, tanks, plants, floodlights, the truck, rubble… (tall) | yes, always | no | 105 |
+
+The heights are read from the props' 3D models (the player is about 70 px tall; `FLUX-MOVEMENT.md` §13): waist high or less is low. A barred gate is seen through and water is seen across **[reading]**.
+
+The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cover": its crates, barrel, barriers and desk (cover, seen over) and its two consoles (cover, not seen over). Its generator is tall.
+
+### 8.3 Sight (`facilitySees`; in play `facilitySeesFrom`)
+
+- **Nothing is seen through:**
+  - a wall: any edge of a room, whatever it is drawn as (wall, rock, glass, the arena's railing wall, the Nest's spill lip) **[reading: glass blocks sight, as it always did]**;
+  - the band between rooms, or outside the building;
+  - a solid that is not low.
+- **What is seen:**
+  - over a low solid;
+  - through a doorway;
+  - a solid at either end of the line: the one looking (a turret) or the one looked at (a rubble pile being drilled) does not hide itself.
+- **What uses sight:**
+  - the auto-lock and the enemy card;
+  - a creature's choice of prey;
+  - the combat step's "enemy near";
+  - the technicians' aims;
+  - the Technomancer's arc, ARC WARDEN, BURROW STRIKE;
+  - spawning out of the player's sight;
+  - the shooters of §8.5.
+- **Walking is another question:** route smoothing, steering, wander spots, leaps, the clone's pounce, PINBALL's roll and FAULTLINE's path keep the walking test. A crate is seen over and still not walked through.
+- **What changed for sight** (it was the walking test until this build): low furniture, water and barred gates are now seen over. Walls, glass and tall objects hide what is behind them, as before.
+
+### 8.4 Shots (`facilityShotStop`, `facilityShotReach`; the shots in flight, `js/game.js`)
+
+- **A shot that travels** is anything on the shared shot list:
+  - the player's service gun and machine gun;
+  - a Mage's bolt (FIREBALL and CHAIN LIGHTNING too);
+  - QUILL BURST's quills and HEXFIRE's shot;
+  - a creature's rear shot;
+  - a turret's shot.
+- **Such a shot stops at:**
+  - a wall (glass included **[reading]**);
+  - a cover object, unless it is the shooter's own: cover within `FAC_SHOT.own` = **1.0 tile** of where the shot was fired, measured to the object's nearest edge **[reading: the owner's "about a tile"]**;
+  - a tall object, always. A tall object is nobody's own cover **[reading]**.
+- **Over its own cover:** a shot fired from right behind a crate stack or a console passes over it too: cover too high to see over is still its owner's cover **[reading]**.
+- **What it passes over:** a low object that gives no cover.
+- **Either side's cover:** a creature's shot at a follower behind a crate stops at the crate, as yours do.
+- **Where a shot stops:** a small spark in the shot's colour (an `impact` effect, 0.35 tiles, 12 frames) **[reading]**. A shot that does something where it ends (HEXFIRE's burning circle) does it on its own side of what stopped it.
+- **The laser's beam** (`fireLaserShot`) stops at the first wall, cover (not the player's own) or tall object:
+  - the target beyond the stop is not hit;
+  - a creature in the line before the stop is hit as before (for less); one beyond it is not;
+  - a spark marks where the beam stopped, and the beam is drawn to there.
+- **Unchanged:**
+  - lobs (an arc: the toxic smoke bomb) fly over everything;
+  - the fire bombs bounce off walls and props (`js/firebombs.js`);
+  - the Photonic Shield stops enemy shots;
+  - melee (bites, the lash, the punch) tests distance only, so a bite still reaches over a one-tile object;
+  - the moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were **[reading; open: `OPEN-QUESTIONS.md` §1x]**.
+
+### 8.5 The shooters fire at what they can see
+
+- **A Mage** (`js/npc.js`) fires only at an enemy it can see. One it cannot see it walks toward, as it does one too far off, and the navigation layer takes that step round the wall, until it can see it **[reading]**. Cover it sees over may still stop its shot.
+- **QUILL BURST and HEXFIRE** (`js/evolution.js`) are aimed only at an enemy the follower can see. With none in sight, the move is not fired and stays ready **[reading]**.
+- **A creature's rear shot** (`js/predator.js`) is fired only at a target it can see, the one that last hit it included **[reading]**.
+- **A turret** (`js/stations.js`) fires only with a clear shot (`facilityShotClear`: nothing would stop it short of its target), so the Crystal pays for no shot that a wall or cover would stop **[reading]**.
+- **The player** fires when they choose (a tap or a hold). A round fired at a creature behind a wall or cover is stopped there. The auto-lock takes only creatures in sight, as before (now over low objects too).
+
+### 8.6 FLUX MOVE and cover
+
+A moved object keeps its kind and its traits. It gives cover, and is seen over, where it now stands, and no longer where it stood. The traits live on the solid that `facilitySolidMove` moves, so nothing has to be copied.
+
+### 8.7 Code and tests
+
+- **Code:**
+  - `js/facility.js`: `FAC_COVER`, `FAC_LOW`, `FAC_SHOT`, `_facWallCrossed`, `facilitySees`, `facilityShotStop`, `facilityShotReach`;
+  - `js/facilityplay.js`: `facilitySeesFrom`, `facilityShotStopAt`, `facilityShotClear`;
+  - the seeing uses moved from the walking test in `js/targeting.js`, `js/predator.js`, `js/facilityspawn.js`, `js/technomancer.js`, `js/playercards.js`, `js/combat.js`, `js/techabilities.js`;
+  - `js/game.js` (the shot loop), `js/weapons.js` (the laser), `js/npc.js` (the Mage), `js/evolution.js` (`_evoSeen`), `js/stations.js` (the turret).
+- **Tests:**
+  - `tests/cover.js` (new, 19 checks; the real page on a tablet);
+  - suites whose fixtures faked sight with the walking test, or placed units outside the building or across walls, were updated: `tests/enemycard.js`, `tests/facilityplay.js`, `tests/followercombat.js`, `tests/technomancer.js`, `tests/mutator.js`, `tests/playercards.js`, `tests/evolution.js`.

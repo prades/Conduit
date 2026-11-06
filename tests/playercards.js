@@ -305,7 +305,7 @@ function page(w, h, query) {
         near(r.arc[3], r.arc[2], 1e-6, 'the arc on a creature with no element'); near(r.punch[3], r.punch[2], 1e-6, 'the punch on a creature with no element');
     });
     await check('FORGEMASTER: the sentries\' rounds BURN (a sentry fires, its round lands: 3 a second for 3 s); your repairs take half the time (a sentry 600 → 300 frames, a relay 100 → 50); with no role, as before', () => {
-        const r = J(`(function(){ const o = {}; const shoot = role => { __tm(role); const it = __sentries[0]; _fp.items.push(it); it.cd = 0; it.broken = false; it.hp = it.maxHp || 500; const e = __creature('ant', 'scout', 0, 0); e.x = it.x + 3; e.y = it.y; e.team = 'red';
+        const r = J(`(function(){ const o = {}; const shoot = role => { __tm(role); const it = __sentries[0]; _fp.items.push(it); it.cd = 0; it.broken = false; it.hp = it.maxHp || 500; const e = __creature('ant', 'scout', 0, 0); const dd = [[-3, 0], [3, 0], [0, 3], [0, -3], [2, 2], [-2, 2], [2, -2], [-2, -2]].find(d => facilityStandOk(it.x + d[0], it.y + d[1]) && facilityShotClear(it.x, it.y, it.x + d[0], it.y + d[1])); e.x = it.x + dd[0]; e.y = it.y + dd[1]; e.team = 'red';   // (where it has a clear shot: a turret fires only so, since build 2026-11-06h)
                 const n0 = followerProjectiles.length; facilitySentryTick(); const p = followerProjectiles[n0] || null; let k = 0; while (p && followerProjectiles.indexOf(p) >= 0 && k < 90) { render(); k++; }
                 const res = [!!p, !!(p && p.onHit), e.burning || 0]; _fp.items = _fp.items.filter(x => x !== it); e.dead = true; actors = actors.filter(x => x !== e); return res; };
             o.with = shoot('forgemaster'); o.without = shoot(null);

@@ -329,7 +329,7 @@ function measure(w, h) {
         const r = J(`(function(){ __clear(); const f = __burrower(), t = __foe(f.x + 3.5, f.y), o = {}; for (let i = 0; i < 30; i++) { frame++; updateNPC(f); }
             o.under = f.untargetable; const h0 = f.health; applyDamage(f, 50, t); o.hurt = h0 - f.health; t.dead = true; frame++; updateNPC(f); o.upAfterLoss = !f.untargetable && !f._burrow;
             __clear(); const g = __burrower(), far = __foe(g.x + BURROW_REACH + 0.6, g.y); o.far = burrowStrikeTry(g, far); o.farBurrow = !!g._burrow;
-            const keep = facilityLosFrom; globalThis.facilityLosFrom = () => false; const near = __foe(g.x + 2, g.y); o.wall = burrowStrikeTry(g, near); globalThis.facilityLosFrom = keep;
+            const keep = facilitySeesFrom; globalThis.facilitySeesFrom = () => false; const near = __foe(g.x + 2, g.y); o.wall = burrowStrikeTry(g, near); globalThis.facilitySeesFrom = keep;
             return o; })()`);
         same(r.under, true, 'under the floor'); same(r.hurt, 0, 'hurt under the floor'); same(r.upAfterLoss, true, 'it stayed under with its enemy dead');
         same(r.far, false, 'it dived at an enemy out of reach'); same(r.farBurrow, false, 'a burrow out of reach'); same(r.wall, false, 'it dived at an enemy it cannot see');

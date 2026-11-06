@@ -264,25 +264,28 @@ function updateRTSNPC(actor) {
                 // back-off below runs for every dist under SNIPER_MIN, zero
                 // included.
                 const dist=Math.max(NPC_MIN_DIST, Math.sqrt(dx*dx+dy*dy));
+                // SIGHT (Milestone Two: a wall or a tall object stops its shot, docs/COMBAT.md): an enemy it cannot see it walks toward, as one too far off, until it can; the navigation layer
+                // takes that step round the wall (js/facilityplay.js facilityReroute). It fires only at one it sees (cover it sees over may still stop the shot).
+                const seen = typeof facilitySeesFrom !== "function" || facilitySeesFrom(actor.x, actor.y, nearestEnemy.x, nearestEnemy.y);
 
-                if (dist < SNIPER_MIN) {
+                if (seen && dist < SNIPER_MIN) {
                     actor.x-=(dx/dist)*actor.moveSpeed*1.2;
                     actor.y-=(dy/dist)*actor.moveSpeed*1.2;
-                } else if (dist > SNIPER_PREFERRED) {
+                } else if (!seen || dist > SNIPER_PREFERRED) {
                     const _sp = _ord && dist > SNIPER_PREFERRED + 2 ? 1 : 0.6;   // (a creature it was sent at, far off: at its full pace)
                     actor.x+=(dx/dist)*actor.moveSpeed*_sp;
                     actor.y+=(dy/dist)*actor.moveSpeed*_sp;
                 } else {
                     // In sweet spot — fire ranged projectile
                     if (!actor.attackCooldown) actor.attackCooldown = 0;
-                    if (actor.attackCooldown <= 0 && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(actor.x, actor.y, nearestEnemy.x, nearestEnemy.y))) {   // (only at what it can see: a wall stops a shot now, Milestone Two; cover it sees over may still stop it)
+                    if (actor.attackCooldown <= 0) {
                         const elDef = ELEMENTS.find(e=>e.id===actor.element);
                         const col   = elDef ? elDef.color : "#fff";
                         const dmg   = (actor.stats?.specialAttack||10) * MAGE_SHOT_MULT;
                         spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT);   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING, which conducts on from the enemy it strikes: js/evolution.js)
                         actor.attackCooldown = followerRest(actor, MAGE_SHOT_REST);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
                         if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
-                    } else if (actor.attackCooldown > 0) {
+                    } else {
                         actor.attackCooldown--;
                     }
                 }

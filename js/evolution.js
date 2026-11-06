@@ -315,6 +315,9 @@ function _evoFoes(x, y, r) {
     const near = typeof unitsNear === "function" ? unitsNear(x, r) : actors;
     return near.filter(a => a && !a.dead && typeof isHostileTarget === "function" && isHostileTarget(a) && Math.hypot(a.x - x, a.y - y) <= r);
 }
+// a move that FLIES at an enemy (QUILL BURST, HEXFIRE) is aimed only at one the follower can see: a wall or a tall object stops it (Milestone Two, js/facility.js facilityShotStop; sight over low objects,
+// js/facilityplay.js facilitySeesFrom). The moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were: docs/OPEN-QUESTIONS.md §1x.
+function _evoSeen(f, foes) { return typeof facilitySeesFrom === "function" ? foes.filter(a => facilitySeesFrom(f.x, f.y, a.x, a.y)) : foes; }
 // PETAL BLAZE: a ring of fire from the opened petals. True when it fired.
 function petalBlaze(f) {
     const foes = _evoFoes(f.x, f.y, BLOOM_RADIUS);
@@ -337,7 +340,7 @@ function petalBlaze(f) {
 // tiles and stops at the FIRST enemy it touches, which takes it; it pierces nothing, and nothing explodes or splashes. A cluster can catch several quills; spread-out enemies few. Nothing
 // is rolled. (It was one volley with a hit chance and a splash: superseded.) True when it fired.
 function quillBurst(f) {
-    const foes = _evoFoes(f.x, f.y, QUILL_RANGE);
+    const foes = _evoSeen(f, _evoFoes(f.x, f.y, QUILL_RANGE));
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, a0 = Math.atan2(t.y - f.y, t.x - f.x), dmg = (f.power || 10) * QUILL_MULT;
@@ -406,7 +409,7 @@ function singularityShot(f) {
 // (FIRE BOMBS' burning ground hurts everyone). The projectile itself does no damage: FIREBALL is the direct hit, HEXFIRE the area denial. A new circle takes the place of the same Ember
 // Hood's last one (no stacking). (It was six instant rounds that set their targets burning: superseded.) True when it fired.
 function hexfire(f) {
-    const foes = _evoFoes(f.x, f.y, HALO_RANGE);
+    const foes = _evoSeen(f, _evoFoes(f.x, f.y, HALO_RANGE));
     if (!foes.length || typeof spawnFollowerProjectile !== "function") return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1;

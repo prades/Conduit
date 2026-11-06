@@ -59,6 +59,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('a striker clone\'s abdomen shot hits the creature (an untagged shot: a creature\'s hits your side), never a recruit walking to the Crystal', () => {
         const r = J(`(function(){ __clear(); __class('mutator'); const c = makeClone('scorpion', 'striker', player.x, player.y + 2, 'hunt'); c.update = c.update; const e = __creature('ant', 'tank', 4, -2.5, 2, true); e.health = e.maxHealth = 1e6;
+            { const q = [..._fp.cellsP.values()].find(q => _fp.cellsP.has((q[0] - 3) + ',' + q[1]) && facilitySeesFrom(q[0], q[1], q[0] - 2.5, q[1])); c.x = q[0]; c.y = q[1]; e.x = q[0] - 2.5; e.y = q[1]; }   // (in sight of each other: a creature's or a clone's shot goes only at what it sees, and stops at a wall, since build 2026-11-06h)
             c.dirX = 1; c.dirY = 0; c._nearestEnemy = e; c.abdomenTimer = c.abdomenCooldown; const n0 = followerProjectiles.length; cloneTick(c); const shot = followerProjectiles[followerProjectiles.length - 1];
             const out = { fired: followerProjectiles.length > n0, tagged: shot ? !!shot.targetsGreen : null, dmg: shot ? shot.damage : 0, range: c.rangeDamage };
             const nr = { x: c.x - 2, y: c.y, team: 'red', isNeutralRecruit: true, dead: false, health: 10, maxHealth: 10 }; actors.push(nr); followerProjectiles.length = 0; e.x = c.x + 30; c._nearestEnemy = null; c.lastAttacker = null; c.abdomenTimer = c.abdomenCooldown; c._abdomenTick();

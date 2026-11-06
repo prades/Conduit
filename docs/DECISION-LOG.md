@@ -1632,7 +1632,7 @@ The owner reached the test room ("Works fine") and was asked what should come ne
 ## DECISION: Milestone Two: cover stops shots; walls stop shots; low objects seen over; shooting over your own cover; no stepping over yet
 
 - **Date:** 2026-11-06
-- **Status:** Approved (six answers). Not built yet: the build follows (`FLUX-MOVEMENT.md` §13).
+- **Status:** Approved (six answers). Implemented and tested in build `2026-11-06h`, on the branch; not playtested (`COMBAT.md` §8; the readings in `OPEN-QUESTIONS.md` §1x).
 - **Branch/build:** after build `2026-11-06g`, on `claude/start-game-project-HSh7Z`.
 - **Related feature/docs:** `FLUX-MOVEMENT.md` §13 (the study), `NEXT-PHASE-ROADMAP.md` §3.3 and §9 ("Cover rules", "Traversal rules"), `COMBAT.md`
 
@@ -1661,7 +1661,7 @@ The roadmap asks for movement, sight, cover and traversal to be "not interchange
 
 ### Impact
 - The build changes combat for everyone: shots that travel stop at walls and at cover.
-- Shooters that pick targets without looking (the mages, the turrets, the creatures' abdomen shots) need to see a target before they fire at it, or they would shoot walls for good. That is a reading, recorded with the build.
+- Shooters that pick targets without looking (the mages, the turrets, the creatures' abdomen shots) need to see a target before they fire at it, or they would shoot walls for good. That is a reading, recorded with the build (`OPEN-QUESTIONS.md` §1x item 11: the Mages, QUILL BURST and HEXFIRE, the creatures' rear shots, the turrets).
 - Walking is unchanged.
 
 ## DECISION: Tall objects stop shots too

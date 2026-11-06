@@ -1,6 +1,6 @@
 # The Flux Technician's object movement (replacing Telegrab)
 
-- **Status:** **Implemented and tested in the arena, build `2026-11-06f`** (FLUX MOVE; on main at the owner's word), **and in its test room, build `2026-11-06g`** (`game.html?fluxlab`, §9.1 Build 2; on the branch). Not playtested. Milestone Two (cover, sight and traversal as properties of their own) is **not built**. Designed by the owner's roadmap (`NEXT-PHASE-ROADMAP.md` §2, §3, §8, §9, §11), registered as a future update on 2026-11-06 and started the same day.
+- **Status:** **Implemented and tested in the arena, build `2026-11-06f`** (FLUX MOVE), **and in its test room, build `2026-11-06g`** (`game.html?fluxlab`, §9.1 Build 2); both on main at the owner's word. **Milestone Two's cover, walls and sight: implemented and tested in build `2026-11-06h`** (on the branch; the rules in `COMBAT.md` §8, the study and the answers in §13). Stepping over objects: "Not yet" (the owner). Not playtested. Designed by the owner's roadmap (`NEXT-PHASE-ROADMAP.md` §2, §3, §8, §9, §11), registered as a future update on 2026-11-06 and started the same day.
   - This document holds the approved rules in brief, with the roadmap as their source, and **the study of the code** the owner asked for on 2026-11-06 ("do extensive work to understand the flux technician's new mechanic"): what the game already has for this tool, what it lacks, what would break, and what must be decided.
   - Nothing here is a decision unless it is quoted from the owner or the roadmap.
 - **Owner:** User (creative direction); agent (implementation support)
@@ -28,7 +28,7 @@ The roadmap (§1, §2.1): "establish a reusable environmental manipulation syste
 - [x] The standard 2-tile range is enforced, measured from where the object stands at the start of each move, with no chaining. *(No object has the 3-tile exception: the owner has named none.)*
 - [x] One-tile and two-tile footprints validate as a whole; the two-tile placement is atomic.
 - [x] Invalid placement and cancelling never change the object.
-- [x] Collision and pathfinding update correctly after a move; actors are never left inside an object. *(Sight is as before: a moved object blocks sight as it blocks walking. Cover does not exist yet: Milestone Two.)*
+- [x] Collision and pathfinding update correctly after a move; actors are never left inside an object. *(Sight is as before: a moved object blocks sight as it blocks walking. Cover does not exist yet: Milestone Two.)* *(Since build `2026-11-06h`: a moved object gives cover, and is seen over if it is low, where it now stands; `COMBAT.md` §8.6.)*
 - [x] Enemies recover from a blocked route: every route in flight is dropped and planned again round the object; a place that would cut the floor in two is refused, so nobody is trapped. *(A unit with no way round waits where it is.)*
 - [x] Repeated use does not accumulate range or destabilise pathfinding; save and load do not corrupt positions.
 - [ ] It is useful without trivialising every obstacle. *(Needs playing; not playtested.)*
@@ -161,7 +161,7 @@ The neutral test room (§3.5) holds a one-tile, a two-tile, a rotatable, an immo
 7. **The save:** an optional key, `moved` (each moved object's place and turn), put back before the player's spot; a malformed or impossible entry is ignored (the object stays where it was authored). NEW GAME puts everything back.
 8. **Tests:** a new suite (`tests/fluxmove.js`); the suites that pin Telegrab moved to the tool (`tests/techlevel1.js`, `tests/sewerquest.js`, `tests/series2.js`, `tests/series2abilities.js`, `tests/bible.js`).
 
-**Build 2: the test room (`?fluxlab`).** A room of its own, in its own part of the map, added only when the address carries `?fluxlab` (the normal game's map is unchanged). In it: a one-tile and a two-tile movable object, a turnable one, an immovable one, a narrow passage, an objective behind an obstruction, a few creatures, and a doorway back. The cover-giving object waits for Milestone Two: no cover exists in the game today (§6.2). *Built in `2026-11-06g`.* What the code does:
+**Build 2: the test room (`?fluxlab`).** A room of its own, in its own part of the map, added only when the address carries `?fluxlab` (the normal game's map is unchanged). In it: a one-tile and a two-tile movable object, a turnable one, an immovable one, a narrow passage, an objective behind an obstruction, a few creatures, and a doorway back. The cover-giving object waits for Milestone Two: no cover exists in the game today (§6.2). *(Since build `2026-11-06h` the room's crates, barrel, barriers, desk and consoles give cover: `COMBAT.md` §8.2.)* *Built in `2026-11-06g`.* What the code does:
 - `js/facilitymap.js` `FLUX_LAB_MAP`: the room's data, apart from `FACILITY_MAP`. `js/facilitygrow.js` adds it to the map before the building pass, and only when the address carries `?fluxlab`. It is an interior under the Crystal Chamber at the arena's level, carried 64 tiles east and 96 south, out of sight of every room. A pair of doorways joins the two: stairs up in an alcove of its north wall, and a stairwell in the Crystal Chamber's floor (north-east corner) that exists only with the flag.
 - The layout (18 × 13 tiles) **[reading, `OPEN-QUESTIONS.md` §1w]**:
   - by the doorway, a crate and an immovable generator;
@@ -176,7 +176,7 @@ The neutral test room (§3.5) holds a one-tile, a two-tile, a rotatable, an immo
   - The room's look (the teleport rooms' violet) and its name ("Flux Test Room") go in the facility's tables with the flag only.
 - FLUX MOVE's INFO names the test room's objects with the arena's while the flag is on. Every rule is the tool's own: the room adds nothing but its layout.
 
-**Then Milestone Two** (cover, sight and stepping-over as properties of their own) is designed with the owner once the tool can be tried.
+**Then Milestone Two** (cover, sight and stepping-over as properties of their own) is designed with the owner once the tool can be tried. *(Designed with the owner on 2026-11-06, §13; cover, walls and sight built in `2026-11-06h`; stepping over: "Not yet".)*
 
 ### 9.2 The study's list
 
@@ -198,6 +198,7 @@ What a build would need, from the study (a plan to approve, not a decision):
 | Telegrab's removal | Tested | `tests/sewerquest.js` (two routes; the old record loads), `tests/series2.js` and `tests/series2abilities.js` (the cooldown cards and DOUBLE CHARGE on FLUX MOVE), `tests/bible.js` |
 | The rest of the game (regressions) | Passed (build `2026-11-06f`, 6166da5; build `2026-11-06g`, 56d52a6) | the full run: 90 of 90 suites, 1,922 checks; then, with the test room, 91 of 91, 1,938 checks (`CHANGELOG.md`) |
 | The test room (`?fluxlab`) | Implemented and tested (build `2026-11-06g`) | `tests/fluxlab.js`, 16 checks: without the flag the game as it was (the map, the tables, a new game's start); with it the room (no map errors, out of sight, the doorway pair), the roadmap's objects, the narrow passage and the way round, the objective sealed behind the barrier; the start (no tutorial, the squad, the chip ready at once), nothing kept (spies on storage and on the cards screen, proved on a normal game first), its creatures staying in it; FLUX MOVE played out (the passage shut, the way round taken, the seal refused, the pocket opened and the pack taken), the doorway both ways; the real page on a tablet and a phone (a player's own save untouched, the chip, a move through the chip, the pack) |
+| Milestone Two: cover, walls and sight | Implemented and tested (build `2026-11-06h`, on the branch) | `tests/cover.js`, 19 checks: the traits of every kind (42 cover objects on the main map, 17 low without cover); sight over low objects and not through tall ones, walls, glass (every pane), doorways seen through, walking unchanged; the auto-lock; the player's round and a creature's shot stopped at cover and passing over the shooter's own (1.0 tile); walls and glass; tall objects; lobs; HEXFIRE's circle on its own side; QUILL BURST and HEXFIRE not fired at what is unseen; the laser's beam; a Mage, a creature's rear shot and a turret firing only at what they see; FLUX MOVE carrying cover; the cost; the real page on a tablet. The full run: see `CHANGELOG.md` |
 | Played by a person | Tried, not played through | The owner, 2026-11-06, on the main build, after reaching the test room through `game.html?fluxlab`: "Works fine". No report yet on each rule of the tool or on how it plays (§3's last item) |
 | The study's claims | Checked against the code | four read-only audits; the stale bucket index and the sealed doors reproduced by re-running their probes (scratch scripts, not in the repo) |
 
@@ -216,7 +217,7 @@ What a build would need, from the study (a plan to approve, not a decision):
 **Proposed for the first build, standing unless the owner says otherwise** (each to be reviewed when the tool can be tried, as the roadmap's §9 asks):
 - **Persistence:** a moved object stays where it was put for the run, saved with the game; NEW GAME puts everything back.
 - **Sealing:** a placement that would cut the walkable floor in two (shut a room or a door) is refused, so every room stays reachable.
-- **Sight and cover:** as today. A moved object blocks walking and sight as it did where it stood; shots pass props as they do today. Separate cover and traversal properties come with Milestone Two.
+- **Sight and cover:** as today. A moved object blocks walking and sight as it did where it stood; shots pass props as they do today. Separate cover and traversal properties come with Milestone Two. *(Superseded by the owner's Milestone Two answers, §13; built in `2026-11-06h`.)*
 - **Rotation:** only for objects that look the same turned, until turned art is drawn for others.
 - **Range:** 2 tiles for every movable object; no 3-tile object until the owner names one.
 - **Followers and enemies:** they find a new way round a moved object (their route caches are cleared); one with no way round waits where it is.
@@ -304,9 +305,18 @@ Letting some units pass over some objects means a second floor, or a cost on cel
 6. Stepping over: "Not yet".
 7. *(Asked during the build, after a probe showed the gap.)* Tall objects (not seen over) stop shots too: "Yes, they stop shots".
 
+**Built in `2026-11-06h`** (on the branch; not playtested). The rules as built are in `COMBAT.md` §8 (the canonical statement); the readings taken where nothing said are in `OPEN-QUESTIONS.md` §1x. In brief:
+- **Two traits per kind** compiled onto every solid (`js/facility.js` `FAC_COVER`, `FAC_LOW`): cover and low. Every solid still blocks walking.
+- **Sight** is a line test of its own (`facilitySees`): walls and solids that are not low hide what is behind them; low ones are seen over. The seeing uses of the walking test moved to it; the movement uses (routes, steering, leaps, wander spots) did not.
+- **A shot that travels** stops at a wall, at cover that is not the shooter's own (1.0 tile), or at a tall object, with a small spark; lobs fly over. The laser's beam stops the same way.
+- **The shooters** (a Mage, QUILL BURST and HEXFIRE, a creature's rear shot, a turret) fire only at what they can see, or with a clear shot.
+- **FLUX MOVE** carries cover with the object.
+- **The test room** has its object that gives cover: its crates, barrel, barriers, desk and consoles.
+
 ## 12. History
 
 - 2026-11-06: the owner's roadmap (PR #19, `NEXT-PHASE-ROADMAP.md`) set the design; the owner asked for this study and registered the roadmap as a future update (`DECISION-LOG.md`). Written from four code audits on build `2026-11-06a`.
 - 2026-11-06: the owner chose the Flux phase and answered §11's questions (two rounds); §9.1's plan was written from a second read of the code.
 - 2026-11-06, build `2026-11-06f`: Build 1 built (FLUX MOVE in the arena; Telegrab retired); to main at the owner's word.
 - 2026-11-06, build `2026-11-06g`: Build 2 built (the test room, `?fluxlab`); to main at the owner's word. The owner chose Milestone Two next (§13: the study and the questions).
+- 2026-11-06, build `2026-11-06h`: Milestone Two's cover, walls and sight built from the owner's seven answers (§13; `COMBAT.md` §8); on the branch.

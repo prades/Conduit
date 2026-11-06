@@ -136,7 +136,7 @@ function measure(w, h) {
             targetSet(far, true); o.tapped = [targetIndexSubject() === far, targetCurrent() === far];
             far.dead = true; o.deadNow = targetIndexSubject(); __tick(); o.afterDead = targetIndexSubject() === near;
             near.dead = true; mid.dead = true; __tick(); o.empty = targetIndexSubject();
-            const w = __mk(2, 1, { calm: true }); const real = _fpLos; _fpLos = () => false; _ixSubject = null; __tick(); o.blocked = targetIndexSubject(); _fpLos = real; __tick(); o.seen = targetIndexSubject() === w;
+            const w = __mk(2, 1, { calm: true }); const real = facilitySeesFrom; facilitySeesFrom = () => false; _ixSubject = null; __tick(); o.blocked = targetIndexSubject(); facilitySeesFrom = real; __tick(); o.seen = targetIndexSubject() === w;   // (sight is facilitySeesFrom since Milestone Two, build 2026-11-06h: it sees over low objects; walking keeps _fpLos)
             for (const a of actors) if (a instanceof Predator) a.dead = true; actors.length = 0; for (const a of keep) actors.push(a); targetDrop(); standDown = false; _ixSubject = null; return o; })()`);
         same(r.none[0], null, 'a card with nobody near'); same(r.first.join(), 'true,true,true', 'the nearest in range is the card\'s and the gun\'s, and each creature has its own id'); same(r.stowed.join(), ',true,true', 'with the gun put away the card is still for the nearest');
         same(r.stays.join(), 'true,', 'a nearer creature took the card from the one it had'); same(r.leaves, true, 'the card does not move to the nearest when its creature leaves'); same(r.tapped.join(), 'true,true', 'a tap on another creature'); same(r.deadNow, null, 'a dead creature stays on the card');

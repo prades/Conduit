@@ -4,6 +4,54 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **h · Walls, cover and sight** (the next development phase's Milestone Two; the owner, 2026-11-06: cover "Stops shots"; "Barriers", "Crates and stacks", "Barrels", "Desks and consoles"; "Walls stop shots"; "See over low ones"; "Shoot over own cover"; stepping over: "Not yet"; tall objects: "Yes, they stop shots"; on the branch only; commit named in git log).
+  - **Main:** build `2026-11-06g` (the Flux test room; d3121e6, 56d52a6 and its full run's docs 3c595d6) went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
+  - **What each object does** (`js/facility.js` `FAC_COVER`, `FAC_LOW`; `COMBAT.md` §8.2). Every solid still blocks walking. Besides that:
+    - **cover you can see over:** barriers, crates, barrels, the desks and the lab benches (34 on the main map);
+    - **cover too high to see over:** crate stacks and consoles (8);
+    - **low, no cover:** tables, couches, carts, the turrets, the Sewers' water and barred gates (17): seen over, and shots pass over them;
+    - **tall:** everything else (105): it hides what is behind it and stops every shot.
+  - **Sight** is a line test of its own (`facilitySees`). Walls (glass included) and tall objects hide what is behind them; low objects are seen over; doorways are seen through. It now serves:
+    - the auto-lock and the enemy card;
+    - a creature's choice of prey;
+    - the combat step's "enemy near";
+    - the technicians' aims;
+    - the Technomancer's arc, ARC WARDEN and BURROW STRIKE;
+    - spawning out of sight.
+    Walking keeps its own test, so a crate is seen over and still not walked through. New for the player: low furniture, water and barred gates no longer hide a creature.
+  - **Shots that travel stop** (`facilityShotStop`, in the shot loop of `js/game.js`):
+    - at a wall (glass included);
+    - at cover that is not the shooter's own (cover within 1.0 tile of where the shot was fired is its own, and the shot passes over it);
+    - at a tall object, always.
+    That is either side's shots: your guns, the Mages' bolts, QUILL BURST, HEXFIRE, a creature's rear shot, a turret's. A small spark in the shot's colour marks where one stopped; a HEXFIRE stopped short lights its circle on its own side. Lobs fly over everything as before; the fire bombs, melee, the Photonic Shield and the moves that strike at once are as they were.
+  - **The laser's beam** stops the same way: the creature beyond is not hit, a spark marks the stop, and the beam is drawn to it.
+  - **The shooters fire at what they can see:**
+    - a Mage walks toward an enemy it cannot see (round the wall, as to one too far off) until it can, and fires only then;
+    - QUILL BURST and HEXFIRE wait for an enemy in sight;
+    - a creature's rear shot needs its target in sight;
+    - a turret fires only with a clear shot, so the Crystal pays for no shot a wall or cover would stop (the hallway turret no longer fires through the Experiment Lab's glass).
+  - **FLUX MOVE carries cover:** a moved crate gives cover where it now stands and none where it stood. The test room (`?fluxlab`) now has the roadmap's object that gives cover: its crates, barrel, barriers, desk and consoles.
+  - **How:**
+    - js/facility.js: the traits, `_facWallCrossed`, `facilitySees`, `facilityShotStop`, `facilityShotReach`;
+    - js/facilityplay.js: `facilitySeesFrom`, `facilityShotStopAt`, `facilityShotClear`;
+    - the seeing uses moved off the walking test in js/targeting.js, js/predator.js, js/facilityspawn.js, js/technomancer.js, js/playercards.js, js/combat.js, js/techabilities.js;
+    - js/game.js (the shot loop), js/weapons.js (the laser), js/npc.js (the Mage), js/evolution.js (`_evoSeen`), js/stations.js (the turret).
+  - **Readings** taken where nothing said, for the owner: `OPEN-QUESTIONS.md` §1x.
+    - The low kinds and the middle heights; glass and every room edge as walls; "about a tile" as 1.0.
+    - Tall objects nobody's own cover; cover too high to see over still its owner's.
+    - The spark; lobs and the moves that strike at once (open: should those need sight?); the shooters' restraint; HEXFIRE and the laser where they stop.
+  - **Tests:**
+    - tests/cover.js (new, 19 checks): the traits and the counts; sight (low objects, tall ones, every pane of glass, every doorway, walking apart); the auto-lock; the player's round and a creature's shot at cover and over the shooter's own; glass and a doorway; tall and low-no-cover objects; the 1.0 tile; a lob; HEXFIRE and QUILL BURST; the laser; a Mage, a creature's rear shot and a turret; FLUX MOVE carrying cover; the cost of a shot's step; the real page at `?fluxlab` on a tablet.
+    - Suites whose fixtures faked sight with the walking test, or set units outside the building or across walls, brought up to date: tests/enemycard.js, tests/facilityplay.js, tests/followercombat.js, tests/technomancer.js, tests/mutator.js, tests/playercards.js, tests/evolution.js.
+    - tests/run.js (92 suites).
+  - **The Bible:** a new section, "Walls, cover and sight" (Creatures and combat). The laser, the signature moves and the rear shot are brought up to date. 92 suites, 36 of them in a real browser.
+  - **Written up:**
+    - docs/COMBAT.md (§8, new: the canonical rules);
+    - docs/FLUX-MOVEMENT.md (status, §3, §9.1, §10, §11, §13 built, §12);
+    - docs/OPEN-QUESTIONS.md (§1x; §1w's "no cover" superseded);
+    - docs/DECISION-LOG.md (status), docs/FACILITY.md, docs/TECHNICIANS.md, docs/FOLLOWER-COMBAT-REDESIGN.md, docs/NEXT-PHASE-ROADMAP.md (status), docs/DEVELOPMENT-FRAMEWORK.md (the map).
+  - **Not playtested.**
+
 - **g · The Flux test room: `game.html?fluxlab`** (the next development phase's Milestone One, its second build; the owner: "Test room + arena"; the roadmap's test room, `NEXT-PHASE-ROADMAP.md` §3.5; on the branch only; commit named in git log).
   - **Main:** build `2026-11-06f` (FLUX MOVE in the arena, Telegrab retired; 33e2f74, its follow-up 6166da5 and its full run's docs 27c0b81) went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
   - **The room:** with `?fluxlab` the game starts in a room of its own for trying FLUX MOVE. It is an interior under the Crystal Chamber, out of sight of every room, reached by a stairwell in the Crystal Chamber's floor (north-east corner) and left by stairs up in its own north wall. In it:

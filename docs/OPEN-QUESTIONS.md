@@ -387,9 +387,60 @@ Built as decided (the owner, 2026-11-06: "Test room + arena": "a small neutral t
 7. **The creatures are three ants** of the arena's kind (workers and scouts, level 2), beyond the divider. They belong to the room (they wander in it, calm until provoked, and never leave it) and are not replaced: a reload or NEW GAME brings them back.
 8. **Nothing is kept**: no saved game is read or written, and nothing at all is written to storage, as with `?attract`. A player's own save is left exactly as it was. NEW GAME starts the room again (the address keeps `?fluxlab`); its question says so ("Start the test room again? (Your own saved game is not touched.)").
 9. **The rest of the facility is a new game's**, power on. The arena's own creatures and its nine movable objects are there as in any game. The words of FLUX MOVE's INFO name the test room's objects with the arena's while the flag is on.
-10. **No cover object**: the roadmap's "object that provides cover" waits for Milestone Two. There is no cover in the game yet; every solid blocks walking and sight alike (`FLUX-MOVEMENT.md` §6.2).
+10. **No cover object**: the roadmap's "object that provides cover" waits for Milestone Two. There is no cover in the game yet; every solid blocks walking and sight alike (`FLUX-MOVEMENT.md` §6.2). *(Superseded by build `2026-11-06h`: the room's crates, barrel, barriers, desk and consoles give cover; §1x.)*
 
 **Answered 2026-11-06:** the test room keeps the game's 60 s wait after a placement (the owner: "Keep 60 s"; `DECISION-LOG.md`).
+
+## 1x. Milestone Two's readings: walls, cover and sight (build `2026-11-06h`, on the branch; `COMBAT.md` §8)
+
+Built as decided. The owner, 2026-11-06:
+- cover "Stops shots";
+- what gives cover: "Barriers", "Crates and stacks", "Barrels", "Desks and consoles";
+- "Walls stop shots";
+- "See over low ones";
+- "Shoot over own cover";
+- stepping over: "Not yet";
+- tall objects: "Yes, they stop shots".
+
+Where nothing said, these readings were taken. Each stands as built until the owner says otherwise.
+
+1. **What is low (seen over)** is read from the 3D models: waist high or less (the player is about 70 px tall).
+   - Low: barriers, crates, barrels, the desks (the desk, the computer desks, the reception desk), lab benches, tables, couches, carts and turrets.
+   - Water (the Sewers' river and pools) is seen across, and a barred gate is seen through.
+   - Everything else is not low.
+2. **The middle heights are not seen over.**
+   - A crate stack (60–66 px) and a console (screens to about 64 px) give cover but hide what is behind them.
+   - The generator, the filing cabinets and the coolers hide what is behind them too, and give no cover.
+   - *(Other way: see over the middle heights too.)*
+3. **A low object that gives no cover lets a shot pass**: a table, a couch, a cart, a turret, water, a barred gate. *(Other way: any low object stops a shot.)*
+4. **Glass is a wall.**
+   - It stops shots and hides what is behind it: the Experiment Lab's windows, the Show Room's, the Observation Deck's over the arena.
+   - Sight stopped at glass before this build too, because it was the walking test.
+   - *(Other ways: glass is seen through but stops shots; or glass is seen and shot through.)*
+5. **Every edge of a room is a wall** for shots and sight, whatever it is drawn as: rock, the arena's railing wall, the Nest's spill lip.
+6. **"About a tile" is 1.0 tile** (`FAC_SHOT.own`), from where the shot was fired to the object's nearest edge. A crate half a tile in front of the shooter is its own cover; one 1.1 tiles off is not.
+7. **Whose cover an object can be:**
+   - A tall object is nobody's own cover: it stops a shot even when the shot is fired from right beside it.
+   - Cover too high to see over (a crate stack, a console) is still its owner's: a shot fired from right behind one passes over it.
+8. **The spark.**
+   - A shot that stops makes a small spark in its own colour where it stopped (the game's impact effect, 0.35 tiles, 12 frames).
+   - The laser's spark is pale blue and a little larger.
+   - No sound.
+9. **Lobs fly over everything**, the toxic smoke bomb's arc among them. The fire bombs bounce off walls and props as before.
+10. **The moves that strike at once are as they were.**
+    - ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX and PETAL BLAZE do not travel, so walls and cover do not stop them: an ARC VOLLEY can still strike through a wall.
+    - Melee is a matter of distance only, as before.
+    - **Open:** should these need sight, or stop at walls?
+11. **The shooters hold their fire at what they cannot see.**
+    - A Mage fires only at an enemy it sees. It walks toward one it cannot see, by the route round the wall, until it can.
+    - QUILL BURST and HEXFIRE are aimed only at an enemy in sight. With none in sight, the move is not fired and stays ready.
+    - A creature's rear shot is fired only at a target it sees.
+    - A turret fires only with a clear shot, so the Crystal pays for no shot that a wall or cover would stop.
+    - The player's own shots are the player's to fire.
+12. **A HEXFIRE stopped short** lights its circle on its own side of what stopped it.
+13. **The laser's beam stops** where a wall, cover (not the player's own) or a tall object stops it.
+    - The target beyond the stop is not hit.
+    - A creature in the line before the stop is hit as before (for less); one beyond it is not.
 
 ## 2. Newly open
 

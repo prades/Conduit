@@ -212,7 +212,8 @@ function facilityCanStep(x0, y0, x1, y1, F) {
 }
 // WHAT A KIND OF PROP DOES BESIDES BLOCKING WALKING (Milestone Two; the owner, 2026-11-06: docs/FLUX-MOVEMENT.md §13, docs/DECISION-LOG.md). Every solid still blocks walking for everyone.
 //   COVER  a shot that reaches it stops there ("Stops shots"): "Barriers", "Crates and stacks", "Barrels", "Desks and consoles" (the desks, consoles and lab benches); a shot fired from right behind
-//          it passes over it ("Shoot over own cover"). A TALL object (one that is not low) stops a shot too ("Yes, they stop shots"), and nobody shoots over it.
+//          it passes over it ("Shoot over own cover"), a crate stack's or a console's too (cover too high to see over). A TALL object (neither cover nor low: a generator, a locker, a vending machine,
+//          a teleporter, a rubble pile) stops a shot too ("Yes, they stop shots"), and it is nobody's own cover. A low object that gives no cover (a table, a cart, water, a barred gate) is passed over.
 //   LOW    sight passes over it ("See over low ones"): waist high or less by its 3D model (design/props/models; the player is about 70 px tall), a barred gate (seen through) or water (seen across).
 //          Everything else blocks sight as it always did, the middle heights too (a crate stack, a console's screens, a generator). The heights are a reading: docs/OPEN-QUESTIONS.md §1x.
 const FAC_COVER = new Set(["barrier", "crate", "crate_stack", "barrel", "desk", "computer_desk", "reception_desk", "console", "lab_bench"]);
