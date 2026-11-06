@@ -348,6 +348,12 @@ This build followed the approved brief and the owner's answer "Keep both buttons
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
 
+- **tests/perf.js's frame budget fails at random** (seen 2026-11-06, build `2026-11-06a`; for whoever keeps the tests, not a design question).
+  - The check: one frame of a busy arena (ten eggs, twelve creatures) must draw fewer than 21,500 canvas operations.
+  - Six runs on each build measured 20,731 to 21,674 on `2026-11-06a` and 21,209 to 21,514 on `2026-11-03a`; both builds went over the budget at times. Earlier full runs measured up to 21,499.
+  - Its scene draws each egg's type at random. The per-follower check beside it fixes the types for this reason ("a random draw made the cost swing by a fifth between runs").
+  - Ways to steady it: fix the scene's types the same way, then set the budget from what it measures; or raise the budget a little, with the reason written beside it. Nothing is changed until someone picks.
+
 - **A card's words are cut on its face** (seen 2026-11-02, build `2026-11-02j`, on the CARDS screen at 1180 × 820). The face's box shows about five lines, so the longer words run past it and are cut. That is 23 cards: the six Mage CROWNs, the three opportunity cards and 14 of the 18 Player cards (PLAGUE DOCTOR's words are the longest). The EFFECT line beside the stage always shows the whole text. It is not new: the auras and the opportunity cards have been cut this way since Build B. Ways to mend it, for the owner: smaller type on the face for long words; a short line on the face (the role's theme) with the full words in EFFECT; or a taller box. Nothing is changed until the owner picks.
 
 ## 3. Not decided, nothing built

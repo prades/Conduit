@@ -17,7 +17,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
   - **Tests:**
     - tests/followercombat.js grows from 26 to 35 checks: BURROW STRIKE (its dive, its travel under the floor, its eruption against a real plain hit of its own, its rest, the Siphon perk, untargetable, a lost enemy, out of reach, behind a wall; no other form burrows); FAULTLINE (the second chip and its waits; the drill kept; a freehand path kept as a curve, a short stroke, the 8-tile stop; the run under the floor along the path; who the spikes hit; calling it off three ways; BUSY; INFO); and the real page in headless Chromium by touch (both chips, a tap, a path drawn with `pointerType: 'touch'` pointer events, a cancelled touch);
     - tests/techabilities.js: the press while aiming now also starts a path.
-  - **The full run:** (to come)
+  - **The full run:** 87 of 88 suites passed (1,864 checks), tests/followercombat.js among them (35 of 35, the touch check included).
+    - The one failure: tests/perf.js's frame budget. One frame drew 21,564 canvas operations against a budget of 21,500.
+    - Its scene (ten eggs and twelve creatures) has no evolved follower, so nothing this build added is drawn in it.
+    - Run six times on each build: this build measured 20,731 to 21,674 (mean 21,205, two runs over); build `2026-11-03a`'s code measured 21,209 to 21,514 (mean 21,362, one run over).
+    - So the budget sits inside the scene's run-to-run spread and the check fails at random on either build. It is left as it is and noted in `OPEN-QUESTIONS.md` §2.
   - **The Bible:** the BURROW STRIKE row in the moves table; FAULTLINE in the technicians' abilities (its row and its own section, with its numbers read from the code); the Burrower's card and form row. Fixed with it: the Static Orb's form row now lists PINBALL (build `2026-11-03a` missed it).
   - **Written up:** docs/FOLLOWER-COMBAT-REDESIGN.md (status, sections 3, 7, 9, 10, 11, 12), docs/OPEN-QUESTIONS.md §1t, docs/TECHNICIANS.md, docs/COMBAT.md §7.4 and a dated note under §7.10's attack-kind table, docs/UI-STYLE.md (the second chip), docs/DECISION-LOG.md (2026-11-03a to main), the in-game guide, the Bible. Build `2026-11-03a`'s entry below said its suite had 23 checks: it had 26.
   - Not playtested. FAULTLINE has not been drawn by a finger on an iPad or a phone.
