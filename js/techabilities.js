@@ -6,7 +6,7 @@
 // a tap in the world, the tests. So a command from the HUD and one from the world are one thing, with one cooldown and the same checks, and only a technician that is in the squad uses one.
 //   WAITS: the first use waits TECH_AB.joinWait after the technician joins the squad (the user: "the 60-second initial squad wait"), and each use after that waits that ability's cooldown (60 s for each of the six, as asked).
 //     Cooldowns are not saved (none are).
-//   THE SIX: ELECTRIC the KINETIC LAUNCHER, CORE the PHOTONIC SHIELD, FIRE the THERMITE DRILL, ICE the FROST PATCH, TOXIC the BLIGHT SPIDER, FLUX FLUX MOVE (each below; FLUX MOVE's rules: js/fluxmove.js). docs/TECHNICIANS.md
+//   THE SIX: ELECTRIC the KINETIC LAUNCHER, CORE the PHOTONIC SHIELD, FIRE the THERMITE DRILL, ICE the FROST PATCH, TOXIC the TOXIC PODS (the Blight Spider's pools until build 2026-11-06k), FLUX FLUX MOVE (each below; FLUX MOVE's rules: js/fluxmove.js). docs/TECHNICIANS.md
 //     has their numbers, which were given and which are provisional, and what is still to be decided. (The flux technician's TELEGRAB is retired: the owner, 2026-11-06, "Retire it now"; docs/FLUX-MOVEMENT.md.)
 //   AIMS: what a chip asks the player to pick, in order: a follower, an enemy (on the screen, or its card), a spot on the floor, an object and then its new place (FLUX MOVE), a path (FAULTLINE).
 //
@@ -76,7 +76,7 @@ const TECH_AB = {
         cooldown: 3600,     // 60 s from when its pool is down
         size: 2,            // tiles: 2 by 2 (given)
         max: 3,             // pools at once: a 4th takes the oldest's place (given)
-        days: 2,            // a pool lasts two in-game days (given), fading as it is taken back in (reabsorbed)
+        life: 7200,         // frames of play: a TOXIC POD runs down in 2 minutes of play (the owner, 2026-11-06: "Shorter life"; the pools it replaced lasted 2 in-game days), its field weaker and smaller as it goes
         every: 30,          // frames between its bites at what stands in it: every half second (given)
         walk: 1200,         // frames to get to the spot, or it is called off
     },
@@ -109,7 +109,7 @@ const TECH_ABILITIES = {
                 ask: () => "TAP AN ENEMY IT CAN SEE (OR ITS CARD) TO DRILL" },
     ice:      { id: "frost_patch", name: "FROST PATCH", short: "FROST", icon: "❄", col: "#9be8ff", aim: ["spot"], use: (f, p) => techFrostAt(f, p.spot),
                 ask: () => "TAP THE FLOOR WHERE IT CAN SEE" },
-    toxic:    { id: "blight_spider", name: "BLIGHT SPIDER", short: "POOL", icon: "☣", col: "#7dff4a", aim: ["spot"], use: (f, p) => techBlightAt(f, p.spot),
+    toxic:    { id: "blight_spider", name: "TOXIC PODS", short: "POD", icon: "☣", col: "#7dff4a", aim: ["spot"], use: (f, p) => techBlightAt(f, p.spot),
                 ask: () => "TAP THE FLOOR WHERE IT CAN SEE: IT LEAVES A POOL THERE" },
     flux:     { id: "flux_move", name: "FLUX MOVE", short: "MOVE", icon: "✦", col: "#c77dff", aim: ["object", "place"], use: (f, p) => techFluxMoveAt(f, p.object, p.place),
                 ask: () => "" },   // (its prompt says more as it goes: techAimPrompt)
@@ -555,7 +555,8 @@ function _techFrostTick(f0) {
     }
 }
 
-// ── THE BLIGHT SPIDER (toxic) and THE PLAY CLOCK ──
+// ── TOXIC PODS (toxic; the BLIGHT SPIDER's pools until build 2026-11-06k: the owner, 2026-11-06, "Shorter life", docs/NEXT-PHASE-ROADMAP.md §12.3) and THE PLAY CLOCK ──
+// (The names below keep the pools' words: techPools, _techPoolLay. A pool is a pod now: a round field round a small pod, running down in TECH_AB.blight.life frames of play.)
 // ASKED: "Create contamination pools. Make the pools persist for two complete in-game days. Implement gradual toxin reabsorption according to the established behavior. Use the existing day-cycle system rather than real-world timers.
 // Prevent repeated updates from incorrectly extending pool duration or multiplying toxin reabsorption. Leave the death-spill behavior unresolved"; then: on a spot the player taps that it can see, the spider walks there and leaves a
 // 2×2 pool; up to 3 (a 4th takes the oldest's place); 2 in-game days, a day being 20 minutes of play, play time only (a saved clock: nothing passes while the game is closed); the pool hurts enemies in it with the toxic cloud's own
@@ -565,7 +566,7 @@ function _techFrostTick(f0) {
 let techClock = 0;    // frames of play (saved)
 let techPools = [];   // { id, x, y (its middle), born (the clock), bite (its full bite), by }
 let _techPoolN = 0;
-function techPoolLife() { return TECH_AB.blight.days * TECH_AB.day; }
+function techPoolLife() { return TECH_AB.blight.life; }
 function techPoolFade(P) { return Math.max(0, 1 - (techClock - P.born) / techPoolLife()); }   // 1 when it is laid, 0 when it is gone
 function techDayOf(t) { return Math.floor((t === undefined ? techClock : t) / TECH_AB.day) + 1; }
 function techBlightAt(tech, spot) {
@@ -574,7 +575,7 @@ function techBlightAt(tech, spot) {
     if (typeof facilityStandOk === "function" && !facilityStandOk(spot.x, spot.y)) return { ok: false, why: "TAP THE FLOOR", again: true };
     if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, spot.x, spot.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
     tech._blight = { x, y, t0: _techFrame() }; tech._abBusy = { kind: "blight" }; tech.job = null; tech.attackOrder = null; tech._shieldHold = null;
-    _techSay("☣ " + _techName(tech) + " GOES TO LAY A POOL", "#7dff4a");
+    _techSay("☣ " + _techName(tech) + " GOES TO PLACE A TOXIC POD", "#7dff4a");
     return { ok: true };
 }
 function _techPoolLay(f, x, y) {
@@ -582,16 +583,16 @@ function _techPoolLay(f, x, y) {
     techPools.push({ id: ++_techPoolN, x, y, born: techClock, bite, by: f.uid || null });
     while (techPools.length > T.max) techPools.shift();   // (a 4th takes the oldest's place)
     f._abReadyAt = _techFrame() + techCooldown(f, T.cooldown);
-    _techSay("☣ BLIGHT POOL · " + techPools.length + " OF " + T.max + " · " + T.days + " DAYS", "#7dff4a");
+    _techSay("☣ TOXIC POD · " + techPools.length + " OF " + T.max + " · " + Math.round(T.life / 3600) + " MIN", "#7dff4a");
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x, y, color: "#7dff4a", radius: 1.0, life: 24 });
 }
 function _techBlightWalkTick(f, f0) {
     const B = f._blight, T = TECH_AB.blight, stop = why => { f._blight = null; f._abBusy = null; f._fpWalkGoal = null; if (why) _techSay(why, "#ff8a6a"); };
-    if (f.returningToCrystal || !_techMember(f)) return stop("THE POOL IS OFF");
-    if (f0 - B.t0 > T.walk) return stop("THE POOL IS OFF · " + _techName(f) + " COULD NOT GET THERE");
+    if (f.returningToCrystal || !_techMember(f)) return stop("THE POD IS OFF");
+    if (f0 - B.t0 > T.walk) return stop("THE POD IS OFF · " + _techName(f) + " COULD NOT GET THERE");
     if (Math.hypot(B.x - f.x, B.y - f.y) <= 0.5) { stop(null); _techPoolLay(f, B.x, B.y); }
 }
-function techInPool(a, P) { const k = techPoolFade(P), h = TECH_AB.blight.size / 2 * k; return k > 0 && Math.abs(a.x - P.x) <= h && Math.abs(a.y - P.y) <= h; }
+function techInPool(a, P) { const k = techPoolFade(P), r = TECH_AB.blight.size / 2 * k; return k > 0 && Math.hypot(a.x - P.x, a.y - P.y) <= r; }   // (the pod's field: a round one, 2 tiles across, shrinking as it runs down)
 function _techPoolTick() {
     if (!techPools.length) return;
     techPools = techPools.filter(P => techPoolFade(P) > 0);
@@ -1099,7 +1100,7 @@ function techChipState(f) {
     const ab = techAbilityOf(f); if (!ab) return null;
     const ic = ab.icon || "⚡";
     if (techAim && techAim.f === f && techAim.ab === ab) return { text: "✕ AIMING", cls: "aim" };
-    if (f._abBusy) return { text: ic + " " + ({ setup: "SETTING UP", combat: "THROWING", drill: "DRILLING", blight: "LAYING" }[f._abBusy.kind] || "BUSY"), cls: "busy" };
+    if (f._abBusy) return { text: ic + " " + ({ setup: "SETTING UP", combat: "THROWING", drill: "DRILLING", blight: "PLACING" }[f._abBusy.kind] || "BUSY"), cls: "busy" };
     const w = techReadyIn(f); if (w > 0) return { text: ic + " " + Math.ceil(w / 60) + " S", cls: "wait" };
     return { text: ic + " " + ab.short, cls: "ready" };
 }
@@ -1132,8 +1133,8 @@ function techAbilityInfo(f) {
     }
     if (ab.id === "blight_spider") {
         const B = TECH_AB.blight, bite = Math.round(((f.stats && f.stats.specialAttack) || 10) * 0.12 * 0.3 * 100) / 100;
-        return { h: "ABILITY · " + ab.name, note: "From the ☣ chip on its squad card: it walks to a spot of floor it can see and leaves a poison pool. The pool hurts enemies standing in it, and is slowly taken back in: weaker and smaller until it is gone.",
-                 rows: [["POOL", B.size + " × " + B.size + " tiles, up to " + B.max + " (a new one takes the oldest's place)"], ["LASTS", B.days + " in-game days (" + Math.round(B.days * TECH_AB.day / 3600) + " min of play)"], ["BITE", bite + " every " + (B.every / 60) + " s, fading with the pool"], ["POOLS NOW", techPools.length + " · DAY " + techDayOf()]].concat(wait) };
+        return { h: "ABILITY · " + ab.name, note: "From the ☣ chip on its squad card: it walks to a spot of floor it can see and sets down a toxic pod. The pod's field hurts enemies standing in it, and the pod runs down: its field weaker and smaller until it is gone.",
+                 rows: [["FIELD", B.size + " tiles across; up to " + B.max + " pods (a new one takes the oldest's place)"], ["RUNS DOWN IN", Math.round(B.life / 3600) + " min of play"], ["BITE", bite + " every " + (B.every / 60) + " s, fading as it runs down"], ["PODS NOW", String(techPools.length)]].concat(wait) };
     }
     if (ab.id === "flux_move") {
         wait[0][1] = Math.round(TECH_AB.flux.cooldown / 60) + " s, from when it is placed";
@@ -1200,7 +1201,7 @@ function techDrawRubbleOn(it, f) {
     }
     ctx.restore();
 }
-// ── on each floor tile (js/game.js draws it with the tile, like the serum's pools): the FROST PATCH's ice, the BLIGHT SPIDER's pools ──
+// ── on each floor tile (js/game.js draws it with the tile, like the serum's pools): the FROST PATCH's ice, the TOXIC PODS' fields ──
 function techDrawOnTile(tx, ty, px, py) {
     const FX = techAim && techAim.flux && techAim.flux.s && typeof fluxDrawOnTile === "function" ? techAim : null;   // FLUX MOVE's grid, on the floor (js/fluxmove.js): drawn last on the tile
     if (!techFrosts.length && !techPools.length) { if (FX) fluxDrawOnTile(FX, tx, ty, px, py); return; }
@@ -1218,18 +1219,13 @@ function techDrawOnTile(tx, ty, px, py) {
         if ((f0 + seed) % 90 < 8) { const p = S(tx + ((seed % 7) - 3) / 10, ty + ((seed % 5) - 2) / 10); g.fillStyle = "rgba(255,255,255," + a.toFixed(3) + ")"; g.fillRect(p[0] - 1, p[1] - 3, 2, 6); g.fillRect(p[0] - 3, p[1] - 1, 6, 2); }   // a glint
         g.restore();
     }
-    for (const P of techPools) {
-        const k = techPoolFade(P), h = TECH_AB.blight.size / 2 * k; if (k <= 0 || Math.abs(tx - P.x) > h + 0.5 || Math.abs(ty - P.y) > h + 0.5) continue;
-        const a = 0.35 + 0.55 * k, wob = 1 + 0.04 * Math.sin(f0 * 0.05 + P.id), c = S(P.x, P.y), R = h * Math.SQRT2 * wob;
-        g.save(); tile(); g.clip();
-        // a puddle, not a square: the pool's own round, three spills off its edge (where they go is the pool's own), a darker heart
-        const blob = (x, y, r, fill, stroke) => { const q = S(x, y); g.beginPath(); g.ellipse(q[0], q[1], r * W, r * H, 0, 0, Math.PI * 2); g.fillStyle = fill; g.fill(); if (stroke) { g.strokeStyle = stroke; g.lineWidth = 2; g.stroke(); } };
-        const lip = "rgba(170,255,90," + (0.7 * a).toFixed(3) + ")", body = "rgba(70,170,40," + (0.62 * a).toFixed(3) + ")";
-        for (let s = 0; s < 3; s++) { const an = (P.id * 2.3 + s * 2.1) % (Math.PI * 2); blob(P.x + Math.cos(an) * h * 0.75, P.y + Math.sin(an) * h * 0.75, R * 0.42, body, lip); }
-        g.beginPath(); g.ellipse(c[0], c[1], R * W * 0.92, R * H * 0.92, 0, 0, Math.PI * 2); g.fillStyle = body; g.fill(); g.strokeStyle = lip; g.lineWidth = 2; g.stroke();
-        g.beginPath(); g.ellipse(c[0], c[1], R * W * 0.45, R * H * 0.45, 0, 0, Math.PI * 2); g.fillStyle = "rgba(30,90,20," + (0.45 * a).toFixed(3) + ")"; g.fill();
-        const seed = ((tx * 73856093) ^ (ty * 19349663) ^ P.id) >>> 0;   // bubbles rising and popping
-        for (let b = 0; b < 2; b++) { const ph = ((f0 + seed % 97 + b * 41) % 70) / 70, q = S(tx + (((seed >>> (b * 3)) % 9) - 4) / 12, ty + (((seed >>> (b * 3 + 1)) % 9) - 4) / 12); g.globalAlpha = 0.6 * a * (1 - ph); g.strokeStyle = "#d6ff9a"; g.lineWidth = 1; g.beginPath(); g.arc(q[0], q[1] - ph * 8, 1.5 + ph * 2.5, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1; }
+    for (const P of techPools) {   // a TOXIC POD's field: a round green haze on the floor, brightest at the pod, with a faint rim, weaker and smaller as the pod runs down
+        const k = techPoolFade(P), h = TECH_AB.blight.size / 2 * k; if (k <= 0 || Math.hypot(tx - P.x, ty - P.y) > h + 0.75) continue;
+        const a = 0.3 + 0.5 * k, c = S(P.x, P.y), R = h * Math.SQRT2 * W * (1 + 0.04 * Math.sin(f0 * 0.08 + P.id));
+        g.save(); tile(); g.clip(); g.translate(c[0], c[1]); g.scale(1, H / W);
+        const gr = g.createRadialGradient(0, 0, 0, 0, 0, R); gr.addColorStop(0, "rgba(140,255,80," + (0.5 * a).toFixed(3) + ")"); gr.addColorStop(0.7, "rgba(80,190,40," + (0.32 * a).toFixed(3) + ")"); gr.addColorStop(1, "rgba(60,150,30,0)");
+        g.fillStyle = gr; g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = "rgba(190,255,120," + (0.45 * a).toFixed(3) + ")"; g.lineWidth = 1.5; g.setLineDash([5, 6]); g.lineDashOffset = -f0 * 0.3; g.beginPath(); g.arc(0, 0, R * 0.96, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
         g.restore();
     }
     if (FX) fluxDrawOnTile(FX, tx, ty, px, py);
@@ -1247,11 +1243,23 @@ function techDrawItems(list) {
         const n = Math.max(1, Math.ceil((W.u1 - W.u0) / 0.5)), du = (W.u1 - W.u0) / n;
         for (let i = 0; i < n; i++) { const ua = W.u0 + du * i, ub = ua + du, um = (ua + ub) / 2; list.push({ type: "tech", kind: "shield", x: W.x - W.ny * um, y: W.y + W.nx * um, W, ua, ub, first: i === 0, last: i === n - 1 }); }
     }
+    for (const P of techPools) if (techPoolFade(P) > 0) list.push({ type: "tech", kind: "pod", x: P.x, y: P.y, P });   // a TOXIC POD, standing among everything else
 }
 function techDrawItem(o, px, py) {
     const g = ctx, f0 = _techFrame();
     g.save();
-    if (o.kind === "launcher") {
+    if (o.kind === "pod") {
+        // a TOXIC POD: a small glass canister of bubbling toxin on a black base, a black cap with a lens (the Blight Spider's own tank, small); the toxin's level and the lens fall as it runs down
+        const k = techPoolFade(o.P), lit = 0.35 + 0.65 * k * (0.75 + 0.25 * Math.sin(f0 * 0.15 + o.P.id));
+        g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(px, py, 12, 5, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "#0e1016"; g.beginPath(); g.ellipse(px, py - 2, 10, 4.5, 0, 0, Math.PI * 2); g.fill(); g.fillRect(px - 10, py - 7, 20, 5); g.beginPath(); g.ellipse(px, py - 7, 10, 4.5, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = "rgba(150,255,140,0.14)"; g.fillRect(px - 6, py - 26, 12, 19);   // the glass
+        const lv = 17 * k; g.fillStyle = "rgba(110,255,60,0.85)"; g.fillRect(px - 6, py - 8 - lv, 12, lv);   // the toxin, down as it runs down
+        g.fillStyle = "rgba(220,255,170,0.8)"; for (let b = 0; b < 3; b++) { const ph = ((f0 + o.P.id * 17 + b * 23) % 60) / 60; if (ph * 17 < lv) g.fillRect(px - 4 + b * 3, py - 9 - ph * 17, 2, 2); }   // bubbles rising in it
+        g.strokeStyle = "rgba(200,255,190,0.6)"; g.lineWidth = 1; g.strokeRect(px - 6, py - 26, 12, 19); g.fillStyle = "rgba(255,255,255,0.35)"; g.fillRect(px - 4, py - 24, 2, 14);   // its rim, a highlight
+        g.fillStyle = "#0e1016"; g.fillRect(px - 8, py - 30, 16, 5); g.fillStyle = "#1b1f2b"; g.fillRect(px - 5, py - 33, 10, 3);   // the cap
+        g.fillStyle = "rgba(125,255,74," + lit.toFixed(3) + ")"; g.beginPath(); g.arc(px, py - 28, 2, 0, Math.PI * 2); g.fill();   // the lens
+    } else if (o.kind === "launcher") {
         // a squat pad in the Hover Shell's black with two launch prongs, lit yellow; its coil pulses while it is free
         const busy = _techSiteBusy(o.site), pulse = busy ? 1 : 0.55 + 0.45 * Math.sin(f0 * 0.12);
         g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(px, py, 26, 12, 0, 0, Math.PI * 2); g.fill();

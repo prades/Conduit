@@ -241,26 +241,26 @@ function measure(w, h) {
             techChipTap(t); o.prompt = techAimPrompt(); techAimPickSpot(sp); o.walk = !!t._blight; o.chip = techChipState(t).text; o.coolBefore = techReadyIn(t);
             for (let i = 0; i < 600 && !techPools.length; i++) __step(1); const P = techPools[0]; o.pool = P ? [P.x, P.y] : null; o.want = [Math.round(sp.x - 0.5) + 0.5, Math.round(sp.y - 0.5) + 0.5]; o.cool = techReadyIn(t);
             for (let k = 1; k <= 3; k++) _techPoolLay(t, P.x + k * 3, P.y); o.n = techPools.length; o.ids = techPools.map(q => q.id); o.first = P.id; return o; })()`);
-        ok(/BLIGHT SPIDER · TAP THE FLOOR/.test(r.prompt), r.prompt); same(r.walk, true, 'it does not walk there'); same(r.chip, '☣ LAYING', 'the chip'); same(r.coolBefore, 0, 'the cooldown before the pool');
+        ok(/TOXIC PODS · TAP THE FLOOR/.test(r.prompt), r.prompt); same(r.walk, true, 'it does not walk there'); same(r.chip, '☣ PLACING', 'the chip'); same(r.coolBefore, 0, 'the cooldown before the pool');
         same(JSON.stringify(r.pool), JSON.stringify(r.want), 'the pool\'s middle'); ok(r.cool > 3500, 'the cooldown when it is down: ' + r.cool); same(r.n, 3, 'pools'); ok(!r.ids.includes(r.first), 'the oldest was kept');
     });
-    check('THE PLAY CLOCK: a frame of play a frame; a day is 20 minutes of it; a pool lasts 2 days, fading weaker and smaller as it goes (half at one day), and is gone at two; it hurts the enemies standing in it with the toxic cloud\'s bite every half second, and nothing of yours', () => {
+    check('THE PLAY CLOCK: a frame of play a frame; a day is 20 minutes of it; a TOXIC POD runs down in 2 minutes of play (the owner: "Shorter life"), its field weaker and smaller as it goes (half at one minute), and is gone at two; it hurts the enemies standing in it with the toxic cloud\'s bite every half second, and nothing of yours', () => {
         const r = J(`(function(){ const fs = __fresh(['toxic', 'fire']), t = fs[0], g = fs[1], o = {}; const c0 = techClock; __step(10); o.tick = techClock - c0; o.day = TECH_AB.day; o.life = techPoolLife();
             techPools = []; _techPoolLay(t, t.x + 2.5, t.y + 0.5); const P = techPools[0]; o.bite = Math.round(P.bite * 1000) / 1000; o.want = Math.round(((t.stats && t.stats.specialAttack) || 10) * 0.12 * 0.3 * 1000) / 1000;
             const e = __foe(P.x + 0.3, P.y - 0.2), ref = __foe(P.x + 9, P.y); applyDamage(ref, P.bite, null); const full = 5000 - ref.health; ref.dead = true; g.x = P.x - 0.3; g.y = P.y; g.spawnProtection = 0; const gh = g.health;
             const bites = n => { const h0 = e.health; for (let i = 0; i < n; i++) { techClock++; _techPoolTick(); } return Math.round((h0 - e.health) / full * 100) / 100; };
-            o.oneSecond = bites(60); techClock = P.born + o.day; o.k = techPoolFade(P); o.half = [techInPool(e, P), (e.x = P.x + 0.7, techInPool(e, P))]; e.x = P.x + 0.3; o.halfBite = bites(30);
+            o.oneSecond = bites(60); techClock = P.born + o.life / 2; o.k = techPoolFade(P); o.half = [techInPool(e, P), (e.x = P.x + 0.7, techInPool(e, P))]; e.x = P.x + 0.3; o.halfBite = bites(30);
             o.mine = gh - g.health; techClock = P.born + o.life - 1; _techPoolTick(); o.lastFrame = techPools.length; techClock++; _techPoolTick(); o.gone = techPools.length; return o; })()`);
-        same(r.tick, 10, 'the clock'); same(r.day, 72000, 'a day'); same(r.life, 144000, 'a pool\'s life'); same(r.bite, r.want, 'the bite (the toxic cloud\'s)');
-        same(r.oneSecond, 2, 'bites in a second'); same(r.k, 0.5, 'at one day'); same(r.half.join(), 'true,false', 'its size at one day'); same(r.halfBite, 0.5, 'its bite at one day');
-        same(r.mine, 0, 'it hurt a follower'); same(r.lastFrame, 1, 'gone before two days'); same(r.gone, 0, 'there after two days');
+        same(r.tick, 10, 'the clock'); same(r.day, 72000, 'a day'); same(r.life, 7200, 'a pod\'s life (2 minutes of play)'); same(r.bite, r.want, 'the bite (the toxic cloud\'s)');
+        ok(Math.abs(r.oneSecond - 2) < 0.02, 'bites in a second (two, a little weaker as the pod runs down): ' + r.oneSecond); same(r.k, 0.5, 'at one minute'); same(r.half.join(), 'true,false', 'its size at one minute'); same(r.halfBite, 0.5, 'its bite at one minute');
+        same(r.mine, 0, 'it hurt a follower'); same(r.lastFrame, 1, 'gone before two minutes'); same(r.gone, 0, 'there after two minutes');
     });
     check('saved: the clock and the pools; put back as they were (nothing passes while the game is closed); putting the same save back again changes nothing (no pool is stretched, no fade doubled); a new game starts the clock again', () => {
-        const r = J(`(function(){ const fs = __fresh(['toxic']), t = fs[0], o = {}; techPools = []; techClock = 50000; _techPoolLay(t, t.x + 2.5, t.y + 0.5); techClock += 30000;
+        const r = J(`(function(){ const fs = __fresh(['toxic']), t = fs[0], o = {}; techPools = []; techClock = 50000; _techPoolLay(t, t.x + 2.5, t.y + 0.5); techClock += 3000;
             const save = facilitySaveCollect(); o.saved = save.blight; const k0 = techPoolFade(techPools[0]);
             techBlightApply(save.blight); techBlightApply(save.blight); o.back = [techClock, techPools.length, techPoolFade(techPools[0]) === k0];
             techReset(); o.reset = [techClock, techPools.length]; techBlightApply(save.blight); return o; })()`);
-        same(r.saved.clock, 80000, 'the clock saved'); same(r.saved.pools.length, 1, 'the pools saved'); same(r.back.join(), '80000,1,true', 'put back'); same(r.reset.join(), '0,0', 'a new game');
+        same(r.saved.clock, 53000, 'the clock saved'); same(r.saved.pools.length, 1, 'the pods saved'); same(r.back.join(), '53000,1,true', 'put back'); same(r.reset.join(), '0,0', 'a new game');
     });
 
     group('FLUX MOVE (flux)');
