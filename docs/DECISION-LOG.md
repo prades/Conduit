@@ -1663,3 +1663,21 @@ The roadmap asks for movement, sight, cover and traversal to be "not interchange
 - The build changes combat for everyone: shots that travel stop at walls and at cover.
 - Shooters that pick targets without looking (the mages, the turrets, the creatures' abdomen shots) need to see a target before they fire at it, or they would shoot walls for good. That is a reading, recorded with the build.
 - Walking is unchanged.
+
+## DECISION: Tall objects stop shots too
+
+- **Date:** 2026-11-06
+- **Status:** Approved; built with the cover rules (build `2026-11-06h`).
+- **Branch/build:** `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `FLUX-MOVEMENT.md` §13, the entry above (Milestone Two's six answers)
+
+### Context
+While the cover rules were being built, a probe in the test room showed a gap. The tall objects not chosen as cover (lockers, vending machines, server racks, the generator, the tanks, the truck) blocked sight, but still let shots through, as everything did before.
+
+### Decision
+- "Yes, they stop shots". Any tall object (one that is not seen over) stops a shot that reaches it, like a wall.
+- They do not count as cover: nobody shoots over a tall object from right behind it. That rule is for the cover objects.
+- Low objects that give no cover (a table, water, a barred gate) are still passed over.
+
+### Alternatives considered
+- Only the cover objects and walls stop shots.

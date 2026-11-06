@@ -302,6 +302,7 @@ Letting some units pass over some objects means a second floor, or a cost on cel
 4. "See over low ones".
 5. *(Asked second.)* "Shoot over own cover": a shot fired from right behind an object passes over that object, within about a tile of the shooter.
 6. Stepping over: "Not yet".
+7. *(Asked during the build, after a probe showed the gap.)* Tall objects (not seen over) stop shots too: "Yes, they stop shots".
 
 ## 12. History
 

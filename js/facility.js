@@ -116,6 +116,7 @@ function _facilityBuild(ex) {
         const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null,
             flux: pr.flux ? { range: Math.max(1, pr.flux.range | 0 || 2), turn: !!pr.flux.turn, turned: false } : null };   // (flux: the Flux technician can move it, js/fluxmove.js; `turned` is its state in play, along the other axis)
     });
+    for (const so of solids) { so.cover = FAC_COVER.has(so.kind); so.low = FAC_LOW.has(so.kind); }   // (what it does besides blocking walking: FAC_COVER, FAC_LOW below)
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
     const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));   // (a tile's middle, not snapped, like a pickup)
@@ -208,6 +209,55 @@ function facilityCanStep(x0, y0, x1, y1, F) {
         else for (let i = 0; i < s.poly.length; i++) if (facilitySegmentsCross(a, b, s.poly[i], s.poly[(i + 1) % s.poly.length])) return false;
     }
     return true;
+}
+// WHAT A KIND OF PROP DOES BESIDES BLOCKING WALKING (Milestone Two; the owner, 2026-11-06: docs/FLUX-MOVEMENT.md §13, docs/DECISION-LOG.md). Every solid still blocks walking for everyone.
+//   COVER  a shot that reaches it stops there ("Stops shots"): "Barriers", "Crates and stacks", "Barrels", "Desks and consoles" (the desks, consoles and lab benches); a shot fired from right behind
+//          it passes over it ("Shoot over own cover"). A TALL object (one that is not low) stops a shot too ("Yes, they stop shots"), and nobody shoots over it.
+//   LOW    sight passes over it ("See over low ones"): waist high or less by its 3D model (design/props/models; the player is about 70 px tall), a barred gate (seen through) or water (seen across).
+//          Everything else blocks sight as it always did, the middle heights too (a crate stack, a console's screens, a generator). The heights are a reading: docs/OPEN-QUESTIONS.md §1x.
+const FAC_COVER = new Set(["barrier", "crate", "crate_stack", "barrel", "desk", "computer_desk", "reception_desk", "console", "lab_bench"]);
+const FAC_LOW = new Set(["barrier", "crate", "barrel", "desk", "computer_desk", "reception_desk", "lab_bench", "cart", "table", "couch", "sentry", "river", "pool", "gate", "boss_gate"]);
+// the first wall line the segment (x0,y0)-(x1,y1) crosses, or null: the walls are every room's outline but its openings, so this is a band between rooms and a thin wall (glass) alike
+function _facWallCrossed(x0, y0, x1, y1, F) {
+    const ix = _facIndex(F), B = FAC_BUCKET, a = [x0, y0], b = [x1, y1], seen = new Set();
+    for (let by = Math.floor(Math.min(y0, y1) / B), y2 = Math.floor(Math.max(y0, y1) / B); by <= y2; by++) for (let bx = Math.floor(Math.min(x0, x1) / B), x2 = Math.floor(Math.max(x0, x1) / B); bx <= x2; bx++)
+        for (const w of ix.walls.get(ix.key(bx, by)) || _FAC_NONE) { if (seen.has(w)) continue; seen.add(w); if (facilitySegmentsCross(a, b, w.a, w.b)) return w; }
+    return null;
+}
+// THE SIGHT LINE: can one see from (x0,y0) to (x1,y1)? Not through a wall, nor through a solid that is not LOW. A solid at either end is the one looking or the one looked at (a turret, a rubble pile being
+// aimed at) and does not hide itself. Walking is another question (facilityCanStep): a crate is seen over and still not walked through.
+function facilitySees(x0, y0, x1, y1, F) {
+    F = F || facilityGet();
+    const e0 = facilitySolidAt(x0, y0, F), e1 = facilitySolidAt(x1, y1, F), n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.25));
+    for (let i = 1; i < n; i++) {
+        const t = i / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+        if (!facilityRoomAt(x, y, F)) return false;   // (a wall's band, or outside the building)
+        const so = facilitySolidAt(x, y, F); if (so && !so.low && so !== e0 && so !== e1) return false;
+    }
+    return !_facWallCrossed(x0, y0, x1, y1, F);
+}
+// A SHOT'S STEP ("Walls stop shots"; cover "Stops shots"; "Shoot over own cover"; tall objects "stop shots"): does the step from (x0,y0) to (x1,y1) stop at a wall, at an object that gives COVER or at
+// a tall one? A cover object within FAC_SHOT.own tiles of where the shot was fired (ox, oy) is the shooter's own, and the shot passes over it. A low object that gives no cover (a table, water, a barred
+// gate) is passed over. Returns where it stops ({ x, y, wall } or { x, y, solid }) or null. Nothing is changed.
+const FAC_SHOT = { own: 1.0 };
+function facilityShotStop(x0, y0, x1, y1, ox, oy, F) {
+    F = F || facilityGet();
+    const w = _facWallCrossed(x0, y0, x1, y1, F); if (w) return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, wall: w };
+    if (!facilityRoomAt(x1, y1, F)) return { x: x0, y: y0, wall: true };
+    const ix = _facIndex(F), a = [x0, y0], b = [x1, y1], seen = new Set(), own = so => { const dx = Math.max(so.bb[0] - ox, 0, ox - so.bb[2]), dy = Math.max(so.bb[1] - oy, 0, oy - so.bb[3]); return Math.hypot(dx, dy) <= FAC_SHOT.own; };
+    for (const q of [[x0, y0], [x1, y1]]) for (const so of _facNear(ix.solids, ix, q[0], q[1])) {
+        if (seen.has(so)) continue; seen.add(so); if (so.open || !(so.cover || !so.low) || (so.cover && own(so))) continue;
+        if (facilitySolidAt(x1, y1, F) === so) return { x: x1, y: y1, solid: so };
+        if (so.shape !== "circle") for (let i = 0; i < so.poly.length; i++) if (facilitySegmentsCross(a, b, so.poly[i], so.poly[(i + 1) % so.poly.length])) return { x: (x0 + x1) / 2, y: (y0 + y1) / 2, solid: so };
+    }
+    return null;
+}
+// how far along the line from (x0,y0) to (x1,y1) a shot fired at (x0,y0) gets before a wall or cover stops it (tiles; the whole length when nothing does): the laser's beam (js/weapons.js)
+function facilityShotReach(x0, y0, x1, y1, F) {
+    F = F || facilityGet();
+    const L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(L / 0.25));
+    for (let i = 0; i < n; i++) { const ta = i / n, tb = (i + 1) / n; if (facilityShotStop(x0 + (x1 - x0) * ta, y0 + (y1 - y0) * ta, x0 + (x1 - x0) * tb, y0 + (y1 - y0) * tb, x0, y0, F)) return L * ta; }
+    return L;
 }
 // The movement helper for when the facility is wired in: the furthest the body gets toward (x+dx, y+dy), sliding along a wall on one axis if the diagonal is blocked.
 function facilityMove(x, y, dx, dy, F) {

@@ -44,7 +44,7 @@ function technoRelays() { const R = typeof _fp !== "undefined" && _fp && _fp.rel
 function technoArcDamage() { const base = typeof weaponDamage === "function" ? weaponDamage("gauntlet") : WEAPONS.gauntlet.damage; return Math.round(base * TECHNO.arc.mult * (1 + TECHNO.arc.perRelay * technoRelays()) * 10) / 10; }
 
 // ── the attack (js/input.js firePlayerShot, with the gauntlet in hand): true when a punch or an arc has begun ──
-function _tcSight(a) { return typeof facilityLosFrom !== "function" || facilityLosFrom(player.x, player.y, a.x, a.y); }
+function _tcSight(a) { return typeof facilitySeesFrom !== "function" || facilitySeesFrom(player.x, player.y, a.x, a.y); }   // (sight: over low objects too)
 function technoAttack(foe) {
     if (!foe || foe.dead) return false;
     const d = Math.hypot(foe.x - player.x, foe.y - player.y);

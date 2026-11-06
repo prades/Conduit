@@ -83,7 +83,7 @@ function facilitySpawnSpot(P) {
         if (cm && landings.has(cm.get(c[0] + "," + c[1]))) return -1;
         if (sq && Math.hypot(c[0] - sq[0], c[1] - sq[1]) < 3) return -1;
         const dp = Math.hypot(c[0] - player.visualX, c[1] - player.visualY); let dn = 99; for (const o of others) dn = Math.min(dn, Math.hypot(c[0] - o.x, c[1] - o.y));
-        const seen = typeof _fpLos === "function" && _fpLos(player.visualX, player.visualY, c[0], c[1]), good = dp >= P.minFromPlayer && dn >= P.spacing && !seen;
+        const seen = typeof facilitySeesFrom === "function" && facilitySeesFrom(player.visualX, player.visualY, c[0], c[1]), good = dp >= P.minFromPlayer && dn >= P.spacing && !seen;
         if (strict) return good ? 1 : -1;
         return good ? 1e9 : Math.min(dp, P.minFromPlayer) * 2 + Math.min(dn, P.spacing) * 2 + (seen ? 0 : 6);
     };

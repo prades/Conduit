@@ -185,7 +185,7 @@ function _techFoeOk(foe) { return !!foe && !foe.dead && foe.team !== "green" && 
 function techLaunchAt(tech, who, foe) {
     if (!_techThrowable(who, tech)) return { ok: false, why: who === tech ? "IT CANNOT THROW ITSELF" : "PICK A FOLLOWER TO THROW" };
     if (!_techFoeOk(foe)) return { ok: false, why: "PICK AN ENEMY" };
-    if (typeof facilityLosFrom === "function" && !facilityLosFrom(tech.x, tech.y, foe.x, foe.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE IT" };   // (thrown only at what it sees: never over a wall into another room)
+    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, foe.x, foe.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE IT" };   // (thrown only at what it sees: never over a wall into another room; over a low object, yes)
     tech._abBusy = { kind: "combat", who };
     who._launchLoad = { kind: "combat", by: tech, foe, t0: _techFrame() }; who.job = null; who.attackOrder = null;
     _techSay("⚡ " + _techName(who) + " TO THE LAUNCHER", "#ffe733");
@@ -294,7 +294,7 @@ function _techShieldPlace(tech, foe) {
 }
 function techShieldAt(tech, foe) {
     if (!_techFoeOk(foe)) return { ok: false, why: "PICK AN ENEMY" };
-    if (typeof facilityLosFrom === "function" && !facilityLosFrom(tech.x, tech.y, foe.x, foe.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE IT" };
+    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, foe.x, foe.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE IT" };
     const S = TECH_AB.shield, P = _techShieldPlace(tech, foe), f0 = _techFrame();
     const W = { id: ++_techShieldN, by: tech, x: P.cx, y: P.cy, nx: P.nx, ny: P.ny, u0: P.u0, u1: P.u1, t0: f0, until: f0 + S.life, hits: [] };
     techShields.push(W);
@@ -310,7 +310,7 @@ function techShieldAt(tech, foe) {
 function techShieldRaise(from, tx, ty, life, foe) {
     if (!from) return { ok: false, why: "NOBODY TO RAISE IT" };
     const S = TECH_AB.shield, f0 = _techFrame(), los = (x0, y0, x1, y1) => typeof facilityLosFrom !== "function" || facilityLosFrom(x0, y0, x1, y1), stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
-    let aim = foe && _techFoeOk(foe) && los(from.x, from.y, foe.x, foe.y) ? foe : null;
+    let aim = foe && _techFoeOk(foe) && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(from.x, from.y, foe.x, foe.y)) ? foe : null;   // (aimed at what is seen, over low objects too; the floor in front is the walking test, los)
     if (!aim) {
         const dx = tx - from.x, dy = ty - from.y, D = Math.hypot(dx, dy) || 1, nx = dx / D, ny = dy / D; let k = 0;
         for (let s = 0.5; s <= S.back + 1e-6; s += 0.25) { const x = from.x + nx * s, y = from.y + ny * s; if (!los(from.x, from.y, x, y) || !stand(x, y)) break; k = s; }
@@ -448,7 +448,7 @@ function _techDrillRubble(tech, r) {
 }
 function techDrillFoe(tech, foe) {
     if (!_techFoeOk(foe)) return { ok: false, why: "PICK AN ENEMY", again: true };
-    if (typeof facilityLosFrom === "function" && !facilityLosFrom(tech.x, tech.y, foe.x, foe.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE IT", again: true };
+    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, foe.x, foe.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE IT", again: true };
     _techDrillStart(tech, { foe }); return { ok: true };
 }
 function _techDrillStart(t, o) { t._drill = Object.assign({ t0: _techFrame(), workAt: null, next: 0, hits: 0 }, o); t._abBusy = { kind: "drill" }; t.job = null; t.attackOrder = null; t._shieldHold = null; }
@@ -534,7 +534,7 @@ function techFrostAt(tech, spot) {
     if (!spot || !Number.isFinite(spot.x) || !Number.isFinite(spot.y)) return { ok: false, why: "TAP THE FLOOR", again: true };
     const cx = Math.round(spot.x), cy = Math.round(spot.y);
     if (typeof facilityStandOk === "function" && !facilityStandOk(cx, cy)) return { ok: false, why: "TAP THE FLOOR", again: true };
-    if (typeof facilityLosFrom === "function" && !facilityLosFrom(tech.x, tech.y, cx, cy)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
+    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, cx, cy)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
     const T = TECH_AB.frost, f0 = _techFrame(), h = Math.floor(T.size / 2), tiles = new Set();
     for (let dx = -h; dx <= h; dx++) for (let dy = -h; dy <= h; dy++) { const x = cx + dx, y = cy + dy; if ((typeof facilityStandOk !== "function" || facilityStandOk(x, y)) && (typeof facilityLosFrom !== "function" || facilityLosFrom(cx, cy, x, y))) tiles.add(x + "," + y); }
     techFrosts.push({ x: cx, y: cy, tiles, t0: f0, until: f0 + T.life, by: tech });
@@ -572,7 +572,7 @@ function techBlightAt(tech, spot) {
     if (!spot || !Number.isFinite(spot.x) || !Number.isFinite(spot.y)) return { ok: false, why: "TAP THE FLOOR", again: true };
     const ox = Math.round(spot.x - 0.5), oy = Math.round(spot.y - 0.5), x = ox + 0.5, y = oy + 0.5;   // the 2×2 block of tiles nearest the spot: ox..ox+1, oy..oy+1
     if (typeof facilityStandOk === "function" && !facilityStandOk(spot.x, spot.y)) return { ok: false, why: "TAP THE FLOOR", again: true };
-    if (typeof facilityLosFrom === "function" && !facilityLosFrom(tech.x, tech.y, spot.x, spot.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
+    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, spot.x, spot.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
     tech._blight = { x, y, t0: _techFrame() }; tech._abBusy = { kind: "blight" }; tech.job = null; tech.attackOrder = null; tech._shieldHold = null;
     _techSay("☣ " + _techName(tech) + " GOES TO LAY A POOL", "#7dff4a");
     return { ok: true };

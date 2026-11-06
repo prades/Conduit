@@ -289,7 +289,7 @@ function burrowStrikeTry(f, t) {
     if (!_burrowerHit(f) || !t || t.dead) return false;
     if (f._burrow) return true;
     if ((f.attackCooldown || 0) > 0) { f.attackCooldown--; return true; }   // (resting after an eruption: it holds where it surfaced)
-    if (Math.hypot(t.x - f.x, t.y - f.y) > BURROW_REACH || (typeof facilityLosFrom === "function" && !facilityLosFrom(f.x, f.y, t.x, t.y))) return false;   // (not in reach, or a wall between: it walks as before)
+    if (Math.hypot(t.x - f.x, t.y - f.y) > BURROW_REACH || (typeof facilitySeesFrom === "function" && !facilitySeesFrom(f.x, f.y, t.x, t.y))) return false;   // (not in reach, or a wall between: it walks as before. It burrows under a low object it sees over)
     const f0 = typeof frame !== "undefined" ? frame : 0;
     f._burrow = { t, phase: "dive", t0: f0, t1: 0 }; f.state = "attack";
     { const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }

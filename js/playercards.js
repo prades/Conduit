@@ -103,7 +103,7 @@ function _pcWarden(r) {
     const R = typeof facilityLampReach === "function" ? facilityLampReach() : 7, dmg = typeof technoArcDamage === "function" ? technoArcDamage() : 18;
     let n = 0;
     for (const a of _pcFoes()) {
-        if (Math.hypot(a.x - player.x, a.y - player.y) > R || (typeof facilityLosFrom === "function" && !facilityLosFrom(player.x, player.y, a.x, a.y))) continue;
+        if (Math.hypot(a.x - player.x, a.y - player.y) > R || (typeof facilitySeesFrom === "function" && !facilitySeesFrom(player.x, player.y, a.x, a.y))) continue;
         if (typeof _tcZap === "function") _tcZap(a, dmg);
         if (typeof equipElementStatus === "function") equipElementStatus(player, a, r.kit.el);
         if (typeof technoBolt === "function") technoBolt(player, a, true);

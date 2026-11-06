@@ -275,14 +275,14 @@ function updateRTSNPC(actor) {
                 } else {
                     // In sweet spot — fire ranged projectile
                     if (!actor.attackCooldown) actor.attackCooldown = 0;
-                    if (actor.attackCooldown <= 0) {
+                    if (actor.attackCooldown <= 0 && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(actor.x, actor.y, nearestEnemy.x, nearestEnemy.y))) {   // (only at what it can see: a wall stops a shot now, Milestone Two; cover it sees over may still stop it)
                         const elDef = ELEMENTS.find(e=>e.id===actor.element);
                         const col   = elDef ? elDef.color : "#fff";
                         const dmg   = (actor.stats?.specialAttack||10) * MAGE_SHOT_MULT;
                         spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT);   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING, which conducts on from the enemy it strikes: js/evolution.js)
                         actor.attackCooldown = followerRest(actor, MAGE_SHOT_REST);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
                         if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
-                    } else {
+                    } else if (actor.attackCooldown > 0) {
                         actor.attackCooldown--;
                     }
                 }

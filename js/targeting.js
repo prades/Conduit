@@ -28,7 +28,7 @@ function targetLive(a) { return !!a && !a.dead && a.team !== "green" && !a.isClo
 function targetOn() { return typeof facilityPlay !== "undefined" && facilityPlay; }
 function targetCurrent() { return typeof playerLockTarget !== "undefined" && targetLive(playerLockTarget) ? playerLockTarget : null; }
 function _tgDist(a) { return Math.hypot(a.x - player.x, a.y - player.y); }
-function _tgSees(a) { return typeof _fpLos === "function" && typeof _fp !== "undefined" && _fp && _fp.F ? _fpLos(player.visualX, player.visualY, a.x, a.y) : true; }
+function _tgSees(a) { return typeof facilitySeesFrom === "function" ? facilitySeesFrom(player.visualX, player.visualY, a.x, a.y) : true; }   // (sight, which sees over low objects: js/facilityplay.js facilitySeesFrom)
 function targetName(a) { return typeof unitTypeLabel === "function" ? unitTypeLabel(a) : String(a.speciesName || "ENEMY").toUpperCase(); }
 function _tgColour(a) { const el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null; return el ? el.color : "#ff8a6a"; }
 

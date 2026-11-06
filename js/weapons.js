@@ -91,7 +91,7 @@ function weaponHud() {
     const dry = playerAmmo <= 0; return { text: armed ? (dry ? "NO AMMO — STOW" : "ARMED ◆ " + playerAmmo) : "AMMO ◆ " + playerAmmo, dry, short: "AMMO " + playerAmmo, kind: "ammo", n: playerAmmo, cells: 0 };   // (kind, n and cells: what the little icon in the facility shows, js/targeting.js drawAmmoIcon)
 }
 
-// ── the laser: a hit at once, through what is behind ──
+// ── the laser: a hit at once, through what is behind (creatures; a wall or cover stops the beam: Milestone Two, js/facility.js facilityShotReach) ──
 function fireLaserShot(foe) {
     const W = WEAPONS.laser, d = Math.hypot(foe.x - player.x, foe.y - player.y);
     if (d > W.range) { _wSay("OUT OF RANGE", "#ff9c8a"); return false; }
@@ -103,16 +103,19 @@ function fireLaserShot(foe) {
     // A GUNSLINGER ROLE awake (a Player card, js/playercards.js): the beam is the role's element (for the triangle only), and its kit acts on each creature it hits; the shot's one jump (ARC SLINGER) comes last, to one it missed
     const role = typeof playerGunRole === "function" ? playerGunRole() : null;
     const dmg = weaponDamage("laser"), src = { x: player.x, y: player.y, element: role ? role.kit.el : (player.selectedElement || null), isPlayer: true }, f = typeof frame !== "undefined" ? frame : 0;
-    applyDamage(foe, dmg, src, null, false, false, DMG_HIT_GUN);
-    if (role) playerRoundHit(role, foe, src);
+    const ux = (foe.x - player.x) / (d || 1), uy = (foe.y - player.y) / (d || 1), far = Math.min(W.range, d + 3);
+    const reach = _fp && _fp.F && typeof facilityShotReach === "function" ? facilityShotReach(player.x, player.y, player.x + ux * far, player.y + uy * far, _fp.F) : far;   // (as far as the beam gets: a wall or cover stops it, the shooter's own cover excepted)
+    const hits = reach >= d - 0.3;   // (the target itself, unless the beam stops short of it)
+    if (hits) { applyDamage(foe, dmg, src, null, false, false, DMG_HIT_GUN); if (role) playerRoundHit(role, foe, src); }
     // whatever stands in the line behind it, a little further on, is hit for less
-    const ux = (foe.x - player.x) / (d || 1), uy = (foe.y - player.y) / (d || 1), reach = Math.min(W.range, d + 3), through = role ? [] : null;
+    const through = role ? [] : null;
     for (const a of actors) {
         if (!a || a.dead || a === foe || !isHostileTarget(a)) continue;
         const ax = a.x - player.x, ay = a.y - player.y, t = ax * ux + ay * uy; if (t < 0 || t > reach) continue;
         if (Math.abs(ax * uy - ay * ux) < 0.75) { applyDamage(a, dmg * W.pierce, src, null, false, false, DMG_HIT_GUN); if (role) { playerRoundHit(role, a, src); through.push(a); } }
     }
-    if (role) playerRoundJump(role, foe, src, dmg, through);
+    if (role && hits) playerRoundJump(role, foe, src, dmg, through);
+    if (!hits && typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: player.x + ux * reach, y: player.y + uy * reach, color: "#9be8ff", radius: 0.4, life: 14 });   // (stopped short: a spark where)
     const ex = player.x + ux * reach, ey = player.y + uy * reach;
     (_fp.beams = _fp.beams || []).push({ x0: player.x, y0: player.y, x1: ex, y1: ey, t0: f });
     player.attackCooldown = weaponCooldown("laser");

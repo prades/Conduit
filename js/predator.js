@@ -31,7 +31,7 @@ function predatorPickPrey(p) {
         const d = Math.hypot(a.x - p.x, a.y - p.y), hit = p.lastAttacker === a; if (d > (hit ? P.revenge : P.sense)) continue;
         const share = predatorPreyShare(a);
         if (!hit && (calm ? !(share <= P.calmWeakAt && d <= P.notice) : !(d <= P.close || share <= P.weakAt))) continue;   // (calm: only what is very weak and close; in a fight: what is in its way, or weak)
-        if (!hit && d > 1.5 && typeof facilityLosFrom === "function" && !facilityLosFrom(p.x, p.y, a.x, a.y)) continue;   // (in sight)
+        if (!hit && d > 1.5 && typeof facilitySeesFrom === "function" && !facilitySeesFrom(p.x, p.y, a.x, a.y)) continue;   // (in sight: over low objects too, js/facilityplay.js facilitySeesFrom)
         const s = P.near * (1 - Math.min(1, d / P.sense)) + (a === player ? P.weakPlayer : P.weak) * (1 - share) + (hit ? P.attacker : 0) + (p.currentTarget === a ? P.keep : 0);
         if (s > bs) { bs = s; best = a; }
     }
@@ -516,14 +516,14 @@ class Predator {
                     let   diff = Math.atan2(dy, dx) - bodyAngle;
                     if (diff >  Math.PI) diff -= Math.PI * 2;
                     if (diff < -Math.PI) diff += Math.PI * 2;
-                    if (Math.abs(diff) > Math.PI * 0.5 && d < 6 && d < bestRearDist) {
+                    if (Math.abs(diff) > Math.PI * 0.5 && d < 6 && d < bestRearDist && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(this.x, this.y, a.x, a.y))) {   // (only at what it can see: a wall would stop the shot, Milestone Two)
                         bestRearDist = d; rearTarget = a;
                     }
                 });
                 // Fall back to lastAttacker if they're not in rear arc but they just hit us
                 if (!rearTarget && this.lastAttacker && !this.lastAttacker.dead) {
                     const d = Math.hypot(this.lastAttacker.x - this.x, this.lastAttacker.y - this.y);
-                    if (d < 6) rearTarget = this.lastAttacker;
+                    if (d < 6 && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(this.x, this.y, this.lastAttacker.x, this.lastAttacker.y))) rearTarget = this.lastAttacker;
                 }
 
                 if (rearTarget) {
