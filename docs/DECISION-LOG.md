@@ -1377,3 +1377,26 @@ The drone texture, as the theme was written (machined panels: seams, rivets and 
 ### Impact
 - Four of the five species textures are approved.
 - Next, for a yes: the jelly texture (GEL ORCHID, soft membrane cells). After it: the five other race emblems.
+
+## DECISION: Part 2's gate 2: the jelly's membrane cells approved; all five species textures set
+
+- **Date:** 2026-11-06
+- **Status:** Approved (designed, not built). Gate 2 stays open only for the five other race emblems.
+- **Branch/build:** mockups at commit ced2e13 on `claude/start-game-project-HSh7Z`; the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3
+
+### Context
+The jelly texture, as the theme was written (soft membrane cells with nuclei, a gel's wobble), was shown:
+- on GEL MEMBRANE;
+- behind JELLY RAM and GOO PROXY.
+
+### Decision
+- "Approve as drawn".
+
+### Alternatives considered
+- No nuclei.
+- Fainter.
+
+### Impact
+- All five species textures are approved: crustacean crust, mollusk sheen, elemental storm clouds, drone panels, jelly cells.
+- Next, for a yes: the five other race emblems (beetle, scorpion, spider, mantis, moth). Gate 2 closes with them.

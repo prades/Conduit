@@ -135,7 +135,7 @@ Each part is its own commit, with its own tests and a full green run before the 
   - The emblems: "Approve all five".
   - The texture: "New cloud texture is puffy and stormy no repreating icons". It was redrawn as storm clouds: "Approve as drawn".
 - **The drone texture** (GUNMETAL, machined panels): "Approve as drawn".
-- **The jelly texture** (GEL ORCHID, membrane cells) is drawn and on the design canvas, for the owner's yes. Then the five other race emblems.
+- **The jelly texture** (GEL ORCHID, membrane cells): "Approve as drawn". All five species textures are set. Next: the five other race emblems, the last of gate 2.
 
 **Then the build:**
 - the species textures on species cards and follower cards;

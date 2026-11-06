@@ -482,7 +482,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
     **The drone texture (machined panels)** was drawn and put on the design canvas. **Answered:** "Approve as drawn".
 
-    **The jelly texture (membrane cells)** is drawn and on the design canvas, **for your yes or correction**.
+    **The jelly texture (membrane cells)** was drawn and put on the design canvas. **Answered:** "Approve as drawn". All five species textures are set. Next: the five other race emblems.
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;
