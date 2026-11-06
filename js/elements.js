@@ -477,6 +477,7 @@ const ULT_UNDERTOW = { radius: 3, mult: 1.5, thrown: 2.5, weak: 240, weakFactor:
 const ULT_NETWORK = { frames: 600, tick: 30, mult: 0.5, poison: 180, touch: 0.5 };         // the Blight Spider's: "10 s" (frames, frames between bites, × power, frames of poison, tiles from a strand)
 const ULT_VORTEX = { radius: 3, frames: 480, tick: 30, mult: 0.4, heal: 0.25, pull: 0.06 };   // the Rift Mimic's SHARD VORTEX: "8 s" (tiles, frames, frames between bites, × power a bite, share of the damage healed, pull a frame)
 const ULT_JELLY = { soak: 0.4, frames: 600, knock: 1 };                                     // the Jelly Ram's shields: "Squad only" (share of the wearer's max health, frames, tiles of knockback)
+const ULT_PUDDLE = { from: 0.5, radius: 2, grow: 120, frames: 300, tick: 30, mult: 0.5, poison: 120 };   // the Rotshard's: "Short and tight" (tiles at first and at full size, frames to grow, frames, frames between shards, × power a shard, frames of poison)
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
 function _ultSay(a, text, color) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text, color, life: 60, vy: -0.06, size: 13 }); }
@@ -549,6 +550,18 @@ const FORM_ULTIMATES = {
     } },
     // FAULTLINE (Thermite Burrower; the owner, 2026-11-06: "Make it the Ultimate"): the drawn path of js/techabilities.js, opened by the Ultimate instead of a chip; the charge is spent when it goes under
     thermite: { name: "Faultline", desc: "Draw a path on the floor: it dives and runs under it, and molten spikes erupt along it", execute(actor) { if (typeof techChip2Tap === "function") techChip2Tap(actor); } },
+    // THE ROTSHARD'S PUDDLE (its own; the name is open): a toxic puddle spreads under the biggest group of enemies it can see within its CORRODE SHOT's reach, growing from ULT_PUDDLE.from to
+    // ULT_PUDDLE.radius tiles over ULT_PUDDLE.grow frames; for ULT_PUDDLE.frames, every ULT_PUDDLE.tick frames a small crystal shard erupts under each enemy in it (seen from its middle):
+    // ULT_PUDDLE.mult × its power, toxic, and poisoned ULT_PUDDLE.poison frames.
+    rotshard: { name: "Toxic Puddle", desc: "A toxic puddle spreads under a group of enemies; small crystal shards erupt from it under them, hurting and poisoning", execute(actor) {
+        const P = ULT_PUDDLE, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, typeof ROT_RANGE !== "undefined" ? ROT_RANGE : 7) : [];
+        let best = null, bestN = 0;
+        for (const a of foes) { const n = foes.filter(b => Math.hypot(b.x - a.x, b.y - a.y) <= P.radius).length; if (n > bestN) { bestN = n; best = a; } }
+        if (!best) return;
+        actor.ultimateCharge = 0;
+        spawnElementEffect({ type: "toxicpuddle", x: best.x, y: best.y, by: actor, radius: P.from, bite: (actor.power || 10) * P.mult, shards: [], shardAt: -99, life: P.frames, maxLife: P.frames, element: "toxic" });
+        _ultSay(actor, "TOXIC PUDDLE", "#99ff88");
+    } },
     blightspider: { name: "Contamination Network", desc: "Its toxic pods link with toxic strands: enemies crossing them are hurt and poisoned", execute(actor) {
         const N = ULT_NETWORK, pods = (typeof techPools !== "undefined" ? techPools : []).filter(P => P.by === (actor.uid || null) && (typeof techPoolFade !== "function" || techPoolFade(P) > 0)).slice(-3);
         if (pods.length < 2) { _ultSay(actor, "NEEDS 2 TOXIC PODS", "#ff8a6a"); return; }
@@ -707,6 +720,18 @@ function updateElementEffects() {
                 const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
                 if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(V.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
                 if (bite) { const h0 = a.health; applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH); const by = e.by; if (by && !by.dead && h0 > a.health) by.health = Math.min(by.maxHealth || by.health, by.health + (h0 - a.health) * V.heal); }
+            }
+        }
+        if (e.type === "toxicpuddle") {
+            const P = ULT_PUDDLE, age = e.maxLife - e.life;
+            e.radius = P.from + (P.radius - P.from) * Math.min(1, age / P.grow);
+            if (age > 0 && e.life > 0 && age % P.tick === 0) {
+                e.shards = []; e.shardAt = age;
+                for (const a of actors) {
+                    if (!a || a.dead || !isHostileTarget(a) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
+                    applyDamage(a, e.bite, e.by || null, "toxic", false, false, DMG_HIT_SPECIAL); if (typeof applyWeaken === "function") applyWeaken(a, P.poison);
+                    e.shards.push([a.x, a.y]);
+                }
             }
         }
         if (e.type === "jellyshield") { const w = e.on; if (!w || w.dead || !w.jellyShield) e.life = 0; else { e.x = w.x; e.y = w.y; } }
@@ -1152,6 +1177,20 @@ function drawElementEffects() {
                 ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#a070ff"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 0.5 * k; ctx.strokeStyle = "#c9a6ff"; ctx.lineWidth = 1.5; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(px, cy, rx * (0.4 + i * 0.25), ry * (0.4 + i * 0.25), 0, spin + i, spin + i + 2.4); ctx.stroke(); }
                 for (let i = 0; i < 4; i++) { const an = spin + i * Math.PI / 2, sx = px + Math.cos(an) * rx * 0.6, sy = cy + Math.sin(an) * ry * 0.6 - 10; ctx.globalAlpha = 0.95 * k; ctx.fillStyle = "#e6d6ff"; ctx.beginPath(); ctx.moveTo(sx, sy - 9); ctx.lineTo(sx + 5, sy); ctx.lineTo(sx, sy + 9); ctx.lineTo(sx - 5, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7a4adf"; ctx.lineWidth = 1; ctx.stroke(); }
+                break;
+            }
+            // THE ROTSHARD'S PUDDLE (FORM_ULTIMATES.rotshard): a green puddle growing on the floor, bubbles in it; each eruption throws up a cluster of three small black crystal shards in green haze under each enemy it bites
+            case "toxicpuddle": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy0 = py + TILE_H;
+                ctx.globalAlpha = 0.3 * k; ctx.fillStyle = "#3f9a1f"; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.6 * k; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = "#b8ff8a"; for (let i = 0; i < 5; i++) { const an = i * 2.4 + e.x, t = (frame * 0.02 + i * 0.37) % 1; ctx.globalAlpha = (1 - t) * 0.7 * k; ctx.beginPath(); ctx.arc(px + Math.cos(an) * rx * 0.6, cy0 + Math.sin(an) * ry * 0.6, 1.5 + t * 2.5, 0, Math.PI * 2); ctx.fill(); }
+                const since = (e.maxLife - e.life) - e.shardAt, b = Math.max(0, 1 - since / 18);
+                if (b > 0) for (const s of e.shards) {
+                    const sx = px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, sy = cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, h = 16 * Math.min(1, since / 4 + 0.3);
+                    ctx.globalAlpha = 0.35 * b * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(sx, sy - 6, 12, 8, 0, 0, Math.PI * 2); ctx.fill();   // the haze
+                    for (let i = -1; i <= 1; i++) { const hx = sx + i * 6, hh = h * (i ? 0.75 : 1); ctx.globalAlpha = b * k; ctx.fillStyle = "#14161a"; ctx.beginPath(); ctx.moveTo(hx - 3, sy); ctx.lineTo(hx, sy - hh); ctx.lineTo(hx + 3, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1; ctx.stroke(); }
+                }
                 break;
             }
             // A JELLY SHIELD (FORM_ULTIMATES.jellyram): a soft cyan dome over its wearer, wobbling, fainter as it is used up

@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **p · The Rotshard's puddle** (the owner, 2026-11-06: "Short and tight"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06o` went to main at the owner's word ("Push to main").
+  - **The Rotshard's own Ultimate** (its name is open; called TOXIC PUDDLE for now): a toxic puddle spreads under the biggest group of enemies it can see within its CORRODE SHOT's reach (7 tiles) **[reading]**, growing from half a tile to 2 tiles over 2 s **[reading]**, for 5 s. Every 0.5 s a cluster of small black crystal shards erupts under each enemy in it: 0.5× its power (toxic), poisoned 2 s. Nothing in sight: it keeps its charge.
+  - Tests: followercombat (the puddle, new), unitinfo, evolution, bible, globals. Screenshot checked. No full run. Not playtested.
+
 - **o · SHARD VORTEX, Jelly shields; FAULTLINE becomes an Ultimate** (the owner, 2026-11-06: "8 s", "Squad only", "Make it the Ultimate"; on the branch; commit named in git log).
   - **Main:** build `2026-11-06n` went to main at the owner's word ("Push to main").
   - **SHARD VORTEX** (Rift Mimic): its shards swirl 3 tiles round where it stands for 8 s, pulling enemies to the middle and biting them every 0.5 s for 0.4× its power (crushing); it heals a quarter of what they take.

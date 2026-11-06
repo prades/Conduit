@@ -1802,3 +1802,17 @@ The owner: too much time goes into testing and side checks. From here on, only t
 - "Squad only": the Jelly Ram and the two other squad followers wear shields; the player does not.
 - FAULTLINE's charge is spent when the Burrower goes under; drawing no path keeps it.
 
+## DECISION: Build 2026-11-06o to main; the Rotshard's puddle; card attacks next
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06o` on main. The puddle: implemented and tested in build `2026-11-06p`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.3, §12.5; `CHANGELOG.md` (p)
+
+### Decision
+1. "Push to main" (build o).
+2. The Rotshard's Ultimate: "Short and tight" (2 tiles, 5 s, a shard every 0.5 s for 0.5× its power, poisoned 2 s).
+3. Next: "Card attacks" (§12.5), before the nine forms still without their own Ultimate.
+
+### Readings
+- The puddle spreads under the biggest group the Rotshard can see within CORRODE SHOT's 7 tiles, and grows over 2 s (as in the option it was weighed against). Its name is open.
+

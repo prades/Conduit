@@ -483,6 +483,19 @@ function measure(w, h) {
         same(r.hit.join(), 'true,true', 'a hit taken by the shield, the attacker knocked back'); same(r.after.join(), 'true,true', 'gone after 10 s');
         same(r.fault.join(), 'true,path', 'FAULTLINE: its path is asked for');
     });
+    check('the ROTSHARD\'s puddle (the owner, 2026-11-06: "Short and tight"): it spreads under the group it can see, grows to 2 tiles, a shard every 0.5 s under each enemy in it for 0.5× its power, poisoned 2 s; gone after 5 s; nothing in sight keeps the charge', () => {
+        const r = J(`(function(){ const o = {};
+            __clear(); const rs = __fol('toxic', 'sniper', 'rotshard'); rs.ultimateCharge = 100; followerUltimate(rs).execute(rs); o.none = rs.ultimateCharge;
+            const a = __foe(rs.x + 5, rs.y), b = __foe(rs.x + 5.4, rs.y + 0.4), edge = __foe(rs.x + 6.6, rs.y), far = __foe(rs.x + 5, rs.y + 4); followerUltimate(rs).execute(rs);
+            const e = elementEffects.find(x => x.type === 'toxicpuddle'); o.at = [!!e, e && Math.hypot(e.x - a.x, e.y - a.y) < 1, rs.ultimateCharge, followerUltimate(rs).name];
+            for (let i = 0; i < 30; i++) updateElementEffects(); o.first = [__dmg(a) > 0, __dmg(b) > 0, __dmg(edge), __dmg(far), a.toxicWeakened, Math.round(e.bite / rs.power * 10) / 10];
+            for (let i = 0; i < 100; i++) updateElementEffects(); o.grown = [e.radius, __dmg(edge) > 0, __dmg(far)];
+            for (let i = 0; i < 200; i++) updateElementEffects(); o.gone = !elementEffects.some(x => x.type === 'toxicpuddle');
+            return o; })()`);
+        same(r.none, 100, 'nothing in sight: the charge kept'); same(r.at.join(), 'true,true,0,Toxic Puddle', 'the puddle under the group, the charge spent, its name');
+        same(r.first.join(), 'true,true,0,0,120,0.5', 'the first shards at 0.5 s: the two in it hurt, poisoned 2 s, a bite 0.5× its power (before the damage system); the one past its edge and the far one not yet');
+        same(r.grown.join(), '2,true,0', 'grown to 2 tiles: the one 1.6 tiles out bitten now, the far one never'); same(r.gone, true, 'gone after 5 s');
+    });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);
             return { ids, names, dupN: names.length - new Set(names).size, idOk: ids.every(k => MOVES[k].id === k), missing }; })()`);
