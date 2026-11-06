@@ -86,6 +86,63 @@ function facilitySolidOpen(id) {
     return true;
 }
 function facilitySolidIsOpen(id) { const s = _fp && _fp.F && _fp.F.solids.find(q => q.id === id); return !!(s && s.open); }
+// ── A SOLID MOVED IN PLAY: the Flux technician's FLUX MOVE (js/fluxmove.js checks the move first, every rule of it: this only carries it out; docs/FLUX-MOVEMENT.md) ──
+// ONE TRANSACTION: the solid's outline in the map and in its planning copy (and both bucket indexes), the floor it leaves and the floor it covers (the walkable cells, the floor tiles and their paint), its draw
+// pieces and its sprite's caches, the stretches of floor (relabelled only where they changed: a whole relabelling costs tens of ms), the cached routes and spawn spots, and every route in flight (each unit plans
+// again round it). Nothing here can fail part way: the arguments are checked before the first change. The object stands on the w x h cells from (x0, y0) (whole tiles); turned: along the other axis.
+// Returns { ok, covered, freed } (the cells it now covers, the floor it gave back), or { ok: false, why } when nothing was changed.
+function facilitySolidMove(id, x0, y0, w, h, turned) {
+    if (!_fp || !_fp.F || !_fp.cells || !_fp.cellsP) return { ok: false, why: "NO MAP" };
+    const F = _fp.F, P = _fp.P, s = F.solids.find(q => q.id === id), p = P ? P.solids.find(q => q.id === id) : null;
+    if (!s || s.shape !== "rect" || s.tilted || s.open) return { ok: false, why: "NO SUCH OBJECT" };
+    if (![x0, y0, w, h].every(Number.isInteger) || w < 1 || h < 1) return { ok: false, why: "NOT A PLACE" };
+    const before = _fpSolidCells(s);
+    const bb = [x0 - 0.5, y0 - 0.5, x0 + w - 0.5, y0 + h - 0.5], poly = [[bb[0], bb[1]], [bb[2], bb[1]], [bb[2], bb[3]], [bb[0], bb[3]]];
+    // 1. the map and its planning copy
+    for (const q of [s, p]) { if (!q) continue; q.poly = poly.map(c => c.slice()); q.bb = bb.slice(); if (q.flux) q.flux.turned = !!turned; }
+    for (const M of [F, P]) if (M && M._ix) M._ix = null;   // (the bucket indexes are built again at the next question: the rooms, solids and walls, a few ms)
+    const after = _fpSolidCells(s);
+    // 2. the floor: the cells it now covers are no longer floor; the cells it left are, where a body can stand
+    const covered = [...after].filter(k => !before.has(k)), left = [...before].filter(k => !after.has(k)), freed = [], gone = new Set();
+    for (const k of covered) { if (_fp.cells.has(k)) { _fp.cells.delete(k); gone.add(k); } _fp.cellsP.delete(k); }
+    if (gone.size) { world = world.filter(t => !gone.has(t.x + "," + t.y)); for (const k of gone) worldTileMap.delete(k); }   // (a new list, not one spliced: js/game.js indexes the world's columns as it grows, and indexes a new list afresh)
+    for (const k of left) {
+        const [x, y] = k.split(",").map(Number);
+        if (!_fp.cells.has(k) && facilityWalkable(x, y, F)) { const room = facilityRoomAt(x, y, F); if (room) { const t = _fpFloorTile(x, y, room.id); world.push(t); worldTileMap.set(k, t); _fp.cells.set(k, [x, y]); freed.push(k); } }
+        if (_fp.cells.has(k) && !_fp.cellsP.has(k) && P && facilityWalkable(x, y, P)) _fp.cellsP.set(k, [x, y]);
+    }
+    // 3. the floor's paint for the cells that changed (js/facilitydecor.js), the object's draw pieces, its sprite's caches (js/propsprites.js: built again on the next draw)
+    if (typeof facilityFloorRedo === "function") facilityFloorRedo(new Set(covered.concat(left)));
+    if (_fp.items) { _fp.items = _fp.items.filter(it => !(it.fp === "prop" && it.id === id)); for (const it of _fpPropItems(s)) _fp.items.push(it); }
+    _fp._psc = null; _fp._pss = null;
+    // 4. the routes: the stretches of floor, the cached routes and spots, the routes in flight
+    _fpCompsMoved(covered, left);
+    _fp.paths.clear(); _fp.spawnCells = null; _fp.roomCells = null; _fp.fromCells = null; _fp.spiderCover = null;
+    for (const a of (typeof actors !== "undefined" ? actors : [])) if (a && a._fpPath) { a._fpPath = null; a._fpAt = 0; a._fpFail = 0; }
+    if (typeof player !== "undefined" && player && player.fpPath && player.fpPath.length) {   // the player's own walk: planned again to where it was going (to the floor beside the object, if that is under it now)
+        let tx = player.targetX, ty = player.targetY; if (after.has(Math.round(tx) + "," + Math.round(ty))) { const c = _fpNearestCellOpen(tx, ty); if (c) { tx = c[0]; ty = c[1]; } }
+        const run = player._tapRun === player.fpPath, np = facilityPath(player.x, player.y, tx, ty);
+        player.fpPath = np || null; player._tapRun = run && np ? np : null; if (np) { player.targetX = tx; player.targetY = ty; } else { player.targetX = player.x; player.targetY = player.y; }
+    }
+    return { ok: true, covered, freed };
+}
+// the stretches of floor after a move (facilitySolidMove): the covered cells leave theirs; a cell given back joins the stretch round it. A cell that would join two stretches, or none, has them all labelled
+// again (once; it does not happen with the arena's objects). FLUX MOVE never covers floor in a way that cuts a stretch in two (js/fluxmove.js refuses it), so the labels left stand.
+function _fpCompsMoved(covered, left) {
+    const cm = _fp.comp; if (!cm) return;   // (not labelled yet: it will be, from the floor as it is now)
+    const sz = _fp.compSize;
+    for (const k of covered) { const c = cm.get(k); if (c !== undefined) { cm.delete(k); if (sz) sz.set(c, Math.max(0, (sz.get(c) || 1) - 1)); } }
+    const fresh = left.filter(k => _fp.cellsP.has(k) && !cm.has(k));
+    for (let pass = 0; fresh.length && pass <= left.length; pass++) {
+        for (let i = fresh.length - 1; i >= 0; i--) {
+            const [x, y] = fresh[i].split(",").map(Number), labels = new Set();
+            for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) { if (!dx && !dy) continue; const nk = (x + dx) + "," + (y + dy); if (cm.has(nk) && _fpEdgeOk(x, y, x + dx, y + dy)) labels.add(cm.get(nk)); }
+            if (labels.size > 1) { _fp.comp = null; return; }
+            if (labels.size === 1) { const c = labels.values().next().value; cm.set(fresh[i], c); if (sz) sz.set(c, (sz.get(c) || 0) + 1); fresh.splice(i, 1); }
+        }
+    }
+    if (fresh.length) _fp.comp = null;
+}
 // The cells from (x0,y0) to (x1,y1), or null if there is no way.
 function _fpCellPath(sx, sy, gx, gy) {
     const key = sx + "," + sy + ">" + gx + "," + gy; if (_fp.paths.has(key)) return _fp.paths.get(key);
@@ -465,6 +522,30 @@ function _fpWallLightRoom(w, a, b, F) {
     return w.room;
 }
 const FP_SELF_SOLIDS = new Set(["river", "pool", "gate", "boss_gate", "rubble"]);   // solids that are not furniture: they draw themselves (js/facilitysewers.js; a choke of rubble: js/techabilities.js techDrawRubbleOn), and have no sprite
+// the cells a solid stands on: the tile centres inside its outline ("x,y"; a small round chamber is at least one cell)
+function _fpSolidCells(s) {
+    const box = s.bb, cells = new Set();
+    for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {
+        if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) cells.add(x + "," + y);
+    }
+    if (s.shape === "circle" && !cells.size) cells.add(Math.round(s.at[0]) + "," + Math.round(s.at[1]));
+    return cells;
+}
+// ONE PROP's draw pieces: one item for each cell it stands on (the faces each cell shows; js/facilitydecor.js and js/propsprites.js draw them). Built when the facility opens, and again for a prop the Flux technician moves (facilitySolidMove).
+function _fpPropItems(s) {
+    if (s.kind === "rubble") return [];   // (a choke of rubble is drawn by the rubble it is the solid of: js/techabilities.js techDrawRubbleOn; no prop piece, no sprite)
+    if (FP_SELF_SOLIDS.has(s.kind)) return [];   // (the sewers' water and gates draw themselves: js/facilitysewers.js)
+    const cells = _fpSolidCells(s), out = [];
+    let whole = null; if (s.tilted) for (const k of cells) { const [x, y] = k.split(",").map(Number); if (!whole || x + y > whole[0] + whole[1]) whole = [x, y]; }   // (a prop lying at an angle: its flat drawing, before its sprite has arrived, is drawn whole from the cell drawn last; its sprite is drawn a tile's column at a time, like any other)
+    for (const k of cells) {
+        const [x, y] = k.split(",").map(Number);
+        // sides are drawn only where no neighbour hides them: the faces toward +y (lower left) and +x (lower right)
+        const it = { type: "fp", fp: "prop", room: s.room, base: facilityLiftPx(x, y), x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), lf: !cells.has((x - 1) + "," + y), seed: _fpHash(x, y) };
+        if (whole) { if (x === whole[0] && y === whole[1]) it.poly = s.poly; else it.skip = true; }
+        out.push(it);
+    }
+    return out;
+}
 function _fpPlaceStatics(F) {
     const items = [], seg = 0.5;
     for (const w of F.walls) {
@@ -480,23 +561,7 @@ function _fpPlaceStatics(F) {
     for (const o of F.openings) { if (F.connections.some(c => c.opening === o.id && c.ramp)) continue;   // a stairway has no door: the steps run through the gap (the arena door, the deck door, the stair mouth)
         const mx = (o.a[0] + o.b[0]) / 2, my = (o.a[1] + o.b[1]) / 2, st = { open: 0 }, base = facilityLiftPx(mx, my), lroom = _fpWallLightRoom({ room: (o.rooms || [])[0] }, o.a, o.b, F), thin = _fpDoorThin(o, F);   // (lroom: the room whose face the wall round the door shows, which the door's header takes its light from; thin: a door in glass)
         for (const [part, d] of [["a", o.a[0] + o.a[1]], ["b", o.b[0] + o.b[1]], ["m", Math.max(o.a[0] + o.a[1], o.b[0] + o.b[1]) + 0.88]]) items.push({ type: "fp", fp: "door", part, st, out: _fpDoorOut(o, F), lroom, thin, id: o.id, depth: d + 0.02, x: mx, y: my, a: o.a, b: o.b, door: o.door, rooms: o.rooms, base }); }
-    for (const s of F.solids) {
-        if (s.kind === "rubble") continue;   // (a choke of rubble is drawn by the rubble it is the solid of: js/techabilities.js techDrawRubbleOn; no prop piece, no sprite)
-        if (FP_SELF_SOLIDS.has(s.kind)) continue;   // (the sewers' water and gates draw themselves: js/facilitysewers.js)
-        const box = s.bb, cells = new Set();
-        for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) {
-            if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) cells.add(x + "," + y);
-        }
-        if (s.shape === "circle" && !cells.size) cells.add(Math.round(s.at[0]) + "," + Math.round(s.at[1]));   // a small chamber is at least one cell
-        let whole = null; if (s.tilted) for (const k of cells) { const [x, y] = k.split(",").map(Number); if (!whole || x + y > whole[0] + whole[1]) whole = [x, y]; }   // (a prop lying at an angle: its flat drawing, before its sprite has arrived, is drawn whole from the cell drawn last; its sprite is drawn a tile's column at a time, like any other)
-        for (const k of cells) {
-            const [x, y] = k.split(",").map(Number);
-            // sides are drawn only where no neighbour hides them: the faces toward +y (lower left) and +x (lower right)
-            const it = { type: "fp", fp: "prop", room: s.room, base: facilityLiftPx(x, y), x, y, kind: s.kind || (s.shape === "circle" ? "tank" : "bench"), cargo: s.cargo, id: s.id, sy: !cells.has(x + "," + (y + 1)), sx: !cells.has((x + 1) + "," + y), top: !cells.has(x + "," + (y - 1)), lf: !cells.has((x - 1) + "," + y), seed: _fpHash(x, y) };
-            if (whole) { if (x === whole[0] && y === whole[1]) it.poly = s.poly; else it.skip = true; }
-            items.push(it);
-        }
-    }
+    for (const s of F.solids) for (const it of _fpPropItems(s)) items.push(it);
     if (typeof _psRimItems === "function") { for (const it of _psRimItems(F, items)) items.push(it); for (const it of _psBridgeItems(F)) items.push(it); }   // the 3D tanks' rim cells and the catwalk bridges (js/propsprites.js)
     for (const r of F.ramps) {   // a staircase: one prism per tread tile, from the lower floor up to the tread (the risers the camera sees)
         const z = r.zone; if (!z || !z.steps) continue; const lo = Math.min(z.hA, z.hB);

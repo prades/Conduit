@@ -67,7 +67,7 @@ const QUEST_STEPS = {
     purify: [
         { id: "samples", title: "COLLECT THE SAMPLES",
           text: Q => { const h = questSamplesHeld(), P = QUEST_PURIFY; return "ANT SAMPLES " + Math.min(P.samples, h.ant) + "/" + P.samples + " (THE TOXIC ANTS OF THE SEWERS DROP THEM) · WATER SAMPLE " + Math.min(1, h.water) + "/1 (THE COLLAPSED TUNNEL OFF THE NORTH LEDGE)."; },
-          hint: Q => "THE TUNNEL IS CHOKED. A FLUX TECHNICIAN'S TELEGRAB PULLS THE VIAL OUT OVER THE RUBBLE, OR THE ELECTRIC TECHNICIAN SETS A LAUNCHER UP AT THE TUNNEL AND SENDS A FIRE TECHNICIAN IN TO DRILL IT OPEN.", done: Q => questSamplesReady(Q) },
+          hint: Q => "THE TUNNEL IS CHOKED. AN ELECTRIC TECHNICIAN SETS A LAUNCHER UP BY ITS MOUTH THAT CARRIES YOU OVER (TAP ITS TAG TWICE), OR A FIRE TECHNICIAN DRILLS THE CHOKE OPEN FROM THE LEDGE.", done: Q => questSamplesReady(Q) },
         { id: "turnin", title: "TAKE THE SAMPLES TO THE LAB", text: Q => "THE ANALYSIS BENCH: THE CABINET AT THE WEST END OF THE EXPERIMENT LAB. STAND AT IT AND PRESS E (OR TAP IT).", hint: Q => "IT TAKES THE THREE ANT SAMPLES AND THE WATER SAMPLE TOGETHER.", done: Q => !!Q.turnedInAt },
         { id: "module", title: "BUY THE PURIFICATION MODULE", text: Q => "AT THE ANALYSIS BENCH: ◆" + QUEST_PURIFY.modulePrice + ". YOU HAVE ◆" + (typeof shardCount === "number" ? shardCount : 0) + ".", hint: Q => "KILLS PAY SHARDS. THE MODULE GOES IN YOUR PACK.", done: Q => !!Q.moduleAt },
         { id: "install", title: "INSTALL THE MODULE IN THE NEST",

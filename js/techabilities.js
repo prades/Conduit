@@ -6,9 +6,9 @@
 // a tap in the world, the tests. So a command from the HUD and one from the world are one thing, with one cooldown and the same checks, and only a technician that is in the squad uses one.
 //   WAITS: the first use waits TECH_AB.joinWait after the technician joins the squad (the user: "the 60-second initial squad wait"), and each use after that waits that ability's cooldown (60 s for each of the six, as asked).
 //     Cooldowns are not saved (none are).
-//   THE SIX: ELECTRIC the KINETIC LAUNCHER, CORE the PHOTONIC SHIELD, FIRE the THERMITE DRILL, ICE the FROST PATCH, TOXIC the BLIGHT SPIDER, FLUX TELEGRAB (each below). docs/TECHNICIANS.md has their numbers, which were given
-//     and which are provisional, and what is still to be decided.
-//   AIMS: what a chip asks the player to pick, in order: a follower, an enemy (on the screen, or its card), a spot on the floor, an item on the floor.
+//   THE SIX: ELECTRIC the KINETIC LAUNCHER, CORE the PHOTONIC SHIELD, FIRE the THERMITE DRILL, ICE the FROST PATCH, TOXIC the BLIGHT SPIDER, FLUX FLUX MOVE (each below; FLUX MOVE's rules: js/fluxmove.js). docs/TECHNICIANS.md
+//     has their numbers, which were given and which are provisional, and what is still to be decided. (The flux technician's TELEGRAB is retired: the owner, 2026-11-06, "Retire it now"; docs/FLUX-MOVEMENT.md.)
+//   AIMS: what a chip asks the player to pick, in order: a follower, an enemy (on the screen, or its card), a spot on the floor, an object and then its new place (FLUX MOVE), a path (FAULTLINE).
 //
 // THE KINETIC LAUNCHER. ASKED: "Combat Mode — Launch a Follower at an Enemy [...] Secret Access Mode — Launch Toward Hidden Areas [...] The first designated secret destination is the Arena Catwalk [...] the broken section permits travel
 // from top to bottom, not from bottom to top", then "the kinetic launcher should do a set amount of damage to the follower, but a more proportionate damage to the enemy. It should also have the map exploration mode as a secondary feature
@@ -80,10 +80,8 @@ const TECH_AB = {
         every: 30,          // frames between its bites at what stands in it: every half second (given)
         walk: 1200,         // frames to get to the spot, or it is called off
     },
-    grab: {
-        cooldown: 3600,     // 60 s
-        flight: 40,         // frames an item flies to you
-        peak: 60,           // px: its arc
+    flux: {
+        cooldown: 3600,     // 60 s from when the object is placed (the owner: "60 s cooldown", as every technician ability); the reach is each object's own (js/facilitymap.js `flux`, 2 tiles)
     },
     // FAULTLINE (the evolved Thermite Burrower's second ability; the follower combat redesign, docs/FOLLOWER-COMBAT-REDESIGN.md §2.4): every number PROVISIONAL (§11.2)
     fault: {
@@ -113,8 +111,8 @@ const TECH_ABILITIES = {
                 ask: () => "TAP THE FLOOR WHERE IT CAN SEE" },
     toxic:    { id: "blight_spider", name: "BLIGHT SPIDER", short: "POOL", icon: "☣", col: "#7dff4a", aim: ["spot"], use: (f, p) => techBlightAt(f, p.spot),
                 ask: () => "TAP THE FLOOR WHERE IT CAN SEE: IT LEAVES A POOL THERE" },
-    flux:     { id: "telegrab", name: "TELEGRAB", short: "GRAB", icon: "✦", col: "#c77dff", aim: ["item"], use: (f, p) => techGrabAt(f, p.item),
-                ask: () => "TAP AN ITEM ON THE FLOOR, ANYWHERE" },
+    flux:     { id: "flux_move", name: "FLUX MOVE", short: "MOVE", icon: "✦", col: "#c77dff", aim: ["object", "place"], use: (f, p) => techFluxMoveAt(f, p.object, p.place),
+                ask: () => "" },   // (its prompt says more as it goes: techAimPrompt)
 };
 // A SECOND ABILITY, by form (the owner, 2026-11-02, "Keep both buttons"): the evolved THERMITE BURROWER keeps its element's THERMITE DRILL and has FAULTLINE beside it, on a chip of its own with a
 // wait of its own (`_ab2ReadyAt`). An egg, and every other form, has the one ability above. Its aim is a PATH drawn on the floor (techAimPathStart / Move / End, from js/input.js).
@@ -610,56 +608,56 @@ function techBlightApply(d) {
     techPools = techPools.filter(P => techPoolFade(P) > 0);
 }
 
-// ── TELEGRAB (flux) ──
-// ASKED: "Implement the Level 1 Telegrab ability using existing targeting and item-interaction systems [...] its range, eligible targets, and retrieval behavior"; then: any item on the ground, at any distance (supply cases, scrap,
-// capsules, rocks), pulled to the player and collected once through the existing pickup; shards stay paid at the kill.
-//   The chip, then an item on the floor anywhere on the screen (the technician need not see it). It flies to you in an arc and is put at your feet, and the pickup you would have made walking over it takes it (a supply case or a drop:
-//   js/facilitytutorial.js facilityPickupTick; a specimen capsule: js/specimen.js). Each item is taken once; one your pack has no room for stays at your feet, as it would.
-let techGrabs = [];   // the items in flight: { kind: "pickup" | "capsule", o (the item), x0, y0, t0, by }
-function _techGrabbable() {
-    const out = [];
-    if (typeof _fp !== "undefined" && _fp && _fp.items) for (const it of _fp.items) if (it.fp === "pickup" && !it.taken && !it.grab) out.push({ kind: "pickup", o: it });
-    if (typeof cloneBodies !== "undefined") for (const b of cloneBodies) if (b && b.frozen && !b.grab) out.push({ kind: "capsule", o: b });
-    return out;
+// ── FLUX MOVE (flux): the object tool (the rules: js/fluxmove.js; the move in the map: js/facilityplay.js facilitySolidMove; docs/FLUX-MOVEMENT.md) ──
+// ASKED (the roadmap's Milestone One, the owner's): activate, select an eligible object, a placement grid (the valid and invalid places, the allowance, the footprint, the turns), choose the place, turn it in 90° steps,
+// validate, confirm; "Canceling the ability or selecting an invalid destination must leave the object in its original position." The owner's answers: "Retire it now" (Telegrab), "60 s cooldown", "Prompt buttons",
+// "FLUX MOVE", "Square".
+//   THE AIM: the ✦ chip, then an object (the movable ones on the screen are outlined; any other prop says it does not move), then the grid: a tap on a tile shows the object there (a two-tile object's second
+//   tile flashing); ⟳ ROTATE (R) turns a barrier a quarter turn; ✓ PLACE (Enter) places it. ✕ CALL OFF, Escape or the chip again: nothing moved. A tap on another movable object picks that one instead.
+//   The object need only be on the screen: the technician need not see it (Telegrab's rule for the same technician; a reading, docs/FLUX-MOVEMENT.md §9.1).
+//   THE COST: its wait (TECH_AB.flux.cooldown, through techCooldown: the cooldown cards and DOUBLE CHARGE apply) starts when the object is placed; a place refused costs nothing and the aim stays up.
+function _fluxName(s) { return s ? String(s.kind || "object").replace(/_/g, " ").toUpperCase() : "IT"; }
+// the aim's own state (kept in the aim, never on the object: every way out leaves the world untouched): the object, its turn, the tile chosen, the grid for each turn
+function _techFluxAim() { const A = techAim; return A && A.flux ? A : null; }
+function techFluxPick(s) {
+    const A = _techFluxAim(); if (!A) return false;
+    if (!s) { _techSay("TAP AN OBJECT · THE OUTLINED ONES MOVE", "#8aa0c8"); return true; }
+    if (typeof fluxMovable !== "function" || !fluxMovable(s)) { _techSay("✦ THE " + _fluxName(s) + " DOES NOT MOVE", "#ff8a6a"); return true; }
+    A.flux.s = s; A.flux.turn = false; A.flux.at = null; A.flux.grid = [null, null]; A.flux.grid[0] = fluxGrid(s, false);
+    A.picks.object = s; A.step = 1; _techAimShow();
+    return true;
 }
-// the item under a tap (the aim's "item"): its case or capsule on the floor, or the icon over it
-function techItemAtScreen(ex, ey) {
-    let best = null, bd = 46;
-    for (const g of _techGrabbable()) {
-        const p = _techScr(g.o.x, g.o.y), fy = p.y + TILE_H;
-        const d = Math.min(Math.hypot(ex - p.x, ey - (fy - 8)), g.kind === "pickup" ? Math.hypot(ex - p.x, ey - (fy - 40)) : Infinity);
-        if (d < bd) { bd = d; best = g; }
-    }
-    return best;
+// a tap on the grid: the tile it goes to (its first tile); a tap on another movable object picks that one; a tap off the reach says so
+function techFluxTile(x, y) {
+    const A = _techFluxAim(); if (!A || !A.flux.s) return false;
+    const R = fluxRegion(A.flux.s);
+    if (!R.has(x + "," + y)) { _techSay("TOO FAR · " + A.flux.s.flux.range + " TILES AT MOST", "#ff8a6a"); return true; }
+    A.flux.at = [x, y]; _techAimShow();
+    const c = fluxCheck(A.flux.s, x, y, A.flux.turn); if (!c.ok) _techSay(c.why, "#ff8a6a");
+    return true;
 }
-function techGrabAt(tech, item) {
-    if (!item || !item.o) return { ok: false, why: "TAP AN ITEM ON THE FLOOR", again: true };
-    const o = item.o, gone = item.kind === "pickup" ? o.taken : !(typeof cloneBodies !== "undefined" && cloneBodies.includes(o));
-    if (gone || o.grab) return { ok: false, why: "IT IS GONE", again: true };
-    const f0 = _techFrame(); o.grab = { by: tech, t0: f0 }; if (item.kind === "pickup") o.grabbed = true;   // (grabbed: how a puzzle's item was got, js/puzzles.js; set as it leaves the floor, since the pickup can take it before its flight is over)
-    techGrabs.push({ kind: item.kind, o, x0: o.x, y0: o.y, t0: f0, by: tech });
-    tech._abReadyAt = f0 + techCooldown(tech, TECH_AB.grab.cooldown);
-    _techSay("✦ TELEGRAB · " + _techItemName(item), "#c77dff");
+// ⟳ ROTATE (the prompt's button, R): a quarter turn of the place shown (a two-tile object only)
+function techFluxRotate() {
+    const A = _techFluxAim(); if (!A || !A.flux.s) return false;
+    if (!fluxCanTurn(A.flux.s)) { _techSay("THE " + _fluxName(A.flux.s) + " LOOKS THE SAME TURNED", "#8aa0c8"); return false; }
+    A.flux.turn = !A.flux.turn; const i = A.flux.turn ? 1 : 0; if (!A.flux.grid[i]) A.flux.grid[i] = fluxGrid(A.flux.s, A.flux.turn);
+    _techAimShow(); return true;
+}
+// ✓ PLACE (the prompt's button, Enter): the ability is used with the place shown (checked again: bodies move)
+function techFluxPlace() {
+    const A = _techFluxAim(); if (!A || !A.flux.s) return false;
+    if (!A.flux.at) { _techSay("TAP WHERE IT GOES FIRST", "#8aa0c8"); return false; }
+    return _techAimLast("place", { x: A.flux.at[0], y: A.flux.at[1], turn: A.flux.turn });
+}
+// THE USE (techAbilityUse, the one way in): the object to its place, or why not ({ again: true }: the aim stays up)
+function techFluxMoveAt(tech, s, place) {
+    if (!s || typeof fluxMovable !== "function" || !fluxMovable(s)) return { ok: false, why: "PICK AN OBJECT THAT MOVES", again: true };
+    if (!place || !Number.isInteger(place.x) || !Number.isInteger(place.y)) return { ok: false, why: "TAP WHERE IT GOES", again: true };
+    const r = fluxMoveTo(s, place.x, place.y, !!place.turn);
+    if (!r.ok) return { ok: false, why: r.why, again: true };
+    tech._abReadyAt = _techFrame() + techCooldown(tech, TECH_AB.flux.cooldown);
+    _techSay("✦ FLUX MOVE · THE " + _fluxName(s), "#c77dff");
     return { ok: true };
-}
-function _techItemName(g) {
-    if (g.kind === "capsule") return "A SPECIMEN CAPSULE";
-    const id = g.o.items && g.o.items[0] && g.o.items[0][0], d = id && typeof itemDef === "function" ? itemDef(id) : null;
-    return g.o.rock ? "A ROCK" : d ? d.name : "AN ITEM";
-}
-function _techGrabTick(f0) {
-    if (!techGrabs.length) return;
-    const T = TECH_AB.grab;
-    techGrabs = techGrabs.filter(g => {
-        const o = g.o, gone = g.kind === "pickup" ? o.taken : !(typeof cloneBodies !== "undefined" && cloneBodies.includes(o));
-        if (gone) { o.grab = null; return false; }
-        const t = Math.min(1, (f0 - g.t0) / T.flight);
-        o.x = g.x0 + (player.x - g.x0) * t; o.y = g.y0 + (player.y - g.y0) * t;
-        if (t < 1) return true;
-        o.x = player.x; o.y = player.y; o.grab = null;   // at your feet: the pickup takes it
-        if (g.kind === "pickup") { o.depth = o.x + o.y; const room = typeof partyRoomAt === "function" ? partyRoomAt(o.x, o.y) : null; if (room) { o.room = room; if (typeof facilityRoomHeight === "function" && typeof FP_ELEV_PX !== "undefined") o.base = facilityRoomHeight(room, _fp.F) * FP_ELEV_PX; } }
-        return false;
-    });
 }
 
 // ── FAULTLINE (the evolved THERMITE BURROWER's second ability, beside the THERMITE DRILL; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.4; "Keep both buttons") ──
@@ -811,7 +809,7 @@ function _techDrawFaultStroke(g, A, f0) {
 }
 
 // everything the abilities keep for a game, let go when a new one starts or one is loaded (js/facilityplay.js facilityResetState). Saved and put back by the facility's save: the launchers, the rubble, the clock and the pools.
-function techReset() { techShields = []; techFrosts = []; techPools = []; techGrabs = []; techClock = 0; techAim = null; _techLabels = {}; }
+function techReset() { techShields = []; techFrosts = []; techPools = []; techClock = 0; techAim = null; _techLabels = {}; }
 
 // ── the throw and the flight ──
 function _techLoadPoint(a) {
@@ -961,7 +959,7 @@ function techAbilityTick() {
     _techSiteNotices(); _techRubbleNotices();
     _techShieldTick();
     techClock++;   // THE PLAY CLOCK: a frame of play
-    _techFrostTick(f0); _techPoolTick(); _techGrabTick(f0);
+    _techFrostTick(f0); _techPoolTick();
 }
 // THE BROKEN SECTIONS: a follower on a site's room that is not holding it (it was called back) walks to the room's broken section and drops through; one posted to that room that is not up there (it came back from the dead at the
 // Crystal) is let go of its post, since nobody walks up. On a POCKET site's landing with a broken edge (the Sewers' collapsed tunnel) a follower that is not waiting there for you (_pocketHold) and is up there without you
@@ -990,7 +988,7 @@ function _techSiteNotices() {
 }
 
 // ── AIMING: an ability waiting for the player to pick its targets (the prompt over the screen says what to tap; a tap on its chip again, ✕ or Escape calls it off) ──
-let techAim = null;   // { mode: "combat" | "site", f, ab, site, step, picks }
+let techAim = null;   // { mode: "combat" | "site", f, ab, site, step, picks } (+ stroke for a path; + flux for FLUX MOVE: { s, turn, at, grid })
 let _techLabels = {};  // where each site's label was drawn last (a tap on it is a tap on the site): drawing's, not the game's state
 function techAimActive() { return !!techAim; }
 function techAimNeed() { const A = techAim; if (!A) return null; return A.mode === "site" ? "follower" : A.ab.aim[A.step] || null; }
@@ -998,11 +996,18 @@ function techAimPrompt() {
     const A = techAim; if (!A) return "";
     if (A.mode === "site") { const s = _techSite(A.site); return "KINETIC LAUNCHER · " + (s && s.rider ? "TAP ITS TAG AGAIN TO RIDE IT · OR A FOLLOWER TO SEND OVER TO THE " : s && s.pocket ? "TAP " + _techOnlyName(s) + " TO SEND INTO THE " : "TAP A FOLLOWER TO SEND UP TO THE ") + String(s ? s.label || s.to : "").toUpperCase(); }
     const need = techAimNeed();
+    if (A.flux) {   // FLUX MOVE: what to do next, as it goes
+        if (!A.flux.s) return "FLUX MOVE · TAP AN OBJECT TO MOVE: THE OUTLINED ONES";
+        return "FLUX MOVE · THE " + _fluxName(A.flux.s) + (A.flux.at ? " · ✓ PLACE IT" : " · TAP WHERE IT GOES");   // (short: ⟳ ROTATE and ✓ PLACE stand beside it)
+    }
     return A.ab.name + " · " + (need && A.ab.ask ? A.ab.ask(need, A.picks) : "");
 }
 function _techAimShow() {
     if (typeof document === "undefined" || !document.body || !document.body.classList) return;
     document.body.classList.toggle("tech-aiming", !!techAim);
+    const X = techAim && techAim.flux;   // FLUX MOVE's buttons in the prompt: ✓ PLACE once an object is picked, ⟳ ROTATE for one that turns
+    document.body.classList.toggle("tech-flux-place", !!(X && X.s));
+    document.body.classList.toggle("tech-flux-turn", !!(X && X.s && typeof fluxCanTurn === "function" && fluxCanTurn(X.s)));
     const el = document.getElementById ? document.getElementById("techAim") : null, t = el && el.querySelector ? el.querySelector(".ta-t") : null;
     if (t) t.textContent = techAimPrompt();
     if (typeof partyBarRender === "function") partyBarRender(true);
@@ -1011,7 +1016,9 @@ function _techAimShow() {
 function techChipTap(f) {
     if (techAim && techAim.f === f && techAim.ab === techAbilityOf(f)) { techAimCancel(); return false; }   // (its own aim again calls it off; FAULTLINE's aim is its other chip's, and this one takes its place)
     const c = techAbilityCan(f); if (!c.ok) { _techSay(c.why, "#ff8a6a"); return false; }
-    techAim = { mode: "combat", f, ab: c.ab, site: null, step: 0, picks: {} }; _techAimShow();
+    techAim = { mode: "combat", f, ab: c.ab, site: null, step: 0, picks: {} };
+    if (c.ab.id === "flux_move") techAim.flux = { s: null, turn: false, at: null, grid: [null, null] };   // (FLUX MOVE: the object and its place are kept here, in the aim, until ✓ PLACE)
+    _techAimShow();
     return true;
 }
 function techAimCancel(quiet) { if (!techAim) return; techAim = null; _techAimShow(); if (!quiet) _techSay("CALLED OFF", "#8aa0c8"); }
@@ -1023,7 +1030,7 @@ function techAimPickFollower(g) {
     A.picks.follower = g; A.step++; _techAimShow();
     return true;
 }
-// the last pick of an aim (an enemy, a spot, an item): the ability is used; one that can be picked again (out of sight, not floor) keeps the aim up
+// the last pick of an aim (an enemy, a spot, FLUX MOVE's place): the ability is used; one that can be picked again (out of sight, not floor, a place refused) keeps the aim up
 function _techAimLast(kind, v) {
     const A = techAim; if (!A || techAimNeed() !== kind) return false;
     A.picks[kind] = v; const r = techAbilityUse(A.f, A.picks);
@@ -1033,7 +1040,6 @@ function _techAimLast(kind, v) {
 }
 function techAimPickEnemy(e) { return _techAimLast("enemy", e); }
 function techAimPickSpot(p) { return _techAimLast("spot", p); }
-function techAimPickItem(g) { return _techAimLast("item", g); }
 // the floor under a point on the screen (as a tap walks the player there: js/input.js handleInput), not rounded to a tile
 function techScreenToWorld(ex, ey) {
     const dx = ex - canvas.width / 2, dy = ey + (typeof facilityPickLift === "function" ? facilityPickLift(ex, ey) : 0) - canvas.height / 2 - TILE_H;
@@ -1050,7 +1056,12 @@ function techAimTap(x, y) {
     }
     if (need === "enemy") { const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e); _techSay("TAP AN ENEMY", "#8aa0c8"); return true; }
     if (need === "spot") return techAimPickSpot(techScreenToWorld(x, y));
-    if (need === "item") { const g = techItemAtScreen(x, y); if (g) return techAimPickItem(g); _techSay("TAP AN ITEM ON THE FLOOR", "#8aa0c8"); return true; }
+    if (need === "object") return techFluxPick(typeof fluxPropAtScreen === "function" ? fluxPropAtScreen(x, y) : null);   // FLUX MOVE: the object
+    if (need === "place") {   // FLUX MOVE: its place (a tap on another movable object, off the reach, picks that one instead)
+        const t = fluxTileAtScreen(x, y), A = techAim, R = A.flux.s ? fluxRegion(A.flux.s) : null;
+        if (t && R && !R.has(t[0] + "," + t[1])) { const o = fluxPropAtScreen(x, y); if (o && o !== A.flux.s && fluxMovable(o)) return techFluxPick(o); }
+        return t ? techFluxTile(t[0], t[1]) : true;
+    }
     if (need === "path") { if (!techAimPathEnd(x, y)) _techSay("PRESS ON THE FLOOR AND DRAW ITS PATH", "#8aa0c8"); return true; }   // (FAULTLINE: the let-go ends the stroke)
     return true;
 }
@@ -1075,7 +1086,13 @@ function techSiteTap(ex, ey) {
     }
     return false;
 }
-try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (e && e.key === "Escape" && techAim) techAimCancel(); }); } catch (e) { /* no window: the tests */ }
+try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (e && e.key === "Escape" && techAim) techAimCancel(); else if (e && techAim && techAim.flux) _techFluxKey(e); }); } catch (e) { /* no window: the tests */ }
+// FLUX MOVE's keys, while an object is picked: R turns it, Enter places it (the prompt's ⟳ ROTATE and ✓ PLACE); not while typing, and not while a line of dialogue is up (it takes Enter: js/dialogue.js)
+function _techFluxKey(e) {
+    if (!techAim.flux.s || e.repeat || (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName || "")) || (typeof _dlgCur !== "undefined" && _dlgCur)) return;
+    if (e.key === "r" || e.key === "R") { techFluxRotate(); e.preventDefault(); }
+    else if (e.key === "Enter") { techFluxPlace(); e.preventDefault(); }
+}
 
 // ── the chip on a technician's squad card (js/party.js partySlotsUpdate): { text, cls } or null ──
 function techChipState(f) {
@@ -1118,9 +1135,10 @@ function techAbilityInfo(f) {
         return { h: "ABILITY · " + ab.name, note: "From the ☣ chip on its squad card: it walks to a spot of floor it can see and leaves a poison pool. The pool hurts enemies standing in it, and is slowly taken back in: weaker and smaller until it is gone.",
                  rows: [["POOL", B.size + " × " + B.size + " tiles, up to " + B.max + " (a new one takes the oldest's place)"], ["LASTS", B.days + " in-game days (" + Math.round(B.days * TECH_AB.day / 3600) + " min of play)"], ["BITE", bite + " every " + (B.every / 60) + " s, fading with the pool"], ["POOLS NOW", techPools.length + " · DAY " + techDayOf()]].concat(wait) };
     }
-    if (ab.id === "telegrab") {
-        return { h: "ABILITY · " + ab.name, note: "From the ✦ chip on its squad card: an item on the floor anywhere on your screen flies to you and is picked up, as if you had walked over it.",
-                 rows: [["REACH", "anywhere on the screen"], ["ITEMS", "supply cases, drops, capsules, rocks"]].concat(wait) };
+    if (ab.id === "flux_move") {
+        wait[0][1] = Math.round(TECH_AB.flux.cooldown / 60) + " s, from when it is placed";
+        return { h: "ABILITY · " + ab.name, note: "From the ✦ chip on its squad card: tap an object on the screen (the ones that move are outlined), tap where it goes on its grid, and ✓ PLACE. A barrier can be turned (⟳ ROTATE). Nothing moves until it is placed; ✕ CALL OFF leaves it where it was.",
+                 rows: [["REACH", "2 tiles from where it stands, any way (a diagonal counts as one)"], ["OBJECTS", "the arena's loose crates, barrels and barriers"], ["IT MAY NOT", "go under anyone, onto a doorway or an item, or shut a way through"]].concat(wait) };
     }
     return { h: "ABILITY · " + ab.name, note: "", rows: [["READY", ready]] };
 }
@@ -1322,6 +1340,7 @@ function techDrawOverlay() {
         }
     }
     if (A && A.ab && A.ab.id === "faultline") _techDrawFaultStroke(g, A, f0);   // FAULTLINE's path as it is drawn
+    if (A && A.flux && typeof fluxDrawAim === "function") fluxDrawAim(g, A, f0);   // FLUX MOVE: the objects that move, then the picked one's grid and the place chosen (js/fluxmove.js)
     if (A && A.mode === "combat") {   // rings round the technician, and the follower picked to throw
         for (const u of [A.f, A.picks.follower]) { if (!u || u.dead) continue; const p = _techScr(u.x, u.y); g.strokeStyle = u === A.f ? "#ffe733" : "#ffffff"; g.lineWidth = 2; g.beginPath(); g.ellipse(p.x, p.y, 20, 9, 0, 0, Math.PI * 2); g.stroke(); }
     }
@@ -1372,15 +1391,6 @@ function techDrawOverlay() {
     for (const P of techFrosts) {
         const left = P.until - f0; if (left <= 0) continue; const s = _techScr(P.x, P.y);
         g.globalAlpha = Math.min(1, left / 60); g.font = font(12); g.textAlign = "center"; g.fillStyle = "#e6f9ff"; g.fillText("❄ " + Math.ceil(left / 60), s.x, s.y + TILE_H - 14); g.globalAlpha = 1;
-    }
-    // TELEGRAB: each item in flight, up in an arc to you, glowing violet, and a thread of light back to the flux technician
-    for (const G of techGrabs) {
-        const o = G.o, t = Math.min(1, Math.max(0, (f0 - G.t0) / TECH_AB.grab.flight)), q = _techArcScr(G.x0, G.y0, player.x, player.y, 0, 0, TECH_AB.grab.peak, t);
-        const qx = q.x, qy = q.y + TILE_H - 18;
-        if (G.by && !G.by.dead) { const b = _techScr(G.by.x, G.by.y); g.strokeStyle = "rgba(199,125,255,0.45)"; g.lineWidth = 1.5; g.setLineDash([4, 5]); g.lineDashOffset = -f0; g.beginPath(); g.moveTo(b.x, b.y + TILE_H - 30); g.lineTo(qx, qy); g.stroke(); g.setLineDash([]); g.lineDashOffset = 0; }
-        g.globalCompositeOperation = "lighter"; const gr = g.createRadialGradient(qx, qy, 0, qx, qy, 22); gr.addColorStop(0, "rgba(199,125,255,0.55)"); gr.addColorStop(1, "rgba(199,125,255,0)"); g.fillStyle = gr; g.beginPath(); g.arc(qx, qy, 22, 0, Math.PI * 2); g.fill(); g.globalCompositeOperation = "source-over";
-        const id = G.kind === "pickup" && o.items && o.items[0] ? o.items[0][0] : "specimen_capsule";
-        if (typeof invDrawIcon === "function") invDrawIcon(id, qx, qy, 24, f0); else { g.fillStyle = "#c77dff"; g.fillRect(qx - 6, qy - 6, 12, 12); }
     }
     g.restore();
 }

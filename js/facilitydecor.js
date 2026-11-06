@@ -38,7 +38,9 @@ const FP_FLOOR_STYLES = {
     wood:     { base: "#6d4a30", a: 0.62, mark: (h, o) => { for (const v of [-0.3, 0, 0.3]) o.push({ t: "L", c: "rgba(30,16,8,0.5)", w: 1, p: [-0.5, v, 0.5, v] }); o.push({ t: "L", c: "rgba(30,16,8,0.55)", w: 1, p: [((h % 7) - 3) / 7, -0.3, ((h % 7) - 3) / 7, 0] }); } },
     sand:     { base: "#84714c", a: 0.4, mark: (h, o) => { for (let k = 0; k < 2; k++) o.push({ t: "C", c: "rgba(255,235,190,0.16)", u: (((h >>> (k * 3)) % 9) - 4) / 10, v: (((h >>> (k * 3 + 2)) % 9) - 4) / 10, r: 0.035 }); if (h % 8 === 0) o.push({ t: "L", c: "rgba(40,28,14,0.35)", w: 1, p: [-0.35, 0.1, 0.25, 0.2] }); if (h % 17 === 0) o.push({ t: "C", c: "rgba(60,45,28,0.5)", u: 0.1, v: -0.1, r: 0.11 }); } },
 };
-function _fpCellOps(map, x, y) { const k = x + "," + y; let o = map.get(k); if (!o) { o = []; map.set(k, o); } return o; }
+// (_fpOpsOnly: while the floor of a few cells is built again, js/facilityplay.js facilitySolidMove: the other cells' ops go to a sink and are thrown away)
+let _fpOpsOnly = null; const _FP_OPS_SINK = [];
+function _fpCellOps(map, x, y) { const k = x + "," + y; if (_fpOpsOnly && !_fpOpsOnly.has(k)) { _FP_OPS_SINK.length = 0; return _FP_OPS_SINK; } let o = map.get(k); if (!o) { o = []; map.set(k, o); } return o; }
 // a segment given in world tiles goes into every tile it touches, in that tile's own (u, v)
 function _fpSeg(map, x0, y0, x1, y1, op, F) {
     const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 0.4)), seen = new Set();
@@ -60,20 +62,28 @@ function _fpWallEdges(F) {
     }
     return E;
 }
-function _fpFloorBuild(F) {
+// only: a set of cells ("x,y") to build alone, for a prop moved in play (facilityFloorRedo): their ops come back as { map, under }, and nothing kept is touched
+function _fpFloorBuild(F, only) {
     const map = new Map(), solid = new Set();
-    for (const s of F.solids) { const box = s.bb; for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) solid.add(x + "," + y); }
+    // (only: what can touch those cells is the solids, the water and the decor whose boxes come near them; the rest of the building is passed over)
+    let oBox = null; if (only) { oBox = [Infinity, Infinity, -Infinity, -Infinity]; for (const k of only) { const [x, y] = k.split(",").map(Number); oBox = [Math.min(oBox[0], x), Math.min(oBox[1], y), Math.max(oBox[2], x), Math.max(oBox[3], y)]; } }
+    const nearO = bb => !oBox || !bb || !(bb[2] < oBox[0] - 1.5 || bb[0] > oBox[2] + 1.5 || bb[3] < oBox[1] - 1.5 || bb[1] > oBox[3] + 1.5);
+    for (const s of F.solids) { if (!nearO(s.bb)) continue; const box = s.bb; for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) solid.add(x + "," + y); }
     // 1. the room's own floor
     const style = new Map(); for (const f of (F.floors || [])) style.set(f.room, f);
     const under = new Map();   // the floor under a solid cell: a small piece of furniture stands on it, and a bare black tile would show
-    const fills = _fpFillCells(F, solid); _fp.fills = fills; const wallEdges = _fpWallEdges(F);
-    const cellsAll = new Map(_fp.cells); for (const k of solid) { const [x, y] = k.split(",").map(Number); if (facilityRoomAt(x, y, F)) cellsAll.set(k, [x, y]); } for (const [k, f] of fills) cellsAll.set(k, [f.x, f.y]);
+    const fills = only ? (_fp.fills || new Map()) : _fpFillCells(F, solid); if (!only) _fp.fills = fills; const wallEdges = only && _fp.wallEdges ? _fp.wallEdges : (_fp.wallEdges = _fpWallEdges(F));   // (the walls never move: kept for a redo)   // (a moved prop changes no fill: it leaves floor and covers floor)
+    let cellsAll;
+    if (only) { cellsAll = new Map(); for (const k of only) { const [x, y] = k.split(",").map(Number); if (_fp.cells.has(k) || (solid.has(k) && facilityRoomAt(x, y, F))) cellsAll.set(k, [x, y]); else if (fills.has(k)) cellsAll.set(k, [fills.get(k).x, fills.get(k).y]); } }
+    else { cellsAll = new Map(_fp.cells); for (const k of solid) { const [x, y] = k.split(",").map(Number); if (facilityRoomAt(x, y, F)) cellsAll.set(k, [x, y]); } for (const [k, f] of fills) cellsAll.set(k, [f.x, f.y]); }
     // THE SEWERS: a bridge's grating has no floor under it (the water shows through: js/facilitysewers.js), and a floor that drops into the water has a lit lip along its edge
     const deck = new Set(), water = new Set();
     for (const d of (F.decor || [])) if (d.kind === "bridge_deck" && d.rect) for (const k of facilityRectCells(d.rect)) deck.add(k);
-    for (const s of F.solids) if (s.kind === "river" || s.kind === "pool") { const box = s.bb; for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) water.add(x + "," + y); }
+    for (const s of F.solids) if ((s.kind === "river" || s.kind === "pool") && nearO(s.bb)) { const box = s.bb; for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) water.add(x + "," + y); }
+    _fpOpsOnly = only || null;
+    try {
     for (const [k, c] of cellsAll) {
-        if (deck.has(k)) continue;
+        if (deck.has(k) || (only && !only.has(k))) continue;
         const room = fills.has(k) ? F.byId.get(fills.get(k).room) : facilityRoomAt(c[0], c[1], F), f = room && style.get(room.id), sty = !!room && facilityStyleRoom(room.id), S = sty ? _fpStyleFloorFor(room.id) : (f && FP_FLOOR_STYLES[f.style]); if (!S) continue;
         const h = _fpHash(c[0], c[1]), o = _fpCellOps(solid.has(k) ? under : map, c[0], c[1]), alt = S.alt && ((c[0] + c[1]) & 1);
         o.push({ t: "D", c: _fpRgba(alt ? S.alt : ((!sty && f.colour) || S.base), (S.a || 0.5) * (sty ? 1 : 0.82 + (h % 7) * 0.05)), x: sty && (S.a || 0.5) >= 1 });   // (x: an opaque base: painted a hair wide, so it covers the fringe of the tile under it)
@@ -86,6 +96,7 @@ function _fpFloorBuild(F) {
     // 2. what lies on it
     const rect = (r, fn) => { for (let x = Math.ceil(r[0] - 0.5); x <= r[2] - 0.5; x++) for (let y = Math.ceil(r[1] - 0.5); y <= r[3] - 0.5; y++) if (_fp.cells.has(x + "," + y)) fn(x, y, _fpCellOps(map, x, y), r); };
     for (const d of (F.decor || [])) {
+        if (only && !nearO(_fpDecorBox(d))) continue;
         let col = d.colour || "#ffffff"; const k = d.kind; if (FAC_WALL_DECOR.has(k)) continue; if ((k === "hazard" || k === "lane" || k === "arrows") && facilityStyleRoom(d.room)) continue;   // (the style has a simple floor: no caution stripes, lane lines or arrows)
         const sty = facilityStyleRoom(d.room); if (sty && !_fpRoomStyle(d.room).dark) col = _fpStyleCol(k, col);   // (a dark room, the arena, keeps its own muted colours)   // (a styled room's decals are brought into its palette)   // (wall decor is drawn as items; "plate" is both a wall patch and a floor style)
         if (k === "rug") {   // a rectangle with a border two strokes wide
@@ -143,8 +154,30 @@ function _fpFloorBuild(F) {
             for (let x = Math.floor(d.at[0] - R); x <= Math.ceil(d.at[0] + R); x++) for (let y = Math.floor(d.at[1] - R); y <= Math.ceil(d.at[1] + R); y++) { const q = Math.hypot(x - d.at[0], y - d.at[1]) / R; if (q >= 1 || !_fp.cells.has(x + "," + y) || solid.has(x + "," + y)) continue; _fpCellOps(map, x, y).push({ t: "G", c: col, a: a * 0.6 * Math.pow(1 - q, 1.4), fl }); }
         }
     }
+    } finally { _fpOpsOnly = null; _FP_OPS_SINK.length = 0; }
+    if (only) return { map, under };
     _fp.underOps = under; _fp.spr = new Map();
     return map;
+}
+// the box a floor decor can paint into (its rectangle, its points, its path; a mark round a point reaches out by its radius and a little more), or null when it says nothing of where it is
+function _fpDecorBox(d) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; const add = (p, r) => { if (!Array.isArray(p) || !Number.isFinite(p[0])) return; r = r || 0; x0 = Math.min(x0, p[0] - r); y0 = Math.min(y0, p[1] - r); x1 = Math.max(x1, p[0] + r); y1 = Math.max(y1, p[1] + r); };
+    if (d.rect) { add([d.rect[0], d.rect[1]]); add([d.rect[2], d.rect[3]]); }
+    add(d.at, (d.radius || 0) * 1.5 + 1.5); add(d.a); add(d.b); if (Array.isArray(d.path)) for (const p of d.path) add(p);
+    return x0 === Infinity ? null : [x0 - 1, y0 - 1, x1 + 1, y1 + 1];
+}
+// THE FLOOR UNDER A MOVED PROP (js/facilityplay.js facilitySolidMove): the cells that changed, built again exactly as the whole floor is built (the covering, the decals, the light: a cell it leaves is
+// painted as if it had never stood there, one it covers keeps its paint under it), and their cached tile pictures let go; the rest of the floor is kept as it was
+function facilityFloorRedo(keys) {
+    if (!_fp || !_fp.F || !_fp.floorOps || !keys || !keys.size) return;
+    const got = _fpFloorBuild(_fp.F, keys);
+    if (!_fp.underOps) _fp.underOps = new Map();
+    for (const k of keys) {
+        _fp.floorOps.delete(k); _fp.underOps.delete(k);
+        if (got.map.has(k)) _fp.floorOps.set(k, got.map.get(k));
+        if (got.under.has(k)) _fp.underOps.set(k, got.under.get(k));
+        if (_fp.spr) { _fp.spr.delete(k); _fp.spr.delete("u" + k); }
+    }
 }
 // FILL CELLS: floor that is not walkable but must be there, so no black shows where a wall meets the floor. A cell that a room only partly covers (the arena's rock edge is diagonal) gets
 // the room's floor, which runs in under the wall and is hidden by it; and the pocket of void behind the arena's north rock (between the rock teeth and the hallway) gets the arena's floor too.

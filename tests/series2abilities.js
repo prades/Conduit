@@ -76,9 +76,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ __fresh(); const b = __wear('quillstone', null, 0, 0), t = __ant(1, 0), n = __ant(1.6, 0.4); applyDamage(t, 20, b); return [!!EQUIP_CARDS.cleaver_arm, !!EQUIP_CARDS.chain_conduit, 5000 - n.health, __said('CLEAVE') || __said('CHAIN')]; })()`);
         same(r.join(), 'false,false,0,false', 'the cut cards, the one beside struck, the words');
     });
-    check('DOUBLE CELL on a Technician (a flux one\'s Telegrab): the card tick fills a second charge; the first use spends it (ready again at once), the second waits the whole cooldown; the charge is back one cooldown after it was spent', () => {
+    check('DOUBLE CELL on a Technician (a flux one\'s FLUX MOVE): the card tick fills a second charge; the first use spends it (ready again at once), the second waits the whole cooldown; the charge is back one cooldown after it was spent', () => {
         const r = J(`(function(){ __fresh(); frame = 40000; const f = __wear('gooproxy', 'double_cell', 0, 0), o = {}; equipTick(true); o.spare = f._abSpare;
-            const cd = TECH_AB.grab.cooldown; o.first = techCooldown(f, cd); o.second = techCooldown(f, cd); frame += cd - 10; equipTick(true); o.early = f._abSpare; frame += 20; equipTick(true); o.back = f._abSpare;
+            const cd = TECH_AB.flux.cooldown; o.first = techCooldown(f, cd); o.second = techCooldown(f, cd); frame += cd - 10; equipTick(true); o.early = f._abSpare; frame += 20; equipTick(true); o.back = f._abSpare;
             const plain = __wear('gooproxy', null, 3, 0); o.plain = techCooldown(plain, cd); return o; })()`);
         same(r.spare, 1, 'no second charge'); same(r.first, 1, 'the first use waited'); ok(r.second > 100, 'the second use did not wait the cooldown: ' + r.second); same(r.early, 0, 'the charge came back early'); same(r.back, 1, 'the charge did not come back'); ok(r.plain > 100, 'a technician without it');
     });

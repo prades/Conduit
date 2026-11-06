@@ -268,7 +268,7 @@ A technician in the squad has its element's ability, used from the chip on its s
   - **The evolved fire technician, the Thermite Burrower** (build `2026-11-06a`), has a second chip just above the drill's, **FAULTLINE**: tap it, then press on the floor, draw a path (up to 8 tiles) and let go, with a mouse or a finger. It dives, follows the path under the floor, and molten spikes erupt along it, hitting each enemy on the path once; its own 60 s wait. Its everyday hit is **BURROW STRIKE**: it dives, travels under the floor to an enemy within 4 tiles and erupts beneath it. (docs/FOLLOWER-COMBAT-REDESIGN.md)
 - **Ice, the Frost Patch:** 3×3 tiles of ice on a spot it can see, for 10 s: enemies at half speed, your units faster.
 - **Toxic, the Blight Spider:** it walks to a spot and leaves a poison pool (up to three) that hurts enemies in it and fades over two in-game days (a day is 20 minutes of play, on a saved clock).
-- **Flux, Telegrab:** an item on the floor anywhere on the screen flies to you and is picked up.
+- **Flux, FLUX MOVE** (build `2026-11-06f`; Telegrab is retired): tap the chip, then one of the arena's loose crates, barrels or barriers (they are outlined), tap where it goes on its grid (up to 2 tiles, diagonals too) and **✓ PLACE**; a barrier turns with **⟳ ROTATE**. R and Enter do the same on a keyboard; ✕ CALL OFF or Escape leaves it where it was. It never goes under anyone or onto a doorway or an item, and never shuts a way through. Moved objects stay where they are put, saved.
 The details, the numbers (which were given and which are provisional) and what is still open are in docs/TECHNICIANS.md.
 
 ## The HUD: one group to a corner (the facility on a tablet or a desktop; js/party.js hudCorners)

@@ -113,7 +113,8 @@ function _facilityBuild(ex) {
     const solids = (M.props || []).map(pr => {
         if (pr.shape === "circle") return { id: pr.id, room: pr.room, shape: "circle", at: _facP(pr.at), r: pr.radius / s, cargo: pr.cargo || null, provisional: !!pr.provisional_collision, status: pr.status, kind: pr.kind || null };
         if (pr.shape === "poly") return { id: pr.id, room: pr.room, shape: "rect", poly: pr.poly.map(q => _facSnap ? [q[0] / s + 0.5, q[1] / s + 0.5] : [q[0] / s, q[1] / s]), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null, tilted: true };   // an outline as drawn (a toppled rack): not snapped, but in the snapped grid's frame
-        const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null };
+        const [x0, y0, x1, y1] = pr.rect; return { id: pr.id, room: pr.room, shape: "rect", poly: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(_facP), provisional: false, status: pr.status, kind: pr.kind || null, cargo: pr.cargo || null,
+            flux: pr.flux ? { range: Math.max(1, pr.flux.range | 0 || 2), turn: !!pr.flux.turn, turned: false } : null };   // (flux: the Flux technician can move it, js/fluxmove.js; `turned` is its state in play, along the other axis)
     });
     const bridges = (M.bridges || []).map(b => ({ id: b.id, from: b.from, to: b.to, note: b.note }));
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)

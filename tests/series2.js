@@ -6,7 +6,7 @@
 // (the flux technician's form, the Goo Proxy); the real list, its price and its odds below; the Prototype abilities in tests/series2abilities.js.
 //   THE PACK       Series 2 is in the list of packs, ◆150 for four, 50 / 30 / 15 / 5 over Unrefined to Prototype, locked until the purification; Pack 1 is as it was
 //   THE CARDS      a species card fits its subclass and no other (an egg: evolve first); a class card fits its role and no other; worn, the bonuses add; replaced, the old one's goes; removed, nothing is left; never the same card twice
-//   THE COOLDOWN   a technician's ability cooldown is a stat: two cards add, nine tenths at most, through every place a cooldown is set (Telegrab here), and nothing on a brawler
+//   THE COOLDOWN   a technician's ability cooldown is a stat: two cards add, nine tenths at most, through every place a cooldown is set (FLUX MOVE here), and nothing on a brawler
 //   THE SAVE       a follower's cards and the run's found cards come back from a save; a Series 2 card found is kept as any card is
 //   ON SALE        after the purification the pack rolls its own cards (never Pack 1's, never the Crystalline six), one Precision-or-better, none twice, never above Prototype; it is sold for its price; the market's shelf
 //                  spans the packs that are open (a locked one's cards are not on it) with each rarity's own weight; with the numbers taken away it is off sale again and what was found stays usable
@@ -84,14 +84,15 @@ function near(a, b, m, tol) { if (Math.abs(a - b) > (tol || 1e-6)) throw new Err
     });
 
     group('THE COOLDOWN STAT (js/techabilities.js techCooldown)');
-    check('two technician cards of −25% take half off the cooldown; nine tenths is the most that comes off; a brawler with a cooldown card has nothing to shorten; the real path: a Telegrab\'s cooldown on the Jelly Technician is half of TECH_AB.grab.cooldown with the two cards, whole without', () => {
+    check('two technician cards of −25% take half off the cooldown; nine tenths is the most that comes off; a brawler with a cooldown card has nothing to shorten; the real path: a FLUX MOVE\'s cooldown on the Jelly Technician is half of TECH_AB.flux.cooldown with the two cards, whole without', () => {
         const r = J(`(function(){ __fresh(); __fxIn(); equipFound = __FX.map(x => x[0]); const t = __form(__mk('flux', 'camper'), 'gooproxy'), o = {}; t.x = player.x - 1; t.y = player.y; partyTick(); techAbilityTick(); t._abReadyAt = frame;
             o.none = techCooldown(t, 3600); equipPut(t, 0, 'fx_tech_r'); o.one = techCooldown(t, 3600); equipPut(t, 1, 'fx_tech_p'); o.two = techCooldown(t, 3600);
             equipPut(t, 0, 'fx_tech_c'); o.capped = [equipBonus(t, 'cooldown'), techCooldown(t, 3600)]; equipPut(t, 0, 'fx_tech_r');
             const b = __form(__mk('core', 'brawler'), 'jellyram'); b.cards = ['fx_tech_r', null]; equipRefresh(b); o.brawler = [equipBonus(b, 'cooldown'), techCooldown(b, 3600)];
-            const it = _fp.items.find(i => i.fp === 'pickup' && !i.taken); const g = techGrabAt(t, { kind: 'pickup', o: it }); o.grab = [g.ok, techReadyIn(t), TECH_AB.grab.cooldown / 2]; it.grab = null; techGrabs.length = 0;
-            equipPut(t, 0, null); equipPut(t, 1, null); t._abReadyAt = frame; const g2 = techGrabAt(t, { kind: 'pickup', o: it }); o.grabPlain = [g2.ok, techReadyIn(t), TECH_AB.grab.cooldown]; it.grab = null; techGrabs.length = 0; return o; })()`);
-        same([r.none, r.one, r.two].join(), '3600,2700,1800', 'the cooldowns'); same(r.capped.join(), '1.2,360', 'the cap'); same(r.brawler.join(), '0,3600', 'a brawler'); same(r.grab.join(), 'true,1800,1800', 'the Telegrab with the cards'); same(r.grabPlain.join(), 'true,3600,3600', 'the Telegrab without');
+            const b5 = fluxObject('barrel_5'), place = () => { const k = [...fluxGrid(b5, false)].find(([k, c]) => c.ok && !fluxBodyOn(c.cells))[0].split(',').map(Number); return { x: k[0], y: k[1], turn: false }; };
+            const g = techFluxMoveAt(t, b5, place()); o.move = [g.ok, techReadyIn(t), TECH_AB.flux.cooldown / 2];
+            equipPut(t, 0, null); equipPut(t, 1, null); t._abReadyAt = frame; const g2 = techFluxMoveAt(t, b5, place()); o.movePlain = [g2.ok, techReadyIn(t), TECH_AB.flux.cooldown]; return o; })()`);
+        same([r.none, r.one, r.two].join(), '3600,2700,1800', 'the cooldowns'); same(r.capped.join(), '1.2,360', 'the cap'); same(r.brawler.join(), '0,3600', 'a brawler'); same(r.move.join(), 'true,1800,1800', 'FLUX MOVE with the cards'); same(r.movePlain.join(), 'true,3600,3600', 'FLUX MOVE without');
     });
 
     group('THE SAVE');

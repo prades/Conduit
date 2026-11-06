@@ -4,6 +4,8 @@
 //   barrel.s0..s3     1x1: steel drums with rolling hoops, a lid with bungs, a painted band and a label (teal+violet, red fuel, hazard yellow, bare steel; a couple dented)   ~40 px
 //   floodlight        1x1: a floodlight on a weighted base plate, a tall mast (~125 px) and a bank of six very bright lamps with a hood (they are the facility's emergency lights: the lamps are emissive)
 //   barrier           2x1 (x by z): a pair of jersey barriers with a hazard-striped band, steel pins and an amber warning lamp
+//   barrier.1x2       the same barrier turned to lie along z (game y), for the Flux technician's FLUX MOVE (js/fluxmove.js): the model with x and z swapped (a quarter turn and a mirror), so its banded long face
+//                     and its hazard-painted end still face the camera, on +x and +z
 //   case              the supply case a pickup shows (0.6 tile, ~28 px): a rugged two-tone shell with latches, a handle, a white cross stencil and a glowing cyan strip on the lid that reads in the dark; case.s1 is amber
 // The front (details) is on +z and +x, the faces the camera sees.
 (function () {
@@ -203,14 +205,14 @@
     return { g };
   }
 
-  const variants = ['crate.s0', 'crate.s1', 'crate.s2', 'crate.s3', 'crate_stack.s0', 'crate_stack.s1', 'barrel.s0', 'barrel.s1', 'barrel.s2', 'barrel.s3', 'floodlight', 'barrier', 'case', 'case.s1'];
+  const variants = ['crate.s0', 'crate.s1', 'crate.s2', 'crate.s3', 'crate_stack.s0', 'crate_stack.s1', 'barrel.s0', 'barrel.s1', 'barrel.s2', 'barrel.s3', 'floodlight', 'barrier', 'barrier.1x2', 'case', 'case.s1'];
   PROPS.cargo = { variants, canvas: [700, 700], exposure: 0.95, build(name) {
     const [kind, style] = name.split('.');
     if (kind === 'crate') { const c = crate(STYLES[style], 0.82, 0.82); return { g: c.g }; }
     if (kind === 'crate_stack') return stack(style === 's0' ? 0 : 1);
     if (kind === 'barrel') return barrel(BARRELS[style]);
     if (kind === 'floodlight') return floodlight();
-    if (kind === 'barrier') return barrier();
+    if (kind === 'barrier') { const b = barrier(); if (style !== '1x2') return b; const g = G(); b.g.rotation.y = PI / 2; g.add(b.g); g.scale.set(1, 1, -1); return { g }; }   // (x, z) -> (z, x)
     if (kind === 'case') return supplyCase(style === 's1');
     throw new Error('no such cargo variant ' + name);
   } };

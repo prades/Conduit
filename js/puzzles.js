@@ -11,15 +11,14 @@
 // of the game (the puzzle has no logic of its own: each contract names the code that enforces it, and the refusals that code gives, word for word, so the tests can hold the game to them), what it needs, and what it
 // does. `puzzleState(id)` reads the live world and says whether it is solved and HOW (which solution did it): js/quests.js questTick records that in the quest line.
 //   THE SEWER SAMPLE: the WATER SAMPLE vial lies at the far end of the COLLAPSED TUNNEL's floor off the north ledge (pk_sewer_sample): a broken-off stretch of an old side tunnel, open onto the ledge and in plain sight,
-//   six tiles across and four deep, its whole mouth choked with the collapse's rubble (the solid `sewer_choke`, the rubble `rubble_sewer_choke`): no one walks in. Three ways to it, EACH ON ITS OWN (one technician, one
-//   ability; no two of them needed together):
-//     A. TELEGRAB (the flux technician's ability, js/techabilities.js): the vial is on the screen, so it is an item the chip can take: it flies over the rubble to the player's feet, and the pickup takes it, once.
+//   six tiles across and four deep, its whole mouth choked with the collapse's rubble (the solid `sewer_choke`, the rubble `rubble_sewer_choke`): no one walks in. Two ways to it, EACH ON ITS OWN (one technician, one
+//   ability; no two of them needed together). (There were three: A, the flux technician's TELEGRAB, went with Telegrab (the owner, 2026-11-06: "Retire it now"; docs/FLUX-MOVEMENT.md). The letters are kept.)
 //     B. THE LAUNCHER (the electric technician's): it sets a Kinetic Launcher up on the ledge by the mouth (the site site_sewer_tunnel: a POCKET site that carries the player, `rider`); the player taps the launcher's tag
 //        twice and RIDES it over the choke onto the floor, walks to the vial and takes it, and JUMPS back down to the ledge from the floor's BROKEN EDGE (the site's `drop`, one way). Followers may be sent over too:
 //        they wait up there for the player and drop after them.
 //     C. THE DRILL (the fire technician's): the choke is drilled from the LEDGE (its work spot is in front of the pile: six hits a second apart), which opens the solid for good: the floor joins the ledge, and the
 //        player (and everyone) walks in to the vial.
-//   The record says which did it (`how`: telegrab, ride or drill).
+//   The record says which did it (`how`: ride or drill; a game saved before Telegrab went may say "telegrab": kept as it is, and read as no row of the table, js/puzzles.js puzzleSolution).
 const PUZZLES = {
     sewer_sample: {
         id: "sewer_sample", title: "THE WATER SAMPLE", room: "sewers", quest: "purify",
@@ -29,8 +28,6 @@ const PUZZLES = {
             site: { id: "site_sewer_tunnel", kind: "launchSite", pocket: true, rider: true, where: "the ledge a tile west of the mouth; its broken edge at the west end of the floor beyond" },
         },
         solutions: [
-            { id: "telegrab", title: "TELEGRAB", follower: "flux", ability: "grab", steps: ["grab", "pickup"],
-              text: "A FLUX TECHNICIAN'S TELEGRAB PULLS THE VIAL OUT OVER THE RUBBLE TO YOUR FEET." },
             { id: "ride", title: "THE LAUNCHER", follower: "electric", ability: "launch", steps: ["setup", "ride", "walk", "pickup", "jump"],
               text: "THE ELECTRIC TECHNICIAN SETS A LAUNCHER UP BY THE TUNNEL; YOU RIDE IT OVER THE RUBBLE, TAKE THE VIAL, AND JUMP BACK DOWN FROM THE BROKEN EDGE." },
             { id: "drill", title: "THE DRILL", follower: "fire", ability: "drill", steps: ["drill", "walk", "pickup"],
@@ -38,9 +35,6 @@ const PUZZLES = {
         ],
         // THE INTERACTION CONTRACTS: each is enforced by the functions it names (`fns`; js/techabilities.js unless said), which give the refusals named when a condition is not met
         contracts: {
-            grab:   { actor: "flux technician", via: "techAbilityUse(tech, { item })", fns: ["techAbilityUse", "techItemAtScreen", "techGrabAt"], target: "an item on the floor anywhere on the screen (techItemAtScreen); the technician need not see it: no line of sight, no range but the screen",
-                      needs: ["the technician is a squad member and its ability is ready (techReadyIn)", "the item is not taken and not already in flight"],
-                      refuses: ["TAP AN ITEM ON THE FLOOR", "IT IS GONE"], does: "the item flies to the player's feet (TECH_AB.grab.flight frames) and is left there; the ability's cooldown begins", retry: "a refused tap keeps the aim (again: true); a grabbed item cannot be grabbed twice" },
             setup:  { actor: "electric technician", via: "techSiteSetup(site)", fns: ["techSiteSetup", "techLauncherAt"], target: "the launcher site on the ledge by the tunnel's mouth",
                       needs: ["an electric technician in the squad, ready", "no launcher at the site yet"], refuses: ["SETTING IT UP NEEDS AN ELECTRIC TECHNICIAN IN YOUR SQUAD", "A LAUNCHER IS ALREADY HERE", "IT IS BEING SET UP"],
                       does: "the launcher is built over TECH_AB.launch.setup frames and stays for good (saved: launchers)", retry: "walking away interrupts nothing of it; a built launcher is never built again" },
@@ -74,7 +68,7 @@ function puzzleRecord(id) {
 function puzzleReset() { if (typeof _fp !== "undefined" && _fp) _fp.puzzles = {}; }
 function _puzzleNow() { return typeof techClock === "number" ? Math.max(1, techClock) : Math.max(1, typeof frame !== "undefined" ? frame : 1); }
 function _puzzlePickup(id) { return typeof _fp !== "undefined" && _fp && _fp.items ? _fp.items.find(i => i.fp === "pickup" && i.id === id) || null : null; }
-// the live state of a puzzle: { id, solved, how, solvedAt, sampleTaken, chokeOpen, launcherUp, inside, up } (how: the solution's id, "telegrab", "ride" or "drill"; "" until it is solved; inside: a follower waiting on the
+// the live state of a puzzle: { id, solved, how, solvedAt, sampleTaken, chokeOpen, launcherUp, inside, up } (how: the solution's id, "ride" or "drill"; "" until it is solved; inside: a follower waiting on the
 // floor beyond the choke; up: the player is on that floor while the choke is still shut, which is how a vial taken on foot there was got: the ride)
 function puzzleState(id) {
     const D = PUZZLES[id]; if (!D) return null;
@@ -85,7 +79,7 @@ function puzzleState(id) {
     const site = typeof _techSite === "function" ? _techSite(S.id) : null;
     const up = !!(site && !chokeOpen && typeof _pComp === "function" && typeof player !== "undefined" && _pComp(player.x, player.y) === _pComp(site.land[0], site.land[1]));
     const inside = typeof followers !== "undefined" ? followers.some(f => f && !f.dead && f._pocketHold === S.id) : false;
-    if (taken && !R.solvedAt) { R.how = pk && pk.grabbed ? "telegrab" : chokeOpen ? "drill" : up ? "ride" : "other"; R.solvedAt = _puzzleNow(); }
+    if (taken && !R.solvedAt) { R.how = chokeOpen ? "drill" : up ? "ride" : "other"; R.solvedAt = _puzzleNow(); }
     return { id, solved: !!R.solvedAt, how: R.how, solvedAt: R.solvedAt, sampleTaken: taken, chokeOpen, launcherUp, inside, up };
 }
 // each frame (js/facilitytutorial.js): the records are kept up to date, so the quest reads a solve the frame it happens

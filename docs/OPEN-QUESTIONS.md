@@ -359,6 +359,21 @@ Built as approved: Series 2 deals the eighteen at Prototype (45 → 63 cards; pr
 8. **For the owner: the market's shelf and the Player cards.** The shelf sells what an open pack deals, so once Series 2 is open a Player card can be on it, at a Prototype card's market value: ◇350 in credits or ◆350 in shards, kept for good if new to you. That is cheaper than Side Quest's ◆1,000, and than the ◆1,000 that keeps a card found in a pack. It follows the rules already set (the shelf's, from the owner's answers of 2026-10-30), so it was built that way and not changed. Ways it could go: keep it as built; keep Player cards off the shelf; or price them on the shelf at ◆1,000. **Answered (the owner, 2026-11-06): "Keep as built".**
 9. **What the deal does to the odds** (as the following update warned): a pack still holds a Prototype card about one time in three, but each Prototype card now comes up in about 1 pack in 78, where it was about 1 in 32 when the Prototype row was 13 cards. That holds for the species, Technician, aura and opportunity Prototype cards too.
 
+## 1v. FLUX MOVE's readings: the Flux technician's object tool, first build (build `2026-11-06f`, on the branch; `FLUX-MOVEMENT.md`)
+
+Built as decided (the owner, 2026-11-06: "Retire it now", "Test room + arena", "60 s cooldown", "Prompt buttons", "FLUX MOVE", "Square"; and the defaults of `FLUX-MOVEMENT.md` §11). Where nothing said, these readings were taken. Each stands as built until the owner says otherwise.
+
+1. **The crate stack is one of the arena's "crates"**: it moves, as one object (`crate_stack_3`). The arena's movable objects are nine: three crates, the crate stack, three barrels, two barriers.
+2. **The object need only be on the screen**: the technician does not have to see it or be near it (Telegrab's rule for the same technician). It must be in the squad and ready.
+3. **The tile tapped is the object's first tile**: a barrier lies from it toward +x (lower right on the screen), or toward +y (lower left) turned. To put it one tile the other way, tap the tile before. The grid lights the first tiles that work.
+4. **The kept spots** an object may not cover: a doorway's floor and the spot in front of it, a launcher site's points, a rubble's work spot, a follower spot, an item or capsule on the floor (scrap and rocks too), the Crystal and the tiles round it. A tile under an object that is moving may be part of its new place (a barrier shifted one tile).
+5. **The grid's look**: the reach as a faint violet grid; the tiles it can go to filled violet; those it cannot, red; where it stands, a white dashed outline; the place chosen bright violet, a two-tile object's second tile dashed and flashing. While picking, the movable objects on the screen are outlined in violet. A violet ring marks the old and the new place when it moves. *(Other ways: a fragmented preview without the flashing; no outline while picking.)*
+6. **The prompt is short**: "FLUX MOVE · THE BARREL · TAP WHERE IT GOES", then "… · ✓ PLACE IT"; ⟳ ROTATE shows only for an object that turns, ✓ PLACE once an object is picked. On a narrow screen the buttons go under the words.
+7. **The keys**: R turns, Enter places, Escape calls it off. Enter is the dialogue box's while a line is up.
+8. **The barrier's turned sprite** is its own model with x and z swapped (a quarter turn and a mirror), so the banded face and the painted end still face the camera; its stripes run the other way. The crates and barrels look the same turned: they do not turn.
+9. **The Sewers' quest hint** for the water sample now names the two routes left (the launcher that carries you; the drill). It used to name Telegrab and an older form of the launcher route.
+10. **An old save's puzzle record** saying `telegrab` is kept as it is (the quest's record too); it is read as no row of the solution table.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
@@ -387,9 +402,10 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - whether "closer" is for the install, the fight, or both;
     - whether she and the brood may cross;
     - the guard on the install, which today needs only the module in hand, and the gate's 2-tile flank.
-  - **The Flux object movement** (`FLUX-MOVEMENT.md` §11):
-    - the roadmap's ten (cost, weight, 3-tile objects, the rotate control, the preview, cover, traversal, enemy recovery, persistence, followers);
-    - and the study's ten, among them Telegrab's place (replaced or beside it), the Sewers' puzzle route A, which objects may move, whether a placement may seal a door, sight and cover as properties of their own, turned art, and a neutral test room as new map content.
+  - **The Flux object movement** (`FLUX-MOVEMENT.md` §11; its first build, FLUX MOVE, is in `2026-11-06f`, and its readings are §1v above):
+    - answered on 2026-11-06: Telegrab (retired), where (a test room and the arena), the cost (60 s), the controls (prompt buttons), the name (FLUX MOVE), the reach (a square);
+    - still open from the roadmap: weight, which objects get 3 tiles, cover, traversal, how enemies treat a route blocked for good (today: they plan round it, and one with no way round waits), and the test room's layout;
+    - from the study: sight and cover as properties of their own (Milestone Two), turned art for more objects, the Flux damage idea, and the saucer with legs.
   - **Where the roadmap's follower section differs from the built code** (§15):
     - PINBALL or CAPACITOR DISCHARGE;
     - FAULTLINE as an ability or an Ultimate, and MAGMA VENT;

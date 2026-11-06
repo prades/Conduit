@@ -256,19 +256,21 @@ const FACILITY_MAP = {
         { id: "plant_12", room: "observation_deck", shape: "rect", rect: [330, 810, 350, 830], status: "placed", kind: "plant" },
         { id: "plant_13", room: "observation_deck", shape: "rect", rect: [190, 790, 210, 810], status: "placed", kind: "plant" },
         { id: "cooler_4", room: "observation_deck", shape: "rect", rect: [190, 930, 210, 950], status: "placed", kind: "cooler" },
+        // THE FLUX TECHNICIAN'S OBJECTS (FLUX MOVE, js/fluxmove.js; docs/FLUX-MOVEMENT.md): `flux` marks a prop the tool can move: `range` tiles a move (the owner: 2, diagonals counting as one), `turn` when it can be
+        // turned (a two-tile object with art for both ways round). The arena's loose crates, barrels and barriers (the owner, 2026-11-06: "Test room + arena"); nothing else moves.
         { id: "floodlight_1", room: "arena", shape: "rect", rect: [530, 810, 550, 830], status: "placed", kind: "floodlight" },
         { id: "floodlight_2", room: "arena", shape: "rect", rect: [910, 810, 930, 830], status: "placed", kind: "floodlight" },
         { id: "floodlight_3", room: "arena", shape: "rect", rect: [910, 1150, 930, 1170], status: "placed", kind: "floodlight" },
         { id: "floodlight_4", room: "arena", shape: "rect", rect: [530, 1150, 550, 1170], status: "placed", kind: "floodlight" },
-        { id: "barrier_1", room: "arena", shape: "rect", rect: [590, 910, 630, 930], status: "placed", kind: "barrier" },
-        { id: "barrier_2", room: "arena", shape: "rect", rect: [670, 1050, 710, 1070], status: "placed", kind: "barrier" },
-        { id: "barrel_5", room: "arena", shape: "rect", rect: [970, 830, 990, 850], status: "placed", kind: "barrel" },
-        { id: "barrel_6", room: "arena", shape: "rect", rect: [970, 850, 990, 870], status: "placed", kind: "barrel" },
-        { id: "barrel_7", room: "arena", shape: "rect", rect: [950, 850, 970, 870], status: "placed", kind: "barrel" },
-        { id: "crate_4", room: "arena", shape: "rect", rect: [950, 1110, 970, 1130], status: "placed", kind: "crate" },
-        { id: "crate_5", room: "arena", shape: "rect", rect: [970, 1110, 990, 1130], status: "placed", kind: "crate" },
-        { id: "crate_6", room: "arena", shape: "rect", rect: [970, 1130, 990, 1150], status: "placed", kind: "crate" },
-        { id: "crate_stack_3", room: "arena", shape: "rect", rect: [970, 970, 990, 990], status: "placed", kind: "crate_stack" },
+        { id: "barrier_1", room: "arena", shape: "rect", rect: [590, 910, 630, 930], status: "placed", kind: "barrier", flux: { range: 2, turn: true } },
+        { id: "barrier_2", room: "arena", shape: "rect", rect: [670, 1050, 710, 1070], status: "placed", kind: "barrier", flux: { range: 2, turn: true } },
+        { id: "barrel_5", room: "arena", shape: "rect", rect: [970, 830, 990, 850], status: "placed", kind: "barrel", flux: { range: 2 } },
+        { id: "barrel_6", room: "arena", shape: "rect", rect: [970, 850, 990, 870], status: "placed", kind: "barrel", flux: { range: 2 } },
+        { id: "barrel_7", room: "arena", shape: "rect", rect: [950, 850, 970, 870], status: "placed", kind: "barrel", flux: { range: 2 } },
+        { id: "crate_4", room: "arena", shape: "rect", rect: [950, 1110, 970, 1130], status: "placed", kind: "crate", flux: { range: 2 } },
+        { id: "crate_5", room: "arena", shape: "rect", rect: [970, 1110, 990, 1130], status: "placed", kind: "crate", flux: { range: 2 } },
+        { id: "crate_6", room: "arena", shape: "rect", rect: [970, 1130, 990, 1150], status: "placed", kind: "crate", flux: { range: 2 } },
+        { id: "crate_stack_3", room: "arena", shape: "rect", rect: [970, 970, 990, 990], status: "placed", kind: "crate_stack", flux: { range: 2 } },
         { id: "console_4", room: "catwalks", shape: "rect", rect: [1030, 810, 1090, 830], status: "placed", kind: "console" },
         { id: "chair_1", room: "catwalks", shape: "rect", rect: [1050, 830, 1070, 850], status: "placed", kind: "chair" },
         { id: "toolbox_1", room: "catwalks", shape: "rect", rect: [1090, 810, 1110, 830], status: "placed", kind: "toolbox" },
@@ -381,8 +383,8 @@ const FACILITY_MAP = {
         { id: "pk_chamber_mutagen", room: "crystal_chamber", at: [280, 400], items: [["mutagen_sample", 1]], class: "mutator", note: "A sample left by the crystal (Mutator)." },
         { id: "pk_chamber_mutagen_2", room: "crystal_chamber", at: [320, 320], items: [["mutagen_sample", 1]], class: "mutator", note: "Another sample in the chamber (Mutator)." },
         // THE SEWER SAMPLE (the sample puzzle, docs/SEWER-QUEST.md): a sealed vial of the river's water at the far end of the collapsed tunnel's broken-off floor, in sight from the north ledge and out of reach behind the choke.
-        // Three ways to it, each on its own: a flux technician's Telegrab (it flies out over the rubble: an item anywhere on the screen); the electric technician's Kinetic Launcher set up on the ledge, which carries YOU over the
-        // choke onto the floor (you take the vial and jump back down from the broken edge); or a fire technician's Thermite Drill through the choke from the ledge, after which anyone walks in.
+        // Two ways to it, each on its own: the electric technician's Kinetic Launcher set up on the ledge, which carries YOU over the choke onto the floor (you take the vial and jump back down from the broken
+        // edge); or a fire technician's Thermite Drill through the choke from the ledge, after which anyone walks in. (A third, the flux technician's Telegrab, went with Telegrab: the owner, 2026-11-06.)
         { id: "pk_sewer_sample", room: "sewers", at: [920, 800], items: [["sewer_sample", 1]], note: "A water sample at the far (east) end of the collapsed tunnel's floor, against its back wall, behind the choke." },
         // (The five hidden VITAL items, a Fleck, a Prism and a Core, were removed 2026-11-01 with the HP a death cost: the owner, "Remove them".)
     ],

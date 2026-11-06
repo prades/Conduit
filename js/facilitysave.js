@@ -5,7 +5,7 @@
 //
 // WHAT IS SAVED: the class and its perks (and, as classes switch, every class you have been: its perks, its stage, the weapon it last held, the Mutator's clone while it waits), the pack and the ammunition, which supply cases have been taken, the weapon in hand and its level, which relays are online (their rooms have power again), how far through the tutorial the player is
 // (the director's step and what it has already said; the class's stage and what it has counted), the followers (the roster record: level, XP, evolution, traits, equip cards), the run's hand of equip cards and the player's two slots (js/cards.js; the COLLECTION of unlocked cards is its own key, "conduit_fp_cards", which NEW GAME keeps), the clones (live, or waiting to come back), the crystals and the kill count, the Crystal's health and where the player stands;
-// the technicians' work that lasts (js/techabilities.js): the launchers set up, the rubble drilled (and its rocks not yet taken), the play clock and the Blight Spider's pools on it.
+// the technicians' work that lasts (js/techabilities.js): the launchers set up, the rubble drilled (and its rocks not yet taken), the play clock and the Blight Spider's pools on it; the objects FLUX MOVE has moved (js/fluxmove.js).
 // WHAT IS NOT: the enemies (an assault in progress starts again with its countdown), a repair or a build in progress (it is begun again), cooldowns, the lamp's overcharge.
 // It is written every few seconds while the game is running, and when the page is hidden or closed. NEW GAME (a chip, with a confirmation) throws it away and starts again.
 const FS = { key: "conduit_fp_save", version: 1, every: 180 };
@@ -46,6 +46,7 @@ function facilitySaveCollect() {
         shards: shardCount, kills: lifetimeKills,   // the crystals a kill pays (js/drops.js), and how many kills
         crystal: crystal.health, at: [Math.round(player.x * 100) / 100, Math.round(player.y * 100) / 100],
         sentries: typeof sentrySnapshot === "function" ? sentrySnapshot() : undefined,   // the turrets' wear (js/antraids.js)
+        moved: typeof fluxSnapshot === "function" ? fluxSnapshot() : undefined,         // the objects a flux technician's FLUX MOVE has moved: each one's place and turn (js/fluxmove.js)
     };
 }
 function facilitySaveWrite() {
@@ -113,6 +114,7 @@ function facilitySaveApply(d) {
     if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
     if (typeof sentryApply === "function") sentryApply(d.sentries);   // the turrets' wear, a wrecked one with its repair station (js/antraids.js)
+    if (typeof fluxApply === "function") fluxApply(d.moved);   // the moved objects where they were put (before the player's spot: one cannot be put back on top of it; js/fluxmove.js)
     // where the player stood (if that is still floor), and the followers with them
     const at = d.at; if (at && Number.isFinite(at[0]) && Number.isFinite(at[1]) && facilityStandOk(at[0], at[1])) { player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null; }
     for (const f of followers) { f.x = player.x + (Math.random() - 0.5) * 1.2; f.y = player.y + (Math.random() - 0.5) * 1.2; f.returningToCrystal = false; }

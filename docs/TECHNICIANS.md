@@ -11,13 +11,13 @@ A **technician** (role `camper`, shown as TECHNICIAN) of an element has that ele
 | Fire | Thermite Drill | ✹ DRILL | an enemy (or the enemy card); rubble from its own long-press ring |
 | Ice | Frost Patch | ❄ FROST | a spot of floor |
 | Toxic | Blight Spider | ☣ POOL | a spot of floor |
-| Flux | Telegrab | ✦ GRAB | an item on the floor |
+| Flux | FLUX MOVE (build `2026-11-06f`; Telegrab before it) | ✦ MOVE | an object of the arena, then where it goes (⟳ ROTATE, ✓ PLACE) |
 | Fire, the evolved **Thermite Burrower** only (a second ability, build `2026-11-06a`) | FAULTLINE | 〰 FAULT | a path drawn on the floor (press, drag, let go) |
 
 - **A second ability, by form** (`TECH_ABILITY2`, the owner's "Keep both buttons", 2026-11-02): the evolved Thermite Burrower keeps its element's THERMITE DRILL and has FAULTLINE as well, on a second chip with its own wait (`_ab2ReadyAt`), its own checks and way in (`techAbility2Can`, `techAbility2Use`). A fire technician egg, and every other form, has the one ability. See "FAULTLINE" below.
 - **Who:** only a technician in the squad (not one holding a room, not one walking back to the Crystal).
 - **Waits:** a technician that joins the squad waits `TECH_AB.joinWait` (60 s, "the 60-second initial squad wait") before its first use; each use after that waits the ability's cooldown: 60 s for each of the six (as asked). Leaving the squad and coming back starts the first wait again. Cooldowns are not saved (no cooldown is).
-- **Reach:** anything the technician can see (no aiming through a wall); Telegrab reaches any item on the screen.
+- **Reach:** anything the technician can see (no aiming through a wall); FLUX MOVE picks any object that moves on the screen (the technician need not see it).
 - **The cooldown and the cards (2026-10-31):** every place a cooldown is set goes through `techCooldown(f, base)`, which takes off the share the technician's equip cards give to the ABILITY COOLDOWN stat (`EQUIP_STATS.cooldown`, js/cards.js: added over the two cards, nine tenths at most). Series 2's Technician class cards name it (build `2026-11-01j`): SPARE PARTS KIT −8%, CAPACITOR BANK −14%, FIELD MULTITOOL −10% (with +10% maximum HP). DOUBLE CELL gives the ability a second charge through the same function (`equipChargeSpend`): used with the charge held, the ability is ready again at once, and the charge refills one cooldown later. With no such card it is the table's number. The first wait after joining the squad is not a cooldown.
 - **Aiming:** the chip puts up a prompt at the top of the screen saying what to tap. While it is up, a press on the play area is the aim's (no ring, no shot, no walk), a tap on a squad card picks that follower, and a tap on the enemy card picks its creature. A pick that cannot be (out of sight, not floor) says why and the aim stays up for another. ✕ CALL OFF, a second tap on the chip, or Escape calls it off.
 - **The chip:** its mark and word when ready (`⚡ LAUNCH`), the seconds while waiting (`⚡ 42 S`), `✕ AIMING` while being aimed, and what it is doing while busy (`THROWING`, `SETTING UP`, `DRILLING`, `LAYING`). It is on the squad bar only, not in the Command Center's squad box. The Thermite Burrower's second chip (`.sb-ab2`) sits just above it, in orange: `〰 FAULT`, `〰 42 S`, `✕ AIMING`, `〰 UNDER` while it runs, `〰 BUSY` while the drill or BURROW STRIKE is under way. A tap on one chip while the other's aim is up aims the one tapped.
@@ -162,20 +162,25 @@ ASKED: "Create contamination pools. Make the pools persist for two complete in-g
 | Cooldown | 60 s, from when the pool is down | given |
 | Time to get there | 20 s | how it feels |
 
-## Telegrab (flux)
+## FLUX MOVE (flux)
 
-*Superseded in design, still built (2026-11-06):* the owner's roadmap retires Telegrab ("Do not reintroduce Telegrab", `NEXT-PHASE-ROADMAP.md` §12.6) in favour of the Flux object movement in the future update (`FLUX-MOVEMENT.md`). Until that is built, Telegrab stays as below; it is also route A of the Sewers' water-sample puzzle (`SEWER-QUEST.md`).
+**Implemented and tested in build `2026-11-06f`, in the arena; not playtested.** It replaces **Telegrab, retired** (the owner, 2026-11-06: "Retire it now"; the roadmap: "Do not reintroduce Telegrab"). The rules, the code and the open items are in `FLUX-MOVEMENT.md`; the decisions in `DECISION-LOG.md`.
 
-ASKED: "Implement the Level 1 Telegrab ability using existing targeting and item-interaction systems. Check the established design for its range, eligible targets, and retrieval behavior"; then any item on the ground at any distance (supply cases, scrap, capsules, rocks), pulled to the player and collected once through the existing pickup; shards stay paid straight in at the kill.
+ASKED (the roadmap, §2.1): "The Flux Technician manipulates eligible existing environmental objects. The ability allows the player to select an object, reposition it within its movement allowance, and rotate it to create useful environmental arrangements." The owner's answers: "Test room + arena", "60 s cooldown", "Prompt buttons", "FLUX MOVE", "Square".
 
-- The ✦ chip, then an item on the floor anywhere on the screen (the technician need not see it): a supply case, a creature's drop, a rock, a specimen capsule. It **flies to you** in an arc, glowing, on a thread of light from the technician, and is put at your feet, where the pickup you would have made walking over it takes it: once. One your pack has no room for stays at your feet, as it would.
-- Shards are not on the floor: a kill pays them straight in, as before.
+- The ✦ chip, then an object: the arena's loose crates and crate stack, barrels and barriers (outlined in violet while picking; any other prop says it does not move). Its grid shows its reach, the places it can go and those it cannot, and where it stands. A tap on a tile shows it there (a barrier's second tile flashing); **⟳ ROTATE** (R) turns a barrier; **✓ PLACE** (Enter) places it. ✕ CALL OFF, Escape or the chip again: nothing moves, no wait.
+- **Where it may go:** every tile within 2 of where it stands (a diagonal counts as one), floor of its own room at its height, not a doorway or the spot before it, a launcher site, a rubble work spot, a follower spot, an item or capsule, the Crystal; under nobody; never cutting the walkable floor in two.
+- The move is one transaction in the map: the floor, the routes and the drawing change together, and every unit plans again round the object. It is saved.
 
 | Number | Value | Status |
 |---|---|---|
-| Reach | any item on the screen | given |
-| Cooldown | 60 s | given |
-| Flight | 0.7 s | how it feels |
+| Reach | 2 tiles a move, diagonals counting as one | given ("Square") |
+| Cooldown | 60 s, from when it is placed | given |
+| Objects | 9 in the arena (3 crates, a crate stack, 3 barrels, 2 barriers) | given ("the arena's loose crates, barrels and barriers"); the stack is a reading |
+
+### Telegrab (retired 2026-11-06)
+
+*Removed.* It pulled an item on the floor anywhere on the screen to the player (ASKED: "Implement the Level 1 Telegrab ability using existing targeting and item-interaction systems"; built in commit 0b98666). It was route A of the Sewers' water-sample puzzle, which keeps its other two (`SEWER-QUEST.md`). A game saved with that route's record still loads.
 
 ## Rooms and recruitment (js/party.js)
 
@@ -200,14 +205,14 @@ Its numbers, where the coral can be climbed, and the new high areas are open. Th
 
 In the future update registered on 2026-11-06 (`NEXT-PHASE-ROADMAP.md`; the decision is in `DECISION-LOG.md`):
 - **The Ice Technician: freezing water into bridges.** The owner: "I would like to make it to where the ICE technician's utility ability is the ability to freeze water. And make bridges to cross across the water." The Toxic Queen is to sit where an ice bridge brings the player closer to her. What the game has for it today, the spans the map offers, the guard the Queen's install needs, and the open points (the name, the Frost Patch's fate, the bridge's shape, length and thaw, who may cross) are in `NEXT-PHASE-ROADMAP.md` §14.
-- **The Flux Technician: moving objects, in place of Telegrab.** It selects an eligible object, shows a placement grid, moves it up to 2 tiles (some authored objects 3), turns it in 90° steps, and validates the whole footprint before committing; cancelling restores it. The rules are the roadmap's (§2, §3, §8). The study of the code for it, its gaps and risks, and the questions are in `FLUX-MOVEMENT.md`.
+- **The Flux Technician: moving objects, in place of Telegrab** (its first build is in, `2026-11-06f`: FLUX MOVE above; the test room and Milestone Two are next). It selects an eligible object, shows a placement grid, moves it up to 2 tiles (some authored objects 3), turns it in 90° steps, and validates the whole footprint before committing; cancelling restores it. The rules are the roadmap's (§2, §3, §8). The study of the code for it, its gaps and risks, and the questions are in `FLUX-MOVEMENT.md`.
 - **Also in the roadmap, not yet reconciled with the code** (§15): the Blight Spider's TOXIC PODS (in place of its pools); the Thermite Burrower's MAGMA VENT, and FAULTLINE as its Ultimate (it is built as a second ability).
 
 ## Still to be decided
 
 From the audit of the specs against the game (the report given before any code):
 
-Decided in the button rounds and built: every technician has its element's ability; 60 s cooldowns; reach by sight (Telegrab: anywhere); the shield's size and that it blocks attacks; the rubble's place and what is behind it, the rocks, the drill's timing and its hits on an enemy; the frost patch's size, time, slow and "they cross faster"; the pool's place, size, number, the day's length and what reabsorption means; Telegrab's targets and reach; the rooms' caps and who makes room.
+Decided in the button rounds and built: every technician has its element's ability; 60 s cooldowns; reach by sight (FLUX MOVE: any object on the screen); the shield's size and that it blocks attacks; the rubble's place and what is behind it, the rocks, the drill's timing and its hits on an enemy; the frost patch's size, time, slow and "they cross faster"; the pool's place, size, number, the day's length and what reabsorption means; Telegrab's targets and reach; the rooms' caps and who makes room.
 
 Still open:
 

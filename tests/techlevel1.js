@@ -1,5 +1,5 @@
 // THE OTHER FIVE TECHNICIANS' LEVEL 1 ABILITIES (js/techabilities.js; docs/TECHNICIANS.md): the core technician's PHOTONIC SHIELD, the fire technician's THERMITE DRILL (the arena's rubble, its hole, its rocks), the ice
-// technician's FROST PATCH, the toxic technician's BLIGHT SPIDER (its pools, the play clock), the flux technician's TELEGRAB.
+// technician's FROST PATCH, the toxic technician's BLIGHT SPIDER (its pools, the play clock), the flux technician's FLUX MOVE (its chip and one move here; its rules: tests/fluxmove.js). TELEGRAB is retired (2026-11-06).
 // ASKED (the core technician): "The Core Technician deploys a photonic shield between itself and the player-selected creature, creating a defensive barrier that blocks enemy movement while allowing friendly units to pass through
 // and fire through it [...] The shield lasts exactly 20 seconds after activation, then disappears automatically", then "3 wide, 3 back" and "Block attacks too"; 60 s cooldown for each of the six. The others: see each group.
 // The logic runs in the sandbox, stepping the frames the game would; the long press on the rubble, the chips and the taps in the real browser (no Chromium: it says so and passes).
@@ -27,7 +27,7 @@ function findChromium() {
     for (const p of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']) if (fs.existsSync(p)) return p;
     return null;
 }
-// The real page: three technicians' chips; a long press on the rubble and a release up its ring's THERMITE DRILL; the ice chip and a tap on the floor; the flux chip and a tap on a supply case.
+// The real page: three technicians' chips; a long press on the rubble and a release up its ring's THERMITE DRILL; the ice chip and a tap on the floor; the flux chip, a tap on a barrel, a tap on its grid and ✓ PLACE.
 const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
   var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, step = function(n){ for (var i = 0; i < n; i++) render(); };
   canvas.setPointerCapture = function(){};
@@ -49,12 +49,15 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var slots = document.querySelectorAll('#squadBar .sb-slot.has-ab .sb-ab'); slots[1].dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
     var s = _techScr(player.x + 1.4, player.y + 0.2); tapAt(s.x, s.y + TILE_H); step(1);
     out.frost = techFrosts.length ? techFrosts[0].tiles.size : 0;
-    // the flux chip, then a tap on a supply case on the screen
-    var it = null; for (var k = 0; k < _fp.items.length; k++) { var c = _fp.items[k]; if (c.fp === 'pickup' && !c.taken && !c.rock && !c.cls) { var p = _techScr(c.x, c.y); if (p.x > 60 && p.x < canvas.width - 60 && p.y > 120 && p.y < canvas.height - 160) { it = c; break; } } }
-    if (!it) { var cs = _fp.items.filter(function(c){ return c.fp === 'pickup' && !c.taken && !c.rock && !c.cls; }); it = cs[0]; player.x = player.targetX = player.visualX = it.x - 3; player.y = player.targetY = player.visualY = it.y - 2; step(3); }
+    // the flux chip, then a tap on a barrel of the arena, a tap on a tile of its grid, and the prompt's ✓ PLACE
+    var B5 = fluxObject('barrel_5'), BH = fluxHere(B5); player.x = player.targetX = player.visualX = BH.x0 - 3; player.y = player.targetY = player.visualY = BH.y0 + 2; player.fpPath = null; step(3);
     slots = document.querySelectorAll('#squadBar .sb-slot.has-ab .sb-ab'); slots[2].dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
-    var ip = _techScr(it.x, it.y); tapAt(ip.x, ip.y + TILE_H - 40); step(1);
-    out.grab = !!it.grab || it.taken;
+    var bp = _techScr(BH.x0, BH.y0); tapAt(bp.x, bp.y + TILE_H - 20); step(1);
+    out.fluxPicked = techAim && techAim.flux && techAim.flux.s ? techAim.flux.s.id : null;
+    var g0 = techAim && techAim.flux && techAim.flux.grid[0], to = null; if (g0) g0.forEach(function(c, k){ if (!to && c.ok && !fluxBodyOn(c.cells)) to = k.split(',').map(Number); });
+    if (to) { var tp = _techScr(to[0], to[1]); tapAt(tp.x, tp.y + TILE_H); step(1); }
+    var place = document.querySelector('#techAim .ta-p'); out.placeShown = !!place && getComputedStyle(place).display !== 'none'; if (place) place.click(); step(1);
+    var BH2 = fluxHere(B5); out.fluxMoved = !!to && BH2.x0 === to[0] && BH2.y0 === to[1]; out.fluxAim = !!techAim;
   } catch (err) { out.err = String(err && err.stack || err); }
   var pre = document.createElement('pre'); pre.id = '__tl'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 2000); });</script></body>`;
@@ -260,25 +263,25 @@ function measure(w, h) {
         same(r.saved.clock, 80000, 'the clock saved'); same(r.saved.pools.length, 1, 'the pools saved'); same(r.back.join(), '80000,1,true', 'put back'); same(r.reset.join(), '0,0', 'a new game');
     });
 
-    group('TELEGRAB (flux)');
-    // ASKED: "Implement the Level 1 Telegrab ability using existing targeting and item-interaction systems", then any item on the ground, any distance (supply cases, scrap, capsules, rocks), pulled to the player and collected once
-    // through the existing pickup; shards stay paid at the kill.
-    check('the chip, then an item on the floor anywhere (out of the technician\'s sight too): it flies to the player and the pickup takes it, once; a specimen capsule goes into the pack the same way; the cooldown is 60 s', () => {
-        const r = J(`(function(){ const fs = __fresh(['flux', 'fire']), t = fs[0], o = {}; const it = _fp.items.find(i => i.fp === 'pickup' && !i.taken && !i.rock && (!i.cls) && i.items.every(([id, n]) => invRoom(id) >= n)); o.far = Math.round(Math.hypot(it.x - t.x, it.y - t.y)); o.sees = facilityLosFrom(t.x, t.y, it.x, it.y);
-            const id = it.items[0][0], n0 = invCount(id); o.n = it.items[0][1]; techChipTap(t); o.prompt = techAimPrompt(); techAimPickItem({ kind: 'pickup', o: it }); o.cool = techReadyIn(t); o.flying = !!it.grab;
-            for (let i = 0; i < 45; i++) { frame++; techAbilityTick(); } o.at = [Math.hypot(it.x - player.x, it.y - player.y) < 0.01, !it.grab]; facilityPickupTick(); o.took = [it.taken, invCount(id) - n0]; facilityPickupTick(); o.once = invCount(id) - n0;
-            const g = fs[1], b = specimenFollowerFell(g); b.frozen = true; b.x = player.x + 7; b.y = player.y + 1; const c0 = invCount('specimen_capsule'); t._abReadyAt = frame;
-            o.capOk = techAbilityUse(t, { item: { kind: 'capsule', o: b } }).ok; for (let i = 0; i < 45; i++) { frame++; techAbilityTick(); } specimenTick(); o.cap = [invCount('specimen_capsule') - c0, cloneBodies.includes(b)];
+    group('FLUX MOVE (flux)');
+    // ASKED (the roadmap's Milestone One; the owner, 2026-11-06: "Retire it now", "60 s cooldown", "Prompt buttons", "FLUX MOVE", "Square"): the flux technician moves an object of the arena. Here: its chip, one move
+    // through the aim, the wait. Every rule of the tool (the reach, the footprint, the kept spots, the bodies, the floor never cut in two, the transaction, the save): tests/fluxmove.js.
+    check('the flux technician has FLUX MOVE (✦ MOVE): the chip, an object (a floodlight does not move), a tile of its grid, ✓ PLACE: the barrel is there and the wait is 60 s; a tap on nothing keeps the aim', () => {
+        const r = J(`(function(){ const fs = __fresh(['flux', 'fire']), t = fs[0], o = {}; o.id = (techAbilityOf(t) || {}).id; o.chip = techChipState(t).text;
+            const b = fluxObject('barrel_5'), H = fluxHere(b); techChipTap(t); o.need = techAimNeed(); o.prompt = techAimPrompt();
+            techFluxPick(_fp.F.solids.find(s => s.id === 'floodlight_1')); o.flood = techAim.flux.s; techFluxPick(b); o.need2 = techAimNeed();
+            const to = [...techAim.flux.grid[0]].find(([k, c]) => c.ok && !fluxBodyOn(c.cells))[0].split(',').map(Number); techFluxTile(to[0], to[1]); o.prompt2 = techAimPrompt();
+            o.placed = techFluxPlace(); o.aim = techAimActive(); const H2 = fluxHere(b); o.moved = H2.x0 === to[0] && H2.y0 === to[1]; o.cool = techReadyIn(t); o.chip2 = techChipState(t).text;
             t._abReadyAt = frame; techChipTap(t); o.miss = techAimTap(5, 5) && techAimActive(); techAimCancel(true); return o; })()`);
-        ok(r.far > 4, 'the item is near: ' + r.far); ok(/TELEGRAB · TAP AN ITEM ON THE FLOOR/.test(r.prompt), r.prompt); same(r.cool, 3600, 'the cooldown'); same(r.flying, true, 'not flying');
-        same(r.at.join(), 'true,true', 'it did not come to the player'); same(r.took.join(), 'true,' + r.n, 'not taken'); same(r.once, r.n, 'taken twice'); same(r.capOk, true, 'a capsule'); same(r.cap.join(), '1,false', 'the capsule not in the pack');
-        same(r.miss, true, 'a tap on nothing ended the aim');
+        same(r.id, 'flux_move', 'the ability'); same(r.chip, '✦ MOVE', 'the chip'); same(r.need, 'object', 'the first pick'); ok(/^FLUX MOVE · TAP AN OBJECT/.test(r.prompt), r.prompt);
+        same(r.flood, null, 'a floodlight was picked'); same(r.need2, 'place', 'the second pick'); ok(/^FLUX MOVE · THE BARREL · ✓ PLACE IT$/.test(r.prompt2), r.prompt2);
+        same(r.placed, true, 'placed'); same(r.aim, false, 'the aim stayed up'); same(r.moved, true, 'the barrel did not move'); same(r.cool, 3600, 'the cooldown'); same(r.chip2, '✦ 60 S', 'the chip after'); same(r.miss, true, 'a tap on nothing ended the aim');
     });
 
     group('ALL SIX, AND THE CODE THAT CARRIES THEM');
     check('every element\'s technician has its ability and its chip mark; the ring, the save, the floor drawing and the walks are wired', () => {
         const r = J(`(function(){ return Object.keys(TECH_ABILITIES).map(k => k + ':' + TECH_ABILITIES[k].id + ':' + TECH_ABILITIES[k].icon); })()`);
-        same(r.join(), 'electric:kinetic_launcher:⚡,core:photonic_shield:◈,fire:thermite_drill:✹,ice:frost_patch:❄,toxic:blight_spider:☣,flux:telegrab:✦', 'the six');
+        same(r.join(), 'electric:kinetic_launcher:⚡,core:photonic_shield:◈,fire:thermite_drill:✹,ice:frost_patch:❄,toxic:blight_spider:☣,flux:flux_move:✦', 'the six');
         const I = rd('js/input.js'), D = rd('js/draw.js'), C = rd('js/commands.js'), S = rd('js/facilitysave.js'), G = rd('js/game.js'), N = rd('js/npc.js'), FD = rd('js/facilitydecor.js');
         ok(/techRubbleAtScreen\(ex, ey\)/.test(I) && /_ring\.up\.act \+ "_tech"/.test(I), 'the press and the release'); ok(/ring\.up\.act \+ "_tech"/.test(D), 'the ring'); ok(/techRingAct\(commandTechTarget/.test(C), 'the command');
         ok(S.indexOf('techRubbleApply(d.rubble)') < S.indexOf('const taken = new Set(d.taken'), 'the rubble before the taken pickups'); ok(/techBlightApply\(d\.blight\)/.test(S) && /rubble: typeof techRubbleSnapshot/.test(S) && /blight: typeof techBlightSnapshot/.test(S), 'the save');
@@ -293,10 +296,10 @@ function measure(w, h) {
         check('1180x820: the instrument ran', () => { ok(b, 'the probe produced nothing'); same(b.err, undefined, 'the probe threw'); });
         if (b && !b.err) {
             check('the chips of a fire, an ice and a flux technician; a long press on the rubble opens its ring and a release up sends the fire technician to drill it', () => {
-                same((b.chips || []).join(), '✹ DRILL,❄ FROST,✦ GRAB', 'the chips'); same(b.ring.mode && b.ring.tech, true, 'the ring did not open on the rubble'); same(b.drill, true, 'nobody went to drill');
+                same((b.chips || []).join(), '✹ DRILL,❄ FROST,✦ MOVE', 'the chips'); same(b.ring.mode && b.ring.tech, true, 'the ring did not open on the rubble'); same(b.drill, true, 'nobody went to drill');
             });
-            check('the ice chip and a tap on the floor: the patch; the flux chip and a tap on a supply case: it flies to the player', () => {
-                same(b.frost, 9, 'the patch'); same(b.grab, true, 'the case did not fly');
+            check('the ice chip and a tap on the floor: the patch; the flux chip, a tap on a barrel, a tap on its grid and the prompt\'s ✓ PLACE: the barrel is there', () => {
+                same(b.frost, 9, 'the patch'); same(b.fluxPicked, 'barrel_5', 'the barrel not picked by a tap'); same(b.placeShown, true, '✓ PLACE not shown'); same(b.fluxMoved, true, 'the barrel did not move'); same(b.fluxAim, false, 'the aim stayed up');
             });
         }
     }

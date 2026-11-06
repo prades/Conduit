@@ -1546,3 +1546,26 @@ The owner had chosen "Keep on the branch" for Part 2 when its build began. After
 
 ### Impact
 Main carries the following update's Parts 1 and 2 and the Flux phase's first decisions (docs only). Part 2's readings (`OPEN-QUESTIONS.md` §3) stand as built, the owner's to confirm or change.
+
+## DECISION: FLUX MOVE, the name and the reach; the first build
+
+- **Date:** 2026-11-06
+- **Status:** Approved (the two answers). Build `2026-11-06f`: implemented and tested; not playtested.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-06f`.
+- **Related feature/docs:** `FLUX-MOVEMENT.md` (§9.1 the plan and what was built, §10, §11), `TECHNICIANS.md`, `SEWER-QUEST.md`, `OPEN-QUESTIONS.md` §1v (the readings), `CHANGELOG.md`
+
+### Context
+With the four answers of the first round given, the plan for the first build was written (`FLUX-MOVEMENT.md` §9.1). Two things the build needed were the owner's: the ability's name (Telegrab's chip said ✦ GRAB) and how "up to 2 tiles" is measured on a grid that walks in eight directions.
+
+### Decision
+- **The name:** "FLUX MOVE" (chip "✦ MOVE", in Telegrab's violet).
+- **The reach:** "Square": 2 tiles in any of the 8 directions, a diagonal counting as one step (a 5 × 5 area round a one-tile object).
+- **Built in `2026-11-06f`:** the tool in the arena (its nine loose objects), Telegrab retired and the Sewers' puzzle left with two routes, the save, the barrier's turned sprite; the defaults of `FLUX-MOVEMENT.md` §11 as proposed.
+
+### Alternatives considered
+- The name FLUX (chip ✦ FLUX).
+- A diamond reach (2 steps along the floor's lines, a diagonal counting as two).
+
+### Impact
+- The test room (`?fluxlab`) is the next build; Milestone Two (cover, sight and traversal as properties of their own) after it, designed with the owner once the tool can be tried.
+- The build's readings are listed for the owner in `OPEN-QUESTIONS.md` §1v.

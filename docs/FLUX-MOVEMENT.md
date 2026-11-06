@@ -1,6 +1,6 @@
 # The Flux Technician's object movement (replacing Telegrab)
 
-- **Status:** **Designed** (the owner's roadmap, `NEXT-PHASE-ROADMAP.md` §2, §3, §8, §9, §11). **Not built.** Registered with the roadmap as a future update, 2026-11-06.
+- **Status:** **Implemented and tested in the arena, build `2026-11-06f`** (FLUX MOVE; on the branch; not playtested). The test room (`?fluxlab`, §9.1 Build 2) and Milestone Two (cover, sight and traversal as properties of their own) are **not built**. Designed by the owner's roadmap (`NEXT-PHASE-ROADMAP.md` §2, §3, §8, §9, §11), registered as a future update on 2026-11-06 and started the same day.
   - This document holds the approved rules in brief, with the roadmap as their source, and **the study of the code** the owner asked for on 2026-11-06 ("do extensive work to understand the flux technician's new mechanic"): what the game already has for this tool, what it lacks, what would break, and what must be decided.
   - Nothing here is a decision unless it is quoted from the owner or the roadmap.
 - **Owner:** User (creative direction); agent (implementation support)
@@ -24,14 +24,14 @@ The roadmap (§1, §2.1): "establish a reusable environmental manipulation syste
 
 ## 3. Must-have requirements (from the roadmap's acceptance criteria)
 
-- [ ] Flux reliably selects, moves and rotates eligible objects; ineligible ones cannot be selected.
-- [ ] The standard 2-tile and authored 3-tile ranges are enforced, measured from the original spot, with no chaining.
-- [ ] One-tile and two-tile footprints validate as a whole; the two-tile placement is atomic.
-- [ ] Invalid placement and cancelling never change the object.
-- [ ] Collision, sight, cover and pathfinding update correctly after a move; actors are never left inside an object.
-- [ ] Enemies recover from a blocked route; no unintended permanent trap.
-- [ ] Repeated use does not accumulate range or destabilise pathfinding; save and load do not corrupt positions.
-- [ ] It is useful without trivialising every obstacle.
+- [x] Flux reliably selects, moves and rotates eligible objects; ineligible ones cannot be selected. *(Build `2026-11-06f`, the arena's nine; `tests/fluxmove.js`.)*
+- [x] The standard 2-tile range is enforced, measured from where the object stands at the start of each move, with no chaining. *(No object has the 3-tile exception: the owner has named none.)*
+- [x] One-tile and two-tile footprints validate as a whole; the two-tile placement is atomic.
+- [x] Invalid placement and cancelling never change the object.
+- [x] Collision and pathfinding update correctly after a move; actors are never left inside an object. *(Sight is as before: a moved object blocks sight as it blocks walking. Cover does not exist yet: Milestone Two.)*
+- [x] Enemies recover from a blocked route: every route in flight is dropped and planned again round the object; a place that would cut the floor in two is refused, so nobody is trapped. *(A unit with no way round waits where it is.)*
+- [x] Repeated use does not accumulate range or destabilise pathfinding; save and load do not corrupt positions.
+- [ ] It is useful without trivialising every obstacle. *(Needs playing; not playtested.)*
 
 ## 4. Non-goals
 
@@ -141,7 +141,33 @@ The neutral test room (§3.5) holds a one-tile, a two-tile, a rotatable, an immo
 
 ## 9. Implementation notes
 
-**Not built.** What a build would need, from the study (a plan to approve, not a decision):
+### 9.1 The first build's plan (2026-11-06, after the four answers of §11; a second read of the code on `claude/start-game-project-HSh7Z` after build `2026-11-06e`)
+
+**Build 1 is built (`2026-11-06f`); Build 2 is not.** Readings taken where nothing said are marked **[reading]**, for the owner (`OPEN-QUESTIONS.md` §1v lists them all).
+
+**Build 1: the tool, in the arena; Telegrab retired.** *Built in `2026-11-06f` as planned below.* What the code does:
+- `js/fluxmove.js`: the rules (`fluxObjects`, `fluxRegion`, `fluxCheck`, `_fluxSplits`, `fluxMoveTo`), the save (`fluxSnapshot`, `fluxApply`), the pick on the screen (`fluxPropAtScreen`) and the grid's drawing (`fluxGrid`, `fluxDrawAim`).
+- `js/facilityplay.js` `facilitySolidMove` (beside `facilitySolidOpen`): the transaction; `_fpCompsMoved` relabels the stretches of floor only where they changed (a cell that would join two stretches has them all labelled again); `_fpPropItems` builds one prop's draw pieces (the facility's start uses it too).
+- `js/facilitydecor.js` `facilityFloorRedo`: the floor of the changed cells built again exactly as the whole floor is built (`_fpFloorBuild` with `only`), checked equal to a full build after every move in the tests. A move costs about 4 ms in Node on a desktop (the floor 3 ms of it); the grid of one object about 5 ms.
+- `js/techabilities.js`: FLUX MOVE's row, its aim (`techFluxPick`, `techFluxTile`, `techFluxRotate`, `techFluxPlace`, `techFluxMoveAt`), its keys, INFO; Telegrab's code removed. `game.html`: ⟳ ROTATE and ✓ PLACE in the prompt bar.
+- `design/props/models/cargo.js`: the variant `barrier.1x2`, baked into `img/props/cargo.png` (every other sprite of the sheet unchanged, byte for byte).
+
+1. **Which objects:** the arena's loose crates (`crate_4`, `crate_5`, `crate_6`, and the crate stack `crate_stack_3` **[reading: a stack of crates is crates]**), barrels (`barrel_5` to `barrel_7`) and barriers (`barrier_1`, `barrier_2`, two tiles each), with a `flux` field in `FACILITY_MAP.props` (its range, and whether it turns). Nothing else moves; every other object says it does not move when tapped.
+2. **The rules** (a new file, `js/fluxmove.js`): the destination's every tile must be within 2 tiles of the object's footprint as it stands at the start of that move (so moves never add up), diagonals counting as one step (the owner: "Square": a 5 × 5 area round a one-tile object); in the object's own room, on floor, at the room's own height; not on a doorway's floor or its arrival spot, a launcher site, a rubble work spot, a follower spot, an item or capsule on the floor, or the Crystal; under no body (the player, a follower, a clone, a creature); and not cutting the walkable floor in two (§11: refused, so every room stays reachable). Checked again at the moment it is placed, since bodies move.
+3. **One move in the map** (`facilitySolidMove`, beside `facilitySolidOpen` in js/facilityplay.js): one transaction. Both map copies' outlines and bucket indexes, the walkable cells, the floor tiles and their paint for the changed cells only, the object's draw pieces and sprite caches, and the route caches are updated together. The stretches of floor are relabelled only where they changed (a full relabel costs 52 to 84 ms on a desktop). Every route in flight is dropped, so units replan round the object; a unit with no way round waits, as §11 says.
+4. **The ability:** **FLUX MOVE**, chip "✦ MOVE" (the owner's choice of name), in Telegrab's violet: the flux technician's chip runs the tool instead of Telegrab. Tap the chip, then an object (the movable ones are outlined); the grid shows the 2-tile allowance, valid and invalid tiles and the object's footprint; a tap on a tile shows the object there (a two-tile object's second tile flashing); ⟳ ROTATE (R) turns a barrier; ✓ PLACE (Enter) places it; ✕ CALL OFF, Escape or the chip again leave it where it was. The 60 s cooldown starts when it is placed, through the existing cooldown path (the cooldown cards and DOUBLE CHARGE apply). **[reading: like Telegrab, the object need only be on the screen; the technician need not see it.]**
+5. **Turned art:** the barrier's turned sprite (two tiles along the other axis), baked from its own model (design/props/models/cargo.js). The crates and barrels are one tile: turning them changes nothing, so ⟳ ROTATE is shown only for the barriers.
+6. **Telegrab retired:** its code, drawing, INFO and chip; the Sewers' water-sample puzzle keeps two routes (the launcher, the drill); an old save's puzzle record saying "telegrab" still loads.
+7. **The save:** an optional key, `moved` (each moved object's place and turn), put back before the player's spot; a malformed or impossible entry is ignored (the object stays where it was authored). NEW GAME puts everything back.
+8. **Tests:** a new suite (`tests/fluxmove.js`); the suites that pin Telegrab moved to the tool (`tests/techlevel1.js`, `tests/sewerquest.js`, `tests/series2.js`, `tests/series2abilities.js`, `tests/bible.js`).
+
+**Build 2: the test room (`?fluxlab`).** A room of its own, in its own part of the map, added only when the address carries `?fluxlab` (the normal game's map is unchanged). In it: a one-tile and a two-tile movable object, a turnable one, an immovable one, a narrow passage, an objective behind an obstruction, a few creatures, and a doorway back. The cover-giving object waits for Milestone Two: no cover exists in the game today (§6.2).
+
+**Then Milestone Two** (cover, sight and stepping-over as properties of their own) is designed with the owner once the tool can be tried.
+
+### 9.2 The study's list
+
+What a build would need, from the study (a plan to approve, not a decision):
 1. **Data:** per-prop fields in `FACILITY_MAP.props` for movable, rotatable and range; the footprint read from the cells a prop covers; sight, cover and passability as fields of their own (new behaviour: today all three are "solid").
 2. **One move in the map:** a transactional `move` beside `facilitySolidOpen`: validate (range from the original, footprint, rooms and heights, bodies, the floor's connectivity), then update both map copies and both bucket indexes, remove the newly covered cells and add the freed ones (and replace the world's tile list rather than splice it, for the append-only column index), clear the route and spawn caches, drop routes in flight that cross the footprint, rebuild the prop's draw items (keeping a sentry's state) and the floor under the vacated cells. The reverse of `facilitySolidOpen` does not exist and would be part of this.
 3. **The aim:** two new aim kinds (an object, then a place), the grid drawn from a cached set of valid tiles, rotate and confirm controls, the chip's states and INFO; Telegrab's block, tick, item aim and INFO removed in the same change.
@@ -154,7 +180,10 @@ The neutral test room (§3.5) holds a one-tile, a two-tile, a rotatable, an immo
 
 | Check | Result | Evidence / notes |
 |---|---|---|
-| The tool | Not built | — |
+| The tool's rules, the transaction, the save | Implemented and tested (build `2026-11-06f`) | `tests/fluxmove.js`, 23 checks: what moves; the square reach measured from where it stands; the footprint; the kept spots; bodies (shown and at the moment of placing); the floor never cut in two, checked against the map itself on the Sewers' ledge; after every move the map equal to one built afresh (paint, cells, world, draw pieces, stretches, index), twelve moves in a row; routes planned again; cancelling; the wait; the save (a moved object back on load, turned; bad entries ignored; an old save); the turned sprite; Telegrab gone |
+| The ability in the real page | Tested (build `2026-11-06f`) | `tests/fluxmove.js` in headless Chromium at 1180 × 820 and 390 × 844: the chip, a tap on a barrier, the grid in violet, ⟳ ROTATE, ✓ PLACE, R, Enter, Escape, the bar fits; `tests/techlevel1.js` (the flux chip in a squad of three, a barrel moved through the prompt) |
+| Telegrab's removal | Tested | `tests/sewerquest.js` (two routes; the old record loads), `tests/series2.js` and `tests/series2abilities.js` (the cooldown cards and DOUBLE CHARGE on FLUX MOVE), `tests/bible.js` |
+| Played by a person | Not done | — |
 | The study's claims | Checked against the code | four read-only audits; the stale bucket index and the sealed doors reproduced by re-running their probes (scratch scripts, not in the repo) |
 
 ## 11. Open questions (the owner's)
@@ -164,6 +193,10 @@ The neutral test room (§3.5) holds a one-tile, a two-tile, a rotatable, an immo
 2. **Where it works first:** "Test room + arena". A small neutral test room reached only by a link flag (`?fluxlab`) proves every rule; the arena's loose crates, barrels and barriers become movable in normal play.
 3. **The cost:** "60 s cooldown", as every technician ability; the cooldown cards and DOUBLE CHARGE work on it as they do today.
 4. **The controls:** "Prompt buttons". ⟳ ROTATE and ✓ PLACE in the aim's prompt bar (R and Enter on a keyboard); a tap on the grid picks the destination.
+
+**Answered 2026-11-06, a second round** (`DECISION-LOG.md`):
+5. **The name:** "FLUX MOVE" (chip "✦ MOVE").
+6. **The reach's shape:** "Square": 2 tiles in any of the 8 directions, diagonals counting as one step.
 
 **Proposed for the first build, standing unless the owner says otherwise** (each to be reviewed when the tool can be tried, as the roadmap's §9 asks):
 - **Persistence:** a moved object stays where it was put for the run, saved with the game; NEW GAME puts everything back.
@@ -192,3 +225,5 @@ Found by the study:
 ## 12. History
 
 - 2026-11-06: the owner's roadmap (PR #19, `NEXT-PHASE-ROADMAP.md`) set the design; the owner asked for this study and registered the roadmap as a future update (`DECISION-LOG.md`). Written from four code audits on build `2026-11-06a`.
+- 2026-11-06: the owner chose the Flux phase and answered §11's questions (two rounds); §9.1's plan was written from a second read of the code.
+- 2026-11-06, build `2026-11-06f`: Build 1 built (FLUX MOVE in the arena; Telegrab retired).

@@ -189,7 +189,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 | HORNSHELL | Mage · core | Projectile (horn spines) | none yet |
 | ROTSHARD | Mage · toxic | Projectile (rot shards) | CORRODE SHOT: Elemental |
 | HAMMER SLUG | Technician · core | Crushing (hammer) | PHOTONIC SHIELD: no damage |
-| GOO PROXY | Technician · flux | Crushing (goo slam) | TELEGRAB: no damage |
+| GOO PROXY | Technician · flux | Crushing (goo slam) | FLUX MOVE: no damage (it moves objects; Telegrab, retired 2026-11-06, did none either) |
 | THERMITE BURROWER | Technician · fire | Piercing (BURROW STRIKE: it dives, travels under the floor and erupts beneath the enemy, 2 × its plain hit; build `2026-11-06a`) | THERMITE DRILL: Piercing; FAULTLINE (a path the player draws, spikes along it): Piercing |
 | BLIGHT SPIDER | Technician · toxic | Piercing (fangs) | BLIGHT pools: Elemental |
 | HOVER SHELL | Technician · electric | Crushing (ram) | KINETIC LAUNCHER: Earthquake (the landing) |

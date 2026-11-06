@@ -14,11 +14,11 @@ What was a `collapse` wall decoration on the north ledge is a **collapsed tunnel
 
 ## The puzzle (`js/puzzles.js`)
 
-`PUZZLES.sewer_sample` is data: the objects it is made of (by map id), its three solutions, and an **interaction contract** for each step a solution uses: who does it, through which function of the game (`fns`: the names, which the tests check exist), what it needs, the refusals it gives word for word, what it does, and what a retry means. The puzzle has no logic of its own: the technicians' abilities, the pickups and the floor are the game's. `puzzleState(id)` reads the world: `{ solved, how, solvedAt, sampleTaken, chokeOpen, launcherUp, inside, up }` (`inside`: a follower waiting on the floor beyond the choke; `up`: the player is on it while the choke is shut); the solve and how it was done are a record (`_fp.puzzles`, saved as `puzzles`) and are copied into the quest line (`puzzleHow`: `telegrab`, `ride` or `drill`).
+`PUZZLES.sewer_sample` is data: the objects it is made of (by map id), its solutions (two since build `2026-11-06f`), and an **interaction contract** for each step a solution uses: who does it, through which function of the game (`fns`: the names, which the tests check exist), what it needs, the refusals it gives word for word, what it does, and what a retry means. The puzzle has no logic of its own: the technicians' abilities, the pickups and the floor are the game's. `puzzleState(id)` reads the world: `{ solved, how, solvedAt, sampleTaken, chokeOpen, launcherUp, inside, up }` (`inside`: a follower waiting on the floor beyond the choke; `up`: the player is on it while the choke is shut); the solve and how it was done are a record (`_fp.puzzles`, saved as `puzzles`) and are copied into the quest line (`puzzleHow`: `telegrab`, `ride` or `drill`).
 
-**Three ways, each on its own** (one technician, one ability; no two needed together):
+**Two ways, each on its own** (one technician, one ability; no two needed together). There were three until build `2026-11-06f`:
 
-- **A, Telegrab** (the flux technician). From the ledge the vial is on the screen, so the chip takes it (`techItemAtScreen`, `techAbilityUse(tech, { item })`): it flies over the rubble to the player's feet and the pickup takes it, once.
+- ~~**A, Telegrab** (the flux technician)~~ *Removed with Telegrab* (the owner, 2026-11-06: "Retire it now"; `FLUX-MOVEMENT.md`). Its row and its contract are gone from the table; the letters B and C are kept. A game saved with the puzzle solved this way still loads: its record (`how: "telegrab"`) is kept as it is and read as no row of the table. The flux technician's FLUX MOVE moves the arena's objects and fetches nothing.
 - **B, the launcher** (the electric technician). It sets a Kinetic Launcher up on the ledge by the mouth (`techSiteSetup`). **The launcher carries you**: tap its tag once for its aim and again to ride it (`techSiteRide`): you walk to the pad and are thrown the same arc a follower flies (in the air nothing else moves you and no wall or solid stops you: `facilityPlayerStep` steps `techFlightStep` and the draw lifts you), and land on the floor beyond the choke. Walk to the vial and take it. The way back is the floor's **broken edge** (▼ JUMP DOWN on its tag, `techSiteDrop`): you walk to it and drop to the ledge by the launcher, one way; the launcher is the way back up. Followers may be sent over too (`techSiteLaunch`, anyone): one lands and **waits there for you** (`_pocketHold`, still a squad member) until you are up there too, the way is open, or it is called (COME) or ordered; up there without you, it drops from the broken edge after you (`_techDropScan`). The ride is refused, and says why, when there is no launcher yet, the launcher is in use, you are up there already, you are in the air or in a doorway, or there is no way to the pad; a walk elsewhere calls it off, and so does not reaching the pad in 8 s. The arena's site throws followers only ("IT THROWS FOLLOWERS ONLY").
 - **C, the drill** (the fire technician). Press and hold the choke and pick THERMITE DRILL (`techRingAct`): the fire technician walks to the work spot **on the ledge** and drills six hits a second apart; the sixth opens the choke's solid for good (`facilitySolidOpen`): the floor joins the ledge, three rocks lie in front of the pile, and everyone walks in. Nothing else is needed. (The old refusal from outside, "IT IS DRILLED FROM INSIDE …", belongs to a choke with `inside: true`; none is so now.) With the way open the broken edge is just floor: the jump is refused ("THE WAY DOWN IS OPEN · WALK").
 
@@ -29,7 +29,7 @@ The game's quest system is the tutorial director (`js/tutorial.js`): steps with 
 | State | Marked when | Where |
 |---|---|---|
 | `discoveredAt` | the player is within `discoverNear` (6 tiles) of the outfall in the Sewers ("◈ WATER-QUALITY READING: TOXIC …") | `questTick` |
-| `puzzleAt`, `puzzleHow` | the puzzle's record says solved (`telegrab` / `ride` / `drill`) | `questTick` ← `puzzleState` |
+| `puzzleAt`, `puzzleHow` | the puzzle's record says solved (`ride` / `drill`; an older save may say `telegrab`) | `questTick` ← `puzzleState` |
 | `samplesAt` | three TOXIC ANT SAMPLES and the WATER SAMPLE are in the pack | `questTick` |
 | `turnedInAt` | the ANALYSIS BENCH (the cabinet at the Experiment Lab's west end, `st_analysis_bench`) took all four (ANALYSE) | `questBenchUse` |
 | `moduleAt` | the bench sold the PURIFICATION MODULE for **◆300** (refused with fewer; once; `QUEST_PURIFY.modulePrice`: the brief's 800 until build `2026-11-01a`, 300 since, at the owner's word) | `questBenchUse` |
@@ -88,7 +88,7 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 - **A guard the design must keep:** the install checks only that the module is in hand (`questMountCan`), and her encounter starts only when the gate opens (`questGateUse` → `bossArm`). An ice bridge onto the dam with the gate shut would let the module go in with no Queen. A 2-tile span round the gate's north end would also skip the gate.
 - **Open:** where she sits, whether the bridge is the only way to her, and whether she and the brood may cross it.
 - **The stealth section** once planned for the Sewers is removed (the owner: "We don't need to add stealth to the game").
-- **Telegrab is retired in the design**, which takes route A from the sample puzzle when the Flux object movement replaces it (`FLUX-MOVEMENT.md`).
+- **Telegrab is retired** (build `2026-11-06f`), and route A of the sample puzzle with it (above).
 
 ## Side Quest and the Sleeping Potion (`js/sidequest.js`, `js/potion.js`)
 
@@ -116,7 +116,7 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 ## What a player does, in order
 
 1. Go down the culvert behind the arena's north tank. The reading comes as you arrive (your note in the dialogue box): PURIFY THE SEWERS 1/5 in the QUESTS box.
-2. Kill the toxic ants (three samples; ten kills in all before Side Quest comes) and get the water sample from the collapsed tunnel's broken-off floor, any one way: a flux technician's Telegrab from the ledge; an electric technician's launcher by the mouth, which you ride over (tap its tag twice), take the vial, and jump back down from the broken edge; or a fire technician drilling the choke through from the ledge, and you walk in.
+2. Kill the toxic ants (three samples; ten kills in all before Side Quest comes) and get the water sample from the collapsed tunnel's broken-off floor, either way: an electric technician's launcher by the mouth, which you ride over (tap its tag twice), take the vial, and jump back down from the broken edge; or a fire technician drilling the choke through from the ledge, and you walk in.
 3. Take the four to the analysis bench, the cabinet at the west end of the Experiment Lab: ANALYSE, then BUY THE PURIFICATION MODULE ◆300.
 4. Back down: once the samples are in and ten ants are dead, the maintenance platform off the north ledge is open and Side Quest calls you over: talk, promise or not, buy the SLEEPING POTION ◆100 and EQUIP it in the pack.
 5. The boss gate at the east end of the south ledge (the service bridge crosses to it from the north ledge's east end) opens for the module, onto the causeway into THE NEST. The queen sleeps beside the console on the trash dam.

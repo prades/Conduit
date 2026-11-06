@@ -186,7 +186,7 @@ function facilityClassItemsEnter(classId) {
     return n;
 }
 function _fpDrawPickup(it) {
-    if (it.taken || it.grab) return;   // (one flying to the player on a flux technician's Telegrab is drawn in the air: js/techabilities.js)
+    if (it.taken) return;
     const f = _fpFrame(), first = it.items[0][0], d = typeof itemDef === "function" ? itemDef(first) : null, col = d ? d.col : "#ffe9a0", bob = Math.sin(f * 0.06 + it.seed) * 3, A = FP_PAL;
     if (it.rock) {   // a rock from the drilled rubble (js/techabilities.js): a rough lump on the floor, not a case
         const c = _fpP(it.x, it.y, 0), s = 9; ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(c[0], c[1], s * 1.3, s * 0.55, 0, 0, 6.2832); ctx.fill();
