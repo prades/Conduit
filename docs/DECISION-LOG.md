@@ -1327,3 +1327,30 @@ Two pieces were put to the owner:
 - The storm clouds are drawn and on the design canvas, on FOCUSING PRISM and behind FROST MAW and THUNDERHEAD. On a follower they are laid once, at their own size.
 - They wait on the owner's yes.
 - The crystal clusters (commit 1b764a5) are superseded and kept in git as the record.
+
+## DECISION: Part 2's gate 2: the elemental's storm clouds approved
+
+- **Date:** 2026-11-06
+- **Status:** Approved (designed, not built). Gate 2 stays open for the drone and jelly textures and the five other race emblems.
+- **Branch/build:** mockups at commit f2eda48 on `claude/start-game-project-HSh7Z`; the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3, the entry before this one
+
+### Context
+The elemental texture was redrawn as storm clouds at the owner's direction. It was shown:
+- on FOCUSING PRISM, in prism white;
+- behind FROST MAW and THUNDERHEAD, in each follower's element colour.
+
+### Decision
+- "Approve as drawn".
+
+### Alternatives considered
+- More stormy (darker, heavier).
+- Fainter.
+
+### Impact
+- Approved for gate 2:
+  - three textures (crustacean, mollusk, elemental);
+  - the five species emblems and the six element emblems;
+  - the ant emblem and the enemy row's short words;
+  - the drone and jelly themes as written.
+- Next, for a yes: the drone texture (GUNMETAL, machined panels). After it: the jelly texture, then the five other race emblems.

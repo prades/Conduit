@@ -133,7 +133,8 @@ Each part is its own commit, with its own tests and a full green run before the 
   - **Approved:** "Approve as drawn" (the sheen) and "Approve all four" (the emblems).
 - **The elemental texture and the element emblems** were drawn (crystal growth) and put on the design canvas, in a row above the mollusk's.
   - The emblems: "Approve all five".
-  - The texture: "New cloud texture is puffy and stormy no repreating icons". It is redrawn as storm clouds and waits on the owner's yes.
+  - The texture: "New cloud texture is puffy and stormy no repreating icons". It was redrawn as storm clouds: "Approve as drawn".
+- **Next:** the drone texture (GUNMETAL, machined panels), then the jelly's, then the five other race emblems, each for a yes.
 
 **Then the build:**
 - the species textures on species cards and follower cards;
