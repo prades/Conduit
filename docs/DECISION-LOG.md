@@ -1298,3 +1298,32 @@ Two pieces were put to the owner:
 - Next, each for a yes: the elemental texture (PRISM WHITE), and the element emblems (toxic, electric, ice, flux, core).
 - After those: the drone and jelly textures, the five other race emblems, BLOOM's when it comes.
 - Nothing is built until gate 2 closes.
+
+## DECISION: Part 2's gate 2: the element emblems approved; the elemental texture becomes storm clouds
+
+- **Date:** 2026-11-06
+- **Status:** The element emblems are approved (designed, not built). The storm clouds are drawn and wait on the owner's yes.
+- **Branch/build:** mockups on `claude/start-game-project-HSh7Z` (the commit after 1b764a5); the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3, the entries before this one
+
+### Context
+Two pieces were put to the owner:
+- the elemental texture as written in the theme, crystal growth (clusters of prisms, rising motes);
+- the five other element emblems (toxic bubbles, electric bolt, ice snowflake, flux vortex, core hexagon cell).
+
+### Decision
+- **The element emblems:** "Approve all five". The element set of six is complete.
+- **The elemental texture:** "New cloud texture is puffy and stormy no repreating icons". This replaces the theme's written motif (crystal growth) with storm clouds:
+  - puffy and stormy;
+  - continuous, with no repeated motif.
+- Unchanged, as they were not addressed:
+  - the theme's colour and name (PRISM WHITE);
+  - its rule that a follower shows it in its element's colour.
+
+### Alternatives considered
+- The crystals: fainter; prism white on followers too.
+
+### Impact
+- The storm clouds are drawn and on the design canvas, on FOCUSING PRISM and behind FROST MAW and THUNDERHEAD. On a follower they are laid once, at their own size.
+- They wait on the owner's yes.
+- The crystal clusters (commit 1b764a5) are superseded and kept in git as the record.

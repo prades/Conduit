@@ -83,7 +83,8 @@ The owner: "We also need to make themes for the different species and give textu
   - the four other themes as written ("They stand");
   - the mollusk texture, a pearly sheen ("Approve as drawn"; after "I'm not big on it" of a first try, then "Mollusk: pearly sheen");
   - the four other species emblems ("Approve all four").
-- **Drawn, waiting on a yes** (2026-11-06): the elemental texture (crystal growth), and the five other element emblems.
+- **Approved:** the five other element emblems ("Approve all five").
+- **Drawn, waiting on a yes** (2026-11-06): the elemental texture as storm clouds. The owner, of a first try with crystal clusters: "New cloud texture is puffy and stormy no repreating icons".
 - **Still to draw, each for a yes:** the drone and jelly textures, one at a time, and the five other race emblems. Then the build.
 - The block below is the current proposal. The earlier rounds are at its end.
 - **Where to see it:** the Part 2 boards on the design canvas "Conduit 3D card concepts": the approved crustacean row, and above it the mollusk and the species emblems. The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
@@ -95,7 +96,7 @@ The owner: "We also need to make themes for the different species and give textu
 |---|---|---|---|---|
 | Crustacean | CHITIN AMBER `#e7ad78` | A crab shell's bumpy crust: rounded knobs packed close in patches, fine granules between. Each knob is a low matte dome with a shadow where it rises from the shell. Small and faint | A crab | The texture and the icon: **approved** |
 | Mollusk | NACRE `#e3d6ff` | A pearly sheen, as the inside of a shell: soft bands of mother-of-pearl (pale pink, lilac, sky, mint, a little gold), each with a paler core where the light catches, fine wavy growth lines running with them and two soft glows of lustre. No shells drawn. Faint | A spiral (snail) shell | The texture and the icon: **approved** |
-| Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: little clusters of crystal prisms fanning up from their roots, small diamond motes rising between them. Small and faint. On a card in PRISM WHITE; on a follower in its element's colour | A cluster of prisms | The icon: **approved**; the texture: for a yes |
+| Elemental | PRISM WHITE `#f2f7ff` | Storm clouds, puffy and stormy (the owner's direction): banks of billowing puffs on flat cloud bases at uneven heights, a dimmer back row, soft dark bands under the bases, broad dark storm masses, a few wisps and two faint glows inside. No motif is repeated. Faint. On a card in PRISM WHITE; on a follower in its element's colour | A cluster of prisms | The icon: **approved**; the texture: for a yes |
 | Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | The icon: **approved** |
 | Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | The icon: **approved** |
 
@@ -106,9 +107,9 @@ The owner: "We also need to make themes for the different species and give textu
   - Today such a card wears no texture and the class cards' cyan.
 - **On a follower** (shown on QUILLSTONE and SEEPER, VOIDSTAR and HAMMER SLUG, FROST MAW and THUNDERHEAD):
   - the species' texture is a third layer, over the element's and the class's, in the species' colour at 38%, so the element and the class still lead;
-  - the crust and the elemental's crystals are drawn at half their size on a card (the drawing twice across the 300 × 175 band);
-  - the elemental's crystals take the follower's element colour (shown on FROST MAW in ice blue and THUNDERHEAD in yellow);
-  - the mollusk's sheen is laid once at its own size, since a broad sheen laid twice across would show a seam;
+  - the crust is drawn at half its size on a card (the drawing twice across the 300 × 175 band);
+  - the mollusk's sheen and the elemental's clouds are laid once at their own size, since a broad texture laid twice across would show a seam;
+  - the elemental's clouds take the follower's element colour (shown on FROST MAW in ice blue and THUNDERHEAD in yellow);
   - on a flux mollusk (VOIDSTAR) the sheen sits over FLUX's vortex and is hardest to see;
   - the roster's subclass tag carries the icon.
 - **The icons:** flat, one-colour emblems in the manner of Super Smash Bros.' series symbols (the owner's reference). They are our own drawings, not that game's symbols.
@@ -123,7 +124,7 @@ The owner: "We also need to make themes for the different species and give textu
     - the crystal cluster: three prisms from one root, each front edge cut;
     - the drone: a round body, a visor with one eye, two antennae, two feet;
     - the jellyfish: a bell with a scalloped rim, four tendrils, a sheen cut into the bell.
-  - Drawn, for a yes (the other five elements):
+  - Approved (the other five elements, "Approve all five"):
     - TOXIC: four bubbles, a glint cut into each of the two big ones;
     - ELECTRIC: a bolt;
     - ICE: a snowflake, six arms with twigs round a small hexagon;
@@ -148,6 +149,7 @@ The owner: "We also need to make themes for the different species and give textu
     - sticker icons after Persona 5: a black ink edge, a white edge, a solid shadow knocked off to the lower right, tilted.
     - The owner: "The design needs to be fainter, and I do not like the direction of the icons. Just make it like Super Smash Bros. Actually."
   - **The mollusk's first try** (not committed): little coiled shells (ammonites) with ribs across their whorls, over fine wavy nacre lines. The owner: "I'm not big on it", then "Mollusk: pearly sheen".
+  - **The elemental's first try** (commit 1b764a5): little clusters of crystal prisms fanning up from their roots, with small diamond motes rising, at half size on a follower. The owner: "New cloud texture is puffy and stormy no repreating icons".
 
 How it is built: each picture is a small standalone SVG used as a CSS background (a data: URL, made once), through a class js/cardart.js writes into one `<style id="cardArtCss">` the first time it is wanted: `cat-c-<texture>` an equip card's face, `cat-f-<element>-<class>` a follower's backdrop, `cag-<colour>` the crystal, `cac-<colour>` the cube, each setting one CSS variable (`--tex` or `--gem`). The css lays `var(--tex)` under its veils (game.html: the block "THE 3D CARDS", and each follower card's background). The crystal and the cube are drawn already turned (the canvas's turns), so a card has no 3D parts of its own.
 

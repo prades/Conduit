@@ -74,31 +74,37 @@
             + '<g fill="url(#moL)"><ellipse cx="96" cy="120" rx="120" ry="90"/><ellipse cx="220" cy="318" rx="110" ry="84"/></g>'
             + '<g fill="none" stroke="currentColor" stroke-opacity=".1" stroke-width=".55">' + lines + "</g></g>";
     }
-    // THE ELEMENTAL TEXTURE (proposed after the mollusk's approval, 2026-11-06; the theme as written: "crystal growth: clustered prisms and rising motes; on a follower it takes its element's colour").
-    // Little clusters of crystal prisms, each cluster fanning up from one root, and small diamond motes rising between them. One prism is drawn once and laid many times (turned and sized), its lines
-    // keeping their width. Small and faint, as the crust and the sheen are.
+    // THE ELEMENTAL TEXTURE (round 2, 2026-11-06; the owner, of a first try with little crystal clusters: "New cloud texture is puffy and stormy no repreating icons"): storm clouds. Banks of
+    // billowing puffs piled on flat cloud bases, a back row dimmer than the front, a soft dark band under each base, a few broad wisps swirling through, two faint glows lit inside the cloud. No motif
+    // is repeated: every puff has its own size and place. Faint, as the crust and the sheen are. On a follower it takes its element's colour (the theme as written).
     function elemental() {
-        seed = 57;
-        const W = 300, H = 420, roots = [];
-        for (let t = 0; t < 3000 && roots.length < 27; t++) {
-            const x = -8 + rnd() * (W + 16), y = 10 + rnd() * (H + 6);
-            if (roots.every(q => Math.hypot(q.x - x, q.y - y) > 42)) roots.push({ x, y });
-        }
-        let laid = "", motes = "";
-        roots.forEach(q => {
-            const n = 4 + Math.floor(rnd() * 5), lean = (rnd() - .5) * 30;
-            for (let i = 0; i < n; i++) {
-                const a = lean + (i - (n - 1) / 2) * (100 / n) + (rnd() - .5) * 12, k = R(3.2 + rnd() * 3.6) * (i === Math.floor(n / 2) ? 1.35 : 1);
-                laid += '<use href="#elP" transform="translate(' + Math.round(q.x + (rnd() - .5) * 6) + " " + Math.round(q.y) + ") rotate(" + Math.round(a) + ") scale(" + R(k) + ')"/>';
+        seed = 61;
+        const W = 300;
+        let back = "", front = "", bases = "", dark = "", wisps = "";
+        for (let b = 0, y0 = 22; y0 < 450; b++, y0 += 40 + rnd() * 36) {   // banks at uneven heights, each a little tilted
+            const near = rnd() < .55, tilt = (rnd() - .5) * .12, puffs = [];
+            for (let x = -40 + rnd() * 24; x < W + 40;) {
+                const r = (near ? 11 : 15) + rnd() * (near ? 19 : 24), by = y0 + tilt * (x - 150);
+                puffs.push('<circle cx="' + Math.round(x) + '" cy="' + Math.round(by - r * .5 + (rnd() - .5) * 8) + '" r="' + Math.round(r) + '"/>');
+                x += r * (.45 + rnd() * .35);   // puffs overlap, so a bank reads as one billow, not a row of balls
             }
-        });
-        for (let i = 0; i < 46; i++) { const x = rnd() * W, y = rnd() * H, m = .8 + rnd() * 1.4; motes += "M" + R(x) + " " + R(y - m * 1.6) + "l" + R(m) + " " + R(m * 1.6) + "l" + R(-m) + " " + R(m * 1.6) + "l" + R(-m) + " " + R(-m * 1.6) + "z"; }
-        return '<defs><g id="elP"><path d="M0 -3.4L.55 -2.75L.55 -.3L0 0L-.55 -.3L-.55 -2.75Z" fill="currentColor" fill-opacity=".09" stroke="currentColor" stroke-opacity=".38" stroke-width=".8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'
-            + '<path d="M0 -3.3L0 -.1" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width=".7" vector-effect="non-scaling-stroke"/></g></defs>'
-            + '<g id="elAll">' + laid + '<path fill="currentColor" fill-opacity=".3" d="' + motes + '"/></g>';
+            if (near) front += puffs.join(""); else back += puffs.join("");
+            bases += '<rect x="-20" y="' + Math.round(y0 - 8) + '" width="340" height="30" transform="rotate(' + R(Math.atan(tilt) * 180 / Math.PI) + ' 150 ' + Math.round(y0) + ')"/>';
+        }
+        for (let k = 0; k < 5; k++) dark += '<ellipse cx="' + Math.round(rnd() * W) + '" cy="' + Math.round(rnd() * 420) + '" rx="' + Math.round(60 + rnd() * 60) + '" ry="' + Math.round(30 + rnd() * 26) + '"/>';
+        const sweep = (y0, amp, half, tilt) => { let d = "M-40 " + R(y0) + "Q" + R(-40 + half / 2) + " " + R(y0 - amp) + " " + R(-40 + half) + " " + R(y0 + tilt * half); for (let x = -40 + 2 * half; x <= W + 40 + half; x += half) d += "T" + R(x) + " " + R(y0 + tilt * (x + 40)); return d; };
+        for (let k = 0; k < 4; k++) wisps += '<path d="' + sweep(40 + k * 110 + (rnd() - .5) * 30, 14 + rnd() * 12, 90 + rnd() * 50, -.12 + rnd() * .1) + '" stroke-width="' + Math.round(16 + rnd() * 14) + '"/>';
+        return '<defs><radialGradient id="clF" cx=".45" cy=".42" r=".6" fx=".4" fy=".26"><stop offset="0" stop-color="currentColor" stop-opacity=".18"/><stop offset=".5" stop-color="currentColor" stop-opacity=".085"/><stop offset=".78" stop-color="currentColor" stop-opacity=".02"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient>'
+            + '<radialGradient id="clB" cx=".45" cy=".42" r=".6" fx=".4" fy=".28"><stop offset="0" stop-color="currentColor" stop-opacity=".1"/><stop offset=".6" stop-color="currentColor" stop-opacity=".04"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient>'
+            + '<linearGradient id="clS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".35" stop-color="#000" stop-opacity=".14"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>'
+            + '<radialGradient id="clD"><stop offset="0" stop-color="#000" stop-opacity=".16"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>'
+            + '<radialGradient id="clL"><stop offset="0" stop-color="#ffffff" stop-opacity=".07"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient></defs>'
+            + '<g id="clAll"><g fill="url(#clB)">' + back + '</g><g fill="url(#clD)">' + dark + '</g><g fill="url(#clS)">' + bases + '</g><g fill="url(#clF)">' + front + "</g>"
+            + '<g fill="url(#clL)"><ellipse cx="78" cy="150" rx="70" ry="46"/><ellipse cx="228" cy="318" rx="64" ry="42"/></g>'
+            + '<g fill="none" stroke="currentColor" stroke-opacity=".04" stroke-linecap="round">' + wisps + "</g></g>";
     }
-    const TEX = { crustacean, mollusk, elemental }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll", elemental: "elAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
-    const TEX_HALF = { crustacean: true, elemental: true };
+    const TEX = { crustacean, mollusk, elemental }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll", elemental: "clAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
+    const TEX_HALF = { crustacean: true };
     const TEX_ELEMENT_COLOUR = { elemental: true };   // on a follower, laid in its element's colour (the theme as written), not the species' own   // laid at half size on a follower (the crust, "Smaller texture"); the others once, at their own size (a broad sheen laid twice across would show a seam)
 
     // THE THEMES (proposed, for the owner): a colour and a motif each. Element colours (fire, electric, ice, flux, core, toxic, BLOOM's pink) and the class cyan are taken, so a species is a MATERIAL, not a hue.
@@ -106,7 +112,7 @@
     const THEMES = {
         crustacean: { col: "#e7ad78", name: "CHITIN AMBER", motif: "a crab shell's bumpy crust: rounded knobs packed close, fine granules between, drawn small" },
         mollusk:    { col: "#e3d6ff", name: "NACRE",        motif: "a pearly sheen: soft mother-of-pearl bands with fine growth lines, faint (the owner: \"Mollusk: pearly sheen\")" },
-        elemental:  { col: "#f2f7ff", name: "PRISM WHITE",  motif: "crystal growth: clustered prisms and rising motes; on a follower it takes its element's colour" },
+        elemental:  { col: "#f2f7ff", name: "PRISM WHITE",  motif: "storm clouds, puffy and stormy, no repeating motifs (the owner); on a follower it takes its element's colour" },
         drone:      { col: "#b6c4d6", name: "GUNMETAL",     motif: "machined panels: seams, rivets and vent slats" },
         jelly:      { col: "#e39cff", name: "GEL ORCHID",   motif: "soft membrane cells with nuclei, a gel's wobble" },
     };
