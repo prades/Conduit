@@ -11,13 +11,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
     - and the rest of their kind **[reading]**: CORRODE SHOT, CHOMP, ERUPTION, GRAVITY SLAM, SONIC ROLL's shocks, CHAIN LIGHTNING's jumps.
     With none in sight the move is not used and stays ready. What a strike reaches beyond its target is only what can be seen from where the strike comes: jumps, splashes, pulls, slows, areas, a burning circle's or a storm's bite, and the equip cards' NOVA, CLEAVE and CHAIN. Cover still does not stop them (they do not travel).
   - **SONIC ROLL's dash** needs a straight walk to where it ends, as PINBALL's roll does: it never dashes through a wall or over an object (stepping over is "Not yet").
-  - **The roster's strip:** a name of 17 characters or more (ELECTRIC TECHNICIAN, THERMITE BURROWER: the two that were cut) is set at 8.6 px instead of 10 on the carousel's strip only, so every name fits whole at 1180 px wide.
+  - **The roster's strip:** every name is whole on the carousel's strip: a name too wide for its card is set in smaller type, only as much as it needs (10 px otherwise). ELECTRIC TECHNICIAN and THERMITE BURROWER shrink as the strip fills, to about 7.2 px on a card's narrowest (118 px); on a full strip six shorter names (CORE TECHNICIAN, ELECTRIC BRAWLER, SCORPION CLONE and others) shrink a little too. (At first a fixed 8.6 px for names of 17 characters or more, which still cut them once the strip was full.)
   - **Not changed, and open** (`OPEN-QUESTIONS.md` §1y): the creatures' specials and the player's own jumps (ARC SLINGER's, the Technomancer's arc) still reach through walls.
   - **How:**
     - js/evolution.js (`_evoSees`, `_evoFoesSeen`, `_evoDashOk`; every move's target, jumps and areas; `fieldBite`; `staticVortexTick`);
     - js/cards.js (`_equipFoesNear`);
-    - js/commandcenter.js (`CC_LONG_NAME`, `_ccNameSet`);
-    - game.html (the strip's `.cc-name.long`).
+    - js/commandcenter.js (`_ccNameSet`: a name's width measured when it is set);
+    - game.html (the strip's card a size container; `.cc-name` sized to it).
   - **Tests:**
     - tests/cover.js (22 checks, 3 new): every such move held back by the Experiment Lab's glass and used on the same side; jumps, splashes, pulls, slows, fields and echoes stopped at the glass; SONIC ROLL not dashing over the test room's crate. On build h's code the three new checks fail; on this build they pass.
     - tests/carousel.js: every name a strip card can show (52) fits at 1180 px, the long ones in smaller type. It no longer depends on the random draw that failed build h's full run.

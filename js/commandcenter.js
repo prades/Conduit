@@ -41,11 +41,21 @@ const ATTACK_STYLES = [
     { id: "camper",  label: "TECHNICIAN", col: "#8fe3ff", blurb: "HOLDS A POST" },
 ];
 const CC_REFRESH_MS = 400;
-// A LONG NAME on the carousel's strip (the owner, 2026-11-06: "Smaller type"): a name of CC_LONG_NAME characters or more (ELECTRIC TECHNICIAN, THERMITE BURROWER) gets the class `long`, which on the strip's
-// cards alone sets slightly smaller lettering (game.html), so the whole name fits a card at 1180 px; everywhere else the class changes nothing. (Measured: those two were the only names cut, 125 and 126 px
-// of text in a 113 px box; every name of 16 characters or fewer fits.)
-const CC_LONG_NAME = 17;
-function _ccNameSet(el, name) { if (el.textContent !== name) el.textContent = name; el.classList.toggle("long", name.length >= CC_LONG_NAME); }
+// A NAME ON THE CAROUSEL'S STRIP is always whole (the owner, 2026-11-06: "Smaller type"): its type shrinks only as far as its card needs. When a name is set, its width in 10 px type is
+// measured once (--nw); game.html sizes the type to min(10 px, the card's width x 9.8 / --nw), so a name that fits stays at 10 px, and a long one (ELECTRIC TECHNICIAN) shrinks as the strip fills
+// and its cards narrow (to about 7.2 px at a card's narrowest, 118 px). Measured on a canvas: no layout is read.
+let _ccMeasure = null;
+function _ccNameSet(el, name) {
+    if (el.textContent === name && el.style.getPropertyValue("--nw")) return;
+    el.textContent = name;
+    if (!el.isConnected) return;   // (not on the page yet: its type is unknown; measured on the next refresh)
+    try {
+        const cs = getComputedStyle(el);
+        _ccMeasure = _ccMeasure || document.createElement("canvas").getContext("2d");
+        _ccMeasure.font = cs.fontStyle + " " + cs.fontWeight + " 10px " + cs.fontFamily;
+        el.style.setProperty("--nw", Math.ceil(_ccMeasure.measureText(name).width));
+    } catch (e) { /* nothing to measure with (a test's stub page): the name keeps its 10 px type */ }
+}
 
 // The reach multiplier of a unit's play style (1 when it has none). npc.js asks.
 function playReach(actor) {
@@ -351,10 +361,10 @@ function _ccDrawGrid(grid) {
     rows.forEach(r => {
         let card = _ccCards.get(r.unit);
         if (!card) { card = _ccMakeCard(r); _ccCards.set(r.unit, card); }
-        _ccUpdateCard(card, r);
         // keep the order the sort gave, moving a card only when it is out of place (a click in progress is never on a moved card)
         const want = prev ? prev.nextSibling : grid.firstChild;
         if (card !== want) grid.insertBefore(card, want);
+        _ccUpdateCard(card, r);   // (after it is on the page: its name is measured in its own type, _ccNameSet)
         prev = card;
     });
     if (tile && grid.lastChild !== tile) grid.appendChild(tile);   // (RECRUIT is the strip's last tile)
