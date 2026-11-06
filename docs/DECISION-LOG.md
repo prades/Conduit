@@ -1354,3 +1354,26 @@ The elemental texture was redrawn as storm clouds at the owner's direction. It w
   - the ant emblem and the enemy row's short words;
   - the drone and jelly themes as written.
 - Next, for a yes: the drone texture (GUNMETAL, machined panels). After it: the jelly texture, then the five other race emblems.
+
+## DECISION: Part 2's gate 2: the drone's machined panels approved
+
+- **Date:** 2026-11-06
+- **Status:** Approved (designed, not built). Gate 2 stays open for the jelly texture and the five other race emblems.
+- **Branch/build:** mockups at commit 260afde on `claude/start-game-project-HSh7Z`; the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3
+
+### Context
+The drone texture, as the theme was written (machined panels: seams, rivets and vent slats), was shown:
+- on OVERCLOCK CHIP;
+- behind RIMESTAR and THERMITE BURROWER.
+
+### Decision
+- "Approve as drawn".
+
+### Alternatives considered
+- Fainter.
+- More detail (more vents, rivet rows, engraved grooves).
+
+### Impact
+- Four of the five species textures are approved.
+- Next, for a yes: the jelly texture (GEL ORCHID, soft membrane cells). After it: the five other race emblems.
