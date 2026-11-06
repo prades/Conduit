@@ -295,6 +295,14 @@ Letting some units pass over some objects means a second floor, or a cost on cel
    - or let waist-high objects be seen over, so a unit behind a barrier can be seen and aimed at, and its cover then stops the shot.
 5. **Stepping over** (asked after these): not yet; or low barriers stepped over by the player; or crates used as steps.
 
+**Answered 2026-11-06** (`DECISION-LOG.md`):
+1. "Stops shots".
+2. "Barriers", "Crates and stacks", "Barrels", "Desks and consoles".
+3. "Walls stop shots".
+4. "See over low ones".
+5. *(Asked second.)* "Shoot over own cover": a shot fired from right behind an object passes over that object, within about a tile of the shooter.
+6. Stepping over: "Not yet".
+
 ## 12. History
 
 - 2026-11-06: the owner's roadmap (PR #19, `NEXT-PHASE-ROADMAP.md`) set the design; the owner asked for this study and registered the roadmap as a future update (`DECISION-LOG.md`). Written from four code audits on build `2026-11-06a`.

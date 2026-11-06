@@ -1628,3 +1628,38 @@ The owner reached the test room ("Works fine") and was asked what should come ne
 
 ### Impact
 `OPEN-QUESTIONS.md` §1w's open question is answered. The following update's Parts 3 and 4 keep waiting.
+
+## DECISION: Milestone Two: cover stops shots; walls stop shots; low objects seen over; shooting over your own cover; no stepping over yet
+
+- **Date:** 2026-11-06
+- **Status:** Approved (six answers). Not built yet: the build follows (`FLUX-MOVEMENT.md` §13).
+- **Branch/build:** after build `2026-11-06g`, on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `FLUX-MOVEMENT.md` §13 (the study), `NEXT-PHASE-ROADMAP.md` §3.3 and §9 ("Cover rules", "Traversal rules"), `COMBAT.md`
+
+### Context
+The study (`FLUX-MOVEMENT.md` §13) found:
+- almost nothing stops a shot: travelling shots fly through walls and props, and only the Photonic Shield stops them;
+- every solid blocks sight exactly as it blocks walking;
+- nothing can be stepped over.
+
+The roadmap asks for movement, sight, cover and traversal to be "not interchangeable". Six questions were put to the owner.
+
+### Decision
+1. **What cover does:** "Stops shots". A shot that reaches an object that gives cover stops there, the same rule the Photonic Shield uses, for both sides. Bites and area attacks stay as they are.
+2. **Which objects give cover:** "Barriers", "Crates and stacks", "Barrels", "Desks and consoles" (the fixed desks, consoles and lab benches).
+3. **Walls:** "Walls stop shots", for both sides.
+4. **Sight:** "See over low ones". Waist-high objects (barriers, crates, barrels, desks) no longer block sight, so a creature behind one can be seen and aimed at, and its cover then stops the shot. Tall ones (lockers, racks, vending machines) and walls still block sight.
+5. **Shooting out:** "Shoot over own cover". A shot fired from right behind an object passes over that object (within about a tile of the shooter); further along its path, cover stops it as usual.
+6. **Stepping over:** "Not yet". Nothing is stepped over for now; revisit with the Sewers' redesign.
+
+### Alternatives considered
+- Cover that cuts the damage to a unit right behind it, or both that and stopping shots.
+- Walls left as they are.
+- Every object blocking sight, as today.
+- Cover that stops shots both ways.
+- Barriers stepped over by the player; crates used as steps.
+
+### Impact
+- The build changes combat for everyone: shots that travel stop at walls and at cover.
+- Shooters that pick targets without looking (the mages, the turrets, the creatures' abdomen shots) need to see a target before they fire at it, or they would shoot walls for good. That is a reading, recorded with the build.
+- Walking is unchanged.
