@@ -30,7 +30,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
   - **The full run** (of the code as committed in 56d52a6): 91 of 91 suites passed (1,938 checks: build `2026-11-06f`'s 1,922 and tests/fluxlab.js's 16), tests/perf.js's frame budget among them. The first full run (of d3121e6) found tests/cards.js's check of the start, the only failure in the 40 suites it finished, and was stopped; the check was brought up to date (56d52a6) and the run started again. Both commits were made while a run was going, at a stop hook's request; nothing changed during this run.
   - **The Bible:** the test room under FLUX MOVE; 91 suites. Its count of the real-browser suites was stale (27): it is 35.
   - **Written up:** docs/FLUX-MOVEMENT.md (status, §9.1 Build 2, §10, §12), docs/OPEN-QUESTIONS.md (§1w), docs/FACILITY.md (the flag), docs/TECHNICIANS.md, docs/NEXT-PHASE-ROADMAP.md (status), docs/DEVELOPMENT-FRAMEWORK.md (the map).
-  - **Not playtested.**
+  - **Not playtested.** The owner reached the test room on the main build and said "Works fine" (2026-11-06).
 
 - **f · FLUX MOVE: the Flux technician moves the arena's objects; Telegrab is retired** (the next development phase's Milestone One, first build; the owner: "Move on to the next phase", "Flux phase", "Retire it now", "Test room + arena", "60 s cooldown", "Prompt buttons", "FLUX MOVE", "Square"; on the branch only; commit named in git log).
   - **Main:** builds `2026-11-06d` and `2026-11-06e`, with Part 2's gate-2 drafts and the full run's docs (c672cd5), went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
