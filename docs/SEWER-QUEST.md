@@ -83,6 +83,13 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 
 **Saved** as `bosses` (state, outcome, started, defeated). A load: armed or active → armed again, asleep at its post, whole (an interrupted encounter begins again); resolved calm and not defeated → a calm queen at her post; defeated → nothing.
 
+**Designed 2026-11-06, not built** (the future update, `NEXT-PHASE-ROADMAP.md` §14): the owner: "we need to make it to where the queen is in a spot where the player can create an ice bridge to maneuver themselves over closer to the queen", with the Ice Technician's utility freezing water into bridges.
+- **Today:** the only way onto the dam is the boss gate and the causeway. From the service bridge, 6 tiles of water lie between the player and the dam: the river's mouth (2) and the reservoir (4). The measured spans are in the roadmap.
+- **A guard the design must keep:** the install checks only that the module is in hand (`questMountCan`), and her encounter starts only when the gate opens (`questGateUse` → `bossArm`). An ice bridge onto the dam with the gate shut would let the module go in with no Queen. A 2-tile span round the gate's north end would also skip the gate.
+- **Open:** where she sits, whether the bridge is the only way to her, and whether she and the brood may cross it.
+- **The stealth section** once planned for the Sewers is removed (the owner: "We don't need to add stealth to the game").
+- **Telegrab is retired in the design**, which takes route A from the sample puzzle when the Flux object movement replaces it (`FLUX-MOVEMENT.md`).
+
 ## Side Quest and the Sleeping Potion (`js/sidequest.js`, `js/potion.js`)
 
 **Side Quest** is the archive's small flying drone, an outlander who left the facility: an optional side-quest giver, merchant and source of hints (his "gadgets and gizmos" and his later role are open). Since build `2026-11-02f` he is drawn as **the void walker** (below). He appears on **the maintenance platform off the north ledge** (since 2026-11-01; he was first in the south ledge's side passage) **only when the samples have been turned in at the lab AND `antTarget` = 10 toxic ants of the Sewers have been killed** (`sqUnlocked`; not location, not either alone; the archive's "around 10" is tunable). When he appears the platform's gate opens (`facilitySolidOpen`: he is a technician) and he stands two tiles in with a STATION on him (`STATION_KINDS.sidequest`, made at runtime by `sqPlace`): the plate, E, a tap, as any station. The brood keeps 3 tiles off him; the queen's frantic roam is 15 tiles of her post, his platform 27 away. The first time you come within 8 tiles he calls you over, once.

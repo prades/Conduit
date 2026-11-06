@@ -93,6 +93,8 @@ A form had one hard-wired move, chosen by its name in an `if/else` chain. The ch
 
 ### 3.2 Stealth (the Rogue) and the gun (the Gunmaster)
 
+*Note, 2026-11-06:* the owner, of the next development phase: "We don't need to add stealth to the game" (`NEXT-PHASE-ROADMAP.md` §6.1, `DECISION-LOG.md`). The Rogue's stealth below is a plan here, not built (the code has no hidden status). Whether the Rogue and its stealth go too is open (`OPEN-QUESTIONS.md`); nothing here is changed until the owner says.
+
 - **Stealth is a status on the squad**: `a.hidden = frames`. A hidden unit is not picked as a target by creatures beyond 1.5 tiles (the targeting code already asks `isHostileTarget` and range; this is one more test), and its first hit out of hiding is multiplied. The Rogue gets it by passive (standing still for 2 s), by SMOKE BOMB and by the ultimate. The **blind** status (`blinded`, js/predator.js) is the model: a creature that loses its target wanders.
 - **The gun is its own system**: today a table of weapons (`WEAPONS`, js/weapons.js: the service gun at 10 damage every 45 frames, the machine gun, the laser rifle; a level 1 to 3 each, bought with scrap at the Armory's terminal). It gains **mods** (barrel, magazine, core) that the Gunmaster's perks fill. Any class can fire the gun; the Gunmaster gets the slots and the perks.
 

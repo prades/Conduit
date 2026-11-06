@@ -348,6 +348,7 @@ This build followed the approved brief and the owner's answer "Keep both buttons
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
 
+- **A second finger while FAULTLINE is drawn** (found 2026-11-06 by reading `js/input.js`; not run, not seen on a device). The canvas keeps one press for all fingers: there is no `pointerId` tracking. A second finger's press restarts the stroke at its own point. Whichever finger lifts first sends the path, and the other one's release falls through to an ordinary tap (`handleInput`), most likely a walk. A likely small fix: follow only the finger that started the aim's press. It is in the build on main (`2026-11-06a`), so it should be checked on an iPad, or fixed, before the next build.
 - **tests/perf.js's frame budget fails at random** (seen 2026-11-06, build `2026-11-06a`; for whoever keeps the tests, not a design question).
   - The check: one frame of a busy arena (ten eggs, twelve creatures) must draw fewer than 21,500 canvas operations.
   - Six runs on each build measured 20,731 to 21,674 on `2026-11-06a` and 21,209 to 21,514 on `2026-11-03a`; both builds went over the budget at times. Earlier full runs measured up to 21,499.
@@ -358,6 +359,32 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 ## 3. Not decided, nothing built
 
+- **The future update registered 2026-11-06** (`NEXT-PHASE-ROADMAP.md`; `DECISION-LOG.md`). Its open points, for the owner:
+  - **Its place** among the planned updates: the following update's Parts 1d to 4 and BLOOM are approved ahead of it.
+  - **Stealth** is removed from it. Does the planned Rogue class and its stealth (`PLAYER-CLASSES.md` §3.2) go too? Does Rotshard's decoy keep any role in the Sewers?
+  - **The ice bridges** (§14.2):
+    - the utility's name, and the Frost Patch's fate (replaced, kept for floor, or one ability aimed at floor or water);
+    - the bridge's shape and length, how long it lasts and how it thaws, and what happens to anyone on it then;
+    - who may cross (by default every side would);
+    - its wait and numbers, which water may freeze, and whether it is saved.
+  - **The Queen** (§14.3):
+    - where she sits;
+    - whether the ice bridge is the only way to her (an ice technician would then be required);
+    - whether "closer" is for the install, the fight, or both;
+    - whether she and the brood may cross;
+    - the guard on the install, which today needs only the module in hand, and the gate's 2-tile flank.
+  - **The Flux object movement** (`FLUX-MOVEMENT.md` §11):
+    - the roadmap's ten (cost, weight, 3-tile objects, the rotate control, the preview, cover, traversal, enemy recovery, persistence, followers);
+    - and the study's ten, among them Telegrab's place (replaced or beside it), the Sewers' puzzle route A, which objects may move, whether a placement may seal a door, sight and cover as properties of their own, turned art, and a neutral test room as new map content.
+  - **Where the roadmap's follower section differs from the built code** (§15):
+    - PINBALL or CAPACITOR DISCHARGE;
+    - FAULTLINE as an ability or an Ultimate, and MAGMA VENT;
+    - QUILL BURST or QUILLSTORM;
+    - the Blight Spider's pools or TOXIC PODS;
+    - per-element or per-follower Ultimates, and what fills them;
+    - Rotshard's slots;
+    - Voidstar's look;
+    - the saucer with legs, which is Side Quest's look today.
 - **B4 (carried over).** You chose "block the direct unlock of the Crystalline cards when packs open". That is **not built**, because no pack deals them. It waits for the pack that does.
 - **The packs after Series 2:** where Lustrous and Crystalline come from, pack tiers, prices, odds ("higher-tier packs improve the odds"). Pack 1 deals Unrefined to Precision, Series 2 up to Prototype (§1j).
 - **Other kinds of card:** the class card families (Mage auras, Brawler opportunity, Technician cooldowns) are built (build `2026-11-02c`, §1m); the Player cards (the player's elemental roles) are designed and approved, and the rules and the Gunslinger's six are built (build `2026-11-02h`, §1p), and the Technomancer's six (build `2026-11-02i`, §1q): `UNIVERSAL-AND-PLAYER-CARDS.md`. (Series 2 brought class cards beyond the Crystalline six, and the first subclass cards.)

@@ -3,6 +3,13 @@
 - **Development focus:** Flux Movement Tools → Tactical Validation → Follower Refinement → Sewer Redesign and Integration
 - **Planning window:** November 6, 2026 onward
 - **Status:** Development plan — design direction established; implementation and testing remain to be verified.
+  - **Registered as a future update** (the owner, 2026-11-06: "let's get this registered to be a future update"). **Nothing in it is built.** It follows the work already approved (`FOLLOWING-UPDATE.md`); its place among the planned updates is the owner's to set.
+  - **Amended at the owner's word, 2026-11-06** (§14; `DECISION-LOG.md`):
+    - **stealth is removed** ("We don't need to add stealth to the game");
+    - **the Ice Technician's utility freezes water into bridges** to cross it;
+    - **the Toxic Queen sits where an ice bridge brings the player closer to her**.
+  - **The Flux mechanic studied against the code:** `FLUX-MOVEMENT.md` (what the game already has for it, what it lacks, the risks and the questions).
+  - **Where §12 differs from the code as built** (checked against build `2026-11-06a`): §15.
 
 ---
 
@@ -20,7 +27,7 @@ The next phase is organized around five goals:
 2. Validate its tactical applications and enemy interactions.
 3. Continue refining follower identities and combat behavior.
 4. Establish the revised sewer environment direction.
-5. Integrate Flux into the sewer's stealth and Toxic Queen encounters.
+5. Integrate Flux into the sewer's Toxic Queen encounter. *(It read "the sewer's stealth and Toxic Queen encounters": stealth removed, 2026-11-06, §14.)*
 
 **Primary development priority:** Flux Movement Tools.
 
@@ -335,6 +342,7 @@ Before finalizing the sewer layout, determine:
 - Which objects support navigation.
 - Which spaces must remain clear for player movement.
 - Which areas must remain accessible for the purification objective.
+- *(Added 2026-11-06.)* Which water the Ice Technician can freeze into bridges, and where the Toxic Queen sits relative to it so that an ice bridge brings the player closer to her (§14).
 
 The sewer should demonstrate the Flux system through actual gameplay rather than simply contain movable objects for decoration.
 
@@ -354,13 +362,17 @@ These are intended applications, not a finalized object catalog. Each object mus
 
 ---
 
-## 6. Milestone Five — Sewer Stealth and Toxic Queen Integration
+## 6. Milestone Five — Toxic Queen Integration
+
+*(It was "Sewer Stealth and Toxic Queen Integration". Stealth is removed, 2026-11-06: §6.1 and §6.2 below are kept as history, marked removed.)*
 
 **Priority 5 — Dependent on sewer redesign**
 
 Once the environment and Flux behavior are stable, integrate the sewer encounter systems.
 
-### 6.1 Stealth Route
+### 6.1 Stealth Route — **Removed** (2026-11-06)
+
+The owner, 2026-11-06: "It includes some things that I'm willing to take out of there, like stealth. We don't need to add stealth to the game." No stealth route, patrol-avoidance section or stealth system is to be built. The text below is the removed plan, kept as history.
 
 Develop the sewer's stealth section around environmental awareness and tactical preparation.
 
@@ -374,7 +386,9 @@ The player should be encouraged to:
 
 Avoid making stealth depend on a single mandatory ability or one arbitrary object interaction.
 
-### 6.2 Toxic Decoy Interaction
+### 6.2 Toxic Decoy Interaction — **Removed with stealth** (2026-11-06)
+
+Its sewer integration was part of the stealth gameplay, so it goes with it. Rotshard's ROTTEN DECOY, a combat move in §12.3 (item 11), is not removed. Whether the decoy keeps any role in the Sewers without stealth (for example, drawing the Queen's ants away during the install) is open (`OPEN-QUESTIONS.md`). The text below is the removed plan, kept as history.
 
 Integrate the Toxic Decoy as part of the stealth and enemy-manipulation gameplay.
 
@@ -406,7 +420,7 @@ The encounter should support:
 
 1. The player enters the Queen's area and observes the encounter.
 2. The Queen remains in her defensive position and presents a threat.
-3. The player manages nearby enemies and creates a safe approach.
+3. The player manages nearby enemies and creates a safe approach. *(Added 2026-11-06: among the ways in, an ice bridge across the water to get closer to her, §14.)*
 4. The player reduces the Queen to the established encounter threshold.
 5. The Queen enters her distressed or frantic state and leaves her defensive position.
 6. The player uses the resulting opportunity to reach the purification installation point.
@@ -444,7 +458,8 @@ Do not invent new encounter timings or numerical values without an explicit desi
 | 10 | Run tactical test scenarios | Navigation, obstruction, cover, and recovery work |
 | 11 | Audit follower roles and attacks | Approved roster has distinct combat identities |
 | 12 | Establish sewer redesign layout | Geometry and object placement support gameplay |
-| 13 | Integrate stealth and Toxic Decoy | Enemy interactions work in the new layout |
+| 13 | ~~Integrate stealth and Toxic Decoy~~ **Removed** 2026-11-06 (stealth is out, §6.1) | — |
+| 13a | *(Added 2026-11-06; its place in the order is proposed, the owner's to confirm.)* The Ice Technician's utility: freeze water into a bridge (§14) | A bridge can be made over water, crossed, and ends safely; nobody is left standing on water |
 | 14 | Integrate Toxic Queen purification route | Full non-lethal encounter is playable |
 | 15 | Run regression and integration tests | Existing systems remain functional |
 
@@ -530,7 +545,7 @@ This development phase is complete when:
 6. The player can use Flux for meaningful tactical positioning.
 7. Existing approved followers have clear, documented combat roles.
 8. The sewer redesign supports the new environmental interaction system.
-9. The sewer stealth sequence and Toxic Decoy work with the revised environment.
+9. ~~The sewer stealth sequence and Toxic Decoy work with the revised environment.~~ *(Removed 2026-11-06 with stealth.)* In its place: the Ice Technician freezes water into a bridge, and the Toxic Queen can be approached across one (§14).
 10. The Toxic Queen encounter supports a reliable non-lethal purification resolution.
 11. Integration tests confirm that existing systems have not regressed.
 
@@ -548,6 +563,7 @@ To keep development focused:
 - Do not introduce new followers before the existing roster audit.
 - Do not mark planned features as implemented without code verification.
 - Do not add new mechanics simply to make the next phase appear larger.
+- *(Added 2026-11-06.)* Do not add a stealth system or a stealth route: stealth is removed (§6.1).
 
 ---
 
@@ -561,7 +577,9 @@ The sewer should then become the first substantial environment designed to take 
 
 This creates a clean development progression:
 
-**Flux foundation → Tactical validation → Follower refinement → Sewer redesign → Stealth integration → Toxic Queen purification → Regression testing.**
+**Flux foundation → Tactical validation → Follower refinement → Sewer redesign → Toxic Queen purification → Regression testing.**
+
+*(It read "… Sewer redesign → Stealth integration → Toxic Queen purification …": stealth removed, 2026-11-06. The Ice Technician's water-freezing utility and the Queen's ice-bridge approach join the sewer redesign and the Queen's encounter: §14.)*
 
 ---
 
@@ -715,6 +733,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 ##### 18. Igloo Skater — Ice / Elemental Technician
 
 - Preserve existing design. Retrieve primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
+- **Technician utility (the owner, 2026-11-06):** the ability to freeze water, making bridges to cross it ("I would like to make it to where the ICE technician's utility ability is the ability to freeze water. And make bridges to cross across the water."). Its name, and what becomes of FROST PATCH, the ice technician's ability today, are open (§14).
 
 ### 12.4 Series 2 Combat Interaction cards — design work to carry forward
 
@@ -788,8 +807,90 @@ The follower combat work above must not be reduced to a vague "audit the roster"
 3. **Follower combat implementation and verification:** preserve and reconcile the 18-follower move archive; implement the approved primary/alternate/card/utility/Ultimate decisions and individual Ultimate meter framework.
 4. **Series 2 combat cards:** combat-interaction upgrades and card-granted attack additions, preserving the separate attack slot.
 5. **Sewer redesign:** finalize geometry and furnishing only after Flux's actual behavior is proven.
-6. **Sewer stealth and Toxic Decoy integration.**
+6. ~~**Sewer stealth and Toxic Decoy integration.**~~ **Removed** 2026-11-06 (stealth is out). In its place: **the Ice Technician's utility, freezing water into bridges** (§14). *(Proposed, the owner's to confirm: built and proven in the neutral test room before it is used in the sewer, as this roadmap does for Flux.)*
 7. **Toxic Queen non-lethal purification encounter.**
 8. **Full integration, regression, and balance testing.**
 
 **Scope rule:** Flux remains the first implementation priority, but follower abilities and the Ultimate/card systems are explicit parallel design-and-implementation workstreams—not omitted or deferred as generic future refinement.
+
+---
+
+## 14. The owner's amendments of 2026-11-06: stealth removed, ice bridges, the Queen within an ice bridge's reach
+
+The owner, 2026-11-06: "Check out the new development documentation on GitHub. It includes some things that I'm willing to take out of there, like stealth. We don't need to add stealth to the game. And I would like to make it to where the ICE technician's utility ability is the ability to freeze water. And make bridges to cross across the water. And we need to make it to where the queen is in a spot where the player can create an ice bridge to maneuver themselves over closer to the queen. And do extensive work to understand the flux technician's new mechanic. And let's get this registered to be a future update."
+
+**Status:** designed direction; **nothing is built**. What the code has today was studied on build `2026-11-06a` (read-only; measured on the built map). Where a point below is not the owner's, it says so.
+
+### 14.1 Stealth removed
+
+No stealth route, patrol-avoidance section or stealth system (§6.1, §6.2, §7, §10, §11, §13). Rotshard's ROTTEN DECOY stays a combat move (§12.3). The planned Rogue class's stealth (`PLAYER-CLASSES.md` §3.2) is not built; whether it goes too is open.
+
+### 14.2 The Ice Technician's utility: freezing water into bridges
+
+- **The owner's:** the Ice Technician's utility freezes water, making bridges to cross it. Bridge-making is the Ice Technician's, not Flux's ("Flux does not create bridges", §2.1). It was foreseen when FROST PATCH was built: "you can [cross] the sewer with the ice bridges" (`TECHNICIANS.md`).
+- **What the game has today:**
+  - **FROST PATCH** (`TECH_AB.frost`, js/techabilities.js): a 60 s wait; 3 × 3 tiles of ice for 10 s on floor the technician can see; enemies at half speed, your units at 150% (provisional). It refuses water ("TAP THE FLOOR"), and a spot across water is out of sight ("THE TECHNICIAN CANNOT SEE THERE"), because sight is a walkable straight line. It is not saved.
+  - **Water is solid.** It is made of map pieces of kind `river` and `pool`:
+    - the Sewers' river, 6 tiles across, in three pieces;
+    - the Nest's reservoir, 4 tiles wide and 11 long;
+    - its moat, 2 tiles wide, an L round the dam's south and east sides.
+
+    Nobody can stand on it. There is no fall, drown or swim; a unit pushed onto it is put back on the nearest floor. The arena has no water (its grates are floor decoration). The old cistern pool is gone.
+  - **The bridges:** the two real ones are floor left between the river's pieces. The broken bridge is only drawn.
+  - **Floor made at runtime:** only `facilitySolidOpen`, which opens a whole solid for good. Freezing part of a river for a while needs a new kind of change: per tile, and reversible. Making floor and taking it away again is the same missing piece the Flux tool needs (`FLUX-MOVEMENT.md` §6.3).
+- **Open (the owner's):**
+  - the ability's name, and what becomes of FROST PATCH: replaced, kept for floor, or one ability that freezes floor or water by where it is aimed;
+  - the bridge's shape and length (a straight run of tiles from the bank, a line aimed like FAULTLINE, a fixed size), how long it lasts and how it thaws;
+  - what happens to anyone on it at the thaw (today a unit left on water is put on the nearest floor, which can be the far bank);
+  - who may cross: walking is shared by every side, so by default followers, the brood and the Queen would cross too;
+  - its wait and its numbers; which water may freeze (no map field says so today); whether it is saved. A save made on the ice would load the player beside the Crystal.
+- **Proposed order (the owner's to confirm):** built and proven in the neutral test room, with a channel of water added there, before it is used in the Sewers, as this roadmap does for Flux.
+
+### 14.3 The Toxic Queen within an ice bridge's reach
+
+- **The owner's:** the Queen sits where the player can build an ice bridge to get closer to her.
+- **Today** (`SEWER-QUEST.md`, js/bosses.js, js/quests.js, js/stations.js):
+  - **Where she sits:** the console (`purifier_mount`) stands at the trash dam's north-west corner, its west face on the reservoir. Her post is 1.6 tiles east of the console's centre, so moving the console moves her.
+  - **The install** starts within 1.8 tiles of the console's box, takes 600 frames (about 10 s), and is held while she is within 2.5 tiles and not controlled.
+  - **Her reach:** she is rooted until half her health. Her bomb reaches 12 tiles, her spit 3.
+  - **The only way onto the dam** is the boss gate and its causeway. The gate opens with the module, and that is also what starts her encounter (`bossArm`).
+  - **From the service bridge**, 6 tiles of water separate the player from the dam: the river's mouth (2) and the reservoir (4).
+- **Spans an ice bridge could take on today's map** (measured; for the Sewers' redesign to choose from, not decisions):
+
+| Span | Water to freeze | What it does |
+|---|---|---|
+| From the service bridge straight east onto the dam | 6 tiles | lands 3.5 tiles from the console |
+| From the service bridge east, then north beside the console's west face | 8 tiles | within the install's reach; 3.1 tiles from her post |
+| Round the north end of the boss gate, from the south ledge onto the causeway | 2 tiles | **skips the gate**: no wall stands between the river's mouth and the reservoir there |
+
+- **A guard the design must keep:** installing checks only that the module is in hand (`questMountCan`), and her encounter starts only when the gate opens. **An ice bridge onto the dam with the gate still shut would let the module go in with no Queen at all.** So either the ice cannot reach the dam before the gate opens, or the install (or the bridge) needs her encounter started. The 2-tile flank of the gate would need a wall or a rule.
+- **Open (the owner's):**
+  - where she sits (an island in the reservoir, its far side, the console's place);
+  - whether the ice bridge is the only way to her (then an ice technician in the squad becomes required for the quest line), or one of several;
+  - whether "closer" is for the install, for fighting her, or both;
+  - whether she and her nymphs may cross the ice (her waves come up only on floor joined to the player's, and a bridge joins it);
+  - her bombs reach a player on the ice.
+- **Its place:** in the Sewers' redesign (Milestone Four) and the Queen's encounter (Milestone Five). The roadmap keeps the Sewers' layout until Flux has passed its tests (§5).
+
+---
+
+## 15. Where §12 differs from the code as built (checked 2026-11-06, build `2026-11-06a`)
+
+§12 asks the agent to compare each item with the live move registry and the code before changing anything. This is that comparison, done when the roadmap was registered. **Nothing here is changed yet:** each row needs the owner's word before the code follows §12. Builds `2026-11-03a` and `2026-11-06a` followed the owner's brief of 2026-11-02 and its answers (`FOLLOWER-COMBAT-REDESIGN.md`, `DECISION-LOG.md`), so where §12 differs from them, one of the two is out of date.
+
+| Item | §12 says | The code does (build `2026-11-06a`) | To settle |
+|---|---|---|---|
+| Quillstone's alternate | QUILLSTORM, five quills in a forward fan | the same five-quill move, named **QUILL BURST** (`quill_burst`) | the name |
+| Static Orb's moves | primary SONIC ROLL; alternate CAPACITOR DISCHARGE, which supersedes PINBALL; Ultimate OVERDRIVE | everyday hit: the Brawlers' plain hit and the electric melee move; **SONIC ROLL** is its signature move (the default) and **PINBALL** its second, picked on INFO, both built per the brief (2026-11-02) | whether PINBALL goes; CAPACITOR DISCHARGE's numbers and controls (a manual release is new input) |
+| Thermite Burrower | alternate MAGMA VENT; Ultimate FAULTLINE | **BURROW STRIKE** its everyday hit (matches); the **THERMITE DRILL** its element's ability; **FAULTLINE** a second ability chip with its own 60 s wait ("Keep both buttons"), not an Ultimate; no MAGMA VENT | FAULTLINE's slot; MAGMA VENT |
+| Blight Spider's utility | TOXIC PODS (up to three generator pods, fields that run down); Ultimate CONTAMINATION NETWORK | **BLIGHT SPIDER** pools: up to three poison pools that fade over two in-game days | whether pods replace pools |
+| Igloo Skater's utility | (preserve; retrieve) | **FROST PATCH**: 3×3 tiles of ice for 10 s | the owner, 2026-11-06: the utility freezes water into bridges (§14); Frost Patch's fate is open |
+| Goo Proxy's utility | (retrieve); Telegrab "retired from current design" (§12.6) | **TELEGRAB** is built and is the flux technician's ability; it is route A of the Sewers' water-sample puzzle | replaced by the Flux object tool (`FLUX-MOVEMENT.md`); the puzzle's route A |
+| Ultimates | one unique Ultimate per follower, each with its own meter; charge from damage, kills, support, objectives and team play | each follower has **its own meter** (`ultimateCharge`, 0 to 100, a double-tap at full), but the Ultimates are **per element**: fire Volcanic Eruption, electric EMP, ice Blizzard, flux Disorient, toxic Smoke Screen, core none (`FOLLOWER_ULTIMATES`, js/elements.js). Charge: 1 a second (2 near the Crystal) and 20 a kill | per-follower Ultimates; the charge sources |
+| Ember Hood's Ultimate | VOLCANIC ERUPTION | VOLCANIC ERUPTION exists as **every fire follower's** Ultimate | whether it becomes the Ember Hood's own |
+| Rotshard | primary CORRODE SHOT; alternate ROTTEN DECOY; passive weakening aura; card CRYSTAL SPIKE TRIO | everyday attack: the Mages' shot (rot shards, Projectile); **CORRODE SHOT** is its signature move; no decoy, no aura | the slots |
+| Void Star | "octopus-like character with a small head feature" | **VOIDSTAR**, design No. 637: "a dark spined starfish carrying a big orb of violet fluid" (js/evolution.js) | which look is meant |
+| "The saucer-with-legs creature is the new Flux worker" | | that sheet (`img/evo/hauler.png`, the old flux worker) is **Side Quest's look** since build `2026-11-02f`, at the owner's word; the flux technician's evolved form is the **GOO PROXY**, a violet goo head | whether the saucer becomes a follower again |
+| Card-granted attacks | SEARED CHARGE, VOLTAGE FIELD, WRAITHFIRE, CRYSTAL SPIKE TRIO | none exists | (designs to finish) |
+| Series 2 combat-interaction cards | PREDATOR'S TROPHY, ELEMENTAL PUNISHMENT, LAST STAND, BERSERKER PROTOCOL, ARCANE AMPLIFICATION, ADAPTIVE ARMOR | none exists (a BERSERKER *trait* exists for followers, unrelated) | (designs to finish) |
+| Names | Seaper, Horn Shell, Rime Star, Void Star, Thermite Brawler | SEEPER, HORNSHELL, RIMESTAR, VOIDSTAR, THERMITE BURROWER | spelling only |

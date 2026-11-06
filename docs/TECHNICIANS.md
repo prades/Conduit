@@ -135,7 +135,7 @@ ASKED: "Implement the Level 1 Frost Patch using existing terrain and status-effe
 
 - The ❄ chip, then a spot of floor the technician can see: ice covers the **3×3 tiles** round the tapped tile at once (only floor in sight of its middle: a wall cuts it), for **10 s** (its seconds show over it).
 - **An enemy on it** moves at **half its pace** (the game's own slow, `applySlow`; a stronger slow it already has, a web, is kept). **Your units on it** (followers and clones) move **faster** (the same system, a factor over 1; a slow they have is kept). Off it, and once it is gone, everyone moves as before.
-- **Ice bridges** are for later, when the map has a sewer to cross; nothing of them is built.
+- **Ice bridges** are for later, when the map has a sewer to cross; nothing of them is built. **Direction set 2026-11-06** (the owner): the Ice Technician's utility freezes water into bridges to cross it. It is in the future update (`NEXT-PHASE-ROADMAP.md` §14), and what becomes of the Frost Patch then is open. See "Designed 2026-11-06, not built", below.
 
 | Number | Value | Status |
 |---|---|---|
@@ -163,6 +163,8 @@ ASKED: "Create contamination pools. Make the pools persist for two complete in-g
 | Time to get there | 20 s | how it feels |
 
 ## Telegrab (flux)
+
+*Superseded in design, still built (2026-11-06):* the owner's roadmap retires Telegrab ("Do not reintroduce Telegrab", `NEXT-PHASE-ROADMAP.md` §12.6) in favour of the Flux object movement in the future update (`FLUX-MOVEMENT.md`). Until that is built, Telegrab stays as below; it is also route A of the Sewers' water-sample puzzle (`SEWER-QUEST.md`).
 
 ASKED: "Implement the Level 1 Telegrab ability using existing targeting and item-interaction systems. Check the established design for its range, eligible targets, and retrieval behavior"; then any item on the ground at any distance (supply cases, scrap, capsules, rocks), pulled to the player and collected once through the existing pickup; shards stay paid straight in at the kill.
 
@@ -194,6 +196,13 @@ BLOOM is a seventh element. Its Technician is a coral crab, the first crustacean
 
 Its numbers, where the coral can be climbed, and the new high areas are open. The full design is in `CONVERSION.md`.
 
+## Designed 2026-11-06, not built: the next phase's technician utilities
+
+In the future update registered on 2026-11-06 (`NEXT-PHASE-ROADMAP.md`; the decision is in `DECISION-LOG.md`):
+- **The Ice Technician: freezing water into bridges.** The owner: "I would like to make it to where the ICE technician's utility ability is the ability to freeze water. And make bridges to cross across the water." The Toxic Queen is to sit where an ice bridge brings the player closer to her. What the game has for it today, the spans the map offers, the guard the Queen's install needs, and the open points (the name, the Frost Patch's fate, the bridge's shape, length and thaw, who may cross) are in `NEXT-PHASE-ROADMAP.md` §14.
+- **The Flux Technician: moving objects, in place of Telegrab.** It selects an eligible object, shows a placement grid, moves it up to 2 tiles (some authored objects 3), turns it in 90° steps, and validates the whole footprint before committing; cancelling restores it. The rules are the roadmap's (§2, §3, §8). The study of the code for it, its gaps and risks, and the questions are in `FLUX-MOVEMENT.md`.
+- **Also in the roadmap, not yet reconciled with the code** (§15): the Blight Spider's TOXIC PODS (in place of its pools); the Thermite Burrower's MAGMA VENT, and FAULTLINE as its Ultimate (it is built as a second ability).
+
 ## Still to be decided
 
 From the audit of the specs against the game (the report given before any code):
@@ -202,7 +211,7 @@ Decided in the button rounds and built: every technician has its element's abili
 
 Still open:
 
-- **Ice, Frost Patch:** how much faster your units cross it (150% is provisional); the ice bridges, when the map has a sewer to cross.
+- **Ice, Frost Patch:** how much faster your units cross it (150% is provisional); the ice bridges, whose direction was set on 2026-11-06 (above; `NEXT-PHASE-ROADMAP.md` §14), with their details open.
 - **Fire, Thermite Drill:** "twice its normal hit" is read as twice followerAttack's plain hit (a quarter of its attack); what the rocks are for; what is in the hole (the insect burrow).
 - **Fire, the Thermite Burrower's FAULTLINE and BURROW STRIKE:** every number is provisional; the readings are in `OPEN-QUESTIONS.md` §1t; drawing a path with a finger on an iPad has not been tried by a person.
 - **Toxic, Blight Spider:** the death spill (left unresolved, as asked).

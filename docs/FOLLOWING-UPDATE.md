@@ -166,7 +166,7 @@ The BLOOM build itself would come in the update after this one, or late in this 
 | **Series 2's Lustrous cards** (6 drafts) | The owner's approval to build them ("They're just drafts"); then the pack's fifth weight |
 | **Packs after Series 2; the Crystalline six in a pack; blocking their direct unlock then (B4)** | Not designed |
 | **Later quest lines**, their elements, Side Quest's later stock | Not designed |
-| **Ice bridges** | A design. The Sewers' river exists now, the crossing the owner foresaw ("you can [cross] the sewer with the ice bridges"). |
+| **Ice bridges** | A design. The Sewers' river exists now, the crossing the owner foresaw ("you can [cross] the sewer with the ice bridges"). **Direction set 2026-11-06** (the owner): the Ice Technician's utility freezes water into bridges, and the Toxic Queen sits where one brings the player closer to her. It is in the future update registered that day, `NEXT-PHASE-ROADMAP.md` §14, not in this one. |
 | **More creature attacks with cooldowns** | Not designed |
 | **The phone's CARDS screen and slots** | "Later, as planned" |
 | **The readings still waiting on a yes or no** (Builds A and B; the Specimens', Mutator's and Technomancer's lists) | A review pass by the owner; they stand as built until then |
