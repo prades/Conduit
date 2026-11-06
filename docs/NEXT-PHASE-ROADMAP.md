@@ -46,7 +46,7 @@ Flux should provide tactical options without becoming a universal solution to ev
 
 - **Navigation:** Move suitable objects to create stepping opportunities, open routes, or make otherwise difficult areas accessible.
 - **Enemy obstruction:** Block or disrupt advantageous enemy approach routes.
-- **Defensive positioning:** Place objects between the player or allies and incoming threats when the object's physical properties support it.
+- **Defensive positioning:** Place objects between yourself or allies and incoming threats when the object's physical properties support it.
 - **Route control:** Redirect, funnel, or delay enemies by changing which spaces are accessible.
 - **Puzzle solving:** Rearrange furnishings to expose access points or prepare an area for an interaction.
 - **Encounter preparation:** Create more favorable positioning before engaging enemies or performing an objective.
@@ -562,3 +562,234 @@ The sewer should then become the first substantial environment designed to take 
 This creates a clean development progression:
 
 **Flux foundation → Tactical validation → Follower refinement → Sewer redesign → Stealth integration → Toxic Queen purification → Regression testing.**
+
+---
+
+## 12. Milestone Three Expansion — Follower Abilities, Attacks, and Ultimate System
+
+**Priority: High — required workstream in this development phase**
+
+The previous roadmap described follower refinement too generally. This section restores the concrete follower combat work discussed and documented November 1–5. It is part of the roadmap, not an optional future brainstorm.
+
+> **Important status distinction:** The following records approved design direction and working designs. It does not prove that the abilities are implemented, balanced, or tested in GitHub. The coding agent must compare each item with the live move registry and current code before changing anything.
+
+### 12.1 Canonical attack-slot structure
+
+Keep these categories separate for every follower:
+
+1. **Primary attack** — the follower's standard attack.
+2. **Alternate attack** — its second regular attack.
+3. **Card-unlocked special attack** — an additional attack granted by an equipped card; it does not replace the regular kit.
+4. **Technician utility** — a distinct utility slot for Technician-class followers; do not relabel it as a normal attack or Ultimate.
+5. **Ultimate** — a unique, high-impact ability with its own individual meter.
+6. **Passive** — always-on or proximity-based behavior, documented separately.
+
+Each follower should have a distinct combat identity. Preserve existing approved moves and do not invent replacements for slots that have not yet been recovered.
+
+### 12.2 Ultimate meter framework — approved direction
+
+Every follower has its own Ultimate Ability and its own independent Ultimate Meter.
+
+- This is not one shared squad Ultimate Bar.
+- A follower earns personal charge from meaningful combat contributions, including kills and damage.
+- Teamwork and support actions also contribute; charge should not reward only damage dealers or last hits.
+- Objective participation contributes to charge.
+- Major team accomplishments may grant a smaller contribution to participating followers' individual meters.
+- Each follower's meter remains independent; a team contribution advances individual meters without merging them.
+- Ultimates should express the follower's species, element, and evolutionary form, and should create a distinctive tactical moment rather than simply being a larger regular attack.
+
+**Still open:** exact charge values, action eligibility, meter thresholds, evolution variants, activation rules, cooldowns, and per-Ultimate balance. Do not invent numerical values.
+
+### 12.3 Recovered follower roster and ability decisions
+
+The working roster contains 18 followers. Use the existing roster registry to verify names and classifications before implementation.
+
+#### Brawlers
+
+##### 1. Quillstone — Fire / Crustacean
+
+- **Primary:** preserve the existing main quill/piercing attack identity; verify the live move before changing it.
+- **Alternate:** QUILLSTORM is the latest naming for five quills fired simultaneously in a forward fan. Each quill travels independently and stops on its first enemy hit. Do not add piercing through targets or an impact explosion without approval.
+- **Card special:** SEARED CHARGE — a fiery shoulder-check into an enemy with knockback. This is card-unlocked, not a default attack.
+- **Ultimate conflict to resolve:** an older archive uses QUILLSTORM for a massive radial burst of crystal quills, while the latest direct audit used QUILLSTORM for the five-quill forward fan and left the Ultimate undecided. Do not implement both under the same name without reconciling the slot/name.
+
+##### 2. Static Orb — Electric / Drone Brawler
+
+*(Older archive spelling: Sonic Orb.)*
+
+- **Primary:** SONIC ROLL — preserve the existing rolling attack.
+- **Alternate:** CAPACITOR DISCHARGE — Static Orb must remain stationary while it accumulates up to four electrical charges, even when no enemies are present. A visible electrical aura intensifies as charge builds. The player manually chooses when to release; it does not auto-fire when an enemy approaches. Releasing consumes the stored charge in a powerful, very short-range discharge that chains between nearby enemies. More stored charges increase its strength.
+- **Ultimate:** OVERDRIVE — electrical burnout/overload followed by a high-speed rush toward the largest concentration of enemies, not merely the nearest enemy. Deals crushing and electrical damage and knocks struck enemies back.
+- **Superseded:** PINBALL is an older alternate and is superseded by CAPACITOR DISCHARGE. The older BURNOUT DASH Ultimate concept is superseded by OVERDRIVE unless explicitly reopened.
+- **Card attack:** VOLTAGE FIELD — an electrically charged field centered on and moving with Static Orb. Static Orb and nearby allied followers gain movement speed inside it; enemies inside take mild electrical damage. Duration, radius, movement bonus, damage rate, and whether attack speed is affected remain open.
+
+##### 3. Rift Mimic — Jelly Brawler
+
+- **Ultimate:** SHARD VORTEX — separates its four body shards and spreads them into a large swirling area. The vortex pulls enemies inward while the shards deal repeated Crush damage. Rift Mimic can continue moving while the four shards spin separately. It restores health based on a portion of damage dealt (lifesteal), then reassembles when the Ultimate ends.
+- **Primary and alternate:** retain the live attacks; their details were not recovered in the reviewed reference. Do not invent replacements.
+
+##### 4. Jelly Ram — Jelly Brawler
+
+- **Ultimate:** squad shield concept (final name open). Creates three protective jelly shields total: one for Jelly Ram and one for each of two other squad members. Shields protect recipients and knock enemies back when struck.
+- Target-selection rule, shield strength, duration, and knockback values remain open. Automatic lowest-health targeting was not approved.
+- **Primary and alternate:** preserve existing moves; verify from the registry.
+
+##### 5. Seaper — Toxic / Crustacean Brawler
+
+- **Ultimate:** TOXIC UNDERTOW — one powerful toxic blast/surge scatters affected enemies outward in different directions, rather than pushing everyone straight backward. Applies brief poison and weakening. The toxic fluid fades rapidly; it does not leave a lingering pool. This is a single hit, not a sustained wave.
+- **Primary and alternate:** verify existing moves; do not invent replacements.
+
+##### 6. Frost Maw — Ice / Elemental Brawler
+
+- **Ultimate:** ABSOLUTE ZERO — Frost Maw grows larger, devours up to three enemies, and freezes them for the duration. When the Ultimate ends and Frost Maw returns to normal size, those enemies unfreeze.
+- **Primary and alternate:** verify existing moves; do not invent replacements.
+
+#### Mages
+
+##### 7. Ember Hood — Fire Mage
+
+- **Primary:** FIREBALL — direct ranged fire projectile for reliable single-target pressure.
+- **Alternate:** HEXFIRE — projectile creates a stationary burning circle on impact. The circle does not expand or travel after creation; it controls space and punishes enemies entering or remaining in it.
+- **Ultimate:** VOLCANIC ERUPTION — fissures open across the ground. Planned visual overhaul calls for intense glowing highlights and a stronger, light-filled eruption. Deals both Crushing and Elemental damage.
+- **Card attack:** WRAITHFIRE — Ember Hood sacrifices 25% of his remaining HP (bonus/extra HP counts toward the amount available to sacrifice and damage potential), then becomes a ghostly form for a limited duration. Every enemy touched takes damage. Damage scales from both the HP sacrificed and Ember Hood's attack level/power; the intended relationship is nonlinear/exponential, but the exact formula is not set. Each contact consumes some of the damage potential reserved for the final explosion. When the effect expires, Ember Hood explodes and returns to the exact activation position. Duration, movement behavior, contact depletion, explosion, and formula need tuning.
+
+##### 8. Thunderhead — Electric Mage
+
+- **Primary:** CHAIN LIGHTNING — strikes an initial enemy and conducts to nearby enemies. Conductivity is distance-sensitive; gaps can break the chain.
+- **Alternate:** STATIC VORTEX — stationary rotating electrical tornado/vortex that pulls nearby enemies toward its center and continuously damages enemies caught inside. It does not travel across the battlefield and can group enemies for Chain Lightning.
+- **Ultimate:** not recovered in the reviewed reference. Do not mistake STATIC VORTEX for the Ultimate; it is the alternate.
+
+##### 9. Void Star — Flux / Mollusk Mage
+
+- **Character identity:** octopus-like character with a small head feature. The saucer-with-legs creature is the new Flux worker, not Void Star.
+- **Primary, alternate, and Ultimate:** verify from existing design notes and the move registry before filling these slots.
+
+##### 10. Horn Shell — Mollusk Mage
+
+- Preserve existing kit. Primary, alternate, and Ultimate details must be recovered from the existing source notes/registry before any changes.
+
+##### 11. Rotshard — Toxic Mage
+
+- **Primary:** CORRODE SHOT.
+- **Alternate:** ROTTEN DECOY — creates a crystal copy/decoy that draws enemy attention. From the moment it forms, the entire decoy is a black crystal formation surrounded by a constant hazy poisonous green mist. The mist is not only a break/shatter effect; if the decoy breaks, its black shards retain the green haze.
+- **Ultimate:** expanding toxic puddle with small crystal shards periodically erupting from it. Keep this in the Ultimate slot, not the alternate slot.
+- **Passive:** nearby enemies are weakened by Rotshard's toxic aura.
+- **Card attack:** CRYSTAL SPIKE TRIO — three small toxic crystal spikes erupt upward in a tight cluster directly beneath one targeted enemy. Single-target only, not a line or ground-targeted area attack. Deals damage, briefly stuns, and applies a toxic effect. Intended to be useful control without overwhelming the character.
+
+##### 12. Rime Star — Ice / Drone Mage
+
+- Preserve existing kit. Primary, alternate, and Ultimate details were not recovered in the reviewed reference; check the roster registry and source notes.
+
+#### Technicians
+
+##### 13. Thermite Burrower — Fire Technician
+
+*(Older roster spelling: Thermite Brawler.)*
+
+- **Primary:** BURROW STRIKE — dives underground, moves toward an enemy, and erupts beneath the target as a direct ambush attack.
+- **Alternate:** MAGMA VENT — selected as the preferred alternate direction. Creates a small volcanic vent at a targeted location; the vent periodically shoots bursts of superheated magma upward, damaging nearby enemies. Deployment, persistence, pulse cadence, damage, and cooldown remain open.
+- **Ultimate:** FAULTLINE — player freely draws a path across the battlefield. Thermite Burrower travels underground along that route, with molten spikes erupting along it and hitting enemies intersecting the path. This is freehand path drawing, not merely a straight drag or waypoint-only route. Clearly telegraph the route before eruption.
+- **Open:** path limits, input UX, travel speed, eruption spacing, damage, cooldown, and vent tuning.
+
+##### 14. Hover Shell — Electric Technician
+
+- **Preservation requirement:** preserve Hover Shell's existing design, behavior, and role exactly.
+- KINETIC LAUNCHER is an existing ability and must not be replaced, renamed, rebalanced, or reinterpreted during this combat pass.
+- Retrieve remaining kit details from the live registry and documentation; do not invent a new attack or Ultimate.
+
+##### 15. Goo Proxy — Jelly Technician
+
+- Preserve existing design. Retrieve its primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
+
+##### 16. Hammer Slug — Mollusk Technician
+
+- Preserve existing design. Retrieve its primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
+
+##### 17. Blight Spider — Toxic Technician
+
+- **Visual identity:** low-riding black chassis with six thin spider legs, carrying a glass tank of bubbling toxin; black bands and a black front cap with a lens.
+- **Technician utility:** TOXIC PODS — latest revised direction is small toxic generator pods deployed at selected locations, up to three. Each produces a localized toxic field and gradually runs out of energy/deactivates. This replaces the older pool-placement framing; verify code before modifying it.
+- **Ultimate:** CONTAMINATION NETWORK — activates all deployed pods simultaneously. The three pods connect into a triangular network of toxic strands. Enemies crossing the strands take Toxic damage and become poisoned. Pods remain on the battlefield after the Ultimate ends, allowing setup before activation. The user selected a triangular network, not arbitrary placement-shaped connections.
+- Toxic Needles and Web Snare were assistant proposals only, not user-approved moves. Do not treat them as committed designs.
+
+##### 18. Igloo Skater — Ice / Elemental Technician
+
+- Preserve existing design. Retrieve primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
+
+### 12.4 Series 2 Combat Interaction cards — design work to carry forward
+
+These upgrades are triggered by combat events and tactical conditions rather than being only small passive-stat increases.
+
+#### General concepts
+
+- **PREDATOR'S TROPHY:** follower delivering the finishing blow to a Predator receives a temporary combat enhancement. Exact enhancement and duration open.
+- **ELEMENTAL PUNISHMENT** (working name): every successful hit exploiting an enemy's elemental weakness triggers the card reward. This is not a buildup meter or multi-hit threshold. Reward and tuning open.
+- **LAST STAND** (working name): when a follower is hit and drops below a low-health threshold under consideration (10% or 15%), the attacker is knocked back one or two tiles. A five-second cooldown was suggested; threshold, distance, cooldown scope, and target rules remain open.
+
+#### Class-specific concepts
+
+- **Brawler — BERSERKER PROTOCOL:** Brawler-only. Reduces the Brawler's defense while active in exchange for increased damage on subsequent attacks. Preserve the high-risk/high-damage trade-off and class restriction.
+- **Mage — ARCANE AMPLIFICATION** (working name): reduces standard attack power and attack speed while doubling special-attack damage. Creates a slower, ability-focused specialization.
+- **Technician — ADAPTIVE ARMOR** (working name): successful use of a Technician utility increases that Technician's defense briefly. Only utility use triggers it; ordinary attacks do not. Duration, defense increase, and stacking/refresh behavior remain open.
+
+### 12.5 Series 2 cards that grant additional attacks
+
+These are additional card-granted attacks, not replacements for existing follower moves.
+
+- **Rotshard — CRYSTAL SPIKE TRIO:** three toxic crystal spikes erupt beneath one targeted enemy; damage, brief stun, toxic effect.
+- **Static Orb — VOLTAGE FIELD:** mobile electrical aura centered on Static Orb; boosts movement speed for Static Orb and nearby allies while mildly damaging enemies inside.
+- **Ember Hood — WRAITHFIRE:** health-sacrifice ghost transformation with contact damage and a remaining-power final explosion; see the full ability definition above.
+
+The broader request for a batch of new attack cards remains in progress. The conversation first mentioned six cards and then a direction of two per element; if using all six elements that would imply twelve cards. Do not silently choose a total or invent the remaining cards. Reconcile the intended count and elemental distribution when that card-set task resumes.
+
+### 12.6 Cross-system constraints and retired ideas
+
+- Keep the distinction between primary, alternate, card-unlocked special, Technician utility, passive, and Ultimate.
+- Do not reintroduce Telegrab; it is retired from current design.
+- Do not restore the retired Telegrab 5%-of-target-health damage or Adaptive Armor synergy.
+- Flux damage has a separate design direction involving percentage-of-target-health scaling; its scope and exact values remain open. Do not assume every Flux move uses the same percentage.
+- Do not overwrite existing follower work or restart the combat audit. Extend the existing Follower Combat Reference and Game Design Archive.
+- Do not treat proposed moves as approved. In particular, Blight Spider's Toxic Needles and Web Snare were proposals only.
+- Do not mark any ability implemented until the GitHub code and tests verify it.
+
+### 12.7 Follower implementation and verification order
+
+1. Audit the live follower roster and move registry; map each current ability to its correct slot.
+2. Preserve all existing approved moves and identify code/documentation mismatches.
+3. Implement or verify the Ultimate meter foundation: independent follower meters, personal combat/support/objective charge, and smaller team-contribution charge.
+4. Implement/verify the latest approved move changes in the order agreed with the user, without silently replacing existing attacks.
+5. Implement/verify the card-granted attacks as additional slots, with card ownership/equip gating.
+6. Implement/verify Technician utilities independently from regular attacks and Ultimates.
+7. Add visual telegraphs, targeting, collision, damage-type handling, status effects, and cooldowns using existing project conventions.
+8. Test each follower's primary, alternate, card special, utility, passive, and Ultimate independently.
+9. Test squad interactions, targeting, status stacking, crowd control, knockback, and enemy pathfinding.
+10. Record exact implementation status and unresolved balance questions in the archive.
+
+### Acceptance criteria
+
+- All 18 roster entries are represented in the combat reference.
+- Every move is assigned to the correct slot.
+- Existing approved attacks are preserved unless a newer explicit decision supersedes them.
+- Card-granted attacks do not overwrite regular attacks.
+- Each follower's Ultimate has an individual meter.
+- Support and objective play can contribute to Ultimate charge, not only kills.
+- No retired or merely proposed move is implemented as approved.
+- Damage, status, range, duration, and cooldown values are either sourced from existing code/design decisions or clearly marked as unresolved.
+- Documentation distinguishes approved design, proposal, implementation, and tested behavior.
+
+---
+
+## 13. Corrected Development Workstream Order
+
+The follower combat work above must not be reduced to a vague "audit the roster" line. Track it as a named workstream alongside Flux.
+
+1. **Flux foundation:** object eligibility, selection, placement preview, two-tile default range, authored three-tile exceptions, rotation, footprint validation, atomic commit/cancel.
+2. **Flux tactical validation:** navigation, cover, enemy obstruction, pathfinding recovery, and regression tests.
+3. **Follower combat implementation and verification:** preserve and reconcile the 18-follower move archive; implement the approved primary/alternate/card/utility/Ultimate decisions and individual Ultimate meter framework.
+4. **Series 2 combat cards:** combat-interaction upgrades and card-granted attack additions, preserving the separate attack slot.
+5. **Sewer redesign:** finalize geometry and furnishing only after Flux's actual behavior is proven.
+6. **Sewer stealth and Toxic Decoy integration.**
+7. **Toxic Queen non-lethal purification encounter.**
+8. **Full integration, regression, and balance testing.**
+
+**Scope rule:** Flux remains the first implementation priority, but follower abilities and the Ultimate/card systems are explicit parallel design-and-implementation workstreams—not omitted or deferred as generic future refinement.
