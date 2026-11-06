@@ -1632,7 +1632,7 @@ The owner reached the test room ("Works fine") and was asked what should come ne
 ## DECISION: Milestone Two: cover stops shots; walls stop shots; low objects seen over; shooting over your own cover; no stepping over yet
 
 - **Date:** 2026-11-06
-- **Status:** Approved (six answers). Implemented and tested in build `2026-11-06h`, on the branch; not playtested (`COMBAT.md` §8; the readings in `OPEN-QUESTIONS.md` §1x).
+- **Status:** Approved (six answers). Implemented and tested in build `2026-11-06h`, on main at the owner's word ("Build 2026-11-06h to main", below); not playtested (`COMBAT.md` §8; the readings in `OPEN-QUESTIONS.md` §1x).
 - **Branch/build:** after build `2026-11-06g`, on `claude/start-game-project-HSh7Z`.
 - **Related feature/docs:** `FLUX-MOVEMENT.md` §13 (the study), `NEXT-PHASE-ROADMAP.md` §3.3 and §9 ("Cover rules", "Traversal rules"), `COMBAT.md`
 

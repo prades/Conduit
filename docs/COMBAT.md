@@ -465,7 +465,7 @@ These fights are not §1's audit runs (the setup differs); they compare the two 
 
 ## 8. Walls, cover and sight (Milestone Two; built in `2026-11-06h`)
 
-- **Status:** Implemented and tested in build `2026-11-06h` (branch `claude/start-game-project-HSh7Z`). **Not playtested.**
+- **Status:** Implemented and tested in build `2026-11-06h` (on main at the owner's word); the moves that strike at once needing sight (§8.5) in build `2026-11-06i` (branch `claude/start-game-project-HSh7Z`). **Not playtested.**
 - **Source:** the owner's answers of 2026-11-06 (`DECISION-LOG.md`), from the study in `FLUX-MOVEMENT.md` §13 (the roadmap's Milestone Two, `NEXT-PHASE-ROADMAP.md`). This section is the canonical statement of the rules.
 - **Readings:** what nothing said is marked **[reading]**; each one is listed for the owner in `OPEN-QUESTIONS.md` §1x.
 

@@ -391,7 +391,7 @@ Built as decided (the owner, 2026-11-06: "Test room + arena": "a small neutral t
 
 **Answered 2026-11-06:** the test room keeps the game's 60 s wait after a placement (the owner: "Keep 60 s"; `DECISION-LOG.md`).
 
-## 1x. Milestone Two's readings: walls, cover and sight (build `2026-11-06h`, on the branch; `COMBAT.md` §8)
+## 1x. Milestone Two's readings: walls, cover and sight (build `2026-11-06h`, on main at the owner's word; `COMBAT.md` §8)
 
 Built as decided. The owner, 2026-11-06:
 - cover "Stops shots";
