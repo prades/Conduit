@@ -444,7 +444,13 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **Side Quest's look, and the subclass art** (designed 2026-11-02; Side Quest's look built in `2026-11-02f`, the subclass art not built):
   - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`). *(Built in `2026-11-02f`; readings in §1o.)*
   - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).
-  - Mockups come first, for your approval.
+  - Mockups come first, for your approval. **Drafted 2026-11-06** (gate 2): `UI-STYLE.md`, "Proposed for gate 2"; the design canvas's four Part 2 boards. For your yes or correction:
+    1. **The five themes as written:** each species' colour, name, texture motif and icon subject.
+    2. **The crustacean texture,** and how it lies on a follower: large plates as a third layer over the element's and the class's, at 75%.
+    3. **The icon style:** the dock's line style, as drawn on the crab, the flame and the ant.
+    4. **The enemy card's row:** the race's icon, then WEAK and RESISTS chips from the game's table. Short words (SLASH, PIERCE, SHOT, CRUSH, QUAKE, ELEM) or the full ones (SLASHING ... ELEMENTAL), which make the rows longer.
+
+    After a yes, the rest of each family is drawn (four textures and fourteen icons; BLOOM's when it comes) and put to you before anything is built.
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;

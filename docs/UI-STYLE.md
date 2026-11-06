@@ -75,6 +75,43 @@ The owner: "We also need to make themes for the different species and give textu
 - **Open:** the themes themselves (colours, motifs), the icon style, and how three layers stay readable on a follower card.
 - **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop.
 
+**Proposed for gate 2** (drafted 2026-11-06, for the owner; **not approved, and nothing in the game changed**).
+- **Where to see it:** four Part 2 boards on the design canvas "Conduit 3D card concepts". The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
+- **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
+- **A species is a material, not a hue.** These colours are taken: the six element colours, BLOOM's pink, the class cards' cyan and the Player cards' gold.
+
+| Species | Colour | Texture (its motif) | Icon | Drawn |
+|---|---|---|---|---|
+| Crustacean | CHITIN AMBER `#e7ad78` | Overlapping carapace plates in staggered rows. Each is lit along its ridge and fades where the next row tucks under it, with a few facet cuts (QUILLSTONE's faceting) and pores | A crab | The texture and the icon |
+| Mollusk | NACRE `#e3d6ff` | Spiral whorls and growth lines, as a shell's, with a mother-of-pearl sheen | A spiral shell | No |
+| Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: clustered prisms and rising motes. On a follower it takes its element's colour | A cluster of prisms | No |
+| Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | No |
+| Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | No |
+
+- **On a species card** (shown on TIDE SHELL):
+  - its texture on the face, in its colour;
+  - its colour for the frame, the crystal and the kind line;
+  - its icon before the kind, on the face and in the details beside it.
+  - Today such a card wears no texture and the class cards' cyan.
+- **On a follower** (shown on QUILLSTONE and SEEPER):
+  - The species' texture is a third layer, over the element's and the class's, in the species' colour at 75%.
+  - It is drawn large: a 150 × 88 window of the 300 × 420 drawing fills the 300 × 175 band. That way its plates read apart from the class's finer pattern.
+  - The roster's CRUSTACEAN tag carries the icon.
+  - Four other ways were tried in the same page and set aside:
+    - the texture at its own scale, in its colour or in white: the same scale as the class's pattern, so nothing sets the two apart;
+    - faded in from the right: hidden under the card's veil;
+    - faded in from the bottom: hidden behind the creature.
+- **The icons** are in the dock's line style: a 24-unit drawing, stroke 2.2, round caps and joins, in the colour of the text beside it.
+  - Drawn: the crab (species), the flame (fire), the ant (enemy race).
+  - Proposed subjects for the rest:
+    - the elements: TOXIC bubbles, ELECTRIC a bolt, ICE a snowflake, FLUX a vortex, CORE a hexagon (BLOOM a blossom, later);
+    - the races: the beetle, the scorpion, the spider, the mantis and the moth themselves.
+- **The enemy card:**
+  - the race's icon before its name;
+  - under its numbers, a row from the game's own table (js/damage.js `DMG_RACE`, `COMBAT.md` §7.3): WEAK and its types in green chips, then RESISTS and its types in grey ones;
+  - the types in short words: SLASH, PIERCE, SHOT (projectile), CRUSH, QUAKE (earthquake), ELEM (elemental);
+  - a longer row wraps to a second line, and the card grows upward (the ant's ELEM wraps; the beetle has five entries).
+
 How it is built: each picture is a small standalone SVG used as a CSS background (a data: URL, made once), through a class js/cardart.js writes into one `<style id="cardArtCss">` the first time it is wanted: `cat-c-<texture>` an equip card's face, `cat-f-<element>-<class>` a follower's backdrop, `cag-<colour>` the crystal, `cac-<colour>` the cube, each setting one CSS variable (`--tex` or `--gem`). The css lays `var(--tex)` under its veils (game.html: the block "THE 3D CARDS", and each follower card's background). The crystal and the cube are drawn already turned (the canvas's turns), so a card has no 3D parts of its own.
 
 ## The CARDS screen's two menus, the gold of the cards taken into the run, YOU on the roster and a pack's reveal (2026-11-01, build `l`)

@@ -5,8 +5,8 @@
   - **Part 1a** (the Player card rules and the Gunslinger's six) is implemented and tested in build `2026-11-02h`, on main since the owner's "Push to main". Its three main readings were confirmed as built (`OPEN-QUESTIONS.md` §1p).
   - **Part 1b** (the Technomancer's six) is implemented and tested in build `2026-11-02i`, on main since the owner's "Push to main"; two readings confirmed as built (`OPEN-QUESTIONS.md` §1q).
   - **Part 1c** (the Mutator's six) is implemented and tested in build `2026-11-02j`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1r, for the owner. All eighteen kits are in.
-  - **Part 1d** (Series 2 deals the eighteen; Side Quest sells the Sewers' three) is implemented and tested in build `2026-11-06c`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1u (the shelf's Player cards kept as built, the rest for the owner). **All of Part 1 is built.** Part 2 waits on gate 2 (the mockups).
-  - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Still open: gate 2 (the mockups) and gate 3 (each card item).
+  - **Part 1d** (Series 2 deals the eighteen; Side Quest sells the Sewers' three) is implemented and tested in build `2026-11-06c`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1u (the shelf's Player cards kept as built, the rest for the owner). **All of Part 1 is built.** **Part 2's gate-2 mockups are drafted** (2026-11-06, Part 2 below) and wait on the owner's yes or correction; nothing in the game has changed for them.
+  - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Still open: gate 2 (the mockups, drafted 2026-11-06) and gate 3 (each card item).
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-02e`.
   - It follows the update in `NEXT-UPDATE.md`.
   - That update's last step, Build C (the breeding draws, Side Quest drawn as the void walker), came first: implemented in build `2026-11-02f`.
@@ -103,6 +103,18 @@ Each part is its own commit, with its own tests and a full green run before the 
 - the icon set (5 species, 6 elements, 6 races; BLOOM's seventh element when it comes);
 - the enemy card's weakness row.
 
+**Drafted 2026-11-06, waiting on the owner** (the owner: "Draft the Part 2 mockups"). The proposal is written in `UI-STYLE.md`, "Proposed for gate 2". Status: **Proposed**, nothing approved and nothing in the game changed.
+- **Where to see it:** four Part 2 boards on the design canvas "Conduit 3D card concepts", above the earlier boards.
+- **How it was drawn:** in the real game page, by design/ui-mocks/part2-looks.js (`node design/ui-mocks/part2-looks.js <out dir> [scale] [mode]`). The drawings are in design/ui-mocks/part2-looks-art.js.
+  - The script loads a copy of game.html with the drawings added, and wraps four of the game's functions in that page only (`cardArtUnitClass`, `cardArtFaceClass`, `_cdKindCol`, `_cdStageFill`). Nothing in js/ is changed.
+  - Each picture is today's beside the proposal's.
+- **What is drawn,** one piece of each family (`ART-PROCESS.md`):
+  - the crustacean texture, on TIDE SHELL's card and as a third layer on QUILLSTONE's and SEEPER's backdrops;
+  - one icon of each set (the crab, the fire flame, the ant);
+  - the enemy card's row on an ant scout, and every race's row from the game's table.
+- **What is written only:** the other four themes, and the subjects of the other fourteen icons.
+- **The questions for the owner:** `OPEN-QUESTIONS.md` §3, "Side Quest's look, and the subclass art".
+
 **Then the build:**
 - the species textures on species cards and follower cards;
 - the icons where the mockups put them (the roster, the cards, the enemy card);
@@ -176,7 +188,7 @@ The BLOOM build itself would come in the update after this one, or late in this 
 
 1. **This scope and order:** Parts 1 to 4, and whether BLOOM's drafts come in this update. **Approved** 2026-11-02 ("Approve as drafted": BLOOM's drafts are not in this update).
 2. **Gate 1:** the 18 Player card kits (the draft comes first), the player's elemental part, the electric Technomancer role's new name. **Approved** 2026-11-02: "Approve as drafted"; "The role's element"; "ARC WARDEN".
-3. **Gate 2:** the looks' mockups.
+3. **Gate 2:** the looks' mockups. **Drafted** 2026-11-06 (Part 2 above); waiting on the owner.
 4. **Gate 3:** the first card item, then each batch.
 5. **Build C's open point:** whether Side Quest's picture in the dialogue box changes too. **Answered** 2026-11-02: "Keep as built".
 
