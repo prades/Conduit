@@ -1,7 +1,8 @@
 // THE FOLLOWING UPDATE'S PART 2 (build 2026-11-06d; docs/FOLLOWING-UPDATE.md Part 2, docs/UI-STYLE.md "Gate 2"): the species' looks, the emblems and the enemy card's row, as the owner approved them on 2026-11-06.
 // ASKED: "We also need to make themes for the different species and give textures for the different species, and then icons for every different element and subclass and species." Each look was drawn first as a
 // mockup in the real game page (design/ui-mocks/part2-looks-art.js) and approved one at a time; then "Start the Part 2 build".
-//   THE TEXTURES   each species' texture is drawn, is the approved drawing byte for byte, faint, repeats no motif, and is the same on every load
+//   THE TEXTURES   each species' texture is drawn, is the approved drawing byte for byte, faint, repeats no motif, and is the same on every load; the storm clouds are the high-resolution
+//                  drawing of build 2026-11-06e (the owner: "Ew elemental, storm cloud texture please hi res", then "Approve as drawn"): crisp masses in flat fills, no soft gradient to blur or band
 //   A SPECIES CARD wears its texture in its colour, its colour for its frame, chip, crystal and kind line, and its emblem before its kind (its face, its hologram's shadow, its details)
 //   A FOLLOWER     an evolved form of a species carries its texture as a third layer at 38% over its element's and its class's: the crust at half its size, the others once, the storm clouds in the
 //                  follower's element colour; an egg, a retired form and a clone none
@@ -150,15 +151,21 @@ function measure(w, h) {
         const t = sp => J(`cardArtTexture(${JSON.stringify(sp)})`), n = (s, re) => (s.match(re) || []).length;
         const cu = t('crustacean'); ok(n(cu, /<circle/g) >= 500 && /url\(#cuK\)/.test(cu), 'the crust: ' + n(cu, /<circle/g) + ' circles');
         const mo = t('mollusk'); same(n(mo, /stroke="url\(#mo[ABC]\)"/g), 8, 'the nacre\'s bands'); ok(n(mo, /<path/g) >= 50, 'the nacre\'s growth lines');
-        const el = t('elemental'); ok(n(el, /<circle/g) >= 150, 'the storm\'s puffs: ' + n(el, /<circle/g)); ok(n(el, /<rect/g) >= 6 && n(el, /<ellipse/g) >= 7, 'the cloud bases and masses');
+        const el = t('elemental'); same(n(el, /<path id="clS\d+"/g), 9, 'the storm\'s masses'); same(n(el, /<path id="clF\d+"/g), 7, 'the folds inside them'); same(n(el, /<clipPath id="clB\d+"/g), 9, 'their flat bases');
+        ok(n(el, / 0 1 0 /g) / 2 >= 500, 'the billows: ' + n(el, / 0 1 0 /g) / 2); same(n(el, /fill="#ffffff"/g), 14, 'the light rims along the near masses\' and folds\' tops'); same(n(el, /stroke-opacity="\.1"/g), 2, 'the rain shafts');
         const dr = t('drone'), plates = (dr.match(/ d="([^"]*)"/) || [])[1] || ''; ok(n(plates, /Z/g) >= 30, 'the drone\'s panels: ' + n(plates, /Z/g)); ok(n(dr, /<circle/g) >= 40, 'the drone\'s rivets'); ok(/stroke-width="2\.2"/.test(dr), 'the drone\'s vents');
         const je = t('jelly'); ok(n(je, /<path d="M/g) >= 100, 'the jelly\'s cells: ' + n(je, /<path d="M/g)); ok(n(je, /<ellipse/g) >= 30, 'the jelly\'s nuclei');
     });
     await check('faint (the owner: "The design needs to be fainter"): nothing in a species texture is drawn above half opacity', () => {
         for (const sp of SPECIES) { const vals = [...J(`cardArtTexture(${JSON.stringify(sp)})`).matchAll(/(?:fill-|stroke-|stop-)?opacity="([\d.]+)"/g)].map(m => +m[1]); ok(vals.length, sp + ' has no opacities'); ok(Math.max(...vals) <= 0.5, sp + ' is drawn at ' + Math.max(...vals)); }
     });
-    await check('no motif repeated (the owner, of the clouds: "no repreating icons"): no species texture lays a drawing of its own again (no <use>, no <pattern>)', () => {
-        for (const sp of SPECIES) ok(!/<use|<pattern/.test(J(`cardArtTexture(${JSON.stringify(sp)})`)), sp + ' repeats a motif');
+    await check('no motif repeated (the owner, of the clouds: "no repreating icons"): no species texture tiles a pattern or lays a drawing again across the face; only the storm clouds lay anything twice, each mass its own outline shifted for its shading', () => {
+        for (const sp of SPECIES) { const t = J(`cardArtTexture(${JSON.stringify(sp)})`); ok(!/<pattern/.test(t), sp + ' tiles a pattern'); if (sp !== 'elemental') ok(!/<use/.test(t), sp + ' lays a drawing twice'); }
+        const refs = (J('cardArtTexture("elemental")').match(/<use href="#[^"]+"/g) || []).map(u => u.slice(12, -1)); ok(refs.length > 20, 'the storm\'s shading');
+        for (const r of refs) ok(/^cl[SF]\d+$/.test(r), 'the storm clouds lay ' + r + ' again, not a mass\'s own outline');
+    });
+    await check('in high resolution (the owner: "Ew elemental, storm cloud texture please hi res"; build 2026-11-06e): the storm clouds are crisp shapes in flat fills, with no soft gradient to blur or band', () => {
+        ok(!/Gradient|<filter|blur/.test(J('cardArtTexture("elemental")')), 'a soft gradient or a blur in the storm clouds');
     });
 
     group('A SPECIES CARD (js/cardart.js cardArtFaceClass, js/cardsui.js _cdKindCol, _cdSlab, _cdInfo)');

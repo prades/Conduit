@@ -493,6 +493,8 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     2. **A species card's colour goes wherever a card's colour goes:** its mini card on the rail (with its texture), its chip in a slot's list, a pack's reveal. The mockup changed the colour everywhere it was drawn.
     3. **A retired form has no species** (js/cards.js), so it has no subclass tag and no species layer, as before.
 
+    **The storm clouds, redrawn once built** (2026-11-06): of the soft clouds in build `2026-11-06d`, "Ew elemental, storm cloud texture please hi res". A crisp, high-resolution drawing was shown in the game page beside them. **Answered:** "Approve as drawn"; built in `2026-11-06e`.
+
     **Open, for you:**
     - **Where do the six element emblems go?** They are drawn, approved and in the code, but no mockup placed them, so none is shown yet. Two places would match what the species have: before the kind line of an element card (ELEMENT · FIRE), as a species card has its emblem; and on the roster's element tag (FIRE), as the subclass tag has its. Either is a mockup first (`ART-PROCESS.md`).
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).

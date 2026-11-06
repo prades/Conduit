@@ -252,33 +252,58 @@ const _CA_TEX = {
             + '<g fill="url(#moL)"><ellipse cx="96" cy="120" rx="120" ry="90"/><ellipse cx="220" cy="318" rx="110" ry="84"/></g>'
             + '<g fill="none" stroke="currentColor" stroke-opacity=".1" stroke-width=".55">' + lines + "</g></g>";
     },
-    // ELEMENTAL: storm clouds. Banks of billowing puffs piled on flat cloud bases at uneven heights, a back row dimmer than the front, a soft dark band under each base, broad dark storm masses, a few
-    // wisps swirling through, two faint glows lit inside the cloud. No motif repeated: every puff has its own size and place.
+    // ELEMENTAL: storm clouds, in high resolution (round 3: the owner, of the soft clouds built in 2026-11-06d, "Ew elemental, storm cloud texture please hi res"; this drawing "Approve as drawn",
+    // 2026-11-06). Crisp cloud masses, no soft balls: each mass a silhouette (a solid body under a top edge of billows of their own sizes, a cauliflower edge with fine billows riding the bigger ones,
+    // over a flat base), cel-shaded in flat tones: a thin light rim along its top edge, a lit band, a shaded body, a darker underside; a lower fold of billows inside it shaded the same way, so the
+    // mass shows its folds as scalloped contours. Stormy: a far deck of heavy cloud behind, the masses overlapping before it, rain shafts under the darkest, a few fine wisps. Flat fills only, so
+    // nothing bands. A mass's shading lays its own silhouette again, shifted (a <use> of it); no motif is repeated across the face.
     elemental() {
         _caSeed = 61;
-        const W = 300;
-        let back = "", front = "", bases = "", dark = "", wisps = "";
-        for (let b = 0, y0 = 22; y0 < 450; b++, y0 += 40 + _caRnd() * 36) {   // banks at uneven heights, each a little tilted
-            const near = _caRnd() < .55, tilt = (_caRnd() - .5) * .12, puffs = [];
-            for (let x = -40 + _caRnd() * 24; x < W + 40;) {
-                const r = (near ? 11 : 15) + _caRnd() * (near ? 19 : 24), by = y0 + tilt * (x - 150);
-                puffs.push('<circle cx="' + Math.round(x) + '" cy="' + Math.round(by - r * .5 + (_caRnd() - .5) * 8) + '" r="' + Math.round(r) + '"/>');
-                x += r * (.45 + _caRnd() * .35);   // puffs overlap, so a bank reads as one billow, not a row of balls
+        const circ = (x, y, r) => "M" + _caR(x - r) + " " + _caR(y) + "a" + _caR(r) + " " + _caR(r) + " 0 1 0 " + _caR(2 * r) + " 0a" + _caR(r) + " " + _caR(r) + " 0 1 0 " + _caR(-2 * r) + " 0z";
+        // a polygon wound the way the circles are (counterclockwise on the screen), so the union has no holes
+        const poly = pts => { const a = pts.reduce((s, p, i) => { const q = pts[(i + 1) % pts.length]; return s + p[0] * q[1] - q[0] * p[1]; }, 0), l = a > 0 ? pts.slice().reverse() : pts; return "M" + l.map(p => _caR(p[0]) + " " + _caR(p[1])).join("L") + "z"; };
+        let defs = "", out = "";
+        // a silhouette: billows (radius about rk of the height) whose tops follow top(x) over [xl, xr], fine billows on the bigger ones, and a solid body under them down past the base
+        const silhouette = (xl, xr, top, base, rk, fine) => {
+            const b = [], s = [], body = [];
+            for (let x = xl; x < xr;) { const h = top(x), r = Math.max(4.5, h * (rk + _caRnd() * 0.12)), y = base(x) - h + r + (_caRnd() - .5) * 2.5; b.push([x, y, r]); x += r * (0.55 + _caRnd() * 0.4); }
+            b.forEach(([x, y, r]) => { if (r < 7 || _caRnd() > fine) return; for (let i = 0, n = 1 + (_caRnd() < .5 ? 1 : 0); i < n; i++) { const ang = (205 + _caRnd() * 130) * Math.PI / 180, q = 1.6 + _caRnd() * Math.min(4, r * 0.3); s.push([x + Math.cos(ang) * (r - q * 0.35), y + Math.sin(ang) * (r - q * 0.35), q]); } });
+            for (let x = xl; x <= xr + 1; x += 10) body.push([x, base(x) - top(x) * 0.62]);   // the body: under the billows' middles, down past the base
+            body.push([xr, base(xr) + 12], [xl, base(xl) + 12]);
+            return poly(body) + b.concat(s).map(c => circ(c[0], c[1], c[2])).join("");
+        };
+        // a mass: its flat base at y0 (tilted) from xl to xr, its top a bell peaking hp above the base at xp (width wid); `a` its opacity; a fold, rain shafts under it, or (far) a plainer one
+        const mass = (k, xl, xr, y0, hp, xp, wid, tilt, a, fold, rain, far) => {
+            const base = x => y0 + tilt * (x - 150), top = x => 16 + hp * Math.exp(-Math.pow((x - xp) / wid, 2)) * (0.85 + 0.15 * Math.sin(x * 0.09 + k * 2));
+            defs += '<path id="clS' + k + '" d="' + silhouette(xl, xr, top, base, far ? 0.2 : 0.26, fold ? 0.62 : 0.25) + '"/>'
+                + '<clipPath id="clK' + k + '"><use href="#clS' + k + '" xlink:href="#clS' + k + '"/></clipPath>'
+                + '<clipPath id="clB' + k + '"><rect x="-60" y="' + _caR(y0 - 400) + '" width="420" height="400" transform="rotate(' + _caR(Math.atan(tilt) * 180 / Math.PI) + ' 150 ' + _caR(y0) + ')"/></clipPath>';
+            const u = (id, dx, dy, fill, op) => '<use href="#' + id + '" xlink:href="#' + id + '" x="' + dx + '" y="' + dy + '" fill="' + fill + '"' + (op ? ' fill-opacity="' + op + '"' : "") + "/>";
+            const shade = id => (far ? "" : u(id, 0, 0, "#ffffff")) + u(id, 0.4, 1.3, "currentColor") + u(id, 0.7, 6, "#000", ".36");   // a rim, a lit band, the shaded rest
+            let g = shade("clS" + k);
+            if (fold) {   // the fold: a lower bank of billows across part of the mass
+                const fl = xl + (xr - xl) * (0.08 + _caRnd() * 0.25), fr = xr - (xr - xl) * (0.08 + _caRnd() * 0.25), fc = (fl + fr) / 2, fw = (fr - fl) * 0.45;
+                const ftop = x => 6 + hp * 0.5 * Math.exp(-Math.pow((x - fc) / fw, 2)), fbase = x => base(x) + 6;
+                defs += '<path id="clF' + k + '" d="' + silhouette(fl, fr, ftop, fbase, 0.3, 0.6) + '"/>';
+                g += shade("clF" + k);
             }
-            if (near) front += puffs.join(""); else back += puffs.join("");
-            bases += '<rect x="-20" y="' + Math.round(y0 - 8) + '" width="340" height="30" transform="rotate(' + _caR(Math.atan(tilt) * 180 / Math.PI) + ' 150 ' + Math.round(y0) + ')"/>';
-        }
-        for (let k = 0; k < 5; k++) dark += '<ellipse cx="' + Math.round(_caRnd() * W) + '" cy="' + Math.round(_caRnd() * 420) + '" rx="' + Math.round(60 + _caRnd() * 60) + '" ry="' + Math.round(30 + _caRnd() * 26) + '"/>';
-        const sweep = (y0, amp, half, tilt) => { let d = "M-40 " + _caR(y0) + "Q" + _caR(-40 + half / 2) + " " + _caR(y0 - amp) + " " + _caR(-40 + half) + " " + _caR(y0 + tilt * half); for (let x = -40 + 2 * half; x <= W + 40 + half; x += half) d += "T" + _caR(x) + " " + _caR(y0 + tilt * (x + 40)); return d; };
-        for (let k = 0; k < 4; k++) wisps += '<path d="' + sweep(40 + k * 110 + (_caRnd() - .5) * 30, 14 + _caRnd() * 12, 90 + _caRnd() * 50, -.12 + _caRnd() * .1) + '" stroke-width="' + Math.round(16 + _caRnd() * 14) + '"/>';
-        return '<defs><radialGradient id="clF" cx=".45" cy=".42" r=".6" fx=".4" fy=".26"><stop offset="0" stop-color="currentColor" stop-opacity=".18"/><stop offset=".5" stop-color="currentColor" stop-opacity=".085"/><stop offset=".78" stop-color="currentColor" stop-opacity=".02"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient>'
-            + '<radialGradient id="clB" cx=".45" cy=".42" r=".6" fx=".4" fy=".28"><stop offset="0" stop-color="currentColor" stop-opacity=".1"/><stop offset=".6" stop-color="currentColor" stop-opacity=".04"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient>'
-            + '<linearGradient id="clS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset=".35" stop-color="#000" stop-opacity=".14"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>'
-            + '<radialGradient id="clD"><stop offset="0" stop-color="#000" stop-opacity=".16"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>'
-            + '<radialGradient id="clL"><stop offset="0" stop-color="#ffffff" stop-opacity=".07"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient></defs>'
-            + '<g id="clAll"><g fill="url(#clB)">' + back + '</g><g fill="url(#clD)">' + dark + '</g><g fill="url(#clS)">' + bases + '</g><g fill="url(#clF)">' + front + "</g>"
-            + '<g fill="url(#clL)"><ellipse cx="78" cy="150" rx="70" ry="46"/><ellipse cx="228" cy="318" rx="64" ry="42"/></g>'
-            + '<g fill="none" stroke="currentColor" stroke-opacity=".04" stroke-linecap="round">' + wisps + "</g></g>";
+            g += u("clS" + k, 0, Math.round(hp * 0.42 + 15), "#000", ".38") + u("clS" + k, 0, Math.round(hp * 0.68 + 28), "#000", ".38");   // the underside, darker toward the base
+            out += '<g clip-path="url(#clB' + k + ')"><g clip-path="url(#clK' + k + ')" opacity="' + a + '">' + g + "</g></g>";
+            if (rain) { let s = ""; for (let i = 0; i < rain; i++) { const x = xl + 20 + _caRnd() * (xr - xl - 40), y = base(x) + 2 + _caRnd() * 5, L = 16 + _caRnd() * 30; s += "M" + _caR(x) + " " + _caR(y) + "l" + _caR(-L * 0.2) + " " + _caR(L); } out += '<path d="' + s + '" stroke="currentColor" stroke-opacity=".1" stroke-width=".7" stroke-linecap="round" fill="none"/>'; }
+        };
+        let wisps = "";   // fine strands of cloud between the masses
+        for (let k = 0; k < 4; k++) { const y = 40 + _caRnd() * 360, x = -10 + _caRnd() * 200, L = 60 + _caRnd() * 80, b = (_caRnd() - .5) * 10; wisps += "M" + _caR(x) + " " + _caR(y) + "q" + _caR(L * 0.45) + " " + _caR(b - 12) + " " + _caR(L) + " " + _caR(b); }
+        // back to front: the far deck (heavy, plainer), then the masses, each lower one overlapping the one above it
+        mass(0, -40, 340, 150, 110, 210, 110, -0.03, ".07", false, 0, true);
+        mass(1, -40, 340, 330, 100, 70, 100, 0.03, ".07", false, 0, true);
+        mass(2, -40, 230, 82, 56, 70, 70, -0.04, ".14", true, 0);
+        mass(3, 110, 340, 136, 90, 255, 55, 0.03, ".17", true, 8);
+        mass(4, -40, 190, 210, 62, 50, 65, 0.05, ".19", true, 0);
+        mass(5, 70, 340, 268, 84, 210, 75, -0.03, ".21", true, 9);
+        mass(6, -40, 240, 346, 68, 100, 85, 0.02, ".22", true, 0);
+        mass(7, 150, 340, 405, 60, 265, 60, -0.05, ".2", true, 0);
+        mass(8, -40, 150, 452, 50, 40, 60, 0, ".18", true, 0);
+        return "<defs>" + defs + '</defs><g id="clAll"><path d="' + wisps + '" stroke="currentColor" stroke-opacity=".08" stroke-width="1.1" stroke-linecap="round" fill="none"/>' + out + "</g>";
     },
     // DRONE: machined panels. Plating split into panels of uneven sizes, so no layout repeats: each lit along its top and left edges and shaded along its bottom and right, thin dark seams between;
     // rivets at the corners of the larger panels; louvred vents in four of them

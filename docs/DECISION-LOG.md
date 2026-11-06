@@ -1459,3 +1459,25 @@ Gate 2 closed with every look approved. Asked what next, the owner chose to buil
   - a species card's colour reaches its mini card, its chip in lists and a pack's reveal;
   - a retired form has no species, so no tag and no layer.
 - **Open:** where the six element emblems go. They are drawn and in the code, and shown nowhere until the owner places them (a mockup first).
+
+## DECISION: the elemental's storm clouds redrawn in high resolution
+
+- **Date:** 2026-11-06
+- **Status:** Approved; implemented and verified by tests in build `2026-11-06e` (not playtested). On the branch only.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-06e`.
+- **Related feature/docs:** `UI-STYLE.md` (the elemental's row; "Redrawn once built"), `FOLLOWING-UPDATE.md` Part 2, the entry "Part 2's gate 2: the element emblems approved; the elemental texture becomes storm clouds"
+
+### Context
+Round 2's storm clouds (soft gradient puffs, approved as drawn) were built into the game in build `2026-11-06d`. Seen there, the owner: "Ew elemental, storm cloud texture please hi res".
+
+### Decision
+- A new drawing, round 3: crisp cloud masses in flat tones. Each has a light rim along its top, a lit band, a shaded body, a darker underside and a fold inside, with a far deck behind and rain shafts under the darkest. It was shown in the real game page beside round 2, on FOCUSING PRISM's card and FROST MAW.
+- The owner: "Approve as drawn".
+
+### Alternatives considered
+- Bolder: the same drawing with brighter rims and darker undersides.
+- More realistic: a painted, photo-like cloud (fractal noise), heavier for an iPad to draw.
+
+### Impact
+- js/cardart.js's elemental texture and design/ui-mocks/part2-looks-art.js (the record of the approved drawings) carry round 3; tests/speciesart.js checks them equal and checks the clouds hold no soft gradient.
+- The full run of build `2026-11-06d` was stopped at suite 21 of 89, all passing to there, to draw this; build `2026-11-06e` has its own full run.
