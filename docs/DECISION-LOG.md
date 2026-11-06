@@ -1681,3 +1681,44 @@ While the cover rules were being built, a probe in the test room showed a gap. T
 
 ### Alternatives considered
 - Only the cover objects and walls stop shots.
+
+## DECISION: Build 2026-11-06h to main
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06h`: implemented and tested (its full run: 91 of 92 suites, 1,956 of 1,957 checks; the one failure an old layout check that fails on main's earlier code too); not playtested.
+- **Branch/build:** build `2026-11-06h` (29c7e7f and the full run's docs 1f0210a), with the commits before it on the branch (the decision records, the Milestone Two study and the work in progress c612bac), fast-forwarded to `main` from `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `COMBAT.md` §8, `FLUX-MOVEMENT.md` §13, `OPEN-QUESTIONS.md` §1x and §2, `CHANGELOG.md` (2026-11-06 h)
+
+### Context
+After build `2026-11-06h` (walls, cover and sight) and its full run, the owner was asked whether to push it to main, with three screenshots from the test room: a round stopped at a crate, a round over the shooter's own cover, the laser stopped at the desk. The owner was told the one failing check was an old one (the name ELECTRIC TECHNICIAN cut on the roster's strip at 1180 px), failing on main as well.
+
+### Decision
+- "Push to main".
+
+### Alternatives considered
+- Keep it on the branch.
+
+### Impact
+Main has walls, cover and sight for everyone. The build's readings (`OPEN-QUESTIONS.md` §1x) stand as built, the owner's to confirm or change; the two answers below change two of them.
+
+## DECISION: The moves that strike at once need sight; a long name on the roster's strip in smaller type
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Not built yet: the next build (`2026-11-06i`).
+- **Branch/build:** after build `2026-11-06h`, on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `COMBAT.md` §8.4, `OPEN-QUESTIONS.md` §1x item 10 and §2, `FOLLOWER-COMBAT-REDESIGN.md`, `UI-STYLE.md`
+
+### Context
+Build `2026-11-06h` stopped every shot that travels at walls and cover. The moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) were left as they were, so they could still strike through a wall: a reading, left open (`OPEN-QUESTIONS.md` §1x item 10). The build's full run also showed that the name ELECTRIC TECHNICIAN is cut on the Command Center's strip at 1180 px wide (`OPEN-QUESTIONS.md` §2). Two questions were put to the owner.
+
+### Decision
+1. **The moves that strike at once:** "Need sight". Nothing strikes through a wall or a tall object: the follower uses such a move only on an enemy it can see. Cover still does not stop them (they do not travel).
+2. **The cut name:** "Smaller type". A long name gets slightly smaller lettering on the strip's card only; the whole name stays.
+
+### Alternatives considered
+- The moves kept as they were, reaching through walls.
+- The name on two lines; or shortened to TECH. on the strip only.
+
+### Impact
+- A follower no longer strikes a creature in the next room through a wall with these moves.
+- The roster's strip shows every element-and-class name whole at 1180 px.
