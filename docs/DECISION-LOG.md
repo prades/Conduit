@@ -1139,3 +1139,39 @@ Build `2026-11-06c` built the following update's Part 1d, as approved on 2026-11
 
 ### Impact
 None beyond build `2026-11-06c`: it was built this way. All of the following update's Part 1 is on main. Part 1d's other readings (`OPEN-QUESTIONS.md` §1u) stand as built, the owner's to confirm or change. Next in the following update: Part 2, which waits on gate 2 (the mockups).
+
+## DECISION: Part 2's gate-2 mockups, the first round of answers
+
+- **Date:** 2026-11-06
+- **Status:** In progress. One look is approved (the enemy row's short words). Two are rejected as drawn (the crustacean background, the line icon style). The rest is not yet answered. Nothing is built.
+- **Branch/build:** mockups at commit d1fb585 on `claude/start-game-project-HSh7Z`; the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3 ("Side Quest's look, and the subclass art"), `ART-PROCESS.md`
+
+### Context
+The owner asked: "Draft the Part 2 mockups". Drafted:
+- the five species themes, in writing;
+- one piece of each family, drawn in the real game page and put on the design canvas "Conduit 3D card concepts":
+  - the crustacean texture on a card, and as a third layer of large plates on a follower's backdrop;
+  - the crab, fire and ant icons in the dock's line style;
+  - the enemy card's race icon and its WEAK and RESISTS row.
+
+Four questions were asked.
+
+### Decision
+The owner's answers, verbatim:
+- **The themes:** "I don't like crustaceans background,". The crustacean texture as drawn is rejected. The other four themes were not answered.
+- **The layering on a follower:** "Smaller texture". The species layer is to be smaller than the large plates drawn.
+- **The icon style:** "Another style, Japanese rpg style". The line style is rejected for the icons.
+- **The enemy row's words:** "Short words (Recommended)". SLASH, PIERCE, SHOT, CRUSH, QUAKE, ELEM: approved.
+
+### Alternatives considered
+- Themes: approve all five as written; keep only the crustacean; new colours.
+- Layering: keep as drawn; stronger; fainter.
+- Icons: the line style; filled shapes; thicker lines.
+- Words: the full words; weaknesses only.
+
+### Impact
+- The crustacean texture is to be redrawn: smaller on a follower, and changed where the owner says. What is disliked is asked first.
+- **The icons wait on a reference.** "Japanese rpg style" names a family of looks, not one. `ART-PROCESS.md` asks for a reference (a game and which part of it) before a new style is drawn.
+- The enemy row keeps its short words. Its race icon waits on the icon style.
+- Nothing is built until gate 2 is approved.

@@ -451,6 +451,17 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     4. **The enemy card's row:** the race's icon, then WEAK and RESISTS chips from the game's table. Short words (SLASH, PIERCE, SHOT, CRUSH, QUAKE, ELEM) or the full ones (SLASHING ... ELEMENTAL), which make the rows longer.
 
     After a yes, the rest of each family is drawn (four textures and fourteen icons; BLOOM's when it comes) and put to you before anything is built.
+
+    **Your answers (2026-11-06; `DECISION-LOG.md`):**
+    1. "I don't like crustaceans background,". The crustacean texture as drawn is rejected. The other four themes were not answered.
+    2. "Smaller texture". On a follower, the species layer is to be smaller.
+    3. "Another style, Japanese rpg style". The line style is rejected for the icons.
+    4. "Short words (Recommended)". The enemy row's words are approved.
+
+    **Still to settle before anything more is drawn:**
+    - what to change in the crustacean background besides its size;
+    - a reference for the Japanese RPG icon style: a game, and which part of it (`ART-PROCESS.md`);
+    - whether the other four themes stand.
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;

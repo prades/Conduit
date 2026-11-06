@@ -114,6 +114,12 @@ Each part is its own commit, with its own tests and a full green run before the 
   - the enemy card's row on an ant scout, and every race's row from the game's table.
 - **What is written only:** the other four themes, and the subjects of the other fourteen icons.
 - **The questions for the owner:** `OPEN-QUESTIONS.md` §3, "Side Quest's look, and the subclass art".
+- **The owner's first answers** (2026-11-06; `DECISION-LOG.md`):
+  - the crustacean background as drawn is not liked;
+  - on a follower the texture is to be smaller;
+  - the icons are to take a Japanese RPG style (its reference is asked first);
+  - the enemy row's short words are approved.
+  - The crustacean piece and the icons are to be drawn again before gate 2 can close.
 
 **Then the build:**
 - the species textures on species cards and follower cards;

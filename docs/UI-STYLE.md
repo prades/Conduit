@@ -76,6 +76,13 @@ The owner: "We also need to make themes for the different species and give textu
 - **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop.
 
 **Proposed for gate 2** (drafted 2026-11-06, for the owner; **not approved, and nothing in the game changed**).
+- **The owner's first answers (2026-11-06; `DECISION-LOG.md`):**
+  - the crustacean background as drawn is not liked ("I don't like crustaceans background,");
+  - on a follower the species texture is to be smaller ("Smaller texture");
+  - the icons are to take "Another style, Japanese rpg style". A reference is asked for first (`ART-PROCESS.md`), so the line style below is **rejected** for the icons;
+  - the enemy row's short words are **approved**.
+
+  What follows is the first draft, kept as the record of what was shown.
 - **Where to see it:** four Part 2 boards on the design canvas "Conduit 3D card concepts". The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
 - **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
 - **A species is a material, not a hue.** These colours are taken: the six element colours, BLOOM's pink, the class cards' cyan and the Player cards' gold.
