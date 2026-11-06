@@ -1527,3 +1527,22 @@ The Flux phase began with the decisions its first build needs, put to the owner 
 
 ### Impact
 - The first build's smaller defaults (persistence for the run, sealing refused, sight and cover as today, rotation for symmetric objects only, 2 tiles for all, re-routing) are written in `FLUX-MOVEMENT.md` §11 as proposals, standing unless the owner says otherwise.
+
+## DECISION: Builds 2026-11-06d and 2026-11-06e to main
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Both builds: implemented and tested (the full run of build `2026-11-06e`, which carries build `2026-11-06d` whole: 89 of 89 suites); not playtested.
+- **Branch/build:** builds `2026-11-06d` (e023e23) and `2026-11-06e` (395adab), with Part 2's gate-2 drafts and approvals before them and the full run's docs after them (c672cd5), fast-forwarded to `main` from `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `FOLLOWING-UPDATE.md` Part 2, `UI-STYLE.md` ("Gate 2", "The build"), `OPEN-QUESTIONS.md` §3, `CHANGELOG.md` (2026-11-06 d and e)
+
+### Context
+The owner had chosen "Keep on the branch" for Part 2 when its build began. After build `2026-11-06e` (the storm clouds redrawn) and its full run, the owner was asked again whether to push both to main.
+
+### Decision
+- "Push to main".
+
+### Alternatives considered
+- Keep both on the branch.
+
+### Impact
+Main carries the following update's Parts 1 and 2 and the Flux phase's first decisions (docs only). Part 2's readings (`OPEN-QUESTIONS.md` §3) stand as built, the owner's to confirm or change.
