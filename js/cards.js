@@ -102,6 +102,7 @@ function _equipStatusText(p) {
 function equipEffectText(fx) {
     if (fx && fx.bonus) return Object.keys(fx.bonus).map(k => (k === "cooldown" ? "−" : "+") + _equipPct(fx.bonus[k]) + " " + (_EQUIP_STAT_WORDS[k] || String(k).toUpperCase())).join(" · ");   // (a cooldown bonus is a share taken OFF; a card of two stats names both)
     if (fx && fx.ability) return equipAbilityText(fx.ability);
+    if (fx && fx.attack) return equipAttackText(fx.attack);
     if (fx && fx.aura) {   // a Mage's aura: its ATK, its reach, and at Prototype its element's status (named by the Pack 1 card whose numbers it uses)
         const a = fx.aura, tpl = EQUIP_CARDS[_EQUIP_ATTUNED[a.el]], st = tpl && tpl.proc ? _EQUIP_STATUS_WORDS[tpl.proc.kind] : "";
         return "AURA: +" + _equipPct(a.attack) + " ATTACK TO EVERY FOLLOWER WITHIN " + EQUIP_AURA.reach + " TILES IN ITS ROOM, AND THE CLONE" + (a.status > 0 && st ? " · EACH OF THEIR HITS: " + _equipPct(a.status) + " TO " + st : "");
@@ -150,7 +151,20 @@ const EQUIP_SERIES2 = [
     ["capacitor_bank",    "CAPACITOR BANK",    "class",    "camper",     "refined",   { bonus: { cooldown: 0.14 } }],
     ["field_multitool",   "FIELD MULTITOOL",   "class",    "camper",     "precision", { bonus: { cooldown: 0.10, maxHealth: 0.10 } }],
     ["double_cell",       "DOUBLE CELL",       "class",    "camper",     "prototype", { ability: { kind: "doubleCharge" } }],
+    // THE CARD ATTACKS (the owner, 2026-11-06: "Series 2, Prototype", "Only its own form"; docs/NEXT-PHASE-ROADMAP.md §12.5): a FORM card, worn only in a follower's SPECIAL ATTACK slot (its own menu,
+    // equipSpecialPut), never in CARD 1 or 2. Set, it is the follower's new primary attack ("It stays the new primary attack"): it strikes when its wait is over and does nothing between (js/combat.js
+    // cardAttackTry). `el` is its element (its colour and texture); the numbers are in seconds and tiles.
+    ["crystal_spike_trio", "CRYSTAL SPIKE TRIO", "form",   "rotshard",   "prototype", { el: "toxic", attack: { kind: "spikeTrio", reach: 6, mult: 1.5, stun: 0.5, poison: 3, wait: 8 } }],      // "Light"
+    ["seared_charge",      "SEARED CHARGE",      "form",   "quillstone", "prototype", { el: "fire",  attack: { kind: "searedCharge", reach: 3, mult: 1.5, knock: 2, wait: 8 } }],                // "Short and hard"
 ];
+// what a card attack does, in the card's words, made from its numbers
+function equipAttackText(a) {
+    if (!a) return "";
+    const sec = n => (Math.round(n * 10) / 10) + (n === 1 ? " SECOND" : " SECONDS"), tiles = n => n + (n === 1 ? " TILE" : " TILES"), tail = " · READY AGAIN EVERY " + sec(a.wait) + " · ITS PRIMARY ATTACK WHILE SET";
+    if (a.kind === "spikeTrio") return "THREE TOXIC CRYSTAL SPIKES ERUPT UNDER ONE ENEMY WITHIN " + tiles(a.reach) + ": " + a.mult + "× ITS ATTACK, STUNNED " + sec(a.stun) + ", POISONED " + sec(a.poison) + tail;
+    if (a.kind === "searedCharge") return "A FIERY SHOULDER-CHECK INTO AN ENEMY WITHIN " + tiles(a.reach) + ": " + a.mult + "× ITS ATTACK (HALF CRUSHING, HALF FIRE), KNOCKED BACK " + tiles(a.knock) + tail;
+    return "";
+}
 // what an ability does, in the card's words, made from its numbers
 function equipAbilityText(a) {
     if (!a) return "";
@@ -316,8 +330,10 @@ function equipKindLabel(c) {
     if (c.kind === "class") return "CLASS · " + (c.aura ? _equipElementLabel(c.aura.el) + " " : "") + _equipRoleLabel(c.match);
     if (c.kind === "subclass") return "SUBCLASS · " + equipSubclassLabel(c.match);
     if (c.kind === "player") return "PLAYER" + (c.match ? " · " + _equipClassLabel(c.match) : "") + (c.kit && c.kit.el ? " · " + _equipElementLabel(c.kit.el) : "");
+    if (c.kind === "form") return "SPECIAL ATTACK · " + _equipFormName(c.match);
     return "";
 }
+function _equipFormName(id) { const e = typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[id] : null; return e ? e.name : String(id || "").toUpperCase(); }
 
 // ── THE COLLECTION: the cards unlocked for good (kept at EQUIP.key as { v: 1, owned: [ids], refund?: shards }) ──
 // `refund`: the shards owed for CUT cards the collection held (EQUIP_CUT), kept here until a run's shards take them (equipRefundTick). The cut ids leave the record IN THE SAME WRITE that adds their refund, so a refund is counted
@@ -413,6 +429,7 @@ function equipFit(f, c) {
     if (c.kind === "class") return equipRoleOf(f) === c.match && (!c.aura || equipElementOf(f) === c.aura.el) ? null : "FOR " + (c.aura ? _equipElementLabel(c.aura.el) + " " : "") + _equipPlural(_equipRoleLabel(c.match));   // (a Mage's aura: a Mage of its element)
     if (c.kind === "subclass") { const s = equipSubclassOf(f); return s === c.match ? null : "FOR " + _equipPlural(equipSubclassLabel(c.match)) + (s ? "" : " · EVOLVE FIRST"); }
     if (c.kind === "player") return "FOR THE PLAYER";
+    if (c.kind === "form") return f && f.evolved === c.match ? null : "FOR A " + _equipFormName(c.match) + " ONLY";   // (a card attack: its own form)
     return "NOT A CARD";
 }
 // why this card cannot go in this slot of this follower, or null when it can: a follower (not a clone), the card in the hand or found, a fit, and not already on its other slot
@@ -420,9 +437,65 @@ function equipWhyNot(f, id, slot) {
     const c = equipCard(id);
     if (!c) return "NO SUCH CARD";
     if (!f || f.dead || f.isClone || f.isFollower !== true) return "FOLLOWERS ONLY";
+    if (c.attack) return "A SPECIAL ATTACK · ITS OWN MENU";
     if (!equipUsable(id)) return "NOT IN YOUR HAND";
     const fit = equipFit(f, c); if (fit) return fit;
     return equipSlots(f).some((x, i) => i !== slot && x === id) ? "ALREADY ON ITS OTHER SLOT" : null;
+}
+// ── THE SPECIAL ATTACK SLOT (the owner, 2026-11-06: "You must change it in a separate menu inside of index/roster card system. Including access main hud"): one a follower, f.special (a card id); only a card
+// attack (a card with `attack`) goes in it, and only on its own form. Its menus: the roster's SPECIAL ATTACK (js/cardsui.js equipRosterDraw) and the squad card's (js/squadfly.js). Saved as the record's `special`. ──
+function equipSpecialWhyNot(f, id) {
+    const c = equipCard(id);
+    if (!c) return "NO SUCH CARD";
+    if (!f || f.dead || f.isClone || f.isFollower !== true) return "FOLLOWERS ONLY";
+    if (!c.attack) return "NOT A SPECIAL ATTACK";
+    if (!equipUsable(id)) return "NOT IN YOUR HAND";
+    return equipFit(f, c);
+}
+function equipSpecialPut(f, id) {   // (id null empties it); true when it changed
+    if (!f) return false;
+    if (id == null) { if (!f.special) return false; f.special = undefined; return true; }
+    if (f.special === id || equipSpecialWhyNot(f, id)) return false;
+    f.special = id; return true;
+}
+function equipSpecial(f) { const c = f && f.special ? equipCard(f.special) : null; return c && c.attack && !equipFit(f, c) ? c : null; }   // the card attack it fights with, or null
+function equipSpecialCards() { return equipUsableCards().filter(c => c.attack); }   // (the card attacks in the hand and found)
+function equipSpecialFor(f) { return !!(f && f.evolved && f.isFollower === true && !f.isClone) && Object.values(EQUIP_CARDS).some(c => c.attack && c.kind === "form" && c.match === f.evolved); }   // (a form some card attack is for: only then is its menu shown)
+// ── THE CARD ATTACKS IN A FIGHT (a FORM card in the follower's SPECIAL ATTACK slot; the owner, 2026-11-06) ──
+// Set, the card attack is the follower's new primary attack ("It stays the new primary attack"). It strikes when its wait (the card's `wait` seconds) is over and an enemy it can see is within
+// its reach; between strikes the follower makes no everyday hit ("the followers just chill while they're waiting for the next one": the wait is a timer, filled by nothing it does). Its moves and
+// its Ultimate are its own and still fire. Each role's branch in js/npc.js asks cardAttackTry first; followerAttack (js/combat.js) and the Mage's shot make no hit while cardAttackHolds.
+function cardAttackHolds(f) { return !!equipSpecial(f); }
+function cardAttackReadyIn(f) { const f0 = typeof frame !== "undefined" ? frame : 0; return Math.max(0, (f && f._spReadyAt || 0) - f0); }   // (frames until it can strike again; 0: ready)
+function cardAttackTry(f, t) {
+    const c = equipSpecial(f); if (!c || !t || t.dead) return false;
+    const A = c.attack, f0 = typeof frame !== "undefined" ? frame : 0;
+    if (f0 < (f._spReadyAt || 0) || Math.hypot(t.x - f.x, t.y - f.y) > A.reach) return false;
+    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(f.x, f.y, t.x, t.y)) return false;   // (sight: docs/COMBAT.md §8)
+    let fired = false;
+    if (A.kind === "spikeTrio") fired = _cardSpikeTrio(f, t, A);
+    else if (A.kind === "searedCharge") fired = _cardSearedCharge(f, t, A);
+    if (fired) { f._spReadyAt = f0 + Math.round(A.wait * 60); f.state = "attack"; f.attackAnim = 0; const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy); if (L > 0) { f.dirX = dx / L; f.dirY = dy / L; } }
+    return fired;
+}
+// CRYSTAL SPIKE TRIO (the Rotshard's): three small toxic crystal spikes erupt in a tight cluster under the one enemy: `mult` × its attack (toxic), stunned `stun` s, poisoned `poison` s
+function _cardSpikeTrio(f, t, A) {
+    applyDamage(t, (f.power || 10) * A.mult, f, "toxic", false, false, DMG_HIT_SPECIAL);
+    if (!t.dead) { applyStun(t, Math.round(A.stun * 60)); if (typeof applyWeaken === "function") applyWeaken(t, Math.round(A.poison * 60)); }
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "spiketrio", x: t.x, y: t.y, life: 36, maxLife: 36, element: "toxic" });
+    return true;
+}
+// SEARED CHARGE (the Quillstone's): a fiery shoulder-check: it charges straight at the enemy (only along floor it could walk: the dash rule, js/evolution.js _evoDashOk), `mult` × its attack, half
+// crushing and half fire, and knocks it back `knock` tiles
+function _cardSearedCharge(f, t, A) {
+    if (typeof _evoDashOk === "function" && !_evoDashOk(f, t)) return false;
+    const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8), x0 = f.x, y0 = f.y;
+    f.x += dx / L * s; f.y += dy / L * s; f._fpPath = null;
+    const p = (f.power || 10) * A.mult / 2;
+    applyDamage(t, p, f, null, false, false, typeof DMG_HIT_ULT_CRUSH !== "undefined" ? DMG_HIT_ULT_CRUSH : DMG_HIT_SPECIAL); if (!t.dead) applyDamage(t, p, f, "fire", false, false, DMG_HIT_SPECIAL);
+    if (!t.dead && typeof applyKnockback === "function") applyKnockback(t, f, A.knock * (typeof KNOCK_PER_TILE !== "undefined" ? KNOCK_PER_TILE : 0.28));
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "searedcharge", x: f.x, y: f.y, x0, y0, life: 24, maxLife: 24, element: "fire" });
+    return true;
 }
 // put a card in a slot (id null empties it); true when it changed
 function equipPut(f, slot, id) {
@@ -432,9 +505,10 @@ function equipPut(f, slot, id) {
     if (equipWhyNot(f, id, slot) || c[slot] === id) return false;
     c[slot] = id; f.cards = c; equipRefresh(f); return true;
 }
-function equipClear(f) { if (f && f.cards) { f.cards = undefined; equipRefresh(f); return true; } return false; }   // (EXILE, a re-roll)
+function equipClear(f) { if (f && (f.cards || f.special)) { f.cards = undefined; f.special = undefined; equipRefresh(f); return true; } return false; }   // (EXILE, a re-roll; its special attack too)
 // takes off what no longer fits (a role switched, a card out of the hand and not found, a card the registry no longer has); how many came off
 function equipValid(f) {
+    if (f && f.special) { const sc = equipCard(f.special); if (!sc || !sc.attack || !equipUsable(f.special) || equipFit(f, sc)) f.special = undefined; }   // (its special attack: the same rules)
     const c = f && f.cards; if (!c) return 0;
     let n = 0;
     for (let i = 0; i < EQUIP.followerSlots; i++) {
@@ -629,7 +703,7 @@ function equipElementStatus(src, t, el, dealt) { const tpl = EQUIP_CARDS[_EQUIP_
 // how many units wear a card right now (the player's slots count)
 function equipWearers(id) {
     let n = equipPlayer.filter(x => x === id).length;
-    if (typeof followers !== "undefined") for (const f of followers) if (f && !f.dead && f.cards && (f.cards[0] === id || f.cards[1] === id)) n++;
+    if (typeof followers !== "undefined") for (const f of followers) if (f && !f.dead && ((f.cards && (f.cards[0] === id || f.cards[1] === id)) || f.special === id)) n++;
     return n;
 }
 
@@ -729,7 +803,7 @@ const _equipAuraPt = { x: 0, y: 0 };
 // ── EACH FRAME (js/game.js, beside partyTick): every EQUIP.every frames, whatever no longer fits comes off; who stands in an aura is worked out; a refund owed is paid ──
 function equipTick(force) {
     if (!force && typeof frame === "number" && frame % EQUIP.every) return;
-    if (typeof followers !== "undefined") for (const f of followers) if (f && f.cards) { equipValid(f); if (!f.dead) _equipAbilityTick(f); }
+    if (typeof followers !== "undefined") for (const f of followers) if (f && (f.cards || f.special)) { equipValid(f); if (!f.dead && f.cards) _equipAbilityTick(f); }
     { const kept = [null, null]; for (let i = 0; i < EQUIP.playerSlots; i++) { const id = equipPlayer[i]; if (id && !_equipPlayerWhy(id, i, kept, true)) kept[i] = id; } for (let i = 0; i < EQUIP.playerSlots; i++) if (equipPlayer[i] !== kept[i]) equipPlayer[i] = kept[i]; }   // (each slot against those before it: of two that clash the first stays; a role asleep stays)
     _equipAuraTick();   // (after the cards that no longer fit came off)
     equipRefundTick();
@@ -739,6 +813,8 @@ function equipTick(force) {
 
 // ── THE RECORD: what a follower's save entry, and a respawn entry, carry ──
 function equipRecord(f) { const c = equipSlots(f); return c[0] || c[1] ? c : undefined; }
+function equipSpecialRecord(f) { return f && typeof f.special === "string" ? f.special : undefined; }   // (the record's `special`)
+function equipSpecialRestore(f, id) { f.special = typeof id === "string" && id ? id : undefined; return !!f.special; }   // (checked by the tick a moment later, as the slots are)
 function equipRestore(f, cards) {   // (not checked against the hand here: the hand is put back after the followers, and the tick checks them a moment later)
     f.cards = undefined; if (!Array.isArray(cards)) return false;
     const c = [typeof cards[0] === "string" ? cards[0] : null, typeof cards[1] === "string" ? cards[1] : null];
@@ -784,7 +860,7 @@ const EQUIP_PACK = {
 // them, a Player card too (a Prototype card's value). Every pack is in EQUIP_PACKS: the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
 const EQUIP_PACK2 = {
     id: "series2", name: "SERIES 2", price: 150, size: 4,     // PICKED by us at the owner's word ("Pick a price and set the odds", 2026-11-01): half again Pack 1's ◆100, for stronger cards that come later
-    kinds: ["subclass", "class", "player"],                    // species cards (the subclass kind), class cards (the class families) and Player cards (the player's roles, all Prototype; since Part 1d, once all eighteen were
+    kinds: ["subclass", "class", "player", "form"],            // species cards (the subclass kind), class cards (the class families), Player cards and, since build 2026-11-06q, the card attacks (the form kind: "Series 2, Prototype") (the player's roles, all Prototype; since Part 1d, once all eighteen were
                                                                // built); never an element card
     eligible: ["unrefined", "refined", "precision", "prototype"],   // THE OWNER (2026-11-01): "Prototype unlocks": Series 2 deals up to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous joins in a
                                                                // later update (the archive's rule was all six rarities: it is where this is going)

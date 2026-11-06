@@ -738,7 +738,7 @@ function render() {
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
+            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined, special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
                 // Its level and its XP come back with it, all of them.
                 base: a.base ? Object.assign({}, a.base) : undefined,
                 hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // its birth (js/breeding.js)
@@ -1138,6 +1138,7 @@ function render() {
                 if (entry.playStyle) npc.playStyle = entry.playStyle;   // its play style (js/commandcenter.js)
                 if (entry.move) npc.move = entry.move;   // the signature move it was given (js/moves.js)
                 if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
+                if (entry.special && typeof equipSpecialRestore === "function") equipSpecialRestore(npc, entry.special);   // its SPECIAL ATTACK card
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
                 if (entry.evoWait) npc._evoOnLevelUp = true;   // an egg again until it next levels up (js/evolution.js)
                 if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base carries it; nothing is added again

@@ -480,6 +480,11 @@ const ULT_JELLY = { soak: 0.4, frames: 600, knock: 1 };                         
 const ULT_PUDDLE = { from: 0.5, radius: 2, grow: 120, frames: 300, tick: 30, mult: 0.5, poison: 120 };   // the Rotshard's: "Short and tight" (tiles at first and at full size, frames to grow, frames, frames between shards, × power a shard, frames of poison)
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
+// A cluster of three black crystal spikes in green haze at a screen point (the Rotshard's: its puddle's shards and CRYSTAL SPIKE TRIO): h the tallest spike's height, w the spacing, a its opacity
+function _fxRotSpikes(sx, sy, h, w, a) {
+    ctx.globalAlpha = 0.35 * a; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(sx, sy - h * 0.35, w * 2, h * 0.5, 0, 0, Math.PI * 2); ctx.fill();   // the haze
+    for (let i = -1; i <= 1; i++) { const hx = sx + i * w, hh = h * (i ? 0.75 : 1), hw = w * 0.5; ctx.globalAlpha = a; ctx.fillStyle = "#14161a"; ctx.beginPath(); ctx.moveTo(hx - hw, sy); ctx.lineTo(hx, sy - hh); ctx.lineTo(hx + hw, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1; ctx.stroke(); }
+}
 function _ultSay(a, text, color) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text, color, life: 60, vy: -0.06, size: 13 }); }
 const FORM_ULTIMATES = {
     embercowl: FOLLOWER_ULTIMATES.fire,   // VOLCANIC ERUPTION: the Ember Hood's own (roadmap §12.3)
@@ -1186,11 +1191,21 @@ function drawElementEffects() {
                 ctx.globalAlpha = 0.6 * k; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
                 ctx.fillStyle = "#b8ff8a"; for (let i = 0; i < 5; i++) { const an = i * 2.4 + e.x, t = (frame * 0.02 + i * 0.37) % 1; ctx.globalAlpha = (1 - t) * 0.7 * k; ctx.beginPath(); ctx.arc(px + Math.cos(an) * rx * 0.6, cy0 + Math.sin(an) * ry * 0.6, 1.5 + t * 2.5, 0, Math.PI * 2); ctx.fill(); }
                 const since = (e.maxLife - e.life) - e.shardAt, b = Math.max(0, 1 - since / 18);
-                if (b > 0) for (const s of e.shards) {
-                    const sx = px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, sy = cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, h = 16 * Math.min(1, since / 4 + 0.3);
-                    ctx.globalAlpha = 0.35 * b * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(sx, sy - 6, 12, 8, 0, 0, Math.PI * 2); ctx.fill();   // the haze
-                    for (let i = -1; i <= 1; i++) { const hx = sx + i * 6, hh = h * (i ? 0.75 : 1); ctx.globalAlpha = b * k; ctx.fillStyle = "#14161a"; ctx.beginPath(); ctx.moveTo(hx - 3, sy); ctx.lineTo(hx, sy - hh); ctx.lineTo(hx + 3, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1; ctx.stroke(); }
-                }
+                if (b > 0) for (const s of e.shards) _fxRotSpikes(px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, 16 * Math.min(1, since / 4 + 0.3), 6, b * k);
+                break;
+            }
+            // CRYSTAL SPIKE TRIO (a card attack: cardAttackTry): the same cluster, larger, under the enemy it struck: it rises fast and fades
+            case "spiketrio": {
+                const age = e.maxLife - e.life, k = Math.min(1, e.life / 14);
+                _fxRotSpikes(px, py + TILE_H, 28 * Math.min(1, age / 5 + 0.2), 9, k);
+                break;
+            }
+            // SEARED CHARGE (a card attack: cardAttackTry): a streak of fire from where the Quillstone set off to where it struck, and a burst there
+            case "searedcharge": {
+                const k = e.life / e.maxLife, cy0 = py + TILE_H, ax = px + ((e.x0 - e.x) - (e.y0 - e.y)) * TILE_W, ay = cy0 + ((e.x0 - e.x) + (e.y0 - e.y)) * TILE_H;
+                ctx.lineCap = "round"; ctx.globalAlpha = 0.45 * k; ctx.strokeStyle = "#ff4a12"; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke();
+                ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#ffd27a"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke(); ctx.lineCap = "butt";
+                ctx.globalAlpha = k; ctx.fillStyle = "#ffb04a"; ctx.beginPath(); ctx.arc(px, cy0 - 10, 6 + 14 * (1 - k), 0, Math.PI * 2); ctx.fill();
                 break;
             }
             // A JELLY SHIELD (FORM_ULTIMATES.jellyram): a soft cyan dome over its wearer, wobbling, fainter as it is used up

@@ -62,7 +62,13 @@ function followerInfo(a) {
     const out = { kind: "follower", unit: a, title, sub: _uiLabel(a.element) + " · LV " + (a.level || 1) + (ev ? " · EVOLVED" : ""), color: _uiColour(a.element), attacks: [], jobs: [], stats: [] };
     // ATTACKS
     out.attacks.push({ h: "ATTACK STYLE · " + r.label, note: r.text, rows: ps ? [["PLAY STYLE", ps.label + " (" + ps.blurb.toLowerCase() + ")"], ["ENGAGE REACH", _uiX(ps.reach) + " its usual"]] : [] });
-    { const mainName = ev && (ev.shot || ev.hit); if (mainName && SHOT_INFO[mainName]) out.attacks.push({ h: "MAIN ATTACK · " + mainName, note: ev.name, rows: SHOT_INFO[mainName]() }); }   // a form's named everyday attack (FIREBALL, CHAIN LIGHTNING, BURROW STRIKE)
+    { const mainName = ev && (ev.shot || ev.hit); if (mainName && SHOT_INFO[mainName]) out.attacks.push({ h: "MAIN ATTACK · " + mainName, note: ev.name, rows: SHOT_INFO[mainName]() }); }
+    {   // its SPECIAL ATTACK, a card attack set in its own menu (js/cards.js equipSpecial): its primary attack while set (js/combat.js cardAttackTry)
+        const sc = typeof equipSpecial === "function" ? equipSpecial(a) : null;
+        if (sc) { const A = sc.attack, w = typeof cardAttackReadyIn === "function" ? cardAttackReadyIn(a) : 0;
+            out.attacks.push({ h: "SPECIAL ATTACK · " + sc.name, note: "Its primary attack while the card is set (SPECIAL ATTACK, on the roster and its squad card). It makes no everyday hit between strikes.",
+                rows: [["REACH", A.reach + " tiles, an enemy it can see"], ["DAMAGE", _uiX(A.mult) + " its attack"], ["WAIT", A.wait + " s between strikes"], ["READY", w > 0 ? "in " + Math.ceil(w / 60) + " s" : "now"], ["EFFECT", sc.text]] }); }
+    }   // a form's named everyday attack (FIREBALL, CHAIN LIGHTNING, BURROW STRIKE)
     if (ev && MOVE_INFO[ev.move]) {
         const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, ev) : null, mv = cur && MOVE_INFO[cur.name] ? cur : { name: ev.move }, ids = typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, ev, id)) : [];
         out.attacks.push({ h: "SIGNATURE · " + mv.name, note: ev.name, rows: MOVE_INFO[mv.name]() });

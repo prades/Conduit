@@ -156,7 +156,7 @@ function page(w, h, query) {
             o.dealt = dealt.size; o.shelf = shelf; o.why = equipUnlockWhyNot('incendiary_gunner'); equipFound.push('incendiary_gunner'); o.whyFound = equipUnlockWhyNot('incendiary_gunner'); o.unlock = equipUnlock('incendiary_gunner'); o.owned = equipOwns('incendiary_gunner'); o.shards = shardCount;
             questDone = keepQD; equipDevSet('all'); o.all = EQUIP_PLAYER_CARDS.filter(r => equipInHand(r[0])).length + '/' + EQUIP_PLAYER_CARDS.length; equipDevSet(''); return o; })()`);
         same(JSON.stringify(r.locked), '[null,0]', 'before the purification: a roll, or a Player card on the shelf');
-        same(r.pool, 63, 'Series 2\'s pool'); same(r.poolPlayer, 18, 'Player cards in its pool'); same(r.dealt, 18, 'Player cards ever dealt in 2,000 packs'); ok(r.shelf > 0, 'no Player card on 300 shelves');
+        same(r.pool, 65, 'Series 2\'s pool (and the 2 card attacks since build 2026-11-06q)'); same(r.poolPlayer, 18, 'Player cards in its pool'); same(r.dealt, 18, 'Player cards ever dealt in 2,000 packs'); ok(r.shelf > 0, 'no Player card on 300 shelves');
         same(r.why, 'FIND IT IN A PACK FIRST', 'an outright unlock'); same(r.whyFound, null, 'the unlock once found'); same(r.unlock, true, 'kept for good'); same(r.owned, true, 'owned'); same(r.shards, 4000, 'the shards after');
         same(r.all, '18/18', 'every Player card in the hand with ?cards=all');
     });

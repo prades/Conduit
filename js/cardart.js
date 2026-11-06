@@ -565,7 +565,7 @@ function cardArtSpeciesOf(f) { const s = f && !f.isClone && typeof equipSubclass
 // the class that gives an equip card's face its texture: "" for a card with none (a Player card)
 function cardArtFaceClass(c) {
     if (!c) return "";
-    const key = c.kind === "element" && CARD_ART_ELEMENTS.indexOf(c.match) >= 0 ? c.match : c.kind === "class" ? cardArtClassOfRole(c.match) : c.kind === "subclass" && CARD_ART.species[c.match] ? c.match : null;
+    const key = c.kind === "element" && CARD_ART_ELEMENTS.indexOf(c.match) >= 0 ? c.match : c.kind === "class" ? cardArtClassOfRole(c.match) : c.kind === "subclass" && CARD_ART.species[c.match] ? c.match : c.kind === "form" && CARD_ART_ELEMENTS.indexOf(c.el) >= 0 ? c.el : null;   // (a card attack: its form's element)
     return key ? _caRule("cat-c-" + key, "--tex", cardArtUrl("c:" + key, () => cardArtFaceSvg(key))) : "";
 }
 // the class that gives a follower its backdrop: "" for a clone or anything not a follower with an element and a role; an evolved form of a species has its species' layer too (cat-f-<el>-<class>-<species>)

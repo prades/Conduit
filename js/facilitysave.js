@@ -143,6 +143,7 @@ function followerRecord(a) {
         playStyle: a.playStyle || undefined,   // js/commandcenter.js
         post: a.post || undefined,             // the room it holds (js/party.js)
         move: a.move || undefined,             // the signature move it was given (js/moves.js)
+        special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // its SPECIAL ATTACK card (js/cards.js)
         cards: typeof equipRecord === "function" ? equipRecord(a) : undefined   // its equip cards (js/cards.js); a fallen follower's preserved body leaves them out (js/specimen.js)
     };
 }
@@ -171,6 +172,7 @@ function followerBuild(entry) {
     if (entry.move) npc.move = entry.move;
     if (entry.playStyle) npc.playStyle = entry.playStyle;
     if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
+    if (entry.special && typeof equipSpecialRestore === "function") equipSpecialRestore(npc, entry.special);   // its SPECIAL ATTACK card
     if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base below already carries what it was born with; nothing is added again
     // A DEATH NO LONGER COSTS HP (the owner, 2026-11-01): a follower saved with hp stat lost to earlier deaths gets it back, up to what it was born with (js/breeding.js followerHp0)
     let base = entry.base; if (base && Number.isFinite(base.hp) && typeof followerHp0 === "function") { const h0 = followerHp0(npc); if (base.hp < h0) base = Object.assign({}, base, { hp: h0 }); }

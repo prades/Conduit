@@ -12,7 +12,7 @@
 // ASKED (2026-11-01): "be able to equip different equipment cards from the on-screen roster open tab, like the active squad bar." ITS TWO EQUIP CARD SLOTS are on the card (CARD 1 and CARD 2, as on the roster's
 // settings column: js/cardsui.js equipRosterDraw): tap a slot for the hand's cards (EMPTY, then each card, the ones that do not fit saying why), tap one and the member wears it at once (js/cards.js equipPut),
 // its rarity chip beside the name; one list is open at a time, and a press away closes the card as before.
-let _sfEls = null, _sfSig = "", _sfDD = null;   // _sfDD: the slot whose list of cards is open on the card (0 or 1), or null
+let _sfEls = null, _sfSig = "", _sfDD = null;   // _sfDD: the slot whose list of cards is open on the card (0, 1 or "sp", its SPECIAL ATTACK), or null
 function partyFlyEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("squadFly") : null; }
 // the member whose card is open: the last one tapped that is still picked, else the first that is picked; nobody when nothing is picked, when the card was put away (the member
 // is still picked: partyFlyPressAway), or when this is not the corners layout
@@ -39,9 +39,9 @@ function partyFlyClick(ev) {
     const f = _sfEls ? _sfEls.subject : null; if (!f) return;
     // A CARD SLOT's list: a card picked goes on (EMPTY takes the card off); the slot's own row opens or shuts its list (one open at a time)
     const o = t.closest(".sf-opt");
-    if (o) { if (o.disabled) return; const slot = +o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (typeof equipPut === "function") equipPut(f, slot, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
+    if (o) { if (o.disabled) return; const raw = o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (raw === "sp") { if (typeof equipSpecialPut === "function") equipSpecialPut(f, id); } else if (typeof equipPut === "function") equipPut(f, +raw, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
     const s = t.closest(".sf-slot");
-    if (s) { if (s.disabled) return; const slot = +s.getAttribute("data-slot"); _sfDD = _sfDD === slot ? null : slot; partyFlyRender(true); return; }
+    if (s) { if (s.disabled) return; const raw = s.getAttribute("data-slot"), slot = raw === "sp" ? "sp" : +raw; _sfDD = _sfDD === slot ? null : slot; partyFlyRender(true); return; }
     const b = t.closest("[data-act]"); if (!b) return;
     const act = b.getAttribute("data-act");
     if (act === "index") { if (typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
@@ -76,12 +76,14 @@ function _sfCardsDraw(E, f) {
     const sig = can ? [typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || ""].join("|") : "";
     if (sig === E.cardSig) return;
     E.cardSig = sig; box.textContent = ""; if (box.style) box.style.display = can ? "" : "none"; if (!can) return;
-    const hand = typeof equipUsableCards === "function" ? equipUsableCards() : [], chip = c => typeof _cdChip === "function" ? _cdChip(c, true) : null;
+    const all = typeof equipUsableCards === "function" ? equipUsableCards() : [], chip = c => typeof _cdChip === "function" ? _cdChip(c, true) : null;
     const mk = (tag, cls, txt) => { const e = document.createElement(tag); e.className = cls; if (txt != null) e.textContent = txt; return e; };
-    for (let slot = 0; slot < EQUIP.followerSlots; slot++) {
-        const cur = equipSlots(f)[slot], card = typeof equipCard === "function" ? equipCard(cur) : null, open = _sfDD === slot && hand.length > 0;
-        const b = mk("button", "sf-slot" + (open ? " open" : "") + (hand.length ? "" : " off")); b.type = "button"; b.setAttribute("data-slot", String(slot));
-        b.appendChild(mk("span", "sf-sk", "CARD " + (slot + 1))); b.appendChild(mk("span", "sf-sv", hand.length ? (card ? card.name : "EMPTY") : "NO CARDS IN YOUR HAND"));
+    // CARD 1 and CARD 2 list the cards that are not card attacks; SPECIAL ATTACK ("sp": the owner, 2026-11-06, "Including access main hud") lists the card attacks (js/cards.js equipSpecialWhyNot)
+    for (const slot of [0, 1].concat(typeof equipSpecialFor === "function" && equipSpecialFor(f) ? ["sp"] : [])) {   // (its SPECIAL ATTACK only on a form some card attack is for)
+        const sp = slot === "sp", hand = all.filter(c => !!c.attack === sp), why0 = c => sp ? equipSpecialWhyNot(f, c.id) : equipWhyNot(f, c.id, slot);
+        const cur = sp ? f.special || null : equipSlots(f)[slot], card = typeof equipCard === "function" ? equipCard(cur) : null, open = _sfDD === slot && hand.length > 0;
+        const b = mk("button", "sf-slot" + (open ? " open" : "") + (hand.length ? "" : " off") + (sp ? " sp" : "")); b.type = "button"; b.setAttribute("data-slot", String(slot));
+        b.appendChild(mk("span", "sf-sk", sp ? "SPECIAL ATTACK" : "CARD " + (slot + 1))); b.appendChild(mk("span", "sf-sv", hand.length ? (card ? card.name : "EMPTY") : sp ? "NO CARD ATTACKS IN YOUR HAND" : "NO CARDS IN YOUR HAND"));
         if (card) { const ch = chip(card); if (ch) b.appendChild(ch); }
         b.appendChild(mk("span", "sf-sa", open ? "▴" : "▾"));
         if (!hand.length) b.disabled = true;
@@ -89,8 +91,8 @@ function _sfCardsDraw(E, f) {
         if (!open) continue;
         const list = mk("div", "sf-slot-list");
         const opt = (label, sub, on, off, id, c) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", String(slot)); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); if (sub) el.appendChild(mk("small", "sf-os", sub)); if (c) { const ch = chip(c); if (ch) el.appendChild(ch); } if (off) el.disabled = true; list.appendChild(el); };
-        opt("EMPTY", cur ? "TAKE THE CARD OFF" : "", !cur, !cur, null, null);
-        hand.forEach(c => { const why = equipWhyNot(f, c.id, slot); opt(c.name, why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c), c.id === cur, !!why && c.id !== cur, c.id, c); });
+        opt("EMPTY", cur ? (sp ? "TAKE IT OFF: ITS EVERYDAY HIT IS BACK" : "TAKE THE CARD OFF") : "", !cur, !cur, null, null);
+        hand.forEach(c => { const why = why0(c); opt(c.name, why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c), c.id === cur, !!why && c.id !== cur, c.id, c); });
         box.appendChild(list);
     }
 }

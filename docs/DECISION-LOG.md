@@ -1816,3 +1816,23 @@ The owner: too much time goes into testing and side checks. From here on, only t
 ### Readings
 - The puddle spreads under the biggest group the Rotshard can see within CORRODE SHOT's 7 tiles, and grows over 2 s (as in the option it was weighed against). Its name is open.
 
+## DECISION: Build 2026-11-06p to main; the card attacks: their slot, their pace, the first two
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06p` on main. The slot, CRYSTAL SPIKE TRIO and SEARED CHARGE: implemented and tested in build `2026-11-06q`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.1, §12.5; `CHANGELOG.md` (q)
+
+### Decision
+1. "Push to main" (build p).
+2. The card attacks come from "Series 2, Prototype" and fit "Only its own form".
+3. "You must change it in a separate menu inside of index/roster card system. Including access main hud."
+4. "It stays the new primary attack." While it waits: "Nothing in between". The wait: "some of these powers especially if they have like lasting duration they can't be used over and over again so yeah the followers just chill while they're waiting for the next one and there's just a wind up to keep it from it being overpowered". The player does not hold it, and the follower does not fill it.
+5. CRYSTAL SPIKE TRIO: "Light" (1.5×, stunned 0.5 s, poisoned 3 s, 6 tiles, every 8 s). SEARED CHARGE: "Short and hard" (3 tiles, 1.5× half crushing and half fire, knocked back 2 tiles, every 8 s).
+
+### Supersedes
+- `NEXT-PHASE-ROADMAP.md` §12.1 item 3 ("an additional attack ... it does not replace the regular kit"): while set, the card attack replaces the everyday attack. The follower's moves and Ultimate are unchanged.
+
+### Readings
+- The "wind up" is the wait between strikes: a timer that starts at a strike. There is no charge-up before a strike.
+- The menu shows only on a form some card attack is for.
+

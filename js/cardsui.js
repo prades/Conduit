@@ -60,7 +60,7 @@ function _cdChip(c, mini) {
     return chip;
 }
 function _cdKindCol(c) {   // a card's colour: its element's (an element card, a Mage's aura), gold for a Player card, a species card its species' (js/cardart.js CARD_ART.species, Part 2), else the class cyan
-    const el = c.kind === "element" ? c.match : c.aura ? c.aura.el : null;
+    const el = c.kind === "element" ? c.match : c.aura ? c.aura.el : c.el || null;   // (a card attack: its form's element)
     if (el) return ((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === el)) || {}).color || "#8fe3ff";
     if (c.kind === "player") return "#ffe733";
     return (c.kind === "subclass" && typeof cardArtSpeciesColour === "function" && cardArtSpeciesColour(c.match)) || "#8fe3ff";
@@ -179,7 +179,7 @@ const CD_RAIL = { settle: 110, wheel: 60 };
 const _CD_EL_ORDER = ["fire", "toxic", "electric", "ice", "flux", "core"], _CD_ROLE_ORDER = ["brawler", "sniper", "camper"];
 const _CD_INFO_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED", "": "YOURS FOR GOOD" };
 function _cdRarityIdx(c) { return EQUIP_RARITIES.findIndex(r => r.id === c.rarity); }
-function _cdGroupIdx(c) { return c.kind === "element" ? _CD_EL_ORDER.indexOf(c.match) : c.kind === "class" ? 10 + _CD_ROLE_ORDER.indexOf(c.match) + (c.aura ? (1 + _CD_EL_ORDER.indexOf(c.aura.el)) / 10 : 0) : c.kind === "subclass" ? 20 + EQUIP_SUBCLASSES.findIndex(s => s.id === c.match) : 40; }   // (a Mage's auras after its other cards, by their element; the Player cards last)
+function _cdGroupIdx(c) { return c.kind === "element" ? _CD_EL_ORDER.indexOf(c.match) : c.kind === "class" ? 10 + _CD_ROLE_ORDER.indexOf(c.match) + (c.aura ? (1 + _CD_EL_ORDER.indexOf(c.aura.el)) / 10 : 0) : c.kind === "subclass" ? 20 + EQUIP_SUBCLASSES.findIndex(s => s.id === c.match) : c.kind === "form" ? 30 : 40; }   // (a Mage's auras after its other cards, by their element; the Player cards last)
 // the collection in the rail's order ("rarity" or "element")
 function equipCollectionOrder(cards, by) {
     return cards.slice().sort((a, b) => by === "element" ? (_cdGroupIdx(a) - _cdGroupIdx(b) || _cdRarityIdx(a) - _cdRarityIdx(b) || a.name.localeCompare(b.name))
@@ -377,7 +377,7 @@ function cardsRender(force) {
 // ── the roster (js/commandcenter.js _ccDrawSettings): the creature in view's subclass, and its two slots ──
 function equipSig(f) {   // what the settings column must redraw for
     if (!f || f.isClone || f.isFollower !== true) return "";
-    return [equipSubclassOf(f), equipSlots(f).join(","), equipHand.join(","), equipFound.join(",")].join("|");
+    return [equipSubclassOf(f), equipSlots(f).join(","), f.special || "", equipHand.join(","), equipFound.join(",")].join("|");
 }
 function _cdSubclassNote(f) {
     const s = equipSubclassOf(f);
@@ -390,13 +390,23 @@ function equipSubclassRow(side, f) {   // (drawn under the buttons, above the st
 }
 function equipRosterDraw(side, f) {   // (drawn under the styles)
     if (!f || f.isClone || f.isFollower !== true || typeof _ccEl !== "function") return;
-    const hand = equipUsableCards();   // (the hand and what the packs found)
+    const hand = equipUsableCards().filter(c => !c.attack);   // (the hand and what the packs found; the card attacks have their own menu, below)
     for (let slot = 0; slot < EQUIP.followerSlots; slot++) {
         const cur = equipSlots(f)[slot], card = equipCard(cur), opts = [];
         opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE THE CARD OFF" : "", fn: () => { equipPut(f, slot, null); } });
         hand.forEach(c => { const why = equipWhyNot(f, c.id, slot); opts.push({ label: c.name, col: "#19e6c1", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipPut(f, slot, c.id); } }); });
         _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);
     }
+    equipSpecialDraw(side, f);
+}
+// ITS SPECIAL ATTACK (the owner, 2026-11-06: "You must change it in a separate menu inside of index/roster card system. Including access main hud"): a menu of its own under CARD 1 and CARD 2, listing the card
+// attacks in the hand (js/cards.js equipSpecialCards): the ones for another form say why; the one set is lit. Set, it is the follower's primary attack (js/combat.js cardAttackTry).
+function equipSpecialDraw(side, f) {
+    if (!f || f.isClone || f.isFollower !== true || typeof _ccDropdown !== "function" || !equipSpecialFor(f)) return;   // (only on a form some card attack is for)
+    const hand = equipSpecialCards(), cur = f.special || null, card = equipCard(cur), opts = [];
+    opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE IT OFF: ITS EVERYDAY HIT IS BACK" : "", fn: () => { equipSpecialPut(f, null); } });
+    hand.forEach(c => { const why = equipSpecialWhyNot(f, c.id); opts.push({ label: c.name, col: "#19e6c1", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipSpecialPut(f, c.id); } }); });
+    _ccDropdown(side, "special", "SPECIAL ATTACK", card ? card.name : "EMPTY", "#ff9a3a", opts, hand.length ? null : "NO CARD ATTACKS IN YOUR HAND", card ? _cdChip(card, true) : null);
 }
 // ── YOU, ON THE ROSTER (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the player's card in view (js/commandcenter.js
 // _ccFocusDraw) shows its two cards, each a mini card as the collection's (a tap opens its list); the settings column has YOUR SLOT 1 and YOUR SLOT 2, drop-downs as a follower's CARD 1 and CARD 2, listing the hand

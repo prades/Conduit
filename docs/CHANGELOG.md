@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **q · Card attacks: the SPECIAL ATTACK slot; CRYSTAL SPIKE TRIO and SEARED CHARGE** (the owner, 2026-11-06: "Series 2, Prototype", "Only its own form", its own menu, "It stays the new primary attack", "Nothing in between", "Light", "Short and hard"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06p` went to main at the owner's word ("Push to main").
+  - **The slot:** a follower has a SPECIAL ATTACK slot of its own (`f.special`, saved as `special`), apart from CARD 1 and 2. It is set in a separate menu on the roster and on the HUD squad card, shown only on a form some card attack is for; INFO (the index) lists it. A card attack cannot go in CARD 1 or 2. EXILE, a re-roll or falling empties it; a card out of the hand comes off.
+  - **How it fights:** set, the card attack is the follower's primary attack. It strikes when its 8 s wait is over and an enemy it can see is in reach; between strikes it makes no everyday hit. Its moves and its Ultimate still fire. Taken off, the everyday hit is back.
+  - **CRYSTAL SPIKE TRIO** (Rotshard): three toxic crystal spikes under one enemy within 6 tiles: 1.5× its attack (toxic), stunned 0.5 s, poisoned 3 s.
+  - **SEARED CHARGE** (Quillstone): a charge of up to 3 tiles along walkable floor into one enemy: 1.5× its attack, half crushing and half fire, knocked back 2 tiles.
+  - Series 2 deals both at Prototype (its pool: 65 cards). VOLTAGE FIELD and WRAITHFIRE are not built (their numbers are open).
+  - Tests: followercombat (the card attacks, new), cards, series2, classcards, series2abilities, playercards, packs, market, squadfly, carousel, unitinfo, cardart, combat, damage, loadorder, boot, globals, bible. No full run. Not playtested.
+
 - **p · The Rotshard's puddle** (the owner, 2026-11-06: "Short and tight"; on the branch; commit named in git log).
   - **Main:** build `2026-11-06o` went to main at the owner's word ("Push to main").
   - **The Rotshard's own Ultimate** (its name is open; called TOXIC PUDDLE for now): a toxic puddle spreads under the biggest group of enemies it can see within its CORRODE SHOT's reach (7 tiles) **[reading]**, growing from half a tile to 2 tiles over 2 s **[reading]**, for 5 s. Every 0.5 s a cluster of small black crystal shards erupts under each enemy in it: 0.5× its power (toxic), poisoned 2 s. Nothing in sight: it keeps its charge.

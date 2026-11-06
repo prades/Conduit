@@ -233,6 +233,7 @@ function updateRTSNPC(actor) {
                 // orbit below divides by it. -dy/0 is NaN, and a NaN position
                 // never recovers — see the net in updateNPC.
                 const dist=Math.max(NPC_MIN_DIST, Math.sqrt(dx*dx+dy*dy));
+                if (typeof cardAttackTry === "function" && cardAttackTry(actor, nearestEnemy)) return;   // its card attack, when set and ready (cardAttackTry; SEARED CHARGE reaches 3 tiles)
                 if (dist > 1.4) {
                     // Approach
                     actor.x+=(dx/dist)*actor.moveSpeed;
@@ -267,6 +268,7 @@ function updateRTSNPC(actor) {
                 // SIGHT (Milestone Two: a wall or a tall object stops its shot, docs/COMBAT.md): an enemy it cannot see it walks toward, as one too far off, until it can; the navigation layer
                 // takes that step round the wall (js/facilityplay.js facilityReroute). It fires only at one it sees (cover it sees over may still stop the shot).
                 const seen = typeof facilitySeesFrom !== "function" || facilitySeesFrom(actor.x, actor.y, nearestEnemy.x, nearestEnemy.y);
+                if (typeof cardAttackTry === "function" && cardAttackTry(actor, nearestEnemy)) return;   // its card attack, when set and ready (cardAttackTry)
 
                 if (seen && dist < SNIPER_MIN) {
                     actor.x-=(dx/dist)*actor.moveSpeed*1.2;
@@ -278,7 +280,8 @@ function updateRTSNPC(actor) {
                 } else {
                     // In sweet spot — fire ranged projectile
                     if (!actor.attackCooldown) actor.attackCooldown = 0;
-                    if (actor.attackCooldown <= 0) {
+                    if (typeof cardAttackHolds === "function" && cardAttackHolds(actor)) { /* a card attack set: no shot between its strikes */ }
+                    else if (actor.attackCooldown <= 0) {
                         const elDef = ELEMENTS.find(e=>e.id===actor.element);
                         const col   = elDef ? elDef.color : "#fff";
                         const dmg   = (actor.stats?.specialAttack||10) * MAGE_SHOT_MULT;
@@ -300,7 +303,8 @@ function updateRTSNPC(actor) {
         if (role === "camper") {
             const CAMPER_ENGAGE_RADIUS = 4;
             if (nearestEnemy && nearestEnemyDist < CAMPER_ENGAGE_RADIUS * _reach) {
-                if (typeof burrowStrikeTry === "function" && burrowStrikeTry(actor, nearestEnemy)) return;   // the THERMITE BURROWER's hit is BURROW STRIKE, from under the floor (js/combat.js); every other technician's is the plain hit below
+                if (typeof burrowStrikeTry === "function" && burrowStrikeTry(actor, nearestEnemy)) return;
+                if (typeof cardAttackTry === "function" && cardAttackTry(actor, nearestEnemy)) return;   // its card attack, when set and ready (cardAttackTry)   // the THERMITE BURROWER's hit is BURROW STRIKE, from under the floor (js/combat.js); every other technician's is the plain hit below
                 // Enemy close enough — engage
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy);

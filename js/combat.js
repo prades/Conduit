@@ -325,6 +325,7 @@ function burrowStep(f) {
 }
 function followerAttack(actor, target) {
     if (!actor || !target || target.dead) return;
+    if (typeof cardAttackHolds === "function" && cardAttackHolds(actor)) { cardAttackTry(actor, target); return; }   // (a card attack set, js/cards.js: it is the primary, and there is no everyday hit between its strikes)
     if (!actor.attackCooldown) actor.attackCooldown = 0;
     if (actor.attackCooldown > 0) { actor.attackCooldown--; return; }
 

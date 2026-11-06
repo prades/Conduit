@@ -496,6 +496,33 @@ function measure(w, h) {
         same(r.first.join(), 'true,true,0,0,120,0.5', 'the first shards at 0.5 s: the two in it hurt, poisoned 2 s, a bite 0.5× its power (before the damage system); the one past its edge and the far one not yet');
         same(r.grown.join(), '2,true,0', 'grown to 2 tiles: the one 1.6 tiles out bitten now, the far one never'); same(r.gone, true, 'gone after 5 s');
     });
+    check('CARD ATTACKS (the owner, 2026-11-06: "Series 2, Prototype", "Only its own form", a SPECIAL ATTACK menu of its own, "It stays the new primary attack", "Nothing in between"): the two cards, their own slot, its rules, saved and cleared; CRYSTAL SPIKE TRIO ("Light") and SEARED CHARGE ("Short and hard") strike, then wait 8 s with no everyday hit; taken off, the everyday hit is back', () => {
+        const r = J(`(function(){ const o = {}, ids = ['crystal_spike_trio', 'seared_charge'];
+            __clear(); for (const id of ids) if (equipFound.indexOf(id) < 0) equipFound.push(id);
+            const rs = __fol('toxic', 'sniper', 'rotshard'), qs = __fol('fire', 'brawler', 'quillstone');
+            o.cards = ids.map(id => [EQUIP_CARDS[id].pack, EQUIP_CARDS[id].rarity, EQUIP_CARDS[id].kind, EQUIP_CARDS[id].match].join(':')).join();
+            o.why = [equipSpecialWhyNot(qs, ids[0]), equipSpecialWhyNot(rs, ids[0]), equipWhyNot(rs, ids[0], 0), equipSpecialWhyNot(rs, 'chitin_scale')].join('|');
+            o.put = [equipSpecialPut(qs, ids[0]), equipSpecialPut(rs, ids[0]), rs.special, equipSpecialPut(qs, ids[1]), qs.special].join();
+            o.rec = [followerRecord(rs).special, equipSpecialRestore({}, ids[1]), equipSpecialRestore({}, 7)].join();
+            const t = __foe(rs.x + 5, rs.y); rs._spReadyAt = 0;
+            o.spike = [cardAttackTry(rs, t), __dmg(t) > 0, t.stunned, t.toxicWeakened, elementEffects.some(e => e.type === 'spiketrio'), rs._spReadyAt - frame];
+            const d1 = __dmg(t); rs.attackCooldown = 0; o.wait = [cardAttackTry(rs, t), (followerAttack(rs, t), __dmg(t) === d1)];
+            followerProjectiles.length = 0; t.x = rs.x + 4; for (let i = 0; i < 30; i++) updateNPC(rs); o.noShot = followerProjectiles.length;
+            equipSpecialPut(rs, null); rs.attackCooldown = 0; for (let i = 0; i < 30; i++) updateNPC(rs); o.shotBack = followerProjectiles.length > 0;
+            const far = __foe(qs.x + 4, qs.y + 3), u = __foe(qs.x + 2.5, qs.y); qs._spReadyAt = 0; const x0 = qs.x;
+            o.charge = [cardAttackTry(qs, far), cardAttackTry(qs, u), Math.hypot(u.x - qs.x, u.y - qs.y) < 1.4, qs.x > x0, __dmg(u) > 0, !!(u.kbVX || u.kbVY), elementEffects.some(e => e.type === 'searedcharge'), qs._spReadyAt - frame];
+            equipFound.splice(equipFound.indexOf(ids[0]), 1); equipValid(rs); equipSpecialPut(rs, ids[0]); o.gone = [rs.special === undefined, equipClear(qs), qs.special === undefined].join();
+            return o; })()`);
+        same(r.cards, 'series2:prototype:form:rotshard,series2:prototype:form:quillstone', 'the two cards: Series 2, Prototype, each its own form\'s');
+        same(r.why, 'FOR A ROTSHARD ONLY||A SPECIAL ATTACK · ITS OWN MENU|NOT A SPECIAL ATTACK', 'the slot\'s rules: another form, its own form, not in CARD 1 or 2, an equip card not in the special slot');
+        same(r.put, 'false,true,crystal_spike_trio,true,seared_charge', 'set in its own slot (not on the wrong form)');
+        same(r.rec, 'crystal_spike_trio,true,false', 'saved with the follower; a bad saved value not believed');
+        same(r.spike.join(), 'true,true,30,180,true,480', 'CRYSTAL SPIKE TRIO: it struck, stunned 0.5 s, poisoned 3 s, the spikes drawn, 8 s to wait');
+        same(r.wait.join(), 'false,true', 'waiting: no strike and no everyday hit'); same(r.noShot, 0, 'the Mage shot no everyday shot while it waited');
+        same(r.shotBack, true, 'the card taken off: its everyday shot is back');
+        same(r.charge.join(), 'false,true,true,true,true,true,true,480', 'SEARED CHARGE: not past 3 tiles; charged in, hurt it, knocked it back, the streak drawn, 8 s to wait');
+        same(r.gone, 'true,true,true', 'out of the hand it comes off; EXILE (a clear) empties it');
+    });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);
             return { ids, names, dupN: names.length - new Set(names).size, idOk: ids.every(k => MOVES[k].id === k), missing }; })()`);

@@ -49,7 +49,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if (card) {
       var slotRows = function(){ return $$('#squadFly .sf-slot').map(function(b){ return [b.querySelector('.sf-sk').textContent, b.querySelector('.sf-sv').textContent, b.disabled, !!b.querySelector('.cd-chip.mini')]; }); };
       out.cards = { off: slotRows(), offList: $$('#squadFly .sf-slot-list').length }; click($$('#squadFly .sf-slot')[0]); await wait(40); out.cards.offTap = $$('#squadFly .sf-slot-list').length;
-      equipDevSet('all'); partyTick(); partyFlyRender(true); await wait(60); out.cards.rows = slotRows(); out.cards.hand = equipUsableCards().length;
+      equipDevSet('all'); partyTick(); partyFlyRender(true); await wait(60); out.cards.rows = slotRows(); out.cards.hand = equipUsableCards().filter(function(c){ return !c.attack; }).length;
       click($$('#squadFly .sf-slot')[0]); await wait(60); out.cards.list = $$('#squadFly .sf-opt').map(function(o){ return [o.querySelector('.sf-ol').textContent, o.disabled, (o.querySelector('.sf-os') || {}).textContent || '', !!o.querySelector('.cd-chip.mini')]; }); out.cards.open = $$('#squadFly .sf-slot.open').length;
       var fitOpt = out.cards.list.filter(function(o){ return o[0] !== 'EMPTY' && !o[1]; })[0]; out.cards.pick = fitOpt ? fitOpt[0] : null; out.cards.pickId = (Object.values(equipCards()).filter(function(c){ return c.name === out.cards.pick; })[0] || {}).id || null;   // (the first card that fits this member: no card fits everyone since the Universal kind was retired, Build B)
       click($$('#squadFly .sf-opt').filter(function(o){ return o.querySelector('.sf-ol').textContent === out.cards.pick; })[0]); await wait(60);
