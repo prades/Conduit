@@ -237,9 +237,67 @@ Found by the study:
 9. **Flux damage** as a share of the target's health: its scope (which Flux moves) and values.
 10. **The saucer with legs:** Side Quest's look today, or a new Flux follower design?
 
+## 13. Milestone Two: the study (2026-11-06, after build `2026-11-06g`)
+
+The owner chose Milestone Two next: cover, blocking sight and stepping over objects as properties of their own (the roadmap §3.3: "Do not treat these properties as interchangeable"; §9's open rows: "Cover rules: Which materials and shapes provide actual protection?", "Traversal rules: Which objects can be stepped over or used for navigation?"). Nothing is built until the owner answers. A read-only audit of the code on `claude/start-game-project-HSh7Z` at 2903cd1, re-checking §6.2:
+
+**What stops a shot today: almost nothing [code].**
+- Every travelling shot flies straight through walls, glass and props:
+  - the player's service gun and machine gun;
+  - the mages' bolts (the Ember Hood's FIREBALL, the Thunderhead's CHAIN LIGHTNING), QUILL BURST's quills;
+  - the creatures' abdomen shots (the strikers, tanks and bosses of the scorpion, spider, mantis and moth; ants and beetles have none);
+  - the sentries' shots (one was seen firing through a wall: `js/stations.js` 248-250).
+  
+  They share one list, moved and hit in `js/game.js` 1157-1193.
+- The laser and the instant moves test nothing either.
+- The only exceptions:
+  - the **Photonic Shield**, which stops enemy shots, bites, specials and steps (`techShieldStopsShot`, `techShieldBetween`, `js/techabilities.js` 332-350);
+  - the **fire bombs**, which bounce off walls and props (`js/firebombs.js` 38-77).
+- The mages pick their targets without any sight test, so they shoot through walls.
+
+**Melee [code].** Bites (1.5 tiles), the lash (1.45) and the punch (1.4) test nothing but distance and the shield. Across a one-tile object two bodies can be about 1.0 apart, so a bite reaches over a crate. Across a wall (a one-tile band) they are at least 1.8 apart, so it does not.
+
+**Sight [code].** `_fpLos` (`js/facilityplay.js` 40-44) is the only line test; it asks whether the line is walkable. It has 40 uses:
+- 23 are **movement** (route smoothing, steering, wander spots, leaps, FAULTLINE);
+- 17 are **seeing** (the auto-lock and the enemy card, a creature's choice of prey, the combat step's "enemy near", the technicians' aims, the Technomancer's arc, ARC WARDEN, BURROW STRIKE, spawns out of the player's sight).
+
+So today every solid blocks sight exactly as it blocks walking. Making some objects see-through would mean a second line test for the 17 seeing uses only.
+
+**Heights [code: the 3D models; the player is about 70 px tall, a wall 122].**
+
+| Height | Objects |
+|---|---|
+| Low (waist high or less) | barrier (38), barrel (~40), crate (34-44), desk and computer desk tops (30-33), reception desk, lab bench (36), cart, table, couch, sentry |
+| Middle | generator, filing cabinet, cooler, crate stack (60-66), console (displays to ~64) |
+| Tall | relay, charger, vending machine, locker, tall cabinet, server rack, plants, tanks, freezer bank, floodlight, the truck |
+
+No height field exists in the map: it would be a property to add per kind.
+
+**Something like cover already [code].** The arena's spiders lurk behind crates, crate stacks and barrels (`js/facilityspawn.js` 156-190). They are drawn faint and the auto-lock skips them: a look and a targeting rule, not protection.
+
+**Stepping over [code].** Walking is one shared floor for every unit:
+- the walkable cells, the route graph, the floor's stretches and A*;
+- FLUX MOVE's never-cut-the-floor rule.
+
+Letting some units pass over some objects means a second floor, or a cost on cells, through all of it. The only units that cross solids today are flights, which a launcher throws.
+
+**The roadmap's own note:** its data table defines `blocksLineOfSight` as obstructing "attacks or visibility", one property for both, while §3.3 asks for sight and cover kept apart. The questions below keep them apart.
+
+**The questions put to the owner** (each with the simplest option first; recommendations are the agent's, not decisions):
+1. **What cover does:**
+   - *stops shots* at the object, as the Photonic Shield does (nothing new to tune);
+   - or *cuts the damage* to a unit right behind it (a share to be chosen);
+   - or both.
+2. **Which objects give cover:** barriers, crates and crate stacks, barrels, desks, consoles and benches (by material and shape, the roadmap's words).
+3. **Whether walls stop shots too** (today they do not; with cover stopping shots, a wall that does not would be odd).
+4. **Sight over low objects:**
+   - keep it as today, where every object blocks sight;
+   - or let waist-high objects be seen over, so a unit behind a barrier can be seen and aimed at, and its cover then stops the shot.
+5. **Stepping over** (asked after these): not yet; or low barriers stepped over by the player; or crates used as steps.
+
 ## 12. History
 
 - 2026-11-06: the owner's roadmap (PR #19, `NEXT-PHASE-ROADMAP.md`) set the design; the owner asked for this study and registered the roadmap as a future update (`DECISION-LOG.md`). Written from four code audits on build `2026-11-06a`.
 - 2026-11-06: the owner chose the Flux phase and answered §11's questions (two rounds); §9.1's plan was written from a second read of the code.
 - 2026-11-06, build `2026-11-06f`: Build 1 built (FLUX MOVE in the arena; Telegrab retired); to main at the owner's word.
-- 2026-11-06, build `2026-11-06g`: Build 2 built (the test room, `?fluxlab`).
+- 2026-11-06, build `2026-11-06g`: Build 2 built (the test room, `?fluxlab`); to main at the owner's word. The owner chose Milestone Two next (§13: the study and the questions).
