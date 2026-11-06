@@ -1588,3 +1588,22 @@ After build `2026-11-06f` (FLUX MOVE in the arena; Telegrab retired) and its ful
 
 ### Impact
 Main has FLUX MOVE as the flux technician's ability, and Telegrab is gone from it; the Sewers' water-sample puzzle has two routes there too. The build's readings (`OPEN-QUESTIONS.md` §1v) stand as built, the owner's to confirm or change. The test room (`?fluxlab`) is the next build, on the branch.
+
+## DECISION: Build 2026-11-06g to main
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06g`: implemented and tested (its full run: 91 of 91 suites, 1,938 checks); not playtested.
+- **Branch/build:** build `2026-11-06g` (d3121e6, the card suite's follow-up 56d52a6 and the full run's docs 3c595d6), with the record of the last push before it (ef9fca8), fast-forwarded to `main` from `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `FLUX-MOVEMENT.md` §9.1 (Build 2), `OPEN-QUESTIONS.md` §1w, `FACILITY.md`, `CHANGELOG.md` (2026-11-06 g)
+
+### Context
+After build `2026-11-06g` (the Flux test room, `game.html?fluxlab`) and its full run, the owner was asked whether to push it to main, with screenshots of the room and of FLUX MOVE aimed at the pocket's barrier. The owner was told that nobody had played it and that its layout and some rules are readings (`OPEN-QUESTIONS.md` §1w).
+
+### Decision
+- "Push to main".
+
+### Alternatives considered
+- Keep it on the branch until the room had been tried or its layout changed.
+
+### Impact
+Main has the test room behind `?fluxlab`. Without the flag the game is as it was. The room's readings (§1w) stand as built, the owner's to confirm or change. Milestone Two (cover, sight and traversal as properties of their own) is next in the Flux plan, designed with the owner once the tool has been tried.
