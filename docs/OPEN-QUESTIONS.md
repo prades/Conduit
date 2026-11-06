@@ -446,6 +446,11 @@ Where nothing said, these readings were taken. Each stands as built until the ow
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
 
+- **The name ELECTRIC TECHNICIAN is cut on the roster's strip** (seen 2026-11-06 in build `2026-11-06h`'s full run; main's code, 3c595d6, measures the same).
+  - On the Command Center's carousel at 1180 × 820, a strip card's name box is 113 px wide. ELECTRIC TECHNICIAN needs 125 px; the other seventeen element-and-class names fit.
+  - tests/carousel.js checks that no name is cut. It draws its followers at random, so it fails only when an electric follower is drawn as a technician. Three re-runs, with other draws, passed.
+  - Ways to mend it, for the owner: a slightly smaller type for a long name on the strip; let the name take two lines; or shorten TECHNICIAN to TECH. on the strip only (the card in view keeps the whole name). Nothing is changed until the owner picks.
+
 - **tests/perf.js's frame budget fails at random** (seen 2026-11-06, build `2026-11-06a`; for whoever keeps the tests, not a design question).
   - The check: one frame of a busy arena (ten eggs, twelve creatures) must draw fewer than 21,500 canvas operations.
   - Six runs on each build measured 20,731 to 21,674 on `2026-11-06a` and 21,209 to 21,514 on `2026-11-03a`; both builds went over the budget at times. It passed in the full runs of builds `2026-11-06b` and `2026-11-06c`, which changed nothing it draws. Earlier full runs measured up to 21,499.

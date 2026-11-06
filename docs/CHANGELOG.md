@@ -44,6 +44,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
     - tests/cover.js (new, 19 checks): the traits and the counts; sight (low objects, tall ones, every pane of glass, every doorway, walking apart); the auto-lock; the player's round and a creature's shot at cover and over the shooter's own; glass and a doorway; tall and low-no-cover objects; the 1.0 tile; a lob; HEXFIRE and QUILL BURST; the laser; a Mage, a creature's rear shot and a turret; FLUX MOVE carrying cover; the cost of a shot's step; the real page at `?fluxlab` on a tablet.
     - Suites whose fixtures faked sight with the walking test, or set units outside the building or across walls, brought up to date: tests/enemycard.js, tests/facilityplay.js, tests/followercombat.js, tests/technomancer.js, tests/mutator.js, tests/playercards.js, tests/evolution.js.
     - tests/run.js (92 suites).
+  - **The full run** (of the code as committed in 29c7e7f): **91 of 92 suites passed** (1,956 of 1,957 checks), tests/perf.js's frame budget among them. The commit was made while the run was going, at a stop hook's request; nothing changed during the run.
+    - **The one failure is old, not this build's:** tests/carousel.js's check that no name is cut on the roster strip at 1180 × 820. The suite's followers are drawn at random, and the run drew an ELECTRIC TECHNICIAN: that name is the only one of the eighteen that does not fit a strip card (125 px of text in a 113 px box).
+    - Main's code (3c595d6) measures the same; this build changed no layout. Three re-runs of the suite, with other draws, passed.
+    - Not mended here: `OPEN-QUESTIONS.md` §2.
   - **The Bible:** a new section, "Walls, cover and sight" (Creatures and combat). The laser, the signature moves and the rear shot are brought up to date. 92 suites, 36 of them in a real browser.
   - **Written up:**
     - docs/COMBAT.md (§8, new: the canonical rules);
