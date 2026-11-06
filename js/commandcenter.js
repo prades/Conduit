@@ -542,7 +542,8 @@ function _ccFocusDraw(box) {
     E.card.style.setProperty("--c", col);
     set(E.name, "textContent", typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER");
     set(E.lv, "textContent", "LV " + (f.level || 1)); E.lv.style.display = ""; set(E.el, "textContent", f.isClone ? "CLONE" : String(_ccElLabel(f.element)).toUpperCase());
-    { const sc = typeof equipSubclassOf === "function" ? equipSubclassLabel(equipSubclassOf(f)) : ""; set(E.sc, "textContent", sc); E.sc.style.display = sc ? "" : "none"; }   // its SUBCLASS tag, once it has evolved into a form that has one (js/cards.js)
+    { const sc = typeof equipSubclassOf === "function" ? equipSubclassLabel(equipSubclassOf(f)) : ""; set(E.sc, "textContent", sc); E.sc.style.display = sc ? "" : "none";   // its SUBCLASS tag, once it has evolved into a form that has one (js/cards.js)
+      if (typeof cardArtEmblemClass === "function") cardArtMark(E.sc, sc ? cardArtEmblemClass(equipSubclassOf(f)) : "", "emb"); }   // with its species' emblem before the word, in the species' colour (Part 2: js/cardart.js)
     set(E.state, "textContent", st ? st.text + (st.room ? " · " + st.room : "") : "");
     E.state.style.display = st ? "" : "none"; if (st) E.state.style.setProperty("--tc", st.col);
     const rows = _ccFocusStats(f);

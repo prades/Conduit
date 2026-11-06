@@ -9,7 +9,8 @@
 //   What a follower IS (a brawler, a mage, a technician) and its element are how it was found: the player does not choose them (js/species.js FOLLOWER_TYPES), and every element is online from the start.
 // THE ENEMY CARD   ASKED: "whenever you get near an enemy, a little index pops up in that little corner as well, and you can have your followers attack that creature if you tap it, and depending on what creatures you
 //                  have selected or what followers you have selected, they'll attack it." It is the creature the gun is locked on (js/targeting.js: the dial at the top left is the same one), or the nearest in range
-//                  when the gun is put away: its picture, its kind (SPIDER STRIKER), level and element, a health bar with its numbers and bite. TAP IT and the units the tool is set to (WHO: ALL, one element, or the selected
+//                  when the gun is put away: its picture, its race's emblem and its kind (SPIDER STRIKER), level and element, a health bar with its numbers and bite, and under them the row of what its race is weak to
+//                  and resists (the following update's Part 2, below: mixToolFoeRow). TAP IT and the units the tool is set to (WHO: ALL, one element, or the selected
 //                  roster cards, which win) are sent at THAT creature (an attack order, js/npc.js attackOrderTarget): they go for it whatever is nearer, calm or not, until it is dead, thirty seconds have
 //                  gone, it is out of reach of you, or they are given another order (RETREAT, HOLD, COME).
 // The Crystal's flag is how everything else opens it: a tap on the Crystal. On a wide screen the flag is just put down; on a phone it is "the tool is open".
@@ -90,13 +91,23 @@ function mixToolAttack(foe) {
     mixToolSay("ATTACK \u00b7 " + pool.length + " AT " + (typeof targetName === "function" ? targetName(foe) : "IT"), "#ff7755"); mixToolRender(true); return pool.length;
 }
 const _mtEsc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-// The card: the picture, the kind (SPIDER STRIKER), level · element, the health bar with its numbers and the button strip (who goes); what it is in words is the dial's INFO. `fresh`: it has just popped up.
+// THE RACE'S ROW (the following update's Part 2; approved 2026-11-06, docs/UI-STYLE.md): WEAK and the types its race is weak to in green chips, then RESISTS and those it resists in grey ones, from the game's own
+// table (js/damage.js dmgRow: DMG_RACE, docs/COMBAT.md §7.3; a boss uses its race's), in the approved short words (DMG_SHORT: SLASH, PIERCE, SHOT, CRUSH, QUAKE, ELEM). A longer row wraps to a second line and
+// the card grows upward (it stands on its foot in every layout). "" for a creature with no row.
+function mixToolFoeRow(foe) {
+    const row = typeof dmgRow === "function" ? dmgRow(foe) : null; if (!row || !(row.weak.length || row.resist.length)) return "";
+    const say = t => _mtEsc((typeof DMG_SHORT !== "undefined" && DMG_SHORT[t]) || String(t).toUpperCase());
+    const part = (list, cls, label) => list.length ? '<b class="' + cls + '">' + label + '</b>' + list.map(t => '<i class="' + cls + '">' + say(t) + '</i>').join('') : '';
+    return '<span class="mt-foe-dmg">' + part(row.weak, 'wk', 'WEAK') + part(row.resist, 'rs', 'RESISTS') + '</span>';
+}
+// The card: the picture, the race's emblem (Part 2: js/cardart.js cardArtRaceEmblemClass) and the kind (SPIDER STRIKER), level · element, the health bar with its numbers, the race's row and the button
+// strip (who goes); what it is in words is the dial's INFO. `fresh`: it has just popped up.
 function mixToolFoeHTML(foe, pool, fresh) {
-    const c = targetCardInfo(foe), img = typeof targetPortraitURL === "function" ? targetPortraitURL(foe) : "", going = mixToolOrdered(foe);
+    const c = targetCardInfo(foe), img = typeof targetPortraitURL === "function" ? targetPortraitURL(foe) : "", going = mixToolOrdered(foe), emb = typeof cardArtRaceEmblemClass === "function" ? cardArtRaceEmblemClass(foe) : "";
     const sub = [c.level !== null ? "LV " + c.level : "", c.element].filter(Boolean).join(" \u00b7 "), go = !pool.length ? "NO ONE TO SEND" : going ? "ATTACKING \u00b7 " + going + " OF " + pool.length : "ATTACK \u00b7 " + mixToolTarget(pool);
     return '<button class="mt-foe' + (fresh ? ' pop' : '') + (going ? ' going' : '') + (!pool.length ? ' idle' : '') + '" data-act="attack" style="--c:' + c.col + '" aria-label="Attack ' + _mtEsc(c.name) + '">'
         + '<span class="mt-foe-pic">' + (img ? '<img alt="" src="' + img + '">' : '') + '</span>'
-        + '<span class="mt-foe-txt"><b class="mt-foe-name">' + _mtEsc(c.title) + '</b><i class="mt-foe-sub">' + _mtEsc(sub) + '</i><span class="mt-foe-hp"><u></u></span><em class="mt-foe-num"></em></span>'
+        + '<span class="mt-foe-txt"><b class="mt-foe-name' + (emb ? ' ' + emb : '') + '">' + _mtEsc(c.title) + '</b><i class="mt-foe-sub">' + _mtEsc(sub) + '</i><span class="mt-foe-hp"><u></u></span><em class="mt-foe-num"></em>' + mixToolFoeRow(foe) + '</span>'
         + '<span class="mt-foe-go">' + _mtEsc(go) + '</span></button>';
 }
 // the health bar and its numbers follow the creature without rebuilding the card (a rebuild between a press and its release loses the tap)

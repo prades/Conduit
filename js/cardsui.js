@@ -59,13 +59,15 @@ function _cdChip(c, mini) {
     for (let i = 0; i < EQUIP_RARITIES.length; i++) { const seg = _cdEl("i", i < n ? "on" : ""); seg.style.setProperty("--i", String(i)); chip.appendChild(seg); }   // (--i: its place, so a lit chip can light up one segment after another)
     return chip;
 }
-function _cdKindCol(c) {   // a card's colour: its element's (an element card, a Mage's aura), gold for a Player card, else the class and species cyan
+function _cdKindCol(c) {   // a card's colour: its element's (an element card, a Mage's aura), gold for a Player card, a species card its species' (js/cardart.js CARD_ART.species, Part 2), else the class cyan
     const el = c.kind === "element" ? c.match : c.aura ? c.aura.el : null;
-    return el ? ((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === el)) || {}).color || "#8fe3ff" : c.kind === "player" ? "#ffe733" : "#8fe3ff";
+    if (el) return ((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === el)) || {}).color || "#8fe3ff";
+    if (c.kind === "player") return "#ffe733";
+    return (c.kind === "subclass" && typeof cardArtSpeciesColour === "function" && cardArtSpeciesColour(c.match)) || "#8fe3ff";
 }
 // THE 3D CARD (ASKED 2026-11-01: "actual cards that look 3D ... a 3D looking object inside the card, and the card itself is kind of like tilted a little bit on an axis ... the text might be a raised hologram"; the
 // design canvas's chosen board, then "Make an update to implement this style"). The card is a slab tilted in 3D with a little thickness (game.html "THE 3D CARDS"): its face wears the card's texture under a veil
-// (js/cardart.js: its element's, or a class card's class's), the element's crystal or a class card's cube floats over it, the rarity and the card's state are along its top, the rarity chip stands on its right
+// (js/cardart.js: its element's, a class card's class's, a species card's species'), the element's crystal or a class card's cube floats over it, the rarity and the card's state are along its top, the rarity chip stands on its right
 // edge, and its name, kind and text are a raised hologram with a blurred copy under it for its shadow. `extra` is its state: "hand", "found", "locked" (or "" for none). The callers put what can be done with it
 // (its buttons, who wears it) under the slab, flat: a tap there is never lost to the tilt.
 const _CD_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED" };
@@ -84,8 +86,11 @@ function _cdSlab(c, extra) {
     const item = typeof cardArtItemUrl === "function" ? cardArtItemUrl(c) : "";
     const long = /\S{12,}/.test(c.name) ? " long" : "";   // (a name with a long word, CORE REINFORCEMENT, is set smaller so that it breaks between words, not inside one)
     const ghost = _cdEl("div", "cd-holo ghost"); ghost.setAttribute("aria-hidden", "true");   // the hologram's shadow: its own class names, so a card has one .cd-name, .cd-kind and .cd-text
-    ghost.appendChild(_cdEl("div", "cd-gn" + long, c.name)); ghost.appendChild(_cdEl("div", "cd-gk", equipKindLabel(c))); ghost.appendChild(_cdEl("div", "cd-gt", c.text || "")); face.appendChild(ghost);
-    const holo = _cdEl("div", "cd-holo"); holo.appendChild(_cdEl("div", "cd-name" + long, c.name)); holo.appendChild(_cdEl("div", "cd-kind", equipKindLabel(c))); holo.appendChild(_cdEl("div", "cd-text", c.text || "")); face.appendChild(holo);
+    // a species card's emblem before its kind (Part 2: js/cardart.js cardArtKindEmblemClass), on the hologram and its shadow alike, so the shadow stays under it
+    const emb = typeof cardArtKindEmblemClass === "function" ? cardArtKindEmblemClass(c) : "", gk = _cdEl("div", "cd-gk", equipKindLabel(c)), kd = _cdEl("div", "cd-kind", equipKindLabel(c));
+    if (emb) { cardArtMark(gk, emb, "emb"); cardArtMark(kd, emb, "emb"); }
+    ghost.appendChild(_cdEl("div", "cd-gn" + long, c.name)); ghost.appendChild(gk); ghost.appendChild(_cdEl("div", "cd-gt", c.text || "")); face.appendChild(ghost);
+    const holo = _cdEl("div", "cd-holo"); holo.appendChild(_cdEl("div", "cd-name" + long, c.name)); holo.appendChild(kd); holo.appendChild(_cdEl("div", "cd-text", c.text || "")); face.appendChild(holo);
     face.appendChild(_cdEl("i", "cd-emit l")); face.appendChild(_cdEl("i", "cd-emit r"));
     slab.appendChild(face); art.appendChild(slab);
     if (item) { s.classList.add("itemed"); const im = _cdEl("i", "cd-item"); im.style.backgroundImage = 'url("' + item + '")'; im.setAttribute("aria-hidden", "true"); art.appendChild(im); }
@@ -194,7 +199,8 @@ function _cdMini(c) {
 function _cdInfo(c) {
     const st = _cdStateOf(c), box = _cdEl("div", "cd-info"); box.style.setProperty("--c", _cdKindCol(c));
     const row = (k, v, cls) => { const r = _cdEl("div", "cd-irow" + (cls ? " " + cls : "")); r.appendChild(_cdEl("span", "cd-ik", k)); r.appendChild(typeof v === "string" ? _cdEl("span", "cd-iv", v) : v); box.appendChild(r); return r; };
-    row("NAME", c.name, "nm"); row("KIND", equipKindLabel(c), "kd");
+    row("NAME", c.name, "nm");
+    { const kd = row("KIND", equipKindLabel(c), "kd"), emb = typeof cardArtKindEmblemClass === "function" ? cardArtKindEmblemClass(c) : ""; if (emb) cardArtMark(kd.lastChild, emb, "emb"); }   // (a species card's emblem before its kind, as on its face)
     const n = equipRarityBars(c), meter = _cdEl("span", "cd-iv cd-imeter"); meter.setAttribute("role", "img"); meter.setAttribute("aria-label", "RARITY · " + equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length);
     for (let i = 0; i < EQUIP_RARITIES.length; i++) { const seg = _cdEl("i", i < n ? "on" : ""); seg.style.setProperty("--i", String(i)); meter.appendChild(seg); }
     meter.appendChild(_cdEl("b", null, equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length)); row("RARITY", meter, "rr");

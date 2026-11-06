@@ -6,6 +6,8 @@
 // The sandbox checks the tables and the pictures (every element and class has a texture, ids that never clash in a mix, the class textures in currentColor so a tint reaches them, the same drawing on every load, the
 // crystal's four faces and the cube's three), and which class each card and each follower gets. Chromium checks the real page: the cards' parts and states, a tilt with no 3D edge to go wrong, buttons a tap reaches,
 // every picture an image the browser can draw, and the backdrop on each follower card (the roster's strip, the card in view, the squad's slots, the card on the fly, the INFO, a phone's roster).
+// THE FOLLOWING UPDATE'S PART 2 (build 2026-11-06d) gave a species card its species' texture and an evolved form's backdrop its species' layer: this suite follows them where they meet its checks (the ids across every
+// texture, a species card's class, a backdrop's class name); tests/speciesart.js checks the species looks, the emblems and the enemy card's row themselves.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -36,7 +38,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var $ = function(s){ return document.querySelector(s); }, $$ = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
   var art = function(el){ return el ? (Array.prototype.slice.call(el.classList).filter(function(c){ return /^ca[tgc]-/.test(c); }).join(' ')) : null; };
   var tex = function(el){ return el ? getComputedStyle(el).getPropertyValue('--tex').trim().slice(0, 30) : ''; };
-  var want = function(f){ return 'cat-f-' + f.element + '-' + ({ brawler: 'brawler', sniper: 'mage', camper: 'technician', hybrid: 'brawler' })[f.role]; };
+  var want = function(f){ var sp = f.evolved && EQUIP_FORM_SUBCLASS[f.evolved]; return 'cat-f-' + f.element + '-' + ({ brawler: 'brawler', sniper: 'mage', camper: 'technician', hybrid: 'brawler' })[f.role] + (sp ? '-' + sp : ''); };   // (an evolved form of a species has its species' layer too: Part 2)
   var hit = function(el){ var r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2, h = document.elementFromPoint(x, y); return !!h && (h === el || el.contains(h)); };
   var load = function(url){ return new Promise(function(res){ var im = new Image(); im.onload = function(){ res([im.naturalWidth, im.naturalHeight]); }; im.onerror = function(){ res(null); }; im.src = url; }); };
   try {
@@ -87,7 +89,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     _cdReveal = { pack: equipPackLast.pack, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice() }; cardsRender(true); await wait(200);   // a pack's reveal: its cards are cards too
     var rc = measureCards('#cardsRoot .cr-overlay .cd-card'); out.revealCards = rc.length; out.cards = out.cards.concat(rc); _cdReveal = null; cardsRender(true); await wait(60);
     // every picture is one the browser can draw (the nine card faces, the eighteen backdrops, the crystal in each colour and the cube)
-    var urls = []; ['fire', 'electric', 'ice', 'flux', 'core', 'toxic', 'brawler', 'mage', 'technician'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
+    var urls = []; ['fire', 'electric', 'ice', 'flux', 'core', 'toxic', 'brawler', 'mage', 'technician', 'crustacean', 'mollusk', 'elemental', 'drone', 'jelly'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
     ['fire', 'electric', 'ice', 'flux', 'core', 'toxic'].forEach(function(e){ ['brawler', 'mage', 'technician'].forEach(function(c){ urls.push(['f:' + e + ':' + c, cardArtUrl('f:' + e + ':' + c, function(){ return cardArtMixSvg(e, c); })]); }); urls.push(['gem:' + e, 'data:image/svg+xml,' + encodeURIComponent(cardArtGemSvg(cardArtElementColour(e)))]); });
     urls.push(['cube', 'data:image/svg+xml,' + encodeURIComponent(cardArtCubeSvg('#8fe3ff'))]);
     out.css = { sheet: !!$('#cardArtCss'), rules: ($('#cardArtCss') || { textContent: '' }).textContent.split('\\n').filter(Boolean).length };   // (by now the roster and the CARDS screen have asked for theirs)
@@ -136,15 +138,15 @@ function measure(w, h) {
     await check('the class textures are drawn in currentColor only, so a follower\'s tint (or a class card\'s colour) reaches every line of them', () => {
         for (const k of ['brawler', 'mage', 'technician']) { const t = J(`cardArtTexture(${JSON.stringify(k)})`); ok(/currentColor/.test(t), k + ' has no currentColor'); ok(!/#[0-9a-f]{3,6}\b/i.test(t.replace(/href="#\w+"|url\(#\w+\)/g, '')), k + ' has a colour of its own: ' + (t.match(/#[0-9a-f]{3,6}\b/i) || [])[0]); }
     });
-    await check('no two textures use the same id, so any element\'s and any class\'s share a document (a follower\'s backdrop) without one taking the other\'s gradient or pattern', () => {
+    await check('no two textures use the same id, so any element\'s, any class\'s and any species\' share a document (a follower\'s backdrop) without one taking another\'s gradient or pattern', () => {
         const seen = {};
-        for (const k of J('CARD_ART_ELEMENTS.concat(CARD_ART_CLASSES)')) for (const m of J(`cardArtTexture(${JSON.stringify(k)})`).match(/id="[^"]+"/g) || []) { ok(!seen[m] || seen[m] === k, m + ' is in ' + seen[m] + ' and ' + k); seen[m] = k; }
-        ok(Object.keys(seen).length >= 15, 'too few ids: ' + Object.keys(seen).length);
+        for (const k of J('CARD_ART_ELEMENTS.concat(CARD_ART_CLASSES, CARD_ART_SPECIES)')) for (const m of J(`cardArtTexture(${JSON.stringify(k)})`).match(/id="[^"]+"/g) || []) { ok(!seen[m] || seen[m] === k, m + ' is in ' + seen[m] + ' and ' + k); seen[m] = k; }
+        ok(Object.keys(seen).length >= 30, 'too few ids: ' + Object.keys(seen).length);
     });
-    await check('the same drawing on every load: the seeded textures come out the same when drawn again', () => {
-        const a = J('CARD_ART_ELEMENTS.concat(CARD_ART_CLASSES).map(cardArtTexture)');
+    await check('the same drawing on every load: the seeded textures (the species\' too) come out the same when drawn again, whatever was drawn before them', () => {
+        const all = 'CARD_ART_ELEMENTS.concat(CARD_ART_CLASSES, CARD_ART_SPECIES)', a = J(all + '.map(cardArtTexture)');
         run('for (const k in _caTexMemo) delete _caTexMemo[k];');
-        same(J('CARD_ART_ELEMENTS.concat(CARD_ART_CLASSES).map(cardArtTexture)').join('|'), a.join('|'), 'a second drawing');
+        same(J(all + '.slice().reverse().map(cardArtTexture).reverse()').join('|'), a.join('|'), 'a second drawing, in the other order');
     });
 
     group('THE PICTURES: an equip card\'s face, a follower\'s backdrop, the crystal and the cube');
@@ -167,12 +169,12 @@ function measure(w, h) {
     });
 
     group('WHO WEARS WHAT: the classes on the page');
-    await check('an ELEMENT card wears its element\'s texture and the crystal in its colour; a CLASS card its class\'s texture and the cube (a Mage\'s aura, the cube in its element\'s colour); a Player or a Subclass card no texture (none was designed), the crystal in its colour', () => {
+    await check('an ELEMENT card wears its element\'s texture and the crystal in its colour; a CLASS card its class\'s texture and the cube (a Mage\'s aura, the cube in its element\'s colour); a SPECIES card its species\' texture (Part 2); a Player card no texture (none was designed), the crystal in its colour', () => {
         same(J('cardArtFaceClass({ kind: "element", match: "fire" })'), 'cat-c-fire', 'an element card');
         same(J('cardArtFaceClass({ kind: "class", match: "sniper" })'), 'cat-c-mage', 'a mage card'); same(J('cardArtFaceClass({ kind: "class", match: "camper" })'), 'cat-c-technician', 'a technician card'); same(J('cardArtFaceClass({ kind: "class", match: "brawler" })'), 'cat-c-brawler', 'a brawler card');
-        same(J('cardArtFaceClass({ kind: "player" })'), '', 'a Player card'); same(J('cardArtFaceClass({ kind: "subclass", match: "drone" })'), '', 'a subclass card'); same(J('cardArtFaceClass(null)'), '', 'no card');
+        same(J('cardArtFaceClass({ kind: "player" })'), '', 'a Player card'); same(J('cardArtFaceClass({ kind: "subclass", match: "drone" })'), 'cat-c-drone', 'a species card'); same(J('cardArtFaceClass({ kind: "subclass", match: "plasma" })'), '', 'a species with no look'); same(J('cardArtFaceClass(null)'), '', 'no card');
         same(J('cardArtObjectClass({ kind: "class" }, "#8fe3ff")'), 'cac-8fe3ff', 'a class card\'s cube'); same(J('cardArtFaceClass(EQUIP_CARDS.winter_crown) + "|" + cardArtObjectClass(EQUIP_CARDS.winter_crown, _cdKindCol(EQUIP_CARDS.winter_crown)) + "|" + _cdKindCol(EQUIP_CARDS.pressure_spur) + "|" + _cdKindCol({ kind: "player" })'), 'cat-c-mage|cac-99ddff|#8fe3ff|#ffe733', 'an ice aura (the Mage\'s texture, the cube in ice), an opportunity card (cyan), a Player card (gold)'); same(J('cardArtObjectClass({ kind: "element" }, "#ff3300")'), 'cag-ff3300', 'an element card\'s crystal');
-        for (const c of J('Object.values(EQUIP_CARDS).map(c => [c.id, c.kind, c.match])')) if (c[1] === 'element' || c[1] === 'class') ok(J(`cardArtFaceClass(EQUIP_CARDS[${JSON.stringify(c[0])}])`), c[0] + ' has no texture');
+        for (const c of J('Object.values(EQUIP_CARDS).map(c => [c.id, c.kind, c.match])')) if (c[1] === 'element' || c[1] === 'class' || c[1] === 'subclass') ok(J(`cardArtFaceClass(EQUIP_CARDS[${JSON.stringify(c[0])}])`), c[0] + ' has no texture');
     });
     await check('a follower wears its element\'s texture under its class\'s (a hybrid a brawler\'s); a clone, something that is not a follower, or one with no element or role, none', () => {
         same(J('cardArtUnitClass({ isFollower: true, element: "fire", role: "brawler" })'), 'cat-f-fire-brawler', 'a fire brawler');
@@ -240,8 +242,8 @@ function measure(w, h) {
         const T = measure(w, h);
         await check('it ran', () => { ok(T, 'no result'); ok(!T.err, T.err); same((T.errs || []).length, 0, 'page errors: ' + JSON.stringify(T.errs)); });
         if (!T || T.err) continue;
-        await check('every picture is one the browser can draw: the nine card faces (300 x 420), the eighteen backdrops (300 x 175), the crystal in six colours and the cube', () => {
-            same(T.images.length, 34, 'pictures'); for (const [k, s] of T.images) { ok(s && s[0] > 0 && s[1] > 0, k + ' did not load'); if (/^c:/.test(k)) same(s.join('x'), '300x420', k); if (/^f:/.test(k)) same(s.join('x'), '300x175', k); }
+        await check('every picture is one the browser can draw: the fourteen card faces (300 x 420: the elements\', the classes\' and the species\'), the eighteen backdrops (300 x 175), the crystal in six colours and the cube', () => {
+            same(T.images.length, 39, 'pictures'); for (const [k, s] of T.images) { ok(s && s[0] > 0 && s[1] > 0, k + ' did not load'); if (/^c:/.test(k)) same(s.join('x'), '300x420', k); if (/^f:/.test(k)) same(s.join('x'), '300x175', k); }
             ok(T.css.sheet && T.css.rules >= 10, 'the page has no art classes: ' + JSON.stringify(T.css));
         });
         await check('THE CARDS (the stage\'s, for a card of each kind; the SHOP\'s; a pack\'s reveal): each a tilted slab (a 3D transform under a perspective, one flat layer, no 3D edge) with its back, its face (the texture, the frame, the rarity, the chip, the crystal and its glow and shadow, the hologram and its shadow, the emitters); one name, kind and text each; the shadow\'s copy hidden from a reader', () => {
@@ -249,14 +251,15 @@ function measure(w, h) {
             same(T.tilt.transform, 'matrix3d(', 'the tilt'); same(T.tilt.style, 'flat', 'one layer'); ok(T.tilt.perspective !== 'none', 'no perspective'); same(T.tilt.sides, 0, '3D edges');
             for (const c of T.cards) { ok(c.face, c.name + ' has no face'); same(c.parts.join(), '', c.name + ' lacks'); same([c.names, c.kinds, c.texts, c.chips].join(), '1,1,1,1', c.name + '\'s name, kind, text and chip'); same(c.ghost, c.name, c.name + '\'s shadow'); same(c.ghostHidden, 'true', c.name + '\'s shadow is read out'); }
         });
-        await check('an element card wears its element\'s texture and the crystal, a class card its class\'s and the cube (an aura\'s in its element\'s colour), a Player or a Subclass card no texture and the crystal', () => {
-            const role = { brawler: 'brawler', sniper: 'mage', camper: 'technician' };
+        await check('an element card wears its element\'s texture and the crystal, a class card its class\'s and the cube (an aura\'s in its element\'s colour), a species card its species\' texture and the crystal in its colour (Part 2), a Player card no texture and the crystal', () => {
+            const role = { brawler: 'brawler', sniper: 'mage', camper: 'technician' }, spCol = J('CARD_ART.species');
             for (const c of T.cards) {
                 if (c.kind === 'element') { same(c.tex, 'cat-c-' + c.match, c.name); ok(/^cag-/.test(c.gem), c.name + ' has no crystal: ' + c.gem); }
                 else if (c.kind === 'class') { same(c.tex, 'cat-c-' + role[c.match], c.name); same(c.gem, 'cac-' + (c.aura ? { fire: 'ff3300', electric: 'ffee33', ice: '99ddff', flux: '9933ff', core: '00ccaa', toxic: '66ff66' }[c.aura] : '8fe3ff'), c.name + '\'s cube'); }
+                else if (c.kind === 'subclass') { same(c.tex, 'cat-c-' + c.match, c.name); same(c.gem, 'cag-' + spCol[c.match].slice(1), c.name + '\'s crystal'); }
                 else { same(c.tex, '', c.name + ' (' + c.kind + ') has a texture'); ok(/^cag-/.test(c.gem), c.name + ' has no crystal'); }
             }
-            ok(T.cards.some(c => c.kind === 'element') && T.cards.some(c => c.kind === 'class' && !c.aura) && T.cards.some(c => c.aura) && T.cards.some(c => c.kind === 'player'), 'not every kind was shown');
+            ok(T.cards.some(c => c.kind === 'element') && T.cards.some(c => c.kind === 'class' && !c.aura) && T.cards.some(c => c.aura) && T.cards.some(c => c.kind === 'player') && T.cards.some(c => c.kind === 'subclass'), 'not every kind was shown');
         });
         await check('its state is written along its top (IN YOUR HAND, FOUND THIS RUN, LOCKED, or nothing), the rarity chip stands on its right edge (the right fifth of the card, its upper half), and its buttons are under it (beside it, for the collection\'s card on its stage) where a tap reaches them', () => {
             const st = { hand: 'IN YOUR HAND', found: 'FOUND THIS RUN', locked: 'LOCKED' };
@@ -282,7 +285,7 @@ function measure(w, h) {
         await check('the INFO\'s picture is framed on its backdrop' + (T.fly ? '; the card on the fly wears its member\'s' : '') + (T.radial ? '; a phone\'s roster cards wear theirs' : ''), () => {
             same(T.info.art, T.info.want, 'the INFO'); ok(T.info.bg && T.info.framed === '2px', 'the INFO picture: ' + JSON.stringify(T.info));
             if (T.fly) { same(T.fly.art, T.fly.want, 'the card on the fly'); ok(/^url\("data:image\/svg/.test(T.fly.tex), 'its --tex: ' + T.fly.tex); }
-            if (T.radial) { ok(T.radial.length >= 3, 'a phone\'s roster cards: ' + T.radial.length); for (const a of T.radial) ok(/^cat-f-\w+-(brawler|mage|technician)$/.test(a), 'a phone roster card: ' + a); }
+            if (T.radial) { ok(T.radial.length >= 3, 'a phone\'s roster cards: ' + T.radial.length); for (const a of T.radial) ok(/^cat-f-\w+-(brawler|mage|technician)(-(crustacean|mollusk|elemental|drone|jelly))?$/.test(a), 'a phone roster card: ' + a); }
         });
     }
 

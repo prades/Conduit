@@ -88,6 +88,7 @@ const SUITES = [
     ['follower progression: the recruitment posts claimed once for ◆200 (short of it nothing moves; the squad-full question; saved), breeding a bonded pair\'s offspring for ◆50 (its element an even toss between its parents\', its class an even draw among the three, seedable; the formula, deterministic and better raised, applied once through level-ups, loads, respawns and bodies; two taps; the squad-full question), a death that costs nothing, the Vital items gone', 'followerprog.js'],
     ['the Command Center as a carousel', 'carousel.js'],
     ['the 3D cards and the followers\' backdrops: a texture for each element and class, the tilted slab with its crystal or cube and its hologram, a follower\'s element under its class on every card', 'cardart.js'],
+    ['the species\' looks (the following update\'s Part 2): each species\' texture as approved on its cards and as a third layer on its followers, the seventeen emblems where the mockups put them, the enemy card\'s race emblem and its WEAK / RESISTS row from COMBAT.md §7.3', 'speciesart.js'],
     ['facility play',            'facilityplay.js'],
     ['facility map',             'facility.js'],
     ['attract screen (website background)', 'attract.js'],

@@ -470,7 +470,7 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 8. **Player cards: answered 2026-11-02.** Switching class: the card sleeps. Each role's kit and numbers: drafted and approved ("Approve as drafted"; section 2, "The 18 kits"). The hit's element: the role's element, for the triangle only (`COMBAT.md` §7.9). The electric Technomancer role's name: ARC WARDEN.
 9. **The Universal kind: answered 2026-11-02.** Retired.
 10. **The clone: answered 2026-11-02.** It gets auras.
-11. **The cards' look** for each family and the Player cards: open. The species (subclass) textures and icons are designed in `UI-STYLE.md`.
+11. **The cards' look** for each family and the Player cards: open. The species (subclass) cards' look is approved and built (build `2026-11-06d`: each species' texture, colour and emblem; `UI-STYLE.md`, "Gate 2"); the Player cards' own look and each class card's item are still open.
 12. **The opportunity card and the split: answered 2026-11-02. Both parts count**, a race weak to the hit's physical type or to Elemental. (The question: every hit has an elemental part, so every hit on a scorpion or a moth exploits a weakness; count only the physical type, or both?)
 13. **The Mage auras and the split: answered 2026-11-02. The aura stays on ATK**, the physical part (the alternatives were the whole hit, or SP.ATK).
 14. **The refunds' timing: answered 2026-11-02.** The shards wait in the collection and are added when the next run starts, at once if a run is in progress. (The alternative was a free unlock for each refund.)

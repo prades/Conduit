@@ -1433,3 +1433,29 @@ Gate 2's looks, all approved on 2026-11-06:
 Not covered here: BLOOM's emblem and texture, which come with BLOOM.
 
 The drawings to build from are in design/ui-mocks/part2-looks-art.js. The build is Part 2's next step in `FOLLOWING-UPDATE.md` (js/cardart.js, js/cardsui.js, js/commandcenter.js, the enemy card), with its tests.
+
+## DECISION: Part 2 built: the species' looks, the emblems and the enemy card's row
+
+- **Date:** 2026-11-06
+- **Status:** Implemented and verified by tests in build `2026-11-06d` (not playtested). On the branch only; main waits on the owner's word.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, build `2026-11-06d`; main still at build `2026-11-06c`.
+- **Related feature/docs:** `FOLLOWING-UPDATE.md` Part 2, `UI-STYLE.md` ("Gate 2", "The build"), `OPEN-QUESTIONS.md` §3, the entry before this one
+
+### Context
+Gate 2 closed with every look approved. Asked what next, the owner chose to build it, and to keep it on the branch.
+
+### Decision
+- "Start the Part 2 build".
+- "Keep on the branch".
+
+### Alternatives considered
+- Draft other work first (BLOOM's drafts, or Part 3's first card item).
+- Push the build to main as soon as it passed.
+
+### Impact
+- **Built as drawn:** the five species textures (the approved drawings, ported unchanged and checked byte for byte), a species card's texture and colour, the third backdrop layer at 38% on an evolved form of a species, the 17 emblems, the roster's subclass tag's emblem, and the enemy card's race emblem and WEAK / RESISTS row in short words.
+- **Readings** (`OPEN-QUESTIONS.md` §3), standing unless the owner says otherwise:
+  - the hologram's shadow carries the emblem too;
+  - a species card's colour reaches its mini card, its chip in lists and a pack's reveal;
+  - a retired form has no species, so no tag and no layer.
+- **Open:** where the six element emblems go. They are drawn and in the code, and shown nowhere until the owner places them (a mockup first).

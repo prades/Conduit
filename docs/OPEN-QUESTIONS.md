@@ -441,7 +441,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - the coral crab Technician, whose REEF grows coral the player can climb to new areas.
 
     These are drafts and mockups for your approval. Confirmed last: the other 50% is toxic or fire; Series 2's BLOOM cards wait for the apparatus; an evolved toxic follower waits for its class's BLOOM form.
-- **Side Quest's look, and the subclass art** (designed 2026-11-02; Side Quest's look built in `2026-11-02f`, the subclass art not built):
+- **Side Quest's look, and the subclass art** (designed 2026-11-02; Side Quest's look built in `2026-11-02f`; the subclass art approved 2026-11-06 and built in `2026-11-06d`):
   - Side Quest becomes the void walker, the old flux worker's form (`img/evo/hauler.png`; `SEWER-QUEST.md`). *(Built in `2026-11-02f`; readings in §1o.)*
   - Each of the five subclasses gets a theme, a texture and an icon, and each element an icon. They show on cards, followers and the enemy card (`UI-STYLE.md`).
   - Mockups come first, for your approval. **Drafted 2026-11-06** (gate 2): `UI-STYLE.md`, "Proposed for gate 2"; the design canvas's four Part 2 boards. For your yes or correction:
@@ -487,6 +487,14 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     **The five other race emblems** (beetle, scorpion, spider, mantis, moth) were drawn and put on the design canvas. **Answered:** "Approve all five".
 
     **Gate 2 is closed (2026-11-06): every look is approved.** Nothing is open here but the build; BLOOM's looks come with BLOOM.
+
+    **Built in `2026-11-06d`** (the owner: "Start the Part 2 build", "Keep on the branch"; on the branch only; `UI-STYLE.md`, "The build"). Implemented as drawn and verified by tests/speciesart.js; not playtested. **Readings taken where the mockups did not say, standing unless you say otherwise:**
+    1. **The hologram's shadow carries the emblem too.** A card's name, kind and text are a raised hologram with a blurred copy under it for its shadow. The mockup put the emblem on the kind line and in the details only, so its shadow would have stood off to one side; the shadow now has it as well.
+    2. **A species card's colour goes wherever a card's colour goes:** its mini card on the rail (with its texture), its chip in a slot's list, a pack's reveal. The mockup changed the colour everywhere it was drawn.
+    3. **A retired form has no species** (js/cards.js), so it has no subclass tag and no species layer, as before.
+
+    **Open, for you:**
+    - **Where do the six element emblems go?** They are drawn, approved and in the code, but no mockup placed them, so none is shown yet. Two places would match what the species have: before the kind line of an element card (ELEMENT · FIRE), as a species card has its emblem; and on the roster's element tag (FIRE), as the subclass tag has its. Either is a mockup first (`ART-PROCESS.md`).
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;

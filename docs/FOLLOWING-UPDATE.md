@@ -5,7 +5,7 @@
   - **Part 1a** (the Player card rules and the Gunslinger's six) is implemented and tested in build `2026-11-02h`, on main since the owner's "Push to main". Its three main readings were confirmed as built (`OPEN-QUESTIONS.md` §1p).
   - **Part 1b** (the Technomancer's six) is implemented and tested in build `2026-11-02i`, on main since the owner's "Push to main"; two readings confirmed as built (`OPEN-QUESTIONS.md` §1q).
   - **Part 1c** (the Mutator's six) is implemented and tested in build `2026-11-02j`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1r, for the owner. All eighteen kits are in.
-  - **Part 1d** (Series 2 deals the eighteen; Side Quest sells the Sewers' three) is implemented and tested in build `2026-11-06c`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1u (the shelf's Player cards kept as built, the rest for the owner). **All of Part 1 is built.** **Part 2's gate 2 is approved** (2026-11-06, every look; Part 2 below). Its build is next; nothing in the game has changed for it yet.
+  - **Part 1d** (Series 2 deals the eighteen; Side Quest sells the Sewers' three) is implemented and tested in build `2026-11-06c`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1u (the shelf's Player cards kept as built, the rest for the owner). **All of Part 1 is built.** **Part 2's gate 2 is approved** (2026-11-06, every look; Part 2 below). **Part 2 is implemented and tested in build `2026-11-06d`**, on the branch only (the owner: "Start the Part 2 build", "Keep on the branch"); its readings are in `OPEN-QUESTIONS.md` §3, for the owner.
   - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Gate 2 (the mockups) was approved on 2026-11-06. Still open: gate 3 (each card item).
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-02e`.
   - It follows the update in `NEXT-UPDATE.md`.
@@ -149,6 +149,17 @@ Each part is its own commit, with its own tests and a full green run before the 
   - **Updated:** cardart, enemycard, cards, bible.
 - **Risks:** readability on an iPad; the frame cost of more textures (they are cached pictures, as today's are).
 
+**Built in `2026-11-06d`** (on the branch `claude/start-game-project-HSh7Z`; the owner: "Start the Part 2 build", "Keep on the branch"). Status: **Implemented**, and **Verified** by the tests below; not playtested. The looks are in `UI-STYLE.md` ("Gate 2"); the readings are in `OPEN-QUESTIONS.md` §3.
+- **What is in the game:**
+  - the five species textures, ported unchanged from the approved drawings (the same seeds give the same pictures, checked byte for byte against design/ui-mocks/part2-looks-art.js);
+  - a species card wears its texture in its colour, and that colour on its frame, chip, crystal and kind line; its emblem stands before its kind on its face, its hologram's shadow and its details;
+  - an evolved form of a species carries its texture as the third layer of its backdrop, everywhere a backdrop is drawn (the roster, the card in view, the squad's slots, the card on the fly, the INFO, a phone's roster);
+  - the roster's subclass tag carries the species' emblem in the species' colour;
+  - the enemy card carries its race's emblem before its name and, under its numbers, its race's WEAK and RESISTS row in the approved short words.
+  - The six element emblems are drawn and in the code, and shown nowhere: no mockup placed them (`OPEN-QUESTIONS.md` §3).
+- **Files (as built):** js/cardart.js (the textures, the colours, the third layer, the emblems and their classes), js/cardsui.js (a species card's colour; the emblem on its kind line), js/commandcenter.js (the roster's tag), js/mixtool.js (the enemy card is built there, not in js/targeting.js as planned above: its emblem and row), js/damage.js (`DMG_SHORT`, the short words), game.html (the emblem's rule, the tag's and the name's sizes, the row's chips; the in-game guide's enemy card line).
+- **Tests:** tests/speciesart.js (new, 23 checks: the sandbox, and the real page on a tablet and a phone); tests/cardart.js and tests/enemycard.js updated (a species card's texture, a backdrop's species in its class name; the enemy card's height bound, 110 → 150 px, for the row, with a check for its emblem and row); tests/bible.js unchanged, the Bible's new numbers checked by it. tests/cards.js needed no change.
+
 ### Part 3: The class-card items (`ART-PROCESS.md`, `SERIES-2.md`)
 
 - **The rule (approved):** "Each look approved, one at a time" and "ONE piece first".
@@ -211,7 +222,7 @@ The BLOOM build itself would come in the update after this one, or late in this 
 
 1. **This scope and order:** Parts 1 to 4, and whether BLOOM's drafts come in this update. **Approved** 2026-11-02 ("Approve as drafted": BLOOM's drafts are not in this update).
 2. **Gate 1:** the 18 Player card kits (the draft comes first), the player's elemental part, the electric Technomancer role's new name. **Approved** 2026-11-02: "Approve as drafted"; "The role's element"; "ARC WARDEN".
-3. **Gate 2:** the looks' mockups. **Approved** 2026-11-06, every look (Part 2 above; `DECISION-LOG.md`).
+3. **Gate 2:** the looks' mockups. **Approved** 2026-11-06, every look (Part 2 above; `DECISION-LOG.md`). Built in `2026-11-06d`, on the branch.
 4. **Gate 3:** the first card item, then each batch.
 5. **Build C's open point:** whether Side Quest's picture in the dialogue box changes too. **Answered** 2026-11-02: "Keep as built".
 
@@ -226,7 +237,7 @@ The BLOOM build itself would come in the update after this one, or late in this 
 ## 8. Size
 
 - **Part 1** is the largest: 18 kits across three classes, a shop and a deal.
-- **Part 2** next: art and interface.
+- **Part 2** (art and interface) is built in `2026-11-06d`. **Part 3** comes next, at its gate.
 - **Part 3** is steady art work in batches.
 - **Part 4** is small.
 - **BLOOM's drafts** are design work, no code.

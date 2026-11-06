@@ -23,6 +23,7 @@
 
 const DMG_TYPES = ["slashing", "piercing", "projectile", "crushing", "earthquake", "elemental"];
 const DMG_LABEL = { slashing: "SLASHING", piercing: "PIERCING", projectile: "PROJECTILE", crushing: "CRUSHING", earthquake: "EARTHQUAKE", elemental: "ELEMENTAL" };
+const DMG_SHORT = { slashing: "SLASH", piercing: "PIERCE", projectile: "SHOT", crushing: "CRUSH", earthquake: "QUAKE", elemental: "ELEM" };   // the enemy card's row (js/mixtool.js; the owner approved "Short words", 2026-11-06)
 const DMG_WEAK = 1.3, DMG_RESIST = 0.7;
 const DMG_PHYSICAL_W = 0.5, DMG_ELEMENTAL_W = 0.75;   // the elemental share of a follower's attack: half and half; an Elemental attack a quarter and three quarters
 const DMG_LEAN_STEP = 0.1;                           // a form's lean: each step moves 10% between ATK and SP.ATK (docs/COMBAT.md §7.7)

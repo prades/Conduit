@@ -58,9 +58,9 @@ The owner, of the board picked on the design canvas ("Conduit 3D card concepts")
 
 **The textures** (js/cardart.js), each a drawing on the 300 × 420 card, seeded so it is the same on every load: FIRE crisp flame tongues in three rows (red, orange, gold, a smaller flame nested in each, embers above); TOXIC bubbles; FLUX a vortex; CORE hexagons; ICE cut ice (the mage's facets made finer, light caught on some edges, glints, frost at the top); ELECTRIC forked lightning. The classes, a follower's role: BRAWLER impact cracks; MAGE broad facets; TECHNICIAN circuit traces. An element card wears its element's texture; a class card its class's, in the class colour (`#8fe3ff`), a Mage's aura (Build B) with its cube in its element's colour; a Player or a Subclass card (the test cards, and Series 2's species cards since build `j`) none, as none was designed (designed 2026-11-02: see "The subclass themes, textures and icons" below). The brawler's cracks and the electric lightning are our designs; the owner named the other seven.
 
-**A follower's backdrop** is its element's texture with its class's laid over it in a paler shade of the element's colour (half way to white, at 80%), each cropped to its best band of 300 × 175: a fire brawler is flames with impact cracks over them, an ice mage cut ice under broad facets. Every follower card wears it: the roster's strip and a phone's grid, the card in view (behind its numbers, and in its picture's frame), the squad's slots (the bar over the dock, the corners' stack, the roster's squad box), the member's card on the fly, the INFO's picture and a phone's roster cards. A veil keeps the text side dark; an open slot and a clone have none. The egg carries it, so a follower keeps it through its evolution.
+**A follower's backdrop** is its element's texture with its class's laid over it in a paler shade of the element's colour (half way to white, at 80%), each cropped to its best band of 300 × 175: a fire brawler is flames with impact cracks over them, an ice mage cut ice under broad facets. Every follower card wears it: the roster's strip and a phone's grid, the card in view (behind its numbers, and in its picture's frame), the squad's slots (the bar over the dock, the corners' stack, the roster's squad box), the member's card on the fly, the INFO's picture and a phone's roster cards. A veil keeps the text side dark; an open slot and a clone have none. The egg carries it, so a follower keeps it through its evolution. Since build `2026-11-06d` an evolved form of a species also carries its species' texture as a third layer (below).
 
-### The subclass themes, textures and icons (designed 2026-11-02, not built)
+### The subclass themes, textures and icons (designed 2026-11-02, approved 2026-11-06, built in `2026-11-06d`)
 
 The owner: "We also need to make themes for the different species and give textures for the different species, and then icons for every different element and subclass and species." Asked what "species" and "subclass" meant, the owner answered that both mean the five follower subclasses: crustacean, mollusk, elemental, drone and jelly.
 
@@ -68,14 +68,14 @@ The owner: "We also need to make themes for the different species and give textu
   - a theme (a colour and a motif) and a texture for each of the five subclasses, like the elements' and the classes';
   - an icon for each subclass (5) and each element (6).
 - **Where** (the owner's picks):
-  - **On the cards:** a species (subclass) card wears its subclass's texture and icon. Today it wears none.
+  - **On the cards:** a species (subclass) card wears its subclass's texture and icon (built in `2026-11-06d`; before it wore none).
   - **On followers:** the roster's and the squad's backdrops add the subclass texture to the element and class layers. An egg has no subclass, so it gets no such layer until it evolves.
   - **On enemies:** the enemy card shows its race's icon and what it is weak to (`COMBAT.md` §7.3). This needs an icon for each of the six enemy races and a way to show the six damage types. That need follows from this pick; it is to be confirmed with the looks.
 - **How:** the looks are proposed as mockups for the owner's approval first (`ART-PROCESS.md`). The game keeps today's art until they are approved.
-- **Open:** the themes themselves (colours, motifs), the icon style, and how three layers stay readable on a follower card.
+- **Open (2026-11-02), answered at gate 2 (2026-11-06):** the themes themselves (colours, motifs), the icon style, and how three layers stay readable on a follower card. Still open: where the element emblems go (`OPEN-QUESTIONS.md` §3).
 - **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop.
 
-**Gate 2: approved, every look** (2026-11-06; `DECISION-LOG.md`). Designed, **not built**: nothing in the game has changed yet.
+**Gate 2: approved, every look** (2026-11-06; `DECISION-LOG.md`). **Built** in `2026-11-06d`, on the branch `claude/start-game-project-HSh7Z` (not on main): implemented as drawn, and verified by tests/speciesart.js; how it was built is under "The build" below.
 - **Approved so far** (`DECISION-LOG.md`):
   - the crustacean texture as drawn in round 3 ("Approve as drawn");
   - the icon style, flat one-colour emblems ("Yes, this style");
@@ -87,10 +87,10 @@ The owner: "We also need to make themes for the different species and give textu
 - **Approved:** the elemental texture as storm clouds ("Approve as drawn"; the owner's direction, of a first try with crystal clusters: "New cloud texture is puffy and stormy no repreating icons").
 - **Approved:** the drone texture, machined panels ("Approve as drawn").
 - **Approved:** the jelly texture, membrane cells ("Approve as drawn"). All five species textures are set.
-- **Approved:** the five other race emblems ("Approve all five"). Gate 2 is closed; the build is next.
-- The block below is the current proposal. The earlier rounds are at its end.
-- **Where to see it:** the Part 2 boards on the design canvas "Conduit 3D card concepts": the approved crustacean row, and above it the mollusk and the species emblems. The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
-- **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
+- **Approved:** the five other race emblems ("Approve all five"). Gate 2 is closed; built in `2026-11-06d` (the owner: "Start the Part 2 build").
+- The block below is what was approved, and what build `2026-11-06d` built. The earlier rounds are at its end.
+- **Where to see it:** in the game since build `2026-11-06d` (on the branch); and the Part 2 boards on the design canvas "Conduit 3D card concepts": the approved crustacean row, and above it the mollusk and the species emblems. The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
+- **How much is drawn:** everything: the five textures and the seventeen emblems, each drawn and approved one family at a time, as `ART-PROCESS.md` asks.
 - **A species is a material, not a hue.** These colours are taken: the six element colours, BLOOM's pink, the class cards' cyan and the Player cards' gold.
 - **The four other themes stand as written** (the owner: "They stand"). Each is drawn after the crustacean is approved, one at a time.
 
@@ -106,7 +106,7 @@ The owner: "We also need to make themes for the different species and give textu
   - its texture on the face, faint, in its colour;
   - its colour for the frame, the crystal and the kind line;
   - its icon before the kind, on the face and in the details beside it.
-  - Today such a card wears no texture and the class cards' cyan.
+  - Before build `2026-11-06d` such a card wore no texture and the class cards' cyan.
 - **On a follower** (shown on QUILLSTONE and SEEPER, VOIDSTAR and HAMMER SLUG, FROST MAW and THUNDERHEAD, RIMESTAR and THERMITE BURROWER, JELLY RAM and GOO PROXY):
   - the species' texture is a third layer, over the element's and the class's, in the species' colour at 38%, so the element and the class still lead;
   - the crust is drawn at half its size on a card (the drawing twice across the 300 × 175 band);
@@ -144,6 +144,16 @@ The owner: "We also need to make themes for the different species and give textu
   - under its numbers, a row from the game's own table (js/damage.js `DMG_RACE`, `COMBAT.md` §7.3): WEAK and its types in green chips, then RESISTS and its types in grey ones;
   - the types in short words, **approved** ("Short words"): SLASH, PIERCE, SHOT (projectile), CRUSH, QUAKE (earthquake), ELEM (elemental);
   - a longer row wraps to a second line, and the card grows upward (the ant's ELEM wraps; the beetle has five entries).
+- **The build** (`2026-11-06d`; `FOLLOWING-UPDATE.md` Part 2):
+  - **Where it lives:** js/cardart.js (`CARD_ART.species`, `speciesAlpha`, `speciesHalf`, `speciesInElement`; `CARD_ART_SPECIES`, `CARD_ART_RACES`; the five textures in `_CA_TEX`; `cardArtMixSvg`'s third layer; `CARD_ART_EMBLEMS` and `cardArtEmblemClass`, `cardArtKindEmblemClass`, `cardArtRaceEmblemClass`), js/cardsui.js (`_cdKindCol`, `_cdSlab`, `_cdInfo`), js/commandcenter.js (the roster's tag), js/mixtool.js (`mixToolFoeRow`, `mixToolFoeHTML`), js/damage.js (`DMG_SHORT`), game.html ("THE EMBLEMS", the tag's and the name's sizes, the row's chips).
+  - **The drawings** are the approved ones, ported unchanged: the same seeds give the same pictures. tests/speciesart.js compares each texture, each card face, each emblem and all 90 backdrops with design/ui-mocks/part2-looks-art.js (a backdrop writes its opacity `0.38` for `.38`, and an `xlink:href` beside its `href`, as the game's other textures do).
+  - **An emblem on the page** is a class, `cae-<key>`, that sets its picture (`--emb`) and its own colour (`--emc`). game.html draws it before the text as a mask, so it takes the text's colour; the roster's tag draws it in `--emc`, the species' colour, as the mockup did. It is sized as in the mockups: 1.15 em on a kind line, 14 px on the tag, 16 px on the enemy card's name.
+  - **Readings taken where the mockups did not say** (`OPEN-QUESTIONS.md` §3, for the owner):
+    - the hologram's shadow on a species card carries the emblem too, so the shadow stays under the kind line (the mockup put the emblem on the line and in the details only, and its shadow would have stood off to one side);
+    - a species card's colour reaches everything that takes a card's colour: its mini card on the rail (with its texture), its chip in a slot's list, a pack's reveal, as the mockup's colour did wherever it was drawn;
+    - a retired form has no species (js/cards.js), so it has no tag and no species layer, as before;
+    - the six element emblems are in the code and shown nowhere: no mockup placed them. Where they go is open.
+  - **Performance:** each new picture is made once and kept, as the others are (a backdrop with a species is a picture of its own, made the first time a follower of that mix is drawn); nothing new runs in a frame.
 - **The earlier rounds** (rejected, kept as the record):
   - **Round 1** (commit d1fb585):
     - the crustacean texture was overlapping carapace plates in staggered rows, laid large on a follower (a 150 × 88 window of the drawing filling the band) at 75%;
