@@ -1,13 +1,21 @@
-// node design/ui-mocks/part2-looks.js <out dir> [dsf] [mode] : the following update's Part 2 gate-2 mockups, drawn in the REAL game page (game.html), today beside the proposal.
+// node design/ui-mocks/part2-looks.js <out dir> [dsf] [mode] [species] [icons] : the following update's Part 2 gate-2 mockups, drawn in the REAL game page (game.html), today beside the proposal.
 // PROPOSALS ONLY (docs/FOLLOWING-UPDATE.md Part 2; docs/ART-PROCESS.md, one piece first): the page is a copy with design/ui-mocks/part2-looks-art.js added, and four of the game's own functions wrapped in it
-// (cardArtUnitClass, cardArtFaceClass, _cdKindCol, _cdStageFill) so the crustacean look shows where the game would show it. Nothing in js/ is changed. Needs playwright + chromium.
-// Writes: foe-today.png, foe-proposed.png (the enemy card, an ant locked), roster-today.png, roster-proposed.png (the Command Center's card in view: QUILLSTONE, a fire crustacean), card-today.png,
-// card-proposed.png (the CARDS screen's featured card and its details: TIDE SHELL, a crustacean card), icons.png (one icon of each set), texture.png (the crustacean texture alone),
-// backdrop.png (a follower's backdrop alone, today's two layers beside the proposal's three, for a fire and a toxic crustacean).
+// (cardArtUnitClass, cardArtFaceClass, _cdKindCol, _cdStageFill) so a species' look shows where the game would show it. Nothing in js/ is changed. Needs playwright + chromium.
+// species: whose texture is shown (crustacean, the default and approved; mollusk); icons: the emblems on the sheet, comma-separated keys of part2-looks-art.js ICONS (default crustacean,fire,ant).
+// Writes: foe-today.png, foe-proposed.png (the enemy card, an ant locked), roster-today.png, roster-proposed.png (the Command Center's card in view: the species' first follower), card-today.png,
+// card-proposed.png (the CARDS screen's featured card and its details: the species' card), icons.png (the emblems), texture.png (the species' texture alone),
+// backdrop.png (a follower's backdrop alone, today's two layers beside the proposal's three, for the species' two followers).
 // mode: how the species layer lies on a follower's backdrop (part2-looks-art.js backdrop3); "small" is the one proposed since round 2 (the crust at half its size, faint; the owner: "Smaller texture", "fainter"), "big" the first round's.
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2] || '/tmp/part2'), DSF = +(process.argv[3] || 2), MODE = process.argv[4] || 'small';
+const SPECIES = process.argv[5] || 'crustacean', ICON_KEYS = (process.argv[6] || 'crustacean,fire,ant').split(',');
+// each species' card and two followers to show it on (a form of that subclass, js/cards.js EQUIP_FORM_SUBCLASS; its element and role)
+const SHOW = {
+    crustacean: { card: 'tide_shell',  forms: [['quillstone', 'fire', 'brawler', 'QUILLSTONE'], ['seeper', 'toxic', 'brawler', 'SEEPER']] },
+    mollusk:    { card: 'nacre_pearl', forms: [['voidstar', 'flux', 'sniper', 'VOIDSTAR'], ['hammerslug', 'core', 'camper', 'HAMMER SLUG']] },
+}[SPECIES];
+if (!SHOW) { console.error('no such species to show: ' + SPECIES); process.exit(1); }
 
 (async () => {
     fs.mkdirSync(OUT, { recursive: true });
@@ -21,16 +29,16 @@ const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2
     const ev = async (fn, arg) => { const r = await page.evaluate(fn, arg); if (r && r.err) throw new Error(r.err); return r; };
     const box = sel => ev(s => { const e = document.querySelector(s); if (!e) return { err: 'not on the page: ' + s }; const r = e.getBoundingClientRect(); return { x: Math.max(0, r.left - 10), y: Math.max(0, r.top - 10), width: Math.min(1180, r.width + 20), height: Math.min(820, r.height + 20) }; }, sel);
 
-    // THE SCENE: the facility, the tutorial done, no creature about; the squad's first two are QUILLSTONE (fire, crustacean) and SEEPER (toxic, crustacean)
-    const scene = await ev(() => { try {
+    // THE SCENE: the facility, the tutorial done, no creature about; the squad's first two are the species' two followers
+    const scene = await ev(FORMS => { try {
         if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart();
         gameState.running = true; crystalMenuOpen = false; classPickerOpen = false; _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; playerClassKey = 'gunslinger';
         if (typeof facilityBlackoutSet === 'function') facilityBlackoutSet(false); alertActive = false; actors = actors.filter(a => !(a instanceof Predator)); dialogueClear();
         partyTick(); const sq = Array.prototype.slice.call(document.querySelectorAll('#squadBar .sb-slot')).map(e => e._unit).filter(Boolean);
         const set = (f, ev, el, role) => { f.element = el; f.role = role; f.evolved = ev; f._moltAt = -1e9; if (f.level < 10) f.level = 10; };
-        if (sq[0]) set(sq[0], 'quillstone', 'fire', 'brawler'); if (sq[1]) set(sq[1], 'seeper', 'toxic', 'brawler');
+        FORMS.forEach((f, i) => { if (sq[i]) set(sq[i], f[0], f[1], f[2]); });
         partyBarRender(true); window.__sq = sq; return { n: sq.length };
-    } catch (e) { return { err: String(e && e.stack || e) }; } });
+    } catch (e) { return { err: String(e && e.stack || e) }; } }, SHOW.forms);
 
     // ── TODAY ──
     // the enemy card, an ant locked; then the world is held still for the pictures (gameState.running false: js/game.js gameLoop draws and does not step, so no turret or bite takes the ant)
@@ -51,13 +59,13 @@ const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2
     } catch (e) { return { err: String(e && e.stack || e) }; } });
     await shot('foe-proposed.png', await box('.mt-foe'));
     await ev(() => { mixToolRender(true); return {}; });
-    // the roster's card in view, QUILLSTONE
+    // the roster's card in view, the species' first follower
     await ev(() => { ccOpen(); ccFocusSet(window.__sq[0]); if (typeof ccRender === 'function') ccRender(true); return {}; });
     const rosterClip = await box('.cf-card');
     await shot('roster-today.png', rosterClip);
     await ev(() => { ccClose(); return {}; });
-    // the CARDS screen's featured card, TIDE SHELL, and its details beside it (every card shown, as ?cards=all; out of the hand, so it is not lit gold)
-    await ev(() => { equipDevSet('all'); equipHand = equipHand.filter(id => id !== 'tide_shell'); cardsOpen(); _cdView = 'all'; cardsRender(true); const rail = document.querySelector('.cd-rail'); if (rail) _cdRailGo(rail, 'tide_shell', false); return {}; });
+    // the CARDS screen's featured card, the species' card, and its details beside it (every card shown, as ?cards=all; out of the hand, so it is not lit gold)
+    await ev(ID => { equipDevSet('all'); equipHand = equipHand.filter(id => id !== ID); cardsOpen(); _cdView = 'all'; cardsRender(true); const rail = document.querySelector('.cd-rail'); if (rail) _cdRailGo(rail, ID, false); return {}; }, SHOW.card);
     const cardWide = await box('.cd-stage');
     await shot('card-today.png', cardWide);
     await ev(() => { cardsClose(); return {}; });
@@ -66,53 +74,54 @@ const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2
     await ev(MODE => { try {
         window.__p2mode = MODE;
         const unitKeep = cardArtUnitClass, faceKeep = cardArtFaceClass, colKeep = _cdKindCol;
-        // a crustacean follower's backdrop gains the third layer, the species'
+        // a follower of a species with a drawn texture: its backdrop gains the third layer, the species'
         cardArtUnitClass = function (f) {
             const base = unitKeep(f); if (!base) return base;
-            const sp = typeof EQUIP_FORM_SUBCLASS !== 'undefined' && f.evolved ? EQUIP_FORM_SUBCLASS[f.evolved] : null; if (sp !== 'crustacean') return base;
+            const sp = typeof EQUIP_FORM_SUBCLASS !== 'undefined' && f.evolved ? EQUIP_FORM_SUBCLASS[f.evolved] : null; if (!sp || !PART2.TEX[sp]) return base;
             const el = f.element, cls = cardArtClassOfRole(f.role);
             return _caRule('cat-p2-' + el + '-' + cls + '-' + sp, '--tex', cardArtUrl('p2:' + el + ':' + cls + ':' + sp, () => PART2.backdrop3(el, cls, sp, window.__p2mode)));
         };
-        // a crustacean card wears the species' texture and colour
+        // a species card (of a species with a drawn texture) wears its texture and colour
+        const drawn = c => c && c.kind === 'subclass' && PART2.TEX[c.match];
         cardArtFaceClass = function (c) {
-            if (c && c.kind === 'subclass' && c.match === 'crustacean') return _caRule('cat-p2-face-crustacean', '--tex', cardArtUrl('p2:face:crustacean', () => _caDoc(300, 420, '<g color="' + PART2.THEMES.crustacean.col + '">' + PART2.crustacean() + '</g>')));
+            if (drawn(c)) return _caRule('cat-p2-face-' + c.match, '--tex', cardArtUrl('p2:face:' + c.match, () => _caDoc(300, 420, '<g color="' + PART2.THEMES[c.match].col + '">' + PART2.TEX[c.match]() + '</g>')));
             return faceKeep(c);
         };
-        _cdKindCol = function (c) { return c && c.kind === 'subclass' && c.match === 'crustacean' ? PART2.THEMES.crustacean.col : colKeep(c); };
+        _cdKindCol = function (c) { return drawn(c) ? PART2.THEMES[c.match].col : colKeep(c); };
         // its kind line carries the species' icon, on the card's face and in the details beside it (the stage is filled again as the rail settles, so the icon goes in each time it is filled)
         const stageKeep = _cdStageFill;
         _cdStageFill = function (stage, c) {
             stageKeep(stage, c);
-            if (stage && c && c.kind === 'subclass' && c.match === 'crustacean') stage.querySelectorAll('.cd-kind, .cd-irow.kd .cd-iv').forEach(k => { k.innerHTML = '<span style="display:inline-block;vertical-align:-0.2em;margin-right:.3em;width:1.15em;height:1.15em">' + PART2.iconSvg('crustacean', '100%', 'currentColor') + '</span>' + k.textContent; });
+            if (stage && drawn(c) && PART2.ICONS[c.match]) stage.querySelectorAll('.cd-kind, .cd-irow.kd .cd-iv').forEach(k => { k.innerHTML = '<span style="display:inline-block;vertical-align:-0.2em;margin-right:.3em;width:1.15em;height:1.15em">' + PART2.iconSvg(c.match, '100%', 'currentColor') + '</span>' + k.textContent; });
         };
         return {};
     } catch (e) { return { err: String(e && e.stack || e) }; } }, MODE);
-    // the roster's card in view, with the species' icon on its CRUSTACEAN tag
+    // the roster's card in view, with the species' icon on its subclass tag
     await ev(() => { ccOpen(); ccFocusSet(window.__sq[0]); if (typeof ccRender === 'function') ccRender(true);
-        document.querySelectorAll('.cf-sc').forEach(t => { if (/CRUSTACEAN/.test(t.textContent) && !t.querySelector('svg')) t.innerHTML = '<span style="display:inline-block;vertical-align:-2px;margin-right:4px">' + PART2.iconSvg('crustacean', 14) + '</span>' + t.textContent; });
+        document.querySelectorAll('.cf-sc').forEach(t => { const k = t.textContent.trim().toLowerCase(); if (PART2.ICONS[k] && PART2.THEMES[k] && !t.querySelector('svg')) t.innerHTML = '<span style="display:inline-block;vertical-align:-2px;margin-right:4px">' + PART2.iconSvg(k, 14) + '</span>' + t.textContent; });
         return {}; });
     await shot('roster-proposed.png', rosterClip);
     await ev(() => { ccClose(); return {}; });
-    // the featured card, TIDE SHELL, with the species' texture and colour, and its icon in the kind line
-    await ev(() => { cardsOpen(); _cdView = 'all'; cardsRender(true); const rail = document.querySelector('.cd-rail'); if (rail) { _cdSel = null; _cdRailGo(rail, 'tide_shell', false); } return {}; });
+    // the featured card, the species' card, with the species' texture and colour, and its icon in the kind line
+    await ev(ID => { cardsOpen(); _cdView = 'all'; cardsRender(true); const rail = document.querySelector('.cd-rail'); if (rail) { _cdSel = null; _cdRailGo(rail, ID, false); } return {}; }, SHOW.card);
     await shot('card-proposed.png', cardWide);
     await ev(() => { cardsClose(); equipDevSet(''); return {}; });
 
     // THE ICONS (one of each set) big and at the sizes they would be shown; THE TEXTURE alone at a card face's size
     const sheet = path.join(dir, 'icons.html');
     fs.writeFileSync(sheet, '<html><head><script src="file://' + ROOT + '/js/cardart.js"></script><script src="file://' + ROOT + '/design/ui-mocks/part2-looks-art.js"></script></head><body style="margin:0;background:#070b16;color:#cfe;font:12px monospace"><div id="o" style="display:flex;gap:34px;padding:18px 24px;align-items:flex-end"></div>'
-        + '<script>const o=document.getElementById("o"),S=[["crustacean","CRUSTACEAN · species",PART2.THEMES.crustacean.col],["fire","FIRE · element","#ff3300"],["ant","ANT · enemy race","#ff8a6a"]];for(const [k,n,c] of S){const d=document.createElement("div");d.style.cssText="display:flex;flex-direction:column;align-items:center;gap:10px";d.innerHTML="<div style=\\"color:"+c+"\\">"+PART2.iconSvg(k,96)+"</div><div style=\\"display:flex;gap:12px;align-items:center;color:"+c+"\\">"+PART2.iconSvg(k,32)+PART2.iconSvg(k,20)+PART2.iconSvg(k,14)+"</div><div>"+n+"</div>";o.appendChild(d);}</script></body></html>');
-    await page.goto('file://' + sheet); await page.setViewportSize({ width: 600, height: 230 }); await shot('icons.png');
+        + '<script>const o=document.getElementById("o"),S=' + JSON.stringify(ICON_KEYS) + '.map(k=>[k,k.toUpperCase()+" · "+(PART2.THEMES[k]?"species":["fire","toxic","electric","ice","flux","core","bloom"].indexOf(k)>=0?"element":"enemy race"),PART2.ICONS[k].col]);for(const [k,n,c] of S){const d=document.createElement("div");d.style.cssText="display:flex;flex-direction:column;align-items:center;gap:10px";d.innerHTML="<div style=\\"color:"+c+"\\">"+PART2.iconSvg(k,96)+"</div><div style=\\"display:flex;gap:12px;align-items:center;color:"+c+"\\">"+PART2.iconSvg(k,32)+PART2.iconSvg(k,20)+PART2.iconSvg(k,14)+"</div><div>"+n+"</div>";o.appendChild(d);}</script></body></html>');
+    await page.goto('file://' + sheet); await page.setViewportSize({ width: Math.max(600, 48 + ICON_KEYS.length * 176), height: 230 }); await shot('icons.png');
     const tex = path.join(dir, 'texture.html');
-    fs.writeFileSync(tex, '<html><head><script src="file://' + ROOT + '/js/cardart.js"></script><script src="file://' + ROOT + '/design/ui-mocks/part2-looks-art.js"></script></head><body style="margin:0;background:#070b16"><div id="t" style="width:300px;height:420px;margin:10px;border-radius:12px;border:2px solid #e7ad78;background-color:#0b1226"></div>'
-        + '<script>document.getElementById("t").style.backgroundImage=\'url("data:image/svg+xml,\'+encodeURIComponent(_caDoc(300,420,\'<g color="\'+PART2.THEMES.crustacean.col+\'">\'+PART2.crustacean()+\'</g>\'))+\'")\';</script></body></html>');
+    fs.writeFileSync(tex, '<html><head><script src="file://' + ROOT + '/js/cardart.js"></script><script src="file://' + ROOT + '/design/ui-mocks/part2-looks-art.js"></script></head><body style="margin:0;background:#070b16"><div id="t" style="width:300px;height:420px;margin:10px;border-radius:12px;border:2px solid ' + '#e7ad78' + ';background-color:#0b1226"></div>'
+        + '<script>const S="' + SPECIES + '";document.getElementById("t").style.borderColor=PART2.THEMES[S].col;document.getElementById("t").style.backgroundImage=\'url("data:image/svg+xml,\'+encodeURIComponent(_caDoc(300,420,\'<g color="\'+PART2.THEMES[S].col+\'">\'+PART2.TEX[S]()+\'</g>\'))+\'")\';</script></body></html>');
     await page.goto('file://' + tex); await page.setViewportSize({ width: 324, height: 444 }); await shot('texture.png');
-    // THE BACKDROP alone (no creature, no veil): today's two layers (element, class) beside the proposal's three (the species' plates added), for a fire brawler and a toxic brawler, as QUILLSTONE and SEEPER
+    // THE BACKDROP alone (no creature, no veil): today's two layers (element, class) beside the proposal's three (the species' texture added), for the species' two followers
     const bd = path.join(dir, 'backdrop.html');
     fs.writeFileSync(bd, '<html><head><script src="file://' + ROOT + '/js/cardart.js"></script><script src="file://' + ROOT + '/design/ui-mocks/part2-looks-art.js"></script></head><body style="margin:0;background:#070b16;color:#cfe;font:11px monospace"><div id="g" style="display:grid;grid-template-columns:300px 300px;gap:14px 16px;padding:12px 16px"></div>'
-        + '<script>const g=document.getElementById("g");for(const [el,cls,who] of [["fire","brawler","QUILLSTONE"],["toxic","brawler","SEEPER"]])for(const [svg,lab] of [[cardArtMixSvg(el,cls),"TODAY · "+el.toUpperCase()+" + BRAWLER"],[PART2.backdrop3(el,cls,"crustacean","' + MODE + '"),"PROPOSED · + CRUSTACEAN"]]){'
+        + '<script>const g=document.getElementById("g"),SP="' + SPECIES + '",F=' + JSON.stringify(SHOW.forms) + ';for(const [ev,el,role,who] of F){const cls=cardArtClassOfRole(role);for(const [svg,lab] of [[cardArtMixSvg(el,cls),"TODAY · "+el.toUpperCase()+" + "+cls.toUpperCase()],[PART2.backdrop3(el,cls,SP,"' + MODE + '"),"PROPOSED · + "+SP.toUpperCase()]]){'
         + 'const d=document.createElement("div"),p=document.createElement("div"),t=document.createElement("div");p.style.cssText="width:300px;height:175px;border-radius:8px;border:1px solid #2a3550;background-color:#0b1226;background-size:cover;background-repeat:no-repeat";'
-        + 'p.style.backgroundImage=\'url("data:image/svg+xml,\'+encodeURIComponent(svg)+\'")\';t.style.marginTop="5px";t.textContent=who+" · "+lab;d.appendChild(p);d.appendChild(t);g.appendChild(d);}</script></body></html>');
+        + 'p.style.backgroundImage=\'url("data:image/svg+xml,\'+encodeURIComponent(svg)+\'")\';t.style.marginTop="5px";t.textContent=who+" · "+lab;d.appendChild(p);d.appendChild(t);g.appendChild(d);}}</script></body></html>');
     await page.goto('file://' + bd); await page.setViewportSize({ width: 648, height: 434 }); await shot('backdrop.png');
 
     console.log(JSON.stringify({ scene, errors: errors.slice(0, 6) }));

@@ -126,6 +126,10 @@ Each part is its own commit, with its own tests and a full green run before the 
   - The other four themes stand ("They stand").
   - Round 3 is on the design canvas.
 - **Approved** (2026-11-06): the crustacean texture as drawn ("Approve as drawn"), and the emblem style for all the icons ("Yes, this style"). Gate 2 stays open while the rest is drawn, each for a yes: four textures, one at a time, and fourteen icons, a set at a time.
+- **Next, for the owner's yes** (2026-11-06; `DECISION-LOG.md`):
+  - the mollusk texture as a pearly sheen ("Mollusk: pearly sheen", after "I'm not big on it" of a first try with little shells);
+  - the four other species emblems.
+  - Both are on the design canvas, in a row above the approved crustacean.
 
 **Then the build:**
 - the species textures on species cards and follower cards;

@@ -46,11 +46,42 @@
             + '<g fill="currentColor" fill-opacity=".17">' + grain + "</g></g>";
     }
 
+    // THE MOLLUSK TEXTURE (proposed after the crustacean's approval, 2026-11-06; the owner, of a first try with little spiral shells: "I'm not big on it", then "Mollusk: pearly sheen"): NACRE as the inside
+    // of a shell. Broad soft bands of mother-of-pearl (pale pink, lilac, sky, mint, a little gold) flowing across the face, each with a paler core where the light catches, and fine wavy growth lines
+    // running with them, the layers of the nacre. No shells drawn. Faint, as the crust is. The waves are quadratic curves continued with T, so each line is a few dozen bytes.
+    function mollusk() {
+        seed = 41;
+        const W = 300, wave = (y0, amp, half, tilt) => {   // a gentle wave across the face, falling to the right
+            let d = "M-30 " + R(y0) + "Q" + R(-30 + half / 2) + " " + R(y0 - amp + tilt * half / 2) + " " + R(-30 + half) + " " + R(y0 + tilt * half);
+            for (let x = -30 + 2 * half; x <= W + 30 + half; x += half) d += "T" + R(x) + " " + R(y0 + tilt * (x + 30));
+            return d;
+        };
+        let bands = "", cores = "", lines = "";
+        const hues = ["url(#moA)", "url(#moB)", "url(#moC)"];
+        for (let k = 0; k < 8; k++) {
+            const y0 = -70 + k * 66 + (rnd() - .5) * 26, amp = 6 + rnd() * 16, half = 60 + rnd() * 70, w = 28 + rnd() * 30, d = wave(y0, amp, half, .18 + rnd() * .14);
+            bands += '<path d="' + d + '" stroke="' + hues[k % 3] + '" stroke-width="' + Math.round(w) + '"/>';
+            cores += '<path d="' + d + '" stroke-width="' + Math.round(w * .18) + '"/>';
+        }
+        for (let y = -96, k = 0; y < 430; y += 12.5, k++) lines += '<path d="' + wave(y, 4 + (k % 3), 64 + (k % 4) * 6, .24) + '"/>';
+        return '<defs><linearGradient id="moA" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300" y2="420"><stop offset="0" stop-color="#ffc6e6"/><stop offset=".5" stop-color="#d9c8ff"/><stop offset="1" stop-color="#c4e6ff"/></linearGradient>'
+            + '<linearGradient id="moB" gradientUnits="userSpaceOnUse" x1="300" y1="0" x2="0" y2="420"><stop offset="0" stop-color="#c4e6ff"/><stop offset=".5" stop-color="#c9ffe4"/><stop offset="1" stop-color="#fff1c2"/></linearGradient>'
+            + '<linearGradient id="moC" gradientUnits="userSpaceOnUse" x1="0" y1="420" x2="300" y2="0"><stop offset="0" stop-color="#fff1c2"/><stop offset=".5" stop-color="#ffc6e6"/><stop offset="1" stop-color="#d9c8ff"/></linearGradient>'
+            + '<radialGradient id="moL"><stop offset="0" stop-color="#ffffff" stop-opacity=".07"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient></defs>'
+            + '<g id="moAll"><rect width="300" height="420" fill="currentColor" fill-opacity=".035"/>'
+            + '<g fill="none" stroke-opacity=".13" stroke-linecap="round">' + bands + "</g>"
+            + '<g fill="none" stroke="#ffffff" stroke-opacity=".07" stroke-linecap="round">' + cores + "</g>"
+            + '<g fill="url(#moL)"><ellipse cx="96" cy="120" rx="120" ry="90"/><ellipse cx="220" cy="318" rx="110" ry="84"/></g>'
+            + '<g fill="none" stroke="currentColor" stroke-opacity=".1" stroke-width=".55">' + lines + "</g></g>";
+    }
+    const TEX = { crustacean, mollusk }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
+    const TEX_HALF = { crustacean: true };   // laid at half size on a follower (the crust, "Smaller texture"); the others once, at their own size (a broad sheen laid twice across would show a seam)
+
     // THE THEMES (proposed, for the owner): a colour and a motif each. Element colours (fire, electric, ice, flux, core, toxic, BLOOM's pink) and the class cyan are taken, so a species is a MATERIAL, not a hue.
     // The other four stand as written (the owner, 2026-11-06: "They stand"); each is drawn after the crustacean is approved, one at a time.
     const THEMES = {
         crustacean: { col: "#e7ad78", name: "CHITIN AMBER", motif: "a crab shell's bumpy crust: rounded knobs packed close, fine granules between, drawn small" },
-        mollusk:    { col: "#e3d6ff", name: "NACRE",        motif: "spiral whorls and growth lines (a shell's), with a mother-of-pearl sheen" },
+        mollusk:    { col: "#e3d6ff", name: "NACRE",        motif: "a pearly sheen: soft mother-of-pearl bands with fine growth lines, faint (the owner: \"Mollusk: pearly sheen\")" },
         elemental:  { col: "#f2f7ff", name: "PRISM WHITE",  motif: "crystal growth: clustered prisms and rising motes; on a follower it takes its element's colour" },
         drone:      { col: "#b6c4d6", name: "GUNMETAL",     motif: "machined panels: seams, rivets and vent slats" },
         jelly:      { col: "#e39cff", name: "GEL ORCHID",   motif: "soft membrane cells with nuclei, a gel's wobble" },
@@ -74,6 +105,28 @@
             [[[8.2, 18.4], [3.8, 17], [2.2, 20.2]], [[8, 21.2], [3.8, 22.4], [2.8, 25.8]], [[10.4, 24.2], [7.2, 26.4], [6.8, 29.6]]].forEach(l => { d += both(l, 1.9); });   // the legs
             return d + "M10.6 19.4Q16 16.6 21.4 19.4Q16 14.6 10.6 19.4Z";                                       // cut: the arched ridge across the shell
         })() },
+        mollusk: { col: "#e3d6ff", d: (() => {   // a snail's coiled shell: the coil, the flared lip with its mouth, a spiral groove
+            let d = disc(14.5, 14.5, 11) + ell(23.2, 24.6, 6.6, 4.6, true);
+            const k = (8.2 - 1.2) / (2.25 * 2 * Math.PI), w = 1.4, out = [], inn = [];
+            for (let t = 0; t <= 2.25 * 2 * Math.PI + 1e-6; t += 0.18) { const r = 1.2 + k * t, a = t + 2.2; out.push([14.5 + (r + w / 2) * Math.cos(a), 14.5 + (r + w / 2) * Math.sin(a)]); inn.push([14.5 + Math.max(.2, r - w / 2) * Math.cos(a), 14.5 + Math.max(.2, r - w / 2) * Math.sin(a)]); }
+            return d + poly(out.concat(inn.reverse()), false) + ell(24.6, 25.8, 2.8, 1.8, false);   // cut: the groove, and the shell's mouth
+        })() },
+        elemental: { col: "#f2f7ff", d: (() => {   // three crystal prisms from one root, each with its front edge cut
+            const prism = (cx, by, hw, h, tip, ang) => { const c = Math.cos(ang * Math.PI / 180), sn = Math.sin(ang * Math.PI / 180), T = p => [cx + p[0] * c - p[1] * sn, by + p[0] * sn + p[1] * c];
+                return poly([[0, -h - tip], [hw, -h], [hw, -hw * .6], [0, 0], [-hw, -hw * .6], [-hw, -h]].map(T), true) + poly([[-.45, -h + .6], [.45, -h + .6], [.45, -hw * .6 - 1.4], [-.45, -hw * .6 - 1.4]].map(T), false); };
+            return prism(16, 29.5, 3.7, 19, 6, 0) + prism(12.6, 29, 2.9, 12.5, 4.6, -27) + prism(19.4, 29, 2.9, 12.5, 4.6, 27);
+        })() },
+        drone: { col: "#b6c4d6", d: (() => {   // a round body with a visor slot and its eye, two antennae, two feet
+            let d = disc(16, 18.4, 9.6) + both([[12.6, 10.2], [9.6, 4]], 1.6) + disc(9.3, 3.6, 1.8) + disc(22.7, 3.6, 1.8) + both([[11.4, 26], [9.8, 30]], 2);
+            return d + "M11.5 15.6A2.6 2.6 0 0 0 11.5 20.8L20.5 20.8A2.6 2.6 0 0 0 20.5 15.6Z" + disc(16, 18.2, 1.7);   // cut: the visor (the eye stays)
+        })() },
+        jelly: { col: "#e39cff", d: (() => {   // a jellyfish: the bell with a scalloped rim, four trailing tendrils, a sheen cut into the bell
+            let d = "M4.5 16.5A11.5 11 0 0 1 27.5 16.5Q25.6 19.7 23.6 16.9Q21.6 19.9 19.6 16.9Q17.8 19.9 16 16.9Q14.2 19.9 12.4 16.9Q10.4 19.9 8.4 16.9Q6.4 19.7 4.5 16.5Z";
+            d += both([[8.8, 17.4], [7.5, 21.4], [9.1, 25.4], [7.9, 29.6]], 1.7) + both([[13.2, 17.8], [12.3, 22.2], [13.8, 26.4], [12.9, 30.6]], 1.6);
+            const band = []; for (let a = 200; a <= 252; a += 4) band.push([16 + 9.6 * Math.cos(a * Math.PI / 180), 16.5 + 9.6 * Math.sin(a * Math.PI / 180)]);
+            for (let a = 252; a >= 200; a -= 4) band.push([16 + 8 * Math.cos(a * Math.PI / 180), 16.5 + 8 * Math.sin(a * Math.PI / 180)]);
+            return d + poly(band, false);
+        })() },
         fire: { col: "#ff3d14", d: "M16 30C9 30 6 25 6.5 20C7 15 10.5 12.5 11.5 8.5C13 11 13.5 12.5 13.5 14.5C15.5 11.5 16.5 7 15.5 2.5C20.5 5.5 25.5 11.5 25.5 19.5C25.5 25.5 21.5 30 16 30Z"
             + "M16 27C19 27 21 25 21 22.5C21 21 20.5 19.5 19 17.5C19 19 18.5 20 17.5 21C17.5 19.5 16.5 18 14.5 16C14 18.5 12 19.5 11.5 22C11 24.5 12.5 27 16 27Z" },   // cut: the heart of the flame
         ant: { col: "#ff8a6a", d: (() => {
@@ -96,9 +149,10 @@
         const W = 300, H = 175, band = (inner, top, extra) => '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="0 ' + top + " " + W + " " + H + '" preserveAspectRatio="xMidYMid slice"' + (extra || "") + ">" + inner + "</svg>";
         const elBand = band(cardArtTexture(el), CARD_ART.band[el] || 0), clsBand = band(cardArtTexture(cls), CARD_ART.band[cls] || 0, ' color="' + cardArtMix(cardArtElementColour(el), "#ffffff", CARD_ART.tint) + '" opacity="' + CARD_ART.tintAlpha + '"');
         if (!sp) return _caDoc(W, H, elBand + clsBand);
-        const spTex = sp === "crustacean" ? crustacean() : "", T = THEMES[sp];
+        const spTex = TEX[sp] ? TEX[sp]() : "", T = THEMES[sp];
         let third = "";
-        if (!mode || mode === "small") third = '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="0 60 600 350" preserveAspectRatio="xMidYMid slice" color="' + T.col + '" opacity=".38">' + spTex + '<use href="#cuAll" x="300"/></svg>';   // half its size: the drawing twice across
+        if ((!mode || mode === "small") && TEX_HALF[sp]) third = '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="0 60 600 350" preserveAspectRatio="xMidYMid slice" color="' + T.col + '" opacity=".38">' + spTex + '<use href="#' + TEX_ID[sp] + '" x="300"/></svg>';   // half its size: the drawing twice across
+        else if (!mode || mode === "small") third = band(spTex, 60, ' color="' + T.col + '" opacity=".38"');   // once, at its own size
         else if (mode === "full") third = band(spTex, 60, ' color="' + T.col + '" opacity=".8"');
         else if (mode === "white") third = band(spTex, 60, ' color="#ffffff" opacity=".55"');
         else if (mode === "edge") third = '<defs><linearGradient id="spFade" x1="0" y1="0" x2="1" y2="0"><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset=".78" stop-color="#fff" stop-opacity="1"/></linearGradient><mask id="spMask"><rect width="300" height="175" fill="url(#spFade)"/></mask></defs><g mask="url(#spMask)">' + band(spTex, 60, ' color="' + T.col + '"') + "</g>";
@@ -106,5 +160,5 @@
         else if (mode === "big") third = '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="40 40 150 88" preserveAspectRatio="xMidYMid slice" color="' + T.col + '" opacity=".75">' + spTex + "</svg>";
         return _caDoc(W, H, elBand + clsBand + third);
     }
-    root.PART2 = { crustacean, THEMES, ICONS, iconSvg, backdrop3 };
+    root.PART2 = { crustacean, mollusk, TEX, THEMES, ICONS, iconSvg, backdrop3 };
 })(typeof window !== "undefined" ? window : globalThis);

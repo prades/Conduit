@@ -1242,3 +1242,28 @@ Round 3 of the gate-2 mockups was put to the owner:
   - the four other themes as written.
 - Next: the mollusk texture (NACRE), and the four species emblems.
 - Nothing is built until gate 2 closes.
+
+## DECISION: Part 2's gate 2: the mollusk becomes a pearly sheen
+
+- **Date:** 2026-11-06
+- **Status:** The direction is chosen. The drawing waits on the owner's yes, with the four other species emblems. Nothing is built.
+- **Branch/build:** mockups on `claude/start-game-project-HSh7Z` (the commit after ac82864); the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3, the entries before this one
+
+### Context
+After the crustacean was approved, the mollusk texture was drawn as the theme was written (spiral whorls and growth lines). It came out as little coiled shells with ribs over fine wavy nacre lines. The owner stopped it.
+
+### Decision
+- The owner, verbatim: "I'm not big on it". Asked which part and which way: "Mollusk: pearly sheen".
+- The mollusk texture drops the shells. It becomes a soft mother-of-pearl shimmer with fine growth lines, faint like the crust.
+- NACRE's colour, and the theme's name, are unchanged.
+
+### Alternatives considered
+- Octopus suckers (rows of sucker rings along curling arms).
+- Cone-shell zigzags.
+- Changing the four new emblems instead of the texture.
+
+### Impact
+- The pearly sheen is drawn and on the design canvas, on NACRE PEARL and on VOIDSTAR and HAMMER SLUG. On a follower it is laid once, at its own size.
+- It waits on the owner's yes, together with the four other species emblems (snail shell, crystal cluster, drone, jellyfish).
+- The first try was never committed. It is described in `UI-STYLE.md` as the record.

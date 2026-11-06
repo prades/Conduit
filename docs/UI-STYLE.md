@@ -81,9 +81,12 @@ The owner: "We also need to make themes for the different species and give textu
   - the icon style, flat one-colour emblems ("Yes, this style");
   - the enemy row's short words;
   - the four other themes as written ("They stand").
-- **Still to draw, each for a yes:** the four other textures, one at a time; the fourteen other icons, a set at a time. Then the build.
-- The block below is the current proposal (round 3). The earlier rounds are at its end.
-- **Where to see it:** four Part 2 boards on the design canvas "Conduit 3D card concepts". The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
+- **Drawn, waiting on a yes** (2026-11-06):
+  - the mollusk texture, a pearly sheen ("Mollusk: pearly sheen", after "I'm not big on it" of a first try);
+  - the four other species emblems.
+- **Still to draw, each for a yes:** the three other textures, one at a time, and the ten element and race icons, a set at a time. Then the build.
+- The block below is the current proposal. The earlier rounds are at its end.
+- **Where to see it:** the Part 2 boards on the design canvas "Conduit 3D card concepts": the approved crustacean row, and above it the mollusk and the species emblems. The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
 - **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
 - **A species is a material, not a hue.** These colours are taken: the six element colours, BLOOM's pink, the class cards' cyan and the Player cards' gold.
 - **The four other themes stand as written** (the owner: "They stand"). Each is drawn after the crustacean is approved, one at a time.
@@ -91,27 +94,34 @@ The owner: "We also need to make themes for the different species and give textu
 | Species | Colour | Texture (its motif) | Icon | Drawn |
 |---|---|---|---|---|
 | Crustacean | CHITIN AMBER `#e7ad78` | A crab shell's bumpy crust: rounded knobs packed close in patches, fine granules between. Each knob is a low matte dome with a shadow where it rises from the shell. Small and faint | A crab | The texture and the icon: **approved** |
-| Mollusk | NACRE `#e3d6ff` | Spiral whorls and growth lines, as a shell's, with a mother-of-pearl sheen | A spiral shell | No |
-| Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: clustered prisms and rising motes. On a follower it takes its element's colour | A cluster of prisms | No |
-| Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | No |
-| Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | No |
+| Mollusk | NACRE `#e3d6ff` | A pearly sheen, as the inside of a shell: soft bands of mother-of-pearl (pale pink, lilac, sky, mint, a little gold), each with a paler core where the light catches, fine wavy growth lines running with them and two soft glows of lustre. No shells drawn. Faint | A spiral (snail) shell | The texture and the icon: for a yes |
+| Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: clustered prisms and rising motes. On a follower it takes its element's colour | A cluster of prisms | The icon: for a yes |
+| Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | The icon: for a yes |
+| Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | The icon: for a yes |
 
-- **On a species card** (shown on TIDE SHELL):
+- **On a species card** (shown on TIDE SHELL and NACRE PEARL):
   - its texture on the face, faint, in its colour;
   - its colour for the frame, the crystal and the kind line;
   - its icon before the kind, on the face and in the details beside it.
   - Today such a card wears no texture and the class cards' cyan.
-- **On a follower** (shown on QUILLSTONE and SEEPER):
-  - the species' texture is a third layer, over the element's and the class's;
-  - it is drawn at half its size on a card (the drawing twice across the 300 × 175 band), in the species' colour at 38%, so the element and the class still lead;
-  - the roster's CRUSTACEAN tag carries the icon.
+- **On a follower** (shown on QUILLSTONE and SEEPER, VOIDSTAR and HAMMER SLUG):
+  - the species' texture is a third layer, over the element's and the class's, in the species' colour at 38%, so the element and the class still lead;
+  - the crust is drawn at half its size on a card (the drawing twice across the 300 × 175 band);
+  - the mollusk's sheen is laid once at its own size, since a broad sheen laid twice across would show a seam;
+  - on a flux mollusk (VOIDSTAR) the sheen sits over FLUX's vortex and is hardest to see;
+  - the roster's subclass tag carries the icon.
 - **The icons:** flat, one-colour emblems in the manner of Super Smash Bros.' series symbols (the owner's reference). They are our own drawings, not that game's symbols.
   - Each is one solid shape on a 32-unit square, built from discs, wedges and bars, with its details cut out of it.
   - Each is drawn in the colour of the text beside it.
-  - Drawn:
+  - Approved with the style:
     - the crab (species): open claws on raised arms, eyes on stalks, an arched ridge cut across the shell;
     - the flame (fire), its heart cut out;
     - the ant (enemy race): head, waist and banded abdomen, bent legs, feelers.
+  - Drawn, for a yes (the other four species):
+    - the snail shell: the coil with a spiral groove, the flared lip with its mouth;
+    - the crystal cluster: three prisms from one root, each front edge cut;
+    - the drone: a round body, a visor with one eye, two antennae, two feet;
+    - the jellyfish: a bell with a scalloped rim, four tendrils, a sheen cut into the bell.
   - Proposed subjects for the rest:
     - the elements: TOXIC bubbles, ELECTRIC a bolt, ICE a snowflake, FLUX a vortex, CORE a hexagon (BLOOM a blossom, later);
     - the races: the beetle, the scorpion, the spider, the mantis and the moth themselves.
@@ -130,6 +140,7 @@ The owner: "We also need to make themes for the different species and give textu
     - the bumpy crust, stronger;
     - sticker icons after Persona 5: a black ink edge, a white edge, a solid shadow knocked off to the lower right, tilted.
     - The owner: "The design needs to be fainter, and I do not like the direction of the icons. Just make it like Super Smash Bros. Actually."
+  - **The mollusk's first try** (not committed): little coiled shells (ammonites) with ribs across their whorls, over fine wavy nacre lines. The owner: "I'm not big on it", then "Mollusk: pearly sheen".
 
 How it is built: each picture is a small standalone SVG used as a CSS background (a data: URL, made once), through a class js/cardart.js writes into one `<style id="cardArtCss">` the first time it is wanted: `cat-c-<texture>` an equip card's face, `cat-f-<element>-<class>` a follower's backdrop, `cag-<colour>` the crystal, `cac-<colour>` the cube, each setting one CSS variable (`--tex` or `--gem`). The css lays `var(--tex)` under its veils (game.html: the block "THE 3D CARDS", and each follower card's background). The crystal and the cube are drawn already turned (the canvas's turns), so a card has no 3D parts of its own.
 

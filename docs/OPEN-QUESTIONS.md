@@ -471,6 +471,8 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     After a yes, the rest is drawn one family at a time.
 
     **Answered:** the crust, "Approve as drawn"; the emblems, "Yes, this style". Next: the mollusk texture, and the four species emblems.
+
+    **The mollusk:** a first try with little coiled shells. The owner: "I'm not big on it", then "Mollusk: pearly sheen". The pearly sheen and the four species emblems are drawn and on the design canvas, **for your yes or correction**.
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;
