@@ -1,14 +1,14 @@
 # Follower combat redesign: the fire and electric followers' attacks
 
-- **Status:** **In progress.** Approved by the owner, 2026-11-02, in the brief "CONDUIT — FOLLOWER COMBAT REDESIGN · Fire & Electric Follower Attack Implementation Brief".
+- **Status:** **Implemented and verified by tests, all five followers; not playtested.** Approved by the owner, 2026-11-02, in the brief "CONDUIT — FOLLOWER COMBAT REDESIGN · Fire & Electric Follower Attack Implementation Brief". Every number is provisional (section 11.2).
   - **Phase 1 (the audit): finished, 2026-11-02.** What the code did then is in section 6.
   - The conflicts it found, each with a recommended way through, and the recommended starting values are in section 11.
-  - **Implemented and tested in build `2026-11-03a` (on the branch):** QUILLSTONE (QUILL BURST), EMBER HOOD (FIREBALL, HEXFIRE), STATIC ORB (SONIC ROLL kept, PINBALL) and THUNDERHEAD (CHAIN LIGHTNING, STATIC VORTEX); the HOVER SHELL and its KINETIC LAUNCHER untouched (section 9; tests/followercombat.js; section 10). Not playtested.
-  - **Not built yet:** the THERMITE BURROWER's BURROW STRIKE and FAULTLINE (the next build, with FAULTLINE's drawn-path input and its second chip).
+  - **Implemented and tested in build `2026-11-03a` (on main since, at the owner's word):** QUILLSTONE (QUILL BURST), EMBER HOOD (FIREBALL, HEXFIRE), STATIC ORB (SONIC ROLL kept, PINBALL) and THUNDERHEAD (CHAIN LIGHTNING, STATIC VORTEX); the HOVER SHELL and its KINETIC LAUNCHER untouched (section 9; tests/followercombat.js; section 10).
+  - **Implemented and tested in build `2026-11-06a` (on the branch):** the THERMITE BURROWER: BURROW STRIKE, its everyday hit from under the floor, and FAULTLINE, a path the player draws freehand, followed under the floor with molten spikes along it, on a second chip beside the THERMITE DRILL (section 9). The input is the same on a mouse and a finger; touch was checked with synthetic touch pointer events in a headless browser, **not by a finger on an iPad** (section 10).
   - **The owner's answers, 2026-11-02:** SONIC ROLL is STATIC RUSH; CHAIN LIGHTNING is the Thunderhead's everyday shot; the Thermite Burrower keeps both buttons (the THERMITE DRILL and FAULTLINE). The other points of section 11.1 follow their recommendations. Section 11.1 marks each.
 - **Owner:** User (creative direction); agent (implementation support)
-- **Last updated:** 2026-11-03
-- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-02j`; the fire and electric moves built in build `2026-11-03a` on the same branch.
+- **Last updated:** 2026-11-06
+- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-02j`; the fire and electric moves built in build `2026-11-03a` (pushed to main at the owner's word); the Thermite Burrower built in build `2026-11-06a` on the branch.
 - **Related docs:** `COMBAT.md` §7 (the damage types, each form's attacks: §7.4), `FIRE-BOMBS.md`, `TECHNICIANS.md` (the technicians' abilities, the Kinetic Launcher), `FOLLOWER-PROGRESSION.md`, `SEWER-QUEST.md` (the puzzle routes the Thermite Drill opens), `UI-STYLE.md`, `DECISION-LOG.md` (the decision)
 
 ## 1. Intent
@@ -82,13 +82,13 @@ Its design, behaviour, role and KINETIC LAUNCHER stay exactly as they are: not r
 
 ## 3. Must-have requirements (from the brief's acceptance criteria)
 
-- [ ] All five designs are implemented as section 2 says. *(Four of five in build `2026-11-03a`: Quillstone, Ember Hood, Static Orb, Thunderhead. The Thermite Burrower is next.)*
-- [x] Existing attacks are kept where the brief says so (Quillstone's main quill attack, FIRE BOMBS, SONIC ROLL). *(tests/followercombat.js)*
-- [x] Hover Shell and the Kinetic Launcher are untouched, with regression checks. *(js/techabilities.js unchanged; tests/followercombat.js pins the launcher's every field and number and the Hover Shell's form; the technician suites pass. To check again in the Thermite Burrower's build, which touches the technicians' code.)*
-- [x] The new attacks use the established combat and damage code (no parallel damage system, no duplicate move ids). *(applyDamage with a move's or the Mages' hit; the follower shots, the element effects and the knock's step reused; tests/followercombat.js)*
-- [x] The move registry and the player-facing words (names, descriptions, controls, help) agree. *(For the four built: `MOVES`, `MOVE_INFO`, `SHOT_INFO`, the Bible; FAULTLINE's controls and help come with its build.)*
-- [ ] Regression tests cover the new behaviours (the brief's Phase 3 list), and the results are reported. *(All but the Thermite Burrower's: section 10.)*
-- [ ] What still needs a person's hands (iPad/phone touch above all) is listed. *(For build `2026-11-03a`: section 10, "Played by a person".)*
+- [x] All five designs are implemented as section 2 says. *(Quillstone, Ember Hood, Static Orb and Thunderhead in build `2026-11-03a`; the Thermite Burrower in build `2026-11-06a`.)*
+- [x] Existing attacks are kept where the brief says so (Quillstone's main quill attack, FIRE BOMBS, SONIC ROLL; the THERMITE DRILL, with "Keep both buttons"). *(tests/followercombat.js; tests/techlevel1.js for the drill)*
+- [x] Hover Shell and the Kinetic Launcher are untouched, with regression checks. *(Build `2026-11-03a` left js/techabilities.js as it was. Build `2026-11-06a` changed its shared aiming code for FAULTLINE's path and second chip (`techAimTap`, `techChipTap`, `techChipState`, `techAbilityCan`, the join wait, the overlay), not the launcher's own code. tests/followercombat.js pins the launcher's every field and number, the Hover Shell's form, and the Technicians' plain hit; tests/techabilities.js (the system and the Kinetic Launcher) passes; the Hover Shell does not burrow.)*
+- [x] The new attacks use the established combat and damage code (no parallel damage system, no duplicate move ids). *(applyDamage with a move's or the Mages' hit; BURROW STRIKE through `applyElementalDamage` with the plain hit's own kind and numbers; FAULTLINE's spikes with an ability's kind; the follower shots, the element effects, the knock's step and the technicians' aiming mode reused; tests/followercombat.js)*
+- [x] The move registry and the player-facing words (names, descriptions, controls, help) agree. *(`MOVES`, `MOVE_INFO`, `SHOT_INFO` (BURROW STRIKE too), `TECH_ABILITY2` and FAULTLINE's INFO section, its aiming prompt, the in-game guide, the Bible.)*
+- [x] Regression tests cover the new behaviours (the brief's Phase 3 list), and the results are reported. *(Section 10.)*
+- [x] What still needs a person's hands (iPad/phone touch above all) is listed. *(Section 10, "Played by a person".)*
 
 ## 4. Non-goals
 
@@ -173,6 +173,23 @@ As built in build `2026-11-03a` (the readings taken are in `OPEN-QUESTIONS.md` �
 - **CHAIN LIGHTNING:** each enemy is struck once, and every jump is weaker than the last, so it always ends. A shot that touches nobody conducts nothing.
 - **STATIC VORTEX:** nobody in reach, no vortex and no wait spent. A beetle or a boss is bitten but not pulled. The pull is a knock's own step, so walls and a Photonic Shield stop it. A stronger knock on an enemy is left as it is.
 
+As built in build `2026-11-06a` (the readings taken are in `OPEN-QUESTIONS.md` §1t):
+- **BURROW STRIKE:**
+  - an enemy out of reach or behind a wall: no dive; it walks as the technicians do;
+  - its enemy dies or stops being an enemy on the way, or a wall is in the way under the floor, or it has travelled `BURROW_MAX` frames: it comes up where it is, with no eruption and half the rest;
+  - told to RETREAT, called to a launcher, thrown, or walking back to the Crystal: it comes up where it is;
+  - it falls (it cannot be hurt under the floor, so only before it dives or after it surfaces): the burrow ends;
+  - nothing else moves it while it is under way; the drill and FAULTLINE cannot start;
+  - not saved: a game saved mid-burrow loads with it standing.
+- **FAULTLINE:**
+  - a stroke under a tile, a start off the floor or out of the Burrower's sight, or a path a wall cuts under a tile: nothing is sent, the game says why, and the aim stays up for another stroke;
+  - a stroke longer than 8 tiles stops growing there; a wall cuts the path where it meets it;
+  - the chip again, Escape, or a touch the system cancels (`pointercancel`) calls the aim off; a tap on the drill's chip while FAULTLINE is aimed aims the drill instead;
+  - on the way it stops (comes up where it is) if it falls, is thrown or called to a launcher, is told to RETREAT, walks back to the Crystal or leaves the squad, or a wall is in its way to the path's start;
+  - each enemy is hit once a FAULTLINE, however many spikes reach it;
+  - its wait starts as it sets off, so one called off on the way still costs it;
+  - not saved: a game saved mid-run loads with it standing, and no wait (no cooldown is saved).
+
 ## 8. Acceptance criteria
 
 The brief's Phase 3 tests, per follower:
@@ -206,6 +223,19 @@ Build `2026-11-03a` (the fire and electric moves). The numbers are the PROVISION
 - **The looks:** js/game.js `_drawRedesignShot` (the quill's shard, HEXFIRE's ember) and js/elements.js (the circle, the vortex, the chain's bolt). Drawn on the canvas with no new images.
 - **Not touched:** js/techabilities.js (the Kinetic Launcher), the Hover Shell's form, the damage tables.
 
+Build `2026-11-06a` (the Thermite Burrower). The numbers are the PROVISIONAL constants `BURROW_*` (js/combat.js) and `TECH_AB.fault` (js/techabilities.js); §11.2.
+- **BURROW STRIKE** (js/combat.js, beside the plain hit it stands in for):
+  - `EVOLUTIONS.thermite.hit = "BURROW STRIKE"` marks the form; `burrowStrikeTry` is asked first in the technicians' branch of js/npc.js (any other unit, or no enemy it can see in reach, falls through to the plain hit as before);
+  - `burrowStep` runs each frame from `updateNPC`, before the unit's own moves, as PINBALL's roll does: the dive, the travel under the floor (`untargetable`), the eruption through `applyElementalDamage` with the plain hit's kind (`DMG_HIT_MAIN`), its numbers and its perk hook, then the rest through `followerRest`;
+  - the look: js/evolution.js `drawEvolvedFollower` sinks the body into the floor during the dive (a clip and a shift) and draws a moving mound of glowing earth while it is under (`burrowerDepth`, `_drawBurrowMound`); the eruption is three molten spikes (js/elements.js `faultSpike`) and the words BURROW STRIKE.
+- **FAULTLINE** (js/techabilities.js):
+  - `TECH_ABILITY2.thermite`, a second ability by form, with its own wait (`_ab2ReadyAt`) and its own checks and way in (`techAbility2Can`, `techAbility2Use`), as the first ability's;
+  - the aim kind `path`: `techAimPathStart` / `Move` / `End` / `Cancel`, called from js/input.js (the press while aiming starts the stroke, each move adds to it, the let-go sends it, and a new `pointercancel` listener calls it off); `techAimTap` hands a let-go to `techAimPathEnd`;
+  - `techFaultPath` turns the stroke into the path (resampled, smoothed, laid over the floor, cut at a wall and at `maxLen`); `techFaultlineAt` starts the run and lays the path's glow (an element effect, `faultTrace`); `techFaultStep` runs it each frame from `updateNPC` (dive, to the start, along), and `_techFaultSpike` erupts the spikes through `applyElementalDamage` with an ability's kind (`DMG_HIT_ALT`);
+  - the second chip: js/party.js (`.sb-ab2` on the squad card, `techChip2State`, `techChip2Tap`), its css in game.html; the stroke drawn while it is being drawn (`_techDrawFaultStroke`, from `techDrawOverlay`); INFO's ABILITY · FAULTLINE section (`techAbility2Info`).
+- **The words:** js/unitinfo.js `SHOT_INFO["BURROW STRIKE"]` (the MAIN ATTACK section reads a form's `shot` or `hit`), FAULTLINE's INFO section, its prompt "PRESS ON THE FLOOR, DRAW ITS PATH AND LET GO", the in-game guide, the Bible.
+- **Not touched:** the Kinetic Launcher's own code and numbers, the THERMITE DRILL's, every other technician's plain hit, the damage tables.
+
 ## 10. Verification record
 
 | Check | Result | Evidence / notes |
@@ -218,8 +248,11 @@ Build `2026-11-03a` (the fire and electric moves). The numbers are the PROVISION
 | One damage system, one move table, one set of words: every new hit through `applyDamage` with a move's or the Mages' hit; no name or id twice; INFO's rows read off the constants; the new looks draw | Passed | tests/followercombat.js |
 | The suites that pinned the old behaviour | Updated, passed | tests/evolution.js (the roll-and-splash QUILL BURST and the six-round HEXFIRE checks replaced; ARC VOLLEY checked on the Reaver), tests/moves.js, tests/unitinfo.js; tests/firebombs.js, techlevel1.js, damage.js, abtest.js, facing.js, combat.js, loadorder.js, globals.js and bible.js pass as they were |
 | The rest of the game | Passed | the full run on build `2026-11-03a`: 86 of 88 the first time; the other two, tests/crystalline.js and tests/cards.js, pinned the Mage's shot's source text (a literal 55 now named `MAGE_SHOT_REST`; the word "cards" in a new comment) and passed once that was fixed, with the ten other suites that read js/npc.js |
-| THERMITE BURROWER: BURROW STRIKE, FAULTLINE's drawn path, underground, eruptions, touch | Not built | the next build |
-| Played by a person | Not done | not playtested. To try by hand: how QUILL BURST's fan reads in a fight; HEXFIRE's circle and its 4 s; PINBALL's roll among a pack; how far CHAIN LIGHTNING carries in a real fight; STATIC VORTEX's pull against creatures that walk; and every new look on an iPad (the frame cost of the circle, the vortex and the bolt is small canvas work, not measured on an iPad) |
+| THERMITE BURROWER, BURROW STRIKE: it dives for 20 frames, goes under the floor, never moves more than 0.12 tiles a frame, erupts within 0.35 tiles of the enemy for exactly 2 × a real plain hit of its own (`followerAttack`), surfaces and rests; under the floor it is not hurt; its enemy lost on the way brings it up with no eruption; out of reach or behind a wall it does not dive; a Siphon perk heals on the eruption as on the plain hit; a fire egg, the Hover Shell and the other technicians do not burrow | Passed | tests/followercombat.js (build `2026-11-06a`) |
+| THERMITE BURROWER, FAULTLINE: the evolved Burrower's alone, on a second chip with its own wait (60 s after joining, 60 s after a use) while the THERMITE DRILL keeps its chip, wait and the rubble; the aim asks for a path; a stroke under a tile sends nothing and keeps the aim; a quarter circle of radius 3 is sent as a curve (its length within 0.15 of 3π/2, about 4.7 tiles; it bows more than 0.7 tiles off its chord, where a straight line would not bow at all), starting where it was drawn; a stroke drawn 15 tiles long stops at 8; the run dives, tunnels to the start and follows the path with no offset (under 1e-6 tiles), surfaces exactly at its end; spikes every 0.75 tiles hit the two enemies within 0.7 tiles of the path once each and not the one beside it; the chip again, Escape and a cancelled touch call it off; the drill is BUSY while it runs; INFO names MAIN ATTACK · BURROW STRIKE, ABILITY · THERMITE DRILL, ABILITY · FAULTLINE | Passed | tests/followercombat.js |
+| THE REAL PAGE, BY TOUCH: in game.html in headless Chromium, the Burrower's squad card shows both chips (FAULTLINE's just above the drill's); a click on FAULTLINE's aims it (the prompt, ✕ AIMING); a quarter circle drawn with `PointerEvent`s of `pointerType: 'touch'` (down, moves, up) on the canvas is sent and run to its end; a second stroke ended by `pointercancel` sends nothing and ends the aim | Passed | tests/followercombat.js. It failed once before the check put the Burrower on open floor (it had used wherever the facility left it, so the stroke could start off the floor or behind a wall), and passed three runs in a row after, then in the full run |
+| The suites that pinned the old behaviour | Updated, passed | tests/techabilities.js (the press while aiming now starts a path); tests/followercombat.js (9 checks added: 35 in all) |
+| Played by a person | Not done | not playtested. To try by hand: how QUILL BURST's fan reads in a fight; HEXFIRE's circle and its 4 s; PINBALL's roll among a pack; how far CHAIN LIGHTNING carries in a real fight; STATIC VORTEX's pull against creatures that walk; BURROW STRIKE's rhythm against walking enemies (it follows them under the floor); **drawing FAULTLINE with a finger on an iPad and a phone** (a real touch, the system's own gestures near the screen's edges, a palm on the glass, a second finger), and whether the second chip is easy to hit; and every new look on an iPad (the frame cost of the circle, the vortex, the bolt, the path's glow and the mound is small canvas work, not measured on an iPad) |
 
 ## 11. Open questions
 
@@ -242,6 +275,8 @@ Items 1, 2 and 3 (and 7 with 3) were put to the owner on 2026-11-02 and answered
      - while aiming, no walk, ring, shot or lock can take the press (section 6.4).
 
      This is new input code (moves are not tracked while aiming today), kept inside the aiming mode. A tap on separate waypoints, which the brief rules out, is not used.
+
+     **Built as described in build `2026-11-06a`**, with FAULTLINE on its own chip beside the drill's (section 9).
 4. **QUILL BURST was decided before.** "Quill Burst's numbers (range 4, +25% on a hit, every 4 seconds, no burn)" are in `OPEN-QUESTIONS.md` §5, "already decided", and the code adds a hit chance and a 0.8-tile splash. **The brief supersedes them**: five real quills, each stopping at its first enemy, no splash, no chance roll. The old entry is marked superseded, not deleted.
 5. **FIREBALL already exists in all but name:** EMBER HOOD's everyday hit is the Mages' shot, a fire-coloured projectile. **Recommended:** call it FIREBALL (on INFO and in the guide) and give the fire Mage's shot a fireball's look. Its behaviour and numbers stay.
 6. **HEXFIRE is rebuilt.** Today it is six instant rounds, not a projectile and a circle. **Recommended:** a projectile at the nearest enemy that, where it lands, leaves a circle that hurts enemies only, not your followers or you, unlike FIRE BOMBS' burning ground. The circle never moves or grows.
@@ -273,15 +308,15 @@ Items 1, 2 and 3 (and 7 with 3) were put to the owner on 2026-11-02 and answered
 
 ### 11.2 Recommended starting values (from the game's own conventions; all PROVISIONAL, to tune in play)
 
-Built as below in build `2026-11-03a` for the four followers built (the constants at the top of js/evolution.js), except where a row says otherwise.
+Built as below in build `2026-11-03a` for the four followers built (the constants at the top of js/evolution.js), and in build `2026-11-06a` for the Thermite Burrower (`BURROW_*` in js/combat.js, `TECH_AB.fault` in js/techabilities.js), except where a row says otherwise.
 
 | Attack | Starting values | From |
 |---|---|---|
 | QUILL BURST | 5 quills across a 40° fan (10° apart), the middle one at the nearest enemy; 4 tiles; the follower shots' speed (0.18 tiles a frame); **power × 0.5 a quill** (all five on one target = the old hit, 2.0 × 1.25); every 240 frames. Like every follower shot today, a quill is not stopped by a wall. | its own numbers today |
 | FIREBALL | as the Mages' shot: SP.ATK × 0.5, every 55 frames | the shot today |
 | HEXFIRE | 7 tiles; a circle of 1.2 tiles for 240 frames, biting every 30 frames for power × 0.25; a new HEXFIRE replaces the same Ember Hood's last circle (no stacking); every 330 frames | HEXFIRE's range and wait; the pools' bite every 30 frames |
-| BURROW STRIKE | within 4 tiles (the technicians' reach): dive 20 frames, travel underground at 0.12 tiles a frame (untargetable, a mound of earth), erupt for 2× its plain hit, then 90 frames' rest | THERMITE DRILL's 2× hit |
-| FAULTLINE | a path of up to 8 tiles, smoothed; spikes every 0.75 tiles along it; it travels at 0.12 tiles a frame, each spike erupting as it passes, 2× its plain hit, each enemy hit once; the path glows from the moment it is drawn; wait 3600 frames | the technicians' ability wait |
+| BURROW STRIKE | within 4 tiles (the technicians' reach): dive 20 frames, travel underground at 0.12 tiles a frame (untargetable, a mound of earth), erupt for 2× its plain hit, then 90 frames' rest. *(Built so. The build also needed: it erupts within 0.35 tiles of the enemy (`BURROW_TOUCH`), and it comes up after 120 frames under the floor if it has not reached it (`BURROW_MAX`), with half the rest. A consequence to weigh in play: with an enemy 2 to 4 tiles away a whole strike (dive, travel, eruption, rest) takes about 126 to 143 frames, so it deals about 0.0035 to 0.0040 × ATK a frame to one enemy. That is roughly 65 to 75% of the plain hit's rate (0.25 × ATK every 46 frames), and it no longer strikes with the fire element's ring (0.4 × ATK to every enemy within 1.5 tiles), which a technician uses while it has Will. In exchange it is untouchable while it travels. The rest and the multiplier are the levers.)* | THERMITE DRILL's 2× hit |
+| FAULTLINE | a path of up to 8 tiles, smoothed; spikes every 0.75 tiles along it; it travels at 0.12 tiles a frame, each spike erupting as it passes, 2× its plain hit, each enemy hit once; the path glows from the moment it is drawn; wait 3600 frames. *(Built so. The build also needed: at least 1 tile (§11.1 item 3's "under a tile long sends nothing"), resampled every 0.25 tiles, a spike reaching 0.7 tiles (`hitR`), BURROW STRIKE's 20-frame dive, and the glow fading over 90 frames after it surfaces.)* | the technicians' ability wait |
 | PINBALL | the nearest enemy within 4 tiles, then the nearest unhit enemy within **3 tiles of the last**; it rolls between them at 0.35 tiles a frame (not a jump); power × 1.44 a collision (STATIC RUSH's jump: 2.4 × 0.6); each enemy once; safety: it stops after 600 frames or 30 tiles of rolling, or at a wall; every 300 frames | STATIC RUSH |
 | CHAIN LIGHTNING | the shot's damage on the first enemy; then the nearest unhit enemy within **2.5 tiles of the last**, at 60% of the jump before; each enemy once; ends when none is near enough or a jump would do under 1 | ARC VOLLEY |
 | STATIC VORTEX | at the nearest enemy within 7 tiles; radius 2.5 tiles; 240 frames; pulls at 0.06 tiles a frame (not beetles or bosses; not through a Photonic Shield); bites every 30 frames for SP.ATK × 0.2; every 330 frames. *(Built with its bites reading power (ATK) × 0.2, as every move reads ATK: `OPEN-QUESTIONS.md` §1s.)* | the flux pull, the Mages' moves' waits |
@@ -300,5 +335,6 @@ The brief's open balance values (none is final; recommendations come only after 
 
 - 2026-11-02: the owner's brief, "Design approval date: November 2, 2026". Phase 1 (the audit) finished on build `2026-11-02j`: no code changed; the conflicts and the recommended values went to the owner (section 11).
 - 2026-11-02: the owner's answers (`DECISION-LOG.md`): SONIC ROLL is STATIC RUSH; CHAIN LIGHTNING is the Thunderhead's everyday shot, STATIC VORTEX its move, ARC VOLLEY left to the Reaver; the Thermite Burrower keeps both buttons, the THERMITE DRILL and FAULTLINE. Build j went to main.
-- 2026-11-03, build `2026-11-03a`: the fire and electric moves built and tested on the branch (QUILL BURST's five quills, FIREBALL named, HEXFIRE's circle, SONIC ROLL kept, PINBALL, CHAIN LIGHTNING, STATIC VORTEX); the readings taken are in `OPEN-QUESTIONS.md` §1s. The Thermite Burrower is next.
+- 2026-11-03, build `2026-11-03a`: the fire and electric moves built and tested on the branch (QUILL BURST's five quills, FIREBALL named, HEXFIRE's circle, SONIC ROLL kept, PINBALL, CHAIN LIGHTNING, STATIC VORTEX); the readings taken are in `OPEN-QUESTIONS.md` §1s. The Thermite Burrower is next. Pushed to main at the owner's word.
+- 2026-11-06, build `2026-11-06a`: the Thermite Burrower built and tested on the branch: BURROW STRIKE, its everyday hit, and FAULTLINE, a path drawn freehand, on a second chip beside the THERMITE DRILL; touch checked with synthetic touch pointer events in a headless browser. All five of the brief's followers are built. The readings taken are in `OPEN-QUESTIONS.md` §1t.
 - Superseded by the brief: QUILL BURST's earlier rules (`OPEN-QUESTIONS.md` §5, "Quill Burst's numbers"): one roll with a hit chance and a splash become five quills that each stop at the first enemy, with no splash.

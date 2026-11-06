@@ -12,16 +12,18 @@ A **technician** (role `camper`, shown as TECHNICIAN) of an element has that ele
 | Ice | Frost Patch | ❄ FROST | a spot of floor |
 | Toxic | Blight Spider | ☣ POOL | a spot of floor |
 | Flux | Telegrab | ✦ GRAB | an item on the floor |
+| Fire, the evolved **Thermite Burrower** only (a second ability, build `2026-11-06a`) | FAULTLINE | 〰 FAULT | a path drawn on the floor (press, drag, let go) |
 
+- **A second ability, by form** (`TECH_ABILITY2`, the owner's "Keep both buttons", 2026-11-02): the evolved Thermite Burrower keeps its element's THERMITE DRILL and has FAULTLINE as well, on a second chip with its own wait (`_ab2ReadyAt`), its own checks and way in (`techAbility2Can`, `techAbility2Use`). A fire technician egg, and every other form, has the one ability. See "FAULTLINE" below.
 - **Who:** only a technician in the squad (not one holding a room, not one walking back to the Crystal).
 - **Waits:** a technician that joins the squad waits `TECH_AB.joinWait` (60 s, "the 60-second initial squad wait") before its first use; each use after that waits the ability's cooldown: 60 s for each of the six (as asked). Leaving the squad and coming back starts the first wait again. Cooldowns are not saved (no cooldown is).
 - **Reach:** anything the technician can see (no aiming through a wall); Telegrab reaches any item on the screen.
 - **The cooldown and the cards (2026-10-31):** every place a cooldown is set goes through `techCooldown(f, base)`, which takes off the share the technician's equip cards give to the ABILITY COOLDOWN stat (`EQUIP_STATS.cooldown`, js/cards.js: added over the two cards, nine tenths at most). Series 2's Technician class cards name it (build `2026-11-01j`): SPARE PARTS KIT −8%, CAPACITOR BANK −14%, FIELD MULTITOOL −10% (with +10% maximum HP). DOUBLE CELL gives the ability a second charge through the same function (`equipChargeSpend`): used with the charge held, the ability is ready again at once, and the charge refills one cooldown later. With no such card it is the table's number. The first wait after joining the squad is not a cooldown.
 - **Aiming:** the chip puts up a prompt at the top of the screen saying what to tap. While it is up, a press on the play area is the aim's (no ring, no shot, no walk), a tap on a squad card picks that follower, and a tap on the enemy card picks its creature. A pick that cannot be (out of sight, not floor) says why and the aim stays up for another. ✕ CALL OFF, a second tap on the chip, or Escape calls it off.
-- **The chip:** its mark and word when ready (`⚡ LAUNCH`), the seconds while waiting (`⚡ 42 S`), `✕ AIMING` while being aimed, and what it is doing while busy (`THROWING`, `SETTING UP`, `DRILLING`, `LAYING`). It is on the squad bar only, not in the Command Center's squad box.
+- **The chip:** its mark and word when ready (`⚡ LAUNCH`), the seconds while waiting (`⚡ 42 S`), `✕ AIMING` while being aimed, and what it is doing while busy (`THROWING`, `SETTING UP`, `DRILLING`, `LAYING`). It is on the squad bar only, not in the Command Center's squad box. The Thermite Burrower's second chip (`.sb-ab2`) sits just above it, in orange: `〰 FAULT`, `〰 42 S`, `✕ AIMING`, `〰 UNDER` while it runs, `〰 BUSY` while the drill or BURROW STRIKE is under way. A tap on one chip while the other's aim is up aims the one tapped.
 - **INFO:** a technician's INFO card has an ABILITY section with its numbers and when it is ready.
 
-All six are built.
+All six are built, and the Thermite Burrower's FAULTLINE (build `2026-11-06a`).
 
 ## The Kinetic Launcher (electric)
 
@@ -111,6 +113,22 @@ ASKED: "Place a distinctive rubble patch at the midpoint of the southern wall. K
 | How near an enemy it drills from | 1 tile | how it feels |
 | Time to get there | 20 s to the rubble, 8 s to an enemy | how it feels |
 
+## FAULTLINE and BURROW STRIKE (the evolved Thermite Burrower; build `2026-11-06a`)
+
+The follower combat redesign (`FOLLOWER-COMBAT-REDESIGN.md`, the owner's brief, 2026-11-02; the readings taken are in `OPEN-QUESTIONS.md` §1t). ASKED: "Thermite Burrower dives underground. It follows the player-drawn route. Molten spikes erupt along the route. Enemies intersecting the eruption path are hit"; not a straight drag-to-aim line, a directional charge or taps on separate waypoints (`FOLLOWER-COMBAT-REDESIGN.md` §2.4); then the owner's answer "Keep both buttons": the drill stays as it is, and FAULTLINE has a chip of its own.
+
+- **FAULTLINE** (`TECH_AB.fault`, js/techabilities.js): tap its chip (just above the drill's), then press on the floor, draw the path and let go; a glowing line follows the pointer, the same with a mouse and a finger (js/input.js: the press while aiming starts the stroke, each move adds to it, the let-go sends it, a `pointercancel` calls it off). A stroke under 1 tile sends nothing and the aim stays up; the stroke stops growing at 8 tiles. The path is resampled and smoothed, must start on the floor where the Burrower can see, and ends where a wall cuts it. The Burrower dives, tunnels to the path's start, follows the path under the floor (untargetable) and surfaces at its end; from the start, every 0.75 tiles, a molten spike erupts as it passes, hitting every enemy within 0.7 tiles once a FAULTLINE for 2 × its plain hit, fire, as its ability. Its wait, 60 s, starts as it sets off; the drill's is not spent. The chip again, Escape or a cancelled touch calls the aim off.
+- **BURROW STRIKE** (js/combat.js `burrowStrikeTry`, `burrowStep`) is not an ability: it is the evolved Thermite Burrower's everyday hit, in place of the technicians' plain hit for this form only. At the nearest enemy it can see within 4 tiles it dives, travels under the floor toward it (untargetable, a mound of glowing earth showing where it is) and erupts beneath it for 2 × its plain hit, then rests. The other technicians' plain hit, the Hover Shell's included, is untouched.
+
+| Number | Value | Status |
+|---|---|---|
+| FAULTLINE's path: longest, shortest, resampled every | 8, 1, 0.25 tiles | provisional (§11.2; the 1 from the approved input) |
+| FAULTLINE's spikes: every, reach, damage | 0.75 tiles, 0.7 tiles, 2 × the plain hit | provisional (reach: a reading) |
+| FAULTLINE's dive, speed under the floor, glow after | 20 frames, 0.12 tiles a frame, 90 frames | provisional |
+| FAULTLINE's wait | 60 s, its own, from when it sets off | provisional (the technicians' wait) |
+| BURROW STRIKE: reach, dive, speed, damage, rest | 4 tiles, 20 frames, 0.12 tiles a frame, 2 × the plain hit, 90 frames | provisional (§11.2) |
+| BURROW STRIKE: how near is beneath, longest under | 0.35 tiles, 120 frames | readings |
+
 ## The Frost Patch (ice)
 
 ASKED: "Implement the Level 1 Frost Patch using existing terrain and status-effect systems. Check the established design for its dimensions, duration, slowing effects, and sliding behavior"; then 3×3, 10 s, half speed, on a spot the player taps that the technician can see, there at once; "sliding" for your own units: they cross faster; ice bridges later ("they'll be like sewer somewhere on the map; we'll find a place to add the sewer system, and you can [cross] the sewer with the ice bridges").
@@ -186,6 +204,7 @@ Still open:
 
 - **Ice, Frost Patch:** how much faster your units cross it (150% is provisional); the ice bridges, when the map has a sewer to cross.
 - **Fire, Thermite Drill:** "twice its normal hit" is read as twice followerAttack's plain hit (a quarter of its attack); what the rocks are for; what is in the hole (the insect burrow).
+- **Fire, the Thermite Burrower's FAULTLINE and BURROW STRIKE:** every number is provisional; the readings are in `OPEN-QUESTIONS.md` §1t; drawing a path with a finger on an iPad has not been tried by a person.
 - **Toxic, Blight Spider:** the death spill (left unresolved, as asked).
 - **Electric, Kinetic Launcher:** its provisional numbers (above) were confirmed as placeholders.
 - **Rooms:** forward rooms, nests, Crystal energy, equipment and the healing station wait ("Not yet").

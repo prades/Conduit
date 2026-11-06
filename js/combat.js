@@ -276,6 +276,53 @@ function followerRest(actor, frames) {
     const k = typeof equipMult === "function" ? equipMult(actor, "attackSpeed") : 1;
     return k > 0 && k !== 1 ? Math.max(1, Math.round((frames + 1) / k) - 1) : frames;
 }
+// BURROW STRIKE (the Thermite Burrower's everyday hit): it dives, travels under the floor to an enemy it can see in reach, and erupts beneath it. 2× its plain hit (the plain hit is a quarter of its ATK).
+const BURROW_REACH = 4, BURROW_DIVE = 20, BURROW_SPEED = 0.12, BURROW_MULT = 2, BURROW_REST = 90, BURROW_MAX = 120, BURROW_TOUCH = 0.35;   // reach (the technicians'), the dive (frames), speed under the floor (tiles a frame), × its plain hit, the rest after, the longest it travels, how near is beneath
+// BURROW STRIKE (the Thermite Burrower's everyday hit; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.4): an underground ambush in place of the plain hit. With an enemy in
+// reach that it can see, it DIVES (BURROW_DIVE frames), then TRAVELS UNDER THE FLOOR toward it, BURROW_SPEED tiles a frame, and ERUPTS BENEATH IT: the eruption is the hit, BURROW_MULT × its
+// plain hit, through the damage system as its main attack. While under the floor it cannot be targeted or hurt (`untargetable`: js/predator.js, js/helpers.js) and a mound of glowing earth
+// shows where it is (drawEvolvedFollower). It surfaces where it is if it loses its enemy, meets a wall, travels BURROW_MAX frames, or is told to RETREAT, called to a launcher or thrown. Only
+// this form's hit changes: every other technician's plain hit (the Hover Shell's included) is the one it was. From js/npc.js (the technicians' branch); the steps from updateNPC. It lives here, beside the plain hit it stands in for: its rest after an eruption reads attack speed (followerRest) as the plain hit's does.
+function _burrowerHit(f) { const d = f && f.evolved ? evolvedDef(f) : null; return !!(d && d.hit === "BURROW STRIKE"); }
+// the technicians' branch asks this first (js/npc.js): true when the Burrower's turn is BURROW STRIKE's (it has set off, or it is resting after one); false for any other unit, or with no enemy it can see
+function burrowStrikeTry(f, t) {
+    if (!_burrowerHit(f) || !t || t.dead) return false;
+    if (f._burrow) return true;
+    if ((f.attackCooldown || 0) > 0) { f.attackCooldown--; return true; }   // (resting after an eruption: it holds where it surfaced)
+    if (Math.hypot(t.x - f.x, t.y - f.y) > BURROW_REACH || (typeof facilityLosFrom === "function" && !facilityLosFrom(f.x, f.y, t.x, t.y))) return false;   // (not in reach, or a wall between: it walks as before)
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    f._burrow = { t, phase: "dive", t0: f0, t1: 0 }; f.state = "attack";
+    { const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: 0.8, color: "#ff8a3a", life: 20 });
+    return true;
+}
+// a frame of BURROW STRIKE (js/npc.js updateNPC, before the unit's own moves): true while it is under way (nothing else moves it), false once it has surfaced
+function burrowStep(f) {
+    const B = f._burrow; if (!B) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    const surface = rest => { f._burrow = null; f.untargetable = false; f.attackCooldown = typeof followerRest === "function" ? followerRest(f, rest) : rest; if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#9a6a3a", radius: 0.5, life: 14 }); return false; };
+    if (f.dead) { f._burrow = null; f.untargetable = false; return false; }
+    if (f._flight || f._launchLoad || f.returningToCrystal || f.retreatUntil > f0) return surface(BURROW_REST);
+    if (B.phase === "dive") { if (f0 - B.t0 >= BURROW_DIVE) { B.phase = "travel"; B.t1 = f0; f.untargetable = true; } return true; }
+    const t = B.t;
+    if (!t || t.dead || !isHostileTarget(t) || f0 - B.t1 > BURROW_MAX) return surface(Math.round(BURROW_REST / 2));   // (it lost its enemy: up where it is)
+    const dx = t.x - f.x, dy = t.y - f.y, d = Math.hypot(dx, dy) || 1e-6;
+    if (d <= BURROW_TOUCH) {   // THE ERUPTION, beneath it
+        const dmg = ((f.stats && f.stats.attack) || 5) * 0.25 * BURROW_MULT;
+        applyElementalDamage(t, dmg, f, f.element || "fire", DMG_HIT_MAIN);   // (its main attack: the plain hit's kind, Piercing for the Burrower: js/damage.js DMG_FORM)
+        if (f.perk && typeof PERKS !== "undefined") { const pk = PERKS[f.perk]; if (pk && pk.onDealDamage) pk.onDealDamage(f, dmg); }   // (as the plain hit it stands in for, followerAttack: a Siphon heals on it)
+        if (f.currentResonance < 100) f.currentResonance = Math.min(100, f.currentResonance + 2);
+        if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "faultSpike", x: t.x, y: t.y, life: 26, maxLife: 26 }); elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#ff8a3a", radius: 0.9, life: 22 }); }
+        if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text: "BURROW STRIKE", color: "#ff9a4a", life: 45, vy: -0.06, size: 10 });
+        f._sigAt = f0;
+        return surface(BURROW_REST);
+    }
+    const step = Math.min(BURROW_SPEED, d), nx = f.x + dx / d * step, ny = f.y + dy / d * step;
+    if (typeof facilityStandOk === "function" && !facilityStandOk(nx, ny)) return surface(Math.round(BURROW_REST / 2));   // (a wall under the floor too: up where it is)
+    f.x = nx; f.y = ny; f.dirX = dx / d; f.dirY = dy / d;
+    return true;
+}
 function followerAttack(actor, target) {
     if (!actor || !target || target.dead) return;
     if (!actor.attackCooldown) actor.attackCooldown = 0;

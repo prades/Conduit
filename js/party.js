@@ -234,7 +234,7 @@ function partySlotsBuild(root, onClick) {
     root.textContent = ""; const slots = [];
     for (let i = 0; i < PARTY.max; i++) {
         const el = document.createElement("div"); el.className = "sb-slot empty"; el.setAttribute("data-slot", String(i));
-        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><span class="sb-open">+ OPEN SLOT</span>';   // (sb-ab: a technician's ability, js/techabilities.js)
+        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><button class="sb-ab2" aria-label="Second ability"></button><span class="sb-open">+ OPEN SLOT</span>';   // (sb-ab: a technician's ability; sb-ab2: the Thermite Burrower's second, FAULTLINE: js/techabilities.js)
         const no = el.querySelector(".sb-no"); if (no) no.textContent = String(i + 1);   // (the number and the ✕ REMOVE are the Command Center carousel's: js/commandcenter.js; game.html hides them on the bar)
         root.appendChild(el); slots.push(el);
     }
@@ -245,13 +245,14 @@ function partyBarBuild(root) { if (!_sbEls || _sbEls.root !== root) _sbEls = par
 function _partyTapped(ev) {
     const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return null;
     const slot = t.closest(".sb-slot"); if (!slot) return null;
-    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), call: slot._call || null };
+    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), call: slot._call || null };
 }
 function partyBarClick(ev) {
     const hit = _partyTapped(ev); if (!hit) return;
     const f = hit.f;
     if (hit.info) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
     // A TECHNICIAN'S ABILITY (js/techabilities.js): its chip aims it (again: calls the aim off); while one is aimed, a tap on a squad card picks that follower for it
+    if (f && hit.ab2 && typeof techChip2Tap === "function") { techChip2Tap(f); partyBarRender(true); return; }   // (the Thermite Burrower's second chip: FAULTLINE)
     if (f && hit.ab && typeof techChipTap === "function") { techChipTap(f); partyBarRender(true); return; }
     if (f && typeof techAimActive === "function" && techAimActive() && typeof techAimPickFollower === "function" && techAimPickFollower(f)) { partyBarRender(true); return; }
     if (!f) { if (hit.call) { partyAdd([hit.call]); if (typeof mixToolRender === "function") mixToolRender(true); } else if (typeof ccShowCandidates === "function") ccShowCandidates(); else if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the one follower that holds a room comes back; else the roster, showing the followers that could fill it
@@ -286,7 +287,9 @@ function partySlotsUpdate(E, lit) {
         if (el._col !== col) { el._col = col; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", col); }
         el.classList.toggle("sel", lit ? !!lit(f) : typeof selectedUnits !== "undefined" && selectedUnits.has(f));
         { const cs = !lit && typeof techChipState === "function" ? techChipState(f) : null, ab = el.querySelector(".sb-ab");   // a technician's ability chip: on the bar only (not the Command Center's squad box)
-          el.classList.toggle("has-ab", !!cs); if (ab) { _sbSet(ab, "textContent", cs ? cs.text : ""); _sbSet(ab, "className", "sb-ab" + (cs ? " " + cs.cls : "")); } }
+          el.classList.toggle("has-ab", !!cs); if (ab) { _sbSet(ab, "textContent", cs ? cs.text : ""); _sbSet(ab, "className", "sb-ab" + (cs ? " " + cs.cls : "")); }
+          const cs2 = !lit && typeof techChip2State === "function" ? techChip2State(f) : null, ab2 = el.querySelector(".sb-ab2");   // the Thermite Burrower's second chip (FAULTLINE), above the first
+          el.classList.toggle("has-ab2", !!cs2); if (ab2) { _sbSet(ab2, "textContent", cs2 ? cs2.text : ""); _sbSet(ab2, "className", "sb-ab2" + (cs2 ? " " + cs2.cls : "")); } }
         const name = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", sub = "LV " + (f.level || 1) + (st ? " · " + st.text : "");
         const nm = el.querySelector(".sb-name"), sb = el.querySelector(".sb-sub"), hp = el.querySelector(".sb-hp u");
         _sbSet(nm, "textContent", name); _sbSet(sb, "textContent", sub); if (st) sb.style.color = st.col;

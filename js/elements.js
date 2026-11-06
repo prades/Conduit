@@ -485,7 +485,7 @@ function spawnElementEffect(effect) {
 // alive — the oldest short-lived ones go first, the long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1, hexfire: 1, staticVortex: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show: never dropped for the budget)
+const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
     const keep = [], clouds = [], blizzards = [];
@@ -1020,6 +1020,41 @@ function drawElementEffects() {
                 }
                 ctx.globalAlpha = (0.5 + 0.3 * Math.sin(frame * 0.5)) * k; ctx.fillStyle = "#ffffff";
                 ctx.beginPath(); ctx.ellipse(px, cy - 14, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+                break;
+            }
+            // FAULTLINE's path (js/techabilities.js techFaultlineAt): a molten line along the drawn path from the moment it is sent; the stretch the Burrower has passed burns white-hot, the rest pulses
+            // ahead of it; it fades once the Burrower is up.
+            case "faultTrace": {
+                const P = e.pts, C = e.cum, W = canvas.width / 2, H = canvas.height / 2, k = e.done ? Math.max(0, e.life / Math.max(1, e.maxLife)) : 1;
+                ctx.lineCap = "round"; ctx.lineJoin = "round";
+                for (let pass = 0; pass < 2; pass++) {
+                    ctx.globalAlpha = k * (pass ? 0.85 : 0.3 + 0.12 * Math.sin(frame * 0.25)); ctx.strokeStyle = pass ? "#ffb04a" : "#ff3a0a"; ctx.lineWidth = pass ? 2 : 8;
+                    ctx.beginPath();
+                    for (let i = 0; i < P.length; i++) { const tx = (P[i].x - player.visualX - (P[i].y - player.visualY)) * TILE_W + W, ty = (P[i].x - player.visualX + (P[i].y - player.visualY)) * TILE_H + H + TILE_H; if (i) ctx.lineTo(tx, ty); else ctx.moveTo(tx, ty); }
+                    ctx.stroke();
+                }
+                if (e.reached > 0) {   // (the stretch it has passed)
+                    ctx.globalAlpha = k; ctx.strokeStyle = "#fff4d0"; ctx.lineWidth = 1.5; ctx.beginPath();
+                    for (let i = 0; i < P.length; i++) {
+                        let qx = P[i].x, qy = P[i].y;
+                        if (C[i] > e.reached) { const a = P[i - 1], sg = (C[i] - C[i - 1]) || 1e-9, t = (e.reached - C[i - 1]) / sg; qx = a.x + (P[i].x - a.x) * t; qy = a.y + (P[i].y - a.y) * t; }
+                        const tx = (qx - player.visualX - (qy - player.visualY)) * TILE_W + W, ty = (qx - player.visualX + (qy - player.visualY)) * TILE_H + H + TILE_H;
+                        if (i) ctx.lineTo(tx, ty); else ctx.moveTo(tx, ty);
+                        if (C[i] > e.reached) break;
+                    }
+                    ctx.stroke();
+                }
+                break;
+            }
+            // FAULTLINE's spikes (js/techabilities.js), and BURROW STRIKE's eruption (js/combat.js): three molten spikes burst up out of the floor and sink again, a glow round their foot.
+            case "faultSpike": {
+                const age = e.maxLife - e.life, up = Math.min(1, age / 5), fall = Math.max(0, (age - 12) / 14), h = 26 * up * (1 - fall), cy = py + TILE_H;
+                ctx.globalAlpha = 0.5 * (1 - fall); ctx.fillStyle = "#ff5a1f"; ctx.beginPath(); ctx.ellipse(px, cy, 16, 7, 0, 0, Math.PI * 2); ctx.fill();
+                for (let i = -1; i <= 1; i++) {
+                    const bx = px + i * 7, hh = h * (i ? 0.7 : 1);
+                    ctx.globalAlpha = 1 - fall * 0.8; ctx.fillStyle = "#2a1208"; ctx.beginPath(); ctx.moveTo(bx - 4, cy); ctx.lineTo(bx + i * 2, cy - hh); ctx.lineTo(bx + 4, cy); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = "#ff8a3a"; ctx.beginPath(); ctx.moveTo(bx - 1.5, cy); ctx.lineTo(bx + i * 2, cy - hh * 0.9); ctx.lineTo(bx + 1.5, cy); ctx.closePath(); ctx.fill();
+                }
                 break;
             }
             // CHAIN LIGHTNING's jumps (js/evolution.js chainLightning): a jagged bolt from the enemy the shot struck through each enemy it conducted to, flickering out.

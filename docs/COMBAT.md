@@ -190,7 +190,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 | ROTSHARD | Mage · toxic | Projectile (rot shards) | CORRODE SHOT: Elemental |
 | HAMMER SLUG | Technician · core | Crushing (hammer) | PHOTONIC SHIELD: no damage |
 | GOO PROXY | Technician · flux | Crushing (goo slam) | TELEGRAB: no damage |
-| THERMITE BURROWER | Technician · fire | Piercing (drill) | THERMITE DRILL: Piercing |
+| THERMITE BURROWER | Technician · fire | Piercing (BURROW STRIKE: it dives, travels under the floor and erupts beneath the enemy, 2 × its plain hit; build `2026-11-06a`) | THERMITE DRILL: Piercing; FAULTLINE (a path the player draws, spikes along it): Piercing |
 | BLIGHT SPIDER | Technician · toxic | Piercing (fangs) | BLIGHT pools: Elemental |
 | HOVER SHELL | Technician · electric | Crushing (ram) | KINETIC LAUNCHER: Earthquake (the landing) |
 | IGLOO SKATER | Technician · ice | Slashing (skate blades) | FROST PATCH: Elemental |
@@ -384,6 +384,8 @@ PETAL BLAZE, the one move of their own, is Elemental.
 | You | guns, the laser and its pierce, the turrets | Projectile | — |
 | You | the Mutator's lash; the gauntlet; the arc | Slashing; Crushing; Elemental (electric) | — |
 | You | the clone's pounce | Piercing | — |
+
+*Since then (the follower combat redesign, `FOLLOWER-COMBAT-REDESIGN.md`): build `2026-11-03a`'s PINBALL and STATIC VORTEX are signature moves (alternate, ATK), and the Ember Hood's FIREBALL and the Thunderhead's CHAIN LIGHTNING are the Mages' shot (main, SP.ATK). Build `2026-11-06a`'s BURROW STRIKE stands in the Thermite Burrower's plain hit (main, ATK), and its FAULTLINE's spikes are an ability's (alternate, ATK), as THERMITE DRILL's are.*
 
 **Left on the old rule, as §7.6 item 4 says:**
 - a burn's tick;

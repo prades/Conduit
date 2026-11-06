@@ -2,10 +2,13 @@
 // The brief's Phase 3 list: QUILLSTONE (QUILL BURST: exactly five quills, at once, each on its own, stopping at the first enemy, no piercing, no splash), EMBER HOOD (FIREBALL; HEXFIRE's circle
 // placed, stationary, its duration and damage, never growing or travelling), STATIC ORB (SONIC ROLL kept; PINBALL: the nearest targets, never one twice, ending, never looping), THUNDERHEAD
 // (CHAIN LIGHTNING by distance: clusters chain further, a gap breaks it; STATIC VORTEX: stationary, pulling in, biting on), and HOVER SHELL with its KINETIC LAUNCHER unchanged.
-// (The THERMITE BURROWER's BURROW STRIKE and FAULTLINE are the next build's, and get their checks with it.) Every number read here is the code's own, PROVISIONAL constant.
+// THERMITE BURROWER (BURROW STRIKE's targeting and eruption; FAULTLINE's freehand path, followed under the floor, its eruptions, on a chip of its own beside the THERMITE DRILL; touch in the real browser).
+// Every number read here is the code's own, PROVISIONAL constant.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
+const os = require('os');
+const { execFileSync } = require('child_process');
 const { ROOT, scriptOrder, makeBrowserSandbox } = require('./domstub.js');
 process.on('unhandledRejection', () => {});
 
@@ -15,6 +18,58 @@ function check(name, fn) { try { fn(); console.log('  ok   ' + name); } catch (e
 function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+function findChromium() {
+    const fromEnv = process.env.CHROMIUM_PATH; if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
+    const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers'; let dirs = [];
+    try { dirs = fs.readdirSync(base); } catch (e) { return null; }
+    for (const d of dirs.filter(d => d.startsWith('chromium')).sort().reverse()) for (const rel of ['chrome-linux/chrome', 'chrome-linux/headless_shell']) { const p = path.join(base, d, rel); if (fs.existsSync(p)) return p; }
+    for (const p of ['/usr/bin/chromium', '/usr/bin/chromium-browser', '/usr/bin/google-chrome']) if (fs.existsSync(p)) return p;
+    return null;
+}
+// THE REAL PAGE (FAULTLINE by touch): an evolved Thermite Burrower in the squad; its card's two chips; a tap on FAULTLINE's; a path drawn on the canvas with a finger's pointer events (pointerType
+// "touch": the canvas listens to pointer events for a mouse and a finger alike, js/input.js); then a second stroke the system cancels (pointercancel).
+const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(async function(){
+  var out = {}, wait = function(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }, $ = function(s){ return document.querySelector(s); }, step = function(n){ for (var i = 0; i < n; i++) render(); };
+  canvas.setPointerCapture = function(){};   // (a synthetic pointer is not a real one: capturing it throws)
+  var rect = function(e){ if (!e) return null; var b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]; };
+  var scr = function(wx, wy){ var sx = (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width / 2, sy = (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H; for (var i = 0; i < 8; i++) { var w = techScreenToWorld(sx, sy), ex = wx - w.x, ey = wy - w.y; if (Math.hypot(ex, ey) < 1e-4) break; sx += (ex - ey) * TILE_W; sy += (ex + ey) * TILE_H; } return { x: sx, y: sy }; };
+  var touch = function(type, x, y){ var r = canvas.getBoundingClientRect(); canvas.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: r.left + x * r.width / canvas.width, clientY: r.top + y * r.height / canvas.height, pointerId: 11, pointerType: 'touch', isPrimary: true })); };
+  try {
+    if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
+    gameState.running = true; crystalMenuOpen = false; selectedUnits.clear();
+    actors = actors.filter(function(a){ return !(a instanceof Predator); });
+    var t = followers[0]; t.element = 'fire'; t.role = 'camper'; t.evolved = 'thermite'; t._moltAt = -1e9; followers.slice(1).forEach(function(f){ f.role = 'brawler'; f.evolved = undefined; });
+    var said = [], keepSay = _techSay; _techSay = function(m){ said.push(m); return keepSay.apply(this, arguments); };   // (what the game tells the player, in case a path is refused)
+    var cells = partyRoomCells('arena'), set = new Set(cells.map(function(c){ return c[0] + ',' + c[1]; })), best = null, bn = -1;   // (the arena's most open patch of floor, as the node checks use: where the Burrower stands, the player beside it)
+    cells.forEach(function(c){ var n = 0; for (var dx = -6; dx <= 6; dx++) for (var dy = -6; dy <= 6; dy++) if (set.has((c[0] + dx) + ',' + (c[1] + dy))) n++; if (n > bn) { bn = n; best = c; } });
+    var put = function(){ t.x = best[0] + 0.5; t.y = best[1] + 0.5; t.job = null; t.stance = 'hold'; player.x = player.visualX = t.x - 2; player.y = player.visualY = t.y; };
+    put(); step(12); partyTick(); t._ab2ReadyAt = 0; t._abReadyAt = 0; put(); step(7); partyTick(); put();
+    var slot = Array.prototype.slice.call(document.querySelectorAll('#squadBar .sb-slot')).find(function(e){ return e._unit === t; }), c1 = slot && slot.querySelector('.sb-ab'), c2 = slot && slot.querySelector('.sb-ab2');
+    out.chips = { has1: !!slot && slot.classList.contains('has-ab'), has2: !!slot && slot.classList.contains('has-ab2'), t1: c1 && c1.textContent, t2: c2 && c2.textContent, r1: rect(c1), r2: rect(c2), shown2: c2 ? getComputedStyle(c2).display : null };
+    c2.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(2);
+    out.aim = { on: document.body.classList.contains('tech-aiming'), prompt: $('#techAim .ta-t').textContent, chip2: c2.textContent, chip1: c1.textContent };
+    var cx = t.x, cy = t.y, pts = []; for (var i = 0; i <= 24; i++) { var th = Math.PI * (1 - i / 24) / 2; pts.push(scr(cx + 3 - 2.5 * Math.cos(th), cy + 2.5 - 2.5 * Math.sin(th))); }
+    touch('pointerdown', pts[0].x, pts[0].y); for (var j = 1; j < pts.length; j++) touch('pointermove', pts[j].x, pts[j].y); touch('pointerup', pts[pts.length - 1].x, pts[pts.length - 1].y); step(1);
+    out.sent = { fault: !!t._fault, n: t._fault ? t._fault.pts.length : 0, len: t._fault ? Math.round(t._fault.cum[t._fault.cum.length - 1] * 100) / 100 : 0, aiming: document.body.classList.contains('tech-aiming'), start: t._fault ? [Math.round((t._fault.pts[0].x - cx) * 100) / 100, Math.round((t._fault.pts[0].y - cy) * 100) / 100] : null, said: said.slice(-3), at: [Math.round(cx * 10) / 10, Math.round(cy * 10) / 10], stroke: techAim && techAim.stroke ? techAim.stroke.length : null,
+      panels: [typeof infoPanelOpen !== 'undefined' && infoPanelOpen, typeof settingsPanelOpen !== 'undefined' && settingsPanelOpen, typeof questBoxOpen !== 'undefined' && questBoxOpen, typeof classPickerOpen !== 'undefined' && classPickerOpen, typeof invPanelOpen !== 'undefined' && invPanelOpen, typeof armoryPanelOpen !== 'undefined' && armoryPanelOpen, typeof cloneMenuOpen !== 'undefined' && cloneMenuOpen].map(function(b){ return b ? 1 : 0; }).join('') };
+    for (var k = 0; k < 400 && t._fault; k++) step(1);
+    out.run = { over: !t._fault, up: !t.untargetable };
+    t._ab2ReadyAt = 0; partyTick(); c2.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
+    var on2 = document.body.classList.contains('tech-aiming');
+    touch('pointerdown', pts[0].x, pts[0].y); touch('pointermove', pts[6].x, pts[6].y); touch('pointercancel', pts[6].x, pts[6].y); step(1);
+    out.cancel = { was: on2, aiming: document.body.classList.contains('tech-aiming'), fault: !!t._fault };
+  } catch (err) { out.err = String(err && err.stack || err); }
+  var pre = document.createElement('pre'); pre.id = '__fc'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
+}, 2000); });</script></body>`;
+function measure(w, h) {
+    const bin = findChromium(); if (!bin) return null;
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fc-')), file = path.join(dir, 'game.html');
+    fs.writeFileSync(file, rd('game.html').replace(/<head>/i, '<head><base href="file://' + ROOT + '/">').replace(/<\/body>/i, () => SCRIPT));
+    let dom = '';
+    try { dom = execFileSync(bin, ['--headless=new', '--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + w + ',' + h, '--virtual-time-budget=60000', '--dump-dom', 'file://' + file], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: 150000, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) { dom = (e && e.stdout) || ''; }
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch (e) {}
+    const m = dom.match(/<pre id="__fc">([\s\S]*?)<\/pre>/); return m ? JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')) : undefined;
+}
 
 (async () => {
     const context = vm.createContext(makeBrowserSandbox({}));
@@ -33,7 +88,11 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         globalThis.__off = f => { actors = actors.filter(a => a !== f); followers = followers.filter(a => a !== f); };   // (out of the world: its own AI and melee add nothing; its shots and fields keep it as their source)
         globalThis.__dmg = p => 1e6 - p.health;
         globalThis.__fire = f => { frame++; f._sigCd = 1; evolutionTick(); };
-        globalThis.__one = (f, x, y, sp) => { const twin = __foe(x, y, sp); return twin; };`);
+        globalThis.__one = (f, x, y, sp) => { const twin = __foe(x, y, sp); return twin; };
+        globalThis.__scr = (wx, wy) => { let sx = (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width / 2, sy = (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H; for (let i = 0; i < 8; i++) { const w = techScreenToWorld(sx, sy), ex = wx - w.x, ey = wy - w.y; if (Math.hypot(ex, ey) < 1e-4) break; sx += (ex - ey) * TILE_W; sy += (ex + ey) * TILE_H; } return { x: sx, y: sy }; };
+        globalThis.__burrower = () => { const f = __fol('fire', 'camper', 'thermite'); partyAdd([f]); techAbilityTick(); f._abReadyAt = 0; f._ab2ReadyAt = 0; f.attackCooldown = 0; return f; };
+        globalThis.__draw = (f, wpts) => { const sp = wpts.map(p => __scr(f.x + p[0], f.y + p[1])); techAimPathStart(sp[0].x, sp[0].y); for (let i = 1; i < sp.length; i++) techAimPathMove(sp[i].x, sp[i].y); return techAimTap(sp[sp.length - 1].x, sp[sp.length - 1].y); };
+        globalThis.__arc = (R, n) => { const o = []; for (let i = 0; i <= n; i++) { const th = Math.PI * (1 - i / n) / 2; o.push([1 + R - R * Math.cos(th), R - R * Math.sin(th)]); } return o; };`);
 
     // ── QUILLSTONE ──────────────────────────────────────────
     group('QUILLSTONE (fire Brawler): QUILL BURST, five crystal quills at once, each stopping at the first enemy it hits; its main attack and FIRE BOMBS kept');
@@ -228,6 +287,97 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         ok(Math.abs(r.k - r.life) <= 2, 'it lasted ' + r.k); same(r.out, 0, 'an enemy outside it was bitten');
         same(r.move, 'static_vortex', 'the Thunderhead\'s move'); same(r.thunder, 'STATIC VORTEX', 'its form'); same(r.reaver, 'ARC VOLLEY', 'the Reaver');
     });
+
+    // ── THERMITE BURROWER ───────────────────────────────────
+    group('THERMITE BURROWER (fire Technician): BURROW STRIKE, its everyday hit from under the floor; FAULTLINE, a path the player draws freehand, on its own chip beside the THERMITE DRILL');
+    check('BURROW STRIKE: at the nearest enemy it can see in reach it DIVES (BURROW_DIVE frames), TRAVELS UNDER THE FLOOR (never more than BURROW_SPEED a frame) and ERUPTS BENEATH IT for BURROW_MULT × its plain hit, then surfaces and rests', () => {
+        const r = J(`(function(){ __clear(); const f = __burrower(), t = __foe(f.x + 3, f.y + 0.5); f.perk = 'siphon'; f.health = Math.round(f.maxHealth * 0.9); let fr = 0, under = -1, most = 0, x = f.x, y = f.y, at = -1, near = null, healed = null;
+            while (fr < 240) { const h0 = f.health; frame++; updateNPC(f); most = Math.max(most, Math.hypot(f.x - x, f.y - y)); x = f.x; y = f.y; fr++; if (f.untargetable && under < 0) under = fr; if (__dmg(t) > 0 && at < 0) { at = fr; near = Math.hypot(f.x - t.x, f.y - t.y); healed = f.health - h0; } if (at > 0 && fr > at + 1) break; }
+            const rest = f.attackCooldown, twin = __foe(f.x + 40, f.y + 40), w0 = f.currentWill; f.currentWill = 0; f.attackCooldown = 0; followerAttack(f, twin); f.currentWill = w0;   // (its plain hit, as a technician strikes with no Will: js/combat.js followerAttack)
+            return { under, dive: BURROW_DIVE, most, speed: BURROW_SPEED, at, near, touch: BURROW_TOUCH, dmg: __dmg(t), want: BURROW_MULT * __dmg(twin), healed, siphon: 0.1 * f.stats.attack * 0.25 * BURROW_MULT, up: !f.untargetable, done: !f._burrow, rest, plain: DMG_FORM.thermite.main, hit: EVOLUTIONS.thermite.hit }; })()`);
+        same(r.under, r.dive + 1, 'under the floor after its dive'); ok(r.most <= r.speed + 1e-9, 'a frame\'s step ' + r.most); ok(r.at > 0 && r.near <= r.touch + 1e-9, 'not beneath it: ' + JSON.stringify(r));
+        ok(Math.abs(r.dmg - r.want) < 1e-6 * r.want + 1e-6, 'the eruption is ' + r.dmg + ', not ' + r.want + ' (BURROW_MULT × a plain hit of its own, its main attack)'); ok(r.up && r.done, 'it did not surface'); ok(r.rest > 60, 'no rest after: ' + r.rest);
+        ok(Math.abs(r.healed - r.siphon) < 1e-6, 'a Siphon perk heals on the eruption as on the plain hit it stands in for: ' + r.healed + ', not ' + r.siphon);
+        same(r.plain, 'piercing', 'its main attack\'s type'); same(r.hit, 'BURROW STRIKE', 'its form\'s hit');
+    });
+    check('under the floor it cannot be targeted or hurt; a target lost on the way (dead) brings it up where it is, with no eruption; out of reach or behind a wall it does not dive', () => {
+        const r = J(`(function(){ __clear(); const f = __burrower(), t = __foe(f.x + 3.5, f.y), o = {}; for (let i = 0; i < 30; i++) { frame++; updateNPC(f); }
+            o.under = f.untargetable; const h0 = f.health; applyDamage(f, 50, t); o.hurt = h0 - f.health; t.dead = true; frame++; updateNPC(f); o.upAfterLoss = !f.untargetable && !f._burrow;
+            __clear(); const g = __burrower(), far = __foe(g.x + BURROW_REACH + 0.6, g.y); o.far = burrowStrikeTry(g, far); o.farBurrow = !!g._burrow;
+            const keep = facilityLosFrom; globalThis.facilityLosFrom = () => false; const near = __foe(g.x + 2, g.y); o.wall = burrowStrikeTry(g, near); globalThis.facilityLosFrom = keep;
+            return o; })()`);
+        same(r.under, true, 'under the floor'); same(r.hurt, 0, 'hurt under the floor'); same(r.upAfterLoss, true, 'it stayed under with its enemy dead');
+        same(r.far, false, 'it dived at an enemy out of reach'); same(r.farBurrow, false, 'a burrow out of reach'); same(r.wall, false, 'it dived at an enemy it cannot see');
+    });
+    check('only the Thermite Burrower\'s hit changes: a fire technician egg, the Hover Shell and every other technician keep the plain hit', () => {
+        const r = J(`(function(){ __clear(); const t = __foe(__C[0] + 2, __C[1]), o = {}; for (const [el, evo] of [['fire', null], ['electric', 'hovershell'], ['core', 'hammerslug'], ['flux', 'gooproxy'], ['ice', 'igloo'], ['toxic', 'blightspider']]) { const f = __fol(el, 'camper', evo); f.attackCooldown = 0; o[evo || 'egg'] = burrowStrikeTry(f, t) || !!f._burrow; } return o; })()`);
+        for (const k of Object.keys(r)) same(r[k], false, k + ' burrowed');
+    });
+    check('FAULTLINE is the evolved Burrower\'s alone, on a SECOND CHIP with its own wait; the THERMITE DRILL keeps its chip, its wait and the rubble (the egg has the drill alone; no other form has a second chip)', () => {
+        const r = J(`(function(){ __clear(); const f = __burrower(), egg = __fol('fire', 'camper', null), hs = __fol('electric', 'camper', 'hovershell'), o = {};
+            o.second = (techAbility2Of(f) || {}).id; o.first = (techAbilityOf(f) || {}).id; o.egg = techAbility2Of(egg); o.eggFirst = (techAbilityOf(egg) || {}).id; o.hover = techAbility2Of(hs);
+            o.chip2 = techChip2State(f).text; o.chip1 = techChipState(f).text; o.others = Object.keys(EVOLUTIONS).filter(k => k !== 'thermite' && TECH_ABILITY2[k]).join();
+            o.rubble = _techFireTechs().indexOf(f) >= 0; o.join = (function(){ __clear(); const g = __fol('fire', 'camper', 'thermite'); partyAdd([g]); techAbilityTick(); return Math.round(techReady2In(g) / 60); })(); return o; })()`);
+        same(r.second, 'faultline', 'its second'); same(r.first, 'thermite_drill', 'its first'); same(r.egg, null, 'the egg\'s second'); same(r.eggFirst, 'thermite_drill', 'the egg\'s first'); same(r.hover, null, 'the Hover Shell\'s second');
+        ok(/^〰 FAULT$/.test(r.chip2) && /^✹ DRILL$/.test(r.chip1), 'the chips: ' + r.chip1 + ' / ' + r.chip2); same(r.others, '', 'other forms with a second ability'); ok(r.rubble, 'the rubble\'s ring does not find the Burrower'); same(r.join, 60, 'FAULTLINE\'s first wait (s) after joining');
+    });
+    check('FAULTLINE\'s input is a FREEHAND PATH: a press, a drag and a let-go (not taps, not a straight line); its curve is kept (resampled, smoothed); a stroke under minLen sends nothing and the aim stays up; the stroke stops at maxLen', () => {
+        const r = J(`(function(){ __clear(); const f = __burrower(), o = {}; o.tap = techChip2Tap(f); o.need = techAimNeed();
+            __draw(f, [[1, 0], [1.4, 0]]); o.short = { aim: !!techAim, fault: !!f._fault };
+            __draw(f, __arc(3, 40)); const F = f._fault; o.sent = !!F; o.aimAfter = !!techAim;
+            const P = F ? F.pts : [], A = P[0], B = P[P.length - 1]; let bulge = 0; for (const q of P) { const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1; bulge = Math.max(bulge, Math.abs((q.x - A.x) * dy - (q.y - A.y) * dx) / L); }
+            o.n = P.length; o.len = F ? F.cum[F.cum.length - 1] : 0; o.bulge = bulge; o.start = F ? [P[0].x - f.x, P[0].y - f.y] : null;
+            __clear(); const g = __burrower(); techChip2Tap(g); const long = []; for (let i = 0; i <= 60; i++) long.push([1 + i * 0.25, Math.sin(i * 0.3) * 0.8]);
+            const sp = long.map(p => __scr(g.x + p[0], g.y + p[1])); techAimPathStart(sp[0].x, sp[0].y); for (let i = 1; i < sp.length; i++) techAimPathMove(sp[i].x, sp[i].y);
+            o.stroke = techAim && techAim.stroke ? _faultLen(techAim.stroke) : -1; o.full = !!(techAim && techAim.full); techAimTap(sp[sp.length - 1].x, sp[sp.length - 1].y); o.capped = g._fault ? g._fault.cum[g._fault.cum.length - 1] : -1;
+            o.min = TECH_AB.fault.minLen; o.max = TECH_AB.fault.maxLen; return o; })()`);
+        same(r.tap, true, 'the chip aims it'); same(r.need, 'path', 'what it asks for'); same(r.short.fault, false, 'a short stroke sent'); same(r.short.aim, true, 'the aim fell after a short stroke');
+        same(r.sent, true, 'the path was not sent'); same(r.aimAfter, false, 'the aim stayed up after sending'); ok(r.n >= 10, 'points on the path: ' + r.n);
+        ok(Math.abs(r.len - 3 * Math.PI / 2) < 0.15, 'a quarter circle of radius 3 is ' + r.len + ' long, not ' + (3 * Math.PI / 2)); ok(r.bulge > 0.7, 'the curve was flattened into a line: ' + r.bulge);
+        ok(Math.hypot(r.start[0] - 4, r.start[1]) < 0.05, 'it does not start where it was drawn (the arc\'s first point, [4, 0]): ' + JSON.stringify(r.start)); ok(Math.abs(r.stroke - r.max) < 1e-6 && r.full, 'a long stroke (drawn ~15 tiles) stops at ' + r.stroke + ', not at ' + r.max);
+        ok(r.capped <= r.max + 1e-9 && r.capped > r.max - 0.2, 'its path is ' + r.capped + ' tiles (at most ' + r.max + '; the smoothing takes only a little off a wobbly stroke)');
+    });
+    check('FAULTLINE runs UNDER THE FLOOR along the drawn path (it dives, tunnels to its start, follows it exactly, surfaces at its end) and MOLTEN SPIKES erupt along it: every enemy within hitR of a spike is hit once, one beside it is not', () => {
+        // (the drawn arc: a quarter circle round (4, 3), radius 3, from [4, 0] to [1, 3]; on1 and on2 lie within hitR of it, off beside its start and far past its end)
+        const r = J(`(function(){ __clear(); const f = __burrower(), on1 = __foe(f.x + 2.5, f.y + 1.0), on2 = __foe(f.x + 1.3, f.y + 2.0), off = __foe(f.x + 4.5, f.y + 1.0), far = __foe(f.x + 1, f.y + 5);
+            techChip2Tap(f); __draw(f, __arc(3, 40)); const F = f._fault, P = F.pts.slice(), dist = (x, y) => { let best = 1e9; for (let i = 1; i < P.length; i++) { const A = P[i - 1], B = P[i], dx = B.x - A.x, dy = B.y - A.y, L = dx * dx + dy * dy || 1e-9, t = Math.max(0, Math.min(1, ((x - A.x) * dx + (y - A.y) * dy) / L)); best = Math.min(best, Math.hypot(x - (A.x + dx * t), y - (A.y + dy * t))); } return best; };
+            const hits = [], keep = applyDamage, keepStep = techFaultStep; let up = null; globalThis.applyDamage = function (t, amt, src, el, rf, fx, hit) { if (src === f) hits.push(t === on1 ? 'on1' : t === on2 ? 'on2' : t === off ? 'off' : t === far ? 'far' : 'x'); return keep.apply(this, arguments); };
+            globalThis.techFaultStep = function (a) { const go = keepStep.apply(this, arguments); if (a === f && !go && !up) up = { x: a.x, y: a.y, top: !a.untargetable }; return go; };   // (where it is the moment it surfaces: the same frame, its own AI takes over)
+            let fr = 0, offPath = 0, under = 0, along = 0, phases = []; try { while (f._fault && fr < 800) { frame++; updateNPC(f); fr++; if (f.untargetable) under++; const ph = f._fault && f._fault.phase; if (ph && phases[phases.length - 1] !== ph) phases.push(ph); if (ph === 'along') { along++; offPath = Math.max(offPath, dist(f.x, f.y)); } } } finally { globalThis.applyDamage = keep; globalThis.techFaultStep = keepStep; }
+            const spikes = elementEffects.filter(e => e.type === 'faultSpike').length, trace = elementEffects.find(e => e.type === 'faultTrace');
+            return { phases, offPath, hits, end: up ? Math.hypot(up.x - P[P.length - 1].x, up.y - P[P.length - 1].y) : -1, up: !!up && up.top, under, fr, spikes, len: F.cum[F.cum.length - 1], spacing: TECH_AB.fault.spacing, d: [dist(on1.x, on1.y), dist(on2.x, on2.y), dist(off.x, off.y)], hitR: TECH_AB.fault.hitR, trace: !!trace && trace.done }; })()`);
+        same(r.phases.join(), 'dive,to,along', 'its phases'); ok(r.offPath < 1e-6, 'it left the path: ' + r.offPath); ok(r.end >= 0 && r.end < 1e-6 && r.up, 'it did not surface at the path\'s end: ' + JSON.stringify({ end: r.end, up: r.up }));
+        ok(r.d[0] <= r.hitR && r.d[1] <= r.hitR && r.d[2] > r.hitR, 'the fixture: ' + JSON.stringify(r.d));
+        same(r.hits.slice().sort().join(), 'on1,on2', 'who was hit (each once)'); ok(r.spikes >= Math.floor(r.len / r.spacing), 'spikes ' + r.spikes + ' along ' + r.len + ' tiles'); same(r.trace, true, 'the path\'s glow did not start to fade');
+    });
+    check('FAULTLINE is called off by the chip again, by Escape and by a touch the system cancels; its spikes go through the damage system as its ability; it is busy while it runs (the drill cannot start) and its wait is its own', () => {
+        const r = J(`(function(){ __clear(); const f = __burrower(), o = {}; techChip2Tap(f); techChip2Tap(f); o.chipAgain = !!techAim;
+            techChip2Tap(f); techAimCancel(); o.escape = !!techAim;   // (Escape: js/techabilities.js's keydown calls techAimCancel)
+            techChip2Tap(f); const s0 = __scr(f.x + 1, f.y); techAimPathStart(s0.x, s0.y); techAimPathMove(s0.x + 30, s0.y + 10); techAimPathCancel(); o.cancel = { aim: !!techAim, fault: !!f._fault };
+            techChip2Tap(f); __draw(f, __arc(3, 40)); o.busyDrill = techAbilityCan(f).why; o.chip1 = techChipState(f).text; o.drillWait = techReadyIn(f); o.faultWait = Math.round(techReady2In(f) / 60);
+            const E = rd => 0; return o; })()`);
+        same(r.chipAgain, false, 'the chip again'); same(r.escape, false, 'Escape'); same(r.cancel.aim, false, 'a cancelled touch'); same(r.cancel.fault, false, 'a cancelled touch sent it');
+        same(r.busyDrill, 'BUSY', 'the drill while FAULTLINE runs'); ok(/BUSY/.test(r.chip1), 'the drill\'s chip: ' + r.chip1); same(r.drillWait, 0, 'the drill\'s wait was spent'); same(r.faultWait, 60, 'FAULTLINE\'s wait (s)');
+        const T = rd('js/techabilities.js'), I = rd('js/input.js'); ok(/applyElementalDamage\(e, dmg, f, "fire", DMG_HIT_ALT\)/.test(T), 'the spikes do not go through the damage system as its ability');
+        ok(/canvas\.addEventListener\('pointercancel'/.test(I) && /techAimPathCancel\(\)/.test(I) && /techAimPathMove\(_mx, _my\)/.test(I) && /techAimPathStart\(pressX, pressY\)/.test(I), 'the input does not carry the path');
+    });
+    check('INFO names it all: MAIN ATTACK · BURROW STRIKE, ABILITY · THERMITE DRILL, ABILITY · FAULTLINE (its path, its spikes, its own wait)', () => {
+        const r = J(`(function(){ __clear(); const f = __burrower(); return followerInfo(f).attacks.map(s => s.h); })()`);
+        ok(r.indexOf('MAIN ATTACK · BURROW STRIKE') >= 0 && r.indexOf('ABILITY · THERMITE DRILL') >= 0 && r.indexOf('ABILITY · FAULTLINE') >= 0, 'INFO: ' + r);
+    });
+    {
+        const T = measure(1180, 820);
+        if (T === null) console.log('  (no Chromium here: the real page\'s check skipped)');
+        else check('THE REAL PAGE, BY TOUCH: the Burrower\'s card shows both chips, FAULTLINE\'s just above the drill\'s; a tap on it aims; a path drawn with a finger\'s pointer events is sent and run; a stroke the system cancels sends nothing and ends the aim', () => {
+            ok(T && !T.err, 'the page: ' + JSON.stringify(T));
+            ok(T.chips.has1 && T.chips.has2 && T.chips.shown2 === 'block', 'the chips: ' + JSON.stringify(T.chips)); ok(/DRILL/.test(T.chips.t1) && /FAULT/.test(T.chips.t2), 'their words: ' + JSON.stringify(T.chips));
+            ok(T.chips.r2[3] <= T.chips.r1[1] + 1 && Math.abs(T.chips.r2[2] - T.chips.r1[2]) <= 1, 'FAULTLINE\'s chip is not just above the drill\'s: ' + JSON.stringify(T.chips));
+            ok(T.aim.on && /FAULTLINE/.test(T.aim.prompt) && /AIMING/.test(T.aim.chip2) && !/AIMING/.test(T.aim.chip1), 'the aim: ' + JSON.stringify(T.aim));
+            ok(T.sent.fault && T.sent.n >= 8 && Math.abs(T.sent.len - 2.5 * Math.PI / 2) < 0.2 && !T.sent.aiming, 'the touch path: ' + JSON.stringify(T.sent));
+            ok(Math.hypot(T.sent.start[0] - 3, T.sent.start[1]) < 0.1, 'it does not start under the finger (the stroke\'s first point, [3, 0] from the Burrower): ' + JSON.stringify(T.sent.start)); ok(T.run.over && T.run.up, 'the run: ' + JSON.stringify(T.run));
+            ok(T.cancel.was && !T.cancel.aiming && !T.cancel.fault, 'the cancelled touch: ' + JSON.stringify(T.cancel));
+        });
+    }
 
     // ── HOVER SHELL ─────────────────────────────────────────
     group('HOVER SHELL (electric Technician) and its KINETIC LAUNCHER: unchanged');

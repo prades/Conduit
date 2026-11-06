@@ -201,7 +201,7 @@ function measure(w, h) {
     });
     check('the code carries it the same way everywhere: the canvas press goes to the aim first; a site takes a tap; a flyer is moved by its flight alone, never jostled, never firing a move; the routing knows its walks; the ring\'s far taps do nothing; a slow tap on an open ring is still its tap; a held key does not repeat', () => {
         const I = rd('js/input.js'), G = rd('js/game.js'), N = rd('js/npc.js'), E = rd('js/evolution.js'), FP = rd('js/facilityplay.js');
-        ok(/_techAimPressed = false; if \(typeof techAimActive === "function" && techAimActive\(\)\) \{ _techAimPressed = true; isPressing = false; return; \}/.test(I), 'the press');
+        ok(/_techAimPressed = false; if \(typeof techAimActive === "function" && techAimActive\(\)\) \{ _techAimPressed = true; isPressing = false; (if \(typeof techAimPathStart === "function"\) techAimPathStart\(pressX, pressY\); )?return; \}/.test(I), 'the press');   // (FAULTLINE's aim: the press, still the aim's first, also starts its path)
         ok(/if \(_techAimPressed\) \{ _techAimPressed = false;[^\n]*techAimTap\(_ax, _ay\)/.test(I), 'the release'); ok(/techSiteTap\(ex, ey\)\) return;/.test(I), 'a site\'s tap');
         ok(I.indexOf('_techAimPressed = false; if (typeof techAimActive') < I.indexOf('if (commandPendingTap) return;'), 'the aim is not before the ring');
         ok(/if \(relDist > 18 && relDist <= _ringReach\)/.test(I), 'far taps on the ring'); ok(/&&!_targetPressed&&!commandPendingTap\)/.test(G), 'a slow tap on an open ring');

@@ -297,6 +297,7 @@ function updateRTSNPC(actor) {
         if (role === "camper") {
             const CAMPER_ENGAGE_RADIUS = 4;
             if (nearestEnemy && nearestEnemyDist < CAMPER_ENGAGE_RADIUS * _reach) {
+                if (typeof burrowStrikeTry === "function" && burrowStrikeTry(actor, nearestEnemy)) return;   // the THERMITE BURROWER's hit is BURROW STRIKE, from under the floor (js/combat.js); every other technician's is the plain hit below
                 // Enemy close enough — engage
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy);
@@ -365,6 +366,8 @@ function followPlayer(actor) {
 function updateNPC(actor) {
     if (actor._flight && typeof techFlightStep === "function" && techFlightStep(actor)) return;   // thrown by a Kinetic Launcher: in the air, nothing else moves it and no wall stops it (js/techabilities.js)
     if (actor._pinball && typeof pinballStep === "function" && pinballStep(actor)) return;   // a PINBALL rolling (js/evolution.js): the roll moves it, and stops itself at a wall
+    if (actor._burrow && typeof burrowStep === "function" && burrowStep(actor)) return;   // the Thermite Burrower's BURROW STRIKE under way (js/combat.js): its dive and its tunnel move it
+    if (actor._fault && typeof techFaultStep === "function" && techFaultStep(actor)) return;   // its FAULTLINE under way (js/techabilities.js): it follows the drawn path under the floor
     const _fpx = actor.x, _fpy = actor.y;   // for the facility's walls (js/facilityplay.js)
     if (actor instanceof Predator && actor.team !== "green") {
         actor.update();

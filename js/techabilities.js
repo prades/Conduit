@@ -85,6 +85,19 @@ const TECH_AB = {
         flight: 40,         // frames an item flies to you
         peak: 60,           // px: its arc
     },
+    // FAULTLINE (the evolved Thermite Burrower's second ability; the follower combat redesign, docs/FOLLOWER-COMBAT-REDESIGN.md §2.4): every number PROVISIONAL (§11.2)
+    fault: {
+        cooldown: 3600,     // 60 s, its own (the drill keeps its own wait)
+        maxLen: 8,          // tiles: the longest path; the stroke stops growing there
+        minLen: 1,          // tiles: a shorter stroke sends nothing (and the aim stays up)
+        step: 0.25,         // tiles between the path's points, once it is smoothed
+        spacing: 0.75,      // tiles between the spikes along it
+        hitR: 0.7,          // tiles: how near a spike an enemy is hit
+        speed: 0.12,        // tiles a frame under the floor (BURROW STRIKE's)
+        mult: 2,            // × its plain hit, each spike (the plain hit is a quarter of its ATK)
+        dive: 20,           // frames to dive (BURROW STRIKE's)
+        trace: 90,          // frames the path still glows after it has surfaced
+    },
     day: 72000,             // THE PLAY CLOCK: frames of play to an in-game day, 20 minutes (given); it runs only while the game does (it is saved, and nothing passes while the game is closed)
 };
 
@@ -103,6 +116,12 @@ const TECH_ABILITIES = {
     flux:     { id: "telegrab", name: "TELEGRAB", short: "GRAB", icon: "✦", col: "#c77dff", aim: ["item"], use: (f, p) => techGrabAt(f, p.item),
                 ask: () => "TAP AN ITEM ON THE FLOOR, ANYWHERE" },
 };
+// A SECOND ABILITY, by form (the owner, 2026-11-02, "Keep both buttons"): the evolved THERMITE BURROWER keeps its element's THERMITE DRILL and has FAULTLINE beside it, on a chip of its own with a
+// wait of its own (`_ab2ReadyAt`). An egg, and every other form, has the one ability above. Its aim is a PATH drawn on the floor (techAimPathStart / Move / End, from js/input.js).
+const TECH_ABILITY2 = {
+    thermite: { id: "faultline", name: "FAULTLINE", short: "FAULT", icon: "〰", col: "#ff6a1f", aim: ["path"], use: (f, p) => techFaultlineAt(f, p.path),
+                ask: () => "PRESS ON THE FLOOR, DRAW ITS PATH AND LET GO" },
+};
 
 function _techFrame() { return typeof frame !== "undefined" ? frame : 0; }
 function _techSay(text, col) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 96, text, color: col || "#ffe733", life: 110, vy: -0.22, size: 13 }); }
@@ -111,6 +130,8 @@ function _techMember(f) { return typeof partyIsMember === "function" ? partyIsMe
 
 // ── who has which ability, and when it can be used ──
 function techAbilityOf(f) { return f && f.isFollower && !f.isClone && f.role === "camper" ? TECH_ABILITIES[f.element] || null : null; }
+function techAbility2Of(f) { return f && f.isFollower && !f.isClone && f.role === "camper" && f.evolved && TECH_ABILITY2[f.evolved] ? TECH_ABILITY2[f.evolved] : null; }   // (the evolved Thermite Burrower's FAULTLINE)
+function techReady2In(f) { return Math.max(0, ((f && f._ab2ReadyAt) || 0) - _techFrame()); }
 function techReadyIn(f) { return Math.max(0, ((f && f._abReadyAt) || 0) - _techFrame()); }   // frames until it can use its ability again
 // a technician's cooldown after its equip cards (js/cards.js EQUIP_STATS.cooldown: the share the cards it wears take off it, added over them; never more than nine tenths off). Every place a cooldown is set goes through here.
 // With DOUBLE CHARGE (js/cards.js, a Series 2 card) and its second charge held, that charge is spent instead of the wait: the ability is ready again at once (equipChargeSpend), and the charge comes back one cooldown later.
@@ -122,13 +143,26 @@ function techAbilityCan(f) {
     const ab = techAbilityOf(f); if (!ab) return { ok: false, why: "NO ABILITY" };
     if (f.dead || f.returningToCrystal || f._flight) return { ok: false, why: "NOT HERE" };
     if (!_techMember(f)) return { ok: false, why: "NOT IN THE SQUAD" };
-    if (f._abBusy) return { ok: false, why: "BUSY" };
+    if (f._abBusy || f._burrow) return { ok: false, why: "BUSY" };   // (_burrow: the Thermite Burrower's BURROW STRIKE under way, js/combat.js)
     const w = techReadyIn(f); if (w > 0) return { ok: false, why: ab.short + " READY IN " + Math.ceil(w / 60) + " S" };
     return { ok: true, ab };
 }
 // THE ONE WAY IN (the HUD's chip, the world, the tests): { ok } or { ok: false, why }
 function techAbilityUse(f, picks) {
     const c = techAbilityCan(f); if (!c.ok) return c;
+    return c.ab.use(f, picks || {});
+}
+// the second ability's, as the first's: in the squad, not busy (a drill, a FAULTLINE, BURROW STRIKE under way) and ready; its own wait
+function techAbility2Can(f) {
+    const ab = techAbility2Of(f); if (!ab) return { ok: false, why: "NO ABILITY" };
+    if (f.dead || f.returningToCrystal || f._flight) return { ok: false, why: "NOT HERE" };
+    if (!_techMember(f)) return { ok: false, why: "NOT IN THE SQUAD" };
+    if (f._abBusy || f._fault || f._burrow) return { ok: false, why: "BUSY" };
+    const w = techReady2In(f); if (w > 0) return { ok: false, why: ab.short + " READY IN " + Math.ceil(w / 60) + " S" };
+    return { ok: true, ab };
+}
+function techAbility2Use(f, picks) {
+    const c = techAbility2Can(f); if (!c.ok) return c;
     return c.ab.use(f, picks || {});
 }
 
@@ -628,6 +662,154 @@ function _techGrabTick(f0) {
     });
 }
 
+// ── FAULTLINE (the evolved THERMITE BURROWER's second ability, beside the THERMITE DRILL; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.4; "Keep both buttons") ──
+// ASKED: "The player freely draws a path across the battlefield. Thermite Burrower dives underground. It follows the player-drawn route. Molten spikes erupt along the route. Enemies intersecting the
+// eruption path are hit." Not a straight drag-to-aim line, a charge, or taps on separate waypoints: a continuous freehand stroke.
+//   THE INPUT (js/input.js; the same on a mouse and a finger): after a tap on its chip, the next press on the floor starts the path, the drag draws it (a glowing line follows the pointer) and the
+//   let-go sends it. A stroke under `minLen` sends nothing and the aim stays up; ✕ CALL OFF (the chip again), Escape or a touch the system cancels calls it off. The stroke stops growing at
+//   `maxLen`. The path is resampled, smoothed and laid over the floor: it ends where a wall cuts it.
+//   THE RUN: it dives where it stands, tunnels to the path's start, follows the path under the floor at `speed`, and a molten spike erupts every `spacing` tiles as it passes, hitting every enemy
+//   within `hitR` of it, each enemy once a FAULTLINE, as its ability (DMG_HIT_ALT). Under the floor it cannot be targeted or hurt. The path glows from the moment it is drawn until a little after
+//   it surfaces at its end. Its wait (`_ab2ReadyAt`) starts as it sets off.
+function _faultLen(pts) { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); return L; }
+// a stroke (world points) -> the path: { ok, pts, len } or { ok: false, why }
+function techFaultPath(f, stroke) {
+    const T = TECH_AB.fault;
+    if (!stroke || stroke.length < 2 || _faultLen(stroke) < T.minLen) return { ok: false, why: "DRAW A LONGER PATH" };
+    const out = [{ x: stroke[0].x, y: stroke[0].y }]; let need = T.step;   // resampled every `step` tiles along the stroke
+    for (let i = 1; i < stroke.length; i++) {
+        const a = stroke[i - 1], b = stroke[i], seg = Math.hypot(b.x - a.x, b.y - a.y); let pos = 0;
+        if (seg < 1e-9) continue;
+        while (seg - pos >= need) { pos += need; out.push({ x: a.x + (b.x - a.x) * pos / seg, y: a.y + (b.y - a.y) * pos / seg }); need = T.step; }
+        need -= seg - pos;
+    }
+    { const e = stroke[stroke.length - 1], l = out[out.length - 1]; if (Math.hypot(e.x - l.x, e.y - l.y) > 0.05) out.push({ x: e.x, y: e.y }); }
+    const sm = out.map((p, i) => i === 0 || i === out.length - 1 ? p : { x: (out[i - 1].x + p.x + out[i + 1].x) / 3, y: (out[i - 1].y + p.y + out[i + 1].y) / 3 });   // (smoothed: a hand's wobble taken out, its curves kept)
+    if (typeof facilityStandOk === "function" && !facilityStandOk(sm[0].x, sm[0].y)) return { ok: false, why: "START THE PATH ON THE FLOOR" };
+    const pts = [sm[0]]; let L = 0;
+    for (let i = 1; i < sm.length; i++) {
+        const a = pts[pts.length - 1], b = sm[i], seg = Math.hypot(b.x - a.x, b.y - a.y);
+        if ((typeof facilityStandOk === "function" && !facilityStandOk(b.x, b.y)) || (typeof facilityLosFrom === "function" && !facilityLosFrom(a.x, a.y, b.x, b.y))) break;   // (a wall cuts it: it ends here)
+        if (L + seg >= T.maxLen) { const k = (T.maxLen - L) / seg; pts.push({ x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k }); L = T.maxLen; break; }
+        pts.push(b); L += seg;
+    }
+    if (L < T.minLen) return { ok: false, why: "THE PATH RUNS INTO A WALL" };
+    if (f && typeof facilityLosFrom === "function" && !facilityLosFrom(f.x, f.y, pts[0].x, pts[0].y)) return { ok: false, why: "THE BURROWER CANNOT GET TO ITS START" };
+    return { ok: true, pts, len: L };
+}
+function techFaultlineAt(tech, pts) {
+    if (!Array.isArray(pts) || pts.length < 2) return { ok: false, why: "DRAW A PATH", again: true };
+    const T = TECH_AB.fault, f0 = _techFrame(), cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
+    const trace = { type: "faultTrace", x: pts[0].x, y: pts[0].y, pts, cum, by: tech, life: 1e6, maxLife: 1e6, reached: -1, done: false };   // (it glows until the run is over, then fades: techFaultStep)
+    if (typeof elementEffects !== "undefined") elementEffects.push(trace);
+    tech._fault = { pts, cum, phase: "dive", t0: f0, dive: T.dive, along: 0, nextSpike: 0, hit: [], trace };
+    tech._abBusy = { kind: "fault" }; tech.job = null; tech.attackOrder = null; tech._shieldHold = null; tech._burrow = null;
+    tech._ab2ReadyAt = f0 + techCooldown(tech, T.cooldown);
+    _techSay("〰 FAULTLINE · " + _techName(tech) + " GOES UNDER", "#ff8a3a");
+    return { ok: true };
+}
+function _faultAt(F, s) {   // the path's point `s` tiles along it
+    const P = F.pts, C = F.cum; let i = 1;
+    while (i < C.length - 1 && C[i] < s) i++;
+    const a = P[i - 1], b = P[i], seg = (C[i] - C[i - 1]) || 1e-9, k = Math.max(0, Math.min(1, (s - C[i - 1]) / seg));
+    return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+}
+function _techFaultSpike(f, F, x, y) {
+    const T = TECH_AB.fault, dmg = ((f.stats && f.stats.attack) || 5) * 0.25 * T.mult;
+    for (const e of (typeof unitsNear === "function" ? unitsNear(x, T.hitR + 0.5) : actors)) {
+        if (!_techFoeOk(e) || F.hit.indexOf(e) >= 0 || Math.hypot(e.x - x, e.y - y) > T.hitR) continue;
+        F.hit.push(e);
+        if (typeof applyElementalDamage === "function") applyElementalDamage(e, dmg, f, "fire", DMG_HIT_ALT); else if (typeof applyDamage === "function") applyDamage(e, dmg, f, "fire", false, false, DMG_HIT_ALT);
+    }
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "faultSpike", x, y, life: 26, maxLife: 26 });
+}
+// a frame of a FAULTLINE (js/npc.js updateNPC, before the unit's own moves): true while it runs (nothing else moves it), false once it has surfaced
+function techFaultStep(f) {
+    const F = f._fault; if (!F) return false;
+    const T = TECH_AB.fault, f0 = _techFrame();
+    const end = () => { f._fault = null; if (f._abBusy && f._abBusy.kind === "fault") f._abBusy = null; f.untargetable = false; if (F.trace) { F.trace.done = true; F.trace.life = T.trace; F.trace.maxLife = T.trace; } return false; };
+    if (f.dead || f._flight || f._launchLoad || f.returningToCrystal || f.retreatUntil > f0 || !_techMember(f)) return end();
+    if (F.phase === "dive") { if (f0 - F.t0 >= F.dive) { F.phase = "to"; f.untargetable = true; } return true; }
+    if (F.phase === "to") {   // under the floor to the path's start
+        const p = F.pts[0], dx = p.x - f.x, dy = p.y - f.y, d = Math.hypot(dx, dy);
+        if (d <= T.speed) { f.x = p.x; f.y = p.y; F.phase = "along"; return true; }
+        const nx = f.x + dx / d * T.speed, ny = f.y + dy / d * T.speed;
+        if (typeof facilityStandOk === "function" && !facilityStandOk(nx, ny)) return end();
+        f.x = nx; f.y = ny; f.dirX = dx / d; f.dirY = dy / d;
+        return true;
+    }
+    const total = F.cum[F.cum.length - 1], was = { x: f.x, y: f.y };   // along the path, a spike every `spacing` tiles as it passes
+    F.along = Math.min(total, F.along + T.speed);
+    const q = _faultAt(F, F.along); f.x = q.x; f.y = q.y;
+    { const dx = q.x - was.x, dy = q.y - was.y, d = Math.hypot(dx, dy); if (d > 1e-6) { f.dirX = dx / d; f.dirY = dy / d; } }
+    while (F.nextSpike <= F.along + 1e-9) { const sp = _faultAt(F, F.nextSpike); _techFaultSpike(f, F, sp.x, sp.y); F.nextSpike += T.spacing; }
+    if (F.trace) F.trace.reached = F.along;
+    if (F.along >= total - 1e-9) return end();
+    return true;
+}
+// ── THE PATH AIM (FAULTLINE's): a press-drag-release on the floor, from js/input.js (the press, every move while it is down, the let-go; a cancelled touch) ──
+function techAimPathStart(sx, sy) {
+    const A = techAim; if (!A || techAimNeed() !== "path") return false;
+    const p = techScreenToWorld(sx, sy); A.stroke = [{ x: p.x, y: p.y }]; A.drawing = true; A.full = false;
+    return true;
+}
+function techAimPathMove(sx, sy) {
+    const A = techAim; if (!A || !A.drawing || !A.stroke) return false;
+    if (A.full) return true;
+    const T = TECH_AB.fault, p = techScreenToWorld(sx, sy), q = A.stroke[A.stroke.length - 1], d = Math.hypot(p.x - q.x, p.y - q.y);
+    if (d < 0.1) return true;
+    const L = _faultLen(A.stroke);
+    if (L + d >= T.maxLen) { const k = (T.maxLen - L) / d; A.stroke.push({ x: q.x + (p.x - q.x) * k, y: q.y + (p.y - q.y) * k }); A.full = true; return true; }   // (it stops growing at maxLen)
+    A.stroke.push({ x: p.x, y: p.y });
+    return true;
+}
+function techAimPathEnd(sx, sy) {
+    const A = techAim; if (!A || !A.drawing) return false;
+    techAimPathMove(sx, sy); A.drawing = false;
+    const P = techFaultPath(A.f, A.stroke);
+    if (!P.ok) { _techSay(P.why, "#ff8a6a"); A.stroke = null; A.full = false; return true; }   // (the aim stays up: draw it again)
+    const r = techAbility2Use(A.f, { path: P.pts });
+    if (!r.ok) { _techSay(r.why, "#ff8a6a"); A.stroke = null; A.full = false; return true; }
+    techAimCancel(true);
+    return true;
+}
+function techAimPathCancel() { if (techAim && techAimNeed() === "path") techAimCancel(); }
+// the second chip on its squad card (js/party.js): { text, cls } or null; a tap on it aims FAULTLINE (again: calls it off)
+function techChip2State(f) {
+    const ab = techAbility2Of(f); if (!ab) return null;
+    if (techAim && techAim.f === f && techAim.ab === ab) return { text: "✕ AIMING", cls: "aim" };
+    if (f._fault) return { text: ab.icon + " UNDER", cls: "busy" };
+    if (f._abBusy || f._burrow) return { text: ab.icon + " BUSY", cls: "busy" };
+    const w = techReady2In(f); if (w > 0) return { text: ab.icon + " " + Math.ceil(w / 60) + " S", cls: "wait" };
+    return { text: ab.icon + " " + ab.short, cls: "ready" };
+}
+function techChip2Tap(f) {
+    const ab = techAbility2Of(f); if (!ab) return false;
+    if (techAim && techAim.f === f && techAim.ab === ab) { techAimCancel(); return false; }
+    const c = techAbility2Can(f); if (!c.ok) { _techSay(c.why, "#ff8a6a"); return false; }
+    techAim = { mode: "combat", f, ab: c.ab, site: null, step: 0, picks: {}, stroke: null, drawing: false, full: false }; _techAimShow();
+    return true;
+}
+// its INFO section (js/unitinfo.js), beside the drill's
+function techAbility2Info(f) {
+    const ab = techAbility2Of(f); if (!ab) return null;
+    const T = TECH_AB.fault, w = techReady2In(f), ready = f._fault || f._abBusy ? "BUSY" : w > 0 ? "IN " + Math.ceil(w / 60) + " S" : _techMember(f) ? "NOW" : "IN THE SQUAD ONLY", hit = Math.round(((f.stats && f.stats.attack) || 5) * 0.25 * T.mult * 10) / 10;
+    return { h: "ABILITY · " + ab.name, note: "From the " + ab.icon + " chip on its squad card, then press on the floor, draw its path and let go: it dives, follows the path under the floor, and molten spikes erupt along it. Each enemy on the path is hit once. The THERMITE DRILL keeps its own chip and its own wait.",
+             rows: [["PATH", "up to " + T.maxLen + " tiles, at least " + T.minLen + "; it ends at a wall"], ["SPIKES", "every " + T.spacing + " tiles, " + hit + " each (fire), within " + T.hitR + " tiles"], ["COOLDOWN", Math.round(T.cooldown / 60) + " s, its own"], ["FIRST WAIT", Math.round(TECH_AB.joinWait / 60) + " s after it joins the squad"], ["READY", ready]] };
+}
+// the stroke while it is drawn (techDrawOverlay): a glowing line to the pen
+function _techDrawFaultStroke(g, A, f0) {
+    const S = A.stroke; if (!S || !S.length) return;
+    g.save(); g.lineCap = "round"; g.lineJoin = "round";
+    for (let pass = 0; pass < 2; pass++) {
+        g.globalAlpha = pass ? 0.95 : 0.35 + 0.1 * Math.sin(f0 * 0.3); g.strokeStyle = pass ? "#ffd27a" : "#ff5a1f"; g.lineWidth = pass ? 2.5 : 9;
+        g.beginPath(); for (let i = 0; i < S.length; i++) { const p = _techScr(S[i].x, S[i].y), y = p.y + TILE_H; if (i) g.lineTo(p.x, y); else g.moveTo(p.x, y); } g.stroke();
+    }
+    const e = _techScr(S[S.length - 1].x, S[S.length - 1].y); g.globalAlpha = 1; g.fillStyle = A.full ? "#ffffff" : "#ffd27a"; g.beginPath(); g.arc(e.x, e.y + TILE_H, 4, 0, Math.PI * 2); g.fill();
+    g.restore();
+}
+
 // everything the abilities keep for a game, let go when a new one starts or one is loaded (js/facilityplay.js facilityResetState). Saved and put back by the facility's save: the launchers, the rubble, the clock and the pools.
 function techReset() { techShields = []; techFrosts = []; techPools = []; techGrabs = []; techClock = 0; techAim = null; _techLabels = {}; }
 
@@ -743,7 +925,7 @@ function techAbilityTick() {
     for (const f of followers) {
         if (!f || f.dead) continue;
         const m = !!techAbilityOf(f) && _techMember(f);
-        if (m && !f._abMember) f._abReadyAt = Math.max(f._abReadyAt || 0, f0 + TECH_AB.joinWait);   // it has just joined the squad: the first wait
+        if (m && !f._abMember) { f._abReadyAt = Math.max(f._abReadyAt || 0, f0 + TECH_AB.joinWait); if (techAbility2Of(f)) f._ab2ReadyAt = Math.max(f._ab2ReadyAt || 0, f0 + TECH_AB.joinWait); }   // it has just joined the squad: the first wait (FAULTLINE's too)
         f._abMember = m;
         if (f._abBusy && f._abBusy.kind === "combat" && (!f._abBusy.who || f._abBusy.who.dead || !f._abBusy.who._launchLoad)) f._abBusy = null;   // (the follower it was throwing is gone)
         const L = f._launchLoad;
@@ -827,7 +1009,7 @@ function _techAimShow() {
 }
 // the chip on a technician's squad card (js/party.js)
 function techChipTap(f) {
-    if (techAim && techAim.f === f) { techAimCancel(); return false; }
+    if (techAim && techAim.f === f && techAim.ab === techAbilityOf(f)) { techAimCancel(); return false; }   // (its own aim again calls it off; FAULTLINE's aim is its other chip's, and this one takes its place)
     const c = techAbilityCan(f); if (!c.ok) { _techSay(c.why, "#ff8a6a"); return false; }
     techAim = { mode: "combat", f, ab: c.ab, site: null, step: 0, picks: {} }; _techAimShow();
     return true;
@@ -869,6 +1051,7 @@ function techAimTap(x, y) {
     if (need === "enemy") { const e = typeof findEnemyAtScreen === "function" ? findEnemyAtScreen(x, y) : null; if (e) return techAimPickEnemy(e); _techSay("TAP AN ENEMY", "#8aa0c8"); return true; }
     if (need === "spot") return techAimPickSpot(techScreenToWorld(x, y));
     if (need === "item") { const g = techItemAtScreen(x, y); if (g) return techAimPickItem(g); _techSay("TAP AN ITEM ON THE FLOOR", "#8aa0c8"); return true; }
+    if (need === "path") { if (!techAimPathEnd(x, y)) _techSay("PRESS ON THE FLOOR AND DRAW ITS PATH", "#8aa0c8"); return true; }   // (FAULTLINE: the let-go ends the stroke)
     return true;
 }
 // is a point of the screen on a tag drawn last frame (a site's, or its broken edge's: key site id, or site id + ":drop")
@@ -898,7 +1081,7 @@ try { if (typeof window !== "undefined" && window.addEventListener) window.addEv
 function techChipState(f) {
     const ab = techAbilityOf(f); if (!ab) return null;
     const ic = ab.icon || "⚡";
-    if (techAim && techAim.f === f) return { text: "✕ AIMING", cls: "aim" };
+    if (techAim && techAim.f === f && techAim.ab === ab) return { text: "✕ AIMING", cls: "aim" };
     if (f._abBusy) return { text: ic + " " + ({ setup: "SETTING UP", combat: "THROWING", drill: "DRILLING", blight: "LAYING" }[f._abBusy.kind] || "BUSY"), cls: "busy" };
     const w = techReadyIn(f); if (w > 0) return { text: ic + " " + Math.ceil(w / 60) + " S", cls: "wait" };
     return { text: ic + " " + ab.short, cls: "ready" };
@@ -1138,6 +1321,7 @@ function techDrawOverlay() {
             g.fillStyle = "#ffe733"; g.font = font(12); g.textAlign = "center"; g.fillText("LANDS HERE", q.x, q.y - 16);
         }
     }
+    if (A && A.ab && A.ab.id === "faultline") _techDrawFaultStroke(g, A, f0);   // FAULTLINE's path as it is drawn
     if (A && A.mode === "combat") {   // rings round the technician, and the follower picked to throw
         for (const u of [A.f, A.picks.follower]) { if (!u || u.dead) continue; const p = _techScr(u.x, u.y); g.strokeStyle = u === A.f ? "#ffe733" : "#ffffff"; g.lineWidth = 2; g.beginPath(); g.ellipse(p.x, p.y, 20, 9, 0, 0, Math.PI * 2); g.stroke(); }
     }

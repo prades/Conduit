@@ -237,7 +237,7 @@ canvas.addEventListener('pointerdown', e=>{
         || (typeof classPickerOpen !== "undefined" && classPickerOpen) || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof armoryPanelOpen !== "undefined" && armoryPanelOpen)) return;
 
     // AIMING A TECHNICIAN'S ABILITY (js/techabilities.js): the press is the aim's, whatever is under it: no ring, no shot, no walk
-    _techAimPressed = false; if (typeof techAimActive === "function" && techAimActive()) { _techAimPressed = true; isPressing = false; return; }
+    _techAimPressed = false; if (typeof techAimActive === "function" && techAimActive()) { _techAimPressed = true; isPressing = false; if (typeof techAimPathStart === "function") techAimPathStart(pressX, pressY); return; }   // (FAULTLINE's aim: the press starts its path)
 
     // If the radial menu is waiting for a tap, preserve commandTarget from long-press
     if (commandPendingTap) return;
@@ -262,6 +262,7 @@ canvas.addEventListener('pointerdown', e=>{
 });
 
 canvas.addEventListener('pointermove', e=>{
+    if (_techAimPressed) { if (typeof techAimPathMove === "function") { const [_mx, _my] = toCanvas(e.clientX, e.clientY); techAimPathMove(_mx, _my); } return; }   // FAULTLINE's path, drawn while the press is down (js/techabilities.js); any other aim ignores a move
     if (!isPressing) return;
     [pointerX,pointerY]=toCanvas(e.clientX,e.clientY);
     if (_cloneDrag) { const dx = pointerX - _cloneDrag.x0; if (Math.abs(dx) > 8) _cloneDrag.moved = true; if (_cloneDrag.moved) _crystalScrollX = Math.max(0, _cloneDrag.s0 - dx); return; }
@@ -406,6 +407,12 @@ canvas.addEventListener('pointerup', e=>{
     }
     else if (!longHoldFired&&!touchMoved) handleInput(pressX,pressY);
     isPressing=false;
+});
+// A TOUCH THE SYSTEM CANCELS (a call, a system gesture) while a technician's ability is being aimed: FAULTLINE's path being drawn is called off (js/techabilities.js techAimPathCancel). Nothing else listens here.
+canvas.addEventListener('pointercancel', e=>{
+    if (!_techAimPressed) return;
+    _techAimPressed = false; isPressing = false;
+    if (typeof techAimPathCancel === "function") techAimPathCancel();
 });
 
 // The wheel slides the clone card strip sideways (a vertical roll too).

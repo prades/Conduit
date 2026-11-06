@@ -146,7 +146,7 @@ const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action
 // QUILL BURST (the redesign): EXACTLY five quills at once (approved), fanned forward, the middle one at the nearest enemy; each its own follower shot that stops at the first enemy it touches. The fan, reach, speed, damage and wait are PROVISIONAL.
 const QUILL_RANGE = 4, QUILL_EVERY = 240, QUILL_COUNT = 5, QUILL_FAN = 40, QUILL_MULT = 0.5, QUILL_SPEED = 0.18;   // its reach (tiles), the frames between, the quills, the fan (degrees, edge to edge), × power a quill, its speed (the follower shots')
 
-// THE FOLLOWER COMBAT REDESIGN (the owner, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md): `shot` names a Mage form's everyday shot where it has a name of its own (the Ember Hood's FIREBALL, the
+// THE FOLLOWER COMBAT REDESIGN (the owner, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md): `hit` names the Thermite Burrower's everyday hit, BURROW STRIKE (burrowStrikeTry); `shot` names a Mage form's everyday shot where it has a name of its own (the Ember Hood's FIREBALL, the
 // Thunderhead's CHAIN LIGHTNING, which conducts on: evoShotOnHit). The Static Orb's moves are SONIC ROLL (STATIC RUSH renamed) and PINBALL; the Thunderhead's is STATIC VORTEX, ARC VOLLEY staying
 // with the retired Reaver. The retired electric brawlers keep SONIC ROLL alone.
 const EVOLUTIONS = {
@@ -213,7 +213,7 @@ const EVOLUTIONS = {
     // The FIRE TECHNICIAN, design No. 855 (the "THERMITE BU…" sheet, its name cut off on it, then the user's review: "a black body with red glowing accents",
     // "thick armored arms", "more like a bear/zoids style tank animal ... same silhouette", "no ears or any face"): a hunched black armoured digger with seams of
     // red light and a cone drill for a nose glowing red in its groove, on a bear's thick armoured legs with clawed paws. The drill turns, so the sheet carries its own light.
-    thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", sheet: "img/evo/thermite.png",
+    thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", hit: "BURROW STRIKE", sheet: "img/evo/thermite.png",
               cell: 144, anchor: [72, 114.2], core: [72, 74.8], noGlow: true, color: "#ff5a1f" },
     // The TOXIC TECHNICIAN, design No. 873 (the user's card, "BLIGHT SPIDER · TOXIC DEPLOY", then the review: "smaller, thinner, finer legs, and ... lower to the
     // ground"): a glass tank of bubbling toxin with black bands and a black front cap with a lens, on a black chassis riding low on six fine spider legs. The toxin
@@ -590,6 +590,14 @@ function pinballStep(f) {
     return true;
 }
 
+// under the floor (BURROW STRIKE's travel: js/combat.js; FAULTLINE's: js/techabilities.js): its dive and its mound. 0 above, rising to 1 while it dives; 1 under the floor; null when it is not burrowing
+function burrowerDepth(f) {
+    const f0 = typeof frame !== "undefined" ? frame : 0, B = f && (f._burrow || f._fault);
+    if (!B) return null;
+    if (B.phase === "dive") return Math.max(0, Math.min(1, (f0 - B.t0) / Math.max(1, B.dive || BURROW_DIVE)));
+    return 1;
+}
+
 // CHAIN LIGHTNING (the Thunderhead's everyday shot; the owner, 2026-11-02, "Its everyday shot"; docs/FOLLOWER-COMBAT-REDESIGN.md §2.6): the Mages' shot (js/npc.js), and from the enemy it strikes the
 // electricity conducts on, jump by jump, to the nearest enemy not yet struck within CHAIN_HOP of the last; each jump does CHAIN_SHARE of the one before. Distance decides it: a close cluster
 // carries it far, a gap wider than CHAIN_HOP breaks it. No fixed cap: it ends when no enemy is near enough or a jump would do under CHAIN_MIN (each enemy once, so it always ends).
@@ -682,7 +690,32 @@ function _evoFacing(f) {
 // Draw it, if it is an evolved follower out of (or coming out of) the egg.
 // False: draw the egg as usual (before it has cracked open, or if the sheet
 // has not loaded).
+// UNDER THE FLOOR (BURROW STRIKE, FAULTLINE: burrowerDepth): while it dives it sinks into the floor (what goes below the floor is not drawn) as a mound rises; under it only the mound shows
 function drawEvolvedFollower(f, px, py, g) {
+    const dep = typeof burrowerDepth === "function" ? burrowerDepth(f) : null;
+    if (dep === null) return _drawEvolvedBody(f, px, py, g);
+    if (dep >= 1) { _drawBurrowMound(f, px, py, g, 1); return true; }
+    g.save(); g.beginPath(); g.rect(px - 90, py - 230, 180, 232); g.clip(); g.translate(0, dep * 36);
+    let drawn = false; try { drawn = _drawEvolvedBody(f, px, py, g); } finally { g.restore(); }
+    _drawBurrowMound(f, px, py, g, dep);
+    return drawn;
+}
+// a mound of dark earth with glowing cracks and embers, `k` of its full size (a frame's few strokes; nothing made)
+function _drawBurrowMound(f, px, py, g, k) {
+    const f0 = typeof frame !== "undefined" ? frame : 0, w = (20 + Math.sin(f0 * 0.4 + f.x * 3) * 2.5) * (0.35 + 0.65 * k), cy = py + 2;
+    g.save();
+    g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(px, cy + 2, w * 1.2, w * 0.45, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#3a2a1c"; g.beginPath(); g.ellipse(px, cy, w, w * 0.5, 0, Math.PI, 0); g.fill();
+    g.fillStyle = "#5a4326"; g.beginPath(); g.ellipse(px - w * 0.15, cy - w * 0.08, w * 0.6, w * 0.28, 0, Math.PI, 0); g.fill();
+    g.strokeStyle = "rgba(255,110,40," + (0.55 + 0.35 * Math.sin(f0 * 0.3)) + ")"; g.lineWidth = 1.5; g.beginPath();
+    g.moveTo(px - w * 0.5, cy - 2); g.lineTo(px - w * 0.15, cy - w * 0.3); g.lineTo(px + w * 0.1, cy - w * 0.12);
+    g.moveTo(px + w * 0.2, cy - w * 0.36); g.lineTo(px + w * 0.5, cy - 3);
+    g.stroke();
+    g.fillStyle = "#ff9a4a";
+    for (let i = 0; i < 3; i++) { const a = f0 * 0.22 + i * 2.1, ex = px + Math.cos(a) * w * 0.7, ey = cy - 6 - Math.abs(Math.sin(f0 * 0.2 + i)) * 9 * k; g.beginPath(); g.arc(ex, ey, 1.8, 0, Math.PI * 2); g.fill(); }
+    g.restore();
+}
+function _drawEvolvedBody(f, px, py, g) {
     const d = evolvedDef(f); if (!d) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0, m = f0 - (f._moltAt === undefined ? -1e9 : f._moltAt);
     if (m < EVO_MOLT * 0.3) return false;                 // still the egg, shaking (the overlay cracks it)

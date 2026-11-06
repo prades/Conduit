@@ -2,6 +2,26 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-06
+
+- **a · The follower combat redesign, part 2: the Thermite Burrower** (the owner's brief "CONDUIT — FOLLOWER COMBAT REDESIGN", approved 2026-11-02, with the owner's answer "Keep both buttons"; `FOLLOWER-COMBAT-REDESIGN.md`; on the branch only; commit named in git log). All five of the brief's followers are now built.
+  - **Main:** build `2026-11-03a` (8c2d260) and the redesign's answers' docs before it (8cac916) went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
+  - **BURROW STRIKE**, the evolved Thermite Burrower's everyday hit, in place of the technicians' plain hit for this form only: at the nearest enemy it can see within 4 tiles it dives (20 frames, sinking into the floor), travels under the floor toward it at 0.12 tiles a frame, where it cannot be targeted or hurt and a mound of glowing earth shows where it is, and erupts beneath it for 2 × its plain hit (Piercing, its main attack), then surfaces and rests. It comes up where it is if its enemy is lost, at a wall, after 120 frames under, or when told to RETREAT, thrown or called back. A Siphon perk heals on it as on the plain hit. A fire technician egg, the Hover Shell and every other technician keep the plain hit.
+  - **FAULTLINE**, on a **second chip** on the Burrower's squad card, just above the THERMITE DRILL's, with its own 60 s wait (the drill keeps its chip, its wait, enemies and the rubble; an egg has the drill alone). Tap it, then press on the floor, draw a path and let go: the same with a mouse and a finger. A glowing line follows the pointer; under 1 tile sends nothing and keeps the aim; the stroke stops at 8 tiles; the path is smoothed and ends at a wall. The Burrower dives, tunnels to the path's start, follows the path under the floor and surfaces at its end; every 0.75 tiles a molten spike erupts as it passes and hits every enemy within 0.7 tiles once, for 2 × its plain hit (fire, as its ability). The path glows molten, the stretch passed white-hot. The chip again, Escape or a touch the system cancels calls it off.
+  - **The input:** while a path is aimed, the press starts the stroke, each move adds to it and the let-go sends it (js/input.js); a new `pointercancel` listener calls it off. No tap on waypoints and no straight drag-to-aim line.
+  - **The Hover Shell and its Kinetic Launcher:** the launcher's own code and numbers are unchanged; the technicians' shared aiming code changed for the path and the second chip (`techAimTap`, `techChipTap`, `techChipState`, `techAbilityCan`, the join wait). The checks pin the launcher's every field and number, the Hover Shell's form and the Technicians' plain hit.
+  - **Every number is provisional** (`FOLLOWER-COMBAT-REDESIGN.md` §11.2). The readings taken where the brief did not say are in `OPEN-QUESTIONS.md` §1t.
+  - **How:** BURROW STRIKE in js/combat.js (`burrowStrikeTry`, `burrowStep`, beside the plain hit), asked first in the technicians' branch of js/npc.js and stepped from `updateNPC`; FAULTLINE in js/techabilities.js (`TECH_ABILITY2`, `TECH_AB.fault`, the path aim, `techFaultPath`, `techFaultlineAt`, `techFaultStep`, the second chip's state); the chip in js/party.js and game.html's css; the looks in js/evolution.js (the body sinking, the mound) and js/elements.js (`faultTrace`, `faultSpike`). Every hit goes through `applyElementalDamage`.
+  - **INFO:** MAIN ATTACK · BURROW STRIKE, and an ABILITY · FAULTLINE section beside the THERMITE DRILL's (js/unitinfo.js).
+  - **The in-game guide:** FIREBALL, CHAIN LIGHTNING, BURROW STRIKE and FAULTLINE explained; the signature moves' examples are current ones (the charged arc that jumps, ARC VOLLEY, is only the retired Reaver's now).
+  - **Tests:**
+    - tests/followercombat.js grows from 26 to 35 checks: BURROW STRIKE (its dive, its travel under the floor, its eruption against a real plain hit of its own, its rest, the Siphon perk, untargetable, a lost enemy, out of reach, behind a wall; no other form burrows); FAULTLINE (the second chip and its waits; the drill kept; a freehand path kept as a curve, a short stroke, the 8-tile stop; the run under the floor along the path; who the spikes hit; calling it off three ways; BUSY; INFO); and the real page in headless Chromium by touch (both chips, a tap, a path drawn with `pointerType: 'touch'` pointer events, a cancelled touch);
+    - tests/techabilities.js: the press while aiming now also starts a path.
+  - **The full run:** (to come)
+  - **The Bible:** the BURROW STRIKE row in the moves table; FAULTLINE in the technicians' abilities (its row and its own section, with its numbers read from the code); the Burrower's card and form row. Fixed with it: the Static Orb's form row now lists PINBALL (build `2026-11-03a` missed it).
+  - **Written up:** docs/FOLLOWER-COMBAT-REDESIGN.md (status, sections 3, 7, 9, 10, 11, 12), docs/OPEN-QUESTIONS.md §1t, docs/TECHNICIANS.md, docs/COMBAT.md §7.4 and a dated note under §7.10's attack-kind table, docs/UI-STYLE.md (the second chip), docs/DECISION-LOG.md (2026-11-03a to main), the in-game guide, the Bible. Build `2026-11-03a`'s entry below said its suite had 23 checks: it had 26.
+  - Not playtested. FAULTLINE has not been drawn by a finger on an iPad or a phone.
+
 ## 2026-11-03
 
 - **a · The follower combat redesign, part 1: the fire and electric followers' moves** (the owner's brief "CONDUIT — FOLLOWER COMBAT REDESIGN", approved 2026-11-02, with the owner's answers; `FOLLOWER-COMBAT-REDESIGN.md`; on the branch only; commit named in git log). Four of the brief's five followers; the Thermite Burrower is next.
@@ -22,7 +42,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
     - every hit through `applyDamage` with a move's or the Mages' hit.
   - **INFO:** the new moves' rows, and a MAIN ATTACK section naming FIREBALL and CHAIN LIGHTNING (js/unitinfo.js).
   - **Tests:**
-    - new tests/followercombat.js (23 checks): the brief's Phase 3 list for the four followers, the Hover Shell unchanged, one damage system and one move table;
+    - new tests/followercombat.js (26 checks; this entry said 23 at first, corrected in build `2026-11-06a`): the brief's Phase 3 list for the four followers, the Hover Shell unchanged, one damage system and one move table;
     - tests/evolution.js (the superseded QUILL BURST and HEXFIRE checks replaced; ARC VOLLEY checked on the Reaver), tests/moves.js and tests/unitinfo.js updated;
     - tests/crystalline.js reads the Mage's shot's rest by its new name (`MAGE_SHOT_REST`, still 55).
   - **The full run:** 86 of 88 suites passed the first time.

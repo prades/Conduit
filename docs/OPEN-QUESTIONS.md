@@ -326,6 +326,24 @@ This build followed the approved brief and the owner's answers (`DECISION-LOG.md
    - an enemy can walk against the pull, and a stronger knock is left as it is.
 7. **An observation on the existing shots, not changed:** a follower shot touches an enemy within 30 px of (Δx × 60, Δy × 30), so its touch is about half a tile across the floor's x and a whole tile across its y. QUILL BURST's quills therefore spread less sharply in one direction than in the other. It is the shots' existing hit test (`js/game.js`), shared by every follower shot and the sentries, so it was left as it is. A rounder touch would be a separate change, the owner's call.
 
+## 1t. The follower combat redesign, the Thermite Burrower: readings (build `2026-11-06a`, on the branch; `FOLLOWER-COMBAT-REDESIGN.md`)
+
+This build followed the approved brief and the owner's answer "Keep both buttons" (`DECISION-LOG.md`). Every number is the provisional one in `FOLLOWER-COMBAT-REDESIGN.md` §11.2, to tune in play. Where the brief did not say, these readings were taken, each easy to change; they are the owner's to confirm or change.
+1. **BURROW STRIKE is the whole everyday attack.** It stands in for the plain hit and for the fire element's melee moves that a technician strikes with when it has Will (js/combat.js `followerAttack`); its Will is not spent. As the plain hit does, a Siphon perk heals on the eruption, and its rest after one reads attack speed. Only the evolved Thermite Burrower's hit changes; a fire technician egg and every other technician keep the plain hit.
+2. **When it dives:** at the enemy the technicians' branch already picks (the nearest), within 4 tiles and in sight; otherwise it walks toward it as the technicians do. In the rare case it ends up beside an enemy it cannot see (a wall's corner between them), it strikes with the plain hit, as before. It follows its enemy under the floor (it erupts within 0.35 tiles of wherever the enemy is), so a walking enemy is still reached.
+3. **Under the floor** it cannot be targeted or hurt. It comes up where it is, with no eruption and half the rest, if its enemy dies or is no longer an enemy, if a wall is in the way, or after 120 frames under. Told to RETREAT, called to a launcher, thrown or walking back to the Crystal, it comes up at once.
+4. **Its tells:** a ring as it dives, its body sinking into the floor, a mound of glowing earth that moves while it is under, three molten spikes and the words BURROW STRIKE at the eruption. Nothing marks its target beforehand.
+5. **FAULTLINE's path:**
+   - it must start on the floor where the Burrower can see; the Burrower tunnels to the start in a straight line, and no spike erupts on that leg;
+   - it ends where a wall cuts it (each step of the path must be floor and in sight of the step before), and at 8 tiles; a stroke or a path under 1 tile sends nothing, the game says why, and the aim stays up;
+   - the smoothing: resampled every 0.25 tiles, then each point (not the ends) averaged once with its two neighbours. A hand's wobble goes, a curve stays; a wobbly stroke comes out a little shorter than it was drawn.
+6. **FAULTLINE's spikes:** the first at the path's start, then every 0.75 tiles; each hits every enemy within 0.7 tiles of it, each enemy once a FAULTLINE, for 2× its plain hit (half its ATK), fire, as its ability (the Burrower's alternate type, Piercing).
+7. **Its wait** is its own and starts as it sets off (one called off on the way still costs it). It goes through `techCooldown` like every ability's: the cards' ABILITY COOLDOWN shortens it, and DOUBLE CELL's one spare charge is the follower's, shared by the drill and FAULTLINE (whichever is used first while it is held spends it). The first wait after joining the squad holds both chips.
+8. **Busy:** the drill cannot start while FAULTLINE or BURROW STRIKE is under way, and FAULTLINE cannot start while the drill, another FAULTLINE or BURROW STRIKE is. After FAULTLINE surfaces it has no rest of its own: BURROW STRIKE may follow at once.
+9. **The two chips:** a tap on one chip while the other's aim is up aims the one tapped instead; a tap on the chip being aimed calls it off. FAULTLINE's chip sits just above the drill's on the squad card, in orange, its mark 〰 (a fault line) and its word FAULT; it shows UNDER while the run is on.
+10. **Neither is saved:** a game saved mid-burrow or mid-FAULTLINE loads with the Burrower standing; FAULTLINE's wait, like every cooldown, is not saved.
+11. **Touch:** checked only with synthetic `PointerEvent`s of `pointerType: 'touch'` in headless Chromium (tests/followercombat.js): the press, the moves, the let-go, and `pointercancel`. A finger on an iPad or a phone has not drawn one.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

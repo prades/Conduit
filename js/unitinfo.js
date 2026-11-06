@@ -44,9 +44,10 @@ const MOVE_INFO = {
     "CHOMP":           () => [["REACH", MAW_RANGE + " tiles"], ["EVERY", _uiSec(MAW_EVERY)], ["DAMAGE", _uiX(MAW_MULT) + " power"], ["EFFECT", "The fangs slam down: the target is frozen stiff for " + _uiSec(MAW_STUN) + " and everything within " + MAW_SLOW_R + " tiles of it is slowed"]],
 };
 
-// A Mage form's everyday shot where it has a name of its own (EVOLUTIONS[x].shot; the follower combat redesign, docs/FOLLOWER-COMBAT-REDESIGN.md), as rows read off the constants.
+// A form's everyday attack where it has a name of its own (a Mage's shot, EVOLUTIONS[x].shot; the Thermite Burrower's hit, EVOLUTIONS[x].hit; the follower combat redesign, docs/FOLLOWER-COMBAT-REDESIGN.md), as rows read off the constants.
 const SHOT_INFO = {
     "FIREBALL":        () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " (less with attack-speed cards)"], ["EFFECT", "A ball of fire at the nearest enemy: a direct hit"]],
+    "BURROW STRIKE":   () => [["REACH", BURROW_REACH + " tiles, an enemy it can see"], ["DAMAGE", _uiX(BURROW_MULT) + " its plain hit, as it erupts"], ["REST", _uiSec(BURROW_REST) + " after an eruption"], ["EFFECT", "It dives into the floor, travels under it to the enemy and erupts beneath it. Under the floor nothing can target or hurt it"]],
     "CHAIN LIGHTNING": () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack on the first enemy"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " (less with attack-speed cards)"], ["JUMPS", "On to the nearest enemy not yet struck within " + CHAIN_HOP + " tiles, each " + Math.round(CHAIN_SHARE * 100) + "% of the one before, while one is that near"], ["EFFECT", "A close cluster carries it far; a gap breaks it"]],
 };
 const _uiLabel = id => { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === id) : null; return e ? e.label.toUpperCase() : String(id || "").toUpperCase(); };
@@ -60,7 +61,7 @@ function followerInfo(a) {
     const out = { kind: "follower", unit: a, title, sub: _uiLabel(a.element) + " · LV " + (a.level || 1) + (ev ? " · EVOLVED" : ""), color: _uiColour(a.element), attacks: [], jobs: [], stats: [] };
     // ATTACKS
     out.attacks.push({ h: "ATTACK STYLE · " + r.label, note: r.text, rows: ps ? [["PLAY STYLE", ps.label + " (" + ps.blurb.toLowerCase() + ")"], ["ENGAGE REACH", _uiX(ps.reach) + " its usual"]] : [] });
-    if (ev && ev.shot && SHOT_INFO[ev.shot]) out.attacks.push({ h: "MAIN ATTACK · " + ev.shot, note: ev.name, rows: SHOT_INFO[ev.shot]() });   // a Mage form's named everyday shot (FIREBALL, CHAIN LIGHTNING)
+    { const mainName = ev && (ev.shot || ev.hit); if (mainName && SHOT_INFO[mainName]) out.attacks.push({ h: "MAIN ATTACK · " + mainName, note: ev.name, rows: SHOT_INFO[mainName]() }); }   // a form's named everyday attack (FIREBALL, CHAIN LIGHTNING, BURROW STRIKE)
     if (ev && MOVE_INFO[ev.move]) {
         const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, ev) : null, mv = cur && MOVE_INFO[cur.name] ? cur : { name: ev.move }, ids = typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, ev, id)) : [];
         out.attacks.push({ h: "SIGNATURE · " + mv.name, note: ev.name, rows: MOVE_INFO[mv.name]() });
@@ -73,6 +74,7 @@ function followerInfo(a) {
         out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health, attack and special attack)" + (f.move ? ", with the move " + f.move + ":" : ". It has no signature move yet.") : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]() : [] });
     }
     { const ab = typeof techAbilityInfo === "function" ? techAbilityInfo(a) : null; if (ab) out.attacks.push(ab); }   // a technician's ability: what it does, its numbers, when it is ready (js/techabilities.js)
+    { const ab2 = typeof techAbility2Info === "function" ? techAbility2Info(a) : null; if (ab2) out.attacks.push(ab2); }   // the Thermite Burrower's second ability, FAULTLINE
     const u = ELEMENT_ULTIMATES.find(x => x.el === a.element);
     if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". Double-tap the follower when it is fully charged.", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
     // JOBS: the squad, or a room it holds (js/party.js)

@@ -34,7 +34,7 @@ Minimum touch target is 56px high. Anything that was a tiny icon button becomes 
 ## What the kit covers, screen by screen
 
 1. **HUD**: the crystals, the health and ultimate bars, the room tag and the network panel, the ammunition pill and the round dial, the dialogue box at the bottom, and the dock (ROSTER, CARDS, QUESTS, CLONES, SETTINGS, PACK, MAP, ?) are slabs.
-2. **The squad bar and the battle tool** (bottom left): the three squad cards (and the Mutator's clone's, a fourth in its purple `#c06bff` while it lives, with a CLONE tag in the corners: 2026-11-01), ALL / WHO, RETREAT, HOLD, COME and the enemy card.
+2. **The squad bar and the battle tool** (bottom left): the three squad cards (and the Mutator's clone's, a fourth in its purple `#c06bff` while it lives, with a CLONE tag in the corners: 2026-11-01), ALL / WHO, RETREAT, HOLD, COME and the enemy card. A technician's card carries its ability chip at its foot on the right (`.sb-ab`); the evolved Thermite Burrower's carries a second chip just above it (`.sb-ab2`, FAULTLINE's, build `2026-11-06a`): the same small slab in orange (`#ff8a3a`), with the same states (ready, the seconds, ✕ AIMING, busy). Neither is shown in the Command Center's squad box. While FAULTLINE is aimed, the path is drawn on the floor as a glowing line to the pen, and once sent it glows as a molten line, the stretch already passed white-hot.
 3. **The Command Center**: slab tabs, the carousel, the filter chips, the RECRUIT tile.
 4. **The canvas panels**: the Clone Bay, the pack, the Armory terminal, the class picker, SETTINGS and the INFO panel are drawn with the same kit.
 
