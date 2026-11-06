@@ -41,6 +41,11 @@ const ATTACK_STYLES = [
     { id: "camper",  label: "TECHNICIAN", col: "#8fe3ff", blurb: "HOLDS A POST" },
 ];
 const CC_REFRESH_MS = 400;
+// A LONG NAME on the carousel's strip (the owner, 2026-11-06: "Smaller type"): a name of CC_LONG_NAME characters or more (ELECTRIC TECHNICIAN, THERMITE BURROWER) gets the class `long`, which on the strip's
+// cards alone sets slightly smaller lettering (game.html), so the whole name fits a card at 1180 px; everywhere else the class changes nothing. (Measured: those two were the only names cut, 125 and 126 px
+// of text in a 113 px box; every name of 16 characters or fewer fits.)
+const CC_LONG_NAME = 17;
+function _ccNameSet(el, name) { if (el.textContent !== name) el.textContent = name; el.classList.toggle("long", name.length >= CC_LONG_NAME); }
 
 // The reach multiplier of a unit's play style (1 when it has none). npc.js asks.
 function playReach(actor) {
@@ -417,7 +422,7 @@ function _ccUpdateCard(card, r) {
     card.style.setProperty("--c", _ccColour(r.element)); card.classList.toggle("sel", r.selected); card.classList.toggle("clone", r.clone);
     if (typeof cardArtUnitClass === "function") cardArtMark(card, cardArtUnitClass(r.unit));   // its backdrop: its element's texture under its class's (js/cardart.js)
     const no = card.querySelector(".cc-no"); if (no) { const n = !r.clone && typeof partyIsMember === "function" && partyIsMember(r.unit) && r.unit.partySlot !== undefined ? String(r.unit.partySlot + 1) : ""; if (no.textContent !== n) no.textContent = n; }
-    card.querySelector(".cc-name").textContent = r.name;
+    _ccNameSet(card.querySelector(".cc-name"), r.name);
     card.querySelector(".cc-sub").textContent = (r.clone ? "CLONE" : _ccElLabel(r.element)) + " · LV " + r.level;
     { const bar = card.querySelector(".cc-bar"), u = r.unit, hpN = Math.max(0, Math.round(u.health || 0)), mxN = Math.max(1, Math.round(u.maxHealth || 1)), cls = "cc-bar" + (r.hp > 0.5 ? "" : r.hp > 0.25 ? " mid" : " low");
       bar.querySelector("i").style.width = Math.round(r.hp * 100) + "%"; if (bar.className !== cls) bar.className = cls; const n = bar.querySelector(".cc-hpn"); if (n && n.textContent !== hpN + "/" + mxN) n.textContent = hpN + "/" + mxN;

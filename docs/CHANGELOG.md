@@ -4,6 +4,32 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **i · The moves that strike at once need sight; the long names on the roster's strip** (the owner, 2026-11-06: "Need sight", "Smaller type"; on the branch only; commit named in git log).
+  - **Main:** build `2026-11-06h` (walls, cover and sight; 29c7e7f and its full run's docs 1f0210a) went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
+  - **Nothing a follower does strikes through a wall or a tall object** (`COMBAT.md` §8.5). A move that strikes at once is used only on an enemy the follower can see:
+    - the four the owner was asked about: ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE;
+    - and the rest of their kind **[reading]**: CORRODE SHOT, CHOMP, ERUPTION, GRAVITY SLAM, SONIC ROLL's shocks, CHAIN LIGHTNING's jumps.
+    With none in sight the move is not used and stays ready. What a strike reaches beyond its target is only what can be seen from where the strike comes: jumps, splashes, pulls, slows, areas, a burning circle's or a storm's bite, and the equip cards' NOVA, CLEAVE and CHAIN. Cover still does not stop them (they do not travel).
+  - **SONIC ROLL's dash** needs a straight walk to where it ends, as PINBALL's roll does: it never dashes through a wall or over an object (stepping over is "Not yet").
+  - **The roster's strip:** a name of 17 characters or more (ELECTRIC TECHNICIAN, THERMITE BURROWER: the two that were cut) is set at 8.6 px instead of 10 on the carousel's strip only, so every name fits whole at 1180 px wide.
+  - **Not changed, and open** (`OPEN-QUESTIONS.md` §1y): the creatures' specials and the player's own jumps (ARC SLINGER's, the Technomancer's arc) still reach through walls.
+  - **How:**
+    - js/evolution.js (`_evoSees`, `_evoFoesSeen`, `_evoDashOk`; every move's target, jumps and areas; `fieldBite`; `staticVortexTick`);
+    - js/cards.js (`_equipFoesNear`);
+    - js/commandcenter.js (`CC_LONG_NAME`, `_ccNameSet`);
+    - game.html (the strip's `.cc-name.long`).
+  - **Tests:**
+    - tests/cover.js (22 checks, 3 new): every such move held back by the Experiment Lab's glass and used on the same side; jumps, splashes, pulls, slows, fields and echoes stopped at the glass; SONIC ROLL not dashing over the test room's crate. On build h's code the three new checks fail; on this build they pass.
+    - tests/carousel.js: every name a strip card can show (52) fits at 1180 px, the long ones in smaller type. It no longer depends on the random draw that failed build h's full run.
+    - tests/evolution.js: its scenes are staged off the map, so between two points both off the map, sight and a straight walk count as clear (on the map they are the game's own).
+    - tests/series2abilities.js: the NOVA check moved onto real floor.
+  - **The Bible:** the moves that strike at once in "Walls, cover and sight" and in the signature moves; the strip's long names.
+  - **Written up:**
+    - docs/COMBAT.md (§8.4, §8.5, §8.7);
+    - docs/OPEN-QUESTIONS.md (§1x item 10 answered; §1y, new; §2's cut name mended);
+    - docs/DECISION-LOG.md (status), docs/FOLLOWER-COMBAT-REDESIGN.md, docs/UI-STYLE.md.
+  - **Not playtested.**
+
 - **h · Walls, cover and sight** (the next development phase's Milestone Two; the owner, 2026-11-06: cover "Stops shots"; "Barriers", "Crates and stacks", "Barrels", "Desks and consoles"; "Walls stop shots"; "See over low ones"; "Shoot over own cover"; stepping over: "Not yet"; tall objects: "Yes, they stop shots"; on the branch only; commit named in git log).
   - **Main:** build `2026-11-06g` (the Flux test room; d3121e6, 56d52a6 and its full run's docs 3c595d6) went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
   - **What each object does** (`js/facility.js` `FAC_COVER`, `FAC_LOW`; `COMBAT.md` §8.2). Every solid still blocks walking. Besides that:

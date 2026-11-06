@@ -430,7 +430,7 @@ Where nothing said, these readings were taken. Each stands as built until the ow
 10. **The moves that strike at once are as they were.**
     - ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX and PETAL BLAZE do not travel, so walls and cover do not stop them: an ARC VOLLEY can still strike through a wall.
     - Melee is a matter of distance only, as before.
-    - **Open:** should these need sight, or stop at walls?
+    - **Open:** should these need sight, or stop at walls? **Answered 2026-11-06: "Need sight"** (`DECISION-LOG.md`; built in `2026-11-06i`, §1y).
 11. **The shooters hold their fire at what they cannot see.**
     - A Mage fires only at an enemy it sees. It walks toward one it cannot see, by the route round the wall, until it can.
     - QUILL BURST and HEXFIRE are aimed only at an enemy in sight. With none in sight, the move is not fired and stays ready.
@@ -442,14 +442,34 @@ Where nothing said, these readings were taken. Each stands as built until the ow
     - The target beyond the stop is not hit.
     - A creature in the line before the stop is hit as before (for less); one beyond it is not.
 
+## 1y. Build i's readings: the moves that strike at once need sight; the long names on the roster's strip (build `2026-11-06i`, on the branch; `COMBAT.md` §8.5, `UI-STYLE.md`)
+
+Built as decided. The owner, 2026-11-06:
+- the moves that strike at once: "Need sight" (nothing strikes through a wall or a tall object; the follower uses such a move only on an enemy it can see);
+- the name cut on the roster's strip: "Smaller type".
+
+Where nothing said, these readings were taken. Each stands as built until the owner says otherwise.
+
+1. **Every follower move of that kind**, not only the four the question named (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE): CORRODE SHOT, CHOMP, ERUPTION, GRAVITY SLAM, SONIC ROLL's shocks and CHAIN LIGHTNING's jumps need sight too. §1x item 10 named only four; the answer said nothing strikes through a wall.
+2. **What a strike reaches beyond its target** is only what can be seen from where the strike comes: a jump from the enemy it leaves; a splash, a pull or a slow from the enemy struck; an area from the follower; a burning circle's or a storm's bite and pull from the field's middle. The equip cards' echoes (NOVA, CLEAVE, CHAIN) too.
+3. **SONIC ROLL's dash** needs a straight walk to where it ends (the walking test, as PINBALL's roll), so it never dashes through a wall or over an object (stepping over is "Not yet"). A creature it sees over a crate is not dashed at; the move stays ready.
+4. **A long name** is one of 17 characters or more: ELECTRIC TECHNICIAN and THERMITE BURROWER, the two that were cut (125 and 126 px of text in a 113 px box at 1180 px wide). On the carousel's strip only, it is set at 8.6 px instead of 10. The card in view, the phone's cards and the SQUADS window are unchanged.
+5. **Still open:** the creatures' specials (LEAP, MANDIBLE FRENZY, CARAPACE SLAM up to 5 tiles, VENOM LANCE, WEB SNARE, BLADE FLURRY, BLINDING DUST) and the player's own jumps (ARC SLINGER's jump; the Technomancer's arc jumping on to the next creature) still reach through walls. Should they need sight too?
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
 
-- **The name ELECTRIC TECHNICIAN is cut on the roster's strip** (seen 2026-11-06 in build `2026-11-06h`'s full run; main's code, 3c595d6, measures the same).
+- **The name ELECTRIC TECHNICIAN is cut on the roster's strip** (seen 2026-11-06 in build `2026-11-06h`'s full run; main's code, 3c595d6, measures the same). **Answered 2026-11-06: "Smaller type"; mended in build `2026-11-06i`** (§1y: THERMITE BURROWER was cut too).
   - On the Command Center's carousel at 1180 × 820, a strip card's name box is 113 px wide. ELECTRIC TECHNICIAN needs 125 px; the other seventeen element-and-class names fit.
   - tests/carousel.js checks that no name is cut. It draws its followers at random, so it fails only when an electric follower is drawn as a technician. Three re-runs, with other draws, passed.
   - Ways to mend it, for the owner: a slightly smaller type for a long name on the strip; let the name take two lines; or shorten TECHNICIAN to TECH. on the strip only (the card in view keeps the whole name). Nothing is changed until the owner picks.
+
+- **tests/fluxlab.js once counted two of the test room's three ants** (seen 2026-11-06 on build `2026-11-06i`'s code, run three suites at a time; for whoever keeps the tests, not a design question).
+  - The check "ITS CREATURES" found 2 ants of the room alive when it began, after the suite's earlier 3,780 frames of play. Every other check passed.
+  - Not reproduced since: 23 more runs passed, 21 of them with a logger on every hit to the room's ants and on each one's death or removal. The logger saw nothing at all: no hit, no death.
+  - The cause is not known. Nothing in the builds since `2026-11-06g` touches the creatures' lives.
+  - Next: if it comes back, keep the suite's sandbox state when it fails (which ant, its health, where it stood).
 
 - **tests/perf.js's frame budget fails at random** (seen 2026-11-06, build `2026-11-06a`; for whoever keeps the tests, not a design question).
   - The check: one frame of a busy arena (ten eggs, twelve creatures) must draw fewer than 21,500 canvas operations.

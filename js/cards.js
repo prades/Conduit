@@ -527,8 +527,9 @@ function _equipStrike(src, t, dmg, word, col) {
     _equipEcho = true; try { if (typeof applyDamage === "function") applyDamage(t, dmg, src, src.element || null); } finally { _equipEcho = false; }
     if (word) _equipSay(t, word, col);
 }
-function _equipFoesNear(x, y, r, but) {
-    return (typeof actors !== "undefined" ? actors : []).filter(a => a && a !== but && !a.dead && a.health > 0 && a.team !== "green" && !a.isClone && (typeof isHostileTarget !== "function" || isHostileTarget(a)) && Math.hypot(a.x - x, a.y - y) <= r);
+function _equipFoesNear(x, y, r, but) {   // (only what can be seen from the target: an echo strikes at once, and nothing strikes through a wall or a tall object; the owner, 2026-11-06, "Need sight": docs/COMBAT.md §8)
+    return (typeof actors !== "undefined" ? actors : []).filter(a => a && a !== but && !a.dead && a.health > 0 && a.team !== "green" && !a.isClone && (typeof isHostileTarget !== "function" || isHostileTarget(a)) && Math.hypot(a.x - x, a.y - y) <= r
+        && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(x, y, a.x, a.y)));
 }
 function _equipAbilitiesOnHit(src, target, dealt) {
     for (const a of equipAbilities(src)) {

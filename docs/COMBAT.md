@@ -540,7 +540,7 @@ The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cove
   - the fire bombs bounce off walls and props (`js/firebombs.js`);
   - the Photonic Shield stops enemy shots;
   - melee (bites, the lash, the punch) tests distance only, so a bite still reaches over a one-tile object;
-  - the moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were **[reading; open: `OPEN-QUESTIONS.md` §1x]**.
+  - ~~the moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were~~ *(superseded in build `2026-11-06i` by the owner's "Need sight": §8.5)*.
 
 ### 8.5 The shooters fire at what they can see
 
@@ -549,6 +549,15 @@ The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cove
 - **A creature's rear shot** (`js/predator.js`) is fired only at a target it can see, the one that last hit it included **[reading]**.
 - **A turret** (`js/stations.js`) fires only with a clear shot (`facilityShotClear`: nothing would stop it short of its target), so the Crystal pays for no shot that a wall or cover would stop **[reading]**.
 - **The player** fires when they choose (a tap or a hold). A round fired at a creature behind a wall or cover is stopped there. The auto-lock takes only creatures in sight, as before (now over low objects too).
+- **A follower's moves that strike at once need sight** (built in `2026-11-06i`; the owner, 2026-11-06: "Need sight": nothing strikes through a wall or a tall object). Cover does not stop them: they do not travel.
+  - **The moves:** ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE (the four the owner was asked about), and the rest of their kind **[reading: the owner's "nothing strikes through a wall"]**: CORRODE SHOT, CHOMP, ERUPTION, GRAVITY SLAM, SONIC ROLL's shocks, CHAIN LIGHTNING's jumps.
+  - **The target:** such a move is used only on an enemy the follower can see. With none in sight it is not used, and it stays ready.
+  - **What it reaches beyond the target** is only what can be seen from where the strike comes **[reading]**:
+    - from the follower: PETAL BLAZE's ring, ERUPTION, GRAVITY SLAM;
+    - from the enemy struck: ARC VOLLEY's, CHAIN LIGHTNING's and SONIC ROLL's jumps; SINGULARITY SHOT's pull and slow; CORRODE SHOT's splash; CHOMP's slow; the equip cards' echoes (NOVA, CLEAVE, CHAIN);
+    - from the middle of a field: a burning circle's bite (HEXFIRE), a storm's bite and pull (STATIC VORTEX).
+  - **SONIC ROLL's dash** puts the follower's body where it ends, so it needs a straight walk there (the walking test, as PINBALL's roll does), not only sight: never through a wall nor over an object **[reading: stepping over is "Not yet"]**.
+  - **Not changed** (the owner was asked about the followers' moves): the creatures' specials (LEAP, MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE, WEB SNARE, BLADE FLURRY, BLINDING DUST) test only distance and the Photonic Shield, and the player's own jumps (ARC SLINGER's, the Technomancer's arc jumping on) test only distance **[open: `OPEN-QUESTIONS.md` §1y]**.
 
 ### 8.6 FLUX MOVE and cover
 
@@ -560,7 +569,8 @@ A moved object keeps its kind and its traits. It gives cover, and is seen over, 
   - `js/facility.js`: `FAC_COVER`, `FAC_LOW`, `FAC_SHOT`, `_facWallCrossed`, `facilitySees`, `facilityShotStop`, `facilityShotReach`;
   - `js/facilityplay.js`: `facilitySeesFrom`, `facilityShotStopAt`, `facilityShotClear`;
   - the seeing uses moved from the walking test in `js/targeting.js`, `js/predator.js`, `js/facilityspawn.js`, `js/technomancer.js`, `js/playercards.js`, `js/combat.js`, `js/techabilities.js`;
-  - `js/game.js` (the shot loop), `js/weapons.js` (the laser), `js/npc.js` (the Mage), `js/evolution.js` (`_evoSeen`), `js/stations.js` (the turret).
+  - `js/game.js` (the shot loop), `js/weapons.js` (the laser), `js/npc.js` (the Mage), `js/evolution.js` (`_evoSeen`), `js/stations.js` (the turret);
+  - build `2026-11-06i`: `js/evolution.js` (`_evoSees`, `_evoFoesSeen`, `_evoDashOk`, `fieldBite`, `staticVortexTick`), `js/cards.js` (`_equipFoesNear`).
 - **Tests:**
-  - `tests/cover.js` (new, 19 checks; the real page on a tablet);
+  - `tests/cover.js` (new, 19 checks; the real page on a tablet; 22 since build `2026-11-06i`: the moves that strike at once);
   - suites whose fixtures faked sight with the walking test, or placed units outside the building or across walls, were updated: `tests/enemycard.js`, `tests/facilityplay.js`, `tests/followercombat.js`, `tests/technomancer.js`, `tests/mutator.js`, `tests/playercards.js`, `tests/evolution.js`.

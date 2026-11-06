@@ -315,12 +315,18 @@ function _evoFoes(x, y, r) {
     const near = typeof unitsNear === "function" ? unitsNear(x, r) : actors;
     return near.filter(a => a && !a.dead && typeof isHostileTarget === "function" && isHostileTarget(a) && Math.hypot(a.x - x, a.y - y) <= r);
 }
-// a move that FLIES at an enemy (QUILL BURST, HEXFIRE) is aimed only at one the follower can see: a wall or a tall object stops it (Milestone Two, js/facility.js facilityShotStop; sight over low objects,
-// js/facilityplay.js facilitySeesFrom). The moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were: docs/OPEN-QUESTIONS.md §1x.
-function _evoSeen(f, foes) { return typeof facilitySeesFrom === "function" ? foes.filter(a => facilitySeesFrom(f.x, f.y, a.x, a.y)) : foes; }
+// SIGHT FOR EVERY MOVE (Milestone Two; docs/COMBAT.md §8). A move that FLIES at an enemy (QUILL BURST, HEXFIRE) is aimed only at one the follower can see: a wall or a tall object would stop it
+// (js/facility.js facilityShotStop). A move that STRIKES AT ONCE needs sight too (the owner, 2026-11-06: "Need sight"; nothing strikes through a wall or a tall object): it is used only on an enemy the
+// follower can see, and what it reaches beyond that enemy (a chain's next jump, a splash, a pull, a slow, an area round the follower, a storm or a burning circle) is only what can be seen from where the
+// strike comes. Cover does not stop such a strike: it does not travel. Sight passes over low objects (js/facilityplay.js facilitySeesFrom).
+function _evoSees(x, y, a) { return typeof facilitySeesFrom !== "function" || facilitySeesFrom(x, y, a.x, a.y); }
+function _evoSeen(f, foes) { return foes.filter(a => _evoSees(f.x, f.y, a)); }                         // (of these, the ones the follower sees)
+function _evoFoesSeen(x, y, r) { return _evoFoes(x, y, r).filter(a => _evoSees(x, y, a)); }          // (the enemies within r of a point that can be seen from it)
+// SONIC ROLL's dash puts the body where it ends: only along floor it could walk in a straight line (the walking test, as PINBALL rolls), so never through a wall nor over an object (stepping over: "Not yet")
+function _evoDashOk(f, a) { if (typeof facilityLosFrom !== "function") return true; const dx = a.x - f.x, dy = a.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8); return facilityLosFrom(f.x, f.y, f.x + dx / L * s, f.y + dy / L * s); }
 // PETAL BLAZE: a ring of fire from the opened petals. True when it fired.
 function petalBlaze(f) {
-    const foes = _evoFoes(f.x, f.y, BLOOM_RADIUS);
+    const foes = _evoFoesSeen(f.x, f.y, BLOOM_RADIUS);
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of foes) {
@@ -356,14 +362,14 @@ function quillBurst(f) {
 }
 // ARC VOLLEY: a charged arc into the nearest enemy in range, jumping on. True when it fired.
 function arcVolley(f) {
-    const foes = _evoFoes(f.x, f.y, REAVER_RANGE);
+    const foes = _evoFoesSeen(f.x, f.y, REAVER_RANGE);
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const hits = [foes[0]], f0 = typeof frame !== "undefined" ? frame : 0;
     applyDamage(foes[0], (f.power || 10) * REAVER_MULT, f, "electric", false, false, DMG_HIT_ALT);
     let from = foes[0];
     for (let i = 0; i < REAVER_CHAIN; i++) {
-        const next = _evoFoes(from.x, from.y, REAVER_HOP).filter(a => !hits.includes(a))
+        const next = _evoFoesSeen(from.x, from.y, REAVER_HOP).filter(a => !hits.includes(a))
             .sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
         if (!next) break;
         applyDamage(next, (f.power || 10) * REAVER_MULT * REAVER_CHAIN_SHARE, f, "electric", false, false, DMG_HIT_ALT);
@@ -380,13 +386,13 @@ function arcVolley(f) {
 // SINGULARITY SHOT: a gravity round into the nearest enemy in range; whatever is
 // round it is dragged in and slowed. True when it fired.
 function singularityShot(f) {
-    const foes = _evoFoes(f.x, f.y, SERPENT_RANGE);
+    const foes = _evoFoesSeen(f.x, f.y, SERPENT_RANGE);
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
     applyDamage(tgt, (f.power || 10) * SERPENT_MULT, f, "flux", false, false, DMG_HIT_ALT);
     let pulled = 0;
-    for (const a of _evoFoes(tgt.x, tgt.y, SERPENT_PULL_R)) {
+    for (const a of _evoFoesSeen(tgt.x, tgt.y, SERPENT_PULL_R)) {
         if (typeof applySlow === "function") applySlow(a, SERPENT_SLOW_FRAMES, SERPENT_SLOW);
         if (a === tgt || (typeof vortexPullImmune === "function" && vortexPullImmune(a))) continue;
         const _px = a.x, _py = a.y; a.x += (tgt.x - a.x) * SERPENT_PULL; a.y += (tgt.y - a.y) * SERPENT_PULL; pulled++;
@@ -435,18 +441,18 @@ function hexfireCircle(f, x, y) {
 function fieldBite(e, el) {
     if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return;
     const r2 = e.radius * e.radius;
-    for (const a of actors) { if (!a || !isHostileTarget(a)) continue; const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy <= r2) applyDamage(a, e.bite, e.by || null, el, false, false, DMG_HIT_ALT); }
+    for (const a of actors) { if (!a || !isHostileTarget(a)) continue; const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy <= r2 && _evoSees(e.x, e.y, a)) applyDamage(a, e.bite, e.by || null, el, false, false, DMG_HIT_ALT); }   // (only what can be seen from its middle: "Need sight")
 }
 
 // CORRODE SHOT: one long shot that eats the target's armour, splashing weaker corrosion round it. True when it fired.
 function corrodeShot(f) {
-    const foes = _evoFoes(f.x, f.y, ROT_RANGE);
+    const foes = _evoFoesSeen(f.x, f.y, ROT_RANGE);
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
     applyDamage(tgt, (f.power || 10) * ROT_MULT, f, "toxic", false, false, DMG_HIT_ALT);
     tgt.defenseShredded = Math.max(tgt.defenseShredded || 0, ROT_SHRED_FRAMES); tgt.defenseShredFactor = Math.min(tgt.defenseShredFactor || 1, ROT_SHRED);
-    for (const a of _evoFoes(tgt.x, tgt.y, ROT_SPLASH_R)) {
+    for (const a of _evoFoesSeen(tgt.x, tgt.y, ROT_SPLASH_R)) {
         if (a === tgt) continue;
         a.defenseShredded = Math.max(a.defenseShredded || 0, ROT_SPLASH_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, ROT_SPLASH_SHRED);
     }
@@ -463,14 +469,14 @@ function corrodeShot(f) {
 
 // CHOMP: the fangs slam down on the nearest enemy: ice damage and frozen stiff; those beside it are slowed. True when it fired.
 function chomp(f) {
-    const foes = _evoFoes(f.x, f.y, MAW_RANGE);
+    const foes = _evoFoesSeen(f.x, f.y, MAW_RANGE);
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
     applyDamage(tgt, (f.power || 10) * MAW_MULT, f, "ice", false, false, DMG_HIT_ALT);
     tgt.hitStun = Math.max(tgt.hitStun || 0, MAW_STUN);
     if (typeof applyStun === "function") applyStun(tgt, MAW_STUN);   // (hitStun is read by nothing: the stun is real now, js/combat.js applyStun)
-    for (const a of _evoFoes(tgt.x, tgt.y, MAW_SLOW_R)) if (typeof applySlow === "function") applySlow(a, MAW_SLOW_FRAMES, MAW_SLOW);
+    for (const a of _evoFoesSeen(tgt.x, tgt.y, MAW_SLOW_R)) if (typeof applySlow === "function") applySlow(a, MAW_SLOW_FRAMES, MAW_SLOW);
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     f._sigAt = f0; f._sigCd = MAW_EVERY;
     if (typeof elementEffects !== "undefined") {
@@ -484,7 +490,7 @@ function chomp(f) {
 
 // ERUPTION: the crater bursts over everything close: toxic damage and eaten armour. True when it fired.
 function eruption(f) {
-    const foes = _evoFoes(f.x, f.y, CALDERA_RADIUS);
+    const foes = _evoFoesSeen(f.x, f.y, CALDERA_RADIUS);
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of foes) {
@@ -503,7 +509,7 @@ function eruption(f) {
 
 // GRAVITY SLAM: flatten and slam, hitting, shoving and slowing everything close. True when it fired.
 function gravitySlam(f) {
-    const foes = _evoFoes(f.x, f.y, MIMIC_RADIUS);
+    const foes = _evoFoesSeen(f.x, f.y, MIMIC_RADIUS);
     if (!foes.length) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const a of foes) {
@@ -527,7 +533,7 @@ function gravitySlam(f) {
 // SONIC ROLL (it was STATIC RUSH: the owner, 2026-11-02, "STATIC RUSH" is the SONIC ROLL that "already exists"; renamed, and kept as it is): dash to the nearest enemy in range, hit it,
 // shock two more; all stunned. Its id stays static_rush (a follower's saved choice). True when it fired.
 function staticRush(f) {
-    const foes = _evoFoes(f.x, f.y, MANTA_RANGE);
+    const foes = _evoFoesSeen(f.x, f.y, MANTA_RANGE).filter(a => _evoDashOk(f, a));
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const tgt = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
@@ -537,7 +543,7 @@ function staticRush(f) {
     applyDamage(tgt, (f.power || 10) * MANTA_MULT, f, "electric", false, false, DMG_HIT_ALT); tgt.hitStun = Math.max(tgt.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(tgt, MANTA_STUN);
     let last = tgt;
     for (let i = 0; i < MANTA_CHAIN; i++) {
-        const next = _evoFoes(last.x, last.y, MANTA_HOP).filter(a => !hits.includes(a))
+        const next = _evoFoesSeen(last.x, last.y, MANTA_HOP).filter(a => !hits.includes(a))
             .sort((a, b) => Math.hypot(a.x - last.x, a.y - last.y) - Math.hypot(b.x - last.x, b.y - last.y))[0];
         if (!next) break;
         applyDamage(next, (f.power || 10) * MANTA_MULT * MANTA_CHAIN_SHARE, f, "electric", false, false, DMG_HIT_ALT); next.hitStun = Math.max(next.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(next, MANTA_STUN);
@@ -611,7 +617,7 @@ function chainLightning(f, first, dmg) {
     let from = first, d = dmg * CHAIN_SHARE;
     while (d >= CHAIN_MIN) {
         let next = null, bd = Infinity;
-        for (const a of _evoFoes(from.x, from.y, CHAIN_HOP)) { if (hit.indexOf(a) >= 0) continue; const k = Math.hypot(a.x - from.x, a.y - from.y); if (k < bd) { bd = k; next = a; } }
+        for (const a of _evoFoesSeen(from.x, from.y, CHAIN_HOP)) { if (hit.indexOf(a) >= 0) continue; const k = Math.hypot(a.x - from.x, a.y - from.y); if (k < bd) { bd = k; next = a; } }
         if (!next) break;
         applyDamage(next, d, f, null, false, false, DMG_HIT_SHOT);   // (as the shot: the Mages' shot's type and stat)
         hit.push(next); pts.push({ x: next.x, y: next.y }); from = next; d *= CHAIN_SHARE;
@@ -627,7 +633,7 @@ function evoShotOnHit(f, dmg) { const d = f && f.evolved ? evolvedDef(f) : null;
 // VORTEX_LIFE frames. The pull is a knock's own step (js/combat.js updateStatusEffects: kbVX/kbVY), so it goes no farther than the walls and a Photonic Shield let it. An element effect
 // (js/elements.js updateElementEffects). It gathers them; CHAIN LIGHTNING conducts through the cluster it makes. True when it fired.
 function staticVortex(f) {
-    const foes = _evoFoes(f.x, f.y, VORTEX_RANGE);
+    const foes = _evoFoesSeen(f.x, f.y, VORTEX_RANGE);
     if (!foes.length || typeof elementEffects === "undefined") return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
@@ -645,7 +651,7 @@ function staticVortexTick(e) {
     for (const a of actors) {
         if (!a || !isHostileTarget(a)) continue;
         const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy);
-        if (d > R) continue;
+        if (d > R || !_evoSees(e.x, e.y, a)) continue;   // (not through a wall or a tall object: "Need sight")
         if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) {
             const v = Math.min(VORTEX_PULL, d - 0.3);   // (in toward the middle, never past it)
             if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; }   // (a stronger knock is left as it is)

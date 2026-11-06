@@ -28,6 +28,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
     run(`gameState.running = true; facilityBlackoutSet(false); unlockedElements = new Set(ELEMENTS.map(e => e.id)); TUT.followerLevel = 0;`);
+    // THE OPEN FIELD. Most scenes here are staged off the map (around x 20, y 2): an open field with nothing in it, where a move's own mechanics are measured (its damage, jumps, waits, stuns). Since build
+    // 2026-11-06i every move needs sight (the owner: "Need sight"), and SONIC ROLL's dash a straight walk; off the map there is no floor, so here, between two points both off the map, sight and a straight walk
+    // are taken as clear. On the map they are the game's own: the moves' sight there is tested in tests/cover.js, and the scenes put on real floor here (QUILL BURST, HEXFIRE) use it.
+    run(`{ const sees = facilitySeesFrom, los = facilityLosFrom, off = (x, y) => !facilityRoomAt(x, y, _fp.F);
+        facilitySeesFrom = (x0, y0, x1, y1) => (off(x0, y0) && off(x1, y1)) || sees(x0, y0, x1, y1);
+        facilityLosFrom = (x0, y0, x1, y1) => (off(x0, y0) && off(x1, y1)) || los(x0, y0, x1, y1); }`);
 
     // A follower of this element and role, one XP short of `lv`.
     const mk = (el, role, lv) => run(`(function(){

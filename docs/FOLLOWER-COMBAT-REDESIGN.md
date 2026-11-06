@@ -62,7 +62,7 @@ The brief's three damage categories are Piercing/Slashing, Crush/Slam/Ground and
 
 ### 2.5 STATIC ORB (electric Brawler)
 
-- **Main: SONIC ROLL** ("already exists"): its direct high-speed roll. Kept as it is: not rebuilt, not replaced by another charge.
+- **Main: SONIC ROLL** ("already exists"): its direct high-speed roll. Kept as it is: not rebuilt, not replaced by another charge. *(Since build `2026-11-06i`, the owner's "Need sight": it dashes only at an enemy it can see, along floor it could walk in a straight line, and its shocks jump only to enemies seen from the one struck; `COMBAT.md` §8.5.)*
 - **Alternate: PINBALL**, an automatic multi-target ricochet:
   1. it launches toward the nearest valid enemy;
   2. on collision it picks the next nearest valid enemy and launches toward it;
@@ -171,8 +171,8 @@ As built in build `2026-11-03a` (the readings taken are in `OPEN-QUESTIONS.md` �
   - it stops at a wall, after `PIN_MAX_FRAMES` or `PIN_MAX_DIST`, or when it falls, is thrown, is told to RETREAT or goes back to the Crystal;
   - nothing else moves it while it rolls, and no move fires;
   - the roll is not saved (a game saved mid-roll loads standing).
-- **CHAIN LIGHTNING:** each enemy is struck once, and every jump is weaker than the last, so it always ends. A shot that touches nobody conducts nothing.
-- **STATIC VORTEX:** nobody in reach, no vortex and no wait spent. A beetle or a boss is bitten but not pulled. The pull is a knock's own step, so walls and a Photonic Shield stop it. A stronger knock on an enemy is left as it is.
+- **CHAIN LIGHTNING:** each enemy is struck once, and every jump is weaker than the last, so it always ends. A shot that touches nobody conducts nothing. *(Since build `2026-11-06i`: a jump goes only to an enemy that can be seen from the one it leaves; the owner's "Need sight", `COMBAT.md` §8.5.)*
+- **STATIC VORTEX:** nobody in reach, no vortex and no wait spent. A beetle or a boss is bitten but not pulled. The pull is a knock's own step, so walls and a Photonic Shield stop it. A stronger knock on an enemy is left as it is. *(Since build `2026-11-06i`: it is cast only on an enemy the Thunderhead can see, and it bites and pulls only what can be seen from its middle; `COMBAT.md` §8.5.)*
 
 As built in build `2026-11-06a` (the readings taken are in `OPEN-QUESTIONS.md` §1t):
 - **BURROW STRIKE:**

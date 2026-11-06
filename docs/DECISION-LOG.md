@@ -1704,7 +1704,7 @@ Main has walls, cover and sight for everyone. The build's readings (`OPEN-QUESTI
 ## DECISION: The moves that strike at once need sight; a long name on the roster's strip in smaller type
 
 - **Date:** 2026-11-06
-- **Status:** Approved. Not built yet: the next build (`2026-11-06i`).
+- **Status:** Approved. Implemented and tested in build `2026-11-06i` (on the branch; not playtested): `COMBAT.md` §8.5, `UI-STYLE.md`, the readings in `OPEN-QUESTIONS.md` §1y.
 - **Branch/build:** after build `2026-11-06h`, on `claude/start-game-project-HSh7Z`.
 - **Related feature/docs:** `COMBAT.md` §8.4, `OPEN-QUESTIONS.md` §1x item 10 and §2, `FOLLOWER-COMBAT-REDESIGN.md`, `UI-STYLE.md`
 

@@ -3,7 +3,8 @@
 // "Walls stop shots"; "See over low ones"; "Shoot over own cover" (within about a tile of the shooter); stepping over cover: "Not yet"; tall objects: "Yes, they stop shots".
 // The code: js/facility.js (FAC_COVER, FAC_LOW: the traits; facilitySees: sight; facilityShotStop, facilityShotReach: a shot's step and a beam's reach), js/facilityplay.js (the same in play), js/game.js (a shot in
 // flight stops there, with a spark), js/weapons.js (the laser's beam); and the shooters, each firing only at what it can see or with a clear shot: js/npc.js (a Mage), js/evolution.js (QUILL BURST, HEXFIRE),
-// js/predator.js (a creature's rear shot), js/stations.js (a turret). What is a reading (which kinds are low, glass, the spark, lobs and the attacks that strike at once, the shooters, the 1.0 tile, the middle
+// js/predator.js (a creature's rear shot), js/stations.js (a turret). Build 2026-11-06i: the moves that strike at once need sight too (the owner: "Need sight"; js/evolution.js _evoFoesSeen, fieldBite,
+// staticVortexTick; js/cards.js _equipFoesNear), and SONIC ROLL dashes only along floor it could walk. What is a reading (which kinds are low, glass, the spark, lobs and the attacks that strike at once, the shooters, the 1.0 tile, the middle
 // heights, a tall object nobody's own cover): docs/OPEN-QUESTIONS.md §1x.
 // The rules on the Flux test room's objects (?fluxlab: crates, a barrel, barriers, a generator, consoles, a desk: the roadmap's "Object that provides cover") and on the main map's walls, glass, doorways and low
 // objects; the shots fired the game's own way and moved by its own loop (render); the real page at ?fluxlab on a tablet (no Chromium: it says so and passes).
@@ -234,6 +235,49 @@ async function boot(search) {
             __wild(); __ant(hall[0], hall[1]); it.cd = 0; h = crystal.health; facilitySentryTick(); o.hall = [followerProjectiles.length, crystal.health < h]; __wild(); crystal.health = 300; return o; })()`);
         same(r.fixture, true, 'fixture: no place in the lab behind the glass, or none in the hallway in the clear, in the turret\'s range'); same(r.lab.join(), '0,true,0', 'at the creature behind the glass (shots, the Crystal unpaid, the turret\'s wait)');
         same(r.hall.join(), '1,true', 'at the creature in the clear (shots, the Crystal paid)');
+    });
+
+    group('THE MOVES THAT STRIKE AT ONCE NEED SIGHT (build 2026-11-06i; the owner, 2026-11-06: "Need sight": nothing strikes through a wall or a tall object)');
+    // points on one line straight through a pane of the Experiment Lab's glass: the follower 2 tiles out in the hallway; enemy A 0.75 out and C 1.5 out (both in its sight); enemy B 0.75 in, behind the glass
+    run(`globalThis.__glassLine = () => { const F = _fp.F; for (const w of F.walls.filter(w => /^lab_window/.test(w.window || '') && w.room === 'lab_hallway')) { const a = __across(w, [2]); if (!a) continue;
+            const u = [(a.m[0] - a.p[0]) / 2, (a.m[1] - a.p[1]) / 2], hs = facilityRoomAt(a.p[0], a.p[1], F).id === 'lab_hallway' ? -1 : 1, at = d => [a.m[0] + u[0] * d * hs, a.m[1] + u[1] * d * hs];
+            return { f: at(2), A: at(0.75), C: at(1.5), B: at(-0.75), pane: w.window }; } return null; };
+        globalThis.__mover = () => { const f = followers[0]; f.power = 40; f.stance = 'hold'; return f; };
+        globalThis.__at = (u, p) => { u.x = p[0]; u.y = p[1]; _ucolsFrame = -1; };`);
+    check('across the Experiment Lab\'s glass, 1.5 tiles off, no move that strikes at once is used (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, CORRODE SHOT, CHOMP, SONIC ROLL, PETAL BLAZE, ERUPTION, GRAVITY SLAM): each holds, the creature unhurt; on the same side, at the same distance, each is used', () => {
+        const r = J(`(function(){ __wild(); const g = __glassLine(), F = _fp.F, f = __mover(), o = { pane: g && g.pane, through: {}, open: {} }; if (!g) return o;
+            o.rooms = [g.f, g.A, g.C, g.B].map(p => (facilityRoomAt(p[0], p[1], F) || {}).id + (facilityWalkable(p[0], p[1], F) ? '' : '!')).join();
+            const moves = { 'ARC VOLLEY': arcVolley, 'SINGULARITY SHOT': singularityShot, 'STATIC VORTEX': staticVortex, 'CORRODE SHOT': corrodeShot, 'CHOMP': chomp, 'SONIC ROLL': staticRush, 'PETAL BLAZE': petalBlaze, 'ERUPTION': eruption, 'GRAVITY SLAM': gravitySlam };
+            for (const k in moves) { __wild(); const b = __ant(...g.B); __at(f, g.A); frame++; const fired = moves[k](f); o.through[k] = (fired ? 'USED' : 'held') + (b.health < 5000 ? ' HURT' : '') + (elementEffects.some(e => e.type === 'staticVortex') ? ' STORM' : ''); }
+            for (const k in moves) { __wild(); const a = __ant(...g.A); __at(f, g.C); frame++; o.open[k] = moves[k](f) ? 'used' : 'HELD'; }
+            __wild(); __bench(); return o; })()`);
+        ok(r.pane, 'fixture: no clear line through the lab\'s glass'); same(r.rooms, 'lab_hallway,lab_hallway,lab_hallway,experiment_lab', 'fixture: where the points are (' + r.pane + ')');
+        same(Object.values(r.through).join(), Array(9).fill('held').join(), 'a move through the glass: ' + JSON.stringify(r.through));
+        same(Object.values(r.open).join(), Array(9).fill('used').join(), 'a move on the same side: ' + JSON.stringify(r.open));
+    });
+    check('what a strike reaches beyond its target is only what can be seen from there: through the glass, ARC VOLLEY\'s and CHAIN LIGHTNING\'s jumps, SONIC ROLL\'s shocks, SINGULARITY SHOT\'s pull and slow, CORRODE SHOT\'s splash, CHOMP\'s slow, a burning circle\'s or a storm\'s bite, STATIC VORTEX\'s pull, and the equip cards\' NOVA, CLEAVE and CHAIN reach nobody, while those on the near side are reached', () => {
+        const r = J(`(function(){ const g = __glassLine(), f = __mover(), o = {}; if (!g) return o;
+            const set = withC => { __wild(); const A = __ant(...g.A), B = __ant(...g.B), C = withC ? __ant(...g.C) : null; __at(f, g.f); frame++; return { A, B, C }; }, hurt = u => u.health < 5000;
+            let s = set(true); arcVolley(f); o.arc = [hurt(s.A), hurt(s.B)];
+            s = set(true); chainLightning(f, s.A, 50); o.chain = [hurt(s.C), hurt(s.B)];
+            s = set(true); staticRush(f); o.roll = [hurt(s.A), hurt(s.B)];
+            s = set(false); const bx = s.B.x, by = s.B.y; singularityShot(f); o.pull = [!!s.A.slowed, !!s.B.slowed || s.B.x !== bx || s.B.y !== by];
+            s = set(false); corrodeShot(f); o.splash = [!!s.A.defenseShredded, !!s.B.defenseShredded];
+            s = set(false); chomp(f); o.slow = [!!s.A.slowed, !!s.B.slowed];
+            s = set(false); fieldBite({ x: s.A.x, y: s.A.y, radius: 2, bite: 10, by: f }, 'fire'); o.field = [hurt(s.A), hurt(s.B)];
+            s = set(true); staticVortexTick({ x: s.A.x, y: s.A.y, radius: VORTEX_RADIUS, life: 100, maxLife: 100, bite: 0, by: f }); o.vortex = [!!(s.C.kbVX || s.C.kbVY), !!(s.B.kbVX || s.B.kbVY)];
+            s = set(true); o.echo = _equipFoesNear(s.A.x, s.A.y, 2, null).map(u => u === s.A ? 'A' : u === s.B ? 'B' : u === s.C ? 'C' : '?').sort().join('');
+            __wild(); __bench(); return o; })()`);
+        ok(r.arc, 'fixture: no line through the glass');
+        for (const k of ['arc', 'chain', 'roll', 'pull', 'splash', 'slow', 'field', 'vortex']) same(r[k].join(), 'true,false', k + ' (the near side reached, the far side not)');
+        same(r.echo, 'AC', 'the equip cards\' echoes (NOVA, CLEAVE, CHAIN) reach');
+    });
+    check('SONIC ROLL dashes only along floor it could walk: at a creature seen over the test room\'s crate it holds (the dash would pass over the crate: stepping over is "Not yet"), at one in the open it dashes', () => {
+        const r = J(`(function(){ __wild(); const T = __T, f = __mover(), o = {}; __at(f, T([6, 4])); const a = __ant(...T([6, 0.6])); frame++;
+            o.seen = facilitySees(f.x, f.y, a.x, a.y, _fp.F); o.over = staticRush(f); o.stayed = Math.hypot(f.x - T([6, 4])[0], f.y - T([6, 4])[1]) < 1e-9; o.hp = a.health;
+            __wild(); __at(f, T([6, 4])); const b = __ant(...T([3.5, 4])); frame++; o.open = staticRush(f); o.openHit = b.health < 5000; __wild(); __bench(); return o; })()`);
+        same(r.seen, true, 'fixture: the creature is not seen over the crate'); same(r.over, false, 'it dashed over the crate'); same(r.stayed, true, 'it moved'); same(r.hp, 5000, 'the creature was hit');
+        same(r.open, true, 'it did not dash at the one in the open'); same(r.openHit, true, 'the one in the open was not hit');
     });
 
     group('FLUX MOVE MOVES COVER (js/fluxmove.js; js/facilityplay.js facilitySolidMove)');

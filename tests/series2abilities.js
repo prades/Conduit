@@ -67,7 +67,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.base, 0, 'a bonus before'); same(r.before, 0, 'it came early'); same(r.on[0], 0.5, 'the bonus while it runs'); same(r.on[1], true, 'no OVERCLOCK'); ok(r.on[2] < r.rest0, 'the rest is not shorter: ' + r.on[2] + ' vs ' + r.rest0); same(r.after, 0, 'it did not end');
     });
     check('STORM HEART on an Elemental (an Ember Cowl): its 6th hit bursts (NOVA) on every enemy within 1.5 tiles of the target, the target too, for 60% of its special attack; the 5th does not; one farther off is untouched', () => {
-        const r = J(`(function(){ __fresh(); const e = __wear('embercowl', 'storm_heart', 0, 0), t = __ant(2, 0), n = __ant(3, 0), far = __ant(5, 0), o = {}; const hp = () => [t.health, n.health, far.health];
+        const r = J(`(function(){ __fresh(); const c = [..._fp.cellsP.values()].find(q => [1, 2, 3, 4, 5].every(k => _fp.cellsP.has((q[0] + k) + ',' + q[1])) && facilitySeesFrom(q[0], q[1], q[0] + 5, q[1]));   // (on the floor, in sight: the burst strikes at once, and nothing strikes through a wall: build 2026-11-06i)
+            const e = __wear('embercowl', 'storm_heart', c[0], c[1]), t = __ant(c[0] + 2, c[1]), n = __ant(c[0] + 3, c[1]), far = __ant(c[0] + 5, c[1]), o = {}; const hp = () => [t.health, n.health, far.health];
             for (let i = 0; i < 5; i++) applyDamage(t, 10, e); const b5 = hp(); o.fifth = n.health === 5000; applyDamage(t, 10, e); const a6 = hp(); o.sixth = [b5[1] - a6[1] > 0, b5[2] - a6[2], __said('NOVA')];
             o.burst = Math.round((b5[1] - a6[1]) * 10) / 10; o.sp = e.stats.specialAttack; return o; })()`);
         same(r.fifth, true, 'a burst before the 6th hit'); same(r.sixth.join(), 'true,0,true', 'the burst (near, far, the word)'); ok(r.burst > 0 && r.burst <= r.sp * 0.6 + 0.01, 'the burst\'s damage: ' + r.burst + ' for a special attack of ' + r.sp);
