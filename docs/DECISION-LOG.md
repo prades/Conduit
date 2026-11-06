@@ -1481,3 +1481,49 @@ Round 2's storm clouds (soft gradient puffs, approved as drawn) were built into 
 ### Impact
 - js/cardart.js's elemental texture and design/ui-mocks/part2-looks-art.js (the record of the approved drawings) carry round 3; tests/speciesart.js checks them equal and checks the clouds hold no soft gradient.
 - The full run of build `2026-11-06d` was stopped at suite 21 of 89, all passing to there, to draw this; build `2026-11-06e` has its own full run.
+
+## DECISION: on to the next development phase (Flux) after the following update's Part 2
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Nothing is built for it yet.
+- **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-06e`.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` (status), `FLUX-MOVEMENT.md`, `FOLLOWING-UPDATE.md` (status)
+
+### Context
+The following update's Parts 1 and 2 are built; Parts 3 (the class-card items) and 4 (the squad's move setter) were next. The roadmap of the next development phase was registered as a future update, "its place among the planned updates is the owner's to set". The owner: "Move on to the next phase". Asked which: the Flux phase, Part 3, or Part 4 then Flux.
+
+### Decision
+- "Flux phase": the next development phase starts now, with the Flux Technician's object movement (`NEXT-PHASE-ROADMAP.md` §2, §13).
+- The following update's Parts 3 and 4 wait; nothing in them is dropped.
+
+### Alternatives considered
+- Part 3 first (KINDLING BAND's item for gate 3).
+- Part 4 first (a small build), then Flux.
+
+### Impact
+The first step is the decisions the Flux tool's first build needs (`FLUX-MOVEMENT.md` §11), put to the owner before any code.
+
+## DECISION: the Flux object tool's first build: four answers
+
+- **Date:** 2026-11-06
+- **Status:** Approved (designed, not built).
+- **Branch/build:** `claude/start-game-project-HSh7Z`, after build `2026-11-06e`.
+- **Related feature/docs:** `FLUX-MOVEMENT.md` §11 (answered; the proposed defaults beside them), `NEXT-PHASE-ROADMAP.md` §2, §9, `SEWER-QUEST.md` (the puzzle's Telegrab route)
+
+### Context
+The Flux phase began with the decisions its first build needs, put to the owner with a recommendation each.
+
+### Decision
+- **Telegrab:** "Retire it now". The object tool replaces it; the water-sample puzzle keeps its launcher and drill routes.
+- **Where:** "Test room + arena". A neutral test room behind a link flag (`?fluxlab`), and the arena's loose crates, barrels and barriers movable in play.
+- **Cost:** "60 s cooldown", as every technician ability.
+- **Controls:** "Prompt buttons": ⟳ ROTATE and ✓ PLACE (R, Enter).
+
+### Alternatives considered
+- Keeping Telegrab beside the tool until the sewer redesign.
+- The test room alone, or the arena alone.
+- Limited uses per room, or refilling charges.
+- A second tap on the preview, or a two-finger twist.
+
+### Impact
+- The first build's smaller defaults (persistence for the run, sealing refused, sight and cover as today, rotation for symmetric objects only, 2 tiles for all, re-routing) are written in `FLUX-MOVEMENT.md` §11 as proposals, standing unless the owner says otherwise.

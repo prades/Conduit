@@ -4,6 +4,7 @@
 - **Planning window:** November 6, 2026 onward
 - **Status:** Development plan — design direction established; implementation and testing remain to be verified.
   - **Registered as a future update** (the owner, 2026-11-06: "let's get this registered to be a future update"). **Nothing in it is built.** It follows the work already approved (`FOLLOWING-UPDATE.md`); its place among the planned updates is the owner's to set.
+  - **Started, 2026-11-06** (the owner, after the following update's Part 2: "Move on to the next phase", then "Flux phase"; `DECISION-LOG.md`). The following update's Parts 3 and 4 wait. The first step was the decisions the Flux tool's first build needs, put to the owner: answered the same day (`FLUX-MOVEMENT.md` §11: Telegrab retired now, a test room and the arena, a 60 s cooldown, prompt buttons).
   - **Amended at the owner's word, 2026-11-06** (§14; `DECISION-LOG.md`):
     - **stealth is removed** ("We don't need to add stealth to the game");
     - **the Ice Technician's utility freezes water into bridges** to cross it;

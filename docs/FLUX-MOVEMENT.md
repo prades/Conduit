@@ -159,6 +159,22 @@ The neutral test room (§3.5) holds a one-tile, a two-tile, a rotatable, an immo
 
 ## 11. Open questions (the owner's)
 
+**Answered 2026-11-06** (the owner chose the Flux phase, then these four; `DECISION-LOG.md`):
+1. **Telegrab:** "Retire it now". The object tool replaces Telegrab on the Flux technician's chip in the first build; the Sewers' water-sample puzzle keeps its launcher and drill routes; an old save that used Telegrab still loads.
+2. **Where it works first:** "Test room + arena". A small neutral test room reached only by a link flag (`?fluxlab`) proves every rule; the arena's loose crates, barrels and barriers become movable in normal play.
+3. **The cost:** "60 s cooldown", as every technician ability; the cooldown cards and DOUBLE CHARGE work on it as they do today.
+4. **The controls:** "Prompt buttons". ⟳ ROTATE and ✓ PLACE in the aim's prompt bar (R and Enter on a keyboard); a tap on the grid picks the destination.
+
+**Proposed for the first build, standing unless the owner says otherwise** (each to be reviewed when the tool can be tried, as the roadmap's §9 asks):
+- **Persistence:** a moved object stays where it was put for the run, saved with the game; NEW GAME puts everything back.
+- **Sealing:** a placement that would cut the walkable floor in two (shut a room or a door) is refused, so every room stays reachable.
+- **Sight and cover:** as today. A moved object blocks walking and sight as it did where it stood; shots pass props as they do today. Separate cover and traversal properties come with Milestone Two.
+- **Rotation:** only for objects that look the same turned, until turned art is drawn for others.
+- **Range:** 2 tiles for every movable object; no 3-tile object until the owner names one.
+- **Followers and enemies:** they find a new way round a moved object (their route caches are cleared); one with no way round waits where it is.
+
+The questions still open from the lists below are the rest.
+
 From the roadmap (§9): the cost (charge, cooldown or a limited use); weight or size limits; which objects get 3 tiles; the rotate control on touch; the preview's look for an incomplete footprint; which materials and shapes give cover; which objects can be stepped over or used to get around; how enemies respond to a permanently blocked route; how moves persist; how followers respond to newly blocked tiles.
 
 Found by the study:

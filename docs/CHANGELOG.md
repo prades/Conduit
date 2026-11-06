@@ -9,6 +9,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
   - **How:** js/cardart.js (the elemental texture); design/ui-mocks/part2-looks-art.js, the record of the approved drawings, carries the same drawing. Each mass's shading lays its own outline again, shifted, inside a clip of it. 48 KB against 9 KB; drawn in about 20 ms against 17 ms at twice a card's size (headless Chromium, made once per size).
   - **Tests:** tests/speciesart.js, 28 checks (one new): the drawing is the approved one byte for byte; nine masses, seven folds, rims, rain; no soft gradient or blur; a `<use>` only re-lays a mass's own outline.
   - **The full run of build `2026-11-06d` was stopped** at suite 21 of 89, all passing to there, to draw this; this build has its own full run (recorded in the commit that follows it).
+  - **The full run** (of this build, which carries build `2026-11-06d` whole): 89 of 89 suites passed (1,899 checks), tests/perf.js's frame budget among them. This entry was first committed (395adab) while the run was still going, at a stop hook's request; the suites nearest the change (speciesart, cardart, bible) had passed before that commit.
   - **The Bible:** the subclass table's elemental look, and the species' looks paragraph.
   - **Written up:** docs/UI-STYLE.md (the elemental's row; "Redrawn once built"; "The build"), docs/DECISION-LOG.md, docs/FOLLOWING-UPDATE.md, docs/OPEN-QUESTIONS.md (§3).
   - Not playtested.
