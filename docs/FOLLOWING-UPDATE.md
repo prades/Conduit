@@ -5,7 +5,7 @@
   - **Part 1a** (the Player card rules and the Gunslinger's six) is implemented and tested in build `2026-11-02h`, on main since the owner's "Push to main". Its three main readings were confirmed as built (`OPEN-QUESTIONS.md` §1p).
   - **Part 1b** (the Technomancer's six) is implemented and tested in build `2026-11-02i`, on main since the owner's "Push to main"; two readings confirmed as built (`OPEN-QUESTIONS.md` §1q).
   - **Part 1c** (the Mutator's six) is implemented and tested in build `2026-11-02j`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1r, for the owner. All eighteen kits are in.
-  - **Part 1d** (Series 2 deals the eighteen; Side Quest sells the Sewers' three) is implemented and tested in build `2026-11-06c`, on the branch; its readings are in `OPEN-QUESTIONS.md` §1u, for the owner. **All of Part 1 is built.** Part 2 waits on gate 2 (the mockups).
+  - **Part 1d** (Series 2 deals the eighteen; Side Quest sells the Sewers' three) is implemented and tested in build `2026-11-06c`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1u (the shelf's Player cards kept as built, the rest for the owner). **All of Part 1 is built.** Part 2 waits on gate 2 (the mockups).
   - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Still open: gate 2 (the mockups) and gate 3 (each card item).
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-02e`.
   - It follows the update in `NEXT-UPDATE.md`.
@@ -59,7 +59,7 @@ Each part is its own commit, with its own tests and a full green run before the 
 - **Part 1a, build `2026-11-02h`: implemented and tested; on main.** The slots' rules (its class, one role of a class at a time, asleep after a switch) and the Gunslinger's six, on every round of any gun. The Player cards are registered as Series 2's (found before kept), but Series 2 does not deal them yet ("All 18 together"). Readings taken: `OPEN-QUESTIONS.md` §1p.
 - **Part 1b, build `2026-11-02i`: implemented and tested; on main.** The Technomancer's six (the punch and the arc take the role's element; FORGEMASTER, SMOG ENGINEER, ARC WARDEN, CRYO TECH, GRAVITY ENGINEER, BULWARK ENGINEER). Readings taken: `OPEN-QUESTIONS.md` §1q.
 - **Part 1c, build `2026-11-02j`: implemented and tested; on main.** The Mutator's six (the lash and the clone's bites take the role's element; ASH SURGEON, PLAGUE DOCTOR, SPARK GENETICIST, CRYO GENETICIST, SPLICER, CORE SHAPER). Readings taken: `OPEN-QUESTIONS.md` §1r.
-- **Part 1d, build `2026-11-06c`: implemented and tested; on the branch.** Series 2 deals the eighteen at Prototype (45 → 63), and Side Quest sells the Sewers' three once the water is purified (◆1,000 each, kept for good, on buttons in his line). Both waited for all eighteen: the pack's odds and pool change once, and the Sewers' three span all three classes. Readings taken: `OPEN-QUESTIONS.md` §1u.
+- **Part 1d, build `2026-11-06c`: implemented and tested; on main.** Series 2 deals the eighteen at Prototype (45 → 63), and Side Quest sells the Sewers' three once the water is purified (◆1,000 each, kept for good, on buttons in his line). Both waited for all eighteen: the pack's odds and pool change once, and the Sewers' three span all three classes. Readings taken: `OPEN-QUESTIONS.md` §1u.
 
 **Then the build (rules approved 2026-11-02):**
 1. **The slots and their rules:**

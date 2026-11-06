@@ -108,7 +108,7 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 - **The install step's hint names him** since build `2026-11-02g` (the owner: "Say SIDE QUEST"): "SIDE QUEST, ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE, SELLS A SLEEPING POTION." It had said "THE DRONE".
 - **Nothing else about him changed:** his spot, lines, shop and save.
 
-**His cards** (designed 2026-11-02; **implemented in build `2026-11-06c`**, the following update's Part 1d, on the branch; tested by tests/sidequest.js, not playtested):
+**His cards** (designed 2026-11-02; **implemented in build `2026-11-06c`**, the following update's Part 1d, on main at the owner's word; tested by tests/sidequest.js, not playtested):
 - The owner: "side quest should sell them after each quest for the quest lines elements". After each quest, he sells the Player cards of that quest line's element, ◆1,000 each, kept for good. This line is toxic, so once it is done he sells BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR. The rules are in `UNIVERSAL-AND-PLAYER-CARDS.md`.
 - **As built** (js/sidequest.js `SIDEQUEST.stock`, `sqCardBuy`): once the water is purified, his line in the dialogue box ("…") has a gold button for each of the three you do not keep yet, its name with ◆1000 · KEPT FOR GOOD under it. A tap buys it: the card is kept for good and found for the run, so your slots take it at once. Short of the shards, it says how short and nothing is paid. The potion stays on his station. None is offered on a phone (no cards screen yet). The readings taken are in `OPEN-QUESTIONS.md` §1u.
 - **Nothing new in the save:** the collection keeps what was bought.

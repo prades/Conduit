@@ -1118,3 +1118,24 @@ Keep it on the branch until it had been tried on an iPad.
 
 ### Impact
 None beyond build `2026-11-06b`. Still to come: drawing FAULTLINE with a finger on an iPad and a phone (`FOLLOWER-COMBAT-REDESIGN.md` §10, "Played by a person").
+
+## DECISION: Build 2026-11-06c to main; the market's shelf keeps the Player cards as built
+
+- **Date:** 2026-11-06
+- **Status:** Approved (two answers in one prompt, after build `2026-11-06c`). Build `2026-11-06c`: implemented and tested; not playtested.
+- **Branch/build:** build `2026-11-06c` (commit 50baa5c), its full run's docs (ec182a8) and the record of build `2026-11-06b` going to main (b0eb0a4), fast-forwarded to `main`; on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `UNIVERSAL-AND-PLAYER-CARDS.md` section 9 ("Part 1d"), `OPEN-QUESTIONS.md` §1u, `FOLLOWING-UPDATE.md` Part 1, `SERIES-2.md`, `SEWER-QUEST.md`, `CHANGELOG.md` (2026-11-06 c)
+
+### Context
+Build `2026-11-06c` built the following update's Part 1d, as approved on 2026-11-02: Series 2 deals the eighteen Player cards at Prototype, and Side Quest sells the Sewers' three toxic roles after the purification, ◆1,000 each, kept for good. The full run passed 88 of 88 suites. One consequence of rules already set was put to the owner: the market's shelf sells what an open pack deals, so it can offer a Player card at a Prototype card's ◇350 or ◆350, kept for good, which is cheaper than Side Quest's ◆1,000.
+
+### Decision
+- **Main:** "Push to main".
+- **The shelf:** "Keep as built". A Player card can be on the market's shelf at a Prototype card's value.
+
+### Alternatives considered
+- Main: keep the build on the branch until it had been tried.
+- The shelf: keep Player cards off it; or price them there at ◆1,000, as Side Quest does.
+
+### Impact
+None beyond build `2026-11-06c`: it was built this way. All of the following update's Part 1 is on main. Part 1d's other readings (`OPEN-QUESTIONS.md` §1u) stand as built, the owner's to confirm or change. Next in the following update: Part 2, which waits on gate 2 (the mockups).
