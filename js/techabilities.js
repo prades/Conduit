@@ -121,7 +121,7 @@ const TECH_ABILITIES = {
 // A SECOND ABILITY, by form (the owner, 2026-11-02, "Keep both buttons"): the evolved THERMITE BURROWER keeps its element's THERMITE DRILL and has FAULTLINE beside it, on a chip of its own with a
 // wait of its own (`_ab2ReadyAt`). An egg, and every other form, has the one ability above. Its aim is a PATH drawn on the floor (techAimPathStart / Move / End, from js/input.js).
 const TECH_ABILITY2 = {
-    thermite: { id: "faultline", name: "FAULTLINE", short: "FAULT", icon: "〰", col: "#ff6a1f", aim: ["path"], use: (f, p) => techFaultlineAt(f, p.path),
+    thermite: { id: "faultline", name: "FAULTLINE", short: "FAULT", icon: "〰", col: "#ff6a1f", ult: true, aim: ["path"], use: (f, p) => techFaultlineAt(f, p.path),
                 ask: () => "PRESS ON THE FLOOR, DRAW ITS PATH AND LET GO" },
 };
 
@@ -160,7 +160,8 @@ function techAbility2Can(f) {
     if (f.dead || f.returningToCrystal || f._flight) return { ok: false, why: "NOT HERE" };
     if (!_techMember(f)) return { ok: false, why: "NOT IN THE SQUAD" };
     if (f._abBusy || f._fault || f._burrow) return { ok: false, why: "BUSY" };
-    const w = techReady2In(f); if (w > 0) return { ok: false, why: ab.short + " READY IN " + Math.ceil(w / 60) + " S" };
+    if (ab.ult) { if (!(f.ultimateCharge >= 100)) return { ok: false, why: ab.name + " · ITS ULTIMATE IS NOT CHARGED" }; }   // (FAULTLINE is the Thermite Burrower's Ultimate: the owner, "Make it the Ultimate")
+    else { const w = techReady2In(f); if (w > 0) return { ok: false, why: ab.short + " READY IN " + Math.ceil(w / 60) + " S" }; }
     return { ok: true, ab };
 }
 function techAbility2Use(f, picks) {
@@ -748,7 +749,7 @@ function techFaultlineAt(tech, pts) {
     if (typeof elementEffects !== "undefined") elementEffects.push(trace);
     tech._fault = { pts, cum, phase: "dive", t0: f0, dive: T.dive, along: 0, nextSpike: 0, hit: [], trace };
     tech._abBusy = { kind: "fault" }; tech.job = null; tech.attackOrder = null; tech._shieldHold = null; tech._burrow = null;
-    tech._ab2ReadyAt = f0 + techCooldown(tech, T.cooldown);
+    if (TECH_ABILITY2[tech.evolved] && TECH_ABILITY2[tech.evolved].ult) tech.ultimateCharge = 0; else tech._ab2ReadyAt = f0 + techCooldown(tech, T.cooldown);   // (the Ultimate's charge, spent as it goes under)
     _techSay("〰 FAULTLINE · " + _techName(tech) + " GOES UNDER", "#ff8a3a");
     return { ok: true };
 }
@@ -820,7 +821,7 @@ function techAimPathEnd(sx, sy) {
 function techAimPathCancel() { if (techAim && techAimNeed() === "path") techAimCancel(); }
 // the second chip on its squad card (js/party.js): { text, cls } or null; a tap on it aims FAULTLINE (again: calls it off)
 function techChip2State(f) {
-    const ab = techAbility2Of(f); if (!ab) return null;
+    const ab = techAbility2Of(f); if (!ab || ab.ult) return null;   // (FAULTLINE is the Ultimate now: no chip)
     if (techAim && techAim.f === f && techAim.ab === ab) return { text: "✕ AIMING", cls: "aim" };
     if (f._fault) return { text: ab.icon + " UNDER", cls: "busy" };
     if (f._abBusy || f._burrow) return { text: ab.icon + " BUSY", cls: "busy" };
@@ -836,7 +837,7 @@ function techChip2Tap(f) {
 }
 // its INFO section (js/unitinfo.js), beside the drill's
 function techAbility2Info(f) {
-    const ab = techAbility2Of(f); if (!ab) return null;
+    const ab = techAbility2Of(f); if (!ab || ab.ult) return null;   // (FAULTLINE: INFO lists it as the Ultimate, js/unitinfo.js)
     const T = TECH_AB.fault, w = techReady2In(f), ready = f._fault || f._abBusy ? "BUSY" : w > 0 ? "IN " + Math.ceil(w / 60) + " S" : _techMember(f) ? "NOW" : "IN THE SQUAD ONLY", hit = Math.round(((f.stats && f.stats.attack) || 5) * 0.25 * T.mult * 10) / 10;
     return { h: "ABILITY · " + ab.name, note: "From the " + ab.icon + " chip on its squad card, then press on the floor, draw its path and let go: it dives, follows the path under the floor, and molten spikes erupt along it. Each enemy on the path is hit once. The THERMITE DRILL keeps its own chip and its own wait.",
              rows: [["PATH", "up to " + T.maxLen + " tiles, at least " + T.minLen + "; it ends at a wall"], ["SPIKES", "every " + T.spacing + " tiles, " + hit + " each (fire), within " + T.hitR + " tiles"], ["COOLDOWN", Math.round(T.cooldown / 60) + " s, its own"], ["FIRST WAIT", Math.round(TECH_AB.joinWait / 60) + " s after it joins the squad"], ["READY", ready]] };

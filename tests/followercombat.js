@@ -46,22 +46,22 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     put(); step(12); partyTick(); t._ab2ReadyAt = 0; t._abReadyAt = 0; put(); step(7); partyTick(); put();
     var slot = Array.prototype.slice.call(document.querySelectorAll('#squadBar .sb-slot')).find(function(e){ return e._unit === t; }), c1 = slot && slot.querySelector('.sb-ab'), c2 = slot && slot.querySelector('.sb-ab2');
     out.chips = { has1: !!slot && slot.classList.contains('has-ab'), has2: !!slot && slot.classList.contains('has-ab2'), t1: c1 && c1.textContent, t2: c2 && c2.textContent, r1: rect(c1), r2: rect(c2), shown2: c2 ? getComputedStyle(c2).display : null };
-    c2.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(2);
-    out.aim = { on: document.body.classList.contains('tech-aiming'), prompt: $('#techAim .ta-t').textContent, chip2: c2.textContent, chip1: c1.textContent };
+    (t.ultimateCharge = 100, followerUltimate(t).execute(t)); step(2);
+    out.aim = { on: document.body.classList.contains('tech-aiming'), prompt: $('#techAim .ta-t').textContent, chip2: c2 ? c2.textContent : null, chip1: c1.textContent };
     var cx = t.x, cy = t.y, pts = []; for (var i = 0; i <= 24; i++) { var th = Math.PI * (1 - i / 24) / 2; pts.push(scr(cx + 3 - 2.5 * Math.cos(th), cy + 2.5 - 2.5 * Math.sin(th))); }
     touch('pointerdown', pts[0].x, pts[0].y); for (var j = 1; j < pts.length; j++) touch('pointermove', pts[j].x, pts[j].y); touch('pointerup', pts[pts.length - 1].x, pts[pts.length - 1].y); step(1);
     out.sent = { fault: !!t._fault, n: t._fault ? t._fault.pts.length : 0, len: t._fault ? Math.round(t._fault.cum[t._fault.cum.length - 1] * 100) / 100 : 0, aiming: document.body.classList.contains('tech-aiming'), start: t._fault ? [Math.round((t._fault.pts[0].x - cx) * 100) / 100, Math.round((t._fault.pts[0].y - cy) * 100) / 100] : null, said: said.slice(-3), at: [Math.round(cx * 10) / 10, Math.round(cy * 10) / 10], stroke: techAim && techAim.stroke ? techAim.stroke.length : null,
       panels: [typeof infoPanelOpen !== 'undefined' && infoPanelOpen, typeof settingsPanelOpen !== 'undefined' && settingsPanelOpen, typeof questBoxOpen !== 'undefined' && questBoxOpen, typeof classPickerOpen !== 'undefined' && classPickerOpen, typeof invPanelOpen !== 'undefined' && invPanelOpen, typeof armoryPanelOpen !== 'undefined' && armoryPanelOpen, typeof cloneMenuOpen !== 'undefined' && cloneMenuOpen].map(function(b){ return b ? 1 : 0; }).join('') };
     for (var k = 0; k < 400 && t._fault; k++) step(1);
     out.run = { over: !t._fault, up: !t.untargetable };
-    t._ab2ReadyAt = 0; partyTick(); c2.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
+    t._ab2ReadyAt = 0; partyTick(); (t.ultimateCharge = 100, followerUltimate(t).execute(t)); step(1);
     var on2 = document.body.classList.contains('tech-aiming');
     touch('pointerdown', pts[0].x, pts[0].y); touch('pointermove', pts[6].x, pts[6].y); touch('pointercancel', pts[6].x, pts[6].y); step(1);
     out.cancel = { was: on2, aiming: document.body.classList.contains('tech-aiming'), fault: !!t._fault };
     // A SECOND FINGER while the path is drawn (build 2026-11-06b): it is ignored, its moves and its lift. Once with the stray finger lifting first, once with the drawing finger lifting first.
     var two = function(strayFirst){
       for (var k2 = 0; k2 < 400 && t._fault; k2++) step(1);
-      put(); if (techAim) techAimCancel(); t._ab2ReadyAt = 0; partyTick(); c2.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
+      put(); if (techAim) techAimCancel(); t._ab2ReadyAt = 0; partyTick(); (t.ultimateCharge = 100, followerUltimate(t).execute(t)); step(1);
       var bx = t.x, by = t.y, ps = []; for (var i2 = 0; i2 <= 24; i2++) { var th2 = Math.PI * (1 - i2 / 24) / 2; ps.push(scr(bx + 3 - 2.5 * Math.cos(th2), by + 2.5 - 2.5 * Math.sin(th2))); }
       var st = scr(player.x - 1.5, player.y + 1);   // floor beside you, away from the Burrower: a tap there would walk you
       player.fpPath = null;
@@ -77,7 +77,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.twoA = two(true); out.twoB = two(false);
     // A finger set aside whose lift the canvas never sees (build 2026-11-06b): its id is not kept, so the next press with it is an ordinary tap and walks you
     for (var k3 = 0; k3 < 400 && t._fault; k3++) step(1);
-    put(); if (techAim) techAimCancel(); t._ab2ReadyAt = 0; partyTick(); c2.dispatchEvent(new MouseEvent('click', { bubbles: true })); step(1);
+    put(); if (techAim) techAimCancel(); t._ab2ReadyAt = 0; partyTick(); (t.ultimateCharge = 100, followerUltimate(t).execute(t)); step(1);
     var st3 = scr(player.x - 1.5, player.y + 1), p3 = scr(t.x + 0.5, t.y + 2.5);
     touch('pointerdown', p3.x, p3.y, 11); touch('pointerdown', st3.x, st3.y, 13); touch('pointerup', p3.x, p3.y, 11); step(1);
     var aimed3 = document.body.classList.contains('tech-aiming'); if (techAim) techAimCancel(); step(1);
@@ -115,7 +115,7 @@ function measure(w, h) {
         globalThis.__fire = f => { frame++; f._sigCd = 1; evolutionTick(); };
         globalThis.__one = (f, x, y, sp) => { const twin = __foe(x, y, sp); return twin; };
         globalThis.__scr = (wx, wy) => { let sx = (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width / 2, sy = (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H; for (let i = 0; i < 8; i++) { const w = techScreenToWorld(sx, sy), ex = wx - w.x, ey = wy - w.y; if (Math.hypot(ex, ey) < 1e-4) break; sx += (ex - ey) * TILE_W; sy += (ex + ey) * TILE_H; } return { x: sx, y: sy }; };
-        globalThis.__burrower = () => { const f = __fol('fire', 'camper', 'thermite'); partyAdd([f]); techAbilityTick(); f._abReadyAt = 0; f._ab2ReadyAt = 0; f.attackCooldown = 0; return f; };
+        globalThis.__burrower = () => { const f = __fol('fire', 'camper', 'thermite'); partyAdd([f]); techAbilityTick(); f._abReadyAt = 0; f._ab2ReadyAt = 0; f.attackCooldown = 0; f.ultimateCharge = 100; return f; };   // (FAULTLINE is its Ultimate: charged)
         globalThis.__draw = (f, wpts) => { const sp = wpts.map(p => __scr(f.x + p[0], f.y + p[1])); techAimPathStart(sp[0].x, sp[0].y); for (let i = 1; i < sp.length; i++) techAimPathMove(sp[i].x, sp[i].y); return techAimTap(sp[sp.length - 1].x, sp[sp.length - 1].y); };
         globalThis.__arc = (R, n) => { const o = []; for (let i = 0; i <= n; i++) { const th = Math.PI * (1 - i / n) / 2; o.push([1 + R - R * Math.cos(th), R - R * Math.sin(th)]); } return o; };`);
 
@@ -338,13 +338,13 @@ function measure(w, h) {
         const r = J(`(function(){ __clear(); const t = __foe(__C[0] + 2, __C[1]), o = {}; for (const [el, evo] of [['fire', null], ['electric', 'hovershell'], ['core', 'hammerslug'], ['flux', 'gooproxy'], ['ice', 'igloo'], ['toxic', 'blightspider']]) { const f = __fol(el, 'camper', evo); f.attackCooldown = 0; o[evo || 'egg'] = burrowStrikeTry(f, t) || !!f._burrow; } return o; })()`);
         for (const k of Object.keys(r)) same(r[k], false, k + ' burrowed');
     });
-    check('FAULTLINE is the evolved Burrower\'s alone, on a SECOND CHIP with its own wait; the THERMITE DRILL keeps its chip, its wait and the rubble (the egg has the drill alone; no other form has a second chip)', () => {
+    check('FAULTLINE is the evolved Burrower\'s alone, its ULTIMATE (the owner, 2026-11-06: "Make it the Ultimate"): no chip of its own; the THERMITE DRILL keeps its chip, its wait and the rubble (the egg has the drill alone; no other form has FAULTLINE)', () => {
         const r = J(`(function(){ __clear(); const f = __burrower(), egg = __fol('fire', 'camper', null), hs = __fol('electric', 'camper', 'hovershell'), o = {};
             o.second = (techAbility2Of(f) || {}).id; o.first = (techAbilityOf(f) || {}).id; o.egg = techAbility2Of(egg); o.eggFirst = (techAbilityOf(egg) || {}).id; o.hover = techAbility2Of(hs);
-            o.chip2 = techChip2State(f).text; o.chip1 = techChipState(f).text; o.others = Object.keys(EVOLUTIONS).filter(k => k !== 'thermite' && TECH_ABILITY2[k]).join();
+            o.chip2 = techChip2State(f); o.chip1 = techChipState(f).text; o.ult = followerUltimate(f).name; f.ultimateCharge = 50; o.uncharged = techAbility2Can(f).why; f.ultimateCharge = 100; o.others = Object.keys(EVOLUTIONS).filter(k => k !== 'thermite' && TECH_ABILITY2[k]).join();
             o.rubble = _techFireTechs().indexOf(f) >= 0; o.join = (function(){ __clear(); const g = __fol('fire', 'camper', 'thermite'); partyAdd([g]); techAbilityTick(); return Math.round(techReady2In(g) / 60); })(); return o; })()`);
         same(r.second, 'faultline', 'its second'); same(r.first, 'thermite_drill', 'its first'); same(r.egg, null, 'the egg\'s second'); same(r.eggFirst, 'thermite_drill', 'the egg\'s first'); same(r.hover, null, 'the Hover Shell\'s second');
-        ok(/^〰 FAULT$/.test(r.chip2) && /^✹ DRILL$/.test(r.chip1), 'the chips: ' + r.chip1 + ' / ' + r.chip2); same(r.others, '', 'other forms with a second ability'); ok(r.rubble, 'the rubble\'s ring does not find the Burrower'); same(r.join, 60, 'FAULTLINE\'s first wait (s) after joining');
+        same(r.chip2, null, 'FAULTLINE has a chip'); ok(/^✹ DRILL$/.test(r.chip1), 'the drill\'s chip: ' + r.chip1); same(r.ult, 'Faultline', 'its Ultimate'); same(r.uncharged, 'FAULTLINE · ITS ULTIMATE IS NOT CHARGED', 'uncharged'); same(r.others, '', 'other forms with FAULTLINE'); ok(r.rubble, 'the rubble\'s ring does not find the Burrower');
     });
     check('FAULTLINE\'s input is a FREEHAND PATH: a press, a drag and a let-go (not taps, not a straight line); its curve is kept (resampled, smoothed); a stroke under minLen sends nothing and the aim stays up; the stroke stops at maxLen', () => {
         const r = J(`(function(){ __clear(); const f = __burrower(), o = {}; o.tap = techChip2Tap(f); o.need = techAimNeed();
@@ -375,29 +375,28 @@ function measure(w, h) {
         ok(r.d[0] <= r.hitR && r.d[1] <= r.hitR && r.d[2] > r.hitR, 'the fixture: ' + JSON.stringify(r.d));
         same(r.hits.slice().sort().join(), 'on1,on2', 'who was hit (each once)'); ok(r.spikes >= Math.floor(r.len / r.spacing), 'spikes ' + r.spikes + ' along ' + r.len + ' tiles'); same(r.trace, true, 'the path\'s glow did not start to fade');
     });
-    check('FAULTLINE is called off by the chip again, by Escape and by a touch the system cancels; its spikes go through the damage system as its ability; it is busy while it runs (the drill cannot start) and its wait is its own', () => {
+    check('FAULTLINE is called off by asking again, by Escape and by a touch the system cancels; its spikes go through the damage system as its ability; it is busy while it runs (the drill cannot start); the Ultimate\'s charge is spent as it goes under', () => {
         const r = J(`(function(){ __clear(); const f = __burrower(), o = {}; techChip2Tap(f); techChip2Tap(f); o.chipAgain = !!techAim;
             techChip2Tap(f); techAimCancel(); o.escape = !!techAim;   // (Escape: js/techabilities.js's keydown calls techAimCancel)
             techChip2Tap(f); const s0 = __scr(f.x + 1, f.y); techAimPathStart(s0.x, s0.y); techAimPathMove(s0.x + 30, s0.y + 10); techAimPathCancel(); o.cancel = { aim: !!techAim, fault: !!f._fault };
-            techChip2Tap(f); __draw(f, __arc(3, 40)); o.busyDrill = techAbilityCan(f).why; o.chip1 = techChipState(f).text; o.drillWait = techReadyIn(f); o.faultWait = Math.round(techReady2In(f) / 60);
+            techChip2Tap(f); __draw(f, __arc(3, 40)); o.busyDrill = techAbilityCan(f).why; o.chip1 = techChipState(f).text; o.drillWait = techReadyIn(f); o.charge = f.ultimateCharge;
             const E = rd => 0; return o; })()`);
         same(r.chipAgain, false, 'the chip again'); same(r.escape, false, 'Escape'); same(r.cancel.aim, false, 'a cancelled touch'); same(r.cancel.fault, false, 'a cancelled touch sent it');
-        same(r.busyDrill, 'BUSY', 'the drill while FAULTLINE runs'); ok(/BUSY/.test(r.chip1), 'the drill\'s chip: ' + r.chip1); same(r.drillWait, 0, 'the drill\'s wait was spent'); same(r.faultWait, 60, 'FAULTLINE\'s wait (s)');
+        same(r.busyDrill, 'BUSY', 'the drill while FAULTLINE runs'); ok(/BUSY/.test(r.chip1), 'the drill\'s chip: ' + r.chip1); same(r.drillWait, 0, 'the drill\'s wait was spent'); ok(r.charge < 50, 'the Ultimate\'s charge was not spent: ' + r.charge);
         const T = rd('js/techabilities.js'), I = rd('js/input.js'); ok(/applyElementalDamage\(e, dmg, f, "fire", DMG_HIT_ALT\)/.test(T), 'the spikes do not go through the damage system as its ability');
         ok(/canvas\.addEventListener\('pointercancel'/.test(I) && /techAimPathCancel\(\)/.test(I) && /techAimPathMove\(_mx, _my\)/.test(I) && /techAimPathStart\(pressX, pressY\)/.test(I), 'the input does not carry the path');
     });
-    check('INFO names it all: MAIN ATTACK · BURROW STRIKE, ABILITY · THERMITE DRILL, ABILITY · FAULTLINE (its path, its spikes, its own wait)', () => {
+    check('INFO names it all: MAIN ATTACK · BURROW STRIKE, ABILITY · THERMITE DRILL, ULTIMATE · FAULTLINE', () => {
         const r = J(`(function(){ __clear(); const f = __burrower(); return followerInfo(f).attacks.map(s => s.h); })()`);
-        ok(r.indexOf('MAIN ATTACK · BURROW STRIKE') >= 0 && r.indexOf('ABILITY · THERMITE DRILL') >= 0 && r.indexOf('ABILITY · FAULTLINE') >= 0, 'INFO: ' + r);
+        ok(r.indexOf('MAIN ATTACK · BURROW STRIKE') >= 0 && r.indexOf('ABILITY · THERMITE DRILL') >= 0 && r.indexOf('ULTIMATE · FAULTLINE') >= 0, 'INFO: ' + r);
     });
     {
         const T = measure(1180, 820);
         if (T === null) console.log('  (no Chromium here: the real page\'s check skipped)');
-        else check('THE REAL PAGE, BY TOUCH: the Burrower\'s card shows both chips, FAULTLINE\'s just above the drill\'s; a tap on it aims; a path drawn with a finger\'s pointer events is sent and run; a stroke the system cancels sends nothing and ends the aim', () => {
+        else check('THE REAL PAGE, BY TOUCH: the Burrower\'s card shows the drill\'s chip and no FAULTLINE chip (it is the Ultimate); the Ultimate aims; a path drawn with a finger\'s pointer events is sent and run; a stroke the system cancels sends nothing and ends the aim', () => {
             ok(T && !T.err, 'the page: ' + JSON.stringify(T));
-            ok(T.chips.has1 && T.chips.has2 && T.chips.shown2 === 'block', 'the chips: ' + JSON.stringify(T.chips)); ok(/DRILL/.test(T.chips.t1) && /FAULT/.test(T.chips.t2), 'their words: ' + JSON.stringify(T.chips));
-            ok(T.chips.r2[3] <= T.chips.r1[1] + 1 && Math.abs(T.chips.r2[2] - T.chips.r1[2]) <= 1, 'FAULTLINE\'s chip is not just above the drill\'s: ' + JSON.stringify(T.chips));
-            ok(T.aim.on && /FAULTLINE/.test(T.aim.prompt) && /AIMING/.test(T.aim.chip2) && !/AIMING/.test(T.aim.chip1), 'the aim: ' + JSON.stringify(T.aim));
+            ok(T.chips.has1 && !T.chips.has2, 'the chips: ' + JSON.stringify(T.chips)); ok(/DRILL/.test(T.chips.t1), 'its words: ' + JSON.stringify(T.chips));
+            ok(T.aim.on && /FAULTLINE/.test(T.aim.prompt) && !/AIMING/.test(T.aim.chip1), 'the aim: ' + JSON.stringify(T.aim));
             ok(T.sent.fault && T.sent.n >= 8 && Math.abs(T.sent.len - 2.5 * Math.PI / 2) < 0.2 && !T.sent.aiming, 'the touch path: ' + JSON.stringify(T.sent));
             ok(Math.hypot(T.sent.start[0] - 3, T.sent.start[1]) < 0.1, 'it does not start under the finger (the stroke\'s first point, [3, 0] from the Burrower): ' + JSON.stringify(T.sent.start)); ok(T.run.over && T.run.up, 'the run: ' + JSON.stringify(T.run));
             ok(T.cancel.was && !T.cancel.aiming && !T.cancel.fault, 'the cancelled touch: ' + JSON.stringify(T.cancel));
@@ -466,6 +465,23 @@ function measure(w, h) {
         same(r.zero.join(), '0,3,true', 'ABSOLUTE ZERO: spent, three swallowed (not four), no damage'); same(r.zeroAfter.join(), '0,true,true', 'let go after 6 s, targetable again, still no damage');
         same(r.under.join(), 'true,true,240,0.7,true', 'TOXIC UNDERTOW: both hurt, poisoned 4 s at 70% of their hits, thrown');
         same(r.netNone, 100, 'CONTAMINATION NETWORK with no pods spent its charge'); same(r.net.join(), 'true,true,true,0,true', 'CONTAMINATION NETWORK: spent (its bites charge it a little again), the strand is up, the one on it hurt and poisoned, the one off it not');
+    });
+    check('OWN ULTIMATES, the next three (the owner, 2026-11-06: "8 s", "Squad only", "Make it the Ultimate"): SHARD VORTEX pulls the enemies in its swirl and grinds them (crushing), healing the Mimic, for 8 s; the JELLY RAM\'s shields go on it and the two other squad followers, take hits first (40% of each wearer\'s max health) and knock the attacker back, for 10 s; FAULTLINE opens the Thermite Burrower\'s path', () => {
+        const r = J(`(function(){ const o = {};
+            __clear(); const m = __fol('core', 'brawler', 'mimic'); m.health = m.maxHealth * 0.5; const a = __foe(m.x + 2.5, m.y), far = __foe(m.x + 6, m.y), d0 = Math.hypot(a.x - m.x, a.y - m.y), h0 = m.health; m.ultimateCharge = 100; followerUltimate(m).execute(m);
+            for (let i = 0; i < 90; i++) { updateElementEffects(); updateStatusEffects(); }
+            o.vortex = [elementEffects.some(e => e.type === 'shardvortex'), __dmg(a) > 0, __dmg(far), Math.hypot(a.x - m.x, a.y - m.y) < d0, m.health > h0];
+            for (let i = 0; i < 400; i++) updateElementEffects(); o.vortexGone = !elementEffects.some(e => e.type === 'shardvortex');
+            __clear(); const j = __fol('core', 'brawler', 'jellyram'), b1 = __fol('fire', 'brawler'), b2 = __fol('ice', 'sniper'), b3 = __fol('toxic', 'brawler'); partyAdd([j, b1, b2]); j.ultimateCharge = 100; followerUltimate(j).execute(j);
+            o.worn = [j, b1, b2, b3].map(f => !!f.jellyShield).join(); o.soak = Math.round(b1.jellyShield.hp / b1.maxHealth * 100);
+            const biter = __foe(b1.x + 0.8, b1.y), hp0 = b1.health; applyDamage(b1, b1.maxHealth * 0.1, biter); o.hit = [b1.health === hp0, !!(biter.kbVX || biter.kbVY)];
+            frame += 601; applyDamage(b1, 1, biter); o.after = [b1.jellyShield === null, b1.health < hp0];
+            __clear(); const t = __fol('fire', 'camper', 'thermite'); partyAdd([t]); techAbilityTick(); t.ultimateCharge = 100; followerUltimate(t).execute(t); o.fault = [!!techAim, techAimNeed()]; techAimCancel();
+            return o; })()`);
+        same(r.vortex.join(), 'true,true,0,true,true', 'SHARD VORTEX: up, grinding the one in it, not the one outside, pulling it in, healing the Mimic'); same(r.vortexGone, true, 'over after 8 s');
+        same(r.worn, 'true,true,true,false', 'the shields: the Jelly Ram and the two other squad followers, not the one outside the squad'); same(r.soak, 40, 'a shield\'s share of its wearer\'s max health');
+        same(r.hit.join(), 'true,true', 'a hit taken by the shield, the attacker knocked back'); same(r.after.join(), 'true,true', 'gone after 10 s');
+        same(r.fault.join(), 'true,path', 'FAULTLINE: its path is asked for');
     });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);

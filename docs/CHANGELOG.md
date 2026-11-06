@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **o · SHARD VORTEX, Jelly shields; FAULTLINE becomes an Ultimate** (the owner, 2026-11-06: "8 s", "Squad only", "Make it the Ultimate"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06n` went to main at the owner's word ("Push to main").
+  - **SHARD VORTEX** (Rift Mimic): its shards swirl 3 tiles round where it stands for 8 s, pulling enemies to the middle and biting them every 0.5 s for 0.4× its power (crushing); it heals a quarter of what they take.
+  - **Jelly shields** (Jelly Ram): on itself and the two other squad followers **[reading: not the player]** for 10 s; each shield takes hits first, up to 40% of its wearer's max health, and knocks the attacker back a tile.
+  - **FAULTLINE** is the Thermite Burrower's Ultimate: its chip is gone; the double-tap draws the path once the meter is full, and going under spends the charge. MAGMA VENT stays its move.
+  - Tests: followercombat (the two new, FAULTLINE's checks rewritten), techabilities, cards, classcards, evolution, unitinfo, bonds, techlevel1, squadui, globals, bible, combat, damage. No full run. Not playtested.
+
 - **n · Own Ultimates, the first four** (the owner, 2026-11-06: "Own Ultimates"; "Smaller rush", "6 s, no damage", "Strong", "10 s"; on the branch; commit named in git log).
   - **Main:** build `2026-11-06m` went to main at the owner's word ("Push to main").
   - A form with an Ultimate of its own fires it; every other keeps its element's until its own is designed (`js/elements.js` `FORM_ULTIMATES`, `followerUltimate`). The meter, its charge and the double-tap are unchanged.

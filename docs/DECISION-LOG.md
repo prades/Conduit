@@ -1788,3 +1788,17 @@ The owner: too much time goes into testing and side checks. From here on, only t
 - An Ultimate that finds nothing to do keeps its charge; CONTAMINATION NETWORK with fewer than two pods says so and keeps it.
 - ABSOLUTE ZERO's "grows larger" is not drawn yet (no size hook for a follower's sprite).
 
+## DECISION: Build 2026-11-06n to main; SHARD VORTEX, Jelly shields, FAULTLINE as an Ultimate
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06n` on main. The three: implemented and tested in build `2026-11-06o`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.3; `CHANGELOG.md` (o)
+
+### Decision
+1. "Push to main" (build n).
+2. SHARD VORTEX: "8 s". Jelly Ram shields: "Squad only". FAULTLINE: "Make it the Ultimate" (the chip goes).
+
+### Readings
+- "Squad only": the Jelly Ram and the two other squad followers wear shields; the player does not.
+- FAULTLINE's charge is spent when the Burrower goes under; drawing no path keeps it.
+

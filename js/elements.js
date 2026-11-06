@@ -475,6 +475,8 @@ const ULT_OVERDRIVE = { reach: 6, radius: 2, mult: 2, knock: 1 };               
 const ULT_ZERO = { reach: 3, max: 3, frames: 360 };                                       // the Frost Maw's: "6 s, no damage" (tiles, enemies, frames)
 const ULT_UNDERTOW = { radius: 3, mult: 1.5, thrown: 2.5, weak: 240, weakFactor: 0.7 };   // the Seeper's: "Strong" (tiles, × power, tiles thrown, frames of poison: hits 30% weaker)
 const ULT_NETWORK = { frames: 600, tick: 30, mult: 0.5, poison: 180, touch: 0.5 };         // the Blight Spider's: "10 s" (frames, frames between bites, × power, frames of poison, tiles from a strand)
+const ULT_VORTEX = { radius: 3, frames: 480, tick: 30, mult: 0.4, heal: 0.25, pull: 0.06 };   // the Rift Mimic's SHARD VORTEX: "8 s" (tiles, frames, frames between bites, × power a bite, share of the damage healed, pull a frame)
+const ULT_JELLY = { soak: 0.4, frames: 600, knock: 1 };                                     // the Jelly Ram's shields: "Squad only" (share of the wearer's max health, frames, tiles of knockback)
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
 function _ultSay(a, text, color) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text, color, life: 60, vy: -0.06, size: 13 }); }
@@ -528,6 +530,25 @@ const FORM_ULTIMATES = {
     } },
     // CONTAMINATION NETWORK: its toxic pods (js/techabilities.js; at least two) link with toxic strands for ULT_NETWORK.frames: an enemy within ULT_NETWORK.touch of a strand takes
     // ULT_NETWORK.mult × its power every ULT_NETWORK.tick frames and is poisoned. The pods stay.
+    // SHARD VORTEX (Rift Mimic): its four shards spin out into a swirl ULT_VORTEX.radius tiles round where it stands, for ULT_VORTEX.frames: the swirl pulls the enemies in it to its middle and
+    // the shards bite them (crushing) every ULT_VORTEX.tick frames; the Mimic heals ULT_VORTEX.heal of what they take, and can move on while they spin.
+    mimic: { name: "Shard Vortex", desc: "Its shards spin out into a swirl that pulls enemies in and grinds them, healing it", execute(actor) {
+        const V = ULT_VORTEX, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, V.radius) : [];
+        if (!foes.length) return;
+        actor.ultimateCharge = 0;
+        spawnElementEffect({ type: "shardvortex", x: actor.x, y: actor.y, by: actor, radius: V.radius, bite: (actor.power || 10) * V.mult, life: V.frames, maxLife: V.frames, element: null });
+        _ultSay(actor, "SHARD VORTEX", "#c9a6ff");
+    } },
+    // THE JELLY RAM'S SHIELDS (its own; the name is open): a jelly shield on itself and on the other two followers of the squad, wherever they are ("Squad only": not the player). Each takes the
+    // hits first, up to ULT_JELLY.soak of its wearer's max health, for ULT_JELLY.frames, and knocks the attacker back (jellyShieldTake, js/helpers.js applyDamage).
+    jellyram: { name: "Jelly Shields", desc: "Jelly shields on itself and the two other squad followers: they take the hits and knock attackers back", execute(actor) {
+        const others = (typeof partyMembers === "function" ? partyMembers() : []).filter(f => f !== actor && !f.dead).slice(0, 2), wear = [actor].concat(others), f0 = typeof frame !== "undefined" ? frame : 0;
+        actor.ultimateCharge = 0;
+        for (const w of wear) { w.jellyShield = { hp: (w.maxHealth || 20) * ULT_JELLY.soak, until: f0 + ULT_JELLY.frames, by: actor }; spawnElementEffect({ type: "jellyshield", x: w.x, y: w.y, on: w, life: ULT_JELLY.frames, maxLife: ULT_JELLY.frames, element: null }); }
+        _ultSay(actor, "JELLY SHIELDS", "#9ff0ff");
+    } },
+    // FAULTLINE (Thermite Burrower; the owner, 2026-11-06: "Make it the Ultimate"): the drawn path of js/techabilities.js, opened by the Ultimate instead of a chip; the charge is spent when it goes under
+    thermite: { name: "Faultline", desc: "Draw a path on the floor: it dives and runs under it, and molten spikes erupt along it", execute(actor) { if (typeof techChip2Tap === "function") techChip2Tap(actor); } },
     blightspider: { name: "Contamination Network", desc: "Its toxic pods link with toxic strands: enemies crossing them are hurt and poisoned", execute(actor) {
         const N = ULT_NETWORK, pods = (typeof techPools !== "undefined" ? techPools : []).filter(P => P.by === (actor.uid || null) && (typeof techPoolFade !== "function" || techPoolFade(P) > 0)).slice(-3);
         if (pods.length < 2) { _ultSay(actor, "NEEDS 2 TOXIC PODS", "#ff8a6a"); return; }
@@ -540,6 +561,15 @@ const FORM_ULTIMATES = {
 };
 // The Ultimate a follower fires: its form's own, else its element's (null: none, a core form without its own)
 function followerUltimate(a) { if (!a) return null; return (a.evolved && FORM_ULTIMATES[a.evolved]) || FOLLOWER_ULTIMATES[a.element] || null; }
+// A hit on a follower wearing a jelly shield (js/helpers.js applyDamage): the shield takes it first, up to what it has left, and knocks the attacker back. Returns what is left of the hit.
+function jellyShieldTake(t, dmg, source) {
+    const S = t.jellyShield, f0 = typeof frame !== "undefined" ? frame : 0;
+    if (!S || f0 >= S.until || !(S.hp > 0)) { t.jellyShield = null; return dmg; }
+    const take = Math.min(S.hp, dmg); S.hp -= take; if (S.hp <= 0) t.jellyShield = null;
+    const src = source && typeof predatorSource === "function" ? predatorSource(source) : source;
+    if (src && src !== t && src.team !== t.team && Number.isFinite(src.x) && typeof applyKnockback === "function") applyKnockback(src, t, ULT_JELLY.knock * KNOCK_PER_TILE);
+    return dmg - take;
+}
 function _ultSegDist(p, a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1; let t = ((p.x - a[0]) * dx + (p.y - a[1]) * dy) / L2; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a[0] + dx * t), p.y - (a[1] + dy * t)); }
 
 // ─────────────────────────────────────────────────────────
@@ -670,6 +700,16 @@ function updateElementEffects() {
             });
             if (done) e.life = 0;
         }
+        if (e.type === "shardvortex") {
+            const V = ULT_VORTEX, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % V.tick === 0;
+            for (const a of actors) {
+                if (!a || a.dead || !isHostileTarget(a)) continue;
+                const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
+                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(V.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
+                if (bite) { const h0 = a.health; applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH); const by = e.by; if (by && !by.dead && h0 > a.health) by.health = Math.min(by.maxHealth || by.health, by.health + (h0 - a.health) * V.heal); }
+            }
+        }
+        if (e.type === "jellyshield") { const w = e.on; if (!w || w.dead || !w.jellyShield) e.life = 0; else { e.x = w.x; e.y = w.y; } }
         if (e.type === "toxicnet") {
             const age = e.maxLife - e.life;
             if (age > 0 && e.life > 0 && age % ULT_NETWORK.tick === 0) for (const a of actors) {
@@ -1104,6 +1144,21 @@ function drawElementEffects() {
                     ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#d6ff9a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
                     const t = (frame % 40) / 40; ctx.fillStyle = "#ffffff"; ctx.globalAlpha = k; ctx.beginPath(); ctx.arc(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, 3, 0, Math.PI * 2); ctx.fill();
                 }
+                break;
+            }
+            // SHARD VORTEX (FORM_ULTIMATES): a violet swirl with four crystal shards spinning round its middle
+            case "shardvortex": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, spin = frame * 0.14;
+                ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#a070ff"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.5 * k; ctx.strokeStyle = "#c9a6ff"; ctx.lineWidth = 1.5; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(px, cy, rx * (0.4 + i * 0.25), ry * (0.4 + i * 0.25), 0, spin + i, spin + i + 2.4); ctx.stroke(); }
+                for (let i = 0; i < 4; i++) { const an = spin + i * Math.PI / 2, sx = px + Math.cos(an) * rx * 0.6, sy = cy + Math.sin(an) * ry * 0.6 - 10; ctx.globalAlpha = 0.95 * k; ctx.fillStyle = "#e6d6ff"; ctx.beginPath(); ctx.moveTo(sx, sy - 9); ctx.lineTo(sx + 5, sy); ctx.lineTo(sx, sy + 9); ctx.lineTo(sx - 5, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7a4adf"; ctx.lineWidth = 1; ctx.stroke(); }
+                break;
+            }
+            // A JELLY SHIELD (FORM_ULTIMATES.jellyram): a soft cyan dome over its wearer, wobbling, fainter as it is used up
+            case "jellyshield": {
+                const w = e.on, S = w && w.jellyShield, k = Math.min(1, (e.maxLife - e.life) / 8, e.life / 20), left = S ? Math.max(0.25, S.hp / ((w.maxHealth || 20) * ULT_JELLY.soak)) : 0, wob = 1 + 0.05 * Math.sin(frame * 0.2), cy = py - 18;
+                ctx.globalAlpha = 0.22 * k * left; ctx.fillStyle = "#9ff0ff"; ctx.beginPath(); ctx.ellipse(px, cy, 24 * wob, 28 / wob, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.75 * k * left; ctx.strokeStyle = "#e6ffff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, cy, 24 * wob, 28 / wob, 0, 0, Math.PI * 2); ctx.stroke();
                 break;
             }
             // ABSOLUTE ZERO (FORM_ULTIMATES): the Frost Maw, swollen with what it swallowed: a frosted ring round it, crystals rising
