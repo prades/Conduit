@@ -12,7 +12,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
     - With js/input.js as it was, the check failed: no path was sent, the aim stayed up and the player walked.
     - Without the line that lets a left-over id go, its last part failed.
     - With the fix whole, it passes.
-  - **The full run:** still running when this entry was first committed (at a stop hook's request); its result is recorded here in the next commit. Run before that commit and passing: tests/followercombat.js (36 of 36), tests/bible.js, tests/boot.js.
+  - **The full run:** 88 of 88 suites passed (1,866 checks), tests/followercombat.js among them (36 of 36). tests/perf.js's frame budget passed this time; it still fails at random (`OPEN-QUESTIONS.md` §2). This entry was first committed (5289362) while the run was still going, at a stop hook's request, with tests/followercombat.js, tests/bible.js and tests/boot.js run and passing.
   - **The Bible:** the technicians' "Aiming" bullet says another finger is ignored while an aim's press is held.
   - **Written up:** docs/OPEN-QUESTIONS.md (§1t, items 11 and 12; the item moved there from §2), docs/FOLLOWER-COMBAT-REDESIGN.md (status, sections 9, 10, 12), docs/FLUX-MOVEMENT.md §6.6, docs/TECHNICIANS.md (FAULTLINE), docs/DECISION-LOG.md.
   - Not tried with a finger on an iPad or a phone.
@@ -30,7 +30,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
   - **Tests:**
     - tests/followercombat.js grows from 26 to 35 checks: BURROW STRIKE (its dive, its travel under the floor, its eruption against a real plain hit of its own, its rest, the Siphon perk, untargetable, a lost enemy, out of reach, behind a wall; no other form burrows); FAULTLINE (the second chip and its waits; the drill kept; a freehand path kept as a curve, a short stroke, the 8-tile stop; the run under the floor along the path; who the spikes hit; calling it off three ways; BUSY; INFO); and the real page in headless Chromium by touch (both chips, a tap, a path drawn with `pointerType: 'touch'` pointer events, a cancelled touch);
     - tests/techabilities.js: the press while aiming now also starts a path.
-  - **The full run:** 87 of 88 suites passed (1,864 checks), tests/followercombat.js among them (35 of 35, the touch check included).
+  - **The full run:** 87 of 88 suites passed (1,864 of 1,865 checks; this entry said "1,864 checks" at first, corrected in build `2026-11-06b`), tests/followercombat.js among them (35 of 35, the touch check included).
     - The one failure: tests/perf.js's frame budget. One frame drew 21,564 canvas operations against a budget of 21,500.
     - Its scene (ten eggs and twelve creatures) has no evolved follower, so nothing this build added is drawn in it.
     - Run six times on each build: this build measured 20,731 to 21,674 (mean 21,205, two runs over); build `2026-11-03a`'s code measured 21,209 to 21,514 (mean 21,362, one run over).
