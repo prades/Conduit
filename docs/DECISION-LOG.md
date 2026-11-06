@@ -1762,3 +1762,14 @@ The owner: too much time goes into testing and side checks. From here on, only t
 2. The Queen's gate: "Rubble, drilled" (the fire technician drills it; the ice is the other way in; the module is only for the install).
 3. "Access points in troves" means "Many crossings": many places along the water where an ice bridge (or another route) gets you across or onto the dam.
 
+## DECISION: Build 2026-11-06l to main; ledges onto the dam; MAGMA VENT's numbers
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06l` on main. The ledge and MAGMA VENT: implemented and tested in build `2026-11-06m`, on the branch; not playtested.
+- **Related feature/docs:** `OPEN-QUESTIONS.md` §1za, `FOLLOWER-COMBAT-REDESIGN.md`, `SEWER-QUEST.md`
+
+### Decision
+1. "Push to main" (build l).
+2. More ways onto the dam: "Add ledges".
+3. MAGMA VENT: "Short and hot" (the vent lasts 8 s, bursts every 1 s in a 1.5-tile radius for 60% of its attack; 20 s wait).
+

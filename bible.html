@@ -266,7 +266,7 @@
 <tr><td>Openings / drawn as sliding doors / doorless stairways</td><td class="num"><span class="n" data-k="FACILITY_MAP.openings.length">13</span> / <span class="n" data-k="_fp.items.filter(function (i) { return i.fp === 'door' ? i.part === 'm' : false; }).length">10</span> / <span class="n" data-k="_fp.F.connections.filter(function (c) { return !!c.ramp; }).length">3</span></td><td><code>js/facilitymap.js:855-882</code>, <code>js/facilityplay.js:352</code></td></tr>
 <tr><td>Connections / portals (5 pairs)</td><td class="num"><span class="n" data-k="FACILITY_MAP.connections.length">18</span> / <span class="n" data-k="FACILITY_MAP.portals.length">10</span></td><td><code>js/facilitymap.js:131-152, 883-902</code></td></tr>
 <tr><td>Separate walkable areas</td><td class="num"><span class="n" data-k="facilityComponents(_fp.F, false).length">3</span></td><td><code>js/facility.js:316</code></td></tr>
-<tr><td>Floor tiles, whole map</td><td class="num"><span class="n" data-k="world.length">3297</span></td><td><code>js/facilityplay.js:29-37</code></td></tr>
+<tr><td>Floor tiles, whole map</td><td class="num"><span class="n" data-k="world.length">3304</span></td><td><code>js/facilityplay.js:29-37</code></td></tr>
 <tr><td>Main building, west–east × north–south</td><td class="num"><span class="n" data-k="_fp.F.byId.get('nest_area').bb[2] - _fp.F.byId.get('crystal_chamber').bb[0]">48</span> × <span class="n" data-k="_fp.F.byId.get('nest_area').bb[3] - _fp.F.byId.get('front_lobby').bb[1]">76 tiles</span></td><td>built map</td></tr>
 <tr><td>Main Hallway width</td><td class="num"><span class="n" data-k="_fp.F.byId.get('experiment_lab').bb[1] - _fp.F.byId.get('lab_hallway').bb[1]">6 tiles</span></td><td><code>js/facilitymap.js:22</code></td></tr>
 <tr><td>The Crystal (tile) / where you start, from it</td><td class="num"><span class="n" data-k="crystal.x">12</span>, <span class="n" data-k="crystal.y">16</span> / <span class="n" data-k="player.x - crystal.x">2</span> east, <span class="n" data-k="player.y - crystal.y">1</span> south</td><td><code>js/facilityplay.js:255-258</code></td></tr>
@@ -299,7 +299,7 @@
 <tr><td>Catwalks</td><td>=</td><td><code>catwalks</code></td><td class="num"><span class="n" data-k="facilityRoomHeight('catwalks', _fp.F)">3.2</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'catwalks'; }).length">84</span></td><td class="num"><span class="n" data-k="partyRoomCap('catwalks')">2</span></td></tr>
 <tr><td>Arena</td><td>=</td><td><code>arena</code></td><td class="num"><span class="n" data-k="facilityRoomHeight('arena', _fp.F)">-1.8</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'arena'; }).length">516</span></td><td class="num"><span class="n" data-k="partyRoomCap('arena')">6</span></td></tr>
 <tr><td>Cold Storage</td><td>=</td><td><code>cold_storage</code>*</td><td class="num"><span class="n" data-k="facilityRoomHeight('cold_storage', _fp.F)">-1.8</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'cold_storage'; }).length">164</span></td><td class="num"><span class="n" data-k="partyRoomCap('cold_storage')">2</span></td></tr>
-<tr><td>Sewers</td><td>=</td><td><code>sewers</code>*</td><td class="num"><span class="n" data-k="facilityRoomHeight('sewers', _fp.F)">-1.8</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'sewers'; }).length">405</span></td><td class="num"><span class="n" data-k="partyRoomCap('sewers')">2</span></td></tr>
+<tr><td>Sewers</td><td>=</td><td><code>sewers</code>*</td><td class="num"><span class="n" data-k="facilityRoomHeight('sewers', _fp.F)">-1.8</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'sewers'; }).length">412</span></td><td class="num"><span class="n" data-k="partyRoomCap('sewers')">2</span></td></tr>
 <tr><td>Nest Area</td><td>Nest area</td><td><code>nest_area</code></td><td class="num"><span class="n" data-k="facilityRoomHeight('nest_area', _fp.F)">0</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'nest_area'; }).length">1058</span></td><td class="num"><span class="n" data-k="partyRoomCap('nest_area')">2</span></td></tr>
 </table></div>
 <p class="where">= the tag · * interior · height in tiles · tags <code>js/facilitynet.js:10-14</code> · rooms <code>js/facilitymap.js:37-117</code> · holds <code>js/party.js:39-40</code></p>
@@ -500,7 +500,7 @@
 <tr><td>The waterfall / brood holes / eggs</td><td class="num"><span class="n" data-k="facilitySewerMeasures().falls">13 tiles</span> / <span class="n" data-k="facilitySewerMeasures().holes">4</span> / <span class="n" data-k="facilitySewerMeasures().eggs">18</span></td><td><code>nest_falls</code>, <code>brood_hole_*</code>, <code>nest_eggs_*</code></td></tr>
 <tr><td>Gates / boss gates</td><td class="num"><span class="n" data-k="facilitySewerMeasures().gates">3</span> / <span class="n" data-k="facilitySewerMeasures().bossGates">0</span> (the boss gate is rubble since build <code>2026-11-06l</code>)</td><td><code>js/facilitymap.js</code> <code>sewer_gate_*</code></td></tr>
 <tr><td>River and pools' surface below the floor; gate height</td><td class="num"><span class="n" data-k="FP_SEWER.sink">12</span>; <span class="n" data-k="FP_SEWER.gateH">104 px</span></td><td><code>js/facilitysewers.js</code> <code>FP_SEWER</code></td></tr>
-<tr><td>Floor cells in the Sewers</td><td class="num"><span class="n" data-k="facilitySewerMeasures().cells">405</span></td><td><code>facilitySewerMeasures</code></td></tr>
+<tr><td>Floor cells in the Sewers</td><td class="num"><span class="n" data-k="facilitySewerMeasures().cells">412</span></td><td><code>facilitySewerMeasures</code></td></tr>
 </table></div>
 <p class="where">Where it lives: <code>js/facilitymap.js</code> (the room <code>sewers</code>, its solids and decor) · <code>js/facilitysewers.js</code> (its drawing; <code>facilitySewerMeasures</code>, the numbers above) · <code>js/population.js</code> (the Nest)</p>
 <details class="dec"><summary>Decisions</summary><div>
@@ -3562,7 +3562,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-06l</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-06m</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3783,7 +3783,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-06l (6 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-06m (6 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

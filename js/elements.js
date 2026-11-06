@@ -582,6 +582,7 @@ function updateElementEffects() {
         // HEXFIRE's circle and STATIC VORTEX (js/evolution.js; the follower combat redesign): stationary fields that hurt enemies only. The circle bites every HALO_TICK frames (it bit once as it
         // landed); the vortex pulls every frame and bites every VORTEX_TICK.
         if (e.type === "hexfire") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
+        if (e.type === "magmavent") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
         if (e.type === "staticVortex" && typeof staticVortexTick === "function") staticVortexTick(e);
 
         // Blizzard field — 60 % freeze chance every 30 frames for every enemy in it
@@ -999,6 +1000,17 @@ function drawElementEffects() {
                     const an = i / 10 * Math.PI * 2, h = 5 + 4 * Math.sin(frame * 0.4 + i * 1.7), fx = px + Math.cos(an) * rx, fy = cy + Math.sin(an) * ry;
                     ctx.globalAlpha = 0.7 * k; ctx.beginPath(); ctx.moveTo(fx - 2.5, fy); ctx.lineTo(fx, fy - h); ctx.lineTo(fx + 2.5, fy); ctx.closePath(); ctx.fill();
                 }
+                break;
+            }
+            // MAGMA VENT (js/evolution.js magmaVent): a dark cracked mouth in the floor glowing orange, its reach a faint ring; each burst throws a column of magma up and a flash of the ring
+            case "magmavent": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, since = (e.maxLife - e.life) - (e.burstAt || 0), b = Math.max(0, 1 - since / 24);
+                ctx.globalAlpha = (0.12 + 0.25 * b) * k; ctx.fillStyle = "#ff4a12"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = (0.35 + 0.5 * b) * k; ctx.strokeStyle = "#ff8a3a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+                ctx.globalAlpha = k; ctx.fillStyle = "#1a0d08"; ctx.beginPath(); ctx.ellipse(px, cy, 14, 7, 0, 0, Math.PI * 2); ctx.fill();   // the mouth
+                ctx.fillStyle = "#ff7a1f"; ctx.beginPath(); ctx.ellipse(px, cy, 9, 4, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = "#ffb04a"; ctx.lineWidth = 1.5; for (let i = 0; i < 4; i++) { const an = i * 1.57 + e.x; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * 10, cy + Math.sin(an) * 5); ctx.lineTo(px + Math.cos(an) * 22, cy + Math.sin(an) * 11); ctx.stroke(); }   // cracks
+                if (b > 0) { ctx.globalAlpha = b * k; const h = 46 * (1 - b * 0.4); const gr = ctx.createLinearGradient(px, cy, px, cy - h); gr.addColorStop(0, "#ffd27a"); gr.addColorStop(1, "rgba(255,90,20,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(px - 8, cy); ctx.lineTo(px, cy - h); ctx.lineTo(px + 8, cy); ctx.closePath(); ctx.fill(); }   // the burst
                 break;
             }
             // STATIC VORTEX (js/evolution.js staticVortex): a stationary storm VORTEX_RADIUS tiles round: a faint disc, its edge turning, three arms of lightning winding in to a bright eye at its middle.

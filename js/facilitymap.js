@@ -113,8 +113,8 @@ const FACILITY_MAP = {
           // its reservoir (west, under the big barred arch in the north wall, where a stream comes out of an old tunnel), the CAUSEWAY from the boss gate east across the water, the DAM itself (a wide flat
           // platform of trash, nine tiles across and fourteen deep, its console and the queen's post at its north-west corner, the brood's eggs at its north-east), the moat round its south and east, and the
           // waterfall where the moat spills over the east edge.
-          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [600, 860], [600, 800], [700, 800], [700, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1020, 900],
-                    [1060, 900], [1060, 800], [1360, 800], [1360, 860], [1360, 1120], [1060, 1120], [1060, 1080], [640, 1080], [640, 1140], [600, 1140], [600, 1080], [300, 1080], [300, 900], [280, 900]],
+          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [600, 860], [600, 800], [700, 800], [700, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1040, 860], [1040, 800],
+                    [1060, 800], [1360, 800], [1360, 860], [1360, 1120], [1060, 1120], [1060, 1080], [640, 1080], [640, 1140], [600, 1140], [600, 1080], [300, 1080], [300, 900], [280, 900]],
           // (the Nest's two edges on the camera's side where the moat runs, east and south, are a low SPILL lip, not a wall: the moat is seen over it, and over the east one the water pours: the waterfall)
           edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "spill", "spill", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
         { id: "nest_area", label: "Nest area", level: 0, status: "approximate",
@@ -872,7 +872,7 @@ const FACILITY_MAP = {
         { id: "nest_arch", room: "sewers", kind: "sewer_arch", a: [1060, 800], b: [1140, 800], note: "A big arched sewer gate in the Nest's north wall over the reservoir, taller than the wall, its bars down: an old tunnel from somewhere else (a way for later). The stream comes out under the bars." },
         { id: "nest_resin_1", room: "sewers", kind: "resin", a: [1160, 800], b: [1200, 800] },
         { id: "nest_resin_2", room: "sewers", kind: "resin", a: [1260, 800], b: [1300, 800] },
-        { id: "nest_resin_3", room: "sewers", kind: "resin", a: [1060, 820], b: [1060, 860] },
+        { id: "nest_resin_3", room: "sewers", kind: "resin", a: [1040, 820], b: [1040, 860] },   // (on the wall west of the reservoir's new ledge, build 2026-11-06m)
         { id: "brood_hole_1", room: "sewers", kind: "brood_hole", a: [740, 860], b: [760, 860], note: "A gallery the colony has bored through the north ledge's wall." },
         { id: "brood_hole_2", room: "sewers", kind: "brood_hole", a: [1000, 860], b: [1020, 860], note: "A gallery bored through the wall at the north ledge's east end, by the service bridge." },
         { id: "brood_hole_3", room: "sewers", kind: "brood_hole", a: [1240, 800], b: [1260, 800], note: "A gallery into the Nest's north wall, among the eggs." },

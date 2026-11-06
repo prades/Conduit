@@ -12,6 +12,9 @@
 - **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-02j`; the fire and electric moves built in build `2026-11-03a` (pushed to main at the owner's word); the Thermite Burrower built in build `2026-11-06a` on the same branch (pushed to main at the owner's word); the second-finger fix in build `2026-11-06b` on the same branch (pushed to main at the owner's word).
 - **Related docs:** `COMBAT.md` §7 (the damage types, each form's attacks: §7.4), `FIRE-BOMBS.md`, `TECHNICIANS.md` (the technicians' abilities, the Kinetic Launcher), `FOLLOWER-PROGRESSION.md`, `SEWER-QUEST.md` (the puzzle routes the Thermite Drill opens), `UI-STYLE.md`, `DECISION-LOG.md` (the decision)
 
+
+> **MAGMA VENT** (build `2026-11-06m`; the owner, 2026-11-06: "Short and hot"): the Thermite Burrower's move (its alternate, roadmap §12.3). A vent opens under the nearest enemy it can see within 6 tiles, bursts every 1 s for 8 s (60% of its power a burst, enemies within 1.5 tiles seen from the vent), then a 20 s wait. Code: js/evolution.js `magmaVent`, js/elements.js (the burst and the drawing), js/moves.js `magma_vent`. Test: tests/followercombat.js. Readings: `OPEN-QUESTIONS.md` §1za.
+
 ## 1. Intent
 
 The owner, 2026-11-02 (the brief, section 1): "We are refining the combat identities, main attacks, and alternate attacks of five existing followers. The goal is to make each creature mechanically distinctive. Their attacks should reflect their physical designs, elemental identities, and combat roles. This is not a general combat overhaul."

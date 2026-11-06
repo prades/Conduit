@@ -119,7 +119,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "camper").map(d => d.id).sort().join()'), 'blightspider,gooproxy,hammerslug,hovershell,igloo,thermite', 'the technicians\' forms');
     });
     check('THE ASK ("they help traverse the battlefield and provide exploration tools [...] I will put them in later"): the new technicians\' forms have NO signature move, and run without one', () => {
-        for (const id of ['gooproxy', 'thermite', 'igloo', 'blightspider', 'hovershell', 'rimestar']) { same(run('EVOLUTIONS.' + id + '.move || null'), null, id + ' has a move'); same(run('EVOLUTIONS.' + id + '.moves || null'), null, id + ' has moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move'); }
+        for (const id of ['gooproxy', 'igloo', 'blightspider', 'hovershell', 'rimestar']) {   // (the Thermite Burrower has MAGMA VENT since build 2026-11-06m: tests/followercombat.js)
+ same(run('EVOLUTIONS.' + id + '.move || null'), null, id + ' has a move'); same(run('EVOLUTIONS.' + id + '.moves || null'), null, id + ' has moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move'); }
         const r = run(`(function(){ followers.length = 0; spawnFollowerAtCrystal('flux'); const f = followers[0]; f.returningToCrystal = false; f.role = 'camper'; f.evolved = 'gooproxy'; f._moltAt = -1e9; f._sigCd = 0;
             const t0 = floatingTexts.length, fx0 = elementEffects.length; for (let i = 0; i < 400; i++) evolutionTick();
             return { role: f.role, texts: floatingTexts.length - t0, fx: elementEffects.length - fx0, sig: f._sigAt === undefined }; })()`);

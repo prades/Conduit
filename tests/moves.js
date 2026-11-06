@@ -32,8 +32,8 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
         for (const id of J('Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].move)')) { const n = J(`EVOLUTIONS[${JSON.stringify(id)}].move`); ok(J(`!!MOVE_BY_NAME[${JSON.stringify(n)}]`), id + ': no row for ' + n); }
     });
     check('the forms with no move are the new technicians\' (their exploration tools are the user\'s, to come), the Rimestar (there was no ice mage move) and the core forms (AEGIS BURST and AEGIS BLOOM went with the followers\' shield), and they fire none', () => {
-        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'blightspider,gooproxy,hammerslug,hornshell,hovershell,igloo,jellyram,petal,rimestar,thermite,warden', 'forms without a move');
-        for (const id of ['blightspider', 'gooproxy', 'hammerslug', 'hornshell', 'hovershell', 'igloo', 'jellyram', 'petal', 'rimestar', 'thermite', 'warden']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
+        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'blightspider,gooproxy,hammerslug,hornshell,hovershell,igloo,jellyram,petal,rimestar,warden', 'forms without a move');
+        for (const id of ['blightspider', 'gooproxy', 'hammerslug', 'hornshell', 'hovershell', 'igloo', 'jellyram', 'petal', 'rimestar', 'warden']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
     });
     check('every row fires a real function', () => {
         for (const id of J('Object.keys(MOVES)')) same(J(`typeof MOVES[${JSON.stringify(id)}].fn`), 'function', id);

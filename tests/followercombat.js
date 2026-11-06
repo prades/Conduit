@@ -437,6 +437,14 @@ function measure(w, h) {
         for (const [fn, kind] of [['quillBurst', 'DMG_HIT_ALT'], ['fieldBite', 'DMG_HIT_ALT'], ['pinballStep', 'DMG_HIT_ALT'], ['chainLightning', 'DMG_HIT_SHOT']]) { const b = body(fn); ok(b.indexOf(kind) >= 0, fn + ' does not use ' + kind); ok(!/\.health\s*-=|\.health\s*=\s*[^=]/.test(b), fn + ' sets health by hand'); }
         ok(/applyDamage\(t, \(f\.power \|\| 10\) \* PIN_MULT/.test(E) && /applyDamage\(a, e\.bite/.test(E) && /applyDamage\(next, d, f/.test(E), 'not through applyDamage');
     });
+    check('MAGMA VENT (the Thermite Burrower\'s move; the owner: "Short and hot"): a vent MAGMA_RADIUS tiles round opens under the enemy it can see within MAGMA_RANGE, bites at once and every MAGMA_TICK frames for MAGMA_LIFE frames, enemies only; then MAGMA_EVERY frames before the next', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('fire', 'camper', 'thermite'), t = __foe(f.x + 4, f.y + 0.5), far = __foe(f.x + 4 + MAGMA_RADIUS + 1, f.y + 0.5); const fired = magmaVent(f), cd = f._sigCd; const v = elementEffects.find(e => e.type === 'magmavent');
+            const first = __dmg(t), farFirst = __dmg(far); let bites = 0, last = first, k = 0; while (elementEffects.some(e => e.type === 'magmavent') && k < 600) { render(); k++; const d = __dmg(t); if (d !== last) { bites++; last = d; } }
+            return { fired, move: evoMoveOf(f).name, at: v && [Math.round(v.x * 10) / 10, Math.round(v.y * 10) / 10], t: [Math.round(t.x * 10) / 10, Math.round(t.y * 10) / 10], r: v && v.radius, first: first > 0, far: farFirst, bites, gone: k, cd, want: [MAGMA_RADIUS, MAGMA_LIFE, MAGMA_TICK, MAGMA_EVERY] }; })()`);
+        same(r.fired, true, 'it did not open'); same(r.move, 'MAGMA VENT', 'the Thermite Burrower\'s move'); same(JSON.stringify(r.at), JSON.stringify(r.t), 'not under the enemy');
+        same(r.r, r.want[0], 'its radius'); same(r.first, true, 'no bite as it opened'); same(r.far, 0, 'it reached an enemy beyond its radius');
+        same(r.bites, Math.floor(r.want[1] / r.want[2]) - 1, 'bursts after the first (one a second while it is open): ' + r.bites); ok(r.gone <= r.want[1] + 2, 'it stayed open too long: ' + r.gone); same(r.cd, r.want[3], 'the wait');
+    });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);
             return { ids, names, dupN: names.length - new Set(names).size, idOk: ids.every(k => MOVES[k].id === k), missing }; })()`);

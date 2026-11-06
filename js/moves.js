@@ -25,6 +25,8 @@ const MOVES = {
     // THE FOLLOWER COMBAT REDESIGN (docs/FOLLOWER-COMBAT-REDESIGN.md): the Static Orb's second move, chosen on its INFO tab (SONIC ROLL stays its default), and the Thunderhead's move.
     pinball:           { id: "pinball",           name: "PINBALL",           fn: f => pinball(f) },
     static_vortex:     { id: "static_vortex",     name: "STATIC VORTEX",     fn: f => staticVortex(f) },
+    // the Thermite Burrower's alternate (the owner, 2026-11-06: "Short and hot"; js/evolution.js magmaVent)
+    magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        fn: f => magmaVent(f) },
 };
 const MOVE_BY_NAME = {};
 for (const id in MOVES) MOVE_BY_NAME[MOVES[id].name] = MOVES[id];

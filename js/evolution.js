@@ -131,6 +131,9 @@ const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL
 const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;   // SONIC ROLL (was STATIC RUSH: renamed, kept as it is)
 // THE FOLLOWER COMBAT REDESIGN (the owner's brief, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md). Every number below is PROVISIONAL (that doc's §11.2), to tune in play.
 // HEXFIRE: a fire projectile at the nearest enemy in reach; where it lands, a stationary burning circle that hurts enemies only, never grows and never moves. One circle an Ember Hood: a new one takes its last one's place.
+// MAGMA VENT (the Thermite Burrower's alternate; the owner, 2026-11-06: "Short and hot"; docs/NEXT-PHASE-ROADMAP.md §12.3): a small volcanic vent opened at the enemy it can see, bursting magma upward
+// every MAGMA_TICK frames for MAGMA_LIFE frames: each burst bites the enemies within MAGMA_RADIUS tiles that can be seen from the vent, for MAGMA_BITE × its power; then MAGMA_EVERY frames before the next.
+const MAGMA_RANGE = 6, MAGMA_EVERY = 1200, MAGMA_RADIUS = 1.5, MAGMA_LIFE = 480, MAGMA_TICK = 60, MAGMA_BITE = 0.6;   // reach (tiles) [reading], the wait (20 s), the burst's reach, 8 s, a burst a second, 60%
 const HALO_RANGE = 7, HALO_EVERY = 330, HALO_RADIUS = 1.2, HALO_LIFE = 240, HALO_TICK = 30, HALO_BITE = 0.25;   // its reach, the frames between, the circle's radius (tiles) and life (frames), a bite every HALO_TICK frames of HALO_BITE × power
 // PINBALL (the Static Orb's second move): it rolls into the nearest enemy, then on into the nearest one it has not hit within PIN_HOP of it, and on, while one is that near: each enemy once, no fixed count.
 const PIN_RANGE = 4, PIN_HOP = 3, PIN_SPEED = 0.35, PIN_TOUCH = 0.7, PIN_MULT = 1.44, PIN_EVERY = 300, PIN_MAX_FRAMES = 600, PIN_MAX_DIST = 30;   // reach, the hop, its speed (tiles a frame), a collision within PIN_TOUCH, × power a collision, the wait after a roll, and the safety stops (frames, tiles rolled)
@@ -213,7 +216,7 @@ const EVOLUTIONS = {
     // The FIRE TECHNICIAN, design No. 855 (the "THERMITE BU…" sheet, its name cut off on it, then the user's review: "a black body with red glowing accents",
     // "thick armored arms", "more like a bear/zoids style tank animal ... same silhouette", "no ears or any face"): a hunched black armoured digger with seams of
     // red light and a cone drill for a nose glowing red in its groove, on a bear's thick armoured legs with clawed paws. The drill turns, so the sheet carries its own light.
-    thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", hit: "BURROW STRIKE", sheet: "img/evo/thermite.png",
+    thermite:{ id: "thermite", name: "THERMITE BURROWER", element: "fire", role: "camper", hit: "BURROW STRIKE", move: "MAGMA VENT", sheet: "img/evo/thermite.png",
               cell: 144, anchor: [72, 114.2], core: [72, 74.8], noGlow: true, color: "#ff5a1f" },
     // The TOXIC TECHNICIAN, design No. 873 (the user's card, "BLIGHT SPIDER · TOXIC DEPLOY", then the review: "smaller, thinner, finer legs, and ... lower to the
     // ground"): a glass tank of bubbling toxin with black bands and a black front cap with a lens, on a black chassis riding low on six fine spider legs. The toxin
@@ -426,6 +429,18 @@ function hexfire(f) {
     f._sigAt = f0; f._sigCd = HALO_EVERY;
     f.dirX = dx / L; f.dirY = dy / L;
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "HEXFIRE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+function magmaVent(f) {
+    const foes = _evoFoesSeen(f.x, f.y, MAGMA_RANGE);
+    if (!foes.length || typeof elementEffects === "undefined") return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    for (let i = elementEffects.length - 1; i >= 0; i--) if (elementEffects[i].type === "magmavent" && elementEffects[i].by === f) elementEffects.splice(i, 1);   // (its last vent closes)
+    const e = { type: "magmavent", x: t.x, y: t.y, radius: MAGMA_RADIUS, life: MAGMA_LIFE, maxLife: MAGMA_LIFE, by: f, bite: (f.power || 10) * MAGMA_BITE, element: "fire" };
+    elementEffects.push(e); fieldBite(e, "fire");   // (the first burst as it opens)
+    f._sigAt = f0; f._sigCd = MAGMA_EVERY; const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L;
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "MAGMA VENT", color: "#ff7a2a", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 // The circle where a HEXFIRE lands: the same Ember Hood's last circle goes, and every enemy in the new one is bitten at once. Returns the circle.

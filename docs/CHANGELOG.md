@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **m · MAGMA VENT; a ledge onto the reservoir** (the owner, 2026-11-06: "Short and hot", "Add ledges"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06l` went to main at the owner's word ("Push to main").
+  - **MAGMA VENT**, the Thermite Burrower's move: a vent opens under the nearest enemy it can see within 6 tiles **[reading: placed by the follower, no third chip]**, bursts every second for 8 s, each burst 60% of its power to enemies within 1.5 tiles that can be seen from it; then a 20 s wait. INFO lists it.
+  - **A ledge west of the Nest's reservoir**, from the north ledge's east end: ice bridges now cross the water at 39 places, 8 of them onto the dam (was 35 and 5). The moat's outer sides were left as they are: the dam's east and south edges are the waterfall's spill lip **[reading]**.
+  - Tests: followercombat (MAGMA VENT, new), moves, evolution, unitinfo, sewers, sewerquest, facility, facilityplay, bible, techlevel1, globals. No full run. Not playtested.
+
 - **l · Rubble in the boss gate's place** (the owner, 2026-11-06: "Rubble, drilled", "Many crossings"; on the branch; commit named in git log).
   - **Main:** build `2026-11-06k` went to main at the owner's word ("Push to main").
   - The way onto the Nest's dam is **rubble** a fire technician drills through (with its own label and notice), or an ice bridge. The boss gate's seal and station are gone; the module is only for the install; the plate names both ways.

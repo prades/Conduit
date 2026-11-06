@@ -471,6 +471,12 @@ Readings taken (each stands until the owner says otherwise):
 - **"Access points in troves"**: answered "Many crossings". Measured in `2026-11-06l`: 35 places the ice crosses the river, 5 onto the dam; none across the reservoir or the moat (their far banks are not floor). More onto the dam would need floor on those banks: the owner's call.
 - **MAGMA VENT** (the Thermite Burrower's alternate): next, with its numbers.
 
+## 1za. Build m's readings: MAGMA VENT, the reservoir's ledge (build `2026-11-06m`, on the branch)
+
+1. **MAGMA VENT is placed by the follower**, under the nearest enemy it can see within 6 tiles (the reach is a reading), as its signature move: no third chip on the Thermite Burrower's card. A vent at a spot the player picks would need a third chip: the owner's call.
+2. **A vent at a time** per Thermite Burrower (a new one closes its last), as HEXFIRE's circle.
+3. **Ledges:** one, west of the reservoir (3 more crossings onto the dam, 8 in all). The moat's outer sides were not given ledges: the dam's east and south edges are the waterfall's spill lip, and a ledge there would change that look. The owner's call if more are wanted.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
