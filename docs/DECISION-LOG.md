@@ -1400,3 +1400,36 @@ The jelly texture, as the theme was written (soft membrane cells with nuclei, a 
 ### Impact
 - All five species textures are approved: crustacean crust, mollusk sheen, elemental storm clouds, drone panels, jelly cells.
 - Next, for a yes: the five other race emblems (beetle, scorpion, spider, mantis, moth). Gate 2 closes with them.
+
+## DECISION: Part 2's gate 2 closed: every look approved
+
+- **Date:** 2026-11-06
+- **Status:** Approved (designed, not built). Gate 2 is closed. Part 2's build may start when the owner says.
+- **Branch/build:** mockups at commit 96ebe4c on `claude/start-game-project-HSh7Z`; the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2", now approved), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3, the entries before this one
+
+### Context
+The last set, the five other race emblems (beetle, scorpion, spider, mantis, moth), was shown on its own board and in the enemy card's rows.
+
+### Decision
+- "Approve all five".
+
+### Alternatives considered
+- Change some.
+
+### Impact
+Gate 2's looks, all approved on 2026-11-06:
+- **Textures:**
+  - crustacean: a faint bumpy crust, at half size on a follower;
+  - mollusk: a pearly sheen;
+  - elemental: storm clouds, in the element's colour on a follower;
+  - drone: machined panels;
+  - jelly: membrane cells.
+- **Theme colours:** CHITIN AMBER, NACRE, PRISM WHITE, GUNMETAL, GEL ORCHID.
+- **Emblems:** 17 in the flat one-colour style (5 species, 6 elements, 6 races).
+- **The enemy card's row:** WEAK and RESISTS in short words, with the race's emblem.
+- **Where it all goes:** as drawn. Species cards wear their texture and colour, with the emblem by the kind. Followers carry the texture as a third backdrop layer at 38%. The roster's subclass tag carries the emblem.
+
+Not covered here: BLOOM's emblem and texture, which come with BLOOM.
+
+The drawings to build from are in design/ui-mocks/part2-looks-art.js. The build is Part 2's next step in `FOLLOWING-UPDATE.md` (js/cardart.js, js/cardsui.js, js/commandcenter.js, the enemy card), with its tests.

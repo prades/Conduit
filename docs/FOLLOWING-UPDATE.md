@@ -5,8 +5,8 @@
   - **Part 1a** (the Player card rules and the Gunslinger's six) is implemented and tested in build `2026-11-02h`, on main since the owner's "Push to main". Its three main readings were confirmed as built (`OPEN-QUESTIONS.md` §1p).
   - **Part 1b** (the Technomancer's six) is implemented and tested in build `2026-11-02i`, on main since the owner's "Push to main"; two readings confirmed as built (`OPEN-QUESTIONS.md` §1q).
   - **Part 1c** (the Mutator's six) is implemented and tested in build `2026-11-02j`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1r, for the owner. All eighteen kits are in.
-  - **Part 1d** (Series 2 deals the eighteen; Side Quest sells the Sewers' three) is implemented and tested in build `2026-11-06c`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1u (the shelf's Player cards kept as built, the rest for the owner). **All of Part 1 is built.** **Part 2's gate-2 mockups are drafted** (2026-11-06, Part 2 below) and wait on the owner's yes or correction; nothing in the game has changed for them.
-  - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Still open: gate 2 (the mockups, drafted 2026-11-06) and gate 3 (each card item).
+  - **Part 1d** (Series 2 deals the eighteen; Side Quest sells the Sewers' three) is implemented and tested in build `2026-11-06c`, on main since the owner's "Push to main"; its readings are in `OPEN-QUESTIONS.md` §1u (the shelf's Player cards kept as built, the rest for the owner). **All of Part 1 is built.** **Part 2's gate 2 is approved** (2026-11-06, every look; Part 2 below). Its build is next; nothing in the game has changed for it yet.
+  - **Each part's gate is the owner's.** Gate 1 (the kits) was approved on 2026-11-02, so Part 1 can be built. Gate 2 (the mockups) was approved on 2026-11-06. Still open: gate 3 (each card item).
 - **Branch/build:** drafted on `claude/start-game-project-HSh7Z` at build `2026-11-02e`.
   - It follows the update in `NEXT-UPDATE.md`.
   - That update's last step, Build C (the breeding draws, Side Quest drawn as the void walker), came first: implemented in build `2026-11-02f`.
@@ -136,7 +136,7 @@ Each part is its own commit, with its own tests and a full green run before the 
   - The texture: "New cloud texture is puffy and stormy no repreating icons". It was redrawn as storm clouds: "Approve as drawn".
 - **The drone texture** (GUNMETAL, machined panels): "Approve as drawn".
 - **The jelly texture** (GEL ORCHID, membrane cells): "Approve as drawn". All five species textures are set.
-- **The five other race emblems** are drawn and on the design canvas, for the owner's yes: the last of gate 2.
+- **The five other race emblems:** "Approve all five". **Gate 2 is closed: every look is approved** (`DECISION-LOG.md`). The build is next, when the owner says.
 
 **Then the build:**
 - the species textures on species cards and follower cards;
@@ -211,7 +211,7 @@ The BLOOM build itself would come in the update after this one, or late in this 
 
 1. **This scope and order:** Parts 1 to 4, and whether BLOOM's drafts come in this update. **Approved** 2026-11-02 ("Approve as drafted": BLOOM's drafts are not in this update).
 2. **Gate 1:** the 18 Player card kits (the draft comes first), the player's elemental part, the electric Technomancer role's new name. **Approved** 2026-11-02: "Approve as drafted"; "The role's element"; "ARC WARDEN".
-3. **Gate 2:** the looks' mockups. **Drafted** 2026-11-06 (Part 2 above); waiting on the owner.
+3. **Gate 2:** the looks' mockups. **Approved** 2026-11-06, every look (Part 2 above; `DECISION-LOG.md`).
 4. **Gate 3:** the first card item, then each batch.
 5. **Build C's open point:** whether Side Quest's picture in the dialogue box changes too. **Answered** 2026-11-02: "Keep as built".
 

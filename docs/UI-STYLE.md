@@ -75,7 +75,7 @@ The owner: "We also need to make themes for the different species and give textu
 - **Open:** the themes themselves (colours, motifs), the icon style, and how three layers stay readable on a follower card.
 - **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop.
 
-**Gate 2, in progress** (2026-11-06; nothing in the game has changed).
+**Gate 2: approved, every look** (2026-11-06; `DECISION-LOG.md`). Designed, **not built**: nothing in the game has changed yet.
 - **Approved so far** (`DECISION-LOG.md`):
   - the crustacean texture as drawn in round 3 ("Approve as drawn");
   - the icon style, flat one-colour emblems ("Yes, this style");
@@ -87,7 +87,7 @@ The owner: "We also need to make themes for the different species and give textu
 - **Approved:** the elemental texture as storm clouds ("Approve as drawn"; the owner's direction, of a first try with crystal clusters: "New cloud texture is puffy and stormy no repreating icons").
 - **Approved:** the drone texture, machined panels ("Approve as drawn").
 - **Approved:** the jelly texture, membrane cells ("Approve as drawn"). All five species textures are set.
-- **Drawn, waiting on a yes** (2026-11-06): the five other race emblems, the last of gate 2. Then the build.
+- **Approved:** the five other race emblems ("Approve all five"). Gate 2 is closed; the build is next.
 - The block below is the current proposal. The earlier rounds are at its end.
 - **Where to see it:** the Part 2 boards on the design canvas "Conduit 3D card concepts": the approved crustacean row, and above it the mollusk and the species emblems. The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
 - **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
@@ -132,7 +132,7 @@ The owner: "We also need to make themes for the different species and give textu
     - ICE: a snowflake, six arms with twigs round a small hexagon;
     - FLUX: a vortex, three arms round an eye;
     - CORE: a hexagon cell, a ring cut out of it and a hexagon at its heart.
-  - Drawn, for a yes (the other five races, in the enemy colour):
+  - Approved (the other five races, in the enemy colour, "Approve all five"):
     - BEETLE: horned, its shell split down its back, the line of the pronotum cut across, six bent legs;
     - SCORPION: open pincers, eight short legs, the tail curled up to its sting;
     - SPIDER: a round abdomen with a mark cut in it, the head, eight long bent legs;

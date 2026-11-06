@@ -484,7 +484,9 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
     **The jelly texture (membrane cells)** was drawn and put on the design canvas. **Answered:** "Approve as drawn". All five species textures are set.
 
-    **The five other race emblems** (beetle, scorpion, spider, mantis, moth) are drawn and on the design canvas, in the race board and in the enemy card's rows, **for your yes or correction**. They are the last of gate 2.
+    **The five other race emblems** (beetle, scorpion, spider, mantis, moth) were drawn and put on the design canvas. **Answered:** "Approve all five".
+
+    **Gate 2 is closed (2026-11-06): every look is approved.** Nothing is open here but the build; BLOOM's looks come with BLOOM.
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;
