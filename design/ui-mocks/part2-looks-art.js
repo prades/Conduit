@@ -241,6 +241,35 @@
         })() },
         fire: { col: "#ff3d14", d: "M16 30C9 30 6 25 6.5 20C7 15 10.5 12.5 11.5 8.5C13 11 13.5 12.5 13.5 14.5C15.5 11.5 16.5 7 15.5 2.5C20.5 5.5 25.5 11.5 25.5 19.5C25.5 25.5 21.5 30 16 30Z"
             + "M16 27C19 27 21 25 21 22.5C21 21 20.5 19.5 19 17.5C19 19 18.5 20 17.5 21C17.5 19.5 16.5 18 14.5 16C14 18.5 12 19.5 11.5 22C11 24.5 12.5 27 16 27Z" },   // cut: the heart of the flame
+        beetle: { col: "#ff8a6a", d: (() => {   // a horned beetle: the shell split down its back, the line of the pronotum, six bent legs
+            let d = ell(16, 19, 8.5, 10, true) + ell(16, 7.5, 4.2, 3.4, true) + poly([[15, 5], [16, .8], [17.6, 1.6], [17, 5.2]], true);
+            [[[9.5, 13.5], [5.5, 11.5], [3.5, 8]], [[8.2, 18.5], [3.8, 19], [2, 22.5]], [[9, 24], [5.5, 27], [5, 30.5]]].forEach(l => { d += both(l, 1.7); });
+            return d + poly([[10.2, 12.1], [21.8, 12.1], [21.8, 13], [10.2, 13]], false) + poly([[15.55, 13.8], [16.45, 13.8], [16.45, 28], [15.55, 28]], false);   // cuts: the pronotum's line, the split of the shell
+        })() },
+        scorpion: { col: "#ff8a6a", d: (() => {   // a scorpion: open pincers, eight short legs, the tail curling up to its sting
+            let d = ell(16, 15, 4.6, 6, true) + both([[13.4, 11], [9.8, 8.6], [8.4, 7.4]], 2) + pie(7.5, 5.5, 3.4, -115, 28) + pie(24.5, 5.5, 3.4, -65, 28);
+            [[[12, 13], [7.5, 12.5], [5.6, 14.6]], [[11.6, 15.4], [7, 16.2], [5.4, 18.6]], [[11.8, 17.6], [7.6, 19.6], [6.6, 22.2]], [[12.6, 19.6], [9.6, 23], [9.4, 25.6]]].forEach(l => { d += both(l, 1.4); });
+            [[16, 22.5, 2.9], [16.6, 26, 2.7], [18.6, 28.8, 2.5], [21.8, 29.6, 2.3], [24.6, 27.6, 2.1], [25.6, 24.4, 1.9]].forEach(q => { d += disc(q[0], q[1], q[2]); });   // the tail's segments, overlapping into one curl
+            return d + poly([[24.4, 23.6], [27.2, 22.6], [25.2, 19.4]], true);   // the sting
+        })() },
+        spider: { col: "#ff8a6a", d: (() => {   // a spider: the round abdomen with a mark cut in it, the head, eight long bent legs
+            let d = ell(16, 20.5, 6.2, 7, true) + ell(16, 10, 4, 3.6, true);
+            [[[13, 9], [8, 4.5], [4.5, 6.5]], [[12.6, 10.4], [6.5, 8.8], [2.6, 12.4]], [[12.6, 11.8], [6.8, 14.4], [3.2, 19.4]], [[13.2, 12.8], [8.6, 18.6], [6.4, 25]]].forEach(l => { d += both(l, 1.5); });
+            return d + poly([[16, 17.4], [17.6, 20.2], [16, 23], [14.4, 20.2]], false);   // cut: the mark on its back
+        })() },
+        mantis: { col: "#ff8a6a", d: (() => {   // a mantis: the triangular head with its eyes, the long neck, the folded raptor arms, a banded abdomen, four legs
+            let d = poly([[11.8, 3.2], [20.2, 3.2], [16, 8]], true) + disc(12, 3.6, 1.6) + disc(20, 3.6, 1.6) + bar([[16, 7.6], [16, 15.2]], 2.2) + ell(16, 22.6, 3.8, 7.6, true);
+            d += both([[15, 10.6], [10.2, 7.6], [8.6, 13.6]], 1.9) + poly([[8.2, 13.2], [6.6, 12.4], [8.6, 11.4]], true) + poly([[23.8, 13.2], [25.4, 12.4], [23.4, 11.4]], true);   // the arms and their hooks
+            [[[14.6, 15.6], [9.4, 18.8], [7.6, 24.6]], [[14.4, 18], [10, 23.6], [9.4, 30]]].forEach(l => { d += both(l, 1.3); });
+            return d + poly([[13.2, 20.6], [18.8, 20.6], [18.8, 21.4], [13.2, 21.4]], false) + poly([[13.4, 24.6], [18.6, 24.6], [18.6, 25.4], [13.4, 25.4]], false);   // cuts: the abdomen's bands
+        })() },
+        moth: { col: "#ff8a6a", d: (() => {   // a moth: four spread wings with an eyespot cut in each upper one, the body, the head, two feelers
+            let d = ell(16, 17, 1.8, 8.5, true) + disc(16, 7.6, 2);
+            d += poly([[14.6, 10], [7.5, 4.5], [2, 6], [2.4, 13.5], [7, 17.5], [14.4, 15.6]], true) + poly([[17.4, 10], [24.5, 4.5], [30, 6], [29.6, 13.5], [25, 17.5], [17.6, 15.6]], true);
+            d += poly([[14.4, 17], [8, 18.5], [4.5, 23.5], [7.5, 28], [12.5, 26.5], [14.8, 21]], true) + poly([[17.6, 17], [24, 18.5], [27.5, 23.5], [24.5, 28], [19.5, 26.5], [17.2, 21]], true);
+            d += both([[15.2, 6.2], [13, 2.4], [10.2, 1.4]], 1.2);
+            return d + ell(7, 10.5, 1.8, 1.8, false) + ell(25, 10.5, 1.8, 1.8, false);   // cuts: the eyespots
+        })() },
         ant: { col: "#ff8a6a", d: (() => {
             let d = disc(16, 6.6, 3) + ell(16, 13, 2.3, 2.6, true) + ell(16, 22.6, 5, 6.5, true);                // head, waist, abdomen
             d += both([[14.6, 4.6], [12.2, 1.9], [9.8, 1.6]], 1.4);                                            // the feelers
