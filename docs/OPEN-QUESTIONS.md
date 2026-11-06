@@ -304,6 +304,28 @@ Part 1c followed the approved kits. Where they did not say, these readings were 
    - Its health and pace follow the role on the card tick, within half a second.
 6. **The words.** "EVERY BITE OF YOUR CLONE TO POISON: …", "ENEMIES IN YOUR SERUM'S POOL, ON EVERY HEAL BEAT, TO BURN: …". SPLICER's first line names the lash only ("YOUR LASH IS FLUX"). When CRYO GENETICIST preserves the clone, the screen says "… HAS FALLEN — PRESERVED AT ONCE, ITS 2 UPGRADES KEPT".
 
+## 1s. The follower combat redesign, the fire and electric moves: readings (build `2026-11-03a`, on the branch; `FOLLOWER-COMBAT-REDESIGN.md`)
+
+This build followed the approved brief and the owner's answers (`DECISION-LOG.md`). Every number is the provisional one in `FOLLOWER-COMBAT-REDESIGN.md` §11.2, to tune in play. Where the brief did not say, these readings were taken, each easy to change; they are the owner's to confirm or change.
+1. **QUILL BURST:** the middle quill flies straight at the nearest enemy and the other four fan out evenly either side of it. A quill that touches nobody flies its full reach and is gone. Nothing burns.
+2. **FIREBALL:** a name only. The Ember Hood's everyday shot is the Mages' fire shot, which the game already drew as a fireball; its look, numbers and behaviour are unchanged.
+3. **HEXFIRE:**
+   - the shot does no damage of its own (FIREBALL is the direct hit);
+   - it lands on the first enemy it touches, or where it was aimed if nothing was in the way;
+   - the circle bites every enemy in it as it lands, then every half second, through the Ember Hood as a move;
+   - the retired Cinder Halo, which shares the Ember Hood's move, gets the new HEXFIRE too.
+4. **PINBALL:**
+   - each collision does the same damage (no rise or fall along the chain), and each hit is a little brighter;
+   - it picks only an enemy it can see, and stops at a wall, when it falls, is thrown or is told to RETREAT;
+   - its wait counts from the end of a roll;
+   - it is the Static Orb's alone: the retired electric brawlers (Storm Manta, Prism Hood, Volt Ring) keep SONIC ROLL by itself.
+5. **CHAIN LIGHTNING:** the first jump is 60% of the shot; each enemy is struck once; the Reaver and an electric Mage egg keep the plain shot.
+6. **STATIC VORTEX:**
+   - it is cast on the nearest enemy in reach, not on the biggest cluster;
+   - its bites read the Thunderhead's power (ATK), as every move does. §11.2's provisional value said SP.ATK; the established system has a move read ATK, so this follows it;
+   - an enemy can walk against the pull, and a stronger knock is left as it is.
+7. **An observation on the existing shots, not changed:** a follower shot touches an enemy within 30 px of (Δx × 60, Δy × 30), so its touch is about half a tile across the floor's x and a whole tile across its y. QUILL BURST's quills therefore spread less sharply in one direction than in the other. It is the shots' existing hit test (`js/game.js`), shared by every follower shot and the sentries, so it was left as it is. A rounder touch would be a separate change, the owner's call.
+
 ## 2. Newly open
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)

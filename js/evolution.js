@@ -128,15 +128,27 @@ const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) dra
 const BLOOM_RADIUS = 1.8, BLOOM_EVERY = 360, BLOOM_MULT = 2.0, BLOOM_BURN = 180;
 const REAVER_RANGE = 6, REAVER_EVERY = 300, REAVER_MULT = 2.5, REAVER_CHAIN = 2, REAVER_HOP = 2.5, REAVER_CHAIN_SHARE = 0.6;
 const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
-const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;
-const HALO_RANGE = 7, HALO_EVERY = 330, HALO_ROUNDS = 6, HALO_MULT = 0.8, HALO_BURN = 150;
+const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;   // SONIC ROLL (was STATIC RUSH: renamed, kept as it is)
+// THE FOLLOWER COMBAT REDESIGN (the owner's brief, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md). Every number below is PROVISIONAL (that doc's §11.2), to tune in play.
+// HEXFIRE: a fire projectile at the nearest enemy in reach; where it lands, a stationary burning circle that hurts enemies only, never grows and never moves. One circle an Ember Hood: a new one takes its last one's place.
+const HALO_RANGE = 7, HALO_EVERY = 330, HALO_RADIUS = 1.2, HALO_LIFE = 240, HALO_TICK = 30, HALO_BITE = 0.25;   // its reach, the frames between, the circle's radius (tiles) and life (frames), a bite every HALO_TICK frames of HALO_BITE × power
+// PINBALL (the Static Orb's second move): it rolls into the nearest enemy, then on into the nearest one it has not hit within PIN_HOP of it, and on, while one is that near: each enemy once, no fixed count.
+const PIN_RANGE = 4, PIN_HOP = 3, PIN_SPEED = 0.35, PIN_TOUCH = 0.7, PIN_MULT = 1.44, PIN_EVERY = 300, PIN_MAX_FRAMES = 600, PIN_MAX_DIST = 30;   // reach, the hop, its speed (tiles a frame), a collision within PIN_TOUCH, × power a collision, the wait after a roll, and the safety stops (frames, tiles rolled)
+// CHAIN LIGHTNING (the Thunderhead's everyday shot): the Mages' shot, then on from the enemy it struck to the nearest one not yet struck within CHAIN_HOP, each jump CHAIN_SHARE of the last, until none is that near or a jump would do under CHAIN_MIN.
+const CHAIN_HOP = 2.5, CHAIN_SHARE = 0.6, CHAIN_MIN = 1;
+// STATIC VORTEX (the Thunderhead's move): a stationary storm at the nearest enemy in reach; enemies in it are pulled toward its middle and take electric damage until it runs out.
+const VORTEX_RANGE = 7, VORTEX_EVERY = 330, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2;   // reach, the frames between, its radius and life, the pull (tiles a frame), a bite every VORTEX_TICK frames of VORTEX_MULT × power
 const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
 const CALDERA_RADIUS = 2.4, CALDERA_EVERY = 330, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
 const MAW_RANGE = 1.8, MAW_EVERY = 300, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
-const QUILL_RANGE = 4, QUILL_SURE = 1, QUILL_CHANCE = 0.75, QUILL_EVERY = 240, QUILL_MULT = 2.0, QUILL_BONUS = 0.25, QUILL_SPLASH = 0.8;   // QUILL BURST: its reach, the distance of a sure hit, the chance at the reach, the frames between, the base damage, the fixed bonus on a hit, the splash
+// QUILL BURST (the redesign): EXACTLY five quills at once (approved), fanned forward, the middle one at the nearest enemy; each its own follower shot that stops at the first enemy it touches. The fan, reach, speed, damage and wait are PROVISIONAL.
+const QUILL_RANGE = 4, QUILL_EVERY = 240, QUILL_COUNT = 5, QUILL_FAN = 40, QUILL_MULT = 0.5, QUILL_SPEED = 0.18;   // its reach (tiles), the frames between, the quills, the fan (degrees, edge to edge), × power a quill, its speed (the follower shots')
 
+// THE FOLLOWER COMBAT REDESIGN (the owner, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md): `shot` names a Mage form's everyday shot where it has a name of its own (the Ember Hood's FIREBALL, the
+// Thunderhead's CHAIN LIGHTNING, which conducts on: evoShotOnHit). The Static Orb's moves are SONIC ROLL (STATIC RUSH renamed) and PINBALL; the Thunderhead's is STATIC VORTEX, ARC VOLLEY staying
+// with the retired Reaver. The retired electric brawlers keep SONIC ROLL alone.
 const EVOLUTIONS = {
     // LEGACY: the first fire brawler. New evolutions use the Quillstone; a follower already evolved into this keeps it.
     bloom:  { id: "bloom",  legacy: true, name: "BUNKER BLOOM", element: "fire",     role: "brawler", move: "PETAL BLAZE", moves: ["petal_blaze", "bomb_lob"], sheet: "img/evo/bloom.png",
@@ -146,7 +158,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 58.4] },
     // The ELECTRIC MAGE ("sniper" in the code), design No. 541: a smooth cloud of dark gas over a flickering glow, a crown of black spikes,
     // four glowing spikes circling its base and gas fins that ripple. The glow flickers, so its sheet carries its own light.
-    thunderhead: { id: "thunderhead", name: "THUNDERHEAD", element: "electric", role: "sniper", move: "ARC VOLLEY", sheet: "img/evo/thunderhead.png",
+    thunderhead: { id: "thunderhead", name: "THUNDERHEAD", element: "electric", role: "sniper", move: "STATIC VORTEX", shot: "CHAIN LIGHTNING", sheet: "img/evo/thunderhead.png",
               cell: 144, anchor: [72, 114.2], core: [72, 78.3], noGlow: true, color: "#ffee33" },
     // Its reactor is in its head, which moves with its facing: the sheet carries its own light.
     // LEGACY: the first flux mage. New evolutions use the Voidstar; a follower already evolved into this keeps it.
@@ -160,7 +172,7 @@ const EVOLUTIONS = {
     warden: { id: "warden", legacy: true, name: "AEGIS WARDEN", element: "core",     role: "brawler", sheet: "img/evo/warden.png",
               cell: 144, anchor: [72, 114.2], core: [72, 59], noGlow: true, color: "#33e6c4" },
     // LEGACY: the first electric brawler. New evolutions use the Prism Hood; a follower already evolved into this keeps it.
-    manta:  { id: "manta",  legacy: true, name: "STORM MANTA",  element: "electric", role: "brawler", move: "STATIC RUSH",  sheet: "img/evo/manta.png",
+    manta:  { id: "manta",  legacy: true, name: "STORM MANTA",  element: "electric", role: "brawler", move: "SONIC ROLL",  sheet: "img/evo/manta.png",
               cell: 144, anchor: [72, 114.2], core: [72, 57], noGlow: true, color: "#ffee33" },
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     // LEGACY: the first fire mage, whose design went to the electric brawler (the Volt Ring). A follower already evolved into this keeps it.
@@ -175,19 +187,19 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 93], noGlow: true, color: "#9fe8ff", ground: "img/evo/maw_g.png" },
     // The ELECTRIC BRAWLER, design No. 312: a black hollow pyramid hood over a diamond. The diamond turns, so its sheet carries its own light.
     // LEGACY: the first design of the electric brawler, which went to the fire mage (the Ember Hood). A follower already evolved into this keeps it.
-    prism:  { id: "prism",  legacy: true, name: "PRISM HOOD", element: "electric", role: "brawler", move: "STATIC RUSH", sheet: "img/evo/prism.png",
+    prism:  { id: "prism",  legacy: true, name: "PRISM HOOD", element: "electric", role: "brawler", move: "SONIC ROLL", sheet: "img/evo/prism.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ffee33" },
     // THE SWAP: the electric brawler and the fire mage traded designs ("I don't like the fire mage design, so we'll just have it there on the
     // electric as a placeholder"), each recoloured for its new element. Moves and roles stay with the slots.
     // LEGACY: the ring-drone placeholder. New evolutions use the Static Orb; a follower already evolved into this keeps it.
-    voltring:{ id: "voltring", legacy: true, name: "VOLT RING", element: "electric", role: "brawler", move: "STATIC RUSH", sheet: "img/evo/voltring.png",
+    voltring:{ id: "voltring", legacy: true, name: "VOLT RING", element: "electric", role: "brawler", move: "SONIC ROLL", sheet: "img/evo/voltring.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ffee33" },
     // The ELECTRIC BRAWLER, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
     // pair of long thick trapezoid brackets down its back, static arcing between them. The tread and core move, so its sheet carries its own light.
-    staticorb:{ id: "staticorb", name: "STATIC ORB", element: "electric", role: "brawler", move: "STATIC RUSH", sheet: "img/evo/staticorb.png",
+    staticorb:{ id: "staticorb", name: "STATIC ORB", element: "electric", role: "brawler", move: "SONIC ROLL", moves: ["static_rush", "pinball"], sheet: "img/evo/staticorb.png",
               cell: 144, anchor: [72, 114.2], core: [72, 80.1], noGlow: true, color: "#ffe033" },
     // The FIRE MAGE ("sniper" in the code): the hooded pyramid with the hovering gems (design No. 391), recoloured for fire. The gems turn, so its sheet carries its own light.
-    embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire", "bomb_lob"], sheet: "img/evo/embercowl.png",
+    embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire", "bomb_lob"], shot: "FIREBALL", sheet: "img/evo/embercowl.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f" },
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
     hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", sheet: "img/evo/hammerslug.png",
@@ -291,6 +303,7 @@ function evolutionTick() {
         const d = evolvedDef(f); if (!d) continue;
         if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
+        if (f._pinball) continue;   // a PINBALL rolling: nothing else fires, and its wait starts when it stops (pinballStep)
         f._sigCd = (f._sigCd || 0) - 1;
         if (f._sigCd > 0) continue;
         if (f.retreatUntil > f0) continue;   // told to RETREAT (js/mixtool.js): no signature moves until it is over
@@ -319,25 +332,23 @@ function petalBlaze(f) {
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: (evolvedDef(f) || {}).move || "PETAL BLAZE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
 }
-// QUILL BURST (the Quillstone's): heated quills at the nearest enemy in range. The chance of a hit at distance d: QUILL_CHANCE at QUILL_RANGE, rising in a straight line to 1 within QUILL_SURE.
-function quillChance(d) { return QUILL_CHANCE + (1 - QUILL_CHANCE) * Math.max(0, Math.min(1, (QUILL_RANGE - d) / (QUILL_RANGE - QUILL_SURE))); }
+// QUILL BURST (the Quillstone's; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.2): QUILL_COUNT crystal quills launched AT ONCE in a forward fan, QUILL_FAN degrees edge to edge,
+// the middle one at the nearest enemy in reach. Each is a follower shot of its own (js/clone.js spawnFollowerProjectile; moved and hit in js/game.js): it flies straight on for QUILL_RANGE
+// tiles and stops at the FIRST enemy it touches, which takes it; it pierces nothing, and nothing explodes or splashes. A cluster can catch several quills; spread-out enemies few. Nothing
+// is rolled. (It was one volley with a hit chance and a splash: superseded.) True when it fired.
 function quillBurst(f) {
     const foes = _evoFoes(f.x, f.y, QUILL_RANGE);
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
-    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, d = Math.hypot(dx, dy), L = d || 1, hit = Math.random() < quillChance(d);
-    if (hit) for (const a of _evoFoes(t.x, t.y, QUILL_SPLASH)) applyDamage(a, (f.power || 10) * QUILL_MULT * (1 + QUILL_BONUS), f, "fire", false, false, DMG_HIT_ALT);   // (the target and what stands against it, the same hit; nobody burns)
+    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, a0 = Math.atan2(t.y - f.y, t.x - f.x), dmg = (f.power || 10) * QUILL_MULT;
+    const gap = QUILL_COUNT > 1 ? (QUILL_FAN * Math.PI / 180) / (QUILL_COUNT - 1) : 0;
+    if (typeof spawnFollowerProjectile === "function") for (let i = 0; i < QUILL_COUNT; i++) {
+        const a = a0 + (i - (QUILL_COUNT - 1) / 2) * gap;   // (the middle one straight at the enemy)
+        spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
+    }
     f._sigAt = f0; f._sigCd = QUILL_EVERY;
-    if (f.dirX !== undefined) { f.dirX = dx / L; f.dirY = dy / L; }
-    if (typeof elementEffects !== "undefined") {
-        const past = hit ? 0 : 1.6;   // (a miss flies on past the target)
-        elementEffects.push({ type: "quills", x: f.x, y: f.y, tx: t.x + dx / L * past, ty: t.y + dy / L * past, life: 14, maxLife: 14 });
-        if (hit) elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#ff7a2e", radius: QUILL_SPLASH, life: 20 });
-    }
-    if (typeof floatingTexts !== "undefined") {
-        floatingTexts.push({ world: true, x: f.x, y: f.y, text: "QUILL BURST", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
-        if (!hit) floatingTexts.push({ world: true, x: t.x, y: t.y, text: "MISS", color: "#c8d4ee", life: 45, vy: -0.06, size: 11 });
-    }
+    if (f.dirX !== undefined) { f.dirX = Math.cos(a0); f.dirY = Math.sin(a0); }
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "QUILL BURST", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
 }
 // ARC VOLLEY: a charged arc into the nearest enemy in range, jumping on. True when it fired.
@@ -389,27 +400,39 @@ function singularityShot(f) {
     return true;
 }
 
-// HEXFIRE: six rounds at once, shared out among the nearest enemies in range (one by one, round the list).
-// True when it fired.
+// HEXFIRE (the Ember Hood's, and the retired Cinder Halo's; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.3): a fire projectile at the nearest enemy in reach. Where it
+// lands (on the first enemy it touches, or where it was aimed when nothing was in the way) it leaves a STATIONARY BURNING CIRCLE: an element effect (js/elements.js updateElementEffects),
+// HALO_RADIUS tiles across its middle, HALO_LIFE frames. Every enemy in it is bitten as it lands and every HALO_TICK frames after. It never grows and never moves, and it hurts enemies only
+// (FIRE BOMBS' burning ground hurts everyone). The projectile itself does no damage: FIREBALL is the direct hit, HEXFIRE the area denial. A new circle takes the place of the same Ember
+// Hood's last one (no stacking). (It was six instant rounds that set their targets burning: superseded.) True when it fired.
 function hexfire(f) {
     const foes = _evoFoes(f.x, f.y, HALO_RANGE);
-    if (!foes.length) return false;
+    if (!foes.length || typeof spawnFollowerProjectile !== "function") return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
-    const f0 = typeof frame !== "undefined" ? frame : 0, dmg = (f.power || 10) * HALO_MULT, pts = [];
-    for (let i = 0; i < HALO_ROUNDS; i++) {
-        const live = foes.filter(a => !a.dead);
-        if (!live.length) break;
-        const a = live[i % live.length];
-        applyDamage(a, dmg, f, "fire", false, false, DMG_HIT_ALT);
-        if (!a.dead) { a.burning = Math.max(a.burning || 0, HALO_BURN); a.burnDamage = Math.max(a.burnDamage || 0, (f.power || 10) * 0.08); }
-        pts.push({ x: a.x, y: a.y, hex: i });
-        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ff6622", radius: 0.45, life: 18 });
-    }
+    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1;
+    let landed = false;
+    const land = (x, y) => { if (landed) return; landed = true; hexfireCircle(f, x, y); };   // (once: a shot can touch an enemy the frame it runs out)
+    const p = spawnFollowerProjectile(f, t, "#ff5a1f", 0, 5, a => land(a.x, a.y), DMG_HIT_ALT, { range: L, kind: "hex" });
+    if (p) p.onLand = () => land(p.x, p.y);
     f._sigAt = f0; f._sigCd = HALO_EVERY;
-    f._arcPts = pts; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = true; f._arcCol = [255, 110, 34];
-    { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    f.dirX = dx / L; f.dirY = dy / L;
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "HEXFIRE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
+}
+// The circle where a HEXFIRE lands: the same Ember Hood's last circle goes, and every enemy in the new one is bitten at once. Returns the circle.
+function hexfireCircle(f, x, y) {
+    if (typeof elementEffects === "undefined") return null;
+    for (let i = elementEffects.length - 1; i >= 0; i--) if (elementEffects[i].type === "hexfire" && elementEffects[i].by === f) elementEffects.splice(i, 1);
+    const e = { type: "hexfire", x, y, radius: HALO_RADIUS, life: HALO_LIFE, maxLife: HALO_LIFE, by: f, bite: (f.power || 10) * HALO_BITE, element: "fire" };
+    elementEffects.push(e);
+    fieldBite(e, "fire");
+    return e;
+}
+// A stationary field's bite (HEXFIRE's circle, STATIC VORTEX): every enemy inside it takes the field's bite from the follower that made it, through the damage system as that follower's move (DMG_HIT_ALT)
+function fieldBite(e, el) {
+    if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return;
+    const r2 = e.radius * e.radius;
+    for (const a of actors) { if (!a || !isHostileTarget(a)) continue; const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy <= r2) applyDamage(a, e.bite, e.by || null, el, false, false, DMG_HIT_ALT); }
 }
 
 // CORRODE SHOT: one long shot that eats the target's armour, splashing weaker corrosion round it. True when it fired.
@@ -498,7 +521,8 @@ function gravitySlam(f) {
     return true;
 }
 
-// STATIC RUSH: dash to the nearest enemy in range, hit it, shock two more; all stunned. True when it fired.
+// SONIC ROLL (it was STATIC RUSH: the owner, 2026-11-02, "STATIC RUSH" is the SONIC ROLL that "already exists"; renamed, and kept as it is): dash to the nearest enemy in range, hit it,
+// shock two more; all stunned. Its id stays static_rush (a follower's saved choice). True when it fired.
 function staticRush(f) {
     const foes = _evoFoes(f.x, f.y, MANTA_RANGE);
     if (!foes.length) return false;
@@ -519,8 +543,104 @@ function staticRush(f) {
     f._sigAt = f0; f._sigCd = MANTA_EVERY;
     f._arcPts = hits.map(a => ({ x: a.x, y: a.y })); f._arcUntil = f0 + 20; f._arcStraight = false; f._arcCol = [255, 238, 51];
     if (typeof elementEffects !== "undefined") for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 18 });
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "STATIC RUSH", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SONIC ROLL", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
     return true;
+}
+
+// PINBALL (the Static Orb's second move, picked on its INFO tab; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.5): an automatic ricochet. It rolls into the nearest
+// enemy in reach; on each collision it picks the nearest enemy it has NOT hit this time within PIN_HOP of where it is and rolls into that; it goes on while one is that near. No fixed count:
+// each enemy is hit at most once a PINBALL, so it always ends, and it ends cleanly (it also stops at a wall, after PIN_MAX_FRAMES or PIN_MAX_DIST tiles rolled, when it falls, is thrown or
+// is told to RETREAT). It ROLLS between them: it is moved PIN_SPEED tiles a frame (pinballStep, from js/npc.js updateNPC), never put there, so it goes no farther than the floor lets it and
+// only at what it can see. SONIC ROLL is the one direct dash; PINBALL the chain of collisions. True when it set off.
+function _pinSees(f, a) { return typeof facilityLosFrom !== "function" || facilityLosFrom(f.x, f.y, a.x, a.y); }
+function _pinNext(f, r, hit) {   // the nearest enemy it has not hit, within r of where it is, that it can see
+    let best = null, bd = Infinity;
+    for (const a of _evoFoes(f.x, f.y, r)) { if (hit.indexOf(a) >= 0 || !_pinSees(f, a)) continue; const d = Math.hypot(a.x - f.x, a.y - f.y); if (d < bd) { bd = d; best = a; } }
+    return best;
+}
+function pinball(f) {
+    if (f._pinball) return false;
+    const t = _pinNext(f, PIN_RANGE, []);
+    if (!t) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    f._pinball = { t, hit: [], t0: f0, run: 0 };
+    f._sigAt = f0; f._sigCd = PIN_EVERY;   // (and again when it stops: its wait counts from the end of a roll)
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "PINBALL", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+// a frame of the roll (js/npc.js updateNPC, before the unit's own moves): true while it rolls (nothing else moves it this frame), false once it has stopped
+function pinballStep(f) {
+    const P = f._pinball; if (!P) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    const stop = () => { f._pinball = null; f._sigCd = PIN_EVERY; return false; };
+    if (f.dead || f._flight || f.returningToCrystal || f.retreatUntil > f0 || f0 - P.t0 > PIN_MAX_FRAMES || P.run >= PIN_MAX_DIST) return stop();
+    if (!P.t || P.t.dead || !isHostileTarget(P.t)) { P.t = _pinNext(f, P.hit.length ? PIN_HOP : PIN_RANGE, P.hit); if (!P.t) return stop(); }   // (it was killed before it got there: the next one from here)
+    const t = P.t, dx = t.x - f.x, dy = t.y - f.y, d = Math.hypot(dx, dy) || 1e-6;
+    if (d <= PIN_TOUCH) {   // THE COLLISION
+        applyDamage(t, (f.power || 10) * PIN_MULT, f, "electric", false, false, DMG_HIT_ALT);
+        P.hit.push(t); f._sigAt = f0;
+        if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#ffee33", radius: 0.5 + Math.min(4, P.hit.length) * 0.1, life: 18 });   // (brighter with every collision)
+        if (typeof shake !== "undefined") shake = Math.max(shake || 0, 1.5);
+        P.t = _pinNext(f, PIN_HOP, P.hit);
+        return P.t ? true : stop();
+    }
+    const step = Math.min(PIN_SPEED, PIN_MAX_DIST - P.run, Math.max(0.02, d - PIN_TOUCH * 0.5)), nx = f.x + dx / d * step, ny = f.y + dy / d * step;
+    if ((typeof facilityStandOk === "function" && !facilityStandOk(nx, ny)) || (typeof facilityLosFrom === "function" && !facilityLosFrom(f.x, f.y, nx, ny))) return stop();   // a wall: it stops there
+    f.x = nx; f.y = ny; f.dirX = dx / d; f.dirY = dy / d; P.run += step;
+    return true;
+}
+
+// CHAIN LIGHTNING (the Thunderhead's everyday shot; the owner, 2026-11-02, "Its everyday shot"; docs/FOLLOWER-COMBAT-REDESIGN.md §2.6): the Mages' shot (js/npc.js), and from the enemy it strikes the
+// electricity conducts on, jump by jump, to the nearest enemy not yet struck within CHAIN_HOP of the last; each jump does CHAIN_SHARE of the one before. Distance decides it: a close cluster
+// carries it far, a gap wider than CHAIN_HOP breaks it. No fixed cap: it ends when no enemy is near enough or a jump would do under CHAIN_MIN (each enemy once, so it always ends).
+// `dmg` is the shot's. Returns the number of jumps.
+function chainLightning(f, first, dmg) {
+    if (!first) return 0;
+    const hit = [first], pts = [{ x: first.x, y: first.y }];
+    let from = first, d = dmg * CHAIN_SHARE;
+    while (d >= CHAIN_MIN) {
+        let next = null, bd = Infinity;
+        for (const a of _evoFoes(from.x, from.y, CHAIN_HOP)) { if (hit.indexOf(a) >= 0) continue; const k = Math.hypot(a.x - from.x, a.y - from.y); if (k < bd) { bd = k; next = a; } }
+        if (!next) break;
+        applyDamage(next, d, f, null, false, false, DMG_HIT_SHOT);   // (as the shot: the Mages' shot's type and stat)
+        hit.push(next); pts.push({ x: next.x, y: next.y }); from = next; d *= CHAIN_SHARE;
+    }
+    if (pts.length > 1 && typeof elementEffects !== "undefined") elementEffects.push({ type: "chainBolt", pts, color: "#ffee33", life: 18, maxLife: 18 });
+    return hit.length - 1;
+}
+// The everyday shot's own effect (js/npc.js, the Mages' shot): the Thunderhead's CHAIN LIGHTNING conducts on from the enemy it strikes; any other form's shot (the Ember Hood's FIREBALL too) is the plain shot
+function evoShotOnHit(f, dmg) { const d = f && f.evolved ? evolvedDef(f) : null; return d && d.shot === "CHAIN LIGHTNING" ? (a => chainLightning(f, a, dmg)) : null; }
+
+// STATIC VORTEX (the Thunderhead's move; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.6): a STATIONARY electrical storm on the nearest enemy in reach. It does not travel.
+// Every enemy in it is pulled toward its middle, VORTEX_PULL tiles a frame (not a beetle or a boss: vortexPullImmune), and takes electric damage every VORTEX_TICK frames, until it runs out after
+// VORTEX_LIFE frames. The pull is a knock's own step (js/combat.js updateStatusEffects: kbVX/kbVY), so it goes no farther than the walls and a Photonic Shield let it. An element effect
+// (js/elements.js updateElementEffects). It gathers them; CHAIN LIGHTNING conducts through the cluster it makes. True when it fired.
+function staticVortex(f) {
+    const foes = _evoFoes(f.x, f.y, VORTEX_RANGE);
+    if (!foes.length || typeof elementEffects === "undefined") return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    elementEffects.push({ type: "staticVortex", x: t.x, y: t.y, radius: VORTEX_RADIUS, life: VORTEX_LIFE, maxLife: VORTEX_LIFE, by: f, bite: (f.power || 10) * VORTEX_MULT, element: "electric" });
+    f._sigAt = f0; f._sigCd = VORTEX_EVERY;
+    f._arcPts = [{ x: t.x, y: t.y }]; f._arcUntil = f0 + 20; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];   // (a bolt to where it is cast)
+    { const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "STATIC VORTEX", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+// a frame of a STATIC VORTEX (js/elements.js updateElementEffects): the pull, and the bite every VORTEX_TICK frames
+function staticVortexTick(e) {
+    if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return;
+    const R = e.radius, age = e.maxLife - e.life;
+    for (const a of actors) {
+        if (!a || !isHostileTarget(a)) continue;
+        const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy);
+        if (d > R) continue;
+        if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) {
+            const v = Math.min(VORTEX_PULL, d - 0.3);   // (in toward the middle, never past it)
+            if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; }   // (a stronger knock is left as it is)
+        }
+    }
+    if (age > 0 && age % VORTEX_TICK === 0 && e.life > 0) fieldBite(e, "electric");
 }
 // ── THE LOOK ───────────────────────────────────────────────
 function _evoImg(d) {

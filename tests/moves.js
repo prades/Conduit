@@ -14,7 +14,8 @@ function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 
 // What the old chain in evolutionTick called, by form id (copied from it before it was replaced).
-const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley', thunderhead: 'arcVolley', serpent: 'singularityShot', voidstar: 'singularityShot',
+// (The THUNDERHEAD's is STATIC VORTEX since the owner's follower combat redesign, 2026-11-02: ARC VOLLEY stays with the Reaver. docs/FOLLOWER-COMBAT-REDESIGN.md)
+const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley', thunderhead: 'staticVortex', serpent: 'singularityShot', voidstar: 'singularityShot',
     manta: 'staticRush', prism: 'staticRush', voltring: 'staticRush', staticorb: 'staticRush', halo: 'hexfire', embercowl: 'hexfire',
     rotshard: 'corrodeShot', mimic: 'gravitySlam', caldera: 'eruption', seeper: 'eruption', maw: 'chomp' };
 

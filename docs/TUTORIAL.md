@@ -399,6 +399,8 @@ ASKED: "Make way for a robust card system that will be used to give followers [.
 
 ## Quill Burst, rebuilt (revision)
 
+**Superseded** (the owner's follower combat brief, 2026-11-02; built in build `2026-11-03a`): QUILL BURST is now five quills launched at once in a fan, each stopping at the first enemy it touches, with no hit roll and no splash (`FOLLOWER-COMBAT-REDESIGN.md`). Kept below as history.
+
 ASKED (the Notion "Conduit Game Design Archive"): Quill Burst is "a projectile" with "a 75% hit chance" that "improves as the target gets closer"; the numbers were chosen with the user, 2026-10-30. Until then it was the old ring of fire (the Bunker Bloom's PETAL BLAZE under another name).
 
 - **What it does now** (`quillBurst`, js/evolution.js): the Quillstone fires heated quills at the nearest enemy within **4 tiles**, every **4 seconds**. The hit is a roll made as it fires (no flight to dodge, no spread). The chance is **75% at 4 tiles** and rises in a straight line to **100% within 1 tile**. A hit deals **2.0x its power plus 25%** (2.5x) to the target and to everything within **0.8 tile** of it, and burns nobody. A miss shows MISS over the target and the quills fly on past it. It still spends its 4 seconds on a miss.

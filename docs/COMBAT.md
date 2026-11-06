@@ -172,19 +172,19 @@ Weak: ×1.3. Resists: ×0.7. Anything else: ×1. Every form of a race, nymph to 
 
 ### 7.4 The followers' attacks
 
-A follower's **main attack** is its everyday hit: a Brawler's or Technician's plain hit and its element's physical move, or a Mage's shot. Its **alternates** are its signature move and, for a Technician, its ability. The types follow each creature's body.
+A follower's **main attack** is its everyday hit: a Brawler's or Technician's plain hit and its element's physical move, or a Mage's shot. Its **alternates** are its signature move and, for a Technician, its ability. The types follow each creature's body. The fire and electric followers' attacks were redesigned on 2026-11-02 (`FOLLOWER-COMBAT-REDESIGN.md`, built from build `2026-11-03a`); their types did not change.
 
 | Form | Class · element | Main attack | Alternates |
 |---|---|---|---|
-| QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST: Projectile |
+| QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST (five quills at once, each stopping at its first enemy): Projectile; FIRE BOMBS |
 | FROST MAW | Brawler · ice | Slashing (ice jaws) | CHOMP: Piercing |
-| STATIC ORB | Brawler · electric | Crushing (rams) | STATIC RUSH: Crushing |
+| STATIC ORB | Brawler · electric | Crushing (rams) | SONIC ROLL (STATIC RUSH renamed): Crushing; PINBALL (a ricochet from enemy to enemy): Crushing |
 | JELLY RAM | Brawler · core | Crushing (ram) | none yet |
 | SEEPER | Brawler · toxic | Slashing (lash) | ERUPTION: Earthquake |
 | RIFT MIMIC | Brawler · flux | Slashing (claws) | GRAVITY SLAM: Earthquake |
-| THUNDERHEAD | Mage · electric | Elemental | ARC VOLLEY: Elemental |
+| THUNDERHEAD | Mage · electric | Elemental (CHAIN LIGHTNING: the shot conducts on, by distance) | STATIC VORTEX (a stationary pull that bites): Elemental |
 | VOIDSTAR | Mage · flux | Elemental | SINGULARITY SHOT: Elemental |
-| EMBER HOOD | Mage · fire | Elemental | HEXFIRE: Elemental |
+| EMBER HOOD | Mage · fire | Elemental (FIREBALL) | HEXFIRE (a shot that leaves a stationary burning circle): Elemental; FIRE BOMBS |
 | RIMESTAR | Mage · ice | Projectile (ice shards) | none yet |
 | HORNSHELL | Mage · core | Projectile (horn spines) | none yet |
 | ROTSHARD | Mage · toxic | Projectile (rot shards) | CORRODE SHOT: Elemental |

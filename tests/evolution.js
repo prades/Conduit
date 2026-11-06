@@ -160,57 +160,28 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.far, 0, 'damage 4 tiles away');
         ok(r.cd > 300 && r.again === 0, 'it fired again at once: ' + JSON.stringify(r));
     });
-    // QUILL BURST, rebuilt (ASKED, the Notion design archive: a projectile with a 75% hit chance that improves up close; the numbers chosen with the user, 2026-10-30)
-    const QB = `globalThis.__qb = (rolls, foes) => { actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; floatingTexts.length = 0; elementEffects.length = 0;
-        spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.stance = 'hold';
-        const S = SPECIES.ant, ps = foes.map(([x, y]) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 20 + x, 2 + y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; });
-        const twin = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 30, 30); twin.team = 'red'; twin.health = twin.maxHealth = 1e6; twin.update = () => {};
-        applyDamage(twin, f.power * QUILL_MULT, f, 'fire', false, false, DMG_HIT_ALT); const base = 1e6 - twin.health; floatingTexts.length = 0; elementEffects.length = 0;   // (the plain hit the quills are measured against, made before the rolls are set)
-        const keep = Math.random, seq = rolls.slice(); Math.random = () => seq.length ? seq.shift() : 0.5;
-        try { frame++; f._sigCd = 1; evolutionTick();
-              return { dmg: ps.map(p => (1e6 - p.health) / base), burn: ps.map(p => p.burning > 0), cd: f._sigCd, texts: floatingTexts.map(t => t.text).join('|'), fx: elementEffects.map(e => e.type).join('|'), q: elementEffects.find(e => e.type === 'quills'), foes: ps.length }; }
-        finally { Math.random = keep; for (const p of ps) p.dead = true; } };`;
-    check('QUILL BURST (rebuilt): the chance of a hit is 75% at its 4 tiles of reach, rising in a straight line to 100% within 1 tile, and no more than 100% or less than 75% anywhere', () => {
-        run(QB); const r = run(`[QUILL_RANGE, QUILL_SURE, QUILL_CHANCE, QUILL_EVERY, QUILL_MULT, QUILL_BONUS, QUILL_SPLASH, quillChance(4), quillChance(6), quillChance(2.5), quillChance(1), quillChance(0.4), quillChance(0)]`);
-        same(r.slice(0, 7).join(), '4,1,0.75,240,2,0.25,0.8', 'the numbers (reach 4 tiles, a sure hit within 1, 75% at the reach, every 4 s, 2.0x power, +25% on a hit, a splash of 0.8 tile)');
-        same(r[7], 0.75, 'at the reach'); same(r[8], 0.75, 'beyond it'); ok(Math.abs(r[9] - 0.875) < 1e-9, 'half way: ' + r[9]); same(r[10], 1, 'within a tile'); same(r[11], 1, 'point blank'); same(r[12], 1, 'on top of it');
-    });
-    check('QUILL BURST (rebuilt): a hit does 2.0x its power and 25% more (2.5x) to the target and burns nobody; it shows QUILL BURST and an impact; the quills fly to the target; it then waits 4 seconds', () => {
-        run(QB); const r = run(`__qb([0], [[3, 0]])`);
-        ok(Math.abs(r.dmg[0] - 1.25) < 0.01, 'the hit does ' + r.dmg[0] + ' of the base damage, not 1.25'); same(r.burn[0], false, 'it burned'); same(r.cd, 240, 'its cooldown'); ok(/QUILL BURST/.test(r.texts) && !/MISS/.test(r.texts), 'it said: ' + r.texts); same(r.fx, 'quills|impact', 'its effects');
-        ok(Math.abs(r.q.tx - 23) < 1e-9 && Math.abs(r.q.ty - 2) < 1e-9, 'the quills fly to the target: ' + JSON.stringify(r.q));
-    });
-    check('QUILL BURST (rebuilt): a miss does nothing to anyone, says MISS over the target, the quills fly on past it, and it still waits its 4 seconds', () => {
-        run(QB); const r = run(`__qb([0.999], [[3, 0]])`);
-        same(r.dmg[0], 0, 'a miss hurt'); same(r.burn[0], false, 'a miss burned'); same(r.cd, 240, 'a miss skips its cooldown'); ok(/QUILL BURST/.test(r.texts) && /MISS/.test(r.texts), 'it said: ' + r.texts); same(r.fx, 'quills', 'its effects (no impact on a miss)');
-        ok(r.q.tx > 23.5, 'the quills stop at the target instead of flying past: ' + JSON.stringify(r.q));
-    });
-    check('QUILL BURST (rebuilt): the roll is against the chance at the target\'s distance: at the reach 0.74 hits and 0.76 misses; within a tile nothing misses', () => {
-        run(QB); same(run(`__qb([0.74], [[4, 0]])`).dmg[0] > 0, true, '0.74 at 4 tiles'); same(run(`__qb([0.76], [[4, 0]])`).dmg[0], 0, '0.76 at 4 tiles');
-        same(run(`__qb([0.999], [[0.8, 0]])`).dmg[0] > 0, true, '0.999 at 0.8 tile (a sure hit)'); same(run(`__qb([0.874], [[2.5, 0]])`).dmg[0] > 0, true, '0.874 at 2.5 tiles'); same(run(`__qb([0.876], [[2.5, 0]])`).dmg[0], 0, '0.876 at 2.5 tiles');
-    });
-    check('QUILL BURST (rebuilt): it fires at the nearest enemy within 4 tiles and at nobody beyond (no cooldown spent); the splash is 0.8 tile round the target: a neighbour inside it takes the same hit, one outside it, and a farther enemy, take nothing', () => {
-        run(QB); const none = run(`__qb([0], [[4.4, 0]])`); same(none.dmg[0], 0, 'an enemy beyond the reach was hit'); ok(none.cd <= 0, 'it spent its cooldown on nothing: ' + none.cd); same(none.texts, '', 'it spoke with nobody to shoot at');
-        const r = run(`__qb([0], [[2, 0], [2.6, 0.2], [3, 1.4], [3.9, 0]])`);
-        ok(Math.abs(r.dmg[0] - 1.25) < 0.01, 'the nearest: ' + r.dmg[0]); ok(Math.abs(r.dmg[1] - 1.25) < 0.01, 'a neighbour inside the splash took ' + r.dmg[1]); same(r.dmg[2], 0, 'an enemy outside the splash took damage'); same(r.dmg[3], 0, 'a farther enemy took damage');
-    });
-    check('QUILL BURST (rebuilt): the Bunker Bloom keeps its ring of fire (PETAL BLAZE), the Quillstone\'s move is its own function, INFO says what it does (reach, every, hit chance, damage, effect), and the quills are drawn', () => {
+    // QUILL BURST: the roll-and-splash volley (2026-10-30) is SUPERSEDED by the owner's follower combat brief (2026-11-02): five quills at once, each stopping at its first enemy, no
+    // splash, no roll (docs/FOLLOWER-COMBAT-REDESIGN.md). The quills' own checks are in tests/followercombat.js; here, that the Quillstone fires it and the Bunker Bloom keeps its own move.
+    check('QUILL BURST (the redesign): the Quillstone fires five quills at once at the nearest enemy in reach, then waits; the Bunker Bloom keeps its ring of fire (PETAL BLAZE)', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; followerProjectiles.length = 0;
+            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2; f.stance = 'hold';
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            frame++; f._sigCd = 1; evolutionTick();
+            const q = followerProjectiles.filter(x => x.kind === 'quill'), out = { n: q.length, cd: f._sigCd, src: q.every(x => x.source === f) };
+            followerProjectiles.length = 0; p.dead = true; return out; })()`);
+        same(r.n, 5, 'quills'); same(r.cd, 240, 'its wait'); ok(r.src, 'the quills are its own');
         same(run(`MOVES.petal_blaze.fn.toString().indexOf('petalBlaze(') >= 0 && MOVES.quill_burst.fn.toString().indexOf('quillBurst(') >= 0 && MOVES.quill_burst.fn.toString().indexOf('petalBlaze') < 0`), true, 'the two moves');
-        const rows = JSON.parse(run(`JSON.stringify(MOVE_INFO['QUILL BURST']())`)), by = {}; rows.forEach(x => { by[x[0]] = x[1]; });
-        same(Object.keys(by).join(), 'REACH,EVERY,HIT CHANCE,DAMAGE,EFFECT', 'its INFO rows'); same(by.REACH, '4 tiles', 'reach'); same(by.EVERY, '4 s', 'every'); ok(/75%.*4 tiles.*100%.*1 tile/.test(by['HIT CHANCE']), 'hit chance: ' + by['HIT CHANCE']); ok(/2×.*\+25%/.test(by.DAMAGE), 'damage: ' + by.DAMAGE); ok(/miss/.test(by.EFFECT), 'effect: ' + by.EFFECT);
-        same(run(`(function(){ elementEffects.length = 0; elementEffects.push({ type: 'quills', x: player.x, y: player.y, tx: player.x + 3, ty: player.y, life: 7, maxLife: 14 }); try { drawElementEffects(); return 'drawn'; } catch (e) { return e.message; } finally { elementEffects.length = 0; } })()`), 'drawn', 'drawing the quills');
     });
-    check('THE ASK: ARC VOLLEY — a charged arc into the nearest enemy in range, jumping to the ones beside it', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator));
+    // ARC VOLLEY (the charged arc that jumps to the ones beside it) left the THUNDERHEAD with the redesign (the owner, 2026-11-02, "Its everyday shot": CHAIN LIGHTNING is its shot, STATIC VORTEX
+    // its move; tests/followercombat.js). The REAVER keeps it, checked next.
+    check('the THUNDERHEAD (the electric mage) fires STATIC VORTEX now, not ARC VOLLEY', () => {
+        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); elementEffects.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'thunderhead'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
-            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-            const a = mkP(24, 2), b = mkP(25.5, 2.5), c = mkP(26.8, 1.5), lone = mkP(32, 2), tooFar = mkP(20, 40);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), c: d(c), lone: d(lone), arcs: (f._arcPts || []).length };
-            [a, b, c, lone, tooFar].forEach(p => p.dead = true); return out; })()`);
-        ok(r.a > r.b && r.b > 0 && r.c > 0, 'the arc and its jumps: ' + JSON.stringify(r));
-        same(r.lone, 0, 'damage to one out of reach of any jump');
-        same(r.arcs, 3, 'arcs drawn');
+            const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 24, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+            frame++; f._sigCd = 1; evolutionTick();
+            const out = { vortex: elementEffects.filter(e => e.type === 'staticVortex').length, move: evoMoveOf(f).id, cd: f._sigCd };
+            p.dead = true; elementEffects.length = 0; return out; })()`);
+        same(r.vortex, 1, 'a vortex cast'); same(r.move, 'static_vortex', 'its move'); same(r.cd, 330, 'its wait');
     });
 
     check('the legacy REAVER still fires ARC VOLLEY for a follower already evolved into it', () => {
@@ -226,42 +197,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.arcs, 3, 'arcs drawn');
     });
 
-    check('THE ASK: HEXFIRE — the cinder halo fires six rounds at once, shared out among the nearest enemies, each setting its target burning', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
-            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'halo'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
-            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-            const fire = () => { frame++; f._sigCd = 1; evolutionTick(); };
-            const a = mkP(24, 2), b = mkP(25, 3), c = mkP(26, 1), far = mkP(40, 2);
-            fire();
-            const d = p => 1e6 - p.health, shot = d(a) + d(b) + d(c), per = dmgApply({ speciesName: a.speciesName, element: a.element }, f.power * HALO_MULT, f, 'fire', DMG_HIT_ALT);   // (a round through the damage system, docs/COMBAT.md §7, against a target like these)
-            const out = { rounds: (f._arcPts || []).length, shot, per, a: d(a), b: d(b), c: d(c), far: d(far), burn: a.burning > 0 && b.burning > 0 && c.burning > 0, fan: f._arcFan, cd: f._sigCd };
-            [a, b, c, far].forEach(p => p.dead = true);
-            // Alone, all six go into the one.
-            const solo = mkP(24, 2); fire(); out.solo = d(solo); solo.dead = true; return out; })()`);
-        same(r.rounds, 6, 'six rounds');
-        ok(Math.abs(r.shot - 6 * r.per) < 1e-6 * r.shot + 1e-3, 'six rounds of damage in all: ' + JSON.stringify(r));
-        ok(r.a > 0 && r.b > 0 && r.c > 0 && r.burn, 'shared out among the three, burning: ' + JSON.stringify(r));
-        same(r.far, 0, 'damage 20 tiles away'); ok(r.fan, 'the rounds do not fan from the ring'); ok(r.cd > 300, 'it did not wait');
-        ok(Math.abs(r.solo - 6 * r.per) < 1e-3, 'alone, all six go into the one: ' + JSON.stringify(r));
-    });
-
-    check('the EMBER HOOD (the fire mage) fires HEXFIRE: six rounds at once', () => {
-        const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
-            spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'embercowl'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
-            const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-            const fire = () => { frame++; f._sigCd = 1; evolutionTick(); };
-            const a = mkP(24, 2), b = mkP(25, 3), c = mkP(26, 1), far = mkP(40, 2);
-            fire();
-            const d = p => 1e6 - p.health, shot = d(a) + d(b) + d(c), per = dmgApply({ speciesName: a.speciesName, element: a.element }, f.power * HALO_MULT, f, 'fire', DMG_HIT_ALT);   // (a round through the damage system, docs/COMBAT.md §7, against a target like these)
-            const out = { rounds: (f._arcPts || []).length, shot, per, a: d(a), b: d(b), c: d(c), far: d(far), burn: a.burning > 0 && b.burning > 0 && c.burning > 0, fan: f._arcFan, cd: f._sigCd };
-            [a, b, c, far].forEach(p => p.dead = true);
-            // Alone, all six go into the one.
-            const solo = mkP(24, 2); fire(); out.solo = d(solo); solo.dead = true; return out; })()`);
-        same(r.rounds, 6, 'six rounds');
-        ok(Math.abs(r.shot - 6 * r.per) < 1e-6 * r.shot + 1e-3, 'six rounds of damage in all: ' + JSON.stringify(r));
-        ok(r.a > 0 && r.b > 0 && r.c > 0 && r.burn, 'shared out among the three, burning: ' + JSON.stringify(r));
-        same(r.far, 0, 'damage 20 tiles away'); ok(r.fan, 'the rounds do not fan from the ring'); ok(r.cd > 300, 'it did not wait');
-        ok(Math.abs(r.solo - 6 * r.per) < 1e-3, 'alone, all six go into the one: ' + JSON.stringify(r));
+    // HEXFIRE: the six instant rounds that set their targets burning are SUPERSEDED by the owner's follower combat brief (2026-11-02): a fire shot that lands as a stationary burning circle,
+    // enemies only (tests/followercombat.js). Here, that the Ember Hood and the retired Cinder Halo (which shares its replacement's move) both fire it.
+    check('HEXFIRE (the redesign): the Ember Hood and the retired Cinder Halo fire one HEXFIRE shot (no damage of its own) at the nearest enemy in reach, then wait', () => {
+        const r = run(`(function(){ const out = {};
+            for (const evo of ['embercowl', 'halo']) { actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; followerProjectiles.length = 0;
+                spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = evo; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
+                const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 25, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
+                frame++; f._sigCd = 1; evolutionTick();
+                const h = followerProjectiles.filter(x => x.kind === 'hex'); out[evo] = { n: h.length, dmg: h.length ? h[0].damage : null, cd: f._sigCd };
+                followerProjectiles.length = 0; p.dead = true; }
+            return out; })()`);
+        for (const evo of ['embercowl', 'halo']) { same(r[evo].n, 1, evo + ': its shots'); same(r[evo].dmg, 0, evo + ': the shot\'s own damage'); same(r[evo].cd, 330, evo + ': its wait'); }
     });
 
     check('THE ASK: CORRODE SHOT — one long shot that eats the nearest enemy\'s armour, with a weaker corrosion splashed over its neighbours', () => {
@@ -406,7 +353,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             frame++; evolutionTick(); return { role: f.role }; })()`);
         same(r.role, 'camper', 'a hammer slug evolved as a brawler is not a technician now');
     });
-    check('THE ASK: STATIC RUSH — it dashes to the nearest enemy, hits it, shocks two more, and stuns them all', () => {
+    check('THE ASK: SONIC ROLL (it was STATIC RUSH, renamed and kept as it is) — it dashes to the nearest enemy, hits it, shocks two more, and stuns them all', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'manta'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
@@ -417,7 +364,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dist < 1 && r.a > r.b && r.b > 0 && r.c > 0, 'the dash and the shocks: ' + JSON.stringify(r));
         same(r.far, 0, 'damage to one out of reach'); ok(r.stun, 'not all stunned'); ok(r.real, 'not all really stunned (js/combat.js applyStun)'); ok(r.cd > 250, 'it did not wait');
     });
-    check('the PRISM HOOD runs the same STATIC RUSH (dash, shock, stun) as the Storm Manta did', () => {
+    check('the PRISM HOOD runs the same SONIC ROLL (dash, shock, stun) as the Storm Manta did', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'prism'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
@@ -425,7 +372,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
     });
 
-    check('the STATIC ORB (the electric brawler) runs STATIC RUSH: dash, shock, stun', () => {
+    check('the STATIC ORB (the electric brawler) runs SONIC ROLL by default: dash, shock, stun', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'staticorb'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
@@ -433,7 +380,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
     });
 
-    check('the legacy VOLT RING still runs STATIC RUSH', () => {
+    check('the legacy VOLT RING still runs SONIC ROLL', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'voltring'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);

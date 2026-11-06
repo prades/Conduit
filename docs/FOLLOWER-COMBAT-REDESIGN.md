@@ -1,12 +1,14 @@
 # Follower combat redesign: the fire and electric followers' attacks
 
-- **Status:** **Designed** (approved by the owner, 2026-11-02, in the brief "CONDUIT — FOLLOWER COMBAT REDESIGN · Fire & Electric Follower Attack Implementation Brief").
-  - **Phase 1 (the audit): finished, 2026-11-02.** What the code does today is in section 6.
-  - The conflicts it found, each with a recommended way through, and the recommended starting values are in section 11. **Nothing is implemented yet.**
+- **Status:** **In progress.** Approved by the owner, 2026-11-02, in the brief "CONDUIT — FOLLOWER COMBAT REDESIGN · Fire & Electric Follower Attack Implementation Brief".
+  - **Phase 1 (the audit): finished, 2026-11-02.** What the code did then is in section 6.
+  - The conflicts it found, each with a recommended way through, and the recommended starting values are in section 11.
+  - **Implemented and tested in build `2026-11-03a` (on the branch):** QUILLSTONE (QUILL BURST), EMBER HOOD (FIREBALL, HEXFIRE), STATIC ORB (SONIC ROLL kept, PINBALL) and THUNDERHEAD (CHAIN LIGHTNING, STATIC VORTEX); the HOVER SHELL and its KINETIC LAUNCHER untouched (section 9; tests/followercombat.js; section 10). Not playtested.
+  - **Not built yet:** the THERMITE BURROWER's BURROW STRIKE and FAULTLINE (the next build, with FAULTLINE's drawn-path input and its second chip).
   - **The owner's answers, 2026-11-02:** SONIC ROLL is STATIC RUSH; CHAIN LIGHTNING is the Thunderhead's everyday shot; the Thermite Burrower keeps both buttons (the THERMITE DRILL and FAULTLINE). The other points of section 11.1 follow their recommendations. Section 11.1 marks each.
 - **Owner:** User (creative direction); agent (implementation support)
-- **Last updated:** 2026-11-02
-- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-02j`.
+- **Last updated:** 2026-11-03
+- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-02j`; the fire and electric moves built in build `2026-11-03a` on the same branch.
 - **Related docs:** `COMBAT.md` §7 (the damage types, each form's attacks: §7.4), `FIRE-BOMBS.md`, `TECHNICIANS.md` (the technicians' abilities, the Kinetic Launcher), `FOLLOWER-PROGRESSION.md`, `SEWER-QUEST.md` (the puzzle routes the Thermite Drill opens), `UI-STYLE.md`, `DECISION-LOG.md` (the decision)
 
 ## 1. Intent
@@ -80,13 +82,13 @@ Its design, behaviour, role and KINETIC LAUNCHER stay exactly as they are: not r
 
 ## 3. Must-have requirements (from the brief's acceptance criteria)
 
-- [ ] All five designs are implemented as section 2 says.
-- [ ] Existing attacks are kept where the brief says so (Quillstone's main quill attack, FIRE BOMBS, SONIC ROLL).
-- [ ] Hover Shell and the Kinetic Launcher are untouched, with regression checks.
-- [ ] The new attacks use the established combat and damage code (no parallel damage system, no duplicate move ids).
-- [ ] The move registry and the player-facing words (names, descriptions, controls, help) agree.
-- [ ] Regression tests cover the new behaviours (the brief's Phase 3 list), and the results are reported.
-- [ ] What still needs a person's hands (iPad/phone touch above all) is listed.
+- [ ] All five designs are implemented as section 2 says. *(Four of five in build `2026-11-03a`: Quillstone, Ember Hood, Static Orb, Thunderhead. The Thermite Burrower is next.)*
+- [x] Existing attacks are kept where the brief says so (Quillstone's main quill attack, FIRE BOMBS, SONIC ROLL). *(tests/followercombat.js)*
+- [x] Hover Shell and the Kinetic Launcher are untouched, with regression checks. *(js/techabilities.js unchanged; tests/followercombat.js pins the launcher's every field and number and the Hover Shell's form; the technician suites pass. To check again in the Thermite Burrower's build, which touches the technicians' code.)*
+- [x] The new attacks use the established combat and damage code (no parallel damage system, no duplicate move ids). *(applyDamage with a move's or the Mages' hit; the follower shots, the element effects and the knock's step reused; tests/followercombat.js)*
+- [x] The move registry and the player-facing words (names, descriptions, controls, help) agree. *(For the four built: `MOVES`, `MOVE_INFO`, `SHOT_INFO`, the Bible; FAULTLINE's controls and help come with its build.)*
+- [ ] Regression tests cover the new behaviours (the brief's Phase 3 list), and the results are reported. *(All but the Thermite Burrower's: section 10.)*
+- [ ] What still needs a person's hands (iPad/phone touch above all) is listed. *(For build `2026-11-03a`: section 10, "Played by a person".)*
 
 ## 4. Non-goals
 
@@ -159,7 +161,17 @@ Read on `claude/start-game-project-HSh7Z`, build `2026-11-02j`, 2026-11-02. Noth
 
 ## 7. Edge cases and failure behavior
 
-*(After the audit and the owner's answers.)*
+As built in build `2026-11-03a` (the readings taken are in `OPEN-QUESTIONS.md` §1s):
+- **QUILL BURST:** no enemy in reach, no quills and no wait spent. A quill that touches nobody flies its reach and is gone. A quill is not stopped by a wall, like every follower shot.
+- **HEXFIRE:** a shot that touches nobody lands where it was aimed and leaves its circle there. A shot that touches an enemy on its last frame lands once. A new circle from the same Ember Hood takes the last one's place. The circle keeps burning if the Ember Hood falls.
+- **PINBALL:**
+  - a target killed before the collision: the next nearest unhit enemy it can see is taken from where it is;
+  - nobody left within reach: it stops;
+  - it stops at a wall, after `PIN_MAX_FRAMES` or `PIN_MAX_DIST`, or when it falls, is thrown, is told to RETREAT or goes back to the Crystal;
+  - nothing else moves it while it rolls, and no move fires;
+  - the roll is not saved (a game saved mid-roll loads standing).
+- **CHAIN LIGHTNING:** each enemy is struck once, and every jump is weaker than the last, so it always ends. A shot that touches nobody conducts nothing.
+- **STATIC VORTEX:** nobody in reach, no vortex and no wait spent. A beetle or a boss is bitten but not pulled. The pull is a knock's own step, so walls and a Photonic Shield stop it. A stronger knock on an enemy is left as it is.
 
 ## 8. Acceptance criteria
 
@@ -173,13 +185,41 @@ The brief's Phase 3 tests, per follower:
 
 ## 9. Implementation notes
 
-*(None: nothing is implemented. The audit of what the code does today is in section 6.)*
+Build `2026-11-03a` (the fire and electric moves). The numbers are the PROVISIONAL constants at the top of js/evolution.js (`QUILL_*`, `HALO_*`, `PIN_*`, `CHAIN_*`, `VORTEX_*`; §11.2).
+- **QUILL BURST** (`quillBurst`):
+  - five follower shots (js/clone.js `spawnFollowerProjectile`, which now takes a flight distance, a look and a landing, and a point to fly at);
+  - each is moved and hit in js/game.js like every follower shot: it stops at the first enemy it touches.
+  - The roll, the splash and `quillChance` are gone; so is the old `quills` effect.
+- **FIREBALL:** `EVOLUTIONS.embercowl.shot`. The Mages' shot in js/npc.js, its two numbers named `MAGE_SHOT_MULT` and `MAGE_SHOT_REST` so INFO can read them.
+- **HEXFIRE:**
+  - `hexfire` fires a shot with no damage of its own (`kind: "hex"`); js/game.js now skips the damage of a shot whose damage is 0;
+  - `hexfireCircle` lays the circle, an element effect (`type: "hexfire"`) bitten in js/elements.js `updateElementEffects`;
+  - `fieldBite` is shared with STATIC VORTEX;
+  - both fields are kept from the effects budget (`FX_LONG`).
+- **SONIC ROLL:** `MOVES.static_rush` renamed; the id and `staticRush` unchanged.
+- **PINBALL:**
+  - `pinball` starts it; `pinballStep` rolls it each frame from js/npc.js `updateNPC`, as a Kinetic Launcher's flight does;
+  - `evolutionTick` fires nothing while it rolls.
+- **CHAIN LIGHTNING:** `chainLightning`, given to the Thunderhead's shot as its `onHit` by `evoShotOnHit` (js/npc.js). Its jumps are drawn as an element effect (`chainBolt`).
+- **STATIC VORTEX:** `staticVortex` and `staticVortexTick`. The pull sets the knock's velocity (`kbVX`/`kbVY`), so js/combat.js `updateStatusEffects` moves it with its wall and shield checks.
+- **The words:** js/unitinfo.js `MOVE_INFO` (QUILL BURST, HEXFIRE, SONIC ROLL, PINBALL, STATIC VORTEX) and `SHOT_INFO`, a new "MAIN ATTACK" section on INFO for a named shot; the Bible's moves table.
+- **The looks:** js/game.js `_drawRedesignShot` (the quill's shard, HEXFIRE's ember) and js/elements.js (the circle, the vortex, the chain's bolt). Drawn on the canvas with no new images.
+- **Not touched:** js/techabilities.js (the Kinetic Launcher), the Hover Shell's form, the damage tables.
 
 ## 10. Verification record
 
 | Check | Result | Evidence / notes |
 |---|---|---|
-| Anything | Not run | nothing implemented yet |
+| QUILLSTONE: exactly five quills, launched at once, a 40° fan aimed at the nearest; each on its own heading and speed; each stops at its first enemy; no piercing; no explosion or splash; a cluster close up takes all five, five spread enemies one each; nothing in reach, nothing spent; QUILL BURST its default and FIRE BOMBS a choice; its main attack kept | Passed | tests/followercombat.js (build `2026-11-03a`) |
+| EMBER HOOD: FIREBALL is the Mages' fire shot, named; HEXFIRE's shot does no damage, lands on the enemy (or where aimed), its circle bites at once and every 30 frames, lasts 240, never moves or grows, bites who walks in and not who walked out, spares a follower and the player, one circle an Ember Hood; the Cinder Halo shares it | Passed | tests/followercombat.js |
+| STATIC ORB: SONIC ROLL is STATIC RUSH renamed, with the same id, function and numbers, its dash, shocks and stuns; PINBALL takes the nearest targets in turn, never one twice, ends with no target near, never loops, rolls no more than 0.35 tiles a frame, stops at its limits, fires nothing while rolling; picks what it can see | Passed | tests/followercombat.js |
+| THUNDERHEAD: CHAIN LIGHTNING jumps through a cluster 2 tiles apart and not across 3; each jump 60% of the last; each enemy once; ends under 1; the Thunderhead's shot carries it and an egg's and the Reaver's do not; STATIC VORTEX stays put, pulls in (not a beetle, not one outside), bites every 30 frames through the damage system, lasts 240; ARC VOLLEY stays the Reaver's | Passed | tests/followercombat.js |
+| HOVER SHELL and the KINETIC LAUNCHER unchanged: every field and number of the ability, the form, its types and subclass, the Technicians' shared hit | Passed | tests/followercombat.js; js/techabilities.js byte for byte as before; tests/techlevel1.js |
+| One damage system, one move table, one set of words: every new hit through `applyDamage` with a move's or the Mages' hit; no name or id twice; INFO's rows read off the constants; the new looks draw | Passed | tests/followercombat.js |
+| The suites that pinned the old behaviour | Updated, passed | tests/evolution.js (the roll-and-splash QUILL BURST and the six-round HEXFIRE checks replaced; ARC VOLLEY checked on the Reaver), tests/moves.js, tests/unitinfo.js; tests/firebombs.js, techlevel1.js, damage.js, abtest.js, facing.js, combat.js, loadorder.js, globals.js and bible.js pass as they were |
+| The rest of the game | Passed | the full run on build `2026-11-03a`: 86 of 88 the first time; the other two, tests/crystalline.js and tests/cards.js, pinned the Mage's shot's source text (a literal 55 now named `MAGE_SHOT_REST`; the word "cards" in a new comment) and passed once that was fixed, with the ten other suites that read js/npc.js |
+| THERMITE BURROWER: BURROW STRIKE, FAULTLINE's drawn path, underground, eruptions, touch | Not built | the next build |
+| Played by a person | Not done | not playtested. To try by hand: how QUILL BURST's fan reads in a fight; HEXFIRE's circle and its 4 s; PINBALL's roll among a pack; how far CHAIN LIGHTNING carries in a real fight; STATIC VORTEX's pull against creatures that walk; and every new look on an iPad (the frame cost of the circle, the vortex and the bolt is small canvas work, not measured on an iPad) |
 
 ## 11. Open questions
 
@@ -233,6 +273,8 @@ Items 1, 2 and 3 (and 7 with 3) were put to the owner on 2026-11-02 and answered
 
 ### 11.2 Recommended starting values (from the game's own conventions; all PROVISIONAL, to tune in play)
 
+Built as below in build `2026-11-03a` for the four followers built (the constants at the top of js/evolution.js), except where a row says otherwise.
+
 | Attack | Starting values | From |
 |---|---|---|
 | QUILL BURST | 5 quills across a 40° fan (10° apart), the middle one at the nearest enemy; 4 tiles; the follower shots' speed (0.18 tiles a frame); **power × 0.5 a quill** (all five on one target = the old hit, 2.0 × 1.25); every 240 frames. Like every follower shot today, a quill is not stopped by a wall. | its own numbers today |
@@ -242,7 +284,7 @@ Items 1, 2 and 3 (and 7 with 3) were put to the owner on 2026-11-02 and answered
 | FAULTLINE | a path of up to 8 tiles, smoothed; spikes every 0.75 tiles along it; it travels at 0.12 tiles a frame, each spike erupting as it passes, 2× its plain hit, each enemy hit once; the path glows from the moment it is drawn; wait 3600 frames | the technicians' ability wait |
 | PINBALL | the nearest enemy within 4 tiles, then the nearest unhit enemy within **3 tiles of the last**; it rolls between them at 0.35 tiles a frame (not a jump); power × 1.44 a collision (STATIC RUSH's jump: 2.4 × 0.6); each enemy once; safety: it stops after 600 frames or 30 tiles of rolling, or at a wall; every 300 frames | STATIC RUSH |
 | CHAIN LIGHTNING | the shot's damage on the first enemy; then the nearest unhit enemy within **2.5 tiles of the last**, at 60% of the jump before; each enemy once; ends when none is near enough or a jump would do under 1 | ARC VOLLEY |
-| STATIC VORTEX | at the nearest enemy within 7 tiles; radius 2.5 tiles; 240 frames; pulls at 0.06 tiles a frame (not beetles or bosses; not through a Photonic Shield); bites every 30 frames for SP.ATK × 0.2; every 330 frames | the flux pull, the Mages' moves' waits |
+| STATIC VORTEX | at the nearest enemy within 7 tiles; radius 2.5 tiles; 240 frames; pulls at 0.06 tiles a frame (not beetles or bosses; not through a Photonic Shield); bites every 30 frames for SP.ATK × 0.2; every 330 frames. *(Built with its bites reading power (ATK) × 0.2, as every move reads ATK: `OPEN-QUESTIONS.md` §1s.)* | the flux pull, the Mages' moves' waits |
 
 The brief's open balance values (none is final; recommendations come only after the audit):
 
@@ -258,4 +300,5 @@ The brief's open balance values (none is final; recommendations come only after 
 
 - 2026-11-02: the owner's brief, "Design approval date: November 2, 2026". Phase 1 (the audit) finished on build `2026-11-02j`: no code changed; the conflicts and the recommended values went to the owner (section 11).
 - 2026-11-02: the owner's answers (`DECISION-LOG.md`): SONIC ROLL is STATIC RUSH; CHAIN LIGHTNING is the Thunderhead's everyday shot, STATIC VORTEX its move, ARC VOLLEY left to the Reaver; the Thermite Burrower keeps both buttons, the THERMITE DRILL and FAULTLINE. Build j went to main.
+- 2026-11-03, build `2026-11-03a`: the fire and electric moves built and tested on the branch (QUILL BURST's five quills, FIREBALL named, HEXFIRE's circle, SONIC ROLL kept, PINBALL, CHAIN LIGHTNING, STATIC VORTEX); the readings taken are in `OPEN-QUESTIONS.md` §1s. The Thermite Burrower is next.
 - Superseded by the brief: QUILL BURST's earlier rules (`OPEN-QUESTIONS.md` §5, "Quill Burst's numbers"): one roll with a hit chance and a splash become five quills that each stop at the first enemy, with no splash.

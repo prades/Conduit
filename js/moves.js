@@ -13,7 +13,7 @@ const MOVES = {
     quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       fn: f => quillBurst(f) },
     arc_volley:        { id: "arc_volley",        name: "ARC VOLLEY",        fn: f => arcVolley(f) },
     singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  fn: f => singularityShot(f) },
-    static_rush:       { id: "static_rush",       name: "STATIC RUSH",       fn: f => staticRush(f) },
+    static_rush:       { id: "static_rush",       name: "SONIC ROLL",        fn: f => staticRush(f) },   // (it was STATIC RUSH: renamed by the owner, 2026-11-02; the id stays, a saved choice)
     hexfire:           { id: "hexfire",           name: "HEXFIRE",           fn: f => hexfire(f) },
     corrode_shot:      { id: "corrode_shot",      name: "CORRODE SHOT",      fn: f => corrodeShot(f) },
     gravity_slam:      { id: "gravity_slam",      name: "GRAVITY SLAM",      fn: f => gravitySlam(f) },
@@ -22,6 +22,9 @@ const MOVES = {
     chomp:             { id: "chomp",             name: "CHOMP",             fn: f => chomp(f) },
     // A second move for the fire forms (js/firebombs.js): three bouncing bombs fanned at the nearest foe. Chosen on the unit's INFO tab; a fire form's own move stays its default.
     bomb_lob:          { id: "bomb_lob",          name: "FIRE BOMBS",        fn: f => fireBombBarrage(f) },
+    // THE FOLLOWER COMBAT REDESIGN (docs/FOLLOWER-COMBAT-REDESIGN.md): the Static Orb's second move, chosen on its INFO tab (SONIC ROLL stays its default), and the Thunderhead's move.
+    pinball:           { id: "pinball",           name: "PINBALL",           fn: f => pinball(f) },
+    static_vortex:     { id: "static_vortex",     name: "STATIC VORTEX",     fn: f => staticVortex(f) },
 };
 const MOVE_BY_NAME = {};
 for (const id in MOVES) MOVE_BY_NAME[MOVES[id].name] = MOVES[id];

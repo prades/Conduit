@@ -11,10 +11,10 @@ Asked: *"Make a clear path to add player classes and class specific ultimates an
 | The player's ultimate | `playerUltimate` / `PLAYER_ULT_MAX`, `chargePlayerUltimate`, `fireArmySurge` (js/helpers.js), the bar under the health (js/game.js) | **one** ultimate, hard-wired: ARMY SURGE. Charged by the siphon (followers near you). |
 | The player's weapon | `WEAPONS` (js/weapons.js): the service gun, the Gunslinger's machine gun, the laser rifle, each with a level 1 to 3 bought with scrap at the Armory's terminal; `firePlayerShot` (js/input.js) | one weapon in hand; rounds from ammo packs, the hallway's charging station and scrap; the rifle's fuel cells from the computer lab. |
 | The classes | `CLASSES`, `CLASS_RULES`, `CLASS_PERKS`, `classStat(name, base)` (js/classes.js); the stations that earn a perk (js/stations.js) | three classes as data, chosen when the tutorial is done; a rank (1, plus one per perk); no XP and no level for the player. |
-| Follower evolution moves | `MOVES` (js/moves.js), `EVOLUTIONS[id].moves`, `f.move` | one default move per form; a form that lists a second (the fire forms' FIRE BOMBS) shows the choice on the INFO tab of its card (js/unitinfo.js). |
+| Follower evolution moves | `MOVES` (js/moves.js), `EVOLUTIONS[id].moves`, `f.move` | one default move per form; a form that lists a second (the fire forms' FIRE BOMBS, the Static Orb's PINBALL) shows the choice on the INFO tab of its card (js/unitinfo.js). |
 | Follower roles | `brawler` / `sniper` (MAGE) / `camper` (TECHNICIAN) | a role fixes how it fights; it comes with the egg or the recruit, and an evolved form keeps its own. |
 | Follower's own ultimate | `FOLLOWER_ULTIMATES` (js/elements.js; the names in `ELEMENT_ULTIMATES`, js/unitinfo.js), double-tap | one per element, working within `ULT_REACH` (12) tiles of the follower. |
-| Info pages | `MOVE_INFO` keyed by move name (js/unitinfo.js); the INFO panel (js/infodex.js) | text read off the constants. |
+| Info pages | `MOVE_INFO` keyed by move name, and `SHOT_INFO` for a Mage form's named everyday shot (FIREBALL, CHAIN LIGHTNING: a MAIN ATTACK section; js/unitinfo.js); the INFO panel (js/infodex.js) | text read off the constants. |
 
 What blocks classes: the ultimate, the surge numbers and the siphon rate are constants and functions the rest of the game reads directly. So the path is **make those data-driven** (stages 1 and 2), then adding a class, a perk or a move is a table entry, as `classStat` already makes a stat perk one.
 
@@ -66,7 +66,7 @@ The player is hard to kill (three hits, then back at the Crystal), and the creat
 
 A form had one hard-wired move, chosen by its name in an `if/else` chain. The change, most of it built in stage 0:
 
-- **`MOVES` registry** holds every move as `{ id, name, fn }`. The existing ones (PETAL BLAZE, QUILL BURST, ARC VOLLEY, SINGULARITY SHOT, STATIC RUSH, HEXFIRE, CORRODE SHOT, GRAVITY SLAM, ERUPTION, CHOMP) moved out of the chain **unchanged**, and FIRE BOMBS (`bomb_lob`, docs/FIRE-BOMBS.md) was added as a row. *Built.* (AEGIS BURST and AEGIS BLOOM, the core forms' moves, were taken out with the followers' shield; the core forms have no move for now.)
+- **`MOVES` registry** holds every move as `{ id, name, fn }`. The existing ones (PETAL BLAZE, QUILL BURST, ARC VOLLEY, SINGULARITY SHOT, STATIC RUSH, HEXFIRE, CORRODE SHOT, GRAVITY SLAM, ERUPTION, CHOMP; since then QUILL BURST and HEXFIRE rebuilt, STATIC RUSH renamed SONIC ROLL, PINBALL and STATIC VORTEX added: `FOLLOWER-COMBAT-REDESIGN.md`) moved out of the chain **unchanged**, and FIRE BOMBS (`bomb_lob`, docs/FIRE-BOMBS.md) was added as a row. *Built.* (AEGIS BURST and AEGIS BLOOM, the core forms' moves, were taken out with the followers' shield; the core forms have no move for now.)
 - **Each evolution lists the moves it may use**: `EVOLUTIONS[id].moves = ["petal_blaze", ...]`, the first being its old move (the default, so nothing changes until the player picks). *Built; the fire forms list two.*
 - **A follower has `f.move`** (saved with it). `evolutionTick` fires `evoMoveOf(f).fn(f)`; the cooldown is the move's own. *Built.*
 - **The UI:** a form with more than one move shows them as buttons on the INFO tab of its card (js/unitinfo.js). *Built.* A "set move" for a selected group in the Command Center, like it has for roles, is left.

@@ -20,6 +20,7 @@ const SUITES = [
     ['the Crystal heals between alarms', 'pressure.js'],
     ['follower evolutions',      'evolution.js'],
     ['the moves table',          'moves.js'],
+    ['the follower combat redesign: QUILL BURST\'s five quills, FIREBALL, HEXFIRE\'s stationary circle, SONIC ROLL kept, PINBALL\'s ricochet, CHAIN LIGHTNING by distance, STATIC VORTEX; the Hover Shell and its Kinetic Launcher unchanged', 'followercombat.js'],
     ['insect abilities',         'abtest.js'],
     ['attack facing',            'facing.js'],
     ['targeting rules',          'targets.js'],

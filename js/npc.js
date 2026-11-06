@@ -1,6 +1,8 @@
 // ─────────────────────────────────────────────────────────
 //  NPC UPDATE
 // ─────────────────────────────────────────────────────────
+// A Mage's everyday shot (the sniper branch below): SP.ATK × MAGE_SHOT_MULT, a shot every MAGE_SHOT_REST frames (an attack-speed bonus shortens the rest: js/combat.js followerRest). Named here so the INFO tab reads them (js/unitinfo.js SHOT_INFO).
+const MAGE_SHOT_MULT = 0.5, MAGE_SHOT_REST = 55;
 // One step toward (dx, dy) at the unit's speed, WALKING: the legs are drawn
 // from walkCycle and it faces the way it goes. These moves (home to the
 // Crystal, out to a POSITION, a room's round) return before the shared
@@ -276,9 +278,9 @@ function updateRTSNPC(actor) {
                     if (actor.attackCooldown <= 0) {
                         const elDef = ELEMENTS.find(e=>e.id===actor.element);
                         const col   = elDef ? elDef.color : "#fff";
-                        const dmg   = (actor.stats?.specialAttack||10) * 0.5;
-                        spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, null, DMG_HIT_SHOT);   // (a Mage's shot reads SP.ATK: js/damage.js)
-                        actor.attackCooldown = followerRest(actor, 55);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
+                        const dmg   = (actor.stats?.specialAttack||10) * MAGE_SHOT_MULT;
+                        spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT);   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING, which conducts on from the enemy it strikes: js/evolution.js)
+                        actor.attackCooldown = followerRest(actor, MAGE_SHOT_REST);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
                         if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
                     } else {
                         actor.attackCooldown--;
@@ -362,6 +364,7 @@ function followPlayer(actor) {
 
 function updateNPC(actor) {
     if (actor._flight && typeof techFlightStep === "function" && techFlightStep(actor)) return;   // thrown by a Kinetic Launcher: in the air, nothing else moves it and no wall stops it (js/techabilities.js)
+    if (actor._pinball && typeof pinballStep === "function" && pinballStep(actor)) return;   // a PINBALL rolling (js/evolution.js): the roll moves it, and stops itself at a wall
     const _fpx = actor.x, _fpy = actor.y;   // for the facility's walls (js/facilityplay.js)
     if (actor instanceof Predator && actor.team !== "green") {
         actor.update();

@@ -2,6 +2,37 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-03
+
+- **a · The follower combat redesign, part 1: the fire and electric followers' moves** (the owner's brief "CONDUIT — FOLLOWER COMBAT REDESIGN", approved 2026-11-02, with the owner's answers; `FOLLOWER-COMBAT-REDESIGN.md`; on the branch only; commit named in git log). Four of the brief's five followers; the Thermite Burrower is next.
+  - **Main:** build j (4f6a965), the answers' docs around it (d716c0f) and the redesign's audit (54bb23b) went to main at the owner's word ("Push to main"). The redesign's answers: SONIC ROLL is STATIC RUSH; CHAIN LIGHTNING is the Thunderhead's everyday shot; the Thermite Burrower keeps both buttons (`DECISION-LOG.md`).
+  - **QUILLSTONE · QUILL BURST:** exactly five crystal quills launched at once in a forward fan, the middle one at the nearest enemy. Each is a follower shot of its own that stops at the first enemy it touches: no piercing, no explosion, no splash, no hit roll. Up close one enemy can take all five; spread-out enemies fewer. FIRE BOMBS stays its second move; its main attack is unchanged.
+  - **EMBER HOOD:** its everyday shot is named **FIREBALL** (the Mages' fire shot, already drawn as a fireball; unchanged). **HEXFIRE** is now a fire shot that does no damage of its own and, where it lands, leaves a stationary burning circle: 1.2 tiles round, 4 s, biting enemies in it as it lands and every half second. Enemies only, unlike FIRE BOMBS' ground; it never grows or moves; one circle an Ember Hood. The retired Cinder Halo shares it.
+  - **STATIC ORB:** STATIC RUSH is renamed **SONIC ROLL** and kept as it is (its saved id too). **PINBALL**, its new second move (picked on INFO): it rolls into the nearest enemy, then on into the nearest one it has not hit within 3 tiles, and on. No fixed count: each enemy once, and it stops at a wall or its safety limits.
+  - **THUNDERHEAD:** its everyday shot is **CHAIN LIGHTNING**: from the enemy it strikes it conducts on to the nearest enemy not yet struck within 2.5 tiles, each jump 60% of the last, so a cluster carries it far and a gap breaks it. Its move is **STATIC VORTEX**, a stationary storm on the nearest enemy (2.5 tiles round, 4 s) that pulls enemies in (not beetles or bosses; not through walls or a Photonic Shield) and bites them every half second. ARC VOLLEY stays with the retired Reaver.
+  - **HOVER SHELL and its KINETIC LAUNCHER:** untouched (js/techabilities.js as it was), with regression checks.
+  - **Every number is provisional** (`FOLLOWER-COMBAT-REDESIGN.md` §11.2). The readings taken where the brief did not say are in `OPEN-QUESTIONS.md` §1s, with one observation: a follower shot's touch is narrower across the floor's x than its y.
+  - **How:**
+    - the moves in js/evolution.js and js/moves.js (new ids `pinball`, `static_vortex`);
+    - the shots through js/clone.js `spawnFollowerProjectile` (a flight distance, a look, a landing);
+    - the circle and the vortex as element effects (js/elements.js);
+    - the pull through the knock's own step (js/combat.js);
+    - the roll from js/npc.js `updateNPC`;
+    - the Thunderhead's shot's conduction from js/npc.js;
+    - every hit through `applyDamage` with a move's or the Mages' hit.
+  - **INFO:** the new moves' rows, and a MAIN ATTACK section naming FIREBALL and CHAIN LIGHTNING (js/unitinfo.js).
+  - **Tests:**
+    - new tests/followercombat.js (23 checks): the brief's Phase 3 list for the four followers, the Hover Shell unchanged, one damage system and one move table;
+    - tests/evolution.js (the superseded QUILL BURST and HEXFIRE checks replaced; ARC VOLLEY checked on the Reaver), tests/moves.js and tests/unitinfo.js updated;
+    - tests/crystalline.js reads the Mage's shot's rest by its new name (`MAGE_SHOT_REST`, still 55).
+  - **The full run:** 86 of 88 suites passed the first time.
+    - tests/crystalline.js looked for the rest's old literal (`followerRest(actor, 55)`).
+    - tests/cards.js found the word "cards" in a new comment in js/npc.js (no card may reach the movement code); the comment was reworded.
+    - Both passed when run again, and so did the ten other suites that read js/npc.js.
+  - **The Bible:** the moves table (QUILL BURST, HEXFIRE, SONIC ROLL, PINBALL, STATIC VORTEX, the named shots), the forms' cards and rows.
+  - **Written up:** docs/FOLLOWER-COMBAT-REDESIGN.md (status, sections 7, 9, 10), docs/OPEN-QUESTIONS.md §1s, docs/COMBAT.md §7.4, docs/PLAYER-CLASSES.md, docs/TUTORIAL.md (the old QUILL BURST revision marked superseded), the Bible.
+  - Not playtested.
+
 ## 2026-11-02
 
 - **j · Player cards, Part 1c: the Mutator's six roles** (the following update's Part 1, `FOLLOWING-UPDATE.md`; the kits approved by the owner, "Approve as drafted"; on the branch only; commit named in git log). All eighteen kits are now in.

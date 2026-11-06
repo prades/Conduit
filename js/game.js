@@ -14,6 +14,9 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 
+    // THE FOLLOWER COMBAT REDESIGN's shots (js/evolution.js): a QUILL BURST quill, a slim crystal shard along its flight; a HEXFIRE shot, an ember in a turning hexagon
+    if (p.kind === "quill" || p.kind === "hex") { _drawRedesignShot(ctx, p, sx, sy); ctx.restore(); return; }
+
     if (el === 'fire') {
         // Fireball — flickering orange/red core with white-hot centre
         const flicker = 1 + Math.sin(f * 0.45) * 0.14;
@@ -239,6 +242,24 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
 
     ctx.shadowBlur =0;
     ctx.restore();
+}
+// A QUILL BURST quill: a dark crystal shard pointed along its flight, red-hot at its tip. A HEXFIRE shot: an ember in a hexagon of fire that turns as it flies. (Drawn in screen space.)
+function _drawRedesignShot(ctx, p, sx, sy) {
+    if (p.kind === "quill") {
+        const dx = (p.vx - p.vy) * TILE_W, dy = (p.vx + p.vy) * TILE_H, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux;   // its flight on screen
+        ctx.fillStyle = "#1a0b08"; ctx.strokeStyle = "#ff5a1f"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(sx + ux * 8, sy + uy * 8); ctx.lineTo(sx + nx * 2.6, sy + ny * 2.6); ctx.lineTo(sx - ux * 11, sy - uy * 11); ctx.lineTo(sx - nx * 2.6, sy - ny * 2.6); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#ffb15c"; ctx.beginPath(); ctx.moveTo(sx + ux * 8, sy + uy * 8); ctx.lineTo(sx + ux * 3 + nx * 1.6, sy + uy * 3 + ny * 1.6); ctx.lineTo(sx + ux * 3 - nx * 1.6, sy + uy * 3 - ny * 1.6); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 0.35; ctx.strokeStyle = "#ff7a2e"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx - ux * 11, sy - uy * 11); ctx.lineTo(sx - ux * 22, sy - uy * 22); ctx.stroke();   // (a short trail)
+        return;
+    }
+    const spin = (p.frame || 0) * 0.18;
+    ctx.fillStyle = "rgba(255,90,31,0.25)"; ctx.beginPath(); ctx.arc(sx, sy, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ff5a1f"; ctx.beginPath(); ctx.arc(sx, sy, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ffe0a0"; ctx.beginPath(); ctx.arc(sx, sy, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#ffb04a"; ctx.lineWidth = 1.4; ctx.beginPath();
+    for (let i = 0; i <= 6; i++) { const an = spin + i / 6 * Math.PI * 2, hx = sx + Math.cos(an) * 9, hy = sy + Math.sin(an) * 9; if (i) ctx.lineTo(hx, hy); else ctx.moveTo(hx, hy); }
+    ctx.stroke();
 }
 
 
@@ -1160,7 +1181,7 @@ function render() {
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
                     if (Math.hypot(dx,dy) < 30) {
-                        applyDamage(a, p.damage, p.source, null, false, false, p.hit || null);
+                        if (p.damage > 0) applyDamage(a, p.damage, p.source, null, false, false, p.hit || null);   // (a shot with no damage of its own, a HEXFIRE's, only lands: js/evolution.js)
                         if (p.onHit) p.onHit(a);
                         hit = true;
                     }

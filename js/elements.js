@@ -485,7 +485,7 @@ function spawnElementEffect(effect) {
 // alive — the oldest short-lived ones go first, the long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1 };
+const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1, hexfire: 1, staticVortex: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
     const keep = [], clouds = [], blizzards = [];
@@ -579,6 +579,11 @@ function updateElementEffects() {
             });
         }
 
+        // HEXFIRE's circle and STATIC VORTEX (js/evolution.js; the follower combat redesign): stationary fields that hurt enemies only. The circle bites every HALO_TICK frames (it bit once as it
+        // landed); the vortex pulls every frame and bites every VORTEX_TICK.
+        if (e.type === "hexfire") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
+        if (e.type === "staticVortex" && typeof staticVortexTick === "function") staticVortexTick(e);
+
         // Blizzard field — 60 % freeze chance every 30 frames for every enemy in it
         if (e.type === "blizzardField" && e.life % 30 === 0) {
             const r = e.radius || ULT_REACH;
@@ -603,6 +608,7 @@ function updateElementEffects() {
     }
 }
 
+const FX_VORTEX_DASH = [6, 5], FX_NO_DASH = [];   // (STATIC VORTEX's turning edge: made once, not a frame)
 function drawElementEffects() {
 
     // ── EMP: a short dim, and a crackling ring on each predator it hit ──
@@ -977,16 +983,60 @@ function drawElementEffects() {
                 }
                 break;
             }
-            // QUILL BURST (js/evolution.js): three heated quills streak from the follower to the target (past it, on a miss), a beat apart, fanning in from the sides: each a short bright line, 14 frames.
-            case "quills": {
-                const prog = 1 - e.life / e.maxLife, ex = (e.tx - player.visualX - (e.ty - player.visualY)) * TILE_W + canvas.width / 2, ey = (e.tx - player.visualX + (e.ty - player.visualY)) * TILE_H + canvas.height / 2 - 30;
-                ctx.globalAlpha = 1 - prog * 0.5; ctx.lineCap = "round";
-                for (let qi = -1; qi <= 1; qi++) {
-                    const k = Math.min(1, prog * 1.15 - (qi + 1) * 0.06), k0 = Math.max(0, k - 0.28);
-                    if (k <= 0) continue;
-                    const sx = px, sy = py - 30, dx = ex - sx, dy = ey - sy, side = qi * 5 * (1 - k);
-                    ctx.lineWidth = 3; ctx.strokeStyle = "#ffb15c"; ctx.beginPath(); ctx.moveTo(sx + dx * k0 + side, sy + dy * k0); ctx.lineTo(sx + dx * k + side, sy + dy * k); ctx.stroke();
-                    ctx.lineWidth = 1.5; ctx.strokeStyle = "#ffffff"; ctx.beginPath(); ctx.moveTo(sx + dx * Math.max(0, k - 0.06) + side, sy + dy * Math.max(0, k - 0.06)); ctx.lineTo(sx + dx * k + side, sy + dy * k); ctx.stroke();
+            // HEXFIRE's circle (js/evolution.js hexfireCircle): a disc of floor HALO_RADIUS tiles round, burning, that never grows or moves: a glow, its edge, a hexagon of fire turning slowly in it,
+            // flames standing on its edge. (A circle on the floor is an ellipse on screen, its radius √2 tiles across each screen axis.)
+            case "hexfire": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H;
+                ctx.globalAlpha = 0.26 * k; ctx.fillStyle = "#ff4a12";
+                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = (0.7 + 0.3 * Math.sin(frame * 0.3 + e.x)) * k; ctx.strokeStyle = "#ffb04a"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+                ctx.globalAlpha = 0.6 * k; ctx.strokeStyle = "#ff6a1f"; ctx.lineWidth = 1.5; ctx.beginPath();
+                for (let i = 0; i <= 6; i++) { const an = i / 6 * Math.PI * 2 + frame * 0.01, hx = px + Math.cos(an) * rx * 0.72, hy = cy + Math.sin(an) * ry * 0.72; if (i) ctx.lineTo(hx, hy); else ctx.moveTo(hx, hy); }
+                ctx.stroke();
+                ctx.fillStyle = "#ffd27a";
+                for (let i = 0; i < 10; i++) {
+                    const an = i / 10 * Math.PI * 2, h = 5 + 4 * Math.sin(frame * 0.4 + i * 1.7), fx = px + Math.cos(an) * rx, fy = cy + Math.sin(an) * ry;
+                    ctx.globalAlpha = 0.7 * k; ctx.beginPath(); ctx.moveTo(fx - 2.5, fy); ctx.lineTo(fx, fy - h); ctx.lineTo(fx + 2.5, fy); ctx.closePath(); ctx.fill();
+                }
+                break;
+            }
+            // STATIC VORTEX (js/evolution.js staticVortex): a stationary storm VORTEX_RADIUS tiles round: a faint disc, its edge turning, three arms of lightning winding in to a bright eye at its middle.
+            case "staticVortex": {
+                const k = Math.min(1, (e.maxLife - e.life) / 12, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, spin = frame * 0.12;
+                ctx.globalAlpha = 0.12 * k; ctx.fillStyle = "#ffee33";
+                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.55 * k; ctx.strokeStyle = "#fff27a"; ctx.lineWidth = 1.5; ctx.setLineDash(FX_VORTEX_DASH); ctx.lineDashOffset = -frame * 0.6;
+                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash(FX_NO_DASH);
+                ctx.lineCap = "round"; ctx.lineJoin = "round";
+                for (let arm = 0; arm < 3; arm++) {
+                    ctx.globalAlpha = 0.8 * k; ctx.strokeStyle = arm === 0 ? "#ffffff" : "#ffee33"; ctx.lineWidth = arm === 0 ? 1.5 : 2;
+                    ctx.beginPath();
+                    for (let s = 0; s <= 12; s++) {
+                        const q = s / 12, an = spin + arm * 2.094 + q * 3.2, rr = 1 - q * 0.9, j = (s % 2 ? 2 : -2) * Math.sin(frame * 0.7 + arm + s), vx = px + Math.cos(an) * rx * rr + j, vy = cy + Math.sin(an) * ry * rr - q * 14;
+                        if (s) ctx.lineTo(vx, vy); else ctx.moveTo(vx, vy);
+                    }
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = (0.5 + 0.3 * Math.sin(frame * 0.5)) * k; ctx.fillStyle = "#ffffff";
+                ctx.beginPath(); ctx.ellipse(px, cy - 14, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+                break;
+            }
+            // CHAIN LIGHTNING's jumps (js/evolution.js chainLightning): a jagged bolt from the enemy the shot struck through each enemy it conducted to, flickering out.
+            case "chainBolt": {
+                const k = e.life / e.maxLife, W = canvas.width / 2, H = canvas.height / 2, P = e.pts;
+                ctx.lineCap = "round"; ctx.lineJoin = "round";
+                for (let pass = 0; pass < 2; pass++) {
+                    ctx.globalAlpha = (pass ? 1 : 0.4) * k; ctx.strokeStyle = pass ? "#ffffff" : (e.color || "#ffee33"); ctx.lineWidth = pass ? 1.6 : 4;
+                    ctx.beginPath();
+                    for (let i = 0; i < P.length; i++) {
+                        const bx = (P[i].x - player.visualX - (P[i].y - player.visualY)) * TILE_W + W, by = (P[i].x - player.visualX + (P[i].y - player.visualY)) * TILE_H + H + TILE_H - 26;
+                        if (!i) { ctx.moveTo(bx, by); continue; }
+                        const ax = (P[i - 1].x - player.visualX - (P[i - 1].y - player.visualY)) * TILE_W + W, ay = (P[i - 1].x - player.visualX + (P[i - 1].y - player.visualY)) * TILE_H + H + TILE_H - 26;
+                        for (let s = 1; s < 5; s++) { const q = s / 5, jg = 7 * Math.sin(frame * 1.3 + i * 2.1 + s * 1.7); ctx.lineTo(ax + (bx - ax) * q + jg, ay + (by - ay) * q - jg * 0.6); }
+                        ctx.lineTo(bx, by);
+                    }
+                    ctx.stroke();
                 }
                 break;
             }

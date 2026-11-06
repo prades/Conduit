@@ -485,20 +485,26 @@ function applySpeciesBody(predator, speciesName) {
     }
 }
 
-function spawnFollowerProjectile(actor, target, color, damage, radius, onHit, hit) {   // hit: what the shot is (js/damage.js)
-    if (!target || target.dead) return;
+// o (optional; the follower combat redesign, docs/FOLLOWER-COMBAT-REDESIGN.md): { speed (tiles a frame), range (tiles: it flies that far and no farther), kind (its look: js/game.js _drawFollowerProjectile),
+// onLand (called where it ends without hitting anything) }. `target` may be a point ({ x, y }): the shot flies toward it. Returns the shot, or null.
+function spawnFollowerProjectile(actor, target, color, damage, radius, onHit, hit, o) {   // hit: what the shot is (js/damage.js)
+    if (!target || target.dead) return null;
     const dx = target.x - actor.x, dy = target.y - actor.y;
     const dist = Math.hypot(dx, dy) || 1;
-    const speed = 0.18;
-    followerProjectiles.push({
+    const speed = (o && o.speed) || 0.18;
+    const p = {
         x: actor.x, y: actor.y,
         vx: (dx/dist)*speed, vy: (dy/dist)*speed,
         color, damage, radius: radius||4,
-        life: Math.ceil(dist/speed) + 10,
+        life: o && o.range > 0 ? Math.ceil(o.range/speed) : Math.ceil(dist/speed) + 10,
         source: actor, onHit, hit: hit || null,
         element: actor.element || null,
         frame: 0
-    });
+    };
+    if (o && o.kind) p.kind = o.kind;
+    if (o && o.onLand) p.onLand = o.onLand;
+    followerProjectiles.push(p);
+    return p;
 }
 
 // ─────────────────────────────────────────────────────────
