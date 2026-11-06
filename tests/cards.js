@@ -354,7 +354,7 @@ function measure(w, h, query, seed) {
         const Z = await boot('?cards', {}); Z.run(`globalThis.cardsOpen = function(){ globalThis.__n = (globalThis.__n || 0) + 1; return true; };`); same(Z.J('equipRunStart()'), false, 'it asked with nothing to choose from'); same(Z.J('globalThis.__n || 0'), 0, 'it opened the screen');
         const A = await boot('?cards=all', {}); A.run(`globalThis.cardsOpen = function(){ globalThis.__n = (globalThis.__n || 0) + 1; return true; };`); same(A.J('equipRunStart()'), false, '?cards=all asked'); same(A.J('globalThis.__n || 0'), 0, '?cards=all opened the screen');
         const Ph = await boot('?cards', store); Ph.run(`innerWidth = 390; globalThis.cardsOpen = function(){ globalThis.__n = (globalThis.__n || 0) + 1; return true; };`); same(Ph.J('equipRunStart()'), false, 'a phone was asked to choose a hand'); same(Ph.J('globalThis.__n || 0'), 0, 'a phone has no cards screen to open');
-        ok(/if \(!away && !saved && typeof equipRunStart === "function"\) equipRunStart\(\);/.test(rd('js/facilityplay.js')), 'a fresh game (no saved one, not the website\'s background) is where the hand is asked for');
+        ok(/if \(!away && !lab && !saved && typeof equipRunStart === "function"\) equipRunStart\(\);/.test(rd('js/facilityplay.js')), 'a fresh game (no saved one, not the website\'s background, not the Flux test room: js/fluxlab.js, since build 2026-11-06g) is where the hand is asked for');
     });
 
     group('5. THE LIFE OF A FOLLOWER\'S CARDS');
