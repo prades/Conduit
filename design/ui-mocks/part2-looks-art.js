@@ -137,7 +137,31 @@
             + '<path fill="none" stroke="#000" stroke-opacity=".4" stroke-width="1.2" stroke-linecap="round" d="' + rims + '"/>'
             + '<path fill="none" stroke="currentColor" stroke-opacity=".24" stroke-width="2.2" stroke-linecap="round" d="' + slats + '"/></g>';
     }
-    const TEX = { crustacean, mollusk, elemental, drone }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll", elemental: "clAll", drone: "drAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
+    // THE JELLY TEXTURE (proposed after the drone's approval, 2026-11-06; the theme as written: "soft membrane cells with nuclei, a gel's wobble"). A foam of soft cells packed against each other,
+    // the big ones first and smaller ones in the gaps; each cell a wobbly closed curve (its membrane) with a soft gel fill, about half of them holding a nucleus of their own size and place. No cell
+    // is drawn twice. Faint, as the other textures are.
+    function jelly() {
+        seed = 89;
+        const W = 300, H = 420, cells = [];
+        const place = (n, tries, r0, r1) => { for (let t = 0, k = 0; t < tries && k < n; t++) { const r = r0 + rnd() * (r1 - r0), x = -10 + rnd() * (W + 20), y = -10 + rnd() * (H + 20); if (cells.every(c => Math.hypot(c.x - x, c.y - y) > c.r + r + 1.4)) { cells.push({ x, y, r }); k++; } } };
+        place(26, 1500, 20, 30); place(60, 4000, 12, 20); place(60, 4000, 6, 12);
+        let body = "", nuclei = "";
+        cells.forEach(c => {
+            const n = 7, ph = rnd() * 6.283, amp = .05 + rnd() * .07, pts = [];
+            for (let i = 0; i < n; i++) { const a = ph + i * 6.283 / n, rr = c.r * (1 + amp * Math.sin(3 * a + ph * 2) + (rnd() - .5) * .06); pts.push([c.x + rr * Math.cos(a), c.y + rr * Math.sin(a)]); }
+            const mid = (p, q) => Math.round((p[0] + q[0]) / 2) + " " + Math.round((p[1] + q[1]) / 2);
+            let d = "M" + mid(pts[n - 1], pts[0]);
+            for (let i = 0; i < n; i++) d += "Q" + Math.round(pts[i][0]) + " " + Math.round(pts[i][1]) + " " + mid(pts[i], pts[(i + 1) % n]);
+            body += '<path d="' + d + 'Z"/>';
+            if (c.r > 9 && rnd() < .55) { const a = rnd() * 6.283, o = c.r * (.1 + rnd() * .25), nr = c.r * (.16 + rnd() * .1);
+                nuclei += '<ellipse cx="' + Math.round(c.x + o * Math.cos(a)) + '" cy="' + Math.round(c.y + o * Math.sin(a)) + '" rx="' + R(nr * (1 + rnd() * .3)) + '" ry="' + R(nr) + '"/>'; }
+        });
+        return '<defs><radialGradient id="jeG" cx=".45" cy=".42" r=".62"><stop offset="0" stop-color="currentColor" stop-opacity=".1"/><stop offset=".7" stop-color="currentColor" stop-opacity=".05"/><stop offset="1" stop-color="currentColor" stop-opacity=".02"/></radialGradient></defs>'
+            + '<g id="jeAll"><rect width="300" height="420" fill="currentColor" fill-opacity=".025"/>'
+            + '<g fill="url(#jeG)" stroke="currentColor" stroke-opacity=".22" stroke-width="1.1">' + body + "</g>"
+            + '<g fill="currentColor" fill-opacity=".16">' + nuclei + "</g></g>";
+    }
+    const TEX = { crustacean, mollusk, elemental, drone, jelly }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll", elemental: "clAll", drone: "drAll", jelly: "jeAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
     const TEX_HALF = { crustacean: true };
     const TEX_ELEMENT_COLOUR = { elemental: true };   // on a follower, laid in its element's colour (the theme as written), not the species' own   // laid at half size on a follower (the crust, "Smaller texture"); the others once, at their own size (a broad sheen laid twice across would show a seam)
 
@@ -248,5 +272,5 @@
         else if (mode === "big") third = '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="40 40 150 88" preserveAspectRatio="xMidYMid slice" color="' + T.col + '" opacity=".75">' + spTex + "</svg>";
         return _caDoc(W, H, elBand + clsBand + third);
     }
-    root.PART2 = { crustacean, mollusk, elemental, drone, TEX, THEMES, ICONS, iconSvg, backdrop3 };
+    root.PART2 = { crustacean, mollusk, elemental, drone, jelly, TEX, THEMES, ICONS, iconSvg, backdrop3 };
 })(typeof window !== "undefined" ? window : globalThis);

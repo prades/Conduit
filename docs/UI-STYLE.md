@@ -86,7 +86,8 @@ The owner: "We also need to make themes for the different species and give textu
 - **Approved:** the five other element emblems ("Approve all five").
 - **Approved:** the elemental texture as storm clouds ("Approve as drawn"; the owner's direction, of a first try with crystal clusters: "New cloud texture is puffy and stormy no repreating icons").
 - **Approved:** the drone texture, machined panels ("Approve as drawn").
-- **Still to draw, each for a yes:** the jelly texture, and the five other race emblems. Then the build.
+- **Drawn, waiting on a yes** (2026-11-06): the jelly texture (membrane cells).
+- **Still to draw, each for a yes:** the five other race emblems. Then the build.
 - The block below is the current proposal. The earlier rounds are at its end.
 - **Where to see it:** the Part 2 boards on the design canvas "Conduit 3D card concepts": the approved crustacean row, and above it the mollusk and the species emblems. The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
 - **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
@@ -99,17 +100,17 @@ The owner: "We also need to make themes for the different species and give textu
 | Mollusk | NACRE `#e3d6ff` | A pearly sheen, as the inside of a shell: soft bands of mother-of-pearl (pale pink, lilac, sky, mint, a little gold), each with a paler core where the light catches, fine wavy growth lines running with them and two soft glows of lustre. No shells drawn. Faint | A spiral (snail) shell | The texture and the icon: **approved** |
 | Elemental | PRISM WHITE `#f2f7ff` | Storm clouds, puffy and stormy (the owner's direction): banks of billowing puffs on flat cloud bases at uneven heights, a dimmer back row, soft dark bands under the bases, broad dark storm masses, a few wisps and two faint glows inside. No motif is repeated. Faint. On a card in PRISM WHITE; on a follower in its element's colour | A cluster of prisms | The texture and the icon: **approved** |
 | Drone | GUNMETAL `#b6c4d6` | Machined panels: plating split into panels of uneven sizes, so no layout repeats; each lit along its top and left edges and shaded along its bottom and right, with thin dark seams between; rivets at the corners of the larger panels; louvred vents on a few. Faint | A drone's round body with two antennae | The texture and the icon: **approved** |
-| Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | The icon: **approved** |
+| Jelly | GEL ORCHID `#e39cff` | Membrane cells: a foam of soft cells packed against each other, each a wobbly closed membrane with a soft gel fill, about half holding a nucleus of their own size and place; no cell drawn twice. Faint | A jellyfish bell | The icon: **approved**; the texture: for a yes |
 
-- **On a species card** (shown on TIDE SHELL, NACRE PEARL, FOCUSING PRISM and OVERCLOCK CHIP):
+- **On a species card** (shown on TIDE SHELL, NACRE PEARL, FOCUSING PRISM, OVERCLOCK CHIP and GEL MEMBRANE):
   - its texture on the face, faint, in its colour;
   - its colour for the frame, the crystal and the kind line;
   - its icon before the kind, on the face and in the details beside it.
   - Today such a card wears no texture and the class cards' cyan.
-- **On a follower** (shown on QUILLSTONE and SEEPER, VOIDSTAR and HAMMER SLUG, FROST MAW and THUNDERHEAD, RIMESTAR and THERMITE BURROWER):
+- **On a follower** (shown on QUILLSTONE and SEEPER, VOIDSTAR and HAMMER SLUG, FROST MAW and THUNDERHEAD, RIMESTAR and THERMITE BURROWER, JELLY RAM and GOO PROXY):
   - the species' texture is a third layer, over the element's and the class's, in the species' colour at 38%, so the element and the class still lead;
   - the crust is drawn at half its size on a card (the drawing twice across the 300 × 175 band);
-  - the mollusk's sheen, the elemental's clouds and the drone's panels are laid once at their own size, since a broad texture laid twice across would show a seam;
+  - the mollusk's sheen, the elemental's clouds, the drone's panels and the jelly's cells are laid once at their own size, since a broad texture laid twice across would show a seam;
   - the elemental's clouds take the follower's element colour (shown on FROST MAW in ice blue and THUNDERHEAD in yellow);
   - on a flux mollusk (VOIDSTAR) the sheen sits over FLUX's vortex and is hardest to see;
   - the roster's subclass tag carries the icon.
