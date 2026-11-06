@@ -279,6 +279,20 @@ async function boot(search) {
         same(r.seen, true, 'fixture: the creature is not seen over the crate'); same(r.over, false, 'it dashed over the crate'); same(r.stayed, true, 'it moved'); same(r.hp, 5000, 'the creature was hit');
         same(r.open, true, 'it did not dash at the one in the open'); same(r.openHit, true, 'the one in the open was not hit');
     });
+    check('a creature\'s special and your own jumps need sight too (the owner, 2026-11-06: "Both need sight"): across the lab\'s glass a special neither aims at nor reaches a follower, and ARC SLINGER\'s jump and the Technomancer\'s arc do not jump; on the same side they do', () => {
+        const r = J(`(function(){ const g = __glassLine(), f = __mover(), o = {}; if (!g) return o;
+            const special = p => { __wild(); const c = __ant(...g.A); __at(f, p); frame++; const area = []; _abForEachFoeInRadius(c, 3, a => area.push(a)); return (_abNearestFoe(c, 3) === f) + '/' + area.includes(f); };
+            o.special = [special(g.B), special(g.C)];
+            const slinger = p => { __wild(); const A = __ant(...g.A), X = __ant(...p); frame++; return !!playerRoundJump({ kit: { jump: { radius: 2.6, share: 0.6 } } }, A, player, 50, []) + '/' + (X.health < 5000); };
+            o.slinger = [slinger(g.B), slinger(g.C)];
+            const arc = p => { __wild(); const A = __ant(...g.A), X = __ant(...p); technoCharge = 1; frame++; technoArc(A); return X.health < 5000; };
+            o.arc = [arc(g.B), arc(g.C)];
+            __wild(); __bench(); return o; })()`);
+        ok(r.special, 'fixture: no line through the glass');
+        same(r.special.join(), 'false/false,true/true', 'a creature\'s special (aimed / in its area): behind the glass, then on the same side');
+        same(r.slinger.join(), 'false/false,true/true', 'ARC SLINGER\'s jump (jumped / hurt)');
+        same(r.arc.join(), 'false,true', 'the Technomancer\'s arc (the next creature hurt)');
+    });
 
     group('FLUX MOVE MOVES COVER (js/fluxmove.js; js/facilityplay.js facilitySolidMove)');
     check('a crate moved two tiles gives cover where it now stands and none where it stood: a shot along its old line passes, one along its new line stops at it; it is seen over and not walked through in its new place, and the floor it left is walked again', () => {

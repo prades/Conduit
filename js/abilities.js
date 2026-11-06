@@ -168,8 +168,12 @@ function faceAbdomenToward(pred, tx, ty, rate) {
 
 // ── Helpers ──────────────────────────────────────────────
 function _abHostileTeam(pred) { return pred.isClone ? 'red' : 'green'; }
-// a creature's special does not reach anything on the far side of a Photonic Shield (js/techabilities.js): it neither aims at it nor hits it
-function _abWalled(pred, a) { return !pred.isClone && typeof techShieldBetween === "function" && !!techShieldBetween(pred.x, pred.y, a.x, a.y); }
+// a creature's special does not reach anything on the far side of a Photonic Shield (js/techabilities.js), nor anything it cannot see (a wall or a tall object between; the owner, 2026-11-06:
+// "Both need sight"; js/facilityplay.js facilitySeesFrom): it neither aims at it nor hits it
+function _abWalled(pred, a) {
+    if (!pred.isClone && typeof techShieldBetween === "function" && techShieldBetween(pred.x, pred.y, a.x, a.y)) return true;
+    return typeof facilitySeesFrom === "function" && !facilitySeesFrom(pred.x, pred.y, a.x, a.y);
+}
 
 function _abNearestFoe(pred, maxDist) {
     const team = _abHostileTeam(pred);

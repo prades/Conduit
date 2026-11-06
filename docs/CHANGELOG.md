@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **j · Creature specials and the player's own jumps need sight** (the owner, 2026-11-06: "Both need sight"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06i` went to main at the owner's word ("Push to main"), with its strip fix (every name whole; 15f4f45). Its full run was stopped at suite 31, none failing, at the owner's word (too much testing); only the suites nearest each change were run.
+  - A creature's special neither aims at nor reaches what the creature cannot see. ARC SLINGER's jump and the Technomancer's arc jump only to a creature seen from the last one (`COMBAT.md` §8.5).
+  - Tests: tests/cover.js (23 checks, 1 new); the nearest suites passed (abtest, cards, classcards, combat, damage, foundation, mutator, playercards, stun, techlevel1, technomancer). Not playtested.
+
 - **i · The moves that strike at once need sight; the long names on the roster's strip** (the owner, 2026-11-06: "Need sight", "Smaller type"; on the branch only; commit named in git log).
   - **Main:** build `2026-11-06h` (walls, cover and sight; 29c7e7f and its full run's docs 1f0210a) went to main at the owner's word ("Push to main"; `DECISION-LOG.md`).
   - **Nothing a follower does strikes through a wall or a tall object** (`COMBAT.md` §8.5). A move that strikes at once is used only on an enemy the follower can see:

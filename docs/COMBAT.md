@@ -557,7 +557,7 @@ The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cove
     - from the enemy struck: ARC VOLLEY's, CHAIN LIGHTNING's and SONIC ROLL's jumps; SINGULARITY SHOT's pull and slow; CORRODE SHOT's splash; CHOMP's slow; the equip cards' echoes (NOVA, CLEAVE, CHAIN);
     - from the middle of a field: a burning circle's bite (HEXFIRE), a storm's bite and pull (STATIC VORTEX).
   - **SONIC ROLL's dash** puts the follower's body where it ends, so it needs a straight walk there (the walking test, as PINBALL's roll does), not only sight: never through a wall nor over an object **[reading: stepping over is "Not yet"]**.
-  - **Not changed** (the owner was asked about the followers' moves): the creatures' specials (LEAP, MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE, WEB SNARE, BLADE FLURRY, BLINDING DUST) test only distance and the Photonic Shield, and the player's own jumps (ARC SLINGER's, the Technomancer's arc jumping on) test only distance **[open: `OPEN-QUESTIONS.md` §1y]**.
+  - **The creatures' specials and the player's own jumps need sight too** (built in `2026-11-06j`; the owner, 2026-11-06: "Both need sight"). A special (LEAP, MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE, WEB SNARE, BLADE FLURRY, BLINDING DUST) neither aims at nor reaches anything its creature cannot see (js/abilities.js `_abWalled`, beside the Photonic Shield). ARC SLINGER's jump and the Technomancer's arc jump only to a creature seen from the one they leave (js/playercards.js `playerRoundJump`, js/technomancer.js `technoArc`). Nothing in the game strikes through a wall or a tall object now.
 
 ### 8.6 FLUX MOVE and cover
 

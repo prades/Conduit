@@ -47,7 +47,8 @@ function playerRoundJump(role, from, src, dmg, skip) {
     let best = null, bd = j.radius;
     for (const a of actors) {
         if (!a || a === from || a.dead || (skip && skip.indexOf(a) >= 0) || (typeof isHostileTarget === "function" && !isHostileTarget(a))) continue;
-        const d = Math.hypot(a.x - from.x, a.y - from.y); if (d <= bd) { bd = d; best = a; }
+        const d = Math.hypot(a.x - from.x, a.y - from.y);
+        if (d <= bd && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(from.x, from.y, a.x, a.y))) { bd = d; best = a; }   // (only to one seen from there: "Both need sight")
     }
     if (!best) return null;
     if (typeof applyDamage === "function") applyDamage(best, dmg * j.share, src, null, false, false, typeof DMG_HIT_GUN !== "undefined" ? DMG_HIT_GUN : null);

@@ -61,7 +61,7 @@ function technoArc(foe) {
     let last = foe;
     for (let k = 0; k < TECHNO.arc.chain; k++) {
         let best = null, bd = TECHNO.arc.chainRange;
-        for (const a of actors) { if (!a || hit.includes(a) || !isHostileTarget(a)) continue; const dd = Math.hypot(a.x - last.x, a.y - last.y); if (dd <= bd) { bd = dd; best = a; } }
+        for (const a of actors) { if (!a || hit.includes(a) || !isHostileTarget(a)) continue; const dd = Math.hypot(a.x - last.x, a.y - last.y); if (dd <= bd && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(last.x, last.y, a.x, a.y))) { bd = dd; best = a; } }   // (a jump only to one seen from the last: "Both need sight")
         if (!best) break;
         hit.push(best); pts.push([best.x, best.y]); _tcZap(best, dmg * TECHNO.arc.chainPct); last = best;
     }

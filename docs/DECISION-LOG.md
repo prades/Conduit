@@ -1722,3 +1722,17 @@ Build `2026-11-06h` stopped every shot that travels at walls and cover. The move
 ### Impact
 - A follower no longer strikes a creature in the next room through a wall with these moves.
 - The roster's strip shows every element-and-class name whole at 1180 px.
+
+## DECISION: Build 2026-11-06i to main; the creatures' specials and the player's jumps need sight
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06i` (with its strip fix, 15f4f45) on main. The sight answer: implemented and tested in build `2026-11-06j`, on the branch; not playtested.
+- **Branch/build:** after build `2026-11-06i`, on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `COMBAT.md` §8.5, `OPEN-QUESTIONS.md` §1y item 5
+
+### Decision
+1. "Push to main" (told that only the suites nearest the change were run, not the full suite).
+2. "Both need sight": the creatures' specials and the player's own jumps (ARC SLINGER's, the Technomancer's arc) need sight, so nothing in the game strikes through a wall or a tall object.
+
+### Also said
+The owner: too much time goes into testing and side checks. From here on, only the suites nearest a change are run, and docs are kept short.
