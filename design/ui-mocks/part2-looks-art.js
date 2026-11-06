@@ -103,7 +103,41 @@
             + '<g fill="url(#clL)"><ellipse cx="78" cy="150" rx="70" ry="46"/><ellipse cx="228" cy="318" rx="64" ry="42"/></g>'
             + '<g fill="none" stroke="currentColor" stroke-opacity=".04" stroke-linecap="round">' + wisps + "</g></g>";
     }
-    const TEX = { crustacean, mollusk, elemental }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll", elemental: "clAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
+    // THE DRONE TEXTURE (proposed after the elemental's approval, 2026-11-06; the theme as written: "machined panels: seams, rivets and vent slats"). Plating split into panels of uneven sizes, so no
+    // layout repeats: each panel lit along its top and left edges and shaded along its bottom and right, thin dark seams between them; rivets at the corners of the larger panels; vent slats in a few.
+    // Faint, as the other textures are.
+    function drone() {
+        seed = 73;
+        const panels = [];
+        const split = (x, y, w, h, depth) => {
+            const area = w * h;
+            if (depth > 0 && (area > 9000 || (area > 3600 && rnd() < .55))) {
+                if (w > h * (.8 + rnd() * .5)) { const c = Math.round(w * (.32 + rnd() * .36)); split(x, y, c, h, depth - 1); split(x + c, y, w - c, h, depth - 1); }
+                else { const c = Math.round(h * (.32 + rnd() * .36)); split(x, y, w, c, depth - 1); split(x, y + c, w, h - c, depth - 1); }
+            } else panels.push({ x, y, w, h });
+        };
+        split(0, 0, 300, 420, 7);
+        let plates = "", lit = "", shade = "", rivets = "", slats = "", rims = "";
+        const vented = panels.filter(p => p.w > 64 && p.h > 50).filter((p, i) => i % 2 === 0).slice(0, 4);   // four of the larger panels carry vents
+        panels.forEach(p => {
+            const g = 1.6, x0 = R(p.x + g), y0 = R(p.y + g), x1 = R(p.x + p.w - g), y1 = R(p.y + p.h - g);
+            plates += "M" + x0 + " " + y0 + "H" + x1 + "V" + y1 + "H" + x0 + "Z";
+            lit += "M" + x0 + " " + y1 + "V" + y0 + "H" + x1;
+            shade += "M" + x1 + " " + y0 + "V" + y1 + "H" + x0;
+            if (p.w > 44 && p.h > 44 && rnd() < .7) [[x0 + 5, y0 + 5], [x1 - 5, y0 + 5], [x1 - 5, y1 - 5], [x0 + 5, y1 - 5]].forEach(c => { rivets += '<circle cx="' + R(c[0]) + '" cy="' + R(c[1]) + '" r="1.3"/>'; });
+            if (vented.indexOf(p) >= 0) {   // louvres: each a raised slat lit along its top, its shadow under it
+                const n = 4 + Math.floor(rnd() * 4), L = Math.min(p.w * .55, 70), sx = p.x + (p.w - L) / 2, sy = p.y + p.h / 2 - (n - 1) * 3.5;
+                for (let i = 0; i < n; i++) { const y = sy + i * 7; slats += "M" + R(sx) + " " + R(y) + "h" + R(L); rims += "M" + R(sx) + " " + R(y + 1.8) + "h" + R(L); }
+            }
+        });
+        return '<g id="drAll"><path fill="currentColor" fill-opacity=".04" d="' + plates + '"/>'
+            + '<path fill="none" stroke="currentColor" stroke-opacity=".26" stroke-width="1" d="' + lit + '"/>'
+            + '<path fill="none" stroke="#000" stroke-opacity=".32" stroke-width="1" d="' + shade + '"/>'
+            + '<g fill="currentColor" fill-opacity=".3">' + rivets + "</g>"
+            + '<path fill="none" stroke="#000" stroke-opacity=".4" stroke-width="1.2" stroke-linecap="round" d="' + rims + '"/>'
+            + '<path fill="none" stroke="currentColor" stroke-opacity=".24" stroke-width="2.2" stroke-linecap="round" d="' + slats + '"/></g>';
+    }
+    const TEX = { crustacean, mollusk, elemental, drone }, TEX_ID = { crustacean: "cuAll", mollusk: "moAll", elemental: "clAll", drone: "drAll" };   // a species' texture, and the id of its drawing (so a follower's band can lay it twice across)
     const TEX_HALF = { crustacean: true };
     const TEX_ELEMENT_COLOUR = { elemental: true };   // on a follower, laid in its element's colour (the theme as written), not the species' own   // laid at half size on a follower (the crust, "Smaller texture"); the others once, at their own size (a broad sheen laid twice across would show a seam)
 
@@ -214,5 +248,5 @@
         else if (mode === "big") third = '<svg x="0" y="0" width="' + W + '" height="' + H + '" viewBox="40 40 150 88" preserveAspectRatio="xMidYMid slice" color="' + T.col + '" opacity=".75">' + spTex + "</svg>";
         return _caDoc(W, H, elBand + clsBand + third);
     }
-    root.PART2 = { crustacean, mollusk, elemental, TEX, THEMES, ICONS, iconSvg, backdrop3 };
+    root.PART2 = { crustacean, mollusk, elemental, drone, TEX, THEMES, ICONS, iconSvg, backdrop3 };
 })(typeof window !== "undefined" ? window : globalThis);

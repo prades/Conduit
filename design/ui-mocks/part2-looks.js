@@ -1,7 +1,7 @@
 // node design/ui-mocks/part2-looks.js <out dir> [dsf] [mode] [species] [icons] : the following update's Part 2 gate-2 mockups, drawn in the REAL game page (game.html), today beside the proposal.
 // PROPOSALS ONLY (docs/FOLLOWING-UPDATE.md Part 2; docs/ART-PROCESS.md, one piece first): the page is a copy with design/ui-mocks/part2-looks-art.js added, and four of the game's own functions wrapped in it
 // (cardArtUnitClass, cardArtFaceClass, _cdKindCol, _cdStageFill) so a species' look shows where the game would show it. Nothing in js/ is changed. Needs playwright + chromium.
-// species: whose texture is shown (crustacean, the default, and mollusk, both approved; elemental); icons: the emblems on the sheet, comma-separated keys of part2-looks-art.js ICONS (default crustacean,fire,ant).
+// species: whose texture is shown (crustacean, the default, mollusk and elemental, approved; drone); icons: the emblems on the sheet, comma-separated keys of part2-looks-art.js ICONS (default crustacean,fire,ant).
 // Writes: foe-today.png, foe-proposed.png (the enemy card, an ant locked), roster-today.png, roster-proposed.png (the Command Center's card in view: the species' first follower), card-today.png,
 // card-proposed.png (the CARDS screen's featured card and its details: the species' card), icons.png (the emblems), texture.png (the species' texture alone),
 // backdrop.png (a follower's backdrop alone, today's two layers beside the proposal's three, for the species' two followers).
@@ -15,6 +15,7 @@ const SHOW = {
     crustacean: { card: 'tide_shell',  forms: [['quillstone', 'fire', 'brawler', 'QUILLSTONE'], ['seeper', 'toxic', 'brawler', 'SEEPER']] },
     mollusk:    { card: 'nacre_pearl', forms: [['voidstar', 'flux', 'sniper', 'VOIDSTAR'], ['hammerslug', 'core', 'camper', 'HAMMER SLUG']] },
     elemental:  { card: 'focusing_prism', forms: [['maw', 'ice', 'brawler', 'FROST MAW'], ['thunderhead', 'electric', 'sniper', 'THUNDERHEAD']] },
+    drone:      { card: 'overclock_chip', forms: [['rimestar', 'ice', 'sniper', 'RIMESTAR'], ['thermite', 'fire', 'camper', 'THERMITE BURROWER']] },
 }[SPECIES];
 if (!SHOW) { console.error('no such species to show: ' + SPECIES); process.exit(1); }
 
