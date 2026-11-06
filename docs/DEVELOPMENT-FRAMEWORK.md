@@ -138,6 +138,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Change history/build notes | `CHANGELOG.md` |
 | The next update (draft, active work) | `NEXT-UPDATE.md` |
 | The update after it (proposed, for approval) | `FOLLOWING-UPDATE.md` |
+| Next development phase roadmap (Flux movement, follower abilities and Ultimates, Series 2 combat cards → sewer redesign; plan, not implemented) | `NEXT-PHASE-ROADMAP.md` |
 | Unresolved questions | `OPEN-QUESTIONS.md` |
 | Decision index | `DECISION-LOG.md` |
 | Combat | `COMBAT.md` |
