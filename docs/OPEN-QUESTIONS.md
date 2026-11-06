@@ -467,8 +467,8 @@ Readings taken (each stands until the owner says otherwise):
 4. **The pod's field is round**, shrinking as it runs down (the pools' fade, kept).
 
 **Still to do or to ask:**
-- **"I wanted rubble"**: the Queen's boss gate becomes rubble (drilled through by the fire technician, as the arena's rubble and the tunnel's choke are). Not built yet: what opens her encounter and what the module is then for need the owner's word.
-- **"Access points in troves"**: read as many ways into the Sewers' parts across the water. Not built: what the owner means is to be confirmed.
+- **"I wanted rubble"**: answered "Rubble, drilled"; built in `2026-11-06l` (`SEWER-QUEST.md`).
+- **"Access points in troves"**: answered "Many crossings". Measured in `2026-11-06l`: 35 places the ice crosses the river, 5 onto the dam; none across the reservoir or the moat (their far banks are not floor). More onto the dam would need floor on those banks: the owner's call.
 - **MAGMA VENT** (the Thermite Burrower's alternate): next, with its numbers.
 
 ## 2. Newly open

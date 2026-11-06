@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **l · Rubble in the boss gate's place** (the owner, 2026-11-06: "Rubble, drilled", "Many crossings"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06k` went to main at the owner's word ("Push to main").
+  - The way onto the Nest's dam is **rubble** a fire technician drills through (with its own label and notice), or an ice bridge. The boss gate's seal and station are gone; the module is only for the install; the plate names both ways.
+  - **Crossings, measured:** the ice crosses the river at 35 places, 5 of them onto the dam; the reservoir and the moat give none (their far banks are not floor). No map change for more yet (`OPEN-QUESTIONS.md` §1z).
+  - Tests: sewerquest (the gate's checks rewritten: the rubble drilled, the way open, the Queen armed by nearness), sewers, facilityplay, techlevel1, cover, facility, bible, globals (counts: 3 gates, 0 boss gates, 3 rubble, 16 stations). No full run. Not playtested.
+
 - **k · TOXIC PODS; ice bridges** (Milestone Three's technician utilities; the owner, 2026-11-06: "Technician utilities", "Shorter life", "One ability", "Straight, 30 s"; on the branch; commit named in git log).
   - **Main:** build `2026-11-06j` went to main at the owner's word ("Push to main").
   - **TOXIC PODS** replace the Blight Spider's pools: a small pod with a round toxic field 2 tiles across, up to 3, biting every 0.5 s, running down in 2 minutes of play (was 2 in-game days).

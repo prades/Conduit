@@ -504,7 +504,7 @@ function _techDrillTick(f, f0) {
 function techRingFor(r) {
     if (!r || techRubbleOpen(r)) return null;
     const left = techRubbleLeft(r);
-    return { up: { label: "THERMITE DRILL", act: "drill" }, caption: (r.solid ? "CHOKED TUNNEL" : "RUBBLE") + " · " + left + " HIT" + (left === 1 ? "" : "S") + " TO DRILL THROUGH" + (r.inside ? " · FROM INSIDE" : "") };
+    return { up: { label: "THERMITE DRILL", act: "drill" }, caption: (r.tag || (r.solid ? "CHOKED TUNNEL" : "RUBBLE")) + " · " + left + " HIT" + (left === 1 ? "" : "S") + " TO DRILL THROUGH" + (r.inside ? " · FROM INSIDE" : "") };
 }
 function techRingAct(r, act) {
     if (act !== "drill") return { ok: false };
@@ -523,7 +523,7 @@ function _techRubbleNotices() {
     if (!_fp.rubbleNear) _fp.rubbleNear = new Set();
     for (const r of _techRubbles()) {
         const near = Math.hypot(r.at[0] - player.x, r.at[1] - player.y) <= TECH_AB.drill.near;
-        if (near && !_fp.rubbleNear.has(r.id)) { _fp.rubbleNear.add(r.id); if (!techRubbleOpen(r)) _techSay(r.inside ? "✹ A COLLAPSED TUNNEL · ITS CHOKE IS DRILLED FROM INSIDE: A FIRE TECHNICIAN LAUNCHED IN CAN OPEN IT" : r.solid ? "✹ A COLLAPSED TUNNEL, CHOKED WITH RUBBLE · A FIRE TECHNICIAN CAN DRILL IT THROUGH FROM HERE: PRESS AND HOLD IT" : "✹ RUBBLE IN THE ROCK · A FIRE TECHNICIAN CAN DRILL IT: PRESS AND HOLD IT", "#ff9a4a"); }
+        if (near && !_fp.rubbleNear.has(r.id)) { _fp.rubbleNear.add(r.id); if (!techRubbleOpen(r)) _techSay(r.say ? "✹ " + r.say : r.inside ? "✹ A COLLAPSED TUNNEL · ITS CHOKE IS DRILLED FROM INSIDE: A FIRE TECHNICIAN LAUNCHED IN CAN OPEN IT" : r.solid ? "✹ A COLLAPSED TUNNEL, CHOKED WITH RUBBLE · A FIRE TECHNICIAN CAN DRILL IT THROUGH FROM HERE: PRESS AND HOLD IT" : "✹ RUBBLE IN THE ROCK · A FIRE TECHNICIAN CAN DRILL IT: PRESS AND HOLD IT", "#ff9a4a"); }
         else if (!near) _fp.rubbleNear.delete(r.id);
     }
 }
@@ -1431,7 +1431,7 @@ function techDrawOverlay() {
     for (const r of _techRubbles()) {
         const d = Math.hypot(r.at[0] - player.visualX, r.at[1] - player.visualY); if (d > TECH_AB.drill.near) continue;
         const a = Math.min(1, (TECH_AB.drill.near - d) / 2), open = techRubbleOpen(r), p = rP(r, 0);
-        const txt = open ? (r.solid ? "THE CHOKE IS DRILLED THROUGH · THE WAY IN IS OPEN" : "A DARK HOLE IN THE ROCK · SEALED FOR NOW") : _techDrilling(r) ? "✹ THERMITE DRILL · " + techRubbleLeft(r) + " TO GO" : (r.solid ? "✹ CHOKED TUNNEL" : "✹ RUBBLE") + " · PRESS AND HOLD IT: THERMITE DRILL";
+        const txt = open ? (r.solid ? (r.opened || "THE CHOKE IS DRILLED THROUGH · THE WAY IN IS OPEN") : "A DARK HOLE IN THE ROCK · SEALED FOR NOW") : _techDrilling(r) ? "✹ THERMITE DRILL · " + techRubbleLeft(r) + " TO GO" : (r.tag ? "✹ " + r.tag : r.solid ? "✹ CHOKED TUNNEL" : "✹ RUBBLE") + " · PRESS AND HOLD IT: THERMITE DRILL";
         g.globalAlpha = a; g.font = font(13); g.textAlign = "center"; g.textBaseline = "middle";
         const w = g.measureText(txt).width + 22, y = p[1] - 96 + Math.sin(f0 * 0.07) * 2, col = open ? "#9aa4b4" : "#ff9a4a";
         g.fillStyle = "rgba(5,8,18,0.82)"; g.fillRect(p[0] - w / 2, y - 12, w, 24); g.strokeStyle = col; g.lineWidth = 1.5; g.strokeRect(p[0] - w / 2 + 0.5, y - 11.5, w - 1, 23); g.fillStyle = col; g.fillText(txt, p[0], y + 1);

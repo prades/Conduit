@@ -34,8 +34,6 @@ const STATION_KINDS = {
     // is a BUILD (the mech bay's kind: the progress bar, walk away and it stops, nothing spent) that takes the module when it is done, and its start wakes the boss (onStart)
     analysis_bench: { name: "ANALYSIS BENCH", classes: null, verbFn: () => typeof questBenchVerb === "function" ? questBenchVerb() : "ANALYSE", canFn: () => typeof questBenchCan === "function" ? questBenchCan() : { ok: false, why: "NO QUEST" },
         use: () => typeof questBenchUse === "function" ? questBenchUse() : { ok: false, why: "NO QUEST" } },
-    gate_seal: { name: "BOSS GATE", classes: null, verbFn: () => "BREAK THE SEAL ON THE GATE", canFn: () => typeof questGateCan === "function" ? questGateCan() : { ok: false, why: "NO QUEST" },
-        use: () => typeof questGateUse === "function" ? questGateUse() : { ok: false, why: "NO QUEST" } },
     purifier_mount: { name: "PURIFIER MOUNT", classes: null, build: 600, cost: [["purification_module", 1]], buildMsg: "MOUNTING THE MODULE… STAY AT THE CONSOLE", verbFn: () => typeof questMountVerb === "function" ? questMountVerb() : "INSTALL",   // (build: QUEST_PURIFY.install, js/quests.js: the archive's "about 10 seconds")
         canFn: () => typeof questMountCan === "function" ? questMountCan() : { ok: false, why: "NO QUEST" }, onStart: () => { if (typeof questMountStart === "function") questMountStart(); },
         blockFn: () => typeof questMountBlocked === "function" ? questMountBlocked() : null,   // (the queen at the console: the build's progress holds, js/bosses.js bossInstallBlocked)

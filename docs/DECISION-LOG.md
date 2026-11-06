@@ -1751,3 +1751,14 @@ The owner: too much time goes into testing and side checks. From here on, only t
 4. The bridge: "Straight, 30 s" (2 tiles wide, bank to bank, up to 8 tiles, 60 s wait).
 5. Where: "I want players to be able to sneak in before the gate opens. I never wanted a gate. I wanted rubble. So it works out. Test it if you want but make the sewer have access points in troves."
 
+## DECISION: Build 2026-11-06k to main; the boss gate becomes rubble; many crossings
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06k` on main. The rubble: implemented and tested in build `2026-11-06l`, on the branch; not playtested. The crossings: measured (35 over the river, 5 onto the dam); nothing more built yet.
+- **Related feature/docs:** `SEWER-QUEST.md`, `OPEN-QUESTIONS.md` §1z
+
+### Decision
+1. "Push to main" (build k).
+2. The Queen's gate: "Rubble, drilled" (the fire technician drills it; the ice is the other way in; the module is only for the install).
+3. "Access points in troves" means "Many crossings": many places along the water where an ice bridge (or another route) gets you across or onto the dam.
+

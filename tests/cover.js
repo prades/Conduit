@@ -105,8 +105,8 @@ async function boot(search) {
             o.middle = [...new Set(main.filter(s => s.cover && !s.low).map(s => s.kind))].sort().join(); o.lowKinds = [...new Set(main.filter(s => s.low && !s.cover).map(s => s.kind))].sort().join();
             o.tallSome = ['generator', 'locker', 'vending', 'teleporter', 'rubble', 'server_rack', 'tank'].every(k => main.some(s => s.kind === k && !s.low && !s.cover)); return o; })()`);
         same(r.cover, 'barrel,barrier,computer_desk,console,crate,crate_stack,desk,lab_bench,reception_desk', 'what gives cover'); same(r.every, true, 'a solid without its kind\'s traits');
-        same(r.n + ':' + r.nCover + ':' + r.nSeen + ':' + r.nLow + ':' + r.nTall, '164:42:34:17:105', 'the counts (solids : cover : cover seen over : low without cover : tall)');
-        same(r.middle, 'console,crate_stack', 'cover too high to see over'); same(r.lowKinds, 'boss_gate,cart,couch,gate,pool,river,sentry,table', 'low objects that give no cover'); same(r.tallSome, true, 'a tall kind');
+        same(r.n + ':' + r.nCover + ':' + r.nSeen + ':' + r.nLow + ':' + r.nTall, '164:42:34:16:106', 'the counts (solids : cover : cover seen over : low without cover : tall)');
+        same(r.middle, 'console,crate_stack', 'cover too high to see over'); same(r.lowKinds, 'cart,couch,gate,pool,river,sentry,table', 'low objects that give no cover'); same(r.tallSome, true, 'a tall kind');
     });
     check('THE TEST ROOM HAS ITS OBJECT THAT GIVES COVER (the roadmap\'s room, docs/NEXT-PHASE-ROADMAP.md §3.5): its two crates, barrel and two barriers (that move) and its desk give cover and are seen over, its two consoles give cover and are not, its generator gives none and is tall', () => {
         const r = J(`_fp.F.solids.filter(s => s.room === 'flux_lab').map(s => s.id + ':' + (s.cover ? 'C' : '-') + (s.low ? 'L' : '-')).sort().join()`);
@@ -163,7 +163,7 @@ async function boot(search) {
     });
     check('A TALL OBJECT stops a shot and is nobody\'s own cover (the generator, even from right beside it); COVER TOO HIGH TO SEE OVER is still its owner\'s (a console: from right behind it a shot passes over, from three tiles off it stops); A LOW OBJECT THAT GIVES NO COVER is passed over (the lobby\'s table and couch, the armory\'s cart, a turret, the Sewers\' river and barred gates)', () => {
         const r = J(`(function(){ const o = {}, F = _fp.F; o.gen = __L([9, 3], [9, 0]); o.genFar = __L([9, 6], [9, 0]); o.conNear = __L([7, 5], [7, 9]); o.conFar = __L([7, 3], [7, 9]);
-            o.low = []; for (const id of ['table_1', 'couch_1', 'armory_cart', 'sentry_hall', 'sewer_river_w', 'sewer_river_e', 'sewer_gate_s1', 'sewer_gate_boss']) { const s = F.solids.find(q => q.id === id); const c = [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], h = Math.max(s.bb[2] - s.bb[0], s.bb[3] - s.bb[1]) / 2 + 1.2; let got = null;
+            o.low = []; for (const id of ['table_1', 'couch_1', 'armory_cart', 'sentry_hall', 'sewer_river_w', 'sewer_river_e', 'sewer_gate_s1']) { const s = F.solids.find(q => q.id === id); const c = [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], h = Math.max(s.bb[2] - s.bb[0], s.bb[3] - s.bb[1]) / 2 + 1.2; let got = null;
                 for (const [dx, dy] of [[1, 0], [0, 1], [0.7071, 0.7071], [0.7071, -0.7071]]) { for (const k of [1, 1.5, 2, 3]) { const p = [c[0] - dx * h * k, c[1] - dy * h * k], q = [c[0] + dx * h * k, c[1] + dy * h * k];
                     if (!facilityWalkable(p[0], p[1], F) || !facilityWalkable(q[0], q[1], F) || _facWallCrossed(p[0], p[1], q[0], q[1], F)) continue; let other = false, crosses = false;
                     for (let i = 0; i <= 40; i++) { const z = facilitySolidAt(p[0] + (q[0] - p[0]) * i / 40, p[1] + (q[1] - p[1]) * i / 40, F); if (z && z !== s) other = true; if (z === s) crosses = true; }
@@ -171,7 +171,7 @@ async function boot(search) {
                 o.low.push(got || id + ':no line'); }
             return o; })()`);
         same(r.gen, 'lab_generator', 'the generator from right beside it'); same(r.genFar, 'lab_generator', 'the generator from three off'); same(r.conNear, 'through', 'a console from right behind it'); same(r.conFar, 'lab_console_2', 'a console from three off');
-        same(r.low.join(), 'table_1:through:seen,couch_1:through:seen,armory_cart:through:seen,sentry_hall:through:seen,sewer_river_w:through:seen,sewer_river_e:through:seen,sewer_gate_s1:through:seen,sewer_gate_boss:through:seen', 'the low objects');
+        same(r.low.join(), 'table_1:through:seen,couch_1:through:seen,armory_cart:through:seen,sentry_hall:through:seen,sewer_river_w:through:seen,sewer_river_e:through:seen,sewer_gate_s1:through:seen', 'the low objects');
     });
     check('WHAT IS THE SHOOTER\'S OWN: cover within one tile (FAC_SHOT.own) of where the shot was fired, to its nearest edge: the crate from 0.9 tiles is passed over, from 1.1 it stops the shot; the next cover on the line stops it (from right behind a console, a shot passes over the console and stops at the crate)', () => {
         const r = J(`[FAC_SHOT.own, __L([6, 3.4], [6, 0]), __L([6, 3.6], [6, 0]), __L([6, 5], [6, 9]), __L([6, 5], [6, 0])].join()`);

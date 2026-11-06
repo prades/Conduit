@@ -72,7 +72,7 @@ const QUEST_STEPS = {
         { id: "turnin", title: "TAKE THE SAMPLES TO THE LAB", text: Q => "THE ANALYSIS BENCH: THE CABINET AT THE WEST END OF THE EXPERIMENT LAB. STAND AT IT AND PRESS E (OR TAP IT).", hint: Q => "IT TAKES THE THREE ANT SAMPLES AND THE WATER SAMPLE TOGETHER.", done: Q => !!Q.turnedInAt },
         { id: "module", title: "BUY THE PURIFICATION MODULE", text: Q => "AT THE ANALYSIS BENCH: ◆" + QUEST_PURIFY.modulePrice + ". YOU HAVE ◆" + (typeof shardCount === "number" ? shardCount : 0) + ".", hint: Q => "KILLS PAY SHARDS. THE MODULE GOES IN YOUR PACK.", done: Q => !!Q.moduleAt },
         { id: "install", title: "INSTALL THE MODULE IN THE NEST",
-          text: Q => Q.gateAt ? "MOUNT THE MODULE ON THE CONSOLE ON THE TRASH DAM, BELOW THE BIG BARRED ARCH, AND STAY AT IT: " + Math.round(QUEST_PURIFY.install / 60) + " SECONDS." : "TAKE IT DOWN TO THE SEWERS: THE BOSS GATE AT THE EAST END OF THE SOUTH LEDGE. ITS SEAL BREAKS FOR THE MODULE.",
+          text: Q => "MOUNT THE MODULE ON THE CONSOLE ON THE TRASH DAM, BELOW THE BIG BARRED ARCH, AND STAY AT IT: " + Math.round(QUEST_PURIFY.install / 60) + " SECONDS." + (Q.gateAt ? "" : " THE WAY ONTO THE DAM: DRILL THROUGH THE RUBBLE AT THE EAST END OF THE SOUTH LEDGE (A FIRE TECHNICIAN), OR FREEZE A BRIDGE ACROSS THE WATER (AN ICE TECHNICIAN)."),
           hint: Q => _questBossName() + " SLEEPS BESIDE THE CONSOLE. THE INSTALL WAKES HER: SHE SITS ROOTED THERE, THROWS TOXIC BOMBS AND CALLS HER BROOD, AND THE INSTALL HOLDS WHILE SHE IS AT THE CONSOLE. ASLEEP, STUNNED, FROZEN OR GLITCHED SHE LETS GO OF IT; AT HALF HER HEALTH SHE GOES FRANTIC AND ROAMS: LURE HER OFF AND WORK. HER BITES DO NOT STOP THE INSTALL; WALKING AWAY DOES. OR KILL HER." + (typeof sqPresent === "function" && sqPresent() ? " SIDE QUEST, ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE, SELLS A SLEEPING POTION." : ""), done: Q => !!Q.installedAt },   // (his name, not "THE DRONE": the owner, 2026-11-02, "Say SIDE QUEST", once he was drawn as the void walker)
         { id: "purify", title: "THE WATER CLEARS", text: Q => "THE MODULE IS RUNNING: " + Math.ceil((Q.cycleLeft || 0) / 60) + " S. THE RIVER CLEARS AS IT GOES.", hint: Q => "THE QUEEN NEED NOT DIE: CLEAN WATER CALMS HER, AND SHE KEEPS HER POST.", done: Q => !!Q.purifiedAt },
     ],
@@ -111,6 +111,7 @@ function questTick() {
         const S = bossState(P.boss), at = S && S.state === "idle" ? bossLair(bossEnc(P.boss)) : null;
         if (at && Math.hypot(at[0] - player.x, at[1] - player.y) <= P.queenNear) bossArm(P.boss);
     }
+    if (!Q.gateAt && typeof facilitySolidIsOpen === "function" && facilitySolidIsOpen(P.gate)) questMark(Q, "gateAt", "◈ THE RUBBLE IS DRILLED THROUGH — THE WAY ONTO THE DAM IS OPEN");   // (the way in: js/facilitymap.js rubble_sewer_gate)
     if (Q.discoveredAt && !Q.samplesAt && questSamplesReady(Q)) questMark(Q, "samplesAt", "◈ EVERY SAMPLE IS IN YOUR PACK — THE ANALYSIS BENCH IN THE EXPERIMENT LAB WANTS THEM");
     if (!Q.nestSeenAt && typeof facilityAreaAt === "function") { const a = facilityAreaAt(player.x, player.y, P.room); if (a && a.nest) questMark(Q, "nestSeenAt", "◈ THE NEST: THE QUEEN'S COLONY, BUILT ON A DAM OF TRASH ACROSS THE WATER. HER EGGS ARE EVERYWHERE — THE BROOD COMES FROM HERE", "#8cff5a"); }   // (your note, once, the first time you stand in it: js/population.js NESTS)
     if (Q.installedAt && !Q.purifiedAt) {   // THE CYCLE: the module runs, the water clears, then the boss is calmed if it lives
@@ -166,19 +167,8 @@ function questBenchUse() {
     if (!Q.moduleAt) { shardCount -= P.modulePrice; invAdd("purification_module", 1); questMark(Q, "moduleAt"); return { ok: true, msg: "PURIFICATION MODULE — IN YOUR PACK. MOUNT IT ON THE CONSOLE IN THE NEST, AT THE SEWERS' EAST END: THE BOSS GATE OPENS FOR IT" }; }
     return potionCopyUse();
 }
-function questGateCan() {
-    const Q = questState("purify");
-    if (Q.gateAt) return { ok: false, why: "THE GATE IS OPEN", done: true };
-    if (typeof invHas === "function" && !invHas("purification_module")) return { ok: false, why: "SEALED · THE PURIFICATION MODULE OPENS IT (THE ANALYSIS BENCH, EXPERIMENT LAB)" };
-    return { ok: true };
-}
-function questGateUse() {
-    const Q = questState("purify"), P = QUEST_PURIFY, can = questGateCan(); if (!can.ok) return can;
-    if (typeof facilitySolidOpen === "function") facilitySolidOpen(P.gate);
-    questMark(Q, "gateAt"); if (typeof shake !== "undefined") shake = Math.max(shake || 0, 6);
-    if (typeof bossArm === "function") bossArm(P.boss);
-    return { ok: true, msg: "THE SEAL IS BROKEN — THE BOSS GATE GRINDS OPEN. SOMETHING SLEEPS BESIDE THE CONSOLE ON THE DAM" };
-}
+// THE WAY ONTO THE DAM (build 2026-11-06l; the owner, 2026-11-06: "I never wanted a gate. I wanted rubble", "Rubble, drilled"): rubble a fire technician drills through (js/facilitymap.js rubble_sewer_gate,
+// js/techabilities.js), or an ice bridge across the water. `gateAt` marks the rubble drilled (questTick); the Queen is there, asleep, once the player comes near her post (QUEST_PURIFY.queenNear).
 function questMountVerb() { const Q = questState("purify"); return Q.installedAt ? (Q.purifiedAt ? "THE WATER RUNS CLEAN" : "THE MODULE IS RUNNING") : "INSTALL THE PURIFICATION MODULE"; }
 function questMountCan() {
     const Q = questState("purify");

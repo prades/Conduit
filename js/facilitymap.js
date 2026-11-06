@@ -353,7 +353,7 @@ const FACILITY_MAP = {
         // THE PURIFIER MOUNT: a console on the trash dam, at the reservoir's edge below the big barred arch where the water comes in, where the purification module is installed (a station, js/quests.js; the
         // boss encounter's pressure, js/bosses.js: the queen's post is beside it)
         { id: "purifier_mount", room: "sewers", shape: "rect", rect: [1150, 830, 1190, 850], status: "placed", kind: "console", note: "The Nest's control console, on the dam at the head of the reservoir, below the big barred arch: the purification module mounts here (the PURIFIER MOUNT station)." },
-        { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1080], [1056, 1080]], status: "placed", kind: "boss_gate", note: "THE BOSS GATE: the south ledge's way into the Nest, three tiles across the wider ledge. Sealed until the purification module is brought to it." },
+        { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1080], [1056, 1080]], status: "placed", kind: "rubble", note: "THE RUBBLE ON THE WAY INTO THE NEST (a barred boss gate until build 2026-11-06l; the owner, 2026-11-06: \"I never wanted a gate. I wanted rubble\", \"Rubble, drilled\"): the south ledge's way onto the dam, three tiles across, choked with fallen concrete until a fire technician drills it through (rubble_sewer_gate). The other way onto the dam: an ice bridge across the water." },
     ],
 
     // PICKUPS: supply cases standing on the floor (docs/TUTORIAL.md). `at` is the middle of a tile (sketch pixels: 20 to a tile); `items` is [[item id, how many], ...] from the ITEMS table in js/inventory.js. The player walks over one to take
@@ -429,6 +429,9 @@ const FACILITY_MAP = {
         // A CHOKE (`solid`): rubble that fills a passage's mouth instead of lying against a wall: the solid named is in the way until the rubble is drilled through, then it is open for good (the tunnel is walked into). Its work spot
         //   is on the LEDGE, in front of the pile's middle: a fire technician in the squad drills it from there, with nothing else needed (an `inside: true` choke, with its work spot behind it, would be drilled from the far side
         //   instead, and the order from outside refused: js/techabilities.js _techCanReach; none is so now).
+        { id: "rubble_sewer_gate", room: "sewers", label: "Rubble", a: [1060, 1020], b: [1060, 1080], work: [1036, 1050], solid: "sewer_gate_boss",
+          tag: "RUBBLE ON THE WAY TO THE DAM", say: "RUBBLE ON THE WAY ONTO THE DAM · A FIRE TECHNICIAN CAN DRILL IT THROUGH FROM HERE: PRESS AND HOLD IT (OR FREEZE A BRIDGE ACROSS THE WATER)", opened: "THE RUBBLE IS DRILLED THROUGH · THE WAY ONTO THE DAM IS OPEN",
+          note: "The way onto the Nest's dam from the south ledge, choked with rubble (the owner, 2026-11-06: \"Rubble, drilled\"): drilled through from the ledge by a fire technician, and open for good. It replaced the boss gate and its seal." },
         { id: "rubble_sewer_choke", room: "sewers", label: "Collapsed tunnel", a: [820, 860], b: [940, 860], work: [880, 880], solid: "sewer_choke",
           note: "The collapsed tunnel's mouth on the Sewers' north ledge, six tiles of fallen concrete and rock: drilled through from the ledge, the way in on foot to the sample and, later, further." },
     ],
@@ -452,7 +455,6 @@ const FACILITY_MAP = {
         { id: "st_armory_terminal", room: "armory", prop: "armory_terminal", kind: "armory_terminal" },
         // THE SEWER PURIFICATION QUEST (js/quests.js, docs/SEWER-QUEST.md): the samples are analysed and the module bought at the cabinet at the Experiment Lab's west end (cabinet_1: away from the sequencer and the serum hood, whose station plate a bench beside them would take over); the boss gate's seal is broken with the module in hand; the module is installed at the cistern's console
         { id: "st_analysis_bench", room: "experiment_lab", prop: "cabinet_1", kind: "analysis_bench" },
-        { id: "st_sewer_gate", room: "sewers", prop: "sewer_gate_boss", kind: "gate_seal" },
         { id: "st_purifier", room: "sewers", prop: "purifier_mount", kind: "purifier_mount" },
     ],
 
