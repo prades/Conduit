@@ -1175,3 +1175,41 @@ The owner's answers, verbatim:
 - **The icons wait on a reference.** "Japanese rpg style" names a family of looks, not one. `ART-PROCESS.md` asks for a reference (a game and which part of it) before a new style is drawn.
 - The enemy row keeps its short words. Its race icon waits on the icon style.
 - Nothing is built until gate 2 is approved.
+
+## DECISION: Part 2's gate-2 mockups, the second and third rounds
+
+- **Date:** 2026-11-06
+- **Status:** In progress. Approved so far: the enemy row's short words, and the four other themes as written. Round 3 (below) is drawn and waits on the owner. Nothing is built.
+- **Branch/build:** mockups on `claude/start-game-project-HSh7Z` (the commit after 90b809b); the game itself unchanged since build `2026-11-06c`.
+- **Related feature/docs:** `UI-STYLE.md` ("Proposed for gate 2"), `FOLLOWING-UPDATE.md` Part 2, `OPEN-QUESTIONS.md` §3, `ART-PROCESS.md`, the entry before this one
+
+### Context
+After the first round's answers, three questions were asked:
+- what to change in the crustacean background besides its size;
+- which game the Japanese RPG icons should follow;
+- whether the other four themes stand.
+
+Then round 2 was drawn:
+- the crustacean texture as a bumpy shell crust;
+- sticker icons after Persona 5.
+
+The owner interrupted it while it was being shown.
+
+### Decision
+The owner's words, verbatim:
+- **The crustacean background:** "Bumpy shell crust". A crab shell's knobbly surface replaces the carapace plates, drawn small.
+- **The icon reference:** "Persona 5", then, on seeing it: "I do not like the direction of the icons. Just make it like Super Smash Bros. Actually." The icons follow Super Smash Bros.' series symbols, read as flat one-colour emblems. They are our own drawings, not that game's symbols.
+- **The other four themes:** "They stand". They are approved as written, to be drawn one at a time after the crustacean.
+- **The crust:** "The design needs to be fainter". On a card and on a follower; on a follower it stays at half its size (from "Smaller texture").
+
+### Alternatives considered
+- The crustacean: the same plates, smaller; a lobster tail's segmented bands.
+- The icons: Final Fantasy's menus, Dragon Quest, SNES pixel art.
+- The other themes: hold them until the crustacean is right; rethink them.
+
+### Impact
+- **Round 3** is drawn and on the design canvas:
+  - the crust faint: on a card's face, and on a follower at half size and 38%;
+  - the crab, the flame and the ant as flat one-colour emblems.
+- Still waiting on the owner's yes or correction. After a yes, the rest is drawn one family at a time: the other four textures, fourteen icons, BLOOM's when it comes.
+- The round-2 sticker icons were never committed. They are described in `UI-STYLE.md` as the record.

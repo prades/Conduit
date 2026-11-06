@@ -4,10 +4,10 @@
 // Writes: foe-today.png, foe-proposed.png (the enemy card, an ant locked), roster-today.png, roster-proposed.png (the Command Center's card in view: QUILLSTONE, a fire crustacean), card-today.png,
 // card-proposed.png (the CARDS screen's featured card and its details: TIDE SHELL, a crustacean card), icons.png (one icon of each set), texture.png (the crustacean texture alone),
 // backdrop.png (a follower's backdrop alone, today's two layers beside the proposal's three, for a fire and a toxic crustacean).
-// mode: how the species layer lies on a follower's backdrop (part2-looks-art.js backdrop3); "big" is the one proposed (large plates behind the class's finer pattern and the element's).
+// mode: how the species layer lies on a follower's backdrop (part2-looks-art.js backdrop3); "small" is the one proposed since round 2 (the crust at half its size, faint; the owner: "Smaller texture", "fainter"), "big" the first round's.
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const fs = require('fs'), path = require('path');
-const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2] || '/tmp/part2'), DSF = +(process.argv[3] || 2), MODE = process.argv[4] || 'big';
+const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2] || '/tmp/part2'), DSF = +(process.argv[3] || 2), MODE = process.argv[4] || 'small';
 
 (async () => {
     fs.mkdirSync(OUT, { recursive: true });
@@ -43,7 +43,7 @@ const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2
         const chip = (t, w) => '<span style="display:inline-block;margin:0 2px 0 0;padding:0 3px;border-radius:3px;font:700 8.5px/13px monospace;letter-spacing:.02em;'
             + (w ? 'background:rgba(120,255,170,.16);color:#9dffc4;border:1px solid rgba(120,255,170,.5)' : 'background:rgba(160,170,200,.12);color:#a9b4cc;border:1px solid rgba(160,170,200,.38)') + '">' + T[t] + '</span>';
         const name = el.querySelector('.mt-foe-name'), txt = el.querySelector('.mt-foe-txt');
-        if (name) name.innerHTML = '<span style="display:inline-block;vertical-align:-2px;margin-right:4px">' + PART2.iconSvg('ant', 14, 'currentColor', 2.4) + '</span>' + name.innerHTML;
+        if (name) name.innerHTML = '<span style="display:inline-block;vertical-align:-3px;margin-right:4px">' + PART2.iconSvg('ant', 16, 'currentColor') + '</span>' + name.innerHTML;
         const r = document.createElement('span'); r.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:2px 0;margin-top:3px';   // (a race with more entries wraps to a second line; the card grows upward, as a corner card does)
         r.innerHTML = '<b style="font:700 8.5px/13px monospace;color:#9dffc4;margin-right:3px">WEAK</b>' + row.weak.map(t => chip(t, true)).join('') + '<b style="font:700 8.5px/13px monospace;color:#a9b4cc;margin:0 3px 0 4px">RESISTS</b>' + row.resist.map(t => chip(t, false)).join('');
         const h0 = el.getBoundingClientRect().height; if (txt) txt.appendChild(r); const dh = el.getBoundingClientRect().height - h0; if (dh > 0) el.style.transform = 'translateY(' + (-dh) + 'px)';
@@ -83,13 +83,13 @@ const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2
         const stageKeep = _cdStageFill;
         _cdStageFill = function (stage, c) {
             stageKeep(stage, c);
-            if (stage && c && c.kind === 'subclass' && c.match === 'crustacean') stage.querySelectorAll('.cd-kind, .cd-irow.kd .cd-iv').forEach(k => { k.innerHTML = '<span style="display:inline-block;vertical-align:-0.12em;margin-right:.3em;width:1.05em;height:1.05em">' + PART2.iconSvg('crustacean', '100%', 'currentColor', 2.4) + '</span>' + k.textContent; });
+            if (stage && c && c.kind === 'subclass' && c.match === 'crustacean') stage.querySelectorAll('.cd-kind, .cd-irow.kd .cd-iv').forEach(k => { k.innerHTML = '<span style="display:inline-block;vertical-align:-0.2em;margin-right:.3em;width:1.15em;height:1.15em">' + PART2.iconSvg('crustacean', '100%', 'currentColor') + '</span>' + k.textContent; });
         };
         return {};
     } catch (e) { return { err: String(e && e.stack || e) }; } }, MODE);
     // the roster's card in view, with the species' icon on its CRUSTACEAN tag
     await ev(() => { ccOpen(); ccFocusSet(window.__sq[0]); if (typeof ccRender === 'function') ccRender(true);
-        document.querySelectorAll('.cf-sc').forEach(t => { if (/CRUSTACEAN/.test(t.textContent) && !t.querySelector('svg')) t.innerHTML = '<span style="display:inline-block;vertical-align:-2px;margin-right:4px">' + PART2.iconSvg('crustacean', 13, PART2.THEMES.crustacean.col, 2.4) + '</span>' + t.textContent; });
+        document.querySelectorAll('.cf-sc').forEach(t => { if (/CRUSTACEAN/.test(t.textContent) && !t.querySelector('svg')) t.innerHTML = '<span style="display:inline-block;vertical-align:-2px;margin-right:4px">' + PART2.iconSvg('crustacean', 14) + '</span>' + t.textContent; });
         return {}; });
     await shot('roster-proposed.png', rosterClip);
     await ev(() => { ccClose(); return {}; });
@@ -101,7 +101,7 @@ const ROOT = path.resolve(__dirname, '../..'), OUT = path.resolve(process.argv[2
     // THE ICONS (one of each set) big and at the sizes they would be shown; THE TEXTURE alone at a card face's size
     const sheet = path.join(dir, 'icons.html');
     fs.writeFileSync(sheet, '<html><head><script src="file://' + ROOT + '/js/cardart.js"></script><script src="file://' + ROOT + '/design/ui-mocks/part2-looks-art.js"></script></head><body style="margin:0;background:#070b16;color:#cfe;font:12px monospace"><div id="o" style="display:flex;gap:34px;padding:18px 24px;align-items:flex-end"></div>'
-        + '<script>const o=document.getElementById("o"),S=[["crustacean","CRUSTACEAN · species",PART2.THEMES.crustacean.col],["fire","FIRE · element","#ff3300"],["ant","ANT · enemy race","#ff8a6a"]];for(const [k,n,c] of S){const d=document.createElement("div");d.style.cssText="display:flex;flex-direction:column;align-items:center;gap:10px";d.innerHTML="<div style=\\"color:"+c+"\\">"+PART2.iconSvg(k,96)+"</div><div style=\\"display:flex;gap:12px;align-items:center;color:"+c+"\\">"+PART2.iconSvg(k,32)+PART2.iconSvg(k,20)+PART2.iconSvg(k,14,null,2.4)+"</div><div>"+n+"</div>";o.appendChild(d);}</script></body></html>');
+        + '<script>const o=document.getElementById("o"),S=[["crustacean","CRUSTACEAN · species",PART2.THEMES.crustacean.col],["fire","FIRE · element","#ff3300"],["ant","ANT · enemy race","#ff8a6a"]];for(const [k,n,c] of S){const d=document.createElement("div");d.style.cssText="display:flex;flex-direction:column;align-items:center;gap:10px";d.innerHTML="<div style=\\"color:"+c+"\\">"+PART2.iconSvg(k,96)+"</div><div style=\\"display:flex;gap:12px;align-items:center;color:"+c+"\\">"+PART2.iconSvg(k,32)+PART2.iconSvg(k,20)+PART2.iconSvg(k,14)+"</div><div>"+n+"</div>";o.appendChild(d);}</script></body></html>');
     await page.goto('file://' + sheet); await page.setViewportSize({ width: 600, height: 230 }); await shot('icons.png');
     const tex = path.join(dir, 'texture.html');
     fs.writeFileSync(tex, '<html><head><script src="file://' + ROOT + '/js/cardart.js"></script><script src="file://' + ROOT + '/design/ui-mocks/part2-looks-art.js"></script></head><body style="margin:0;background:#070b16"><div id="t" style="width:300px;height:420px;margin:10px;border-radius:12px;border:2px solid #e7ad78;background-color:#0b1226"></div>'

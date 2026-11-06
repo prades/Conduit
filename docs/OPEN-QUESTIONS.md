@@ -458,10 +458,17 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     3. "Another style, Japanese rpg style". The line style is rejected for the icons.
     4. "Short words (Recommended)". The enemy row's words are approved.
 
-    **Still to settle before anything more is drawn:**
-    - what to change in the crustacean background besides its size;
-    - a reference for the Japanese RPG icon style: a game, and which part of it (`ART-PROCESS.md`);
-    - whether the other four themes stand.
+    **Asked next, and answered the same day:**
+    - the crustacean background: "Bumpy shell crust";
+    - the icons' reference: "Persona 5". On seeing that drawn: "I do not like the direction of the icons. Just make it like Super Smash Bros. Actually.";
+    - the other four themes: "They stand";
+    - and on the crust drawn: "The design needs to be fainter".
+
+    **Round 3 is drawn, for your yes or correction** (`UI-STYLE.md`, "Proposed for gate 2"; the design canvas):
+    - the crust faint on the card and the follower;
+    - the crab, the flame and the ant as flat one-colour emblems, after Super Smash Bros.' series symbols.
+
+    After a yes, the rest is drawn one family at a time.
 - **Damage types, race weaknesses, and every hit part physical, part elemental** (designed and approved 2026-11-02; built in `2026-11-02a`, on main since your "Push to main"; the words moved in `2026-11-02b`; `COMBAT.md` §7). Approved: six types, each race's weaknesses and resistances, each follower attack's type, and your rule that every attack is part physical (ATK) and part elemental (SP.ATK).
   - **Your answers of 2026-11-02:**
     - half and half, with an Elemental attack at a quarter and three quarters;

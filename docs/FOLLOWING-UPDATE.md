@@ -120,6 +120,11 @@ Each part is its own commit, with its own tests and a full green run before the 
   - the icons are to take a Japanese RPG style (its reference is asked first);
   - the enemy row's short words are approved.
   - The crustacean piece and the icons are to be drawn again before gate 2 can close.
+- **Rounds 2 and 3** (the same day; `DECISION-LOG.md`):
+  - The crustacean background became a bumpy shell crust ("Bumpy shell crust"), then fainter ("The design needs to be fainter").
+  - The icons were tried after Persona 5 and set aside. They are now flat one-colour emblems after Super Smash Bros.' series symbols ("Just make it like Super Smash Bros.").
+  - The other four themes stand ("They stand").
+  - Round 3 is on the design canvas and waits on the owner.
 
 **Then the build:**
 - the species textures on species cards and follower cards;

@@ -75,49 +75,54 @@ The owner: "We also need to make themes for the different species and give textu
 - **Open:** the themes themselves (colours, motifs), the icon style, and how three layers stay readable on a follower card.
 - **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop.
 
-**Proposed for gate 2** (drafted 2026-11-06, for the owner; **not approved, and nothing in the game changed**).
-- **The owner's first answers (2026-11-06; `DECISION-LOG.md`):**
-  - the crustacean background as drawn is not liked ("I don't like crustaceans background,");
-  - on a follower the species texture is to be smaller ("Smaller texture");
-  - the icons are to take "Another style, Japanese rpg style". A reference is asked for first (`ART-PROCESS.md`), so the line style below is **rejected** for the icons;
-  - the enemy row's short words are **approved**.
-
-  What follows is the first draft, kept as the record of what was shown.
+**Proposed for gate 2** (drafted 2026-11-06, for the owner; **not approved, and nothing in the game changed**). This is round 3, after the owner's corrections (`DECISION-LOG.md`). The earlier rounds are at the end of this block.
 - **Where to see it:** four Part 2 boards on the design canvas "Conduit 3D card concepts". The pictures are taken from the real game page by design/ui-mocks/part2-looks.js; the drawings are in design/ui-mocks/part2-looks-art.js (`FOLLOWING-UPDATE.md` Part 2).
 - **How much is drawn:** as `ART-PROCESS.md` asks, the five themes are written and one piece of each family is drawn. The rest waits for a yes or a correction.
 - **A species is a material, not a hue.** These colours are taken: the six element colours, BLOOM's pink, the class cards' cyan and the Player cards' gold.
+- **The four other themes stand as written** (the owner: "They stand"). Each is drawn after the crustacean is approved, one at a time.
 
 | Species | Colour | Texture (its motif) | Icon | Drawn |
 |---|---|---|---|---|
-| Crustacean | CHITIN AMBER `#e7ad78` | Overlapping carapace plates in staggered rows. Each is lit along its ridge and fades where the next row tucks under it, with a few facet cuts (QUILLSTONE's faceting) and pores | A crab | The texture and the icon |
+| Crustacean | CHITIN AMBER `#e7ad78` | A crab shell's bumpy crust: rounded knobs packed close in patches, fine granules between. Each knob is a low matte dome with a shadow where it rises from the shell. Small and faint | A crab | The texture and the icon |
 | Mollusk | NACRE `#e3d6ff` | Spiral whorls and growth lines, as a shell's, with a mother-of-pearl sheen | A spiral shell | No |
 | Elemental | PRISM WHITE `#f2f7ff` | Crystal growth: clustered prisms and rising motes. On a follower it takes its element's colour | A cluster of prisms | No |
 | Drone | GUNMETAL `#b6c4d6` | Machined panels: seams, rivets and vent slats | A drone's round body with two antennae | No |
 | Jelly | GEL ORCHID `#e39cff` | Soft membrane cells with nuclei, a gel's wobble | A jellyfish bell | No |
 
 - **On a species card** (shown on TIDE SHELL):
-  - its texture on the face, in its colour;
+  - its texture on the face, faint, in its colour;
   - its colour for the frame, the crystal and the kind line;
   - its icon before the kind, on the face and in the details beside it.
   - Today such a card wears no texture and the class cards' cyan.
 - **On a follower** (shown on QUILLSTONE and SEEPER):
-  - The species' texture is a third layer, over the element's and the class's, in the species' colour at 75%.
-  - It is drawn large: a 150 × 88 window of the 300 × 420 drawing fills the 300 × 175 band. That way its plates read apart from the class's finer pattern.
-  - The roster's CRUSTACEAN tag carries the icon.
-  - Four other ways were tried in the same page and set aside:
-    - the texture at its own scale, in its colour or in white: the same scale as the class's pattern, so nothing sets the two apart;
-    - faded in from the right: hidden under the card's veil;
-    - faded in from the bottom: hidden behind the creature.
-- **The icons** are in the dock's line style: a 24-unit drawing, stroke 2.2, round caps and joins, in the colour of the text beside it.
-  - Drawn: the crab (species), the flame (fire), the ant (enemy race).
+  - the species' texture is a third layer, over the element's and the class's;
+  - it is drawn at half its size on a card (the drawing twice across the 300 × 175 band), in the species' colour at 38%, so the element and the class still lead;
+  - the roster's CRUSTACEAN tag carries the icon.
+- **The icons:** flat, one-colour emblems in the manner of Super Smash Bros.' series symbols (the owner's reference). They are our own drawings, not that game's symbols.
+  - Each is one solid shape on a 32-unit square, built from discs, wedges and bars, with its details cut out of it.
+  - Each is drawn in the colour of the text beside it.
+  - Drawn:
+    - the crab (species): open claws on raised arms, eyes on stalks, an arched ridge cut across the shell;
+    - the flame (fire), its heart cut out;
+    - the ant (enemy race): head, waist and banded abdomen, bent legs, feelers.
   - Proposed subjects for the rest:
     - the elements: TOXIC bubbles, ELECTRIC a bolt, ICE a snowflake, FLUX a vortex, CORE a hexagon (BLOOM a blossom, later);
     - the races: the beetle, the scorpion, the spider, the mantis and the moth themselves.
 - **The enemy card:**
   - the race's icon before its name;
   - under its numbers, a row from the game's own table (js/damage.js `DMG_RACE`, `COMBAT.md` §7.3): WEAK and its types in green chips, then RESISTS and its types in grey ones;
-  - the types in short words: SLASH, PIERCE, SHOT (projectile), CRUSH, QUAKE (earthquake), ELEM (elemental);
+  - the types in short words, **approved** ("Short words"): SLASH, PIERCE, SHOT (projectile), CRUSH, QUAKE (earthquake), ELEM (elemental);
   - a longer row wraps to a second line, and the card grows upward (the ant's ELEM wraps; the beetle has five entries).
+- **The earlier rounds** (rejected, kept as the record):
+  - **Round 1** (commit d1fb585):
+    - the crustacean texture was overlapping carapace plates in staggered rows, laid large on a follower (a 150 × 88 window of the drawing filling the band) at 75%;
+    - the icons were thin line drawings in the dock's style.
+    - Three other ways of laying the texture on a follower were tried in the page and set aside: at its own size (in its colour or in white), faded in from the right (hidden under the veil), faded in from the bottom (hidden behind the creature).
+    - The owner: "I don't like crustaceans background,"; "Smaller texture"; "Another style, Japanese rpg style". Asked further: "Bumpy shell crust", "Persona 5".
+  - **Round 2** (not committed):
+    - the bumpy crust, stronger;
+    - sticker icons after Persona 5: a black ink edge, a white edge, a solid shadow knocked off to the lower right, tilted.
+    - The owner: "The design needs to be fainter, and I do not like the direction of the icons. Just make it like Super Smash Bros. Actually."
 
 How it is built: each picture is a small standalone SVG used as a CSS background (a data: URL, made once), through a class js/cardart.js writes into one `<style id="cardArtCss">` the first time it is wanted: `cat-c-<texture>` an equip card's face, `cat-f-<element>-<class>` a follower's backdrop, `cag-<colour>` the crystal, `cac-<colour>` the cube, each setting one CSS variable (`--tex` or `--gem`). The css lays `var(--tex)` under its veils (game.html: the block "THE 3D CARDS", and each follower card's background). The crystal and the cube are drawn already turned (the canvas's turns), so a card has no 3D parts of its own.
 
