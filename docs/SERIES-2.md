@@ -1,11 +1,11 @@
 # Series 2: the items
 
-**Status (build 2026-11-02c, Build B, on the branch): 45 cards implemented and on sale after the purification** (the 20 species cards, the Technician's 4, the 18 Mage auras and the 3 Brawler opportunity cards); tested (tests/series2.js, tests/series2abilities.js, tests/classcards.js), not playtested. The 18 Player cards are built (builds `2026-11-02h`, `i` and `j`, the following update's Parts 1a to 1c) and are Series 2's cards, but it does not deal them until Part 1d ("All 18 together"; `UNIVERSAL-AND-PLAYER-CARDS.md`); the 8 Lustrous cards are PROPOSED (a later update). Built in build 2026-11-01j with 32 cards.
+**Status: 63 cards implemented and on sale after the purification:** the 20 species cards, the Technician's 4, the 18 Mage auras and the 3 Brawler opportunity cards (45, build 2026-11-02c, Build B), and the 18 Player cards at Prototype (build `2026-11-06c`, the following update's Part 1d, on the branch; built in builds `2026-11-02h`, `i` and `j`, and dealt once all eighteen were in: "All 18 together"; `UNIVERSAL-AND-PLAYER-CARDS.md`). Tested (tests/series2.js, tests/series2abilities.js, tests/classcards.js, tests/playercards.js), not playtested. The 8 Lustrous cards are PROPOSED (a later update). Built in build 2026-11-01j with 32 cards.
 
 **Series 2 reshaped: designed 2026-11-02, implemented in build 2026-11-02c, except the Player cards** (the owner, in prompts; the rules are in `UNIVERSAL-AND-PLAYER-CARDS.md`).
 - **Cut:** the eight Brawler and Mage class cards (the two tables below, marked CUT). Their two proposed Lustrous cards, WAR BANNER and ASTRAL FOCUS, go with them.
 - **Added:** the Mage auras (6 elements × Refined, Precision, Prototype: 18), the Brawler opportunity cards (Refined, Precision, Prototype: 3) and the 18 Player cards (Prototype). The Technician's four stay: they are its cooldown family.
-- **Series 2 then deals 63 cards** (45 in build 2026-11-02c: the Player cards come later, so its Prototype row is 13 for now):
+- **Series 2 then deals 63 cards** (45 in build 2026-11-02c, its Prototype row 13; the Player cards since build `2026-11-06c`):
 
   | Rarity | Cards |
   |---|---|
@@ -14,7 +14,7 @@
   | Precision | 13 |
   | Prototype | 31 (5 species + 1 Technician + 6 auras + 1 opportunity + 18 Player cards) |
 
-  Its price and odds stay as they are. With the same odds, each Unrefined card comes up more often than today and each Prototype card far less often.
+  Its price and odds stay as they are. With the same odds, each Unrefined card comes up more often than today and each Prototype card far less often: measured on 20,000 seeded packs since the Player cards came in, 35.4% of packs hold a Prototype card, and a given one turns up in about 1 pack in 78 (it was about 1 in 32 among 13).
 - **With BLOOM** (the seventh element, `CONVERSION.md`), its aura (Refined, Precision, Prototype) and its three Player roles (Prototype) join. That makes 69 cards: Refined 14, Precision 14, Prototype 35. They are dealt only once the conversion apparatus is in, as Pack 1's BLOOM cards are (the owner, 2026-11-02).
 - **Owned copies of the cut cards are removed** from collections, hands and slots. Each permanently unlocked copy refunds ◆1,000, added when the next run starts (at once if a run is in progress). *Implemented:* the collection drops them in the same write that keeps the refund; the refund is paid on the first card tick of a run in play, a line says so (◆3000 BACK · 3 SERIES 2 CARDS YOU OWNED WERE CUT), and the run is saved at once. Paid once; safe on malformed saves (js/cards.js `EQUIP_CUT`, `equipOwnedSet`, `equipRefundTick`).
 
@@ -40,7 +40,7 @@ Each card is an **item** with its own 3D look (the "3D look" column). The looks 
 | Cards a pack | 4 | 4 |
 | Odds a slot: Unrefined / Refined / Precision / Prototype | 50 / 30 / 15 / 5 (PICKED) | 60 / 30 / 10 / none |
 | Reserved slot | 1, Precision or higher, drawn among Precision and Prototype by the same odds (15 to 5) | 1, Precision |
-| Deals | 45 cards since build 2026-11-02c: the 20 species cards, the Technician's 4, the 18 Mage auras, the 3 Brawler opportunity cards (32 before) | the 18 element cards |
+| Deals | 63 cards since build `2026-11-06c`: the 20 species cards, the Technician's 4, the 18 Mage auras, the 3 Brawler opportunity cards (45 since build 2026-11-02c; 32 before) and the 18 Player cards | the 18 element cards |
 | Opens | after the purification (the owner's rule) | from the start |
 
 - **About one pack in three holds a Prototype card**: 1 − 0.75 × 0.95³ ≈ 36% (the reserved slot draws Prototype 5 times in 20, each other slot 5 in 100). Measured: 35.5% of 20,000 seeded packs.
@@ -164,7 +164,7 @@ A card's ability works only on a follower the card fits, as a bonus does (js/car
 - **Two stats on one card** (the drone's and the three classes' Precision cards): each stat is a bonus like any other and adds to the same stat on the other slot.
 - **Ability cooldown** shortens a technician's ability wait: never below one frame, and never by more than 90% in all.
 
-Tests: tests/series2.js (the pack, its 45 cards, the price and odds, the lock, fits, the saves, the shelf), tests/series2abilities.js (each ability, Attuned Core and the two-stat cards, on real followers) and tests/classcards.js (the class families, the deal of 45, the cut cards' clean-up and refund).
+Tests: tests/series2.js (the pack, its 63 cards, the price and odds, the lock, fits, the saves, the shelf), tests/series2abilities.js (each ability, Attuned Core and the two-stat cards, on real followers), tests/playercards.js (the Player cards in the deal and on the shelf) and tests/classcards.js (the class families, the deal of 63, the cut cards' clean-up and refund).
 
 ## What is left
 

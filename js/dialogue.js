@@ -34,7 +34,8 @@ function dialogueSpeaker(who) {
     if (who && typeof who === "object") { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === who.element) : null; return { id: "unit", name: typeof unitTypeLabel === "function" ? unitTypeLabel(who) : "FOLLOWER", col: e ? e.color : "#8aa0c8" }; }
     const sp = DLG_SPEAKERS[who] || DLG_SPEAKERS.player; return { id: DLG_SPEAKERS[who] ? who : "player", name: sp.name(), col: sp.col() };
 }
-// SAY: who ("crystal", "player", "sidequest", or a follower), text (one string, or an array: its pages), opts { key, group, col, hold, now, choices: [{ label, col, fn }], onTap }
+// SAY: who ("crystal", "player", "sidequest", or a follower), text (one string, or an array: its pages), opts { key, group, col, hold, now, choices: [{ label, col, fn, sub }], onTap }
+//   (a choice's `sub`: a second, smaller line under its label, shrunk to fit: Side Quest's cards, their price)
 //   key: a line already queued or showing with this key is not added again;  group: the sayer's name, for dismissal and replacement;  col: a tint for this one line (the speaker's colour else)
 //   hold: it stays until replaced or dismissed;  now: it shows at once, in place of the line showing (which goes back to the front of the queue, unless it is the same group's: then it is replaced)
 function dialogueSay(who, text, opts) {
@@ -171,7 +172,12 @@ function dialogueDraw() {
     }
     if (choices && typeof uiButton === "function") {
         const k = choices.length, bw = Math.floor((tw - 10 * (k - 1)) / k), by = y + h - pad - DIALOGUE.choiceH;
-        choices.forEach((c, i) => { const r = { x: tx + i * (bw + 10), y: by, w: bw, h: DIALOGUE.choiceH, label: c.label, fn: c.fn, yes: c.yes }; uiButton(r, c.label, c.col || L.col, false, 16); _dlgBtns.push(r); });
+        choices.forEach((c, i) => {
+            const r = { x: tx + i * (bw + 10), y: by, w: bw, h: DIALOGUE.choiceH, label: c.label, fn: c.fn, yes: c.yes, sub: c.sub || null, card: c.card || null };
+            if (c.sub && typeof uiCaptionFit === "function") { uiButton(r, c.label, c.col || L.col, false, 15, " "); uiCaptionFit(c.sub, r.x + r.w / 2, r.y + r.h * 0.76, "#8aa0c8", "center", 12, r.w - 14); }   // (the label up top, the sub shrunk to fit under it)
+            else uiButton(r, c.label, c.col || L.col, false, 16);
+            _dlgBtns.push(r);
+        });
     }
     ctx.restore();
 }

@@ -16,7 +16,8 @@
 //   THE TALK       four lines, one a press (the archive's opening verbatim, then his name and the Queen blocking the system, his idea that she only needs to be moved, and the PROMISE he asks for), then a choice of two
 //                  buttons: I PROMISE or NO PROMISES (sqChoose: recorded in `promised`, 1 or −1; it changes nothing of the quest line, and killing her later invalidates nothing: the archive). Either way he sells
 //                  the potion after. Come back and he gives the hint. Once the queen's fate is decided (the quest line's bossResolvedAt), everything he says is "…" (SIDEQUEST.lines.after), and he still sells.
-//   THE SHOP       one thing: the SLEEPING POTION (js/potion.js potionBuy: ◆100, ◆50 the next once it has put the queen to sleep). His "gadgets and gizmos" and his later role are open (the archive).
+//   THE SHOP       the SLEEPING POTION (js/potion.js potionBuy: ◆100, ◆50 the next once it has put the queen to sleep), on his station; and, after each quest, its quest line's three PLAYER CARDS (below, "his cards":
+//                  the following update's Part 1d), on buttons in his line. His "gadgets and gizmos" and his later role are open (the archive).
 //   SAVED          `sidequest` (js/facilitysave.js): that he appeared, how far the talk got, the promise, that he called you over. A load opens the gate again and puts him back.
 //   HIS LOOK       the void walker, the old flux worker's form (the owner, 2026-11-02): see "drawing" below. (Until build 2026-11-02f he was a small black saucer drawn here in code.)
 //   PROVISIONAL    the platform as his spot, and every line but the archive's opening (its wording "can be polished during implementation").
@@ -37,6 +38,11 @@ const SIDEQUEST = {
         after: "…",   // (the user, 2026-10-31: after the queen's fate is decided, spared or killed, this and nothing else, for now)
     },
     replyFrames: 480,   // how long his answer to the promise stays before the hint takes its place
+    // HIS CARDS (the owner, 2026-11-02: "side quest should sell them after each quest for the quest lines elements"; approved with the following update's Part 1: "◆1,000 each, kept for good"): a quest line and its element.
+    // The Sewers' line (js/quests.js "purify") is toxic: BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR. A later quest line adds a row here (which elements they have is open).
+    stock: [{ quest: "purify", el: "toxic", after: "THE PURIFICATION" }],   // (after: what a refusal says it waits for)
+    cardPrice: 1000,       // shards a card (the owner: "◆1,000 each")
+    cardCol: "#ffe733",    // the buttons' gold: a Player card's colour (js/cardsui.js _cdKindCol)
 };
 // (what he says is said through the dialogue box, js/dialogue.js: sqDrawOverlay feeds it; his two choice buttons are the box's, and sqTap hands a tap on his line to it)
 function _sqFrame() { return typeof frame !== "undefined" ? frame : 0; }
@@ -130,6 +136,44 @@ function sqChoose(yes) {
     S.promised = yes ? 1 : -1; S.promisedAt = Math.max(1, _sqNow()); S.replyUntil = _sqFrame() + SIDEQUEST.replyFrames;
     return true;
 }
+// ── his cards (the following update's Part 1d) ──
+// AFTER EACH QUEST he sells the Player cards of its quest line's element (SIDEQUEST.stock: one for each of the three classes), SIDEQUEST.cardPrice shards each, KEPT FOR GOOD: in the collection for good, and found for this
+// run so it can be worn at once (js/cards.js equipGrant, as a card bought from the market's shelf). Readings taken where the design did not say (docs/OPEN-QUESTIONS.md §1u): "after the quest" is once the quest is done
+// (js/quests.js questDone: the Sewers' water purified, when Series 2 opens too); they are bought on buttons in his line in the dialogue box, the potion staying on his station; a card you keep for good already is not
+// offered; shards only; not on a phone (it has no cards screen yet, as js/cards.js equipRunStart).
+function sqStock() {
+    const cards = typeof equipCards === "function" ? Object.values(equipCards()) : [];
+    return (SIDEQUEST.stock || []).filter(s => typeof questDone === "function" && questDone(s.quest)).flatMap(s => cards.filter(c => c.kind === "player" && !c.test && c.kit && c.kit.el === s.el));
+}
+function _sqPhone() { return typeof hudCorners === "function" && !hudCorners(); }
+function _sqNear() { const st = _sqStation(); return !!st && typeof stationDist === "function" && stationDist(st) <= STATION_RANGE + 1.2; }   // (where his line shows: sqDrawOverlay)
+// the cards on sale now: his stock, less those you keep for good already (none on a phone)
+function sqCardsForSale() {
+    if (!sqPresent() || _sqPhone()) return [];
+    return sqStock().filter(c => !(typeof equipOwns === "function" && equipOwns(c.id)));
+}
+// why a card cannot be bought from him now, or null when it can
+function sqCardWhyNot(id) {
+    if (!sqPresent()) return "NOBODY HERE";
+    const c = typeof equipCard === "function" ? equipCard(id) : null;
+    if (!c || !sqStock().some(s => s.id === id)) {
+        const row = c && c.kind === "player" && c.kit ? (SIDEQUEST.stock || []).find(s => s.el === c.kit.el) : null;   // (one of his, its quest not done yet)
+        return row ? "HE SELLS " + c.name + " AFTER " + row.after : "HE DOES NOT SELL THAT";
+    }
+    if (_sqPhone()) return "NOT ON A PHONE YET: IT HAS NO CARDS SCREEN";
+    if (!_sqNear()) return "TOO FAR AWAY";
+    if (equipOwns(id)) return "YOU KEEP " + c.name + " FOR GOOD ALREADY";
+    const have = typeof shardCount === "number" ? shardCount : 0;
+    return have < SIDEQUEST.cardPrice ? "NEED ◆" + (SIDEQUEST.cardPrice - have) + " MORE FOR " + c.name + " (◆" + SIDEQUEST.cardPrice + ")" : null;
+}
+// buy one: the price from the run's shards; the card kept for good and found; what happened is said (js/inventory.js invSay)
+function sqCardBuy(id) {
+    const why = sqCardWhyNot(id); if (why) { if (typeof invSay === "function") invSay(why, false); return { ok: false, why }; }
+    const c = equipCard(id); shardCount -= SIDEQUEST.cardPrice; equipGrant(id);
+    const msg = c.name + " — ◆" + SIDEQUEST.cardPrice + ". KEPT FOR GOOD: YOUR SLOTS CAN TAKE IT NOW";
+    if (typeof invSay === "function") invSay(msg, true);
+    return { ok: true, id, price: SIDEQUEST.cardPrice, msg };
+}
 // a tap on his line in the dialogue box (js/input.js, before the stations): one of his choice buttons, or NEXT on the words; true when it was his
 function sqTap(ex, ey) { const L = typeof dialogueCurrent === "function" ? dialogueCurrent() : null; return !!(L && L.group === "sq" && typeof dialogueTap === "function" && dialogueTap(ex, ey)); }
 // ── drawing ──
@@ -174,15 +218,17 @@ function sqPortrait(cx, cy, s, f) {
 }
 // each frame (js/facilitytutorial.js facilityDrawOverlay; the name stays from when it drew a slab over his plate): what he is saying, while you are at his station, is a HELD line of the dialogue box (js/dialogue.js) with his
 // picture: a tap on it is NEXT while the talk is going (the station's use), the two choice buttons are in the box when it is time to choose, and away from him his line goes. Nothing is drawn here: the box draws itself.
+// After a quest his cards on sale are buttons in his line (each card's name, its price and KEPT FOR GOOD under it); a card bought leaves the row, and the line is said again with what is left.
 function sqDrawOverlay() {
     const S = sqState(); if (!S || !S.appearedAt || typeof dialogueSay !== "function") return;
     if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen)) return;
-    const st = _sqStation(), near = !!st && typeof stationDist === "function" && stationDist(st) <= STATION_RANGE + 1.2, text = near ? sqSpeech() : null;
+    const st = _sqStation(), near = _sqNear(), text = near ? sqSpeech() : null;
     if (!text) { if (typeof dialogueDismiss === "function") dialogueDismiss("sq"); return; }
-    const choosing = sqChoosing(), next = !sqAfter() && S.talk < SIDEQUEST.lines.talk.length;
-    dialogueSay("sidequest", text, { key: "sq:" + S.talk + ":" + (choosing ? "choose" : S.promised) + ":" + text, group: "sq", hold: true, now: true,
+    const choosing = sqChoosing(), next = !sqAfter() && S.talk < SIDEQUEST.lines.talk.length, sale = choosing || next ? [] : sqCardsForSale();
+    dialogueSay("sidequest", text, { key: "sq:" + S.talk + ":" + (choosing ? "choose" : S.promised) + ":" + text + (sale.length ? ":" + sale.map(c => c.id).join(",") : ""), group: "sq", hold: true, now: true,
         onTap: next ? () => { if (typeof stationUse === "function") stationUse(st); else sqUse(); } : null,
-        choices: choosing ? [{ label: "I PROMISE", col: "#9dffb6", yes: true, fn: () => sqChoose(true) }, { label: "NO PROMISES", col: "#ff9c8a", yes: false, fn: () => sqChoose(false) }] : null });
+        choices: choosing ? [{ label: "I PROMISE", col: "#9dffb6", yes: true, fn: () => sqChoose(true) }, { label: "NO PROMISES", col: "#ff9c8a", yes: false, fn: () => sqChoose(false) }]
+            : sale.length ? sale.map(c => ({ label: c.name, sub: "◆" + SIDEQUEST.cardPrice + " · KEPT FOR GOOD", col: SIDEQUEST.cardCol, card: c.id, fn: () => sqCardBuy(c.id) })) : null });
 }
 // ── saving (js/facilitysave.js) ──
 function sqSnapshot() { const S = sqState(); return S ? { at: S.appearedAt, talk: S.talk, promised: S.promised, pAt: S.promisedAt, called: S.calledAt, met: S.metAt } : null; }

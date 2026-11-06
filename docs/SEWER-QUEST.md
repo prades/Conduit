@@ -108,8 +108,10 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 - **The install step's hint names him** since build `2026-11-02g` (the owner: "Say SIDE QUEST"): "SIDE QUEST, ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE, SELLS A SLEEPING POTION." It had said "THE DRONE".
 - **Nothing else about him changed:** his spot, lines, shop and save.
 
-**Designed 2026-11-02, not built:**
-- **His cards:** the owner: "side quest should sell them after each quest for the quest lines elements". After each quest, he sells the Player cards of that quest line's element, ◆1,000 each, kept for good. This line is toxic, so once it is done he sells BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR. The rules are in `UNIVERSAL-AND-PLAYER-CARDS.md`.
+**His cards** (designed 2026-11-02; **implemented in build `2026-11-06c`**, the following update's Part 1d, on the branch; tested by tests/sidequest.js, not playtested):
+- The owner: "side quest should sell them after each quest for the quest lines elements". After each quest, he sells the Player cards of that quest line's element, ◆1,000 each, kept for good. This line is toxic, so once it is done he sells BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR. The rules are in `UNIVERSAL-AND-PLAYER-CARDS.md`.
+- **As built** (js/sidequest.js `SIDEQUEST.stock`, `sqCardBuy`): once the water is purified, his line in the dialogue box ("…") has a gold button for each of the three you do not keep yet, its name with ◆1000 · KEPT FOR GOOD under it. A tap buys it: the card is kept for good and found for the run, so your slots take it at once. Short of the shards, it says how short and nothing is paid. The potion stays on his station. None is offered on a phone (no cards screen yet). The readings taken are in `OPEN-QUESTIONS.md` §1u.
+- **Nothing new in the save:** the collection keeps what was bought.
 
 ## What a player does, in order
 
@@ -119,7 +121,7 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 4. Back down: once the samples are in and ten ants are dead, the maintenance platform off the north ledge is open and Side Quest calls you over: talk, promise or not, buy the SLEEPING POTION ◆100 and EQUIP it in the pack.
 5. The boss gate at the east end of the south ledge (the service bridge crosses to it from the north ledge's east end) opens for the module, onto the causeway into THE NEST. The queen sleeps beside the console on the trash dam.
 6. INSTALL THE MODULE at the console: she wakes, rooted, throwing toxic bombs and calling her brood; the install holds while she sits there. Sleep her (the POTION pill, or T), or have your squad stun, freeze or glitch her, and the install runs; at half her health she goes frantic and roams: lure her off, sleep her, install. Her bites do not stop the install; walking away does. Or kill her.
-7. The module runs thirty seconds; the river clears as it goes. At the end the water is clean, the brood thins to a straggler, and a living queen settles by the console, calm: the quest line is done either way. Side Quest says "…".
+7. The module runs thirty seconds; the river clears as it goes. At the end the water is clean, the brood thins to a straggler, and a living queen settles by the console, calm: the quest line is done either way. Side Quest says "…", and from then on sells the three toxic Player cards (◆1,000 each, kept for good) on the buttons under his line. Series 2 opens on the CARDS screen.
 
 ## Still open (docs/OPEN-QUESTIONS.md)
 

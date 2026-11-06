@@ -22,9 +22,10 @@
 //   THE HAND  the card types taken into a run, up to EQUIP.startPick, chosen from the collection when it begins (js/cardsui.js). A card put back out of the hand comes off everyone, unless it was found as well.
 //   PACK 1    ◆EQUIP_PACK.price buys a BOOSTER PACK: 4 Element cards, one reserved for a Precision, the others rolled over Unrefined, Refined and Precision by weight; none twice in a pack. What a pack deals is FOUND (equipFound): a card
 //             to wear at once, for this run only (NEW GAME clears it) unless EQUIP.unlockCost shards keep it for good. Only the hand and what is found can be worn.
-//   SERIES 2  a second pack (EQUIP_PACK2, in EQUIP_PACKS with Pack 1), which is the archive's BOOSTER PACK 2 (the roll, the sale, the shelf and the sheet take any pack of the list). Since Build B it deals 45 cards: the 20 SPECIES cards
-//             (the subclass kind) and the Technician's 4 cooldown cards (EQUIP_SERIES2), the 18 Mage AURAS and the 3 Brawler OPPORTUNITY cards (EQUIP_AURAS, EQUIP_OPPORTUNITY). Its eight Brawler and Mage class cards were cut (EQUIP_CUT):
-//             a copy unlocked for good is refunded (equipRefundTick). A technician's ABILITY COOLDOWN is a stat a card can name (EQUIP_STATS.cooldown).
+//   SERIES 2  a second pack (EQUIP_PACK2, in EQUIP_PACKS with Pack 1), which is the archive's BOOSTER PACK 2 (the roll, the sale, the shelf and the sheet take any pack of the list). It deals 63 cards: the 20 SPECIES cards (the subclass
+//             kind) and the Technician's 4 cooldown cards (EQUIP_SERIES2), the 18 Mage AURAS and the 3 Brawler OPPORTUNITY cards (EQUIP_AURAS, EQUIP_OPPORTUNITY), all four since Build B, and the 18 PLAYER cards at Prototype since the
+//             following update's Part 1d (EQUIP_PLAYER_CARDS). Its eight Brawler and Mage class cards were cut (EQUIP_CUT): a copy unlocked for good is refunded (equipRefundTick). A technician's ABILITY COOLDOWN is a stat a card
+//             can name (EQUIP_STATS.cooldown). Side Quest sells each quest line's three Player cards after its quest, kept for good (js/sidequest.js, through equipGrant).
 //   LEAVING   a respawn keeps a follower's cards; EXILE, falling for good (its body is restored with empty slots) and a RE-ROLL empty the slots. Nothing is lost: the card is still in the hand.
 //   SAVED     additively (js/facilitysave.js, FS.version stays 1, so every save made before the cards still loads): a follower's record carries `cards`, the run's save carries `cards: { hand, player, found }`.
 //   TICK      equipTick takes off, every half second, whatever no longer fits (a role switched, a card out of the hand): nothing else has to know the cards exist.
@@ -202,8 +203,9 @@ EQUIP_AURAS.forEach(([id, name, el, rarity, fx]) => { fx.aura.el = el; EQUIP_CAR
 EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind: "class", match: "brawler", rarity, text: equipEffectText(fx), pack: "series2" }, fx); });
 // THE PLAYER CARDS (the following update's Part 1; docs/UNIVERSAL-AND-PLAYER-CARDS.md section 2, "The 18 kits": drafted, then approved by the owner 2026-11-02, "Approve as drafted"). Each is a ROLE: while it is worn and AWAKE (the player is
 // its class: equipPlayerRole, below) it turns that class into an elemental role. A row: [id, name, class (js/classes.js CLASSES: the class it is for, its `match`), element (the role's), kit]. Every one is PROTOTYPE and is
-// SERIES 2's (the owner, 2026-11-02: Series 2 deals them at Prototype), so like every Series 2 card it is found before it can be kept for good (equipUnlockWhyNot). Series 2 deals them once all eighteen are in (Part 1d,
-// with Side Quest's sale): until then only ?cards=all has them. What a kit does is js/playercards.js; EVERY NUMBER IS HERE, and the words on each card are made from it (equipPlayerKitText). Built: all eighteen (Parts 1a to 1c).
+// SERIES 2's (the owner, 2026-11-02: Series 2 deals them at Prototype), so like every Series 2 card it is found before it can be kept for good (equipUnlockWhyNot). Series 2 deals them since all eighteen are in (Part 1d:
+// "All 18 together"), and Side Quest sells each quest line's three after its quest, ◆1,000 each, kept for good (js/sidequest.js). What a kit does is js/playercards.js; EVERY NUMBER IS HERE, and the words on each card are
+// made from it (equipPlayerKitText). Built: all eighteen (Parts 1a to 1c).
 //   (every kit)  its class's hits take the role's ELEMENT, for the element triangle only (docs/COMBAT.md §7.9; the owner: "The role's element"): no SP.ATK, no elemental share
 //   status       true: EVERY hit sets the role element's own status with Pack 1's Precision numbers (_EQUIP_ATTUNED, as the Prototype auras use them): fire burns, toxic weakens (the game's POISON), ice slows, core knocks back
 //   jump         { radius, share }: each shot jumps on to the nearest other creature within `radius` tiles, for `share` of its damage (the Technomancer arc's jump: js/technomancer.js TECHNO.arc chainRange, chainPct)
@@ -774,14 +776,15 @@ const EQUIP_PACK = {
 // THE SERIES 2 PACK, which is BOOSTER PACK 2 (the user, 2026-10-31): the pack that deals the Series 2 cards (EQUIP_SERIES2: species cards and class cards), in the same shape as Pack 1, with the archive's approved rules for Pack 2
 // (the Game Design Archive, 2026-10-30): it UNLOCKS AFTER THE PURIFICATION (the owner, 2026-11-01, settling the sources that disagreed; it was "after the first boss", calm or defeated), all SIX rarities are eligible, and every pack holds
 // at least one PRECISION-OR-HIGHER card (`guaranteed.orHigher`: the reserved slot is filled from Precision and up, by the pack's own odds among them). ON SALE since build 2026-11-01j (the owner: "Series 2. Pick a price and set the
-// odds for the pack and make it to where another rarity is unlocked"): ◆150, odds 50/30/15/5, Unrefined to PROTOTYPE (the rarity it unlocks). Its cards since Build B: 45 (the 20 species cards, the Technician's 4, the 18 Mage
-// auras and the 3 Brawler opportunity cards; its eight Brawler and Mage class cards were cut, EQUIP_CUT); the price and the odds stay (the owner, 2026-11-02). Before the purification it is on the sheet with its button off
-// ("UNLOCKS AFTER THE PURIFICATION"), not rolled, and its cards are not on the market's shelf (equipPacksOpen). Its cards are worn, found, unlocked and saved like any card. Every pack is in EQUIP_PACKS: the roll, the sale, the
-// shelf and the sheet take a pack and ask nothing of which one it is.
+// odds for the pack and make it to where another rarity is unlocked"): ◆150, odds 50/30/15/5, Unrefined to PROTOTYPE (the rarity it unlocks). Its cards: 63 since the following update's Part 1d (the 20 species cards, the
+// Technician's 4, the 18 Mage auras and the 3 Brawler opportunity cards since Build B, 45; and the 18 Player cards, at Prototype: "All 18 together", the owner, 2026-11-02; its eight Brawler and Mage class cards were cut,
+// EQUIP_CUT); the price and the odds stay (the owner, 2026-11-02), so its Prototype row is 31 cards and each comes up less often than when it was 13. Before the purification it is on the sheet with its button off
+// ("UNLOCKS AFTER THE PURIFICATION"), not rolled, and its cards are not on the market's shelf (equipPacksOpen). Its cards are worn, found, unlocked and saved like any card; once it is open the market's shelf can offer any of
+// them, a Player card too (a Prototype card's value). Every pack is in EQUIP_PACKS: the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
 const EQUIP_PACK2 = {
     id: "series2", name: "SERIES 2", price: 150, size: 4,     // PICKED by us at the owner's word ("Pick a price and set the odds", 2026-11-01): half again Pack 1's ◆100, for stronger cards that come later
-    kinds: ["subclass", "class"],                              // species cards (the subclass kind) and class cards (the class families); never an element card. The Player cards name this pack (they are found before they are kept)
-                                                               // and come into its deal at Prototype once all eighteen are built (the following update's Part 1d): "player" joins these kinds then
+    kinds: ["subclass", "class", "player"],                    // species cards (the subclass kind), class cards (the class families) and Player cards (the player's roles, all Prototype; since Part 1d, once all eighteen were
+                                                               // built); never an element card
     eligible: ["unrefined", "refined", "precision", "prototype"],   // THE OWNER (2026-11-01): "Prototype unlocks": Series 2 deals up to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous joins in a
                                                                // later update (the archive's rule was all six rarities: it is where this is going)
     rarities: { unrefined: 50, refined: 30, precision: 15, prototype: 5 },   // PICKED (as the price): a slot rolled over the four; with the reserved Precision-or-better slot (Prototype 5 in 20) a pack holds a Prototype about 1 time in 3 (1 − 0.75 × 0.95³ ≈ 36%)
@@ -914,8 +917,14 @@ function equipMarketBuy(id, pay) {
     if (equipMarketWhyNot(id, pay)) return false;
     const c = equipCard(id), v = equipMarketValue(c);
     if (pay === "credits") equipCredits -= v; else shardCount -= v;
-    const fresh = !equipOwns(id); if (fresh) { equipOwnedSet().add(id); equipWriteOwned(); }   // new to you: kept for good
-    if (!equipIsFound(id)) equipFound.push(id);                                                 // and found: worn at once
+    const fresh = equipGrant(id);
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: (fresh ? "BOUGHT, KEPT FOR GOOD · " : "BOUGHT · ") + c.name, color: "#ffe733", life: 140, vy: -0.25, size: 14 });
     return true;
+}
+// a card bought (the market's shelf; Side Quest's shop, js/sidequest.js): new to you, it is kept for good (the collection's record is written at once); and it is found, so it can be worn at once. True when it was new to you.
+function equipGrant(id) {
+    if (!equipCard(id)) return false;
+    const fresh = !equipOwns(id); if (fresh) { equipOwnedSet().add(id); equipWriteOwned(); }
+    if (!equipIsFound(id)) equipFound.push(id);
+    return fresh;
 }

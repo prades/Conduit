@@ -146,14 +146,17 @@ function page(w, h, query) {
         same(r.p1.join('|'), ['15% PER HIT TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS', '15% PER HIT TO POISON: IT HITS 40% WEAKER FOR 4 SECONDS', '10% PER HIT TO GLITCH: ITS WIND-UPS FAIL FOR 0.5 SECONDS', '20% PER HIT TO SLOW BY 25% FOR 2 SECONDS',
             '15% PER HIT TO HEAL 10% OF THE DAMAGE DEALT', '15% PER HIT TO KNOCK THE TARGET BACK'].join('|'), 'Pack 1\'s Precision words');
     });
-    await check('where they come from, for now: they are Series 2\'s, so found before they are kept (no outright ◆1,000 unlock); Series 2 does not deal them yet (its pool is still its 45; 2,000 seeded packs and 300 shelves never hold one); found, ◆1,000 keeps one for good; ?cards=all has every Player card to hand', () => {
-        const r = J(`(function(){ __gs(); questDone = id => id === 'purify'; shardCount = 5000; const o = {};
-            o.pool = equipPackPool(EQUIP_PACK2).length; o.poolPlayer = equipPackPool(EQUIP_PACK2).filter(c => c.kind === 'player').length; let dealt = 0, shelf = 0;
-            for (let s = 1; s <= 2000; s++) for (const id of (equipPackRoll(s, EQUIP_PACK2) || [])) if (EQUIP_CARDS[id].kind === 'player') dealt++;
+    await check('where they come from: they are Series 2\'s, so found before they are kept (no outright ◆1,000 unlock); Series 2 deals them at Prototype since the following update\'s Part 1d ("All 18 together": its pool is 63, the 18 among them; 2,000 seeded packs deal every one of them, none before the purification; the market\'s shelf can offer one once Series 2 is open); found, ◆1,000 keeps one for good; Side Quest sells the toxic three (tests/sidequest.js); ?cards=all has every Player card to hand', () => {
+        const r = J(`(function(){ __gs(); const keepQD = questDone; shardCount = 5000; const o = {};
+            questDone = id => false; o.locked = [equipPackRoll(1, EQUIP_PACK2), equipShelfPool().filter(c => c.kind === 'player').length];   // (before the purification: no roll, none on the shelf)
+            questDone = id => id === 'purify';
+            o.pool = equipPackPool(EQUIP_PACK2).length; o.poolPlayer = equipPackPool(EQUIP_PACK2).filter(c => c.kind === 'player').length; const dealt = new Set(); let shelf = 0;
+            for (let s = 1; s <= 2000; s++) for (const id of (equipPackRoll(s, EQUIP_PACK2) || [])) if (EQUIP_CARDS[id].kind === 'player') dealt.add(id);
             for (let s = 1; s <= 300; s++) for (const id of equipShelfDeal(s)) if (EQUIP_CARDS[id].kind === 'player') shelf++;
-            o.dealt = dealt; o.shelf = shelf; o.why = equipUnlockWhyNot('incendiary_gunner'); equipFound.push('incendiary_gunner'); o.whyFound = equipUnlockWhyNot('incendiary_gunner'); o.unlock = equipUnlock('incendiary_gunner'); o.owned = equipOwns('incendiary_gunner'); o.shards = shardCount;
-            equipDevSet('all'); o.all = EQUIP_PLAYER_CARDS.filter(r => equipInHand(r[0])).length + '/' + EQUIP_PLAYER_CARDS.length; equipDevSet(''); return o; })()`);
-        same(r.pool, 45, 'Series 2\'s pool'); same(r.poolPlayer, 0, 'Player cards in its pool'); same(r.dealt, 0, 'Player cards dealt'); same(r.shelf, 0, 'Player cards on the shelf');
+            o.dealt = dealt.size; o.shelf = shelf; o.why = equipUnlockWhyNot('incendiary_gunner'); equipFound.push('incendiary_gunner'); o.whyFound = equipUnlockWhyNot('incendiary_gunner'); o.unlock = equipUnlock('incendiary_gunner'); o.owned = equipOwns('incendiary_gunner'); o.shards = shardCount;
+            questDone = keepQD; equipDevSet('all'); o.all = EQUIP_PLAYER_CARDS.filter(r => equipInHand(r[0])).length + '/' + EQUIP_PLAYER_CARDS.length; equipDevSet(''); return o; })()`);
+        same(JSON.stringify(r.locked), '[null,0]', 'before the purification: a roll, or a Player card on the shelf');
+        same(r.pool, 63, 'Series 2\'s pool'); same(r.poolPlayer, 18, 'Player cards in its pool'); same(r.dealt, 18, 'Player cards ever dealt in 2,000 packs'); ok(r.shelf > 0, 'no Player card on 300 shelves');
         same(r.why, 'FIND IT IN A PACK FIRST', 'an outright unlock'); same(r.whyFound, null, 'the unlock once found'); same(r.unlock, true, 'kept for good'); same(r.owned, true, 'owned'); same(r.shards, 4000, 'the shards after');
         same(r.all, '18/18', 'every Player card in the hand with ?cards=all');
     });

@@ -6,20 +6,20 @@
   - **Implemented in build `2026-11-02c` (Build B, on the branch), and tested** (tests/classcards.js and the updated card suites; section 10). Not playtested.
     - The three class families: the 18 Mage auras, the 3 Brawler opportunity cards, and the Technician's cooldown cards (Series 2's four, unchanged).
     - Their tiers, the aura's reach, and what counts as an opening.
-    - Series 2 reshaped: 45 cards for now (63 once the Player cards come).
+    - Series 2 reshaped: 45 cards then (63 since build `2026-11-06c`, with the Player cards).
     - The cut cards' clean-up and refund.
     - The Universal kind retired.
     - The rings and glints. Their look waits for the owner's approval.
-  - **Implemented in build `2026-11-02h` (the following update's Part 1a, on the branch), and tested** (tests/playercards.js, 24 checks; section 10). Not playtested.
+  - **Implemented in build `2026-11-02h` (the following update's Part 1a; on main at the owner's word), and tested** (tests/playercards.js, 24 checks; section 10). Not playtested.
     - The Player card rules: a role needs its class; one role of a class at a time; a role for another class sleeps in its slot after a switch, greyed and marked ASLEEP, and wakes on switching back.
     - The Gunslinger's six roles, on every round that hits from any gun.
   - **Implemented in build `2026-11-02i` (Part 1b; on main at the owner's word), and tested:** the Technomancer's six roles (tests/playercards.js; section 9, "Part 1b"). Not playtested.
-  - **Implemented in build `2026-11-02j` (Part 1c, on the branch), and tested:** the Mutator's six roles, on the lash, the clone and the serum (tests/playercards.js, 42 checks; section 9, "Part 1c"). Not playtested.
-  - **Designed and approved, not implemented:** Series 2's deal of the eighteen and Side Quest's sale: Part 1d.
+  - **Implemented in build `2026-11-02j` (Part 1c; on main at the owner's word), and tested:** the Mutator's six roles, on the lash, the clone and the serum (tests/playercards.js, 42 checks; section 9, "Part 1c"). Not playtested.
+  - **Implemented in build `2026-11-06c` (Part 1d, on the branch), and tested:** Series 2 deals the eighteen at Prototype (45 → 63 cards), and Side Quest sells the Sewers' three toxic roles once the water is purified, ◆1,000 each, kept for good (tests/sidequest.js, tests/playercards.js, tests/classcards.js, tests/series2.js; section 9, "Part 1d"). Not playtested. All of Part 1 is built.
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
-- **Last updated:** 2026-11-02
-- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on main too, at the owner's word) the Gunslinger's six are Player cards too, beside the two test cards; the Technomancer's six since build `2026-11-02i` (on main), the Mutator's six since build `2026-11-02j` (on the branch).
+- **Last updated:** 2026-11-06
+- **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on main too, at the owner's word) the Gunslinger's six are Player cards too, beside the two test cards; the Technomancer's six since build `2026-11-02i` (on main), the Mutator's six since build `2026-11-02j` (on main). Series 2 deals them, and Side Quest sells the Sewers' three, since build `2026-11-06c` (Part 1d, on the branch).
 - **Related docs:** `TUTORIAL.md` (the equip cards), `UI-STYLE.md` (the CARDS screen; YOU on the roster), `COMBAT.md` §7 (the damage types and race weaknesses), `SERIES-2.md`, `TECHNICIANS.md`, `OPEN-QUESTIONS.md` §1l and §3, `DECISION-LOG.md`
 
 ## 1. Intent
@@ -217,8 +217,8 @@ Every card is now an element, class, species (subclass) or Player card. The Univ
 - [x] The Technician's cooldown cards are Series 2's four, unchanged.
 - [x] The player's slots take Player cards only, one at a time, the role matching the player's class; a role for the other class sleeps until the player switches back. *(Build B: Player cards only. The rest since build `2026-11-02h`, Part 1a: tests/playercards.js.)*
 - [x] Each of the 18 roles' kits works on its class's own attacks, as approved. *(The Gunslinger's six since build `2026-11-02h`, the Technomancer's six since build `2026-11-02i`, the Mutator's six since build `2026-11-02j`: tests/playercards.js. Not playtested.)*
-- [ ] Series 2 deals the 63 cards of section 2, and no longer deals the eight cut Brawler and Mage cards. Copies already owned leave collections, hands and slots, with ◆1,000 back for each permanently unlocked copy. *(Build B: 45 of the 63, the 18 Player cards to come; the cut, the clean-up and the refund are built.)*
-- [ ] After each quest, Side Quest sells that quest line's element's three Player cards, ◆1,000 each, kept for good. *(With the Player cards.)*
+- [x] Series 2 deals the 63 cards of section 2, and no longer deals the eight cut Brawler and Mage cards. Copies already owned leave collections, hands and slots, with ◆1,000 back for each permanently unlocked copy. *(Build B: 45 of the 63, with the cut, the clean-up and the refund; the 18 Player cards since build `2026-11-06c`, Part 1d.)*
+- [x] After each quest, Side Quest sells that quest line's element's three Player cards, ◆1,000 each, kept for good. *(Build `2026-11-06c`, Part 1d: the Sewers' line, toxic, once its water is purified; the only quest line so far.)*
 - [x] No card is of the Universal kind. *(Build B.)*
 - [x] The subtle aura rings and glints, kept to the Mage's room. *(Build B; the room since build `2026-11-02d`, the owner's answer on the look.)*
 
@@ -278,9 +278,9 @@ Technician ideas not chosen (2026-11-02): kills refunding part of the wait; one 
 - [x] A Brawler's opportunity hit deals its tier's bonus more than the same hit without the card; any other hit is unchanged. *(tests/classcards.js: each opening, openings adding up, none.)*
 - [x] A Technician with a cooldown card waits less, or holds an extra charge. *(tests/series2.js, tests/series2abilities.js; unchanged.)*
 - [x] The player's slots refuse every family's card but Player cards; after a class switch, a role for the other class shows asleep and does nothing. *(The first half: tests/classcards.js, tests/cards.js. The second: tests/playercards.js, build `2026-11-02h`: kept in its slot through the tick and a save, its rounds the selector's with nothing on them, greyed and marked ASLEEP on the roster in the real page.)*
-- [ ] A Series 2 pack never deals a cut card; it can deal every one of the 63. *(For the 45 built: 20,000 seeded packs deal all 45 and never a cut card, tests/classcards.js.)*
+- [x] A Series 2 pack never deals a cut card; it can deal every one of the 63. *(20,000 seeded packs deal all 63, the 18 Player cards among them, and never a cut card: tests/classcards.js, since build `2026-11-06c`.)*
 - [x] A save holding cut cards (in the collection, the hand, a slot) loads without them, refunds ◆1,000 for each permanently unlocked copy once, and a second load pays nothing. *(tests/classcards.js, with malformed collections.)*
-- [ ] Before a quest is finished Side Quest sells none of its element's Player cards; after it, all three, at ◆1,000, kept for good. *(With the Player cards.)*
+- [x] Before a quest is finished Side Quest sells none of its element's Player cards; after it, all three, at ◆1,000, kept for good. *(tests/sidequest.js, build `2026-11-06c`: none before the purification, even with the queen's fate decided; then the three; each bought is kept for good and found; one kept already is not offered.)*
 - [ ] The rings and glints show and stay subtle; no frame-rate cost on an iPad. *(They show: tests/classcards.js checks what is drawn, and a screenshot went to the owner. Subtle: the owner's call. The frame cost is a few strokes a frame and the reach every 30 frames; tests/perf.js holds in the full run. Not measured on an iPad.)*
 - [x] The existing card tests still pass. *(Updated where the cards changed; section 10.)*
 
@@ -329,7 +329,7 @@ Build `2026-11-02c` (Build B), on `claude/start-game-project-HSh7Z`. The 21 card
 On `claude/start-game-project-HSh7Z`, not on main until the owner says so. Every number is in js/cards.js `EQUIP_PLAYER_CARDS`; the words on each card are made from it (`equipPlayerKitText`).
 
 - **The cards.** Six rows of `EQUIP_PLAYER_CARDS`: kind `"player"`, `match` the class (`"gunslinger"`), rarity Prototype, `pack: "series2"`, and a `kit` (`el` the role's element; `status`, `jump`, `freeze`, `slower`, `pull`). The kind line reads PLAYER · GUNSLINGER · FIRE. A Player card is gold with no texture (the look is item 11, open).
-- **Where they come from, for now.** They are Series 2's, so one has to be found before ◆1,000 keeps it for good (no outright unlock). Series 2 does not deal them yet: its `kinds` take "player" once all eighteen are built (Part 1d, with Side Quest's sale). Until then only `?cards=all` has them. A reading, `OPEN-QUESTIONS.md` §1p, item 8.
+- **Where they come from.** They are Series 2's, so one a pack deals has to be found before ◆1,000 keeps it for good (no outright unlock). Series 2 did not deal them until all eighteen were built (`OPEN-QUESTIONS.md` §1p, item 8, confirmed: "All 18 together"); since Part 1d (below) its `kinds` take "player", and Side Quest sells the Sewers' three.
 - **The rules** (js/cards.js `_equipPlayerWhy`):
   - Putting a card in (`equipPlayerWhyNot`) asks, in order: a card; in the hand or found; a Player card; not already in the other slot; **its class** (FOR THE GUNSLINGER); **one role of a class** (ONE GUNSLINGER ROLE AT A TIME).
   - The card tick and a load ask the same without the class, so a role asleep stays. Of two that clash, the first slot's stays.
@@ -401,6 +401,22 @@ On `claude/start-game-project-HSh7Z`, not on main until the owner says so. Six m
 - **Frame cost:** nothing per frame. A bite asks for the role once (two slots); the pool's beat is one pass over the creatures for each pool every 30 frames; the clone's health is made again only when the role changes.
 - **Readings taken where the kits did not say:** `OPEN-QUESTIONS.md` §1r.
 
+### Part 1d: Series 2's deal and Side Quest's sale (build `2026-11-06c`)
+
+On `claude/start-game-project-HSh7Z`, not on main until the owner says so. As approved: "Series 2 deals the 18 at Prototype (45 → 63); its price and odds stay as they are", and "after each quest he sells that quest line's element's three cards, ◆1,000 each, kept for good. The Sewers' line is toxic: BLIGHT SHOOTER, SMOG ENGINEER, PLAGUE DOCTOR" (`FOLLOWING-UPDATE.md` Part 1).
+
+- **The deal** (js/cards.js `EQUIP_PACK2.kinds` takes `"player"`): Series 2 deals 63 cards, its Prototype row 31 (13 before). Its price (◆150) and odds (50 / 30 / 15 / 5, one Precision-or-better) are unchanged, so a pack still holds a Prototype card about one time in three, but a given Prototype card comes up in about 1 pack in 78 (0.4 Prototype cards a pack, among 31) where it was about 1 in 32 among 13. A Player card a pack deals is found for the run, and ◆1,000 keeps it for good, as every Series 2 card.
+- **The market's shelf** offers what the open packs deal, so once Series 2 is open a Player card can be on it, at a Prototype card's value (◇350 or ◆350; new to you, kept for good and found). That is the shelf's rule as set; it is cheaper than Side Quest's ◆1,000 (for the owner: `OPEN-QUESTIONS.md` §1u).
+- **Side Quest's sale** (js/sidequest.js `SIDEQUEST.stock`, `sqStock`, `sqCardsForSale`, `sqCardWhyNot`, `sqCardBuy`):
+  - his stock is a table of quest lines and their elements; the Sewers' line (`purify`) is toxic, so his cards are the three Player cards of that element, one a class;
+  - after the quest (`questDone`: the water purified, the moment Series 2 opens), his line in the dialogue box ("…") has a gold button for each card you do not keep yet: its name, and ◆1000 · KEPT FOR GOOD under it (js/dialogue.js takes a choice's `sub`, shrunk to fit). The potion stays on his station's verb (E, a tap on his plate);
+  - a tap buys it: ◆1,000 from the run's shards, the card kept for good in the collection (written at once) and found for the run, so the slots take it at once (js/cards.js `equipGrant`, shared with the market's shelf); the button leaves the row;
+  - refused, with nothing paid: short of the shards (NEED ◆n MORE FOR …), one kept already (YOU KEEP … FOR GOOD ALREADY), from afar (TOO FAR AWAY), before the quest (HE SELLS … AFTER THE PURIFICATION), on a phone (NOT ON A PHONE YET: IT HAS NO CARDS SCREEN);
+  - none is offered on a phone (it has no cards screen yet, as the start-of-run hand: js/cards.js `equipRunStart`).
+- **Saved:** nothing new. The collection (localStorage, `conduit_fp_cards`) keeps what was bought; the run's save keeps what was found, as it did.
+- **Frame cost:** his buttons are made while you stand at his station: one pass over the card table each frame there, 87 rows.
+- **Readings taken where the design did not say:** `OPEN-QUESTIONS.md` §1u.
+
 ## 9a. Frame cost
 
 The reach is checked every 30 frames: one pass over the followers and the clones for each aura worn. A unit's stats are made again only when its auras change. The drawing is a dashed ellipse for each Mage and colour, and a small glint for each unit in reach, each frame; nothing is allocated per frame. Measured: not on an iPad. tests/perf.js's frame budgets hold in the full run (section 10).
@@ -435,6 +451,10 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 | Part 1c: the bites' statuses (each role, none, a killing bite), a bite in the real game loop and a pounce's bite; the pool's beats (the burn and the weakness, renewed, not 3 tiles off, the heal kept); CRYO GENETICIST (a follower back with the Crystal under its reserve and nothing drawn; the clone a capsule, its upgrades kept, taken by walking over it); SPLICER (none before a kill, toxic after a toxic ant's, kept through a plain kill, fire after a fire one, nothing under another role); CORE SHAPER (×1.5 health, ×2 with two ARMOR ranks, its share kept, the pace ×0.8 and a slow on top, all undone off); a role asleep doing nothing | Passed | tests/playercards.js |
 | Part 1c: the suites whose counts moved with six more cards | Passed | tests/cards.js, tests/classcards.js, tests/series2.js, tests/series2abilities.js, tests/packs.js |
 | Part 1c: the rest of the game | Passed | the full run, 87 suites, on build `2026-11-02j`, the first time (tests/perf.js's frame budgets and tests/carousel.js included) |
+| Part 1d (build `2026-11-06c`): Series 2 deals 63 cards (Prototype 31: the 18 Player cards among them); its price and odds unchanged; 20,000 seeded packs deal all 63 and never a cut card | Passed | tests/classcards.js, tests/series2.js |
+| Part 1d: the Player cards in the deal: none rolled and none on the shelf before the purification; after it the pool is 63, 2,000 seeded packs deal all eighteen, 300 shelves offer some; found, ◆1,000 keeps one; ?cards=all has all | Passed | tests/playercards.js |
+| Part 1d: Side Quest's sale: none before the purification (not with the queen's fate decided alone); after it three gold buttons under "…", BLIGHT SHOOTER, SMOG ENGINEER, PLAGUE DOCTOR, ◆1000 · KEPT FOR GOOD; a tap short of ◆1000 pays nothing and says why; a tap with the shards pays ◆1000, keeps the card for good (the collection's record) and finds it, and a Gunslinger wears it at once; it leaves the row; all three bought: no buttons; refused twice and for a card he does not sell; the potion still sells; a card kept another way not offered; none with ?cards=all, on a phone, or from afar; the run's save gets no new field; the collection read back keeps them | Passed | tests/sidequest.js (3 checks added: 10 in all) |
+| Part 1d, in the real page (Chromium, 1180 × 820 and 390 × 844): the three buttons in his box at his station after the purification; a mouse click on the first buys it and leaves two; on a phone none, his "…" alone; no page errors | Checked by hand, not a suite | a scratch Playwright script, with screenshots; the look is for the owner |
 | Played by a person | Not done | not playtested |
 
 ## 11. Open questions
@@ -460,6 +480,8 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 19. **Part 1a's readings** (build `2026-11-02h`): "one at a time" with two slots, when the class is asked, the guns' "20% slower", ARC SLINGER's jump, CRYO MARKSMAN's freeze, the pull's and the push's directions, where the cards come from until Part 1d, and the look of a role asleep. `OPEN-QUESTIONS.md` §1p. **Confirmed 2026-11-02, as built:** "One per class", "Rate × 0.8", "All 18 together". The others stand as readings.
 20. **Part 1b's readings** (build `2026-11-02i`): the sentries' rounds stay electric; the relays' area by distance alone; the first zap at once; SWAP on a tablet's squad card only, on your stretch of floor; the shield toward a locked creature or the way you face. `OPEN-QUESTIONS.md` §1q. **Confirmed 2026-11-02, as built:** "Distance alone", "Tablet/desktop only for now". The others stand as readings.
 21. **Part 1c's readings** (build `2026-11-02j`): the clone's "bites" are its bite and its pounce's (not its special or shot); the pool's area by distance, its status on each heal beat; CRYO GENETICIST takes both readings, (a) and (b); SPLICER's element from any kill of the clone's, kept until the next kill with an element, not saved; CORE SHAPER's health added as ARMOR's ranks add, its share kept, its walk × 0.8. `OPEN-QUESTIONS.md` §1r, for the owner to confirm or change.
+
+22. **Part 1d's readings** (build `2026-11-06c`): "after the quest" is the water purified; his cards on buttons in his line, the potion on his station; kept for good and found; a card kept already not offered; shards only; none on a phone or from afar. And, for the owner: the market's shelf can sell a Player card at ◇350 / ◆350, less than his ◆1,000. `OPEN-QUESTIONS.md` §1u.
 
 ## 12. History
 
@@ -487,4 +509,5 @@ The reach is checked every 30 frames: one pass over the followers and the clones
 - 2026-11-02: **the 18 kits drafted and approved** ("Approve as drafted"), with the hit taking the role's element for the triangle only and the electric Technomancer role named ARC WARDEN.
 - 2026-11-02, build `2026-11-02h` (the following update's Part 1a): **the Player card rules and the Gunslinger's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1p. On main at the owner's word, its three main readings confirmed as built ("One per class", "Rate × 0.8", "All 18 together").
 - 2026-11-02, build `2026-11-02i` (Part 1b): **the Technomancer's six built**, on the branch. The readings taken are in `OPEN-QUESTIONS.md` §1q. On main at the owner's word, two readings confirmed as built ("Distance alone", "Tablet/desktop only for now").
-- 2026-11-02, build `2026-11-02j` (Part 1c): **the Mutator's six built**, on the branch: all eighteen kits are in. The readings taken are in `OPEN-QUESTIONS.md` §1r.
+- 2026-11-02, build `2026-11-02j` (Part 1c): **the Mutator's six built**, on the branch: all eighteen kits are in. The readings taken are in `OPEN-QUESTIONS.md` §1r. On main at the owner's word.
+- 2026-11-06, build `2026-11-06c` (Part 1d): **Series 2 deals the eighteen at Prototype, and Side Quest sells the Sewers' three**, on the branch. All of Part 1 is built. The readings taken are in `OPEN-QUESTIONS.md` §1u.

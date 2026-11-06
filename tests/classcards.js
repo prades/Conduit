@@ -226,18 +226,18 @@ async function boot(search, store) {
     });
 
     group('SERIES 2 RESHAPED');
-    check('the pack deals 45 cards: the 20 species cards, the Technician\'s 4, the 18 auras and the 3 opportunity cards (Unrefined 6, Refined 13, Precision 13, Prototype 13); its price and odds are unchanged (◆150; 50 / 30 / 15 / 5, one Precision or better)', () => {
-        const r = J(`(function(){ const pool = equipPackPool(EQUIP_PACK2), by = {}; pool.forEach(c => by[c.rarity] = (by[c.rarity] || 0) + 1); return { n: pool.length, sub: pool.filter(c => c.kind === 'subclass').length, tech: pool.filter(c => c.match === 'camper').length, aura: pool.filter(c => c.aura).length, opp: pool.filter(c => c.opportunity).length, by, price: EQUIP_PACK2.price, odds: EQUIP_PACK2.rarities, g: EQUIP_PACK2.guaranteed }; })()`);
-        same(r.n, 45, 'its cards'); same([r.sub, r.tech, r.aura, r.opp].join(), '20,4,18,3', 'species, Technician, auras, opportunity'); same(JSON.stringify(r.by), '{"unrefined":6,"refined":13,"precision":13,"prototype":13}', 'by rarity');
+    check('the pack deals 63 cards: the 20 species cards, the Technician\'s 4, the 18 auras, the 3 opportunity cards and, since the following update\'s Part 1d, the 18 Player cards (Unrefined 6, Refined 13, Precision 13, Prototype 31); its price and odds are unchanged (◆150; 50 / 30 / 15 / 5, one Precision or better)', () => {
+        const r = J(`(function(){ const pool = equipPackPool(EQUIP_PACK2), by = {}; pool.forEach(c => by[c.rarity] = (by[c.rarity] || 0) + 1); return { n: pool.length, sub: pool.filter(c => c.kind === 'subclass').length, tech: pool.filter(c => c.match === 'camper').length, aura: pool.filter(c => c.aura).length, opp: pool.filter(c => c.opportunity).length, player: pool.filter(c => c.kind === 'player').length, by, price: EQUIP_PACK2.price, odds: EQUIP_PACK2.rarities, g: EQUIP_PACK2.guaranteed }; })()`);
+        same(r.n, 63, 'its cards'); same([r.sub, r.tech, r.aura, r.opp, r.player].join(), '20,4,18,3,18', 'species, Technician, auras, opportunity, Player cards'); same(JSON.stringify(r.by), '{"unrefined":6,"refined":13,"precision":13,"prototype":31}', 'by rarity');
         same(r.price, 150, 'its price'); same(JSON.stringify(r.odds), '{"unrefined":50,"refined":30,"precision":15,"prototype":5}', 'its odds'); same(JSON.stringify(r.g), '{"rarity":"precision","count":1,"orHigher":true}', 'its guarantee');
     });
-    check('20,000 seeded packs (once purified) never deal a cut card, deal every one of the 45, each pack four different cards with one Precision or better; the market\'s shelf never offers a cut card', () => {
+    check('20,000 seeded packs (once purified) never deal a cut card, deal every one of the 63 (the 18 Player cards among them), each pack four different cards with one Precision or better; the market\'s shelf never offers a cut card', () => {
         const r = J(`(function(){ const keep = questDone; questDone = q => q === 'purify' || keep(q); try { const seen = new Set(); let bad = 0, cut = 0, n = 0;
                 for (let s = 1; s <= 20000; s++) { const ids = equipPackRoll(s, EQUIP_PACK2); if (!ids) { bad++; continue; } n++; ids.forEach(id => { seen.add(id); if (EQUIP_CUT.indexOf(id) >= 0) cut++; });
                     if (new Set(ids).size !== 4 || !ids.some(id => ['precision', 'prototype'].indexOf(EQUIP_CARDS[id].rarity) >= 0)) bad++; }
                 let shelfCut = 0; for (let s = 1; s <= 300; s++) { equipShelfDeal(s); if (equipShelf.ids.some(id => EQUIP_CUT.indexOf(id) >= 0)) shelfCut++; }
-                return { n, bad, cut, seen: seen.size, shelfCut }; } finally { questDone = keep; } })()`);
-        same(r.n, 20000, 'packs made'); same(r.bad, 0, 'bad packs'); same(r.cut, 0, 'cut cards dealt'); same(r.seen, 45, 'cards ever dealt'); same(r.shelfCut, 0, 'shelves with a cut card');
+                return { n, bad, cut, seen: seen.size, players: [...seen].filter(id => EQUIP_CARDS[id].kind === 'player').length, shelfCut }; } finally { questDone = keep; } })()`);
+        same(r.n, 20000, 'packs made'); same(r.bad, 0, 'bad packs'); same(r.cut, 0, 'cut cards dealt'); same(r.seen, 63, 'cards ever dealt'); same(r.players, 18, 'Player cards ever dealt'); same(r.shelfCut, 0, 'shelves with a cut card');
     });
 
     group('THE OLD SAVES\' CLEAN-UP AND THE REFUND (paid once)');
