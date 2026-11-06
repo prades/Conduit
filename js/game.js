@@ -844,7 +844,7 @@ function render() {
     // A catch-up step (gameLoop) draws nothing, and drawing a unit changes
     // nothing — so its units are not even laid out: the predators' body maths
     // was the biggest share of a step with no picture.
-    if (!_simGhost) actors.forEach(a=>{ if(visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });
+    if (!_simGhost) actors.forEach(a=>{ if(!a._swallowedBy && visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });   // (one swallowed by ABSOLUTE ZERO is inside the Frost Maw: js/elements.js)
     if (!_simGhost && typeof cloneBodiesDrawItems === "function") cloneBodiesDrawItems(drawList);   // a fallen clone's body (js/mutator.js)
     if (!_simGhost && typeof techDrawItems === "function") techDrawItems(drawList);   // a Kinetic Launcher set up at a site, and the broken section the site's room is left by (js/techabilities.js)
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});

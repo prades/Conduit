@@ -468,6 +468,80 @@ const FOLLOWER_ULTIMATES = {
 
 }; // end FOLLOWER_ULTIMATES
 
+// ── EACH FOLLOWER'S OWN ULTIMATE (Milestone Three; the owner, 2026-11-06: "Own Ultimates"; docs/NEXT-PHASE-ROADMAP.md §12.3) ──
+// A form with an Ultimate of its own uses it; every other form keeps its element's (FOLLOWER_ULTIMATES above) until its own is designed. The meter, its charge and the double-tap are unchanged.
+// An Ultimate that finds nothing to do keeps its charge (as the element ones do).
+const ULT_OVERDRIVE = { reach: 6, radius: 2, mult: 2, knock: 1 };                         // the Static Orb's: "Smaller rush" (tiles, tiles, × power split crush/electric, tiles of knockback)
+const ULT_ZERO = { reach: 3, max: 3, frames: 360 };                                       // the Frost Maw's: "6 s, no damage" (tiles, enemies, frames)
+const ULT_UNDERTOW = { radius: 3, mult: 1.5, thrown: 2.5, weak: 240, weakFactor: 0.7 };   // the Seeper's: "Strong" (tiles, × power, tiles thrown, frames of poison: hits 30% weaker)
+const ULT_NETWORK = { frames: 600, tick: 30, mult: 0.5, poison: 180, touch: 0.5 };         // the Blight Spider's: "10 s" (frames, frames between bites, × power, frames of poison, tiles from a strand)
+const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
+const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
+function _ultSay(a, text, color) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text, color, life: 60, vy: -0.06, size: 13 }); }
+const FORM_ULTIMATES = {
+    embercowl: FOLLOWER_ULTIMATES.fire,   // VOLCANIC ERUPTION: the Ember Hood's own (roadmap §12.3)
+    // OVERDRIVE: an overload, then a rush to the biggest group of enemies it can see and walk straight to (up to ULT_OVERDRIVE.reach tiles); everything within ULT_OVERDRIVE.radius of where it
+    // lands takes ULT_OVERDRIVE.mult × its power, half crushing and half electric, and is knocked back.
+    staticorb: { name: "Overdrive", desc: "An overload, then a rush to the biggest group of enemies it can see: crushing and electric damage, and a knockback", execute(actor) {
+        const O = ULT_OVERDRIVE, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, O.reach) : [];
+        let best = null, bestN = 0;
+        for (const a of foes) { if (typeof facilityLosFrom === "function" && !facilityLosFrom(actor.x, actor.y, a.x, a.y)) continue; const n = foes.filter(b => Math.hypot(b.x - a.x, b.y - a.y) <= O.radius).length; if (n > bestN) { bestN = n; best = a; } }
+        if (!best) return;
+        actor.ultimateCharge = 0;
+        const dx = best.x - actor.x, dy = best.y - actor.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8);
+        actor.x += dx / L * s; actor.y += dy / L * s; actor._fpPath = null; actor.dirX = dx / L; actor.dirY = dy / L;
+        for (const a of _evoFoesSeen(actor.x, actor.y, O.radius)) {
+            const p = (actor.power || 10) * O.mult / 2;
+            applyDamage(a, p, actor, null, false, false, DMG_HIT_ULT_CRUSH); applyDamage(a, p, actor, "electric", false, false, DMG_HIT_SPECIAL);
+            if (typeof applyKnockback === "function") applyKnockback(a, actor, O.knock * KNOCK_PER_TILE);
+        }
+        spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, radius: O.radius, color: "#fff27a", life: 30, element: "electric" });
+        spawnElementEffect({ type: "impact", x: actor.x, y: actor.y, color: "#fff27a", radius: 1.2, life: 20, element: "electric" });
+        _ultSay(actor, "OVERDRIVE", "#fff27a");
+    } },
+    // ABSOLUTE ZERO: it swallows up to ULT_ZERO.max enemies within ULT_ZERO.reach (not a boss), frozen inside it for ULT_ZERO.frames, no damage; then lets them go round it, unfrozen. (It grows
+    // larger in the design: not drawn yet.)
+    maw: { name: "Absolute Zero", desc: "Swallows up to three enemies near it and holds them frozen inside it, then lets them go", execute(actor) {
+        const Z = ULT_ZERO, foes = (typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, Z.reach) : []).filter(a => !a.bossName && !a.bossId && !a._swallowedBy)
+            .sort((a, b) => Math.hypot(a.x - actor.x, a.y - actor.y) - Math.hypot(b.x - actor.x, b.y - actor.y)).slice(0, Z.max);
+        if (!foes.length) return;
+        actor.ultimateCharge = 0;
+        for (const a of foes) { a._swallowedBy = actor; a.untargetable = true; a.stunned = Math.max(a.stunned || 0, Z.frames); a.x = actor.x; a.y = actor.y; }
+        spawnElementEffect({ type: "abszero", x: actor.x, y: actor.y, by: actor, held: foes, radius: 1.2, life: Z.frames, maxLife: Z.frames, element: "ice" });
+        _ultSay(actor, "ABSOLUTE ZERO", "#bfefff");
+    } },
+    // TOXIC UNDERTOW: one toxic surge ULT_UNDERTOW.radius tiles round: ULT_UNDERTOW.mult × its power, each enemy thrown outward (its way turned by up to 40°, so they scatter), and poisoned
+    // (the game's poison: its hits weaker) for ULT_UNDERTOW.weak frames. No pool is left.
+    seeper: { name: "Toxic Undertow", desc: "One toxic surge that throws the enemies round it outward and poisons them", execute(actor) {
+        const U = ULT_UNDERTOW, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, U.radius) : [];
+        if (!foes.length) return;
+        actor.ultimateCharge = 0;
+        foes.forEach((a, i) => {
+            applyDamage(a, (actor.power || 10) * U.mult, actor, "toxic", false, false, DMG_HIT_SPECIAL);
+            const ang = Math.atan2(a.y - actor.y, a.x - actor.x) + (((i * 2.399) % 1.4) - 0.7);
+            if (typeof applyKnockback === "function") applyKnockback(a, { x: a.x - Math.cos(ang), y: a.y - Math.sin(ang) }, U.thrown * KNOCK_PER_TILE);
+            if (typeof applyWeaken === "function") applyWeaken(a, U.weak, U.weakFactor);
+        });
+        spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, radius: U.radius, color: "#7dff4a", life: 34, element: "toxic" });
+        spawnElementEffect({ type: "impact", x: actor.x, y: actor.y, color: "#7dff4a", radius: 2, life: 24, element: "toxic" });
+        _ultSay(actor, "TOXIC UNDERTOW", "#99ff88");
+    } },
+    // CONTAMINATION NETWORK: its toxic pods (js/techabilities.js; at least two) link with toxic strands for ULT_NETWORK.frames: an enemy within ULT_NETWORK.touch of a strand takes
+    // ULT_NETWORK.mult × its power every ULT_NETWORK.tick frames and is poisoned. The pods stay.
+    blightspider: { name: "Contamination Network", desc: "Its toxic pods link with toxic strands: enemies crossing them are hurt and poisoned", execute(actor) {
+        const N = ULT_NETWORK, pods = (typeof techPools !== "undefined" ? techPools : []).filter(P => P.by === (actor.uid || null) && (typeof techPoolFade !== "function" || techPoolFade(P) > 0)).slice(-3);
+        if (pods.length < 2) { _ultSay(actor, "NEEDS 2 TOXIC PODS", "#ff8a6a"); return; }
+        actor.ultimateCharge = 0;
+        const pts = pods.map(P => [P.x, P.y]), segs = []; for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) segs.push([pts[i], pts[j]]);
+        const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+        spawnElementEffect({ type: "toxicnet", x: cx, y: cy, segs, by: actor, bite: (actor.power || 10) * N.mult, life: N.frames, maxLife: N.frames, element: "toxic" });
+        _ultSay(actor, "CONTAMINATION NETWORK", "#99ff88");
+    } },
+};
+// The Ultimate a follower fires: its form's own, else its element's (null: none, a core form without its own)
+function followerUltimate(a) { if (!a) return null; return (a.evolved && FORM_ULTIMATES[a.evolved]) || FOLLOWER_ULTIMATES[a.element] || null; }
+function _ultSegDist(p, a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1; let t = ((p.x - a[0]) * dx + (p.y - a[1]) * dy) / L2; t = Math.max(0, Math.min(1, t)); return Math.hypot(p.x - (a[0] + dx * t), p.y - (a[1] + dy * t)); }
+
 // ─────────────────────────────────────────────────────────
 //  ELEMENT EFFECTS POOL (visual + lingering)
 // ─────────────────────────────────────────────────────────
@@ -584,6 +658,25 @@ function updateElementEffects() {
         if (e.type === "hexfire") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
         if (e.type === "magmavent") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
         if (e.type === "staticVortex" && typeof staticVortexTick === "function") staticVortexTick(e);
+        // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
+        if (e.type === "abszero") {
+            const by = e.by, done = e.life <= 0 || !by || by.dead;
+            if (by && !by.dead) { e.x = by.x; e.y = by.y; }
+            e.held.forEach((a, i) => {
+                if (!a || a.dead) return;
+                if (!done) { a.x = e.x; a.y = e.y; a.stunned = Math.max(a.stunned || 0, 2); return; }
+                const an = i / Math.max(1, e.held.length) * Math.PI * 2, c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(e.x + Math.cos(an) * 1.2, e.y + Math.sin(an) * 1.2) : null;
+                a._swallowedBy = null; a.untargetable = false; a.stunned = 0; if (c) { a.x = c[0]; a.y = c[1]; } else { a.x = e.x + Math.cos(an) * 1.2; a.y = e.y + Math.sin(an) * 1.2; }
+            });
+            if (done) e.life = 0;
+        }
+        if (e.type === "toxicnet") {
+            const age = e.maxLife - e.life;
+            if (age > 0 && e.life > 0 && age % ULT_NETWORK.tick === 0) for (const a of actors) {
+                if (!a || a.dead || !isHostileTarget(a)) continue;
+                if (e.segs.some(s => _ultSegDist(a, s[0], s[1]) <= ULT_NETWORK.touch)) { applyDamage(a, e.bite, e.by || null, "toxic", false, false, DMG_HIT_SPECIAL); if (typeof applyWeaken === "function") applyWeaken(a, ULT_NETWORK.poison); }
+            }
+        }
 
         // Blizzard field — 60 % freeze chance every 30 frames for every enemy in it
         if (e.type === "blizzardField" && e.life % 30 === 0) {
@@ -1000,6 +1093,25 @@ function drawElementEffects() {
                     const an = i / 10 * Math.PI * 2, h = 5 + 4 * Math.sin(frame * 0.4 + i * 1.7), fx = px + Math.cos(an) * rx, fy = cy + Math.sin(an) * ry;
                     ctx.globalAlpha = 0.7 * k; ctx.beginPath(); ctx.moveTo(fx - 2.5, fy); ctx.lineTo(fx, fy - h); ctx.lineTo(fx + 2.5, fy); ctx.closePath(); ctx.fill();
                 }
+                break;
+            }
+            // CONTAMINATION NETWORK (FORM_ULTIMATES): glowing toxic strands between its pods, a pulse running along them
+            case "toxicnet": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), cy0 = py + TILE_H, S = (x, y) => [px + ((x - e.x) - (y - e.y)) * TILE_W, cy0 + ((x - e.x) + (y - e.y)) * TILE_H];
+                for (const s of e.segs) {
+                    const a = S(s[0][0], s[0][1]), b = S(s[1][0], s[1][1]);
+                    ctx.globalAlpha = 0.35 * k; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+                    ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#d6ff9a"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+                    const t = (frame % 40) / 40; ctx.fillStyle = "#ffffff"; ctx.globalAlpha = k; ctx.beginPath(); ctx.arc(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, 3, 0, Math.PI * 2); ctx.fill();
+                }
+                break;
+            }
+            // ABSOLUTE ZERO (FORM_ULTIMATES): the Frost Maw, swollen with what it swallowed: a frosted ring round it, crystals rising
+            case "abszero": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), rx = 1.2 * 1.4142 * TILE_W, ry = 1.2 * 1.4142 * TILE_H, cy = py + TILE_H;
+                ctx.globalAlpha = 0.28 * k; ctx.fillStyle = "#bfefff"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.8 * k; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+                ctx.fillStyle = "#e6f8ff"; for (let i = 0; i < 6; i++) { const an = i / 6 * Math.PI * 2 + frame * 0.02, h = 8 + 4 * Math.sin(frame * 0.2 + i); const fx = px + Math.cos(an) * rx * 0.8, fy = cy + Math.sin(an) * ry * 0.8; ctx.globalAlpha = 0.85 * k; ctx.beginPath(); ctx.moveTo(fx - 3, fy); ctx.lineTo(fx, fy - h); ctx.lineTo(fx + 3, fy); ctx.closePath(); ctx.fill(); }
                 break;
             }
             // MAGMA VENT (js/evolution.js magmaVent): a dark cracked mouth in the floor glowing orange, its reach a faint ring; each burst throws a column of magma up and a flash of the ring

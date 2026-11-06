@@ -279,7 +279,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.soak.join(), 'true,40', 'a creature\'s shield did not soak the hit');
         const draw = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8'), helpers = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8');
         ok(!/_drawFollowerShield|ellipse\(px, py - 32, 17, 22/.test(draw), 'the bubble is still drawn'); ok(!/_shieldHitAt/.test(draw + helpers), 'the bubble\'s hit flash is still kept');
-        ok(/isFollower && typeof actor\.ultimateCharge === "number" && typeof FOLLOWER_ULTIMATES !== "undefined" && FOLLOWER_ULTIMATES\[actor\.element\]/.test(draw), 'a core follower still has an ultimate bar');
+        ok(/isFollower && typeof actor\.ultimateCharge === "number" && typeof followerUltimate === "function" && followerUltimate\(actor\)/.test(draw), 'the bar is not drawn only for a follower with an Ultimate (its form\'s own or its element\'s: a core form without its own has none)');
     });
     check('THE ASK: ERUPTION — the crater bursts over everything close: toxic damage and eaten armour', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;

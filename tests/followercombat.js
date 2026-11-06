@@ -445,6 +445,28 @@ function measure(w, h) {
         same(r.r, r.want[0], 'its radius'); same(r.first, true, 'no bite as it opened'); same(r.far, 0, 'it reached an enemy beyond its radius');
         same(r.bites, Math.floor(r.want[1] / r.want[2]) - 1, 'bursts after the first (one a second while it is open): ' + r.bites); ok(r.gone <= r.want[1] + 2, 'it stayed open too long: ' + r.gone); same(r.cd, r.want[3], 'the wait');
     });
+    check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it, any other its element\'s; OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
+        const r = J(`(function(){ const o = {};
+            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('fire', 'brawler', 'quillstone');
+            o.look = [followerUltimate(so).name, followerUltimate(eh) === FOLLOWER_ULTIMATES.fire, followerUltimate(qs) === FOLLOWER_ULTIMATES.fire];
+            __clear(); const s = __fol('electric', 'brawler', 'staticorb'), g1 = __foe(s.x + 4, s.y), g2 = __foe(s.x + 4.6, s.y + 0.4), lone = __foe(s.x - 3, s.y); s.ultimateCharge = 100; followerUltimate(s).execute(s);
+            o.over = [s.ultimateCharge < 50, Math.hypot(s.x - g1.x, s.y - g1.y) <= 1.2, __dmg(g1) > 0, __dmg(g2) > 0, __dmg(lone), !!(g1.kbVX || g1.kbVY)];
+            __clear(); const m = __fol('ice', 'brawler', 'maw'), z = [1, 2, 3, 4].map(i => __foe(m.x + i * 0.6, m.y)); m.ultimateCharge = 100; followerUltimate(m).execute(m);
+            o.zero = [m.ultimateCharge, z.filter(a => a._swallowedBy === m).length, z.every(a => __dmg(a) === 0)];
+            for (let i = 0; i < 365; i++) updateElementEffects(); o.zeroAfter = [z.filter(a => a._swallowedBy).length, z.every(a => !a.untargetable), z.every(a => __dmg(a) === 0)];
+            __clear(); const sp = __fol('toxic', 'brawler', 'seeper'), u1 = __foe(sp.x + 1.5, sp.y), u2 = __foe(sp.x - 1.5, sp.y + 0.3); sp.ultimateCharge = 100; followerUltimate(sp).execute(sp);
+            o.under = [__dmg(u1) > 0, __dmg(u2) > 0, u1.toxicWeakened, Math.round(u1.toxicWeakenFactor * 10) / 10, !!(u1.kbVX || u1.kbVY)];
+            __clear(); const bs = __fol('toxic', 'camper', 'blightspider'); techPools = []; bs.ultimateCharge = 100; followerUltimate(bs).execute(bs); o.netNone = bs.ultimateCharge;
+            _techPoolLay(bs, bs.x + 2.5, bs.y + 0.5); _techPoolLay(bs, bs.x + 6.5, bs.y + 0.5); const on = __foe(bs.x + 4.5, bs.y + 0.6), off = __foe(bs.x + 4.5, bs.y + 4);
+            followerUltimate(bs).execute(bs); for (let i = 0; i < 61; i++) updateElementEffects();
+            o.net = [bs.ultimateCharge < 50, elementEffects.some(e => e.type === 'toxicnet'), __dmg(on) > 0, __dmg(off), on.toxicWeakened > 0];
+            techPools = []; return o; })()`);
+        same(r.look.join(), 'Overdrive,true,true', 'its own, the Ember Hood\'s (the fire one), a form without its own (its element\'s)');
+        same(r.over.join(), 'true,true,true,true,0,true', 'OVERDRIVE: spent (its own hits charge it a little again), rushed to the group, both hit, the lone one not, knocked back');
+        same(r.zero.join(), '0,3,true', 'ABSOLUTE ZERO: spent, three swallowed (not four), no damage'); same(r.zeroAfter.join(), '0,true,true', 'let go after 6 s, targetable again, still no damage');
+        same(r.under.join(), 'true,true,240,0.7,true', 'TOXIC UNDERTOW: both hurt, poisoned 4 s at 70% of their hits, thrown');
+        same(r.netNone, 100, 'CONTAMINATION NETWORK with no pods spent its charge'); same(r.net.join(), 'true,true,true,0,true', 'CONTAMINATION NETWORK: spent (its bites charge it a little again), the strand is up, the one on it hurt and poisoned, the one off it not');
+    });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);
             return { ids, names, dupN: names.length - new Set(names).size, idOk: ids.every(k => MOVES[k].id === k), missing }; })()`);

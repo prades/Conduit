@@ -4,6 +4,16 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **n · Own Ultimates, the first four** (the owner, 2026-11-06: "Own Ultimates"; "Smaller rush", "6 s, no damage", "Strong", "10 s"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06m` went to main at the owner's word ("Push to main").
+  - A form with an Ultimate of its own fires it; every other keeps its element's until its own is designed (`js/elements.js` `FORM_ULTIMATES`, `followerUltimate`). The meter, its charge and the double-tap are unchanged.
+  - **OVERDRIVE** (Static Orb): a rush up to 6 tiles to the biggest group it can see and walk straight to; everything within 2 tiles takes 2× its power (half crushing, half electric) and is knocked back a tile.
+  - **ABSOLUTE ZERO** (Frost Maw): swallows up to 3 enemies within 3 tiles (not a boss) and holds them frozen inside it for 6 s, no damage; then lets them go round it. Its growing larger is not drawn yet.
+  - **TOXIC UNDERTOW** (Seeper): a surge 3 tiles round: 1.5× its power, each enemy thrown 2.5 tiles outward in a scattered direction, poisoned 4 s (hits 30% weaker; the game's poison is a weakness).
+  - **CONTAMINATION NETWORK** (Blight Spider): its toxic pods (at least 2) link with strands for 10 s; an enemy within half a tile of a strand takes 0.5× its power every 0.5 s and is poisoned 3 s. The pods stay.
+  - **VOLCANIC ERUPTION** is the Ember Hood's own (no change in play).
+  - INFO names each follower's own Ultimate. Tests: followercombat (the four, new), evolution, unitinfo, bonds, moves, techlevel1, globals, bible, loadorder. No full run. Not playtested.
+
 - **m · MAGMA VENT; a ledge onto the reservoir** (the owner, 2026-11-06: "Short and hot", "Add ledges"; on the branch; commit named in git log).
   - **Main:** build `2026-11-06l` went to main at the owner's word ("Push to main").
   - **MAGMA VENT**, the Thermite Burrower's move: a vent opens under the nearest enemy it can see within 6 tiles **[reading: placed by the follower, no third chip]**, bursts every second for 8 s, each burst 60% of its power to enemies within 1.5 tiles that can be seen from it; then a 20 s wait. INFO lists it.

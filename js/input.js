@@ -349,7 +349,7 @@ canvas.addEventListener('pointerup', e=>{
                 // A bonded pair, both full and close: the DUO ultimate (js/bonds.js).
                 if (typeof tryDuoUltimate === "function" && tryDuoUltimate(_tappedFollower)) { /* fired both */ }
                 else if (typeof _tappedFollower.ultimateCharge === "number" && _tappedFollower.ultimateCharge >= 100) {
-                    const _ult = FOLLOWER_ULTIMATES[_tappedFollower.element];
+                    const _ult = typeof followerUltimate === "function" ? followerUltimate(_tappedFollower) : FOLLOWER_ULTIMATES[_tappedFollower.element];   // (its form's own, else its element's: js/elements.js FORM_ULTIMATES)
                     if (_ult) _ult.execute(_tappedFollower);
                 }
                 _ultimateLastTapActor = null;

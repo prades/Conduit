@@ -76,7 +76,8 @@ function followerInfo(a) {
     }
     { const ab = typeof techAbilityInfo === "function" ? techAbilityInfo(a) : null; if (ab) out.attacks.push(ab); }   // a technician's ability: what it does, its numbers, when it is ready (js/techabilities.js)
     { const ab2 = typeof techAbility2Info === "function" ? techAbility2Info(a) : null; if (ab2) out.attacks.push(ab2); }   // the Thermite Burrower's second ability, FAULTLINE
-    const u = ELEMENT_ULTIMATES.find(x => x.el === a.element);
+    const own = a.evolved && typeof FORM_ULTIMATES !== "undefined" && FORM_ULTIMATES[a.evolved] && FORM_ULTIMATES[a.evolved].desc ? FORM_ULTIMATES[a.evolved] : null;   // (its form's own Ultimate, js/elements.js)
+    const u = own ? { name: own.name, desc: own.desc } : ELEMENT_ULTIMATES.find(x => x.el === a.element);
     if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". Double-tap the follower when it is fully charged.", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
     // JOBS: the squad, or a room it holds (js/party.js)
     out.jobs.push({ h: "RIGHT NOW", rows: [["STANCE", a.post && typeof partyRoomName === "function" ? "HOLDING THE " + partyRoomName(a.post).toUpperCase() : typeof partyIsMember === "function" && partyIsMember(a) ? "IN THE SQUAD, FOLLOWING YOU" : a.stance === "hold" || (a.job && a.job.type === "move") ? "HOLDING A POST" : "FOLLOWING YOU"]] });

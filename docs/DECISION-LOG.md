@@ -1773,3 +1773,18 @@ The owner: too much time goes into testing and side checks. From here on, only t
 2. More ways onto the dam: "Add ledges".
 3. MAGMA VENT: "Short and hot" (the vent lasts 8 s, bursts every 1 s in a 1.5-tile radius for 60% of its attack; 20 s wait).
 
+## DECISION: Build 2026-11-06m to main; own Ultimates, the first four
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06m` on main. The four Ultimates: implemented and tested in build `2026-11-06n`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.2, §12.3; `CHANGELOG.md` (n)
+
+### Decision
+1. "Push to main" (build m). 2. Next: "Own Ultimates".
+3. OVERDRIVE: "Smaller rush" (up to 6 tiles; 2× power; knockback 1 tile). ABSOLUTE ZERO: "6 s, no damage". TOXIC UNDERTOW: "Strong" (3 tiles; 1.5× power; thrown 2.5 tiles; poisoned 3 s and weakened 4 s). CONTAMINATION NETWORK: "10 s" (needs 2 pods; 0.5× power every 0.5 s; poisoned 3 s).
+
+### Readings
+- "Poisoned 3 s and weakened 4 s" (TOXIC UNDERTOW) is one status in this game (poison is a weakness): poisoned 4 s at 70% of their hits.
+- An Ultimate that finds nothing to do keeps its charge; CONTAMINATION NETWORK with fewer than two pods says so and keeps it.
+- ABSOLUTE ZERO's "grows larger" is not drawn yet (no size hook for a follower's sprite).
+
