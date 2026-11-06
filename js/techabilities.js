@@ -623,7 +623,7 @@ function techFluxPick(s) {
     const A = _techFluxAim(); if (!A) return false;
     if (!s) { _techSay("TAP AN OBJECT · THE OUTLINED ONES MOVE", "#8aa0c8"); return true; }
     if (typeof fluxMovable !== "function" || !fluxMovable(s)) { _techSay("✦ THE " + _fluxName(s) + " DOES NOT MOVE", "#ff8a6a"); return true; }
-    A.flux.s = s; A.flux.turn = false; A.flux.at = null; A.flux.grid = [null, null]; A.flux.grid[0] = fluxGrid(s, false);
+    A.flux.s = s; A.flux.turn = false; A.flux.at = null; A.flux.region = fluxRegion(s); A.flux.grid = [null, null]; A.flux.grid[0] = fluxGrid(s, false);
     A.picks.object = s; A.step = 1; _techAimShow();
     return true;
 }
@@ -1202,7 +1202,8 @@ function techDrawRubbleOn(it, f) {
 }
 // ── on each floor tile (js/game.js draws it with the tile, like the serum's pools): the FROST PATCH's ice, the BLIGHT SPIDER's pools ──
 function techDrawOnTile(tx, ty, px, py) {
-    if (!techFrosts.length && !techPools.length) return;
+    const FX = techAim && techAim.flux && techAim.flux.s && typeof fluxDrawOnTile === "function" ? techAim : null;   // FLUX MOVE's grid, on the floor (js/fluxmove.js): drawn last on the tile
+    if (!techFrosts.length && !techPools.length) { if (FX) fluxDrawOnTile(FX, tx, ty, px, py); return; }
     const g = ctx, f0 = _techFrame(), W = TILE_W, H = TILE_H, S = (x, y) => [px + ((x - tx) - (y - ty)) * W, py + H + ((x - tx) + (y - ty)) * H];   // a point of the floor near this tile, on the screen
     const tile = () => { g.beginPath(); g.moveTo(px, py); g.lineTo(px + W, py + H); g.lineTo(px, py + 2 * H); g.lineTo(px - W, py + H); g.closePath(); };
     const key = tx + "," + ty;
@@ -1231,6 +1232,7 @@ function techDrawOnTile(tx, ty, px, py) {
         for (let b = 0; b < 2; b++) { const ph = ((f0 + seed % 97 + b * 41) % 70) / 70, q = S(tx + (((seed >>> (b * 3)) % 9) - 4) / 12, ty + (((seed >>> (b * 3 + 1)) % 9) - 4) / 12); g.globalAlpha = 0.6 * a * (1 - ph); g.strokeStyle = "#d6ff9a"; g.lineWidth = 1; g.beginPath(); g.arc(q[0], q[1] - ph * 8, 1.5 + ph * 2.5, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1; }
         g.restore();
     }
+    if (FX) fluxDrawOnTile(FX, tx, ty, px, py);
 }
 // the launchers and the broken sections stand among everything else (js/game.js sorts them by depth)
 function techDrawItems(list) {

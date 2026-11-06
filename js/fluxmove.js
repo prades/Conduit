@@ -213,7 +213,18 @@ function fluxGrid(s, turn) {
     return out;
 }
 
-// ── drawing (js/techabilities.js techDrawOverlay, while the tool is aimed) ──
+// ── drawing ──
+// THE GRID, ON THE FLOOR (js/techabilities.js techDrawOnTile, as each floor tile is drawn: walls and props in front of it cover it as they cover the floor): each tile of the reach, a faint violet edge; a tile the
+// object can go to (its first tile), filled violet; one it cannot, red. Tiles that are not floor (walls, other objects) show nothing: what stands there is seen.
+function fluxDrawOnTile(A, tx, ty, px, py) {
+    const X = A.flux, k = tx + "," + ty; if (!X || !X.region || !X.region.has(k) || typeof ctx === "undefined") return;
+    const g = ctx, W = TILE_W, H = TILE_H, grid = X.grid && X.grid[X.turn ? 1 : 0], c = grid ? grid.get(k) : null;
+    g.save(); g.beginPath(); g.moveTo(px, py); g.lineTo(px + W, py + H); g.lineTo(px, py + 2 * H); g.lineTo(px - W, py + H); g.closePath();
+    if (c) { const ok = c.ok && !fluxBodyOn(c.cells); g.fillStyle = ok ? "rgba(199,125,255,0.26)" : "rgba(255,74,74,0.2)"; g.fill(); g.strokeStyle = ok ? "rgba(222,184,255,0.8)" : "rgba(255,110,110,0.6)"; g.lineWidth = ok ? 1.5 : 1; }
+    else { g.strokeStyle = "rgba(199,125,255,0.28)"; g.lineWidth = 1; }
+    g.stroke(); g.restore();
+}
+// over the world (js/techabilities.js techDrawOverlay, while the tool is aimed):
 function _fluxTile(g, x, y, fill, stroke, lw, dash) {
     const p = _techScr(x, y), cx = p.x, cy = p.y + TILE_H;
     g.beginPath(); g.moveTo(cx, cy - TILE_H); g.lineTo(cx + TILE_W, cy); g.lineTo(cx, cy + TILE_H); g.lineTo(cx - TILE_W, cy); g.closePath();
@@ -229,13 +240,7 @@ function fluxDrawAim(g, A, f0) {
         for (const s of fluxObjects()) { const cx = (s.bb[0] + s.bb[2]) / 2, cy = (s.bb[1] + s.bb[3]) / 2; if (Math.hypot(cx - player.visualX, cy - player.visualY) > 16) continue; for (const k of _fpSolidCells(s)) { const [x, y] = k.split(",").map(Number); _fluxTile(g, x, y, "rgba(199,125,255," + (0.12 + 0.12 * pulse).toFixed(3) + ")", FLUX.col, 2); } }
         g.restore(); return;
     }
-    const s = X.s, grid = X.grid && X.grid[X.turn ? 1 : 0]; if (!grid) { g.restore(); return; }
-    for (const k of fluxRegion(s)) { const [x, y] = k.split(",").map(Number); _fluxTile(g, x, y, null, "rgba(199,125,255,0.22)", 1); }   // the reach: a faint grid
-    for (const [k, c] of grid) {
-        const [x, y] = k.split(",").map(Number), body = c.ok && fluxBodyOn(c.cells);
-        if (c.ok && !body) _fluxTile(g, x, y, "rgba(199,125,255,0.24)", "rgba(222,184,255,0.75)", 1.5);
-        else _fluxTile(g, x, y, "rgba(255,74,74,0.16)", "rgba(255,110,110,0.55)", 1);
-    }
+    const s = X.s, grid = X.grid && X.grid[X.turn ? 1 : 0]; if (!grid) { g.restore(); return; }   // (the grid itself is drawn with the floor, fluxDrawOnTile: here only where it stands and the place chosen)
     const H = fluxHere(s); for (const k of fluxCellsOf(H.x0, H.y0, H.w, H.h)) { const [x, y] = k.split(",").map(Number); _fluxTile(g, x, y, null, "#ffffff", 2, [5, 4]); }   // where it stands now
     if (X.at) {
         const c = grid.get(X.at[0] + "," + X.at[1]) || fluxCheck(s, X.at[0], X.at[1], X.turn, { bodies: false }), ok = c.ok && !fluxBodyOn(c.cells), col = ok ? "#e8c8ff" : "#ff6a6a";

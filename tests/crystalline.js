@@ -347,8 +347,8 @@ const restOf = (n, k) => Math.max(1, Math.round((n + 1) / k) - 1);   // the rest
         const o = J(`(function(){ __fresh(0); const f = __prep('brawler', 'fire', 6); f.health = f.maxHealth - 5; const miss = f.maxHealth - f.health, max0 = f.maxHealth; gainXp(f, xpForLevel(7) - f.xp + 1); return { miss, now: f.maxHealth - f.health, grew: f.maxHealth > max0 }; })()`);
         same(o.grew, true, 'maximum health did not grow'); same(o.now, o.miss, 'a level-up changed how hurt it is');
     });
-    await check('the save keeps its parts (34 fields) and its version, the follower record its fields, and the collection its shape: nothing was added for the bonuses', () => {
-        same(J('Object.keys(facilitySaveCollect()).length'), 34, 'the save\'s fields (34 since build 2026-11-01h: the turrets\' wear, sentries, js/antraids.js)'); same(J('FS.version'), 1, 'FS.version'); const f = JSON.parse(run('JSON.stringify(followerRecord(__fresh(1)[0]))')), known = 'element,personality,combatTrait,naturalTrait,perk,stats,role,uid,partnerUid,base,level,xp,evolved,evoWait,playStyle,post,move,cards,hp0,bred'.split(',');   // (hp0 and bred: its birth, js/breeding.js; neither holds a card's bonus)
+    await check('the save keeps its parts (35 fields) and its version, the follower record its fields, and the collection its shape: nothing was added for the bonuses', () => {
+        same(J('Object.keys(facilitySaveCollect()).length'), 35, 'the save\'s fields (34 since build 2026-11-01h: the turrets\' wear, sentries, js/antraids.js; 35 since build 2026-11-06f: the objects FLUX MOVE has moved, moved, js/fluxmove.js)'); same(J('FS.version'), 1, 'FS.version'); const f = JSON.parse(run('JSON.stringify(followerRecord(__fresh(1)[0]))')), known = 'element,personality,combatTrait,naturalTrait,perk,stats,role,uid,partnerUid,base,level,xp,evolved,evoWait,playStyle,post,move,cards,hp0,bred'.split(',');   // (hp0 and bred: its birth, js/breeding.js; neither holds a card's bonus)
         for (const k of Object.keys(f)) ok(known.includes(k), 'a new field in a follower\'s record: ' + k);
     });
 
