@@ -389,7 +389,7 @@ Built as decided (the owner, 2026-11-06: "Test room + arena": "a small neutral t
 9. **The rest of the facility is a new game's**, power on. The arena's own creatures and its nine movable objects are there as in any game. The words of FLUX MOVE's INFO name the test room's objects with the arena's while the flag is on.
 10. **No cover object**: the roadmap's "object that provides cover" waits for Milestone Two. There is no cover in the game yet; every solid blocks walking and sight alike (`FLUX-MOVEMENT.md` §6.2).
 
-Open for the owner: whether the wait after a placement should be shorter in the test room, to try more moves in a row (it is the game's 60 s now).
+**Answered 2026-11-06:** the test room keeps the game's 60 s wait after a placement (the owner: "Keep 60 s"; `DECISION-LOG.md`).
 
 ## 2. Newly open
 

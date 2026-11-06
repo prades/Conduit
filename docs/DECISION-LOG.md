@@ -1607,3 +1607,24 @@ After build `2026-11-06g` (the Flux test room, `game.html?fluxlab`) and its full
 
 ### Impact
 Main has the test room behind `?fluxlab`. Without the flag the game is as it was. The room's readings (§1w) stand as built, the owner's to confirm or change. Milestone Two (cover, sight and traversal as properties of their own) is next in the Flux plan, designed with the owner once the tool has been tried.
+
+## DECISION: The test room keeps the 60 s wait; Milestone Two next
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Nothing to build for the first; the second starts with a study and questions, not code.
+- **Branch/build:** after build `2026-11-06g` (on main), on `claude/start-game-project-HSh7Z`.
+- **Related feature/docs:** `FLUX-MOVEMENT.md` (§9.1 Build 2, Milestone Two), `OPEN-QUESTIONS.md` §1w, `NEXT-PHASE-ROADMAP.md` §3.3 and §3.5
+
+### Context
+The owner reached the test room ("Works fine") and was asked what should come next (Milestone Two, a review of the readings, or the following update's Parts 3 and 4), and whether the test room should keep the 60 s wait after a placement.
+
+### Decision
+- **Next:** "Milestone Two": cover, blocking sight and stepping over objects as properties of their own (the roadmap: "Do not treat these properties as interchangeable"). The code is studied and the design questions are put to the owner first; nothing is built until they are answered.
+- **The test room's wait:** "Keep 60 s", the game's own, so the room shows the rules exactly as the arena has them.
+
+### Alternatives considered
+- Review the readings of `OPEN-QUESTIONS.md` §1v and §1w first; return to the following update's Parts 3 and 4.
+- No wait after a placement in the test room only.
+
+### Impact
+`OPEN-QUESTIONS.md` §1w's open question is answered. The following update's Parts 3 and 4 keep waiting.
