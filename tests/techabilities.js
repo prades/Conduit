@@ -212,7 +212,7 @@ function measure(w, h) {
         same(r.start, true, 'aimed'); same(r.need0, 'follower', 'first'); same(r.chip, '✕ AIMING', 'the chip'); ok(/TAP A FOLLOWER TO THROW/.test(r.prompt0), r.prompt0);
         same(r.need1, 'enemy', 'then'); ok(/TAP AN ENEMY TO THROW CORE /.test(r.prompt1), r.prompt1); same(r.off, false, 'the chip again did not call it off'); same(r.thrown, true, 'the third aim did not throw');
         const P = rd('js/party.js'), T = rd('js/techabilities.js');
-        ok(/hit\.ab && typeof techChipTap === "function"\) \{ techChipTap\(f\)/.test(P) && /techAimActive\(\) && typeof techAimPickFollower === "function" && techAimPickFollower\(f\)/.test(P), 'the squad card does not route to the aim');
+        ok(/if \(f && hit\.ab\) \{[^\n]*\n[^\n]*else if \(typeof techChipTap === "function"\) techChipTap\(f\)/.test(P) && /techAimActive\(\) && typeof techAimPickFollower === "function" && techAimPickFollower\(f\)/.test(P), 'the squad card does not route to the aim');
         ok(/e\.key === "Escape" && techAim\) techAimCancel\(\)/.test(T), 'Escape');
     });
     check('the code carries it the same way everywhere: the canvas press goes to the aim first; a site takes a tap; a flyer is moved by its flight alone, never jostled, never firing a move; the routing knows its walks; the ring\'s far taps do nothing; a slow tap on an open ring is still its tap; a held key does not repeat', () => {

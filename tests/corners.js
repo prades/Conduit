@@ -54,7 +54,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             _fnBottom = 0; o.tablet = drew(1180, 820); _fnBottom = 300; o.net = drew(1180, 820); o.big = drew(1600, 900); o.phone = drew(390, 800); __size(1180, 820); _fnBottom = 0;
             const c = objectiveCurrent(); o.cur = [c.key, c.title, /POWER IS OUT/.test(c.body), /AMMUNITION/.test(c.hint), c.col]; o.unread = objectiveUnread(); questBoxRead(); o.read = objectiveUnread(); S.step = 1; facilityDrawObjective(); o.next = [S.objKey, objectiveUnread()]; S.step = 0; return o; })()`);
         same(r.tablet.join(), '0,0,t0', 'a tablet'); same(r.net.join(), '0,0,t0', 'under a network panel'); same(r.big.join(), '0,0,t0', '1600 wide'); same(r.phone.join(), '0,0,t0', 'a phone');
-        same(r.cur.join('|'), 't0|OBJECTIVE 1/7  ·  FIND SUPPLIES|true|true|#19e6c1', 'the objective now'); same(r.unread, true, 'a new objective is not new'); same(r.read, false, 'opening the quest box did not read it'); same(r.next.join(), 't1,true', 'the next objective is not new');
+        same(r.cur.join('|'), 't0|OBJECTIVE 1/9  ·  FIND SUPPLIES|true|true|#19e6c1', 'the objective now'); same(r.unread, true, 'a new objective is not new'); same(r.read, false, 'opening the quest box did not read it'); same(r.next.join(), 't1,true', 'the next objective is not new');
     });
 
     group('THE REST OF THE CORNERS (game.html)');

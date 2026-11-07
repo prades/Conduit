@@ -225,6 +225,21 @@ function drawNPC(actor, px, py, drawCtx=ctx) {
             drawCtx.save(); drawCtx.translate(Math.sin(gf * 1.9) * amp, Math.cos(gf * 2.7) * amp * 0.5);
             try { _drawVirus(actor, px, py, drawCtx); } finally { drawCtx.restore(); }
         }
+    } else if (actor.isFollower && actor.alt === "capacitor_discharge" && (actor._cap > 0 || (typeof capacitorRooted === "function" && capacitorRooted(actor)))) {
+        // CAPACITOR DISCHARGE (js/evolution.js, build 2026-11-07ss): its electrical aura, brighter with every charge it stores (the design notes: "A visible electrical aura intensifies as charge builds");
+        // full, it flickers white. Made from the frame alone, as the wind-ups above.
+        const n = Math.max(0, Math.min(CAP_MAX, actor._cap || 0)), gf = frame || 0, full = n >= CAP_MAX, cy = py - 26, r = 16 + 3 * n, step = Math.floor(gf / 4);
+        drawCtx.save(); drawCtx.lineCap = "round";
+        drawCtx.globalAlpha = 0.18 + 0.14 * n; drawCtx.strokeStyle = full && gf % 8 < 4 ? "#ffffff" : "#ffee33"; drawCtx.lineWidth = 1 + 0.6 * n;
+        drawCtx.beginPath(); drawCtx.ellipse(px, cy, r, r * 0.62, 0, 0, Math.PI * 2); drawCtx.stroke();
+        for (let i = 0; i < n + 1; i++) {   // (one bolt more for each charge, jumping every 4 frames)
+            if ((gf + i) % 3 === 0) continue;
+            const a = (i * 2.399 + step * 1.7) % (Math.PI * 2), ca = Math.cos(a), sa = Math.sin(a) * 0.62;
+            drawCtx.globalAlpha = 0.5 + 0.12 * n; drawCtx.strokeStyle = "#fff27a"; drawCtx.lineWidth = 1.4;
+            drawCtx.beginPath(); drawCtx.moveTo(px + ca * (r - 7), cy + sa * (r - 7)); drawCtx.lineTo(px + ca * (r - 2) - sa * 3, cy + sa * (r - 2) + ca * 3); drawCtx.lineTo(px + ca * (r + 4), cy + sa * (r + 4)); drawCtx.stroke();
+        }
+        drawCtx.restore();
+        _drawVirus(actor, px, py, drawCtx);
     } else {
         _drawVirus(actor, px, py, drawCtx);
     }
@@ -1382,18 +1397,22 @@ function _drawVirus(actor, px, py, drawCtx) {
         const _ucFull = _uc >= 100;
         const _elDef = ELEMENTS.find(e => e.id === actor.element);
         const _elCol = _elDef ? _elDef.color : "#aaa";
-        // A thin slanted slab, gold when it is full (the same style as the health bar under it)
-        const _ux = px - 14, _uy = py - 82, _uw = 28, _uh = 3, _us = 2, _slab = f => { drawCtx.beginPath(); drawCtx.moveTo(_ux + _us, _uy); drawCtx.lineTo(_ux + _us + (_uw - _us) * f, _uy); drawCtx.lineTo(_ux + (_uw - _us) * f, _uy + _uh); drawCtx.lineTo(_ux, _uy + _uh); };
+        // A slanted slab, gold when it is full (the same style as the health bar under it). Bigger since build 2026-11-07ss (the owner: "more visible ultimate bar on followers"): 40 × 5 with a light
+        // edge, and full it glows, pulsing, with a ▲ beside it: it can be fired (its squad card's ULTIMATE, js/party.js, or a double-tap on it)
+        const _ux = px - 20, _uy = py - 84, _uw = 40, _uh = 5, _us = 3, _slab = f => { drawCtx.beginPath(); drawCtx.moveTo(_ux + _us, _uy); drawCtx.lineTo(_ux + _us + (_uw - _us) * f, _uy); drawCtx.lineTo(_ux + (_uw - _us) * f, _uy + _uh); drawCtx.lineTo(_ux, _uy + _uh); };
+        const _pulse = 0.5 + 0.5 * Math.sin((frame || 0) * 0.15);
+        if (_ucFull) { const a0 = drawCtx.globalAlpha; drawCtx.globalAlpha = a0 * (0.25 + 0.35 * _pulse); drawCtx.fillStyle = "#ffe733"; drawCtx.fillRect(_ux - 3, _uy - 3, _uw + 6, _uh + 6); drawCtx.globalAlpha = a0; }
         drawCtx.fillStyle = _ucFull ? "#4a3f00" : "#05070f"; _slab(1); drawCtx.fill();
-        if (_uc > 0) { drawCtx.fillStyle = _ucFull ? (0.5 + 0.5 * Math.sin((frame || 0) * 0.18) > 0.5 ? "#ffffff" : "#ffe733") : _elCol; _slab(_uc / 100); drawCtx.fill(); }
+        if (_uc > 0) { drawCtx.fillStyle = _ucFull ? (_pulse > 0.5 ? "#ffffff" : "#ffe733") : _elCol; _slab(_uc / 100); drawCtx.fill(); }
+        drawCtx.strokeStyle = "rgba(255,255,255,0.28)"; drawCtx.lineWidth = 1; _slab(1); drawCtx.stroke();
         // "▲" ready indicator
         if (_ucFull) {
             drawCtx.save();
             drawCtx.setTransform(1, 0, 0, 1, 0, 0);
-            drawCtx.font = "bold 8px monospace";
+            drawCtx.font = "bold 11px monospace";
             drawCtx.textAlign = "center";
-            drawCtx.fillStyle = _elCol;
-            drawCtx.fillText("▲", px, py - 85);
+            drawCtx.fillStyle = "#ffe733";
+            drawCtx.fillText("▲", px + 27, py - 78);
             drawCtx.restore();
         }
     }

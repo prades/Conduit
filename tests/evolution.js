@@ -119,9 +119,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         }
         same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "camper").map(d => d.id).sort().join()'), 'blightspider,gooproxy,hammerslug,hovershell,igloo,thermite', 'the technicians\' forms');
     });
-    check('THE ASK ("they help traverse the battlefield and provide exploration tools [...] I will put them in later"): the new technicians\' forms have NO signature move, and run without one', () => {
+    check('THE ASK ("they help traverse the battlefield and provide exploration tools [...] I will put them in later"): the new technicians\' forms have no signature move of their own: BASH is their second attack (build 2026-11-07ss, "BASH for now"), and on their normal attack they fire none', () => {
         for (const id of ['gooproxy', 'igloo', 'blightspider', 'hovershell', 'rimestar']) {   // (the Thermite Burrower has MAGMA VENT since build 2026-11-06m: tests/followercombat.js)
- same(run('EVOLUTIONS.' + id + '.move || null'), null, id + ' has a move'); same(run('EVOLUTIONS.' + id + '.moves || null'), null, id + ' has moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move'); }
+ same(run('EVOLUTIONS.' + id + '.move || null'), 'BASH', id + '\'s move'); same(run('JSON.stringify(EVOLUTIONS.' + id + '.moves || null)'), '["bash"]', id + '\'s moves'); same(run(`evoMoveOf({ evolved: '${id}' })`), null, id + ' fires a move on its normal attack'); }
         const r = run(`(function(){ followers.length = 0; spawnFollowerAtCrystal('flux'); const f = followers[0]; f.returningToCrystal = false; f.role = 'camper'; f.evolved = 'gooproxy'; f._moltAt = -1e9; f._sigCd = 0;
             const t0 = floatingTexts.length, fx0 = elementEffects.length; for (let i = 0; i < 400; i++) evolutionTick();
             return { role: f.role, texts: floatingTexts.length - t0, fx: elementEffects.length - fx0, sig: f._sigAt === undefined }; })()`);
@@ -221,18 +221,19 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         for (const evo of ['embercowl', 'halo']) { same(r[evo].n, 1, evo + ': its shots'); same(r[evo].dmg, 0, evo + ': the shot\'s own damage'); same(r[evo].cd, 330, evo + ': its wait'); }
     });
 
-    check('THE ASK: CORRODE SHOT — one long shot that eats the nearest enemy\'s armour, with a weaker corrosion splashed over its neighbours', () => {
+    check('THE ASK: CORRODE SHOT eats the armour of the enemy it hits, with a weaker corrosion splashed over its neighbours; since build 2026-11-07ss it is the Rotshard\'s EVERYDAY SHOT (the design notes\' primary), ROTTEN DECOY its second attack', () => {
+        same(run('EVOLUTIONS.rotshard.shot'), 'CORRODE SHOT', 'its everyday shot'); same(run('JSON.stringify(evoMoveIds(EVOLUTIONS.rotshard))'), '["rotten_decoy"]', 'its second attack');
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('toxic'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'rotshard'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(24, 2), b = mkP(25, 2.8), far = mkP(40, 2), apart = mkP(24, 7);
-            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
-            const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), apart: d(apart), sa: [a.defenseShredded, a.defenseShredFactor], sb: [b.defenseShredded, b.defenseShredFactor], sfar: far.defenseShredded || 0, sapart: apart.defenseShredded || 0, cd: f._sigCd };
+            frame++; const hook = evoShotOnHit(f, 5); if (hook) hook(a);   // (its shot lands on a: what the shot does where it lands)
+            const out = { hook: typeof hook, sa: [a.defenseShredded, a.defenseShredFactor], sb: [b.defenseShredded, b.defenseShredFactor], sfar: far.defenseShredded || 0, sapart: apart.defenseShredded || 0 };
             [a, b, far, apart].forEach(p => p.dead = true); return out; })()`);
-        ok(r.a > 0 && r.b === 0, 'one shot, into the nearest: ' + JSON.stringify(r));
+        same(r.hook, 'function', 'the shot does nothing where it lands');
         ok(r.sa[0] >= run('ROT_SHRED_FRAMES') && r.sa[1] <= run('ROT_SHRED'), 'the target\'s armour: ' + JSON.stringify(r));
         ok(r.sb[0] > 0 && r.sb[0] < r.sa[0] && r.sb[1] > r.sa[1] && r.sb[1] < 1, 'the neighbour\'s weaker corrosion: ' + JSON.stringify(r));
-        same(r.sfar, 0, 'corroded out of range'); same(r.sapart, 0, 'corroded beyond the splash'); ok(r.cd > 300, 'it did not wait');
+        same(r.sfar, 0, 'corroded out of range'); same(r.sapart, 0, 'corroded beyond the splash');
     });
 
     check('THE ASK: GRAVITY SLAM — it flattens and slams: hits, shoves and slows everything close; a beetle is too heavy to shove', () => {
@@ -261,7 +262,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = EVOLUTIONS[id].role; f.evolved = id; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
                 spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21; al.y = 2; al.health = Math.round(al.maxHealth * 0.3); al.shielded = false; al.shieldAmount = 0;
                 const p = mkP(21.4); for (let k = 0; k < 3; k++) { frame++; __arm(f); evolutionTick(); }
-                if (f._sigAt !== undefined || al.shielded || f.shielded || p.health < 1e6) o.cast.push(id);
+                if (al.shielded || f.shielded) o.cast.push(id);   // (no shield: since build 2026-11-07ss the Jelly Ram, Hornshell and Hammer Slug have BASH, which rams the enemy and shields nobody)
                 p.dead = true;
             }
             // a core follower's attacks, many of them, with a hurt ally beside it: Shield Bash every time, never a shield on anyone

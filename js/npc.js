@@ -47,7 +47,7 @@ function updateRTSNPC(actor) {
     if (actor.dead) return;
     if (actor.spawnProtection>0) { actor.spawnProtection--; }
     if (actor.hitFlash>0) actor.hitFlash--;
-    if (actor.isFollower && actor._altWind > 0) return;   // WINDING UP its chosen alternate (js/evolution.js altTick): it stands still and does nothing else until the move goes off
+    if (actor.isFollower && (actor._altWind > 0 || (typeof capacitorRooted === "function" && capacitorRooted(actor)))) return;   // WINDING UP its chosen alternate (js/evolution.js altTick): it stands still and does nothing else until the move goes off; a Static Orb storing CAPACITOR DISCHARGE's charges stands still too (capacitorRooted)
     if (actor.isFollower && actor._shotWind > 0) {   // a MAGE WINDING UP its shot (MAGE_SHOT_WINDUP above): rooted, then the shot goes off
         if (actor.retreatUntil > (typeof frame !== "undefined" ? frame : 0)) { actor._shotWind = 0; actor._shotTarget = null; }   // (a retreat cancels it)
         else { if (--actor._shotWind <= 0) _mageShotFire(actor); return; }
@@ -286,6 +286,8 @@ function updateRTSNPC(actor) {
                 // takes that step round the wall (js/facilityplay.js facilityReroute). It fires only at one it sees (cover it sees over may still stop the shot).
                 const seen = typeof facilitySeesFrom !== "function" || facilitySeesFrom(actor.x, actor.y, nearestEnemy.x, nearestEnemy.y);
                 if (typeof cardAttackTry === "function" && cardAttackTry(actor, nearestEnemy)) return;   // its card attack, when set and ready (cardAttackTry)
+                const _close = typeof followerAltCloseReach === "function" ? followerAltCloseReach(actor) : 0;   // locked on a close move (BASH, build 2026-11-07ss): it walks in to use it, as a Brawler does (js/moves.js)
+                if (_close > 0) { if (!seen || dist > _close - 0.3) { actor.x += (dx/dist)*actor.moveSpeed*0.8; actor.y += (dy/dist)*actor.moveSpeed*0.8; } return; }
 
                 if (seen && dist < SNIPER_MIN) {
                     actor.x-=(dx/dist)*actor.moveSpeed*1.2;

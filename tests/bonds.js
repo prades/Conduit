@@ -139,7 +139,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
             return { fired, ran, a: __a.ultimateCharge, b: __b.ultimateCharge, duo: __a._duoUntil > frame, said: floatingTexts.map(t => t.text) }; })()`);
         ok(r.fired && r.ran.length === 2 && r.a === 0 && r.b === 0 && r.duo, JSON.stringify(r));
         ok(r.said.some(t => /DUO: FIRE/.test(t)), 'not announced');
-        ok(/tryDuoUltimate\(_tappedFollower\)/.test(rd('js/input.js')), 'the double-tap does not try it');
+        ok(/followerUltFire\(_tappedFollower\)/.test(rd('js/input.js')) && /function followerUltFire[\s\S]{0,200}tryDuoUltimate\(f\)/.test(rd('js/elements.js')), 'the double-tap does not try it');   // (the double-tap and the squad card's ULTIMATE both fire through followerUltFire since build 2026-11-07ss, which tries the duo first)
     });
     await check('not with one bar short, nor apart', () => {
         pair(1, true, run('BOND_POINTS'));

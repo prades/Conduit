@@ -108,7 +108,8 @@ function measure(w, h) {
     run(`(function(){ const cells = partyRoomCells('arena'), set = new Set(cells.map(c => c[0] + ',' + c[1])); let best = null, bn = -1;
         for (const [x, y] of cells) { let n = 0; for (let dx = -6; dx <= 6; dx++) for (let dy = -6; dy <= 6; dy++) if (set.has((x + dx) + ',' + (y + dy))) n++; if (n > bn) { bn = n; best = [x, y]; } }
         globalThis.__C = [best[0] + 0.5, best[1] + 0.5]; player.x = player.visualX = __C[0] - 8; player.y = player.visualY = __C[1]; })();
-        globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k] = []; followerProjectiles.length = 0; elementEffects.length = 0; floatingTexts.length = 0; frame++; };
+        globalThis.__pinOn = () => { if (!globalThis.__soMoves) globalThis.__soMoves = EVOLUTIONS.staticorb.moves.slice(); EVOLUTIONS.staticorb.moves = ['static_rush', 'pinball']; };   // (PINBALL is superseded by CAPACITOR DISCHARGE since build 2026-11-07ss: its checks turn it back on for themselves, as its code is kept)
+        globalThis.__clear = () => { if (globalThis.__soMoves) { EVOLUTIONS.staticorb.moves = globalThis.__soMoves; globalThis.__soMoves = null; } actors = actors.filter(a => !(a instanceof Predator) && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k] = []; followerProjectiles.length = 0; elementEffects.length = 0; floatingTexts.length = 0; frame++; };
         globalThis.__foe = (x, y, sp) => { const S = SPECIES[sp || 'ant'], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp || 'ant'; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
         globalThis.__fol = (el, role, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.evolved = evo || undefined; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.stance = 'hold'; f.x = __C[0]; f.y = __C[1]; return f; };
         globalThis.__off = f => { actors = actors.filter(a => a !== f); followers = followers.filter(a => a !== f); };   // (out of the world: its own AI and melee add nothing; its shots and fields keep it as their source)
@@ -231,12 +232,12 @@ function measure(w, h) {
             return { name: MOVES.static_rush.name, fn: MOVES.static_rush.fn.toString(), nums: [MANTA_RANGE, moveWindupFrames("static_rush"), MANTA_MULT, MANTA_CHAIN, MANTA_HOP, MANTA_CHAIN_SHARE, MANTA_STUN], def: evoMoveOf(f).id, ids: evoMoveIds(EVOLUTIONS.staticorb),
                      dist: Math.hypot(a.x - f.x, a.y - f.y), hit: [d(a), d(b), d(c), d(far)], stun: [a, b, c].every(p => p.stunned > 0), cd: f._sigCd, legacy: ['manta', 'prism', 'voltring'].map(k => EVOLUTIONS[k].move) }; })()`);
         same(r.name, 'SONIC ROLL', 'its name'); ok(/staticRush\(/.test(r.fn), 'its function'); same(r.nums.join(), '4,300,2.4,2,2.2,0.6,45', 'its numbers (unchanged)');
-        same(r.def, 'static_rush', 'the default'); same(r.ids.join(), 'static_rush,pinball', 'its moves');
+        same(r.def, 'static_rush', 'the default'); same(r.ids.join(), 'static_rush,capacitor_discharge', 'its moves (PINBALL superseded by CAPACITOR DISCHARGE, build 2026-11-07ss)');
         ok(Math.abs(r.dist - 0.8) < 1e-6, 'the dash stops 0.8 short: ' + r.dist); ok(r.hit[0] > r.hit[1] && r.hit[1] > 0 && r.hit[2] > 0 && r.hit[3] === 0, 'hit and shocks: ' + r.hit); ok(r.stun, 'not stunned'); same(r.cd, 300, 'its wait');
         same(r.legacy.join(), 'SONIC ROLL,SONIC ROLL,SONIC ROLL', 'the retired electric brawlers');
     });
     check('PINBALL rolls into the nearest valid enemy, then each time into the nearest enemy it has NOT hit within PIN_HOP of it; an enemy farther than that ends it; no fixed count', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); f.move = 'pinball';
+        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); __pinOn(); f.move = 'pinball';
             const a = __foe(f.x + 2, f.y), b = __foe(f.x + 4.2, f.y + 0.6), c = __foe(f.x + 5.5, f.y + 2.4), d = __foe(f.x + 6.4, f.y + 4.6), far = __foe(f.x + 6.4, f.y + 9), name = p => p === a ? 'a' : p === b ? 'b' : p === c ? 'c' : p === d ? 'd' : p === far ? 'far' : 'other';
             __fire(f); const order = [], keep = applyDamage; globalThis.applyDamage = function (t, amt, src, el, rf, fx, hit) { if (src === f && hit === DMG_HIT_ALT) order.push(name(t)); return keep.apply(this, arguments); };   // (the roll's own hits: its melee, once it has stopped, is another attack)
             let fr = 0; try { while (f._pinball && fr < 900) { frame++; updateNPC(f); fr++; } } finally { globalThis.applyDamage = keep; }
@@ -244,7 +245,7 @@ function measure(w, h) {
         same(r.order.join(), 'a,b,c,d', 'the order it hit them (four collisions, no count fixed)'); ok(r.ended, 'it did not end');
     });
     check('PINBALL never hits one enemy twice and never loops: two enemies side by side are hit once each and it stops; it ends with its wait (its WIND-UP, counted from the end) and fires nothing while rolling', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); f.move = 'pinball'; const a = __foe(f.x + 2, f.y), b = __foe(f.x + 2.6, f.y + 0.4);
+        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); __pinOn(); f.move = 'pinball'; const a = __foe(f.x + 2, f.y), b = __foe(f.x + 2.6, f.y + 0.4);
             __fire(f); const hits = [], keep = applyDamage; globalThis.applyDamage = function (t, amt, src, el, rf, fx, hit) { if (src === f && hit === DMG_HIT_ALT) hits.push(t === a ? 'a' : 'b'); return keep.apply(this, arguments); };
             let fr = 0, fired = 0; try { while (f._pinball && fr < 900) { const cd = f._sigCd; frame++; updateNPC(f); evolutionTick(); if (f._pinball && f._sigCd !== cd) fired++; fr++; } } finally { globalThis.applyDamage = keep; }
             return { hits, ended: !f._pinball, cd: f._sigCd, fired, every: moveWindupFrames("pinball"), fr }; })()`);
@@ -252,16 +253,16 @@ function measure(w, h) {
         ok(r.cd >= r.every - 1 && r.cd <= r.every, 'its wait after the roll: ' + r.cd);
     });
     check('PINBALL ROLLS (never more than PIN_SPEED tiles a frame) and stops cleanly at its safety limits: a target that keeps running off ends it by PIN_MAX_FRAMES or PIN_MAX_DIST', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); f.move = 'pinball'; const a = __foe(f.x + 3, f.y); __fire(f);
+        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); __pinOn(); f.move = 'pinball'; const a = __foe(f.x + 3, f.y); __fire(f);
             let fr = 0, most = 0, x = f.x, y = f.y; while (f._pinball && fr < 2000) { a.x = f.x + 1.5; a.y = f.y + (fr % 2 ? 0.3 : -0.3); frame++; updateNPC(f); most = Math.max(most, Math.hypot(f.x - x, f.y - y)); x = f.x; y = f.y; fr++; }   // (it runs on ahead every frame: a wall, PIN_MAX_FRAMES or PIN_MAX_DIST must stop it)
             return { most, speed: PIN_SPEED, fr, ended: !f._pinball, maxF: PIN_MAX_FRAMES, maxD: PIN_MAX_DIST }; })()`);
         ok(r.most <= r.speed + 1e-9, 'a frame\'s step ' + r.most); ok(r.ended, 'it never stopped: ' + JSON.stringify(r)); ok(r.fr <= r.maxF + 2, 'it rolled ' + r.fr + ' frames');
     });
     check('PINBALL: nobody in reach, no roll and no wait spent; an enemy it cannot see (a wall between) is not picked; PINBALL is the Static Orb\'s only (the retired electric brawlers keep SONIC ROLL alone)', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); f.move = 'pinball'; __foe(f.x + PIN_RANGE + 0.7, f.y); __fire(f); const out = { roll: !!f._pinball, cd: f._sigCd };
-            out.legacy = ['manta', 'prism', 'voltring'].map(k => evoMoveIds(EVOLUTIONS[k]).join()); out.hover = evoMoveIds(EVOLUTIONS.hovershell).length;
+        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); __pinOn(); f.move = 'pinball'; __foe(f.x + PIN_RANGE + 0.7, f.y); __fire(f); const out = { roll: !!f._pinball, cd: f._sigCd };
+            out.legacy = ['manta', 'prism', 'voltring'].map(k => evoMoveIds(EVOLUTIONS[k]).join()); out.hover = evoMoveIds(EVOLUTIONS.hovershell).join();
             out.sees = (function(){ const g = { x: __C[0], y: __C[1] }, cells = partyRoomCells('arena'); return typeof _pinSees === 'function' && cells.length > 0; })(); return out; })()`);
-        same(r.roll, false, 'a roll at an enemy out of reach'); ok(!(r.cd > 0), 'a wait for nothing: ' + r.cd); same(r.legacy.join('|'), 'static_rush|static_rush|static_rush', 'the retired forms'); same(r.hover, 0, 'the Hover Shell has a move'); ok(r.sees, 'no sight check');
+        same(r.roll, false, 'a roll at an enemy out of reach'); ok(!(r.cd > 0), 'a wait for nothing: ' + r.cd); same(r.legacy.join('|'), 'static_rush|static_rush|static_rush', 'the retired forms'); same(r.hover, 'bash', 'the Hover Shell\'s moves (BASH only, build 2026-11-07ss)'); ok(r.sees, 'no sight check');
         ok(/_pinSees\(f, a\)/.test(rd('js/evolution.js')) && /facilityLosFrom\(f\.x, f\.y, a\.x, a\.y\)/.test(rd('js/evolution.js')), 'PINBALL does not ask whether it can see its target');
     });
 
@@ -423,23 +424,23 @@ function measure(w, h) {
         same(JSON.stringify(r.ab), JSON.stringify({ id: 'kinetic_launcher', name: 'KINETIC LAUNCHER', short: 'LAUNCH', icon: '⚡', col: '#ffe733', aim: ['follower', 'enemy'], use: 'fn', ask: 'fn' }), 'the ability');
         same(JSON.stringify(r.launch), JSON.stringify({ cooldown: 3600, selfDamage: 10, powerMult: 3, siteXp: 100, hitReach: 1.6, loadReach: 1.3, loadWait: 480, flight: 40, peak: 70, siteFlight: 64, sitePeak: 120, dropFlight: 28, near: 6, setupWalk: 1200, setup: 120 }), 'its numbers');
     });
-    check('the Hover Shell itself is as it was: no move, no named shot, its types (Crushing, Earthquake) and subclass (Drone), and the Technicians\' shared plain hit within 4 tiles', () => {
+    check('the Hover Shell itself is as it was: BASH its only move (build 2026-11-07ss, the design notes give it none), no named shot, its types (Crushing, Earthquake) and subclass (Drone), and the Technicians\' shared plain hit within 4 tiles', () => {
         const r = J(`({ form: EVOLUTIONS.hovershell, dmg: DMG_FORM.hovershell, sub: EQUIP_FORM_SUBCLASS.hovershell })`);
-        same(JSON.stringify(r.form), JSON.stringify({ id: 'hovershell', name: 'HOVER SHELL', element: 'electric', role: 'camper', sheet: 'img/evo/hovershell.png', cell: 144, anchor: [72, 114.2], core: [72, 91.1], noGlow: true, color: '#ffee33' }), 'its form');
+        same(JSON.stringify(r.form), JSON.stringify({ id: 'hovershell', name: 'HOVER SHELL', element: 'electric', role: 'camper', move: 'BASH', moves: ['bash'], sheet: 'img/evo/hovershell.png', cell: 144, anchor: [72, 114.2], core: [72, 91.1], noGlow: true, color: '#ffee33' }), 'its form');
         same(JSON.stringify(r.dmg), JSON.stringify({ main: 'crushing', alt: 'earthquake' }), 'its damage types'); same(r.sub, 'drone', 'its subclass');
         const N = rd('js/npc.js'); ok(/const CAMPER_ENGAGE_RADIUS = 4;/.test(N) && /\} else \{\s*followerAttack\(actor, nearestEnemy\);\s*\}/.test(N.slice(N.indexOf('CAMPER (the technician)'))), 'the Technicians\' plain hit changed');
     });
 
     // ── THE DAMAGE SYSTEM, THE TABLES AND THE WORDS ─────────
     group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
-    check('a move waits its own WIND-UP after it fires (the Rotshard\'s two moves each their own), and changing the number on the attack changes the wait', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('toxic', 'mage', 'rotshard'), t = __foe(f.x + 3, f.y); const out = {};
-            f.move = 'corrode_shot'; __fire(f); out.corrode = [f._sigCd, moveWindupFrames('corrode_shot')];
-            f.move = 'rotten_decoy'; __fire(f); out.decoy = [f._sigCd, moveWindupFrames('rotten_decoy')];
-            const keep = MOVES.corrode_shot.windup; MOVES.corrode_shot.windup = 2; f.move = 'corrode_shot'; __fire(f); out.tuned = f._sigCd; MOVES.corrode_shot.windup = keep;
-            return out; })()`);
-        same(r.corrode[0], r.corrode[1], 'CORRODE SHOT\'s wait'); same(r.decoy[0], r.decoy[1], 'ROTTEN DECOY\'s wait'); ok(r.corrode[1] !== r.decoy[1], 'the two moves share one wait');
-        same(r.tuned, 120, 'CORRODE SHOT with its wind-up set to 2 s');
+    check('a move waits its own WIND-UP after it fires (the Static Orb\'s two moves each their own), and changing the number on the attack changes the wait', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'), t = __foe(f.x + 3, f.y); const out = {};
+            f.move = 'static_rush'; __fire(f); out.roll = [f._sigCd, moveWindupFrames('static_rush')];
+            const keep = MOVES.static_rush.windup; MOVES.static_rush.windup = 2; f.x = t.x - 3; f.move = 'static_rush'; __fire(f); out.tuned = f._sigCd; MOVES.static_rush.windup = keep;
+            const r2 = __fol('toxic', 'sniper', 'rotshard'), t2 = __foe(r2.x + 3, r2.y); r2.move = 'rotten_decoy'; __fire(r2); out.decoy = [r2._sigCd, moveWindupFrames('rotten_decoy')];
+            return out; })()`);   // (the Rotshard's CORRODE SHOT is its everyday shot since build 2026-11-07ss: the Static Orb's SONIC ROLL is the move tuned here)
+        same(r.roll[0], r.roll[1], 'SONIC ROLL\'s wait'); same(r.decoy[0], r.decoy[1], 'ROTTEN DECOY\'s wait'); ok(r.roll[1] !== r.decoy[1], 'the two moves share one wait');
+        same(r.tuned, 120, 'SONIC ROLL with its wind-up set to 2 s');
     });
 
     group('ONE DAMAGE SYSTEM, ONE TABLE, ONE SET OF WORDS');
@@ -560,7 +561,7 @@ function measure(w, h) {
             const m = __foe(d.x + 0.5, d.y); for (let i = 0; i < 31; i++) { frame++; evolutionTick(); } o.mist = m.toxicWeakened > 0;
             for (let i = 0; i < 340; i++) { frame++; evolutionTick(); } o.gone = rotDecoys.length; o.info = !!MOVE_INFO['ROTTEN DECOY'];
             return o; })()`);
-        same(r.moves, 'corrode_shot,rotten_decoy', 'its two moves'); same(r.set.join(), '1,2,true,0.5,840', 'set 2 tiles from the enemy toward the Rotshard; half its max HP; 14 s to the next');
+        same(r.moves, 'rotten_decoy', 'its moves (CORRODE SHOT its everyday shot since build 2026-11-07ss)'); same(r.set.join(), '1,2,true,0.5,840', 'set 2 tiles from the enemy toward the Rotshard; half its max HP; 14 s to the next');
         same(r.lure.join(), 'true,false', 'the near enemy goes for it, the far one not'); same(r.boss, false, 'a boss goes for it'); same(r.mist, true, 'the mist poisons'); same(r.gone, 0, 'gone after 6 s'); same(r.info, true, 'INFO has its rows');
     });
     check('QUILLSTORM, THUNDERSTORM, EVENT HORIZON (the owner, 2026-11-07): the Quillstone throws 16 burning quills all round; the Thunderhead\'s storm moves with it and its bolts strike enemies under it; the Void Star\'s black hole opens on the group, drags them in and crushes them', () => {

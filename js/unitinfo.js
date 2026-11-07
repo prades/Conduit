@@ -42,6 +42,8 @@ const MOVE_INFO = {
     "CORRODE SHOT":    () => [["REACH", ROT_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("corrode_shot"))], ["DAMAGE", _uiX(ROT_MULT) + " power"], ["EFFECT", "Eats the target's armour for " + _uiSec(ROT_SHRED_FRAMES) + " and splashes the corrosion over " + ROT_SPLASH_R + " tiles"]],
     "GRAVITY SLAM":    () => [["REACH", MIMIC_RADIUS + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("gravity_slam"))], ["DAMAGE", _uiX(MIMIC_MULT) + " power"], ["EFFECT", "Flattens and slams: shoves enemies back and slows them for " + _uiSec(MIMIC_SLOW_FRAMES) + " (heavy ones are not moved)"]],
     "ERUPTION":        () => [["REACH", CALDERA_RADIUS + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("eruption"))], ["DAMAGE", _uiX(CALDERA_MULT) + " power"], ["EFFECT", "The crater bursts in toxic goo and eats the armour of everything it hits for " + _uiSec(CALDERA_SHRED_FRAMES)]],
+    "BASH":            () => [["REACH", BASH_RANGE + " tiles (it steps in to ram)"], ["WIND-UP", _uiSec(moveWindupFrames("bash"))], ["DAMAGE", _uiX(BASH_MULT) + " power, crushing"], ["EFFECT", "Rams the nearest enemy: pushed " + BASH_PUSH + " tile, stunned " + _uiSec(BASH_STUN)]],
+    "CAPACITOR DISCHARGE": () => [["WIND-UP", "none: you release it (its squad card's ⚡ chip, or here)"], ["CHARGES", "1 every " + _uiSec(moveWindupFrames("capacitor_discharge")) + ", up to " + CAP_MAX + ", standing still"], ["REACH", CAP_REACH + " tiles, then it chains " + CAP_HOP + " tiles at a time"], ["DAMAGE", _uiX(CAP_MULT) + " power a charge, to each of 1 + the charges enemies"]],
     "CHOMP":           () => [["REACH", MAW_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("chomp"))], ["DAMAGE", _uiX(MAW_MULT) + " power"], ["EFFECT", "The fangs slam down: the target is frozen stiff for " + _uiSec(MAW_STUN) + " and everything within " + MAW_SLOW_R + " tiles of it is slowed"]],
 };
 
@@ -49,6 +51,7 @@ const MOVE_INFO = {
 const SHOT_INFO = {
     "FIREBALL":        () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack-speed cards)"], ["EFFECT", "A ball of fire at the nearest enemy: a direct hit"]],
     "BURROW STRIKE":   () => [["REACH", BURROW_REACH + " tiles, an enemy it can see"], ["DAMAGE", _uiX(BURROW_MULT) + " its plain hit, as it erupts"], ["REST", _uiSec(BURROW_REST) + " after an eruption"], ["EFFECT", "It dives into the floor, travels under it to the enemy and erupts beneath it. Under the floor nothing can target or hurt it"]],
+    "CORRODE SHOT":    () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack speed)"], ["EFFECT", "Eats the target's armour for " + _uiSec(ROT_SHRED_FRAMES) + " (×" + ROT_SHRED + " defence), weaker within " + ROT_SPLASH_R + " tiles of it"]],
     "CHAIN LIGHTNING": () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack on the first enemy"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack-speed cards)"], ["JUMPS", "On to the nearest enemy not yet struck within " + CHAIN_HOP + " tiles, each " + Math.round(CHAIN_SHARE * 100) + "% of the one before, while one is that near"], ["EFFECT", "A close cluster carries it far; a gap breaks it"]],
 };
 const _uiLabel = id => { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === id) : null; return e ? e.label.toUpperCase() : String(id || "").toUpperCase(); };
@@ -69,16 +72,19 @@ function followerInfo(a) {
             out.attacks.push({ h: "SPECIAL ATTACK · " + sc.name, note: "Its primary attack while the card is set (SPECIAL ATTACK, on the roster and its squad card). It makes no everyday hit between strikes.",
                 rows: [["REACH", A.reach + " tiles, an enemy it can see"], ...(A.mult ? [["DAMAGE", _uiX(A.mult) + " its attack"]] : []), ["WAIT", A.wait + " s " + (A.lasts ? "after it ends (it lasts " + A.lasts + " s)" : "between strikes")], ["READY", w > 0 ? "in " + Math.ceil(w / 60) + " s" : "now"], ["EFFECT", sc.text]] }); }
     }   // a form's named everyday attack (FIREBALL, CHAIN LIGHTNING, BURROW STRIKE)
-    const altIds = ev && typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, ev, id)) : [];
-    if (ev && altIds.length) {
+    const mvd = typeof followerMoveDef === "function" ? followerMoveDef(a) : ev;   // (its form's moves, or BASH before it evolves: js/moves.js, build 2026-11-07ss)
+    const altIds = mvd && typeof evoMoveIds === "function" ? evoMoveIds(mvd).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, mvd, id)) : [];
+    if (altIds.length) {
         // ITS ALTERNATES (js/moves.js "THE ALTERNATE ATTACK IS A CHOSEN MODE"): each move it may use, what it does, and the mode it fights in now: its NORMAL ATTACK or one alternate it is locked to
-        const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, ev) : null, w = a._altWind > 0 ? Math.ceil(a._altWind / 60) : 0;
-        for (const id of altIds) { const m = MOVES[id], on = !!cur && cur.id === id; out.attacks.push({ h: "ALTERNATE · " + m.name + (on ? " · LOCKED ON" : ""), note: ev.name + (on ? (w ? " · WINDING UP, " + w + " S (IT STANDS STILL)" : a._altLive ? " · ITS EFFECT IS ON: IT WINDS UP AGAIN WHEN IT ENDS" : " · READY") : ""), rows: MOVE_INFO[m.name] ? MOVE_INFO[m.name]() : [] }); }
+        const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, mvd) : null, w = a._altWind > 0 ? Math.ceil(a._altWind / 60) : 0, who = ev ? ev.name : "BEFORE IT EVOLVES";
+        for (const id of altIds) { const m = MOVES[id], on = !!cur && cur.id === id, cap = on && m.manual;
+            out.attacks.push({ h: "ALTERNATE · " + m.name + (on ? " · LOCKED ON" : ""), note: who + (cap ? " · " + (a._cap || 0) + " OF " + CAP_MAX + " CHARGES" + ((a._cap || 0) < CAP_MAX ? " (IT STANDS STILL TO CHARGE)" : " · FULL") : on ? (w ? " · WINDING UP, " + w + " S (IT STANDS STILL)" : a._altLive ? " · ITS EFFECT IS ON: IT WINDS UP AGAIN WHEN IT ENDS" : " · READY") : ""), rows: MOVE_INFO[m.name] ? MOVE_INFO[m.name]() : [],
+                choices: cap ? [{ id: "release", label: "RELEASE ⚡ " + (a._cap || 0) + "/" + CAP_MAX + (typeof capacitorWhyNot === "function" && capacitorWhyNot(a) ? " · " + capacitorWhyNot(a) : ""), act: () => capacitorRelease(a) }] : undefined, unit: a }); }
         out.attacks.push({ h: "ATTACK", note: "Its normal attack, or one alternate it is locked to until you switch it back: it winds up standing still, strikes, and winds up again when the strike's effect is over. On an alternate it makes no other attack, an attack order included.",
             choices: [{ id: null, label: "NORMAL ATTACK", on: !cur }].concat(altIds.map(id => ({ id, label: MOVES[id].name, on: !!cur && cur.id === id }))), unit: a });
     }
-    else if (ev) out.attacks.push({ h: "SIGNATURE", note: "The " + ev.name + " has no signature move yet.", rows: [] });   // (the technicians' forms, the Rimestar and the core forms: their moves are to come)
-    else {
+    if (ev && !altIds.length) out.attacks.push({ h: "SIGNATURE", note: "The " + ev.name + " has no signature move yet.", rows: [] });   // (none now: every form has a second attack since build 2026-11-07ss)
+    else if (!ev) {
         const f = typeof evolutionFor === "function" ? evolutionFor(a) : null;
         out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health, attack and special attack)" + (f.move ? ", with the move " + f.move + ":" : ". It has no signature move yet.") : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]() : [] });
     }
@@ -86,7 +92,7 @@ function followerInfo(a) {
     { const ab2 = typeof techAbility2Info === "function" ? techAbility2Info(a) : null; if (ab2) out.attacks.push(ab2); }   // the Thermite Burrower's second ability, FAULTLINE
     const own = a.evolved && typeof FORM_ULTIMATES !== "undefined" && FORM_ULTIMATES[a.evolved] && FORM_ULTIMATES[a.evolved].desc ? FORM_ULTIMATES[a.evolved] : null;   // (its form's own Ultimate, js/elements.js)
     const u = own ? { name: own.name, desc: own.desc } : ELEMENT_ULTIMATES.find(x => x.el === a.element);
-    if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". Double-tap the follower when it is fully charged.", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
+    if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". When it is fully charged, tap ULTIMATE on its squad card (or double-tap the follower).", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
     // JOBS: the squad, or a room it holds (js/party.js)
     out.jobs.push({ h: "RIGHT NOW", rows: [["STANCE", a.post && typeof partyRoomName === "function" ? "HOLDING THE " + partyRoomName(a.post).toUpperCase() : typeof partyIsMember === "function" && partyIsMember(a) ? "IN THE SQUAD, FOLLOWING YOU" : a.stance === "hold" || (a.job && a.job.type === "move") ? "HOLDING A POST" : "FOLLOWING YOU"]] });
     // STATS
@@ -132,7 +138,7 @@ function _uiRenderSections(body, secs) {
     for (const s of secs) {
         const sec = _uiEl("div", "ui-sec"); sec.appendChild(_uiEl("div", "ui-h", s.h));
         if (s.note) sec.appendChild(_uiEl("div", "ui-note", s.note));
-        if (s.choices) { const row = _uiEl("div", "ui-choices"); for (const c of s.choices) { const b = _uiEl("button", "ui-choice" + (c.on ? " on" : ""), c.label); b.addEventListener("click", ev => { ev.stopPropagation(); if (s.unit && typeof followerAltSet === "function") followerAltSet(s.unit, c.id); if (typeof unitInfoOpen === "function") unitInfoOpen(s.unit, "attacks"); }); row.appendChild(b); } sec.appendChild(row); }
+        if (s.choices) { const row = _uiEl("div", "ui-choices"); for (const c of s.choices) { const b = _uiEl("button", "ui-choice" + (c.on ? " on" : ""), c.label); b.addEventListener("click", ev => { ev.stopPropagation(); if (c.act) c.act(); else if (s.unit && typeof followerAltSet === "function") followerAltSet(s.unit, c.id); if (typeof unitInfoOpen === "function") unitInfoOpen(s.unit, "attacks"); }); row.appendChild(b); } sec.appendChild(row); }
         for (const r of s.rows || []) { const row = _uiEl("div", "ui-row"); row.appendChild(_uiEl("span", "ui-k", r[0])); row.appendChild(_uiEl("span", "ui-v", r[1])); sec.appendChild(row); }
         body.appendChild(sec);
     }

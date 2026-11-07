@@ -83,6 +83,7 @@ const DMG_HIT_ALT = Object.freeze({ which: "alt", stat: "atk" });            // 
 const DMG_HIT_SPECIAL = Object.freeze({ which: "special", stat: "sp" });     // an element special, a fire eruption
 const DMG_HIT_SPECIAL_ATK = Object.freeze({ which: "special", stat: "atk" });// the fire forms' FIRE BOMBS move (it reads ATK)
 const DMG_HIT_LAUNCH = Object.freeze({ which: "alt", stat: "atk", type: "earthquake" });   // a follower thrown by the Kinetic Launcher, landing
+const DMG_HIT_BASH = Object.freeze({ which: "alt", stat: "atk", type: "crushing" });      // BASH (js/evolution.js bash): Crushing, whatever the follower's form
 const DMG_HIT_GUN = Object.freeze({ type: "projectile", player: true });     // the player's guns, and the turrets
 const DMG_HIT_LASH = Object.freeze({ type: "slashing", player: true });      // the Mutator's lash
 const DMG_HIT_PUNCH = Object.freeze({ type: "crushing", player: true });     // the Technomancer's gauntlet

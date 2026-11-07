@@ -689,3 +689,8 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - The six Crystalline class cards, each +50% to one stat.
 - Quill Burst's numbers (range 4, +25% on a hit, every 4 seconds, no burn). (**Superseded** by your follower combat brief, 2026-11-02: QUILL BURST becomes five quills fired at once, each stopping at its first enemy, with no splash; its numbers are open again, `FOLLOWER-COMBAT-REDESIGN.md`. The code still runs the old rules until that is built.)
 - The market: everything in sections 1b and 1c.
+
+## Second attacks and Ultimates (build `2026-11-07ss`)
+- **The eight forms on BASH** (Jelly Ram, Rimestar, Hornshell, Hammer Slug, Goo Proxy, Blight Spider, Hover Shell, Igloo Skater): their own second attacks, from the design archive (Notion, not reachable this session) or new designs. BASH stays until then.
+- **BASH's and CAPACITOR DISCHARGE's numbers** are the agent's (provisional): see `COMBAT.md`.
+- **CAPACITOR DISCHARGE:** should a full Static Orb move (it does now), and should a follower posted in a room (no squad card) be released from anywhere but its INFO?

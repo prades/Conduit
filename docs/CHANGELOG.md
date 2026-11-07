@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **ss · Second attacks for every follower; the Ultimates on the squad cards.** Owner's requests (2026-11-07): "inherit second attacks on all the followers and have more visible ultimate bar on followers and access to use them", "Inherit from the design notes"; then "BASH for now", "Apply both" and "Squad cards + world". Branch `claude/start-game-project-HSh7Z`.
+  - **BASH** is the second attack of the eight forms the design notes give none (Jelly Ram, Rimestar, Hornshell, Hammer Slug, Goo Proxy, Blight Spider, Hover Shell, Igloo Skater) and of every follower before it evolves: a short ram, 1.5 × its attack (Crushing), a tile's push, a 0.5 s stun, 4 s wind-up. A Mage on it walks in. Numbers provisional.
+  - **CAPACITOR DISCHARGE** replaces the Static Orb's PINBALL (the design notes): it stands still storing up to 4 charges (one a 1.5 s), and you release them from its squad card's ⚡ chip or its INFO into a short chain. Numbers provisional.
+  - **CORRODE SHOT** is the Rotshard's everyday shot (the design notes' primary); ROTTEN DECOY its second attack.
+  - **Ultimates:** each squad card has an Ultimate meter; full, it glows and a tap fires the Ultimate. The bar over each follower is bigger and glows when full. Double-tap still works.
+  - **The roster's settings are slimmer** (44 px, were 54): every follower now has an ATTACK setting, and the five settings with RE-ROLL · INFO ▸ · EXILE under them stay in view at 1024 × 768 and 1180 × 820 (without it, the three buttons needed a scroll).
+  - The unevolved follower's new look (the owner's sketch) was modelled and then set aside on the owner's word ("Skip the redesign"): the glass egg stays.
+  - Tests: new `tests/secondattacks.js`; moves, evolution, followercombat, unitinfo, bonds, commandcenter, squadfly, squadui, carousel, cards and techabilities updated for the new second attacks; corners' stale objective count (1/7 → 1/9, from build qq) corrected. Not playtested.
+
 - **rr · EQUIP NOW.** Owner's request (2026-11-07): "an equip now feature that whenever you open up a new pack or whenever you're looking through your collection, you can select equip now and it pulls up a sliding roster menu ... it shows the creatures that have two cards that you are able to replace the card with, and ... allows you to switch the cards from that menu as well". Branch `claude/start-game-project-HSh7Z`.
   - **EQUIP NOW** is under the card on the collection's stage and under each card of a pack's reveal.
   - It opens a pop-out: the followers the card fits in a sliding row (squad first; YOU for a Player card), each with its CARD 1 and CARD 2 (or SPECIAL ATTACK) showing the card on each.

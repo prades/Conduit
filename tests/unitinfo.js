@@ -63,12 +63,14 @@ function findChromium() {
         const miss = JSON.parse(run(`JSON.stringify(Object.values(EVOLUTIONS).filter(e => e.move && typeof MOVE_INFO[e.move] !== 'function').map(e => e.id + ':' + e.move))`));
         same(miss.length, 0, 'forms without an info entry: ' + miss.join(', '));
     });
-    check('a form with no move yet (the new technicians\') says so, evolved or not', () => {
+    check('every follower has a second attack (build 2026-11-07ss): BASH before it evolves, and on a form the design notes give none (the new technicians\'); its INFO shows it with its ATTACK choice, and says what it evolves into', () => {
         const r = JSON.parse(run(`(function(){ spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.role = 'camper'; f.level = 5;
-            const before = followerInfo(f).attacks.find(s => /^SIGNATURE/.test(s.h)); f.evolved = 'igloo'; f._moltAt = -1e9; const after = followerInfo(f).attacks.find(s => /^SIGNATURE/.test(s.h));
+            const pick = () => { const i = followerInfo(f); return { sig: i.attacks.find(s => /^SIGNATURE/.test(s.h)) || null, alts: i.attacks.filter(s => /^ALTERNATE/.test(s.h)).map(s => s.h), choice: (i.attacks.find(s => s.h === 'ATTACK') || { choices: [] }).choices.map(c => c.label) }; };
+            const before = pick(); f.evolved = 'igloo'; f._moltAt = -1e9; const after = pick();
             followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f); return JSON.stringify({ before, after }); })()`));
-        ok(/into the IGLOO SKATER/.test(r.before.note) && /no signature move yet/.test(r.before.note) && !/undefined/.test(r.before.note), 'before: ' + r.before.note);
-        same(r.after.note, 'The IGLOO SKATER has no signature move yet.', 'after'); same(r.after.rows.length, 0, 'rows');
+        ok(r.before.sig && /into the IGLOO SKATER/.test(r.before.sig.note) && /with the move BASH/.test(r.before.sig.note) && !/undefined/.test(r.before.sig.note), 'before: ' + JSON.stringify(r.before.sig));
+        same(r.before.alts.join(), 'ALTERNATE · BASH', 'before: its alternates'); same(r.before.choice.join(), 'NORMAL ATTACK,BASH', 'before: its ATTACK choice');
+        same(r.after.sig, null, 'after: a SIGNATURE section'); same(r.after.alts.join(), 'ALTERNATE · BASH', 'after: its alternates'); same(r.after.choice.join(), 'NORMAL ATTACK,BASH', 'after: its ATTACK choice');
     });
     check('every element with an ultimate has it described, under the name the game gives it (js/elements.js FOLLOWER_ULTIMATES); core has none (its Shield Grant went with the followers\' shield), and its card shows none', () => {
         same(run('ELEMENTS.filter(e => FOLLOWER_ULTIMATES[e.id]).every(e => ELEMENT_ULTIMATES.some(u => u.el === e.id))'), true, 'an element with an ultimate the card does not describe');

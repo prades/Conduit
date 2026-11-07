@@ -725,6 +725,15 @@ const FORM_ULTIMATES = {
 };
 // The Ultimate a follower fires: its form's own, else its element's (null: none, a core form without its own)
 function followerUltimate(a) { if (!a) return null; return (a.evolved && FORM_ULTIMATES[a.evolved]) || FOLLOWER_ULTIMATES[a.element] || null; }
+// FIRE A FOLLOWER'S ULTIMATE NOW (build 2026-11-07ss; the owner: "access to use them"): its squad card's ULTIMATE (js/party.js) and a double-tap on it (js/input.js) both come here. A bonded pair, both full
+// and close, fire the DUO ultimate (js/bonds.js). True when one went off (its charge spent); an Ultimate that found nothing to act on (no enemy for an eruption) keeps its charge.
+function followerUltFire(f) {
+    if (!f || f.dead || !(f.ultimateCharge >= 100)) return false;
+    if (typeof tryDuoUltimate === "function" && tryDuoUltimate(f)) return true;
+    const u = followerUltimate(f); if (!u) return false;
+    u.execute(f);
+    return !(f.ultimateCharge >= 100);
+}
 // A hit on a follower wearing a jelly shield (js/helpers.js applyDamage): the shield takes it first, up to what it has left, and knocks the attacker back. Returns what is left of the hit.
 function jellyShieldTake(t, dmg, source) {
     const S = t.jellyShield, f0 = typeof frame !== "undefined" ? frame : 0;

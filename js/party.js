@@ -234,7 +234,7 @@ function partySlotsBuild(root, onClick) {
     root.textContent = ""; const slots = [];
     for (let i = 0; i < PARTY.max; i++) {
         const el = document.createElement("div"); el.className = "sb-slot empty"; el.setAttribute("data-slot", String(i));
-        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><button class="sb-ab2" aria-label="Second ability"></button><span class="sb-open">+ OPEN SLOT</span>';   // (sb-ab: a technician's ability; sb-ab2: the Thermite Burrower's second, FAULTLINE: js/techabilities.js)
+        el.innerHTML = '<canvas class="sb-thumb" width="52" height="52"></canvas><span class="sb-no"></span><span class="sb-txt"><b class="sb-name"></b><span class="sb-row"><i class="sb-sub"></i><button class="sb-x" aria-label="Remove from the squad">\u2715 REMOVE</button></span><span class="sb-hp"><u></u><i class="sb-hpl">HP</i><em class="sb-hpn"></em></span><span class="sb-xp"><u></u></span><button class="sb-ult" aria-label="Ultimate" hidden><u></u><i class="sb-ultl">ULT</i><em class="sb-ultn"></em></button></span><button class="sb-info" aria-label="Info">i</button><button class="sb-ab" aria-label="Ability"></button><button class="sb-ab2" aria-label="Second ability"></button><span class="sb-open">+ OPEN SLOT</span>';   // (sb-ab: a technician's ability; sb-ab2: the Thermite Burrower's second, FAULTLINE: js/techabilities.js)
         const no = el.querySelector(".sb-no"); if (no) no.textContent = String(i + 1);   // (the number and the ✕ REMOVE are the Command Center carousel's: js/commandcenter.js; game.html hides them on the bar)
         root.appendChild(el); slots.push(el);
     }
@@ -245,7 +245,7 @@ function partyBarBuild(root) { if (!_sbEls || _sbEls.root !== root) _sbEls = par
 function _partyTapped(ev) {
     const t = ev.target && ev.target.closest ? ev.target : null; if (!t) return null;
     const slot = t.closest(".sb-slot"); if (!slot) return null;
-    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), call: slot._call || null };
+    return { f: slot._unit, info: !!t.closest(".sb-info"), x: !!t.closest(".sb-x"), ab: !!t.closest(".sb-ab"), ab2: !!t.closest(".sb-ab2"), ult: !!t.closest(".sb-ult"), call: slot._call || null };
 }
 function partyBarClick(ev) {
     const hit = _partyTapped(ev); if (!hit) return;
@@ -253,7 +253,15 @@ function partyBarClick(ev) {
     if (hit.info) { if (f && typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
     // A TECHNICIAN'S ABILITY (js/techabilities.js): its chip aims it (again: calls the aim off); while one is aimed, a tap on a squad card picks that follower for it
     if (f && hit.ab2 && typeof techChip2Tap === "function") { techChip2Tap(f); partyBarRender(true); return; }   // (the Thermite Burrower's second chip: FAULTLINE)
-    if (f && hit.ab && typeof techChipTap === "function") { techChipTap(f); partyBarRender(true); return; }
+    if (f && hit.ab) {   // the chip: a technician's ability, else a CAPACITOR DISCHARGE's release (js/evolution.js altChipTap)
+        if (!(typeof techChipState === "function" && techChipState(f)) && typeof altChipState === "function" && altChipState(f)) altChipTap(f); else if (typeof techChipTap === "function") techChipTap(f);
+        partyBarRender(true); return;
+    }
+    // ITS ULTIMATE (build 2026-11-07ss; the owner: "more visible ultimate bar on followers and access to use them"): the meter on its card, full, fires it (js/elements.js followerUltFire); not full, a tap is a tap on the card
+    if (f && hit.ult && f.ultimateCharge >= 100 && typeof followerUltFire === "function") {
+        if (!followerUltFire(f) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "NOTHING TO HIT", color: "#ffe733", life: 60, vy: -0.05, size: 10 });
+        partyBarRender(true); return;
+    }
     if (f && typeof techAimActive === "function" && techAimActive() && typeof techAimPickFollower === "function" && techAimPickFollower(f)) { partyBarRender(true); return; }
     if (!f) { if (hit.call) { partyAdd([hit.call]); if (typeof mixToolRender === "function") mixToolRender(true); } else if (typeof ccShowCandidates === "function") ccShowCandidates(); else if (typeof ccOpen === "function") ccOpen("roster"); return; }   // an open slot: the one follower that holds a room comes back; else the roster, showing the followers that could fill it
     if (typeof ccToggle === "function" && ccToggle(f)) { _sfLast = f; _sfAway = false; }   // (the card that opens beside the stack is the last one tapped, even after it was put away: js/squadfly.js)
@@ -271,6 +279,19 @@ function _partyXpBar(el, f) {
     el._xpSeen = p.xp; el._xpUnit = f; if (el._xpGain && Date.now() > el._xpGain) { el._xpGain = 0; el.classList.remove("xp-gain"); }
     _sbSet(el, "title", "LV " + p.level + " · XP " + xpText(p) + (p.evo ? " · " + xpEvoText(p) : f.evolved ? " · EVOLVED" : ""));
 }
+// a card's ULTIMATE (build 2026-11-07ss): a meter under the XP in its element's colour, ULT and the charge in it; full, gold and glowing, ULTIMATE ▲ and TAP: a tap fires it (partyBarClick). None for one with no Ultimate.
+function _partyUltBar(el, f) {
+    const bar = el.querySelector(".sb-ult"); if (!bar) return;
+    const u = typeof followerUltimate === "function" ? followerUltimate(f) : null;
+    if (!u || typeof f.ultimateCharge !== "number") { _sbSet(bar, "hidden", true); return; }
+    _sbSet(bar, "hidden", false);
+    const pct = Math.max(0, Math.min(100, Math.round(f.ultimateCharge))), full = pct >= 100, fill = bar.querySelector("u"), w = pct + "%";
+    if (fill && fill.style.width !== w) fill.style.width = w;
+    if (bar.classList.contains("full") !== full) bar.classList.toggle("full", full);
+    const l = bar.querySelector(".sb-ultl"), n = bar.querySelector(".sb-ultn");
+    if (l) _sbSet(l, "textContent", full ? "ULTIMATE \u25b2" : "ULT"); if (n) _sbSet(n, "textContent", full ? "TAP" : pct + "%");
+    _sbSet(bar, "title", "ULTIMATE · " + String(u.name || "").toUpperCase() + (full ? " · TAP TO FIRE" : " · " + pct + "%"));
+}
 // each slot shows the follower in that card slot of the squad (partySlot), or is open
 // An OPEN slot says what a tap on it does: with exactly one follower holding a room it is "+ CALL <that one>" and a tap brings it back (REPORTED: after HOLD, "whenever I click on that follower [...] it doesn't come"); with none or several it is "+ OPEN SLOT" and a
 // tap lists the followers that could fill it (js/commandcenter.js ccShowCandidates): one must not be picked for you when there is a choice.
@@ -286,8 +307,8 @@ function partySlotsUpdate(E, lit) {
         const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
         if (el._col !== col) { el._col = col; if (el.style && typeof el.style.setProperty === "function") el.style.setProperty("--c", col); }
         el.classList.toggle("sel", lit ? !!lit(f) : typeof selectedUnits !== "undefined" && selectedUnits.has(f));
-        { const cs = !lit && typeof techChipState === "function" ? techChipState(f) : null, ab = el.querySelector(".sb-ab");   // a technician's ability chip: on the bar only (not the Command Center's squad box)
-          el.classList.toggle("has-ab", !!cs); if (ab) { _sbSet(ab, "textContent", cs ? cs.text : ""); _sbSet(ab, "className", "sb-ab" + (cs ? " " + cs.cls : "")); }
+        { const cs = lit ? null : (typeof techChipState === "function" && techChipState(f)) || (typeof altChipState === "function" && altChipState(f)) || null, ab = el.querySelector(".sb-ab");   // a technician's ability chip (or a CAPACITOR DISCHARGE's: js/evolution.js altChipState): on the bar only (not the Command Center's squad box)
+          el.classList.toggle("has-ab", !!cs); if (ab) { _sbSet(ab, "textContent", cs ? cs.text : ""); _sbSet(ab, "className", "sb-ab" + (cs ? " " + cs.cls : "")); _sbSet(ab, "title", cs && cs.title ? cs.title : ""); }
           const cs2 = !lit && typeof techChip2State === "function" ? techChip2State(f) : null, ab2 = el.querySelector(".sb-ab2");   // the Thermite Burrower's second chip (FAULTLINE), above the first
           el.classList.toggle("has-ab2", !!cs2); if (ab2) { _sbSet(ab2, "textContent", cs2 ? cs2.text : ""); _sbSet(ab2, "className", "sb-ab2" + (cs2 ? " " + cs2.cls : "")); } }
         const name = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER", sub = "LV " + (f.level || 1) + (st ? " · " + st.text : "");
@@ -296,7 +317,7 @@ function partySlotsUpdate(E, lit) {
         const frac = Math.max(0, Math.min(1, (f.health || 0) / (f.maxHealth || 1))), w = Math.round(frac * 100) + "%", cls = frac > 0.5 ? "" : frac > 0.25 ? "mid" : "low";
         if (hp.style.width !== w) hp.style.width = w; if (hp.className !== cls) hp.className = cls;
         { const hpn = el.querySelector(".sb-hpn"); if (hpn) _sbSet(hpn, "textContent", Math.max(0, Math.round(f.health || 0)) + "/" + Math.max(1, Math.round(f.maxHealth || 1))); }   // the numbers in the bar
-        _partyXpBar(el, f);
+        _partyXpBar(el, f); _partyUltBar(el, f);
         const key = f.evolved + "|" + f.element; if (el._thumbKey !== key && typeof _ccThumb === "function") { el._thumbKey = key; el._thumbDone = false; _ccThumb(el.querySelector(".sb-thumb"), f); }
         if (!el._thumbDone && f.evolved && typeof EVOLUTIONS !== "undefined" && typeof _ccThumb === "function") { const d = EVOLUTIONS[f.evolved]; if (d && d._img && d._img.complete) { el._thumbDone = true; _ccThumb(el.querySelector(".sb-thumb"), f); } }   // (an evolved form's picture may still have been loading)
     }

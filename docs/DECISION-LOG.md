@@ -2255,3 +2255,22 @@ Implemented and tested (the nearby suites and a browser run of the whole trip); 
 
 ### Status
 Implemented and tested (`tests/equipnow.js` and the nearby card suites); seen in screenshots; not playtested.
+
+## DECISION: Second attacks for every follower; the Ultimates on the squad cards
+- Date and build: 2026-11-07, build `2026-11-07ss`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Skip the redesign, let's inherit second attacks on all the followers and have more visible ultimate bar on followers and access to use them", then "Inherit from the design notes".
+- Answers: the eight forms the design notes (`NEXT-PHASE-ROADMAP.md` §12.3, `COMBAT.md`) give no second attack get **"BASH for now"**; the notes' changes to two followers: **"Apply both"**; the Ultimates: **"Squad cards + world"**. Earlier the same day: BASH was "Ram and knock back", the unevolved follower's alternate.
+
+### Decision
+- Every follower has a second attack, chosen as a locked mode as before. The eight forms without one, and every follower before it evolves, have BASH until each gets its own.
+- The Static Orb's PINBALL is replaced by CAPACITOR DISCHARGE (stationary charging, released by the player). The Rotshard's CORRODE SHOT is its everyday shot; ROTTEN DECOY its second attack.
+- Each squad card shows its follower's Ultimate meter; full, a tap on it fires the Ultimate. The bar over each follower is bigger and glows when full. The double-tap stays.
+- The unevolved follower's redesign (the owner's sketch, modelled as No. 890) is set aside: "Skip the redesign". Its model is not in the repository.
+
+### Chosen by the agent (provisional)
+- BASH's numbers (reach 1.8 tiles, 1.5 × attack, 1 tile push, 0.5 s stun, 4 s wind-up) and that a Mage locked on it walks in.
+- CAPACITOR DISCHARGE's numbers (a charge each 1.5 s, 4 at most, 2-tile reach, 2.5-tile hops, 1 + charges targets, 0.5 × attack × charges each), that it may move once full, that RETREAT stops the charging, and its release from the squad card's chip and INFO.
+- The meter's look and the cards' new heights; the world bar's size.
+
+### Status
+Implemented and tested (`tests/secondattacks.js` and the updated suites); not playtested.

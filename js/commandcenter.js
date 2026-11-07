@@ -111,27 +111,27 @@ function ccApplyPlayStyle(units, id) {
     return n;
 }
 // SIGNATURE MOVE for a group (the following update's Part 4; docs/PLAYER-CLASSES.md §5: "Move choice is per follower, plus a squad setter"). Each picked follower whose
-// form can use move `id` takes it (as its INFO choice does, js/unitinfo.js); one that cannot keeps its own, and ccMoveNote says why. A follower not evolved has no move.
+// form can use move `id` takes it (as its INFO choice does, js/unitinfo.js); one that cannot keeps its own, and ccMoveNote says why. A follower not evolved has BASH (js/moves.js followerMoveDef, build 2026-11-07ss).
 let _ccMoveNote = null;   // { units, text }: shown under the setter while the same followers are picked
 function ccApplyMove(units, id) {
     const out = { set: 0, kept: [] }, normal = id === "normal";
     if (!normal && (typeof MOVES === "undefined" || !MOVES[id])) return out;
     for (const a of units) {
-        if (!a || a.dead || a.isClone || !a.evolved) continue;
-        const d = typeof evolvedDef === "function" ? evolvedDef(a) : null;
+        const d = typeof followerMoveDef === "function" ? followerMoveDef(a) : null;
+        if (!a || a.dead || !d) continue;
         if (!normal && !evoMoveAllowed(a, d, id)) { out.kept.push(a); continue; }
         followerAltSet(a, normal ? null : id); out.set++;
     }
-    const why = a => { const d = evolvedDef(a), cur = evoMoveOf(a, d); return ((d && d.name) || "IT") + " KEEPS " + (cur ? cur.name : "ITS NORMAL ATTACK") + (evoMoveIds(d).indexOf(id) >= 0 ? " (NOT FOR YOUR CLASS)" : " (" + MOVES[id].name + " IS NOT ONE OF ITS MOVES)"); };
+    const why = a => { const d = followerMoveDef(a), cur = evoMoveOf(a, d); return ((d && d.name) || "IT") + " KEEPS " + (cur ? cur.name : "ITS NORMAL ATTACK") + (evoMoveIds(d).indexOf(id) >= 0 ? " (NOT FOR YOUR CLASS)" : " (" + MOVES[id].name + " IS NOT ONE OF ITS MOVES)"); };
     _ccMoveNote = out.kept.length ? { units: units.slice(), text: out.kept.map(why).join(" \u00b7 ") } : null;
     return out;
 }
 // The attacks open to the picked: NORMAL ATTACK, then every alternate any of them can use, each with how many can. null when none of them has an alternate.
 function ccMoveChoices(units) {
-    const evo = units.filter(a => a && !a.dead && !a.isClone && a.evolved), ids = [];
-    for (const a of evo) { const d = evolvedDef(a); for (const id of evoMoveIds(d).filter(id => evoMoveAllowed(a, d, id))) if (ids.indexOf(id) < 0) ids.push(id); }
+    const evo = units.filter(a => a && !a.dead && typeof followerMoveDef === "function" && followerMoveDef(a)), ids = [];   // (every follower has its moves now: BASH before it evolves)
+    for (const a of evo) { const d = followerMoveDef(a); for (const id of evoMoveIds(d).filter(id => evoMoveAllowed(a, d, id))) if (ids.indexOf(id) < 0) ids.push(id); }
     if (!ids.length) return null;
-    return { evo, cur: ccCommon(evo, a => (evoMoveOf(a) || {}).id || "normal"), list: [{ id: "normal", can: evo.length }].concat(ids.map(id => ({ id, can: evo.filter(a => evoMoveAllowed(a, evolvedDef(a), id)).length }))) };
+    return { evo, cur: ccCommon(evo, a => (evoMoveOf(a) || {}).id || "normal"), list: [{ id: "normal", can: evo.length }].concat(ids.map(id => ({ id, can: evo.filter(a => evoMoveAllowed(a, followerMoveDef(a), id)).length }))) };
 }
 // Stance (the battle tool's HOLD and COME, js/mixtool.js): HOLD posts each follower in the room it is in, COME calls it back to the squad (js/party.js partyApplyStance, which
 // hands the clones to _ccApplyStanceUnits: a clone has no post, it holds where it stands).

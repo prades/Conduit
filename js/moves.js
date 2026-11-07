@@ -32,6 +32,12 @@ const MOVES = {
     magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        windup: 20, fn: f => magmaVent(f) },
     // the Rotshard's second move, picked on its INFO (the owner, 2026-11-07: "Short lure"; js/evolution.js rottenDecoy)
     rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      windup: 14, fn: f => rottenDecoy(f) },
+    // BASH (build 2026-11-07ss; the owner: "Ram and knock back", then "BASH for now" as the second attack of the eight forms the design notes give none, and of every follower before it
+    // evolves: js/evolution.js bash). `close`: a Mage locked on it closes in to use it (js/npc.js), as a Brawler does.
+    bash:              { id: "bash",              name: "BASH",              windup: 4, close: true, fn: f => bash(f) },
+    // CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; js/evolution.js capacitorTick). `manual`: no
+    // wind-up cycle: it stores charges, standing still, and the player releases them (its squad card's chip, its INFO). `windup` is the time one charge takes.
+    capacitor_discharge: { id: "capacitor_discharge", name: "CAPACITOR DISCHARGE", windup: 1.5, manual: true, fn: f => capacitorRelease(f) },
 };
 // A move's wind-up in frames (60 a second). A row without one waits 5 s.
 function moveWindupFrames(id) { const m = MOVES[id]; return Math.round((m && m.windup > 0 ? m.windup : 5) * 60); }
@@ -56,25 +62,35 @@ function evoMoveAllowed(f, d, id) {
 // squad card on the HUD, or the Command Center's setter). On a move it is LOCKED to it until switched back: no everyday hit, no shot, no card attack, an attack order included (js/combat.js followerAttack,
 // js/npc.js). The cycle (js/evolution.js altTick): an enemy it can see within the move's reach → its WIND-UP (moveWindupFrames; it stands still, js/npc.js) → the move → its EFFECT (what the move left in the
 // world) → when that is over, the next wind-up.
+// BEFORE IT EVOLVES (build 2026-11-07ss; the owner: "inherit second attacks on all the followers"): a follower that has not evolved has a second attack too, BASH. Its moves, as a form's.
+const UNEVOLVED_MOVES = { id: "unevolved", name: "IT", moves: ["bash"] };
+// The moves a follower may use: its form's, or UNEVOLVED_MOVES before it evolves; null for a clone or anything not a follower
+function followerMoveDef(f) {
+    if (!f || f.isClone) return null;
+    if (f.evolved) return typeof evolvedDef === "function" ? evolvedDef(f) : null;   // (an evolved form's, as before: anything with `evolved`)
+    return f.isFollower === true ? UNEVOLVED_MOVES : null;
+}
 // The move it is locked to now: its chosen one if that is still open to it; null on its normal attack (and for a form with none).
 function evoMoveOf(f, d) {
-    d = d || (typeof evolvedDef === "function" ? evolvedDef(f) : null);
+    d = d || followerMoveDef(f);
     if (!d || !f || !f.alt) return null;
     return evoMoveAllowed(f, d, f.alt) ? MOVES[f.alt] : null;
 }
 function followerAltLocked(f) { return !!(f && f.alt && evoMoveOf(f)); }
+// locked on a move that needs it close (BASH): the reach it closes to, else 0 (js/npc.js: a Mage locked on one walks in, as a Brawler does)
+function followerAltCloseReach(f) { const m = f && f.alt ? evoMoveOf(f) : null; return m && m.close ? moveReach(m.id) : 0; }
 // Switch a follower's attack: a move id it may use, or null (its normal attack). True when it changed. A switch starts the move's cycle afresh (no wind-up carried over).
 function followerAltSet(f, id) {
     if (!f) return false;
-    const d = typeof evolvedDef === "function" ? evolvedDef(f) : null;
+    const d = followerMoveDef(f);
     if (id && !(d && evoMoveAllowed(f, d, id))) return false;   // (a move that is not open to it changes nothing)
     const next = id || null;
     if ((f.alt || null) === next) return false;
-    f.alt = next; f._altWind = 0; f._altLive = null;
+    f.alt = next; f._altWind = 0; f._altLive = null; f._cap = 0; f._capT = 0;   // (a CAPACITOR DISCHARGE's stored charges go with a switch)
     return true;
 }
 // A move's reach (tiles): it winds up only with an enemy it can see this close, the reach the move itself looks in
 const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
     corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, pinball: () => PIN_RANGE,
-    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE };
+    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, bash: () => BASH_RANGE, capacitor_discharge: () => CAP_REACH };
 function moveReach(id) { try { const r = MOVE_REACH[id] ? MOVE_REACH[id]() : 0; return r > 0 ? r : 5; } catch (e) { return 5; } }

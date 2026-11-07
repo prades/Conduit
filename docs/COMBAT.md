@@ -184,22 +184,27 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 |---|---|---|---|
 | QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST (five quills at once, each stopping at its first enemy): Projectile (FIRE BOMBS taken off it, 2026-11-07) |
 | FROST MAW | Brawler · ice | Slashing (ice jaws) | CHOMP: Piercing |
-| STATIC ORB | Brawler · electric | Crushing (rams) | SONIC ROLL (STATIC RUSH renamed): Crushing; PINBALL (a ricochet from enemy to enemy): Crushing |
-| JELLY RAM | Brawler · core | Crushing (ram) | none yet |
+| STATIC ORB | Brawler · electric | Crushing (rams) | SONIC ROLL (STATIC RUSH renamed): Crushing; CAPACITOR DISCHARGE (it stands still storing up to 4 charges; you release them into a short chain, build `2026-11-07ss`): Crushing and electric. PINBALL is superseded by it (the design notes) |
+| JELLY RAM | Brawler · core | Crushing (ram) | BASH (build `2026-11-07ss`, "BASH for now"): Crushing |
 | SEEPER | Brawler · toxic | Slashing (lash) | ERUPTION: Earthquake |
 | RIFT MIMIC | Brawler · flux | Slashing (claws) | GRAVITY SLAM: Earthquake |
 | THUNDERHEAD | Mage · electric | Elemental (CHAIN LIGHTNING: the shot conducts on, by distance) | STATIC VORTEX (a stationary pull that bites): Elemental |
 | VOIDSTAR | Mage · flux | Elemental | SINGULARITY SHOT: Elemental |
 | EMBER HOOD | Mage · fire | Elemental (FIREBALL) | HEXFIRE (a shot that leaves a stationary burning circle): Elemental (FIRE BOMBS taken out as an alternate, 2026-11-07) |
-| RIMESTAR | Mage · ice | Projectile (ice shards) | none yet |
-| HORNSHELL | Mage · core | Projectile (horn spines) | none yet |
-| ROTSHARD | Mage · toxic | Projectile (rot shards) | CORRODE SHOT: Elemental |
-| HAMMER SLUG | Technician · core | Crushing (hammer) | PHOTONIC SHIELD: no damage |
-| GOO PROXY | Technician · flux | Crushing (goo slam) | FLUX MOVE: no damage (it moves objects; Telegrab, retired 2026-11-06, did none either) |
+| RIMESTAR | Mage · ice | Projectile (ice shards) | BASH (build `2026-11-07ss`; it walks in to use it): Crushing |
+| HORNSHELL | Mage · core | Projectile (horn spines) | BASH (build `2026-11-07ss`; it walks in to use it): Crushing |
+| ROTSHARD | Mage · toxic | Projectile (CORRODE SHOT since build `2026-11-07ss`: its everyday shot eats the armour of what it hits) | ROTTEN DECOY |
+| HAMMER SLUG | Technician · core | Crushing (hammer) | BASH: Crushing (build `2026-11-07ss`). Its utility, PHOTONIC SHIELD: no damage |
+| GOO PROXY | Technician · flux | Crushing (goo slam) | BASH: Crushing (build `2026-11-07ss`). Its utility, FLUX MOVE: no damage (it moves objects; Telegrab, retired 2026-11-06, did none either) |
 | THERMITE BURROWER | Technician · fire | Piercing (BURROW STRIKE: it dives, travels under the floor and erupts beneath the enemy, 2 × its plain hit; build `2026-11-06a`) | THERMITE DRILL: Piercing; FAULTLINE (a path the player draws, spikes along it): Piercing |
-| BLIGHT SPIDER | Technician · toxic | Piercing (fangs) | BLIGHT pools: Elemental |
-| HOVER SHELL | Technician · electric | Crushing (ram) | KINETIC LAUNCHER: Earthquake (the landing) |
-| IGLOO SKATER | Technician · ice | Slashing (skate blades) | FROST PATCH: Elemental |
+| BLIGHT SPIDER | Technician · toxic | Piercing (fangs) | BASH: Crushing (build `2026-11-07ss`). Its utility, BLIGHT pools: Elemental |
+| HOVER SHELL | Technician · electric | Crushing (ram) | BASH: Crushing (build `2026-11-07ss`). Its utility, KINETIC LAUNCHER: Earthquake (the landing) |
+| IGLOO SKATER | Technician · ice | Slashing (skate blades) | BASH: Crushing (build `2026-11-07ss`). Its utility, FROST PATCH: Elemental |
+
+**Second attacks for every follower (build `2026-11-07ss`; the owner: "inherit second attacks on all the followers", "Inherit from the design notes", then "BASH for now" and "Apply both").** Every follower has a second attack now, chosen as a locked mode as before (`js/moves.js`):
+- **BASH** where the design notes give none (the eight forms above, and every follower before it evolves): it rams the nearest enemy it can see within 1.8 tiles, 1.5 × its attack, Crushing whatever its form, a push of a tile and a 0.5 s stun; a 4 s wind-up. A Mage locked on it walks in to use it. The numbers are the agent's (provisional).
+- **CAPACITOR DISCHARGE** for the Static Orb (the design notes; PINBALL is superseded, its code kept): it stands still storing a charge every 1.5 s, up to 4, enemies near or not, and may move again once full; RETREAT stops the charging. The player releases them (its squad card's ⚡ chip, or its INFO) into an enemy within 2 tiles: a chain of 1 + the charges enemies, each within 2.5 tiles of the last, 0.5 × its attack × the charges each (electric). A switch of attack loses the charges. The numbers are the agent's (provisional).
+- **CORRODE SHOT** is the Rotshard's everyday shot (the design notes' primary): the Mage's shot, its own damage, and it eats the armour of what it hits, weaker round it. ROTTEN DECOY is its second attack.
 | SUNDEW (designed 2026-11-02) | Brawler · bloom | Slashing (barbed lip) | CONSUME: the digestion's type to set (`CONVERSION.md`) |
 | Lotus lantern (designed, name to come) | Mage · bloom | Elemental (seed-light) | SEEDFALL: Elemental |
 | Coral crab (designed, name to come) | Technician · bloom | Crushing (claws) | REEF: to set (`CONVERSION.md`) |

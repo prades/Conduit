@@ -150,8 +150,9 @@ const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action
 const QUILL_RANGE = 4, QUILL_COUNT = 5, QUILL_FAN = 40, QUILL_MULT = 0.5, QUILL_SPEED = 0.18;   // its reach (tiles), the quills, the fan (degrees, edge to edge), × power a quill, its speed (the follower shots')
 
 // THE FOLLOWER COMBAT REDESIGN (the owner, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md): `hit` names the Thermite Burrower's everyday hit, BURROW STRIKE (burrowStrikeTry); `shot` names a Mage form's everyday shot where it has a name of its own (the Ember Hood's FIREBALL, the
-// Thunderhead's CHAIN LIGHTNING, which conducts on: evoShotOnHit). The Static Orb's moves are SONIC ROLL (STATIC RUSH renamed) and PINBALL; the Thunderhead's is STATIC VORTEX, ARC VOLLEY staying
-// with the retired Reaver. The retired electric brawlers keep SONIC ROLL alone.
+// Thunderhead's CHAIN LIGHTNING, which conducts on: evoShotOnHit). The Static Orb's moves are SONIC ROLL (STATIC RUSH renamed) and CAPACITOR DISCHARGE (PINBALL superseded, build 2026-11-07ss); the
+// Thunderhead's is STATIC VORTEX, ARC VOLLEY staying with the retired Reaver. The retired electric brawlers keep SONIC ROLL alone. Build 2026-11-07ss (the owner: "inherit second attacks on all the followers", from the
+// design notes): the Rotshard's everyday shot is CORRODE SHOT (`shot`), ROTTEN DECOY its second; the eight forms the notes give no second attack have BASH ("BASH for now").
 const EVOLUTIONS = {
     // LEGACY: the first fire brawler. New evolutions use the Quillstone; a follower already evolved into this keeps it.
     bloom:  { id: "bloom",  legacy: true, name: "BUNKER BLOOM", element: "fire",     role: "brawler", move: "PETAL BLAZE", moves: ["petal_blaze"], sheet: "img/evo/bloom.png",
@@ -199,19 +200,19 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ffee33" },
     // The ELECTRIC BRAWLER, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
     // pair of long thick trapezoid brackets down its back, static arcing between them. The tread and core move, so its sheet carries its own light.
-    staticorb:{ id: "staticorb", name: "STATIC ORB", element: "electric", role: "brawler", move: "SONIC ROLL", moves: ["static_rush", "pinball"], sheet: "img/evo/staticorb.png",
+    staticorb:{ id: "staticorb", name: "STATIC ORB", element: "electric", role: "brawler", move: "SONIC ROLL", moves: ["static_rush", "capacitor_discharge"], sheet: "img/evo/staticorb.png",
               cell: 144, anchor: [72, 114.2], core: [72, 80.1], noGlow: true, color: "#ffe033" },
     // The FIRE MAGE ("sniper" in the code): the hooded pyramid with the hovering gems (design No. 391), recoloured for fire. The gems turn, so its sheet carries its own light.
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire"], shot: "FIREBALL",   /* (FIRE BOMBS taken out as an alternate: the owner, 2026-11-07, build ii) */ sheet: "img/evo/embercowl.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f" },
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
-    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", sheet: "img/evo/hammerslug.png",
+    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
     // THE TECHNICIANS' FORMS ("camper" in the code), from the user's sheets. No signature move: the technician's job is the user's exploration tools, to come.
     // The FLUX TECHNICIAN, design No. 853 (the "GOO PROXY" sheet, then the user's review: "a frog face with diamond eye iris and one is way bigger than the other and
     // smaller ring", "thinner diamonds"): a head of violet goo in a small black spiked ring, two bulging eyes on top, one far bigger than the other, a thin diamond for
     // each iris with a slit of a pupil, a wide smile. It breathes and looks about, so the sheet carries its own light.
-    gooproxy:{ id: "gooproxy", name: "GOO PROXY", element: "flux", role: "camper", sheet: "img/evo/gooproxy.png",
+    gooproxy:{ id: "gooproxy", name: "GOO PROXY", element: "flux", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/gooproxy.png",
               cell: 144, anchor: [72, 114.2], core: [72, 85.1], noGlow: true, color: "#bb66ff" },
     // The FIRE TECHNICIAN, design No. 855 (the "THERMITE BU…" sheet, its name cut off on it, then the user's review: "a black body with red glowing accents",
     // "thick armored arms", "more like a bear/zoids style tank animal ... same silhouette", "no ears or any face"): a hunched black armoured digger with seams of
@@ -221,7 +222,7 @@ const EVOLUTIONS = {
     // The TOXIC TECHNICIAN, design No. 873 (the user's card, "BLIGHT SPIDER · TOXIC DEPLOY", then the review: "smaller, thinner, finer legs, and ... lower to the
     // ground"): a glass tank of bubbling toxin with black bands and a black front cap with a lens, on a black chassis riding low on six fine spider legs. The toxin
     // bubbles and the legs trot, so the sheet carries its own light.
-    blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", sheet: "img/evo/blightspider.png",
+    blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/blightspider.png",
               cell: 144, anchor: [72, 114.2], core: [72, 79.6], noGlow: true, color: "#66ff66" },
     // The ELECTRIC TECHNICIAN, design No. 882 (the user's pencil sketch of 2026-11-01, "sleek redesign of the electric technician", then on No. 880: "the hover shell
     // should have wings trapezoidal and a manta ray like mouth open and long and straight", and on No. 882: "Yes to all"): a manta of a hover craft, a long low black
@@ -229,12 +230,12 @@ const EVOLUTIONS = {
     // its whole front, a long straight slot with a jutting jaw and gill plates lit yellow inside; two tall launcher prongs on top. Its action frames fire the launcher:
     // an arc between the prongs and a ring of light out of its mouth. It was No. 877 (the "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet's horseshoe-crab shell over a
     // six-legged shuttle, whose action frames lifted the shell off). It glows, so the sheet carries its own light.
-    hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", sheet: "img/evo/hovershell.png",
+    hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/hovershell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 91.1], noGlow: true, color: "#ffee33" },
     // The ICE TECHNICIAN, design No. 857 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around", then the review:
     // "only 4 legs", "fitted bricks on the body", "the diamonds are nested under the body", "bigger bricks 2 layers", "moves like a train cart, so that the smaller side is
     // front facing"): a long box of big fitted ice bricks, narrow end first, on four diamonds nested in sockets under it. It glides, so the sheet carries its own light.
-    igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", sheet: "img/evo/igloo.png",
+    igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/igloo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 89], noGlow: true, color: "#9fe8ff" },
     // The CORE BRAWLER, design No. 881 (the user's pencil sketch of 2026-11-01: "a hard redesign of the jelly ram, [glass] head with bubble inside lit up blue white and a
     // swirly collar that orbits his neck", then "The brawler looks good"): a faceted glass head, a dodecahedron with its edges picked out, a bubble inside it lit blue white
@@ -242,15 +243,15 @@ const EVOLUTIONS = {
     // did (the user's review of the "JELLY RAM" sheet: "move with flicks from all of its tentacles like the jellyfish from SpongeBob"), every tentacle flicking back at once;
     // its action frames are the ram, head first, the bubble flaring. It was No. 867 (a clear dome with a big diamond under a black helmet band, a horn out of either side).
     // No signature move (AEGIS BURST went with the followers' shield). It is in core's teal, its bubble blue white. It swims, so the sheet carries its own light.
-    jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", sheet: "img/evo/jellyram.png",
+    jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", move: "BASH", moves: ["bash"], sheet: "img/evo/jellyram.png",
               cell: 144, anchor: [72, 114.2], core: [72, 64.7], noGlow: true, color: "#33e6c4" },
     // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
     // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
-    rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", sheet: "img/evo/rimestar.png",
+    rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", move: "BASH", moves: ["bash"], sheet: "img/evo/rimestar.png",
               cell: 144, anchor: [72, 114.2], core: [72, 72.1], noGlow: true, color: "#9fe8ff" },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
-    hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", sheet: "img/evo/hornshell.png",
+    hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "BASH", moves: ["bash"], sheet: "img/evo/hornshell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4" },
     // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
     // LEGACY: the first toxic brawler. New evolutions use the Seeper; a follower already evolved into this keeps it.
@@ -268,7 +269,7 @@ const EVOLUTIONS = {
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png" },
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
-    rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", move: "CORRODE SHOT", moves: ["corrode_shot", "rotten_decoy"], sheet: "img/evo/rotshard.png",
+    rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
               cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
 };
 // Which egg grows into which machine.
@@ -346,7 +347,7 @@ function evolutionTick() {
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const f of followers) {
         if (!f || f.dead || f._flight) continue;   // (thrown by a Kinetic Launcher: nothing until it is down, js/techabilities.js)
-        if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); continue; }   // (one re-rolled to another element waits for its next level-up)
+        if (!f.evolved) { if (f0 % 30 === 0 && !f._evoOnLevelUp) evoCheck(f); if (!f.evolved && typeof UNEVOLVED_MOVES !== "undefined") altTick(f, UNEVOLVED_MOVES, f0); continue; }   // (one re-rolled to another element waits for its next level-up; before it evolves, its second attack is BASH: js/moves.js)
         const d = evolvedDef(f); if (!d) continue;
         if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
@@ -359,7 +360,8 @@ function evolutionTick() {
 const ALT_EFFECT_CAP = 1200;   // (frames: an effect still in the world after this no longer holds the next wind-up)
 function altTick(f, d, f0) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
-    if (!mv) { f._altWind = 0; f._altLive = null; return; }
+    if (!mv) { f._altWind = 0; f._altLive = null; f._cap = 0; f._capT = 0; return; }
+    if (mv.manual) { capacitorTick(f); return; }   // (CAPACITOR DISCHARGE: no wind-up cycle; it stores charges, and the player releases them)
     if (f.retreatUntil > f0) { f._altWind = 0; return; }
     if (f._altLive) { if (f0 - f._altLive.t0 < ALT_EFFECT_CAP && _altLiveAny(f._altLive)) return; f._altLive = null; }
     if (f._altWind > 0) { if (--f._altWind > 0) return; _altFire(f, mv, f0); return; }
@@ -575,6 +577,72 @@ function chomp(f) {
     return true;
 }
 
+// BASH (build 2026-11-07ss; the owner, 2026-11-07: "Ram and knock back", then "BASH for now": the second attack of the eight forms the design notes give none, docs/NEXT-PHASE-ROADMAP.md §12.3, and of every follower
+// before it evolves, js/moves.js UNEVOLVED_MOVES): it rams the nearest enemy it can see within BASH_RANGE, a short step along floor it could walk (SONIC ROLL's rule, _evoDashOk): BASH_MULT × its attack, Crushing
+// whatever its form (DMG_HIT_BASH), the enemy pushed BASH_PUSH tiles and stunned BASH_STUN frames (js/combat.js applyKnockback, applyStun). The numbers are the agent's (provisional). True when it rammed.
+const BASH_RANGE = 1.8, BASH_MULT = 1.5, BASH_PUSH = 1, BASH_STUN = 30;
+function bash(f) {
+    const foes = _evoFoesSeen(f.x, f.y, BASH_RANGE).filter(a => _evoDashOk(f, a));
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8);
+    f.x += dx / L * s; f.y += dy / L * s; f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
+    applyDamage(t, (f.power || 10) * BASH_MULT, f, null, false, false, typeof DMG_HIT_BASH !== "undefined" ? DMG_HIT_BASH : DMG_HIT_ALT);
+    if (!t.dead) { if (typeof applyKnockback === "function") applyKnockback(t, f, BASH_PUSH * (typeof KNOCK_PER_TILE !== "undefined" ? KNOCK_PER_TILE : 0.28)); if (typeof applyStun === "function") applyStun(t, BASH_STUN); }
+    f._sigAt = f0; f._sigCd = moveWindupFrames("bash"); f.state = "attack"; f.attackAnim = 0;
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: t.x, y: t.y, color: "#e8edf5", radius: 0.6, life: 20 });
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "BASH", color: "#e8edf5", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
+// CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; the owner, 2026-11-07: "Apply both"). Locked on it, the Static
+// Orb STANDS STILL while it stores charges, one every MOVES.capacitor_discharge.windup seconds up to CAP_MAX, enemies near or not (capacitorRooted: js/npc.js); full, it may move again, holding them. Its aura
+// brightens with each (js/draw.js). It never lets them go by itself: the PLAYER releases them (its squad card's chip, js/party.js; its INFO, js/unitinfo.js), and only with an enemy it can see within CAP_REACH:
+// a very short discharge into it that chains on to the nearest enemy it has not hit within CAP_HOP of the last, 1 + the charges enemies in all, each taking CAP_MULT × its attack for every charge (electric).
+// RETREAT stops the charging (it walks back). A switch of attack loses the charges (js/moves.js followerAltSet). The numbers are the agent's (provisional).
+const CAP_MAX = 4, CAP_REACH = 2, CAP_HOP = 2.5, CAP_MULT = 0.5;
+function capacitorTick(f) {
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (f.retreatUntil > f0 || (f._cap || 0) >= CAP_MAX) return;
+    f._capT = (f._capT || 0) + 1;
+    if (f._capT >= moveWindupFrames("capacitor_discharge")) { f._capT = 0; f._cap = (f._cap || 0) + 1; }
+}
+function capacitorRooted(f) { const m = f && f.alt === "capacitor_discharge" ? evoMoveOf(f) : null, f0 = typeof frame !== "undefined" ? frame : 0; return !!m && (f._cap || 0) < CAP_MAX && !(f.retreatUntil > f0); }
+// why it cannot release now ("NO CHARGE", "NO ENEMY CLOSE"), or null
+function capacitorWhyNot(f) {
+    if (!f || f.dead || f.alt !== "capacitor_discharge" || !evoMoveOf(f)) return "NOT CHARGING";
+    if (!((f._cap || 0) >= 1)) return "NO CHARGE YET";
+    return _evoFoesSeen(f.x, f.y, CAP_REACH).length ? null : "NO ENEMY CLOSE";
+}
+function capacitorRelease(f) {
+    if (capacitorWhyNot(f)) return false;
+    const n = f._cap, f0 = typeof frame !== "undefined" ? frame : 0, bite = (f.power || 10) * CAP_MULT * n, hits = [];
+    let last = _evoFoesSeen(f.x, f.y, CAP_REACH).sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y))[0];
+    while (last && hits.length < 1 + n) {
+        applyDamage(last, bite, f, "electric", false, false, DMG_HIT_ALT); hits.push(last);
+        const from = last; last = _evoFoesSeen(from.x, from.y, CAP_HOP).filter(a => hits.indexOf(a) < 0).sort((a, b) => Math.hypot(a.x - from.x, a.y - from.y) - Math.hypot(b.x - from.x, b.y - from.y))[0];
+    }
+    f._cap = 0; f._capT = 0; f._sigAt = f0;
+    { const t = hits[0], dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
+    f._arcPts = hits.map(a => ({ x: a.x, y: a.y })); f._arcUntil = f0 + 24; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];
+    if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: CAP_REACH, color: "#ffee33", life: 24 }); for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.4 + n * 0.1, life: 20 }); }
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 1 + n);
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "DISCHARGE ×" + n, color: "#fff27a", life: 60, vy: -0.06, size: 11 });
+    return true;
+}
+
+// its squad card's chip (js/party.js, where a technician's ability chip goes: a Static Orb has none): ⚡ and the charges, lit once one is stored; a tap releases them, or says why it cannot
+function altChipState(f) {
+    if (!f || f.alt !== "capacitor_discharge" || !evoMoveOf(f)) return null;
+    const n = f._cap || 0; return { text: "\u26a1 " + n + "/" + CAP_MAX, cls: n >= 1 ? "" : "wait", title: "CAPACITOR DISCHARGE · " + (n >= 1 ? "TAP TO RELEASE" : "CHARGING") };
+}
+function altChipTap(f) {
+    if (capacitorRelease(f)) return true;
+    const why = capacitorWhyNot(f); if (why && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: why, color: "#fff27a", life: 60, vy: -0.05, size: 10 });
+    return false;
+}
+
 // ERUPTION: the crater bursts over everything close: toxic damage and eaten armour. True when it fired.
 function eruption(f) {
     const foes = _evoFoesSeen(f.x, f.y, CALDERA_RADIUS);
@@ -713,7 +781,20 @@ function chainLightning(f, first, dmg) {
     return hit.length - 1;
 }
 // The everyday shot's own effect (js/npc.js, the Mages' shot): the Thunderhead's CHAIN LIGHTNING conducts on from the enemy it strikes; any other form's shot (the Ember Hood's FIREBALL too) is the plain shot
-function evoShotOnHit(f, dmg) { const d = f && f.evolved ? evolvedDef(f) : null; return d && d.shot === "CHAIN LIGHTNING" ? (a => chainLightning(f, a, dmg)) : null; }
+function evoShotOnHit(f, dmg) {
+    const d = f && f.evolved ? evolvedDef(f) : null; if (!d) return null;
+    if (d.shot === "CHAIN LIGHTNING") return a => chainLightning(f, a, dmg);
+    if (d.shot === "CORRODE SHOT") return a => corrodeTouch(a);
+    return null;
+}
+// CORRODE SHOT as the Rotshard's everyday shot (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: "Primary: CORRODE SHOT"; the owner: "Apply both"): the Mage's shot, its own damage, and where it
+// lands it eats the target's armour (ROT_SHRED for ROT_SHRED_FRAMES), weaker round it (ROT_SPLASH_SHRED within ROT_SPLASH_R, enemies seen from the target). It was a move with a wind-up (corrodeShot, kept).
+function corrodeTouch(tgt) {
+    if (!tgt || tgt.dead) return;
+    tgt.defenseShredded = Math.max(tgt.defenseShredded || 0, ROT_SHRED_FRAMES); tgt.defenseShredFactor = Math.min(tgt.defenseShredFactor || 1, ROT_SHRED);
+    for (const a of _evoFoesSeen(tgt.x, tgt.y, ROT_SPLASH_R)) { if (a === tgt) continue; a.defenseShredded = Math.max(a.defenseShredded || 0, ROT_SPLASH_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, ROT_SPLASH_SHRED); }
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: ROT_SPLASH_R, color: "#66ff66", life: 24 });
+}
 
 // STATIC VORTEX (the Thunderhead's move; the owner's brief, 2026-11-02, docs/FOLLOWER-COMBAT-REDESIGN.md §2.6): a STATIONARY electrical storm on the nearest enemy in reach. It does not travel.
 // Every enemy in it is pulled toward its middle, VORTEX_PULL tiles a frame (not a beetle or a boss: vortexPullImmune), and takes electric damage every VORTEX_TICK frames, until it runs out after

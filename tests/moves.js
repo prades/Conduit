@@ -17,7 +17,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 // (The THUNDERHEAD's is STATIC VORTEX since the owner's follower combat redesign, 2026-11-02: ARC VOLLEY stays with the Reaver. docs/FOLLOWER-COMBAT-REDESIGN.md)
 const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley', thunderhead: 'staticVortex', serpent: 'singularityShot', voidstar: 'singularityShot',
     manta: 'staticRush', prism: 'staticRush', voltring: 'staticRush', staticorb: 'staticRush', halo: 'hexfire', embercowl: 'hexfire',
-    rotshard: 'corrodeShot', mimic: 'gravitySlam', caldera: 'eruption', seeper: 'eruption', maw: 'chomp' };
+    rotshard: 'rottenDecoy', mimic: 'gravitySlam', caldera: 'eruption', seeper: 'eruption', maw: 'chomp' };
+// (the ROTSHARD's first move is ROTTEN DECOY since build 2026-11-07ss: CORRODE SHOT is its everyday shot now, the design notes' primary; js/evolution.js corrodeTouch)
 
 (async () => {
     const context = vm.createContext(makeBrowserSandbox({}));
@@ -32,9 +33,11 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     check('every form with a move has it in the table (so every move has a row)', () => {
         for (const id of J('Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].move)')) { const n = J(`EVOLUTIONS[${JSON.stringify(id)}].move`); ok(J(`!!MOVE_BY_NAME[${JSON.stringify(n)}]`), id + ': no row for ' + n); }
     });
-    check('the forms with no move are the new technicians\' (their exploration tools are the user\'s, to come), the Rimestar (there was no ice mage move) and the core forms (AEGIS BURST and AEGIS BLOOM went with the followers\' shield), and they fire none', () => {
-        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'blightspider,gooproxy,hammerslug,hornshell,hovershell,igloo,jellyram,petal,rimestar,warden', 'forms without a move');
-        for (const id of ['blightspider', 'gooproxy', 'hammerslug', 'hornshell', 'hovershell', 'igloo', 'jellyram', 'petal', 'rimestar', 'warden']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
+    check('the eight forms the design notes give no second attack have BASH (build 2026-11-07ss, the owner: "BASH for now"); the retired Petal and Warden still have none and fire none; a follower that has not evolved has BASH too', () => {
+        same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'petal,warden', 'forms without a move');
+        for (const id of ['blightspider', 'gooproxy', 'hammerslug', 'hornshell', 'hovershell', 'igloo', 'jellyram', 'rimestar']) same(J(`evoMoveIds(EVOLUTIONS.${id})`).join(), 'bash', id + ' moves');
+        for (const id of ['petal', 'warden']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
+        same(J(`evoMoveIds(followerMoveDef({ isFollower: true }))`).join(), 'bash', 'before it evolves'); same(run(`followerMoveDef({ isFollower: true, isClone: true })`), null, 'a clone');
     });
     check('every row fires a real function', () => {
         for (const id of J('Object.keys(MOVES)')) same(J(`typeof MOVES[${JSON.stringify(id)}].fn`), 'function', id);
@@ -80,11 +83,11 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
     check('every move has a WIND-UP of its own (seconds), the old waits unchanged, and its function waits exactly that after firing', () => {
         const OLDWAIT = { petal_blaze: 360, quill_burst: 240, arc_volley: 300, singularity_shot: 330, static_rush: 300, hexfire: 330, corrode_shot: 320, gravity_slam: 330,
-            eruption: 330, chomp: 300, pinball: 300, static_vortex: 330, magma_vent: 1200, rotten_decoy: 840 };
+            eruption: 330, chomp: 300, pinball: 300, static_vortex: 330, magma_vent: 1200, rotten_decoy: 840, bash: 240, capacitor_discharge: 90 };   // (BASH and CAPACITOR DISCHARGE: build 2026-11-07ss; the second's is the time one charge takes)
         same(J('Object.keys(MOVES).sort()').join(), Object.keys(OLDWAIT).sort().join(), 'the moves');
         for (const id in OLDWAIT) {
             ok(J(`MOVES.${id}.windup > 0`), id + ' has no wind-up'); same(J(`moveWindupFrames('${id}')`), OLDWAIT[id], id + ' (frames)');
-            const fn = J(`(function(){ const m = /^f => ([A-Za-z]+)\\(f\\)$/.exec(MOVES.${id}.fn.toString()); return m ? globalThis[m[1]].toString() : ''; })()`);
+            const fn = id === 'capacitor_discharge' ? J('capacitorTick.toString()') : J(`(function(){ const m = /^f => ([A-Za-z]+)\\(f\\)$/.exec(MOVES.${id}.fn.toString()); return m ? globalThis[m[1]].toString() : ''; })()`);   // (a CAPACITOR DISCHARGE waits its wind-up for each charge, capacitorTick: the player releases it)
             ok(fn.indexOf('moveWindupFrames("' + id + '")') >= 0, id + '\'s function does not wait its wind-up');
         }
     });

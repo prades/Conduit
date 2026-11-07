@@ -621,6 +621,8 @@ Every follower has its own Ultimate Ability and its own independent Ultimate Met
 
 **Still open:** exact charge values, action eligibility, meter thresholds, evolution variants, activation rules, cooldowns, and per-Ultimate balance. Do not invent numerical values.
 
+**Built (build `2026-11-07ss`; the owner: "more visible ultimate bar on followers and access to use them", then "Squad cards + world"):** each squad card on the HUD has the follower's Ultimate meter under its XP (ULT and the charge; full: gold, glowing, ULTIMATE ▲ and TAP), and a tap on the full meter fires it (`js/elements.js` followerUltFire; a bonded pair's DUO first, as the double-tap, which still works). The bar over each follower is bigger (40 × 5) and glows when full. How the meters fill is unchanged (still open above).
+
 ### 12.3 Recovered follower roster and ability decisions
 
 The working roster contains 18 followers. Use the existing roster registry to verify names and classifications before implementation.
@@ -642,6 +644,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 - **Alternate:** CAPACITOR DISCHARGE — Static Orb must remain stationary while it accumulates up to four electrical charges, even when no enemies are present. A visible electrical aura intensifies as charge builds. The player manually chooses when to release; it does not auto-fire when an enemy approaches. Releasing consumes the stored charge in a powerful, very short-range discharge that chains between nearby enemies. More stored charges increase its strength.
 - **Ultimate:** OVERDRIVE — electrical burnout/overload followed by a high-speed rush toward the largest concentration of enemies, not merely the nearest enemy. Deals crushing and electrical damage and knocks struck enemies back.
 - **Superseded:** PINBALL is an older alternate and is superseded by CAPACITOR DISCHARGE. The older BURNOUT DASH Ultimate concept is superseded by OVERDRIVE unless explicitly reopened.
+- **Built (build `2026-11-07ss`, the owner: "Apply both"):** CAPACITOR DISCHARGE in PINBALL's place (`COMBAT.md`'s attack table: numbers provisional). SONIC ROLL stays an alternate, as it was in the game.
 - **Card attack:** VOLTAGE FIELD — an electrically charged field centered on and moving with Static Orb. Static Orb and nearby allied followers gain movement speed inside it; enemies inside take mild electrical damage. Duration, radius, movement bonus, damage rate, and whether attack speed is affected remain open.
 
 ##### 3. Rift Mimic — Jelly Brawler
@@ -696,6 +699,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 - **Alternate:** ROTTEN DECOY — creates a crystal copy/decoy that draws enemy attention. From the moment it forms, the entire decoy is a black crystal formation surrounded by a constant hazy poisonous green mist. The mist is not only a break/shatter effect; if the decoy breaks, its black shards retain the green haze.
 - **Ultimate:** expanding toxic puddle with small crystal shards periodically erupting from it. Keep this in the Ultimate slot, not the alternate slot.
 - **Passive:** nearby enemies are weakened by Rotshard's toxic aura.
+- **Built (build `2026-11-07ss`):** CORRODE SHOT is its everyday shot, ROTTEN DECOY its second attack.
 - **Card attack:** CRYSTAL SPIKE TRIO — three small toxic crystal spikes erupt upward in a tight cluster directly beneath one targeted enemy. Single-target only, not a line or ground-targeted area attack. Deals damage, briefly stuns, and applies a toxic effect. Intended to be useful control without overwhelming the character.
 
 ##### 12. Rime Star — Ice / Drone Mage
@@ -742,6 +746,8 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 - **Ultimate (built in `2026-11-07w`, the owner's pick):** ICE RINK — the floor 4 tiles round where it stands freezes for 6 s: enemies on it are kept to 40% speed and take 0.25 × its power (ice) every 0.5 s; the squad's followers on it move 30% faster.
 - Preserve existing design. Retrieve primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
 - **Technician utility (the owner, 2026-11-06):** the ability to freeze water, making bridges to cross it ("I would like to make it to where the ICE technician's utility ability is the ability to freeze water. And make bridges to cross across the water."). Its name, and what becomes of FROST PATCH, the ice technician's ability today, are open (§14).
+
+**Second attacks where the notes give none (build `2026-11-07ss`; the owner: "BASH for now"):** the Jelly Ram, Rimestar, Hornshell, Hammer Slug, Goo Proxy, Blight Spider, Hover Shell and Igloo Skater, and every follower before it evolves, have BASH (`COMBAT.md`) until each gets its own. Their own second attacks are still to be recovered or designed (`OPEN-QUESTIONS.md`).
 
 ### 12.4 Series 2 Combat Interaction cards — design work to carry forward
 
