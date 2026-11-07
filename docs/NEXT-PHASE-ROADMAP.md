@@ -685,6 +685,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 
 ##### 10. Horn Shell — Mollusk Mage
 
+- **Ultimate (built in `2026-11-07y`, the owner's design, 2026-11-07; numbers provisional):** WAVE MAKER — three waves out of its horn, 0.75 s apart, each 0.8 × its power (core) to enemies within 4 tiles ahead and a 1.5-tile throw; it moves 1.5 tiles after them between waves.
 - Preserve existing kit. Primary, alternate, and Ultimate details must be recovered from the existing source notes/registry before any changes.
 
 ##### 11. Rotshard — Toxic Mage
@@ -715,6 +716,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 - **Preservation requirement:** preserve Hover Shell's existing design, behavior, and role exactly.
 - KINETIC LAUNCHER is an existing ability and must not be replaced, renamed, rebalanced, or reinterpreted during this combat pass.
 - Retrieve remaining kit details from the live registry and documentation; do not invent a new attack or Ultimate.
+- **Ultimate (built in `2026-11-07y`, the owner's design, 2026-11-07; name and numbers provisional):** DRIFT SLASH — interrupts the enemies it can see within 6 tiles, drifts to up to 4 of them slashing each (1.5 × its power, half slashing, half electric), returns to its post; the squad 30% faster for 6 s. It replaces EMP for this form; the KINETIC LAUNCHER is untouched.
 
 ##### 15. Goo Proxy — Jelly Technician
 

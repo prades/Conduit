@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **y · Own Ultimates for the Hornshell and the Hover Shell: WAVE MAKER, DRIFT SLASH** (the owner's designs, 2026-11-07; x "Push to main"). Implemented and tested on the branch; not playtested. The numbers, and DRIFT SLASH's name, are the agent's (provisional), in `ULT_WAVE` and `ULT_DRIFT` (js/elements.js).
+  - **WAVE MAKER** (Hornshell; "3 waves that knock the enemy's back. The mage gains ground as he uses it as not to waste the pulses"): aimed at the nearest enemy it can see within 6 tiles, three waves roll out of its horn 0.75 s apart. Each hits every enemy within 4 tiles ahead (±50°) for 0.8 × its power (core) and throws it 1.5 tiles back. Between waves it moves 1.5 tiles after them, onto floor only. Its first Ultimate (core has no element Ultimate).
+  - **DRIFT SLASH** (Hover Shell; "drifts in and slashes enemies and returns to his post squad members get increased speed and enemies are interrupted"): every enemy it can see within 6 tiles is interrupted (its wind-up fails for 0.5 s, the GLITCH). It drifts to up to 4 of them in turn, nearest first, slashing each for 1.5 × its power (half slashing, half electric), then drifts back to where it was. The squad moves 30% faster for 6 s. It replaces EMP for this form; its KINETIC LAUNCHER is untouched.
+  - Every evolved form now has its own Ultimate; an unevolved follower keeps its element's.
+  - Tests: followercombat (a new check for both; the "element's Ultimate" example is now an unevolved electric follower), evolution, unitinfo.
+
 - **x · Ice bridges stand until the next one; the Sewers' river 3 tiles across** (the owner, 2026-11-07, on the roadmap's next item: "One ability", "But make the sewer river 3 tiles wide", "Until the next one", "Everyone; install starts her"; w "Push to main"; on the branch; commit named in git log).
   - An **ice bridge** now stands until the same technician makes its next bridge (it was 30 s); then the old one thaws and anyone on it is put on the nearest floor. One bridge per technician; FROST PATCH on floor is unchanged.
   - The **Sewers' river** is 3 tiles across (was 6): the north ledge took the three tiles (5 deep now; the south ledge 3). The steel bridge, the service bridge and the broken bridge's stumps are shortened to it, the outfall moved to the river's head.

@@ -1963,3 +1963,13 @@ The owner: too much time goes into testing and side checks. From here on, only t
 2. "Until the next one": a bridge stands until the same technician makes its next (was 30 s).
 3. "But make the sewer river 3 tiles wide": the river is 3 tiles across; the north ledge took the 3 tiles.
 
+## DECISION: Own Ultimates for the Hornshell and the Hover Shell
+
+- **Date:** 2026-11-07
+- **Status:** Approved (the owner's designs). Implemented and tested in build `2026-11-07y`, on the branch; not playtested. The numbers and DRIFT SLASH's name are the agent's, provisional.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.3 items 10 and 14; `CHANGELOG.md` (2026-11-07 y)
+
+### Decision
+1. Build `2026-11-07x`: "Push to main". Next: "Horn/Hover Shell Ultimates".
+2. Offered three proposals each; the owner wrote their own instead. Hornshell: "Wave maker 3 waves that knock the enemy's back. The mage gains ground as he uses it as not to waste the pulses". Hover Shell: "Hover shell drifts in and slashes enemies and returns to his post squad members get increased speed and enemies are interrupted".
+

@@ -457,7 +457,7 @@ function measure(w, h) {
     });
     check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it, any other its element\'s; OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
         const r = J(`(function(){ const o = {};
-            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('electric', 'camper', 'hovershell');
+            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('electric', 'camper', null);
             o.look = [followerUltimate(so).name, followerUltimate(eh) === FOLLOWER_ULTIMATES.fire, followerUltimate(qs) === FOLLOWER_ULTIMATES.electric];
             __clear(); const s = __fol('electric', 'brawler', 'staticorb'), g1 = __foe(s.x + 4, s.y), g2 = __foe(s.x + 4.6, s.y + 0.4), lone = __foe(s.x - 3, s.y); s.ultimateCharge = 100; followerUltimate(s).execute(s);
             o.over = [s.ultimateCharge < 50, Math.hypot(s.x - g1.x, s.y - g1.y) <= 1.2, __dmg(g1) > 0, __dmg(g2) > 0, __dmg(lone), !!(g1.kbVX || g1.kbVY)];
@@ -594,6 +594,19 @@ function measure(w, h) {
         same(r.rink.join(), 'Ice Rink,true,true,true,0.4,true,1.3,true', 'ICE RINK: stays where it was made, the enemy on it slowed to 40% and bitten, the squad mate on it 30% faster');
         same(r.swarm.join(), 'Proxy Swarm,3,true', 'PROXY SWARM: three copies, an enemy near goes for one');
         same(r.burst.join(), '0,true', 'they burst at the end, hurting the enemy beside one');
+    });
+    check('WAVE MAKER and DRIFT SLASH (the owner\'s designs, 2026-11-07): the Hornshell\'s three waves hurt and throw the enemy ahead and it moves up after them; the Hover Shell interrupts, drifts in to slash, returns to its post, and the squad is faster for 6 s', () => {
+        const r = J(`(function(){ const o = {};
+            __clear(); const hn = __fol('core', 'sniper', 'hornshell'), a = __foe(hn.x + 3.8, hn.y), behind = __foe(hn.x - 5, hn.y), x0 = hn.x; hn.ultimateCharge = 100; followerUltimate(hn).execute(hn);
+            const hit1 = __dmg(a), thrown = !!(a.kbVX || a.kbVY); for (let i = 0; i < 130; i++) updateElementEffects();
+            o.wave = [followerUltimate(hn).name, hn.ultimateCharge < 50, hit1 > 0, thrown, __dmg(a) > hit1 * 2.5, __dmg(behind), Math.round((hn.x - x0) * 10) / 10 >= 2.5];
+            __clear(); const hv = __fol('electric', 'camper', 'hovershell'), b = __foe(hv.x + 3, hv.y), c = __foe(hv.x + 3, hv.y + 1.5), home = [hv.x, hv.y]; b.attackWindup = 20; hv.ultimateCharge = 100; followerUltimate(hv).execute(hv);
+            o.int = [b.attackWindup, b.glitched > 0]; let far = 0; for (let i = 0; i < 80; i++) { updateElementEffects(); far = Math.max(far, Math.hypot(hv.x - home[0], hv.y - home[1])); }
+            o.drift = [followerUltimate(hv).name, hv.ultimateCharge < 50, __dmg(b) > 0, __dmg(c) > 0, far > 2, Math.hypot(hv.x - home[0], hv.y - home[1]) < 0.05, hv._voltMove, hv._voltUntil > frame + 200];
+            return o; })()`);
+        same(r.wave.join(), 'Wave Maker,true,true,true,true,0,true', 'WAVE MAKER: spent, the enemy ahead hit and thrown by all three waves, the one behind untouched, it moved up 3 tiles');
+        same(r.int.join(), '0,true', 'DRIFT SLASH interrupts: the wind-up cancelled, its wind-ups failing');
+        same(r.drift.join(), 'Drift Slash,true,true,true,true,true,1.3,true', 'DRIFT SLASH: spent, both slashed, it drifted out and came back to its post, 30% faster for 6 s');
     });
     check('WHITEOUT (the owner, 2026-11-07): the Rime Star\'s snowstorm moves with it for 6 s, slows the enemies in it to half speed and bites them (ice) every 0.5 s', () => {
         const r = J(`(function(){ __clear(); const rs = __fol('ice', 'sniper', 'rimestar'), a = __foe(rs.x + 2.5, rs.y); rs.ultimateCharge = 100; followerUltimate(rs).execute(rs);
