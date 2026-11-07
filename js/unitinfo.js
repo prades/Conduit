@@ -70,11 +70,13 @@ function followerInfo(a) {
             out.attacks.push({ h: "SPECIAL ATTACK · " + sc.name, note: "Its primary attack while the card is set (SPECIAL ATTACK, on the roster and its squad card). It makes no everyday hit between strikes.",
                 rows: [["REACH", A.reach + " tiles, an enemy it can see"], ...(A.mult ? [["DAMAGE", _uiX(A.mult) + " its attack"]] : []), ["WAIT", A.wait + " s " + (A.lasts ? "after it ends (it lasts " + A.lasts + " s)" : "between strikes")], ["READY", w > 0 ? "in " + Math.ceil(w / 60) + " s" : "now"], ["EFFECT", sc.text]] }); }
     }   // a form's named everyday attack (FIREBALL, CHAIN LIGHTNING, BURROW STRIKE)
-    if (ev && MOVE_INFO[ev.move]) {
-        const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, ev) : null, mv = cur && MOVE_INFO[cur.name] ? cur : { name: ev.move }, ids = typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, ev, id)) : [];
-        out.attacks.push({ h: "SIGNATURE · " + mv.name, note: ev.name, rows: MOVE_INFO[mv.name]() });
-        // MORE THAN ONE MOVE: pick which it uses (js/moves.js; saved with the follower)
-        if (ids.length > 1) out.attacks.push({ h: "MOVE", note: "This form can use more than one move. Pick one:", choices: ids.map(id => ({ id, label: MOVES[id].name, on: cur ? cur.id === id : false })), unit: a });
+    const altIds = ev && typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, ev, id)) : [];
+    if (ev && altIds.length) {
+        // ITS ALTERNATES (js/moves.js "THE ALTERNATE ATTACK IS A CHOSEN MODE"): each move it may use, what it does, and the mode it fights in now: its NORMAL ATTACK or one alternate it is locked to
+        const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, ev) : null, w = a._altWind > 0 ? Math.ceil(a._altWind / 60) : 0;
+        for (const id of altIds) { const m = MOVES[id], on = !!cur && cur.id === id; out.attacks.push({ h: "ALTERNATE · " + m.name + (on ? " · LOCKED ON" : ""), note: ev.name + (on ? (w ? " · WINDING UP, " + w + " S (IT STANDS STILL)" : a._altLive ? " · ITS EFFECT IS ON: IT WINDS UP AGAIN WHEN IT ENDS" : " · READY") : ""), rows: MOVE_INFO[m.name] ? MOVE_INFO[m.name]() : [] }); }
+        out.attacks.push({ h: "ATTACK", note: "Its normal attack, or one alternate it is locked to until you switch it back: it winds up standing still, strikes, and winds up again when the strike's effect is over. On an alternate it makes no other attack, an attack order included.",
+            choices: [{ id: null, label: "NORMAL ATTACK", on: !cur }].concat(altIds.map(id => ({ id, label: MOVES[id].name, on: !!cur && cur.id === id }))), unit: a });
     }
     else if (ev) out.attacks.push({ h: "SIGNATURE", note: "The " + ev.name + " has no signature move yet.", rows: [] });   // (the technicians' forms, the Rimestar and the core forms: their moves are to come)
     else {
@@ -131,7 +133,7 @@ function _uiRenderSections(body, secs) {
     for (const s of secs) {
         const sec = _uiEl("div", "ui-sec"); sec.appendChild(_uiEl("div", "ui-h", s.h));
         if (s.note) sec.appendChild(_uiEl("div", "ui-note", s.note));
-        if (s.choices) { const row = _uiEl("div", "ui-choices"); for (const c of s.choices) { const b = _uiEl("button", "ui-choice" + (c.on ? " on" : ""), c.label); b.addEventListener("click", ev => { ev.stopPropagation(); if (s.unit) { s.unit.move = c.id; s.unit._sigCd = Math.min(s.unit._sigCd || 0, 60); } if (typeof unitInfoOpen === "function") unitInfoOpen(s.unit, "attacks"); }); row.appendChild(b); } sec.appendChild(row); }
+        if (s.choices) { const row = _uiEl("div", "ui-choices"); for (const c of s.choices) { const b = _uiEl("button", "ui-choice" + (c.on ? " on" : ""), c.label); b.addEventListener("click", ev => { ev.stopPropagation(); if (s.unit && typeof followerAltSet === "function") followerAltSet(s.unit, c.id); if (typeof unitInfoOpen === "function") unitInfoOpen(s.unit, "attacks"); }); row.appendChild(b); } sec.appendChild(row); }
         for (const r of s.rows || []) { const row = _uiEl("div", "ui-row"); row.appendChild(_uiEl("span", "ui-k", r[0])); row.appendChild(_uiEl("span", "ui-v", r[1])); sec.appendChild(row); }
         body.appendChild(sec);
     }

@@ -32,7 +32,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   unitInfoOpen(f); await wait(30);
   var chips = $$('#unitInfo .ui-choice'); out.info = { chips: chips.map(function(c){ return c.textContent; }).join(), on: $('#unitInfo .ui-choice.on') ? $('#unitInfo .ui-choice.on').textContent : null, sig: ($$('#unitInfo .ui-h').map(function(h){ return h.textContent; }).filter(function(t){ return /SIGNATURE/.test(t); })[0]) };
   chips[1].dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(50);
-  out.info2 = { move: f.move, on: $('#unitInfo .ui-choice.on') ? $('#unitInfo .ui-choice.on').textContent : null, sig: ($$('#unitInfo .ui-h').map(function(h){ return h.textContent; }).filter(function(t){ return /SIGNATURE/.test(t); })[0]) };
+  out.info2 = { move: f.alt, on: $('#unitInfo .ui-choice.on') ? $('#unitInfo .ui-choice.on').textContent : null, sig: ($$('#unitInfo .ui-h').map(function(h){ return h.textContent; }).filter(function(t){ return /SIGNATURE/.test(t); })[0]) };
   var pre = document.createElement('pre'); pre.id = '__fb'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);
 }, 1500); });</script></body>`;
 function measure() {
@@ -50,6 +50,7 @@ function measure() {
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
+    vm.runInContext('globalThis.__arm = (f, id) => { const d = evolvedDef(f); f.alt = id || (f.move && evoMoveAllowed(f, d, f.move) ? f.move : evoMoveIds(d)[0]); f._altLive = null; f._altWind = 1; };', context);   // (the alternate as a chosen mode, js/moves.js: __arm locks a follower on its alternate and fires it on the next evolutionTick)
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run(`gameState.running = true; facilityBlackoutSet(false); unlockedElements = new Set(ELEMENTS.map(e => e.id)); globalThis.__O = { x: 34, y: 50 };
         globalThis.__clear = () => { fireBombs.length = 0; fireTiles.clear(); actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; ELEMENTS.forEach(e => { followerByElement[e.id] = []; }); floatingTexts.length = 0;
@@ -123,16 +124,16 @@ function measure() {
         run(`globalThis.__E = spawnCreature({ species: Object.keys(SPECIES)[0], className: 'scout', x: __O.x + 4, y: __O.y, state: 'hunt' }); __E.provoked = true;`);
         same(run('MOVES.bomb_lob.fn(__f)'), true, 'with a foe'); same(run('fireBombs.length'), 3, 'bombs'); same(run('__f._sigCd'), run('moveWindupFrames("bomb_lob")'), 'cooldown');
     });
-    check('the chosen move is the one that fires, is kept with the follower through a respawn and the facility\'s save, and is ignored once the form cannot use it', () => {
-        run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl";'); same(run('evoMoveOf(__f).id'), 'hexfire', 'default');
-        run('__f.move = "bomb_lob";'); same(run('evoMoveOf(__f).id'), 'bomb_lob', 'chosen'); run('__f.evolved = "maw";'); same(run('evoMoveOf(__f).id'), 'chomp', 'not for another form');
-        const g = rd('js/game.js'), s = rd('js/facilitysave.js'); ok(/move: a\.move \|\| undefined/.test(g) && /npc\.move = entry\.move/.test(g), 'the respawn queue loses the move'); ok(/move: a\.move \|\| undefined/.test(s) && /npc\.move = entry\.move/.test(s), 'the save loses the move');
+    check('the chosen alternate is the one that fires (the owner, 2026-11-07: a chosen mode, none by default), is kept with the follower through a respawn and the facility\'s save, and is dropped once the form cannot use it', () => {
+        run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl";'); same(run('evoMoveOf(__f)'), null, 'default: its normal attack');
+        run('followerAltSet(__f, "bomb_lob");'); same(run('evoMoveOf(__f).id'), 'bomb_lob', 'chosen'); run('__f.evolved = "maw";'); same(run('evoMoveOf(__f)'), null, 'not for another form');
+        const g = rd('js/game.js'), s = rd('js/facilitysave.js'); ok(/alt: a\.alt \|\| undefined/.test(g) && /npc\.alt = entry\.alt/.test(g), 'the respawn queue loses the alternate'); ok(/alt: a\.alt \|\| undefined/.test(s) && /npc\.alt = entry\.alt/.test(s), 'the save loses the alternate');
     });
     check('the INFO tab lists the form\'s moves with the current one lit (the data)', () => {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "quillstone";');
-        const sec = J('followerInfo(__f).attacks.find(s => s.h === "MOVE").choices.map(c => [c.label, c.on])'); same(JSON.stringify(sec), JSON.stringify([['QUILL BURST', true], ['FIRE BOMBS', false]]), 'choices');
-        run('__f.move = "bomb_lob";'); same(J('followerInfo(__f).attacks[1].h'), 'SIGNATURE · FIRE BOMBS', 'the signature section follows the choice');
-        run('__f.evolved = "maw"; delete __f.move;'); same(run('followerInfo(__f).attacks.some(s => s.h === "MOVE")'), false, 'a form with one move has no chooser');
+        const sec = J('followerInfo(__f).attacks.find(s => s.h === "ATTACK").choices.map(c => [c.label, c.on])'); same(JSON.stringify(sec), JSON.stringify([['NORMAL ATTACK', true], ['QUILL BURST', false], ['FIRE BOMBS', false]]), 'choices');
+        run('followerAltSet(__f, "bomb_lob");'); same(J('followerInfo(__f).attacks.filter(s => /LOCKED ON/.test(s.h)).map(s => s.h).join()'), 'ALTERNATE · FIRE BOMBS · LOCKED ON', 'the alternate it is locked on');
+        run('__f.evolved = "hammerslug"; __f.alt = null;'); same(run('followerInfo(__f).attacks.some(s => s.h === "ATTACK")'), false, 'a form with no move has no chooser');
     });
 
     group('THE MOVE CHOOSER (real browser)');
@@ -141,8 +142,8 @@ function measure() {
     else {
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
-            check('on a fire form\'s INFO tab the moves are buttons: tap FIRE BOMBS and it is the move (and the page says so)', () => {
-                same(r.info.chips, 'HEXFIRE,FIRE BOMBS', 'chips'); same(r.info.on, 'HEXFIRE', 'lit'); ok(/HEXFIRE/.test(r.info.sig), 'signature ' + r.info.sig); same(r.info2.move, 'bomb_lob', 'chosen'); same(r.info2.on, 'FIRE BOMBS', 'lit after'); ok(/FIRE BOMBS/.test(r.info2.sig), 'signature after ' + r.info2.sig);
+            check('on a fire form\'s INFO tab the attacks are buttons, NORMAL ATTACK lit: tap HEXFIRE and it is locked on it (and the page says so)', () => {
+                same(r.info.chips, 'NORMAL ATTACK,HEXFIRE,FIRE BOMBS', 'chips'); same(r.info.on, 'NORMAL ATTACK', 'lit'); same(r.info2.move, 'hexfire', 'chosen'); same(r.info2.on, 'HEXFIRE', 'lit after');
             });
         }
     }

@@ -1572,7 +1572,7 @@
 <li>The combat numbers are “a first pass so a fight can be read; they are not balance” (docs/COMBAT.md §3). The first assault is “tuned by feel” (docs/TUTORIAL.md:107).</li>
 </ul></div>
 <h3 id="followers-forms">Evolution and the forms</h3>
-<p>At level <span class="n" data-k="EVOLVE_LEVEL">10</span> a follower with a form for its element and role <b>evolves</b> on the spot. It sheds the egg and becomes a machine, and it keeps that form for good: through death, respawn, a reload and a re-roll. Its role becomes the form's, its health, ATK and SP.ATK are ×<span class="n" data-k="EVOLVE_MULT">1.25</span> (and its form leans its stats toward ATK or SP.ATK), and it may have a <b>signature move</b> that it fires by itself. There are <span class="n" data-k="Object.values(EVOLUTIONS).filter(function (e) { return !e.legacy; }).length">18</span> forms, one for each element and role, so every follower evolves at 10.</p>
+<p>At level <span class="n" data-k="EVOLVE_LEVEL">10</span> a follower with a form for its element and role <b>evolves</b> on the spot. It sheds the egg and becomes a machine, and it keeps that form for good: through death, respawn, a reload and a re-roll. Its role becomes the form's, its health, ATK and SP.ATK are ×<span class="n" data-k="EVOLVE_MULT">1.25</span> (and its form leans its stats toward ATK or SP.ATK), and it may have <b>alternate attacks</b>: it fights with its normal attack until one is chosen (on the INDEX tab, its squad card or the roster), and a chosen alternate is then its only attack until it is switched back. It stands still while it winds one up and winds up again once the effect has ended. There are <span class="n" data-k="Object.values(EVOLUTIONS).filter(function (e) { return !e.legacy; }).length">18</span> forms, one for each element and role, so every follower evolves at 10.</p>
 <ul>
 <li><b>When.</b> At every level-up, and every 30 frames for a follower that has not evolved, <code>evoCheck</code> looks up <code>evolutionFor(f)</code>: the form, not legacy, with its element and role (a hybrid counts as a brawler).</li>
 <li><b>The molt</b> takes <span class="n" data-k="EVO_MOLT">120</span> frames. In the first 30% the egg shakes and cracks; then the glass bursts, the legs drop and the machine rises. “◆ EVOLVED · NAME” floats over it, the screen shakes, and its health is set to full.</li>
@@ -3562,7 +3562,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-07ee</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-07ff</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3783,7 +3783,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-07ee (7 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-07ff (7 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

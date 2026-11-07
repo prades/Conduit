@@ -2038,3 +2038,22 @@ The owner: too much time goes into testing and side checks. From here on, only t
 1. Build `2026-11-07dd`: "Push to main". Next: "Watch the new Ultimates".
 2. On the screenshots: "the hover shell is supposed to have a circular sort of slash, like a sword, like he goes in and turns around like an oval shape" — the straight legs became one oval swing round the enemies and back to its post.
 
+## DECISION: The alternate attack is a chosen, locked mode
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07ff`, on the branch; not playtested.
+- **Related feature/docs:** `COMBAT.md` §7.4, `PLAYER-CLASSES.md` (move selection), `CHANGELOG.md` (2026-11-07 ff)
+
+### Decision
+1. Build `2026-11-07ee`: "Push to main". Next: "Move wind-up times", answered with the rules rather than numbers: "the alternate attacks must be visitable from the index and the pop out menu on the hood and these alternate abilities [...] are like control abilities, and they're locked into that ability or that attack until switched out of it and they can't use any of their other attacks unless explicitly task now the wind up makes it balanced, and whenever the effect ends is when another wind up occurs, and when the wind up is occurring the [...] follower cannot move".
+2. "Yes, exactly": nothing fires on its own; a follower uses its normal attack by default; a chosen alternate is a locked mode (rooted wind-up, fire, the next wind-up when the effect ends).
+3. "Stays on the alternate": attack orders do not take it off; switching it back is the only way.
+
+### Exact rules
+- `f.alt` (saved): null is NORMAL ATTACK; a move id is that alternate, only if the form lists it and the class allows it.
+- On an alternate: no plain hit, element move or Mage's shot. With an enemy in the move's reach it winds up for the move's wind-up time, rooted, then fires; the next wind-up waits until everything the move made has ended (capped at 20 s). A retreat cancels a wind-up.
+- Chosen on the INDEX tab, the HUD pop-out and the roster's side panel.
+- Chosen by the agent, not separately signed off: the 20 s cap; a move's reach for starting a wind-up; an old save's followers start on NORMAL ATTACK (the old `move` field is kept but no longer read).
+
+### Supersedes / superseded by
+Supersedes "a signature move fires by itself on its own cooldown, beside the normal attack" (`PLAYER-CLASSES.md`, build `2026-11-07i`'s SIGNATURE MOVE setter).

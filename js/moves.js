@@ -51,11 +51,31 @@ function evoMoveAllowed(f, d, id) {
     if (m.classes && typeof playerClassId === "function" && m.classes.indexOf(playerClassId()) < 0) return false;
     return true;
 }
-// The move this follower fires now: the one it was given if that is still allowed, else its form's default. null for a form with none.
+// THE ALTERNATE ATTACK IS A CHOSEN MODE (the owner, 2026-11-07: "these alternate abilities, when chosen, are like control abilities, and they're locked into that ability or that attack until
+// switched out of it and they can't use any of their other attacks [...] the wind up makes it balanced, and whenever the effect ends is when another wind up occurs, and when the wind up is occurring the
+// [...] follower cannot move"; then "Yes, exactly" and "Stays on the alternate"). A follower fights with its NORMAL ATTACK (the default) or with ONE of its form's moves, chosen (`f.alt`: on its INFO, its
+// squad card on the HUD, or the Command Center's setter). On a move it is LOCKED to it until switched back: no everyday hit, no shot, no card attack, an attack order included (js/combat.js followerAttack,
+// js/npc.js). The cycle (js/evolution.js altTick): an enemy it can see within the move's reach → its WIND-UP (moveWindupFrames; it stands still, js/npc.js) → the move → its EFFECT (what the move left in the
+// world) → when that is over, the next wind-up.
+// The move it is locked to now: its chosen one if that is still open to it; null on its normal attack (and for a form with none).
 function evoMoveOf(f, d) {
     d = d || (typeof evolvedDef === "function" ? evolvedDef(f) : null);
-    if (!d) return null;
-    if (f && f.move && evoMoveAllowed(f, d, f.move)) return MOVES[f.move];
-    const ids = evoMoveIds(d).filter(id => evoMoveAllowed(f, d, id));
-    return ids.length ? MOVES[ids[0]] : null;
+    if (!d || !f || !f.alt) return null;
+    return evoMoveAllowed(f, d, f.alt) ? MOVES[f.alt] : null;
 }
+function followerAltLocked(f) { return !!(f && f.alt && evoMoveOf(f)); }
+// Switch a follower's attack: a move id it may use, or null (its normal attack). True when it changed. A switch starts the move's cycle afresh (no wind-up carried over).
+function followerAltSet(f, id) {
+    if (!f) return false;
+    const d = typeof evolvedDef === "function" ? evolvedDef(f) : null;
+    if (id && !(d && evoMoveAllowed(f, d, id))) return false;   // (a move that is not open to it changes nothing)
+    const next = id || null;
+    if ((f.alt || null) === next) return false;
+    f.alt = next; f._altWind = 0; f._altLive = null;
+    return true;
+}
+// A move's reach (tiles): it winds up only with an enemy it can see this close, the reach the move itself looks in
+const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
+    corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, bomb_lob: () => FIRE_BARRAGE_RANGE, pinball: () => PIN_RANGE,
+    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE };
+function moveReach(id) { try { const r = MOVE_REACH[id] ? MOVE_REACH[id]() : 0; return r > 0 ? r : 5; } catch (e) { return 5; } }

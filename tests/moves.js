@@ -24,6 +24,7 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
+    vm.runInContext('globalThis.__arm = (f, id) => { const d = evolvedDef(f); f.alt = id || (f.move && evoMoveAllowed(f, d, f.move) ? f.move : evoMoveIds(d)[0]); f._altLive = null; f._altWind = 1; };', context);   // (the alternate as a chosen mode, js/moves.js: __arm locks a follower on its alternate and fires it on the next evolutionTick)
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
 
     group('THE TABLE');
@@ -41,9 +42,10 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     check('every move has an INFO row (js/unitinfo.js reads it by name)', () => { for (const id of J('Object.keys(MOVES)')) ok(J(`typeof MOVE_INFO[MOVES[${JSON.stringify(id)}].name]`) === 'function', id + ' has no MOVE_INFO'); });
 
     group('THE SAME MOVE AS BEFORE');
-    check('each form\'s default move is the function the old chain called', () => {
+    check('each form\'s first move is the function the old chain called (and on its normal attack, the default since 2026-11-07, it fires none)', () => {
         for (const [id, fn] of Object.entries(OLD)) {
-            const got = run(`(function(){ const d = EVOLUTIONS[${JSON.stringify(id)}], m = evoMoveOf({ evolved: ${JSON.stringify(id)} }, d); return m && m.fn ? m.fn.toString() : null; })()`);
+            same(run(`evoMoveOf({ evolved: ${JSON.stringify(id)} })`), null, id + ' on its normal attack');
+            const got = run(`(function(){ const d = EVOLUTIONS[${JSON.stringify(id)}], m = MOVES[evoMoveIds(d)[0]]; return m && m.fn ? m.fn.toString() : null; })()`);
             ok(got && got.indexOf(fn + '(') >= 0, id + ': ' + got + ' is not ' + fn);
         }
     });
@@ -51,24 +53,27 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
         same(J('["aegis_burst", "aegis_bloom"].filter(id => MOVES[id]).concat(["AEGIS BURST", "AEGIS BLOOM"].filter(n => MOVE_BY_NAME[n]))').join(), '', 'shield moves in the table');
         same(run(`evoMoveOf({ evolved: 'jellyram', move: 'aegis_burst' })`), null, 'a Jelly Ram saved with AEGIS BURST'); same(run(`evoMoveOf({ evolved: 'hornshell', move: 'aegis_bloom' })`), null, 'a Hornshell saved with AEGIS BLOOM');
     });
-    check('evolutionTick fires the form\'s move, once its cooldown is up', () => {
-        run(`gameState.running = true; followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__f = followers[followers.length - 1]; __f.evolved = 'quillstone'; __f._moltAt = -1e9; __f._sigCd = 0;
-             globalThis.__fired = 0; globalThis.__keep = MOVES.quill_burst.fn; MOVES.quill_burst.fn = f => { __fired++; f._sigCd = 100; return true; }; evolutionTick();`);
-        same(J('__fired'), 1, 'fired'); run('evolutionTick();'); same(J('__fired'), 1, 'fired again with its cooldown up'); run('MOVES.quill_burst.fn = __keep;');
+    check('THE ALTERNATE IS A CHOSEN MODE (the owner, 2026-11-07): on its normal attack evolutionTick fires no move; locked on one (followerAltSet), the move fires when its wind-up runs out, once; set back to NORMAL it is unlocked', () => {
+        run(`gameState.running = true; followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__f = followers[followers.length - 1]; __f.evolved = 'quillstone'; __f._moltAt = -1e9;
+             globalThis.__fired = 0; globalThis.__keep = MOVES.quill_burst.fn; MOVES.quill_burst.fn = f => { __fired++; f._sigAt = frame; return true; }; evolutionTick();`);
+        same(J('__fired'), 0, 'fired on its normal attack');
+        same(J('[followerAltSet(__f, "quill_burst"), followerAltLocked(__f), followerAltSet(__f, "chomp"), __f.alt]').join(), 'true,true,false,quill_burst', 'locked on it (another form\'s move changes nothing)');
+        run('__f._altWind = 1; evolutionTick();'); same(J('__fired'), 1, 'fired when its wind-up ran out'); same(J('__f._altWind'), 0, 'no wind-up left');
+        same(J('[followerAltSet(__f, null), __f.alt, followerAltLocked(__f)]').join(), 'true,,false', 'back on its normal attack'); run('MOVES.quill_burst.fn = __keep;');
     });
 
     group('CHOOSING A MOVE');
     check('a move on the form\'s list can be given to a follower; one that is not on it is ignored', () => {
         run(`MOVES.__extra = { id: '__extra', name: 'EXTRA', fn: f => true }; EVOLUTIONS.quillstone.moves = ['quill_burst', '__extra'];`);
-        same(run(`evoMoveOf({ evolved: 'quillstone', move: '__extra' }).id`), '__extra', 'allowed move');
-        same(run(`evoMoveOf({ evolved: 'quillstone', move: 'chomp' }).id`), 'quill_burst', 'a move of another form');
-        same(run(`evoMoveOf({ evolved: 'quillstone', move: 'nonsense' }).id`), 'quill_burst', 'an unknown move');
-        same(run(`evoMoveOf({ evolved: 'quillstone' }).id`), 'quill_burst', 'no choice: the default (first)');
+        same(run(`evoMoveOf({ evolved: 'quillstone', alt: '__extra' }).id`), '__extra', 'allowed move');
+        same(run(`evoMoveOf({ evolved: 'quillstone', alt: 'chomp' })`), null, 'a move of another form');
+        same(run(`evoMoveOf({ evolved: 'quillstone', alt: 'nonsense' })`), null, 'an unknown move');
+        same(run(`evoMoveOf({ evolved: 'quillstone' })`), null, 'no choice: its normal attack');
     });
     check('a class-only move is open only to that class', () => {
         run(`MOVES.__extra.classes = ['engineer']; globalThis.playerClassId = () => 'commander';`);
-        same(run(`evoMoveOf({ evolved: 'quillstone', move: '__extra' }).id`), 'quill_burst', 'as commander');
-        run(`globalThis.playerClassId = () => 'engineer';`); same(run(`evoMoveOf({ evolved: 'quillstone', move: '__extra' }).id`), '__extra', 'as engineer');
+        same(run(`evoMoveOf({ evolved: 'quillstone', alt: '__extra' })`), null, 'as commander');
+        run(`globalThis.playerClassId = () => 'engineer';`); same(run(`evoMoveOf({ evolved: 'quillstone', alt: '__extra' }).id`), '__extra', 'as engineer');
         run(`delete MOVES.__extra; delete EVOLUTIONS.quillstone.moves; delete globalThis.playerClassId;`);
     });
 

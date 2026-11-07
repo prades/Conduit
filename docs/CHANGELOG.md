@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **ff · The alternate attack is a chosen mode** (the owner, 2026-11-07: "the alternate attacks must be visitable from the index and the pop out menu on the hood [...] they're locked into that ability or that attack until switched out of it and they can't use any of their other attacks [...] whenever the effect ends is when another wind up occurs, and when the wind up is occurring the [...] follower cannot move"; then "Yes, exactly" (no alternate fires on its own) and "Stays on the alternate" (attack orders keep it); ee "Push to main"). Implemented and tested on the branch; not playtested.
+  - An evolved follower fights with its **NORMAL ATTACK** until one of its alternates is chosen. A chosen alternate is its **only** attack (no plain hit, no element move, no Mage's shot) until it is switched back to NORMAL ATTACK; attack orders keep it on the alternate.
+  - The cycle: with an enemy in the move's reach it **winds up, rooted** (it cannot move), fires, and the next wind-up starts only **when the effect has ended** (its projectiles, bombs, circles, vortex, decoy or roll are gone; at most 20 s). The wind-up times are the moves' own, unchanged.
+  - Chosen in three places: the **INDEX** tab of its card (ATTACK: NORMAL ATTACK or each alternate, the chosen one LOCKED ON, with WINDING UP / effect on / READY), the **HUD pop-out** of a squad member (an ATTACK row), and the **roster's side panel** (ATTACK, for the followers picked; replaces SIGNATURE MOVE).
+  - Saved with the follower (`alt`), and kept through a respawn. A game saved before this build: every follower on its normal attack.
+  - The game index and the Bible say the same.
+  - Tests: moves, evolution, followercombat (a new check: the chosen mode), firebombs, unitinfo, commandcenter.
+
 - **ee · DRIFT SLASH swings in an oval** (the owner, 2026-11-07, on the screenshots: "the hover shell is supposed to have a circular sort of slash, like a sword, like he goes in and turns around like an oval shape"; dd "Push to main"). Implemented and tested on the branch; not playtested.
   - The Hover Shell no longer drifts in straight legs: it swings out from its post round the biggest group it can see in an **oval** (its far end 1.5 tiles past the enemy it aims at, 1.6 tiles either side), and back to its post, in 36 frames; every enemy within 1.8 tiles of its blade is slashed once (1.5 × its power, half slashing, half electric). A curved sword trail follows it round. Where a wall is in the way the oval is drawn narrower and shorter. The interrupt and the squad's speed are as they were. Numbers provisional (`ULT_DRIFT`).
   - Seen in the game: its plain crushing hit still fires while it swings (the "CRUSHING WEAK!" tags in the screenshot); the slash itself is slashing and electric.

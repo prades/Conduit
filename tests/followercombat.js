@@ -101,6 +101,7 @@ function measure(w, h) {
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context);
+    vm.runInContext('globalThis.__arm = (f, id) => { const d = evolvedDef(f); f.alt = id || (f.move && evoMoveAllowed(f, d, f.move) ? f.move : evoMoveIds(d)[0]); f._altLive = null; f._altWind = 1; };', context);   // (the alternate as a chosen mode, js/moves.js: __arm locks a follower on its alternate and fires it on the next evolutionTick)
     const J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     run(`gameState.running = true; facilityBlackoutSet(false); unlockedElements = new Set(ELEMENTS.map(e => e.id)); TUT.followerLevel = 0;`);
     // An open patch of the arena's floor (the cell with the most floor round it), the player off to one side; creatures that hold still and do not die; a follower of a form at level 20.
@@ -112,7 +113,7 @@ function measure(w, h) {
         globalThis.__fol = (el, role, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.evolved = evo || undefined; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.stance = 'hold'; f.x = __C[0]; f.y = __C[1]; return f; };
         globalThis.__off = f => { actors = actors.filter(a => a !== f); followers = followers.filter(a => a !== f); };   // (out of the world: its own AI and melee add nothing; its shots and fields keep it as their source)
         globalThis.__dmg = p => 1e6 - p.health;
-        globalThis.__fire = f => { frame++; f._sigCd = 1; evolutionTick(); };
+        globalThis.__fire = f => { frame++; __arm(f); evolutionTick(); };
         globalThis.__one = (f, x, y, sp) => { const twin = __foe(x, y, sp); return twin; };
         globalThis.__scr = (wx, wy) => { let sx = (wx - player.visualX - (wy - player.visualY)) * TILE_W + canvas.width / 2, sy = (wx - player.visualX + (wy - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H; for (let i = 0; i < 8; i++) { const w = techScreenToWorld(sx, sy), ex = wx - w.x, ey = wy - w.y; if (Math.hypot(ex, ey) < 1e-4) break; sx += (ex - ey) * TILE_W; sy += (ex + ey) * TILE_H; } return { x: sx, y: sy }; };
         globalThis.__burrower = () => { const f = __fol('fire', 'camper', 'thermite'); partyAdd([f]); techAbilityTick(); f._abReadyAt = 0; f._ab2ReadyAt = 0; f.attackCooldown = 0; f.ultimateCharge = 100; return f; };   // (FAULTLINE is its Ultimate: charged)
@@ -164,9 +165,9 @@ function measure(w, h) {
     });
     check('nobody in reach: no quills and no wait spent; QUILL BURST stays its default move and FIRE BOMBS a choice on INFO; its main attack (the Brawler\'s plain hit, Piercing) is kept', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'); __foe(f.x + QUILL_RANGE + 0.6, f.y); __fire(f);
-            return { n: followerProjectiles.length, cd: f._sigCd, ids: evoMoveIds(EVOLUTIONS.quillstone), def: evoMoveOf(f).id, info: followerInfo(f).attacks.filter(s => s.choices).map(s => s.choices.map(c => c.label)), main: DMG_FORM.quillstone.main, alt: DMG_FORM.quillstone.alt, shot: EVOLUTIONS.quillstone.shot || null }; })()`);
-        same(r.n, 0, 'quills at an enemy out of reach'); ok(r.cd <= 0, 'a wait for nothing: ' + r.cd);
-        same(r.ids.join(), 'quill_burst,bomb_lob', 'its moves'); same(r.def, 'quill_burst', 'its default'); same(JSON.stringify(r.info), JSON.stringify([['QUILL BURST', 'FIRE BOMBS']]), 'the INFO choice');
+            return { n: followerProjectiles.length, cd: f._sigCd, ids: evoMoveIds(EVOLUTIONS.quillstone), def: evoMoveIds(EVOLUTIONS.quillstone)[0], info: followerInfo(f).attacks.filter(s => s.choices).map(s => s.choices.map(c => c.label)), main: DMG_FORM.quillstone.main, alt: DMG_FORM.quillstone.alt, shot: EVOLUTIONS.quillstone.shot || null }; })()`);
+        same(r.n, 0, 'quills at an enemy out of reach'); ok(!(r.cd > 0), 'a wait for nothing: ' + r.cd);
+        same(r.ids.join(), 'quill_burst,bomb_lob', 'its moves'); same(r.def, 'quill_burst', 'its first move'); same(JSON.stringify(r.info), JSON.stringify([['NORMAL ATTACK', 'QUILL BURST', 'FIRE BOMBS']]), 'the INFO choice (2026-11-07: its normal attack, or an alternate)');
         same(r.main, 'piercing', 'its main attack\'s type'); same(r.alt, 'projectile', 'QUILL BURST\'s type'); same(r.shot, null, 'a shot of its own (a Brawler has none)');
     });
 
@@ -260,7 +261,7 @@ function measure(w, h) {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); f.move = 'pinball'; __foe(f.x + PIN_RANGE + 0.7, f.y); __fire(f); const out = { roll: !!f._pinball, cd: f._sigCd };
             out.legacy = ['manta', 'prism', 'voltring'].map(k => evoMoveIds(EVOLUTIONS[k]).join()); out.hover = evoMoveIds(EVOLUTIONS.hovershell).length;
             out.sees = (function(){ const g = { x: __C[0], y: __C[1] }, cells = partyRoomCells('arena'); return typeof _pinSees === 'function' && cells.length > 0; })(); return out; })()`);
-        same(r.roll, false, 'a roll at an enemy out of reach'); ok(r.cd <= 0, 'a wait for nothing: ' + r.cd); same(r.legacy.join('|'), 'static_rush|static_rush|static_rush', 'the retired forms'); same(r.hover, 0, 'the Hover Shell has a move'); ok(r.sees, 'no sight check');
+        same(r.roll, false, 'a roll at an enemy out of reach'); ok(!(r.cd > 0), 'a wait for nothing: ' + r.cd); same(r.legacy.join('|'), 'static_rush|static_rush|static_rush', 'the retired forms'); same(r.hover, 0, 'the Hover Shell has a move'); ok(r.sees, 'no sight check');
         ok(/_pinSees\(f, a\)/.test(rd('js/evolution.js')) && /facilityLosFrom\(f\.x, f\.y, a\.x, a\.y\)/.test(rd('js/evolution.js')), 'PINBALL does not ask whether it can see its target');
     });
 
@@ -450,7 +451,7 @@ function measure(w, h) {
     check('MAGMA VENT (the Thermite Burrower\'s move; the owner: "Short and hot"): a vent MAGMA_RADIUS tiles round opens under the enemy it can see within MAGMA_RANGE, bites at once and every MAGMA_TICK frames for MAGMA_LIFE frames, enemies only; then moveWindupFrames("magma_vent") frames before the next', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'camper', 'thermite'), t = __foe(f.x + 4, f.y + 0.5), far = __foe(f.x + 4 + MAGMA_RADIUS + 1, f.y + 0.5); const fired = magmaVent(f), cd = f._sigCd; const v = elementEffects.find(e => e.type === 'magmavent');
             const first = __dmg(t), farFirst = __dmg(far); let bites = 0, last = first, k = 0; while (elementEffects.some(e => e.type === 'magmavent') && k < 600) { render(); k++; const d = __dmg(t); if (d !== last) { bites++; last = d; } }
-            return { fired, move: evoMoveOf(f).name, at: v && [Math.round(v.x * 10) / 10, Math.round(v.y * 10) / 10], t: [Math.round(t.x * 10) / 10, Math.round(t.y * 10) / 10], r: v && v.radius, first: first > 0, far: farFirst, bites, gone: k, cd, want: [MAGMA_RADIUS, MAGMA_LIFE, MAGMA_TICK, moveWindupFrames("magma_vent")] }; })()`);
+            return { fired, move: MOVES[evoMoveIds(EVOLUTIONS.thermite)[0]].name, at: v && [Math.round(v.x * 10) / 10, Math.round(v.y * 10) / 10], t: [Math.round(t.x * 10) / 10, Math.round(t.y * 10) / 10], r: v && v.radius, first: first > 0, far: farFirst, bites, gone: k, cd, want: [MAGMA_RADIUS, MAGMA_LIFE, MAGMA_TICK, moveWindupFrames("magma_vent")] }; })()`);
         same(r.fired, true, 'it did not open'); same(r.move, 'MAGMA VENT', 'the Thermite Burrower\'s move'); same(JSON.stringify(r.at), JSON.stringify(r.t), 'not under the enemy');
         same(r.r, r.want[0], 'its radius'); same(r.first, true, 'no bite as it opened'); same(r.far, 0, 'it reached an enemy beyond its radius');
         same(r.bites, Math.floor(r.want[1] / r.want[2]) - 1, 'bursts after the first (one a second while it is open): ' + r.bites); ok(r.gone <= r.want[1] + 2, 'it stayed open too long: ' + r.gone); same(r.cd, r.want[3], 'the wait');
@@ -607,6 +608,20 @@ function measure(w, h) {
         same(r.wave.join(), 'Wave Maker,true,true,true,true,0,true', 'WAVE MAKER: spent, the enemy ahead hit and thrown by all three waves, the one behind untouched, it moved up 3 tiles');
         same(r.int.join(), '0,true', 'DRIFT SLASH interrupts: the wind-up cancelled, its wind-ups failing');
         same(r.drift.join(), 'Drift Slash,true,true,true,true,true,1.3,true', 'DRIFT SLASH: spent, both slashed by the oval, it swung out and came back to its post, 30% faster for 6 s');
+    });
+    check('THE ALTERNATE IS A CHOSEN MODE (the owner, 2026-11-07: "locked into that ability [...] the wind up makes it balanced, and whenever the effect ends is when another wind up occurs, and when the wind up is occurring the [...] follower cannot move"; "Yes, exactly"; "Stays on the alternate"): on its normal attack no move fires; locked on STATIC VORTEX it winds up for the move\'s wind-up standing still and makes no normal attack (an attack order included), fires, and winds up again only once the vortex is gone', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('electric', 'sniper', 'thunderhead'), t = __foe(f.x + 3, f.y), o = {}, vortex = () => elementEffects.some(e => e.type === 'staticVortex');
+            for (let i = 0; i < 400; i++) { frame++; evolutionTick(); } o.normal = [vortex(), !!f._altWind];
+            o.set = followerAltSet(f, 'static_vortex'); frame++; evolutionTick(); o.wind = [f._altWind, moveWindupFrames('static_vortex')];
+            const x0 = f.x, y0 = f.y, h0 = __dmg(t); f.attackOrder = t; let n = 0; while (f._altWind > 0 && n < 2000) { frame++; updateNPC(f); followerAttack(f, t); evolutionTick(); n++; }
+            o.held = [Math.hypot(f.x - x0, f.y - y0) < 1e-6, __dmg(t) === h0, n]; o.fired = [vortex(), !!f._altLive];
+            let k = 0, waited = true; while (f._altLive && k < 3000) { if (f._altWind > 0) waited = false; frame++; updateElementEffects(); evolutionTick(); k++; }
+            o.after = [waited, vortex(), f._altWind === moveWindupFrames('static_vortex')]; f.attackOrder = null; return o; })()`);
+        same(r.normal.join(), 'false,false', 'a move on its normal attack');
+        same(r.set, true, 'locked on it'); same(r.wind[0], r.wind[1], 'its wind-up (frames)');
+        same(r.held.slice(0, 2).join(), 'true,true', 'during the wind-up it moved, or hit with its normal attack: ' + JSON.stringify(r.held)); ok(r.held[2] >= r.wind[1] - 2, 'the wind-up was cut short: ' + r.held[2]);
+        same(r.fired.join(), 'true,true', 'the vortex, and the effect it waits on');
+        same(r.after.join(), 'true,false,true', 'no wind-up while the vortex was on; the next one began when it was gone');
     });
     check('WHITEOUT (the owner, 2026-11-07): the Rime Star\'s snowstorm moves with it for 6 s, slows the enemies in it to half speed and bites them (ice) every 0.5 s', () => {
         const r = J(`(function(){ __clear(); const rs = __fol('ice', 'sniper', 'rimestar'), a = __foe(rs.x + 2.5, rs.y); rs.ultimateCharge = 100; followerUltimate(rs).execute(rs);

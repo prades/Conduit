@@ -27,6 +27,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
+    vm.runInContext('globalThis.__arm = (f, id) => { const d = evolvedDef(f); f.alt = id || (f.move && evoMoveAllowed(f, d, f.move) ? f.move : evoMoveIds(d)[0]); f._altLive = null; f._altWind = 1; };', context);   // (the alternate as a chosen mode, js/moves.js: __arm locks a follower on its alternate and fires it on the next evolutionTick)
     run(`gameState.running = true; facilityBlackoutSet(false); unlockedElements = new Set(ELEMENTS.map(e => e.id)); TUT.followerLevel = 0;`);
     // THE OPEN FIELD. Most scenes here are staged off the map (around x 20, y 2): an open field with nothing in it, where a move's own mechanics are measured (its damage, jumps, waits, stuns). Since build
     // 2026-11-06i every move needs sight (the owner: "Need sight"), and SONIC ROLL's dash a straight walk; off the map there is no floor, so here, between two points both off the map, sight and a straight walk
@@ -159,7 +160,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.role = 'brawler'; f.evolved = 'bloom'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const near = mkP(21), far = mkP(24);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const out = { near: 1e6 - near.health, burn: near.burning > 0, far: 1e6 - far.health, cd: f._sigCd };
             near.health = 1e6; evolutionTick(); out.again = 1e6 - near.health;
             near.dead = far.dead = true; return out; })()`);
@@ -174,7 +175,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const c = [..._fp.cellsP.values()].find(q => _fp.cellsP.has((q[0] + 5) + ',' + q[1]) && facilitySeesFrom(q[0], q[1], q[0] + 5, q[1]));   // (on the floor, in sight: a move that flies is aimed only at what the follower sees, Milestone Two)
             spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'quillstone'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = c[0]; f.y = c[1]; f.stance = 'hold';
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), c[0] + 3, c[1]); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            frame++; f._sigCd = 1; evolutionTick();
+            frame++; __arm(f); evolutionTick();
             const q = followerProjectiles.filter(x => x.kind === 'quill'), out = { n: q.length, cd: f._sigCd, src: q.every(x => x.source === f) };
             followerProjectiles.length = 0; p.dead = true; return out; })()`);
         same(r.n, 5, 'quills'); same(r.cd, 240, 'its wait'); ok(r.src, 'the quills are its own');
@@ -186,7 +187,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); elementEffects.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'thunderhead'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 24, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            frame++; f._sigCd = 1; evolutionTick();
+            frame++; __arm(f); evolutionTick();
             const out = { vortex: elementEffects.filter(e => e.type === 'staticVortex').length, move: evoMoveOf(f).id, cd: f._sigCd };
             p.dead = true; elementEffects.length = 0; return out; })()`);
         same(r.vortex, 1, 'a vortex cast'); same(r.move, 'static_vortex', 'its move'); same(r.cd, 330, 'its wait');
@@ -197,7 +198,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('electric'); const f = followers[followers.length - 1]; f.role = 'sniper'; f.evolved = 'reaver'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(24, 2), b = mkP(25.5, 2.5), c = mkP(26.8, 1.5), lone = mkP(32, 2), tooFar = mkP(20, 40);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), c: d(c), lone: d(lone), arcs: (f._arcPts || []).length };
             [a, b, c, lone, tooFar].forEach(p => p.dead = true); return out; })()`);
         ok(r.a > r.b && r.b > 0 && r.c > 0, 'the arc and its jumps: ' + JSON.stringify(r));
@@ -213,7 +214,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 const c = [..._fp.cellsP.values()].find(q => _fp.cellsP.has((q[0] + 5) + ',' + q[1]) && facilitySeesFrom(q[0], q[1], q[0] + 5, q[1]));   // (on the floor, in sight: Milestone Two)
                 spawnFollowerAtCrystal('fire'); const f = followers[0]; f.role = 'sniper'; f.evolved = evo; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = c[0]; f.y = c[1];
                 const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), c[0] + 5, c[1]); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-                frame++; f._sigCd = 1; evolutionTick();
+                frame++; __arm(f); evolutionTick();
                 const h = followerProjectiles.filter(x => x.kind === 'hex'); out[evo] = { n: h.length, dmg: h.length ? h[0].damage : null, cd: f._sigCd };
                 followerProjectiles.length = 0; p.dead = true; }
             return out; })()`);
@@ -225,7 +226,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('toxic'); const f = followers[0]; f.role = 'sniper'; f.evolved = 'rotshard'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(24, 2), b = mkP(25, 2.8), far = mkP(40, 2), apart = mkP(24, 7);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), apart: d(apart), sa: [a.defenseShredded, a.defenseShredFactor], sb: [b.defenseShredded, b.defenseShredFactor], sfar: far.defenseShredded || 0, sapart: apart.defenseShredded || 0, cd: f._sigCd };
             [a, b, far, apart].forEach(p => p.dead = true); return out; })()`);
         ok(r.a > 0 && r.b === 0, 'one shot, into the nearest: ' + JSON.stringify(r));
@@ -240,7 +241,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP('ant', 21.2, 2), b = mkP('ant', 20, 3.4), beetle = mkP('beetle', 18.8, 2), far = mkP('ant', 25, 2);
             const a0 = Math.hypot(a.x - f.x, a.y - f.y), beetle0 = beetle.x;
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), beetle: d(beetle), far: d(far), pushed: Math.hypot(a.x - f.x, a.y - f.y) - a0, beetleMoved: beetle.x !== beetle0, slowed: a.slowed > 0 && b.slowed > 0, sf: a.slowFactor, farSlowed: far.slowed > 0, cd: f._sigCd };
             [a, b, beetle, far].forEach(p => p.dead = true); return out; })()`);
         ok(r.a > 0 && r.b > 0 && r.beetle > 0, 'the slam hit: ' + JSON.stringify(r));
@@ -259,7 +260,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 followers.length = 0; actors = actors.filter(a => !(a instanceof Predator));
                 spawnFollowerAtCrystal('core'); const f = followers[0]; f.role = EVOLUTIONS[id].role; f.evolved = id; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
                 spawnFollowerAtCrystal('fire'); const al = followers[1]; al.returningToCrystal = false; al.x = 21; al.y = 2; al.health = Math.round(al.maxHealth * 0.3); al.shielded = false; al.shieldAmount = 0;
-                const p = mkP(21.4); for (let k = 0; k < 3; k++) { frame++; f._sigCd = 1; evolutionTick(); }
+                const p = mkP(21.4); for (let k = 0; k < 3; k++) { frame++; __arm(f); evolutionTick(); }
                 if (f._sigAt !== undefined || al.shielded || f.shielded || p.health < 1e6) o.cast.push(id);
                 p.dead = true;
             }
@@ -286,10 +287,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('toxic'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'seeper'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(21.2, 2), b = mkP(20, 3.5), far = mkP(24, 2);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), sa: [a.defenseShredded, a.defenseShredFactor], sb: [b.defenseShredded, b.defenseShredFactor], sfar: far.defenseShredded || 0, cd: f._sigCd };
             [a, b, far].forEach(p => p.dead = true);
-            const lone = mkP(24, 2); frame++; f._sigCd = 1; f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
+            const lone = mkP(24, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
         ok(r.a > 0 && r.b > 0 && r.a === r.b, 'both in the blast take the same: ' + JSON.stringify(r)); same(r.far, 0, 'damage outside the blast');
         ok(r.sa[0] >= run('CALDERA_SHRED_FRAMES') && r.sa[1] === 0.5 && r.sb[1] === 0.5, 'armour eaten (it takes double): ' + JSON.stringify(r));
         same(r.sfar, 0, 'armour eaten outside the blast'); ok(r.cd > 300, 'it did not wait'); ok(!r.loneCast, 'it erupted with nothing in reach');
@@ -300,10 +301,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('toxic'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'caldera'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(21.2, 2), b = mkP(20, 3.5), far = mkP(24, 2);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), sa: [a.defenseShredded, a.defenseShredFactor], sb: [b.defenseShredded, b.defenseShredFactor], sfar: far.defenseShredded || 0, cd: f._sigCd };
             [a, b, far].forEach(p => p.dead = true);
-            const lone = mkP(24, 2); frame++; f._sigCd = 1; f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
+            const lone = mkP(24, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
         ok(r.a > 0 && r.b > 0 && r.a === r.b, 'both in the blast take the same: ' + JSON.stringify(r)); same(r.far, 0, 'damage outside the blast');
         ok(r.sa[0] >= run('CALDERA_SHRED_FRAMES') && r.sa[1] === 0.5 && r.sb[1] === 0.5, 'armour eaten (it takes double): ' + JSON.stringify(r));
         same(r.sfar, 0, 'armour eaten outside the blast'); ok(r.cd > 300, 'it did not wait'); ok(!r.loneCast, 'it erupted with nothing in reach');
@@ -314,10 +315,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('ice'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'maw'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(21.2, 2), b = mkP(21.9, 2.8), far = mkP(24, 2), apart = mkP(21.2, 5);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { a: d(a), b: d(b), far: d(far), stunA: a.hitStun || 0, stunB: b.hitStun || 0, realA: a.stunned || 0, realB: b.stunned || 0, slowA: a.slowed > 0, slowB: a.slowed > 0 && b.slowed > 0, sf: b.slowFactor, farSlow: far.slowed > 0, apartSlow: apart.slowed > 0, cd: f._sigCd };
             [a, b, far, apart].forEach(p => p.dead = true);
-            const lone = mkP(23.5, 2); frame++; f._sigCd = 1; f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
+            const lone = mkP(23.5, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
         ok(r.a > 0 && r.b === 0, 'one bite, into the nearest: ' + JSON.stringify(r)); ok(r.stunA >= 60 && r.stunB === 0, 'frozen stiff (only the one bitten): ' + JSON.stringify(r)); ok(r.realA >= 60 && r.realB === 0, 'the stun is real, not a number nothing reads (only the one bitten): ' + JSON.stringify(r));
         ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 250, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
@@ -328,7 +329,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.5, 2.5), beetle = mkP('beetle', 25.5, 1.2), apart = mkP('ant', 29, 2), tooFar = mkP('ant', 40, 2);
             const m0 = Math.hypot(mate.x - tgt.x, mate.y - tgt.y), b0 = Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { tgt: d(tgt), mate: d(mate), mateIn: m0 - Math.hypot(mate.x - tgt.x, mate.y - tgt.y), beetleIn: b0 - Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y),
                 slowed: mate.slowed > 0, apartMoved: apart.x !== 29, cd: f._sigCd };
             [tgt, mate, beetle, apart, tooFar].forEach(p => p.dead = true); return out; })()`);
@@ -345,7 +346,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const mkP = (sp, x, y) => { const S = SPECIES[sp], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const tgt = mkP('ant', 25, 2), mate = mkP('ant', 26.5, 2.5), beetle = mkP('beetle', 25.5, 1.2), apart = mkP('ant', 29, 2), tooFar = mkP('ant', 40, 2);
             const m0 = Math.hypot(mate.x - tgt.x, mate.y - tgt.y), b0 = Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { tgt: d(tgt), mate: d(mate), mateIn: m0 - Math.hypot(mate.x - tgt.x, mate.y - tgt.y), beetleIn: b0 - Math.hypot(beetle.x - tgt.x, beetle.y - tgt.y),
                 slowed: mate.slowed > 0, apartMoved: apart.x !== 29, cd: f._sigCd };
             [tgt, mate, beetle, apart, tooFar].forEach(p => p.dead = true); return out; })()`);
@@ -367,7 +368,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'manta'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, mkP = (x, y) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             const a = mkP(23, 2), b = mkP(24.5, 2.4), c = mkP(25.8, 1.6), far = mkP(24, 8);
-            frame++; f._sigCd = 1; evolutionTick();   // a new frame: the unit index is rebuilt per frame
+            frame++; __arm(f); evolutionTick();   // a new frame: the unit index is rebuilt per frame
             const d = p => 1e6 - p.health, out = { dist: Math.hypot(a.x - f.x, a.y - f.y), a: d(a), b: d(b), c: d(c), far: d(far), stun: [a, b, c].every(p => p.hitStun >= MANTA_STUN), real: [a, b, c].every(p => p.stunned > 0), cd: f._sigCd };
             [a, b, c, far].forEach(p => p.dead = true); return out; })()`);
         ok(r.dist < 1 && r.a > r.b && r.b > 0 && r.c > 0, 'the dash and the shocks: ' + JSON.stringify(r));
@@ -377,7 +378,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'prism'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            frame++; f._sigCd = 1; evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
+            frame++; __arm(f); evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
         ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
     });
 
@@ -385,7 +386,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'staticorb'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            frame++; f._sigCd = 1; evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
+            frame++; __arm(f); evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
         ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
     });
 
@@ -393,7 +394,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;
             spawnFollowerAtCrystal('electric'); const f = followers[0]; f.role = 'brawler'; f.evolved = 'voltring'; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.x = 20; f.y = 2;
             const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), 23, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p);
-            frame++; f._sigCd = 1; evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
+            frame++; __arm(f); evolutionTick(); const out = { dist: Math.hypot(p.x - f.x, p.y - f.y), dmg: 1e6 - p.health, stun: p.hitStun >= MANTA_STUN }; p.dead = true; return out; })()`);
         ok(r.dist < 1 && r.dmg > 0 && r.stun, 'the prism hood did not rush: ' + JSON.stringify(r));
     });
 

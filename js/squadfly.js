@@ -39,9 +39,9 @@ function partyFlyClick(ev) {
     const f = _sfEls ? _sfEls.subject : null; if (!f) return;
     // A CARD SLOT's list: a card picked goes on (EMPTY takes the card off); the slot's own row opens or shuts its list (one open at a time)
     const o = t.closest(".sf-opt");
-    if (o) { if (o.disabled) return; const raw = o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (raw === "sp") { if (typeof equipSpecialPut === "function") equipSpecialPut(f, id); } else if (typeof equipPut === "function") equipPut(f, +raw, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
+    if (o) { if (o.disabled) return; const raw = o.getAttribute("data-slot"), id = o.getAttribute("data-card") || null; if (raw === "alt") { if (typeof followerAltSet === "function") followerAltSet(f, id); } else if (raw === "sp") { if (typeof equipSpecialPut === "function") equipSpecialPut(f, id); } else if (typeof equipPut === "function") equipPut(f, +raw, id); _sfDD = null; partyFlyRender(true); if (typeof partyBarRender === "function") partyBarRender(true); return; }
     const s = t.closest(".sf-slot");
-    if (s) { if (s.disabled) return; const raw = s.getAttribute("data-slot"), slot = raw === "sp" ? "sp" : +raw; _sfDD = _sfDD === slot ? null : slot; partyFlyRender(true); return; }
+    if (s) { if (s.disabled) return; const raw = s.getAttribute("data-slot"), slot = raw === "sp" || raw === "alt" ? raw : +raw; _sfDD = _sfDD === slot ? null : slot; partyFlyRender(true); return; }
     const b = t.closest("[data-act]"); if (!b) return;
     const act = b.getAttribute("data-act");
     if (act === "index") { if (typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
@@ -73,11 +73,26 @@ function _sfSwapDraw(E, f) {
 function _sfCardsDraw(E, f) {
     const box = E.cards; if (!box) return;
     const can = !!f && f.isFollower === true && !f.isClone && typeof equipSlots === "function" && typeof EQUIP !== "undefined";
-    const sig = can ? [typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || ""].join("|") : "";
+    const ev = f && f.evolved && !f.isClone && typeof evolvedDef === "function" ? evolvedDef(f) : null, altIds = ev && typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => evoMoveAllowed(f, ev, id)) : [];   // (its alternates: js/moves.js)
+    const sig = can || altIds.length ? [can && typeof equipSig === "function" ? equipSig(f) : "", _sfDD, f.uid || f.id || "", f.alt || "", altIds.join()].join("|") : "";
     if (sig === E.cardSig) return;
-    E.cardSig = sig; box.textContent = ""; if (box.style) box.style.display = can ? "" : "none"; if (!can) return;
+    E.cardSig = sig; box.textContent = ""; if (box.style) box.style.display = can || altIds.length ? "" : "none"; if (!can && !altIds.length) return;
     const all = typeof equipUsableCards === "function" ? equipUsableCards() : [], chip = c => typeof _cdChip === "function" ? _cdChip(c, true) : null;
     const mk = (tag, cls, txt) => { const e = document.createElement(tag); e.className = cls; if (txt != null) e.textContent = txt; return e; };
+    // ITS ATTACK (the owner, 2026-11-07: "the alternate attacks must be visible from the index and the pop out menu on the HUD"): NORMAL ATTACK, or one alternate it is locked to (js/moves.js followerAltSet)
+    if (altIds.length) {
+        const cur = typeof evoMoveOf === "function" ? evoMoveOf(f, ev) : null, open = _sfDD === "alt";
+        const b = mk("button", "sf-slot sp" + (open ? " open" : "")); b.type = "button"; b.setAttribute("data-slot", "alt");
+        b.appendChild(mk("span", "sf-sk", "ATTACK")); b.appendChild(mk("span", "sf-sv", cur ? cur.name + (f._altWind > 0 ? " · WINDING UP" : " · LOCKED ON") : "NORMAL ATTACK")); b.appendChild(mk("span", "sf-sa", open ? "\u25b4" : "\u25be"));
+        box.appendChild(b);
+        if (open) {
+            const list = mk("div", "sf-slot-list"), opt = (label, sub, on, id) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", "alt"); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); el.appendChild(mk("small", "sf-os", sub)); list.appendChild(el); };
+            opt("NORMAL ATTACK", "ITS EVERYDAY HITS", !cur, null);
+            for (const id of altIds) opt(MOVES[id].name, "LOCKED ON IT: IT WINDS UP STANDING STILL, AND AGAIN WHEN ITS EFFECT IS OVER", !!cur && cur.id === id, id);
+            box.appendChild(list);
+        }
+    }
+    if (!can) return;
     // CARD 1 and CARD 2 list the cards that are not card attacks; SPECIAL ATTACK ("sp": the owner, 2026-11-06, "Including access main hud") lists the card attacks (js/cards.js equipSpecialWhyNot)
     for (const slot of [0, 1].concat(typeof equipSpecialFor === "function" && equipSpecialFor(f) ? ["sp"] : [])) {   // (its SPECIAL ATTACK only on a form some card attack is for)
         const sp = slot === "sp", hand = all.filter(c => !!c.attack === sp), why0 = c => sp ? equipSpecialWhyNot(f, c.id) : equipWhyNot(f, c.id, slot);

@@ -351,12 +351,40 @@ function evolutionTick() {
         if (d.role && f.role !== d.role) f.role = d.role;   // its role is fixed
         if (f0 - (f._moltAt || -1e9) < EVO_MOLT) continue;   // still coming out of the egg
         if (f._pinball) continue;   // a PINBALL rolling: nothing else fires, and its wait starts when it stops (pinballStep)
-        f._sigCd = (f._sigCd || 0) - 1;
-        if (f._sigCd > 0) continue;
-        if (f.retreatUntil > f0) continue;   // told to RETREAT (js/mixtool.js): no signature moves until it is over
-        const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;   // js/moves.js: the move it fires (a form's default until it is given another)
-        if (mv && mv.fn) mv.fn(f);
+        altTick(f, d, f0);   // its chosen alternate's cycle (js/moves.js: on its normal attack it has none)
     }
+}
+// THE ALTERNATE'S CYCLE (js/moves.js, "THE ALTERNATE ATTACK IS A CHOSEN MODE"): READY → WIND-UP (f._altWind frames, standing still: js/npc.js) → the move → its EFFECT (f._altLive: the effects, shots, bombs
+// and decoys the move put in the world, and a PINBALL's roll) → READY. A move that finds nothing when its wind-up ends does not fire: it is READY again. RETREAT (js/mixtool.js) holds the cycle.
+const ALT_EFFECT_CAP = 1200;   // (frames: an effect still in the world after this no longer holds the next wind-up)
+function altTick(f, d, f0) {
+    const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
+    if (!mv) { f._altWind = 0; f._altLive = null; return; }
+    if (f.retreatUntil > f0) { f._altWind = 0; return; }
+    if (f._altLive) { if (f0 - f._altLive.t0 < ALT_EFFECT_CAP && _altLiveAny(f._altLive)) return; f._altLive = null; }
+    if (f._altWind > 0) { if (--f._altWind > 0) return; _altFire(f, mv, f0); return; }
+    if (_evoFoesSeen(f.x, f.y, moveReach(mv.id)).length) { f._altWind = moveWindupFrames(mv.id); f._altWindMax = f._altWind; f._fpPath = null; }
+}
+function _altFire(f, mv, f0) {
+    const has = a => typeof a !== "undefined" && Array.isArray(a), seen = { fx: new Set(has(elementEffects) ? elementEffects : []), pr: new Set(typeof followerProjectiles !== "undefined" ? followerProjectiles : []), bm: new Set(typeof fireBombs !== "undefined" ? fireBombs : []), dc: new Set(typeof rotDecoys !== "undefined" ? rotDecoys : []) };
+    const at = f._sigAt; f._sigAt = -1; if (mv.fn) mv.fn(f);
+    if (f._sigAt !== f0) { f._sigAt = at; return; }   // (nothing to strike when its wind-up ended: ready again)
+    const live = [];
+    if (typeof elementEffects !== "undefined") for (const o of elementEffects) if (!seen.fx.has(o)) live.push(["fx", o]);
+    if (typeof followerProjectiles !== "undefined") for (const o of followerProjectiles) if (!seen.pr.has(o)) live.push(["pr", o]);
+    if (typeof fireBombs !== "undefined") for (const o of fireBombs) if (!seen.bm.has(o)) live.push(["bm", o]);
+    if (typeof rotDecoys !== "undefined") for (const o of rotDecoys) if (!seen.dc.has(o)) live.push(["dc", o]);
+    f._altLive = { t0: f0, list: live, by: f };
+}
+function _altLiveAny(L) {
+    if (L.by && L.by._pinball) return true;   // (a PINBALL rolling)
+    for (const [k, o] of L.list) {
+        if (k === "fx" && typeof elementEffects !== "undefined" && elementEffects.indexOf(o) >= 0 && o.life > 0) return true;
+        if (k === "pr" && typeof followerProjectiles !== "undefined" && followerProjectiles.indexOf(o) >= 0 && !o.dead) return true;
+        if (k === "bm" && typeof fireBombs !== "undefined" && fireBombs.indexOf(o) >= 0 && !o.dead) return true;
+        if (k === "dc" && typeof rotDecoys !== "undefined" && rotDecoys.indexOf(o) >= 0 && !o.dead) return true;
+    }
+    return false;
 }
 function _evoFoes(x, y, r) {
     const near = typeof unitsNear === "function" ? unitsNear(x, r) : actors;

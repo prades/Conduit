@@ -35,6 +35,7 @@ function updateRTSNPC(actor) {
     if (actor.dead) return;
     if (actor.spawnProtection>0) { actor.spawnProtection--; }
     if (actor.hitFlash>0) actor.hitFlash--;
+    if (actor.isFollower && actor._altWind > 0) return;   // WINDING UP its chosen alternate (js/evolution.js altTick): it stands still and does nothing else until the move goes off
     if (actor.asleep > 0) return;   // ASLEEP (the Sleeping Potion's original takes your followers and clones too: js/combat.js applySleep): it does nothing until the sleep's timer, which updateStatusEffects runs down, is out
     if (actor.isClone && typeof cloneTick === "function" && cloneTick(actor)) return;   // a clone's special and its abdomen shot (js/clone.js): a special that is winding up or under way has the step
     if (actor.isFollower && actor.state === "attack") {
@@ -280,7 +281,7 @@ function updateRTSNPC(actor) {
                 } else {
                     // In sweet spot — fire ranged projectile
                     if (!actor.attackCooldown) actor.attackCooldown = 0;
-                    if (typeof cardAttackHolds === "function" && cardAttackHolds(actor)) { /* a card attack set: no shot between its strikes */ }
+                    if ((typeof cardAttackHolds === "function" && cardAttackHolds(actor)) || (typeof followerAltLocked === "function" && followerAltLocked(actor))) { /* a card attack set, or locked on its chosen alternate (js/moves.js): no shot */ }
                     else if (actor.attackCooldown <= 0) {
                         const elDef = ELEMENTS.find(e=>e.id===actor.element);
                         const col   = elDef ? elDef.color : "#fff";

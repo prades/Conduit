@@ -147,6 +147,7 @@ function followerRecord(a) {
         playStyle: a.playStyle || undefined,   // js/commandcenter.js
         post: a.post || undefined,             // the room it holds (js/party.js)
         move: a.move || undefined,             // the signature move it was given (js/moves.js)
+        alt: a.alt || undefined,               // the alternate it is locked to (js/moves.js; none: its normal attack)
         special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // its SPECIAL ATTACK card (js/cards.js)
         cards: typeof equipRecord === "function" ? equipRecord(a) : undefined   // its equip cards (js/cards.js); a fallen follower's preserved body leaves them out (js/specimen.js)
     };
@@ -173,7 +174,7 @@ function followerBuild(entry) {
     if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
     if (entry.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[entry.evolved]) npc.evolved = entry.evolved;   // (set before its level, so the evolved stats apply)
     if (entry.evoWait && !npc.evolved) npc._evoOnLevelUp = true;
-    if (entry.move) npc.move = entry.move;
+    if (entry.move) npc.move = entry.move; if (typeof entry.alt === "string") npc.alt = entry.alt;
     if (entry.playStyle) npc.playStyle = entry.playStyle;
     if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
     if (entry.special && typeof equipSpecialRestore === "function") equipSpecialRestore(npc, entry.special);   // its SPECIAL ATTACK card

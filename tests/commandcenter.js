@@ -118,7 +118,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         run('__c.playStyle = "defensive"');
         const snap = run('JSON.stringify(followerRosterSnapshot())'); ok(/"playStyle":"defensive"/.test(snap), 'not in the roster save');
         const game = fs.readFileSync(path.join(ROOT, 'js/game.js'), 'utf8'), save = fs.readFileSync(path.join(ROOT, 'js/facilitysave.js'), 'utf8');
-        ok(/respawnQueue\.push\(\{[\s\S]{0,1500}playStyle: a\.playStyle \|\| undefined, move: a\.move \|\| undefined \}\);/.test(game) && /if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(game), 'a respawn loses it');
+        ok(/respawnQueue\.push\(\{[\s\S]{0,1500}playStyle: a\.playStyle \|\| undefined, move: a\.move \|\| undefined(, alt: a\.alt \|\| undefined)? \}\);/.test(game) && /if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(game), 'a respawn loses it');
         ok(/if \(entry\.playStyle\) npc\.playStyle = entry\.playStyle;/.test(save), 'a reload loses it'); run('__c.playStyle = undefined');
     });
 
@@ -198,13 +198,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     console.log('\nSIGNATURE MOVE for a group (the following update\'s Part 4: "a squad setter (\'set move\' for a selected group like roles)")');
-    check('a group\'s move is set once; a follower whose form cannot use it keeps its own and says why', () => {
+    check('a group\'s ATTACK is set once (the owner, 2026-11-07: NORMAL ATTACK or an alternate it is locked on); a follower whose form cannot use the alternate keeps its own and says why', () => {
         run(`globalThis.__q = { evolved: 'quillstone', isFollower: true, team: 'green' }; globalThis.__q2 = { evolved: 'quillstone', isFollower: true, team: 'green' }; globalThis.__m = { evolved: 'maw', isFollower: true, team: 'green' };`);
-        const r = J(`(function(){ const o = ccApplyMove([__q, __q2, __m], 'bomb_lob'); return { set: o.set, kept: o.kept.length, moves: [__q, __q2, __m].map(a => evoMoveOf(a).id), note: _ccMoveNote && _ccMoveNote.text,
-            choices: ccMoveChoices([__q, __m]).list.map(m => m.id + ':' + m.can).join(), none: ccMoveChoices([__m]), bad: ccApplyMove([__q], 'nonsense').set }; })()`);
-        same(r.set, 2, 'set'); same(r.kept, 1, 'kept'); same(r.moves.join(), 'bomb_lob,bomb_lob,chomp', 'their moves');
-        ok(/FROST MAW KEEPS CHOMP \(FIRE BOMBS IS NOT ONE OF ITS MOVES\)/.test(r.note || ''), 'the note: ' + r.note);
-        same(r.choices, 'quill_burst:1,bomb_lob:1,chomp:1', 'the choices for a Quillstone and a Frost Maw'); same(r.none, null, 'no setter for forms with one move each'); same(r.bad, 0, 'a nonsense move');
+        const r = J(`(function(){ const o = ccApplyMove([__q, __q2, __m], 'bomb_lob'); return { set: o.set, kept: o.kept.length, moves: [__q, __q2, __m].map(a => (evoMoveOf(a) || { id: 'normal' }).id), note: _ccMoveNote && _ccMoveNote.text,
+            choices: ccMoveChoices([__q, __m]).list.map(m => m.id + ':' + m.can).join(), none: ccMoveChoices([{ evolved: 'hammerslug', isFollower: true, team: 'green' }]), bad: ccApplyMove([__q], 'nonsense').set,
+            back: (function(){ const b = ccApplyMove([__q, __m], 'normal'); return [b.set, evoMoveOf(__q), evoMoveOf(__m)]; })() }; })()`);
+        same(r.set, 2, 'set'); same(r.kept, 1, 'kept'); same(r.moves.join(), 'bomb_lob,bomb_lob,normal', 'their attacks');
+        ok(/FROST MAW KEEPS ITS NORMAL ATTACK \(FIRE BOMBS IS NOT ONE OF ITS MOVES\)/.test(r.note || ''), 'the note: ' + r.note);
+        same(r.choices, 'normal:2,quill_burst:1,bomb_lob:1,chomp:1', 'the choices for a Quillstone and a Frost Maw'); same(r.none, null, 'no setter for a form with no move'); same(r.bad, 0, 'a nonsense move');
+        same(JSON.stringify(r.back), JSON.stringify([2, null, null]), 'NORMAL ATTACK for both: unlocked');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
