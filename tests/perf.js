@@ -194,7 +194,7 @@ const SCENE = `(function(){
         // `world.filter(...)` inline; it is now visibleTilesForDraw(), which
         // caches the scan — the properties below are unchanged either way.
         const at = SRC.game.indexOf('let drawList=');
-        const body = SRC.game.slice(at, at + 900);
+        const body = SRC.game.slice(at, at + 2000);   // was 900: the comments added since (ABSOLUTE ZERO, the clones, the launchers) pushed the crystal's line past it
         ok(at > -1, 'the draw list build could not be located');
         ok(/drawList\.push\(\{type:'player'/.test(body), 'the player is not pushed unconditionally');
         ok(/drawList\.push\(\{type:'crystal'/.test(body), 'the crystal is not pushed unconditionally');
@@ -223,9 +223,10 @@ const SCENE = `(function(){
 
     check('it culls actors too, not only tiles', () => {
         const at = SRC.game.indexOf('let drawList=');
-        const body = SRC.game.slice(at, at + 900);
+        const body = SRC.game.slice(at, at + 2000);
         ok(at > -1, 'the draw list build could not be located');
-        ok(/actors\.forEach\([a-z]=>\{ if\(visibleForDraw/.test(body), 'actors are not culled');
+        // Since build 2026-11-07 the test may come after another (one swallowed by ABSOLUTE ZERO is not drawn): `if(!a._swallowedBy && visibleForDraw(`
+        ok(/actors\.forEach\([a-z]=>\{ if\((?:[^(){};]|\([^()]*\))*visibleForDraw\(/.test(body), 'actors are not culled');
     });
 
     // A SEPARATE facility for the group below: it moves the camera all over the

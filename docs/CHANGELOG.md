@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **Tests brought up to date (no build; no game code changed)** (the owner, 2026-11-07: "Go ahead"; on branch `claude/fix-stale-tests`). A full run on main at `2026-11-07aa` found 9 checks in 5 suites that still described the game before changes the owner approved:
+  - tests/cards.js (3): the roster's SIGNATURE MOVE dropdown (build `2026-11-07i`) between PLAY STYLE and CARD 1, showing QUILL BURST.
+  - tests/crystalline.js, tests/potion.js (1 each): the save has 36 fields since the ice bridges (`2026-11-07aa`).
+  - tests/fluxlab.js (2): the map has 171 props and 16 movable objects since the Sewers' three pumps and four valves (`2026-11-07b`).
+  - tests/perf.js (2): it read 900 characters of the draw-list build and a fixed `{ if(visibleForDraw`; the ABSOLUTE ZERO check (`!a._swallowedBy &&`) and new comments moved both out of reach. It reads 2,000 now and allows a condition before the cull. The code still pushes the player and the crystal unconditionally and culls actors.
+  - Re-run: perf, potion, crystalline and cards all pass; fluxlab passes bar its four real-browser checks. Those four, and bottomui, carousel, visiblearea and cover, fail the same way at build `2026-11-06h` (which passed its full run) in the agent's environment, so they are read as the environment's, not the game's. Not checked on a real device.
 - **aa · Ice bridges are saved** (the owner, 2026-11-07: "Save ice bridges"; z "Push to main"). Implemented and tested on the branch; not playtested.
   - The save keeps each standing ice bridge and its technician; a reload puts it back (it was cleared), still that technician's, so its next bridge still thaws it. A player saved standing on a bridge loads on it. A bridge whose technician is gone stands on. A game saved before this build has none.
   - Code: js/techabilities.js `techBridgesSnapshot`, `techBridgesApply`; js/facilitysave.js (`bridges`). FROST PATCH on floor is still not saved.

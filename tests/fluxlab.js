@@ -99,18 +99,20 @@ async function boot(search, store) {
     return { run, J, store: sb.localStorage };
 }
 const ARENA9 = 'barrel_5,barrel_6,barrel_7,barrier_1,barrier_2,crate_4,crate_5,crate_6,crate_stack_3';
+// Since build 2026-11-07b the Sewers' machinery moves too: three pump housings and four valves (seven props).
+const MOVABLE = ARENA9 + ',sewer_pump_1,sewer_pump_2,sewer_pump_3,sewer_valve_1,sewer_valve_2,sewer_valve_3,sewer_valve_4';
 const ROOMS17 = 'arena,armory,catwalks,cold_storage,crystal_chamber,experiment_lab,front_lobby,lab_hallway,lab_passage,nest_area,observation_deck,security_room,sewers,show_room,teleport_room_1,teleport_room_2,teleport_stair_room';
 
 (async () => {
     group('WITHOUT THE FLAG: THE GAME AS IT WAS');
     {
         const { J } = await boot('');
-        check('without ?fluxlab nothing changes: the map\'s 17 rooms, 10 doorways and 164 props, no test room and no stairwell to it; the arena\'s nine objects are the only ones that move; the facility\'s tables are as they were; a new game starts as it always did (the three followers, the Crystal Chamber, the tutorial at its first step, the save on)', () => {
+        check('without ?fluxlab nothing changes: the map\'s 17 rooms, 10 doorways and 171 props (164 before the Sewers\' seven pumps and valves, build 2026-11-07b), no test room and no stairwell to it; the arena\'s nine objects and the Sewers\' seven are the only ones that move; the facility\'s tables are as they were; a new game starts as it always did (the three followers, the Crystal Chamber, the tutorial at its first step, the save on)', () => {
             const r = J(`(function(){ const M = FACILITY_MAP; return { rooms: M.rooms.map(r => r.id).sort().join(), portals: M.portals.length, props: M.props.length, flag: !!M._fluxLab, lab: fluxLabOn(), stair: M.decor.some(d => d.id === 'crystal_lab_stairwell'),
                 moves: fluxObjects().map(s => s.id).sort().join(), styled: FP_STYLE_ROOMS.size, tag: 'flux_lab' in FP_ROOM_TAG, look: 'flux_lab' in FP_ROOM_STYLE, squad: followers.map(f => f.element).sort().join(),
                 room: __room(player.x, player.y), step: _fp.tut.script.step, save: !!_fp.saveReady, mode: !!_fp.fluxLab, spy: (render(), facilitySaveWrite(), __opened.concat(__writes).join()) }; })()`);
-            same(r.rooms, ROOMS17, 'the rooms'); same(r.portals, 10, 'the doorways'); same(r.props, 164, 'the props'); same(r.flag || r.lab || r.stair || r.mode, false, 'something of the test room is there');
-            same(r.moves, ARENA9, 'what moves'); same(r.styled, 17, 'the styled rooms'); same(r.tag || r.look, false, 'the room\'s look or name is in the tables');
+            same(r.rooms, ROOMS17, 'the rooms'); same(r.portals, 10, 'the doorways'); same(r.props, 171, 'the props'); same(r.flag || r.lab || r.stair || r.mode, false, 'something of the test room is there');
+            same(r.moves, MOVABLE, 'what moves'); same(r.styled, 17, 'the styled rooms'); same(r.tag || r.look, false, 'the room\'s look or name is in the tables');
             same(r.squad, 'core,electric,fire', 'the squad'); same(r.room, 'crystal_chamber', 'the start'); same(r.step, 0, 'the tutorial'); same(r.save, true, 'the save');
             ok(/^run start(,set conduit_fp_save)+$/.test(r.spy), 'the spies on the start\'s cards screen and on storage (used below) do not see a new game\'s: ' + r.spy);
         });
@@ -142,7 +144,7 @@ const ROOMS17 = 'arena,armory,catwalks,cold_storage,crystal_chamber,experiment_l
             o.all = fluxObjects().map(s => s.id).filter(id => !/^lab_/.test(id)).sort().join(); o.still = _fp.F.solids.filter(s => s.room === 'flux_lab' && !s.flux).map(s => s.id + ':' + s.kind).sort().join();
             techChipTap(followers[0]); o.picked = []; for (const id of ['lab_generator', 'lab_console_1', 'lab_desk']) { floatingTexts.length = 0; techFluxPick(_fp.F.solids.find(s => s.id === id)); o.picked.push(!(techAim && techAim.flux && techAim.flux.s) && floatingTexts.some(t => /DOES NOT MOVE/.test(t.text))); }
             techAimCancel(true); return o; })()`);
-        same(r.moves, 'lab_barrel_1:1x1,lab_barrier_1:1x2T,lab_barrier_2:2x1T,lab_crate_1:1x1,lab_crate_2:1x1', 'what moves in the room'); same(r.range, '2', 'the reach'); same(r.all, ARENA9, 'the arena\'s objects');
+        same(r.moves, 'lab_barrel_1:1x1,lab_barrier_1:1x2T,lab_barrier_2:2x1T,lab_crate_1:1x1,lab_crate_2:1x1', 'what moves in the room'); same(r.range, '2', 'the reach'); same(r.all, MOVABLE, 'the arena\'s and the Sewers\' objects');
         same(r.still, 'lab_console_1:console,lab_console_2:console,lab_desk:computer_desk,lab_generator:generator', 'what does not move'); same(r.picked.join(), 'true,true,true', 'an immovable object picked');
     });
     check('THE NARROW PASSAGE: the divider (immovable) runs across the room with ONE tile open at its west end and three at its east end, so the two halves are one stretch of floor two ways round', () => {
