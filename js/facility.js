@@ -125,7 +125,7 @@ function _facilityBuild(ex) {
     const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
     // portals (js/facilityportals.js): the doorway's floor as a box of whole tiles, and where you stand when you come out of the other end (a tile's middle: snapped to the floor when it is used)
-    const portals = (M.portals || []).map(p => { const a = _facP([p.rect[0], p.rect[1]]), b = _facP([p.rect[2], p.rect[3]]); return { id: p.id, room: p.room, to: p.to, label: p.label || "", kind: p.kind || "stairs", rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])], arrive: rawP(p.arrive), well: !!p.well, note: p.note }; });   // (well: a stairwell in the floor, not an alcove)
+    const portals = (M.portals || []).map(p => { const a = _facP([p.rect[0], p.rect[1]]), b = _facP([p.rect[2], p.rect[3]]); return { id: p.id, room: p.room, to: p.to, label: p.label || "", kind: p.kind || "stairs", rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])], arrive: rawP(p.arrive), well: !!p.well, within: !!p.within, shut: !!p.shut, note: p.note }; });   // (well: a stairwell in the floor, not an alcove)
     const interiors = (M.interiors || []).map(i => ({ id: i.id, under: i.under || null }));
     const outer = M.outer_path ? { id: M.outer_path.id, poly: _facPoly(M.outer_path.polygon), walkable: M.outer_path.walkable === true, navigation_link: M.outer_path.navigation_link === true } : null;
     const conns = (M.connections || []).concat(ex.connections || []).filter(c => !c.opening || openings.some(o => o.id === c.opening)).map(c => ({ id: c.id, rooms: c.rooms, opening: c.opening || null, ramp: c.ramp || null, portal: c.portal || null, confirmed: true }));
@@ -481,7 +481,7 @@ function facilityValidate(F) {
         const room = F.byId.get(p.room), other = F.portals.find(q => q.id === p.to);
         if (!room) { errors.push("portal " + p.id + " names a room that does not exist"); continue; }
         if (!other || other.to !== p.id) errors.push("portal " + p.id + " has no partner that points back at it");
-        else if (other.room === p.room) errors.push("portal " + p.id + " joins a room to itself");
+        else if (other.room === p.room) { if (!(p.within && other.within)) errors.push("portal " + p.id + " joins a room to itself"); }   // (`within`: a pair inside one room, the Sewers' drain pipe)
         else if (!F.connections.some(c => c.portal === p.id || c.portal === other.id) ) errors.push("the pair " + p.id + " / " + other.id + " has no connection joining " + p.room + " and " + other.room);
         const mx = (p.rect[0] + p.rect[2]) / 2, my = (p.rect[1] + p.rect[3]) / 2, at = facilityRoomAt(mx, my, F);
         if (!at || at.id !== p.room) errors.push("portal " + p.id + "'s doorway is not on the floor of " + p.room); else if (!facilityWalkable(Math.round(mx), Math.round(my), F)) errors.push("portal " + p.id + "'s doorway has no floor to stand on");

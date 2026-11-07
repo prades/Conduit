@@ -14,14 +14,20 @@ const FP_PORTAL = { out: 14, hold: 14, in: 18, cool: 70, carry: 16, pocket: 30 }
 
 function facilityPortalsStart(F) {
     if (!_fp) return;
-    _fp.portals = []; _fp.portal = { phase: "idle", t0: 0, from: null, to: null }; _fp.portalCool = 0;
+    _fp.portals = []; _fp.portal = { phase: "idle", t0: 0, from: null, to: null }; _fp.portalCool = 0; _fp.portalsOpen = new Set();
     for (const p of (F.portals || [])) {
         const cx = (p.rect[0] + p.rect[2]) / 2, cy = (p.rect[1] + p.rect[3]) / 2;
         let a = _fpNearestCell(p.arrive[0], p.arrive[1]); const rm = a ? facilityRoomAt(a[0], a[1], F) : null;
         if (!rm || rm.id !== p.room) a = _fpNearestCell(cx, cy) || [Math.round(cx), Math.round(cy)];
-        _fp.portals.push({ id: p.id, room: p.room, to: p.to, label: p.label, kind: p.kind, rect: p.rect.slice(), x: cx, y: cy, ax: a[0], ay: a[1], up: p.kind === "stairs_up", well: !!p.well });
+        _fp.portals.push({ id: p.id, room: p.room, to: p.to, label: p.label, kind: p.kind, rect: p.rect.slice(), x: cx, y: cy, ax: a[0], ay: a[1], up: p.kind === "stairs_up", well: !!p.well, shut: !!p.shut });
     }
 }
+// A SHUT doorway (`shut` in the map: the Sewers' drain pipe's ledge end, the owner, 2026-11-07: "Pipe shortcut"): a grate that opens only from inside. Nobody goes in at it until someone has come out of it;
+// then it is open for good (_fp.portalsOpen, saved as `pipes`), a shortcut both ways.
+function facilityPortalShut(p) { return !!(p && p.shut && !(_fp && _fp.portalsOpen && _fp.portalsOpen.has(p.id))); }
+function _pOpened(dest) { if (!facilityPortalShut(dest)) return; _fp.portalsOpen.add(dest.id); if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: dest.ax, y: dest.ay, text: "THE GRATE SWINGS OPEN · A SHORTCUT", color: "#ffe733", life: 120, vy: -0.05, size: 13 }); }
+function facilityPortalsSnapshot() { return _fp && _fp.portalsOpen ? Array.from(_fp.portalsOpen) : []; }
+function facilityPortalsApply(list) { if (!_fp) return; _fp.portalsOpen = new Set((Array.isArray(list) ? list : []).filter(id => typeof id === "string" && facilityPortal(id))); }
 function facilityPortal(id) { return (_fp && _fp.portals || []).find(p => p.id === id) || null; }
 function _pIn(x, y, r) { return x > r[0] && x < r[2] && y > r[1] && y < r[3]; }
 // the portal whose doorway a point is in
@@ -71,7 +77,7 @@ function _pMove() {
         ids.push(a); if (Math.hypot(a.x - from.x, a.y - from.y) > FP_PORTAL.carry || _pComp(a.x, a.y) !== pc) continue;
         facilityPortalSend(a, from, ++n);
     }
-    _fp.zoneRoom = dest.room; _fp.portalCool = frame + FP_PORTAL.cool;
+    _fp.zoneRoom = dest.room; _fp.portalCool = frame + FP_PORTAL.cool; _pOpened(dest);
 }
 // who comes through on their own: a follower that is following (no post, no order)
 function _pCarries(a) { return !a.returningToCrystal && !a.job && !a.post && (a.stance === "follow" || (a.isClone && !a.stance)) && (a.role !== "camper" || (typeof partyOn === "function" && partyOn())); }   // (a technician in the squad comes with you: it is not tied to the Crystal. A clone that has had no order has no stance: it is following, and it comes too; it used to be left behind at every doorway, found 2026-11-01)
@@ -81,7 +87,7 @@ function facilityPortalTick() {
     if (!_fp || !_fp.portals || !_fp.portals.length) return;
     const P = _fp.portal, f = typeof frame !== "undefined" ? frame : 0;
     if (P.phase === "idle") {
-        if (f >= _fp.portalCool) { const p = facilityPortalAt(player.x, player.y); if (p) facilityPortalStart(p); }
+        if (f >= _fp.portalCool) { const p = facilityPortalAt(player.x, player.y); if (p && !facilityPortalShut(p)) facilityPortalStart(p); }
     } else if (P.phase === "out") { if (f - P.t0 >= FP_PORTAL.out) { _pMove(); P.phase = "hold"; P.t0 = f; } }
     else if (P.phase === "hold") { if (f - P.t0 >= FP_PORTAL.hold) { P.phase = "in"; P.t0 = f; } }
     else if (P.phase === "in") { if (f - P.t0 >= FP_PORTAL.in) { P.phase = "idle"; P.from = P.to = null; } }
@@ -99,7 +105,7 @@ function _pFollowScan() {
         a._fpPortalGoal = null; if (!_pCarries(a) || (a._fpPortalAt && frame - a._fpPortalAt < 90)) { a._fpSealed = 0; continue; }
         const ac = _pComp(a.x, a.y); if (ac === undefined || ac === pc) { a._fpSealed = 0; continue; }
         let best = null, bd = 1e9;   // the nearest doorway on its own floor that comes out on the player's
-        for (const p of _fp.portals) { if (_pComp(p.x, p.y) !== ac) continue; const q = facilityPortal(p.to); if (q && _pComp(q.ax, q.ay) === pc) { const d = Math.hypot(p.x - a.x, p.y - a.y); if (d < bd) { bd = d; best = p; } } }
+        for (const p of _fp.portals) { if (_pComp(p.x, p.y) !== ac || facilityPortalShut(p)) continue; const q = facilityPortal(p.to); if (q && _pComp(q.ax, q.ay) === pc) { const d = Math.hypot(p.x - a.x, p.y - a.y); if (d < bd) { bd = d; best = p; } } }
         if (best) { a._fpPortalGoal = best.id; a._fpSealed = 0; continue; }
         if (!landings) { landings = new Set(); for (const s of ((_fp.F && _fp.F.launchSites) || [])) if (s.land) landings.add(_pComp(s.land[0], s.land[1])); }
         const cells = _fp.compSize ? (_fp.compSize.get(ac) || 0) : 0;
@@ -113,7 +119,7 @@ function facilityPortalGoal(a) { const p = a && a._fpPortalGoal ? facilityPortal
 // after a follower's step (js/npc.js updateNPC): in the doorway it was walking to? Through it.
 function facilityPortalActorTick(a) {
     if (!a._fpPortalGoal || a.dead) return;
-    const p = facilityPortal(a._fpPortalGoal); if (p && _pIn(a.x, a.y, p.rect)) facilityPortalSend(a, p, 1);
+    const p = facilityPortal(a._fpPortalGoal); if (p && _pIn(a.x, a.y, p.rect) && !facilityPortalShut(p)) { facilityPortalSend(a, p, 1); _pOpened(facilityPortal(p.to)); }
 }
 
 // ── drawing: the name over a doorway you are near, and the fade ──
@@ -122,9 +128,11 @@ function facilityDrawPortals() {
     const P = _fp.portal, f = typeof frame !== "undefined" ? frame : 0, W = canvas.width, H = canvas.height;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (P.phase === "idle") {
-        for (const p of _fp.portals) {
+        const shown = [];   // (two doorways side by side, the arena culvert and the drain pipe's ledge end: only the nearer one's name, so the two tags do not overlap)
+        for (const p of _fp.portals.slice().sort((a, b) => Math.hypot(a.x - player.visualX, a.y - player.visualY) - Math.hypot(b.x - player.visualX, b.y - player.visualY))) {
             const d = Math.hypot(p.x - player.visualX, p.y - player.visualY); if (d > 9 || (typeof invPanelOpen !== "undefined" && invPanelOpen)) continue;
-            const s = _stScreen({ x: p.x, y: p.y }), a = Math.min(1, (9 - d) / 4), col = p.up || p.kind === "door" ? "#ffb347" : "#8fe3ff", txt = (p.kind === "door" ? "▶ " : p.up ? "▲ " : "▼ ") + String(p.label || "").toUpperCase();
+            if (shown.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 3.5)) continue; shown.push(p);
+            const s = _stScreen({ x: p.x, y: p.y }), a = Math.min(1, (9 - d) / 4), col = p.up || p.kind === "door" ? "#ffb347" : "#8fe3ff", txt = facilityPortalShut(p) ? "▣ " + String(p.label || "").toUpperCase() + " · ITS GRATE OPENS FROM INSIDE" : (p.kind === "door" ? "▶ " : p.up ? "▲ " : "▼ ") + String(p.label || "").toUpperCase();
             ctx.globalAlpha = a; ctx.font = (typeof uiFont === "function" ? uiFont(15) : "bold 15px sans-serif"); ctx.textAlign = "center"; ctx.textBaseline = "middle";
             const w = ctx.measureText(txt).width + 22, y = s.y - 92 + Math.sin(f * 0.07 + p.x) * 3;
             ctx.fillStyle = "rgba(5,8,18,0.82)"; ctx.fillRect(s.x - w / 2, y - 13, w, 26); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.strokeRect(s.x - w / 2 + 1, y - 12, w - 2, 24); ctx.fillStyle = col; ctx.fillText(txt, s.x, y + 1);

@@ -14,7 +14,7 @@
 //     ("calm" or "defeated": js/bosses.js), bossDefeated (whenever it died, outcome or not). Each is a play-clock time (techClock, saved) or 0; `cycleLeft` and `closeLeft` are frames still to run (saved as numbers, so a load
 //     goes on where it was). A step is never skipped by a later one: buying the module does not install it, installing it does not purify the water, purifying it does not kill the boss.
 //   THE SAMPLES: three TOXIC ANT SAMPLES, dropped by the toxic ants of the Sewers (js/facilityspawn.js FP_SPAWN_SEWERS; questDropFor from js/drops.js: one a kill, only while the bench still wants them), and the WATER SAMPLE
-//     at the end of the collapsed tunnel (the puzzle: docs/SEWER-QUEST.md). The bench takes all four at once.
+//     on the sample bank across the river (the puzzle: docs/SEWER-QUEST.md). The bench takes all four at once.
 //   THE STATIONS (js/stations.js STATION_KINDS): the ANALYSIS BENCH (the cabinet at the Experiment Lab's west end, cabinet_1: ANALYSE, then BUY ◆300; not a bench beside the sequencer and the hood, whose plate would show the wrong station), the BOSS GATE's seal (with the module in the pack), the PURIFIER MOUNT (the cistern's console: a build of
 //     QUEST_PURIFY.install frames that the player stays at; starting it wakes the boss; finishing it mounts the module and starts the cycle).
 //   NON-LETHAL: the module's cycle completes whether the boss lives or not; when it does, a living boss is CALMED (js/bosses.js bossCalm: it keeps its lair, alive). Defeating it is the other resolution. The quest records both.
@@ -67,8 +67,8 @@ function questDone(id) { const Q = questState(id); return !!Q.purifiedAt; }
 const QUEST_STEPS = {
     purify: [
         { id: "samples", title: "COLLECT THE SAMPLES",
-          text: Q => { const h = questSamplesHeld(), P = QUEST_PURIFY; return "ANT SAMPLES " + Math.min(P.samples, h.ant) + "/" + P.samples + " (THE TOXIC ANTS OF THE SEWERS DROP THEM) · WATER SAMPLE " + Math.min(1, h.water) + "/1 (THE COLLAPSED TUNNEL OFF THE NORTH LEDGE)."; },
-          hint: Q => "THE TUNNEL IS CHOKED. AN ELECTRIC TECHNICIAN SETS A LAUNCHER UP BY ITS MOUTH THAT CARRIES YOU OVER (TAP ITS TAG TWICE), OR A FIRE TECHNICIAN DRILLS THE CHOKE OPEN FROM THE LEDGE.", done: Q => questSamplesReady(Q) },
+          text: Q => { const h = questSamplesHeld(), P = QUEST_PURIFY; return "ANT SAMPLES " + Math.min(P.samples, h.ant) + "/" + P.samples + " (THE TOXIC ANTS OF THE SEWERS DROP THEM) · WATER SAMPLE " + Math.min(1, h.water) + "/1 (THE BANK ACROSS THE RIVER, AT ITS WEST END)."; },
+          hint: Q => "THE BANK IS CUT OFF: AN ICE TECHNICIAN FREEZES A BRIDGE OVER THE RIVER, A FIRE TECHNICIAN DRILLS ITS ROCK FALL FROM THE SOUTH LEDGE, OR AN ELECTRIC TECHNICIAN'S LAUNCHER THROWS YOU OVER (TAP ITS TAG TWICE; THE DRAIN PIPE BRINGS YOU BACK).", done: Q => questSamplesReady(Q) },
         { id: "turnin", title: "TAKE THE SAMPLES TO THE LAB", text: Q => "THE ANALYSIS BENCH: THE CABINET AT THE WEST END OF THE EXPERIMENT LAB. STAND AT IT AND PRESS E (OR TAP IT).", hint: Q => "IT TAKES THE THREE ANT SAMPLES AND THE WATER SAMPLE TOGETHER.", done: Q => !!Q.turnedInAt },
         { id: "module", title: "BUY THE PURIFICATION MODULE", text: Q => "AT THE ANALYSIS BENCH: ◆" + QUEST_PURIFY.modulePrice + ". YOU HAVE ◆" + (typeof shardCount === "number" ? shardCount : 0) + ".", hint: Q => "KILLS PAY SHARDS. THE MODULE GOES IN YOUR PACK.", done: Q => !!Q.moduleAt },
         { id: "install", title: "INSTALL THE MODULE IN THE NEST",

@@ -1993,3 +1993,16 @@ The owner: too much time goes into testing and side checks. From here on, only t
 1. Build `2026-11-07z`: "Push to main".
 2. Next: "Save ice bridges": the save keeps the standing bridges and their technicians.
 
+## DECISION: The water sample across the river; the drain pipe back
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07bb`, on the branch; not playtested.
+- **Related feature/docs:** `SEWER-QUEST.md` (the puzzle); `CHANGELOG.md` (2026-11-07 bb)
+
+### Decision
+1. Build `2026-11-07aa`: "Push to main".
+2. "a little water sample is on the other side of the bank of the river and the player can use the ice bridge to get across to get to it and it also includes the thermite brawlers rock formation breakable to retrieve the item as well".
+3. "Ice or drill" (each alone); "Launch over the river" (the electric technician's way stays, over the water).
+4. "Let's find a clever way to hop back to the previous path from the electric tech route" → "Pipe shortcut": a drain pipe from the bank to the north ledge, its grate opening only from inside, then open for good.
+5. The agent's: the bank at the south bank's west end; the collapsed tunnel kept, empty, its choke still drillable.
+

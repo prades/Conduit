@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **bb · The water sample across the river: ice, drill or launcher, and the drain pipe back** (the owner, 2026-11-07: "a little water sample is on the other side of the bank of the river [...] the ice bridge to get across [...] the thermite brawlers rock formation breakable"; "Ice or drill", "Launch over the river", "Let's find a clever way to hop back to the previous path from the electric tech route", "Pipe shortcut"; aa "Push to main"). Implemented and tested on the branch; not playtested.
+  - The WATER SAMPLE lies on the **sample bank**, the south bank's west end, cut off by the river, the end wall and a **rock fall** across the south ledge.
+  - Three ways, each with one technician: an **ice bridge** from the north ledge; the fire technician **drills the rock fall** from the south ledge; or the electric technician's **launcher** on the north ledge throws you over the river.
+  - The way back from the launcher is a **drain pipe** under the river: from the bank's west wall to the north ledge's wall beside the arena culvert, its grate there opening only from inside; once opened it stays open, a shortcut both ways (saved). Followers come back through it too.
+  - The collapsed tunnel keeps its choke to drill, empty behind it. The quest step, its hint and the in-game guide say where the sample is now.
+  - Tests: sewerquest (the map, routes B, C and the new D, the load; the Queen's checks reseeded so the earlier checks' random draws do not move them), sewers (culverts, the loop from the tunnel's mouth), techlevel1 (rubble 4), cover (one more solid), facilityplay, techabilities, bible (numbers and text).
+
 - **aa · Ice bridges are saved** (the owner, 2026-11-07: "Save ice bridges"; z "Push to main"). Implemented and tested on the branch; not playtested.
   - The save keeps each standing ice bridge and its technician; a reload puts it back (it was cleared), still that technician's, so its next bridge still thaws it. A player saved standing on a bridge loads on it. A bridge whose technician is gone stands on. A game saved before this build has none.
   - Code: js/techabilities.js `techBridgesSnapshot`, `techBridgesApply`; js/facilitysave.js (`bridges`). FROST PATCH on floor is still not saved.

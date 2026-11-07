@@ -36,6 +36,7 @@ function facilitySaveCollect() {
         tc: typeof technoSnapshot === "function" ? technoSnapshot() : 0,                // the charges in the Technomancer's gauntlet (js/technomancer.js)
         spots: typeof followerSpotsSnapshot === "function" ? followerSpotsSnapshot() : {},   // (the delay still to run on each empty follower spot)
         launchers: typeof techLaunchersSnapshot === "function" ? techLaunchersSnapshot() : [],   // the launcher sites a Kinetic Launcher has been set up at, for good (js/techabilities.js)
+        pipes: typeof facilityPortalsSnapshot === "function" ? facilityPortalsSnapshot() : [],   // the shut doorways opened from inside (the Sewers' drain pipe: js/facilityportals.js)
         bridges: typeof techBridgesSnapshot === "function" ? techBridgesSnapshot() : [],     // the ice bridges standing, each with its technician (js/techabilities.js)
         rubble: typeof techRubbleSnapshot === "function" ? techRubbleSnapshot() : {},           // the hits the rubble has taken from a Thermite Drill (drilled through: a hole, for good)
         blight: typeof techBlightSnapshot === "function" ? techBlightSnapshot() : null,          // the play clock, and the Blight Spider's pools on it
@@ -116,6 +117,7 @@ function facilitySaveApply(d) {
     if (Number.isFinite(d.shards)) shardCount = Math.max(0, d.shards | 0); if (Number.isFinite(d.kills)) lifetimeKills = Math.max(0, d.kills | 0);
     if (Number.isFinite(d.crystal) && crystal.maxHealth) crystal.health = Math.max(1, Math.min(crystal.maxHealth, d.crystal));
     if (typeof sentryApply === "function") sentryApply(d.sentries);   // the turrets' wear, a wrecked one with its repair station (js/antraids.js)
+    if (typeof facilityPortalsApply === "function") facilityPortalsApply(d.pipes);   // (a game saved before has none open)
     if (typeof techBridgesApply === "function") techBridgesApply(d.bridges);   // the ice bridges (before the player's spot: one saved on the ice loads on it)
     if (typeof fluxApply === "function") fluxApply(d.moved);   // the moved objects where they were put (before the player's spot: one cannot be put back on top of it; js/fluxmove.js)
     // where the player stood (if that is still floor), and the followers with them

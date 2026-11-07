@@ -281,8 +281,9 @@ function _fpCulvertDoor(it, f) {
     _fpQuad(mouth, gr, ink, 2.5);                                                                        // the dark mouth, the runoff's glow coming up the tunnel
     ctx.save(); _fpSwPath(mouth); ctx.closePath(); ctx.clip();
     for (let k = 0; k < 7; k++) { const u = 0.16 + k * 0.68 / 6, s = P(u, 2 + ((f * 0.4 + k * 9) % 12)); ctx.fillStyle = "rgba(200,150,255,0.35)"; ctx.fillRect(s[0] - 1.5, s[1] - 1, 3, 2); }   // the stream in the tunnel's floor
-    for (let k = 1; k < 9; k++) { const u = 0.1 + k * 0.8 / 9; _fpWLine(it, u, H - 30, u, H + 2, "#1b2026", 4); _fpWLine(it, u, H - 30, u, H + 2, "#7f8c9a", 1.6); }   // the grating, raised into the arch
-    _fpWLine(it, 0.1, H - 30, 0.9, H - 30, "#1b2026", 6); _fpWLine(it, 0.1, H - 30, 0.9, H - 30, "#8e9cab", 3);
+    const shut = !!it.portal && typeof facilityPortalShut === "function" && facilityPortalShut(facilityPortal(it.portal)), gz = shut ? 0 : H - 30;   // (a shut grate is down: the drain pipe's ledge end)
+    for (let k = 1; k < 9; k++) { const u = 0.1 + k * 0.8 / 9; _fpWLine(it, u, gz, u, H + 2, "#1b2026", 4); _fpWLine(it, u, gz, u, H + 2, "#7f8c9a", 1.6); }   // the grating, raised into the arch (or down)
+    for (const z of shut ? [12, H / 2, H - 30] : [H - 30]) { _fpWLine(it, 0.1, z, 0.9, z, "#1b2026", 6); _fpWLine(it, 0.1, z, 0.9, z, "#8e9cab", 3); }
     ctx.restore();
     for (const u of [0.13, 0.87]) _fpWLine(it, u, H - 30, u, H + 8, "#a9b3bd", 1.4);                     // its chains
     _fpWQuad(it, 0.1, 0.9, 0, 5, "rgba(166,77,255," + (0.35 * pul).toFixed(3) + ")", null);              // the lip, wet and lit from below

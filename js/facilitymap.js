@@ -113,10 +113,10 @@ const FACILITY_MAP = {
           // its reservoir (west, under the big barred arch in the north wall, where a stream comes out of an old tunnel), the CAUSEWAY from the boss gate east across the water, the DAM itself (a wide flat
           // platform of trash, nine tiles across and fourteen deep, its console and the queen's post at its north-west corner, the brood's eggs at its north-east), the moat round its south and east, and the
           // waterfall where the moat spills over the east edge.
-          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [440, 860], [440, 780], [560, 780], [560, 860], [600, 860], [600, 800], [700, 800], [700, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1040, 860], [1040, 800],
-                    [1060, 800], [1360, 800], [1360, 860], [1360, 1120], [1060, 1120], [1060, 1080], [640, 1080], [640, 1140], [600, 1140], [600, 1080], [300, 1080], [300, 900], [280, 900]],
+          polygon: [[280, 860], [300, 860], [300, 840], [340, 840], [340, 860], [360, 860], [360, 800], [400, 800], [400, 860], [440, 860], [440, 780], [560, 780], [560, 860], [600, 860], [600, 800], [700, 800], [700, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1040, 860], [1040, 800],
+                    [1060, 800], [1360, 800], [1360, 860], [1360, 1120], [1060, 1120], [1060, 1080], [640, 1080], [640, 1140], [600, 1140], [600, 1080], [300, 1080], [280, 1080], [280, 1040], [300, 1040], [300, 900], [280, 900]],
           // (the Nest's two edges on the camera's side where the moat runs, east and south, are a low SPILL lip, not a wall: the moat is seen over it, and over the east one the water pours: the waterfall)
-          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "spill", "spill", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
+          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "spill", "spill", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
         { id: "nest_area", label: "Nest area", level: 0, status: "approximate",
           boundary_type: "outer_edge", boundary_blocks_movement: true,
           note: "One completely open room. The long double lines in the sketch are its OUTSIDE EDGES (walls), not tunnels or a path. The sketch stops drawing at the bottom, so the bottom wall is provisional.",
@@ -156,6 +156,13 @@ const FACILITY_MAP = {
           note: "The sewer culvert: an arched concrete mouth with its grating raised, in an alcove in the arena's north rock behind the north tank." },
         { id: "portal_sewers_arena", room: "sewers", rect: [280, 860, 300, 900], arrive: [330, 880], to: "portal_arena_sewers", label: "ARENA", kind: "door",
           note: "The culvert back up to the arena: an alcove at the west end of the north ledge, beside the outfall where the runoff pours in." },
+        // THE DRAIN PIPE UNDER THE RIVER (the owner, 2026-11-07: "Pipe shortcut"): from the sample bank's back wall to the north ledge's, beside the arena culvert. Its ledge end is SHUT (`shut`: a grate that
+        //   opens only from inside): nobody goes in there until someone has come out of it; then it stays open, a shortcut both ways (js/facilityportals.js facilityPortalShut; saved: pipes). `within`: a pair inside
+        //   one room (js/facility.js facilityValidate lets it join the room to itself).
+        { id: "portal_sewer_pipe_in", room: "sewers", rect: [280, 1040, 300, 1080], arrive: [320, 1060], to: "portal_sewer_pipe_out", label: "PIPE", kind: "door", within: true,
+          note: "A drain pipe's mouth in the sample bank's west wall (the end wall): it runs under the river and comes out on the north ledge." },
+        { id: "portal_sewer_pipe_out", room: "sewers", rect: [300, 840, 340, 860], arrive: [320, 885], to: "portal_sewer_pipe_in", label: "PIPE", kind: "door", within: true, shut: true,
+          note: "The drain pipe's other end, in the north ledge's wall beside the arena culvert: its grate opens only from inside." },
     ],
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
@@ -363,6 +370,9 @@ const FACILITY_MAP = {
         { id: "sewer_pump_3", room: "sewers", shape: "rect", rect: [440, 780, 480, 800], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A pump housing against the pump room's back wall." },
         { id: "sewer_valve_3", room: "sewers", shape: "rect", rect: [520, 780, 540, 800], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing against the pump room's back wall." },
         { id: "sewer_valve_4", room: "sewers", shape: "rect", rect: [480, 820, 500, 840], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing in the middle of the pump room." },
+        // THE SAMPLE BANK'S ROCK FALL (the owner, 2026-11-07: "Ice or drill"): across the south ledge at x 380, walling the bank (x 300 to 380, the end wall its other side) off from the rest of the ledge; drilled
+        //   from the ledge's side (its rubble entry below). Like the collapsed tunnel's choke it lies a hair inside its line (x 372 to 378 for x 380), so the work spot sees it
+        { id: "sewer_bank_rock", room: "sewers", shape: "poly", poly: [[372, 1020], [378, 1020], [378, 1080], [372, 1080]], status: "placed", kind: "rubble", note: "A rock fall across the south ledge, walling the sample bank off from the rest of it: drilled through by a fire technician from the ledge." },
         { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1080], [1056, 1080]], status: "placed", kind: "rubble", note: "THE RUBBLE ON THE WAY INTO THE NEST (a barred boss gate until build 2026-11-06l; the owner, 2026-11-06: \"I never wanted a gate. I wanted rubble\", \"Rubble, drilled\"): the south ledge's way onto the dam, three tiles across, choked with fallen concrete until a fire technician drills it through (rubble_sewer_gate). The other way onto the dam: an ice bridge across the water." },
     ],
 
@@ -395,7 +405,7 @@ const FACILITY_MAP = {
         // THE SEWER SAMPLE (the sample puzzle, docs/SEWER-QUEST.md): a sealed vial of the river's water at the far end of the collapsed tunnel's broken-off floor, in sight from the north ledge and out of reach behind the choke.
         // Two ways to it, each on its own: the electric technician's Kinetic Launcher set up on the ledge, which carries YOU over the choke onto the floor (you take the vial and jump back down from the broken
         // edge); or a fire technician's Thermite Drill through the choke from the ledge, after which anyone walks in. (A third, the flux technician's Telegrab, went with Telegrab: the owner, 2026-11-06.)
-        { id: "pk_sewer_sample", room: "sewers", at: [920, 800], items: [["sewer_sample", 1]], note: "A water sample at the far (east) end of the collapsed tunnel's floor, against its back wall, behind the choke." },
+        { id: "pk_sewer_sample", room: "sewers", at: [356, 1064], items: [["sewer_sample", 1]], note: "A water sample on the SAMPLE BANK (the owner, 2026-11-07: \"a little water sample is on the other side of the bank of the river\"): the west end of the south bank, walled off by the rock fall; reached by an ice bridge, the drill, or the launcher (and back through the drain pipe)." },
         // (The five hidden VITAL items, a Fleck, a Prism and a Core, were removed 2026-11-01 with the HP a death cost: the owner, "Remove them".)
     ],
 
@@ -425,8 +435,8 @@ const FACILITY_MAP = {
         // A POCKET SITE (`pocket`): the landing is a cut-off part of the SAME room, not another room, so a follower sent there keeps its place in the squad (no room post) and waits there for you. `rider`: the launcher carries
         //   YOU as well (tap its tag once for its aim and again to ride it: js/techabilities.js techSiteRide); `drop`/`dropTo`: the BROKEN EDGE of the floor up there, which drops you (and a follower up there without you)
         //   back to the ledge under it, one way (techSiteDrop). (`only`, one ability the site is for, is no longer set here: anyone may be sent over: docs/SEWER-QUEST.md.)
-        { id: "site_sewer_tunnel", room: "sewers", label: "Collapsed tunnel", to: "sewers", pocket: true, rider: true, at: [800, 880], land: [880, 820], drop: [840, 840], dropTo: [800, 900],
-          note: "On the north ledge a tile west of the collapsed tunnel's mouth: it throws you, or a follower, over the choke onto the tunnel's broken-off floor; the floor's broken edge at its west end drops you back to the ledge by the launcher." },
+        { id: "site_sewer_tunnel", room: "sewers", label: "Sample bank", to: "sewers", pocket: true, rider: true, at: [360, 935], land: [340, 1045],
+          note: "On the north ledge across the river from the sample bank (the owner, 2026-11-07: \"Launch over the river\"; the id is the old one, kept for saves): it throws you, or a follower, over the river onto the bank; the drain pipe in the bank's back wall is the way back (\"Pipe shortcut\")" },
     ],
 
     // RUBBLE (the fire technician's Thermite Drill, js/techabilities.js; docs/TECHNICIANS.md): a pile of broken rock in a room's edge that a fire technician can drill through. ASKED: "Place a distinctive rubble patch at the midpoint
@@ -442,6 +452,9 @@ const FACILITY_MAP = {
         { id: "rubble_sewer_gate", room: "sewers", label: "Rubble", a: [1060, 1020], b: [1060, 1080], work: [1036, 1050], solid: "sewer_gate_boss",
           tag: "RUBBLE ON THE WAY TO THE DAM", say: "RUBBLE ON THE WAY ONTO THE DAM · A FIRE TECHNICIAN CAN DRILL IT THROUGH FROM HERE: PRESS AND HOLD IT (OR FREEZE A BRIDGE ACROSS THE WATER)", opened: "THE RUBBLE IS DRILLED THROUGH · THE WAY ONTO THE DAM IS OPEN",
           note: "The way onto the Nest's dam from the south ledge, choked with rubble (the owner, 2026-11-06: \"Rubble, drilled\"): drilled through from the ledge by a fire technician, and open for good. It replaced the boss gate and its seal." },
+        { id: "rubble_sewer_bank", room: "sewers", label: "Rock fall", a: [380, 1020], b: [380, 1080], work: [404, 1050], solid: "sewer_bank_rock",
+          tag: "ROCK FALL", say: "A ROCK FALL WALLS THE BANK OFF · THE WATER SAMPLE IS BEHIND IT · A FIRE TECHNICIAN CAN DRILL IT THROUGH FROM HERE: PRESS AND HOLD IT", opened: "THE ROCK FALL IS DRILLED THROUGH · THE BANK IS OPEN",
+          note: "The rock fall walling the sample bank off from the south ledge: drilled through from the ledge, the way onto the bank on foot (the owner, 2026-11-07: \"Ice or drill\")." },
         { id: "rubble_sewer_choke", room: "sewers", label: "Collapsed tunnel", a: [820, 860], b: [940, 860], work: [880, 880], solid: "sewer_choke",
           note: "The collapsed tunnel's mouth on the Sewers' north ledge, six tiles of fallen concrete and rock: drilled through from the ledge, the way in on foot to the sample and, later, further." },
     ],
@@ -839,6 +852,8 @@ const FACILITY_MAP = {
         // ── THE SEWERS: the culvert up to the arena (the inside of the arena's), the OUTFALL where the runoff pours into the head of the river, the bridge's grating and the broken bridge's two stumps, the collapsed
         //    tunnel and the sealed hatch (ways in for later), pipes, lights, damp ──
         { id: "sewer_culvert_up", room: "sewers", kind: "portal_door", a: [280, 860], b: [280, 900], colour: "#c08aff", culvert: true },
+        { id: "sewer_pipe_in_door", room: "sewers", kind: "portal_door", a: [280, 1040], b: [280, 1080], colour: "#c08aff", culvert: true, portal: "portal_sewer_pipe_in" },
+        { id: "sewer_pipe_out_door", room: "sewers", kind: "portal_door", a: [300, 840], b: [340, 840], colour: "#c08aff", culvert: true, portal: "portal_sewer_pipe_out" },
         { id: "sewer_outfall", room: "sewers", kind: "outfall", a: [300, 965], b: [300, 1015], colour: "#a64dff", note: "A big pipe in the west wall, the tanks' runoff pouring out of it into the head of the river." },
         { id: "sewer_bridge", room: "sewers", kind: "bridge_deck", rect: [460, 960, 500, 1020], note: "A steel bridge across the river, two tiles wide: its grating, with the river seen through it, rails either side." },
         { id: "sewer_bridge_broken", room: "sewers", kind: "bridge_broken", rect: [760, 960, 800, 1020], note: "A bridge fallen in: a stump of it on each bank, bent, the middle gone. Not crossable." },
