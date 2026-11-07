@@ -82,6 +82,7 @@ function ccUnits(filter) {
     if (f.element) list = list.filter(a => a.element === f.element);
     if (f.role) list = list.filter(a => !a.isClone && a.role === f.role);
     if (f.squad) list = list.filter(a => !a.isClone && (f.squad === "in") === (typeof partyIsMember === "function" && partyIsMember(a)));
+    if (f.species) list = list.filter(a => !a.isClone && typeof equipSubclassOf === "function" && equipSubclassOf(a) === f.species);   // (a species: the evolved form's subclass, js/cards.js; an egg has none)
     return list;
 }
 function ccRow(a) {
@@ -191,7 +192,7 @@ function drawSelectedUnitRings() {
 // ═════════ THE OVERLAY (DOM) ═════════
 let _ccSideSig = "";   // the side panel is redrawn only when what it shows changes: a redraw every tick lost taps and sent the panel back to its top
 let ccSquadsOpen = false, _ccDD = null, _ccSqWinSig = "";   // the SQUADS window (YOUR SQUAD), redrawn the same way; the one settings drop-down that is open in the side panel
-let ccOpenTab = null, ccFilter = { element: null, role: null, kind: null, squad: null }, ccRerollArmed = false, _ccTimer = 0;   // ccOpenTab: "roster" while the overlay is open (its one page), null when it is shut
+let ccOpenTab = null, ccFilter = { element: null, role: null, kind: null, squad: null, species: null }, ccRerollArmed = false, _ccTimer = 0;   // ccOpenTab: "roster" while the overlay is open (its one page), null when it is shut
 const _ccCards = new Map();   // unit → its card element (updated in place, so a click is never lost to a redraw)
 
 function _ccEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -313,7 +314,7 @@ function ccBuildFrame() {
 function ccShowCandidates() {
     const car = ccCarousel();
     if (!car) ccClearSelection();   // (a phone: nothing selected, so the next tap picks exactly one)
-    ccFilter = { element: null, role: null, kind: null, squad: "out" };
+    ccFilter = { element: null, role: null, kind: null, squad: "out", species: null };   // (the squad filter has no button since build 2026-11-07gg: only an OPEN SLOT sets it, ALL clears it)
     if (!ccOpenTab) ccOpen();
     if (car) { const first = ccUnits({ squad: "out" }).sort(_ccStripSort)[0]; if (first) _ccFocus = first; }   // (the carousel puts the first of them in view, ADD TO SQUAD is for it; looking does not change the pick the orders follow)
     ccRender();
@@ -354,18 +355,33 @@ function ccRender() {
 }
 function ccFocusUnit() { return _ccFocus; }   // (the squad box lights the slot of the creature in view: js/party.js)
 
+let _ccFiltDD = null;   // the filter drop-down that is open (CLASS, ELEMENT or SPECIES), null when none
 function _ccDrawFilters(box) {
     // redrawn only when the filters change (a redraw under a finger loses the tap)
-    const unlocked = typeof unlockedElements !== "undefined" ? unlockedElements : new Set(), car = ccCarousel();
-    const sg = JSON.stringify(ccFilter) + "|" + unlocked.size + "|" + car; if (sg === _ccFiltSig && box.firstChild) return; _ccFiltSig = sg;
+    // The owner, 2026-11-07: "Drop-down menu for the different classes elements species no need for squad filter. Clones is OK. If is the current class grade out if otherwise":
+    // ALL, then CLASS, ELEMENT and SPECIES as drop-downs (each with ALL at its head), then CLONES, greyed out unless your class grows clones (js/clone.js cloneAllowed).
+    // IN SQUAD and NOT IN SQUAD are gone; an OPEN SLOT still lists who is not in the squad, and ALL clears that.
+    const unlocked = typeof unlockedElements !== "undefined" ? unlockedElements : new Set(), car = ccCarousel(), cloneOk = typeof cloneAllowed !== "function" || !!cloneAllowed().ok;
+    if (!cloneOk && ccFilter.kind === "clone") ccFilter.kind = null;
+    const sg = JSON.stringify(ccFilter) + "|" + unlocked.size + "|" + car + "|" + _ccFiltDD + "|" + cloneOk; if (sg === _ccFiltSig && box.firstChild) return; _ccFiltSig = sg;
     box.textContent = "";
     const add = (label, col, on, fn) => box.appendChild(_ccBtn(label, col, on, fn, "small"));
-    add("ALL", "#19e6c1", !ccFilter.element && !ccFilter.role && !ccFilter.kind && !ccFilter.squad, () => { ccFilter = { element: null, role: null, kind: null, squad: null }; });
-    (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).forEach(el => { if (unlocked.has(el.id)) add(el.label, el.color, ccFilter.element === el.id, () => { ccFilter.element = ccFilter.element === el.id ? null : el.id; }); });
-    const gap = () => { if (car && box.lastChild && box.lastChild.classList) box.lastChild.classList.add("sep"); };   // (the carousel sets the groups apart: the elements, the roles, who is in the squad, the clones)
-    [["BRAWL", "brawler", "#ff4a1c"], ["MAGE", "sniper", "#a64dff"], ["TECH", "camper", "#8fe3ff"]].forEach((r, i) => { add(r[0], r[2], ccFilter.role === r[1], () => { ccFilter.role = ccFilter.role === r[1] ? null : r[1]; }); if (!i) gap(); });
-    [["IN SQUAD", "in", "#19e6c1"], ["NOT IN SQUAD", "out", "#8fe3ff"]].forEach((r, i) => { add(r[0], r[2], ccFilter.squad === r[1], () => { ccFilter.squad = ccFilter.squad === r[1] ? null : r[1]; }); if (!i) gap(); });   // (who is in the squad, and who could be)
-    add("CLONES", "#99ddff", ccFilter.kind === "clone", () => { ccFilter.kind = ccFilter.kind === "clone" ? null : "clone"; }); gap();
+    const gap = () => { if (car && box.lastChild && box.lastChild.classList) box.lastChild.classList.add("sep"); };   // (the carousel sets the groups apart)
+    add("ALL", "#19e6c1", !ccFilter.element && !ccFilter.role && !ccFilter.kind && !ccFilter.squad && !ccFilter.species, () => { ccFilter = { element: null, role: null, kind: null, squad: null, species: null }; _ccFiltDD = null; }); gap();
+    const dd = (key, title, list, cur, set) => {
+        const pick = list.find(o => o.id === cur), open = _ccFiltDD === key, w = _ccEl("span", "cc-fdd" + (open ? " open" : ""));
+        const b = _ccBtn(title + " \u00b7 " + (pick ? pick.label : "ALL"), pick ? pick.col : "#8aa0c8", !!pick, () => { _ccFiltDD = open ? null : key; }, "small");
+        b.setAttribute("data-dd", key); b.appendChild(_ccEl("span", "cc-fa", open ? "\u25b4" : "\u25be")); w.appendChild(b);
+        if (open) { const L = _ccEl("div", "cc-fdd-list"); [{ id: null, label: "ALL", col: "#19e6c1" }].concat(list).forEach(o => L.appendChild(_ccBtn(o.label, o.col, cur === o.id, () => { set(o.id); _ccFiltDD = null; }, "small"))); w.appendChild(L); }
+        box.appendChild(w);
+    };
+    dd("class", "CLASS", ATTACK_STYLES.map(x => ({ id: x.id, label: x.label, col: x.col })), ccFilter.role, v => { ccFilter.role = v; });
+    dd("element", "ELEMENT", (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(el => unlocked.has(el.id)).map(el => ({ id: el.id, label: el.label, col: el.color })), ccFilter.element, v => { ccFilter.element = v; });
+    const spCol = typeof CARD_ART !== "undefined" && CARD_ART.species ? CARD_ART.species : {};
+    dd("species", "SPECIES", (typeof EQUIP_SUBCLASSES !== "undefined" ? EQUIP_SUBCLASSES : []).map(s => ({ id: s.id, label: s.label, col: spCol[s.id] || "#cfd6dd" })), ccFilter.species, v => { ccFilter.species = v; }); gap();
+    const cb = _ccBtn("CLONES", "#99ddff", ccFilter.kind === "clone", () => { ccFilter.kind = ccFilter.kind === "clone" ? null : "clone"; }, "small");
+    if (!cloneOk) cb.disabled = true;   // (greyed out: your class grows no clones)
+    box.appendChild(cb); gap();
     if (car) return;   // (the carousel picks one creature at a time: no SELECT SHOWN, no CLEAR)
     const sp = _ccEl("span", "cc-spacer"); box.appendChild(sp);
     box.appendChild(_ccBtn("SELECT SHOWN", "#ffe733", false, () => ccSetSelection(ccUnits(ccFilter)), "small"));

@@ -2073,3 +2073,4 @@ Supersedes "a signature move fires by itself on its own cooldown, beside the nor
 - Winding up: a Mage, a faint glow of its element on the floor round it; a Brawler, its body rumbling; both growing with the wind-up. A Technician: none until decided.
 - The Quillstone's alternates: QUILL BURST only. FIRE BOMBS stays on the Ember Hood (and the retired fire forms).
 - ATTACK STYLE in the roster's side panel is left out when every follower picked is evolved.
+- The roster's filters: ALL; CLASS, ELEMENT and SPECIES as drop-downs; CLONES, greyed out unless the player's class grows clones; no IN SQUAD / NOT IN SQUAD buttons (an open slot still lists who is not in the squad).

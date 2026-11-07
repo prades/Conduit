@@ -91,7 +91,7 @@ else for (const [w, h] of [[1200, 780], [600, 800]]) {
     });
     check(w + ': the full-screen menu is the creature cards with the filter tabs at the top and a squad summary; it has no tab bar', () => {
         same(r.tabs, 0, 'tabs left in the roster menu'); ok(/SQUAD 3\/3 · 1 POSTED · 4 UNITS/.test(r.summary), 'no squad summary: ' + r.summary); same(r.title, 'COMMAND CENTER', 'title'); same(r.cards, 4, 'cards');
-        for (const f of ['ALL', 'ELECTRIC', 'BRAWL', 'IN SQUAD', 'NOT IN SQUAD', 'CLONES']) ok(r.filters.includes(f), 'no ' + f + ' filter: ' + r.filters);
+        for (const f of ['ALL', 'CLASS · ALL', 'ELEMENT · ALL', 'SPECIES · ALL', 'CLONES']) ok(r.filters.includes(f), 'no ' + f + ' filter: ' + r.filters); ok(!r.filters.includes('IN SQUAD'), 'a squad filter (taken off: the owner, 2026-11-07)');
         if (wide) { same(r.recruitTop, 'none', 'the carousel has a recruit button at the top'); same(r.recruitTile, true, 'the carousel\'s strip has no RECRUIT tile'); ok(!r.filters.includes('SELECT SHOWN'), 'the carousel picks one at a time: no SELECT SHOWN'); }
         else { ok(r.recruitTop !== 'none', 'a phone has no + RECRUIT at the top'); ok(r.filters.includes('SELECT SHOWN') && r.filters.includes('CLEAR'), 'a phone has no SELECT SHOWN / CLEAR: ' + r.filters); }
     });
