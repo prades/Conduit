@@ -1973,3 +1973,13 @@ The owner: too much time goes into testing and side checks. From here on, only t
 1. Build `2026-11-07x`: "Push to main". Next: "Horn/Hover Shell Ultimates".
 2. Offered three proposals each; the owner wrote their own instead. Hornshell: "Wave maker 3 waves that knock the enemy's back. The mage gains ground as he uses it as not to waste the pulses". Hover Shell: "Hover shell drifts in and slashes enemies and returns to his post squad members get increased speed and enemies are interrupted".
 
+## DECISION: The game's name and tagline
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented in build `2026-11-07z`, on the branch.
+- **Related feature/docs:** `STARTUP.md` (the loading screen); `CHANGELOG.md` (2026-11-07 z)
+
+### Decision
+1. Build `2026-11-07y`: "Push to main".
+2. "I want the title on the browser and the title screen for the loading and everything to read conduit and then it has core c.o.r.E strategy & stands for combat operations roguelite evolutions": the game is **CONDUIT**, tagline **C.O.R.E. STRATEGY** (Combat Operations Roguelite Evolutions), on the browser tab, the loading screen and the home page's card.
+

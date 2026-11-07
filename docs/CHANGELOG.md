@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **z · The game's name: CONDUIT, C.O.R.E. STRATEGY** (the owner, 2026-11-07: "I want the title on the browser and the title screen for the loading and everything to read conduit and then it has core c.o.r.E strategy & stands for combat operations roguelite evolutions"; y "Push to main"). Implemented; screenshot of the loading screen.
+  - The browser tab reads **Conduit · C.O.R.E. Strategy** (it read "Tube Crawler: Peak AI Data-Driven").
+  - The loading screen reads **CONDUIT**, then **C.O.R.E. STRATEGY**, then **COMBAT · OPERATIONS · ROGUELITE · EVOLUTIONS**, above LOADING.
+  - The home page's Conduit card has the same line under its name. The home page's own tab title (your site, "Dragonlord — Home") is unchanged.
+  - Tests: startup.
+
 - **y · Own Ultimates for the Hornshell and the Hover Shell: WAVE MAKER, DRIFT SLASH** (the owner's designs, 2026-11-07; x "Push to main"). Implemented and tested on the branch; not playtested. The numbers, and DRIFT SLASH's name, are the agent's (provisional), in `ULT_WAVE` and `ULT_DRIFT` (js/elements.js).
   - **WAVE MAKER** (Hornshell; "3 waves that knock the enemy's back. The mage gains ground as he uses it as not to waste the pulses"): aimed at the nearest enemy it can see within 6 tiles, three waves roll out of its horn 0.75 s apart. Each hits every enemy within 4 tiles ahead (±50°) for 0.8 × its power (core) and throws it 1.5 tiles back. Between waves it moves 1.5 tiles after them, onto floor only. Its first Ultimate (core has no element Ultimate).
   - **DRIFT SLASH** (Hover Shell; "drifts in and slashes enemies and returns to his post squad members get increased speed and enemies are interrupted"): every enemy it can see within 6 tiles is interrupted (its wind-up fails for 0.5 s, the GLITCH). It drifts to up to 4 of them in turn, nearest first, slashing each for 1.5 × its power (half slashing, half electric), then drifts back to where it was. The squad moves 30% faster for 6 s. It replaces EMP for this form; its KINETIC LAUNCHER is untouched.
