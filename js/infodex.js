@@ -108,9 +108,9 @@ function infoEntries() {
         const a = _IP_ATTACKS[el.id] || {}, proc = typeof ELEMENT_PROC_CHANCE !== "undefined" ? ELEMENT_PROC_CHANCE[el.id] : undefined;
         add("el_" + el.id, "elements", el.label.toUpperCase(), el.color, "Beats " + _ipElName(strong[el.id]).toLowerCase() + ", weak to " + _ipElName(weak[el.id]).toLowerCase(),
             ["A " + el.label.toUpperCase() + " follower hits " + _ipElName(strong[el.id]) + " for ×" + mult(el.id, strong[el.id]) + " and " + _ipElName(weak[el.id]) + " for ×" + mult(el.id, weak[el.id]) + (el.id === "ice" ? ", and does nothing to CORE" : "") + ".",
-             "Its physical attack is " + (a.physical || "—") + " (1 WILL)" + (a.special || a.ult ? ", its special " + (a.special || "—") + " (4 WILL), and its ultimate, fired by a double-tap once the bar is full, is " + (a.ult || "—") + "." : ". It has no special and no ultimate for now.") + " Its hits can " + (a.proc || "proc") + " the target."],
+             "Its physical attack is " + (a.physical || "—") + " (1 WILL)" + (a.ult ? ", and its ultimate, fired by a double-tap once the bar is full, is " + a.ult + "." : ". It has no ultimate for now.") + " Its hits can " + (a.proc || "proc") + " the target. (Elements have no special attack: a follower's attacks are its primary, an alternate, a card's special attack and its ultimate.)"],
             [["BEATS", _ipElName(strong[el.id]), ELEMENTS.find(x => x.id === strong[el.id]).color], ["WEAK TO", _ipElName(weak[el.id]), ELEMENTS.find(x => x.id === weak[el.id]).color],
-             ["PHYSICAL", a.physical || "—"], ["SPECIAL", a.special || "—"], ["ULTIMATE", a.ult || "—", UI_GOLD], ["PROC", (proc !== undefined ? Math.round(proc * 100) + "% " : "") + (a.proc || "")]]);
+             ["PHYSICAL", a.physical || "—"], ["ULTIMATE", a.ult || "—", UI_GOLD], ["PROC", (proc !== undefined ? Math.round(proc * 100) + "% " : "") + (a.proc || "")]]);
     });
 
     // ── RULES ──

@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **jj · No element special attack: a follower has a primary, an alternate, a card special attack and an Ultimate** (the owner, 2026-11-07, asked whether the fire special's bombs should go too: "I don't think we're gonna have a special attack. It's going to be each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability"; ii "Push to main"). Implemented and tested on the branch; not playtested.
+  - A follower no longer fires its element's special now and then (it was a 15% chance with 4 WILL: fire bombs, static field, ice burst, singularity, toxic cloud). With WILL it uses its element's physical move, without it the plain hit, as before. js/combat.js `followerAttack`.
+  - Nothing throws fire bombs now, so nothing sets the floor burning that way.
+  - The special functions stay in js/elements.js, unused (a cleanup can take them out); the game index no longer lists a special for each element, and the Bible marks them as no longer used.
+  - Tests: crystalline (the attacks' rests), combat, followercombat, evolution, packs, firebombs, damage, bible, infodex.
+
 - **ii · FIRE BOMBS taken out as an alternate** (the owner, 2026-11-07, after build hh: "I thought we were getting rid of firebombs"; hh "Push to main"). Implemented and tested on the branch; not playtested.
   - No form has FIRE BOMBS any more: the Ember Hood's one alternate is HEXFIRE (the retired Bunker Bloom and Cinder Halo lost it too; the Quillstone lost it in gg). The move is out of the moves table, its firing code (`fireBombBarrage`) and its INDEX entry are gone.
   - A follower saved on FIRE BOMBS loads on its normal attack.

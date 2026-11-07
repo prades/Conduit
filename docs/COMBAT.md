@@ -174,6 +174,8 @@ Weak: ×1.3. Resists: ×0.7. Anything else: ×1. Every form of a race, nymph to 
 
 A follower's **main attack** is its everyday hit: a Brawler's or Technician's plain hit and its element's physical move, or a Mage's shot. Its **alternates** are its signature move and, for a Technician, its ability. The types follow each creature's body. The fire and electric followers' attacks were redesigned on 2026-11-02 (`FOLLOWER-COMBAT-REDESIGN.md`, built from build `2026-11-03a`); their types did not change.
 
+**A follower's attacks** (the owner, 2026-11-07: "I don't think we're gonna have a special attack. It's going to be each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability"; build `2026-11-07jj`): its primary (the everyday hit above), at most one alternate, a card's special attack (the SPECIAL ATTACK slot) and its Ultimate. The element special that a follower used to fire now and then (fire bombs, static field, ice burst, singularity, toxic cloud) is gone from its attacks.
+
 **An alternate is a chosen mode** (the owner, 2026-11-07, build `2026-11-07ff`). An evolved follower fights with its main attack until one of its alternates is chosen (the INDEX tab, the HUD pop-out, the roster). The chosen alternate is then its only attack, until it is switched back; attack orders keep it. With an enemy in the move's reach it winds up rooted (it cannot move), fires, and winds up again only once the move's effect has ended (at most 20 s). While it winds up, a Mage has a faint glow of its element round it, a Brawler's body rumbles and a Technician has circuit sparks of its element flickering over its body, each growing (builds `2026-11-07gg` and `hh`: the owner, "an aura for a mage and a rumble for a brawler", then "Circuit sparks works"). The Technician's ability is unchanged (the player fires it).
 
 | Form | Class · element | Main attack | Alternates |
@@ -200,7 +202,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 | Lotus lantern (designed, name to come) | Mage · bloom | Elemental (seed-light) | SEEDFALL: Elemental |
 | Coral crab (designed, name to come) | Technician · bloom | Crushing (claws) | REEF: to set (`CONVERSION.md`) |
 
-- **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS move too, until it was taken out on 2026-11-07), the static field, the ice burst, the singularity, the smoke bomb.
+- **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS move too, until it was taken out on 2026-11-07), the static field, the ice burst, the singularity, the smoke bomb. *(Since build `2026-11-07jj` no follower uses an element special: the owner, "each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability". The functions stay in js/elements.js, unused.)*
 - **An egg** (not yet evolved) hits with its scythe legs: Slashing.
 - **The player's guns and the turrets:** Projectile.
 
@@ -377,7 +379,7 @@ PETAL BLAZE, the one move of their own, is Elemental.
 | Follower | a Mage's shot | main | SP.ATK |
 | Follower | the twelve signature moves, THERMITE DRILL | alternate | ATK |
 | Follower | a follower thrown by the Kinetic Launcher, landing | Earthquake | ATK |
-| Follower | the element specials, the toxic impact, the fire eruption, the fire special's bombs | special (Elemental) | SP.ATK |
+| Follower | the element specials and the fire special's bombs (no longer used since 2026-11-07, build `jj`), the toxic impact, the fire eruption | special (Elemental) | SP.ATK |
 | Follower | the fire forms' FIRE BOMBS move (taken out 2026-11-07, build `ii`) | special (Elemental) | ATK |
 | Creature | its bite (js/predator.js, three places) | its race's (§7.8) | — |
 | Creature | MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE's first hit, BLADE FLURRY | its own (§7.8) | — |

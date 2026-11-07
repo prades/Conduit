@@ -2097,3 +2097,16 @@ Supersedes "a signature move fires by itself on its own cooldown, beside the nor
 
 ### Supersedes / superseded by
 Supersedes `FOLLOWER-COMBAT-REDESIGN.md`'s "FIRE BOMBS stays a selectable alternate for fire followers".
+
+## DECISION: No element special attack; a follower's attacks are primary, alternate, card special attack, Ultimate
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07jj`, on the branch; not playtested.
+- **Related feature/docs:** `COMBAT.md` §7.4; `FIRE-BOMBS.md`; `CHANGELOG.md` (2026-11-07 jj)
+
+### Decision
+1. Asked whether the fire special's two bombs should go after FIRE BOMBS the move: "I don't think we're gonna have a special attack. It's going to be each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability".
+2. A follower no longer fires its element's special (all elements). Its attacks: its primary (the everyday hit), at most one alternate (a chosen mode), a card's special attack (the SPECIAL ATTACK slot) and its Ultimate.
+
+### Follow-up
+The special functions (and the fire bombs they threw) stay in the code, unused; taking them out is a cleanup for later, on the owner's word.

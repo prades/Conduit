@@ -334,7 +334,6 @@ function followerAttack(actor, target) {
     const attacks  = element ? ELEMENT_ATTACKS[element] : null;
     const role     = actor.role || "brawler";
     const hasWill  = actor.currentWill >= WILL_COST_PHYSICAL;
-    const canSpecial = actor.currentWill >= WILL_COST_SPECIAL;
 
     // ── SNIPER recharge behavior ──
     if (role === "sniper" && !hasWill) {
@@ -342,16 +341,11 @@ function followerAttack(actor, target) {
         return;
     }
 
-    // Decide attack tier
+    // Decide attack tier: its element's physical move when it has the WILL, else the plain hit. NO ELEMENT SPECIAL any more (the owner, 2026-11-07: "I don't think
+    // we're gonna have a special attack. It's going to be each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate
+    // ability"): ELEMENT_ATTACKS[el].special is no longer fired by a follower (js/elements.js keeps the functions, unused).
     let attackTier = "normal";
-    if (attacks && hasWill) {
-        // Hybrid can use special more freely
-        if (canSpecial && attacks.special && (role==="hybrid" || Math.random() < 0.15)) {   // (core has no special: its Radiant Pulse went with the followers' shield)
-            attackTier = "special";
-        } else {
-            attackTier = "physical";
-        }
-    }
+    if (attacks && hasWill) attackTier = "physical";
 
     // Execute attack
     actor.state = "attack"; actor.attackAnim = 0;
@@ -368,11 +362,6 @@ function followerAttack(actor, target) {
         if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor, actor.stats?.attack||5); }
         actor.attackCooldown = followerRest(actor, 40);
 
-    } else if (attackTier === "special" && attacks.special) {
-        attacks.special(actor, target);
-        actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
-        if (actor.perk) { const pk=PERKS[actor.perk]; if(pk&&pk.onDealDamage) pk.onDealDamage(actor, actor.stats?.specialAttack||5); }
-        actor.attackCooldown = followerRest(actor, 70);
     }
 
     // Resonance builds from damage output
