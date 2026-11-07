@@ -405,6 +405,8 @@ The decoy should complement environmental manipulation, not replace it.
 
 ### 6.3 Toxic Queen Encounter
 
+**Status (2026-11-07):** built as described below (js/bosses.js; `SEWER-QUEST.md`); the owner's tuning "Harder" in build `2026-11-07dd` (level 8, bomb 30 s, spit 6 s, waves of 6 every 25 s). An ice bridge is floor for everyone, the Queen and her brood too ("Everyone crosses (as now)"). Not playtested.
+
 The Queen encounter should preserve its non-lethal resolution direction.
 
 The player's objective is to create an opportunity to install the purification module, not simply defeat the Queen through damage.

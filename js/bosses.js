@@ -33,16 +33,16 @@
 // post: the nest area has no way in yet (js/facilitymap.js `candidates`), so nothing arms it. A nest encounter is a row of data when the nest is built, not a new system.
 const BOSS_ENCOUNTERS = {
     sewer_cistern: { id: "sewer_cistern", domain: "sewers", room: "sewers", name: "THE TOXIC ANT QUEEN",
-        species: "ant", cls: "boss", element: "toxic", level: 6,   // PROVISIONAL: the ant species' boss block (js/species.js: 500 health, power 60, mandible frenzy) at level 6; the archive leaves the boss's numbers open ("measure the live game first")
+        species: "ant", cls: "boss", element: "toxic", level: 8,   // the owner, 2026-11-07: "Harder" (it was 6). PROVISIONAL before: the ant species' boss block (js/species.js: 500 health, power 60, mandible frenzy) at level 6; the archive leaves the boss's numbers open ("measure the live game first")
         lair: F => { const m = F.solids.find(q => q.id === "purifier_mount"); return m && m.bb ? [(m.bb[0] + m.bb[2]) / 2 + 1.6, (m.bb[1] + m.bb[3]) / 2] : null; },   // her POST: beside the console on the Nest's trash dam, east of it (the blockage: she sits on the work)
         mount: "st_purifier",     // the station she keeps (js/stations.js): the purification module's mount at the head of the sump
         guard: 2.5,               // PROVISIONAL: within this of the console, awake and not controlled, she holds the install (the archive's "a couple of tiles")
         leash: 15,                // tiles from her post: a player further off is let go (rooted: she sleeps again; frantic: she roams). PROVISIONAL: the whole Nest (its farthest floor, the causeway's end at the gate, is 13.5 tiles from her post since 2026-11-01: facilitySewerMeasures().farFromPost)
         attacks: {
-            bomb: { every: 2700, windup: 60, flight: 60, radius: 1.6, range: 12, power: 1.5 },   // the archive's 45 s; PROVISIONAL: a second of wind-up, a second in the air, a 1.6-tile burst, 12 tiles of reach, 1.5 × her power on a follower (you: one hit)
-            spit: { trigger: 3, cooldown: 600, windup: 30, flight: 30, radius: 1.0, power: 0.8 },   // the archive's 10 s cooldown, "only while the player is within its close-range trigger"; PROVISIONAL: 3 tiles, half a second each way, a tile's burst
+            bomb: { every: 1800, windup: 60, flight: 60, radius: 1.6, range: 12, power: 1.5 },   // the owner, 2026-11-07: "Harder": every 30 s (the archive's 45 s before); PROVISIONAL: a second of wind-up, a second in the air, a 1.6-tile burst, 12 tiles of reach, 1.5 × her power on a follower (you: one hit)
+            spit: { trigger: 3, cooldown: 360, windup: 30, flight: 30, radius: 1.0, power: 0.8 },   // the owner, 2026-11-07: "Harder": every 6 s (the archive's 10 s cooldown before), "only while the player is within its close-range trigger"; PROVISIONAL: 3 tiles, half a second each way, a tile's burst
         },
-        waves: { n: 4, first: 1800, every: 1800, table: "queen", near: [1.5, 3.5] },   // the archive's 30 s and "start at 4"; PROVISIONAL: the first wave 30 s after she wakes, within a few tiles of her. WHAT comes is her table's (js/population.js SPAWN_TABLES.queen: toxic nymphs of level 2 to 3)
+        waves: { n: 6, first: 1800, every: 1500, table: "queen", near: [1.5, 3.5] },   // the owner, 2026-11-07: "Harder": 6 every 25 s (the archive's 30 s and "start at 4" before); PROVISIONAL: the first wave 30 s after she wakes, within a few tiles of her. WHAT comes is her table's (js/population.js SPAWN_TABLES.queen: toxic nymphs of level 2 to 3)
         frantic: { at: 0.5, speed: 3, roam: 15 },   // the archive's 50%; PROVISIONAL: three times her pace (her own would never get her anywhere), roaming within 15 tiles of her post (the Nest's trash dam and causeway; Side Quest's platform is twice as far)
         quest: "purify", wakes: ["install", "hit"], calms: ["purified"],
         note: "The Sewers' boss, behind the boss gate: the user's toxic ant boss (2026-10-31), named after the archive's proposed progression (the Toxic Ant Queen of the Sewers, Stage 3); provisional. The purification module's install wakes her; clean water calms her." },

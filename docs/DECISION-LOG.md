@@ -2017,3 +2017,14 @@ The owner: too much time goes into testing and side checks. From here on, only t
 2. The river moved two tiles north: the north ledge 3 deep, the south ledge 5; the sample bank four tiles by five. Walls stay as they are.
 3. Next (asked with build bb): "Toxic Queen encounter". Build bb's push to main was not answered (the answer was the wall); nothing was pushed to main.
 
+## DECISION: The Toxic Queen's encounter as built; harder numbers; ice for everyone
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07dd`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §6.3 and §14.3; `SEWER-QUEST.md` (the Toxic Queen); `CHANGELOG.md` (2026-11-07 dd)
+
+### Decision
+1. Builds `2026-11-07bb` and `cc`: "Push to main".
+2. The roadmap's next item, the Toxic Queen's non-lethal purification encounter (§6.3), is built as described (rooted at the console, three attacks, nymph waves, frantic at half health, the sleeping potion, the install, calm or defeated). The owner: "Tune her numbers" → "Harder": level 8, a bomb every 30 s, a spit every 6 s, waves of 6 every 25 s.
+3. "Everyone crosses (as now)": an ice bridge is floor for the Queen and her brood too.
+

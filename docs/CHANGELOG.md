@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **dd · The Toxic Queen, harder** (the owner, 2026-11-07, on the roadmap's next item, the Queen's encounter, which is built as the roadmap describes: "Tune her numbers", then "Harder"; and "Everyone crosses (as now)" for the ice; cc "Push to main"). Implemented and tested on the branch; not playtested.
+  - Level 8 (was 6); her BOMB every 30 s (was 45 s); her SPIT every 6 s (was 10 s); her waves 6 nymphs every 25 s (was 4 every 30 s; the first still 30 s after she wakes). Frantic at half health, her guard and leash unchanged.
+  - Ice bridges stay floor for everyone, the Queen and her brood too (decided, no change).
+  - Tests: sewerquest (her level, the wave of six), bible (her numbers).
+
 - **cc · The river moved two tiles north: the sample's side is bigger** (the owner, 2026-11-07, of the Sewers' far-left wall hiding the bank: "rather than rewrite the whole game with the transparent walls, don't do that. Just make that side of the bank bigger. I don't care if you move the river over"). Implemented and tested on the branch; not playtested.
   - The whole river (its three lengths), the three bridges and the outfall are two tiles further north: the north ledge is 3 tiles deep, the **south ledge 5** (it was 5 and 3). The sample bank is four tiles by five (it was four by three), so less of it is behind the front wall. The rock fall spans the whole south ledge; the launcher pad sits on the narrower north ledge.
   - No transparent walls (the owner: "don't do that").
