@@ -291,6 +291,71 @@ function equipPlayerKitText(cls, k) {
     return out.join(" · ");
 }
 EQUIP_PLAYER_CARDS.forEach(([id, name, cls, el, kit]) => { const k = Object.assign({ el }, kit); EQUIP_CARDS[id] = { id, name, kind: "player", match: cls, rarity: "prototype", pack: "series2", kit: k, text: equipPlayerKitText(cls, k) }; });
+// A CARD'S SHORT TEXT (the owner, 2026-11-07: in the pop-outs where a card is put on, "use shortened text"): what it does in a few words. It is built from the same numbers as the full text, so tuning a number tunes
+// both. A card whose full text is EQUIP_SHORT.max letters or fewer keeps it. Shown where a card is put on: on the cards of the roster's card picker, on the line under a roster slot, and in the HUD member card's
+// lists. The CARDS screen keeps the full text. The words are the agent's (provisional).
+const EQUIP_SHORT = { max: 30 };
+const _EQUIP_SHORT_STAT = { attack: "ATTACK", specialAttack: "SP. ATTACK", attackSpeed: "ATTACK SPEED", defense: "DEFENSE", maxHealth: "MAX HP", damage: "DAMAGE", cooldown: "COOLDOWN" };
+const _EQUIP_STATUS_VERBS = { burn: "BURNS", poison: "POISONS", glitch: "GLITCHES", slow: "SLOWS", siphon: "SIPHONS", knockback: "KNOCKS BACK" };
+function equipShortText(c) {
+    const t = c && c.text || ""; if (t.length <= EQUIP_SHORT.max) return t;
+    return _equipShort(c) || t;
+}
+function _equipShort(c) {
+    const sec = n => (Math.round(n * 10) / 10) + " S";
+    if (c.kit) return _equipKitShort(c.match, c.kit);
+    if (c.bonus) return Object.keys(c.bonus).map(k => (k === "cooldown" ? "−" : "+") + _equipPct(c.bonus[k]) + " " + (_EQUIP_SHORT_STAT[k] || String(k).toUpperCase())).join(" · ");
+    const a = c.ability;
+    if (a) {
+        if (a.kind === "shellBlock") return "BLOCKS A HIT, AGAIN AFTER " + sec(a.every);
+        if (a.kind === "regrowth") return "REGAINS " + _equipPct(a.perSecond) + " HP A SECOND";
+        if (a.kind === "nova") return "NOVA: EVERY " + a.every + "TH HIT BURSTS";
+        if (a.kind === "overclock") return "+" + _equipPct(a.attackSpeed) + " ATTACK SPEED " + sec(a.lasts) + ", EVERY " + sec(a.every);
+        if (a.kind === "absorb") return "AFTER " + sec(a.after) + " UNHIT: NEXT HIT −" + _equipPct(a.cut);
+        if (a.kind === "cleave") return "CLEAVE: HITS STRIKE NEARBY";
+        if (a.kind === "chain") return "CHAIN: HITS JUMP ON";
+        if (a.kind === "doubleCharge") return "ITS ABILITY HOLDS TWO CHARGES";
+        return "";
+    }
+    const k = c.attack;
+    if (k) {   // (a card attack: what it is, then its wait)
+        const when = k.lasts ? " · WAIT " + sec(k.wait) : " · EVERY " + sec(k.wait);
+        if (k.kind === "spikeTrio") return "TOXIC SPIKES " + k.mult + "× ATTACK" + when;
+        if (k.kind === "searedCharge") return "FIERY CHARGE " + k.mult + "× ATTACK" + when;
+        if (k.kind === "voltageField") return "SPEED FIELD " + sec(k.lasts) + ", ZAPS ENEMIES" + when;
+        if (k.kind === "wraithfire") return "FIRE GHOST " + sec(k.lasts) + ", THEN A BLAST" + when;
+        return "";
+    }
+    if (c.aura) { const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[c.aura.el]], st = tpl && tpl.proc ? _EQUIP_STATUS_WORDS[tpl.proc.kind] : ""; return "AURA: +" + _equipPct(c.aura.attack) + " ATTACK" + (c.aura.status > 0 && st ? ", " + _equipPct(c.aura.status) + " TO " + st : ""); }
+    if (c.opportunity) return "+" + _equipPct(c.opportunity) + " PER WEAKNESS EXPLOITED";
+    const p = c.proc;
+    if (p) { if (p.kind === "attuned") return _equipPct(p.chance) + " PER HIT: ITS ELEMENT'S STATUS"; const w = _EQUIP_STATUS_WORDS[p.kind]; return w ? _equipPct(p.chance) + " PER HIT TO " + w : ""; }
+    return "";
+}
+// a role's short text: whose hits take its element (ROUNDS, PUNCH, LASH), then what its kit does, a few words for each part (equipPlayerKitText's parts, in its order)
+const _EQUIP_KIT_SHORT_HITS = { gunslinger: "ROUNDS", technomancer: "PUNCH", mutator: "LASH" };
+function _equipKitShort(cls, k) {
+    const hits = _EQUIP_KIT_SHORT_HITS[cls]; if (!hits || !k) return "";
+    const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[k.el]], kind = tpl && tpl.proc ? tpl.proc.kind : "", w = _EQUIP_STATUS_WORDS[kind] || "", v = _EQUIP_STATUS_VERBS[kind] || "", out = [];
+    if (k.status && w) out.push(w);
+    if (k.jump) out.push("SHOTS JUMP");
+    if (k.freeze) out.push("FREEZE");
+    if (k.pull > 0) out.push("PULL");
+    if (k.slower > 0) out.push("SLOWER GUNS");
+    if (k.sentries && w) out.push("SENTRIES " + w);
+    if (k.repair > 0 && k.repair < 1) out.push("FAST REPAIRS");
+    if (k.relays && w) out.push("RELAYS " + w);
+    if (k.lamp) out.push("LAMP ZAPS");
+    if (k.swap) out.push("SWAP PLACES");
+    if (k.shield) out.push("CELLS RAISE A SHIELD");
+    if (k.bite && w) out.push("BITES " + w);
+    if (k.pool && v) out.push("POOL " + v);
+    if (k.freeRevive) out.push("FREE REVIVALS");
+    if (k.preserve) out.push("CLONE PRESERVED");
+    if (k.splice) out.push("CLONE STEALS ELEMENTS");
+    if (k.tank) out.push("TOUGH CLONE");
+    return _equipElementLabel(k.el) + " " + hits + (out.length ? " · " + out.join(", ") : "");
+}
 // THE CUT CARDS (the owner, 2026-11-02: Series 2 reshaped): its eight Brawler and Mage class cards are no longer cards. The registry does not know them, so every place that reads a saved id already drops them (the hand, the cards
 // found, the shelf, the player's slots: equipSaveApply; a follower's slots: equipValid on the tick, and the bonuses skip them before that). The COLLECTION keeps ids it does not know (?cards on and off loses nothing), so it drops these
 // by name, and each one it held (unlocked for good) pays back EQUIP.unlockCost shards, once (equipOwnedSet, equipRefundTick). Their abilities' code (Cleave, Chain) is kept, worn by no card.

@@ -4,6 +4,20 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **pp · The pop-outs show only the cards that fit, in short text.** Owner's request (2026-11-07): "Just make it to where the pop-outs don't display cards that aren't available to the follower, and use shortened text." Implemented and tested on the branch and seen in screenshots; not playtested.
+  - **The roster's card picker:**
+    - Only the cards a slot can take are shown, plus EMPTY and the worn card. Cards for another class, element or species, a Player card on a follower, and the card on the other slot are not in the row. The same holds for the player's own slots.
+    - Each card shows its short text on its face. Under it are only its name, its chip and WORN.
+    - The header and the note are shorter.
+  - **The HUD's member card lists** (CARD 1, CARD 2, SPECIAL ATTACK) follow the same rule. Each card shows its name, its short text and its chip. The ATTACK list's long line now reads LOCKED ON · WINDS UP IN PLACE.
+  - **Off when nothing fits:** a slot with nothing on it and no card that fits is off and says NO CARD FITS.
+  - **A card's short text** (js/cards.js `equipShortText`) is built from its numbers, so tuning keeps it right. A text of 30 letters or fewer is kept. The CARDS screen keeps the full text.
+  - Agent's choices (provisional): the short texts' wording.
+  - Tests:
+    - `tests/cards.js`: a new check on every card's short text; the picker lists only what fits; a swallowed `cards3` check restored.
+    - `tests/squadfly.js`, `tests/playercards.js`, `tests/packs.js`, `tests/crystalline.js`: updated.
+    - These pass, as do series2, classcards, cardart, commandcenter, carousel, ccmerge and squadui.
+
 - **oo · The card picker in the roster.** Owner's request (2026-11-07): "I'd like to make it to where I can see information about the cards when I'm equipping them to the creatures", then "a sliding list of card arts appears in the middle of the screen in a pop-out. You can scroll through and select which one you want to put on". Implemented and tested on the branch and seen in screenshots; not playtested.
   - A tap on a card slot in the roster opens **the card picker**, a box in the middle of the screen. This covers a follower's CARD 1, CARD 2 and SPECIAL ATTACK, and your YOUR SLOT 1 / 2. It replaces the slot's drop-down list.
   - The cards the slot can take are in a row that slides sideways. Each is drawn in full as on the CARDS screen, with its art, name, kind and what it does.

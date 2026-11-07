@@ -89,7 +89,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.awake = look();
     classSet('technomancer'); ccRender(); await wait(150); out.asleep = look();
     click(slot(2)); await wait(80);
-    out.list2 = $$('#cardPick .cp-tile').filter(function(b){ return /GUNNER|SHOOTER|SLINGER|MARKSMAN|RUNNER/.test(b.querySelector('.cp-nm').textContent); }).map(function(b){ return [b.querySelector('.cp-nm').textContent, b.disabled, (b.querySelector('.cp-st') || {}).textContent || '']; }); cardPickClose();   // (the card picker since build 2026-11-07oo)
+    out.list2 = $$('#cardPick .cp-tile').filter(function(b){ return /GUNNER|SHOOTER|SLINGER|MARKSMAN|RUNNER/.test(b.querySelector('.cp-nm').textContent); }).map(function(b){ return [b.querySelector('.cp-nm').textContent, b.disabled, (b.querySelector('.cp-st') || {}).textContent || '']; }); out.list2all = $$('#cardPick .cp-tile').map(function(b){ return b.querySelector('.cp-nm').textContent + (b.disabled ? ':off' : ''); }); cardPickClose();   // (the card picker since build 2026-11-07oo; only what fits since pp)
     classSet('gunslinger'); ccRender(); await wait(150); out.back = look();
     ccClose(); await wait(60);
     // GRAVITY ENGINEER's SWAP on a squad member's card (the corners layout: a tap on the member's card on the squad stack opens its card beside it)
@@ -447,7 +447,7 @@ function page(w, h, query) {
 
     group('THE ROSTER, IN THE REAL PAGE: a role asleep is greyed, marked ASLEEP, and says when it wakes');
     const PAGE = page(1180, 820, '?cards=all');
-    await check('as a Gunslinger INCENDIARY GUNNER is lit on YOUR SLOT 1; as a Technomancer it is greyed (grayscale), ASLEEP on the card and in the slot, the note says it wakes when you are a Gunslinger, and the other slot\'s list refuses every Gunslinger role (FOR THE GUNSLINGER); back as a Gunslinger it is lit', () => {
+    await check('as a Gunslinger INCENDIARY GUNNER is lit on YOUR SLOT 1; as a Technomancer it is greyed (grayscale), ASLEEP on the card and in the slot, the note says it wakes when you are a Gunslinger, and the other slot\'s picker shows no Gunslinger role (since build 2026-11-07pp a card that does not fit is not shown: the Technomancer\'s six are there); back as a Gunslinger it is lit', () => {
         const P = PAGE;
         if (P === null) { console.log('       (no Chromium here: skipped)'); return; }
         ok(P, 'the page did not report'); ok(!P.err, P.err); same(P.put, true, 'put in');
@@ -455,8 +455,9 @@ function page(w, h, query) {
         same([P.asleep.asleep, P.asleep.zz, P.asleep.k, P.asleep.v].join('|'), 'true|ASLEEP|YOUR SLOT 1 · ASLEEP|INCENDIARY GUNNER', 'asleep'); ok(/grayscale\(1\)/.test(P.asleep.filter), 'greyed: ' + P.asleep.filter);
         ok(P.asleep.level <= 1, 'the two slots\' cards are not level while one sleeps: ' + P.asleep.level); same(P.asleep.under, true, 'ASLEEP is not under the card'); same(P.asleep.fits, true, 'the slot\'s drop-down overflows while its card sleeps');
         ok(/INCENDIARY GUNNER IS ASLEEP: IT WAKES WHEN YOU ARE A GUNSLINGER AGAIN/.test(P.asleep.note), 'the note: ' + P.asleep.note); ok(/ASLEEP$/.test(P.asleep.label), 'its label: ' + P.asleep.label);
-        same(P.list2.length, 6, 'the roles listed for the other slot'); ok(P.list2.every(x => x[1] === true), 'a role could be picked: ' + JSON.stringify(P.list2));
-        same(P.list2.map(x => x[0] + ':' + x[2]).join('|'), ['INCENDIARY GUNNER:ALREADY IN THE OTHER SLOT', 'BLIGHT SHOOTER:FOR THE GUNSLINGER', 'ARC SLINGER:FOR THE GUNSLINGER', 'CRYO MARKSMAN:FOR THE GUNSLINGER', 'RIFT RUNNER:FOR THE GUNSLINGER', 'BREACH GUNNER:FOR THE GUNSLINGER'].join('|'), 'the other slot\'s list, as a Technomancer');
+        same(P.list2.length, 0, 'a Gunslinger role is shown in the other slot\'s picker: ' + JSON.stringify(P.list2));
+        for (const n of ['FORGEMASTER', 'SMOG ENGINEER', 'ARC WARDEN', 'CRYO TECH', 'GRAVITY ENGINEER', 'BULWARK ENGINEER']) ok(P.list2all.includes(n), n + ' is not in the other slot\'s picker: ' + P.list2all.join('|'));
+        ok(P.list2all.every(n => n === 'EMPTY:off' || !/:off$/.test(n)), 'a card in the picker is off: ' + P.list2all.join('|'));
         same([P.back.asleep, P.back.zz, P.back.k, P.back.v].join('|'), 'false||YOUR SLOT 1|INCENDIARY GUNNER', 'awake again');
     });
     await check('GRAVITY ENGINEER\'s SWAP, in the real page: a row on the squad member\'s card while the role is awake, saying what it does; a tap trades places with the member; then it is off and says when it is ready; without the role the row is gone', () => {

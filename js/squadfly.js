@@ -88,26 +88,28 @@ function _sfCardsDraw(E, f) {
         if (open) {
             const list = mk("div", "sf-slot-list"), opt = (label, sub, on, id) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", "alt"); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); el.appendChild(mk("small", "sf-os", sub)); list.appendChild(el); };
             opt("NORMAL ATTACK", "ITS EVERYDAY HITS", !cur, null);
-            for (const id of altIds) opt(MOVES[id].name, "LOCKED ON IT: IT WINDS UP STANDING STILL, AND AGAIN WHEN ITS EFFECT IS OVER", !!cur && cur.id === id, id);
+            for (const id of altIds) opt(MOVES[id].name, "LOCKED ON · WINDS UP IN PLACE", !!cur && cur.id === id, id);   // (short: the owner, 2026-11-07, "use shortened text")
             box.appendChild(list);
         }
     }
     if (!can) return;
-    // CARD 1 and CARD 2 list the cards that are not card attacks; SPECIAL ATTACK ("sp": the owner, 2026-11-06, "Including access main hud") lists the card attacks (js/cards.js equipSpecialWhyNot)
+    // CARD 1 and CARD 2 list the cards that are not card attacks; SPECIAL ATTACK ("sp": the owner, 2026-11-06, "Including access main hud") lists the card attacks (js/cards.js equipSpecialWhyNot). Only the cards the
+    // slot can take are listed, and the one worn, each with its short text (the owner, 2026-11-07: "don't display cards that aren't available to the follower, and use shortened text": js/cards.js equipShortText)
     for (const slot of [0, 1].concat(typeof equipSpecialFor === "function" && equipSpecialFor(f) ? ["sp"] : [])) {   // (its SPECIAL ATTACK only on a form some card attack is for)
         const sp = slot === "sp", hand = all.filter(c => !!c.attack === sp), why0 = c => sp ? equipSpecialWhyNot(f, c.id) : equipWhyNot(f, c.id, slot);
-        const cur = sp ? f.special || null : equipSlots(f)[slot], card = typeof equipCard === "function" ? equipCard(cur) : null, open = _sfDD === slot && hand.length > 0;
-        const b = mk("button", "sf-slot" + (open ? " open" : "") + (hand.length ? "" : " off") + (sp ? " sp" : "")); b.type = "button"; b.setAttribute("data-slot", String(slot));
-        b.appendChild(mk("span", "sf-sk", sp ? "SPECIAL ATTACK" : "CARD " + (slot + 1))); b.appendChild(mk("span", "sf-sv", hand.length ? (card ? card.name : "EMPTY") : sp ? "NO CARD ATTACKS IN YOUR HAND" : "NO CARDS IN YOUR HAND"));
+        const cur = sp ? f.special || null : equipSlots(f)[slot], card = typeof equipCard === "function" ? equipCard(cur) : null, shown = hand.filter(c => c.id === cur || !why0(c));
+        const usable = !!card || shown.length > 0, open = _sfDD === slot && usable;   // (a slot with no card on and none that fits it is off: nothing to list)
+        const b = mk("button", "sf-slot" + (open ? " open" : "") + (usable ? "" : " off") + (sp ? " sp" : "")); b.type = "button"; b.setAttribute("data-slot", String(slot));
+        b.appendChild(mk("span", "sf-sk", sp ? "SPECIAL ATTACK" : "CARD " + (slot + 1))); b.appendChild(mk("span", "sf-sv", usable ? (card ? card.name : "EMPTY") : hand.length ? "NO CARD FITS" : sp ? "NO CARD ATTACKS IN YOUR HAND" : "NO CARDS IN YOUR HAND"));
         if (card) { const ch = chip(card); if (ch) b.appendChild(ch); }
         b.appendChild(mk("span", "sf-sa", open ? "▴" : "▾"));
-        if (!hand.length) b.disabled = true;
+        if (!usable) b.disabled = true;
         box.appendChild(b);
         if (!open) continue;
         const list = mk("div", "sf-slot-list");
-        const opt = (label, sub, on, off, id, c) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", String(slot)); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); if (sub) el.appendChild(mk("small", "sf-os", sub)); if (c) { const ch = chip(c); if (ch) el.appendChild(ch); if (c.text) el.appendChild(mk("small", "sf-ofx", c.text)); } if (off) el.disabled = true; list.appendChild(el); };   // (sf-ofx: what the card does, the owner, 2026-11-07: "see information about the cards when I'm equipping them")
-        opt("EMPTY", cur ? (sp ? "TAKE IT OFF: ITS EVERYDAY HIT IS BACK" : "TAKE THE CARD OFF") : "", !cur, !cur, null, null);
-        hand.forEach(c => { const why = why0(c); opt(c.name, why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c), c.id === cur, !!why && c.id !== cur, c.id, c); });
+        const opt = (label, sub, on, off, id, c) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", String(slot)); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); if (sub) el.appendChild(mk("small", "sf-os", sub)); if (c) { const ch = chip(c); if (ch) el.appendChild(ch); const fx = typeof equipShortText === "function" ? equipShortText(c) : c.text; if (fx) el.appendChild(mk("small", "sf-ofx", fx)); } if (off) el.disabled = true; list.appendChild(el); };   // (sf-ofx: what the card does, short)
+        opt("EMPTY", cur ? "TAKE IT OFF" : "", !cur, !cur, null, null);
+        shown.forEach(c => opt(c.name, "", c.id === cur, false, c.id, c));
         box.appendChild(list);
     }
 }

@@ -71,8 +71,8 @@ function _cdKindCol(c) {   // a card's colour: its element's (an element card, a
 // edge, and its name, kind and text are a raised hologram with a blurred copy under it for its shadow. `extra` is its state: "hand", "found", "locked" (or "" for none). The callers put what can be done with it
 // (its buttons, who wears it) under the slab, flat: a tap there is never lost to the tilt.
 const _CD_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED" };
-function _cdSlab(c, extra) {
-    const s = _cdEl("div", "cd-card" + (extra ? " " + extra : "")), col = _cdKindCol(c); s.style.setProperty("--c", col);
+function _cdSlab(c, extra, short) {   // (short: its text is its short text, js/cards.js equipShortText: the card picker's cards)
+    const s = _cdEl("div", "cd-card" + (extra ? " " + extra : "")), col = _cdKindCol(c), fx = short && typeof equipShortText === "function" ? equipShortText(c) : c.text || ""; s.style.setProperty("--c", col);
     const art = _cdEl("div", "cd-art"), slab = _cdEl("div", "cd-slab"), face = _cdEl("div", "cd-face");
     slab.appendChild(_cdEl("i", "cd-back"));   // (its back plate, which shows along its right edge and its foot: its thickness)
     const tex = _cdEl("i", "cd-tex"); if (typeof cardArtFaceClass === "function") cardArtMark(tex, cardArtFaceClass(c)); face.appendChild(tex);
@@ -89,8 +89,8 @@ function _cdSlab(c, extra) {
     // a species card's emblem before its kind (Part 2: js/cardart.js cardArtKindEmblemClass), on the hologram and its shadow alike, so the shadow stays under it
     const emb = typeof cardArtKindEmblemClass === "function" ? cardArtKindEmblemClass(c) : "", gk = _cdEl("div", "cd-gk", equipKindLabel(c)), kd = _cdEl("div", "cd-kind", equipKindLabel(c));
     if (emb) { cardArtMark(gk, emb, "emb"); cardArtMark(kd, emb, "emb"); }
-    ghost.appendChild(_cdEl("div", "cd-gn" + long, c.name)); ghost.appendChild(gk); ghost.appendChild(_cdEl("div", "cd-gt", c.text || "")); face.appendChild(ghost);
-    const holo = _cdEl("div", "cd-holo"); holo.appendChild(_cdEl("div", "cd-name" + long, c.name)); holo.appendChild(kd); holo.appendChild(_cdEl("div", "cd-text", c.text || "")); face.appendChild(holo);
+    ghost.appendChild(_cdEl("div", "cd-gn" + long, c.name)); ghost.appendChild(gk); ghost.appendChild(_cdEl("div", "cd-gt", fx)); face.appendChild(ghost);
+    const holo = _cdEl("div", "cd-holo"); holo.appendChild(_cdEl("div", "cd-name" + long, c.name)); holo.appendChild(kd); holo.appendChild(_cdEl("div", "cd-text", fx)); face.appendChild(holo);
     face.appendChild(_cdEl("i", "cd-emit l")); face.appendChild(_cdEl("i", "cd-emit r"));
     slab.appendChild(face); art.appendChild(slab);
     if (item) { s.classList.add("itemed"); const im = _cdEl("i", "cd-item"); im.style.backgroundImage = 'url("' + item + '")'; im.setAttribute("aria-hidden", "true"); art.appendChild(im); }
@@ -392,23 +392,26 @@ function equipRosterDraw(side, f) {   // (drawn under the styles)
     if (!f || f.isClone || f.isFollower !== true || typeof _ccEl !== "function") return;
     const hand = equipUsableCards().filter(c => !c.attack);   // (the hand and what the packs found; the card attacks have their own slot, below)
     for (let slot = 0; slot < EQUIP.followerSlots; slot++) {
-        const card = equipCard(equipSlots(f)[slot]);
-        _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", () => equipFollowerPick(f, slot), hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null, card ? card.text : null);
+        const card = equipCard(equipSlots(f)[slot]), fits = hand.some(c => !equipWhyNot(f, c.id, slot));
+        _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", () => equipFollowerPick(f, slot), _cpOff(card, fits, hand.length, "NO CARDS IN YOUR HAND"), card ? _cdChip(card, true) : null, card ? equipShortText(card) : null);
     }
     equipSpecialDraw(side, f);
 }
 // ITS SPECIAL ATTACK (the owner, 2026-11-06: "You must change it in a separate menu inside of index/roster card system. Including access main hud"): a slot of its own under CARD 1 and CARD 2, its picker listing the card
-// attacks in the hand (js/cards.js equipSpecialCards): the ones for another form say why; the one set is marked. Set, it is the follower's primary attack (js/combat.js cardAttackTry).
+// attacks in the hand for its form (js/cards.js equipSpecialCards); the one set is marked. Set, it is the follower's primary attack (js/combat.js cardAttackTry).
 function equipSpecialDraw(side, f) {
     if (!f || f.isClone || f.isFollower !== true || typeof _ccDropdown !== "function" || !equipSpecialFor(f)) return;   // (only on a form some card attack is for)
-    const hand = equipSpecialCards(), card = equipCard(f.special || null);
-    _ccDropdown(side, "special", "SPECIAL ATTACK", card ? card.name : "EMPTY", "#ff9a3a", () => equipSpecialPick(f), hand.length ? null : "NO CARD ATTACKS IN YOUR HAND", card ? _cdChip(card, true) : null, card ? card.text : null);
+    const hand = equipSpecialCards(), card = equipCard(f.special || null), fits = hand.some(c => !equipSpecialWhyNot(f, c.id));
+    _ccDropdown(side, "special", "SPECIAL ATTACK", card ? card.name : "EMPTY", "#ff9a3a", () => equipSpecialPick(f), _cpOff(card, fits, hand.length, "NO CARD ATTACKS IN YOUR HAND"), card ? _cdChip(card, true) : null, card ? equipShortText(card) : null);
 }
+// a card slot is off (its words, or null) when it has no card on and none in the hand fits it (the picker would hold nothing to put on)
+function _cpOff(card, fits, inHand, none) { return card || fits ? null : inHand ? "NO CARD FITS" : none; }
 // ── THE CARD PICKER (the owner, 2026-11-07: "a separate pop-out menu could show up when the user is in the roster and they're hooking up cards, and then whenever they hit selected card slot or an empty card slot,
 // a sliding list of card arts appears in the middle of the screen in a pop-out. You can scroll through and select which one you want to put on"). A tap on a card slot in the roster (a follower's CARD 1, CARD 2 and
 // SPECIAL ATTACK; your YOUR SLOT 1 and 2, and your cards on your card in view) opens it over the roster, in the middle of the screen: whose slot it is, and a row of the cards that slot can take, each in full (the
-// CARDS screen's card: its art, its name and kind, and what it does), sliding sideways. EMPTY comes first (it takes the card off); the card worn is marked WORN; one that does not fit is dimmed and says why. A tap
-// on a card puts it on and the pop-out closes; ✕, a tap outside the box or Escape closes it with nothing changed. (The HUD's pop-out keeps its list, with what each card does under its name: js/squadfly.js.)
+// CARDS screen's card: its art, its name and kind, and its short text), sliding sideways. EMPTY comes first (it takes the card off); the card worn is marked WORN. A card the slot cannot take is not shown
+// (the owner, 2026-11-07: "don't display cards that aren't available to the follower, and use shortened text"). A tap on a card puts it on and the pop-out closes; ✕, a tap outside the box or Escape closes it
+// with nothing changed. (The HUD's pop-out keeps its list, the same cards with the same short text: js/squadfly.js.)
 let _cpOpen = null;   // { key, title, sub, col, cur, cards, why(c) -> reason or null, put(id or null) }
 function cardPickIsOpen() { return !!_cpOpen; }
 function cardPickOpen(o) {
@@ -428,20 +431,21 @@ function _cpRender(root) {
     const box = _cdEl("div", "cp-box"); box.style.setProperty("--c", o.col || "#ffe733");
     const head = _cdEl("div", "cp-head"), hl = _cdEl("div", "cp-hl"); hl.appendChild(_cdEl("div", "cp-title", o.title)); if (o.sub) hl.appendChild(_cdEl("div", "cp-sub", o.sub)); head.appendChild(hl);
     const x = _cdEl("button", "cp-x", "✕"); x.type = "button"; x.setAttribute("aria-label", "CLOSE"); _cdClick(x, () => cardPickClose()); head.appendChild(x); box.appendChild(head);
-    const wrap = _cdEl("div", "cp-wrap"), rail = _cdEl("div", "cp-rail");
+    const wrap = _cdEl("div", "cp-wrap"), rail = _cdEl("div", "cp-rail"), cur = o.cur || null;
+    const shown = o.cards.filter(c => c.id === cur || !o.why(c));   // (what the slot can take, and the card worn)
     const tile = (c) => {
-        const id = c ? c.id : null, worn = id === (o.cur || null), why = c && !worn ? o.why(c) : null, off = !!why || (!id && !o.cur);
+        const id = c ? c.id : null, worn = id === cur, off = !id && !cur;   // (EMPTY with nothing on: nothing to take off)
         const t = _cdEl("button", "cp-tile" + (worn ? " worn" : "") + (off ? " off" : "") + (c ? "" : " empty")); t.type = "button"; t.setAttribute("data-card", id || "");
         t.appendChild(_cdEl("span", "cp-nm", c ? c.name : "EMPTY"));   // (first: the tile reads as the card's name)
-        t.appendChild(_cdEl("span", "cp-st", worn ? (c ? "WORN" : "NOTHING ON IT") : why || (c ? equipKindLabel(c) + " · " + equipRarityLabel(c) : "TAKE THE CARD OFF")));
-        if (c) { t.appendChild(_cdChip(c, true)); t.appendChild(_cdSlab(c, "")); } else { const e = _cdEl("div", "cp-blank"); e.appendChild(_cdEl("span", null, "EMPTY")); t.appendChild(e); }   // (WORN is the tile's own mark: the card's face keeps no state line)
+        const st = c ? (worn ? "WORN" : "") : cur ? "TAKE IT OFF" : ""; if (st) t.appendChild(_cdEl("span", "cp-st", st));
+        if (c) { t.appendChild(_cdChip(c, true)); t.appendChild(_cdSlab(c, "", true)); } else { const e = _cdEl("div", "cp-blank"); e.appendChild(_cdEl("span", null, "EMPTY")); t.appendChild(e); }   // (WORN is the tile's own mark: the card's face keeps no state line)
         if (off) t.disabled = true; else _cdClick(t, () => { o.put(id); cardPickClose(); });
         rail.appendChild(t);
     };
-    tile(null); for (const c of o.cards) tile(c);
+    tile(null); for (const c of shown) tile(c);
     const arrow = (cls, dir, label) => { const a = _cdEl("button", "cp-arrow " + cls, label); a.type = "button"; a.setAttribute("aria-label", dir < 0 ? "BACK" : "ON"); _cdClick(a, () => { const w = ((rail.children[1] || rail.firstChild || {}).offsetWidth || 240) + 18; if (typeof rail.scrollBy === "function") rail.scrollBy({ left: dir * w, behavior: "smooth" }); else rail.scrollLeft += dir * w; }); return a; };
     wrap.appendChild(arrow("prev", -1, "‹")); wrap.appendChild(rail); wrap.appendChild(arrow("next", 1, "›")); box.appendChild(wrap);
-    box.appendChild(_cdEl("div", "cp-note", o.cards.length ? "SLIDE THROUGH THE CARDS · TAP ONE TO PUT IT ON" : "NO CARDS IN YOUR HAND · TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN"));
+    box.appendChild(_cdEl("div", "cp-note", shown.some(c => c.id !== cur) ? "TAP A CARD TO PUT IT ON" : o.cards.length ? "NO OTHER CARD FITS" : "NO CARDS IN YOUR HAND"));
     root.appendChild(box);
     const sel = rail.querySelector ? (rail.querySelector(".cp-tile.worn") || rail.children[1] || rail.firstChild) : null;   // (the card worn in the middle, else the first card)
     const centre = () => { if (sel && Number.isFinite(sel.offsetLeft) && rail.clientWidth) rail.scrollLeft = sel.offsetLeft + sel.offsetWidth / 2 - rail.clientWidth / 2; };
@@ -450,20 +454,20 @@ function _cpRender(root) {
 // the pickers: a follower's CARD 1 or CARD 2, its SPECIAL ATTACK, your own slot
 function _cpWho(f) { return typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER"; }
 function equipFollowerPick(f, slot) {
-    return cardPickOpen({ key: "card" + slot, title: "CARD " + (slot + 1) + " · " + _cpWho(f), sub: "WHAT IT WEARS IN THIS SLOT", col: "#ffe733", cur: equipSlots(f)[slot] || null,
+    return cardPickOpen({ key: "card" + slot, title: "CARD " + (slot + 1) + " · " + _cpWho(f), col: "#ffe733", cur: equipSlots(f)[slot] || null,
         cards: equipUsableCards().filter(c => !c.attack), why: c => equipWhyNot(f, c.id, slot), put: id => equipPut(f, slot, id) });
 }
 function equipSpecialPick(f) {
-    return cardPickOpen({ key: "special", title: "SPECIAL ATTACK · " + _cpWho(f), sub: "A CARD ATTACK: SET, IT IS ITS PRIMARY ATTACK", col: "#ff9a3a", cur: f.special || null,
+    return cardPickOpen({ key: "special", title: "SPECIAL ATTACK · " + _cpWho(f), sub: "ITS PRIMARY ATTACK WHILE SET", col: "#ff9a3a", cur: f.special || null,
         cards: equipSpecialCards(), why: c => equipSpecialWhyNot(f, c.id), put: id => equipSpecialPut(f, id) });
 }
 function equipPlayerPick(slot) {
-    return cardPickOpen({ key: "pslot" + slot, title: "YOUR SLOT " + (slot + 1), sub: "PLAYER CARDS ONLY", col: "#ffe733", cur: equipPlayer[slot] || null,
+    return cardPickOpen({ key: "pslot" + slot, title: "YOUR SLOT " + (slot + 1), col: "#ffe733", cur: equipPlayer[slot] || null,
         cards: equipUsableCards(), why: c => equipPlayerWhyNot(c.id, slot), put: id => equipPlayerPut(slot, id) });
 }
 // ── YOU, ON THE ROSTER (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the player's card in view (js/commandcenter.js
 // _ccFocusDraw) shows its two cards, each a mini card as the collection's (a tap opens its list); the settings column has YOUR SLOT 1 and YOUR SLOT 2, drop-downs as a follower's CARD 1 and CARD 2, listing the hand
-// (Player cards only since Build B, the Universal kind retired: the rest say why not, js/cards.js equipPlayerWhyNot)
+// (Player cards only since Build B, the Universal kind retired; since build 2026-11-07pp the picker shows only the ones that fit, js/cards.js equipPlayerWhyNot)
 // A ROLE ASLEEP (a Player card for a class you are not now: js/cards.js equipPlayerAwake; the owner, 2026-11-02: "greyed out and inactive, until the player switches back") is greyed in both, marked ASLEEP, and says whose it is.
 function equipPlayerSig() { return [equipPlayer.join(","), equipHand.join(","), equipFound.join(","), equipUsableCards().length, typeof playerClassKey !== "undefined" ? playerClassKey : ""].join("|"); }   // (what the player's card and its column must redraw for: the class too, which wakes a role or puts it to sleep)
 function _cdAsleep(c) { return !!c && typeof equipPlayerAwake === "function" && !equipPlayerAwake(c.id); }
@@ -474,7 +478,7 @@ function equipPlayerRosterDraw(side) {
     let asleep = null;
     for (let slot = 0; slot < EQUIP.playerSlots; slot++) {
         const card = equipCard(equipPlayer[slot]), zz = _cdAsleep(card); if (zz) asleep = card;
-        _ccDropdown(side, "pslot" + slot, "YOUR SLOT " + (slot + 1) + (zz ? " · ASLEEP" : ""), card ? card.name : "EMPTY", zz ? "#8a8f9e" : "#ffe733", () => equipPlayerPick(slot), hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null, card ? card.text : null);   // (ASLEEP in the slot's small label: the name keeps its place)
+        _ccDropdown(side, "pslot" + slot, "YOUR SLOT " + (slot + 1) + (zz ? " · ASLEEP" : ""), card ? card.name : "EMPTY", zz ? "#8a8f9e" : "#ffe733", () => equipPlayerPick(slot), _cpOff(card, hand.some(c => !equipPlayerWhyNot(c.id, slot)), hand.length, "NO CARDS IN YOUR HAND"), card ? _cdChip(card, true) : null, card ? equipShortText(card) : null);   // (ASLEEP in the slot's small label: the name keeps its place)
     }
     side.appendChild(_ccEl("div", "cc-note", asleep ? asleep.name + " IS ASLEEP: IT WAKES WHEN YOU ARE A " + _equipClassLabel(asleep.match) + " AGAIN" : !hand.length ? "TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN: THEY ARE LISTED HERE" : !mine ? "NO PLAYER CARD IN YOUR HAND: ONLY THOSE FIT YOU" : "EACH FOLLOWER'S TWO CARDS ARE ON ITS OWN PAGE OF THE ROSTER"));
 }

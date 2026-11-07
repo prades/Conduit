@@ -2194,3 +2194,26 @@ Implemented and tested (tests/nest.js); not playtested.
 ### Status
 Implemented and tested (cards, squadfly, crystalline, packs, playercards and cardart suites); seen in screenshots; not playtested.
 
+## DECISION: The pop-outs show only the cards that fit, in short text
+
+- **Date / build:** 2026-11-07, build `2026-11-07pp`, branch `claude/start-game-project-HSh7Z`.
+- **Context:** asked whether the HUD's member card should open the same art picker, the owner answered: "Just make it to where the pop-outs don't display cards that aren't available to the follower, and use shortened text."
+
+### Decision
+- **Only what fits:** the roster's card picker and the HUD member card's lists show only the cards the slot can take, plus EMPTY and the worn card. This replaces dimming a card that does not fit and saying why; the build `oo` decision above is superseded on that point.
+- **Off when nothing fits:** a slot with nothing on it and no card that fits is off and says NO CARD FITS.
+- **Short text:** both pop-outs, and the line under a roster slot, show each card's short text (js/cards.js `equipShortText`).
+  - It is built from the same numbers as the full text.
+  - A text of 30 letters or fewer stays as it is.
+  - The CARDS screen keeps the full text.
+- **The picker's own lines** are shorter too: no sub-line under CARD n or YOUR SLOT n; TAP A CARD TO PUT IT ON.
+- **The HUD's ATTACK list** has one shorter line: LOCKED ON · WINDS UP IN PLACE.
+- The fit rules themselves (js/cards.js `equipWhyNot`, `equipSpecialWhyNot`, `equipPlayerWhyNot`) are unchanged.
+
+### Chosen by the agent (provisional)
+- Every short text's wording, e.g. ICE ROUNDS · SLOW, FREEZE, SLOWER GUNS or FIRE GHOST 4 S, THEN A BLAST · WAIT 15 S.
+- The 30-letter limit for keeping a text as it is.
+
+### Status
+Implemented and tested (cards, squadfly, playercards, packs, crystalline and nearby suites); seen in screenshots; not playtested.
+

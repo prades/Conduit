@@ -287,11 +287,19 @@ Five layouts of the roster and the squad viewer were drawn on the same parts (do
 **The card picker** (build `2026-11-07oo`; the owner, 2026-11-07: "a separate pop-out menu could show up when the user is in the roster and they're hooking up cards, and then whenever they hit selected card slot or an empty card slot, a sliding list of card arts appears in the middle of the screen in a pop-out. You can scroll through and select which one you want to put on"). Implemented and tested; not playtested.
 - A tap on a card slot in the roster opens it: a follower's **CARD 1**, **CARD 2** and **SPECIAL ATTACK**, and **YOUR SLOT 1 / 2** (or your card's mini cards).
 - It is a box in the middle of the screen over the roster: whose slot it is (CARD 1 · QUILLSTONE), then a row of cards that slides sideways (a finger, a trackpad, or ‹ ›). Each card is drawn in full, as on the CARDS screen (its art, name, kind and what it does), with its name, its rarity chip and a line under it.
-- **EMPTY** comes first and takes the card off. The card worn is framed gold and marked WORN, and the row opens with it in the middle. A card that does not fit is dimmed and says why (FOR MAGES).
+- **EMPTY** comes first and takes the card off. The card worn is framed gold and marked WORN, and the row opens with it in the middle.
+- **Only the cards the slot can take are shown** (since build `2026-11-07pp`; the owner, 2026-11-07: "make it to where the pop-outs don't display cards that aren't available to the follower, and use shortened text"). A card for another class, element or species, a Player card on a follower, or the card on the other slot is not in the row. When nothing fits and nothing is worn, the slot itself is off and says NO CARD FITS.
+- **Short text:** each card in the row shows its short text on its face. Under it are only its name, its rarity chip, and WORN on the worn one. The note under the row reads TAP A CARD TO PUT IT ON.
 - A tap on a card puts it on and closes the box. ✕, a tap outside the box or Escape closes it with nothing changed.
-- The slot in the roster shows what the worn card does on a line under it.
-- The HUD's member card keeps its short list; each card there now has what it does under its name.
-- (js/cardsui.js `cardPickOpen`, `equipFollowerPick`, `equipSpecialPick`, `equipPlayerPick`; game.html "THE CARD PICKER", whose cards reuse the 3D cards' CSS.) The look is the agent's, provisional.
+- The slot in the roster shows the worn card's short text on a line under it.
+- **The HUD's member card** keeps its short list, with the same rule: only the cards that fit, plus EMPTY and the worn card.
+  - Each card shows its name, its short text and its chip.
+  - The ATTACK list's long line is short too: LOCKED ON · WINDS UP IN PLACE.
+- **A card's short text** (js/cards.js `equipShortText`) is built from the same numbers as its full text, e.g. 15% PER HIT TO BURN, AURA: +10% ATTACK, 10% TO BURN, ICE ROUNDS · SLOW, FREEZE, SLOWER GUNS.
+  - A text of 30 letters or fewer stays as it is.
+  - The longest short text is 41 letters.
+  - The CARDS screen keeps the full text.
+- (js/cardsui.js `cardPickOpen`, `equipFollowerPick`, `equipSpecialPick`, `equipPlayerPick`; js/squadfly.js `_sfCardsDraw`; game.html "THE CARD PICKER", whose cards reuse the 3D cards' CSS.) The look and the short texts' wording are the agent's, provisional.
 
 ## The INFO panel (js/infodex.js)
 
