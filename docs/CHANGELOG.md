@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **u · The Jelly's four live; the Technician's four for approval** (the owner, 2026-11-07: "Approve all four"; t "Push to main"; on the branch; commit named in git log).
+  - GEL MEMBRANE, STINGER TENDRIL, NEMATOCYST and AMORPHOUS BODY show for everyone.
+  - The Technician's four, the last of Series 2's built cards, from their drafted looks in workshop yellow and gunmetal with the Technician's ice-blue (design/cards/models/_tech.js): SPARE PARTS KIT (an open tool case of bolts, nuts, a gear, a spring, a lit fuse, a wrench), CAPACITOR BANK (six capacitors on a block with a charge gauge), FIELD MULTITOOL (a folding multitool, its tools fanned, lit tips), DOUBLE CELL (two power cells with glowing charge in a steel clip). On preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **t · The Drone's four live; the Jelly's four for approval** (the owner, 2026-11-07: "Approve all four"; s "Push to main"; on the branch; commit named in git log).
   - SERVO OIL, GYRO STABILIZER, HUNTER OPTICS and OVERCLOCK CHIP show for everyone.
   - The Jelly's four, from their drafted looks in the species' gel orchid (design/cards/models/_jelly.js): GEL MEMBRANE (a see-through orchid membrane bellied out on a silver hoop), STINGER TENDRIL (a coiled tendril beaded with pink stinging nodes, its tip glowing), NEMATOCYST (a glass capsule of glowing stinging cells with coiled threads and barbs), AMORPHOUS BODY (a blob of gel held in three glowing field rings). On preview only (`?cardart=items`).
