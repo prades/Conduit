@@ -269,7 +269,7 @@ async function boot(store) {
     });
     check('Telegrab is gone: no grab numbers, no item aim, no flying items, no puzzle route; the flux technician\'s INFO describes FLUX MOVE', () => {
         const r = J(`(function(){ const t = __fresh(['flux'])[0], I = techAbilityInfo(t); return { grab: typeof TECH_AB.grab, fns: ['techGrabAt', 'techItemAtScreen', '_techGrabTick', 'techAimPickItem'].map(n => typeof globalThis[n]), grabs: typeof techGrabs, route: PUZZLES.sewer_sample.solutions.map(s => s.id).join(), info: [I.h, I.rows.map(x => x[0]).join()] }; })()`);
-        same(r.grab, 'undefined', 'TECH_AB.grab'); same(r.fns.join(), 'undefined,undefined,undefined,undefined', 'its functions'); same(r.grabs, 'undefined', 'techGrabs'); same(r.route, 'ride,drill', 'the puzzle\'s routes');
+        same(r.grab, 'undefined', 'TECH_AB.grab'); same(r.fns.join(), 'undefined,undefined,undefined,undefined', 'its functions'); same(r.grabs, 'undefined', 'techGrabs'); same(r.route, 'ride,drill,ice', 'the puzzle\'s routes (no grab; the ice bridge since build 2026-11-07bb)');
         same(r.info.join('|'), 'ABILITY · FLUX MOVE|REACH,OBJECTS,IT MAY NOT,COOLDOWN,FIRST WAIT,READY', 'the INFO');
         ok(!/telegrab|techGrab/i.test(rd('js/techabilities.js').replace(/\/\/.*$/gm, '')), 'Telegrab in js/techabilities.js\'s code');
     });
