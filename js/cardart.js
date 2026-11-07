@@ -606,7 +606,8 @@ const CARD_ITEMS = {
           "barnacle_bracer", "pincer_clamp", "tide_shell",   // the Crustacean's other three (build 2026-11-07p, design/cards/models/_crust.js): approved 2026-11-07 ("Approve all three")
           "mantle_gel", "nacre_pearl", "siphon_slime", "regrowth_sac",   // the Mollusk's four (build 2026-11-07q, design/cards/models/_mollusk.js): approved 2026-11-07 ("Approve all four")
           "raw_shard", "focusing_prism", "attuned_core", "storm_heart",   // the Elemental's four (build 2026-11-07r, design/cards/models/_elemental.js): approved 2026-11-07 ("Approve all four")
-          "servo_oil", "gyro_stabilizer", "hunter_optics", "overclock_chip"],   // the Drone's four (build 2026-11-07s, design/cards/models/_drone.js): on preview until approved
+          "servo_oil", "gyro_stabilizer", "hunter_optics", "overclock_chip",   // the Drone's four (build 2026-11-07s, design/cards/models/_drone.js): approved 2026-11-07 ("Approve all four")
+          "gel_membrane", "stinger_tendril", "nematocyst", "amorphous_body"],   // the Jelly's four (build 2026-11-07t, design/cards/models/_jelly.js): on preview until approved
     // approved: all eighteen of Pack 1. EMBER PLATING 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen 2026-11-01 ("Yes push the card art for everyone"), live since build 2026-11-01n
     approved: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",
                "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse",
@@ -617,7 +618,8 @@ const CARD_ITEMS = {
                "chitin_scale",    // CHITIN SCALE: "Approve it" (live since build 2026-11-07p)
                "barnacle_bracer", "pincer_clamp", "tide_shell",   // the Crustacean's other three: "Approve all three" (live since build 2026-11-07q)
                "mantle_gel", "nacre_pearl", "siphon_slime", "regrowth_sac",   // the Mollusk's four: "Approve all four" (live since build 2026-11-07r)
-               "raw_shard", "focusing_prism", "attuned_core", "storm_heart"],   // the Elemental's four: "Approve all four" (live since build 2026-11-07s)
+               "raw_shard", "focusing_prism", "attuned_core", "storm_heart",   // the Elemental's four: "Approve all four" (live since build 2026-11-07s)
+               "servo_oil", "gyro_stabilizer", "hunter_optics", "overclock_chip"],   // the Drone's four: "Approve all four" (live since build 2026-11-07t)
 };
 function cardArtItemsPreview() { try { return typeof location !== "undefined" && /[?&]cardart=items\b/.test(location.search || ""); } catch (e) { return false; } }
 // the picture of a card's item, or "" (none baked, or not approved and no preview)

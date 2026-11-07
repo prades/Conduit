@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **t · The Drone's four live; the Jelly's four for approval** (the owner, 2026-11-07: "Approve all four"; s "Push to main"; on the branch; commit named in git log).
+  - SERVO OIL, GYRO STABILIZER, HUNTER OPTICS and OVERCLOCK CHIP show for everyone.
+  - The Jelly's four, from their drafted looks in the species' gel orchid (design/cards/models/_jelly.js): GEL MEMBRANE (a see-through orchid membrane bellied out on a silver hoop), STINGER TENDRIL (a coiled tendril beaded with pink stinging nodes, its tip glowing), NEMATOCYST (a glass capsule of glowing stinging cells with coiled threads and barbs), AMORPHOUS BODY (a blob of gel held in three glowing field rings). On preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **s · The Elemental's four live; the Drone's four for approval** (the owner, 2026-11-07: "Approve all four"; r "Push to main"; on the branch; commit named in git log).
   - RAW SHARD, FOCUSING PRISM, ATTUNED CORE and STORM HEART show for everyone.
   - The Drone's four, from their drafted looks in the species' gunmetal (design/cards/models/_drone.js): SERVO OIL (an oil can with a long spout, a bead of amber oil), GYRO STABILIZER (a spinning rotor in gimbal rings on a stand), HUNTER OPTICS (a lens cluster with a red reticle), OVERCLOCK CHIP (a chip with pins and glowing traces under an orange-hot heat sink). On preview only (`?cardart=items`).
