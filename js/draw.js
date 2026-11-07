@@ -193,12 +193,27 @@ function drawNPC(actor, px, py, drawCtx=ctx) {
             }
             drawCtx.restore();
         }
-    } else if (actor.isFollower && actor._altWind > 0 && actor._altWindMax > 0 && (actor.role === "sniper" || actor.role === "brawler")) {
+    } else if (actor.isFollower && actor._altWind > 0 && actor._altWindMax > 0 && (actor.role === "sniper" || actor.role === "brawler" || actor.role === "camper")) {
         // WINDING UP ITS CHOSEN ALTERNATE (js/evolution.js altTick). The owner, 2026-11-07: "It's an aura for a mage and a rumble for a brawler and something else for
-        // a technician not sure": a MAGE has a faint glow of its element on the floor round it; a BRAWLER's body rumbles where it stands; both grow as the wind-up runs.
-        // A technician has none yet (docs/OPEN-QUESTIONS.md). Made from the frame alone (no random), like the glitch above.
+        // a technician", then "Circuit sparks works": a MAGE has a faint glow of its element on the floor round it; a BRAWLER's body rumbles where it stands; a
+        // TECHNICIAN has circuit sparks flickering over its body; each grows as the wind-up runs. Made from the frame alone (no random), like the glitch above.
         const k = Math.max(0, Math.min(1, 1 - actor._altWind / actor._altWindMax));
-        if (actor.role === "sniper") {
+        if (actor.role === "camper") {
+            _drawVirus(actor, px, py, drawCtx);
+            const el = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === actor.element) : null, col = el ? el.color : "#8fe3ff", gf = frame || 0;
+            const n = 2 + Math.round(3 * k), cx = px, cy = py - 28, step = Math.floor(gf / 4);   // (the bolts jump to new places every 4 frames: the flicker)
+            drawCtx.save(); drawCtx.lineCap = "round"; drawCtx.lineJoin = "round";
+            for (let i = 0; i < n; i++) {
+                if ((gf + i) % 3 === 0) continue;   // (one frame in three a bolt is out: it flickers)
+                const a = ((i * 2.399 + step * 1.7) % (Math.PI * 2)), r0 = 8 + 4 * k, r1 = 16 + 10 * k, ca = Math.cos(a), sa = Math.sin(a) * 0.8, nx = -sa, ny = ca, w = 3 + 2 * k;
+                drawCtx.globalAlpha = 0.55 + 0.4 * k; drawCtx.strokeStyle = col; drawCtx.lineWidth = 1.6;
+                drawCtx.beginPath(); drawCtx.moveTo(cx + ca * r0, cy + sa * r0);
+                for (let j = 1; j <= 3; j++) { const t = r0 + (r1 - r0) * j / 3, z = (j % 2 ? w : -w) * (j < 3 ? 1 : 0); drawCtx.lineTo(cx + ca * t + nx * z, cy + sa * t + ny * z); }
+                drawCtx.stroke();
+                drawCtx.globalAlpha = 0.9; drawCtx.fillStyle = "#ffffff"; drawCtx.fillRect(cx + ca * r1 - 1, cy + sa * r1 - 1, 2, 2);   // (the spark at its tip)
+            }
+            drawCtx.restore();
+        } else if (actor.role === "sniper") {
             const el = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === actor.element) : null, rx = 32 + 14 * k;   // (wider than an evolved body's base, so the glow shows round it)
             drawCtx.save(); drawCtx.fillStyle = el ? el.color : "#19e6c1";
             drawCtx.globalAlpha *= 0.10 + 0.16 * k; drawCtx.beginPath(); drawCtx.ellipse(px, py - 4, rx, rx * 0.5, 0, 0, Math.PI * 2); drawCtx.fill();

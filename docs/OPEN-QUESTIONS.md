@@ -481,7 +481,7 @@ Readings taken (each stands until the owner says otherwise):
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
 
-- **What shows a Technician winding up its alternate?** (the owner, 2026-11-07: "an aura for a mage and a rumble for a brawler and something else for a technician not sure"; build `2026-11-07gg`). A Mage glows, a Brawler rumbles; a Technician shows nothing yet. Only the Thermite Burrower (MAGMA VENT) has an alternate among the technicians today.
+- **What shows a Technician winding up its alternate?** (the owner, 2026-11-07: "an aura for a mage and a rumble for a brawler and something else for a technician not sure"; build `2026-11-07gg`). **Answered 2026-11-07: "Circuit sparks works"; built in `2026-11-07hh`.** A Mage glows, a Brawler rumbles, a Technician sparks. Only the Thermite Burrower (MAGMA VENT) has an alternate among the technicians today.
 
 - **The name ELECTRIC TECHNICIAN is cut on the roster's strip** (seen 2026-11-06 in build `2026-11-06h`'s full run; main's code, 3c595d6, measures the same). **Answered 2026-11-06: "Smaller type"; mended in build `2026-11-06i`** (§1y: THERMITE BURROWER was cut too).
   - On the Command Center's carousel at 1180 × 820, a strip card's name box is 113 px wide. ELECTRIC TECHNICIAN needs 125 px; the other seventeen element-and-class names fit.

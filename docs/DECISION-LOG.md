@@ -2074,3 +2074,13 @@ Supersedes "a signature move fires by itself on its own cooldown, beside the nor
 - The Quillstone's alternates: QUILL BURST only. FIRE BOMBS stays on the Ember Hood (and the retired fire forms).
 - ATTACK STYLE in the roster's side panel is left out when every follower picked is evolved.
 - The roster's filters: ALL; CLASS, ELEMENT and SPECIES as drop-downs; CLONES, greyed out unless the player's class grows clones; no IN SQUAD / NOT IN SQUAD buttons (an open slot still lists who is not in the squad).
+
+## DECISION: A Technician winding up shows circuit sparks
+
+- **Date:** 2026-11-07
+- **Status:** Approved (the owner's pick); the sizes are the agent's, provisional. Implemented and tested in build `2026-11-07hh`, on the branch; not playtested.
+- **Related feature/docs:** `COMBAT.md` §7.4; `OPEN-QUESTIONS.md` §2 (answered); `CHANGELOG.md` (2026-11-07 hh)
+
+### Decision
+1. Build `2026-11-07gg`: "Push to main". The open question, a Technician's wind-up cue, offered as sparks or a circuit flicker, a pulsing light, a ripple on the floor, or none: "Circuit sparks works".
+2. Short zigzag bolts of its element's colour with bright tips flicker over its body while it winds up, more and longer as the wind-up runs.

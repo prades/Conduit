@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **hh · A Technician winding up shows circuit sparks** (the owner, 2026-11-07, of the open question what a Technician shows: "Circuit sparks works"; gg "Push to main"). Implemented and tested on the branch; seen in a screenshot; not playtested.
+  - While a Technician stands rooted winding up its chosen alternate, short zigzag bolts of its element's colour with bright spark tips flicker over its body (one in three out each frame, jumping to new places every 4 frames), more and longer as the wind-up runs (two to five, js/draw.js `drawNPC`). Today only the Thermite Burrower (MAGMA VENT) has an alternate among the technicians. The sizes are the agent's (provisional).
+  - Tests: combat (the cue for each class: a Mage's glow, a Brawler's rumble, a Technician's sparks).
+
 - **gg · The wind-up cue by class; FIRE BOMBS off the fire brawler; ATTACK STYLE hidden when it cannot change** (the owner, 2026-11-07, on build ff: "Wind-up cue in the world"; on the drafts: "Should rumble or minimal magical aura", then "It's an aura for a mage and a rumble for a brawler and something else for a technician not sure but also remove fire bombs from the fire brawler please"; and of the roster's "EVOLVED KEEPS ITS ROLE": "Remove this when it's not selectable"; ff "Push to main"). Implemented and tested on the branch; seen in screenshots; not playtested.
   - While a follower stands rooted winding up its chosen alternate: a **Mage** has a faint glow of its element on the floor round it; a **Brawler**'s body rumbles where it stands; both grow as the wind-up runs (js/draw.js `drawNPC`). A **Technician** has none yet: what it should be is open (`OPEN-QUESTIONS.md`); of the technicians only the Thermite Burrower (MAGMA VENT) has an alternate. The sizes and strengths are the agent's (provisional). The first draft (the bite's ring in teal over the follower with the move's name) is gone.
   - The **Quillstone** has one alternate, QUILL BURST: FIRE BOMBS is off it (the Ember Hood keeps it). A Quillstone saved on FIRE BOMBS loads on its normal attack.
