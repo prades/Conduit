@@ -657,6 +657,13 @@ function _fpDecorProp(it) {
     } else if (k === "pingpong") {   // a table-tennis table: a green slab, a white centre line, a net
         _fpBox(x - 0.5, y - 0.5, x + 0.5, y + 0.5, 20, 26, "#1f6a4a", "#14402e", "#0f3022"); if (it.sx) { const a = _fpP(x, y - 0.5, 26), b = _fpP(x, y + 0.5, 26); ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
         const p = _fpP(x + 0.5, y, 20), q = _fpP(x + 0.5, y, 0); ctx.strokeStyle = "#1a1a20"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+    } else if (k === "pump") {   // A SEWER PUMP HOUSING (Milestone Four; the Flux Technician moves it): a squat dark-steel box, a motor drum on top, a toxic-green gauge glowing on its side
+        _fpPrism(it, 28, "#46505a", "#2a323b", "#20262e", "rgba(190,220,200,0.18)");
+        if (it.sy) { _fpFaceY(it, 0.08, 0.92, 4, 6, "rgba(10,14,12,0.6)", null); _fpFaceY(it, 0.18, 0.36, 12, 21, "rgba(125,255,74,0.85)", "#0b120c"); }
+        if (it.sx) { _fpFaceX(it, 0.08, 0.92, 4, 6, "rgba(10,14,12,0.6)", null); _fpFaceX(it, 0.62, 0.8, 12, 21, "rgba(125,255,74,0.7)", "#0b120c"); }
+        const c0 = _fpP(x, y, 28), c1 = _fpP(x, y, 42), rx = TILE_W * 0.32, ry = TILE_H * 0.32;
+        ctx.fillStyle = "#2c343c"; ctx.beginPath(); ctx.ellipse(c0[0], c0[1], rx, ry, 0, 0, 3.1416); ctx.lineTo(c1[0] - rx, c1[1]); ctx.ellipse(c1[0], c1[1], rx, ry, 0, 3.1416, 0, true); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#56616c"; ctx.beginPath(); ctx.ellipse(c1[0], c1[1], rx, ry, 0, 0, 6.2832); ctx.fill(); ctx.strokeStyle = "rgba(125,255,74,0.45)"; ctx.lineWidth = 1; ctx.stroke();
     } else if (k === "crate") {   // a wooden crate with slats, stencilled
         _fpPrism(it, 34, "#9a7a4a", "#6a5030", "#54401f", "rgba(255,230,160,0.3)"); if (it.sy) { _fpFaceY(it, 0.0, 1.0, 14, 16, "rgba(40,24,10,0.6)", null); _fpFaceY(it, 0.0, 1.0, 26, 28, "rgba(40,24,10,0.6)", null); _fpFaceY(it, 0.06, 0.94, 3, 5, "rgba(40,24,10,0.45)", null); } if (it.sx) { _fpFaceX(it, 0.0, 1.0, 14, 16, "rgba(40,24,10,0.5)", null); }
         if (seed % 3 === 0 && it.sy) _fpFaceY(it, 0.3, 0.7, 14, 24, "rgba(255,210,26,0.65)", null);   // a hazard label

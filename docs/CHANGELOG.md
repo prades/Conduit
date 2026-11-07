@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **b · Sewer machinery: two pump housings the Flux Technician can move** (Milestone Four, `NEXT-PHASE-ROADMAP.md` §5.3; the owner, 2026-11-07: "Sewer machinery" first; on the branch; commit named in git log).
+  - **Main:** build `2026-11-07a` went to main at the owner's word ("Push to main").
+  - A new kind, `pump`: a squat dark-steel pump housing with a motor drum and a glowing green gauge. Low cover: it stops shots, and sight passes over it. FLUX MOVE moves it up to 2 tiles and turns it.
+  - Two on the Nest's dam, at its south end, well clear of the Queen's post and the console **[reading: where they stand]**.
+  - Tests: cover, fluxmove, sewers, sewerquest, facility, bible (counts and lists updated). No full run. Not playtested.
+
 - **a · The sewer's darker look** (Milestone Four, `NEXT-PHASE-ROADMAP.md` §5.1; the owner, 2026-11-07: "Sewer redesign", then "Green, as shown" on the before/after screenshots; on the branch; commit named in git log).
   - **Main:** build `2026-11-06r` went to main at the owner's word ("Push to main").
   - The sewer's floor and walls are darker; its accent (the floor's seams and the wall trim) is toxic green instead of violet.

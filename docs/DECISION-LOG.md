@@ -1860,3 +1860,15 @@ The owner: too much time goes into testing and side checks. From here on, only t
 1. "Push to main" (build r). 2. Next: "Sewer redesign".
 3. On the before/after screenshots: "Green, as shown" (darker floor and walls, the foul water a dark toxic green with green glow, the accent green).
 
+## DECISION: Build 2026-11-07a to main; sewer machinery first
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Build `2026-11-07a` on main. Two pump housings: implemented and tested in build `2026-11-07b`, on the branch; screenshot checked; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §5.3; `CHANGELOG.md` (2026-11-07 b)
+
+### Decision
+1. "Push to main" (build 2026-11-07a). 2. The first Flux objects for the sewer: "Sewer machinery".
+
+### Readings
+- A pump is low cover (it stops shots; sight passes over it), 2×1 tiles, moved up to 2 tiles and turned by FLUX MOVE. Two stand at the dam's south end, clear of the Queen's post.
+
