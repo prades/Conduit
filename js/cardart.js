@@ -596,7 +596,8 @@ function cardArtObjectClass(c, col) {
 //   approved   the ones the owner approved: shown to everyone. The rest show only on a preview (?cardart=items), so the next piece can be looked at while the approved ones stay on.
 const CARD_ITEMS = {
     ids: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",   // all eighteen of Pack 1, by element (fire, toxic,
-          "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse"],    // electric, ice, flux, core), each Unrefined to Precision
+          "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse",    // electric, ice, flux, core), each Unrefined to Precision
+          "kindling_band"],   // the first class-card item (docs/FOLLOWING-UPDATE.md Part 3, gate 3; build 2026-11-07j): on preview until the owner approves it
     // approved: all eighteen of Pack 1. EMBER PLATING 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen 2026-11-01 ("Yes push the card art for everyone"), live since build 2026-11-01n
     approved: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",
                "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse"],

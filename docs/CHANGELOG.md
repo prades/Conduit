@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **j · KINDLING BAND's item, for approval** (the following update's Part 3, gate 3: "ONE piece first"; on the branch; commit named in git log).
+  - The first class-card item, modelled and baked like EMBER PLATING: a bronze arm-band with brass lips, charred kindling lashed round it with copper wire (smouldering, the tips catching), a faceted ember gem in a brass bezel, sparks. A proposed look.
+  - On preview only (`?cardart=items`); everyone else still sees the crystal until the owner approves it.
+  - Tests: cardart. No full run.
+
 - **i · SIGNATURE MOVE for a group** (the following update's Part 4; approved: "Move choice is per follower, plus a squad setter"; the owner chose Parts 3–4 next, 2026-11-07; on the branch; commit named in git log).
   - In the roster's side panel, under PLAY STYLE: a SIGNATURE MOVE dropdown for the followers picked, shown when one of them can choose. Each option says how many can use it. One whose form cannot keeps its own move, and a note under the setter says why (e.g. "FROST MAW KEEPS CHOMP (FIRE BOMBS IS NOT ONE OF ITS MOVES)").
   - Tests: commandcenter (1 new), carousel, unitinfo. No full run. Not playtested.

@@ -198,16 +198,18 @@ function measure(w, h) {
     });
 
     group('THE CARD ITEMS (js/cardart.js CARD_ITEMS; design/cards: each card\'s own 3D object in place of the crystal; EMBER PLATING approved in build 2026-11-01j, Pack 1\'s other seventeen baked in build k and approved in build n: "Yes push the card art for everyone")');
-    await check('each item is approved on its own, and all of Pack 1\'s eighteen are: each shows its baked picture without any flag; a baked piece not approved would show only with ?cardart=items (none is waiting now); a card with none baked keeps its crystal, flag or not (docs/ART-PROCESS.md)', () => {
-        const url = id => 'img/cards/' + id + '.png?v=' + J('BUILD_VERSION'), ids = J('CARD_ITEMS.ids');
+    await check('each item is approved on its own, and all of Pack 1\'s eighteen are: each shows its baked picture without any flag; a baked piece not approved shows only with ?cardart=items (KINDLING BAND waits at gate 3, build 2026-11-07j); a card with none baked keeps its crystal, flag or not (docs/ART-PROCESS.md)', () => {
+        const url = id => 'img/cards/' + id + '.png?v=' + J('BUILD_VERSION'), all = J('CARD_ITEMS.ids'), ids = all.filter(id => id !== 'kindling_band');
         same(J('CARD_ITEMS.approved.slice().sort().join()'), ids.slice().sort().join(), 'what is approved: all eighteen'); ok(J('CARD_ITEMS.approved.every(function(id){ return CARD_ITEMS.ids.indexOf(id) >= 0; })'), 'an approved item that is not baked');
-        same(J('CARD_ITEMS.ids.slice().sort().join()'), J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).map(function(c){ return c.id; }).sort().join()'), 'the baked items are Pack 1\'s eighteen');
-        same(J('CARD_ITEMS.ids.filter(function(id){ return CARD_ITEMS.approved.indexOf(id) < 0; })').length, 0, 'on preview');
+        same(ids.slice().sort().join(), J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).map(function(c){ return c.id; }).sort().join()'), 'the baked items are Pack 1\'s eighteen');
+        same(J('CARD_ITEMS.ids.filter(function(id){ return CARD_ITEMS.approved.indexOf(id) < 0; })').join(), 'kindling_band', 'on preview: KINDLING BAND, the first class-card item (the following update\'s Part 3, gate 3)');
+        same(J('cardArtItemUrl(EQUIP_CARDS.kindling_band)'), '', 'KINDLING BAND without the flag: its crystal');
         same(JSON.stringify(J(JSON.stringify(ids) + '.map(function(id){ return cardArtItemUrl(EQUIP_CARDS[id]); })')), JSON.stringify(ids.map(url)), 'without a flag: every approved piece');
         same(J('cardArtItemUrl(EQUIP_CARDS.tide_shell)'), '', 'a Series 2 card (none baked yet)');
         run("CARD_ITEMS.approved = CARD_ITEMS.approved.filter(function(id){ return id !== 'venom_gland'; })");   // (the preview's rule, with one piece taken off the approved list for the moment)
         same(J('cardArtItemUrl(EQUIP_CARDS.venom_gland)'), '', 'a piece not approved shows without the flag');
         run("location.search = '?cardart=items'");
+        same(J('cardArtItemUrl(EQUIP_CARDS.kindling_band)'), url('kindling_band'), 'KINDLING BAND with the flag');
         same(J('[cardArtItemUrl(EQUIP_CARDS.venom_gland), cardArtItemUrl(EQUIP_CARDS.ember_plating), cardArtItemUrl(EQUIP_CARDS.tide_shell)]').join('|'), url('venom_gland') + '|' + url('ember_plating') + '|', 'with the flag: the piece not approved, the approved ones still on, an unbaked card still its crystal');
         run("location.search = ''; CARD_ITEMS.approved.push('venom_gland')");
     });
