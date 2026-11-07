@@ -257,6 +257,17 @@ function measure(w, h) {
     group('THE BLIGHT SPIDER (toxic) and THE PLAY CLOCK');
     // ASKED: "Make the pools persist for two complete in-game days. Implement gradual toxin reabsorption [...] Prevent repeated updates from incorrectly extending pool duration or multiplying toxin reabsorption. Leave the death-spill
     // behavior unresolved", then a tapped spot it can see, a 2x2 pool, up to 3, a day = 20 minutes of play (play time only, saved), the toxic cloud's damage every half second, fading weaker and smaller until gone.
+    check('ICE BRIDGES ARE SAVED (the owner, 2026-11-07: "Save ice bridges"): the save carries each bridge and its technician; a load puts it back, walkable and still that technician\'s; a game saved before has none', () => {
+        const r = J(`(function(){ const fs = __fresh(['ice']), t = fs[0], o = {}, F = _fp.F, S = F.solids.find(q => q.id === 'sewer_river_w'), bb = S.bb, y0 = Math.ceil(bb[1]), y1 = Math.floor(bb[3]);
+            let cx = null; for (let x = Math.ceil(bb[0]) + 1; x < Math.floor(bb[2]); x++) if (facilityStandOk(x, y0 - 1) && facilityStandOk(x, y1 + 1) && facilityStandOk(x + 1, y0 - 1) && facilityStandOk(x + 1, y1 + 1)) { cx = x; break; }
+            const mid = Math.round((y0 + y1) / 2); t.x = cx; t.y = y0 - 1; techChipTap(t); techAimPickSpot({ x: cx + 0.2, y: mid });
+            const d = JSON.parse(JSON.stringify(facilitySaveCollect())); o.saved = (d.bridges || []).length;
+            techReset(); o.reset = [techBridges.length, facilityWalkable(cx, mid, F)];
+            techBridgesApply(d.bridges); o.back = [techBridges.length, facilityWalkable(cx, mid, F), !!techBridges[0] && techBridges[0].by === t];
+            techBridgesApply(undefined); o.old = [techBridges.length, facilityWalkable(cx, mid, F)];
+            return o; })()`);
+        same(r.saved, 1, 'the save has the bridge'); same(r.reset.join(), '0,false', 'a reset thaws it'); same(r.back.join(), '1,true,true', 'the load puts it back, walkable, its technician\'s'); same(r.old.join(), '0,false', 'a game saved before has none');
+    });
     check('a tap on the floor it can see: the spider walks there and leaves a 2x2 pool; the cooldown starts when it is down; up to 3 pools, a 4th takes the oldest\'s place', () => {
         const r = J(`(function(){ const fs = __fresh(['toxic']), t = fs[0], o = {}; const sp = { x: t.x + 2.3, y: t.y + 0.8 };
             techChipTap(t); o.prompt = techAimPrompt(); techAimPickSpot(sp); o.walk = !!t._blight; o.chip = techChipState(t).text; o.coolBefore = techReadyIn(t);

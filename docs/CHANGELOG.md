@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **aa · Ice bridges are saved** (the owner, 2026-11-07: "Save ice bridges"; z "Push to main"). Implemented and tested on the branch; not playtested.
+  - The save keeps each standing ice bridge and its technician; a reload puts it back (it was cleared), still that technician's, so its next bridge still thaws it. A player saved standing on a bridge loads on it. A bridge whose technician is gone stands on. A game saved before this build has none.
+  - Code: js/techabilities.js `techBridgesSnapshot`, `techBridgesApply`; js/facilitysave.js (`bridges`). FROST PATCH on floor is still not saved.
+  - Tests: techlevel1 (a new check: saved, reset, put back, none from an older save), techabilities.
+
 - **z · The game's name: CONDUIT, C.O.R.E. STRATEGY** (the owner, 2026-11-07: "I want the title on the browser and the title screen for the loading and everything to read conduit and then it has core c.o.r.E strategy & stands for combat operations roguelite evolutions"; y "Push to main"). Implemented; screenshot of the loading screen.
   - The browser tab reads **Conduit · C.O.R.E. Strategy** (it read "Tube Crawler: Peak AI Data-Driven").
   - The loading screen reads **CONDUIT**, then **C.O.R.E. STRATEGY**, then **COMBAT · OPERATIONS · ROGUELITE · EVOLUTIONS**, above LOADING.

@@ -572,6 +572,18 @@ function techIceBridgePlan(tech, spot) {
     const xs = tiles.map(p => p[0]), ys = tiles.map(p => p[1]);
     return { ok: true, rect: [Math.min(...xs) - 0.5, Math.min(...ys) - 0.5, Math.max(...xs) + 0.5, Math.max(...ys) + 0.5], tiles: tiles.length, alongX };
 }
+// THE BRIDGES IN THE SAVE (the owner, 2026-11-07: "Save ice bridges"; js/facilitysave.js): each bridge's tiles and its technician's uid. A load puts them back before the player's spot is checked
+// (a player saved on the ice loads on it); a bridge whose technician is gone stands on. A game saved before has none.
+function techBridgesSnapshot() { return techBridges.map(b => ({ rect: b.rect.slice(), by: (b.by && b.by.uid) || null })); }
+function techBridgesApply(list) {
+    techBridges = [];
+    for (const b of (Array.isArray(list) ? list : [])) {
+        const r = b && b.rect; if (!Array.isArray(r) || r.length !== 4 || !r.every(Number.isFinite)) continue;
+        const by = b.by && typeof followers !== "undefined" ? followers.find(f => f && f.uid === b.by) || null : null;
+        techBridges.push({ rect: r.slice(), t0: 0, until: Infinity, by });
+    }
+    if (typeof facilityIceSet === "function") facilityIceSet(techBridges.map(b => b.rect));
+}
 function techIceBridgeAt(tech, spot) {
     if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, spot.x, spot.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
     const plan = techIceBridgePlan(tech, spot); if (!plan.ok) return plan;

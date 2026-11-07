@@ -1983,3 +1983,13 @@ The owner: too much time goes into testing and side checks. From here on, only t
 1. Build `2026-11-07y`: "Push to main".
 2. "I want the title on the browser and the title screen for the loading and everything to read conduit and then it has core c.o.r.E strategy & stands for combat operations roguelite evolutions": the game is **CONDUIT**, tagline **C.O.R.E. STRATEGY** (Combat Operations Roguelite Evolutions), on the browser tab, the loading screen and the home page's card.
 
+## DECISION: Ice bridges are saved
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07aa`, on the branch; not playtested.
+- **Related feature/docs:** `TECHNICIANS.md` (FROST PATCH and the ice bridge); `CHANGELOG.md` (2026-11-07 aa)
+
+### Decision
+1. Build `2026-11-07z`: "Push to main".
+2. Next: "Save ice bridges": the save keeps the standing bridges and their technicians.
+
