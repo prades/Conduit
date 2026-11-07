@@ -1,8 +1,8 @@
-# The conversion apparatus and BLOOM, the seventh element
+# The conversion apparatus and BLOOM, the seventh element (and MAGNETIC, electric's conversion: section 13)
 
-- **Status:** Designed (the owner's rules of 2026-11-02). **The breeding draws are implemented** in build `2026-11-02f` (Build C of `NEXT-UPDATE.md`): an offspring's element is drawn between its parents' current elements and its class among the three. The apparatus, BLOOM and conversion are not implemented. Open: section 11.
+- **Status:** Designed (the owner's rules of 2026-11-02). **The breeding draws are implemented** in build `2026-11-02f` (Build C of `NEXT-UPDATE.md`): an offspring's element is drawn between its parents' current elements and its class among the three. The apparatus, BLOOM and conversion are not implemented. Open: section 11. **MAGNETIC**, electric's conversion (today's electric Brawler becoming the MAGNETIC Brawler), is the owner's direction of 2026-11-07, not designed in detail and not built: section 13.
 - **Owner:** User (creative direction); agent (implementation support)
-- **Last updated:** 2026-11-02
+- **Last updated:** 2026-11-07 (section 13)
 - **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. The breeding draws are code since build `2026-11-02f` (that branch); nothing else is.
 - **Related docs:**
   - `FOLLOWER-PROGRESSION.md` §2 (breeding)
@@ -102,13 +102,13 @@ Until now a follower kept the type and element it was found with for good. The o
 
 ## 4. Non-goals
 
-- No conversion but toxic into BLOOM, for now (the owner chose that one over "more conversions later").
+- No conversion but toxic into BLOOM, for now (the owner chose that one over "more conversions later"). **Superseded in part, 2026-11-07:** electric will convert into MAGNETIC too (section 13).
 - No BLOOM recruits, eggs at the posts or enemies (the owner, 2026-11-02).
 - No Sanctuary room for now: breeding stays at the roster.
 
 ## 5. Optional / future ideas
 
-- More conversions later.
+- More conversions later. (The first one chosen: electric into MAGNETIC, 2026-11-07, section 13.)
 
 ## 6. Dependencies and affected systems
 
@@ -188,6 +188,7 @@ Answered last (2026-11-02):
 
 ## 12. History
 
+- 2026-11-07: the owner's direction for MAGNETIC, electric's conversion (section 13). Nothing built.
 - 2026-11-02, build `2026-11-02f` (Build C of `NEXT-UPDATE.md`): the breeding draws built, the element between the parents' current elements and the class among the three. The lead-parent rule is superseded.
 - 2026-11-02, BLOOM's creatures (a run through design ideas, words only). The owner picked:
   - MEND at 2% every hit (over 4% every hit, or 6% on a third of hits);
@@ -211,3 +212,25 @@ Answered last (2026-11-02):
   - for the BLOOM roles: Series 2 only;
   - building the Sanctuary next.
 - 2026-11-02: designed from the owner's message and two rounds of prompts. The element's name was chosen from VITAL, BLOOM, ELIXIR and LIFE. The chance was chosen from 10%, 25% and 50%. For the class, the alternatives were either parent's class or the lead parent's (today's rule).
+
+## 13. MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
+
+- **Status:** Approved direction. Not designed in detail; not implemented. The game does not change until it is built.
+- **The owner, 2026-11-07:** "We are changing the electric brawler, but we're keeping the design for it for another creature, and its moves and everything. So what we're gonna do is, you know about Bloom. Well, we're making the same sort of dynamic for electricity. Electricity is going to be able to be converted into magnetic, okay? And then the electric brawler is going to be the new magnetic brawler. And then the electric brawler is going to be something new. So just keep this in your head in case you come stumble across something confusing in the future."
+
+### Decided
+- **MAGNETIC comes from electric** the way BLOOM comes from toxic: electric can be converted into magnetic.
+- **Today's electric Brawler becomes the MAGNETIC Brawler,** its design kept "and its moves and everything". Today that is the **STATIC ORB** (design No. 781; `EVOLUTIONS.staticorb` in js/evolution.js, whose comment calls it "the ELECTRIC BRAWLER"), with SONIC ROLL and CAPACITOR DISCHARGE.
+- **The electric Brawler gets a new design,** still to be made.
+
+### Until it is built
+The STATIC ORB is the electric Brawler's form in the code, and the docs, tests and Bible call it electric. That is correct until this work is done; it is not a mistake to fix on its own.
+
+### Open (to ask when the work starts)
+1. How electric becomes MAGNETIC: at the conversion apparatus, as toxic becomes BLOOM; by breeding (which pair, what chance); or both.
+2. MAGNETIC's rules: its match-ups, status, colour, texture, crystal and icon, its cards, its Technician ability.
+3. MAGNETIC's Mage and Technician forms (only its Brawler is decided).
+4. The new electric Brawler: its body and its attacks.
+5. A follower that is a Static Orb in a save when the change comes: does it stay electric (taking the new form), or become MAGNETIC?
+6. Whether the Static Orb keeps its name as a MAGNETIC creature.
+7. The three retired electric Brawler forms kept for old saves (Storm Manta, Prism Hood, Volt Ring), which the owner's words do not cover.

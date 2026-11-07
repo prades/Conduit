@@ -146,7 +146,7 @@ Use existing documents first; add new ones only with a clear owner.
 | The fire and electric followers' attack redesign | `FOLLOWER-COMBAT-REDESIGN.md` |
 | Facility/core systems | `FACILITY.md` |
 | Followers/recruitment/breeding | `FOLLOWER-PROGRESSION.md` |
-| The conversion apparatus and BLOOM | `CONVERSION.md` |
+| The conversion apparatus and BLOOM; MAGNETIC, electric's conversion (direction only, 2026-11-07: §13) | `CONVERSION.md` |
 | Sewer quest/purification | `SEWER-QUEST.md` |
 | The Ant Nest (beyond the arena's south rubble: THE ANT QUEEN and the testing console; designed 2026-11-07) | `NEST.md` |
 | Player classes | `PLAYER-CLASSES.md` |

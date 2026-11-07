@@ -2273,4 +2273,19 @@ Implemented and tested (`tests/equipnow.js` and the nearby card suites); seen in
 - The meter's look and the cards' new heights; the world bar's size.
 
 ### Status
-Implemented and tested (`tests/secondattacks.js` and the updated suites); not playtested.
+Implemented and tested (`tests/secondattacks.js` and the updated suites); not playtested. On main at the owner's word. **The owner accepted it as it is, 2026-11-07:** "From this point, it looks pretty good. I'm gonna say go ahead and pass it, whatever it is" (BASH stays on followers before they evolve; the numbers stay provisional until played).
+
+## DECISION: Electric converts into MAGNETIC; today's electric Brawler becomes the MAGNETIC Brawler
+- Date and build: 2026-11-07, after build `2026-11-07ss`, branch `claude/start-game-project-HSh7Z`. No game code changed.
+- The owner's words: "We are changing the electric brawler, but we're keeping the design for it for another creature, and its moves and everything. So what we're gonna do is, you know about Bloom. Well, we're making the same sort of dynamic for electricity. Electricity is going to be able to be converted into magnetic, okay? And then the electric brawler is going to be the new magnetic brawler. And then the electric brawler is going to be something new. So just keep this in your head in case you come stumble across something confusing in the future."
+
+### Decision
+- MAGNETIC comes from electric as BLOOM comes from toxic (`CONVERSION.md` §13).
+- The electric Brawler's current design, the STATIC ORB (design No. 781) with its moves, is kept and becomes the MAGNETIC Brawler.
+- The electric Brawler gets a new design.
+
+### Status
+Approved direction; not designed in detail; not implemented. Until it is built, the STATIC ORB stays the electric Brawler in the code, docs and tests. The open points are in `CONVERSION.md` §13.
+
+### Supersedes / superseded by
+In part, `CONVERSION.md` §4's non-goal "No conversion but toxic into BLOOM, for now".

@@ -694,3 +694,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **The eight forms on BASH** (Jelly Ram, Rimestar, Hornshell, Hammer Slug, Goo Proxy, Blight Spider, Hover Shell, Igloo Skater): their own second attacks, from the design archive (Notion, not reachable this session) or new designs. BASH stays until then.
 - **BASH's and CAPACITOR DISCHARGE's numbers** are the agent's (provisional): see `COMBAT.md`.
 - **CAPACITOR DISCHARGE:** should a full Static Orb move (it does now), and should a follower posted in a room (no squad card) be released from anywhere but its INFO?
+- **Accepted, 2026-11-07:** the owner passed build ss as it is ("go ahead and pass it, whatever it is"), so followers before they evolve keep BASH. The points above stay open.
+
+## MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
+The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; today's electric Brawler (the STATIC ORB, its moves and all) becomes the MAGNETIC Brawler; the electric Brawler gets a new design. Not designed in detail and not built. Seven points are open, listed in `CONVERSION.md` §13 (how electric converts, MAGNETIC's rules and other forms, the new electric Brawler, saved Static Orbs, the name, the retired electric Brawler forms).
