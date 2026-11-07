@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **r · The Mollusk's four live; the Elemental's four for approval** (the owner, 2026-11-07: "Approve all four"; q "Push to main"; on the branch; commit named in git log).
+  - MANTLE GEL, NACRE PEARL, SIPHON SLIME and REGROWTH SAC show for everyone.
+  - The Elemental's four, from their drafted looks in the species' prism white (design/cards/models/_elemental.js): RAW SHARD (a rough white crystal with glints of the six element colours), FOCUSING PRISM (a brass-edged prism in a cradle, a white beam in, six coloured beams out), ATTUNED CORE (a white-hot core in a steel cage with six coloured lights), STORM HEART (a crackling orb in a ring of turbine fins). Two drafted lines asked for "the wearer's colour": a baked picture cannot change, so those carry all six. On preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **q · The Crustacean's three live; the Mollusk's four for approval** (the owner, 2026-11-07: "Approve all three"; p "Push to main"; on the branch; commit named in git log).
   - BARNACLE BRACER, PINCER CLAMP and TIDE SHELL show for everyone.
   - The Mollusk's four, from their drafted looks in the species' nacre (design/cards/models/_mollusk.js): MANTLE GEL (a stoppered glass jar of iridescent gel), NACRE PEARL (a big pearl held by four steel claws on a stem), SIPHON SLIME (a tilted vial of glowing sea-green slime running over its lip), REGROWTH SAC (a translucent pink sac with red veins and a glowing heart). On preview only (`?cardart=items`).
