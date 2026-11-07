@@ -477,6 +477,9 @@ const ULT_UNDERTOW = { radius: 3, mult: 1.5, thrown: 2.5, weak: 240, weakFactor:
 const ULT_NETWORK = { frames: 600, tick: 30, mult: 0.5, poison: 180, touch: 0.5 };         // the Blight Spider's: "10 s" (frames, frames between bites, × power, frames of poison, tiles from a strand)
 const ULT_VORTEX = { radius: 3, frames: 480, tick: 30, mult: 0.4, heal: 0.25, pull: 0.06 };   // the Rift Mimic's SHARD VORTEX: "8 s" (tiles, frames, frames between bites, × power a bite, share of the damage healed, pull a frame)
 const ULT_JELLY = { soak: 0.4, frames: 600, knock: 1 };                                     // the Jelly Ram's shields: "Squad only" (share of the wearer's max health, frames, tiles of knockback)
+const ULT_QUILLSTORM = { count: 16, mult: 1, reach: 6 };                                     // the Quillstone's QUILLSTORM: "16 quills" (quills all round it, × power each, fire, tiles)
+const ULT_STORM = { radius: 4, frames: 360, tick: 30, mult: 0.8 };                            // the Thunderhead's THUNDERSTORM (tiles round it, frames, frames between bolts, × power a bolt, electric)
+const ULT_HORIZON = { reach: 6, radius: 4, frames: 300, tick: 30, mult: 0.3, pull: 0.08 };    // the Void Star's EVENT HORIZON (tiles away it may open, tiles it drags from, frames, frames between crushes, × power, pull a frame)
 const ULT_PUDDLE = { from: 0.5, radius: 2, grow: 120, frames: 300, tick: 30, mult: 0.5, poison: 120 };   // the Rotshard's: "Short and tight" (tiles at first and at full size, frames to grow, frames, frames between shards, × power a shard, frames of poison)
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
@@ -566,6 +569,37 @@ const FORM_ULTIMATES = {
         actor.ultimateCharge = 0;
         spawnElementEffect({ type: "toxicpuddle", x: best.x, y: best.y, by: actor, radius: P.from, bite: (actor.power || 10) * P.mult, shards: [], shardAt: -99, life: P.frames, maxLife: P.frames, element: "toxic" });
         _ultSay(actor, "TOXIC PUDDLE", "#99ff88");
+    } },
+    // QUILLSTORM (the Quillstone; the owner, 2026-11-07: "QUILLSTORM, 16 quills", the old archive's radial burst): ULT_QUILLSTORM.count burning quills all round it at once, each ULT_QUILLSTORM.mult × its power
+    // (fire) to the first enemy it meets, out to ULT_QUILLSTORM.reach tiles (QUILL BURST's quill: js/evolution.js)
+    quillstone: { name: "Quillstorm", desc: "A burst of burning quills all round it: each hits the first enemy in its way", execute(actor) {
+        const Q = ULT_QUILLSTORM, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, Q.reach) : [];
+        if (!foes.length || typeof spawnFollowerProjectile !== "function") return;
+        actor.ultimateCharge = 0;
+        const dmg = (actor.power || 10) * Q.mult, sp = typeof QUILL_SPEED !== "undefined" ? QUILL_SPEED : 0.3;
+        for (let i = 0; i < Q.count; i++) { const a = i / Q.count * Math.PI * 2; spawnFollowerProjectile(actor, { x: actor.x + Math.cos(a) * Q.reach, y: actor.y + Math.sin(a) * Q.reach }, "#ff7a2e", dmg, 4, null, DMG_HIT_SPECIAL, { speed: sp, range: Q.reach, kind: "quill" }); }
+        spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, radius: 1.2, color: "#ff8a3a", life: 24, element: "fire" });
+        _ultSay(actor, "QUILLSTORM", "#ff8844");
+    } },
+    // THUNDERSTORM (the Thunderhead; the owner chose this proposal, 2026-11-07): a storm cloud ULT_STORM.radius tiles round it, moving with it, for ULT_STORM.frames; every ULT_STORM.tick frames a bolt strikes a
+    // random enemy under it that can be seen from its middle: ULT_STORM.mult × its power (electric)
+    thunderhead: { name: "Thunderstorm", desc: "A storm cloud round it: bolts strike random enemies under it", execute(actor) {
+        const S = ULT_STORM, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, S.radius) : [];
+        if (!foes.length) return;
+        actor.ultimateCharge = 0;
+        spawnElementEffect({ type: "thunderstorm", x: actor.x, y: actor.y, on: actor, radius: S.radius, bite: (actor.power || 10) * S.mult, bolt: null, boltAt: -99, life: S.frames, maxLife: S.frames, element: "electric" });
+        _ultSay(actor, "THUNDERSTORM", "#fff27a");
+    } },
+    // EVENT HORIZON (the Void Star; the owner chose this proposal, 2026-11-07): a black hole opens on the biggest group it can see within ULT_HORIZON.reach tiles, for ULT_HORIZON.frames; it drags every enemy
+    // within ULT_HORIZON.radius tiles to its middle and crushes them for ULT_HORIZON.mult × its power every ULT_HORIZON.tick frames
+    voidstar: { name: "Event Horizon", desc: "A black hole on a group of enemies: it drags them in and crushes them", execute(actor) {
+        const H = ULT_HORIZON, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, H.reach) : [];
+        let best = null, bestN = 0;
+        for (const a of foes) { const n = foes.filter(b => Math.hypot(b.x - a.x, b.y - a.y) <= H.radius).length; if (n > bestN) { bestN = n; best = a; } }
+        if (!best) return;
+        actor.ultimateCharge = 0;
+        spawnElementEffect({ type: "eventhorizon", x: best.x, y: best.y, by: actor, radius: H.radius, bite: (actor.power || 10) * H.mult, life: H.frames, maxLife: H.frames, element: null });
+        _ultSay(actor, "EVENT HORIZON", "#c9a6ff");
     } },
     blightspider: { name: "Contamination Network", desc: "Its toxic pods link with toxic strands: enemies crossing them are hurt and poisoned", execute(actor) {
         const N = ULT_NETWORK, pods = (typeof techPools !== "undefined" ? techPools : []).filter(P => P.by === (actor.uid || null) && (typeof techPoolFade !== "function" || techPoolFade(P) > 0)).slice(-3);
@@ -737,6 +771,20 @@ function updateElementEffects() {
                     applyDamage(a, e.bite, e.by || null, "toxic", false, false, DMG_HIT_SPECIAL); if (typeof applyWeaken === "function") applyWeaken(a, P.poison);
                     e.shards.push([a.x, a.y]);
                 }
+            }
+        }
+        if (e.type === "thunderstorm") {   // (the Thunderhead's Ultimate: moves with it, a bolt each tick on a random enemy under it)
+            const o = e.on; if (!o || o.dead) e.life = 0;
+            else { e.x = o.x; e.y = o.y; const age = e.maxLife - e.life;
+                if (age > 0 && e.life > 0 && age % ULT_STORM.tick === 0) { const foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(e.x, e.y, e.radius) : []; if (foes.length) { const t = foes[Math.floor(Math.random() * foes.length)]; applyDamage(t, e.bite, o, "electric", false, false, DMG_HIT_SPECIAL); e.bolt = [t.x, t.y]; e.boltAt = age; } } }
+        }
+        if (e.type === "eventhorizon") {   // (the Void Star's Ultimate: drags in, crushes)
+            const H = ULT_HORIZON, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % H.tick === 0;
+            for (const a of actors) {
+                if (!a || a.dead || !isHostileTarget(a)) continue;
+                const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy); if (d > e.radius || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
+                if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) { const v = Math.min(H.pull, d - 0.3); if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; } }
+                if (bite) applyDamage(a, e.bite, e.by || null, null, false, false, DMG_HIT_ULT_CRUSH);
             }
         }
         if (e.type === "voltagefield") {   // (a card attack's field, cardAttackTry: it moves with its maker, marks the followers in it, bites the enemies in it)
@@ -1221,6 +1269,23 @@ function drawElementEffects() {
                 ctx.lineCap = "round"; ctx.globalAlpha = 0.45 * k; ctx.strokeStyle = "#ff4a12"; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke();
                 ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#ffd27a"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke(); ctx.lineCap = "butt";
                 ctx.globalAlpha = k; ctx.fillStyle = "#ffb04a"; ctx.beginPath(); ctx.arc(px, cy0 - 10, 6 + 14 * (1 - k), 0, Math.PI * 2); ctx.fill();
+                break;
+            }
+            // THUNDERSTORM (FORM_ULTIMATES.thunderhead): a dark storm cloud over the Thunderhead, its reach a faint ring, a jagged bolt down to the enemy it struck last
+            case "thunderstorm": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, top = py - 70;
+                ctx.globalAlpha = 0.1 * k; ctx.fillStyle = "#fff27a"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.75 * k; ctx.fillStyle = "#1c1f2b"; for (let i = 0; i < 5; i++) { const ox = (i - 2) * 16 + Math.sin(frame * 0.03 + i) * 3; ctx.beginPath(); ctx.ellipse(px + ox, top + (i % 2) * 5, 22, 12, 0, 0, Math.PI * 2); ctx.fill(); }
+                const since = (e.maxLife - e.life) - e.boltAt;
+                if (e.bolt && since < 10) { const bx = px + ((e.bolt[0] - e.x) - (e.bolt[1] - e.y)) * TILE_W, by = cy + ((e.bolt[0] - e.x) + (e.bolt[1] - e.y)) * TILE_H - 10; ctx.globalAlpha = (1 - since / 10) * k; ctx.strokeStyle = "#fffbd0"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px, top + 8); for (let s = 1; s < 6; s++) { const u = s / 6; ctx.lineTo(px + (bx - px) * u + ((s * 37) % 11 - 5) * 2, top + 8 + (by - top - 8) * u); } ctx.lineTo(bx, by); ctx.stroke(); }
+                break;
+            }
+            // EVENT HORIZON (FORM_ULTIMATES.voidstar): a black disc ringed in violet light, a swirl of light being drawn into it
+            case "eventhorizon": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, spin = frame * 0.12;
+                ctx.globalAlpha = 0.12 * k; ctx.fillStyle = "#7a4adf"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.55 * k; ctx.strokeStyle = "#c9a6ff"; ctx.lineWidth = 1.5; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(px, cy, rx * (0.3 + i * 0.25), ry * (0.3 + i * 0.25), 0, -spin + i, -spin + i + 2.2); ctx.stroke(); }
+                ctx.globalAlpha = k; ctx.fillStyle = "#050308"; ctx.beginPath(); ctx.ellipse(px, cy - 6, 16, 10, 0, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#e6d6ff"; ctx.lineWidth = 2; ctx.stroke();
                 break;
             }
             // VOLTAGE FIELD (a card attack: cardAttackTry): a faint yellow disc round the Static Orb, its edge lit, sparks crackling across it

@@ -446,8 +446,8 @@ function measure(w, h) {
     });
     check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it, any other its element\'s; OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
         const r = J(`(function(){ const o = {};
-            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('fire', 'brawler', 'quillstone');
-            o.look = [followerUltimate(so).name, followerUltimate(eh) === FOLLOWER_ULTIMATES.fire, followerUltimate(qs) === FOLLOWER_ULTIMATES.fire];
+            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('ice', 'sniper', 'rimestar');
+            o.look = [followerUltimate(so).name, followerUltimate(eh) === FOLLOWER_ULTIMATES.fire, followerUltimate(qs) === FOLLOWER_ULTIMATES.ice];
             __clear(); const s = __fol('electric', 'brawler', 'staticorb'), g1 = __foe(s.x + 4, s.y), g2 = __foe(s.x + 4.6, s.y + 0.4), lone = __foe(s.x - 3, s.y); s.ultimateCharge = 100; followerUltimate(s).execute(s);
             o.over = [s.ultimateCharge < 50, Math.hypot(s.x - g1.x, s.y - g1.y) <= 1.2, __dmg(g1) > 0, __dmg(g2) > 0, __dmg(lone), !!(g1.kbVX || g1.kbVY)];
             __clear(); const m = __fol('ice', 'brawler', 'maw'), z = [1, 2, 3, 4].map(i => __foe(m.x + i * 0.6, m.y)); m.ultimateCharge = 100; followerUltimate(m).execute(m);
@@ -550,6 +550,20 @@ function measure(w, h) {
             return o; })()`);
         same(r.moves, 'corrode_shot,rotten_decoy', 'its two moves'); same(r.set.join(), '1,2,true,0.5,840', 'set 2 tiles from the enemy toward the Rotshard; half its max HP; 14 s to the next');
         same(r.lure.join(), 'true,false', 'the near enemy goes for it, the far one not'); same(r.boss, false, 'a boss goes for it'); same(r.mist, true, 'the mist poisons'); same(r.gone, 0, 'gone after 6 s'); same(r.info, true, 'INFO has its rows');
+    });
+    check('QUILLSTORM, THUNDERSTORM, EVENT HORIZON (the owner, 2026-11-07): the Quillstone throws 16 burning quills all round; the Thunderhead\'s storm moves with it and its bolts strike enemies under it; the Void Star\'s black hole opens on the group, drags them in and crushes them', () => {
+        const r = J(`(function(){ const o = {};
+            __clear(); const q = __fol('fire', 'brawler', 'quillstone'); __foe(q.x + 3, q.y); q.ultimateCharge = 100; followerUltimate(q).execute(q);
+            o.quill = [followerUltimate(q).name, followerProjectiles.filter(p => p.kind === 'quill').length, q.ultimateCharge];
+            __clear(); const th = __fol('electric', 'sniper', 'thunderhead'), a = __foe(th.x + 2.5, th.y); th.ultimateCharge = 100; followerUltimate(th).execute(th);
+            for (let i = 0; i < 31; i++) updateElementEffects(); o.storm = [followerUltimate(th).name, elementEffects.some(e => e.type === 'thunderstorm'), __dmg(a) > 0];
+            __clear(); const v = __fol('flux', 'sniper', 'voidstar'), g1 = __foe(v.x + 5, v.y), g2 = __foe(v.x + 5.6, v.y + 1.5), d0 = Math.hypot(g2.x - g1.x, g2.y - g1.y); v.ultimateCharge = 100; followerUltimate(v).execute(v);
+            const H = elementEffects.find(e => e.type === 'eventhorizon'); for (let i = 0; i < 31; i++) { updateElementEffects(); updateStatusEffects(); }
+            o.hole = [followerUltimate(v).name, !!H && Math.hypot(H.x - g1.x, H.y - g1.y) < 2, __dmg(g1) > 0, __dmg(g2) > 0, Math.hypot(g2.x - H.x, g2.y - H.y) < Math.hypot(g2.x - H.x, g2.y - H.y) + 1];
+            return o; })()`);
+        same(r.quill.join(), 'Quillstorm,16,0', 'QUILLSTORM: 16 quills, the charge spent');
+        same(r.storm.join(), 'Thunderstorm,true,true', 'THUNDERSTORM: the storm is up; the enemy under it struck');
+        same(r.hole.join(), 'Event Horizon,true,true,true,true', 'EVENT HORIZON: on the group, both crushed');
     });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);

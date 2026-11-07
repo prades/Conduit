@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **f · QUILLSTORM, THUNDERSTORM, EVENT HORIZON** (the owner, 2026-11-07: "QUILLSTORM, 16 quills"; THUNDERSTORM and EVENT HORIZON chosen from proposals; on the branch; commit named in git log).
+  - **Main:** build `2026-11-07e` went to main at the owner's word ("Push to main").
+  - **QUILLSTORM** (Quillstone, the old archive's radial burst): 16 burning quills all round it at once, each 1× its power (fire), stopping at the first enemy; reach 6 tiles.
+  - **THUNDERSTORM** (Thunderhead): a storm cloud 4 tiles round it, moving with it, for 6 s; every 0.5 s a bolt strikes a random enemy under it for 0.8× its power (electric).
+  - **EVENT HORIZON** (Void Star): a black hole on the biggest group it can see within 6 tiles, for 5 s; it drags every enemy within 4 tiles to its middle and crushes them for 0.3× its power every 0.5 s.
+  - Six forms still use their element's Ultimate: Horn Shell, Rime Star, Hover Shell, Goo Proxy, Hammer Slug, Igloo Skater.
+  - Tests: followercombat (the three, new; an older check now uses the Rime Star as a form without its own), unitinfo. No screenshot. No full run. Not playtested.
+
 - **e · ROTTEN DECOY** (Milestone Five; the owner, 2026-11-07: "ROTTEN DECOY", "Short lure", "A second move to pick"; on the branch; commit named in git log).
   - **Main:** build `2026-11-07d` and the seeded Queen tests went to main at the owner's word ("Push to main").
   - The Rotshard's second move, picked on its INFO (CORRODE SHOT stays its default). A black crystal decoy in a constant green mist is set 2 tiles from the nearest enemy it can see, toward the Rotshard **[reading: where]**. For 6 s, or until broken (half the Rotshard's max HP), every enemy within 6 tiles goes for it; a boss does not **[reading]**. Its mist poisons enemies within 1.5 tiles (refreshed each 0.5 s **[reading]**). Ready again 14 s after it is set. Broken or timed out, its black shards keep the haze a moment.

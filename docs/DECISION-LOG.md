@@ -1899,3 +1899,14 @@ The owner: too much time goes into testing and side checks. From here on, only t
 ### Readings
 - Bosses ignore it; it is set 2 tiles from the nearest enemy toward the Rotshard; its mist poison is refreshed each 0.5 s.
 
+## DECISION: Build 2026-11-07e to main; three more own Ultimates
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Build `2026-11-07e` on main. The three: implemented and tested in build `2026-11-07f`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.3; `CHANGELOG.md` (2026-11-07 f)
+
+### Decision
+1. "Push to main" (e). Next: "Looks right; nine Ultimates".
+2. Quillstone: "QUILLSTORM, 16 quills" (resolves §12.3's QUILLSTORM conflict: QUILL BURST stays the five-quill fan; QUILLSTORM is the radial Ultimate).
+3. Thunderhead: "THUNDERSTORM"; Void Star: "EVENT HORIZON" (both chosen from the agent's proposals; the numbers are the proposals').
+
