@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **gg · A follower winding up its alternate shows it** (the owner, 2026-11-07, on build ff: "Wind-up cue in the world"; ff "Push to main"). Implemented and tested on the branch; seen in a screenshot; not playtested.
+  - While a follower stands rooted winding up its chosen alternate, a ring in the allies' teal hangs over it, above its stance tag, filling as the wind-up runs, with the move's name over it (QUILL BURST, HEXFIRE...). It is the creatures' bite telegraph (`drawBiteTelegraphs`, js/combat.js) in the allies' colour, without the chevron. The look is the agent's, from the existing telegraph (provisional).
+  - Tests: combat (a new check: the ring and the name while winding up, nothing after).
+
 - **ff · The alternate attack is a chosen mode** (the owner, 2026-11-07: "the alternate attacks must be visitable from the index and the pop out menu on the hood [...] they're locked into that ability or that attack until switched out of it and they can't use any of their other attacks [...] whenever the effect ends is when another wind up occurs, and when the wind up is occurring the [...] follower cannot move"; then "Yes, exactly" (no alternate fires on its own) and "Stays on the alternate" (attack orders keep it); ee "Push to main"). Implemented and tested on the branch; not playtested.
   - An evolved follower fights with its **NORMAL ATTACK** until one of its alternates is chosen. A chosen alternate is its **only** attack (no plain hit, no element move, no Mage's shot) until it is switched back to NORMAL ATTACK; attack orders keep it on the alternate.
   - The cycle: with an enemy in the move's reach it **winds up, rooted** (it cannot move), fires, and the next wind-up starts only **when the effect has ended** (its projectiles, bombs, circles, vortex, decoy or roll are gone; at most 20 s). The wind-up times are the moves' own, unchanged.

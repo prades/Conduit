@@ -103,6 +103,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.wound, true, 'wound up'); same(r.threw, null, 'drawing threw');
         const src = rd('js/combat.js'); ok(/function drawBiteTelegraphs/.test(src) && /"BITE"/.test(src) && /biteTarget/.test(src), 'the telegraph'); ok(/drawBiteTelegraphs\(\)/.test(rd('js/game.js')), 'called by the frame');
     });
+    check('a follower WINDING UP its chosen alternate shows it: the ring in the allies\' teal over it, filling as the wind-up runs, with the move\'s name (build 2026-11-07ff); none when it is not winding up', () => {
+        const r = J(`(function(){ __clear(); const f = __follower('fire', 'brawler', 5); player.x = player.visualX = f.x; player.y = player.visualY = f.y; const seen = [], arcs = [], ct = cachedText, arc = ctx.arc;
+            cachedText = function (t, font, col) { seen.push(t + '|' + col); }; ctx.arc = function (x, y, rr) { arcs.push(Math.round(rr)); return arc.apply(this, arguments); };
+            const o = {}; try { f.alt = 'quill_burst'; f._altWindMax = 60; f._altWind = 30; drawBiteTelegraphs(); o.mid = seen.slice(); o.arcs = arcs.slice(); seen.length = 0; f._altWind = 0; drawBiteTelegraphs(); o.after = seen.slice(); }
+            finally { cachedText = ct; ctx.arc = arc; f.alt = null; f._altWind = 0; } return o; })()`);
+        same(JSON.stringify(r.mid), JSON.stringify(['QUILL BURST|#19e6c1']), 'the name over it'); ok(r.arcs.length >= 2 && r.arcs[0] === 18 && r.arcs[1] === 9, 'the ring (13 + 9 × half) and its fill (half of it): ' + JSON.stringify(r.arcs)); same(JSON.stringify(r.after), '[]', 'drawn when not winding up');
+    });
 
     group('THE FLOOR UNDER A LEAP AND A SLAM, AND THE WAY TO YOU');
     check('a scout\'s escape leap lands on floor it can see (or not at all), never off the map; a beetle\'s slam is held by the walls', () => {

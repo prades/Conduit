@@ -65,6 +65,21 @@ function drawBiteTelegraphs() {
             ctx.globalAlpha = 0.35 + 0.25 * k; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx, y0 + r + 4); ctx.lineTo(tp[0], my + 14); ctx.stroke();   // a thread from the ring to the mark
         }
     }
+    // A FOLLOWER WINDING UP ITS CHOSEN ALTERNATE (js/evolution.js altTick; the owner, 2026-11-07: "when the wind up is occurring the [...] follower cannot move"):
+    // the bite's ring in the allies' teal over its plate, filling as the wind-up runs, with the move's name where a bite says BITE. No chevron: the move picks its
+    // own aim when it fires.
+    if (typeof followers !== "undefined") for (const f of followers) {
+        if (!f || f.dead || !(f._altWind > 0) || !(f._altWindMax > 0) || !f.alt) continue;
+        if (typeof visibleForDraw === "function" && !visibleForDraw(f.x, f.y)) continue;
+        if (!drew) { drew = true; ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = "round"; ctx.lineJoin = "round"; }
+        const k = Math.max(0, Math.min(1, 1 - f._altWind / f._altWindMax)), [sx, sy] = scr(f.x, f.y), y0 = sy - 172, r = 13 + 9 * k, col = "#19e6c1";   // (26 px above a bite's ring: clear of the follower's stance tag, HOLDING)
+        ctx.globalAlpha = 0.55 + 0.45 * k; ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(sx, y0, r, 0, Math.PI * 2); ctx.stroke();
+        ctx.globalAlpha = 0.2 + 0.45 * k; ctx.beginPath(); ctx.arc(sx, y0, r * k, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.95;
+        const mv = typeof MOVES !== "undefined" ? MOVES[f.alt] : null;
+        if (mv && typeof cachedText === "function") cachedText(mv.name, "bold 10px monospace", col, sx, y0 - r - 6);
+    }
     if (drew) ctx.restore();
 }
 
