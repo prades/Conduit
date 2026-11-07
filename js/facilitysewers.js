@@ -453,6 +453,19 @@ Object.assign(FP_STYLE_WALL, {
     },
 });
 for (const k of ["sewer_arch", "brood_hole", "resin"]) FP_WALL_KINDS[k] = FP_STYLE_WALL[k];
+// THE ANT NEST'S TUNNEL MOUTH (a portal door with `burrow`, docs/NEST.md): the way back up to the arena, the tunnel the drill opened seen from below: a rough black hole into the packed dirt, ringed with the
+// colony's resin, darker going in, a lit chevron over it pointing up
+function _fpBurrowDoor(it, f) {
+    const P = (u, z) => _fpWP(it, u, z), ink = _FPW.ink, sd = it.seed || 5;
+    const hole = (u0, u1, z1, jag) => { const pts = [_fpWP(it, u0, 0)]; for (let k = 0; k <= 12; k++) { const a = Math.PI * k / 12, j = 1 - jag * _fpSwHash(sd + k * 1.7); pts.push(P((u0 + u1) / 2 - Math.cos(a) * (u1 - u0) / 2 * j, z1 * 0.5 + Math.sin(a) * z1 * 0.5 * j)); } pts.push(P(u1, 0)); return pts; };
+    _fpQuad(hole(0.02, 0.98, 84, 0.08), "rgba(122,140,58,0.62)", ink, 1.5);   // the resin round its mouth
+    _fpQuad(hole(0.1, 0.9, 74, 0.1), "#060504", ink, 2.5);                     // the hole
+    _fpQuad(hole(0.24, 0.76, 54, 0.06), "#030202", null); _fpQuad(hole(0.36, 0.64, 34, 0.04), "#000000", null);   // deeper in
+    for (const [u, z] of [[0.08, 40], [0.9, 34], [0.16, 62], [0.82, 66]]) _fpWLine(it, u, z, u + 0.05, z - 8, "rgba(230,255,170,0.22)", 1.2);   // the resin's sheen
+    const col = it.colour || "#ffb347", pul = 0.65 + 0.35 * Math.sin(f * 0.07 + sd), c0 = P(0.5, 98), cl = P(0.38, 91), cr = P(0.62, 91);   // the chevron, pointing up
+    ctx.save(); ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = _fpRgba(col, 0.5 + 0.45 * pul); ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cl[0], cl[1]); ctx.lineTo(c0[0], c0[1]); ctx.lineTo(cr[0], cr[1]); ctx.stroke(); ctx.restore();
+    _fpGlow(c0[0], c0[1], 28, col, 0.2 * pul);
+}
 // ── A SPILL LIP (an outline edge of kind `spill`: the Nest's east and south edges, where the moat runs): no wall, a low wet concrete lip the camera sees the moat over, its face running down into the dark ──
 function _fpDrawSpillLip(it) {
     const P = _fpP, a = it.a, b = it.b, top = 8, foot = -54, R = _fpRoomCols ? _fpRoomCols(it.room) : null;
@@ -481,6 +494,6 @@ function facilitySewerMeasures() {
         bridges: F.decor.filter(d => d.room === "sewers" && d.kind === "bridge_deck").length, bridgeWidth: deck(F.decor.find(d => d.id === "sewer_bridge")), serviceWidth: deck(F.decor.find(d => d.id === "sewer_bridge_east")),
         gates: F.solids.filter(s => s.room === "sewers" && s.kind === "gate").length, bossGates: F.solids.filter(s => s.room === "sewers" && s.kind === "boss_gate").length,
         nestW: A ? A.rect[2] - A.rect[0] : 0, nestH: A ? A.rect[3] - A.rect[1] : 0, dam: dam.length, reservoir: wet(sol("nest_reservoir")), moat: wet(sol("nest_moat")), farFromPost: Math.round(far * 10) / 10,
-        falls: items("falls"), holes: F.decor.filter(d => d.room === "sewers" && d.kind === "brood_hole").length, eggs: items("egg"), cells: [..._fp.cellsP.values()].filter(c => { const r = facilityRoomAt(c[0], c[1], F); return r && r.id === "sewers"; }).length,
+        falls: items("falls"), holes: F.decor.filter(d => d.room === "sewers" && d.kind === "brood_hole").length, eggs: (_fp.items || []).filter(i => i.fp === "sewer" && i.what === "egg" && i.room === "sewers").length, cells: [..._fp.cellsP.values()].filter(c => { const r = facilityRoomAt(c[0], c[1], F); return r && r.id === "sewers"; }).length,
     };
 }

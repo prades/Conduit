@@ -1446,6 +1446,7 @@ function techDrawOverlay() {
     for (const r of _techRubbles()) {
         const d = Math.hypot(r.at[0] - player.visualX, r.at[1] - player.visualY); if (d > TECH_AB.drill.near) continue;
         const a = Math.min(1, (TECH_AB.drill.near - d) / 2), open = techRubbleOpen(r), p = rP(r, 0);
+        if (open && !r.solid && _fp && (_fp.portals || []).some(q => q.rubble === r.id)) continue;   // (a hole that is a doorway, the Ant Nest's: the doorway's name is shown over it, js/facilityportals.js)
         const txt = open ? (r.solid ? (r.opened || "THE CHOKE IS DRILLED THROUGH · THE WAY IN IS OPEN") : "A DARK HOLE IN THE ROCK · SEALED FOR NOW") : _techDrilling(r) ? "✹ THERMITE DRILL · " + techRubbleLeft(r) + " TO GO" : (r.tag ? "✹ " + r.tag : r.solid ? "✹ CHOKED TUNNEL" : "✹ RUBBLE") + " · PRESS AND HOLD IT: THERMITE DRILL";
         g.globalAlpha = a; g.font = font(13); g.textAlign = "center"; g.textBaseline = "middle";
         const w = g.measureText(txt).width + 22, y = p[1] - 96 + Math.sin(f0 * 0.07) * 2, col = open ? "#9aa4b4" : "#ff9a4a";

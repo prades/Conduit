@@ -63,7 +63,7 @@ Decided with you by buttons before building, and built: the Sewers' boss is **a 
 
 Still open from that work:
 - **The queen's numbers.** Level 6, the ant species' boss block: provisional; the archive says to measure the live game before setting them. (The distress cycle of build `d` is gone: the archive's later rules replaced it, §1e.)
-- **The Nest's encounter.** The row names the Ant Queen with no lair, level or numbers; the nest area has no entrance. The archive's proposed Ant Queen fight (lunge, brood call, nest tremor) is a design, not code.
+- **The Nest's encounter.** The row names the Ant Queen with no lair, level or numbers; the nest area has no entrance. The archive's proposed Ant Queen fight (lunge, brood call, nest tremor) is a design, not code. **Answered 2026-11-07 (docs/NEST.md):** the owner placed the nest beyond the arena's south rubble in a new room (built in `2026-11-07ll`: the Ant Nest, its way in the drilled rubble) and chose THE ANT QUEEN's attacks: mandible crush, tremor stomp, brood call (step B, not built yet).
 - **Series 2 cards.** The list, its effects and numbers, and the pack's price and odds: none exist in the archive. The pack stays off sale until they do. **Settled in build `2026-11-01j` (§1j):** 32 cards from the owner-approved draft, the price and odds picked at the owner's word.
 - **A reward for sparing the queen.** The archive calls it valuable and undecided; nothing is granted.
 - **After purification:** one straggler ant at a time, one every 100 s, is my number for "a few incidental insects may remain".

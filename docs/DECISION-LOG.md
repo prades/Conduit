@@ -2119,3 +2119,20 @@ The special functions (and the fire bombs they threw) stay in the code, unused; 
 
 ### Decision
 "mages have to wind up their normal attack as well, but it's a really fast wind up and they can't move while they're doing it": a short rooted wind-up before each everyday shot, then the shot; the rest after it unchanged.
+
+## DECISION: The Ant Nest, step A: the egg cavern beyond the arena's south rubble
+
+- **Date / build:** 2026-11-07, build `2026-11-07ll`, branch `claude/start-game-project-HSh7Z`.
+- **Context:** the owner: "Can we finally create the nest layer? [...] I want to use it to test the player and squad combinations and different moves against a boss ant that's huge." Asked where it lies: "the nest would be in the against the wall of the arena that the southernmost wall and it is beyond the rubble in a new room"; the room: "Big egg cavern".
+
+### Decision
+- The Nest is a new room beyond the arena's south rubble: an interior (`nest_area`), a big egg cavern of sixteen tiles by twelve. Its way in is the hole a fire technician drills through `rubble_arena_south` (a portal shut until the rubble is drilled through); a tunnel mouth in its north wall leads back up.
+- It takes the place of the sketch's open "Nest area" outline south of the arena (unreachable, its bottom wall a guess): superseded by the owner's placement. The room keeps the id `nest_area`, which THE ANT QUEEN's row in js/bosses.js already names.
+- The way in is the drilled hole itself, walked into (the spec first said "a burrow in the arena floor": the agent's wording, changed while building, since the hole is already drawn in the rock).
+
+### Chosen by the agent (provisional)
+- The zone tag "Ant Nest"; the room built 96 tiles south of where it is drawn; the tunnel mouth's look; the dressing (seven egg clusters, four brood holes, five resin sheets, two resin pools, the lights).
+
+### Status
+Implemented and tested (tests/nest.js and the updated facility suites); not playtested. Steps B (THE ANT QUEEN) and C (the console) are designed in docs/NEST.md.
+

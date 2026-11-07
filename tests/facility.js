@@ -74,7 +74,7 @@ function measure(w, h, query) {
         ok(M.scale.px_per_tile > 0, 'no scale');
     });
     check('NOTHING IS INVENTED: only what the user confirmed is a connection (the doors the user listed, and the stair room\'s opening, door and staircase); the rest the sketch suggests is a flagged candidate', () => {
-        const M = J('FACILITY_MAP'); same(M.openings.map(o => o.id).sort().join(), 'door_arena_hallway,door_chamber_teleport_1,door_crystal_hallway,door_lab_passage,door_lobby_hallway_east,door_lobby_hallway_west,door_passage_teleport_1,door_security_hallway,door_security_lobby,door_showroom_hallway,door_stair_teleport_2,door_teleport_1_deck,open_stair_mouth', 'openings'); same(M.connections.length, 18, 'connections (thirteen doors, the Armory\'s two portals, the Cold Storage\'s two and the Sewers\' one)'); same(M.ramps.map(x => x.id).join(), 'r_arena_steps,r_deck_door_steps,r_teleport_stairs', 'ramps');
+        const M = J('FACILITY_MAP'); same(M.openings.map(o => o.id).sort().join(), 'door_arena_hallway,door_chamber_teleport_1,door_crystal_hallway,door_lab_passage,door_lobby_hallway_east,door_lobby_hallway_west,door_passage_teleport_1,door_security_hallway,door_security_lobby,door_showroom_hallway,door_stair_teleport_2,door_teleport_1_deck,open_stair_mouth', 'openings'); same(M.connections.length, 19, 'connections (thirteen doors, the Armory\'s two portals, the Cold Storage\'s two, the Sewers\' one and the Ant Nest\'s one)'); same(M.ramps.map(x => x.id).join(), 'r_arena_steps,r_deck_door_steps,r_teleport_stairs', 'ramps');
         for (const o of M.openings) same(o.position_status, 'approximate', o.id + ' position');
         ok(M.candidates.connections.length >= 3 && M.candidates.ramps.length >= 1, 'candidates were not recorded');
         for (const c of M.candidates.connections) { ok(c.rooms.every(id => M.rooms.some(r => r.id === id)), c.id + ' names a missing room'); ok(c.evidence, c.id + ' has no evidence'); ok(!c.rooms.includes('outer_path'), c.id + ' uses the outer path'); }
@@ -92,7 +92,7 @@ function measure(w, h, query) {
     group('VALIDATION');
     check('the authored map passes every rule: no overlaps, an outer path in no link, a sealed arena, no unconfirmed route', () => {
         const v = J('facilityValidateCached()'); same(v.errors.length, 0, 'errors: ' + v.errors.join(' | '));
-        same(v.info.rooms, 17, 'rooms'); same(v.info.navComponents, 3, 'twelve rooms form one area through the doors; the blocked-off catwalks and the nest area stand alone');
+        same(v.info.rooms, 17, 'rooms'); same(v.info.navComponents, 2, 'the rooms form one area through the doors and the doorways (the Ant Nest\'s too, since build 2026-11-07ll); the blocked-off catwalks stand alone');
         ok(v.warnings.some(w => /unconfirmed/.test(w)), 'the candidates are not reported'); ok(v.warnings.some(w => /^unresolved/.test(w)), 'unresolved items are not reported');
     });
 
@@ -105,7 +105,7 @@ function measure(w, h, query) {
             return out; })()`);
         ok(r.walls >= r.edges, 'only ' + r.walls + ' wall pieces for ' + r.edges + ' edges'); same(r.crossed, 0, 'steps through the perimeter (of ' + r.tested + ')');
     });
-    check('agent walks from inside the arena, in every direction, never leave it', () => { const v = J('facilityValidateCached()'); ok(v.info.arenaAgents >= 1200, 'only ' + v.info.arenaAgents + ' walks'); same(v.info.arenaLeaks, 0, 'leaks'); });
+    check('agent walks from inside the arena, in every direction, never leave it', () => { const v = J('facilityValidateCached()'); ok(v.info.arenaAgents >= 800, 'only ' + v.info.arenaAgents + ' walks');   /* (the arena's walls alone since build 2026-11-07ll: the sketch's open nest area, walked as well before, became the Ant Nest, an interior) */ same(v.info.arenaLeaks, 0, 'leaks'); });
     check('the two circular structures are giant liquid reserves: solid tanks nobody walks through', () => {
         const M = J('FACILITY_MAP'), t = M.props.filter(p => p.shape === 'circle' && p.room === 'arena'); same(t.length, 2, 'reserves');
         ok(t.every(p => p.kind === 'liquid_reserve' && !p.provisional_collision), 'not marked as solid liquid reserves');
@@ -131,12 +131,13 @@ function measure(w, h, query) {
         same(r[0], false, 'a point on a wall is walkable');
     });
 
-    group('THE NEST AREA: one open room, its drawn edges are its walls');
-    check('it is one open rectangle (the sketch\'s long double lines are its outside edges, not tunnels): a flood from its centre covers all of it', () => {
-        const M = J('FACILITY_MAP'), N = M.rooms.find(r => r.id === 'nest_area'); same(N.polygon.length, 4, 'corners'); ok(N.edge_kinds.every(k => /^outer_wall/.test(k)), 'edge kinds ' + N.edge_kinds);
+    group('THE ANT NEST: a big egg cavern beyond the arena\'s south rock, an interior (docs/NEST.md)');
+    check('it is an interior under the arena, sixteen tiles across and twelve deep (and its tunnel mouth), walled in rock: a flood from its middle covers it and stays in it', () => {
+        const M = J('FACILITY_MAP'), N = M.rooms.find(r => r.id === 'nest_area'), I = M.interiors.find(i => i.id === 'nest_area');
+        same(N.label, 'Ant Nest', 'its name'); same(N.interior, true, 'an interior'); same(I && I.under, 'arena', 'under the arena'); ok(N.edge_kinds.every(k => k === 'rock'), 'edge kinds ' + N.edge_kinds); same(N.edge_kinds.length, N.polygon.length, 'an edge kind for each edge');
         same(M.outer_path, null, 'a separate outer path is still in the data');
-        const r = J(`(function(){ const F = facilityGet(), N = F.byId.get('nest_area'), c = [(N.bb[0] + N.bb[2]) / 2, (N.bb[1] + N.bb[3]) / 2], cells = facilityFlood(c[0], c[1], F, 0.5), area = (N.bb[2] - N.bb[0]) * (N.bb[3] - N.bb[1]); return { cells: cells.length, expect: area / 0.25, allIn: cells.every(q => facilityRoomAt(q[0], q[1]).id === 'nest_area') }; })()`);
-        ok(r.cells > r.expect * 0.95, 'the flood covered ' + r.cells + ' of about ' + r.expect + ' cells: something is blocking the room'); same(r.allIn, true, 'the flood left the room');
+        const r = J(`(function(){ const F = facilityGet(), N = F.byId.get('nest_area'), c = [(N.bb[0] + N.bb[2]) / 2, (N.bb[1] + N.bb[3]) / 2], cells = facilityFlood(c[0], c[1], F, 0.5); return { w: N.bb[2] - N.bb[0], h: N.bb[3] - N.bb[1], cells: cells.length, allIn: cells.every(q => facilityRoomAt(q[0], q[1]).id === 'nest_area') }; })()`);
+        same(r.w, 16, 'across'); same(r.h, 13, 'deep, with the tunnel mouth\'s alcove'); ok(r.cells > 4 * 16 * 12 * 0.85, 'the flood covered only ' + r.cells + ' half-tile cells: something is blocking the cavern'); same(r.allIn, true, 'the flood left the room');
     });
     check('every edge is a wall: a body cannot cross any of them in either direction, and nothing outside every room is walkable', () => {
         const r = J(`(function(){ const F = facilityGet(), N = F.byId.get('nest_area'); let crossed = 0, tested = 0;
@@ -146,10 +147,13 @@ function measure(w, h, query) {
             return { crossed, tested, outside }; })()`);
         same(r.crossed, 0, 'steps through the nest area\'s edge (of ' + r.tested + ')'); same(r.outside, 0, 'walkable points outside every room');
     });
-    check('agents walking from inside the nest area never leave it (the validator walks them, like the arena)', () => { const v = J('facilityValidateCached()'); same(v.info.arenaLeaks, 0, 'leaks'); same(v.errors.length, 0, v.errors.join(' | ')); });
-    check('the nest area is walled in: nothing walks from the arena to it (no entrance is confirmed)', () => {
-        const r = J(`(function(){ const F = facilityGet(); return [facilityReachable('arena', 'nest_area', F, false), facilityReachable('arena', 'nest_area', F, true)]; })()`);
-        same(r[0], false, 'reachable with confirmed links'); same(r[1], true, 'the candidate would join them (so it is flagged, not hidden)');
+    check('agents walking from inside the arena never leave it through a wall (the validator walks them), and the map has no errors', () => { const v = J('facilityValidateCached()'); same(v.info.arenaLeaks, 0, 'leaks'); same(v.errors.length, 0, v.errors.join(' | ')); });
+    check('the Ant Nest is joined to the arena by its pair of doorways only: the hole drilled through the arena\'s south rubble and the tunnel mouth back up', () => {
+        const M = J('FACILITY_MAP'), a = M.portals.find(p => p.id === 'portal_arena_nest'), b = M.portals.find(p => p.id === 'portal_nest_arena');
+        same([a.room, a.to, a.rubble, b.room, b.to, b.kind].join(), 'arena,portal_nest_arena,rubble_arena_south,nest_area,portal_arena_nest,stairs_up', 'the pair');
+        ok(M.connections.some(c => c.portal === 'portal_arena_nest' && c.rooms.join() === 'arena,nest_area'), 'no connection names the pair'); ok(!M.candidates.connections.some(c => c.id === 'c_arena_nest'), 'the sketch\'s candidate is still listed');
+        const r = J(`(function(){ const F = facilityGet(); return { reach: facilityReachable('arena', 'nest_area', F, false), onFoot: facilityFlood((F.byId.get('nest_area').bb[0] + F.byId.get('nest_area').bb[2]) / 2, (F.byId.get('nest_area').bb[1] + F.byId.get('nest_area').bb[3]) / 2, F, 0.5).some(q => facilityRoomAt(q[0], q[1]).id === 'arena') }; })()`);
+        same(r.reach, true, 'the doorways do not join the rooms'); same(r.onFoot, false, 'a body walks from the Nest to the arena');
     });
     check('the teleport is a feature for later: two placeholder rooms and no teleport object in the data', () => {
         const M = J('FACILITY_MAP'); ok(M.rooms.some(r => r.id === 'teleport_room_1' && /Room 1/.test(r.label)) && M.rooms.some(r => r.id === 'teleport_room_2' && /Room 2/.test(r.label)), 'rooms');
@@ -158,7 +162,7 @@ function measure(w, h, query) {
 
     group('NAVIGATION: only confirmed openings join rooms');
     check('only the confirmed links join rooms: the unconfirmed candidates are listed but never walked', () => {
-        same(J('facilityComponents(null, false).length'), 3, 'areas'); same(J('facilityComponents(null, true).length'), 1, 'areas if every candidate were real');
+        same(J('facilityComponents(null, false).length'), 2, 'areas'); same(J('facilityComponents(null, true).length'), 1, 'areas if every candidate were real');
         const f = J(`(function(){ const F = facilityGet(), c = facilityFlood(F.byId.get('catwalks').poly[0][0] + 2, F.byId.get('catwalks').poly[0][1] + 2, F, 0.5); return Array.from(new Set(c.map(q => facilityRoomAt(q[0], q[1]).id))); })()`);
         same(f.length, 1, 'a flood left the catwalks: ' + f.join());
     });
@@ -166,7 +170,7 @@ function measure(w, h, query) {
         const r = J(`(function(){ const sc = facilityScale(), base = facilityGet(), D = base.byId.get('observation_deck'), xw = D.bb[2], ym = (D.bb[1] + D.bb[3]) / 2 + 3; const F = facilityBuild({ openings: [{ id: 't_open', a: [xw * sc, (ym - 1.5) * sc], b: [xw * sc, (ym + 1.5) * sc], rooms: ['observation_deck', 'arena'] }], connections: [{ id: 't_conn', rooms: ['observation_deck', 'arena'], opening: 't_open', ramp: 'r_arena_steps' }] });
             const y = ym, x0 = xw - 1.5, x1 = xw + 1.5;
             return { through: facilityCanStep(x0, y, x1, y, F), before: facilityCanStep(x0, y, x1, y, base), above: facilityCanStep(x0, D.bb[1] + 3, x1, D.bb[1] + 3, F), catwalks: facilityReachable('observation_deck', 'catwalks', F, false), nest: facilityReachable('observation_deck', 'nest_area', F, false), errs: facilityValidate(F).errors, walls: [base.walls.length, F.walls.length] }; })()`);
-        same(r.before, false, 'the authored data has a gap it should not'); same(r.through, true, 'the opening does not let a body through'); same(r.above, false, 'the wall above the opening is open'); same(r.catwalks, false, 'the catwalks opened'); same(r.nest, false, 'the nest area opened');
+        same(r.before, false, 'the authored data has a gap it should not'); same(r.through, true, 'the opening does not let a body through'); same(r.above, false, 'the wall above the opening is open'); same(r.catwalks, false, 'the catwalks opened');
         same(r.errs.length, 0, r.errs.join(' | ')); ok(r.walls[1] >= r.walls[0], 'the wall was not cut');
     });
     check('a connection between two levels needs a ramp, and an opening with no connection is flagged', () => {
@@ -222,7 +226,7 @@ function measure(w, h, query) {
         const r = J(`(function(){ const sc = facilityScale(), C = facilityBuild({ closed: ['lab_passage'] }), ad = __door('door_arena_hallway', C), cells = facilityFlood(ad.mx, ad.my + 3, C); return { rooms: Array.from(new Set(cells.map(q => facilityRoomAt(q[0], q[1], C).id))).sort(), arenaChamber: facilityReachable('arena', 'crystal_chamber', C, false), arenaLab: facilityReachable('arena', 'experiment_lab', C, false) }; })()`);
         same(r.arenaChamber, true, 'arena to chamber'); same(r.arenaLab, true, 'arena to lab with the passage shut: through the Cold Storage (its door in the arena, its stairs up into the lab), not on foot'); ok(r.rooms.includes('arena') && r.rooms.includes('crystal_chamber') && r.rooms.includes('lab_hallway'), 'a body from the arena reached ' + r.rooms); ok(!r.rooms.includes('experiment_lab') && !r.rooms.includes('lab_passage'), 'it got into the lab: ' + r.rooms);
     });
-    check('the arena\'s door is the one way out of it: agent walks leave only into rooms the confirmed doors reach', () => { const v = J('facilityValidateCached()'); same(v.info.arenaLeaks, 0, 'illegal leaks'); ok(v.info.arenaAgents >= 1200, 'agents ' + v.info.arenaAgents); });
+    check('the arena\'s door is the one way out of it: agent walks leave only into rooms the confirmed doors reach', () => { const v = J('facilityValidateCached()'); same(v.info.arenaLeaks, 0, 'illegal leaks'); ok(v.info.arenaAgents >= 800, 'agents ' + v.info.arenaAgents); });
 
     group('THE NOOK IS GONE: where the Crystal Chamber, the hallway and the lab passage meet');
     check('the nook is gone for good: the corner north-west of the lab is outside every room (the walls are one tile thick now, and Teleport Room 1 no longer reaches the lab)', () => {
@@ -296,7 +300,7 @@ function measure(w, h, query) {
     });
     check('the armory is an INTERIOR under the Observation Deck, at the arena\'s level: it has no door onto any other room, it is joined to the deck and to the arena by two pairs of portals (alcoves in the deck\'s and the arena\'s walls, two alcoves in its own north wall) and the built map keeps it in a part of the map of its own; the arena\'s two garage doors stay as scenery, and the arena\'s doorway is just south of them on the same west wall', () => {
         const M = J('FACILITY_MAP'), A = M.rooms.find(r => r.id === 'armory'); ok(A && A.label === 'Armory' && A.level === -1 && A.interior === true, 'the armory is missing, not at the arena level or not an interior');
-        same(JSON.stringify(M.interiors.map(i => [i.id, i.under])), JSON.stringify([['armory', 'observation_deck'], ['cold_storage', 'experiment_lab'], ['sewers', 'arena']]), 'interiors');
+        same(JSON.stringify(M.interiors.map(i => [i.id, i.under])), JSON.stringify([['armory', 'observation_deck'], ['cold_storage', 'experiment_lab'], ['sewers', 'arena'], ['nest_area', 'arena']]), 'interiors');
         const g = M.decor.filter(d => d.kind === 'garage_door' && d.room === 'arena'); same(g.length, 2, 'garage doors'); ok(g[0].a[0] === g[1].a[0] && g[0].a[0] === 340 && g[0].b[1] === g[1].a[1], 'the two garage doors are not side by side on the west wall');
         same(M.openings.filter(o => (o.rooms || []).includes('armory')).length, 0, 'the armory has a door onto another room');
         same(JSON.stringify(M.portals.filter(p => /armory/.test(p.id)).map(p => [p.id, p.room, p.to]).sort()), JSON.stringify([['portal_arena_armory', 'arena', 'portal_armory_arena'], ['portal_armory_arena', 'armory', 'portal_arena_armory'], ['portal_armory_deck', 'armory', 'portal_deck_armory'], ['portal_deck_armory', 'observation_deck', 'portal_armory_deck']]), 'the portals'); { const ap = M.portals.find(p => p.id === 'portal_arena_armory'); ok(ap.rect[0] === 320 && ap.rect[2] === 340 && ap.rect[1] >= g[1].b[1] + 19, 'the arena\'s doorway is not on the garage doors\' wall, south of them'); }
@@ -434,9 +438,9 @@ function measure(w, h, query) {
         const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js'), styles = ['carpet', 'plate', 'tile', 'labtile', 'concrete', 'grate', 'polished', 'wood', 'sand'];
         for (const st of styles) ok(new RegExp('\\b' + st + ':\\s+\\{ base').test(src), st + ' is not a floor style in the drawing code');
         const dressed = new Set(M.floors.map(f => f.room)); for (const f of M.floors) ok(styles.includes(f.style), f.room + ' has the unknown floor ' + f.style);
-        for (const r of M.rooms) if (r.id !== 'nest_area') ok(dressed.has(r.id), r.id + ' has no floor covering');
+        for (const r of M.rooms) ok(dressed.has(r.id), r.id + ' has no floor covering');
         ok(M.decor.length >= 200, 'decor: ' + M.decor.length); const dressing = M.props.filter(p => !/^(lobby_desk|lab_tank|computers_|racks_|lab_bench_|lab_hood|chamber_|arena_)/.test(p.id)); ok(dressing.length >= 60, 'dressing props: ' + dressing.length);
-        for (const r of M.rooms) if (r.id !== 'nest_area') ok(M.decor.filter(d => d.room === r.id).length >= 4, r.id + ' has little decor');
+        for (const r of M.rooms) ok(M.decor.filter(d => d.room === r.id).length >= 4, r.id + ' has little decor');
     });
     check('every kind of decor and furniture in the data has drawing code, and every id is unique', () => {
         const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js') + rd('js/facilitystyleall.js') + rd('js/facilitysewers.js'), play = rd('js/facilityplay.js');

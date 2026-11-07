@@ -67,7 +67,7 @@ function measure() {
         const r = J(`(function(){ const F = facilityBuild({ snap: true, margin: 0.3 }); let off = 0; const on = v => Math.abs(v - Math.round(v - 0.5) - 0.5) < 1e-9;
             for (const room of F.rooms) for (const p of room.poly) if (!on(p[0]) || !on(p[1])) off++; const widths = F.openings.map(o => Math.hypot(o.a[0] - o.b[0], o.a[1] - o.b[1])); const v = facilityValidate(F);
             return { off, minDoor: Math.min.apply(null, widths), errors: v.errors, comps: v.info.navComponents, snapped: F.snapped, margin: F.margin }; })()`);
-        same(r.off, 0, 'corners off the grid'); ok(r.minDoor >= 2 - 1e-9, 'a door is ' + r.minDoor + ' tiles wide'); same(r.errors.length, 0, r.errors.join(' | ')); same(r.comps, 3, 'areas'); same(r.snapped, true, 'snapped'); same(r.margin, 0.3, 'body margin');
+        same(r.off, 0, 'corners off the grid'); ok(r.minDoor >= 2 - 1e-9, 'a door is ' + r.minDoor + ' tiles wide'); same(r.errors.length, 0, r.errors.join(' | ')); same(r.comps, 2, 'areas');   // (2 since build 2026-11-07ll: the Ant Nest is joined to the arena by its doorways; the catwalks stand alone) same(r.snapped, true, 'snapped'); same(r.margin, 0.3, 'body margin');
     });
     check('the authored data is untouched by snapping, and the unsnapped map is still the one the inspection map draws', () => {
         const a = J('JSON.stringify(FACILITY_MAP).length'), b = J('(facilityBuild({ snap: true }), JSON.stringify(FACILITY_MAP).length)'); same(a, b, 'the data changed');

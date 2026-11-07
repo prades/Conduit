@@ -117,11 +117,12 @@ const FACILITY_MAP = {
                     [1060, 800], [1360, 800], [1360, 860], [1360, 1120], [1060, 1120], [1060, 1080], [640, 1080], [640, 1140], [600, 1140], [600, 1080], [300, 1080], [280, 1080], [280, 1040], [300, 1040], [300, 900], [280, 900]],
           // (the Nest's two edges on the camera's side where the moat runs, east and south, are a low SPILL lip, not a wall: the moat is seen over it, and over the east one the water pours: the waterfall)
           edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "spill", "spill", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
-        { id: "nest_area", label: "Nest area", level: 0, status: "approximate",
-          boundary_type: "outer_edge", boundary_blocks_movement: true,
-          note: "One completely open room. The long double lines in the sketch are its OUTSIDE EDGES (walls), not tunnels or a path. The sketch stops drawing at the bottom, so the bottom wall is provisional.",
-          polygon: [[205, 1250], [1120, 1250], [1120, 1705], [205, 1705]],
-          edge_kinds: ["outer_wall", "outer_wall", "outer_wall_provisional", "outer_wall"] },
+        { id: "nest_area", label: "Ant Nest", level: -1, status: "placed", wall_material: "solid", interior: true,
+          note: "THE ANT NEST (docs/NEST.md; the owner, 2026-11-07: \"the nest would be in the against the wall of the arena that the southernmost wall and it is beyond the rubble in a new room\"; \"Big egg cavern\"): an INTERIOR beyond the arena's south rock, reached through the hole a fire technician drills in the arena's south rubble (`rubble_arena_south`: the portal there is shut until it is drilled), and back up through a tunnel mouth in its north wall. A big egg cavern of packed dirt and resin, sixteen tiles across and twelve deep, the colony's eggs and brood holes round its edge and its middle open: the ground to test squads and moves against THE ANT QUEEN (step B). It replaces the sketch's open 'Nest area' south of the arena (an unreachable outline, its bottom wall a guess).",
+          // drawn just beyond the arena's south rock, under the rubble: the TUNNEL MOUTH is an alcove in the north wall (x 570 to 610, one tile deep), right below the rubble's hole. The cave's corners are cut on slopes of
+          // two tiles to one (a piece at 45 degrees running north-west to south-east would be seen side-on and show no rock); the north-west one at 45 degrees the other way, which the camera sees face on.
+          polygon: [[480, 1180], [570, 1180], [570, 1160], [610, 1160], [610, 1180], [720, 1180], [760, 1200], [760, 1360], [740, 1400], [700, 1420], [500, 1420], [460, 1400], [440, 1360], [440, 1220]],
+          edge_kinds: ["rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock"] },
     ],
 
     // INTERIORS: rooms that are not beside any other room but under or inside one. The data draws them where they belong (the armory under the Observation Deck); the building pass (js/facilitygrow.js) puts each in a part of
@@ -132,6 +133,7 @@ const FACILITY_MAP = {
         { id: "cold_storage", under: "experiment_lab", offset: [-1280, 0] },   // (64 tiles WEST: east of the building is the armory's, and a room as big as this one there would be in sight of it on a wide screen;
                                                                                 //  out here, beside the crystal chamber's corner of the plan, nothing is within sight of it and the MAP stays as wide as it was)
         { id: "sewers", under: "arena", offset: [-1280, 1280] },               // (64 tiles west and 64 south: the west is the Cold Storage's and the south the nest area's; down here nothing is in sight of it)
+        { id: "nest_area", under: "arena", offset: [0, 1920] },                 // THE ANT NEST (96 tiles south: the nest area's part of the map, far enough below the Sewers that neither is in sight of the other)
     ],
     // PORTALS come in pairs. `rect` is the doorway's floor (the alcove's end: stepping into it takes you through), `arrive` a spot of the same room in front of the doorway, where you are put when you come out of the OTHER end,
     // `to` the portal at the other end, `label` what the other end is, shown over the doorway. Each pair also has a connection in `connections` (portal: ...), so the rooms count as joined.
@@ -163,6 +165,12 @@ const FACILITY_MAP = {
           note: "A drain pipe's mouth in the sample bank's west wall (the end wall): it runs under the river and comes out on the north ledge." },
         { id: "portal_sewer_pipe_out", room: "sewers", rect: [300, 840, 340, 860], arrive: [320, 885], to: "portal_sewer_pipe_in", label: "PIPE", kind: "door", within: true, shut: true,
           note: "The drain pipe's other end, in the north ledge's wall beside the arena culvert: its grate opens only from inside." },
+        // THE ANT NEST (docs/NEST.md): the way in is the HOLE drilled through the arena's south rubble. `rubble`: the doorway is shut until that rubble is drilled through (js/facilityportals.js facilityPortalShut), and the
+        //   rubble draws it (the hole); `rect` is the floor in front of the hole, the last row of floor under the rock. Drilled rubble stays drilled (saved), so the way stays open.
+        { id: "portal_arena_nest", room: "arena", rect: [570, 1110, 610, 1130], arrive: [590, 1080], to: "portal_nest_arena", label: "ANT NEST", kind: "stairs_down", rubble: "rubble_arena_south",
+          note: "The hole a fire technician drills through the arena's south rubble: a tunnel down to the Ant Nest. Shut until the rubble is drilled through." },
+        { id: "portal_nest_arena", room: "nest_area", rect: [570, 1160, 610, 1180], arrive: [590, 1210], to: "portal_arena_nest", label: "ARENA", kind: "stairs_up",
+          note: "The tunnel mouth back up to the arena, in an alcove in the Ant Nest's north wall." },
     ],
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
@@ -447,7 +455,7 @@ const FACILITY_MAP = {
     // Drilled through it leaves a dark hole in the rock, sealed for now: nothing walks in (no wall changes).
     rubble: [
         { id: "rubble_arena_south", room: "arena", label: "Rubble", a: [570, 1130], b: [610, 1130], work: [590, 1080],
-          note: "In the arena's south rock, on the west half of its straight stretch (the middle is on a slant; the east half has the red banner, banner_4). Behind it: the future insect burrow." },
+          note: "In the arena's south rock, on the west half of its straight stretch (the middle is on a slant; the east half has the red banner, banner_4). Behind it: the tunnel down to the Ant Nest (since build 2026-11-07ll: the hole it leaves is the doorway `portal_arena_nest`)." },
         // A CHOKE (`solid`): rubble that fills a passage's mouth instead of lying against a wall: the solid named is in the way until the rubble is drilled through, then it is open for good (the tunnel is walked into). Its work spot
         //   is on the LEDGE, in front of the pile's middle: a fire technician in the squad drills it from there, with nothing else needed (an `inside: true` choke, with its work spot behind it, would be drilled from the far side
         //   instead, and the order from outside refused: js/techabilities.js _techCanReach; none is so now).
@@ -510,6 +518,7 @@ const FACILITY_MAP = {
         { room: "arena", style: "sand" },
         { room: "armory", style: "concrete", colour: "#5a5648" },
         { room: "cold_storage", style: "plate", colour: "#cfe6f0" },
+        { room: "nest_area", style: "sand", colour: "#3b2e22" },   // (packed dirt: the room's own style, FP_ROOM_STYLE.nest_area, colours it)
         { room: "sewers", style: "concrete", colour: "#272d2c" },   // (darker since build 2026-11-07a: Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.1; it was #3e4744)
     ],
 
@@ -917,6 +926,31 @@ const FACILITY_MAP = {
         { id: "nest_light_brood", room: "sewers", kind: "light", at: [1290, 840], radius: 120, colour: "#8cff5a", a: 0.12, flicker: true },
         { id: "nest_light_arch", room: "sewers", kind: "light", at: [1100, 830], radius: 100, colour: "#b07aff", a: 0.12 },
         { id: "nest_light_falls", room: "sewers", kind: "light", at: [1300, 1000], radius: 110, colour: "#a64dff", a: 0.1 },
+        // ── THE ANT NEST (docs/NEST.md), the big egg cavern beyond the arena's south rock: the tunnel mouth back up (a portal door, `burrow`: a rough hole in the packed dirt ringed with resin), the colony's
+        //    brood holes and resin on the two walls the camera sees (north and west), its eggs in clusters round the edge, the middle left open, a dim warm light and the brood's green glow
+        { id: "nest_tunnel_up", room: "nest_area", kind: "portal_door", a: [570, 1160], b: [610, 1160], colour: "#ffb347", burrow: true, up: true },
+        { id: "antnest_brood_1", room: "nest_area", kind: "brood_hole", a: [500, 1180], b: [520, 1180] },
+        { id: "antnest_brood_2", room: "nest_area", kind: "brood_hole", a: [660, 1180], b: [680, 1180] },
+        { id: "antnest_brood_3", room: "nest_area", kind: "brood_hole", a: [440, 1260], b: [440, 1280] },
+        { id: "antnest_brood_4", room: "nest_area", kind: "brood_hole", a: [440, 1320], b: [440, 1340] },
+        { id: "antnest_resin_1", room: "nest_area", kind: "resin", a: [525, 1180], b: [565, 1180] },
+        { id: "antnest_resin_2", room: "nest_area", kind: "resin", a: [615, 1180], b: [655, 1180] },
+        { id: "antnest_resin_3", room: "nest_area", kind: "resin", a: [685, 1180], b: [720, 1180] },
+        { id: "antnest_resin_4", room: "nest_area", kind: "resin", a: [440, 1225], b: [440, 1255] },
+        { id: "antnest_resin_5", room: "nest_area", kind: "resin", a: [440, 1285], b: [440, 1315] },
+        { id: "antnest_eggs_1", room: "nest_area", kind: "egg_cluster", at: [722, 1222], radius: 28, n: 12 },
+        { id: "antnest_eggs_2", room: "nest_area", kind: "egg_cluster", at: [740, 1300], radius: 16, n: 6 },
+        { id: "antnest_eggs_3", room: "nest_area", kind: "egg_cluster", at: [705, 1385], radius: 26, n: 10 },
+        { id: "antnest_eggs_4", room: "nest_area", kind: "egg_cluster", at: [600, 1404], radius: 16, n: 6 },
+        { id: "antnest_eggs_5", room: "nest_area", kind: "egg_cluster", at: [486, 1384], radius: 24, n: 9 },
+        { id: "antnest_eggs_6", room: "nest_area", kind: "egg_cluster", at: [460, 1300], radius: 14, n: 5 },
+        { id: "antnest_eggs_7", room: "nest_area", kind: "egg_cluster", at: [492, 1214], radius: 16, n: 6 },
+        { id: "antnest_resin_pool_1", room: "nest_area", kind: "puddle", at: [672, 1252], radius: 14, colour: "#6fbf3a" },
+        { id: "antnest_resin_pool_2", room: "nest_area", kind: "puddle", at: [520, 1330], radius: 12, colour: "#6fbf3a" },
+        { id: "antnest_light", room: "nest_area", kind: "light", at: [600, 1300], radius: 170, colour: "#d9a860", a: 0.16 },
+        { id: "antnest_light_brood_n", room: "nest_area", kind: "light", at: [670, 1210], radius: 90, colour: "#8cff5a", a: 0.12, flicker: true },
+        { id: "antnest_light_brood_w", room: "nest_area", kind: "light", at: [470, 1300], radius: 90, colour: "#8cff5a", a: 0.12, flicker: true },
+        { id: "antnest_light_eggs", room: "nest_area", kind: "light", at: [705, 1370], radius: 80, colour: "#ffe9a0", a: 0.1 },
         { id: "armory_sign_in", room: "armory", kind: "hazard_sign", a: [190, 950], b: [190, 970] },
         { id: "gun_rack_3", room: "armory", kind: "gun_rack", a: [190, 970], b: [190, 1030] },
         { id: "gun_rack_4", room: "armory", kind: "gun_rack", a: [190, 1070], b: [190, 1130] },
@@ -1004,6 +1038,7 @@ const FACILITY_MAP = {
         { id: "conn_arena_cold", rooms: ["arena", "cold_storage"], portal: "portal_arena_cold" },
         { id: "conn_lab_cold", rooms: ["experiment_lab", "cold_storage"], portal: "portal_lab_cold" },
         { id: "conn_arena_sewers", rooms: ["arena", "sewers"], portal: "portal_arena_sewers" },
+        { id: "conn_arena_nest", rooms: ["arena", "nest_area"], portal: "portal_arena_nest" },   // (the sketch's candidate c_arena_nest, made real: through the drilled rubble)
     ],
     ramps: [
         // `zone` is where the floor slopes: a rectangle, the axis it slopes along, and the two coordinates at which the height equals between_levels[0] and between_levels[1] (sketch pixels).
@@ -1026,7 +1061,6 @@ const FACILITY_MAP = {
             { id: "c_teleport_catwalks", rooms: ["teleport_room_2", "catwalks"], at: [1045, 805], evidence: "the catwalks begin right under the teleport room" },
             { id: "c_catwalks_arena", rooms: ["catwalks", "arena"], at: [1000, 960], evidence: "railing posts along the catwalks' west side" },
             { id: "c_deck_arena", rooms: ["observation_deck", "arena"], at: [340, 860], evidence: "the deck wall is drawn with breaks" },
-            { id: "c_arena_nest", rooms: ["arena", "nest_area"], at: [470, 1240], evidence: "an arrow points from 'FURTHER NESTS' down into the nest area; no opening is drawn" },
         ],
         ramps: [
             { id: "r_structure_01_stairs", at: [745, 905], between_levels: [0, 1], evidence: "stairs up the side of the upper liquid reserve (to its rim?)" },
@@ -1048,7 +1082,6 @@ const FACILITY_MAP = {
         "Elevation heights (only the ORDER ground < raised is known) and every ramp or stair",
         "What the two liquid reserves contain (ooze or another liquid), and whether the stairs lead onto their rims",
         "The zone to the right of the arena (the catwalks) is blocked off for now and not being developed",
-        "Whether the nest area has any entrance from the arena (the arrow points down into it), and whether its bottom edge is closed",
         "The teleport feature itself (to be added later): Teleport Room 1 and 2 are placeholders",
         "What goes in the show room (blank for now); the lobby sign's wording; where exactly the power pack sits on the chamber wall",
         "The CARRIER NPC drawn beside the map is a creature design, not map geometry: it is not part of this file",

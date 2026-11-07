@@ -171,7 +171,7 @@
     <h1>Conduit</h1>
     <div class="subtitle">The game bible</div>
     <p class="lede">The facility is dark and its power is down. Find supplies, bring the relays back online room by room, gather a squad of followers, and keep the Crystal alive against what comes out of the arena. <span class="muted">(The game's own one line, from its guide.)</span></p>
-    <div class="facts"><div class="fact" style="--c:var(--teal)"><b><span class="n" data-k="FACILITY_MAP.rooms.length">17</span></b><span>rooms</span></div><div class="fact" style="--c:var(--electric)"><b><span class="n" data-k="FACILITY_MAP.relays.length">6</span></b><span>relays</span></div><div class="fact" style="--c:var(--ice)"><b><span class="n" data-k="(FACILITY_MAP.interiors || []).length">3</span></b><span>interiors</span></div><div class="fact" style="--c:var(--red)"><b><span class="n" data-k="Object.keys(CLASSES).length">3</span></b><span>classes</span></div><div class="fact" style="--c:var(--violet)"><b><span class="n" data-k="ELEMENTS.length">6</span></b><span>elements</span></div><div class="fact" style="--c:var(--toxic)"><b><span class="n" data-k="Object.values(EVOLUTIONS).filter(function (e) { return !e.legacy; }).length">18</span></b><span>follower forms</span></div><div class="fact" style="--c:var(--gold)"><b><span class="n" data-k="Object.keys(SPECIES).length">6</span></b><span>creature species</span></div><div class="fact" style="--c:var(--teal)"><b><span class="n" data-k="PARTY.max">3</span></b><span>in a squad</span></div></div>
+    <div class="facts"><div class="fact" style="--c:var(--teal)"><b><span class="n" data-k="FACILITY_MAP.rooms.length">17</span></b><span>rooms</span></div><div class="fact" style="--c:var(--electric)"><b><span class="n" data-k="FACILITY_MAP.relays.length">6</span></b><span>relays</span></div><div class="fact" style="--c:var(--ice)"><b><span class="n" data-k="(FACILITY_MAP.interiors || []).length">4</span></b><span>interiors</span></div><div class="fact" style="--c:var(--red)"><b><span class="n" data-k="Object.keys(CLASSES).length">3</span></b><span>classes</span></div><div class="fact" style="--c:var(--violet)"><b><span class="n" data-k="ELEMENTS.length">6</span></b><span>elements</span></div><div class="fact" style="--c:var(--toxic)"><b><span class="n" data-k="Object.values(EVOLUTIONS).filter(function (e) { return !e.legacy; }).length">18</span></b><span>follower forms</span></div><div class="fact" style="--c:var(--gold)"><b><span class="n" data-k="Object.keys(SPECIES).length">6</span></b><span>creature species</span></div><div class="fact" style="--c:var(--teal)"><b><span class="n" data-k="PARTY.max">3</span></b><span>in a squad</span></div></div>
     <div class="meta">Written against build <b>2026-10-28t</b> · 28 October 2026 · a number with a dotted underline is read from the code (hover or long-press it for where) and checked by <code>tests/bible.js</code></div>
   </div>
 </header>
@@ -255,19 +255,19 @@
     Rooms are named as the room tag shows them.</p>
 <h3 id="world-glance">At a glance</h3>
 <ul>
-  <li><b>17 rooms</b>: 15 form one walkable network, joined by 13 openings (10 sliding doors, 3 doorless stairways) and 5 pairs of portals; the Catwalks and the Nest Area are joined to nothing.</li>
+  <li><b>17 rooms</b>: 16 form one walkable network, joined by 13 openings (10 sliding doors, 3 doorless stairways) and 6 pairs of portals (the Ant Nest's opens once the arena's south rubble is drilled through); the Catwalks are joined to nothing.</li>
   <li><b>A new game</b>: you in the Crystal Chamber beside the Crystal, three followers (always electric, core and fire; each one's type from a random personality), the facility in a blackout, four creatures in the arena.</li>
   <li><b>Heights are drawing only</b>: movement is flat everywhere.</li>
   <li><b>The building is data</b> (<code>FACILITY_MAP</code>); only a few tables name a room (tags, capacities, the spawner, the gun lesson, the lab-coat walk, the building pass).</li>
 </ul>
 <div class="tw"><table>
 <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
-<tr><td>Rooms / interiors</td><td class="num"><span class="n" data-k="FACILITY_MAP.rooms.length">17</span> / <span class="n" data-k="FACILITY_MAP.interiors.length">3</span></td><td><code>js/facilitymap.js:36-128</code></td></tr>
+<tr><td>Rooms / interiors</td><td class="num"><span class="n" data-k="FACILITY_MAP.rooms.length">17</span> / <span class="n" data-k="FACILITY_MAP.interiors.length">4</span></td><td><code>js/facilitymap.js:36-128</code></td></tr>
 <tr><td>Openings / drawn as sliding doors / doorless stairways</td><td class="num"><span class="n" data-k="FACILITY_MAP.openings.length">13</span> / <span class="n" data-k="_fp.items.filter(function (i) { return i.fp === 'door' ? i.part === 'm' : false; }).length">10</span> / <span class="n" data-k="_fp.F.connections.filter(function (c) { return !!c.ramp; }).length">3</span></td><td><code>js/facilitymap.js:855-882</code>, <code>js/facilityplay.js:352</code></td></tr>
-<tr><td>Connections / portals (6 pairs, the Sewers' drain pipe among them)</td><td class="num"><span class="n" data-k="FACILITY_MAP.connections.length">18</span> / <span class="n" data-k="FACILITY_MAP.portals.length">12</span></td><td><code>js/facilitymap.js:131-152, 883-902</code></td></tr>
-<tr><td>Separate walkable areas</td><td class="num"><span class="n" data-k="facilityComponents(_fp.F, false).length">3</span></td><td><code>js/facility.js:316</code></td></tr>
-<tr><td>Floor tiles, whole map</td><td class="num"><span class="n" data-k="world.length">3424</span></td><td><code>js/facilityplay.js:29-37</code></td></tr>
-<tr><td>Main building, west–east × north–south</td><td class="num"><span class="n" data-k="_fp.F.byId.get('nest_area').bb[2] - _fp.F.byId.get('crystal_chamber').bb[0]">48</span> × <span class="n" data-k="_fp.F.byId.get('nest_area').bb[3] - _fp.F.byId.get('front_lobby').bb[1]">76 tiles</span></td><td>built map</td></tr>
+<tr><td>Connections / portals (7 pairs, the Sewers' drain pipe and the Ant Nest's among them)</td><td class="num"><span class="n" data-k="FACILITY_MAP.connections.length">19</span> / <span class="n" data-k="FACILITY_MAP.portals.length">14</span></td><td><code>js/facilitymap.js:131-152, 883-902</code></td></tr>
+<tr><td>Separate walkable areas</td><td class="num"><span class="n" data-k="facilityComponents(_fp.F, false).length">2</span></td><td><code>js/facility.js:316</code></td></tr>
+<tr><td>Floor tiles, whole map</td><td class="num"><span class="n" data-k="world.length">2545</span></td><td><code>js/facilityplay.js:29-37</code></td></tr>
+<tr><td>Main building, west–east × north–south</td><td class="num"><span class="n" data-k="_fp.F.byId.get('show_room').bb[2] - _fp.F.byId.get('crystal_chamber').bb[0]">47</span> × <span class="n" data-k="_fp.F.byId.get('arena').bb[3] - _fp.F.byId.get('front_lobby').bb[1]">51 tiles</span></td><td>built map</td></tr>
 <tr><td>Main Hallway width</td><td class="num"><span class="n" data-k="_fp.F.byId.get('experiment_lab').bb[1] - _fp.F.byId.get('lab_hallway').bb[1]">6 tiles</span></td><td><code>js/facilitymap.js:22</code></td></tr>
 <tr><td>The Crystal (tile) / where you start, from it</td><td class="num"><span class="n" data-k="crystal.x">12</span>, <span class="n" data-k="crystal.y">16</span> / <span class="n" data-k="player.x - crystal.x">2</span> east, <span class="n" data-k="player.y - crystal.y">1</span> south</td><td><code>js/facilityplay.js:255-258</code></td></tr>
 <tr><td>Crystal health (its power) / idle, it refills whole in</td><td class="num"><span class="n" data-k="crystal.maxHealth">300 HP</span> / <span class="n" data-k="CRYSTAL_POWER.refill.fullFrames" data-f="f">300 s</span></td><td><code>js/facilityplay.js:230</code>, <code>js/crystalpower.js</code></td></tr>
@@ -300,7 +300,7 @@
 <tr><td>Arena</td><td>=</td><td><code>arena</code></td><td class="num"><span class="n" data-k="facilityRoomHeight('arena', _fp.F)">-1.8</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'arena'; }).length">516</span></td><td class="num"><span class="n" data-k="partyRoomCap('arena')">6</span></td></tr>
 <tr><td>Cold Storage</td><td>=</td><td><code>cold_storage</code>*</td><td class="num"><span class="n" data-k="facilityRoomHeight('cold_storage', _fp.F)">-1.8</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'cold_storage'; }).length">164</span></td><td class="num"><span class="n" data-k="partyRoomCap('cold_storage')">2</span></td></tr>
 <tr><td>Sewers</td><td>=</td><td><code>sewers</code>*</td><td class="num"><span class="n" data-k="facilityRoomHeight('sewers', _fp.F)">-1.8</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'sewers'; }).length">532</span></td><td class="num"><span class="n" data-k="partyRoomCap('sewers')">2</span></td></tr>
-<tr><td>Nest Area</td><td>Nest area</td><td><code>nest_area</code></td><td class="num"><span class="n" data-k="facilityRoomHeight('nest_area', _fp.F)">0</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'nest_area'; }).length">1058</span></td><td class="num"><span class="n" data-k="partyRoomCap('nest_area')">2</span></td></tr>
+<tr><td>Ant Nest</td><td>=</td><td><code>nest_area</code>*</td><td class="num"><span class="n" data-k="facilityRoomHeight('nest_area', _fp.F)">-1.8</span></td><td class="num"><span class="n" data-k="world.filter(function (t) { return t.room === 'nest_area'; }).length">179</span></td><td class="num"><span class="n" data-k="partyRoomCap('nest_area')">2</span></td></tr>
 </table></div>
 <p class="where">= the tag · * interior · height in tiles · tags <code>js/facilitynet.js:10-14</code> · rooms <code>js/facilitymap.js:37-117</code> · holds <code>js/party.js:39-40</code></p>
 <div class="tw"><table>
@@ -337,7 +337,7 @@
 <tr><td>Arena</td><td>5 steps up, no door, to the Main Hallway; portals to the Armory, the Cold Storage and the Sewers</td><td><a href="#world-arena">The Arena</a></td></tr>
 <tr><td>Catwalks</td><td>none: a launched follower only, down one way</td><td>Scaffold over the arena, blocked off: <a href="#world-arena">The Arena</a></td></tr>
 <tr><td>Armory, Cold Storage, Sewers</td><td>portals only</td><td><a href="#world-interiors">Interiors and portals</a></td></tr>
-<tr><td>Nest Area</td><td>none (a candidate only)</td><td>“One completely open room” beyond the arena's south rock, empty, its bottom wall provisional: floor nobody can reach.</td></tr>
+<tr><td>Ant Nest</td><td>a portal pair: the hole drilled through the arena's south rubble, the tunnel mouth in its north wall</td><td>A big egg cavern beyond the arena's south rock (an interior, 16 × 12 tiles): eggs and brood holes round its edge, its middle open; shut until a fire technician drills the rubble through (build 2026-11-07ll, docs/NEST.md). It replaced the sketch's “one completely open room” there, which nobody could reach.</td></tr>
 </table></div>
 <p class="where">Where it lives: <code>js/facilitymap.js</code> rooms 36-118, props 155-338, decor 453-824 · <code>js/party.js</code> <code>partyPlace</code>, <code>partyArenaOverflow</code> · <code>js/facilitystyleall.js:10-28</code> (colours)</p>
 <details class="dec"><summary>Decisions</summary><div>
@@ -362,7 +362,7 @@
 <tr><td>Wall thickness / wall height / door height</td><td class="num"><span class="n" data-k="FP_WALL_T">1 tile</span> / <span class="n" data-k="FP_WALL_H">122</span> / <span class="n" data-k="FP_DOOR_H">108 px</span></td><td><code>js/facilityplay.js:21-24</code></td></tr>
 <tr><td>Narrowest opening</td><td class="num"><span class="n" data-k="Math.min.apply(null, _fp.F.openings.map(function (o) { return Math.hypot(o.b[0] - o.a[0], o.b[1] - o.a[1]); }))">2 tiles</span></td><td><code>js/facility.js:76</code></td></tr>
 <tr><td>Stairways / steps into the arena / steps up to the deck</td><td class="num"><span class="n" data-k="FACILITY_MAP.ramps.length">3</span> / <span class="n" data-k="_fp.F.ramps.filter(function (r) { return r.id === 'r_arena_steps'; })[0].zone.steps">5</span> / <span class="n" data-k="_fp.F.ramps.filter(function (r) { return r.id === 'r_deck_door_steps'; })[0].zone.steps">5</span></td><td><code>js/facilitymap.js:903-915</code>, <code>js/facilitygrow.js:111-112</code></td></tr>
-<tr><td>Candidate doorways / stairs / arrows off the map</td><td class="num"><span class="n" data-k="FACILITY_MAP.candidates.connections.length">5</span> / <span class="n" data-k="FACILITY_MAP.candidates.ramps.length">2</span> / <span class="n" data-k="FACILITY_MAP.external_exits.length">4</span></td><td><code>js/facilitymap.js:918-938</code></td></tr>
+<tr><td>Candidate doorways / stairs / arrows off the map</td><td class="num"><span class="n" data-k="FACILITY_MAP.candidates.connections.length">4</span> / <span class="n" data-k="FACILITY_MAP.candidates.ramps.length">2</span> / <span class="n" data-k="FACILITY_MAP.external_exits.length">4</span></td><td><code>js/facilitymap.js:918-938</code></td></tr>
 <tr><td>Stretches of glass</td><td class="num"><span class="n" data-k="FACILITY_MAP.windows.length">8</span></td><td><code>js/facilitymap.js:830-839</code></td></tr>
 <tr><td>A door opens within / shuts beyond</td><td class="num">2.6 / 3.4 tiles</td><td><code>js/facilitystyle.js:199</code> (literal)</td></tr>
 </table></div>
@@ -378,7 +378,7 @@
 </ol>
 <p><b>Where a tap may send you</b> (2026-11-01: “clicking outside the player's current room causes the character to pathfind across the map”): anywhere in <b>the room you are in</b>, and through a doorway of it a little way into the next (within <span class="n" data-k="FP_MOVE.doorReach">2.6 tiles</span> of the doorway's line); a tap anywhere else is ignored, with a small ✕ where it landed. A portal's doorway lies in its own room. The walks the game makes for its own reasons (a station, a launcher's pad, a body, the lash) are not limited.
   <b>The combat step</b>, a prototype the owner then shaped (“if there's no enemies nearby, there's no limit. But if they run into an enemy, they stop if they're on a run, and then they're limited to moving 5 spaces”): with no enemy near, a tap goes the whole way; a run that <b>runs into</b> one stops where you are, with a “!” over you, once; with one near, a tap goes at most <span class="n" data-k="FP_MOVE.capTiles">3 tiles</span> along its route (five until the owner's playtest of 2026-11-01: “too long”; asked how many: “3”). An enemy is near within <span class="n" data-k="FP_MOVE.near">6 tiles</span> and in sight, or within <span class="n" data-k="FP_MOVE.chase">10 tiles</span> if it is after you or your squad, or for <span class="n" data-k="FP_MOVE.hitWindow" data-f="f">3 s</span> after a hit on you; a sleeping or calm boss and a hidden spider are not. Settings → COMBAT STEP turns it off (kept per browser).</p>
-<p>The validator, run by the tests, checks: no overlapping rooms; no floor outside a room; the Arena and the Nest Area hold every agent in with their doors shut (<span class="n" data-k="facilityValidate(_fp.F).info.arenaAgents">1600 walks</span>);
+<p>The validator, run by the tests, checks: no overlapping rooms; no floor outside a room; the Arena holds every agent in with its doors shut (<span class="n" data-k="facilityValidate(_fp.F).info.arenaAgents">800 walks</span>);
   a flood from each room reaches only rooms a confirmed connection joins; portals in pairs; interiors only through portals; every level has a height; the dressing is where it says. Now: <span class="n" data-k="facilityValidate(_fp.F).errors.length">0 errors</span>.</p>
 <div class="tw"><table>
 <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
@@ -517,7 +517,7 @@
 <tr><td><span class="n" data-k="FACILITY_MAP.relays.filter(function (r) { return r.id === 'relay_lobby'; })[0].name">LOBBY RELAY</span></td><td>Computer Lab</td><td>Computer Lab, Security Room</td><td>(the fuel-cell cases come with it)</td></tr>
 <tr><td><span class="n" data-k="FACILITY_MAP.relays.filter(function (r) { return r.id === 'relay_lab'; })[0].name">LAB RELAY</span></td><td>Experiment Lab</td><td>Experiment Lab, Lab Passage, both Teleport Rooms, Cold Storage</td><td>—</td></tr>
 <tr><td><span class="n" data-k="FACILITY_MAP.relays.filter(function (r) { return r.id === 'relay_show'; })[0].name">SHOW ROOM RELAY</span></td><td>Show Room, east wall</td><td>Show Room</td><td>—</td></tr>
-<tr><td><span class="n" data-k="FACILITY_MAP.relays.filter(function (r) { return r.id === 'relay_armory'; })[0].name">ARMORY RELAY</span></td><td>Armory, west wall</td><td>Armory, Arena, Observation Deck, Catwalks, Nest Area, Sewers</td><td>(the armory terminal needs it)</td></tr>
+<tr><td><span class="n" data-k="FACILITY_MAP.relays.filter(function (r) { return r.id === 'relay_armory'; })[0].name">ARMORY RELAY</span></td><td>Armory, west wall</td><td>Armory, Arena, Observation Deck, Catwalks, Ant Nest, Sewers</td><td>(the armory terminal needs it)</td></tr>
 </table></div>
 <ul>
   <li><b>Repair</b> is a station (stand within reach and press E, tap the plate, or tap the box). The rule is data (<code>CLASS_RULES.relay</code>): the Technomancer (the repair skill) spends one power cell on a short repair that
@@ -805,7 +805,7 @@
 <tr><td>the deck “treated as ground level [...] no ramp”; heights “unknown” (FACILITY.md:27, 37)</td><td>the deck is high (3.2), 5 steps up; heights set</td></tr>
 <tr><td>“A body keeps 0.3 tiles from a wall” (FACILITY.md:56)</td><td>0.4</td></tr>
 <tr><td>a wall in front of you “turns see-through” (FACILITY.md:58)</td><td>walls never react (the same doc, :92)</td></tr>
-<tr><td>only the catwalks and the Nest Area have no door, the Armory a portal (FACILITY.md:34)</td><td>the Cold Storage and the Sewers are portal-only too</td></tr>
+<tr><td>only the catwalks and the Nest Area have no door, the Armory a portal (FACILITY.md:34)</td><td>the Cold Storage, the Sewers and the Ant Nest are portal-only too</td></tr>
 <tr><td>the style used by “Only the Crystal Chamber” (STYLE-CRYSTAL-LAB.md:40)</td><td>every room</td></tr>
 <tr><td>“FP_WALL_T = 0.4 tile” (STYLE-CRYSTAL-LAB.md:68)</td><td>1.0</td></tr>
 <tr><td>“a post at every room corner”, “bathroom teal” (STYLE-CRYSTAL-LAB.md:29, 36)</td><td>no posts; no bathroom</td></tr>
@@ -3561,7 +3561,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-07kk</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-07ll</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3782,7 +3782,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-07kk (7 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-07ll (7 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

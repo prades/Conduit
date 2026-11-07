@@ -2,7 +2,7 @@
 
 A cavern beyond the arena's south rubble where THE ANT QUEEN lives: a place to test the player and squad combinations, and the different moves, against a huge boss ant.
 
-Status: **Designed** (2026-11-07). Built in three steps, each its own build on `claude/start-game-project-HSh7Z`; this file says which step is built.
+Status: **In progress.** Step A **implemented and tested** in build `2026-11-07ll` (not playtested); steps B and C **designed**. Built in three steps, each its own build on `claude/start-game-project-HSh7Z`; this file says which step is built.
 
 ## The owner's words (2026-11-07)
 
@@ -19,7 +19,7 @@ Status: **Designed** (2026-11-07). Built in three steps, each its own build on `
 
 | Step | What | Status |
 |---|---|---|
-| A | The room and the way in: the arena's south rubble, drilled by a fire technician, opens a burrow in the arena floor down into the Nest; a tunnel mouth in the Nest's north wall leads back up | Designed |
+| A | The room and the way in: the hole a fire technician drills through the arena's south rubble is the doorway down into the Nest; a tunnel mouth in the Nest's north wall leads back up | Implemented and tested, `2026-11-07ll` |
 | B | THE ANT QUEEN: huge, her three attacks, her health for a medium fight, held to the room | Designed |
 | C | The console in the Nest: boss reset (full health, a level you pick), the test squad builder, the damage meter | Designed |
 
@@ -33,8 +33,18 @@ Status: **Designed** (2026-11-07). Built in three steps, each its own build on `
 ## Chosen by the agent (provisional, the owner's to change)
 
 - The room's name on the zone tag: **Ant Nest** (the Sewers' east end already reads *The Nest*).
-- Where it lies in the map: drawn under the arena and carried 64 tiles south (the part of the map the Sewers' entry left for "the nest area").
+- Where it lies in the map: drawn just beyond the arena's south rock and built 96 tiles south (the nest area's part of the map, far enough below the Sewers that neither is in sight of the other).
+- It **takes the place of the sketch's "Nest area"** (the room id `nest_area`, which THE ANT QUEEN's row in js/bosses.js already names): an open outline south of the arena that nobody could reach, its bottom wall a guess. The owner's placement supersedes it.
 - The burrow's look, the tunnel mouth's look, and every number of the queen and the tools (they are written in the step that builds them, marked provisional).
+
+## Step A as built (`2026-11-07ll`)
+
+- **The room** (`nest_area` in js/facilitymap.js, an interior under the arena): sixteen tiles across and twelve deep, rock walls, its corners cut on slopes; packed dirt underfoot (`FP_ROOM_STYLE.nest_area`); the colony's **eggs** in seven clusters round the edge, four **brood holes** and five sheets of **resin** on the north and west walls (the walls the camera sees), two resin pools, a dim warm light and the brood's green glow; the middle open. Zone tag: **Ant Nest**. Powered by the Armory relay, like the arena.
+- **The way in**: the arena's south rubble (`rubble_arena_south`). Before it is drilled, the floor in front of it is a shut doorway: standing in it does nothing, and the rubble's own tag shows. Drilled through (a fire technician's THERMITE DRILL, as before), the hole is the doorway (`portal_arena_nest`, a portal with `rubble`): walking into it fades to black and puts you in front of the tunnel mouth inside, and **▼ ANT NEST** shows over the hole. The squad following you comes too, as through every doorway.
+- **The way back**: the tunnel mouth in an alcove in the Nest's north wall (`portal_nest_arena`, drawn as a rough hole in the dirt ringed with resin, a chevron over it pointing up): you come out in front of the hole in the arena.
+- **Saved**: the drilled rubble is saved (as before), so the way stays open; a new game has the rubble back.
+- **Not in step A**: nothing lives in the Nest yet (no queen, no brood, no console).
+- **Tests**: `tests/nest.js` (the room, its dressing, the gate shut and open, the trip down and back with the squad, the save); `tests/facility.js`, `tests/facilityplay.js`, `tests/fluxlab.js` and `tests/sewers.js` updated for the new room and doorways.
 
 ## Open questions
 

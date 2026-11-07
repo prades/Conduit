@@ -22,7 +22,7 @@ const FP_ROOM_STYLE = {
     observation_deck:    { acc: FP_ACC.blue,   wain: "#4a7fb0", fa: "#dae5ef", fb: "#b8c9da" },
     arena:               { acc: FP_ACC.amber,  wain: "#3a3532", fa: "#4a4540", fb: "#3f3a36", dark: true },
     catwalks:            { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },
-    nest_area:           { acc: FP_ACC.violet, wain: "#3a3532", fa: "#4a4540", fb: "#3f3a36", dark: true },
+    nest_area:           { acc: FP_ACC.mint, wain: "#33281d", fa: "#4a3a2b", fb: "#403224", dark: true },   // (the Ant Nest: packed dirt, build 2026-11-07ll)
     cold_storage:        { acc: "#9be8ff",     wain: "#5f93ad", fa: "#dcedf4", fb: "#c2dbe7", ice: true },   // ICE: frost on the floor and the walls, icicles on the cave's rock (the look only)
     sewers:              { acc: "#46d62e",     wain: "#1a201f", fa: "#2b3230", fb: "#262c2a", dark: true, damp: true, wallLit: "#363d3b", wallDark: "#2a302e", cap: "#222826" },   // DAMP: wet concrete, a slick sheen and moss in the cracks, stains down the walls (the look only)
 };
@@ -359,6 +359,7 @@ Object.assign(FP_STYLE_WALL, {
     portal_door: (it, f) => {
         if (it.cold) return _fpColdDoor(it, f);   // the Cold Storage's door: its own drawing (below)
         if (it.culvert) return _fpCulvertDoor(it, f);   // the sewer culvert: its own drawing (js/facilitysewers.js)
+        if (it.burrow) return _fpBurrowDoor(it, f);     // the Ant Nest's tunnel mouth (js/facilitysewers.js)
         const S = FP_STEEL_DOOR, H = 86, col = it.colour || _FPW.amber, pul = 0.65 + 0.35 * Math.sin(f * 0.07 + it.seed), up = it.up;
         _fpWQuad(it, 0.02, 0.98, 0, H + 14, _FPW.tealDark, _FPW.ink, 4);   // the frame, with a header slab for the sign
         _fpWQuad(it, 0.09, 0.91, 3, H, "#04070d", _FPW.ink, 2);            // the dark stairwell

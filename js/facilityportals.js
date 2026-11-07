@@ -19,12 +19,13 @@ function facilityPortalsStart(F) {
         const cx = (p.rect[0] + p.rect[2]) / 2, cy = (p.rect[1] + p.rect[3]) / 2;
         let a = _fpNearestCell(p.arrive[0], p.arrive[1]); const rm = a ? facilityRoomAt(a[0], a[1], F) : null;
         if (!rm || rm.id !== p.room) a = _fpNearestCell(cx, cy) || [Math.round(cx), Math.round(cy)];
-        _fp.portals.push({ id: p.id, room: p.room, to: p.to, label: p.label, kind: p.kind, rect: p.rect.slice(), x: cx, y: cy, ax: a[0], ay: a[1], up: p.kind === "stairs_up", well: !!p.well, shut: !!p.shut });
+        _fp.portals.push({ id: p.id, room: p.room, to: p.to, label: p.label, kind: p.kind, rect: p.rect.slice(), x: cx, y: cy, ax: a[0], ay: a[1], up: p.kind === "stairs_up", well: !!p.well, shut: !!p.shut, rubble: p.rubble || null });
     }
 }
 // A SHUT doorway (`shut` in the map: the Sewers' drain pipe's ledge end, the owner, 2026-11-07: "Pipe shortcut"): a grate that opens only from inside. Nobody goes in at it until someone has come out of it;
 // then it is open for good (_fp.portalsOpen, saved as `pipes`), a shortcut both ways.
-function facilityPortalShut(p) { return !!(p && p.shut && !(_fp && _fp.portalsOpen && _fp.portalsOpen.has(p.id))); }
+function facilityPortalShut(p) { return !!(p && ((p.shut && !(_fp && _fp.portalsOpen && _fp.portalsOpen.has(p.id))) || (p.rubble && !(typeof techRubbleOpen === "function" && typeof _techRubble === "function" && techRubbleOpen(_techRubble(p.rubble)))))); }
+// A doorway through RUBBLE (`rubble` in the map: the Ant Nest's, through the arena's south rubble, docs/NEST.md) is shut until a fire technician has drilled that rubble through; drilled rubble stays drilled (saved).
 function _pOpened(dest) { if (!facilityPortalShut(dest)) return; _fp.portalsOpen.add(dest.id); if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: dest.ax, y: dest.ay, text: "THE GRATE SWINGS OPEN · A SHORTCUT", color: "#ffe733", life: 120, vy: -0.05, size: 13 }); }
 function facilityPortalsSnapshot() { return _fp && _fp.portalsOpen ? Array.from(_fp.portalsOpen) : []; }
 function facilityPortalsApply(list) { if (!_fp) return; _fp.portalsOpen = new Set((Array.isArray(list) ? list : []).filter(id => typeof id === "string" && facilityPortal(id))); }
@@ -131,6 +132,7 @@ function facilityDrawPortals() {
         const shown = [];   // (two doorways side by side, the arena culvert and the drain pipe's ledge end: only the nearer one's name, so the two tags do not overlap)
         for (const p of _fp.portals.slice().sort((a, b) => Math.hypot(a.x - player.visualX, a.y - player.visualY) - Math.hypot(b.x - player.visualX, b.y - player.visualY))) {
             const d = Math.hypot(p.x - player.visualX, p.y - player.visualY); if (d > 9 || (typeof invPanelOpen !== "undefined" && invPanelOpen)) continue;
+            if (p.rubble && facilityPortalShut(p)) continue;   // (rubble not drilled yet: the rubble's own tag says what it is)
             if (shown.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 3.5)) continue; shown.push(p);
             const s = _stScreen({ x: p.x, y: p.y }), a = Math.min(1, (9 - d) / 4), col = p.up || p.kind === "door" ? "#ffb347" : "#8fe3ff", txt = facilityPortalShut(p) ? "▣ " + String(p.label || "").toUpperCase() + " · ITS GRATE OPENS FROM INSIDE" : (p.kind === "door" ? "▶ " : p.up ? "▲ " : "▼ ") + String(p.label || "").toUpperCase();
             ctx.globalAlpha = a; ctx.font = (typeof uiFont === "function" ? uiFont(15) : "bold 15px sans-serif"); ctx.textAlign = "center"; ctx.textBaseline = "middle";

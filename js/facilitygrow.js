@@ -25,7 +25,7 @@
     // how far each room slides, in tiles: [x, y]. The hallway, the lab and the passage hold their ground (the hub); the others move away from them.
     const SHIFT = {
         crystal_chamber: [-1, -1], teleport_room_1: [-1, 0], front_lobby: [-1, -1], security_room: [0, -1], show_room: [1, 0],
-        teleport_stair_room: [0, 1], teleport_room_2: [1, 1], observation_deck: [0, 1], catwalks: [0, 1], arena: [0, 1], nest_area: [0, 1],
+        teleport_stair_room: [0, 1], teleport_room_2: [1, 1], observation_deck: [0, 1], catwalks: [0, 1], arena: [0, 1],
     };
     // an INTERIOR (js/facilitymap.js `interiors`) is not slid but carried: to a part of the map of its own, `offset` sketch pixels from where the data draws it
     const INTERIOR = {}; for (const i of (M.interiors || [])) INTERIOR[i.id] = [i.offset[0] / G, i.offset[1] / G];
