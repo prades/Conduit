@@ -25,7 +25,7 @@ Three registries, one save record, one hook function.
 ```
 CLASSES   (js/classes.js)   id → { name, colour, tagline, rooms, startKit, skills, ultimate?, passive?, perkTree?, startMoves? }   (the first three rows exist)
 PERKS     (CLASS_PERKS)     id → { cls, name, desc, stat:{ name: { mul | add } } | hook:"name" }                                  (stat perks exist)
-MOVES     (js/moves.js)     id → { name, fn(f), classes:[ids]? }                                                                   (exists)
+MOVES     (js/moves.js)     id → { name, windup (s), fn(f), classes:[ids]? }                                                                   (exists)
 PLAYER    (the facility's save, js/facilitysave.js)  { cls, perks, xp?, level?, points?, moves:{formId: moveId} }               (cls and perks are saved)
 ```
 
@@ -156,4 +156,5 @@ The decisions about the hack puzzle and its gear are parked with them (§4.1).
 - **The Mutator's kit (built, docs/MUTATOR.md):** its own melee weapon (the TENTACLE LASH, `CLASSES.mutator.weapon`, a melee row in `WEAPONS`) aimed through the same targeting as the gun; cloning is the Mutator's (`CLASS_RULES.clone`: the class with the `bio` skill, one at a time), and its clone is a primary clone that follows it, takes the squad's orders, fights as its species and does not come back by itself (its body stays where it fell). A class's own weapon is a new column of the registry: `weapon`.
 
 - **The registry's first rows (built):** GUNSLINGER, TECHNOMANCER and MUTATOR as data in js/classes.js, `CLASS_RULES` (carry anyone's gear, use only your own; how a relay is repaired), `CLASS_PERKS` read through `classStat`, the stations that earn them (js/stations.js), the signature gear (docs/TUTORIAL.md, "Class gear") and the weapons table (js/weapons.js). The class and its perks are saved with the facility.
+- **The WIND-UP (built in `2026-11-07h`, on the branch):** each move's charge between two firings is a stat on its row, `windup` in seconds (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it's on the attack not the follower"). The move fires the moment it is full and an enemy is in reach; a form with two moves charges each at its own pace. The values are the old waits, unchanged (QUILL BURST 4 s, CORRODE SHOT 5.33 s, ROTTEN DECOY 14 s, MAGMA VENT 20 s, the rest 5–6 s). INFO shows it as WIND-UP; `moveWindupFrames(id)` gives it in frames.
 - **Stage 0 (built):** `MOVES` in js/moves.js, `evoMoveIds / evoMoveAllowed / evoMoveOf`, and `evolutionTick` fires `evoMoveOf(f).fn(f)` instead of the if/else chain. Each form's default is the move it always had (tests/moves.js compares every form with the old chain). A form can list several moves (`EVOLUTIONS[id].moves`: the fire forms do, and the INFO tab offers the choice), and a class-only move is already blocked for other classes; nothing uses that yet.

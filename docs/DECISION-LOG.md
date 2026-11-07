@@ -1910,3 +1910,13 @@ The owner: too much time goes into testing and side checks. From here on, only t
 2. Quillstone: "QUILLSTORM, 16 quills" (resolves §12.3's QUILLSTORM conflict: QUILL BURST stays the five-quill fan; QUILLSTORM is the radial Ultimate).
 3. Thunderhead: "THUNDERSTORM"; Void Star: "EVENT HORIZON" (both chosen from the agent's proposals; the numbers are the proposals').
 
+## DECISION: The secondary attack's wind-up is a stat on the attack
+
+- **Date:** 2026-11-07
+- **Status:** Approved direction. Implemented and tested in build `2026-11-07h`, on the branch; not playtested.
+- **Related feature/docs:** `PLAYER-CLASSES.md` (the MOVES table); `CHANGELOG.md` (2026-11-07 h)
+
+### Decision
+1. The owner first wrote "Wind up for the secondary attack takes 10 seconds to charge up actually five seconds and then it's immediately fired", then: "Don't make it a flat 10 or five seconds ... make it another stat ... it needs to be adjustable ... it's on the attack not the follower."
+2. Each move carries `windup` (seconds). It fires the moment the wind-up is full and an enemy is in reach. The values stay the old waits until the owner sets new ones.
+

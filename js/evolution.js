@@ -18,11 +18,11 @@
 //   STATS  Health and power × EVOLVE_MULT, applied where a follower's stats
 //          are derived (levels.js _applyFollowerLevel), so it survives every
 //          level-up and recompute.
-//   MOVES  BUNKER BLOOM, PETAL BLAZE: with an enemy within BLOOM_RADIUS, every
-//          BLOOM_EVERY frames its petals fly open in a ring of fire that hits
+//   MOVES  BUNKER BLOOM, PETAL BLAZE: with an enemy within BLOOM_RADIUS, at each wind-up
+//          (MOVES.petal_blaze.windup) its petals fly open in a ring of fire that hits
 //          everything round it (BLOOM_MULT × its power) and sets it burning.
-//          REAVER, ARC VOLLEY: with an enemy within REAVER_RANGE, every
-//          REAVER_EVERY frames it fans its blades and fires a charged arc
+//          REAVER, ARC VOLLEY: with an enemy within REAVER_RANGE, at each wind-up
+//          (MOVES.arc_volley.windup) it fans its blades and fires a charged arc
 //          (REAVER_MULT × its power) that jumps to REAVER_CHAIN more enemies.
 //          HAMMER SLUG (design No. 467: a slug with a hammerhead and bobbles at its tips, a uniform hexagon tile
 //          cover either side of a spiked spine, a small horn) was the CORE BRAWLER, which replaced the Aegis Warden;
@@ -57,27 +57,27 @@
 //          element and role has a form now. The HOVER SHELL was REDONE from the user's pencil sketch (2026-11-01,
 //          design No. 882): a manta of a hover craft, no shuttle now; the entry below says what it is.
 //          STORM MANTA (the electric brawler, No. 68), STATIC RUSH: with an
-//          enemy within MANTA_RANGE, every MANTA_EVERY frames it dashes to it,
+//          enemy within MANTA_RANGE, every wind-up (MOVES.static_rush.windup) it dashes to it,
 //          hits it (MANTA_MULT × its power) and shocks two more near it; all
 //          are stunned for a moment.
 //          SERPENT (the flux sniper, design No. 15), SINGULARITY SHOT: with an
-//          enemy within SERPENT_RANGE, every SERPENT_EVERY frames it rears up
+//          enemy within SERPENT_RANGE, every wind-up (MOVES.singularity_shot.windup) it rears up
 //          and fires a gravity round (SERPENT_MULT × its power) that DRAGS every
 //          enemy within SERPENT_PULL_R of the target in towards it and slows
 //          them. A beetle, a boss or a machine is too heavy to drag
 //          (vortexPullImmune) and takes the hit only.
 //          CINDER HALO (the FIRE SNIPER, design No. 90, the ring drone), HEXFIRE:
-//          with an enemy within HALO_RANGE, every HALO_EVERY frames it fires
+//          with an enemy within HALO_RANGE, every wind-up (MOVES.hexfire.windup) it fires
 //          SIX rounds at once from the six crystals of its ring, one at each of
 //          the nearest enemies in turn (all six into one if it is alone), each
 //          HALO_MULT × its power and setting its target burning.
 //          ROTSHARD (the TOXIC SNIPER, design No. 101, the crystal half eaten by its pool),
-//          CORRODE SHOT: with an enemy within ROT_RANGE, every ROT_EVERY frames it
+//          CORRODE SHOT: with an enemy within ROT_RANGE, every wind-up (MOVES.corrode_shot.windup) it
 //          fires one long shot (ROT_MULT × its power) that eats the target's armour
 //          (it takes 1 / ROT_SHRED × damage for ROT_SHRED_FRAMES) and splashes
 //          the same corrosion, at half strength, over whatever is within ROT_SPLASH_R.
 //          RIFT MIMIC (the FLUX BRAWLER, design No. 114, the Ditto-style blob with big black shards),
-//          GRAVITY SLAM: with an enemy within MIMIC_RADIUS, every MIMIC_EVERY frames it
+//          GRAVITY SLAM: with an enemy within MIMIC_RADIUS, every wind-up (MOVES.gravity_slam.windup) it
 //          flattens and slams its weight down: everything within MIMIC_RADIUS takes
 //          MIMIC_MULT × its power, is shoved MIMIC_PUSH back (a beetle, a boss or a machine
 //          is too heavy to move) and slowed by MIMIC_SLOW for MIMIC_SLOW_FRAMES.
@@ -89,20 +89,20 @@
 //          Bloom for new evolutions (the Bunker Bloom stays defined, marked legacy, for followers already evolved into it, with
 //          its ring of fire, PETAL BLAZE). It cast the same ring under the name QUILL BURST until it was rebuilt (ASKED, in the
 //          Notion design archive: a projectile with a 75% hit chance that improves up close; the numbers were chosen with the
-//          user, 2026-10-30): with an enemy within QUILL_RANGE, every QUILL_EVERY frames it fires heated quills at the nearest.
+//          user, 2026-10-30): with an enemy within QUILL_RANGE, every wind-up (MOVES.quill_burst.windup) it fires heated quills at the nearest.
 //          The hit is a roll made as it fires, with no flight to dodge and no spread (a simple attack-resolution modifier, not
 //          projectile physics): the chance is QUILL_CHANCE at the outer range and rises in a straight line to 100% within
 //          QUILL_SURE tiles of the target. A hit deals QUILL_MULT × its power plus QUILL_BONUS (a fixed bonus: it does not grow
 //          with the closeness) to the target and everything within QUILL_SPLASH of it, and burns nobody. A miss shows MISS and
 //          the quills fly on past. The damage is still fire: the game has no damage categories yet.
 //          SEEPER (the TOXIC BRAWLER, design No. 578: a black volcano walking on four pins,
-//          goo oozing from its eye and flanks; it replaced the Caldera), ERUPTION: with an enemy within CALDERA_RADIUS, every
-//          CALDERA_EVERY frames it hunkers and the crater bursts: everything within
+//          goo oozing from its eye and flanks; it replaced the Caldera), ERUPTION: with an enemy within CALDERA_RADIUS, at each wind-up
+//          (MOVES.eruption.windup) it hunkers and the crater bursts: everything within
 //          CALDERA_RADIUS takes CALDERA_MULT × its power in toxic goo and has its armour
 //          eaten (it takes 1 / CALDERA_SHRED × damage for CALDERA_SHRED_FRAMES).
 //          FROST MAW (the ICE BRAWLER, design No. 156: a dome of frosted shell with a cave
 //          for a mouth and two crystal fangs inside), CHOMP: with an enemy within MAW_RANGE,
-//          every MAW_EVERY frames the fangs slam down: the nearest enemy takes MAW_MULT × its
+//          every wind-up (MOVES.chomp.windup) the fangs slam down: the nearest enemy takes MAW_MULT × its
 //          power in ice damage and is frozen stiff for MAW_STUN frames, and everything within
 //          MAW_SLOW_R of it is slowed to MAW_SLOW for MAW_SLOW_FRAMES.
 //          PRISM HOOD (the ELECTRIC BRAWLER, design No. 388: a hollow black pyramid whose front droops like a
@@ -125,29 +125,29 @@ const EVOLVE_LEVEL = 10;
 const EVOLVE_MULT  = 1.25;
 const EVO_MOLT     = 120;          // frames: shake, burst, rise
 const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) drawn at game size
-const BLOOM_RADIUS = 1.8, BLOOM_EVERY = 360, BLOOM_MULT = 2.0, BLOOM_BURN = 180;
-const REAVER_RANGE = 6, REAVER_EVERY = 300, REAVER_MULT = 2.5, REAVER_CHAIN = 2, REAVER_HOP = 2.5, REAVER_CHAIN_SHARE = 0.6;
-const SERPENT_RANGE = 6.5, SERPENT_EVERY = 330, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
-const MANTA_RANGE = 4, MANTA_EVERY = 300, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;   // SONIC ROLL (was STATIC RUSH: renamed, kept as it is)
+const BLOOM_RADIUS = 1.8, BLOOM_MULT = 2.0, BLOOM_BURN = 180;
+const REAVER_RANGE = 6, REAVER_MULT = 2.5, REAVER_CHAIN = 2, REAVER_HOP = 2.5, REAVER_CHAIN_SHARE = 0.6;
+const SERPENT_RANGE = 6.5, SERPENT_MULT = 2.2, SERPENT_PULL_R = 2.2, SERPENT_PULL = 0.75, SERPENT_SLOW = 0.5, SERPENT_SLOW_FRAMES = 90;
+const MANTA_RANGE = 4, MANTA_MULT = 2.4, MANTA_CHAIN = 2, MANTA_HOP = 2.2, MANTA_CHAIN_SHARE = 0.6, MANTA_STUN = 45;   // SONIC ROLL (was STATIC RUSH: renamed, kept as it is)
 // THE FOLLOWER COMBAT REDESIGN (the owner's brief, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md). Every number below is PROVISIONAL (that doc's §11.2), to tune in play.
 // HEXFIRE: a fire projectile at the nearest enemy in reach; where it lands, a stationary burning circle that hurts enemies only, never grows and never moves. One circle an Ember Hood: a new one takes its last one's place.
 // MAGMA VENT (the Thermite Burrower's alternate; the owner, 2026-11-06: "Short and hot"; docs/NEXT-PHASE-ROADMAP.md §12.3): a small volcanic vent opened at the enemy it can see, bursting magma upward
-// every MAGMA_TICK frames for MAGMA_LIFE frames: each burst bites the enemies within MAGMA_RADIUS tiles that can be seen from the vent, for MAGMA_BITE × its power; then MAGMA_EVERY frames before the next.
-const MAGMA_RANGE = 6, MAGMA_EVERY = 1200, MAGMA_RADIUS = 1.5, MAGMA_LIFE = 480, MAGMA_TICK = 60, MAGMA_BITE = 0.6;   // reach (tiles) [reading], the wait (20 s), the burst's reach, 8 s, a burst a second, 60%
-const HALO_RANGE = 7, HALO_EVERY = 330, HALO_RADIUS = 1.2, HALO_LIFE = 240, HALO_TICK = 30, HALO_BITE = 0.25;   // its reach, the frames between, the circle's radius (tiles) and life (frames), a bite every HALO_TICK frames of HALO_BITE × power
+// every MAGMA_TICK frames for MAGMA_LIFE frames: each burst bites the enemies within MAGMA_RADIUS tiles that can be seen from the vent, for MAGMA_BITE × its power; then its wind-up (MOVES.magma_vent.windup) before the next.
+const MAGMA_RANGE = 6, MAGMA_RADIUS = 1.5, MAGMA_LIFE = 480, MAGMA_TICK = 60, MAGMA_BITE = 0.6;   // reach (tiles) [reading], the burst's reach, 8 s, a burst a second, 60%
+const HALO_RANGE = 7, HALO_RADIUS = 1.2, HALO_LIFE = 240, HALO_TICK = 30, HALO_BITE = 0.25;   // its reach, the circle's radius (tiles) and life (frames), a bite every HALO_TICK frames of HALO_BITE × power
 // PINBALL (the Static Orb's second move): it rolls into the nearest enemy, then on into the nearest one it has not hit within PIN_HOP of it, and on, while one is that near: each enemy once, no fixed count.
-const PIN_RANGE = 4, PIN_HOP = 3, PIN_SPEED = 0.35, PIN_TOUCH = 0.7, PIN_MULT = 1.44, PIN_EVERY = 300, PIN_MAX_FRAMES = 600, PIN_MAX_DIST = 30;   // reach, the hop, its speed (tiles a frame), a collision within PIN_TOUCH, × power a collision, the wait after a roll, and the safety stops (frames, tiles rolled)
+const PIN_RANGE = 4, PIN_HOP = 3, PIN_SPEED = 0.35, PIN_TOUCH = 0.7, PIN_MULT = 1.44, PIN_MAX_FRAMES = 600, PIN_MAX_DIST = 30;   // reach, the hop, its speed (tiles a frame), a collision within PIN_TOUCH, × power a collision, and the safety stops (frames, tiles rolled)
 // CHAIN LIGHTNING (the Thunderhead's everyday shot): the Mages' shot, then on from the enemy it struck to the nearest one not yet struck within CHAIN_HOP, each jump CHAIN_SHARE of the last, until none is that near or a jump would do under CHAIN_MIN.
 const CHAIN_HOP = 2.5, CHAIN_SHARE = 0.6, CHAIN_MIN = 1;
 // STATIC VORTEX (the Thunderhead's move): a stationary storm at the nearest enemy in reach; enemies in it are pulled toward its middle and take electric damage until it runs out.
-const VORTEX_RANGE = 7, VORTEX_EVERY = 330, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2;   // reach, the frames between, its radius and life, the pull (tiles a frame), a bite every VORTEX_TICK frames of VORTEX_MULT × power
-const ROT_RANGE = 7, ROT_EVERY = 320, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
-const MIMIC_RADIUS = 2.2, MIMIC_EVERY = 330, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
-const CALDERA_RADIUS = 2.4, CALDERA_EVERY = 330, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
-const MAW_RANGE = 1.8, MAW_EVERY = 300, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
+const VORTEX_RANGE = 7, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2;   // reach, its radius and life, the pull (tiles a frame), a bite every VORTEX_TICK frames of VORTEX_MULT × power
+const ROT_RANGE = 7, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
+const MIMIC_RADIUS = 2.2, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
+const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
+const MAW_RANGE = 1.8, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
 // QUILL BURST (the redesign): EXACTLY five quills at once (approved), fanned forward, the middle one at the nearest enemy; each its own follower shot that stops at the first enemy it touches. The fan, reach, speed, damage and wait are PROVISIONAL.
-const QUILL_RANGE = 4, QUILL_EVERY = 240, QUILL_COUNT = 5, QUILL_FAN = 40, QUILL_MULT = 0.5, QUILL_SPEED = 0.18;   // its reach (tiles), the frames between, the quills, the fan (degrees, edge to edge), × power a quill, its speed (the follower shots')
+const QUILL_RANGE = 4, QUILL_COUNT = 5, QUILL_FAN = 40, QUILL_MULT = 0.5, QUILL_SPEED = 0.18;   // its reach (tiles), the quills, the fan (degrees, edge to edge), × power a quill, its speed (the follower shots')
 
 // THE FOLLOWER COMBAT REDESIGN (the owner, 2026-11-02; docs/FOLLOWER-COMBAT-REDESIGN.md): `hit` names the Thermite Burrower's everyday hit, BURROW STRIKE (burrowStrikeTry); `shot` names a Mage form's everyday shot where it has a name of its own (the Ember Hood's FIREBALL, the
 // Thunderhead's CHAIN LIGHTNING, which conducts on: evoShotOnHit). The Static Orb's moves are SONIC ROLL (STATIC RUSH renamed) and PINBALL; the Thunderhead's is STATIC VORTEX, ARC VOLLEY staying
@@ -299,9 +299,9 @@ function evoCheck(f) {
 // Once a step, from render(): evolve anyone due, and run the signature moves.
 // ROTTEN DECOY (the Rotshard's second move, picked on its INFO; the owner, 2026-11-07: "Short lure", "A second move to pick"; docs/NEXT-PHASE-ROADMAP.md §12.3 item 11): a black crystal copy in a constant green
 // mist, set on the floor DECOY_SET tiles from the nearest enemy the Rotshard can see (toward the Rotshard). For DECOY_LIFE frames, or until broken (its HP is DECOY_HP of the Rotshard's maximum), every enemy
-// within DECOY_DRAW tiles goes for it (js/predator.js predatorPickPrey asks decoyLure); a boss does not. Its mist poisons the enemies within DECOY_MIST tiles. Ready again DECOY_EVERY frames after it is set.
+// within DECOY_DRAW tiles goes for it (js/predator.js predatorPickPrey asks decoyLure); a boss does not. Its mist poisons the enemies within DECOY_MIST tiles. Ready again its wind-up (MOVES.rotten_decoy.windup) after it is set.
 // The decoy is not an actor: it lives in rotDecoys, takes hits through applyDamage, and is drawn as an element effect; broken, its black shards keep the green haze a moment.
-const DECOY_LIFE = 360, DECOY_HP = 0.5, DECOY_DRAW = 6, DECOY_MIST = 1.5, DECOY_EVERY = 840, DECOY_SET = 2, DECOY_POISON = 60, DECOY_TICK = 30;
+const DECOY_LIFE = 360, DECOY_HP = 0.5, DECOY_DRAW = 6, DECOY_MIST = 1.5, DECOY_SET = 2, DECOY_POISON = 60, DECOY_TICK = 30;
 let rotDecoys = [];
 function rottenDecoy(f) {
     const foes = _evoFoesSeen(f.x, f.y, ROT_RANGE);
@@ -314,7 +314,7 @@ function rottenDecoy(f) {
     const d = { isDecoy: true, team: "green", x, y, health: hp, maxHealth: hp, by: f, until: f0 + DECOY_LIFE, dead: false, name: "ROTTEN DECOY" };
     rotDecoys.push(d);
     if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "rotdecoy", x, y, on: d, life: DECOY_LIFE, maxLife: DECOY_LIFE, element: "toxic" });
-    f._sigAt = f0; f._sigCd = DECOY_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("rotten_decoy");
     return true;
 }
 function decoyLure(p) {   // the decoy a creature goes for: the nearest standing one within DECOY_DRAW (a boss: none)
@@ -373,7 +373,7 @@ function petalBlaze(f) {
         applyDamage(a, (f.power || 10) * BLOOM_MULT, f, "fire", false, false, DMG_HIT_ALT);
         a.burning = Math.max(a.burning || 0, BLOOM_BURN); a.burnDamage = Math.max(a.burnDamage || 0, (f.power || 10) * 0.1);
     }
-    f._sigAt = f0; f._sigCd = BLOOM_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("petal_blaze");
     if (typeof elementEffects !== "undefined") {
         elementEffects.push({ type: "fireShockwave", x: f.x, y: f.y, radius: BLOOM_RADIUS, life: 36, maxLife: 36 });
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ff6622", radius: BLOOM_RADIUS * 0.7, life: 26 });
@@ -395,7 +395,7 @@ function quillBurst(f) {
         const a = a0 + (i - (QUILL_COUNT - 1) / 2) * gap;   // (the middle one straight at the enemy)
         spawnFollowerProjectile(f, { x: f.x + Math.cos(a) * QUILL_RANGE, y: f.y + Math.sin(a) * QUILL_RANGE }, "#ff7a2e", dmg, 4, null, DMG_HIT_ALT, { speed: QUILL_SPEED, range: QUILL_RANGE, kind: "quill" });
     }
-    f._sigAt = f0; f._sigCd = QUILL_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("quill_burst");
     if (f.dirX !== undefined) { f.dirX = Math.cos(a0); f.dirY = Math.sin(a0); }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "QUILL BURST", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
@@ -415,7 +415,7 @@ function arcVolley(f) {
         applyDamage(next, (f.power || 10) * REAVER_MULT * REAVER_CHAIN_SHARE, f, "electric", false, false, DMG_HIT_ALT);
         hits.push(next); from = next;
     }
-    f._sigAt = f0; f._sigCd = REAVER_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("arc_volley");
     f._arcPts = hits.map(a => ({ x: a.x, y: a.y })); f._arcUntil = f0 + 20;
     if (f.dirX !== undefined) { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof elementEffects !== "undefined") for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 18 });
@@ -438,7 +438,7 @@ function singularityShot(f) {
         const _px = a.x, _py = a.y; a.x += (tgt.x - a.x) * SERPENT_PULL; a.y += (tgt.y - a.y) * SERPENT_PULL; pulled++;
         if (typeof techShieldKeep === "function") techShieldKeep(a, _px, _py);   // (not through a Photonic Shield: js/techabilities.js)
     }
-    f._sigAt = f0; f._sigCd = SERPENT_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("singularity_shot");
     f._arcPts = [{ x: tgt.x, y: tgt.y }]; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcCol = [187, 102, 255];
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof elementEffects !== "undefined") {
@@ -463,7 +463,7 @@ function hexfire(f) {
     const land = (x, y) => { if (landed) return; landed = true; hexfireCircle(f, x, y); };   // (once: a shot can touch an enemy the frame it runs out)
     const p = spawnFollowerProjectile(f, t, "#ff5a1f", 0, 5, a => land(a.x, a.y), DMG_HIT_ALT, { range: L, kind: "hex" });
     if (p) p.onLand = () => land(p.x, p.y);
-    f._sigAt = f0; f._sigCd = HALO_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("hexfire");
     f.dirX = dx / L; f.dirY = dy / L;
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "HEXFIRE", color: "#ff8844", life: 50, vy: -0.06, size: 10 });
     return true;
@@ -476,7 +476,7 @@ function magmaVent(f) {
     for (let i = elementEffects.length - 1; i >= 0; i--) if (elementEffects[i].type === "magmavent" && elementEffects[i].by === f) elementEffects.splice(i, 1);   // (its last vent closes)
     const e = { type: "magmavent", x: t.x, y: t.y, radius: MAGMA_RADIUS, life: MAGMA_LIFE, maxLife: MAGMA_LIFE, by: f, bite: (f.power || 10) * MAGMA_BITE, element: "fire" };
     elementEffects.push(e); fieldBite(e, "fire");   // (the first burst as it opens)
-    f._sigAt = f0; f._sigCd = MAGMA_EVERY; const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("magma_vent"); const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L;
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "MAGMA VENT", color: "#ff7a2a", life: 50, vy: -0.06, size: 10 });
     return true;
 }
@@ -508,7 +508,7 @@ function corrodeShot(f) {
         if (a === tgt) continue;
         a.defenseShredded = Math.max(a.defenseShredded || 0, ROT_SPLASH_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, ROT_SPLASH_SHRED);
     }
-    f._sigAt = f0; f._sigCd = ROT_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("corrode_shot");
     f._arcPts = [{ x: tgt.x, y: tgt.y }]; f._arcUntil = f0 + 20; f._arcStraight = true; f._arcFan = false; f._arcCol = [120, 255, 110];
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof elementEffects !== "undefined") {
@@ -530,7 +530,7 @@ function chomp(f) {
     if (typeof applyStun === "function") applyStun(tgt, MAW_STUN);   // (hitStun is read by nothing: the stun is real now, js/combat.js applyStun)
     for (const a of _evoFoesSeen(tgt.x, tgt.y, MAW_SLOW_R)) if (typeof applySlow === "function") applySlow(a, MAW_SLOW_FRAMES, MAW_SLOW);
     { const dx = tgt.x - f.x, dy = tgt.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
-    f._sigAt = f0; f._sigCd = MAW_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("chomp");
     if (typeof elementEffects !== "undefined") {
         elementEffects.push({ type: "ring", x: tgt.x, y: tgt.y, radius: MAW_SLOW_R, color: "#9fe8ff", life: 36 });
         elementEffects.push({ type: "impact", x: tgt.x, y: tgt.y, color: "#cff4ff", radius: 0.7, life: 24 });
@@ -549,7 +549,7 @@ function eruption(f) {
         applyDamage(a, (f.power || 10) * CALDERA_MULT, f, "toxic", false, false, DMG_HIT_ALT);
         a.defenseShredded = Math.max(a.defenseShredded || 0, CALDERA_SHRED_FRAMES); a.defenseShredFactor = Math.min(a.defenseShredFactor || 1, CALDERA_SHRED);
     }
-    f._sigAt = f0; f._sigCd = CALDERA_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("eruption");
     if (typeof elementEffects !== "undefined") {
         elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: CALDERA_RADIUS, color: "#66ff66", life: 40 });
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#66ff66", radius: CALDERA_RADIUS * 0.6, life: 24 });
@@ -572,7 +572,7 @@ function gravitySlam(f) {
         a.x += dx / L * MIMIC_PUSH; a.y += dy / L * MIMIC_PUSH;
         if (typeof techShieldKeep === "function") techShieldKeep(a, _px, _py);   // (not through a Photonic Shield: js/techabilities.js)
     }
-    f._sigAt = f0; f._sigCd = MIMIC_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("gravity_slam");
     if (typeof elementEffects !== "undefined") {
         elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: MIMIC_RADIUS, color: "#bb66ff", life: 40 });
         elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#bb66ff", radius: MIMIC_RADIUS * 0.6, life: 24 });
@@ -601,7 +601,7 @@ function staticRush(f) {
         applyDamage(next, (f.power || 10) * MANTA_MULT * MANTA_CHAIN_SHARE, f, "electric", false, false, DMG_HIT_ALT); next.hitStun = Math.max(next.hitStun || 0, MANTA_STUN); if (typeof applyStun === "function") applyStun(next, MANTA_STUN);
         hits.push(next); last = next;
     }
-    f._sigAt = f0; f._sigCd = MANTA_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("static_rush");
     f._arcPts = hits.map(a => ({ x: a.x, y: a.y })); f._arcUntil = f0 + 20; f._arcStraight = false; f._arcCol = [255, 238, 51];
     if (typeof elementEffects !== "undefined") for (const a of hits) elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 18 });
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SONIC ROLL", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
@@ -625,7 +625,7 @@ function pinball(f) {
     if (!t) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     f._pinball = { t, hit: [], t0: f0, run: 0 };
-    f._sigAt = f0; f._sigCd = PIN_EVERY;   // (and again when it stops: its wait counts from the end of a roll)
+    f._sigAt = f0; f._sigCd = moveWindupFrames("pinball");   // (and again when it stops: its wait counts from the end of a roll)
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "PINBALL", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
     return true;
 }
@@ -633,7 +633,7 @@ function pinball(f) {
 function pinballStep(f) {
     const P = f._pinball; if (!P) return false;
     const f0 = typeof frame !== "undefined" ? frame : 0;
-    const stop = () => { f._pinball = null; f._sigCd = PIN_EVERY; return false; };
+    const stop = () => { f._pinball = null; f._sigCd = moveWindupFrames("pinball"); return false; };
     if (f.dead || f._flight || f.returningToCrystal || f.retreatUntil > f0 || f0 - P.t0 > PIN_MAX_FRAMES || P.run >= PIN_MAX_DIST) return stop();
     if (!P.t || P.t.dead || !isHostileTarget(P.t)) { P.t = _pinNext(f, P.hit.length ? PIN_HOP : PIN_RANGE, P.hit); if (!P.t) return stop(); }   // (it was killed before it got there: the next one from here)
     const t = P.t, dx = t.x - f.x, dy = t.y - f.y, d = Math.hypot(dx, dy) || 1e-6;
@@ -690,7 +690,7 @@ function staticVortex(f) {
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
     elementEffects.push({ type: "staticVortex", x: t.x, y: t.y, radius: VORTEX_RADIUS, life: VORTEX_LIFE, maxLife: VORTEX_LIFE, by: f, bite: (f.power || 10) * VORTEX_MULT, element: "electric" });
-    f._sigAt = f0; f._sigCd = VORTEX_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("static_vortex");
     f._arcPts = [{ x: t.x, y: t.y }]; f._arcUntil = f0 + 20; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];   // (a bolt to where it is cast)
     { const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "STATIC VORTEX", color: "#fff27a", life: 50, vy: -0.06, size: 10 });

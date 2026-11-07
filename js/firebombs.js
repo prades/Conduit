@@ -111,14 +111,14 @@ function throwFireBombsAt(actor, target, n, spread, dmg, hit) {   // hit: what e
     actor.fireOrbitTimer = 30; return n;
 }
 // The move FIRE BOMBS (js/moves.js), for the evolved fire forms that can use it: three bombs fanned at the nearest foe in reach.
-const FIRE_BARRAGE_RANGE = 7, FIRE_BARRAGE_EVERY = 300;
+const FIRE_BARRAGE_RANGE = 7;
 function fireBombBarrage(f) {
     const foes = typeof _evoFoes === "function" ? _evoFoes(f.x, f.y, FIRE_BARRAGE_RANGE) : [];
     if (!foes.length) return false;
     foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
     const f0 = typeof frame !== "undefined" ? frame : 0;
     throwFireBombsAt(f, foes[0], 3, 0.3, (f.power || 10) * 0.9, DMG_HIT_SPECIAL_ATK);
-    f._sigAt = f0; f._sigCd = FIRE_BARRAGE_EVERY;
+    f._sigAt = f0; f._sigCd = moveWindupFrames("bomb_lob");
     { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "FIRE BOMBS", color: "#ff8a3a", life: 50, vy: -0.06, size: 10 });
     return true;

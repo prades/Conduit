@@ -6,30 +6,36 @@
 // each form's first (default) move is the one it always had, and until a follower is given another it uses that.
 //   id        the key (saved with a follower as f.move once a choice exists)
 //   name      what the form calls it (EVOLUTIONS[x].move, the floating text, MOVE_INFO in js/unitinfo.js)
-//   fn        the function that fires it: fn(f) -> true when it fired (it sets f._sigCd itself)
+//   windup    its WIND-UP, in seconds: the charge between two firings. Once it is full the move fires the moment an enemy is in reach. It is the attack's own stat, so a
+//             form with two moves charges each at its own pace; change a number here and the move, its INFO and the bible all follow (the owner, 2026-11-07: "make it
+//             another stat ... it needs to be adjustable ... it's on the attack not the follower"). The values were the moves' old waits, unchanged. PINBALL's counts from
+//             the end of a roll.
+//   fn        the function that fires it: fn(f) -> true when it fired (it sets f._sigCd itself, to moveWindupFrames(id))
 //   classes   (optional) the player classes whose followers may use it; absent = everyone's
 const MOVES = {
-    petal_blaze:       { id: "petal_blaze",       name: "PETAL BLAZE",       fn: f => petalBlaze(f) },
-    quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       fn: f => quillBurst(f) },
-    arc_volley:        { id: "arc_volley",        name: "ARC VOLLEY",        fn: f => arcVolley(f) },
-    singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  fn: f => singularityShot(f) },
-    static_rush:       { id: "static_rush",       name: "SONIC ROLL",        fn: f => staticRush(f) },   // (it was STATIC RUSH: renamed by the owner, 2026-11-02; the id stays, a saved choice)
-    hexfire:           { id: "hexfire",           name: "HEXFIRE",           fn: f => hexfire(f) },
-    corrode_shot:      { id: "corrode_shot",      name: "CORRODE SHOT",      fn: f => corrodeShot(f) },
-    gravity_slam:      { id: "gravity_slam",      name: "GRAVITY SLAM",      fn: f => gravitySlam(f) },
+    petal_blaze:       { id: "petal_blaze",       name: "PETAL BLAZE",       windup: 6, fn: f => petalBlaze(f) },
+    quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       windup: 4, fn: f => quillBurst(f) },
+    arc_volley:        { id: "arc_volley",        name: "ARC VOLLEY",        windup: 5, fn: f => arcVolley(f) },
+    singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  windup: 5.5, fn: f => singularityShot(f) },
+    static_rush:       { id: "static_rush",       name: "SONIC ROLL",        windup: 5, fn: f => staticRush(f) },   // (it was STATIC RUSH: renamed by the owner, 2026-11-02; the id stays, a saved choice)
+    hexfire:           { id: "hexfire",           name: "HEXFIRE",           windup: 5.5, fn: f => hexfire(f) },
+    corrode_shot:      { id: "corrode_shot",      name: "CORRODE SHOT",      windup: 5.33, fn: f => corrodeShot(f) },
+    gravity_slam:      { id: "gravity_slam",      name: "GRAVITY SLAM",      windup: 5.5, fn: f => gravitySlam(f) },
     // (AEGIS BURST and AEGIS BLOOM, the core forms' moves, went with the followers' shield: js/evolution.js "THE CORE FORMS HAVE NO MOVE NOW")
-    eruption:          { id: "eruption",          name: "ERUPTION",          fn: f => eruption(f) },
-    chomp:             { id: "chomp",             name: "CHOMP",             fn: f => chomp(f) },
+    eruption:          { id: "eruption",          name: "ERUPTION",          windup: 5.5, fn: f => eruption(f) },
+    chomp:             { id: "chomp",             name: "CHOMP",             windup: 5, fn: f => chomp(f) },
     // A second move for the fire forms (js/firebombs.js): three bouncing bombs fanned at the nearest foe. Chosen on the unit's INFO tab; a fire form's own move stays its default.
-    bomb_lob:          { id: "bomb_lob",          name: "FIRE BOMBS",        fn: f => fireBombBarrage(f) },
+    bomb_lob:          { id: "bomb_lob",          name: "FIRE BOMBS",        windup: 5, fn: f => fireBombBarrage(f) },
     // THE FOLLOWER COMBAT REDESIGN (docs/FOLLOWER-COMBAT-REDESIGN.md): the Static Orb's second move, chosen on its INFO tab (SONIC ROLL stays its default), and the Thunderhead's move.
-    pinball:           { id: "pinball",           name: "PINBALL",           fn: f => pinball(f) },
-    static_vortex:     { id: "static_vortex",     name: "STATIC VORTEX",     fn: f => staticVortex(f) },
+    pinball:           { id: "pinball",           name: "PINBALL",           windup: 5, fn: f => pinball(f) },
+    static_vortex:     { id: "static_vortex",     name: "STATIC VORTEX",     windup: 5.5, fn: f => staticVortex(f) },
     // the Thermite Burrower's alternate (the owner, 2026-11-06: "Short and hot"; js/evolution.js magmaVent)
-    magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        fn: f => magmaVent(f) },
+    magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        windup: 20, fn: f => magmaVent(f) },
     // the Rotshard's second move, picked on its INFO (the owner, 2026-11-07: "Short lure"; js/evolution.js rottenDecoy)
-    rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      fn: f => rottenDecoy(f) },
+    rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      windup: 14, fn: f => rottenDecoy(f) },
 };
+// A move's wind-up in frames (60 a second). A row without one waits 5 s.
+function moveWindupFrames(id) { const m = MOVES[id]; return Math.round((m && m.windup > 0 ? m.windup : 5) * 60); }
 const MOVE_BY_NAME = {};
 for (const id in MOVES) MOVE_BY_NAME[MOVES[id].name] = MOVES[id];
 

@@ -124,7 +124,7 @@ function measure(w, h) {
     check('EXACTLY five quills, all launched at once (the same frame, from the Quillstone), in a forward fan QUILL_FAN degrees edge to edge with the middle one at the nearest enemy', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'), t = __foe(f.x + 3, f.y + 1); __fire(f);
             const q = followerProjectiles.filter(p => p.kind === 'quill'), a0 = Math.atan2(t.y - f.y, t.x - f.x) * 180 / Math.PI, ang = q.map(p => Math.atan2(p.vy, p.vx) * 180 / Math.PI - a0);
-            return { n: q.length, all: followerProjectiles.length, born: q.every(p => p.frame === 0 && p.x === f.x && p.y === f.y && p.source === f), ang, fan: QUILL_FAN, count: QUILL_COUNT, cd: f._sigCd, every: QUILL_EVERY }; })()`);
+            return { n: q.length, all: followerProjectiles.length, born: q.every(p => p.frame === 0 && p.x === f.x && p.y === f.y && p.source === f), ang, fan: QUILL_FAN, count: QUILL_COUNT, cd: f._sigCd, every: moveWindupFrames("quill_burst") }; })()`);
         same(r.count, 5, 'QUILL_COUNT (approved: exactly five)'); same(r.n, 5, 'quills'); same(r.all, 5, 'shots in all'); ok(r.born, 'not all launched together from the Quillstone');
         const s = r.ang.slice().sort((a, b) => a - b); ok(Math.abs(s[0] + r.fan / 2) < 1e-6 && Math.abs(s[4] - r.fan / 2) < 1e-6 && Math.abs(s[2]) < 1e-6, 'the fan: ' + JSON.stringify(s));
         for (let i = 1; i < 5; i++) ok(Math.abs(s[i] - s[i - 1] - r.fan / 4) < 1e-6, 'evenly spread: ' + JSON.stringify(s));
@@ -227,7 +227,7 @@ function measure(w, h) {
     check('SONIC ROLL is STATIC RUSH renamed, kept as it is: the same id (a saved choice), function and numbers; the default move; dash, hit, shock two more, all stunned', () => {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'), a = __foe(f.x + 3, f.y), b = __foe(f.x + 4.5, f.y + 0.6), c = __foe(f.x + 6, f.y + 1), far = __foe(f.x + 12, f.y);
             __fire(f); const d = __dmg;
-            return { name: MOVES.static_rush.name, fn: MOVES.static_rush.fn.toString(), nums: [MANTA_RANGE, MANTA_EVERY, MANTA_MULT, MANTA_CHAIN, MANTA_HOP, MANTA_CHAIN_SHARE, MANTA_STUN], def: evoMoveOf(f).id, ids: evoMoveIds(EVOLUTIONS.staticorb),
+            return { name: MOVES.static_rush.name, fn: MOVES.static_rush.fn.toString(), nums: [MANTA_RANGE, moveWindupFrames("static_rush"), MANTA_MULT, MANTA_CHAIN, MANTA_HOP, MANTA_CHAIN_SHARE, MANTA_STUN], def: evoMoveOf(f).id, ids: evoMoveIds(EVOLUTIONS.staticorb),
                      dist: Math.hypot(a.x - f.x, a.y - f.y), hit: [d(a), d(b), d(c), d(far)], stun: [a, b, c].every(p => p.stunned > 0), cd: f._sigCd, legacy: ['manta', 'prism', 'voltring'].map(k => EVOLUTIONS[k].move) }; })()`);
         same(r.name, 'SONIC ROLL', 'its name'); ok(/staticRush\(/.test(r.fn), 'its function'); same(r.nums.join(), '4,300,2.4,2,2.2,0.6,45', 'its numbers (unchanged)');
         same(r.def, 'static_rush', 'the default'); same(r.ids.join(), 'static_rush,pinball', 'its moves');
@@ -242,11 +242,11 @@ function measure(w, h) {
             return { order, ended: !f._pinball, fr }; })()`);
         same(r.order.join(), 'a,b,c,d', 'the order it hit them (four collisions, no count fixed)'); ok(r.ended, 'it did not end');
     });
-    check('PINBALL never hits one enemy twice and never loops: two enemies side by side are hit once each and it stops; it ends with its wait (PIN_EVERY, counted from the end) and fires nothing while rolling', () => {
+    check('PINBALL never hits one enemy twice and never loops: two enemies side by side are hit once each and it stops; it ends with its wait (its WIND-UP, counted from the end) and fires nothing while rolling', () => {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); f.move = 'pinball'; const a = __foe(f.x + 2, f.y), b = __foe(f.x + 2.6, f.y + 0.4);
             __fire(f); const hits = [], keep = applyDamage; globalThis.applyDamage = function (t, amt, src, el, rf, fx, hit) { if (src === f && hit === DMG_HIT_ALT) hits.push(t === a ? 'a' : 'b'); return keep.apply(this, arguments); };
             let fr = 0, fired = 0; try { while (f._pinball && fr < 900) { const cd = f._sigCd; frame++; updateNPC(f); evolutionTick(); if (f._pinball && f._sigCd !== cd) fired++; fr++; } } finally { globalThis.applyDamage = keep; }
-            return { hits, ended: !f._pinball, cd: f._sigCd, fired, every: PIN_EVERY, fr }; })()`);
+            return { hits, ended: !f._pinball, cd: f._sigCd, fired, every: moveWindupFrames("pinball"), fr }; })()`);
         same(r.hits.slice().sort().join(), 'a,b', 'hits'); ok(r.ended && r.fr < 100, 'it went on: ' + JSON.stringify(r)); same(r.fired, 0, 'its wait ran (or a move fired) while it rolled');
         ok(r.cd >= r.every - 1 && r.cd <= r.every, 'its wait after the roll: ' + r.cd);
     });
@@ -430,16 +430,27 @@ function measure(w, h) {
     });
 
     // ── THE DAMAGE SYSTEM, THE TABLES AND THE WORDS ─────────
+    group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
+    check('a move waits its own WIND-UP after it fires (the Rotshard\'s two moves each their own), and changing the number on the attack changes the wait', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('toxic', 'mage', 'rotshard'), t = __foe(f.x + 3, f.y); const out = {};
+            f.move = 'corrode_shot'; __fire(f); out.corrode = [f._sigCd, moveWindupFrames('corrode_shot')];
+            f.move = 'rotten_decoy'; __fire(f); out.decoy = [f._sigCd, moveWindupFrames('rotten_decoy')];
+            const keep = MOVES.corrode_shot.windup; MOVES.corrode_shot.windup = 2; f.move = 'corrode_shot'; __fire(f); out.tuned = f._sigCd; MOVES.corrode_shot.windup = keep;
+            return out; })()`);
+        same(r.corrode[0], r.corrode[1], 'CORRODE SHOT\'s wait'); same(r.decoy[0], r.decoy[1], 'ROTTEN DECOY\'s wait'); ok(r.corrode[1] !== r.decoy[1], 'the two moves share one wait');
+        same(r.tuned, 120, 'CORRODE SHOT with its wind-up set to 2 s');
+    });
+
     group('ONE DAMAGE SYSTEM, ONE TABLE, ONE SET OF WORDS');
     check('every new hit goes through applyDamage with the established hit kinds (a move\'s DMG_HIT_ALT, the Mages\' DMG_HIT_SHOT): no health is taken off by hand', () => {
         const E = rd('js/evolution.js'), body = n => { const i = E.indexOf('function ' + n + '('); ok(i >= 0, 'no ' + n); const j = E.indexOf('\nfunction ', i + 10); return E.slice(i, j < 0 ? undefined : j); };
         for (const [fn, kind] of [['quillBurst', 'DMG_HIT_ALT'], ['fieldBite', 'DMG_HIT_ALT'], ['pinballStep', 'DMG_HIT_ALT'], ['chainLightning', 'DMG_HIT_SHOT']]) { const b = body(fn); ok(b.indexOf(kind) >= 0, fn + ' does not use ' + kind); ok(!/\.health\s*-=|\.health\s*=\s*[^=]/.test(b), fn + ' sets health by hand'); }
         ok(/applyDamage\(t, \(f\.power \|\| 10\) \* PIN_MULT/.test(E) && /applyDamage\(a, e\.bite/.test(E) && /applyDamage\(next, d, f/.test(E), 'not through applyDamage');
     });
-    check('MAGMA VENT (the Thermite Burrower\'s move; the owner: "Short and hot"): a vent MAGMA_RADIUS tiles round opens under the enemy it can see within MAGMA_RANGE, bites at once and every MAGMA_TICK frames for MAGMA_LIFE frames, enemies only; then MAGMA_EVERY frames before the next', () => {
+    check('MAGMA VENT (the Thermite Burrower\'s move; the owner: "Short and hot"): a vent MAGMA_RADIUS tiles round opens under the enemy it can see within MAGMA_RANGE, bites at once and every MAGMA_TICK frames for MAGMA_LIFE frames, enemies only; then moveWindupFrames("magma_vent") frames before the next', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'camper', 'thermite'), t = __foe(f.x + 4, f.y + 0.5), far = __foe(f.x + 4 + MAGMA_RADIUS + 1, f.y + 0.5); const fired = magmaVent(f), cd = f._sigCd; const v = elementEffects.find(e => e.type === 'magmavent');
             const first = __dmg(t), farFirst = __dmg(far); let bites = 0, last = first, k = 0; while (elementEffects.some(e => e.type === 'magmavent') && k < 600) { render(); k++; const d = __dmg(t); if (d !== last) { bites++; last = d; } }
-            return { fired, move: evoMoveOf(f).name, at: v && [Math.round(v.x * 10) / 10, Math.round(v.y * 10) / 10], t: [Math.round(t.x * 10) / 10, Math.round(t.y * 10) / 10], r: v && v.radius, first: first > 0, far: farFirst, bites, gone: k, cd, want: [MAGMA_RADIUS, MAGMA_LIFE, MAGMA_TICK, MAGMA_EVERY] }; })()`);
+            return { fired, move: evoMoveOf(f).name, at: v && [Math.round(v.x * 10) / 10, Math.round(v.y * 10) / 10], t: [Math.round(t.x * 10) / 10, Math.round(t.y * 10) / 10], r: v && v.radius, first: first > 0, far: farFirst, bites, gone: k, cd, want: [MAGMA_RADIUS, MAGMA_LIFE, MAGMA_TICK, moveWindupFrames("magma_vent")] }; })()`);
         same(r.fired, true, 'it did not open'); same(r.move, 'MAGMA VENT', 'the Thermite Burrower\'s move'); same(JSON.stringify(r.at), JSON.stringify(r.t), 'not under the enemy');
         same(r.r, r.want[0], 'its radius'); same(r.first, true, 'no bite as it opened'); same(r.far, 0, 'it reached an enemy beyond its radius');
         same(r.bites, Math.floor(r.want[1] / r.want[2]) - 1, 'bursts after the first (one a second while it is open): ' + r.bites); ok(r.gone <= r.want[1] + 2, 'it stayed open too long: ' + r.gone); same(r.cd, r.want[3], 'the wait');

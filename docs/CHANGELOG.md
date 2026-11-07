@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **h · THE WIND-UP, a stat on every move** (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it's on the attack not the follower"; on the branch; commit named in git log).
+  - Each follower move (QUILL BURST, CORRODE SHOT, ROTTEN DECOY, MAGMA VENT…) has its own `windup` in seconds on its row in js/moves.js: the charge between firings. When it is full the move fires as soon as an enemy is in reach. One number per attack; the move, INFO (WIND-UP, was EVERY) and the bible read it.
+  - The values are the old waits, unchanged; the 15 old `*_EVERY` constants are gone. No new numbers: the owner sets them.
+  - Tests: moves (2 new checks), followercombat (1 new), evolution, firebombs, unitinfo, bible. No full run. Not playtested.
+
 - **g · WHITEOUT** (the owner, 2026-11-07: "WHITEOUT", chosen from proposals; the Hover Shell: "Keep its element's"; on the branch; commit named in git log).
   - **WHITEOUT** (Rime Star): a snowstorm 4 tiles round it, moving with it, for 6 s; enemies in it move at half speed and take 0.3× its power (ice) every 0.5 s.
   - The Hover Shell keeps the electric Ultimate. Still to design: Horn Shell (the owner chose "Something else" with no description yet), Goo Proxy, Hammer Slug, Igloo Skater.

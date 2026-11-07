@@ -121,7 +121,7 @@ function measure() {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl"; __f.x = __O.x; __f.y = __O.y; __f.power = 20;');
         same(run('MOVES.bomb_lob.fn(__f)'), false, 'with no foe'); same(run('fireBombs.length'), 0, 'bombs thrown at nothing');
         run(`globalThis.__E = spawnCreature({ species: Object.keys(SPECIES)[0], className: 'scout', x: __O.x + 4, y: __O.y, state: 'hunt' }); __E.provoked = true;`);
-        same(run('MOVES.bomb_lob.fn(__f)'), true, 'with a foe'); same(run('fireBombs.length'), 3, 'bombs'); same(run('__f._sigCd'), run('FIRE_BARRAGE_EVERY'), 'cooldown');
+        same(run('MOVES.bomb_lob.fn(__f)'), true, 'with a foe'); same(run('fireBombs.length'), 3, 'bombs'); same(run('__f._sigCd'), run('moveWindupFrames("bomb_lob")'), 'cooldown');
     });
     check('the chosen move is the one that fires, is kept with the follower through a respawn and the facility\'s save, and is ignored once the form cannot use it', () => {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl";'); same(run('evoMoveOf(__f).id'), 'hexfire', 'default');

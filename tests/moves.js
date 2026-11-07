@@ -72,6 +72,19 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
         run(`delete MOVES.__extra; delete EVOLUTIONS.quillstone.moves; delete globalThis.playerClassId;`);
     });
 
+    group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
+    check('every move has a WIND-UP of its own (seconds), the old waits unchanged, and its function waits exactly that after firing', () => {
+        const OLDWAIT = { petal_blaze: 360, quill_burst: 240, arc_volley: 300, singularity_shot: 330, static_rush: 300, hexfire: 330, corrode_shot: 320, gravity_slam: 330,
+            eruption: 330, chomp: 300, bomb_lob: 300, pinball: 300, static_vortex: 330, magma_vent: 1200, rotten_decoy: 840 };
+        same(J('Object.keys(MOVES).sort()').join(), Object.keys(OLDWAIT).sort().join(), 'the moves');
+        for (const id in OLDWAIT) {
+            ok(J(`MOVES.${id}.windup > 0`), id + ' has no wind-up'); same(J(`moveWindupFrames('${id}')`), OLDWAIT[id], id + ' (frames)');
+            const fn = J(`(function(){ const m = /^f => ([A-Za-z]+)\\(f\\)$/.exec(MOVES.${id}.fn.toString()); return m ? globalThis[m[1]].toString() : ''; })()`);
+            ok(fn.indexOf('moveWindupFrames("' + id + '")') >= 0, id + '\'s function does not wait its wind-up');
+        }
+    });
+    check('the INFO tab shows each move\'s WIND-UP', () => { for (const id of J('Object.keys(MOVES)')) ok(J(`MOVE_INFO[MOVES.${id}.name]().some(r => r[0] === 'WIND-UP')`), id); });
+
     console.log(failures ? `\n${failures} FAILED` : '\nall ok');
     process.exit(failures ? 1 : 0);
 })();

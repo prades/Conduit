@@ -41,7 +41,7 @@ function findChromium() {
     check('an evolved follower: its attack style, its signature move read off the constants, and its element ultimate (named as the game names it)', () => {
         const i = JSON.parse(run(`JSON.stringify(followerInfo(__mk('electric', 'sniper', 14, 'thunderhead')))`));
         ok(/ATTACK STYLE · MAGE/.test(i.attacks[0].h), 'style ' + i.attacks[0].h); const m = sec(i, 'attacks', 'SIGNATURE');
-        same(m.h, 'SIGNATURE · STATIC VORTEX', 'move'); same(rowOf(m, 'REACH'), run('VORTEX_RANGE') + ' tiles', 'reach'); same(rowOf(m, 'DAMAGE'), run('VORTEX_MULT') + '× power every ' + run('VORTEX_TICK / 60') + ' s', 'damage'); same(rowOf(m, 'EVERY'), run('VORTEX_EVERY / 60') + ' s', 'every');   // (the Thunderhead's move since the follower combat redesign; ARC VOLLEY stays with the Reaver)
+        same(m.h, 'SIGNATURE · STATIC VORTEX', 'move'); same(rowOf(m, 'REACH'), run('VORTEX_RANGE') + ' tiles', 'reach'); same(rowOf(m, 'DAMAGE'), run('VORTEX_MULT') + '× power every ' + run('VORTEX_TICK / 60') + ' s', 'damage'); same(rowOf(m, 'WIND-UP'), run('moveWindupFrames("static_vortex") / 60') + ' s', 'wind-up');   // (the Thunderhead's move since the follower combat redesign; ARC VOLLEY stays with the Reaver)
         const sh = sec(i, 'attacks', 'MAIN ATTACK'); same(sh && sh.h, 'MAIN ATTACK · CHAIN LIGHTNING', 'its everyday shot, named'); ok(/within 2.5 tiles/.test(rowOf(sh, 'JUMPS')), 'the jumps: ' + rowOf(sh, 'JUMPS'));
         const u = run('followerUltimate(__mk("electric", "sniper", 14, "thunderhead")).name'); ok(sec(i, 'attacks', 'ULTIMATE · ' + u.toUpperCase()), 'no ultimate named ' + u + ': ' + i.attacks.map(s => s.h));   // (its own since 2026-11-07: THUNDERSTORM)
     });
