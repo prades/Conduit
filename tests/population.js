@@ -99,15 +99,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.first, 3, 'the first time in: FP_SPAWN_SEWERS.start'); same(r.full, 4, 'the full cap'); same(r.nest, 'calmed', 'the Nest calmed');
         same(r.calmFirst, 0, 'calmed: none at once'); same(r.calm, 1, 'calmed: a straggler at most'); same(r.every, 6000, 'calmed: one every 100 s'); same(r.asks, true, 'the brood asks the quest, not the Nest');
     });
-    check('her infantry: a wave is the table\'s (four toxic nymphs of level 2 to 3, brood, beside her), while she is above half her health; none once she is frantic', () => {
+    check('her infantry: a wave is the table\'s (six toxic nymphs of level 2 to 3, brood, beside her), while she is above half her health; none once she is frantic', () => {
         const r = J(`(function(){ __fresh(); __wild(); const E = BOSS_ENCOUNTERS.sewer_cistern, S = bossState('sewer_cistern'); bossArm('sewer_cistern'); const b = bossUnit('sewer_cistern'); __put(b.x - 4, b.y);
             bossWake('sewer_cistern', 'hit'); const n = _bossWave(E, S, b), w = facilityCreatures('sewers').filter(a => a.bossWave === 'sewer_cistern');
             const o = { n, kinds: [...new Set(w.map(a => [a.speciesName, a.className, a.element, a.sewerBrood, a.race].join(':')))].join('|'), lv: w.every(a => a.level >= 2 && a.level <= 3), near: w.every(a => Math.hypot(a.x - b.x, a.y - b.y) <= E.waves.near[1] + 0.01) };
             frame = S.waveAt; _bossWavesTick(E, S, b); o.timed = facilityCreatures('sewers').filter(a => a.bossWave === 'sewer_cistern').length;
             b.health = b.maxHealth * 0.4; S.frantic = false; _bossFrantic(E, S, b); const before = o.timed; frame += E.waves.every * 3; _bossWavesTick(E, S, b); o.frantic = facilityCreatures('sewers').filter(a => a.bossWave === 'sewer_cistern').length - before;
             __wild(); return o; })()`);
-        same(r.n, 4, 'a wave'); same(r.kinds, 'ant:nymph:toxic:true:ant', 'what came'); same(r.lv, true, 'a level outside 2 to 3'); same(r.near, true, 'beside her');
-        same(r.timed, 8, 'the next wave on its timer'); same(r.frantic, 0, 'a wave once frantic');
+        same(r.n, 6, 'a wave');   // (six since build 2026-11-07dd, "Harder") same(r.kinds, 'ant:nymph:toxic:true:ant', 'what came'); same(r.lv, true, 'a level outside 2 to 3'); same(r.near, true, 'beside her');
+        same(r.timed, 12, 'the next wave on its timer');   // (two waves of six since build 2026-11-07dd) same(r.frantic, 0, 'a wave once frantic');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
