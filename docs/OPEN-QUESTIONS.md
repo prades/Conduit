@@ -481,6 +481,8 @@ Readings taken (each stands until the owner says otherwise):
 
 Nothing market-related is open: the eight questions above were all answered. (What was never decided is in section 3.)
 
+- **What shows a Technician winding up its alternate?** (the owner, 2026-11-07: "an aura for a mage and a rumble for a brawler and something else for a technician not sure"; build `2026-11-07gg`). A Mage glows, a Brawler rumbles; a Technician shows nothing yet. Only the Thermite Burrower (MAGMA VENT) has an alternate among the technicians today.
+
 - **The name ELECTRIC TECHNICIAN is cut on the roster's strip** (seen 2026-11-06 in build `2026-11-06h`'s full run; main's code, 3c595d6, measures the same). **Answered 2026-11-06: "Smaller type"; mended in build `2026-11-06i`** (§1y: THERMITE BURROWER was cut too).
   - On the Command Center's carousel at 1180 × 820, a strip card's name box is 113 px wide. ELECTRIC TECHNICIAN needs 125 px; the other seventeen element-and-class names fit.
   - tests/carousel.js checks that no name is cut. It draws its followers at random, so it fails only when an electric follower is drawn as a technician. Three re-runs, with other draws, passed.
@@ -496,7 +498,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
   - The check: one frame of a busy arena (ten eggs, twelve creatures) must draw fewer than 21,500 canvas operations.
   - Six runs on each build measured 20,731 to 21,674 on `2026-11-06a` and 21,209 to 21,514 on `2026-11-03a`; both builds went over the budget at times. It passed in the full runs of builds `2026-11-06b` and `2026-11-06c`, which changed nothing it draws. Earlier full runs measured up to 21,499.
   - Its scene draws each egg's type at random. The per-follower check beside it fixes the types for this reason ("a random draw made the cost swing by a fifth between runs").
-  - Ways to steady it: fix the scene's types the same way, then set the budget from what it measures; or raise the budget a little, with the reason written beside it. Nothing is changed until someone picks.
+  - Ways to steady it: fix the scene's types the same way, then set the budget from what it measures; or raise the budget a little, with the reason written beside it. Nothing is changed until someone picks. **Changed by the agent in build `2026-11-07ff`** (not the owner's pick): the budget raised to 22,000 with the reason beside it, after the same code measured 21,164 to 21,645 across runs; the scene's types are still random. Reversible.
 
 - **A card's words are cut on its face** (seen 2026-11-02, build `2026-11-02j`, on the CARDS screen at 1180 × 820). The face's box shows about five lines, so the longer words run past it and are cut. That is 23 cards: the six Mage CROWNs, the three opportunity cards and 14 of the 18 Player cards (PLAGUE DOCTOR's words are the longest). The EFFECT line beside the stage always shows the whole text. It is not new: the auras and the opportunity cards have been cut this way since Build B. Ways to mend it, for the owner: smaller type on the face for long words; a short line on the face (the role's theme) with the full words in EFFECT; or a taller box. Nothing is changed until the owner picks.
 

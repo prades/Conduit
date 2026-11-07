@@ -116,9 +116,9 @@ function measure() {
         ok(!/type: "meteor"/.test(rd('js/elements.js').slice(rd('js/elements.js').indexOf('special(actor, target)'), rd('js/elements.js').indexOf('// ── ELECTRIC'))), 'the meteor is still there');
         same(J('ELEMENT_ATTACKS.fire.special(__f, null).hit'), false, 'no target');
     });
-    check('FIRE BOMBS is a second move of the fire forms (their own move stays the default), three bombs fanned at the nearest foe in reach, then a cooldown', () => {
-        for (const id of ['bloom', 'quillstone', 'halo', 'embercowl']) { const ids = J('evoMoveIds(EVOLUTIONS.' + id + ')'); same(ids.length, 2, id + ' moves'); same(ids[1], 'bomb_lob', id + ' second'); ok(ids[0] !== 'bomb_lob', id + ': the default is not the bombs'); }
-        for (const id of ['maw', 'staticorb', 'seeper', 'voidstar']) ok(J('evoMoveIds(EVOLUTIONS.' + id + ')').indexOf('bomb_lob') < 0, id + ' got the fire move');
+    check('FIRE BOMBS is a second move of the fire mage and the retired fire forms (their own move stays first), not of the fire brawler (the owner, 2026-11-07), three bombs fanned at the nearest foe in reach, then a cooldown', () => {
+        for (const id of ['bloom', 'halo', 'embercowl']) { const ids = J('evoMoveIds(EVOLUTIONS.' + id + ')'); same(ids.length, 2, id + ' moves'); same(ids[1], 'bomb_lob', id + ' second'); ok(ids[0] !== 'bomb_lob', id + ': the default is not the bombs'); }
+        for (const id of ['quillstone', 'maw', 'staticorb', 'seeper', 'voidstar']) ok(J('evoMoveIds(EVOLUTIONS.' + id + ')').indexOf('bomb_lob') < 0, id + ' got the fire move');
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl"; __f.x = __O.x; __f.y = __O.y; __f.power = 20;');
         same(run('MOVES.bomb_lob.fn(__f)'), false, 'with no foe'); same(run('fireBombs.length'), 0, 'bombs thrown at nothing');
         run(`globalThis.__E = spawnCreature({ species: Object.keys(SPECIES)[0], className: 'scout', x: __O.x + 4, y: __O.y, state: 'hunt' }); __E.provoked = true;`);
@@ -131,8 +131,8 @@ function measure() {
     });
     check('the INFO tab lists the form\'s moves with the current one lit (the data)', () => {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "quillstone";');
-        const sec = J('followerInfo(__f).attacks.find(s => s.h === "ATTACK").choices.map(c => [c.label, c.on])'); same(JSON.stringify(sec), JSON.stringify([['NORMAL ATTACK', true], ['QUILL BURST', false], ['FIRE BOMBS', false]]), 'choices');
-        run('followerAltSet(__f, "bomb_lob");'); same(J('followerInfo(__f).attacks.filter(s => /LOCKED ON/.test(s.h)).map(s => s.h).join()'), 'ALTERNATE · FIRE BOMBS · LOCKED ON', 'the alternate it is locked on');
+        const sec = J('followerInfo(__f).attacks.find(s => s.h === "ATTACK").choices.map(c => [c.label, c.on])'); same(JSON.stringify(sec), JSON.stringify([['NORMAL ATTACK', true], ['QUILL BURST', false]]), 'choices (FIRE BOMBS taken off the fire brawler, 2026-11-07)');
+        same(run('followerAltSet(__f, "bomb_lob")'), false, 'FIRE BOMBS taken by a Quillstone'); run('followerAltSet(__f, "quill_burst");'); same(J('followerInfo(__f).attacks.filter(s => /LOCKED ON/.test(s.h)).map(s => s.h).join()'), 'ALTERNATE · QUILL BURST · LOCKED ON', 'the alternate it is locked on');
         run('__f.evolved = "hammerslug"; __f.alt = null;'); same(run('followerInfo(__f).attacks.some(s => s.h === "ATTACK")'), false, 'a form with no move has no chooser');
     });
 

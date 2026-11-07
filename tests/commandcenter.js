@@ -199,13 +199,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     console.log('\nSIGNATURE MOVE for a group (the following update\'s Part 4: "a squad setter (\'set move\' for a selected group like roles)")');
     check('a group\'s ATTACK is set once (the owner, 2026-11-07: NORMAL ATTACK or an alternate it is locked on); a follower whose form cannot use the alternate keeps its own and says why', () => {
-        run(`globalThis.__q = { evolved: 'quillstone', isFollower: true, team: 'green' }; globalThis.__q2 = { evolved: 'quillstone', isFollower: true, team: 'green' }; globalThis.__m = { evolved: 'maw', isFollower: true, team: 'green' };`);
+        run(`globalThis.__q = { evolved: 'embercowl', isFollower: true, team: 'green' }; globalThis.__q2 = { evolved: 'embercowl', isFollower: true, team: 'green' }; globalThis.__m = { evolved: 'maw', isFollower: true, team: 'green' };`);
         const r = J(`(function(){ const o = ccApplyMove([__q, __q2, __m], 'bomb_lob'); return { set: o.set, kept: o.kept.length, moves: [__q, __q2, __m].map(a => (evoMoveOf(a) || { id: 'normal' }).id), note: _ccMoveNote && _ccMoveNote.text,
-            choices: ccMoveChoices([__q, __m]).list.map(m => m.id + ':' + m.can).join(), none: ccMoveChoices([{ evolved: 'hammerslug', isFollower: true, team: 'green' }]), bad: ccApplyMove([__q], 'nonsense').set,
+            choices: ccMoveChoices([__q, __m]).list.map(m => m.id + ':' + m.can).join(), none: ccMoveChoices([{ evolved: 'hammerslug', isFollower: true, team: 'green' }]), bad: ccApplyMove([__q], 'nonsense').set, quill: ccApplyMove([{ evolved: 'quillstone', isFollower: true, team: 'green' }], 'bomb_lob').set,
             back: (function(){ const b = ccApplyMove([__q, __m], 'normal'); return [b.set, evoMoveOf(__q), evoMoveOf(__m)]; })() }; })()`);
         same(r.set, 2, 'set'); same(r.kept, 1, 'kept'); same(r.moves.join(), 'bomb_lob,bomb_lob,normal', 'their attacks');
         ok(/FROST MAW KEEPS ITS NORMAL ATTACK \(FIRE BOMBS IS NOT ONE OF ITS MOVES\)/.test(r.note || ''), 'the note: ' + r.note);
-        same(r.choices, 'normal:2,quill_burst:1,bomb_lob:1,chomp:1', 'the choices for a Quillstone and a Frost Maw'); same(r.none, null, 'no setter for a form with no move'); same(r.bad, 0, 'a nonsense move');
+        same(r.choices, 'normal:2,hexfire:1,bomb_lob:1,chomp:1', 'the choices for an Ember Hood and a Frost Maw'); same(r.quill, 0, 'FIRE BOMBS set on a Quillstone (taken off the fire brawler, 2026-11-07)'); same(r.none, null, 'no setter for a form with no move'); same(r.bad, 0, 'a nonsense move');
         same(JSON.stringify(r.back), JSON.stringify([2, null, null]), 'NORMAL ATTACK for both: unlocked');
     });
 

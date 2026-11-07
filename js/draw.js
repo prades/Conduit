@@ -193,18 +193,23 @@ function drawNPC(actor, px, py, drawCtx=ctx) {
             }
             drawCtx.restore();
         }
-    } else if (actor.isFollower && actor._altWind > 0 && actor._altWindMax > 0) {
-        // WINDING UP ITS CHOSEN ALTERNATE (js/evolution.js altTick; the owner, 2026-11-07: "Should rumble or minimal magical aura"): a faint glow of its element on the
-        // floor under it, and its body rumbling where it stands, both growing as the wind-up runs. Made from the frame alone (no random), like the glitch above.
-        const k = Math.max(0, Math.min(1, 1 - actor._altWind / actor._altWindMax)), gf = frame || 0, amp = 0.5 + 1.5 * k;
-        const el = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === actor.element) : null;
-        drawCtx.save(); drawCtx.fillStyle = el ? el.color : "#19e6c1";
-        const rx = 32 + 14 * k;   // (wider than an evolved body's base, so the glow shows round it)
-        drawCtx.globalAlpha *= 0.10 + 0.16 * k; drawCtx.beginPath(); drawCtx.ellipse(px, py - 4, rx, rx * 0.5, 0, 0, Math.PI * 2); drawCtx.fill();
-        drawCtx.globalAlpha *= 1.6; drawCtx.beginPath(); drawCtx.ellipse(px, py - 4, rx * 0.7, rx * 0.35, 0, 0, Math.PI * 2); drawCtx.fill();
-        drawCtx.restore();
-        drawCtx.save(); drawCtx.translate(Math.sin(gf * 1.9) * amp, Math.cos(gf * 2.7) * amp * 0.5);
-        try { _drawVirus(actor, px, py, drawCtx); } finally { drawCtx.restore(); }
+    } else if (actor.isFollower && actor._altWind > 0 && actor._altWindMax > 0 && (actor.role === "sniper" || actor.role === "brawler")) {
+        // WINDING UP ITS CHOSEN ALTERNATE (js/evolution.js altTick). The owner, 2026-11-07: "It's an aura for a mage and a rumble for a brawler and something else for
+        // a technician not sure": a MAGE has a faint glow of its element on the floor round it; a BRAWLER's body rumbles where it stands; both grow as the wind-up runs.
+        // A technician has none yet (docs/OPEN-QUESTIONS.md). Made from the frame alone (no random), like the glitch above.
+        const k = Math.max(0, Math.min(1, 1 - actor._altWind / actor._altWindMax));
+        if (actor.role === "sniper") {
+            const el = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === actor.element) : null, rx = 32 + 14 * k;   // (wider than an evolved body's base, so the glow shows round it)
+            drawCtx.save(); drawCtx.fillStyle = el ? el.color : "#19e6c1";
+            drawCtx.globalAlpha *= 0.10 + 0.16 * k; drawCtx.beginPath(); drawCtx.ellipse(px, py - 4, rx, rx * 0.5, 0, 0, Math.PI * 2); drawCtx.fill();
+            drawCtx.globalAlpha *= 1.6; drawCtx.beginPath(); drawCtx.ellipse(px, py - 4, rx * 0.7, rx * 0.35, 0, 0, Math.PI * 2); drawCtx.fill();
+            drawCtx.restore();
+            _drawVirus(actor, px, py, drawCtx);
+        } else {
+            const gf = frame || 0, amp = 0.5 + 1.5 * k;
+            drawCtx.save(); drawCtx.translate(Math.sin(gf * 1.9) * amp, Math.cos(gf * 2.7) * amp * 0.5);
+            try { _drawVirus(actor, px, py, drawCtx); } finally { drawCtx.restore(); }
+        }
     } else {
         _drawVirus(actor, px, py, drawCtx);
     }

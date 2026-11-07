@@ -103,14 +103,17 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.wound, true, 'wound up'); same(r.threw, null, 'drawing threw');
         const src = rd('js/combat.js'); ok(/function drawBiteTelegraphs/.test(src) && /"BITE"/.test(src) && /biteTarget/.test(src), 'the telegraph'); ok(/drawBiteTelegraphs\(\)/.test(rd('js/game.js')), 'called by the frame');
     });
-    check('a follower WINDING UP its chosen alternate shows it (the owner: "Should rumble or minimal magical aura"): its body rumbles where it stands and a faint glow of its element lies under it, both growing as the wind-up runs; neither when it is not winding up; no ring or name over it (build 2026-11-07gg)', () => {
-        const r = J(`(function(){ __clear(); const f = __follower('fire', 'brawler', 5); const col = ELEMENTS.find(e => e.id === 'fire').color.toLowerCase(), log = [], el = ctx.ellipse, tr = ctx.translate;
+    check('a follower WINDING UP its chosen alternate shows it by its class (the owner, 2026-11-07: "an aura for a mage and a rumble for a brawler and something else for a technician not sure"): a Mage a faint glow of its element round it, a Brawler its body rumbling; a Technician nothing yet; none of it when not winding up; no ring or name over it (build 2026-11-07gg)', () => {
+        const r = J(`(function(){ __clear(); const log = [], el = ctx.ellipse, tr = ctx.translate, o = {};
             ctx.ellipse = function () { log.push('e:' + String(ctx.fillStyle).toLowerCase()); return el.apply(this, arguments); }; ctx.translate = function (x, y) { log.push('t'); return tr.apply(this, arguments); };
-            const o = {}; const n = (a, k) => a.filter(q => q === k).length;
-            try { f.alt = 'quill_burst'; f._altWindMax = 60; f._altWind = 0; drawNPC(f, 400, 300); const base = log.slice(); log.length = 0; f._altWind = 30; drawNPC(f, 400, 300); const mid = log.slice(); log.length = 0;
-                o.aura = n(mid, 'e:' + col) - n(base, 'e:' + col); o.shake = n(mid, 't') - n(base, 't'); let threw = null; try { f._altWind = 30; drawBiteTelegraphs(); } catch (e) { threw = String(e); } o.threw = threw; }
-            finally { ctx.ellipse = el; ctx.translate = tr; f.alt = null; f._altWind = 0; } return o; })()`);
-        same(r.aura, 2, 'the glow under it (two soft ellipses of its element)'); ok(r.shake >= 1, 'the body is not moved (the rumble): ' + r.shake); same(r.threw, null, 'the telegraphs threw with one winding up');
+            const n = (a, k) => a.filter(q => q === k).length;
+            const probe = (element, role) => { const f = __follower(element, role, 5), col = 'e:' + ELEMENTS.find(e => e.id === element).color.toLowerCase(); f.role = role; f.alt = 'x'; f._altWindMax = 60;
+                f._altWind = 0; log.length = 0; drawNPC(f, 400, 300); const base = log.slice(); f._altWind = 30; log.length = 0; drawNPC(f, 400, 300); const mid = log.slice(); f._altWind = 0; f.alt = null;
+                return { aura: n(mid, col) - n(base, col), shake: n(mid, 't') - n(base, 't') }; };
+            try { o.mage = probe('fire', 'sniper'); o.brawler = probe('fire', 'brawler'); o.tech = probe('fire', 'camper'); let threw = null; try { drawBiteTelegraphs(); } catch (e) { threw = String(e); } o.threw = threw; }
+            finally { ctx.ellipse = el; ctx.translate = tr; } return o; })()`);
+        same(JSON.stringify(r.mage), JSON.stringify({ aura: 2, shake: 0 }), 'a Mage: the glow (two soft ellipses of its element), no rumble'); ok(r.brawler.aura === 0 && r.brawler.shake >= 1, 'a Brawler: the rumble, no glow: ' + JSON.stringify(r.brawler));
+        same(JSON.stringify(r.tech), JSON.stringify({ aura: 0, shake: 0 }), 'a Technician: nothing yet'); same(r.threw, null, 'the telegraphs threw');
         ok(!/MOVES\[f\.alt\]/.test(rd('js/combat.js')), 'the ring with the move\'s name is gone from the telegraphs');
     });
 

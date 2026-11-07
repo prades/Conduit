@@ -2058,12 +2058,18 @@ The owner: too much time goes into testing and side checks. From here on, only t
 ### Supersedes / superseded by
 Supersedes "a signature move fires by itself on its own cooldown, beside the normal attack" (`PLAYER-CLASSES.md`, build `2026-11-07i`'s SIGNATURE MOVE setter).
 
-## DECISION: The wind-up cue: a rumble and a faint aura
+## DECISION: The wind-up cue by class; FIRE BOMBS off the fire brawler; ATTACK STYLE hidden when locked
 
 - **Date:** 2026-11-07
-- **Status:** Approved (the owner's words); the sizes and strengths are the agent's, provisional. Implemented and tested in build `2026-11-07gg`, on the branch; not playtested.
-- **Related feature/docs:** `COMBAT.md` §7.4; `CHANGELOG.md` (2026-11-07 gg)
+- **Status:** Approved (the owner's words); the cue's sizes and strengths are the agent's, provisional; the technician's cue is open. Implemented and tested in build `2026-11-07gg`, on the branch; not playtested.
+- **Related feature/docs:** `COMBAT.md` §7.4; `OPEN-QUESTIONS.md` §2; `CHANGELOG.md` (2026-11-07 gg)
 
 ### Decision
 1. Build `2026-11-07ff`: "Push to main". Next: "Wind-up cue in the world".
-2. A first draft drew the bite's telegraph in teal over the follower with the move's name. The owner: "Should rumble or minimal magical aura". Built as both, minimal: the body rumbles where it stands and a faint glow of its element lies round it, growing as the wind-up runs; nothing over its head.
+2. A first draft drew the bite's telegraph in teal over the follower with the move's name. The owner: "Should rumble or minimal magical aura"; a second draft did both for everyone. The owner: "It's an aura for a mage and a rumble for a brawler and something else for a technician not sure but also remove fire bombs from the fire brawler please".
+3. On the roster's disabled "EVOLVED KEEPS ITS ROLE": "Remove this when it's not selectable".
+
+### Exact rules
+- Winding up: a Mage, a faint glow of its element on the floor round it; a Brawler, its body rumbling; both growing with the wind-up. A Technician: none until decided.
+- The Quillstone's alternates: QUILL BURST only. FIRE BOMBS stays on the Ember Hood (and the retired fire forms).
+- ATTACK STYLE in the roster's side panel is left out when every follower picked is evolved.

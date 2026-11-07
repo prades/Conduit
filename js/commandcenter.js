@@ -537,8 +537,9 @@ function _ccDrawSide(side) {
 function _ccDrawStyles(side, S, sel) {
     if (!S.followers) return;
     const lab = (list, id) => (list.find(x => x.id === id) || {}).label, mixed = v => v === "mixed", lockedAll = S.followers - S.lockedRole <= 0;
-    _ccDropdown(side, "role", "ATTACK STYLE", mixed(S.role) ? "MIXED" : (lab(ATTACK_STYLES, S.role) || "—"), "#ff4a1c",
-        ATTACK_STYLES.map(x => ({ label: x.label, col: x.col, sub: x.blurb, on: S.role === x.id, fn: () => ccApplyRole(sel, x.id) })), lockedAll ? "EVOLVED KEEPS ITS ROLE" : null);
+    // (not there at all when no one picked can change it, every one evolved: the owner, 2026-11-07, of "EVOLVED KEEPS ITS ROLE": "Remove this when it's not selectable")
+    if (!lockedAll) _ccDropdown(side, "role", "ATTACK STYLE", mixed(S.role) ? "MIXED" : (lab(ATTACK_STYLES, S.role) || "—"), "#ff4a1c",
+        ATTACK_STYLES.map(x => ({ label: x.label, col: x.col, sub: x.blurb, on: S.role === x.id, fn: () => ccApplyRole(sel, x.id) })));
     _ccDropdown(side, "play", "PLAY STYLE", mixed(S.playStyle) ? "MIXED" : (lab(PLAY_STYLES, S.playStyle) || "—"), "#ffe733",
         PLAY_STYLES.map(x => ({ label: x.label, col: "#ffe733", sub: x.blurb, on: S.playStyle === x.id, fn: () => ccApplyPlayStyle(sel, x.id) })));
     const M = typeof MOVES !== "undefined" ? ccMoveChoices(sel) : null;

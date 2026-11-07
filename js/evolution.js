@@ -183,7 +183,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
     // The FIRE BRAWLER, design No. 354 (its separate antennae dropped, the two front spikes black like the shell): a pitch-black cut gem that crawls on
     // little hidden feet, red shards growing out of it. The quills sway, so its sheet carries its own light.
-    quillstone:{ id: "quillstone", name: "QUILLSTONE", element: "fire", role: "brawler", move: "QUILL BURST", moves: ["quill_burst", "bomb_lob"], sheet: "img/evo/quillstone.png",
+    quillstone:{ id: "quillstone", name: "QUILLSTONE", element: "fire", role: "brawler", move: "QUILL BURST", moves: ["quill_burst"],   /* (FIRE BOMBS taken off the fire brawler: the owner, 2026-11-07, build gg) */ sheet: "img/evo/quillstone.png",
               cell: 144, anchor: [72, 114.2], core: [72, 85], noGlow: true, color: "#ff5a1f" },
     // The ICE BRAWLER: a dome with a cave mouth. Its rubble lies on the floor (the ground sheet), and the cave is its own light.
     maw:    { id: "maw",    name: "FROST MAW",    element: "ice",      role: "brawler", move: "CHOMP",        sheet: "img/evo/maw.png",

@@ -174,11 +174,11 @@ Weak: ×1.3. Resists: ×0.7. Anything else: ×1. Every form of a race, nymph to 
 
 A follower's **main attack** is its everyday hit: a Brawler's or Technician's plain hit and its element's physical move, or a Mage's shot. Its **alternates** are its signature move and, for a Technician, its ability. The types follow each creature's body. The fire and electric followers' attacks were redesigned on 2026-11-02 (`FOLLOWER-COMBAT-REDESIGN.md`, built from build `2026-11-03a`); their types did not change.
 
-**An alternate is a chosen mode** (the owner, 2026-11-07, build `2026-11-07ff`). An evolved follower fights with its main attack until one of its alternates is chosen (the INDEX tab, the HUD pop-out, the roster). The chosen alternate is then its only attack, until it is switched back; attack orders keep it. With an enemy in the move's reach it winds up rooted (it cannot move), fires, and winds up again only once the move's effect has ended (at most 20 s). While it winds up, its body rumbles and a faint glow of its element lies round it, both growing (build `2026-11-07gg`: the owner, "Should rumble or minimal magical aura"). The Technician's ability is unchanged (the player fires it).
+**An alternate is a chosen mode** (the owner, 2026-11-07, build `2026-11-07ff`). An evolved follower fights with its main attack until one of its alternates is chosen (the INDEX tab, the HUD pop-out, the roster). The chosen alternate is then its only attack, until it is switched back; attack orders keep it. With an enemy in the move's reach it winds up rooted (it cannot move), fires, and winds up again only once the move's effect has ended (at most 20 s). While it winds up, a Mage has a faint glow of its element round it and a Brawler's body rumbles, both growing; a Technician has no cue yet (build `2026-11-07gg`: the owner, "an aura for a mage and a rumble for a brawler and something else for a technician not sure"). The Technician's ability is unchanged (the player fires it).
 
 | Form | Class · element | Main attack | Alternates |
 |---|---|---|---|
-| QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST (five quills at once, each stopping at its first enemy): Projectile; FIRE BOMBS |
+| QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST (five quills at once, each stopping at its first enemy): Projectile (FIRE BOMBS taken off it, 2026-11-07) |
 | FROST MAW | Brawler · ice | Slashing (ice jaws) | CHOMP: Piercing |
 | STATIC ORB | Brawler · electric | Crushing (rams) | SONIC ROLL (STATIC RUSH renamed): Crushing; PINBALL (a ricochet from enemy to enemy): Crushing |
 | JELLY RAM | Brawler · core | Crushing (ram) | none yet |

@@ -121,7 +121,7 @@ function measure(w, h) {
         globalThis.__arc = (R, n) => { const o = []; for (let i = 0; i <= n; i++) { const th = Math.PI * (1 - i / n) / 2; o.push([1 + R - R * Math.cos(th), R - R * Math.sin(th)]); } return o; };`);
 
     // ── QUILLSTONE ──────────────────────────────────────────
-    group('QUILLSTONE (fire Brawler): QUILL BURST, five crystal quills at once, each stopping at the first enemy it hits; its main attack and FIRE BOMBS kept');
+    group('QUILLSTONE (fire Brawler): QUILL BURST, five crystal quills at once, each stopping at the first enemy it hits; its main attack kept (FIRE BOMBS taken off it, 2026-11-07)');
     check('EXACTLY five quills, all launched at once (the same frame, from the Quillstone), in a forward fan QUILL_FAN degrees edge to edge with the middle one at the nearest enemy', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'), t = __foe(f.x + 3, f.y + 1); __fire(f);
             const q = followerProjectiles.filter(p => p.kind === 'quill'), a0 = Math.atan2(t.y - f.y, t.x - f.x) * 180 / Math.PI, ang = q.map(p => Math.atan2(p.vy, p.vx) * 180 / Math.PI - a0);
@@ -163,11 +163,11 @@ function measure(w, h) {
         ok(Math.abs(r.close - 5 * r.one) < 1e-6 * r.close + 1e-6, 'close up, five quills in one enemy: ' + JSON.stringify(r));
         ok(r.spread.every(d => Math.abs(d - r.one) < 1e-6 * d + 1e-6), 'across the fan, a quill each: ' + JSON.stringify(r));
     });
-    check('nobody in reach: no quills and no wait spent; QUILL BURST stays its default move and FIRE BOMBS a choice on INFO; its main attack (the Brawler\'s plain hit, Piercing) is kept', () => {
+    check('nobody in reach: no quills and no wait spent; QUILL BURST its one alternate on INFO (FIRE BOMBS taken off it, 2026-11-07); its main attack (the Brawler\'s plain hit, Piercing) is kept', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler', 'quillstone'); __foe(f.x + QUILL_RANGE + 0.6, f.y); __fire(f);
             return { n: followerProjectiles.length, cd: f._sigCd, ids: evoMoveIds(EVOLUTIONS.quillstone), def: evoMoveIds(EVOLUTIONS.quillstone)[0], info: followerInfo(f).attacks.filter(s => s.choices).map(s => s.choices.map(c => c.label)), main: DMG_FORM.quillstone.main, alt: DMG_FORM.quillstone.alt, shot: EVOLUTIONS.quillstone.shot || null }; })()`);
         same(r.n, 0, 'quills at an enemy out of reach'); ok(!(r.cd > 0), 'a wait for nothing: ' + r.cd);
-        same(r.ids.join(), 'quill_burst,bomb_lob', 'its moves'); same(r.def, 'quill_burst', 'its first move'); same(JSON.stringify(r.info), JSON.stringify([['NORMAL ATTACK', 'QUILL BURST', 'FIRE BOMBS']]), 'the INFO choice (2026-11-07: its normal attack, or an alternate)');
+        same(r.ids.join(), 'quill_burst', 'its moves'); same(r.def, 'quill_burst', 'its first move'); same(JSON.stringify(r.info), JSON.stringify([['NORMAL ATTACK', 'QUILL BURST']]), 'the INFO choice (2026-11-07: its normal attack, or an alternate)');
         same(r.main, 'piercing', 'its main attack\'s type'); same(r.alt, 'projectile', 'QUILL BURST\'s type'); same(r.shot, null, 'a shot of its own (a Brawler has none)');
     });
 
