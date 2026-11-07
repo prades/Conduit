@@ -67,7 +67,7 @@ function followerInfo(a) {
         const sc = typeof equipSpecial === "function" ? equipSpecial(a) : null;
         if (sc) { const A = sc.attack, w = typeof cardAttackReadyIn === "function" ? cardAttackReadyIn(a) : 0;
             out.attacks.push({ h: "SPECIAL ATTACK · " + sc.name, note: "Its primary attack while the card is set (SPECIAL ATTACK, on the roster and its squad card). It makes no everyday hit between strikes.",
-                rows: [["REACH", A.reach + " tiles, an enemy it can see"], ["DAMAGE", _uiX(A.mult) + " its attack"], ["WAIT", A.wait + " s between strikes"], ["READY", w > 0 ? "in " + Math.ceil(w / 60) + " s" : "now"], ["EFFECT", sc.text]] }); }
+                rows: [["REACH", A.reach + " tiles, an enemy it can see"], ...(A.mult ? [["DAMAGE", _uiX(A.mult) + " its attack"]] : []), ["WAIT", A.wait + " s " + (A.lasts ? "after it ends (it lasts " + A.lasts + " s)" : "between strikes")], ["READY", w > 0 ? "in " + Math.ceil(w / 60) + " s" : "now"], ["EFFECT", sc.text]] }); }
     }   // a form's named everyday attack (FIREBALL, CHAIN LIGHTNING, BURROW STRIKE)
     if (ev && MOVE_INFO[ev.move]) {
         const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, ev) : null, mv = cur && MOVE_INFO[cur.name] ? cur : { name: ev.move }, ids = typeof evoMoveIds === "function" ? evoMoveIds(ev).filter(id => typeof evoMoveAllowed !== "function" || evoMoveAllowed(a, ev, id)) : [];

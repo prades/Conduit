@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-06
 
+- **r · VOLTAGE FIELD and WRAITHFIRE** (the owner: "Speed and attack speed", "Haunt"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06q` went to main at the owner's word ("Push to main").
+  - **VOLTAGE FIELD** (Static Orb, a card attack): a field 2 tiles round the Orb that moves with it for 5 s; followers in it move +30% and attack +20% faster; enemies in it take 0.1× its attack (electric) every 0.5 s. Then a 14 s wait **[reading: a field waits from its end]**.
+  - **WRAITHFIRE** (Ember Hood, a card attack): it gives 25% of its HP and is a ghost for 4 s that cannot be hit; its power is the HP given × its attack ÷ 10. It rushes on its own through the enemies it can see **[reading: 0.12 tiles a frame, along walkable floor]**; each enemy it touches (at most once a second) takes 15% of the power (fire); the rest explodes 2 tiles round at the end, and it is back where it began. Then a 15 s wait.
+  - Series 2 deals both at Prototype (its pool: 67). Tests: followercombat (new check), cards, series2, classcards, series2abilities, playercards, packs, unitinfo, combat, bible. No full run. Not playtested.
+
 - **q · Card attacks: the SPECIAL ATTACK slot; CRYSTAL SPIKE TRIO and SEARED CHARGE** (the owner, 2026-11-06: "Series 2, Prototype", "Only its own form", its own menu, "It stays the new primary attack", "Nothing in between", "Light", "Short and hard"; on the branch; commit named in git log).
   - **Main:** build `2026-11-06p` went to main at the owner's word ("Push to main").
   - **The slot:** a follower has a SPECIAL ATTACK slot of its own (`f.special`, saved as `special`), apart from CARD 1 and 2. It is set in a separate menu on the roster and on the HUD squad card, shown only on a form some card attack is for; INFO (the index) lists it. A card attack cannot go in CARD 1 or 2. EXILE, a re-roll or falling empties it; a card out of the hand comes off.

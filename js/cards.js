@@ -156,12 +156,16 @@ const EQUIP_SERIES2 = [
     // cardAttackTry). `el` is its element (its colour and texture); the numbers are in seconds and tiles.
     ["crystal_spike_trio", "CRYSTAL SPIKE TRIO", "form",   "rotshard",   "prototype", { el: "toxic", attack: { kind: "spikeTrio", reach: 6, mult: 1.5, stun: 0.5, poison: 3, wait: 8 } }],      // "Light"
     ["seared_charge",      "SEARED CHARGE",      "form",   "quillstone", "prototype", { el: "fire",  attack: { kind: "searedCharge", reach: 3, mult: 1.5, knock: 2, wait: 8 } }],                // "Short and hard"
+    ["voltage_field",      "VOLTAGE FIELD",      "form",   "staticorb",  "prototype", { el: "electric", attack: { kind: "voltageField", reach: 2, radius: 2, lasts: 5, move: 0.3, atkSpeed: 0.2, mult: 0.1, every: 0.5, wait: 14 } }],   // "Speed and attack speed"
+    ["wraithfire",         "WRAITHFIRE",         "form",   "embercowl",  "prototype", { el: "fire", attack: { kind: "wraithfire", reach: 6, give: 0.25, per: 10, lasts: 4, speed: 0.12, touch: 0.15, touchEvery: 1, blast: 2, wait: 15 } }],   // "Haunt"
 ];
 // what a card attack does, in the card's words, made from its numbers
 function equipAttackText(a) {
     if (!a) return "";
-    const sec = n => (Math.round(n * 10) / 10) + (n === 1 ? " SECOND" : " SECONDS"), tiles = n => n + (n === 1 ? " TILE" : " TILES"), tail = " · READY AGAIN EVERY " + sec(a.wait) + " · ITS PRIMARY ATTACK WHILE SET";
+    const sec = n => (Math.round(n * 10) / 10) + (n === 1 ? " SECOND" : " SECONDS"), tiles = n => n + (n === 1 ? " TILE" : " TILES"), tail = (a.lasts ? " · THEN " + sec(a.wait) + " TO WAIT" : " · READY AGAIN EVERY " + sec(a.wait)) + " · ITS PRIMARY ATTACK WHILE SET";
     if (a.kind === "spikeTrio") return "THREE TOXIC CRYSTAL SPIKES ERUPT UNDER ONE ENEMY WITHIN " + tiles(a.reach) + ": " + a.mult + "× ITS ATTACK, STUNNED " + sec(a.stun) + ", POISONED " + sec(a.poison) + tail;
+    if (a.kind === "voltageField") return "AN ELECTRIC FIELD " + tiles(a.radius) + " ROUND IT FOR " + sec(a.lasts) + ": FOLLOWERS IN IT MOVE +" + Math.round(a.move * 100) + "% FASTER AND ATTACK +" + Math.round(a.atkSpeed * 100) + "% FASTER; ENEMIES IN IT TAKE " + a.mult + "× ITS ATTACK EVERY " + sec(a.every) + tail;
+    if (a.kind === "wraithfire") return "IT GIVES " + Math.round(a.give * 100) + "% OF ITS HP AND BECOMES A GHOST FOR " + sec(a.lasts) + ": ITS POWER IS THE HP GIVEN × ITS ATTACK ÷ " + a.per + "; EACH ENEMY IT TOUCHES (AT MOST ONCE A SECOND) TAKES " + Math.round(a.touch * 100) + "% OF IT (FIRE); THE REST EXPLODES " + tiles(a.blast) + " ROUND AT THE END, AND IT IS BACK WHERE IT BEGAN" + tail;
     if (a.kind === "searedCharge") return "A FIERY SHOULDER-CHECK INTO AN ENEMY WITHIN " + tiles(a.reach) + ": " + a.mult + "× ITS ATTACK (HALF CRUSHING, HALF FIRE), KNOCKED BACK " + tiles(a.knock) + tail;
     return "";
 }
@@ -475,7 +479,10 @@ function cardAttackTry(f, t) {
     let fired = false;
     if (A.kind === "spikeTrio") fired = _cardSpikeTrio(f, t, A);
     else if (A.kind === "searedCharge") fired = _cardSearedCharge(f, t, A);
-    if (fired) { f._spReadyAt = f0 + Math.round(A.wait * 60); f.state = "attack"; f.attackAnim = 0; const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy); if (L > 0) { f.dirX = dx / L; f.dirY = dy / L; } }
+    else if (A.kind === "voltageField") fired = _cardVoltageField(f, A);
+    else if (A.kind === "wraithfire") fired = _cardWraithfire(f, A);
+    if (fired) { f._spReadyAt = f0 + Math.round(((A.lasts || 0) + A.wait) * 60);   // (one that lasts waits from its end)
+        f.state = "attack"; f.attackAnim = 0; const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy); if (L > 0) { f.dirX = dx / L; f.dirY = dy / L; } }
     return fired;
 }
 // CRYSTAL SPIKE TRIO (the Rotshard's): three small toxic crystal spikes erupt in a tight cluster under the one enemy: `mult` × its attack (toxic), stunned `stun` s, poisoned `poison` s
@@ -487,6 +494,46 @@ function _cardSpikeTrio(f, t, A) {
 }
 // SEARED CHARGE (the Quillstone's): a fiery shoulder-check: it charges straight at the enemy (only along floor it could walk: the dash rule, js/evolution.js _evoDashOk), `mult` × its attack, half
 // crushing and half fire, and knocks it back `knock` tiles
+// VOLTAGE FIELD (the Static Orb's): an electric field `radius` tiles round it that moves with it for `lasts` s: followers in it move `move` and attack `atkSpeed` faster (js/npc.js updateNPC, js/combat.js
+// followerRest read the marks the field leaves on them); enemies in it that can be seen from its middle take `mult` × its attack every `every` s (js/elements.js updateElementEffects)
+function _cardVoltageField(f, A) {
+    if (typeof spawnElementEffect !== "function") return false;
+    const n = Math.round(A.lasts * 60);
+    spawnElementEffect({ type: "voltagefield", x: f.x, y: f.y, on: f, radius: A.radius, bite: (f.power || 10) * A.mult, every: Math.round(A.every * 60), move: 1 + A.move, atk: 1 + A.atkSpeed, life: n, maxLife: n, element: "electric" });
+    return true;
+}
+// WRAITHFIRE (the Ember Hood's): it gives `give` of its HP and is a ghost for `lasts` s (it cannot be targeted or hurt); its power is the HP given × its attack ÷ `per`. The ghost rushes on its own through the
+// enemies it can see (wraithfireTick, from js/npc.js updateNPC); each it touches, at most once every `touchEvery` s, takes `touch` of the power (fire), until the power is spent; at the end the rest explodes
+// `blast` tiles round it, and it is back where it began.
+function _cardWraithfire(f, A) {
+    const give = (f.health || 0) * A.give; if (!(give > 0)) return false;
+    f.health -= give;
+    const P = give * (f.power || 10) / A.per, n = Math.round(A.lasts * 60), f0 = typeof frame !== "undefined" ? frame : 0;
+    f._wraith = { power: P, left: P, until: f0 + n, x0: f.x, y0: f.y, touched: new Map(), A }; f.untargetable = true; f._fpPath = null;
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "wraithfire", x: f.x, y: f.y, on: f, life: n, maxLife: n, element: "fire" });
+    return true;
+}
+function wraithfireTick(f) {
+    const W = f._wraith, A = W.A, f0 = typeof frame !== "undefined" ? frame : 0;
+    const done = () => { f._wraith = null; f.untargetable = false; f._fpPath = null; };
+    if (f.dead) return done();
+    if (f0 >= W.until || W.left <= 1e-6) {   // the end: the rest explodes, and it is back where it began
+        if (W.left > 0 && typeof _evoFoesSeen === "function") for (const a of _evoFoesSeen(f.x, f.y, A.blast)) applyDamage(a, W.left, f, "fire", false, false, DMG_HIT_SPECIAL);
+        if (typeof spawnElementEffect === "function") { spawnElementEffect({ type: "ring", x: f.x, y: f.y, radius: A.blast, color: "#ff8a3a", life: 30, element: "fire" }); spawnElementEffect({ type: "impact", x: f.x, y: f.y, color: "#ffb04a", radius: 1.4, life: 22, element: "fire" }); }
+        W.left = 0; f.x = W.x0; f.y = W.y0; return done();
+    }
+    const foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(f.x, f.y, A.reach) : [], gap = Math.round(A.touchEvery * 60);
+    for (const a of foes) if (Math.hypot(a.x - f.x, a.y - f.y) <= 0.6 && !(f0 - (W.touched.get(a) ?? -1e9) < gap)) {
+        const d = Math.min(W.left, W.power * A.touch); if (!(d > 0)) break;
+        W.left -= d; W.touched.set(a, f0); applyDamage(a, d, f, "fire", false, false, DMG_HIT_SPECIAL);
+    }
+    let t = null, best = 1e9;   // on to the nearest it has not touched within the gap (else the nearest)
+    for (const a of foes) { const d = Math.hypot(a.x - f.x, a.y - f.y) + (f0 - (W.touched.get(a) ?? -1e9) < gap ? 50 : 0); if (d < best) { best = d; t = a; } }
+    if (!t) return;
+    const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, nx = f.x + dx / L * A.speed, ny = f.y + dy / L * A.speed;
+    if (typeof facilityStandOk !== "function" || facilityStandOk(nx, ny)) { f.x = nx; f.y = ny; }
+    f.dirX = dx / L; f.dirY = dy / L;
+}
 function _cardSearedCharge(f, t, A) {
     if (typeof _evoDashOk === "function" && !_evoDashOk(f, t)) return false;
     const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8), x0 = f.x, y0 = f.y;

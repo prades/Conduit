@@ -273,7 +273,7 @@ function updateStatusEffects() {
 // The rest after an attack, in frames (the attack's own number, below). EQUIP CARDS (js/cards.js): attack speed x1.5 (+50%) is an attack every 1/1.5 as many frames, x2 (two such cards, +100%) every half. The attack's own frame counts with
 // the rest (45 + 1 = 46 frames from one attack to the next), so 46 become 31 (a rest of 30) and, at +100%, 23 (a rest of 22). A follower with no such card rests as it always did.
 function followerRest(actor, frames) {
-    const k = typeof equipMult === "function" ? equipMult(actor, "attackSpeed") : 1;
+    const k = (typeof equipMult === "function" ? equipMult(actor, "attackSpeed") : 1) * (actor && actor._voltUntil > (typeof frame !== "undefined" ? frame : 0) ? actor._voltAtk || 1 : 1);   // (in a VOLTAGE FIELD, a card attack: faster)
     return k > 0 && k !== 1 ? Math.max(1, Math.round((frames + 1) / k) - 1) : frames;
 }
 // BURROW STRIKE (the Thermite Burrower's everyday hit): it dives, travels under the floor to an enemy it can see in reach, and erupts beneath it. 2× its plain hit (the plain hit is a quarter of its ATK).

@@ -523,6 +523,22 @@ function measure(w, h) {
         same(r.charge.join(), 'false,true,true,true,true,true,true,480', 'SEARED CHARGE: not past 3 tiles; charged in, hurt it, knocked it back, the streak drawn, 8 s to wait');
         same(r.gone, 'true,true,true', 'out of the hand it comes off; EXILE (a clear) empties it');
     });
+    check('VOLTAGE FIELD ("Speed and attack speed") and WRAITHFIRE ("Haunt"): the field moves with the Orb, marks the followers in it (+30% move, +20% attack speed) and bites the enemies in it; the Ember Hood gives 25% of its HP, is a ghost 4 s that touches and hurts, then is back where it began; each waits from its end', () => {
+        const r = J(`(function(){ const o = {}; __clear(); for (const id of ['voltage_field', 'wraithfire']) if (equipFound.indexOf(id) < 0) equipFound.push(id);
+            const so = __fol('electric', 'brawler', 'staticorb'), mate = __fol('fire', 'brawler'), t = __foe(so.x + 1.5, so.y); mate.x = so.x - 1; mate.y = so.y;
+            o.put = equipSpecialPut(so, 'voltage_field'); so._spReadyAt = 0; o.vf = [cardAttackTry(so, t), so._spReadyAt - frame];
+            for (let i = 0; i < 31; i++) updateElementEffects(); o.vin = [__dmg(t) > 0, mate._voltUntil > frame, mate._voltMove, followerRest(mate, 45)];
+            __clear(); const eh = __fol('fire', 'sniper', 'embercowl'), a = __foe(eh.x + 2, eh.y), b = __foe(eh.x + 2.6, eh.y + 0.4);
+            equipSpecialPut(eh, 'wraithfire'); eh._spReadyAt = 0; const hp0 = eh.health, x0 = eh.x, y0 = eh.y;
+            o.wf = [cardAttackTry(eh, a), Math.round((hp0 - eh.health) / hp0 * 100), eh.untargetable === true, eh._spReadyAt - frame];
+            for (let i = 0; i < 60; i++) { frame++; updateNPC(eh); } o.mid = [__dmg(a) > 0, !!eh._wraith && eh._wraith.left < eh._wraith.power];
+            for (let i = 0; i < 200 && eh._wraith; i++) { frame++; updateNPC(eh); } o.end = [!eh._wraith, eh.untargetable === false, eh.x === x0 && eh.y === y0, __dmg(b) > 0];
+            return o; })()`);
+        same(r.put, true, 'set'); same(r.vf.join(), 'true,1140', 'VOLTAGE FIELD: up; 5 s and then 14 s to wait');
+        same(r.vin.join(), 'true,true,1.3,37', 'the enemy in it bitten; the follower in it marked: +30% move, its rest after an attack 37 frames, not 45 (+20%)');
+        same(r.wf.join(), 'true,25,true,1140', 'WRAITHFIRE: 25% of its HP given, a ghost no one can hit; 4 s and then 15 s to wait');
+        same(r.mid.join(), 'true,true', 'a touch hurt the enemy, spending part of its power'); same(r.end.join(), 'true,true,true,true', 'at the end: no ghost, targetable, back where it began; the rest exploded');
+    });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);
             return { ids, names, dupN: names.length - new Set(names).size, idOk: ids.every(k => MOVES[k].id === k), missing }; })()`);

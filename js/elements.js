@@ -739,6 +739,20 @@ function updateElementEffects() {
                 }
             }
         }
+        if (e.type === "voltagefield") {   // (a card attack's field, cardAttackTry: it moves with its maker, marks the followers in it, bites the enemies in it)
+            const o = e.on;
+            if (!o || o.dead) e.life = 0;
+            else {
+                e.x = o.x; e.y = o.y;
+                const age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % e.every === 0, f0 = typeof frame !== "undefined" ? frame : 0;
+                for (const a of actors) {
+                    if (!a || a.dead || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue;
+                    if (a.isFollower === true && a.team === "green") { a._voltUntil = f0 + 2; a._voltMove = e.move; a._voltAtk = e.atk; }
+                    else if (bite && isHostileTarget(a) && (typeof _evoSees !== "function" || _evoSees(e.x, e.y, a))) applyDamage(a, e.bite, o, "electric", false, false, DMG_HIT_SPECIAL);
+                }
+            }
+        }
+        if (e.type === "wraithfire") { const w = e.on; if (!w || w.dead || !w._wraith) e.life = 0; else { e.x = w.x; e.y = w.y; } }
         if (e.type === "jellyshield") { const w = e.on; if (!w || w.dead || !w.jellyShield) e.life = 0; else { e.x = w.x; e.y = w.y; } }
         if (e.type === "toxicnet") {
             const age = e.maxLife - e.life;
@@ -1206,6 +1220,22 @@ function drawElementEffects() {
                 ctx.lineCap = "round"; ctx.globalAlpha = 0.45 * k; ctx.strokeStyle = "#ff4a12"; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke();
                 ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#ffd27a"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke(); ctx.lineCap = "butt";
                 ctx.globalAlpha = k; ctx.fillStyle = "#ffb04a"; ctx.beginPath(); ctx.arc(px, cy0 - 10, 6 + 14 * (1 - k), 0, Math.PI * 2); ctx.fill();
+                break;
+            }
+            // VOLTAGE FIELD (a card attack: cardAttackTry): a faint yellow disc round the Static Orb, its edge lit, sparks crackling across it
+            case "voltagefield": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H;
+                ctx.globalAlpha = 0.12 * k; ctx.fillStyle = "#ffee33"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.7 * k; ctx.strokeStyle = "#fff27a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
+                for (let i = 0; i < 3; i++) { const an = frame * 0.09 + i * 2.1, j = (frame * 7 + i * 13) % 5; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * rx * 0.3, cy + Math.sin(an) * ry * 0.3); ctx.lineTo(px + Math.cos(an + 0.3) * rx * 0.6 + j, cy + Math.sin(an + 0.3) * ry * 0.6 - j); ctx.lineTo(px + Math.cos(an) * rx * 0.95, cy + Math.sin(an) * ry * 0.95); ctx.stroke(); }
+                break;
+            }
+            // WRAITHFIRE (a card attack: cardAttackTry): the Ember Hood's ghost, a tall wavering flame of pale fire round it
+            case "wraithfire": {
+                const k = Math.min(1, (e.maxLife - e.life) / 8, e.life / 12), cy = py - 16, wob = Math.sin(frame * 0.25) * 3;
+                ctx.globalAlpha = 0.28 * k; ctx.fillStyle = "#ff8a3a"; ctx.beginPath(); ctx.ellipse(px, cy, 22, 34, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.55 * k; ctx.fillStyle = "#ffe0b0"; ctx.beginPath(); ctx.moveTo(px - 14, cy + 22); ctx.quadraticCurveTo(px - 18 + wob, cy - 10, px + wob, cy - 44); ctx.quadraticCurveTo(px + 18 + wob, cy - 10, px + 14, cy + 22); ctx.closePath(); ctx.fill();
                 break;
             }
             // A JELLY SHIELD (FORM_ULTIMATES.jellyram): a soft cyan dome over its wearer, wobbling, fainter as it is used up

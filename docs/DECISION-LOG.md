@@ -1836,3 +1836,17 @@ The owner: too much time goes into testing and side checks. From here on, only t
 - The "wind up" is the wait between strikes: a timer that starts at a strike. There is no charge-up before a strike.
 - The menu shows only on a form some card attack is for.
 
+## DECISION: Build 2026-11-06q to main; VOLTAGE FIELD and WRAITHFIRE's numbers
+
+- **Date:** 2026-11-06
+- **Status:** Approved. Build `2026-11-06q` on main. Both: implemented and tested in build `2026-11-06r`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.3, §12.5; `CHANGELOG.md` (r)
+
+### Decision
+1. "Push to main" (build q).
+2. VOLTAGE FIELD: "Speed and attack speed" (2 tiles, 5 s, +30% move and +20% attack speed for followers in it, 0.1× its attack every 0.5 s, 14 s wait).
+3. WRAITHFIRE: "Haunt" (25% of its HP; power = HP given × attack ÷ 10; a 4 s ghost; 15% of the power a touch, an enemy at most once a second; the rest explodes 2 tiles round; 15 s wait).
+
+### Readings
+- A card attack that lasts waits from its end. The ghost moves 0.12 tiles a frame along walkable floor.
+

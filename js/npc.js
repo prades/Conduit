@@ -370,7 +370,15 @@ function followPlayer(actor) {
     if (dist > stop) { actor.x += (dx / dist) * actor.moveSpeed; actor.y += (dy / dist) * actor.moveSpeed; }
 }
 
+// A step of a follower's mind, with two card attacks' marks (cardAttackTry): WRAITHFIRE's ghost moves itself (wraithfireTick), and a VOLTAGE FIELD's mark makes it faster for this step
 function updateNPC(actor) {
+    if (actor && actor._wraith && typeof wraithfireTick === "function") { wraithfireTick(actor); return; }
+    const v = actor && actor._voltUntil > (typeof frame !== "undefined" ? frame : 0) ? actor._voltMove || 1 : 1;
+    if (v === 1) return _updateNPCStep(actor);
+    const s0 = actor.moveSpeed; actor.moveSpeed = s0 * v;
+    try { return _updateNPCStep(actor); } finally { actor.moveSpeed = s0; }
+}
+function _updateNPCStep(actor) {
     if (actor._flight && typeof techFlightStep === "function" && techFlightStep(actor)) return;   // thrown by a Kinetic Launcher: in the air, nothing else moves it and no wall stops it (js/techabilities.js)
     if (actor._pinball && typeof pinballStep === "function" && pinballStep(actor)) return;   // a PINBALL rolling (js/evolution.js): the roll moves it, and stops itself at a wall
     if (actor._burrow && typeof burrowStep === "function" && burrowStep(actor)) return;   // the Thermite Burrower's BURROW STRIKE under way (js/combat.js): its dive and its tunnel move it
