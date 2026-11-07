@@ -198,18 +198,18 @@ function measure(w, h) {
     });
 
     group('THE CARD ITEMS (js/cardart.js CARD_ITEMS; design/cards: each card\'s own 3D object in place of the crystal; EMBER PLATING approved in build 2026-11-01j, Pack 1\'s other seventeen baked in build k and approved in build n: "Yes push the card art for everyone")');
-    await check('each item is approved on its own, and all of Pack 1\'s eighteen are: each shows its baked picture without any flag; a baked piece not approved shows only with ?cardart=items (the five other bands wait, build 2026-11-07k; KINDLING BAND approved 2026-11-07); a card with none baked keeps its crystal, flag or not (docs/ART-PROCESS.md)', () => {
-        const url = id => 'img/cards/' + id + '.png?v=' + J('BUILD_VERSION'), all = J('CARD_ITEMS.ids'), bands = ['spore_band', 'ionic_band', 'chill_band', 'phase_band', 'lodestone_band'], ids = all.filter(id => bands.indexOf(id) < 0), pack1 = ids.filter(id => id !== 'kindling_band');
-        same(J('CARD_ITEMS.approved.slice().sort().join()'), ids.slice().sort().join(), 'what is approved: Pack 1\'s eighteen and KINDLING BAND'); ok(J('CARD_ITEMS.approved.every(function(id){ return CARD_ITEMS.ids.indexOf(id) >= 0; })'), 'an approved item that is not baked');
+    await check('each item is approved on its own, and all of Pack 1\'s eighteen are: each shows its baked picture without any flag; a baked piece not approved shows only with ?cardart=items (the six sigils wait, build 2026-11-07l; the six bands approved 2026-11-07); a card with none baked keeps its crystal, flag or not (docs/ART-PROCESS.md)', () => {
+        const url = id => 'img/cards/' + id + '.png?v=' + J('BUILD_VERSION'), all = J('CARD_ITEMS.ids'), bands = ['kindling_band', 'spore_band', 'ionic_band', 'chill_band', 'phase_band', 'lodestone_band'], sigils = ['hearth_sigil', 'miasma_sigil', 'voltaic_sigil', 'glacial_sigil', 'warp_sigil', 'keystone_sigil'], ids = all.filter(id => sigils.indexOf(id) < 0), pack1 = ids.filter(id => bands.indexOf(id) < 0);
+        same(J('CARD_ITEMS.approved.slice().sort().join()'), ids.slice().sort().join(), 'what is approved: Pack 1\'s eighteen and the six bands'); ok(J('CARD_ITEMS.approved.every(function(id){ return CARD_ITEMS.ids.indexOf(id) >= 0; })'), 'an approved item that is not baked');
         same(pack1.slice().sort().join(), J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).map(function(c){ return c.id; }).sort().join()'), 'the baked items are Pack 1\'s eighteen');
-        same(J('CARD_ITEMS.ids.filter(function(id){ return CARD_ITEMS.approved.indexOf(id) < 0; })').join(), bands.join(), 'on preview: the five other bands (the following update\'s Part 3)');
-        same(J('cardArtItemUrl(EQUIP_CARDS.spore_band)'), '', 'SPORE BAND without the flag: its crystal');
+        same(J('CARD_ITEMS.ids.filter(function(id){ return CARD_ITEMS.approved.indexOf(id) < 0; })').join(), sigils.join(), 'on preview: the six sigils (the following update\'s Part 3)');
+        same(J('cardArtItemUrl(EQUIP_CARDS.hearth_sigil)'), '', 'HEARTH SIGIL without the flag: its crystal');
         same(JSON.stringify(J(JSON.stringify(ids) + '.map(function(id){ return cardArtItemUrl(EQUIP_CARDS[id]); })')), JSON.stringify(ids.map(url)), 'without a flag: every approved piece');
         same(J('cardArtItemUrl(EQUIP_CARDS.tide_shell)'), '', 'a Series 2 card (none baked yet)');
         run("CARD_ITEMS.approved = CARD_ITEMS.approved.filter(function(id){ return id !== 'venom_gland'; })");   // (the preview's rule, with one piece taken off the approved list for the moment)
         same(J('cardArtItemUrl(EQUIP_CARDS.venom_gland)'), '', 'a piece not approved shows without the flag');
         run("location.search = '?cardart=items'");
-        same(J('cardArtItemUrl(EQUIP_CARDS.spore_band)'), url('spore_band'), 'SPORE BAND with the flag');
+        same(J('cardArtItemUrl(EQUIP_CARDS.hearth_sigil)'), url('hearth_sigil'), 'HEARTH SIGIL with the flag');
         same(J('[cardArtItemUrl(EQUIP_CARDS.venom_gland), cardArtItemUrl(EQUIP_CARDS.ember_plating), cardArtItemUrl(EQUIP_CARDS.tide_shell)]').join('|'), url('venom_gland') + '|' + url('ember_plating') + '|', 'with the flag: the piece not approved, the approved ones still on, an unbaked card still its crystal');
         run("location.search = ''; CARD_ITEMS.approved.push('venom_gland')");
     });

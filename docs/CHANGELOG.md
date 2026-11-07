@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **l · The five bands live; the six sigils for approval** (the owner, 2026-11-07: "Approve all five"; k "Push to main"; on the branch; commit named in git log).
+  - SPORE, IONIC, CHILL, PHASE and LODESTONE BAND show for everyone.
+  - The sigils, one family (design/cards/models/_sigil.js): an upright medallion with a heavy rim, the element's rune glowing in its middle, a gem at the top where it hangs from a chain. HEARTH (flame rune, flames off the rim), MIASMA (three droplets, goo dripping), VOLTAIC (bolt, arcs between terminals), GLACIAL (snowflake, ice crystals), WARP (spiral, ghost rim, hovering fragments), KEYSTONE (stone arch, an arch of blocks over the rim). Proposed looks, on preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **k · KINDLING BAND live; the other five bands for approval** (the owner, 2026-11-07: KINDLING BAND "Approve it"; i and j "Push to main"; on the branch; commit named in git log).
   - KINDLING BAND's item shows for everyone.
   - SPORE BAND (fungus with glowing spots), IONIC BAND (copper-wound posts with arcs), CHILL BAND (ice crystals), PHASE BAND (ghost rings, hovering fragments) and LODESTONE BAND (lodestone chunks with iron filings) are baked on KINDLING BAND's ring and gem (design/cards/models/_band.js). Proposed looks, on preview only (`?cardart=items`).
