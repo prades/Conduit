@@ -2,6 +2,14 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-07
+
+- **a · The sewer's darker look** (Milestone Four, `NEXT-PHASE-ROADMAP.md` §5.1; the owner, 2026-11-07: "Sewer redesign", then "Green, as shown" on the before/after screenshots; on the branch; commit named in git log).
+  - **Main:** build `2026-11-06r` went to main at the owner's word ("Push to main").
+  - The sewer's floor and walls are darker; its accent (the floor's seams and the wall trim) is toxic green instead of violet.
+  - The foul water is a dark toxic green with green light, instead of violet; the purification still clears it to the cold blue-green. One switch, `FP_SEWER_GREEN` (js/facilitysewers.js), puts the violet back. The culverts' glow, the arena's grates and the tanks' sight glasses stay violet for now **[reading]**.
+  - Geometry unchanged. Tests: sewers, facility, bible, boot. No full run. Not playtested.
+
 ## 2026-11-06
 
 - **r · VOLTAGE FIELD and WRAITHFIRE** (the owner: "Speed and attack speed", "Haunt"; on the branch; commit named in git log).

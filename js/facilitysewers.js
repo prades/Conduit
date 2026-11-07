@@ -115,9 +115,15 @@ const _fpSwHash = i => { const s = Math.sin(i * 127.1 + 311.7) * 43758.5453; ret
 // THE WATER'S COLOUR: the violet runoff, clearing to a cold blue-green as the purification module's cycle runs (js/quests.js questWaterClean: 0 foul, 1 clean). The river, the sump and their glow clear;
 // the outfall's pour, the arena's grates and the tanks' sight glasses stay violet: the tanks still leak what they leak, the module cleans what is down here.
 const FP_SEWER_CLEAN = { "#6b2cc4": "#2a8aa8", "#4a1f8c": "#1f6079", "#2c1660": "#143d4f", "#8a46e0": "#3aa6c4", "#3c1878": "#1d5b72", "#1c0c38": "#0f2f3d", "#a64dff": "#4fd0e8" };
+// MILESTONE FOUR's look (docs/NEXT-PHASE-ROADMAP.md §5.1: "a dark sewer environment with concentrated toxic illumination", toxic green as a luminous accent): the foul water is a dark toxic green
+// with glowing green light, in place of the violet; one switch (FP_SEWER_GREEN) puts the violet back. It still clears to the cold blue-green as the purification runs.
+let FP_SEWER_GREEN = true;
+const FP_SEWER_TOXIC = { "#6b2cc4": "#2e7a1e", "#4a1f8c": "#1f5615", "#2c1660": "#12360c", "#8a46e0": "#46a52a", "#3c1878": "#1a4a12", "#1c0c38": "#0a1f07", "#a64dff": "#7dff4a", "#5a27a8": "#276b1a" };
+function _fpSwFoul(hex) { return (FP_SEWER_GREEN && FP_SEWER_TOXIC[hex]) || hex; }
+function _fpSwFoulRgb(c) { return FP_SEWER_GREEN ? [Math.round(c[1] * 0.75), c[2], Math.round(c[1] * 0.45)] : c; }   // (a violet light's green twin: its blue becomes the green)
 function _fpSwClean() { return typeof questWaterClean === "function" ? questWaterClean() : 0; }
-function _fpSwCol(hex) { const t = _fpSwClean(), to = FP_SEWER_CLEAN[hex]; if (!(t > 0) || !to) return hex; const A = parseInt(hex.slice(1), 16), B = parseInt(to.slice(1), 16), ch = s => Math.round(((A >> s) & 255) + (((B >> s) & 255) - ((A >> s) & 255)) * t); return "rgb(" + ch(16) + "," + ch(8) + "," + ch(0) + ")"; }
-function _fpSwRgba(foul, clean, a) { const t = _fpSwClean(), c = foul.map((v, i) => Math.round(v + (clean[i] - v) * (t > 0 ? t : 0))); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
+function _fpSwCol(hex) { const t = _fpSwClean(), from = _fpSwFoul(hex), to = FP_SEWER_CLEAN[hex]; if (!(t > 0) || !to) return from; const A = parseInt(from.slice(1), 16), B = parseInt(to.slice(1), 16), ch = s => Math.round(((A >> s) & 255) + (((B >> s) & 255) - ((A >> s) & 255)) * t); return "rgb(" + ch(16) + "," + ch(8) + "," + ch(0) + ")"; }
+function _fpSwRgba(foul, clean, a) { const t = _fpSwClean(), c = _fpSwFoulRgb(foul).map((v, i) => Math.round(v + (clean[i] - v) * (t > 0 ? t : 0))); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")"; }
 
 // ── THE WATER: the far banks (the faces the camera sees, going down to it), its surface sunk below the ledges, the current, the sump's slow swirl, a violet glow ──
 function _fpSewerWater(it, f) {

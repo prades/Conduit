@@ -485,7 +485,7 @@ const FACILITY_MAP = {
         { room: "arena", style: "sand" },
         { room: "armory", style: "concrete", colour: "#5a5648" },
         { room: "cold_storage", style: "plate", colour: "#cfe6f0" },
-        { room: "sewers", style: "concrete", colour: "#3e4744" },
+        { room: "sewers", style: "concrete", colour: "#272d2c" },   // (darker since build 2026-11-07a: Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.1; it was #3e4744)
     ],
 
     // DECOR: paint and light, not solid. Floor kinds: rug, hazard, lane, arrows, cables, ring, stain / puddle / scorch, papers / debris, light, tint. Wall kinds (drawn flat on the wall between a and b, on its visible +y / +x face,

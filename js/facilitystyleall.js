@@ -24,7 +24,7 @@ const FP_ROOM_STYLE = {
     catwalks:            { acc: FP_ACC.amber,  wain: "#6d8791", fa: "#9db1ba", fb: "#869ba5" },
     nest_area:           { acc: FP_ACC.violet, wain: "#3a3532", fa: "#4a4540", fb: "#3f3a36", dark: true },
     cold_storage:        { acc: "#9be8ff",     wain: "#5f93ad", fa: "#dcedf4", fb: "#c2dbe7", ice: true },   // ICE: frost on the floor and the walls, icicles on the cave's rock (the look only)
-    sewers:              { acc: "#a64dff",     wain: "#232b29", fa: "#47504c", fb: "#3e4643", dark: true, damp: true, wallLit: "#4d5654", wallDark: "#3c4442", cap: "#2e3533" },   // DAMP: wet concrete, a slick sheen and moss in the cracks, stains down the walls (the look only)
+    sewers:              { acc: "#46d62e",     wain: "#1a201f", fa: "#2b3230", fb: "#262c2a", dark: true, damp: true, wallLit: "#363d3b", wallDark: "#2a302e", cap: "#222826" },   // DAMP: wet concrete, a slick sheen and moss in the cracks, stains down the walls (the look only)
 };
 function _fpRoomStyle(id) { return FP_ROOM_STYLE[id] || FP_ROOM_STYLE.crystal_chamber; }
 function _fpAcc(id) { return _fpRoomStyle(id).acc; }

@@ -3387,7 +3387,7 @@
     <tr><td><span class="sw" style="--s:#43e0a8"></span><span class="n" data-k="FP_ROOM_STYLE.experiment_lab.acc">#43e0a8</span> mint</td><td>Experiment Lab</td><td><code>js/facilitystyleall.js:20</code></td></tr>
     <tr><td><span class="sw" style="--s:#f2b13a"></span><span class="n" data-k="FP_ROOM_STYLE.arena.acc">#f2b13a</span> amber</td><td>Armory, Arena (dark), Catwalks</td><td><code>js/facilitystyleall.js:17</code> <code>:23-24</code></td></tr>
     <tr><td><span class="sw" style="--s:#9be8ff"></span><span class="n" data-k="FP_ROOM_STYLE.cold_storage.acc">#9be8ff</span> ice blue</td><td>Cold Storage (ice)</td><td><code>js/facilitystyleall.js:26</code></td></tr>
-    <tr><td><span class="sw" style="--s:#a64dff"></span><span class="n" data-k="FP_ROOM_STYLE.sewers.acc">#a64dff</span> violet</td><td>Sewers (dark, damp; its own wall and cap colours)</td><td><code>js/facilitystyleall.js:27</code></td></tr>
+    <tr><td><span class="sw" style="--s:#46d62e"></span><span class="n" data-k="FP_ROOM_STYLE.sewers.acc">#46d62e</span> toxic green (since build 2026-11-07a; it was violet)</td><td>Sewers (dark, damp; its own wall and cap colours)</td><td><code>js/facilitystyleall.js:27</code></td></tr>
   </table></div>
   <figure><a href="img/bible/rooms/experiment_lab.webp"><img src="img/bible/rooms/experiment_lab.webp" alt="The Experiment Lab: glass walls, benches and tanks in the mint accent, with the stairwell down to Cold Storage and an egg pad" width="1400" height="900" loading="lazy"></a>
     <figcaption>The Experiment Lab in its mint accent: glass walls, benches and tanks, the stairwell down to Cold Storage (▼ COLD STORAGE), a MAGE · TOXIC egg pad.</figcaption></figure>
@@ -3562,7 +3562,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-06r</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-07a</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3783,7 +3783,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-06r (6 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-07a (7 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

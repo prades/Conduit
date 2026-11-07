@@ -1850,3 +1850,13 @@ The owner: too much time goes into testing and side checks. From here on, only t
 ### Readings
 - A card attack that lasts waits from its end. The ghost moves 0.12 tiles a frame along walkable floor.
 
+## DECISION: Build 2026-11-06r to main; the sewer redesign starts with its look
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Build `2026-11-06r` on main. The darker sewer with green toxic water: implemented in build `2026-11-07a`, on the branch; screenshots checked; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §5.1; `CHANGELOG.md` (2026-11-07 a)
+
+### Decision
+1. "Push to main" (build r). 2. Next: "Sewer redesign".
+3. On the before/after screenshots: "Green, as shown" (darker floor and walls, the foul water a dark toxic green with green glow, the accent green).
+
