@@ -148,6 +148,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Followers/recruitment/breeding | `FOLLOWER-PROGRESSION.md` |
 | The conversion apparatus and BLOOM | `CONVERSION.md` |
 | Sewer quest/purification | `SEWER-QUEST.md` |
+| The Ant Nest (beyond the arena's south rubble: THE ANT QUEEN and the testing console; designed 2026-11-07) | `NEST.md` |
 | Player classes | `PLAYER-CLASSES.md` |
 | Technicians | `TECHNICIANS.md` |
 | Series 2 cards | `SERIES-2.md` |
