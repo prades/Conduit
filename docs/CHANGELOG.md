@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **s · The Elemental's four live; the Drone's four for approval** (the owner, 2026-11-07: "Approve all four"; r "Push to main"; on the branch; commit named in git log).
+  - RAW SHARD, FOCUSING PRISM, ATTUNED CORE and STORM HEART show for everyone.
+  - The Drone's four, from their drafted looks in the species' gunmetal (design/cards/models/_drone.js): SERVO OIL (an oil can with a long spout, a bead of amber oil), GYRO STABILIZER (a spinning rotor in gimbal rings on a stand), HUNTER OPTICS (a lens cluster with a red reticle), OVERCLOCK CHIP (a chip with pins and glowing traces under an orange-hot heat sink). On preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **r · The Mollusk's four live; the Elemental's four for approval** (the owner, 2026-11-07: "Approve all four"; q "Push to main"; on the branch; commit named in git log).
   - MANTLE GEL, NACRE PEARL, SIPHON SLIME and REGROWTH SAC show for everyone.
   - The Elemental's four, from their drafted looks in the species' prism white (design/cards/models/_elemental.js): RAW SHARD (a rough white crystal with glints of the six element colours), FOCUSING PRISM (a brass-edged prism in a cradle, a white beam in, six coloured beams out), ATTUNED CORE (a white-hot core in a steel cage with six coloured lights), STORM HEART (a crackling orb in a ring of turbine fins). Two drafted lines asked for "the wearer's colour": a baked picture cannot change, so those carry all six. On preview only (`?cardart=items`).
