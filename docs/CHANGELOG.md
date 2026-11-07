@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **kk · A Mage winds up its everyday shot** (the owner, 2026-11-07, a hot fix: "mages have to wind up their normal attack as well, but it's a really fast wind up and they can't move while they're doing it"; jj "Push to main"). Implemented and tested on the branch; not playtested.
+  - Before each everyday shot a Mage stands still for a short wind-up, 12 frames (0.2 s, the agent's number, `MAGE_SHOT_WINDUP` in js/npc.js), aimed at the enemy it picked, then shoots; the rest after the shot is as before (55 frames). Attack-speed cards shorten the wind-up as they do the rest (Speed Trial: 8 frames), so the shots still come half as often again. A retreat cancels a wind-up; a target that dies in it is let go.
+  - No cue is drawn for this one (it is short); the INFO card's shot rows say WIND-UP 0.2 s, standing still.
+  - Tests: combat (a new check: the shot when the wind-up ends, no step while winding up, a retreat cancels it), crystalline and packs (their shot helpers step through the wind-up; Speed Trial counts it), unitinfo, followercombat, evolution, cover, damage, followerprog, cards, classcards, bible.
+
 - **jj · No element special attack: a follower has a primary, an alternate, a card special attack and an Ultimate** (the owner, 2026-11-07, asked whether the fire special's bombs should go too: "I don't think we're gonna have a special attack. It's going to be each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability"; ii "Push to main"). Implemented and tested on the branch; not playtested.
   - A follower no longer fires its element's special now and then (it was a 15% chance with 4 WILL: fire bombs, static field, ice burst, singularity, toxic cloud). With WILL it uses its element's physical move, without it the plain hit, as before. js/combat.js `followerAttack`.
   - Nothing throws fire bombs now, so nothing sets the floor burning that way.

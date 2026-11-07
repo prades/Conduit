@@ -60,8 +60,10 @@ async function boot(search, store) {
         // a creature to shoot at, held still
         globalThis.__foe = (dx, dy) => { const e = spawnCreature({ species: 'ant', className: 'tank', level: 3, x: crystal.x + dx, y: crystal.y + dy, state: 'hunt' }); e.provoked = true; e.health = e.maxHealth = 1e9; e.moveSpeed = 0; e.baseMoveSpeed = 0; return e; };
         // the Mage's shots: the damage of each shot made in a number of frames, with the foe in its sweet spot (js/npc.js), taken from the call that makes the shot
-        globalThis.__shots = (f, frames) => { const e = __foe(0, 0); f.stance = 'follow'; f.job = null; f.post = null; f.health = f.maxHealth = 1e9; f.attackCooldown = 0; f.x = crystal.x; f.y = crystal.y; const log = [], orig = spawnFollowerProjectile; spawnFollowerProjectile = (a, t, col, dmg) => { log.push(dmg); };
-            try { for (let i = 0; i < frames; i++) { frame++; e.x = f.x + 3.2; e.y = f.y; e.hitStun = 1e9; updateNPC(f); } } finally { spawnFollowerProjectile = orig; e.dead = true; const k = actors.indexOf(e); if (k >= 0) actors.splice(k, 1); } return log; };`, ctx);
+        globalThis.__shots = (f, frames, one) => { const e = __foe(0, 0); f.stance = 'follow'; f.job = null; f.post = null; f.health = f.maxHealth = 1e9; f.attackCooldown = 0; f._shotWind = 0; f._shotTarget = null; f.x = crystal.x; f.y = crystal.y; const log = [], orig = spawnFollowerProjectile; spawnFollowerProjectile = (a, t, col, dmg) => { log.push(dmg); };
+            try { for (let i = 0; i < frames && !(one && log.length); i++) { frame++; e.x = f.x + 3.2; e.y = f.y; e.hitStun = 1e9; updateNPC(f); } } finally { spawnFollowerProjectile = orig; e.dead = true; const k = actors.indexOf(e); if (k >= 0) actors.splice(k, 1); } return log; };
+        // one shot: steps until it goes off (a Mage winds its shot up first since 2026-11-07, js/npc.js MAGE_SHOT_WINDUP), and stops there
+        globalThis.__shotOne = f => __shots(f, 200, true);`, ctx);
     return { ctx, run: s => vm.runInContext(s, ctx), J: s => JSON.parse(vm.runInContext('JSON.stringify(' + s + ')', ctx)) };
 }
 
@@ -188,16 +190,16 @@ const restOf = (n, k) => Math.max(1, Math.round((n + 1) / k) - 1);   // the rest
         same(o.a, o.atk0 * 0.45, 'the bash before'); same(o.b, o.atk * 0.45, 'the bash with the card'); ok(Math.abs(o.b / o.a - 1.5) < 0.05, 'the bash is not half as much again: ' + o.a + ' to ' + o.b); same(o.power, o.atk, 'power is ATK, which the signature moves read (js/evolution.js)');
     });
     await check('Power Surge: a Mage\'s ranged shot (SP.ATK x0.5) and an element\'s special (SP.ATK x0.6 for ice) are half as much again; its plain ATK is untouched', () => {
-        const o = J(`(function(){ __fresh(0); const f = __prep('sniper', 'ice'); __hand(['power_surge']); const sp0 = f.stats.specialAttack, atk0 = f.stats.attack, shot0 = __shots(f, 1)[0]; equipPut(f, 0, 'power_surge'); const sp1 = f.stats.specialAttack, shot1 = __shots(f, 1)[0], atk1 = f.stats.attack;
+        const o = J(`(function(){ __fresh(0); const f = __prep('sniper', 'ice'); __hand(['power_surge']); const sp0 = f.stats.specialAttack, atk0 = f.stats.attack, shot0 = __shotOne(f)[0]; equipPut(f, 0, 'power_surge'); const sp1 = f.stats.specialAttack, shot1 = __shotOne(f)[0], atk1 = f.stats.attack;
             const e = __foe(1.2, 0), spec = () => { const got = [], orig = applyElementalDamage; applyElementalDamage = (t, a) => { got.push(a); }; try { ELEMENT_ATTACKS.ice.special(f, e); } finally { applyElementalDamage = orig; } return got[0]; };
             const special1 = spec(); equipPut(f, 0, null); const special0 = spec(); e.dead = true; return { sp0, sp1, atk0, atk1, shot0, shot1, special0, special1 }; })()`);
         same(o.shot0, o.sp0 * 0.5, 'the shot before'); same(o.shot1, o.sp1 * 0.5, 'the shot with the card'); same(o.sp1, st(o.sp0, 1.5), 'SP.ATK'); ok(Math.abs(o.shot1 / o.shot0 - 1.5) < 0.05, 'the shot is not half as much again');
         same(o.special0, o.sp0 * 0.6, 'the ice burst before'); same(o.special1, o.sp1 * 0.6, 'the ice burst with the card'); ok(Math.abs(o.special1 / o.special0 - 1.5) < 0.05, 'the ice burst is not half as much again'); same(o.atk1, o.atk0, 'ATK moved');
     });
     await check('Speed Trial: the Mage\'s shots come half as often again (the rest after a shot, 55 frames, is 36); with the card off, as before', () => {
-        const N = 2300, o = J(`(function(){ __fresh(0); const f = __prep('sniper', 'ice'); __hand(['speed_trial']); __shots(f, 1); const r0 = f.attackCooldown, a = __shots(f, ${N}); equipPut(f, 0, 'speed_trial'); __shots(f, 1); const r1 = f.attackCooldown, b = __shots(f, ${N}); equipPut(f, 0, null); const c = __shots(f, ${N}); return { a: a.length, b: b.length, c: c.length, r0, r1 }; })()`);
-        const per = rest => Math.floor((N - 1) / (rest + 1)) + 1;   // a shot, then the rest counted down, then the next shot
-        same(o.r0, 55, 'the rest as it was'); same(o.r1, 36, 'the rest with the card'); same(o.a, per(55), 'shots before'); same(o.b, per(36), 'shots with the card'); same(o.c, o.a, 'shots after taking it off'); ok(Math.abs(o.b / o.a - 1.5) < 0.04, 'not half as often again: ' + o.a + ' to ' + o.b);
+        const N = 2300, o = J(`(function(){ __fresh(0); const f = __prep('sniper', 'ice'); __hand(['speed_trial']); __shotOne(f); const r0 = f.attackCooldown, w0 = followerRest(f, MAGE_SHOT_WINDUP), a = __shots(f, ${N}); equipPut(f, 0, 'speed_trial'); __shotOne(f); const r1 = f.attackCooldown, w1 = followerRest(f, MAGE_SHOT_WINDUP), b = __shots(f, ${N}); equipPut(f, 0, null); const c = __shots(f, ${N}); return { a: a.length, b: b.length, c: c.length, r0, r1, w0, w1 }; })()`);
+        const per = (rest, w) => Math.floor((N - 1 - w) / (rest + 1 + w)) + 1;   // a wind-up, the shot, then the rest counted down, then the next wind-up (the wind-up since 2026-11-07)
+        same(o.r0, 55, 'the rest as it was'); same(o.r1, 36, 'the rest with the card'); same(o.w0, 12, 'the wind-up as it was'); same(o.w1, 8, 'the wind-up with the card'); same(o.a, per(55, o.w0), 'shots before'); same(o.b, per(36, o.w1), 'shots with the card'); same(o.c, o.a, 'shots after taking it off'); ok(Math.abs(o.b / o.a - 1.5) < 0.04, 'not half as often again: ' + o.a + ' to ' + o.b);
     });
     await check('Prototype X: a Technician\'s attacks come half as often again (the plain hit\'s rest, 45 frames, is 30), and the other two attacks\' rests (40, 70) shorten the same way', () => {
         const N = 2300, o = J(`(function(){ __fresh(0); const f = __prep('camper', 'core'); __hand(['prototype_x']); const a = __swings(f, ${N}), r0 = __hit(f).rest; equipPut(f, 0, 'prototype_x'); const b = __swings(f, ${N}), r1 = __hit(f).rest, rs = __rests(f); equipPut(f, 0, null); const c = __swings(f, ${N}); return { a, b, c, r0, r1, rs }; })()`);
@@ -222,7 +224,7 @@ const restOf = (n, k) => Math.max(1, Math.round((n + 1) / k) - 1);   // the rest
     });
     await check('Power Surge + Speed Trial on a Mage, and Prototype X + Core Reinforcement on a Technician: each pair works at once', () => {
         const o = J(`(function(){ __fresh(0); const m = __prep('sniper', 'ice'), t = __prep('camper', 'core'); __hand(['power_surge', 'speed_trial', 'prototype_x', 'core_reinforcement']); const ma = __snap(m), ta = __snap(t); equipPut(m, 0, 'power_surge'); equipPut(m, 1, 'speed_trial'); equipPut(t, 0, 'prototype_x'); equipPut(t, 1, 'core_reinforcement');
-            return { ma, mb: __snap(m), mr: __rests(m), ta, tb: __snap(t), tr: __rests(t), shot: __shots(m, 1)[0], swings: __swings(t, 2300) }; })()`);
+            return { ma, mb: __snap(m), mr: __rests(m), ta, tb: __snap(t), tr: __rests(t), shot: __shotOne(m)[0], swings: __swings(t, 2300) }; })()`);
         same(o.mb.stats.specialAttack, st(o.ma.stats.specialAttack, 1.5), 'the Mage\'s SP.ATK'); sameJ(o.mr, [30, 26, 36, 46], 'the Mage\'s rests'); same(o.mb.maxHealth, o.ma.maxHealth, 'the Mage\'s health moved'); same(o.shot, o.mb.stats.specialAttack * 0.5, 'the shot');
         same(o.tb.maxHealth, Math.round(o.ta.stats.hp * 1.25 * 1.5), 'the Technician\'s maximum health'); sameJ(o.tr, [30, 26, 36, 46], 'the Technician\'s rests'); same(o.tb.stats.attack, o.ta.stats.attack, 'the Technician\'s ATK moved'); same(o.swings, Math.floor(2299 / 31) + 1, 'its attacks in 2300 frames');
     });

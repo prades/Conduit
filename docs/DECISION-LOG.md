@@ -2110,3 +2110,12 @@ Supersedes `FOLLOWER-COMBAT-REDESIGN.md`'s "FIRE BOMBS stays a selectable altern
 
 ### Follow-up
 The special functions (and the fire bombs they threw) stay in the code, unused; taking them out is a cleanup for later, on the owner's word.
+
+## DECISION: A Mage winds up its everyday shot
+
+- **Date:** 2026-11-07
+- **Status:** Approved (the rule); the number (12 frames) and attack speed shortening it are the agent's, provisional. Implemented and tested in build `2026-11-07kk`, on the branch; not playtested.
+- **Related feature/docs:** `COMBAT.md` §7.4; `CHANGELOG.md` (2026-11-07 kk)
+
+### Decision
+"mages have to wind up their normal attack as well, but it's a really fast wind up and they can't move while they're doing it": a short rooted wind-up before each everyday shot, then the shot; the rest after it unchanged.

@@ -47,9 +47,9 @@ const MOVE_INFO = {
 
 // A form's everyday attack where it has a name of its own (a Mage's shot, EVOLUTIONS[x].shot; the Thermite Burrower's hit, EVOLUTIONS[x].hit; the follower combat redesign, docs/FOLLOWER-COMBAT-REDESIGN.md), as rows read off the constants.
 const SHOT_INFO = {
-    "FIREBALL":        () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " (less with attack-speed cards)"], ["EFFECT", "A ball of fire at the nearest enemy: a direct hit"]],
+    "FIREBALL":        () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack-speed cards)"], ["EFFECT", "A ball of fire at the nearest enemy: a direct hit"]],
     "BURROW STRIKE":   () => [["REACH", BURROW_REACH + " tiles, an enemy it can see"], ["DAMAGE", _uiX(BURROW_MULT) + " its plain hit, as it erupts"], ["REST", _uiSec(BURROW_REST) + " after an eruption"], ["EFFECT", "It dives into the floor, travels under it to the enemy and erupts beneath it. Under the floor nothing can target or hurt it"]],
-    "CHAIN LIGHTNING": () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack on the first enemy"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " (less with attack-speed cards)"], ["JUMPS", "On to the nearest enemy not yet struck within " + CHAIN_HOP + " tiles, each " + Math.round(CHAIN_SHARE * 100) + "% of the one before, while one is that near"], ["EFFECT", "A close cluster carries it far; a gap breaks it"]],
+    "CHAIN LIGHTNING": () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack on the first enemy"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack-speed cards)"], ["JUMPS", "On to the nearest enemy not yet struck within " + CHAIN_HOP + " tiles, each " + Math.round(CHAIN_SHARE * 100) + "% of the one before, while one is that near"], ["EFFECT", "A close cluster carries it far; a gap breaks it"]],
 };
 const _uiLabel = id => { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === id) : null; return e ? e.label.toUpperCase() : String(id || "").toUpperCase(); };
 const _uiColour = id => { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === id) : null; return e ? e.color : "#8aa0c8"; };

@@ -328,7 +328,7 @@ function measure(w, h, query, seed) {
     });
     await check('Venom Gland and Corrosive Reservoir SPECIAL ATTACK: what is made from SP.ATK (a Mage\'s ranged shot x0.5, an element\'s special) is made from the raised number', () => {
         const o = J(`(function(){ __fresh(0); equipFound = ['venom_gland', 'corrosive_reservoir']; const f = __prep('toxic', 'sniper', 30); f.x = crystal.x; f.y = crystal.y; f.stance = 'follow'; f.job = null; f.post = null; f.health = f.maxHealth = 1e9;
-            const shot = () => { const e = __ant(0, 0); f.attackCooldown = 0; const log = [], orig = spawnFollowerProjectile; spawnFollowerProjectile = (a, t, col, dmg) => { log.push(dmg); }; try { frame++; e.x = f.x + 3.2; e.y = f.y; updateNPC(f); } finally { spawnFollowerProjectile = orig; __gone(e); } return log[0]; };
+            const shot = () => { const e = __ant(0, 0); f.attackCooldown = 0; f._shotWind = 0; f._shotTarget = null; const log = [], orig = spawnFollowerProjectile; spawnFollowerProjectile = (a, t, col, dmg) => { log.push(dmg); }; try { for (let i = 0; i < 200 && !log.length; i++) { frame++; e.x = f.x + 3.2; e.y = f.y; updateNPC(f); } } finally { spawnFollowerProjectile = orig; __gone(e); } return log[0]; };
             const out = { sp0: f.stats.specialAttack, s0: shot() }; equipPut(f, 0, 'venom_gland'); out.sp5 = f.stats.specialAttack; out.s5 = shot(); equipPut(f, 0, 'corrosive_reservoir'); out.sp10 = f.stats.specialAttack; out.s10 = shot(); return out; })()`);
         same(o.s0, o.sp0 * 0.5, 'the shot before'); same(o.s5, o.sp5 * 0.5, 'the shot with +5%'); same(o.s10, o.sp10 * 0.5, 'the shot with +10%'); same(o.sp5, st(o.sp0, 1.05), 'SP.ATK +5%'); same(o.sp10, st(o.sp0, 1.10), 'SP.ATK +10%');
     });

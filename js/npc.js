@@ -3,6 +3,18 @@
 // ─────────────────────────────────────────────────────────
 // A Mage's everyday shot (the sniper branch below): SP.ATK × MAGE_SHOT_MULT, a shot every MAGE_SHOT_REST frames (an attack-speed bonus shortens the rest: js/combat.js followerRest). Named here so the INFO tab reads them (js/unitinfo.js SHOT_INFO).
 const MAGE_SHOT_MULT = 0.5, MAGE_SHOT_REST = 55;
+// The owner, 2026-11-07: "mages have to wind up their normal attack as well, but it's a really fast wind up and they can't move while they're doing it": a Mage's shot
+// winds up MAGE_SHOT_WINDUP frames, rooted, at the enemy it picked, then goes off (the rest after it is as before). A retreat cancels it; a target that died in the
+// wind-up is let go. The number is the agent's (provisional).
+const MAGE_SHOT_WINDUP = 12;
+function _mageShotFire(actor) {
+    const t = actor._shotTarget; actor._shotTarget = null;
+    if (!t || t.dead) return;   // (it died in the wind-up: the next step picks another)
+    const elDef = ELEMENTS.find(e => e.id === actor.element), col = elDef ? elDef.color : "#fff", dmg = (actor.stats?.specialAttack || 10) * MAGE_SHOT_MULT;
+    spawnFollowerProjectile(actor, t, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT);   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING)
+    actor.attackCooldown = followerRest(actor, MAGE_SHOT_REST);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
+    if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
+}
 // One step toward (dx, dy) at the unit's speed, WALKING: the legs are drawn
 // from walkCycle and it faces the way it goes. These moves (home to the
 // Crystal, out to a POSITION, a room's round) return before the shared
@@ -36,6 +48,10 @@ function updateRTSNPC(actor) {
     if (actor.spawnProtection>0) { actor.spawnProtection--; }
     if (actor.hitFlash>0) actor.hitFlash--;
     if (actor.isFollower && actor._altWind > 0) return;   // WINDING UP its chosen alternate (js/evolution.js altTick): it stands still and does nothing else until the move goes off
+    if (actor.isFollower && actor._shotWind > 0) {   // a MAGE WINDING UP its shot (MAGE_SHOT_WINDUP above): rooted, then the shot goes off
+        if (actor.retreatUntil > (typeof frame !== "undefined" ? frame : 0)) { actor._shotWind = 0; actor._shotTarget = null; }   // (a retreat cancels it)
+        else { if (--actor._shotWind <= 0) _mageShotFire(actor); return; }
+    }
     if (actor.asleep > 0) return;   // ASLEEP (the Sleeping Potion's original takes your followers and clones too: js/combat.js applySleep): it does nothing until the sleep's timer, which updateStatusEffects runs down, is out
     if (actor.isClone && typeof cloneTick === "function" && cloneTick(actor)) return;   // a clone's special and its abdomen shot (js/clone.js): a special that is winding up or under way has the step
     if (actor.isFollower && actor.state === "attack") {
@@ -283,12 +299,7 @@ function updateRTSNPC(actor) {
                     if (!actor.attackCooldown) actor.attackCooldown = 0;
                     if ((typeof cardAttackHolds === "function" && cardAttackHolds(actor)) || (typeof followerAltLocked === "function" && followerAltLocked(actor))) { /* a card attack set, or locked on its chosen alternate (js/moves.js): no shot */ }
                     else if (actor.attackCooldown <= 0) {
-                        const elDef = ELEMENTS.find(e=>e.id===actor.element);
-                        const col   = elDef ? elDef.color : "#fff";
-                        const dmg   = (actor.stats?.specialAttack||10) * MAGE_SHOT_MULT;
-                        spawnFollowerProjectile(actor, nearestEnemy, col, dmg, 5, typeof evoShotOnHit === "function" ? evoShotOnHit(actor, dmg) : null, DMG_HIT_SHOT);   // (a Mage's shot reads SP.ATK: js/damage.js; the Thunderhead's is CHAIN LIGHTNING, which conducts on from the enemy it strikes: js/evolution.js)
-                        actor.attackCooldown = followerRest(actor, MAGE_SHOT_REST);   // (EQUIP CARDS: +attack speed shortens the rest, js/combat.js followerRest)
-                        if (actor.currentWill !== undefined) actor.currentWill = Math.max(0, actor.currentWill - WILL_COST_SPECIAL);
+                        actor._shotTarget = nearestEnemy; actor._shotWind = Math.max(1, followerRest(actor, MAGE_SHOT_WINDUP));   // (the shot winds up first, rooted, then _mageShotFire sends it and sets the rest; attack speed shortens the wind-up as it does the rest)
                     } else {
                         actor.attackCooldown--;
                     }

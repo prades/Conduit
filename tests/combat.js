@@ -103,6 +103,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.wound, true, 'wound up'); same(r.threw, null, 'drawing threw');
         const src = rd('js/combat.js'); ok(/function drawBiteTelegraphs/.test(src) && /"BITE"/.test(src) && /biteTarget/.test(src), 'the telegraph'); ok(/drawBiteTelegraphs\(\)/.test(rd('js/game.js')), 'called by the frame');
     });
+    check('a MAGE WINDS UP its everyday shot (the owner, 2026-11-07: "mages have to wind up their normal attack as well, but it\'s a really fast wind up and they can\'t move while they\'re doing it"): MAGE_SHOT_WINDUP frames rooted, then the shot at the enemy it picked; a retreat cancels it', () => {
+        const r = J(`(function(){ __clear(); const f = __follower('fire', 'sniper', 5); f.stance = 'follow'; f.job = null; f.post = null; f.health = f.maxHealth = 1e9; f.x = crystal.x; f.y = crystal.y; f.attackCooldown = 0; f._shotWind = 0;
+            const e = spawnCreature({ species: 'ant', className: 'tank', level: 3, x: crystal.x + 3.2, y: crystal.y, state: 'hunt' }); e.provoked = true; e.health = e.maxHealth = 1e9; e.moveSpeed = e.baseMoveSpeed = 0;
+            const shots = [], orig = spawnFollowerProjectile; spawnFollowerProjectile = (a, t) => { shots.push(frame); }; const o = { W: MAGE_SHOT_WINDUP };
+            try {
+                let start = -1; for (let i = 0; i < 60 && !shots.length; i++) { frame++; e.x = f.x + 3.2; e.y = f.y; e.hitStun = 1e9; const x0 = f.x, y0 = f.y; updateNPC(f);
+                    if (start < 0 && f._shotWind > 0) { start = frame; e.x = f.x + 9; o.far = true; } else if (start >= 0 && !shots.length && (f.x !== x0 || f.y !== y0)) o.moved = true; }
+                o.after = shots.length ? shots[0] - start : null; o.n = shots.length;
+                f.attackCooldown = 0; f._shotWind = 0; shots.length = 0; for (let i = 0; i < 5 && !(f._shotWind > 0); i++) { frame++; e.x = f.x + 3.2; e.y = f.y; updateNPC(f); }
+                o.wound = f._shotWind > 0; f.retreatUntil = frame + 100; f.attackOrder = null; f._nearestEnemy = null; frame++; updateNPC(f);   /* (as RETREAT sets it: js/mixtool.js) */ o.cancelled = !(f._shotWind > 0) && !f._shotTarget; f.retreatUntil = 0; o.shotOnRetreat = shots.length;
+            } finally { spawnFollowerProjectile = orig; e.dead = true; const k = actors.indexOf(e); if (k >= 0) actors.splice(k, 1); } return o; })()`);
+        same(r.W, 12, 'the wind-up (frames)'); same(r.n, 1, 'one shot'); same(r.after, r.W, 'the shot goes off when the wind-up ends'); ok(!r.moved, 'it moved while winding up (its target stepped away)');
+        same(r.wound, true, 'a second wind-up'); same(r.cancelled, true, 'a retreat cancels the wind-up'); same(r.shotOnRetreat, 0, 'a shot on the retreat');
+    });
     check('a follower WINDING UP its chosen alternate shows it by its class (the owner, 2026-11-07: "an aura for a mage and a rumble for a brawler", then for a technician "Circuit sparks works"): a Mage a faint glow of its element round it, a Brawler its body rumbling, a Technician circuit sparks of its element over its body; none of it when not winding up; no ring or name over it (builds 2026-11-07gg, hh)', () => {
         const r = J(`(function(){ __clear(); const log = [], el = ctx.ellipse, tr = ctx.translate, st = ctx.stroke, o = {};
             ctx.ellipse = function () { log.push('e:' + String(ctx.fillStyle).toLowerCase()); return el.apply(this, arguments); }; ctx.translate = function (x, y) { log.push('t'); return tr.apply(this, arguments); };
