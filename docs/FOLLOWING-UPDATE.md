@@ -167,9 +167,9 @@ Each part is its own commit, with its own tests and a full green run before the 
 - **The rule (approved):** "Each look approved, one at a time" and "ONE piece first".
 
 **Gate 3, for the owner's approval:**
-- the first piece, KINDLING BAND, modelled in the game-model look like EMBER PLATING; **baked in `2026-11-07j`** (design/cards/models/kindling_band.js, img/cards/kindling_band.png): a bronze arm-band with brass lips, charred kindling lashed round it with copper wire, smouldering, and a faceted ember gem in a brass bezel. **On preview only** (`?cardart=items`) until the owner approves it;
+- the first piece, KINDLING BAND, modelled in the game-model look like EMBER PLATING; **baked in `2026-11-07j`** (design/cards/models/kindling_band.js, img/cards/kindling_band.png): a bronze arm-band with brass lips, charred kindling lashed round it with copper wire, smouldering, and a faceted ember gem in a brass bezel. **Approved** by the owner 2026-11-07 ("Approve it"), live for everyone since `2026-11-07k`;
 - then the rest in batches the owner approves:
-  - the other bands;
+  - the other bands: **baked in `2026-11-07k`** (SPORE, IONIC, CHILL, PHASE, LODESTONE: one family on KINDLING BAND's ring and gem, design/cards/models/_band.js), on preview until approved;
   - the sigils;
   - the crowns;
   - the Brawler's SPUR, TALON and FANG.

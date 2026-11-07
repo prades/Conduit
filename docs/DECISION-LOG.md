@@ -1920,3 +1920,14 @@ The owner: too much time goes into testing and side checks. From here on, only t
 1. The owner first wrote "Wind up for the secondary attack takes 10 seconds to charge up actually five seconds and then it's immediately fired", then: "Don't make it a flat 10 or five seconds ... make it another stat ... it needs to be adjustable ... it's on the attack not the follower."
 2. Each move carries `windup` (seconds). It fires the moment the wind-up is full and an enemy is in reach. The values stay the old waits until the owner sets new ones.
 
+## DECISION: KINDLING BAND's item approved; builds i and j to main
+
+- **Date:** 2026-11-07
+- **Status:** Approved. KINDLING BAND live in `2026-11-07k`; main at `2026-11-07j`.
+- **Related feature/docs:** `FOLLOWING-UPDATE.md` Part 3; `CHANGELOG.md` (2026-11-07 i–k)
+
+### Decision
+1. KINDLING BAND: "Approve it". The family's look (ring, lips, four-pronged gem) carries to the other bands.
+2. Builds i (SIGNATURE MOVE for a group) and j: "Push to main".
+3. The move wind-ups: the owner chose to set them; no numbers have come through yet.
+

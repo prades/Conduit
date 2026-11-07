@@ -597,10 +597,12 @@ function cardArtObjectClass(c, col) {
 const CARD_ITEMS = {
     ids: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",   // all eighteen of Pack 1, by element (fire, toxic,
           "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse",    // electric, ice, flux, core), each Unrefined to Precision
-          "kindling_band"],   // the first class-card item (docs/FOLLOWING-UPDATE.md Part 3, gate 3; build 2026-11-07j): on preview until the owner approves it
+          "kindling_band",    // the first class-card item (docs/FOLLOWING-UPDATE.md Part 3, gate 3; build 2026-11-07j), approved 2026-11-07 ("Approve it")
+          "spore_band", "ionic_band", "chill_band", "phase_band", "lodestone_band"],   // the other bands (build 2026-11-07k), the same family: on preview until the owner approves them
     // approved: all eighteen of Pack 1. EMBER PLATING 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen 2026-11-01 ("Yes push the card art for everyone"), live since build 2026-11-01n
     approved: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",
-               "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse"],
+               "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse",
+               "kindling_band"],   // KINDLING BAND: the owner, 2026-11-07, "Approve it" (live for everyone since build 2026-11-07k)
 };
 function cardArtItemsPreview() { try { return typeof location !== "undefined" && /[?&]cardart=items\b/.test(location.search || ""); } catch (e) { return false; } }
 // the picture of a card's item, or "" (none baked, or not approved and no preview)

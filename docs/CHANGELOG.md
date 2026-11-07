@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **k · KINDLING BAND live; the other five bands for approval** (the owner, 2026-11-07: KINDLING BAND "Approve it"; i and j "Push to main"; on the branch; commit named in git log).
+  - KINDLING BAND's item shows for everyone.
+  - SPORE BAND (fungus with glowing spots), IONIC BAND (copper-wound posts with arcs), CHILL BAND (ice crystals), PHASE BAND (ghost rings, hovering fragments) and LODESTONE BAND (lodestone chunks with iron filings) are baked on KINDLING BAND's ring and gem (design/cards/models/_band.js). Proposed looks, on preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **j · KINDLING BAND's item, for approval** (the following update's Part 3, gate 3: "ONE piece first"; on the branch; commit named in git log).
   - The first class-card item, modelled and baked like EMBER PLATING: a bronze arm-band with brass lips, charred kindling lashed round it with copper wire (smouldering, the tips catching), a faceted ember gem in a brass bezel, sparks. A proposed look.
   - On preview only (`?cardart=items`); everyone else still sees the crystal until the owner approves it.
