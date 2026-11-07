@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **w · Three more own Ultimates: PROXY SWARM, SHOCKWAVE SLAM, ICE RINK** (the owner, 2026-11-07, each picked from two proposals; v "Push to main"; on the branch; commit named in git log).
+  - **PROXY SWARM** (Goo Proxy): three goo copies round it for 6 s that lure enemies within 6 tiles (the ROTTEN DECOY lure), each bursting when broken or at the end for 1.5 × its power (flux) within 1.5 tiles.
+  - **SHOCKWAVE SLAM** (Hammer Slug): 2 × its power (core) to every enemy within 3.5 tiles, thrown 2 tiles, stunned 1.5 s (not a boss). Core forms had no Ultimate before.
+  - **ICE RINK** (Igloo Skater): the floor 4 tiles round it freezes for 6 s, staying put: enemies on it at 40% speed and 0.25 × its power (ice) every 0.5 s; squad followers on it 30% faster.
+  - The numbers are the proposals' (drafted by the agent, picked by the owner). Horn Shell and Hover Shell keep their element's.
+  - Tests: followercombat (1 new; the "form without its own" check now uses the Hover Shell), unitinfo. Screenshot of the rink and the copies in the test room. No full run. Not playtested.
+
 - **v · The Technician's four live: every built card has its item** (the owner, 2026-11-07: "Approve all four"; u "Push to main"; next "More own Ultimates"; on the branch; commit named in git log).
   - SPARE PARTS KIT, CAPACITOR BANK, FIELD MULTITOOL and DOUBLE CELL show for everyone. Every built card now shows its own item, bar the Brawler's three (skipped by the owner, they keep the cube). Nothing waits on the preview.
   - Tests: cardart. No full run.

@@ -1942,3 +1942,13 @@ The owner: too much time goes into testing and side checks. From here on, only t
 2. The Brawler's PRESSURE SPUR, FAULTLINE TALON and RUPTURE FANG: "No, just skip these items". They keep the cube.
 3. Next: "Series 2 items", one piece first (CHITIN SCALE).
 
+## DECISION: Series 2 items done; three more own Ultimates
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Items live by `2026-11-07v` (main); the Ultimates implemented and tested in `2026-11-07w`, on the branch; not playtested.
+- **Related feature/docs:** `SERIES-2.md`; `NEXT-PHASE-ROADMAP.md` §12.3 items 15, 16, 18; `CHANGELOG.md` (2026-11-07 p–w)
+
+### Decision
+1. Every Series 2 family's items: "Approve all" (Crustacean, Mollusk, Elemental, Drone, Jelly, Technician).
+2. Next: "More own Ultimates". Goo Proxy: "PROXY SWARM"; Hammer Slug: "SHOCKWAVE SLAM"; Igloo Skater: "ICE RINK" (each picked from two agent proposals; the numbers are the proposals').
+

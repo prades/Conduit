@@ -457,8 +457,8 @@ function measure(w, h) {
     });
     check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it, any other its element\'s; OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
         const r = J(`(function(){ const o = {};
-            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('ice', 'camper', 'igloo');
-            o.look = [followerUltimate(so).name, followerUltimate(eh) === FOLLOWER_ULTIMATES.fire, followerUltimate(qs) === FOLLOWER_ULTIMATES.ice];
+            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('electric', 'camper', 'hovershell');
+            o.look = [followerUltimate(so).name, followerUltimate(eh) === FOLLOWER_ULTIMATES.fire, followerUltimate(qs) === FOLLOWER_ULTIMATES.electric];
             __clear(); const s = __fol('electric', 'brawler', 'staticorb'), g1 = __foe(s.x + 4, s.y), g2 = __foe(s.x + 4.6, s.y + 0.4), lone = __foe(s.x - 3, s.y); s.ultimateCharge = 100; followerUltimate(s).execute(s);
             o.over = [s.ultimateCharge < 50, Math.hypot(s.x - g1.x, s.y - g1.y) <= 1.2, __dmg(g1) > 0, __dmg(g2) > 0, __dmg(lone), !!(g1.kbVX || g1.kbVY)];
             __clear(); const m = __fol('ice', 'brawler', 'maw'), z = [1, 2, 3, 4].map(i => __foe(m.x + i * 0.6, m.y)); m.ultimateCharge = 100; followerUltimate(m).execute(m);
@@ -575,6 +575,25 @@ function measure(w, h) {
         same(r.quill.join(), 'Quillstorm,16,0', 'QUILLSTORM: 16 quills, the charge spent');
         same(r.storm.join(), 'Thunderstorm,true,true', 'THUNDERSTORM: the storm is up; the enemy under it struck');
         same(r.hole.join(), 'Event Horizon,true,true,true,true', 'EVENT HORIZON: on the group, both crushed');
+    });
+    check('SHOCKWAVE SLAM, ICE RINK, PROXY SWARM (the owner\'s picks, 2026-11-07): the Hammer Slug slams (core damage, thrown, stunned); the Igloo Skater\'s rink stays put, slows and bites enemies on it and speeds the squad on it; the Goo Proxy\'s three copies lure enemies, then burst (flux)', () => {
+        const r = J(`(function(){ const o = {};
+            __clear(); const hs = __fol('core', 'camper', 'hammerslug'), a = __foe(hs.x + 2, hs.y), far = __foe(hs.x + 6, hs.y); hs.ultimateCharge = 100; followerUltimate(hs).execute(hs);
+            o.slam = [followerUltimate(hs).name, hs.ultimateCharge < 50, __dmg(a) > 0, a.stunned >= 60, !!(a.kbVX || a.kbVY), __dmg(far)];
+            __clear(); const ig = __fol('ice', 'camper', 'igloo'), mate = __fol('fire', 'brawler', null), b = __foe(ig.x + 2.5, ig.y); mate.x = ig.x + 1; mate.y = ig.y; const x0 = ig.x;
+            ig.ultimateCharge = 100; followerUltimate(ig).execute(ig); ig.x += 10; for (let i = 0; i < 31; i++) updateElementEffects();
+            const rink = elementEffects.find(e => e.type === 'icerink');
+            o.rink = [followerUltimate(ig).name, !!rink, rink && rink.x === x0, b.slowed > 0, b.slowFactor, __dmg(b) > 0, mate._voltMove, mate._voltUntil > frame];
+            __clear(); rotDecoys = []; const gp = __fol('flux', 'camper', 'gooproxy'), c = __foe(gp.x + 3, gp.y); gp.ultimateCharge = 100; followerUltimate(gp).execute(gp);
+            const goo = rotDecoys.filter(d => d.goo); o.swarm = [followerUltimate(gp).name, goo.length, !!(decoyLure(c) && decoyLure(c).goo)];
+            const near = goo.reduce((m, d) => Math.hypot(d.x - c.x, d.y - c.y) < Math.hypot(m.x - c.x, m.y - c.y) ? d : m, goo[0]); c.x = near.x + 0.5; c.y = near.y;
+            for (const d of goo) d.until = frame; rotDecoyTick();
+            o.burst = [rotDecoys.filter(d => d.goo).length, __dmg(c) > 0];
+            rotDecoys = []; return o; })()`);
+        same(r.slam.join(), 'Shockwave Slam,true,true,true,true,0', 'SHOCKWAVE SLAM: spent, the near one hurt, stunned and thrown, the far one untouched');
+        same(r.rink.join(), 'Ice Rink,true,true,true,0.4,true,1.3,true', 'ICE RINK: stays where it was made, the enemy on it slowed to 40% and bitten, the squad mate on it 30% faster');
+        same(r.swarm.join(), 'Proxy Swarm,3,true', 'PROXY SWARM: three copies, an enemy near goes for one');
+        same(r.burst.join(), '0,true', 'they burst at the end, hurting the enemy beside one');
     });
     check('WHITEOUT (the owner, 2026-11-07): the Rime Star\'s snowstorm moves with it for 6 s, slows the enemies in it to half speed and bites them (ice) every 0.5 s', () => {
         const r = J(`(function(){ __clear(); const rs = __fol('ice', 'sniper', 'rimestar'), a = __foe(rs.x + 2.5, rs.y); rs.ultimateCharge = 100; followerUltimate(rs).execute(rs);

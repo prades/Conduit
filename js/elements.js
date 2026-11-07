@@ -481,6 +481,9 @@ const ULT_QUILLSTORM = { count: 16, mult: 1, reach: 6 };                        
 const ULT_STORM = { radius: 4, frames: 360, tick: 30, mult: 0.8 };                            // the Thunderhead's THUNDERSTORM (tiles round it, frames, frames between bolts, × power a bolt, electric)
 const ULT_HORIZON = { reach: 6, radius: 4, frames: 300, tick: 30, mult: 0.3, pull: 0.08 };    // the Void Star's EVENT HORIZON (tiles away it may open, tiles it drags from, frames, frames between crushes, × power, pull a frame)
 const ULT_WHITEOUT = { radius: 4, frames: 360, tick: 30, mult: 0.3, slow: 0.5 };            // the Rime Star's WHITEOUT (tiles round it, frames, frames between bites, × power, the share of speed kept)
+const ULT_SLAM = { radius: 3.5, mult: 2, knock: 2, stun: 90 };                              // the Hammer Slug's SHOCKWAVE SLAM (the owner's pick, 2026-11-07): reach (tiles), × power (core), thrown (tiles), stun (frames; not a boss)
+const ULT_RINK = { radius: 4, frames: 360, tick: 30, mult: 0.25, slow: 0.4, fast: 1.3 };     // the Igloo Skater's ICE RINK: reach, 6 s, a bite every 0.5 s of 0.25 × power (ice), enemies kept to 40% speed, the squad on it 30% faster
+const ULT_PROXY = { count: 3, frames: 360, reach: 6, burst: 1.5, mult: 1.5, hp: 0.5 };       // the Goo Proxy's PROXY SWARM: copies, 6 s, the lure's reach (tiles), the burst's reach, × power (flux), each copy's HP (× its maximum)
 const ULT_PUDDLE = { from: 0.5, radius: 2, grow: 120, frames: 300, tick: 30, mult: 0.5, poison: 120 };   // the Rotshard's: "Short and tight" (tiles at first and at full size, frames to grow, frames, frames between shards, × power a shard, frames of poison)
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
@@ -619,6 +622,47 @@ const FORM_ULTIMATES = {
         const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length, cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
         spawnElementEffect({ type: "toxicnet", x: cx, y: cy, segs, by: actor, bite: (actor.power || 10) * N.mult, life: N.frames, maxLife: N.frames, element: "toxic" });
         _ultSay(actor, "CONTAMINATION NETWORK", "#99ff88");
+    } },
+    // SHOCKWAVE SLAM (the Hammer Slug; the owner chose this proposal, 2026-11-07): it rears up and slams down: every enemy within ULT_SLAM.radius tiles takes ULT_SLAM.mult × its power (core),
+    // is thrown ULT_SLAM.knock tiles outward and stunned ULT_SLAM.stun frames (a boss is not stunned).
+    hammerslug: { name: "Shockwave Slam", desc: "Slams down: a core shockwave round it that hurts, throws and stuns the enemies in it", execute(actor) {
+        const S = ULT_SLAM, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, S.radius) : [];
+        if (!foes.length) return;
+        actor.ultimateCharge = 0;
+        for (const a of foes) {
+            applyDamage(a, (actor.power || 10) * S.mult, actor, "core", false, false, DMG_HIT_SPECIAL);
+            if (typeof applyKnockback === "function") applyKnockback(a, actor, S.knock * KNOCK_PER_TILE);
+            if (!a.bossId && !a.bossName) a.stunned = Math.max(a.stunned || 0, S.stun);
+        }
+        spawnElementEffect({ type: "ring", x: actor.x, y: actor.y, radius: S.radius, color: "#33e6c4", life: 30, element: "core" });
+        spawnElementEffect({ type: "impact", x: actor.x, y: actor.y, color: "#9ffff0", radius: 1.6, life: 22, element: "core" });
+        if (typeof shake !== "undefined") shake = Math.max(shake || 0, 8);
+        _ultSay(actor, "SHOCKWAVE SLAM", "#9ffff0");
+    } },
+    // ICE RINK (the Igloo Skater; the owner chose this proposal, 2026-11-07): it freezes the floor ULT_RINK.radius tiles round where it stands, for ULT_RINK.frames: enemies on it are kept to
+    // ULT_RINK.slow of their speed and take ULT_RINK.mult × its power (ice) every ULT_RINK.tick frames; the squad's followers on it move ULT_RINK.fast × as fast. The rink stays where it was made.
+    igloo: { name: "Ice Rink", desc: "Freezes the floor round it: enemies on it are slowed and chilled, the squad on it skates faster", execute(actor) {
+        const R = ULT_RINK, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, R.radius) : [];
+        if (!foes.length) return;
+        actor.ultimateCharge = 0;
+        spawnElementEffect({ type: "icerink", x: actor.x, y: actor.y, by: actor, radius: R.radius, bite: (actor.power || 10) * R.mult, life: R.frames, maxLife: R.frames, element: "ice" });
+        _ultSay(actor, "ICE RINK", "#bfefff");
+    } },
+    // PROXY SWARM (the Goo Proxy; the owner chose this proposal, 2026-11-07): ULT_PROXY.count goo copies of it pop out round it for ULT_PROXY.frames; every enemy within ULT_PROXY.reach
+    // goes for the nearest (the ROTTEN DECOY's lure, js/evolution.js decoyLure; a boss does not); each bursts when broken or at the end, ULT_PROXY.mult × its power (flux) within ULT_PROXY.burst.
+    gooproxy: { name: "Proxy Swarm", desc: "Three goo copies of it lure the enemies near it, then burst", execute(actor) {
+        const X = ULT_PROXY, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, X.reach) : [];
+        if (!foes.length || typeof rotDecoys === "undefined") return;
+        actor.ultimateCharge = 0;
+        const f0 = typeof frame !== "undefined" ? frame : 0, hp = Math.max(1, (actor.maxHealth || 20) * X.hp);
+        for (let k = 0; k < X.count; k++) {
+            const an = k * Math.PI * 2 / X.count + 0.5; let x = actor.x + Math.cos(an) * 1.2, y = actor.y + Math.sin(an) * 1.2;
+            if (typeof facilityStandOk === "function" && !facilityStandOk(x, y)) { x = actor.x; y = actor.y; }
+            const d = { isDecoy: true, goo: true, team: "green", x, y, health: hp, maxHealth: hp, by: actor, until: f0 + X.frames, dead: false, name: "GOO PROXY", bite: (actor.power || 10) * X.mult };
+            rotDecoys.push(d);
+            spawnElementEffect({ type: "gooproxy", x, y, on: d, life: X.frames, maxLife: X.frames, element: "flux" });
+        }
+        _ultSay(actor, "PROXY SWARM", "#d9b0ff");
     } },
 };
 // The Ultimate a follower fires: its form's own, else its element's (null: none, a core form without its own)
@@ -788,6 +832,14 @@ function updateElementEffects() {
             else { e.x = o.x; e.y = o.y; const W = ULT_WHITEOUT, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % W.tick === 0;
                 for (const a of actors) { if (!a || a.dead || !isHostileTarget(a) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue; if (typeof applySlow === "function") applySlow(a, 20, W.slow); if (bite) applyDamage(a, e.bite, o, "ice", false, false, DMG_HIT_SPECIAL); } }
         }
+        if (e.type === "icerink") {   // (the Igloo Skater's Ultimate: stays put; slows and bites the enemies on it, speeds the squad on it)
+            const R = ULT_RINK, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % R.tick === 0, f0 = typeof frame !== "undefined" ? frame : 0;
+            for (const a of actors) {
+                if (!a || a.dead || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue;
+                if (a.isFollower === true && a.team === "green") { if (!(a._voltUntil > f0 && (a._voltMove || 1) >= R.fast)) { a._voltUntil = f0 + 2; a._voltMove = R.fast; a._voltAtk = 1; } }   // (a voltage field as fast or faster is left as it is)
+                else if (isHostileTarget(a)) { if (typeof applySlow === "function") applySlow(a, 20, R.slow); if (bite) applyDamage(a, e.bite, e.by, "ice", false, false, DMG_HIT_SPECIAL); }
+            }
+        }
         if (e.type === "thunderstorm") {   // (the Thunderhead's Ultimate: moves with it, a bolt each tick on a random enemy under it)
             const o = e.on; if (!o || o.dead) e.life = 0;
             else { e.x = o.x; e.y = o.y; const age = e.maxLife - e.life;
@@ -815,7 +867,8 @@ function updateElementEffects() {
                 }
             }
         }
-        if (e.type === "rotdecoy") { const d = e.on; if (!d || d.dead) e.life = 0; }   // (a ROTTEN DECOY: drawn while it stands)
+        if (e.type === "rotdecoy") { const d = e.on; if (!d || d.dead) e.life = 0; }
+        if (e.type === "gooproxy") { const d = e.on; if (!d || d.dead) e.life = 0; }   // (a PROXY SWARM copy: drawn while it stands)   // (a ROTTEN DECOY: drawn while it stands)
         if (e.type === "wraithfire") { const w = e.on; if (!w || w.dead || !w._wraith) e.life = 0; else { e.x = w.x; e.y = w.y; } }
         if (e.type === "jellyshield") { const w = e.on; if (!w || w.dead || !w.jellyShield) e.life = 0; else { e.x = w.x; e.y = w.y; } }
         if (e.type === "toxicnet") {
@@ -1291,6 +1344,26 @@ function drawElementEffects() {
                 const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H;
                 ctx.globalAlpha = 0.22 * k; ctx.fillStyle = "#e6f6ff"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = "#ffffff"; for (let i = 0; i < 24; i++) { const u = ((frame * 0.012 + i * 0.137) % 1) * 2 - 1, v = ((i * 0.381) % 1) * 2 - 1; if (u * u + v * v > 1) continue; ctx.globalAlpha = 0.7 * k; ctx.fillRect(px + u * rx, cy + v * ry - 10 - (i % 4) * 6, 3, 1.5); }
+                break;
+            }
+            // ICE RINK (FORM_ULTIMATES.igloo): a pale blue sheet of ice on the floor, its rim frosted, light streaking across it, scratches where skates have been
+            case "icerink": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H;
+                ctx.globalAlpha = 0.42 * k; ctx.fillStyle = "#a9dcff"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.8 * k; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+                ctx.globalAlpha = 0.45 * k; ctx.lineWidth = 1; for (let i = 0; i < 5; i++) { const a0 = i * 1.3 + e.x, r0 = 0.25 + (i % 3) * 0.2; ctx.beginPath(); ctx.ellipse(px, cy, rx * r0, ry * r0, 0, a0, a0 + 1.2); ctx.stroke(); }
+                const sh = ((frame * 0.01) % 1) * 2 - 1; ctx.globalAlpha = 0.35 * k; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(px + sh * rx - 20, cy - ry * 0.6); ctx.lineTo(px + sh * rx + 20, cy + ry * 0.6); ctx.stroke();
+                break;
+            }
+            // PROXY SWARM (FORM_ULTIMATES.gooproxy): a copy of the Goo Proxy, a violet goo blob with its two eyes (one far bigger, a thin diamond iris in each) and a wide smile, wobbling; its HP as a bar
+            case "gooproxy": {
+                const d = e.on, k = Math.min(1, (e.maxLife - e.life) / 8), cy = py + TILE_H * 0.5, wob = Math.sin(frame * 0.15 + e.x) * 1.5;
+                ctx.globalAlpha = 0.25 * k; ctx.fillStyle = "#9a3ae0"; ctx.beginPath(); ctx.ellipse(px, cy, 18, 8, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 0.85 * k; ctx.fillStyle = "#b66cf5"; ctx.beginPath(); ctx.ellipse(px, cy - 12, 14 + wob, 13 - wob * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(px - 6, cy - 24, 7, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(px + 6, cy - 22, 4, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#3a0a5a"; for (const [ex, ey, r] of [[-6, -24, 6], [6, -22, 3.5]]) { ctx.beginPath(); ctx.moveTo(px + ex, cy + ey - r); ctx.lineTo(px + ex + r * 0.35, cy + ey); ctx.lineTo(px + ex, cy + ey + r); ctx.lineTo(px + ex - r * 0.35, cy + ey); ctx.closePath(); ctx.fill(); }
+                ctx.strokeStyle = "#3a0a5a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(px, cy - 12, 7, 0.2, Math.PI - 0.2); ctx.stroke();
+                if (d && d.maxHealth > 0) { const fr = Math.max(0, d.health / d.maxHealth); ctx.globalAlpha = 0.9 * k; ctx.fillStyle = "#12081a"; ctx.fillRect(px - 14, cy - 40, 28, 3); ctx.fillStyle = "#d9b0ff"; ctx.fillRect(px - 14, cy - 40, 28 * fr, 3); }
                 break;
             }
             // THUNDERSTORM (FORM_ULTIMATES.thunderhead): a dark storm cloud over the Thunderhead, its reach a faint ring, a jagged bolt down to the enemy it struck last

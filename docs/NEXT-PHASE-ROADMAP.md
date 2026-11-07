@@ -718,10 +718,12 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 
 ##### 15. Goo Proxy — Jelly Technician
 
+- **Ultimate (built in `2026-11-07w`, the owner's pick of the agent's proposals, 2026-11-07):** PROXY SWARM — three goo copies pop out round it for 6 s; enemies within 6 tiles go for them (ROTTEN DECOY's lure); each bursts when broken or at the end, 1.5 × its power (flux) within 1.5 tiles.
 - Preserve existing design. Retrieve its primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
 
 ##### 16. Hammer Slug — Mollusk Technician
 
+- **Ultimate (built in `2026-11-07w`, the owner's pick):** SHOCKWAVE SLAM — it slams down: 2 × its power (core) to every enemy within 3.5 tiles, thrown 2 tiles, stunned 1.5 s (not a boss). Core had no element Ultimate, so this is its first.
 - Preserve existing design. Retrieve its primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
 
 ##### 17. Blight Spider — Toxic Technician
@@ -733,6 +735,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 
 ##### 18. Igloo Skater — Ice / Elemental Technician
 
+- **Ultimate (built in `2026-11-07w`, the owner's pick):** ICE RINK — the floor 4 tiles round where it stands freezes for 6 s: enemies on it are kept to 40% speed and take 0.25 × its power (ice) every 0.5 s; the squad's followers on it move 30% faster.
 - Preserve existing design. Retrieve primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
 - **Technician utility (the owner, 2026-11-06):** the ability to freeze water, making bridges to cross it ("I would like to make it to where the ICE technician's utility ability is the ability to freeze water. And make bridges to cross across the water."). Its name, and what becomes of FROST PATCH, the ice technician's ability today, are open (§14).
 
