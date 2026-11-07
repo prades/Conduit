@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **g · WHITEOUT** (the owner, 2026-11-07: "WHITEOUT", chosen from proposals; the Hover Shell: "Keep its element's"; on the branch; commit named in git log).
+  - **WHITEOUT** (Rime Star): a snowstorm 4 tiles round it, moving with it, for 6 s; enemies in it move at half speed and take 0.3× its power (ice) every 0.5 s.
+  - The Hover Shell keeps the electric Ultimate. Still to design: Horn Shell (the owner chose "Something else" with no description yet), Goo Proxy, Hammer Slug, Igloo Skater.
+  - Not on main: the owner's answer to "push build f?" was a note about a wind-up ("Wind up for the secondary attack takes 10 seconds to charge up actually five seconds and then it's immediately fired"), being clarified.
+  - Tests: followercombat (WHITEOUT, new; the "form without its own" check now uses the Igloo Skater), unitinfo. No full run. Not playtested.
+
 - **f · QUILLSTORM, THUNDERSTORM, EVENT HORIZON** (the owner, 2026-11-07: "QUILLSTORM, 16 quills"; THUNDERSTORM and EVENT HORIZON chosen from proposals; on the branch; commit named in git log).
   - **Main:** build `2026-11-07e` went to main at the owner's word ("Push to main").
   - **QUILLSTORM** (Quillstone, the old archive's radial burst): 16 burning quills all round it at once, each 1× its power (fire), stopping at the first enemy; reach 6 tiles.

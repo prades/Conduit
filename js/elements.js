@@ -480,6 +480,7 @@ const ULT_JELLY = { soak: 0.4, frames: 600, knock: 1 };                         
 const ULT_QUILLSTORM = { count: 16, mult: 1, reach: 6 };                                     // the Quillstone's QUILLSTORM: "16 quills" (quills all round it, × power each, fire, tiles)
 const ULT_STORM = { radius: 4, frames: 360, tick: 30, mult: 0.8 };                            // the Thunderhead's THUNDERSTORM (tiles round it, frames, frames between bolts, × power a bolt, electric)
 const ULT_HORIZON = { reach: 6, radius: 4, frames: 300, tick: 30, mult: 0.3, pull: 0.08 };    // the Void Star's EVENT HORIZON (tiles away it may open, tiles it drags from, frames, frames between crushes, × power, pull a frame)
+const ULT_WHITEOUT = { radius: 4, frames: 360, tick: 30, mult: 0.3, slow: 0.5 };            // the Rime Star's WHITEOUT (tiles round it, frames, frames between bites, × power, the share of speed kept)
 const ULT_PUDDLE = { from: 0.5, radius: 2, grow: 120, frames: 300, tick: 30, mult: 0.5, poison: 120 };   // the Rotshard's: "Short and tight" (tiles at first and at full size, frames to grow, frames, frames between shards, × power a shard, frames of poison)
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
@@ -600,6 +601,15 @@ const FORM_ULTIMATES = {
         actor.ultimateCharge = 0;
         spawnElementEffect({ type: "eventhorizon", x: best.x, y: best.y, by: actor, radius: H.radius, bite: (actor.power || 10) * H.mult, life: H.frames, maxLife: H.frames, element: null });
         _ultSay(actor, "EVENT HORIZON", "#c9a6ff");
+    } },
+    // WHITEOUT (the Rime Star; the owner chose this proposal, 2026-11-07): a snowstorm ULT_WHITEOUT.radius tiles round it, moving with it, for ULT_WHITEOUT.frames: enemies in it are slowed to
+    // ULT_WHITEOUT.slow of their speed and take ULT_WHITEOUT.mult × its power (ice) every ULT_WHITEOUT.tick frames
+    rimestar: { name: "Whiteout", desc: "A snowstorm round it: enemies in it are slowed and chilled", execute(actor) {
+        const W = ULT_WHITEOUT, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, W.radius) : [];
+        if (!foes.length) return;
+        actor.ultimateCharge = 0;
+        spawnElementEffect({ type: "whiteout", x: actor.x, y: actor.y, on: actor, radius: W.radius, bite: (actor.power || 10) * W.mult, life: W.frames, maxLife: W.frames, element: "ice" });
+        _ultSay(actor, "WHITEOUT", "#bfefff");
     } },
     blightspider: { name: "Contamination Network", desc: "Its toxic pods link with toxic strands: enemies crossing them are hurt and poisoned", execute(actor) {
         const N = ULT_NETWORK, pods = (typeof techPools !== "undefined" ? techPools : []).filter(P => P.by === (actor.uid || null) && (typeof techPoolFade !== "function" || techPoolFade(P) > 0)).slice(-3);
@@ -772,6 +782,11 @@ function updateElementEffects() {
                     e.shards.push([a.x, a.y]);
                 }
             }
+        }
+        if (e.type === "whiteout") {   // (the Rime Star's Ultimate: moves with it; slows and bites the enemies in it)
+            const o = e.on; if (!o || o.dead) e.life = 0;
+            else { e.x = o.x; e.y = o.y; const W = ULT_WHITEOUT, age = e.maxLife - e.life, bite = age > 0 && e.life > 0 && age % W.tick === 0;
+                for (const a of actors) { if (!a || a.dead || !isHostileTarget(a) || Math.hypot(a.x - e.x, a.y - e.y) > e.radius) continue; if (typeof applySlow === "function") applySlow(a, 20, W.slow); if (bite) applyDamage(a, e.bite, o, "ice", false, false, DMG_HIT_SPECIAL); } }
         }
         if (e.type === "thunderstorm") {   // (the Thunderhead's Ultimate: moves with it, a bolt each tick on a random enemy under it)
             const o = e.on; if (!o || o.dead) e.life = 0;
@@ -1269,6 +1284,13 @@ function drawElementEffects() {
                 ctx.lineCap = "round"; ctx.globalAlpha = 0.45 * k; ctx.strokeStyle = "#ff4a12"; ctx.lineWidth = 14; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke();
                 ctx.globalAlpha = 0.9 * k; ctx.strokeStyle = "#ffd27a"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(px, cy0); ctx.stroke(); ctx.lineCap = "butt";
                 ctx.globalAlpha = k; ctx.fillStyle = "#ffb04a"; ctx.beginPath(); ctx.arc(px, cy0 - 10, 6 + 14 * (1 - k), 0, Math.PI * 2); ctx.fill();
+                break;
+            }
+            // WHITEOUT (FORM_ULTIMATES.rimestar): a pale disc of blowing snow round the Rime Star, flakes streaking across it
+            case "whiteout": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H;
+                ctx.globalAlpha = 0.22 * k; ctx.fillStyle = "#e6f6ff"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "#ffffff"; for (let i = 0; i < 24; i++) { const u = ((frame * 0.012 + i * 0.137) % 1) * 2 - 1, v = ((i * 0.381) % 1) * 2 - 1; if (u * u + v * v > 1) continue; ctx.globalAlpha = 0.7 * k; ctx.fillRect(px + u * rx, cy + v * ry - 10 - (i % 4) * 6, 3, 1.5); }
                 break;
             }
             // THUNDERSTORM (FORM_ULTIMATES.thunderhead): a dark storm cloud over the Thunderhead, its reach a faint ring, a jagged bolt down to the enemy it struck last

@@ -446,7 +446,7 @@ function measure(w, h) {
     });
     check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it, any other its element\'s; OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
         const r = J(`(function(){ const o = {};
-            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('ice', 'sniper', 'rimestar');
+            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('ice', 'camper', 'igloo');
             o.look = [followerUltimate(so).name, followerUltimate(eh) === FOLLOWER_ULTIMATES.fire, followerUltimate(qs) === FOLLOWER_ULTIMATES.ice];
             __clear(); const s = __fol('electric', 'brawler', 'staticorb'), g1 = __foe(s.x + 4, s.y), g2 = __foe(s.x + 4.6, s.y + 0.4), lone = __foe(s.x - 3, s.y); s.ultimateCharge = 100; followerUltimate(s).execute(s);
             o.over = [s.ultimateCharge < 50, Math.hypot(s.x - g1.x, s.y - g1.y) <= 1.2, __dmg(g1) > 0, __dmg(g2) > 0, __dmg(lone), !!(g1.kbVX || g1.kbVY)];
@@ -564,6 +564,11 @@ function measure(w, h) {
         same(r.quill.join(), 'Quillstorm,16,0', 'QUILLSTORM: 16 quills, the charge spent');
         same(r.storm.join(), 'Thunderstorm,true,true', 'THUNDERSTORM: the storm is up; the enemy under it struck');
         same(r.hole.join(), 'Event Horizon,true,true,true,true', 'EVENT HORIZON: on the group, both crushed');
+    });
+    check('WHITEOUT (the owner, 2026-11-07): the Rime Star\'s snowstorm moves with it for 6 s, slows the enemies in it to half speed and bites them (ice) every 0.5 s', () => {
+        const r = J(`(function(){ __clear(); const rs = __fol('ice', 'sniper', 'rimestar'), a = __foe(rs.x + 2.5, rs.y); rs.ultimateCharge = 100; followerUltimate(rs).execute(rs);
+            for (let i = 0; i < 31; i++) updateElementEffects(); return [followerUltimate(rs).name, elementEffects.some(e => e.type === 'whiteout'), a.slowed > 0, a.slowFactor, __dmg(a) > 0, rs.ultimateCharge < 50]; })()`);
+        same(r.join(), 'Whiteout,true,true,0.5,true,true', 'WHITEOUT: up, the enemy in it slowed to half and bitten, the charge spent');
     });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);
