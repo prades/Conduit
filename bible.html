@@ -493,7 +493,7 @@
 <div class="tw"><table>
 <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
 <tr><td>Tunnel length / river width</td><td class="num"><span class="n" data-k="facilitySewerMeasures().length">38</span> / <span class="n" data-k="facilitySewerMeasures().riverWidth">3 tiles</span></td><td><code>js/facilitymap.js</code> <code>sewers</code>, <code>sewer_river_*</code></td></tr>
-<tr><td>Ledges deep (north / south) / side passages deep</td><td class="num"><span class="n" data-k="facilitySewerMeasures().northLedge">5</span> / <span class="n" data-k="facilitySewerMeasures().southLedge">3</span> / <span class="n" data-k="facilitySewerMeasures().passage">3 tiles</span></td><td><code>js/facilitymap.js</code> <code>sewers</code></td></tr>
+<tr><td>Ledges deep (north / south) / side passages deep</td><td class="num"><span class="n" data-k="facilitySewerMeasures().northLedge">3</span> / <span class="n" data-k="facilitySewerMeasures().southLedge">5</span> / <span class="n" data-k="facilitySewerMeasures().passage">3 tiles</span></td><td><code>js/facilitymap.js</code> <code>sewers</code></td></tr>
 <tr><td>Bridges / width (the first, the service bridge)</td><td class="num"><span class="n" data-k="facilitySewerMeasures().bridges">2</span> / <span class="n" data-k="facilitySewerMeasures().bridgeWidth">2</span>, <span class="n" data-k="facilitySewerMeasures().serviceWidth">2 tiles</span></td><td><code>sewer_bridge</code>, <code>sewer_bridge_east</code></td></tr>
 <tr><td>Side Quest's platform: across / floor cells</td><td class="num"><span class="n" data-k="facilitySewerMeasures().platformWide">5 tiles</span> / <span class="n" data-k="facilitySewerMeasures().platform">15</span></td><td><code>sewer_gate_n2</code></td></tr>
 <tr><td>The Nest: across × deep / the dam with its causeway / reservoir / moat</td><td class="num"><span class="n" data-k="facilitySewerMeasures().nestW">15</span> × <span class="n" data-k="facilitySewerMeasures().nestH">16 tiles</span> / <span class="n" data-k="facilitySewerMeasures().dam">136</span> / <span class="n" data-k="facilitySewerMeasures().reservoir">44</span> / <span class="n" data-k="facilitySewerMeasures().moat">52 cells</span></td><td><code>nest_area</code>, <code>nest_reservoir</code>, <code>nest_moat</code></td></tr>
@@ -3562,7 +3562,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-07bb</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-07cc</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3783,7 +3783,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-07bb (7 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-07cc (7 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

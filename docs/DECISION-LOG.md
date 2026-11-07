@@ -2006,3 +2006,14 @@ The owner: too much time goes into testing and side checks. From here on, only t
 4. "Let's find a clever way to hop back to the previous path from the electric tech route" → "Pipe shortcut": a drain pipe from the bank to the north ledge, its grate opening only from inside, then open for good.
 5. The agent's: the bank at the south bank's west end; the collapsed tunnel kept, empty, its choke still drillable.
 
+## DECISION: The Sewers' river moved north; no transparent walls
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07cc`, on the branch; not playtested.
+- **Related feature/docs:** `SEWER-QUEST.md`, `FACILITY.md` (the Sewers); `CHANGELOG.md` (2026-11-07 cc)
+
+### Decision
+1. "Feel like for the sewer we have to have that far left wall that's covering everything transparent for the most part [...] I can't see" — then: "rather than rewrite the whole game with the transparent walls, don't do that. Just make that side of the bank bigger. I don't care if you move the river over."
+2. The river moved two tiles north: the north ledge 3 deep, the south ledge 5; the sample bank four tiles by five. Walls stay as they are.
+3. Next (asked with build bb): "Toxic Queen encounter". Build bb's push to main was not answered (the answer was the wall); nothing was pushed to main.
+

@@ -12,7 +12,7 @@
 // does. `puzzleState(id)` reads the live world and says whether it is solved and HOW (which solution did it): js/quests.js questTick records that in the quest line.
 //   THE SEWER SAMPLE (moved 2026-11-07, the owner: "a little water sample is on the other side of the bank of the river and the player can use the ice bridge to get across to get to it and it also includes the
 //   thermite brawlers rock formation breakable to retrieve the item as well"; then "Ice or drill", "Launch over the river", "Pipe shortcut"): the WATER SAMPLE vial (pk_sewer_sample) lies on the SAMPLE BANK, the
-//   west end of the south bank (four tiles by three): the river on one side, the end wall on another, and a ROCK FALL across the south ledge (the solid `sewer_bank_rock`, the rubble `rubble_sewer_bank`) on the
+//   west end of the south bank (four tiles by five): the river on one side, the end wall on another, and a ROCK FALL across the south ledge (the solid `sewer_bank_rock`, the rubble `rubble_sewer_bank`) on the
 //   third: no one walks onto it. Three ways to it, EACH ON ITS OWN (one technician, one ability). (A, TELEGRAB, went with Telegrab, 2026-11-06; the letters are kept. Until 2026-11-07 the vial lay in the
 //   COLLAPSED TUNNEL off the north ledge, whose choke is still there to drill, the floor behind it empty.)
 //     B. THE LAUNCHER (the electric technician's): it sets a Kinetic Launcher up on the north ledge across the river (the site site_sewer_tunnel, its id kept for saves: a POCKET site that carries the player); the
@@ -26,7 +26,7 @@ const PUZZLES = {
         id: "sewer_sample", title: "THE WATER SAMPLE", room: "sewers", quest: "purify",
         objects: {
             sample: { id: "pk_sewer_sample", kind: "pickup", item: "sewer_sample", where: "the sample bank: the west end of the south bank, walled off by the rock fall" },
-            choke: { id: "rubble_sewer_bank", kind: "rubble", solid: "sewer_bank_rock", where: "the rock fall across the south ledge at the bank's east side, three tiles of it", hits: 6, inside: false },
+            choke: { id: "rubble_sewer_bank", kind: "rubble", solid: "sewer_bank_rock", where: "the rock fall across the south ledge at the bank's east side, five tiles of it", hits: 6, inside: false },
             site: { id: "site_sewer_tunnel", kind: "launchSite", pocket: true, rider: true, where: "the north ledge across the river from the bank" },
             pipe: { id: "portal_sewer_pipe_in", kind: "portal", to: "portal_sewer_pipe_out", where: "the drain pipe from the bank's back wall under the river to the north ledge; its ledge end opens only from inside" },
         },

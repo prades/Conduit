@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **cc · The river moved two tiles north: the sample's side is bigger** (the owner, 2026-11-07, of the Sewers' far-left wall hiding the bank: "rather than rewrite the whole game with the transparent walls, don't do that. Just make that side of the bank bigger. I don't care if you move the river over"). Implemented and tested on the branch; not playtested.
+  - The whole river (its three lengths), the three bridges and the outfall are two tiles further north: the north ledge is 3 tiles deep, the **south ledge 5** (it was 5 and 3). The sample bank is four tiles by five (it was four by three), so less of it is behind the front wall. The rock fall spans the whole south ledge; the launcher pad sits on the narrower north ledge.
+  - No transparent walls (the owner: "don't do that").
+  - Tests: sewers (the ledges 3 and 5), sewerquest (the bank's cells, the rock fall's span), bible (the ledges), techlevel1, cover, facilityplay.
+
 - **bb · The water sample across the river: ice, drill or launcher, and the drain pipe back** (the owner, 2026-11-07: "a little water sample is on the other side of the bank of the river [...] the ice bridge to get across [...] the thermite brawlers rock formation breakable"; "Ice or drill", "Launch over the river", "Let's find a clever way to hop back to the previous path from the electric tech route", "Pipe shortcut"; aa "Push to main"). Implemented and tested on the branch; not playtested.
   - The WATER SAMPLE lies on the **sample bank**, the south bank's west end, cut off by the river, the end wall and a **rock fall** across the south ledge.
   - Three ways, each with one technician: an **ice bridge** from the north ledge; the fire technician **drills the rock fall** from the south ledge; or the electric technician's **launcher** on the north ledge throws you over the river.

@@ -346,9 +346,11 @@ const FACILITY_MAP = {
         //    them: the steel bridge (x 460 to 500) and the service bridge by the Nest (x 980 to 1020, 2026-11-01), where the floor is the bridge's grating (decor `bridge_deck`). It runs on into the NEST's RESERVOIR, the
         //    water the trash dam holds back (kind `pool`, a rectangle), and round the dam in the MOAT (an L of `pool`), which spills over the Nest's east edge: the WATERFALL. The GATES (kind `gate`, the boss's
         //    `boss_gate`): barred grilles across the side passages' mouths and the south ledge's way into the Nest, thin, on the line of the wall they close.
-        { id: "sewer_river_w", room: "sewers", shape: "poly", poly: [[300, 960], [460, 960], [460, 1020], [300, 1020]], status: "placed", kind: "river", note: "The deep river from the outfall at its head to the bridge. Not walkable." },
-        { id: "sewer_river_e", room: "sewers", shape: "poly", poly: [[500, 960], [980, 960], [980, 1020], [500, 1020]], status: "placed", kind: "river", note: "The deep river from the bridge, under the broken bridge, to the service bridge. Not walkable." },
-        { id: "sewer_river_mouth", room: "sewers", shape: "poly", poly: [[1020, 960], [1060, 960], [1060, 1020], [1020, 1020]], status: "placed", kind: "river", note: "The river's last length, from the service bridge into the Nest's reservoir. Not walkable." },
+        // (the owner, 2026-11-07: "Just make that side of the bank bigger. I don't care if you move the river over": the whole river moved two tiles north, y 920 to 980; the north ledge is 3 deep, the south
+        //  ledge 5, so the front wall hides less of it and of the sample bank)
+        { id: "sewer_river_w", room: "sewers", shape: "poly", poly: [[300, 920], [460, 920], [460, 980], [300, 980]], status: "placed", kind: "river", note: "The deep river from the outfall at its head to the bridge. Not walkable." },
+        { id: "sewer_river_e", room: "sewers", shape: "poly", poly: [[500, 920], [980, 920], [980, 980], [500, 980]], status: "placed", kind: "river", note: "The deep river from the bridge, under the broken bridge, to the service bridge. Not walkable." },
+        { id: "sewer_river_mouth", room: "sewers", shape: "poly", poly: [[1020, 920], [1060, 920], [1060, 980], [1020, 980]], status: "placed", kind: "river", note: "The river's last length, from the service bridge into the Nest's reservoir. Not walkable." },
         { id: "nest_reservoir", room: "sewers", shape: "poly", poly: [[1060, 800], [1140, 800], [1140, 1020], [1060, 1020]], status: "placed", kind: "pool", note: "THE NEST'S RESERVOIR: the river and the stream from the big barred arch backed up behind the trash dam, west of it. Not walkable." },
         { id: "nest_moat", room: "sewers", shape: "poly", poly: [[1060, 1080], [1320, 1080], [1320, 860], [1360, 860], [1360, 1120], [1060, 1120]], status: "placed", kind: "pool", note: "THE MOAT round the dam's south and east sides, from under the causeway to the Nest's east edge, where it spills over: the waterfall. Not walkable." },
         { id: "sewer_gate_n1", room: "sewers", shape: "poly", poly: [[360, 856], [400, 856], [400, 864], [360, 864]], status: "placed", kind: "gate", note: "A barred gate across the first side passage off the north ledge: shut (an area for later)." },
@@ -372,7 +374,7 @@ const FACILITY_MAP = {
         { id: "sewer_valve_4", room: "sewers", shape: "rect", rect: [480, 820, 500, 840], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing in the middle of the pump room." },
         // THE SAMPLE BANK'S ROCK FALL (the owner, 2026-11-07: "Ice or drill"): across the south ledge at x 380, walling the bank (x 300 to 380, the end wall its other side) off from the rest of the ledge; drilled
         //   from the ledge's side (its rubble entry below). Like the collapsed tunnel's choke it lies a hair inside its line (x 372 to 378 for x 380), so the work spot sees it
-        { id: "sewer_bank_rock", room: "sewers", shape: "poly", poly: [[372, 1020], [378, 1020], [378, 1080], [372, 1080]], status: "placed", kind: "rubble", note: "A rock fall across the south ledge, walling the sample bank off from the rest of it: drilled through by a fire technician from the ledge." },
+        { id: "sewer_bank_rock", room: "sewers", shape: "poly", poly: [[372, 980], [378, 980], [378, 1080], [372, 1080]], status: "placed", kind: "rubble", note: "A rock fall across the south ledge, walling the sample bank off from the rest of it: drilled through by a fire technician from the ledge." },
         { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1080], [1056, 1080]], status: "placed", kind: "rubble", note: "THE RUBBLE ON THE WAY INTO THE NEST (a barred boss gate until build 2026-11-06l; the owner, 2026-11-06: \"I never wanted a gate. I wanted rubble\", \"Rubble, drilled\"): the south ledge's way onto the dam, three tiles across, choked with fallen concrete until a fire technician drills it through (rubble_sewer_gate). The other way onto the dam: an ice bridge across the water." },
     ],
 
@@ -435,7 +437,7 @@ const FACILITY_MAP = {
         // A POCKET SITE (`pocket`): the landing is a cut-off part of the SAME room, not another room, so a follower sent there keeps its place in the squad (no room post) and waits there for you. `rider`: the launcher carries
         //   YOU as well (tap its tag once for its aim and again to ride it: js/techabilities.js techSiteRide); `drop`/`dropTo`: the BROKEN EDGE of the floor up there, which drops you (and a follower up there without you)
         //   back to the ledge under it, one way (techSiteDrop). (`only`, one ability the site is for, is no longer set here: anyone may be sent over: docs/SEWER-QUEST.md.)
-        { id: "site_sewer_tunnel", room: "sewers", label: "Sample bank", to: "sewers", pocket: true, rider: true, at: [360, 935], land: [340, 1045],
+        { id: "site_sewer_tunnel", room: "sewers", label: "Sample bank", to: "sewers", pocket: true, rider: true, at: [360, 897], land: [340, 1030],
           note: "On the north ledge across the river from the sample bank (the owner, 2026-11-07: \"Launch over the river\"; the id is the old one, kept for saves): it throws you, or a follower, over the river onto the bank; the drain pipe in the bank's back wall is the way back (\"Pipe shortcut\")" },
     ],
 
@@ -452,7 +454,7 @@ const FACILITY_MAP = {
         { id: "rubble_sewer_gate", room: "sewers", label: "Rubble", a: [1060, 1020], b: [1060, 1080], work: [1036, 1050], solid: "sewer_gate_boss",
           tag: "RUBBLE ON THE WAY TO THE DAM", say: "RUBBLE ON THE WAY ONTO THE DAM · A FIRE TECHNICIAN CAN DRILL IT THROUGH FROM HERE: PRESS AND HOLD IT (OR FREEZE A BRIDGE ACROSS THE WATER)", opened: "THE RUBBLE IS DRILLED THROUGH · THE WAY ONTO THE DAM IS OPEN",
           note: "The way onto the Nest's dam from the south ledge, choked with rubble (the owner, 2026-11-06: \"Rubble, drilled\"): drilled through from the ledge by a fire technician, and open for good. It replaced the boss gate and its seal." },
-        { id: "rubble_sewer_bank", room: "sewers", label: "Rock fall", a: [380, 1020], b: [380, 1080], work: [404, 1050], solid: "sewer_bank_rock",
+        { id: "rubble_sewer_bank", room: "sewers", label: "Rock fall", a: [380, 980], b: [380, 1080], work: [404, 1030], solid: "sewer_bank_rock",
           tag: "ROCK FALL", say: "A ROCK FALL WALLS THE BANK OFF · THE WATER SAMPLE IS BEHIND IT · A FIRE TECHNICIAN CAN DRILL IT THROUGH FROM HERE: PRESS AND HOLD IT", opened: "THE ROCK FALL IS DRILLED THROUGH · THE BANK IS OPEN",
           note: "The rock fall walling the sample bank off from the south ledge: drilled through from the ledge, the way onto the bank on foot (the owner, 2026-11-07: \"Ice or drill\")." },
         { id: "rubble_sewer_choke", room: "sewers", label: "Collapsed tunnel", a: [820, 860], b: [940, 860], work: [880, 880], solid: "sewer_choke",
@@ -854,10 +856,10 @@ const FACILITY_MAP = {
         { id: "sewer_culvert_up", room: "sewers", kind: "portal_door", a: [280, 860], b: [280, 900], colour: "#c08aff", culvert: true },
         { id: "sewer_pipe_in_door", room: "sewers", kind: "portal_door", a: [280, 1040], b: [280, 1080], colour: "#c08aff", culvert: true, portal: "portal_sewer_pipe_in" },
         { id: "sewer_pipe_out_door", room: "sewers", kind: "portal_door", a: [300, 840], b: [340, 840], colour: "#c08aff", culvert: true, portal: "portal_sewer_pipe_out" },
-        { id: "sewer_outfall", room: "sewers", kind: "outfall", a: [300, 965], b: [300, 1015], colour: "#a64dff", note: "A big pipe in the west wall, the tanks' runoff pouring out of it into the head of the river." },
-        { id: "sewer_bridge", room: "sewers", kind: "bridge_deck", rect: [460, 960, 500, 1020], note: "A steel bridge across the river, two tiles wide: its grating, with the river seen through it, rails either side." },
-        { id: "sewer_bridge_broken", room: "sewers", kind: "bridge_broken", rect: [760, 960, 800, 1020], note: "A bridge fallen in: a stump of it on each bank, bent, the middle gone. Not crossable." },
-        { id: "sewer_bridge_east", room: "sewers", kind: "bridge_deck", rect: [980, 960, 1020, 1020], note: "THE SERVICE BRIDGE (2026-11-01: \"Improve room connectivity and navigation\"): a second steel grating across the river at the north ledge's east end, to the south ledge just short of the Nest's gate. The ledges, the two bridges and the gate make a loop: nobody walks back to the first bridge to reach the Nest, and the way back to the culvert is either ledge." },
+        { id: "sewer_outfall", room: "sewers", kind: "outfall", a: [300, 925], b: [300, 975], colour: "#a64dff", note: "A big pipe in the west wall, the tanks' runoff pouring out of it into the head of the river." },
+        { id: "sewer_bridge", room: "sewers", kind: "bridge_deck", rect: [460, 920, 500, 980], note: "A steel bridge across the river, two tiles wide: its grating, with the river seen through it, rails either side." },
+        { id: "sewer_bridge_broken", room: "sewers", kind: "bridge_broken", rect: [760, 920, 800, 980], note: "A bridge fallen in: a stump of it on each bank, bent, the middle gone. Not crossable." },
+        { id: "sewer_bridge_east", room: "sewers", kind: "bridge_deck", rect: [980, 920, 1020, 980], note: "THE SERVICE BRIDGE (2026-11-01: \"Improve room connectivity and navigation\"): a second steel grating across the river at the north ledge's east end, to the south ledge just short of the Nest's gate. The ledges, the two bridges and the gate make a loop: nobody walks back to the first bridge to reach the Nest, and the way back to the culvert is either ledge." },
         // (the collapsed tunnel on the north wall is an opening now, x 820 to 940: its fallen-in mouth is the `sewer_choke` solid and the `rubble_sewer_choke` entry, drawn as the pile across the whole mouth: js/techabilities.js
         //  techDrawRubbleOn; the wall decor that hung there moved east of it, and the floor beyond has its own damp and debris)
         { id: "sewer_hatch", room: "sewers", kind: "sealed_hatch", a: [570, 860], b: [590, 860], note: "Rungs up the wall to a hatch at the top, welded shut, a hazard plate on it (a way in for later)." },
