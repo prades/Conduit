@@ -74,7 +74,7 @@ const TECH_AB = {
         // ICE BRIDGES: the same chip aimed at water (the owner, 2026-11-06: "One ability"; "Straight, 30 s": straight, 2 tiles wide, bank to bank, up to 8 tiles; one 60 s wait for patch or bridge)
         bridgeWide: 2,      // tiles across
         bridgeMax: 8,       // tiles of water at most, bank to bank
-        bridgeLife: 1800,   // 30 s, then it thaws
+        // (a bridge stands until the same technician makes its next one: the owner, 2026-11-07, "Until the next one"; it was 30 s)
     },
     blight: {
         cooldown: 3600,     // 60 s from when its pool is down
@@ -551,7 +551,8 @@ function techFrostAt(tech, spot) {
 }
 // ── ICE BRIDGES (the ice technician's utility on water; the owner, 2026-11-06: "One ability", "Straight, 30 s"; docs/NEXT-PHASE-ROADMAP.md §14.2) ──
 // The FROST PATCH chip aimed at water the technician can see freezes a straight bridge across it, there at once: TECH_AB.frost.bridgeWide tiles wide, along the axis nearer the line from the technician to the spot,
-// from bank to bank (both ends must be floor), at most bridgeMax tiles of water. It is floor while it stands (js/facilityplay.js facilityIceSet; everyone may cross it) and thaws after bridgeLife; anyone on it
+// from bank to bank (both ends must be floor), at most bridgeMax tiles of water. It is floor while it stands (js/facilityplay.js facilityIceSet; everyone may cross it) and stands until the same technician
+// makes its next bridge (the owner, 2026-11-07: "Until the next one"; it was 30 s), when the old one thaws; anyone on it
 // then is put on the nearest floor. Several may stand at once. Nothing is saved (a save loads with the water as it was).
 let techBridges = [];   // { rect: [x0, y0, x1, y1], t0, until, by }
 function _techWaterAt(x, y) { if (typeof _fp === "undefined" || !_fp || !_fp.F || typeof facilitySolidAt !== "function") return false; if (typeof facilityIced === "function" && facilityIced(_fp.F, x, y)) return false; const s = facilitySolidAt(x, y, _fp.F); return !!(s && s.water); }
@@ -575,10 +576,11 @@ function techIceBridgeAt(tech, spot) {
     if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, spot.x, spot.y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
     const plan = techIceBridgePlan(tech, spot); if (!plan.ok) return plan;
     const T = TECH_AB.frost, f0 = _techFrame();
-    techBridges.push({ rect: plan.rect, t0: f0, until: f0 + T.bridgeLife, by: tech });
+    techBridges = techBridges.filter(b => b.by !== tech);   // its last bridge thaws (one each): anyone on it is put on the nearest floor (facilityIceSet)
+    techBridges.push({ rect: plan.rect, t0: f0, until: Infinity, by: tech });
     if (typeof facilityIceSet === "function") facilityIceSet(techBridges.map(b => b.rect));
     tech._abReadyAt = f0 + techCooldown(tech, T.cooldown);
-    _techSay("❄ ICE BRIDGE · " + Math.round(T.bridgeLife / 60) + " S", "#9be8ff");
+    _techSay("❄ ICE BRIDGE · UNTIL ITS NEXT ONE", "#9be8ff");
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: (plan.rect[0] + plan.rect[2]) / 2, y: (plan.rect[1] + plan.rect[3]) / 2, radius: 1.6, color: "#9be8ff", life: 24 });
     return { ok: true };
 }
@@ -1174,7 +1176,7 @@ function techAbilityInfo(f) {
     if (ab.id === "frost_patch") {
         const R = TECH_AB.frost;
         return { h: "ABILITY · " + ab.name, note: "From the ❄ chip on its squad card: on a spot of floor it can see, a patch of ice, there at once (enemies on it are slowed; your units cross it faster). On water it can see, an ICE BRIDGE: straight across, bank to bank, that anyone can walk on until it thaws.",
-                 rows: [["PATCH", R.size + " × " + R.size + " tiles, " + Math.round(R.life / 60) + " s"], ["ENEMIES ON IT", Math.round(R.slow * 100) + "% of their speed"], ["YOUR UNITS ON IT", Math.round(R.boost * 100) + "% of their speed"], ["BRIDGE", R.bridgeWide + " tiles wide, up to " + R.bridgeMax + " tiles of water, " + Math.round(R.bridgeLife / 60) + " s"]].concat(wait) };
+                 rows: [["PATCH", R.size + " × " + R.size + " tiles, " + Math.round(R.life / 60) + " s"], ["ENEMIES ON IT", Math.round(R.slow * 100) + "% of their speed"], ["YOUR UNITS ON IT", Math.round(R.boost * 100) + "% of their speed"], ["BRIDGE", R.bridgeWide + " tiles wide, up to " + R.bridgeMax + " tiles of water, standing until its next one"]].concat(wait) };
     }
     if (ab.id === "blight_spider") {
         const B = TECH_AB.blight, bite = Math.round(((f.stats && f.stats.specialAttack) || 10) * 0.12 * 0.3 * 100) / 100;

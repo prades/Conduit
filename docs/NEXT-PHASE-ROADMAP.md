@@ -823,7 +823,7 @@ The follower combat work above must not be reduced to a vague "audit the roster"
 
 The owner, 2026-11-06: "Check out the new development documentation on GitHub. It includes some things that I'm willing to take out of there, like stealth. We don't need to add stealth to the game. And I would like to make it to where the ICE technician's utility ability is the ability to freeze water. And make bridges to cross across the water. And we need to make it to where the queen is in a spot where the player can create an ice bridge to maneuver themselves over closer to the queen. And do extensive work to understand the flux technician's new mechanic. And let's get this registered to be a future update."
 
-**Status:** designed direction; **nothing is built**. What the code has today was studied on build `2026-11-06a` (read-only; measured on the built map). Where a point below is not the owner's, it says so.
+**Status:** the ice bridges are **built** (build `2026-11-06k`: one ability, straight, 2 wide, up to 8 tiles; the Queen asleep at her post once you are within 10 tiles, so a bridge does not skip her). Changed in `2026-11-07x` (the owner, 2026-11-07): a bridge stands until the same technician makes its next one (was 30 s); the Sewers' river is 3 tiles across (was 6). The text below is the study of 2026-11-06, kept as history. What the code has today was studied on build `2026-11-06a` (read-only; measured on the built map). Where a point below is not the owner's, it says so.
 
 ### 14.1 Stealth removed
 
@@ -835,7 +835,7 @@ No stealth route, patrol-avoidance section or stealth system (§6.1, §6.2, §7,
 - **What the game has today:**
   - **FROST PATCH** (`TECH_AB.frost`, js/techabilities.js): a 60 s wait; 3 × 3 tiles of ice for 10 s on floor the technician can see; enemies at half speed, your units at 150% (provisional). It refuses water ("TAP THE FLOOR"), and a spot across water is out of sight ("THE TECHNICIAN CANNOT SEE THERE"), because sight is a walkable straight line. It is not saved.
   - **Water is solid.** It is made of map pieces of kind `river` and `pool`:
-    - the Sewers' river, 6 tiles across, in three pieces;
+    - the Sewers' river, 6 tiles across, in three pieces (3 since build `2026-11-07x`);
     - the Nest's reservoir, 4 tiles wide and 11 long;
     - its moat, 2 tiles wide, an L round the dam's south and east sides.
 

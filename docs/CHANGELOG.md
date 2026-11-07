@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **x · Ice bridges stand until the next one; the Sewers' river 3 tiles across** (the owner, 2026-11-07, on the roadmap's next item: "One ability", "But make the sewer river 3 tiles wide", "Until the next one", "Everyone; install starts her"; w "Push to main"; on the branch; commit named in git log).
+  - An **ice bridge** now stands until the same technician makes its next bridge (it was 30 s); then the old one thaws and anyone on it is put on the nearest floor. One bridge per technician; FROST PATCH on floor is unchanged.
+  - The **Sewers' river** is 3 tiles across (was 6): the north ledge took the three tiles (5 deep now; the south ledge 3). The steel bridge, the service bridge and the broken bridge's stumps are shortened to it, the outfall moved to the river's head.
+  - Already as asked, no change: one ability (FROST PATCH on floor, a bridge on water), a straight span, anyone may cross, and the Toxic Queen is at her post asleep once you are within 10 tiles, so an install reached by ice starts her fight.
+  - The roadmap's §14.2 said nothing was built; it was built in `2026-11-06k`. Corrected.
+  - Tests: techlevel1 (the bridge now outlasts 30 s and thaws at its technician's next), sewers (river 3, north ledge 5, bridge tiles), cover (a shot line across the river's short side), sewerquest, facilityplay, bible. Screenshots of the river at both bridges. No full run. Not playtested.
+
 - **w · Three more own Ultimates: PROXY SWARM, SHOCKWAVE SLAM, ICE RINK** (the owner, 2026-11-07, each picked from two proposals; v "Push to main"; on the branch; commit named in git log).
   - **PROXY SWARM** (Goo Proxy): three goo copies round it for 6 s that lure enemies within 6 tiles (the ROTTEN DECOY lure), each bursting when broken or at the end for 1.5 × its power (flux) within 1.5 tiles.
   - **SHOCKWAVE SLAM** (Hammer Slug): 2 × its power (core) to every enemy within 3.5 tiles, thrown 2 tiles, stunned 1.5 s (not a boss). Core forms had no Ultimate before.

@@ -1952,3 +1952,14 @@ The owner: too much time goes into testing and side checks. From here on, only t
 1. Every Series 2 family's items: "Approve all" (Crustacean, Mollusk, Elemental, Drone, Jelly, Technician).
 2. Next: "More own Ultimates". Goo Proxy: "PROXY SWARM"; Hammer Slug: "SHOCKWAVE SLAM"; Igloo Skater: "ICE RINK" (each picked from two agent proposals; the numbers are the proposals').
 
+## DECISION: Ice bridges until the next one; the Sewers' river 3 tiles across
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07x`, on the branch; not playtested.
+- **Related feature/docs:** `TECHNICIANS.md` (FROST PATCH and the ice bridge); `FACILITY.md` (the Sewers); `NEXT-PHASE-ROADMAP.md` §14.2; `CHANGELOG.md` (2026-11-07 x)
+
+### Decision
+1. Asked again (the roadmap wrongly said nothing was built): "One ability" (as built), "Everyone; install starts her" (as built: the Queen is armed by nearness).
+2. "Until the next one": a bridge stands until the same technician makes its next (was 30 s).
+3. "But make the sewer river 3 tiles wide": the river is 3 tiles across; the north ledge took the 3 tiles.
+
