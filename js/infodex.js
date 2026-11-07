@@ -37,7 +37,6 @@ function infoEntries() {
     const party = typeof PARTY !== "undefined" ? PARTY : { max: 3 };
     const spot = typeof FP_SPOT !== "undefined" ? FP_SPOT : { take: 1.5, refill: 5400, cap: 12 };
     const spawn = typeof FP_SPAWN !== "undefined" ? FP_SPAWN : { every: 1200, start: 4, cap: 7, levels: [2, 4], species: ["ant", "beetle", "spider", "scorpion", "mantis", "moth"], scrap: { chance: 0.75, life: 3600 } };
-    const relayRule = typeof CLASS_RULES !== "undefined" && CLASS_RULES.relay ? CLASS_RULES.relay : { skillCells: 1, kitCells: 2 };
     const relays = typeof _fp !== "undefined" && _fp && _fp.F && _fp.F.relays ? _fp.F.relays.length : 6;
     const recruitCost = typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 30;
     const evolveAt = typeof EVOLVE_LEVEL !== "undefined" ? EVOLVE_LEVEL : 10, evolveMult = typeof EVOLVE_MULT !== "undefined" ? EVOLVE_MULT : 1.25;
@@ -118,10 +117,10 @@ function infoEntries() {
         ["The Crystal stands in the Crystal Chamber: it is where you start, where recruits come out and where a fallen follower or clone comes back. It mends slowly on its own.",
          "The creatures hunt it when an alarm is up. If it is destroyed the game is over: the card says so, with the shards you had, and NEW GAME starts the facility again (SETTINGS on the dock does the same)."],
         [["HEALTH", crystalHp + " HP", "#7dffb5"], ["LOST", "game over", UI_RED]]);
-    add("relays", "rules", "RELAYS & THE BLACKOUT", "#ffe733", "Power the rooms back up",
-        ["The facility starts in a blackout: every room dark, your monitor lamp and the emergency lights the only light. " + relays + " relays stand broken, and each one powers a few rooms. Walk up to one (or tap it) to repair it: a Technomancer spends " + relayRule.skillCells + " power cell and starts by itself; anyone else needs the RELAY KIT and " + relayRule.kitCells + " cells. Walk away and the repair stops, nothing spent.",
-         "Once a relay is online its rooms have power: lit while you are in them, their doors throwing light, and whatever it feeds (sentries, the charging station) working. The NETWORK panel at the top right counts the relays online and the rooms powered, and the room tag names the room you are in; with every relay online the blackout is over."],
-        [["RELAYS", relays], ["TECHNOMANCER", relayRule.skillCells + " power cell"], ["ANYONE", "the relay kit + " + relayRule.kitCells + " cells"]]);
+    add("relays", "rules", "THE BLACKOUT & THE JUNCTION", "#ffe733", "One repair powers the facility",
+        ["The facility starts in a blackout: every room dark, your monitor lamp and the emergency lights the only light. Its power runs through " + relays + " relay nodes, small boxes on the walls, and every one is dead because the MAIN POWER JUNCTION in the server room is broken: its module is missing.",
+         "A spare POWER MODULE sits on the catwalks over the arena, out of your reach. SIDE QUEST, waiting under the catwalks, can fly: talk to him and he brings it down. Install it at the junction (stay at it while it goes in) and every relay comes on at once: the rooms have power, their doors throw light, the sentries and the charging station work, and the server room's fuel cells arrive. The NETWORK panel at the top right counts the relays online and the rooms powered."],
+        [["RELAY NODES", relays], ["THE REPAIR", "the junction, once"], ["THE MODULE", "the catwalks: Side Quest flies up"]]);
     add("gun", "rules", "YOUR GUN", "#ffb070", "Lock on, then the round dial fires",
         ["Near a creature the gun takes aim by itself: the nearest one within " + target.range + " tiles that you can see is locked, red corners close on it, and a round DIAL with its picture appears: its health as a ring, its level, an INFO button and the ammunition under it. CLICK the dial for a shot, HOLD it to keep firing at the gun's own rate.",
          "Tap another creature to lock that one instead; a tap on the locked creature is a shot too. The ammunition chip stands the gun down. Rounds come from AMMO PACKS in the supply cases and from scrap at the Armory's terminal, where weapons are equipped and upgraded as well."],

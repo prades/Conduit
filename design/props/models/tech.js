@@ -7,6 +7,10 @@
 //   cabinet.1x1           1x1  a filing cabinet with three drawers (the Security Room's, against the west wall: its front is on the +x face);  cabinet.1x2  the lab's tall glass-fronted storage cabinet (front on +x)
 //   display_case.s0..s2   1x1  a showcase on a pedestal lit from within: s0 a floating crystal, s1 a small drone, s2 a headset
 //   telescope             1x1  a brass-and-steel observation telescope on a tripod, pointing out (+x) and up
+//   junction.2x2.off / .on  2x2  THE MAIN POWER JUNCTION, the machine the tutorial has the player repair: a wall-standing switchgear cabinet (~100 px; its back on -z against a north wall, its front +z) with a breaker
+//                         bank, two gauges, THE MODULE SLOT in a hazard-striped frame and a red rotary isolator; heavy cables up into the wall (~140 px) and along the floor into a hatch; a service step before it.
+//                         off: the slot empty and scorched, a cut lead hanging out of it, red standby lamps; on: a glowing module seated in the slot, lit gauges, mint and cyan indicators, a cyan beacon.
+//                         (off is listed first: a kind given no state is drawn with its first variant)
 // The front of a 1x1 is on its +z face except where said (the lockers and cabinets stand against a wall and the cabinets face +x). Detail on BOTH visible faces (+x and +z), nothing on the hidden ones.
 (function () {
   const S = STY.mat, std = STY.std, glow = STY.glow, col = STY.col;
@@ -381,9 +385,103 @@
     return { g };
   }
 
+  // ───────────────────────── MAIN POWER JUNCTION (2 x 2) ─────────────────────────
+  // a wall-standing switchgear cabinet (its back on -z, against a north wall; the front +z): a breaker bank, two gauges, THE MODULE SLOT in a hazard-striped frame, a rotary isolator; heavy cables up into the wall and
+  // along the floor into a hatch; a service step in front. on: a glowing module in the slot, lit gauges and indicators; off: the slot empty and scorched, a cut lead hanging out of it, red standby lamps
+  const wide = (w, h, text, bg, fg, font, lit) => { const t = plateTex(text, bg, fg, 512, Math.max(32, Math.round(512 * h / w)), font); return new T.Mesh(new T.PlaneGeometry(w, h), lit ? new T.MeshBasicMaterial({ map: t, toneMapped: false }) : new T.MeshStandardMaterial({ map: t, metalness: 0.1, roughness: 0.6, envMapIntensity: 0.3 })); };
+  const sootMat = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(0,0,0,0.9)'); gr.addColorStop(0.55, 'rgba(0,0,0,0.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+    const t = new T.CanvasTexture(c); return new T.MeshBasicMaterial({ map: t, color: 0x050608, transparent: true, depthWrite: false, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }); })();
+  function junction(on) {
+    const g = G(), frame = std('#3a4350', 0.8, 0.4), door = std('#c9d6dc', 0.35, 0.45), teal = std('#4f9aa0', 0.3, 0.4), redM = std('#d6422a', 0.3, 0.45), copper = std('#c8782e', 0.9, 0.3), toggle = std('#e8ecef', 0.2, 0.5);
+    const XR = 0.92, ZB = -0.94, ZF = 0.1, ZC = (ZB + ZF) / 2, D = ZF - ZB, H = 94, lz = ZF + 0.026;   // the carcass's half width, back, front, its height (px); lz: the doors' face
+    // the carcass on its plinth, a roof cap, a teal fascia band with the name plate
+    slab(g, 1.9, 4, D + 0.06, graphite, 0, 0, ZC, 0.02); hazardZ(g, -0.94, 0.94, 0.6, 2.8, ZF + 0.039, 24); hazardX(g, ZB, ZF, 0.6, 2.8, 0.959, 14);
+    slab(g, 2 * XR, H - 4, D, frame, 0, 4, ZC, 0.035); slab(g, 1.9, 4.5, D + 0.06, frame, 0, H, ZC, 0.025);
+    slab(g, 1.86, 6.5, 0.024, teal, 0, 85, ZF + 0.012, 0.005); onZ(g, wide(0.98, 0.062, 'MAIN POWER JUNCTION', '#14181d', on ? '#7fe8ff' : '#dfe6ea', 'bold 25px sans-serif', on), 0, px(88.2), ZF + 0.0255);
+    // three doors, hinges on their left edges, a quarter-turn latch on their right, bolts in their corners
+    const doors = [[-0.9, -0.32], [-0.3, 0.42], [0.44, 0.9]];
+    for (const [a, b] of doors) {
+      slab(g, b - a, 74, 0.026, door, (a + b) / 2, 9, ZF + 0.013, 0.01);
+      for (const y of [14, 68]) cylY(g, 0.016, 0.016, 9, steelLt, a + 0.012, y, lz + 0.01, 8);
+      const lt = cyl(0.026, 0.026, 0.02, steelLt, 12); lt.rotation.x = PI / 2; g.add(at(lt, b - 0.06, px(47), lz + 0.01)); g.add(at(cbox(0.034, px(0.8), 0.008, 0.001, black), b - 0.06, px(47), lz + 0.021));
+      for (const [x, y] of [[a + 0.05, 12], [b - 0.05, 12], [a + 0.05, 80], [b - 0.05, 80]]) bolt(g, x, px(y), lz + 0.004, 'z');
+    }
+    // THE BREAKER BANK (left door): eight breakers in a dark recess, their toggles up when fed (one in three left up when dead), an LED by each
+    slab(g, 0.5, 44, 0.008, black, -0.61, 30, lz + 0.004, 0.003); onZ(g, wide(0.4, 0.05, 'FEEDERS 1 - 8', '#e8ecef', '#1b2430', 'bold 34px sans-serif'), -0.61, px(77.5), lz + 0.002);
+    for (let c = 0; c < 2; c++) for (let r = 0; r < 4; r++) {
+      const i = c * 4 + r, bx = -0.73 + c * 0.24, by = 33 + r * 10, up = on || i % 3 === 1;
+      slab(g, 0.19, 8, 0.03, graphiteLt, bx, by, lz + 0.015, 0.006); slab(g, 0.045, 3.4, 0.03, toggle, bx - 0.035, by + (up ? 4.2 : 0.6), lz + 0.04, 0.005);
+      g.add(at(cbox(0.03, px(1.8), 0.012, 0.003, on ? mint : (i === 2 || i === 5 ? redDim : std('#2a1210', 0.5, 0.5))), bx + 0.055, px(by + 4), lz + 0.036));
+    }
+    // two gauges (centre door): a bezel, a face (lit when fed), a green band, a needle (in the band when fed, at the stop when dead)
+    for (const [gx, k] of [[-0.12, 0], [0.2, 1]]) {
+      const y = px(73.5); g.add(at(torus(0.07, 0.012, steelLt, 24), gx, y, lz + 0.012));
+      const face = cyl(0.064, 0.064, 0.012, on ? glow('#dff8ff', 0.85) : std('#1c232b', 0.4, 0.5), 24); face.rotation.x = PI / 2; g.add(at(face, gx, y, lz + 0.008));
+      const band = new T.Mesh(new T.TorusGeometry(0.05, 0.007, 4, 12, 0.9), on ? mint : std('#1d4a3a', 0.3, 0.5)); band.rotation.z = 0.25; g.add(at(band, gx, y, lz + 0.016));
+      const nd = cbox(0.009, 0.056, 0.006, 0.001, redM); nd.geometry.translate(0, 0.026, 0); nd.rotation.z = on ? -0.45 - k * 0.3 : 1.15; g.add(at(nd, gx, y, lz + 0.02));
+      const hub = cyl(0.012, 0.012, 0.012, black, 8); hub.rotation.x = PI / 2; g.add(at(hub, gx, y, lz + 0.022));
+    }
+    // THE MODULE SLOT (centre door): a heavy steel frame round a deep dark opening, hazard stripes on its sill; a status strip under it
+    const sx = 0.05, sy0 = 32, sh = 26, sw = 0.34, fz = lz + 0.025, fd = 0.05;
+    slab(g, sw + 0.12, 4, fd, steelDk, sx, sy0 - 4, fz, 0.01); slab(g, sw + 0.12, 4, fd, steelDk, sx, sy0 + sh, fz, 0.01);
+    for (const s of [-1, 1]) slab(g, 0.06, sh, fd, steelDk, sx + s * (sw / 2 + 0.03), sy0, fz, 0.01);
+    slab(g, sw, sh, 0.01, black, sx, sy0, lz + 0.005, 0.002); for (const s of [-1, 1]) slab(g, 0.02, sh - 2, 0.03, graphite, sx + s * (sw / 2 - 0.01), sy0 + 1, lz + 0.02, 0.004);   // its back, the guide rails
+    hazardZ(g, sx - sw / 2 - 0.06, sx + sw / 2 + 0.06, sy0 - 3.6, 3.2, fz + fd / 2 + 0.009, 8);
+    slab(g, 0.34, 8, 0.012, black, sx, 16, lz + 0.006, 0.003);
+    if (on) {
+      // the module, seated: a graphite cartridge standing proud of the frame, a glowing core window with a white-hot heart, a handle; cyan light down the slot's edges, two seated lamps on the sill
+      slab(g, sw - 0.04, sh - 4, 0.1, graphite, sx, sy0 + 2, lz + 0.03, 0.012); slab(g, sw * 0.66, sh - 11, 0.012, steelDk, sx, sy0 + 5, lz + 0.081, 0.004);
+      g.add(at(new T.Mesh(new T.PlaneGeometry(sw * 0.56, px(sh - 13)), cyan), sx, px(sy0 + 5.5 + (sh - 12) / 2), lz + 0.0885)); g.add(at(new T.Mesh(new T.PlaneGeometry(sw * 0.12, px(sh - 15)), white), sx, px(sy0 + 5.5 + (sh - 12) / 2), lz + 0.089));
+      for (const s of [-1, 1]) slab(g, 0.03, 2, 0.04, steelLt, sx + s * sw * 0.28, sy0 + sh - 6, lz + 0.09, 0.006); slab(g, sw * 0.62, 2, 0.026, steelLt, sx, sy0 + sh - 6, lz + 0.115, 0.006);
+      for (const s of [-1, 1]) g.add(at(cbox(0.012, px(sh), 0.02, 0.002, cyan), sx + s * (sw / 2 + 0.004), px(sy0 + sh / 2), lz + 0.045));
+      for (const s of [-1, 1]) g.add(at(cbox(0.026, px(1.6), 0.01, 0.002, mint), sx + s * 0.1, px(sy0 - 2), fz + fd / 2 + 0.02));
+      for (let i = 0; i < 7; i++) g.add(at(cbox(0.03, px(2 + ((i * 5) % 7) * 0.6), 0.006, 0.001, i % 3 ? cyan : cyanDim), sx - 0.12 + i * 0.04, px(17.5 + (2 + ((i * 5) % 7) * 0.6) / 2), lz + 0.0135));
+    } else {
+      // empty and burnt: the contact block at the back with its copper pins (one still glowing), soot up the frame and the door over it, a cut lead hanging out onto the step, a FAULT tag, one red bar on the strip
+      slab(g, sw * 0.7, 4, 0.04, steelDk, sx, sy0 + 1, lz + 0.02, 0.006); for (let i = 0; i < 3; i++) slab(g, 0.03, 3, 0.02, copper, sx - 0.07 + i * 0.07, sy0 + 5, lz + 0.03, 0.004);
+      g.add(at(new T.Mesh(new T.SphereGeometry(0.012, 8, 6), amber), sx + 0.07, px(sy0 + 8.2), lz + 0.035));
+      for (const [x, y, w, h, z] of [[sx + 0.05, sy0 + sh + 9, 0.34, 20, lz + 0.0015], [sx + 0.02, sy0 + sh + 2, 0.4, 4.6, fz + fd / 2 + 0.0015], [sx - 0.1, sy0 + 13, 0.2, 16, lz + 0.011]]) g.add(at(new T.Mesh(new T.PlaneGeometry(w, px(h)), sootMat), x, px(y), z));
+      g.add(tube([[sx - 0.1, px(36), lz + 0.02], [sx - 0.12, px(31), lz + 0.1], [sx - 0.19, px(17), lz + 0.2], [sx - 0.22, px(7), lz + 0.29], [sx - 0.17, px(4.6), lz + 0.38]], 0.022, rubber));
+      for (let i = 0; i < 3; i++) { const w = cyl(0.005, 0.005, 0.05, copper, 5); w.rotation.set(PI / 2 + (i - 1) * 0.4, 0, (i - 1) * 0.5); g.add(at(w, sx - 0.165 + (i - 1) * 0.01, px(4.6), lz + 0.415)); }
+      g.add(at(new T.Mesh(new T.SphereGeometry(0.018, 8, 6), amber), sx - 0.16, px(5), lz + 0.44)); g.add(at(new T.Mesh(new T.SphereGeometry(0.04, 10, 8), trans('#f2b13a', 0.3, 1)), sx - 0.16, px(5), lz + 0.44));
+      const tag = onZ(g, plate(0.09, 0.07, 'FAULT', '#c9301f', '#ffffff', 'bold 22px sans-serif'), sx + sw / 2 + 0.12, px(39), lz + 0.035); tag.rotation.z = 0.18;
+      g.add(at(cbox(0.03, px(4), 0.006, 0.001, redDim), sx - 0.12, px(20), lz + 0.0135));
+    }
+    // THE ISOLATOR (right door): a red rotary handle on a yellow plate (up: on; across: off), a high-voltage triangle, vents below
+    slab(g, 0.28, 20, 0.012, hzY, 0.67, 52, lz + 0.006, 0.004); const hub = cyl(0.05, 0.05, 0.03, graphite, 16); hub.rotation.x = PI / 2; g.add(at(hub, 0.67, px(62), lz + 0.027));
+    const hd = cbox(0.06, 0.24, 0.035, 0.012, redM); hd.rotation.z = on ? 0 : PI / 2; g.add(at(hd, 0.67, px(62), lz + 0.045));
+    if (!on) { const t2 = onZ(g, plate(0.08, 0.1, 'DO NOT', '#e8e3d2', '#b02515', 'bold 20px sans-serif'), 0.76, px(54), lz + 0.07); t2.rotation.z = -0.12; }   // a lock-out tag on the handle
+    { const tri = s => { const sh2 = new T.Shape(); sh2.moveTo(0, 0.1 * s); sh2.lineTo(-0.1 * s, -0.07 * s); sh2.lineTo(0.1 * s, -0.07 * s); sh2.closePath(); return new T.ShapeGeometry(sh2); };
+      g.add(at(new T.Mesh(tri(1.18), std('#14181d', 0.2, 0.6)), 0.67, px(41), lz + 0.003)); g.add(at(new T.Mesh(tri(1), hzY), 0.67, px(41), lz + 0.005)); g.add(at(boltIcon(9, std('#14181d', 0.2, 0.6)), 0.67, px(39.6), lz + 0.006)); }
+    louvres(g, 4, 0.5, 0.84, 12, 26, lz + 0.006, black);
+    // the +x side: vents, a nameplate, a conduit up the side into the roof
+    louvresX(g, 6, -0.78, -0.26, 58, 80, XR + 0.012, black); onX(g, plate(0.3, 0.09, 'J-01', '#14181d', '#f2b13a', 'bold 26px sans-serif'), XR + 0.003, px(40), -0.52);
+    cylY(g, 0.034, 0.034, H + 2, steelLt, XR + 0.04, 2, -0.08, 12); for (const y of [16, 48, 80]) slab(g, 0.05, 2.4, 0.1, steelDk, XR + 0.025, y, -0.08, 0.005);
+    g.add(at(sphere(0.034, steelLt, 12), XR + 0.04, px(H + 4), -0.08)); { const el = cyl(0.034, 0.034, 0.14, steelLt, 12); el.rotation.z = PI / 2; g.add(at(el, XR - 0.03, px(H + 4), -0.08)); }
+    // the roof: a gland plate, three heavy cables (coloured sleeves) up and back into the wall through a plate; a beacon at the front corner (cyan when fed, a dull red when not)
+    slab(g, 1.3, 1.6, 0.42, steelDk, -0.2, H + 4.5, -0.62, 0.008); slab(g, 1.2, 26, 0.014, steelDk, -0.22, 126, -0.985, 0.004);
+    for (const [x, sl] of [[-0.66, hzY], [-0.22, teal], [0.22, hzY]]) {
+      cylY(g, 0.07, 0.075, 4, graphiteLt, x, H + 6, -0.62, 14); cylY(g, 0.058, 0.058, 4, sl, x, H + 10, -0.62, 14);
+      g.add(tube([[x, px(H + 12), -0.62], [x, px(H + 28), -0.63], [x + 0.01, px(H + 40), -0.7], [x + 0.02, px(H + 46), -0.84], [x + 0.02, px(H + 47), -0.975]], 0.05, rubber));
+      const gl = cyl(0.068, 0.068, 0.03, graphiteLt, 14); gl.rotation.x = PI / 2; g.add(at(gl, x + 0.02, px(H + 47), -0.968));
+    }
+    cylY(g, 0.055, 0.06, 3, steelDk, 0.72, H + 4.5, -0.05, 14); cylY(g, 0.045, 0.045, 6, on ? cyan : redDim, 0.72, H + 7.5, -0.05, 14); cylY(g, 0.05, 0.04, 1.6, steelDk, 0.72, H + 13.5, -0.05, 14);
+    // the floor: a gland box at the foot of the right door, two heavy cables out along the floor into a hatch; a service step with a hazard nosing before the other doors
+    slab(g, 0.38, 8, 0.1, graphiteLt, 0.67, 0, ZF + 0.08, 0.012);
+    slab(g, 0.42, 1.2, 0.32, steelDk, 0.67, 0, 0.8, 0.01); hazardZ(g, 0.46, 0.88, 0, 1.4, 0.969, 6); hazardX(g, 0.64, 0.96, 0, 1.4, 0.889, 5);
+    for (const x of [0.58, 0.76]) {
+      g.add(tube([[x, px(4), ZF + 0.12], [x, px(3.4), ZF + 0.26], [x + 0.01, px(3.4), 0.6], [x + 0.01, px(3.6), 0.8]], 0.046, rubber));
+      cylY(g, 0.072, 0.072, 5.5, graphiteLt, x + 0.01, 1.2, 0.8, 14); cylY(g, 0.078, 0.078, 1.2, steelDk, x + 0.01, 6.2, 0.8, 14);
+    }
+    slab(g, 1.34, 3, 0.47, std('#76818e', 0.75, 0.42), -0.23, 0, 0.365, 0.01); for (let i = 0; i < 6; i++) slab(g, 1.26, 0.5, 0.025, steelDk, -0.23, 3, 0.18 + i * 0.075, 0.004);
+    hazardZ(g, -0.9, 0.44, 0.3, 2.4, 0.609, 16);
+    return { g, marks: { lamp: [0.72, px(H + 10.5), -0.05], slot: [sx, px(sy0 + sh / 2), lz + 0.05] } };   // (where the beacon and the slot are on the sprite, for a light the game paints live in the dark)
+  }
+
   const VARS = [];
   for (const s of [0, 1]) VARS.push('teleporter.s' + s);
   VARS.push('charger.on', 'charger.off', 'relay.on', 'relay.off', 'mech_bay', 'locker.1x1.s0', 'locker.1x1.s1', 'locker.4x1', 'cabinet.1x1', 'cabinet.1x2', 'display_case.s0', 'display_case.s1', 'display_case.s2', 'telescope');
+  VARS.push('junction.2x2.off', 'junction.2x2.on');   // (off first: with no state given, the game draws the first, the broken one the tutorial starts with)
   PROPS.tech = { variants: VARS, canvas: [1100, 900], exposure: 0.92, build(name) {
     if (name.startsWith('teleporter')) return teleporter(+name.slice(-1));
     if (name === 'charger.on' || name === 'charger.off') return charger(name === 'charger.on');
@@ -396,6 +494,7 @@
     if (name === 'cabinet.1x2') return cabinet1x2();
     if (name.startsWith('display_case')) return displayCase(+name.slice(-1));
     if (name === 'telescope') return telescope();
+    if (name === 'junction.2x2.on' || name === 'junction.2x2.off') return junction(name === 'junction.2x2.on');
     throw new Error('unknown tech variant ' + name);
   } };
 })();

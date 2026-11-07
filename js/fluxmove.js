@@ -46,6 +46,7 @@ function fluxKept() {
     const put = (x, y, why) => { if (Number.isFinite(x) && Number.isFinite(y)) { const k = Math.round(x) + "," + Math.round(y); if (!out.has(k)) out.set(k, why); } };
     for (const p of ((_fp && _fp.portals) || [])) { for (const k of (typeof facilityRectCells === "function" ? facilityRectCells(p.rect) : [])) if (!out.has(k)) out.set(k, "NOT IN A DOORWAY"); put(p.ax, p.ay, "NOT IN FRONT OF A DOORWAY"); }
     for (const s of (F.launchSites || [])) for (const q of [s.at, s.land, s.drop, s.dropTo]) if (q) put(q[0], q[1], "NOT ON A LAUNCHER SITE");
+    for (const l of (F.ledges || [])) for (const q of [l.at, l.to]) put(q[0], q[1], "NOT ON THE LEDGE");
     for (const r of (F.rubble || [])) if (r.work) put(r.work[0], r.work[1], "NOT ON THE RUBBLE'S WORK SPOT");
     for (const p of (F.followerSpots || [])) if (p.at) put(p.at[0], p.at[1], "NOT ON A FOLLOWER SPOT");
     for (const it of ((_fp && _fp.items) || [])) if (it.fp === "pickup" && !it.taken) put(it.x, it.y, "NOT ON AN ITEM");

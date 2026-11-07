@@ -11,7 +11,7 @@ This page covers the brief's step 8, *"Implement the Technomancer's hybrid melee
 | System | Where | State before step 8 |
 |---|---|---|
 | The Technomancer class | `CLASSES.technomancer` (js/classes.js) | the `repair` and `tech` skills, a power cell to start, its gear found in the labs and Teleport Room 1. **No weapon of its own:** it fired the service gun like everyone. |
-| Its tie to the power network | `CLASS_RULES.relay` (js/classes.js), js/stations.js | it repairs a relay with **one** power cell (anyone else needs the relay kit and two), and the repair **starts by itself** when it stands at a broken relay. The charging station gives it a power cell as well as ammunition. |
+| Its tie to the power network | js/stations.js | ~~it repairs a relay with one power cell~~ (**superseded in build 2026-11-07qq**: no relay is repaired; the one repair is the main power junction, which anyone may do with the power module: docs/TUTORIAL.md). What is left: a powered room recharges the gauntlet, and every relay online makes the arc stronger. |
 | Its perks | `CLASS_PERKS.tuned`, `CLASS_PERKS.mech` | the tuned lamp (Teleport Room 1's console) and the spider mech (the Show Room's mech bay). |
 | The power network | js/facilitytutorial.js, js/stations.js | the facility starts in a blackout; a relay online powers its rooms (`_fpPowered`); the blackout is over when every room has power. |
 | Melee | js/mutator.js | the Mutator's lash: walked into reach, two beats (a wind-up, then the hit), aimed through the same dial and lock as the gun. |
@@ -54,7 +54,7 @@ This page covers the brief's step 8, *"Implement the Technomancer's hybrid melee
 
 - **In a powered room** (js/facilitytutorial.js `_fpPowered`: a room whose relay is online, or every room once the blackout is over) the gauntlet gains **one charge every `TECHNO.charge.gridEvery` frames** (120, two seconds), up to its most. In a room with no power it gains none. The count starts again when the player walks into power or spends a charge from full.
 - **Every relay online makes the arc stronger** by `TECHNO.arc.perRelay` (10% each; with the six relays, 60%).
-- The relays are the Technomancer's own work (one power cell, by standing at it), so restoring the network is how the Technomancer grows in a fight: more rooms to recharge in, a stronger arc.
+- The relays were the Technomancer's own work (one power cell, by standing at it) until build 2026-11-07qq; now the junction turns them all on in the tutorial, so the arc's bonus is the full six from then on.
 
 ### 2.5 What the player sees
 
@@ -115,5 +115,5 @@ The punch is about 23 damage a second (14 every 36 frames), between the lash (25
 
 ## 5. Not done here
 
-- **Its tutorial stage: built** in step 9 (docs/TUTORIAL.md, "The class stages"): the mech, a relay, three punches, two arcs.
+- **Its tutorial stage: built** in step 9 (docs/TUTORIAL.md, "The class stages"): the mech, three punches, two arcs (its relay step went in build 2026-11-07qq).
 - **Further Technomancer abilities** (deployables, turrets, taking over the facility's systems) were not asked for in these words and are not invented here; the existing mech and tuned lamp perks stay as they were.

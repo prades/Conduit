@@ -15,6 +15,14 @@ function facilitySaveLoad() {
     if (typeof fluxLabOn === "function" && fluxLabOn()) return null;   // (nor does the Flux test room, js/fluxlab.js: a player's own save is not read, nor written over)
     try { const d = JSON.parse(localStorage.getItem(FS.key) || "null"); return d && d.v === FS.version ? d : null; } catch (e) { return null; }
 }
+// the tutorial's step from a save: by its id (since build 2026-11-07qq, when the steps changed), else an older save's index read through the old list of steps (its relay step is the junction now)
+const FS_OLD_STEPS = ["supplies", "relay", "recruit", "position", "gun", "assault", "evolve"];
+function facilitySaveStep(sc) {
+    const N = TUT_STEPS.length, at = id => { const i = TUT_STEPS.findIndex(t => t.id === id); return i < 0 ? N : i; };
+    if (sc.sid) return sc.sid === "done" ? N : at(sc.sid);
+    const i = Math.max(0, sc.step | 0); if (i >= FS_OLD_STEPS.length) return N;
+    return at(FS_OLD_STEPS[i] === "relay" ? "junction" : FS_OLD_STEPS[i]);
+}
 function facilitySaveCollect() {
     const S = _fp.tut && _fp.tut.script;
     return {
@@ -23,7 +31,7 @@ function facilitySaveCollect() {
         classes: typeof classSeen !== "undefined" ? { seen: Array.from(classSeen), weapon: classWeapon, clone: classWaitingClone } : null,   // the classes you have been, the weapon each last held, the Mutator's clone waiting (js/classes.js)
         taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp).map(i => i.id),
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
-        script: S ? { step: S.step, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays,
+        script: S ? { step: S.step, sid: TUT_STEPS[S.step] ? TUT_STEPS[S.step].id : "done", jseen: S.jseen ? 1 : 0, baseFollowers: S.baseFollowers, done: S.doneAt ? 1 : 0, said: S.said, kills: S.kills, gunBase: S.gunBase, strays: S.strays,
             cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away)
         followers: followerRosterSnapshot(),
         cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,   // the run's hand of equip cards and the player's two slots (js/cards.js; the collection is its own key, which NEW GAME leaves alone)
@@ -92,7 +100,8 @@ function facilitySaveApply(d) {
     const taken = new Set(d.taken || []); for (const it of _fp.items) if (it.fp === "pickup" && taken.has(it.id)) it.taken = true;
     // the tutorial: where it had got to (an assault in progress begins again; the followers that are back are not levelled again)
     if (S && d.script) {
-        S.step = Math.max(0, Math.min(TUT_STEPS.length, d.script.step | 0)); S.baseFollowers = Number.isFinite(d.script.baseFollowers) ? d.script.baseFollowers : S.baseFollowers;
+        S.step = facilitySaveStep(d.script); S.jseen = d.script.jseen ? 1 : 0; S.baseFollowers = Number.isFinite(d.script.baseFollowers) ? d.script.baseFollowers : S.baseFollowers;
+        if (!d.script.sid && (d.script.step | 0) >= 2 && typeof facilityJunctionRepair === "function") facilityJunctionRepair(true);   // (a save from before build 2026-11-07qq past its relay step: the junction counts as repaired, every relay on)
         S.doneAt = d.script.done ? 1 : 0; S.said = d.script.said || {}; S.kills = d.script.kills || 0; S.gunBase = d.script.gunBase; S.strays = d.script.strays || 0; S.assault = null;
         S.cstep = Math.max(0, d.script.cstep | 0); S.tally = d.script.tally && typeof d.script.tally === "object" ? d.script.tally : {}; S.ck0 = Number.isFinite(d.script.ck0) ? d.script.ck0 : undefined; S.cr0 = Number.isFinite(d.script.cr0) ? d.script.cr0 : undefined; S.cstages = d.script.cstages && typeof d.script.cstages === "object" ? d.script.cstages : {};   // the class's stage, as far as it had got
         S.levelled = new Set(followers);

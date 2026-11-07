@@ -121,8 +121,9 @@ function _facilityBuild(ex) {
     const pickups = (M.pickups || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), items: (p.items || []).map(i => i.slice()), class: p.class || null, needs: p.needs || null, note: p.note }));   // (a tile's middle, not snapped; `needs` is a relay that must be online before the case is there)
     const followerSpots = (M.followerSpots || []).map(p => ({ id: p.id, room: p.room, at: rawP(p.at), type: p.type, element: p.element, note: p.note }));   // (a tile's middle, not snapped, like a pickup)
     const launchSites = (M.launchSites || []).map(s => ({ id: s.id, room: s.room, to: s.to, label: s.label, at: rawP(s.at), land: rawP(s.land), drop: s.drop ? rawP(s.drop) : null, dropTo: s.dropTo ? rawP(s.dropTo) : null, pocket: !!s.pocket, rider: !!s.rider, only: s.only || null, note: s.note }));   // (tiles' middles, like a follower spot: js/techabilities.js; a pocket site may have no broken section; `rider`: the launcher carries the player too)
+    const ledges = (M.ledges || []).map(l => ({ id: l.id, room: l.room, toRoom: l.toRoom, label: l.label || "", at: rawP(l.at), to: rawP(l.to), w: l.w || 2, note: l.note }));   // (the one way down from a raised floor, build 2026-11-07qq: js/techabilities.js)
     const rubble = (M.rubble || []).map(r => { const a = rawP(r.a), b = rawP(r.b); return { id: r.id, room: r.room, label: r.label, a, b, at: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], work: rawP(r.work), solid: r.solid || null, inside: !!r.inside, tag: r.tag || null, say: r.say || null, opened: r.opened || null, note: r.note }; });   // (tag, say, opened: a choke's own words, when it is not a tunnel's)   // (on the room's edge, or a CHOKE across a passage's mouth (`solid`): js/techabilities.js, the Thermite Drill)
-    const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, prop: r.prop, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));
+    const relays = (M.relays || []).map(r => ({ id: r.id, name: r.name, room: r.room, node: r.node, powers: (r.powers || []).slice(), feeds: (r.feeds || []).slice() }));   // (node: its wall node, since build 2026-11-07qq)
     const stations = (M.stations || []).map(st => ({ id: st.id, room: st.room, prop: st.prop, kind: st.kind }));
     // portals (js/facilityportals.js): the doorway's floor as a box of whole tiles, and where you stand when you come out of the other end (a tile's middle: snapped to the floor when it is used)
     const portals = (M.portals || []).map(p => { const a = _facP([p.rect[0], p.rect[1]]), b = _facP([p.rect[2], p.rect[3]]); return { id: p.id, room: p.room, to: p.to, label: p.label || "", kind: p.kind || "stairs", rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])], arrive: rawP(p.arrive), well: !!p.well, within: !!p.within, shut: !!p.shut, rubble: p.rubble || null, note: p.note }; });   // (well: a stairwell in the floor, not an alcove)
@@ -147,7 +148,7 @@ function _facilityBuild(ex) {
     if (outer) outer.bb = bbox(outer.poly);
     const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
     for (const poly of rooms.map(r => r.poly).concat(outer ? [outer.poly] : [])) for (const q of poly) { b.minX = Math.min(b.minX, q[0]); b.minY = Math.min(b.minY, q[1]); b.maxX = Math.max(b.maxX, q[0]); b.maxY = Math.max(b.maxY, q[1]); }
-    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, followerSpots, launchSites, rubble, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
+    return { margin: ex.margin || FAC_WALL_MARGIN, snapped: !!ex.snap, levelH, rooms, walls, windows, fixtures, floors, decor, solids, pickups, followerSpots, launchSites, ledges, rubble, bridges, stations, relays, portals, interiors, outer, openings, connections: conns, candidates: cands, ramps, candidateRamps: candRamps, exits: (M.external_exits || []).map(e => Object.assign({}, e, { at: _facP(e.at) })), bounds: b, byId: new Map(rooms.map(r => [r.id, r])) };
 }
 // The compiled map of the authored data (built once, again if the data changes).
 function facilityGet() {
@@ -295,7 +296,7 @@ function facilityHeightAt(x, y, F) {
 function facilityRoomHeight(id, F) { F = F || facilityGet(); const r = F.byId.get(id); return r ? (F.levelH.get(r.level) || 0) : 0; }
 
 // the kinds of decor that hang on a wall (the rest lie on the floor)
-const FAC_WALL_DECOR = new Set(["poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "bulbs", "monitor_bank", "garage_door", "gun_rack", "portal_door", "outfall", "collapse", "sealed_hatch", "sewer_arch", "brood_hole", "resin"]);   // (the last three: the Nest, js/facilitysewers.js)
+const FAC_WALL_DECOR = new Set(["relay_node", "poster", "vent", "pipe", "wall_light", "screen", "board", "whiteboard", "exit_sign", "clock", "graffiti", "panel", "banner", "mirror", "shelf", "sign", "hazard_sign", "cable_run", "window_blind", "crack", "vein", "beam", "chain", "claw", "ooze_drip", "lamp", "ladder", "scoreboard", "plate", "moss", "bulbs", "monitor_bank", "garage_door", "gun_rack", "portal_door", "outfall", "collapse", "sealed_hatch", "sewer_arch", "brood_hole", "resin"]);   // (the last three: the Nest, js/facilitysewers.js)
 
 // The dressing (floors and decor): floors name a room, floor decor lies inside its room, wall decor is flat on a real solid wall, on the side of it that the camera sees, and (but for signs over a door) not across a doorway.
 function facilityValidateDressing(F) {
@@ -344,12 +345,21 @@ function facilityValidateDressing(F) {
     for (const s of (F.launchSites || [])) {
         if (!F.byId.get(s.room) || !F.byId.get(s.to)) { errors.push("launcher site " + s.id + " names a room that does not exist"); continue; }
         if (s.pocket ? s.room !== s.to : s.room === s.to) errors.push("launcher site " + s.id + (s.pocket ? " is a pocket of another room" : " reaches its own room"));   // (a pocket site lands in a cut-off part of its OWN room; any other reaches another room)
-        if (!s.pocket && (!s.drop || !s.dropTo)) { errors.push("launcher site " + s.id + " has no broken section to drop through"); continue; }
+        if (!s.pocket && (!s.drop || !s.dropTo) && !(F.ledges || []).some(l => l.room === s.to)) { errors.push("launcher site " + s.id + " has no way back down (a ledge in " + s.to + ")"); continue; }   // (the catwalks' ledge, since build 2026-11-07qq; before, the site's own broken section)
         if (!!s.drop !== !!s.dropTo) { errors.push("launcher site " + s.id + " has a broken section with no floor under it (or the other way about)"); continue; }   // (a pocket site may have none, or both: the Sewers' broken edge)
         for (const [k, pt, room] of [["at", s.at, s.room], ["land", s.land, s.to]].concat(s.drop ? [["dropTo", s.dropTo, s.room], ["drop", s.drop, s.to]] : [])) {
             const r = facilityRoomAt(pt[0], pt[1], F); if (!r || r.id !== room) errors.push("launcher site " + s.id + ": its " + k + " is not in " + room);
             else if (F.snapped && !facilityWalkable(pt[0], pt[1], F)) errors.push("launcher site " + s.id + ": its " + k + " is not on a tile a body can stand on");
         }
+    }
+    // ledges: the tile you step off on the floor of its room, where you land on the floor of the room below, both tiles a body can stand on, and the two floors at different heights (it is a way DOWN)
+    for (const l of (F.ledges || [])) {
+        if (!F.byId.get(l.room) || !F.byId.get(l.toRoom)) { errors.push("ledge " + l.id + " names a room that does not exist"); continue; }
+        for (const [k, pt, room] of [["at", l.at, l.room], ["to", l.to, l.toRoom]]) {
+            const r = facilityRoomAt(pt[0], pt[1], F); if (!r || r.id !== room) errors.push("ledge " + l.id + ": its " + k + " is not in " + room);
+            else if (F.snapped && !facilityWalkable(pt[0], pt[1], F)) errors.push("ledge " + l.id + ": its " + k + " is not on a tile a body can stand on");
+        }
+        if (facilityRoomHeight(l.room, F) <= facilityRoomHeight(l.toRoom, F)) errors.push("ledge " + l.id + " does not go down");
     }
     // rubble: on a wall of its room (its middle on the wall's line), and the spot it is drilled from on that room's floor, a body can stand on, in sight of it
     for (const r of (F.rubble || [])) {
@@ -365,8 +375,8 @@ function facilityValidateDressing(F) {
         else if (F.snapped && !facilityWalkable(r.work[0], r.work[1], F)) errors.push("rubble " + r.id + ": its work spot is not on a tile a body can stand on");
         else { const dx = r.work[0] - r.at[0], dy = r.work[1] - r.at[1], L = Math.hypot(dx, dy) || 1, fx = r.at[0] + dx / L * 0.5, fy = r.at[1] + dy / L * 0.5; if (F.snapped && !facilityCanStep(r.work[0], r.work[1], fx, fy, F)) errors.push("rubble " + r.id + " cannot be seen from its work spot"); }
     }
-    for (const r of (F.relays || [])) {   // a relay is a relay box of its room, powering rooms that exist and feeding props that exist
-        const pr = F.solids.find(p => p.id === r.prop); if (!pr) errors.push("relay " + r.id + " names a prop that does not exist"); else if (pr.room !== r.room || pr.kind !== "relay") errors.push("relay " + r.id + ": " + r.prop + " is not a relay box of " + r.room);
+    for (const r of (F.relays || [])) {   // a relay is a NODE on a wall of its room (decor of kind relay_node, since build 2026-11-07qq: no relay box is repaired now), powering rooms that exist and feeding props that exist
+        const nd = (F.decor || []).find(d => d.id === r.node); if (!nd) errors.push("relay " + r.id + " names a node that does not exist"); else if (nd.room !== r.room || nd.kind !== "relay_node") errors.push("relay " + r.id + ": " + r.node + " is not a relay node of " + r.room);
         if (!r.powers.length) errors.push("relay " + r.id + " powers nothing"); for (const id of r.powers) if (!F.byId.has(id)) errors.push("relay " + r.id + " powers " + id + ", which is not a room");
         for (const id of r.feeds) if (!F.solids.some(p => p.id === id)) errors.push("relay " + r.id + " feeds " + id + ", which is not a prop");
     }

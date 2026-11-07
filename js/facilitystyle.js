@@ -467,12 +467,14 @@ function _fpStyleRig(it) {
 // Levels: the room the player stands in is fully lit (the stair room counts as part of the hallway: no change of light on the stairs); every other room is dark. When a door is OPEN (a unit is near it,
 // or it is a stairway) the room beyond it is lit on the GROUND only, in a pool near the door; it lights up completely only when the player steps on one of its tiles. Levels ease.
 var FP_DARK = 0.82, FP_POOL = 0.7, FP_POOL_R = 3.6, FP_LIGHT_EASE = 0.12;
+// a room that stays DIM with you in it and the power on (the owner, 2026-11-07: "a dark server room"): its light level is held at this (the agent's number, provisional); its racks' lights blink over it (js/propsprites.js)
+const FP_ROOM_DIM = { front_lobby: 0.42 };
 function _fpLightKey(id) { return id === "teleport_stair_room" ? "lab_hallway" : id; }
 function _fpLightUpdate(F) {
     _fp.light = _fp.light || new Map(); _fp.pool = _fp.pool || new Map();
     const pr = facilityRoomAt(player.visualX, player.visualY, F), here = pr ? _fpLightKey(pr.id) : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; _fp.here = here;
     const bo = facilityBlackout(), away = typeof attractOn === "function" && attractOn();   // (a blackout: a room is lit, and a door throws a pool, only once it has power: js/facilitytutorial.js; the website's background: every room dim, js/attract.js)
-    for (const r of F.rooms) { const k = _fpLightKey(r.id), v = away ? attractRoomLight(k, here) : k === here && (!bo || _fpPowered(k)) ? 1 : 0, cur = _fp.light.has(k) ? _fp.light.get(k) : v; if (r.id === k || !_fp.light.has(k)) _fp.light.set(k, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
+    for (const r of F.rooms) { const k = _fpLightKey(r.id), v = away ? attractRoomLight(k, here) : k === here && (!bo || _fpPowered(k)) ? (FP_ROOM_DIM[k] || 1) : 0, cur = _fp.light.has(k) ? _fp.light.get(k) : v; if (r.id === k || !_fp.light.has(k)) _fp.light.set(k, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
     const pools = [];
     if (!_fp.openings) { _fp.openings = F.openings.map(o => ({ id: o.id, x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, rooms: (F.connections.find(c => c.opening === o.id) || { rooms: o.rooms || [] }).rooms.map(_fpLightKey), ramp: F.connections.some(c => c.opening === o.id && c.ramp) })); _fp.doorItems = new Map(_fp.items.filter(i => i.fp === "door").map(i => [i.id, i])); }
     for (const o of _fp.openings) {
@@ -527,7 +529,7 @@ function _fpDimCtx(real, k) {
 }
 // the light level that applies to a facility item (the room that shows its face)
 function _fpItemLight(it) {
-    if (it.fp === "pickup" || it.fp === "station" || it.fp === "spot") return 0.8;   // (a supply case is lit by its own beacon: it can be found in the dark)
+    if (it.fp === "pickup" || it.fp === "station" || it.fp === "sidequest" || it.fp === "spot") return 0.8;   // (a supply case is lit by its own beacon: it can be found in the dark; Side Quest by his own lamp)
     const lv = _fpItemRoomLight(it); if (lv > 0.98 || it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return lv;
     const k = _fpLightKey(it.lroom || it.room || (it.rooms && it.rooms[0])); return Math.max(lv, _fpPoolAt(it.x, it.y, k), _fpExtraLight(it.x, it.y, it.rooms ? it.rooms.map(_fpLightKey) : [k]));   // (near a stairway or an open door, things share its light; in a blackout the monitor lamp and the emergency lights add theirs)
 }

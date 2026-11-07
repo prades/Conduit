@@ -231,7 +231,7 @@ EQUIP_OPPORTUNITY.forEach(([id, name, rarity, fx]) => { EQUIP_CARDS[id] = Object
 //   slower       the share of the guns' rate of fire taken off (new, approved): their wait between shots is divided by (1 − slower)
 //   pull         the push of a knockback, reversed: the creature hit is pulled toward you (js/helpers.js vortexPullImmune: a beetle or a boss is not)
 //   sentries     true: the facility's sentries' rounds set the role element's status (the Technomancer places no sentries of its own: the kits' reading, approved)
-//   repair       the share of the time your repairs take: a sentry's (js/antraids.js SENTRY.repair) and a relay's (js/classes.js CLASS_RULES.relay.skillFrames)
+//   repair       the share of the time your repairs take: a sentry's (js/antraids.js SENTRY.repair). (A relay's too, until build 2026-11-07qq: no relay is repaired now.)
 //   relays       { radius }: every ONLINE relay sets the role element's status on every creature within `radius` tiles of it, on every card tick while it stays (the sleeping potion's area: js/potion.js POTION.radius)
 //   lamp         { every }: while your lamp is overcharged (a POWER CELL), every `every` frames (the grid's charge beat: js/technomancer.js TECHNO.charge.gridEvery) every creature in its light, in sight, takes the
 //                arc's zap and the role element's status

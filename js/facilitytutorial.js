@@ -171,12 +171,12 @@ function facilityPickupsStart(F) {
     _fp.items = _fp.items.filter(i => i.fp !== "pickup");
     for (const p of (F.pickups || [])) if (!p.class && !p.needs) _fp.items.push(_fpPickupItem(p));   // (the cases for a class are not here until that class is chosen: facilityClassItemsEnter; a case that `needs` a relay not until it is online: facilityNeedsEnter)
 }
-function _fpPickupItem(p) { return { type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, _fp.F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), cls: p.class || null, taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) }; }
+function _fpPickupItem(p) { return { type: "fp", fp: "pickup", id: p.id, room: p.room, x: p.at[0], y: p.at[1], depth: p.at[0] + p.at[1], base: facilityRoomHeight(p.room, _fp.F) * FP_ELEV_PX, items: p.items.map(i => i.slice()), cls: p.class || null, fetch: p.fetch || null, taken: false, seed: _fpHash(Math.round(p.at[0] * 3), Math.round(p.at[1] * 5)) }; }
 // a relay has come online: the cases that were waiting for it (a pickup with `needs`) arrive, each in a column of light (quiet: no message, no light: a saved game putting things back)
 function facilityNeedsEnter(relayId, quiet) {
     if (!_fp || !_fp.items) return 0;
     let n = 0; for (const p of (_fp.F.pickups || [])) { if (p.needs !== relayId || _fp.items.some(i => i.fp === "pickup" && i.id === p.id)) continue; const it = _fpPickupItem(p); if (!quiet) it.arrive = _fpFrame(); _fp.items.push(it); n++; }
-    if (n && !quiet && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 105, text: "\u25c8 FUEL CELLS HAVE ARRIVED IN THE COMPUTER LAB", color: "#5dffb0", life: 300, vy: -0.04, size: 15 });
+    if (n && !quiet && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 105, text: "\u25c8 FUEL CELLS HAVE ARRIVED IN THE SERVER ROOM", color: "#5dffb0", life: 300, vy: -0.04, size: 15 });
     return n;
 }
 // a class has been chosen: the cases for that class (and only that class) enter the facility, each arriving in a column of light
@@ -187,7 +187,7 @@ function facilityClassItemsEnter(classId) {
     return n;
 }
 function _fpDrawPickup(it) {
-    if (it.taken) return;
+    if (it.taken || it.carried) return;   // (carried: the power module in Side Quest's grip, js/sidequest.js)
     const f = _fpFrame(), first = it.items[0][0], d = typeof itemDef === "function" ? itemDef(first) : null, col = d ? d.col : "#ffe9a0", bob = Math.sin(f * 0.06 + it.seed) * 3, A = FP_PAL;
     if (it.rock) {   // a rock from the drilled rubble (js/techabilities.js): a rough lump on the floor, not a case
         const c = _fpP(it.x, it.y, 0), s = 9; ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.beginPath(); ctx.ellipse(c[0], c[1], s * 1.3, s * 0.55, 0, 0, 6.2832); ctx.fill();
@@ -207,7 +207,7 @@ function _fpDrawPickup(it) {
 function facilityPickupTick() {
     if (!_fp || !_fp.items || typeof invAdd !== "function") return;
     for (const it of _fp.items) {
-        if (it.fp !== "pickup" || it.taken) continue;
+        if (it.fp !== "pickup" || it.taken || it.fetch) continue;   // (a case someone else fetches, the power module on the catwalks: js/sidequest.js)
         if (Math.hypot(it.x - player.visualX, it.y - player.visualY) > FP_PICK_R) continue;
         if (!it.items.every(([id, n]) => invRoom(id) >= n)) { if (!it.said) { it.said = true; invSay("YOUR PACK IS FULL OF THAT", false); } continue; }
         for (const [id, n] of it.items) { invAdd(id, n); const d = itemDef(id); if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 100 - 20 * it.items.indexOf(it.items.find(q => q[0] === id)), text: "+" + n + " " + d.name + (classAllows(d.classes) ? "" : "  (" + d.classes.map(className).join(" / ") + " ONLY)"), color: d.col, life: 110, vy: -0.1, size: 13 }); }

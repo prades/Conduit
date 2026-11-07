@@ -54,7 +54,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(rows('clones').some(r => r === 'AT ONCE ' + run('cloneCap()')), 'the clone cap (the rule\'s: CLASS_RULES.clone)'); ok(rows('clones').some(r => r === 'WHO MUTATOR'), 'who grows them');
         ok(rows('gun').some(r => r.includes('within ' + run('TARGET.range') + ' tiles')), 'the gun\'s reach');
         ok(rows('alarm').some(r => r.includes(run('ALERT_DURATION / 60') + ' s')), 'how long an alarm lasts');
-        ok(rows('relays').some(r => r === 'RELAYS ' + run('_fp.F.relays.length')), 'the relay count');
+        ok(rows('relays').some(r => r === 'RELAY NODES ' + run('_fp.F.relays.length')), 'the relay count');   // (relays are small wall nodes since build 2026-11-07qq: the junction turns them all on)
         ok(rows('crystal').some(r => r.includes(run('crystal.maxHealth') + ' HP')), 'the Crystal\'s health');
     });
     check('the element entries say what each beats and is beaten by, as the game plays it', () => {

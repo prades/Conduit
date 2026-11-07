@@ -74,7 +74,7 @@ const SUITES = [
     ['room capacity, who makes room, the arena over its six', 'rooms.js'],
     ['the corners: the target\'s dial and ammunition bottom right, the place\'s corner without the objective plate (the quest box has it)', 'corners.js'],
     ['a squad member\'s card on the fly: ALL instead of the element picker, a tap picks a member, INDEX and DISMISS FROM SQUAD', 'squadfly.js'],
-    ['the technicians\' abilities: one table, one way in; the Kinetic Launcher\'s throw, its launcher site, the Arena Catwalk and its broken section', 'techabilities.js'],
+    ['the technicians\' abilities: one table, one way in; the Kinetic Launcher\'s throw, its launcher site, the Arena Catwalk and the catwalks\' ledge', 'techabilities.js'],
     ['the other five technicians\' Level 1 abilities: the Photonic Shield, the Thermite Drill and the arena\'s rubble, the Frost Patch, the Blight Spider and the play clock, FLUX MOVE\'s chip', 'techlevel1.js'],
     ['FLUX MOVE, the flux technician\'s object tool: what moves, its 2-tile reach (a square), the whole footprint, the kept spots, the bodies, the floor never cut in two, a barrier turned, one transaction in the map (the floor, the routes, the drawing), the save', 'fluxmove.js'],
     ['the Flux test room (?fluxlab): without the flag the game as it was; with it the room (an interior, a doorway pair, the roadmap\'s objects, the narrow passage, the objective behind the barrier), the start in it, nothing kept, its creatures, FLUX MOVE played out on its layout, the real page', 'fluxlab.js'],

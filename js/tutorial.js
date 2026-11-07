@@ -1,7 +1,9 @@
 // ─────────────────────────────────────────────────────────
 //  THE TUTORIAL DIRECTOR — what to do, in order, and the first assault (docs/TUTORIAL.md, phase 6)
 // ─────────────────────────────────────────────────────────
-// A short list of objectives (TUT_STEPS) that teaches the loop the earlier phases built, WITHOUT CLASSES: find supplies in the dark, restore a relay (with the relay kit and two power cells: anyone can), RECRUIT a follower, POSITION
+// A short list of objectives (TUT_STEPS) that teaches the loop the earlier phases built, WITHOUT CLASSES: find supplies in the dark, find the broken MAIN POWER JUNCTION in the server room, get its POWER MODULE (up on the
+// catwalks over the arena: SIDE QUEST, who can fly, brings it down: js/sidequest.js) and install it, which turns every relay on (build 2026-11-07qq, the owner: "there's no relay stations that need to be repaired. It's just
+// one spot on the map that needs to be repaired, and you need to obtain a module to repair it somewhere on the map. And you have to get the help of a NPC like side quest to retrieve the item"), RECRUIT a follower, POSITION
 // followers, then DEFEND THE CRYSTAL against a first assault, in which followers fight, gain levels and EVOLVE. Only when that is finished are the classes given: the class picker opens, and once a class is chosen the cases for that
 // class enter the facility (facilityClassItemsEnter) and the class's own STAGE follows (TUT_CLASS_STAGES: its gear at its station, then its loop). A step is done when its `done()` says so (a step already done when it comes up is skipped). Nothing here is a new system:
 //   recruiting is recruitFollower (js/clone.js), positioning is the roster's HOLD (a.stance, js/commandcenter.js), levels and evolution are gainXp and evolutionTick (js/levels.js, js/evolution.js), the enemies are
@@ -27,22 +29,26 @@ const TUT = {
 
 const TUT_STEPS = [
     { id: "supplies", title: "FIND SUPPLIES", text: () => "THE POWER IS OUT. TAKE THE GLOWING CASES: WALK OVER ONE. PRESS I FOR YOUR PACK.",
-        hint: () => "AMMUNITION IS IN THE ARMORY (THE STEEL DOOR IN THE ARENA'S WEST WALL, OR THE STAIRS DOWN FROM THE OBSERVATION DECK) AND THE SECURITY ROOM; POWER CELLS IN THE LAB AND THE LOBBY.", done: () => tutTaken() >= 2 },
-    { id: "relay", title: "RESTORE THE RELAY", text: () => "REPAIR THE CRYSTAL CHAMBER'S RELAY (ITS NORTH-EAST CORNER).",
-        hint: () => "YOU NEED THE RELAY KIT (A CASE IN THE CHAMBER) AND 2 POWER CELLS. TAP THE RELAY AND STAY AT IT.", done: () => relayOnline("relay_chamber") },
-    { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "WALK UP TO A FOLLOWER'S EGG, OR OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: 30 SHARDS.",
-        hint: () => "EGGS WAIT ON GLOWING PADS (THE COMPUTER LAB, THE SHOW ROOM, THE DECK, THE EXPERIMENT LAB, THE SECOND TELEPORT ROOM AND TWO IN THE ARENA): EACH ONE IS A BRAWLER, A MAGE OR A TECHNICIAN OF ONE ELEMENT, AND JOINS YOU AS EXACTLY THAT. EVERY ELEMENT IS ONLINE FROM THE START. YOU CANNOT CHANGE WHAT A FOLLOWER IS: EVOLVE IT TO MAKE IT BETTER. YOUR SQUAD HOLDS THREE: A NEW FOLLOWER ONLY FOLLOWS YOU WHILE IT HAS ROOM, OTHERWISE IT HOLDS THE ROOM IT IS IN.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
+        hint: () => "AMMUNITION IS IN THE ARMORY (THE STEEL DOOR IN THE ARENA'S WEST WALL, OR THE STAIRS DOWN FROM THE OBSERVATION DECK) AND THE SECURITY ROOM; POWER CELLS IN THE LAB, THE SERVER ROOM AND THE CRYSTAL CHAMBER: USE ONE TO OVERCHARGE YOUR LAMP.", done: () => tutTaken() >= 2 },
+    { id: "junction", title: "FIND THE BROKEN JUNCTION", text: () => "THE FACILITY'S MAIN POWER JUNCTION IS BROKEN. IT IS IN THE SERVER ROOM, NORTH OF THE MAIN HALLWAY: GO AND LOOK AT IT.",
+        hint: () => "THE SERVER ROOM STAYS DARK EVEN WITH POWER: FOLLOW THE BLINKING RACKS. THE JUNCTION STANDS IN ITS NORTH-EAST CORNER.", done: () => tutJunctionSeen() },
+    { id: "module", title: "GET THE POWER MODULE", text: () => "THE JUNCTION'S MODULE IS MISSING. A SPARE IS UP ON THE CATWALKS OVER THE ARENA, OUT OF YOUR REACH.",
+        hint: () => "SIDE QUEST WAITS IN THE ARENA, UNDER THE CATWALKS ON ITS EAST SIDE: HE CAN FLY. TALK TO HIM.", done: () => tutModuleGot() },
+    { id: "repair", title: "REPAIR THE JUNCTION", text: () => "TAKE THE POWER MODULE TO THE JUNCTION IN THE SERVER ROOM AND INSTALL IT.",
+        hint: () => "STAND AT THE JUNCTION AND PRESS E (OR TAP IT), AND STAY AT IT WHILE THE MODULE GOES IN: EVERY RELAY COMES ON.", done: () => typeof junctionRepaired === "function" && junctionRepaired() },
+    { id: "recruit", title: "RECRUIT A FOLLOWER", text: () => "WALK UP TO A FOLLOWER'S EGG, OR OPEN THE ROSTER (BOTTOM BAR) AND PRESS + RECRUIT: " + (typeof RECRUIT_COST !== "undefined" ? RECRUIT_COST : 200) + " SHARDS.",
+        hint: () => "EGGS WAIT ON GLOWING PADS (THE SERVER ROOM, THE WAREHOUSE, THE DECK, THE EXPERIMENT LAB, THE SECOND TELEPORT ROOM AND TWO IN THE ARENA): EACH ONE IS A BRAWLER, A MAGE OR A TECHNICIAN OF ONE ELEMENT, AND JOINS YOU AS EXACTLY THAT. EVERY ELEMENT IS ONLINE FROM THE START. YOU CANNOT CHANGE WHAT A FOLLOWER IS: EVOLVE IT TO MAKE IT BETTER. YOUR SQUAD HOLDS THREE: A NEW FOLLOWER ONLY FOLLOWS YOU WHILE IT HAS ROOM, OTHERWISE IT HOLDS THE ROOM IT IS IN.", done: () => followers.filter(f => f && !f.dead).length > _fp.tut.script.baseFollowers },
     { id: "position", title: "POST YOUR FOLLOWERS", text: () => "POST TWO FOLLOWERS NEAR THE CRYSTAL: SELECT THEM AND PRESS HOLD.",
         hint: () => "HOLD POSTS A FOLLOWER IN THE ROOM IT IS IN: IT PATROLS THE ROOM AND FIGHTS ANYTHING THAT COMES IN. COME CALLS IT BACK TO YOUR SQUAD (THREE AT A TIME).", done: () => tutHeld() >= TUT.holdNeeded },
     { id: "gun", title: "FIRE YOUR GUN", text: () => tutGunText(),
         hint: () => playerAttackMode ? "CLICK THE ROUND BUTTON AT THE TOP LEFT FOR A SHOT, OR HOLD IT TO KEEP FIRING. EACH SHOT COSTS A ROUND. TAP ANOTHER CREATURE TO SWITCH TARGETS." : "GET CLOSE TO THE ANT: YOUR GUN TAKES AIM BY ITSELF, AND A ROUND BUTTON WITH THE ANT'S PICTURE APPEARS AT THE TOP LEFT.", done: () => tutGunDone() },
-    { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS (LEVEL 10: EVOLUTION). YOU CAN SHOOT TOO: THE GUN LOCKS ON TO THE NEAREST ENEMY; CLICK THE ROUND BUTTON OR HOLD IT. THE SENTRIES HELP IF THEIR RELAY IS ON.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
+    { id: "assault", title: "DEFEND THE CRYSTAL", text: () => tutAssaultText(), hint: () => "FOLLOWERS FIGHT AND GAIN LEVELS (LEVEL 10: EVOLUTION). YOU CAN SHOOT TOO: THE GUN LOCKS ON TO THE NEAREST ENEMY; CLICK THE ROUND BUTTON OR HOLD IT. THE SENTRIES HELP: THEY RUN ON THE CRYSTAL'S POWER.", done: () => !!_fp.tut.script.assault && _fp.tut.script.assault.over },
     { id: "evolve", title: "EVOLVE A FOLLOWER", text: () => "A FOLLOWER EVOLVES AT LEVEL " + EVOLVE_LEVEL + ".", hint: () => "KEEP IT FIGHTING. THE BAR UNDER ITS HEALTH IS ITS XP.", done: () => followers.some(f => f && f.evolved) },
 ];
 
 // AFTER the tutorial, once a class is chosen: the class's own objective (earn its perk at its station). Classes are given only when the tutorial is finished. It is the first step of the class's stage (below).
-const TUT_CLASS_STEP = { id: "perk", title: "GET YOUR GEAR", text: () => ({ gunslinger: "FIND THE MACHINE GUN: THE WEAPON LOCKER IN THE ARMORY (THE ARENA'S WEST DOOR, OR THE STAIRS FROM THE OBSERVATION DECK).", technomancer: "BUILD THE SPIDER MECH AT THE MECH BAY IN THE SHOW ROOM.", mutator: "WALK THROUGH TELEPORT ROOM 1 AND DOWN THE PASSAGE INTO THE EXPERIMENT LAB." }[playerClassKey] || ""),
-    hint: () => ({ gunslinger: "WALK UP TO THE GLOWING LOCKER AND PRESS E (OR TAP IT). THE GUN IS BIG: YOU STAND TALL ON YOUR TENTACLES TO HOLD IT.", technomancer: "COLLECT 4 MECH LEGS (TELEPORT ROOM 1) AND THE CORE (SHOW ROOM), THEN STAND AT THE PAD AND PRESS E.", mutator: "THE LAB COAT AND SAFETY GOGGLES GO ON BY THEMSELVES WHEN YOU WALK IN, AND YOU KEEP THEM." }[playerClassKey] || ""), done: () => !!CLASS_SIGNATURE[playerClassKey] && classHas(CLASS_SIGNATURE[playerClassKey]) };
+const TUT_CLASS_STEP = { id: "perk", title: "GET YOUR GEAR", text: () => ({ gunslinger: "FIND THE MACHINE GUN: THE WEAPON LOCKER IN THE ARMORY (THE ARENA'S WEST DOOR, OR THE STAIRS FROM THE OBSERVATION DECK).", technomancer: "BUILD THE SPIDER MECH AT THE MECH BAY IN THE WAREHOUSE.", mutator: "WALK THROUGH TELEPORT ROOM 1 AND DOWN THE PASSAGE INTO THE EXPERIMENT LAB." }[playerClassKey] || ""),
+    hint: () => ({ gunslinger: "WALK UP TO THE GLOWING LOCKER AND PRESS E (OR TAP IT). THE GUN IS BIG: YOU STAND TALL ON YOUR TENTACLES TO HOLD IT.", technomancer: "COLLECT 4 MECH LEGS (TELEPORT ROOM 1) AND THE CORE (THE WAREHOUSE), THEN STAND AT THE PAD AND PRESS E.", mutator: "THE LAB COAT AND SAFETY GOGGLES GO ON BY THEMSELVES WHEN YOU WALK IN, AND YOU KEEP THEM." }[playerClassKey] || ""), done: () => !!CLASS_SIGNATURE[playerClassKey] && classHas(CLASS_SIGNATURE[playerClassKey]) };
 
 // THE CLASS'S STAGE (the brief: "Each class should have its own tutorial stage after the initial tutorial"): once a class is chosen, a few objectives that teach what it does with what the game already has. The first is its
 // gear (TUT_CLASS_STEP); the rest are its loop. A step is done when its `done()` says so, and one already done when it comes up is passed, as in the tutorial. What the class does is COUNTED from the moment the
@@ -57,10 +63,7 @@ const TUT_CLASS_STAGES = {
             hint: () => "IT LIGHTS THE GROUND FOR HALF A MINUTE, POWER OR NOT. MORE ARE IN THE ARMORY.", done: () => tutCount("flare") >= 1 },
         { id: "hunt", title: "HUNT IN THE ARENA", text: () => "DEFEAT 3 CREATURES: " + Math.min(3, tutClassKills()) + "/3. YOUR SQUAD FIGHTS WITH YOU.",
             hint: () => "A KILL PAYS SHARDS, DNA AND SCRAP: THE ARMORY'S TERMINAL MAKES SCRAP INTO ROUNDS.", done: () => tutClassKills() >= 3 } ],
-    technomancer: [TUT_CLASS_STEP,
-        { id: "relay", title: "RESTORE ANOTHER RELAY", text: () => "REPAIR A BROKEN RELAY: STAND AT IT WITH A POWER CELL AND THE REPAIR STARTS BY ITSELF.",
-            hint: () => "A POWERED ROOM CHARGES YOUR GAUNTLET; EACH RELAY ONLINE MAKES YOUR ARC STRONGER.",
-            done: () => tutClassRelays() >= 1 || tutRelaysOnline() >= tutRelaysAll() },
+    technomancer: [TUT_CLASS_STEP,   // (its "RESTORE ANOTHER RELAY" step went with the relay repairs, build 2026-11-07qq: the junction turns every relay on)
         { id: "punch", title: "CHARGE YOUR GAUNTLET", stray: true, text: () => "PUNCH THE STRAY ANT: " + Math.min(3, tutCount("gauntlet")) + "/3. EVERY PUNCH THAT LANDS STORES A CHARGE.",
             hint: () => "TAP IT: YOUR GAUNTLET LOCKS ON. CLICK THE ROUND BUTTON TO PUNCH, OR HOLD IT.", done: () => tutCount("gauntlet") >= 3 },
         { id: "arc", title: "THROW THE ARC", stray: true, text: () => "STEP AWAY FROM IT AND THROW THE ARC: " + Math.min(2, tutCount("arc")) + "/2. OUT OF REACH, A CHARGE THROWS AN ELECTRIC ARC.",
@@ -83,7 +86,6 @@ function tutCount(key) { const S = _fp && _fp.tut && _fp.tut.script; return S &&
 function tutRelaysOnline() { const R = _fp && _fp.relays; return R ? Object.keys(R).filter(id => R[id] && R[id].online).length : 0; }
 function tutRelaysAll() { return _fp && _fp.relays ? Object.keys(_fp.relays).length : 0; }
 function tutClassKills() { const S = _fp.tut.script; return S.ck0 === undefined ? 0 : Math.max(0, lifetimeKills - S.ck0); }
-function tutClassRelays() { const S = _fp.tut.script; return S.cr0 === undefined ? 0 : Math.max(0, tutRelaysOnline() - S.cr0); }
 // the step that is up: S.cstep, and past any that are done (the plate asks this; the director moves S.cstep)
 function tutClassCurrent() { const st = tutClassStage(), S = _fp && _fp.tut && _fp.tut.script; if (!st || !S) return -1; let i = S.cstep | 0; while (i < st.length && st[i].done()) i++; return i; }
 // each frame once the tutorial is over and a class is chosen: the stage begins (its counts start), a step that is done is passed (and said), the training creature comes and goes
@@ -152,7 +154,10 @@ function tutGunTick() {
         }
     } else if (S.gunBase !== undefined) { const s = tutStray(); if (s) { s.dead = true; s._xpGiven = true; } }   // (the lesson is over: the stray goes)
 }
-function tutTaken() { return _fp.items.filter(i => i.fp === "pickup" && i.taken).length; }
+function tutTaken() { return _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.fetch).length; }   // (the power module's case is not one you take: Side Quest does)
+// THE JUNCTION (build 2026-11-07qq): seen once the player has stood at it (its station in range: S.jseen, set by the director); the module got once it is in the pack (or in the junction already)
+function tutJunctionSeen() { const S = _fp && _fp.tut && _fp.tut.script; return !!(S && S.jseen) || tutModuleGot(); }
+function tutModuleGot() { return (typeof invHas === "function" && invHas("power_module")) || (typeof junctionRepaired === "function" && junctionRepaired()); }
 function tutHeld() { let n = 0; for (const f of followers) if (f && !f.dead && f.stance === "hold" && Math.hypot(f.x - crystal.x, f.y - crystal.y) <= TUT.holdRange) n++; return n; }
 function tutAssaultText() {
     const A = _fp.tut.script.assault, now = frame;
@@ -198,6 +203,7 @@ function tutSaidOnce(key) { const S = _fp && _fp.tut && _fp.tut.script; if (!S) 
 function facilityDirectorTick() {
     const S = _fp && _fp.tut && _fp.tut.script; if (!S) return;
     tutLevelFollowers(); tutGunTick();
+    if (!S.jseen && _fp.stationNear && _fp.stationNear.kind === "junction") S.jseen = 1;   // (the junction found: its station in range)
     while (S.step < TUT_STEPS.length && TUT_STEPS[S.step].id !== "assault" && TUT_STEPS[S.step].done()) S.step++;
     const st = TUT_STEPS[S.step];
     if (st && !(S.step === 0 && _fp.tut.blackout && !_fp.tut.said)) _tutSay("step:" + st.id, [st.text(), st.hint()]);   // the Crystal gives the step as it comes up (the first one after its blackout words: js/facilitytutorial.js)
@@ -226,7 +232,7 @@ function facilityDirectorTick() {
 // the number of enemies spawned before the wave that is due (waves spawn in order, once)
 function tutSpawnedBefore(A) { let n = 0; for (let i = 0; i < A.wave; i++) n += TUT.waves[i].who.length; return n; }
 
-// THE OBJECTIVE, KEPT BUT NOT DRAWN (the owner, 2026-11-01: "still have the objective thing, but hide it. Make a little quest box on the menu"): the tutorial's seven steps; then (once a class is chosen) the class's own; then
+// THE OBJECTIVE, KEPT BUT NOT DRAWN (the owner, 2026-11-01: "still have the objective thing, but hide it. Make a little quest box on the menu"): the tutorial's nine steps (seven until build 2026-11-07qq); then (once a class is chosen) the class's own; then
 // a closing line; a quest under way (js/quests.js) between the tutorial and the class's stage. objectiveCurrent says which it is now ({ key, title, body, hint, col }); the QUEST BOX shows it (js/questbox.js: QUESTS on the dock,
 // a round button on a phone), and the Crystal says each as it comes up (facilityDirectorTick, through js/dialogue.js). The plate it used to be (top left; under the network panel in THE CORNERS; a mailbox on a phone, 2026-10)
 // is gone: facilityDrawObjective keeps its name (js/facilitytutorial.js calls it each frame) and keeps only the record: which objective is up (S.objKey, S.objNewAt) and whether it has been opened (S.objSeen: the quest box

@@ -107,16 +107,16 @@ function _psCentre(id) {
 
 // ── which sheet a kind of prop is on, and which variant of it a given prop is ──
 // The sheets (design/props/models/<family>.js): office (the desks, consoles, server racks), lounge (the sofas, tables, vending machines...), lab (benches, the fume hood, test chambers, the generator...), tech (teleporters,
-// relays, the charger, the mech bay, lockers, cabinets, display cases, the telescope), cargo (crates, barrels, floodlights, barriers, the supply case), cold (the Cold Storage's freezers and toppled racks), plant, sentry,
-// truck, tank, bridge.
+// relays, the charger, the mech bay, lockers, cabinets, display cases, the telescope, the main power junction), cargo (crates, barrels, floodlights, barriers, the warehouse's pallet racks, the supply case), cold (the Cold
+// Storage's freezers and toppled racks), plant, sentry, truck, tank, bridge.
 // A variant is named  kind[.WxH|.rNN][.on|.off][.sN]  : the size of the prop in tiles (WxH along x and y; rNN a round prop's radius in hundredths), its state (a relay or the charger: online or not), and a look (s0, s1...:
 // a prop picks one by its id, so a row of crates is not a row of the same crate). The most specific variant that exists is used: a kind with one model for every size is just `kind`.
 const PS_FAMILY = {
     reception_desk: "office", computer_desk: "office", desk: "office", console: "office", server_rack: "office",
     couch: "lounge", table: "lounge", beanbag: "lounge", pingpong: "lounge", vending: "lounge", cooler: "lounge", bin: "lounge", chair: "lounge",
     lab_bench: "lab", fume_hood: "lab", test_chamber: "lab", cart: "lab", generator: "lab", toolbox: "lab", speaker: "lab", spool: "lab",
-    teleporter: "tech", charger: "tech", relay: "tech", mech_bay: "tech", locker: "tech", cabinet: "tech", display_case: "tech", telescope: "tech",
-    crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo",
+    teleporter: "tech", charger: "tech", relay: "tech", mech_bay: "tech", locker: "tech", cabinet: "tech", display_case: "tech", telescope: "tech", junction: "tech",
+    crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo", pallet_rack: "cargo",
     freezer_bank: "cold", toppled_rack: "cold", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
 };
 const _psIndex = {};
@@ -173,9 +173,33 @@ function facilitySpriteDraw(it) {
     if (!S) return false;
     if (k === "semi_truck") return !!_psBlit("truck", "truck", S.c[0], S.c[1], [it.x, it.y]);
     if (k === "liquid_reserve" || k === "tank") return !!_psBlit("tank", k === "tank" ? "lab" : "reserve", S.c[0], S.c[1], [it.x, it.y]);
-    const state = k === "relay" ? (typeof relayOnline === "function" && relayOnline(it.id) ? "on" : "off") : k === "charger" ? (typeof facilityFeedOn === "function" && facilityFeedOn(it.id) ? "on" : "off") : null;
+    const state = k === "junction" ? (typeof junctionRepaired === "function" && junctionRepaired() ? "on" : "off") : k === "charger" ? (typeof facilityFeedOn === "function" && facilityFeedOn(it.id) ? "on" : "off") : null;   // (the main power junction: broken or repaired, js/stations.js)
     const name = _psResolve(fam, k, S.dims, state, seed); if (!name) return false;
-    return !!_psBlit(fam, name, S.c[0], S.c[1], S.multi ? [it.x, it.y] : null);
+    const ok = !!_psBlit(fam, name, S.c[0], S.c[1], S.multi ? [it.x, it.y] : null);
+    if (ok && k === "server_rack") facilityRackLeds(it, S, seed);
+    return ok;
+}
+// THE SERVER ROOM'S RACKS (build 2026-11-07qq, the owner: "a dark server room"): little status lights on each cell's faces that the camera sees (its east and south faces, on the prop's edge), blinking out of step,
+// drawn at full brightness over the dimmed room (js/facilitystyle.js FP_ROOM_DIM). Dark while the room has no power (the blackout, before the junction is repaired). A few small dots a cell: no gradients.
+const RACK_LEDS = { rows: [16, 24, 32, 40], cols: [-0.28, 0, 0.28], cols2: ["#43e0a8", "#31e8ff", "#43e0a8", "#ffb347", "#31e8ff", "#43e0a8", "#ff4a3a"] };
+function facilityRackLeds(it, S, seed) {
+    if (!S || !S.bb || typeof _fpP !== "function" || (typeof gfxLow !== "undefined" && gfxLow)) return;
+    if (typeof facilityBlackout === "function" && facilityBlackout() && typeof _fpPowered === "function" && typeof _fpLightKey === "function" && !_fpPowered(_fpLightKey(it.room))) return;   // (no power, no lights)
+    const f = typeof frame !== "undefined" ? frame : 0, faces = [];
+    if (it.x + 0.5 >= S.bb[2] - 0.01) faces.push(0);   // the east face
+    if (it.y + 0.5 >= S.bb[3] - 0.01) faces.push(1);   // the south face
+    if (!faces.length) return;
+    const draw = () => {
+        const g0 = ctx.globalCompositeOperation; ctx.globalCompositeOperation = "lighter";
+        for (const fc of faces) for (let r = 0; r < RACK_LEDS.rows.length; r++) for (let c = 0; c < RACK_LEDS.cols.length; c++) {
+            const h = (seed + Math.round(it.x * 13) + Math.round(it.y * 7) + r * 5 + c * 3 + fc * 11) >>> 0, per = 40 + (h % 5) * 23;
+            if (((f + h * 17) % per) > per * 0.62) continue;   // (off for part of its beat)
+            const u = RACK_LEDS.cols[c], p = fc === 0 ? _fpP(S.bb[2] + 0.02, it.y + u, RACK_LEDS.rows[r]) : _fpP(it.x + u, S.bb[3] + 0.02, RACK_LEDS.rows[r]);
+            ctx.fillStyle = RACK_LEDS.cols2[h % RACK_LEDS.cols2.length]; ctx.fillRect(p[0] - 1.2, p[1] - 1, 2.4, 2);
+        }
+        ctx.globalCompositeOperation = g0;
+    };
+    if (typeof _fpWithLight === "function") _fpWithLight(1, draw); else draw();
 }
 // the supply case on the floor (js/facilitytutorial.js _fpDrawPickup): its sprite, if it has arrived; false for the flat box
 function facilityCaseSprite(it) { const fam = "cargo"; if (!_psImg(fam)) return false; const name = _psResolve(fam, "case", null, null, _psHash(String(it.id))); return !!(name && _psBlit(fam, name, it.x, it.y)); }

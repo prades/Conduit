@@ -343,6 +343,13 @@ function _fpScaffoldMarks(items) {
         if (it.scaffold) {   // legs under every edge but the one that is held up by the arena's frame (the arena is behind it)
             const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
             const behind = facilityRoomAt(it.x - nx * 0.4, it.y - ny * 0.4, _fp.F); it.legs = !(behind && behind.id === "arena"); it.legH = (it.base || 0) - facilityRoomHeight("arena", _fp.F) * FP_ELEV_PX;
+            it.gap = null;   // THE LEDGE (build 2026-11-07qq: js/facilitymap.js `ledges`): the rail stops where the deck's edge is the way down; `gap` is that stretch, along the piece
+            for (const L of (_fp.F.ledges || [])) {
+                if (L.room !== it.room) continue; const ldx = L.to[0] - L.at[0], ldy = L.to[1] - L.at[1], ax = Math.abs(ldx) >= Math.abs(ldy), E = ax ? [L.at[0] + Math.sign(ldx) * 0.5, L.at[1]] : [L.at[0], L.at[1] + Math.sign(ldy) * 0.5], half = (L.w || 2) / 2;
+                const vert = Math.abs(it.b[0] - it.a[0]) < 1e-6, hor = Math.abs(it.b[1] - it.a[1]) < 1e-6;
+                if (ax && vert && Math.abs(it.a[0] - E[0]) < 0.05) { const lo = Math.min(it.a[1], it.b[1]), hi = Math.max(it.a[1], it.b[1]); if (E[1] + half > lo && E[1] - half < hi) it.gap = [Math.max(lo, E[1] - half), Math.min(hi, E[1] + half)]; }
+                else if (!ax && hor && Math.abs(it.a[1] - E[1]) < 0.05) { const lo = Math.min(it.a[0], it.b[0]), hi = Math.max(it.a[0], it.b[0]); if (E[0] + half > lo && E[0] - half < hi) it.gap = [Math.max(lo, E[0] - half), Math.min(hi, E[0] + half)]; }
+            }
         }
     }
 }
@@ -380,12 +387,18 @@ function _fpDrawRail(it) {
     _fpWallGrad(it, 0, 1, -10, 0, FP_GS.fascia, "fascia");
     _fpQuad([P(lo, 0), P(hi, 0), P(hi, 6), P(lo, 6)], "#3a4258", null);            // the kickboard
     ctx.lineCap = "round"; ctx.beginPath(); mv(lo, 0); ln(hi, 0); stroke("rgba(255,255,255,0.4)", 1.2); ctx.beginPath(); mv(lo, -10); ln(hi, -10); stroke("rgba(8,26,34,0.45)", 1.6);
-    ctx.beginPath(); mv(lo, 36, 0, 2); ln(hi, 36, 0, 2); mv(lo, 20, 0, 2); ln(hi, 20, 0, 2); stroke("rgba(8,26,34,0.3)", 5);          // the rails: a shade under each, the metal, a highlight on top
-    ctx.beginPath(); mv(lo, 36); ln(hi, 36); stroke(FP_STEEL.rail, 3.5); ctx.beginPath(); mv(lo, 20); ln(hi, 20); stroke(FP_STEEL.post, 2.5);
-    ctx.beginPath(); mv(lo, 36, 0, -1); ln(hi, 36, 0, -1); mv(lo, 20, 0, -0.8); ln(hi, 20, 0, -0.8); stroke("rgba(255,255,255,0.4)", 1);
-    ctx.beginPath(); for (let m = Math.ceil(lo - 1e-6); m <= hi + 1e-6; m++) { mv(m, 0, 1.4); ln(m, 38, 1.4); } stroke("rgba(8,26,34,0.4)", 3.4);   // posts
-    ctx.beginPath(); for (let m = Math.ceil(lo - 1e-6); m <= hi + 1e-6; m++) { mv(m, 0); ln(m, 38); } stroke(FP_STEEL.post, 3.2);
-    ctx.beginPath(); for (let m = Math.ceil(lo - 1e-6); m <= hi + 1e-6; m++) { mv(m, 0, -0.9); ln(m, 38, -0.9); } stroke("rgba(255,255,255,0.5)", 1);
+    // the rails and posts, in the stretches either side of a LEDGE's gap (it.gap: js/facilitydecor.js _fpScaffoldMarks), or the whole piece
+    const G = it.gap, spans = G ? [[lo, G[0]], [G[1], hi]].filter(q => q[1] - q[0] > 1e-6) : [[lo, hi]], posts = []; for (const [p0, p1] of spans) { for (let m = Math.ceil(p0 - 1e-6); m <= p1 + 1e-6; m++) posts.push(m); if (G) posts.push(p0, p1); }
+    ctx.beginPath(); for (const [p0, p1] of spans) { mv(p0, 36, 0, 2); ln(p1, 36, 0, 2); mv(p0, 20, 0, 2); ln(p1, 20, 0, 2); } stroke("rgba(8,26,34,0.3)", 5);          // the rails: a shade under each, the metal, a highlight on top
+    ctx.beginPath(); for (const [p0, p1] of spans) { mv(p0, 36); ln(p1, 36); } stroke(FP_STEEL.rail, 3.5); ctx.beginPath(); for (const [p0, p1] of spans) { mv(p0, 20); ln(p1, 20); } stroke(FP_STEEL.post, 2.5);
+    ctx.beginPath(); for (const [p0, p1] of spans) { mv(p0, 36, 0, -1); ln(p1, 36, 0, -1); mv(p0, 20, 0, -0.8); ln(p1, 20, 0, -0.8); } stroke("rgba(255,255,255,0.4)", 1);
+    ctx.beginPath(); for (const m of posts) { mv(m, 0, 1.4); ln(m, 38, 1.4); } stroke("rgba(8,26,34,0.4)", 3.4);   // posts
+    ctx.beginPath(); for (const m of posts) { mv(m, 0); ln(m, 38); } stroke(FP_STEEL.post, 3.2);
+    ctx.beginPath(); for (const m of posts) { mv(m, 0, -0.9); ln(m, 38, -0.9); } stroke("rgba(255,255,255,0.5)", 1);
+    if (G) {   // THE LEDGE: hazard paint along the lip where the rail stops (the way down: js/techabilities.js draws its arrows)
+        const n = Math.max(2, Math.round((G[1] - G[0]) * 4)); for (let k = 0; k < n; k++) { const u0 = G[0] + (G[1] - G[0]) * k / n, u1 = G[0] + (G[1] - G[0]) * (k + 1) / n; _fpQuad([P(u0, 0), P(u1, 0), P(u1, 6), P(u0, 6)], k % 2 ? "#14161c" : "#ffd21a", null); }
+        ctx.beginPath(); for (const e of [G[0], G[1]]) { mv(e, 36); ln(e + (e === G[0] ? 0.18 : -0.18), 30); } stroke(FP_STEEL.rail, 3);   // the rail's cut ends, bent down
+    }
     ctx.lineCap = "butt";
     if (it.legs && it.legH > 20) _fpDrawFrame(it, -it.legH, -10);
 }
@@ -503,6 +516,17 @@ const FP_WALL_KINDS = {
         _fpWQuad(it, 0.12, 0.88, z0 - 2, z1 + 2, "#0c0f16", "rgba(200,210,235,0.45)", 1); _fpWQuad(it, 0.17, 0.83, z0 + 1, z1 - 1, pal[0], null);
         _fpWQuad(it, 0.24, 0.76, z1 - 11, z1 - 5, pal[1], null); for (let k = 0; k < 3; k++) _fpWQuad(it, 0.24, 0.76 - (k === 2 ? 0.2 : 0), z1 - 17 - k * 5, z1 - 15 - k * 5, _fpRgba(pal[1], 0.5), null);
         if (it.seed % 3 === 0) _fpWLine(it, 0.3, z0 + 2, 0.7, z1 - 2, "rgba(0,0,0,0.25)", 1);   // a tear / crease
+    },
+    // A RELAY NODE (since build 2026-11-07qq; the owner: "Make them smaller wall nodes"): a small junction box on the wall with a conduit down to the floor, a little screen and a lamp. Off: a dark screen and a red lamp that
+    // blinks. Online (js/stations.js relayOnline: every relay comes on with the main power junction): a green lamp with a glow and a slow pulse on the screen. Nothing is repaired at it.
+    relay_node: (it, f) => {
+        const R = typeof _fp !== "undefined" && _fp && _fp.F && _fp.F.relays ? _fp.F.relays.find(r => r.node === it.id) : null, on = !!R && typeof relayOnline === "function" && relayOnline(R.id), z0 = 30, z1 = 52;
+        _fpWQuad(it, 0.45, 0.55, 0, z0, "#3a4458", null);   // the conduit down to the floor
+        _fpWQuad(it, 0.16, 0.84, z0, z1, "#56627a", FP_PAL.ink, 2);   // the box
+        _fpWQuad(it, 0.25, 0.75, z0 + 9, z1 - 4, on ? "#0d3a33" : "#0a1420", null);   // its little screen
+        if (on) _fpWQuad(it, 0.29, 0.29 + 0.42 * (0.5 + 0.5 * Math.sin(f * 0.06 + it.seed)), z0 + 12, z0 + 15, "rgba(120,255,190,0.9)", null);   // a slow pulse
+        _fpWQuad(it, 0.43, 0.57, z0 + 3, z0 + 7, on ? "#43e0a8" : ((Math.floor(f / 24) + it.seed) % 2 ? "#ff4a3a" : "#5a1d16"), null);   // the lamp
+        if (on && typeof _fpGlow === "function") { const c = _fpWP(it, 0.5, z0 + 5); _fpGlow(c[0], c[1], 14, "#43e0a8", 0.35); }
     },
     vent: (it, f) => {   // a louvred vent grille
         const z0 = it.z || 40; _fpWQuad(it, 0.1, 0.9, z0, z0 + 16, "#1b2230", "rgba(180,200,230,0.5)", 1); for (let k = 0; k < 4; k++) _fpWLine(it, 0.14, z0 + 3 + k * 3.4, 0.86, z0 + 3 + k * 3.4, "rgba(150,170,200,0.55)", 1);

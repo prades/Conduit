@@ -55,7 +55,7 @@ async function boot(search, store) {
         // a punch that lands on a creature in reach: the health it took (the two beats: a wind-up, then the hit)
         globalThis.__punch = foe => { player.attackCooldown = 0; const h = foe.health; firePlayerShot(foe); let k = 0; while (h - foe.health < 0.001 && k < 90) { render(); k++; } return h - foe.health; };
         // the first relay and its box's spot
-        globalThis.__relay = () => _fp.stations.find(s => s.kind === 'relay');
+        globalThis.__relay = () => { const R = _fp.F.relays[0], p = facilityRelayAt(R.id); return { relay: R.id, x: p.x, y: p.y }; };   // (a relay is a node on a wall since build 2026-11-07qq: where it stands is the floor by its node)
         // a Mutator with the lash, these roles found for the run, the first worn
         globalThis.__mx = (...ids) => { __clear(); __class('mutator'); equipReset(); for (const id of ids) equipFound.push(id); if (ids[0]) equipPlayerPut(0, ids[0]); return equipPlayer.slice(); };
         // the Mutator's own clone (its primary clone, as the Clone Bay makes it: js/mutator.js mutatorCloneMade), an ant scout beside you
@@ -304,14 +304,14 @@ function page(w, h, query) {
         ok(r.arc[0] > 0 && r.punch[0] > 0, 'a hit took nothing: ' + JSON.stringify(r)); near(r.arc[1] / r.arc[0], 1.3, 1e-6, 'the arc on a flux creature'); near(r.punch[1] / r.punch[0], 1.3, 1e-6, 'the punch on a flux creature');
         near(r.arc[3], r.arc[2], 1e-6, 'the arc on a creature with no element'); near(r.punch[3], r.punch[2], 1e-6, 'the punch on a creature with no element');
     });
-    await check('FORGEMASTER: the sentries\' rounds BURN (a sentry fires, its round lands: 3 a second for 3 s); your repairs take half the time (a sentry 600 → 300 frames, a relay 100 → 50); with no role, as before', () => {
+    await check('FORGEMASTER: the sentries\' rounds BURN (a sentry fires, its round lands: 3 a second for 3 s); your repairs take half the time (a sentry 600 → 300 frames; no relay is repaired since build 2026-11-07qq); with no role, as before', () => {
         const r = J(`(function(){ const o = {}; const shoot = role => { __tm(role); const it = __sentries[0]; _fp.items.push(it); it.cd = 0; it.broken = false; it.hp = it.maxHp || 500; const e = __creature('ant', 'scout', 0, 0); const dd = [[-3, 0], [3, 0], [0, 3], [0, -3], [2, 2], [-2, 2], [2, -2], [-2, -2]].find(d => facilityStandOk(it.x + d[0], it.y + d[1]) && facilityShotClear(it.x, it.y, it.x + d[0], it.y + d[1])); e.x = it.x + dd[0]; e.y = it.y + dd[1]; e.team = 'red';   // (where it has a clear shot: a turret fires only so, since build 2026-11-06h)
                 const n0 = followerProjectiles.length; facilitySentryTick(); const p = followerProjectiles[n0] || null; let k = 0; while (p && followerProjectiles.indexOf(p) >= 0 && k < 90) { render(); k++; }
                 const res = [!!p, !!(p && p.onHit), e.burning || 0]; _fp.items = _fp.items.filter(x => x !== it); e.dead = true; actors = actors.filter(x => x !== e); return res; };
             o.with = shoot('forgemaster'); o.without = shoot(null);
-            __tm('forgemaster'); o.times = [STATION_KINDS.sentry_repair.build, relayPlan().frames, playerRepairShare()]; __tm(null); o.before = [STATION_KINDS.sentry_repair.build, relayPlan().frames, playerRepairShare()]; return o; })()`);
+            __tm('forgemaster'); o.times = [STATION_KINDS.sentry_repair.build, playerRepairShare()]; __tm(null); o.before = [STATION_KINDS.sentry_repair.build, playerRepairShare()]; return o; })()`);
         same(r.with.join(), 'true,true,180', 'a sentry\'s round with FORGEMASTER (fired, carries the burn, the creature burns)'); same(r.without.join(), 'true,false,0', 'with no role');
-        same(r.times.join(), '300,50,0.5', 'the repairs with FORGEMASTER'); same(r.before.join(), '600,100,1', 'the repairs with no role');
+        same(r.times.join(), '300,0.5', 'the repairs with FORGEMASTER'); same(r.before.join(), '600,1', 'the repairs with no role');
     });
     await check('SMOG ENGINEER and CRYO TECH: an online relay WEAKENS / SLOWS every creature within 3 tiles of it on the card tick (40% for 4 s; 25% for 2 s), not one 3.5 tiles off, and nothing while the relay is down', () => {
         const r = J(`(function(){ const o = {}; const s = __relay(); const at = (dx) => { const e = __dummy(0, 0); e.x = s.x + dx; e.y = s.y; return e; };

@@ -40,15 +40,15 @@ const FACILITY_MAP = {
         { id: "teleport_room_1", label: "Teleport Room 1", level: 0, status: "traced", wall_material: "solid",
           note: "The sketch's faint 'TELE ROOM'. The teleport itself is a feature to be added later: the room is a placeholder for it. It takes in the little nook that used to sit between the Crystal Chamber, the hallway and the lab passage, so that corner is now a tidy alcove of this room (not a dead-end pocket of the hallway).",
           polygon: [[185, 500], [370, 500], [370, 530], [430, 530], [430, 565], [310, 565], [310, 760], [185, 760]] },
-        { id: "front_lobby", label: "Front Lobby", level: 0, status: "approximate",
-          dressing: "The big headquarters lobby: a BIG SIGN on the north wall and a reception desk area that leads through to the hallway at the back (which looks onto the experiment lab). Rundown 2010s startup.",
+        { id: "front_lobby", label: "Server Room", level: 0, status: "approximate",
+          dressing: "THE SERVER ROOM (the owner, 2026-11-07: \"make that a server room, a dark server room\"; it was the Front Lobby's computer lab): rows of server racks, cables over the floor, the monitoring console, and the facility's main power junction. It stays dim with the power on: the racks' lights blink in the dark.",
           note: "The sketch's faint 'FRONT OFFICE', now the Front Lobby. An arrow points in at the top-left: an entrance from outside is indicated but not drawn as an opening.",
           polygon: [[380, 222], [824, 222], [824, 410], [380, 410]] },
         { id: "security_room", label: "Security Room", level: 0, status: "approximate", wall_material: "solid",
           note: "The sketch's unlabelled room beside the show room, once taken for a bathroom: the Security Room. Monitors line its walls (the camera feeds), with a console desk, a chair, filing cabinets and a locker. It has a door to the Front Lobby and a door to the hallway.",
           polygon: [[824, 270], [930, 270], [930, 410], [824, 410]] },
-        { id: "show_room", label: "Show Room", level: 0, status: "traced", wall_material: "glass",
-          contents: "A glass case showcasing a bunch of different products: three display cases on a rug, lit by spotlights (what is in them is a placeholder glow until the products are decided).",
+        { id: "show_room", label: "Warehouse", level: 0, status: "traced", wall_material: "glass",
+          contents: "THE WAREHOUSE (the owner, 2026-11-07: \"the showroom, I want to convert that into a little warehouse\"): pallet racks, crate stacks, barrels, a cart and lockers. Its outer walls are solid now; the glass front onto the hallway stays, with its door.",
           polygon: [[930, 275], [1090, 275], [1090, 600], [930, 600]] },
         { id: "lab_hallway", label: "Hallway past the Experiment Lab", level: 0, status: "approximate",
           note: "The gridded floor round the lab: it runs from the arena's top-left corner up the lab's west side, along its north edge and down its east side, ending at the Crystal Chamber's door. The lab (and the passage to Teleport Room 1) cuts the ring open on the west, so this is a C, not a closed loop. Its north-west end is a clean dead end at the Crystal Chamber's door (the old nook there now belongs to Teleport Room 1).",
@@ -175,17 +175,20 @@ const FACILITY_MAP = {
 
     // Solid things standing in a room. Collision is on for all of them; the arena's two circular structures are giant reserves of ooze or liquid (solid tanks).
     props: [
-        { id: "lobby_desk", room: "front_lobby", shape: "rect", rect: [475, 325, 735, 410], status: "approximate", kind: "reception_desk",
-          note: "The reception desk area. It leads through (past its east end) to the hallway at the back." },
         { id: "lab_tank", room: "experiment_lab", shape: "circle", at: [715, 575], radius: 25, status: "approximate", kind: "tank" },
 
-        // ── THE COMPUTER LAB (the Front Lobby's floor, beside the reception desk): rows of computer desks along the north wall and server racks down the west and east walls.
-        //    Everything stands clear of the doors, the reception desk and the security room door, so the lobby stays walkable. (Placed in the amber old-tech look of the lab wall.)
-        { id: "computers_1", room: "front_lobby", shape: "rect", rect: [420, 222, 520, 252], status: "placed", kind: "computer_desk", note: "A row of computer desks with monitors, facing the aisle." },
-        { id: "computers_2", room: "front_lobby", shape: "rect", rect: [545, 222, 665, 252], status: "placed", kind: "computer_desk" },
-        { id: "computers_3", room: "front_lobby", shape: "rect", rect: [690, 222, 790, 252], status: "placed", kind: "computer_desk" },
+        // ── THE SERVER ROOM (the owner, 2026-11-07: "make that a server room, a dark server room"; it was the Front Lobby's computer lab): four rows of racks across the floor, racks down the west wall and in the
+        //    north-east corner, the monitoring console on the south wall between the two doors, and THE MAIN POWER JUNCTION in the north-east corner, the tutorial's one repair (js/tutorial.js, js/stations.js
+        //    STATION_KINDS.junction). The aisles keep the supply case, the three fuel-cell cases and the fire brawler's egg where they were; the doors (two south, one east) stay clear. The room stays dim with the
+        //    power on (js/facilitystyle.js FP_ROOM_DIM) and its racks' lights blink (js/propsprites.js).
         { id: "racks_west", room: "front_lobby", shape: "rect", rect: [380, 262, 410, 378], status: "placed", kind: "server_rack", note: "Server racks down the west wall." },
-        { id: "racks_east", room: "front_lobby", shape: "rect", rect: [794, 222, 824, 296], status: "placed", kind: "server_rack", note: "Server racks in the north-east corner (the bathroom door below them stays clear)." },
+        { id: "racks_east", room: "front_lobby", shape: "rect", rect: [794, 222, 824, 296], status: "placed", kind: "server_rack", note: "Server racks in the north-east corner (the security room door below them stays clear)." },
+        { id: "srv_row_1", room: "front_lobby", shape: "rect", rect: [480, 242, 500, 342], status: "placed", kind: "server_rack", note: "A row of five racks across the floor." },
+        { id: "srv_row_2", room: "front_lobby", shape: "rect", rect: [540, 242, 560, 342], status: "placed", kind: "server_rack" },
+        { id: "srv_row_3", room: "front_lobby", shape: "rect", rect: [600, 242, 620, 342], status: "placed", kind: "server_rack" },
+        { id: "srv_row_4", room: "front_lobby", shape: "rect", rect: [660, 242, 680, 342], status: "placed", kind: "server_rack" },
+        { id: "srv_console", room: "front_lobby", shape: "rect", rect: [570, 390, 630, 410], status: "placed", kind: "console", note: "The monitoring console on the south wall, facing the racks." },
+        { id: "junction", room: "front_lobby", shape: "rect", rect: [720, 222, 760, 262], status: "placed", kind: "junction", note: "THE MAIN POWER JUNCTION: broken at the start, its module slot empty. The tutorial's one repair puts the power module in it, and every relay in the facility comes on." },
 
         // ── THE SCIENCE LAB (the Experiment Lab): benches along the north and south walls, a fume hood, glass test chambers beside the big tank. A two-and-a-half tile aisle runs between the benches
         //    from the passage door to the tank.
@@ -218,18 +221,6 @@ const FACILITY_MAP = {
         { id: "teleporter_3", room: "teleport_room_1", shape: "rect", rect: [290, 690, 310, 710], status: "placed", kind: "teleporter" },
         { id: "teleporter_4", room: "teleport_room_1", shape: "rect", rect: [290, 630, 310, 650], status: "placed", kind: "teleporter" },
         { id: "console_2", room: "teleport_room_1", shape: "rect", rect: [290, 510, 350, 530], status: "placed", kind: "console" },
-        { id: "pingpong_1", room: "front_lobby", shape: "rect", rect: [550, 270, 630, 310], status: "placed", kind: "pingpong" },
-        { id: "couch_1", room: "front_lobby", shape: "rect", rect: [430, 270, 490, 290], status: "placed", kind: "couch" },
-        { id: "table_1", room: "front_lobby", shape: "rect", rect: [450, 310, 490, 330], status: "placed", kind: "table" },
-        { id: "beanbag_1", room: "front_lobby", shape: "rect", rect: [490, 290, 510, 310], status: "placed", kind: "beanbag" },
-        { id: "beanbag_2", room: "front_lobby", shape: "rect", rect: [650, 290, 670, 310], status: "placed", kind: "beanbag" },
-        { id: "beanbag_3", room: "front_lobby", shape: "rect", rect: [670, 310, 690, 330], status: "placed", kind: "beanbag" },
-        { id: "vending_3", room: "front_lobby", shape: "rect", rect: [790, 290, 810, 310], status: "placed", kind: "vending" },
-        { id: "vending_4", room: "front_lobby", shape: "rect", rect: [810, 290, 830, 310], status: "placed", kind: "vending" },
-        { id: "cooler_2", room: "front_lobby", shape: "rect", rect: [730, 290, 750, 310], status: "placed", kind: "cooler" },
-        { id: "plant_2", room: "front_lobby", shape: "rect", rect: [730, 310, 750, 330], status: "placed", kind: "plant" },
-        { id: "plant_3", room: "front_lobby", shape: "rect", rect: [450, 370, 470, 390], status: "placed", kind: "plant" },
-        { id: "bin_1", room: "front_lobby", shape: "rect", rect: [450, 350, 470, 370], status: "placed", kind: "bin" },
         { id: "sec_desk", room: "security_room", shape: "rect", rect: [830, 270, 910, 290], status: "placed", kind: "computer_desk", note: "The console desk along the north wall, under the bank of monitors." },
         { id: "sec_locker", room: "security_room", shape: "rect", rect: [910, 270, 930, 290], status: "placed", kind: "locker" },
         { id: "sec_drawers_1", room: "security_room", shape: "rect", rect: [830, 350, 850, 370], status: "placed", kind: "cabinet", note: "A run of filing cabinets (three drawers each) along the west wall, under the monitors." },
@@ -238,13 +229,6 @@ const FACILITY_MAP = {
         { id: "sec_chair", room: "security_room", shape: "rect", rect: [870, 290, 890, 310], status: "placed", kind: "chair" },
         { id: "sec_cooler", room: "security_room", shape: "rect", rect: [910, 370, 930, 390], status: "placed", kind: "cooler" },
         { id: "sec_bin", room: "security_room", shape: "rect", rect: [910, 390, 930, 410], status: "placed", kind: "bin" },
-        { id: "case_a", room: "show_room", shape: "rect", rect: [990, 350, 1010, 370], status: "placed", kind: "display_case" },
-        { id: "case_b", room: "show_room", shape: "rect", rect: [1030, 430, 1050, 450], status: "placed", kind: "display_case" },
-        { id: "case_c", room: "show_room", shape: "rect", rect: [1010, 510, 1030, 530], status: "placed", kind: "display_case" },
-        { id: "plant_4", room: "show_room", shape: "rect", rect: [1070, 270, 1090, 290], status: "placed", kind: "plant" },
-        { id: "plant_5", room: "show_room", shape: "rect", rect: [1070, 570, 1090, 590], status: "placed", kind: "plant" },
-        { id: "plant_6", room: "show_room", shape: "rect", rect: [950, 570, 970, 590], status: "placed", kind: "plant" },
-        { id: "plant_7", room: "show_room", shape: "rect", rect: [1070, 390, 1090, 410], status: "placed", kind: "plant" },
         { id: "plant_8", room: "lab_hallway", shape: "rect", rect: [470, 410, 490, 430], status: "placed", kind: "plant" },
         { id: "plant_9", room: "lab_hallway", shape: "rect", rect: [710, 410, 730, 430], status: "placed", kind: "plant" },
         { id: "cooler_3", room: "lab_hallway", shape: "rect", rect: [530, 410, 550, 430], status: "placed", kind: "cooler" },
@@ -314,18 +298,26 @@ const FACILITY_MAP = {
         { id: "floodlight_arena_3", room: "arena", shape: "rect", rect: [370, 970, 390, 990], status: "placed", kind: "floodlight" },
         { id: "floodlight_arena_4", room: "arena", shape: "rect", rect: [970, 1010, 990, 1030], status: "placed", kind: "floodlight" },
         { id: "floodlight_arena_5", room: "arena", shape: "rect", rect: [370, 870, 390, 890], status: "placed", kind: "floodlight" },
-        // ── THE ELECTRICAL NETWORK (docs/TUTORIAL.md, phase 5): relay boxes against the walls, the sentries and the charging station they feed. Everything starts dead: the relays are broken. ──
-        { id: "mech_bay", room: "show_room", shape: "rect", rect: [970, 390, 1010, 430], status: "placed", kind: "mech_bay", note: "The mech bay: a build pad in the show room where the Technomancer assembles the four-legged spider mech." },
-        { id: "relay_chamber_box", room: "crystal_chamber", shape: "rect", rect: [310, 290, 330, 310], status: "placed", kind: "relay", note: "The Crystal Chamber's relay, on the north wall beside the crystal, in plain view from the door." },
+        // ── THE ELECTRICAL NETWORK (docs/TUTORIAL.md, phase 5): the sentries and the charging station. (The relays are small nodes on the walls since build 2026-11-07qq: decor `relay_node`, below.) ──
+        { id: "mech_bay", room: "show_room", shape: "rect", rect: [970, 390, 1010, 430], status: "placed", kind: "mech_bay", note: "The mech bay: a build pad in the warehouse where the Technomancer assembles the four-legged spider mech." },
+        // ── THE WAREHOUSE (the owner, 2026-11-07: "convert that into a little warehouse"; it was the show room): pallet racks along the walls and down the middle, crate stacks, barrels, a cart and a run of lockers.
+        //    The mech bay, the supply case, the mech core's case and the ice mage's egg keep their places; the door onto the hallway stays clear.
+        { id: "rack_w1", room: "show_room", shape: "rect", rect: [930, 330, 950, 390], status: "placed", kind: "pallet_rack", note: "Pallet racks along the west wall (the Security Room side)." },
+        { id: "rack_n1", room: "show_room", shape: "rect", rect: [950, 275, 1010, 295], status: "placed", kind: "pallet_rack" },
+        { id: "rack_m1", room: "show_room", shape: "rect", rect: [1030, 360, 1050, 440], status: "placed", kind: "pallet_rack" },
+        { id: "rack_e1", room: "show_room", shape: "rect", rect: [1070, 340, 1090, 440], status: "placed", kind: "pallet_rack" },
+        { id: "rack_e2", room: "show_room", shape: "rect", rect: [1070, 460, 1090, 540], status: "placed", kind: "pallet_rack" },
+        { id: "wh_crate_1", room: "show_room", shape: "rect", rect: [1070, 275, 1090, 295], status: "placed", kind: "crate" },
+        { id: "wh_cart", room: "show_room", shape: "rect", rect: [990, 470, 1030, 490], status: "placed", kind: "cart" },
+        { id: "wh_stack_1", room: "show_room", shape: "rect", rect: [1030, 470, 1050, 490], status: "placed", kind: "crate_stack" },
+        { id: "wh_stack_2", room: "show_room", shape: "rect", rect: [950, 570, 970, 590], status: "placed", kind: "crate_stack" },
+        { id: "wh_lockers", room: "show_room", shape: "rect", rect: [970, 580, 1050, 600], status: "placed", kind: "locker" },
+        { id: "wh_barrel_1", room: "show_room", shape: "rect", rect: [1050, 580, 1070, 600], status: "placed", kind: "barrel" },
+        { id: "wh_barrel_2", room: "show_room", shape: "rect", rect: [1070, 560, 1090, 580], status: "placed", kind: "barrel" },
         { id: "sentry_chamber_1", room: "crystal_chamber", shape: "rect", rect: [330, 430, 350, 450], status: "placed", kind: "sentry", note: "An automatic sentry guarding the chamber's door." },
         { id: "sentry_chamber_2", room: "crystal_chamber", shape: "rect", rect: [290, 470, 310, 490], status: "placed", kind: "sentry" },
-        { id: "relay_hall_box", room: "lab_hallway", shape: "rect", rect: [630, 410, 650, 430], status: "placed", kind: "relay", note: "The hallway's relay, on its north wall." },
         { id: "sentry_hall", room: "lab_hallway", shape: "rect", rect: [750, 490, 770, 510], status: "placed", kind: "sentry", note: "A sentry on the hallway's north-east corner." },
         { id: "charger_hall", room: "lab_hallway", shape: "rect", rect: [390, 630, 410, 650], status: "placed", kind: "charger", note: "A charging station: it refills your ammunition once the hallway has power." },
-        { id: "relay_lobby_box", room: "front_lobby", shape: "rect", rect: [390, 230, 410, 250], status: "placed", kind: "relay", note: "The Front Lobby's relay, which also feeds the Security Room." },
-        { id: "relay_lab_box", room: "experiment_lab", shape: "rect", rect: [610, 530, 630, 550], status: "placed", kind: "relay", note: "The lab's relay, in the gap in the north bench line." },
-        { id: "relay_show_box", room: "show_room", shape: "rect", rect: [1070, 310, 1090, 330], status: "placed", kind: "relay", note: "The show room's relay, on its east wall." },
-        { id: "relay_armory_box", room: "armory", shape: "rect", rect: [190, 1090, 210, 1110], status: "placed", kind: "relay", note: "The armory's relay, on its west wall: it feeds the armory, the arena and everything below the deck." },
         // ── THE ARMORY (x 190-350, y 950-1150): a terminal and a workbench in the middle, crates in the corners, lockers and barrels along the south wall; the door's landing (x 310-350, y 1070-1110) stays clear ──
         { id: "armory_terminal", room: "armory", shape: "rect", rect: [190, 1030, 210, 1070], status: "placed", kind: "computer_desk", note: "The inventory terminal." },
         { id: "armory_bench", room: "armory", shape: "rect", rect: [230, 1030, 290, 1050], status: "placed", kind: "desk", note: "The workbench." },
@@ -394,22 +386,26 @@ const FACILITY_MAP = {
         { id: "pk_armory_ammo", room: "armory", at: [280, 1020], items: [["ammo_pack", 2]], note: "Ammunition in the Armory." },
         { id: "pk_security_cache", room: "security_room", at: [880, 360], items: [["ammo_pack", 1]], note: "A drawer's worth of ammunition in the Security Room." },
         { id: "pk_lab_cells", room: "experiment_lab", at: [620, 580], items: [["power_cell", 2]], note: "Charged cells on the lab bench." },
-        { id: "pk_lobby_cell", room: "front_lobby", at: [700, 280], items: [["power_cell", 1]], note: "A cell among the lobby's computers." },
-        // FUEL CELLS: the laser rifle's fuel, in the computer lab (the Front Lobby). A case with `needs` is not in the facility until that relay is online: then it arrives, in a column of light.
-        { id: "pk_lobby_fuel_1", room: "front_lobby", at: [460, 260], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells beside the west server racks (once the lobby has power)." },
-        { id: "pk_lobby_fuel_2", room: "front_lobby", at: [640, 300], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells on the lobby floor, by the reception desk." },
+        { id: "pk_lobby_cell", room: "front_lobby", at: [700, 280], items: [["power_cell", 1]], note: "A cell among the server racks." },
+        // FUEL CELLS: the laser rifle's fuel, in the server room (it was the computer lab). A case with `needs` is not in the facility until that relay is online (since build 2026-11-07qq: when the junction is
+        // repaired, every relay comes on): then it arrives, in a column of light.
+        { id: "pk_lobby_fuel_1", room: "front_lobby", at: [460, 260], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells beside the west server racks (once the room has power)." },
+        { id: "pk_lobby_fuel_2", room: "front_lobby", at: [640, 300], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells in an aisle between the racks." },
         { id: "pk_lobby_fuel_3", room: "front_lobby", at: [780, 260], items: [["fuel_cell", 2]], needs: "relay_lobby", note: "Fuel cells beside the east server racks." },
         { id: "pk_security_cell", room: "security_room", at: [900, 330], items: [["power_cell", 1]], note: "A spare cell in the Security Room's drawers." },
         { id: "pk_hall_cell", room: "lab_hallway", at: [650, 450], items: [["power_cell", 1]], note: "A cell on the hallway floor." },
-        { id: "pk_show_cells", room: "show_room", at: [1010, 320], items: [["power_cell", 2]], note: "Two cells among the show room's exhibits." },
+        { id: "pk_show_cells", room: "show_room", at: [1010, 320], items: [["power_cell", 2]], note: "Two cells in the warehouse, by the racks." },
         { id: "pk_armory_cell", room: "armory", at: [250, 990], items: [["power_cell", 1]], note: "A cell in the Armory." },
         { id: "pk_arena_cells", room: "arena", at: [700, 880], items: [["power_cell", 2]], note: "Two cells left in the arena." },
-        { id: "pk_chamber_kit", room: "crystal_chamber", at: [260, 440], items: [["relay_kit", 1]], note: "A relay kit in the Crystal Chamber: with two power cells, anyone can splice a relay with it." },
+        { id: "pk_chamber_cell", room: "crystal_chamber", at: [260, 440], items: [["power_cell", 1]], note: "A cell in the Crystal Chamber. (It held the relay kit until build 2026-11-07qq: no relay is repaired now.)" },
+        // THE POWER MODULE (the tutorial, build 2026-11-07qq; the owner: "you need to obtain a module to repair it somewhere on the map ... the item could be in the catwalks, and side quest's ability is to fly"): on the
+        // catwalks over the arena, out of the player's reach (`fetch`: it is not taken by walking up to it). Side Quest, waiting under the catwalks, flies up and brings it down (js/sidequest.js).
+        { id: "pk_power_module", room: "catwalks", at: [1030, 1060], items: [["power_module", 1]], fetch: "sidequest", note: "The power module the junction needs, glowing on the catwalks." },
         { id: "pk_armory_flare", room: "armory", at: [240, 1100], items: [["flare", 2]], class: "gunslinger", note: "Flares in the Armory (Gunslinger)." },
         { id: "pk_armory_flare_2", room: "armory", at: [320, 1080], items: [["flare", 2]], class: "gunslinger", note: "More flares in the Armory (Gunslinger)." },
         { id: "pk_tele_legs", room: "teleport_room_1", at: [260, 620], items: [["mech_leg", 2]], class: "technomancer", note: "Two spider-mech legs beside the teleporters (Technomancer)." },
         { id: "pk_tele_legs_2", room: "teleport_room_1", at: [260, 680], items: [["mech_leg", 2]], class: "technomancer", note: "Two more legs by the console (Technomancer)." },
-        { id: "pk_show_core", room: "show_room", at: [1060, 520], items: [["mech_core", 1]], class: "technomancer", note: "A mech core, left among the show room's exhibits (Technomancer)." },
+        { id: "pk_show_core", room: "show_room", at: [1060, 520], items: [["mech_core", 1]], class: "technomancer", note: "A mech core, left in the warehouse (Technomancer)." },
         { id: "pk_lab_mutagen", room: "experiment_lab", at: [500, 580], items: [["mutagen_sample", 2]], class: "mutator", note: "Samples in the lab (Mutator)." },
         { id: "pk_chamber_mutagen", room: "crystal_chamber", at: [280, 400], items: [["mutagen_sample", 1]], class: "mutator", note: "A sample left by the crystal (Mutator)." },
         { id: "pk_chamber_mutagen_2", room: "crystal_chamber", at: [320, 320], items: [["mutagen_sample", 1]], class: "mutator", note: "Another sample in the chamber (Mutator)." },
@@ -423,11 +419,11 @@ const FACILITY_MAP = {
     // FOLLOWER SPOTS (js/followerspots.js): a place where a follower waits, in its egg, as one thing and nothing else: its `type` (brawler, sniper = the MAGE, camper = the TECHNICIAN) and its `element` are fixed,
     // and so is where it is. Walk up to it and it joins, there, as that type and that element, free, and the post is claimed for good (it does not fill again: the archive's follow-up scope, 2026-10-31; free: the owner).
     // `at` is the middle of a tile (sketch pixels: 20 to a tile).
-    // Seven spots, in the places the player marked on the facility's outline view: the computer lab's north-east corner, the show room's north end, the observation deck, the experiment lab, the second teleport
+    // Seven spots, in the places the player marked on the facility's outline view: the server room's north-east corner (it was the computer lab), the warehouse's north end (it was the show room), the observation deck, the experiment lab, the second teleport
     // room, and two in the arena (its west end by the Armory's steel door, and its middle). Every element has one; core has two.
     followerSpots: [
-        { id: "spot_lobby",   room: "front_lobby",      at: [770, 330],  type: "brawler", element: "fire",     note: "A fire brawler in the computer lab's north-east corner." },
-        { id: "spot_show",    room: "show_room",        at: [1030, 310], type: "sniper",  element: "ice",      note: "An ice mage at the show room's north end." },
+        { id: "spot_lobby",   room: "front_lobby",      at: [770, 330],  type: "brawler", element: "fire",     note: "A fire brawler in the server room's north-east corner." },
+        { id: "spot_show",    room: "show_room",        at: [1030, 310], type: "sniper",  element: "ice",      note: "An ice mage at the warehouse's north end." },
         { id: "spot_deck",    room: "observation_deck", at: [250, 850],  type: "camper",  element: "core",     note: "A core technician on the observation deck." },
         { id: "spot_lab",     room: "experiment_lab",   at: [650, 590],  type: "sniper",  element: "toxic",    note: "A toxic mage in the experiment lab." },
         { id: "spot_tele_2",  room: "teleport_room_2",  at: [1030, 710], type: "camper",  element: "flux",     note: "A flux technician in the second teleport room." },
@@ -438,16 +434,24 @@ const FACILITY_MAP = {
 
     // KINETIC LAUNCHER SITES (the electric technician's ability, js/techabilities.js; docs/TECHNICIANS.md): a place where its launcher can be set up for good, to send followers where nobody can walk. ASKED: "you need to have some sort
     // of check for a spot where it can be deployed [...] whenever you enter a spot where it can be deployed, have a little notification or highlighted area near the catwalk, or in the future any sort of secret area".
-    // `at`: where the launcher stands (on `room`'s floor); `land`: where a follower it throws comes down (on `to`'s floor); `drop`: `to`'s BROKEN SECTION, the way back down (one way only, top to bottom), to `dropTo` on the floor
-    // under it. Each is the middle of a tile (sketch pixels: 20 to a tile).
+    // `at`: where the launcher stands (on `room`'s floor); `land`: where a follower it throws comes down (on `to`'s floor). The way back down is the room's LEDGE (`ledges`, below; the catwalks' broken section, a site's
+    // `drop`/`dropTo`, went in build 2026-11-07qq). Each is the middle of a tile (sketch pixels: 20 to a tile).
     launchSites: [
-        { id: "site_arena_catwalk", room: "arena", label: "Arena Catwalk", to: "catwalks", at: [940, 1000], land: [1040, 1000], drop: [1040, 1140], dropTo: [980, 1100],
-          note: "The launcher stands on the arena floor under the catwalks' railing, between the two tanks' footbridges, and throws a follower up onto the catwalks; the catwalks' broken section, near their south end, drops it back into the arena." },
+        { id: "site_arena_catwalk", room: "arena", label: "Arena Catwalk", to: "catwalks", at: [940, 1000], land: [1040, 1000],
+          note: "The launcher stands on the arena floor under the catwalks' railing, between the two tanks' footbridges, and throws a follower up onto the catwalks; the catwalks' LEDGE (ledge_catwalks) is the way back down into the arena. (Its broken section, the old way down, went in build 2026-11-07qq: the owner chose \"Only its way back\".)" },
         // A POCKET SITE (`pocket`): the landing is a cut-off part of the SAME room, not another room, so a follower sent there keeps its place in the squad (no room post) and waits there for you. `rider`: the launcher carries
-        //   YOU as well (tap its tag once for its aim and again to ride it: js/techabilities.js techSiteRide); `drop`/`dropTo`: the BROKEN EDGE of the floor up there, which drops you (and a follower up there without you)
-        //   back to the ledge under it, one way (techSiteDrop). (`only`, one ability the site is for, is no longer set here: anyone may be sent over: docs/SEWER-QUEST.md.)
+        //   YOU as well (tap its tag once for its aim and again to ride it: js/techabilities.js techSiteRide). A floor up there with a LEDGE (`ledges`, below) is left by it, one way (techLedgeJump); a pocket with none,
+        //   by the way its rubble opens. (`only`, one ability the site is for, is no longer set here: anyone may be sent over: docs/SEWER-QUEST.md.)
         { id: "site_sewer_tunnel", room: "sewers", label: "Sample bank", to: "sewers", pocket: true, rider: true, at: [360, 897], land: [340, 1030],
           note: "On the north ledge across the river from the sample bank (the owner, 2026-11-07: \"Launch over the river\"; the id is the old one, kept for saves): it throws you, or a follower, over the river onto the bank; the drain pipe in the bank's back wall is the way back (\"Pipe shortcut\")" },
+    ],
+
+    // LEDGES (build 2026-11-07qq; the owner: "I want to make it to where there's like a ledge that goes down that the player can only move to jump off of to get down"): an edge of a raised floor that is the ONE WAY DOWN from it.
+    // Whoever walks onto it (`at`: the floor tile at the edge, on `room`'s floor) jumps off and comes down on `to` (on `toRoom`'s floor), one way only: nobody climbs back up it (js/techabilities.js techLedgeTick). A follower
+    // thrown up by the launcher comes down by it (COME), and SIDE QUEST shows it in the tutorial: he walks to it with the power module and jumps (js/sidequest.js). Sketch pixels, the middle of a tile.
+    ledges: [
+        { id: "ledge_catwalks", room: "catwalks", toRoom: "arena", label: "Catwalk ledge", at: [1020, 1120], to: [940, 1120],
+          note: "The catwalks' west edge over the arena floor, just south of the power module's spot (where the owner's yellow line goes down, 2026-11-07): hazard paint on the lip, a gap in the railing, arrows pointing down. You land four tiles out, over the crates, where the camera sees you come down (the floor right under the edge is hidden behind the raised deck)." },
     ],
 
     // RUBBLE (the fire technician's Thermite Drill, js/techabilities.js; docs/TECHNICIANS.md): a pile of broken rock in a room's edge that a fire technician can drill through. ASKED: "Place a distinctive rubble patch at the midpoint
@@ -486,6 +490,7 @@ const FACILITY_MAP = {
         { id: "st_serum_hood", room: "experiment_lab", prop: "lab_hood", kind: "serum_hood" },   // the Mutator's laboratory: serum (js/serum.js)
         { id: "st_charger", room: "lab_hallway", prop: "charger_hall", kind: "charger" },
         { id: "st_mech_bay", room: "show_room", prop: "mech_bay", kind: "mech_bay" },
+        { id: "st_junction", room: "front_lobby", prop: "junction", kind: "junction" },   // the main power junction: the tutorial's one repair (js/stations.js, js/tutorial.js)
         { id: "st_armory_terminal", room: "armory", prop: "armory_terminal", kind: "armory_terminal" },
         { id: "st_nest_console", room: "nest_area", prop: "nest_console", kind: "nest_console" },   // the Ant Nest's test console (js/nestconsole.js)
         // THE SEWER PURIFICATION QUEST (js/quests.js, docs/SEWER-QUEST.md): the samples are analysed and the module bought at the cabinet at the Experiment Lab's west end (cabinet_1: away from the sequencer and the serum hood, whose station plate a bench beside them would take over); the boss gate's seal is broken with the module in hand; the module is installed at the cistern's console
@@ -493,23 +498,25 @@ const FACILITY_MAP = {
         { id: "st_purifier", room: "sewers", prop: "purifier_mount", kind: "purifier_mount" },
     ],
 
-    // RELAYS: the electrical network (docs/TUTORIAL.md, phase 5). Each is a prop (a relay box) that the player repairs at (a station of kind "relay"). When one comes online the rooms it `powers` have power (the blackout lifts there), and what it `feeds` (props: sentries, the charging station) works.
+    // RELAYS: the electrical network (docs/TUTORIAL.md, phase 5). Since build 2026-11-07qq (the owner: "there's no relay stations that need to be repaired"; "Make them smaller wall nodes") each is a small NODE on a wall
+    // (`node`: a decor of kind relay_node), not a box to repair: every one comes on when the MAIN POWER JUNCTION in the server room is repaired (js/stations.js facilityJunctionRepair). When one is online the rooms it
+    // `powers` have power (the blackout lifts there), and what it `feeds` (props: sentries, the charging station) works.
     relays: [
-        { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", prop: "relay_chamber_box", powers: ["crystal_chamber"], feeds: [] },   // (its two sentries run on the Crystal's power since 2026-11-01: js/crystalpower.js)
-        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", prop: "relay_hall_box", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["charger_hall"] },   // (its sentry runs on the Crystal's power since 2026-11-01)
-        { id: "relay_lobby", name: "LOBBY RELAY", room: "front_lobby", prop: "relay_lobby_box", powers: ["front_lobby", "security_room"], feeds: [] },
-        { id: "relay_lab", name: "LAB RELAY", room: "experiment_lab", prop: "relay_lab_box", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage under the lab)
-        { id: "relay_show", name: "SHOW ROOM RELAY", room: "show_room", prop: "relay_show_box", powers: ["show_room"], feeds: [] },
-        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", prop: "relay_armory_box", powers: ["armory", "arena", "observation_deck", "catwalks", "nest_area", "sewers"], feeds: [] },   // (and the Sewers under the arena)
+        { id: "relay_chamber", name: "CRYSTAL CHAMBER RELAY", room: "crystal_chamber", node: "relay_node_chamber", powers: ["crystal_chamber"], feeds: [] },   // (its two sentries run on the Crystal's power since 2026-11-01: js/crystalpower.js)
+        { id: "relay_hall", name: "HALLWAY RELAY", room: "lab_hallway", node: "relay_node_hall", powers: ["lab_hallway", "teleport_stair_room"], feeds: ["charger_hall"] },   // (its sentry runs on the Crystal's power since 2026-11-01)
+        { id: "relay_lobby", name: "SERVER ROOM RELAY", room: "front_lobby", node: "relay_node_lobby", powers: ["front_lobby", "security_room"], feeds: [] },
+        { id: "relay_lab", name: "LAB RELAY", room: "lab_passage", node: "relay_node_lab", powers: ["experiment_lab", "lab_passage", "teleport_room_1", "teleport_room_2", "cold_storage"], feeds: [] },   // (and the Cold Storage under the lab)
+        { id: "relay_show", name: "WAREHOUSE RELAY", room: "show_room", node: "relay_node_show", powers: ["show_room"], feeds: [] },
+        { id: "relay_armory", name: "ARMORY RELAY", room: "armory", node: "relay_node_armory", powers: ["armory", "arena", "observation_deck", "catwalks", "nest_area", "sewers"], feeds: [] },   // (and the Sewers under the arena)
     ],
 
     // FLOORS: each room's floor covering (js/facilitydecor.js draws it over the tile). Styles: carpet, plate, tile, labtile, concrete, grate, polished, wood, sand.
     floors: [
         { room: "crystal_chamber", style: "plate", colour: "#2a4458" },
         { room: "teleport_room_1", style: "plate", colour: "#3a2f5a" },
-        { room: "front_lobby", style: "carpet" },
+        { room: "front_lobby", style: "plate" },
         { room: "security_room", style: "tile" },
-        { room: "show_room", style: "polished" },
+        { room: "show_room", style: "concrete" },
         { room: "lab_hallway", style: "concrete" },
         { room: "experiment_lab", style: "labtile" },
         { room: "lab_passage", style: "grate" },
@@ -545,6 +552,7 @@ const FACILITY_MAP = {
         { id: "pipe_1", room: "crystal_chamber", kind: "pipe", a: [190, 270], b: [190, 510], colour: "#ffb347", z: 62 },
         { id: "panel_1", room: "crystal_chamber", kind: "panel", a: [190, 290], b: [190, 310] },
         { id: "vent_1", room: "crystal_chamber", kind: "vent", a: [190, 330], b: [190, 350] },
+        { id: "relay_node_chamber", room: "crystal_chamber", kind: "relay_node", a: [190, 370], b: [190, 390] },   // the chamber's relay node (build 2026-11-07qq: the relays are nodes on the walls)
         { id: "screen_1", room: "crystal_chamber", kind: "screen", a: [190, 410], b: [190, 450], colour: "#6adfff" },
         { id: "wall_light_1", room: "crystal_chamber", kind: "wall_light", a: [190, 450], b: [190, 490], h: 1 },
         { id: "hazard_sign_1", room: "crystal_chamber", kind: "hazard_sign", a: [190, 270], b: [210, 270] },
@@ -574,36 +582,25 @@ const FACILITY_MAP = {
         { id: "hazard_sign_2", room: "teleport_room_1", kind: "hazard_sign", a: [330, 510], b: [350, 510] },
         { id: "pipe_4", room: "teleport_room_1", kind: "pipe", a: [270, 510], b: [370, 510], colour: "#a64dff", z: 62 },
         { id: "wall_light_4", room: "teleport_room_1", kind: "wall_light", a: [270, 510], b: [370, 510], colour: "#c9a0ff" },
-        { id: "rug_1", room: "front_lobby", kind: "rug", rect: [510, 250, 670, 330], colour: "#24345a", border: "#ffd34d" },
-        { id: "rug_2", room: "front_lobby", kind: "rug", rect: [410, 370, 450, 390], colour: "#2a2a30", border: "#888888" },
-        { id: "rug_3", room: "front_lobby", kind: "rug", rect: [750, 370, 830, 390], colour: "#2a2a30", border: "#888888" },
-        { id: "light_5", room: "front_lobby", kind: "light", at: [500, 280], radius: 90, colour: "#ffd9a0", a: 0.22, flicker: true },
-        { id: "light_6", room: "front_lobby", kind: "light", at: [640, 300], radius: 80, colour: "#ffd9a0", a: 0.2 },
-        { id: "light_7", room: "front_lobby", kind: "light", at: [760, 340], radius: 64, colour: "#bfe8ff", a: 0.17 },
-        { id: "light_8", room: "front_lobby", kind: "light", at: [440, 360], radius: 60, colour: "#ffd9a0", a: 0.14 },
-        { id: "cables_6", room: "front_lobby", kind: "cables", path: [[412, 268], [680, 268], [680, 260]], colour: "#ffb347" },
-        { id: "cables_7", room: "front_lobby", kind: "cables", path: [[412, 352], [426, 352], [426, 268]], colour: "#6adfff" },
-        { id: "cables_8", room: "front_lobby", kind: "cables", path: [[772, 300], [772, 268]], colour: "#ff6a4a" },
-        { id: "stain_2", room: "front_lobby", kind: "stain", at: [700, 300], radius: 24, colour: "#1a0c10" },
-        { id: "stain_3", room: "front_lobby", kind: "stain", at: [440, 340], radius: 18, colour: "#1a0c10" },
-        { id: "stain_4", room: "front_lobby", kind: "stain", at: [780, 360], radius: 16, colour: "#1a0c10" },
-        { id: "papers_3", room: "front_lobby", kind: "papers", at: [600, 264], radius: 30, n: 7 },
-        { id: "papers_4", room: "front_lobby", kind: "papers", at: [500, 360], radius: 20, n: 5 },
-        { id: "papers_5", room: "front_lobby", kind: "papers", at: [720, 272], radius: 20, n: 4 },
-        { id: "pipe_5", room: "front_lobby", kind: "pipe", a: [390, 230], b: [830, 230], colour: "#7d8aa6", z: 66 },
-        { id: "poster_3", room: "front_lobby", kind: "poster", a: [390, 230], b: [430, 230] },
-        { id: "poster_4", room: "front_lobby", kind: "poster", a: [450, 230], b: [490, 230], z: 40 },
-        { id: "clock_1", room: "front_lobby", kind: "clock", a: [490, 230], b: [510, 230], z: 46 },
-        { id: "screen_4", room: "front_lobby", kind: "screen", a: [690, 230], b: [730, 230], colour: "#ffb347", z: 36 },
-        { id: "poster_5", room: "front_lobby", kind: "poster", a: [730, 230], b: [770, 230], z: 40 },
+        // THE SERVER ROOM's dressing (build 2026-11-07qq): cool dim pools between the racks, cables over the floor to the junction, status screens and a vent on the north wall, the pipe along it, the cable run down the west
+        // wall, and the room's relay node beside the junction
+        { id: "light_5", room: "front_lobby", kind: "light", at: [520, 300], radius: 70, colour: "#3fa9ff", a: 0.14 },
+        { id: "light_6", room: "front_lobby", kind: "light", at: [640, 300], radius: 70, colour: "#3fa9ff", a: 0.14, flicker: true },
+        { id: "light_7", room: "front_lobby", kind: "light", at: [740, 300], radius: 64, colour: "#31e8ff", a: 0.16 },
+        { id: "light_8", room: "front_lobby", kind: "light", at: [600, 370], radius: 60, colour: "#43e0a8", a: 0.12 },
+        { id: "cables_6", room: "front_lobby", kind: "cables", path: [[500, 352], [690, 352], [690, 270], [720, 270]], colour: "#31e8ff" },
+        { id: "cables_7", room: "front_lobby", kind: "cables", path: [[412, 352], [470, 352], [470, 342]], colour: "#6adfff" },
+        { id: "cables_8", room: "front_lobby", kind: "cables", path: [[560, 352], [560, 380], [575, 380]], colour: "#43e0a8" },
+        { id: "stain_2", room: "front_lobby", kind: "stain", at: [700, 300], radius: 18, colour: "#0a0e18" },
+        { id: "pipe_5", room: "front_lobby", kind: "pipe", a: [390, 230], b: [830, 230], colour: "#3a4a66", z: 66 },
+        { id: "srv_screen_1", room: "front_lobby", kind: "screen", a: [430, 230], b: [470, 230], colour: "#31e8ff", z: 36 },
+        { id: "srv_screen_2", room: "front_lobby", kind: "screen", a: [580, 230], b: [620, 230], colour: "#43e0a8", z: 36 },
         { id: "vent_4", room: "front_lobby", kind: "vent", a: [790, 230], b: [830, 230] },
-        { id: "wall_light_5", room: "front_lobby", kind: "wall_light", a: [430, 230], b: [510, 230], h: 1, colour: "#ffe9a0" },
-        { id: "wall_light_6", room: "front_lobby", kind: "wall_light", a: [710, 230], b: [790, 230], colour: "#ffe9a0" },
-        { id: "board_1", room: "front_lobby", kind: "board", a: [390, 230], b: [390, 270] },
+        { id: "relay_node_lobby", room: "front_lobby", kind: "relay_node", a: [690, 230], b: [710, 230] },
         { id: "cable_run_1", room: "front_lobby", kind: "cable_run", a: [390, 270], b: [390, 370] },
-        { id: "poster_6", room: "front_lobby", kind: "poster", a: [390, 370], b: [390, 410] },
         { id: "pipe_6", room: "lab_hallway", kind: "pipe", a: [410, 410], b: [830, 410], colour: "#7d8aa6", z: 64 },
         { id: "exit_sign_1", room: "lab_hallway", kind: "exit_sign", a: [410, 410], b: [450, 410] },
+        { id: "relay_node_hall", room: "lab_hallway", kind: "relay_node", a: [630, 410], b: [650, 410] },
         { id: "exit_sign_2", room: "lab_hallway", kind: "exit_sign", a: [750, 410], b: [830, 410] },
         { id: "exit_sign_3", room: "lab_hallway", kind: "exit_sign", a: [870, 410], b: [910, 410] },
         { id: "poster_7", room: "lab_hallway", kind: "poster", a: [470, 410], b: [510, 410], z: 34 },
@@ -622,21 +619,14 @@ const FACILITY_MAP = {
         { id: "mon_n", room: "security_room", kind: "monitor_bank", a: [830, 270], b: [930, 270], note: "The wall of camera feeds along the north wall, three rows of monitors over the console desk." },
         { id: "mon_w1", room: "security_room", kind: "monitor_bank", a: [830, 270], b: [830, 310] },
         { id: "mon_w2", room: "security_room", kind: "monitor_bank", a: [830, 350], b: [830, 410] },
-        { id: "banner_1", room: "show_room", kind: "banner", a: [930, 290], b: [930, 310], colour: "#8a1f2a" },
-        { id: "sign_3", room: "show_room", kind: "sign", a: [930, 310], b: [930, 350], colour: "#ffd34d" },
-        { id: "banner_2", room: "show_room", kind: "banner", a: [930, 350], b: [930, 390], colour: "#1f4a8a" },
-        { id: "rug_4", room: "show_room", kind: "rug", rect: [950, 310, 1070, 590], colour: "#2a2440", border: "#ffd34d" },
-        { id: "ring_7", room: "show_room", kind: "ring", at: [1010, 450], radius: 60, colour: "#ffd34d", a: 0.7, w: 3, glow: true },
-        { id: "ring_8", room: "show_room", kind: "ring", at: [1010, 450], radius: 36, colour: "#ffd34d", a: 0.5, w: 2, dashed: true },
-        { id: "light_10", room: "show_room", kind: "light", at: [1000, 360], radius: 68, colour: "#6adfff", a: 0.32 },
-        { id: "light_11", room: "show_room", kind: "light", at: [1040, 440], radius: 68, colour: "#ffb347", a: 0.32 },
-        { id: "light_12", room: "show_room", kind: "light", at: [1020, 530], radius: 68, colour: "#a64dff", a: 0.32 },
-        { id: "light_13", room: "show_room", kind: "light", at: [1010, 450], radius: 120, colour: "#fff2c0", a: 0.14, flicker: true },
+        // THE WAREHOUSE's dressing (build 2026-11-07qq): work lights over the floor, a hazard sign on the west wall, the room's relay node on the north wall, the old scuffs and papers
+        { id: "relay_node_show", room: "show_room", kind: "relay_node", a: [930, 300], b: [930, 320] },
+        { id: "hazard_sign_wh", room: "show_room", kind: "hazard_sign", a: [930, 380], b: [930, 400] },
+        { id: "light_10", room: "show_room", kind: "light", at: [990, 360], radius: 80, colour: "#ffe2b0", a: 0.2 },
+        { id: "light_11", room: "show_room", kind: "light", at: [1010, 520], radius: 90, colour: "#ffe2b0", a: 0.18, flicker: true },
         { id: "stain_6", room: "show_room", kind: "stain", at: [1050, 330], radius: 16, colour: "#10101a" },
         { id: "papers_7", room: "show_room", kind: "papers", at: [980, 560], radius: 24, n: 5 },
-        { id: "debris_3", room: "show_room", kind: "debris", at: [1060, 520], radius: 20, n: 4 },
-        { id: "lane_1", room: "show_room", kind: "lane", a: [960, 320], b: [1060, 320], colour: "#ffd34d", dashed: true, w: 2 },
-        { id: "lane_2", room: "show_room", kind: "lane", a: [960, 580], b: [1060, 580], colour: "#ffd34d", dashed: true, w: 2 },
+        { id: "debris_3", room: "show_room", kind: "debris", at: [1010, 540], radius: 20, n: 4 },
         { id: "lane_3", room: "lab_hallway", kind: "lane", a: [400, 470], b: [880, 470], colour: "#ffd21a", dashed: true, w: 2 },
         { id: "lane_4", room: "lab_hallway", kind: "lane", a: [820, 540], b: [820, 720], colour: "#ffd21a", dashed: true, w: 2 },
         { id: "lane_5", room: "lab_hallway", kind: "lane", a: [820, 710], b: [440, 710], colour: "#ffd21a", dashed: true, w: 2 },
@@ -695,7 +685,8 @@ const FACILITY_MAP = {
         { id: "light_22", room: "lab_passage", kind: "light", at: [370, 590], radius: 60, colour: "#ffe9a0", a: 0.18, flicker: true },
         { id: "pipe_9", room: "lab_passage", kind: "pipe", a: [310, 570], b: [430, 570], colour: "#ffb347", z: 60 },
         { id: "vent_8", room: "lab_passage", kind: "vent", a: [330, 570], b: [350, 570] },
-        { id: "wall_light_10", room: "lab_passage", kind: "wall_light", a: [350, 570], b: [410, 570], h: 1 },
+        { id: "relay_node_lab", room: "lab_passage", kind: "relay_node", a: [390, 570], b: [410, 570] },   // the lab's relay (the lab's own walls are glass and its west wall full: the node is in the passage)
+        { id: "wall_light_10", room: "lab_passage", kind: "wall_light", a: [350, 570], b: [390, 570], h: 1 },   // (shortened for the lab relay's node, build 2026-11-07qq)
         { id: "pipe_10", room: "teleport_stair_room", kind: "pipe", a: [870, 610], b: [950, 610], colour: "#7d8aa6", z: 62 },
         { id: "hazard_sign_5", room: "teleport_stair_room", kind: "hazard_sign", a: [890, 610], b: [910, 610] },
         { id: "wall_light_11", room: "teleport_stair_room", kind: "wall_light", a: [870, 610], b: [930, 610], colour: "#bfe8ff" },
@@ -845,6 +836,7 @@ const FACILITY_MAP = {
         { id: "arena_armory_door", room: "arena", kind: "portal_door", a: [320, 1090], b: [320, 1130], colour: "#ffb347", flat: true },
         { id: "armory_light_wall", room: "armory", kind: "wall_light", a: [250, 950], b: [270, 950], colour: "#ffe9a0" },
         { id: "gun_rack_2", room: "armory", kind: "gun_rack", a: [270, 950], b: [290, 950] },
+        { id: "relay_node_armory", room: "armory", kind: "relay_node", a: [300, 930], b: [320, 930] },   // (in the recess in its north wall)
         { id: "armory_stairs_door", room: "armory", kind: "portal_door", a: [290, 930], b: [330, 930], colour: "#ffb347", up: true },
         { id: "deck_stairs_door", room: "observation_deck", kind: "portal_door", a: [160, 870], b: [160, 910], colour: "#8fe3ff" },
         // ── the Cold Storage: its freezer door at the entrance (the inside of the arena's), the stairwell down to it in the Experiment Lab's floor and the stairs up inside it, the ice cave's glassy floor, cold lights ──
@@ -973,8 +965,6 @@ const FACILITY_MAP = {
         { id: "lab_window_east", a: [750, 530], b: [750, 640], rooms: ["experiment_lab", "lab_hallway"] },
         { id: "lab_window_south", a: [750, 640], b: [430, 640], rooms: ["experiment_lab", "lab_hallway"] },
         { id: "deck_window_arena", a: [340, 760], b: [340, 950], rooms: ["observation_deck", "arena"] },   // the observation deck looks down into the arena through glass (solid to movement like every window)
-        { id: "show_window_north", a: [930, 275], b: [1090, 275], rooms: ["show_room"] },
-        { id: "show_window_east", a: [1090, 275], b: [1090, 600], rooms: ["show_room"] },
         { id: "show_window_west", a: [930, 600], b: [930, 410], rooms: ["show_room", "lab_hallway"] },   // the hallway side only (its north part is the security room's wall). Glass for BOTH rooms' pieces, as the lab's windows are: the hallway's own piece of this edge was an opaque wall standing in front of the glass (and its thick top ran over the show room's floor)
         { id: "lab_window_west_lower", a: [430, 605], b: [430, 640], rooms: ["experiment_lab", "lab_hallway"] },
     ],
@@ -987,8 +977,6 @@ const FACILITY_MAP = {
     fixtures: [
         { id: "power_pack_area", type: "power_pack_area", room: "crystal_chamber", edge: 0, a: [275, 262], b: [360, 262], status: "approximate",
           note: "The power / battery pack area on the Crystal Chamber's north wall (somewhere on the wall: this is a first placement). The wall power unit's cells and machine go here." },
-        { id: "lobby_sign", type: "wall_sign", room: "front_lobby", edge: 0, a: [520, 222], b: [680, 222], status: "approximate",
-          note: "The big headquarters sign over the lobby. Its wording is not decided." },
     ],
 
     // CONFIRMED only. An opening is a gap cut into the walls along the segment a -> b; a connection says which two rooms it joins (and the ramp, if their levels differ).

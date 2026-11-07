@@ -117,6 +117,10 @@ A chaser now faces the way it walks (the route's next waypoint), not its prey: f
 - **As built** (js/sidequest.js `SIDEQUEST.stock`, `sqCardBuy`): once the water is purified, his line in the dialogue box ("…") has a gold button for each of the three you do not keep yet, its name with ◆1000 · KEPT FOR GOOD under it. A tap buys it: the card is kept for good and found for the run, so your slots take it at once. Short of the shards, it says how short and nothing is paid. The potion stays on his station. None is offered on a phone (no cards screen yet). The readings taken are in `OPEN-QUESTIONS.md` §1u.
 - **Nothing new in the save:** the collection keeps what was bought.
 
+### Side Quest in the tutorial (build 2026-11-07qq)
+
+Before he is met in the Sewers, Side Quest helps in the tutorial (the owner, 2026-11-07: "you have to get the help of a NPC like side quest to retrieve the item ... and side quest's ability is to fly"; answer "Side Quest himself", met "Under the catwalks"). While the junction's POWER MODULE is up on the catwalks he waits on the arena floor by them (a station on him, `STATION_KINDS.sidequest_tut`), calls you over once, says two lines, flies up, takes the module, lands on the catwalks, walks to their ledge and steps off it ("to show the player how it works"), walks to you and hands it over, then flies off. In the Sewers he is met later as before: his unlock, lines and shop are unchanged. His words there and his timings are the agent's (provisional). docs/TUTORIAL.md, "The server room, the warehouse and the one repair".
+
 ## What a player does, in order
 
 1. Go down the culvert behind the arena's north tank. The reading comes as you arrive (your note in the dialogue box): PURIFY THE SEWERS 1/5 in the QUESTS box.

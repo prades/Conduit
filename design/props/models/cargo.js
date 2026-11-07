@@ -7,6 +7,10 @@
 //   barrier.1x2       the same barrier turned to lie along z (game y), for the Flux technician's FLUX MOVE (js/fluxmove.js): the model with x and z swapped (a quarter turn and a mirror), so its banded long face
 //                     and its hazard-painted end still face the camera, on +x and +z
 //   case              the supply case a pickup shows (0.6 tile, ~28 px): a rugged two-tone shell with latches, a handle, a white cross stencil and a glowing cyan strip on the lid that reads in the dark; case.s1 is amber
+//   pallet_rack.WxH.s0/s1   1x3, 1x4, 1x5, 3x1, 4x1: the warehouse's storage racking (the Show Room as a little warehouse), ~108 px: teal steel upright frames at every bay (two or three bays), amber beams at three
+//                     levels carrying steel mesh decks, and the goods on them (s0 the general stores: wrapped pallets and card boxes; s1 the parts store: plastic bins, small crates, drums, pipe bundles); glowing pick-to-light
+//                     tags on the beams; on the end the camera sees, an aisle sign, a load notice, a scanner in its cradle and a hazard-striped post guard. Its front is its long side: +z for 3x1 and 4x1, +x for 1x3..1x5
+//                     (the same rack turned a quarter, not mirrored, so its stencils still read)
 // The front (details) is on +z and +x, the faces the camera sees.
 (function () {
   const S = STY, mt = S.mat;
@@ -205,9 +209,146 @@
     return { g };
   }
 
+  // ═════════ PALLET RACKING ═════════
+  // built along x (N tiles long, one deep) with its front on +z; endSign is the end the camera sees (+1: +x; -1: -x, for a rack turned a quarter to lie along z)
+  const RK = {
+    post: S.std('#2f6a73', 0.45, 0.4), cap: S.std('#14181d', 0.3, 0.6), beam: S.std('#f2b13a', 0.35, 0.42), clip: S.std('#4a525e', 0.85, 0.4), rib: S.std('#5d6874', 0.8, 0.4),
+    card: S.std('#c69c62', 0, 0.85), cardDk: S.std('#a8834f', 0, 0.85), cardLt: S.std('#d6b17a', 0, 0.85), tape: S.std('#e8d9ad', 0.1, 0.45), paper: S.std('#eef3f1', 0, 0.7), print: S.std('#2a3440', 0.2, 0.6),
+    wood: S.std('#8a6a3e', 0.02, 0.85), woodDk: S.std('#5e472a', 0.02, 0.9), yel: S.std('#e0a526', 0.2, 0.6), blk: S.std('#14181d', 0.2, 0.7), strap: S.std('#3a7bff', 0.1, 0.6),
+  };
+  RK.deck = (() => {   // a steel mesh deck: a grid texture in world units (cbox's caps and walls take their uv from the geometry's own coordinates)
+    const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d'); x.fillStyle = '#c4ccd4'; x.fillRect(0, 0, 32, 32); x.fillStyle = '#76808c'; x.fillRect(0, 0, 32, 4); x.fillRect(0, 0, 4, 32);
+    const t = new T.CanvasTexture(c); t.wrapS = t.wrapT = T.RepeatWrapping; t.encoding = T.sRGBEncoding; t.repeat.set(6, 6); t.anisotropy = 4; return S.std('#ffffff', 0.7, 0.42, { map: t });
+  })();
+  RK.film = new T.MeshStandardMaterial({ color: S.col('#eaf6fa'), transparent: true, opacity: 0.34, metalness: 0, roughness: 0.18, depthWrite: false }); RK.film.envMapIntensity = 1.1;
+  const TOTES = ['#3f8590', '#3366cc', '#4a5563', '#e0a526', '#93382b'].map(h => S.std(h, 0.05, 0.6));   // (deep teal, blue, slate, amber, red: plastic bins, a shade darker than the trims so a row of them does not glare)
+  // the goods, each on y = 0 (the deck) and centred on its footprint, front on +z
+  function cardBox(w, d, h, k) {   // a card box: tape along its top seam and down its ends, a shipping label on its face
+    const g = G(), H = px(h), m = [RK.card, RK.cardDk, RK.cardLt][k % 3];
+    g.add(at(cbox(w, H, d, 0.01, m), 0, H / 2, 0));
+    g.add(at(cbox(w + 0.006, px(0.5), 0.06, 0.002, RK.tape), 0, H + px(0.05), 0));
+    for (const sx of [-1, 1]) g.add(at(cbox(0.008, H * 0.3, 0.06, 0.002, RK.tape), sx * (w / 2 + 0.001), H * 0.85, 0));
+    if (k % 4 !== 3) g.add(at(cbox(Math.min(0.14, w * 0.4), px(Math.min(4.4, h * 0.4)), 0.006, 0.002, RK.paper), (k % 2 ? -1 : 1) * w * 0.18, H * 0.55, d / 2 + 0.002));
+    if (k % 3 === 1) g.add(at(cbox(w * 0.5, px(0.8), 0.005, 0.001, RK.print), -w * 0.1, H * 0.22, d / 2 + 0.002));
+    return g;
+  }
+  function tote(w, d, h, m) {   // a plastic storage bin: a body, a rim, a hand hold, a label card, two ribs
+    const g = G(), H = px(h), zf = d * 0.465 + 0.002;
+    g.add(at(cbox(w * 0.93, H * 0.86, d * 0.93, 0.018, m), 0, H * 0.43, 0)); g.add(at(cbox(w, H * 0.16, d, 0.012, m), 0, H * 0.92, 0));
+    g.add(at(cbox(w * 0.32, px(1.8), 0.01, 0.004, mt.rubber), 0, H * 0.7, zf)); g.add(at(cbox(w * 0.36, px(3), 0.006, 0.002, RK.paper), 0, H * 0.36, zf));
+    for (const sx of [-1, 1]) g.add(at(cbox(0.018, H * 0.72, 0.01, 0.003, m), sx * w * 0.38, H * 0.43, zf + 0.001));
+    return g;
+  }
+  function skid(w, d) {   // a pallet sized to its load: three stringers with fork pockets, deck boards across
+    const g = G();
+    for (const z of [-d / 2 + 0.045, 0, d / 2 - 0.045]) g.add(at(cbox(w, px(3.4), 0.09, 0.006, RK.woodDk), 0, px(1.7), z));
+    for (const sx of [-1, 1]) g.add(at(cbox(w * 0.24, px(2), 0.01, 0.002, mt.rubber), sx * w * 0.25, px(1.5), d / 2 + 0.001));
+    const n = Math.max(3, Math.round(w / 0.15)); for (let i = 0; i < n; i++) g.add(at(cbox(0.1, px(1.6), d, 0.004, RK.wood), -w / 2 + 0.05 + i * (w - 0.1) / (n - 1), px(4.2), 0));
+    return { g, h: px(5) };
+  }
+  function wrappedLoad(w, d, h, k) {   // a pallet of card boxes in stretch film, with its label
+    const g = G(), sk = skid(w, d); g.add(sk.g);
+    const y0 = sk.h, bh = px(h) - y0, nx = w > 0.55 ? 2 : 1, nl = h > 18 ? 2 : 1, bw = (w - 0.03) / nx, lh = bh / nl, mats = [RK.card, RK.cardDk, RK.cardLt];
+    for (let i = 0; i < nx; i++) for (let l = 0; l < nl; l++) g.add(at(cbox(bw - 0.012, lh - px(0.5), d - 0.04, 0.008, mats[(i + l * 2 + k) % 3]), -w / 2 + 0.015 + bw * (i + 0.5), y0 + lh * (l + 0.5), 0));
+    g.add(at(cbox(w - 0.012, bh + px(0.8), d - 0.02, 0.02, RK.film), 0, y0 + bh / 2 + px(0.2), 0));
+    g.add(at(cbox(0.13, px(5), 0.006, 0.002, RK.paper), (k % 2 ? 1 : -1) * w * 0.18, y0 + bh * 0.45, d / 2 - 0.004));
+    return g;
+  }
+  function pipeBundle(len, k) {   // six steel pipes stacked in a triangle, coloured end caps, two straps
+    const g = G(), r = 0.03, capM = [RK.yel, S.std('#9a5cff', 0.2, 0.5), mt.teal][k % 3];
+    for (const [a, b] of [[-2, 0], [0, 0], [2, 0], [-1, 1.73], [1, 1.73], [0, 3.46]]) {
+      const p = cyl(r, r, len, mt.steel, 12); p.rotation.z = PI / 2; g.add(at(p, 0, r + b * r, a * r));
+      for (const sx of [-1, 1]) { const c = cyl(r * 1.08, r * 1.08, 0.02, capM, 12); c.rotation.z = PI / 2; g.add(at(c, sx * (len / 2 + 0.005), r + b * r, a * r)); }
+    }
+    for (const sx of [-0.3, 0.3]) g.add(at(cbox(0.03, r * 5, r * 6.4, 0.004, RK.strap), sx * len, r * 2.5, 0));
+    return g;
+  }
+  // which goods a bay holds, by the rack's look and the level (0 the foot, 1, 2): s0 the general stores (card and wrapped pallets), s1 the parts store (totes, crates, drums)
+  const RACK_PLAN = [[['wrapped', 'wrapped', 'boxes'], ['boxes', 'totes', 'boxes', 'crates'], ['boxes', 'wrapped', 'crates']],
+                     [['drums', 'crates', 'wrapped'], ['totes', 'totes', 'boxes'], ['totes', 'pipes', 'crates', 'boxes']]];
+  function rackBody(N, style, endSign) {
+    const g = G(), seed = N * 100 + style * 1000, rnd = k => { const s = Math.sin((seed + 1) * 12.9898 + k * 78.233) * 43758.5453; return s - Math.floor(s); };
+    const ZP = 0.41, PW = 0.075, PD = 0.07, HP = 108, LV = [7, 41, 75], HMAX = [26, 26, 30], BH = 5.5;   // the posts' z (front +, back -) and size, their height (px), the decks' tops (px), how tall the goods on each may be, the beams' height
+    const nb = N === 3 ? 2 : 3, xs = []; for (let i = 0; i <= nb; i++) xs.push(-N / 2 + 0.075 + i * (N - 0.15) / nb);   // the upright frames
+    // THE UPRIGHT FRAMES: two posts (a foot plate, a cap, a column of punched holes up the front one), braced by a zig-zag
+    for (const x of xs) {
+      for (const z of [ZP, -ZP]) {
+        g.add(at(cbox(PW, px(HP), PD, 0.01, RK.post), x, px(HP / 2), z)); g.add(at(cbox(PW + 0.006, px(1.4), PD + 0.006, 0.004, RK.cap), x, px(HP + 0.7), z));
+        g.add(at(cbox(PW + 0.05, px(1.5), PD + 0.05, 0.006, mt.steelDk), x, px(0.75), z));
+      }
+      for (let y = 12; y < HP - 4; y += 4.5) g.add(at(cbox(0.024, px(1.6), 0.006, 0.001, mt.graphite), x, px(y), ZP + PD / 2 + 0.002));
+      const yb = [4, 28, 52, 76, 100];
+      for (const y of [yb[0], 63, yb[4]]) rod(g, V(x, px(y), -ZP), V(x, px(y), ZP), 0.012, RK.post);
+      for (let k = 0; k + 1 < yb.length; k++) rod(g, V(x, px(yb[k]), k % 2 ? ZP : -ZP), V(x, px(yb[k + 1]), k % 2 ? -ZP : ZP), 0.011, RK.post);
+    }
+    // THE BAYS: at each level a front and a back beam (connector plates at their ends), a mesh deck on them, a location label and a pick-to-light tag on the front beam; then the goods
+    const put = (m, x, z, ang, y) => { m.position.set(x, px(y), z); m.rotation.y = ang || 0; g.add(m); return m; };
+    let tagN = 0;
+    for (let i = 0; i < nb; i++) {
+      const x0 = xs[i] + PW / 2, x1 = xs[i + 1] - PW / 2, bw = x1 - x0, cx = (x0 + x1) / 2;
+      for (let lv = 0; lv < 3; lv++) {
+        const y = LV[lv];
+        for (const z of [ZP, -ZP]) g.add(at(cbox(bw, px(BH), 0.05, 0.008, RK.beam), cx, px(y - BH / 2), z));
+        for (const ex of [x0 + 0.016, x1 - 0.016]) g.add(at(cbox(0.032, px(BH + 2.4), 0.056, 0.004, RK.clip), ex, px(y - BH / 2 - 0.4), ZP));
+        g.add(at(cbox(bw - 0.02, px(1.1), 2 * ZP - 0.02, 0.004, RK.deck), cx, px(y - 0.55), 0));
+        for (let q = 0; q < 3; q++) g.add(at(cbox(0.03, px(1.8), 2 * ZP - 0.03, 0.004, RK.rib), x0 + bw * (q + 0.5) / 3, px(y - 2), 0));
+        if (lv > 0) {
+          g.add(at(cbox(0.13, px(3), 0.006, 0.002, RK.paper), x0 + 0.2, px(y - BH / 2), ZP + 0.028)); g.add(at(cbox(0.08, px(0.8), 0.004, 0.001, RK.print), x0 + 0.2, px(y - BH / 2 - 0.4), ZP + 0.031));
+          const led = [mt.cyan, mt.cyan, mt.amberGlow, mt.cyan, mt.greenGlow][(tagN++ + style * 2 + N) % 5], tx = x1 - 0.16;
+          g.add(at(cbox(0.1, px(4), 0.026, 0.005, mt.graphite), tx, px(y - BH / 2), ZP + 0.036)); g.add(at(cbox(0.026, px(1.8), 0.01, 0.002, led), tx + 0.028, px(y - BH / 2), ZP + 0.052)); g.add(at(cbox(0.04, px(1.4), 0.008, 0.001, mt.cyanDim), tx - 0.02, px(y - BH / 2), ZP + 0.051));
+        }
+        // the goods
+        const k = seed + i * 10 + lv, r = j => rnd(k * 17 + j), a = x0 + 0.02, b = x1 - 0.02, span = b - a, hmax = HMAX[lv], plan = RACK_PLAN[style][lv], kind = plan[(i * 2 + lv + N + style) % plan.length];
+        if (kind === 'wrapped') {
+          const n = Math.max(1, Math.round(span / 0.74)), w = Math.min(0.68, span / n - 0.06);
+          for (let j = 0; j < n; j++) { const x = a + (span / n) * (j + 0.5); if (n > 1 && r(j) < 0.2) { put(cardBox(0.38, 0.5, 12, k + j), x, 0.1, 0.25 * (r(j + 1) - 0.5), y); continue; } put(wrappedLoad(w, 0.72, hmax - 1 - r(j + 3) * 6, k + j), x, 0.01, (r(j + 5) - 0.5) * 0.04, y); }
+        } else if (kind === 'boxes') {
+          let x = a + 0.01, j = 0;
+          while (x < b - 0.2) {
+            const w = Math.min(b - 0.01 - x, 0.26 + r(j) * 0.26), d = 0.42 + r(j + 1) * 0.26, h = Math.min(hmax - 1, 10 + r(j + 2) * 15); if (w < 0.18) break;
+            if (r(j + 3) < 0.12) { x += w * 0.7; j += 9; continue; }   // a gap where a box was taken
+            const bx = x + w / 2, bz = 0.36 - d / 2 + (r(j + 4) - 0.5) * 0.04; put(cardBox(w - 0.02, d, h, k + j), bx, bz, (r(j + 5) - 0.5) * 0.12, y);
+            if (h < hmax - 9 && r(j + 6) < 0.6) put(cardBox((w - 0.02) * 0.72, d * 0.8, Math.min(hmax - h - 1, 6 + r(j + 7) * 8), k + j + 1), bx + (r(j + 8) - 0.5) * 0.06, bz - 0.02, (r(j + 2) - 0.5) * 0.3, y + h);
+            x += w + 0.01; j += 9;
+          }
+        } else if (kind === 'totes') {
+          const tw = 0.34 + r(0) * 0.08, n = Math.floor((span - 0.02) / (tw + 0.02)), m = TOTES[Math.floor(r(1) * TOTES.length)], th = 11.5, stack = hmax >= 2 * th + 1 ? 2 : 1, off = (span - n * (tw + 0.02)) / 2;
+          for (let j = 0; j < n; j++) for (let l = 0; l < stack; l++) { if ((l === 1 && r(j + 10) < 0.35) || r(j + 30) < 0.08) continue; put(tote(tw, 0.62, th, m), a + off + (tw + 0.02) * (j + 0.5), 0.05, 0, y + l * th); }
+        } else if (kind === 'crates') {
+          const n = span > 1.2 ? 2 : 1, cw = Math.min(0.56, (span - 0.12 * (n + 1)) / n);
+          for (let j = 0; j < n; j++) { const c = crate(STYLES['s' + Math.floor(r(j) * 4)], cw, 0.56, Math.min(hmax - 1, 22 + r(j + 3) * 4)); put(c.g, a + (span / n) * (j + 0.5) - 0.03, 0.06, (r(j + 5) - 0.5) * 0.1, y); }
+        } else if (kind === 'drums') {
+          const n = Math.floor((span - 0.02) / 0.44), off = (span - n * 0.44) / 2;
+          for (let j = 0; j < n; j++) { if (r(j) < 0.12) continue; const dr = barrel(BARRELS['s' + Math.floor(r(j + 7) * 4)]); dr.g.scale.setScalar(0.55); put(dr.g, a + off + 0.44 * (j + 0.5), 0.1, r(j + 3) * 6, y); }
+        } else if (kind === 'pipes') {
+          put(pipeBundle(span - 0.1, k), a + span / 2, 0.2, 0, y); put(pipeBundle(span - 0.16, k + 1), a + span / 2 + 0.03, -0.12, 0, y);
+        }
+      }
+    }
+    // THE END THE CAMERA SEES: a hazard-yellow guard round the foot of the front post, an aisle sign under the top brace, a load notice on a brace, a scanner in its cradle on the post
+    const xe = xs[endSign > 0 ? nb : 0], xo = xe + endSign * PW / 2, face = m => { m.rotation.y = endSign > 0 ? PI / 2 : -PI / 2; return m; };
+    g.add(at(cbox(PW + 0.05, px(16), 0.03, 0.006, RK.yel), xe, px(8), ZP + PD / 2 + 0.017)); g.add(at(cbox(0.03, px(16), PD + 0.05, 0.006, RK.yel), xo + endSign * 0.017, px(8), ZP));
+    for (const y of [5, 11]) { g.add(at(cbox(PW + 0.054, px(2.2), 0.034, 0.003, RK.blk), xe, px(y), ZP + PD / 2 + 0.017)); g.add(at(cbox(0.034, px(2.2), PD + 0.054, 0.003, RK.blk), xo + endSign * 0.017, px(y), ZP)); }
+    const aisle = 'ABCD'[(N + style) % 4] + '-' + String(N * 2 + style + 1).padStart(2, '0');
+    g.add(at(cbox(0.012, px(12), 0.5, 0.004, RK.post), xe + endSign * 0.012, px(95.5), -0.02));
+    g.add(at(face(decal(0.48, px(11), (c, cw, ch) => { c.fillStyle = '#4f9aa0'; c.fillRect(0, 0, cw, ch); c.strokeStyle = '#16303a'; c.lineWidth = 8; c.strokeRect(4, 4, cw - 8, ch - 8); text(c, aisle, cw / 2, ch / 2 + 2, ch * 0.62, '#f1f8fa', 'sans-serif'); })), xe + endSign * 0.0195, px(95.5), -0.02));
+    for (const z of [-0.18, 0.14]) g.add(at(cbox(0.02, px(3), 0.02, 0.004, RK.clip), xe + endSign * 0.008, px(101.8), z));
+    g.add(at(cbox(0.01, px(10), 0.26, 0.003, RK.paper), xe + endSign * 0.014, px(57.5), -0.12));
+    g.add(at(face(decal(0.25, px(9), (c, cw, ch) => { c.fillStyle = '#eef3f1'; c.fillRect(0, 0, cw, ch); c.strokeStyle = '#c9301f'; c.lineWidth = 6; c.strokeRect(3, 3, cw - 6, ch - 6); text(c, 'MAX LOAD', cw / 2, ch * 0.34, ch * 0.26, '#1b2430', 'sans-serif'); text(c, '800 kg / bay', cw / 2, ch * 0.7, ch * 0.24, '#c9301f', 'sans-serif'); })), xe + endSign * 0.0205, px(57.5), -0.12));
+    g.add(at(cbox(0.024, px(9), 0.05, 0.006, mt.graphite), xo + endSign * 0.012, px(44), ZP - 0.004));
+    g.add(at(cbox(0.02, px(6), 0.036, 0.005, S.std('#e0a526', 0.2, 0.55)), xo + endSign * 0.022, px(46), ZP - 0.004)); g.add(at(cbox(0.006, px(2.2), 0.026, 0.002, mt.cyan), xo + endSign * 0.033, px(47.5), ZP - 0.004));
+    return g;
+  }
+  function palletRack(W, L, style) {
+    if (L <= W) return { g: rackBody(W, style, 1) };
+    const g = G(), b = rackBody(L, style, -1); b.rotation.y = PI / 2; g.add(b); return { g };   // (x, z) -> (z, -x): the front +z to +x, the -x end to +z
+  }
+
   const variants = ['crate.s0', 'crate.s1', 'crate.s2', 'crate.s3', 'crate_stack.s0', 'crate_stack.s1', 'barrel.s0', 'barrel.s1', 'barrel.s2', 'barrel.s3', 'floodlight', 'barrier', 'barrier.1x2', 'case', 'case.s1'];
+  for (const d of ['1x3', '1x4', '1x5', '3x1', '4x1']) for (const s of [0, 1]) variants.push('pallet_rack.' + d + '.s' + s);
   PROPS.cargo = { variants, canvas: [700, 700], exposure: 0.95, build(name) {
     const [kind, style] = name.split('.');
+    if (kind === 'pallet_rack') { const p = name.split('.'), [W, L] = p[1].split('x').map(Number); return palletRack(W, L, +p[2].slice(1)); }
     if (kind === 'crate') { const c = crate(STYLES[style], 0.82, 0.82); return { g: c.g }; }
     if (kind === 'crate_stack') return stack(style === 's0' ? 0 : 1);
     if (kind === 'barrel') return barrel(BARRELS[style]);

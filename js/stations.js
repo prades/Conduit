@@ -8,7 +8,7 @@
 //   the console in Teleport Room 1   Technomancer   a tuned monitor lamp: it reaches further, and an overcharge lasts longer
 //   a test chamber in the lab        Mutator        a sequenced sample: a mutagen sample raises a follower two levels, not one
 //   the hallway's charging station   anyone         once its relay is online: refills the gun (and gives a Technomancer a cell)
-//   the relays (docs/TUTORIAL.md, phase 5) are stations too: see the electrical network at the end of this file
+//   the main power junction           anyone         the tutorial's one repair (the server room): the power module goes in, and every relay comes on (the electrical network, at the end of this file)
 // A station can be used by walking up and pressing E, by tapping the plate that appears, or by tapping the station (the player walks to it first). Another class's station shows its ring dimmed and refuses, saying who it is for.
 //   STATION_KINDS[kind] = { name, verb, classes, perk, once, cost, cooldown, use }
 
@@ -23,7 +23,7 @@ const STATION_KINDS = {
         use: () => ({ ok: true, msg: "LAMP TUNED — 25% FURTHER, OVERCHARGES LAST 50% LONGER" }) },
     sequencer: { name: "SEQUENCER", verb: "SEQUENCE A MUTAGEN SAMPLE", classes: ["mutator"], perk: "sequenced", once: true, cost: [["mutagen_sample", 1]],
         use: () => ({ ok: true, msg: "SAMPLES SEQUENCED \u2014 A SAMPLE NOW RAISES A FOLLOWER ONE LEVEL MORE" }) },
-    // the mech bay (the show room): the Technomancer builds the spider mech here from four legs and a core. A BUILD takes seven seconds at the pad (a progress bar; walk away and it stops, nothing is spent), and the mech is theirs for good.
+    // the mech bay (the warehouse, the show room until build 2026-11-07qq): the Technomancer builds the spider mech here from four legs and a core. A BUILD takes seven seconds at the pad (a progress bar; walk away and it stops, nothing is spent), and the mech is theirs for good.
     mech_bay: { name: "MECH BAY", verb: "BUILD THE SPIDER MECH", classes: ["technomancer"], perk: "mech", once: true, cost: [["mech_leg", 4], ["mech_core", 1]], build: 420,
         use: () => ({ ok: true, msg: "THE SPIDER MECH IS BUILT" }) },
     // the Mutator's LABORATORY (the Experiment Lab's fume hood: js/serum.js): COLLECT the serum it has made, or with none waiting CRAFT one for DNA. Its words and whether it can are the serum's (verbFn, canFn).
@@ -41,9 +41,17 @@ const STATION_KINDS = {
     // SIDE QUEST, the void walker on the Sewers' maintenance platform (js/sidequest.js): a talk, a choice, then his shop; a station made at runtime when he appears (sqPlace), not a prop of the map
     sidequest: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqVerb === "function" ? sqVerb() : "TALK", canFn: () => typeof sqCan === "function" ? sqCan() : { ok: false, why: "NOBODY HERE" },
         use: () => typeof sqUse === "function" ? sqUse() : { ok: false, why: "NOBODY HERE" } },
+    // SIDE QUEST IN THE TUTORIAL (js/sidequest.js, build 2026-11-07qq): under the catwalks in the arena, a talk of two lines, and then he flies up for the power module; a station made at runtime, as his Sewers' one
+    sidequest_tut: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqTutVerb === "function" ? sqTutVerb() : "TALK", canFn: () => typeof sqTutCan === "function" ? sqTutCan() : { ok: false, why: "NOBODY HERE" },
+        use: () => typeof sqTutUse === "function" ? sqTutUse() : { ok: false, why: "NOBODY HERE" } },
     // THE ANT NEST'S TEST CONSOLE (js/nestconsole.js; docs/NEST.md, step C): for any class, no cost: it opens its panel (the boss reset, the test squad, the damage meter)
     nest_console: { name: "NEST CONSOLE", classes: null, verbFn: () => "OPEN THE TEST CONSOLE", use: () => { if (typeof nestConsoleOpen === "function") nestConsoleOpen(); return { ok: true, msg: "", quiet: true }; } },
-    relay: { name: "POWER RELAY", classes: null, dynamic: true },
+    // THE MAIN POWER JUNCTION (the server room; build 2026-11-07qq, the owner: "there's no relay stations that need to be repaired. It's just one spot on the map that needs to be repaired, and you need to obtain a
+    // module to repair it"): a BUILD (stand at it, the progress bar; walk away and it stops, nothing spent) that takes the POWER MODULE when it is done (Side Quest brings it down from the catwalks: js/sidequest.js);
+    // then every relay in the facility comes on (facilityJunctionRepair). Anyone can, before any class.
+    junction: { name: "MAIN POWER JUNCTION", classes: null, build: 600, cost: [["power_module", 1]], buildMsg: "INSTALLING THE POWER MODULE… STAY AT THE JUNCTION", verbFn: () => "INSTALL THE POWER MODULE",
+        doneFn: () => junctionRepaired(), doneWhy: "POWER RESTORED", needWhy: "IT NEEDS A POWER MODULE: ONE IS UP ON THE CATWALKS OVER THE ARENA",
+        use: () => facilityJunctionRepair() },
     // A BROKEN TURRET (js/antraids.js): a station made on it when a raid wrecks it; the repair is a BUILD (stand by it, the progress bar; walk away and it stops), FREE (the owner, 2026-11-01: "Free, takes time", ten seconds)
     sentry_repair: { name: "TURRET", classes: null, cost: [], buildMsg: "REPAIRING THE TURRET… STAY BY IT", get build() { return Math.round((typeof SENTRY !== "undefined" ? SENTRY.repair : 600) * (typeof playerRepairShare === "function" ? playerRepairShare() : 1)); },   // (FORGEMASTER halves it: js/playercards.js)
         verbFn: () => "REPAIR THE TURRET", canFn: s => typeof sentryRepairCan === "function" ? sentryRepairCan(s) : { ok: false, why: "NOTHING TO REPAIR" },
@@ -70,16 +78,16 @@ function stationNearest() { let best = null, bd = STATION_RANGE; for (const s of
 // can the player use it now? { ok, why }
 function stationCan(s) {
     const k = STATION_KINDS[s.kind], now = typeof frame !== "undefined" ? frame : 0;
-    if (s.kind === "relay") return relayCan(s);
     if (k.classes && !playerClassKey) return { ok: false, why: "CLASSES COME AFTER THE TUTORIAL" };
-    if (k.needsRelay && !relayOnline(k.needsRelay)) return { ok: false, why: "NO POWER \u2014 REPAIR THE ARMORY RELAY" };
-    if (k.powered && !facilityFeedOn(s.prop)) return { ok: false, why: "NO POWER \u2014 REPAIR THE HALLWAY RELAY" };
+    if (typeof k.doneFn === "function" && k.doneFn()) return { ok: false, why: k.doneWhy || "DONE", done: true };   // (the junction once repaired)
+    if (k.needsRelay && !relayOnline(k.needsRelay)) return { ok: false, why: "NO POWER \u2014 REPAIR THE MAIN JUNCTION (THE SERVER ROOM)" };
+    if (k.powered && !facilityFeedOn(s.prop)) return { ok: false, why: "NO POWER \u2014 REPAIR THE MAIN JUNCTION (THE SERVER ROOM)" };
     if (k.powered && _fp.chargerReady > now) return { ok: false, why: "CHARGING \u2014 " + Math.ceil((_fp.chargerReady - now) / 60) + " S" };
     if (!classAllows(k.classes)) return { ok: false, why: "ONLY A " + k.classes.map(className).join(" / ") + " CAN USE THIS" };
     if (k.once && classHas(k.perk)) return { ok: false, why: "ALREADY DONE", done: true };
     if (k.build && _fp.channel && _fp.channel.station === s.id) return { ok: false, why: "BUILDING \u2014 " + Math.min(99, Math.floor((frame - _fp.channel.t0) / _fp.channel.frames * 100)) + "%" };
     if (k.cooldown && _fp.cctvReadyAt > now && s.kind === "cctv") return { ok: false, why: "CAMERAS RESETTING — " + Math.ceil((_fp.cctvReadyAt - now) / 60) + " S" };
-    for (const [id, n] of (k.cost || [])) if (!invHas(id, n)) return { ok: false, why: "NEEDS " + n + " " + itemDef(id).name };
+    for (const [id, n] of (k.cost || [])) if (!invHas(id, n)) return { ok: false, why: k.needWhy || "NEEDS " + n + " " + itemDef(id).name };
     if (typeof k.canFn === "function") { const r = k.canFn(s); if (!r || !r.ok) return r || { ok: false, why: "NOT NOW" }; }   // (a station whose readiness is its own: the serum hood)
     return { ok: true };
 }
@@ -87,7 +95,6 @@ function stationUse(s) {
     s = s || stationNearest(); if (!s) return { ok: false, why: "NOTHING TO USE HERE" };
     const k = STATION_KINDS[s.kind], can = stationCan(s); if (!can.ok) { invSay(can.why, false); return can; }
     if (stationDist(s) > STATION_RANGE + 0.6) { invSay("TOO FAR AWAY", false); return { ok: false, why: "TOO FAR AWAY" }; }
-    if (s.kind === "relay") return relayStart(s);
     if (k.build) return buildStart(s);
     if (k.panel) { if (typeof armoryOpenNow === "function") armoryOpenNow(); return { ok: true, msg: "", panel: true }; }
     for (const [id, n] of (k.cost || [])) invRemove(id, n);
@@ -127,7 +134,7 @@ function _stApproach(s) { return typeof facilityApproachTile === "function" ? fa
 // the ring on the floor round a station: its class's colour and pulsing for the class that can use it, a dim grey for everyone else
 function _fpDrawStation(it) {
     if (STATION_KINDS[it.kind].classes && !playerClassKey) return;   // (no ring: the tutorial has no classes)
-    const k = STATION_KINDS[it.kind], rel = it.kind === "relay" ? _fp.relays[it.id] : null, mine = playerClassKey && classAllows(k.classes), done = (k.once && (typeof classOwns === "function" ? classOwns(k.perk) : classHas(k.perk))) || !!(rel && rel.online), live = (mine || !k.classes) && !done, col = done ? (rel ? "#43e0a8" : "#5a6a8a") : !k.classes ? (rel ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#4a5675", f = _fpFrame(), pul = 0.6 + 0.4 * Math.sin(f * 0.07 + it.seed), b = it.bb, e = 0.12;
+    const k = STATION_KINDS[it.kind], jx = typeof k.doneFn === "function" && k.doneFn(), mine = playerClassKey && classAllows(k.classes), done = (k.once && (typeof classOwns === "function" ? classOwns(k.perk) : classHas(k.perk))) || jx, live = (mine || !k.classes) && !done, col = done ? (jx ? "#43e0a8" : "#5a6a8a") : !k.classes ? (it.kind === "junction" ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#4a5675", f = _fpFrame(), pul = 0.6 + 0.4 * Math.sin(f * 0.07 + it.seed), b = it.bb, e = 0.12;
     const pts = [_fpP(b[0] - e, b[1] - e, 0), _fpP(b[2] + e, b[1] - e, 0), _fpP(b[2] + e, b[3] + e, 0), _fpP(b[0] - e, b[3] + e, 0)];
     ctx.save(); ctx.lineJoin = "round"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
     ctx.globalAlpha = (live ? 0.35 : 0.2) * (live ? pul : 1); ctx.fillStyle = col; ctx.fill(); ctx.globalAlpha = live ? 0.55 + 0.4 * pul : 0.5; ctx.strokeStyle = col; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
@@ -138,9 +145,9 @@ function _fpDrawStation(it) {
 function _stPlate() { const W = canvas.width, H = canvas.height; return { x: Math.round(W / 2 - 190), y: Math.round(H / 2 + 74), w: 380, h: 56 }; }
 function facilityDrawStationPrompt() {
     const s = _fp && _fp.stationNear; if (!s || (typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen) || typeof uiButton !== "function") return;
-    const k = STATION_KINDS[s.kind], can = stationCan(s), r = _stPlate(), mine = playerClassKey && classAllows(k.classes), col = !k.classes ? (s.kind === "relay" ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#6d7fa6";
+    const k = STATION_KINDS[s.kind], can = stationCan(s), r = _stPlate(), mine = playerClassKey && classAllows(k.classes), col = !k.classes ? (s.kind === "junction" ? "#ffb347" : "#31e8ff") : mine ? classColour(k.classes[0]) : "#6d7fa6";
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    const nm = s.kind === "relay" ? _relayName(s) : k.name, verb = s.kind === "relay" ? relayVerb(s, can) : typeof k.verbFn === "function" ? k.verbFn(s) : k.verb;
+    const nm = k.name, verb = typeof k.verbFn === "function" ? k.verbFn(s) : k.verb;
     uiButton(r, can.ok ? verb : can.done ? nm + " \u2014 DONE" : nm, col, false, can.ok ? 16 : 15, can.ok ? nm + "   \u00b7   TAP OR PRESS E" : can.why, !can.ok);
     ctx.restore();
 }
@@ -163,66 +170,49 @@ try { if (typeof window !== "undefined" && window.addEventListener) window.addEv
 // ─────────────────────────────────────────────────────────
 //  THE ELECTRICAL NETWORK (docs/TUTORIAL.md, phase 5)
 // ─────────────────────────────────────────────────────────
-// F.relays (js/facilitymap.js) are relay boxes, every one broken at the start. A relay is a station: the player repairs it by standing at it (press E or tap), which runs a REPAIR for a few seconds with a progress bar over the box.
-// What a repair needs is a rule, CLASS_RULES.relay (js/classes.js), not an accident:
-//   a class with the `repair` skill (the Technomancer)   one power cell, a short repair, and it STARTS BY ITSELF when they stand at a broken relay with a cell and keep still (the rule's `auto`)
-//   anyone else                                         a RELAY KIT (a tool they find in the Crystal Chamber) and two power cells, a long repair: the kit is their way past the Technomancer's skill, by design
-// A repair that is left (the player walks off) stops; the cost is paid when it completes. When a relay comes online: the rooms it `powers` have power (the blackout lifts there: lights, door pools), what it `feeds`
-// (a sentry, the charging station) works, the relay box shows green, a ring of light spreads from it and the screen says so.
+// F.relays (js/facilitymap.js) are the network's NODES, small boxes on the walls (decor of kind relay_node: js/facilitydecor.js draws them), every one dead at the start. Since build 2026-11-07qq (the owner: "there's
+// no relay stations that need to be repaired. It's just one spot on the map that needs to be repaired"; "Make them smaller wall nodes") no relay is repaired: the MAIN POWER JUNCTION in the server room is (a station,
+// STATION_KINDS.junction: the power module goes in), and when it is every relay comes on at once (facilityJunctionRepair). When a relay is online: the rooms it `powers` have power (the blackout lifts there: lights,
+// door pools), what it `feeds` (a sentry, the charging station) works, its node's lamp shows green, and what waited for it (the server room's fuel cells) arrives. (Before, each relay was a box the player spliced
+// with a relay kit and two power cells, or a Technomancer with one: the relay kit is gone.)
 function _relayDef(id) { return _fp.F.relays.find(r => r.id === id) || null; }
-function _relayName(s) { const d = _relayDef(s.relay); return d ? d.name : "RELAY"; }
 function facilityRelaysStart(F) {
     _fp.relays = {}; _fp.channel = null; _fp.surge = null; _fp.chargerReady = 0;
-    for (const r of (F.relays || [])) {
-        const pr = F.solids.find(p => p.id === r.prop); if (!pr) continue; _fp.relays[r.id] = { id: r.id, online: false };
-        const s = { id: r.id, kind: "relay", relay: r.id, room: r.room, prop: r.prop, bb: pr.bb.slice(), x: (pr.bb[0] + pr.bb[2]) / 2, y: (pr.bb[1] + pr.bb[3]) / 2 };
-        _fp.stations.push(s); _fp.items.push({ type: "fp", fp: "station", id: r.id, kind: "relay", room: r.room, bb: s.bb, x: s.x, y: s.y, depth: s.bb[2] + s.bb[3] - 0.45, base: facilityRoomHeight(r.room, F) * FP_ELEV_PX, seed: _fpHash(Math.round(s.x * 3), Math.round(s.y * 7)) });
-    }
+    for (const r of (F.relays || [])) _fp.relays[r.id] = { id: r.id, online: false };
     for (const it of _fp.items) if (it.fp === "prop" && it.kind === "sentry") { it.cd = 0; it.aim = 0; }
     if (typeof sentriesStart === "function") sentriesStart();   // (every turret whole: js/antraids.js)
 }
 function relayOnline(id) { return !!(_fp && _fp.relays && _fp.relays[id] && _fp.relays[id].online); }
+// where a relay's node is (tiles): its wall decor's middle, a little into its room (SMOG ENGINEER's and CRYO TECH's reach is measured from it: js/playercards.js)
+function facilityRelayAt(id) {
+    const d = _relayDef(id), n = d && (_fp.F.decor || []).find(x => x.id === d.node); if (!n || !n.a || !n.b) return null;
+    const x = (n.a[0] + n.b[0]) / 2, y = (n.a[1] + n.b[1]) / 2, c = typeof _fpNearestCell === "function" ? _fpNearestCell(x, y) : null; return c ? { x: c[0], y: c[1] } : { x, y };
+}
 // is a prop that a relay feeds (a sentry, the charging station) working? it is when its relay is online, or once the blackout is over
 function facilityFeedOn(propId) {
     if (typeof facilityBlackout === "function" && !facilityBlackout()) return true;
     for (const r of (_fp.F.relays || [])) if (r.feeds.includes(propId)) return relayOnline(r.id);
     return false;
 }
-// what a repair would take for this player: { ok, mode, cost, frames } or { ok: false, why }
-function relayPlan() {
-    const R = CLASS_RULES.relay, cls = playerClass();   // (no class, as in the tutorial: the kit and two cells, like every class without the skill)
-    let plan;
-    if (cls && cls.skills.includes(R.skill)) plan = { mode: "skill", cost: [["power_cell", R.skillCells]], frames: R.skillFrames };
-    else if (invHas(R.kit)) plan = { mode: "kit", cost: [["power_cell", R.kitCells]], frames: R.kitFrames };
-    else return { ok: false, why: "NEEDS A RELAY KIT (OR A TECHNOMANCER)" };
-    if (typeof playerRepairShare === "function") plan.frames = Math.max(1, Math.round(plan.frames * playerRepairShare()));   // (FORGEMASTER: your repairs take half the time, js/playercards.js)
-    for (const [id, n] of plan.cost) if (!invHas(id, n)) return { ok: false, why: "NEEDS " + n + " " + itemDef(id).name + (n > 1 ? "S" : ""), plan };
-    plan.ok = true; return plan;
-}
-function relayCan(s) {
-    const r = _fp.relays[s.relay]; if (!r) return { ok: false, why: "NOT A RELAY" };
-    if (r.online) return { ok: false, why: "RELAY ONLINE", done: true };
-    if (_fp.channel && _fp.channel.relay === s.relay) return { ok: false, why: "REPAIRING — " + Math.min(99, Math.floor((frame - _fp.channel.t0) / _fp.channel.frames * 100)) + "%" };
-    const p = relayPlan(); return p.ok ? { ok: true, plan: p } : p;
-}
-function relayVerb(s, can) { const p = can.plan || relayPlan(); if (!p.cost) return "REPAIR THE RELAY"; return p.mode === "skill" ? "REPAIR THE RELAY — " + p.cost[0][1] + " POWER CELL" : "SPLICE THE RELAY — " + p.cost[0][1] + " POWER CELLS"; }
-function relayStart(s) {
-    const can = relayCan(s); if (!can.ok) { invSay(can.why, false); return can; }
-    _fp.channel = { relay: s.relay, t0: frame, frames: can.plan.frames, cost: can.plan.cost, mode: can.plan.mode, x: s.x, y: s.y, bb: s.bb };
-    invSay(can.plan.mode === "skill" ? "REPAIRING THE RELAY…" : "SPLICING THE RELAY WITH THE KIT… STAY AT IT", true);
-    return { ok: true, msg: "REPAIR STARTED", channel: true };
-}
-function relayComplete(c) {
-    const R = _fp.relays[c.relay], d = _relayDef(c.relay); _fp.channel = null;
-    for (const [id, n] of c.cost) if (!invHas(id, n)) { invSay("YOU NO LONGER HAVE THE PARTS", false); return false; }
-    for (const [id, n] of c.cost) invRemove(id, n);
+// a relay comes on: its rooms have power and what waited for it arrives (quiet: a saved game putting things back, no light and no message)
+function relaySetOnline(id, quiet) {
+    const R = _fp.relays && _fp.relays[id], d = _relayDef(id); if (!R || !d || R.online) return false;
     R.online = true; for (const room of d.powers) facilityPower(room, true);
-    _fp.surge = { x: c.x, y: c.y, t0: frame, rooms: d.powers.slice() };
-    if (typeof facilityNeedsEnter === "function") facilityNeedsEnter(c.relay);   // what waited for this relay arrives (the computer lab's fuel cells)
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 140, text: "◈ POWER RESTORED — " + d.name, color: "#9dffb6", life: 260, vy: -0.05, size: 16 });
+    if (typeof facilityNeedsEnter === "function") facilityNeedsEnter(id, quiet);   // (the server room's fuel cells)
     return true;
 }
-// each frame: a repair runs (and stops if the player leaves), a Technomancer's repair starts by itself, the sentries fire
+// THE MAIN POWER JUNCTION: is it repaired? (every relay online: the two are one fact, so a save's relays say it too)
+function junctionRepaired() { const R = _fp && _fp.relays; if (!R) return false; const ids = Object.keys(R); return ids.length > 0 && ids.every(id => R[id].online); }
+// it is repaired (the station's build is done, or an old save is brought up to date): every relay comes on, a ring of light spreads from it, and the screen says so
+function facilityJunctionRepair(quiet) {
+    let n = 0; for (const id of Object.keys(_fp.relays || {})) if (relaySetOnline(id, quiet)) n++;
+    if (!quiet) {
+        const st = (_fp.stations || []).find(s => s.kind === "junction"); if (st) _fp.surge = { x: st.x, y: st.y, t0: frame, rooms: [] };
+        if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 140, text: "◈ POWER RESTORED — EVERY RELAY IS ONLINE", color: "#9dffb6", life: 260, vy: -0.05, size: 16 });
+    }
+    return { ok: true, msg: "THE JUNCTION IS REPAIRED — THE FACILITY HAS POWER", relays: n };
+}
+// each frame: a build runs (and stops if the player leaves), the sentries fire
 function facilityRelayTick() {
     if (!_fp || !_fp.relays) return;
     const c = _fp.channel;
@@ -230,16 +220,14 @@ function facilityRelayTick() {
         const near = Math.hypot(Math.max(c.bb[0] - player.visualX, 0, player.visualX - c.bb[2]), Math.max(c.bb[1] - player.visualY, 0, player.visualY - c.bb[3]));
         // A HIT DOES NOT CANCEL A BUILD (the archive, 2026-10-31: "A predator hitting the player does not automatically interrupt or cancel purifier installation"): a bite's step back is not taken while a channel runs (js/helpers.js
         // hurtPlayer), so only walking away ends one
-        if (near > STATION_RANGE + 0.6) { _fp.channel = null; invSay(c.station ? "BUILD INTERRUPTED" : "REPAIR INTERRUPTED", false); }
+        if (near > STATION_RANGE + 0.6) { _fp.channel = null; invSay("BUILD INTERRUPTED", false); }
         else {
             // a build a boss contests (the purifier mount: js/bosses.js bossInstallBlocked through the kind's blockFn) HOLDS while it is blocked: its start is pushed on a frame for every blocked frame, so the progress
             // made before stays and goes on when the block lifts; the plate says why every two seconds
             const k = c.kind ? STATION_KINDS[c.kind] : null, why = k && typeof k.blockFn === "function" ? k.blockFn() : null;
             if (why) { c.t0++; c.held = (c.held || 0) + 1; if (frame - (c.saidAt || -1e9) >= 120) { c.saidAt = frame; invSay(why, false); } }
-            else if (frame - c.t0 >= c.frames) { if (c.station) buildComplete(c); else relayComplete(c); }
+            else if (frame - c.t0 >= c.frames) buildComplete(c);
         }
-    } else if (playerClassKey && CLASS_RULES.relay.auto.includes(playerClassKey) && (!player.fpPath || !player.fpPath.length)) {
-        const s = _fp.stationNear; if (s && s.kind === "relay" && relayCan(s).ok) relayStart(s);
     }
     facilitySentryTick();
 }
@@ -261,12 +249,12 @@ function facilitySentryTick() {
         if (typeof spawnFollowerProjectile === "function") { const src = { x: it.x, y: it.y, element: "electric" }; spawnFollowerProjectile(src, best, "#7ff2ff", SENTRY_DAMAGE, 5, typeof playerSentryHit === "function" ? playerSentryHit(src) : null, DMG_HIT_GUN); }   // (a turret's shot: Projectile, js/damage.js; FORGEMASTER's rounds burn: js/playercards.js)
     }
 }
-// over the scene: the progress bar of a repair, the ring of light from a relay that has just come online
+// over the scene: the progress bar of a build, the ring of light from the junction (or a station's build) just done
 function facilityDrawRelays() {
     if (!_fp || !_fp.relays) return;
     const c = _fp.channel, W = canvas.width, H = canvas.height;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    if (c) { const p = _stScreen({ x: c.x, y: c.y }), k = Math.min(1, (frame - c.t0) / c.frames), w = 90, x = p.x - w / 2, y = p.y - 66; ctx.fillStyle = "rgba(5,7,15,0.85)"; ctx.fillRect(x - 3, y - 3, w + 6, 14); ctx.fillStyle = c.station ? "#ffe733" : c.mode === "skill" ? "#31e8ff" : "#ffb347"; ctx.fillRect(x, y, w * k, 8); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.strokeRect(x - 3, y - 3, w + 6, 14); }
+    if (c) { const p = _stScreen({ x: c.x, y: c.y }), k = Math.min(1, (frame - c.t0) / c.frames), w = 90, x = p.x - w / 2, y = p.y - 66; ctx.fillStyle = "rgba(5,7,15,0.85)"; ctx.fillRect(x - 3, y - 3, w + 6, 14); ctx.fillStyle = c.kind === "junction" ? "#ffb347" : "#ffe733"; ctx.fillRect(x, y, w * k, 8); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.strokeRect(x - 3, y - 3, w + 6, 14); }
     const g = _fp.surge;
     if (g) {
         const t = (frame - g.t0) / 90;

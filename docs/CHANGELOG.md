@@ -4,6 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **qq · The Server Room, the Warehouse, one repair, Side Quest and the catwalks' ledge.** Owner's requests (2026-11-07): the computer lab becomes "a dark server room", the show room "a little warehouse"; "there's no relay stations that need to be repaired. It's just one spot on the map ... you need to obtain a module ... the help of a NPC like side quest ... the item could be in the catwalks, and side quest's ability is to fly"; then "a ledge that goes down that the player can only move to jump off of", Side Quest using it "to show the player how it works", and the launcher's way back removed. Implemented and tested on the branch and seen in screenshots; not playtested.
+  - **Server Room** (the Front Lobby): server racks with blinking lights, a console, cable runs; dim with the power on. The **MAIN POWER JUNCTION** in its north-east corner. Its doors, the fire brawler egg, its case and the fuel cells stay.
+  - **Warehouse** (the Show Room): pallet racks (new cargo sprites), crates, barrels, a cart, lockers; solid walls but for its pane onto the hallway. The ice mage egg, its case and the mech bay stay.
+  - **One repair:** the junction takes the POWER MODULE (10 s, anyone, stay at it) and turns all six relays on: the blackout ends, the fuel cells arrive. Relays are small wall **nodes** (red and blinking off, green on). The relay kit is gone.
+  - **The tutorial** has nine steps: FIND SUPPLIES, FIND THE BROKEN JUNCTION, GET THE POWER MODULE, REPAIR THE JUNCTION, then recruit, post, gun, assault, evolve. The Technomancer's stage loses its relay step.
+  - **Side Quest** waits by the catwalks, calls you over, talks, flies up for the module, walks to the catwalks' **ledge**, says what it is, steps off it, walks to you and hands it over, then flies back to the Sewers.
+  - **The ledge:** the one way down from the catwalks; walking onto it jumps you down, one way. Followers thrown up by the launcher come down by it. The launcher keeps its way up; its broken section is gone.
+  - Old saves: mapped by step; a save past the relay step counts the junction as repaired.
+  - Agent's choices (provisional): docs/OPEN-QUESTIONS.md 2-qq.
+  - Tests updated: facility, facilityplay, techabilities (a new ledge check), classstage, classswitch, dialogue, cover, playercards, infodex, bible. Run and passing: those, plus sidequest, sewers, sewerquest, fluxlab, fluxmove, followerspots, globals, boot, loadorder, rooms, technomancer, nest, antraids, population, weapon, potion, index, followerprog.
+
 - **pp · The pop-outs show only the cards that fit, in short text.** Owner's request (2026-11-07): "Just make it to where the pop-outs don't display cards that aren't available to the follower, and use shortened text." Implemented and tested on the branch and seen in screenshots; not playtested.
   - **The roster's card picker:**
     - Only the cards a slot can take are shown, plus EMPTY and the worn card. Cards for another class, element or species, a Player card on a follower, and the card on the other slot are not in the row. The same holds for the player's own slots.

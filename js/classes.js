@@ -12,7 +12,7 @@ const CLASSES = {
         blurb: ["Finds weapons, ammunition and tactical equipment.", "Fights from the Security Room and the Armory.", "Cannot use the Technomancer's tech or the Mutator's samples."],
         rooms: ["armory", "security_room"], startKit: [["flare", 1]], skills: ["tactical"] },
     technomancer: { id: "technomancer", name: "TECHNOMANCER", colour: "#31e8ff", tagline: "Electrical infrastructure and technology.",
-        blurb: ["Punches with an arc gauntlet and throws electric arcs, charged from the powered rooms.", "Repairs relays and restores the facility's systems.", "Cannot use the Gunslinger's gear or the Mutator's samples."],
+        blurb: ["Punches with an arc gauntlet and throws electric arcs, charged from the powered rooms.", "Draws on the facility's power: each relay online makes the arc stronger.", "Cannot use the Gunslinger's gear or the Mutator's samples."],
         rooms: ["experiment_lab", "teleport_room_1", "lab_passage"], startKit: [["power_cell", 1]], skills: ["repair", "tech"], weapon: "gauntlet" },
     mutator: { id: "mutator", name: "MUTATOR", colour: "#c06bff", tagline: "Biological samples, DNA and creature evolution.",
         blurb: ["Fights up close with a tentacle lash, beside one clone it grows from DNA.", "Works with samples, DNA and experimentation.", "Cannot use the Gunslinger's gear or the Technomancer's tech."],
@@ -25,7 +25,7 @@ const CLASS_ORDER = ["gunslinger", "technomancer", "mutator"];
 // clone: who grows clones at the Clone Bay (js/clone.js). ASKED (the brief): the Mutator "uses DNA to create clones" and "normally has only one active primary clone". A class with the `skill` may clone, `max` at
 // once, and with `primary` its clone is a PRIMARY clone: it does not come back by itself, and when it falls its body stays where it fell (js/mutator.js). With no `skill` every class may clone, up to MAX_CLONES,
 // and the clones come back at the Crystal (the rule before the Mutator had the clones to itself).
-const CLASS_RULES = { carryOthers: true, useOthers: false, relay: { skill: "repair", skillCells: 1, skillFrames: 100, auto: ["technomancer"], kit: "relay_kit", kitCells: 2, kitFrames: 300 },
+const CLASS_RULES = { carryOthers: true, useOthers: false,   // (the relay rule, a Technomancer's repair or anyone's relay kit, went with the relay repairs: build 2026-11-07qq, js/stations.js)
     clone: { skill: "bio", max: 1, primary: true } };
 
 // PERKS: what a class earns at its stations (js/stations.js). The game asks classStat(name, base) for a number, as docs/PLAYER-CLASSES.md plans: each owned perk may multiply (mul) or add to it.
@@ -33,7 +33,7 @@ const CLASS_RULES = { carryOthers: true, useOthers: false, relay: { skill: "repa
 const CLASS_PERKS = {
     machinegun: { id: "machinegun", cls: "gunslinger", name: "MACHINE GUN", desc: "A big machine gun in your tentacles: it fires four times as fast (each round hits a little softer). It is a weapon you can put away and take out again: the Armory's terminal equips it (js/weapons.js).", stat: {} },
     cctv:      { id: "cctv", cls: "gunslinger", name: "CCTV SWEEPS", desc: "The Security Room's cameras mark every enemy in the facility for 25 seconds.", stat: {} },
-    mech:      { id: "mech", cls: "technomancer", name: "SPIDER MECH", desc: "A four-legged spider mech you built in the show room: you ride it, 40% faster, and its headlamps light 30% further.", stat: { playerSpeed: { mul: 1.4 }, lampReach: { mul: 1.3 } } },
+    mech:      { id: "mech", cls: "technomancer", name: "SPIDER MECH", desc: "A four-legged spider mech you built in the warehouse: you ride it, 40% faster, and its headlamps light 30% further.", stat: { playerSpeed: { mul: 1.4 }, lampReach: { mul: 1.3 } } },
     tuned:     { id: "tuned", cls: "technomancer", name: "TUNED LAMP", desc: "Your monitor lamp reaches 25% further and an overcharge lasts 50% longer.", stat: { lampReach: { mul: 1.25 }, boostFrames: { mul: 1.5 } } },
     labcoat:   { id: "labcoat", cls: "mutator", name: "LAB COAT AND GOGGLES", desc: "You put them on in the experiment lab and keep them for good: a mutagen sample raises a follower two levels, not one.", stat: { mutagenLevels: { add: 1 } } },
     sequenced: { id: "sequenced", cls: "mutator", name: "SEQUENCED SAMPLES", desc: "A sequenced sample raises a follower one level more again.", stat: { mutagenLevels: { add: 1 } } },

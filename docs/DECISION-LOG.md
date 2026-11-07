@@ -2217,3 +2217,23 @@ Implemented and tested (cards, squadfly, crystalline, packs, playercards and car
 ### Status
 Implemented and tested (cards, squadfly, playercards, packs, crystalline and nearby suites); seen in screenshots; not playtested.
 
+## DECISION: The Server Room, the Warehouse, one repair at the junction, Side Quest and the catwalks' ledge
+- Date and build: 2026-11-07, build `2026-11-07qq`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "make the computer lab ... a dark server room, and ... the showroom ... a little warehouse ... include all the elements that would be in those two rooms that are pertinent to the [tutorial] ... there's no relay stations that need to be repaired. It's just one spot on the map that needs to be repaired, and you need to obtain a module to repair it somewhere on the map. And you have to get the help of a NPC like side quest to retrieve the item ... in the catwalks, and side quest's ability is to fly." Then, with an annotated screenshot: "a ledge that goes down that the player can only move to jump off of to get down ... side quest[] utilize that walk as he gets down after retrieving the item to show the player how it works, and remove the back retrieval launcher spot".
+- Answers: the repair spot is the **server room junction**; the relays become **smaller wall nodes**; the helper is **Side Quest himself**; he waits **under the catwalks**; of the launcher, **only its way back** goes.
+
+### Decision
+- The Front Lobby is a dark **Server Room**; the Show Room is a **Warehouse**. Each keeps its doors, egg, supply cases, fuel cells (Server Room) and mech bay (Warehouse).
+- **One repair**: the MAIN POWER JUNCTION in the Server Room needs the POWER MODULE; installing it turns all six relays on. Relays are wall nodes; nothing is repaired at them; the relay kit is gone.
+- The tutorial's relay step is three steps: FIND THE BROKEN JUNCTION, GET THE POWER MODULE, REPAIR THE JUNCTION (nine in all). The Technomancer's stage loses RESTORE ANOTHER RELAY.
+- **Side Quest** waits by the catwalks, flies up for the module, comes down by the catwalks' **ledge** to show it, hands the module over, and goes back to the Sewers (shop and lines as before).
+- **The ledge** is the one way down from the catwalks for anyone up there. The Arena Catwalk launcher keeps throwing followers up; its broken section is gone.
+- Old saves: mapped by step id; a save past the relay step counts the junction as repaired.
+
+### Chosen by the agent (provisional)
+- The Server Room's dimness (0.42), the rack LEDs, both rooms' layouts, the nodes' places.
+- Side Quest's lines, timings and walk speed; the ledge's place and its landing four tiles out (so the camera sees the drop); the ledge's look.
+
+### Status
+Implemented and tested (the nearby suites and a browser run of the whole trip); not playtested.
+

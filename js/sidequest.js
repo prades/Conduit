@@ -90,6 +90,7 @@ function sqPlace(announce) {
 }
 // each frame (js/facilitytutorial.js facilityTutorialTick): he appears when he may; he is put back if the stations were rebuilt; he calls you over the first time you come near
 function sqTick() {
+    sqTutTick();   // (the tutorial: he waits under the catwalks and flies up for the power module, below)
     const S = sqState(); if (!S) return;
     if (!S.appearedAt) { if (sqUnlocked()) sqPlace(true); return; }
     if (!_sqStation()) sqPlace(false);
@@ -175,7 +176,7 @@ function sqCardBuy(id) {
     return { ok: true, id, price: SIDEQUEST.cardPrice, msg };
 }
 // a tap on his line in the dialogue box (js/input.js, before the stations): one of his choice buttons, or NEXT on the words; true when it was his
-function sqTap(ex, ey) { const L = typeof dialogueCurrent === "function" ? dialogueCurrent() : null; return !!(L && L.group === "sq" && typeof dialogueTap === "function" && dialogueTap(ex, ey)); }
+function sqTap(ex, ey) { const L = typeof dialogueCurrent === "function" ? dialogueCurrent() : null; return !!(L && (L.group === "sq" || L.group === "sqt") && typeof dialogueTap === "function" && dialogueTap(ex, ey)); }
 // ── drawing ──
 // HIS LOOK, the void walker (the owner, 2026-11-02: "he's a recycled asset from before ... he should be the void walker character ... that used to be the flux worker"; confirmed from a picture of the sheet): the old
 // flux worker's form, a dark saucer with violet lights on four jointed legs, from its sheet img/evo/hauler.png (the HOVER HAULER's; its numbers are img/evo/hauler.json's: 8 facings × 16 frames of 144 px, 8 idle then
@@ -197,16 +198,19 @@ function _sqBlit(img, col, row, gx, gy, s) { const C = SQ_LOOK.cell; ctx.drawIma
 // him, in the world (js/facilityplay.js drawFacilityItem): his shadow on the floor, the void walker over it turned toward you, a soft glow in his colour at his core, his plate over him
 function sqDraw(it) {
     if (typeof ctx === "undefined" || typeof _fpP !== "function") return;
-    const f = _sqFrame(), g = _fpP(it.x, it.y, 0), col = SIDEQUEST.col, s = typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144, img = sqSheet();
-    ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(g[0], g[1], 22, 9, 0, 0, Math.PI * 2); ctx.fill();   // the shadow on the floor (an evolved follower's)
+    const f = _sqFrame(), lift = it.lift || 0, g = _fpP(it.x, it.y, lift), col = SIDEQUEST.col, s = typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144, img = sqSheet();
+    const ground = lift && typeof facilityHeightAt === "function" && typeof FP_ELEV_PX === "number" ? facilityHeightAt(it.x, it.y, _fp.F) * FP_ELEV_PX - (it.base || 0) : 0, sh = _fpP(it.x, it.y, ground), far = Math.max(0, lift - ground);   // (in the air: his shadow on whatever is under him, smaller the higher he is)
+    ctx.save(); if (it.alpha !== undefined) ctx.globalAlpha *= Math.max(0, it.alpha);
+    const sk = Math.max(0.35, 1 - far / 260); ctx.fillStyle = "rgba(0,0,0," + (0.4 * sk).toFixed(3) + ")"; ctx.beginPath(); ctx.ellipse(sh[0], sh[1], 22 * sk, 9 * sk, 0, 0, Math.PI * 2); ctx.fill();   // the shadow (an evolved follower's)
+    if (it.flying) { const b = 0.5 + 0.5 * Math.sin(f * 0.3); if (typeof _fpGlow === "function") _fpGlow(g[0], g[1] - 4, 20 + 4 * b, col, 0.35); }   // (his thrust while he flies; walking on the catwalks he has none)
+    if (it.carry && typeof invDrawIcon === "function") invDrawIcon("power_module", g[0], g[1] + 4, 24, f);   // the module he carries, under him
     if (img) {
         const P = typeof player !== "undefined" && player ? player : null;
-        _sqBlit(img, _sqIdleCol(f), _sqRow(P ? P.x - it.x : 0, P ? P.y - it.y : 0), g[0], g[1], s);
+        const fc = it.face; _sqBlit(img, _sqIdleCol(f), _sqRow(fc ? fc[0] : P ? P.x - it.x : 0, fc ? fc[1] : P ? P.y - it.y : 0), g[0], g[1], s);   // (toward you; walking, the way he goes)
         if (typeof _fpGlow === "function") _fpGlow(g[0], g[1] + (SQ_LOOK.core[1] - SQ_LOOK.anchor[1]) * s, 26, col, 0.22);
     }
     ctx.restore();
-    if (typeof drawPlate === "function") drawPlate(SIDEQUEST.name, col, g[0], g[1] - SQ_LOOK.plate);
+    if (!lift && typeof drawPlate === "function") drawPlate(SIDEQUEST.name, col, g[0], g[1] - SQ_LOOK.plate);
 }
 // his picture in the dialogue box (js/dialogue.js _dlgPortrait, the square s wide centred on (cx, cy)): the same void walker facing you, as wide as SQ_LOOK.portrait of the square and centred in it, over his shadow, with his glow
 function sqPortrait(cx, cy, s, f) {
@@ -220,6 +224,7 @@ function sqPortrait(cx, cy, s, f) {
 // picture: a tap on it is NEXT while the talk is going (the station's use), the two choice buttons are in the box when it is time to choose, and away from him his line goes. Nothing is drawn here: the box draws itself.
 // After a quest his cards on sale are buttons in his line (each card's name, its price and KEPT FOR GOOD under it); a card bought leaves the row, and the line is said again with what is left.
 function sqDrawOverlay() {
+    sqTutOverlay();   // (the tutorial's talk under the catwalks, below)
     const S = sqState(); if (!S || !S.appearedAt || typeof dialogueSay !== "function") return;
     if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen)) return;
     const st = _sqStation(), near = _sqNear(), text = near ? sqSpeech() : null;
@@ -238,4 +243,144 @@ function sqApply(d) {
     S.promisedAt = Number.isFinite(d.pAt) ? d.pAt : 0; S.calledAt = Number.isFinite(d.called) ? d.called : 0; S.metAt = Number.isFinite(d.met) ? d.met : 0; S.replyUntil = 0;
     if (S.appearedAt) sqPlace(false);
     return true;
+}
+
+// ── THE TUTORIAL: SIDE QUEST FLIES UP FOR THE POWER MODULE ──
+// (build 2026-11-07qq; the owner: "you have to get the help of a NPC like side quest to retrieve the item, and I'm thinking the item could be in the catwalks, and side quest's ability is to fly"; where you meet him:
+// "Under the catwalks"). While the tutorial runs and its POWER MODULE is still up on the catwalks (the case js/facilitymap.js pk_power_module, which you cannot take: `fetch`), Side Quest waits on the arena floor below
+// it, a station on him as in the Sewers (STATION_KINDS.sidequest_tut). The first time you come near he calls you over; his talk is two lines (a tap on each: NEXT), and then he FLIES: up to the catwalks, along to the
+// module, and takes it. Then he comes down THE WAY YOU WOULD (the owner, 2026-11-07: "I want side quest to utilize that walk as he gets down after retrieving the item to show the player how it works"): he lands on the
+// catwalks, walks to their LEDGE (js/facilitymap.js `ledges`), says what it is, steps off it, and walks over to you on the floor; the module is in your pack. Then he flies off, back to the Sewers' platform, where he is met
+// later as before (sqUnlocked; his lines there as they were: the owner chose him "with his shop and lines as today"). His flight is not saved: a game saved while he is up there has him waiting below again, the module
+// still up there. The words and the timings are the agent's (provisional).
+const SQ_TUT = {
+    pickup: "pk_power_module", room: "arena", callNear: 7,
+    spots: [[0, -1], [-1, -1], [-1, 0], [0, 0], [-1, -2]],   // where he waits: the first of these offsets (tiles) from the ledge's landing that is arena floor, where the camera sees him (the floor within about three tiles of the
+                                                             // catwalks' edge is hidden behind the raised deck); with no ledge, the same offsets from three tiles west of the module's case
+    over: 11,   // drawn this much later than his place says (depth): from where the camera looks, the raised catwalks would cover anyone standing below them, and he must be seen
+    t: { up: 45, over: 60, grab: 30, jump: 30, down: 70, give: 16, away: 80 },   // frames for each part of the flight (`down`: straight down to you, only if the catwalks had no ledge); the walks take as long as they are long
+    walk: 0.06,   // tiles a frame he walks: along the catwalks to the ledge, and over the floor to you
+    giveNear: 10,   // tiles: you farther off than this when he lands, and he hands it over from where he is (he does not chase you round the facility)
+    rise: 30,   // px he flies over the catwalks' deck
+    lines: {
+        call: "LOOKING FOR THAT? THE GLOWING THING UP ON THE CATWALKS. YOU CAN'T CLIMB UP THERE.",
+        talk: ["I'M SIDE QUEST. I DON'T WORK FOR THIS PLACE ANY MORE, BUT I CAN FLY.", "STAY THERE. I'LL BRING IT DOWN."],
+        ledge: "THIS LEDGE IS THE ONLY WAY DOWN FROM THE CATWALKS. YOU JUST WALK OFF IT.",
+        give: "ONE POWER MODULE. YOUR JUNCTION IS IN THE SERVER ROOM. I'M GOING BACK DOWN BELOW: FIND ME THERE SOMETIME.",
+    },
+};
+function _sqtState() { if (typeof _fp === "undefined" || !_fp) return null; if (!_fp.sqtut) _fp.sqtut = { phase: "none", talk: 0, t0: 0, called: false }; return _fp.sqtut; }
+function _sqtCase() { return typeof _fp !== "undefined" && _fp && _fp.items ? _fp.items.find(i => i.fp === "pickup" && i.id === SQ_TUT.pickup) || null : null; }
+function _sqtItem() { return typeof _fp !== "undefined" && _fp && _fp.items ? _fp.items.find(i => i.id === "sidequest_tut") || null : null; }
+function _sqtStation() { return typeof _fp !== "undefined" && _fp && _fp.stations ? _fp.stations.find(s => s.id === "st_sidequest_tut") || null : null; }
+// is he wanted: the tutorial not over, the module's case still up there, and the module neither in your pack nor in the junction
+function sqTutWanted() {
+    const S = typeof _fp !== "undefined" && _fp && _fp.tut && _fp.tut.script, c = _sqtCase();
+    if (!S || S.doneAt || S.step >= (typeof TUT_STEPS !== "undefined" ? TUT_STEPS.length : 0) || !c || c.taken) return false;
+    return !(typeof invHas === "function" && invHas("power_module")) && !(typeof junctionRepaired === "function" && junctionRepaired());
+}
+// where he waits: arena floor below the module
+function sqTutSpot() {
+    const c = _sqtCase(); if (!c || typeof _fpNearestCell !== "function" || typeof facilityRoomAt !== "function") return null;
+    const L = _sqtLedge(), o = L ? L.to : [c.x - 3, c.y + 0.5];
+    for (const d of SQ_TUT.spots) { const p = _fpNearestCell(o[0] + d[0], o[1] + d[1]); if (p && (facilityRoomAt(p[0], p[1], _fp.F) || {}).id === SQ_TUT.room) return p; }
+    return null;
+}
+function _sqtRemove() {
+    _fp.items = _fp.items.filter(i => !(i.id === "sidequest_tut" || (i.fp === "station" && i.id === "st_sidequest_tut"))); _fp.stations = _fp.stations.filter(s => s.id !== "st_sidequest_tut");
+    if (typeof dialogueDismiss === "function") { dialogueDismiss("sqt"); dialogueDismiss("sqtc"); }
+}
+function _sqtPlace() {
+    const T = _sqtState(), at = sqTutSpot(); if (!T || !at || !_fp.items || !_fp.stations) return false;
+    _sqtRemove();
+    const x = at[0], y = at[1], base = typeof facilityRoomHeight === "function" ? facilityRoomHeight(SQ_TUT.room, _fp.F) * FP_ELEV_PX : 0, seed = typeof _fpHash === "function" ? _fpHash(Math.round(x * 3), Math.round(y * 7)) : 1;
+    const bb = [x - 0.45, y - 0.45, x + 0.45, y + 0.45], st = { id: "st_sidequest_tut", kind: "sidequest_tut", room: SQ_TUT.room, prop: null, bb, x, y };
+    _fp.stations.push(st);
+    _fp.items.push({ type: "fp", fp: "station", id: st.id, kind: st.kind, room: SQ_TUT.room, bb: bb.slice(), x, y, depth: x + y + 0.01, base, seed });
+    _fp.items.push({ type: "fp", fp: "sidequest", id: "sidequest_tut", tut: true, room: SQ_TUT.room, x, y, depth: x + y + SQ_TUT.over, base, seed });
+    T.phase = "wait"; T.talk = 0; return true;
+}
+// each frame (sqTick): he is put under the catwalks while he is wanted and taken away when he is not; he calls you over once; his flight runs
+function sqTutTick() {
+    const T = _sqtState(); if (!T) return;
+    const c = _sqtCase();
+    if (c && !c.taken && typeof junctionRepaired === "function" && junctionRepaired()) c.taken = true;   // (the junction repaired already, an old save brought up to date: the spare is not wanted)
+    if (T.phase === "fly") return _sqtFly(T);
+    if (T.phase === "away") return _sqtAway(T);
+    const want = sqTutWanted();
+    if (want && T.phase !== "wait") _sqtPlace();
+    else if (!want && T.phase === "wait") { _sqtRemove(); T.phase = "none"; }
+    if (T.phase === "wait" && !_sqtStation()) _sqtPlace();   // (the stations were rebuilt: put him back)
+    if (T.phase === "wait" && !T.called && typeof player !== "undefined") { const it = _sqtItem(); if (it && Math.hypot(it.x - player.x, it.y - player.y) <= SQ_TUT.callNear) { T.called = true; if (typeof dialogueSay === "function") dialogueSay("sidequest", SQ_TUT.lines.call, { key: "sqt:call", group: "sqtc" }); } }
+}
+// his station (js/stations.js STATION_KINDS.sidequest_tut): TALK, then NEXT on each line; after the last he flies
+function sqTutVerb() { const T = _sqtState(); return T && T.talk > 0 ? "NEXT" : "TALK TO SIDE QUEST"; }
+function sqTutCan() { const T = _sqtState(); return T && T.phase === "wait" ? { ok: true } : { ok: false, why: "HE IS FLYING" }; }
+function sqTutUse() {
+    const T = _sqtState(); if (!T || T.phase !== "wait") return { ok: false, why: "HE IS FLYING" };
+    if (typeof dialogueDismiss === "function") dialogueDismiss("sqtc");   // (his call is answered: it does not come back after the talk)
+    if (T.talk < SQ_TUT.lines.talk.length) { T.talk++; return { ok: true, quiet: true, talk: T.talk }; }
+    _sqtStart(); return { ok: true, quiet: true, fly: true };
+}
+// what he is saying while you are at his station: a HELD line of the dialogue box with his picture, a tap on it is NEXT (as in the Sewers)
+function sqTutOverlay() {
+    const T = _sqtState(), st = _sqtStation(); if (!T || typeof dialogueSay !== "function") return;
+    if ((typeof invPanelOpen !== "undefined" && invPanelOpen) || (typeof classPickerOpen !== "undefined" && classPickerOpen)) return;
+    const near = !!st && T.phase === "wait" && T.talk > 0 && typeof stationDist === "function" && stationDist(st) <= STATION_RANGE + 1.2;
+    if (!near) { if (typeof dialogueDismiss === "function") dialogueDismiss("sqt"); return; }
+    const text = SQ_TUT.lines.talk[T.talk - 1];
+    dialogueSay("sidequest", text, { key: "sqt:" + T.talk, group: "sqt", hold: true, now: true, onTap: () => { if (typeof stationUse === "function") stationUse(st); else sqTutUse(); } });
+}
+// the trip: up, over to the module, take it, down onto the catwalks, walk to the ledge, step off it, walk to you, give it; then away (T.leg is the part he is on, from T.t0; sqDraw draws him at it.lift over the arena floor)
+function _sqtLedge() { const c = _sqtCase(); return c && typeof _fp !== "undefined" && _fp && _fp.F && _fp.F.ledges ? _fp.F.ledges.find(l => l.room === c.room) || null : null; }
+function _sqtLeg(T, leg) { T.leg = leg; T.t0 = _sqFrame(); }
+function _sqtStart() {
+    const T = _sqtState(), it = _sqtItem(); if (!T || !it) return false;
+    T.phase = "fly"; T.from = [it.x, it.y]; T.dn = null; T.given = false; T.saidLedge = false; _sqtLeg(T, "up");
+    _fp.stations = _fp.stations.filter(s => s.id !== "st_sidequest_tut"); _fp.items = _fp.items.filter(i => !(i.fp === "station" && i.id === "st_sidequest_tut"));
+    if (typeof dialogueDismiss === "function") dialogueDismiss("sqt");
+    return true;
+}
+function _sqtFly(T) {
+    const it = _sqtItem(), c = _sqtCase(); if (!it || !c) { T.phase = "none"; return; }
+    const D = SQ_TUT.t, deck = (c.base || 0) - (it.base || 0), up = deck + SQ_TUT.rise, ease = k => k * k * (3 - 2 * k), t = _sqFrame() - T.t0, L = _sqtLedge(), P = typeof player !== "undefined" ? player : null;
+    let x = it.x, y = it.y, z = it.lift || 0, flying = true;
+    if (T.leg === "up") { const k = Math.min(1, t / D.up); x = T.from[0]; y = T.from[1]; z = up * ease(k); if (k >= 1) _sqtLeg(T, "over"); }
+    else if (T.leg === "over") { const k = Math.min(1, t / D.over), e = ease(k); x = T.from[0] + (c.x - T.from[0]) * e; y = T.from[1] + (c.y - T.from[1]) * e; z = up; if (k >= 1) _sqtLeg(T, "grab"); }
+    else if (T.leg === "grab") {   // he comes down onto the catwalks where the module is, and takes it
+        const k = Math.min(1, t / D.grab); x = c.x; y = c.y; z = up - (up - deck) * ease(k); if (k > 0.5) c.carried = true;
+        if (k >= 1) { T.walkFrom = [c.x, c.y]; T.dn = [c.x, c.y]; _sqtLeg(T, L ? "deck" : "down"); }
+    }
+    else if (T.leg === "deck") {   // along the catwalks to the ledge, on foot
+        const a = T.walkFrom, b = L.at, len = Math.hypot(b[0] - a[0], b[1] - a[1]), k = len > 1e-6 ? Math.min(1, t * SQ_TUT.walk / len) : 1;
+        x = a[0] + (b[0] - a[0]) * k; y = a[1] + (b[1] - a[1]) * k; z = deck; flying = false; it.face = [b[0] - a[0], b[1] - a[1]];
+        if (k >= 1) { if (!T.saidLedge && typeof dialogueSay === "function") dialogueSay("sidequest", SQ_TUT.lines.ledge, { key: "sqt:ledge" }); T.saidLedge = true; _sqtLeg(T, "jump"); }
+    }
+    else if (T.leg === "jump") {   // off the ledge: a little hop out, and down to the floor under it
+        const k = Math.min(1, t / D.jump), a = L.at, b = L.to; x = a[0] + (b[0] - a[0]) * k; y = a[1] + (b[1] - a[1]) * k; z = deck * (1 - k * k) + 14 * Math.sin(k * Math.PI); flying = false; it.face = [b[0] - a[0], b[1] - a[1]];
+        if (k >= 1) { z = 0; _sqtLeg(T, "floor"); }
+    }
+    else if (T.leg === "floor") {   // over the floor to you (from where you are now: he stops a step short, on his side of you); you far off, and he hands it over from where he is
+        const pd = P ? Math.hypot(x - P.x, y - P.y) : 0, to = P && pd > 1e-6 ? [P.x + (x - P.x) / pd * 0.9, P.y + (y - P.y) / pd * 0.9] : [x, y], dx = to[0] - x, dy = to[1] - y, d = Math.hypot(dx, dy); z = 0; flying = false;
+        if (d <= SQ_TUT.walk || !P || Math.hypot(P.x - x, P.y - y) > SQ_TUT.giveNear) { if (d <= SQ_TUT.walk) { x = to[0]; y = to[1]; } it.face = null; _sqtLeg(T, "give"); }
+        else { x += dx / d * SQ_TUT.walk; y += dy / d * SQ_TUT.walk; it.face = [dx, dy]; }
+    }
+    else if (T.leg === "down") {   // (no ledge in the data: he flies straight down to you)
+        const k = Math.min(1, t / D.down), e = ease(k), to = P ? [P.x + 0.8, P.y - 0.4] : T.from; x = T.dn[0] + (to[0] - T.dn[0]) * e; y = T.dn[1] + (to[1] - T.dn[1]) * e; z = deck * (1 - e); if (k >= 1) _sqtLeg(T, "give");
+    }
+    else { flying = false; z = 0; it.face = null; if (!T.given) _sqtGive(T, c); if (t >= D.give) { T.phase = "away"; T.t0 = _sqFrame(); T.from = [x, y]; } }
+    it.x = x; it.y = y; it.lift = Math.max(0, z); it.flying = flying; it.depth = x + y + SQ_TUT.over; it.carry = !!c.carried && !T.given;
+}
+function _sqtGive(T, c) {
+    T.given = true; c.carried = false;
+    if (typeof invRoom === "function" && invRoom("power_module") < 1) {   // (no room in the pack: he sets it down at your feet, a case you can take)
+        const P = typeof player !== "undefined" ? player : null; if (P) { c.x = P.x; c.y = P.y; c.room = SQ_TUT.room; c.base = typeof facilityRoomHeight === "function" ? facilityRoomHeight(SQ_TUT.room, _fp.F) * FP_ELEV_PX : 0; c.depth = c.x + c.y; }
+        c.fetch = null;
+    } else { c.taken = true; if (typeof invAdd === "function") invAdd("power_module", 1); }   // (his line says what it is: no text in the middle of the screen)
+    if (typeof dialogueSay === "function") dialogueSay("sidequest", SQ_TUT.lines.give, { key: "sqt:give" });
+}
+function _sqtAway(T) {
+    const it = _sqtItem(); if (!it) { T.phase = "gone"; return; }
+    const k = Math.min(1, (_sqFrame() - T.t0) / SQ_TUT.t.away); it.lift = 260 * k * k; it.alpha = 1 - k; it.y = T.from[1] - 3 * k; it.depth = it.x + it.y + SQ_TUT.over; it.flying = true; it.face = null;
+    if (k >= 1) { _sqtRemove(); T.phase = "gone"; }
 }

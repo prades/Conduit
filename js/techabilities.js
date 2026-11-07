@@ -20,11 +20,12 @@
 //     called off (the enemy died, the follower could not get to the technician in TECH_AB.launch.loadWait) costs nothing.
 //   EXPLORATION: a LAUNCHER SITE (the map's `launchSites`, js/facilitymap.js) shows only when you are near it: a highlighted patch on the floor, a label, and a notice as you come near. Tap it and an electric technician in your squad walks
 //     over and sets a launcher up there FOR GOOD (it is saved, and the setting up gives its XP once). Tap the launcher: the arc it throws on is drawn, to where a follower comes down; tap a follower and it runs to the launcher and is thrown
-//     up into the site's room (the Arena Catwalk), where it holds the room until it is called back (COME). The way down is the room's BROKEN SECTION: a follower that is not holding the room walks to it and drops through to the floor
-//     under it, one way only. Nobody walks up: the catwalks stay shut to walking (tests/facility.js); the launcher is the only way up, and at the catwalks only a follower goes.
+//     up into the site's room (the Arena Catwalk), where it holds the room until it is called back (COME). The way down is the room's LEDGE (the map's `ledges`; build 2026-11-07qq, the owner: "a ledge that goes down that the
+//     player can only move to jump off of to get down", in place of the site's old broken section): a follower that is not holding the room walks onto it and jumps down to the floor under it, one way only. Nobody walks up: the
+//     catwalks stay shut to walking (tests/facility.js); the launcher is the only way up, and at the catwalks only a follower goes (and Side Quest, who flies: js/sidequest.js).
 //   THE RIDE (2026-10-31, the Sewers' collapsed tunnel: docs/SEWER-QUEST.md): a site with `rider` has its launcher carry YOU as well. Tap its tag once for the aim and again to ride it: you walk to the pad and are thrown up the
 //     same arc a follower flies (in the air nothing else moves you and no wall or solid stops you: js/facilityplay.js facilityPlayerStep draws on techFlightStep), and you land on the site's landing. The way back is the site's
-//     BROKEN EDGE (`drop`, its tag ▼ JUMP DOWN): one way, to the floor under it (`dropTo`). A follower sent up there waits for you (a POCKET site: _pocketHold) and, once you are not up there with it, drops after you.
+//     the floor's LEDGE, if it has one (walk onto it, or tap its tag ▼ LEDGE: one way, to the floor under it). A follower sent up there waits for you (a POCKET site: _pocketHold) and, once you are not up there with it, jumps after you.
 
 // THE NUMBERS. PROVISIONAL marks a number that was not given and waits to be confirmed (docs/TECHNICIANS.md); the rest are how it looks and feels.
 const TECH_AB = {
@@ -172,6 +173,13 @@ function techAbility2Use(f, picks) {
 // ── the sites (the map's launchSites) and the launchers set up at them ──
 function _techSites() { return (typeof _fp !== "undefined" && _fp && _fp.F && _fp.F.launchSites) || []; }
 function _techSite(id) { return _techSites().find(s => s.id === id) || null; }
+// THE LEDGES (js/facilitymap.js `ledges`, build 2026-11-07qq): the one way down from a raised floor (the catwalks'): stepped off at `at`, landed on at `to`
+function _techLedges() { return (typeof _fp !== "undefined" && _fp && _fp.F && _fp.F.ledges) || []; }
+function _techLedge(id) { return _techLedges().find(l => l.id === id) || null; }
+// which way a ledge looks out (a step along x or y, from its tile toward where you land)
+function _techLedgeDir(L) { const dx = L.to[0] - L.at[0], dy = L.to[1] - L.at[1]; return Math.abs(dx) >= Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)]; }
+// the ledge down from the stretch of floor (x, y) is on, if it has one and the floor under it is still another stretch
+function _techLedgeFrom(x, y) { const c = _techComp(x, y); if (c === undefined) return null; for (const l of _techLedges()) if (_techComp(l.at[0], l.at[1]) === c && _techComp(l.to[0], l.to[1]) !== c) return l; return null; }
 function _techInstalled() { if (!_fp.launchers) _fp.launchers = new Set(); return _fp.launchers; }
 function techLauncherAt(id) { return typeof _fp !== "undefined" && !!_fp && _techInstalled().has(id); }
 function techLaunchersSnapshot() { return typeof _fp !== "undefined" && _fp ? Array.from(_techInstalled()) : []; }
@@ -223,7 +231,7 @@ function techSiteLaunch(s, who) {
 
 // ── THE RIDE: a launcher at a site with `rider` carries the player too (the Sewers' collapsed tunnel, docs/SEWER-QUEST.md) ──
 // techSiteRide: you walk to the pad (facilityWalkTo; a tap elsewhere calls it off, as it does a walk to a station) and _techRiderTick throws you when you are within loadReach of it: the same flight as a follower's, to the
-// site's landing. techSiteDrop: from the landing's stretch you walk to the site's broken edge and drop to the floor under it, one way. Both refuse, and say why, when they cannot. Nothing of this is saved: a game left in
+// site's landing. techLedgeJump: up on a raised floor with a LEDGE you walk onto it and jump down to the floor under it, one way (walking onto it does it too). Both refuse, and say why, when they cannot. Nothing of this is saved: a game left in
 // the air comes back on the floor (js/facilitysave.js puts you where you stood if that is floor, else at the Crystal).
 function _techRider() { return typeof player !== "undefined" && player && typeof player.x === "number" ? player : null; }
 function _techRiderBusy(p) { return !!(p._flight || (typeof facilityPortalBusy === "function" && facilityPortalBusy())); }
@@ -240,18 +248,19 @@ function techSiteRide(s) {
     _techSay("⚡ TO THE LAUNCHER · IT THROWS YOU OVER", "#ffe733");
     return { ok: true };
 }
-function techSiteDrop(s) {
-    const p = _techRider(); if (!p) return { ok: false, why: "NOBODY TO DROP" };
-    if (!s || !s.drop || !s.dropTo) return { ok: false, why: "NO BROKEN EDGE HERE" };
+// you, up on a raised floor: walk to its LEDGE and jump down from it (a tap on the ledge's tag; walking onto it does the same: _techRiderTick)
+function techLedgeJump(L) {
+    const p = _techRider(); if (!p) return { ok: false, why: "NOBODY TO JUMP" };
+    if (!L) return { ok: false, why: "NO LEDGE HERE" };
     if (_techRiderBusy(p)) return { ok: false, why: "NOT NOW" };
-    if (_techComp(p.x, p.y) !== _techComp(s.drop[0], s.drop[1])) return { ok: false, why: "YOU ARE NOT UP THERE" };
-    if (_techComp(s.drop[0], s.drop[1]) === _techComp(s.dropTo[0], s.dropTo[1])) return { ok: false, why: "THE WAY DOWN IS OPEN · WALK" };   // (the choke drilled through: the floors are one)
-    if (Math.hypot(s.drop[0] - p.x, s.drop[1] - p.y) > 0.5 && !(typeof facilityWalkTo === "function" && facilityWalkTo(s.drop[0], s.drop[1]))) return { ok: false, why: "NO WAY TO THE EDGE FROM HERE" };
-    p._launchLoad = null; p._dropSite = s.id; p._dropT0 = _techFrame();
-    _techSay("▼ TO THE BROKEN EDGE · YOU JUMP DOWN FROM IT", "#ffe733");
+    if (_techComp(p.x, p.y) !== _techComp(L.at[0], L.at[1])) return { ok: false, why: "YOU ARE NOT UP THERE" };
+    if (_techComp(L.at[0], L.at[1]) === _techComp(L.to[0], L.to[1])) return { ok: false, why: "THE WAY DOWN IS OPEN · WALK" };
+    if (Math.hypot(L.at[0] - p.x, L.at[1] - p.y) > 0.5 && !(typeof facilityWalkTo === "function" && facilityWalkTo(L.at[0], L.at[1]))) return { ok: false, why: "NO WAY TO THE LEDGE FROM HERE" };
+    p._launchLoad = null; p._dropSite = L.id; p._dropT0 = _techFrame();
+    _techSay("▼ TO THE LEDGE · YOU JUMP DOWN FROM IT", "#ffe733");
     return { ok: true };
 }
-// each frame: you on your way to a launcher's pad, or to a broken edge; at it, the flight
+// each frame: you on your way to a launcher's pad, or to a ledge; at it, the flight (a ledge you walk onto takes you down too: "the player can only move to jump off of to get down")
 function _techRiderTick(f0) {
     const p = _techRider(); if (!p) return;
     const T = TECH_AB.launch, fx = () => { if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: p.x, y: p.y, radius: 0.9, color: "#ffe733", life: 22 }); };
@@ -262,11 +271,11 @@ function _techRiderTick(f0) {
         else if (f0 - L.t0 > T.loadWait) { p._launchLoad = null; _techSay("THE RIDE IS OFF · YOU DID NOT GET TO THE LAUNCHER", "#ff8a6a"); }
         else if (Math.hypot(s.at[0] - p.x, s.at[1] - p.y) <= T.loadReach) { p._launchLoad = null; _techFly(p, s.land[0], s.land[1], T.siteFlight, T.sitePeak, { kind: "site", site: s.id, rider: true }); fx(); }
     }
-    if (p._dropSite && !p._flight) {
-        const s = _techSite(p._dropSite);
-        if (!s || !s.drop || !s.dropTo) p._dropSite = null;
-        else if (f0 - (p._dropT0 || 0) > T.loadWait) { p._dropSite = null; _techSay("THE JUMP IS OFF · YOU DID NOT GET TO THE EDGE", "#ff8a6a"); }
-        else if (Math.hypot(s.drop[0] - p.x, s.drop[1] - p.y) <= 0.5) { p._dropSite = null; _techFly(p, s.dropTo[0], s.dropTo[1], T.dropFlight, 14, { kind: "drop", site: s.id, rider: true }); fx(); }
+    if (!p._flight && !_techRiderBusy(p)) {
+        const L = p._dropSite ? _techLedge(p._dropSite) : _techLedgeFrom(p.x, p.y);
+        if (p._dropSite && !L) p._dropSite = null;
+        else if (p._dropSite && f0 - (p._dropT0 || 0) > T.loadWait) { p._dropSite = null; _techSay("THE JUMP IS OFF · YOU DID NOT GET TO THE LEDGE", "#ff8a6a"); }
+        else if (L && Math.hypot(L.at[0] - p.x, L.at[1] - p.y) <= 0.5 && _techComp(L.at[0], L.at[1]) !== _techComp(L.to[0], L.to[1])) { p._dropSite = null; p.fpPath = null; _techFly(p, L.to[0], L.to[1], T.dropFlight, 14, { kind: "drop", ledge: L.id, rider: true }); fx(); }
     }
 }
 
@@ -930,8 +939,8 @@ function _techLand(a, F) {
         if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: a.x, y: a.y, color: "#ffe733", radius: 0.9, life: 24 });
     } else if (F.kind === "site") {
         const s = _techSite(F.site), where = s ? String(s.label || s.to).toUpperCase() : "";
-        if (F.rider || a === _techRider()) { a.fpPath = null; a.targetX = a.x; a.targetY = a.y; if (s) _techSay("⚡ YOU ARE ON THE " + where + (s.drop ? " · ITS BROKEN EDGE (▼) DROPS YOU BACK DOWN" : ""), "#ffe733"); }   // you, carried over
-        else if (s && s.pocket) { a._pocketHold = s.id; _techSay("⚡ " + _techName(a) + " IS ON THE " + where + " · IT WAITS THERE FOR YOU" + (s.drop ? " · COME BRINGS IT DOWN THE BROKEN EDGE" : " UNTIL THE WAY IS OPEN"), "#ffe733"); }   // a pocket: it stays in the squad and waits there (techStepOverride) until you are up there too, the way is open, or it is called
+        if (F.rider || a === _techRider()) { a.fpPath = null; a.targetX = a.x; a.targetY = a.y; if (s) _techSay("⚡ YOU ARE ON THE " + where + (_techLedgeFrom(a.x, a.y) ? " · ITS LEDGE (▼) IS THE WAY BACK DOWN" : ""), "#ffe733"); }   // you, carried over
+        else if (s && s.pocket) { a._pocketHold = s.id; _techSay("⚡ " + _techName(a) + " IS ON THE " + where + " · IT WAITS THERE FOR YOU" + (_techLedgeFrom(a.x, a.y) ? " · COME BRINGS IT DOWN THE LEDGE" : " UNTIL THE WAY IS OPEN"), "#ffe733"); }   // a pocket: it stays in the squad and waits there (techStepOverride) until you are up there too, the way is open, or it is called
         else {
             if (s && typeof partyPost === "function") partyPost(a, s.to, true);   // it holds the room up there until it is called back
             if (s) _techSay("⚡ " + _techName(a) + " IS ON THE " + where + " · COME BRINGS IT BACK", "#ffe733");
@@ -940,10 +949,10 @@ function _techLand(a, F) {
     if (typeof elementEffects !== "undefined" && F.kind !== "combat") elementEffects.push({ type: "ring", x: a.x, y: a.y, radius: 0.7, color: "#ffe733", life: 18 });
 }
 
-// ── a follower walking to the launcher, to a site it is setting up, or to a broken section (js/npc.js updateRTSNPC asks first): true when this moved it ──
+// ── a follower walking to the launcher, to a site it is setting up, or to a ledge (js/npc.js updateRTSNPC asks first): true when this moved it ──
 function techStepWants(a) { return !!(a && (a._launchLoad || a._siteWork || a._dropSite || a._shieldHold || a._drill || a._blight || a._pocketHold)); }
 // a follower thrown onto a POCKET site's landing (a cut-off part of its room: the Sewers' collapsed tunnel) waits where it landed until the player is on that stretch too (rode over, or the choke was drilled and the floors are
-// one), or it is ordered elsewhere (an attack, a retreat, a post; COME clears the hold itself: js/commandcenter.js); then it follows as before, and without the player up there it drops from the broken edge (_techDropScan)
+// one), or it is ordered elsewhere (an attack, a retreat, a post; COME clears the hold itself: js/commandcenter.js); then it follows as before, and without the player up there it jumps from the ledge (_techDropScan)
 function _techPocketTick(f) {
     const s = _techSite(f._pocketHold); if (!s) { f._pocketHold = null; return; }
     const pc = _techComp(player.x, player.y), lc = _techComp(s.land[0], s.land[1]), fc = _techComp(f.x, f.y);
@@ -954,7 +963,7 @@ function techStepOverride(a) {
     let pt = null;
     if (a._launchLoad) pt = _techLoadPoint(a);
     else if (a._siteWork) { const s = _techSite(a._siteWork.site); if (s) { if (a._siteWork.workAt !== null) { a._fpWalkGoal = null; return true; } pt = s.at; } }   // (at work: it stands still)
-    else if (a._dropSite) { const s = _techSite(a._dropSite); if (s) pt = s.drop; }
+    else if (a._dropSite) { const L = _techLedge(a._dropSite); if (L) pt = L.at; }
     else if (a._shieldHold) {   // behind its Photonic Shield: it holds its spot, and fights back only what comes right up to it
         const H = a._shieldHold;
         let foe = null, fd = 1.0; for (const e of (typeof unitsNear === "function" ? unitsNear(a.x, 1.2) : actors)) { if (!_techFoeOk(e)) continue; const d = Math.hypot(e.x - a.x, e.y - a.y); if (d < fd) { fd = d; foe = e; } }
@@ -976,7 +985,7 @@ function techStepOverride(a) {
     return true;
 }
 
-// ── each frame (js/game.js): first waits, throws, set-ups, the broken sections, the sites' notices ──
+// ── each frame (js/game.js): first waits, throws, set-ups, the ledges, the sites' notices ──
 function techAbilityTick() {
     if (typeof _fp === "undefined" || !_fp || typeof followers === "undefined") return;
     const f0 = _techFrame(), T = TECH_AB.launch;
@@ -1006,36 +1015,37 @@ function techAbilityTick() {
                 if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: s.at[0], y: s.at[1], radius: 1.4, color: "#ffe733", life: 36 });
             }
         }
-        if (f._dropSite && !f._flight) {
-            const s = _techSite(f._dropSite);
-            if (s && Math.hypot(s.drop[0] - f.x, s.drop[1] - f.y) <= 0.5) { f._dropSite = null; f._fpWalkGoal = null; _techFly(f, s.dropTo[0], s.dropTo[1], T.dropFlight, 14, { kind: "drop", site: s.id }); }
+        if (f._dropSite && !f._flight) {   // at the ledge: it jumps down
+            const L = _techLedge(f._dropSite);
+            if (!L) f._dropSite = null;
+            else if (Math.hypot(L.at[0] - f.x, L.at[1] - f.y) <= 0.5) { f._dropSite = null; f._fpWalkGoal = null; _techFly(f, L.to[0], L.to[1], T.dropFlight, 14, { kind: "drop", ledge: L.id }); }
         }
         if (f._drill) _techDrillTick(f, f0);
         if (f._blight) _techBlightWalkTick(f, f0);
         if (f._pocketHold) _techPocketTick(f);
     }
-    _techRiderTick(f0);   // you, to a launcher's pad or a broken edge
+    _techRiderTick(f0);   // you, to a launcher's pad or a ledge
     if (f0 % 15 === 3) _techDropScan();
     _techSiteNotices(); _techRubbleNotices();
     _techShieldTick();
     techClock++;   // THE PLAY CLOCK: a frame of play
     _techFrostTick(f0); _techBridgeTick(f0); _techPoolTick();
 }
-// THE BROKEN SECTIONS: a follower on a site's room that is not holding it (it was called back) walks to the room's broken section and drops through; one posted to that room that is not up there (it came back from the dead at the
-// Crystal) is let go of its post, since nobody walks up. On a POCKET site's landing with a broken edge (the Sewers' collapsed tunnel) a follower that is not waiting there for you (_pocketHold) and is up there without you
-// drops the same way; a pocket with no broken edge has no way out but the passage its rubble opens.
+// THE LEDGES: a follower up on a raised floor with a ledge (the catwalks) that is not holding it (it was called back), and is up there without you, walks onto the ledge and jumps down; one posted to a site's room that is not
+// up there (it came back from the dead at the Crystal) is let go of its post, since nobody walks up. A POCKET site's landing (the Sewers' sample bank) has no ledge: its way out is the passage its rubble opens, or the pipe.
 function _techDropScan() {
-    const sites = _techSites(); if (!sites.length) return;
+    const sites = _techSites(), ledges = _techLedges(); if (!sites.length && !ledges.length) return;
     const pc = _techComp(player.x, player.y);
     for (const f of followers) {
         if (!f || f.dead || f.isClone || f._flight || f._launchLoad || f._siteWork) continue;
-        const fc = _techComp(f.x, f.y); f._dropSite = null;
+        const fc = _techComp(f.x, f.y); f._dropSite = null; let freed = false;
         for (const s of sites) {
             const sc = _techComp(s.land[0], s.land[1]); if (sc === undefined) continue;
-            if (!s.pocket && f.post === s.to && fc !== sc) { if (typeof partyCall === "function" && !partyCall(f, true) && typeof partyPost === "function" && typeof partyRoomOf === "function") partyPost(f, partyRoomOf(f), true); break; }   // (a pocket is no post: its room is the follower's own)
-            if (!s.drop || !s.dropTo) continue;
-            if (fc === sc && sc !== pc && !f.post && !f.job && !f.returningToCrystal && !f._pocketHold) { f._dropSite = s.id; break; }
+            if (!s.pocket && f.post === s.to && fc !== sc) { if (typeof partyCall === "function" && !partyCall(f, true) && typeof partyPost === "function" && typeof partyRoomOf === "function") partyPost(f, partyRoomOf(f), true); freed = true; break; }   // (a pocket is no post: its room is the follower's own)
         }
+        if (freed) continue;
+        const L = _techLedgeFrom(f.x, f.y);
+        if (L && fc !== pc && !f.post && !f.job && !f.returningToCrystal && !f._pocketHold) f._dropSite = L.id;
     }
 }
 function _techSiteNotices() {
@@ -1125,14 +1135,14 @@ function techAimTap(x, y) {
     if (need === "path") { if (!techAimPathEnd(x, y)) _techSay("PRESS ON THE FLOOR AND DRAW ITS PATH", "#8aa0c8"); return true; }   // (FAULTLINE: the let-go ends the stroke)
     return true;
 }
-// is a point of the screen on a tag drawn last frame (a site's, or its broken edge's: key site id, or site id + ":drop")
+// is a point of the screen on a tag drawn last frame (a site's: its id; a ledge's: "ledge:" + its id)
 function _techOnLabel(key, ex, ey) { const lr = _techLabels[key]; return !!lr && ex >= lr.x && ex <= lr.x + lr.w && ey >= lr.y && ey <= lr.y + lr.h; }
-// a tap on a site (js/input.js handleInput): set a launcher up there, send a follower up from the one there, or (its tag again, with its aim up) ride it yourself; a tap on a broken edge's tag: jump down. True when it was a site's
+// a tap on a site (js/input.js handleInput): set a launcher up there, send a follower up from the one there, or (its tag again, with its aim up) ride it yourself; a tap on a ledge's tag: jump down. True when it was a site's
 function techSiteTap(ex, ey) {
     if (typeof _fp === "undefined" || !_fp || typeof player === "undefined") return false;
+    for (const L of _techLedges()) if (_techOnLabel("ledge:" + L.id, ex, ey)) { const r = techLedgeJump(L); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // a ledge's tag (▼ LEDGE): you jump down from it
     for (const s of _techSites()) {
-        const nearAt = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY) <= TECH_AB.launch.near, nearDrop = !!s.drop && Math.hypot(s.drop[0] - player.visualX, s.drop[1] - player.visualY) <= TECH_AB.launch.near;
-        if (nearDrop && _techOnLabel(s.id + ":drop", ex, ey)) { const r = techSiteDrop(s); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // the broken edge's tag (▼ JUMP DOWN): you drop from it
+        const nearAt = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY) <= TECH_AB.launch.near;
         if (!nearAt || !_techOnLabel(s.id, ex, ey)) continue;   // (only its tag takes a tap: a tap on the floor round it, to walk past, is a walk)
         if (techLauncherAt(s.id)) {
             if (_techSiteBusy(s)) { _techSay("THE LAUNCHER IS IN USE", "#ff8a6a"); return true; }
@@ -1303,13 +1313,13 @@ function techDrawOnTile(tx, ty, px, py) {
     }
     if (FX) fluxDrawOnTile(FX, tx, ty, px, py);
 }
-// the launchers and the broken sections stand among everything else (js/game.js sorts them by depth)
+// the launchers and the ledges stand among everything else (js/game.js sorts them by depth)
 function techDrawItems(list) {
     if (typeof _fp === "undefined" || !_fp) return;
     for (const s of _techSites()) {
         if (techLauncherAt(s.id)) list.push({ type: "tech", kind: "launcher", x: s.at[0], y: s.at[1], site: s });
-        if (s.drop) list.push({ type: "tech", kind: "broken", x: s.drop[0], y: s.drop[1], site: s });
     }
+    for (const L of _techLedges()) { const d = _techLedgeDir(L); list.push({ type: "tech", kind: "ledge", x: L.at[0] + d[0] * 0.5, y: L.at[1] + d[1] * 0.5, L, d }); }   // (at the deck's edge, over the drop)
     // a Photonic Shield, in pieces half a tile long, so what stands behind it is drawn behind it and what stands in front, in front
     for (const W of techShields) {
         if (!_techShieldOn(W)) continue;
@@ -1344,13 +1354,12 @@ function techDrawItem(o, px, py) {
             g.strokeStyle = "#ffe733"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(px + sx * 9, py - 14); g.lineTo(px + sx * 12, py - 32); g.stroke();
             g.fillStyle = "#c9ccd4"; g.beginPath(); g.moveTo(px + sx * 13, py - 44); g.lineTo(px + sx * 16, py - 36); g.lineTo(px + sx * 10, py - 36); g.closePath(); g.fill();
         }
-    } else if (o.kind === "broken") {
-        // the catwalk's broken section: a hole torn in the grating, its bent edges, hazard paint either side
-        g.fillStyle = "#030406"; g.beginPath(); g.moveTo(px - 18, py - 2); g.lineTo(px - 6, py - 10); g.lineTo(px + 3, py - 7); g.lineTo(px + 17, py - 1); g.lineTo(px + 6, py + 8); g.lineTo(px - 4, py + 6); g.closePath(); g.fill();
-        g.strokeStyle = "#5b6275"; g.lineWidth = 1.5; g.stroke();
-        g.strokeStyle = "#ffd21a"; g.lineWidth = 3;
-        for (const k of [-1, 1]) { g.beginPath(); g.moveTo(px + k * 21, py - 10); g.lineTo(px + k * 27, py - 7); g.stroke(); g.beginPath(); g.moveTo(px + k * 23, py + 2); g.lineTo(px + k * 29, py + 5); g.stroke(); }
-        g.fillStyle = "#ffd21a"; g.font = (typeof uiFont === "function" ? uiFont(11) : "bold 11px sans-serif"); g.textAlign = "center"; g.fillText("▼", px, py - 13 + Math.sin(f0 * 0.08) * 2);
+    } else if (o.kind === "ledge") {
+        // THE LEDGE (build 2026-11-07qq): over the deck's edge where the rail stops (js/facilitydecor.js draws the gap and its hazard paint), arrows pointing down, one after another, so the way down reads from the floor too
+        const L = o.L, q = _techScr(L.at[0], L.at[1]), d = o.d, ex = q.x + (d[0] - d[1]) * TILE_W * 0.5, ey = q.y + (d[0] + d[1]) * TILE_H * 0.5;
+        g.font = (typeof uiFont === "function" ? uiFont(15) : "bold 15px sans-serif"); g.textAlign = "center"; g.textBaseline = "middle";
+        for (let k = 0; k < 3; k++) { const t = ((f0 * 0.012 + k / 3) % 1), y = ey - 8 + t * 34; g.globalAlpha = Math.sin(t * Math.PI) * 0.9; g.fillStyle = "#0b0c10"; g.fillText("▼", ex + 1, y + 1); g.fillStyle = "#ffd21a"; g.fillText("▼", ex, y); }
+        g.globalAlpha = 1;
     } else if (o.kind === "shield") {
         // a piece of a Photonic Shield: a pane of teal light standing on the floor, its foot and top lit, light running up it; a ripple where it stopped something; it rises as it goes up and flickers in its last 3 s
         const W = o.W, um = (o.ua + o.ub) / 2, age = f0 - W.t0, left = W.until - f0;
@@ -1385,15 +1394,16 @@ function techDrawOverlay() {
     const g = ctx, f0 = _techFrame(), T = TECH_AB.launch; _techLabels = {};
     g.save(); g.setTransform(1, 0, 0, 1, 0, 0);
     const font = n => typeof uiFont === "function" ? uiFont(n) : "bold " + n + "px sans-serif";
+    // A LEDGE's tag (while you are up there with it, and the floors are still apart): ▼ LEDGE; a tap on it walks you there and you jump (techSiteTap); walking onto it does the same
+    for (const L of _techLedges()) {
+        const dd = Math.hypot(L.at[0] - player.visualX, L.at[1] - player.visualY); if (dd > T.near || _techLedgeFrom(player.x, player.y) !== L) continue;
+        const q = _techScr(L.at[0], L.at[1]), a2 = Math.min(1, (T.near - dd) / 2), txt2 = "▼ LEDGE · STEP OFF IT TO JUMP DOWN";
+        g.globalAlpha = a2 * 0.9; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle"; const w2 = g.measureText(txt2).width + 16, y2 = q.y - 52;
+        g.fillStyle = "rgba(5,8,18,0.7)"; g.fillRect(q.x - w2 / 2, y2 - 10, w2, 20); g.strokeStyle = "rgba(255,210,26,0.6)"; g.lineWidth = 1; g.strokeRect(q.x - w2 / 2 + 0.5, y2 - 9.5, w2 - 1, 19); g.fillStyle = "#ffd21a"; g.fillText(txt2, q.x, y2 + 1);
+        _techLabels["ledge:" + L.id] = { x: q.x - w2 / 2, y: y2 - 10, w: w2, h: 20 };
+    }
     for (const s of _techSites()) {
-        const d = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY), dd = s.drop ? Math.hypot(s.drop[0] - player.visualX, s.drop[1] - player.visualY) : Infinity;
-        // THE BROKEN EDGE's tag (a site that carries you, while you are up there and the floors are still apart): ▼ JUMP DOWN; a tap on it is the jump (techSiteTap)
-        if (s.rider && s.drop && dd <= T.near && _techComp(player.x, player.y) === _techComp(s.drop[0], s.drop[1]) && _techComp(s.drop[0], s.drop[1]) !== _techComp(s.dropTo[0], s.dropTo[1])) {
-            const q = _techScr(s.drop[0], s.drop[1]), a2 = Math.min(1, (T.near - dd) / 2), txt2 = "▼ JUMP DOWN · TAP IT";
-            g.globalAlpha = a2 * 0.9; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle"; const w2 = g.measureText(txt2).width + 16, y2 = q.y - 52;
-            g.fillStyle = "rgba(5,8,18,0.7)"; g.fillRect(q.x - w2 / 2, y2 - 10, w2, 20); g.strokeStyle = "rgba(255,210,26,0.6)"; g.lineWidth = 1; g.strokeRect(q.x - w2 / 2 + 0.5, y2 - 9.5, w2 - 1, 19); g.fillStyle = "#ffd21a"; g.fillText(txt2, q.x, y2 + 1);
-            _techLabels[s.id + ":drop"] = { x: q.x - w2 / 2, y: y2 - 10, w: w2, h: 20 };
-        }
+        const d = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY);
         if (d > T.near) continue;
         const p = _techScr(s.at[0], s.at[1]), a = Math.min(1, (T.near - d) / 2), on = techLauncherAt(s.id);
         if (!on) {   // the spot it can stand on: a faint dashed outline (subtle: no fill, no pulse)

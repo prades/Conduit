@@ -502,6 +502,12 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 - **A card's words are cut on its face** (seen 2026-11-02, build `2026-11-02j`, on the CARDS screen at 1180 × 820). The face's box shows about five lines, so the longer words run past it and are cut. That is 23 cards: the six Mage CROWNs, the three opportunity cards and 14 of the 18 Player cards (PLAGUE DOCTOR's words are the longest). The EFFECT line beside the stage always shows the whole text. It is not new: the auras and the opportunity cards have been cut this way since Build B. Ways to mend it, for the owner: smaller type on the face for long words; a short line on the face (the role's theme) with the full words in EFFECT; or a taller box. Nothing is changed until the owner picks.
 
+### 2-qq. The server room, the warehouse, the junction and the ledge (build `2026-11-07qq`): the agent's choices, waiting for a look
+- How dark the Server Room stays with the power on (`FP_ROOM_DIM.front_lobby`, 0.42), and its blinking rack lights.
+- The Server Room's and the Warehouse's layouts; where the six relay nodes hang.
+- Side Quest's tutorial lines (the call, two talk lines, the ledge line, the hand-over), his flight's timings and his walk speed.
+- The ledge: its place on the catwalks' west edge, its width (two tiles), and the landing four tiles out on the arena floor (right under the edge is hidden behind the raised deck); its hazard paint and arrows.
+
 ## 3. Not decided, nothing built
 
 - **The future update registered 2026-11-06** (`NEXT-PHASE-ROADMAP.md`; `DECISION-LOG.md`). Its open points, for the owner:

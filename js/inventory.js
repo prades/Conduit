@@ -37,21 +37,16 @@ const ITEMS = {
         lore: "Cloudy, warm and faintly alive. The Mutator reads it like a letter from a creature that has not been born yet.",
         stats: ["EFFECT  +1 FOLLOWER LEVEL (+2 ONCE SEQUENCED)", "RANGE  8 TILES", "A FORM EVOLVES AT LEVEL " + (typeof EVOLVE_LEVEL === "number" ? EVOLVE_LEVEL : 10)],
         use: () => invFeedFollower() },
-    relay_kit: { id: "relay_kit", name: "RELAY KIT", cat: "tool", type: "tool", stack: 1, col: "#ffb347", icon: "kit", classes: null,
-        desc: "Splicing tools for a dead relay. Any class can repair with it, slowly, using two power cells.",
-        lore: "A grey case of clamps, a soldering stylus and a laminated card of wiring colours. The Technomancer does not need one. Everyone else does.",
-        stats: ["EFFECT  LETS YOU REPAIR A RELAY", "COST  2 POWER CELLS, 5 SECONDS", "A TECHNOMANCER NEEDS 1 CELL AND NO KIT", "NOT USED UP"],
-        use: () => { const s = typeof stationNearest === "function" ? stationNearest() : null; if (!s || s.kind !== "relay") return { ok: false, why: "USE IT AT A BROKEN RELAY" }; const r = stationUse(s); return r.ok ? { ok: true, msg: r.msg } : { ok: false, why: r.why }; } },
     mech_leg: { id: "mech_leg", name: "MECH LEG", cat: "part", type: "component", stack: 4, col: "#31e8ff", icon: "leg", classes: ["technomancer"],
         desc: "One articulated leg for a spider mech. You need four, and the core.",
         lore: "Titanium and braided cable, jointed twice, still smelling of machine oil. Somebody was building something with long legs.",
-        stats: ["NEEDED  4 LEGS AND A CORE", "BUILT AT  THE MECH BAY, SHOW ROOM", "USED UP BY THE BUILD"],
-        use: () => ({ ok: false, why: "BUILD IT AT THE MECH BAY IN THE SHOW ROOM" }) },
+        stats: ["NEEDED  4 LEGS AND A CORE", "BUILT AT  THE MECH BAY, THE WAREHOUSE", "USED UP BY THE BUILD"],
+        use: () => ({ ok: false, why: "BUILD IT AT THE MECH BAY IN THE WAREHOUSE" }) },
     mech_core: { id: "mech_core", name: "MECH CORE", cat: "part", type: "component", stack: 1, col: "#31e8ff", icon: "core", classes: ["technomancer"],
         desc: "The brain and reactor of a spider mech. It goes in the middle of four legs.",
         lore: "A hexagonal housing humming faintly through its casing. A label reads: DO NOT DROP. Then, in marker: PLEASE.",
-        stats: ["NEEDED  4 LEGS AND A CORE", "BUILT AT  THE MECH BAY, SHOW ROOM", "USED UP BY THE BUILD"],
-        use: () => ({ ok: false, why: "BUILD IT AT THE MECH BAY IN THE SHOW ROOM" }) },
+        stats: ["NEEDED  4 LEGS AND A CORE", "BUILT AT  THE MECH BAY, THE WAREHOUSE", "USED UP BY THE BUILD"],
+        use: () => ({ ok: false, why: "BUILD IT AT THE MECH BAY IN THE WAREHOUSE" }) },
     scrap_metal: { id: "scrap_metal", name: "SCRAP METAL", cat: "part", type: "component", stack: 30, col: "#9aa4b4", icon: "scrap", classes: null,
         desc: "Bent plate and torn casing off the things that live in the arena. The Armory's terminal turns it into ammunition and upgrades.",
         lore: "Whatever the arena's creatures are made of, it is mostly good steel. Somebody in the Armory will pay for it in rounds.",
@@ -60,7 +55,7 @@ const ITEMS = {
     fuel_cell: { id: "fuel_cell", name: "FUEL CELL", cat: "part", type: "component", stack: 6, col: "#5dffb0", icon: "fuel", classes: null,
         desc: "A sealed canister of reactor fuel. A laser rifle loads one by itself when it runs dry: 12 charges.",
         lore: "A glass-and-steel canister with a green glow that does not flicker. The label says THIS SIDE UP and, underneath, in a different hand, YES REALLY.",
-        stats: ["LOADED INTO  THE LASER RIFLE", "EACH CELL  12 CHARGES", "FOUND IN  THE COMPUTER LAB, ONCE ITS POWER IS BACK"],
+        stats: ["LOADED INTO  THE LASER RIFLE", "EACH CELL  12 CHARGES", "FOUND IN  THE SERVER ROOM, ONCE ITS POWER IS BACK"],
         use: () => ({ ok: false, why: "THE LASER RIFLE LOADS IT BY ITSELF" }) },
     // the Mutator's HEALING SERUM (js/serum.js): made at the laboratory over time, or crafted there for DNA; used, it is splashed where the Mutator stands and heals the allies in the pool
     healing_serum: { id: "healing_serum", name: "HEALING SERUM", cat: "sample", type: "consumable", stack: 5, col: "#7dffb0", icon: "vial", classes: ["mutator"],
@@ -91,6 +86,13 @@ const ITEMS = {
         lore: "Violet, and it will not settle. Somebody sealed it and never came back for it.",
         stats: ["FROM  THE COLLAPSED TUNNEL IN THE SEWERS", "NEEDED  1, AT THE ANALYSIS BENCH (EXPERIMENT LAB)", "PART OF  THE SEWER PURIFICATION"],
         use: () => ({ ok: false, why: "TAKE IT TO THE ANALYSIS BENCH IN THE EXPERIMENT LAB" }) },
+    // THE POWER MODULE (the tutorial, build 2026-11-07qq; the owner: "you need to obtain a module to repair it somewhere on the map"): up on the catwalks over the arena, out of reach; Side Quest flies up for it
+    // (js/sidequest.js). It goes into the MAIN POWER JUNCTION in the server room (js/stations.js), which then turns every relay on.
+    power_module: { id: "power_module", name: "POWER MODULE", cat: "part", type: "tool", stack: 1, col: "#ffb347", icon: "core", classes: null,
+        desc: "A replacement module for the facility's main power junction. Slotted in, it brings every relay back online.",
+        lore: "A heavy cartridge with a cracked status window and a sticker: SPARE — DO NOT REMOVE. Someone removed it and left it on the catwalks.",
+        stats: ["FOUND ON  THE CATWALKS OVER THE ARENA (SIDE QUEST FLIES UP FOR IT)", "INSTALLED AT  THE MAIN POWER JUNCTION, THE SERVER ROOM", "THE INSTALL  STAY AT THE JUNCTION WHILE IT GOES IN"],
+        use: () => ({ ok: false, why: "INSTALL IT AT THE MAIN POWER JUNCTION IN THE SERVER ROOM" }) },
     purification_module: { id: "purification_module", name: "PURIFICATION MODULE", cat: "part", type: "tool", stack: 1, col: "#5ff7e0", icon: "core", classes: null,
         desc: "A filtration module built in the Experiment Lab. It mounts on the cistern's console in the Sewers, and cleans the river while it runs.",
         lore: "A canister of membranes and a pump, and a chalk mark on it: THE DRAIN. Heavier than it looks.",
@@ -109,7 +111,7 @@ const ITEMS = {
         get stats() { const P = typeof POTION !== "undefined" ? POTION : null; return P ? ["EFFECT  SLEEP, " + (Math.round(P.sleep * P.copyFactor) / 60).toFixed(2).replace(/\.?0+$/, "") + " S (A QUARTER OF THE ORIGINAL), " + P.radius + " TILES", "SPARES  YOU AND YOURS: ENEMIES ONLY", "THROWN BY  THE POTION PILL, OR " + P.key.toUpperCase() + ", ONCE EQUIPPED", "MADE AT  THE ANALYSIS BENCH, ◆" + P.copyPrice + ", WITH THE ORIGINAL IN YOUR PACK"] : []; },
         verb: () => typeof potionVerb === "function" ? potionVerb("sleeping_potion_copy") : "EQUIP", use: () => typeof potionUse === "function" ? potionUse("sleeping_potion_copy") : { ok: false, why: "NO POTION HERE" } },
 };
-const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "relay_kit", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy"];
+const ITEM_ORDER = ["ammo_pack", "flare", "power_cell", "mutagen_sample", "power_module", "mech_leg", "mech_core", "scrap_metal", "fuel_cell", "healing_serum", "specimen_capsule", "rock", "toxic_sample", "sewer_sample", "purification_module", "sleeping_potion", "sleeping_potion_copy"];
 
 // ── the pack ──
 let playerInv = {};

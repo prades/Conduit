@@ -9,7 +9,7 @@
 //   A TAP on the panel charges the Crystal: ◆50 for +75% (crystalBuyCharge). (The outer ring was the relays online, and the panel was not tapped.)
 // Both read the same data as the rest of the facility: F.relays (js/facilitymap.js), relayOnline (js/stations.js) and the powered rooms (_fp.tut.powered, js/facilitytutorial.js).
 const FP_ROOM_TAG = {
-    crystal_chamber: "Crystal Chamber", teleport_room_1: "Teleport Room 1", front_lobby: "Computer Lab", security_room: "Security Room", show_room: "Show Room", lab_hallway: "Main Hallway",
+    crystal_chamber: "Crystal Chamber", teleport_room_1: "Teleport Room 1", front_lobby: "Server Room", security_room: "Security Room", show_room: "Warehouse", lab_hallway: "Main Hallway",
     experiment_lab: "Experiment Lab", lab_passage: "Lab Passage", teleport_stair_room: "Stair Room", teleport_room_2: "Teleport Room 2", observation_deck: "Observation Deck", armory: "Armory",
     catwalks: "Catwalks", arena: "Arena", nest_area: "Ant Nest", cold_storage: "Cold Storage", sewers: "Sewers",
 };

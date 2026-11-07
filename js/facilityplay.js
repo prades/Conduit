@@ -309,7 +309,7 @@ function facilityWalkTo(gx, gy) {
     if (!_fp || (typeof facilityPortalBusy === "function" && facilityPortalBusy()) || player._flight) return false;   // (nobody is told where to walk while the screen fades through a doorway, nor while a Kinetic Launcher has you in the air)
     const c = _fpNearestCell(gx, gy); if (!c || Math.hypot(c[0] - gx, c[1] - gy) > 1.6) return false;
     const p = facilityPath(player.x, player.y, c[0], c[1]); if (!p) return false;
-    player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; player._launchLoad = null; player._dropSite = null;   // (a new destination calls off a walk to a launcher's pad or to a broken edge: js/techabilities.js techSiteRide, techSiteDrop)
+    player.fpPath = p; player.targetX = c[0]; player.targetY = c[1]; player._launchLoad = null; player._dropSite = null;   // (a new destination calls off a walk to a launcher's pad or to a ledge: js/techabilities.js techSiteRide, techLedgeJump)
     player._tapRun = null;   // (a walk of the game's own is never stopped by an enemy near; a tap's makes itself a free run after this: facilityTapCap)
     return true;
 }

@@ -5,7 +5,7 @@
 //   SERVICE GUN    every class starts with it. Ammunition (the pack's ammo packs fill the gun: js/inventory.js).
 //   MACHINE GUN    the Gunslinger's, taken from the Armory's weapon locker (js/stations.js): four times the rate of fire, each round a little softer. Ammunition.
 //   LASER RIFLE    assembled at the Armory's terminal from scrap metal (any class). It runs on FUEL CELLS, not rounds: a cell is a magazine of charges (a lit-up beam that hits at once and goes through
-//                  whatever is behind the target), and the fuel cells are in the computer lab (the Front Lobby) once its power has been restored (js/facilitymap.js: pickups with `needs`).
+//                  whatever is behind the target), and the fuel cells are in the server room (the computer lab until build 2026-11-07qq) once its power has been restored (js/facilitymap.js: pickups with `needs`).
 // A weapon has a LEVEL (1 to 3): each level hits harder and fires faster. Levels are bought at the terminal with SCRAP METAL, which the arena's creatures drop where they fall (js/facilityspawn.js).
 // THE ARMORY TERMINAL (a station: js/stations.js, in the Armory, working once the Armory relay has restored its power) is a window with three things: turn scrap into ammunition, equip a weapon
 // you have, and upgrade or assemble one. What is equipped is also what the player is seen holding (js/playergear.js).
@@ -96,7 +96,7 @@ function fireLaserShot(foe) {
     const W = WEAPONS.laser, d = Math.hypot(foe.x - player.x, foe.y - player.y);
     if (d > W.range) { _wSay("OUT OF RANGE", "#ff9c8a"); return false; }
     if (laserCharge <= 0) {
-        if (!invHas("fuel_cell")) { _wSay("NO FUEL CELLS — THE COMPUTER LAB", "#ff7766"); return false; }
+        if (!invHas("fuel_cell")) { _wSay("NO FUEL CELLS — THE SERVER ROOM", "#ff7766"); return false; }
         invRemove("fuel_cell", 1); laserCharge = W.charges; _wSay("NEW FUEL CELL — " + W.charges + " CHARGES", "#9be8ff");
     }
     laserCharge--; playerShotsFired++; player.gunShotAt = typeof frame !== "undefined" ? frame : 0;

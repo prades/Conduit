@@ -211,7 +211,7 @@ function measure(w, h, query) {
     check('the lab has windows on every side that faces the hallway, drawn as glass, and they are solid like walls', () => {
         const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(); const glass = F.walls.filter(w => w.window); let through = 0; for (const w of glass) { const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2, dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], l = Math.hypot(dx, dy), nx = -dy / l, ny = dx / l; if (facilityCanStep(mx - nx * 0.6, my - ny * 0.6, mx + nx * 0.6, my + ny * 0.6)) through++; }
             return { n: glass.length, rooms: Array.from(new Set(glass.map(w => w.room))).sort(), ids: Array.from(new Set(glass.map(w => w.window))).sort(), through, windows: F.windows.length }; })()`);
-        ok(r.n >= 4, 'only ' + r.n + ' window pieces'); same(r.through, 0, 'a body walked through a window'); same(r.ids.filter(x => /^lab_/.test(x)).length, 4, 'lab windows ' + r.ids); same(r.windows, 8, 'compiled windows (four on the lab, three on the show room, one on the observation deck)');   // (the glass is drawn in the game: js/facilitystyle.js; the inspection map draws rooms only)
+        ok(r.n >= 4, 'only ' + r.n + ' window pieces'); same(r.through, 0, 'a body walked through a window'); same(r.ids.filter(x => /^lab_/.test(x)).length, 4, 'lab windows ' + r.ids); same(r.windows, 6, 'compiled windows (four on the lab, one on the warehouse: its pane onto the hallway, one on the observation deck)');   // (the glass is drawn in the game: js/facilitystyle.js; the inspection map draws rooms only)
     });
     check('the lab\'s only DOOR is the narrow passage (its other way in is the Cold Storage\'s stairs, a doorway you go through, not a walk): with the passage shut no walk reaches it, and a flood from inside it never leaves it', () => {
         const r = J(`(function(){ const F = facilityGet(), sc = facilityScale(), C = facilityBuild({ closed: ['lab_passage'] }); const L0 = F.byId.get('experiment_lab'), cells = facilityFlood((L0.bb[0] + L0.bb[2]) / 2, (L0.bb[1] + L0.bb[3]) / 2, C), ad = __door('door_arena_hallway', C), out = facilityFlood(ad.mx, ad.my - 2, C);
@@ -248,25 +248,29 @@ function measure(w, h, query) {
     });
 
     group('THE THEME: a rundown 2010s tech-startup headquarters');
-    check('the map records the theme, and the lobby has its big sign and a reception desk', () => {
+    check('the map records the theme, and the old front lobby is the SERVER ROOM (build 2026-11-07qq): its sign and reception desk are gone, the MAIN POWER JUNCTION stands in it', () => {
         const M = J('FACILITY_MAP'); same(M.theme.condition, 'rundown', 'condition'); ok(/2010s tech startup/.test(M.theme.era), 'era');
-        const L = M.rooms.find(r => r.id === 'front_lobby'); ok(L && /Lobby/.test(L.label) && /BIG SIGN/.test(L.dressing), 'the lobby'); same(M.rooms.some(r => r.id === 'front_office'), false, 'the old name is still there');
-        const sign = M.fixtures.find(f => f.type === 'wall_sign'); same(sign.room, 'front_lobby', 'sign room'); const desk = M.props.find(p => p.kind === 'reception_desk'); same(desk.room, 'front_lobby', 'desk room');
+        const L = M.rooms.find(r => r.id === 'front_lobby'); ok(L && L.label === 'Server Room' && /server/i.test(L.dressing), 'the server room'); same(M.rooms.some(r => r.id === 'front_office'), false, 'the old name is still there');
+        same(M.fixtures.filter(f => f.room === 'front_lobby' && f.type === 'wall_sign').length, 0, 'the lobby sign'); same(M.props.filter(p => p.kind === 'reception_desk').length, 0, 'the reception desk');
+        same(M.props.filter(p => p.kind === 'junction').map(p => p.room).join(), 'front_lobby', 'the junction'); same(M.stations.filter(s => s.kind === 'junction').map(s => s.prop).join(), 'junction', 'the junction\'s station');
     });
-    check('the lobby has TWO sliding doors to the hallway, one each side of the reception desk, and the desk itself is solid', () => {
-        const r = J(`(function(){ const F = facilityGet(), d = F.solids.find(s => s.kind === 'reception_desk'), W = __door('door_lobby_hallway_west'), E = __door('door_lobby_hallway_east'), x0 = d.bb[0], x1 = d.bb[2];
-            return { doors: [W.o.door, E.o.door], west: [W.mx + W.half, x0], east: [E.mx - E.half, x1], wmid: __cross('door_lobby_hallway_west', 0), emid: __cross('door_lobby_hallway_east', 0), wallW: __cross('door_lobby_hallway_west', 1).fwd, wallE: __cross('door_lobby_hallway_east', -1).fwd, desk: !facilityWalkable((d.poly[0][0] + d.poly[2][0]) / 2, (d.poly[0][1] + d.poly[2][1]) / 2) }; })()`);
-        ok(r.doors.every(d => d === 'sliding_access_door'), r.doors.join()); ok(r.west[0] <= r.west[1] + 0.5 && r.east[0] >= r.east[1] - 0.5, 'the doors are not on both sides of the desk: ' + JSON.stringify([r.west, r.east])); same(r.wmid.fwd, true, 'the west door does not work'); same(r.emid.fwd, true, 'the east door does not work'); same(r.wmid.back, true, 'cannot come back');
-        same(r.wallW, false, 'a wall between the west door and the desk is open'); same(r.wallE, false, 'a wall between the east door and the desk is open'); same(r.desk, true, 'the desk is walkable');
+    check('the server room keeps its TWO sliding doors to the hallway (the wall between them is shut), and its racks and junction are solid', () => {
+        const r = J(`(function(){ const F = facilityGet(), mid = s => s.shape === 'circle' ? s.at : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2], W = __door('door_lobby_hallway_west'), E = __door('door_lobby_hallway_east');
+            const solid = F.solids.filter(s => s.room === 'front_lobby' && (s.kind === 'junction' || s.kind === 'server_rack'));
+            return { doors: [W.o.door, E.o.door], wmid: __cross('door_lobby_hallway_west', 0), emid: __cross('door_lobby_hallway_east', 0), wallW: __cross('door_lobby_hallway_west', 1).fwd, wallE: __cross('door_lobby_hallway_east', -1).fwd, n: solid.length, junction: solid.some(s => s.kind === 'junction'), open: solid.filter(s => facilityWalkable(mid(s)[0], mid(s)[1], F)).map(s => s.id) }; })()`);
+        ok(r.doors.every(d => d === 'sliding_access_door'), r.doors.join()); same(r.wmid.fwd, true, 'the west door does not work'); same(r.emid.fwd, true, 'the east door does not work'); same(r.wmid.back, true, 'cannot come back');
+        same(r.wallW, false, 'the wall east of the west door is open'); same(r.wallE, false, 'the wall west of the east door is open'); ok(r.n >= 5 && r.junction, 'the racks and the junction are not solids: ' + r.n); same(r.open.join(), '', 'walkable racks');
     });
-    check('the show room is a glass case of display cases: glass on its north, east and hallway-side west walls, only display cases and plants inside it, and one sliding door in the glass to the hallway', () => {
-        const M = J('FACILITY_MAP'), S = M.rooms.find(r => r.id === 'show_room'); same(S.wall_material, 'glass', 'material'); ok(/display cases/.test(S.contents), 'contents not described');
-        ok(M.props.filter(p => p.room === 'show_room' && p.kind === 'display_case').length === 3 && M.props.filter(p => p.room === 'show_room').every(p => p.kind === 'display_case' || p.kind === 'plant' || p.kind === 'mech_bay' || p.kind === 'relay') && !(S.objects || []).length, 'the show room holds something besides its display cases, plants and the mech bay');
-        const w = J(`(function(){ const F = facilityGet(); return Array.from(new Set(F.walls.filter(x => x.room === 'show_room' && x.window).map(x => x.window))).sort(); })()`); same(w.join(), 'show_window_east,show_window_north,show_window_west', 'its windows');
+    check('the show room is the WAREHOUSE (build 2026-11-07qq): shelving, crates, barrels, a cart and lockers beside the mech bay; solid walls but for its pane onto the hallway; one sliding door in the glass to the hallway', () => {
+        const M = J('FACILITY_MAP'), S = M.rooms.find(r => r.id === 'show_room'); same(S.label, 'Warehouse', 'its name'); ok(/warehouse/i.test(S.contents), 'contents not described');
+        const kinds = M.props.filter(p => p.room === 'show_room').map(p => p.kind), allowed = ['pallet_rack', 'crate', 'crate_stack', 'barrel', 'cart', 'locker', 'mech_bay'];
+        ok(kinds.filter(k => k === 'pallet_rack').length >= 3 && kinds.includes('mech_bay') && kinds.every(k => allowed.includes(k)) && !(S.objects || []).length, 'the warehouse holds something besides its shelves, crates, barrels, cart, lockers and the mech bay: ' + kinds.join());
+        same(kinds.filter(k => k === 'display_case').length, 0, 'a display case is left');
+        const w = J(`(function(){ const F = facilityGet(); return Array.from(new Set(F.walls.filter(x => x.room === 'show_room' && x.window).map(x => x.window))).sort(); })()`); same(w.join(), 'show_window_west', 'its windows');
         const d = J(`(function(){ const F = facilityGet(), D = F.openings.find(o => o.id === 'door_showroom_hallway'); return { door: D.door, rooms: D.rooms.join(), conns: F.connections.filter(c => c.rooms.includes('show_room')).length, through: __cross('door_showroom_hallway', 0).fwd, glass: __cross('door_showroom_hallway', 1).fwd || __cross('door_showroom_hallway', -1).fwd, glassPieces: F.walls.filter(x => x.room === 'show_room' && x.window === 'show_window_west').length }; })()`);
         same(d.door, 'sliding_access_door', 'door'); same(d.rooms, 'show_room,lab_hallway', 'rooms'); same(d.conns, 1, 'the show room has more than the one door'); same(d.through, true, 'cannot walk through the door'); same(d.glass, false, 'the glass beside the door is open'); ok(d.glassPieces >= 2, 'the door did not leave glass on both sides of it: ' + d.glassPieces);
     });
-    check('the Crystal Chamber and both teleport rooms are walled off (solid, no glass); the lab and the show room are glass', () => {
+    check('the Crystal Chamber and both teleport rooms are walled off (solid, no glass); the lab and the warehouse (its pane onto the hallway) have glass', () => {
         const M = J('FACILITY_MAP'); const mat = id => M.rooms.find(r => r.id === id).wall_material;
         for (const id of ['crystal_chamber', 'teleport_room_1', 'teleport_room_2']) same(mat(id), 'solid', id);
         for (const id of ['experiment_lab', 'show_room']) same(mat(id), 'glass', id);
@@ -360,12 +364,12 @@ function measure(w, h, query) {
         same(r.dupes.length, 0, 'candidates already confirmed: ' + r.dupes.join()); same(r.overlap, 0, 'two doors overlap');
     });
 
-    group('FURNITURE: a computer lab in the lobby, science lab equipment in the lab, and glass');
-    check('the Front Lobby is a computer lab (rows of computer desks, server racks) and the Experiment Lab a science lab (benches, a fume hood, glass test chambers beside the tank); every piece is solid', () => {
+    group('FURNITURE: a server room at the front, science lab equipment in the lab, and glass');
+    check('the Server Room is rows of server racks, a console and the junction (build 2026-11-07qq: its computer desks went), and the Experiment Lab a science lab (benches, a fume hood, glass test chambers beside the tank); every piece is solid', () => {
         const M = J('FACILITY_MAP'), count = (room, kind) => M.props.filter(p => p.room === room && p.kind === kind).length;
-        ok(count('front_lobby', 'computer_desk') >= 3, 'computer desks'); ok(count('front_lobby', 'server_rack') >= 2, 'server racks'); ok(count('front_lobby', 'reception_desk') === 1, 'the reception desk');
+        ok(count('front_lobby', 'server_rack') >= 4, 'server racks'); same(count('front_lobby', 'console'), 1, 'the console'); same(count('front_lobby', 'junction'), 1, 'the junction'); same(count('front_lobby', 'computer_desk') + count('front_lobby', 'reception_desk'), 0, 'the lobby furniture');
         ok(count('experiment_lab', 'lab_bench') >= 2, 'lab benches'); same(count('experiment_lab', 'fume_hood'), 1, 'fume hood'); ok(count('experiment_lab', 'test_chamber') >= 2, 'test chambers'); ok(M.props.some(p => p.id === 'lab_tank'), 'the big tank');
-        const bad = J(`(function(){ const F = facilityGet(); return F.solids.filter(s => ['computer_desk', 'server_rack', 'lab_bench', 'fume_hood', 'test_chamber'].includes(s.kind)).filter(s => { const c = s.shape === 'circle' ? s.at : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2]; return facilityWalkable(c[0], c[1], F); }).map(s => s.id); })()`);
+        const bad = J(`(function(){ const F = facilityGet(); return F.solids.filter(s => ['server_rack', 'junction', 'pallet_rack', 'lab_bench', 'fume_hood', 'test_chamber'].includes(s.kind)).filter(s => { const c = s.shape === 'circle' ? s.at : [(s.bb[0] + s.bb[2]) / 2, (s.bb[1] + s.bb[3]) / 2]; return facilityWalkable(c[0], c[1], F); }).map(s => s.id); })()`);
         same(bad.length, 0, 'walkable pieces of furniture: ' + bad.join());
     });
     check('nothing stands in a doorway: every door has two clear tiles of floor on each side of it, and no piece of furniture touches a door\'s span', () => {
@@ -373,7 +377,7 @@ function measure(w, h, query) {
             for (const side of [-1, 1]) for (const along of [-half + 0.6, 0, half - 0.6]) for (const dist of [1, 2]) { const x = h ? mx + along : mx + side * dist, y = h ? my + side * dist : my + along; if (!facilityWalkable(x, y, F)) bad.push(o.id + '@' + side + ',' + along.toFixed(1) + ',' + dist); } } return bad; })()`);
         same(r.length, 0, 'blocked in front of a door: ' + r.slice(0, 6).join(' '));
     });
-    check('the lobby stays walkable: from the west door round the computer desks and the reception desk to the east door and the bathroom door, all inside the lobby', () => {
+    check('the server room stays walkable: from the west door round the racks to the east door and the bathroom door, all inside the room', () => {
         const r = J(`(function(){ const F = facilityBuild({ closed: ['front_lobby'] }), W = __door('door_lobby_hallway_west'), E = __door('door_lobby_hallway_east'), B = __door('door_security_lobby'), cells = facilityFlood(W.mx - 1, W.my - 3, F), rooms = new Set(), has = (x, y) => cells.some(q => Math.hypot(q[0] - x, q[1] - y) < 1.1);   // (the lobby's doors shut, so the flood is the lobby's own floor)
             for (const q of cells) rooms.add(facilityRoomAt(q[0], q[1], F).id); return { east: has(E.mx, E.my - 3), bath: has(B.mx - 3, B.my), rooms: Array.from(rooms), n: cells.length }; })()`);
         same(r.east, true, 'the east door is cut off'); same(r.bath, true, 'the bathroom door is cut off'); same(r.rooms.join(), 'front_lobby', 'the flood left the lobby'); ok(r.n > 150, 'only ' + r.n + ' cells of lobby floor');
@@ -444,7 +448,7 @@ function measure(w, h, query) {
     });
     check('every kind of decor and furniture in the data has drawing code, and every id is unique', () => {
         const M = J('FACILITY_MAP'), src = rd('js/facilitydecor.js') + rd('js/facilitystyleall.js') + rd('js/facilitysewers.js'), play = rd('js/facilityplay.js');
-        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind', 'crack', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'ladder', 'scoreboard', 'plate', 'moss', 'bulbs', 'monitor_bank', 'garage_door', 'gun_rack', 'portal_door', 'outfall', 'collapse', 'sealed_hatch', 'sewer_arch', 'brood_hole', 'resin']);   // (the last three: the Sewers' Nest)
+        const wall = new Set(['poster', 'vent', 'pipe', 'wall_light', 'screen', 'board', 'whiteboard', 'exit_sign', 'clock', 'graffiti', 'panel', 'banner', 'mirror', 'shelf', 'sign', 'hazard_sign', 'cable_run', 'window_blind', 'crack', 'vein', 'beam', 'chain', 'claw', 'ooze_drip', 'lamp', 'ladder', 'scoreboard', 'plate', 'moss', 'bulbs', 'monitor_bank', 'garage_door', 'gun_rack', 'portal_door', 'outfall', 'collapse', 'sealed_hatch', 'sewer_arch', 'brood_hole', 'resin', 'relay_node']);   // (brood_hole, resin: the Sewers' Nest; relay_node: a relay's small wall node, build 2026-11-07qq)
         const missing = []; for (const d of M.decor) { if (d.kind === 'area') { if (!/d\.kind === "area"/.test(rd('js/facilitynet.js'))) missing.push(d.kind); continue; }   // (an AREA is not drawn: it names a part of a room for the zone tag, js/facilitynet.js facilityAreaAt)
             if (wall.has(d.kind)) { if (!new RegExp('\\b' + d.kind + ':\\s*\\(it, f\\)').test(src)) missing.push(d.kind); } else if (!new RegExp('k === "' + d.kind + '"').test(src) && !new RegExp('d\\.kind === "' + d.kind + '"').test(play)) missing.push(d.kind); }   // (a stairwell is an item of its own: js/facilityplay.js places it by its kind)
         for (const p of M.props) if (p.kind && !new RegExp('(kind|k) === "' + p.kind + '"').test(src + play)) missing.push(p.kind);

@@ -199,6 +199,29 @@ function _fpStylePropMore(it) {
     } else if (k === "toppled_rack") {   // A STORAGE RACK TOPPLED OVER (the user's plan): lying on its back at an angle, its frame and shelves facing up, a few boxes spilled beside it. Drawn whole from one of its cells (the last drawn). (The flat drawing, until the cold sheet's sprite has arrived: js/propsprites.js)
         if (it.skip || !it.poly) return true;
         _fpTiltRack(it.poly, seed, f);
+    } else if (k === "pallet_rack") {   // WAREHOUSE RACKING (the flat drawing, until the cargo sheet's sprite has arrived): teal uprights, three amber beam levels, a box or a bin on each. A rack along y faces +x, one along x faces +y
+        const alongY = it.sx && it.lf && !(it.sy && it.top), ends = it[alongY ? "sy" : "sx"] ? [-0.46, 0.46] : [-0.46];   // (a post at every tile, and one at the near end)
+        const posts = side => { for (const e of ends) { const a = alongY ? side * 0.44 : e, b = alongY ? e : side * 0.44, p = P(x + a, y + b, 0), q = P(x + a, y + b, 108); ctx.strokeStyle = A.ink; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); ctx.strokeStyle = A.tealDark; ctx.lineWidth = 2.5; ctx.stroke(); } };
+        posts(-1);   // the back posts, then the shelves and what is on them, then the front posts
+        for (let i = 0; i < 3; i++) {
+            const z = [7, 41, 75][i], c = ["#c69c62", A.caseLit, "#d6b17a", A.teal, A.blue][(seed + i * 3) % 5], h = 14 + ((seed >>> (i * 3)) % 3) * 4, w = 0.24 + ((seed >>> (i * 2 + 1)) % 3) * 0.05;
+            _fpSBox(x - 0.48, y - 0.48, x + 0.48, y + 0.48, z - 5, z, "#c4ccd4", _fpShade(A.amber, 0.85), A.amber, 2);
+            if ((seed >>> (i + 7)) % 5) _fpSBox(x - w, y - w, x + w, y + w, z, z + h, _fpShade(c, 1.08), _fpShade(c, 0.78), _fpShade(c, 0.9), 2.5);
+        }
+        posts(1);
+    } else if (k === "junction") {   // THE MAIN POWER JUNCTION (the flat drawing, until the tech sheet's sprite has arrived): its back row of cells a tall switchgear cabinet (a breaker bank, the module slot, a red isolator), its front row the service step
+        const on = typeof junctionRepaired === "function" && junctionRepaired();   // (lit once the power module is in: js/stations.js)
+        if (it.sy) { _fpSBox(x - 0.5, y - 0.5, x + 0.5, y + 0.5, 0, 4, "#9aa6b2", "#6b7683", "#7d8995", 2.5); _fpFaceY(it, 0.02, 0.98, 0.5, 3.5, A.amber, null); }
+        else {
+            _fpSBox(x - 0.5, y - 0.5, x + 0.5, y + 0.5, 0, 94, "#5b6573", "#c9d6dc", "#3a4350", 3.5); _fpFaceY(it, 0, 1, 0, 5, A.amber, null); _fpFaceY(it, 0, 1, 84, 90, A.teal, null);
+            if (it.lf) { for (let r = 0; r < 4; r++) for (let c = 0; c < 2; c++) { const u = 0.14 + c * 0.38; _fpFaceY(it, u, u + 0.3, 32 + r * 10, 39 + r * 10, "#39424e", A.ink); _fpFaceY(it, u + 0.22, u + 0.27, 34 + r * 10, 37 + r * 10, on ? "#43e0a8" : (r + c) % 3 ? "#2a1210" : "#ff4a3a", null); } }   // the breakers
+            else {
+                _fpFaceY(it, 0.04, 0.44, 28, 62, "#4a525e", A.ink); _fpFaceY(it, 0.1, 0.38, 32, 58, on ? _fpRgba(A.cyan, 0.75 + 0.2 * Math.sin(f * 0.06 + seed)) : "#05080c", null);   // the module slot: the module glowing in it, or empty
+                if (on) { _fpFaceY(it, 0.21, 0.27, 36, 54, A.white, null); const g = P(x - 0.26, y + 0.5, 45); _fpGlow(g[0], g[1], 30, A.cyan, 0.22); }
+                _fpFaceY(it, 0.6, 0.9, 52, 72, A.amber, A.ink); _fpFaceY(it, on ? 0.72 : 0.64, on ? 0.78 : 0.86, on ? 53 : 60, on ? 71 : 64, "#d6422a", null);   // the isolator: its handle up when on, across when not
+            }
+            if (it.sx) { const l = P(x + 0.25, y, 98); ctx.fillStyle = on ? A.cyan : ((Math.floor(f / 30) + seed) % 3 ? "#3a1410" : "#ff4a3a"); ctx.beginPath(); ctx.arc(l[0], l[1], 3.2, 0, 6.2832); ctx.fill(); }   // the beacon on its roof
+        }
     } else if (k === "rail") { return false;
     } else return false;
     return true;

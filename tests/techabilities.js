@@ -137,11 +137,13 @@ function measure(w, h) {
         ok(/READY IN 2 S/.test(r.cooling), 'during the cooldown: ' + r.cooling);
     });
 
-    group('THE KINETIC LAUNCHER: EXPLORATION (a launcher site, the Arena Catwalk, the broken section)');
-    check('the map has a launcher site in the arena that reaches the catwalks: the launcher\'s spot and the landing under the broken section on the arena floor, the landing and the broken section on the catwalks, all on tiles a body can stand on; nobody walks from one to the other', () => {
-        const r = J(`(function(){ const s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'), at = (p) => partyRoomAt(p[0], p[1]); return { n: _fp.F.launchSites.length, id: s.id, rooms: [at(s.at), at(s.dropTo), at(s.land), at(s.drop)], stand: [s.at, s.dropTo, s.land, s.drop].every(p => facilityStandOk(p[0], p[1])),
-            up: facilityPath(s.at[0], s.at[1], s.land[0], s.land[1]) === null, down: facilityPath(s.land[0], s.land[1], s.at[0], s.at[1]) === null, errs: facilityValidate(_fp.F).errors.filter(x => /launcher site/.test(x)) }; })()`);
-        same(r.n, 2, 'sites (the arena catwalk, and the Sewers\' collapsed tunnel: tests/sewerquest.js)'); same(r.id, 'site_arena_catwalk', 'the site'); same(r.rooms.join(), 'arena,arena,catwalks,catwalks', 'where its points are'); same(r.stand, true, 'a point a body cannot stand on'); same(r.up, true, 'a walk up'); same(r.down, true, 'a walk down'); same(r.errs.length, 0, 'the validator: ' + r.errs);
+    group('THE KINETIC LAUNCHER: EXPLORATION (a launcher site, the Arena Catwalk, the catwalks\' LEDGE: the one way down since build 2026-11-07qq)');
+    check('the map has a launcher site in the arena that reaches the catwalks (the launcher\'s spot on the arena floor, the landing on the catwalks) and the catwalks\' LEDGE down (stepped off on the catwalks, landed on in the arena, in sight below the deck), all on tiles a body can stand on; the site has no broken section any more; nobody walks from one floor to the other', () => {
+        const r = J(`(function(){ const s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'), L = (_fp.F.ledges || []).find(q => q.id === 'ledge_catwalks'), at = (p) => partyRoomAt(p[0], p[1]); return { n: _fp.F.launchSites.length, id: s.id, rooms: [at(s.at), at(s.land), at(L.at), at(L.to)], stand: [s.at, s.land, L.at, L.to].every(p => facilityStandOk(p[0], p[1])),
+            broken: [s.drop, s.dropTo].join(), ledges: _fp.F.ledges.length, out: L.at[0] - L.to[0],
+            up: facilityPath(s.at[0], s.at[1], s.land[0], s.land[1]) === null, down: facilityPath(s.land[0], s.land[1], s.at[0], s.at[1]) === null, errs: facilityValidate(_fp.F).errors.filter(x => /launcher site|ledge/.test(x)) }; })()`);
+        same(r.n, 2, 'sites (the arena catwalk, and the Sewers\' collapsed tunnel: tests/sewerquest.js)'); same(r.id, 'site_arena_catwalk', 'the site'); same(r.rooms.join(), 'arena,catwalks,catwalks,arena', 'where its points are (the launcher, its landing, the ledge, under it)'); same(r.stand, true, 'a point a body cannot stand on');
+        same(r.broken, ',', 'the site still has its broken section'); same(r.ledges, 1, 'ledges'); ok(r.out >= 3.5, 'the ledge lands too close under the deck, where the camera cannot see: ' + r.out); same(r.up, true, 'a walk up'); same(r.down, true, 'a walk down'); same(r.errs.length, 0, 'the validator: ' + r.errs);
     });
     check('setting a launcher up: it takes an electric technician in the squad, which walks to the site and works there; then the launcher is there for good (saved, and put back from a save), its XP given once; a second one is refused', () => {
         const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); _fp.launchers = new Set();
@@ -154,19 +156,33 @@ function measure(w, h) {
         same(r.installed, true, 'not set up'); same(r.xp, 100, 'its XP'); same(r.saved.join(), 'site_arena_catwalk', 'the save'); same(r.again, 'A LAUNCHER IS ALREADY HERE', 'a second one');
         same(r.cleared, false, 'a save without it'); same(r.applied.join(), 'site_arena_catwalk', 'a save with it (and an unknown site left out)');
     });
-    check('the launcher sends a follower up: it runs to the launcher and is thrown in an arc up onto the catwalks, where it holds them; called back (COME), it walks to the broken section and drops through into the arena, one way, and follows again; one posted up there that is not (back from the dead) is let go of the post', () => {
+    check('the launcher sends a follower up: it runs to the launcher and is thrown in an arc up onto the catwalks, where it holds them; called back (COME), it walks to the LEDGE and jumps down into the arena where the ledge lands, one way, and follows again; one posted up there that is not (back from the dead) is let go of the post', () => {
         const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1];
             player.x = player.targetX = player.visualX = s.at[0] - 2; player.y = player.targetY = player.visualY = s.at[1] + 1; g.x = player.x + 0.5; g.y = player.y + 0.5;
             o.use = techSiteLaunch(s, g).ok; let up = 0; for (let i = 0; i < 900 && (g._launchLoad || g._flight || !up); i++) { __step(1); if (g._flight) up = Math.max(up, techFlightLift(g)); }
             o.peak = Math.round(up); o.post = g.post; o.room = partyRoomAt(g.x, g.y); o.again = techSiteLaunch(s, g).why;
-            partyCall(g, true); let dropped = false; for (let i = 0; i < 2400 && !(dropped && !g._flight); i++) { __step(1); if (g._flight && g._flight.kind === 'drop') dropped = true; }
-            o.dropped = dropped; o.down = partyRoomAt(g.x, g.y); o.sameFloor = _pComp(g.x, g.y) === _pComp(player.x, player.y);
+            partyCall(g, true); let dropped = false, from = null; const L = _fp.F.ledges[0]; for (let i = 0; i < 2400 && !(dropped && !g._flight); i++) { __step(1); if (g._flight && g._flight.kind === 'drop' && !dropped) { dropped = true; from = Math.hypot(g.x - L.at[0], g.y - L.at[1]); } }
+            o.dropped = dropped; o.from = from; o.down = partyRoomAt(g.x, g.y); o.sameFloor = _pComp(g.x, g.y) === _pComp(player.x, player.y);
             partyPost(g, 'catwalks', true); g.x = player.x; g.y = player.y; _techDropScan(); o.stale = g.post; return o; })()`);
         same(r.use, true, 'the launch'); ok(r.peak > 100, 'the arc up is not drawn high: ' + r.peak); same(r.post, 'catwalks', 'it does not hold the catwalks'); same(r.room, 'catwalks', 'where it came down'); same(r.again, 'IT IS UP THERE ALREADY', 'sent up again');
-        same(r.dropped, true, 'it never dropped through the broken section'); same(r.down, 'arena', 'where it came down'); same(r.sameFloor, true, 'not back on the player\'s floor');
+        same(r.dropped, true, 'it never jumped from the ledge'); ok(r.from !== null && r.from < 0.8, 'it did not jump from the ledge: ' + r.from); same(r.down, 'arena', 'where it came down'); same(r.sameFloor, true, 'not back on the player\'s floor');
         same(r.stale, null, 'a post up there it cannot walk to');
     });
 
+    check('THE LEDGE for you (the owner: "a ledge that goes down that the player can only move to jump off of to get down"): up on the catwalks, walking onto it jumps you down to where it lands, one way; its tag (▼ LEDGE) shows only up there, near it, and a tap on it walks you there; down in the arena it does nothing; it is drawn: the deck\'s rail stops for it and arrows point down', () => {
+        const r = J(`(function(){ const o = {}, L = _fp.F.ledges.find(q => q.id === 'ledge_catwalks'), __pstep = n => { for (let i = 0; i < n; i++) { frame++; facilityPlayerStep(); techAbilityTick(); } }, put = (x, y) => { player.x = player.targetX = player.visualX = x; player.y = player.targetY = player.visualY = y; player.fpPath = null; player._flight = null; player._dropSite = null; };
+            put(L.at[0], L.at[1] - 3); __pstep(2); o.up = !player._flight && partyRoomAt(player.x, player.y);
+            o.walk = facilityWalkTo(L.at[0], L.at[1]); let jumped = false; for (let i = 0; i < 400 && !(jumped && !player._flight); i++) { __pstep(1); if (player._flight && player._flight.kind === 'drop') jumped = true; }
+            o.jumped = jumped; o.landed = [partyRoomAt(player.x, player.y), Math.round(Math.hypot(player.x - L.to[0], player.y - L.to[1]) * 10) / 10];
+            put(L.to[0], L.to[1]); __pstep(5); o.belowStays = !player._flight && partyRoomAt(player.x, player.y);
+            put(L.at[0] - 0.2, L.at[1] - 2.5); canvas.width = 1280; canvas.height = 860; techDrawOverlay(); o.tag = !!_techLabels['ledge:' + L.id]; const lab = _techLabels['ledge:' + L.id];
+            o.tap = lab ? techSiteTap(lab.x + lab.w / 2, lab.y + lab.h / 2) : false; o.going = player._dropSite; for (let i = 0; i < 400 && !player._flight; i++) __pstep(1); o.tapJump = !!player._flight && player._flight.kind === 'drop';
+            for (let i = 0; i < 120 && player._flight; i++) __pstep(1); put(L.to[0], L.to[1]); techDrawOverlay(); o.noTagBelow = !_techLabels['ledge:' + L.id];
+            const list = []; techDrawItems(list); o.item = list.some(q => q.kind === 'ledge'); o.gap = _fp.items.some(i => i.fp === 'wall' && i.scaffold && i.gap); put(crystal.x - 2, crystal.y + 5); return o; })()`);
+        same(r.up, 'catwalks', 'not up there'); same(r.walk, true, 'no walk to the ledge'); same(r.jumped, true, 'walking onto the ledge did not jump you'); same(r.landed[0], 'arena', 'where you came down'); ok(r.landed[1] < 0.6, 'not where the ledge lands: ' + r.landed[1]);
+        same(r.belowStays, 'arena', 'the ledge did something from below'); same(r.tag, true, 'no tag up there'); same(r.tap, true, 'the tag did not take the tap'); same(r.going, 'ledge_catwalks', 'the tap did not send you to the ledge'); same(r.tapJump, true, 'the tap did not end in the jump'); same(r.noTagBelow, true, 'a tag down in the arena');
+        same(r.item, true, 'the ledge is not drawn'); same(r.gap, true, 'the deck\'s rail does not stop for the ledge');
+    });
     check('THE LAUNCHER IS SUBTLE (asked: "it shouldn\'t automatically lock me into jumping up to the next level. It should remain subtle and uninterruptive"): coming near a site says nothing; its tag is small and still; only a tap on the tag is the site\'s (a tap on the floor round it walks); the launcher\'s aim never holds you: a tap that is not on a follower puts it away and is an ordinary tap', () => {
         const r = J(`(function(){ const o = {}, s = _fp.F.launchSites.find(q => q.id === 'site_arena_catwalk'); techLaunchersApply(['site_arena_catwalk']); const fs = __fresh(['electric', 'core']), g = fs[1]; techAimCancel(true);
             player.x = player.targetX = player.visualX = s.at[0] - 9; player.y = player.targetY = player.visualY = s.at[1]; __step(2); floatingTexts.length = 0;

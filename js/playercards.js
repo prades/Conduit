@@ -58,7 +58,7 @@ function playerRoundJump(role, from, src, dmg, skip) {
 
 // ── THE TECHNOMANCER'S SIX (the following update's Part 1b, build 2026-11-02i) ──
 //   (rule 2)           its PUNCH (js/mutator.js _mxStrike, the gauntlet) and its ARC (js/technomancer.js _tcZap) take the role's element, for the triangle only (playerHitElement; the arc's hit: js/damage.js dmgArcHit)
-//   FORGEMASTER        fire: the facility's three sentries' rounds BURN (js/stations.js, playerSentryHit); your repairs take kit.repair of the time, a sentry's and a relay's (playerRepairShare)
+//   FORGEMASTER        fire: the facility's three sentries' rounds BURN (js/stations.js, playerSentryHit); your repairs take kit.repair of the time, a sentry's (playerRepairShare; a relay's too until build 2026-11-07qq, when relay repairs went)
 //   SMOG ENGINEER      toxic: every ONLINE relay WEAKENS every creature within kit.relays.radius tiles of it, on every card tick while it stays (js/cards.js equipTick → playerRolesTick)
 //   CRYO TECH          ice: the same, and it SLOWS
 //   ARC WARDEN         electric: while your lamp is OVERCHARGED (a POWER CELL), every kit.lamp.every frames every creature in its light (js/facilitytutorial.js facilityLampReach), in sight, takes the arc's zap
@@ -88,10 +88,11 @@ function playerRolesTick() {
 }
 function _pcFoes() { return (typeof actors !== "undefined" ? actors : []).filter(a => a && !a.dead && a.health > 0 && (typeof isHostileTarget !== "function" || isHostileTarget(a))); }
 function _pcRelays(r) {
-    const k = r.kit.relays; if (typeof _fp === "undefined" || !_fp || !_fp.stations || typeof equipElementStatus !== "function") return 0;
+    const k = r.kit.relays; if (typeof _fp === "undefined" || !_fp || !_fp.F || typeof equipElementStatus !== "function" || typeof facilityRelayAt !== "function") return 0;
     let n = 0; const foes = _pcFoes();
-    for (const s of _fp.stations) {
-        if (s.kind !== "relay" || !(typeof relayOnline === "function" && relayOnline(s.relay))) continue;
+    for (const R of (_fp.F.relays || [])) {   // (each relay's NODE on its wall, since build 2026-11-07qq: js/stations.js facilityRelayAt)
+        if (!(typeof relayOnline === "function" && relayOnline(R.id))) continue;
+        const s = facilityRelayAt(R.id); if (!s) continue;
         for (const a of foes) if (Math.hypot(a.x - s.x, a.y - s.y) <= k.radius) { equipElementStatus(s, a, r.kit.el); n++; }
     }
     return n;

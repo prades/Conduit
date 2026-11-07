@@ -79,7 +79,7 @@ const menu = HTML.slice(HTML.indexOf('<div id="controlsMenu">'), HTML.indexOf('<
         ok(/id="cmStart" class="cm-section active"/.test(menu), 'it does not open on START');
         const st = section('cmStart');
         ok((st.match(/class="ix-step"/g) || []).length === 6, 'not six steps');
-        for (const w of ['Find supplies in the dark', 'Restore a relay', 'Gather a squad', 'Hunt the arena', 'Level, evolve, clone', 'Defend the Crystal']) ok(st.includes(w), 'no step: ' + w);
+        for (const w of ['Find supplies in the dark', 'Repair the junction', 'Gather a squad', 'Hunt the arena', 'Level, evolve, clone', 'Defend the Crystal']) ok(st.includes(w), 'no step: ' + w);
         for (const w of ['Build pylons', 'Power them', 'Take the next zone', 'Survive the night']) ok(!st.includes(w), 'a step of the strip game is still listed: ' + w);
     });
     await check('every tab leads with a short overview; the full reference is folded underneath', () => {
