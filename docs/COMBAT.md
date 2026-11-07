@@ -186,7 +186,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 | RIFT MIMIC | Brawler · flux | Slashing (claws) | GRAVITY SLAM: Earthquake |
 | THUNDERHEAD | Mage · electric | Elemental (CHAIN LIGHTNING: the shot conducts on, by distance) | STATIC VORTEX (a stationary pull that bites): Elemental |
 | VOIDSTAR | Mage · flux | Elemental | SINGULARITY SHOT: Elemental |
-| EMBER HOOD | Mage · fire | Elemental (FIREBALL) | HEXFIRE (a shot that leaves a stationary burning circle): Elemental; FIRE BOMBS |
+| EMBER HOOD | Mage · fire | Elemental (FIREBALL) | HEXFIRE (a shot that leaves a stationary burning circle): Elemental (FIRE BOMBS taken out as an alternate, 2026-11-07) |
 | RIMESTAR | Mage · ice | Projectile (ice shards) | none yet |
 | HORNSHELL | Mage · core | Projectile (horn spines) | none yet |
 | ROTSHARD | Mage · toxic | Projectile (rot shards) | CORRODE SHOT: Elemental |
@@ -200,7 +200,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 | Lotus lantern (designed, name to come) | Mage · bloom | Elemental (seed-light) | SEEDFALL: Elemental |
 | Coral crab (designed, name to come) | Technician · bloom | Crushing (claws) | REEF: to set (`CONVERSION.md`) |
 
-- **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS too), the static field, the ice burst, the singularity, the smoke bomb.
+- **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS move too, until it was taken out on 2026-11-07), the static field, the ice burst, the singularity, the smoke bomb.
 - **An egg** (not yet evolved) hits with its scythe legs: Slashing.
 - **The player's guns and the turrets:** Projectile.
 
@@ -378,7 +378,7 @@ PETAL BLAZE, the one move of their own, is Elemental.
 | Follower | the twelve signature moves, THERMITE DRILL | alternate | ATK |
 | Follower | a follower thrown by the Kinetic Launcher, landing | Earthquake | ATK |
 | Follower | the element specials, the toxic impact, the fire eruption, the fire special's bombs | special (Elemental) | SP.ATK |
-| Follower | the fire forms' FIRE BOMBS move | special (Elemental) | ATK |
+| Follower | the fire forms' FIRE BOMBS move (taken out 2026-11-07, build `ii`) | special (Elemental) | ATK |
 | Creature | its bite (js/predator.js, three places) | its race's (§7.8) | — |
 | Creature | MANDIBLE FRENZY, CARAPACE SLAM, VENOM LANCE's first hit, BLADE FLURRY | its own (§7.8) | — |
 | Creature | the spider's shot; its charged extra | Projectile; Elemental | — |

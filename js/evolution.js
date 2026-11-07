@@ -154,7 +154,7 @@ const QUILL_RANGE = 4, QUILL_COUNT = 5, QUILL_FAN = 40, QUILL_MULT = 0.5, QUILL_
 // with the retired Reaver. The retired electric brawlers keep SONIC ROLL alone.
 const EVOLUTIONS = {
     // LEGACY: the first fire brawler. New evolutions use the Quillstone; a follower already evolved into this keeps it.
-    bloom:  { id: "bloom",  legacy: true, name: "BUNKER BLOOM", element: "fire",     role: "brawler", move: "PETAL BLAZE", moves: ["petal_blaze", "bomb_lob"], sheet: "img/evo/bloom.png",
+    bloom:  { id: "bloom",  legacy: true, name: "BUNKER BLOOM", element: "fire",     role: "brawler", move: "PETAL BLAZE", moves: ["petal_blaze"], sheet: "img/evo/bloom.png",
               cell: 144, anchor: [72, 114.2], core: [72, 74.6] },
     // LEGACY: the first electric mage. New evolutions use the Thunderhead; a follower already evolved into this keeps it.
     reaver: { id: "reaver", legacy: true, name: "REAVER", element: "electric", role: "sniper",  move: "ARC VOLLEY",  sheet: "img/evo/reaver.png",
@@ -179,7 +179,7 @@ const EVOLUTIONS = {
               cell: 144, anchor: [72, 114.2], core: [72, 57], noGlow: true, color: "#ffee33" },
     // The FIRE SNIPER: a ring of six crystals, one round from each. Its ring turns, so its sheet carries its own light.
     // LEGACY: the first fire mage, whose design went to the electric brawler (the Volt Ring). A follower already evolved into this keeps it.
-    halo:   { id: "halo",   legacy: true, name: "CINDER HALO", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire", "bomb_lob"], sheet: "img/evo/halo.png",
+    halo:   { id: "halo",   legacy: true, name: "CINDER HALO", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire"], sheet: "img/evo/halo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ff5a1f" },
     // The FIRE BRAWLER, design No. 354 (its separate antennae dropped, the two front spikes black like the shell): a pitch-black cut gem that crawls on
     // little hidden feet, red shards growing out of it. The quills sway, so its sheet carries its own light.
@@ -202,7 +202,7 @@ const EVOLUTIONS = {
     staticorb:{ id: "staticorb", name: "STATIC ORB", element: "electric", role: "brawler", move: "SONIC ROLL", moves: ["static_rush", "pinball"], sheet: "img/evo/staticorb.png",
               cell: 144, anchor: [72, 114.2], core: [72, 80.1], noGlow: true, color: "#ffe033" },
     // The FIRE MAGE ("sniper" in the code): the hooded pyramid with the hovering gems (design No. 391), recoloured for fire. The gems turn, so its sheet carries its own light.
-    embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire", "bomb_lob"], shot: "FIREBALL", sheet: "img/evo/embercowl.png",
+    embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire"], shot: "FIREBALL",   /* (FIRE BOMBS taken out as an alternate: the owner, 2026-11-07, build ii) */ sheet: "img/evo/embercowl.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f" },
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
     hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", sheet: "img/evo/hammerslug.png",

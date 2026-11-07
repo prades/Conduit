@@ -44,7 +44,7 @@ The brief's three damage categories are Piercing/Slashing, Crush/Slam/Ground and
   - Each travels on its own and **stops at the first enemy it hits**: no piercing, no explosion, no fragment splash.
   - A crystal shotgun: a cluster can catch several quills; spread-out enemies are less likely to take the whole volley. The simultaneous launch must be plain to see.
   - Five quills and the simultaneous launch are **approved**. The 40° fan, four-tile range, four-second cooldown and multiplier discussed earlier are **not final**.
-- **Additional alternate: FIRE BOMBS** stays a selectable alternate for fire followers wherever the game already supports it: slower, broader area pressure that complements QUILL BURST rather than replacing it.
+- **Additional alternate: FIRE BOMBS** *(**Superseded 2026-11-07:** off the fire brawler in build `gg`, then taken out as an alternate altogether in build `ii`; the owner: "I thought we were getting rid of firebombs". The fire special's bombs are unchanged.)* stays a selectable alternate for fire followers wherever the game already supports it: slower, broader area pressure that complements QUILL BURST rather than replacing it.
 
 ### 2.3 EMBER HOOD (fire Mage)
 

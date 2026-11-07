@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **ii · FIRE BOMBS taken out as an alternate** (the owner, 2026-11-07, after build hh: "I thought we were getting rid of firebombs"; hh "Push to main"). Implemented and tested on the branch; not playtested.
+  - No form has FIRE BOMBS any more: the Ember Hood's one alternate is HEXFIRE (the retired Bunker Bloom and Cinder Halo lost it too; the Quillstone lost it in gg). The move is out of the moves table, its firing code (`fireBombBarrage`) and its INDEX entry are gone.
+  - A follower saved on FIRE BOMBS loads on its normal attack.
+  - Unchanged, and asked: every fire follower's special still lobs two bouncing bombs that set the floor burning (js/elements.js, `throwFireBombsAt`).
+  - Tests: firebombs (a new check: no form has it, the move and its code are gone, the special's bombs remain), followercombat, commandcenter, moves, evolution, unitinfo, foundation, bible (the forms, the moves table), infodex.
+
 - **hh · A Technician winding up shows circuit sparks** (the owner, 2026-11-07, of the open question what a Technician shows: "Circuit sparks works"; gg "Push to main"). Implemented and tested on the branch; seen in a screenshot; not playtested.
   - While a Technician stands rooted winding up its chosen alternate, short zigzag bolts of its element's colour with bright spark tips flicker over its body (one in three out each frame, jumping to new places every 4 frames), more and longer as the wind-up runs (two to five, js/draw.js `drawNPC`). Today only the Thermite Burrower (MAGMA VENT) has an alternate among the technicians. The sizes are the agent's (provisional).
   - Tests: combat (the cue for each class: a Mage's glow, a Brawler's rumble, a Technician's sparks).

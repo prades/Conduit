@@ -7,7 +7,7 @@
 //                 reflects off anything that is not floor in its way (the facility's walls and props), splashes whoever is hostile where it lands, and sets the ground there alight.
 //   BURNING GROUND  a tile on fire for FIRE_BURN_MIN to FIRE_BURN_MAX frames (10 to 15 seconds; it fades in its last second). Anything standing on it, EVERYONE, followers and you included, takes a little
 //                 hit every half second and is set burning. Bounces that land on the same tile refresh it rather than stacking.
-//   WHO THROWS THEM  a fire follower's special (js/elements.js) and the evolved fire forms' FIRE BOMBS move (fireBombBarrage, js/moves.js).
+//   WHO THROWS THEM  a fire follower's special (js/elements.js). (The evolved fire forms' FIRE BOMBS move, fireBombBarrage, was taken out: the owner, 2026-11-07, build ii.)
 const FIRE_GRAVITY = 0.014;        // tiles of height a frame, squared
 const FIRE_BOUNCE_KEEP = 0.62;     // the share of its upward speed a bounce keeps
 const FIRE_WALL_KEEP = 0.85;       // the share of its sideways speed a wall bounce keeps
@@ -100,7 +100,7 @@ function fireBombsTick() {
 }
 // ── FIRE FOLLOWERS ──
 // `n` bombs from a follower at a target, fanned `spread` radians apart, landing at (or just short of) it. `dmg` is each landing's splash; the little hit of the fire it leaves is a tenth of it.
-function throwFireBombsAt(actor, target, n, spread, dmg, hit) {   // hit: what each splash is (js/damage.js): an element special's, or the FIRE BOMBS move's
+function throwFireBombsAt(actor, target, n, spread, dmg, hit) {   // hit: what each splash is (js/damage.js): an element special's
     if (!actor || !target) return 0;
     const dx = target.x - actor.x, dy = target.y - actor.y, d = Math.hypot(dx, dy) || 1, dist = Math.max(1.5, Math.min(8, d)), L = n > 1 ? spread : 0;
     for (let i = 0; i < n; i++) {
@@ -109,19 +109,6 @@ function throwFireBombsAt(actor, target, n, spread, dmg, hit) {   // hit: what e
     }
     if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: actor.x, y: actor.y, color: "#ff7a1a", radius: 0.4, life: 10, element: "fire" });
     actor.fireOrbitTimer = 30; return n;
-}
-// The move FIRE BOMBS (js/moves.js), for the evolved fire forms that can use it: three bombs fanned at the nearest foe in reach.
-const FIRE_BARRAGE_RANGE = 7;
-function fireBombBarrage(f) {
-    const foes = typeof _evoFoes === "function" ? _evoFoes(f.x, f.y, FIRE_BARRAGE_RANGE) : [];
-    if (!foes.length) return false;
-    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
-    const f0 = typeof frame !== "undefined" ? frame : 0;
-    throwFireBombsAt(f, foes[0], 3, 0.3, (f.power || 10) * 0.9, DMG_HIT_SPECIAL_ATK);
-    f._sigAt = f0; f._sigCd = moveWindupFrames("bomb_lob");
-    { const dx = foes[0].x - f.x, dy = foes[0].y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L; }
-    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "FIRE BOMBS", color: "#ff8a3a", life: 50, vy: -0.06, size: 10 });
-    return true;
 }
 // ── DRAWING ──
 function _fireScr(x, y, z) { const W = canvas.width / 2, H = canvas.height / 2; return [(x - player.visualX - (y - player.visualY)) * TILE_W + W, (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H - (z || 0) * FIRE_Z_PX]; }

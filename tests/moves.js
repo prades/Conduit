@@ -80,7 +80,7 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
     check('every move has a WIND-UP of its own (seconds), the old waits unchanged, and its function waits exactly that after firing', () => {
         const OLDWAIT = { petal_blaze: 360, quill_burst: 240, arc_volley: 300, singularity_shot: 330, static_rush: 300, hexfire: 330, corrode_shot: 320, gravity_slam: 330,
-            eruption: 330, chomp: 300, bomb_lob: 300, pinball: 300, static_vortex: 330, magma_vent: 1200, rotten_decoy: 840 };
+            eruption: 330, chomp: 300, pinball: 300, static_vortex: 330, magma_vent: 1200, rotten_decoy: 840 };
         same(J('Object.keys(MOVES).sort()').join(), Object.keys(OLDWAIT).sort().join(), 'the moves');
         for (const id in OLDWAIT) {
             ok(J(`MOVES.${id}.windup > 0`), id + ' has no wind-up'); same(J(`moveWindupFrames('${id}')`), OLDWAIT[id], id + ' (frames)');

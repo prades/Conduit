@@ -25,7 +25,6 @@ const MOVES = {
     eruption:          { id: "eruption",          name: "ERUPTION",          windup: 5.5, fn: f => eruption(f) },
     chomp:             { id: "chomp",             name: "CHOMP",             windup: 5, fn: f => chomp(f) },
     // A second move for the fire forms (js/firebombs.js): three bouncing bombs fanned at the nearest foe. Chosen on the unit's INFO tab; a fire form's own move stays its default.
-    bomb_lob:          { id: "bomb_lob",          name: "FIRE BOMBS",        windup: 5, fn: f => fireBombBarrage(f) },
     // THE FOLLOWER COMBAT REDESIGN (docs/FOLLOWER-COMBAT-REDESIGN.md): the Static Orb's second move, chosen on its INFO tab (SONIC ROLL stays its default), and the Thunderhead's move.
     pinball:           { id: "pinball",           name: "PINBALL",           windup: 5, fn: f => pinball(f) },
     static_vortex:     { id: "static_vortex",     name: "STATIC VORTEX",     windup: 5.5, fn: f => staticVortex(f) },
@@ -76,6 +75,6 @@ function followerAltSet(f, id) {
 }
 // A move's reach (tiles): it winds up only with an enemy it can see this close, the reach the move itself looks in
 const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
-    corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, bomb_lob: () => FIRE_BARRAGE_RANGE, pinball: () => PIN_RANGE,
+    corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, pinball: () => PIN_RANGE,
     static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE };
 function moveReach(id) { try { const r = MOVE_REACH[id] ? MOVE_REACH[id]() : 0; return r > 0 ? r : 5; } catch (e) { return 5; } }

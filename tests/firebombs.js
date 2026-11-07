@@ -116,17 +116,16 @@ function measure() {
         ok(!/type: "meteor"/.test(rd('js/elements.js').slice(rd('js/elements.js').indexOf('special(actor, target)'), rd('js/elements.js').indexOf('// ── ELECTRIC'))), 'the meteor is still there');
         same(J('ELEMENT_ATTACKS.fire.special(__f, null).hit'), false, 'no target');
     });
-    check('FIRE BOMBS is a second move of the fire mage and the retired fire forms (their own move stays first), not of the fire brawler (the owner, 2026-11-07), three bombs fanned at the nearest foe in reach, then a cooldown', () => {
-        for (const id of ['bloom', 'halo', 'embercowl']) { const ids = J('evoMoveIds(EVOLUTIONS.' + id + ')'); same(ids.length, 2, id + ' moves'); same(ids[1], 'bomb_lob', id + ' second'); ok(ids[0] !== 'bomb_lob', id + ': the default is not the bombs'); }
-        for (const id of ['quillstone', 'maw', 'staticorb', 'seeper', 'voidstar']) ok(J('evoMoveIds(EVOLUTIONS.' + id + ')').indexOf('bomb_lob') < 0, id + ' got the fire move');
-        run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl"; __f.x = __O.x; __f.y = __O.y; __f.power = 20;');
-        same(run('MOVES.bomb_lob.fn(__f)'), false, 'with no foe'); same(run('fireBombs.length'), 0, 'bombs thrown at nothing');
-        run(`globalThis.__E = spawnCreature({ species: Object.keys(SPECIES)[0], className: 'scout', x: __O.x + 4, y: __O.y, state: 'hunt' }); __E.provoked = true;`);
-        same(run('MOVES.bomb_lob.fn(__f)'), true, 'with a foe'); same(run('fireBombs.length'), 3, 'bombs'); same(run('__f._sigCd'), run('moveWindupFrames("bomb_lob")'), 'cooldown');
+    check('FIRE BOMBS is no longer an alternate (the owner, 2026-11-07: "I thought we were getting rid of firebombs"): no form lists it, it is not in the moves table, and its firing code is gone; the fire special still throws its bombs', () => {
+        for (const id of ['bloom', 'halo', 'embercowl', 'quillstone', 'maw', 'staticorb', 'seeper', 'voidstar']) ok(J('evoMoveIds(EVOLUTIONS.' + id + ')').indexOf('bomb_lob') < 0, id + ' has FIRE BOMBS');
+        same(J('JSON.stringify([evoMoveIds(EVOLUTIONS.embercowl), evoMoveIds(EVOLUTIONS.halo), evoMoveIds(EVOLUTIONS.bloom)])'), JSON.stringify([['hexfire'], ['hexfire'], ['petal_blaze']]), 'the fire forms\' alternates');
+        same(J('typeof MOVES.bomb_lob'), 'undefined', 'the move'); same(J('typeof fireBombBarrage'), 'undefined', 'its firing code'); same(J('typeof throwFireBombsAt'), 'function', 'the special\'s bombs');
+        run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl"; __f.alt = "bomb_lob";');
+        same(run('evoMoveOf(__f)'), null, 'a follower saved on FIRE BOMBS is on its normal attack'); same(run('followerAltSet(__f, "bomb_lob")'), false, 'FIRE BOMBS chosen');
     });
     check('the chosen alternate is the one that fires (the owner, 2026-11-07: a chosen mode, none by default), is kept with the follower through a respawn and the facility\'s save, and is dropped once the form cannot use it', () => {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl";'); same(run('evoMoveOf(__f)'), null, 'default: its normal attack');
-        run('followerAltSet(__f, "bomb_lob");'); same(run('evoMoveOf(__f).id'), 'bomb_lob', 'chosen'); run('__f.evolved = "maw";'); same(run('evoMoveOf(__f)'), null, 'not for another form');
+        run('followerAltSet(__f, "hexfire");'); same(run('evoMoveOf(__f).id'), 'hexfire', 'chosen'); run('__f.evolved = "maw";'); same(run('evoMoveOf(__f)'), null, 'not for another form');
         const g = rd('js/game.js'), s = rd('js/facilitysave.js'); ok(/alt: a\.alt \|\| undefined/.test(g) && /npc\.alt = entry\.alt/.test(g), 'the respawn queue loses the alternate'); ok(/alt: a\.alt \|\| undefined/.test(s) && /npc\.alt = entry\.alt/.test(s), 'the save loses the alternate');
     });
     check('the INFO tab lists the form\'s moves with the current one lit (the data)', () => {
@@ -143,7 +142,7 @@ function measure() {
         check('the instrument ran', () => ok(r, 'the probe produced nothing'));
         if (r) {
             check('on a fire form\'s INFO tab the attacks are buttons, NORMAL ATTACK lit: tap HEXFIRE and it is locked on it (and the page says so)', () => {
-                same(r.info.chips, 'NORMAL ATTACK,HEXFIRE,FIRE BOMBS', 'chips'); same(r.info.on, 'NORMAL ATTACK', 'lit'); same(r.info2.move, 'hexfire', 'chosen'); same(r.info2.on, 'HEXFIRE', 'lit after');
+                same(r.info.chips, 'NORMAL ATTACK,HEXFIRE', 'chips (FIRE BOMBS taken out, 2026-11-07)'); same(r.info.on, 'NORMAL ATTACK', 'lit'); same(r.info2.move, 'hexfire', 'chosen'); same(r.info2.on, 'HEXFIRE', 'lit after');
             });
         }
     }

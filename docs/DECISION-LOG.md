@@ -2084,3 +2084,16 @@ Supersedes "a signature move fires by itself on its own cooldown, beside the nor
 ### Decision
 1. Build `2026-11-07gg`: "Push to main". The open question, a Technician's wind-up cue, offered as sparks or a circuit flicker, a pulsing light, a ripple on the floor, or none: "Circuit sparks works".
 2. Short zigzag bolts of its element's colour with bright tips flicker over its body while it winds up, more and longer as the wind-up runs.
+
+## DECISION: FIRE BOMBS taken out as an alternate
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07ii`, on the branch; not playtested.
+- **Related feature/docs:** `FIRE-BOMBS.md`, `COMBAT.md` §7.4, `FOLLOWER-COMBAT-REDESIGN.md` (its "Additional alternate: FIRE BOMBS" superseded); `CHANGELOG.md` (2026-11-07 ii)
+
+### Decision
+1. Build `gg` took FIRE BOMBS off the fire brawler only ("remove fire bombs from the fire brawler please"). After build `hh`: "I thought we were getting rid of firebombs".
+2. No form lists FIRE BOMBS; the move, its firing code and its INDEX entry are gone. The fire special's two bombs and their burning floor are unchanged until the owner says otherwise.
+
+### Supersedes / superseded by
+Supersedes `FOLLOWER-COMBAT-REDESIGN.md`'s "FIRE BOMBS stays a selectable alternate for fire followers".

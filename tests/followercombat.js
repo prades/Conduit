@@ -215,12 +215,12 @@ function measure(w, h) {
             out.circles = elementEffects.filter(e => e.type === 'hexfire' && e.by === f).length; out.most = n2; return out; })()`);
         same(r.mate, 0, 'the follower in it was hurt'); same(r.player, 0, 'the player in it was hurt'); same(r.circles, 1, 'circles of one Ember Hood'); same(r.most, 1, 'two at once');
     });
-    check('a shot that touches nobody lands where it was aimed and leaves its circle there; the retired Cinder Halo shares the move; HEXFIRE and FIRE BOMBS stay the INFO choice', () => {
+    check('a shot that touches nobody lands where it was aimed and leaves its circle there; the retired Cinder Halo shares the move; HEXFIRE its one alternate on INFO (FIRE BOMBS taken out, 2026-11-07)', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'sniper', 'embercowl'), t = __foe(f.x + 5, f.y); __fire(f); __off(f); const aim = [t.x, t.y]; t.x += 30;
             let fr = 0, c = null; while (!c && fr < 200) { render(); fr++; c = elementEffects.find(e => e.type === 'hexfire'); }
             return { at: c && [c.x, c.y], aim, halo: evoMoveIds(EVOLUTIONS.halo), ember: evoMoveIds(EVOLUTIONS.embercowl), def: evoMoveOf(f).id }; })()`);
         ok(r.at && Math.hypot(r.at[0] - r.aim[0], r.at[1] - r.aim[1]) < 0.4, 'not where it was aimed: ' + JSON.stringify(r));
-        same(r.halo.join(), 'hexfire,bomb_lob', 'the Cinder Halo'); same(r.ember.join(), 'hexfire,bomb_lob', 'the Ember Hood'); same(r.def, 'hexfire', 'its default');
+        same(r.halo.join(), 'hexfire', 'the Cinder Halo'); same(r.ember.join(), 'hexfire', 'the Ember Hood (FIRE BOMBS taken out, 2026-11-07)'); same(r.def, 'hexfire', 'its default');
     });
 
     // ── STATIC ORB ──────────────────────────────────────────
