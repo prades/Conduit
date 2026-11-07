@@ -737,6 +737,7 @@ function render() {
             // A clone takes far longer to come back than a follower: it is
             // worth three times as much in a fight and cost crystals and DNA, so
             // losing one has to be felt. The Crystal shows the countdown.
+            if (a.nestTest) return;   // a TEST follower of the Ant Nest's console (js/nestconsole.js): one that falls is gone, never revived
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
             respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined, special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
                 // Its level and its XP come back with it, all of them.
@@ -1223,6 +1224,7 @@ function render() {
     if (typeof drawSerumOverlay === "function") drawSerumOverlay();   // the allies a serum's pool is healing (js/serum.js)
     if (typeof drawPotionOverlay === "function") drawPotionOverlay();   // a Sleeping Potion in the air, where one shattered, the z z z over the sleepers (js/potion.js)
     if (typeof bossDrawOverlay === "function") bossDrawOverlay();       // the queen's wind-up ring and her shots in the air (js/bosses.js)
+    if (typeof nestMeterDraw === "function") nestMeterDraw();           // the Ant Nest's damage meter (js/nestconsole.js)
     if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)
     drawFloatingTexts();
     if (typeof dialogueDraw === "function") dialogueDraw();   // the dialogue box: who is talking, their picture, what they said (js/dialogue.js); the panels below draw over it

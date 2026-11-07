@@ -2,7 +2,7 @@
 
 A cavern beyond the arena's south rubble where THE ANT QUEEN lives: a place to test the player and squad combinations, and the different moves, against a huge boss ant.
 
-Status: **In progress.** Step A **implemented and tested** in build `2026-11-07ll`, step B in `2026-11-07mm` (neither playtested); step C **designed**. Built in three steps, each its own build on `claude/start-game-project-HSh7Z`; this file says which step is built.
+Status: **Implemented and tested** (not playtested): step A in build `2026-11-07ll`, step B in `2026-11-07mm`, step C in `2026-11-07nn`. Built in three steps, each its own build on `claude/start-game-project-HSh7Z`; this file says which step is built.
 
 ## The owner's words (2026-11-07)
 
@@ -21,7 +21,7 @@ Status: **In progress.** Step A **implemented and tested** in build `2026-11-07l
 |---|---|---|
 | A | The room and the way in: the hole a fire technician drills through the arena's south rubble is the doorway down into the Nest; a tunnel mouth in the Nest's north wall leads back up | Implemented and tested, `2026-11-07ll` |
 | B | THE ANT QUEEN: huge, her three attacks, her health for a medium fight, held to the room | Implemented and tested, `2026-11-07mm` |
-| C | The console in the Nest: boss reset (full health, a level you pick), the test squad builder, the damage meter | Designed |
+| C | The console in the Nest: boss reset (full health, a level you pick), the test squad builder, the damage meter | Implemented and tested, `2026-11-07nn` |
 
 ## Rules (decided)
 
@@ -63,9 +63,19 @@ THE ANT QUEEN is the `nest` row of `BOSS_ENCOUNTERS` (js/bosses.js), the same bo
 - **A knock never carries you through a doorway** (js/helpers.js `hurtPlayer`): the tunnel mouth is beside where she fights, and her hits used to shove you up it, out of the fight.
 - **Tests:** `tests/nest.js` (her arming, size, body and health; waking; the crush, the stomp and the brood; held to the Nest; killed, nothing paid, a fresh queen; the knock rule; her enemy card); `tests/sewerquest.js` (the nest row now arms).
 
+## Step C as built (`2026-11-07nn`)
+
+The **NEST CONSOLE** (js/nestconsole.js): a console prop by the tunnel mouth, east of it (`nest_console`), a station for any class, free (`STATION_KINDS.nest_console`, js/stations.js). Walk up to it and tap it (or press E) to open its panel. Every number is the agent's, provisional.
+
+- **THE ANT QUEEN:** what she is doing (asleep or awake, her level and health); **LEVEL** with −5, −1, +1, +5 (from 1 to 30); **RESET THE QUEEN**: whatever was left of her and her brood is cleared (nothing paid) and a fresh queen sleeps at her post, whole, at that level. The damage meter starts again with her. The level is the console's setting for this session (a reload brings her back at 10).
+- **TEST SQUAD:** three slots, each a **form** (every element's Brawler, Mage and Technician unevolved, and every evolved form) and a **level** (1 to 30). Defaults: a Quillstone, a Thunderhead and a Hammer Slug at level 15. **SEND IN THE TEST SQUAD:** your squad (the followers following you; those holding rooms stay where they are) is set aside, out of the world and untouched, and the three test followers come in beside you as your squad. A form picked unevolved stays unevolved at any level. **END THE TEST**, or leaving the Nest (by the tunnel, or a fall that sends you back to the Crystal), sends them away and puts your squad back beside you as it was. Test followers are **never saved** (a save while they are in keeps your real squad), **never revived** (one that falls is gone) and pay nothing. **SEND IN AGAIN** replaces them with the picks as they stand.
+- **DAMAGE METER:** on from the start. It counts what each of yours deals to the creatures of the Nest: its total, its damage a second over the fight, and by kind: **P** its primary (everyday hit or shot), **A** its alternate, **S** its special (a card attack or an Ultimate), and your own hits. It is shown on the screen at the top right while you are in the Nest, and in the panel with **TURN OFF** and **RESET**. A test follower's name carries **·T**.
+- **Tests:** `tests/nest.js` (5 new checks: the console, the boss reset, the test squad sent in and saved right, the test ending, the meter); `tests/facilityplay.js` (17 stations) and `tests/fluxlab.js` (165 props) updated.
+
 ## Open questions
 
 - Rewards for beating THE ANT QUEEN, if any (none while the Nest is a test ground: built so in step B).
 - Her numbers (all provisional): her level, health, the moves' strength, timing and reach, the brood's size.
-- A follower that falls in the Nest is revived at the Crystal, as anywhere, and walks all the way back: should the Nest revive it closer (a test ground)?
+- A follower that falls in the Nest is revived at the Crystal, as anywhere, and walks all the way back: should the Nest revive it closer (a test ground)? (A test follower is not revived at all.)
+- Should the console also let you pick the Ant Queen's moves to test one at a time, or the player's own class and level? (Not asked for; not built.)
 - Whether the Nest's brood joins the arena's spawn tables.

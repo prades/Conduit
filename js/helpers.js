@@ -250,6 +250,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     const _before = target.health;
     target.health -= dmg;
     if (typeof noteHit === "function") noteHit(target, _before);   // the bar's pale segment shows the hit's size (js/combat.js)
+    if (typeof nestMeterHit === "function") nestMeterHit(target, _before - Math.max(0, target.health), source, hit);   // the Ant Nest's damage meter (js/nestconsole.js)
     if (source) target.lastAttacker = typeof predatorSource === "function" ? predatorSource(source) : source;   // (the player's hit: the player itself, js/predator.js, so a creature turns on the player)
     if (typeof target.hitFlash !== "undefined") target.hitFlash = 6;
     if (typeof target.hitStun  !== "undefined") target.hitStun  = 6;

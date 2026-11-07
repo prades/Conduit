@@ -41,6 +41,8 @@ const STATION_KINDS = {
     // SIDE QUEST, the void walker on the Sewers' maintenance platform (js/sidequest.js): a talk, a choice, then his shop; a station made at runtime when he appears (sqPlace), not a prop of the map
     sidequest: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqVerb === "function" ? sqVerb() : "TALK", canFn: () => typeof sqCan === "function" ? sqCan() : { ok: false, why: "NOBODY HERE" },
         use: () => typeof sqUse === "function" ? sqUse() : { ok: false, why: "NOBODY HERE" } },
+    // THE ANT NEST'S TEST CONSOLE (js/nestconsole.js; docs/NEST.md, step C): for any class, no cost: it opens its panel (the boss reset, the test squad, the damage meter)
+    nest_console: { name: "NEST CONSOLE", classes: null, verbFn: () => "OPEN THE TEST CONSOLE", use: () => { if (typeof nestConsoleOpen === "function") nestConsoleOpen(); return { ok: true, msg: "", quiet: true }; } },
     relay: { name: "POWER RELAY", classes: null, dynamic: true },
     // A BROKEN TURRET (js/antraids.js): a station made on it when a raid wrecks it; the repair is a BUILD (stand by it, the progress bar; walk away and it stops), FREE (the owner, 2026-11-01: "Free, takes time", ten seconds)
     sentry_repair: { name: "TURRET", classes: null, cost: [], buildMsg: "REPAIRING THE TURRET… STAY BY IT", get build() { return Math.round((typeof SENTRY !== "undefined" ? SENTRY.repair : 600) * (typeof playerRepairShare === "function" ? playerRepairShare() : 1)); },   // (FORGEMASTER halves it: js/playercards.js)

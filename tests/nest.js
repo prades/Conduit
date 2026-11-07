@@ -5,6 +5,8 @@
 //   through the arena's south rubble is a doorway (a portal shut until the rubble is drilled through), the tunnel mouth in the Nest's north wall the way back up; the squad comes along; the save keeps it open.
 //   STEP B (build 2026-11-07mm): THE ANT QUEEN: armed on coming down, her size, body and health, waking, MANDIBLE CRUSH, TREMOR STOMP, BROOD CALL, held to the Nest, killed (nothing paid, nothing unlocked, a fresh
 //   queen next time); a knock never carries you through a doorway; her enemy card.
+//   STEP C (build 2026-11-07nn): the test console: a station by the tunnel mouth; BOSS RESET at a picked level; the TEST SQUAD (your squad set aside and saved, three test followers never saved nor revived,
+//   gone when you leave); the DAMAGE METER by who and by kind.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -70,7 +72,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('THE ANT QUEEN (step B): huge, three moves, a fresh queen each time you come down, held to the Nest, pays nothing');
     run(`globalThis.__nest = () => { const Q = facilityPortal('portal_nest_arena'); techRubbleApply({ rubble_arena_south: TECH_AB.drill.hits }); __put(Q.ax, Q.ay); };
         globalThis.__out = () => { const P = facilityPortal('portal_arena_nest'); __put(P.ax, P.ay); };
-        globalThis.__fresh = () => { actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); bossReset(); __out(); __tick(1); };`);
+        globalThis.__fresh = () => { actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; selectedUnits.clear(); bossReset(); if (_fp.nestc) { nestTestEnd('end'); _fp.nestc = null; } __out(); __tick(1); };`);
     check('coming down into the Nest arms her: asleep at her post in the middle of the cavern, three times the Toxic Queen\'s size, a body 1.2 tiles round, 1.6 times the ant boss block\'s health at level 10, no plain bite and no species special, paying nothing', () => {
         const r = J(`(function(){ __fresh(); const before = !!bossUnit('nest'); __nest(); __tick(1); const q = bossUnit('nest'), S = bossState('nest'), N = _fp.F.byId.get('nest_area');
             const ref = spawnCreature({ species: 'ant', className: 'boss', x: q.x, y: q.y, level: 10, state: 'wander' }); const o = { refHp: ref.maxHealth, refW: ref.dimensions.width }; ref.dead = true; actors.splice(actors.indexOf(ref), 1);
@@ -133,6 +135,47 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('her enemy card says CRUSH (her crush\'s strength), not BITE', () => {
         const r = J(`(function(){ __fresh(); __nest(); __tick(1); const q = bossUnit('nest'), c = targetCardInfo(q); return [c.biteLabel, c.bite, Math.round(q.power * BOSS_ENCOUNTERS.nest.moves.crush.power * 10) / 10, targetInfoLines(q)[1].indexOf('CRUSH') >= 0]; })()`);
         same(r[0], 'CRUSH', 'the label'); same(r[1], r[2], 'the number'); same(r[3], true, 'the INFO line');
+    });
+
+    group('THE TEST CONSOLE (step C): the boss reset, the test squad, the damage meter');
+    check('the console is a station in the Nest by the tunnel mouth (NEST CONSOLE, for any class, free): using it opens its panel', () => {
+        const r = J(`(function(){ __fresh(); __nest(); __tick(1); const st = _fp.stations.find(s => s.id === 'st_nest_console'); if (!st) return { st: false };
+            __put(st.x - 0.2, st.y + 1.3); let opened = 0; const keep = nestConsoleOpen; nestConsoleOpen = () => { opened++; return true; }; const can = stationCan(st), u = stationUse(st); nestConsoleOpen = keep;
+            const Q = facilityPortal('portal_nest_arena'); return { st: true, room: st.room, can: can.ok, use: u.ok, opened, nearTunnel: Math.hypot(st.x - Q.x, st.y - Q.y) < 5, kind: STATION_KINDS.nest_console.classes === null && !STATION_KINDS.nest_console.cost }; })()`);
+        same([r.st, r.room, r.can, r.use, r.opened, r.nearTunnel, r.kind].join(), 'true,nest_area,true,true,1,true,true', 'the console');
+    });
+    check('BOSS RESET: THE ANT QUEEN at the level picked, whole and asleep at her post; whatever was left of her and her brood is cleared, nothing paid; the meter starts again', () => {
+        const r = J(`(function(){ __fresh(); __nest(); __tick(1); const q = bossUnit('nest'); bossWake('nest', 'hit'); q.health -= 300; _bossBrood(BOSS_ENCOUNTERS.nest, q); nestMeterHit(q, 50, player, DMG_HIT_GUN); const sh0 = shardCount, m0 = nestMeterRows().length;
+            const ok = nestQueenReset(14), q2 = bossUnit('nest'), S = bossState('nest'); const ref = spawnCreature({ species: 'ant', className: 'boss', x: q2.x, y: q2.y, level: 14, state: 'wander' }); const refHp = ref.maxHealth; ref.dead = true; actors.splice(actors.indexOf(ref), 1);
+            return { ok, m0, gone: actors.indexOf(q) < 0, other: q2 !== q, level: q2.level, hp: [q2.health, q2.maxHealth, Math.round(refHp * 1.6)], asleep: q2.bossAsleep, state: S.state, brood: actors.filter(a => a.bossWave === 'nest' && !a.dead).length, paid: shardCount - sh0, meter: nestMeterRows().length, size: q2.dimensions.width }; })()`);
+        same([r.ok, r.m0, r.gone, r.other].join(), 'true,1,true,true', 'the reset'); same(r.level, 14, 'her level'); same(r.hp[0], r.hp[1], 'whole'); same(r.hp[1], r.hp[2], 'her health at that level'); same([r.asleep, r.state].join(), 'true,armed', 'asleep');
+        same(r.brood, 0, 'her brood'); same(r.paid, 0, 'shards'); same(r.meter, 0, 'the meter');
+    });
+    check('TEST SQUAD: SEND IN sets your squad aside (out of the world, still in your save) and brings three test followers of the forms and levels picked; one picked unevolved stays so at any level; none is ever saved; one that falls is not revived', () => {
+        const r = J(`(function(){ __fresh(); __nest(); __tick(1); const real = __squad(['fire', 'ice']); const ids = real.map(f => f.element);
+            const S = _ncState(); S.picks = [{ form: 'staticorb', level: 12 }, { form: 'fire:camper', level: 22 }, { form: 'embercowl', level: 8 }];
+            const res = nestTestSendIn(); for (let i = 0; i < 20; i++) { frame++; for (const f of followers) if (typeof evoCheck === 'function') evoCheck(f); }
+            const tests = followers.filter(f => f.nestTest), saved = followerRosterSnapshot();
+            return { ok: res.ok, out: real.every(f => actors.indexOf(f) < 0 && followers.indexOf(f) < 0), stash: nestStashed().length, tests: tests.map(f => (f.evolved || f.element + ':' + f.role) + '@' + f.level), squad: partyMembers().every(f => f.nestTest) && partyMembers().length === 3,
+                saved: saved.length, savedTests: saved.filter(x => x.nestTest).length }; })()`);
+        r.src = /if \(a\.nestTest\) return;[^\n]*\n\s*const _respawnFrames/.test(rd('js/game.js'));
+        same([r.ok, r.out, r.stash].join(), 'true,true,2', 'your squad set aside'); same(r.tests.join(), 'staticorb@12,fire:camper@22,embercowl@8', 'the test squad'); same(r.squad, true, 'the test followers are the squad');
+        same([r.saved, r.savedTests].join(), '2,0', 'the save: your squad, no test follower'); same(r.src, true, 'a test follower that falls is revived');
+    });
+    check('leaving the Nest ends the test: the test followers vanish and your squad is back beside you, as it was; END THE TEST does the same', () => {
+        const r = J(`(function(){ __fresh(); __nest(); __tick(1); const real = __squad(['fire', 'ice']); real[0].health = real[0].maxHealth - 5; const before = real.map(f => [f.health, f.level, f.xp || 0].join('/'));
+            nestTestSendIn(); __out(); __tick(2); const o = { tests: actors.filter(a => a.nestTest).length + followers.filter(a => a.nestTest).length, back: real.every(f => actors.includes(f) && followers.includes(f)), same: real.map(f => [f.health, f.level, f.xp || 0].join('/')).join() === before.join(), near: real.every(f => Math.hypot(f.x - player.x, f.y - player.y) < 3), active: nestTestActive() };
+            __nest(); __tick(1); nestTestSendIn(); nestTestEnd('end'); o.end = [actors.filter(a => a.nestTest).length, real.every(f => followers.includes(f)), nestStashed().length]; return o; })()`);
+        same([r.tests, r.back, r.same, r.near, r.active].join(), '0,true,true,true,false', 'after leaving'); same(r.end.join(), '0,true,0', 'END THE TEST');
+    });
+    check('DAMAGE METER: what each of yours deals to the creatures of the Nest, by who and by kind (P primary, A alternate, S special; yours); a hit outside the Nest is not counted; turned off it counts nothing; RESET clears it', () => {
+        const r = J(`(function(){ __fresh(); __nest(); __tick(1); const q = bossUnit('nest'); q.health = q.maxHealth = 1e6; nestMeterReset(); const f = __squad(['core'])[0];
+            applyDamage(q, 10, f, null, false, false, DMG_HIT_MAIN); applyDamage(q, 10, f, null, false, false, DMG_HIT_ALT); applyDamage(q, 10, f, null, false, false, DMG_HIT_SPECIAL); applyDamage(q, 10, player, null, false, false, DMG_HIT_GUN);
+            const rows = nestMeterRows(), fr = rows.find(x => x.name !== 'YOU'), pr = rows.find(x => x.name === 'YOU');
+            const A = _fp.F.byId.get('arena'); spawnCreature({ species: 'ant', className: 'scout', x: A.bb[0] + 8, y: A.bb[1] + 8, level: 3, state: 'wander' }); const out = actors[actors.length - 1]; out.health = out.maxHealth = 1e6; applyDamage(out, 10, f, null, false, false, DMG_HIT_MAIN);
+            const afterOut = nestMeterRows().find(x => x.name !== 'YOU').total; _fp.nestc.meter.on = false; applyDamage(q, 10, f, null, false, false, DMG_HIT_MAIN); const off = nestMeterRows().find(x => x.name !== 'YOU').total; _fp.nestc.meter.on = true; nestMeterReset();
+            return { kinds: [fr.P > 0, fr.A > 0, fr.S > 0, fr.total === fr.P + fr.A + fr.S], you: [pr.Y > 0, pr.total === pr.Y], outside: afterOut === fr.total, off: off === fr.total, reset: nestMeterRows().length }; })()`);
+        same(r.kinds.join(), 'true,true,true,true', 'by kind'); same(r.you.join(), 'true,true', 'yours'); same(r.outside, true, 'a hit outside the Nest counted'); same(r.off, true, 'counted while off'); same(r.reset, 0, 'reset');
     });
 
     console.log(failures ? `\n${failures} check(s) FAILED` : '\nall checks passed');

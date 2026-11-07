@@ -2154,3 +2154,19 @@ Implemented and tested (tests/nest.js and the updated facility suites); not play
 ### Status
 Implemented and tested (tests/nest.js); not playtested. Step C (the console) is next.
 
+## DECISION: The Ant Nest, step C: the test console
+
+- **Date / build:** 2026-11-07, build `2026-11-07nn`, branch `claude/start-game-project-HSh7Z`.
+- **Context:** the owner chose the console's tools ("Damage meter, Boss reset, Squad builder") and a temporary test squad ("any form, element and level for three test followers that exist only in the Nest and vanish when you leave; your real squad waits outside, untouched").
+
+### Decision
+- A station in the Nest (the existing station system) opens a panel (js/nestconsole.js): the boss reset at a picked level, the test squad, the damage meter.
+- "Waits outside, untouched": the real squad is taken out of the world while the test squad is in (nothing can touch it) and kept in the save; it is put back beside the player when the test ends or the player leaves the Nest.
+- Test followers are never saved, never revived and pay nothing; a form picked unevolved stays unevolved.
+
+### Chosen by the agent (provisional)
+- Levels 1 to 30 for the queen and the test followers; the default picks (Quillstone, Thunderhead, Hammer Slug at 15); the meter's kinds (P, A, S, yours) and its place on the screen; the queen's picked level lasting for the session.
+
+### Status
+Implemented and tested (tests/nest.js); not playtested.
+

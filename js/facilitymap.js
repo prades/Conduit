@@ -370,6 +370,7 @@ const FACILITY_MAP = {
         { id: "sewer_choke", room: "sewers", shape: "poly", poly: [[820, 852], [940, 852], [940, 858], [820, 858]], status: "placed", kind: "rubble", note: "The collapsed tunnel's mouth, choked along its whole width with broken concrete and rock: the way in on foot, once a fire technician has drilled it through from the ledge." },
         // THE PURIFIER MOUNT: a console on the trash dam, at the reservoir's edge below the big barred arch where the water comes in, where the purification module is installed (a station, js/quests.js; the
         // boss encounter's pressure, js/bosses.js: the queen's post is beside it)
+        { id: "nest_console", room: "nest_area", shape: "rect", rect: [630, 1192, 670, 1206], status: "placed", kind: "console", note: "THE ANT NEST'S TEST CONSOLE (docs/NEST.md, step C): by the tunnel mouth, east of it: the boss reset, the test squad and the damage meter (js/nestconsole.js)." },
         { id: "purifier_mount", room: "sewers", shape: "rect", rect: [1150, 830, 1190, 850], status: "placed", kind: "console", note: "The Nest's control console, on the dam at the head of the reservoir, below the big barred arch: the purification module mounts here (the PURIFIER MOUNT station)." },
         // SEWER MACHINERY the Flux Technician can move (Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.3; the owner, 2026-11-07: "Sewer machinery" first): pump housings on the dam, low cover that stops shots, turned and moved by FLUX MOVE
         { id: "sewer_pump_1", room: "sewers", shape: "rect", rect: [1220, 1000, 1260, 1020], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A pump housing at the south end of the dam, well clear of the Queen's post: move it to make cover." },
@@ -486,6 +487,7 @@ const FACILITY_MAP = {
         { id: "st_charger", room: "lab_hallway", prop: "charger_hall", kind: "charger" },
         { id: "st_mech_bay", room: "show_room", prop: "mech_bay", kind: "mech_bay" },
         { id: "st_armory_terminal", room: "armory", prop: "armory_terminal", kind: "armory_terminal" },
+        { id: "st_nest_console", room: "nest_area", prop: "nest_console", kind: "nest_console" },   // the Ant Nest's test console (js/nestconsole.js)
         // THE SEWER PURIFICATION QUEST (js/quests.js, docs/SEWER-QUEST.md): the samples are analysed and the module bought at the cabinet at the Experiment Lab's west end (cabinet_1: away from the sequencer and the serum hood, whose station plate a bench beside them would take over); the boss gate's seal is broken with the module in hand; the module is installed at the cistern's console
         { id: "st_analysis_bench", room: "experiment_lab", prop: "cabinet_1", kind: "analysis_bench" },
         { id: "st_purifier", room: "sewers", prop: "purifier_mount", kind: "purifier_mount" },

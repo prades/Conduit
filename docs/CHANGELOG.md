@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **nn · The Ant Nest, step C: the test console** (the owner, 2026-11-07: "Damage meter, Boss reset, Squad builder"; "Temporary test squad"; docs/NEST.md). Implemented and tested on the branch; seen in screenshots; not playtested.
+  - **NEST CONSOLE** by the tunnel mouth in the Nest (any class, free): its panel has three parts.
+  - **THE ANT QUEEN:** pick her level (1 to 30) and **RESET** her: whole, asleep at her post, her brood cleared, nothing paid.
+  - **TEST SQUAD:** three slots, any form (every element's three classes unevolved, and every evolved form) at any level (1 to 30). **SEND IN** sets your squad aside, untouched and still in your save, and brings the three in as your squad; they leave when you leave the Nest or **END THE TEST**, and your squad is back beside you. Test followers are never saved, never revived and pay nothing; one picked unevolved stays so.
+  - **DAMAGE METER:** what each of yours deals in the Nest, its damage a second, and by kind (primary, alternate, special; yours), on the screen at the top right while you are in the Nest, with TURN OFF and RESET in the panel.
+  - Agent's choices, provisional: the level range, the default picks, the meter's place and its kinds.
+  - Tests: `tests/nest.js` (5 new checks); facilityplay (17 stations), fluxlab (165 props).
+
 - **mm · The Ant Nest, step B: THE ANT QUEEN** (the owner, 2026-11-07: "a boss ant that's huge"; "Mandible crush, Tremor stomp, Brood call"; "Huge, medium fight"; docs/NEST.md). Implemented and tested on the branch; seen in screenshots and in fights run in the browser; not playtested.
   - **THE ANT QUEEN** sleeps at her post in the middle of the Nest whenever you come down and she is not alive. Three times the Toxic Queen's size, level 10, 1,067 health (1.6 times the ant boss block: measured so a good squad takes about a minute and a half). She wakes when hit or when one of yours comes near; she is held to the Nest (leave and she goes back to sleep, her wounds kept).
   - **Her three moves**, no plain bite: **MANDIBLE CRUSH** (a red wedge in front of her, 0.9 s, then a heavy crushing hit on everyone of yours in it), **TREMOR STOMP** (she rears up, an amber ring 3.6 tiles past her body, 1.2 s, then everyone inside is hurt and thrown back), **BROOD CALL** (3 ants out of the brood holes every 25 s, at most 6 alive).
