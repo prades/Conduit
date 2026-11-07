@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **d · The pump room** (the owner, 2026-11-07: "Machinery elsewhere", then "Widen a section"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-07c` went to main at the owner's word ("Push to main").
+  - A chamber opened off the north walkway, between the west nook and the gated stub (x 440 to 560, y 780 to 860: 6 by 4 tiles) **[reading: where]**. The pipe, moss and wall light that hung on that stretch of wall moved to its back wall. In it: a pump against the back wall and two valves, all movable by FLUX MOVE.
+  - Why there: the corridors are 2 tiles wide; on the 3-wide south corridor the near wall hides anything on its south row, and its river side is on the Queen's ground.
+  - The sewer's brood spawner now tries 60 random spots (was 30) so the new floor near the way in does not leave its far spots unfound.
+  - Pumps and valves are drawn in code, not from a sprite sheet (`FP_DRAWN_SOLIDS`); the props-have-sheets check skips them. A baked 3D sprite for them is open. This also clears that check, which builds b and c had left failing.
+  - **Known flaky:** four of the Queen's checks in `tests/sewerquest.js` (her post, the stun window, the spit wind-up, the roam) pass or fail at random on the same code (unseeded randomness); seen on this build and its parent.
+  - Tests: sewers, sewerquest (flaky as above), facility, facilityplay, cover, fluxmove, bible, sidequest, population. No full run. Not playtested.
+
 - **c · Sewer machinery: two valve housings** (the owner, 2026-11-07: "Looks right; add valves"; on the branch; commit named in git log).
   - **Main:** build `2026-11-07b` went to main at the owner's word ("Push to main").
   - A new kind, `valve`: a 1×1 steel block with a pipe stub, a rust-red handwheel and a green tell-tale. Low cover; FLUX MOVE moves it up to 2 tiles. Two stand beside the pumps at the south end of the dam **[reading: where they stand]**.

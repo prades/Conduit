@@ -1872,3 +1872,16 @@ The owner: too much time goes into testing and side checks. From here on, only t
 ### Readings
 - A pump is low cover (it stops shots; sight passes over it), 2×1 tiles, moved up to 2 tiles and turned by FLUX MOVE. Two stand at the dam's south end, clear of the Queen's post.
 
+## DECISION: Builds 2026-11-07b and c to main; machinery elsewhere; a widened section
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Build `2026-11-07c` on main. The pump room: implemented and tested in build `2026-11-07d`, on the branch; screenshot checked; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §5.3; `CHANGELOG.md` (2026-11-07 d)
+
+### Decision
+1. "Push to main" (b, then c). Pumps: "Looks right; add valves".
+2. Next: "Machinery elsewhere"; asked where, given the narrow walkways: "Widen a section".
+
+### Readings
+- The widened section is a 6×4-tile pump room off the north walkway; pumps and valves are drawn in code until a baked sprite is approved.
+

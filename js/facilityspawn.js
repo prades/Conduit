@@ -89,7 +89,7 @@ function facilitySpawnSpot(P) {
     };
     // up out of a grate or a brood hole when one meets every rule (a random one of those that do)
     const from = _fsFromCells(P).filter(c => fits(c, true) > 0); if (from.length) return from[Math.floor(Math.random() * from.length)];
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 60; i++) {   // (60 tries: a nook near the way in, the sewer's pump room since build 2026-11-07d, must not leave the far spots unfound)
         const c = cells[Math.floor(Math.random() * cells.length)], s = fits(c, false); if (s < 0) continue;
         if (s >= 1e9) return c;
         if (s > bs) { bs = s; best = c; }

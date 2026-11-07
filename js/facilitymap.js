@@ -113,10 +113,10 @@ const FACILITY_MAP = {
           // its reservoir (west, under the big barred arch in the north wall, where a stream comes out of an old tunnel), the CAUSEWAY from the boss gate east across the water, the DAM itself (a wide flat
           // platform of trash, nine tiles across and fourteen deep, its console and the queen's post at its north-west corner, the brood's eggs at its north-east), the moat round its south and east, and the
           // waterfall where the moat spills over the east edge.
-          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [600, 860], [600, 800], [700, 800], [700, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1040, 860], [1040, 800],
+          polygon: [[280, 860], [300, 860], [360, 860], [360, 800], [400, 800], [400, 860], [440, 860], [440, 780], [560, 780], [560, 860], [600, 860], [600, 800], [700, 800], [700, 860], [820, 860], [820, 780], [940, 780], [940, 860], [1020, 860], [1040, 860], [1040, 800],
                     [1060, 800], [1360, 800], [1360, 860], [1360, 1120], [1060, 1120], [1060, 1080], [640, 1080], [640, 1140], [600, 1140], [600, 1080], [300, 1080], [300, 900], [280, 900]],
           // (the Nest's two edges on the camera's side where the moat runs, east and south, are a low SPILL lip, not a wall: the moat is seen over it, and over the east one the water pours: the waterfall)
-          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "spill", "spill", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
+          edge_kinds: ["wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "spill", "spill", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall", "wall"] },
         { id: "nest_area", label: "Nest area", level: 0, status: "approximate",
           boundary_type: "outer_edge", boundary_blocks_movement: true,
           note: "One completely open room. The long double lines in the sketch are its OUTSIDE EDGES (walls), not tunnels or a path. The sketch stops drawing at the bottom, so the bottom wall is provisional.",
@@ -358,6 +358,10 @@ const FACILITY_MAP = {
         { id: "sewer_pump_2", room: "sewers", shape: "rect", rect: [1180, 1000, 1200, 1040], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A second pump housing, turned the other way, further south on the dam." },
         { id: "sewer_valve_1", room: "sewers", shape: "rect", rect: [1240, 980, 1260, 1000], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing beside the first pump (the owner, 2026-11-07: \"add valves\")." },
         { id: "sewer_valve_2", room: "sewers", shape: "rect", rect: [1200, 1020, 1220, 1040], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing beside the second pump." },
+        // THE PUMP ROOM (the owner, 2026-11-07: "Machinery elsewhere", then "Widen a section"): a chamber opened off the north walkway (x 440 to 560, y 780 to 860) with machinery to move for cover
+        { id: "sewer_pump_3", room: "sewers", shape: "rect", rect: [440, 780, 480, 800], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A pump housing against the pump room's back wall." },
+        { id: "sewer_valve_3", room: "sewers", shape: "rect", rect: [520, 780, 540, 800], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing against the pump room's back wall." },
+        { id: "sewer_valve_4", room: "sewers", shape: "rect", rect: [480, 820, 500, 840], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing in the middle of the pump room." },
         { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1080], [1056, 1080]], status: "placed", kind: "rubble", note: "THE RUBBLE ON THE WAY INTO THE NEST (a barred boss gate until build 2026-11-06l; the owner, 2026-11-06: \"I never wanted a gate. I wanted rubble\", \"Rubble, drilled\"): the south ledge's way onto the dam, three tiles across, choked with fallen concrete until a fire technician drills it through (rubble_sewer_gate). The other way onto the dam: an ice bridge across the water." },
     ],
 
@@ -841,14 +845,14 @@ const FACILITY_MAP = {
         // (the collapsed tunnel on the north wall is an opening now, x 820 to 940: its fallen-in mouth is the `sewer_choke` solid and the `rubble_sewer_choke` entry, drawn as the pile across the whole mouth: js/techabilities.js
         //  techDrawRubbleOn; the wall decor that hung there moved east of it, and the floor beyond has its own damp and debris)
         { id: "sewer_hatch", room: "sewers", kind: "sealed_hatch", a: [570, 860], b: [590, 860], note: "Rungs up the wall to a hatch at the top, welded shut, a hazard plate on it (a way in for later)." },
-        { id: "sewer_pipe_1", room: "sewers", kind: "pipe", a: [410, 860], b: [500, 860], colour: "#5d6a72", z: 60 },
+        { id: "sewer_pipe_1", room: "sewers", kind: "pipe", a: [450, 780], b: [540, 780], colour: "#5d6a72", z: 60 },
         { id: "sewer_pipe_2", room: "sewers", kind: "pipe", a: [706, 860], b: [746, 860], colour: "#5d6a72", z: 64 },
         { id: "sewer_pipe_3", room: "sewers", kind: "pipe", a: [960, 860], b: [1000, 860], colour: "#5d6a72", z: 60 },
         { id: "sewer_drip_1", room: "sewers", kind: "ooze_drip", a: [300, 1010], b: [300, 1040], colour: "#a64dff" },
-        { id: "sewer_moss_1", room: "sewers", kind: "moss", a: [440, 860], b: [480, 860] },
+        { id: "sewer_moss_1", room: "sewers", kind: "moss", a: [460, 780], b: [500, 780] },
         { id: "sewer_moss_2", room: "sewers", kind: "moss", a: [970, 860], b: [1000, 860] },
         { id: "sewer_moss_3", room: "sewers", kind: "moss", a: [860, 780], b: [900, 780], note: "On the back wall of the collapsed tunnel's floor." },
-        { id: "sewer_wall_light_1", room: "sewers", kind: "wall_light", a: [520, 860], b: [540, 860], colour: "#d8c8ff" },
+        { id: "sewer_wall_light_1", room: "sewers", kind: "wall_light", a: [530, 780], b: [550, 780], colour: "#d8c8ff" },
         { id: "sewer_wall_light_2", room: "sewers", kind: "wall_light", a: [780, 860], b: [800, 860], colour: "#d8c8ff" },
         { id: "sewer_wall_light_3", room: "sewers", kind: "wall_light", a: [1200, 800], b: [1220, 800], colour: "#ff9aa8" },
         { id: "sewer_light_1", room: "sewers", kind: "light", at: [360, 880], radius: 110, colour: "#b07aff", a: 0.2 },

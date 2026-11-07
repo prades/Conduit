@@ -560,6 +560,7 @@ function _fpWallLightRoom(w, a, b, F) {
     for (const t of [0.4, 0.9, 1.5, 2.2, 3.0]) { const r = facilityRoomAt((a[0] + b[0]) / 2 + nx * t, (a[1] + b[1]) / 2 + ny * t, F); if (r) return r.id; }   // (the room that shows its face; the pocket of void behind the arena's rock belongs to the arena)
     return w.room;
 }
+const FP_DRAWN_SOLIDS = new Set(["pump", "valve"]);   // furniture drawn in code, not from a sprite sheet: the sewer's machinery (js/facilitydecor.js; Milestone Four, build 2026-11-07b). A baked 3D sprite for them is open.
 const FP_SELF_SOLIDS = new Set(["river", "pool", "gate", "boss_gate", "rubble"]);   // solids that are not furniture: they draw themselves (js/facilitysewers.js; a choke of rubble: js/techabilities.js techDrawRubbleOn), and have no sprite
 // the cells a solid stands on: the tile centres inside its outline ("x,y"; a small round chamber is at least one cell)
 function _fpSolidCells(s) {

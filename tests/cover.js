@@ -105,7 +105,7 @@ async function boot(search) {
             o.middle = [...new Set(main.filter(s => s.cover && !s.low).map(s => s.kind))].sort().join(); o.lowKinds = [...new Set(main.filter(s => s.low && !s.cover).map(s => s.kind))].sort().join();
             o.tallSome = ['generator', 'locker', 'vending', 'teleporter', 'rubble', 'server_rack', 'tank'].every(k => main.some(s => s.kind === k && !s.low && !s.cover)); return o; })()`);
         same(r.cover, 'barrel,barrier,computer_desk,console,crate,crate_stack,desk,lab_bench,pump,reception_desk,valve', 'what gives cover'); same(r.every, true, 'a solid without its kind\'s traits');
-        same(r.n + ':' + r.nCover + ':' + r.nSeen + ':' + r.nLow + ':' + r.nTall, '168:46:38:16:106', 'the counts (solids : cover : cover seen over : low without cover : tall)');
+        same(r.n + ':' + r.nCover + ':' + r.nSeen + ':' + r.nLow + ':' + r.nTall, '171:49:41:16:106', 'the counts (solids : cover : cover seen over : low without cover : tall)');
         same(r.middle, 'console,crate_stack', 'cover too high to see over'); same(r.lowKinds, 'cart,couch,gate,pool,river,sentry,table', 'low objects that give no cover'); same(r.tallSome, true, 'a tall kind');
     });
     check('THE TEST ROOM HAS ITS OBJECT THAT GIVES COVER (the roadmap\'s room, docs/NEXT-PHASE-ROADMAP.md §3.5): its two crates, barrel and two barriers (that move) and its desk give cover and are seen over, its two consoles give cover and are not, its generator gives none and is tall', () => {
