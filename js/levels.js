@@ -188,7 +188,7 @@ function killXp(p) {
 }
 // Once per dead creature (from the death sweep, game.js).
 function awardKillXp(p) {
-    if (!p || p._xpGiven || p.team === "green" || p.isClone) return 0;
+    if (!p || p._xpGiven || p.team === "green" || p.isClone || p.noReward) return 0;   // (noReward: a test boss and her brood, js/bosses.js)
     p._xpGiven = true;
     const total = killXp(p);
     if (!(total > 0)) return 0;

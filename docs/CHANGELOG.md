@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **mm · The Ant Nest, step B: THE ANT QUEEN** (the owner, 2026-11-07: "a boss ant that's huge"; "Mandible crush, Tremor stomp, Brood call"; "Huge, medium fight"; docs/NEST.md). Implemented and tested on the branch; seen in screenshots and in fights run in the browser; not playtested.
+  - **THE ANT QUEEN** sleeps at her post in the middle of the Nest whenever you come down and she is not alive. Three times the Toxic Queen's size, level 10, 1,067 health (1.6 times the ant boss block: measured so a good squad takes about a minute and a half). She wakes when hit or when one of yours comes near; she is held to the Nest (leave and she goes back to sleep, her wounds kept).
+  - **Her three moves**, no plain bite: **MANDIBLE CRUSH** (a red wedge in front of her, 0.9 s, then a heavy crushing hit on everyone of yours in it), **TREMOR STOMP** (she rears up, an amber ring 3.6 tiles past her body, 1.2 s, then everyone inside is hurt and thrown back), **BROOD CALL** (3 ants out of the brood holes every 25 s, at most 6 alive).
+  - **A test ground:** she and her brood pay nothing (no shards, DNA or XP), and beating her unlocks nothing (Booster Pack 2 still waits for the Toxic Queen).
+  - Her body is big for followers too: brawlers and technicians strike her at her edge, and shots hit anywhere on her. Her enemy card says CRUSH instead of BITE.
+  - **A knock never carries you through a doorway** any more (her hits shoved you up the tunnel mouth, out of the fight).
+  - Agent's numbers, all provisional: her level, health, size and body, each move's strength, wind-up, reach and timing, the brood's size.
+  - Tests: `tests/nest.js` (9 new checks), `tests/sewerquest.js` (the nest row now arms); combat, followercombat, enemycard, damage, facilityplay and bible rerun.
+
 - **ll · The Ant Nest, step A: the egg cavern and the way in through the arena's south rubble** (the owner, 2026-11-07: "Can we finally create the nest layer? [...] I want to use it to test the player and squad combinations and different moves against a boss ant that's huge"; "the nest would be in the against the wall of the arena that the southernmost wall and it is beyond the rubble in a new room"; "Big egg cavern"; docs/NEST.md). Implemented and tested on the branch; seen in screenshots; not playtested.
   - **The Ant Nest** (`nest_area`): an interior beyond the arena's south rock, a big egg cavern sixteen tiles by twelve: packed dirt, rock walls, the colony's eggs in clusters round the edge, brood holes and resin on the north and west walls, the middle open. Zone tag ANT NEST. It replaces the sketch's open "Nest area" outline south of the arena, which nobody could reach.
   - **The way in**: drill the arena's south rubble through with a fire technician (THERMITE DRILL, as before); the hole is now a doorway down to the Nest (shut until then: standing in front of the rubble does nothing). **▼ ANT NEST** shows over the hole. The tunnel mouth in the Nest's north wall leads back up. The squad following you comes along; the save keeps the rubble drilled, so the way stays open.

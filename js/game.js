@@ -1194,7 +1194,7 @@ function render() {
                     : isHostileTarget(a);
                 if (isTarget) {
                     const dx=(p.x-a.x)*TILE_W, dy=(p.y-a.y)*TILE_H;
-                    if (Math.hypot(dx,dy) < 30) {
+                    if (Math.hypot(dx,dy) < 30 + (a.bodyR || 0) * TILE_W) {   // (bodyR: a huge body, THE ANT QUEEN's, is hit anywhere on it: js/bosses.js)
                         if (p.damage > 0) applyDamage(a, p.damage, p.source, null, false, false, p.hit || null);   // (a shot with no damage of its own, a HEXFIRE's, only lands: js/evolution.js)
                         if (p.onHit) p.onHit(a);
                         hit = true;

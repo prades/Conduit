@@ -2136,3 +2136,21 @@ The special functions (and the fire bombs they threw) stay in the code, unused; 
 ### Status
 Implemented and tested (tests/nest.js and the updated facility suites); not playtested. Steps B (THE ANT QUEEN) and C (the console) are designed in docs/NEST.md.
 
+## DECISION: The Ant Nest, step B: THE ANT QUEEN
+
+- **Date / build:** 2026-11-07, build `2026-11-07mm`, branch `claude/start-game-project-HSh7Z`.
+- **Context:** the owner chose THE ANT QUEEN, her moves ("Mandible crush, Tremor stomp, Brood call") and her size and toughness ("Huge, medium fight": about three times the Toxic Queen's size, a fight of one to two minutes with a good squad).
+
+### Decision
+- THE ANT QUEEN is the `nest` row of the existing boss table (js/bosses.js), not a new system: a `test` boss with `moves`.
+- Her three moves are all she has (no plain bite, no species special), each on its own timer, each telegraphed on the floor (a wedge, a ring).
+- A fresh queen whenever you come down and she is not alive; held to the Nest; nothing paid and nothing unlocked by her (the Nest is a test ground; the spec's open question on rewards says none while it is).
+
+### Chosen by the agent (provisional)
+- Level 10; 1.6 times the boss block's health (measured: 15 to 18 damage a second from three evolved level-15 followers; a full fight with her moves on lasted 141 s at 2 times, without the player's attacks); body 1.2 tiles; the crush 0.4 × power, 0.9 s, every 6 s; the stomp 0.25 × power, 1.2 s, every 12 s, thrown back; the brood 3 ants every 25 s, at most 6.
+- A knock no longer carries the player through a doorway (found in the measured fights: her hits shoved the player up the tunnel mouth).
+- First tuning, recorded: her first numbers (the crush at 1.6 × power, a plain bite, 4 ants every 20 s up to 8) killed level-15 followers in one crush and the fight never ended; they were cut before the build.
+
+### Status
+Implemented and tested (tests/nest.js); not playtested. Step C (the console) is next.
+

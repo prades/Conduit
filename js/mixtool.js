@@ -113,7 +113,7 @@ function mixToolFoeHTML(foe, pool, fresh) {
 // the health bar and its numbers follow the creature without rebuilding the card (a rebuild between a press and its release loses the tap)
 function mixToolFoeLive(slot, foe) {
     const u = slot.querySelector ? slot.querySelector(".mt-foe-hp u") : null, n = slot.querySelector ? slot.querySelector(".mt-foe-num") : null; if (!u || !n || !foe) return;
-    const c = targetCardInfo(foe), w = Math.round(c.frac * 100) + "%", cls = c.frac > 0.5 ? "" : c.frac > 0.25 ? "mid" : "low", t = "HP " + c.hp + "/" + c.max + (c.bite !== null ? " \u00b7 BITE " + c.bite : "");
+    const c = targetCardInfo(foe), w = Math.round(c.frac * 100) + "%", cls = c.frac > 0.5 ? "" : c.frac > 0.25 ? "mid" : "low", t = "HP " + c.hp + "/" + c.max + (c.bite !== null ? " \u00b7 " + (c.biteLabel || "BITE") + " " + c.bite : "");
     if (u.style.width !== w) u.style.width = w; if (u.className !== cls) u.className = cls; if (n.textContent !== t) n.textContent = t;
 }
 let _mtFoeSig = "", _mtFoeId = 0, _mtFoeShown = null;   // (the creature on the card: a tap sends them at THAT one, whoever the card is about by the next frame)

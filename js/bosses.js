@@ -29,8 +29,18 @@
 //            she only roams again, and she never sleeps again. The way in: lure her off the console, sleep her (about 5 s), install (about 10 s: js/quests.js QUEST_PURIFY.install) while your followers hold her.
 //            A hit on you does not cancel the install (js/stations.js facilityRelayTick); walking away does.
 //   RESOLVED as before: the water clean calms her, alive, at her post (bossCalm); killed, defeated. Either way Booster Pack 2 unlocks (bossAnyResolved, js/cards.js).
-// THE NESTS: the second domain the design names. Its row carries THE ANT QUEEN, the archive's proposed first nest boss ("Enemy Faction & Biome Escalation", Stage 1; the user: apply it, provisional, 2026-10-31), with no
-// post: the nest area has no way in yet (js/facilitymap.js `candidates`), so nothing arms it. A nest encounter is a row of data when the nest is built, not a new system.
+// THE ANT NEST'S QUEEN (docs/NEST.md, step B, build 2026-11-07mm; the owner, 2026-11-07: "a boss ant that's huge", "Mandible crush, Tremor stomp, Brood call", "Huge, medium fight"): THE ANT QUEEN, the row `nest`, a
+// TEST boss (`test`): the Nest is where the player tries squads and moves on her. Every number of hers is PROVISIONAL (the agent's), the owner's to change.
+//   HER       three times the Toxic Queen's size (`size`: her drawing; `bodyR`: her body's reach in tiles, so a follower strikes her edge, a shot hits her body and her own bite reaches from it); health for a fight of
+//             one to two minutes with a good squad (`hpMul` on the ant species' boss block at her level). She walks after whoever she fights, slowly, in her own room.
+//   SHE IS    THERE whenever you come down: a fresh queen, asleep at her post, each time you come into the Nest and she is not alive (killed, or never armed); she wakes when she is hit or one of yours comes near
+//             her (`wakeNear` tiles from her body); held to the Nest: when you leave it she lets go, walks back to her post and sleeps again there, her wounds kept.
+//   MOVES     three, with independent timers (`moves`): the MANDIBLE CRUSH, at whoever of yours is in reach of her jaws: a wedge on the floor in front of her for `crush.windup` frames while she stands rooted, then
+//             her jaws close on everyone of yours in it (crushing damage; you: one of your hits); the TREMOR STOMP, when one of yours is within `stomp.trigger` tiles of her body: she rears up for `stomp.windup`
+//             frames, a ring on the floor showing how far it reaches, then the ground shakes: everyone of yours within the ring is hurt (earthquake damage) and thrown back (you: one of your hits); the BROOD
+//             CALL, every `brood.every` frames once she is awake: ants climb out of the Nest's brood holes (`brood.n`, never more than `brood.cap` of hers alive) and go for you.
+//   NOTHING   she or her brood leave pays (no shards, DNA or XP: `noReward`, js/drops.js and js/levels.js), and beating her unlocks nothing (bossAnyResolved leaves a test boss out): a test ground.
+const HP_MUL_NEST = 1.6;   // THE ANT QUEEN's health: 1.6 times the ant boss block at her level (1067 at level 10). PROVISIONAL, measured (docs/NEST.md): three evolved followers at level 15 dealt her 15 to 18 a second, her moves off
 const BOSS_ENCOUNTERS = {
     sewer_cistern: { id: "sewer_cistern", domain: "sewers", room: "sewers", name: "THE TOXIC ANT QUEEN",
         species: "ant", cls: "boss", element: "toxic", level: 8,   // the owner, 2026-11-07: "Harder" (it was 6). PROVISIONAL before: the ant species' boss block (js/species.js: 500 health, power 60, mandible frenzy) at level 6; the archive leaves the boss's numbers open ("measure the live game first")
@@ -46,8 +56,17 @@ const BOSS_ENCOUNTERS = {
         frantic: { at: 0.5, speed: 3, roam: 15 },   // the archive's 50%; PROVISIONAL: three times her pace (her own would never get her anywhere), roaming within 15 tiles of her post (the Nest's trash dam and causeway; Side Quest's platform is twice as far)
         quest: "purify", wakes: ["install", "hit"], calms: ["purified"],
         note: "The Sewers' boss, behind the boss gate: the user's toxic ant boss (2026-10-31), named after the archive's proposed progression (the Toxic Ant Queen of the Sewers, Stage 3); provisional. The purification module's install wakes her; clean water calms her." },
-    nest: { id: "nest", domain: "nest_area", room: "nest_area", name: "THE ANT QUEEN", species: "ant", cls: "boss", element: null, level: 0, lair: null, mount: null, guard: 0, leash: 0, attacks: null, waves: null, frantic: null, quest: null, wakes: [], calms: [],   // (level 0, no post: a row, not a boss yet)
-        note: "PLANNED, NOT ARMED: the archive's proposed first nest boss (Stage 1 of the faction progression: break into the nest and defeat the Ant Queen), applied here as provisional (the user, 2026-10-31). No post: the nest area has no entrance yet, so nothing spawns it; its level, numbers and encounter are not designed." },
+    nest: { id: "nest", domain: "nest_area", room: "nest_area", name: "THE ANT QUEEN", species: "ant", cls: "boss", element: null, level: 10, test: true,
+        lair: F => { const N = F.byId.get("nest_area"); return N ? [(N.bb[0] + N.bb[2]) / 2, N.bb[1] + (N.bb[3] - N.bb[1]) * 0.62] : null; },   // her POST: the middle of the cavern, a little south (the tunnel mouth is in its north wall)
+        size: 3, bodyR: 1.2, hpMul: HP_MUL_NEST, wakeNear: 2.5,
+        mount: null, guard: 0, leash: 0, attacks: null, waves: null, frantic: null,
+        moves: {
+            crush: { every: 360, windup: 54, reach: 2.0, arc: 1.0, power: 0.4 },       // every 6 s at most, 0.9 s of wind-up, 2 tiles past her body, a wedge 115 degrees wide, 0.4 × her power (32 at level 10: about half a level-15 brawler's health)
+            stomp: { every: 720, windup: 72, trigger: 3.0, radius: 3.6, power: 0.25, push: 0.35 },   // every 12 s at most, 1.2 s of wind-up, when one of yours is within 3 tiles of her body; 3.6 tiles past it, 0.25 × her power (20 at level 10); thrown back
+            brood: { first: 900, every: 1500, n: 3, cap: 6, classes: { scout: 3, striker: 1 }, below: [5, 3] },   // 15 s after she wakes, then every 25 s: 3 ants, scouts and the odd striker (never more than 6 of hers alive), 5 to 3 levels under hers
+        },
+        quest: null, wakes: ["hit", "near"], calms: [],
+        note: "THE ANT QUEEN of the Ant Nest (docs/NEST.md): the archive's proposed first nest boss (Stage 1 of the faction progression), built as the Nest's test boss (the owner, 2026-11-07). Every number is provisional." },
 };
 const BOSS_HOME = 1.2;   // tiles from its post: home (a rooted boss sleeps again there)
 const BOSS_COL = "#8cff5a";   // the toxic green of her bombs and her brood's call
@@ -76,13 +95,19 @@ function bossLair(E) { return E ? _bossSpot(E.lair) : null; }
 // the station a boss keeps (its mount), as the stations list has it: { x, y, bb } or null
 function bossMount(E) { return E && E.mount && typeof _fp !== "undefined" && _fp && _fp.stations ? _fp.stations.find(s => s.id === E.mount) || null : null; }
 // has any encounter been resolved, calm or defeated? (js/cards.js: Booster Pack 2 unlocks after the first boss; the user: a spared boss counts, 2026-10-31)
-function bossAnyResolved() { const B = typeof _fp !== "undefined" && _fp && _fp.bosses || {}; return Object.keys(B).some(id => B[id].state === "resolved"); }
+function bossAnyResolved() { const B = typeof _fp !== "undefined" && _fp && _fp.bosses || {}; return Object.keys(B).some(id => B[id].state === "resolved" && !(BOSS_ENCOUNTERS[id] && BOSS_ENCOUNTERS[id].test)); }   // (a test boss, the Ant Nest's queen, counts for nothing)
 // the creature, at its post: asleep (ARMED) or calm (RESOLVED calm); null when the encounter has no boss or the world cannot hold it
 function _bossSpawn(E, how) {
     if (!E || !E.species || typeof spawnCreature !== "function") return null;
     const at = bossLair(E); if (!at) return null;
-    let b = null; try { b = spawnCreature({ species: E.species, className: E.cls || "boss", x: at[0], y: at[1], level: E.level || 1, state: "wander" }); } catch (e) { b = null; }
+    const S0 = bossState(E.id), lvl = (S0 && S0.level) || E.level || 1;   // (a level set for this encounter: the Nest's console, step C)
+    let b = null; try { b = spawnCreature({ species: E.species, className: E.cls || "boss", x: at[0], y: at[1], level: lvl, state: "wander" }); } catch (e) { b = null; }
     if (!b) return null;
+    if (E.size && b.dimensions) { b.dimensions.width *= E.size; b.dimensions.height *= E.size; }   // HUGE: drawn at `size` times (js/bugs3d.js scales by her width)
+    if (E.bodyR) { b.bodyR = E.bodyR; b.biteReach = ((typeof COMBAT !== "undefined" && COMBAT.bite && COMBAT.bite.reach) || 1) + E.bodyR; }   // her body's reach: a follower strikes her edge, a shot her body, her bite reaches from it (js/npc.js, js/game.js)
+    if (E.hpMul && E.hpMul !== 1) { b.maxHealth = Math.round(b.maxHealth * E.hpMul); b.health = b.maxHealth; }
+    if (E.test) b.noReward = true;   // a test boss pays nothing (js/drops.js, js/levels.js)
+    if (E.moves) { b.noBite = true; b.abilityDef = null; }   // her moves are all she has: no plain bite (the crush is her bite: js/predator.js), no species special
     b.fpCreature = true; b.homeRoom = E.room; b.bossId = E.id; b.bossName = E.name || null; b.element = E.element || null; b.spawnProtection = 0; b.provoked = false; b.currentTarget = null;
     b._bossPace = b.baseMoveSpeed || b.moveSpeed || 0.008;   // (her true pace: frantic she runs faster than it, and _bossLetGo gives it back)
     b.bossAsleep = how !== "calm"; b.bossCalm = how === "calm"; b.bossRooted = false; b.bossFrantic = false; b.wanderTarget = { x: at[0], y: at[1], rest: 1e9 }; b.wanderTimer = 1e9;
@@ -93,7 +118,7 @@ function bossArm(id) {
     const E = bossEnc(id), S = bossState(id); if (!E || !S || !E.species) return false;
     if (S.state !== "idle") return false;
     const b = _bossSpawn(E, "asleep"); if (!b) return false;
-    S.unit = b; S.state = "armed"; S.frantic = false; S.cast = null; S.waveAt = null; S.bombAt = null; S.spitAt = null; S.waves = 0; return true;
+    S.unit = b; S.state = "armed"; S.frantic = false; S.cast = null; S.waveAt = null; S.bombAt = null; S.spitAt = null; S.waves = 0; S.crushAt = null; S.stompAt = null; S.broodAt = null; return true;
 }
 // WAKE: it fights (the install begins, or it is hit); rooted at its post, its timers started; the quest line is told the encounter has started
 function bossWake(id, why) {
@@ -249,7 +274,9 @@ function _bossFrantic(E, S, b) {
 }
 // each frame (js/facilitytutorial.js): a death, a hit on a sleeper, the frantic turn, the attacks, the waves, the leash, going home; then the shots in the air
 function bossTick() {
-    if (typeof _fp === "undefined" || !_fp || !_fp.bosses || typeof player === "undefined") { _bossShotsTick(); return; }
+    if (typeof _fp === "undefined" || !_fp || typeof player === "undefined") { _bossShotsTick(); return; }
+    _bossTestEntry();
+    if (!_fp.bosses) { _bossShotsTick(); return; }
     for (const id of Object.keys(_fp.bosses)) {
         const E = bossEnc(id), S = _fp.bosses[id], b = S.unit; if (!E || !b) continue;
         if (b.dead) {   // DEFEATED: the game's own kill paid it (js/drops.js); recorded whatever the state was
@@ -258,6 +285,7 @@ function bossTick() {
             if (typeof questBossResolved === "function") questBossResolved(id, "defeated");
             continue;
         }
+        if (E.moves) { _bossNestTick(E, S, b); continue; }   // THE ANT QUEEN's rules (below)
         const at = bossLair(E) || [b.x, b.y], dp = Math.hypot(player.x - at[0], player.y - at[1]), home = Math.hypot(b.x - at[0], b.y - at[1]) <= BOSS_HOME;
         if (S.state === "armed" && b.bossAsleep && b.provoked) { bossWake(id, "hit"); continue; }   // a sleeper hit wakes
         if (S.state === "active") {
@@ -273,6 +301,119 @@ function bossTick() {
         if (b.bossCalm && !b.provoked && !home && b.state === "wander" && !(b.wanderTarget && b.wanderTarget.rest === 1e9)) _bossLetGo(E, S, b, at);   // a calm boss keeps to its post (its fight over, it walks back)
     }
     _bossShotsTick();
+}
+// ── THE ANT QUEEN (the `test` rows with `moves`: the Ant Nest's) ──
+// a fresh queen each time you come down into her room and she is not alive (killed, or never armed): asleep at her post, whole, at the encounter's level
+function _bossTestEntry() {
+    for (const id of Object.keys(BOSS_ENCOUNTERS)) {
+        const E = BOSS_ENCOUNTERS[id]; if (!E.test) continue;
+        const inside = typeof partyRoomAt === "function" && partyRoomAt(player.x, player.y) === E.room;
+        const S = inside || (_fp.bosses && _fp.bosses[id]) ? bossState(id) : null; if (!S) continue;
+        if (inside && !S.inRoom && !bossUnit(id)) { S.state = "idle"; S.outcome = null; S.unit = null; S.cast = null; bossArm(id); }
+        S.inRoom = inside;
+    }
+}
+// the nearest of yours (you, a follower, a clone) within `r` tiles of her middle, in her room, that she may hurt; with `all`, every one of them
+function _bossYoursNear(b, r, all) {
+    const E = bossEnc(b.bossId), out = [], cand = [typeof player !== "undefined" ? player : null].concat(typeof actors !== "undefined" ? actors.filter(a => a && !a.dead && a.team === "green" && (a.isFollower || a.isClone) && !a.untargetable) : []);
+    let best = null, bd = 1e9;
+    for (const t of cand) {
+        if (!t || !Number.isFinite(t.x)) continue;
+        const d = Math.hypot(t.x - b.x, t.y - b.y); if (d > r) continue;
+        if (E && typeof partyRoomAt === "function" && partyRoomAt(t.x, t.y) !== E.room) continue;
+        if (t === player ? (typeof predatorMayHurtPlayer === "function" && !predatorMayHurtPlayer()) : (typeof predatorPreyOk === "function" && !predatorPreyOk(b, t))) continue;
+        out.push(t); if (d < bd) { bd = d; best = t; }
+    }
+    return all ? out : best;
+}
+// held still while she winds up (the creature's walk reads both paces: js/predator.js); _bossRun gives them back
+function _bossHold(b) { b.moveSpeed = 0; b.baseMoveSpeed = 0; }
+function _bossNestTick(E, S, b) {
+    const at = bossLair(E) || [b.x, b.y], home = Math.hypot(b.x - at[0], b.y - at[1]) <= BOSS_HOME, inside = typeof partyRoomAt !== "function" || partyRoomAt(player.x, player.y) === E.room;
+    if (S.state === "armed" && b.bossAsleep) {
+        if (b.provoked) { bossWake(E.id, "hit"); return; }
+        if (inside && _bossYoursNear(b, (E.wakeNear || 2) + (E.bodyR || 0))) { bossWake(E.id, "near"); }
+        return;
+    }
+    if (S.state !== "active") return;
+    if (!inside) {   // you left her room: she lets go, walks back to her post and sleeps again there (her wounds kept)
+        if (S.cast) { S.cast = null; _bossRun(E, S, b); }
+        if (b.provoked) _bossLetGo(E, S, b, at);
+        else if (home) { b.bossAsleep = true; S.state = "armed"; S.crushAt = S.stompAt = S.broodAt = null; bossSay(_bossName(E) + " SLEEPS AGAIN", "#8aa0c8"); }
+        else if (b.state !== "wander" || !b.wanderTarget) _bossLetGo(E, S, b, at);
+        return;
+    }
+    if (!b.provoked) _bossHunt(b);
+    _bossMovesTick(E, S, b);
+}
+// HER MOVES each frame she is awake: a wind-up under way holds her and goes off at its end; else the brood when it is due, the stomp when one of yours is close and it is ready, the crush when one is in reach of her jaws
+function _bossMovesTick(E, S, b) {
+    const M = E.moves, f = _bossFrame(), R = E.bodyR || 0;
+    if (bossControlled(b)) { if (S.cast) { S.cast = null; _bossRun(E, S, b); } return; }   // (held by a stun, a freeze, a glitch or a sleep: the wind-up is lost)
+    if (S.cast) {
+        _bossHold(b);
+        if (f >= S.cast.until) { const c = S.cast; S.cast = null; _bossRun(E, S, b); if (c.kind === "crush") _bossCrush(E, b, c); else _bossStomp(E, b); }
+        return;
+    }
+    if (S.crushAt === null || S.crushAt === undefined) S.crushAt = f + 60;
+    if (S.stompAt === null || S.stompAt === undefined) S.stompAt = f + Math.round(M.stomp.every / 2);
+    if (S.broodAt === null || S.broodAt === undefined) S.broodAt = f + M.brood.first;
+    if (f >= S.broodAt) { S.broodAt = f + M.brood.every; _bossBrood(E, b); }
+    if (f >= S.stompAt && _bossYoursNear(b, M.stomp.trigger + R)) {
+        S.cast = { kind: "stomp", t0: f, until: f + M.stomp.windup }; S.stompAt = f + M.stomp.every; _bossHold(b);
+        bossSay("⚠ " + _bossName(E) + " REARS UP — TREMOR STOMP · GET CLEAR", "#ffb347"); return;
+    }
+    const t = f >= S.crushAt ? _bossYoursNear(b, M.crush.reach + R) : null;
+    if (t) {
+        S.cast = { kind: "crush", t0: f, until: f + M.crush.windup, dir: Math.atan2(t.y - b.y, t.x - b.x), x: b.x, y: b.y }; S.crushAt = f + M.crush.every; _bossHold(b);
+        if (typeof faceToward === "function") faceToward(b, t.x, t.y, 1);
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: b.x, y: b.y, text: "MANDIBLE CRUSH!", color: "#ff6a4a", life: 50, vy: -0.05, size: 13 });
+    }
+}
+// is (x, y) in the wedge in front of her (from her middle at `c`, along `dir`, `arc` radians either side, out to `r` tiles)?
+function _bossInWedge(c, x, y, r, arc) { const dx = x - c.x, dy = y - c.y, d = Math.hypot(dx, dy); if (d > r) return false; if (d < 0.6) return true; let a = Math.atan2(dy, dx) - c.dir; while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return Math.abs(a) <= arc; }
+function _bossCrush(E, b, c) {
+    const M = E.moves.crush, r = M.reach + (E.bodyR || 0), dmg = (b.power || 60) * M.power;
+    for (const t of _bossYoursNear(b, r + 0.5, true)) {
+        if (!_bossInWedge(c, t.x, t.y, r, M.arc)) continue;
+        if (t === player) { if (typeof hurtPlayer === "function" && hurtPlayer(1, 8, { x: b.x, y: b.y }) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "CRUSHED", color: "#ff6a4a", life: 40, vy: -0.05, size: 12 }); }
+        else if (typeof applyDamage === "function") applyDamage(t, dmg, b, null, false, false, typeof DMG_HIT_ENEMY !== "undefined" ? DMG_HIT_ENEMY.crushing : null);
+    }
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: c.x + Math.cos(c.dir) * r * 0.6, y: c.y + Math.sin(c.dir) * r * 0.6, color: "#ff8a5a", radius: 1.1, life: 18 });
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 4);
+}
+function _bossStomp(E, b) {
+    const M = E.moves.stomp, r = M.radius + (E.bodyR || 0), dmg = (b.power || 60) * M.power;
+    for (const t of _bossYoursNear(b, r, true)) {
+        if (t === player) { if (typeof hurtPlayer === "function" && hurtPlayer(1, 10, { x: b.x, y: b.y }) && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "TREMOR", color: "#ffb347", life: 40, vy: -0.05, size: 12 }); continue; }
+        if (typeof applyDamage === "function") applyDamage(t, dmg, b, null, false, false, typeof DMG_HIT_ENEMY !== "undefined" ? DMG_HIT_ENEMY.earthquake : null);
+        if (typeof applyKnockback === "function") applyKnockback(t, b, M.push);
+    }
+    if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: b.x, y: b.y, radius: r, color: "#ffb347", life: 26 }); elementEffects.push({ type: "impact", x: b.x, y: b.y, color: "#c9a060", radius: 1.6, life: 22 }); }
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 9);
+}
+// THE BROOD CALL: ants climb out of the Nest's brood holes (a floor cell in front of each hole), as many as she may have alive, and go for you
+function _bossBrood(E, b) {
+    const M = E.moves.brood; if (typeof facilitySpawnCreature !== "function" || typeof facilityCreatures !== "function" || !_fp || !_fp.F) return 0;
+    const mine = facilityCreatures(E.room).filter(a => a.bossWave === E.id).length, n = Math.min(M.n, M.cap - mine); if (n <= 0) return 0;
+    const holes = _fp.F.decor.filter(d => d.room === E.room && d.kind === "brood_hole" && d.a && d.b), spots = [];
+    for (const h of holes) {
+        const mx = (h.a[0] + h.b[0]) / 2, my = (h.a[1] + h.b[1]) / 2, L = Math.hypot(h.b[0] - h.a[0], h.b[1] - h.a[1]) || 1; let nx = (h.b[1] - h.a[1]) / L, ny = -(h.b[0] - h.a[0]) / L; if (nx + ny < 0) { nx = -nx; ny = -ny; }   // (into the room: the side of the wall the camera sees)
+        const c = typeof _fpNearestCell === "function" ? _fpNearestCell(mx + nx * 0.9, my + ny * 0.9) : null; if (c && partyRoomAt(c[0], c[1]) === E.room) spots.push(c);
+    }
+    if (!spots.length) return 0;
+    const L0 = b.level || E.level || 1, P = { room: E.room, species: [E.species], classes: M.classes, levels: [Math.max(1, L0 - M.below[0]), Math.max(1, L0 - M.below[1])], element: null, minFromPlayer: 0, spacing: 0.6, wander: [3, 9] };
+    let k = 0;
+    for (let i = 0; i < n; i++) {
+        const c = spots[(i + Math.floor(Math.random() * spots.length)) % spots.length];
+        let p = null; try { p = facilitySpawnCreature(E.species, [c[0], c[1]], P); } catch (e) { p = null; }
+        if (!p) continue;
+        p.bossWave = E.id; p.noReward = !!E.test; p.provoked = true; p.lastAttacker = player; p.spawnProtection = 0;
+        if (typeof predatorPreyOk === "function" && predatorPreyOk(p, player)) { p.currentTarget = player; p._prey = player; p.state = "attack"; }
+        k++;
+    }
+    if (k) bossSay("⚠ " + _bossName(E) + " CALLS HER BROOD — " + k + " ANTS FROM THE BROOD HOLES", "#ffb347");
+    return k;
 }
 // where a boss wanders (js/facilityspawn.js facilityWanderTarget asks): its post, and nowhere else, while it sleeps, is calm or is rooted; a roam within `frantic.roam` of its post while frantic
 function bossWanderTarget(a) {
@@ -302,6 +443,17 @@ function _bossRing(x, y, r, k, col) {
     ctx.globalAlpha = 0.1 + 0.28 * k; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, 0, R * Math.max(0.05, k), 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 }
+// THE ANT QUEEN's wind-ups on the floor: the crush's wedge in front of her filling as it comes, the stomp's ring out to its reach closing in; the word over her
+function _bossDrawMove(E, b, c, f) {
+    const k = Math.max(0, Math.min(1, (f - c.t0) / Math.max(1, c.until - c.t0))), R = E.bodyR || 0;
+    if (c.kind === "crush") {
+        const M = E.moves.crush, r = M.reach + R, pts = [_bossScr(c.x, c.y, 0)];
+        for (let i = 0; i <= 12; i++) { const a = c.dir - M.arc + 2 * M.arc * i / 12; pts.push(_bossScr(c.x + Math.cos(a) * r, c.y + Math.sin(a) * r, 0)); }
+        ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
+        ctx.globalAlpha = 0.12 + 0.3 * k; ctx.fillStyle = "#ff5a3a"; ctx.fill(); ctx.globalAlpha = 0.45 + 0.45 * k; ctx.strokeStyle = "#ff8a5a"; ctx.lineWidth = 2.5; ctx.stroke(); ctx.globalAlpha = 1;
+    } else { const M = E.moves.stomp; _bossRing(b.x, b.y, M.radius + R, k, "#ffb347"); }
+    const [sx, sy] = _bossScr(b.x, b.y, 0); if (typeof cachedText === "function") cachedText(c.kind === "crush" ? "MANDIBLE CRUSH" : "TREMOR STOMP", "bold 13px monospace", c.kind === "crush" ? "#ff8a5a" : "#ffb347", sx, sy - 210);
+}
 function bossDrawOverlay() {
     if (typeof ctx === "undefined" || typeof canvas === "undefined" || !canvas || typeof player === "undefined" || typeof _fp === "undefined" || !_fp) return;
     const B = _fp.bosses || {}, f = _bossFrame(); let any = bossShots.length > 0;
@@ -309,7 +461,9 @@ function bossDrawOverlay() {
     if (!any) return;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const id of Object.keys(B)) {
-        const S = B[id], E = bossEnc(id), b = S.unit, c = S.cast; if (!c || !b || b.dead || !E || !E.attacks) continue;
+        const S = B[id], E = bossEnc(id), b = S.unit, c = S.cast; if (!c || !b || b.dead || !E) continue;
+        if (E.moves) { _bossDrawMove(E, b, c, f); continue; }
+        if (!E.attacks) continue;
         const A = E.attacks[c.kind], k = Math.max(0, Math.min(1, (f - c.t0) / Math.max(1, c.until - c.t0)));
         _bossRing(c.aim[0], c.aim[1], A.radius, k, BOSS_COL);
         const [sx, sy] = _bossScr(b.x, b.y, 0); if (typeof cachedText === "function") cachedText(c.kind === "bomb" ? "TOXIC BOMB" : "SPIT", "bold 12px monospace", BOSS_COL, sx, sy - 162);

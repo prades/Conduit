@@ -5,6 +5,7 @@
 // (js/species.js), said over it as "◆ n". It drops its DNA splices for the Clone Bay (js/clone.js addDNA, under "species_class"), and in the arena a case of SCRAP METAL where it fell
 // (js/facilityspawn.js facilityScrapDrop), which the Armory's terminal turns into ammunition. A nymph is worth nothing (REPORTED, long ago: "make nymphs not grant any points").
 function onPredatorDeath(predator) {
+    if (predator && predator.noReward) return;   // a test boss and her brood (the Ant Nest's: js/bosses.js) pay nothing
     if (typeof facilityScrapDrop === "function") facilityScrapDrop(predator);
     if (typeof questDropFor === "function") questDropFor(predator);   // a toxic ant of the Sewers: an ANT SAMPLE while the analysis bench wants them (js/quests.js)
     if (typeof questAntKilled === "function") questAntKilled(predator);   // and it counts toward Side Quest's appearance (js/sidequest.js: about ten of them, the archive's target)

@@ -211,6 +211,7 @@ class Predator {
     // The bite's two beats, once a target is in reach: the rest runs down, then it REARS BACK for COMBAT.bite.windup frames (attackWindup counts down; the telegraph is drawn over it, js/combat.js
     // drawBiteTelegraphs; the body rears: attackAnim goes negative), then the bite lands (bite()) and the body lunges (attackAnim runs 0 to π). A target that got out of reach in the wind-up is missed.
     _biteTick(target) {
+        if (this.noBite) { this.attackWindup = 0; this.biteTarget = null; return; }   // (THE ANT QUEEN: her MANDIBLE CRUSH is her bite, js/bosses.js)
         if (this.glitched > 0) { this.attackWindup = 0; this.biteTarget = null; this.attackAnim = 0; return; }   // GLITCH (an equip card's Static Lock, js/cards.js): the wind-up it tries fails
         if (this.attackWindup > 0) {
             this.attackWindup--;

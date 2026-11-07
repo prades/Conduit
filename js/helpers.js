@@ -135,7 +135,9 @@ function hurtPlayer(amount, shakeAmt, source) {
         const kl = Math.hypot(kx, ky);
         if (kl < 1e-3) { kx = -1; ky = 0; } else { kx /= kl; ky /= kl; }
         // Both where you are and where you were walking: the camera slides you back (and the walls hold you: js/facilityplay.js).
-        const _kx = player.x, _ky = player.y; player.x += kx * PLAYER_KNOCKBACK; player.y += ky * PLAYER_KNOCKBACK; facilityConstrain(player, _kx, _ky); player.targetX = player.x; player.targetY = player.y; player.fpPath = null;
+        const _kx = player.x, _ky = player.y; player.x += kx * PLAYER_KNOCKBACK; player.y += ky * PLAYER_KNOCKBACK; facilityConstrain(player, _kx, _ky);
+        if (typeof facilityPortalAt === "function" && facilityPortalAt(player.x, player.y) && !facilityPortalAt(_kx, _ky)) { player.x = _kx; player.y = _ky; }   // (a knock never carries you through a doorway: the Ant Nest's tunnel mouth is beside where THE ANT QUEEN fights, js/bosses.js)
+        player.targetX = player.x; player.targetY = player.y; player.fpPath = null;
     }
     shake = Math.max(shake, shakeAmt || 4);
     if (health > 0 && typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") {

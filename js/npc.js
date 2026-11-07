@@ -320,7 +320,7 @@ function updateRTSNPC(actor) {
                 // Enemy close enough — engage
                 const dx=nearestEnemy.x-actor.x, dy=nearestEnemy.y-actor.y;
                 const dist=Math.sqrt(dx*dx+dy*dy);
-                if (dist > 0.8) {
+                if (dist > Math.max(0.8, (nearestEnemy.bodyR || 0) + 0.2)) {   // (a huge body, THE ANT QUEEN's, bodyR: it stops at her edge, not in her middle: js/bosses.js; a brawler's 1.4 is her edge already)
                     actor.x+=(dx/dist)*actor.moveSpeed*0.8;
                     actor.y+=(dy/dist)*actor.moveSpeed*0.8;
                 } else {

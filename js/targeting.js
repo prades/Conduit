@@ -256,17 +256,21 @@ function targetInfoLines(a) {
     const mx = Math.ceil(a.maxHealth || a.health || 0), hp = Math.ceil(Math.max(0, a.health)), pw = Number.isFinite(a.power) ? Math.round(a.power * 10) / 10 : "?", sp = Number.isFinite(a.moveSpeed) ? Math.round(a.moveSpeed * 1000) / 10 : "?";
     return [
         "LEVEL " + (Number.isFinite(a.level) ? a.level : "?") + "  ·  " + String(a.className || "").toUpperCase() + "  ·  " + (a.element ? String(a.element).toUpperCase() : "NO ELEMENT"),
-        "HEALTH " + hp + " / " + mx + "   BITE " + pw + "   SPEED " + sp,
+        "HEALTH " + hp + " / " + mx + "   " + _tgBiteLabel(a) + " " + (Number.isFinite(a.power) ? Math.round(a.power * _tgBiteK(a) * 10) / 10 : pw) + "   SPEED " + sp,
         TARGET_NOTES.species[a.speciesName] || "", TARGET_NOTES.cls[a.className] || "",
     ].filter(Boolean);
 }
+// a creature with no plain bite (THE ANT QUEEN: her MANDIBLE CRUSH is her bite, js/bosses.js) shows her crush instead
+function _tgCrush(a) { const E = a && a.noBite && a.bossId && typeof bossEnc === "function" ? bossEnc(a.bossId) : null; return E && E.moves && E.moves.crush ? E.moves.crush : null; }
+function _tgBiteK(a) { const c = _tgCrush(a); return c ? c.power : 1; }
+function _tgBiteLabel(a) { return _tgCrush(a) ? "CRUSH" : "BITE"; }
 // what the enemy card shows (js/mixtool.js): its name (and the shorter title for the card) and colour, level and class, health and the two numbers that matter
 function targetCardInfo(a) {
     const hp = Math.ceil(Math.max(0, a.health || 0)), mx = Math.max(1, Math.ceil(a.maxHealth || a.health || 1)), el = a.element && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === a.element) : null;
     return {
         name: targetName(a), title: a.bossName ? a.bossName : a.speciesName ? (String(a.speciesName) + " " + String(a.className || "")).trim().toUpperCase() : targetName(a),   // (a boss is named: js/bosses.js)   // (the card's name line: the kind, without the element, which is on the line under it in its colour)
         col: _tgColour(a), level: Number.isFinite(a.level) ? a.level : null, cls: String(a.className || "").toUpperCase(), element: el ? el.label.toUpperCase() : "", hp, max: mx, frac: Math.max(0, Math.min(1, hp / mx)),
-        bite: Number.isFinite(a.power) ? Math.round(a.power * 10) / 10 : null, speed: Number.isFinite(a.moveSpeed) ? Math.round(a.moveSpeed * 1000) / 10 : null,
+        bite: Number.isFinite(a.power) ? Math.round(a.power * _tgBiteK(a) * 10) / 10 : null, biteLabel: _tgBiteLabel(a), speed: Number.isFinite(a.moveSpeed) ? Math.round(a.moveSpeed * 1000) / 10 : null,
     };
 }
 function _tgInfo(a, x, y, R, col) {
