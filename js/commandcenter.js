@@ -305,7 +305,7 @@ function ccBuildFrame() {
     const sb = _ccEl("div", "cc-sqbody"); sb.id = "ccSquadBody"; card.appendChild(sb); win.appendChild(card); root.appendChild(win);
     window.addEventListener("keydown", e => {
         if (!e || !ccOpenTab) return;
-        if (e.key === "Escape") { if (ccSquadsOpen) { ccSquadsOpen = false; ccRender(); } else ccClose(); }
+        if (e.key === "Escape") { if (typeof cardPickIsOpen === "function" && cardPickIsOpen()) cardPickClose(); else if (ccSquadsOpen) { ccSquadsOpen = false; ccRender(); } else ccClose(); }   // (the card picker first)
         else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !ccSquadsOpen && ccCarousel() && !document.getElementById("unitInfo")) ccFocusStep(e.key === "ArrowRight" ? 1 : -1);   // (the arrows walk the roster)
     });
 }
@@ -503,13 +503,14 @@ function _ccThumb(cv, f) {
 
 // The right-hand panel: the selected creature as a stat index, and its settings as one-line drop-downs.
 // Each setting shows only what it is now; tap it to see the choices (one open at a time), pick one and it folds shut.
-function _ccDropdown(side, key, title, value, col, options, off, chip) {   // (chip: an element shown beside the value, and an option's own `chip` beside its label: the equip cards' rarity, js/cardsui.js)
+function _ccDropdown(side, key, title, value, col, options, off, chip, note) {   // (chip: an element shown beside the value, and an option's own `chip` beside its label: the equip cards' rarity, js/cardsui.js; note: a line under it, what the card worn does; `options` a function: a card slot, whose tap opens the card picker, js/cardsui.js cardPickOpen, in place of a list)
     const open = _ccDD === key && !off;
     const b = _ccEl("button", "cc-dd" + (open ? " open" : "") + (off ? " off" : "")); b.style.setProperty("--c", col || "#19e6c1");
     b.appendChild(_ccEl("span", "cc-dd-k", title)); b.appendChild(_ccEl("span", "cc-dd-v", off || value)); if (chip && !off) { b.classList.add("chipped"); b.appendChild(chip); } b.appendChild(_ccEl("span", "cc-dd-a", open ? "\u25b4" : "\u25be"));
-    if (off) b.disabled = true; else _ccClick(b, () => { _ccDD = open ? null : key; ccRender(); });
+    if (off) b.disabled = true; else if (typeof options === "function") _ccClick(b, () => { _ccDD = key; options(); ccRender(); }); else _ccClick(b, () => { _ccDD = open ? null : key; ccRender(); });
     side.appendChild(b);
-    if (open) {
+    if (note && !off) side.appendChild(_ccEl("div", "cc-dd-fx", note));
+    if (open && Array.isArray(options)) {
         const list = _ccEl("div", "cc-dd-list");
         options.forEach(o => { const ob = _ccBtn(o.label, o.col, o.on, () => { o.fn(); _ccDD = null; }, "wide", o.sub); if (o.chip) { ob.classList.add("chipped"); ob.appendChild(o.chip); } if (o.off) ob.disabled = true; list.appendChild(ob); });
         side.appendChild(list);
@@ -636,7 +637,7 @@ function _ccFocusYou(E) {
     if (typeof equipPlayerSlotsBox === "function") {
         if (!E.pc) { E.pc = _ccEl("div", "cf-pcwrap"); E.txt.appendChild(E.pc); }
         const sig = typeof equipPlayerSig === "function" ? equipPlayerSig() : "";
-        if (E.pcSig !== sig || !E.pc.firstChild) { E.pcSig = sig; E.pc.textContent = ""; E.pc.appendChild(_ccEl("div", "cf-pch", "YOUR CARDS · TAP ONE TO CHANGE IT")); E.pc.appendChild(equipPlayerSlotsBox(slot => { _ccDD = "pslot" + slot; ccRender(); })); }
+        if (E.pcSig !== sig || !E.pc.firstChild) { E.pcSig = sig; E.pc.textContent = ""; E.pc.appendChild(_ccEl("div", "cf-pch", "YOUR CARDS · TAP ONE TO CHANGE IT")); E.pc.appendChild(equipPlayerSlotsBox(slot => { if (typeof equipPlayerPick === "function") equipPlayerPick(slot); else { _ccDD = "pslot" + slot; ccRender(); } })); }   // (a tap on one of your cards opens the card picker for that slot)
     }
     if (E.key !== "you") { E.key = "you"; E.done = _ccYouThumb(E.cv); } else if (!E.done) E.done = _ccYouThumb(E.cv);   // (the player's sheet may still have been loading)
 }

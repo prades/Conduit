@@ -105,7 +105,7 @@ function _sfCardsDraw(E, f) {
         box.appendChild(b);
         if (!open) continue;
         const list = mk("div", "sf-slot-list");
-        const opt = (label, sub, on, off, id, c) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", String(slot)); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); if (sub) el.appendChild(mk("small", "sf-os", sub)); if (c) { const ch = chip(c); if (ch) el.appendChild(ch); } if (off) el.disabled = true; list.appendChild(el); };
+        const opt = (label, sub, on, off, id, c) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", String(slot)); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); if (sub) el.appendChild(mk("small", "sf-os", sub)); if (c) { const ch = chip(c); if (ch) el.appendChild(ch); if (c.text) el.appendChild(mk("small", "sf-ofx", c.text)); } if (off) el.disabled = true; list.appendChild(el); };   // (sf-ofx: what the card does, the owner, 2026-11-07: "see information about the cards when I'm equipping them")
         opt("EMPTY", cur ? (sp ? "TAKE IT OFF: ITS EVERYDAY HIT IS BACK" : "TAKE THE CARD OFF") : "", !cur, !cur, null, null);
         hand.forEach(c => { const why = why0(c); opt(c.name, why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c), c.id === cur, !!why && c.id !== cur, c.id, c); });
         box.appendChild(list);

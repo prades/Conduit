@@ -2170,3 +2170,27 @@ Implemented and tested (tests/nest.js); not playtested. Step C (the console) is 
 ### Status
 Implemented and tested (tests/nest.js); not playtested.
 
+## DECISION: The card picker in the roster
+
+- **Date / build:** 2026-11-07, build `2026-11-07oo`, branch `claude/start-game-project-HSh7Z`.
+- **Context:** the owner asked to "see information about the cards when I'm equipping them to the creatures". When shown the first version, the effect text in the roster's drop-down lists, the owner chose a pop-out instead: "a separate pop-out menu could show up when the user is in the roster and they're hooking up cards, and then whenever they hit selected card slot or an empty card slot, a sliding list of card arts appears in the middle of the screen in a pop-out. You can scroll through and select which one you want to put on" ("Yes" to go ahead).
+
+### Decision
+- **Where it opens:** every card slot in the roster opens the picker (js/cardsui.js `cardPickOpen`) in place of its drop-down list. That is a follower's CARD 1, CARD 2 and SPECIAL ATTACK, and the player's two slots.
+- **What it shows:** each card in full, using the CARDS screen's 3D card and its CSS.
+- **Which cards:** the same cards and the same rules as the lists they replace:
+  - EMPTY comes first;
+  - the worn card is marked;
+  - a card that does not fit says why.
+- **Pick and close:** a tap puts the card on and closes the picker; closing it any other way changes nothing.
+- **The HUD's member card:** it keeps its short list (not part of the request). Each card in it now shows what it does under its name.
+
+### Chosen by the agent (provisional)
+- The box's look: gold, about 1,120 px wide, with the cards at the CARDS screen's size.
+- The line under each card (WORN, why not, or its kind and rarity).
+- The ‹ › arrows, hidden on a phone.
+- The worn card's effect on a line under its roster slot.
+
+### Status
+Implemented and tested (cards, squadfly, crystalline, packs, playercards and cardart suites); seen in screenshots; not playtested.
+

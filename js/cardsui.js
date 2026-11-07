@@ -390,23 +390,76 @@ function equipSubclassRow(side, f) {   // (drawn under the buttons, above the st
 }
 function equipRosterDraw(side, f) {   // (drawn under the styles)
     if (!f || f.isClone || f.isFollower !== true || typeof _ccEl !== "function") return;
-    const hand = equipUsableCards().filter(c => !c.attack);   // (the hand and what the packs found; the card attacks have their own menu, below)
+    const hand = equipUsableCards().filter(c => !c.attack);   // (the hand and what the packs found; the card attacks have their own slot, below)
     for (let slot = 0; slot < EQUIP.followerSlots; slot++) {
-        const cur = equipSlots(f)[slot], card = equipCard(cur), opts = [];
-        opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE THE CARD OFF" : "", fn: () => { equipPut(f, slot, null); } });
-        hand.forEach(c => { const why = equipWhyNot(f, c.id, slot); opts.push({ label: c.name, col: "#19e6c1", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipPut(f, slot, c.id); } }); });
-        _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);
+        const card = equipCard(equipSlots(f)[slot]);
+        _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", () => equipFollowerPick(f, slot), hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null, card ? card.text : null);
     }
     equipSpecialDraw(side, f);
 }
-// ITS SPECIAL ATTACK (the owner, 2026-11-06: "You must change it in a separate menu inside of index/roster card system. Including access main hud"): a menu of its own under CARD 1 and CARD 2, listing the card
-// attacks in the hand (js/cards.js equipSpecialCards): the ones for another form say why; the one set is lit. Set, it is the follower's primary attack (js/combat.js cardAttackTry).
+// ITS SPECIAL ATTACK (the owner, 2026-11-06: "You must change it in a separate menu inside of index/roster card system. Including access main hud"): a slot of its own under CARD 1 and CARD 2, its picker listing the card
+// attacks in the hand (js/cards.js equipSpecialCards): the ones for another form say why; the one set is marked. Set, it is the follower's primary attack (js/combat.js cardAttackTry).
 function equipSpecialDraw(side, f) {
     if (!f || f.isClone || f.isFollower !== true || typeof _ccDropdown !== "function" || !equipSpecialFor(f)) return;   // (only on a form some card attack is for)
-    const hand = equipSpecialCards(), cur = f.special || null, card = equipCard(cur), opts = [];
-    opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE IT OFF: ITS EVERYDAY HIT IS BACK" : "", fn: () => { equipSpecialPut(f, null); } });
-    hand.forEach(c => { const why = equipSpecialWhyNot(f, c.id); opts.push({ label: c.name, col: "#19e6c1", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipSpecialPut(f, c.id); } }); });
-    _ccDropdown(side, "special", "SPECIAL ATTACK", card ? card.name : "EMPTY", "#ff9a3a", opts, hand.length ? null : "NO CARD ATTACKS IN YOUR HAND", card ? _cdChip(card, true) : null);
+    const hand = equipSpecialCards(), card = equipCard(f.special || null);
+    _ccDropdown(side, "special", "SPECIAL ATTACK", card ? card.name : "EMPTY", "#ff9a3a", () => equipSpecialPick(f), hand.length ? null : "NO CARD ATTACKS IN YOUR HAND", card ? _cdChip(card, true) : null, card ? card.text : null);
+}
+// ── THE CARD PICKER (the owner, 2026-11-07: "a separate pop-out menu could show up when the user is in the roster and they're hooking up cards, and then whenever they hit selected card slot or an empty card slot,
+// a sliding list of card arts appears in the middle of the screen in a pop-out. You can scroll through and select which one you want to put on"). A tap on a card slot in the roster (a follower's CARD 1, CARD 2 and
+// SPECIAL ATTACK; your YOUR SLOT 1 and 2, and your cards on your card in view) opens it over the roster, in the middle of the screen: whose slot it is, and a row of the cards that slot can take, each in full (the
+// CARDS screen's card: its art, its name and kind, and what it does), sliding sideways. EMPTY comes first (it takes the card off); the card worn is marked WORN; one that does not fit is dimmed and says why. A tap
+// on a card puts it on and the pop-out closes; ✕, a tap outside the box or Escape closes it with nothing changed. (The HUD's pop-out keeps its list, with what each card does under its name: js/squadfly.js.)
+let _cpOpen = null;   // { key, title, sub, col, cur, cards, why(c) -> reason or null, put(id or null) }
+function cardPickIsOpen() { return !!_cpOpen; }
+function cardPickOpen(o) {
+    if (!o || typeof document === "undefined" || !document.body) return false;
+    _cpOpen = o; let root = document.getElementById("cardPick");
+    if (!root) { root = _cdEl("div"); root.id = "cardPick"; root.setAttribute("role", "dialog"); document.body.appendChild(root); root.addEventListener("click", ev => { if (ev.target === root) cardPickClose(); }); }
+    _cpRender(root); if (root.classList) root.classList.add("open");
+    return true;
+}
+function cardPickClose() {
+    _cpOpen = null; if (typeof _ccDD !== "undefined") _ccDD = null;
+    const root = typeof document !== "undefined" ? document.getElementById("cardPick") : null; if (root) { if (root.classList) root.classList.remove("open"); root.textContent = ""; }
+    if (typeof ccRender === "function") ccRender();
+}
+function _cpRender(root) {
+    const o = _cpOpen; root.textContent = ""; if (!o) return;
+    const box = _cdEl("div", "cp-box"); box.style.setProperty("--c", o.col || "#ffe733");
+    const head = _cdEl("div", "cp-head"), hl = _cdEl("div", "cp-hl"); hl.appendChild(_cdEl("div", "cp-title", o.title)); if (o.sub) hl.appendChild(_cdEl("div", "cp-sub", o.sub)); head.appendChild(hl);
+    const x = _cdEl("button", "cp-x", "✕"); x.type = "button"; x.setAttribute("aria-label", "CLOSE"); _cdClick(x, () => cardPickClose()); head.appendChild(x); box.appendChild(head);
+    const wrap = _cdEl("div", "cp-wrap"), rail = _cdEl("div", "cp-rail");
+    const tile = (c) => {
+        const id = c ? c.id : null, worn = id === (o.cur || null), why = c && !worn ? o.why(c) : null, off = !!why || (!id && !o.cur);
+        const t = _cdEl("button", "cp-tile" + (worn ? " worn" : "") + (off ? " off" : "") + (c ? "" : " empty")); t.type = "button"; t.setAttribute("data-card", id || "");
+        t.appendChild(_cdEl("span", "cp-nm", c ? c.name : "EMPTY"));   // (first: the tile reads as the card's name)
+        t.appendChild(_cdEl("span", "cp-st", worn ? (c ? "WORN" : "NOTHING ON IT") : why || (c ? equipKindLabel(c) + " · " + equipRarityLabel(c) : "TAKE THE CARD OFF")));
+        if (c) { t.appendChild(_cdChip(c, true)); t.appendChild(_cdSlab(c, "")); } else { const e = _cdEl("div", "cp-blank"); e.appendChild(_cdEl("span", null, "EMPTY")); t.appendChild(e); }   // (WORN is the tile's own mark: the card's face keeps no state line)
+        if (off) t.disabled = true; else _cdClick(t, () => { o.put(id); cardPickClose(); });
+        rail.appendChild(t);
+    };
+    tile(null); for (const c of o.cards) tile(c);
+    const arrow = (cls, dir, label) => { const a = _cdEl("button", "cp-arrow " + cls, label); a.type = "button"; a.setAttribute("aria-label", dir < 0 ? "BACK" : "ON"); _cdClick(a, () => { const w = ((rail.children[1] || rail.firstChild || {}).offsetWidth || 240) + 18; if (typeof rail.scrollBy === "function") rail.scrollBy({ left: dir * w, behavior: "smooth" }); else rail.scrollLeft += dir * w; }); return a; };
+    wrap.appendChild(arrow("prev", -1, "‹")); wrap.appendChild(rail); wrap.appendChild(arrow("next", 1, "›")); box.appendChild(wrap);
+    box.appendChild(_cdEl("div", "cp-note", o.cards.length ? "SLIDE THROUGH THE CARDS · TAP ONE TO PUT IT ON" : "NO CARDS IN YOUR HAND · TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN"));
+    root.appendChild(box);
+    const sel = rail.querySelector ? (rail.querySelector(".cp-tile.worn") || rail.children[1] || rail.firstChild) : null;   // (the card worn in the middle, else the first card)
+    const centre = () => { if (sel && Number.isFinite(sel.offsetLeft) && rail.clientWidth) rail.scrollLeft = sel.offsetLeft + sel.offsetWidth / 2 - rail.clientWidth / 2; };
+    if (typeof requestAnimationFrame === "function") requestAnimationFrame(centre); else centre();
+}
+// the pickers: a follower's CARD 1 or CARD 2, its SPECIAL ATTACK, your own slot
+function _cpWho(f) { return typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER"; }
+function equipFollowerPick(f, slot) {
+    return cardPickOpen({ key: "card" + slot, title: "CARD " + (slot + 1) + " · " + _cpWho(f), sub: "WHAT IT WEARS IN THIS SLOT", col: "#ffe733", cur: equipSlots(f)[slot] || null,
+        cards: equipUsableCards().filter(c => !c.attack), why: c => equipWhyNot(f, c.id, slot), put: id => equipPut(f, slot, id) });
+}
+function equipSpecialPick(f) {
+    return cardPickOpen({ key: "special", title: "SPECIAL ATTACK · " + _cpWho(f), sub: "A CARD ATTACK: SET, IT IS ITS PRIMARY ATTACK", col: "#ff9a3a", cur: f.special || null,
+        cards: equipSpecialCards(), why: c => equipSpecialWhyNot(f, c.id), put: id => equipSpecialPut(f, id) });
+}
+function equipPlayerPick(slot) {
+    return cardPickOpen({ key: "pslot" + slot, title: "YOUR SLOT " + (slot + 1), sub: "PLAYER CARDS ONLY", col: "#ffe733", cur: equipPlayer[slot] || null,
+        cards: equipUsableCards(), why: c => equipPlayerWhyNot(c.id, slot), put: id => equipPlayerPut(slot, id) });
 }
 // ── YOU, ON THE ROSTER (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the player's card in view (js/commandcenter.js
 // _ccFocusDraw) shows its two cards, each a mini card as the collection's (a tap opens its list); the settings column has YOUR SLOT 1 and YOUR SLOT 2, drop-downs as a follower's CARD 1 and CARD 2, listing the hand
@@ -420,10 +473,8 @@ function equipPlayerRosterDraw(side) {
     side.appendChild(_ccEl("div", "cc-sec", "YOUR CARDS · " + EQUIP.playerSlots + " SLOTS · PLAYER CARDS ONLY"));
     let asleep = null;
     for (let slot = 0; slot < EQUIP.playerSlots; slot++) {
-        const cur = equipPlayer[slot], card = equipCard(cur), opts = [], zz = _cdAsleep(card); if (zz) asleep = card;
-        opts.push({ label: "EMPTY", col: "#8aa0c8", on: !cur, off: !cur, sub: cur ? "TAKE THE CARD OFF" : "", fn: () => { equipPlayerPut(slot, null); } });
-        hand.forEach(c => { const why = equipPlayerWhyNot(c.id, slot); opts.push({ label: c.name, col: "#ffe733", on: c.id === cur, off: !!why && c.id !== cur, sub: (why && c.id !== cur ? why : equipKindLabel(c) + " · " + equipRarityLabel(c)), chip: _cdChip(c, true), fn: () => { equipPlayerPut(slot, c.id); } }); });
-        _ccDropdown(side, "pslot" + slot, "YOUR SLOT " + (slot + 1) + (zz ? " · ASLEEP" : ""), card ? card.name : "EMPTY", zz ? "#8a8f9e" : "#ffe733", opts, hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null);   // (ASLEEP in the slot's small label: the name keeps its lines)
+        const card = equipCard(equipPlayer[slot]), zz = _cdAsleep(card); if (zz) asleep = card;
+        _ccDropdown(side, "pslot" + slot, "YOUR SLOT " + (slot + 1) + (zz ? " · ASLEEP" : ""), card ? card.name : "EMPTY", zz ? "#8a8f9e" : "#ffe733", () => equipPlayerPick(slot), hand.length ? null : "NO CARDS IN YOUR HAND", card ? _cdChip(card, true) : null, card ? card.text : null);   // (ASLEEP in the slot's small label: the name keeps its place)
     }
     side.appendChild(_ccEl("div", "cc-note", asleep ? asleep.name + " IS ASLEEP: IT WAKES WHEN YOU ARE A " + _equipClassLabel(asleep.match) + " AGAIN" : !hand.length ? "TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN: THEY ARE LISTED HERE" : !mine ? "NO PLAYER CARD IN YOUR HAND: ONLY THOSE FIT YOU" : "EACH FOLLOWER'S TWO CARDS ARE ON ITS OWN PAGE OF THE ROSTER"));
 }

@@ -222,7 +222,7 @@ function measure(w, h) {
     });
     await check('on a card the item takes the crystal\'s place, stands in front of the tilted card and rises past its top, hovering; on the collection\'s stage it is blown up', () => {
         const html = rd('game.html'), ui = rd('js/cardsui.js');
-        ok(/#cardsRoot \.cd-card\.itemed \.cd-gem \{ display: none; \}/.test(html), 'the crystal stays under the item'); ok(/#cardsRoot \.cd-item \{[^}]*top: -16px[^}]*animation: cdHover/.test(html), 'the item does not rise past the top (16 px since build l: it was too big), hovering');
+        ok(/:is\(#cardsRoot, #cardPick\) \.cd-card\.itemed \.cd-gem \{ display: none; \}/.test(html), 'the crystal stays under the item'); ok(/:is\(#cardsRoot, #cardPick\) \.cd-item \{[^}]*top: -16px[^}]*animation: cdHover/.test(html), 'the item does not rise past the top (16 px since build l: it was too big), hovering');
         ok(/#cardsRoot \.cd-stage \.cd-item \{[^}]*cdBlowItem/.test(html), 'the stage does not blow it up'); ok(/cardArtItemUrl\(c\)/.test(ui) && /"cd-item"/.test(ui), 'the card does not ask for its item');
     });
 
@@ -231,8 +231,8 @@ function measure(w, h) {
         const html = rd('game.html'), order = scriptOrder();
         ok(order.indexOf('js/cardart.js') > order.indexOf('js/cards.js') && order.indexOf('js/cardart.js') < order.indexOf('js/cardsui.js') && order.indexOf('js/cardart.js') < order.indexOf('js/commandcenter.js') && order.indexOf('js/cardart.js') < order.indexOf('js/party.js'), 'the order');
         ok(/"js\/cardart\.js": "CARD_ART"/.test(html), 'the boot check');
-        ok(/#cardsRoot \.cd-slab \{[^}]*transform: rotateX\(6deg\) rotateY\(-16deg\)/.test(html), 'the tilt'); ok(!/#cardsRoot \.cd-side/.test(html), 'a 3D edge is back (Chrome draws it wrong under the list\'s scrolling)');
-        ok(/#cardsRoot \.cd-tex \{[^}]*linear-gradient\(180deg[^}]*var\(--tex, none\)/.test(html), 'the texture under its veil'); ok(/#cardsRoot \.cd-holo\.ghost \{[^}]*blur/.test(html), 'the hologram\'s shadow');
+        ok(/:is\(#cardsRoot, #cardPick\) \.cd-slab \{[^}]*transform: rotateX\(6deg\) rotateY\(-16deg\)/.test(html), 'the tilt'); ok(!/#cardsRoot \.cd-side/.test(html), 'a 3D edge is back (Chrome draws it wrong under the list\'s scrolling)');
+        ok(/:is\(#cardsRoot, #cardPick\) \.cd-tex \{[^}]*linear-gradient\(180deg[^}]*var\(--tex, none\)/.test(html), 'the texture under its veil'); ok(/:is\(#cardsRoot, #cardPick\) \.cd-holo\.ghost \{[^}]*blur/.test(html), 'the hologram\'s shadow');
         for (const sel of ['#ccRoot .cc-card {', '#ccRoot.carousel #ccGrid .cc-card::before', '#ccRoot.carousel .cf-card::before', '#ccRoot.carousel .cf-art {', ':is(#squadBar, #ccSquadBox) .sb-slot {', '#ccRoot.carousel #ccSquadBox .sb-slot::before', 'body.corners #squadBar .sb-slot::before', '#squadFly .sf-card::before', '#radialPanel .rp-card {'])
             ok(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[^}]*var\\(--tex, none\\)').test(html), sel + ' has no backdrop');
         ok(/#unitInfo \.ui-art\[class\*="cat-f-"\] \{[^}]*var\(--tex\)/.test(html), 'the INFO\'s picture has no backdrop');

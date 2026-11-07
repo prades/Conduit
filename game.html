@@ -9,18 +9,18 @@
     <!-- THE PROPS SHEETS THE START WAITS FOR (js/init.js, docs/STARTUP.md) begin to download with the page, alongside the scripts, instead of once the world is built: measured on a slow link (2x CPU, 60 ms, 15 Mbit/s), the start is about half a second sooner (4.1 s to 3.5 s for a new player, 6.4 s to 5.9 s for a returning one).
          They are the addresses the loader asks for (img/props/<family>.png, with the build stamp), so its own requests are answered from these; the stamp changes with the build (tests/startup.js checks both).
          Not here: the player's sheet (the website's background, ?attract, draws no player), the eggs and the evolved forms (which of them the first picture draws depends on the saved game): the start asks for those itself. -->
-    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-07nn">
-    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-07nn">
+    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-07oo">
+    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-07oo">
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -587,6 +587,29 @@
         #topToggles { gap: 7px; padding: 8px 14px; } #topToggles .top-btn { min-width: 0; padding: 0 8px; font-size: 16px; height: 54px; gap: 4px; } #topToggles .top-btn svg { width: 22px; height: 22px; } .top-tag { font-size: 14px !important; } #btnCtrl { min-width: 46px !important; }
         #topToggles #dockScroll { gap: 6px; padding: 4px 6px; }   /* (eight buttons since QUESTS came, 2026-11-01: denser, so a tablet's width still shows them all without a slide) */
     }
+    /* THE CARD PICKER (js/cardsui.js cardPickOpen; the owner, 2026-11-07: "a sliding list of card arts appears in the middle of the screen in a pop-out"): over the roster, the cards a slot can take in a row that slides */
+    #cardPick { display: none; position: fixed; inset: 0; z-index: 80; align-items: center; justify-content: center; background: rgba(2,4,10,0.72); font-family: var(--neo-font); color: #fff; }
+    #cardPick.open { display: flex; }
+    #cardPick .cp-box { --c: #ffe733; width: min(1120px, calc(100vw - 24px)); max-height: calc(100vh - 24px); display: flex; flex-direction: column; box-sizing: border-box; padding: 14px 16px 12px; background: linear-gradient(180deg, #121a34, #080c1a); border: 2px solid var(--c); box-shadow: 0 0 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,231,51,0.22); }
+    #cardPick .cp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 6px; }
+    #cardPick .cp-title { font: italic 900 24px var(--neo-font); color: var(--c); letter-spacing: 0.02em; text-shadow: 0 0 12px rgba(255,231,51,0.35); }
+    #cardPick .cp-sub { font: 700 11px monospace; color: #8aa0c8; letter-spacing: 0.06em; margin-top: 2px; }
+    #cardPick .cp-x { flex: none; width: 44px; height: 44px; font: 900 18px var(--neo-font); color: #fff; background: #0a1022; border: 2px solid #2a3a66; cursor: pointer; }
+    #cardPick .cp-wrap { position: relative; display: flex; align-items: center; gap: 6px; min-height: 0; }
+    #cardPick .cp-rail { flex: 1; min-width: 0; display: flex; gap: 18px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 22px 30px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    #cardPick .cp-arrow { flex: none; width: 44px; height: 64px; font: 900 30px/1 var(--neo-font); color: var(--c); background: #0a1022; border: 2px solid #2a3a66; cursor: pointer; }
+    #cardPick .cp-tile { flex: none; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 244px; padding: 6px 4px 8px; background: none; border: 2px solid transparent; color: #fff; cursor: pointer; font: inherit; }
+    #cardPick .cp-tile > .cd-card, #cardPick .cp-tile > .cp-blank { order: 1; }
+    #cardPick .cp-tile > .cp-nm { order: 2; font: italic 900 15px var(--neo-font); color: #fff; text-align: center; } #cardPick .cp-tile.worn > .cp-nm { color: var(--neo-gold); }
+    #cardPick .cp-tile > .cd-chip.mini { order: 3; }
+    #cardPick .cp-tile > .cp-st { order: 4; font: 700 10px/1.3 monospace; color: #9fb2d8; letter-spacing: 0.04em; text-align: center; max-width: 230px; }
+    #cardPick .cp-tile.worn { border-color: var(--neo-gold); background: rgba(255,231,51,0.06); } #cardPick .cp-tile.worn > .cp-st { color: var(--neo-gold); }
+    #cardPick .cp-tile.off { cursor: default; } #cardPick .cp-tile.off > .cd-card { opacity: 0.42; filter: saturate(0.4); } #cardPick .cp-tile.off > .cp-st { color: #ff8a6a; }
+    #cardPick .cp-tile:not(.off):not(.worn):hover { border-color: #2a3a66; background: rgba(255,255,255,0.04); }
+    #cardPick .cp-blank { width: 210px; height: 290px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3a4a7a; border-radius: 10px; font: italic 900 20px var(--neo-font); color: #8aa0c8; background: rgba(10,16,34,0.6); }
+    #cardPick .cp-tile.empty.off > .cp-blank { opacity: 0.5; }
+    #cardPick .cp-note { font: 700 11px monospace; color: #8aa0c8; letter-spacing: 0.05em; text-align: center; padding-top: 4px; }
+    @media (max-width: 700px) { #cardPick .cp-title { font-size: 18px; } #cardPick .cp-arrow { display: none; } #cardPick .cp-rail { padding: 16px 8px 8px; } }
     /* THE ANT NEST'S TEST CONSOLE (js/nestconsole.js; docs/NEST.md, step C) */
     #nestConsole { display: none; position: fixed; inset: 0; z-index: 70; align-items: center; justify-content: center; background: rgba(2,4,10,0.55); font-family: var(--neo-font); color: #fff; }
     #nestConsole.open { display: flex; }
@@ -663,6 +686,9 @@
     #ccRoot .cc-dd { --c: #19e6c1; display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; min-height: 44px; font-family: var(--neo-font); font-style: italic; font-weight: 900; color: #fff; background: #0a1022; border: 2px solid var(--c); cursor: pointer; touch-action: manipulation; text-align: left; }
     #ccRoot .cc-dd .cc-dd-k { flex: none; width: 112px; font: 800 11px monospace; font-style: normal; color: #ffcc44; letter-spacing: 0.4px; } #ccRoot .cc-dd .cc-dd-v { flex: 1; font-size: 16px; } #ccRoot .cc-dd .cc-dd-a { color: var(--c); font-size: 16px; }
     #ccRoot .cc-dd.open { background: color-mix(in srgb, var(--c) 18%, #0a1022); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 45%, transparent); } #ccRoot .cc-dd.off { opacity: 0.4; cursor: default; }
+    /* WHAT A CARD DOES, where you equip it (the owner, 2026-11-07: "see information about the cards when I'm equipping them to the creatures"): under the slot for the card worn, and under each card of the HUD pop-out's list */
+    #ccRoot .cc-dd-fx { font: 600 11px/1.35 var(--neo-font); color: #c9d6f0; padding: 0 4px 8px 14px; margin-top: -2px; }
+    #squadFly .sf-opt .sf-ofx { grid-column: 1 / span 2; font: 600 10px/1.3 var(--neo-font); color: #c9d6f0; white-space: normal; text-align: left; }
     #ccRoot .cc-dd-list { display: flex; flex-direction: column; gap: 5px; padding: 6px 0 8px 14px; border-left: 3px solid #1a2850; } #ccRoot .cc-dd-list .cc-btn.wide { flex: none; width: 100%; }
     #ccRoot .cc-sqwin { display: none; position: absolute; inset: 0; z-index: 5; background: rgba(2,4,12,0.82); align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
     #ccRoot .cc-sqcard { display: flex; flex-direction: column; width: min(720px, 100%); max-height: 100%; background: linear-gradient(180deg, #0f1730, #060914); border: 2.5px solid var(--neo-teal); box-shadow: 0 0 22px rgba(25,230,193,0.4); padding: 14px 18px 16px; box-sizing: border-box; }
@@ -687,36 +713,36 @@
        cae-<key> carries one before its text: --emb is the emblem's picture, laid as a mask, so it takes the colour of the text (--emc is its own colour, for a place that shows it so). Sized to the text; a place
        sets its own size below (the roster's subclass tag, the enemy card's name). */
     :is([class^="cae-"], [class*=" cae-"])::before { content: ""; display: inline-block; width: 1.15em; height: 1.15em; margin-right: 0.3em; vertical-align: -0.2em; background-color: currentColor; -webkit-mask: var(--emb) center / contain no-repeat; mask: var(--emb) center / contain no-repeat; }
-    /* THE 3D CARDS (js/cardsui.js _cdSlab, js/cardart.js; ASKED 2026-11-01, the design canvas's chosen board, then "Make an update to implement this style"): each card a slab tilted in 3D (perspective, a little
+    /* THE 3D CARDS (js/cardsui.js _cdSlab, js/cardart.js; the card picker, #cardPick, wears the same card face; ASKED 2026-11-01, the design canvas's chosen board, then "Make an update to implement this style"): each card a slab tilted in 3D (perspective, a little
        thickness along its right edge and its foot), its face the card's texture under a dark veil, the element's crystal or a class card's cube floating over it, its name, kind and text a raised hologram
        (a blurred copy under it is its shadow), the rarity chip on its right edge. What can be done with a card (its buttons, who wears it) is flat under it, where a tap is never lost to the tilt.
        The sizes are the canvas's 300 x 420 card at three quarters (225 x 315). The card is ONE flat layer, tilted: its thickness is a back plate showing along its right edge and its foot (a real
        edge turned 90 degrees, as the canvas had, is drawn wrong by Chrome once the list's scrolling cuts the card: part of the face goes dark). */
     #cardsRoot .cd-row, #cardsRoot .cd-grid { display: grid; grid-template-columns: repeat(auto-fill, 236px); justify-content: start; gap: 16px 14px; }
-    #cardsRoot .cd-card { --c: #8fe3ff; position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 236px; box-sizing: border-box; padding: 0 0 4px; }
-    #cardsRoot .cd-art { position: relative; flex: none; width: 225px; height: 315px; margin: 6px 0 10px; perspective: 825px; perspective-origin: 50% 38%; }
-    #cardsRoot .cd-slab { position: absolute; inset: 0; transform: rotateX(6deg) rotateY(-16deg); transition: transform 0.25s ease; }
-    @media (hover: hover) { #cardsRoot .cd-card:hover .cd-slab { transform: rotateX(4deg) rotateY(-8deg); } }   /* (a mouse over it turns it a little toward you) */
-    #cardsRoot .cd-back { position: absolute; inset: 0; transform: translate(4px, 3px); background: linear-gradient(180deg, #141d3a, #090d1c); border-right: 1px solid rgba(255,255,255,0.09); box-shadow: 0 26px 50px rgba(0,0,0,0.65); }
-    #cardsRoot .cd-face { position: absolute; inset: 0; background: #0b1226; }
-    #cardsRoot .cd-face::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 44%, rgba(255,255,255,0.05) 50%, transparent 56%); pointer-events: none; }   /* (a sheen across the glass) */
-    #cardsRoot .cd-tex { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,22,46,0.26) 0%, rgba(10,16,34,0.56) 46%, rgba(8,12,26,0.9) 70%, rgba(8,12,26,0.97) 100%), var(--tex, none) center / 100% 100% no-repeat; }   /* the texture, under the veil that keeps it subtle */
-    #cardsRoot .cd-frame { position: absolute; inset: 7px 9px; border: 2px solid var(--c); transform: skewX(-6deg); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 45%, transparent), inset 0 0 18px rgba(0,0,0,0.45); pointer-events: none; }
-    #cardsRoot .cd-frame::before { content: ""; position: absolute; inset: -6px; border: 5px solid var(--c); opacity: 0.14; }
-    #cardsRoot .cd-top { position: absolute; left: 27px; right: 36px; top: 18px; display: flex; justify-content: space-between; gap: 6px; } #cardsRoot .cd-rar, #cardsRoot .cd-state { font: 800 8.5px/1 monospace; letter-spacing: 0.1em; color: #9fb0d0; white-space: nowrap; }
+    :is(#cardsRoot, #cardPick) .cd-card { --c: #8fe3ff; position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 236px; box-sizing: border-box; padding: 0 0 4px; }
+    :is(#cardsRoot, #cardPick) .cd-art { position: relative; flex: none; width: 225px; height: 315px; margin: 6px 0 10px; perspective: 825px; perspective-origin: 50% 38%; }
+    :is(#cardsRoot, #cardPick) .cd-slab { position: absolute; inset: 0; transform: rotateX(6deg) rotateY(-16deg); transition: transform 0.25s ease; }
+    @media (hover: hover) { :is(#cardsRoot, #cardPick) .cd-card:hover .cd-slab { transform: rotateX(4deg) rotateY(-8deg); } }   /* (a mouse over it turns it a little toward you) */
+    :is(#cardsRoot, #cardPick) .cd-back { position: absolute; inset: 0; transform: translate(4px, 3px); background: linear-gradient(180deg, #141d3a, #090d1c); border-right: 1px solid rgba(255,255,255,0.09); box-shadow: 0 26px 50px rgba(0,0,0,0.65); }
+    :is(#cardsRoot, #cardPick) .cd-face { position: absolute; inset: 0; background: #0b1226; }
+    :is(#cardsRoot, #cardPick) .cd-face::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 44%, rgba(255,255,255,0.05) 50%, transparent 56%); pointer-events: none; }   /* (a sheen across the glass) */
+    :is(#cardsRoot, #cardPick) .cd-tex { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,22,46,0.26) 0%, rgba(10,16,34,0.56) 46%, rgba(8,12,26,0.9) 70%, rgba(8,12,26,0.97) 100%), var(--tex, none) center / 100% 100% no-repeat; }   /* the texture, under the veil that keeps it subtle */
+    :is(#cardsRoot, #cardPick) .cd-frame { position: absolute; inset: 7px 9px; border: 2px solid var(--c); transform: skewX(-6deg); box-shadow: 0 0 10px color-mix(in srgb, var(--c) 45%, transparent), inset 0 0 18px rgba(0,0,0,0.45); pointer-events: none; }
+    :is(#cardsRoot, #cardPick) .cd-frame::before { content: ""; position: absolute; inset: -6px; border: 5px solid var(--c); opacity: 0.14; }
+    :is(#cardsRoot, #cardPick) .cd-top { position: absolute; left: 27px; right: 36px; top: 18px; display: flex; justify-content: space-between; gap: 6px; } :is(#cardsRoot, #cardPick) .cd-rar, :is(#cardsRoot, #cardPick) .cd-state { font: 800 8.5px/1 monospace; letter-spacing: 0.1em; color: #9fb0d0; white-space: nowrap; }
     #cardsRoot .cd-state { color: var(--neo-teal); } #cardsRoot .cd-card.hand .cd-state { color: var(--neo-gold); text-shadow: 0 0 6px rgba(255,231,51,0.6); } #cardsRoot .cd-card.locked .cd-state { color: #6d7fa6; }
-    #cardsRoot .cd-glow { position: absolute; left: 69px; top: 70px; width: 87px; height: 87px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 50%, transparent), transparent 70%); filter: blur(3px); }
-    #cardsRoot .cd-shadow { position: absolute; left: 78px; top: 150px; width: 69px; height: 16px; border-radius: 50%; background: rgba(0,0,0,0.6); filter: blur(4px); }
-    #cardsRoot .cd-gem { position: absolute; left: 52px; top: 52px; width: 121px; height: 121px; background: var(--gem, none) center / auto no-repeat; }   /* (the crystal or the cube: js/cardart.js draws it at the card's size, round the middle of this box) */
-    #cardsRoot .cd-holo { position: absolute; left: 20px; right: 20px; top: 178px; bottom: 24px; box-sizing: border-box; padding: 9px 11px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 11%, transparent), transparent 85%); border-top: 1px solid color-mix(in srgb, var(--c) 65%, transparent); }
-    #cardsRoot .cd-holo::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(180deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 3px); pointer-events: none; }   /* (scan lines) */
-    #cardsRoot .cd-holo.ghost { transform: translate(5px, 8px); filter: blur(2px); opacity: 0.3; border-top-color: transparent; background: none; pointer-events: none; } #cardsRoot .cd-holo.ghost::after { display: none; }
-    #cardsRoot :is(.cd-name, .cd-gn) { font-size: 16px; font-style: italic; font-weight: 900; line-height: 1.02; letter-spacing: 0.3px; color: #fff; text-shadow: 0 0 8px var(--c), 1.2px 0 0 rgba(255,70,70,0.5), -1.2px 0 0 rgba(70,220,255,0.5); overflow-wrap: anywhere; }
-    #cardsRoot :is(.cd-name, .cd-gn).long { font-size: 13px; }
-    #cardsRoot :is(.cd-kind, .cd-gk) { font: 700 9.5px/1.3 monospace; color: var(--c); letter-spacing: 0.5px; text-shadow: 0 0 6px var(--c); }
-    #cardsRoot :is(.cd-text, .cd-gt) { font: 700 9.5px/1.4 monospace; color: #d4deff; text-shadow: 0 0 6px rgba(159,176,208,0.55); }
-    #cardsRoot .cd-holo.ghost > * { color: var(--c); text-shadow: none; }
-    #cardsRoot .cd-emit { position: absolute; bottom: 20px; width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px var(--c), 0 0 16px var(--c); } #cardsRoot .cd-emit.l { left: 24px; } #cardsRoot .cd-emit.r { right: 24px; }
+    :is(#cardsRoot, #cardPick) .cd-glow { position: absolute; left: 69px; top: 70px; width: 87px; height: 87px; border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--c) 50%, transparent), transparent 70%); filter: blur(3px); }
+    :is(#cardsRoot, #cardPick) .cd-shadow { position: absolute; left: 78px; top: 150px; width: 69px; height: 16px; border-radius: 50%; background: rgba(0,0,0,0.6); filter: blur(4px); }
+    :is(#cardsRoot, #cardPick) .cd-gem { position: absolute; left: 52px; top: 52px; width: 121px; height: 121px; background: var(--gem, none) center / auto no-repeat; }   /* (the crystal or the cube: js/cardart.js draws it at the card's size, round the middle of this box) */
+    :is(#cardsRoot, #cardPick) .cd-holo { position: absolute; left: 20px; right: 20px; top: 178px; bottom: 24px; box-sizing: border-box; padding: 9px 11px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 11%, transparent), transparent 85%); border-top: 1px solid color-mix(in srgb, var(--c) 65%, transparent); }
+    :is(#cardsRoot, #cardPick) .cd-holo::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(180deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 3px); pointer-events: none; }   /* (scan lines) */
+    :is(#cardsRoot, #cardPick) .cd-holo.ghost { transform: translate(5px, 8px); filter: blur(2px); opacity: 0.3; border-top-color: transparent; background: none; pointer-events: none; } :is(#cardsRoot, #cardPick) .cd-holo.ghost::after { display: none; }
+    :is(#cardsRoot, #cardPick) :is(.cd-name, .cd-gn) { font-size: 16px; font-style: italic; font-weight: 900; line-height: 1.02; letter-spacing: 0.3px; color: #fff; text-shadow: 0 0 8px var(--c), 1.2px 0 0 rgba(255,70,70,0.5), -1.2px 0 0 rgba(70,220,255,0.5); overflow-wrap: anywhere; }
+    :is(#cardsRoot, #cardPick) :is(.cd-name, .cd-gn).long { font-size: 13px; }
+    :is(#cardsRoot, #cardPick) :is(.cd-kind, .cd-gk) { font: 700 9.5px/1.3 monospace; color: var(--c); letter-spacing: 0.5px; text-shadow: 0 0 6px var(--c); }
+    :is(#cardsRoot, #cardPick) :is(.cd-text, .cd-gt) { font: 700 9.5px/1.4 monospace; color: #d4deff; text-shadow: 0 0 6px rgba(159,176,208,0.55); }
+    :is(#cardsRoot, #cardPick) .cd-holo.ghost > * { color: var(--c); text-shadow: none; }
+    :is(#cardsRoot, #cardPick) .cd-emit { position: absolute; bottom: 20px; width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px var(--c), 0 0 16px var(--c); } :is(#cardsRoot, #cardPick) .cd-emit.l { left: 24px; } :is(#cardsRoot, #cardPick) .cd-emit.r { right: 24px; }
     /* its state: taken into the run (LIT GOLD FROM BEHIND, build 2026-11-01l, the owner: "an illuminated background that is yellow, matching the purchased button color scheme": a gold light behind its picture, a gold glow
        round it and from behind its slab), found this run (a teal outline), locked (a dashed frame, its texture and its crystal dulled) */
     #cardsRoot .cd-card.hand .cd-face { outline: 2px solid var(--neo-gold); box-shadow: 0 0 22px rgba(255,231,51,0.6); }
@@ -727,14 +753,14 @@
     /* THE CARD'S ITEM (js/cardart.js CARD_ITEMS, js/cardsui.js _cdSlab; ASKED 2026-11-01: "the item itself needs to be a 3D object that hovers out of the picture of the card itself"): the card's own object, baked
        in 3D (design/cards), in place of the crystal: it stands in front of the tilted card, over its picture, and rises past its top edge, hovering; its shadow on the card breathes with it. Build 2026-11-01m (the owner:
        "They're a little bit too big. They're blocking the buttons above it for sorting"): 140 × 176 (it was 168 × 212), rising 16 px past the top edge (it was 48), blown up on the stage to 1.06 (it was 1.2). */
-    #cardsRoot .cd-card.itemed .cd-art { margin-top: 28px; }
-    #cardsRoot .cd-card.itemed .cd-gem { display: none; }
-    #cardsRoot .cd-item { position: absolute; left: 50%; top: -16px; width: 140px; height: 176px; margin-left: -74px; background: center bottom / contain no-repeat; filter: drop-shadow(0 16px 12px rgba(0,0,0,0.55)) drop-shadow(0 0 14px color-mix(in srgb, var(--c) 30%, transparent)); pointer-events: none; z-index: 3; animation: cdHover 3.4s ease-in-out infinite; }
-    #cardsRoot .cd-card.itemed .cd-shadow { left: 66px; top: 156px; width: 84px; height: 16px; animation: cdHoverShadow 3.4s ease-in-out infinite; }
+    :is(#cardsRoot, #cardPick) .cd-card.itemed .cd-art { margin-top: 28px; }
+    :is(#cardsRoot, #cardPick) .cd-card.itemed .cd-gem { display: none; }
+    :is(#cardsRoot, #cardPick) .cd-item { position: absolute; left: 50%; top: -16px; width: 140px; height: 176px; margin-left: -74px; background: center bottom / contain no-repeat; filter: drop-shadow(0 16px 12px rgba(0,0,0,0.55)) drop-shadow(0 0 14px color-mix(in srgb, var(--c) 30%, transparent)); pointer-events: none; z-index: 3; animation: cdHover 3.4s ease-in-out infinite; }
+    :is(#cardsRoot, #cardPick) .cd-card.itemed .cd-shadow { left: 66px; top: 156px; width: 84px; height: 16px; animation: cdHoverShadow 3.4s ease-in-out infinite; }
     #cardsRoot .cd-card.locked .cd-item { filter: saturate(0.35) brightness(0.7) drop-shadow(0 16px 12px rgba(0,0,0,0.55)); }
     @keyframes cdHover { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
     @keyframes cdHoverShadow { 0%, 100% { opacity: 0.75; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.86); } }
-    @media (prefers-reduced-motion: reduce) { #cardsRoot .cd-item, #cardsRoot .cd-card.itemed .cd-shadow { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { :is(#cardsRoot, #cardPick) .cd-item, :is(#cardsRoot, #cardPick) .cd-card.itemed .cd-shadow { animation: none; } }
     /* THE COLLECTION (js/cardsui.js _cdDeckBox; ASKED 2026-11-01: sortable by rarity or element, slid through; then "the cards at the bottom in the slider to be mini cards that the player can slide through, and
        the main card that would be in the middle of the slider is the card that is displayed at the top ... its description and card elements are labeled on the side of the card, and the card itself
        actually changes form and blows up the image and the rarity meters highlight"). THE STAGE: the selected card, which grows out of a mini card as it arrives (cdMorph), its picture blown up and kept so
@@ -842,7 +868,7 @@
     .cd-chip { display: flex; flex-direction: column-reverse; gap: 3px; box-sizing: border-box; padding: 6px 5px 6px 8px; background: #05070f; border: 2px solid var(--c, #8fe3ff); border-right: 0; box-shadow: 0 0 8px color-mix(in srgb, var(--c, #8fe3ff) 45%, transparent); clip-path: polygon(0 7px, 7px 0, 100% 0, 100% 100%, 7px 100%, 0 calc(100% - 7px)); }
     .cd-chip i { display: block; width: 16px; height: 7px; background: #1a2238; } .cd-chip i.on { background: var(--neo-teal); box-shadow: 0 0 7px var(--neo-teal), 0 0 2px #fff; }
     .cd-chip.mini { flex: none; flex-direction: row; gap: 2px; padding: 3px 5px; border: 1px solid var(--c, #8fe3ff); box-shadow: none; clip-path: polygon(0 4px, 4px 0, 100% 0, 100% 100%, 4px 100%, 0 calc(100% - 4px)); } .cd-chip.mini i { width: 6px; height: 11px; }
-    #cardsRoot .cd-face > .cd-chip { position: absolute; right: -4px; top: 48px; }
+    :is(#cardsRoot, #cardPick) .cd-face > .cd-chip { position: absolute; right: -4px; top: 48px; }
     #ccRoot.carousel .cc-dd > .cd-chip.mini { position: absolute; right: 42px; top: 50%; transform: translateY(-50%); } #ccRoot.carousel .cc-dd.chipped .cc-dd-v { padding-right: 76px; } #ccRoot .cc-btn.chipped { position: relative; padding-right: 64px; } #ccRoot .cc-btn.chipped > .cd-chip.mini { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
     #cardsRoot .cd-worn { color: #8aa0c8; font: 800 11px monospace; letter-spacing: 0.06em; }
     #cardsRoot .cd-pack { display: flex; flex-direction: column; gap: 10px; } #cardsRoot .cd-pack > .cd-btn { max-width: 340px; }
@@ -1944,12 +1970,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-11-07nn, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-11-07oo, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-11-07nn";
+window.__PAGE_BUILD = "2026-11-07oo";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -1985,92 +2011,92 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-07nn"></script>
-<script src="js/icons.js?v=2026-11-07nn"></script>
-<script src="js/uikit.js?v=2026-11-07nn"></script>
-<script src="js/traits.js?v=2026-11-07nn"></script>
-<script src="js/elements.js?v=2026-11-07nn"></script>
-<script src="js/damage.js?v=2026-11-07nn"></script>
-<script src="js/combat.js?v=2026-11-07nn"></script>
-<script src="js/species.js?v=2026-11-07nn"></script>
-<script src="js/levels.js?v=2026-11-07nn"></script>
-<script src="js/status.js?v=2026-11-07nn"></script>
-<script src="js/helpers.js?v=2026-11-07nn"></script>
-<script src="js/predator.js?v=2026-11-07nn"></script>
-<script src="js/abilities.js?v=2026-11-07nn"></script>
-<script src="js/commands.js?v=2026-11-07nn"></script>
-<script src="js/npc.js?v=2026-11-07nn"></script>
-<script src="js/draw.js?v=2026-11-07nn"></script>
-<script src="js/beetle3d.js?v=2026-11-07nn"></script>
-<script src="js/bugs3d.js?v=2026-11-07nn"></script>
-<script src="js/settings.js?v=2026-11-07nn"></script>
-<script src="js/alarm.js?v=2026-11-07nn"></script>
-<script src="js/drops.js?v=2026-11-07nn"></script>
-<script src="js/clone.js?v=2026-11-07nn"></script>
-<script src="js/bonds.js?v=2026-11-07nn"></script>
-<script src="js/evolution.js?v=2026-11-07nn"></script>
-<script src="js/cards.js?v=2026-11-07nn"></script>
-<script src="js/cardart.js?v=2026-11-07nn"></script>
-<script src="js/hdsprites.js?v=2026-11-07nn"></script>
-<script src="js/firebombs.js?v=2026-11-07nn"></script>
-<script src="js/moves.js?v=2026-11-07nn"></script>
-<script src="js/hudgems.js?v=2026-11-07nn"></script>
-<script src="js/commandcenter.js?v=2026-11-07nn"></script>
-<script src="js/cardsui.js?v=2026-11-07nn"></script>
-<script src="js/unitinfo.js?v=2026-11-07nn"></script>
-<script src="js/infodex.js?v=2026-11-07nn"></script>
-<script src="js/classes.js?v=2026-11-07nn"></script>
-<script src="js/playergear.js?v=2026-11-07nn"></script>
-<script src="js/inventory.js?v=2026-11-07nn"></script>
-<script src="js/weapons.js?v=2026-11-07nn"></script>
-<script src="js/mutator.js?v=2026-11-07nn"></script>
-<script src="js/specimen.js?v=2026-11-07nn"></script>
-<script src="js/serum.js?v=2026-11-07nn"></script>
-<script src="js/potion.js?v=2026-11-07nn"></script>
-<script src="js/technomancer.js?v=2026-11-07nn"></script>
-<script src="js/playercards.js?v=2026-11-07nn"></script>
-<script src="js/stations.js?v=2026-11-07nn"></script>
-<script src="js/facilityportals.js?v=2026-11-07nn"></script>
-<script src="js/tutorial.js?v=2026-11-07nn"></script>
-<script src="js/dialogue.js?v=2026-11-07nn"></script>
-<script src="js/questbox.js?v=2026-11-07nn"></script>
-<script src="js/facilitymap.js?v=2026-11-07nn"></script>
-<script src="js/facilitygrow.js?v=2026-11-07nn"></script>
-<script src="js/facility.js?v=2026-11-07nn"></script>
-<script src="js/attract.js?v=2026-11-07nn"></script>
-<script src="js/facilitysave.js?v=2026-11-07nn"></script>
-<script src="js/facilityplay.js?v=2026-11-07nn"></script>
-<script src="js/facilitydecor.js?v=2026-11-07nn"></script>
-<script src="js/propatlas.js?v=2026-11-07nn"></script>
-<script src="js/propsprites.js?v=2026-11-07nn"></script>
-<script src="js/facilitystyle.js?v=2026-11-07nn"></script>
-<script src="js/facilitystyleall.js?v=2026-11-07nn"></script>
-<script src="js/facilitysewers.js?v=2026-11-07nn"></script>
-<script src="js/facilitynet.js?v=2026-11-07nn"></script>
-<script src="js/population.js?v=2026-11-07nn"></script>
-<script src="js/facilityspawn.js?v=2026-11-07nn"></script>
-<script src="js/crystalpower.js?v=2026-11-07nn"></script>
-<script src="js/antraids.js?v=2026-11-07nn"></script>
-<script src="js/followerspots.js?v=2026-11-07nn"></script>
-<script src="js/breeding.js?v=2026-11-07nn"></script>
-<script src="js/party.js?v=2026-11-07nn"></script>
-<script src="js/squadfly.js?v=2026-11-07nn"></script>
-<script src="js/techabilities.js?v=2026-11-07nn"></script>
-<script src="js/fluxmove.js?v=2026-11-07nn"></script>
-<script src="js/fluxlab.js?v=2026-11-07nn"></script>
-<script src="js/puzzles.js?v=2026-11-07nn"></script>
-<script src="js/quests.js?v=2026-11-07nn"></script>
-<script src="js/bosses.js?v=2026-11-07nn"></script>
-<script src="js/nestconsole.js?v=2026-11-07nn"></script>
-<script src="js/sidequest.js?v=2026-11-07nn"></script>
-<script src="js/facilitytutorial.js?v=2026-11-07nn"></script>
-<script src="js/gunfire.js?v=2026-11-07nn"></script>
-<script src="js/targeting.js?v=2026-11-07nn"></script>
-<script src="js/toolbox.js?v=2026-11-07nn"></script>
-<script src="js/mixtool.js?v=2026-11-07nn"></script>
-<script src="js/radialmenu.js?v=2026-11-07nn"></script>
-<script src="js/input.js?v=2026-11-07nn"></script>
-<script src="js/game.js?v=2026-11-07nn"></script>
+<script src="js/config.js?v=2026-11-07oo"></script>
+<script src="js/icons.js?v=2026-11-07oo"></script>
+<script src="js/uikit.js?v=2026-11-07oo"></script>
+<script src="js/traits.js?v=2026-11-07oo"></script>
+<script src="js/elements.js?v=2026-11-07oo"></script>
+<script src="js/damage.js?v=2026-11-07oo"></script>
+<script src="js/combat.js?v=2026-11-07oo"></script>
+<script src="js/species.js?v=2026-11-07oo"></script>
+<script src="js/levels.js?v=2026-11-07oo"></script>
+<script src="js/status.js?v=2026-11-07oo"></script>
+<script src="js/helpers.js?v=2026-11-07oo"></script>
+<script src="js/predator.js?v=2026-11-07oo"></script>
+<script src="js/abilities.js?v=2026-11-07oo"></script>
+<script src="js/commands.js?v=2026-11-07oo"></script>
+<script src="js/npc.js?v=2026-11-07oo"></script>
+<script src="js/draw.js?v=2026-11-07oo"></script>
+<script src="js/beetle3d.js?v=2026-11-07oo"></script>
+<script src="js/bugs3d.js?v=2026-11-07oo"></script>
+<script src="js/settings.js?v=2026-11-07oo"></script>
+<script src="js/alarm.js?v=2026-11-07oo"></script>
+<script src="js/drops.js?v=2026-11-07oo"></script>
+<script src="js/clone.js?v=2026-11-07oo"></script>
+<script src="js/bonds.js?v=2026-11-07oo"></script>
+<script src="js/evolution.js?v=2026-11-07oo"></script>
+<script src="js/cards.js?v=2026-11-07oo"></script>
+<script src="js/cardart.js?v=2026-11-07oo"></script>
+<script src="js/hdsprites.js?v=2026-11-07oo"></script>
+<script src="js/firebombs.js?v=2026-11-07oo"></script>
+<script src="js/moves.js?v=2026-11-07oo"></script>
+<script src="js/hudgems.js?v=2026-11-07oo"></script>
+<script src="js/commandcenter.js?v=2026-11-07oo"></script>
+<script src="js/cardsui.js?v=2026-11-07oo"></script>
+<script src="js/unitinfo.js?v=2026-11-07oo"></script>
+<script src="js/infodex.js?v=2026-11-07oo"></script>
+<script src="js/classes.js?v=2026-11-07oo"></script>
+<script src="js/playergear.js?v=2026-11-07oo"></script>
+<script src="js/inventory.js?v=2026-11-07oo"></script>
+<script src="js/weapons.js?v=2026-11-07oo"></script>
+<script src="js/mutator.js?v=2026-11-07oo"></script>
+<script src="js/specimen.js?v=2026-11-07oo"></script>
+<script src="js/serum.js?v=2026-11-07oo"></script>
+<script src="js/potion.js?v=2026-11-07oo"></script>
+<script src="js/technomancer.js?v=2026-11-07oo"></script>
+<script src="js/playercards.js?v=2026-11-07oo"></script>
+<script src="js/stations.js?v=2026-11-07oo"></script>
+<script src="js/facilityportals.js?v=2026-11-07oo"></script>
+<script src="js/tutorial.js?v=2026-11-07oo"></script>
+<script src="js/dialogue.js?v=2026-11-07oo"></script>
+<script src="js/questbox.js?v=2026-11-07oo"></script>
+<script src="js/facilitymap.js?v=2026-11-07oo"></script>
+<script src="js/facilitygrow.js?v=2026-11-07oo"></script>
+<script src="js/facility.js?v=2026-11-07oo"></script>
+<script src="js/attract.js?v=2026-11-07oo"></script>
+<script src="js/facilitysave.js?v=2026-11-07oo"></script>
+<script src="js/facilityplay.js?v=2026-11-07oo"></script>
+<script src="js/facilitydecor.js?v=2026-11-07oo"></script>
+<script src="js/propatlas.js?v=2026-11-07oo"></script>
+<script src="js/propsprites.js?v=2026-11-07oo"></script>
+<script src="js/facilitystyle.js?v=2026-11-07oo"></script>
+<script src="js/facilitystyleall.js?v=2026-11-07oo"></script>
+<script src="js/facilitysewers.js?v=2026-11-07oo"></script>
+<script src="js/facilitynet.js?v=2026-11-07oo"></script>
+<script src="js/population.js?v=2026-11-07oo"></script>
+<script src="js/facilityspawn.js?v=2026-11-07oo"></script>
+<script src="js/crystalpower.js?v=2026-11-07oo"></script>
+<script src="js/antraids.js?v=2026-11-07oo"></script>
+<script src="js/followerspots.js?v=2026-11-07oo"></script>
+<script src="js/breeding.js?v=2026-11-07oo"></script>
+<script src="js/party.js?v=2026-11-07oo"></script>
+<script src="js/squadfly.js?v=2026-11-07oo"></script>
+<script src="js/techabilities.js?v=2026-11-07oo"></script>
+<script src="js/fluxmove.js?v=2026-11-07oo"></script>
+<script src="js/fluxlab.js?v=2026-11-07oo"></script>
+<script src="js/puzzles.js?v=2026-11-07oo"></script>
+<script src="js/quests.js?v=2026-11-07oo"></script>
+<script src="js/bosses.js?v=2026-11-07oo"></script>
+<script src="js/nestconsole.js?v=2026-11-07oo"></script>
+<script src="js/sidequest.js?v=2026-11-07oo"></script>
+<script src="js/facilitytutorial.js?v=2026-11-07oo"></script>
+<script src="js/gunfire.js?v=2026-11-07oo"></script>
+<script src="js/targeting.js?v=2026-11-07oo"></script>
+<script src="js/toolbox.js?v=2026-11-07oo"></script>
+<script src="js/mixtool.js?v=2026-11-07oo"></script>
+<script src="js/radialmenu.js?v=2026-11-07oo"></script>
+<script src="js/input.js?v=2026-11-07oo"></script>
+<script src="js/game.js?v=2026-11-07oo"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2125,7 +2151,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-07nn"></script>
+<script src="js/init.js?v=2026-11-07oo"></script>
 
 </body>
 </html>

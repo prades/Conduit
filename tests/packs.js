@@ -139,13 +139,13 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     for (var r = 0; r < 6; r++) { cardsClose(); await wait(20); cardsOpen(); await wait(40); cardsRender(true); } out.added = added.slice(); EventTarget.prototype.addEventListener = oa;
     cardsClose(); await wait(60); selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f; ccRender(); await wait(80);
     click(byText('#ccSide .cc-dd', 'CARD 1')); await wait(80);
-    out.opts = $$('#ccSide .cc-dd-list .cc-btn').map(function(b){ return [b.querySelector('.cc-bl').textContent, b.disabled, (b.querySelector('.cc-bs') || {}).textContent || '']; });
-    var before = plain(f).atk; click(byText('#ccSide .cc-dd-list .cc-btn', equipCard(fc).name)); await wait(100); ccRender(); await wait(60);
+    out.opts = $$('#cardPick .cp-tile').map(function(b){ return [b.querySelector('.cp-nm').textContent, b.disabled, (b.querySelector('.cp-st') || {}).textContent || '']; });   // (the card picker since build 2026-11-07oo, js/cardsui.js cardPickOpen)
+    var before = plain(f).atk; click(byText('#cardPick .cp-tile', equipCard(fc).name)); await wait(100); ccRender(); await wait(60);
     out.worn = { cards: f.cards ? f.cards.slice() : null, atk: f.stats.attack, plain: plain(f).atk, card: fc };
     var snap = function(){ return JSON.stringify([f.stats, f.maxHealth, f.cards, equipHand, equipFound, equipWearers(fc)]); }, s1 = snap();
     for (var n = 0; n < 5; n++) { cardsOpen(); await wait(40); cardsRender(true); cardsClose(); await wait(20); }
     out.stable = snap() === s1;
-    click(byText('#ccSide .cc-dd', 'CARD 1')); await wait(60); click(byText('#ccSide .cc-dd-list .cc-btn', 'EMPTY')); await wait(100); ccRender(); await wait(60);
+    click(byText('#ccSide .cc-dd', 'CARD 1')); await wait(60); click(byText('#cardPick .cp-tile', 'EMPTY')); await wait(100); ccRender(); await wait(60);
     out.off = { cards: f.cards ? f.cards.slice() : null, atk: f.stats.attack, plain: plain(f).atk, stillFound: equipIsFound(fc) };
     ccClose();
   } catch (err) { out.err = String(err && err.stack || err); }

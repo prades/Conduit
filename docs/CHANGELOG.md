@@ -4,6 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **oo · The card picker in the roster.** Owner's request (2026-11-07): "I'd like to make it to where I can see information about the cards when I'm equipping them to the creatures", then "a sliding list of card arts appears in the middle of the screen in a pop-out. You can scroll through and select which one you want to put on". Implemented and tested on the branch and seen in screenshots; not playtested.
+  - A tap on a card slot in the roster opens **the card picker**, a box in the middle of the screen. This covers a follower's CARD 1, CARD 2 and SPECIAL ATTACK, and your YOUR SLOT 1 / 2. It replaces the slot's drop-down list.
+  - The cards the slot can take are in a row that slides sideways. Each is drawn in full as on the CARDS screen, with its art, name, kind and what it does.
+  - **EMPTY** comes first. The worn card is marked WORN and starts in the middle. A card that does not fit is dimmed and says why.
+  - A tap puts a card on and closes the box. ✕, a tap outside or Escape closes it with nothing changed.
+  - Under each roster slot, a line says what the worn card does.
+  - In the HUD member card's CARD 1 / CARD 2 lists, each card now shows what it does under its name.
+  - Agent's choices (provisional): the box's look and size, the line under each card, the ‹ › arrows.
+  - Tests updated for the picker:
+    - Tile checks in `tests/cards.js`, `tests/squadfly.js`, `tests/crystalline.js`, `tests/packs.js` and `tests/playercards.js`.
+    - Selector checks in `tests/cardart.js`: the 3D card rules are now shared with the picker.
+    - All of these pass, as do commandcenter, carousel, ccmerge, squadui and followercombat.
+
 - **nn · The Ant Nest, step C: the test console** (the owner, 2026-11-07: "Damage meter, Boss reset, Squad builder"; "Temporary test squad"; docs/NEST.md). Implemented and tested on the branch; seen in screenshots; not playtested.
   - **NEST CONSOLE** by the tunnel mouth in the Nest (any class, free): its panel has three parts.
   - **THE ANT QUEEN:** pick her level (1 to 30) and **RESET** her: whole, asleep at her post, her brood cleared, nothing paid.

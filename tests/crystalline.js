@@ -93,16 +93,16 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     // THE ROSTER: CARD 1 offers IMPACT TEST to a Brawler and says why not for a Mage's card
     selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f; ccRender(); await wait(60);
     click(byText('#ccSide .cc-dd', 'CARD 1')); await wait(60);
-    out.opts = $$('#ccSide .cc-dd-list .cc-btn').map(function(b){ return [b.querySelector('.cc-bl').textContent, b.disabled, (b.querySelector('.cc-bs') || {}).textContent || '']; });
-    click(byText('#ccSide .cc-dd-list .cc-btn', 'IMPACT TEST')); await wait(80); ccRender(); await wait(60);
+    out.opts = $$('#cardPick .cp-tile').map(function(b){ return [b.querySelector('.cp-nm').textContent, b.disabled, (b.querySelector('.cp-st') || {}).textContent || '']; });   // (the card picker since build 2026-11-07oo: a pop-out of the cards, js/cardsui.js cardPickOpen)
+    click(byText('#cardPick .cp-tile', 'IMPACT TEST')); await wait(80); ccRender(); await wait(60);
     var bars = function(){ var o = {}; $$('#ccFocus .cf-bar').forEach(function(r){ o[r.querySelector('.cf-k').textContent] = r.querySelector('em').textContent; }); return o; };
     out.on = Object.assign(read(), { bars: bars(), wearers: equipWearers('impact_test') });
     // the sheet opened, closed and drawn again and again: nothing moves
     var snap = function(){ var r = read(); return JSON.stringify([r.atk === st(r.plainAtk, 1.5), r.max === r.plainMax, r.power === r.atk, f.cards, equipHand, equipWearers('impact_test')]); }, s0 = snap();
     for (var n = 0; n < 6; n++) { cardsOpen(); await wait(40); cardsRender(true); cardsRender(true); cardsClose(); await wait(20); }
-    for (var m = 0; m < 4; m++) { click(byText('#ccSide .cc-dd', 'CARD 2')); await wait(40); ccRender(); click(byText('#ccSide .cc-dd', 'CARD 2')); await wait(40); }
+    for (var m = 0; m < 4; m++) { click(byText('#ccSide .cc-dd', 'CARD 2')); await wait(40); ccRender(); click($('#cardPick .cp-x')); await wait(40); }
     out.stable = snap() === s0; out.nCards = $$('#cardsRoot').length;
-    click(byText('#ccSide .cc-dd', 'CARD 1')); await wait(60); click(byText('#ccSide .cc-dd-list .cc-btn', 'EMPTY')); await wait(80); ccRender(); await wait(60);
+    click(byText('#ccSide .cc-dd', 'CARD 1')); await wait(60); click(byText('#cardPick .cp-tile', 'EMPTY')); await wait(80); ccRender(); await wait(60);
     out.off = Object.assign(read(), { bars: bars() });
     ccClose();
   } catch (err) { out.err = String(err && err.stack || err); }

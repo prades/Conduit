@@ -89,7 +89,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.awake = look();
     classSet('technomancer'); ccRender(); await wait(150); out.asleep = look();
     click(slot(2)); await wait(80);
-    out.list2 = $$('#ccSide .cc-dd-list .cc-btn').filter(function(b){ return /GUNNER|SHOOTER|SLINGER|MARKSMAN|RUNNER/.test(b.querySelector('.cc-bl').textContent); }).map(function(b){ return [b.querySelector('.cc-bl').textContent, b.disabled, (b.querySelector('.cc-bs') || {}).textContent || '']; });
+    out.list2 = $$('#cardPick .cp-tile').filter(function(b){ return /GUNNER|SHOOTER|SLINGER|MARKSMAN|RUNNER/.test(b.querySelector('.cp-nm').textContent); }).map(function(b){ return [b.querySelector('.cp-nm').textContent, b.disabled, (b.querySelector('.cp-st') || {}).textContent || '']; }); cardPickClose();   // (the card picker since build 2026-11-07oo)
     classSet('gunslinger'); ccRender(); await wait(150); out.back = look();
     ccClose(); await wait(60);
     // GRAVITY ENGINEER's SWAP on a squad member's card (the corners layout: a tap on the member's card on the squad stack opens its card beside it)
