@@ -10,7 +10,7 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
   - Why there: the corridors are 2 tiles wide; on the 3-wide south corridor the near wall hides anything on its south row, and its river side is on the Queen's ground.
   - The sewer's brood spawner now tries 60 random spots (was 30) so the new floor near the way in does not leave its far spots unfound.
   - Pumps and valves are drawn in code, not from a sprite sheet (`FP_DRAWN_SOLIDS`); the props-have-sheets check skips them. A baked 3D sprite for them is open. This also clears that check, which builds b and c had left failing.
-  - **Known flaky:** four of the Queen's checks in `tests/sewerquest.js` (her post, the stun window, the spit wind-up, the roam) pass or fail at random on the same code (unseeded randomness); seen on this build and its parent.
+  - **Was flaky, now fixed (tests only):** four of the Queen's checks in `tests/sewerquest.js` (her post, the stun window, the spit wind-up, the roam) passed or failed at random on the same code; the suite's sandbox now seeds `Math.random` (the owner: "Fix them next"), and three runs in a row pass.
   - Tests: sewers, sewerquest (flaky as above), facility, facilityplay, cover, fluxmove, bible, sidequest, population. No full run. Not playtested.
 
 - **c · Sewer machinery: two valve housings** (the owner, 2026-11-07: "Looks right; add valves"; on the branch; commit named in git log).

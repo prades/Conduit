@@ -29,6 +29,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
+    // A SEEDED Math.random in the sandbox (the owner, 2026-11-07: "Fix them next"): the Queen's checks drew on unseeded randomness and passed or failed at random on the same code; with a seed every run is the same
+    run(`Math.random = (function(){ let s = 20261107; return function(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; })();`);
     run(`facilityBlackoutSet(false); gameState.running = true; alertActive = false; crystal.health = crystal.maxHealth = 1e7; canvas.width = 1280; canvas.height = 860; innerWidth = 1100; health = 1e6;
         _fp.tut.script.step = TUT_STEPS.length; _fp.tut.script.doneAt = 3; classPickerOpen = false; playerClassKey = 'gunslinger';   // (after the tutorial: the quest shows on the plate)
         globalThis.__site = () => _fp.F.launchSites.find(x => x.id === 'site_sewer_tunnel'); globalThis.__rub = () => _fp.F.rubble.find(x => x.id === 'rubble_sewer_choke'); globalThis.__pk = () => _fp.items.find(i => i.fp === 'pickup' && i.id === 'pk_sewer_sample');
