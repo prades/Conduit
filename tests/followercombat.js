@@ -595,7 +595,7 @@ function measure(w, h) {
         same(r.swarm.join(), 'Proxy Swarm,3,true', 'PROXY SWARM: three copies, an enemy near goes for one');
         same(r.burst.join(), '0,true', 'they burst at the end, hurting the enemy beside one');
     });
-    check('WAVE MAKER and DRIFT SLASH (the owner\'s designs, 2026-11-07): the Hornshell\'s three waves hurt and throw the enemy ahead and it moves up after them; the Hover Shell interrupts, drifts in to slash, returns to its post, and the squad is faster for 6 s', () => {
+    check('WAVE MAKER and DRIFT SLASH (the owner\'s designs, 2026-11-07): the Hornshell\'s three waves hurt and throw the enemy ahead and it moves up after them; the Hover Shell interrupts, swings round the enemies in an oval slashing each (the owner, 2026-11-07: "a circular sort of slash, like a sword"), returns to its post, and the squad is faster for 6 s', () => {
         const r = J(`(function(){ const o = {};
             __clear(); const hn = __fol('core', 'sniper', 'hornshell'), a = __foe(hn.x + 3.8, hn.y), behind = __foe(hn.x - 5, hn.y), x0 = hn.x; hn.ultimateCharge = 100; followerUltimate(hn).execute(hn);
             const hit1 = __dmg(a), thrown = !!(a.kbVX || a.kbVY); for (let i = 0; i < 130; i++) updateElementEffects();
@@ -606,7 +606,7 @@ function measure(w, h) {
             return o; })()`);
         same(r.wave.join(), 'Wave Maker,true,true,true,true,0,true', 'WAVE MAKER: spent, the enemy ahead hit and thrown by all three waves, the one behind untouched, it moved up 3 tiles');
         same(r.int.join(), '0,true', 'DRIFT SLASH interrupts: the wind-up cancelled, its wind-ups failing');
-        same(r.drift.join(), 'Drift Slash,true,true,true,true,true,1.3,true', 'DRIFT SLASH: spent, both slashed, it drifted out and came back to its post, 30% faster for 6 s');
+        same(r.drift.join(), 'Drift Slash,true,true,true,true,true,1.3,true', 'DRIFT SLASH: spent, both slashed by the oval, it swung out and came back to its post, 30% faster for 6 s');
     });
     check('WHITEOUT (the owner, 2026-11-07): the Rime Star\'s snowstorm moves with it for 6 s, slows the enemies in it to half speed and bites them (ice) every 0.5 s', () => {
         const r = J(`(function(){ __clear(); const rs = __fol('ice', 'sniper', 'rimestar'), a = __foe(rs.x + 2.5, rs.y); rs.ultimateCharge = 100; followerUltimate(rs).execute(rs);

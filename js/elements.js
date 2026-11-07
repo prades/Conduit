@@ -486,7 +486,7 @@ const ULT_RINK = { radius: 4, frames: 360, tick: 30, mult: 0.25, slow: 0.4, fast
 const ULT_PROXY = { count: 3, frames: 360, reach: 6, burst: 1.5, mult: 1.5, hp: 0.5 };       // the Goo Proxy's PROXY SWARM: copies, 6 s, the lure's reach (tiles), the burst's reach, × power (flux), each copy's HP (× its maximum)
 const ULT_PUDDLE = { from: 0.5, radius: 2, grow: 120, frames: 300, tick: 30, mult: 0.5, poison: 120 };   // the Rotshard's: "Short and tight" (tiles at first and at full size, frames to grow, frames, frames between shards, × power a shard, frames of poison)
 const ULT_WAVE = { reach: 6, waves: 3, every: 45, len: 4, cos: 0.64, mult: 0.8, knock: 1.5, step: 1.5 };   // the Hornshell's WAVE MAKER (the owner's design, 2026-11-07; these numbers are the agent's, provisional): aim reach (tiles), waves, frames between, a wave's reach (tiles), its width (cos of its half angle, ±50°), × power (core), tiles thrown, tiles it moves up between waves
-const ULT_DRIFT = { reach: 6, max: 4, hop: 10, mult: 1.5, glitch: 30, fast: 1.3, frames: 360 };   // the Hover Shell's DRIFT SLASH (the owner's design, 2026-11-07; the name and numbers are the agent's, provisional): reach (tiles), enemies slashed, frames a leg, × power a slash (half slashing, half electric), frames of interrupt, the squad's speed, its frames
+const ULT_DRIFT = { reach: 6, loop: 36, width: 1.6, beyond: 1.5, cut: 1.8, mult: 1.5, glitch: 30, fast: 1.3, frames: 360 };   // the Hover Shell's DRIFT SLASH (the owner's design, 2026-11-07; the oval: "a circular sort of slash, like a sword [...] he goes in and turns around like an oval shape"; the name and numbers are the agent's, provisional): reach (tiles), frames round the oval, its half width (tiles), how far past the enemies it swings (tiles), the blade's reach (tiles), × power a slash (half slashing, half electric), frames of interrupt, the squad's speed, its frames
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const DMG_HIT_ULT_SLASH = Object.freeze({ which: "special", stat: "sp", type: "slashing" });
 const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
@@ -507,15 +507,13 @@ function _ultWave(e) {
     }
 }
 // DRIFT SLASH's next leg (FORM_ULTIMATES.hovershell): to the next enemy of its route still standing and in sight (stopping short of it), else home to its post
-function _ultDriftLeg(e, o, age) {
-    e.from = [o.x, o.y]; e.legAt = age; e.target = null;
-    while (e.leg < e.route.length) {
-        const a = e.route[e.leg++];
-        if (!a || a.dead || (typeof facilityLosFrom === "function" && !facilityLosFrom(o.x, o.y, a.x, a.y))) continue;
-        const dx = a.x - o.x, dy = a.y - o.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.6);
-        e.to = [o.x + dx / L * s, o.y + dy / L * s]; e.target = a; o.dirX = dx / L; o.dirY = dy / L; return;
-    }
-    e.to = e.home.slice(); e.done = true;
+// DRIFT SLASH's oval (FORM_ULTIMATES.hovershell): from its post out round the enemy it aims at and back, ULT_DRIFT.loop points. The oval's near end is the post, its far end ULT_DRIFT.beyond tiles past
+// the enemy, ULT_DRIFT.width tiles either side of the line; where a wall is in the way it is drawn narrower and shorter, and if even that is blocked it goes straight out and back (to an enemy it can see).
+function _ultDriftPath(o, cx, cy) {
+    const D = ULT_DRIFT, hx = o.x, hy = o.y, dx = cx - hx, dy = cy - hy, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, vx = -uy, vy = ux;
+    const oval = (a, b) => { const mx = hx + ux * a, my = hy + uy * a, pts = []; for (let n = 1; n <= D.loop; n++) { const t = Math.PI + n / D.loop * Math.PI * 2, ex = Math.cos(t) * a, ey = Math.sin(t) * b; pts.push([mx + ux * ex + vx * ey, my + uy * ex + vy * ey]); } return pts; };
+    for (const k of [1, 0.7, 0.45]) { const pts = oval((L + D.beyond * k) / 2, D.width * k); if (typeof facilityStandOk !== "function" || pts.every(p => facilityStandOk(p[0], p[1]))) return pts; }
+    return oval(Math.max(0.3, L - 0.6) / 2, 0.01);
 }
 function _ultDriftSlash(o, a) {
     if (!a || a.dead) return;
@@ -707,25 +705,21 @@ const FORM_ULTIMATES = {
         _ultWave(e); spawnElementEffect(e);
         _ultSay(actor, "WAVE MAKER", "#9ffff0");
     } },
-    // DRIFT SLASH (the Hover Shell; the owner's design, 2026-11-07: "Hover shell drifts in and slashes enemies and returns to his post squad members get increased speed and enemies are interrupted";
-    // the name is the agent's): every enemy it can see within ULT_DRIFT.reach is interrupted (the GLITCH: its wind-up fails for ULT_DRIFT.glitch frames); it drifts to up to ULT_DRIFT.max of them in
-    // turn, nearest first (ULT_DRIFT.hop frames a leg), slashes each (ULT_DRIFT.mult × its power, half slashing, half electric), then drifts back to its post. The squad moves ULT_DRIFT.fast × as fast for
-    // ULT_DRIFT.frames. Its KINETIC LAUNCHER is untouched.
-    hovershell: { name: "Drift Slash", desc: "Interrupts the enemies near it, drifts in to slash them and returns to its post; the squad moves faster", execute(actor) {
+    // DRIFT SLASH (the Hover Shell; the owner's design, 2026-11-07: "Hover shell drifts in and slashes enemies and returns to his post squad members get increased speed and enemies are interrupted",
+    // then "a circular sort of slash, like a sword, like he goes in and turns around like an oval shape"; the name is the agent's): every enemy it can see within ULT_DRIFT.reach is interrupted (the GLITCH: its
+    // wind-up fails for ULT_DRIFT.glitch frames); it swings out round the biggest group it can see in an oval and back to its post (_ultDriftPath, ULT_DRIFT.loop frames), slashing every enemy within
+    // ULT_DRIFT.cut of it once (ULT_DRIFT.mult × its power, half slashing, half electric). The squad moves ULT_DRIFT.fast × as fast for ULT_DRIFT.frames. Its KINETIC LAUNCHER is untouched.
+    hovershell: { name: "Drift Slash", desc: "Interrupts the enemies near it, swings round them in an oval slashing each, and returns to its post; the squad moves faster", execute(actor) {
         const D = ULT_DRIFT, foes = (typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, D.reach) : []).filter(a => typeof facilityLosFrom !== "function" || facilityLosFrom(actor.x, actor.y, a.x, a.y));
         if (!foes.length) return;
         actor.ultimateCharge = 0;
         const f0 = typeof frame !== "undefined" ? frame : 0;
         for (const a of foes) if (typeof applyGlitch === "function") applyGlitch(a, D.glitch);
         for (const f of (typeof partyMembers === "function" ? partyMembers() : []).concat([actor])) { if (f && !f.dead && !(f._voltUntil > f0 && (f._voltMove || 1) >= D.fast)) { f._voltUntil = f0 + D.frames; f._voltMove = D.fast; f._voltAtk = 1; } }   // (a voltage field as fast or faster is left as it is)
-        const route = [], used = new Set(); let cx = actor.x, cy = actor.y;
-        while (route.length < D.max) {
-            let best = null, bd = Infinity;
-            for (const a of foes) { const d = Math.hypot(a.x - cx, a.y - cy); if (!used.has(a) && d < bd && (typeof facilityLosFrom !== "function" || facilityLosFrom(cx, cy, a.x, a.y))) { bd = d; best = a; } }
-            if (!best) break; used.add(best); route.push(best); cx = best.x; cy = best.y;
-        }
-        const life = (route.length + 1) * (D.hop + 1) + 30;
-        spawnElementEffect({ type: "hoverdrift", x: actor.x, y: actor.y, on: actor, home: [actor.x, actor.y], route, leg: 0, from: [actor.x, actor.y], to: null, target: null, done: false, legAt: 0, life, maxLife: life, element: "electric" });
+        let best = foes[0], bn = -1, bd = Infinity;   // the biggest group (most enemies within 2 tiles), the nearer on a tie
+        for (const a of foes) { const n = foes.filter(b => Math.hypot(b.x - a.x, b.y - a.y) <= 2).length, d = Math.hypot(a.x - actor.x, a.y - actor.y); if (n > bn || (n === bn && d < bd)) { bn = n; bd = d; best = a; } }
+        const path = _ultDriftPath(actor, best.x, best.y), life = path.length + 30;
+        spawnElementEffect({ type: "hoverdrift", x: actor.x, y: actor.y, on: actor, home: [actor.x, actor.y], path, i: 0, hit: [], life, maxLife: life, element: "electric" });
         _ultSay(actor, "DRIFT SLASH", "#fff27a");
     } },
 };
@@ -913,14 +907,14 @@ function updateElementEffects() {
                 }
                 e.x = o.x; e.y = o.y; }
         }
-        if (e.type === "hoverdrift") {   // (the Hover Shell's Ultimate: a leg to each enemy of its route, a slash on arriving, then back to its post)
+        if (e.type === "hoverdrift") {   // (the Hover Shell's Ultimate: a point of its oval a frame, a slash at every enemy within the blade's reach once, then home at its post)
             const o = e.on; if (!o || o.dead) e.life = 0;
-            else { const age = e.maxLife - e.life;
-                if (!e.to) _ultDriftLeg(e, o, age);
-                const k = Math.min(1, (age - e.legAt + 1) / ULT_DRIFT.hop);
-                o.x = e.from[0] + (e.to[0] - e.from[0]) * k; o.y = e.from[1] + (e.to[1] - e.from[1]) * k; o._fpPath = null;
-                if (k >= 1) { if (e.target) _ultDriftSlash(o, e.target); e.to = null; if (e.done) e.life = 0; }
-                e.x = o.x; e.y = o.y; }
+            else if (e.i >= e.path.length) { o.x = e.home[0]; o.y = e.home[1]; o._fpPath = null; e.life = 0; }
+            else {
+                const p = e.path[e.i++], px0 = o.x, py0 = o.y; o.x = p[0]; o.y = p[1]; o._fpPath = null; o.dirX = o.x - px0; o.dirY = o.y - py0;
+                for (const a of _evoFoesSeen(o.x, o.y, ULT_DRIFT.cut)) if (e.hit.indexOf(a) < 0) { e.hit.push(a); _ultDriftSlash(o, a); }
+                e.x = o.x; e.y = o.y;
+            }
         }
         if (e.type === "thunderstorm") {   // (the Thunderhead's Ultimate: moves with it, a bolt each tick on a random enemy under it)
             const o = e.on; if (!o || o.dead) e.life = 0;
@@ -1448,11 +1442,12 @@ function drawElementEffects() {
                 }
                 break;
             }
-            // DRIFT SLASH (FORM_ULTIMATES.hovershell): a yellow streak behind the Hover Shell along the leg it is drifting
+            // DRIFT SLASH (FORM_ULTIMATES.hovershell): a curved sword trail along the last stretch of its oval, thin and faint at its tail, bright at the Hover Shell
             case "hoverdrift": {
-                if (!e.to) break;
-                const fx = e.from[0] - e.x, fy = e.from[1] - e.y, sx = px + (fx - fy) * TILE_W, sy = py + TILE_H * 0.4 + (fx + fy) * TILE_H;
-                for (const [w, c, al] of [[8, "#ffee33", 0.35], [2.5, "#ffffff", 0.9]]) { ctx.globalAlpha = al; ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(px, py + TILE_H * 0.4); ctx.stroke(); }
+                if (!e.path || e.i < 2) break;
+                const n0 = Math.max(0, e.i - 12), pts = e.path.slice(n0, e.i).map(q => { const fx = q[0] - e.x, fy = q[1] - e.y; return [px + (fx - fy) * TILE_W, py + TILE_H * 0.4 + (fx + fy) * TILE_H]; });
+                for (let k = 1; k < pts.length; k++) { const t = k / (pts.length - 1 || 1);
+                    for (const [w, c, al] of [[10 * t + 2, "#ffee33", 0.35 * t], [3 * t + 1, "#ffffff", 0.9 * t]]) { ctx.globalAlpha = al; ctx.strokeStyle = c; ctx.lineWidth = w; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(pts[k - 1][0], pts[k - 1][1]); ctx.lineTo(pts[k][0], pts[k][1]); ctx.stroke(); } }
                 break;
             }
             // PROXY SWARM (FORM_ULTIMATES.gooproxy): a copy of the Goo Proxy, a violet goo blob with its two eyes (one far bigger, a thin diamond iris in each) and a wide smile, wobbling; its HP as a bar

@@ -718,7 +718,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 - **Preservation requirement:** preserve Hover Shell's existing design, behavior, and role exactly.
 - KINETIC LAUNCHER is an existing ability and must not be replaced, renamed, rebalanced, or reinterpreted during this combat pass.
 - Retrieve remaining kit details from the live registry and documentation; do not invent a new attack or Ultimate.
-- **Ultimate (built in `2026-11-07y`, the owner's design, 2026-11-07; name and numbers provisional):** DRIFT SLASH — interrupts the enemies it can see within 6 tiles, drifts to up to 4 of them slashing each (1.5 × its power, half slashing, half electric), returns to its post; the squad 30% faster for 6 s. It replaces EMP for this form; the KINETIC LAUNCHER is untouched.
+- **Ultimate (built in `2026-11-07y`, the owner's design, 2026-11-07; name and numbers provisional):** DRIFT SLASH — interrupts the enemies it can see within 6 tiles, swings round them in an oval like a sword (build `2026-11-07ee`, the owner: "a circular sort of slash"), slashing each it passes (1.5 × its power, half slashing, half electric), returns to its post; the squad 30% faster for 6 s. It replaces EMP for this form; the KINETIC LAUNCHER is untouched.
 
 ##### 15. Goo Proxy — Jelly Technician
 

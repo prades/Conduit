@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **ee · DRIFT SLASH swings in an oval** (the owner, 2026-11-07, on the screenshots: "the hover shell is supposed to have a circular sort of slash, like a sword, like he goes in and turns around like an oval shape"; dd "Push to main"). Implemented and tested on the branch; not playtested.
+  - The Hover Shell no longer drifts in straight legs: it swings out from its post round the biggest group it can see in an **oval** (its far end 1.5 tiles past the enemy it aims at, 1.6 tiles either side), and back to its post, in 36 frames; every enemy within 1.8 tiles of its blade is slashed once (1.5 × its power, half slashing, half electric). A curved sword trail follows it round. Where a wall is in the way the oval is drawn narrower and shorter. The interrupt and the squad's speed are as they were. Numbers provisional (`ULT_DRIFT`).
+  - Seen in the game: its plain crushing hit still fires while it swings (the "CRUSHING WEAK!" tags in the screenshot); the slash itself is slashing and electric.
+  - Tests: followercombat (both enemies slashed by the oval, back at its post).
+
 - **dd · The Toxic Queen, harder** (the owner, 2026-11-07, on the roadmap's next item, the Queen's encounter, which is built as the roadmap describes: "Tune her numbers", then "Harder"; and "Everyone crosses (as now)" for the ice; cc "Push to main"). Implemented and tested on the branch; not playtested.
   - Level 8 (was 6); her BOMB every 30 s (was 45 s); her SPIT every 6 s (was 10 s); her waves 6 nymphs every 25 s (was 4 every 30 s; the first still 30 s after she wakes). Frantic at half health, her guard and leash unchanged.
   - Ice bridges stay floor for everyone, the Queen and her brood too (decided, no change).

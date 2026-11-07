@@ -2028,3 +2028,13 @@ The owner: too much time goes into testing and side checks. From here on, only t
 2. The roadmap's next item, the Toxic Queen's non-lethal purification encounter (§6.3), is built as described (rooted at the console, three attacks, nymph waves, frantic at half health, the sleeping potion, the install, calm or defeated). The owner: "Tune her numbers" → "Harder": level 8, a bomb every 30 s, a spit every 6 s, waves of 6 every 25 s.
 3. "Everyone crosses (as now)": an ice bridge is floor for the Queen and her brood too.
 
+## DECISION: DRIFT SLASH swings in an oval
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Implemented and tested in build `2026-11-07ee`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §12.3 item 14; `CHANGELOG.md` (2026-11-07 ee)
+
+### Decision
+1. Build `2026-11-07dd`: "Push to main". Next: "Watch the new Ultimates".
+2. On the screenshots: "the hover shell is supposed to have a circular sort of slash, like a sword, like he goes in and turns around like an oval shape" — the straight legs became one oval swing round the enemies and back to its post.
+
