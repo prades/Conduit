@@ -301,6 +301,20 @@ Five layouts of the roster and the squad viewer were drawn on the same parts (do
   - The CARDS screen keeps the full text.
 - (js/cardsui.js `cardPickOpen`, `equipFollowerPick`, `equipSpecialPick`, `equipPlayerPick`; js/squadfly.js `_sfCardsDraw`; game.html "THE CARD PICKER", whose cards reuse the 3D cards' CSS.) The look and the short texts' wording are the agent's, provisional.
 
+**EQUIP NOW** (build `2026-11-07rr`; the owner, 2026-11-07: "whenever you open up a new pack or whenever you're looking through your collection, you can select equip now and it pulls up a sliding roster menu where you can select the follower that you want to equip the card to, and it shows the creatures that have two cards that you are able to replace the card with, and it shows a new feature that allows you to switch the cards from that menu as well"). Implemented and tested; not playtested.
+- **Where:** an EQUIP NOW button (teal) under the card on the collection's stage, below TAKE INTO THE RUN / IN YOUR HAND / UNLOCK, and under each card of a pack's reveal.
+  - It is on for a card in the hand or found this run, and for a card kept for good while the hand has room. Otherwise it is off and says why: YOUR HAND IS FULL (3), or NOT YOURS YET.
+- **The pop-out** opens over the CARDS screen (and over the reveal, which stays as it is). It is the card picker's box in teal: the card as a mini card, EQUIP NOW · its name, its kind and short text, and how many followers it fits.
+- **The row** slides sideways (a finger, a trackpad, or ‹ ›): one tile for each follower the card fits, the squad first (the roster strip's order). A follower it does not fit is not shown; with none, the box says so (NONE OF YOUR FOLLOWERS FITS IT · FOR ICE FOLLOWERS). A Player card shows one tile, YOU.
+- **Each tile:** the follower's picture on its backdrop, its name, ELEMENT · LV n (· SQUAD), and its slots: CARD 1 and CARD 2 (a card attack: SPECIAL ATTACK; YOU: YOUR SLOT 1 and 2). Each slot shows the card on it as a mini card (or a dashed EMPTY) and what a tap does:
+  - **EQUIP HERE** (teal): the slot is empty.
+  - **SWITCH ⇄** (amber): another card is on it. A tap puts this card in its place; the other card comes off and stays yours.
+  - **WORN ✓** (gold): this card is on it.
+  - A slot that cannot take it is off and says why (e.g. ALREADY ON ITS OTHER SLOT).
+- After a tap the box **stays open** (the same card can go on more followers) and its note says what changed in gold, e.g. CINDERBRAND OFF · EMBER PLATING ON · QUILLSTONE · CARD 2. ✕, a tap outside the box or Escape closes it. Escape closes it first, then a reveal, then the screen.
+- A card kept for good that is not in the hand **goes into the hand as it goes on**; the note says so before (IT GOES INTO YOUR HAND AS IT GOES ON (2 OF 3)).
+- (js/cardsui.js `equipNowOpen`, `_ceTile`; js/cards.js `equipNowPut`, `equipNowWhyNot`, `equipNowTakes`; game.html "EQUIP NOW", which shares the card picker's box styles.) The look, the colours and the box staying open are the agent's, provisional.
+
 ## The INFO panel (js/infodex.js)
 
 The long-press ring's INFO opens a slab panel: the **readout** of what was pressed (a follower, a clone or a creature: its live numbers), a button to read about its kind,

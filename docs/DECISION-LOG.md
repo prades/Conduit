@@ -2237,3 +2237,21 @@ Implemented and tested (cards, squadfly, playercards, packs, crystalline and nea
 ### Status
 Implemented and tested (the nearby suites and a browser run of the whole trip); not playtested.
 
+## DECISION: EQUIP NOW from the collection and a pack's reveal
+- Date and build: 2026-11-07, build `2026-11-07rr`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "there needs to be an equip now feature that whenever you open up a new pack or whenever you're looking through your collection, you can select equip now and it pulls up a sliding roster menu where you can select the follower that you want to equip the card to, and it shows the creatures that have two cards that you are able to replace the card with, and it shows a new feature that allows you to switch the cards from that menu as well."
+
+### Decision
+- **EQUIP NOW** under a card of the collection (its stage) and under each card a pack reveals opens a pop-out of the followers the card fits, in a sliding row, each with its slots.
+- A follower with two cards is shown too: each of its slots offers **SWITCH**, which puts the new card in place of the one there.
+- The slot rules are the roster's (`equipWhyNot`, `equipSpecialWhyNot`, `equipPlayerWhyNot`); a Player card goes on YOU, a card attack in a SPECIAL ATTACK slot.
+
+### Chosen by the agent (provisional)
+- **SWITCH** is read as "replace the card in that slot"; the card switched off stays yours (in the hand or found), worn by nobody until put on again. If "switch" meant something else (e.g. swapping a card between two followers), it is a small change.
+- Only the followers the card fits are shown (as the pop-outs since build `pp`).
+- The box stays open after a card goes on, so the same card can go on more followers; ✕, a tap outside or Escape closes it.
+- A card kept for good but not in the hand goes into the hand as it goes on, while the hand has room; with a full hand EQUIP NOW is off (YOUR HAND IS FULL (3)).
+- The look: teal box and buttons, amber SWITCH, gold WORN ✓; the button sits under TAKE INTO THE RUN.
+
+### Status
+Implemented and tested (`tests/equipnow.js` and the nearby card suites); seen in screenshots; not playtested.

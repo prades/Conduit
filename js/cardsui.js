@@ -44,6 +44,7 @@ function cardsOpen(opts) {
     cardsRender(); return true;
 }
 function cardsClose() {
+    if (_ceId) equipNowClose();   // (EQUIP NOW's pop-out is the sheet's: it goes with it)
     equipShelfSync();   // (the time the sheet was open is not the shelf's)
     cardsPanelOpen = false; _cdOpts = {}; _cdArm = null; _cdSig = ""; _cdReveal = null; clearInterval(_cdTimer); _cdTimer = 0;
     const root = document.getElementById("cardsRoot"); if (root) { root.classList.remove("open"); root.textContent = ""; }
@@ -101,17 +102,25 @@ function _cdBtn(label, sub, col, fn, disabled) {
     const b = _cdEl("button", "cd-btn"); b.style.setProperty("--c", col || "#19e6c1"); b.appendChild(_cdEl("span", "cd-bl", label)); if (sub) b.appendChild(_cdEl("span", "cd-bs", sub));
     if (disabled) b.disabled = true; else _cdClick(b, () => { fn(); cardsRender(true); }); return b;
 }
-// what can be done with a card of the collection: UNLOCK (two taps) while it is not yours, else TAKE INTO THE RUN or PUT IT BACK (gold, as the buttons that buy: a card taken into the run is lit gold, build 2026-11-01l)
+// what can be done with a card of the collection: UNLOCK (two taps) while it is not yours, else TAKE INTO THE RUN or PUT IT BACK (gold, as the buttons that buy: a card taken into the run is lit gold, build 2026-11-01l);
+// and under it, for a card kept for good or found this run, EQUIP NOW (build 2026-11-07rr: equipNowOpen, below)
 function _cdCollectionActions(c) {
+    const now = equipOwns(c.id) || equipIsFound(c.id) ? [_cdEquipNowBtn(c)] : [];
     if (!equipOwns(c.id)) {
         const why = equipUnlockWhyNot(c.id), armed = _cdArm && _cdArm.id === c.id && _cdNow() < _cdArm.until;
         return [_cdBtn(armed ? "TAP AGAIN TO UNLOCK" : "UNLOCK ◆" + EQUIP.unlockCost, why || (armed ? "◆" + EQUIP.unlockCost + " OF YOUR SHARDS, FOR GOOD" : "FOR GOOD, EVERY RUN"), "#ffe733", () => {
             if (_cdArm && _cdArm.id === c.id && _cdNow() < _cdArm.until) { _cdArm = null; equipUnlock(c.id); } else _cdArm = { id: c.id, until: _cdNow() + CARDS_ARM_MS };
-        }, !!why)];
+        }, !!why)].concat(now);
     }
     const worn = equipWearers(c.id);
-    if (equipInHand(c.id)) return [_cdBtn("IN YOUR HAND ✓", "PUT IT BACK" + (worn ? " · COMES OFF " + worn : ""), "#ffe733", () => equipHandRemove(c.id))];
-    const full = equipHand.length >= equipHandCap(); return [_cdBtn("TAKE INTO THE RUN", full ? "YOUR HAND IS FULL (" + EQUIP.startPick + ")" : "", "#ffe733", () => equipHandAdd(c.id), full)];
+    if (equipInHand(c.id)) return [_cdBtn("IN YOUR HAND ✓", "PUT IT BACK" + (worn ? " · COMES OFF " + worn : ""), "#ffe733", () => equipHandRemove(c.id))].concat(now);
+    const full = equipHand.length >= equipHandCap(); return [_cdBtn("TAKE INTO THE RUN", full ? "YOUR HAND IS FULL (" + EQUIP.startPick + ")" : "", "#ffe733", () => equipHandAdd(c.id), full)].concat(now);
+}
+// EQUIP NOW: on for a card you can wear now (in the hand or found), or one kept for good while the hand has room (it is taken into the run as it goes on)
+function _cdEquipNowWhy(c) { return equipUsable(c.id) || equipNowTakes(c.id) ? null : equipOwns(c.id) ? "YOUR HAND IS FULL (" + EQUIP.startPick + ")" : "NOT YOURS YET"; }
+function _cdEquipNowBtn(c) {
+    const why = _cdEquipNowWhy(c), worn = equipWearers(c.id);
+    return _cdBtn("EQUIP NOW", why || (equipUsable(c.id) ? (worn ? "WORN BY " + worn + " · PUT IT ON ANOTHER" : "PICK WHO WEARS IT") : "PICK WHO WEARS IT · IT GOES INTO YOUR HAND"), "#19e6c1", () => equipNowOpen(c.id), !!why);
 }
 function _cdStateOf(c) { return equipOwns(c.id) ? (equipInHand(c.id) ? "hand" : "") : equipIsFound(c.id) ? "found" : "locked"; }
 // the player's own cards (THE COLLECTION's OWNED view): those kept for good and those found this run; the hand is among them
@@ -185,9 +194,9 @@ function equipCollectionOrder(cards, by) {
     return cards.slice().sort((a, b) => by === "element" ? (_cdGroupIdx(a) - _cdGroupIdx(b) || _cdRarityIdx(a) - _cdRarityIdx(b) || a.name.localeCompare(b.name))
                                                          : (_cdRarityIdx(b) - _cdRarityIdx(a) || _cdGroupIdx(a) - _cdGroupIdx(b) || a.name.localeCompare(b.name)));
 }
-// a mini card on the rail
-function _cdMini(c) {
-    const st = _cdStateOf(c), col = _cdKindCol(c), m = _cdEl("button", "cd-mini" + (st ? " " + st : "")); m.type = "button"; m._id = c.id; m.setAttribute("data-id", c.id); m.style.setProperty("--c", col);
+// a mini card on the rail (`tag` "span": a picture only, inside another button: EQUIP NOW's slots)
+function _cdMini(c, tag) {
+    const st = _cdStateOf(c), col = _cdKindCol(c), m = _cdEl(tag || "button", "cd-mini" + (st ? " " + st : "")); if (!tag) m.type = "button"; m._id = c.id; m.setAttribute("data-id", c.id); m.style.setProperty("--c", col);
     const tex = _cdEl("i", "cd-mtex"); if (typeof cardArtFaceClass === "function") cardArtMark(tex, cardArtFaceClass(c)); m.appendChild(tex);
     const gem = _cdEl("i", "cd-mgem"), item = typeof cardArtItemUrl === "function" ? cardArtItemUrl(c) : "";
     if (item) { gem.classList.add("item"); gem.style.backgroundImage = 'url("' + item + '")'; } else if (typeof cardArtObjectClass === "function") cardArtMark(gem, cardArtObjectClass(c, col), "gem");
@@ -249,6 +258,7 @@ function _cdRailInput(rail) {
     rail.addEventListener("scroll", () => {
         if (!raf && typeof requestAnimationFrame === "function") raf = requestAnimationFrame(() => { raf = 0; const m = _cdRailMiddle(rail); (rail._minis || []).forEach(x => x.classList.toggle("mid", x === m)); });
         clearTimeout(t); t = setTimeout(() => {   // the slide has settled: the card in the middle is the one selected
+            if (rail.isConnected === false) return;   // (a rail the sheet has drawn again since: its slide is over, and its middle is nobody's; build 2026-11-07rr)
             const m = _cdRailMiddle(rail); if (!m || m._id === _cdSel) return;
             if (rail._seek && _cdNow() - rail._seek < 900) return;   // (still on its way to a card it was sent to)
             _cdRailGo(rail, m._id, false);
@@ -319,6 +329,11 @@ function _cdRevealBox(rv) {
         const slot = _cdEl("div", "cr-slot" + (rare ? " rarest" : "")); slot.style.setProperty("--k", String(k)); slot.style.setProperty("--fx", (-at) + "px"); slot.setAttribute("data-id", c.id);
         slot.appendChild(_cdSlab(c, ""));
         slot.appendChild(_cdEl("div", "cd-worn cr-tag" + (fresh ? " new" : ""), fresh ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS"));
+        {   // EQUIP NOW (build 2026-11-07rr), under each card: it opens over the reveal, which stays as it is (no redraw: the reveal never starts over)
+            const why = _cdEquipNowWhy(c), eq = _cdEl("button", "cd-btn cr-eq"); eq.type = "button"; eq.style.setProperty("--c", "#19e6c1"); eq.appendChild(_cdEl("span", "cd-bl", "EQUIP NOW"));
+            if (why) { eq.disabled = true; eq.appendChild(_cdEl("span", "cd-bs", why)); } else _cdClick(eq, () => equipNowOpen(c.id));
+            slot.appendChild(eq);
+        }
         row.appendChild(slot);
     });
     stage.appendChild(row);
@@ -465,6 +480,86 @@ function equipPlayerPick(slot) {
     return cardPickOpen({ key: "pslot" + slot, title: "YOUR SLOT " + (slot + 1), col: "#ffe733", cur: equipPlayer[slot] || null,
         cards: equipUsableCards(), why: c => equipPlayerWhyNot(c.id, slot), put: id => equipPlayerPut(slot, id) });
 }
+// ── EQUIP NOW (build 2026-11-07rr; the owner: "whenever you open up a new pack or whenever you're looking through your collection, you can select equip now and it pulls up a sliding roster menu where you can
+// select the follower that you want to equip the card to, and it shows the creatures that have two cards that you are able to replace the card with, and it shows a new feature that allows you to switch the cards
+// from that menu as well"). EQUIP NOW is under the card on the collection's stage and under each card a pack just dealt (_cdRevealBox). It opens a pop-out over the sheet, as the card picker is over the roster: the
+// card, and a row of the followers it fits sliding sideways (the squad first, as the roster's strip; a Player card: YOU alone). A follower it does not fit is not shown. Each tile: its picture on its backdrop, its
+// name, element and level, and its slots, CARD 1 and CARD 2 (a card attack: its SPECIAL ATTACK; YOU: YOUR SLOT 1 and 2), each with the card on it as a mini card and what a tap does: EQUIP HERE (empty), SWITCH
+// (another card is on it: that card comes off and stays yours, this one goes on), WORN ✓ (this card is on it); a slot that cannot take it says why. The pop-out stays open after a card goes on, saying what
+// changed (the same card can go on more followers); ✕, a tap outside its box or Escape closes it. The rules are js/cards.js equipNowPut's.
+let _ceId = null, _ceSaid = "";
+function equipNowIsOpen() { return !!_ceId; }
+function equipNowOpen(id) {
+    if (!equipCard(id) || typeof document === "undefined" || !document.body) return false;
+    _ceId = id; _ceSaid = ""; let root = document.getElementById("cardEquip");
+    if (!root) { root = _cdEl("div"); root.id = "cardEquip"; root.setAttribute("role", "dialog"); root.setAttribute("aria-modal", "true"); document.body.appendChild(root); root.addEventListener("click", ev => { if (ev.target === root) equipNowClose(); }); }
+    _ceRender(root, true); if (root.classList) root.classList.add("open");
+    return true;
+}
+function equipNowClose() {
+    _ceId = null; _ceSaid = "";
+    const root = typeof document !== "undefined" ? document.getElementById("cardEquip") : null; if (root) { if (root.classList) root.classList.remove("open"); root.textContent = ""; }
+}
+// who it can go on: YOU for a Player card; else the followers it fits (yours, up, not clones), in the roster strip's order (js/commandcenter.js _ccStripSort: the squad first)
+function _ceWho(c) {
+    if (c.kind === "player") return ["you"];
+    const list = (typeof followers !== "undefined" ? followers : []).filter(f => f && !f.dead && !f.isClone && f.isFollower === true && f.team === "green" && !equipFit(f, c));
+    return typeof _ccStripSort === "function" ? list.sort(_ccStripSort) : list;
+}
+function _ceNeed(c) { return String(equipFit({ isFollower: true }, c) || "").replace(" · EVOLVE FIRST", ""); }   // (what a follower must be for it: FOR FIRE FOLLOWERS)
+// one follower's tile (or YOU's): its picture, name and slots
+function _ceTile(c, who, root) {
+    const you = who === "you", t = _cdEl("div", "ce-tile" + (you ? " you" : "")), col = you ? "#ffe733" : typeof _ccColour === "function" ? _ccColour(who.element) : "#8fe3ff"; t.style.setProperty("--c", col);
+    if (!you && typeof cardArtUnitClass === "function") cardArtMark(t, cardArtUnitClass(who));   // (its backdrop, as on the roster: js/cardart.js)
+    const cv = _cdEl("canvas", "ce-pic"); cv.width = 96; cv.height = 96;
+    try { if (you) { if (typeof _ccYouThumb === "function") _ccYouThumb(cv); } else if (typeof _ccThumb === "function") _ccThumb(cv, who); } catch (e) { /* the tile without its picture */ }
+    t.appendChild(cv);
+    const name = you ? "YOU" : _cpWho(who), squad = !you && typeof partyIsMember === "function" && partyIsMember(who);
+    t.appendChild(_cdEl("div", "ce-nm", name));
+    t.appendChild(_cdEl("div", "ce-sub", you ? (typeof playerClassKey !== "undefined" && playerClassKey ? _equipClassLabel(playerClassKey) : "THE PLAYER") : (typeof _ccElLabel === "function" ? _ccElLabel(who.element) : String(who.element || "").toUpperCase()) + " · LV " + (who.level || 1) + (squad ? " · SQUAD" : "")));
+    const box = _cdEl("div", "ce-slots");
+    const add = (slot, label, cur) => {
+        const on = cur ? equipCard(cur) : null, worn = !!on && on.id === c.id, why = worn ? null : equipNowWhyNot(you ? "you" : who, slot, c.id);
+        const b = _cdEl("button", "ce-slot " + (worn ? "worn" : why ? "off" : on ? "full" : "open")); b.type = "button"; b.setAttribute("data-slot", String(slot));
+        b.appendChild(_cdEl("span", "ce-sk", label));
+        if (on) b.appendChild(_cdMini(on, "span")); else { const e = _cdEl("span", "ce-empty"); e.appendChild(_cdEl("span", null, "EMPTY")); b.appendChild(e); }
+        const say = worn ? "WORN ✓" : why || (on ? "SWITCH ⇄" : "EQUIP HERE"); b.appendChild(_cdEl("span", "ce-do", say));
+        b.setAttribute("aria-label", name + " · " + label + " · " + (on ? on.name : "EMPTY") + " · " + say);
+        if (worn || why) b.disabled = true;
+        else _cdClick(b, () => {
+            const ok = equipNowPut(you ? "you" : who, slot, c.id);
+            _ceSaid = ok ? (on ? on.name + " OFF · " : "") + c.name + " ON · " + (you ? label : name + " · " + label) : "IT COULD NOT GO ON · " + (equipNowWhyNot(you ? "you" : who, slot, c.id) || "NOTHING CHANGED");
+            _ceRender(root); cardsRender(); if (typeof ccRender === "function") ccRender();   // (the sheet under it says who wears it now; it waits while a pack's reveal is up)
+        });
+        box.appendChild(b);
+    };
+    if (you) for (let s = 0; s < EQUIP.playerSlots; s++) add(s, "YOUR SLOT " + (s + 1), equipPlayer[s] || null);
+    else if (c.attack) add("special", "SPECIAL ATTACK", who.special || null);
+    else { const cur = equipSlots(who); for (let s = 0; s < EQUIP.followerSlots; s++) add(s, "CARD " + (s + 1), cur[s]); }
+    t.appendChild(box);
+    return t;
+}
+function _ceRender(root, first) {
+    const c = equipCard(_ceId); if (!c) { equipNowClose(); return; }
+    const old = root.querySelector ? root.querySelector(".cp-rail") : null, keep = !first && old ? old.scrollLeft : 0;   // (the place in the row, kept after a card goes on)
+    root.textContent = "";
+    const box = _cdEl("div", "cp-box ce-box"); box.style.setProperty("--c", "#19e6c1");
+    const head = _cdEl("div", "cp-head"), pic = _cdMini(c, "span"), hl = _cdEl("div", "cp-hl"); pic.classList.add("ce-card"); head.appendChild(pic);
+    hl.appendChild(_cdEl("div", "cp-title", "EQUIP NOW · " + c.name)); hl.appendChild(_cdEl("div", "cp-sub", equipKindLabel(c) + " · " + equipShortText(c)));
+    const who = _ceWho(c), n = who.length;
+    hl.appendChild(_cdEl("div", "cp-sub", c.kind === "player" ? "A PLAYER CARD · IT GOES IN ONE OF YOUR TWO SLOTS" : n ? (c.attack ? "A SPECIAL ATTACK · " : "") + n + (n === 1 ? " FOLLOWER IT FITS" : " FOLLOWERS IT FITS") + " · YOUR SQUAD FIRST" : ""));
+    head.appendChild(hl);
+    const x = _cdEl("button", "cp-x", "✕"); x.type = "button"; x.setAttribute("aria-label", "CLOSE"); _cdClick(x, () => equipNowClose()); head.appendChild(x); box.appendChild(head);
+    const wrap = _cdEl("div", "cp-wrap"), rail = _cdEl("div", "cp-rail");
+    if (n) for (const w of who) rail.appendChild(_ceTile(c, w, root));
+    else rail.appendChild(_cdEl("div", "ce-none", "NONE OF YOUR FOLLOWERS FITS IT · " + _ceNeed(c)));
+    const arrow = (cls, dir, label) => { const a = _cdEl("button", "cp-arrow " + cls, label); a.type = "button"; a.setAttribute("aria-label", dir < 0 ? "BACK" : "ON"); _cdClick(a, () => { const w = ((rail.firstChild || {}).offsetWidth || 236) + 18; if (typeof rail.scrollBy === "function") rail.scrollBy({ left: dir * w, behavior: "smooth" }); else rail.scrollLeft += dir * w; }); return a; };
+    wrap.appendChild(arrow("prev", -1, "‹")); wrap.appendChild(rail); wrap.appendChild(arrow("next", 1, "›")); box.appendChild(wrap);
+    const takes = equipNowTakes(c.id) ? " · IT GOES INTO YOUR HAND AS IT GOES ON (" + equipHand.length + " OF " + EQUIP.startPick + ")" : "";
+    box.appendChild(_cdEl("div", "cp-note" + (_ceSaid ? " said" : ""), _ceSaid || (n ? "TAP A SLOT · EQUIP HERE FILLS AN EMPTY ONE · SWITCH PUTS IT IN PLACE OF THE CARD THERE, WHICH STAYS YOURS" + takes : "")));
+    root.appendChild(box);
+    if (keep && rail.style) { rail.style.scrollBehavior = "auto"; rail.scrollLeft = keep; rail.style.scrollBehavior = ""; }   // (at once, not a slide back from the start)
+}
 // ── YOU, ON THE ROSTER (build 2026-11-01l; the owner: "a new player icon and player card in the roster that the player can equip their cards to their own player"): the player's card in view (js/commandcenter.js
 // _ccFocusDraw) shows its two cards, each a mini card as the collection's (a tap opens its list); the settings column has YOUR SLOT 1 and YOUR SLOT 2, drop-downs as a follower's CARD 1 and CARD 2, listing the hand
 // (Player cards only since Build B, the Universal kind retired; since build 2026-11-07pp the picker shows only the ones that fit, js/cards.js equipPlayerWhyNot)
@@ -500,6 +595,6 @@ function equipPlayerSlotsBox(onTap) {
 function initCardsUi() {
     if (typeof document === "undefined" || !document.body || document.getElementById("cardsRoot")) return;
     const root = _cdEl("div"); root.id = "cardsRoot"; document.body.appendChild(root);
-    window.addEventListener("keydown", e => { if (e && e.key === "Escape" && cardsPanelOpen) { if (_cdReveal) _cdRevealClose(); else cardsClose(); } });   // (a pack's reveal first, then the sheet)
+    window.addEventListener("keydown", e => { if (!e || e.key !== "Escape") return; if (_ceId) equipNowClose(); else if (cardsPanelOpen) { if (_cdReveal) _cdRevealClose(); else cardsClose(); } });   // (EQUIP NOW's pop-out first, then a pack's reveal, then the sheet)
 }
 try { initCardsUi(); } catch (e) { /* no page (the test sandbox): the rules in js/cards.js still work */ }

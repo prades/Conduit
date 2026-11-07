@@ -9,18 +9,18 @@
     <!-- THE PROPS SHEETS THE START WAITS FOR (js/init.js, docs/STARTUP.md) begin to download with the page, alongside the scripts, instead of once the world is built: measured on a slow link (2x CPU, 60 ms, 15 Mbit/s), the start is about half a second sooner (4.1 s to 3.5 s for a new player, 6.4 s to 5.9 s for a returning one).
          They are the addresses the loader asks for (img/props/<family>.png, with the build stamp), so its own requests are answered from these; the stamp changes with the build (tests/startup.js checks both).
          Not here: the player's sheet (the website's background, ?attract, draws no player), the eggs and the evolved forms (which of them the first picture draws depends on the saved game): the start asks for those itself. -->
-    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-07qq">
-    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-07qq">
+    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-07rr">
+    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-07rr">
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -588,16 +588,16 @@
         #topToggles #dockScroll { gap: 6px; padding: 4px 6px; }   /* (eight buttons since QUESTS came, 2026-11-01: denser, so a tablet's width still shows them all without a slide) */
     }
     /* THE CARD PICKER (js/cardsui.js cardPickOpen; the owner, 2026-11-07: "a sliding list of card arts appears in the middle of the screen in a pop-out"): over the roster, the cards a slot can take in a row that slides */
-    #cardPick { display: none; position: fixed; inset: 0; z-index: 80; align-items: center; justify-content: center; background: rgba(2,4,10,0.72); font-family: var(--neo-font); color: #fff; }
-    #cardPick.open { display: flex; }
-    #cardPick .cp-box { --c: #ffe733; width: min(1120px, calc(100vw - 24px)); max-height: calc(100vh - 24px); display: flex; flex-direction: column; box-sizing: border-box; padding: 14px 16px 12px; background: linear-gradient(180deg, #121a34, #080c1a); border: 2px solid var(--c); box-shadow: 0 0 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,231,51,0.22); }
-    #cardPick .cp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 6px; }
-    #cardPick .cp-title { font: italic 900 24px var(--neo-font); color: var(--c); letter-spacing: 0.02em; text-shadow: 0 0 12px rgba(255,231,51,0.35); }
-    #cardPick .cp-sub { font: 700 11px monospace; color: #8aa0c8; letter-spacing: 0.06em; margin-top: 2px; }
-    #cardPick .cp-x { flex: none; width: 44px; height: 44px; font: 900 18px var(--neo-font); color: #fff; background: #0a1022; border: 2px solid #2a3a66; cursor: pointer; }
-    #cardPick .cp-wrap { position: relative; display: flex; align-items: center; gap: 6px; min-height: 0; }
-    #cardPick .cp-rail { flex: 1; min-width: 0; display: flex; gap: 18px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 22px 30px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-    #cardPick .cp-arrow { flex: none; width: 44px; height: 64px; font: 900 30px/1 var(--neo-font); color: var(--c); background: #0a1022; border: 2px solid #2a3a66; cursor: pointer; }
+    :is(#cardPick, #cardEquip) { display: none; position: fixed; inset: 0; z-index: 80; align-items: center; justify-content: center; background: rgba(2,4,10,0.72); font-family: var(--neo-font); color: #fff; }
+    :is(#cardPick, #cardEquip).open { display: flex; }
+    :is(#cardPick, #cardEquip) .cp-box { --c: #ffe733; width: min(1120px, calc(100vw - 24px)); max-height: calc(100vh - 24px); display: flex; flex-direction: column; box-sizing: border-box; padding: 14px 16px 12px; background: linear-gradient(180deg, #121a34, #080c1a); border: 2px solid var(--c); box-shadow: 0 0 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,231,51,0.22); }
+    :is(#cardPick, #cardEquip) .cp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 6px; }
+    :is(#cardPick, #cardEquip) .cp-title { font: italic 900 24px var(--neo-font); color: var(--c); letter-spacing: 0.02em; text-shadow: 0 0 12px rgba(255,231,51,0.35); }
+    :is(#cardPick, #cardEquip) .cp-sub { font: 700 11px monospace; color: #8aa0c8; letter-spacing: 0.06em; margin-top: 2px; }
+    :is(#cardPick, #cardEquip) .cp-x { flex: none; width: 44px; height: 44px; font: 900 18px var(--neo-font); color: #fff; background: #0a1022; border: 2px solid #2a3a66; cursor: pointer; }
+    :is(#cardPick, #cardEquip) .cp-wrap { position: relative; display: flex; align-items: center; gap: 6px; min-height: 0; }
+    :is(#cardPick, #cardEquip) .cp-rail { flex: 1; min-width: 0; display: flex; gap: 18px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; padding: 22px 30px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    :is(#cardPick, #cardEquip) .cp-arrow { flex: none; width: 44px; height: 64px; font: 900 30px/1 var(--neo-font); color: var(--c); background: #0a1022; border: 2px solid #2a3a66; cursor: pointer; }
     #cardPick .cp-tile { flex: none; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 244px; padding: 6px 4px 8px; background: none; border: 2px solid transparent; color: #fff; cursor: pointer; font: inherit; }
     #cardPick .cp-tile > .cd-card, #cardPick .cp-tile > .cp-blank { order: 1; }
     #cardPick .cp-tile > .cp-nm { order: 2; font: italic 900 15px var(--neo-font); color: #fff; text-align: center; } #cardPick .cp-tile.worn > .cp-nm { color: var(--neo-gold); }
@@ -608,8 +608,31 @@
     #cardPick .cp-tile:not(.off):not(.worn):hover { border-color: #2a3a66; background: rgba(255,255,255,0.04); }
     #cardPick .cp-blank { width: 210px; height: 290px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3a4a7a; border-radius: 10px; font: italic 900 20px var(--neo-font); color: #8aa0c8; background: rgba(10,16,34,0.6); }
     #cardPick .cp-tile.empty.off > .cp-blank { opacity: 0.5; }
-    #cardPick .cp-note { font: 700 11px monospace; color: #8aa0c8; letter-spacing: 0.05em; text-align: center; padding-top: 4px; }
+    :is(#cardPick, #cardEquip) .cp-note { font: 700 11px monospace; color: #8aa0c8; letter-spacing: 0.05em; text-align: center; padding-top: 4px; }
     @media (max-width: 700px) { #cardPick .cp-title { font-size: 18px; } #cardPick .cp-arrow { display: none; } #cardPick .cp-rail { padding: 16px 8px 8px; } }
+    /* EQUIP NOW (js/cardsui.js equipNowOpen; build 2026-11-07rr): over the CARDS screen (and a pack's reveal), the followers a card fits in a row that slides, each with its slots: the card picker's box, teal */
+    #cardEquip { z-index: 82; }
+    #cardEquip .cp-box { box-shadow: 0 0 30px rgba(0,0,0,0.6), 0 0 18px rgba(25,230,193,0.22); } #cardEquip .cp-title { text-shadow: 0 0 12px rgba(25,230,193,0.35); }
+    #cardEquip .cp-head { justify-content: flex-start; align-items: center; } #cardEquip .cp-hl { flex: 1; min-width: 0; } #cardEquip .ce-card { flex: none; scroll-snap-align: none; }
+    #cardEquip .cp-rail { padding: 16px 30px 10px; }
+    #cardEquip .ce-tile { --c: #8fe3ff; flex: none; scroll-snap-align: center; width: 240px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 8px 10px; border: 2px solid var(--c); background: linear-gradient(180deg, rgba(8,12,26,0.3), rgba(8,12,26,0.92) 44%), var(--tex, none) center top / cover no-repeat, linear-gradient(180deg, #101a36, #05070f); box-shadow: 0 0 14px -4px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
+    #cardEquip .ce-pic { width: 96px; height: 96px; }
+    #cardEquip .ce-nm { font: italic 900 16px var(--neo-font); color: #fff; text-align: center; text-shadow: 0 0 8px var(--c); max-width: 100%; overflow-wrap: anywhere; }
+    #cardEquip .ce-sub { font: 700 10px monospace; color: #9fb2d8; letter-spacing: 0.05em; text-align: center; }
+    #cardEquip .ce-slots { display: flex; gap: 8px; margin-top: 6px; }
+    #cardEquip .ce-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 106px; box-sizing: border-box; padding: 6px 4px 8px; background: rgba(5,7,15,0.78); border: 2px solid #2a3a66; color: #fff; font: inherit; cursor: pointer; }
+    #cardEquip .ce-slot .cd-mini { scroll-snap-align: none; pointer-events: none; }
+    #cardEquip .ce-sk { font: 800 10px monospace; color: #8aa0c8; letter-spacing: 0.06em; }
+    #cardEquip .ce-empty { width: 82px; height: 114px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 2px dashed #3a4a7a; font: italic 900 13px var(--neo-font); color: #8aa0c8; background: rgba(10,16,34,0.6); }
+    #cardEquip .ce-do { font: italic 900 12px var(--neo-font); letter-spacing: 0.03em; color: var(--neo-teal); text-align: center; min-height: 15px; }
+    #cardEquip .ce-slot.open { border-color: var(--neo-teal); } #cardEquip .ce-slot.full { border-color: #ffb347; } #cardEquip .ce-slot.full .ce-do { color: #ffb347; }
+    #cardEquip .ce-slot.worn { border-color: var(--neo-gold); background: rgba(255,231,51,0.08); cursor: default; } #cardEquip .ce-slot.worn .ce-do { color: var(--neo-gold); }
+    #cardEquip .ce-slot.off { cursor: default; } #cardEquip .ce-slot.off .ce-do { font: 700 9px/1.25 monospace; font-style: normal; color: #ff8a6a; } #cardEquip .ce-slot.off :is(.cd-mini, .ce-empty) { opacity: 0.55; }
+    #cardEquip .ce-slot:is(.open, .full):hover { background: rgba(25,230,193,0.12); }
+    #cardEquip .ce-none { flex: 1; padding: 40px 16px; font: 700 12px monospace; color: #8aa0c8; letter-spacing: 0.05em; text-align: center; }
+    #cardEquip .cp-note.said { color: var(--neo-gold); }
+    #cardsRoot .cr-slot > .cd-btn.cr-eq { margin-top: 6px; width: 225px; align-items: center; }
+    @media (max-width: 700px) { #cardEquip .cp-title { font-size: 18px; } #cardEquip .cp-arrow { display: none; } #cardEquip .cp-rail { padding: 12px 8px 8px; } }
     /* THE ANT NEST'S TEST CONSOLE (js/nestconsole.js; docs/NEST.md, step C) */
     #nestConsole { display: none; position: fixed; inset: 0; z-index: 70; align-items: center; justify-content: center; background: rgba(2,4,10,0.55); font-family: var(--neo-font); color: #fff; }
     #nestConsole.open { display: flex; }
@@ -800,17 +823,17 @@
     #cardsRoot .cd-railbox { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
     #cardsRoot .cd-rail { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; padding: 16px calc(50% - 41px) 12px; scrollbar-width: none; outline: none; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
     #cardsRoot .cd-rail::-webkit-scrollbar { display: none; } #cardsRoot .cd-rail:focus-visible { box-shadow: inset 0 0 0 2px rgba(25,230,193,0.5); }
-    :is(#cardsRoot, #ccRoot) .cd-mini { --c: #8fe3ff; position: relative; flex: none; width: 82px; height: 114px; padding: 0; scroll-snap-align: center; border: 2px solid var(--c); background: #0b1226; overflow: hidden; cursor: pointer; touch-action: manipulation; opacity: 0.68; transform: scale(0.9); transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease; box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini { --c: #8fe3ff; position: relative; flex: none; width: 82px; height: 114px; padding: 0; scroll-snap-align: center; border: 2px solid var(--c); background: #0b1226; overflow: hidden; cursor: pointer; touch-action: manipulation; opacity: 0.68; transform: scale(0.9); transition: transform 0.22s ease, opacity 0.22s ease, box-shadow 0.22s ease; box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
     #cardsRoot .cd-mini.mid { opacity: 0.9; } #cardsRoot .cd-mini.on { opacity: 1; transform: scale(1.12) translateY(-5px); box-shadow: 0 0 16px var(--c), 0 10px 18px rgba(0,0,0,0.6); }
-    :is(#cardsRoot, #ccRoot) .cd-mtex { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,22,46,0.2), rgba(8,12,26,0.92) 72%), var(--tex, none) center / 100% 100% no-repeat; }
-    :is(#cardsRoot, #ccRoot) .cd-mgem { position: absolute; left: 8px; right: 8px; top: 7px; height: 58px; background: var(--gem, none) center / contain no-repeat; } :is(#cardsRoot, #ccRoot) .cd-mgem.item { top: 3px; height: 64px; background-position: center bottom; background-size: contain; background-repeat: no-repeat; }
-    :is(#cardsRoot, #ccRoot) .cd-mn { position: absolute; left: 4px; right: 4px; bottom: 21px; font: italic 900 8.5px/1.05 var(--neo-font); color: #fff; text-align: center; text-shadow: 0 0 4px var(--c); overflow-wrap: anywhere; }
-    :is(#cardsRoot, #ccRoot) .cd-mini > .cd-chip.mini { position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%) scale(0.82); }
-    :is(#cardsRoot, #ccRoot) .cd-mini.locked { border-style: dashed; } :is(#cardsRoot, #ccRoot) .cd-mini.locked :is(.cd-mtex, .cd-mgem) { filter: saturate(0.35) brightness(0.7); }
-    :is(#cardsRoot, #ccRoot) .cd-mini.hand::after, :is(#cardsRoot, #ccRoot) .cd-mini.found::after { position: absolute; top: 2px; right: 4px; font: 900 11px sans-serif; } :is(#cardsRoot, #ccRoot) .cd-mini.hand::after { content: "✓"; color: var(--neo-gold); text-shadow: 0 0 6px var(--neo-gold); } :is(#cardsRoot, #ccRoot) .cd-mini.found::after { content: "★"; color: var(--neo-teal); text-shadow: 0 0 6px var(--neo-teal); }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mtex { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14,22,46,0.2), rgba(8,12,26,0.92) 72%), var(--tex, none) center / 100% 100% no-repeat; }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mgem { position: absolute; left: 8px; right: 8px; top: 7px; height: 58px; background: var(--gem, none) center / contain no-repeat; } :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mgem.item { top: 3px; height: 64px; background-position: center bottom; background-size: contain; background-repeat: no-repeat; }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mn { position: absolute; left: 4px; right: 4px; bottom: 21px; font: italic 900 8.5px/1.05 var(--neo-font); color: #fff; text-align: center; text-shadow: 0 0 4px var(--c); overflow-wrap: anywhere; }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini > .cd-chip.mini { position: absolute; left: 50%; bottom: 5px; transform: translateX(-50%) scale(0.82); }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini.locked { border-style: dashed; } :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini.locked :is(.cd-mtex, .cd-mgem) { filter: saturate(0.35) brightness(0.7); }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini.hand::after, :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini.found::after { position: absolute; top: 2px; right: 4px; font: 900 11px sans-serif; } :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini.hand::after { content: "✓"; color: var(--neo-gold); text-shadow: 0 0 6px var(--neo-gold); } :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini.found::after { content: "★"; color: var(--neo-teal); text-shadow: 0 0 6px var(--neo-teal); }
     /* a card taken into the run, LIT GOLD FROM BEHIND (build 2026-11-01l): a gold light behind its crystal or its item, the gold of the buttons that buy, and a gold glow round it */
-    :is(#cardsRoot, #ccRoot) .cd-mini.hand { background: #2a2000; box-shadow: inset 0 0 16px rgba(255,231,51,0.5), 0 0 16px rgba(255,231,51,0.65), 0 6px 12px rgba(0,0,0,0.5); }
-    :is(#cardsRoot, #ccRoot) .cd-mini.hand .cd-mtex { background: radial-gradient(ellipse at 50% 34%, rgba(255,250,210,0.98) 0%, rgba(255,231,51,0.78) 26%, rgba(255,231,51,0.3) 56%, rgba(255,231,51,0.08) 80%), linear-gradient(180deg, rgba(46,36,0,0.1), rgba(24,18,0,0.88) 76%), var(--tex, none) center / 100% 100% no-repeat; }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini.hand { background: #2a2000; box-shadow: inset 0 0 16px rgba(255,231,51,0.5), 0 0 16px rgba(255,231,51,0.65), 0 6px 12px rgba(0,0,0,0.5); }
+    :is(#cardsRoot, #ccRoot, #cardEquip) .cd-mini.hand .cd-mtex { background: radial-gradient(ellipse at 50% 34%, rgba(255,250,210,0.98) 0%, rgba(255,231,51,0.78) 26%, rgba(255,231,51,0.3) 56%, rgba(255,231,51,0.08) 80%), linear-gradient(180deg, rgba(46,36,0,0.1), rgba(24,18,0,0.88) 76%), var(--tex, none) center / 100% 100% no-repeat; }
     #cardsRoot .cd-mini.hand { opacity: 0.95; } #cardsRoot .cd-mini.hand.on { box-shadow: inset 0 0 18px rgba(255,231,51,0.55), 0 0 26px rgba(255,231,51,0.9), 0 10px 18px rgba(0,0,0,0.6); }   /* (it stays bright on the rail, where the others are dimmed) */
     #cardsRoot .cd-rnav { flex: none; width: 34px; height: 70px; font-size: 13px; color: #fff; background: #0a1022; border: 2px solid #26365e; cursor: pointer; touch-action: manipulation; } #cardsRoot .cd-rnav:disabled { opacity: 0.35; cursor: default; }
     /* a phone: the card smaller (zoom, so its room shrinks with it), its labels still beside it, smaller, so the rail stays in view under them */
@@ -1971,12 +1994,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-11-07qq, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-11-07rr, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-11-07qq";
+window.__PAGE_BUILD = "2026-11-07rr";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -2012,92 +2035,92 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-07qq"></script>
-<script src="js/icons.js?v=2026-11-07qq"></script>
-<script src="js/uikit.js?v=2026-11-07qq"></script>
-<script src="js/traits.js?v=2026-11-07qq"></script>
-<script src="js/elements.js?v=2026-11-07qq"></script>
-<script src="js/damage.js?v=2026-11-07qq"></script>
-<script src="js/combat.js?v=2026-11-07qq"></script>
-<script src="js/species.js?v=2026-11-07qq"></script>
-<script src="js/levels.js?v=2026-11-07qq"></script>
-<script src="js/status.js?v=2026-11-07qq"></script>
-<script src="js/helpers.js?v=2026-11-07qq"></script>
-<script src="js/predator.js?v=2026-11-07qq"></script>
-<script src="js/abilities.js?v=2026-11-07qq"></script>
-<script src="js/commands.js?v=2026-11-07qq"></script>
-<script src="js/npc.js?v=2026-11-07qq"></script>
-<script src="js/draw.js?v=2026-11-07qq"></script>
-<script src="js/beetle3d.js?v=2026-11-07qq"></script>
-<script src="js/bugs3d.js?v=2026-11-07qq"></script>
-<script src="js/settings.js?v=2026-11-07qq"></script>
-<script src="js/alarm.js?v=2026-11-07qq"></script>
-<script src="js/drops.js?v=2026-11-07qq"></script>
-<script src="js/clone.js?v=2026-11-07qq"></script>
-<script src="js/bonds.js?v=2026-11-07qq"></script>
-<script src="js/evolution.js?v=2026-11-07qq"></script>
-<script src="js/cards.js?v=2026-11-07qq"></script>
-<script src="js/cardart.js?v=2026-11-07qq"></script>
-<script src="js/hdsprites.js?v=2026-11-07qq"></script>
-<script src="js/firebombs.js?v=2026-11-07qq"></script>
-<script src="js/moves.js?v=2026-11-07qq"></script>
-<script src="js/hudgems.js?v=2026-11-07qq"></script>
-<script src="js/commandcenter.js?v=2026-11-07qq"></script>
-<script src="js/cardsui.js?v=2026-11-07qq"></script>
-<script src="js/unitinfo.js?v=2026-11-07qq"></script>
-<script src="js/infodex.js?v=2026-11-07qq"></script>
-<script src="js/classes.js?v=2026-11-07qq"></script>
-<script src="js/playergear.js?v=2026-11-07qq"></script>
-<script src="js/inventory.js?v=2026-11-07qq"></script>
-<script src="js/weapons.js?v=2026-11-07qq"></script>
-<script src="js/mutator.js?v=2026-11-07qq"></script>
-<script src="js/specimen.js?v=2026-11-07qq"></script>
-<script src="js/serum.js?v=2026-11-07qq"></script>
-<script src="js/potion.js?v=2026-11-07qq"></script>
-<script src="js/technomancer.js?v=2026-11-07qq"></script>
-<script src="js/playercards.js?v=2026-11-07qq"></script>
-<script src="js/stations.js?v=2026-11-07qq"></script>
-<script src="js/facilityportals.js?v=2026-11-07qq"></script>
-<script src="js/tutorial.js?v=2026-11-07qq"></script>
-<script src="js/dialogue.js?v=2026-11-07qq"></script>
-<script src="js/questbox.js?v=2026-11-07qq"></script>
-<script src="js/facilitymap.js?v=2026-11-07qq"></script>
-<script src="js/facilitygrow.js?v=2026-11-07qq"></script>
-<script src="js/facility.js?v=2026-11-07qq"></script>
-<script src="js/attract.js?v=2026-11-07qq"></script>
-<script src="js/facilitysave.js?v=2026-11-07qq"></script>
-<script src="js/facilityplay.js?v=2026-11-07qq"></script>
-<script src="js/facilitydecor.js?v=2026-11-07qq"></script>
-<script src="js/propatlas.js?v=2026-11-07qq"></script>
-<script src="js/propsprites.js?v=2026-11-07qq"></script>
-<script src="js/facilitystyle.js?v=2026-11-07qq"></script>
-<script src="js/facilitystyleall.js?v=2026-11-07qq"></script>
-<script src="js/facilitysewers.js?v=2026-11-07qq"></script>
-<script src="js/facilitynet.js?v=2026-11-07qq"></script>
-<script src="js/population.js?v=2026-11-07qq"></script>
-<script src="js/facilityspawn.js?v=2026-11-07qq"></script>
-<script src="js/crystalpower.js?v=2026-11-07qq"></script>
-<script src="js/antraids.js?v=2026-11-07qq"></script>
-<script src="js/followerspots.js?v=2026-11-07qq"></script>
-<script src="js/breeding.js?v=2026-11-07qq"></script>
-<script src="js/party.js?v=2026-11-07qq"></script>
-<script src="js/squadfly.js?v=2026-11-07qq"></script>
-<script src="js/techabilities.js?v=2026-11-07qq"></script>
-<script src="js/fluxmove.js?v=2026-11-07qq"></script>
-<script src="js/fluxlab.js?v=2026-11-07qq"></script>
-<script src="js/puzzles.js?v=2026-11-07qq"></script>
-<script src="js/quests.js?v=2026-11-07qq"></script>
-<script src="js/bosses.js?v=2026-11-07qq"></script>
-<script src="js/nestconsole.js?v=2026-11-07qq"></script>
-<script src="js/sidequest.js?v=2026-11-07qq"></script>
-<script src="js/facilitytutorial.js?v=2026-11-07qq"></script>
-<script src="js/gunfire.js?v=2026-11-07qq"></script>
-<script src="js/targeting.js?v=2026-11-07qq"></script>
-<script src="js/toolbox.js?v=2026-11-07qq"></script>
-<script src="js/mixtool.js?v=2026-11-07qq"></script>
-<script src="js/radialmenu.js?v=2026-11-07qq"></script>
-<script src="js/input.js?v=2026-11-07qq"></script>
-<script src="js/game.js?v=2026-11-07qq"></script>
+<script src="js/config.js?v=2026-11-07rr"></script>
+<script src="js/icons.js?v=2026-11-07rr"></script>
+<script src="js/uikit.js?v=2026-11-07rr"></script>
+<script src="js/traits.js?v=2026-11-07rr"></script>
+<script src="js/elements.js?v=2026-11-07rr"></script>
+<script src="js/damage.js?v=2026-11-07rr"></script>
+<script src="js/combat.js?v=2026-11-07rr"></script>
+<script src="js/species.js?v=2026-11-07rr"></script>
+<script src="js/levels.js?v=2026-11-07rr"></script>
+<script src="js/status.js?v=2026-11-07rr"></script>
+<script src="js/helpers.js?v=2026-11-07rr"></script>
+<script src="js/predator.js?v=2026-11-07rr"></script>
+<script src="js/abilities.js?v=2026-11-07rr"></script>
+<script src="js/commands.js?v=2026-11-07rr"></script>
+<script src="js/npc.js?v=2026-11-07rr"></script>
+<script src="js/draw.js?v=2026-11-07rr"></script>
+<script src="js/beetle3d.js?v=2026-11-07rr"></script>
+<script src="js/bugs3d.js?v=2026-11-07rr"></script>
+<script src="js/settings.js?v=2026-11-07rr"></script>
+<script src="js/alarm.js?v=2026-11-07rr"></script>
+<script src="js/drops.js?v=2026-11-07rr"></script>
+<script src="js/clone.js?v=2026-11-07rr"></script>
+<script src="js/bonds.js?v=2026-11-07rr"></script>
+<script src="js/evolution.js?v=2026-11-07rr"></script>
+<script src="js/cards.js?v=2026-11-07rr"></script>
+<script src="js/cardart.js?v=2026-11-07rr"></script>
+<script src="js/hdsprites.js?v=2026-11-07rr"></script>
+<script src="js/firebombs.js?v=2026-11-07rr"></script>
+<script src="js/moves.js?v=2026-11-07rr"></script>
+<script src="js/hudgems.js?v=2026-11-07rr"></script>
+<script src="js/commandcenter.js?v=2026-11-07rr"></script>
+<script src="js/cardsui.js?v=2026-11-07rr"></script>
+<script src="js/unitinfo.js?v=2026-11-07rr"></script>
+<script src="js/infodex.js?v=2026-11-07rr"></script>
+<script src="js/classes.js?v=2026-11-07rr"></script>
+<script src="js/playergear.js?v=2026-11-07rr"></script>
+<script src="js/inventory.js?v=2026-11-07rr"></script>
+<script src="js/weapons.js?v=2026-11-07rr"></script>
+<script src="js/mutator.js?v=2026-11-07rr"></script>
+<script src="js/specimen.js?v=2026-11-07rr"></script>
+<script src="js/serum.js?v=2026-11-07rr"></script>
+<script src="js/potion.js?v=2026-11-07rr"></script>
+<script src="js/technomancer.js?v=2026-11-07rr"></script>
+<script src="js/playercards.js?v=2026-11-07rr"></script>
+<script src="js/stations.js?v=2026-11-07rr"></script>
+<script src="js/facilityportals.js?v=2026-11-07rr"></script>
+<script src="js/tutorial.js?v=2026-11-07rr"></script>
+<script src="js/dialogue.js?v=2026-11-07rr"></script>
+<script src="js/questbox.js?v=2026-11-07rr"></script>
+<script src="js/facilitymap.js?v=2026-11-07rr"></script>
+<script src="js/facilitygrow.js?v=2026-11-07rr"></script>
+<script src="js/facility.js?v=2026-11-07rr"></script>
+<script src="js/attract.js?v=2026-11-07rr"></script>
+<script src="js/facilitysave.js?v=2026-11-07rr"></script>
+<script src="js/facilityplay.js?v=2026-11-07rr"></script>
+<script src="js/facilitydecor.js?v=2026-11-07rr"></script>
+<script src="js/propatlas.js?v=2026-11-07rr"></script>
+<script src="js/propsprites.js?v=2026-11-07rr"></script>
+<script src="js/facilitystyle.js?v=2026-11-07rr"></script>
+<script src="js/facilitystyleall.js?v=2026-11-07rr"></script>
+<script src="js/facilitysewers.js?v=2026-11-07rr"></script>
+<script src="js/facilitynet.js?v=2026-11-07rr"></script>
+<script src="js/population.js?v=2026-11-07rr"></script>
+<script src="js/facilityspawn.js?v=2026-11-07rr"></script>
+<script src="js/crystalpower.js?v=2026-11-07rr"></script>
+<script src="js/antraids.js?v=2026-11-07rr"></script>
+<script src="js/followerspots.js?v=2026-11-07rr"></script>
+<script src="js/breeding.js?v=2026-11-07rr"></script>
+<script src="js/party.js?v=2026-11-07rr"></script>
+<script src="js/squadfly.js?v=2026-11-07rr"></script>
+<script src="js/techabilities.js?v=2026-11-07rr"></script>
+<script src="js/fluxmove.js?v=2026-11-07rr"></script>
+<script src="js/fluxlab.js?v=2026-11-07rr"></script>
+<script src="js/puzzles.js?v=2026-11-07rr"></script>
+<script src="js/quests.js?v=2026-11-07rr"></script>
+<script src="js/bosses.js?v=2026-11-07rr"></script>
+<script src="js/nestconsole.js?v=2026-11-07rr"></script>
+<script src="js/sidequest.js?v=2026-11-07rr"></script>
+<script src="js/facilitytutorial.js?v=2026-11-07rr"></script>
+<script src="js/gunfire.js?v=2026-11-07rr"></script>
+<script src="js/targeting.js?v=2026-11-07rr"></script>
+<script src="js/toolbox.js?v=2026-11-07rr"></script>
+<script src="js/mixtool.js?v=2026-11-07rr"></script>
+<script src="js/radialmenu.js?v=2026-11-07rr"></script>
+<script src="js/input.js?v=2026-11-07rr"></script>
+<script src="js/game.js?v=2026-11-07rr"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2152,7 +2175,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-07qq"></script>
+<script src="js/init.js?v=2026-11-07rr"></script>
 
 </body>
 </html>

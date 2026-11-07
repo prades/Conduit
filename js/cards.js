@@ -502,23 +502,24 @@ function equipFit(f, c) {
     return "NOT A CARD";
 }
 // why this card cannot go in this slot of this follower, or null when it can: a follower (not a clone), the card in the hand or found, a fit, and not already on its other slot
-function equipWhyNot(f, id, slot) {
+// (`take`: EQUIP NOW's question, below: a card kept for good that is not in the hand counts as in it while the hand has room, for it is taken into the run as it goes on)
+function equipWhyNot(f, id, slot, take) {
     const c = equipCard(id);
     if (!c) return "NO SUCH CARD";
     if (!f || f.dead || f.isClone || f.isFollower !== true) return "FOLLOWERS ONLY";
     if (c.attack) return "A SPECIAL ATTACK · ITS OWN MENU";
-    if (!equipUsable(id)) return "NOT IN YOUR HAND";
+    if (!equipUsable(id) && !(take && equipNowTakes(id))) return "NOT IN YOUR HAND";
     const fit = equipFit(f, c); if (fit) return fit;
     return equipSlots(f).some((x, i) => i !== slot && x === id) ? "ALREADY ON ITS OTHER SLOT" : null;
 }
 // ── THE SPECIAL ATTACK SLOT (the owner, 2026-11-06: "You must change it in a separate menu inside of index/roster card system. Including access main hud"): one a follower, f.special (a card id); only a card
 // attack (a card with `attack`) goes in it, and only on its own form. Its menus: the roster's SPECIAL ATTACK (js/cardsui.js equipRosterDraw) and the squad card's (js/squadfly.js). Saved as the record's `special`. ──
-function equipSpecialWhyNot(f, id) {
+function equipSpecialWhyNot(f, id, take) {   // (take: as equipWhyNot's)
     const c = equipCard(id);
     if (!c) return "NO SUCH CARD";
     if (!f || f.dead || f.isClone || f.isFollower !== true) return "FOLLOWERS ONLY";
     if (!c.attack) return "NOT A SPECIAL ATTACK";
-    if (!equipUsable(id)) return "NOT IN YOUR HAND";
+    if (!equipUsable(id) && !(take && equipNowTakes(id))) return "NOT IN YOUR HAND";
     return equipFit(f, c);
 }
 function equipSpecialPut(f, id) {   // (id null empties it); true when it changed
@@ -616,6 +617,20 @@ function equipPut(f, slot, id) {
     if (id == null) { if (!c[slot]) return false; c[slot] = null; f.cards = c[0] || c[1] ? c : undefined; equipRefresh(f); return true; }
     if (equipWhyNot(f, id, slot) || c[slot] === id) return false;
     c[slot] = id; f.cards = c; equipRefresh(f); return true;
+}
+// ── EQUIP NOW (build 2026-11-07rr; js/cardsui.js equipNowOpen): a card put on from the CARDS screen (the collection, or a pack just opened) onto a follower's slot, its SPECIAL ATTACK, or one of yours ──
+// The slot's own rules decide (equipWhyNot, equipSpecialWhyNot, equipPlayerWhyNot), with one more way in: a card kept for good that is not in the hand is TAKEN INTO THE RUN as it goes on, while the hand has room
+// (equipNowTakes). Put on a slot holding another card, it SWITCHES them: that card comes off (it stays yours, in the hand or found). Nothing changes when it cannot go on.
+function equipNowTakes(id) { return !equipUsable(id) && equipOwns(id) && equipHand.length < equipHandCap(); }
+// why `id` cannot go on `who` (a follower, or "you") in `slot` (0 or 1, or "special": a follower's SPECIAL ATTACK), or null
+function equipNowWhyNot(who, slot, id) { return who === "you" ? equipPlayerWhyNot(id, slot, true) : slot === "special" ? equipSpecialWhyNot(who, id, true) : equipWhyNot(who, id, slot, true); }
+// put it on (taking it into the run first when it must be); true when it went on
+function equipNowPut(who, slot, id) {
+    if (equipNowWhyNot(who, slot, id)) return false;
+    const took = equipNowTakes(id) && equipHandAdd(id);
+    const ok = who === "you" ? equipPlayerPut(slot, id) : slot === "special" ? equipSpecialPut(who, id) : equipPut(who, slot, id);
+    if (!ok && took) equipHand.splice(equipHand.indexOf(id), 1);   // (nothing went on: the hand as it was)
+    return ok;
 }
 function equipClear(f) { if (f && (f.cards || f.special)) { f.cards = undefined; f.special = undefined; equipRefresh(f); return true; } return false; }   // (EXILE, a re-roll; its special attack too)
 // takes off what no longer fits (a role switched, a card out of the hand and not found, a card the registry no longer has); how many came off
@@ -785,17 +800,17 @@ function _equipProc(src, t, p, dealt) {
 //                  (equipPlayerAwake). So the tick and a load KEEP a role whatever the class (_equipPlayerWhy with `keep`), and only putting one in asks for its class.
 function _equipPlayerClass() { return typeof playerClassKey !== "undefined" ? playerClassKey : null; }
 // why `id` cannot be in `slot` beside the other slot of `slots`, or null: `keep` asks only what a slot may keep (the tick, a load), not the class you are now
-function _equipPlayerWhy(id, slot, slots, keep) {
+function _equipPlayerWhy(id, slot, slots, keep, take) {   // (take: as equipWhyNot's)
     const c = equipCard(id);
     if (!c) return "NO SUCH CARD";
-    if (!equipUsable(id)) return "NOT IN YOUR HAND";
+    if (!equipUsable(id) && !(take && equipNowTakes(id))) return "NOT IN YOUR HAND";
     if (c.kind !== "player") return "PLAYER CARDS ONLY";
     if (slots.some((x, i) => i !== slot && x === id)) return "ALREADY IN THE OTHER SLOT";
     if (!keep && c.match && c.match !== _equipPlayerClass()) return "FOR THE " + _equipClassLabel(c.match);
     if (c.match && slots.some((x, i) => { const o = i !== slot && x ? equipCard(x) : null; return !!o && o.match === c.match; })) return "ONE " + _equipClassLabel(c.match) + " ROLE AT A TIME";
     return null;
 }
-function equipPlayerWhyNot(id, slot) { return _equipPlayerWhy(id, slot, equipPlayer, false); }
+function equipPlayerWhyNot(id, slot, take) { return _equipPlayerWhy(id, slot, equipPlayer, false, take); }
 function equipPlayerPut(slot, id) {
     if (slot !== 0 && slot !== 1) return false;
     if (id == null) { if (!equipPlayer[slot]) return false; equipPlayer[slot] = null; return true; }

@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **rr · EQUIP NOW.** Owner's request (2026-11-07): "an equip now feature that whenever you open up a new pack or whenever you're looking through your collection, you can select equip now and it pulls up a sliding roster menu ... it shows the creatures that have two cards that you are able to replace the card with, and ... allows you to switch the cards from that menu as well". Branch `claude/start-game-project-HSh7Z`.
+  - **EQUIP NOW** is under the card on the collection's stage and under each card of a pack's reveal.
+  - It opens a pop-out: the followers the card fits in a sliding row (squad first; YOU for a Player card), each with its CARD 1 and CARD 2 (or SPECIAL ATTACK) showing the card on each.
+  - A slot reads **EQUIP HERE** (empty), **SWITCH ⇄** (another card on it: that card comes off and stays yours) or **WORN ✓**; one that cannot take the card says why.
+  - The box stays open after a card goes on and says what changed. A card kept for good but not in the hand goes into the hand as it goes on, while the hand has room.
+  - Fixed on the way: a redraw of the CARDS screen while the rail was still sliding could change the card on the stage a moment later.
+  - Tests: new `tests/equipnow.js` (12 checks: the rules, and the screen in a real browser); `tests/cards.js` reads the shared mini card selector. Not playtested.
+
 - **qq · The Server Room, the Warehouse, one repair, Side Quest and the catwalks' ledge.** Owner's requests (2026-11-07): the computer lab becomes "a dark server room", the show room "a little warehouse"; "there's no relay stations that need to be repaired. It's just one spot on the map ... you need to obtain a module ... the help of a NPC like side quest ... the item could be in the catwalks, and side quest's ability is to fly"; then "a ledge that goes down that the player can only move to jump off of", Side Quest using it "to show the player how it works", and the launcher's way back removed. Implemented and tested on the branch and seen in screenshots; not playtested.
   - **Server Room** (the Front Lobby): server racks with blinking lights, a console, cable runs; dim with the power on. The **MAIN POWER JUNCTION** in its north-east corner. Its doors, the fire brawler egg, its case and the fuel cells stay.
   - **Warehouse** (the Show Room): pallet racks (new cargo sprites), crates, barrels, a cart, lockers; solid walls but for its pane onto the hallway. The ice mage egg, its case and the mech bay stay.
