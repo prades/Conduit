@@ -228,8 +228,8 @@ function _facSegHit(a, b, c, d) {   // where segment ab crosses segment cd, or n
 //          a teleporter, a rubble pile) stops a shot too ("Yes, they stop shots"), and it is nobody's own cover. A low object that gives no cover (a table, a cart, water, a barred gate) is passed over.
 //   LOW    sight passes over it ("See over low ones"): waist high or less by its 3D model (design/props/models; the player is about 70 px tall), a barred gate (seen through) or water (seen across).
 //          Everything else blocks sight as it always did, the middle heights too (a crate stack, a console's screens, a generator). The heights are a reading: docs/OPEN-QUESTIONS.md §1x.
-const FAC_COVER = new Set(["barrier", "crate", "crate_stack", "barrel", "desk", "computer_desk", "reception_desk", "console", "lab_bench", "pump"]);   // (a pump: the sewer's machinery, Milestone Four)
-const FAC_LOW = new Set(["barrier", "crate", "barrel", "pump", "desk", "computer_desk", "reception_desk", "lab_bench", "cart", "table", "couch", "sentry", "river", "pool", "gate", "boss_gate"]);
+const FAC_COVER = new Set(["barrier", "crate", "crate_stack", "barrel", "desk", "computer_desk", "reception_desk", "console", "lab_bench", "pump", "valve"]);   // (a pump: the sewer's machinery, Milestone Four)
+const FAC_LOW = new Set(["barrier", "crate", "barrel", "pump", "valve", "desk", "computer_desk", "reception_desk", "lab_bench", "cart", "table", "couch", "sentry", "river", "pool", "gate", "boss_gate"]);
 // the first wall line the segment (x0,y0)-(x1,y1) crosses, or null: the walls are every room's outline but its openings, so this is a band between rooms and a thin wall (glass) alike
 function _facWallCrossed(x0, y0, x1, y1, F) {
     const ix = _facIndex(F), B = FAC_BUCKET, a = [x0, y0], b = [x1, y1], seen = new Set();

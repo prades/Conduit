@@ -356,6 +356,8 @@ const FACILITY_MAP = {
         // SEWER MACHINERY the Flux Technician can move (Milestone Four, docs/NEXT-PHASE-ROADMAP.md §5.3; the owner, 2026-11-07: "Sewer machinery" first): pump housings on the dam, low cover that stops shots, turned and moved by FLUX MOVE
         { id: "sewer_pump_1", room: "sewers", shape: "rect", rect: [1220, 1000, 1260, 1020], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A pump housing at the south end of the dam, well clear of the Queen's post: move it to make cover." },
         { id: "sewer_pump_2", room: "sewers", shape: "rect", rect: [1180, 1000, 1200, 1040], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A second pump housing, turned the other way, further south on the dam." },
+        { id: "sewer_valve_1", room: "sewers", shape: "rect", rect: [1240, 980, 1260, 1000], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing beside the first pump (the owner, 2026-11-07: \"add valves\")." },
+        { id: "sewer_valve_2", room: "sewers", shape: "rect", rect: [1200, 1020, 1220, 1040], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing beside the second pump." },
         { id: "sewer_gate_boss", room: "sewers", shape: "poly", poly: [[1056, 1020], [1064, 1020], [1064, 1080], [1056, 1080]], status: "placed", kind: "rubble", note: "THE RUBBLE ON THE WAY INTO THE NEST (a barred boss gate until build 2026-11-06l; the owner, 2026-11-06: \"I never wanted a gate. I wanted rubble\", \"Rubble, drilled\"): the south ledge's way onto the dam, three tiles across, choked with fallen concrete until a fire technician drills it through (rubble_sewer_gate). The other way onto the dam: an ice bridge across the water." },
     ],
 

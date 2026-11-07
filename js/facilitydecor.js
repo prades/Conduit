@@ -664,6 +664,12 @@ function _fpDecorProp(it) {
         const c0 = _fpP(x, y, 28), c1 = _fpP(x, y, 42), rx = TILE_W * 0.32, ry = TILE_H * 0.32;
         ctx.fillStyle = "#2c343c"; ctx.beginPath(); ctx.ellipse(c0[0], c0[1], rx, ry, 0, 0, 3.1416); ctx.lineTo(c1[0] - rx, c1[1]); ctx.ellipse(c1[0], c1[1], rx, ry, 0, 3.1416, 0, true); ctx.closePath(); ctx.fill();
         ctx.fillStyle = "#56616c"; ctx.beginPath(); ctx.ellipse(c1[0], c1[1], rx, ry, 0, 0, 6.2832); ctx.fill(); ctx.strokeStyle = "rgba(125,255,74,0.45)"; ctx.lineWidth = 1; ctx.stroke();
+    } else if (k === "valve") {   // A SEWER VALVE HOUSING (Milestone Four; the Flux Technician moves it): a low steel block, a stub of pipe rising from it, a rust-red handwheel on top, a green tell-tale
+        _fpPrism(it, 18, "#46505a", "#2a323b", "#20262e", "rgba(190,220,200,0.18)");
+        if (it.sy) _fpFaceY(it, 0.6, 0.8, 8, 13, "rgba(125,255,74,0.85)", "#0b120c");
+        const p0 = _fpP(x, y, 18), p1 = _fpP(x, y, 34); ctx.strokeStyle = "#1c2228"; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.stroke(); ctx.strokeStyle = "#5c6873"; ctx.lineWidth = 4.5; ctx.stroke();
+        const rx = TILE_W * 0.3, ry = TILE_H * 0.3; ctx.strokeStyle = "#8a2e22"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(p1[0], p1[1], rx, ry, 0, 0, 6.2832); ctx.stroke();
+        ctx.lineWidth = 1.6; for (let i = 0; i < 3; i++) { const an = i * 1.0472 + seed; ctx.beginPath(); ctx.moveTo(p1[0] - Math.cos(an) * rx, p1[1] - Math.sin(an) * ry); ctx.lineTo(p1[0] + Math.cos(an) * rx, p1[1] + Math.sin(an) * ry); ctx.stroke(); }
     } else if (k === "crate") {   // a wooden crate with slats, stencilled
         _fpPrism(it, 34, "#9a7a4a", "#6a5030", "#54401f", "rgba(255,230,160,0.3)"); if (it.sy) { _fpFaceY(it, 0.0, 1.0, 14, 16, "rgba(40,24,10,0.6)", null); _fpFaceY(it, 0.0, 1.0, 26, 28, "rgba(40,24,10,0.6)", null); _fpFaceY(it, 0.06, 0.94, 3, 5, "rgba(40,24,10,0.45)", null); } if (it.sx) { _fpFaceX(it, 0.0, 1.0, 14, 16, "rgba(40,24,10,0.5)", null); }
         if (seed % 3 === 0 && it.sy) _fpFaceY(it, 0.3, 0.7, 14, 24, "rgba(255,210,26,0.65)", null);   // a hazard label

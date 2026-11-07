@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **c · Sewer machinery: two valve housings** (the owner, 2026-11-07: "Looks right; add valves"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-07b` went to main at the owner's word ("Push to main").
+  - A new kind, `valve`: a 1×1 steel block with a pipe stub, a rust-red handwheel and a green tell-tale. Low cover; FLUX MOVE moves it up to 2 tiles. Two stand beside the pumps at the south end of the dam **[reading: where they stand]**.
+  - Tests: cover, fluxmove, sewers, sewerquest, facility, bible (counts and lists updated). No full run. Not playtested.
+
 - **b · Sewer machinery: two pump housings the Flux Technician can move** (Milestone Four, `NEXT-PHASE-ROADMAP.md` §5.3; the owner, 2026-11-07: "Sewer machinery" first; on the branch; commit named in git log).
   - **Main:** build `2026-11-07a` went to main at the owner's word ("Push to main").
   - A new kind, `pump`: a squat dark-steel pump housing with a motor drum and a glowing green gauge. Low cover: it stops shots, and sight passes over it. FLUX MOVE moves it up to 2 tiles and turns it.
