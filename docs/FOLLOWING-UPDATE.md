@@ -171,8 +171,8 @@ Each part is its own commit, with its own tests and a full green run before the 
 - then the rest in batches the owner approves:
   - the other bands: **baked in `2026-11-07k`** (SPORE, IONIC, CHILL, PHASE, LODESTONE: one family on KINDLING BAND's ring and gem, design/cards/models/_band.js); **approved** 2026-11-07 ("Approve all five"), live since `2026-11-07l`;
   - the sigils: **baked in `2026-11-07l`** (HEARTH, MIASMA, VOLTAIC, GLACIAL, WARP, KEYSTONE: one medallion with the element's glowing rune, design/cards/models/_sigil.js); **approved** 2026-11-07 ("Approve all six"), live since `2026-11-07m`;
-  - the crowns: **baked in `2026-11-07m`** (INFERNO, PESTILENCE, TEMPEST, WINTER, ECLIPSE, MONOLITH: one circlet with eight points and a big front gem, design/cards/models/_crown.js), on preview until approved;
-  - the Brawler's SPUR, TALON and FANG.
+  - the crowns: **baked in `2026-11-07m`** (INFERNO, PESTILENCE, TEMPEST, WINTER, ECLIPSE, MONOLITH: one circlet with eight points and a big front gem, design/cards/models/_crown.js); **approved** 2026-11-07 ("Approve all six"), live since `2026-11-07n`;
+  - the Brawler's SPUR, TALON and FANG: **baked in `2026-11-07n`** (PRESSURE SPUR, FAULTLINE TALON, RUPTURE FANG: each rising out of one knuckle-duster, design/cards/models/_knuckle.js), on preview until approved.
 
 **Then:** each approved batch goes in for everyone (`CARD_ITEMS.approved`).
 

@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **n · The six crowns live; the Brawler's three for approval** (the owner, 2026-11-07: "Approve all six"; m "Push to main"; on the branch; commit named in git log).
+  - INFERNO, PESTILENCE, TEMPEST, WINTER, ECLIPSE and MONOLITH CROWN show for everyone.
+  - The Brawler's opportunity cards, one family (design/cards/models/_knuckle.js): a steel knuckle-duster with the Brawler's red-orange along its striking bar, the weapon rising out of it. PRESSURE SPUR (a blunt spur on a piston, a pressure gauge), FAULTLINE TALON (three hooked talons split by glowing fault lines), RUPTURE FANG (a great ivory fang cracked open with light, two lesser fangs). Proposed looks, on preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **m · The six sigils live; the six crowns for approval** (the owner, 2026-11-07: "Approve all six"; l "Push to main"; on the branch; commit named in git log).
   - HEARTH, MIASMA, VOLTAIC, GLACIAL, WARP and KEYSTONE SIGIL show for everyone.
   - The crowns, one family (design/cards/models/_crown.js): a circlet with a big front gem and eight points, the one over the gem tallest. INFERNO (gold spikes with ember orbs and flames), PESTILENCE (bone thorns with green blisters, goo), TEMPEST (steel lightning bolts, arcs between their tips), WINTER (ice crystals), ECLIPSE (obsidian blades, a black disc with a violet corona over the gem), MONOLITH (standing stones with teal veins). Proposed looks, on preview only (`?cardart=items`).
