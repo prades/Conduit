@@ -752,6 +752,7 @@ function updateElementEffects() {
                 }
             }
         }
+        if (e.type === "rotdecoy") { const d = e.on; if (!d || d.dead) e.life = 0; }   // (a ROTTEN DECOY: drawn while it stands)
         if (e.type === "wraithfire") { const w = e.on; if (!w || w.dead || !w._wraith) e.life = 0; else { e.x = w.x; e.y = w.y; } }
         if (e.type === "jellyshield") { const w = e.on; if (!w || w.dead || !w.jellyShield) e.life = 0; else { e.x = w.x; e.y = w.y; } }
         if (e.type === "toxicnet") {
@@ -1229,6 +1230,22 @@ function drawElementEffects() {
                 ctx.globalAlpha = 0.7 * k; ctx.strokeStyle = "#fff27a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
                 ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1;
                 for (let i = 0; i < 3; i++) { const an = frame * 0.09 + i * 2.1, j = (frame * 7 + i * 13) % 5; ctx.beginPath(); ctx.moveTo(px + Math.cos(an) * rx * 0.3, cy + Math.sin(an) * ry * 0.3); ctx.lineTo(px + Math.cos(an + 0.3) * rx * 0.6 + j, cy + Math.sin(an + 0.3) * ry * 0.6 - j); ctx.lineTo(px + Math.cos(an) * rx * 0.95, cy + Math.sin(an) * ry * 0.95); ctx.stroke(); }
+                break;
+            }
+            // ROTTEN DECOY (the Rotshard's move): a black crystal formation, the Rotshard's height, in a constant hazy green mist; its health as a thin bar
+            case "rotdecoy": {
+                const d = e.on, k = Math.min(1, (e.maxLife - e.life) / 8), cy = py + TILE_H * 0.5, sway = Math.sin(frame * 0.05) * 2;
+                ctx.globalAlpha = 0.22 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px + sway, cy - 14, 30, 22, 0, 0, Math.PI * 2); ctx.fill();   // the mist
+                ctx.globalAlpha = 0.14 * k; ctx.beginPath(); ctx.ellipse(px - sway, cy - 4, DECOY_MIST * 1.4142 * TILE_W, DECOY_MIST * 1.4142 * TILE_H, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = k; for (const [ox, h, w] of [[-7, 30, 6], [0, 44, 8], [8, 34, 6], [-2, 22, 5]]) { ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.moveTo(px + ox - w, cy); ctx.lineTo(px + ox, cy - h); ctx.lineTo(px + ox + w, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "rgba(125,255,74,0.6)"; ctx.lineWidth = 1; ctx.stroke(); }
+                if (d && d.maxHealth > 0) { const fr = Math.max(0, d.health / d.maxHealth); ctx.globalAlpha = 0.9 * k; ctx.fillStyle = "#0b0f0c"; ctx.fillRect(px - 14, cy - 52, 28, 3); ctx.fillStyle = "#7dff4a"; ctx.fillRect(px - 14, cy - 52, 28 * fr, 3); }
+                break;
+            }
+            // ...broken: its black shards scattered on the floor, still in the green haze, fading
+            case "rotshards": {
+                const k = e.life / e.maxLife, cy = py + TILE_H * 0.5;
+                ctx.globalAlpha = 0.2 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px, cy - 4, 26, 12, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = k; ctx.fillStyle = "#121418"; for (let i = 0; i < 6; i++) { const an = i * 1.05 + e.x, r = 8 + (i % 3) * 5, sx = px + Math.cos(an) * r, sy = cy + Math.sin(an) * r * 0.5; ctx.beginPath(); ctx.moveTo(sx - 3, sy); ctx.lineTo(sx, sy - 7); ctx.lineTo(sx + 3, sy); ctx.closePath(); ctx.fill(); }
                 break;
             }
             // WRAITHFIRE (a card attack: cardAttackTry): the Ember Hood's ghost, a tall wavering flame of pale fire round it

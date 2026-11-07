@@ -539,6 +539,18 @@ function measure(w, h) {
         same(r.wf.join(), 'true,25,true,1140', 'WRAITHFIRE: 25% of its HP given, a ghost no one can hit; 4 s and then 15 s to wait');
         same(r.mid.join(), 'true,true', 'a touch hurt the enemy, spending part of its power'); same(r.end.join(), 'true,true,true,true', 'at the end: no ghost, targetable, back where it began; the rest exploded');
     });
+    check('ROTTEN DECOY (the owner, 2026-11-07: "Short lure", "A second move to pick"): the Rotshard\'s second move sets a black crystal decoy 2 tiles from the nearest enemy, toward it; enemies within 6 tiles go for it (a boss does not); its mist poisons within 1.5 tiles; it lasts 6 s (half the Rotshard\'s max HP) and is ready again every 14 s', () => {
+        const r = J(`(function(){ const o = {}; __clear(); rotDecoys = [];
+            const rs = __fol('toxic', 'sniper', 'rotshard'); rs.move = 'rotten_decoy'; const t = __foe(rs.x + 5, rs.y), far = __foe(rs.x + 14, rs.y);
+            o.moves = EVOLUTIONS.rotshard.moves.join(); __fire(rs); const d = rotDecoys[0];
+            o.set = [rotDecoys.length, !!d && Math.round(Math.hypot(d.x - t.x, d.y - t.y)), !!d && d.x < t.x, !!d && Math.round(d.maxHealth / rs.maxHealth * 10) / 10, rs._sigCd];
+            o.lure = [predatorPickPrey(t) === d, predatorPickPrey(far) === d]; t.bossName = 'TEST'; o.boss = predatorPickPrey(t) === d; t.bossName = undefined;
+            const m = __foe(d.x + 0.5, d.y); for (let i = 0; i < 31; i++) { frame++; evolutionTick(); } o.mist = m.toxicWeakened > 0;
+            for (let i = 0; i < 340; i++) { frame++; evolutionTick(); } o.gone = rotDecoys.length; o.info = !!MOVE_INFO['ROTTEN DECOY'];
+            return o; })()`);
+        same(r.moves, 'corrode_shot,rotten_decoy', 'its two moves'); same(r.set.join(), '1,2,true,0.5,840', 'set 2 tiles from the enemy toward the Rotshard; half its max HP; 14 s to the next');
+        same(r.lure.join(), 'true,false', 'the near enemy goes for it, the far one not'); same(r.boss, false, 'a boss goes for it'); same(r.mist, true, 'the mist poisons'); same(r.gone, 0, 'gone after 6 s'); same(r.info, true, 'INFO has its rows');
+    });
     check('the move table has one row a move, no id twice, every form\'s moves in it; the new ids are pinball and static_vortex; static_rush keeps its id under its new name', () => {
         const r = J(`(function(){ const ids = Object.keys(MOVES), names = ids.map(k => MOVES[k].name), missing = []; for (const k in EVOLUTIONS) for (const id of (EVOLUTIONS[k].moves || [])) if (!MOVES[id]) missing.push(k + ':' + id);
             return { ids, names, dupN: names.length - new Set(names).size, idOk: ids.every(k => MOVES[k].id === k), missing }; })()`);

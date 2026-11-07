@@ -268,7 +268,7 @@ const EVOLUTIONS = {
     mimic:  { id: "mimic",  name: "RIFT MIMIC",   element: "flux",     role: "brawler", move: "GRAVITY SLAM", sheet: "img/evo/mimic.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99], noGlow: true, color: "#bb66ff", ground: "img/evo/mimic_g.png" },
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
-    rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", move: "CORRODE SHOT", sheet: "img/evo/rotshard.png",
+    rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", move: "CORRODE SHOT", moves: ["corrode_shot", "rotten_decoy"], sheet: "img/evo/rotshard.png",
               cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
 };
 // Which egg grows into which machine.
@@ -297,7 +297,44 @@ function evoCheck(f) {
     return true;
 }
 // Once a step, from render(): evolve anyone due, and run the signature moves.
+// ROTTEN DECOY (the Rotshard's second move, picked on its INFO; the owner, 2026-11-07: "Short lure", "A second move to pick"; docs/NEXT-PHASE-ROADMAP.md §12.3 item 11): a black crystal copy in a constant green
+// mist, set on the floor DECOY_SET tiles from the nearest enemy the Rotshard can see (toward the Rotshard). For DECOY_LIFE frames, or until broken (its HP is DECOY_HP of the Rotshard's maximum), every enemy
+// within DECOY_DRAW tiles goes for it (js/predator.js predatorPickPrey asks decoyLure); a boss does not. Its mist poisons the enemies within DECOY_MIST tiles. Ready again DECOY_EVERY frames after it is set.
+// The decoy is not an actor: it lives in rotDecoys, takes hits through applyDamage, and is drawn as an element effect; broken, its black shards keep the green haze a moment.
+const DECOY_LIFE = 360, DECOY_HP = 0.5, DECOY_DRAW = 6, DECOY_MIST = 1.5, DECOY_EVERY = 840, DECOY_SET = 2, DECOY_POISON = 60, DECOY_TICK = 30;
+let rotDecoys = [];
+function rottenDecoy(f) {
+    const foes = _evoFoesSeen(f.x, f.y, ROT_RANGE);
+    if (!foes.length) return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const t = foes[0], dx = f.x - t.x, dy = f.y - t.y, L = Math.hypot(dx, dy) || 1, k = Math.min(DECOY_SET, L * 0.5);
+    let x = t.x + dx / L * k, y = t.y + dy / L * k;
+    if (typeof facilityStandOk === "function" && !facilityStandOk(x, y)) { const c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(x, y) : null; if (c) { x = c[0]; y = c[1]; } }
+    const f0 = typeof frame !== "undefined" ? frame : 0, hp = Math.max(1, (f.maxHealth || 20) * DECOY_HP);
+    const d = { isDecoy: true, team: "green", x, y, health: hp, maxHealth: hp, by: f, until: f0 + DECOY_LIFE, dead: false, name: "ROTTEN DECOY" };
+    rotDecoys.push(d);
+    if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "rotdecoy", x, y, on: d, life: DECOY_LIFE, maxLife: DECOY_LIFE, element: "toxic" });
+    f._sigAt = f0; f._sigCd = DECOY_EVERY;
+    return true;
+}
+function decoyLure(p) {   // the decoy a creature goes for: the nearest standing one within DECOY_DRAW (a boss: none)
+    if (!rotDecoys.length || !p || p.bossId || p.bossName) return null;
+    let best = null, bd = DECOY_DRAW;
+    for (const d of rotDecoys) { if (d.dead) continue; const dd = Math.hypot(d.x - p.x, d.y - p.y); if (dd <= bd) { bd = dd; best = d; } }
+    return best;
+}
+function rotDecoyTick() {   // (each frame, from evolutionTick): time out, the mist, broken
+    if (!rotDecoys.length) return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const d of rotDecoys) {
+        if (!d.dead && f0 >= d.until) d.dead = true;
+        if (d.dead) { if (!d._gone) { d._gone = true; if (typeof spawnElementEffect === "function") spawnElementEffect({ type: "rotshards", x: d.x, y: d.y, life: 45, maxLife: 45, element: "toxic" }); } continue; }
+        if ((f0 - d.until) % DECOY_TICK === 0 && typeof actors !== "undefined") for (const a of actors) if (a && !a.dead && isHostileTarget(a) && Math.hypot(a.x - d.x, a.y - d.y) <= DECOY_MIST && typeof applyWeaken === "function") applyWeaken(a, DECOY_POISON);
+    }
+    rotDecoys = rotDecoys.filter(d => !d._gone);
+}
 function evolutionTick() {
+    rotDecoyTick();
     if (typeof followers === "undefined") return;
     const f0 = typeof frame !== "undefined" ? frame : 0;
     for (const f of followers) {

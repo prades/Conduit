@@ -1885,3 +1885,17 @@ The owner: too much time goes into testing and side checks. From here on, only t
 ### Readings
 - The widened section is a 6×4-tile pump room off the north walkway; pumps and valves are drawn in code until a baked sprite is approved.
 
+## DECISION: Build 2026-11-07d to main; Milestone Five starts with ROTTEN DECOY
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Build `2026-11-07d` and the seeded sewer quest tests on main. ROTTEN DECOY: implemented and tested in build `2026-11-07e`, on the branch; not playtested.
+- **Related feature/docs:** `NEXT-PHASE-ROADMAP.md` §6, §12.3 item 11; `OPEN-QUESTIONS.md` (the decoy's Sewers role); `CHANGELOG.md` (2026-11-07 e)
+
+### Decision
+1. "Push to main" (d; the test fix). "Fix them next": the Queen tests' randomness is seeded.
+2. Next: "Toxic Queen (Milestone 5)", then "ROTTEN DECOY".
+3. "Short lure" (6 s or until broken, half the Rotshard's max HP, draws within 6 tiles, mist poisons within 1.5 tiles, every 14 s) and "A second move to pick".
+
+### Readings
+- Bosses ignore it; it is set 2 tiles from the nearest enemy toward the Rotshard; its mist poison is refreshed each 0.5 s.
+

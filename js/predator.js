@@ -22,6 +22,7 @@ function predatorPreyShare(a) { return typeof player !== "undefined" && a === pl
 // the best prey near it, or null (see COMBAT.prey)
 function predatorPickPrey(p) {
     if ((p.bossAsleep || p.bossCalm) && !p.provoked) return null;   // (a boss asleep or calm in its lair picks no prey: a hit provokes it, js/bosses.js)
+    { const d = typeof decoyLure === "function" ? decoyLure(p) : null; if (d) return d; }   // a ROTTEN DECOY within reach draws it (js/evolution.js; not a boss)
     const P = COMBAT.prey, calm = !predatorAlarm(p) && !p.provoked, seen = [];
     for (const a of _predNear(p.x, Math.max(P.sense, P.revenge))) if (a !== p && a.team === "green") seen.push(a);
     if (typeof player !== "undefined") seen.push(player);

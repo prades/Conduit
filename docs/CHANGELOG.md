@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **e · ROTTEN DECOY** (Milestone Five; the owner, 2026-11-07: "ROTTEN DECOY", "Short lure", "A second move to pick"; on the branch; commit named in git log).
+  - **Main:** build `2026-11-07d` and the seeded Queen tests went to main at the owner's word ("Push to main").
+  - The Rotshard's second move, picked on its INFO (CORRODE SHOT stays its default). A black crystal decoy in a constant green mist is set 2 tiles from the nearest enemy it can see, toward the Rotshard **[reading: where]**. For 6 s, or until broken (half the Rotshard's max HP), every enemy within 6 tiles goes for it; a boss does not **[reading]**. Its mist poisons enemies within 1.5 tiles (refreshed each 0.5 s **[reading]**). Ready again 14 s after it is set. Broken or timed out, its black shards keep the haze a moment.
+  - In the Sewers it can pull the brood off you during the install.
+  - Tests: followercombat (the decoy, new), moves, evolution, unitinfo, prey, bible. Screenshot checked. No full run. Not playtested.
+
 - **d · The pump room** (the owner, 2026-11-07: "Machinery elsewhere", then "Widen a section"; on the branch; commit named in git log).
   - **Main:** build `2026-11-07c` went to main at the owner's word ("Push to main").
   - A chamber opened off the north walkway, between the west nook and the gated stub (x 440 to 560, y 780 to 860: 6 by 4 tiles) **[reading: where]**. The pipe, moss and wall light that hung on that stretch of wall moved to its back wall. In it: a pump against the back wall and two valves, all movable by FLUX MOVE.
