@@ -103,12 +103,15 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.wound, true, 'wound up'); same(r.threw, null, 'drawing threw');
         const src = rd('js/combat.js'); ok(/function drawBiteTelegraphs/.test(src) && /"BITE"/.test(src) && /biteTarget/.test(src), 'the telegraph'); ok(/drawBiteTelegraphs\(\)/.test(rd('js/game.js')), 'called by the frame');
     });
-    check('a follower WINDING UP its chosen alternate shows it: the ring in the allies\' teal over it, filling as the wind-up runs, with the move\'s name (build 2026-11-07ff); none when it is not winding up', () => {
-        const r = J(`(function(){ __clear(); const f = __follower('fire', 'brawler', 5); player.x = player.visualX = f.x; player.y = player.visualY = f.y; const seen = [], arcs = [], ct = cachedText, arc = ctx.arc;
-            cachedText = function (t, font, col) { seen.push(t + '|' + col); }; ctx.arc = function (x, y, rr) { arcs.push(Math.round(rr)); return arc.apply(this, arguments); };
-            const o = {}; try { f.alt = 'quill_burst'; f._altWindMax = 60; f._altWind = 30; drawBiteTelegraphs(); o.mid = seen.slice(); o.arcs = arcs.slice(); seen.length = 0; f._altWind = 0; drawBiteTelegraphs(); o.after = seen.slice(); }
-            finally { cachedText = ct; ctx.arc = arc; f.alt = null; f._altWind = 0; } return o; })()`);
-        same(JSON.stringify(r.mid), JSON.stringify(['QUILL BURST|#19e6c1']), 'the name over it'); ok(r.arcs.length >= 2 && r.arcs[0] === 18 && r.arcs[1] === 9, 'the ring (13 + 9 × half) and its fill (half of it): ' + JSON.stringify(r.arcs)); same(JSON.stringify(r.after), '[]', 'drawn when not winding up');
+    check('a follower WINDING UP its chosen alternate shows it (the owner: "Should rumble or minimal magical aura"): its body rumbles where it stands and a faint glow of its element lies under it, both growing as the wind-up runs; neither when it is not winding up; no ring or name over it (build 2026-11-07gg)', () => {
+        const r = J(`(function(){ __clear(); const f = __follower('fire', 'brawler', 5); const col = ELEMENTS.find(e => e.id === 'fire').color.toLowerCase(), log = [], el = ctx.ellipse, tr = ctx.translate;
+            ctx.ellipse = function () { log.push('e:' + String(ctx.fillStyle).toLowerCase()); return el.apply(this, arguments); }; ctx.translate = function (x, y) { log.push('t'); return tr.apply(this, arguments); };
+            const o = {}; const n = (a, k) => a.filter(q => q === k).length;
+            try { f.alt = 'quill_burst'; f._altWindMax = 60; f._altWind = 0; drawNPC(f, 400, 300); const base = log.slice(); log.length = 0; f._altWind = 30; drawNPC(f, 400, 300); const mid = log.slice(); log.length = 0;
+                o.aura = n(mid, 'e:' + col) - n(base, 'e:' + col); o.shake = n(mid, 't') - n(base, 't'); let threw = null; try { f._altWind = 30; drawBiteTelegraphs(); } catch (e) { threw = String(e); } o.threw = threw; }
+            finally { ctx.ellipse = el; ctx.translate = tr; f.alt = null; f._altWind = 0; } return o; })()`);
+        same(r.aura, 2, 'the glow under it (two soft ellipses of its element)'); ok(r.shake >= 1, 'the body is not moved (the rumble): ' + r.shake); same(r.threw, null, 'the telegraphs threw with one winding up');
+        ok(!/MOVES\[f\.alt\]/.test(rd('js/combat.js')), 'the ring with the move\'s name is gone from the telegraphs');
     });
 
     group('THE FLOOR UNDER A LEAP AND A SLAM, AND THE WAY TO YOU');

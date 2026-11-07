@@ -2058,12 +2058,12 @@ The owner: too much time goes into testing and side checks. From here on, only t
 ### Supersedes / superseded by
 Supersedes "a signature move fires by itself on its own cooldown, beside the normal attack" (`PLAYER-CLASSES.md`, build `2026-11-07i`'s SIGNATURE MOVE setter).
 
-## DECISION: The wind-up cue over a follower
+## DECISION: The wind-up cue: a rumble and a faint aura
 
 - **Date:** 2026-11-07
-- **Status:** Approved (the cue); the look is the agent's, provisional. Implemented and tested in build `2026-11-07gg`, on the branch; not playtested.
+- **Status:** Approved (the owner's words); the sizes and strengths are the agent's, provisional. Implemented and tested in build `2026-11-07gg`, on the branch; not playtested.
 - **Related feature/docs:** `COMBAT.md` §7.4; `CHANGELOG.md` (2026-11-07 gg)
 
 ### Decision
 1. Build `2026-11-07ff`: "Push to main". Next: "Wind-up cue in the world".
-2. Built from the existing bite telegraph: a teal ring over the follower, above its stance tag, filling as the wind-up runs, with the move's name. No chevron (the move aims when it fires).
+2. A first draft drew the bite's telegraph in teal over the follower with the move's name. The owner: "Should rumble or minimal magical aura". Built as both, minimal: the body rumbles where it stands and a faint glow of its element lies round it, growing as the wind-up runs; nothing over its head.

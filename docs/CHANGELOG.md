@@ -4,9 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
-- **gg · A follower winding up its alternate shows it** (the owner, 2026-11-07, on build ff: "Wind-up cue in the world"; ff "Push to main"). Implemented and tested on the branch; seen in a screenshot; not playtested.
-  - While a follower stands rooted winding up its chosen alternate, a ring in the allies' teal hangs over it, above its stance tag, filling as the wind-up runs, with the move's name over it (QUILL BURST, HEXFIRE...). It is the creatures' bite telegraph (`drawBiteTelegraphs`, js/combat.js) in the allies' colour, without the chevron. The look is the agent's, from the existing telegraph (provisional).
-  - Tests: combat (a new check: the ring and the name while winding up, nothing after).
+- **gg · A follower winding up its alternate rumbles, with a faint aura** (the owner, 2026-11-07, on build ff: "Wind-up cue in the world"; then, on a first draft with a ring and the move's name over it: "Should rumble or minimal magical aura"; ff "Push to main"). Implemented and tested on the branch; seen in screenshots; not playtested.
+  - While a follower stands rooted winding up its chosen alternate, its body rumbles where it stands and a faint glow of its element lies on the floor round it, both growing as the wind-up runs (js/draw.js `drawNPC`). Nothing over its head. The sizes and strengths are the agent's (provisional).
+  - The first draft (the bite's ring in teal over it with the move's name) is gone.
+  - Tests: combat (a new check: the glow and the rumble while winding up, nothing after, no ring).
 
 - **ff · The alternate attack is a chosen mode** (the owner, 2026-11-07: "the alternate attacks must be visitable from the index and the pop out menu on the hood [...] they're locked into that ability or that attack until switched out of it and they can't use any of their other attacks [...] whenever the effect ends is when another wind up occurs, and when the wind up is occurring the [...] follower cannot move"; then "Yes, exactly" (no alternate fires on its own) and "Stays on the alternate" (attack orders keep it); ee "Push to main"). Implemented and tested on the branch; not playtested.
   - An evolved follower fights with its **NORMAL ATTACK** until one of its alternates is chosen. A chosen alternate is its **only** attack (no plain hit, no element move, no Mage's shot) until it is switched back to NORMAL ATTACK; attack orders keep it on the alternate.
