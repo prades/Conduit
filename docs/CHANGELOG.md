@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **o · The Brawler's three skipped; CHITIN SCALE, the first Series 2 item, for approval** (the owner, 2026-11-07: "No, just skip these items"; n "Push to main"; next "Series 2 items"; on the branch; commit named in git log).
+  - PRESSURE SPUR, FAULTLINE TALON and RUPTURE FANG get no item; they keep the cube. Their models and pictures are removed.
+  - CHITIN SCALE (Crustacean, Unrefined), from its drafted look in SERIES-2.md: a curved shell plate with raised ridges, coral with darker bands in the grooves, a row of blunt spines along its top, a rolled lip. One piece first; on preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **n · The six crowns live; the Brawler's three for approval** (the owner, 2026-11-07: "Approve all six"; m "Push to main"; on the branch; commit named in git log).
   - INFERNO, PESTILENCE, TEMPEST, WINTER, ECLIPSE and MONOLITH CROWN show for everyone.
   - The Brawler's opportunity cards, one family (design/cards/models/_knuckle.js): a steel knuckle-duster with the Brawler's red-orange along its striking bar, the weapon rising out of it. PRESSURE SPUR (a blunt spur on a piston, a pressure gauge), FAULTLINE TALON (three hooked talons split by glowing fault lines), RUPTURE FANG (a great ivory fang cracked open with light, two lesser fangs). Proposed looks, on preview only (`?cardart=items`).

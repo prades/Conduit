@@ -30,7 +30,7 @@ The list came from the owner's answers of 2026-11-01:
 
 All 32 built cards are rows of one table, js/cards.js `EQUIP_SERIES2`, so tuning stays one edit. **Every number is PICKED by us (a first setting); nobody has played Series 2 yet.**
 
-Each card is an **item** with its own 3D look (the "3D look" column). The looks will be modelled like EMBER PLATING (design/cards), one piece at a time, once its look is approved (docs/ART-PROCESS.md). No Series 2 item is modelled yet: its cards show the crystal (species) or the cube (class).
+Each card is an **item** with its own 3D look (the "3D look" column). The looks will be modelled like EMBER PLATING (design/cards), one piece at a time, once its look is approved (docs/ART-PROCESS.md). The first, CHITIN SCALE, is baked (build `2026-11-07o`, design/cards/models/chitin_scale.js) and shows only on the preview (`?cardart=items`) until approved; the rest show the crystal (species) or the cube (class).
 
 ## The pack (BUILT: js/cards.js `EQUIP_PACK2`)
 

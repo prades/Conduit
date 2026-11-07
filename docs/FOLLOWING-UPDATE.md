@@ -172,11 +172,11 @@ Each part is its own commit, with its own tests and a full green run before the 
   - the other bands: **baked in `2026-11-07k`** (SPORE, IONIC, CHILL, PHASE, LODESTONE: one family on KINDLING BAND's ring and gem, design/cards/models/_band.js); **approved** 2026-11-07 ("Approve all five"), live since `2026-11-07l`;
   - the sigils: **baked in `2026-11-07l`** (HEARTH, MIASMA, VOLTAIC, GLACIAL, WARP, KEYSTONE: one medallion with the element's glowing rune, design/cards/models/_sigil.js); **approved** 2026-11-07 ("Approve all six"), live since `2026-11-07m`;
   - the crowns: **baked in `2026-11-07m`** (INFERNO, PESTILENCE, TEMPEST, WINTER, ECLIPSE, MONOLITH: one circlet with eight points and a big front gem, design/cards/models/_crown.js); **approved** 2026-11-07 ("Approve all six"), live since `2026-11-07n`;
-  - the Brawler's SPUR, TALON and FANG: **baked in `2026-11-07n`** (PRESSURE SPUR, FAULTLINE TALON, RUPTURE FANG: each rising out of one knuckle-duster, design/cards/models/_knuckle.js), on preview until approved.
+  - the Brawler's SPUR, TALON and FANG: **skipped** (the owner, 2026-11-07, shown a knuckle-duster set: "No, just skip these items"). They keep the cube; the models were removed in `2026-11-07o`.
 
 **Then:** each approved batch goes in for everyone (`CARD_ITEMS.approved`).
 
-- **Later, the same way:** Series 2's 24 species and Technician items. Their one-line looks are in `SERIES-2.md`, not yet approved.
+- **Later, the same way:** Series 2's 24 species and Technician items. Their one-line looks are in `SERIES-2.md`, not yet approved. **Started** 2026-11-07 (the owner: "Series 2 items"): the first piece, CHITIN SCALE, baked in `2026-11-07o`, on preview.
 - **Files:** design/cards (models, the bake), img/cards, js/cardart.js `CARD_ITEMS`.
 - **Tests:** cardart (each approved item shows; a baked one not yet approved shows only on the preview).
 - **Risks:** none to play. Each batch is an art review.

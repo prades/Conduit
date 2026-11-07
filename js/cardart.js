@@ -601,7 +601,8 @@ const CARD_ITEMS = {
           "spore_band", "ionic_band", "chill_band", "phase_band", "lodestone_band",   // the other bands (build 2026-11-07k), the same family: approved 2026-11-07 ("Approve all five")
           "hearth_sigil", "miasma_sigil", "voltaic_sigil", "glacial_sigil", "warp_sigil", "keystone_sigil",   // the sigils (build 2026-11-07l, design/cards/models/_sigil.js): approved 2026-11-07 ("Approve all six")
           "inferno_crown", "pestilence_crown", "tempest_crown", "winter_crown", "eclipse_crown", "monolith_crown",   // the crowns (build 2026-11-07m, design/cards/models/_crown.js): approved 2026-11-07 ("Approve all six")
-          "pressure_spur", "faultline_talon", "rupture_fang"],   // the Brawler's three (build 2026-11-07n, design/cards/models/_knuckle.js): on preview until approved
+          // (the Brawler's PRESSURE SPUR, FAULTLINE TALON and RUPTURE FANG have no item: the owner, 2026-11-07, "No, just skip these items"; they keep the cube)
+          "chitin_scale"],   // the first Series 2 item (build 2026-11-07o; docs/SERIES-2.md, one piece first): on preview until approved
     // approved: all eighteen of Pack 1. EMBER PLATING 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen 2026-11-01 ("Yes push the card art for everyone"), live since build 2026-11-01n
     approved: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",
                "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse",

@@ -1931,3 +1931,14 @@ The owner: too much time goes into testing and side checks. From here on, only t
 2. Builds i (SIGNATURE MOVE for a group) and j: "Push to main".
 3. The move wind-ups: the owner chose to set them; no numbers have come through yet.
 
+## DECISION: The class-card items: bands, sigils and crowns approved; the Brawler's skipped; Series 2 next
+
+- **Date:** 2026-11-07
+- **Status:** Approved. Bands live in `2026-11-07l`, sigils in `m`, crowns in `n`; main at `2026-11-07n`.
+- **Related feature/docs:** `FOLLOWING-UPDATE.md` Part 3; `SERIES-2.md`; `CHANGELOG.md` (2026-11-07 k–o)
+
+### Decision
+1. The five other bands: "Approve all five". The six sigils: "Approve all six". The six crowns: "Approve all six".
+2. The Brawler's PRESSURE SPUR, FAULTLINE TALON and RUPTURE FANG: "No, just skip these items". They keep the cube.
+3. Next: "Series 2 items", one piece first (CHITIN SCALE).
+
