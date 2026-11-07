@@ -608,7 +608,7 @@ const CARD_ITEMS = {
           "raw_shard", "focusing_prism", "attuned_core", "storm_heart",   // the Elemental's four (build 2026-11-07r, design/cards/models/_elemental.js): approved 2026-11-07 ("Approve all four")
           "servo_oil", "gyro_stabilizer", "hunter_optics", "overclock_chip",   // the Drone's four (build 2026-11-07s, design/cards/models/_drone.js): approved 2026-11-07 ("Approve all four")
           "gel_membrane", "stinger_tendril", "nematocyst", "amorphous_body",   // the Jelly's four (build 2026-11-07t, design/cards/models/_jelly.js): approved 2026-11-07 ("Approve all four")
-          "spare_parts_kit", "capacitor_bank", "field_multitool", "double_cell"],   // the Technician's four (build 2026-11-07u, design/cards/models/_tech.js): on preview until approved
+          "spare_parts_kit", "capacitor_bank", "field_multitool", "double_cell"],   // the Technician's four (build 2026-11-07u, design/cards/models/_tech.js): approved 2026-11-07 ("Approve all four")
     // approved: all eighteen of Pack 1. EMBER PLATING 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen 2026-11-01 ("Yes push the card art for everyone"), live since build 2026-11-01n
     approved: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",
                "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse",
@@ -621,7 +621,8 @@ const CARD_ITEMS = {
                "mantle_gel", "nacre_pearl", "siphon_slime", "regrowth_sac",   // the Mollusk's four: "Approve all four" (live since build 2026-11-07r)
                "raw_shard", "focusing_prism", "attuned_core", "storm_heart",   // the Elemental's four: "Approve all four" (live since build 2026-11-07s)
                "servo_oil", "gyro_stabilizer", "hunter_optics", "overclock_chip",   // the Drone's four: "Approve all four" (live since build 2026-11-07t)
-               "gel_membrane", "stinger_tendril", "nematocyst", "amorphous_body"],   // the Jelly's four: "Approve all four" (live since build 2026-11-07u)
+               "gel_membrane", "stinger_tendril", "nematocyst", "amorphous_body",   // the Jelly's four: "Approve all four" (live since build 2026-11-07u)
+               "spare_parts_kit", "capacitor_bank", "field_multitool", "double_cell"],   // the Technician's four: "Approve all four" (live since build 2026-11-07v). Every built card has its item now, bar the Brawler's three (skipped)
 };
 function cardArtItemsPreview() { try { return typeof location !== "undefined" && /[?&]cardart=items\b/.test(location.search || ""); } catch (e) { return false; } }
 // the picture of a card's item, or "" (none baked, or not approved and no preview)

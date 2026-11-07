@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **v · The Technician's four live: every built card has its item** (the owner, 2026-11-07: "Approve all four"; u "Push to main"; next "More own Ultimates"; on the branch; commit named in git log).
+  - SPARE PARTS KIT, CAPACITOR BANK, FIELD MULTITOOL and DOUBLE CELL show for everyone. Every built card now shows its own item, bar the Brawler's three (skipped by the owner, they keep the cube). Nothing waits on the preview.
+  - Tests: cardart. No full run.
+
 - **u · The Jelly's four live; the Technician's four for approval** (the owner, 2026-11-07: "Approve all four"; t "Push to main"; on the branch; commit named in git log).
   - GEL MEMBRANE, STINGER TENDRIL, NEMATOCYST and AMORPHOUS BODY show for everyone.
   - The Technician's four, the last of Series 2's built cards, from their drafted looks in workshop yellow and gunmetal with the Technician's ice-blue (design/cards/models/_tech.js): SPARE PARTS KIT (an open tool case of bolts, nuts, a gear, a spring, a lit fuse, a wrench), CAPACITOR BANK (six capacitors on a block with a charge gauge), FIELD MULTITOOL (a folding multitool, its tools fanned, lit tips), DOUBLE CELL (two power cells with glowing charge in a steel clip). On preview only (`?cardart=items`).
