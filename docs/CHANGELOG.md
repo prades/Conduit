@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **q · The Crustacean's three live; the Mollusk's four for approval** (the owner, 2026-11-07: "Approve all three"; p "Push to main"; on the branch; commit named in git log).
+  - BARNACLE BRACER, PINCER CLAMP and TIDE SHELL show for everyone.
+  - The Mollusk's four, from their drafted looks in the species' nacre (design/cards/models/_mollusk.js): MANTLE GEL (a stoppered glass jar of iridescent gel), NACRE PEARL (a big pearl held by four steel claws on a stem), SIPHON SLIME (a tilted vial of glowing sea-green slime running over its lip), REGROWTH SAC (a translucent pink sac with red veins and a glowing heart). On preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **p · CHITIN SCALE live; the Crustacean's other three for approval** (the owner, 2026-11-07: "Approve it"; o "Push to main"; on the branch; commit named in git log).
   - CHITIN SCALE shows for everyone.
   - From their drafted looks, in CHITIN SCALE's colours (design/cards/models/_crust.js): BARNACLE BRACER (a banded forearm guard crusted with barnacles, a leather strap), PINCER CLAMP (a crab's claw half open on a steel pin, a piston, teeth), TIDE SHELL (a banded conch wound with a glowing sea-green seam, knobs, a pearl-pink lip). On preview only (`?cardart=items`).
