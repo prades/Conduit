@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **m · The six sigils live; the six crowns for approval** (the owner, 2026-11-07: "Approve all six"; l "Push to main"; on the branch; commit named in git log).
+  - HEARTH, MIASMA, VOLTAIC, GLACIAL, WARP and KEYSTONE SIGIL show for everyone.
+  - The crowns, one family (design/cards/models/_crown.js): a circlet with a big front gem and eight points, the one over the gem tallest. INFERNO (gold spikes with ember orbs and flames), PESTILENCE (bone thorns with green blisters, goo), TEMPEST (steel lightning bolts, arcs between their tips), WINTER (ice crystals), ECLIPSE (obsidian blades, a black disc with a violet corona over the gem), MONOLITH (standing stones with teal veins). Proposed looks, on preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **l · The five bands live; the six sigils for approval** (the owner, 2026-11-07: "Approve all five"; k "Push to main"; on the branch; commit named in git log).
   - SPORE, IONIC, CHILL, PHASE and LODESTONE BAND show for everyone.
   - The sigils, one family (design/cards/models/_sigil.js): an upright medallion with a heavy rim, the element's rune glowing in its middle, a gem at the top where it hangs from a chain. HEARTH (flame rune, flames off the rim), MIASMA (three droplets, goo dripping), VOLTAIC (bolt, arcs between terminals), GLACIAL (snowflake, ice crystals), WARP (spiral, ghost rim, hovering fragments), KEYSTONE (stone arch, an arch of blocks over the rim). Proposed looks, on preview only (`?cardart=items`).

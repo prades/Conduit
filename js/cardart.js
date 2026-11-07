@@ -599,12 +599,14 @@ const CARD_ITEMS = {
           "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse",    // electric, ice, flux, core), each Unrefined to Precision
           "kindling_band",    // the first class-card item (docs/FOLLOWING-UPDATE.md Part 3, gate 3; build 2026-11-07j), approved 2026-11-07 ("Approve it")
           "spore_band", "ionic_band", "chill_band", "phase_band", "lodestone_band",   // the other bands (build 2026-11-07k), the same family: approved 2026-11-07 ("Approve all five")
-          "hearth_sigil", "miasma_sigil", "voltaic_sigil", "glacial_sigil", "warp_sigil", "keystone_sigil"],   // the sigils (build 2026-11-07l, design/cards/models/_sigil.js): on preview until approved
+          "hearth_sigil", "miasma_sigil", "voltaic_sigil", "glacial_sigil", "warp_sigil", "keystone_sigil",   // the sigils (build 2026-11-07l, design/cards/models/_sigil.js): approved 2026-11-07 ("Approve all six")
+          "inferno_crown", "pestilence_crown", "tempest_crown", "winter_crown", "eclipse_crown", "monolith_crown"],   // the crowns (build 2026-11-07m, design/cards/models/_crown.js): on preview until approved
     // approved: all eighteen of Pack 1. EMBER PLATING 2026-11-01 ("The ember plating looks good"), live since build 2026-11-01j; the other seventeen 2026-11-01 ("Yes push the card art for everyone"), live since build 2026-11-01n
     approved: ["ember_plating", "furnace_heart", "cinderbrand", "venom_gland", "corrosive_reservoir", "mireblight", "charged_wiring", "arc_capacitor", "static_lock",
                "frost_lining", "permafrost_shell", "rime_snare", "flux_cell", "vortex_core", "siphon_field", "impact_studs", "bedrock_matrix", "repulsor_pulse",
                "kindling_band",    // KINDLING BAND: the owner, 2026-11-07, "Approve it" (live for everyone since build 2026-11-07k)
-               "spore_band", "ionic_band", "chill_band", "phase_band", "lodestone_band"],   // the other five: "Approve all five" (live since build 2026-11-07l)
+               "spore_band", "ionic_band", "chill_band", "phase_band", "lodestone_band",   // the other five: "Approve all five" (live since build 2026-11-07l)
+               "hearth_sigil", "miasma_sigil", "voltaic_sigil", "glacial_sigil", "warp_sigil", "keystone_sigil"],   // the sigils: "Approve all six" (live since build 2026-11-07m)
 };
 function cardArtItemsPreview() { try { return typeof location !== "undefined" && /[?&]cardart=items\b/.test(location.search || ""); } catch (e) { return false; } }
 // the picture of a card's item, or "" (none baked, or not approved and no preview)
