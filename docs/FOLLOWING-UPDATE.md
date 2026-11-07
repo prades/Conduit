@@ -183,7 +183,7 @@ Each part is its own commit, with its own tests and a full green run before the 
 
 ### Part 4: The squad setter for signature moves (`PLAYER-CLASSES.md` §5, §8)
 
-- **Approved:** "Move choice is per follower, plus a squad setter ('set move' for a selected group like roles)". The per-follower choice is built; the squad setter is not.
+- **Approved:** "Move choice is per follower, plus a squad setter ('set move' for a selected group like roles)". The per-follower choice is built; the squad setter is **built in `2026-11-07i`**, on the branch (tests/commandcenter.js).
 - **The build:** "set move" for the followers picked in the roster, as roles are set for a group.
 - **Files:** js/commandcenter.js, js/moves.js.
 - **Tests:** a group's move set once; a follower that cannot use the move keeps its own and says why.

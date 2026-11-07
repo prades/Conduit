@@ -29,6 +29,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = src => vm.runInContext(src, context);
+    const J = s => JSON.parse(run("JSON.stringify(" + s + ")"));
     const html = fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8');
     ok(run('facilityPlay === true'), 'fixture: the page did not boot the facility');
     run(`gameState.running = true; facilityBlackoutSet(false); canvas.width = 1280; canvas.height = 860; innerWidth = 1180;`);
@@ -194,6 +195,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('short of the price it refuses, says so, and spends nothing', () => {
         run('followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0; shardCount = 5; floatingTexts.length = 0;');
         same(run('recruitFollower()'), false, 'refused'); same(run('shardCount'), 5, 'spent'); same(run('followers.length'), 0, 'a follower appeared'); ok(run('floatingTexts.some(t => /NEED/.test(t.text))'), 'no reason said');
+    });
+
+    console.log('\nSIGNATURE MOVE for a group (the following update\'s Part 4: "a squad setter (\'set move\' for a selected group like roles)")');
+    check('a group\'s move is set once; a follower whose form cannot use it keeps its own and says why', () => {
+        run(`globalThis.__q = { evolved: 'quillstone', isFollower: true, team: 'green' }; globalThis.__q2 = { evolved: 'quillstone', isFollower: true, team: 'green' }; globalThis.__m = { evolved: 'maw', isFollower: true, team: 'green' };`);
+        const r = J(`(function(){ const o = ccApplyMove([__q, __q2, __m], 'bomb_lob'); return { set: o.set, kept: o.kept.length, moves: [__q, __q2, __m].map(a => evoMoveOf(a).id), note: _ccMoveNote && _ccMoveNote.text,
+            choices: ccMoveChoices([__q, __m]).list.map(m => m.id + ':' + m.can).join(), none: ccMoveChoices([__m]), bad: ccApplyMove([__q], 'nonsense').set }; })()`);
+        same(r.set, 2, 'set'); same(r.kept, 1, 'kept'); same(r.moves.join(), 'bomb_lob,bomb_lob,chomp', 'their moves');
+        ok(/FROST MAW KEEPS CHOMP \(FIRE BOMBS IS NOT ONE OF ITS MOVES\)/.test(r.note || ''), 'the note: ' + r.note);
+        same(r.choices, 'quill_burst:1,bomb_lob:1,chomp:1', 'the choices for a Quillstone and a Frost Maw'); same(r.none, null, 'no setter for forms with one move each'); same(r.bad, 0, 'a nonsense move');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

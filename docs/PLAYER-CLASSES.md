@@ -69,7 +69,7 @@ A form had one hard-wired move, chosen by its name in an `if/else` chain. The ch
 - **`MOVES` registry** holds every move as `{ id, name, fn }`. The existing ones (PETAL BLAZE, QUILL BURST, ARC VOLLEY, SINGULARITY SHOT, STATIC RUSH, HEXFIRE, CORRODE SHOT, GRAVITY SLAM, ERUPTION, CHOMP; since then QUILL BURST and HEXFIRE rebuilt, STATIC RUSH renamed SONIC ROLL, PINBALL and STATIC VORTEX added: `FOLLOWER-COMBAT-REDESIGN.md`) moved out of the chain **unchanged**, and FIRE BOMBS (`bomb_lob`, docs/FIRE-BOMBS.md) was added as a row. *Built.* (AEGIS BURST and AEGIS BLOOM, the core forms' moves, were taken out with the followers' shield; the core forms have no move for now.)
 - **Each evolution lists the moves it may use**: `EVOLUTIONS[id].moves = ["petal_blaze", ...]`, the first being its old move (the default, so nothing changes until the player picks). *Built; the fire forms list two.*
 - **A follower has `f.move`** (saved with it). `evolutionTick` fires `evoMoveOf(f).fn(f)`; the cooldown is the move's own. *Built.*
-- **The UI:** a form with more than one move shows them as buttons on the INFO tab of its card (js/unitinfo.js). *Built.* A "set move" for a selected group in the Command Center, like it has for roles, is left.
+- **The UI:** a form with more than one move shows them as buttons on the INFO tab of its card (js/unitinfo.js). *Built.* A "set move" for a selected group in the Command Center, like it has for roles: *built in `2026-11-07i`* (SIGNATURE MOVE, under PLAY STYLE in the roster's side panel, shown when one of the picked can choose; each option says how many can use it; one whose form cannot keeps its own and a note under the setter says why).
 - **How a move becomes allowed:** it is on the form's list, **and** (if the move has `classes`) your class is on its list (`evoMoveAllowed`, built), **and** you have unlocked it (a perk, a level, or a class start move: planned).
 
 ### 3.1 Niche moves only certain classes can use
@@ -117,7 +117,7 @@ A **hack puzzle** (an algebra problem at a wall panel, paying gear by tier) and 
 1. **Class registry + save + `classStat`/`classHook`.** Half built: the registry, `classStat` and the save exist (js/classes.js, js/facilitysave.js); `classHook`, COMMANDER's row and the siphon and surge constants reading through `classStat` are left. Test: with no perks, every number equals the old constant.
 2. **Ultimate slot.** `fireArmySurge` becomes `class.ultimate.fn`; the HUD label and the info page come from the class.
 3. **XP, levels, perk points, the CLASS panel** with COMMANDER's tree.
-4. **Move selection.** `f.move` and the INFO tab's choice are built; the squad setter and the class-gated unlocks are left.
+4. **Move selection.** `f.move`, the INFO tab's choice and the squad setter (`2026-11-07i`) are built; the class-gated unlocks are left.
 5. The elemental classes one at a time: **STORMCALLER**, **PYROMANCER**, **FLUX WEAVER**, **NECROMANCER** (a row, a tree, an ultimate, two moves each, a test that its numbers match the table).
 6. **ROGUE** (the `hidden` status and the targeting test), then **GUNMASTER** (needs the gun mods).
 

@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **i · SIGNATURE MOVE for a group** (the following update's Part 4; approved: "Move choice is per follower, plus a squad setter"; the owner chose Parts 3–4 next, 2026-11-07; on the branch; commit named in git log).
+  - In the roster's side panel, under PLAY STYLE: a SIGNATURE MOVE dropdown for the followers picked, shown when one of them can choose. Each option says how many can use it. One whose form cannot keeps its own move, and a note under the setter says why (e.g. "FROST MAW KEEPS CHOMP (FIRE BOMBS IS NOT ONE OF ITS MOVES)").
+  - Tests: commandcenter (1 new), carousel, unitinfo. No full run. Not playtested.
+
 - **h · THE WIND-UP, a stat on every move** (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it's on the attack not the follower"; on the branch; commit named in git log).
   - Each follower move (QUILL BURST, CORRODE SHOT, ROTTEN DECOY, MAGMA VENT…) has its own `windup` in seconds on its row in js/moves.js: the charge between firings. When it is full the move fires as soon as an enemy is in reach. One number per attack; the move, INFO (WIND-UP, was EVERY) and the bible read it.
   - The values are the old waits, unchanged; the 15 old `*_EVERY` constants are gone. No new numbers: the owner sets them.
