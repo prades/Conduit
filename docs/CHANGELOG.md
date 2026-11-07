@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-07
 
+- **p · CHITIN SCALE live; the Crustacean's other three for approval** (the owner, 2026-11-07: "Approve it"; o "Push to main"; on the branch; commit named in git log).
+  - CHITIN SCALE shows for everyone.
+  - From their drafted looks, in CHITIN SCALE's colours (design/cards/models/_crust.js): BARNACLE BRACER (a banded forearm guard crusted with barnacles, a leather strap), PINCER CLAMP (a crab's claw half open on a steel pin, a piston, teeth), TIDE SHELL (a banded conch wound with a glowing sea-green seam, knobs, a pearl-pink lip). On preview only (`?cardart=items`).
+  - Tests: cardart. No full run.
+
 - **o · The Brawler's three skipped; CHITIN SCALE, the first Series 2 item, for approval** (the owner, 2026-11-07: "No, just skip these items"; n "Push to main"; next "Series 2 items"; on the branch; commit named in git log).
   - PRESSURE SPUR, FAULTLINE TALON and RUPTURE FANG get no item; they keep the cube. Their models and pictures are removed.
   - CHITIN SCALE (Crustacean, Unrefined), from its drafted look in SERIES-2.md: a curved shell plate with raised ridges, coral with darker bands in the grooves, a row of blunt spines along its top, a rolled lip. One piece first; on preview only (`?cardart=items`).
