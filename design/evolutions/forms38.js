@@ -228,12 +228,13 @@ function _coralTick(o) {
   const topY = o.headR * (hb + hf) / 2 * Math.cos(PI / 6) * hy;   // (its flat top, at its middle)
   // ITS NECK BRACE (the owner, of the crystal on top of its head: "I don't like the positioning on it. I might want to have it rooted as his, as some sort of neck
   // brace"): a collar of crystals rooted round the top and sides of its neck where the head leaves the body, each pointing out from the neck and leaning back over the
-  // body, the biggest on top. It stays with the body: the head droops, rears and bites inside it. The rock glows round it as round the others.
-  const br = o.brace, nC = V(0, br.y, br.z);
-  br.gems.forEach(([deg, h, r, tip], i) => { const a = deg * PI / 180, ax = V(Math.sin(a), Math.cos(a), -br.back).normalize(), bot = o.bot * r, geo = _ccCrystal(h, r, tip, o.jag, 0.3 + 0.9 * i, 200 + i, bot);
-    aim.position.copy(nC).add(V(Math.sin(a) * br.rx, Math.cos(a) * br.ry, 0)).addScaledVector(ax, bot * (1 - o.sink)); _aim32(aim, ax, V(0, 0, 1)); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);
+  // body; two each side, the top left open (the owner: "remove the middle crystal, maybe on his head, shoulder, neck piece"; it had a fifth, the biggest, on top). It
+  // stays with the body: the head droops, rears and bites inside it. The rock glows round each crystal as round the others.
+  const br = o.brace, nC = V(0, br.y, br.z), Pr = V(0, 0, 0);
+  br.gems.forEach(([deg, h, r, tip, id], i) => { const k = id == null ? i : id, a = deg * PI / 180, ax = V(Math.sin(a), Math.cos(a), -br.back).normalize(), bot = o.bot * r, geo = _ccCrystal(h, r, tip, o.jag, 0.3 + 0.9 * k, 200 + k, bot);   // (k: its own shape, whatever else is added or taken away)
+    Pr.copy(nC).add(V(Math.sin(a) * br.rx, Math.cos(a) * br.ry, 0)); glowPts.push(new T.Vector4(Pr.x, Pr.y, Pr.z, br.glowR));   // (its root, and its glow)
+    aim.position.copy(Pr).addScaledVector(ax, bot * (1 - o.sink)); _aim32(aim, ax, V(0, 0, 1)); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);
     const m = _gemCol32(geo, gem); body.add(m); gems.push(m); });
-  glowPts.push(new T.Vector4(nC.x, nC.y + br.ry, nC.z - 0.01, o.gradR * 1.1));
   const [fl, fr2, ft2] = o.fang, fangGeo = new T.CylinderGeometry(fr2 * ft2, fr2, fl, 6); fangGeo.translate(0, fl / 2, 0);   // (its root at the origin, its blunt tip up: turned over below)
   const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.32, -topY * 0.8, o.headR * hl * 0.36); hd.add(pv);   // (each fang's root, under its face)
     const f = new T.Mesh(fangGeo, headM); f.rotation.x = PI - 0.12; pv.add(f); return { s, pv }; });   // (pointing down, a touch forward)
@@ -279,8 +280,8 @@ const _ccT = {
   ],
   jag: 0.8, bot: 0.8, sink: 0.6, gemK: 1,   // (how far off centre the points go; each crystal's lower point (times its half-width) and how much of that point is sunk; how bright their pink)
   headR: 0.055, droop: 0.68, headCut: [1.8, 1.2, 0.78, 0.72], fang: [0.034, 0.012, 0.5],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); each fang (length, girth at the root, its tip's share of that))
-  brace: { y: -0.012, z: 0.25, rx: 0.066, ry: 0.048, back: 0.75,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back)
-    gems: [[0, 0.048, 0.025, 0.024], [-45, 0.04, 0.023, 0.02], [45, 0.04, 0.023, 0.02], [-92, 0.032, 0.021, 0.017], [92, 0.032, 0.021, 0.017]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
+  brace: { y: -0.012, z: 0.25, rx: 0.066, ry: 0.048, back: 0.75, glowR: 0.045,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back, how far each one's glow reaches)
+    gems: [[-45, 0.04, 0.023, 0.02, 1], [45, 0.04, 0.023, 0.02, 2], [-92, 0.032, 0.021, 0.017, 3], [92, 0.032, 0.021, 0.017, 4]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
   flowers: null,   // (none: see No. 915)
   seg: 0.08, hipY: 0, legR: 0.022, lift: 0.03, stride: 0.03,   // (the legs' short segment: how long, how high on the body's side; how thick; their step)
@@ -288,7 +289,7 @@ const _ccT = {
     { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small, angular head of the same stone, hung low, two smaller, blunt fangs of its stone pointing down that clamp, and a brace of crystals round its neck; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small, angular head of the same stone, hung low, two smaller, blunt fangs of its stone pointing down that clamp, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
 fx(915, "CORAL TICK with flowers: No. 914 with small open blossoms in a few loose clumps among its crystals, no two alike, five or six round pink petals round a deep rose heart, matte (the owner: \"we may add flowers to the 3d texture\").", () => _coralTick(Object.assign({}, _ccT, {
   flowers: [[0.1, 0.32, 0.024], [0.21, 0.43, 0.015], [0.01, 0.45, 0.013], [-0.18, -0.2, 0.02], [-0.28, -0.11, 0.014], [0.42, -0.5, 0.018], [-0.62, -0.05, 0.016]],   // (each: where (its direction's x and z on the body), its size; in clumps)
 })));
