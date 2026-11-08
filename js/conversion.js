@@ -13,7 +13,7 @@
 //                 its element, what its hits do (toxic's defense shred to BLOOM's MEND), its moves, its cards that come off, and the form it will evolve into.
 //   CONVERT       two taps (it cannot be undone): its element becomes BLOOM (js/config.js ELEMENTS, id "blossom": "bloom" is the retired BUNKER BLOOM's form id); its toxic cards come off
 //                 (js/cards.js equipValid, as when any card stops fitting); it is saved with its element (js/facilitysave.js).
-// Not yet (the next stages): an evolved toxic follower (its class's BLOOM form: SUNDEW, the coral crab, the lotus lantern), and a toxic Technician (BLOOM's Technician ability, REEF, is not built).
+// Not yet (the next stages): an evolved toxic follower (its class's BLOOM form: SUNDEW, the coral crab, the Mage (a little shrub, in review)), and a toxic Technician (BLOOM's Technician ability, REEF, is not built).
 const CONVERT = { from: "toxic", to: "blossom", room: "sewers", arm: 180, col: "#8cff5a", bloom: "#ff7ab8",
     forms: { brawler: "SUNDEW", sniper: "THE LOTUS LANTERN", camper: "THE CORAL CRAB" } };   // (the class's BLOOM form: docs/CONVERSION.md §2; working names)
 

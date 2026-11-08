@@ -654,7 +654,7 @@ When built:
 - the coral crab's everyday attack.
 
 ### Supersedes / superseded by
-Partly superseded by "The coral crab's REEF grows rock and crystal; its name for now" (2026-11-08): REEF grows rock and crystal, not coral; and by "The coral crab's look (No. 914); Crustacean; Crushing; REEF climbs to the catwalks" (2026-11-08): its look (its climbing's reach, the catwalks alone, superseded in turn by "Connected systems: REEF climbs onto any high ground over ground the player stands on", 2026-11-08: any high ground over ground the player stands on).
+Partly superseded by "BLOOM's Mage is a little shrub" (2026-11-08): the Mage's body (a little shrub, not a lotus lantern); by "The coral crab's REEF grows rock and crystal; its name for now" (2026-11-08): REEF grows rock and crystal, not coral; and by "The coral crab's look (No. 914); Crustacean; Crushing; REEF climbs to the catwalks" (2026-11-08): its look (its climbing's reach, the catwalks alone, superseded in turn by "Connected systems: REEF climbs onto any high ground over ground the player stands on", 2026-11-08: any high ground over ground the player stands on).
 
 ## DECISION: Build A to main; the hit words beside the creature; BLINDING DUST keeps its ticks; the 21 card names
 
@@ -2405,3 +2405,20 @@ Every toxic follower listed wherever it is; stats that change on conversion; one
 
 ### Supersedes / superseded by
 Supersedes, in "BLOOM's creatures ..." and `CONVERSION.md` §2 (2026-11-02), the apparatus as a separate machine beside the module, handed over when the quest is finished.
+
+## DECISION: BLOOM's Mage is a little shrub
+- Date and build: 2026-11-08, after build `2026-11-08i`, branch `claude/start-game-project-HSh7Z`. No game code changed.
+- The owner's words: a pencil sketch, sent with no words; asked what it was for, "BLOOM's Mage"; then "It's a little shrub that has vines coming out the bottom of it that inch it along to cover ground, and it has the rot shard poking out the back, which is now converted into pink for the bloom. It's mage." On the first render: "No eyes. Just straight texture."
+
+### Decision
+- BLOOM's Mage is a little shrub: vines from its underside inch it along over the ground, and the Rotshard's crystal (the toxic Mage's) pokes out of its back, now BLOOM's pink.
+- No eyes and no face: its texture covers it all round.
+
+### Status
+Approved (the concept). Its look is in review: drafts No. 919 (spikes) and No. 920 (leaves), `design/evolutions/forms39.js`. Not implemented: BLOOM's forms are not built. Its subclass (Elemental), main attack (seed-light) and SEEDFALL are the lotus lantern's and stand until the owner says otherwise; whether they fit, and its name, are open (`CONVERSION.md` §11).
+
+### Alternatives
+The lotus lantern (a floating black lotus, its petals pink crystal round a glowing heart, 2026-11-02); the sketch's eyes.
+
+### Supersedes / superseded by
+Supersedes the Mage's body in "BLOOM's creatures: SUNDEW, the lotus lantern, the coral crab; MEND's strength" (2026-11-02).

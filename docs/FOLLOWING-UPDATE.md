@@ -192,7 +192,7 @@ Each part is its own commit, with its own tests and a full green run before the 
 ### Optional, if the owner wants it in this update: BLOOM's drafts (`CONVERSION.md` §11)
 
 BLOOM and the conversion apparatus are designed (2026-11-02) but wait on a list of looks, names and numbers. The drafts that would clear it, each for approval:
-- **The three forms:** SUNDEW, the lotus lantern and the coral crab, one picture at a time; names for the lotus lantern and the coral crab; a BLOOM egg's look.
+- **The three forms:** SUNDEW, the Mage (the little shrub, 2026-11-08; it was the lotus lantern) and the coral crab, one picture at a time; names for the Mage and the coral crab; a BLOOM egg's look.
 - **The numbers:** CONSUME's digestion damage and its damage type; SEEDFALL's and REEF's numbers.
 - **REEF's climbing:** onto any high ground that extends over ground the player can stand on or interact with, as an ice bridge on any water (the owner, 2026-11-08; today the catwalks' edge and, if its glass allows, the observation deck's); still open: who may climb, both ways or one, how long its rock and crystal last.
 - **The looks:** the apparatus; BLOOM's texture, crystal and icon.
