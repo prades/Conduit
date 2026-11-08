@@ -55,14 +55,21 @@ function _bloomShrub(o) {
     const y = 1 - 2 * (i + 0.5) / o.leafN, r = Math.sqrt(1 - y * y), a = i * 2.39996 + 0.5 * (rnd() - 0.5);
     const d = V(r * Math.cos(a), y, r * Math.sin(a)).add(V(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(0.16)).normalize();
     if (d.y < o.leafBottom || d.dot(sDir) > 0.96) continue;
-    spots.push({ d, s: 0.75 + 0.5 * rnd(), w: 0.8 + 0.4 * rnd(), turn: rnd() * PI, sw: rnd() });
+    spots.push({ d, s: 0.75 + 0.5 * rnd(), w: 0.8 + 0.4 * rnd(), turn: rnd() * PI, sw: rnd(), lie: o.lie ? o.lie[0] + (o.lie[1] - o.lie[0]) * rnd() : 0, tone: o.lie ? 0.75 + 0.5 * rnd() : 1 });
   }
-  const F = _bsTris(), A = V(0, 0, 0), Q = V(0, 0, 0), t1 = V(0, 0, 0), t2 = V(0, 0, 0), dd = V(0, 0, 0);
+  const F = _bsTris(), A = V(0, 0, 0), Q = V(0, 0, 0), t1 = V(0, 0, 0), t2 = V(0, 0, 0), dd = V(0, 0, 0), tU = V(0, 0, 0);
   for (const sp of spots) {
     onBush(sp.d, o.leafSink, Q); const nn = normal(sp.d);
-    dd.copy(nn).addScaledVector(up, o.sweep * (0.5 + sp.sw)).normalize();   // (each swept a little upward)
-    t1.crossVectors(up, dd); if (t1.lengthSq() < 1e-6) t1.set(1, 0, 0); t1.normalize().applyAxisAngle(dd, o.leaves ? 0 : sp.turn); t2.crossVectors(dd, t1).normalize();
-    const len = o.leafL * sp.s, wid = o.leafW * sp.w, g0 = glowAt(Q);
+    if (o.lie) {   // (920, "More leaves": each leaf leans off the bush's normal by its own angle, up over the bush and turned its own way, so they lie over it, overlapping)
+      tU.copy(up).addScaledVector(nn, -nn.y); const crown = tU.lengthSq() < 0.04; if (crown) tU.set(1, 0, 0).addScaledVector(nn, -nn.x);
+      tU.normalize().applyAxisAngle(nn, crown ? 2 * sp.turn : o.spread * (2 * sp.turn / PI - 1));
+      dd.copy(nn).multiplyScalar(Math.cos(sp.lie)).addScaledVector(tU, Math.sin(sp.lie)).normalize();
+      t1.crossVectors(nn, dd).normalize(); t2.crossVectors(dd, t1).normalize();
+    } else {
+      dd.copy(nn).addScaledVector(up, o.sweep * (0.5 + sp.sw)).normalize();   // (each swept a little upward)
+      t1.crossVectors(up, dd); if (t1.lengthSq() < 1e-6) t1.set(1, 0, 0); t1.normalize().applyAxisAngle(dd, o.leaves ? 0 : sp.turn); t2.crossVectors(dd, t1).normalize();
+    }
+    const len = o.leafL * sp.s, wid = o.leafW * sp.w, g0 = glowAt(Q), lt = light.clone().multiplyScalar(sp.tone);   // (lt: its tip's shade, each leaf its own)
     if (!o.leaves) {   // 919: a spike, a flattened four-sided point
       A.copy(Q).addScaledVector(dd, len);
       const c = [Q.clone().addScaledVector(t1, wid), Q.clone().addScaledVector(t2, wid * o.flatten), Q.clone().addScaledVector(t1, -wid), Q.clone().addScaledVector(t2, -wid * o.flatten)], ax = Q.clone().addScaledVector(dd, len / 3);
@@ -73,7 +80,7 @@ function _bloomShrub(o) {
       const NS = 6, rows = [];
       for (let k = 0; k <= NS; k++) { const u = k / NS, half = wid * Math.pow(Math.sin(PI * Math.pow(Math.max(0.0001, u), 0.8)), 0.9), cen = Q.clone().addScaledVector(dd, len * u).addScaledVector(t2, -o.curl * len * u * u);
         rows.push({ l: cen.clone().addScaledVector(t1, half), m: cen.clone().addScaledVector(t2, o.fold * half), r: cen.clone().addScaledVector(t1, -half), u }); }
-      for (let k = 0; k < NS; k++) { const a = rows[k], z = rows[k + 1], ca = C.copy(dark).lerp(light, a.u).clone(), cz = C.copy(dark).lerp(light, z.u).clone(), ga = glowAt(a.m), gz = glowAt(z.m);
+      for (let k = 0; k < NS; k++) { const a = rows[k], z = rows[k + 1], ca = C.copy(dark).lerp(lt, a.u).clone(), cz = C.copy(dark).lerp(lt, z.u).clone(), ga = glowAt(a.m), gz = glowAt(z.m);
         F.tri(a.l, a.m, z.l, ca, ca, cz, ga, ga, gz); F.tri(a.m, z.m, z.l, ca, cz, cz, ga, gz, gz); F.tri(a.m, a.r, z.m, ca, ca, cz, ga, ga, gz); F.tri(a.r, z.r, z.m, ca, cz, cz, ga, gz, gz); }
     }
   }
@@ -120,4 +127,6 @@ const _bsA = {
   vineGlow: 0.06, bob: 0.012, lurch: 0.018,
 };
 fx(919, "BLOOM MAGE draft A, the little shrub as sketched: a round bush of short pointed spikes all over in velvet plum-black (no eyes, no face), the Rotshard's eaten crystal now pink poking out of its back with its black shell shard, the pink glowing round its root; two long vines from its underside, trailing behind, that hump and stretch in turn to inch it along.", () => _bloomShrub(_bsA));
-fx(920, "BLOOM MAGE draft B: the same little shrub, its spikes real leaves, pointed and folded down their midribs, overlapping all over; the same pink shard and inching vines.", () => _bloomShrub(Object.assign({}, _bsA, { leaves: true, leafN: 70, leafL: 0.1, leafW: 0.036, sweep: 0.25, fold: 0.35, curl: 0.15, leafSink: 0.88 })));
+// 920 since the owner's "More leaves" (2026-11-08): three times as many (70 to 210, a little smaller), lying over the bush at their own angles (`lie`, off its normal;
+// `spread`, how far each turns from straight up over it), each its own shade, and down further round its sides, so its dark core no longer shows between them.
+fx(920, "BLOOM MAGE draft B: the same little shrub, its spikes real leaves, pointed and folded down their midribs; since \"More leaves\", thick with them, overlapping all over it at their own angles, each its own shade; the same pink shard and inching vines.", () => _bloomShrub(Object.assign({}, _bsA, { leaves: true, leafN: 210, leafL: 0.095, leafW: 0.034, fold: 0.35, curl: 0.15, leafSink: 0.9, leafBottom: -0.72, lie: [0.3, 1.15], spread: 1.3 })));
