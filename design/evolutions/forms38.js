@@ -155,34 +155,46 @@ function _coralTick(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
   const pink = _c31(EL.color).convertSRGBToLinear(), rnd = _ccRnd(o.seed || 17);
   const body = G(); b.add(body);
-  // THE BODY: a sphere broken into rocky plates (the nearest of o.plates points on it), each domed, the seams between sunk and glowing pink
+  // THE BODY: a sphere broken into rocky plates (the nearest of o.plates points on it), each domed, the seams between sunk. Its glow (the owner: "The print on the back is
+  // low quality, make it a gradient that radiates from the crystal"; its seams glowed, a blotchy print): one smooth gradient of BLOOM's pink, worked out for each pixel,
+  // brightest where each crystal breaks out of the rock and fading into the dark stone around it (glowPts: where, and how far it reaches); it pulses
   const cells = Array.from({ length: o.plates }, () => { const u = rnd() * 2 - 1, a = rnd() * TAU, r = Math.sqrt(1 - u * u); return V(r * Math.cos(a), u, r * Math.sin(a)); });
-  const rockAt = n => { let d1 = -2, d2 = -2;   // (the rock's height along the direction n, and how much of a seam is there)
+  const rockAt = n => { let d1 = -2, d2 = -2;   // (the rock's height along the direction n)
     for (const c of cells) { const d = n.dot(c); if (d > d1) { d2 = d1; d1 = d; } else if (d > d2) d2 = d; }
     const gap = d1 - d2, crack = 1 - _ccS(0, 0.03, gap), grain = 0.012 * Math.sin(n.x * 37.1 + n.y * 17.3) * Math.sin(n.y * 29.7 + n.z * 11.1) * Math.sin(n.z * 23.3 + n.x * 13.7);
-    return [1 + o.plateH * Math.sqrt(Math.min(1, gap / 0.14)) - 0.02 * crack + grain, crack]; };
+    return 1 + o.plateH * Math.sqrt(Math.min(1, gap / 0.14)) - 0.02 * crack + grain; };
   const place = (n, k, P) => { const y = n.y * k;   // (the point on the body at the direction n, k times out: its belly flatter, wider toward the back, as a tick's)
     return P.set(n.x * k * o.w * (1 + o.flare * Math.max(0, -n.z)), (y < 0 ? y * 0.55 : y) * o.h, n.z * k * o.l); };
-  const bg = new T.SphereGeometry(1, 60, 40), bp = bg.attributes.position, col = new Float32Array(bp.count * 3), n = V(0, 0, 0), P = V(0, 0, 0);
-  for (let i = 0; i < bp.count; i++) {
-    n.set(bp.getX(i), bp.getY(i), bp.getZ(i)).normalize(); const [k, crack] = rockAt(n); place(n, k, P); bp.setXYZ(i, P.x, P.y, P.z);
-    const glow = crack * 0.95; col[i * 3] = pink.r * glow; col[i * 3 + 1] = pink.g * glow; col[i * 3 + 2] = pink.b * glow;
-  }
-  bg.setAttribute('color', new T.BufferAttribute(col, 3)); bg.computeVertexNormals();
-  const rockM = new T.MeshPhysicalMaterial({ color: o.rock, vertexColors: true, emissive: 0xffffff, flatShading: true, metalness: 0, roughness: 0.92, reflectivity: 0.08 }); rockM.envMapIntensity = 0.08;   // (dull charcoal stone, barely any shine: its facets show by their shading, its seams glow)
-  let seamU = null;   // (the seams' glow: it pulses)
-  rockM.onBeforeCompile = sh => { sh.uniforms.seamK = seamU = seamU || { value: 1 }; sh.fragmentShader = 'uniform float seamK;\n' + sh.fragmentShader.replace('#include <color_fragment>', '').replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor * seamK;'); };
-  rockM.customProgramCacheKey = () => 'ccRock';
+  const bg = new T.SphereGeometry(1, 60, 40), bp = bg.attributes.position, n = V(0, 0, 0), P = V(0, 0, 0);
+  for (let i = 0; i < bp.count; i++) { n.set(bp.getX(i), bp.getY(i), bp.getZ(i)).normalize(); place(n, rockAt(n), P); bp.setXYZ(i, P.x, P.y, P.z); }
+  bg.computeVertexNormals();
+  const rockM = new T.MeshPhysicalMaterial({ color: o.rock, emissive: pink, flatShading: true, metalness: 0, roughness: 0.92, reflectivity: 0.08 }); rockM.envMapIntensity = 0.08;   // (dull charcoal stone, barely any shine: its facets show by their shading)
+  const glowPts = []; let seamU = null;
+  rockM.onBeforeCompile = sh => { const N = Math.max(1, glowPts.length); sh.uniforms.seamK = seamU = seamU || { value: 1 }; sh.uniforms.gemP = { value: glowPts.length ? glowPts : [new T.Vector4(0, -9, 0, 0.001)] };
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vObj;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = position;');
+    sh.fragmentShader = `uniform float seamK;\nuniform vec4 gemP[${N}];\nvarying vec3 vObj;\n` + sh.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;',
+      `float gg = 0.0; for (int i = 0; i < ${N}; i++) { vec3 d = vObj - gemP[i].xyz; gg += exp(-dot(d, d) / (gemP[i].w * gemP[i].w)); }\n  vec3 totalEmissiveRadiance = emissive * ${o.gradK.toFixed(3)} * min(gg, 1.0) * seamK;`); };
+  rockM.customProgramCacheKey = () => 'ccRockGlow' + glowPts.length;
   body.add(new T.Mesh(bg, rockM));
   // ON ITS BACK: THE CRYSTALS (o.crystals), the biggest where the sketch's little spire stood; each breaks out of the rock where it stands, its foot sunk in it, and is
   // coloured facet by facet in BLOOM's pink, as the game's crystals are (_gemCol32, forms32.js); they brighten as it strikes
   const gem = pink.clone().multiplyScalar(o.gemK), gems = [], Pc = V(0, 0, 0), aim = new T.Object3D();
   o.crystals.forEach(([nx, nz, dx, dz, h, r, tip, twist], i) => {
-    n.set(nx, Math.sqrt(Math.max(0, 1 - nx * nx - nz * nz)), nz); place(n, rockAt(n)[0], Pc);   // (where it breaks out)
+    n.set(nx, Math.sqrt(Math.max(0, 1 - nx * nx - nz * nz)), nz); place(n, rockAt(n), Pc); glowPts.push(new T.Vector4(Pc.x, Pc.y, Pc.z, o.gradR * r / 0.05));   // (where it breaks out: its glow spreads from there)
     const ax = V(dx, 1, dz).normalize(), geo = _ccCrystal(h, r, tip, o.jag, twist, (o.seed || 17) * 31 + i);
     aim.position.copy(Pc).addScaledVector(ax, -o.sink * h); _aim32(aim, ax, V(0, 0, 1)); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);
     const m = _gemCol32(geo, gem); body.add(m); gems.push(m);
   });
+  // FLOWERS (o.flowers; the owner: "we may add flowers to the 3d texture"): a few small open blossoms on the rock among the crystals, five pale pink petals cupped round
+  // a glowing heart, each facing out from the rock where it grows
+  if (o.flowers) {
+    const petalM = new T.MeshStandardMaterial({ color: _lin31(0xffd2e6), emissive: pink, emissiveIntensity: 0.22, metalness: 0, roughness: 0.55 }); petalM.envMapIntensity = 0.2;
+    const heartM = new T.MeshBasicMaterial({ color: pink.clone().lerp(new T.Color(1, 1, 1), 0.25), toneMapped: false }), pg = new T.SphereGeometry(1, 14, 10);
+    o.flowers.forEach(([nx, nz, sz, tw]) => { n.set(nx, Math.sqrt(Math.max(0, 1 - nx * nx - nz * nz)), nz); place(n, rockAt(n), Pc);
+      const fl = G(); fl.position.copy(Pc); _aim32(fl, V(n.x / o.w, n.y / o.h, n.z / o.l), V(0, 0, 1)); fl.rotateY(tw); body.add(fl);   // (facing out from the rock)
+      for (let k = 0; k < 5; k++) { const pv = G(); pv.rotation.y = k * TAU / 5; fl.add(pv); const pt = new T.Mesh(pg, petalM); pt.scale.set(sz * 0.42, sz * 0.12, sz); pt.position.set(0, sz * 0.2, sz * 0.85); pt.rotation.x = -0.35; pv.add(pt); }
+      const ht = new T.Mesh(pg, heartM); ht.scale.set(sz * 0.32, sz * 0.24, sz * 0.32); ht.position.y = sz * 0.25; fl.add(ht); });
+  }
   // THE HEAD: small, at the front, smooth and simple (the owner: "its head is really weirdly shaped right now. It needs to have less definition"; it had a faceted
   // head, two curved black horns for mouthparts, two palps and a crystal mouth-spike): one rounded head of the same stone, smooth, and two short, blunt mouthparts
   // of the same stone that clamp (its crushing bite)
@@ -192,10 +204,14 @@ function _coralTick(o) {
   const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.28, -o.headR * 0.12, o.headR * 0.55); head.add(pv);   // (tucked in: only their rounded tips show, a soft cleft at its front)
     const k = G(); k.rotation.y = -s * 0.2; pv.add(k);   // (at rest the two lean in toward each other)
     const j = new T.Mesh(new T.SphereGeometry(1, 20, 14), headM); j.scale.set(o.headR * 0.34, o.headR * 0.28, o.headR * 0.45); j.position.z = o.headR * 0.35; k.add(j); return { s, pv }; });
-  // THE LEGS: a pair for each of o.legs (four now: the owner, "4 legs"), the sketch's leaf-spears (a leaf of 0 would draw a thinner jointed leg)
-  const legs = []; [-1, 1].forEach(s => o.legs.forEach((ld, k) => legs.push({ s, k, ld, ph: (k % 2 ? PI : 0) + (s > 0 ? PI : 0), up: _taper32(b, _ccBlack, 12, 8), lo: _taper32(b, _ccBlack, 18, 10),
-    knee: (() => { const m = new T.Mesh(new T.SphereGeometry(1, 12, 8), _ccBlack); b.add(m); return m; })(), pu: Array.from({ length: 12 }, () => V(0, 0, 0)), pl: Array.from({ length: 18 }, () => V(0, 0, 0)) })));
-  const A = V(0, 0, 0), K = V(0, 0, 0), F = V(0, 0, 0);
+  // THE LEGS (the owner: "the legs more like the original image, pointed steak like legs that have a shorter segment that connects to the body at 90degree"): a pair for
+  // each of o.legs, each a short, straight segment out of the body's side, square to it, and at its knee the sketch's leaf-spear: a long pointed stake hanging almost
+  // straight down to its point on the floor, its top end rising a little above the knee
+  const legs = []; [-1, 1].forEach(s => o.legs.forEach((ld, k) => legs.push({ s, ld, ph: (k % 2 ? PI : 0) + (s > 0 ? PI : 0), up: _taper32(b, _ccBlack, 6, 10), lo: _taper32(b, _ccBlack, 20, 10),
+    knee: (() => { const m = new T.Mesh(new T.SphereGeometry(1, 14, 10), _ccBlack); b.add(m); return m; })(), pu: Array.from({ length: 6 }, () => V(0, 0, 0)), pl: Array.from({ length: 20 }, () => V(0, 0, 0)) })));
+  legs.forEach(L => { const z = L.ld.z, wz = o.w * (1 + o.flare * Math.max(0, -z / o.l)), hx = wz * Math.sqrt(Math.max(0, 1 - (z / o.l) ** 2));   // (the body's side at that z)
+    L.hip = V(L.s * hx * 0.97, 0, z); L.out = V(L.s * hx / (wz * wz), 0, z / (o.l * o.l)).normalize(); });   // (its root just inside the rock; straight out, square to the body)
+  const A = V(0, 0, 0), K = V(0, 0, 0), F = V(0, 0, 0), Tp = V(0, 0, 0), dir = V(0, 0, 0), dn = V(0, 0, 0), UP = V(0, 1, 0);
   const Lt = new T.PointLight(0xffffff, 0.5, 1, 2); Lt.color.copy(_c31(EL.color)); Lt.position.set(0, o.h + 0.12, 0); body.add(Lt); LIGHTS.push(Lt);
   return { g, core: o.coreY * (o.S || 1), update(t, act) {
     const ph = 1.6 * t, pr = _prog31(t, act), rear = _ccS(0, 0.3, pr) * (1 - _ccS(0.34, 0.5, pr)), strike = _ccS(0.34, 0.5, pr) * (1 - _ccS(0.62, 1, pr)), calm = 1 - 0.7 * Math.min(1, act || 0);
@@ -206,16 +222,17 @@ function _coralTick(o) {
     const gk = 1.2 * Math.max(0, glow - 0.85); gems.forEach(m => m.userData.relight(gk));   // (the crystals brighten with the glow)
     head.rotation.x = 0.1 * Math.sin(ph) * calm - 0.25 * rear + 0.3 * strike;
     jaws.forEach(J => { J.pv.rotation.y = J.s * ((0.18 + 0.06 * Math.sin(ph * 2)) * calm + 0.45 * rear - 0.25 * strike); });   // (open, then clamp)
-    legs.forEach(L => { const ld = L.ld, lift = Math.max(0, Math.sin(2 * ph + L.ph)) * o.lift * calm, swing = Math.cos(2 * ph + L.ph) * o.stride * calm, big = ld.leaf > 0;
-      A.set(L.s * o.hipX, o.bodyY + bob - o.h * 0.35, ld.z);
-      K.set(L.s * (o.hipX + ld.out * 0.5), o.bodyY + bob + ld.up + 0.6 * lift, ld.z + ld.dz * 0.45 + swing * 0.3);
-      F.set(L.s * (o.hipX + ld.out), 0.004 + lift, ld.z + ld.dz + swing);
-      L.knee.position.copy(K); L.knee.scale.setScalar(big ? o.legR * 1.4 : o.legR * 1.1);
-      for (let i = 0; i < 12; i++) { const u = i / 11; L.pu[i].lerpVectors(A, K, u); L.pu[i].y += 0.02 * Math.sin(PI * u); }
-      L.up.set(L.pu, 0, 0, u => ((big ? o.legR * 1.15 : o.legR) - 0.006 * u) * (1 + 0.14 * Math.pow(0.5 + 0.5 * Math.cos(u * 3 * TAU), 3)), 1, 1);
-      for (let i = 0; i < 18; i++) { const u = i / 17; L.pl[i].lerpVectors(K, F, u); L.pl[i].x += L.s * (big ? 0.03 : 0.015) * Math.sin(PI * u); }
-      if (big) L.lo.set(L.pl, 0, 0, u => ld.leaf * Math.pow(Math.sin(PI * Math.min(1, 0.1 + 0.9 * u)), 0.75) + 0.002, 1.25, 0.5);   // (the sketch's leaf-spear: widest at its middle, to a point)
-      else L.lo.set(L.pl, 0, 0, u => o.legR * 0.8 * (1 - u) * (1 + 0.12 * Math.pow(0.5 + 0.5 * Math.cos(u * 2 * TAU), 3)) + 0.002, 1, 1);
+    legs.forEach(L => { const ld = L.ld, lift = Math.max(0, Math.sin(2 * ph + L.ph)) * o.lift * calm, swing = Math.cos(2 * ph + L.ph) * o.stride * calm;
+      dir.copy(L.out).applyAxisAngle(UP, -L.s * swing / (o.seg + ld.out));   // (it steps: the leg swings forward and back at its root)
+      A.set(L.hip.x, o.bodyY + bob + o.hipY + 0.02 * rear, L.hip.z + 0.04 * strike);   // (its root moves with the body)
+      K.copy(A).addScaledVector(dir, o.seg); K.y += 0.7 * lift;
+      F.copy(K).addScaledVector(dir, ld.out); F.y = 0.004 + lift;
+      dn.copy(F).sub(K).normalize(); Tp.copy(K).addScaledVector(dn, -ld.top);
+      L.knee.position.copy(K); L.knee.scale.setScalar(o.legR * 0.8);   // (inside the stake: the segment simply enters it)
+      for (let i = 0; i < 6; i++) L.pu[i].lerpVectors(A, K, i / 5);
+      L.up.set(L.pu, o.legR * 1.1, o.legR * 0.9);
+      for (let i = 0; i < 20; i++) L.pl[i].lerpVectors(Tp, F, i / 19);
+      L.lo.set(L.pl, 0, 0, u => ld.leaf * Math.pow(Math.sin(PI * Math.pow(u, 0.62)), 0.8) + 0.0015, 1.25, 0.5);   // (the leaf-spear: pointed at its top, widest a third of the way down, to a long point on the floor)
     });
   } };
 }
@@ -228,9 +245,14 @@ const _ccT = {
   ],
   jag: 0.8, sink: 0.3, gemK: 1,   // (how far off centre the points go, how much of each crystal is sunk in the rock, how bright their pink)
   headR: 0.055,
-  hipX: 0.1, legR: 0.02, lift: 0.032, stride: 0.03,
-  legs: [   // (a pair each, front to back: where along it (z), how far out, how high the knee, how far forward or back the foot goes, the leaf-spear's width (0: a thin jointed leg))
-    { z: 0.06, out: 0.3, up: 0.15, dz: 0.14, leaf: 0.044 }, { z: -0.06, out: 0.3, up: 0.16, dz: -0.17, leaf: 0.046 },
+  gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
+  flowers: null,   // (none: see No. 915)
+  seg: 0.08, hipY: 0, legR: 0.022, lift: 0.03, stride: 0.03,   // (the legs' short segment: how long, how high on the body's side; how thick; their step)
+  legs: [   // (a pair each, front and back: where along the body (z), how far out the point stands beyond the knee, how far the stake's top rises above the knee, its half-width)
+    { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior rocky plates of dark stone, the seams between them glowing BLOOM pink; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood; a small, smooth head of the same stone with two short, blunt mouthparts that clamp; four legs, the sketch's long pointed leaf-spears.", () => _coralTick(_ccT));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior rocky plates of dark stone; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small, smooth head of the same stone with two short, blunt mouthparts that clamp; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
+fx(915, "CORAL TICK with flowers: No. 914 with a few small open blossoms on the rock among its crystals, five pale pink petals cupped round a glowing heart (the owner: \"we may add flowers to the 3d texture\").", () => _coralTick(Object.assign({}, _ccT, {
+  flowers: [[0.12, 0.42, 0.022, 0.3], [-0.24, -0.1, 0.02, 1.1], [0.5, -0.12, 0.019, 2], [-0.6, 0.02, 0.018, 0.7], [-0.06, -0.47, 0.021, 1.6], [0.32, -0.6, 0.017, 2.6]],   // (each: where (its direction's x and z on the body), its size, its turn)
+})));
