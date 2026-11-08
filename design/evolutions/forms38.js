@@ -135,3 +135,79 @@ const _ccB = Object.assign({}, _ccA, {
   shoulderX: 0.12, armR: 0.03, palm: 0.085, finger: 0.1, reachZ: 0.2,
 });
 fx(913, "CORAL CRAB draft B: a lower, wider crab of the same velvet black veined in pink, big crushing claws in front, a tall branching coral on its back forking as it grows, its tips glowing; jointed, pointed legs.", () => _coralCrab(_ccB));
+
+// ── 914 · THE CORAL TICK ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+// The owner on 912 and 913 (2026-11-08): "Look, it's not really a crab. It's more of a tick-looking thing, but it's rocky exterior and has those back legs like the
+// picture." So: a tick's plump body, wider at the back, low, its underside flatter; its exterior rocky, plates of dark stone fitted together, the seams between them
+// glowing BLOOM's pink (the living coral under the rock); on its back the sketch's little coral spire and two nubs; a small head at the front, its mouthparts clamping
+// (its crushing bite); its legs the sketch's long pointed leaf-spears, four (the owner, interrupting the first render: "4 legs"; it had eight, as a tick has).
+function _coralTick(o) {
+  const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
+  const pink = _c31(EL.color).convertSRGBToLinear(), rnd = _ccRnd(o.seed || 17);
+  const body = G(); b.add(body);
+  // THE BODY: a sphere broken into rocky plates (the nearest of o.plates points on it), each domed, the seams between sunk and glowing pink
+  const cells = Array.from({ length: o.plates }, () => { const u = rnd() * 2 - 1, a = rnd() * TAU, r = Math.sqrt(1 - u * u); return V(r * Math.cos(a), u, r * Math.sin(a)); });
+  const bg = new T.SphereGeometry(1, 60, 40), bp = bg.attributes.position, col = new Float32Array(bp.count * 3), n = V(0, 0, 0);
+  for (let i = 0; i < bp.count; i++) {
+    n.set(bp.getX(i), bp.getY(i), bp.getZ(i)).normalize(); let d1 = -2, d2 = -2;
+    for (const c of cells) { const d = n.dot(c); if (d > d1) { d2 = d1; d1 = d; } else if (d > d2) d2 = d; }
+    const gap = d1 - d2, plate = Math.min(1, gap / 0.14), crack = 1 - _ccS(0, 0.03, gap);
+    const grain = 0.012 * Math.sin(n.x * 37.1 + n.y * 17.3) * Math.sin(n.y * 29.7 + n.z * 11.1) * Math.sin(n.z * 23.3 + n.x * 13.7);
+    const k = 1 + o.plateH * Math.sqrt(plate) - 0.02 * crack + grain;
+    let x = n.x * k, y = n.y * k, z = n.z * k; if (y < 0) y *= 0.55;   // (its belly flatter)
+    x *= o.w * (1 + o.flare * Math.max(0, -n.z)); y *= o.h; z *= o.l;   // (wider toward the back, as a tick's)
+    bp.setXYZ(i, x, y, z); const glow = crack * 0.95; col[i * 3] = pink.r * glow; col[i * 3 + 1] = pink.g * glow; col[i * 3 + 2] = pink.b * glow;
+  }
+  bg.setAttribute('color', new T.BufferAttribute(col, 3)); bg.computeVertexNormals();
+  const rockM = new T.MeshPhysicalMaterial({ color: o.rock, vertexColors: true, emissive: 0xffffff, flatShading: true, metalness: 0, roughness: 0.92, reflectivity: 0.08 }); rockM.envMapIntensity = 0.08;   // (dull charcoal stone, barely any shine: its facets show by their shading, its seams glow)
+  let seamU = null;   // (the seams' glow: it pulses)
+  rockM.onBeforeCompile = sh => { sh.uniforms.seamK = seamU = seamU || { value: 1 }; sh.fragmentShader = 'uniform float seamK;\n' + sh.fragmentShader.replace('#include <color_fragment>', '').replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor * seamK;'); };
+  rockM.customProgramCacheKey = () => 'ccRock';
+  body.add(new T.Mesh(bg, rockM));
+  // ON ITS BACK: the sketch's little coral spire and two nubs, glowing, porous
+  const coralM = new T.MeshStandardMaterial({ color: 0x1a0610, emissive: 0xffffff, emissiveMap: _ccCoralTex(), emissiveIntensity: 0.85, metalness: 0, roughness: 0.68 }); coralM.envMapIntensity = 0.15;
+  const sp = new T.Mesh(_ccHorn(o.spireL, o.spireR, 0.3), coralM); sp.position.set(o.spire[0], o.h * o.spire[1], o.spire[2]); _aim32(sp, V(-0.15, 1, 0.35), V(0, 0, -1)); body.add(sp);
+  o.nubs.forEach(([x, y, z, r]) => { const m = new T.Mesh(new T.SphereGeometry(r, 16, 12), coralM); m.position.set(x, o.h * y, z); m.scale.y = 1.25; body.add(m); });
+  // THE HEAD: small, at the front; a barbed mouth-spike between two clamping mouthparts and two short palps
+  const head = G(); head.position.set(0, -o.h * 0.15, o.l * 0.96); body.add(head);
+  const hm = new T.Mesh(new T.SphereGeometry(1, 20, 14), rockM); hm.scale.set(o.headR * 1.1, o.headR * 0.8, o.headR); head.add(hm);
+  const spike = new T.Mesh(_ccHorn(o.headR * 1.5, o.headR * 0.32, -0.25), coralM); spike.position.set(0, -o.headR * 0.2, o.headR * 0.6); spike.rotation.x = PI / 2 + 0.35; head.add(spike);
+  const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.55, 0, o.headR * 0.7); head.add(pv);
+    const j = new T.Mesh(_ccHorn(o.headR * 1.3, o.headR * 0.3, 0.45), _ccBlack); j.rotation.set(PI / 2, 0, -s * 0.5); pv.add(j); return { s, pv }; });
+  [-1, 1].forEach(s => { const pa = new T.Mesh(new T.CylinderGeometry(o.headR * 0.18, o.headR * 0.24, o.headR * 1.1, 8), rockM); pa.position.set(s * o.headR * 0.95, -o.headR * 0.1, o.headR * 0.55); pa.rotation.set(PI / 2 - 0.3, 0, s * 0.3); head.add(pa); });
+  // THE LEGS: eight, from the front half of the body: the back four the sketch's leaf-spears, the front four thinner and jointed
+  const legs = []; [-1, 1].forEach(s => o.legs.forEach((ld, k) => legs.push({ s, k, ld, ph: (k % 2 ? PI : 0) + (s > 0 ? PI : 0), up: _taper32(b, _ccBlack, 12, 8), lo: _taper32(b, _ccBlack, 18, 10),
+    knee: (() => { const m = new T.Mesh(new T.SphereGeometry(1, 12, 8), _ccBlack); b.add(m); return m; })(), pu: Array.from({ length: 12 }, () => V(0, 0, 0)), pl: Array.from({ length: 18 }, () => V(0, 0, 0)) })));
+  const A = V(0, 0, 0), K = V(0, 0, 0), F = V(0, 0, 0);
+  const Lt = new T.PointLight(0xffffff, 0.5, 1, 2); Lt.color.copy(_c31(EL.color)); Lt.position.set(0, o.h + 0.12, 0); body.add(Lt); LIGHTS.push(Lt);
+  return { g, core: o.coreY * (o.S || 1), update(t, act) {
+    const ph = 1.6 * t, pr = _prog31(t, act), rear = _ccS(0, 0.3, pr) * (1 - _ccS(0.34, 0.5, pr)), strike = _ccS(0.34, 0.5, pr) * (1 - _ccS(0.62, 1, pr)), calm = 1 - 0.7 * Math.min(1, act || 0);
+    const bob = 0.007 * Math.sin(2 * ph) * calm;
+    body.position.set(0, o.bodyY + bob + 0.02 * rear, 0.04 * strike); body.rotation.x = -0.1 * rear + 0.14 * strike;   // (it rears, then lunges and bites)
+    const glow = (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * Math.max(0.5 * rear, strike));
+    if (seamU) seamU.value = glow; coralM.emissiveIntensity = 0.85 * glow; Lt.intensity = 0.5 * glow;
+    head.rotation.x = 0.1 * Math.sin(ph) * calm - 0.25 * rear + 0.3 * strike;
+    jaws.forEach(J => { J.pv.rotation.y = J.s * ((0.18 + 0.06 * Math.sin(ph * 2)) * calm + 0.45 * rear - 0.25 * strike); });   // (open, then clamp)
+    legs.forEach(L => { const ld = L.ld, lift = Math.max(0, Math.sin(2 * ph + L.ph)) * o.lift * calm, swing = Math.cos(2 * ph + L.ph) * o.stride * calm, big = ld.leaf > 0;
+      A.set(L.s * o.hipX, o.bodyY + bob - o.h * 0.35, ld.z);
+      K.set(L.s * (o.hipX + ld.out * 0.5), o.bodyY + bob + ld.up + 0.6 * lift, ld.z + ld.dz * 0.45 + swing * 0.3);
+      F.set(L.s * (o.hipX + ld.out), 0.004 + lift, ld.z + ld.dz + swing);
+      L.knee.position.copy(K); L.knee.scale.setScalar(big ? o.legR * 1.4 : o.legR * 1.1);
+      for (let i = 0; i < 12; i++) { const u = i / 11; L.pu[i].lerpVectors(A, K, u); L.pu[i].y += 0.02 * Math.sin(PI * u); }
+      L.up.set(L.pu, 0, 0, u => ((big ? o.legR * 1.15 : o.legR) - 0.006 * u) * (1 + 0.14 * Math.pow(0.5 + 0.5 * Math.cos(u * 3 * TAU), 3)), 1, 1);
+      for (let i = 0; i < 18; i++) { const u = i / 17; L.pl[i].lerpVectors(K, F, u); L.pl[i].x += L.s * (big ? 0.03 : 0.015) * Math.sin(PI * u); }
+      if (big) L.lo.set(L.pl, 0, 0, u => ld.leaf * Math.pow(Math.sin(PI * Math.min(1, 0.1 + 0.9 * u)), 0.75) + 0.002, 1.25, 0.5);   // (the sketch's leaf-spear: widest at its middle, to a point)
+      else L.lo.set(L.pl, 0, 0, u => o.legR * 0.8 * (1 - u) * (1 + 0.12 * Math.pow(0.5 + 0.5 * Math.cos(u * 2 * TAU), 3)) + 0.002, 1, 1);
+    });
+  } };
+}
+const _ccT = {
+  S: 1, coreY: 0.32, seed: 17, bodyY: 0.27, w: 0.2, h: 0.14, l: 0.25, flare: 0.28, plates: 34, plateH: 0.07, rock: 0x0b090a,
+  spire: [-0.03, 0.85, 0.02], spireL: 0.15, spireR: 0.028, nubs: [[0.07, 0.8, -0.06, 0.028], [-0.08, 0.75, -0.1, 0.024]],
+  headR: 0.055,
+  hipX: 0.1, legR: 0.02, lift: 0.032, stride: 0.03,
+  legs: [   // (a pair each, front to back: where along it (z), how far out, how high the knee, how far forward or back the foot goes, the leaf-spear's width (0: a thin jointed leg))
+    { z: 0.06, out: 0.3, up: 0.15, dz: 0.14, leaf: 0.044 }, { z: -0.06, out: 0.3, up: 0.16, dz: -0.17, leaf: 0.046 },
+  ],
+};
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior rocky plates of dark stone, the seams between them glowing BLOOM pink; the sketch's little coral spire and two nubs on its back; a small head with clamping mouthparts; eight legs, the back four the sketch's long pointed leaf-spears, the front four thinner and jointed.", () => _coralTick(_ccT));
