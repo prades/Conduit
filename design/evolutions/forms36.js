@@ -136,8 +136,8 @@ function _electroSkink(o) {
 const _sk0 = {
   S: 0.85, coreY: 0.09, shiftZ: 0.2,
   spine: [[0.36, 0.112], [0.25, 0.086], [0.1, 0.072], [-0.08, 0.07], [-0.24, 0.07], [-0.42, 0.066], [-0.6, 0.072], [-0.78, 0.098]],
-  rNeck: 0.034, rBody: 0.065, rTip: 0.01, sTrunk: 0.13,   // (a pinched neck, so the head reads: the owner, 2026-11-08, "He's supposed to have a small head, but it looks like he doesn't have a head at all")
-  sHip: 0.47, flat: 0.6,
+  rNeck: 0.04, rBody: 0.075, rTip: 0.01, sTrunk: 0.13,   // (a pinched neck, so the head reads: the owner, 2026-11-08, "He's supposed to have a small head, but it looks like he doesn't have a head at all"; the body as wide as the head since the owner on build e: "Make the body ... a little bit bigger to match the size of the head": it was rNeck 0.034, rBody 0.065, flat 0.6)
+  sHip: 0.47, flat: 0.55,   // (flatter, so the bigger body stays low and flat: 0.15 wide, 0.083 high, about the head's size)
   legs: [{ s: 0.115, fwd: 0.04 }, { s: 0.47, fwd: -0.03 }], legR0: 0.025, legR1: 0.015, reach: 0.13, arch: 0.045,
   stride: 0.035, lift: 0.028, rearLift: 0.05,
   headW: 0.155, headL: 0.215, headH: 0.096, headRb: 0.05, headRf: 0.028, headP: 2.4, headTaper: 0.3, headUnder: 0.65,   // (small and sleek: a little wider than the neck at the back (rounded by headRb), narrowing to the snout (rounded by headRf); its underside shallow, so no jaw. The owner on build d: "a little bit sleeker. It needs to not have such a jaw": it was 0.185 wide, 0.21 long, 0.104 high, rb 0.045, rf 0.026, the underside as deep as the top, tilted 0.18. Build c's was a ball 0.165 × 0.115 × 0.165; build a's 0.15 × 0.078 × 0.17, level with the body)
