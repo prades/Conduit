@@ -15,6 +15,7 @@ const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src 
 const JOBS = [
   // No. 905 (forms36.js), the game sprite of No. 904: the ELECTRO SKINK, the new electric brawler (the owner's whiteboard sketch, reviewed through Nos. 900-904; "Okay, that's good. Send it.").
   // Its idle is its walk, an eel's fast slither with its legs paddling; its action is the rear and lunge; the tail's yellow glow and bolt are its own light.
+  // (bigger since 2026-11-08: bake it alone in a 192 px cell with half 2.267, the same pixels a unit as the 144 px sheets: node design/evolutions/bake.js <three> img/evo electroskink 192 2.2667)
   { id: 'electroskink', form: 905, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // Nos. 880-882 (forms34.js), the user's pencil sketch (2026-11-01): the HOVER SHELL made sleek (one low hull, two tall prongs; its action fires the launcher) and the JELLY RAM
   // redone (a faceted glass head with a bubble lit blue white inside, a swirly collar orbiting its neck, seven fat tentacles, one curled; it swims and rams). The Jelly Ram was

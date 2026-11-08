@@ -14,7 +14,7 @@
 // then "maybe he moves like a fish, like a slippery eel, but also legs"); the bolt pulsing. Action: it rears its front, then lunges, the bolt flaring.
 // Nos. 900 to 903 were rejected and are gone.
 // Uses forms31.js (_c31, _prog31) and forms32.js (_taper32). +z is the front; ph = 1.6 t runs once round the idle loop.
-const _skSkin = new T.MeshStandardMaterial({ color: 0x06070a, metalness: 0.2, roughness: 0.24 }); _skSkin.envMapIntensity = 0.9;   // (wet black skin: it catches the lights)
+const _skSkin = new T.MeshStandardMaterial({ color: 0x020203, metalness: 0.2, roughness: 0.34 }); _skSkin.envMapIntensity = 0.32;   // (black skin with a little wet sheen: darker since the owner's "make him darker", 2026-11-08; it was 0x06070a, roughness 0.24, env 0.9, which read slate grey)
 const _skS = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 // a tube along pts (as forms32.js's _taper32) whose cross-section (fxf, fyf: sideways and upright) and colour (cf, into vertex colours) change along it, rebuilt every frame
 function _skTube(parent, mat, n, ring) {
@@ -44,7 +44,7 @@ function _electroSkink(o) {
   // THE TAIL'S END: a tube of its own from there to the tip, its colour fading from the body's black to a glowing yellow, turning from flat to upright, its last stretch
   // a zig-zag bolt (sharp jogs up and back down, rising to a point)
   // (the same wet skin as the body, so the join does not show, but its colour and its glow both follow the vertex colour: black where it leaves the body, glowing yellow at its end)
-  const tailM = new T.MeshStandardMaterial({ color: _skSkin.color, vertexColors: true, metalness: 0.2, roughness: 0.24, emissive: 0xffffff, toneMapped: false }); tailM.envMapIntensity = 0.9;   // (not tone mapped: the yellow stays saturated)
+  const tailM = new T.MeshStandardMaterial({ color: _skSkin.color, vertexColors: true, metalness: 0.2, roughness: 0.34, emissive: 0xffffff, toneMapped: false }); tailM.envMapIntensity = 0.32;   // (not tone mapped: the yellow stays saturated)
   tailM.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '').replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor;'); };   // (the vertex colour is its glow only: the skin stays wet black under it, so the yellow is pure)
   const NT = 72, tpts = Array.from({ length: NT }, () => V(0, 0, 0)), tail = _skTube(unit, tailM, NT, 12);
   const s0 = o.sCut - 0.006, sOf = i => s0 + (1 - s0) * i / (NT - 1);
@@ -113,4 +113,4 @@ const _sk0 = {
   swimAmp: 0.075, swimWaves: 1.1, rearH: 0.12, rearReach: 0.42, lunge: 0.11,
 };
 fx(904, "The ELECTRO SKINK, the new electric brawler (the owner's whiteboard sketch: a long, skinny, flat body, a rounded-off head with no face, four legs each a single arch): wet black and plain, its tail fading into a glowing electric yellow toward its end, its last stretch a zig-zag lightning bolt.", () => _electroSkink(_sk0));
-fx(905, "904, the game sprite (its size in the sheet's cell).", () => _electroSkink(Object.assign({}, _sk0, { S: 2.0 })));
+fx(905, "904, the game sprite (its size in the sheet's cell; S 2.8 since the owner's \"make him bigger\", 2026-11-08: it was 2.0; baked in a 192 px cell, half 2.267, so it keeps the 144 px cell's pixels a unit).", () => _electroSkink(Object.assign({}, _sk0, { S: 2.8 })));

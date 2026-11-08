@@ -4,6 +4,8 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-08
 
+- **b · The Electro Skink darker and bigger.** Owner (2026-11-08): "Can you make him darker and bigger?" Its skin is near black with only a little wet sheen (it read slate grey), and it is 1.4 × as big: baked in a 192 px cell at the same pixels a unit as the other forms (`EVOLUTIONS.electroskink.cell`; the roster's and the radial's thumbnails now read each form's own cell). Its tail's glow and bolt are as they were. Branch `claude/start-game-project-HSh7Z`. Not playtested.
+
 - **a · The ELECTRO SKINK is the electric brawler; the Static Orb set aside.** Owner (2026-11-07/08): the whiteboard sketch is "the new electric brawler", the Static Orb "will now be the magnetic one, but if you just wanna throw him to the side for now"; reviewed through models Nos. 900-904 ("Okay, that's good. Send it."); its name "Electro Skink"; "BASH for now"; "it's really fast", "maybe he moves like a fish, like a slippery eel, but also legs". Branch `claude/start-game-project-HSh7Z`.
   - **The Electro Skink** (`img/evo/electroskink.png`, design No. 904, sprite No. 905): a long, skinny, flat black body, a rounded-off head with no face, four single-arch legs, its tail fading into a glowing electric yellow and ending in a zig-zag bolt. It slithers like an eel, legs paddling. An electric brawler evolves into it now.
   - **Quick:** its pace is 1.6 × (a form's own pace, `js/abilities.js` tickSlowSpeed). Provisional number.

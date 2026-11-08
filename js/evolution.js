@@ -203,7 +203,7 @@ const EVOLUTIONS = {
     // zig-zag bolt. It slithers like an eel, legs paddling, and is quick: its pace is 1.6 × (js/abilities.js tickSlowSpeed; the owner: "it's really fast"; the number is provisional). Its second
     // attack is BASH for now (the owner: "BASH for now"); its own attacks, subclass and Ultimate are open (it uses the electric Ultimate and has no subclass yet).
     electroskink:{ id: "electroskink", name: "ELECTRO SKINK", element: "electric", role: "brawler", move: "BASH", moves: ["bash"], pace: 1.6, sheet: "img/evo/electroskink.png",
-              cell: 144, anchor: [72, 114.2], core: [72, 107.6], noGlow: true, color: "#ffe033" },
+              cell: 192, anchor: [96, 138.2], core: [96, 128.9], noGlow: true, color: "#ffe033" },   // (a 192 px cell since build 2026-11-08b, the owner: "make him darker and bigger": the same pixels a unit as the 144 px sheets, so it draws 1.4 × as big)
     // The ELECTRIC BRAWLER until build 2026-11-08a, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
     // pair of long thick trapezoid brackets down its back, static arcing between them. The tread and core move, so its sheet carries its own light.
     // SET ASIDE since build 2026-11-08a (aside: true): the owner, 2026-11-07: "the old electric brawler [...] will now be the magnetic one, but if you just wanna throw him to the side
