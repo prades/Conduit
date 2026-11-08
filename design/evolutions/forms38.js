@@ -175,6 +175,21 @@ function _ccRoundHex(L, rb, rf, flat, k, m, NU, NV) {
   for (let i = 1; i < NV - 1; i++) for (let j = 0; j < NU; j++) { const a = v(i, j), b = v(i, j + 1), c = v(i + 1, j), d = v(i + 1, j + 1); idx.push(a, b, d, a, d, c); }
   const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); return geo;
 }
+// an ear (No. 914's): growing along +y from its base at the origin to its rounded tip L away, its cross-section the head's rounded hexagon (k, as _ccRoundHex), rt
+// across its flats at the tip, rb at its base and widening still toward the base (flare, over its first 30%), so it never narrows into the head (the owner: "I don't
+// want to see any shrinkage towards the base of the ears"). Open at its base, which is sunk in the head. Smooth, its vertices shared.
+function _ccEar(L, rb, rt, flare, k, NU, NS, NC) {
+  const N = [30, 90, 150].map(d => [Math.cos(d * PI / 180), Math.sin(d * PI / 180)]), ring = [], pos = [], idx = [], Ls = L - 0.8 * rt;   // (Ls: the shaft, below its tip's cap)
+  for (let j = 0; j < NU; j++) { const a = j / NU * TAU, dx = Math.cos(a), dy = Math.sin(a); let f = 0; for (const [nx, ny] of N) f += Math.pow(Math.abs(nx * dx + ny * dy), k); f = Math.pow(f, 1 / k); ring.push([dx / f, dy / f]); }
+  const push = (y, r) => { for (let j = 0; j < NU; j++) pos.push(ring[j][0] * r, y, -ring[j][1] * r); };   // (a ring round the +y axis, turning the same way as _ccRoundHex's)
+  for (let i = 0; i < NS; i++) { const t = i / (NS - 1); push(t * Ls, rt + (rb - rt) * Math.pow(1 - t, 0.7) + rb * flare * Math.pow(Math.max(0, 1 - t / 0.3), 2)); }   // (its shaft)
+  for (let i = 1; i < NC; i++) { const ps = PI / 2 * i / NC; push(Ls + 0.8 * rt * Math.sin(ps), rt * Math.cos(ps)); }   // (its tip, rounded)
+  pos.push(0, L, 0);   // (its tip's point)
+  const R = NS + NC - 1, tip = R * NU, v = (i, j) => i * NU + (j % NU);
+  for (let i = 0; i < R - 1; i++) for (let j = 0; j < NU; j++) { const a = v(i, j), b = v(i, j + 1), c = v(i + 1, j), d = v(i + 1, j + 1); idx.push(a, b, d, a, d, c); }
+  for (let j = 0; j < NU; j++) idx.push(tip, v(R - 1, j), v(R - 1, j + 1));
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); return geo;
+}
 function _coralTick(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
   const pink = _c31(EL.color).convertSRGBToLinear(), rnd = _ccRnd(o.seed || 17);
@@ -238,11 +253,10 @@ function _coralTick(o) {
   const head = G(); head.position.set(0, -o.h * 0.1, o.l * 1.05 - o.headR * o.headCut[0] / 2); body.add(head);   // (its neck, where it joins the body: it droops from there (the owner: "Head droops downward", "It needs to droop downward more"))
   const hd = G(); hd.position.z = o.headR * o.headCut[0] / 2; head.add(hd);   // (the head itself, out from under the body's front, so its crystal stands clear)
   // And (the owner: "Make the head a little bit more rounded. Keep the shape, though"): the same six-sided block, its long edges and its two ends rounded off (o.headRound)
-  // Then (the owner: "Broader now"): a quarter wider (headCut), as tall as it was; its fangs and the brace round its neck spread with it
-  // and smoothly shaded; with headRound null, the sharp-edged block
-  const [hl, hb, hf, hy] = o.headCut;
-  if (o.headRound) { const headSm = headM.clone(); headSm.flatShading = false;   // (the same stone, smooth)
-    hd.add(new T.Mesh(_ccRoundHex(o.headR * hl, o.headR * hb, o.headR * hf, hy, o.headRound[0], o.headRound[1], 48, 28), headSm)); }
+  // and smoothly shaded; with headRound null, the sharp-edged block. Then (the owner: "Broader now"): a quarter wider (headCut), as tall as it was; its ears and the
+  // brace round its neck spread with it
+  const [hl, hb, hf, hy] = o.headCut, headSm = o.headRound ? headM.clone() : headM; headSm.flatShading = !o.headRound;   // (the same stone, smooth; its ears share it)
+  if (o.headRound) hd.add(new T.Mesh(_ccRoundHex(o.headR * hl, o.headR * hb, o.headR * hf, hy, o.headRound[0], o.headRound[1], 48, 28), headSm));
   else { const hg = new T.CylinderGeometry(o.headR * hf, o.headR * hb, o.headR * hl, 6, 1, false, PI / 6);   // (narrower at its face; a flat top and bottom)
     const hm = new T.Mesh(hg, headM); hm.rotation.x = PI / 2; hm.scale.set(1, 1, hy); hd.add(hm); }   // (its axis forward, flattened)
   const topY = o.headR * (hb + hf) / 2 * Math.cos(PI / 6) * hy;   // (its flat top, at its middle)
@@ -255,15 +269,19 @@ function _coralTick(o) {
     Pr.copy(nC).add(V(Math.sin(a) * br.rx, Math.cos(a) * br.ry, 0)); glowPts.push(new T.Vector4(Pr.x, Pr.y, Pr.z, br.glowR));   // (its root, and its glow)
     aim.position.copy(Pr).addScaledVector(ax, bot * (1 - o.sink)); _aim32(aim, ax, V(0, 0, 1)); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);
     const m = _gemCol32(geo, gem); body.add(m); gems.push(m); });
-  const [fl, fr2, ft2] = o.fang, fangGeo = new T.CylinderGeometry(fr2 * ft2, fr2, fl, 6); fangGeo.translate(0, fl / 2, 0);   // (its root at the origin, its blunt tip up: turned over below)
   // The fangs aligned (the owner: "The fangs need realignment"; they grew from the middle of its underside, square to it, raking back toward the body; then from the
   // front of its underside, hanging straight down). Then moved up (the owner, marking two spots at the head's upper left and right edges toward its back: "Put the,
   // here instead of"; asked what goes there: "Fangs, pointing up"): each from the head's upper edge (o.fangAt: how far out, as a share of the head's half-width there;
   // how far forward of its centre, as a share of its length; how high, as a share of its height), sticking up and back from the head and splayed a little outward
-  // (o.fangDir: degrees back from the head's up, degrees out), like two small horns. Fixed to the head: its bite is the head driving down (they used to clamp).
-  const [fax, faz, fay] = o.fangAt, [fbk, fou] = o.fangDir.map(d => d * PI / 180), Rz = o.headR * (hb + (hf - hb) * (faz + 0.5));   // (the head's half-width, corner to corner, where they grow)
-  [-1, 1].forEach(s => { const f = new T.Mesh(fangGeo, headM); f.position.set(s * fax * Rz, topY * fay, o.headR * hl * faz);   // (its root, just inside the head's upper edge)
-    _aim32(f, V(s * Math.sin(fou), Math.cos(fbk) * Math.cos(fou), -Math.sin(fbk) * Math.cos(fou)), V(0, 0, 1)); hd.add(f); });
+  // (o.earDir: degrees back from the head's up, degrees out), like two small horns. Fixed to the head: its bite is the head driving down (they used to clamp).
+  // Now its EARS (the owner: "let's make the ears, now we'll call them ears, just a little bit thicker and more attached. I don't want to see any shrinkage towards the
+  // base of the ears"; they were six-sided pegs, flat-shaded, pushed into the head's curved edge, so they looked pinched and stuck on): each one smooth piece of the
+  // head's own stone (its rounded hexagon, its smooth shading), a little thicker, widening all the way down and flaring into the head, its base sunk in it (o.ear:
+  // its length out of the head, its half-width at the base and at the tip, its flare, how deep its base is sunk)
+  const [fax, faz, fay] = o.earAt, [fbk, fou] = o.earDir.map(d => d * PI / 180), Rz = o.headR * (hb + (hf - hb) * (faz + 0.5));   // (the head's half-width, corner to corner, where they grow)
+  const [eL, eRb, eRt, eFl, eSk] = o.ear, earGeo = _ccEar(eL + eSk, eRb, eRt, eFl, o.headRound ? o.headRound[0] : 7, 36, 14, 6), eD = V(0, 0, 0);
+  [-1, 1].forEach(s => { const e = new T.Mesh(earGeo, headSm); eD.set(s * Math.sin(fou), Math.cos(fbk) * Math.cos(fou), -Math.sin(fbk) * Math.cos(fou));
+    e.position.set(s * fax * Rz, topY * fay, o.headR * hl * faz).addScaledVector(eD, -eSk); _aim32(e, eD, V(0, 0, 1)); hd.add(e); });   // (its root just inside the head's upper edge; its base sunk below that)
   // THE LEGS (the owner: "the legs more like the original image, pointed steak like legs that have a shorter segment that connects to the body at 90degree"): a pair for
   // each of o.legs, each a short, straight segment out of the body's side, square to it, and at its knee the sketch's leaf-spear: a long pointed stake hanging almost
   // straight down to its point on the floor, its top end rising a little above the knee
@@ -304,7 +322,7 @@ const _ccT = {
     [-0.32, -0.36, -0.5, -0.65, 0.09, 0.048, 0.038, 0.7], [0.02, -0.68, 0.05, -1, 0.075, 0.044, 0.034, 0.9],
   ],
   jag: 0.8, bot: 0.8, sink: 0.6, gemK: 1,   // (how far off centre the points go; each crystal's lower point (times its half-width) and how much of that point is sunk; how bright their pink)
-  headR: 0.055, droop: 0.68, headCut: [1.8, 1.5, 0.975, 0.576], headRound: [7, 5], fang: [0.044, 0.013, 0.5], fangAt: [0.53, -0.05, 0.8], fangDir: [60, 15],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); how rounded its long edges and its ends (the lower, the rounder); each fang (length, girth at the root, its tip's share of that))
+  headR: 0.055, droop: 0.68, headCut: [1.8, 1.5, 0.975, 0.576], headRound: [7, 5], ear: [0.044, 0.016, 0.008, 0.35, 0.012], earAt: [0.53, -0.05, 0.8], earDir: [60, 15],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); how rounded its long edges and its ends (the lower, the rounder); its ears (above), where (as a share of the head's half-width, of its length forward of its centre, of its height), their lean (back, out))
   brace: { y: -0.012, z: 0.25, rx: 0.0825, ry: 0.048, back: 0.75, glowR: 0.045,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back, how far each one's glow reaches)
     gems: [[-45, 0.04, 0.023, 0.02, 1], [45, 0.04, 0.023, 0.02, 2], [-92, 0.032, 0.021, 0.017, 3], [92, 0.032, 0.021, 0.017, 4]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
@@ -314,7 +332,7 @@ const _ccT = {
     { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small six-sided head of the same stone, its edges softly rounded, hung low, two smaller, blunt fangs of its stone sticking up and back from its upper edges like small horns, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small six-sided head of the same stone, its edges softly rounded, hung low, two ears of its stone sticking up and back from its upper edges like small horns, flaring into the head, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
 fx(915, "CORAL TICK with flowers: No. 914 with small open blossoms in a few loose clumps among its crystals, no two alike, five or six round pink petals round a deep rose heart, matte (the owner: \"we may add flowers to the 3d texture\").", () => _coralTick(Object.assign({}, _ccT, {
   flowers: [[0.1, 0.32, 0.024], [0.21, 0.43, 0.015], [0.01, 0.45, 0.013], [-0.18, -0.2, 0.02], [-0.28, -0.11, 0.014], [0.42, -0.5, 0.018], [-0.62, -0.05, 0.016]],   // (each: where (its direction's x and z on the body), its size; in clumps)
 })));
