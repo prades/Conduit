@@ -238,6 +238,7 @@ function _coralTick(o) {
   const head = G(); head.position.set(0, -o.h * 0.1, o.l * 1.05 - o.headR * o.headCut[0] / 2); body.add(head);   // (its neck, where it joins the body: it droops from there (the owner: "Head droops downward", "It needs to droop downward more"))
   const hd = G(); hd.position.z = o.headR * o.headCut[0] / 2; head.add(hd);   // (the head itself, out from under the body's front, so its crystal stands clear)
   // And (the owner: "Make the head a little bit more rounded. Keep the shape, though"): the same six-sided block, its long edges and its two ends rounded off (o.headRound)
+  // Then (the owner: "Broader now"): a quarter wider (headCut), as tall as it was; its fangs and the brace round its neck spread with it
   // and smoothly shaded; with headRound null, the sharp-edged block
   const [hl, hb, hf, hy] = o.headCut;
   if (o.headRound) { const headSm = headM.clone(); headSm.flatShading = false;   // (the same stone, smooth)
@@ -255,7 +256,7 @@ function _coralTick(o) {
     aim.position.copy(Pr).addScaledVector(ax, bot * (1 - o.sink)); _aim32(aim, ax, V(0, 0, 1)); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);
     const m = _gemCol32(geo, gem); body.add(m); gems.push(m); });
   const [fl, fr2, ft2] = o.fang, fangGeo = new T.CylinderGeometry(fr2 * ft2, fr2, fl, 6); fangGeo.translate(0, fl / 2, 0);   // (its root at the origin, its blunt tip up: turned over below)
-  const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.32, -topY * 0.8, o.headR * hl * 0.36); hd.add(pv);   // (each fang's root, under its face)
+  const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.16 * (hb + hf), -topY * 0.8, o.headR * hl * 0.36); hd.add(pv);   // (each fang's root, under its face)
     const f = new T.Mesh(fangGeo, headM); f.rotation.x = PI - 0.12; pv.add(f); return { s, pv }; });   // (pointing down, a touch forward)
   // THE LEGS (the owner: "the legs more like the original image, pointed steak like legs that have a shorter segment that connects to the body at 90degree"): a pair for
   // each of o.legs, each a short, straight segment out of the body's side, square to it, and at its knee the sketch's leaf-spear: a long pointed stake hanging almost
@@ -298,8 +299,8 @@ const _ccT = {
     [-0.32, -0.36, -0.5, -0.65, 0.09, 0.048, 0.038, 0.7], [0.02, -0.68, 0.05, -1, 0.075, 0.044, 0.034, 0.9],
   ],
   jag: 0.8, bot: 0.8, sink: 0.6, gemK: 1,   // (how far off centre the points go; each crystal's lower point (times its half-width) and how much of that point is sunk; how bright their pink)
-  headR: 0.055, droop: 0.68, headCut: [1.8, 1.2, 0.78, 0.72], headRound: [7, 5], fang: [0.034, 0.012, 0.5],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); how rounded its long edges and its ends (the lower, the rounder); each fang (length, girth at the root, its tip's share of that))
-  brace: { y: -0.012, z: 0.25, rx: 0.066, ry: 0.048, back: 0.75, glowR: 0.045,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back, how far each one's glow reaches)
+  headR: 0.055, droop: 0.68, headCut: [1.8, 1.5, 0.975, 0.576], headRound: [7, 5], fang: [0.034, 0.012, 0.5],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); how rounded its long edges and its ends (the lower, the rounder); each fang (length, girth at the root, its tip's share of that))
+  brace: { y: -0.012, z: 0.25, rx: 0.0825, ry: 0.048, back: 0.75, glowR: 0.045,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back, how far each one's glow reaches)
     gems: [[-45, 0.04, 0.023, 0.02, 1], [45, 0.04, 0.023, 0.02, 2], [-92, 0.032, 0.021, 0.017, 3], [92, 0.032, 0.021, 0.017, 4]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
   flowers: null,   // (none: see No. 915)
