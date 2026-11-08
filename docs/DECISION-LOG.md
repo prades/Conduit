@@ -654,7 +654,7 @@ When built:
 - the coral crab's everyday attack.
 
 ### Supersedes / superseded by
-Partly superseded by "The coral crab's REEF grows rock and crystal; its name for now" (2026-11-08): REEF grows rock and crystal, not coral; and by "The coral crab's look (No. 914); Crustacean; Crushing; REEF climbs to the catwalks" (2026-11-08): its look, and the climbing reaches the catwalks only, for now.
+Partly superseded by "The coral crab's REEF grows rock and crystal; its name for now" (2026-11-08): REEF grows rock and crystal, not coral; and by "The coral crab's look (No. 914); Crustacean; Crushing; REEF climbs to the catwalks" (2026-11-08): its look (its climbing's reach, the catwalks alone, superseded in turn by "Connected systems: REEF climbs onto any high ground over ground the player stands on", 2026-11-08: any high ground over ground the player stands on).
 
 ## DECISION: Build A to main; the hit words beside the creature; BLINDING DUST keeps its ticks; the 21 card names
 
@@ -2346,4 +2346,22 @@ Approved (look, subclass, attack, climbing's reach). Not implemented: BLOOM is n
 Nos. 912 and 913 (crabs with coral, 2026-11-08); every intermediate No. 914 (`CONVERSION.md` §12); new high areas for the climbing.
 
 ### Supersedes / superseded by
-Supersedes, in the 2026-11-02 BLOOM creatures entry, the coral crab's coral on its back and its clamping claws (as drawn), and the climbing's "new, higher areas" (for now).
+Supersedes, in the 2026-11-02 BLOOM creatures entry, the coral crab's coral on its back and its clamping claws (as drawn), and the climbing's "new, higher areas" (for now). Its climbing's reach (the catwalks alone) is superseded by "Connected systems: REEF climbs onto any high ground over ground the player stands on" (2026-11-08).
+
+## DECISION: Connected systems: REEF climbs onto any high ground over ground the player stands on
+- Date and build: 2026-11-08, after build `2026-11-08g`, branch `claude/start-game-project-HSh7Z`. No game code changed.
+- The owner's words: "I really want to make these systems really connected, like how the ice bridges can freeze any part of water, and I want the coral reef to extend to all high ground that extends over ground that the player can interact with or stand upon."
+- Context: earlier the same day the owner had answered "the player can climb to the cat walks and that's it for now". The Ice Technician's bridges (built in `2026-11-06k`) can be made on any water, not on marked sites.
+
+### Decision
+- REEF's rock and crystal let the player climb onto any high ground that extends over ground the player can stand on or interact with, wherever it is, as an ice bridge can be made on any part of water: no marked sites.
+- On today's map (checked on the map data, build `2026-11-08g`): the catwalks' whole west edge over the arena floor (their railing, about 18 tiles), and the observation deck's edge over the arena floor (its cliff, about 9 tiles, behind the deck's glass: whether the glass lets a climb through is open). Nothing else qualifies today: Teleport Room 2 is walled in and the stair room's open side already has its stairs, the tanks' tops are not floor, and the Sewers and the Nest are on one level each (the dam stands over water, which no one stands on). Any high ground added later qualifies the same way, with no extra data.
+
+### Status
+Approved (the rule). Not implemented: BLOOM is not built. Open (`CONVERSION.md` §11): who may climb, both ways or one, how long a climb lasts, whether the deck's glass lets one through, whether high ground over an ice bridge counts while the ice holds, and whether the "connected" rule is meant for every technician's utility (the owner named the ice bridges and REEF).
+
+### Alternatives
+The catwalks alone (the owner's answer earlier the same day); marked climbing sites, as the Kinetic Launcher's deploy spots are.
+
+### Supersedes / superseded by
+Supersedes the climbing's reach in "The coral crab's look (No. 914); Crustacean; Crushing; REEF climbs to the catwalks" (2026-11-08): the catwalks alone.

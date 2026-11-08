@@ -568,7 +568,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
   - **Open** (its section 11):
     - the apparatus's look;
     - BLOOM's forms: pictures (SUNDEW's approved 2026-11-08: No. 911; the coral crab's: No. 914), the lotus lantern's name (the coral crab's is "coral crab" for now, 2026-11-08), which comes first, an egg;
-    - CONSUME's, SEEDFALL's and REEF's numbers (REEF's climbing reaches the catwalks only, for now: 2026-11-08);
+    - CONSUME's, SEEDFALL's and REEF's numbers; REEF's climbing reaches any high ground over ground the player can stand on (2026-11-08), but who may climb, both ways or one, how long, and the deck's glass are open;
     - BLOOM's cards' designs;
     - BLOOM's texture and icon.
 
@@ -576,7 +576,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - MEND heals 2% every hit;
     - SUNDEW, the Brawler, whose CONSUME swallows an enemy and takes 75% less damage while holding it. *(2026-11-08: its look approved, No. 911, a wilted black flower with fangs on root-tentacles; CONSUME is its Ultimate: `CONVERSION.md` §2.)*
     - the lotus lantern Mage, with SEEDFALL;
-    - the coral crab Technician, whose REEF grows rock and crystal (coral until 2026-11-08) the player can climb, up to the catwalks for now. *(2026-11-08: its look approved, No. 914, a rocky tick with square pink crystals on its back; it stays Crustacean, its attack Crushing.)*
+    - the coral crab Technician, whose REEF grows rock and crystal (coral until 2026-11-08) the player can climb onto any high ground that extends over ground the player can stand on or interact with (as an ice bridge on any water). *(2026-11-08: its look approved, No. 914, a rocky tick with square pink crystals on its back; it stays Crustacean, its attack Crushing.)*
 
     These are drafts and mockups for your approval. Confirmed last: the other 50% is toxic or fire; Series 2's BLOOM cards wait for the apparatus; an evolved toxic follower waits for its class's BLOOM form.
 - **Side Quest's look, and the subclass art** (designed 2026-11-02; Side Quest's look built in `2026-11-02f`; the subclass art approved 2026-11-06 and built in `2026-11-06d`):
