@@ -179,6 +179,7 @@ function _sundewPitcher(o) {
   const bladeP = G(); b.add(bladeP); const blade = _sdBlade(m, o.bladeL, o.bladeW, o.teeth, true, o.bend, skin); blade.position.z = 0.02; bladeP.add(blade);
   const S0 = o.stemVia ? potPt(0, o.stemBase[0], o.stemBase[1]) : potPt(0, o.stalkY0, o.stalkZ0), C1 = V(0, 0, 0), C2 = V(0, 0, 0), TOP = V(0, 0, 0);
   const via0 = (o.stemVia || []).map(p => V(p[0], p[1], p[2])), via = via0.map(p => p.clone());
+  const wv = (o.witherVia || []).map(p => V(p[0], p[1], p[2])), WTOP = o.witherTop ? V(o.witherTop[0], o.witherTop[1], o.witherTop[2]) : null;   // (CONSUME: where the stem lies, withered)
   const stem = o.stemVia ? new T.CatmullRomCurve3([S0].concat(via, [TOP]), false, 'centripetal') : null;   // (it holds these points: moving them moves it)
   return { g, core: o.coreY * (o.S || 1), update(t, act, cons) {   // (cons: seconds since CONSUME swallowed its catch; leave it out when it holds none)
     const ph = 1.6 * t, pr = _prog31(t, act), rear = _sdS(0, 0.3, pr) * (1 - _sdS(0.34, 0.5, pr)), strike = _sdS(0.34, 0.5, pr) * (1 - _sdS(0.62, 1, pr)), br = Math.sin(ph);
@@ -187,10 +188,13 @@ function _sundewPitcher(o) {
     const c = cons == null ? -1 : cons, gulp = c < 0 ? 0 : _sdS(0, 0.1, c) * (1 - _sdS(0.1, 0.24, c));
     const shut = c < 0 ? (o.shutHold || 0) : _sdS(0.1, 0.3, c) * (1 - _sdS(o.consumeHold, o.consumeHold + 0.45, c));
     const throb = shut > 0.3 ? 0.5 + 0.5 * Math.sin((c < 0 ? t : c - 0.3) * TAU * 1.1 - PI / 2) : 0;
+    // ...and while it digests its stem withers to the floor and curls round toward it, the flower and the blade lying wilted on the ground; its roots draw in (the owner:
+    // "make him put the stem on the ground when he's consuming like he may make it wrapped towards him as well. He's taking it all in make it [wither] on the ground")
+    const wither = c < 0 || !WTOP ? 0 : _sdS(0.15, 0.85, c) * (1 - _sdS(o.consumeHold - 0.1, o.consumeHold + 0.7, c)), we = wither * wither * (3 - 2 * wither);
     roots.forEach(r => { const d0 = Math.hypot(r.P0.x, r.P0.z), ax = Math.atan2(r.P0.x, r.P0.z), dx = Math.sin(ax), dz = Math.cos(ax), tx = Math.cos(ax), tz = -Math.sin(ax);
-      for (let i = 0; i < NR; i++) { const u = i / (NR - 1), d = d0 + r.len * u, down = _sdS(0, 0.34, u), tip = _sdS(0.68, 1, u);
+      for (let i = 0; i < NR; i++) { const u = i / (NR - 1), d = d0 + r.len * (1 - 0.14 * shut) * u, down = _sdS(0, 0.34, u), tip = _sdS(0.68, 1, u);   // (drawn in while it holds a catch)
         const side = o.rootWave * u * Math.sin(TAU * 0.85 * u + r.ph0 + ph) * calm + r.cs * o.rootCurlSide * tip * tip;   // (a slow writhe, the tip curling to one side)
-        r.pts[i].set(dx * d + tx * side, r.P0.y * (1 - down) + o.rootR1 * down + o.rootCurl * tip * tip * (0.8 + 0.2 * Math.sin(ph + r.ph0) * calm), dz * d + tz * side); }
+        r.pts[i].set(dx * d + tx * side, r.P0.y * (1 - down) + o.rootR1 * down + o.rootCurl * (1 + 0.9 * shut) * tip * tip * (0.8 + 0.2 * Math.sin(ph + r.ph0) * calm), dz * d + tz * side); }
       r.tb.set(r.pts, 0, 0, u => (o.rootR0 * Math.pow(1 - u, 0.85) + 0.0035) * (1 + (o.rootRing || 0) * Math.pow(0.5 + 0.5 * Math.cos(u * (o.rootRingN || 0) * TAU), 3)), 1.2, 0.85);   // (910: ringed, as roots or tentacles)
       if (r.twig) { const B = r.pts[Math.floor(NR * 0.45)], ta = r.twig.side * 0.6, bx = dx * Math.cos(ta) + tx * Math.sin(ta), bz = dz * Math.cos(ta) + tz * Math.sin(ta);
         for (let i = 0; i < 8; i++) { const u = i / 7; r.twig.pts[i].set(B.x + bx * 0.13 * u, B.y + 0.012 * Math.sin(PI * u) + 0.018 * u * u, B.z + bz * 0.13 * u); }
@@ -203,8 +207,10 @@ function _sundewPitcher(o) {
         f.pts[i].set(Math.sin(f.a) * d, o.footY * (1 - u) + 0.012 + lift * u * u + o.curl * Math.pow(u, 4), Math.cos(f.a) * d); }
       f.tb.set(f.pts, 0, 0, u => 0.05 * Math.sqrt(Math.max(0, 1 - u * u * u)) + 0.006, 2, 0.35); });   // (flat and wide, their ends blunt and round, as drawn)
     TOP.set(0.02 * Math.sin(ph + 0.5), o.flowerY + 0.012 * Math.sin(2 * ph) + 0.05 * rear - 0.07 * strike, o.flowerZ - 0.08 * rear + 0.1 * strike);
+    if (we > 0) TOP.lerp(WTOP, we);   // (the flower down on the floor in front of it)
     if (stem) {   // (the higher along it, the more it follows the flower: cocked back as it rears, whipped forward in the strike)
-      via.forEach((p, i) => { const k = (i + 1) / (via.length + 1); p.copy(via0[i]); p.x += TOP.x * k; p.y += (0.05 * rear - 0.06 * strike) * k; p.z += (-0.06 * rear + 0.1 * strike) * k; });
+      via.forEach((p, i) => { const k = (i + 1) / (via.length + 1); p.copy(via0[i]); p.x += TOP.x * k; p.y += (0.05 * rear - 0.06 * strike) * k; p.z += (-0.06 * rear + 0.1 * strike) * k;
+        if (we > 0) p.lerp(wv[i], we); });   // (withered: along the floor, round its side)
       for (let i = 0; i < NS; i++) stem.getPoint(i / (NS - 1), spts[i]);
       stalk.set(spts, 0, 0, u => o.stemR0 + (o.stemR1 - o.stemR0) * u, 1, 1);
     } else {
@@ -213,6 +219,10 @@ function _sundewPitcher(o) {
     }
     flower.position.copy(TOP); flower.rotation.set(-0.35 + 0.4 * rear - 0.3 * strike, 0.1 * Math.sin(ph + 0.5), 0);
     bladeP.position.copy(TOP); bladeP.rotation.set(o.droop + 0.05 * Math.sin(ph + 1) - 1.1 * rear + 1.0 * strike, 0.08 * Math.sin(ph + 0.9), 0);
+    flower.scale.setScalar(1 - 0.15 * we);
+    if (we > 0) {   // (withered: the flower face up on the floor, the blade lying flat beside it)
+      flower.rotation.x += (-1.35 - flower.rotation.x) * we; flower.rotation.y += (o.witherYaw - flower.rotation.y) * we;
+      bladeP.rotation.x += (0.06 - bladeP.rotation.x) * we; bladeP.rotation.y += (o.witherYaw - bladeP.rotation.y) * we; bladeP.rotation.z += (PI / 2 - bladeP.rotation.z) * we; }
   } };
 }
 const _sdA = {
@@ -241,7 +251,8 @@ const _sdD = Object.assign({}, _sdC, {
   body: 'flower', tilt: 0.5, lift: 0.04, lightK: 0.45,
   petals: 6, petalL: 0.44, petalW: 0.14, cup: 0.05, p0r: 0.06, p0y: 0.1, pRise: 0.44, phi0: 0.36, phi1: 0.72, wilt: 2.7, recR: 0.1,   // (the petals: how many, long, wide, cupped; the spine's start, its rise, its wilt (radians))
   teethRim: 12, rimR: 0.14, rimY: 0.26, teethThroat: 9, throatR: 0.075, throatY: 0.19, necR: 0.07, necY: 0.165,
-  budH: 0.4, budR: 0.31, budTip: 0.012, consumeHold: 5,   // (CONSUME: the closed bud (its height, its bulge's pull, its tip) and how long it holds its catch (docs/CONVERSION.md: 5 s))
+  budH: 0.4, budR: 0.31, budTip: 0.012, consumeHold: 5,
+  witherVia: [[0, 0.045, -0.3], [0.27, 0.045, -0.12], [0.29, 0.045, 0.13]], witherTop: [0.1, 0.05, 0.31], witherYaw: -0.84,   // (CONSUME: the stem withered on the floor, round its right side to the front (x, y, z), and the way its flower and blade lie)   // (CONSUME: the closed bud (its height, its bulge's pull, its tip) and how long it holds its catch (docs/CONVERSION.md: 5 s))
   rootR: 0.08, rootY: 0.05,
   stemBase: [0.06, -0.09], stemVia: [[0, 0.1, -0.3], [0, 0.42, -0.38], [0, 0.74, -0.18]], flowerY: 0.74, flowerZ: 0.3,
 });
