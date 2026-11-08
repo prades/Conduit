@@ -221,7 +221,7 @@ Answered last (2026-11-02):
 ### Decided
 - **MAGNETIC comes from electric** the way BLOOM comes from toxic: electric can be converted into magnetic.
 - **Today's electric Brawler becomes the MAGNETIC Brawler,** its design kept "and its moves and everything". Today that is the **STATIC ORB** (design No. 781; `EVOLUTIONS.staticorb` in js/evolution.js, whose comment calls it "the ELECTRIC BRAWLER"), with SONIC ROLL and CAPACITOR DISCHARGE.
-- **The electric Brawler gets a new design:** the owner's whiteboard sketch (2026-11-07: "The one character on dry erase is the electric brawler, the new electric brawler, the old electric brawler [...] will now be the magnetic one, but if you just wanna throw him to the side for now"). Its model, **No. 900** (`design/evolutions/forms36.js`: a long near-black flyer with a hooked beak, a swept crest, three pairs of hanging fins and a lightning-bolt tail), is in review: not in the game yet.
+- **The electric Brawler gets a new design:** the owner's whiteboard sketch (2026-11-07: "The one character on dry erase is the electric brawler, the new electric brawler, the old electric brawler [...] will now be the magnetic one, but if you just wanna throw him to the side for now"). Its first model, No. 900 (a flying eel-bird), was rejected (2026-11-08: "Those look awful they should look like a mix between a centipede and a salamander"). Its name, from the owner: **ELECTRO SKINK**. Its model now, **No. 901** (`design/evolutions/forms36.js`: a long, low, wet-black body of armour segments with lit yellow spots and a pair of jointed legs on each, a broad flat head with bulging lit eyes, venom claws and long antennae swept back, two zig-zag bolts for tail legs), is in review: not in the game yet. Its second attack until it has its own: **BASH** (the owner: "BASH for now").
 
 ### Until it is built
 The STATIC ORB is the electric Brawler's form in the code, and the docs, tests and Bible call it electric. That is correct until this work is done; it is not a mistake to fix on its own.
@@ -230,7 +230,7 @@ The STATIC ORB is the electric Brawler's form in the code, and the docs, tests a
 1. How electric becomes MAGNETIC: at the conversion apparatus, as toxic becomes BLOOM; by breeding (which pair, what chance); or both.
 2. MAGNETIC's rules: its match-ups, status, colour, texture, crystal and icon, its cards, its Technician ability.
 3. MAGNETIC's Mage and Technician forms (only its Brawler is decided).
-4. The new electric Brawler: its name and its attacks (its body: the whiteboard sketch, model No. 900 in review).
+4. The ELECTRO SKINK's own attacks (BASH stands in; its look: model No. 901, in review).
 5. A follower that is a Static Orb in a save when the change comes: does it stay electric (taking the new form), or become MAGNETIC?
 6. Whether the Static Orb keeps its name as a MAGNETIC creature.
 7. The three retired electric Brawler forms kept for old saves (Storm Manta, Prism Hood, Volt Ring), which the owner's words do not cover.

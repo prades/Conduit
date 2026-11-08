@@ -2287,7 +2287,7 @@ Implemented and tested (`tests/secondattacks.js` and the updated suites); not pl
 ### Status
 Approved direction; not designed in detail; not implemented. Until it is built, the STATIC ORB stays the electric Brawler in the code, docs and tests. The open points are in `CONVERSION.md` §13.
 
-Later the same day the owner sent the new electric Brawler's look, a whiteboard sketch, and set the Static Orb aside for now ("if you just wanna throw him to the side for now"). Its model, No. 900 (`design/evolutions/forms36.js`), is in review (`docs/ART-PROCESS.md`: one piece first).
+Later the same day the owner sent the new electric Brawler's look, a whiteboard sketch, and set the Static Orb aside for now ("if you just wanna throw him to the side for now"). Its model, No. 900 (`design/evolutions/forms36.js`), is in review (`docs/ART-PROCESS.md`: one piece first). On 2026-11-08 the owner rejected No. 900 ("Those look awful they should look like a mix between a centipede and a salamander"), named the creature **ELECTRO SKINK** and gave it **BASH for now**; No. 901, the centipede-salamander, is in review.
 
 ### Supersedes / superseded by
 In part, `CONVERSION.md` §4's non-goal "No conversion but toxic into BLOOM, for now".
