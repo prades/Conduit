@@ -183,13 +183,15 @@ function _coralTick(o) {
     aim.position.copy(Pc).addScaledVector(ax, -o.sink * h); _aim32(aim, ax, V(0, 0, 1)); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);
     const m = _gemCol32(geo, gem); body.add(m); gems.push(m);
   });
-  // THE HEAD: small, at the front; a mouth-spike between two clamping mouthparts and two short palps
-  const head = G(); head.position.set(0, -o.h * 0.15, o.l * 0.96); body.add(head);
-  const hm = new T.Mesh(new T.SphereGeometry(1, 20, 14), rockM); hm.scale.set(o.headR * 1.1, o.headR * 0.8, o.headR); head.add(hm);
-  const spike = _gemCol32(_ccCrystal(o.headR * 1.1, o.headR * 0.26, o.headR * 0.5, o.jag, 0.4, 5), gem); spike.position.set(0, -o.headR * 0.2, o.headR * 0.6); spike.rotation.x = PI / 2 + 0.35; spike.userData.relight(); head.add(spike); gems.push(spike);   // (its mouth-spike a crystal too)
-  const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.55, 0, o.headR * 0.7); head.add(pv);
-    const j = new T.Mesh(_ccHorn(o.headR * 1.3, o.headR * 0.3, 0.45), _ccBlack); j.rotation.set(PI / 2, 0, -s * 0.5); pv.add(j); return { s, pv }; });
-  [-1, 1].forEach(s => { const pa = new T.Mesh(new T.CylinderGeometry(o.headR * 0.18, o.headR * 0.24, o.headR * 1.1, 8), rockM); pa.position.set(s * o.headR * 0.95, -o.headR * 0.1, o.headR * 0.55); pa.rotation.set(PI / 2 - 0.3, 0, s * 0.3); head.add(pa); });
+  // THE HEAD: small, at the front, smooth and simple (the owner: "its head is really weirdly shaped right now. It needs to have less definition"; it had a faceted
+  // head, two curved black horns for mouthparts, two palps and a crystal mouth-spike): one rounded head of the same stone, smooth, and two short, blunt mouthparts
+  // of the same stone that clamp (its crushing bite)
+  const headM = new T.MeshPhysicalMaterial({ color: o.rock, metalness: 0, roughness: 0.92, reflectivity: 0.08 }); headM.envMapIntensity = 0.08;
+  const head = G(); head.position.set(0, -o.h * 0.2, o.l * 0.95); body.add(head);
+  const hm = new T.Mesh(new T.SphereGeometry(1, 32, 24), headM); hm.scale.set(o.headR * 1.25, o.headR * 0.8, o.headR * 1.1); head.add(hm);
+  const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.28, -o.headR * 0.12, o.headR * 0.55); head.add(pv);   // (tucked in: only their rounded tips show, a soft cleft at its front)
+    const k = G(); k.rotation.y = -s * 0.2; pv.add(k);   // (at rest the two lean in toward each other)
+    const j = new T.Mesh(new T.SphereGeometry(1, 20, 14), headM); j.scale.set(o.headR * 0.34, o.headR * 0.28, o.headR * 0.45); j.position.z = o.headR * 0.35; k.add(j); return { s, pv }; });
   // THE LEGS: a pair for each of o.legs (four now: the owner, "4 legs"), the sketch's leaf-spears (a leaf of 0 would draw a thinner jointed leg)
   const legs = []; [-1, 1].forEach(s => o.legs.forEach((ld, k) => legs.push({ s, k, ld, ph: (k % 2 ? PI : 0) + (s > 0 ? PI : 0), up: _taper32(b, _ccBlack, 12, 8), lo: _taper32(b, _ccBlack, 18, 10),
     knee: (() => { const m = new T.Mesh(new T.SphereGeometry(1, 12, 8), _ccBlack); b.add(m); return m; })(), pu: Array.from({ length: 12 }, () => V(0, 0, 0)), pl: Array.from({ length: 18 }, () => V(0, 0, 0)) })));
@@ -231,4 +233,4 @@ const _ccT = {
     { z: 0.06, out: 0.3, up: 0.15, dz: 0.14, leaf: 0.044 }, { z: -0.06, out: 0.3, up: 0.16, dz: -0.17, leaf: 0.046 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior rocky plates of dark stone, the seams between them glowing BLOOM pink; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood; a small head with clamping mouthparts and a crystal mouth-spike; four legs, the sketch's long pointed leaf-spears.", () => _coralTick(_ccT));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior rocky plates of dark stone, the seams between them glowing BLOOM pink; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood; a small, smooth head of the same stone with two short, blunt mouthparts that clamp; four legs, the sketch's long pointed leaf-spears.", () => _coralTick(_ccT));
