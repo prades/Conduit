@@ -257,7 +257,7 @@ function _coralTick(o) {
     const m = _gemCol32(geo, gem); body.add(m); gems.push(m);
   });
   // FLOWERS (o.flowers; the owner: "we may add flowers to the 3d texture", then "the flower pattern is too regular, and they're not, I don't like them glowing like
-  // that"): small open blossoms in a few loose clumps among the crystals, no two alike: five or six petals, each a little longer or shorter, wider or narrower, turned
+  // that", and "Add flowers again", putting them on No. 914 itself; they were on No. 915 alone): small open blossoms in a few loose clumps among the crystals, no two alike: five or six petals, each a little longer or shorter, wider or narrower, turned
   // a little off even and cupped more or less; each flower its own size and shade of pink, its petals round, tipped a little off the rock's face. Matte: nothing on them glows.
   if (o.flowers) {
     const fr = _ccRnd((o.seed || 17) + 53), pg = new T.SphereGeometry(1, 14, 10);
@@ -360,13 +360,10 @@ const _ccT = {
   brace: { y: -0.012, z: 0.25, rx: 0.0825, ry: 0.048, back: 0.75, glowR: 0.045,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back, how far each one's glow reaches)
     gems: [[-45, 0.04, 0.023, 0.02, 1], [45, 0.04, 0.023, 0.02, 2], [-92, 0.032, 0.021, 0.017, 3], [92, 0.032, 0.021, 0.017, 4]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
-  flowers: null,   // (none: see No. 915)
+  flowers: [[0.1, 0.32, 0.024], [0.21, 0.43, 0.015], [0.01, 0.45, 0.013], [-0.18, -0.2, 0.02], [-0.28, -0.11, 0.014], [0.42, -0.5, 0.018], [-0.62, -0.05, 0.016]],   // (its flowers (the owner: "Add flowers again"; they were on No. 915 alone), in clumps; each: where (its direction's x and z on the body), its size)
   seg: 0.08, hipY: 0, legR: 0.022, lift: 0.03, stride: 0.03,   // (the legs' short segment: how long, how high on the body's side; how thick; their step)
   legs: [   // (a pair each, front and back: where along the body (z), how far out the point stands beyond the knee, how far the stake's top rises above the knee, its half-width)
     { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small six-sided head of the same stone, its edges softly rounded, hung low, two ears of its stone sticking up and back from its upper edges like small horns, flaring into the head, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
-fx(915, "CORAL TICK with flowers: No. 914 with small open blossoms in a few loose clumps among its crystals, no two alike, five or six round pink petals round a deep rose heart, matte (the owner: \"we may add flowers to the 3d texture\").", () => _coralTick(Object.assign({}, _ccT, {
-  flowers: [[0.1, 0.32, 0.024], [0.21, 0.43, 0.015], [0.01, 0.45, 0.013], [-0.18, -0.2, 0.02], [-0.28, -0.11, 0.014], [0.42, -0.5, 0.018], [-0.62, -0.05, 0.016]],   // (each: where (its direction's x and z on the body), its size; in clumps)
-})));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock, and among them small matte pink flowers in loose clumps, no two alike; a small six-sided head of the same stone, its edges softly rounded, hung low, two ears of its stone sticking up and back from its upper edges like small horns, flaring into the head, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
