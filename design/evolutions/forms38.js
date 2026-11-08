@@ -161,6 +161,20 @@ function _ccSmoothSeams(geo, NW) {
   avg(Array.from({ length: R }, (_, j) => j)); avg(Array.from({ length: R }, (_, j) => (rows - 1) * R + j));
   for (let r = 1; r < rows - 1; r++) avg([r * R, r * R + NW]);
 }
+// a six-sided block with rounded edges (No. 914's head), along z, L long, centred on the origin: its cross-section a hexagon with a corner at each side and flat on top and
+// below, rb across its corners at the back and rf at the front, flattened (its height times flat); k rounds its long edges (a soft maximum of its three faces' distances: the
+// higher, the sharper; a hexagon at infinity) and m its two ends (a superellipse along it: the higher, the squarer). One closed surface with shared vertices, smooth.
+function _ccRoundHex(L, rb, rf, flat, k, m, NU, NV) {
+  const N = [30, 90, 150].map(d => [Math.cos(d * PI / 180), Math.sin(d * PI / 180)]), ring = [], pos = [0, 0, -L / 2], idx = [];   // (its faces' normals; its back point)
+  for (let j = 0; j < NU; j++) { const a = j / NU * TAU, dx = Math.cos(a), dy = Math.sin(a); let f = 0; for (const [nx, ny] of N) f += Math.pow(Math.abs(nx * dx + ny * dy), k); f = Math.pow(f, 1 / k); ring.push([dx / f, dy / f]); }
+  for (let i = 1; i < NV; i++) { const ps = -PI / 2 + PI * i / NV, sn = Math.sin(ps), z = L / 2 * Math.sign(sn) * Math.pow(Math.abs(sn), 2 / m), s = Math.pow(Math.cos(ps), 2 / m), ap = (rb + (rf - rb) * (z / L + 0.5)) * Math.cos(PI / 6) * s;
+    for (let j = 0; j < NU; j++) pos.push(ring[j][0] * ap, ring[j][1] * ap * flat, z); }
+  pos.push(0, 0, L / 2);   // (its front point)
+  const last = 1 + (NV - 1) * NU, v = (i, j) => 1 + (i - 1) * NU + (j % NU);
+  for (let j = 0; j < NU; j++) idx.push(0, v(1, j + 1), v(1, j), last, v(NV - 1, j), v(NV - 1, j + 1));
+  for (let i = 1; i < NV - 1; i++) for (let j = 0; j < NU; j++) { const a = v(i, j), b = v(i, j + 1), c = v(i + 1, j), d = v(i + 1, j + 1); idx.push(a, b, d, a, d, c); }
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); return geo;
+}
 function _coralTick(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
   const pink = _c31(EL.color).convertSRGBToLinear(), rnd = _ccRnd(o.seed || 17);
@@ -223,8 +237,13 @@ function _coralTick(o) {
   const headM = new T.MeshPhysicalMaterial({ color: o.rock, flatShading: true, metalness: 0, roughness: o.rockRough, reflectivity: 0.15 }); headM.envMapIntensity = 0.15;   // (the body's stone, cut in facets)
   const head = G(); head.position.set(0, -o.h * 0.1, o.l * 1.05 - o.headR * o.headCut[0] / 2); body.add(head);   // (its neck, where it joins the body: it droops from there (the owner: "Head droops downward", "It needs to droop downward more"))
   const hd = G(); hd.position.z = o.headR * o.headCut[0] / 2; head.add(hd);   // (the head itself, out from under the body's front, so its crystal stands clear)
-  const [hl, hb, hf, hy] = o.headCut, hg = new T.CylinderGeometry(o.headR * hf, o.headR * hb, o.headR * hl, 6, 1, false, PI / 6);   // (narrower at its face; a flat top and bottom)
-  const hm = new T.Mesh(hg, headM); hm.rotation.x = PI / 2; hm.scale.set(1, 1, hy); hd.add(hm);   // (its axis forward, flattened)
+  // And (the owner: "Make the head a little bit more rounded. Keep the shape, though"): the same six-sided block, its long edges and its two ends rounded off (o.headRound)
+  // and smoothly shaded; with headRound null, the sharp-edged block
+  const [hl, hb, hf, hy] = o.headCut;
+  if (o.headRound) { const headSm = headM.clone(); headSm.flatShading = false;   // (the same stone, smooth)
+    hd.add(new T.Mesh(_ccRoundHex(o.headR * hl, o.headR * hb, o.headR * hf, hy, o.headRound[0], o.headRound[1], 48, 28), headSm)); }
+  else { const hg = new T.CylinderGeometry(o.headR * hf, o.headR * hb, o.headR * hl, 6, 1, false, PI / 6);   // (narrower at its face; a flat top and bottom)
+    const hm = new T.Mesh(hg, headM); hm.rotation.x = PI / 2; hm.scale.set(1, 1, hy); hd.add(hm); }   // (its axis forward, flattened)
   const topY = o.headR * (hb + hf) / 2 * Math.cos(PI / 6) * hy;   // (its flat top, at its middle)
   // ITS NECK BRACE (the owner, of the crystal on top of its head: "I don't like the positioning on it. I might want to have it rooted as his, as some sort of neck
   // brace"): a collar of crystals rooted round the top and sides of its neck where the head leaves the body, each pointing out from the neck and leaning back over the
@@ -279,7 +298,7 @@ const _ccT = {
     [-0.32, -0.36, -0.5, -0.65, 0.09, 0.048, 0.038, 0.7], [0.02, -0.68, 0.05, -1, 0.075, 0.044, 0.034, 0.9],
   ],
   jag: 0.8, bot: 0.8, sink: 0.6, gemK: 1,   // (how far off centre the points go; each crystal's lower point (times its half-width) and how much of that point is sunk; how bright their pink)
-  headR: 0.055, droop: 0.68, headCut: [1.8, 1.2, 0.78, 0.72], fang: [0.034, 0.012, 0.5],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); each fang (length, girth at the root, its tip's share of that))
+  headR: 0.055, droop: 0.68, headCut: [1.8, 1.2, 0.78, 0.72], headRound: [7, 5], fang: [0.034, 0.012, 0.5],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); how rounded its long edges and its ends (the lower, the rounder); each fang (length, girth at the root, its tip's share of that))
   brace: { y: -0.012, z: 0.25, rx: 0.066, ry: 0.048, back: 0.75, glowR: 0.045,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back, how far each one's glow reaches)
     gems: [[-45, 0.04, 0.023, 0.02, 1], [45, 0.04, 0.023, 0.02, 2], [-92, 0.032, 0.021, 0.017, 3], [92, 0.032, 0.021, 0.017, 4]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
@@ -289,7 +308,7 @@ const _ccT = {
     { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small, angular head of the same stone, hung low, two smaller, blunt fangs of its stone pointing down that clamp, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small six-sided head of the same stone, its edges softly rounded, hung low, two smaller, blunt fangs of its stone pointing down that clamp, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
 fx(915, "CORAL TICK with flowers: No. 914 with small open blossoms in a few loose clumps among its crystals, no two alike, five or six round pink petals round a deep rose heart, matte (the owner: \"we may add flowers to the 3d texture\").", () => _coralTick(Object.assign({}, _ccT, {
   flowers: [[0.1, 0.32, 0.024], [0.21, 0.43, 0.015], [0.01, 0.45, 0.013], [-0.18, -0.2, 0.02], [-0.28, -0.11, 0.014], [0.42, -0.5, 0.018], [-0.62, -0.05, 0.016]],   // (each: where (its direction's x and z on the body), its size; in clumps)
 })));
