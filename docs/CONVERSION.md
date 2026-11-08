@@ -169,7 +169,7 @@ Answered on 2026-11-02 (section 2):
 Still open:
 1. **The apparatus's look.**
 2. **BLOOM's forms:**
-   - the pictures of the three concepts, and which form is built first (BLOOM breeding needs one). The owner's pencil page (section 12) has all three; **SUNDEW's first drafts are in review** (2026-11-08, `design/evolutions/forms37.js`): No. 906, the pitcher (from the drawing marked BRAWLY), and No. 907, the snail (from the snail drawn below it);
+   - the pictures of the three concepts, and which form is built first (BLOOM breeding needs one). The owner's pencil page (section 12) has all three; **SUNDEW's drafts** (2026-11-08, `design/evolutions/forms37.js`): No. 906, the pitcher (from the drawing marked BRAWLY), and No. 907, the snail (from the snail drawn below it). The owner chose the pitcher: "The left one tilted pitcher and feet like roots/tentacles". **No. 908**, the pitcher tilted forward on roots, is in review;
    - names for the lotus lantern and the coral crab;
    - a BLOOM egg's look.
 3. **CONSUME's numbers:** the digestion's damage a second, and its type. SEEDFALL's and REEF's numbers.
@@ -188,6 +188,7 @@ Answered last (2026-11-02):
 
 ## 12. History
 
+- 2026-11-08: the owner chose the pitcher (No. 906) over the snail (No. 907): "The left one tilted pitcher and feet like roots/tentacles". **No. 908:** the pitcher tilted forward, its glowing mouth to the front; its stalk from the high back rim, arching over the mouth, so the flower and the blade-leaf hang in front of it; its feet seven long, round roots from under its body, writhing like tentacles, their tips curling, three forking a rootlet. In review; not in the game.
 - 2026-11-08: the owner asked for the BLOOM Brawler's designs ("draft me some designs for the brawler next", "The bloom one."). Two drafts of SUNDEW, one from each mollusk on the owner's page, both black with BLOOM's pink: **No. 906**, a pitcher on six flat, blunt feet, a pink Y vein on its front, its barbed mouth holding glowing nectar, a stalk from its rim to a four-petal flower that carries a curved blade-leaf with a sawtooth top edge; **No. 907**, a spiral shell with glowing growth lines on a frilled foot, a long S-neck to the flower, and a blade-leaf toothed underneath. In review; not in the game.
 - 2026-11-07: the owner's pencil page of the BLOOM forms (sent with the Electro Skink's whiteboard sketch): a round sac body on splayed flat feet with a Y on its front, a stalk to a flower and a long jagged blade-leaf, marked "BRAWLY" and "MOLLUSK"; "BLOOM (PINK)"; a lotus bud on spreading leaves marked "LOTUS LANTERN", "ELEMENTAL", "MAGE"; a crab with coral on its back marked "CORAL CRAB"; and, unmarked, a snail with a spiral shell and a frilled foot whose long neck ends in a flower and a jagged blade-leaf.
 - 2026-11-07: the owner's direction for MAGNETIC, electric's conversion (section 13). Nothing built.

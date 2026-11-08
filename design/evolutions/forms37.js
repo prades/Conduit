@@ -6,7 +6,8 @@
 //        blade-leaf, its edge jagged. Drawn as a black pitcher (its mouth on top, rim barbed, holding the glowing nectar), its feet a mollusk's flat arms.
 //   907  from the snail below it: a spiral shell on a frilled foot; a long S-curved neck to a four-petal flower; from the flower a long blade-leaf, its lower edge a
 //        sawtooth. Drawn with the shell's growth lines glowing nectar pink.
-// Drafts for the owner's choice (2026-11-08: "draft me some designs for the brawler next", "The bloom one."): not in the game.
+// Drafts for the owner's choice (2026-11-08: "draft me some designs for the brawler next", "The bloom one."): not in the game. The owner chose 906: "The left one tilted
+// pitcher and feet like roots/tentacles". That is No. 908 (below 906), in review; 907 was passed over.
 // Uses forms31.js (_c31, _prog31) and forms32.js (_taper32, _aim32). +z is the front; ph = 1.6 t runs once round the idle loop.
 const _sdS = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 const _sdSkin = new T.MeshStandardMaterial({ color: 0x040405, metalness: 0.25, roughness: 0.3, side: T.DoubleSide }); _sdSkin.envMapIntensity = 0.5;   // (wet black, as the Electro Skink's)
@@ -57,7 +58,8 @@ function _sdBez(pts, p0, c1, c2, p3) {
 function _sundewPitcher(o) {
   const m = _sdMats(), g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
   // THE PITCHER: round and black, its mouth on top, the rim barbed, holding the glowing nectar; a Y of pink vein on its front
-  const pot = G(); b.add(pot);
+  const pot = G(); b.add(pot); pot.rotation.x = o.tilt || 0; pot.position.y = o.lift || 0;   // (908: tilted forward, its mouth to the front)
+  const ct = Math.cos(o.tilt || 0), st = Math.sin(o.tilt || 0), potPt = (x, y, z) => V(x, (o.lift || 0) + y * ct - z * st, y * st + z * ct);   // (a point of the pot where it stands)
   pot.add(new T.Mesh(new T.LatheGeometry(o.prof.map(([r, y]) => new T.Vector2(r, y)), 48), _sdSkin));
   const outer = o.prof.slice(0, o.lipAt + 1), rAt = y => { for (let i = 1; i < outer.length; i++) if (y <= outer[i][1]) { const [r0, y0] = outer[i - 1], [r1, y1] = outer[i]; return r0 + (r1 - r0) * (y - y0) / (y1 - y0); } return outer[outer.length - 1][0]; };
   const nec = new T.Mesh(new T.CircleGeometry(o.necR, 40), m.nectar); nec.rotation.x = -PI / 2; nec.position.y = o.necY; pot.add(nec);
@@ -68,15 +70,28 @@ function _sundewPitcher(o) {
     const pts = Array.from({ length: 8 }, () => V(0, 0, 0)); _sdBez(pts, surf(...seg[0]), surf(...seg[1]), surf(...seg[1]), surf(...seg[2]));
     _taper32(pot, m.vein, 8, 8).set(pts, 0.011, 0.008); });
   const Ln = new T.PointLight(0xffffff, 0.9, 0.9, 2); Ln.color.copy(m.pink); Ln.position.set(0, o.necY + 0.06, 0); pot.add(Ln); LIGHTS.push(Ln);
-  // THE FEET: six flat arms splayed on the floor, their tips lifting in a slow wave round it
-  const NF = 12, feet = o.feet.map(([deg, len]) => ({ a: deg * PI / 180, len, tb: _taper32(b, _sdSkin, NF, 10), pts: Array.from({ length: NF }, () => V(0, 0, 0)) }));
+  // THE FEET (906): six flat arms splayed on the floor, their tips lifting in a slow wave round it; or ROOTS (908): long, round, tapering tentacles out of its lower body,
+  // arching down to the floor and out, wavering, their tips curling, some forking a rootlet (the owner on 906: "tilted pitcher and feet like roots/tentacles")
+  const NF = 12, feet = (o.feet || []).map(([deg, len]) => ({ a: deg * PI / 180, len, tb: _taper32(b, _sdSkin, NF, 10), pts: Array.from({ length: NF }, () => V(0, 0, 0)) }));
+  const NR = 18, roots = (o.roots || []).map(([deg, len, ph0, twig], j) => { const a = deg * PI / 180, P0 = potPt(Math.sin(a) * o.rootR, o.rootY, Math.cos(a) * o.rootR);
+    return { len, ph0, P0, cs: j % 2 ? 1 : -1, tb: _taper32(b, _sdSkin, NR, 10), pts: Array.from({ length: NR }, () => V(0, 0, 0)),
+             twig: twig ? { side: twig, tb: _taper32(b, _sdSkin, 8, 8), pts: Array.from({ length: 8 }, () => V(0, 0, 0)) } : null }; });
   // THE STALK, from the front of the rim up to the flower; THE FLOWER; THE BLADE-LEAF, from the flower, forward
   const NS = 16, stalk = _taper32(b, _sdSkin, NS, 10), spts = Array.from({ length: NS }, () => V(0, 0, 0));
   const flower = _sdFlower(m, o.flowerR); b.add(flower);
   const bladeP = G(); b.add(bladeP); const blade = _sdBlade(m, o.bladeL, o.bladeW, o.teeth, true, o.bend); blade.position.z = 0.02; bladeP.add(blade);
-  const S0 = V(0, o.stalkY0, o.stalkZ0), C1 = V(0, 0, 0), C2 = V(0, 0, 0), TOP = V(0, 0, 0);
+  const S0 = potPt(0, o.stalkY0, o.stalkZ0), C1 = V(0, 0, 0), C2 = V(0, 0, 0), TOP = V(0, 0, 0);
   return { g, core: o.coreY * (o.S || 1), update(t, act) {
     const ph = 1.6 * t, pr = _prog31(t, act), rear = _sdS(0, 0.3, pr) * (1 - _sdS(0.34, 0.5, pr)), strike = _sdS(0.34, 0.5, pr) * (1 - _sdS(0.62, 1, pr)), br = Math.sin(ph);
+    const calm = 1 - 0.7 * Math.min(1, act || 0);
+    roots.forEach(r => { const d0 = Math.hypot(r.P0.x, r.P0.z), ax = Math.atan2(r.P0.x, r.P0.z), dx = Math.sin(ax), dz = Math.cos(ax), tx = Math.cos(ax), tz = -Math.sin(ax);
+      for (let i = 0; i < NR; i++) { const u = i / (NR - 1), d = d0 + r.len * u, down = _sdS(0, 0.34, u), tip = _sdS(0.68, 1, u);
+        const side = o.rootWave * u * Math.sin(TAU * 0.85 * u + r.ph0 + ph) * calm + r.cs * o.rootCurlSide * tip * tip;   // (a slow writhe, the tip curling to one side)
+        r.pts[i].set(dx * d + tx * side, r.P0.y * (1 - down) + o.rootR1 * down + o.rootCurl * tip * tip * (0.8 + 0.2 * Math.sin(ph + r.ph0) * calm), dz * d + tz * side); }
+      r.tb.set(r.pts, 0, 0, u => o.rootR0 * Math.pow(1 - u, 0.85) + 0.0035, 1.2, 0.85);
+      if (r.twig) { const B = r.pts[Math.floor(NR * 0.45)], ta = r.twig.side * 0.6, bx = dx * Math.cos(ta) + tx * Math.sin(ta), bz = dz * Math.cos(ta) + tz * Math.sin(ta);
+        for (let i = 0; i < 8; i++) { const u = i / 7; r.twig.pts[i].set(B.x + bx * 0.13 * u, B.y + 0.012 * Math.sin(PI * u) + 0.018 * u * u, B.z + bz * 0.13 * u); }
+        r.twig.tb.set(r.twig.pts, 0, 0, u => 0.013 * (1 - u) + 0.003, 1.1, 0.9); } });
     pot.scale.set(1 - 0.012 * br, 1 + 0.02 * br, 1 - 0.012 * br);   // (it breathes)
     nec.position.y = o.necY + 0.004 * Math.sin(2 * ph); Ln.intensity = 0.9 * (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * strike);
     feet.forEach((f, j) => { const lift = 0.03 * Math.max(0, Math.sin(ph - j * TAU / feet.length)) * (1 - 0.7 * Math.min(1, act || 0));
@@ -100,6 +115,15 @@ const _sdA = {
   bladeL: 0.4, bladeW: 0.1, teeth: 6, bend: 0.06, droop: 0.25,
 };
 fx(906, "SUNDEW draft A, from the owner's sketch marked BRAWLY: a black pitcher on six flat mollusk feet, a pink Y vein on its front, its barbed mouth holding glowing pink nectar; a stalk from the rim to a four-petal pink flower, and from the flower a long blade-leaf with a sawtooth top edge.", () => _sundewPitcher(_sdA));
+// 908: the owner chose 906 (2026-11-08: "The left one tilted pitcher and feet like roots/tentacles"): the pitcher tilted forward, its mouth to the front; its stalk from the
+// high back rim, arching over the mouth, so the flower and the blade hang in front of it; seven long round roots for feet
+const _sdC = Object.assign({}, _sdA, {
+  tilt: 0.45, lift: 0.035, feet: null,
+  roots: [[-165, 0.36, 0.3, 0], [-115, 0.32, 1.9, 1], [-62, 0.38, 3.6, 0], [-18, 0.33, 5.1, -1], [28, 0.36, 0.9, 0], [78, 0.32, 2.6, 1], [128, 0.37, 4.4, 0]],   // (angle, length, its writhe's phase, a rootlet to one side)
+  rootR: 0.14, rootY: 0.05, rootR0: 0.036, rootR1: 0.013, rootWave: 0.05, rootCurl: 0.05, rootCurlSide: 0.035,   // (out from under the body, as an octopus's arms from under its mantle)
+  stalkY0: 0.575, stalkZ0: -0.11, flowerY: 0.93, flowerZ: 0.3,
+});
+fx(908, "SUNDEW, 906 as the owner chose it: the pitcher tilted forward, its glowing mouth to the front; its stalk from the back rim arching over the mouth to the flower and the blade-leaf; its feet seven long round roots, writhing like tentacles, their tips curling.", () => _sundewPitcher(_sdC));
 
 // ── 907 · THE SNAIL (from the snail drawn below it) ────────────────────────────────────────────────────────────────────────
 // the shell: a tube coiled in the y-z plane (its eye toward the back, its mouth at the front of its foot), growing as it coils; its growth lines glow nectar pink
