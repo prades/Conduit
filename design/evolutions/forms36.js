@@ -6,8 +6,10 @@
 // on No. 903 (a flat bolt stuck on the tail's end): "The tail should gradually change colors at the end and have that electric lightning bolt definition. It shouldn't look
 // like a number one fan hand sign" (docs/CONVERSION.md §13). So:
 //   BODY   long, skinny and flattened, low to the floor, wet black and plain;
-//   HEAD   small and rounded, no face, no eyes; on a pinched neck, rounder and taller than the flat body and lifted a little, so it reads as a head (the owner on
-//          build 2026-11-08b: "He's supposed to have a small head, but it looks like he doesn't have a head at all");
+//   HEAD   small and rounded, no face, no eyes; on a pinched neck, taller than the flat body and lifted a little, so it reads as a head (the owner on build
+//          2026-11-08b: "He's supposed to have a small head, but it looks like he doesn't have a head at all"); a rounded triangle seen from above, wide at the back
+//          and narrowing to a rounded snout, its top domed, a pill from the side (on build c: "Needs a more triangle head, but still overall round. Still want it
+//          pill-shaped");
 //   LEGS   four, each a single arch out of its side and down to the floor;
 //   TAIL   long and tapering; toward its end it fades from the black of the body into a glowing electric yellow, and its last stretch IS the lightning bolt: the tail
 //          itself zig-zags in sharp jogs to a point, upright, its tip the brightest.
@@ -34,6 +36,32 @@ function _skTube(parent, mat, n, ring) {
     geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
   } };
 }
+// THE HEAD's shape (the owner, 2026-11-08: "Needs a more triangle head, but still overall round. Still want it pill-shaped"): seen from above a rounded triangle, wide
+// at the back and narrowing to a rounded snout (its outline the hull of three circles: two at the back corners, a smaller one at the snout); its top domed and its sides
+// round (every level a smaller copy of that outline, the rise a rounded oval: headP 2 is an ellipse, more is fuller); from the side a pill, lower toward the snout
+// (headTaper). Its length runs along +z, the snout at +z, its middle at the origin. (A hull of three balls was tried first: its top was flat between them.)
+function _skHeadGeo(o) {
+  const rb = o.headRb, rf = o.headRf, bx = o.headW / 2 - rb, zb = -o.headL / 2 + rb, zf = o.headL / 2 - rf;
+  const C = [[bx, zb, rb], [-bx, zb, rb], [0, zf, rf]], OL = [];   // (x, z, radius)
+  for (let k = 0; k < 720; k++) { const a = k / 720 * TAU, sx = Math.sin(a), cz = Math.cos(a); let c = C[0], best = -Infinity;   // (the outline, walked round by the way it faces)
+    for (const q of C) { const h = q[0] * sx + q[1] * cz + q[2]; if (h > best) { best = h; c = q; } }
+    OL.push([c[0] + c[2] * sx, c[1] + c[2] * cz]); }
+  const R = th => { const dx = Math.sin(th), dz = Math.cos(th); let best = Infinity;   // (how far the outline is from the middle toward th: 0 the snout, PI / 2 its left)
+    for (let k = 0; k < OL.length; k++) { const A = OL[k], B = OL[(k + 1) % OL.length], ex = B[0] - A[0], ez = B[1] - A[1], den = dx * ez - dz * ex;
+      if (Math.abs(den) < 1e-12) continue; const t = (A[0] * ez - A[1] * ex) / den, u = (A[0] * dz - A[1] * dx) / den;
+      if (t > 0 && u >= -1e-9 && u <= 1 + 1e-9 && t < best) best = t; }
+    return best; };
+  const NA = 96, NB = 36, e = 2 / (o.headP || 2), hh = o.headH / 2, tz = Z => 1 - (o.headTaper || 0) * Z / o.headL;   // (round the outline × top to bottom; the taper)
+  const Rs = Array.from({ length: NA }, (_, i) => R(i / NA * TAU)), pos = [0, hh, 0], idx = [];
+  for (let j = 1; j < NB; j++) { const be = j / NB * PI, sb = Math.sin(be), cb = Math.cos(be), rho = Math.pow(sb, e), yy = Math.sign(cb) * Math.pow(Math.abs(cb), e);
+    for (let i = 0; i < NA; i++) { const th = i / NA * TAU, X = Rs[i] * rho * Math.sin(th), Z = Rs[i] * rho * Math.cos(th); pos.push(X, hh * yy * tz(Z), Z); } }
+  pos.push(0, -hh, 0); const bot = pos.length / 3 - 1, at = (j, i) => 1 + (j - 1) * NA + (i % NA);   // (one point at each pole, the rings closed round: no seam)
+  for (let i = 0; i < NA; i++) idx.push(0, at(1, i), at(1, i + 1));
+  for (let j = 1; j < NB - 1; j++) for (let i = 0; i < NA; i++) { const a = at(j, i + 1), b = at(j, i), c = at(j + 1, i), d = at(j + 1, i + 1); idx.push(a, b, d, b, c, d); }
+  for (let i = 0; i < NA; i++) idx.push(at(NB - 1, i + 1), at(NB - 1, i), bot);
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); geo.computeBoundingSphere();
+  return geo;
+}
 function _electroSkink(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1); b.position.z = (o.shiftZ || 0) * (o.S || 1);   // (shifted so its middle, not its neck, stands on the spot)
   const lit = _c31(EL.color).lerp(_c31(0xffffff), 0.08).convertSRGBToLinear(), dark = _skSkin.color.clone(), white = new T.Color(1, 1, 1);
@@ -59,8 +87,8 @@ function _electroSkink(o) {
   const NL = 14, legs = [];
   o.legs.forEach((ld, li) => [-1, 1].forEach(sx => legs.push({ ld, li, sx, tb: _taper32(unit, _skSkin, NL, 10), pts: Array.from({ length: NL }, () => V(0, 0, 0)) })));
   const legR = s => o.legR0 + (o.legR1 - o.legR0) * s - (s > 0.9 ? (s - 0.9) * 0.05 : 0);   // (thick at the body, thinner to its rounded foot)
-  // THE HEAD: just a rounded-off end
-  const head = new T.Mesh(new T.SphereGeometry(1, 30, 18), _skSkin); head.scale.set(o.headW / 2, o.headH / 2, o.headL / 2); unit.add(head);
+  // THE HEAD: small, no face: a rounded triangle seen from above, a pill from the side
+  const head = new T.Mesh(_skHeadGeo(o), _skSkin); unit.add(head);
   // a light at the tail's tip
   const Lt = new T.PointLight(0xffffff, 0.6, 1.2, 2); Lt.color.copy(lit); unit.add(Lt); LIGHTS.push(Lt);
   // the spine as it moves: the rest curve, the salamander's side-to-side bend (and a wave down the tail), the front reared by the action
@@ -109,7 +137,8 @@ const _sk0 = {
   sHip: 0.47, flat: 0.6,
   legs: [{ s: 0.115, fwd: 0.04 }, { s: 0.47, fwd: -0.03 }], legR0: 0.025, legR1: 0.015, reach: 0.13, arch: 0.045,
   stride: 0.035, lift: 0.028, rearLift: 0.05,
-  headW: 0.165, headH: 0.115, headL: 0.165, headFwd: 0.075, headUp: 0.028, headTilt: 0.18,   // (small, but rounder and taller than the flat body, lifted a little: it was 0.15 × 0.078 × 0.17, level with the body)
+  headW: 0.185, headL: 0.21, headH: 0.104, headRb: 0.045, headRf: 0.026, headP: 2.4, headTaper: 0.3,   // (small, taller than the flat body: wide at the back corners (rounded by headRb), narrowing to the snout (rounded by headRf). Build c's was a ball 0.165 × 0.115 × 0.165; build a's 0.15 × 0.078 × 0.17, level with the body)
+  headFwd: 0.075, headUp: 0.028, headTilt: 0.18,   // (ahead of the neck and lifted a little)
   sCut: 0.55, sBolt: 0.8, colStart: 0.57, colFull: 0.88, boltFx: 0.55, boltFy: 1.5,
   zig: [[0, 0], [0.3, 0.078], [0.38, 0.026], [0.66, 0.112], [0.74, 0.056], [1, 0.17]],   // (the bolt: (along its stretch, height): up, a sharp jog back down, up, a jog, up to the point)
   swimAmp: 0.075, swimWaves: 1.1, rearH: 0.12, rearReach: 0.42, lunge: 0.11,
