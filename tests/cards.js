@@ -30,7 +30,7 @@ const CHART = {
     'QUILLSTONE': 'spinelegged', 'STATIC ORB': 'drone', 'ELECTRO SKINK': 'spinelegged', 'RIFT MIMIC': 'jelly', 'JELLY RAM': 'jelly', 'SEEPER': 'spinelegged', 'FROST MAW': 'elemental',
     'EMBER HOOD': 'elemental', 'THUNDERHEAD': 'elemental', 'VOIDSTAR': 'mollusk', 'HORNSHELL': 'mollusk', 'ROTSHARD': 'elemental', 'RIMESTAR': 'drone',
     'THERMITE BURROWER': 'drone', 'HOVER SHELL': 'drone', 'GOO PROXY': 'jelly', 'HAMMER SLUG': 'mollusk', 'BLIGHT SPIDER': 'spinelegged', 'IGLOO SKATER': 'elemental',
-    'THORNWHIP': 'elemental', 'SUNDEW': 'mollusk',   // (and SUNDEW, BLOOM's Brawler, build 2026-11-08k: a mollusk)   // (BLOOM's Mage, build 2026-11-08j: not on the chart; it keeps the lotus lantern's Elemental, docs/CONVERSION.md §2)
+    'THORNWHIP': 'elemental', 'SUNDEW': 'mollusk', 'CORAL CRAB': 'spinelegged',   // (and SUNDEW, BLOOM's Brawler, build 2026-11-08k: a mollusk)   // (BLOOM's Mage, build 2026-11-08j: not on the chart; it keeps the lotus lantern's Elemental, docs/CONVERSION.md §2)
 };
 
 function findChromium() {
@@ -223,18 +223,18 @@ function measure(w, h, query, seed) {
         const r = J('EQUIP_SUBCLASSES.map(function(s){ return s.id; })'); same(r.join(), 'spinelegged,mollusk,elemental,drone,jelly', 'the subclasses');
         same(J('EQUIP_SUBCLASSES.map(function(s){ return s.label; })').join(), 'SPINE-LEGGED,MOLLUSK,ELEMENTAL,DRONE,JELLY', 'their names');
     });
-    await check('each of the 20 forms has the subclass the chart gives it (by name), the Electro Skink Spine-legged since build 2026-11-08h; the Static Orb, set aside, keeps its own; the ten retired forms have none; nothing else is in the table', () => {
+    await check('each of the 21 forms has the subclass the chart gives it (by name), the Electro Skink Spine-legged since build 2026-11-08h; the Static Orb, set aside, keeps its own; the ten retired forms have none; nothing else is in the table', () => {
         const forms = J('Object.values(EVOLUTIONS).map(function(e){ return { id: e.id, name: e.name, legacy: !!e.legacy, aside: !!e.aside, sub: equipSubclassOf({ evolved: e.id }) }; })');
         const live = forms.filter(f => !f.legacy && !f.aside), aside = forms.filter(f => f.aside), legacy = forms.filter(f => f.legacy);
-        same(live.length, 20, 'forms in play'); same(aside.map(f => f.id).join(), 'staticorb', 'set aside'); same(legacy.length, 10, 'retired forms');
+        same(live.length, 21, 'forms in play'); same(aside.map(f => f.id).join(), 'staticorb', 'set aside'); same(legacy.length, 10, 'retired forms');
         for (const f of live.concat(aside)) same(f.sub, CHART[f.name], f.name + '\'s subclass');   // (the Electro Skink: Spine-legged, the owner's answer of 2026-11-08)
         for (const f of legacy) same(f.sub, null, f.name + ' (retired) has a subclass');
-        same(Object.keys(CHART).length, 21, 'the chart'); same(J('Object.keys(EQUIP_FORM_SUBCLASS).length'), 21, 'the table');
+        same(Object.keys(CHART).length, 22, 'the chart'); same(J('Object.keys(EQUIP_FORM_SUBCLASS).length'), 22, 'the table');
         const ids = J('Object.keys(EQUIP_FORM_SUBCLASS)'); for (const id of ids) ok(live.concat(aside).some(f => f.id === id), id + ' is in the table and is not a form in play');
     });
-    await check('the counts: spine-legged 4 (the Crustacean renamed, with the Electro Skink and the Blight Spider), mollusk 4 (with BLOOM\'s SUNDEW, build 2026-11-08k), elemental 6 (with BLOOM\'s THORNWHIP, build 2026-11-08j), drone 4, jelly 3', () => {
+    await check('the counts: spine-legged 5 (the Crustacean renamed, with the Electro Skink, the Blight Spider and BLOOM\'s coral crab), mollusk 4 (with BLOOM\'s SUNDEW, build 2026-11-08k), elemental 6 (with BLOOM\'s THORNWHIP, build 2026-11-08j), drone 4, jelly 3', () => {
         const n = {}; for (const v of Object.values(CHART)) n[v] = (n[v] || 0) + 1;
-        same(JSON.stringify(n), JSON.stringify({ spinelegged: 4, drone: 4, jelly: 3, elemental: 6, mollusk: 4 }), 'the chart\'s counts');
+        same(JSON.stringify(n), JSON.stringify({ spinelegged: 5, drone: 4, jelly: 3, elemental: 6, mollusk: 4 }), 'the chart\'s counts');
     });
     await check('an egg has no subclass until it evolves; a follower evolved into a retired form has none; a clone, and nobody, have none', () => {
         const r = J(`(function(){ __fresh(0); const egg = __mk('fire', 'brawler'), old = __mk('fire', 'brawler'); old.evolved = 'bloom'; const q = __form(__mk('fire', 'brawler'), 'quillstone');

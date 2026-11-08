@@ -97,14 +97,14 @@ function measure(w, h) {
         const r = J(`ELEMENTS.map(e => [getElementMultiplier('blossom', e.id), getElementMultiplier(e.id, 'blossom')])`);
         ok(r.every(p => p[0] === 1 && p[1] === 1), JSON.stringify(r));
     });
-    check('an unevolved BLOOM follower is named by its element\'s name (BLOOM TECHNICIAN, not BLOSSOM); it has no element move (its hit is plain), no Ultimate yet, and it does not evolve while its form is not in the game (a Technician: its Brawler and Mage forms are in since builds 2026-11-08j and k)', () => {
-        const r = J(`(function(){ __clear(); const f = __mk('blossom', 'camper'); f.level = 12; f.xp = 0; return { label: unitTypeLabel(f), ult: followerUltimate(f), form: evolutionFor(f), evolved: evoCheck(f), still: f.evolved || null, moves: _IP_ATTACKS.blossom }; })()`);
-        same(r.label, 'BLOOM TECHNICIAN', 'its name'); same(r.ult, null, 'its Ultimate'); same(r.form, null, 'its form'); same(r.evolved, false, 'it evolved'); same(r.still, null, 'its form'); same(r.moves.proc, 'mend', 'what its hits do');
+    check('an unevolved BLOOM follower is named by its element\'s name (BLOOM TECHNICIAN, not BLOSSOM); it has no element move (its hit is plain) and no Ultimate; under level 10 it does not evolve', () => {
+        const r = J(`(function(){ __clear(); const f = __mk('blossom', 'camper'); f.level = 5; f.xp = 0; return { label: unitTypeLabel(f), ult: followerUltimate(f), evolved: evoCheck(f), still: f.evolved || null, moves: _IP_ATTACKS.blossom }; })()`);
+        same(r.label, 'BLOOM TECHNICIAN', 'its name'); same(r.ult, null, 'its Ultimate'); same(r.evolved, false, 'it evolved'); same(r.still, null, 'its form'); same(r.moves.proc, 'mend', 'what its hits do');
     });
-    check('a BLOOM Mage evolves at its level into the THORNWHIP, BLOOM\'s Mage (build 2026-11-08j): its name, its shot SEED SHOT and its alternate SEEDFALL, no Ultimate yet; a BLOOM Brawler into SUNDEW (build 2026-11-08k); a BLOOM Technician still waits', () => {
+    check('a BLOOM Mage evolves at its level into the THORNWHIP, BLOOM\'s Mage (build 2026-11-08j): its name, its shot SEED SHOT and its alternate SEEDFALL, and its Ultimate PINK THICKET; a BLOOM Brawler into SUNDEW (build 2026-11-08k); a BLOOM Technician into the CORAL CRAB (build 2026-11-08m)', () => {
         const r = J(`(function(){ __clear(); const m = __mk('blossom', 'sniper'), b = __mk('blossom', 'brawler'), t = __mk('blossom', 'camper'); for (const f of [m, b, t]) { f.level = 12; f.xp = 0; }
             const did = [m, b, t].map(evoCheck); return { did, forms: [m, b, t].map(f => f.evolved || null), label: unitTypeLabel(m), shot: EVOLUTIONS.shrub.shot, moves: evoMoveIds(EVOLUTIONS.shrub), ult: followerUltimate(m), lean: dmgLean(m), sub: equipSubclassOf(m) }; })()`);
-        same(r.did.join(), 'true,true,false', 'who evolved'); same(r.forms.join(), 'shrub,sundew,', 'their forms'); same(r.label, 'THORNWHIP', 'its name'); same(r.shot, 'SEED SHOT', 'its shot');
+        same(r.did.join(), 'true,true,true', 'who evolved'); same(r.forms.join(), 'shrub,sundew,coralcrab', 'their forms'); same(r.label, 'THORNWHIP', 'its name'); same(r.shot, 'SEED SHOT', 'its shot');
         same(r.moves.join(), 'seedfall', 'its alternate'); same(r.ult && r.ult.name, 'Pink Thicket', 'its Ultimate (PINK THICKET since build 2026-11-08l)'); same(r.lean, 2, 'its lean (Elemental, and an Elemental shot)'); same(r.sub, 'elemental', 'its subclass');
     });
     check('MEND: a BLOOM follower\'s hit heals the most hurt of yours within 4 tiles (the lowest share of health) by 2% of its max; one 5 tiles off, or at full health, is passed over; it counts itself', () => {
@@ -149,12 +149,12 @@ function measure(w, h) {
     });
 
     group('WHO: the toxic followers there; who cannot convert yet says why');
-    check('an unevolved toxic Brawler and Mage can, and an evolved one (its BLOOM form in the game since builds 2026-11-08j and k); a Technician waits for BLOOM\'s ability; another element is not listed', () => {
+    check('an unevolved toxic Brawler, Mage and Technician can, and an evolved one (its BLOOM form in the game since builds 2026-11-08j, k and m); another element is not listed', () => {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const br = __mk('toxic', 'brawler'), mg = __mk('toxic', 'sniper'), ev = __mk('toxic', 'brawler', 'seeper'), te = __mk('toxic', 'camper'), fi = __mk('fire', 'brawler');
             partyTick(); for (const f of [br, mg, ev, te, fi]) if (!partyIsMember(f)) partyPost(f, 'sewers', true);
             return { listed: convertHere().map(f => f.element + ':' + f.role + ':' + (f.evolved || '')), why: [br, mg, ev, te].map(convertWhyNot) }; })()`);
         same(r.listed.length, 4, 'listed: ' + r.listed.join()); ok(r.listed.every(s => s.indexOf('toxic') === 0), 'only toxic ones');
-        same(JSON.stringify(r.why), JSON.stringify([null, null, null, 'THE BLOOM TECHNICIAN\'S ABILITY IS NOT READY']), 'why');
+        same(JSON.stringify(r.why), JSON.stringify([null, null, null, null]), 'why (a Technician too, since build 2026-11-08m: REEF is built)');
     });
 
     check('an evolved toxic Mage (the Rotshard) can: its class\'s BLOOM form, the THORNWHIP, is in the game (build 2026-11-08j); so can an evolved toxic Brawler (the Seeper): SUNDEW (build 2026-11-08k)', () => {
@@ -206,7 +206,7 @@ function measure(w, h) {
     });
     check('the Ant Nest\'s test console offers BLOOM\'s evolved Mage (the THORNWHIP, build 2026-11-08j) and its unevolved Brawler and Mage, not its Technician (no ability yet)', () => {
         const r = J(`nestForms().filter(f => f.element === 'blossom').map(f => f.role + (String(f.id).indexOf(':') < 0 ? ':' + f.id : ''))`);
-        same(r.join(), 'sniper:shrub,brawler:sundew,brawler,sniper', 'BLOOM\'s forms there');   // (SUNDEW since build 2026-11-08k)
+        same(r.join(), 'sniper:shrub,brawler:sundew,camper:coralcrab,brawler,sniper,camper', 'BLOOM\'s forms there');   // (SUNDEW since build 2026-11-08k; the coral crab and the unevolved Technician since 2026-11-08m)
     });
     check('the card art: a BLOOM follower\'s backdrop has its texture, and BLOOM has an emblem (approved 2026-11-08)', () => {
         const r = J(`(function(){ return { cls: cardArtUnitClass({ isFollower: true, element: 'blossom', role: 'brawler' }), tex: cardArtTexture('blossom').length, emb: !!CARD_ART_EMBLEMS.blossom }; })()`);
@@ -217,10 +217,10 @@ function measure(w, h) {
     for (const [w, h, name] of [[1180, 820, 'a tablet'], [390, 740, 'a phone']]) {
         const R = measure(w, h);
         if (R === null) { console.log('  skip (no Chromium): ' + name); continue; }
-        check(name + ': the station\'s use opens it; the strip lists the toxic ones there, the Blight Spider dimmed saying why; a tap on the Brawler shows NOW and AFTER, the numbers, and the changes; CONVERT arms, then converts', () => {
+        check(name + ': the station\'s use opens it; the strip lists the toxic ones there, the Blight Spider too (it converts into the coral crab since build 2026-11-08m); a tap on the Brawler shows NOW and AFTER, the numbers, and the changes; CONVERT arms, then converts', () => {
             ok(R && !R.error, 'the page: ' + (R && R.error));
             same(R.room, 'sewers', 'the player\'s room'); same(R.name, 'PURIFICATION MODULE', 'the station\'s name'); same(R.verb, 'CONVERT A TOXIC FOLLOWER INTO BLOOM', 'its verb'); same(R.open, true, 'the panel open');
-            same(R.cards.length, 2, 'cards: ' + JSON.stringify(R.cards)); ok(R.cards.some(c => c[0] === 'TOXIC BRAWLER' && !c[2]), 'the Brawler'); ok(R.cards.some(c => c[0] === 'BLIGHT SPIDER' && c[1] === 'ITS BLOOM FORM IS NOT READY' && c[2]), 'the Blight Spider');
+            same(R.cards.length, 2, 'cards: ' + JSON.stringify(R.cards)); ok(R.cards.some(c => c[0] === 'TOXIC BRAWLER' && !c[2]), 'the Brawler'); ok(R.cards.some(c => c[0] === 'BLIGHT SPIDER' && !c[2]), 'the Blight Spider, not dimmed');
             same(R.drawn, 2, 'pictures'); same(R.stripScrolls, 'auto', 'the strip scrolls');
             same(R.pair.join(), 'TOXIC BRAWLER,BLOOM BRAWLER', 'now and after'); same(R.changed.join(), 'ELEMENT,ITS HITS,MOVES,EVOLVES INTO', 'what changes');
             ok(R.rows.some(r => /^HEALTH\|(\d+ \/ \d+)\|\1$/.test(r)), 'health side by side: ' + R.rows.join(' ; ')); ok(R.rows.some(r => /^ELEMENT\|TOXIC\|BLOOM$/.test(r)), 'the element row');

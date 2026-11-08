@@ -44,7 +44,7 @@ const EQUIP_SUBCLASSES = [
 const EQUIP_FORM_SUBCLASS = {
     quillstone: "spinelegged", staticorb: "drone", mimic: "jelly", jellyram: "jelly", seeper: "spinelegged", maw: "elemental", electroskink: "spinelegged", sundew: "mollusk",   // the brawlers (SUNDEW, BLOOM's: a mollusk, docs/CONVERSION.md §2)
     embercowl: "elemental", thunderhead: "elemental", voidstar: "mollusk", hornshell: "mollusk", rotshard: "elemental", rimestar: "drone", shrub: "elemental",   // the mages (the THORNWHIP, BLOOM's: the lotus lantern's Elemental, kept)
-    thermite: "drone", hovershell: "drone", gooproxy: "jelly", hammerslug: "mollusk", blightspider: "spinelegged", igloo: "elemental",   // the technicians
+    thermite: "drone", hovershell: "drone", gooproxy: "jelly", hammerslug: "mollusk", blightspider: "spinelegged", igloo: "elemental", coralcrab: "spinelegged",   // the technicians (the CORAL CRAB, BLOOM's: Spine-legged, it was Crustacean, docs/CONVERSION.md §2)
 };
 // A card's rarity, lowest first: the names are the older doc's, shown as bars lit one for each step (js/cardsui.js).
 const EQUIP_RARITIES = [

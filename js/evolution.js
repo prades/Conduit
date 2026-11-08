@@ -294,6 +294,13 @@ const EVOLUTIONS = {
     // Brawler (the Seeper) converts into it at the purification module (js/conversion.js).
     sundew: { id: "sundew", name: "SUNDEW", element: "blossom", role: "brawler", move: "BASH", moves: ["bash"], sheet: "img/evo/sundew.png",
               cell: 192, anchor: [96, 138.2], core: [96, 114], noGlow: true, color: "#ff7ab8", consume: 16 },   // (a 192 px cell: room for its roots, its stem and its blade)
+    // THE CORAL CRAB (its name for now: the owner, 2026-11-08), BLOOM'S TECHNICIAN since build 2026-11-08m (design No. 914, approved: "914 crustacean crushing clause is fine"; its game
+    // sprite No. 923, design/evolutions/forms38.js; the owner sent it to the game: "Coral crab into the game next"; docs/CONVERSION.md §2): a rocky tick, big smooth rounded plates of dark
+    // stone, six big square pink crystals and crystal flowers on its back, a brace of four crystals round its neck, a broad rounded six-sided head hung low with two stone ears, four
+    // stake legs. Its everyday hit is its head driving down (Crushing); its alternate BASH (forms without one have BASH); its ability REEF (js/techabilities.js); its Ultimate REEF
+    // PILLAR (js/elements.js FORM_ULTIMATES.coralcrab). A BLOOM Technician evolves into it; an evolved toxic Technician (the Blight Spider) converts into it (js/conversion.js).
+    coralcrab: { id: "coralcrab", name: "CORAL CRAB", element: "blossom", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/coralcrab.png",
+              cell: 192, anchor: [96, 138.2], core: [96, 103], noGlow: true, color: "#ff7ab8" },   // (a 192 px cell: room for its stake legs)
 };
 // Which egg grows into which machine.
 function evolutionFor(f) {

@@ -61,6 +61,7 @@ const DMG_FORM = {
     rimestar:   { main: "projectile", alt: "projectile" },
     hornshell:  { main: "projectile", alt: "projectile" },
     rotshard:   { main: "projectile", alt: "elemental" },
+    coralcrab:  { main: "crushing",   alt: "crushing" },    // (BLOOM's Technician, build 2026-11-08m: its head driving down, "crushing clause is fine"; BASH)
     sundew:     { main: "slashing",   alt: "crushing" },    // (BLOOM's Brawler, build 2026-11-08k: its blade-leaf slashes; BASH for now)
     shrub:      { main: "elemental",  alt: "elemental" },   // (BLOOM's Mage, build 2026-11-08j: SEED SHOT and SEEDFALL, Elemental: the owner's pick, 2026-11-08)
     hammerslug: { main: "crushing",   alt: "crushing" },
