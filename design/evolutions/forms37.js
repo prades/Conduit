@@ -76,11 +76,14 @@ function _sundewPitcher(o) {
   const NR = 18, roots = (o.roots || []).map(([deg, len, ph0, twig], j) => { const a = deg * PI / 180, P0 = potPt(Math.sin(a) * o.rootR, o.rootY, Math.cos(a) * o.rootR);
     return { len, ph0, P0, cs: j % 2 ? 1 : -1, tb: _taper32(b, _sdSkin, NR, 10), pts: Array.from({ length: NR }, () => V(0, 0, 0)),
              twig: twig ? { side: twig, tb: _taper32(b, _sdSkin, 8, 8), pts: Array.from({ length: 8 }, () => V(0, 0, 0)) } : null }; });
-  // THE STALK, from the front of the rim up to the flower; THE FLOWER; THE BLADE-LEAF, from the flower, forward
-  const NS = 16, stalk = _taper32(b, _sdSkin, NS, 10), spts = Array.from({ length: NS }, () => V(0, 0, 0));
+  // THE STALK, from the rim up to the flower (906); or (908) THE STEM, from the bottom of the barrel at its back, out behind it, up and over its top to the flower, like a
+  // scorpion's tail (the owner on 908: "Put the stem on the bottom of the barrel"); THE FLOWER; THE BLADE-LEAF, from the flower, forward
+  const NS = o.stemVia ? 30 : 16, stalk = _taper32(b, _sdSkin, NS, 10), spts = Array.from({ length: NS }, () => V(0, 0, 0));
   const flower = _sdFlower(m, o.flowerR); b.add(flower);
   const bladeP = G(); b.add(bladeP); const blade = _sdBlade(m, o.bladeL, o.bladeW, o.teeth, true, o.bend); blade.position.z = 0.02; bladeP.add(blade);
-  const S0 = potPt(0, o.stalkY0, o.stalkZ0), C1 = V(0, 0, 0), C2 = V(0, 0, 0), TOP = V(0, 0, 0);
+  const S0 = o.stemVia ? potPt(0, o.stemBase[0], o.stemBase[1]) : potPt(0, o.stalkY0, o.stalkZ0), C1 = V(0, 0, 0), C2 = V(0, 0, 0), TOP = V(0, 0, 0);
+  const via0 = (o.stemVia || []).map(p => V(p[0], p[1], p[2])), via = via0.map(p => p.clone());
+  const stem = o.stemVia ? new T.CatmullRomCurve3([S0].concat(via, [TOP]), false, 'centripetal') : null;   // (it holds these points: moving them moves it)
   return { g, core: o.coreY * (o.S || 1), update(t, act) {
     const ph = 1.6 * t, pr = _prog31(t, act), rear = _sdS(0, 0.3, pr) * (1 - _sdS(0.34, 0.5, pr)), strike = _sdS(0.34, 0.5, pr) * (1 - _sdS(0.62, 1, pr)), br = Math.sin(ph);
     const calm = 1 - 0.7 * Math.min(1, act || 0);
@@ -99,8 +102,14 @@ function _sundewPitcher(o) {
         f.pts[i].set(Math.sin(f.a) * d, o.footY * (1 - u) + 0.012 + lift * u * u + o.curl * Math.pow(u, 4), Math.cos(f.a) * d); }
       f.tb.set(f.pts, 0, 0, u => 0.05 * Math.sqrt(Math.max(0, 1 - u * u * u)) + 0.006, 2, 0.35); });   // (flat and wide, their ends blunt and round, as drawn)
     TOP.set(0.02 * Math.sin(ph + 0.5), o.flowerY + 0.012 * Math.sin(2 * ph) + 0.05 * rear - 0.07 * strike, o.flowerZ - 0.08 * rear + 0.1 * strike);
-    C1.set(0, S0.y + 0.16, S0.z + 0.02); C2.set(TOP.x * 0.6, TOP.y - 0.12, TOP.z - 0.06);
-    stalk.set(_sdBez(spts, S0, C1, C2, TOP), 0, 0, u => 0.024 - 0.009 * u, 1, 1);
+    if (stem) {   // (the higher along it, the more it follows the flower: cocked back as it rears, whipped forward in the strike)
+      via.forEach((p, i) => { const k = (i + 1) / (via.length + 1); p.copy(via0[i]); p.x += TOP.x * k; p.y += (0.05 * rear - 0.06 * strike) * k; p.z += (-0.06 * rear + 0.1 * strike) * k; });
+      for (let i = 0; i < NS; i++) stem.getPoint(i / (NS - 1), spts[i]);
+      stalk.set(spts, 0, 0, u => o.stemR0 + (o.stemR1 - o.stemR0) * u, 1, 1);
+    } else {
+      C1.set(0, S0.y + 0.16, S0.z + 0.02); C2.set(TOP.x * 0.6, TOP.y - 0.12, TOP.z - 0.06);
+      stalk.set(_sdBez(spts, S0, C1, C2, TOP), 0, 0, u => 0.024 - 0.009 * u, 1, 1);
+    }
     flower.position.copy(TOP); flower.rotation.set(-0.35 + 0.4 * rear - 0.3 * strike, 0.1 * Math.sin(ph + 0.5), 0);
     bladeP.position.copy(TOP); bladeP.rotation.set(o.droop + 0.05 * Math.sin(ph + 1) - 1.1 * rear + 1.0 * strike, 0.08 * Math.sin(ph + 0.9), 0);
   } };
@@ -115,15 +124,17 @@ const _sdA = {
   bladeL: 0.4, bladeW: 0.1, teeth: 6, bend: 0.06, droop: 0.25,
 };
 fx(906, "SUNDEW draft A, from the owner's sketch marked BRAWLY: a black pitcher on six flat mollusk feet, a pink Y vein on its front, its barbed mouth holding glowing pink nectar; a stalk from the rim to a four-petal pink flower, and from the flower a long blade-leaf with a sawtooth top edge.", () => _sundewPitcher(_sdA));
-// 908: the owner chose 906 (2026-11-08: "The left one tilted pitcher and feet like roots/tentacles"): the pitcher tilted forward, its mouth to the front; its stalk from the
-// high back rim, arching over the mouth, so the flower and the blade hang in front of it; seven long round roots for feet
+// 908: the owner chose 906 (2026-11-08: "The left one tilted pitcher and feet like roots/tentacles"): the pitcher tilted forward, its mouth to the front; seven long round
+// roots for feet; then "Put the stem on the bottom of the barrel and no spikes on the bowl rim": its stem from the bottom of the barrel at its back, up behind it and over
+// its top like a scorpion's tail, so the flower and the blade hang in front of the mouth; its rim smooth
 const _sdC = Object.assign({}, _sdA, {
-  tilt: 0.45, lift: 0.035, feet: null,
+  tilt: 0.45, lift: 0.035, feet: null, barbs: 0,   // (a smooth rim: the owner on 908, "no spikes on the bowl rim")
   roots: [[-165, 0.36, 0.3, 0], [-115, 0.32, 1.9, 1], [-62, 0.38, 3.6, 0], [-18, 0.33, 5.1, -1], [28, 0.36, 0.9, 0], [78, 0.32, 2.6, 1], [128, 0.37, 4.4, 0]],   // (angle, length, its writhe's phase, a rootlet to one side)
   rootR: 0.14, rootY: 0.05, rootR0: 0.036, rootR1: 0.013, rootWave: 0.05, rootCurl: 0.05, rootCurlSide: 0.035,   // (out from under the body, as an octopus's arms from under its mantle)
-  stalkY0: 0.575, stalkZ0: -0.11, flowerY: 0.93, flowerZ: 0.3,
+  stemBase: [0.07, -0.16], stemVia: [[0, 0.15, -0.34], [0, 0.5, -0.42], [0, 0.9, -0.22]], stemR0: 0.03, stemR1: 0.016,   // (the stem: from the bottom of the barrel's back (pot y, z), then by these points (x, y, z), to the flower)
+  flowerY: 0.93, flowerZ: 0.3,
 });
-fx(908, "SUNDEW, 906 as the owner chose it: the pitcher tilted forward, its glowing mouth to the front; its stalk from the back rim arching over the mouth to the flower and the blade-leaf; its feet seven long round roots, writhing like tentacles, their tips curling.", () => _sundewPitcher(_sdC));
+fx(908, "SUNDEW, 906 as the owner chose it: the pitcher tilted forward, its glowing mouth to the front, its rim smooth; its stem from the bottom of the barrel, up behind it and over its top like a scorpion's tail to the flower and the blade-leaf; its feet seven long round roots, writhing like tentacles, their tips curling.", () => _sundewPitcher(_sdC));
 
 // ── 907 · THE SNAIL (from the snail drawn below it) ────────────────────────────────────────────────────────────────────────
 // the shell: a tube coiled in the y-z plane (its eye toward the back, its mouth at the front of its foot), growing as it coils; its growth lines glow nectar pink
