@@ -32,7 +32,7 @@ const MOVES = {
     magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        windup: 20, fn: f => magmaVent(f) },
     // the Rotshard's second move, picked on its INFO (the owner, 2026-11-07: "Short lure"; js/evolution.js rottenDecoy)
     rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      windup: 14, fn: f => rottenDecoy(f) },
-    // the Little Shrub's alternate (BLOOM's Mage, build 2026-11-08j; js/evolution.js seedfall): its wind-up is the agent's, provisional (HEXFIRE's and STATIC VORTEX's)
+    // the THORNWHIP's alternate (BLOOM's Mage, build 2026-11-08j; js/evolution.js seedfall): its wind-up is the agent's, provisional (HEXFIRE's and STATIC VORTEX's)
     seedfall:          { id: "seedfall",          name: "SEEDFALL",          windup: 5.5, fn: f => seedfall(f) },
     // BASH (build 2026-11-07ss; the owner: "Ram and knock back", then "BASH for now" as the second attack of the eight forms the design notes give none, and of every follower before it
     // evolves: js/evolution.js bash). `close`: a Mage locked on it closes in to use it (js/npc.js), as a Brawler does.

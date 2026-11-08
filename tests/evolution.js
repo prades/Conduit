@@ -443,12 +443,12 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     console.log('\nTHE LOOK');
-    check('the sheets are in the build, 8 facings × 16 frames of each form\'s cell (144 px; the Electro Skink\'s 192, build 2026-11-08b, and the Little Shrub\'s, build 2026-11-08j)', () => {
+    check('the sheets are in the build, 8 facings × 16 frames of each form\'s cell (144 px; the Electro Skink\'s 192, build 2026-11-08b, and the THORNWHIP\'s, build 2026-11-08j)', () => {
         for (const id of run('Object.keys(EVOLUTIONS)')) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k)
             same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), (N * C) + 'x' + (8 * C), id + ' size');
         }
-        same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'electroskink,shrub,sundew', 'the forms in a bigger cell');   // (the Little Shrub's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k)
+        same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'electroskink,shrub,sundew', 'the forms in a bigger cell');   // (the THORNWHIP's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k)
         ok(/js\/evolution\.js/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'not loaded by the game');
     });
     check('the pools of material are on a sheet of their own (rotshard, mimic), the same size as the body sheet', () => {

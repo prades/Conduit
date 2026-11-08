@@ -2493,3 +2493,24 @@ Its game sprite first, for review; new look drafts.
 
 ### Supersedes / superseded by
 Builds on "SUNDEW's look (No. 911); CONSUME is its Ultimate" (2026-11-08).
+
+## DECISION: The owner's answers on BLOOM and REEF: THORNWHIP, PINK THICKET, REEF's climbs, the connected rule, REEF PILLAR
+- Date and build: 2026-11-08, build `2026-11-08l` (the built ones), branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Prompt me questions one by one"; then, question by question, the owner's answers, 2026-11-08 (asked one by one: "Prompt me questions one by one"): SUNDEW "Stays put" while it digests; CONSUME's numbers kept (2 tiles, 0.5 × power a bite); its bites Elemental; BLOOM's Mage named **THORNWHIP** (it came in as the LITTLE SHRUB); drawn at the other Mages' height ("Match the other Mages"); SEEDFALL heals "Followers only" (its numbers: the question skipped, still provisional); BLOOM's forms shown on the title screen ("Show them"); THORNWHIP's Ultimate the owner's own design, **PINK THICKET** ("How about a seed is shot a big seed that is shot at the enemy and it grows into patchy pink leaves bushes and enemies. There are bound and damaged and the damage is converted into healing aura for the area."), its healing "Shared out"; REEF's climbs: "Player and followers", "Both ways", lasting "Until the next one", the deck's glass stops it ("No, the glass stops it"), not from an ice bridge ("No"); the connected rule for "every Technician"; REEF's fight numbers: "You pick, provisional"; the coral crab's Ultimate the owner's own design, **REEF PILLAR** ("A giant spike erupts from the ground between the target and the technician the crystal heels solely", read as "Blocks and heals only"); then "Build these answers".
+
+### Decision
+- SUNDEW stays put while it digests a CONSUME catch; CONSUME's numbers (2 tiles, 0.5 × power a bite) and its Elemental bite are kept.
+- BLOOM's Mage is THORNWHIP, at the other Mages' height; BLOOM's forms appear on the title screen; SEEDFALL heals your followers only.
+- THORNWHIP's Ultimate is PINK THICKET (the owner's design): a big seed that grows into patchy pink-leaved bushes; enemies there bound and damaged; the damage shared out as healing among your followers there, the most hurt first.
+- REEF's climbs: you and your followers, both ways, standing until the coral crab makes the next; not through the deck's glass; not from an ice bridge. REEF's fight numbers: the agent's, provisional, when built.
+- The connected rule (a utility works on every place of its kind, no marked sites) is for every Technician's utility.
+- The coral crab's Ultimate is REEF PILLAR (the owner's design): a giant crystal spike between its target and the crab, a wall that blocks the enemy's way and heals allies near it, hurting no one.
+
+### Status
+Built in build `2026-11-08l`: THORNWHIP's name and size, the title screen, PINK THICKET (its numbers the agent's, provisional). Recorded, to build with the coral crab: REEF's climbs and numbers, REEF PILLAR. The connected rule: a direction, no utility changed yet. SEEDFALL's numbers: still provisional (the question skipped).
+
+### Alternatives
+Offered and passed over: the Ultimates listed in `CONVERSION.md` §2; for REEF, the player alone or everyone climbing, up only, 20 s or for good, through the glass, from an ice bridge; for the size, keeping it little or smaller; keeping BLOOM off the title screen.
+
+### Supersedes / superseded by
+Answers the open questions of "BLOOM's Mage (No. 920) approved and built", "SUNDEW built (No. 911); CONSUME as its Ultimate" and "Connected systems: REEF climbs onto any high ground over ground the player stands on" (2026-11-08); the working name LITTLE SHRUB is replaced by THORNWHIP.

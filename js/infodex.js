@@ -112,7 +112,7 @@ function infoEntries() {
                 ["A " + el.label.toUpperCase() + " follower stands outside the two triangles: it hits every element for ×" + mult(el.id, "fire") + ", and every element hits it for ×" + mult("fire", el.id) + ".",
                  "It is never found: no recruit, egg or creature is " + el.label.toUpperCase() + ". The purification module in the Sewers, once it has run, converts a toxic follower into one (its level, XP, bond and stats stay).",
                  "Its hits MEND: each heals the most hurt of your followers within " + M.radius + " tiles by " + Math.round(M.share * 100) + "% of its maximum health. It has no element move or ultimate yet.",
-                 (() => { const fs = typeof EVOLUTIONS !== "undefined" ? Object.values(EVOLUTIONS).filter(d => d.element === el.id && !d.legacy && !d.aside) : [];   // (its forms in the game: the Little Shrub since build 2026-11-08j)
+                 (() => { const fs = typeof EVOLUTIONS !== "undefined" ? Object.values(EVOLUTIONS).filter(d => d.element === el.id && !d.legacy && !d.aside) : [];   // (its forms in the game: the THORNWHIP since build 2026-11-08j)
                    return fs.length ? "Its forms: " + fs.map(d => "a " + el.label.toUpperCase() + " " + roleLabel(d.role) + " evolves at level " + (typeof EVOLVE_LEVEL !== "undefined" ? EVOLVE_LEVEL : 10) + " into the " + d.name + (d.shot ? " (" + d.shot + (d.move ? "; " + d.move : "") + ")" : "")).join("; ") + ". The others are not in the game yet." : "Its forms are not in the game yet."; })()],
                 [["AGAINST ALL", "×" + mult(el.id, "fire")], ["MEND", Math.round(M.share * 100) + "% · " + M.radius + " tiles", el.color], ["FOUND", "never: converted", UI_GOLD]]);
             return;

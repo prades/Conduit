@@ -23,7 +23,7 @@ const W = 1180, H = 820;                            // an iPad-sized screen: the
 // ── what may legitimately differ between a drawn step and a step with no picture ──
 // (1) the clock's and the readout's own counters, and the pen; (2) values that only DRAWING reads. Anything else that differs is a failure.
 // Keep this list short and give every entry a reader check (Grep for the name) before adding it.
-const IGNORE = /^(_virusesOnScreen|_virusesCounting|_virusCountFrame|_perf|_simLast|_simDebt|_simStepsShown|_simStepsCount|_simStepsAt|_simGhost|_nullCtx|_lastDrawScan|_fpCam|_fpBase|_fpDimW|_fpDimFor|_evoGround|_sfFrame|_sfList|ctx|canvas)(\W|$)/;
+const IGNORE = /^(_virusesOnScreen|_virusesCounting|_virusCountFrame|_perf|_simLast|_simDebt|_simStepsShown|_simStepsCount|_simStepsAt|_simGhost|_nullCtx|_lastDrawScan|_fpCam|_fpBase|_fpDimW|_fpDimFor|_evoGround|_sfFrame|_sfList|_thFrame|_thList|ctx|canvas)(\W|$)/;
 // DRAW-ONLY caches that a step with no picture rightly does not fill (each checked with Grep: only the drawing code reads it): the tile column index (_colIndex*, built
 // lazily from `world` by tileColumns for the draw list), the rooms' colour cache (_fpRoomCol), the baked floor sprites (_fp.spr), a wall's bounds cache and the draw-depth cache (_fp.items[].bb and ._dd, _fpWallOnScreen and the sort).
 // `world` itself is followed through worldTileMap and the actors; as a root it is only the same array under another name.

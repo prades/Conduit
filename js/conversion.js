@@ -13,12 +13,12 @@
 //                 its element, what its hits do (toxic's defense shred to BLOOM's MEND), its moves, its cards that come off, and the form it will evolve into.
 //   CONVERT       two taps (it cannot be undone): its element becomes BLOOM (js/config.js ELEMENTS, id "blossom": "bloom" is the retired BUNKER BLOOM's form id); its toxic cards come off
 //                 (js/cards.js equipValid, as when any card stops fitting); it is saved with its element (js/facilitysave.js).
-// AN EVOLVED ONE (build 2026-11-08j): it takes its class's BLOOM form, where that is in the game: an evolved toxic Mage (the Rotshard) becomes the LITTLE SHRUB, BLOOM's Mage (js/evolution.js
+// AN EVOLVED ONE (build 2026-11-08j): it takes its class's BLOOM form, where that is in the game: an evolved toxic Mage (the Rotshard) becomes the THORNWHIP, BLOOM's Mage (js/evolution.js
 // EVOLUTIONS.shrub). Its stats stay as they are ("Same stats, show changes"); an alternate the new form does not have is let go (it goes back to its normal attack).
 // An evolved toxic Brawler (the Seeper) becomes SUNDEW, BLOOM's Brawler (build 2026-11-08k).
 // Not yet (the next stage): a toxic Technician (the coral crab; BLOOM's Technician ability, REEF, is not built).
 const CONVERT = { from: "toxic", to: "blossom", room: "sewers", arm: 180, col: "#8cff5a", bloom: "#ff7ab8",
-    forms: { brawler: "SUNDEW", sniper: "THE LITTLE SHRUB", camper: "THE CORAL CRAB" } };   // (the class's BLOOM form: docs/CONVERSION.md §2; working names)
+    forms: { brawler: "SUNDEW", sniper: "THORNWHIP", camper: "THE CORAL CRAB" } };   // (the class's BLOOM form: docs/CONVERSION.md §2; working names)
 
 function convertReady() { const Q = typeof questState === "function" ? questState("purify") : null; return !!(Q && Q.installedAt && Q.purifiedAt); }   // (installed, and its cycle run: the water clean; until then the quest says the module is running)
 function _cvOurs(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green"; }
@@ -35,7 +35,7 @@ function convertWhyNot(f) {
     if (!_cvOurs(f)) return "NOT ONE OF YOURS";
     if (f.element !== CONVERT.from) return "ONLY A TOXIC FOLLOWER CONVERTS";
     if (!convertReady()) return "THE PURIFICATION MODULE IS NOT READY: INSTALL IT AND LET IT RUN";
-    if (f.evolved && !convertBloomForm(f)) return "ITS BLOOM FORM IS NOT READY";   // (an evolved Mage becomes the Little Shrub: build 2026-11-08j)
+    if (f.evolved && !convertBloomForm(f)) return "ITS BLOOM FORM IS NOT READY";   // (an evolved Mage becomes the THORNWHIP: build 2026-11-08j)
     if (_cvRole(f) === "camper") return "THE BLOOM TECHNICIAN'S ABILITY IS NOT READY";
     return null;
 }

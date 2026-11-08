@@ -490,6 +490,11 @@ const ULT_WAVE = { reach: 6, waves: 3, every: 45, len: 4, cos: 0.64, mult: 0.8, 
 // (`tick`), and spits it out if it lives; while it holds one it takes 75% less damage (`guard`). The agent's numbers, PROVISIONAL (the owner's are open): its reach (tiles: its mouth
 // lunging), the digestion's bite (× its power a second) and its type (Elemental, BLOOM's: each bite MENDs, as every BLOOM hit).
 const ULT_CONSUME = { reach: 2, frames: 300, tick: 60, mult: 0.5, guard: 0.75 };
+// THORNWHIP's PINK THICKET (build 2026-11-08l; the owner's design, 2026-11-08: a big seed slung at an enemy grows into patchy pink-leaved
+// bushes; the enemies there are bound and damaged; the damage becomes a healing aura for the area, "Shared out": the followers there, the most hurt first). The agent's numbers,
+// PROVISIONAL: its reach (tiles), the thicket's radius (tiles) and life (frames), a beat every `tick` frames of `mult` × its power on every enemy in it (Elemental, BLOOM's), each held
+// in place till the next beat.
+const ULT_THICKET = { reach: 7, radius: 2, frames: 300, tick: 30, mult: 0.3 };
 const ULT_DRIFT = { reach: 6, loop: 36, width: 1.6, beyond: 1.5, cut: 1.8, mult: 1.5, glitch: 30, fast: 1.3, frames: 360 };   // the Hover Shell's DRIFT SLASH (the owner's design, 2026-11-07; the oval: "a circular sort of slash, like a sword [...] he goes in and turns around like an oval shape"; the name and numbers are the agent's, provisional): reach (tiles), frames round the oval, its half width (tiles), how far past the enemies it swings (tiles), the blade's reach (tiles), × power a slash (half slashing, half electric), frames of interrupt, the squad's speed, its frames
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const DMG_HIT_ULT_SLASH = Object.freeze({ which: "special", stat: "sp", type: "slashing" });
@@ -561,6 +566,20 @@ const FORM_ULTIMATES = {
     // CONSUME (SUNDEW's: "911, and make CONSUME his Ultimate"): the nearest enemy it can see within ULT_CONSUME.reach, not a boss nor one already held, swallowed whole: out of the fight
     // (untargetable, not drawn, still) inside it for ULT_CONSUME.frames, bitten every ULT_CONSUME.tick frames; SUNDEW stands still with its petals shut (js/npc.js) and takes
     // ULT_CONSUME.guard less damage (js/helpers.js applyDamage); then it is spat out in front of it, if it lives. Nothing to swallow: the charge is kept.
+    // PINK THICKET (THORNWHIP's: the owner's design and name, 2026-11-08): a big seed slung at the nearest enemy it can see within ULT_THICKET.reach grows, where it lands, into a
+    // thicket of patchy pink-leaved bushes ULT_THICKET.radius tiles round for ULT_THICKET.frames: at once and every ULT_THICKET.tick frames, every enemy in it is held in place and
+    // bitten; the damage those bites deal is shared out as healing among your followers in it, the most hurt first. Nothing in reach: the charge is kept.
+    shrub: { name: "Pink Thicket", desc: "Slings a big seed at an enemy: it grows into a thicket of pink-leaved bushes that holds the enemies in it in place and bites them; the damage it deals heals your followers in it, the most hurt first", execute(actor) {
+        const T = ULT_THICKET, foes = (typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, T.reach) : []).sort((a, b) => Math.hypot(a.x - actor.x, a.y - actor.y) - Math.hypot(b.x - actor.x, b.y - actor.y));
+        if (!foes.length || typeof spawnFollowerProjectile !== "function") return;
+        const t = foes[0], dx = t.x - actor.x, dy = t.y - actor.y, L = Math.hypot(dx, dy) || 1;
+        let landed = false; const land = (x, y) => { if (landed) return; landed = true; thicketGrow(actor, x, y); };   // (once: a seed can touch an enemy the frame it runs out)
+        const p = spawnFollowerProjectile(actor, t, "#ff7ab8", 0, 9, a => land(a.x, a.y), DMG_HIT_SPECIAL, { range: L, kind: "bigseed" });   // (a big BLOOM seed: js/game.js draws it)
+        if (!p) return;
+        p.onLand = () => land(p.x, p.y);
+        actor.ultimateCharge = 0; actor.dirX = dx / L; actor.dirY = dy / L;
+        _ultSay(actor, "PINK THICKET", "#ff9ccc");
+    } },
     sundew: { name: "Consume", desc: "Swallows an enemy whole (not a boss) and digests it for 5 seconds, a bite every second; while it holds one it takes 75% less damage; then spits it out if it lives", execute(actor) {
         const C = ULT_CONSUME, foes = (typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, C.reach) : []).filter(a => !a.bossName && !a.bossId && !a.isBoss && !a._swallowedBy)
             .sort((a, b) => Math.hypot(a.x - actor.x, a.y - actor.y) - Math.hypot(b.x - actor.x, b.y - actor.y));
@@ -794,7 +813,7 @@ function spawnElementEffect(effect) {
 // alive — the oldest short-lived ones go first, the long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
+const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
     const keep = [], clouds = [], blizzards = [];
@@ -897,6 +916,7 @@ function updateElementEffects() {
         // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
         // CONSUME (FORM_ULTIMATES.sundew): SUNDEW holds its catch inside it, bites it every ULT_CONSUME.tick frames (the catch is untargetable: the bite lets itself through), and spits it out
         // in front of it when its time is up, or at once if SUNDEW falls; a catch that dies inside is gone
+        if (e.type === "thicket") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % ULT_THICKET.tick === 0 && typeof thicketBeat === "function") thicketBeat(e); }   // (PINK THICKET's beat)
         if (e.type === "consume") {
             const by = e.by, prey = e.held[0], age = e.maxLife - e.life, gone = !by || by.dead;
             if (by && !by.dead) { e.x = by.x; e.y = by.y; }
@@ -1434,6 +1454,7 @@ function drawElementEffects() {
             }
             // SEEDFALL's circle and seeds lie on the floor: drawn tile by tile in the floor's pass (drawSeedfallOnTile, below), so walls and units in front cover them
             case "seedfall": break;
+            case "thicket": break;   // (PINK THICKET's bushes and aura lie on the floor too: drawThicketOnTile)
             // CONTAMINATION NETWORK (FORM_ULTIMATES): glowing toxic strands between its pods, a pulse running along them
             case "toxicnet": {
                 const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), cy0 = py + TILE_H, S = (x, y) => [px + ((x - e.x) - (y - e.y)) * TILE_W, cy0 + ((x - e.x) + (y - e.y)) * TILE_H];
@@ -1690,7 +1711,7 @@ function drawElementEffects() {
     });
 }
 
-// ── SEEDFALL ON THE FLOOR (the Little Shrub's alternate, build 2026-11-08j; js/evolution.js seedfall) ──
+// ── SEEDFALL ON THE FLOOR (the THORNWHIP's alternate, build 2026-11-08j; js/evolution.js seedfall) ──
 // The owner: "the alternate attack needs to be hidden behind walls". Its circle is painted onto the floor tile by tile, in the floor's own pass (js/game.js, as a Mage's aura ring and
 // a serum's pool are), each tile clipped to itself: a wall or a unit in front of it covers it, and it never spills onto a wall. Only the tiles of its own room show it. Its seeds fall
 // onto the tile each lands on, drawn with that tile, so a wall in front covers them too; a seed that would land off the floor is not drawn. Nine seeds, each falling over and over to
@@ -1751,4 +1772,79 @@ function consumeHoldStep(f) {
     const C = f && f._consume; if (!C) return false;
     if (!C.prey || C.prey.dead || !C.prey._swallowedBy) { f._consume = null; return false; }
     f.state = "idle"; f.attackAnim = 0; return true;
+}
+
+// ── PINK THICKET (THORNWHIP's Ultimate, build 2026-11-08l) ──
+// Where its seed lands: the thicket, and its first beat at once
+function thicketGrow(f, x, y) {
+    if (typeof elementEffects === "undefined") return null;
+    const T = ULT_THICKET, e = { type: "thicket", x, y, radius: T.radius, life: T.frames, maxLife: T.frames, by: f, element: "blossom", seed: Math.round(Math.abs(x * 7.31 + y * 3.17) * 100) % 997, healAt: null };
+    elementEffects.push(e); thicketBeat(e);
+    return e;
+}
+// A beat: every enemy in it that its middle can see is held in place till the next beat and bitten (Elemental, BLOOM's); what the bites take is shared out as healing
+function thicketBeat(e) {
+    if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return 0;
+    const T = ULT_THICKET, by = e.by, r2 = e.radius * e.radius; let dealt = 0;
+    for (const a of actors) {
+        if (!a || !isHostileTarget(a)) continue;
+        const dx = a.x - e.x, dy = a.y - e.y; if (dx * dx + dy * dy > r2 || (typeof _evoSees === "function" && !_evoSees(e.x, e.y, a))) continue;
+        if (typeof applySlow === "function") applySlow(a, T.tick + 2, 0);   // (bound: it cannot move till the next beat)
+        const h0 = a.health; applyDamage(a, ((by && by.power) || 10) * T.mult, by || null, "blossom", false, false, DMG_HIT_SPECIAL);
+        dealt += Math.max(0, h0 - Math.max(0, a.health));
+    }
+    if (dealt > 0) thicketHeal(e, dealt);
+    return dealt;
+}
+// The healing aura (the owner: "Shared out"): `amount` (the damage just dealt) shared among your followers in it, the most hurt first, each up to its full health; what none can take is lost.
+// Your followers, not the player (as SEEDFALL's and MEND's: the owner's answer for SEEDFALL, 2026-11-08). Returns what it healed.
+function thicketHeal(e, amount) {
+    if (typeof followers === "undefined" || typeof healUnit !== "function" || !(amount > 0)) return 0;
+    const r2 = e.radius * e.radius, hurt = followers.filter(a => a && !a.dead && a.team === "green" && a.maxHealth > 0 && a.health < a.maxHealth && (a.x - e.x) * (a.x - e.x) + (a.y - e.y) * (a.y - e.y) <= r2)
+        .sort((a, b) => a.health / a.maxHealth - b.health / b.maxHealth);
+    let left = amount, healed = 0;
+    for (const a of hurt) { if (left <= 1e-9) break; const got = healUnit(a, Math.min(left, a.maxHealth - a.health), e.by || null); left -= got; healed += got; }
+    if (healed > 0) e.healAt = typeof frame !== "undefined" ? frame : 0;   // (the aura swells: drawThicketOnTile)
+    return healed;
+}
+// ON THE FLOOR, as SEEDFALL is: patchy pink-leaved bushes over its circle and a soft pink aura that swells as it heals, drawn tile by tile in the floor's pass (js/game.js): walls and
+// units in front cover them; only the tiles of its own room show them. (_thFrame, _thList: drawing only, tests/ghost.js allow-lists them.)
+let _thFrame = -1, _thList = [];
+function _thHash(x, y, s) { const v = Math.sin(x * 127.1 + y * 311.7 + s * 74.7) * 43758.5453; return v - Math.floor(v); }
+function _thBush(x, y, s, t) {   // a bush: a dark plum mound, pink pointed leaves fanned up out of it, swaying a little
+    if (!(s > 0.02)) return;
+    ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+    ctx.globalAlpha = 0.3; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(0, 0, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1; ctx.fillStyle = "#3a1530"; ctx.beginPath(); ctx.ellipse(0, -5, 10, 6.5, 0, 0, Math.PI * 2); ctx.fill();
+    const sway = Math.sin(t * 0.05) * 0.08;
+    for (let i = 0; i < 7; i++) {
+        const a = -Math.PI / 2 + (i - 3) * 0.42 + sway, L = 12 + (i % 3) * 3, w = 3.2, bx = Math.cos(a) * 3, by = -5 + Math.sin(a) * 3, ex = Math.cos(a) * L, ey = -5 + Math.sin(a) * L * 0.9, nx = -Math.sin(a) * w, ny = Math.cos(a) * w;
+        ctx.fillStyle = i % 2 ? "#ff7ab8" : "#e0559a"; ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo((bx + ex) / 2 + nx, (by + ey) / 2 + ny, ex, ey); ctx.quadraticCurveTo((bx + ex) / 2 - nx, (by + ey) / 2 - ny, bx, by); ctx.fill();
+    }
+    ctx.restore();
+}
+function drawThicketOnTile(tx, ty, px, py) {
+    if (typeof ctx === "undefined" || !ctx || typeof elementEffects === "undefined") return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (_thFrame !== f0) { _thFrame = f0; _thList = elementEffects.filter(e => e.type === "thicket" && e.life > 0).map(e => ({ e, room: _sfRoomAt(e.x, e.y) })); }   // (once a frame)
+    if (!_thList.length) return;
+    let room, roomKnown = false;
+    for (const it of _thList) {
+        const e = it.e, R = e.radius; if (Math.abs(tx - e.x) > R + 0.75 || Math.abs(ty - e.y) > R + 0.75) continue;
+        if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
+        if (room !== it.room) continue;   // (a tile of another room shows none of it)
+        const age = e.maxLife - e.life, grow = Math.min(1, age / 24, e.life / 30), pulse = e.healAt != null ? Math.max(0, 1 - (f0 - e.healAt) / 20) : 0;
+        const at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H], [cx, cy] = at(e.x, e.y), rx = R * Math.SQRT2 * TILE_W, ry = R * Math.SQRT2 * TILE_H;
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
+        ctx.globalAlpha = (0.16 + 0.2 * pulse) * grow; ctx.fillStyle = "#ff7ab8"; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();   // (the healing aura)
+        ctx.globalAlpha = (0.5 + 0.3 * pulse) * grow; ctx.strokeStyle = "#ff5fa8"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+        const n = (() => { const h = _thHash(tx, ty, e.seed); return h < 0.3 ? 0 : h < 0.75 ? 1 : 2; })();   // (patchy: none, one or two bushes on a tile)
+        for (let k = 0; k < n; k++) {
+            const bx = tx + (_thHash(tx + k * 7, ty, e.seed + 1) - 0.5) * 0.8, by = ty + (_thHash(tx, ty + k * 5, e.seed + 2) - 0.5) * 0.8;
+            if ((bx - e.x) * (bx - e.x) + (by - e.y) * (by - e.y) > R * R) continue;
+            const [qx, qy] = at(bx, by); _thBush(qx, qy, (0.75 + 0.5 * _thHash(tx, ty, e.seed + 3 + k)) * grow, f0 + tx * 13 + ty * 7);
+        }
+    }
 }

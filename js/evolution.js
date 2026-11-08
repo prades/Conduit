@@ -280,12 +280,12 @@ const EVOLUTIONS = {
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
               cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
-    // THE LITTLE SHRUB (a working name: its name is the owner's to give), BLOOM'S MAGE since build 2026-11-08j (design No. 920, approved: "Shrub into the game"; its game sprite No. 921, design/evolutions/
+    // THORNWHIP (the owner named it, 2026-11-08; it came in as the THORNWHIP, a working name), BLOOM'S MAGE since build 2026-11-08j (design No. 920, approved: "Shrub into the game"; its game sprite No. 921, design/evolutions/
     // forms39.js), from the owner's pencil sketch and reviews (docs/CONVERSION.md §2): a little shrub, mostly leaves, the Rotshard's crystal poking out of its back, now pink; two black thorny vines
     // held out in front of it; it shuffles about. Its shot, SEED SHOT: the vines rear round a glowing pink seed and fling it like a sling (a Mage's shot, Elemental; every BLOOM hit MENDs). Its
     // alternate, SEEDFALL. Its Ultimate is open: it has none yet. A BLOOM Mage evolves into it; an evolved toxic Mage (the Rotshard) converts into it at the purification module (js/conversion.js).
-    shrub:  { id: "shrub", name: "LITTLE SHRUB", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall"], sheet: "img/evo/shrub.png",
-              cell: 192, anchor: [96, 138.2], core: [96, 110.7], noGlow: true, color: "#ff7ab8" },   // (a 192 px cell, as the Electro Skink's: room for its whip; the same pixels a unit as the 144 px sheets)
+    shrub:  { id: "shrub", name: "THORNWHIP", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall"], sheet: "img/evo/shrub.png",
+              cell: 256, anchor: [128, 170.2], core: [128, 130.6], noGlow: true, color: "#ff7ab8" },   // (a 256 px cell since build 2026-11-08l, at the other Mages' height (the owner: "Match the other Mages"): room for its whip; the same pixels a unit as the 144 px sheets)
     // SUNDEW, BLOOM'S BRAWLER since build 2026-11-08k (design No. 911, approved: "911, and make CONSUME his Ultimate"; its game sprite No. 922, design/evolutions/forms37.js; the owner sent
     // it to the game: "SUNDEW into the game"; docs/CONVERSION.md §2): a wilted black flower, six velvet petals veined in glowing pink round a mouth of pale fangs, tipped forward on
     // seven ringed root-tentacles; a stem from its base arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf. Its everyday hit is the blade's
@@ -549,7 +549,7 @@ function hexfireCircle(f, x, y) {
     fieldBite(e, "fire");
     return e;
 }
-// SEEDFALL (the Little Shrub's alternate, build 2026-11-08j; designed for BLOOM's Mage 2026-11-02: "glowing seeds rain on an area; enemies there are hurt, allies there are mended"; the owner's pick
+// SEEDFALL (the THORNWHIP's alternate, build 2026-11-08j; designed for BLOOM's Mage 2026-11-02: "glowing seeds rain on an area; enemies there are hurt, allies there are mended"; the owner's pick
 // for its kit, 2026-11-08): on the nearest enemy it can see within SEEDFALL_RANGE, glowing seeds rain on a circle SEEDFALL_RADIUS tiles round for SEEDFALL_LIFE frames. Every SEEDFALL_TICK frames each
 // enemy in it takes SEEDFALL_BITE × its power (Elemental, a BLOOM hit: each one MENDs, js/elements.js elementMend) and each of your followers in it is mended SEEDFALL_MEND of its maximum health
 // ("allies" read as your followers, as MEND's are). Its last circle goes when it casts a new one. The numbers are the agent's, PROVISIONAL: HEXFIRE's reach, life and beat, its circle a little wider,

@@ -432,8 +432,8 @@ function measure(w, h) {
     });
 
     // ── THE DAMAGE SYSTEM, THE TABLES AND THE WORDS ─────────
-    // ── THE LITTLE SHRUB (BLOOM's Mage, build 2026-11-08j) ──
-    group('LITTLE SHRUB (BLOOM Mage, build 2026-11-08j): SEED SHOT, its everyday shot, that MENDs as every BLOOM hit; SEEDFALL, seeds raining on a circle that hurt the enemies in it and mend your followers in it');
+    // ── THE THORNWHIP (BLOOM's Mage, build 2026-11-08j) ──
+    group('THORNWHIP (BLOOM Mage, build 2026-11-08j): SEED SHOT, its everyday shot, that MENDs as every BLOOM hit; SEEDFALL, seeds raining on a circle that hurt the enemies in it and mend your followers in it');
     check('SEED SHOT is its everyday shot: the BLOOM shot (a seed) at the nearest enemy, SP.ATK × MAGE_SHOT_MULT, a plain hit, named SEED SHOT on INFO; its hit MENDs the most hurt follower near the shrub', () => {
         const r = J(`(function(){ __clear(); const f = __fol('blossom', 'sniper', 'shrub'), t = __foe(f.x + 3.5, f.y), mate = __fol('fire', 'brawler', null); mate.x = f.x - 1; mate.y = f.y; mate.health = mate.maxHealth * 0.5;
             f.attackCooldown = 0; f._sigCd = 1e9;
@@ -463,6 +463,32 @@ function measure(w, h) {
         ok(Math.abs(r.firstMend - r.share) < 1e-6, 'the follower in it was mended ' + r.firstMend + ' as it opened, not ' + r.share);
         ok(r.gained >= r.bites.length * r.mend * r.m0 * 0.999, 'the follower in it was mended each beat: ' + r.gained + ' after the first (' + r.bites.length + ' beats)'); same(r.outFirst, 0, 'the follower outside it was mended as it opened'); ok(Math.abs(r.beatIn - r.beatShare) < 1e-9, 'a beat mended the follower in it ' + r.beatIn + ', not ' + r.beatShare); same(r.beatOut, 0, 'a beat mended the follower outside it');
         ok(/^ALTERNATE · SEEDFALL/.test(r.info || ''), 'INFO: ' + r.info);
+    });
+
+    // ── THORNWHIP's PINK THICKET (build 2026-11-08l) ──
+    group('THORNWHIP (BLOOM Mage): its Ultimate PINK THICKET (build 2026-11-08l, the owner\'s design): a big seed grows into a thicket that binds and bites the enemies in it, the damage shared out as healing among your followers in it');
+    check('PINK THICKET slings a big seed (no damage of its own) at the nearest enemy it can see in reach and spends the charge; nothing in reach keeps it; where the seed lands, a thicket ULT_THICKET.radius round for ULT_THICKET.frames', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'sniper', 'shrub'); __foe(f.x + 12, f.y); f.ultimateCharge = 100; const none = followerUltFire(f), keep = f.ultimateCharge;
+            const t = __foe(f.x + 4, f.y + 0.5), fired = followerUltFire(f), p = followerProjectiles.find(q => q.kind === 'bigseed'), out = { none, keep, fired, spent: f.ultimateCharge, seed: p ? [p.damage, p.element, p.radius] : null };
+            __off(f); let k = 0, c = null; while (!c && k < 200) { render(); k++; c = elementEffects.find(e => e.type === 'thicket'); }
+            out.at = c && [c.x - t.x, c.y - t.y, c.radius, c.maxLife]; out.name = followerUltimate(f).name; return out; })()`);
+        same(r.none, false, 'it fired with nothing in reach'); same(r.keep, 100, 'the charge with nothing in reach'); same(r.fired, true, 'it did not fire'); same(r.spent, 0, 'the charge after');
+        ok(r.seed && r.seed[0] === 0 && r.seed[1] === 'blossom' && r.seed[2] > 5, 'the big seed: ' + JSON.stringify(r.seed)); ok(r.at && Math.hypot(r.at[0], r.at[1]) < 1.1, 'no thicket where it landed: ' + JSON.stringify(r.at));
+        same(r.at[2], 2, 'its radius'); same(r.at[3], 300, 'its life'); same(r.name, 'Pink Thicket', 'its Ultimate');
+    });
+    check('each beat holds every enemy in it in place and bites it (Elemental, its power × ULT_THICKET.mult), one outside untouched; what the bites take is shared out as healing among your followers in it, the most hurt first, the total the damage dealt; a follower outside it, and the player, are not healed', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'sniper', 'shrub'); __off(f); const x = f.x + 6, y = f.y;   // (6 tiles off: its followers out of MEND's 4, which every BLOOM bite also does)
+            const a = __foe(x + 0.5, y), b = __foe(x - 0.5, y + 0.4), o = __foe(x + 5, y), lo = __fol('fire', 'brawler', null), mid = __fol('fire', 'brawler', null), far = __fol('fire', 'brawler', null);
+            lo.x = x + 0.3; lo.y = y - 0.6; mid.x = x - 0.6; mid.y = y - 0.3; far.x = x + 6; far.y = y + 3; __off(lo); __off(mid); __off(far); followers.push(lo, mid, far);
+            lo.health = lo.maxHealth * 0.2; mid.health = mid.maxHealth * 0.9; far.health = far.maxHealth * 0.2; const h = [lo.health, mid.health, far.health], ph = health;
+            const twin = __foe(x + 30, y + 30); applyDamage(twin, f.power * ULT_THICKET.mult, f, 'blossom', false, false, DMG_HIT_SPECIAL); const one = __dmg(twin);
+            const e = thicketGrow(f, x, y), got = [lo.health - h[0], mid.health - h[1], far.health - h[2]];
+            return { one, bites: [__dmg(a), __dmg(b), __dmg(o)], held: [a.slowFactor, a.slowed > 0, b.slowFactor, o.slowed > 0], got, lowMiss: lo.maxHealth - h[0], player: health - ph }; })()`);
+        ok(Math.abs(r.bites[0] - r.one) < 1e-6 && Math.abs(r.bites[1] - r.one) < 1e-6, 'each enemy in it bitten ' + r.one + ': ' + JSON.stringify(r.bites)); same(r.bites[2], 0, 'the enemy outside it bitten');
+        same(r.held.join(), '0,true,0,false', 'held in place (in it), not (outside)');
+        const dealt = r.bites[0] + r.bites[1], healed = r.got[0] + r.got[1];
+        ok(Math.abs(healed - Math.min(dealt, r.lowMiss + r.got[1])) < 1e-6, 'the healing is the damage dealt: ' + healed + ' of ' + dealt);
+        ok(r.got[0] >= Math.min(dealt, r.lowMiss) - 1e-6, 'the most hurt first: ' + JSON.stringify(r.got)); same(r.got[2], 0, 'the follower outside it healed'); same(r.player, 0, 'the player healed');
     });
 
     // ── SUNDEW (BLOOM's Brawler, build 2026-11-08k) ──

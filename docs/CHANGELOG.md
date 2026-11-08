@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-08
 
+### Build `2026-11-08l` · branch `claude/start-game-project-HSh7Z` · THORNWHIP and PINK THICKET; the owner's answers
+The owner asked to be prompted with the open questions one by one ("Prompt me questions one by one"), then to build the answers.
+- **THORNWHIP:** BLOOM's Mage is named THORNWHIP (it was the LITTLE SHRUB, a working name; its id `shrub` is kept, for saves), and is drawn at the other Mages' height ("Match the other Mages"): its sheet re-baked at 4.9 × in a 256 px cell.
+- **PINK THICKET**, its Ultimate (the owner's design and name): a big seed slung at the nearest enemy it can see grows into patchy pink-leaved bushes; every half second the enemies in it are held in place and bitten, and the damage the bites deal is shared out as healing among your followers in it, the most hurt first. Its bushes and aura lie on the floor, covered by walls and units in front. Numbers the agent's, provisional (7 tiles' reach, 2 round, 5 s, 0.3 × its power a bite).
+- **The title screen** shows BLOOM's forms too ("Show them").
+- **Recorded, no game change:** SUNDEW stays put while it digests, CONSUME's numbers and its Elemental bite kept; SEEDFALL heals followers only; REEF's climbs (you and your followers, both ways, until the next one, not through the deck's glass, not from an ice bridge); the connected rule for every Technician's utility; REEF's fight numbers to be picked when built; the coral crab's Ultimate, REEF PILLAR (a crystal spike wall between its target and the crab that heals allies near it).
+- Tests: PINK THICKET checks (followercombat); updated: conversion, attract, evolution, ghost. The full run on this build: 91 of 96 suites passing, the five failing the ones failing before these builds too (visiblearea, bottomui, carousel's 1024 coverage, the `?fluxlab` real page: cover, fluxlab). Checked in a browser in the real game (THORNWHIP as tall as an Ember Hood; PINK THICKET round two enemies, a hurt follower in it healed; no page errors). Not playtested.
+
 ### Build `2026-11-08k` · branch `claude/start-game-project-HSh7Z` · SUNDEW, BLOOM's Brawler, in the game
 The owner: "Draft SUNDEW next", then "SUNDEW into the game". SUNDEW's look is No. 911 (approved earlier the same day), CONSUME its Ultimate.
 - **SUNDEW**: a wilted black flower, its velvet petals veined in glowing pink round a mouth of pale fangs, tipped forward on ringed root-tentacles, a stem arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf. Its sheet (`img/evo/sundew.png`) is baked from No. 922 (No. 911 at about the Seeper's height) in a 192 px cell.
