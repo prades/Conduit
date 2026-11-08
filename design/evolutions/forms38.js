@@ -175,20 +175,50 @@ function _ccRoundHex(L, rb, rf, flat, k, m, NU, NV) {
   for (let i = 1; i < NV - 1; i++) for (let j = 0; j < NU; j++) { const a = v(i, j), b = v(i, j + 1), c = v(i + 1, j), d = v(i + 1, j + 1); idx.push(a, b, d, a, d, c); }
   const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); return geo;
 }
-// an ear (No. 914's): growing along +y from its base at the origin to its rounded tip L away, its cross-section the head's rounded hexagon (k, as _ccRoundHex), rt
-// across its flats at the tip, rb at its base and widening still toward the base (flare, over its first 30%), so it never narrows into the head (the owner: "I don't
-// want to see any shrinkage towards the base of the ears"). Open at its base, which is sunk in the head. Smooth, its vertices shared.
-function _ccEar(L, rb, rt, flare, k, NU, NS, NC) {
-  const N = [30, 90, 150].map(d => [Math.cos(d * PI / 180), Math.sin(d * PI / 180)]), ring = [], pos = [], idx = [], Ls = L - 0.8 * rt;   // (Ls: the shaft, below its tip's cap)
-  for (let j = 0; j < NU; j++) { const a = j / NU * TAU, dx = Math.cos(a), dy = Math.sin(a); let f = 0; for (const [nx, ny] of N) f += Math.pow(Math.abs(nx * dx + ny * dy), k); f = Math.pow(f, 1 / k); ring.push([dx / f, dy / f]); }
-  const push = (y, r) => { for (let j = 0; j < NU; j++) pos.push(ring[j][0] * r, y, -ring[j][1] * r); };   // (a ring round the +y axis, turning the same way as _ccRoundHex's)
-  for (let i = 0; i < NS; i++) { const t = i / (NS - 1); push(t * Ls, rt + (rb - rt) * Math.pow(1 - t, 0.7) + rb * flare * Math.pow(Math.max(0, 1 - t / 0.3), 2)); }   // (its shaft)
-  for (let i = 1; i < NC; i++) { const ps = PI / 2 * i / NC; push(Ls + 0.8 * rt * Math.sin(ps), rt * Math.cos(ps)); }   // (its tip, rounded)
-  pos.push(0, L, 0);   // (its tip's point)
-  const R = NS + NC - 1, tip = R * NU, v = (i, j) => i * NU + (j % NU);
+// where a ray from P along d first meets mesh (in its parent's frame: mesh's own placement applied), and the mesh's smooth normal there (null if it misses)
+function _ccSurf(mesh) {
+  const m = new T.Mesh(mesh.geometry, new T.MeshBasicMaterial({ side: T.DoubleSide })); m.position.copy(mesh.position); m.quaternion.copy(mesh.quaternion); m.scale.copy(mesh.scale); m.updateMatrixWorld(true);
+  const pos = mesh.geometry.attributes.position, nor = mesh.geometry.attributes.normal, nm = new T.Matrix3().getNormalMatrix(m.matrixWorld), rc = new T.Raycaster(), tri = new T.Triangle(), bc = V(0, 0, 0), q = V(0, 0, 0);
+  return (P, d) => { rc.set(P, d); const h = rc.intersectObject(m, false)[0]; if (!h) return null; const f = h.face;
+    tri.a.fromBufferAttribute(pos, f.a).applyMatrix4(m.matrixWorld); tri.b.fromBufferAttribute(pos, f.b).applyMatrix4(m.matrixWorld); tri.c.fromBufferAttribute(pos, f.c).applyMatrix4(m.matrixWorld); tri.getBarycoord(h.point, bc);
+    const n = V(0, 0, 0).addScaledVector(q.fromBufferAttribute(nor, f.a), bc.x).addScaledVector(q.fromBufferAttribute(nor, f.b), bc.y).addScaledVector(q.fromBufferAttribute(nor, f.c), bc.z).applyMatrix3(nm).normalize();
+    return { p: h.point.clone(), n }; };
+}
+// an ear (No. 914's) grown out of the head (the owner, circling where each ear left the head: "Not connected here"; they were straight pegs leaning back at a low angle
+// to the head's top, their bases pushed into its rounded edge, so each stood off the head in a thin wedge and overhung the edge). Its root R0 is on the head's surface
+// (surf: the head, as _ccSurf), n0 the head's normal there: it rises first straight out of the head and curves back to its tip Tp (its last stretch along tEnd);
+// round its foot a fillet, a concave quarter-round F high, whose edge lies along the head's surface (each point found on the head by a ray along -n0, so it follows
+// the head's curve) and whose top meets the ear's side square: the head runs into the ear with no seam. Its lowest ring is sunk just under the head's surface. Its
+// cross-section the head's rounded hexagon (k), a corner toward out (the head's side); rb across its flats at its foot, rt at its tip, which is rounded off.
+function _ccGrowEar(surf, R0, n0, Tp, tEnd, out, rb, rt, F, k, NU, NF, NS, NC) {
+  const N = [30, 90, 150].map(d => [Math.cos(d * PI / 180), Math.sin(d * PI / 180)]), sh = [], pos = [], idx = [];
+  for (let j = 0; j < NU; j++) { const a = j / NU * TAU, dx = Math.cos(a), dy = Math.sin(a); let f = 0; for (const [nx, ny] of N) f += Math.pow(Math.abs(nx * dx + ny * dy), k); f = Math.pow(f, 1 / k); sh.push([dx / f, dy / f]); }
+  let u = out.clone().addScaledVector(n0, -out.dot(n0)).normalize(), w = V(0, 0, 0).crossVectors(n0, u);   // (its frame: u and w across it, w = along x u, so it faces outward)
+  const ring = (C, r) => { for (let j = 0; j < NU; j++) { const p = C.clone().addScaledVector(u, sh[j][0] * r).addScaledVector(w, sh[j][1] * r); pos.push(p.x, p.y, p.z); } };
+  // its foot: the skirt (just under the head's surface), then the fillet's rings up to the shaft
+  // (low down, its shading is the head's own: hn, the head's normal under each point, and hw, how much of its own shading each ring keeps, set after it is built)
+  const Q = V(0, 0, 0), Pu = V(0, 0, 0), dn = n0.clone().negate(), hn = [], hw = [];
+  for (let i = 0; i <= NF; i++) { const skirt = i === 0, ph = skirt ? 0 : PI / 2 * (i - 1) / NF, rho = skirt ? rb + 1.5 * F : rb + F * (1 - Math.sin(ph)), h = skirt ? -0.0005 : F * (1 - Math.cos(ph)), be = skirt ? 0 : _ccS(0, 1, h / F);
+    hw.push(skirt ? 0 : _ccS(0, 0.5, h / F));
+    for (let j = 0; j < NU; j++) { Q.copy(R0).addScaledVector(u, sh[j][0] * rho).addScaledVector(w, sh[j][1] * rho);   // (in the plane square to the head's normal at its root)
+      const hit = surf(Pu.copy(Q).addScaledVector(n0, 0.08), dn), onHead = hit ? hit.p.addScaledVector(hit.n, h) : Q.clone().addScaledVector(n0, h), p = onHead.lerp(Q.addScaledVector(n0, h), be);   // (on the head low down, square to its root higher up)
+      pos.push(p.x, p.y, p.z); hn.push(hit ? hit.n : n0.clone()); } }
+  // its shaft: along a curve from the fillet's top (straight out of the head) to its tip (along tEnd), its frame carried along it without twisting
+  const B0 = R0.clone().addScaledVector(n0, F), D = B0.distanceTo(Tp), B1 = B0.clone().addScaledVector(n0, 0.3 * D), B2 = Tp.clone().addScaledVector(tEnd, -0.35 * D), C = V(0, 0, 0), tg = n0.clone(), tg2 = V(0, 0, 0), qt = new T.Quaternion();
+  for (let i = 0; i < NS; i++) { const t = i / (NS - 1), mt = 1 - t;
+    C.set(0, 0, 0).addScaledVector(B0, mt * mt * mt).addScaledVector(B1, 3 * mt * mt * t).addScaledVector(B2, 3 * mt * t * t).addScaledVector(Tp, t * t * t);
+    tg2.set(0, 0, 0).addScaledVector(B1.clone().sub(B0), 3 * mt * mt).addScaledVector(B2.clone().sub(B1), 6 * mt * t).addScaledVector(Tp.clone().sub(B2), 3 * t * t).normalize();
+    qt.setFromUnitVectors(tg, tg2); u.applyQuaternion(qt).addScaledVector(tg2, -u.dot(tg2)).normalize(); w.crossVectors(tg2, u); tg.copy(tg2);
+    ring(C, rt + (rb - rt) * Math.pow(mt, 0.7)); }
+  for (let i = 1; i < NC; i++) { const ps = PI / 2 * i / NC; ring(Tp.clone().addScaledVector(tg, 0.8 * rt * Math.sin(ps)), rt * Math.cos(ps)); }   // (its tip, rounded)
+  const tipP = Tp.clone().addScaledVector(tg, 0.8 * rt); pos.push(tipP.x, tipP.y, tipP.z);
+  const R = NF + 1 + NS + NC - 1, tip = R * NU, v = (i, j) => i * NU + (j % NU);
   for (let i = 0; i < R - 1; i++) for (let j = 0; j < NU; j++) { const a = v(i, j), b = v(i, j + 1), c = v(i + 1, j), d = v(i + 1, j + 1); idx.push(a, b, d, a, d, c); }
-  for (let j = 0; j < NU; j++) idx.push(tip, v(R - 1, j), v(R - 1, j + 1));
-  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); return geo;
+  for (let j = 0; j < NU; j++) idx.push(v(R - 1, j), v(R - 1, j + 1), tip);
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  const nr = geo.attributes.normal, nn = V(0, 0, 0);   // (its foot shaded as the head is where they meet, so no line shows round it)
+  for (let i = 0; i <= NF; i++) for (let j = 0; j < NU; j++) { const vi = v(i, j); nn.fromBufferAttribute(nr, vi).lerp(hn[i * NU + j], 1 - hw[i]).normalize(); nr.setXYZ(vi, nn.x, nn.y, nn.z); }
+  return geo;
 }
 function _coralTick(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
@@ -256,9 +286,10 @@ function _coralTick(o) {
   // and smoothly shaded; with headRound null, the sharp-edged block. Then (the owner: "Broader now"): a quarter wider (headCut), as tall as it was; its ears and the
   // brace round its neck spread with it
   const [hl, hb, hf, hy] = o.headCut, headSm = o.headRound ? headM.clone() : headM; headSm.flatShading = !o.headRound;   // (the same stone, smooth; its ears share it)
-  if (o.headRound) hd.add(new T.Mesh(_ccRoundHex(o.headR * hl, o.headR * hb, o.headR * hf, hy, o.headRound[0], o.headRound[1], 48, 28), headSm));
+  let headMesh;   // (kept: its ears grow from it)
+  if (o.headRound) { headMesh = new T.Mesh(_ccRoundHex(o.headR * hl, o.headR * hb, o.headR * hf, hy, o.headRound[0], o.headRound[1], 64, 40), headSm); hd.add(headMesh); }
   else { const hg = new T.CylinderGeometry(o.headR * hf, o.headR * hb, o.headR * hl, 6, 1, false, PI / 6);   // (narrower at its face; a flat top and bottom)
-    const hm = new T.Mesh(hg, headM); hm.rotation.x = PI / 2; hm.scale.set(1, 1, hy); hd.add(hm); }   // (its axis forward, flattened)
+    headMesh = new T.Mesh(hg, headM); headMesh.rotation.x = PI / 2; headMesh.scale.set(1, 1, hy); hd.add(headMesh); }   // (its axis forward, flattened)
   const topY = o.headR * (hb + hf) / 2 * Math.cos(PI / 6) * hy;   // (its flat top, at its middle)
   // ITS NECK BRACE (the owner, of the crystal on top of its head: "I don't like the positioning on it. I might want to have it rooted as his, as some sort of neck
   // brace"): a collar of crystals rooted round the top and sides of its neck where the head leaves the body, each pointing out from the neck and leaning back over the
@@ -277,11 +308,14 @@ function _coralTick(o) {
   // Now its EARS (the owner: "let's make the ears, now we'll call them ears, just a little bit thicker and more attached. I don't want to see any shrinkage towards the
   // base of the ears"; they were six-sided pegs, flat-shaded, pushed into the head's curved edge, so they looked pinched and stuck on): each one smooth piece of the
   // head's own stone (its rounded hexagon, its smooth shading), a little thicker, widening all the way down and flaring into the head, its base sunk in it (o.ear:
-  // its length out of the head, its half-width at the base and at the tip, its flare, how deep its base is sunk)
+  // its length out of the head, its half-width at the base and at the tip, its flare, how deep its base is sunk). Then (the owner, circling where each left the head:
+  // "Not connected here"): each grown out of the head's surface (_ccGrowEar): rising straight out of the head and curving back to its tip, where its tip was, a
+  // fillet round its foot that runs into the head (o.ear: its length, its half-width at its foot and at its tip, the fillet's height)
   const [fax, faz, fay] = o.earAt, [fbk, fou] = o.earDir.map(d => d * PI / 180), Rz = o.headR * (hb + (hf - hb) * (faz + 0.5));   // (the head's half-width, corner to corner, where they grow)
-  const [eL, eRb, eRt, eFl, eSk] = o.ear, earGeo = _ccEar(eL + eSk, eRb, eRt, eFl, o.headRound ? o.headRound[0] : 7, 36, 14, 6), eD = V(0, 0, 0);
-  [-1, 1].forEach(s => { const e = new T.Mesh(earGeo, headSm); eD.set(s * Math.sin(fou), Math.cos(fbk) * Math.cos(fou), -Math.sin(fbk) * Math.cos(fou));
-    e.position.set(s * fax * Rz, topY * fay, o.headR * hl * faz).addScaledVector(eD, -eSk); _aim32(e, eD, V(0, 0, 1)); hd.add(e); });   // (its root just inside the head's upper edge; its base sunk below that)
+  const [eL, eRb, eRt, eF] = o.ear, surf = _ccSurf(headMesh), eD = V(0, 0, 0), eRoot = V(0, 0, 0);
+  [-1, 1].forEach(s => { eD.set(s * Math.sin(fou), Math.cos(fbk) * Math.cos(fou), -Math.sin(fbk) * Math.cos(fou)); eRoot.set(s * fax * Rz, topY * fay, o.headR * hl * faz);   // (its lean; its old root, just inside the head's upper edge)
+    const Tp = eRoot.clone().addScaledVector(eD, eL - 0.8 * eRt), at = surf(Tp, eD.clone().negate()) || { p: eRoot.clone(), n: V(0, 1, 0) };   // (its tip, where it was; where its old line met the head, and the head's normal there)
+    hd.add(new T.Mesh(_ccGrowEar(surf, at.p, at.n, Tp, eD, V(s, 0, 0), eRb, eRt, eF, o.headRound ? o.headRound[0] : 7, 36, 7, 16, 6), headSm)); });
   // THE LEGS (the owner: "the legs more like the original image, pointed steak like legs that have a shorter segment that connects to the body at 90degree"): a pair for
   // each of o.legs, each a short, straight segment out of the body's side, square to it, and at its knee the sketch's leaf-spear: a long pointed stake hanging almost
   // straight down to its point on the floor, its top end rising a little above the knee
@@ -322,7 +356,7 @@ const _ccT = {
     [-0.32, -0.36, -0.5, -0.65, 0.09, 0.048, 0.038, 0.7], [0.02, -0.68, 0.05, -1, 0.075, 0.044, 0.034, 0.9],
   ],
   jag: 0.8, bot: 0.8, sink: 0.6, gemK: 1,   // (how far off centre the points go; each crystal's lower point (times its half-width) and how much of that point is sunk; how bright their pink)
-  headR: 0.055, droop: 0.68, headCut: [1.8, 1.5, 0.975, 0.576], headRound: [7, 5], ear: [0.044, 0.016, 0.008, 0.35, 0.012], earAt: [0.53, -0.05, 0.8], earDir: [60, 15],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); how rounded its long edges and its ends (the lower, the rounder); its ears (above), where (as a share of the head's half-width, of its length forward of its centre, of its height), their lean (back, out))
+  headR: 0.055, droop: 0.68, headCut: [1.8, 1.5, 0.975, 0.576], headRound: [7, 5], ear: [0.044, 0.016, 0.008, 0.009], earAt: [0.53, -0.05, 0.8], earDir: [60, 15],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); how rounded its long edges and its ends (the lower, the rounder); its ears (above), where (as a share of the head's half-width, of its length forward of its centre, of its height), their lean (back, out))
   brace: { y: -0.012, z: 0.25, rx: 0.0825, ry: 0.048, back: 0.75, glowR: 0.045,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back, how far each one's glow reaches)
     gems: [[-45, 0.04, 0.023, 0.02, 1], [45, 0.04, 0.023, 0.02, 2], [-92, 0.032, 0.021, 0.017, 3], [92, 0.032, 0.021, 0.017, 4]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
