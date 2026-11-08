@@ -141,7 +141,7 @@ const _sk0 = {
   legs: [{ s: 0.115, fwd: 0.04 }, { s: 0.47, fwd: -0.03 }], legR0: 0.025, legR1: 0.015, reach: 0.13, arch: 0.045,
   stride: 0.035, lift: 0.028, rearLift: 0.05,
   headW: 0.155, headL: 0.215, headH: 0.096, headRb: 0.05, headRf: 0.028, headP: 2.4, headTaper: 0.3, headUnder: 0.65,   // (small and sleek: a little wider than the neck at the back (rounded by headRb), narrowing to the snout (rounded by headRf); its underside shallow, so no jaw. The owner on build d: "a little bit sleeker. It needs to not have such a jaw": it was 0.185 wide, 0.21 long, 0.104 high, rb 0.045, rf 0.026, the underside as deep as the top, tilted 0.18. Build c's was a ball 0.165 × 0.115 × 0.165; build a's 0.15 × 0.078 × 0.17, level with the body)
-  headFwd: 0.075, headUp: 0.028, headTilt: 0.1,   // (ahead of the neck and lifted a little, its snout tipped up a little)
+  headFwd: 0.075, headUp: 0.028, headTilt: -0.2,   // (ahead of the neck and lifted a little; angled down a little, its snout a touch lower than its back, against the neck's rise (the owner on build f: "I want him to angle his head downward a little bit more": it was 0.1, the snout tipped up))
   sCut: 0.55, sBolt: 0.8, colStart: 0.57, colFull: 0.88, boltFx: 0.55, boltFy: 1.5,
   zig: [[0, 0], [0.3, 0.078], [0.38, 0.026], [0.66, 0.112], [0.74, 0.056], [1, 0.17]],   // (the bolt: (along its stretch, height): up, a sharp jog back down, up, a jog, up to the point)
   swimAmp: 0.075, swimWaves: 1.1, rearH: 0.12, rearReach: 0.42, lunge: 0.11,
