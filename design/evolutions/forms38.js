@@ -141,6 +141,46 @@ fx(913, "CORAL CRAB draft B: a lower, wider crab of the same velvet black veined
 // picture." So: a tick's plump body, wider at the back, low, its underside flatter; its exterior rocky, plates of dark stone fitted together, the seams between them
 // glowing BLOOM's pink (the living coral under the rock); on its back the sketch's little coral spire and two nubs; a small head at the front, its mouthparts clamping
 // (its crushing bite); its legs the sketch's long pointed leaf-spears, four (the owner, interrupting the first render: "4 legs"; it had eight, as a tick has).
+// THE REEF on its back (914: the owner, "The top of his Body needs 3-D texture living coral"): living coral grown over the top of the rock, densest on its crown, thinning
+// toward its sides: branching sprigs with glowing tips, soft polyp stalks with glowing heads, lumpy brain-coral mounds and open tubes glowing inside. Each piece stands on
+// the rock where it is, along its surface's normal. Returns the glowing tips, to pulse.
+function _ccReef(body, geo, o, M, rnd) {
+  const pos = geo.attributes.position, nor = geo.attributes.normal, spots = [], P = V(0, 0, 0), N = V(0, 0, 0), tips = [];
+  for (let i = 0; i < pos.count; i++) { P.set(pos.getX(i), pos.getY(i), pos.getZ(i)); N.set(nor.getX(i), nor.getY(i), nor.getZ(i)).normalize();
+    if (N.y > o.reefUp && P.y > o.h * 0.25) spots.push({ P: P.clone(), N: N.clone() }); }
+  const placed = [];
+  for (let tries = 0; placed.length < o.reefN && tries < o.reefN * 40; tries++) {
+    const sp = spots[Math.floor(rnd() * spots.length)], crown = Math.min(1, Math.max(0, (sp.N.y - o.reefUp) / (1 - o.reefUp)));   // (1 on its crown, 0 at the reef's edge)
+    if (rnd() > 0.35 + 0.65 * crown) continue;   // (thinner toward the sides)
+    if (placed.some(q => q.P.distanceTo(sp.P) < o.reefGap * (0.7 + 0.5 * crown))) continue;
+    placed.push({ P: sp.P, N: sp.N, crown });
+  }
+  const knob = new T.SphereGeometry(1, 10, 8), tipGeo = new T.SphereGeometry(1, 12, 9);
+  const seg = (grp, A, d, len, r, m) => { const c = new T.Mesh(new T.CylinderGeometry(r * 0.72, r, len, 8), m); c.position.copy(A).addScaledVector(d, len / 2); _aim32(c, d, V(0, 0, 1)); grp.add(c);
+    const k = new T.Mesh(knob, m); k.scale.setScalar(r * 0.72); k.position.copy(A).addScaledVector(d, len); grp.add(k); return A.clone().addScaledVector(d, len); };
+  const tip = (grp, E, r) => { const t = new T.Mesh(tipGeo, M.tip); t.scale.setScalar(r); t.position.copy(E); grp.add(t); tips.push(t); };
+  placed.forEach(({ P, N, crown }) => {
+    const grp = G(), s = 0.75 + 0.6 * crown * (0.7 + 0.6 * rnd()), kind = rnd(); grp.position.copy(P).addScaledVector(N, -0.004); _aim32(grp, N, V(0, 0, 1)); grp.rotateY(rnd() * TAU); body.add(grp);
+    if (kind < 0.36) {   // (a branching sprig, forking twice, its tips glowing)
+      const grow = (A, d, len, r, depth) => { const E = seg(grp, A, d, len, r, M.coral);
+        if (depth > 0) for (let k = 0; k < 2; k++) { const ax = V(rnd() - 0.5, 0, rnd() - 0.5).normalize(), nd = d.clone().applyAxisAngle(ax, (k ? 1 : -1) * (0.45 + rnd() * 0.3)); nd.y = Math.max(0.3, nd.y); nd.normalize(); grow(E, nd, len * 0.72, r * 0.72, depth - 1); }
+        else tip(grp, E, r * 1.2); };
+      grow(V(0, 0, 0), V((rnd() - 0.5) * 0.4, 1, (rnd() - 0.5) * 0.4).normalize(), 0.032 * s, 0.009 * s, crown > 0.4 ? 2 : 1);
+    } else if (kind < 0.62) {   // (a few soft polyp stalks from one spot, their heads glowing)
+      const n = 2 + Math.floor(rnd() * 3);
+      for (let k = 0; k < n; k++) { const d = V((rnd() - 0.5) * 0.9, 1, (rnd() - 0.5) * 0.9).normalize(), E = seg(grp, V((rnd() - 0.5) * 0.012, 0, (rnd() - 0.5) * 0.012), d, (0.018 + rnd() * 0.016) * s, 0.0045 * s, M.soft); tip(grp, E, 0.0075 * s); }
+    } else if (kind < 0.84) {   // (a brain-coral mound: lumpy, porous, glowing)
+      const g2 = new T.SphereGeometry(1, 18, 12, 0, TAU, 0, PI / 2), gp = g2.attributes.position, ph0 = rnd() * 6;
+      for (let i = 0; i < gp.count; i++) { const X = gp.getX(i), Y = gp.getY(i), Z = gp.getZ(i), k = 1 + 0.1 * Math.sin(9 * X + ph0) * Math.sin(8 * Z + 2 * ph0) + 0.06 * Math.sin(14 * Y + 3 * X); gp.setXYZ(i, X * k, Y * k * 0.8, Z * k); }
+      g2.computeVertexNormals(); const m = new T.Mesh(g2, M.brain); m.scale.setScalar((0.018 + 0.012 * rnd()) * s); grp.add(m);
+    } else {   // (an open tube, glowing inside)
+      const r = (0.007 + 0.004 * rnd()) * s, len = (0.02 + 0.014 * rnd()) * s, t = new T.Mesh(new T.CylinderGeometry(r, r * 1.15, len, 10, 1, true), M.coral); t.position.y = len / 2; grp.add(t);
+      const lip = new T.Mesh(new T.TorusGeometry(r, r * 0.22, 6, 12), M.coral); lip.rotation.x = PI / 2; lip.position.y = len; grp.add(lip);
+      const glow = new T.Mesh(new T.CircleGeometry(r * 0.9, 12), M.tip); glow.rotation.x = -PI / 2; glow.position.y = len * 0.82; grp.add(glow);
+    }
+  });
+  return tips;
+}
 function _coralTick(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
   const pink = _c31(EL.color).convertSRGBToLinear(), rnd = _ccRnd(o.seed || 17);
@@ -168,6 +208,14 @@ function _coralTick(o) {
   const coralM = new T.MeshStandardMaterial({ color: 0x1a0610, emissive: 0xffffff, emissiveMap: _ccCoralTex(), emissiveIntensity: 0.85, metalness: 0, roughness: 0.68 }); coralM.envMapIntensity = 0.15;
   const sp = new T.Mesh(_ccHorn(o.spireL, o.spireR, 0.3), coralM); sp.position.set(o.spire[0], o.h * o.spire[1], o.spire[2]); _aim32(sp, V(-0.15, 1, 0.35), V(0, 0, -1)); body.add(sp);
   o.nubs.forEach(([x, y, z, r]) => { const m = new T.Mesh(new T.SphereGeometry(r, 16, 12), coralM); m.position.set(x, o.h * y, z); m.scale.y = 1.25; body.add(m); });
+  let tips = [];
+  if (o.reefN > 0) {   // (the living coral grown over its top)
+    const brainTex = coralM.emissiveMap.clone(); brainTex.repeat.set(3, 2); brainTex.needsUpdate = true;
+    const soft = new T.MeshStandardMaterial({ color: 0x14050c, emissive: pink.clone().multiplyScalar(0.55), metalness: 0, roughness: 0.7 }); soft.envMapIntensity = 0.12;
+    const brain = coralM.clone(); brain.emissiveMap = brainTex;
+    const tip = new T.MeshBasicMaterial({ color: pink.clone().lerp(new T.Color(1, 1, 1), 0.35), toneMapped: false });
+    tips = _ccReef(body, bg, o, { coral: coralM, soft, brain, tip }, _ccRnd((o.seed || 17) + 101));
+  }
   // THE HEAD: small, at the front; a barbed mouth-spike between two clamping mouthparts and two short palps
   const head = G(); head.position.set(0, -o.h * 0.15, o.l * 0.96); body.add(head);
   const hm = new T.Mesh(new T.SphereGeometry(1, 20, 14), rockM); hm.scale.set(o.headR * 1.1, o.headR * 0.8, o.headR); head.add(hm);
@@ -186,6 +234,7 @@ function _coralTick(o) {
     body.position.set(0, o.bodyY + bob + 0.02 * rear, 0.04 * strike); body.rotation.x = -0.1 * rear + 0.14 * strike;   // (it rears, then lunges and bites)
     const glow = (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * Math.max(0.5 * rear, strike));
     if (seamU) seamU.value = glow; coralM.emissiveIntensity = 0.85 * glow; Lt.intensity = 0.5 * glow;
+    tips.forEach((tp, i) => { const k = 1 + 0.18 * Math.sin(2 * ph + i * 0.9); tp.userData.s0 = tp.userData.s0 || tp.scale.x; tp.scale.setScalar(tp.userData.s0 * k); });   // (the polyps' heads breathe)
     head.rotation.x = 0.1 * Math.sin(ph) * calm - 0.25 * rear + 0.3 * strike;
     jaws.forEach(J => { J.pv.rotation.y = J.s * ((0.18 + 0.06 * Math.sin(ph * 2)) * calm + 0.45 * rear - 0.25 * strike); });   // (open, then clamp)
     legs.forEach(L => { const ld = L.ld, lift = Math.max(0, Math.sin(2 * ph + L.ph)) * o.lift * calm, swing = Math.cos(2 * ph + L.ph) * o.stride * calm, big = ld.leaf > 0;
@@ -203,7 +252,8 @@ function _coralTick(o) {
 }
 const _ccT = {
   S: 1, coreY: 0.32, seed: 17, bodyY: 0.27, w: 0.2, h: 0.14, l: 0.25, flare: 0.28, plates: 34, plateH: 0.07, rock: 0x0b090a,
-  spire: [-0.03, 0.85, 0.02], spireL: 0.15, spireR: 0.028, nubs: [[0.07, 0.8, -0.06, 0.028], [-0.08, 0.75, -0.1, 0.024]],
+  spire: [-0.03, 0.85, 0.02], spireL: 0.15, spireR: 0.028, nubs: [],
+  reefN: 70, reefUp: 0.35, reefGap: 0.034,   // (the living coral on its top (the owner: "The top of his Body needs 3-D texture living coral"): how many pieces, how far down its sides (a normal's height), how far apart)
   headR: 0.055,
   hipX: 0.1, legR: 0.02, lift: 0.032, stride: 0.03,
   legs: [   // (a pair each, front to back: where along it (z), how far out, how high the knee, how far forward or back the foot goes, the leaf-spear's width (0: a thin jointed leg))
