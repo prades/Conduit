@@ -10,7 +10,8 @@
 //   920  the same, but mostly leaves: a mass of pointed leaves growing out from deep inside it (the owner, 2026-11-08), its round core only a shadow among them.
 // It holds its vines out in front of it and does not crawl on them; it SHUFFLES about to move, and it ATTACKS WITH ITS VINES (the owner, 2026-11-08). Idle (also its walk):
 // it rocks from side to side, lifting the side it rocks off, turning a little, its vines held out and swaying. Its ACTION (its attack): the bush leans back and bristles and
-// both vines rear as it charges, the crystal flaring; it rocks forward as it strikes, both vines whipping out in front together, then they come back up. Drafts for the owner's choice: not in the game. Uses forms5.js (corroded), forms31.js (_c31, _prog31) and forms32.js
+// both vines rear as it charges, the crystal flaring, drawing their tips together round a glowing pink seed; it rocks forward as it strikes, both vines whipping out in
+// front together and flinging the seed like a sling (SEED SHOT, its everyday shot: the owner's pick, 2026-11-08), then they come back up. Drafts for the owner's choice: not in the game. Uses forms5.js (corroded), forms31.js (_c31, _prog31) and forms32.js
 // (_taper32, _aim32, _gemCol32).
 // The sketch's two squinting eyes were drawn on the first render; the owner: "No eyes. Just straight texture." So no eyes and no face: its foliage covers it all round.
 // +z is the front; ph = 1.6 t runs once round the idle loop.
@@ -113,13 +114,19 @@ function _bloomShrub(o) {
       return { m, u: 0.12 + 0.82 * j / Math.max(1, o.thorns - 1), a: (j % 2 ? 1 : -1) * (0.35 + 0.95 * ((j * 0.618 + i * 0.3) % 1)) }; }) }));   // (along it on alternate sides, each at its own angle over its top: none into the floor)
   const Lt = new T.PointLight(0xffffff, 0.5, 1, 2); Lt.color.copy(_c31(EL.color)); Lt.position.copy(sRoot).addScaledVector(ax, 0.1); body.add(Lt); LIGHTS.push(Lt);
   const R0 = V(0, 0, 0), D = V(0, 0, 0), Dp = V(0, 0, 0), dir = V(0, 0, 0), tg = V(0, 0, 0), n1 = V(0, 0, 0), n2 = V(0, 0, 0), out = V(0, 0, 0);
+  // ── SEED SHOT, its everyday shot (the owner's pick, 2026-11-08): as it charges, its vines rear and draw their tips together in front of it, a glowing pink seed growing
+  // between them; at the crack the seed is flung forward. (Shown leaving it only: in the game its flight is drawn as every Mage's shot is.) ──
+  const seedM = new T.MeshBasicMaterial({ color: _c31(EL.color).convertSRGBToLinear().multiplyScalar(1.5), toneMapped: false });
+  const seed = new T.Mesh(new T.SphereGeometry(1, 14, 10), seedM), seedGlow = glowSprite(1); seedGlow.scale.set(5, 5, 1); seed.add(seedGlow); b.add(seed); seed.visible = false;
+  const sP = V(0, 0, 0), sRel = V(0, 0, 0), REL = 0.51, GONE = 0.68;   // (REL: the crack, when it lets go; GONE: when the game's shot takes over)
   // a vine's points from its root at R0, each segment at its own angle up (phi) and to the side (psi), a blend of three poses: held out (h), reared (a: an arch up and over,
   // its tip hanging down in front) and struck out (b: down along the floor, at its full length). pr: its attack's progress (0 when idle): it rears (to 0.42), whips out
   // (to 0.55: the whipping front runs from its root to its tip; ahead of it the vine is still reared, behind it struck out), holds, then comes back (0.62 to 1). w: the sway.
   const shape = (v, pr, w) => {
     const e = _bsS(0, 0.42, pr), f = _bsS(0.42, 0.55, pr), back = _bsS(0.62, 1, pr), c = -0.15 + 1.4 * f, lashing = pr >= 0.42 && pr < 0.55, struck = pr >= 0.55;
     const Hk = o.hold[2], len = o.vineL * (pr < 0.42 ? Hk + (o.rear[2] - Hk) * e : pr < 0.55 ? o.rear[2] + (1 - o.rear[2]) * f : 1 + (Hk - 1) * back), seg = len / (NV - 1);
-    D.set(Math.sin(v.spread), 0, Math.cos(v.spread)); Dp.set(Math.cos(v.spread), 0, -Math.sin(v.spread)); v.pts[0].copy(R0);
+    const gather = pr < 0.55 ? e : 1 - back, sp = v.spread + (-Math.sign(v.spread) * o.cradle - v.spread) * gather;   // (attacking, the two draw their tips together in front of it, a sling round the seed)
+    D.set(Math.sin(sp), 0, Math.cos(sp)); Dp.set(Math.cos(sp), 0, -Math.sin(sp)); v.pts[0].copy(R0);
     for (let i = 1; i < NV; i++) {
       const u = (i - 0.5) / (NV - 1);
       const wa = lashing ? _bsS(c, c + 0.25, u) : pr < 0.42 ? e : 0, wb = lashing ? 1 - wa : struck ? 1 - back : 0, wh = 1 - wa - wb;   // (how much of each pose, here along it)
@@ -139,6 +146,9 @@ function _bloomShrub(o) {
     body.rotation.x = -0.14 * charge + 0.12 * fire; body.scale.set(1 + 0.03 * charge, 1 - 0.03 * Math.abs(Math.sin(2 * ph)) * calm + 0.05 * charge, 1 + 0.03 * charge);
     const glow = (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 1.2 * Math.max(charge, fire)); coreM.U.value = leafM.U.value = glow; Lt.intensity = 0.5 * glow;
     const gk = 1.4 * Math.max(0, glow - 0.85); gems.forEach(m => m.userData.relight(gk));   // (the crystal flares as it charges and fires)
+    const seedOn = act > 0 && pr > 0.03 && pr < GONE;
+    if (seedOn && pr >= REL) { for (const v of vines) { R0.set(v.x, o.vineRoot[0], body.position.z + o.vineRoot[1]); shape(v, REL, 2 * ph); }   // (where the tips let it go)
+      sRel.addVectors(vines[0].pts[NV - 1], vines[1].pts[NV - 1]).multiplyScalar(0.5); }
     for (const v of vines) {
       R0.set(v.x, o.vineRoot[0], body.position.z + o.vineRoot[1]); shape(v, pr, 2 * ph);
       v.tube.set(v.pts, 0, 0, vR, 1, 1);
@@ -151,6 +161,12 @@ function _bloomShrub(o) {
         const h = o.thornL * (0.45 + 0.55 * (1 - th.u)) + r * 0.8, w = r * 1.5 + 0.004; th.m.scale.set(w, h, w); _aim32(th.m, dir, tg);
       }
     }
+    seed.visible = seedOn;
+    if (seedOn) {   // (cradled just under the tips as it charges, growing; then flung forward, a little up and down again)
+      if (pr < REL) { sP.addVectors(vines[0].pts[NV - 1], vines[1].pts[NV - 1]).multiplyScalar(0.5); sP.y -= o.seedR * 0.6; }
+      else { const k = (pr - REL) / (GONE - REL); sP.copy(sRel); sP.y += o.seedR * -0.6 + 0.04 * Math.sin(PI * k); sP.z += o.seedFly * k; }
+      const r = o.seedR * _bsS(0.5, 0.9, _bsS(0, 0.42, pr)) * (1 - _bsS(GONE - 0.06, GONE, pr)); seed.position.copy(sP); seed.scale.set(r, r, r * 1.4); seed.visible = r > 1e-4;   // (it grows once the tips have closed round it)
+    }
   } };
 }
 const _bsA = {
@@ -162,15 +178,16 @@ const _bsA = {
   vine: 0x050505, vineR: 0.022, vineL: 0.5, vines: [[-0.05, -0.38], [0.05, 0.38]], vineRoot: [0.035, 0.12],   // (its vines: black; how thick and long (whipped out); where each comes out and how far it splays to the front; their root's height and how far forward under the bush)
   hold: [0.9, 1.4, 0.8], sway: [0.1, 0.12], rear: [1.6, 2.2, 1], wiggle: 0.25,   // (held out: how steeply it rises from its root, how far it droops toward its tip, how much of its length is out; how much it
   // bobs and swings; reared: the same; struck out along the floor, how much it snakes)
+  cradle: 0.14, seedR: 0.028, seedFly: 0.6,   // (SEED SHOT: how far in the vines turn to bring their tips together; the seed's size; how far it is shown flying)
   thorn: 0x050505, thorns: 9, thornL: 0.03, hook: 0.5,   // (its thorns: black; how many on each vine, how long, how far hooked back toward the root)
   bob: 0.006, shuffle: [0.06, 0.018, 0.08],   // (its shuffle: how far it rocks to each side, how much it lifts the side it rocks off, how far it turns)
 };
-fx(919, "BLOOM MAGE draft A, the little shrub as sketched: a round bush of short pointed spikes all over in velvet plum-black (no eyes, no face), the Rotshard's eaten crystal now pink poking out of its back, the pink glowing round its root; two black thorny vines from under its front, held out in front of it: it does not crawl on them but shuffles about to move, and it attacks with them, both whipping out together.", () => _bloomShrub(_bsA));
+fx(919, "BLOOM MAGE draft A, the little shrub as sketched: a round bush of short pointed spikes all over in velvet plum-black (no eyes, no face), the Rotshard's eaten crystal now pink poking out of its back, the pink glowing round its root; two black thorny vines from under its front, held out in front of it: it does not crawl on them but shuffles about to move, and it attacks with them: SEED SHOT, both rearing round a glowing seed and whipping out together to fling it like a sling.", () => _bloomShrub(_bsA));
 // 920 since the owner's "I can still see the round shape of the creature when it should be mostly leaves" (2026-11-08; it had 70 leaves on a round core, then 210
 // lying over it; very thin leaves were tried and dropped: "Not this direction, forget thin"): a mass of pointed leaves, folded down their midribs (`mass`: n of them),
 // each growing from deep inside out past the core (`foot`, how deep), a little up (`rise`) and its own way (`jit`), arching a little (`droop`), longer in tufts (`tuft`)
 // so the outline is ragged, not round, the lowest lying on the floor; the core smaller (`coreK`) and near black (`coreDark`), only the shadow among them.
-fx(920, "BLOOM MAGE draft B: the same little shrub, but mostly leaves: a mass of pointed leaves growing out from deep inside it at their own angles, ragged at its edges, each its own shade, the round core only a shadow deep among them; the same pink crystal and black thorny vines, held out in front, that it attacks with; it shuffles about to move.", () => _bloomShrub(Object.assign({}, _bsA, {
+fx(920, "BLOOM MAGE draft B: the same little shrub, but mostly leaves: a mass of pointed leaves growing out from deep inside it at their own angles, ragged at its edges, each its own shade, the round core only a shadow deep among them; the same pink crystal and black thorny vines, held out in front, that fling its SEED SHOT like a sling; it shuffles about to move.", () => _bloomShrub(Object.assign({}, _bsA, {
   coreK: 0.6, coreDark: 0x060306, glowR: 0.11, shard: Object.assign({}, _bsA.shard, { len: 0.24 }), vineRoot: [0.035, 0.16],
   mass: { n: 240, foot: [0.4, 0.75], len: 0.14, vary: [0.7, 1.3], wid: 0.042, droop: 0.2, rise: 0.35, jit: 0.6, tuft: 0.3, fold: 0.35, shade: 1, prof: [0.8, 0.9], seg: 6, bottom: -0.75, clear: 0.96 },
 })));

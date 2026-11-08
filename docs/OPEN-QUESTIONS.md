@@ -567,7 +567,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - "Greenshire" a slip.
   - **Open** (its section 11):
     - the apparatus's look;
-    - BLOOM's forms: pictures (SUNDEW's approved 2026-11-08: No. 911; the coral crab's: No. 914), the Mage's look (a little shrub since 2026-11-08, replacing the lotus lantern: drafts Nos. 919 and 920 in review) and name; its vine attack's damage type (it attacks with its vines, 2026-11-08); whether the lotus lantern's subclass and SEEDFALL fit it (the coral crab's name is "coral crab" for now, 2026-11-08), which comes first, an egg;
+    - BLOOM's forms: pictures (SUNDEW's approved 2026-11-08: No. 911; the coral crab's: No. 914), the Mage's look (a little shrub since 2026-11-08, replacing the lotus lantern: drafts Nos. 919 and 920 in review) and name; its Ultimate (its kit otherwise chosen, 2026-11-08: SEED SHOT and SEEDFALL) (the coral crab's name is "coral crab" for now, 2026-11-08), which comes first, an egg;
     - CONSUME's, SEEDFALL's and REEF's numbers; REEF's climbing reaches any high ground over ground the player can stand on (2026-11-08), but who may climb, both ways or one, how long, and the deck's glass are open;
     - ~~the conversion's first stage (build `2026-11-08i`), to confirm~~ *(answered 2026-11-08, the owner: "Your calls were correct": it converts once the module's cycle has run; MEND counts the BLOOM follower itself; an unevolved BLOOM follower hits plainly, has no Ultimate and waits for its form; the square-pink-crystal art stands)*; still open: BLOOM's element move and Ultimate for an unevolved follower (none designed);
     - BLOOM's cards' designs;
@@ -576,7 +576,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     Designed since, in words (2026-11-02):
     - MEND heals 2% every hit;
     - SUNDEW, the Brawler, whose CONSUME swallows an enemy and takes 75% less damage while holding it. *(2026-11-08: its look approved, No. 911, a wilted black flower with fangs on root-tentacles; CONSUME is its Ultimate: `CONVERSION.md` §2.)*
-    - the Mage (the little shrub; it was the lotus lantern), with SEEDFALL;
+    - the Mage (the little shrub; it was the lotus lantern), with SEED SHOT and SEEDFALL;
     - the coral crab Technician, whose REEF grows rock and crystal (coral until 2026-11-08) the player can climb onto any high ground that extends over ground the player can stand on or interact with (as an ice bridge on any water). *(2026-11-08: its look approved, No. 914, a rocky tick with square pink crystals on its back; it stays Crustacean, its attack Crushing.)*
 
     These are drafts and mockups for your approval. Confirmed last: the other 50% is toxic or fire; Series 2's BLOOM cards wait for the apparatus; an evolved toxic follower waits for its class's BLOOM form.

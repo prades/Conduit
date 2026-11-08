@@ -2434,10 +2434,28 @@ Supersedes the Mage's body in "BLOOM's creatures: SUNDEW, the lotus lantern, the
 - The crystal out of its back has no black shell shard on it.
 
 ### Status
-Approved (the owner's design notes). Drawn in the drafts, Nos. 919 and 920 (`design/evolutions/forms39.js`), in review. Not implemented: BLOOM's forms are not built. Open (`CONVERSION.md` §11): the vine attack's damage type (the lotus lantern's seed-light was Elemental; the type sets the form's lean, +2 if Elemental, +1 if not), and whether its subclass (Elemental) and SEEDFALL still fit.
+Approved (the owner's design notes). Drawn in the drafts, Nos. 919 and 920 (`design/evolutions/forms39.js`), in review. Not implemented: BLOOM's forms are not built. Open (`CONVERSION.md` §11): the vine attack's damage type (the lotus lantern's seed-light was Elemental; the type sets the form's lean, +2 if Elemental, +1 if not), and whether its subclass (Elemental) and SEEDFALL still fit. *(Answered the same day by "BLOOM's Mage's kit: SEED SHOT and SEEDFALL; its Ultimate open": SEED SHOT is Elemental, its lean +2; SEEDFALL stays, as its alternate.)*
 
 ### Alternatives
 The vines inching it along (the owner's first words on the sketch); whipping them out idly (the owner's first design note, revised by the next before it was drawn); the Rotshard's black shell shard on its crystal; plum vines.
 
 ### Supersedes / superseded by
 Supersedes, in "BLOOM's Mage is a little shrub" (2026-11-08), the vines inching it along; and the lotus lantern's seed-light as its main attack.
+
+## DECISION: BLOOM's Mage's kit: SEED SHOT and SEEDFALL; its Ultimate open
+- Date and build: 2026-11-08, after build `2026-11-08i`, branch `claude/start-game-project-HSh7Z`. No game code changed.
+- The owner's words: asked how the shrub could be a Mage and what kit it could have, from the options offered: "1, 1, and the ultimate is still in question".
+
+### Decision
+- Main attack, **SEED SHOT** (a working name): its everyday shot, with a Mage's quick wind-up. Its vines rear and crack like a sling, flinging a glowing pink seed. Elemental, so its lean is +2 (Elemental subclass, Elemental main attack).
+- Alternate, **SEEDFALL**, as designed for BLOOM's Mage (2026-11-02): glowing seeds rain on an area; enemies there are hurt, allies there are mended.
+- Its Ultimate: open.
+
+### Status
+Approved (the kit's main attack and alternate). Drawn in the drafts' attack (Nos. 919 and 920, `design/evolutions/forms39.js`), in review. Not implemented: BLOOM's forms are not built. Open (`CONVERSION.md` §11): its Ultimate; SEED SHOT's and SEEDFALL's numbers; its name.
+
+### Alternatives
+For its main attack: THORN SLING (a thrown thorn, Projectile, +1), a long lash (Slashing). For its alternate: SNARE, THORN VOLLEY, BRAMBLE. For its Ultimate (offered, still open): OVERGROWTH, BRIAR CAGE, FULL BLOOM.
+
+### Supersedes / superseded by
+Answers the vine attack's open damage type in "BLOOM's Mage holds its vines out and attacks with them; it shuffles to move" (2026-11-08).
