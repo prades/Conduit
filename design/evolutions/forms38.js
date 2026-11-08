@@ -367,7 +367,7 @@ const _ccT = {
     gems: [[-45, 0.04, 0.023, 0.02, 1], [45, 0.04, 0.023, 0.02, 2], [-92, 0.032, 0.021, 0.017, 3], [92, 0.032, 0.021, 0.017, 4]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
   flowers: [[0.14, 0.38, 0.03], [0.05, 0.52, 0.011], [-0.22, 0.42, 0.019], [-0.2, -0.16, 0.026], [-0.05, -0.31, 0.01], [0.52, -0.06, 0.017], [0.42, -0.55, 0.013], [-0.62, -0.1, 0.022], [0.62, 0.3, 0.009]],   // (its crystal flowers, scattered unevenly, big and small (the owner: "Larger and more irregular sized and positioned"); each: where (its direction's x and z on the body), its size)
-  flowerScale: 1.7, flowerOpen: 0.7,   // (the crystal flowers' size, and how far their crystals fan out from straight up (radians))
+  flowerScale: 3.0, flowerOpen: 0.7,   // (the crystal flowers' size, and how far their crystals fan out from straight up (radians))
   seg: 0.08, hipY: 0, legR: 0.022, lift: 0.03, stride: 0.03,   // (the legs' short segment: how long, how high on the body's side; how thick; their step)
   legs: [   // (a pair each, front and back: where along the body (z), how far out the point stands beyond the knee, how far the stake's top rises above the knee, its half-width)
     { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
