@@ -212,13 +212,16 @@ function _coralTick(o) {
   // THE HEAD: small, at the front, smooth and simple (the owner: "its head is really weirdly shaped right now. It needs to have less definition"; it had a faceted
   // head, two curved black horns for mouthparts, two palps and a crystal mouth-spike): one rounded head of the same stone, smooth. On it (the owner: "make it to where
   // he has a crystal on his head that points upward on top of his head, and make two smaller fangs that point downward"; its mouthparts were two blunt lobes): a
-  // crystal standing straight up from the top of its head, and under its face two smaller crystal fangs pointing down, which open as it rears and clamp as it bites
+  // crystal standing straight up from the top of its head, and under its face two smaller fangs pointing down, which open as it rears and clamp as it bites. The fangs
+  // are of the head's smooth stone, as its mouthparts were (the owner, on crystal fangs: "No, not crystal fangs. Keep them the same texture as you had earlier"):
+  // round, tapering to a point, curving back a little
   const headM = new T.MeshPhysicalMaterial({ color: o.rock, metalness: 0, roughness: o.rockRough, reflectivity: 0.15 }); headM.envMapIntensity = 0.15;   // (the body's stone)
   const head = G(); head.position.set(0, -o.h * 0.1, o.l * 1.05); body.add(head);   // (out from under the body's front, so its crystal stands clear)
   const hm = new T.Mesh(new T.SphereGeometry(1, 32, 24), headM); hm.scale.set(o.headR * 1.25, o.headR * 0.8, o.headR * 1.1); head.add(hm);
   const [gh, gr, gt] = o.headGem, hc = _gemCol32(_ccCrystal(gh, gr, gt, o.jag, 0.6, 77), gem); hc.position.set(0, o.headR * 0.8 - o.sink * gh, o.headR * 0.1); head.add(hc); gems.push(hc);   // (its foot sunk in the head)
-  const [fh, fr2, ft] = o.fang, jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.32, -o.headR * 0.45, o.headR * 0.78); head.add(pv);   // (each fang's root, under its face)
-    const f = _gemCol32(_ccCrystal(fh, fr2, ft, o.jag, 0.4 + 0.5 * s, 90 + s), gem); f.rotation.x = PI - 0.1; f.userData.relight(); pv.add(f); gems.push(f); return { s, pv }; });   // (pointing down)
+  const [fl, fr2, fb] = o.fang, fangGeo = _ccHorn(fl, fr2, fb);
+  const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.32, -o.headR * 0.45, o.headR * 0.78); head.add(pv);   // (each fang's root, under its face)
+    const f = new T.Mesh(fangGeo, headM); f.rotation.x = PI; pv.add(f); return { s, pv }; });   // (pointing down; a horn turned over, so its bend curves it back)
   // THE LEGS (the owner: "the legs more like the original image, pointed steak like legs that have a shorter segment that connects to the body at 90degree"): a pair for
   // each of o.legs, each a short, straight segment out of the body's side, square to it, and at its knee the sketch's leaf-spear: a long pointed stake hanging almost
   // straight down to its point on the floor, its top end rising a little above the knee
@@ -260,7 +263,7 @@ const _ccT = {
     [-0.32, -0.36, -0.5, -0.65, 0.09, 0.048, 0.038, 0.7], [0.02, -0.68, 0.05, -1, 0.075, 0.044, 0.034, 0.9],
   ],
   jag: 0.8, sink: 0.3, gemK: 1,   // (how far off centre the points go, how much of each crystal is sunk in the rock, how bright their pink)
-  headR: 0.055, headGem: [0.085, 0.03, 0.035], fang: [0.028, 0.01, 0.016],   // (its head; the crystal on it and each fang: height to the shoulders, half-width, point)
+  headR: 0.055, headGem: [0.085, 0.03, 0.035], fang: [0.046, 0.012, -0.3],   // (its head; the crystal on it: height to the shoulders, half-width, point; each fang: length, girth at the root, how far it curves back)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
   flowers: null,   // (none: see No. 915)
   seg: 0.08, hipY: 0, legR: 0.022, lift: 0.03, stride: 0.03,   // (the legs' short segment: how long, how high on the body's side; how thick; their step)
@@ -268,7 +271,7 @@ const _ccT = {
     { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small, smooth head of the same stone, a crystal standing straight up on top of it and two smaller crystal fangs pointing down that clamp; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock; a small, smooth head of the same stone, a crystal standing straight up on top of it and two smaller fangs of its stone pointing down that clamp; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
 fx(915, "CORAL TICK with flowers: No. 914 with small open blossoms in a few loose clumps among its crystals, no two alike, five or six round pink petals round a deep rose heart, matte (the owner: \"we may add flowers to the 3d texture\").", () => _coralTick(Object.assign({}, _ccT, {
   flowers: [[0.1, 0.32, 0.024], [0.21, 0.43, 0.015], [0.01, 0.45, 0.013], [-0.18, -0.2, 0.02], [-0.28, -0.11, 0.014], [0.42, -0.5, 0.018], [-0.62, -0.05, 0.016]],   // (each: where (its direction's x and z on the body), its size; in clumps)
 })));
