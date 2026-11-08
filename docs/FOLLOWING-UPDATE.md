@@ -194,7 +194,7 @@ Each part is its own commit, with its own tests and a full green run before the 
 BLOOM and the conversion apparatus are designed (2026-11-02) but wait on a list of looks, names and numbers. The drafts that would clear it, each for approval:
 - **The three forms:** SUNDEW, the lotus lantern and the coral crab, one picture at a time; names for the lotus lantern and the coral crab; a BLOOM egg's look.
 - **The numbers:** CONSUME's digestion damage and its damage type; SEEDFALL's and REEF's numbers.
-- **REEF's climbing:** marked sites or any wall, how long its rock and crystal last, the high areas it reaches.
+- **REEF's climbing:** up to the catwalks, and nowhere else for now (the owner, 2026-11-08); still open: marked sites under them or anywhere, how long its rock and crystal last.
 - **The looks:** the apparatus; BLOOM's texture, crystal and icon.
 
 The BLOOM build itself would come in the update after this one, or late in this one if the approvals come in time.

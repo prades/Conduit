@@ -654,7 +654,7 @@ When built:
 - the coral crab's everyday attack.
 
 ### Supersedes / superseded by
-Partly superseded by "The coral crab's REEF grows rock and crystal; its name for now" (2026-11-08): REEF grows rock and crystal, not coral.
+Partly superseded by "The coral crab's REEF grows rock and crystal; its name for now" (2026-11-08): REEF grows rock and crystal, not coral; and by "The coral crab's look (No. 914); Crustacean; Crushing; REEF climbs to the catwalks" (2026-11-08): its look, and the climbing reaches the catwalks only, for now.
 
 ## DECISION: Build A to main; the hit words beside the creature; BLINDING DUST keeps its ticks; the 21 card names
 
@@ -2327,3 +2327,23 @@ REEF growing coral (the 2026-11-02 concept).
 
 ### Supersedes / superseded by
 Supersedes REEF's coral in "BLOOM's creatures: SUNDEW, the lotus lantern, the coral crab; MEND's strength" (2026-11-02).
+
+## DECISION: The coral crab's look (No. 914); Crustacean; Crushing; REEF climbs to the catwalks
+- Date and build: 2026-11-08, after build `2026-11-08g`, branch `claude/start-game-project-HSh7Z`. No game code changed.
+- The owner's words: "914 crustacean crushing clause is fine, the player can climb to the cat walks and that's it for now" (read: No. 914; Crustacean; "crushing claws is fine").
+- Context: asked whether No. 914 is final, whether the tick-like crab stays Crustacean, what its everyday attack is now that nothing on it clamps, and where REEF's rock and crystal can be climbed.
+
+### Decision
+- The coral crab looks like No. 914 (`design/evolutions/forms38.js`): a rocky tick: big, smooth, rounded plates of dark stone (cartoony), six big square pink crystals breaking out of its back with a pink glow radiating over the rock round them, crystal flowers scattered unevenly among them (each four to seven short square crystals round a stone centre), a brace of four crystals round its neck; a broad six-sided head with softly rounded edges, hung low, two ears of its stone growing out of its upper edges and curving back like small horns; four legs, each a short segment square out of its side and a long pointed leaf-spear stake.
+- It stays Crustacean (its lean −1, as before).
+- Its main attack stays Crushing; the model has no claws, so the crush is drawn as its head driving down.
+- REEF's rock and crystal let the player climb up to the catwalks, and nowhere else for now; no new high areas for now.
+
+### Status
+Approved (look, subclass, attack, climbing's reach). Not implemented: BLOOM is not built. When it is: the form's sprite sheet and entry, REEF in `js/techabilities.js`, and the climb up to the catwalks. Still open: from where under the catwalks it can be climbed, how long the rock and crystal last, REEF's numbers.
+
+### Alternatives
+Nos. 912 and 913 (crabs with coral, 2026-11-08); every intermediate No. 914 (`CONVERSION.md` §12); new high areas for the climbing.
+
+### Supersedes / superseded by
+Supersedes, in the 2026-11-02 BLOOM creatures entry, the coral crab's coral on its back and its clamping claws (as drawn), and the climbing's "new, higher areas" (for now).

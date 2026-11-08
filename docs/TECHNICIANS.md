@@ -202,9 +202,9 @@ ASKED: "Category 1 rooms: two followers. Main Hallway Level 2: three followers. 
 
 BLOOM is a seventh element. Its Technician is a coral crab, the first crustacean technician (the owner: "Crustaceans are under represented in the technician class"). Its ability is **REEF**, on the usual 60-second wait. REEF fires little shards, and rock and crystal grow where they land (the owner, 2026-11-08: "Make reef grow rock and crystal"; it grew coral):
 - **In a fight:** an outcrop of rock and crystal for 20 seconds. Allies beside it are mended, enemies cannot pass it, and it can be stood on to cross a gap.
-- **Getting around:** the owner: "The little shards that the new crustacean shoots should be able to allow players to climb up in new areas". The rock and crystal let the player climb up to new, higher areas.
+- **Getting around:** the owner: "The little shards that the new crustacean shoots should be able to allow players to climb up in new areas". The rock and crystal let the player climb up to the catwalks, and nowhere else for now (the owner, 2026-11-08: "the player can climb to the cat walks and that's it for now").
 
-Its name is "coral crab" for now (the owner: "the name should be coral crab for now"; its look is in review: No. 914, a rocky tick with crystals on its back). Its numbers, where the rock and crystal can be climbed, and the new high areas are open. The full design is in `CONVERSION.md`.
+Its name is "coral crab" for now (the owner: "the name should be coral crab for now"). Its look is approved: No. 914, a rocky tick with square pink crystals and crystal flowers on its back; it stays Crustacean and its main attack stays Crushing. Its numbers, how long the rock and crystal last, and from where under the catwalks it can be climbed are open. The full design is in `CONVERSION.md`.
 
 ## Designed 2026-11-06, not built: the next phase's technician utilities
 
