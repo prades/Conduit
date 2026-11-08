@@ -139,47 +139,17 @@ fx(913, "CORAL CRAB draft B: a lower, wider crab of the same velvet black veined
 // ── 914 · THE CORAL TICK ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 // The owner on 912 and 913 (2026-11-08): "Look, it's not really a crab. It's more of a tick-looking thing, but it's rocky exterior and has those back legs like the
 // picture." So: a tick's plump body, wider at the back, low, its underside flatter; its exterior rocky, plates of dark stone fitted together, the seams between them
-// glowing BLOOM's pink (the living coral under the rock); on its back the sketch's little coral spire and two nubs; a small head at the front, its mouthparts clamping
+// glowing BLOOM's pink; on its back (at first) the sketch's little coral spire and two nubs, now crystals (below); a small head at the front, its mouthparts clamping
 // (its crushing bite); its legs the sketch's long pointed leaf-spears, four (the owner, interrupting the first render: "4 legs"; it had eight, as a tick has).
-// THE REEF on its back (914: the owner, "The top of his Body needs 3-D texture living coral"): living coral grown over the top of the rock, densest on its crown, thinning
-// toward its sides: branching sprigs with glowing tips, soft polyp stalks with glowing heads, lumpy brain-coral mounds and open tubes glowing inside. Each piece stands on
-// the rock where it is, along its surface's normal. Returns the glowing tips, to pulse.
-function _ccReef(body, geo, o, M, rnd) {
-  const pos = geo.attributes.position, nor = geo.attributes.normal, spots = [], P = V(0, 0, 0), N = V(0, 0, 0), tips = [];
-  for (let i = 0; i < pos.count; i++) { P.set(pos.getX(i), pos.getY(i), pos.getZ(i)); N.set(nor.getX(i), nor.getY(i), nor.getZ(i)).normalize();
-    if (N.y > o.reefUp && P.y > o.h * 0.25) spots.push({ P: P.clone(), N: N.clone() }); }
-  const placed = [];
-  for (let tries = 0; placed.length < o.reefN && tries < o.reefN * 40; tries++) {
-    const sp = spots[Math.floor(rnd() * spots.length)], crown = Math.min(1, Math.max(0, (sp.N.y - o.reefUp) / (1 - o.reefUp)));   // (1 on its crown, 0 at the reef's edge)
-    if (rnd() > 0.35 + 0.65 * crown) continue;   // (thinner toward the sides)
-    if (placed.some(q => q.P.distanceTo(sp.P) < o.reefGap * (0.7 + 0.5 * crown))) continue;
-    placed.push({ P: sp.P, N: sp.N, crown });
-  }
-  const knob = new T.SphereGeometry(1, 10, 8), tipGeo = new T.SphereGeometry(1, 12, 9);
-  const seg = (grp, A, d, len, r, m) => { const c = new T.Mesh(new T.CylinderGeometry(r * 0.72, r, len, 8), m); c.position.copy(A).addScaledVector(d, len / 2); _aim32(c, d, V(0, 0, 1)); grp.add(c);
-    const k = new T.Mesh(knob, m); k.scale.setScalar(r * 0.72); k.position.copy(A).addScaledVector(d, len); grp.add(k); return A.clone().addScaledVector(d, len); };
-  const tip = (grp, E, r) => { const t = new T.Mesh(tipGeo, M.tip); t.scale.setScalar(r); t.position.copy(E); grp.add(t); tips.push(t); };
-  placed.forEach(({ P, N, crown }) => {
-    const grp = G(), s = 0.75 + 0.6 * crown * (0.7 + 0.6 * rnd()), kind = rnd(); grp.position.copy(P).addScaledVector(N, -0.004); _aim32(grp, N, V(0, 0, 1)); grp.rotateY(rnd() * TAU); body.add(grp);
-    if (kind < 0.36) {   // (a branching sprig, forking twice, its tips glowing)
-      const grow = (A, d, len, r, depth) => { const E = seg(grp, A, d, len, r, M.coral);
-        if (depth > 0) for (let k = 0; k < 2; k++) { const ax = V(rnd() - 0.5, 0, rnd() - 0.5).normalize(), nd = d.clone().applyAxisAngle(ax, (k ? 1 : -1) * (0.45 + rnd() * 0.3)); nd.y = Math.max(0.3, nd.y); nd.normalize(); grow(E, nd, len * 0.72, r * 0.72, depth - 1); }
-        else tip(grp, E, r * 1.2); };
-      grow(V(0, 0, 0), V((rnd() - 0.5) * 0.4, 1, (rnd() - 0.5) * 0.4).normalize(), 0.032 * s, 0.009 * s, crown > 0.4 ? 2 : 1);
-    } else if (kind < 0.62) {   // (a few soft polyp stalks from one spot, their heads glowing)
-      const n = 2 + Math.floor(rnd() * 3);
-      for (let k = 0; k < n; k++) { const d = V((rnd() - 0.5) * 0.9, 1, (rnd() - 0.5) * 0.9).normalize(), E = seg(grp, V((rnd() - 0.5) * 0.012, 0, (rnd() - 0.5) * 0.012), d, (0.018 + rnd() * 0.016) * s, 0.0045 * s, M.soft); tip(grp, E, 0.0075 * s); }
-    } else if (kind < 0.84) {   // (a brain-coral mound: lumpy, porous, glowing)
-      const g2 = new T.SphereGeometry(1, 18, 12, 0, TAU, 0, PI / 2), gp = g2.attributes.position, ph0 = rnd() * 6;
-      for (let i = 0; i < gp.count; i++) { const X = gp.getX(i), Y = gp.getY(i), Z = gp.getZ(i), k = 1 + 0.1 * Math.sin(9 * X + ph0) * Math.sin(8 * Z + 2 * ph0) + 0.06 * Math.sin(14 * Y + 3 * X); gp.setXYZ(i, X * k, Y * k * 0.8, Z * k); }
-      g2.computeVertexNormals(); const m = new T.Mesh(g2, M.brain); m.scale.setScalar((0.018 + 0.012 * rnd()) * s); grp.add(m);
-    } else {   // (an open tube, glowing inside)
-      const r = (0.007 + 0.004 * rnd()) * s, len = (0.02 + 0.014 * rnd()) * s, t = new T.Mesh(new T.CylinderGeometry(r, r * 1.15, len, 10, 1, true), M.coral); t.position.y = len / 2; grp.add(t);
-      const lip = new T.Mesh(new T.TorusGeometry(r, r * 0.22, 6, 12), M.coral); lip.rotation.x = PI / 2; lip.position.y = len; grp.add(lip);
-      const glow = new T.Mesh(new T.CircleGeometry(r * 0.9, 12), M.tip); glow.rotation.x = -PI / 2; glow.position.y = len * 0.82; grp.add(glow);
-    }
-  });
-  return tips;
+// THE CRYSTALS on its back (914; the owner, after the coral: "Instead of brain, coral and random little mushroom looking things let's just have jagged bold crystal
+// instead it's like square pieces you know"): a few big crystals of square section breaking out of the rock, each a four-sided prism with a jagged point. One crystal:
+// its base at the origin, pointing up (+y), its sides r from its axis at the top (a little narrower at its foot), h tall to its shoulders, its point tip higher and
+// pushed off centre by jag (so no two points are alike), turned twist about its axis. Open at its foot: its foot is buried in the rock.
+function _ccCrystal(h, r, tip, jag, twist, seed) {
+  const rn = _ccRnd(seed), q = [], at = (k, y, rr) => [rr * Math.cos(twist + k * PI / 2), y, rr * Math.sin(twist + k * PI / 2)];
+  const top = [0, 1, 2, 3].map(k => at(k, h * (1 - 0.12 * rn()), r)), foot = [0, 1, 2, 3].map(k => at(k, 0, r * 0.82)), ax = jag * (rn() - 0.5) * r, az = jag * (rn() - 0.5) * r, apex = [ax, h + tip, az];
+  for (let k = 0; k < 4; k++) { const k2 = (k + 1) % 4; q.push(foot[k], foot[k2], top[k2], foot[k], top[k2], top[k], top[k], top[k2], apex); }
+  const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(q.flat(), 3)); geo.computeVertexNormals(); return geo;
 }
 function _coralTick(o) {
   const g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
@@ -187,16 +157,16 @@ function _coralTick(o) {
   const body = G(); b.add(body);
   // THE BODY: a sphere broken into rocky plates (the nearest of o.plates points on it), each domed, the seams between sunk and glowing pink
   const cells = Array.from({ length: o.plates }, () => { const u = rnd() * 2 - 1, a = rnd() * TAU, r = Math.sqrt(1 - u * u); return V(r * Math.cos(a), u, r * Math.sin(a)); });
-  const bg = new T.SphereGeometry(1, 60, 40), bp = bg.attributes.position, col = new Float32Array(bp.count * 3), n = V(0, 0, 0);
-  for (let i = 0; i < bp.count; i++) {
-    n.set(bp.getX(i), bp.getY(i), bp.getZ(i)).normalize(); let d1 = -2, d2 = -2;
+  const rockAt = n => { let d1 = -2, d2 = -2;   // (the rock's height along the direction n, and how much of a seam is there)
     for (const c of cells) { const d = n.dot(c); if (d > d1) { d2 = d1; d1 = d; } else if (d > d2) d2 = d; }
-    const gap = d1 - d2, plate = Math.min(1, gap / 0.14), crack = 1 - _ccS(0, 0.03, gap);
-    const grain = 0.012 * Math.sin(n.x * 37.1 + n.y * 17.3) * Math.sin(n.y * 29.7 + n.z * 11.1) * Math.sin(n.z * 23.3 + n.x * 13.7);
-    const k = 1 + o.plateH * Math.sqrt(plate) - 0.02 * crack + grain;
-    let x = n.x * k, y = n.y * k, z = n.z * k; if (y < 0) y *= 0.55;   // (its belly flatter)
-    x *= o.w * (1 + o.flare * Math.max(0, -n.z)); y *= o.h; z *= o.l;   // (wider toward the back, as a tick's)
-    bp.setXYZ(i, x, y, z); const glow = crack * 0.95; col[i * 3] = pink.r * glow; col[i * 3 + 1] = pink.g * glow; col[i * 3 + 2] = pink.b * glow;
+    const gap = d1 - d2, crack = 1 - _ccS(0, 0.03, gap), grain = 0.012 * Math.sin(n.x * 37.1 + n.y * 17.3) * Math.sin(n.y * 29.7 + n.z * 11.1) * Math.sin(n.z * 23.3 + n.x * 13.7);
+    return [1 + o.plateH * Math.sqrt(Math.min(1, gap / 0.14)) - 0.02 * crack + grain, crack]; };
+  const place = (n, k, P) => { const y = n.y * k;   // (the point on the body at the direction n, k times out: its belly flatter, wider toward the back, as a tick's)
+    return P.set(n.x * k * o.w * (1 + o.flare * Math.max(0, -n.z)), (y < 0 ? y * 0.55 : y) * o.h, n.z * k * o.l); };
+  const bg = new T.SphereGeometry(1, 60, 40), bp = bg.attributes.position, col = new Float32Array(bp.count * 3), n = V(0, 0, 0), P = V(0, 0, 0);
+  for (let i = 0; i < bp.count; i++) {
+    n.set(bp.getX(i), bp.getY(i), bp.getZ(i)).normalize(); const [k, crack] = rockAt(n); place(n, k, P); bp.setXYZ(i, P.x, P.y, P.z);
+    const glow = crack * 0.95; col[i * 3] = pink.r * glow; col[i * 3 + 1] = pink.g * glow; col[i * 3 + 2] = pink.b * glow;
   }
   bg.setAttribute('color', new T.BufferAttribute(col, 3)); bg.computeVertexNormals();
   const rockM = new T.MeshPhysicalMaterial({ color: o.rock, vertexColors: true, emissive: 0xffffff, flatShading: true, metalness: 0, roughness: 0.92, reflectivity: 0.08 }); rockM.envMapIntensity = 0.08;   // (dull charcoal stone, barely any shine: its facets show by their shading, its seams glow)
@@ -204,26 +174,23 @@ function _coralTick(o) {
   rockM.onBeforeCompile = sh => { sh.uniforms.seamK = seamU = seamU || { value: 1 }; sh.fragmentShader = 'uniform float seamK;\n' + sh.fragmentShader.replace('#include <color_fragment>', '').replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = emissive * vColor * seamK;'); };
   rockM.customProgramCacheKey = () => 'ccRock';
   body.add(new T.Mesh(bg, rockM));
-  // ON ITS BACK: the sketch's little coral spire and two nubs, glowing, porous
-  const coralM = new T.MeshStandardMaterial({ color: 0x1a0610, emissive: 0xffffff, emissiveMap: _ccCoralTex(), emissiveIntensity: 0.85, metalness: 0, roughness: 0.68 }); coralM.envMapIntensity = 0.15;
-  const sp = new T.Mesh(_ccHorn(o.spireL, o.spireR, 0.3), coralM); sp.position.set(o.spire[0], o.h * o.spire[1], o.spire[2]); _aim32(sp, V(-0.15, 1, 0.35), V(0, 0, -1)); body.add(sp);
-  o.nubs.forEach(([x, y, z, r]) => { const m = new T.Mesh(new T.SphereGeometry(r, 16, 12), coralM); m.position.set(x, o.h * y, z); m.scale.y = 1.25; body.add(m); });
-  let tips = [];
-  if (o.reefN > 0) {   // (the living coral grown over its top)
-    const brainTex = coralM.emissiveMap.clone(); brainTex.repeat.set(3, 2); brainTex.needsUpdate = true;
-    const soft = new T.MeshStandardMaterial({ color: 0x14050c, emissive: pink.clone().multiplyScalar(0.55), metalness: 0, roughness: 0.7 }); soft.envMapIntensity = 0.12;
-    const brain = coralM.clone(); brain.emissiveMap = brainTex;
-    const tip = new T.MeshBasicMaterial({ color: pink.clone().lerp(new T.Color(1, 1, 1), 0.35), toneMapped: false });
-    tips = _ccReef(body, bg, o, { coral: coralM, soft, brain, tip }, _ccRnd((o.seed || 17) + 101));
-  }
-  // THE HEAD: small, at the front; a barbed mouth-spike between two clamping mouthparts and two short palps
+  // ON ITS BACK: THE CRYSTALS (o.crystals), the biggest where the sketch's little spire stood; each breaks out of the rock where it stands, its foot sunk in it, and is
+  // coloured facet by facet in BLOOM's pink, as the game's crystals are (_gemCol32, forms32.js); they brighten as it strikes
+  const gem = pink.clone().multiplyScalar(o.gemK), gems = [], Pc = V(0, 0, 0), aim = new T.Object3D();
+  o.crystals.forEach(([nx, nz, dx, dz, h, r, tip, twist], i) => {
+    n.set(nx, Math.sqrt(Math.max(0, 1 - nx * nx - nz * nz)), nz); place(n, rockAt(n)[0], Pc);   // (where it breaks out)
+    const ax = V(dx, 1, dz).normalize(), geo = _ccCrystal(h, r, tip, o.jag, twist, (o.seed || 17) * 31 + i);
+    aim.position.copy(Pc).addScaledVector(ax, -o.sink * h); _aim32(aim, ax, V(0, 0, 1)); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);
+    const m = _gemCol32(geo, gem); body.add(m); gems.push(m);
+  });
+  // THE HEAD: small, at the front; a mouth-spike between two clamping mouthparts and two short palps
   const head = G(); head.position.set(0, -o.h * 0.15, o.l * 0.96); body.add(head);
   const hm = new T.Mesh(new T.SphereGeometry(1, 20, 14), rockM); hm.scale.set(o.headR * 1.1, o.headR * 0.8, o.headR); head.add(hm);
-  const spike = new T.Mesh(_ccHorn(o.headR * 1.5, o.headR * 0.32, -0.25), coralM); spike.position.set(0, -o.headR * 0.2, o.headR * 0.6); spike.rotation.x = PI / 2 + 0.35; head.add(spike);
+  const spike = _gemCol32(_ccCrystal(o.headR * 1.1, o.headR * 0.26, o.headR * 0.5, o.jag, 0.4, 5), gem); spike.position.set(0, -o.headR * 0.2, o.headR * 0.6); spike.rotation.x = PI / 2 + 0.35; spike.userData.relight(); head.add(spike); gems.push(spike);   // (its mouth-spike a crystal too)
   const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.55, 0, o.headR * 0.7); head.add(pv);
     const j = new T.Mesh(_ccHorn(o.headR * 1.3, o.headR * 0.3, 0.45), _ccBlack); j.rotation.set(PI / 2, 0, -s * 0.5); pv.add(j); return { s, pv }; });
   [-1, 1].forEach(s => { const pa = new T.Mesh(new T.CylinderGeometry(o.headR * 0.18, o.headR * 0.24, o.headR * 1.1, 8), rockM); pa.position.set(s * o.headR * 0.95, -o.headR * 0.1, o.headR * 0.55); pa.rotation.set(PI / 2 - 0.3, 0, s * 0.3); head.add(pa); });
-  // THE LEGS: eight, from the front half of the body: the back four the sketch's leaf-spears, the front four thinner and jointed
+  // THE LEGS: a pair for each of o.legs (four now: the owner, "4 legs"), the sketch's leaf-spears (a leaf of 0 would draw a thinner jointed leg)
   const legs = []; [-1, 1].forEach(s => o.legs.forEach((ld, k) => legs.push({ s, k, ld, ph: (k % 2 ? PI : 0) + (s > 0 ? PI : 0), up: _taper32(b, _ccBlack, 12, 8), lo: _taper32(b, _ccBlack, 18, 10),
     knee: (() => { const m = new T.Mesh(new T.SphereGeometry(1, 12, 8), _ccBlack); b.add(m); return m; })(), pu: Array.from({ length: 12 }, () => V(0, 0, 0)), pl: Array.from({ length: 18 }, () => V(0, 0, 0)) })));
   const A = V(0, 0, 0), K = V(0, 0, 0), F = V(0, 0, 0);
@@ -233,8 +200,8 @@ function _coralTick(o) {
     const bob = 0.007 * Math.sin(2 * ph) * calm;
     body.position.set(0, o.bodyY + bob + 0.02 * rear, 0.04 * strike); body.rotation.x = -0.1 * rear + 0.14 * strike;   // (it rears, then lunges and bites)
     const glow = (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * Math.max(0.5 * rear, strike));
-    if (seamU) seamU.value = glow; coralM.emissiveIntensity = 0.85 * glow; Lt.intensity = 0.5 * glow;
-    tips.forEach((tp, i) => { const k = 1 + 0.18 * Math.sin(2 * ph + i * 0.9); tp.userData.s0 = tp.userData.s0 || tp.scale.x; tp.scale.setScalar(tp.userData.s0 * k); });   // (the polyps' heads breathe)
+    if (seamU) seamU.value = glow; Lt.intensity = 0.5 * glow;
+    const gk = 1.2 * Math.max(0, glow - 0.85); gems.forEach(m => m.userData.relight(gk));   // (the crystals brighten with the glow)
     head.rotation.x = 0.1 * Math.sin(ph) * calm - 0.25 * rear + 0.3 * strike;
     jaws.forEach(J => { J.pv.rotation.y = J.s * ((0.18 + 0.06 * Math.sin(ph * 2)) * calm + 0.45 * rear - 0.25 * strike); });   // (open, then clamp)
     legs.forEach(L => { const ld = L.ld, lift = Math.max(0, Math.sin(2 * ph + L.ph)) * o.lift * calm, swing = Math.cos(2 * ph + L.ph) * o.stride * calm, big = ld.leaf > 0;
@@ -252,12 +219,16 @@ function _coralTick(o) {
 }
 const _ccT = {
   S: 1, coreY: 0.32, seed: 17, bodyY: 0.27, w: 0.2, h: 0.14, l: 0.25, flare: 0.28, plates: 34, plateH: 0.07, rock: 0x0b090a,
-  spire: [-0.03, 0.85, 0.02], spireL: 0.15, spireR: 0.028, nubs: [],
-  reefN: 70, reefUp: 0.35, reefGap: 0.034,   // (the living coral on its top (the owner: "The top of his Body needs 3-D texture living coral"): how many pieces, how far down its sides (a normal's height), how far apart)
+  crystals: [   // (each: where it breaks out (its direction's x and z on the body), its lean (x, z), its height to the shoulders, its half-width, its point, its turn about its axis)
+    [-0.1, 0.06, -0.15, 0.3, 0.15, 0.06, 0.05, 0.35],   // (the biggest, where the sketch's little spire stood, leaning forward as it did)
+    [0.36, 0.2, 0.6, 0.3, 0.1, 0.05, 0.04, 1], [-0.45, 0.22, -0.75, 0.35, 0.085, 0.046, 0.036, 0.2], [0.22, -0.36, 0.45, -0.6, 0.12, 0.054, 0.045, 1.3],
+    [-0.32, -0.36, -0.5, -0.65, 0.09, 0.048, 0.038, 0.7], [0.02, -0.68, 0.05, -1, 0.075, 0.044, 0.034, 0.9],
+  ],
+  jag: 0.8, sink: 0.3, gemK: 1,   // (how far off centre the points go, how much of each crystal is sunk in the rock, how bright their pink)
   headR: 0.055,
   hipX: 0.1, legR: 0.02, lift: 0.032, stride: 0.03,
   legs: [   // (a pair each, front to back: where along it (z), how far out, how high the knee, how far forward or back the foot goes, the leaf-spear's width (0: a thin jointed leg))
     { z: 0.06, out: 0.3, up: 0.15, dz: 0.14, leaf: 0.044 }, { z: -0.06, out: 0.3, up: 0.16, dz: -0.17, leaf: 0.046 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior rocky plates of dark stone, the seams between them glowing BLOOM pink; the sketch's little coral spire and two nubs on its back; a small head with clamping mouthparts; eight legs, the back four the sketch's long pointed leaf-spears, the front four thinner and jointed.", () => _coralTick(_ccT));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior rocky plates of dark stone, the seams between them glowing BLOOM pink; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood; a small head with clamping mouthparts and a crystal mouth-spike; four legs, the sketch's long pointed leaf-spears.", () => _coralTick(_ccT));
