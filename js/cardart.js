@@ -20,7 +20,7 @@
 // THE SPECIES (the following update's Part 2; every look approved by the owner on 2026-11-06, docs/UI-STYLE.md "Gate 2", docs/DECISION-LOG.md; drawn first in design/ui-mocks/part2-looks-art.js, and
 // ported here unchanged: the same seeds give the same drawings). The owner: "make themes for the different species and give textures for the different species, and then icons for every different element
 // and subclass and species". A species is a MATERIAL, not a hue (the element colours, BLOOM's pink, the class cyan and the Player gold are taken):
-//   CRUSTACEAN    CHITIN AMBER, a crab shell's bumpy crust, small and faint ("Bumpy shell crust", "Smaller texture", "The design needs to be fainter")
+//   SPINE-LEGGED  CHITIN AMBER (the Crustacean's, renamed: build 2026-11-08h), a crab shell's bumpy crust, small and faint ("Bumpy shell crust", "Smaller texture", "The design needs to be fainter")
 //   MOLLUSK       NACRE, a pearly sheen ("Mollusk: pearly sheen")
 //   ELEMENTAL     PRISM WHITE, storm clouds ("puffy and stormy no repreating icons"); on a follower in its element's colour
 //   DRONE         GUNMETAL, machined panels
@@ -42,18 +42,18 @@ const CARD_ART = {
     tint: 0.5, tintAlpha: 0.8,         // a follower's class texture: its element's colour taken this far to white, at this opacity
     roles: { brawler: "brawler", sniper: "mage", camper: "technician", hybrid: "brawler" },   // a follower's role (js/species.js) and its class texture
     // the band each texture shows on a wide card: its top, in the 300 x 420 drawing (the flames' feet and tips, the brawler's strike, the facets' middle; a species' from 60, as approved)
-    band: { fire: 118, toxic: 20, flux: 62, core: 0, ice: 0, electric: 40, brawler: 22, mage: 110, technician: 0, crustacean: 60, mollusk: 60, elemental: 60, drone: 60, jelly: 60 },
+    band: { fire: 118, toxic: 20, flux: 62, core: 0, ice: 0, electric: 40, brawler: 22, mage: 110, technician: 0, spinelegged: 60, mollusk: 60, elemental: 60, drone: 60, jelly: 60 },
     gem: { ry: 32, rx: -14 }, cube: { ry: 38, rx: -26 },   // how the crystal and the cube are turned (degrees), as the canvas's CSS
     objScale: 0.75,                    // the crystal and the cube are drawn at the card's size against the canvas's (a 225 px card for its 300)
     // THE SPECIES (approved 2026-11-06): each one's colour (CHITIN AMBER, NACRE, PRISM WHITE, GUNMETAL, GEL ORCHID), and how its texture lies on a follower
-    species: { crustacean: "#e7ad78", mollusk: "#e3d6ff", elemental: "#f2f7ff", drone: "#b6c4d6", jelly: "#e39cff" },
+    species: { spinelegged: "#e7ad78", mollusk: "#e3d6ff", elemental: "#f2f7ff", drone: "#b6c4d6", jelly: "#e39cff" },
     speciesAlpha: 0.38,                      // a follower's species layer, at this opacity over its element's and its class's
-    speciesHalf: { crustacean: "cuAll" },    // laid at half its size: this drawing (its id) twice across the band
+    speciesHalf: { spinelegged: "cuAll" },    // laid at half its size: this drawing (its id) twice across the band
     speciesInElement: { elemental: true },   // laid in the follower's element's colour, not the species' own
 };
 const CARD_ART_ELEMENTS = ["fire", "electric", "ice", "flux", "core", "toxic"];
 const CARD_ART_CLASSES = ["brawler", "mage", "technician"];
-const CARD_ART_SPECIES = ["crustacean", "mollusk", "elemental", "drone", "jelly"];   // js/cards.js EQUIP_SUBCLASSES
+const CARD_ART_SPECIES = ["spinelegged", "mollusk", "elemental", "drone", "jelly"];   // js/cards.js EQUIP_SUBCLASSES
 const CARD_ART_RACES = ["ant", "beetle", "scorpion", "spider", "mantis", "moth"];      // the enemy races (js/damage.js DMG_RACE)
 
 // ── small helpers ──
@@ -191,9 +191,9 @@ const _CA_TEX = {
         return "<defs>" + cell + '</defs><g opacity=".38">' + tiles + "</g>";
     },
     // ── THE SPECIES (approved 2026-11-06; each drawn in currentColor, faint, its whole drawing in one group with an id, so a follower's band can lay it twice across) ──
-    // CRUSTACEAN: a crab shell's knobbly crust. A faint shell tone; rounded knobs gathered in patches (thick in a patch, sparse between), packed close and of three sizes (the big ones, the middle ones,
+    // SPINE-LEGGED (the Crustacean's texture, renamed): a crab shell's knobbly crust. A faint shell tone; rounded knobs gathered in patches (thick in a patch, sparse between), packed close and of three sizes (the big ones, the middle ones,
     // fine granules in the gaps), each a low dome lit from the top left by one shared gradient, with a dark shadow where it rises from the shell
-    crustacean() {
+    spinelegged() {
         _caSeed = 23;
         const W = 300, H = 420, knobs = [], H2 = v => Math.round(v * 2) / 2;
         const patches = []; for (let i = 0; i < 16; i++) patches.push({ x: -10 + _caRnd() * (W + 20), y: -10 + _caRnd() * (H + 20), s: 38 + _caRnd() * 34 });
@@ -439,7 +439,7 @@ const _caBar = (pts, w) => { let d = ""; for (let i = 0; i < pts.length - 1; i++
 const _caMx = pts => pts.map(p => [32 - p[0], p[1]]), _caBoth = (pts, w) => _caBar(pts, w) + _caBar(_caMx(pts), w);   // a limb and its mirror
 const CARD_ART_EMBLEMS = {
     // THE SPECIES, each in its colour
-    crustacean: { col: "#e7ad78", d() {   // a crab: open claws on raised arms, eyes on stalks, three legs a side, an arched ridge cut across the shell
+    spinelegged: { col: "#e7ad78", d() {   // (the Crustacean's emblem, renamed) a crab: open claws on raised arms, eyes on stalks, three legs a side, an arched ridge cut across the shell
         let d = _caEll(16, 19.6, 9, 6.2, true);                                                                   // the shell
         d += _caBoth([[13.4, 14.6], [12.7, 11]], 1.6) + _caDisc(12.5, 9.9, 1.9) + _caDisc(19.5, 9.9, 1.9);       // the eyes on their stalks
         d += _caBoth([[10.2, 15.8], [7.4, 11.8]], 2.6) + _caPie(6.4, 8.4, 4.7, -112, 30) + _caPie(25.6, 8.4, 4.7, -68, 30);   // the arms and the open claws

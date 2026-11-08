@@ -13,7 +13,7 @@
 //   EFFECTS   a real card has `bonus` ({ stat: fraction }, a key of EQUIP_STATS) or `proc` (an effect on a hit). A follower's bonus to a stat is the SUM over what it wears (equipBonus: two +50% make +100% of the base, never +125%). It is applied
 //             where the follower's numbers are made from its base (js/levels.js _applyFollowerLevel: attack, SP.ATK, defense, maximum health; js/combat.js followerRest: the rest between attacks; js/helpers.js applyDamage: the damage it deals),
 //             so it is never saved, never added twice, and comes off with the card (equipRefresh). A proc (equipOnHit, from applyDamage) rolls once for each hit a follower lands and sets a status on the target (js/combat.js) that is refreshed, never stacked.
-//   SUBCLASS  a tag on each evolved form (EQUIP_FORM_SUBCLASS, the user's roster chart): crustacean, mollusk, elemental, drone or jelly. An egg has none until it evolves, nor do the ten retired forms. It decides nothing yet: it is for the cards to classify by.
+//   SUBCLASS  a tag on each evolved form (EQUIP_FORM_SUBCLASS, the user's roster chart): spine-legged (it was crustacean), mollusk, elemental, drone or jelly. An egg has none until it evolves, nor do the ten retired forms. It decides nothing yet: it is for the cards to classify by.
 //   SLOTS     every follower has two (f.cards = [id | null, id | null]); the player has two, for PLAYER cards (equipPlayer). A unit cannot wear the same card twice; any number of units can wear the same card, because a card is a TYPE you own, never used up.
 //   FITS      a card is one kind: ELEMENT (a follower of that element), CLASS (a follower of that role: brawler, mage or technician; a Mage's AURA names an element too, and is worn by a Mage of that element), SUBCLASS (a follower of that
 //             subclass) or PLAYER (the player's slots, and nothing else: a ROLE for one of the player's classes, awake while you are that class, asleep in its slot while you are another; EQUIP_PLAYER_CARDS, js/playercards.js).
@@ -34,14 +34,17 @@ const EQUIP = { followerSlots: 2, playerSlots: 2, startPick: 3, unlockCost: 1000
 
 // The five subclasses.
 const EQUIP_SUBCLASSES = [
-    { id: "crustacean", label: "CRUSTACEAN" }, { id: "mollusk", label: "MOLLUSK" }, { id: "elemental", label: "ELEMENTAL" }, { id: "drone", label: "DRONE" }, { id: "jelly", label: "JELLY" },
+    { id: "spinelegged", label: "SPINE-LEGGED" }, { id: "mollusk", label: "MOLLUSK" }, { id: "elemental", label: "ELEMENTAL" }, { id: "drone", label: "DRONE" }, { id: "jelly", label: "JELLY" },
 ];
 // Which subclass each evolved form is (js/evolution.js EVOLUTIONS ids): the user's consolidated roster chart, with the game's spellings (Sonic Orb is the Static Orb, Seaper the Seeper, Emberhood the Ember Hood, Void Star the Voidstar,
 // Horn Shell the Hornshell, Rime Star the Rimestar, Thermite Brawler the Thermite Burrower). The ten retired forms (EVOLUTIONS marked legacy) are not in it: they have none.
+// SPINE-LEGGED (build 2026-11-08h; the owner: "Also, I want to rename the crustaceans to spine-legged to include electroskink and the toxic spider"): the subclass that was CRUSTACEAN, renamed, with the Electro Skink (it had none: an open question
+// since build 2026-11-08a) and the Blight Spider (it was a drone) in it. Its rules are the Crustacean's, unchanged (js/damage.js DMG_SUBCLASS, dmgLean), and so are its four cards (CHITIN SCALE, BARNACLE
+// BRACER, PINCER CLAMP, TIDE SHELL: their ids kept, for saves).
 const EQUIP_FORM_SUBCLASS = {
-    quillstone: "crustacean", staticorb: "drone", mimic: "jelly", jellyram: "jelly", seeper: "crustacean", maw: "elemental",         // the brawlers
+    quillstone: "spinelegged", staticorb: "drone", mimic: "jelly", jellyram: "jelly", seeper: "spinelegged", maw: "elemental", electroskink: "spinelegged",   // the brawlers
     embercowl: "elemental", thunderhead: "elemental", voidstar: "mollusk", hornshell: "mollusk", rotshard: "elemental", rimestar: "drone",   // the mages
-    thermite: "drone", hovershell: "drone", gooproxy: "jelly", hammerslug: "mollusk", blightspider: "drone", igloo: "elemental",       // the technicians
+    thermite: "drone", hovershell: "drone", gooproxy: "jelly", hammerslug: "mollusk", blightspider: "spinelegged", igloo: "elemental",   // the technicians
 };
 // A card's rarity, lowest first: the names are the older doc's, shown as bars lit one for each step (js/cardsui.js).
 const EQUIP_RARITIES = [
@@ -117,7 +120,7 @@ EQUIP_PACK1.forEach(([id, name, element, rarity, fx]) => { EQUIP_CARDS[id] = Obj
 // EACH ELEMENT'S OWN STATUS: the one Pack 1's Precision card of that element sets, with its numbers (fire burns, toxic poisons, electric glitches, ice slows, flux siphons, core knocks back). ATTUNED CORE (Series 2) and the Prototype Mage auras set it.
 const _EQUIP_ATTUNED = { fire: "cinderbrand", toxic: "mireblight", electric: "static_lock", ice: "rime_snare", flux: "siphon_field", core: "repulsor_pulse" };
 const _EQUIP_STATUS_WORDS = { burn: "BURN", poison: "POISON", glitch: "GLITCH", slow: "SLOW", siphon: "SIPHON", knockback: "KNOCK BACK" };
-// SERIES 2 (ASKED, the "Series 2" brief, 2026-10-31): two categories of card, SPECIES CARDS (the game's `subclass` kind: Jelly, Mollusk, Elemental, Crustacean or Drone, a tag every evolved form has: EQUIP_FORM_SUBCLASS) and CLASS CARDS
+// SERIES 2 (ASKED, the "Series 2" brief, 2026-10-31): two categories of card, SPECIES CARDS (the game's `subclass` kind: Jelly, Mollusk, Elemental, Spine-legged (it was Crustacean) or Drone, a tag every evolved form has: EQUIP_FORM_SUBCLASS) and CLASS CARDS
 // (the `class` kind: Brawler, Mage or Technician), no hybrid identities, over the six rarities. THE LIST IS NOT HERE YET: the archive that holds it could not be read this session (docs/OPEN-QUESTIONS.md), and no card is invented in its
 // place. A Series 2 card is a row of this table, in the shape of Pack 1's rows with its kind and its match: [id, name, kind ("subclass" | "class"), match (a subclass id | brawler | sniper | camper), rarity, fx]; a row added here is dealt by
 // the Series 2 pack (EQUIP_PACK2, below), worn by what it fits (equipFit: a species card by a follower of that subclass, a class card by one of that role), summed with the others (equipBonus), saved and loaded with nothing else to change.
@@ -126,10 +129,10 @@ const _EQUIP_STATUS_WORDS = { burn: "BURN", poison: "POISON", glitch: "GLITCH", 
 // that make it happen are under "THE SERIES 2 ABILITIES"). Every number is here and PROPOSED (docs/SERIES-2.md), so tuning stays one edit. The Brawler's and the Mage's four were CUT in Build B (EQUIP_CUT, below): the class
 // families took their place.
 const EQUIP_SERIES2 = [
-    ["chitin_scale",      "CHITIN SCALE",      "subclass", "crustacean", "unrefined", { bonus: { defense: 0.08 } }],
-    ["barnacle_bracer",   "BARNACLE BRACER",   "subclass", "crustacean", "refined",   { bonus: { maxHealth: 0.14 } }],
-    ["pincer_clamp",      "PINCER CLAMP",      "subclass", "crustacean", "precision", { proc: { kind: "slow", chance: 0.15, cut: 0.30, seconds: 2 } }],
-    ["tide_shell",        "TIDE SHELL",        "subclass", "crustacean", "prototype", { ability: { kind: "shellBlock", every: 8 } }],
+    ["chitin_scale",      "CHITIN SCALE",      "subclass", "spinelegged", "unrefined", { bonus: { defense: 0.08 } }],
+    ["barnacle_bracer",   "BARNACLE BRACER",   "subclass", "spinelegged", "refined",   { bonus: { maxHealth: 0.14 } }],
+    ["pincer_clamp",      "PINCER CLAMP",      "subclass", "spinelegged", "precision", { proc: { kind: "slow", chance: 0.15, cut: 0.30, seconds: 2 } }],
+    ["tide_shell",        "TIDE SHELL",        "subclass", "spinelegged", "prototype", { ability: { kind: "shellBlock", every: 8 } }],
     ["mantle_gel",        "MANTLE GEL",        "subclass", "mollusk",    "unrefined", { bonus: { maxHealth: 0.08 } }],
     ["nacre_pearl",       "NACRE PEARL",       "subclass", "mollusk",    "refined",   { bonus: { defense: 0.14 } }],
     ["siphon_slime",      "SIPHON SLIME",      "subclass", "mollusk",    "precision", { proc: { kind: "siphon", chance: 0.15, share: 0.12 } }],
@@ -365,7 +368,7 @@ const EQUIP_REFUND_CAP = EQUIP_CUT.length * EQUIP.unlockCost;   // the most a re
 const EQUIP_TEST_CARDS = {};
 [   ["test_fire", "TEST · FIRE", "element", "fire", "unrefined"], ["test_ice", "TEST · ICE", "element", "ice", "refined"],
     ["test_brawler", "TEST · BRAWLER", "class", "brawler", "precision"], ["test_mage", "TEST · MAGE", "class", "sniper", "prototype"], ["test_technician", "TEST · TECHNICIAN", "class", "camper", "lustrous"],
-    ["test_crustacean", "TEST · CRUSTACEAN", "subclass", "crustacean", "unrefined"], ["test_drone", "TEST · DRONE", "subclass", "drone", "crystalline"],
+    ["test_crustacean", "TEST · SPINE-LEGGED", "subclass", "spinelegged", "unrefined"], ["test_drone", "TEST · DRONE", "subclass", "drone", "crystalline"],
     ["test_player_a", "TEST · PLAYER A", "player", null, "refined"], ["test_player_b", "TEST · PLAYER B", "player", null, "precision"],
 ].forEach(([id, name, kind, match, rarity]) => { EQUIP_TEST_CARDS[id] = { id, name, kind, match, rarity, test: true, text: "A TEST CARD: IT DOES NOTHING" }; });
 
@@ -491,7 +494,7 @@ function equipRunStart() {
 function equipSlots(f) { const c = f && f.cards; return [c && c[0] || null, c && c[1] || null]; }   // (a copy)
 function equipWorn(f) { return equipSlots(f).filter(Boolean).length; }
 // does the card fit this follower (null), or why not
-function _equipPlural(w) { return /[^AEIOU]Y$/.test(w) ? w.slice(0, -1) + "IES" : w + "S"; }   // (JELLY: JELLIES; the others take an S)
+function _equipPlural(w) { return /ED$/.test(w) ? w : /[^AEIOU]Y$/.test(w) ? w.slice(0, -1) + "IES" : w + "S"; }   // (JELLY: JELLIES; SPINE-LEGGED as it is; the others take an S)
 function equipFit(f, c) {
     if (!c) return "NO SUCH CARD";
     if (c.kind === "element") return equipElementOf(f) === c.match ? null : "FOR " + _equipElementLabel(c.match) + " FOLLOWERS";

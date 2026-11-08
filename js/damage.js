@@ -39,7 +39,7 @@ const DMG_RACE = {
 };
 // What each follower subclass is weak to and resists (docs/COMBAT.md §7.8)
 const DMG_SUBCLASS = {
-    crustacean: { weak: ["crushing", "earthquake"],   resist: ["slashing", "piercing"] },
+    spinelegged: { weak: ["crushing", "earthquake"],  resist: ["slashing", "piercing"] },   // (the Crustacean's, renamed: build 2026-11-08h)
     mollusk:    { weak: ["slashing", "piercing"],     resist: ["crushing", "earthquake"] },
     elemental:  { weak: ["earthquake", "projectile"], resist: ["slashing", "elemental"] },
     drone:      { weak: ["crushing", "elemental"],    resist: ["piercing", "projectile"] },
@@ -127,11 +127,11 @@ function dmgRow(t) {
     return null;
 }
 function dmgRowMult(row, type) { return !row || !type ? 1 : row.weak.indexOf(type) >= 0 ? DMG_WEAK : row.resist.indexOf(type) >= 0 ? DMG_RESIST : 1; }
-// A form's lean (docs/COMBAT.md §7.7): Elemental species +1, shelled (crustacean, mollusk) −1, a main attack typed Elemental +1 more; an egg none
+// A form's lean (docs/COMBAT.md §7.7): Elemental species +1, spine-legged (the Crustacean's, renamed) and mollusk −1, a main attack typed Elemental +1 more; an egg none
 function dmgLean(f) {
     const id = dmgFormId(f); if (!id) return 0;
     const s = typeof EQUIP_FORM_SUBCLASS !== "undefined" ? EQUIP_FORM_SUBCLASS[id] : null;
-    let L = s === "elemental" ? 1 : (s === "crustacean" || s === "mollusk") ? -1 : 0;
+    let L = s === "elemental" ? 1 : (s === "spinelegged" || s === "mollusk") ? -1 : 0;
     if (DMG_FORM[id] && DMG_FORM[id].main === "elemental") L += 1;
     return L;
 }

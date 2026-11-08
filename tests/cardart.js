@@ -79,7 +79,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
         btns: Array.prototype.slice.call(el.closest('.cd-stage') ? document.querySelectorAll('#cardsRoot .cd-info .cd-btn') : el.querySelectorAll(':scope > .cd-btn')).map(function(b){ b.scrollIntoView({ block: 'center' }); return hit(b); }) };   // (the collection's card on its stage has its buttons beside it, with its labels)
     };
     out.cards = measureCards();   // the stage's card as the sheet opens (the rarest first: a Crystalline CLASS card)
-    var picks = ['TEST · PLAYER A', 'TEST · CRUSTACEAN', 'EMBER PLATING', 'KINDLING BAND']; out.picked = [];   // a PLAYER, a SUBCLASS, an ELEMENT card and a Mage's AURA (a class card), each on the stage
+    var picks = ['TEST · PLAYER A', 'TEST · SPINE-LEGGED', 'EMBER PLATING', 'KINDLING BAND']; out.picked = [];   // a PLAYER, a SUBCLASS, an ELEMENT card and a Mage's AURA (a class card), each on the stage
     for (var pi = 0; pi < picks.length; pi++) { if (await pickMini(picks[pi])) { out.picked.push(picks[pi]); out.cards = out.cards.concat(measureCards()); } }
     var sl = $('#cardsRoot .cd-slab'), sa = $('#cardsRoot .cd-art');
     out.tilt = { transform: getComputedStyle(sl).transform.slice(0, 9), style: getComputedStyle(sl).transformStyle, perspective: getComputedStyle(sa).perspective, sides: $$('#cardsRoot .cd-side').length };
@@ -89,7 +89,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     _cdReveal = { pack: equipPackLast.pack, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice() }; cardsRender(true); await wait(200);   // a pack's reveal: its cards are cards too
     var rc = measureCards('#cardsRoot .cr-overlay .cd-card'); out.revealCards = rc.length; out.cards = out.cards.concat(rc); _cdReveal = null; cardsRender(true); await wait(60);
     // every picture is one the browser can draw (the nine card faces, the eighteen backdrops, the crystal in each colour and the cube)
-    var urls = []; ['fire', 'electric', 'ice', 'flux', 'core', 'toxic', 'brawler', 'mage', 'technician', 'crustacean', 'mollusk', 'elemental', 'drone', 'jelly'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
+    var urls = []; ['fire', 'electric', 'ice', 'flux', 'core', 'toxic', 'brawler', 'mage', 'technician', 'spinelegged', 'mollusk', 'elemental', 'drone', 'jelly'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
     ['fire', 'electric', 'ice', 'flux', 'core', 'toxic'].forEach(function(e){ ['brawler', 'mage', 'technician'].forEach(function(c){ urls.push(['f:' + e + ':' + c, cardArtUrl('f:' + e + ':' + c, function(){ return cardArtMixSvg(e, c); })]); }); urls.push(['gem:' + e, 'data:image/svg+xml,' + encodeURIComponent(cardArtGemSvg(cardArtElementColour(e)))]); });
     urls.push(['cube', 'data:image/svg+xml,' + encodeURIComponent(cardArtCubeSvg('#8fe3ff'))]);
     out.css = { sheet: !!$('#cardArtCss'), rules: ($('#cardArtCss') || { textContent: '' }).textContent.split('\\n').filter(Boolean).length };   // (by now the roster and the CARDS screen have asked for theirs)
@@ -250,7 +250,7 @@ function measure(w, h) {
             ok(T.css.sheet && T.css.rules >= 10, 'the page has no art classes: ' + JSON.stringify(T.css));
         });
         await check('THE CARDS (the stage\'s, for a card of each kind; the SHOP\'s; a pack\'s reveal): each a tilted slab (a 3D transform under a perspective, one flat layer, no 3D edge) with its back, its face (the texture, the frame, the rarity, the chip, the crystal and its glow and shadow, the hologram and its shadow, the emitters); one name, kind and text each; the shadow\'s copy hidden from a reader', () => {
-            same(T.picked.join('|'), 'TEST · PLAYER A|TEST · CRUSTACEAN|EMBER PLATING|KINDLING BAND', 'the cards picked on the rail'); ok(T.shopCards >= 4, 'the SHOP\'s cards: ' + T.shopCards); same(T.revealCards, 4, 'the reveal\'s cards'); ok(T.cards.length >= 12, 'cards: ' + T.cards.length);
+            same(T.picked.join('|'), 'TEST · PLAYER A|TEST · SPINE-LEGGED|EMBER PLATING|KINDLING BAND', 'the cards picked on the rail'); ok(T.shopCards >= 4, 'the SHOP\'s cards: ' + T.shopCards); same(T.revealCards, 4, 'the reveal\'s cards'); ok(T.cards.length >= 12, 'cards: ' + T.cards.length);
             same(T.tilt.transform, 'matrix3d(', 'the tilt'); same(T.tilt.style, 'flat', 'one layer'); ok(T.tilt.perspective !== 'none', 'no perspective'); same(T.tilt.sides, 0, '3D edges');
             for (const c of T.cards) { ok(c.face, c.name + ' has no face'); same(c.parts.join(), '', c.name + ' lacks'); same([c.names, c.kinds, c.texts, c.chips].join(), '1,1,1,1', c.name + '\'s name, kind, text and chip'); same(c.ghost, c.name, c.name + '\'s shadow'); same(c.ghostHidden, 'true', c.name + '\'s shadow is read out'); }
         });
@@ -288,7 +288,7 @@ function measure(w, h) {
         await check('the INFO\'s picture is framed on its backdrop' + (T.fly ? '; the card on the fly wears its member\'s' : '') + (T.radial ? '; a phone\'s roster cards wear theirs' : ''), () => {
             same(T.info.art, T.info.want, 'the INFO'); ok(T.info.bg && T.info.framed === '2px', 'the INFO picture: ' + JSON.stringify(T.info));
             if (T.fly) { same(T.fly.art, T.fly.want, 'the card on the fly'); ok(/^url\("data:image\/svg/.test(T.fly.tex), 'its --tex: ' + T.fly.tex); }
-            if (T.radial) { ok(T.radial.length >= 3, 'a phone\'s roster cards: ' + T.radial.length); for (const a of T.radial) ok(/^cat-f-\w+-(brawler|mage|technician)(-(crustacean|mollusk|elemental|drone|jelly))?$/.test(a), 'a phone roster card: ' + a); }
+            if (T.radial) { ok(T.radial.length >= 3, 'a phone\'s roster cards: ' + T.radial.length); for (const a of T.radial) ok(/^cat-f-\w+-(brawler|mage|technician)(-(spinelegged|mollusk|elemental|drone|jelly))?$/.test(a), 'a phone roster card: ' + a); }
         });
     }
 

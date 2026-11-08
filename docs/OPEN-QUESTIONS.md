@@ -698,7 +698,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
 ## The ELECTRO SKINK (built in build `2026-11-08a`)
 - **Its own attacks:** BASH stands in as its second attack; its everyday hit is Slashing (what it hit with as an egg) until you choose.
-- **Its subclass** (crustacean, mollusk, elemental, drone, jelly, or a new one): none yet, so no subclass card fits it and no row weakens or resists it.
+- ~~**Its subclass**~~ *(answered 2026-11-08, build `2026-11-08h`: **Spine-legged**, the Crustacean renamed; the owner: "Also, I want to rename the crustaceans to spine-legged to include electroskink and the toxic spider")*: so the Spine-legged cards fit it, it is weak to Crushing and Earthquake and resists Slashing and Piercing, and its lean is −1.
 - **Its Ultimate:** it uses the electric element's for now.
 - **Its pace:** 1.6 × the follower's speed (the agent's number for "really fast").
 - **VOLTAGE FIELD** (a Series 2 form card) fits the Static Orb only; it stays with the Static Orb (set aside) unless you move it to the Skink.

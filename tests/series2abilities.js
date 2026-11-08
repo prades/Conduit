@@ -1,7 +1,7 @@
 // THE SERIES 2 ABILITIES (js/cards.js: the PROTOTYPE cards' `ability`, equipOnHit, equipOnHurt, the card tick, equipBonus; js/helpers.js applyDamage's hook; js/techabilities.js techCooldown).
 // ASKED (the owner, 2026-11-01): "Series 2. Pick a price and set the odds for the pack and make it to where another rarity is unlocked", and asked which: "Prototype unlocks": Series 2 deals up to PROTOTYPE, one ability for each
 // species and class (docs/SERIES-2.md). Each is worn here by a follower of the identity it is for (and by one it is not, where that matters), and set off through the game's own damage path.
-//   TIDE SHELL      (crustacean) SHELL BLOCK: an enemy's hit blocked whole; ready again 8 s after a block
+//   TIDE SHELL      (spine-legged, was crustacean) SHELL BLOCK: an enemy's hit blocked whole; ready again 8 s after a block
 //   REGROWTH SAC    (mollusk)    REGROWTH: 0.5% of its maximum HP back every second
 //   STORM HEART     (elemental)  NOVA: every 6th hit bursts on every enemy within 1.5 tiles of the target, for 60% of its special attack
 //   OVERCLOCK CHIP  (drone)      OVERCLOCK: every 12 s, +50% attack speed for 3 s
@@ -37,7 +37,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('THE PROTOTYPE CARDS: one ability for each species and class');
     check('every Prototype species card of Series 2, and the Technician\'s, has an ability its words describe: shell block, regrowth, nova, overclock, absorb, double charge (the Mage\'s and the Brawler\'s Prototypes are an aura and an opportunity card since Build B)', () => {
         const r = J(`Object.values(EQUIP_CARDS).filter(c => c.pack === 'series2' && c.rarity === 'prototype' && c.ability).map(c => [c.match, c.ability && c.ability.kind, c.text.split(':')[0]])`);
-        same(r.map(x => x[0] + '=' + x[1]).join(), 'crustacean=shellBlock,mollusk=regrowth,elemental=nova,drone=overclock,jelly=absorb,camper=doubleCharge', 'the abilities');
+        same(r.map(x => x[0] + '=' + x[1]).join(), 'spinelegged=shellBlock,mollusk=regrowth,elemental=nova,drone=overclock,jelly=absorb,camper=doubleCharge', 'the abilities');
         same(r.map(x => x[2]).join(), 'SHELL BLOCK,REGROWTH,NOVA,OVERCLOCK,ABSORB,DOUBLE CHARGE', 'their words');
         same(J(`Object.values(EQUIP_CARDS).filter(c => c.pack === 'series2' && c.rarity === 'prototype' && !c.ability).map(c => c.aura ? 'aura' : c.opportunity ? 'opportunity' : c.kind === 'player' ? 'player' : c.attack ? 'attack' : c.id).join()`), 'attack,attack,attack,attack,aura,aura,aura,aura,aura,aura,opportunity,player,player,player,player,player,player,player,player,player,player,player,player,player,player,player,player,player,player', 'the Prototypes without an ability (the eighteen Player cards Series 2 names but does not deal yet: tests/playercards.js)');
     });

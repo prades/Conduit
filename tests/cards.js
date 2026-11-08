@@ -27,9 +27,9 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 // the user's roster chart (the Notion Archive, "Follower subclass assignments — consolidated roster"), by the forms' names in the game (Sonic Orb is the STATIC ORB, Seaper the SEEPER, Emberhood the EMBER HOOD,
 // Void Star the VOIDSTAR, Horn Shell the HORNSHELL, Rime Star the RIMESTAR, Thermite Brawler the THERMITE BURROWER)
 const CHART = {
-    'QUILLSTONE': 'crustacean', 'STATIC ORB': 'drone', 'RIFT MIMIC': 'jelly', 'JELLY RAM': 'jelly', 'SEEPER': 'crustacean', 'FROST MAW': 'elemental',
+    'QUILLSTONE': 'spinelegged', 'STATIC ORB': 'drone', 'ELECTRO SKINK': 'spinelegged', 'RIFT MIMIC': 'jelly', 'JELLY RAM': 'jelly', 'SEEPER': 'spinelegged', 'FROST MAW': 'elemental',
     'EMBER HOOD': 'elemental', 'THUNDERHEAD': 'elemental', 'VOIDSTAR': 'mollusk', 'HORNSHELL': 'mollusk', 'ROTSHARD': 'elemental', 'RIMESTAR': 'drone',
-    'THERMITE BURROWER': 'drone', 'HOVER SHELL': 'drone', 'GOO PROXY': 'jelly', 'HAMMER SLUG': 'mollusk', 'BLIGHT SPIDER': 'drone', 'IGLOO SKATER': 'elemental',
+    'THERMITE BURROWER': 'drone', 'HOVER SHELL': 'drone', 'GOO PROXY': 'jelly', 'HAMMER SLUG': 'mollusk', 'BLIGHT SPIDER': 'spinelegged', 'IGLOO SKATER': 'elemental',
 };
 
 function findChromium() {
@@ -218,27 +218,27 @@ function measure(w, h, query, seed) {
     const G = await boot('?cards', {}), run = G.run, J = G.J;
 
     group('1. THE SUBCLASS TAG (five; the user\'s roster chart)');
-    await check('the five: crustacean, mollusk, elemental, drone and jelly (Jelly is the fifth, beside the four first asked for)', () => {
-        const r = J('EQUIP_SUBCLASSES.map(function(s){ return s.id; })'); same(r.join(), 'crustacean,mollusk,elemental,drone,jelly', 'the subclasses');
-        same(J('EQUIP_SUBCLASSES.map(function(s){ return s.label; })').join(), 'CRUSTACEAN,MOLLUSK,ELEMENTAL,DRONE,JELLY', 'their names');
+    await check('the five: spine-legged (the Crustacean renamed, build 2026-11-08h), mollusk, elemental, drone and jelly (Jelly is the fifth, beside the four first asked for)', () => {
+        const r = J('EQUIP_SUBCLASSES.map(function(s){ return s.id; })'); same(r.join(), 'spinelegged,mollusk,elemental,drone,jelly', 'the subclasses');
+        same(J('EQUIP_SUBCLASSES.map(function(s){ return s.label; })').join(), 'SPINE-LEGGED,MOLLUSK,ELEMENTAL,DRONE,JELLY', 'their names');
     });
-    await check('each of the 18 forms has the subclass the chart gives it (by name), the Electro Skink none yet; the Static Orb, set aside, keeps its own; the ten retired forms have none; nothing else is in the table', () => {
+    await check('each of the 18 forms has the subclass the chart gives it (by name), the Electro Skink Spine-legged since build 2026-11-08h; the Static Orb, set aside, keeps its own; the ten retired forms have none; nothing else is in the table', () => {
         const forms = J('Object.values(EVOLUTIONS).map(function(e){ return { id: e.id, name: e.name, legacy: !!e.legacy, aside: !!e.aside, sub: equipSubclassOf({ evolved: e.id }) }; })');
         const live = forms.filter(f => !f.legacy && !f.aside), aside = forms.filter(f => f.aside), legacy = forms.filter(f => f.legacy);
         same(live.length, 18, 'forms in play'); same(aside.map(f => f.id).join(), 'staticorb', 'set aside'); same(legacy.length, 10, 'retired forms');
-        for (const f of live.concat(aside)) same(f.sub, f.id === 'electroskink' ? null : CHART[f.name], f.name + '\'s subclass');   // (the Electro Skink, build 2026-11-08a: its subclass is an open question)
+        for (const f of live.concat(aside)) same(f.sub, CHART[f.name], f.name + '\'s subclass');   // (the Electro Skink: Spine-legged, the owner's answer of 2026-11-08)
         for (const f of legacy) same(f.sub, null, f.name + ' (retired) has a subclass');
-        same(Object.keys(CHART).length, 18, 'the chart'); same(J('Object.keys(EQUIP_FORM_SUBCLASS).length'), 18, 'the table');
+        same(Object.keys(CHART).length, 19, 'the chart'); same(J('Object.keys(EQUIP_FORM_SUBCLASS).length'), 19, 'the table');
         const ids = J('Object.keys(EQUIP_FORM_SUBCLASS)'); for (const id of ids) ok(live.concat(aside).some(f => f.id === id), id + ' is in the table and is not a form in play');
     });
-    await check('the counts: crustacean 2, mollusk 3, elemental 5, drone 5, jelly 3', () => {
+    await check('the counts: spine-legged 4 (the Crustacean renamed, with the Electro Skink and the Blight Spider), mollusk 3, elemental 5, drone 4, jelly 3', () => {
         const n = {}; for (const v of Object.values(CHART)) n[v] = (n[v] || 0) + 1;
-        same(JSON.stringify(n), JSON.stringify({ crustacean: 2, drone: 5, jelly: 3, elemental: 5, mollusk: 3 }), 'the chart\'s counts');
+        same(JSON.stringify(n), JSON.stringify({ spinelegged: 4, drone: 4, jelly: 3, elemental: 5, mollusk: 3 }), 'the chart\'s counts');
     });
     await check('an egg has no subclass until it evolves; a follower evolved into a retired form has none; a clone, and nobody, have none', () => {
         const r = J(`(function(){ __fresh(0); const egg = __mk('fire', 'brawler'), old = __mk('fire', 'brawler'); old.evolved = 'bloom'; const q = __form(__mk('fire', 'brawler'), 'quillstone');
             return { egg: equipSubclassOf(egg), old: equipSubclassOf(old), q: equipSubclassOf(q), none: equipSubclassOf(null), clone: equipSubclassOf({ isClone: true, speciesName: 'beetle' }) }; })()`);
-        same(r.egg, null, 'an egg'); same(r.old, null, 'a retired form'); same(r.q, 'crustacean', 'a Quillstone'); same(r.none, null, 'nobody'); same(r.clone, null, 'a clone');
+        same(r.egg, null, 'an egg'); same(r.old, null, 'a retired form'); same(r.q, 'spinelegged', 'a Quillstone'); same(r.none, null, 'nobody'); same(r.clone, null, 'a clone');
     });
     await check('it is only a tag: it changes no stat (a follower\'s health, power and speed are what they were)', () => {
         const r = J(`(function(){ __fresh(0); const f = __form(__mk('fire', 'brawler'), 'quillstone'); initFollowerLevel(f, { level: 12 }); const a = [f.maxHealth, f.power, f.moveSpeed, JSON.stringify(f.stats)]; equipSubclassOf(f); const b = [f.maxHealth, f.power, f.moveSpeed, JSON.stringify(f.stats)];
@@ -293,7 +293,7 @@ function measure(w, h, query, seed) {
               sub: [w(f, 'test_crustacean'), w(f, 'test_drone'), w(t, 'test_drone'), w(egg, 'test_crustacean'), w(egg, 'test_drone')], uni: [w(f, 'test_player_a'), w(egg, 'test_player_a'), w(ice, 'test_player_b')] }; })()`);
         same(r.fire[0], null, 'a fire card on a fire follower'); same(r.fire[1], 'FOR FIRE FOLLOWERS', 'a fire card on an ice one'); same(r.iceCard[0], 'FOR ICE FOLLOWERS', 'an ice card on a fire follower'); same(r.iceCard[1], null, 'an ice card on an ice one');
         same(r.cls[0], null, 'a brawler card on a brawler'); same(r.cls[1], 'FOR MAGES', 'a mage card on a brawler'); same(r.cls[2], null, 'a mage card on a mage (the code\'s "sniper")'); same(r.cls[3], null, 'a technician card on a technician (the "camper")'); same(r.cls[4], 'FOR TECHNICIANS', 'a technician card on a mage');
-        same(r.sub[0], null, 'a crustacean card on a Quillstone'); same(r.sub[1], 'FOR DRONES', 'a drone card on a Quillstone'); same(r.sub[2], null, 'a drone card on a Thermite Burrower'); same(r.sub[3], 'FOR CRUSTACEANS · EVOLVE FIRST', 'a subclass card on an egg'); same(r.sub[4], 'FOR DRONES · EVOLVE FIRST', 'a drone card on an egg');
+        same(r.sub[0], null, 'a spine-legged card on a Quillstone'); same(r.sub[1], 'FOR DRONES', 'a drone card on a Quillstone'); same(r.sub[2], null, 'a drone card on a Thermite Burrower'); same(r.sub[3], 'FOR SPINE-LEGGED · EVOLVE FIRST', 'a subclass card on an egg'); same(r.sub[4], 'FOR DRONES · EVOLVE FIRST', 'a drone card on an egg');
         same(r.uni.join(), 'FOR THE PLAYER,FOR THE PLAYER,FOR THE PLAYER', 'a Player card on a follower');
     });
     await check('a card is worn from the hand only; the same card cannot be on both of one follower\'s slots; any number of followers can wear the same card (it is a type, never used up)', () => {
@@ -392,7 +392,7 @@ function measure(w, h, query, seed) {
     });
     await check('EVOLVING keeps the cards (the element and the role are the form\'s own); a subclass card, which an egg could not wear, is worn once it has evolved', () => {
         const r = J(`(function(){ const f = __wear(__fresh(1)[0]); delete f.evolved; __hand(['test_fire', 'test_brawler', 'test_crustacean']); const egg = equipWhyNot(f, 'test_crustacean', 0); __form(f, 'quillstone'); const fit = equipWhyNot(f, 'test_crustacean', 0); equipTick(true); return { egg, fit, kept: equipSlots(f).join('|'), put: equipPut(f, 0, 'test_crustacean'), now: equipSlots(f).join('|') }; })()`);
-        same(r.egg, 'FOR CRUSTACEANS · EVOLVE FIRST', 'an egg'); same(r.fit, null, 'evolved'); same(r.kept, 'test_fire|test_brawler', 'evolving took them off'); same(r.put, true, 'put'); same(r.now, 'test_crustacean|test_brawler', 'now');
+        same(r.egg, 'FOR SPINE-LEGGED · EVOLVE FIRST', 'an egg'); same(r.fit, null, 'evolved'); same(r.kept, 'test_fire|test_brawler', 'evolving took them off'); same(r.put, true, 'put'); same(r.now, 'test_crustacean|test_brawler', 'now');
     });
 
     group('6. THE SAVE (additive: FS.version stays 1, an old save still loads)');
@@ -503,8 +503,8 @@ function measure(w, h, query, seed) {
             });
             await check('a slot lists only the cards it can take (since build 2026-11-07pp, the owner: "don\'t display cards that aren\'t available to the follower"), each with its short text on the card; a pick fills the slot and closes the picker; the other slot does not show the card worn on this one; EMPTY takes it off', () => {
                 const en = l => l.filter(x => !x[1]).map(x => x[0]).sort().join('|'), has = (l, n) => l.some(x => x[0] === n);
-                const FITS = 'BARNACLE BRACER|CHITIN SCALE|CINDERBRAND|EMBER PLATING|FAULTLINE TALON|FURNACE HEART|IMPACT TEST|PINCER CLAMP|PRESSURE SPUR|RUPTURE FANG|STRESS TESTED|TEST · BRAWLER|TEST · CRUSTACEAN|TEST · FIRE|TIDE SHELL';
-                same(en(T.ro.opts1), FITS, 'what a fire brawler Quillstone can wear (the two Brawler Crystalline cards, the three fire cards of Pack 1, Series 2\'s four crustacean cards and its three Brawler opportunity cards; not a Player card)');
+                const FITS = 'BARNACLE BRACER|CHITIN SCALE|CINDERBRAND|EMBER PLATING|FAULTLINE TALON|FURNACE HEART|IMPACT TEST|PINCER CLAMP|PRESSURE SPUR|RUPTURE FANG|STRESS TESTED|TEST · BRAWLER|TEST · FIRE|TEST · SPINE-LEGGED|TIDE SHELL';
+                same(en(T.ro.opts1), FITS, 'what a fire brawler Quillstone can wear (the two Brawler Crystalline cards, the three fire cards of Pack 1, Series 2\'s four spine-legged cards and its three Brawler opportunity cards; not a Player card)');
                 same(T.ro.opts1.length, 16, 'the list: EMPTY and the fifteen that fit'); same(T.ro.opts1[0][0] + ':' + T.ro.opts1[0][1], 'EMPTY:true', 'EMPTY first, off while the slot is empty');
                 for (const n of ['FROST LINING', 'NACRE PEARL', 'GEL MEMBRANE', 'KINDLING BAND', 'TEST · PLAYER A', 'POWER SURGE', 'CORE REINFORCEMENT', 'TEST · ICE', 'TEST · MAGE', 'TEST · TECHNICIAN', 'TEST · DRONE']) same(has(T.ro.opts1, n), false, n + ' (it does not fit) is shown');
                 for (const o of T.ro.opts1.slice(1)) same(o[5], o[6], o[0] + '\'s card does not show its short text');
@@ -535,7 +535,7 @@ function measure(w, h, query, seed) {
     }
     // THE RAIL'S ORDER, worked out here from the registry by the rule js/cardsui.js documents (equipCollectionOrder), not read from the page: BY RARITY the rarest first, then the group (the elements fire to core, the classes
     // Brawler, Mage (its auras after its other cards, by their element), Technician, the subclasses in their order), then the name; BY ELEMENT the group first, then the rarity (lowest first), then the name
-    const RAR = ['unrefined', 'refined', 'precision', 'prototype', 'lustrous', 'crystalline'], ELS = ['fire', 'toxic', 'electric', 'ice', 'flux', 'core'], ROLES = ['brawler', 'sniper', 'camper'], SUBS = ['crustacean', 'mollusk', 'elemental', 'drone', 'jelly'];
+    const RAR = ['unrefined', 'refined', 'precision', 'prototype', 'lustrous', 'crystalline'], ELS = ['fire', 'toxic', 'electric', 'ice', 'flux', 'core'], ROLES = ['brawler', 'sniper', 'camper'], SUBS = ['spinelegged', 'mollusk', 'elemental', 'drone', 'jelly'];
     const grp = c => c.kind === 'element' ? ELS.indexOf(c.match) : c.kind === 'class' ? 10 + ROLES.indexOf(c.match) + (c.aura ? (1 + ELS.indexOf(c.aura)) / 10 : 0) : c.kind === 'subclass' ? 20 + SUBS.indexOf(c.match) : c.kind === 'form' ? 30 : 40;
     const railOrder = (cards, by) => cards.slice().sort((a, b) => by === 'element' ? (grp(a) - grp(b) || RAR.indexOf(a.rarity) - RAR.indexOf(b.rarity) || a.name.localeCompare(b.name)) : (RAR.indexOf(b.rarity) - RAR.indexOf(a.rarity) || grp(a) - grp(b) || a.name.localeCompare(b.name)));
     const REAL = Q.J('Object.values(EQUIP_CARDS).map(function(c){ return { name: c.name, kind: c.kind, match: c.match, rarity: c.rarity, aura: c.aura ? c.aura.el : null }; })'), BY_RARITY = railOrder(REAL, 'rarity'), BY_ELEMENT = railOrder(REAL, 'element');
@@ -554,7 +554,7 @@ function measure(w, h, query, seed) {
         same(JSON.stringify(N.minis.map(m => m[0])), JSON.stringify(N.real.names), 'the rail\'s mini cards are not the stage\'s cards in the same order'); same(N.minis.map(m => m[2]).join(), N.real.lit.join(), 'a mini card\'s rarity chip'); same(N.minis.every(m => m[1]), true, 'a mini card not locked');
         ok(/HAND 0 \/ 3 · 0 OF 91 UNLOCKED$/.test(N.real.summary), 'the summary: ' + N.real.summary);
         same(N.plain.dds.join('|'), 'PLAY STYLE|ATTACK|CARD 1|CARD 2|SPECIAL ATTACK', 'the roster\'s settings (its form has a card attack: its SPECIAL ATTACK menu too; and an alternate: ATTACK, build 2026-11-07ff; no ATTACK STYLE for an evolved one, gg)'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
-        same(N.plain.sub.join(), 'SUBCLASS,CRUSTACEAN', 'the subclass row'); same(N.plain.chip, 'CRUSTACEAN', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
+        same(N.plain.sub.join(), 'SUBCLASS,SPINE-LEGGED', 'the subclass row'); same(N.plain.chip, 'SPINE-LEGGED', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
         same(N.plain.you.you, true, 'YOU did not come into view'); same(JSON.stringify(N.plain.you.dds), JSON.stringify([['YOUR SLOT 1', 'NO CARDS IN YOUR HAND', true], ['YOUR SLOT 2', 'NO CARDS IN YOUR HAND', true]]), 'the player\'s slots with no card to put in them');
         same(N.plain.you.slots.join('|'), 'SLOT 1EMPTY|SLOT 2EMPTY', 'the player\'s card'); ok(N.plain.you.note.some(t => /TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN/.test(t)), 'what the column says: ' + N.plain.you.note);
         ok(N.emptySheet.cls.indexOf('open') >= 0, 'the sheet did not open'); same(N.emptySheet.slabs, 0, 'a card on the sheet'); same(N.emptySheet.side, 0, 'something beside the stage (the notch, the slots)');

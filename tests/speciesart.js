@@ -35,11 +35,11 @@ function findChromium() {
     return null;
 }
 
-const SPECIES = ['crustacean', 'mollusk', 'elemental', 'drone', 'jelly'];
-const COLOURS = { crustacean: '#e7ad78', mollusk: '#e3d6ff', elemental: '#f2f7ff', drone: '#b6c4d6', jelly: '#e39cff' };   // CHITIN AMBER, NACRE, PRISM WHITE, GUNMETAL, GEL ORCHID (docs/UI-STYLE.md)
+const SPECIES = ['spinelegged', 'mollusk', 'elemental', 'drone', 'jelly'];   // (spinelegged: the Crustacean, renamed in build 2026-11-08h)
+const COLOURS = { spinelegged: '#e7ad78', mollusk: '#e3d6ff', elemental: '#f2f7ff', drone: '#b6c4d6', jelly: '#e39cff' };   // CHITIN AMBER, NACRE, PRISM WHITE, GUNMETAL, GEL ORCHID (docs/UI-STYLE.md)
 const RACES = ['ant', 'beetle', 'scorpion', 'spider', 'mantis', 'moth'];
 const SHORT = { slashing: 'SLASH', piercing: 'PIERCE', projectile: 'SHOT', crushing: 'CRUSH', earthquake: 'QUAKE', elemental: 'ELEM' };   // approved: "Short words"
-const CARDS = { crustacean: 'tide_shell', mollusk: 'nacre_pearl', elemental: 'focusing_prism', drone: 'overclock_chip', jelly: 'gel_membrane' };   // the cards the mockups showed
+const CARDS = { spinelegged: 'tide_shell', mollusk: 'nacre_pearl', elemental: 'focusing_prism', drone: 'overclock_chip', jelly: 'gel_membrane' };   // the cards the mockups showed
 const FORMS = [['quillstone', 'fire', 'brawler'], ['voidstar', 'flux', 'sniper'], ['maw', 'ice', 'brawler'], ['rimestar', 'ice', 'sniper'], ['jellyram', 'core', 'brawler']];   // a form of each species
 const rgb = h => 'rgb(' + [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)).join(', ') + ')';
 
@@ -108,7 +108,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.foes.push(await foeAt('ant', 'boss', 'THE TOXIC QUEEN'));
     // THE PICTURES: each species card face, a backdrop of each species, each emblem; the rules on the page
     var urls = [];
-    ['crustacean', 'mollusk', 'elemental', 'drone', 'jelly'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
+    ['spinelegged', 'mollusk', 'elemental', 'drone', 'jelly'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
     FORMS.forEach(function(m){ var sp = EQUIP_FORM_SUBCLASS[m[0]], c = cardArtClassOfRole(m[2]); urls.push(['f:' + m[1] + ':' + c + ':' + sp, cardArtUrl('f:' + m[1] + ':' + c + ':' + sp, function(){ return cardArtMixSvg(m[1], c, sp); })]); });
     Object.keys(CARD_ART_EMBLEMS).forEach(function(k){ urls.push(['e:' + k, cardArtUrl('e:' + k, function(){ return cardArtEmblemSvg(k); })]); });
     out.images = []; for (var u = 0; u < urls.length; u++) out.images.push([urls[u][0], await load(urls[u][1])]);
@@ -136,6 +136,8 @@ function measure(w, h) {
     // the approved drawings, beside the game's own, to compare (the mockups' file: design/ui-mocks/part2-looks-art.js)
     try { vm.runInContext(rd('design/ui-mocks/part2-looks-art.js'), context, { filename: 'part2-looks-art.js' }); } catch (e) { console.log('  (the approved drawings did not load: ' + e.message + ')'); }
     run('globalThis.__P2 = typeof PART2 !== "undefined" ? PART2 : (typeof window !== "undefined" && window.PART2) || null;');
+    // (the approved drawings name the Spine-legged's look by its old name, crustacean: build 2026-11-08h renamed the subclass in the game, not its drawings)
+    run('if (globalThis.__P2) { const P = __P2, K = { spinelegged: "crustacean" }; for (const g of ["TEX", "THEMES", "ICONS"]) for (const k in K) if (P[g] && P[g][K[k]] && !P[g][k]) P[g][k] = P[g][K[k]]; const b3 = P.backdrop3; P.backdrop3 = (el, cls, sp, mode) => b3(el, cls, K[sp] || sp, mode); }');
 
     group('THE TEXTURES: one for each species, as approved');
     await check('the five species of the game (js/cards.js EQUIP_SUBCLASSES) each have a colour and a texture: CHITIN AMBER, NACRE, PRISM WHITE, GUNMETAL, GEL ORCHID (docs/UI-STYLE.md)', () => {
@@ -149,7 +151,7 @@ function measure(w, h) {
     });
     await check('each draws what was approved: the crust\'s knobs, middle ones and granules; the nacre\'s eight bands and its growth lines; the storm\'s puffs, bases, dark masses and wisps; the drone\'s panels, rivets and vents; the jelly\'s cells and nuclei', () => {
         const t = sp => J(`cardArtTexture(${JSON.stringify(sp)})`), n = (s, re) => (s.match(re) || []).length;
-        const cu = t('crustacean'); ok(n(cu, /<circle/g) >= 500 && /url\(#cuK\)/.test(cu), 'the crust: ' + n(cu, /<circle/g) + ' circles');
+        const cu = t('spinelegged'); ok(n(cu, /<circle/g) >= 500 && /url\(#cuK\)/.test(cu), 'the crust: ' + n(cu, /<circle/g) + ' circles');
         const mo = t('mollusk'); same(n(mo, /stroke="url\(#mo[ABC]\)"/g), 8, 'the nacre\'s bands'); ok(n(mo, /<path/g) >= 50, 'the nacre\'s growth lines');
         const el = t('elemental'); same(n(el, /<path id="clS\d+"/g), 9, 'the storm\'s masses'); same(n(el, /<path id="clF\d+"/g), 7, 'the folds inside them'); same(n(el, /<clipPath id="clB\d+"/g), 9, 'their flat bases');
         ok(n(el, / 0 1 0 /g) / 2 >= 500, 'the billows: ' + n(el, / 0 1 0 /g) / 2); same(n(el, /fill="#ffffff"/g), 14, 'the light rims along the near masses\' and folds\' tops'); same(n(el, /stroke-opacity="\.1"/g), 2, 'the rain shafts');
@@ -198,7 +200,7 @@ function measure(w, h) {
             const x = J(`cardArtMixSvg(${JSON.stringify(el)}, ${JSON.stringify(cls)}, ${JSON.stringify(sp)})`), two = J(`cardArtMixSvg(${JSON.stringify(el)}, ${JSON.stringify(cls)})`), col = sp === 'elemental' ? J(`cardArtElementColour(${JSON.stringify(el)})`) : COLOURS[sp];
             ok(x.indexOf(two.slice(0, -6)) === 0, el + ' ' + cls + ' ' + sp + ': the element and class layers changed');
             ok(x.indexOf(' color="' + col + '" opacity="0.38">') > 0, el + ' ' + cls + ' ' + sp + ': not in ' + col + ' at 38%');
-            if (sp === 'crustacean') ok(/viewBox="0 60 600 350"[^>]*>/.test(x) && x.indexOf('<use href="#cuAll" xlink:href="#cuAll" x="300"/>') > 0, 'the crust is not at half its size');
+            if (sp === 'spinelegged') ok(/viewBox="0 60 600 350"[^>]*>/.test(x) && x.indexOf('<use href="#cuAll" xlink:href="#cuAll" x="300"/>') > 0, 'the crust is not at half its size');
             else ok(/viewBox="0 60 300 175" preserveAspectRatio="xMidYMid slice" color=/.test(x) && !/<use href="#(moAll|clAll|drAll|jeAll)"/.test(x), sp + ' is not laid once at its own size');
         }
     });
@@ -225,7 +227,7 @@ function measure(w, h) {
         same(J('cardArtEmblemSvg("nothing") + cardArtEmblemPath("nothing")'), '', 'an emblem that is not');
     });
     await check('on the page an emblem is a class (cae-<key>) that sets its picture (--emb) and its own colour (--emc); the page\'s CSS lays the picture as a mask before the text, in the text\'s colour, and sizes it for the roster\'s tag (in the species\' colour) and the enemy card\'s name', () => {
-        same(J('[cardArtEmblemClass("crustacean"), cardArtEmblemClass("ant"), cardArtEmblemClass("fire"), cardArtEmblemClass("nothing")].join()'), 'cae-crustacean,cae-ant,cae-fire,', 'the classes');
+        same(J('[cardArtEmblemClass("spinelegged"), cardArtEmblemClass("ant"), cardArtEmblemClass("fire"), cardArtEmblemClass("nothing")].join()'), 'cae-spinelegged,cae-ant,cae-fire,', 'the classes');
         same(J('[cardArtRaceEmblemClass({ speciesName: "moth" }), cardArtRaceEmblemClass({ speciesName: "crustacean" }), cardArtRaceEmblemClass({}), cardArtRaceEmblemClass(null)].join()'), 'cae-moth,,,', 'a creature\'s');
         const html = rd('game.html');
         ok(/:is\(\[class\^="cae-"\], \[class\*=" cae-"\]\)::before \{[^}]*background-color: currentColor;[^}]*-webkit-mask: var\(--emb\) center \/ contain no-repeat; mask: var\(--emb\) center \/ contain no-repeat;/.test(html), 'the emblem rule');
@@ -271,7 +273,7 @@ function measure(w, h) {
             same(T.cards.map(c => c.sp).join(), SPECIES.join(), 'the species cards shown');
             for (const c of T.cards) {
                 same(c.tex, 'cd-tex cat-c-' + c.sp, c.id + '\'s texture'); ok(c.texBg, c.id + '\'s texture is not drawn'); same(c.col, COLOURS[c.sp], c.id + '\'s colour'); same(c.chip, COLOURS[c.sp], c.id + '\'s chip'); same(c.gem, 'cd-gem cag-' + COLOURS[c.sp].slice(1), c.id + '\'s crystal');
-                same(c.kind, 'cd-kind cae-' + c.sp, c.id + '\'s kind line'); same(c.gk, 'cd-gk cae-' + c.sp, c.id + '\'s shadow'); same(c.iv, 'cd-iv cae-' + c.sp, c.id + '\'s details'); same(c.kindText, 'SUBCLASS · ' + c.sp.toUpperCase(), c.id + '\'s kind (the emblem adds no words)');
+                same(c.kind, 'cd-kind cae-' + c.sp, c.id + '\'s kind line'); same(c.gk, 'cd-gk cae-' + c.sp, c.id + '\'s shadow'); same(c.iv, 'cd-iv cae-' + c.sp, c.id + '\'s details'); same(c.kindText, 'SUBCLASS · ' + (c.sp === 'spinelegged' ? 'SPINE-LEGGED' : c.sp.toUpperCase()), c.id + '\'s kind (the emblem adds no words)');
                 for (const [where, e] of [['face', c.embKind], ['shadow', c.embGk], ['details', c.embIv]]) { ok(e && e.mask && e.w > 6 && e.h > 6, c.id + ': no emblem on its ' + where + ' ' + JSON.stringify(e)); same(e.bg, e.col, c.id + ': the emblem on its ' + where + ' is not in its text\'s colour'); }
                 same(c.embKind.col, rgb(COLOURS[c.sp]), c.id + '\'s kind line is not in its colour'); same(c.mini, 'cd-mtex cat-c-' + c.sp, c.id + '\'s mini card');
             }
@@ -284,7 +286,7 @@ function measure(w, h) {
                 same(T.car, true, 'the roster is not the carousel'); same(T.roster.length, 5, 'the followers in view');
                 for (const r of T.roster) {
                     const sp = J(`EQUIP_FORM_SUBCLASS[${JSON.stringify(r.ev)}]`), cl = J(`cardArtClassOfRole(${JSON.stringify(r.role)})`);
-                    same(r.tag, 'cf-sc cae-' + sp, r.ev + '\'s tag'); same(r.text, sp.toUpperCase(), r.ev + '\'s tag\'s word'); same(r.shown, true, r.ev + '\'s tag is hidden');
+                    same(r.tag, 'cf-sc cae-' + sp, r.ev + '\'s tag'); same(r.text, sp === 'spinelegged' ? 'SPINE-LEGGED' : sp.toUpperCase(), r.ev + '\'s tag\'s word'); same(r.shown, true, r.ev + '\'s tag is hidden');
                     ok(r.emb && r.emb.mask && Math.round(r.emb.w) === 14 && Math.round(r.emb.h) === 14, r.ev + '\'s emblem: ' + JSON.stringify(r.emb)); same(r.emb.bg, rgb(COLOURS[sp]), r.ev + '\'s emblem is not in its species\' colour');
                     ok((' ' + r.card + ' ').indexOf(' cat-f-' + r.el + '-' + cl + '-' + sp + ' ') >= 0 && r.bg, r.ev + '\'s card in view: ' + r.card);
                 }

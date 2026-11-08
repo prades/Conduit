@@ -43,7 +43,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     });
     check('the subclass chart: two weaknesses and two resistances each, as drafted and approved', () => {
         const S = J('DMG_SUBCLASS');
-        sameJSON(S.crustacean, { weak: ['crushing', 'earthquake'], resist: ['slashing', 'piercing'] }, 'crustacean');
+        sameJSON(S.spinelegged, { weak: ['crushing', 'earthquake'], resist: ['slashing', 'piercing'] }, 'spine-legged (the Crustacean, renamed)');
         sameJSON(S.mollusk, { weak: ['slashing', 'piercing'], resist: ['crushing', 'earthquake'] }, 'mollusk');
         sameJSON(S.elemental, { weak: ['earthquake', 'projectile'], resist: ['slashing', 'elemental'] }, 'elemental');
         sameJSON(S.drone, { weak: ['crushing', 'elemental'], resist: ['piercing', 'projectile'] }, 'drone');
@@ -71,7 +71,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
         ok(J(`dmgFormType({ evolved: 'bloom', role: 'brawler' }, 'main')`) === 'piercing', 'bloom main');
         ok(J(`dmgFormType({ evolved: 'bloom', role: 'brawler' }, 'alt')`) === 'elemental', 'PETAL BLAZE');
         ok(J(`dmgFormType({ evolved: 'reaver', role: 'sniper' }, 'main')`) === 'elemental', 'reaver');
-        ok(J(`dmgSubclass({ evolved: 'caldera' })`) === 'crustacean', 'caldera takes SEEPER\'s subclass');
+        ok(J(`dmgSubclass({ evolved: 'caldera' })`) === 'spinelegged', 'caldera takes SEEPER\'s subclass');
         ok(J(`dmgLean({ evolved: 'halo' })`) === 2, 'CINDER HALO takes EMBER HOOD\'s lean');
     });
 
@@ -135,7 +135,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
             return { got: dmgApply(__tgt({ speciesName: 'spider' }), 10, s, 'electric', DMG_HIT_SHOT), want: k * 0.25 * 10 + k * 0.75 * 15 * 0.7 }; })()`);
         near(r.got, r.want, 'a spider: only the Elemental part is resisted', 1e-9);
     });
-    check('a follower is hit by its subclass\'s row (QUILLSTONE, a crustacean, resists Slashing); an egg by none', () => {
+    check('a follower is hit by its subclass\'s row (QUILLSTONE, spine-legged, resists Slashing); an egg by none', () => {
         const r = J(`(function(){ const ant = { speciesName: 'ant' }; return { quill: dmgApply({ isFollower: true, evolved: 'quillstone', role: 'brawler' }, 10, ant, null, DMG_HIT_ENEMY.slashing), egg: dmgApply({ isFollower: true, role: 'brawler' }, 10, ant, null, DMG_HIT_ENEMY.slashing) }; })()`);
         near(r.quill, 7, 'resisted', 1e-9); near(r.egg, 10, 'an egg has no row', 1e-9);
     });
@@ -163,9 +163,9 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     });
 
     group('THE STATS (docs/COMBAT.md §7.6, §7.7)');
-    check('each form\'s lean, by the rule (Elemental species +1, shelled −1, an Elemental main attack +1 more)', () => {
+    check('each form\'s lean, by the rule (Elemental species +1, spine-legged and mollusk −1, an Elemental main attack +1 more)', () => {
         const L = J(`(function(){ const o = {}; for (const k in DMG_FORM) o[k] = dmgLean({ evolved: k }); return o; })()`);
-        sameJSON(L, { quillstone: -1, maw: 1, staticorb: 0, electroskink: 0, jellyram: 0, seeper: -1, mimic: 0, thunderhead: 2, voidstar: 0, embercowl: 2, rimestar: 0, hornshell: -1, rotshard: 1, hammerslug: -1, gooproxy: 0, thermite: 0, blightspider: 0, hovershell: 0, igloo: 1 }, 'the leans');
+        sameJSON(L, { quillstone: -1, maw: 1, staticorb: 0, electroskink: -1, jellyram: 0, seeper: -1, mimic: 0, thunderhead: 2, voidstar: 0, embercowl: 2, rimestar: 0, hornshell: -1, rotshard: 1, hammerslug: -1, gooproxy: 0, thermite: 0, blightspider: -1, hovershell: 0, igloo: 1 }, 'the leans');
         ok(J(`dmgLean({})`) === 0, 'an egg has none');
     });
     check('evolving raises SP.ATK by EVOLVE_MULT too, and the lean tilts the evolved stats (THUNDERHEAD toward SP.ATK, QUILLSTONE toward ATK)', () => {

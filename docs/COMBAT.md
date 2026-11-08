@@ -263,7 +263,7 @@ The owner wanted *"each creature"* to differ in how elemental it is, asked for a
 - **The steps:** each step moves 10% between ATK and SP.ATK. +2 is ATK ×0.8 and SP.ATK ×1.2; +1 is ×0.9 and ×1.1; −1 is ×1.1 and ×0.9. No form is at −2.
 - **The rule:** it uses the owner's species chart (js/cards.js `EQUIP_FORM_SUBCLASS`) and §7.4.
   - Elemental species: +1.
-  - Shelled species (crustacean, mollusk): −1.
+  - Spine-legged and Mollusk: −1 (the shelled lean; Spine-legged is the Crustacean, renamed in build `2026-11-08h`, with the Electro Skink and the Blight Spider in it).
   - Drones and jellies: 0.
   - A main attack typed Elemental: +1 more.
 - **Nothing new is saved:** the lean is applied where a follower's stats are worked out, as evolving's ×1.25 is.
@@ -282,17 +282,18 @@ The elemental share of each form's main attack (the range runs from a wild to an
 | IGLOO SKATER | Technician · ice | Elemental | +1 | 49% |
 | GOO PROXY | Technician · flux | Jelly | 0 | 44% |
 | THERMITE BURROWER | Technician · fire | Drone | 0 | 44% |
-| BLIGHT SPIDER | Technician · toxic | Drone | 0 | 44% |
+| BLIGHT SPIDER | Technician · toxic | Spine-legged (a Drone until build `2026-11-08h`) | −1 | 40% |
 | HOVER SHELL | Technician · electric | Drone | 0 | 44% |
 | HAMMER SLUG | Technician · core | Mollusk | −1 | 40% |
 | FROST MAW | Brawler · ice | Elemental | +1 | 29–38% |
 | STATIC ORB | Brawler · electric | Drone | 0 | 25–33% |
 | JELLY RAM | Brawler · core | Jelly | 0 | 25–33% |
 | RIFT MIMIC | Brawler · flux | Jelly | 0 | 25–33% |
-| QUILLSTONE | Brawler · fire | Crustacean | −1 | 21–29% |
-| SEEPER | Brawler · toxic | Crustacean | −1 | 21–29% |
+| QUILLSTONE | Brawler · fire | Spine-legged | −1 | 21–29% |
+| SEEPER | Brawler · toxic | Spine-legged | −1 | 21–29% |
+| ELECTRO SKINK | Brawler · electric | Spine-legged (none until build `2026-11-08h`) | −1 | 21–29% (by the rule, as the other −1 Brawlers; not measured) |
 | Lotus lantern (designed) | Mage · bloom | Elemental | +2 | 82–87% |
-| Coral crab (designed) | Technician · bloom | Crustacean | −1 | 40% |
+| Coral crab (designed) | Technician · bloom | Spine-legged | −1 | 40% |
 | SUNDEW (designed) | Brawler · bloom | Mollusk | −1 | 21–29% |
 
 Alternatives the owner passed over: species alone, without the +1 for an Elemental main attack (THUNDERHEAD and EMBER HOOD at +1, VOIDSTAR at −1); and steps of 20%.
@@ -320,7 +321,7 @@ The owner asked for a draft of the enemy side and approved it as drafted; the re
 
 | Subclass | Weak to | Resists |
 |---|---|---|
-| Crustacean | Crushing, Earthquake | Slashing, Piercing |
+| Spine-legged (the Crustacean, renamed in build `2026-11-08h`) | Crushing, Earthquake | Slashing, Piercing |
 | Mollusk | Slashing, Piercing | Crushing, Earthquake |
 | Elemental | Earthquake, Projectile | Slashing, Elemental |
 | Drone | Crushing, Elemental | Piercing, Projectile |

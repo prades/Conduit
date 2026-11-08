@@ -23,7 +23,7 @@ The owner's word (2026-11-01): "Series 2. Pick a price and set the odds for the 
 The list came from the owner's answers of 2026-11-01:
 
 - **40 cards**: the eight identities × five rarities.
-  - Identities: the five species (Crustacean, Mollusk, Elemental, Drone, Jelly) and the three classes (Brawler, Mage, Technician).
+  - Identities: the five species (Spine-legged, which was Crustacean until build `2026-11-08h`, Mollusk, Elemental, Drone, Jelly) and the three classes (Brawler, Mage, Technician).
   - Rarities: Unrefined, Refined, Precision, Prototype and Lustrous.
   - The six Crystalline class cards stay as they are.
 - **"Stats low, abilities high"**: the three lower rarities give stat boosts or a Pack 1 style on-hit status; the two upper ones give something new.
@@ -50,7 +50,7 @@ Each card is an **item** with its own 3D look (the "3D look" column). The looks 
 
 ## Who wears what
 
-- A **species card** is worn by a follower of that species. Every evolved form has its species (js/cards.js `EQUIP_FORM_SUBCLASS`): Quillstone and Seeper are Crustaceans, for example, and Jelly Ram, Rift Mimic and Goo Proxy are Jellies.
+- A **species card** is worn by a follower of that species. Every evolved form has its species (js/cards.js `EQUIP_FORM_SUBCLASS`): Quillstone, Seeper, the Electro Skink and the Blight Spider are Spine-legged (the Crustacean, renamed in build `2026-11-08h`: the owner, "Also, I want to rename the crustaceans to spine-legged to include electroskink and the toxic spider"), for example, and Jelly Ram, Rift Mimic and Goo Proxy are Jellies.
 - A **class card** is worn by a follower of that class.
 - An egg has no species until it evolves, so it can wear class cards only. A species card says why it does not fit ("FOR JELLIES · EVOLVE FIRST").
 
@@ -70,7 +70,7 @@ The on-hit statuses are Pack 1's existing six: burn, poison (the target hits wea
 
 The Effect column says what the built card does; a Lustrous row is still a proposal.
 
-### Crustacean: the shell (defense, health)
+### Spine-legged (it was Crustacean): the shell (defense, health)
 
 | Rarity | Item | Effect | 3D look |
 |---|---|---|---|

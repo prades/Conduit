@@ -2365,3 +2365,25 @@ The catwalks alone (the owner's answer earlier the same day); marked climbing si
 
 ### Supersedes / superseded by
 Supersedes the climbing's reach in "The coral crab's look (No. 914); Crustacean; Crushing; REEF climbs to the catwalks" (2026-11-08): the catwalks alone.
+
+## DECISION: Crustacean renamed Spine-legged; the Electro Skink and the Blight Spider join it
+- Date and build: 2026-11-08, build `2026-11-08h`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Also, I want to rename the crustaceans to spine-legged to include electroskink and the toxic spider".
+- Context: the five subclasses came from the owner's roster chart (2026-10-30): Crustacean (Quillstone, Seeper), Mollusk, Elemental, Drone (it held the Blight Spider), Jelly. The Electro Skink, built in `2026-11-08a`, had none (an open question).
+
+### Decision
+- The Crustacean subclass is named **Spine-legged** (id `spinelegged`, label SPINE-LEGGED). Quillstone and Seeper stay in it; the Electro Skink joins it, and the Blight Spider moves to it from Drone. The coral crab (BLOOM, designed) is in it too.
+- Its rules are the Crustacean's, unchanged: weak to Crushing and Earthquake, resists Slashing and Piercing; lean −1. Its four cards (CHITIN SCALE, BARNACLE BRACER, PINCER CLAMP, TIDE SHELL) keep their names, effects and ids (saves unchanged), and now fit the four. Its look (CHITIN AMBER, a crab shell's crust, a crab emblem) is unchanged.
+
+### What this changes in play
+- The Electro Skink: from no subclass to Spine-legged: now weak to Crushing and Earthquake and resisting Slashing and Piercing; lean 0 to −1 (its ATK up 10%, its SP.ATK down 10%); the Spine-legged cards fit it.
+- The Blight Spider: from Drone to Spine-legged: its weaknesses go from Crushing and Elemental to Crushing and Earthquake, its resistances from Piercing and Projectile to Slashing and Piercing; lean 0 to −1; the Drone cards no longer fit it (a Blight Spider wearing one has it taken off and back in the hand, as when any card stops fitting), and the Spine-legged ones do.
+
+### Status
+Implemented and tested in build `2026-11-08h` (tests: cards, damage, series2, series2abilities, speciesart, cardart, bible, classcards, packs). Not playtested.
+
+### Alternatives
+Keeping the name Crustacean; a new subclass beside it.
+
+### Supersedes / superseded by
+Supersedes the chart's Crustacean name and the Blight Spider's Drone tag (the owner's roster chart, 2026-10-30), and answers the Electro Skink's open subclass.
