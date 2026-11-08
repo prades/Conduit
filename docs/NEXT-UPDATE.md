@@ -158,7 +158,7 @@ Each build is its own commit with its own tests and a full green run before the 
 | Item | Waiting on |
 |---|---|
 | **Player cards** (21 roles) and their use of the player's slots; Side Quest's card stock | The 18 kits (a draft is being written for the owner's review), then BLOOM's three |
-| **BLOOM and the conversion apparatus** | Its forms' pictures and two names, its cards' designs, CONSUME's, SEEDFALL's and REEF's numbers, the climbing sites and new areas, its texture and icon (`CONVERSION.md` section 11) |
+| **BLOOM and the conversion apparatus** | Its forms' pictures and the lotus lantern's name, its cards' designs, CONSUME's, SEEDFALL's and REEF's numbers, the climbing sites and new areas, its texture and icon (`CONVERSION.md` section 11) |
 | **The subclass themes, textures and icons**; the element and race icons; the enemy card's weaknesses | Mockups for approval (`UI-STYLE.md`) |
 | **3D items** for the new cards and Series 2's | Each look approved, one at a time (`ART-PROCESS.md`) |
 | **Later quest lines** | Not designed |

@@ -208,7 +208,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 - **CORRODE SHOT** is the Rotshard's everyday shot (the design notes' primary): the Mage's shot, its own damage, and it eats the armour of what it hits, weaker round it. ROTTEN DECOY is its second attack.
 | SUNDEW (designed 2026-11-02) | Brawler · bloom | Slashing (barbed lip) | CONSUME: the digestion's type to set (`CONVERSION.md`) |
 | Lotus lantern (designed, name to come) | Mage · bloom | Elemental (seed-light) | SEEDFALL: Elemental |
-| Coral crab (designed, name to come) | Technician · bloom | Crushing (claws) | REEF: to set (`CONVERSION.md`) |
+| Coral crab (designed; its name for now) | Technician · bloom | Crushing (claws) | REEF: to set (`CONVERSION.md`) |
 
 - **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS move too, until it was taken out on 2026-11-07), the static field, the ice burst, the singularity, the smoke bomb. *(Since build `2026-11-07jj` no follower uses an element special: the owner, "each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability". The functions stay in js/elements.js, unused.)*
 - **An egg** (not yet evolved) hits with its scythe legs: Slashing.

@@ -1,6 +1,6 @@
 // ── THE CORAL CRAB, BLOOM's TECHNICIAN · drafts No. 912 and No. 913 (2026-11-08) ─────────────────────────────────────────────────
 // The approved concept (docs/CONVERSION.md §2): "a black crab carrying a living pink coral on its back"; a crustacean; its main attack crushing (its claws clamp); its
-// ability REEF (it fires little coral shards, and coral grows where they land). The owner's pencil page (2026-11-07, marked "CORAL CRAB"): a rounded, knobbly body, lumps
+// ability REEF (it fires little shards, and coral grew where they land; rock and crystal since 2026-11-08: the owner, "Make reef grow rock and crystal"). The owner's pencil page (2026-11-07, marked "CORAL CRAB"): a rounded, knobbly body, lumps
 // on its top and a small horn, standing on long pointed legs drawn as leaf-shaped spears. In SUNDEW's approved finish (No. 911): matte velvet black, veined in glowing pink.
 //   912  from the sketch: a round carapace topped with a mound of glowing coral bulbs and a coral spire (the horn), on six long spear-leaf legs; small claws in front.
 //   913  a lower, wider crab with big crushing claws, a tall branching coral on its back, its tips glowing; jointed, pointed legs.
@@ -136,7 +136,7 @@ const _ccB = Object.assign({}, _ccA, {
 });
 fx(913, "CORAL CRAB draft B: a lower, wider crab of the same velvet black veined in pink, big crushing claws in front, a tall branching coral on its back forking as it grows, its tips glowing; jointed, pointed legs.", () => _coralCrab(_ccB));
 
-// ── 914 · THE CORAL TICK ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+// ── 914 · THE CORAL CRAB (its name for now: the owner, "the name should be coral crab for now"), drawn as a rocky tick ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 // The owner on 912 and 913 (2026-11-08): "Look, it's not really a crab. It's more of a tick-looking thing, but it's rocky exterior and has those back legs like the
 // picture." So: a tick's plump body, wider at the back, low, its underside flatter; its exterior rocky, plates of dark stone fitted together, the seams between them
 // glowing BLOOM's pink; on its back (at first) the sketch's little coral spire and two nubs, now crystals (below); a small head at the front, its mouthparts clamping
@@ -373,4 +373,4 @@ const _ccT = {
     { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock, and among them crystal flowers scattered unevenly over it, big and small, each four to seven short square crystals fanned out round a round stone centre; a small six-sided head of the same stone, its edges softly rounded, hung low, two ears of its stone sticking up and back from its upper edges like small horns, flaring into the head, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
+fx(914, "CORAL CRAB (its name for now), redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock, and among them crystal flowers scattered unevenly over it, big and small, each four to seven short square crystals fanned out round a round stone centre; a small six-sided head of the same stone, its edges softly rounded, hung low, two ears of its stone sticking up and back from its upper edges like small horns, flaring into the head, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));

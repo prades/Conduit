@@ -654,7 +654,7 @@ When built:
 - the coral crab's everyday attack.
 
 ### Supersedes / superseded by
-None.
+Partly superseded by "The coral crab's REEF grows rock and crystal; its name for now" (2026-11-08): REEF grows rock and crystal, not coral.
 
 ## DECISION: Build A to main; the hit words beside the creature; BLINDING DUST keeps its ticks; the 21 card names
 
@@ -2309,3 +2309,21 @@ The snail (No. 907); the pitcher (Nos. 906, 908); the glossy (909) and velvet-on
 
 ### Supersedes / superseded by
 Supersedes, in `CONVERSION.md` §2, "Every 15 seconds, it swallows an enemy" and the first concept's body ("a black pitcher-shaped shell holding a pool of pink nectar") and its barbed lip.
+
+## DECISION: The coral crab's REEF grows rock and crystal; its name for now
+- Date and build: 2026-11-08, after build `2026-11-08g`, branch `claude/start-game-project-HSh7Z`. No game code changed.
+- The owner's words: "Make reef grow rock and crystal. And the name should be coral crab for now."
+- Context: the BLOOM Technician was conceived as a black crab carrying living coral (2026-11-02); its look has since been redrawn, in review, as a rocky tick with square pink crystals and crystal flowers on its back (No. 914, `design/evolutions/forms38.js`).
+
+### Decision
+- REEF fires little shards, and rock and crystal grow where they land, in place of coral. Its uses are unchanged: in a fight, an outcrop for 20 seconds that mends allies beside it, blocks enemies and can be stood on to cross a gap; outside a fight, rock and crystal the player climbs to new, higher areas.
+- The Technician's name is "coral crab" for now (it was a working name).
+
+### Status
+Approved (rule and name for now). Not implemented: BLOOM is not built. Its look (No. 914) is still in review; REEF's numbers, the climbing's sites and the new areas are still open (`CONVERSION.md` §11).
+
+### Alternatives
+REEF growing coral (the 2026-11-02 concept).
+
+### Supersedes / superseded by
+Supersedes REEF's coral in "BLOOM's creatures: SUNDEW, the lotus lantern, the coral crab; MEND's strength" (2026-11-02).

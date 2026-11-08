@@ -567,8 +567,8 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - "Greenshire" a slip.
   - **Open** (its section 11):
     - the apparatus's look;
-    - BLOOM's forms: pictures (SUNDEW's approved 2026-11-08: No. 911), two names, which comes first, an egg;
-    - CONSUME's, SEEDFALL's and REEF's numbers, and where the coral can be climbed;
+    - BLOOM's forms: pictures (SUNDEW's approved 2026-11-08: No. 911), the lotus lantern's name (the coral crab's is "coral crab" for now, 2026-11-08), which comes first, an egg;
+    - CONSUME's, SEEDFALL's and REEF's numbers, and where REEF's rock and crystal can be climbed;
     - BLOOM's cards' designs;
     - BLOOM's texture and icon.
 
@@ -576,7 +576,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - MEND heals 2% every hit;
     - SUNDEW, the Brawler, whose CONSUME swallows an enemy and takes 75% less damage while holding it. *(2026-11-08: its look approved, No. 911, a wilted black flower with fangs on root-tentacles; CONSUME is its Ultimate: `CONVERSION.md` §2.)*
     - the lotus lantern Mage, with SEEDFALL;
-    - the coral crab Technician, whose REEF grows coral the player can climb to new areas.
+    - the coral crab Technician, whose REEF grows rock and crystal (coral until 2026-11-08) the player can climb to new areas.
 
     These are drafts and mockups for your approval. Confirmed last: the other 50% is toxic or fire; Series 2's BLOOM cards wait for the apparatus; an evolved toxic follower waits for its class's BLOOM form.
 - **Side Quest's look, and the subclass art** (designed 2026-11-02; Side Quest's look built in `2026-11-02f`; the subclass art approved 2026-11-06 and built in `2026-11-06d`):
