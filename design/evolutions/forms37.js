@@ -7,10 +7,36 @@
 //   907  from the snail below it: a spiral shell on a frilled foot; a long S-curved neck to a four-petal flower; from the flower a long blade-leaf, its lower edge a
 //        sawtooth. Drawn with the shell's growth lines glowing nectar pink.
 // Drafts for the owner's choice (2026-11-08: "draft me some designs for the brawler next", "The bloom one."): not in the game. The owner chose 906: "The left one tilted
-// pitcher and feet like roots/tentacles". That is No. 908 (below 906); then, on its body, "a wilted flower that has teeth": No. 909, in review. 907 was passed over.
+// pitcher and feet like roots/tentacles". That is No. 908 (below 906); then, on its body, "a wilted flower that has teeth": No. 909; then, on its textures, Nos. 910 and 911 (two finishes), in review.
+// 907 was passed over.
 // Uses forms31.js (_c31, _prog31) and forms32.js (_taper32, _aim32). +z is the front; ph = 1.6 t runs once round the idle loop.
 const _sdS = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 const _sdSkin = new T.MeshStandardMaterial({ color: 0x040405, metalness: 0.25, roughness: 0.3, side: T.DoubleSide }); _sdSkin.envMapIntensity = 0.5;   // (wet black, as the Electro Skink's)
+const _sdMatte = new T.MeshStandardMaterial({ color: 0x030203, metalness: 0.05, roughness: 0.5, side: T.DoubleSide }); _sdMatte.envMapIntensity = 0.1;   // (910, 911: a matte, organic black with a plum tint, for the roots, stem, base and blade)
+const _sdRnd = s => () => (s = (s * 16807) % 2147483647) / 2147483647;   // (a seeded random: the textures come out the same every time)
+// a petal's texture (its base at the canvas's foot, its tip at its head): velvet plum-black, mottled, its veins fanning out from the base, its edges and its tip darker,
+// wilted. With glow: only the veins, in BLOOM's pink, as an emissive map (911)
+function _sdPetalTex(glow) {
+  const W = 128, H = 256, c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'), rnd = _sdRnd(glow ? 11 : 7);
+  g.fillStyle = glow ? '#000' : '#070406'; g.fillRect(0, 0, W, H);
+  if (!glow) for (let i = 0; i < 240; i++) { const x = rnd() * W, y = rnd() * H, r = 5 + rnd() * 16, gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, rnd() < 0.5 ? 'rgba(34,16,26,0.32)' : 'rgba(0,0,0,0.3)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); }
+  const n = 11; g.lineCap = 'round';
+  for (let k = 0; k < n; k++) {
+    const f = (k - (n - 1) / 2) / ((n - 1) / 2), wob = (rnd() - 0.5) * 12, mid = k === (n - 1) / 2;
+    if (glow) { g.strokeStyle = 'rgba(255,122,184,' + (mid ? 0.95 : 0.75) + ')'; g.shadowColor = '#ff7ab8'; g.shadowBlur = 5; } else g.strokeStyle = 'rgba(64,36,52,' + (mid ? 0.65 : 0.45) + ')';
+    g.beginPath(); g.moveTo(W / 2 + f * 5, H); g.quadraticCurveTo(W / 2 + f * W * 0.2 + wob, H * 0.48, W / 2 + f * W * 0.44, H * 0.03); g.lineWidth = mid ? 3.2 : 1.5; g.stroke();
+    for (let q = 0; q < 3; q++) { const t0 = 0.25 + q * 0.22 + rnd() * 0.06, yy = H * (1 - t0), xx = W / 2 + f * W * (0.05 + 0.4 * t0), dir = f >= 0 ? 1 : -1;   // (veinlets toward the edges)
+      g.beginPath(); g.moveTo(xx, yy); g.lineTo(xx + dir * (8 + rnd() * 8), yy - 10 - rnd() * 8); g.lineWidth = 0.9; g.stroke(); }
+  }
+  g.shadowBlur = 0;
+  if (!glow) {
+    const ge = g.createLinearGradient(0, 0, W, 0); ge.addColorStop(0, 'rgba(0,0,0,0.65)'); ge.addColorStop(0.16, 'rgba(0,0,0,0)'); ge.addColorStop(0.84, 'rgba(0,0,0,0)'); ge.addColorStop(1, 'rgba(0,0,0,0.65)');
+    g.fillStyle = ge; g.fillRect(0, 0, W, H);
+    const gt = g.createLinearGradient(0, 0, 0, H); gt.addColorStop(0, 'rgba(8,4,6,0.75)'); gt.addColorStop(0.3, 'rgba(8,4,6,0)'); g.fillStyle = gt; g.fillRect(0, 0, W, H);   // (the wilted tip darkest)
+  }
+  const t = new T.CanvasTexture(c); t.encoding = T.sRGBEncoding; t.anisotropy = 4; return t;
+}
 // BLOOM's pink from the colour the page is set to (EL.color), and the parts that glow with it
 function _sdMats() {
   const pink = _c31(EL.color).convertSRGBToLinear(), white = _c31(0xffffff);
@@ -32,7 +58,7 @@ function _sdFlower(m, r) {
 }
 // a flat leaf-blade along +z from its root at the origin, curving down like a scythe (bend): one edge (top: +y, else -y) sharp triangle teeth, the other smooth; a
 // glowing vein down its middle
-function _sdBlade(m, L, W, teeth, top, bend) {
+function _sdBlade(m, L, W, teeth, top, bend, skin) {
   const s = top ? 1 : -1, h = u => W / 2 * Math.pow(Math.sin(PI * Math.min(1, 0.1 + 0.9 * u)), 0.6), c = u => -(bend || 0) * u * u, P = [];
   for (let i = 0; i <= 20; i++) { const u = i / 20; P.push([u * L, c(u) - s * h(u) * 0.7]); }   // (the smooth edge, root to tip)
   for (let k = teeth; k >= 1; k--) { const u1 = k / teeth, um = (k - 0.5) / teeth;   // (the toothed edge, tip to root: a notch, then a sharp tooth)
@@ -41,7 +67,7 @@ function _sdBlade(m, L, W, teeth, top, bend) {
   const sh = new T.Shape(); P.forEach(([x, y], i) => i ? sh.lineTo(x, y) : sh.moveTo(x, y)); sh.closePath();
   const geo = new T.ExtrudeGeometry(sh, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 1, curveSegments: 4 });
   geo.translate(0, 0, -0.006); geo.rotateY(-PI / 2); geo.computeVertexNormals();
-  const bl = G(); bl.add(new T.Mesh(geo, _sdSkin));
+  const bl = G(); bl.add(new T.Mesh(geo, skin || _sdSkin));
   const vp = Array.from({ length: 12 }, (_, i) => { const u = 0.04 + 0.8 * i / 11; return V(0, c(u), u * L); });   // (the vein follows the curve)
   _taper32(bl, m.vein, 12, 6).set(vp, 0.007, 0.004, null, 1.7, 0.6);
   return bl;
@@ -61,18 +87,24 @@ function _sdBez(pts, p0, c1, c2, p3) {
 // as it strikes and close a little as it rears.
 function _sdWilted(pot, m, o) {
   const NU = 16, NV = 9, petals = [];
-  const petalM = new T.MeshStandardMaterial({ color: _sdSkin.color, vertexColors: true, metalness: 0.15, roughness: 0.5, emissive: m.pink, side: T.DoubleSide }); petalM.envMapIntensity = 0.26;   // (a soft, deep black: less shine than the wet roots)
-  petalM.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '').replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = gl_FrontFacing ? emissive * vColor : vec3(0.0);'); };   // (the inner faces glow, deepest brightest; the backs stay black)
-  const rec = new T.Mesh(new T.SphereGeometry(1, 24, 16), _sdSkin); rec.scale.set(o.recR, o.recR * 0.8, o.recR); rec.position.y = o.recR * 0.8; pot.add(rec);   // (the base the petals and the roots grow from)
+  const tex = o.tex ? _sdPetalTex(false) : null, veinTex = o.tex === 'glow' ? _sdPetalTex(true) : null;   // (910: velvet, veined; 911: its veins glowing)
+  const petalM = new T.MeshStandardMaterial(tex ? { color: 0xffffff, map: tex, vertexColors: true, metalness: 0.04, roughness: 0.62, emissive: m.pink, side: T.DoubleSide }
+    : { color: _sdSkin.color, vertexColors: true, metalness: 0.15, roughness: 0.5, emissive: m.pink, side: T.DoubleSide }); petalM.envMapIntensity = tex ? 0.08 : 0.26;
+  petalM.customProgramCacheKey = () => 'sdPetal' + (tex ? 'T' : '') + (veinTex ? 'G' : '');   // (its shader differs by version)   // (a soft, deep black: less shine than the wet roots)
+  petalM.onBeforeCompile = sh => { if (veinTex) { sh.uniforms.veinMap = { value: veinTex }; sh.fragmentShader = 'uniform sampler2D veinMap;\n' + sh.fragmentShader; }
+    sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '').replace('vec3 totalEmissiveRadiance = emissive;',
+      'vec3 totalEmissiveRadiance = (gl_FrontFacing ? emissive * vColor : vec3(0.0))' + (veinTex ? ' + sRGBToLinear(texture2D(veinMap, vUv)).rgb * 0.85' : '') + ';'); };   // (the inner faces glow, deepest brightest; the backs stay black)
+  const rec = new T.Mesh(new T.SphereGeometry(1, 24, 16), o.matte ? _sdMatte : _sdSkin); rec.scale.set(o.recR, o.recR * 0.8, o.recR); rec.position.y = o.recR * 0.8; pot.add(rec);   // (the base the petals and the roots grow from)
   for (let k = 0; k < o.petals; k++) {
     const a = (k + 0.5) / o.petals * TAU, R = V(Math.sin(a), 0, Math.cos(a)), Tn = V(Math.cos(a), 0, -Math.sin(a));
     const droop = 1 + 0.22 * Math.sin(k * 2.4 + 1), L = o.petalL * (1 + 0.08 * Math.sin(k * 1.7 + 0.4));   // (each wilts a little differently)
     const pos = new Float32Array(NU * NV * 3), col = new Float32Array(NU * NV * 3), idx = [];
     for (let i = 0; i < NU - 1; i++) for (let j = 0; j < NV - 1; j++) { const p0 = i * NV + j, p1 = p0 + 1, p2 = p0 + NV, p3 = p2 + 1; idx.push(p0, p2, p1, p1, p2, p3); }   // (front faces inward)
     for (let i = 0; i < NU; i++) { const gl = Math.max(0.015, Math.pow(Math.max(0, 1 - i / (NU - 1) / 0.6), 1.3)); for (let j = 0; j < NV; j++) { const q = (i * NV + j) * 3; col[q] = col[q + 1] = col[q + 2] = gl; } }   // (the glow only in the cup and the throat: the wilting outer petals stay black)
-    const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setAttribute('color', new T.BufferAttribute(col, 3)); geo.setIndex(idx);
+    const uv = new Float32Array(NU * NV * 2); for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) { const q = (i * NV + j) * 2; uv[q] = j / (NV - 1); uv[q + 1] = i / (NU - 1); }   // (across, along)
+    const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setAttribute('color', new T.BufferAttribute(col, 3)); geo.setAttribute('uv', new T.BufferAttribute(uv, 2)); geo.setIndex(idx);
     pot.add(new T.Mesh(geo, petalM));
-    petals.push({ R, Tn, droop, L, pos, geo, vein: _taper32(pot, m.vein, 12, 6), vpts: Array.from({ length: 12 }, () => V(0, 0, 0)), sp: Array.from({ length: NU }, () => [0, 0, 0, 0]) });
+    petals.push({ R, Tn, droop, L, pos, geo, seed: k * 1.9, vein: _taper32(pot, m.vein, 12, 6), vpts: Array.from({ length: 12 }, () => V(0, 0, 0)), sp: Array.from({ length: NU }, () => [0, 0, 0, 0]) });
   }
   // the fangs: a ring at the lip of the cup and a smaller one deep in the throat, pointing in, hooked down
   const toothM = new T.MeshStandardMaterial({ color: 0xeee0e4, emissive: m.pink, emissiveIntensity: 0.05, metalness: 0, roughness: 0.32 }); toothM.envMapIntensity = 0.6;
@@ -85,7 +117,7 @@ function _sdWilted(pot, m, o) {
   // a point on a petal: its spine at row i, across it by v (-1..1), its edges cupped inward
   const surf = (P, i, v, out) => { const [r, y, dr, dy] = P.sp[i], u = i / (NU - 1);
     const base = 0.45 + 0.55 * Math.sin(Math.min(1, u / 0.5) * PI / 2), tipR = u > 0.78 ? Math.sqrt(Math.max(0, 1 - Math.pow((u - 0.78) / 0.22, 2))) : 1;
-    const w = o.petalW * base * tipR + 0.003, cup = o.cup * (1 - 0.5 * u) * v * v;   // (the inner normal in its (out, up) plane is (-dy, dr))
+    const w = o.petalW * base * tipR + 0.003, cup = o.cup * (1 - 0.5 * u) * v * v + (o.pleat || 0) * Math.sin(v * PI * 2.5 + P.seed) * (0.3 + u);   // (cupped, and creased lengthwise (910); along the inner normal, (-dy, dr) in its (out, up) plane)
     return out.set(P.R.x * (r - dy * cup) + P.Tn.x * v * w, y + dr * cup, P.R.z * (r - dy * cup) + P.Tn.z * v * w); };
   const tmp = V(0, 0, 0);
   return { update(ph, rear, strike) {
@@ -125,14 +157,14 @@ function _sundewPitcher(o) {
   // THE FEET (906): six flat arms splayed on the floor, their tips lifting in a slow wave round it; or ROOTS (908): long, round, tapering tentacles out of its lower body,
   // arching down to the floor and out, wavering, their tips curling, some forking a rootlet (the owner on 906: "tilted pitcher and feet like roots/tentacles")
   const NF = 12, feet = (o.feet || []).map(([deg, len]) => ({ a: deg * PI / 180, len, tb: _taper32(b, _sdSkin, NF, 10), pts: Array.from({ length: NF }, () => V(0, 0, 0)) }));
-  const NR = 18, roots = (o.roots || []).map(([deg, len, ph0, twig], j) => { const a = deg * PI / 180, P0 = potPt(Math.sin(a) * o.rootR, o.rootY, Math.cos(a) * o.rootR);
-    return { len, ph0, P0, cs: j % 2 ? 1 : -1, tb: _taper32(b, _sdSkin, NR, 10), pts: Array.from({ length: NR }, () => V(0, 0, 0)),
-             twig: twig ? { side: twig, tb: _taper32(b, _sdSkin, 8, 8), pts: Array.from({ length: 8 }, () => V(0, 0, 0)) } : null }; });
+  const skin = o.matte ? _sdMatte : _sdSkin, NR = o.rootN || 18, roots = (o.roots || []).map(([deg, len, ph0, twig], j) => { const a = deg * PI / 180, P0 = potPt(Math.sin(a) * o.rootR, o.rootY, Math.cos(a) * o.rootR);
+    return { len, ph0, P0, cs: j % 2 ? 1 : -1, tb: _taper32(b, skin, NR, 10), pts: Array.from({ length: NR }, () => V(0, 0, 0)),
+             twig: twig ? { side: twig, tb: _taper32(b, skin, 8, 8), pts: Array.from({ length: 8 }, () => V(0, 0, 0)) } : null }; });
   // THE STALK, from the rim up to the flower (906); or (908) THE STEM, from the bottom of the barrel at its back, out behind it, up and over its top to the flower, like a
   // scorpion's tail (the owner on 908: "Put the stem on the bottom of the barrel"); THE FLOWER; THE BLADE-LEAF, from the flower, forward
-  const NS = o.stemVia ? 30 : 16, stalk = _taper32(b, _sdSkin, NS, 10), spts = Array.from({ length: NS }, () => V(0, 0, 0));
+  const NS = o.stemVia ? 30 : 16, stalk = _taper32(b, skin, NS, 10), spts = Array.from({ length: NS }, () => V(0, 0, 0));
   const flower = _sdFlower(m, o.flowerR); b.add(flower);
-  const bladeP = G(); b.add(bladeP); const blade = _sdBlade(m, o.bladeL, o.bladeW, o.teeth, true, o.bend); blade.position.z = 0.02; bladeP.add(blade);
+  const bladeP = G(); b.add(bladeP); const blade = _sdBlade(m, o.bladeL, o.bladeW, o.teeth, true, o.bend, skin); blade.position.z = 0.02; bladeP.add(blade);
   const S0 = o.stemVia ? potPt(0, o.stemBase[0], o.stemBase[1]) : potPt(0, o.stalkY0, o.stalkZ0), C1 = V(0, 0, 0), C2 = V(0, 0, 0), TOP = V(0, 0, 0);
   const via0 = (o.stemVia || []).map(p => V(p[0], p[1], p[2])), via = via0.map(p => p.clone());
   const stem = o.stemVia ? new T.CatmullRomCurve3([S0].concat(via, [TOP]), false, 'centripetal') : null;   // (it holds these points: moving them moves it)
@@ -143,7 +175,7 @@ function _sundewPitcher(o) {
       for (let i = 0; i < NR; i++) { const u = i / (NR - 1), d = d0 + r.len * u, down = _sdS(0, 0.34, u), tip = _sdS(0.68, 1, u);
         const side = o.rootWave * u * Math.sin(TAU * 0.85 * u + r.ph0 + ph) * calm + r.cs * o.rootCurlSide * tip * tip;   // (a slow writhe, the tip curling to one side)
         r.pts[i].set(dx * d + tx * side, r.P0.y * (1 - down) + o.rootR1 * down + o.rootCurl * tip * tip * (0.8 + 0.2 * Math.sin(ph + r.ph0) * calm), dz * d + tz * side); }
-      r.tb.set(r.pts, 0, 0, u => o.rootR0 * Math.pow(1 - u, 0.85) + 0.0035, 1.2, 0.85);
+      r.tb.set(r.pts, 0, 0, u => (o.rootR0 * Math.pow(1 - u, 0.85) + 0.0035) * (1 + (o.rootRing || 0) * Math.pow(0.5 + 0.5 * Math.cos(u * (o.rootRingN || 0) * TAU), 3)), 1.2, 0.85);   // (910: ringed, as roots or tentacles)
       if (r.twig) { const B = r.pts[Math.floor(NR * 0.45)], ta = r.twig.side * 0.6, bx = dx * Math.cos(ta) + tx * Math.sin(ta), bz = dz * Math.cos(ta) + tz * Math.sin(ta);
         for (let i = 0; i < 8; i++) { const u = i / 7; r.twig.pts[i].set(B.x + bx * 0.13 * u, B.y + 0.012 * Math.sin(PI * u) + 0.018 * u * u, B.z + bz * 0.13 * u); }
         r.twig.tb.set(r.twig.pts, 0, 0, u => 0.013 * (1 - u) + 0.003, 1.1, 0.9); } });
@@ -196,7 +228,14 @@ const _sdD = Object.assign({}, _sdC, {
   stemBase: [0.06, -0.09], stemVia: [[0, 0.1, -0.3], [0, 0.42, -0.38], [0, 0.74, -0.18]], flowerY: 0.74, flowerZ: 0.3,
 });
 fx(908, "SUNDEW, 906 as the owner chose it: the pitcher tilted forward, its glowing mouth to the front, its rim smooth; its stem from the bottom of the barrel, up behind it and over its top like a scorpion's tail to the flower and the blade-leaf; its feet seven long round roots, writhing like tentacles, their tips curling.", () => _sundewPitcher(_sdC));
+// 910, 911: the owner on 909 (2026-11-08): "Dude, I like that. I just don't like the textures, really. So can we change the textures a little bit?": 909 in two finishes.
+// 910: velvet petals, plum-black and matte, veined from the base, mottled, darker at the edges and tips, creased lengthwise; the roots, stem, base and blade matte, the
+// roots ringed. 911: 910 with its petals' veins glowing BLOOM's pink.
+const _sdE = Object.assign({}, _sdD, { tex: 'velvet', matte: true, pleat: 0.012, rootN: 48, rootRing: 0.16, rootRingN: 13 });
+const _sdF = Object.assign({}, _sdE, { tex: 'glow' });
 fx(909, "SUNDEW, 908 with a new body: a wilted flower with teeth, its black petals cupped round a mouth of pale fangs and wilting outward and down, their inner faces glowing pink, the nectar deep in its throat; tipped forward on its roots, its stem from its base arching over it to the flower and the blade-leaf.", () => _sundewPitcher(_sdD));
+fx(910, "SUNDEW, 909 textured: velvet petals, plum-black and matte, veined from the base and mottled, darker at their wilted edges and tips, creased lengthwise; the roots, stem and blade matte, the roots ringed like tentacles.", () => _sundewPitcher(_sdE));
+fx(911, "SUNDEW, 910 with the veins of its petals glowing BLOOM's pink.", () => _sundewPitcher(_sdF));
 
 // ── 907 · THE SNAIL (from the snail drawn below it) ────────────────────────────────────────────────────────────────────────
 // the shell: a tube coiled in the y-z plane (its eye toward the back, its mouth at the front of its foot), growing as it coils; its growth lines glow nectar pink
