@@ -6,7 +6,8 @@
 // on No. 903 (a flat bolt stuck on the tail's end): "The tail should gradually change colors at the end and have that electric lightning bolt definition. It shouldn't look
 // like a number one fan hand sign" (docs/CONVERSION.md §13). So:
 //   BODY   long, skinny and flattened, low to the floor, wet black and plain;
-//   HEAD   just a rounded-off end: no face, no eyes;
+//   HEAD   small and rounded, no face, no eyes; on a pinched neck, rounder and taller than the flat body and lifted a little, so it reads as a head (the owner on
+//          build 2026-11-08b: "He's supposed to have a small head, but it looks like he doesn't have a head at all");
 //   LEGS   four, each a single arch out of its side and down to the floor;
 //   TAIL   long and tapering; toward its end it fades from the black of the body into a glowing electric yellow, and its last stretch IS the lightning bolt: the tail
 //          itself zig-zags in sharp jogs to a point, upright, its tip the brightest.
@@ -66,7 +67,7 @@ function _electroSkink(o) {
   const P = V(0, 0, 0), Pa = V(0, 0, 0), Pb = V(0, 0, 0), fw = V(0, 0, 0), ax = V(0, 0, 0), ay = V(0, 0, 0), up = V(0, 1, 0), m4 = new T.Matrix4(), d = V(0, 0, 0);
   let ph = 0, rear = 0, strike = 0, calm = 1;
   const spine = (s, out) => {
-    curve.getPoint(Math.min(1, Math.max(0, s)), out);
+    s = Math.min(1, Math.max(0, s)); curve.getPoint(s, out);   // (clamped first: the frame at the neck asks a little ahead of it, and a power of a negative s is NaN, which hid the head in build 2026-11-08a)
     out.x += o.swimAmp * (0.22 + 0.78 * Math.pow(s, 1.15)) * Math.sin(2 * ph - TAU * o.swimWaves * s) * calm;   // (the eel's wave: small at the head, wide at the tail, two strokes a loop)
     const front = Math.max(0, 1 - s / o.rearReach); out.y += o.rearH * rear * front * front;
     return out;
@@ -104,10 +105,11 @@ function _electroSkink(o) {
 const _sk0 = {
   S: 0.85, coreY: 0.09, shiftZ: 0.2,
   spine: [[0.36, 0.112], [0.25, 0.086], [0.1, 0.072], [-0.08, 0.07], [-0.24, 0.07], [-0.42, 0.066], [-0.6, 0.072], [-0.78, 0.098]],
-  rNeck: 0.05, rBody: 0.065, rTip: 0.01, sTrunk: 0.12, sHip: 0.47, flat: 0.6,
+  rNeck: 0.034, rBody: 0.065, rTip: 0.01, sTrunk: 0.13,   // (a pinched neck, so the head reads: the owner, 2026-11-08, "He's supposed to have a small head, but it looks like he doesn't have a head at all")
+  sHip: 0.47, flat: 0.6,
   legs: [{ s: 0.115, fwd: 0.04 }, { s: 0.47, fwd: -0.03 }], legR0: 0.025, legR1: 0.015, reach: 0.13, arch: 0.045,
   stride: 0.035, lift: 0.028, rearLift: 0.05,
-  headW: 0.15, headH: 0.078, headL: 0.17, headFwd: 0.055, headUp: 0.004, headTilt: 0.1,
+  headW: 0.165, headH: 0.115, headL: 0.165, headFwd: 0.075, headUp: 0.028, headTilt: 0.18,   // (small, but rounder and taller than the flat body, lifted a little: it was 0.15 × 0.078 × 0.17, level with the body)
   sCut: 0.55, sBolt: 0.8, colStart: 0.57, colFull: 0.88, boltFx: 0.55, boltFy: 1.5,
   zig: [[0, 0], [0.3, 0.078], [0.38, 0.026], [0.66, 0.112], [0.74, 0.056], [1, 0.17]],   // (the bolt: (along its stretch, height): up, a sharp jog back down, up, a jog, up to the point)
   swimAmp: 0.075, swimWaves: 1.1, rearH: 0.12, rearReach: 0.42, lunge: 0.11,

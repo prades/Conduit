@@ -4,6 +4,8 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-08
 
+- **c · The Electro Skink's head shows.** Owner (2026-11-08): "He's supposed to have a small head, but it looks like he doesn't have a head at all." A bug hid it: since build a its slither asked the spine a little ahead of the neck, and the wave's power of a negative number was NaN, so the head was never drawn (`design/evolutions/forms36.js` spine, clamped now). The head is also a little rounder and taller than the flat body, on a pinched neck and lifted slightly, so it reads small but clear. Re-baked; the Bible's picture with it. Branch `claude/start-game-project-HSh7Z`. Not playtested.
+
 - **b · The Electro Skink darker and bigger.** Owner (2026-11-08): "Can you make him darker and bigger?" Its skin is near black with only a little wet sheen (it read slate grey), and it is 1.4 × as big: baked in a 192 px cell at the same pixels a unit as the other forms (`EVOLUTIONS.electroskink.cell`; the roster's and the radial's thumbnails now read each form's own cell). Its tail's glow and bolt are as they were. Branch `claude/start-game-project-HSh7Z`. Not playtested.
 
 - **a · The ELECTRO SKINK is the electric brawler; the Static Orb set aside.** Owner (2026-11-07/08): the whiteboard sketch is "the new electric brawler", the Static Orb "will now be the magnetic one, but if you just wanna throw him to the side for now"; reviewed through models Nos. 900-904 ("Okay, that's good. Send it."); its name "Electro Skink"; "BASH for now"; "it's really fast", "maybe he moves like a fish, like a slippery eel, but also legs". Branch `claude/start-game-project-HSh7Z`.
