@@ -117,7 +117,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             same(r.evo, id, el + ' technician'); same(r.tag, name, el + ' tag'); same(r.role, 'camper', el + ' role'); ok(r.molt, el + ': no molt');
             same(run(`evolutionFor({ isFollower: true, element: '${el}', role: 'camper' }).id`), id, el + ' evolutionFor');
         }
-        same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "camper").map(d => d.id).sort().join()'), 'blightspider,gooproxy,hammerslug,hovershell,igloo,thermite', 'the technicians\' forms');
+        same(run('Object.values(EVOLUTIONS).filter(d => !d.legacy && d.role === "camper").map(d => d.id).sort().join()'), 'blightspider,coralcrab,gooproxy,hammerslug,hovershell,igloo,thermite', 'the technicians\' forms (BLOOM\'s coral crab since build 2026-11-08m)');
     });
     check('THE ASK ("they help traverse the battlefield and provide exploration tools [...] I will put them in later"): the new technicians\' forms have no signature move of their own: BASH is their second attack (build 2026-11-07ss, "BASH for now"), and on their normal attack they fire none', () => {
         for (const id of ['gooproxy', 'igloo', 'blightspider', 'hovershell', 'rimestar']) {   // (the Thermite Burrower has MAGMA VENT since build 2026-11-06m: tests/followercombat.js)

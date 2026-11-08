@@ -591,6 +591,20 @@ const FORM_ULTIMATES = {
         spawnElementEffect({ type: "consume", x: actor.x, y: actor.y, by: actor, held: [prey], life: C.frames, maxLife: C.frames, element: "blossom" });
         _ultSay(actor, "CONSUME", "#ff9ccc");
     } },
+    // REEF PILLAR (the coral crab's: the owner's design and name, 2026-11-08: "A giant spike erupts from the ground between the target and the technician the crystal heels solely"; asked,
+    // "Blocks and heals only"): the nearest enemy it can see within TECH_AB.pillar.reach is its target; a giant crystal spike erupts on the line between them, a lesser one either side of it,
+    // standing like a wall in the enemy's way (js/techabilities.js techReefPillar: REEF's own rock and crystal): enemies cannot pass it, your followers near it are mended, and it hurts no one.
+    // Nothing in reach, or no floor for it: the charge is kept. Its numbers are the agent's, provisional (TECH_AB.pillar).
+    coralcrab: { name: "Reef Pillar", desc: "A giant crystal spike erupts between it and an enemy, a lesser one either side: a wall in the enemy's way that mends your followers near it. It hurts no one", execute(actor) {
+        const P = typeof TECH_AB !== "undefined" ? TECH_AB.pillar : null;
+        if (!P || typeof techReefPillar !== "function" || typeof _evoFoesSeen !== "function") return;
+        const foes = _evoFoesSeen(actor.x, actor.y, P.reach).sort((a, b) => Math.hypot(a.x - actor.x, a.y - actor.y) - Math.hypot(b.x - actor.x, b.y - actor.y));
+        if (!foes.length) return;
+        const t = foes[0]; if (!techReefPillar(actor, t)) return;
+        const dx = t.x - actor.x, dy = t.y - actor.y, L = Math.hypot(dx, dy) || 1;
+        actor.ultimateCharge = 0; actor.dirX = dx / L; actor.dirY = dy / L;
+        _ultSay(actor, "REEF PILLAR", "#ff9ccc");
+    } },
     // TOXIC UNDERTOW: one toxic surge ULT_UNDERTOW.radius tiles round: ULT_UNDERTOW.mult × its power, each enemy thrown outward (its way turned by up to 40°, so they scatter), and poisoned
     // (the game's poison: its hits weaker) for ULT_UNDERTOW.weak frames. No pool is left.
     seeper: { name: "Toxic Undertow", desc: "One toxic surge that throws the enemies round it outward and poisons them", execute(actor) {

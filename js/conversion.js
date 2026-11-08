@@ -28,7 +28,7 @@ function convertHere() {
     return followers.filter(f => _cvOurs(f) && f.element === CONVERT.from && ((typeof partyIsMember === "function" && partyIsMember(f)) || f.post === CONVERT.room));
 }
 function _cvRole(f) { return typeof equipRoleOf === "function" ? equipRoleOf(f) : (f && f.role) || null; }
-// the BLOOM form its class takes (js/evolution.js evolutionFor, for it as a BLOOM follower), or null: not in the game yet (SUNDEW, the coral crab)
+// the BLOOM form its class takes (js/evolution.js evolutionFor, for it as a BLOOM follower), or null: not in the game yet (every class has its BLOOM form since build 2026-11-08m: THORNWHIP, SUNDEW, the coral crab)
 function convertBloomForm(f) { return f && typeof evolutionFor === "function" ? evolutionFor(Object.assign({}, f, { element: CONVERT.to })) : null; }
 // why it cannot convert now (null: it can)
 function convertWhyNot(f) {
@@ -149,6 +149,8 @@ function _cvMoves(f) {
     if (U && U.name) list.push("ULTIMATE " + String(U.name).toUpperCase());
     return list.length ? list.join(" · ") : "NONE YET";
 }
+// a Technician's ability, now and after (build 2026-11-08m: TOXIC PODS to REEF); null for a Brawler or a Mage
+function _cvAbility(f) { const a = typeof techAbilityOf === "function" ? techAbilityOf(f) : null, b = a && typeof TECH_ABILITIES !== "undefined" ? TECH_ABILITIES[CONVERT.to] : null; return a && b ? [a.name, b.name] : null; }
 function _cvFormName(u) { const d = u && u.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[u.evolved] : null; return d ? d.name : "—"; }
 function _cvProc(el) { const A = typeof _IP_ATTACKS !== "undefined" ? _IP_ATTACKS[el] : null; return A && A.proc ? String(A.proc).toUpperCase() : "—"; }
 function _cvRender() {
@@ -167,6 +169,7 @@ function _cvRender() {
             ch("ELEMENT", _cvElLabel(f.element), _cvElLabel(CONVERT.to)) +
             ch("ITS HITS", _cvProc(f.element), "MEND: HEALS THE MOST HURT ALLY WITHIN 4 TILES BY 2% OF ITS MAXIMUM HEALTH") +
             ch("MOVES", _cvMoves(f), _cvMoves(g)) +
+            (_cvAbility(f) ? ch("ABILITY", _cvAbility(f)[0], _cvAbility(f)[1]) : "") +
             (f.evolved ? ch("FORM", _cvFormName(f), _cvFormName(g))
                        : ch("EVOLVES INTO", typeof evolutionFor === "function" && evolutionFor(f) ? evolutionFor(f).name : "—", typeof evolutionFor === "function" && evolutionFor(g) ? evolutionFor(g).name : form + " (NOT IN THE GAME YET: IT WAITS AT ITS LEVEL)")) +
             (off.length ? ch("CARDS", off.join(", "), "THEY COME OFF, BACK TO YOUR HAND") : "") +

@@ -310,10 +310,10 @@ function measure(w, h) {
         same(r.placed, true, 'placed'); same(r.aim, false, 'the aim stayed up'); same(r.moved, true, 'the barrel did not move'); same(r.cool, 3600, 'the cooldown'); same(r.chip2, '✦ 60 S', 'the chip after'); same(r.miss, true, 'a tap on nothing ended the aim');
     });
 
-    group('ALL SIX, AND THE CODE THAT CARRIES THEM');
+    group('ALL SEVEN (BLOOM\'s REEF since build 2026-11-08m), AND THE CODE THAT CARRIES THEM');
     check('every element\'s technician has its ability and its chip mark; the ring, the save, the floor drawing and the walks are wired', () => {
         const r = J(`(function(){ return Object.keys(TECH_ABILITIES).map(k => k + ':' + TECH_ABILITIES[k].id + ':' + TECH_ABILITIES[k].icon); })()`);
-        same(r.join(), 'electric:kinetic_launcher:⚡,core:photonic_shield:◈,fire:thermite_drill:✹,ice:frost_patch:❄,toxic:blight_spider:☣,flux:flux_move:✦', 'the six');
+        same(r.join(), 'electric:kinetic_launcher:⚡,core:photonic_shield:◈,fire:thermite_drill:✹,ice:frost_patch:❄,toxic:blight_spider:☣,flux:flux_move:✦,blossom:reef:◆', 'the six, and BLOOM\'s REEF (build 2026-11-08m: tests/reef.js)');
         const I = rd('js/input.js'), D = rd('js/draw.js'), C = rd('js/commands.js'), S = rd('js/facilitysave.js'), G = rd('js/game.js'), N = rd('js/npc.js'), FD = rd('js/facilitydecor.js');
         ok(/techRubbleAtScreen\(ex, ey\)/.test(I) && /_ring\.up\.act \+ "_tech"/.test(I), 'the press and the release'); ok(/ring\.up\.act \+ "_tech"/.test(D), 'the ring'); ok(/techRingAct\(commandTechTarget/.test(C), 'the command');
         ok(S.indexOf('techRubbleApply(d.rubble)') < S.indexOf('const taken = new Set(d.taken'), 'the rubble before the taken pickups'); ok(/techBlightApply\(d\.blight\)/.test(S) && /rubble: typeof techRubbleSnapshot/.test(S) && /blight: typeof techBlightSnapshot/.test(S), 'the save');

@@ -2514,3 +2514,25 @@ Offered and passed over: the Ultimates listed in `CONVERSION.md` §2; for REEF, 
 
 ### Supersedes / superseded by
 Answers the open questions of "BLOOM's Mage (No. 920) approved and built", "SUNDEW built (No. 911); CONSUME as its Ultimate" and "Connected systems: REEF climbs onto any high ground over ground the player stands on" (2026-11-08); the working name LITTLE SHRUB is replaced by THORNWHIP.
+
+## DECISION: The coral crab built, with REEF (its outcrop and its climbs) and REEF PILLAR: the agent's numbers and readings
+- Date and build: 2026-11-08, build `2026-11-08m`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Coral crab into the game next", after the answers built into build `2026-11-08l`'s record: REEF's climbs for "Player and followers", "Both ways", "Until the next one", "No, the glass stops it", "No" (from an ice bridge); the connected rule for "every Technician"; REEF's fight numbers "You pick, provisional"; REEF PILLAR, the owner's design, "Blocks and heals only".
+
+### Decision
+- The coral crab (No. 914; its sheet from No. 923) is BLOOM's Technician in the game. A BLOOM Technician evolves into it; a toxic Technician converts, an evolved one (the Blight Spider) into the coral crab. Its attacks Crushing, its alternate BASH, Spine-legged.
+- REEF, on the ◆ REEF chip, 60 s: a tap on floor it can see on its own floor grows an outcrop for 20 s that enemies cannot pass and that mends your followers beside it; a tap on high ground across an edge grows a climb.
+- The climbs go wherever the map has high ground over floor, read from the map itself: an edge between two stretches of floor at least a tile of height apart, with the raised floor's open face between them (the railing frame under the catwalks, the cliff under a deck) and no glass, neither end on ice. Today: the catwalks' west edge over the arena.
+- You and your followers go over a climb both ways; you go over at the end of a walk onto its end or from its tag, not by walking past it, and you step off where it set you down before it takes you back. One per coral crab; saved, as the ice bridges are.
+- REEF PILLAR: three of REEF's outcrops in a row across the line between the crab and the nearest enemy it can see, a giant spike in front of the enemy and a lesser one either side; they block as an outcrop does, mend your followers near them, and hurt no one.
+- The agent's numbers, provisional: the outcrop 0.8 tiles round, its mend 1% every half second within 1.5 tiles; the shards' 16 frames; a climb's foot 3 tiles out; REEF PILLAR's reach 7 tiles, 1.2 tiles in front of its target, spikes 0.9 and 0.6 round and 1.1 apart, 10 s, 2% every half second within 2 tiles.
+- The agent's readings, to confirm: "stood on to cross a gap" as your side walking over the outcrop (no stepping stone on water, which is the ice bridge's); the mending reaches your followers, not the player (as SEEDFALL's); the outcrop and the pillar stop movement only, not shots or bites.
+
+### Status
+Built in build `2026-11-08m` and tested (`tests/reef.js`; `tests/conversion.js`); checked in a browser in the real game; not playtested. The numbers and readings wait for the owner (`CONVERSION.md` §11, item 10).
+
+### Alternatives
+For the climb's rule: marked sites (ruled out by the owner's connected rule); any edge between floors of different heights (it would make walled-in rooms climbable: Teleport Room 2 beside the catwalks, the warehouse). For using a climb: walking past its end takes you over, as the catwalks' ledge does (passed over: a fight on the arena floor under the catwalks could throw you up). For REEF PILLAR's wall: the Photonic Shield's line, which blocks attacks too (passed over: "Blocks and heals only" read as blocking the enemy's way, as REEF's outcrop does).
+
+### Supersedes / superseded by
+Builds on "The owner's answers on BLOOM and REEF: THORNWHIP, PINK THICKET, REEF's climbs, the connected rule, REEF PILLAR" (2026-11-08, build `2026-11-08l`).

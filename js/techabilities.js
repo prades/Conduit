@@ -8,6 +8,7 @@
 //     Cooldowns are not saved (none are).
 //   THE SIX: ELECTRIC the KINETIC LAUNCHER, CORE the PHOTONIC SHIELD, FIRE the THERMITE DRILL, ICE the FROST PATCH, TOXIC the TOXIC PODS (the Blight Spider's pools until build 2026-11-06k), FLUX FLUX MOVE (each below; FLUX MOVE's rules: js/fluxmove.js). docs/TECHNICIANS.md
 //     has their numbers, which were given and which are provisional, and what is still to be decided. (The flux technician's TELEGRAB is retired: the owner, 2026-11-06, "Retire it now"; docs/FLUX-MOVEMENT.md.)
+//   THE SEVENTH (build 2026-11-08m): BLOOM the coral crab's REEF: an outcrop of rock and crystal in a fight, a climb up onto high ground outside one (below; docs/CONVERSION.md §2).
 //   AIMS: what a chip asks the player to pick, in order: a follower, an enemy (on the screen, or its card), a spot on the floor, an object and then its new place (FLUX MOVE), a path (FAULTLINE).
 //
 // THE KINETIC LAUNCHER. ASKED: "Combat Mode — Launch a Follower at an Enemy [...] Secret Access Mode — Launch Toward Hidden Areas [...] The first designated secret destination is the Arena Catwalk [...] the broken section permits travel
@@ -88,6 +89,33 @@ const TECH_AB = {
     flux: {
         cooldown: 3600,     // 60 s from when the object is placed (the owner: "60 s cooldown", as every technician ability); the reach is each object's own (js/facilitymap.js `flux`, 2 tiles)
     },
+    // REEF (BLOOM's, the coral crab's; build 2026-11-08m): the owner, 2026-11-08, on its fight numbers: "You pick, provisional"
+    reef: {
+        cooldown: 3600,     // 60 s for an outcrop or a climb (designed: "the usual 60-second wait")
+        life: 1200,         // 20 s: an outcrop (designed)
+        radius: 0.8,        // PROVISIONAL: tiles: an outcrop's body (enemies are held outside it)
+        body: 0.3,          // tiles: how near its edge a creature's middle comes
+        mend: 0.01,         // PROVISIONAL: the share of its maximum health a follower beside it is mended each beat (SEEDFALL's)
+        every: 30,          // PROVISIONAL: frames between beats: every half second
+        mendReach: 1.5,     // PROVISIONAL: tiles past its edge a follower is "beside it"
+        shards: 16,         // frames its shards fly before the rock and crystal grow
+        rise: 1,            // tiles of height, at least, between the two floors of a climb
+        search: 6,          // tiles: how far from the tap the edge of the high ground may be
+        foot: 3,            // tiles out from the low floor's edge the climb's foot is, where the camera sees it (the catwalks' ledge lands as far out); nearer where the floor stops
+        flight: 40, peak: 26,   // frames over a climb, and the arc's height (px)
+    },
+    // REEF PILLAR (the coral crab's Ultimate: the owner's design, 2026-11-08: "Blocks and heals only"): every number PROVISIONAL, the agent's
+    pillar: {
+        reach: 7,           // tiles: the nearest enemy it can see within this is its target
+        gap: 1.2,           // tiles in front of the target (on the crab's side) the spike erupts; at half way for a target nearer than twice this
+        life: 600,          // 10 s
+        core: 0.9,          // tiles: the giant spike's body
+        flank: 0.6,         // tiles: each lesser spike's body, one either side of it across the line, so the three stand like a wall
+        spread: 1.1,        // tiles from the giant spike to each lesser one
+        mend: 0.02,         // a share of its maximum health each beat, to each of your followers near it
+        every: 30,          // frames between beats
+        mendReach: 2,       // tiles past a spike's edge a follower is "near it"
+    },
     // FAULTLINE (the evolved Thermite Burrower's second ability; the follower combat redesign, docs/FOLLOWER-COMBAT-REDESIGN.md §2.4): every number PROVISIONAL (§11.2)
     fault: {
         cooldown: 3600,     // 60 s, its own (the drill keeps its own wait)
@@ -118,6 +146,8 @@ const TECH_ABILITIES = {
                 ask: () => "TAP THE FLOOR WHERE IT CAN SEE: IT SETS A TOXIC POD THERE" },
     flux:     { id: "flux_move", name: "FLUX MOVE", short: "MOVE", icon: "✦", col: "#c77dff", aim: ["object", "place"], use: (f, p) => techFluxMoveAt(f, p.object, p.place),
                 ask: () => "" },   // (its prompt says more as it goes: techAimPrompt)
+    blossom:  { id: "reef", name: "REEF", short: "REEF", icon: "◆", col: "#ff7ab8", aim: ["spot"], use: (f, p) => techReefAt(f, p.spot),
+                ask: () => "TAP THE FLOOR FOR AN OUTCROP, OR HIGH GROUND TO CLIMB, WHERE IT CAN SEE" },   // (BLOOM's: the coral crab's, as an egg and evolved alike)
 };
 // A SECOND ABILITY, by form (the owner, 2026-11-02, "Keep both buttons"): the evolved THERMITE BURROWER keeps its element's THERMITE DRILL and has FAULTLINE beside it, on a chip of its own with a
 // wait of its own (`_ab2ReadyAt`). An egg, and every other form, has the one ability above. Its aim is a PATH drawn on the floor (techAimPathStart / Move / End, from js/input.js).
@@ -275,7 +305,24 @@ function _techRiderTick(f0) {
         const L = p._dropSite ? _techLedge(p._dropSite) : _techLedgeFrom(p.x, p.y);
         if (p._dropSite && !L) p._dropSite = null;
         else if (p._dropSite && f0 - (p._dropT0 || 0) > T.loadWait) { p._dropSite = null; _techSay("THE JUMP IS OFF · YOU DID NOT GET TO THE LEDGE", "#ff8a6a"); }
-        else if (L && Math.hypot(L.at[0] - p.x, L.at[1] - p.y) <= 0.5 && _techComp(L.at[0], L.at[1]) !== _techComp(L.to[0], L.to[1])) { p._dropSite = null; p.fpPath = null; _techFly(p, L.to[0], L.to[1], T.dropFlight, 14, { kind: "drop", ledge: L.id, rider: true }); fx(); }
+        else if (L && (p._dropSite || !p._climbHold) && Math.hypot(L.at[0] - p.x, L.at[1] - p.y) <= 0.5 && _techComp(L.at[0], L.at[1]) !== _techComp(L.to[0], L.to[1])) { p._dropSite = null; p.fpPath = null; _techFly(p, L.to[0], L.to[1], T.dropFlight, 14, { kind: "drop", ledge: L.id, rider: true }); fx(); }   // (not the moment a climb has set you down on it: step off it first)
+    }
+    // REEF's CLIMBS (both ways): a walk that ends on a climb's end, or a tap on its tag, takes you over it to its other end. Set down there, you step off it before it takes you again (_climbHold).
+    if (!p._flight && !_techRiderBusy(p) && (techClimbs.length || p._climbGo || p._climbHold)) {
+        if (p._climbGo && !_techClimb(p._climbGo)) p._climbGo = null;
+        else if (p._climbGo && f0 - (p._climbT0 || 0) > T.loadWait) { p._climbGo = null; _techSay("THE CLIMB IS OFF · YOU DID NOT GET TO IT", "#ff8a6a"); }
+        let near = false;
+        for (const C of techClimbs) {
+            const E = _techClimbEnd(C, p.x, p.y); if (!E) continue;
+            const d = Math.hypot(E.at[0] - p.x, E.at[1] - p.y); if (d <= 0.9) near = true;
+            if (d > 0.5) continue;
+            const asked = p._climbGo === C.id, walked = !p._climbHold && Math.hypot(p.targetX - E.at[0], p.targetY - E.at[1]) <= 0.75;
+            if (!asked && !walked) continue;
+            p._climbGo = null; p.fpPath = null; _techFly(p, E.to[0], E.to[1], TECH_AB.reef.flight, TECH_AB.reef.peak, { kind: "climb", climb: C.id, up: E.up, rider: true });
+            if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: p.x, y: p.y, radius: 0.8, color: "#ff7ab8", life: 20 });
+            near = true; break;
+        }
+        if (!near) p._climbHold = false;   // (off every climb's end: the next walk onto one takes you over)
     }
 }
 
@@ -375,7 +422,8 @@ function _techShieldOut(W, a) {
 }
 // AN ENEMY'S STEP (js/npc.js updateNPC, after the walls; a knock, a pull): from (px,py) to where it is now. Across a shield (or into it), it is held on its own side and slides along it; round an end is free.
 function techShieldKeep(a, px, py) {
-    if (!techShields.length || !_techStops(a)) return;
+    if ((!techShields.length && !techReefs.length) || !_techStops(a)) return;
+    if (techReefs.length) _techReefKeep(a, px, py);   // (nor into REEF's rock and crystal: below)
     const B = TECH_AB.shield.band;
     for (const W of techShields) {
         if (!_techShieldOn(W)) continue;
@@ -677,6 +725,185 @@ function techBlightApply(d) {
     techPools = techPools.filter(P => techPoolFade(P) > 0);
 }
 
+// ── REEF (BLOOM; the coral crab's, build 2026-11-08m: docs/CONVERSION.md §2, docs/TECHNICIANS.md) ──
+// ASKED: "Coral crab into the game next" (its look No. 914, approved). Its rules are the owner's (2026-11-02, 2026-11-08): REEF fires little shards, and rock and crystal grow where they land
+// ("Make reef grow rock and crystal").
+//   IN A FIGHT: the ◆ chip, then a spot of floor it can see on its own stretch of floor: an OUTCROP of rock and crystal there for TECH_AB.reef.life (20 s). Enemies cannot pass it (techShieldKeep holds them
+//     outside it; one standing where it grows is put out beside it); your followers beside it are mended every `every` frames; you and your followers walk over it ("it can be stood on"). It hurts no one.
+//   GETTING AROUND (the connected rule, "every Technician": no marked sites): the ◆ chip, then HIGH GROUND across an edge from its floor (or, from up there, the floor below): a CLIMB of rock and crystal up
+//     the edge's face. It goes wherever the map has high ground over floor: an edge between two stretches of floor, one at least `rise` tiles of height above the other, with nothing between them but an
+//     open face (REEF_FACES: what the map draws as the open face of a raised floor, the railing frame under the catwalks and the cliff under a deck; a plain wall is a room walled in) and no glass ("No, the
+//     glass stops it"). On today's map that is the catwalks' west edge over the arena. Its FOOT is out on the low floor where the camera sees it, its TOP on the high floor's first tile. You and your
+//     followers go up it and back down ("Player and followers", "Both ways"): walk to an end (a walk that ends on it), or tap its tag, and you are taken over it to the other end; a follower on the other
+//     stretch from you goes over it to rejoin you. Creatures never do. It stands until the same coral crab makes its next climb ("Until the next one": one each) and is saved, as the ice bridges are.
+//     Not from an ice bridge ("No"): neither end may be on ice.
+//   ITS NUMBERS: TECH_AB.reef (the owner: "You pick, provisional"). REEF PILLAR (the coral crab's Ultimate, js/elements.js FORM_ULTIMATES.coralcrab) grows a row of these outcrops: techReefPillar.
+let techReefs = [];    // the outcrops standing: { id, by, parts: [{ x, y, r }] (one; REEF PILLAR's three), x, y (the middle), from (where the shards flew from), t0 (they land: it grows), until, mend, mendReach, every, pillar }
+let techClimbs = [];   // the climbs standing: { id, by, foot: [x, y], top: [x, y], edge: [x, y] (on the high ground's edge), n: [nx, ny] (from the low floor to the high), from, t0 }
+let _techReefN = 0;
+const REEF_FACES = new Set(["railing_wall", "deck_wall"]);   // the edges drawn as a raised floor's open face (js/facilitymap.js edge_kinds: the arena's under the catwalks and under the observation deck)
+function techReefAt(tech, spot) {
+    if (!spot || !Number.isFinite(spot.x) || !Number.isFinite(spot.y)) return { ok: false, why: "TAP THE FLOOR", again: true };
+    const tc = _techComp(tech.x, tech.y), sc = _techComp(spot.x, spot.y);
+    if (sc === undefined) return { ok: false, why: "TAP THE FLOOR", again: true };
+    if (tc !== undefined && sc !== tc) return techReefClimbAt(tech, spot);   // another stretch of floor (high ground, or the floor below it): a climb
+    const x = Math.round(spot.x), y = Math.round(spot.y);
+    if (typeof facilityStandOk === "function" && !facilityStandOk(x, y)) return { ok: false, why: "TAP THE FLOOR", again: true };
+    if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, x, y)) return { ok: false, why: "THE TECHNICIAN CANNOT SEE THERE", again: true };
+    const R = TECH_AB.reef, f0 = _techFrame();
+    _techReefGrow(tech, [{ x, y, r: R.radius }], { life: R.life, mend: R.mend, mendReach: R.mendReach, every: R.every });
+    tech._abReadyAt = f0 + techCooldown(tech, R.cooldown);
+    _techSay("◆ REEF · AN OUTCROP OF ROCK AND CRYSTAL · " + Math.round(R.life / 60) + " S", "#ff7ab8");
+    return { ok: true };
+}
+// an outcrop (or a row of them): its shards fly from `by` and it grows when they land (_techReefTick)
+function _techReefGrow(by, parts, o) {
+    const t0 = _techFrame() + TECH_AB.reef.shards, O = { id: ++_techReefN, by: by || null, parts, x: parts[0].x, y: parts[0].y, from: by ? [by.x, by.y] : null, t0, until: t0 + o.life, mend: o.mend, mendReach: o.mendReach, every: o.every, pillar: !!o.pillar, grown: false };
+    techReefs.push(O);
+    return O;
+}
+function _techReefOn(O, f0) { return f0 >= O.t0 && f0 < O.until; }
+// a creature caught where a part grows is put out beside it: straight out from its middle, else round it, on floor (a REEF PILLAR's on its own side: away from the crab first)
+function _techReefOut(c, a, O) {
+    const need = c.r + TECH_AB.reef.body, dx = a.x - c.x, dy = a.y - c.y, d = Math.hypot(dx, dy); if (d >= need) return;
+    const base = d > 1e-6 ? Math.atan2(dy, dx) : O && O.from ? Math.atan2(c.y - O.from[1], c.x - O.from[0]) : 0;
+    for (const k of [0, 1, -1, 2, -2, 3, -3, 4]) { const t = base + k * Math.PI / 4, x = c.x + Math.cos(t) * need, y = c.y + Math.sin(t) * need; if (typeof facilityStandOk !== "function" || facilityStandOk(x, y)) { a.x = x; a.y = y; return; } }
+}
+// AN ENEMY'S STEP (techShieldKeep, from js/npc.js and the knocks): from (px,py) to where it is now. Into an outcrop, it is held at its edge and slides round it.
+function _techReefKeep(a, px, py) {
+    const f0 = _techFrame(), B = TECH_AB.reef.body;
+    for (const O of techReefs) {
+        if (!_techReefOn(O, f0)) continue;
+        for (const c of O.parts) {
+            const need = c.r + B, dx = a.x - c.x, dy = a.y - c.y, d = Math.hypot(dx, dy); if (d >= need) continue;
+            let ux, uy; if (d > 1e-6) { ux = dx / d; uy = dy / d; } else { const ex = px - c.x, ey = py - c.y, e = Math.hypot(ex, ey) || 1; ux = ex / e; uy = ey / e; }
+            a.x = c.x + ux * need; a.y = c.y + uy * need;
+            if (typeof facilityConstrain === "function") facilityConstrain(a, px, py);   // (and the walls still hold it)
+            O.pressedAt = f0;
+        }
+    }
+}
+function techOnReef(a) { if (!techReefs.length || !a) return null; const f0 = _techFrame(); for (const O of techReefs) if (_techReefOn(O, f0) && O.parts.some(c => Math.hypot(a.x - c.x, a.y - c.y) < c.r)) return O; return null; }
+// the outcrops' clock: each grows when its shards land (what stands there is put out), then mends your followers beside it every `every` frames, until it crumbles
+function _techReefTick(f0) {
+    if (!techReefs.length) return;
+    techReefs = techReefs.filter(O => f0 < O.until);
+    for (const O of techReefs) {
+        if (f0 < O.t0) continue;
+        if (!O.grown) {
+            O.grown = true;
+            if (typeof actors !== "undefined") for (const a of actors) if (_techStops(a) && !a._flight && !a._swallowedBy) for (const c of O.parts) _techReefOut(c, a, O);
+            if (typeof elementEffects !== "undefined") for (const c of O.parts) elementEffects.push({ type: "ring", x: c.x, y: c.y, radius: c.r + 0.5, color: "#ff7ab8", life: 22 });
+            if (typeof shake !== "undefined") shake = Math.max(shake || 0, O.pillar ? 6 : 2);
+        }
+        if ((f0 - O.t0) % O.every !== 0 || typeof healUnit !== "function" || typeof followers === "undefined") continue;
+        for (const a of followers) {
+            if (!a || a.dead || a.team !== "green" || a._flight || !(a.maxHealth > 0) || !(a.health < a.maxHealth)) continue;
+            if (O.parts.some(c => Math.hypot(a.x - c.x, a.y - c.y) <= c.r + O.mendReach && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(c.x, c.y, a.x, a.y)))) healUnit(a, a.maxHealth * O.mend, O.by);
+        }
+    }
+}
+// REEF PILLAR (the coral crab's Ultimate, js/elements.js FORM_ULTIMATES.coralcrab; the owner's design, 2026-11-08: "A giant spike erupts from the ground between the target and the technician", "Blocks and heals
+// only"): a giant crystal spike erupts on the line from the crab to its target, TECH_AB.pillar.gap in front of the target, with a lesser spike either side of it across the line (where the floor goes), so the
+// three stand like a wall in the enemy's way. They block as an outcrop does, mend your followers near them, and hurt no one. Returns the outcrop, or null when there is no floor for it.
+function techReefPillar(by, foe) {
+    if (!by || !foe) return null;
+    const P = TECH_AB.pillar, dx = foe.x - by.x, dy = foe.y - by.y, D = Math.hypot(dx, dy) || 1e-6, nx = dx / D, ny = dy / D;
+    const k = D >= 2 * P.gap ? D - P.gap : D / 2, los = (x0, y0, x1, y1) => typeof facilityLosFrom !== "function" || facilityLosFrom(x0, y0, x1, y1), stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
+    let cx = by.x + nx * k, cy = by.y + ny * k;
+    if (!stand(cx, cy) || !los(by.x, by.y, cx, cy)) { let ok = false; for (let s = k - 0.25; s >= 0.75; s -= 0.25) { const x = by.x + nx * s, y = by.y + ny * s; if (stand(x, y) && los(by.x, by.y, x, y)) { cx = x; cy = y; ok = true; break; } } if (!ok) return null; }
+    const parts = [{ x: cx, y: cy, r: P.core }], tx = -ny, ty = nx;
+    for (const sg of [-1, 1]) { const x = cx + tx * P.spread * sg, y = cy + ty * P.spread * sg; if (stand(x, y) && los(cx, cy, x, y)) parts.push({ x, y, r: P.flank }); }
+    return _techReefGrow(by, parts, { life: P.life, mend: P.mend, mendReach: P.mendReach, every: P.every, pillar: true });
+}
+
+// ── REEF's climbs: where they can go, making one, and going over one ──
+function _techSegDist(a, b, x, y) { const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l2)) : 0; return Math.hypot(a[0] + dx * t - x, a[1] + dy * t - y); }
+// the climb at a point (qx, qy) of a wall piece, between the stretches `ca` (the technician's) and `cb` (the one tapped): { foot, top, edge, n, lo, hi } or null
+function _techReefEdgeAt(w, qx, qy, ca, cb) {
+    const R = TECH_AB.reef, F = _fp.F, dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L, side = [];
+    for (const s of [-1, 1]) { let P = null; for (let k = 0.3; k <= 2.5 + 1e-9; k += 0.25) { const x = qx + nx * s * k, y = qy + ny * s * k; if (facilityStandOk(x, y)) { P = [Math.round(x), Math.round(y)]; break; } } if (!P) return null; side.push(P); }   // the floor's first tile either side
+    const c0 = _techComp(side[0][0], side[0][1]), c1 = _techComp(side[1][0], side[1][1]);
+    if (c0 === undefined || c1 === undefined || c0 === c1 || !((c0 === ca && c1 === cb) || (c0 === cb && c1 === ca))) return null;   // (two stretches, the technician's and the one tapped: one stretch has its own way)
+    const h0 = facilityHeightAt(side[0][0], side[0][1], F), h1 = facilityHeightAt(side[1][0], side[1][1], F); if (Math.abs(h1 - h0) < R.rise) return null;
+    const lo = h0 < h1 ? 0 : 1, P0 = side[lo], P1 = side[1 - lo], s = lo === 0 ? 1 : -1, cLo = lo === 0 ? c0 : c1, cHi = lo === 0 ? c1 : c0;   // (s: the normal's way from the low floor to the high)
+    if (facilityIced(F, P0[0], P0[1]) || facilityIced(F, P1[0], P1[1])) return null;   // ("No": an ice bridge is not floor to climb from)
+    let face = false;   // what lies between the two floors: no glass, and the high floor's open face
+    for (const v of F.walls) { if (!facilitySegmentsCross(P0, P1, v.a, v.b)) continue; if (v.window) return null; if (REEF_FACES.has(v.kind)) face = true; }
+    if (!face) return null;
+    const ox = -nx * s, oy = -ny * s; let foot = null;   // out onto the low floor, where the camera sees it: `foot` tiles out, less where the floor stops
+    for (let k = R.foot; k >= 0; k -= 0.5) { const x = Math.round(P0[0] + ox * k), y = Math.round(P0[1] + oy * k); if (facilityStandOk(x, y) && _techComp(x, y) === cLo && facilityLosFrom(P0[0], P0[1], x, y)) { foot = [x, y]; break; } }
+    if (!foot) return null;
+    return { foot, top: P1.slice(), edge: [qx, qy], n: [nx * s, ny * s], lo: cLo, hi: cHi };
+}
+// THE PLAN: of the edges within `search` tiles of the tap that join the technician's floor to the floor tapped, the climb nearest the tap whose end on the technician's floor it can see
+function techReefClimbPlan(tech, spot) {
+    const R = TECH_AB.reef, F = typeof _fp !== "undefined" && _fp ? _fp.F : null; if (!F || typeof facilityStandOk !== "function") return { ok: false, why: "NO HIGH GROUND TO CLIMB THERE", again: true };
+    const ca = _techComp(tech.x, tech.y), cb = _techComp(spot.x, spot.y); let best = null, unseen = false;
+    for (const w of F.walls) {
+        if (w.window || _techSegDist(w.a, w.b, spot.x, spot.y) > R.search) continue;
+        const dx = w.b[0] - w.a[0], dy = w.b[1] - w.a[1], L = Math.hypot(dx, dy); if (L < 0.1) continue;
+        const n = Math.max(1, Math.round(L / 0.5));
+        for (let i = 0; i < n; i++) {
+            const t = (i + 0.5) / n, qx = w.a[0] + dx * t, qy = w.a[1] + dy * t, d = Math.hypot(qx - spot.x, qy - spot.y);
+            if (d > R.search || (best && d >= best.d)) continue;
+            const e = _techReefEdgeAt(w, qx, qy, ca, cb); if (!e) continue;
+            const own = e.lo === ca ? e.foot : e.top;
+            if (typeof facilitySeesFrom === "function" && !facilitySeesFrom(tech.x, tech.y, own[0], own[1])) { unseen = true; continue; }
+            best = Object.assign(e, { d });
+        }
+    }
+    if (!best) return { ok: false, why: unseen ? "THE TECHNICIAN CANNOT SEE THE WAY UP THERE" : "NO HIGH GROUND TO CLIMB THERE", again: true };
+    return Object.assign({ ok: true }, best);
+}
+function techReefClimbAt(tech, spot) {
+    const plan = techReefClimbPlan(tech, spot); if (!plan.ok) return plan;
+    const R = TECH_AB.reef, f0 = _techFrame();
+    techClimbs = techClimbs.filter(c => c.by !== tech);   // its last climb crumbles ("Until the next one": one each)
+    const C = { id: ++_techReefN, by: tech, foot: plan.foot, top: plan.top, edge: plan.edge, n: plan.n, from: [tech.x, tech.y], t0: f0 + R.shards };
+    techClimbs.push(C);
+    tech._abReadyAt = f0 + techCooldown(tech, R.cooldown);
+    _techSay("◆ REEF · A CLIMB UP TO THE " + _techClimbName(C) + " · IT STANDS UNTIL ITS NEXT ONE", "#ff7ab8");
+    return { ok: true, climb: C };
+}
+function _techClimbName(C) { const rm = typeof facilityRoomAt === "function" && typeof _fp !== "undefined" && _fp && _fp.F ? facilityRoomAt(C.top[0], C.top[1], _fp.F) : null; return String(rm ? rm.label : "HIGH GROUND").toUpperCase(); }
+function _techClimb(id) { return techClimbs.find(c => c.id === id) || null; }
+// the end of a climb on the stretch of floor (x, y) is on, and where it goes: { at, to, up } or null (null too while it grows, and once its two ends are one stretch: then it is walked)
+function _techClimbEnd(C, x, y) {
+    if (!C || _techFrame() < C.t0) return null;
+    const c = _techComp(x, y), cf = _techComp(C.foot[0], C.foot[1]), ct = _techComp(C.top[0], C.top[1]); if (c === undefined || cf === ct) return null;
+    return c === cf ? { at: C.foot, to: C.top, up: true } : c === ct ? { at: C.top, to: C.foot, up: false } : null;
+}
+// the nearest climb from the stretch (x, y) is on to the stretch `pc`: { c, E } or null (a follower rejoining you)
+function _techClimbTo(x, y, pc) {
+    let best = null, bd = Infinity;
+    for (const c of techClimbs) { const E = _techClimbEnd(c, x, y); if (!E || _techComp(E.to[0], E.to[1]) !== pc) continue; const d = Math.hypot(E.at[0] - x, E.at[1] - y); if (d < bd) { bd = d; best = { c, E }; } }
+    return best;
+}
+// a tap on a climb's tag (techSiteTap): you walk to its end and go over it
+function techClimbGo(C) {
+    const p = _techRider(); if (!p) return { ok: false, why: "NOBODY TO CLIMB" };
+    if (_techRiderBusy(p)) return { ok: false, why: "NOT NOW" };
+    const E = _techClimbEnd(C, p.x, p.y); if (!E) return { ok: false, why: "NO WAY OVER IT FROM HERE" };
+    if (Math.hypot(E.at[0] - p.x, E.at[1] - p.y) > 0.5 && !(typeof facilityWalkTo === "function" && facilityWalkTo(E.at[0], E.at[1]))) return { ok: false, why: "NO WAY TO THE CLIMB FROM HERE" };
+    p._launchLoad = null; p._dropSite = null; p._climbGo = C.id; p._climbT0 = _techFrame();   // (set after the walk: a new destination clears it, js/facilityplay.js facilityWalkTo)
+    _techSay(E.up ? "◆ TO THE REEF · YOU CLIMB UP IT" : "◆ TO THE REEF · YOU CLIMB DOWN IT", "#ff7ab8");
+    return { ok: true };
+}
+// THE CLIMBS IN THE SAVE (as the ice bridges are: "Until the next one"): each one's ends and its coral crab's uid. A load keeps one whose ends are still floor on two stretches; one whose crab is gone stands on.
+function techClimbsSnapshot() { return techClimbs.map(c => ({ foot: c.foot.slice(), top: c.top.slice(), edge: c.edge.slice(), n: c.n.slice(), by: (c.by && c.by.uid) || null })); }
+function techClimbsApply(list) {
+    techClimbs = [];
+    const pt = q => Array.isArray(q) && q.length === 2 && q.every(Number.isFinite);
+    for (const c of (Array.isArray(list) ? list : [])) {
+        if (!c || !pt(c.foot) || !pt(c.top)) continue;
+        if (typeof facilityStandOk === "function" && (!facilityStandOk(c.foot[0], c.foot[1]) || !facilityStandOk(c.top[0], c.top[1]))) continue;
+        const by = c.by && typeof followers !== "undefined" ? followers.find(f => f && f.uid === c.by) || null : null;
+        if (by && techClimbs.some(o => o.by === by)) continue;   // (one each)
+        techClimbs.push({ id: ++_techReefN, by, foot: c.foot.slice(), top: c.top.slice(), edge: pt(c.edge) ? c.edge.slice() : c.top.slice(), n: pt(c.n) ? c.n.slice() : [1, 0], from: null, t0: 0 });
+    }
+}
+
 // ── FLUX MOVE (flux): the object tool (the rules: js/fluxmove.js; the move in the map: js/facilityplay.js facilitySolidMove; docs/FLUX-MOVEMENT.md) ──
 // ASKED (the roadmap's Milestone One, the owner's): activate, select an eligible object, a placement grid (the valid and invalid places, the allowance, the footprint, the turns), choose the place, turn it in 90° steps,
 // validate, confirm; "Canceling the ability or selecting an invalid destination must leave the object in its original position." The owner's answers: "Retire it now" (Telegrab), "60 s cooldown", "Prompt buttons",
@@ -878,7 +1105,7 @@ function _techDrawFaultStroke(g, A, f0) {
 }
 
 // everything the abilities keep for a game, let go when a new one starts or one is loaded (js/facilityplay.js facilityResetState). Saved and put back by the facility's save: the launchers, the rubble, the clock and the pools.
-function techReset() { if (techBridges.length && typeof facilityIceSet === "function") facilityIceSet([]); techBridges = []; techShields = []; techFrosts = []; techPools = []; techClock = 0; techAim = null; _techLabels = {}; }
+function techReset() { if (techBridges.length && typeof facilityIceSet === "function") facilityIceSet([]); techBridges = []; techShields = []; techFrosts = []; techPools = []; techReefs = []; techClimbs = []; techClock = 0; techAim = null; _techLabels = {}; }
 
 // ── the throw and the flight ──
 function _techLoadPoint(a) {
@@ -946,11 +1173,15 @@ function _techLand(a, F) {
             if (s) _techSay("⚡ " + _techName(a) + " IS ON THE " + where + " · COME BRINGS IT BACK", "#ffe733");
         }
     } else if (F.kind === "drop" && a === _techRider()) { a.fpPath = null; a.targetX = a.x; a.targetY = a.y; }   // you, down on the ledge again
-    if (typeof elementEffects !== "undefined" && F.kind !== "combat") elementEffects.push({ type: "ring", x: a.x, y: a.y, radius: 0.7, color: "#ffe733", life: 18 });
+    else if (F.kind === "climb" && a === _techRider()) {   // you, over a REEF climb: you step off its end before it takes you back
+        a.fpPath = null; a.targetX = a.x; a.targetY = a.y; a._climbHold = true;
+        const C = _techClimb(F.climb); if (C) _techSay(F.up ? "◆ YOU CLIMB UP ONTO THE " + _techClimbName(C) + (_techLedgeFrom(a.x, a.y) ? " · ITS LEDGE (▼) OR THE REEF TAKES YOU BACK DOWN" : " · THE REEF TAKES YOU BACK DOWN") : "◆ YOU CLIMB DOWN THE REEF", "#ff7ab8");
+    }
+    if (typeof elementEffects !== "undefined" && F.kind !== "combat") elementEffects.push({ type: "ring", x: a.x, y: a.y, radius: 0.7, color: F.kind === "climb" ? "#ff7ab8" : "#ffe733", life: 18 });
 }
 
 // ── a follower walking to the launcher, to a site it is setting up, or to a ledge (js/npc.js updateRTSNPC asks first): true when this moved it ──
-function techStepWants(a) { return !!(a && (a._launchLoad || a._siteWork || a._dropSite || a._shieldHold || a._drill || a._blight || a._pocketHold)); }
+function techStepWants(a) { return !!(a && (a._launchLoad || a._siteWork || a._dropSite || a._climbGo || a._shieldHold || a._drill || a._blight || a._pocketHold)); }
 // a follower thrown onto a POCKET site's landing (a cut-off part of its room: the Sewers' collapsed tunnel) waits where it landed until the player is on that stretch too (rode over, or the choke was drilled and the floors are
 // one), or it is ordered elsewhere (an attack, a retreat, a post; COME clears the hold itself: js/commandcenter.js); then it follows as before, and without the player up there it jumps from the ledge (_techDropScan)
 function _techPocketTick(f) {
@@ -964,6 +1195,7 @@ function techStepOverride(a) {
     if (a._launchLoad) pt = _techLoadPoint(a);
     else if (a._siteWork) { const s = _techSite(a._siteWork.site); if (s) { if (a._siteWork.workAt !== null) { a._fpWalkGoal = null; return true; } pt = s.at; } }   // (at work: it stands still)
     else if (a._dropSite) { const L = _techLedge(a._dropSite); if (L) pt = L.at; }
+    else if (a._climbGo) { const E = _techClimbEnd(_techClimb(a._climbGo), a.x, a.y); if (E) pt = E.at; }   // to a REEF climb's end, to go over it to you
     else if (a._shieldHold) {   // behind its Photonic Shield: it holds its spot, and fights back only what comes right up to it
         const H = a._shieldHold;
         let foe = null, fd = 1.0; for (const e of (typeof unitsNear === "function" ? unitsNear(a.x, 1.2) : actors)) { if (!_techFoeOk(e)) continue; const d = Math.hypot(e.x - a.x, e.y - a.y); if (d < fd) { fd = d; foe = e; } }
@@ -1020,6 +1252,11 @@ function techAbilityTick() {
             if (!L) f._dropSite = null;
             else if (Math.hypot(L.at[0] - f.x, L.at[1] - f.y) <= 0.5) { f._dropSite = null; f._fpWalkGoal = null; _techFly(f, L.to[0], L.to[1], T.dropFlight, 14, { kind: "drop", ledge: L.id }); }
         }
+        if (f._climbGo && !f._flight) {   // at a REEF climb's end: it goes over it
+            const C = _techClimb(f._climbGo), E = _techClimbEnd(C, f.x, f.y);
+            if (!E) f._climbGo = null;
+            else if (Math.hypot(E.at[0] - f.x, E.at[1] - f.y) <= 0.5) { f._climbGo = null; f._fpWalkGoal = null; _techFly(f, E.to[0], E.to[1], TECH_AB.reef.flight, TECH_AB.reef.peak, { kind: "climb", climb: C.id, up: E.up }); }
+        }
         if (f._drill) _techDrillTick(f, f0);
         if (f._blight) _techBlightWalkTick(f, f0);
         if (f._pocketHold) _techPocketTick(f);
@@ -1029,23 +1266,26 @@ function techAbilityTick() {
     _techSiteNotices(); _techRubbleNotices();
     _techShieldTick();
     techClock++;   // THE PLAY CLOCK: a frame of play
-    _techFrostTick(f0); _techBridgeTick(f0); _techPoolTick();
+    _techFrostTick(f0); _techBridgeTick(f0); _techPoolTick(); _techReefTick(f0);
 }
 // THE LEDGES: a follower up on a raised floor with a ledge (the catwalks) that is not holding it (it was called back), and is up there without you, walks onto the ledge and jumps down; one posted to a site's room that is not
 // up there (it came back from the dead at the Crystal) is let go of its post, since nobody walks up. A POCKET site's landing (the Sewers' sample bank) has no ledge: its way out is the passage its rubble opens, or the pipe.
+// A REEF CLIMB (build 2026-11-08m) is a way between two stretches both ways: a follower on another stretch from you, with a climb from its stretch to yours, goes over it to you (the ledge or the climb,
+// whichever is nearer, when both would take it down).
 function _techDropScan() {
-    const sites = _techSites(), ledges = _techLedges(); if (!sites.length && !ledges.length) return;
+    const sites = _techSites(), ledges = _techLedges(); if (!sites.length && !ledges.length && !techClimbs.length) return;
     const pc = _techComp(player.x, player.y);
     for (const f of followers) {
         if (!f || f.dead || f.isClone || f._flight || f._launchLoad || f._siteWork) continue;
-        const fc = _techComp(f.x, f.y); f._dropSite = null; let freed = false;
+        const fc = _techComp(f.x, f.y); f._dropSite = null; f._climbGo = null; let freed = false;
         for (const s of sites) {
             const sc = _techComp(s.land[0], s.land[1]); if (sc === undefined) continue;
             if (!s.pocket && f.post === s.to && fc !== sc) { if (typeof partyCall === "function" && !partyCall(f, true) && typeof partyPost === "function" && typeof partyRoomOf === "function") partyPost(f, partyRoomOf(f), true); freed = true; break; }   // (a pocket is no post: its room is the follower's own)
         }
-        if (freed) continue;
-        const L = _techLedgeFrom(f.x, f.y);
-        if (L && fc !== pc && !f.post && !f.job && !f.returningToCrystal && !f._pocketHold) f._dropSite = L.id;
+        if (freed || fc === pc || f.post || f.job || f.returningToCrystal || f._pocketHold) continue;
+        const L = _techLedgeFrom(f.x, f.y), W = techClimbs.length ? _techClimbTo(f.x, f.y, pc) : null;
+        const dl = L ? Math.hypot(L.at[0] - f.x, L.at[1] - f.y) : Infinity, dw = W ? Math.hypot(W.E.at[0] - f.x, W.E.at[1] - f.y) : Infinity;
+        if (W && dw <= dl) f._climbGo = W.c.id; else if (L) f._dropSite = L.id;
     }
 }
 function _techSiteNotices() {
@@ -1141,6 +1381,7 @@ function _techOnLabel(key, ex, ey) { const lr = _techLabels[key]; return !!lr &&
 function techSiteTap(ex, ey) {
     if (typeof _fp === "undefined" || !_fp || typeof player === "undefined") return false;
     for (const L of _techLedges()) if (_techOnLabel("ledge:" + L.id, ex, ey)) { const r = techLedgeJump(L); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // a ledge's tag (▼ LEDGE): you jump down from it
+    for (const C of techClimbs) if (_techOnLabel("climb:" + C.id, ex, ey)) { const r = techClimbGo(C); if (!r.ok) _techSay(r.why, "#ff8a6a"); return true; }   // a REEF climb's tag: you go over it
     for (const s of _techSites()) {
         const nearAt = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY) <= TECH_AB.launch.near;
         if (!nearAt || !_techOnLabel(s.id, ex, ey)) continue;   // (only its tag takes a tap: a tap on the floor round it, to walk past, is a walk)
@@ -1204,6 +1445,12 @@ function techAbilityInfo(f) {
         const B = TECH_AB.blight, bite = Math.round(((f.stats && f.stats.specialAttack) || 10) * 0.12 * 0.3 * 100) / 100;
         return { h: "ABILITY · " + ab.name, note: "From the ☣ chip on its squad card: it walks to a spot of floor it can see and sets down a toxic pod. The pod's field hurts enemies standing in it, and the pod runs down: its field weaker and smaller until it is gone.",
                  rows: [["FIELD", B.size + " tiles across; up to " + B.max + " pods (a new one takes the oldest's place)"], ["RUNS DOWN IN", Math.round(B.life / 3600) + " min of play"], ["BITE", bite + " every " + (B.every / 60) + " s, fading as it runs down"], ["PODS NOW", String(techPools.length)]].concat(wait) };
+    }
+    if (ab.id === "reef") {
+        const R = TECH_AB.reef, mine = techClimbs.find(c => c.by === f);
+        wait[0][1] = Math.round(R.cooldown / 60) + " s, an outcrop or a climb";
+        return { h: "ABILITY · " + ab.name, note: "From the ◆ chip on its squad card: it fires little shards, and rock and crystal grow where they land. On a spot of floor it can see: an outcrop that enemies cannot pass, mending your followers beside it. On high ground across an edge from it: a climb up the edge's face that you and your followers go up and back down, standing until its next one (not through glass, not from an ice bridge).",
+                 rows: [["OUTCROP", Math.round(R.life / 60) + " s, " + Math.round(R.radius * 2 * 10) / 10 + " tiles across"], ["MENDS", Math.round(R.mend * 100) + "% of a follower's health every " + (R.every / 60) + " s, within " + R.mendReach + " tiles of it"], ["CLIMB", mine ? "up to the " + _techClimbName(mine) : "none standing"]].concat(wait) };
     }
     if (ab.id === "flux_move") {
         wait[0][1] = Math.round(TECH_AB.flux.cooldown / 60) + " s, from when it is placed";
@@ -1273,7 +1520,7 @@ function techDrawRubbleOn(it, f) {
 // ── on each floor tile (js/game.js draws it with the tile, like the serum's pools): the FROST PATCH's ice, the TOXIC PODS' fields ──
 function techDrawOnTile(tx, ty, px, py) {
     const FX = techAim && techAim.flux && techAim.flux.s && typeof fluxDrawOnTile === "function" ? techAim : null;   // FLUX MOVE's grid, on the floor (js/fluxmove.js): drawn last on the tile
-    if (!techFrosts.length && !techPools.length && !techBridges.length) { if (FX) fluxDrawOnTile(FX, tx, ty, px, py); return; }
+    if (!techFrosts.length && !techPools.length && !techBridges.length && !techReefs.length) { if (FX) fluxDrawOnTile(FX, tx, ty, px, py); return; }
     const g = ctx, f0 = _techFrame(), W = TILE_W, H = TILE_H, S = (x, y) => [px + ((x - tx) - (y - ty)) * W, py + H + ((x - tx) + (y - ty)) * H];   // a point of the floor near this tile, on the screen
     const tile = () => { g.beginPath(); g.moveTo(px, py); g.lineTo(px + W, py + H); g.lineTo(px, py + 2 * H); g.lineTo(px - W, py + H); g.closePath(); };
     const key = tx + "," + ty;
@@ -1311,6 +1558,19 @@ function techDrawOnTile(tx, ty, px, py) {
         g.strokeStyle = "rgba(190,255,120," + (0.45 * a).toFixed(3) + ")"; g.lineWidth = 1.5; g.setLineDash([5, 6]); g.lineDashOffset = -f0 * 0.3; g.beginPath(); g.arc(0, 0, R * 0.96, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
         g.restore();
     }
+    for (const O of techReefs) {   // REEF's mending, on the floor round an outcrop (a REEF PILLAR's spikes): a faint pink haze out to where your followers are mended, its rim a dashed ring (under the walls and units in front)
+        if (!_techReefOn(O, f0)) continue;
+        const a = Math.min(1, (f0 - O.t0) / 12, (O.until - f0) / 60);
+        for (const c of O.parts) {
+            const R0 = c.r + O.mendReach; if (Math.hypot(tx - c.x, ty - c.y) > R0 + 1.25) continue;
+            const q = S(c.x - 0.5, c.y - 0.5), R = R0 * Math.SQRT2 * W;   // (centred under the rock: an item's foot is its tile's top corner)
+            g.save(); tile(); g.clip(); g.translate(q[0], q[1]); g.scale(1, H / W);
+            const gr = g.createRadialGradient(0, 0, R * 0.2, 0, 0, R); gr.addColorStop(0, "rgba(255,122,184," + (0.2 * a).toFixed(3) + ")"); gr.addColorStop(1, "rgba(255,122,184,0)");
+            g.fillStyle = gr; g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill();
+            g.strokeStyle = "rgba(255,170,210," + (0.35 * a).toFixed(3) + ")"; g.lineWidth = 1.5; g.setLineDash([6, 7]); g.lineDashOffset = f0 * 0.25; g.beginPath(); g.arc(0, 0, R * 0.97, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+            g.restore();
+        }
+    }
     if (FX) fluxDrawOnTile(FX, tx, ty, px, py);
 }
 // the launchers and the ledges stand among everything else (js/game.js sorts them by depth)
@@ -1327,11 +1587,97 @@ function techDrawItems(list) {
         for (let i = 0; i < n; i++) { const ua = W.u0 + du * i, ub = ua + du, um = (ua + ub) / 2; list.push({ type: "tech", kind: "shield", x: W.x - W.ny * um, y: W.y + W.nx * um, W, ua, ub, first: i === 0, last: i === n - 1 }); }
     }
     for (const P of techPools) if (techPoolFade(P) > 0) list.push({ type: "tech", kind: "pod", x: P.x, y: P.y, P });   // a TOXIC POD, standing among everything else
+    const f0 = _techFrame();
+    for (const O of techReefs) if (_techReefOn(O, f0)) O.parts.forEach((c, i) => list.push({ type: "tech", kind: "reef", x: c.x, y: c.y, O, c, i }));   // REEF's outcrops (a REEF PILLAR's three spikes)
+    for (const C of techClimbs) if (f0 >= C.t0) { list.push({ type: "tech", kind: "climbFoot", x: C.foot[0], y: C.foot[1], C }); list.push({ type: "tech", kind: "climbTop", x: C.top[0], y: C.top[1], C }); }   // a REEF climb's two ends
+}
+// ── REEF's rock and crystal (the coral crab's look, No. 914: smooth rounded plates of dark stone, big square pink crystals breaking out of them with a pink glow round them, crystal flowers among them) ──
+function _techHash(n) { n = (n ^ 61) ^ (n >>> 16); n = (n + (n << 3)) | 0; n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); return ((n ^ (n >>> 15)) >>> 0) / 4294967296; }
+// one square crystal standing at (x, y) on the screen, `h` px tall and `w` wide, leaning `lean` radians: seen corner-on, its lit face and its shaded face, a pointed tip
+function _techCrystal(g, x, y, h, w, lean, lit) {
+    const ux = Math.sin(lean), uy = -Math.cos(lean), vx = -uy, vy = ux, P = (u, v) => [x + ux * u + vx * v, y + uy * u + vy * v];
+    const body = Math.max(w * 0.4, h - w * 0.85), A = P(0, -w / 2), B = P(-w * 0.18, 0), C = P(0, w / 2), A2 = P(body, -w / 2), B2 = P(body - w * 0.18, 0), C2 = P(body, w / 2), T = P(h, w * 0.04);
+    const face = (pts, col) => { g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.closePath(); g.fillStyle = col; g.fill(); };
+    face([A, B, B2, A2], lit > 0.5 ? "#ffd3e8" : "#ffb0d4"); face([B, C, C2, B2], "#e0569a"); face([A2, B2, T], "#fff0f7"); face([B2, C2, T], "#ff8ac2");
+    g.strokeStyle = "#3a0c24"; g.lineWidth = 2; g.lineJoin = "round"; g.beginPath(); [A, A2, T, C2, C, B, A].forEach((q, i) => i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1])); g.stroke();
+    g.strokeStyle = "rgba(255,255,255,0.55)"; g.lineWidth = 1; g.beginPath(); g.moveTo(B[0], B[1]); g.lineTo(B2[0], B2[1]); g.lineTo(T[0], T[1]); g.stroke();   // the near edge, catching the light
+}
+// a smooth rounded boulder of dark stone standing on (x, y): its shaded side, its rounded top, a soft highlight; rx by ry px across the top
+function _techStone(g, x, y, rx, ry, k) {
+    const h = ry * 0.9, top = ["#3a3542", "#433d4b", "#36313e"][k % 3];
+    g.strokeStyle = "#0c0b10"; g.lineWidth = 2;
+    g.fillStyle = "#1c1a22"; g.beginPath(); g.ellipse(x, y - h * 0.45, rx, ry + h * 0.45, 0, 0, Math.PI * 2); g.fill(); g.stroke();   // its body, its side in shade
+    g.fillStyle = top; g.beginPath(); g.ellipse(x, y - h, rx * 0.94, ry * 0.92, 0, 0, Math.PI * 2); g.fill();   // its rounded top
+    g.fillStyle = "rgba(255,255,255,0.1)"; g.beginPath(); g.ellipse(x - rx * 0.22, y - h - ry * 0.25, rx * 0.5, ry * 0.4, 0, 0, Math.PI * 2); g.fill();   // the light on it
+}
+// a crystal flower: a few short square crystals round a stone centre
+function _techFlower(g, x, y, s, seed) {
+    const n = 4 + Math.floor(_techHash(seed) * 4);
+    for (let i = 0; i < n; i++) { const lean = (i - (n - 1) / 2) * 0.5 + (_techHash(seed + i) - 0.5) * 0.2; _techCrystal(g, x, y, s * (0.8 + 0.4 * _techHash(seed + 9 + i)), s * 0.34, lean, i % 2); }   // (fanned out round its middle)
+    g.fillStyle = "#3b3641"; g.strokeStyle = "#0c0b10"; g.lineWidth = 1.5; g.beginPath(); g.ellipse(x, y - 1, s * 0.3, s * 0.2, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+}
+// a pink glow on the rock round the crystals
+function _techReefGlow(g, x, y, r, a) {
+    const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, "rgba(255,122,184," + (0.42 * a).toFixed(3) + ")"); gr.addColorStop(1, "rgba(255,122,184,0)");
+    g.globalCompositeOperation = "lighter"; g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); g.globalCompositeOperation = "source-over";
+}
+// AN OUTCROP (or one of a REEF PILLAR's spikes) at (px, py): it bursts up when its shards land, flashes where an enemy leans on it, and sinks into the floor in its last second
+function _techDrawReef(g, o, px, py, f0) {
+    const O = o.O, c = o.c, age = f0 - O.t0, left = O.until - f0, seed = O.id * 7 + o.i * 131;
+    const up = Math.min(1, age / 10), pop = up < 1 ? up * (1.15 - 0.15 * up) : 1, sink = left < 60 ? left / 60 : 1, s = pop * (0.35 + 0.65 * sink), a = Math.min(1, sink * 1.4);
+    const RX = c.r * TILE_W * 1.35, RY = c.r * TILE_H * 1.35, pillar = O.pillar, core = pillar && o.i === 0;
+    g.globalAlpha = a;
+    g.fillStyle = "rgba(0,0,0,0.38)"; g.beginPath(); g.ellipse(px, py, RX * 1.05, RY * 1.05, 0, 0, Math.PI * 2); g.fill();   // its shadow
+    const stones = [[-0.12, -0.42, 0.42, 16], [0.34, -0.3, 0.38, 10], [-0.5, -0.06, 0.46, 6], [0.46, 0.06, 0.44, 4], [0, 0.26, 0.52, 0], [-0.04, -0.08, 0.4, 20]];   // (the back ones first; the last one heaped on the middle: a mound, not a patch)
+    stones.forEach(([sx, sy, sr, up], k) => _techStone(g, px + sx * RX, py + sy * RY * 1.3 - up * s, sr * RX * s + 3, sr * RY * 1.25 * s + 2, seed + k));
+    _techReefGlow(g, px, py - 22 * s, RX * (core ? 1.5 : 1.1), (0.7 + 0.3 * Math.sin(f0 * 0.08 + seed)) * a);
+    const tall = core ? 150 : pillar ? 78 : 58, list = [];
+    if (core) list.push([0, 0, 1, 0.42, 0.02]);   // REEF PILLAR's giant spike
+    const n = core ? 4 : pillar ? 3 : 4;
+    for (let i = 0; i < n; i++) { const h = _techHash(seed + 3 + i), side = (i % 2 ? 1 : -1) * (0.18 + 0.42 * _techHash(seed + 17 + i)); list.push([side, (h - 0.5) * 0.4, core ? 0.36 + 0.2 * h : 0.55 + 0.45 * h, core ? 0.2 : 0.28, side * 0.7]); }
+    list.sort((p, q) => p[1] - q[1]);   // (the ones behind first)
+    for (const [ox, oy, hk, wk, lean] of list) _techCrystal(g, px + ox * RX, py + oy * RY - (core ? 10 : 16) * s, tall * hk * s, Math.max(6, tall * wk * s * (core && hk === 1 ? 0.9 : 1)), lean, ox < 0 ? 1 : 0);   // (breaking out of the stone)
+    if (!core) _techFlower(g, px + (_techHash(seed + 40) - 0.5) * RX * 0.9, py + RY * 0.3 - 9 * s, 14 * s, seed + 41);   // a crystal flower among the stones
+    if (O.pressedAt && f0 - O.pressedAt < 6) { g.globalAlpha = 0.7 * a; g.strokeStyle = "#ffd3e8"; g.lineWidth = 2.5; g.beginPath(); g.ellipse(px, py, RX * 1.08, RY * 1.08, 0, 0, Math.PI * 2); g.stroke(); }   // (an enemy leaning on it lights its rim)
+    if (o.i === 0 && left < 600) { g.globalAlpha = Math.min(1, left / 30); g.font = (typeof uiFont === "function" ? uiFont(12) : "bold 12px sans-serif"); g.textAlign = "center"; g.fillStyle = "#ffd3e8"; g.fillText("◆ " + Math.ceil(left / 60), px, py - tall * s - 14); }   // its seconds, in its last ten
+    g.globalAlpha = 1;
+}
+// A CLIMB: at its foot, out on the low floor, a mound of stone with crystals, and the rock and crystal running from it to the high ground's face and up it to the lip (seen through the open face: the
+// railing frame under the catwalks); at its top, crystals breaking over the lip. A chevron pulses at each end, the way over.
+function _techDrawClimb(g, o, px, py, f0) {
+    const C = o.C, lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0, age = f0 - C.t0, s = Math.min(1, Math.max(0, age) / 14), seed = C.id * 13;
+    const rel = (x, y, z) => [px + ((x - o.x) - (y - o.y)) * TILE_W, py + ((x - o.x) + (y - o.y)) * TILE_H - z];
+    if (o.kind === "climbFoot") {
+        const zTop = (lift(C.top[0], C.top[1]) - lift(C.foot[0], C.foot[1])) * s, N = 9;
+        for (let i = N; i >= 1; i--) {   // the rock and crystal up to the lip, the far stones first
+            const t = i / N, x = C.foot[0] + (C.edge[0] - C.foot[0]) * t, y = C.foot[1] + (C.edge[1] - C.foot[1]) * t, z = zTop * Math.pow(t, 1.7), q = rel(x, y, z), r = 14 + 8 * (1 - t);
+            _techStone(g, q[0], q[1], r, r * 0.6, seed + i);
+            if (i % 2 === 0) _techCrystal(g, q[0] + (i % 4 ? -6 : 6), q[1] - 2, 24 + 10 * _techHash(seed + i), 8, (i % 4 ? -0.35 : 0.35), i % 4 ? 1 : 0);
+        }
+        g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(px, py, 34, 15, 0, 0, Math.PI * 2); g.fill();
+        _techStone(g, px - 14, py - 4, 18 * s + 2, 10 * s + 2, seed); _techStone(g, px + 13, py - 2, 16 * s + 2, 9 * s + 2, seed + 1);
+        _techReefGlow(g, px, py - 16, 40, 0.8 + 0.2 * Math.sin(f0 * 0.08));
+        _techCrystal(g, px - 8, py - 6, 40 * s, 12, -0.25, 1); _techCrystal(g, px + 9, py - 4, 30 * s, 10, 0.3, 0); _techFlower(g, px + 2, py + 4, 12 * s, seed + 5);
+    } else {
+        const ex = C.edge[0] - C.top[0], ey = C.edge[1] - C.top[1], q = rel(C.top[0] + ex * 0.7, C.top[1] + ey * 0.7, 0);   // at the lip, on the high floor's edge
+        _techReefGlow(g, q[0], q[1] - 12, 34, 0.75 + 0.25 * Math.sin(f0 * 0.08 + 1));
+        _techStone(g, q[0] + 8, q[1] + 2, 15 * s + 2, 8 * s + 2, seed + 7);
+        _techCrystal(g, q[0] - 6, q[1], 34 * s, 11, -0.3, 1); _techCrystal(g, q[0] + 6, q[1] + 1, 26 * s, 9, 0.35, 0); _techCrystal(g, q[0] + 16, q[1] + 3, 18 * s, 7, 0.6, 0);
+    }
+    const near = typeof player !== "undefined" && _techClimbEnd(C, player.x, player.y), mine = near && near.at === (o.kind === "climbFoot" ? C.foot : C.top);
+    if (mine) {   // the chevron over your end: up at its foot, down at its top
+        const t = (f0 * 0.02) % 1, up = o.kind === "climbFoot";
+        g.font = (typeof uiFont === "function" ? uiFont(15) : "bold 15px sans-serif"); g.textAlign = "center"; g.textBaseline = "middle";
+        for (let k = 0; k < 2; k++) { const tt = (t + k / 2) % 1, y = py - 30 + (up ? -tt * 26 : tt * 26); g.globalAlpha = Math.sin(tt * Math.PI) * 0.9; g.fillStyle = "#3a0c24"; g.fillText(up ? "▲" : "▼", px + 1, y + 1); g.fillStyle = "#ff9ccc"; g.fillText(up ? "▲" : "▼", px, y); }
+        g.globalAlpha = 1;
+    }
 }
 function techDrawItem(o, px, py) {
     const g = ctx, f0 = _techFrame();
     g.save();
-    if (o.kind === "pod") {
+    if (o.kind === "reef") _techDrawReef(g, o, px, py, f0);
+    else if (o.kind === "climbFoot" || o.kind === "climbTop") _techDrawClimb(g, o, px, py, f0);
+    else if (o.kind === "pod") {
         // a TOXIC POD: a small glass canister of bubbling toxin on a black base, a black cap with a lens (the Blight Spider's own tank, small); the toxin's level and the lens fall as it runs down
         const k = techPoolFade(o.P), lit = 0.35 + 0.65 * k * (0.75 + 0.25 * Math.sin(f0 * 0.15 + o.P.id));
         g.fillStyle = "rgba(0,0,0,0.35)"; g.beginPath(); g.ellipse(px, py, 12, 5, 0, 0, Math.PI * 2); g.fill();
@@ -1401,6 +1747,32 @@ function techDrawOverlay() {
         g.globalAlpha = a2 * 0.9; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle"; const w2 = g.measureText(txt2).width + 16, y2 = q.y - 52;
         g.fillStyle = "rgba(5,8,18,0.7)"; g.fillRect(q.x - w2 / 2, y2 - 10, w2, 20); g.strokeStyle = "rgba(255,210,26,0.6)"; g.lineWidth = 1; g.strokeRect(q.x - w2 / 2 + 0.5, y2 - 9.5, w2 - 1, 19); g.fillStyle = "#ffd21a"; g.fillText(txt2, q.x, y2 + 1);
         _techLabels["ledge:" + L.id] = { x: q.x - w2 / 2, y: y2 - 10, w: w2, h: 20 };
+    }
+    // A REEF CLIMB's tag, over its end on your floor, while you are near it: ◆ REEF · CLIMB UP (or DOWN); a tap on it walks you there and takes you over (techSiteTap); a walk that ends on it does the same
+    for (const C of techClimbs) {
+        const E = _techClimbEnd(C, player.x, player.y); if (!E) continue;
+        const dd = Math.hypot(E.at[0] - player.visualX, E.at[1] - player.visualY); if (dd > T.near) continue;
+        const q = _techScr(E.at[0], E.at[1]), a2 = Math.min(1, (T.near - dd) / 2), txt2 = E.up ? "◆ REEF · CLIMB UP" : "◆ REEF · CLIMB DOWN";
+        g.globalAlpha = a2 * 0.9; g.font = font(11); g.textAlign = "center"; g.textBaseline = "middle"; const w2 = g.measureText(txt2).width + 16, y2 = q.y - 98;   // (above a launcher site's tag, which may stand beside it)
+        g.fillStyle = "rgba(18,5,12,0.72)"; g.fillRect(q.x - w2 / 2, y2 - 10, w2, 20); g.strokeStyle = "rgba(255,122,184,0.65)"; g.lineWidth = 1; g.strokeRect(q.x - w2 / 2 + 0.5, y2 - 9.5, w2 - 1, 19); g.fillStyle = "#ff9ccc"; g.fillText(txt2, q.x, y2 + 1);
+        _techLabels["climb:" + C.id] = { x: q.x - w2 / 2, y: y2 - 10, w: w2, h: 20 };
+    }
+    // REEF's SHARDS in flight, from the coral crab to where the rock and crystal will grow (an outcrop's parts; a climb's foot and the lip above it)
+    {
+        const lift = typeof facilityLiftPx === "function" ? facilityLiftPx : () => 0, N = TECH_AB.reef.shards;
+        const shards = (from, tos, t0, id) => {
+            const t = 1 - (t0 - f0) / N; if (t < 0 || t > 1 || !from) return;
+            tos.forEach((to, k) => {
+                for (let j = 0; j < 2; j++) {
+                    const tt = Math.max(0, Math.min(1, t * 1.1 - j * 0.1)), z0 = lift(from[0], from[1]) + 18, z1 = to[2] !== undefined ? to[2] : lift(to[0], to[1]), qa = _techArcScr(from[0], from[1], to[0], to[1], z0, z1, 46, Math.max(0, tt - 0.08)), qb = _techArcScr(from[0], from[1], to[0], to[1], z0, z1, 46, tt);
+                    g.globalCompositeOperation = "lighter"; g.strokeStyle = "rgba(255,122,184,0.55)"; g.lineWidth = 4; g.lineCap = "round"; g.beginPath(); g.moveTo(qa.x, qa.y); g.lineTo(qb.x, qb.y); g.stroke(); g.globalCompositeOperation = "source-over";
+                    const ang = Math.atan2(qb.y - qa.y, qb.x - qa.x); g.save(); g.translate(qb.x, qb.y); g.rotate(ang + (id + k + j)); g.fillStyle = "#ffd3e8"; g.strokeStyle = "#3a0c24"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(5, 0); g.lineTo(0, 3); g.lineTo(-5, 0); g.lineTo(0, -3); g.closePath(); g.fill(); g.stroke(); g.restore();
+                }
+            });
+        };
+        for (const O of techReefs) if (f0 < O.t0) shards(O.from, O.parts.map(c => [c.x, c.y]), O.t0, O.id);
+        for (const C of techClimbs) if (f0 < C.t0) shards(C.from, [C.foot, [C.edge[0], C.edge[1], lift(C.top[0], C.top[1])]], C.t0, C.id);
+        g.lineCap = "butt";
     }
     for (const s of _techSites()) {
         const d = Math.hypot(s.at[0] - player.visualX, s.at[1] - player.visualY);

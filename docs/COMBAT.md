@@ -208,7 +208,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 - **CORRODE SHOT** is the Rotshard's everyday shot (the design notes' primary): the Mage's shot, its own damage, and it eats the armour of what it hits, weaker round it. ROTTEN DECOY is its second attack.
 | SUNDEW (built `2026-11-08k`) | Brawler · bloom | Slashing (its blade-leaf; the barbed lip is gone) | BASH: Crushing. Its Ultimate CONSUME: the digestion Elemental (the owner kept it, 2026-11-08) |
 | THORNWHIP (built `2026-11-08j`; named 2026-11-08; it was the lotus lantern) | Mage · bloom | Elemental (SEED SHOT: its vines fling a glowing seed like a sling, 2026-11-08) | SEEDFALL: Elemental. Its Ultimate PINK THICKET: Elemental (build `2026-11-08l`) |
-| Coral crab (designed; its name for now) | Technician · bloom | Crushing (claws) | REEF: to set (`CONVERSION.md`) |
+| Coral crab (built `2026-11-08m`; its name for now) | Technician · bloom | Crushing (its head driving down: No. 914 has no claws) | BASH: Crushing. Its ability REEF and its Ultimate REEF PILLAR deal no damage (`TECHNICIANS.md`) |
 
 - **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS move too, until it was taken out on 2026-11-07), the static field, the ice burst, the singularity, the smoke bomb. *(Since build `2026-11-07jj` no follower uses an element special: the owner, "each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability". The functions stay in js/elements.js, unused.)*
 - **An egg** (not yet evolved) hits with its scythe legs: Slashing.
@@ -293,7 +293,7 @@ The elemental share of each form's main attack (the range runs from a wild to an
 | SEEPER | Brawler · toxic | Spine-legged | −1 | 21–29% |
 | ELECTRO SKINK | Brawler · electric | Spine-legged (none until build `2026-11-08h`) | −1 | 21–29% (by the rule, as the other −1 Brawlers; not measured) |
 | THORNWHIP (built `2026-11-08j`; it was the lotus lantern) | Mage · bloom | Elemental | +2 | 82–87% |
-| Coral crab (designed) | Technician · bloom | Spine-legged | −1 | 40% |
+| Coral crab (built `2026-11-08m`) | Technician · bloom | Spine-legged | −1 | 40% |
 | SUNDEW (built `2026-11-08k`) | Brawler · bloom | Mollusk | −1 | 21–29% |
 
 Alternatives the owner passed over: species alone, without the +1 for an Elemental main attack (THUNDERHEAD and EMBER HOOD at +1, VOIDSTAR at −1); and steps of 20%.
@@ -552,6 +552,7 @@ The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cove
   - lobs (an arc: the toxic smoke bomb) fly over everything;
   - the fire bombs bounce off walls and props (`js/firebombs.js`);
   - the Photonic Shield stops enemy shots;
+  - REEF's outcrops and REEF PILLAR (build `2026-11-08m`) stop enemies' movement only: shots, bites and sight pass them (`TECHNICIANS.md`, "REEF");
   - melee (bites, the lash, the punch) tests distance only, so a bite still reaches over a one-tile object;
   - ~~the moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were~~ *(superseded in build `2026-11-06i` by the owner's "Need sight": §8.5)*.
 

@@ -182,6 +182,16 @@ function measure(w, h) {
         ok(r.same, 'its stats changed'); same(r.hp.join(), r.hp0.join(), 'its health'); same(r.label, 'THORNWHIP', 'its name'); ok(/IS NOW A THORNWHIP/.test(r.msg), 'the words: ' + r.msg);
         same(r.back.join(), 'blossom,shrub,toxic', 'saved and loaded back');
     });
+    check('an evolved toxic Technician (the Blight Spider) converts into the CORAL CRAB (build 2026-11-08m): BLOOM, its form the coral crab, its ability REEF in place of TOXIC PODS (the preview\'s ABILITY row), its Ultimate REEF PILLAR; saved and loaded as the coral crab', () => {
+        const r = J(`(function(){ __quest(true); __atModule(); __clear(); const t = __mk('toxic', 'camper', 'blightspider'); t.level = 12; _applyFollowerLevel(t, true); partyTick();
+            const st = JSON.stringify(t.stats), g = convertPreview(t), ab = _cvAbility(t), mv = [_cvMoves(t), _cvMoves(g)], fm = [_cvFormName(t), _cvFormName(g)], res = convertApply(t);
+            const rec = followerRecord(t); __clear(); spawnFollowerFromSave(rec); const back = followers[followers.length - 1];
+            return { preview: g.evolved, ab, mv, fm, ok: res.ok, msg: res.msg, el: t.element, evo: t.evolved, now: (techAbilityOf(t) || {}).id, ult: (followerUltimate(t) || {}).name, same: JSON.stringify(t.stats) === st, label: unitTypeLabel(t), back: [back.element, back.evolved, back.convertedFrom], brawler: _cvAbility(__mk('toxic', 'brawler')) }; })()`);
+        same(r.preview, 'coralcrab', 'the preview\'s form'); same(r.fm.join('|'), 'BLIGHT SPIDER|CORAL CRAB', 'the FORM row'); same((r.ab || []).join('|'), 'TOXIC PODS|REEF', 'the ABILITY row'); same(r.brawler, null, 'an ABILITY row for a Brawler');
+        ok(/ULTIMATE REEF PILLAR$/.test(r.mv[1]), 'its moves after: ' + r.mv[1]);
+        ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'coralcrab', 'its form'); same(r.now, 'reef', 'its ability'); same(r.ult, 'Reef Pillar', 'its Ultimate');
+        ok(r.same, 'its stats changed'); same(r.label, 'CORAL CRAB', 'its name'); same(r.back.join(), 'blossom,coralcrab,toxic', 'saved and loaded back');
+    });
     check('its element is BLOOM, and it remembers it was toxic; its level, XP, stats, health and bond are as they were; it is named BLOOM BRAWLER', () => {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const f = __mk('toxic', 'brawler'), mate = __mk('fire', 'mage'); partyTick(); f.level = 7; f.xp = 33; f.partnerUid = mate.uid = mate.uid || 'm1';
             const was = JSON.stringify({ level: f.level, xp: f.xp, stats: f.stats, hp: f.health, max: f.maxHealth, partner: f.partnerUid, role: f.role });

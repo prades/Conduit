@@ -46,6 +46,7 @@ function facilitySaveCollect() {
         launchers: typeof techLaunchersSnapshot === "function" ? techLaunchersSnapshot() : [],   // the launcher sites a Kinetic Launcher has been set up at, for good (js/techabilities.js)
         pipes: typeof facilityPortalsSnapshot === "function" ? facilityPortalsSnapshot() : [],   // the shut doorways opened from inside (the Sewers' drain pipe: js/facilityportals.js)
         bridges: typeof techBridgesSnapshot === "function" ? techBridgesSnapshot() : [],     // the ice bridges standing, each with its technician (js/techabilities.js)
+        climbs: typeof techClimbsSnapshot === "function" ? techClimbsSnapshot() : [],       // REEF's climbs standing, each with its coral crab (js/techabilities.js; a game saved before has none)
         rubble: typeof techRubbleSnapshot === "function" ? techRubbleSnapshot() : {},           // the hits the rubble has taken from a Thermite Drill (drilled through: a hole, for good)
         blight: typeof techBlightSnapshot === "function" ? techBlightSnapshot() : null,          // the play clock, and the Blight Spider's pools on it
         quests: typeof questSnapshot === "function" ? questSnapshot() : null,                     // the Sewer purification: each of its states (js/quests.js)
@@ -128,6 +129,7 @@ function facilitySaveApply(d) {
     if (typeof sentryApply === "function") sentryApply(d.sentries);   // the turrets' wear, a wrecked one with its repair station (js/antraids.js)
     if (typeof facilityPortalsApply === "function") facilityPortalsApply(d.pipes);   // (a game saved before has none open)
     if (typeof techBridgesApply === "function") techBridgesApply(d.bridges);   // the ice bridges (before the player's spot: one saved on the ice loads on it)
+    if (typeof techClimbsApply === "function") techClimbsApply(d.climbs);   // REEF's climbs (after the bridges: one whose end is no longer floor is let go)
     if (typeof fluxApply === "function") fluxApply(d.moved);   // the moved objects where they were put (before the player's spot: one cannot be put back on top of it; js/fluxmove.js)
     // where the player stood (if that is still floor), and the followers with them
     const at = d.at; if (at && Number.isFinite(at[0]) && Number.isFinite(at[1]) && facilityStandOk(at[0], at[1])) { player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null; }

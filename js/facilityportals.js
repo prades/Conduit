@@ -110,7 +110,7 @@ function _pFollowScan() {
         if (best) { a._fpPortalGoal = best.id; a._fpSealed = 0; continue; }
         if (!landings) { landings = new Set(); for (const s of ((_fp.F && _fp.F.launchSites) || [])) if (s.land) landings.add(_pComp(s.land[0], s.land[1])); }
         const cells = _fp.compSize ? (_fp.compSize.get(ac) || 0) : 0;
-        if (!cells || cells > FP_PORTAL.pocket || landings.has(ac) || a._flight || a._launchLoad || a._dropSite || (typeof actors !== "undefined" && actors.indexOf(a) < 0)) { a._fpSealed = 0; continue; }   // (a follower that is not in the world's list is not simulated: left alone)
+        if (!cells || cells > FP_PORTAL.pocket || landings.has(ac) || a._flight || a._launchLoad || a._dropSite || a._climbGo || (typeof actors !== "undefined" && actors.indexOf(a) < 0)) { a._fpSealed = 0; continue; }   // (a follower that is not in the world's list is not simulated: left alone)
         a._fpSealed = (a._fpSealed || 0) + 1;
         if (a._fpSealed >= 2) { _pBeside(a); a._fpSealed = 0; }
     }
