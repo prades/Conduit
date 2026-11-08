@@ -175,21 +175,6 @@ function _ccRoundHex(L, rb, rf, flat, k, m, NU, NV) {
   for (let i = 1; i < NV - 1; i++) for (let j = 0; j < NU; j++) { const a = v(i, j), b = v(i, j + 1), c = v(i + 1, j), d = v(i + 1, j + 1); idx.push(a, b, d, a, d, c); }
   const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals(); return geo;
 }
-// a petal or leaf for the coral tick's flowers: a spindle along +y from its base (at the origin, pinched) to its tip L away, w across at its widest (a share wAt of
-// the way along) and d thick; its tip rounder (pointy below 1) or sharper (above 1); cupped across its width toward +z (cup, a share of w); coloured from cb at its base
-// to ct at its tip (linear colours, by vertex). Smooth, its lathe's seam closed.
-function _ccPetal(L, w, d, wAt, pointy, cup, cb, ct) {
-  const prof = [], NP = 15, S = 14;
-  for (let i = 0; i < NP; i++) { const t = i / (NP - 1), r = t <= wAt ? Math.sin(t / wAt * PI / 2) : Math.pow(Math.max(0, Math.cos((t - wAt) / (1 - wAt) * PI / 2)), pointy); prof.push(new T.Vector2(Math.max(1e-4, r), t * L)); }
-  const geo = new T.LatheGeometry(prof, S), p = geo.attributes.position, col = new Float32Array(p.count * 3);
-  for (let i = 0; i < p.count; i++) { const ux = p.getX(i), y = p.getY(i), k = Math.pow(Math.min(1, y / L), 1.4);
-    p.setXYZ(i, ux * w / 2, y, p.getZ(i) * d / 2 + cup * w * ux * ux * Math.sin(PI * Math.min(1, y / L)));
-    col[i * 3] = cb.r + (ct.r - cb.r) * k; col[i * 3 + 1] = cb.g + (ct.g - cb.g) * k; col[i * 3 + 2] = cb.b + (ct.b - cb.b) * k; }
-  geo.setAttribute('color', new T.BufferAttribute(col, 3)); geo.computeVertexNormals();
-  const nr = geo.attributes.normal, a = V(0, 0, 0), b = V(0, 0, 0);   // (the lathe's first and last columns are the same points: one normal for both)
-  for (let i = 0; i < NP; i++) { const j = S * NP + i; a.fromBufferAttribute(nr, i).add(b.fromBufferAttribute(nr, j)).normalize(); nr.setXYZ(i, a.x, a.y, a.z); nr.setXYZ(j, a.x, a.y, a.z); }
-  return geo;
-}
 // where a ray from P along d first meets mesh (in its parent's frame: mesh's own placement applied), and the mesh's smooth normal there (null if it misses)
 function _ccSurf(mesh) {
   const m = new T.Mesh(mesh.geometry, new T.MeshBasicMaterial({ side: T.DoubleSide })); m.position.copy(mesh.position); m.quaternion.copy(mesh.quaternion); m.scale.copy(mesh.scale); m.updateMatrixWorld(true);
@@ -271,53 +256,26 @@ function _coralTick(o) {
     aim.position.copy(Pc).addScaledVector(ax, bot * (1 - o.sink)); _aim32(aim, ax, V(0, 0, 1)); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);   // (its lower point partly in the rock: the whole crystal shows)
     const m = _gemCol32(geo, gem); body.add(m); gems.push(m);
   });
-  // FLOWERS (o.flowers; the owner: "we may add flowers to the 3d texture", then "the flower pattern is too regular, and they're not, I don't like them glowing like
-  // that", and "Add flowers again", putting them on No. 914 itself; they were on No. 915 alone): small open blossoms in a few loose clumps among the crystals, no two alike: five or six petals, each a little longer or shorter, wider or narrower, turned
-  // a little off even and cupped more or less; each flower its own size and shade of pink, its petals round, tipped a little off the rock's face. Matte: nothing on them glows.
-  if (o.flowers && !o.flowerKind) {
-    const fr = _ccRnd((o.seed || 17) + 53), pg = new T.SphereGeometry(1, 14, 10);
-    const heartM = new T.MeshStandardMaterial({ color: _lin31(0x7a1e45), metalness: 0, roughness: 0.88 }); heartM.envMapIntensity = 0.2;
-    o.flowers.forEach(([nx, nz, sz]) => { n.set(nx, Math.sqrt(Math.max(0, 1 - nx * nx - nz * nz)), nz); place(n, rockAt(n), Pc);
-      const petalM = new T.MeshStandardMaterial({ color: _lin31(0xdf6f9f).lerp(_lin31(0xc44c83), fr()), metalness: 0, roughness: 0.88 }); petalM.envMapIntensity = 0.2;
-      const face = V(n.x / o.w, n.y / o.h, n.z / o.l).normalize().add(V(fr() - 0.5, 0, fr() - 0.5).multiplyScalar(0.6)).normalize();   // (out from the rock, tipped a little)
-      const fl = G(); fl.position.copy(Pc); _aim32(fl, face, V(0, 0, 1)); body.add(fl);
-      const np = fr() < 0.5 ? 5 : 6, a0 = fr() * TAU;
-      for (let k = 0; k < np; k++) { const pv = G(); pv.rotation.y = a0 + (k + 0.35 * (fr() - 0.5)) * TAU / np; fl.add(pv);
-        const pl = sz * (0.75 + 0.3 * fr()), pw = sz * (0.46 + 0.16 * fr()), pt = new T.Mesh(pg, petalM); pt.scale.set(pw, sz * 0.16, pl); pt.position.set(0, sz * 0.2, pl * 0.85); pt.rotation.x = -(0.15 + 0.45 * fr()); pv.add(pt); }
-      const ht = new T.Mesh(pg, heartM); ht.scale.set(sz * 0.34, sz * 0.26, sz * 0.34); ht.position.y = sz * 0.26; fl.add(ht); });
-  }
-  // OTHER FLOWERS, to choose from (o.flowerKind; the owner, of the blossoms above: "Look less like cherry blossoms please"), in the same clumps, matte, nothing glowing:
-  // 'tulip', little tulips, a closed cup of six deep pink petals on a short stem, a leaf or two at its foot; 'rose', stone roses, rosettes of thick pointed leaves,
-  // pale mauve tipped in rose, as succulents grow on rock; 'star', star flowers, five to seven narrow pointed petals, deep pink paling to their tips, round a plum heart
-  if (o.flowers && o.flowerKind) {
-    const fr = _ccRnd((o.seed || 17) + 61), kind = o.flowerKind, UPv = V(0, 1, 0);
-    const fM = new T.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, metalness: 0, roughness: 0.78 }), stemM = new T.MeshStandardMaterial({ color: _lin31(0x34482f), metalness: 0, roughness: 0.8 });
-    const plumM = new T.MeshStandardMaterial({ color: _lin31(0x4a0f2c), metalness: 0, roughness: 0.8 }); fM.envMapIntensity = stemM.envMapIntensity = plumM.envMapIntensity = 0.2;
-    o.flowers.forEach(([nx, nz, sz]) => { n.set(nx, Math.sqrt(Math.max(0, 1 - nx * nx - nz * nz)), nz); place(n, rockAt(n), Pc);
-      const face = V(n.x / o.w, n.y / o.h, n.z / o.l).normalize(); if (kind === 'tulip') face.lerp(UPv, 0.6).normalize();   // (tulips stand up; the others lie on the rock)
-      face.add(V(fr() - 0.5, 0, fr() - 0.5).multiplyScalar(0.3)).normalize();
-      const fl = G(); fl.position.copy(Pc); _aim32(fl, face, V(0, 0, 1)); fl.rotateY(fr() * TAU); body.add(fl); const hue = fr();
-      if (kind === 'tulip') {
-        const sL = sz * (0.5 + 0.4 * fr()), cb = _lin31(0x6a1238).lerp(_lin31(0x8a1f55), hue), ct = _lin31(0xd8488c).lerp(_lin31(0xee6fa6), hue);
-        const st = new T.Mesh(new T.CylinderGeometry(sz * 0.055, sz * 0.075, sL, 8), stemM); st.position.y = sL / 2; fl.add(st);
-        const po = _ccPetal(sz, sz * 0.66, sz * 0.13, 0.55, 0.7, 0.3, cb, ct), pi = _ccPetal(sz * 0.92, sz * 0.58, sz * 0.13, 0.55, 0.7, 0.3, cb, ct);
-        for (let k = 0; k < 6; k++) { const pv = G(); pv.position.y = sL - sz * 0.05; pv.rotation.y = k * PI / 3 + 0.25 * (fr() - 0.5); fl.add(pv);
-          const pt = new T.Mesh(k % 2 ? pi : po, fM); pt.position.z = -sz * (k % 2 ? 0.1 : 0.16); pt.rotation.x = -(k % 2 ? 0.05 : 0.18) - 0.1 * fr(); pv.add(pt); }
-        const lg = _ccPetal(sz * 1.2, sz * 0.32, sz * 0.08, 0.4, 1.3, 0.2, _lin31(0x2e4229), _lin31(0x5b7a4a));
-        for (let k = 0, nl = 1 + Math.floor(fr() * 2); k < nl; k++) { const pv = G(); pv.rotation.y = fr() * TAU; fl.add(pv); const lf = new T.Mesh(lg, fM); lf.rotation.x = -(1.0 + 0.3 * fr()); pv.add(lf); }
-      } else if (kind === 'rose') {
-        const cb = _lin31(0xb48aa8).lerp(_lin31(0xc79bb0), hue), ct = _lin31(0x9a2a5e).lerp(_lin31(0xb23a6c), hue);
-        [[9, 1, 1.2], [7, 0.74, 0.78], [5, 0.5, 0.36]].forEach(([nL, sc, tilt], ring) => { const lg = _ccPetal(sz * sc, sz * 0.46 * sc, sz * 0.22 * sc, 0.42, 1.3, 0.25, cb, ct), a0 = fr() * TAU;
-          for (let k = 0; k < nL; k++) { const pv = G(); pv.position.y = sz * 0.04 * ring; pv.rotation.y = a0 + (k + 0.25 * (fr() - 0.5)) * TAU / nL; fl.add(pv);
-            const lf = new T.Mesh(lg, fM); lf.position.z = -sz * 0.03; lf.rotation.x = -(tilt + 0.15 * (fr() - 0.5)); lf.scale.setScalar(0.88 + 0.24 * fr()); pv.add(lf); } });
-        fl.add(new T.Mesh(_ccPetal(sz * 0.3, sz * 0.22, sz * 0.22, 0.5, 0.8, 0, cb, ct), fM));   // (its bud, closed, in the middle)
-      } else {
-        const cb = _lin31(0x7a1645).lerp(_lin31(0x95225a), hue), ct = _lin31(0xe0559a).lerp(_lin31(0xf27cb1), hue), np = 5 + Math.floor(fr() * 3), a0 = fr() * TAU;
-        const g = _ccPetal(sz, sz * 0.3, sz * 0.07, 0.35, 1.6, 0.12, cb, ct);
-        for (let k = 0; k < np; k++) { const pv = G(); pv.rotation.y = a0 + (k + 0.3 * (fr() - 0.5)) * TAU / np; fl.add(pv);
-          const pt = new T.Mesh(g, fM); pt.position.set(0, sz * 0.08, -sz * 0.05); pt.rotation.x = -(1.2 + 0.25 * (fr() - 0.5)); pt.scale.y = 0.8 + 0.35 * fr(); pv.add(pt); }
-        const ht = new T.Mesh(new T.SphereGeometry(sz * 0.17, 14, 10), plumM); ht.position.y = sz * 0.1; ht.scale.y = 0.7; fl.add(ht);
-      } });
+  // FLOWERS (o.flowers). Their history: blossoms (the owner: "we may add flowers to the 3d texture"; then "the flower pattern is too regular, and they're not, I don't
+  // like them glowing like that"; "Add flowers again"; "Look less like cherry blossoms please"), then three kinds to choose from, tulips, stone roses and star flowers
+  // (Nos. 916-918; the owner: "Ugly flowers, new concept"). Now CRYSTAL FLOWERS (the owner's choice, "Crystal flowers": each a little burst of short, square crystal
+  // points round a round stone centre, the same crystal as its back): five or six short crystals of the back's kind, whole, fanned out from a smooth dome of its stone
+  // like petals, each its own length and lean, scattered unevenly, big and small (the owner: "Larger and more irregular sized and positioned"), no two alike. Coloured and lit as the back's crystals are (_gemCol32), brightening with them as it
+  // strikes; the rock does not glow round them (only round the big crystals). sz: the flower's size (times o.flowerScale)
+  if (o.flowers) {
+    const fr = _ccRnd((o.seed || 17) + 71), stoneM = new T.MeshPhysicalMaterial({ color: o.rock, metalness: 0, roughness: o.rockRough, reflectivity: 0.15 }); stoneM.envMapIntensity = 0.15;
+    const up = V(0, 0, 0), t1 = V(0, 0, 0), t2 = V(0, 0, 0), ax = V(0, 0, 0), dome = new T.SphereGeometry(1, 20, 14);
+    o.flowers.forEach(([nx, nz, sz0]) => { const sz = sz0 * (o.flowerScale || 1); n.set(nx, Math.sqrt(Math.max(0, 1 - nx * nx - nz * nz)), nz); place(n, rockAt(n), Pc);
+      const face = V(n.x / o.w, n.y / o.h, n.z / o.l).normalize().add(V(fr() - 0.5, 0, fr() - 0.5).multiplyScalar(0.5)).normalize();   // (out from the rock, tipped this way or that)
+      const fl = G(); fl.position.copy(Pc); _aim32(fl, face, V(0, 0, 1)); fl.rotateY(fr() * TAU); body.add(fl);
+      up.set(0, 1, 0).applyQuaternion(fl.quaternion); t1.set(1, 0, 0).applyQuaternion(fl.quaternion); t2.set(0, 0, 1).applyQuaternion(fl.quaternion);   // (the flower's frame, in the body's)
+      const cR = sz * 0.3, np = 4 + Math.floor(fr() * 4), a0 = fr() * TAU;   // (four to seven crystals)
+      const ce = new T.Mesh(dome, stoneM); ce.scale.set(cR, cR * 0.62, cR); ce.position.y = cR * 0.12; fl.add(ce);   // (its round stone centre)
+      for (let k = 0; k < np; k++) { const ph = a0 + (k + 0.3 * (fr() - 0.5)) * TAU / np, th = o.flowerOpen + 0.4 * (fr() - 0.5), h = sz * (0.4 + 0.45 * fr()), r = sz * (0.19 + 0.08 * fr()), bot = o.bot * r;   // (stubby and chunky, no two alike)
+        ax.copy(up).multiplyScalar(Math.cos(th)).addScaledVector(t1, Math.sin(th) * Math.cos(ph)).addScaledVector(t2, Math.sin(th) * Math.sin(ph)).normalize();   // (fanned out from the centre)
+        const geo = _ccCrystal(h, r, sz * 0.26, o.jag, fr() * TAU, 500 + Math.floor(fr() * 1000), bot);
+        aim.position.copy(Pc).addScaledVector(up, cR * 0.3).addScaledVector(ax, cR * 0.45 + bot * (1 - o.sink)); _aim32(aim, ax, up); aim.updateMatrix(); geo.applyMatrix4(aim.matrix);   // (its foot in the centre's side)
+        const m = _gemCol32(geo, gem); body.add(m); gems.push(m); } });
   }
   // THE HEAD: small, at the front, smooth and simple (the owner: "its head is really weirdly shaped right now. It needs to have less definition"; it had a faceted
   // head, two curved black horns for mouthparts, two palps and a crystal mouth-spike): one rounded head of the same stone, smooth. On it (the owner: "make it to where
@@ -408,14 +366,11 @@ const _ccT = {
   brace: { y: -0.012, z: 0.25, rx: 0.0825, ry: 0.048, back: 0.75, glowR: 0.045,   // (its neck brace: the neck's centre (y, z), the collar's reach across and up, how far its crystals lean back, how far each one's glow reaches)
     gems: [[-45, 0.04, 0.023, 0.02, 1], [45, 0.04, 0.023, 0.02, 2], [-92, 0.032, 0.021, 0.017, 3], [92, 0.032, 0.021, 0.017, 4]] },   // (each: where round the neck (degrees from the top), height to the shoulders, half-width, point)
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
-  flowers: [[0.1, 0.32, 0.024], [0.21, 0.43, 0.015], [0.01, 0.45, 0.013], [-0.18, -0.2, 0.02], [-0.28, -0.11, 0.014], [0.42, -0.5, 0.018], [-0.62, -0.05, 0.016]],   // (its flowers (the owner: "Add flowers again"; they were on No. 915 alone), in clumps; each: where (its direction's x and z on the body), its size)
+  flowers: [[0.14, 0.38, 0.03], [0.05, 0.52, 0.011], [-0.22, 0.42, 0.019], [-0.2, -0.16, 0.026], [-0.05, -0.31, 0.01], [0.52, -0.06, 0.017], [0.42, -0.55, 0.013], [-0.62, -0.1, 0.022], [0.62, 0.3, 0.009]],   // (its crystal flowers, scattered unevenly, big and small (the owner: "Larger and more irregular sized and positioned"); each: where (its direction's x and z on the body), its size)
+  flowerScale: 1.7, flowerOpen: 0.7,   // (the crystal flowers' size, and how far their crystals fan out from straight up (radians))
   seg: 0.08, hipY: 0, legR: 0.022, lift: 0.03, stride: 0.03,   // (the legs' short segment: how long, how high on the body's side; how thick; their step)
   legs: [   // (a pair each, front and back: where along the body (z), how far out the point stands beyond the knee, how far the stake's top rises above the knee, its half-width)
     { z: 0.1, out: 0.04, top: 0.05, leaf: 0.037 }, { z: -0.1, out: 0.045, top: 0.05, leaf: 0.038 },
   ],
 };
-fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock, and among them small matte pink flowers in loose clumps, no two alike; a small six-sided head of the same stone, its edges softly rounded, hung low, two ears of its stone sticking up and back from its upper edges like small horns, flaring into the head, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
-// Flowers to choose from for No. 914 (the owner, of its blossoms: "Look less like cherry blossoms please"): the same tick, the same clumps, three kinds
-fx(916, "CORAL TICK No. 914 with little tulips in place of its blossoms: closed cups of six deep pink petals on short stems, a leaf or two at their feet.", () => _coralTick(Object.assign({}, _ccT, { flowerKind: 'tulip' })));
-fx(917, "CORAL TICK No. 914 with stone roses in place of its blossoms: rosettes of thick pointed leaves, pale mauve tipped in rose, as succulents grow on rock.", () => _coralTick(Object.assign({}, _ccT, { flowerKind: 'rose' })));
-fx(918, "CORAL TICK No. 914 with star flowers in place of its blossoms: five to seven narrow pointed petals, deep pink paling to their tips, round a dark plum heart.", () => _coralTick(Object.assign({}, _ccT, { flowerKind: 'star' })));
+fx(914, "CORAL TICK, the coral crab redrawn as the owner asked: a tick's plump body, wider at the back, its exterior big, smooth, rounded plates of dark stone, cartoony; jagged, bold crystals of square section breaking out of its back, the biggest where the sketch's little spire stood, a glow of BLOOM pink radiating from each over the rock, and among them crystal flowers scattered unevenly over it, big and small, each four to seven short square crystals fanned out round a round stone centre; a small six-sided head of the same stone, its edges softly rounded, hung low, two ears of its stone sticking up and back from its upper edges like small horns, flaring into the head, and a brace of four crystals round its neck, two each side; four legs as in the sketch, each a short segment straight out of its side and a long pointed leaf-spear stake.", () => _coralTick(_ccT));
