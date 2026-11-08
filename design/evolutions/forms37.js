@@ -7,8 +7,9 @@
 //   907  from the snail below it: a spiral shell on a frilled foot; a long S-curved neck to a four-petal flower; from the flower a long blade-leaf, its lower edge a
 //        sawtooth. Drawn with the shell's growth lines glowing nectar pink.
 // Drafts for the owner's choice (2026-11-08: "draft me some designs for the brawler next", "The bloom one."): not in the game. The owner chose 906: "The left one tilted
-// pitcher and feet like roots/tentacles". That is No. 908 (below 906); then, on its body, "a wilted flower that has teeth": No. 909; then, on its textures, Nos. 910 and 911 (two finishes), in review.
-// 907 was passed over.
+// pitcher and feet like roots/tentacles". That is No. 908 (below 906); then, on its body, "a wilted flower that has teeth": No. 909; then, on its textures, Nos. 910 and 911 (two finishes);
+// then CONSUME's look ("whenever it ... eats one of the enemy targets, that the petal close up"): update's third argument, cons (seconds since it swallowed), closes the
+// petals into a bud, throbbing, then opens them. "The design looks solid right now as stationary and moving"; the finish (910 or 911) is to choose. 907 was passed over.
 // Uses forms31.js (_c31, _prog31) and forms32.js (_taper32, _aim32). +z is the front; ph = 1.6 t runs once round the idle loop.
 const _sdS = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 const _sdSkin = new T.MeshStandardMaterial({ color: 0x040405, metalness: 0.25, roughness: 0.3, side: T.DoubleSide }); _sdSkin.envMapIntensity = 0.5;   // (wet black, as the Electro Skink's)
