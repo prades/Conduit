@@ -178,7 +178,7 @@ function measure(w, h) {
         const r = J(`nestForms().filter(f => f.element === 'blossom').map(f => f.role)`);
         same(r.join(), 'brawler,sniper', 'BLOOM\'s forms there');
     });
-    check('the card art: a BLOOM follower\'s backdrop has its texture (provisional), and BLOOM has an emblem', () => {
+    check('the card art: a BLOOM follower\'s backdrop has its texture, and BLOOM has an emblem (approved 2026-11-08)', () => {
         const r = J(`(function(){ return { cls: cardArtUnitClass({ isFollower: true, element: 'blossom', role: 'brawler' }), tex: cardArtTexture('blossom').length, emb: !!CARD_ART_EMBLEMS.blossom }; })()`);
         ok(/blossom/.test(r.cls), 'its class: ' + r.cls); ok(r.tex > 300, 'its texture: ' + r.tex); same(r.emb, true, 'its emblem');
     });

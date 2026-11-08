@@ -7,7 +7,7 @@
 // into." Asked further, the owner chose: only the toxic followers THERE ("Only toxic ones there"); the stats do not change, shown side by side with what changes marked ("Same stats, show changes");
 // built in stages ("Stages, menus first"): this first one converts an unevolved toxic follower, and an evolved one waits for its class's BLOOM form.
 //   THE MACHINE   the purifier mount (STATION_KINDS.purifier_mount, js/stations.js) once the module is in and has run its cycle (the quest's installedAt and purifiedAt, js/quests.js: while the
-//                 cycle runs, during the queen's fight, the mount says THE MODULE IS RUNNING as before; the agent's reading of "after it's been installed", to confirm): its use opens this panel (#convPanel).
+//                 cycle runs, during the queen's fight, the mount says THE MODULE IS RUNNING as before; the agent's reading of "after it's been installed", confirmed by the owner 2026-11-08): its use opens this panel (#convPanel).
 //   WHO           the toxic followers in your squad or holding the Sewers (js/party.js partyIsMember; a post is f.post). One that cannot convert yet is listed dimmed, saying why.
 //   THE PREVIEW   its card now and as it would be (BLOOM's colour and backdrop), its numbers before and after (the same: a conversion keeps its level, XP, bond and stats), and what changes:
 //                 its element, what its hits do (toxic's defense shred to BLOOM's MEND), its moves, its cards that come off, and the form it will evolve into.

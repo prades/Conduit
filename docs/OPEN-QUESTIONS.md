@@ -569,7 +569,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - the apparatus's look;
     - BLOOM's forms: pictures (SUNDEW's approved 2026-11-08: No. 911; the coral crab's: No. 914), the lotus lantern's name (the coral crab's is "coral crab" for now, 2026-11-08), which comes first, an egg;
     - CONSUME's, SEEDFALL's and REEF's numbers; REEF's climbing reaches any high ground over ground the player can stand on (2026-11-08), but who may climb, both ways or one, how long, and the deck's glass are open;
-    - the conversion's first stage (build `2026-11-08i`), to confirm: it converts once the module's cycle has run (not during the queen's fight); MEND counts the BLOOM follower itself; a toxic Technician waits for REEF; an unevolved BLOOM follower has no element move or Ultimate yet (none designed); BLOOM's texture and emblem are provisional;
+    - ~~the conversion's first stage (build `2026-11-08i`), to confirm~~ *(answered 2026-11-08, the owner: "Your calls were correct": it converts once the module's cycle has run; MEND counts the BLOOM follower itself; an unevolved BLOOM follower hits plainly, has no Ultimate and waits for its form; the square-pink-crystal art stands)*; still open: BLOOM's element move and Ultimate for an unevolved follower (none designed);
     - BLOOM's cards' designs;
     - BLOOM's texture and icon.
 

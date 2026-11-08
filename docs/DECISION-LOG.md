@@ -2398,7 +2398,7 @@ Supersedes the chart's Crustacean name and the Blight Spider's Drone tag (the ow
 - Built in stages: first BLOOM as an element, the machine, both pop-ups, and the conversion of an unevolved toxic follower; the BLOOM forms come next.
 
 ### Status
-Implemented in build `2026-11-08i` (tests/conversion.js; not playtested). The agent's readings to confirm: it converts once the module's cycle has run (the water clean), not during the queen's fight; MEND counts the BLOOM follower itself; a toxic Technician waits for REEF. Provisional: BLOOM's texture and emblem.
+Implemented in build `2026-11-08i` (tests/conversion.js; not playtested). The agent's readings, offered to confirm: it converts once the module's cycle has run (the water clean), not during the queen's fight; MEND counts the BLOOM follower itself; an unevolved BLOOM follower hits plainly, has no Ultimate and waits for its form; BLOOM's texture, emblem and icon (square pink crystals) as placeholders. **Confirmed by the owner, 2026-11-08: "Your calls were correct".** A toxic Technician waits for REEF (the coral crab's stage).
 
 ### Alternatives
 Every toxic follower listed wherever it is; stats that change on conversion; one bigger build with SUNDEW and the coral crab; a preview only.

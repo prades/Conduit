@@ -726,7 +726,7 @@ const FORM_ULTIMATES = {
 // The Ultimate a follower fires: its form's own, else its element's (null: none, a core form without its own)
 // BLOOM's MEND (docs/CONVERSION.md §2, "Its status, MEND"; build 2026-11-08i): every hit a BLOOM follower lands heals the most hurt of your followers within 4 tiles by 2% of that one's maximum
 // health (js/helpers.js applyDamage calls it). "The most hurt": the lowest share of its health left; the BLOOM follower itself counts, being one of yours (the agent's reading of the approved
-// words, docs/OPEN-QUESTIONS.md). A follower at full health is passed over; none hurt nearby, no heal.
+// words, confirmed by the owner 2026-11-08: "Your calls were correct"). A follower at full health is passed over; none hurt nearby, no heal.
 const ELEMENT_MEND = { radius: 4, share: 0.02 };
 function elementMend(src) {
     if (!src || src.dead || src.element !== "blossom" || src.team !== "green" || typeof followers === "undefined") return 0;

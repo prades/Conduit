@@ -48,7 +48,7 @@ const ICONS = {
         <circle cx="14.6" cy="13" r="1.6" fill="${_ICON_DARK}" opacity="0.55"/>
         <circle cx="14.2" cy="18.4" r="1.1" fill="${_ICON_DARK}" opacity="0.55"/>
         <path d="M8.2 10.6 L10.6 7.2" stroke="#fff" stroke-width="1.4" opacity="0.8"/>`,
-    // BLOOM (PROVISIONAL, build 2026-11-08i: its icon is the owner's to choose): three square crystals, the middle one the tallest, as on the coral crab's back
+    // BLOOM (build 2026-11-08i; approved 2026-11-08): three square crystals, the middle one the tallest, as on the coral crab's back
     bloom: c => `
         <path d="M9.4 22 L9.4 7.4 L12 2 L14.6 7.4 L14.6 22 Z" fill="${c}"/>
         <path d="M3.6 22 L3.6 12.4 L5.9 8.6 L8.2 12.4 L8.2 22 Z" fill="${c}" opacity="0.85"/>

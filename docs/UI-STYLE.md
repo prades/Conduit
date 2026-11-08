@@ -81,7 +81,7 @@ The owner: "We also need to make themes for the different species and give textu
   - **On enemies:** the enemy card shows its race's icon and what it is weak to (`COMBAT.md` §7.3). This needs an icon for each of the six enemy races and a way to show the six damage types. That need follows from this pick; it is to be confirmed with the looks.
 - **How:** the looks are proposed as mockups for the owner's approval first (`ART-PROCESS.md`). The game keeps today's art until they are approved.
 - **Open (2026-11-02), answered at gate 2 (2026-11-06):** the themes themselves (colours, motifs), the icon style, and how three layers stay readable on a follower card. Still open: where the element emblems go (`OPEN-QUESTIONS.md` §3).
-- **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop.
+- **BLOOM** (designed 2026-11-02, `CONVERSION.md`), the seventh element, is blossom pink, `#ff7ab8`. It needs what every element has: a texture, a crystal, an icon (seven element icons in all) and a follower backdrop. *(Since build `2026-11-08i`: its texture (faint square pink crystals), emblem and icon (three square crystals) and its follower backdrop are drawn, approved 2026-11-08 (the owner: "Your calls were correct"); its crystal on a card comes with BLOOM's cards.)*
 
 **Gate 2: approved, every look** (2026-11-06; `DECISION-LOG.md`). **Built** in `2026-11-06d`, on the branch `claude/start-game-project-HSh7Z` (not on main): implemented as drawn, and verified by tests/speciesart.js; how it was built is under "The build" below.
 - **Approved so far** (`DECISION-LOG.md`):
@@ -147,7 +147,7 @@ The owner: "We also need to make themes for the different species and give textu
     - SPIDER: a round abdomen with a mark cut in it, the head, eight long bent legs;
     - MANTIS: a triangular head with its eyes, the long neck, raised raptor arms with hooks, a banded abdomen, four legs;
     - MOTH: four spread wings with an eyespot cut in each upper one, the body, two feelers.
-  - Still to come: BLOOM's blossom, when BLOOM comes.
+  - BLOOM's: three square pink crystals, the middle one the tallest (build `2026-11-08i`, approved 2026-11-08); it was to be a blossom.
 - **The enemy card:**
   - the race's icon before its name;
   - under its numbers, a row from the game's own table (js/damage.js `DMG_RACE`, `COMBAT.md` §7.3): WEAK and its types in green chips, then RESISTS and its types in grey ones;

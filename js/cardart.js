@@ -51,7 +51,7 @@ const CARD_ART = {
     speciesHalf: { spinelegged: "cuAll" },    // laid at half its size: this drawing (its id) twice across the band
     speciesInElement: { elemental: true },   // laid in the follower's element's colour, not the species' own
 };
-const CARD_ART_ELEMENTS = ["fire", "electric", "ice", "flux", "core", "toxic", "blossom"];   // (blossom: BLOOM, js/config.js; its texture and emblem PROVISIONAL, build 2026-11-08i)
+const CARD_ART_ELEMENTS = ["fire", "electric", "ice", "flux", "core", "toxic", "blossom"];   // (blossom: BLOOM, js/config.js; its texture and emblem since build 2026-11-08i, approved 2026-11-08)
 const CARD_ART_CLASSES = ["brawler", "mage", "technician"];
 const CARD_ART_SPECIES = ["spinelegged", "mollusk", "elemental", "drone", "jelly"];   // js/cards.js EQUIP_SUBCLASSES
 const CARD_ART_RACES = ["ant", "beetle", "scorpion", "spider", "mantis", "moth"];      // the enemy races (js/damage.js DMG_RACE)
@@ -112,7 +112,7 @@ const _CA_TEX = {
             + '<g fill="none" stroke="#be78ff" stroke-opacity=".26" stroke-width="2.4" stroke-linecap="round" transform="translate(150 150) rotate(-18) scale(1 .9) translate(-150 -150)">' + P + "</g>"
             + '<g fill="none" stroke="#be78ff" stroke-opacity=".14" stroke-width="1.2" stroke-linecap="round" transform="translate(150 150) rotate(42) scale(1 .9) translate(-150 -150)">' + [0, 1, 2].map(i => '<use href="#caVa' + i + '" xlink:href="#caVa' + i + '"/>').join("") + "</g>";
     },
-    // BLOOM (PROVISIONAL, build 2026-11-08i: BLOOM's texture, crystal and icon are the owner's to choose, docs/OPEN-QUESTIONS.md): square pink crystals, each a body and a point, as on the
+    // BLOOM (build 2026-11-08i; approved 2026-11-08, the owner: "Your calls were correct"): square pink crystals, each a body and a point, as on the
     // coral crab's back (design No. 914), scattered and faint
     blossom() {
         _caSeed = 41; const out = [];
@@ -489,7 +489,7 @@ const CARD_ART_EMBLEMS = {
         return _caDisc(12.5, 19, 8.5) + _caDisc(23.5, 10.5, 5.2) + _caDisc(25, 23.5, 3.2) + _caDisc(7.6, 6.6, 2.2) + glint(12.5, 19, 4.6, 6.4) + glint(23.5, 10.5, 2.6, 3.8);
     } },
     electric: { col: "#ffee33", d() { return _caPoly([[13.5, 1.5], [22.5, 1.5], [17, 12.5], [24.5, 12.5], [10.5, 30.5], [14.5, 17.5], [7.5, 17.5]], true); } },   // a bolt
-    // BLOOM (PROVISIONAL, build 2026-11-08i: its icon is the owner's to choose): three square crystals, the middle one the tallest, as on the coral crab's back
+    // BLOOM (build 2026-11-08i; approved 2026-11-08): three square crystals, the middle one the tallest, as on the coral crab's back
     blossom: { col: "#ff7ab8", d() { return _caPoly([[12.5, 30], [12.5, 10], [16, 3], [19.5, 10], [19.5, 30]], true) + _caPoly([[5, 30], [5, 17], [8, 12], [11, 17], [11, 30]], true) + _caPoly([[21, 30], [21, 19], [24, 14], [27, 19], [27, 30]], true); } },
     ice: { col: "#99ddff", d() {   // a snowflake: six arms, each with a pair of twigs, round a small hexagon
         let d = _caPoly([0, 1, 2, 3, 4, 5].map(i => [16 + 3.4 * Math.cos((i * 60 - 90) * Math.PI / 180), 16 + 3.4 * Math.sin((i * 60 - 90) * Math.PI / 180)]), true);
