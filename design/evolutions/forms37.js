@@ -266,6 +266,9 @@ const _sdF = Object.assign({}, _sdE, { tex: 'glow' });
 fx(909, "SUNDEW, 908 with a new body: a wilted flower with teeth, its black petals cupped round a mouth of pale fangs and wilting outward and down, their inner faces glowing pink, the nectar deep in its throat; tipped forward on its roots, its stem from its base arching over it to the flower and the blade-leaf.", () => _sundewPitcher(_sdD));
 fx(910, "SUNDEW, 909 textured: velvet petals, plum-black and matte, veined from the base and mottled, darker at their wilted edges and tips, creased lengthwise; the roots, stem and blade matte, the roots ringed like tentacles.", () => _sundewPitcher(_sdE));
 fx(911, "SUNDEW, the approved look (2026-11-08): 910 with the veins of its petals glowing BLOOM's pink.", () => _sundewPitcher(_sdF));
+// 922, THE GAME'S SPRITE OF No. 911 (SUNDEW, BLOOM's Brawler; the owner sent it to the game, 2026-11-08: "SUNDEW into the game"): No. 911 at the size of the other Brawlers,
+// baked in a 192 px cell with its CONSUME frames (design/evolutions/bake.js, the 'sundew' job; js/evolution.js EVOLUTIONS.sundew).
+fx(922, "SUNDEW: the game's sprite of No. 911, at the other Brawlers' size.", () => _sundewPitcher(Object.assign({}, _sdF, { S: 2.2 })));
 
 // ── 907 · THE SNAIL (from the snail drawn below it) ────────────────────────────────────────────────────────────────────────
 // the shell: a tube coiled in the y-z plane (its eye toward the back, its mouth at the front of its foot), growing as it coils; its growth lines glow nectar pink

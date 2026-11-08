@@ -396,6 +396,7 @@ function _updateNPCStep(actor) {
     if (actor._flight && typeof techFlightStep === "function" && techFlightStep(actor)) return;   // thrown by a Kinetic Launcher: in the air, nothing else moves it and no wall stops it (js/techabilities.js)
     if (actor._pinball && typeof pinballStep === "function" && pinballStep(actor)) return;   // a PINBALL rolling (js/evolution.js): the roll moves it, and stops itself at a wall
     if (actor._burrow && typeof burrowStep === "function" && burrowStep(actor)) return;   // the Thermite Burrower's BURROW STRIKE under way (js/combat.js): its dive and its tunnel move it
+    if (actor._consume && typeof consumeHoldStep === "function" && consumeHoldStep(actor)) return;   // SUNDEW digesting its CONSUME catch (js/elements.js): it stands still, its petals shut
     if (actor._fault && typeof techFaultStep === "function" && techFaultStep(actor)) return;   // its FAULTLINE under way (js/techabilities.js): it follows the drawn path under the floor
     const _fpx = actor.x, _fpy = actor.y;   // for the facility's walls (js/facilityplay.js)
     if (actor instanceof Predator && actor.team !== "green") {

@@ -205,6 +205,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (hit && !fixed && !isReflected && typeof dmgApply === "function") amount = dmgApply(target, amount, source, element, hit);
     else { const _el = element || (source && source.element); if (_el && target.element) amount *= getElementMultiplier(_el, target.element); }
     if (target.untargetable) return;   // underground: nothing reaches it
+    if (target._consume && typeof consumeGuard === "function") amount = consumeGuard(target, amount);   // (SUNDEW holding a catch: 75% less, js/elements.js)
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
     if (target.smokeForm > 0 && Math.random() < (target.smokeEvasion||0.75)) return;

@@ -575,7 +575,7 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 
     Designed since, in words (2026-11-02):
     - MEND heals 2% every hit;
-    - SUNDEW, the Brawler, whose CONSUME swallows an enemy and takes 75% less damage while holding it. *(2026-11-08: its look approved, No. 911, a wilted black flower with fangs on root-tentacles; CONSUME is its Ultimate: `CONVERSION.md` §2.)*
+    - SUNDEW, the Brawler, whose CONSUME swallows an enemy and takes 75% less damage while holding it. *(In the game since build `2026-11-08k`: CONSUME's reach and bite provisional, its bite Elemental, and SUNDEW still while it digests: the agent's calls, to confirm.)* *(2026-11-08: its look approved, No. 911, a wilted black flower with fangs on root-tentacles; CONSUME is its Ultimate: `CONVERSION.md` §2.)*
     - the Mage (the little shrub; it was the lotus lantern), with SEED SHOT and SEEDFALL;
     - the coral crab Technician, whose REEF grows rock and crystal (coral until 2026-11-08) the player can climb onto any high ground that extends over ground the player can stand on or interact with (as an ice bridge on any water). *(2026-11-08: its look approved, No. 914, a rocky tick with square pink crystals on its back; it stays Crustacean, its attack Crushing.)*
 

@@ -11,8 +11,13 @@ const fs = require('fs'), path = require('path');
 const THREE_DIR = process.argv[2], OUT = process.argv[3];
 const core = fs.readFileSync(path.join(__dirname, 'forms-core.js'), 'utf8');
 // forms2.js (helpers + Nos. 33-52), forms3.js (sentinels, robots, drones, Nos. 53-72) and forms4.js (ancient relics, Nos. 73-92), forms5.js (the corroded crystal, Nos. 93-103), forms6.js (the flux brawler, Nos. 104-115), forms7.js (the core mage, Nos. 116-125), forms8.js (the toxic brawler, Nos. 126-141), forms9.js (the core worker, Nos. 142-144), forms10.js (the ice maw, Nos. 145-157), forms11-13.js (the ammonite in its jar, Nos. 158-222), forms14.js (cloaks and pyramids, Nos. 223-331), forms15.js (the rock porcupine, Nos. 332-361) register FORMS2[no].
-const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8'), f6src = fs.readFileSync(path.join(__dirname, 'forms6.js'), 'utf8'), f7src = fs.readFileSync(path.join(__dirname, 'forms7.js'), 'utf8'), f8src = fs.readFileSync(path.join(__dirname, 'forms8.js'), 'utf8'), f9src = fs.readFileSync(path.join(__dirname, 'forms9.js'), 'utf8'), f10src = fs.readFileSync(path.join(__dirname, 'forms10.js'), 'utf8'), f11src = fs.readFileSync(path.join(__dirname, 'forms11.js'), 'utf8'), f12src = fs.readFileSync(path.join(__dirname, 'forms12.js'), 'utf8'), f13src = fs.readFileSync(path.join(__dirname, 'forms13.js'), 'utf8'), f14src = fs.readFileSync(path.join(__dirname, 'forms14.js'), 'utf8'), f15src = fs.readFileSync(path.join(__dirname, 'forms15.js'), 'utf8'), f16src = fs.readFileSync(path.join(__dirname, 'forms16.js'), 'utf8'), f17src = fs.readFileSync(path.join(__dirname, 'forms17.js'), 'utf8'), f18src = fs.readFileSync(path.join(__dirname, 'forms18.js'), 'utf8'), f19src = fs.readFileSync(path.join(__dirname, 'forms19.js'), 'utf8'), f20src = fs.readFileSync(path.join(__dirname, 'forms20.js'), 'utf8'), f21src = fs.readFileSync(path.join(__dirname, 'forms21.js'), 'utf8'), f22src = fs.readFileSync(path.join(__dirname, 'forms22.js'), 'utf8'), f23src = fs.readFileSync(path.join(__dirname, 'forms23.js'), 'utf8'), f24src = fs.readFileSync(path.join(__dirname, 'forms24.js'), 'utf8'), f25src = fs.readFileSync(path.join(__dirname, 'forms25.js'), 'utf8'), f26src = fs.readFileSync(path.join(__dirname, 'forms26.js'), 'utf8'), f27src = fs.readFileSync(path.join(__dirname, 'forms27.js'), 'utf8'), f28src = fs.readFileSync(path.join(__dirname, 'forms28.js'), 'utf8'), f29src = fs.readFileSync(path.join(__dirname, 'forms29.js'), 'utf8'), f30src = fs.readFileSync(path.join(__dirname, 'forms30.js'), 'utf8'), f31src = fs.readFileSync(path.join(__dirname, 'forms31.js'), 'utf8'), f32src = fs.readFileSync(path.join(__dirname, 'forms32.js'), 'utf8'), f33src = fs.readFileSync(path.join(__dirname, 'forms33.js'), 'utf8'), f34src = fs.readFileSync(path.join(__dirname, 'forms34.js'), 'utf8'), f36src = fs.readFileSync(path.join(__dirname, 'forms36.js'), 'utf8'), f39src = fs.readFileSync(path.join(__dirname, 'forms39.js'), 'utf8');
+const f2src = fs.readFileSync(path.join(__dirname, 'forms2.js'), 'utf8'), f3src = fs.readFileSync(path.join(__dirname, 'forms3.js'), 'utf8'), f4src = fs.readFileSync(path.join(__dirname, 'forms4.js'), 'utf8'), f5src = fs.readFileSync(path.join(__dirname, 'forms5.js'), 'utf8'), f6src = fs.readFileSync(path.join(__dirname, 'forms6.js'), 'utf8'), f7src = fs.readFileSync(path.join(__dirname, 'forms7.js'), 'utf8'), f8src = fs.readFileSync(path.join(__dirname, 'forms8.js'), 'utf8'), f9src = fs.readFileSync(path.join(__dirname, 'forms9.js'), 'utf8'), f10src = fs.readFileSync(path.join(__dirname, 'forms10.js'), 'utf8'), f11src = fs.readFileSync(path.join(__dirname, 'forms11.js'), 'utf8'), f12src = fs.readFileSync(path.join(__dirname, 'forms12.js'), 'utf8'), f13src = fs.readFileSync(path.join(__dirname, 'forms13.js'), 'utf8'), f14src = fs.readFileSync(path.join(__dirname, 'forms14.js'), 'utf8'), f15src = fs.readFileSync(path.join(__dirname, 'forms15.js'), 'utf8'), f16src = fs.readFileSync(path.join(__dirname, 'forms16.js'), 'utf8'), f17src = fs.readFileSync(path.join(__dirname, 'forms17.js'), 'utf8'), f18src = fs.readFileSync(path.join(__dirname, 'forms18.js'), 'utf8'), f19src = fs.readFileSync(path.join(__dirname, 'forms19.js'), 'utf8'), f20src = fs.readFileSync(path.join(__dirname, 'forms20.js'), 'utf8'), f21src = fs.readFileSync(path.join(__dirname, 'forms21.js'), 'utf8'), f22src = fs.readFileSync(path.join(__dirname, 'forms22.js'), 'utf8'), f23src = fs.readFileSync(path.join(__dirname, 'forms23.js'), 'utf8'), f24src = fs.readFileSync(path.join(__dirname, 'forms24.js'), 'utf8'), f25src = fs.readFileSync(path.join(__dirname, 'forms25.js'), 'utf8'), f26src = fs.readFileSync(path.join(__dirname, 'forms26.js'), 'utf8'), f27src = fs.readFileSync(path.join(__dirname, 'forms27.js'), 'utf8'), f28src = fs.readFileSync(path.join(__dirname, 'forms28.js'), 'utf8'), f29src = fs.readFileSync(path.join(__dirname, 'forms29.js'), 'utf8'), f30src = fs.readFileSync(path.join(__dirname, 'forms30.js'), 'utf8'), f31src = fs.readFileSync(path.join(__dirname, 'forms31.js'), 'utf8'), f32src = fs.readFileSync(path.join(__dirname, 'forms32.js'), 'utf8'), f33src = fs.readFileSync(path.join(__dirname, 'forms33.js'), 'utf8'), f34src = fs.readFileSync(path.join(__dirname, 'forms34.js'), 'utf8'), f36src = fs.readFileSync(path.join(__dirname, 'forms36.js'), 'utf8'), f37src = fs.readFileSync(path.join(__dirname, 'forms37.js'), 'utf8'), f39src = fs.readFileSync(path.join(__dirname, 'forms39.js'), 'utf8');
 const JOBS = [
+  // No. 922 (forms37.js), the game sprite of No. 911: SUNDEW, BLOOM's Brawler (approved 2026-11-08: "911, and make CONSUME his Ultimate"; sent to the game: "SUNDEW into the game").
+  // Its idle is its walk (its roots writhing); its action the blade-leaf's slash. `consume`: a third block of 8 frames, CONSUME (update's third argument, seconds since it swallowed):
+  // four as its petals snap shut and its stem withers to the floor (the game plays them backward as it opens), then four of the bud throbbing, one throb, looped while it digests.
+  // Bake it alone: node design/evolutions/bake.js <three> img/evo sundew 192 2.2667 (a 192 px cell, as the Electro Skink's and the Little Shrub's)
+  { id: 'sundew', form: 922, color: '#ff7ab8', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true, consume: [0.04, 0.12, 0.2, 0.5, 1.2, 1.4273, 1.6545, 1.8818] },
   // No. 921 (forms39.js), the game sprite of No. 920: the LITTLE SHRUB (a working name), BLOOM's Mage, from the owner's pencil sketch and reviews (approved 2026-11-08: "Shrub into the game").
   // Its idle is its walk, a shuffle (it rocks side to side), its thorny black vines held out; its action is SEED SHOT: the vines rear round a glowing seed and whip out together.
   // Bake it alone in a 192 px cell with half 2.2667 (the same pixels a unit as the 144 px sheets, room for the whip): node design/evolutions/bake.js <three> img/evo shrub 192 2.2667
@@ -207,6 +212,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   ${f33src}
   ${f34src}
   ${f36src}
+  ${f37src}
   ${f39src}
   const out = {};
   const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false });
@@ -226,6 +232,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   const sheetG = document.createElement('canvas'); sheetG.width = CELL * 16; sheetG.height = CELL * 8; const sgG = sheetG.getContext('2d');
   const isGround = o => { for (let q = o; q; q = q.parent) if (q.userData && q.userData.ground) return true; return false; };
   for (const job of jobs) {
+    const NCOL = job.consume ? 24 : 16; if (sheetCv.width !== CELL * NCOL) { sheetCv.width = CELL * NCOL; sheetG.width = CELL * NCOL; }   // (24 columns with a CONSUME block)
     sg.clearRect(0, 0, sheetCv.width, sheetCv.height); sgG.clearRect(0, 0, sheetG.width, sheetG.height);
     EL = { color: job.color }; setElementColour(job.color); if (typeof job.form === 'number' && !job.brightCrystal) { M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8); }
     const scene = new T.Scene(); scene.environment = env;
@@ -255,11 +262,11 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
     for (let k = 0; k < 8; k++) {
       const th = k * PI / 4, fx = Math.cos(th), fz = Math.sin(th);
       B.g.rotation.y = Math.atan2(fx, fz);
-      for (let f = 0; f < 16; f++) {
-        const idle = f < 8, i = f % 8;
-        const t = idle ? i * P / 8 : 1.0 + i * 0.06;
-        const act = idle ? job.idleAct : job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;   // pulse: up and back down, so the move ends where it began
-        B.update(t, act);
+      for (let f = 0; f < NCOL; f++) {
+        const idle = f < 8, i = f % 8, cons = f >= 16 ? job.consume[i] : null;
+        const t = cons != null ? (i < 4 ? i * 0.1 : (i - 4) * P / 4) : idle ? i * P / 8 : 1.0 + i * 0.06;   // (the CONSUME block: its hold frames loop the idle's breath over four)
+        const act = cons != null ? 0 : idle ? job.idleAct : job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;   // pulse: up and back down, so the move ends where it began
+        if (cons != null) B.update(t, act, cons); else B.update(t, act);
         if (!gMeshes.length) { renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL); }
         else {
           gMeshes.forEach(m => m.visible = false); renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL);   // the body
@@ -268,7 +275,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
         }
       }
     }
-    out[job.id] = { png: sheetCv.toDataURL('image/png'), ground: gMeshes.length ? sheetG.toDataURL('image/png') : null, meta: { cell: CELL, rows: 8, cols: 16, idle: 8, action: 8, anchor, core: coreAt, unitsPerCell: HALF * 2 } };
+    out[job.id] = { png: sheetCv.toDataURL('image/png'), ground: gMeshes.length ? sheetG.toDataURL('image/png') : null, meta: Object.assign({ cell: CELL, rows: 8, cols: NCOL, idle: 8, action: 8 }, job.consume ? { consume: 8 } : {}, { anchor, core: coreAt, unitsPerCell: HALF * 2 }) };
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   }
   return out;

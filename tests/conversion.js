@@ -97,14 +97,14 @@ function measure(w, h) {
         const r = J(`ELEMENTS.map(e => [getElementMultiplier('blossom', e.id), getElementMultiplier(e.id, 'blossom')])`);
         ok(r.every(p => p[0] === 1 && p[1] === 1), JSON.stringify(r));
     });
-    check('an unevolved BLOOM follower is named by its element\'s name (BLOOM BRAWLER, not BLOSSOM); it has no element move (its hit is plain), no Ultimate yet, and it does not evolve while its form is not in the game', () => {
-        const r = J(`(function(){ __clear(); const f = __mk('blossom', 'brawler'); f.level = 12; f.xp = 0; return { label: unitTypeLabel(f), ult: followerUltimate(f), form: evolutionFor(f), evolved: evoCheck(f), still: f.evolved || null, moves: _IP_ATTACKS.blossom }; })()`);
-        same(r.label, 'BLOOM BRAWLER', 'its name'); same(r.ult, null, 'its Ultimate'); same(r.form, null, 'its form'); same(r.evolved, false, 'it evolved'); same(r.still, null, 'its form'); same(r.moves.proc, 'mend', 'what its hits do');
+    check('an unevolved BLOOM follower is named by its element\'s name (BLOOM TECHNICIAN, not BLOSSOM); it has no element move (its hit is plain), no Ultimate yet, and it does not evolve while its form is not in the game (a Technician: its Brawler and Mage forms are in since builds 2026-11-08j and k)', () => {
+        const r = J(`(function(){ __clear(); const f = __mk('blossom', 'camper'); f.level = 12; f.xp = 0; return { label: unitTypeLabel(f), ult: followerUltimate(f), form: evolutionFor(f), evolved: evoCheck(f), still: f.evolved || null, moves: _IP_ATTACKS.blossom }; })()`);
+        same(r.label, 'BLOOM TECHNICIAN', 'its name'); same(r.ult, null, 'its Ultimate'); same(r.form, null, 'its form'); same(r.evolved, false, 'it evolved'); same(r.still, null, 'its form'); same(r.moves.proc, 'mend', 'what its hits do');
     });
-    check('a BLOOM Mage evolves at its level into the LITTLE SHRUB, BLOOM\'s Mage (build 2026-11-08j): its name, its shot SEED SHOT and its alternate SEEDFALL, no Ultimate yet; a BLOOM Brawler and Technician still wait', () => {
+    check('a BLOOM Mage evolves at its level into the LITTLE SHRUB, BLOOM\'s Mage (build 2026-11-08j): its name, its shot SEED SHOT and its alternate SEEDFALL, no Ultimate yet; a BLOOM Brawler into SUNDEW (build 2026-11-08k); a BLOOM Technician still waits', () => {
         const r = J(`(function(){ __clear(); const m = __mk('blossom', 'sniper'), b = __mk('blossom', 'brawler'), t = __mk('blossom', 'camper'); for (const f of [m, b, t]) { f.level = 12; f.xp = 0; }
             const did = [m, b, t].map(evoCheck); return { did, forms: [m, b, t].map(f => f.evolved || null), label: unitTypeLabel(m), shot: EVOLUTIONS.shrub.shot, moves: evoMoveIds(EVOLUTIONS.shrub), ult: followerUltimate(m), lean: dmgLean(m), sub: equipSubclassOf(m) }; })()`);
-        same(r.did.join(), 'true,false,false', 'who evolved'); same(r.forms.join(), 'shrub,,', 'their forms'); same(r.label, 'LITTLE SHRUB', 'its name'); same(r.shot, 'SEED SHOT', 'its shot');
+        same(r.did.join(), 'true,true,false', 'who evolved'); same(r.forms.join(), 'shrub,sundew,', 'their forms'); same(r.label, 'LITTLE SHRUB', 'its name'); same(r.shot, 'SEED SHOT', 'its shot');
         same(r.moves.join(), 'seedfall', 'its alternate'); same(r.ult, null, 'its Ultimate (open)'); same(r.lean, 2, 'its lean (Elemental, and an Elemental shot)'); same(r.sub, 'elemental', 'its subclass');
     });
     check('MEND: a BLOOM follower\'s hit heals the most hurt of yours within 4 tiles (the lowest share of health) by 2% of its max; one 5 tiles off, or at full health, is passed over; it counts itself', () => {
@@ -149,20 +149,28 @@ function measure(w, h) {
     });
 
     group('WHO: the toxic followers there; who cannot convert yet says why');
-    check('an unevolved toxic Brawler and Mage can; an evolved one waits for its BLOOM form; a Technician waits for BLOOM\'s ability; another element is not listed', () => {
+    check('an unevolved toxic Brawler and Mage can, and an evolved one (its BLOOM form in the game since builds 2026-11-08j and k); a Technician waits for BLOOM\'s ability; another element is not listed', () => {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const br = __mk('toxic', 'brawler'), mg = __mk('toxic', 'sniper'), ev = __mk('toxic', 'brawler', 'seeper'), te = __mk('toxic', 'camper'), fi = __mk('fire', 'brawler');
             partyTick(); for (const f of [br, mg, ev, te, fi]) if (!partyIsMember(f)) partyPost(f, 'sewers', true);
             return { listed: convertHere().map(f => f.element + ':' + f.role + ':' + (f.evolved || '')), why: [br, mg, ev, te].map(convertWhyNot) }; })()`);
         same(r.listed.length, 4, 'listed: ' + r.listed.join()); ok(r.listed.every(s => s.indexOf('toxic') === 0), 'only toxic ones');
-        same(JSON.stringify(r.why), JSON.stringify([null, null, 'ITS BLOOM FORM IS NOT READY', 'THE BLOOM TECHNICIAN\'S ABILITY IS NOT READY']), 'why');
+        same(JSON.stringify(r.why), JSON.stringify([null, null, null, 'THE BLOOM TECHNICIAN\'S ABILITY IS NOT READY']), 'why');
     });
 
-    check('an evolved toxic Mage (the Rotshard) can: its class\'s BLOOM form, the Little Shrub, is in the game (build 2026-11-08j); an evolved toxic Brawler still waits for SUNDEW', () => {
+    check('an evolved toxic Mage (the Rotshard) can: its class\'s BLOOM form, the Little Shrub, is in the game (build 2026-11-08j); so can an evolved toxic Brawler (the Seeper): SUNDEW (build 2026-11-08k)', () => {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const m = __mk('toxic', 'sniper', 'rotshard'), b = __mk('toxic', 'brawler', 'seeper'); partyTick();
             return { why: [m, b].map(convertWhyNot), form: [m, b].map(f => (convertBloomForm(f) || {}).id || null) }; })()`);
-        same(JSON.stringify(r.why), JSON.stringify([null, 'ITS BLOOM FORM IS NOT READY']), 'why'); same(r.form.join(), 'shrub,', 'their BLOOM forms');
+        same(JSON.stringify(r.why), JSON.stringify([null, null]), 'why'); same(r.form.join(), 'shrub,sundew', 'their BLOOM forms');
     });
     group('CONVERT: the element becomes BLOOM; the rest stays; toxic cards come off; saved and loaded back');
+    check('an evolved toxic Brawler (the Seeper) converts into SUNDEW (build 2026-11-08k): BLOOM, its form SUNDEW, its stats and health as they were, ERUPTION let go (SUNDEW has BASH); the preview shows the form and the moves before and after', () => {
+        const r = J(`(function(){ __quest(true); __atModule(); __clear(); const m = __mk('toxic', 'brawler', 'seeper'); m.level = 12; _applyFollowerLevel(m, true); m.alt = 'eruption'; partyTick();
+            const st = JSON.stringify(m.stats), hp = [m.health, m.maxHealth], g = convertPreview(m), mv = [_cvMoves(m), _cvMoves(g)], fm = [_cvFormName(m), _cvFormName(g)], res = convertApply(m);
+            return { mv, fm, ok: res.ok, msg: res.msg, el: m.element, evo: m.evolved, alt: m.alt || null, same: JSON.stringify(m.stats) === st, hp: [m.health, m.maxHealth], hp0: hp, label: unitTypeLabel(m) }; })()`);
+        same(r.fm.join('|'), 'SEEPER|SUNDEW', 'the FORM row'); same(r.mv[1], 'BASH · ULTIMATE CONSUME', 'its moves after (BASH; its Ultimate CONSUME)');
+        ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'sundew', 'its form'); same(r.alt, null, 'its alternate (ERUPTION is not SUNDEW\'s)');
+        ok(r.same, 'its stats changed'); same(r.hp.join(), r.hp0.join(), 'its health'); same(r.label, 'SUNDEW', 'its name');
+    });
     check('an evolved toxic Mage converts into the LITTLE SHRUB (build 2026-11-08j): BLOOM, its form the shrub, its stats and health as they were, its ROTTEN DECOY let go (the shrub has SEEDFALL); the preview shows the form and the moves before and after; saved and loaded as the shrub', () => {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const m = __mk('toxic', 'sniper', 'rotshard'); m.level = 12; _applyFollowerLevel(m, true); m.alt = 'rotten_decoy'; partyTick();
             const st = JSON.stringify(m.stats), hp = [m.health, m.maxHealth], g = convertPreview(m), mv = [_cvMoves(m), _cvMoves(g)], fm = [_cvFormName(m), _cvFormName(g)], res = convertApply(m);
@@ -198,7 +206,7 @@ function measure(w, h) {
     });
     check('the Ant Nest\'s test console offers BLOOM\'s evolved Mage (the Little Shrub, build 2026-11-08j) and its unevolved Brawler and Mage, not its Technician (no ability yet)', () => {
         const r = J(`nestForms().filter(f => f.element === 'blossom').map(f => f.role + (String(f.id).indexOf(':') < 0 ? ':' + f.id : ''))`);
-        same(r.join(), 'sniper:shrub,brawler,sniper', 'BLOOM\'s forms there');
+        same(r.join(), 'sniper:shrub,brawler:sundew,brawler,sniper', 'BLOOM\'s forms there');   // (SUNDEW since build 2026-11-08k)
     });
     check('the card art: a BLOOM follower\'s backdrop has its texture, and BLOOM has an emblem (approved 2026-11-08)', () => {
         const r = J(`(function(){ return { cls: cardArtUnitClass({ isFollower: true, element: 'blossom', role: 'brawler' }), tex: cardArtTexture('blossom').length, emb: !!CARD_ART_EMBLEMS.blossom }; })()`);

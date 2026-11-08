@@ -286,6 +286,14 @@ const EVOLUTIONS = {
     // alternate, SEEDFALL. Its Ultimate is open: it has none yet. A BLOOM Mage evolves into it; an evolved toxic Mage (the Rotshard) converts into it at the purification module (js/conversion.js).
     shrub:  { id: "shrub", name: "LITTLE SHRUB", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall"], sheet: "img/evo/shrub.png",
               cell: 192, anchor: [96, 138.2], core: [96, 110.7], noGlow: true, color: "#ff7ab8" },   // (a 192 px cell, as the Electro Skink's: room for its whip; the same pixels a unit as the 144 px sheets)
+    // SUNDEW, BLOOM'S BRAWLER since build 2026-11-08k (design No. 911, approved: "911, and make CONSUME his Ultimate"; its game sprite No. 922, design/evolutions/forms37.js; the owner sent
+    // it to the game: "SUNDEW into the game"; docs/CONVERSION.md §2): a wilted black flower, six velvet petals veined in glowing pink round a mouth of pale fangs, tipped forward on
+    // seven ringed root-tentacles; a stem from its base arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf. Its everyday hit is the blade's
+    // slash; its alternate BASH for now (forms without one have BASH); its Ultimate CONSUME (js/elements.js FORM_ULTIMATES.sundew). `consume`: its sheet's CONSUME block starts at
+    // this column (8 frames: four as its petals snap shut and its stem withers, four of the bud throbbing; _evoFrame plays them). A BLOOM Brawler evolves into it; an evolved toxic
+    // Brawler (the Seeper) converts into it at the purification module (js/conversion.js).
+    sundew: { id: "sundew", name: "SUNDEW", element: "blossom", role: "brawler", move: "BASH", moves: ["bash"], sheet: "img/evo/sundew.png",
+              cell: 192, anchor: [96, 138.2], core: [96, 114], noGlow: true, color: "#ff7ab8", consume: 16 },   // (a 192 px cell: room for its roots, its stem and its blade)
 };
 // Which egg grows into which machine.
 function evolutionFor(f) {
@@ -899,7 +907,9 @@ function _evoFrame(f, d, f0) {
     const rise = m < EVO_MOLT ? 1 - Math.pow(1 - u, 3) : 1;
     const sigK = f._sigAt !== undefined ? (f0 - f._sigAt) / EVO_ACT_FRAMES : 9;
     let col = Math.floor(f0 / 7) % 8;
-    if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
+    const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
+    if (cs >= 0) col = d.consume + cs;
+    else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));
     else if (f.state === "attack") col = 8 + Math.min(7, Math.floor(((f.attackAnim || 0) / Math.PI) * 8));
     return { m, rise, sigK, col, row: _evoFacing(f), s: EVO_SCALE * (0.6 + 0.4 * rise) };
 }

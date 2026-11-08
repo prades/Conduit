@@ -2476,3 +2476,20 @@ All three BLOOM forms in one build; pushing builds h and i to main first.
 
 ### Supersedes / superseded by
 Answers the Mage's look in "BLOOM's Mage is a little shrub" (2026-11-08); builds on "BLOOM's Mage's kit: SEED SHOT and SEEDFALL; its Ultimate open".
+
+## DECISION: SUNDEW built (No. 911); CONSUME as its Ultimate
+- Date and build: 2026-11-08, build `2026-11-08k`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Draft SUNDEW next"; asked what to draft (SUNDEW into the game, its game sprite first, or new look drafts): "SUNDEW into the game" (the option read: build it as the shrub was; its slashing blade-leaf, BASH as its alternate for now, CONSUME as its Ultimate, the numbers the agent picks marked provisional).
+
+### Decision
+- SUNDEW is in the game with its approved look (No. 911) and rules: CONSUME its Ultimate (an enemy, not a boss, swallowed for 5 s, bitten every second, spat out if alive; 75% less damage while it holds one).
+- Its alternate is BASH for now; its everyday hit the blade-leaf's slash; Mollusk.
+
+### Status
+Implemented in build `2026-11-08k` (tests: followercombat, conversion, evolution, cards, damage, crystalline, bible; a browser check in the real game). Not playtested. The agent's calls, to confirm: CONSUME's reach (2 tiles) and bite (0.5 × power a second), the bite Elemental, and SUNDEW standing still while it digests.
+
+### Alternatives
+Its game sprite first, for review; new look drafts.
+
+### Supersedes / superseded by
+Builds on "SUNDEW's look (No. 911); CONSUME is its Ultimate" (2026-11-08).

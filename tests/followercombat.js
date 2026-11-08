@@ -465,6 +465,42 @@ function measure(w, h) {
         ok(/^ALTERNATE · SEEDFALL/.test(r.info || ''), 'INFO: ' + r.info);
     });
 
+    // ── SUNDEW (BLOOM's Brawler, build 2026-11-08k) ──
+    group('SUNDEW (BLOOM Brawler, build 2026-11-08k): its Ultimate CONSUME: an enemy swallowed whole (not a boss) for 5 s, a bite every second, 75% less damage while it holds one, spat out if it lives');
+    check('CONSUME swallows the nearest enemy it can see within its reach, passing over a boss: the catch is out of the fight (untargetable, not drawn) and held inside it; SUNDEW stands still on its CONSUME frames; nothing in reach keeps the charge', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'brawler', 'sundew'); __foe(f.x + 6, f.y);
+            f.ultimateCharge = 100; const none = followerUltFire(f), keep = f.ultimateCharge;
+            const t = __foe(f.x + 1.2, f.y + 0.3), boss = __foe(f.x + 0.9, f.y - 0.2); boss.bossId = '__test';
+            const fired = followerUltFire(f), out = { none, keep, fired, spent: f.ultimateCharge, caught: t._swallowedBy === f, bossFree: !boss._swallowedBy, untargetable: !!t.untargetable, hostile: isHostileTarget(t), at: Math.hypot(t.x - f.x, t.y - f.y) };
+            const x0 = f.x, y0 = f.y; f.targetX = f.x + 3; f.targetY = f.y; f.stance = 'follow';
+            for (let i = 0; i < 40; i++) { frame++; updateNPC(f); updateElementEffects(); }
+            out.moved = Math.hypot(f.x - x0, f.y - y0); out.col = _evoFrame(f, EVOLUTIONS.sundew, frame).col; out.inside = Math.hypot(t.x - f.x, t.y - f.y);
+            out.name = followerUltimate(f).name; boss.bossId = null; return out; })()`);
+        same(r.none, false, 'it fired with nothing in reach'); same(r.keep, 100, 'the charge with nothing in reach');
+        same(r.fired, true, 'it did not fire'); same(r.spent, 0, 'the charge after'); ok(r.caught, 'the enemy was not caught'); ok(r.bossFree, 'the boss was caught');
+        ok(r.untargetable && !r.hostile, 'the catch can be targeted'); ok(r.at < 1e-9 && r.inside < 1e-9, 'the catch is not inside it: ' + JSON.stringify(r));
+        ok(r.moved < 1e-9, 'it moved while digesting: ' + r.moved); ok(r.col >= 16 && r.col < 24, 'its sheet\'s CONSUME frames: column ' + r.col); same(r.name, 'Consume', 'its Ultimate');
+    });
+    check('it bites its catch every second (Elemental: a BLOOM hit), takes 75% less damage while it holds it, and spits it out in front of it after 5 s, back in the fight; a catch that dies inside is gone; SUNDEW falling lets it out at once', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'brawler', 'sundew'), g = __fol('blossom', 'brawler', 'sundew'); g.x += 5; f.dirX = 1; f.dirY = 0;
+            const t = __foe(f.x + 1.2, f.y), src = __foe(f.x - 6, f.y); f.ultimateCharge = 100; followerUltFire(f); __off(f); __off(g);
+            const fh = f.health; applyDamage(f, 20, src, null, false, false, null); const C = f._consume; f._consume = null; const fh2 = f.health; applyDamage(f, 20, src, null, false, false, null); f._consume = C; const guard = [fh - fh2, fh2 - f.health];   // (the same hit on the same SUNDEW, holding and not)
+            const twin = __foe(f.x + 30, f.y + 30); applyDamage(twin, (f.power || 10) * ULT_CONSUME.mult, f, 'blossom', false, false, DMG_HIT_SPECIAL); const one = __dmg(twin);
+            const bites = []; let last = __dmg(t), k = 0;
+            while (t._swallowedBy && k < 400) { frame++; updateElementEffects(); k++; const d = __dmg(t); if (d !== last) { bites.push(k); last = d; } }
+            const out = { guard, one, bite: bites.length ? 0 : 0, n: bites.length, gaps: bites.map((b, i) => i ? b - bites[i - 1] : b), after: k, free: !t._swallowedBy && !t.untargetable && isHostileTarget(t), ahead: t.x - f.x, d: Math.hypot(t.x - f.x, t.y - f.y), held: f._consume || null, total: __dmg(t) };
+            // a catch that dies inside: gone, and SUNDEW lets go
+            actors = actors.filter(a => a !== t); const u = __foe(f.x + 1.2, f.y); f._consume = null; f.ultimateCharge = 100; actors.push(f); followers.push(f); followerUltFire(f); __off(f); u.health = 1; for (let i = 0; i < 70; i++) { frame++; updateElementEffects(); }
+            out.died = [u.dead || u.health <= 0, !f._consume];
+            // SUNDEW falling: its catch out at once
+            actors = actors.filter(a => a !== u); const v = __foe(f.x + 1.2, f.y); f._consume = null; f.ultimateCharge = 100; actors.push(f); followers.push(f); followerUltFire(f); __off(f); f.dead = true; frame++; updateElementEffects();
+            out.fell = [!v._swallowedBy, !v.untargetable]; f.dead = false; return out; })()`);
+        ok(Math.abs(r.guard[0] - r.guard[1] * 0.25) < 1e-6 * r.guard[1] + 1e-6, '75% less damage while it holds one: ' + JSON.stringify(r.guard));
+        same(r.n, 5, 'bites in 5 s: ' + JSON.stringify(r.gaps)); ok(r.gaps.every(g => g === 60), 'a bite a second: ' + JSON.stringify(r.gaps)); ok(Math.abs(r.total - 5 * r.one) < 1e-6 * r.total + 1e-6, 'each bite ' + r.one + ' (Elemental, as SUNDEW\'s power × ' + 'ULT_CONSUME.mult): ' + r.total);
+        ok(r.after >= 299 && r.after <= 301, 'it held it ' + r.after + ' frames, not 300'); ok(r.free, 'the catch is not back in the fight'); ok(r.ahead > 0.25 && r.d < 2, 'not spat out in front of it (on the open floor nearest the spot ahead of it): ' + JSON.stringify(r)); same(r.held, null, 'SUNDEW still holds it');
+        same(r.died.join(), 'true,true', 'a catch that died inside'); same(r.fell.join(), 'true,true', 'SUNDEW fell: its catch let out');
+    });
+
     group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
     check('a move waits its own WIND-UP after it fires (the Static Orb\'s two moves each their own), and changing the number on the attack changes the wait', () => {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'), t = __foe(f.x + 3, f.y); const out = {};

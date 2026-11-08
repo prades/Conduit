@@ -15,7 +15,8 @@
 //                 (js/cards.js equipValid, as when any card stops fitting); it is saved with its element (js/facilitysave.js).
 // AN EVOLVED ONE (build 2026-11-08j): it takes its class's BLOOM form, where that is in the game: an evolved toxic Mage (the Rotshard) becomes the LITTLE SHRUB, BLOOM's Mage (js/evolution.js
 // EVOLUTIONS.shrub). Its stats stay as they are ("Same stats, show changes"); an alternate the new form does not have is let go (it goes back to its normal attack).
-// Not yet (the next stages): an evolved toxic Brawler (SUNDEW) and a toxic Technician (the coral crab; BLOOM's Technician ability, REEF, is not built).
+// An evolved toxic Brawler (the Seeper) becomes SUNDEW, BLOOM's Brawler (build 2026-11-08k).
+// Not yet (the next stage): a toxic Technician (the coral crab; BLOOM's Technician ability, REEF, is not built).
 const CONVERT = { from: "toxic", to: "blossom", room: "sewers", arm: 180, col: "#8cff5a", bloom: "#ff7ab8",
     forms: { brawler: "SUNDEW", sniper: "THE LITTLE SHRUB", camper: "THE CORAL CRAB" } };   // (the class's BLOOM form: docs/CONVERSION.md §2; working names)
 
@@ -180,6 +181,6 @@ function _cvRender() {
         '<div class="cv-sub">THE MODULE FILTERS THE TOXIN OUT: A TOXIC FOLLOWER BECOMES <b style="color:' + CONVERT.bloom + '">BLOOM</b>. THE TOXIC FOLLOWERS HERE, IN YOUR SQUAD OR HOLDING THE SEWERS: PICK ONE.</div>' +
         (here.length ? '<div class="cv-strip">' + here.map((f, i) => _cvUnitHTML(f, i, { button: true, where: _cvWhere(f), why: convertWhyNot(f) })).join("") + "</div>"
                      : '<div class="cv-note">' + _cvEsc(can.why || "NO TOXIC FOLLOWER IS HERE") + "</div>") +
-        '<div class="cv-note">AN EVOLVED MAGE BECOMES ' + CONVERT.forms.sniper + '. AN EVOLVED BRAWLER WAITS FOR ' + CONVERT.forms.brawler + ', AND A TECHNICIAN FOR BLOOM\'S ABILITY: NEITHER IS IN THE GAME YET.</div></div>';
+        '<div class="cv-note">AN EVOLVED BRAWLER BECOMES ' + CONVERT.forms.brawler + ', AN EVOLVED MAGE ' + CONVERT.forms.sniper + '. A TECHNICIAN WAITS FOR BLOOM\'S ABILITY: IT IS NOT IN THE GAME YET.</div></div>';
     _cvDraw(root, here);
 }

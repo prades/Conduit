@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-08
 
+### Build `2026-11-08k` · branch `claude/start-game-project-HSh7Z` · SUNDEW, BLOOM's Brawler, in the game
+The owner: "Draft SUNDEW next", then "SUNDEW into the game". SUNDEW's look is No. 911 (approved earlier the same day), CONSUME its Ultimate.
+- **SUNDEW**: a wilted black flower, its velvet petals veined in glowing pink round a mouth of pale fangs, tipped forward on ringed root-tentacles, a stem arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf. Its sheet (`img/evo/sundew.png`) is baked from No. 922 (No. 911 at about the Seeper's height) in a 192 px cell.
+- **How you get one:** a BLOOM Brawler evolves into it at level 10 (one that was waiting at its level evolves now); an evolved toxic Brawler (the Seeper) converts into it at the purification module, its stats and health as they were. Only a toxic Technician still waits (for REEF).
+- **Its attacks:** its everyday hit is the blade-leaf's slash; its alternate BASH for now (as every form without one of its own). Subclass Mollusk: its lean −1.
+- **CONSUME**, its Ultimate: it swallows the nearest enemy it can see within 2 tiles (never a boss) and holds it 5 s out of the fight, its petals snapped shut into a throbbing bud and its stem withered to the floor (a third block of frames in its sheet); it bites its catch every second (0.5 × its power, Elemental: each bite MENDs) and spits it out in front of it if it lives. While it holds one it takes 75% less damage and stands still. Nothing in reach: the charge is kept. Its reach and bite are the agent's numbers, provisional; standing still while it digests is the agent's reading, to confirm.
+- The bake (`design/evolutions/bake.js`) renders a job's CONSUME block, and the game plays it (`_evoFrame`, `consumeFrame`).
+- Tests: new CONSUME checks (followercombat) and conversion checks (an evolved Seeper converts; a BLOOM Brawler evolves); counts updated (evolution, cards, damage, crystalline, secondattacks, bible). The full run on this build: 89 of 96 suites passing; of the seven failing, secondattacks' BASH count was fixed after (passing), enemycard passes run alone (a check timed under the full run's load), and five failed before these builds too (visiblearea, bottomui, carousel's 1024 coverage, the `?fluxlab` real page: cover, fluxlab). Checked in a browser in the real game (it evolves; CONSUME shuts on an ant and spits it out 5 s later; no page errors). Not playtested.
+
 ### Build `2026-11-08j` · branch `claude/start-game-project-HSh7Z` · BLOOM's Mage, the Little Shrub, in the game
 The owner sent BLOOM's Mage to the game ("Let's go", then "Shrub into the game"): design No. 920 is approved.
 - **The LITTLE SHRUB** (a working name; its name is still to come): a little shrub, mostly leaves, the Rotshard's crystal now pink poking out of its back, two black thorny vines held out in front of it; it shuffles about (its idle is its walk). Its sheet (`img/evo/shrub.png`) is baked from No. 921, No. 920 at about seven tenths of the other Mages' height, in a 192 px cell.

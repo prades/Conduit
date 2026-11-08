@@ -42,7 +42,7 @@ const EQUIP_SUBCLASSES = [
 // since build 2026-11-08a) and the Blight Spider (it was a drone) in it. Its rules are the Crustacean's, unchanged (js/damage.js DMG_SUBCLASS, dmgLean), and so are its four cards (CHITIN SCALE, BARNACLE
 // BRACER, PINCER CLAMP, TIDE SHELL: their ids kept, for saves).
 const EQUIP_FORM_SUBCLASS = {
-    quillstone: "spinelegged", staticorb: "drone", mimic: "jelly", jellyram: "jelly", seeper: "spinelegged", maw: "elemental", electroskink: "spinelegged",   // the brawlers
+    quillstone: "spinelegged", staticorb: "drone", mimic: "jelly", jellyram: "jelly", seeper: "spinelegged", maw: "elemental", electroskink: "spinelegged", sundew: "mollusk",   // the brawlers (SUNDEW, BLOOM's: a mollusk, docs/CONVERSION.md §2)
     embercowl: "elemental", thunderhead: "elemental", voidstar: "mollusk", hornshell: "mollusk", rotshard: "elemental", rimestar: "drone", shrub: "elemental",   // the mages (the Little Shrub, BLOOM's: the lotus lantern's Elemental, kept)
     thermite: "drone", hovershell: "drone", gooproxy: "jelly", hammerslug: "mollusk", blightspider: "spinelegged", igloo: "elemental",   // the technicians
 };

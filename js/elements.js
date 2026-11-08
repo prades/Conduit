@@ -486,6 +486,10 @@ const ULT_RINK = { radius: 4, frames: 360, tick: 30, mult: 0.25, slow: 0.4, fast
 const ULT_PROXY = { count: 3, frames: 360, reach: 6, burst: 1.5, mult: 1.5, hp: 0.5 };       // the Goo Proxy's PROXY SWARM: copies, 6 s, the lure's reach (tiles), the burst's reach, × power (flux), each copy's HP (× its maximum)
 const ULT_PUDDLE = { from: 0.5, radius: 2, grow: 120, frames: 300, tick: 30, mult: 0.5, poison: 120 };   // the Rotshard's: "Short and tight" (tiles at first and at full size, frames to grow, frames, frames between shards, × power a shard, frames of poison)
 const ULT_WAVE = { reach: 6, waves: 3, every: 45, len: 4, cos: 0.64, mult: 0.8, knock: 1.5, step: 1.5 };   // the Hornshell's WAVE MAKER (the owner's design, 2026-11-07; these numbers are the agent's, provisional): aim reach (tiles), waves, frames between, a wave's reach (tiles), its width (cos of its half angle, ±50°), × power (core), tiles thrown, tiles it moves up between waves
+// SUNDEW's CONSUME (build 2026-11-08k; docs/CONVERSION.md §2, the owner's rules): it swallows one enemy, anything but a boss, holds it 5 s out of the fight (`frames`), digesting it every second
+// (`tick`), and spits it out if it lives; while it holds one it takes 75% less damage (`guard`). The agent's numbers, PROVISIONAL (the owner's are open): its reach (tiles: its mouth
+// lunging), the digestion's bite (× its power a second) and its type (Elemental, BLOOM's: each bite MENDs, as every BLOOM hit).
+const ULT_CONSUME = { reach: 2, frames: 300, tick: 60, mult: 0.5, guard: 0.75 };
 const ULT_DRIFT = { reach: 6, loop: 36, width: 1.6, beyond: 1.5, cut: 1.8, mult: 1.5, glitch: 30, fast: 1.3, frames: 360 };   // the Hover Shell's DRIFT SLASH (the owner's design, 2026-11-07; the oval: "a circular sort of slash, like a sword [...] he goes in and turns around like an oval shape"; the name and numbers are the agent's, provisional): reach (tiles), frames round the oval, its half width (tiles), how far past the enemies it swings (tiles), the blade's reach (tiles), × power a slash (half slashing, half electric), frames of interrupt, the squad's speed, its frames
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const DMG_HIT_ULT_SLASH = Object.freeze({ which: "special", stat: "sp", type: "slashing" });
@@ -553,6 +557,20 @@ const FORM_ULTIMATES = {
         for (const a of foes) { a._swallowedBy = actor; a.untargetable = true; a.stunned = Math.max(a.stunned || 0, Z.frames); a.x = actor.x; a.y = actor.y; }
         spawnElementEffect({ type: "abszero", x: actor.x, y: actor.y, by: actor, held: foes, radius: 1.2, life: Z.frames, maxLife: Z.frames, element: "ice" });
         _ultSay(actor, "ABSOLUTE ZERO", "#bfefff");
+    } },
+    // CONSUME (SUNDEW's: "911, and make CONSUME his Ultimate"): the nearest enemy it can see within ULT_CONSUME.reach, not a boss nor one already held, swallowed whole: out of the fight
+    // (untargetable, not drawn, still) inside it for ULT_CONSUME.frames, bitten every ULT_CONSUME.tick frames; SUNDEW stands still with its petals shut (js/npc.js) and takes
+    // ULT_CONSUME.guard less damage (js/helpers.js applyDamage); then it is spat out in front of it, if it lives. Nothing to swallow: the charge is kept.
+    sundew: { name: "Consume", desc: "Swallows an enemy whole (not a boss) and digests it for 5 seconds, a bite every second; while it holds one it takes 75% less damage; then spits it out if it lives", execute(actor) {
+        const C = ULT_CONSUME, foes = (typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, C.reach) : []).filter(a => !a.bossName && !a.bossId && !a.isBoss && !a._swallowedBy)
+            .sort((a, b) => Math.hypot(a.x - actor.x, a.y - actor.y) - Math.hypot(b.x - actor.x, b.y - actor.y));
+        if (!foes.length || actor._consume) return;
+        const prey = foes[0], f0 = typeof frame !== "undefined" ? frame : 0, dx = prey.x - actor.x, dy = prey.y - actor.y, L = Math.hypot(dx, dy) || 1;
+        actor.ultimateCharge = 0; actor.dirX = dx / L; actor.dirY = dy / L;
+        prey._swallowedBy = actor; prey.untargetable = true; prey.stunned = Math.max(prey.stunned || 0, C.frames); prey.x = actor.x; prey.y = actor.y;
+        actor._consume = { t0: f0, prey };
+        spawnElementEffect({ type: "consume", x: actor.x, y: actor.y, by: actor, held: [prey], life: C.frames, maxLife: C.frames, element: "blossom" });
+        _ultSay(actor, "CONSUME", "#ff9ccc");
     } },
     // TOXIC UNDERTOW: one toxic surge ULT_UNDERTOW.radius tiles round: ULT_UNDERTOW.mult × its power, each enemy thrown outward (its way turned by up to 40°, so they scatter), and poisoned
     // (the game's poison: its hits weaker) for ULT_UNDERTOW.weak frames. No pool is left.
@@ -877,6 +895,24 @@ function updateElementEffects() {
         if (e.type === "magmavent") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
         if (e.type === "staticVortex" && typeof staticVortexTick === "function") staticVortexTick(e);
         // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
+        // CONSUME (FORM_ULTIMATES.sundew): SUNDEW holds its catch inside it, bites it every ULT_CONSUME.tick frames (the catch is untargetable: the bite lets itself through), and spits it out
+        // in front of it when its time is up, or at once if SUNDEW falls; a catch that dies inside is gone
+        if (e.type === "consume") {
+            const by = e.by, prey = e.held[0], age = e.maxLife - e.life, gone = !by || by.dead;
+            if (by && !by.dead) { e.x = by.x; e.y = by.y; }
+            if (prey && !prey.dead && !gone) {   // (its last bite lands as its time runs out: five in its 5 s)
+                prey.x = e.x; prey.y = e.y; prey.stunned = Math.max(prey.stunned || 0, 2);
+                if (age > 0 && age % ULT_CONSUME.tick === 0) { prey.untargetable = false; applyDamage(prey, (by.power || 10) * ULT_CONSUME.mult, by, "blossom", false, false, DMG_HIT_SPECIAL); if (!prey.dead) prey.untargetable = true; }
+            }
+            if (e.life <= 0 || gone || !prey || prey.dead) {
+                if (prey && !prey.dead) {   // (spat out in front of it)
+                    const fx = by ? (by.dirX || 0) : 0, fy = by ? (by.dirY || 1) : 1, Lf = Math.hypot(fx, fy) || 1, c = typeof _fpNearestCellOpen === "function" ? _fpNearestCellOpen(e.x + fx / Lf * 1.1, e.y + fy / Lf * 1.1) : null;
+                    prey._swallowedBy = null; prey.untargetable = false; prey.stunned = 0; if (c) { prey.x = c[0]; prey.y = c[1]; } else { prey.x = e.x + fx / Lf * 1.1; prey.y = e.y + fy / Lf * 1.1; }
+                } else if (prey) { prey._swallowedBy = null; }
+                if (by && by._consume) by._consume = null;
+                e.life = 0;
+            }
+        }
         if (e.type === "abszero") {
             const by = e.by, done = e.life <= 0 || !by || by.dead;
             if (by && !by.dead) { e.x = by.x; e.y = by.y; }
@@ -1695,4 +1731,24 @@ function drawSeedfallOnTile(tx, ty, px, py) {
         }
         ctx.restore();
     }
+}
+
+// ── CONSUME'S SUPPORT (SUNDEW, build 2026-11-08k) ──
+// Which frame of its sheet's CONSUME block SUNDEW shows (js/evolution.js _evoFrame), its age in frames: its petals snapping shut and its stem withering (the block's first four, over
+// half a second), then the bud throbbing (the last four, looped), then its petals opening (the first four backward, in the last half second). -1: it holds nothing.
+function consumeFrame(f, f0) {
+    const C = f && f._consume; if (!C) return -1;
+    const a = f0 - C.t0, N = ULT_CONSUME.frames;
+    if (a < 0 || a >= N) return -1;
+    if (a < 30) return Math.min(3, Math.floor(a / 30 * 4));
+    if (a >= N - 30) return Math.max(0, 3 - Math.floor((a - (N - 30)) / 30 * 4));
+    return 4 + Math.floor((a - 30) / 14) % 4;
+}
+// While it holds a catch it takes ULT_CONSUME.guard less damage (js/helpers.js applyDamage)
+function consumeGuard(t, amount) { return t && t._consume && t._consume.prey && !t._consume.prey.dead ? amount * (1 - ULT_CONSUME.guard) : amount; }
+// While it holds a catch it stands still, its petals shut, and makes no other attack (js/npc.js _updateNPCStep). True while it holds one.
+function consumeHoldStep(f) {
+    const C = f && f._consume; if (!C) return false;
+    if (!C.prey || C.prey.dead || !C.prey._swallowedBy) { f._consume = null; return false; }
+    f.state = "idle"; f.attackAnim = 0; return true;
 }
