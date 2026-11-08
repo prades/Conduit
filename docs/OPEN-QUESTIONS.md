@@ -567,14 +567,14 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
     - "Greenshire" a slip.
   - **Open** (its section 11):
     - the apparatus's look;
-    - BLOOM's forms: pictures, two names, which comes first, an egg;
+    - BLOOM's forms: pictures (SUNDEW's approved 2026-11-08: No. 911), two names, which comes first, an egg;
     - CONSUME's, SEEDFALL's and REEF's numbers, and where the coral can be climbed;
     - BLOOM's cards' designs;
     - BLOOM's texture and icon.
 
     Designed since, in words (2026-11-02):
     - MEND heals 2% every hit;
-    - SUNDEW, the pitcher-shell Brawler, whose CONSUME swallows an enemy and takes 75% less damage while holding it;
+    - SUNDEW, the Brawler, whose CONSUME swallows an enemy and takes 75% less damage while holding it. *(2026-11-08: its look approved, No. 911, a wilted black flower with fangs on root-tentacles; CONSUME is its Ultimate: `CONVERSION.md` §2.)*
     - the lotus lantern Mage, with SEEDFALL;
     - the coral crab Technician, whose REEF grows coral the player can climb to new areas.
 

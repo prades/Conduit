@@ -9,7 +9,8 @@
 // Drafts for the owner's choice (2026-11-08: "draft me some designs for the brawler next", "The bloom one."): not in the game. The owner chose 906: "The left one tilted
 // pitcher and feet like roots/tentacles". That is No. 908 (below 906); then, on its body, "a wilted flower that has teeth": No. 909; then, on its textures, Nos. 910 and 911 (two finishes);
 // then CONSUME's look ("whenever it ... eats one of the enemy targets, that the petal close up"): update's third argument, cons (seconds since it swallowed), closes the
-// petals into a bud, throbbing, then opens them. "The design looks solid right now as stationary and moving"; the finish (910 or 911) is to choose. 907 was passed over.
+// petals into a bud, throbbing, then opens them; and its stem withers to the floor round it. "The design looks solid right now as stationary and moving". Then "911, and
+// make CONSUME his Ultimate": **No. 911 is SUNDEW's approved look** (docs/DECISION-LOG.md). 907 was passed over; 906 and 908 to 910 are the steps to 911.
 // Uses forms31.js (_c31, _prog31) and forms32.js (_taper32, _aim32). +z is the front; ph = 1.6 t runs once round the idle loop.
 const _sdS = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 const _sdSkin = new T.MeshStandardMaterial({ color: 0x040405, metalness: 0.25, roughness: 0.3, side: T.DoubleSide }); _sdSkin.envMapIntensity = 0.5;   // (wet black, as the Electro Skink's)
@@ -264,7 +265,7 @@ const _sdE = Object.assign({}, _sdD, { tex: 'velvet', matte: true, pleat: 0.012,
 const _sdF = Object.assign({}, _sdE, { tex: 'glow' });
 fx(909, "SUNDEW, 908 with a new body: a wilted flower with teeth, its black petals cupped round a mouth of pale fangs and wilting outward and down, their inner faces glowing pink, the nectar deep in its throat; tipped forward on its roots, its stem from its base arching over it to the flower and the blade-leaf.", () => _sundewPitcher(_sdD));
 fx(910, "SUNDEW, 909 textured: velvet petals, plum-black and matte, veined from the base and mottled, darker at their wilted edges and tips, creased lengthwise; the roots, stem and blade matte, the roots ringed like tentacles.", () => _sundewPitcher(_sdE));
-fx(911, "SUNDEW, 910 with the veins of its petals glowing BLOOM's pink.", () => _sundewPitcher(_sdF));
+fx(911, "SUNDEW, the approved look (2026-11-08): 910 with the veins of its petals glowing BLOOM's pink.", () => _sundewPitcher(_sdF));
 
 // ── 907 · THE SNAIL (from the snail drawn below it) ────────────────────────────────────────────────────────────────────────
 // the shell: a tube coiled in the y-z plane (its eye toward the back, its mouth at the front of its foot), growing as it coils; its growth lines glow nectar pink

@@ -2291,3 +2291,21 @@ Later the same day the owner sent the new electric Brawler's look, a whiteboard 
 
 ### Supersedes / superseded by
 In part, `CONVERSION.md` §4's non-goal "No conversion but toxic into BLOOM, for now".
+
+## DECISION: SUNDEW's look (No. 911); CONSUME is its Ultimate
+- Date and build: 2026-11-08, after build `2026-11-08g`, branch `claude/start-game-project-HSh7Z`. No game code changed.
+- The owner's words: "draft me some designs for the brawler next", "The bloom one."; on the drafts: "The left one tilted pitcher and feet like roots/tentacles", "Put the stem on the bottom of the barrel and no spikes on the bowl rim", "I like everything but the cauldron-like body. Can we make it look more like a flower that has teeth? Like a wilted flower that has teeth", "I just don't like the textures, really", "make sure whenever it uses its ultimate ability and it eats one of the enemy targets, that the petal close up. But the design looks solid right now as stationary and moving", "make him put the stem on the ground when he's consuming"; then "911, and make CONSUME his Ultimate".
+
+### Decision
+- SUNDEW, the BLOOM Brawler, looks like No. 911 (`design/evolutions/forms37.js`): a wilted black flower, six velvet petals veined in glowing pink round a mouth of pale fangs and a glowing throat, tipped forward on seven ringed root-tentacles; a stem from its base arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf (its slash).
+- While it eats (CONSUME) its petals close into a throbbing bud and its stem withers to the floor round it; they open and rise again when the catch is out.
+- CONSUME is SUNDEW's Ultimate, not a move every 15 seconds. Its other rules stand: any enemy but a boss; 5 seconds inside, hurt every second; 75% less damage while it holds one.
+
+### Status
+Approved (look and rule). Not implemented: BLOOM is not built. When it is: the form's sprite sheet (with a block of CONSUME frames), its entry, and CONSUME in `FORM_ULTIMATES`.
+
+### Alternatives
+The snail (No. 907); the pitcher (Nos. 906, 908); the glossy (909) and velvet-only (910) finishes; CONSUME every 15 seconds.
+
+### Supersedes / superseded by
+Supersedes, in `CONVERSION.md` §2, "Every 15 seconds, it swallows an enemy" and the first concept's body ("a black pitcher-shaped shell holding a pool of pink nectar") and its barbed lip.

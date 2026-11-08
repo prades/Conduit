@@ -39,15 +39,16 @@ The owner chose these in prompts. The names are working names; the bodies are to
 
 | Form | Class | Body | Subclass | Main attack | Its move or ability |
 |---|---|---|---|---|---|
-| **SUNDEW** | Brawler | A black pitcher-shaped shell holding a pool of pink nectar | Mollusk | Slashing (its barbed lip) | **CONSUME** (below) |
+| **SUNDEW** | Brawler | **Approved look (2026-11-08): No. 911**, a wilted black flower with a mouth of fangs on root-tentacles (below). *(First concept: a black pitcher-shaped shell holding a pool of pink nectar.)* | Mollusk | Slashing (its blade-leaf; the barbed lip is gone) | **CONSUME**, its Ultimate (below) |
 | **Lotus lantern** (name to come) | Mage | A floating black lotus, its petals pink crystal round a glowing heart | Elemental | Elemental (seed-light) | **SEEDFALL**: glowing seeds rain on an area; enemies there are hurt, allies there are mended |
 | **Coral crab** (name to come) | Technician | A black crab carrying a living pink coral on its back | Crustacean | Crushing (its claws clamp) | **REEF**, 60-second wait (below) |
 
 - **SUNDEW's CONSUME:** the owner: it "takes 75% [less] damage whenever it has consume[d] somebody when it uses its ability in the brawler form".
-  - Every 15 seconds, it swallows an enemy whole: anything but a boss.
+  - **It is SUNDEW's Ultimate** (the owner, 2026-11-08: "911, and make CONSUME his Ultimate"): fired when its Ultimate is charged, as every follower's is; a form's own Ultimate, as FAULTLINE is the Thermite Burrower's (`FORM_ULTIMATES`, `followerUltimate`). It swallows an enemy whole: anything but a boss. *(Superseded: "every 15 seconds", 2026-11-02.)*
   - For 5 seconds the catch is out of the fight and takes damage every second inside, then is spat out if alive.
   - While SUNDEW holds a catch, it takes 75% less damage.
   - **Its look while it eats** (the owner, 2026-11-08: "make sure whenever it uses its ultimate ability and it eats one of the enemy targets, that the petal close up"): its mouth flares to take the catch, its petals snap shut into a plump bud (its fangs and glowing throat inside), the bud throbs as it digests, and the petals open again when the catch is out. While it digests, its stem withers to the floor and curls round its side toward the front, the little flower and the blade lying wilted on the ground, and its roots draw in (the owner: "make him put the stem on the ground when he's consuming like he may make it wrapped towards him as well. He's taking it all in"); they rise again as it opens. In the model (No. 909 on); the game's sheet will need these frames as a block of its own when SUNDEW is built.
+- **SUNDEW's look (approved 2026-11-08: No. 911, `design/evolutions/forms37.js`):** a wilted black flower: six velvet petals, plum-black, veined in glowing pink, cupped round a mouth of pale hooked fangs and a glowing pink throat, their tips wilting outward and down; tipped forward on seven ringed root-tentacles; a stem from its base arching over it like a scorpion's tail to a little four-petal pink flower carrying a curved sawtooth blade-leaf (its slash). Reached through Nos. 906 to 910 (section 12). The owner: "the design looks solid right now as stationary and moving".
 - **The coral crab's REEF:** it fires little coral shards, and coral grows where they land.
   - **In a fight:** a coral outcrop for 20 seconds. Allies beside it are mended, enemies cannot pass it, and it can be stood on to cross a gap.
   - **Getting around:** the owner: "The little shards that the new crustacean shoots should be able to allow players to climb up in new areas". The coral lets the player climb up to new, higher areas.
@@ -170,7 +171,7 @@ Answered on 2026-11-02 (section 2):
 Still open:
 1. **The apparatus's look.**
 2. **BLOOM's forms:**
-   - the pictures of the three concepts, and which form is built first (BLOOM breeding needs one). The owner's pencil page (section 12) has all three; **SUNDEW's drafts** (2026-11-08, `design/evolutions/forms37.js`): No. 906, the pitcher (from the drawing marked BRAWLY), and No. 907, the snail (from the snail drawn below it). The owner chose the pitcher: "The left one tilted pitcher and feet like roots/tentacles". **No. 908**, the pitcher tilted forward on roots, its stem from the bottom of the barrel and its rim smooth; then, for its body, **No. 909**, a wilted flower with teeth; then its textures in two finishes, **Nos. 910** (velvet petals, veined and creased; matte, ringed roots) and **911** (910 with the veins glowing pink). The owner: "the design looks solid right now as stationary and moving". Its CONSUME look (the petals closing into a bud) is in the model; the finish (910 or 911) is to choose;
+   - the pictures of the lotus lantern and the coral crab, and which form is built first (BLOOM breeding needs one). The owner's pencil page (section 12) has all three. **SUNDEW's look is approved: No. 911** (2026-11-08, section 2);
    - names for the lotus lantern and the coral crab;
    - a BLOOM egg's look.
 3. **CONSUME's numbers:** the digestion's damage a second, and its type. SEEDFALL's and REEF's numbers.
@@ -178,18 +179,23 @@ Still open:
    - where the coral can be climbed: marked sites, as the Kinetic Launcher's deploy spots are, or any wall;
    - how long the coral lasts;
    - the new high areas it reaches (map design).
-5. **CONSUME: its Ultimate, or every 15 seconds?** The owner called it "its ultimate ability" (2026-11-08); the design of 2026-11-02 has it swallow an enemy every 15 seconds on its own.
+5. **SUNDEW's alternate attack:** none is designed (forms without one have BASH).
 6. **The coral crab's main attack:** read as its clamping claws, with the shards fired by REEF. Should its everyday attack fire shards instead?
 7. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), and the three Player roles' names and themes. The Technician's ability is REEF.
 8. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
 
-Answered last (2026-11-02):
+Answered on 2026-11-08:
+- SUNDEW's look: No. 911 (section 2);
+- CONSUME is SUNDEW's Ultimate, not every 15 seconds.
+
+Answered on 2026-11-02 (later):
 - the 50%'s other half (toxic or fire);
 - Series 2's BLOOM cards (once the apparatus is in);
 - an evolved toxic follower without its BLOOM form (it waits).
 
 ## 12. History
 
+- 2026-11-08: the owner: "911, and make CONSUME his Ultimate". SUNDEW's look is No. 911 (velvet petals, their veins glowing pink); CONSUME is its Ultimate, its other rules unchanged (`DECISION-LOG.md`).
 - 2026-11-08: the owner: "But make him put the stem on the ground when he's consuming like he may make it wrapped towards him as well. He's taking it all in make it with her on the ground actually" (read as "wither on the ground"). In the model's CONSUME: as the petals close, the stem withers down to the floor (by about 0.85 s) and curls round its right side toward the front, the little flower lying face up and smaller, the blade flat on the floor beside it; the roots draw in a little and curl; all of it rises again as the petals open. Not in the game.
 - 2026-11-08: the owner: "Now make sure whenever it uses its ultimate ability and it eats one of the enemy targets, that the petal close up. But the design looks solid right now as stationary and moving." CONSUME's look built into the model (909, 910, 911): the mouth flares to take the catch (0.1 s), the petals snap shut into a plump bud, inner whorl inside the outer (by 0.3 s), its fangs drawn in and its throat's light down; the bud throbs as it digests (911's veins pulsing brighter); the petals open again after the hold (5 s, as designed). A design-model state (`update(t, act, cons)`), not in the game; the game's sheet will need its frames. Open: whether CONSUME is its Ultimate or every 15 seconds (section 11).
 - 2026-11-08: on No. 909, the owner: "Dude, I like that. I just don't like the textures, really. So can we change the textures a little bit?" Two finishes of 909, its shape unchanged: **No. 910**, the petals velvet and matte, a deep plum-black, veined from the base, mottled, darker at their wilted edges and tips, creased lengthwise (a painted texture, `_sdPetalTex`); the roots, stem, base and blade matte instead of wet, the roots ringed like tentacles; **No. 911**, 910 with its petals' veins glowing BLOOM's pink. In review; not in the game.
