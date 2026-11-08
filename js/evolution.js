@@ -286,20 +286,20 @@ const EVOLUTIONS = {
     // alternate, SEEDFALL. Its Ultimate is open: it has none yet. A BLOOM Mage evolves into it; an evolved toxic Mage (the Rotshard) converts into it at the purification module (js/conversion.js).
     shrub:  { id: "shrub", name: "THORNWHIP", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall"], sheet: "img/evo/shrub.png",
               cell: 256, anchor: [128, 170.2], core: [128, 130.6], noGlow: true, color: "#ff7ab8" },   // (a 256 px cell since build 2026-11-08l, at the other Mages' height (the owner: "Match the other Mages"): room for its whip; the same pixels a unit as the 144 px sheets)
-    // SUNDEW, BLOOM'S BRAWLER since build 2026-11-08k (design No. 911, approved: "911, and make CONSUME his Ultimate"; its game sprite No. 922, design/evolutions/forms37.js; the owner sent
+    // SUNDEW, BLOOM'S BRAWLER since build 2026-11-08k (design No. 911, approved: "911, and make CONSUME his Ultimate"; its game sprite No. 925 since build 2026-11-08n (No. 922 before it), design/evolutions/forms37.js; the owner sent
     // it to the game: "SUNDEW into the game"; docs/CONVERSION.md §2): a wilted black flower, six velvet petals veined in glowing pink round a mouth of pale fangs, tipped forward on
-    // seven ringed root-tentacles; a stem from its base arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf. Its everyday hit is the blade's
-    // slash; its alternate BASH for now (forms without one have BASH); its Ultimate CONSUME (js/elements.js FORM_ULTIMATES.sundew). `consume`: its sheet's CONSUME block starts at
+    // seven ringed root-tentacles; a stem from its base arching over it like a scorpion's tail to a little pink flower carrying a sawtooth blade-leaf. Its everyday hit is NECTAR STING,
+    // the blade's sting, and its alternate SWEET SCENT (build 2026-11-08n, below: "SUNDEW'S KIT"; a slash and BASH before); its Ultimate CONSUME (js/elements.js FORM_ULTIMATES.sundew). `consume`: its sheet's CONSUME block starts at
     // this column (8 frames: four as its petals snap shut and its stem withers, four of the bud throbbing; _evoFrame plays them). A BLOOM Brawler evolves into it; an evolved toxic
     // Brawler (the Seeper) converts into it at the purification module (js/conversion.js).
-    sundew: { id: "sundew", name: "SUNDEW", element: "blossom", role: "brawler", move: "BASH", moves: ["bash"], sheet: "img/evo/sundew.png",
+    sundew: { id: "sundew", name: "SUNDEW", element: "blossom", role: "brawler", hit: "NECTAR STING", move: "SWEET SCENT", moves: ["sweet_scent"], sheet: "img/evo/sundew.png",   // (its kit, build 2026-11-08n: below, "SUNDEW'S KIT")
               cell: 192, anchor: [96, 138.2], core: [96, 114], noGlow: true, color: "#ff7ab8", consume: 16 },   // (a 192 px cell: room for its roots, its stem and its blade)
-    // THE CORAL CRAB (its name for now: the owner, 2026-11-08), BLOOM'S TECHNICIAN since build 2026-11-08m (design No. 914, approved: "914 crustacean crushing clause is fine"; its game
+    // STONEPETAL (the owner's name, 2026-11-08; it came in as THE CORAL CRAB, a working name: its id stays coralcrab, for saves), BLOOM'S TECHNICIAN since build 2026-11-08m (design No. 914, approved: "914 crustacean crushing clause is fine"; its game
     // sprite No. 923, design/evolutions/forms38.js; the owner sent it to the game: "Coral crab into the game next"; docs/CONVERSION.md §2): a rocky tick, big smooth rounded plates of dark
     // stone, six big square pink crystals and crystal flowers on its back, a brace of four crystals round its neck, a broad rounded six-sided head hung low with two stone ears, four
-    // stake legs. Its everyday hit is its head driving down (Crushing); its alternate BASH (forms without one have BASH); its ability REEF (js/techabilities.js); its Ultimate REEF
+    // stake legs. Its everyday hit is its head driving down (Crushing); its alternate STAKE RING (build 2026-11-08n; BASH before it); its ability REEF (js/techabilities.js); its Ultimate REEF
     // PILLAR (js/elements.js FORM_ULTIMATES.coralcrab). A BLOOM Technician evolves into it; an evolved toxic Technician (the Blight Spider) converts into it (js/conversion.js).
-    coralcrab: { id: "coralcrab", name: "CORAL CRAB", element: "blossom", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/coralcrab.png",
+    coralcrab: { id: "coralcrab", name: "STONEPETAL", element: "blossom", role: "camper", move: "STAKE RING", moves: ["stake_ring"], sheet: "img/evo/coralcrab.png",
               cell: 192, anchor: [96, 138.2], core: [96, 103], noGlow: true, color: "#ff7ab8" },   // (a 192 px cell: room for its stake legs)
 };
 // Which egg grows into which machine.
@@ -652,6 +652,65 @@ function bash(f) {
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 2);
     if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "BASH", color: "#e8edf5", life: 50, vy: -0.06, size: 10 });
     return true;
+}
+
+// STAKE RING (STONEPETAL's own second attack, build 2026-11-08n; the owner, 2026-11-08, picked it of four drafts, in place of BASH: "It drives its four leaf-spear legs into the floor and a ring of crystal
+// spikes bursts up round it, hitting and pushing back every enemy right next to it (Piercing)"): with an enemy it can see within STAKE_RADIUS, it plants its legs and a ring of crystal spikes bursts up round
+// it (js/techabilities.js techSpikeRing: drawn among everything else, so a wall in front covers them): every enemy within STAKE_RADIUS that it can see takes STAKE_MULT × its attack, Piercing (its form's
+// alternate: js/damage.js DMG_FORM.coralcrab), and is pushed STAKE_PUSH tiles straight out from it. The numbers are the agent's, PROVISIONAL (the reach BASH's, the hit a little under BASH's as it
+// hits every enemy round it, the push half again BASH's). True when it struck.
+const STAKE_RADIUS = 1.8, STAKE_MULT = 1.2, STAKE_PUSH = 1.5;
+function stakeRing(f) {
+    const foes = _evoFoesSeen(f.x, f.y, STAKE_RADIUS);
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const a of foes) {
+        applyDamage(a, (f.power || 10) * STAKE_MULT, f, null, false, false, DMG_HIT_ALT);
+        if (!a.dead && typeof applyKnockback === "function") applyKnockback(a, f, STAKE_PUSH * (typeof KNOCK_PER_TILE !== "undefined" ? KNOCK_PER_TILE : 0.28));
+    }
+    f._sigAt = f0; f._sigCd = moveWindupFrames("stake_ring"); f.state = "attack"; f.attackAnim = 0;
+    if (typeof techSpikeRing === "function") techSpikeRing(f.x, f.y, STAKE_RADIUS);
+    if (typeof elementEffects !== "undefined") elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: STAKE_RADIUS, color: "#ff9ccc", life: 24 });
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "STAKE RING", color: "#ff9ccc", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+
+// SUNDEW'S KIT (build 2026-11-08n; the owner's own, 2026-11-08: "Primary attack is a lick stabbing attack, and the secondary attack is a sweet scent, taunt ability that lures enemies towards it or if
+// the sundew's stockpile is full it heals and depletes it [to 0]; now the lick replenishes the stockpile by 25% each"; then, asked: "I like the puff and having the wind up", the heal for "Both", "The stem's
+// blade stabs", the stockpile shown "Over it only", the hit named "NECTAR STING"; its numbers "You pick, provisional"):
+//   NECTAR STING, its everyday hit: its stem arches over and stabs with its blade-leaf, Piercing (js/damage.js DMG_FORM.sundew); each one adds SUNDEW_NECTAR_STEP to its STOCKPILE (f._nectar, 0 to 100:
+//     four fill it; js/combat.js followerAttack). Drawn as the sting (No. 924 on its model, approved: "Bake it"; its sheet from No. 925).
+//   SWEET SCENT, its second attack (a chosen mode, as every second attack: locked on it, it makes no sting, so its stockpile fills on its normal attack), after its wind-up: with the stockpile FULL it HEALS
+//     itself and each of your followers within SCENT_HEAL_R tiles that it can see by SCENT_HEAL of their maximum health, and the stockpile drops to 0; otherwise it PUFFS its scent: every enemy within
+//     SCENT_RADIUS that it can see (not a boss, as ROTTEN DECOY's lure) goes for SUNDEW for SCENT_FRAMES (js/predator.js predatorPickPrey asks scentLure). Nothing to lure and the stockpile not full: it
+//     does not fire (ready again). The stockpile is not saved (a fight's). The numbers are the agent's, PROVISIONAL.
+const SUNDEW_NECTAR_STEP = 25, SCENT_RADIUS = 5, SCENT_FRAMES = 240, SCENT_HEAL = 0.2, SCENT_HEAL_R = 3;
+function sundewNectar(f) { if (f && f.evolved === "sundew") f._nectar = Math.min(100, (f._nectar || 0) + SUNDEW_NECTAR_STEP); }
+function sweetScent(f) {
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if ((f._nectar || 0) >= 100) {   // FULL: the heal, for it and your followers near it
+        f._nectar = 0;
+        const heal = a => { if (a && !a.dead && a.maxHealth > 0 && a.health < a.maxHealth && typeof healUnit === "function") healUnit(a, a.maxHealth * SCENT_HEAL, f); };
+        heal(f);
+        if (typeof followers !== "undefined") for (const a of followers) if (a && a !== f && !a.dead && a.team === "green" && Math.hypot(a.x - f.x, a.y - f.y) <= SCENT_HEAL_R && _evoSees(f.x, f.y, a)) heal(a);
+        if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: SCENT_HEAL_R, color: "#ff9ccc", life: 30 }); elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ffd3e8", radius: 1.1, life: 24 }); }
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SWEET SCENT · HEAL", color: "#ff9ccc", life: 60, vy: -0.06, size: 11 });
+    } else {   // THE PUFF: the enemies near it come for it
+        const foes = _evoFoesSeen(f.x, f.y, SCENT_RADIUS).filter(a => !a.bossId && !a.bossName && !a.isBoss);
+        if (!foes.length) return false;
+        for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + SCENT_FRAMES; a.provoked = true; }
+        if (typeof elementEffects !== "undefined") { elementEffects.push({ type: "ring", x: f.x, y: f.y, radius: SCENT_RADIUS, color: "#ffb8dc", life: 36 }); elementEffects.push({ type: "impact", x: f.x, y: f.y, color: "#ffb8dc", radius: 1.4, life: 30 }); }
+        if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SWEET SCENT", color: "#ff9ccc", life: 50, vy: -0.06, size: 10 });
+    }
+    f._sigAt = f0; f._sigCd = moveWindupFrames("sweet_scent");
+    return true;
+}
+// the SUNDEW a creature is lured to by its SWEET SCENT, while the scent holds it (js/predator.js predatorPickPrey), or null
+function scentLure(p) {
+    const s = p && p._scentBy; if (!s) return null;
+    if (s.dead || s.team !== "green" || (typeof frame !== "undefined" ? frame : 0) >= (p._scentUntil || 0)) { p._scentBy = null; return null; }
+    return s;
 }
 
 // CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; the owner, 2026-11-07: "Apply both"). Locked on it, the Static
@@ -1049,6 +1108,17 @@ function drawEvolvedOverlay(f, px, py, g) {
                 g.lineTo(x1, y1); g.stroke();
             }
             if (!f._arcFan) { x0 = x1; y0 = y1; }   // a fan: every round leaves the reactor, none from the last target
+        }
+    }
+    // SUNDEW'S STOCKPILE (build 2026-11-08n; the owner: "Over it only"): four small pink pips beside its health bar, one lit for each quarter its NECTAR STING has gathered; all four full, they glow (its
+    // SWEET SCENT will heal). Only while it fights or holds some (a full stockpile stays shown).
+    if (d.id === "sundew" && (f._nectar > 0 || f.state === "attack") && !(typeof attractOn === "function" && attractOn())) {
+        const n = Math.round((f._nectar || 0) / 25), full = n >= 4, pul = 0.6 + 0.4 * Math.sin(f0 * 0.2);
+        for (let i = 0; i < 4; i++) {
+            const cx = px - 38 + i * 6, cy = py - 73;
+            g.beginPath(); g.moveTo(cx, cy - 3); g.lineTo(cx + 2.6, cy); g.lineTo(cx, cy + 3); g.lineTo(cx - 2.6, cy); g.closePath();
+            g.fillStyle = i < n ? (full ? (pul > 0.8 ? "#ffffff" : "#ffd3e8") : "#ff7ab8") : "rgba(20,8,16,0.75)"; g.fill();
+            g.strokeStyle = full ? "rgba(255,211,232," + (0.5 + 0.5 * pul).toFixed(3) + ")" : "rgba(255,170,210,0.7)"; g.lineWidth = 1; g.stroke();
         }
     }
     g.restore();

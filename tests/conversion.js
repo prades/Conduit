@@ -167,7 +167,7 @@ function measure(w, h) {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const m = __mk('toxic', 'brawler', 'seeper'); m.level = 12; _applyFollowerLevel(m, true); m.alt = 'eruption'; partyTick();
             const st = JSON.stringify(m.stats), hp = [m.health, m.maxHealth], g = convertPreview(m), mv = [_cvMoves(m), _cvMoves(g)], fm = [_cvFormName(m), _cvFormName(g)], res = convertApply(m);
             return { mv, fm, ok: res.ok, msg: res.msg, el: m.element, evo: m.evolved, alt: m.alt || null, same: JSON.stringify(m.stats) === st, hp: [m.health, m.maxHealth], hp0: hp, label: unitTypeLabel(m) }; })()`);
-        same(r.fm.join('|'), 'SEEPER|SUNDEW', 'the FORM row'); same(r.mv[1], 'BASH · ULTIMATE CONSUME', 'its moves after (BASH; its Ultimate CONSUME)');
+        same(r.fm.join('|'), 'SEEPER|SUNDEW', 'the FORM row'); same(r.mv[1], 'NECTAR STING · SWEET SCENT · ULTIMATE CONSUME', 'its moves after (NECTAR STING and SWEET SCENT since build 2026-11-08n; its Ultimate CONSUME)');
         ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'sundew', 'its form'); same(r.alt, null, 'its alternate (ERUPTION is not SUNDEW\'s)');
         ok(r.same, 'its stats changed'); same(r.hp.join(), r.hp0.join(), 'its health'); same(r.label, 'SUNDEW', 'its name');
     });
@@ -187,10 +187,10 @@ function measure(w, h) {
             const st = JSON.stringify(t.stats), g = convertPreview(t), ab = _cvAbility(t), mv = [_cvMoves(t), _cvMoves(g)], fm = [_cvFormName(t), _cvFormName(g)], res = convertApply(t);
             const rec = followerRecord(t); __clear(); spawnFollowerFromSave(rec); const back = followers[followers.length - 1];
             return { preview: g.evolved, ab, mv, fm, ok: res.ok, msg: res.msg, el: t.element, evo: t.evolved, now: (techAbilityOf(t) || {}).id, ult: (followerUltimate(t) || {}).name, same: JSON.stringify(t.stats) === st, label: unitTypeLabel(t), back: [back.element, back.evolved, back.convertedFrom], brawler: _cvAbility(__mk('toxic', 'brawler')) }; })()`);
-        same(r.preview, 'coralcrab', 'the preview\'s form'); same(r.fm.join('|'), 'BLIGHT SPIDER|CORAL CRAB', 'the FORM row'); same((r.ab || []).join('|'), 'TOXIC PODS|REEF', 'the ABILITY row'); same(r.brawler, null, 'an ABILITY row for a Brawler');
+        same(r.preview, 'coralcrab', 'the preview\'s form'); same(r.fm.join('|'), 'BLIGHT SPIDER|STONEPETAL', 'the FORM row (STONEPETAL: the coral crab\'s name since build 2026-11-08n)'); same((r.ab || []).join('|'), 'TOXIC PODS|REEF', 'the ABILITY row'); same(r.brawler, null, 'an ABILITY row for a Brawler');
         ok(/ULTIMATE REEF PILLAR$/.test(r.mv[1]), 'its moves after: ' + r.mv[1]);
         ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'coralcrab', 'its form'); same(r.now, 'reef', 'its ability'); same(r.ult, 'Reef Pillar', 'its Ultimate');
-        ok(r.same, 'its stats changed'); same(r.label, 'CORAL CRAB', 'its name'); same(r.back.join(), 'blossom,coralcrab,toxic', 'saved and loaded back');
+        ok(r.same, 'its stats changed'); same(r.label, 'STONEPETAL', 'its name'); same(r.back.join(), 'blossom,coralcrab,toxic', 'saved and loaded back');
     });
     check('its element is BLOOM, and it remembers it was toxic; its level, XP, stats, health and bond are as they were; it is named BLOOM BRAWLER', () => {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const f = __mk('toxic', 'brawler'), mate = __mk('fire', 'mage'); partyTick(); f.level = 7; f.xp = 33; f.partnerUid = mate.uid = mate.uid || 'm1';

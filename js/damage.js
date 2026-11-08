@@ -61,8 +61,8 @@ const DMG_FORM = {
     rimestar:   { main: "projectile", alt: "projectile" },
     hornshell:  { main: "projectile", alt: "projectile" },
     rotshard:   { main: "projectile", alt: "elemental" },
-    coralcrab:  { main: "crushing",   alt: "crushing" },    // (BLOOM's Technician, build 2026-11-08m: its head driving down, "crushing clause is fine"; BASH)
-    sundew:     { main: "slashing",   alt: "crushing" },    // (BLOOM's Brawler, build 2026-11-08k: its blade-leaf slashes; BASH for now)
+    coralcrab:  { main: "crushing",   alt: "piercing" },    // (BLOOM's Technician, STONEPETAL, build 2026-11-08m: its head driving down, "crushing clause is fine"; its STAKE RING Piercing, build 2026-11-08n)
+    sundew:     { main: "piercing",   alt: "crushing" },    // (BLOOM's Brawler, build 2026-11-08k; its NECTAR STING Piercing since build 2026-11-08n, the owner: "The stem's blade stabs"; SWEET SCENT deals no damage)
     shrub:      { main: "elemental",  alt: "elemental" },   // (BLOOM's Mage, build 2026-11-08j: SEED SHOT and SEEDFALL, Elemental: the owner's pick, 2026-11-08)
     hammerslug: { main: "crushing",   alt: "crushing" },
     gooproxy:   { main: "crushing",   alt: "crushing" },

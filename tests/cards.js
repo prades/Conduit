@@ -30,7 +30,7 @@ const CHART = {
     'QUILLSTONE': 'spinelegged', 'STATIC ORB': 'drone', 'ELECTRO SKINK': 'spinelegged', 'RIFT MIMIC': 'jelly', 'JELLY RAM': 'jelly', 'SEEPER': 'spinelegged', 'FROST MAW': 'elemental',
     'EMBER HOOD': 'elemental', 'THUNDERHEAD': 'elemental', 'VOIDSTAR': 'mollusk', 'HORNSHELL': 'mollusk', 'ROTSHARD': 'elemental', 'RIMESTAR': 'drone',
     'THERMITE BURROWER': 'drone', 'HOVER SHELL': 'drone', 'GOO PROXY': 'jelly', 'HAMMER SLUG': 'mollusk', 'BLIGHT SPIDER': 'spinelegged', 'IGLOO SKATER': 'elemental',
-    'THORNWHIP': 'elemental', 'SUNDEW': 'mollusk', 'CORAL CRAB': 'spinelegged',   // (and SUNDEW, BLOOM's Brawler, build 2026-11-08k: a mollusk)   // (BLOOM's Mage, build 2026-11-08j: not on the chart; it keeps the lotus lantern's Elemental, docs/CONVERSION.md §2)
+    'THORNWHIP': 'elemental', 'SUNDEW': 'mollusk', 'STONEPETAL': 'spinelegged',   // (and SUNDEW, BLOOM's Brawler, build 2026-11-08k: a mollusk)   // (BLOOM's Mage, build 2026-11-08j: not on the chart; it keeps the lotus lantern's Elemental, docs/CONVERSION.md §2)
 };
 
 function findChromium() {

@@ -363,6 +363,7 @@ function followerAttack(actor, target) {
         actor.attackCooldown = followerRest(actor, 40);
 
     }
+    if (actor.evolved === "sundew" && typeof sundewNectar === "function") sundewNectar(actor);   // SUNDEW's NECTAR STING fills its stockpile, a quarter a sting (js/evolution.js, build 2026-11-08n)
 
     // Resonance builds from damage output
     if (actor.currentResonance < 100) {

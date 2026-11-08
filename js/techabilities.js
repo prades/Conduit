@@ -403,11 +403,12 @@ function techShieldBlocks(src, tgt) {
     const W = techShieldBetween(src.x, src.y, tgt.x, tgt.y); if (!W) return false;
     _techShieldHit(W, src.x, src.y, tgt.x, tgt.y); return true;
 }
-// an enemy's shot (js/game.js): stopped where its step crosses a shield
+// an enemy's shot (js/game.js): stopped where its step crosses a shield, or REEF's rock and crystal (_techReefStopsShot)
 function techShieldStopsShot(p) {
-    if (!techShields.length || !p || !p.targetsGreen) return false;
-    const x0 = p.x - p.vx, y0 = p.y - p.vy, W = techShieldBetween(x0, y0, p.x, p.y); if (!W) return false;
-    _techShieldHit(W, x0, y0, p.x, p.y); return true;
+    if ((!techShields.length && !techReefs.length) || !p || !p.targetsGreen) return false;
+    const x0 = p.x - p.vx, y0 = p.y - p.vy, W = techShields.length ? techShieldBetween(x0, y0, p.x, p.y) : null;
+    if (W) { _techShieldHit(W, x0, y0, p.x, p.y); return true; }
+    return techReefs.length ? _techReefStopsShot(p, x0, y0) : false;
 }
 function _techShieldHit(W, x0, y0, x1, y1) {
     const s0 = _techShieldS(W, x0, y0), s1 = _techShieldS(W, x1, y1), k = Math.abs(s0 - s1) > 1e-9 ? s0 / (s0 - s1) : 0.5, f0 = _techFrame();
@@ -741,6 +742,7 @@ function techBlightApply(d) {
 let techReefs = [];    // the outcrops standing: { id, by, parts: [{ x, y, r }] (one; REEF PILLAR's three), x, y (the middle), from (where the shards flew from), t0 (they land: it grows), until, mend, mendReach, every, pillar }
 let techClimbs = [];   // the climbs standing: { id, by, foot: [x, y], top: [x, y], edge: [x, y] (on the high ground's edge), n: [nx, ny] (from the low floor to the high), from, t0 }
 let _techReefN = 0;
+let techSpikes = [];  // crystal spikes bursting up from the floor a moment (STONEPETAL's STAKE RING, js/evolution.js stakeRing): { x, y, t0, life, h, lean, seed }; drawn among everything else
 const REEF_FACES = new Set(["railing_wall", "deck_wall"]);   // the edges drawn as a raised floor's open face (js/facilitymap.js edge_kinds: the arena's under the catwalks and under the observation deck)
 function techReefAt(tech, spot) {
     if (!spot || !Number.isFinite(spot.x) || !Number.isFinite(spot.y)) return { ok: false, why: "TAP THE FLOOR", again: true };
@@ -783,6 +785,22 @@ function _techReefKeep(a, px, py) {
         }
     }
 }
+// AN ENEMY'S SHOT AT REEF'S ROCK AND CRYSTAL (build 2026-11-08n; the owner, 2026-11-08: "Stop shots too", as cover stops shots, bites still reaching over it): a shot whose step crosses an outcrop's
+// body (a REEF PILLAR's spikes too) stops there, with a spark of crystal. A lob (an arc) flies over it, as over cover. Your side's shots pass it, as they pass a Photonic Shield (the agent's reading).
+function _techReefStopsShot(p, x0, y0) {
+    if (p.arcData || p.noHitDetect) return false;
+    const f0 = _techFrame();
+    for (const O of techReefs) {
+        if (!_techReefOn(O, f0)) continue;
+        for (const c of O.parts) {
+            if (_techSegDist([x0, y0], [p.x, p.y], c.x, c.y) > c.r) continue;
+            O.pressedAt = f0;
+            if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: p.x, y: p.y, color: "#ffd3e8", radius: 0.4, life: 12 });
+            return true;
+        }
+    }
+    return false;
+}
 function techOnReef(a) { if (!techReefs.length || !a) return null; const f0 = _techFrame(); for (const O of techReefs) if (_techReefOn(O, f0) && O.parts.some(c => Math.hypot(a.x - c.x, a.y - c.y) < c.r)) return O; return null; }
 // the outcrops' clock: each grows when its shards land (what stands there is put out), then mends your followers beside it every `every` frames, until it crumbles
 function _techReefTick(f0) {
@@ -801,6 +819,16 @@ function _techReefTick(f0) {
             if (!a || a.dead || a.team !== "green" || a._flight || !(a.maxHealth > 0) || !(a.health < a.maxHealth)) continue;
             if (O.parts.some(c => Math.hypot(a.x - c.x, a.y - c.y) <= c.r + O.mendReach && (typeof facilitySeesFrom !== "function" || facilitySeesFrom(c.x, c.y, a.x, a.y)))) healUnit(a, a.maxHealth * O.mend, O.by);
         }
+    }
+}
+// STAKE RING's spikes (STONEPETAL's second attack, build 2026-11-08n): a ring of square crystal spikes bursting up round (x, y), `R` tiles out, on floor only; they rise in a few frames, stand, and sink
+// back into the floor (their whole life about two thirds of a second). Only a look: stakeRing has already struck.
+function techSpikeRing(x, y, R) {
+    const f0 = _techFrame(), n = 10;
+    for (let i = 0; i < n; i++) {
+        const a = i / n * Math.PI * 2 + 0.31, r = R * (0.72 + 0.12 * (i % 2)), sx = x + Math.cos(a) * r, sy = y + Math.sin(a) * r;
+        if (typeof facilityStandOk === "function" && !facilityStandOk(sx, sy)) continue;
+        techSpikes.push({ x: sx, y: sy, t0: f0 + (i % 3), life: 40, h: 30 + (i % 3) * 9, lean: (Math.cos(a) - Math.sin(a)) * 0.32, seed: i * 7 + 3 });
     }
 }
 // REEF PILLAR (the coral crab's Ultimate, js/elements.js FORM_ULTIMATES.coralcrab; the owner's design, 2026-11-08: "A giant spike erupts from the ground between the target and the technician", "Blocks and heals
@@ -1105,7 +1133,7 @@ function _techDrawFaultStroke(g, A, f0) {
 }
 
 // everything the abilities keep for a game, let go when a new one starts or one is loaded (js/facilityplay.js facilityResetState). Saved and put back by the facility's save: the launchers, the rubble, the clock and the pools.
-function techReset() { if (techBridges.length && typeof facilityIceSet === "function") facilityIceSet([]); techBridges = []; techShields = []; techFrosts = []; techPools = []; techReefs = []; techClimbs = []; techClock = 0; techAim = null; _techLabels = {}; }
+function techReset() { if (techBridges.length && typeof facilityIceSet === "function") facilityIceSet([]); techBridges = []; techShields = []; techFrosts = []; techPools = []; techReefs = []; techClimbs = []; techSpikes = []; techClock = 0; techAim = null; _techLabels = {}; }
 
 // ── the throw and the flight ──
 function _techLoadPoint(a) {
@@ -1267,6 +1295,7 @@ function techAbilityTick() {
     _techShieldTick();
     techClock++;   // THE PLAY CLOCK: a frame of play
     _techFrostTick(f0); _techBridgeTick(f0); _techPoolTick(); _techReefTick(f0);
+    if (techSpikes.length) techSpikes = techSpikes.filter(S => f0 < S.t0 + S.life);   // (STAKE RING's spikes, sunk)
 }
 // THE LEDGES: a follower up on a raised floor with a ledge (the catwalks) that is not holding it (it was called back), and is up there without you, walks onto the ledge and jumps down; one posted to a site's room that is not
 // up there (it came back from the dead at the Crystal) is let go of its post, since nobody walks up. A POCKET site's landing (the Sewers' sample bank) has no ledge: its way out is the passage its rubble opens, or the pipe.
@@ -1590,6 +1619,7 @@ function techDrawItems(list) {
     const f0 = _techFrame();
     for (const O of techReefs) if (_techReefOn(O, f0)) O.parts.forEach((c, i) => list.push({ type: "tech", kind: "reef", x: c.x, y: c.y, O, c, i }));   // REEF's outcrops (a REEF PILLAR's three spikes)
     for (const C of techClimbs) if (f0 >= C.t0) { list.push({ type: "tech", kind: "climbFoot", x: C.foot[0], y: C.foot[1], C }); list.push({ type: "tech", kind: "climbTop", x: C.top[0], y: C.top[1], C }); }   // a REEF climb's two ends
+    for (const S of techSpikes) if (f0 >= S.t0 && f0 < S.t0 + S.life) list.push({ type: "tech", kind: "spike", x: S.x, y: S.y, S });   // STAKE RING's spikes
 }
 // ── REEF's rock and crystal (the coral crab's look, No. 914: smooth rounded plates of dark stone, big square pink crystals breaking out of them with a pink glow round them, crystal flowers among them) ──
 function _techHash(n) { n = (n ^ 61) ^ (n >>> 16); n = (n + (n << 3)) | 0; n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); return ((n ^ (n >>> 15)) >>> 0) / 4294967296; }
@@ -1677,6 +1707,13 @@ function techDrawItem(o, px, py) {
     g.save();
     if (o.kind === "reef") _techDrawReef(g, o, px, py, f0);
     else if (o.kind === "climbFoot" || o.kind === "climbTop") _techDrawClimb(g, o, px, py, f0);
+    else if (o.kind === "spike") {   // one of STAKE RING's spikes: a square crystal bursting up out of a little heave of stone, leaning out from STONEPETAL, sinking back in its last frames
+        const S = o.S, age = f0 - S.t0, left = S.t0 + S.life - f0, k = Math.min(1, age / 5) * Math.min(1, left / 12);
+        g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(px, py, 11, 5, 0, 0, Math.PI * 2); g.fill();
+        _techStone(g, px, py + 1, 9 * k + 2, 4 * k + 2, S.seed);
+        _techReefGlow(g, px, py - S.h * 0.4 * k, 18, 0.7 * k);
+        _techCrystal(g, px, py - 2, S.h * k, 9, S.lean, S.lean < 0 ? 1 : 0);
+    }
     else if (o.kind === "pod") {
         // a TOXIC POD: a small glass canister of bubbling toxin on a black base, a black cap with a lens (the Blight Spider's own tank, small); the toxin's level and the lens fall as it runs down
         const k = techPoolFade(o.P), lit = 0.35 + 0.65 * k * (0.75 + 0.25 * Math.sin(f0 * 0.15 + o.P.id));

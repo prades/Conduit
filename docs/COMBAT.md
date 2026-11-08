@@ -206,9 +206,9 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 - **BASH** where the design notes give none (the eight forms above, and every follower before it evolves): it rams the nearest enemy it can see within 1.8 tiles, 1.5 × its attack, Crushing whatever its form, a push of a tile and a 0.5 s stun; a 4 s wind-up. A Mage locked on it walks in to use it. The numbers are the agent's (provisional).
 - **CAPACITOR DISCHARGE** for the Static Orb (the design notes; PINBALL is superseded, its code kept): it stands still storing a charge every 1.5 s, up to 4, enemies near or not, and may move again once full; RETREAT stops the charging. The player releases them (its squad card's ⚡ chip, or its INFO) into an enemy within 2 tiles: a chain of 1 + the charges enemies, each within 2.5 tiles of the last, 0.5 × its attack × the charges each (electric). A switch of attack loses the charges. The numbers are the agent's (provisional).
 - **CORRODE SHOT** is the Rotshard's everyday shot (the design notes' primary): the Mage's shot, its own damage, and it eats the armour of what it hits, weaker round it. ROTTEN DECOY is its second attack.
-| SUNDEW (built `2026-11-08k`) | Brawler · bloom | Slashing (its blade-leaf; the barbed lip is gone) | BASH: Crushing. Its Ultimate CONSUME: the digestion Elemental (the owner kept it, 2026-11-08) |
+| SUNDEW (built `2026-11-08k`) | Brawler · bloom | Piercing: NECTAR STING, its blade-leaf's sting (build `2026-11-08n`; Slashing, its slash, before) | SWEET SCENT: no damage (a lure, or a heal with its stockpile full; build `2026-11-08n`; BASH before). Its Ultimate CONSUME: the digestion Elemental (the owner kept it, 2026-11-08) |
 | THORNWHIP (built `2026-11-08j`; named 2026-11-08; it was the lotus lantern) | Mage · bloom | Elemental (SEED SHOT: its vines fling a glowing seed like a sling, 2026-11-08) | SEEDFALL: Elemental. Its Ultimate PINK THICKET: Elemental (build `2026-11-08l`) |
-| Coral crab (built `2026-11-08m`; its name for now) | Technician · bloom | Crushing (its head driving down: No. 914 has no claws) | BASH: Crushing. Its ability REEF and its Ultimate REEF PILLAR deal no damage (`TECHNICIANS.md`) |
+| STONEPETAL (built `2026-11-08m` as the coral crab; named `2026-11-08n`) | Technician · bloom | Crushing (its head driving down: No. 914 has no claws) | STAKE RING: Piercing (build `2026-11-08n`; BASH before). Its ability REEF and its Ultimate REEF PILLAR deal no damage (`TECHNICIANS.md`) |
 
 - **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS move too, until it was taken out on 2026-11-07), the static field, the ice burst, the singularity, the smoke bomb. *(Since build `2026-11-07jj` no follower uses an element special: the owner, "each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability". The functions stay in js/elements.js, unused.)*
 - **An egg** (not yet evolved) hits with its scythe legs: Slashing.
@@ -293,7 +293,7 @@ The elemental share of each form's main attack (the range runs from a wild to an
 | SEEPER | Brawler · toxic | Spine-legged | −1 | 21–29% |
 | ELECTRO SKINK | Brawler · electric | Spine-legged (none until build `2026-11-08h`) | −1 | 21–29% (by the rule, as the other −1 Brawlers; not measured) |
 | THORNWHIP (built `2026-11-08j`; it was the lotus lantern) | Mage · bloom | Elemental | +2 | 82–87% |
-| Coral crab (built `2026-11-08m`) | Technician · bloom | Spine-legged | −1 | 40% |
+| STONEPETAL (built `2026-11-08m`) | Technician · bloom | Spine-legged | −1 | 40% |
 | SUNDEW (built `2026-11-08k`) | Brawler · bloom | Mollusk | −1 | 21–29% |
 
 Alternatives the owner passed over: species alone, without the +1 for an Elemental main attack (THUNDERHEAD and EMBER HOOD at +1, VOIDSTAR at −1); and steps of 20%.
@@ -552,7 +552,7 @@ The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cove
   - lobs (an arc: the toxic smoke bomb) fly over everything;
   - the fire bombs bounce off walls and props (`js/firebombs.js`);
   - the Photonic Shield stops enemy shots;
-  - REEF's outcrops and REEF PILLAR (build `2026-11-08m`) stop enemies' movement only: shots, bites and sight pass them (`TECHNICIANS.md`, "REEF");
+  - REEF's outcrops and REEF PILLAR (build `2026-11-08m`) stop enemies' movement, and since build `2026-11-08n` their shots (the owner: "Stop shots too"; a lob flies over, your shots pass); bites and sight pass them (`TECHNICIANS.md`, "REEF");
   - melee (bites, the lash, the punch) tests distance only, so a bite still reaches over a one-tile object;
   - ~~the moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were~~ *(superseded in build `2026-11-06i` by the owner's "Need sight": §8.5)*.
 

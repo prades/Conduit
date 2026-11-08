@@ -2536,3 +2536,23 @@ For the climb's rule: marked sites (ruled out by the owner's connected rule); an
 
 ### Supersedes / superseded by
 Builds on "The owner's answers on BLOOM and REEF: THORNWHIP, PINK THICKET, REEF's climbs, the connected rule, REEF PILLAR" (2026-11-08, build `2026-11-08l`).
+
+## DECISION: The owner's answers on STONEPETAL, SUNDEW and REEF: STONEPETAL, STAKE RING, NECTAR STING, SWEET SCENT, REEF stopping shots
+- Date and build: 2026-11-08, build `2026-11-08n`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Prompt me questions one by one", then the answers one by one; for SUNDEW the owner's own kit: "Primary attack is a lick stabbing attack, and the secondary attack is a sweet scent, taunt ability that lures enemies towards it or if the sun dues stockpile is full it heals and depletes it [to 0] now the lick replenishes the stock pile by 25% each"; then "Build these answers".
+
+### Decision
+- REEF's outcrop and REEF PILLAR stop enemy shots too, as cover does ("Stop shots too"); bites still reach over them.
+- REEF's readings of build `2026-11-08m` kept: walk over the outcrop only, no stepping stone on water ("Walk over it only"); a climb used at the end of a walk or from its tag ("Walk's end or tag"); climbs only at open edges ("Open edges only"); its mending for your followers only ("Followers only"); REEF's and REEF PILLAR's numbers kept until a playtest ("Keep them").
+- BLOOM's Technician is named STONEPETAL (it came in as the coral crab; its id `coralcrab` kept); its second attack is STAKE RING (of four drafts): it plants its legs and a ring of crystal spikes bursts up round it, hitting and pushing back every enemy right next to it (Piercing).
+- SUNDEW's kit is the owner's: NECTAR STING, its everyday hit, the stem's blade stabbing like a scorpion's sting ("The stem's blade stabs"), Piercing, each sting adding 25% to its stockpile; SWEET SCENT, its second attack with a wind-up ("I like the puff and having the wind up"): a puff luring the enemies near it, or, the stockpile full, a heal for SUNDEW and your followers near it ("Both") that empties the stockpile; the stockpile shown as four pips over it ("Over it only"); the hit's name NECTAR STING; its sting drawn as No. 924 ("Bake it").
+- The numbers of STAKE RING, SWEET SCENT and the stockpile are the agent's, provisional ("You pick, provisional").
+
+### Status
+Built in build `2026-11-08n` and tested (`tests/reef.js`, `tests/secondattacks.js`, `tests/moves.js`, `tests/conversion.js`); SUNDEW's sheet re-baked from No. 925. Not playtested.
+
+### Alternatives
+Offered and passed over: REEF movement-only, or blocking shots and bites; a stepping stone on water; any step onto a climb, or its tag only; any height difference as high ground; healing you too; for the coral crab's second attack, SHARD SPRAY, GEODE GUARD, FLOWER MINE (and BASH); for its name, GEODE TICK, QUARTZBLOOM, CAIRNBACK (and keeping CORAL CRAB); for SWEET SCENT, a standing scent or a tap from its squad card; for the heal, SUNDEW alone or your followers alone; for the sting, a tongue from its mouth (Piercing or Slashing); for the stockpile, the squad card or both; for the hit's name, LICK or STING.
+
+### Supersedes / superseded by
+Answers the readings of "The coral crab built, with REEF (its outcrop and its climbs) and REEF PILLAR: the agent's numbers and readings" (2026-11-08, build `2026-11-08m`). Supersedes SUNDEW's slash and BASH, and the coral crab's BASH and its working name.

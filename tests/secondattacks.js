@@ -78,7 +78,7 @@ function measure(w, h) {
     await check('the eight forms have BASH as their second attack, and a follower that has not evolved has it; the others keep their own; a clone has none', () => {
         const r = J(`Object.values(EVOLUTIONS).filter(e => !e.legacy).map(e => e.id + ':' + evoMoveIds(e).join('/'))`);
         for (const id of ['jellyram', 'rimestar', 'hornshell', 'hammerslug', 'gooproxy', 'blightspider', 'hovershell', 'igloo']) ok(r.indexOf(id + ':bash') >= 0, id + ': ' + r.join(' '));
-        same(r.filter(x => /bash/.test(x)).length, 11, 'forms with BASH (the eight, the Electro Skink since build 2026-11-08a, SUNDEW since 2026-11-08k, the coral crab since 2026-11-08m)'); same(r.filter(x => /:$/.test(x)).length, 0, 'forms with no second attack');
+        same(r.filter(x => /bash/.test(x)).length, 9, 'forms with BASH (the eight, the Electro Skink since build 2026-11-08a; SUNDEW had it from 2026-11-08k and the coral crab from 2026-11-08m until each got its own, 2026-11-08n)'); same(r.filter(x => /:$/.test(x)).length, 0, 'forms with no second attack');
         same(J(`evoMoveIds(followerMoveDef({ isFollower: true })).join()`), 'bash', 'before it evolves'); same(J(`followerMoveDef({ isFollower: true, isClone: true })`), null, 'a clone');
     });
     await check('BASH rams the nearest enemy it can see within 1.8 tiles: it steps in, 1.5 × its attack (Crushing, its hit kind), the enemy pushed and stunned half a second; one farther is not touched; it waits its 4 s wind-up after', () => {
@@ -101,6 +101,57 @@ function measure(w, h) {
             followerAltSet(f, 'bash'); for (let i = 0; i < 240 && Math.hypot(a.x - f.x, a.y - f.y) > 1.6; i++) { frame++; updateNPC(f); } const dBash = Math.hypot(a.x - f.x, a.y - f.y);
             return { d0, dNormal, dBash, reach: followerAltCloseReach(f) }; })()`);
         ok(r.dNormal > 3, 'on its normal attack it closed in: ' + JSON.stringify(r)); ok(r.dBash < 1.6, 'on BASH it kept away: ' + JSON.stringify(r)); same(r.reach, 1.8, 'its close reach');
+    });
+
+    group('1b. STAKE RING (STONEPETAL\'s own second attack, build 2026-11-08n: the owner\'s pick, in place of BASH)');
+    await check('STONEPETAL\'s second attack is STAKE RING: every enemy it can see within 1.8 tiles takes 1.2 × its attack (its form\'s alternate: Piercing) and is pushed out from it; one farther is not touched; spikes rise round it; it waits its 4 s wind-up after', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'camper', 'coralcrab'), a = __foe(f.x + 1.2, f.y), b = __foe(f.x - 0.8, f.y + 0.9), far = __foe(f.x + 3, f.y + 1); const hits = []; const keep = applyDamage;
+            globalThis.applyDamage = function (t, amt, src, el, rf, fx, kind) { if (src === f) hits.push({ who: t === a ? 'a' : t === b ? 'b' : 'x', amt, alt: kind === DMG_HIT_ALT }); return keep.apply(this, arguments); };
+            try { followerAltSet(f, 'stake_ring'); f._altWind = 1; frame++; evolutionTick(); } finally { globalThis.applyDamage = keep; }
+            const out = (p) => (p.kbVX || 0) * (p.x - f.x) + (p.kbVY || 0) * (p.y - f.y) > 0;
+            return { moves: evoMoveIds(EVOLUTIONS.coralcrab).join(), name: EVOLUTIONS.coralcrab.move, hits, power: f.power, out: [out(a), out(b)], far: __dmg(far), cd: f._sigCd, spikes: techSpikes.length, type: DMG_FORM.coralcrab.alt, reach: moveReach('stake_ring') }; })()`);
+        same(r.moves, 'stake_ring', 'its moves'); same(r.name, 'STAKE RING', 'its move\'s name'); same(r.type, 'piercing', 'its type'); same(r.reach, 1.8, 'its reach');
+        same(r.hits.map(h => h.who).sort().join(), 'a,b', 'who it hit'); ok(r.hits.every(h => Math.abs(h.amt - r.power * 1.2) < 1e-6 && h.alt), 'the hits: ' + JSON.stringify(r.hits));
+        same(r.out.join(), 'true,true', 'pushed out from it'); same(r.far, 0, 'the far enemy'); same(r.cd, 240, 'its wait (frames)'); ok(r.spikes >= 6, 'the spikes: ' + r.spikes);
+    });
+    await check('with no enemy in its reach when its wind-up ends, STAKE RING does not fire (ready again)', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'camper', 'coralcrab'), far = __foe(f.x + 4, f.y); followerAltSet(f, 'stake_ring'); f._altWind = 1; frame++; evolutionTick(); return { far: __dmg(far), live: !!f._altLive }; })()`);
+        same(r.far, 0, 'an enemy 4 tiles off'); same(r.live, false, 'it fired');
+    });
+
+    group('1c. SUNDEW\'s kit (build 2026-11-08n, the owner\'s): NECTAR STING fills its stockpile; SWEET SCENT puffs a lure, or heals when the stockpile is full');
+    await check('its form: NECTAR STING its everyday hit (Piercing), SWEET SCENT its second attack in place of BASH; INFO names both', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'brawler', 'sundew'), info = followerInfo(f).attacks.map(s => s.h);
+            return { hit: EVOLUTIONS.sundew.hit, moves: evoMoveIds(EVOLUTIONS.sundew).join(), main: DMG_FORM.sundew.main, info, reach: moveReach('sweet_scent'), windup: moveWindupFrames('sweet_scent') }; })()`);
+        same(r.hit, 'NECTAR STING', 'its hit'); same(r.moves, 'sweet_scent', 'its second attack'); same(r.main, 'piercing', 'its hit\'s type'); same(r.reach, 5, 'the scent\'s reach'); same(r.windup, 300, 'its wind-up (frames)');
+        ok(r.info.some(h => h === 'MAIN ATTACK · NECTAR STING'), 'INFO: ' + r.info.join(' | ')); ok(r.info.some(h => /SWEET SCENT/.test(h)), 'INFO: ' + r.info.join(' | '));
+    });
+    await check('each NECTAR STING adds a quarter to its stockpile, up to full (four); another form\'s hit adds none; locked on SWEET SCENT it makes no sting, so nothing is added', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'brawler', 'sundew'), g = __fol('core', 'brawler', 'jellyram'), a = __foe(f.x + 0.8, f.y), steps = [];
+            for (let i = 0; i < 5; i++) { f.attackCooldown = 0; followerAttack(f, a); steps.push(f._nectar); }
+            g.attackCooldown = 0; followerAttack(g, a); const other = g._nectar || 0;
+            f._nectar = 0; followerAltSet(f, 'sweet_scent'); f.attackCooldown = 0; followerAttack(f, a); return { steps, other, locked: f._nectar }; })()`);
+        same(r.steps.join(), '25,50,75,100,100', 'the stockpile, sting by sting'); same(r.other, 0, 'another form'); same(r.locked, 0, 'locked on SWEET SCENT');
+    });
+    await check('SWEET SCENT, its stockpile not full: the puff, and every enemy it can see within 5 tiles goes for SUNDEW for 4 s (not a boss; not one farther); then they are let go', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'brawler', 'sundew'), mate = __fol('fire', 'brawler'), a = __foe(f.x + 3, f.y), boss = __foe(f.x - 2, f.y + 1), far = __foe(f.x + 7, f.y); boss.bossId = 'test';
+            mate.x = a.x + 0.6; mate.y = a.y; f._nectar = 50; followerAltSet(f, 'sweet_scent'); f._altWind = 1; frame++; evolutionTick();
+            const o = { fired: f._sigCd === moveWindupFrames('sweet_scent'), lured: scentLure(a) === f, boss: scentLure(boss), far: scentLure(far), prey: predatorPickPrey(a) === f, stock: f._nectar };
+            frame += SCENT_FRAMES; o.after = scentLure(a); return o; })()`);
+        same(r.fired, true, 'it fired'); same(r.lured, true, 'the enemy 3 tiles off'); same(r.prey, true, 'it goes for SUNDEW (not the follower beside it)'); same(r.boss, null, 'a boss'); same(r.far, null, 'an enemy 7 tiles off');
+        same(r.stock, 50, 'the stockpile (a puff spends none)'); same(r.after, null, 'still lured after 4 s');
+    });
+    await check('SWEET SCENT, its stockpile full: it heals itself and your followers within 3 tiles 20% of their maximum health (one farther not), and the stockpile empties; no lure', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'brawler', 'sundew'), near = __fol('fire', 'brawler'), far = __fol('ice', 'brawler'), a = __foe(f.x + 3, f.y);
+            near.x = f.x + 2; near.y = f.y; far.x = f.x - 4.5; far.y = f.y; for (const u of [f, near, far]) u.health = u.maxHealth * 0.5;
+            const h0 = [f.health, near.health, far.health]; f._nectar = 100; followerAltSet(f, 'sweet_scent'); f._altWind = 1; frame++; evolutionTick();
+            return { gain: [f.health - h0[0], near.health - h0[1], far.health - h0[2]], max: [f.maxHealth, near.maxHealth], stock: f._nectar, lured: scentLure(a) }; })()`);
+        ok(Math.abs(r.gain[0] - r.max[0] * 0.2) < 1e-6, 'SUNDEW healed: ' + r.gain[0]); ok(Math.abs(r.gain[1] - r.max[1] * 0.2) < 1e-6, 'the follower 2 tiles off healed: ' + r.gain[1]); same(r.gain[2], 0, 'the follower 4.5 tiles off');
+        same(r.stock, 0, 'the stockpile after'); same(r.lured, null, 'a lure with the heal');
+    });
+    await check('nothing in its reach and the stockpile not full: SWEET SCENT does not fire (ready again)', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'brawler', 'sundew'); f._nectar = 25; followerAltSet(f, 'sweet_scent'); f._altWind = 1; frame++; evolutionTick(); return { live: !!f._altLive, stock: f._nectar }; })()`);
+        same(r.live, false, 'it fired'); same(r.stock, 25, 'the stockpile');
     });
 
     group('2. CAPACITOR DISCHARGE (the Static Orb; PINBALL superseded)');

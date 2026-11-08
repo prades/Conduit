@@ -37,6 +37,11 @@ const MOVES = {
     // BASH (build 2026-11-07ss; the owner: "Ram and knock back", then "BASH for now" as the second attack of the eight forms the design notes give none, and of every follower before it
     // evolves: js/evolution.js bash). `close`: a Mage locked on it closes in to use it (js/npc.js), as a Brawler does.
     bash:              { id: "bash",              name: "BASH",              windup: 4, close: true, fn: f => bash(f) },
+    // STAKE RING (STONEPETAL's own, build 2026-11-08n: the owner picked it of four drafts, in place of BASH; js/evolution.js stakeRing): its wind-up the agent's, provisional (BASH's)
+    stake_ring:        { id: "stake_ring",        name: "STAKE RING",        windup: 4, fn: f => stakeRing(f) },
+    // SWEET SCENT (SUNDEW's own, build 2026-11-08n: the owner's design, in place of BASH; js/evolution.js sweetScent): a puff that lures the enemies near it, or, its stockpile full, a heal. Its wind-up the
+    // agent's, provisional (the owner: "having the wind up that'll be fine")
+    sweet_scent:       { id: "sweet_scent",       name: "SWEET SCENT",       windup: 5, fn: f => sweetScent(f) },
     // CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; js/evolution.js capacitorTick). `manual`: no
     // wind-up cycle: it stores charges, standing still, and the player releases them (its squad card's chip, its INFO). `windup` is the time one charge takes.
     capacitor_discharge: { id: "capacitor_discharge", name: "CAPACITOR DISCHARGE", windup: 1.5, manual: true, fn: f => capacitorRelease(f) },
@@ -94,5 +99,5 @@ function followerAltSet(f, id) {
 // A move's reach (tiles): it winds up only with an enemy it can see this close, the reach the move itself looks in
 const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
     corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, pinball: () => PIN_RANGE,
-    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, seedfall: () => SEEDFALL_RANGE, bash: () => BASH_RANGE, capacitor_discharge: () => CAP_REACH };
+    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, seedfall: () => SEEDFALL_RANGE, bash: () => BASH_RANGE, stake_ring: () => STAKE_RADIUS, sweet_scent: () => SCENT_RADIUS, capacitor_discharge: () => CAP_REACH };
 function moveReach(id) { try { const r = MOVE_REACH[id] ? MOVE_REACH[id]() : 0; return r > 0 ? r : 5; } catch (e) { return 5; } }

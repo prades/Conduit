@@ -72,6 +72,14 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
         same(r.out, true, 'the enemy it grew on was left inside it'); near(r.minD, r.need, 0.02, 'how near its middle a walking enemy came'); same(r.round, true, 'an enemy off its middle did not get round it');
         same(r.hp.join(), '5000,5000,5000', 'it hurt an enemy'); same(r.pressed, true, 'it never showed an enemy pressing on it'); same(r.friend, true, 'a follower was held out of it');
     });
+    check('an enemy\'s shot that crosses it stops there (build 2026-11-08n, the owner: "Stop shots too"); one beside it flies on; a lob flies over it; your shots pass it', () => {
+        const r = J(`(function(){ const fs = __fresh(['blossom']), t = fs[0], o = {}; techAbilityUse(t, { spot: { x: t.x + 2, y: t.y } }); const O = techReefs[0]; __step(TECH_AB.reef.shards);
+            const shot = (dy, extra) => Object.assign({ x: O.x + 0.1, y: O.y + dy, vx: 0.3, vy: 0, targetsGreen: true }, extra || {});
+            o.through = techShieldStopsShot(shot(0)); o.beside = techShieldStopsShot(shot(1.4)); o.lob = techShieldStopsShot(shot(0, { arcData: {} })); o.yours = techShieldStopsShot(shot(0, { targetsGreen: false }));
+            techReefs.length = 0; o.gone = techShieldStopsShot(shot(0)); return o; })()`);
+        same(r.through, true, 'an enemy shot through it'); same(r.beside, false, 'a shot 1.4 tiles off its middle'); same(r.lob, false, 'a lob'); same(r.yours, false, 'your shot'); same(r.gone, false, 'with no outcrop');
+        ok(/techShieldStopsShot\(p\)\) return false;/.test(rd('js/game.js')), 'the enemy shots\' step asks it');
+    });
     check('your followers beside it are mended 1% of their health every half second (within 1.5 tiles of its edge, in sight); one further off is not', () => {
         const r = J(`(function(){ const fs = __fresh(['blossom', 'fire', 'ice']), t = fs[0], o = {};
             techAbilityUse(t, { spot: { x: t.x + 2, y: t.y } }); const O = techReefs[0];

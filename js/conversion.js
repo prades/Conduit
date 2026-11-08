@@ -16,9 +16,9 @@
 // AN EVOLVED ONE (build 2026-11-08j): it takes its class's BLOOM form, where that is in the game: an evolved toxic Mage (the Rotshard) becomes the THORNWHIP, BLOOM's Mage (js/evolution.js
 // EVOLUTIONS.shrub). Its stats stay as they are ("Same stats, show changes"); an alternate the new form does not have is let go (it goes back to its normal attack).
 // An evolved toxic Brawler (the Seeper) becomes SUNDEW, BLOOM's Brawler (build 2026-11-08k).
-// A toxic Technician converts too (build 2026-11-08m): BLOOM's Technician ability, REEF, is built; an evolved one (the Blight Spider) becomes the CORAL CRAB.
+// A toxic Technician converts too (build 2026-11-08m): BLOOM's Technician ability, REEF, is built; an evolved one (the Blight Spider) becomes STONEPETAL (the CORAL CRAB until build 2026-11-08n).
 const CONVERT = { from: "toxic", to: "blossom", room: "sewers", arm: 180, col: "#8cff5a", bloom: "#ff7ab8",
-    forms: { brawler: "SUNDEW", sniper: "THORNWHIP", camper: "THE CORAL CRAB" } };   // (the class's BLOOM form: docs/CONVERSION.md §2; working names)
+    forms: { brawler: "SUNDEW", sniper: "THORNWHIP", camper: "STONEPETAL" } };   // (the class's BLOOM form: docs/CONVERSION.md §2; STONEPETAL was THE CORAL CRAB until build 2026-11-08n)
 
 function convertReady() { const Q = typeof questState === "function" ? questState("purify") : null; return !!(Q && Q.installedAt && Q.purifiedAt); }   // (installed, and its cycle run: the water clean; until then the quest says the module is running)
 function _cvOurs(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green"; }

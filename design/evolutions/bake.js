@@ -18,10 +18,11 @@ const JOBS = [
   // Bake it alone: node design/evolutions/bake.js <three> img/evo coralcrab 192 2.2667
   { id: 'coralcrab', form: 923, color: '#ff7ab8', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true },
   // No. 922 (forms37.js), the game sprite of No. 911: SUNDEW, BLOOM's Brawler (approved 2026-11-08: "911, and make CONSUME his Ultimate"; sent to the game: "SUNDEW into the game").
-  // Its idle is its walk (its roots writhing); its action the blade-leaf's slash. `consume`: a third block of 8 frames, CONSUME (update's third argument, seconds since it swallowed):
+  // Since build 2026-11-08n its sprite is No. 925, No. 924's NECTAR STING (the owner: "Bake it"): its action is the sting, its stem arching over to stab with the blade-leaf. Before it, No. 922's slash.
+  // Its idle is its walk (its roots writhing); its action the blade-leaf's sting. `consume`: a third block of 8 frames, CONSUME (update's third argument, seconds since it swallowed):
   // four as its petals snap shut and its stem withers to the floor (the game plays them backward as it opens), then four of the bud throbbing, one throb, looped while it digests.
   // Bake it alone: node design/evolutions/bake.js <three> img/evo sundew 192 2.2667 (a 192 px cell, as the Electro Skink's and the THORNWHIP's)
-  { id: 'sundew', form: 922, color: '#ff7ab8', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true, consume: [0.04, 0.12, 0.2, 0.5, 1.2, 1.4273, 1.6545, 1.8818] },
+  { id: 'sundew', form: 925, color: '#ff7ab8', idleAct: 0, action: [0, 1.0], pulse: true, glowNormal: true, consume: [0.04, 0.12, 0.2, 0.5, 1.2, 1.4273, 1.6545, 1.8818] },
   // No. 921 (forms39.js), the game sprite of No. 920: the THORNWHIP (a working name), BLOOM's Mage, from the owner's pencil sketch and reviews (approved 2026-11-08: "Shrub into the game").
   // Its idle is its walk, a shuffle (it rocks side to side), its thorny black vines held out; its action is SEED SHOT: the vines rear round a glowing seed and whip out together.
   // Bake it alone in a 256 px cell with half 3.0222 (the same pixels a unit as the 144 px sheets, room for the whip at the other Mages' height): node design/evolutions/bake.js <three> img/evo shrub 256 3.0222

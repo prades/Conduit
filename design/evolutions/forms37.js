@@ -149,6 +149,11 @@ function _sdWilted(pot, m, o) {
 }
 
 // ── 906 · THE PITCHER (from BRAWLY) ──────────────────────────────────────────────────────────────────────────────────────────
+// THE STRIKE'S MOTION, as weights of its rear (cocked back) and its strike: the flower's place (ty, tz), the stem's middle (vy, vz), the flower's tilt (fr), the blade's (br). The slash (906 to 922): the
+// flower whipped forward and the blade swung down through a wide arc. THE STING (924; the owner, 2026-11-08: "The stem's blade stabs", NECTAR STING): it rears higher, then the stem arches over and plunges
+// forward and down, the blade turned only a little, so it drives in tip first, like a scorpion's sting.
+const _sdSlash = { ty: [0.05, -0.07], tz: [-0.08, 0.1], vy: [0.05, -0.06], vz: [-0.06, 0.1], fr: [0.4, -0.3], br: [-1.1, 1.0] };
+const _sdSting = { ty: [0.1, -0.2], tz: [-0.1, 0.26], vy: [0.1, -0.16], vz: [-0.08, 0.24], fr: [0.5, -0.5], br: [-0.9, 0.35] };
 function _sundewPitcher(o) {
   const m = _sdMats(), g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
   // THE PITCHER: round and black, its mouth on top, the rim barbed, holding the glowing nectar; a Y of pink vein on its front
@@ -207,10 +212,11 @@ function _sundewPitcher(o) {
       for (let i = 0; i < NF; i++) { const u = i / (NF - 1), d = o.footR0 + f.len * u;
         f.pts[i].set(Math.sin(f.a) * d, o.footY * (1 - u) + 0.012 + lift * u * u + o.curl * Math.pow(u, 4), Math.cos(f.a) * d); }
       f.tb.set(f.pts, 0, 0, u => 0.05 * Math.sqrt(Math.max(0, 1 - u * u * u)) + 0.006, 2, 0.35); });   // (flat and wide, their ends blunt and round, as drawn)
-    TOP.set(0.02 * Math.sin(ph + 0.5), o.flowerY + 0.012 * Math.sin(2 * ph) + 0.05 * rear - 0.07 * strike, o.flowerZ - 0.08 * rear + 0.1 * strike);
+    const SG = o.sting ? _sdSting : _sdSlash;   // (the strike: a slash, or since No. 924 a sting, its stem arching over to stab with its blade: the owner, 2026-11-08, "The stem's blade stabs")
+    TOP.set(0.02 * Math.sin(ph + 0.5), o.flowerY + 0.012 * Math.sin(2 * ph) + SG.ty[0] * rear + SG.ty[1] * strike, o.flowerZ + SG.tz[0] * rear + SG.tz[1] * strike);
     if (we > 0) TOP.lerp(WTOP, we);   // (the flower down on the floor in front of it)
     if (stem) {   // (the higher along it, the more it follows the flower: cocked back as it rears, whipped forward in the strike)
-      via.forEach((p, i) => { const k = (i + 1) / (via.length + 1); p.copy(via0[i]); p.x += TOP.x * k; p.y += (0.05 * rear - 0.06 * strike) * k; p.z += (-0.06 * rear + 0.1 * strike) * k;
+      via.forEach((p, i) => { const k = (i + 1) / (via.length + 1); p.copy(via0[i]); p.x += TOP.x * k; p.y += (SG.vy[0] * rear + SG.vy[1] * strike) * k; p.z += (SG.vz[0] * rear + SG.vz[1] * strike) * k;
         if (we > 0) p.lerp(wv[i], we); });   // (withered: along the floor, round its side)
       for (let i = 0; i < NS; i++) stem.getPoint(i / (NS - 1), spts[i]);
       stalk.set(spts, 0, 0, u => o.stemR0 + (o.stemR1 - o.stemR0) * u, 1, 1);
@@ -218,8 +224,8 @@ function _sundewPitcher(o) {
       C1.set(0, S0.y + 0.16, S0.z + 0.02); C2.set(TOP.x * 0.6, TOP.y - 0.12, TOP.z - 0.06);
       stalk.set(_sdBez(spts, S0, C1, C2, TOP), 0, 0, u => 0.024 - 0.009 * u, 1, 1);
     }
-    flower.position.copy(TOP); flower.rotation.set(-0.35 + 0.4 * rear - 0.3 * strike, 0.1 * Math.sin(ph + 0.5), 0);
-    bladeP.position.copy(TOP); bladeP.rotation.set(o.droop + 0.05 * Math.sin(ph + 1) - 1.1 * rear + 1.0 * strike, 0.08 * Math.sin(ph + 0.9), 0);
+    flower.position.copy(TOP); flower.rotation.set(-0.35 + SG.fr[0] * rear + SG.fr[1] * strike, 0.1 * Math.sin(ph + 0.5), 0);
+    bladeP.position.copy(TOP); bladeP.rotation.set(o.droop + 0.05 * Math.sin(ph + 1) + SG.br[0] * rear + SG.br[1] * strike, 0.08 * Math.sin(ph + 0.9), 0);
     flower.scale.setScalar(1 - 0.15 * we);
     if (we > 0) {   // (withered: the flower face up on the floor, the blade lying flat beside it)
       flower.rotation.x += (-1.35 - flower.rotation.x) * we; flower.rotation.y += (o.witherYaw - flower.rotation.y) * we;
@@ -269,6 +275,8 @@ fx(911, "SUNDEW, the approved look (2026-11-08): 910 with the veins of its petal
 // 922, THE GAME'S SPRITE OF No. 911 (SUNDEW, BLOOM's Brawler; the owner sent it to the game, 2026-11-08: "SUNDEW into the game"): No. 911 at the size of the other Brawlers,
 // baked in a 192 px cell with its CONSUME frames (design/evolutions/bake.js, the 'sundew' job; js/evolution.js EVOLUTIONS.sundew).
 fx(922, "SUNDEW: the game's sprite of No. 911, at the other Brawlers' size.", () => _sundewPitcher(Object.assign({}, _sdF, { S: 2.2 })));
+fx(924, "SUNDEW, 911 with its NECTAR STING (the owner, 2026-11-08: \"The stem's blade stabs\"): it rears higher, then its stem arches over and plunges forward and down, driving the blade-leaf in tip first like a scorpion's sting, in place of the slash. Approved 2026-11-08 (\"Bake it\").", () => _sundewPitcher(Object.assign({}, _sdF, { sting: true })));
+fx(925, "SUNDEW: the game's sprite of No. 924 (its NECTAR STING), at the other Brawlers' size, as No. 922 was of No. 911.", () => _sundewPitcher(Object.assign({}, _sdF, { S: 2.2, sting: true })));
 
 // ── 907 · THE SNAIL (from the snail drawn below it) ────────────────────────────────────────────────────────────────────────
 // the shell: a tube coiled in the y-z plane (its eye toward the back, its mouth at the front of its foot), growing as it coils; its growth lines glow nectar pink
