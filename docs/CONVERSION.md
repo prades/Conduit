@@ -47,6 +47,7 @@ The owner chose these in prompts. The names are working names; the bodies are to
   - Every 15 seconds, it swallows an enemy whole: anything but a boss.
   - For 5 seconds the catch is out of the fight and takes damage every second inside, then is spat out if alive.
   - While SUNDEW holds a catch, it takes 75% less damage.
+  - **Its look while it eats** (the owner, 2026-11-08: "make sure whenever it uses its ultimate ability and it eats one of the enemy targets, that the petal close up"): its mouth flares to take the catch, its petals snap shut into a plump bud (its fangs and glowing throat inside), the bud throbs as it digests, and the petals open again when the catch is out. In the model (No. 909 on); the game's sheet will need these frames as a block of its own when SUNDEW is built.
 - **The coral crab's REEF:** it fires little coral shards, and coral grows where they land.
   - **In a fight:** a coral outcrop for 20 seconds. Allies beside it are mended, enemies cannot pass it, and it can be stood on to cross a gap.
   - **Getting around:** the owner: "The little shards that the new crustacean shoots should be able to allow players to climb up in new areas". The coral lets the player climb up to new, higher areas.
@@ -169,7 +170,7 @@ Answered on 2026-11-02 (section 2):
 Still open:
 1. **The apparatus's look.**
 2. **BLOOM's forms:**
-   - the pictures of the three concepts, and which form is built first (BLOOM breeding needs one). The owner's pencil page (section 12) has all three; **SUNDEW's drafts** (2026-11-08, `design/evolutions/forms37.js`): No. 906, the pitcher (from the drawing marked BRAWLY), and No. 907, the snail (from the snail drawn below it). The owner chose the pitcher: "The left one tilted pitcher and feet like roots/tentacles". **No. 908**, the pitcher tilted forward on roots, its stem from the bottom of the barrel and its rim smooth; then, for its body, **No. 909**, a wilted flower with teeth; then its textures in two finishes, **Nos. 910** (velvet petals, veined and creased; matte, ringed roots) and **911** (910 with the veins glowing pink), in review;
+   - the pictures of the three concepts, and which form is built first (BLOOM breeding needs one). The owner's pencil page (section 12) has all three; **SUNDEW's drafts** (2026-11-08, `design/evolutions/forms37.js`): No. 906, the pitcher (from the drawing marked BRAWLY), and No. 907, the snail (from the snail drawn below it). The owner chose the pitcher: "The left one tilted pitcher and feet like roots/tentacles". **No. 908**, the pitcher tilted forward on roots, its stem from the bottom of the barrel and its rim smooth; then, for its body, **No. 909**, a wilted flower with teeth; then its textures in two finishes, **Nos. 910** (velvet petals, veined and creased; matte, ringed roots) and **911** (910 with the veins glowing pink). The owner: "the design looks solid right now as stationary and moving". Its CONSUME look (the petals closing into a bud) is in the model; the finish (910 or 911) is to choose;
    - names for the lotus lantern and the coral crab;
    - a BLOOM egg's look.
 3. **CONSUME's numbers:** the digestion's damage a second, and its type. SEEDFALL's and REEF's numbers.
@@ -177,9 +178,10 @@ Still open:
    - where the coral can be climbed: marked sites, as the Kinetic Launcher's deploy spots are, or any wall;
    - how long the coral lasts;
    - the new high areas it reaches (map design).
-5. **The coral crab's main attack:** read as its clamping claws, with the shards fired by REEF. Should its everyday attack fire shards instead?
-6. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), and the three Player roles' names and themes. The Technician's ability is REEF.
-7. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
+5. **CONSUME: its Ultimate, or every 15 seconds?** The owner called it "its ultimate ability" (2026-11-08); the design of 2026-11-02 has it swallow an enemy every 15 seconds on its own.
+6. **The coral crab's main attack:** read as its clamping claws, with the shards fired by REEF. Should its everyday attack fire shards instead?
+7. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), and the three Player roles' names and themes. The Technician's ability is REEF.
+8. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
 
 Answered last (2026-11-02):
 - the 50%'s other half (toxic or fire);
@@ -188,6 +190,7 @@ Answered last (2026-11-02):
 
 ## 12. History
 
+- 2026-11-08: the owner: "Now make sure whenever it uses its ultimate ability and it eats one of the enemy targets, that the petal close up. But the design looks solid right now as stationary and moving." CONSUME's look built into the model (909, 910, 911): the mouth flares to take the catch (0.1 s), the petals snap shut into a plump bud, inner whorl inside the outer (by 0.3 s), its fangs drawn in and its throat's light down; the bud throbs as it digests (911's veins pulsing brighter); the petals open again after the hold (5 s, as designed). A design-model state (`update(t, act, cons)`), not in the game; the game's sheet will need its frames. Open: whether CONSUME is its Ultimate or every 15 seconds (section 11).
 - 2026-11-08: on No. 909, the owner: "Dude, I like that. I just don't like the textures, really. So can we change the textures a little bit?" Two finishes of 909, its shape unchanged: **No. 910**, the petals velvet and matte, a deep plum-black, veined from the base, mottled, darker at their wilted edges and tips, creased lengthwise (a painted texture, `_sdPetalTex`); the roots, stem, base and blade matte instead of wet, the roots ringed like tentacles; **No. 911**, 910 with its petals' veins glowing BLOOM's pink. In review; not in the game.
 - 2026-11-08: on No. 908, the owner: "I like everything but the cauldron-like body. Can we make it look more like a flower that has teeth? Like a wilted flower that has teeth, like maybe the thing from what is it? Death of a Salesman." (Read as the man-eating plant of *Little Shop of Horrors*: taken as a kind, not copied.) **No. 909:** 908 with its body a wilted flower: six black petals cupped round a mouth, their tips wilting outward and down, each its own way; their inner faces glow pink only in the cup and the throat; two rings of pale, hooked fangs in the mouth; the nectar deep in the throat; a pink vein down each petal's back. The petals breathe, flare open as it strikes and close a little as it rears. The roots, the stem from the base arching over it, the flower and the blade-leaf are kept. In review; not in the game.
 - 2026-11-08: on No. 908, the owner: "Put the stem on the bottom of the barrel and no spikes on the bowl rim". The stem now grows from the bottom of the barrel at its back, out behind it, up and over its top like a scorpion's tail, so the flower and the blade-leaf still hang in front of the mouth; the rim is smooth (its barbs are gone, so the slash is the blade-leaf's alone). In review; not in the game.

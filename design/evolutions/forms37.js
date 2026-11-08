@@ -91,9 +91,10 @@ function _sdWilted(pot, m, o) {
   const petalM = new T.MeshStandardMaterial(tex ? { color: 0xffffff, map: tex, vertexColors: true, metalness: 0.04, roughness: 0.62, emissive: m.pink, side: T.DoubleSide }
     : { color: _sdSkin.color, vertexColors: true, metalness: 0.15, roughness: 0.5, emissive: m.pink, side: T.DoubleSide }); petalM.envMapIntensity = tex ? 0.08 : 0.26;
   petalM.customProgramCacheKey = () => 'sdPetal' + (tex ? 'T' : '') + (veinTex ? 'G' : '');   // (its shader differs by version)   // (a soft, deep black: less shine than the wet roots)
-  petalM.onBeforeCompile = sh => { if (veinTex) { sh.uniforms.veinMap = { value: veinTex }; sh.fragmentShader = 'uniform sampler2D veinMap;\n' + sh.fragmentShader; }
+  let veinU = null;   // (911: the glowing veins' strength; they pulse as it digests)
+  petalM.onBeforeCompile = sh => { if (veinTex) { sh.uniforms.veinMap = { value: veinTex }; sh.uniforms.veinK = veinU = veinU || { value: 0.85 }; sh.fragmentShader = 'uniform sampler2D veinMap;\nuniform float veinK;\n' + sh.fragmentShader; }
     sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '').replace('vec3 totalEmissiveRadiance = emissive;',
-      'vec3 totalEmissiveRadiance = (gl_FrontFacing ? emissive * vColor : vec3(0.0))' + (veinTex ? ' + sRGBToLinear(texture2D(veinMap, vUv)).rgb * 0.85' : '') + ';'); };   // (the inner faces glow, deepest brightest; the backs stay black)
+      'vec3 totalEmissiveRadiance = (gl_FrontFacing ? emissive * vColor : vec3(0.0))' + (veinTex ? ' + sRGBToLinear(texture2D(veinMap, vUv)).rgb * veinK' : '') + ';'); };   // (the inner faces glow, deepest brightest; the backs stay black)
   const rec = new T.Mesh(new T.SphereGeometry(1, 24, 16), o.matte ? _sdMatte : _sdSkin); rec.scale.set(o.recR, o.recR * 0.8, o.recR); rec.position.y = o.recR * 0.8; pot.add(rec);   // (the base the petals and the roots grow from)
   for (let k = 0; k < o.petals; k++) {
     const a = (k + 0.5) / o.petals * TAU, R = V(Math.sin(a), 0, Math.cos(a)), Tn = V(Math.cos(a), 0, -Math.sin(a));
@@ -111,27 +112,37 @@ function _sdWilted(pot, m, o) {
   const fang = (len, rad) => { const geo = new T.ConeGeometry(rad, len, 7, 4), p = geo.attributes.position;
     for (let i = 0; i < p.count; i++) { const tt = (p.getY(i) + len / 2) / len; p.setZ(i, p.getZ(i) - 0.35 * len * tt * tt); p.setY(i, p.getY(i) + len / 2); }
     geo.computeVertexNormals(); return geo; };
+  const teeth = G(); pot.add(teeth);
   [[o.teethRim, o.rimR, o.rimY, 0.075, 0.016, 0.25], [o.teethThroat, o.throatR, o.throatY, 0.05, 0.012, 0.5]].forEach(([n, r, y, len, rad, upw], ring) => {
     for (let k = 0; k < n; k++) { const a = (k + ring * 0.5) / n * TAU, sm = k % 2 ? 0.72 : 1, f = new T.Mesh(fang(len * sm, rad * (k % 2 ? 0.8 : 1)), toothM);
-      f.position.set(Math.sin(a) * r, y, Math.cos(a) * r); _aim32(f, V(-Math.sin(a), upw, -Math.cos(a)), V(0, 1, 0)); pot.add(f); } });
+      f.position.set(Math.sin(a) * r, y, Math.cos(a) * r); _aim32(f, V(-Math.sin(a), upw, -Math.cos(a)), V(0, 1, 0)); teeth.add(f); } });
   // a point on a petal: its spine at row i, across it by v (-1..1), its edges cupped inward
   const surf = (P, i, v, out) => { const [r, y, dr, dy] = P.sp[i], u = i / (NU - 1);
     const base = 0.45 + 0.55 * Math.sin(Math.min(1, u / 0.5) * PI / 2), tipR = u > 0.78 ? Math.sqrt(Math.max(0, 1 - Math.pow((u - 0.78) / 0.22, 2))) : 1;
     const w = o.petalW * base * tipR + 0.003, cup = o.cup * (1 - 0.5 * u) * v * v + (o.pleat || 0) * Math.sin(v * PI * 2.5 + P.seed) * (0.3 + u);   // (cupped, and creased lengthwise (910); along the inner normal, (-dy, dr) in its (out, up) plane)
     return out.set(P.R.x * (r - dy * cup) + P.Tn.x * v * w, y + dr * cup, P.R.z * (r - dy * cup) + P.Tn.z * v * w); };
   const tmp = V(0, 0, 0);
-  return { update(ph, rear, strike) {
-    const open = 1 + 0.03 * Math.sin(ph) - 0.12 * rear + 0.25 * strike;
-    petals.forEach(P => {
+  return { update(ph, rear, strike, shut, throb) {   // (shut: 0 open, 1 closed into a bud (CONSUME); throb 0..1, its digesting pulse)
+    const se = shut ? shut * shut * (3 - 2 * shut) : 0, open = 1 + 0.03 * Math.sin(ph) - 0.12 * rear + 0.25 * strike;
+    petals.forEach((P, k) => {
       let r = o.p0r, y = o.p0y; const ds = P.L / (NU - 1);
       for (let i = 0; i < NU; i++) { const u = i / (NU - 1), s = Math.min(1, u / o.pRise), w = Math.max(0, (u - o.pRise) / (1 - o.pRise));
         const phi = (o.phi0 + (o.phi1 - o.phi0) * s) * open + o.wilt * P.droop * w * w * (1 - 0.35 * strike);   // (from upright toward outward; past the lip it wilts over and down)
         const dr = Math.sin(phi), dy = Math.cos(phi); P.sp[i][0] = r; P.sp[i][1] = y; P.sp[i][2] = dr; P.sp[i][3] = dy; r += dr * ds; y += dy * ds; }
+      if (se > 0) {   // (CONSUME: each petal curls up and in over the mouth to the bud's tip, the inner whorl inside the outer; the bud swells as it digests)
+        const lay = k % 2 ? 1 : 0.92, swell = 1 + 0.1 * (throb || 0);
+        for (let i = 0; i < NU; i++) { const u = i / (NU - 1), a = (1 - u) * (1 - u), b = 2 * (1 - u) * u, c = u * u;
+          const cr = (a * o.p0r + b * o.budR + c * o.budTip) * lay * swell, cy = o.p0y + (0.55 * b + c) * o.budH * (0.96 + 0.04 * swell);
+          P.sp[i][0] += (cr - P.sp[i][0]) * se; P.sp[i][1] += (cy - P.sp[i][1]) * se; }
+        for (let i = 0; i < NU; i++) { const i0 = Math.max(0, i - 1), i1 = Math.min(NU - 1, i + 1), dr = P.sp[i1][0] - P.sp[i0][0], dy = P.sp[i1][1] - P.sp[i0][1], l = Math.hypot(dr, dy) || 1;
+          P.sp[i][2] = dr / l; P.sp[i][3] = dy / l; } }
       for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) { surf(P, i, -1 + 2 * j / (NV - 1), tmp); const q = (i * NV + j) * 3; P.pos[q] = tmp.x; P.pos[q + 1] = tmp.y; P.pos[q + 2] = tmp.z; }
       P.geo.attributes.position.needsUpdate = true; P.geo.computeVertexNormals(); P.geo.computeBoundingSphere();
       for (let i = 0; i < 12; i++) { const [rr, yy, dr, dy] = P.sp[i + 1]; P.vpts[i].set(P.R.x * (rr + dy * 0.008), yy - dr * 0.008, P.R.z * (rr + dy * 0.008)); }   // (the vein on its back)
       P.vein.set(P.vpts, 0.006, 0.0035, null, 1.6, 0.6);
     });
+    teeth.scale.set(1 - 0.3 * se, 1, 1 - 0.3 * se);   // (inside the bud)
+    if (veinU) veinU.value = 0.85 * (1 + 1.2 * se * (throb || 0));
   } };
 }
 
@@ -168,9 +179,13 @@ function _sundewPitcher(o) {
   const S0 = o.stemVia ? potPt(0, o.stemBase[0], o.stemBase[1]) : potPt(0, o.stalkY0, o.stalkZ0), C1 = V(0, 0, 0), C2 = V(0, 0, 0), TOP = V(0, 0, 0);
   const via0 = (o.stemVia || []).map(p => V(p[0], p[1], p[2])), via = via0.map(p => p.clone());
   const stem = o.stemVia ? new T.CatmullRomCurve3([S0].concat(via, [TOP]), false, 'centripetal') : null;   // (it holds these points: moving them moves it)
-  return { g, core: o.coreY * (o.S || 1), update(t, act) {
+  return { g, core: o.coreY * (o.S || 1), update(t, act, cons) {   // (cons: seconds since CONSUME swallowed its catch; leave it out when it holds none)
     const ph = 1.6 * t, pr = _prog31(t, act), rear = _sdS(0, 0.3, pr) * (1 - _sdS(0.34, 0.5, pr)), strike = _sdS(0.34, 0.5, pr) * (1 - _sdS(0.62, 1, pr)), br = Math.sin(ph);
     const calm = 1 - 0.7 * Math.min(1, act || 0);
+    // CONSUME (909 on): the mouth flares to take the catch, the petals snap shut into a bud, it throbs as it digests (consumeHold seconds), then the petals open again
+    const c = cons == null ? -1 : cons, gulp = c < 0 ? 0 : _sdS(0, 0.1, c) * (1 - _sdS(0.1, 0.24, c));
+    const shut = c < 0 ? (o.shutHold || 0) : _sdS(0.1, 0.3, c) * (1 - _sdS(o.consumeHold, o.consumeHold + 0.45, c));
+    const throb = shut > 0.3 ? 0.5 + 0.5 * Math.sin((c < 0 ? t : c - 0.3) * TAU * 1.1 - PI / 2) : 0;
     roots.forEach(r => { const d0 = Math.hypot(r.P0.x, r.P0.z), ax = Math.atan2(r.P0.x, r.P0.z), dx = Math.sin(ax), dz = Math.cos(ax), tx = Math.cos(ax), tz = -Math.sin(ax);
       for (let i = 0; i < NR; i++) { const u = i / (NR - 1), d = d0 + r.len * u, down = _sdS(0, 0.34, u), tip = _sdS(0.68, 1, u);
         const side = o.rootWave * u * Math.sin(TAU * 0.85 * u + r.ph0 + ph) * calm + r.cs * o.rootCurlSide * tip * tip;   // (a slow writhe, the tip curling to one side)
@@ -179,8 +194,9 @@ function _sundewPitcher(o) {
       if (r.twig) { const B = r.pts[Math.floor(NR * 0.45)], ta = r.twig.side * 0.6, bx = dx * Math.cos(ta) + tx * Math.sin(ta), bz = dz * Math.cos(ta) + tz * Math.sin(ta);
         for (let i = 0; i < 8; i++) { const u = i / 7; r.twig.pts[i].set(B.x + bx * 0.13 * u, B.y + 0.012 * Math.sin(PI * u) + 0.018 * u * u, B.z + bz * 0.13 * u); }
         r.twig.tb.set(r.twig.pts, 0, 0, u => 0.013 * (1 - u) + 0.003, 1.1, 0.9); } });
-    if (wilted) wilted.update(ph, rear, strike); else pot.scale.set(1 - 0.012 * br, 1 + 0.02 * br, 1 - 0.012 * br);   // (the petals breathe and flare; the pitcher breathes)
-    nec.position.y = o.necY + 0.004 * Math.sin(2 * ph); Ln.intensity = 0.9 * (o.lightK || 1) * (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * strike);
+    if (wilted) { wilted.update(ph, rear, Math.max(strike, gulp), shut, throb); pot.scale.set(1 + 0.03 * throb * shut, 1 + 0.045 * throb * shut, 1 + 0.03 * throb * shut); }   // (the petals breathe, flare, close; the bud throbs)
+    else pot.scale.set(1 - 0.012 * br, 1 + 0.02 * br, 1 - 0.012 * br);   // (the pitcher breathes)
+    nec.position.y = o.necY + 0.004 * Math.sin(2 * ph); Ln.intensity = 0.9 * (o.lightK || 1) * (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * Math.max(strike, gulp)) * (1 - 0.8 * shut);
     feet.forEach((f, j) => { const lift = 0.03 * Math.max(0, Math.sin(ph - j * TAU / feet.length)) * (1 - 0.7 * Math.min(1, act || 0));
       for (let i = 0; i < NF; i++) { const u = i / (NF - 1), d = o.footR0 + f.len * u;
         f.pts[i].set(Math.sin(f.a) * d, o.footY * (1 - u) + 0.012 + lift * u * u + o.curl * Math.pow(u, 4), Math.cos(f.a) * d); }
@@ -224,6 +240,7 @@ const _sdD = Object.assign({}, _sdC, {
   body: 'flower', tilt: 0.5, lift: 0.04, lightK: 0.45,
   petals: 6, petalL: 0.44, petalW: 0.14, cup: 0.05, p0r: 0.06, p0y: 0.1, pRise: 0.44, phi0: 0.36, phi1: 0.72, wilt: 2.7, recR: 0.1,   // (the petals: how many, long, wide, cupped; the spine's start, its rise, its wilt (radians))
   teethRim: 12, rimR: 0.14, rimY: 0.26, teethThroat: 9, throatR: 0.075, throatY: 0.19, necR: 0.07, necY: 0.165,
+  budH: 0.4, budR: 0.31, budTip: 0.012, consumeHold: 5,   // (CONSUME: the closed bud (its height, its bulge's pull, its tip) and how long it holds its catch (docs/CONVERSION.md: 5 s))
   rootR: 0.08, rootY: 0.05,
   stemBase: [0.06, -0.09], stemVia: [[0, 0.1, -0.3], [0, 0.42, -0.38], [0, 0.74, -0.18]], flowerY: 0.74, flowerZ: 0.3,
 });
