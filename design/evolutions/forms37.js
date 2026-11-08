@@ -7,7 +7,7 @@
 //   907  from the snail below it: a spiral shell on a frilled foot; a long S-curved neck to a four-petal flower; from the flower a long blade-leaf, its lower edge a
 //        sawtooth. Drawn with the shell's growth lines glowing nectar pink.
 // Drafts for the owner's choice (2026-11-08: "draft me some designs for the brawler next", "The bloom one."): not in the game. The owner chose 906: "The left one tilted
-// pitcher and feet like roots/tentacles". That is No. 908 (below 906), in review; 907 was passed over.
+// pitcher and feet like roots/tentacles". That is No. 908 (below 906); then, on its body, "a wilted flower that has teeth": No. 909, in review. 907 was passed over.
 // Uses forms31.js (_c31, _prog31) and forms32.js (_taper32, _aim32). +z is the front; ph = 1.6 t runs once round the idle loop.
 const _sdS = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 const _sdSkin = new T.MeshStandardMaterial({ color: 0x040405, metalness: 0.25, roughness: 0.3, side: T.DoubleSide }); _sdSkin.envMapIntensity = 0.5;   // (wet black, as the Electro Skink's)
@@ -54,21 +54,73 @@ function _sdBez(pts, p0, c1, c2, p3) {
   return pts;
 }
 
+// ── 909's BODY · A WILTED FLOWER WITH TEETH ─────────────────────────────────────────────────────────────────────────────────────
+// (the owner on 908: "I like everything but the cauldron-like body. Can we make it look more like a flower that has teeth? Like a wilted flower that has teeth"): black
+// petals cupped round a mouth, their tips wilting outward and down, each its own way; their inner faces glow pink, brightest deep in the throat; two rings of pale fangs
+// in the mouth, the nectar at the bottom; a pink vein down each petal's back. Built in the pot's frame (its axis +y, its base at the origin). The petals breathe, flare open
+// as it strikes and close a little as it rears.
+function _sdWilted(pot, m, o) {
+  const NU = 16, NV = 9, petals = [];
+  const petalM = new T.MeshStandardMaterial({ color: _sdSkin.color, vertexColors: true, metalness: 0.15, roughness: 0.5, emissive: m.pink, side: T.DoubleSide }); petalM.envMapIntensity = 0.26;   // (a soft, deep black: less shine than the wet roots)
+  petalM.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <color_fragment>', '').replace('vec3 totalEmissiveRadiance = emissive;', 'vec3 totalEmissiveRadiance = gl_FrontFacing ? emissive * vColor : vec3(0.0);'); };   // (the inner faces glow, deepest brightest; the backs stay black)
+  const rec = new T.Mesh(new T.SphereGeometry(1, 24, 16), _sdSkin); rec.scale.set(o.recR, o.recR * 0.8, o.recR); rec.position.y = o.recR * 0.8; pot.add(rec);   // (the base the petals and the roots grow from)
+  for (let k = 0; k < o.petals; k++) {
+    const a = (k + 0.5) / o.petals * TAU, R = V(Math.sin(a), 0, Math.cos(a)), Tn = V(Math.cos(a), 0, -Math.sin(a));
+    const droop = 1 + 0.22 * Math.sin(k * 2.4 + 1), L = o.petalL * (1 + 0.08 * Math.sin(k * 1.7 + 0.4));   // (each wilts a little differently)
+    const pos = new Float32Array(NU * NV * 3), col = new Float32Array(NU * NV * 3), idx = [];
+    for (let i = 0; i < NU - 1; i++) for (let j = 0; j < NV - 1; j++) { const p0 = i * NV + j, p1 = p0 + 1, p2 = p0 + NV, p3 = p2 + 1; idx.push(p0, p2, p1, p1, p2, p3); }   // (front faces inward)
+    for (let i = 0; i < NU; i++) { const gl = Math.max(0.015, Math.pow(Math.max(0, 1 - i / (NU - 1) / 0.6), 1.3)); for (let j = 0; j < NV; j++) { const q = (i * NV + j) * 3; col[q] = col[q + 1] = col[q + 2] = gl; } }   // (the glow only in the cup and the throat: the wilting outer petals stay black)
+    const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(pos, 3)); geo.setAttribute('color', new T.BufferAttribute(col, 3)); geo.setIndex(idx);
+    pot.add(new T.Mesh(geo, petalM));
+    petals.push({ R, Tn, droop, L, pos, geo, vein: _taper32(pot, m.vein, 12, 6), vpts: Array.from({ length: 12 }, () => V(0, 0, 0)), sp: Array.from({ length: NU }, () => [0, 0, 0, 0]) });
+  }
+  // the fangs: a ring at the lip of the cup and a smaller one deep in the throat, pointing in, hooked down
+  const toothM = new T.MeshStandardMaterial({ color: 0xeee0e4, emissive: m.pink, emissiveIntensity: 0.05, metalness: 0, roughness: 0.32 }); toothM.envMapIntensity = 0.6;
+  const fang = (len, rad) => { const geo = new T.ConeGeometry(rad, len, 7, 4), p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) { const tt = (p.getY(i) + len / 2) / len; p.setZ(i, p.getZ(i) - 0.35 * len * tt * tt); p.setY(i, p.getY(i) + len / 2); }
+    geo.computeVertexNormals(); return geo; };
+  [[o.teethRim, o.rimR, o.rimY, 0.075, 0.016, 0.25], [o.teethThroat, o.throatR, o.throatY, 0.05, 0.012, 0.5]].forEach(([n, r, y, len, rad, upw], ring) => {
+    for (let k = 0; k < n; k++) { const a = (k + ring * 0.5) / n * TAU, sm = k % 2 ? 0.72 : 1, f = new T.Mesh(fang(len * sm, rad * (k % 2 ? 0.8 : 1)), toothM);
+      f.position.set(Math.sin(a) * r, y, Math.cos(a) * r); _aim32(f, V(-Math.sin(a), upw, -Math.cos(a)), V(0, 1, 0)); pot.add(f); } });
+  // a point on a petal: its spine at row i, across it by v (-1..1), its edges cupped inward
+  const surf = (P, i, v, out) => { const [r, y, dr, dy] = P.sp[i], u = i / (NU - 1);
+    const base = 0.45 + 0.55 * Math.sin(Math.min(1, u / 0.5) * PI / 2), tipR = u > 0.78 ? Math.sqrt(Math.max(0, 1 - Math.pow((u - 0.78) / 0.22, 2))) : 1;
+    const w = o.petalW * base * tipR + 0.003, cup = o.cup * (1 - 0.5 * u) * v * v;   // (the inner normal in its (out, up) plane is (-dy, dr))
+    return out.set(P.R.x * (r - dy * cup) + P.Tn.x * v * w, y + dr * cup, P.R.z * (r - dy * cup) + P.Tn.z * v * w); };
+  const tmp = V(0, 0, 0);
+  return { update(ph, rear, strike) {
+    const open = 1 + 0.03 * Math.sin(ph) - 0.12 * rear + 0.25 * strike;
+    petals.forEach(P => {
+      let r = o.p0r, y = o.p0y; const ds = P.L / (NU - 1);
+      for (let i = 0; i < NU; i++) { const u = i / (NU - 1), s = Math.min(1, u / o.pRise), w = Math.max(0, (u - o.pRise) / (1 - o.pRise));
+        const phi = (o.phi0 + (o.phi1 - o.phi0) * s) * open + o.wilt * P.droop * w * w * (1 - 0.35 * strike);   // (from upright toward outward; past the lip it wilts over and down)
+        const dr = Math.sin(phi), dy = Math.cos(phi); P.sp[i][0] = r; P.sp[i][1] = y; P.sp[i][2] = dr; P.sp[i][3] = dy; r += dr * ds; y += dy * ds; }
+      for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) { surf(P, i, -1 + 2 * j / (NV - 1), tmp); const q = (i * NV + j) * 3; P.pos[q] = tmp.x; P.pos[q + 1] = tmp.y; P.pos[q + 2] = tmp.z; }
+      P.geo.attributes.position.needsUpdate = true; P.geo.computeVertexNormals(); P.geo.computeBoundingSphere();
+      for (let i = 0; i < 12; i++) { const [rr, yy, dr, dy] = P.sp[i + 1]; P.vpts[i].set(P.R.x * (rr + dy * 0.008), yy - dr * 0.008, P.R.z * (rr + dy * 0.008)); }   // (the vein on its back)
+      P.vein.set(P.vpts, 0.006, 0.0035, null, 1.6, 0.6);
+    });
+  } };
+}
+
 // ── 906 · THE PITCHER (from BRAWLY) ──────────────────────────────────────────────────────────────────────────────────────────
 function _sundewPitcher(o) {
   const m = _sdMats(), g = G(), b = G(); g.add(b); b.scale.setScalar(o.S || 1);
   // THE PITCHER: round and black, its mouth on top, the rim barbed, holding the glowing nectar; a Y of pink vein on its front
   const pot = G(); b.add(pot); pot.rotation.x = o.tilt || 0; pot.position.y = o.lift || 0;   // (908: tilted forward, its mouth to the front)
   const ct = Math.cos(o.tilt || 0), st = Math.sin(o.tilt || 0), potPt = (x, y, z) => V(x, (o.lift || 0) + y * ct - z * st, y * st + z * ct);   // (a point of the pot where it stands)
-  pot.add(new T.Mesh(new T.LatheGeometry(o.prof.map(([r, y]) => new T.Vector2(r, y)), 48), _sdSkin));
-  const outer = o.prof.slice(0, o.lipAt + 1), rAt = y => { for (let i = 1; i < outer.length; i++) if (y <= outer[i][1]) { const [r0, y0] = outer[i - 1], [r1, y1] = outer[i]; return r0 + (r1 - r0) * (y - y0) / (y1 - y0); } return outer[outer.length - 1][0]; };
   const nec = new T.Mesh(new T.CircleGeometry(o.necR, 40), m.nectar); nec.rotation.x = -PI / 2; nec.position.y = o.necY; pot.add(nec);
-  for (let k = 0; k < o.barbs; k++) { const a = k / o.barbs * TAU, c = new T.Mesh(new T.ConeGeometry(0.011, 0.045, 6), _sdSkin);   // (the barbed lip: teeth pointing in and down)
-    c.position.set(Math.sin(a) * o.barbR, o.barbY, Math.cos(a) * o.barbR); _aim32(c, V(-Math.sin(a), -0.7, -Math.cos(a)), V(0, 1, 0)); pot.add(c); }
-  const surf = (y, a) => { const r = rAt(y) + 0.002; return V(Math.sin(a) * r, y, Math.cos(a) * r); };
-  [[[0.07, 0], [0.13, 0], [0.19, 0]], [[0.19, 0], [0.25, 0.12], [0.31, 0.3]], [[0.19, 0], [0.25, -0.12], [0.31, -0.3]]].forEach(seg => {   // (the Y, its stem low on the front)
-    const pts = Array.from({ length: 8 }, () => V(0, 0, 0)); _sdBez(pts, surf(...seg[0]), surf(...seg[1]), surf(...seg[1]), surf(...seg[2]));
-    _taper32(pot, m.vein, 8, 8).set(pts, 0.011, 0.008); });
+  const wilted = o.body === 'flower' ? _sdWilted(pot, m, o) : null;   // (909: the wilted flower with teeth, not the pitcher)
+  if (!wilted) {
+    pot.add(new T.Mesh(new T.LatheGeometry(o.prof.map(([r, y]) => new T.Vector2(r, y)), 48), _sdSkin));
+    const outer = o.prof.slice(0, o.lipAt + 1), rAt = y => { for (let i = 1; i < outer.length; i++) if (y <= outer[i][1]) { const [r0, y0] = outer[i - 1], [r1, y1] = outer[i]; return r0 + (r1 - r0) * (y - y0) / (y1 - y0); } return outer[outer.length - 1][0]; };
+    for (let k = 0; k < o.barbs; k++) { const a = k / o.barbs * TAU, c = new T.Mesh(new T.ConeGeometry(0.011, 0.045, 6), _sdSkin);   // (the barbed lip: teeth pointing in and down)
+      c.position.set(Math.sin(a) * o.barbR, o.barbY, Math.cos(a) * o.barbR); _aim32(c, V(-Math.sin(a), -0.7, -Math.cos(a)), V(0, 1, 0)); pot.add(c); }
+    const surf = (y, a) => { const r = rAt(y) + 0.002; return V(Math.sin(a) * r, y, Math.cos(a) * r); };
+    [[[0.07, 0], [0.13, 0], [0.19, 0]], [[0.19, 0], [0.25, 0.12], [0.31, 0.3]], [[0.19, 0], [0.25, -0.12], [0.31, -0.3]]].forEach(seg => {   // (the Y, its stem low on the front)
+      const pts = Array.from({ length: 8 }, () => V(0, 0, 0)); _sdBez(pts, surf(...seg[0]), surf(...seg[1]), surf(...seg[1]), surf(...seg[2]));
+      _taper32(pot, m.vein, 8, 8).set(pts, 0.011, 0.008); });
+  }
   const Ln = new T.PointLight(0xffffff, 0.9, 0.9, 2); Ln.color.copy(m.pink); Ln.position.set(0, o.necY + 0.06, 0); pot.add(Ln); LIGHTS.push(Ln);
   // THE FEET (906): six flat arms splayed on the floor, their tips lifting in a slow wave round it; or ROOTS (908): long, round, tapering tentacles out of its lower body,
   // arching down to the floor and out, wavering, their tips curling, some forking a rootlet (the owner on 906: "tilted pitcher and feet like roots/tentacles")
@@ -95,8 +147,8 @@ function _sundewPitcher(o) {
       if (r.twig) { const B = r.pts[Math.floor(NR * 0.45)], ta = r.twig.side * 0.6, bx = dx * Math.cos(ta) + tx * Math.sin(ta), bz = dz * Math.cos(ta) + tz * Math.sin(ta);
         for (let i = 0; i < 8; i++) { const u = i / 7; r.twig.pts[i].set(B.x + bx * 0.13 * u, B.y + 0.012 * Math.sin(PI * u) + 0.018 * u * u, B.z + bz * 0.13 * u); }
         r.twig.tb.set(r.twig.pts, 0, 0, u => 0.013 * (1 - u) + 0.003, 1.1, 0.9); } });
-    pot.scale.set(1 - 0.012 * br, 1 + 0.02 * br, 1 - 0.012 * br);   // (it breathes)
-    nec.position.y = o.necY + 0.004 * Math.sin(2 * ph); Ln.intensity = 0.9 * (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * strike);
+    if (wilted) wilted.update(ph, rear, strike); else pot.scale.set(1 - 0.012 * br, 1 + 0.02 * br, 1 - 0.012 * br);   // (the petals breathe and flare; the pitcher breathes)
+    nec.position.y = o.necY + 0.004 * Math.sin(2 * ph); Ln.intensity = 0.9 * (o.lightK || 1) * (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * strike);
     feet.forEach((f, j) => { const lift = 0.03 * Math.max(0, Math.sin(ph - j * TAU / feet.length)) * (1 - 0.7 * Math.min(1, act || 0));
       for (let i = 0; i < NF; i++) { const u = i / (NF - 1), d = o.footR0 + f.len * u;
         f.pts[i].set(Math.sin(f.a) * d, o.footY * (1 - u) + 0.012 + lift * u * u + o.curl * Math.pow(u, 4), Math.cos(f.a) * d); }
@@ -134,7 +186,17 @@ const _sdC = Object.assign({}, _sdA, {
   stemBase: [0.07, -0.16], stemVia: [[0, 0.15, -0.34], [0, 0.5, -0.42], [0, 0.9, -0.22]], stemR0: 0.03, stemR1: 0.016,   // (the stem: from the bottom of the barrel's back (pot y, z), then by these points (x, y, z), to the flower)
   flowerY: 0.93, flowerZ: 0.3,
 });
+// 909: the owner on 908 (2026-11-08): "I like everything but the cauldron-like body. Can we make it look more like a flower that has teeth? Like a wilted flower that has
+// teeth": 908 with its body a wilted flower with teeth (_sdWilted), tipped forward a little more, the stem's arc lower to suit the lower body
+const _sdD = Object.assign({}, _sdC, {
+  body: 'flower', tilt: 0.5, lift: 0.04, lightK: 0.45,
+  petals: 6, petalL: 0.44, petalW: 0.14, cup: 0.05, p0r: 0.06, p0y: 0.1, pRise: 0.44, phi0: 0.36, phi1: 0.72, wilt: 2.7, recR: 0.1,   // (the petals: how many, long, wide, cupped; the spine's start, its rise, its wilt (radians))
+  teethRim: 12, rimR: 0.14, rimY: 0.26, teethThroat: 9, throatR: 0.075, throatY: 0.19, necR: 0.07, necY: 0.165,
+  rootR: 0.08, rootY: 0.05,
+  stemBase: [0.06, -0.09], stemVia: [[0, 0.1, -0.3], [0, 0.42, -0.38], [0, 0.74, -0.18]], flowerY: 0.74, flowerZ: 0.3,
+});
 fx(908, "SUNDEW, 906 as the owner chose it: the pitcher tilted forward, its glowing mouth to the front, its rim smooth; its stem from the bottom of the barrel, up behind it and over its top like a scorpion's tail to the flower and the blade-leaf; its feet seven long round roots, writhing like tentacles, their tips curling.", () => _sundewPitcher(_sdC));
+fx(909, "SUNDEW, 908 with a new body: a wilted flower with teeth, its black petals cupped round a mouth of pale fangs and wilting outward and down, their inner faces glowing pink, the nectar deep in its throat; tipped forward on its roots, its stem from its base arching over it to the flower and the blade-leaf.", () => _sundewPitcher(_sdD));
 
 // ── 907 · THE SNAIL (from the snail drawn below it) ────────────────────────────────────────────────────────────────────────
 // the shell: a tube coiled in the y-z plane (its eye toward the back, its mouth at the front of its foot), growing as it coils; its growth lines glow nectar pink
