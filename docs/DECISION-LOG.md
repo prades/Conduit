@@ -2459,3 +2459,20 @@ For its main attack: THORN SLING (a thrown thorn, Projectile, +1), a long lash (
 
 ### Supersedes / superseded by
 Answers the vine attack's open damage type in "BLOOM's Mage holds its vines out and attacks with them; it shuffles to move" (2026-11-08).
+
+## DECISION: BLOOM's Mage (No. 920) approved and built as the LITTLE SHRUB
+- Date and build: 2026-11-08, build `2026-11-08j`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Let's go"; asked what to start (the shrub into the game, all three BLOOM forms, or builds h and i to main): "Shrub into the game" (the option read: take No. 920 as BLOOM's Mage, approved, and build it; numbers the agent picks marked provisional; its Ultimate waits).
+
+### Decision
+- BLOOM's Mage looks like No. 920 (`design/evolutions/forms39.js`); No. 919 is retired.
+- It is in the game: a BLOOM Mage evolves into it; an evolved toxic Mage converts into it; SEED SHOT its everyday shot, SEEDFALL its alternate, no Ultimate yet.
+
+### Status
+Implemented in build `2026-11-08j` (tests: conversion, followercombat, evolution, moves, damage, cards, bible; a browser check in the real game). Not playtested. Agent's calls, to confirm: its working name LITTLE SHRUB; its size (about seven tenths of the other Mages' height); SEEDFALL's numbers (provisional) and that it mends your followers, not the player; every BLOOM shot drawn as a pink seed; BLOOM's forms left out of the title screen's crowd.
+
+### Alternatives
+All three BLOOM forms in one build; pushing builds h and i to main first.
+
+### Supersedes / superseded by
+Answers the Mage's look in "BLOOM's Mage is a little shrub" (2026-11-08); builds on "BLOOM's Mage's kit: SEED SHOT and SEEDFALL; its Ultimate open".

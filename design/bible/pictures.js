@@ -7,7 +7,7 @@
 //   cards      the CARDS screen at an iPad's size, its two menus and a pack's reveal (since build 2026-11-01l: cards_sheet, the CARDS menu; cards_shop, the SHOP, taller; cards_reveal), from seeded packs and a seeded shelf,
 //              and the roster's YOU (roster_you: the player's card in view, YOUR SLOT 1's list open): img/bible/ui/cards_sheet.webp and the rest
 //   creatures  every creature the game draws itself (the player, the egg in each element, six species in six classes), by design/roster-poster/portraits.js, trimmed
-//   forms      the 18 evolved forms, cut from their sheets in img/evo (row 0, a three-quarter view; the ground layer under the four that have one), trimmed
+//   forms      the evolved forms, cut from their sheets in img/evo (row 0, a three-quarter view, each its own cell size; the ground layer under the four that have one), trimmed
 //   poster     the evolution roster poster, by design/roster-poster/poster.js
 // The graphics are held at HIGH (the slow-device check would turn them LOW in a headless browser), and a follower is never placed off the floor.
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || '/opt/node22/lib/node_modules/playwright');
@@ -113,8 +113,9 @@ async function openGame(b, w, h) {
     const ids = Object.values(ctx.__E).filter(e => !e.legacy).map(e => e.id);
     for (const id of ids) {
       const sheet = path.join(ROOT, 'img/evo', id + '.png'), ground = path.join(ROOT, 'img/evo', id + '_g.png'), cell = path.join(TMP, 'form_' + id + '.png');
-      if (fs.existsSync(ground)) execFileSync('convert', [ground, '-crop', '144x144+0+0', '+repage', '(', sheet, '-crop', '144x144+0+0', '+repage', ')', '-composite', cell]);
-      else execFileSync('convert', [sheet, '-crop', '144x144+0+0', '+repage', cell]);
+      const meta = path.join(ROOT, 'img/evo', id + '.json'), C = (fs.existsSync(meta) && JSON.parse(fs.readFileSync(meta, 'utf8')).cell) || 144, box = C + 'x' + C + '+0+0';   // (its cell: 144 px, or 192 for the Electro Skink and the Little Shrub)
+      if (fs.existsSync(ground)) execFileSync('convert', [ground, '-crop', box, '+repage', '(', sheet, '-crop', box, '+repage', ')', '-composite', cell]);
+      else execFileSync('convert', [sheet, '-crop', box, '+repage', cell]);
       webp(cell, path.join(OUT, 'forms', id + '.webp'), 88, ['-trim', '+repage', '-resize', '220x220>']);
     }
     console.log('forms: ' + ids.length);

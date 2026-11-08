@@ -112,13 +112,13 @@ function _bloomShrub(o) {
   const vines = o.vines.map(([x, spread], i) => ({ x, spread, ph: i * PI, tube: _taper32(b, vineM, NV, 10), pts: Array.from({ length: NV }, () => V(0, 0, 0)),
     thorns: Array.from({ length: o.thorns }, (_, j) => { const m = new T.Mesh(thornGeo, thornM); b.add(m);
       return { m, u: 0.12 + 0.82 * j / Math.max(1, o.thorns - 1), a: (j % 2 ? 1 : -1) * (0.35 + 0.95 * ((j * 0.618 + i * 0.3) % 1)) }; }) }));   // (along it on alternate sides, each at its own angle over its top: none into the floor)
-  const Lt = new T.PointLight(0xffffff, 0.5, 1, 2); Lt.color.copy(_c31(EL.color)); Lt.position.copy(sRoot).addScaledVector(ax, 0.1); body.add(Lt); LIGHTS.push(Lt);
+  const Lt = new T.PointLight(0xffffff, 0.5, o.S || 1, 2); Lt.color.copy(_c31(EL.color));   /* (its reach grows with the model: the game's sprite is 3.4 ×) */ Lt.position.copy(sRoot).addScaledVector(ax, 0.1); body.add(Lt); LIGHTS.push(Lt);
   const R0 = V(0, 0, 0), D = V(0, 0, 0), Dp = V(0, 0, 0), dir = V(0, 0, 0), tg = V(0, 0, 0), n1 = V(0, 0, 0), n2 = V(0, 0, 0), out = V(0, 0, 0);
   // ── SEED SHOT, its everyday shot (the owner's pick, 2026-11-08): as it charges, its vines rear and draw their tips together in front of it, a glowing pink seed growing
   // between them; at the crack the seed is flung forward. (Shown leaving it only: in the game its flight is drawn as every Mage's shot is.) ──
   const seedM = new T.MeshBasicMaterial({ color: _c31(EL.color).convertSRGBToLinear().multiplyScalar(1.5), toneMapped: false });
   const seed = new T.Mesh(new T.SphereGeometry(1, 14, 10), seedM), seedGlow = glowSprite(1); seedGlow.scale.set(5, 5, 1); seed.add(seedGlow); b.add(seed); seed.visible = false;
-  const sP = V(0, 0, 0), sRel = V(0, 0, 0), REL = 0.51, GONE = 0.68;   // (REL: the crack, when it lets go; GONE: when the game's shot takes over)
+  const sP = V(0, 0, 0), sRel = V(0, 0, 0), REL = 0.51, GONE = o.seedLeave === false ? REL : 0.68;   // (REL: the crack, when it lets go; GONE: when the game's shot takes over: at once in the game's sprite, No. 921)
   // a vine's points from its root at R0, each segment at its own angle up (phi) and to the side (psi), a blend of three poses: held out (h), reared (a: an arch up and over,
   // its tip hanging down in front) and struck out (b: down along the floor, at its full length). pr: its attack's progress (0 when idle): it rears (to 0.42), whips out
   // (to 0.55: the whipping front runs from its root to its tip; ahead of it the vine is still reared, behind it struck out), holds, then comes back (0.62 to 1). w: the sway.
@@ -182,12 +182,18 @@ const _bsA = {
   thorn: 0x050505, thorns: 9, thornL: 0.03, hook: 0.5,   // (its thorns: black; how many on each vine, how long, how far hooked back toward the root)
   bob: 0.006, shuffle: [0.06, 0.018, 0.08],   // (its shuffle: how far it rocks to each side, how much it lifts the side it rocks off, how far it turns)
 };
-fx(919, "BLOOM MAGE draft A, the little shrub as sketched: a round bush of short pointed spikes all over in velvet plum-black (no eyes, no face), the Rotshard's eaten crystal now pink poking out of its back, the pink glowing round its root; two black thorny vines from under its front, held out in front of it: it does not crawl on them but shuffles about to move, and it attacks with them: SEED SHOT, both rearing round a glowing seed and whipping out together to fling it like a sling.", () => _bloomShrub(_bsA));
+// 919: RETIRED 2026-11-08: the owner went on with the leaves (No. 920), approved as BLOOM's Mage when it was sent to the game ("Shrub into the game").
+fx(919, "(Retired: No. 920 was chosen.) BLOOM MAGE draft A, the little shrub as sketched: a round bush of short pointed spikes all over in velvet plum-black (no eyes, no face), the Rotshard's eaten crystal now pink poking out of its back, the pink glowing round its root; two black thorny vines from under its front, held out in front of it: it does not crawl on them but shuffles about to move, and it attacks with them: SEED SHOT, both rearing round a glowing seed and whipping out together to fling it like a sling.", () => _bloomShrub(_bsA));
 // 920 since the owner's "I can still see the round shape of the creature when it should be mostly leaves" (2026-11-08; it had 70 leaves on a round core, then 210
 // lying over it; very thin leaves were tried and dropped: "Not this direction, forget thin"): a mass of pointed leaves, folded down their midribs (`mass`: n of them),
 // each growing from deep inside out past the core (`foot`, how deep), a little up (`rise`) and its own way (`jit`), arching a little (`droop`), longer in tufts (`tuft`)
 // so the outline is ragged, not round, the lowest lying on the floor; the core smaller (`coreK`) and near black (`coreDark`), only the shadow among them.
-fx(920, "BLOOM MAGE draft B: the same little shrub, but mostly leaves: a mass of pointed leaves growing out from deep inside it at their own angles, ragged at its edges, each its own shade, the round core only a shadow deep among them; the same pink crystal and black thorny vines, held out in front, that fling its SEED SHOT like a sling; it shuffles about to move.", () => _bloomShrub(Object.assign({}, _bsA, {
+const _bsB = Object.assign({}, _bsA, {
   coreK: 0.6, coreDark: 0x060306, glowR: 0.11, shard: Object.assign({}, _bsA.shard, { len: 0.24 }), vineRoot: [0.035, 0.16],
   mass: { n: 240, foot: [0.4, 0.75], len: 0.14, vary: [0.7, 1.3], wid: 0.042, droop: 0.2, rise: 0.35, jit: 0.6, tuft: 0.3, fold: 0.35, shade: 1, prof: [0.8, 0.9], seg: 6, bottom: -0.75, clear: 0.96 },
-})));
+});
+fx(920, "BLOOM MAGE draft B: the same little shrub, but mostly leaves: a mass of pointed leaves growing out from deep inside it at their own angles, ragged at its edges, each its own shade, the round core only a shadow deep among them; the same pink crystal and black thorny vines, held out in front, that fling its SEED SHOT like a sling; it shuffles about to move.", () => _bloomShrub(_bsB));
+// 921, THE GAME'S SPRITE OF No. 920 (BLOOM's Mage, the LITTLE SHRUB, approved 2026-11-08: "Shrub into the game"): No. 920 a little smaller than the other Mages, a little shrub (3.4 ×: its crystal's tip about
+// 2.1 units up, about seven tenths of their height), baked alone in a 192 px cell so its vines' whip is not cut off (design/evolutions/bake.js, the 'shrub' job; js/evolution.js EVOLUTIONS.shrub). Its seed is gone the moment it is flung:
+// the game draws SEED SHOT's flight (js/game.js), as every Mage's shot.
+fx(921, "BLOOM MAGE, the LITTLE SHRUB: the game's sprite of No. 920, a little smaller than the other Mages; its seed gone as it is flung (the game draws the shot).", () => _bloomShrub(Object.assign({}, _bsB, { S: 3.4, vineL: 0.46, seedLeave: false })));   // (its vines a touch shorter, so struck out they stay in the cell)

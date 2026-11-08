@@ -280,6 +280,12 @@ const EVOLUTIONS = {
     // The TOXIC SNIPER: a crystal tilted in a pool that is eating it. The pool shifts, so its sheet carries its own light.
     rotshard:{ id: "rotshard", name: "ROTSHARD", element: "toxic", role: "sniper", shot: "CORRODE SHOT", move: "ROTTEN DECOY", moves: ["rotten_decoy"], sheet: "img/evo/rotshard.png",
               cell: 144, anchor: [72, 114.2], core: [72, 68.3], noGlow: true, color: "#66ff66", ground: "img/evo/rotshard_g.png" },
+    // THE LITTLE SHRUB (a working name: its name is the owner's to give), BLOOM'S MAGE since build 2026-11-08j (design No. 920, approved: "Shrub into the game"; its game sprite No. 921, design/evolutions/
+    // forms39.js), from the owner's pencil sketch and reviews (docs/CONVERSION.md §2): a little shrub, mostly leaves, the Rotshard's crystal poking out of its back, now pink; two black thorny vines
+    // held out in front of it; it shuffles about. Its shot, SEED SHOT: the vines rear round a glowing pink seed and fling it like a sling (a Mage's shot, Elemental; every BLOOM hit MENDs). Its
+    // alternate, SEEDFALL. Its Ultimate is open: it has none yet. A BLOOM Mage evolves into it; an evolved toxic Mage (the Rotshard) converts into it at the purification module (js/conversion.js).
+    shrub:  { id: "shrub", name: "LITTLE SHRUB", element: "blossom", role: "sniper", shot: "SEED SHOT", move: "SEEDFALL", moves: ["seedfall"], sheet: "img/evo/shrub.png",
+              cell: 192, anchor: [96, 138.2], core: [96, 110.7], noGlow: true, color: "#ff7ab8" },   // (a 192 px cell, as the Electro Skink's: room for its whip; the same pixels a unit as the 144 px sheets)
 };
 // Which egg grows into which machine.
 function evolutionFor(f) {
@@ -302,7 +308,7 @@ function evoCheck(f) {
     if (typeof _applyFollowerLevel === "function") _applyFollowerLevel(f, false);
     f.health = f.maxHealth;
     if (typeof floatingTexts !== "undefined")
-        floatingTexts.push({ world: true, x: f.x, y: f.y, text: "◆ EVOLVED · " + d.name, color: d.element === "fire" ? "#ffb066" : d.element === "toxic" ? "#99ff88" : "#fff27a", life: 150, vy: -0.05, size: 13 });
+        floatingTexts.push({ world: true, x: f.x, y: f.y, text: "◆ EVOLVED · " + d.name, color: d.element === "fire" ? "#ffb066" : d.element === "toxic" ? "#99ff88" : d.element === "blossom" ? "#ff9ccc" : "#fff27a", life: 150, vy: -0.05, size: 13 });
     if (typeof shake !== "undefined") shake = Math.max(shake || 0, 4);
     return true;
 }
@@ -534,6 +540,34 @@ function hexfireCircle(f, x, y) {
     elementEffects.push(e);
     fieldBite(e, "fire");
     return e;
+}
+// SEEDFALL (the Little Shrub's alternate, build 2026-11-08j; designed for BLOOM's Mage 2026-11-02: "glowing seeds rain on an area; enemies there are hurt, allies there are mended"; the owner's pick
+// for its kit, 2026-11-08): on the nearest enemy it can see within SEEDFALL_RANGE, glowing seeds rain on a circle SEEDFALL_RADIUS tiles round for SEEDFALL_LIFE frames. Every SEEDFALL_TICK frames each
+// enemy in it takes SEEDFALL_BITE × its power (Elemental, a BLOOM hit: each one MENDs, js/elements.js elementMend) and each of your followers in it is mended SEEDFALL_MEND of its maximum health
+// ("allies" read as your followers, as MEND's are). Its last circle goes when it casts a new one. The numbers are the agent's, PROVISIONAL: HEXFIRE's reach, life and beat, its circle a little wider,
+// its bite a little under HEXFIRE's as it also mends.
+const SEEDFALL_RANGE = 7, SEEDFALL_RADIUS = 1.5, SEEDFALL_LIFE = 240, SEEDFALL_TICK = 30, SEEDFALL_BITE = 0.2, SEEDFALL_MEND = 0.01;
+function seedfall(f) {
+    const foes = _evoFoesSeen(f.x, f.y, SEEDFALL_RANGE);
+    if (!foes.length || typeof elementEffects === "undefined") return false;
+    foes.sort((a, b) => Math.hypot(a.x - f.x, a.y - f.y) - Math.hypot(b.x - f.x, b.y - f.y));
+    const t = foes[0], f0 = typeof frame !== "undefined" ? frame : 0;
+    for (let i = elementEffects.length - 1; i >= 0; i--) if (elementEffects[i].type === "seedfall" && elementEffects[i].by === f) elementEffects.splice(i, 1);   // (its last one ends)
+    const e = { type: "seedfall", x: t.x, y: t.y, radius: SEEDFALL_RADIUS, life: SEEDFALL_LIFE, maxLife: SEEDFALL_LIFE, by: f, bite: (f.power || 10) * SEEDFALL_BITE, element: "blossom" };
+    elementEffects.push(e); seedfallBeat(e);   // (the first seeds land as it opens)
+    f._sigAt = f0; f._sigCd = moveWindupFrames("seedfall");
+    const dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1; f.dirX = dx / L; f.dirY = dy / L;
+    if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text: "SEEDFALL", color: "#ff9ccc", life: 50, vy: -0.06, size: 10 });
+    return true;
+}
+// one beat of a SEEDFALL (as it opens, then every SEEDFALL_TICK frames: js/elements.js): its bite on every enemy in it it can see from its middle (fieldBite), its mend on each of your followers in it
+function seedfallBeat(e) {
+    fieldBite(e, "blossom");
+    if (typeof followers === "undefined" || typeof healUnit !== "function") return;
+    for (const a of followers) {
+        if (!a || a.dead || a.team !== "green" || !(a.maxHealth > 0) || !(a.health < a.maxHealth)) continue;
+        if (Math.hypot(a.x - e.x, a.y - e.y) <= e.radius) healUnit(a, a.maxHealth * SEEDFALL_MEND, e.by || null);
+    }
 }
 // A stationary field's bite (HEXFIRE's circle, STATIC VORTEX): every enemy inside it takes the field's bite from the follower that made it, through the damage system as that follower's move (DMG_HIT_ALT)
 function fieldBite(e, el) {

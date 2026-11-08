@@ -165,7 +165,7 @@ function sameJSON(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw 
     group('THE STATS (docs/COMBAT.md §7.6, §7.7)');
     check('each form\'s lean, by the rule (Elemental species +1, spine-legged and mollusk −1, an Elemental main attack +1 more)', () => {
         const L = J(`(function(){ const o = {}; for (const k in DMG_FORM) o[k] = dmgLean({ evolved: k }); return o; })()`);
-        sameJSON(L, { quillstone: -1, maw: 1, staticorb: 0, electroskink: -1, jellyram: 0, seeper: -1, mimic: 0, thunderhead: 2, voidstar: 0, embercowl: 2, rimestar: 0, hornshell: -1, rotshard: 1, hammerslug: -1, gooproxy: 0, thermite: 0, blightspider: -1, hovershell: 0, igloo: 1 }, 'the leans');
+        sameJSON(L, { quillstone: -1, maw: 1, staticorb: 0, electroskink: -1, jellyram: 0, seeper: -1, mimic: 0, thunderhead: 2, voidstar: 0, embercowl: 2, rimestar: 0, hornshell: -1, rotshard: 1, shrub: 2, hammerslug: -1, gooproxy: 0, thermite: 0, blightspider: -1, hovershell: 0, igloo: 1 }, 'the leans');   // (the Little Shrub, BLOOM's Mage: Elemental, and an Elemental SEED SHOT, build 2026-11-08j)
         ok(J(`dmgLean({})`) === 0, 'an egg has none');
     });
     check('evolving raises SP.ATK by EVOLVE_MULT too, and the lean tilts the evolved stats (THUNDERHEAD toward SP.ATK, QUILLSTONE toward ATK)', () => {

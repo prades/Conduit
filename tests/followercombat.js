@@ -432,6 +432,39 @@ function measure(w, h) {
     });
 
     // ── THE DAMAGE SYSTEM, THE TABLES AND THE WORDS ─────────
+    // ── THE LITTLE SHRUB (BLOOM's Mage, build 2026-11-08j) ──
+    group('LITTLE SHRUB (BLOOM Mage, build 2026-11-08j): SEED SHOT, its everyday shot, that MENDs as every BLOOM hit; SEEDFALL, seeds raining on a circle that hurt the enemies in it and mend your followers in it');
+    check('SEED SHOT is its everyday shot: the BLOOM shot (a seed) at the nearest enemy, SP.ATK × MAGE_SHOT_MULT, a plain hit, named SEED SHOT on INFO; its hit MENDs the most hurt follower near the shrub', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'sniper', 'shrub'), t = __foe(f.x + 3.5, f.y), mate = __fol('fire', 'brawler', null); mate.x = f.x - 1; mate.y = f.y; mate.health = mate.maxHealth * 0.5;
+            f.attackCooldown = 0; f._sigCd = 1e9;
+            let fr = 0; while (!followerProjectiles.length && fr < 120) { frame++; updateNPC(f); fr++; }
+            const p = followerProjectiles[0], i = followerInfo(f).attacks.find(s => /^MAIN ATTACK/.test(s.h)), h0 = mate.health; __off(f); __off(mate); followers.push(mate);
+            let k = 0; while (followerProjectiles.length && k < 200) { render(); k++; }
+            return { got: !!p, el: p && p.element, src: !!p && p.source === f, onHit: p ? !!p.onHit : null, hit: p && p.hit === DMG_HIT_SHOT, dmg: p && p.damage, want: f.stats.specialAttack * MAGE_SHOT_MULT, shot: EVOLUTIONS.shrub.shot, info: i && i.h, hurt: __dmg(t), mended: mate.health - h0, share: mate.maxHealth * ELEMENT_MEND.share }; })()`);
+        ok(r.got, 'no shot'); same(r.el, 'blossom', 'its element'); ok(r.src, 'not the shrub\'s'); same(r.onHit, false, 'an effect of its own'); ok(r.hit, 'not the Mages\' shot');
+        ok(Math.abs(r.dmg - r.want) < 1e-9, 'damage ' + r.dmg + ' not ' + r.want); same(r.shot, 'SEED SHOT', 'its name'); same(r.info, 'MAIN ATTACK · SEED SHOT', 'INFO');
+        ok(r.hurt > 0, 'the enemy was not hit'); ok(r.mended >= r.share * 0.999, 'the hurt follower was mended ' + r.mended + ', not ' + r.share);
+    });
+    check('SEEDFALL: cast on the nearest enemy it can see in reach (no shot): a circle SEEDFALL_RADIUS tiles round on it that bites every enemy in it at once and every SEEDFALL_TICK frames, and mends each of your hurt followers in it by SEEDFALL_MEND of its maximum health each time; gone after SEEDFALL_LIFE frames; a follower outside it is not mended by it', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('blossom', 'sniper', 'shrub'), t = __foe(f.x + 5, f.y + 0.5), inn = __fol('fire', 'brawler', null), outt = __fol('fire', 'brawler', null);
+            inn.x = t.x + 0.6; inn.y = t.y; outt.x = t.x + 4; outt.y = t.y + 3; for (const m of [inn, outt]) m.health = m.maxHealth * 0.3;
+            const at0 = [t.x, t.y], oPre = outt.health; __fire(f); __off(f); __off(inn); __off(outt); followers.push(inn, outt);
+            const c = elementEffects.find(e => e.type === 'seedfall' && e.by === f), at = c && { x: c.x, y: c.y, r: c.radius, life: c.life }, first = __dmg(t), m0 = inn.maxHealth, h0 = inn.health, firstMend = inn.health - inn.maxHealth * 0.3, o0 = outt.health, outFirst = outt.health - oPre;
+            const hi = inn.health, ho = outt.health; seedfallBeat(c); const beatIn = inn.health - hi, beatOut = outt.health - ho, beatShare = inn.maxHealth * SEEDFALL_MEND; inn.health = hi;   // (one beat alone, nothing else running: followers also mend on their own over time)
+            const twin = __foe(f.x + 40, f.y + 40); applyDamage(twin, f.power * SEEDFALL_BITE, f, 'blossom', false, false, DMG_HIT_ALT);
+            const bites = []; let last = __dmg(t), k = 0;   // (from here: the direct beat above bit it too)
+            while (elementEffects.some(e => e.type === 'seedfall') && k < 400) { render(); k++; const d = __dmg(t); if (d !== last) { bites.push(k); last = d; } }
+            return { shots: followerProjectiles.length, at, t: at0, first, one: __dmg(twin), bites, after: k, tick: SEEDFALL_TICK, life: SEEDFALL_LIFE, r: SEEDFALL_RADIUS, firstMend, share: m0 * SEEDFALL_MEND, gained: inn.health - h0, mend: SEEDFALL_MEND, m0, outFirst, beatIn, beatOut, beatShare,
+                     info: (followerInfo(f).attacks.find(s => /^ALTERNATE · SEEDFALL/.test(s.h)) || {}).h || null }; })()`);
+        same(r.shots, 0, 'shots'); ok(r.at, 'no circle'); ok(Math.hypot(r.at.x - r.t[0], r.at.y - r.t[1]) < 1e-9, 'not on the enemy: ' + JSON.stringify(r)); same(r.at.r, r.r, 'its radius');
+        ok(Math.abs(r.first - r.one) < 1e-6 * r.one + 1e-6, 'it bit at once as it opened: ' + JSON.stringify(r));
+        ok(r.bites.length >= 6 && r.bites.every((b, i) => i === 0 || b - r.bites[i - 1] === r.tick), 'a bite every ' + r.tick + ' frames: ' + JSON.stringify(r.bites));
+        ok(r.after <= r.life + 2 && r.after >= r.life - 2, 'it lasted ' + r.after + ' frames, not ' + r.life);
+        ok(Math.abs(r.firstMend - r.share) < 1e-6, 'the follower in it was mended ' + r.firstMend + ' as it opened, not ' + r.share);
+        ok(r.gained >= r.bites.length * r.mend * r.m0 * 0.999, 'the follower in it was mended each beat: ' + r.gained + ' after the first (' + r.bites.length + ' beats)'); same(r.outFirst, 0, 'the follower outside it was mended as it opened'); ok(Math.abs(r.beatIn - r.beatShare) < 1e-9, 'a beat mended the follower in it ' + r.beatIn + ', not ' + r.beatShare); same(r.beatOut, 0, 'a beat mended the follower outside it');
+        ok(/^ALTERNATE · SEEDFALL/.test(r.info || ''), 'INFO: ' + r.info);
+    });
+
     group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
     check('a move waits its own WIND-UP after it fires (the Static Orb\'s two moves each their own), and changing the number on the attack changes the wait', () => {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'), t = __foe(f.x + 3, f.y); const out = {};

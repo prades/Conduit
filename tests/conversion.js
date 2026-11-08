@@ -101,6 +101,12 @@ function measure(w, h) {
         const r = J(`(function(){ __clear(); const f = __mk('blossom', 'brawler'); f.level = 12; f.xp = 0; return { label: unitTypeLabel(f), ult: followerUltimate(f), form: evolutionFor(f), evolved: evoCheck(f), still: f.evolved || null, moves: _IP_ATTACKS.blossom }; })()`);
         same(r.label, 'BLOOM BRAWLER', 'its name'); same(r.ult, null, 'its Ultimate'); same(r.form, null, 'its form'); same(r.evolved, false, 'it evolved'); same(r.still, null, 'its form'); same(r.moves.proc, 'mend', 'what its hits do');
     });
+    check('a BLOOM Mage evolves at its level into the LITTLE SHRUB, BLOOM\'s Mage (build 2026-11-08j): its name, its shot SEED SHOT and its alternate SEEDFALL, no Ultimate yet; a BLOOM Brawler and Technician still wait', () => {
+        const r = J(`(function(){ __clear(); const m = __mk('blossom', 'sniper'), b = __mk('blossom', 'brawler'), t = __mk('blossom', 'camper'); for (const f of [m, b, t]) { f.level = 12; f.xp = 0; }
+            const did = [m, b, t].map(evoCheck); return { did, forms: [m, b, t].map(f => f.evolved || null), label: unitTypeLabel(m), shot: EVOLUTIONS.shrub.shot, moves: evoMoveIds(EVOLUTIONS.shrub), ult: followerUltimate(m), lean: dmgLean(m), sub: equipSubclassOf(m) }; })()`);
+        same(r.did.join(), 'true,false,false', 'who evolved'); same(r.forms.join(), 'shrub,,', 'their forms'); same(r.label, 'LITTLE SHRUB', 'its name'); same(r.shot, 'SEED SHOT', 'its shot');
+        same(r.moves.join(), 'seedfall', 'its alternate'); same(r.ult, null, 'its Ultimate (open)'); same(r.lean, 2, 'its lean (Elemental, and an Elemental shot)'); same(r.sub, 'elemental', 'its subclass');
+    });
     check('MEND: a BLOOM follower\'s hit heals the most hurt of yours within 4 tiles (the lowest share of health) by 2% of its max; one 5 tiles off, or at full health, is passed over; it counts itself', () => {
         const r = J(`(function(){ __clear(); __put0 = 0; const b = __mk('blossom', 'brawler'), near = __mk('fire', 'brawler'), far = __mk('ice', 'brawler'), full = __mk('core', 'brawler'); partyTick();
             b.x = 500; b.y = 500; near.x = 502; near.y = 500; far.x = 505.5; far.y = 500; full.x = 501; full.y = 500;
@@ -151,7 +157,23 @@ function measure(w, h) {
         same(JSON.stringify(r.why), JSON.stringify([null, null, 'ITS BLOOM FORM IS NOT READY', 'THE BLOOM TECHNICIAN\'S ABILITY IS NOT READY']), 'why');
     });
 
+    check('an evolved toxic Mage (the Rotshard) can: its class\'s BLOOM form, the Little Shrub, is in the game (build 2026-11-08j); an evolved toxic Brawler still waits for SUNDEW', () => {
+        const r = J(`(function(){ __quest(true); __atModule(); __clear(); const m = __mk('toxic', 'sniper', 'rotshard'), b = __mk('toxic', 'brawler', 'seeper'); partyTick();
+            return { why: [m, b].map(convertWhyNot), form: [m, b].map(f => (convertBloomForm(f) || {}).id || null) }; })()`);
+        same(JSON.stringify(r.why), JSON.stringify([null, 'ITS BLOOM FORM IS NOT READY']), 'why'); same(r.form.join(), 'shrub,', 'their BLOOM forms');
+    });
     group('CONVERT: the element becomes BLOOM; the rest stays; toxic cards come off; saved and loaded back');
+    check('an evolved toxic Mage converts into the LITTLE SHRUB (build 2026-11-08j): BLOOM, its form the shrub, its stats and health as they were, its ROTTEN DECOY let go (the shrub has SEEDFALL); the preview shows the form and the moves before and after; saved and loaded as the shrub', () => {
+        const r = J(`(function(){ __quest(true); __atModule(); __clear(); const m = __mk('toxic', 'sniper', 'rotshard'); m.level = 12; _applyFollowerLevel(m, true); m.alt = 'rotten_decoy'; partyTick();
+            const st = JSON.stringify(m.stats), hp = [m.health, m.maxHealth], g = convertPreview(m), mv = [_cvMoves(m), _cvMoves(g)], fm = [_cvFormName(m), _cvFormName(g)], res = convertApply(m);
+            const rec = followerRecord(m); __clear(); spawnFollowerFromSave(rec); const back = followers[followers.length - 1];
+            return { preview: g.evolved, mv, fm, ok: res.ok, msg: res.msg, el: m.element, evo: m.evolved, alt: m.alt || null, same: JSON.stringify(m.stats) === st, hp: [m.health, m.maxHealth], hp0: hp, label: unitTypeLabel(m), back: [back.element, back.evolved, back.convertedFrom] }; })()`);
+        same(r.preview, 'shrub', 'the preview\'s form'); same(r.fm.join('|'), 'ROTSHARD|LITTLE SHRUB', 'the FORM row');
+        same(r.mv.join('|'), 'CORRODE SHOT · ROTTEN DECOY · ULTIMATE TOXIC PUDDLE|SEED SHOT · SEEDFALL', 'the MOVES row (its shot, its alternate, its Ultimate: the shrub has none yet)');
+        ok(r.ok, 'it did not convert: ' + r.msg); same(r.el, 'blossom', 'its element'); same(r.evo, 'shrub', 'its form'); same(r.alt, null, 'its alternate (ROTTEN DECOY is not the shrub\'s)');
+        ok(r.same, 'its stats changed'); same(r.hp.join(), r.hp0.join(), 'its health'); same(r.label, 'LITTLE SHRUB', 'its name'); ok(/IS NOW A LITTLE SHRUB/.test(r.msg), 'the words: ' + r.msg);
+        same(r.back.join(), 'blossom,shrub,toxic', 'saved and loaded back');
+    });
     check('its element is BLOOM, and it remembers it was toxic; its level, XP, stats, health and bond are as they were; it is named BLOOM BRAWLER', () => {
         const r = J(`(function(){ __quest(true); __atModule(); __clear(); const f = __mk('toxic', 'brawler'), mate = __mk('fire', 'mage'); partyTick(); f.level = 7; f.xp = 33; f.partnerUid = mate.uid = mate.uid || 'm1';
             const was = JSON.stringify({ level: f.level, xp: f.xp, stats: f.stats, hp: f.health, max: f.maxHealth, partner: f.partnerUid, role: f.role });
@@ -174,9 +196,9 @@ function measure(w, h) {
             return { rec: [rec.element, rec.conv && rec.conv.from], g: [g.element, g.convertedFrom], h: [h.element, h.convertedFrom || null] }; })()`);
         same(r.rec.join(), 'blossom,toxic', 'the record'); same(r.g.join(), 'blossom,toxic', 'loaded'); same(r.h.join(), 'toxic,', 'an old save\'s follower');
     });
-    check('the Ant Nest\'s test console offers BLOOM\'s Brawler and Mage, not its Technician (no ability yet)', () => {
-        const r = J(`nestForms().filter(f => f.element === 'blossom').map(f => f.role)`);
-        same(r.join(), 'brawler,sniper', 'BLOOM\'s forms there');
+    check('the Ant Nest\'s test console offers BLOOM\'s evolved Mage (the Little Shrub, build 2026-11-08j) and its unevolved Brawler and Mage, not its Technician (no ability yet)', () => {
+        const r = J(`nestForms().filter(f => f.element === 'blossom').map(f => f.role + (String(f.id).indexOf(':') < 0 ? ':' + f.id : ''))`);
+        same(r.join(), 'sniper:shrub,brawler,sniper', 'BLOOM\'s forms there');
     });
     check('the card art: a BLOOM follower\'s backdrop has its texture, and BLOOM has an emblem (approved 2026-11-08)', () => {
         const r = J(`(function(){ return { cls: cardArtUnitClass({ isFollower: true, element: 'blossom', role: 'brawler' }), tex: cardArtTexture('blossom').length, emb: !!CARD_ART_EMBLEMS.blossom }; })()`);

@@ -776,7 +776,7 @@ function spawnElementEffect(effect) {
 // alive — the oldest short-lived ones go first, the long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
+const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
     const keep = [], clouds = [], blizzards = [];
@@ -873,6 +873,7 @@ function updateElementEffects() {
         // HEXFIRE's circle and STATIC VORTEX (js/evolution.js; the follower combat redesign): stationary fields that hurt enemies only. The circle bites every HALO_TICK frames (it bit once as it
         // landed); the vortex pulls every frame and bites every VORTEX_TICK.
         if (e.type === "hexfire") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % HALO_TICK === 0 && typeof fieldBite === "function") fieldBite(e, "fire"); }
+        if (e.type === "seedfall") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % SEEDFALL_TICK === 0 && typeof seedfallBeat === "function") seedfallBeat(e); }   // (SEEDFALL: js/evolution.js)
         if (e.type === "magmavent") { const age = e.maxLife - e.life; if (age > 0 && e.life > 0 && age % MAGMA_TICK === 0 && typeof fieldBite === "function") { fieldBite(e, "fire"); e.burstAt = age; } }   // (a burst a second: js/evolution.js magmaVent)
         if (e.type === "staticVortex" && typeof staticVortexTick === "function") staticVortexTick(e);
         // the own Ultimates' fields (FORM_ULTIMATES above): ABSOLUTE ZERO holds what it swallowed inside the Frost Maw, then lets it go round it; CONTAMINATION NETWORK bites what touches a strand
@@ -1395,6 +1396,8 @@ function drawElementEffects() {
                 }
                 break;
             }
+            // SEEDFALL's circle and seeds lie on the floor: drawn tile by tile in the floor's pass (drawSeedfallOnTile, below), so walls and units in front cover them
+            case "seedfall": break;
             // CONTAMINATION NETWORK (FORM_ULTIMATES): glowing toxic strands between its pods, a pulse running along them
             case "toxicnet": {
                 const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), cy0 = py + TILE_H, S = (x, y) => [px + ((x - e.x) - (y - e.y)) * TILE_W, cy0 + ((x - e.x) + (y - e.y)) * TILE_H];
@@ -1649,4 +1652,47 @@ function drawElementEffects() {
 
         ctx.restore();
     });
+}
+
+// ── SEEDFALL ON THE FLOOR (the Little Shrub's alternate, build 2026-11-08j; js/evolution.js seedfall) ──
+// The owner: "the alternate attack needs to be hidden behind walls". Its circle is painted onto the floor tile by tile, in the floor's own pass (js/game.js, as a Mage's aura ring and
+// a serum's pool are), each tile clipped to itself: a wall or a unit in front of it covers it, and it never spills onto a wall. Only the tiles of its own room show it. Its seeds fall
+// onto the tile each lands on, drawn with that tile, so a wall in front covers them too; a seed that would land off the floor is not drawn. Nine seeds, each falling over and over to
+// its own spot, out of step; a little ring opens where each lands.
+let _sfFrame = -1, _sfList = [];   // (drawing only: the SEEDFALLs to paint this frame and their rooms, found once a frame: tests/ghost.js allow-lists them)
+function _sfRoomAt(x, y) { return typeof facilityRoomAt === "function" && typeof _fp !== "undefined" && _fp && _fp.F ? facilityRoomAt(x, y, _fp.F) : undefined; }
+function _sfSeed(e, i, age, out) {   // where seed i lands (world, tiles) and how far through its fall it is (0..1)
+    const an = i * 2.39996 + e.x * 1.7, d = Math.sqrt((i * 0.618 + Math.abs(e.y) * 0.37) % 1) * 0.9 * e.radius;
+    out.x = e.x + Math.cos(an) * d; out.y = e.y + Math.sin(an) * d; out.ph = ((age + i * 13) % 40) / 40; return out;
+}
+function drawSeedfallOnTile(tx, ty, px, py) {
+    if (typeof ctx === "undefined" || !ctx || typeof elementEffects === "undefined") return;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    if (_sfFrame !== f0) { _sfFrame = f0; _sfList = elementEffects.filter(e => e.type === "seedfall" && e.life > 0).map(e => ({ e, room: _sfRoomAt(e.x, e.y) })); }   // (once a frame)
+    if (!_sfList.length) return;
+    let room, roomKnown = false;
+    for (const it of _sfList) {
+        const e = it.e, R = e.radius; if (Math.abs(tx - e.x) > R + 0.75 || Math.abs(ty - e.y) > R + 0.75) continue;
+        if (!roomKnown) { room = _sfRoomAt(tx, ty); roomKnown = true; }
+        if (room !== it.room) continue;   // (a tile of another room shows none of it)
+        const sd = { x: 0, y: 0, ph: 0 };
+        const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), age = e.maxLife - e.life, rx = R * Math.SQRT2 * TILE_W, ry = R * Math.SQRT2 * TILE_H;
+        const at = (x, y) => [px + ((x - tx) - (y - ty)) * TILE_W, py + TILE_H + ((x - tx) + (y - ty)) * TILE_H];   // (a ground point, from this tile)
+        const [cx, cy] = at(e.x, e.y);
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
+        ctx.globalAlpha = 0.3 * k; ctx.fillStyle = "#ff7ab8"; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();   // (on the light floor, a soft pink)
+        ctx.globalAlpha = (0.7 + 0.25 * Math.sin(f0 * 0.2 + e.x)) * k; ctx.strokeStyle = "#ff5fa8"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < 9; i++) {   // (where a seed lands on this tile: a little ring, on the floor)
+            const s = _sfSeed(e, i, age, sd); if (s.ph < 0.85 || Math.round(s.x) !== tx || Math.round(s.y) !== ty) continue;
+            const [qx, qy] = at(s.x, s.y); ctx.globalAlpha = (1 - (s.ph - 0.85) / 0.15) * 0.8 * k; ctx.strokeStyle = "#ff7ab8"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(qx, qy, 5, 2.5, 0, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.restore();
+        ctx.save(); ctx.fillStyle = "#ffd6ea";
+        for (let i = 0; i < 9; i++) {   // (a seed falling onto this tile: in the air, so not clipped to it; drawn with it, so what stands in front covers it)
+            const s = _sfSeed(e, i, age, sd); if (s.ph >= 0.85 || Math.round(s.x) !== tx || Math.round(s.y) !== ty) continue;
+            const [qx, qy] = at(s.x, s.y); ctx.globalAlpha = 0.9 * k; ctx.beginPath(); ctx.ellipse(qx, qy - (1 - s.ph / 0.85) * 46, 2.2, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+    }
 }

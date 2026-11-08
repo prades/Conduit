@@ -13,9 +13,11 @@
 //                 its element, what its hits do (toxic's defense shred to BLOOM's MEND), its moves, its cards that come off, and the form it will evolve into.
 //   CONVERT       two taps (it cannot be undone): its element becomes BLOOM (js/config.js ELEMENTS, id "blossom": "bloom" is the retired BUNKER BLOOM's form id); its toxic cards come off
 //                 (js/cards.js equipValid, as when any card stops fitting); it is saved with its element (js/facilitysave.js).
-// Not yet (the next stages): an evolved toxic follower (its class's BLOOM form: SUNDEW, the coral crab, the Mage (a little shrub, in review)), and a toxic Technician (BLOOM's Technician ability, REEF, is not built).
+// AN EVOLVED ONE (build 2026-11-08j): it takes its class's BLOOM form, where that is in the game: an evolved toxic Mage (the Rotshard) becomes the LITTLE SHRUB, BLOOM's Mage (js/evolution.js
+// EVOLUTIONS.shrub). Its stats stay as they are ("Same stats, show changes"); an alternate the new form does not have is let go (it goes back to its normal attack).
+// Not yet (the next stages): an evolved toxic Brawler (SUNDEW) and a toxic Technician (the coral crab; BLOOM's Technician ability, REEF, is not built).
 const CONVERT = { from: "toxic", to: "blossom", room: "sewers", arm: 180, col: "#8cff5a", bloom: "#ff7ab8",
-    forms: { brawler: "SUNDEW", sniper: "THE LOTUS LANTERN", camper: "THE CORAL CRAB" } };   // (the class's BLOOM form: docs/CONVERSION.md §2; working names)
+    forms: { brawler: "SUNDEW", sniper: "THE LITTLE SHRUB", camper: "THE CORAL CRAB" } };   // (the class's BLOOM form: docs/CONVERSION.md §2; working names)
 
 function convertReady() { const Q = typeof questState === "function" ? questState("purify") : null; return !!(Q && Q.installedAt && Q.purifiedAt); }   // (installed, and its cycle run: the water clean; until then the quest says the module is running)
 function _cvOurs(f) { return !!f && !f.dead && f.isFollower === true && !f.isClone && f.team === "green"; }
@@ -25,12 +27,14 @@ function convertHere() {
     return followers.filter(f => _cvOurs(f) && f.element === CONVERT.from && ((typeof partyIsMember === "function" && partyIsMember(f)) || f.post === CONVERT.room));
 }
 function _cvRole(f) { return typeof equipRoleOf === "function" ? equipRoleOf(f) : (f && f.role) || null; }
+// the BLOOM form its class takes (js/evolution.js evolutionFor, for it as a BLOOM follower), or null: not in the game yet (SUNDEW, the coral crab)
+function convertBloomForm(f) { return f && typeof evolutionFor === "function" ? evolutionFor(Object.assign({}, f, { element: CONVERT.to })) : null; }
 // why it cannot convert now (null: it can)
 function convertWhyNot(f) {
     if (!_cvOurs(f)) return "NOT ONE OF YOURS";
     if (f.element !== CONVERT.from) return "ONLY A TOXIC FOLLOWER CONVERTS";
     if (!convertReady()) return "THE PURIFICATION MODULE IS NOT READY: INSTALL IT AND LET IT RUN";
-    if (f.evolved) return "ITS BLOOM FORM IS NOT READY";
+    if (f.evolved && !convertBloomForm(f)) return "ITS BLOOM FORM IS NOT READY";   // (an evolved Mage becomes the Little Shrub: build 2026-11-08j)
     if (_cvRole(f) === "camper") return "THE BLOOM TECHNICIAN'S ABILITY IS NOT READY";
     return null;
 }
@@ -40,8 +44,12 @@ function convertCan() {
 }
 function convertVerb() { return "CONVERT A TOXIC FOLLOWER INTO BLOOM"; }
 
-// what it would be: a copy with its new element, for the preview's card and words (nothing about the follower itself changes)
-function convertPreview(f) { return Object.assign({}, f, { element: CONVERT.to, cards: f.cards ? f.cards.slice() : f.cards }); }
+// what it would be: a copy with its new element (and, evolved, its class's BLOOM form), for the preview's card and words (nothing about the follower itself changes)
+function convertPreview(f) {
+    const g = Object.assign({}, f, { element: CONVERT.to, cards: f.cards ? f.cards.slice() : f.cards });
+    if (f.evolved) { const d = convertBloomForm(f); if (d) g.evolved = d.id; }
+    return g;
+}
 // its cards that would come off (they stop fitting: a toxic element card, a toxic aura)
 function convertCardsOff(f) {
     if (!f || !f.cards || typeof equipCard !== "function" || typeof equipFit !== "function") return [];
@@ -53,7 +61,12 @@ function convertCardsOff(f) {
 function convertApply(f) {
     const why = convertWhyNot(f); if (why) return { ok: false, why };
     const off = convertCardsOff(f), name = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER";
+    const form = f.evolved ? convertBloomForm(f) : null;   // (evolved: its class's BLOOM form, there or convertWhyNot would have said)
     f.element = CONVERT.to; f.convertedFrom = CONVERT.from; f.convertedAt = typeof frame !== "undefined" ? frame : 0;
+    if (form) {
+        f.evolved = form.id;   // (its stats stay as they are: no level is applied again)
+        if (f.alt && !(typeof evoMoveAllowed === "function" && evoMoveAllowed(f, form, f.alt))) { f.alt = null; f._altWind = 0; f._altLive = null; }   // (an alternate the new form does not have: back to its normal attack)
+    }
     if (typeof rebuildFollowerTable === "function") rebuildFollowerTable();   // (the followers by element, js/helpers.js: rebuilt only when the count changes, and a conversion does not change it)
     if (typeof equipValid === "function") equipValid(f);
     if (typeof partyBarRender === "function") partyBarRender(true);
@@ -127,12 +140,16 @@ function _cvDraw(root, units) {
         if (typeof cardArtMark === "function" && typeof cardArtUnitClass === "function") { try { cardArtMark(el, cardArtUnitClass(u)); } catch (e) {} }
     });
 }
-// its moves as an unevolved follower: its element's move and its Ultimate (an element's special is no longer fired by a follower: js/combat.js)
+// its moves: unevolved, its element's move; evolved, its form's own shot or hit and its alternates; and its Ultimate (an element's special is no longer fired by a follower: js/combat.js)
 function _cvMoves(f) {
     const A = typeof _IP_ATTACKS !== "undefined" ? _IP_ATTACKS[f.element] : null, U = typeof followerUltimate === "function" ? followerUltimate(f) : null;
-    const list = []; if (A && A.physical) list.push(String(A.physical).toUpperCase()); if (U && U.name) list.push("ULTIMATE " + String(U.name).toUpperCase());
+    const d = f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] : null, list = [];
+    if (d) { if (d.shot || d.hit) list.push(String(d.shot || d.hit).toUpperCase()); if (typeof evoMoveIds === "function") evoMoveIds(d).forEach(id => list.push(MOVES[id].name)); }
+    else if (A && A.physical) list.push(String(A.physical).toUpperCase());
+    if (U && U.name) list.push("ULTIMATE " + String(U.name).toUpperCase());
     return list.length ? list.join(" · ") : "NONE YET";
 }
+function _cvFormName(u) { const d = u && u.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[u.evolved] : null; return d ? d.name : "—"; }
 function _cvProc(el) { const A = typeof _IP_ATTACKS !== "undefined" ? _IP_ATTACKS[el] : null; return A && A.proc ? String(A.proc).toUpperCase() : "—"; }
 function _cvRender() {
     const root = typeof document !== "undefined" ? document.getElementById("convPanel") : null; if (!root) return;
@@ -150,7 +167,8 @@ function _cvRender() {
             ch("ELEMENT", _cvElLabel(f.element), _cvElLabel(CONVERT.to)) +
             ch("ITS HITS", _cvProc(f.element), "MEND: HEALS THE MOST HURT ALLY WITHIN 4 TILES BY 2% OF ITS MAXIMUM HEALTH") +
             ch("MOVES", _cvMoves(f), _cvMoves(g)) +
-            ch("EVOLVES INTO", typeof evolutionFor === "function" && evolutionFor(f) ? evolutionFor(f).name : "—", form + " (NOT IN THE GAME YET: IT WAITS AT ITS LEVEL)") +
+            (f.evolved ? ch("FORM", _cvFormName(f), _cvFormName(g))
+                       : ch("EVOLVES INTO", typeof evolutionFor === "function" && evolutionFor(f) ? evolutionFor(f).name : "—", typeof evolutionFor === "function" && evolutionFor(g) ? evolutionFor(g).name : form + " (NOT IN THE GAME YET: IT WAITS AT ITS LEVEL)")) +
             (off.length ? ch("CARDS", off.join(", "), "THEY COME OFF, BACK TO YOUR HAND") : "") +
             "</table>" +
             '<div class="cv-row"><button data-act="back">BACK</button><button data-act="convert" class="cv-go' + (armed ? " armed" : "") + '">' + (armed ? "TAP AGAIN TO CONVERT" : "CONVERT INTO BLOOM") + "</button></div></div>";
@@ -162,6 +180,6 @@ function _cvRender() {
         '<div class="cv-sub">THE MODULE FILTERS THE TOXIN OUT: A TOXIC FOLLOWER BECOMES <b style="color:' + CONVERT.bloom + '">BLOOM</b>. THE TOXIC FOLLOWERS HERE, IN YOUR SQUAD OR HOLDING THE SEWERS: PICK ONE.</div>' +
         (here.length ? '<div class="cv-strip">' + here.map((f, i) => _cvUnitHTML(f, i, { button: true, where: _cvWhere(f), why: convertWhyNot(f) })).join("") + "</div>"
                      : '<div class="cv-note">' + _cvEsc(can.why || "NO TOXIC FOLLOWER IS HERE") + "</div>") +
-        '<div class="cv-note">AN EVOLVED FOLLOWER WAITS FOR ITS CLASS\'S BLOOM FORM, AND A TECHNICIAN FOR BLOOM\'S ABILITY: NEITHER IS IN THE GAME YET.</div></div>';
+        '<div class="cv-note">AN EVOLVED MAGE BECOMES ' + CONVERT.forms.sniper + '. AN EVOLVED BRAWLER WAITS FOR ' + CONVERT.forms.brawler + ', AND A TECHNICIAN FOR BLOOM\'S ABILITY: NEITHER IS IN THE GAME YET.</div></div>';
     _cvDraw(root, here);
 }

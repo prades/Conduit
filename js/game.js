@@ -230,6 +230,15 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
         ctx.fill();
         }
 
+    } else if (el === 'blossom') {
+        // SEED SHOT (build 2026-11-08j): a glowing pink seed pointed along its flight, a soft glow round it and a short trail (every BLOOM follower's shot: the Little Shrub's, and a BLOOM Mage's
+        // before it evolves)
+        const dx = (p.vx - p.vy) * TILE_W, dy = (p.vx + p.vy) * TILE_H, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, an = Math.atan2(uy, ux), pulse = 1 + Math.sin(f * 0.5) * 0.12;
+        ctx.globalAlpha = 0.3; ctx.fillStyle = '#ff7ab8'; ctx.beginPath(); ctx.arc(sx, sy, r * 2.2 * pulse, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 0.35; ctx.strokeStyle = '#ff7ab8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx - ux * r * 1.4, sy - uy * r * 1.4); ctx.lineTo(sx - ux * r * 4, sy - uy * r * 4); ctx.stroke();
+        ctx.globalAlpha = 1; ctx.fillStyle = '#ff9ccc'; ctx.beginPath(); ctx.ellipse(sx, sy, r * 1.5, r * 0.85, an, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff0f7'; ctx.beginPath(); ctx.ellipse(sx + ux * r * 0.35, sy + uy * r * 0.35, r * 0.6, r * 0.35, an, 0, Math.PI * 2); ctx.fill();
+
     } else {
         // Fallback — plain glowing circle (predator shots, unknown element)
         ctx.fillStyle  = p.color;
@@ -1028,6 +1037,7 @@ function render() {
             if (typeof drawSerumOnTile === "function") drawSerumOnTile(obj.x, obj.y, px, py);   // a healing serum's pool (js/serum.js)
             if (typeof techDrawOnTile === "function") techDrawOnTile(obj.x, obj.y, px, py);   // a Frost Patch's ice, a Blight Spider's pool (js/techabilities.js)
             if (typeof equipAuraOnTile === "function") equipAuraOnTile(obj.x, obj.y, px, py);   // a Mage's aura ring, on the floor of its room (js/cards.js): the walls and units in front cover it
+            if (typeof drawSeedfallOnTile === "function") drawSeedfallOnTile(obj.x, obj.y, px, py);   // a Little Shrub's SEEDFALL, on the floor of its room (js/elements.js): the walls and units in front cover it
 
             // ── 3D SMOKE TILES — toxic ultimate: creeping raised slabs + single wisp ──
             for (const sE of smokeFx) {

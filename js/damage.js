@@ -61,6 +61,7 @@ const DMG_FORM = {
     rimestar:   { main: "projectile", alt: "projectile" },
     hornshell:  { main: "projectile", alt: "projectile" },
     rotshard:   { main: "projectile", alt: "elemental" },
+    shrub:      { main: "elemental",  alt: "elemental" },   // (BLOOM's Mage, build 2026-11-08j: SEED SHOT and SEEDFALL, Elemental: the owner's pick, 2026-11-08)
     hammerslug: { main: "crushing",   alt: "crushing" },
     gooproxy:   { main: "crushing",   alt: "crushing" },
     thermite:   { main: "piercing",   alt: "piercing" },
@@ -216,5 +217,6 @@ function _dmgWords(t, ptype, pm, el, em) {
     // in their 40 frames), so they stay beside the body and never climb into the name plate
     const put = (text, good) => { floatingTexts.push({ world: true, x: t.x, y: t.y, dx: 28 + String(text).length * 3.3, dy: 10 + 13 * n, text, color: good ? "#ffcc00" : "#88aaff", size: 11, life: 40, vy: -0.015 }); n++; };
     if (ptype && pm !== 1) put(DMG_LABEL[ptype] + (pm > 1 ? " WEAK!" : " RESIST"), pm > 1);
-    if (el && em !== 1) put(String(el).toUpperCase() + (em > 1 ? " WEAK!" : em === 0 ? " IMMUNE" : " RESIST"), em > 1);
+    const elName = (typeof ELEMENTS !== "undefined" && el && (ELEMENTS.find(e => e.id === el) || {}).label) || el;   // (its element's name: BLOOM's id is "blossom", build 2026-11-08j)
+    if (el && em !== 1) put(String(elName).toUpperCase() + (em > 1 ? " WEAK!" : em === 0 ? " IMMUNE" : " RESIST"), em > 1);
 }

@@ -59,7 +59,7 @@ function attractStart(F) {
     }
     if (spots.length > 900) for (let i = spots.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [spots[i], spots[j]] = [spots[j], spots[i]]; } spots.length = Math.min(spots.length, 900);
     _at = { F, cells, byRoom, spots, cam: { x: crystal.x + 2, y: crystal.y + 1 }, idle: null, idleAt: 0, crowd: [], rooms: new Set(), last: null, f0: frame, ready: false,
-            forms: Object.values(EVOLUTIONS).filter(d => !d.legacy && !d.aside && d.role),   // (not the Static Orb, set aside since build 2026-11-08a)
+            forms: Object.values(EVOLUTIONS).filter(d => !d.legacy && !d.aside && d.role && !(typeof ELEMENTS !== "undefined" && (ELEMENTS.find(x => x.id === d.element) || {}).converted)),   // (not the Static Orb, set aside since build 2026-11-08a; not BLOOM's Little Shrub, build 2026-11-08j: BLOOM is never found, only converted)
             next: frame + ATTRACT.first, spawned: 0, searched: 0, gone: 0 };   // (the last three are counts, for the tests)
     _atSweep(); gfxLow = true; smoke.length = 0; fragments.length = 0;
     const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth, vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;

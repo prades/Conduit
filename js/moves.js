@@ -32,6 +32,8 @@ const MOVES = {
     magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        windup: 20, fn: f => magmaVent(f) },
     // the Rotshard's second move, picked on its INFO (the owner, 2026-11-07: "Short lure"; js/evolution.js rottenDecoy)
     rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      windup: 14, fn: f => rottenDecoy(f) },
+    // the Little Shrub's alternate (BLOOM's Mage, build 2026-11-08j; js/evolution.js seedfall): its wind-up is the agent's, provisional (HEXFIRE's and STATIC VORTEX's)
+    seedfall:          { id: "seedfall",          name: "SEEDFALL",          windup: 5.5, fn: f => seedfall(f) },
     // BASH (build 2026-11-07ss; the owner: "Ram and knock back", then "BASH for now" as the second attack of the eight forms the design notes give none, and of every follower before it
     // evolves: js/evolution.js bash). `close`: a Mage locked on it closes in to use it (js/npc.js), as a Brawler does.
     bash:              { id: "bash",              name: "BASH",              windup: 4, close: true, fn: f => bash(f) },
@@ -92,5 +94,5 @@ function followerAltSet(f, id) {
 // A move's reach (tiles): it winds up only with an enemy it can see this close, the reach the move itself looks in
 const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
     corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, pinball: () => PIN_RANGE,
-    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, bash: () => BASH_RANGE, capacitor_discharge: () => CAP_REACH };
+    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, seedfall: () => SEEDFALL_RANGE, bash: () => BASH_RANGE, capacitor_discharge: () => CAP_REACH };
 function moveReach(id) { try { const r = MOVE_REACH[id] ? MOVE_REACH[id]() : 0; return r > 0 ? r : 5; } catch (e) { return 5; } }

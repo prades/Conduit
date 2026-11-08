@@ -25,7 +25,7 @@ function nestQueenLevel() { const S = typeof bossState === "function" ? bossStat
 // ── the forms a test follower can take: every element's three classes, and every evolved form (not the retired ones) ──
 function nestForms() {
     const out = [], roleName = r => r === "sniper" ? "MAGE" : r === "camper" ? "TECHNICIAN" : "BRAWLER";
-    for (const id of Object.keys(typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS : {})) { const d = EVOLUTIONS[id]; if (!d || d.legacy || !d.element || !d.role) continue; out.push({ id, element: d.element, role: d.role, evolved: id, name: d.name + " · " + String(d.element).toUpperCase() + " " + roleName(d.role) }); }
+    for (const id of Object.keys(typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS : {})) { const d = EVOLUTIONS[id]; if (!d || d.legacy || !d.element || !d.role) continue; out.push({ id, element: d.element, role: d.role, evolved: id, name: d.name + " · " + String(((typeof ELEMENTS !== "undefined" && ELEMENTS.find(e => e.id === d.element)) || {}).label || d.element).toUpperCase() + " " + roleName(d.role) }); }   // (its element's name: BLOOM's id is "blossom")
     for (const el of (typeof ELEMENTS !== "undefined" ? ELEMENTS : [])) for (const role of ["brawler", "sniper", "camper"]) if (!(el.converted && role === "camper")) out.push({ id: el.id + ":" + role, element: el.id, role, evolved: null, name: el.label + " " + roleName(role) + " (UNEVOLVED)" });
     return out;
 }
