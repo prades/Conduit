@@ -106,6 +106,8 @@ const JOBS = [
   { id: 'egg_flux', form: 835, color: '#9933ff', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   { id: 'egg_core', form: 835, color: '#00ccaa', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   { id: 'egg_toxic', form: 835, color: '#66ff66', idleAct: 0, action: [0, 1.0], brightCrystal: true },
+  // BLOOM's egg (build 2026-11-08i): a toxic follower converted at the purification module (js/conversion.js) is BLOOM; unevolved, it is this egg in BLOOM's pink. Cropped as the others (js/hdsprites.js HD_BOX.egg).
+  { id: 'egg_blossom', form: 835, color: '#ff7ab8', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   // The same egg before it has an element: the wild recruit you have not converted yet (grey crystal).
   { id: 'egg_neutral', form: 835, color: '#b4bcc8', idleAct: 0, action: [0, 1.0], brightCrystal: true },
   // Nos. 801-803, the follower egg candidates (element colour here: fire); Nos. 811-813, the player candidates (circuit teal).
@@ -269,7 +271,8 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
 </script></body></html>`;
 
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
+  const OLD_CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';   // (the browser the sheets were first baked with; any Chromium Playwright has will do when it is not there)
+  const b = await chromium.launch(Object.assign(fs.existsSync(OLD_CHROME) ? { executablePath: OLD_CHROME } : {}, { args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] }));
   const p = await b.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.route('**/three.min.js', r => r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(THREE_DIR, 'package/build/three.min.js'), 'utf8') }));

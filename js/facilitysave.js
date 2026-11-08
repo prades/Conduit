@@ -151,6 +151,7 @@ function followerRecord(a) {
     return {
         element: a.element || "fire", personality: a.personality, combatTrait: a.combatTrait, naturalTrait: a.naturalTrait, perk: a.perk, stats: a.stats, role: a.role,
         uid: a.uid || null, partnerUid: a.partnerUid || null,   // its bond (js/bonds.js)
+        conv: a.convertedFrom ? { from: a.convertedFrom, at: a.convertedAt || 0 } : undefined,   // converted at the purification module: what it was (js/conversion.js); an old save has none
         base: a.base || undefined, level: a.level, xp: a.xp,   // its level (js/levels.js); one waiting to respawn carries its own
         hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // born of a bonded pair: the hp it was born with and its line (js/breeding.js)
         evolved: a.evolved || undefined, evoWait: a._evoOnLevelUp || undefined,   // js/evolution.js
@@ -186,6 +187,7 @@ function followerBuild(entry) {
     if (entry.evoWait && !npc.evolved) npc._evoOnLevelUp = true;
     if (entry.move) npc.move = entry.move; if (typeof entry.alt === "string") npc.alt = entry.alt;
     if (entry.playStyle) npc.playStyle = entry.playStyle;
+    if (entry.conv && typeof entry.conv.from === "string") { npc.convertedFrom = entry.conv.from; npc.convertedAt = Number(entry.conv.at) || 0; }   // (what it was before its conversion: js/conversion.js)
     if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
     if (entry.special && typeof equipSpecialRestore === "function") equipSpecialRestore(npc, entry.special);   // its SPECIAL ATTACK card
     if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base below already carries what it was born with; nothing is added again

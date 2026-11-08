@@ -21,7 +21,7 @@ function _hdBlit(g, img, box, col, row, ax, ay, s) {
     g.drawImage(img, col * box.cw, row * box.ch, box.cw, box.ch, ax - (an[0] - box.ox) * s, ay - (an[1] - box.oy) * s, box.cw * s, box.ch * s);
 }
 const HD_PLAYER_SCALE = 0.82, HD_EGG_SCALE = 1.0;
-const HD_ELEMENTS = ["fire", "electric", "ice", "flux", "core", "toxic"];
+const HD_ELEMENTS = ["fire", "electric", "ice", "flux", "core", "toxic", "blossom"];   // (blossom: BLOOM, js/config.js; its egg baked in build 2026-11-08i)
 const HD_EGG_CORE_Y = 73;          // where the crystal sits in an egg cell (the glow goes there)
 const _hdImgs = {};
 

@@ -146,7 +146,7 @@ function measure(w, h, query, seed) {
             });
             await check('the pop-out: over the sheet, titled with the card, only the followers it fits (the toxic ones are not shown), each with its slots: SWITCH on the full one, EQUIP HERE on the empty one', () => {
                 same(T.pop.open, true, 'open'); same(T.pop.sheet, true, 'the sheet closed'); same(T.pop.title, 'EQUIP NOW · TEST · FIRE', 'the title'); same(T.pop.n, T.pop.expect, 'the tiles'); same(T.pop.fits, true, 'a tile it does not fit'); ok(T.pop.n >= 2 && T.pop.others >= 1, 'the set-up: ' + T.pop.n + ' / ' + T.pop.others);
-                same(JSON.stringify(T.s1), JSON.stringify([['CARD 1', 'SWITCH ⇄', false, 'full'], ['CARD 2', 'SWITCH ⇄', false, 'full']]), 'the full follower\'s slots'); same(T.full1.join(), 'TEST · BRAWLER,TEST · CRUSTACEAN', 'the cards it wears, as mini cards');
+                same(JSON.stringify(T.s1), JSON.stringify([['CARD 1', 'SWITCH ⇄', false, 'full'], ['CARD 2', 'SWITCH ⇄', false, 'full']]), 'the full follower\'s slots'); same(T.full1.join(), 'TEST · BRAWLER,TEST · SPINE-LEGGED', 'the cards it wears, as mini cards');
                 same(JSON.stringify(T.s2), JSON.stringify([['CARD 1', 'EQUIP HERE', false, 'open'], ['CARD 2', 'EQUIP HERE', false, 'open']]), 'the empty follower\'s slots'); ok(/^TAP A SLOT/.test(T.pop.note) && /GOES INTO YOUR HAND/.test(T.pop.note), 'the note: ' + T.pop.note);
             });
             await check('EQUIP HERE puts it on (into the hand first); the pop-out stays open, says so, and the slot reads WORN ✓ (the other: ALREADY ON ITS OTHER SLOT)', () => {
@@ -154,7 +154,7 @@ function measure(w, h, query, seed) {
                 same(JSON.stringify(T.put.s2), JSON.stringify([['CARD 1', 'WORN ✓', true, 'worn'], ['CARD 2', 'ALREADY ON ITS OTHER SLOT', true, 'off']]), 'the slots after'); same(T.put.note, 'TEST · FIRE ON · ' + T.name2 + ' · CARD 1', 'what it says'); same(T.put.said, true, 'the note lit');
             });
             await check('SWITCH puts it in place of the card in that slot: that card comes off and stays in the hand', () => {
-                same(T.sw.f1.join(), 'test_brawler,test_fire', 'the slots'); same(T.sw.crustHand, true, 'the card switched off'); same(T.sw.crustWorn, 0, 'still worn'); ok(/^TEST · CRUSTACEAN OFF · TEST · FIRE ON · /.test(T.sw.note), 'what it says: ' + T.sw.note);
+                same(T.sw.f1.join(), 'test_brawler,test_fire', 'the slots'); same(T.sw.crustHand, true, 'the card switched off'); same(T.sw.crustWorn, 0, 'still worn'); ok(/^TEST · SPINE-LEGGED OFF · TEST · FIRE ON · /.test(T.sw.note), 'what it says: ' + T.sw.note);
                 same(T.sw.s1[1][1], 'WORN ✓', 'the slot after'); same(T.sw.s1[0][1], 'ALREADY ON ITS OTHER SLOT', 'the other slot');
             });
             await check('Escape closes the pop-out and leaves the sheet; the stage says who wears it now', () => {

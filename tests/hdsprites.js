@@ -15,7 +15,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
 (async () => {
     group('THE SHEETS');
-    const NAMES = ['player', 'player_angry', 'egg_fire', 'egg_electric', 'egg_ice', 'egg_flux', 'egg_core', 'egg_toxic', 'egg_neutral'];
+    const NAMES = ['player', 'player_angry', 'egg_fire', 'egg_electric', 'egg_ice', 'egg_flux', 'egg_core', 'egg_toxic', 'egg_blossom', 'egg_neutral'];   // (egg_blossom: BLOOM's, build 2026-11-08i)
     for (const n of NAMES) check(n + '.png is a 16 x 8 sheet of cropped cells (HD_BOX), a fraction of the 10 MB the full cells decode to', () => {
         const b = fs.readFileSync(path.join(ROOT, 'img/hd/' + n + '.png')), box = n.indexOf('egg') === 0 ? { cw: 62, ch: 85 } : { cw: 92, ch: 105 };
         same(b.slice(1, 4).toString(), 'PNG', 'signature'); same(b.readUInt32BE(16), box.cw * 16, 'width'); same(b.readUInt32BE(20), box.ch * 8, 'height'); ok(b.readUInt32BE(16) * b.readUInt32BE(20) * 4 < 6e6, "decoded size over 6 MB");

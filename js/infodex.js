@@ -25,6 +25,7 @@ const _IP_ATTACKS = {
     flux:     { physical: "Volatility Aura", special: "Singularity",   ult: "Disorient",    proc: "disorient" },
     core:     { physical: "Shield Bash",     special: null,            ult: null,           proc: "knockback" },   // (Radiant Pulse and Shield Grant shielded the followers: gone with the followers' shield)
     toxic:    { physical: "Smoke Form",      special: "Toxic Cloud",   ult: "Smoke Screen", proc: "defense shred" },
+    blossom:  { physical: null,              special: null,            ult: null,           proc: "mend" },   // BLOOM (build 2026-11-08i): no moves designed yet; every hit MENDS (js/elements.js elementMend)
 };
 const _ipElName = (id) => { const e = ELEMENTS.find(x => x.id === id); return e ? e.label.toUpperCase() : String(id || "?").toUpperCase(); };
 
@@ -105,6 +106,15 @@ function infoEntries() {
         [["BEATS", "×" + mult("fire", "flux"), "#7fffb0"], ["BEATEN BY", "×" + mult("flux", "fire"), "#ff8a7a"], ["ICE ON CORE", mult("ice", "core") === 0 ? "no damage" : "×" + mult("ice", "core"), "#99ddff"]]);
     ELEMENTS.forEach(el => {
         const a = _IP_ATTACKS[el.id] || {}, proc = typeof ELEMENT_PROC_CHANCE !== "undefined" ? ELEMENT_PROC_CHANCE[el.id] : undefined;
+        if (!strong[el.id]) {   // BLOOM (build 2026-11-08i; docs/CONVERSION.md): outside the two triangles, made only by conversion, its hits MEND
+            const M = typeof ELEMENT_MEND !== "undefined" ? ELEMENT_MEND : { radius: 4, share: 0.02 };
+            add("el_" + el.id, "elements", el.label.toUpperCase(), el.color, "Outside the triangles; its hits mend",
+                ["A " + el.label.toUpperCase() + " follower stands outside the two triangles: it hits every element for ×" + mult(el.id, "fire") + ", and every element hits it for ×" + mult("fire", el.id) + ".",
+                 "It is never found: no recruit, egg or creature is " + el.label.toUpperCase() + ". The purification module in the Sewers, once it has run, converts a toxic follower into one (its level, XP, bond and stats stay).",
+                 "Its hits MEND: each heals the most hurt of your followers within " + M.radius + " tiles by " + Math.round(M.share * 100) + "% of its maximum health. It has no element move or ultimate yet."],
+                [["AGAINST ALL", "×" + mult(el.id, "fire")], ["MEND", Math.round(M.share * 100) + "% · " + M.radius + " tiles", el.color], ["FOUND", "never: converted", UI_GOLD]]);
+            return;
+        }
         add("el_" + el.id, "elements", el.label.toUpperCase(), el.color, "Beats " + _ipElName(strong[el.id]).toLowerCase() + ", weak to " + _ipElName(weak[el.id]).toLowerCase(),
             ["A " + el.label.toUpperCase() + " follower hits " + _ipElName(strong[el.id]) + " for ×" + mult(el.id, strong[el.id]) + " and " + _ipElName(weak[el.id]) + " for ×" + mult(el.id, weak[el.id]) + (el.id === "ice" ? ", and does nothing to CORE" : "") + ".",
              "Its physical attack is " + (a.physical || "—") + " (1 WILL)" + (a.ult ? ", and its ultimate, fired by a double-tap once the bar is full, is " + a.ult + "." : ". It has no ultimate for now.") + " Its hits can " + (a.proc || "proc") + " the target. (Elements have no special attack: a follower's attacks are its primary, an alternate, a card's special attack and its ultimate.)"],

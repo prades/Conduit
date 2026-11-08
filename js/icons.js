@@ -48,6 +48,12 @@ const ICONS = {
         <circle cx="14.6" cy="13" r="1.6" fill="${_ICON_DARK}" opacity="0.55"/>
         <circle cx="14.2" cy="18.4" r="1.1" fill="${_ICON_DARK}" opacity="0.55"/>
         <path d="M8.2 10.6 L10.6 7.2" stroke="#fff" stroke-width="1.4" opacity="0.8"/>`,
+    // BLOOM (PROVISIONAL, build 2026-11-08i: its icon is the owner's to choose): three square crystals, the middle one the tallest, as on the coral crab's back
+    bloom: c => `
+        <path d="M9.4 22 L9.4 7.4 L12 2 L14.6 7.4 L14.6 22 Z" fill="${c}"/>
+        <path d="M3.6 22 L3.6 12.4 L5.9 8.6 L8.2 12.4 L8.2 22 Z" fill="${c}" opacity="0.85"/>
+        <path d="M15.8 22 L15.8 13.8 L18.1 10 L20.4 13.8 L20.4 22 Z" fill="${c}" opacity="0.85"/>
+        <path d="M12 2 L12 22" stroke="#fff" stroke-width="1" opacity="0.6"/>`,
     crystal: c => `
         <path d="M12 1.6 L18.4 8.4 L12 22.4 L5.6 8.4 Z" fill="${c}"/>
         <path d="M12 1.6 L12 22.4 L5.6 8.4 Z" fill="#fff" opacity="0.25"/>
@@ -89,7 +95,7 @@ const ICONS = {
 };
 const ICON_IDS = Object.keys(ICONS);
 // The game's ids onto the icon set.
-const ELEMENT_ICON = { fire: "fire", electric: "electric", ice: "ice", flux: "flux", core: "core", toxic: "toxic" };
+const ELEMENT_ICON = { fire: "fire", electric: "electric", ice: "ice", flux: "flux", core: "core", toxic: "toxic", blossom: "bloom" };   // (blossom: BLOOM's id, js/config.js)
 
 // The SVG markup for an icon, `size` css px square. Unknown ids draw nothing.
 function iconSVG(id, colour, size, title) {

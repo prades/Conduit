@@ -363,7 +363,8 @@ function _ccDrawFilters(box) {
     // IN SQUAD and NOT IN SQUAD are gone; an OPEN SLOT still lists who is not in the squad, and ALL clears that.
     const unlocked = typeof unlockedElements !== "undefined" ? unlockedElements : new Set(), car = ccCarousel(), cloneOk = typeof cloneAllowed !== "function" || !!cloneAllowed().ok;
     if (!cloneOk && ccFilter.kind === "clone") ccFilter.kind = null;
-    const sg = JSON.stringify(ccFilter) + "|" + unlocked.size + "|" + car + "|" + _ccFiltDD + "|" + cloneOk; if (sg === _ccFiltSig && box.firstChild) return; _ccFiltSig = sg;
+    const owned = typeof elementsOwned === "function" ? elementsOwned() : [...unlocked];   // (BLOOM once one of yours is: js/config.js)
+    const sg = JSON.stringify(ccFilter) + "|" + unlocked.size + "|" + owned.join() + "|" + car + "|" + _ccFiltDD + "|" + cloneOk; if (sg === _ccFiltSig && box.firstChild) return; _ccFiltSig = sg;
     box.textContent = "";
     const add = (label, col, on, fn) => box.appendChild(_ccBtn(label, col, on, fn, "small"));
     const gap = () => { if (car && box.lastChild && box.lastChild.classList) box.lastChild.classList.add("sep"); };   // (the carousel sets the groups apart)
@@ -376,7 +377,7 @@ function _ccDrawFilters(box) {
         box.appendChild(w);
     };
     dd("class", "CLASS", ATTACK_STYLES.map(x => ({ id: x.id, label: x.label, col: x.col })), ccFilter.role, v => { ccFilter.role = v; });
-    dd("element", "ELEMENT", (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(el => unlocked.has(el.id)).map(el => ({ id: el.id, label: el.label, col: el.color })), ccFilter.element, v => { ccFilter.element = v; });
+    dd("element", "ELEMENT", (typeof ELEMENTS !== "undefined" ? ELEMENTS : []).filter(el => owned.indexOf(el.id) >= 0).map(el => ({ id: el.id, label: el.label, col: el.color })), ccFilter.element, v => { ccFilter.element = v; });
     const spCol = typeof CARD_ART !== "undefined" && CARD_ART.species ? CARD_ART.species : {};
     dd("species", "SPECIES", (typeof EQUIP_SUBCLASSES !== "undefined" ? EQUIP_SUBCLASSES : []).map(s => ({ id: s.id, label: s.label, col: spCol[s.id] || "#cfd6dd" })), ccFilter.species, v => { ccFilter.species = v; }); gap();
     const cb = _ccBtn("CLONES", "#99ddff", ccFilter.kind === "clone", () => { ccFilter.kind = ccFilter.kind === "clone" ? null : "clone"; }, "small");

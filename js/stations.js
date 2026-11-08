@@ -34,10 +34,13 @@ const STATION_KINDS = {
     // is a BUILD (the mech bay's kind: the progress bar, walk away and it stops, nothing spent) that takes the module when it is done, and its start wakes the boss (onStart)
     analysis_bench: { name: "ANALYSIS BENCH", classes: null, verbFn: () => typeof questBenchVerb === "function" ? questBenchVerb() : "ANALYSE", canFn: () => typeof questBenchCan === "function" ? questBenchCan() : { ok: false, why: "NO QUEST" },
         use: () => typeof questBenchUse === "function" ? questBenchUse() : { ok: false, why: "NO QUEST" } },
-    purifier_mount: { name: "PURIFIER MOUNT", classes: null, build: 600, cost: [["purification_module", 1]], buildMsg: "MOUNTING THE MODULE… STAY AT THE CONSOLE", verbFn: () => typeof questMountVerb === "function" ? questMountVerb() : "INSTALL",   // (build: QUEST_PURIFY.install, js/quests.js: the archive's "about 10 seconds")
-        canFn: () => typeof questMountCan === "function" ? questMountCan() : { ok: false, why: "NO QUEST" }, onStart: () => { if (typeof questMountStart === "function") questMountStart(); },
+    // ONCE THE MODULE IS IN, the mount is the CONVERSION machine (js/conversion.js; the owner, 2026-11-08): no build, no cost; its use opens the conversion panel, with a toxic follower in the squad or holding the
+    // Sewers (convertCan says what is missing). Before, the install as it was.
+    purifier_mount: { classes: null, get name() { return _stConvert() ? "PURIFICATION MODULE" : "PURIFIER MOUNT"; }, get build() { return _stConvert() ? 0 : 600; }, get cost() { return _stConvert() ? [] : [["purification_module", 1]]; },
+        buildMsg: "MOUNTING THE MODULE… STAY AT THE CONSOLE", verbFn: () => _stConvert() ? convertVerb() : typeof questMountVerb === "function" ? questMountVerb() : "INSTALL",   // (build: the archive's 10 s install)
+        canFn: () => _stConvert() ? convertCan() : typeof questMountCan === "function" ? questMountCan() : { ok: false, why: "NO QUEST" }, onStart: () => { if (typeof questMountStart === "function") questMountStart(); },
         blockFn: () => typeof questMountBlocked === "function" ? questMountBlocked() : null,   // (the queen at the console: the build's progress holds, js/bosses.js bossInstallBlocked)
-        use: () => typeof questMountUse === "function" ? questMountUse() : { ok: false, why: "NO QUEST" } },
+        use: () => _stConvert() ? convertOpen() : typeof questMountUse === "function" ? questMountUse() : { ok: false, why: "NO QUEST" } },
     // SIDE QUEST, the void walker on the Sewers' maintenance platform (js/sidequest.js): a talk, a choice, then his shop; a station made at runtime when he appears (sqPlace), not a prop of the map
     sidequest: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqVerb === "function" ? sqVerb() : "TALK", canFn: () => typeof sqCan === "function" ? sqCan() : { ok: false, why: "NOBODY HERE" },
         use: () => typeof sqUse === "function" ? sqUse() : { ok: false, why: "NOBODY HERE" } },
@@ -91,6 +94,8 @@ function stationCan(s) {
     if (typeof k.canFn === "function") { const r = k.canFn(s); if (!r || !r.ok) return r || { ok: false, why: "NOT NOW" }; }   // (a station whose readiness is its own: the serum hood)
     return { ok: true };
 }
+// the purifier mount is the conversion machine once the module is in (js/conversion.js)
+function _stConvert() { return typeof convertReady === "function" && convertReady(); }
 function stationUse(s) {
     s = s || stationNearest(); if (!s) return { ok: false, why: "NOTHING TO USE HERE" };
     const k = STATION_KINDS[s.kind], can = stationCan(s); if (!can.ok) { invSay(can.why, false); return can; }

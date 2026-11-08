@@ -212,10 +212,10 @@ function measure(w, h) {
     });
 
     group('THE EMBLEMS (js/cardart.js CARD_ART_EMBLEMS)');
-    await check('seventeen: the five species\', the six elements\' and the six enemy races\' (js/damage.js DMG_RACE), each the approved drawing in its approved colour', () => {
-        same(J('Object.keys(CARD_ART_EMBLEMS).sort().join()'), J('CARD_ART_SPECIES.concat(CARD_ART_ELEMENTS, CARD_ART_RACES).sort().join()'), 'the emblems'); same(J('Object.keys(CARD_ART_EMBLEMS)').length, 17, 'how many');
+    await check('eighteen: the five species\', the seven elements\' and the six enemy races\' (js/damage.js DMG_RACE), each the approved drawing in its approved colour; BLOOM\'s (build 2026-11-08i) is provisional, in its pink', () => {
+        same(J('Object.keys(CARD_ART_EMBLEMS).sort().join()'), J('CARD_ART_SPECIES.concat(CARD_ART_ELEMENTS, CARD_ART_RACES).sort().join()'), 'the emblems'); same(J('Object.keys(CARD_ART_EMBLEMS)').length, 18, 'how many'); same(J('CARD_ART_EMBLEMS.blossom.col'), '#ff7ab8', 'BLOOM\'s colour');
         same(J('CARD_ART_RACES.slice().sort().join()'), J('Object.keys(DMG_RACE).sort().join()'), 'the races'); same(J('CARD_ART_ELEMENTS.slice().sort().join()'), J('ELEMENTS.map(e => e.id).sort().join()'), 'the elements');
-        for (const k of J('Object.keys(CARD_ART_EMBLEMS)')) { same(J(`cardArtEmblemPath(${JSON.stringify(k)}) === __P2.ICONS[${JSON.stringify(k)}].d`), true, k + ' is not the approved drawing'); same(J(`CARD_ART_EMBLEMS[${JSON.stringify(k)}].col`), J(`__P2.ICONS[${JSON.stringify(k)}].col`), k + '\'s colour'); }
+        for (const k of J('Object.keys(CARD_ART_EMBLEMS)').filter(k => k !== 'blossom')) { same(J(`cardArtEmblemPath(${JSON.stringify(k)}) === __P2.ICONS[${JSON.stringify(k)}].d`), true, k + ' is not the approved drawing'); same(J(`CARD_ART_EMBLEMS[${JSON.stringify(k)}].col`), J(`__P2.ICONS[${JSON.stringify(k)}].col`), k + '\'s colour'); }
         for (const sp of SPECIES) same(J(`CARD_ART_EMBLEMS[${JSON.stringify(sp)}].col`), COLOURS[sp], sp + ' is not in its species\' colour'); for (const r of RACES) same(J(`CARD_ART_EMBLEMS[${JSON.stringify(r)}].col`), '#ff8a6a', r + ' is not in the enemy colour');
     });
     await check('each is one flat shape on a 32-unit square: one path, every number of it inside the square, in one colour (its cut-outs are wound against it, so the ordinary fill leaves them open)', () => {
@@ -265,7 +265,7 @@ function measure(w, h) {
         await check('it ran', () => { ok(T, 'no result'); ok(!T.err, T.err); same((T.errs || []).length, 0, 'page errors: ' + JSON.stringify(T.errs)); });
         if (!T || T.err) continue;
         await check('every new picture is one the browser can draw: the five species card faces (300 x 420), a backdrop of each species (300 x 175), the seventeen emblems (32 x 32); the emblems\' rules set their picture and their colour', () => {
-            same(T.images.length, 5 + 5 + 17, 'pictures');
+            same(T.images.length, 5 + 5 + 18, 'pictures');
             for (const [k, s] of T.images) { ok(s && s[0] > 0, k + ' did not load'); same(s.join('x'), /^c:/.test(k) ? '300x420' : /^f:/.test(k) ? '300x175' : '32x32', k); }
             for (const sp of SPECIES) ok(new RegExp('\\.cae-' + sp + '\\{--emb:url\\("data:image/svg\\+xml,[^"]+"\\);--emc:' + COLOURS[sp] + '\\}').test(T.css), 'the rule for ' + sp + '\'s emblem');
         });

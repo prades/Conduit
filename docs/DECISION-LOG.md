@@ -2387,3 +2387,21 @@ Keeping the name Crustacean; a new subclass beside it.
 
 ### Supersedes / superseded by
 Supersedes the chart's Crustacean name and the Blight Spider's Drone tag (the owner's roster chart, 2026-10-30), and answers the Electro Skink's open subclass.
+
+## DECISION: The purification module is the conversion machine; its two pop-ups; built in stages
+- Date and build: 2026-11-08, build `2026-11-08i`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "the purification module within the sewers, after it's been installed by the player, is the place where if the player brings a toxic creature on their squad, or a toxic creature is holding the area, then the player can interact with the machine, and a new pop-up menu comes shows up, and each creature who can convert is in a roster view, and the player can scroll through and pick the one that they want to convert, and then another pop-up menu shows up and shows the stats, stat conversion, and the roster card of the new creature that would be converted into." Asked further, the owner chose "Only toxic ones there", "Same stats, show changes" and "Stages, menus first".
+
+### Decision
+- The conversion apparatus is the purification module itself, once the player has installed it (no separate apparatus).
+- It is used when a toxic follower is in the squad or holding the Sewers. Its first pop-up lists the toxic followers there, in a roster view to scroll; its second shows the one picked: its stats (unchanged, side by side), what changes, and its roster card as it would be.
+- Built in stages: first BLOOM as an element, the machine, both pop-ups, and the conversion of an unevolved toxic follower; the BLOOM forms come next.
+
+### Status
+Implemented in build `2026-11-08i` (tests/conversion.js; not playtested). The agent's readings to confirm: it converts once the module's cycle has run (the water clean), not during the queen's fight; MEND counts the BLOOM follower itself; a toxic Technician waits for REEF. Provisional: BLOOM's texture and emblem.
+
+### Alternatives
+Every toxic follower listed wherever it is; stats that change on conversion; one bigger build with SUNDEW and the coral crab; a preview only.
+
+### Supersedes / superseded by
+Supersedes, in "BLOOM's creatures ..." and `CONVERSION.md` §2 (2026-11-02), the apparatus as a separate machine beside the module, handed over when the quest is finished.

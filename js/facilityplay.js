@@ -440,7 +440,7 @@ function facilityResetState() {
     if (typeof equipReset === "function") equipReset();   // the hand of equip cards and the player's slots (the collection of unlocked cards stays: js/cards.js)
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null; if (typeof activeEmpEffect !== "undefined") activeEmpEffect = null;
     if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
-    frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(ELEMENTS.map(e => e.id)); lifetimeKills = 0;
+    frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(elementsFound()); lifetimeKills = 0;
     // (after the clock is back at 0: these count from it)
     if (typeof serumReset === "function") serumReset();   // the serum's pools and the Mutator's laboratory (js/serum.js)
     if (typeof technoReset === "function") technoReset();   // the gauntlet's charges, the arcs (js/technomancer.js)
@@ -467,7 +467,7 @@ function facilityPlayStart() {
     _fp = { F, P, cells: null, cellsP: null, edges: new Map(), paths: new Map(), gfxSaved: typeof facilityGfxSaved === "function" ? facilityGfxSaved() : null };
     if (_fp.gfxSaved === "low") gfxLow = true; else if (_fp.gfxSaved === "high") gfxLow = false;   // (a slow device was found slow before, or the player chose: js/propsprites.js)
     facilityResetState();                            // a fresh game's state
-    unlockedElements = new Set(ELEMENTS.map(e => e.id));   // ASKED: "make the crystal have access to all the colors from the beginning": all six are online from the first frame
+    unlockedElements = new Set(elementsFound());   // (BLOOM is never found: js/config.js) ASKED: "make the crystal have access to all the colors from the beginning": all six are online from the first frame
     squadMode = "all";   // the battle tool's orders (RETREAT, HOLD, COME, and the enemy card's ATTACK) go to EVERYONE until the player narrows them (WHO, or selected roster cards); there is no element to "start" with here, and the old default was whichever element came first
     _fp.cells = _fpBuildWorld(F);
     _fp.cellsP = new Map(); for (const [k, c] of _fp.cells) if (facilityWalkable(c[0], c[1], P)) _fp.cellsP.set(k, c);

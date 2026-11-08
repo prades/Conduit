@@ -6,7 +6,7 @@
 
 // The build this file belongs to — the same as window.__PAGE_BUILD and the
 // ?v= on every script tag in game.html (the boot check compares them).
-const BUILD_VERSION = "2026-11-08h";
+const BUILD_VERSION = "2026-11-08i";
 
 // ── GLOBAL ERROR DISPLAY ──────────────────────────────────
 // Lives in game.html (_showError), before any file loads. This file used to
@@ -20,11 +20,18 @@ const ELEMENTS = [
     { id:"ice",      label:"ICE",      color:"#99ddff" },
     { id:"flux",     label:"FLUX",     color:"#9933ff" },
     { id:"core",     label:"CORE",     color:"#00ccaa" },
-    { id:"toxic",    label:"TOXIC",    color:"#66ff66" }
+    { id:"toxic",    label:"TOXIC",    color:"#66ff66" },
+    // BLOOM, the seventh (docs/CONVERSION.md; build 2026-11-08i): life-giving, the toxin filtered out. Its id is "blossom" ("bloom" is the retired BUNKER BLOOM form's, js/evolution.js).
+    // `converted`: it only ever comes from the purification module's conversion (js/conversion.js): never a recruit, an egg, a post or a creature (elementsFound, below).
+    { id:"blossom",  label:"BLOOM",    color:"#ff7ab8", converted: true }
 ];
+// the elements a follower or a creature can be found or made with (every one but BLOOM): the pool of every random pick (js/helpers.js, js/npc.js, js/clone.js modulationPick)
+function elementsFound() { return ELEMENTS.filter(e => !e.converted).map(e => e.id); }
+// the elements to filter your followers by (the roster's ELEMENT drop-down): every element found, and BLOOM once one of yours is BLOOM
+function elementsOwned() { return ELEMENTS.filter(e => !e.converted || (typeof followers !== "undefined" && followers.some(f => f && !f.dead && f.isFollower && f.element === e.id))).map(e => e.id); }
 // Every element is online from the start (ASKED: "make the crystal have access to all the colors from the beginning"): a follower is made of any of the six
 // (js/clone.js modulationPick), and a creature carries one too (the type chart runs on every fight: js/elements.js getElementMultiplier, js/helpers.js applyDamage).
-let unlockedElements = new Set(ELEMENTS.map(e => e.id));
+let unlockedElements = new Set(elementsFound());
 // Every creature killed this game (js/helpers.js counts it).
 let lifetimeKills = 0;
 

@@ -36,13 +36,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(new Set(E.map(e => e.id)).size, E.length, 'duplicate ids');
         for (const e of E) { ok(e.name && e.sub && e.text.length && e.text.every(t => t.length > 20), e.id + ' is thin'); ok(cats.includes(e.cat), e.id + ' has category ' + e.cat); }
     });
-    check('four tabs — ALLIES, ENEMIES, ELEMENTS, RULES — and every one has something in it; the elements tab lists the wheel and the six', () => {
+    check('four tabs — ALLIES, ENEMIES, ELEMENTS, RULES — and every one has something in it; the elements tab lists the wheel and the seven (the six of the triangles and BLOOM, build 2026-11-08i)', () => {
         same(J('INFO_CATS.map(c => c.id)').join(), 'allies,foes,elements,rules', 'the tabs');
         const E = J('infoEntries()');
         for (const c of ['allies', 'foes', 'elements', 'rules']) ok(E.some(e => e.cat === c), c + ' is empty');
         openIndex(); run(`_infoCat = 'elements'`);
         let navs = 0; for (let n = 0; n < 8; n++) { run(`_infoPageNo = ${n}`); const L = J('_ipLayout()'); if (n >= L.pages) break; navs += L.placed.filter(p => p.it.k === 'nav').length; }   // (the list may run to a second page on a phone)
-        same(navs, 7, 'the wheel and the six elements');
+        same(navs, 8, 'the wheel and the seven elements');
         for (const id of J('ELEMENTS.map(e => e.id)')) ok(E.some(e => e.id === 'el_' + id && e.cat === 'elements'), 'no entry for ' + id);
         run('closeInfoPanel(); _infoPageNo = 0');
     });
@@ -57,8 +57,10 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(rows('relays').some(r => r === 'RELAY NODES ' + run('_fp.F.relays.length')), 'the relay count');   // (relays are small wall nodes since build 2026-11-07qq: the junction turns them all on)
         ok(rows('crystal').some(r => r.includes(run('crystal.maxHealth') + ' HP')), 'the Crystal\'s health');
     });
-    check('the element entries say what each beats and is beaten by, as the game plays it', () => {
-        for (const id of J('ELEMENTS.map(e => e.id)')) {
+    check('the element entries say what each beats and is beaten by, as the game plays it; BLOOM\'s says it is outside the triangles (×1 both ways), never found, and that its hits mend', () => {
+        { const rows = J(`infoEntry('el_blossom').rows`).map(r => r.join(' ')), text = J(`infoEntry('el_blossom').text`).join(' ');
+          ok(rows.some(r => r === 'AGAINST ALL ×1'), 'BLOOM\'s match-ups: ' + rows.join(' | ')); ok(rows.some(r => /^MEND 2% · 4 tiles/.test(r)), 'its MEND'); ok(/never found/.test(text) && /purification module/.test(text), 'how it is made'); }
+        for (const id of J('ELEMENTS.filter(e => !e.converted).map(e => e.id)')) {
             const rows = J(`infoEntry('el_${id}').rows`), beats = rows.find(r => r[0] === 'BEATS'), weak = rows.find(r => r[0] === 'WEAK TO');
             ok(beats && weak, id + ' has no matchups');
             ok(run(`getElementMultiplier(${JSON.stringify(id)}, ${JSON.stringify(beats[1].toLowerCase())})`) > 1, id + ' does not beat ' + beats[1]);

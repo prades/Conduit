@@ -724,6 +724,20 @@ const FORM_ULTIMATES = {
     } },
 };
 // The Ultimate a follower fires: its form's own, else its element's (null: none, a core form without its own)
+// BLOOM's MEND (docs/CONVERSION.md §2, "Its status, MEND"; build 2026-11-08i): every hit a BLOOM follower lands heals the most hurt of your followers within 4 tiles by 2% of that one's maximum
+// health (js/helpers.js applyDamage calls it). "The most hurt": the lowest share of its health left; the BLOOM follower itself counts, being one of yours (the agent's reading of the approved
+// words, docs/OPEN-QUESTIONS.md). A follower at full health is passed over; none hurt nearby, no heal.
+const ELEMENT_MEND = { radius: 4, share: 0.02 };
+function elementMend(src) {
+    if (!src || src.dead || src.element !== "blossom" || src.team !== "green" || typeof followers === "undefined") return 0;
+    let best = null, low = 1;
+    for (const a of followers) {
+        if (!a || a.dead || a.team !== "green" || !(a.maxHealth > 0) || !(a.health < a.maxHealth)) continue;
+        if (Math.hypot(a.x - src.x, a.y - src.y) > ELEMENT_MEND.radius) continue;
+        const k = a.health / a.maxHealth; if (k < low) { low = k; best = a; }
+    }
+    return best && typeof healUnit === "function" ? healUnit(best, best.maxHealth * ELEMENT_MEND.share, src) : 0;
+}
 function followerUltimate(a) { if (!a) return null; return (a.evolved && FORM_ULTIMATES[a.evolved]) || FOLLOWER_ULTIMATES[a.element] || null; }
 // FIRE A FOLLOWER'S ULTIMATE NOW (build 2026-11-07ss; the owner: "access to use them"): its squad card's ULTIMATE (js/party.js) and a double-tap on it (js/input.js) both come here. A bonded pair, both full
 // and close, fire the DUO ultimate (js/bonds.js). True when one went off (its charge spent); an Ultimate that found nothing to act on (no enemy for an eruption) keeps its charge.

@@ -1,8 +1,8 @@
 # The conversion apparatus and BLOOM, the seventh element (and MAGNETIC, electric's conversion: section 13)
 
-- **Status:** Designed (the owner's rules of 2026-11-02). **The breeding draws are implemented** in build `2026-11-02f` (Build C of `NEXT-UPDATE.md`): an offspring's element is drawn between its parents' current elements and its class among the three. The apparatus, BLOOM and conversion are not implemented. Open: section 11. **MAGNETIC**, electric's conversion (today's electric Brawler becoming the MAGNETIC Brawler), is the owner's direction of 2026-11-07, not designed in detail and not built: section 13.
+- **Status:** Designed (the owner's rules of 2026-11-02, and 2026-11-08's for the machine). **The breeding draws are implemented** in build `2026-11-02f` (Build C of `NEXT-UPDATE.md`): an offspring's element is drawn between its parents' current elements and its class among the three. **The first stage of the conversion is implemented** in build `2026-11-08i`: BLOOM as an element (never found, ×1 both ways, MEND), the purification module as the conversion machine, its two pop-ups, and the conversion of an unevolved toxic Brawler or Mage (section 9). Not implemented: BLOOM's forms (SUNDEW, the coral crab, the lotus lantern), REEF, BLOOM's half chance in breeding, BLOOM's cards. Open: section 11. **MAGNETIC**, electric's conversion (today's electric Brawler becoming the MAGNETIC Brawler), is the owner's direction of 2026-11-07, not designed in detail and not built: section 13.
 - **Owner:** User (creative direction); agent (implementation support)
-- **Last updated:** 2026-11-07 (section 13)
+- **Last updated:** 2026-11-08 (build `2026-11-08i`: the conversion's first stage)
 - **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. The breeding draws are code since build `2026-11-02f` (that branch); nothing else is.
 - **Related docs:**
   - `FOLLOWER-PROGRESSION.md` §2 (breeding)
@@ -60,8 +60,13 @@ The owner chose these in prompts. The names are working names; the bodies are to
   - the coral crab: spine-legged (it was crustacean), −1.
 
 ### The conversion apparatus
-- **Where:** in the Sewers, beside the purification module at the head of the sump.
-- **How it is got:** a free reward for finishing the Sewers' purification quest (the purification module installed and the quest done).
+- **It is the purification module itself** (the owner, 2026-11-08: "the purification module within the sewers, after it's been installed by the player, is the place where if the player brings a toxic creature on their squad, or a toxic creature is holding the area, then the player can interact with the machine"). *(Superseded: a separate apparatus beside the module, handed over free when the quest is finished, 2026-11-02.)*
+- **When:** once the player has installed the module at the console and its cycle has run (the water clean: the quest's `installedAt` and `purifiedAt`). While the cycle runs, during the queen's fight, the mount still says THE MODULE IS RUNNING. *(The agent's reading of "after it's been installed", build `2026-11-08i`: to confirm.)*
+- **Who can use it:** the player, when a toxic follower is in the squad or holding the Sewers (posted there).
+- **Using it** (the owner's flow, 2026-11-08):
+  1. The player interacts with the machine: a pop-up opens with a roster view of the toxic followers that are there (in the squad or holding the Sewers; the owner chose "Only toxic ones there"). The player scrolls through them and picks one.
+  2. A second pop-up shows that follower's stats, the stat conversion, and the roster card of the creature it would become. The stats do not change (the owner chose "Same stats, show changes"): they are shown side by side, before and after, with what does change marked: its element (toxic to BLOOM), its trait (its toxic status to MEND), its form, its moves and its ability.
+- **Built in stages** (the owner chose "Stages, menus first"): first the machine, its rule of use, both pop-ups and the real conversion of an unevolved toxic follower (it becomes a BLOOM follower with MEND); an evolved one shows that its BLOOM form is not ready. SUNDEW and the coral crab come in the next builds, the lotus lantern after it is designed.
 - **It filters the toxin out** ("detox can be filtered out and create new life creatures"). With it installed:
   - **Breeding:** a bonded toxic + fire pair's offspring is BLOOM **half the time** (50%).
   - **Conversion:** a **toxic** follower can be converted into a **BLOOM** follower at the apparatus.
@@ -96,12 +101,12 @@ Until now a follower kept the type and element it was found with for good. The o
 - [ ] With it installed, a toxic + fire pair's offspring is BLOOM half the time; before it, never.
 - [x] Any other pair's offspring takes one of its parents' current elements at random (so BLOOM only if a parent is BLOOM). *(Build `2026-11-02f`; no BLOOM exists yet.)*
 - [x] An offspring's class is a random draw among the three. *(Build `2026-11-02f`.)*
-- [ ] A toxic follower converted at the apparatus becomes BLOOM, for free, keeping its level, XP, bond and stats. It takes its class's BLOOM form if evolved; its toxic cards come off. It stays BLOOM through respawns, saves and loads.
-- [ ] The apparatus is handed over, free, when the purification quest is finished, and sits beside the purification module.
-- [ ] BLOOM never comes from a recruit, a post's egg or an enemy.
-- [ ] A BLOOM hit sets MEND: the most hurt ally nearby is healed a little. BLOOM is ×1 against every element and every element ×1 against it.
+- [ ] A toxic follower converted at the apparatus becomes BLOOM, for free, keeping its level, XP, bond and stats. It takes its class's BLOOM form if evolved; its toxic cards come off. It stays BLOOM through respawns, saves and loads. *(Build `2026-11-08i`: done for an unevolved toxic Brawler or Mage, at the purification module; an evolved one and a Technician wait.)*
+- [x] ~~The apparatus is handed over, free, when the purification quest is finished, and sits beside the purification module.~~ *(Superseded 2026-11-08: the purification module itself converts, once installed and run; build `2026-11-08i`.)*
+- [x] BLOOM never comes from a recruit, a post's egg or an enemy. *(Build `2026-11-08i`: `elementsFound`, the pool of every random pick, leaves it out.)*
+- [x] A BLOOM hit sets MEND: the most hurt ally nearby is healed a little. BLOOM is ×1 against every element and every element ×1 against it. *(Build `2026-11-08i`.)*
 - [ ] Pack 1 deals BLOOM's three element cards only once the apparatus is in. Side Quest sells the BLOOM roles from then on.
-- [ ] Saves keep the apparatus's state and every converted follower; old saves load unchanged.
+- [x] Saves keep the apparatus's state and every converted follower; old saves load unchanged. *(Build `2026-11-08i`: the module's state is the quest's; a follower's element and what it was converted from are saved.)*
 
 ## 4. Non-goals
 
@@ -140,13 +145,23 @@ Until now a follower kept the type and element it was found with for good. The o
 
 - [ ] Seeded: of 1,000 toxic + fire offspring with the apparatus, about half are BLOOM; without it, none.
 - [x] Seeded: an ordinary pair's offspring takes each parent's element about half the time, and each class about a third of the time. *(tests/followerprog.js, 600 seeded offspring, build `2026-11-02f`.)*
-- [ ] A converted follower is BLOOM after a save and a load; an old save loads with nothing changed.
+- [x] A converted follower is BLOOM after a save and a load; an old save loads with nothing changed. *(tests/conversion.js, build `2026-11-08i`.)*
 - [x] The existing breeding tests (price, double tap, stats, provenance) still pass, with the element and class rule updated. *(Build `2026-11-02f`.)*
 
 ## 9. Implementation notes
 
 - **The breeding draws** (build `2026-11-02f`): js/breeding.js `breedElement(a, b, draw)` (under 0.5 the first parent's element, else the second's) and `breedClass(draw)` (an even draw over `FOLLOWER_TYPE_ORDER`). `breedMake(f, rnd)` takes every draw from one source, in the order element, class, then the stats' variations, so a test's seeded `rnd` gives the same offspring's element and class every time. The lead-parent rule (`breedLead`, `breedType`) is gone.
-- **Not implemented:** the apparatus, BLOOM, conversion, and BLOOM's half chance in the element draw. When BLOOM comes, the element draw is where it goes.
+- **BLOOM and the conversion's first stage (build `2026-11-08i`):**
+  - **The element:** js/config.js `ELEMENTS` has BLOOM (id `blossom`, label BLOOM, `#ff7ab8`, `converted: true`); `elementsFound()` is every element but BLOOM and fills `unlockedElements`, the pool of every random pick (recruits, eggs, creatures), so BLOOM is never found. Outside the triangles it is ×1 both ways (js/elements.js, no table entry). An unevolved follower is named by its element's label (js/levels.js `unitTypeLabel`: BLOOM BRAWLER).
+  - **MEND** (js/elements.js `elementMend`, `ELEMENT_MEND` radius 4, share 0.02; called from js/helpers.js `applyDamage` on any damaging hit by a BLOOM follower): the most hurt of your followers within 4 tiles, by the lowest share of health left, the BLOOM follower itself included (*the agent's reading of "the most hurt ally": to confirm*); a follower at full health is passed over.
+  - **What an unevolved BLOOM follower has:** a plain hit (no element move: js/combat.js skips an element with none), no Ultimate, and it does not evolve while its class's BLOOM form is not in the game (js/evolution.js `evolutionFor` finds none: it waits at its level). The index (js/infodex.js) has a BLOOM entry. *Its element moves and Ultimate are not designed.*
+  - **Its egg:** an unevolved BLOOM follower is the follower egg (the clear glass egg on dark scythe legs) with BLOOM's pink crystal inside: `img/hd/egg_blossom.png`, baked from design No. 835 in `#ff7ab8` (design/evolutions/bake.js `egg_blossom`) and cropped as the others (js/hdsprites.js `HD_BOX.egg`; the toxic egg baked and cropped the same way matches the shipped sheet pixel for pixel).
+  - **The art (PROVISIONAL):** a card texture of faint square pink crystals, an emblem of three square crystals (js/cardart.js) and an icon of the same (js/icons.js `bloom`), drawn after the coral crab's crystals (No. 914); BLOOM's texture, crystal and icon are still the owner's to choose (section 11, item 8).
+  - **The roster's ELEMENT filter** offers BLOOM once one of your followers is BLOOM (js/config.js `elementsOwned`); the battle tool's element chips (a phone's WHO row) keep the six found.
+  - **The machine:** js/stations.js `purifier_mount`: once `convertReady()` (the module installed and its cycle run), it is the PURIFICATION MODULE: no build, no cost, its verb CONVERT A TOXIC FOLLOWER INTO BLOOM, usable with a toxic follower in the squad or holding the Sewers (`convertCan`), its use opening the panel (`convertOpen`).
+  - **The panel** (js/conversion.js, a DOM panel `#convPanel`, styled in game.html): pop-up 1, a sideways-scrolling strip of the toxic followers there (`convertHere`), each its picture on its backdrop, its name, level, element and where it is; one that cannot convert yet dimmed with why (`convertWhyNot`: an evolved one, ITS BLOOM FORM IS NOT READY; a Technician, THE BLOOM TECHNICIAN'S ABILITY IS NOT READY). Pop-up 2, for the one picked: its card NOW and AFTER (BLOOM's colour and backdrop), its numbers side by side (the same), and the changed rows marked in pink: ELEMENT, ITS HITS (DEFENSE SHRED to MEND), MOVES, EVOLVES INTO (its class's BLOOM form, not in the game yet), and CARDS that come off. CONVERT arms on the first tap (TAP AGAIN TO CONVERT, 3 s) and converts on the second; BACK returns to the list; it closes when you leave the Sewers.
+  - **The conversion** (`convertApply`): the element becomes BLOOM, `convertedFrom` and `convertedAt` are set (saved as `conv` in js/facilitysave.js, restored on load); level, XP, stats, health and bond stay; cards that stop fitting come off (js/cards.js `equipValid`); the save is written at once.
+  - **The Ant Nest's test console** offers BLOOM's unevolved Brawler and Mage, not its Technician.
 
 Naming care: `bloom` is already the id of the retired BUNKER BLOOM form (js/evolution.js `EVOLUTIONS.bloom`, its sheet img/evo/bloom.png). PETAL BLAZE's numbers are the `BLOOM_*` constants. The element's id and its constants must not collide with them.
 
@@ -155,7 +170,7 @@ Naming care: `bloom` is already the id of the retired BUNKER BLOOM form (js/evol
 | Check | Result | Evidence / notes |
 |---|---|---|
 | The breeding draws (build `2026-11-02f`) | Passed | tests/followerprog.js: the draws as pure functions (the toss, the even class draw, out-of-range draws held to the ends); 600 seeded offspring of a fire Brawler and an ice Mage (300 ± 45 of each element, nothing else; 200 ± 40 of each class; the same seed, the same sequence); the act with the draw injected |
-| The apparatus, BLOOM, conversion | Not run | not built |
+| BLOOM and the conversion's first stage (build `2026-11-08i`) | Passed | tests/conversion.js: BLOOM in the list and never found (300 followers, 300 creature draws); ×1 both ways; its name, no Ultimate, no evolution; MEND (the most hurt within 4 tiles by 2%, itself counted, the far and the whole passed over, a fire hit none); the mount before and after (name, build, cost, verb), its use rule (squad, holding the Sewers, not another room), nothing while the cycle runs or before the install; who can and who waits; the conversion (element, what it was, everything else kept, a second refused); a toxic card off, a class card kept, the preview naming it; the save round trip and an old save; the Ant Nest's console; the art. In Chromium (a tablet and a phone): the station's use opens the panel, two cards (the Blight Spider dimmed with why), pictures drawn, the strip scrolls, the preview's two cards, rows and changes, CONVERT armed then converting, no sideways scroll. Not playtested. |
 
 ## 11. Open questions
 
@@ -184,7 +199,8 @@ Still open:
 5b. *(Answered 2026-11-08: the coral crab, drawn as a tick (No. 914), stays Crustacean, and its main attack stays Crushing.)*
 6. *(Answered 2026-11-08: the coral crab's main attack stays Crushing; REEF fires the shards.)*
 7. **BLOOM's cards' designs:** the three element cards, the aura (its Prototype extra is MEND), and the three Player roles' names and themes. The Technician's ability is REEF.
-8. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`).
+8. **BLOOM's texture, crystal and icon** (`UI-STYLE.md`). *(Build `2026-11-08i` has PROVISIONAL ones: faint square pink crystals, and three square crystals as its emblem.)*
+9. **For the conversion's first stage (build `2026-11-08i`), to confirm:** that it converts once the module's cycle has run (the water clean), not during the queen's fight; that MEND's "most hurt ally" counts the BLOOM follower itself; that a toxic Technician waits for REEF; BLOOM's element moves and Ultimate for an unevolved follower (none for now).
 
 Answered on 2026-11-08:
 - the coral crab's look: No. 914 (section 2); it stays Crustacean; its main attack stays Crushing (the owner: "914 crustacean crushing clause is fine, the player can climb to the cat walks and that's it for now");
@@ -202,6 +218,7 @@ Answered on 2026-11-02 (later):
 
 ## 12. History
 
+- 2026-11-08: build `2026-11-08i`, the conversion's first stage (the owner's choices: "Only toxic ones there", "Same stats, show changes", "Stages, menus first"): BLOOM as the seventh element, never found, ×1 both ways, MEND on every hit; the installed purification module, once its cycle has run, is the conversion machine; pop-up 1 lists the toxic followers there, pop-up 2 shows NOW and AFTER, the numbers side by side and what changes; two taps convert an unevolved toxic Brawler or Mage; an evolved one and a Technician wait, saying why. Provisional art for BLOOM. Details in section 9.
 - 2026-11-08: the owner: "Also, I want to rename the crustaceans to spine-legged to include electroskink and the toxic spider". The Crustacean subclass is renamed **Spine-legged** (build `2026-11-08h`), and the Electro Skink and the Blight Spider join it; the coral crab, chosen as a crustacean, is Spine-legged with them. Decision recorded in `DECISION-LOG.md`.
 - 2026-11-08: the owner: "I really want to make these systems really connected, like how the ice bridges can freeze any part of water, and I want the coral reef to extend to all high ground that extends over ground that the player can interact with or stand upon." So REEF's climbing is not the catwalks alone, nor marked sites: its rock and crystal let the player climb onto any high ground that extends over ground the player can stand on or interact with, wherever it is, as an ice bridge can be made on any part of water: no marked sites. On today's map (checked on the map data, build `2026-11-08g`): the catwalks' whole west edge over the arena floor (their railing, about 18 tiles), and the observation deck's edge over the arena floor (its cliff, about 9 tiles, behind the deck's glass: whether the glass lets a climb through is open). Nothing else qualifies today: Teleport Room 2 is walled in and the stair room's open side already has its stairs, the tanks' tops are not floor, and the Sewers and the Nest are on one level each (the dam stands over water, which no one stands on). Any high ground added later qualifies the same way, with no extra data. Open: who may climb, both ways or one, how long it lasts, the deck's glass, high ground over an ice bridge, and whether the rule is meant for every technician's utility. Decision recorded in `DECISION-LOG.md`.
 - 2026-11-08: the owner: "914 crustacean crushing clause is fine, the player can climb to the cat walks and that's it for now". So: **No. 914 is the coral crab's look** (approved); it stays Crustacean, though it is drawn as a tick; its main attack stays Crushing (read as "crushing claws is fine"; No. 914 has no claws, its crush drawn as the head driving down); REEF's rock and crystal let the player climb up to the catwalks, and nowhere else for now (the new high areas are dropped for now). Still open: from where under the catwalks it can be climbed, how long the rock and crystal last, REEF's numbers. Decision recorded in `DECISION-LOG.md`.
