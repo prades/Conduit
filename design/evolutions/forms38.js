@@ -221,13 +221,14 @@ function _coralTick(o) {
   // Then (the owner: "too sharp and make the head more angular"): the head cut angular, a six-sided block narrowing to its flat face, flat on top, its faces flat-shaded
   // (it was a smooth ball); the fangs blunt, six-sided, tapering to a flat tip (they were sharp round points)
   const headM = new T.MeshPhysicalMaterial({ color: o.rock, flatShading: true, metalness: 0, roughness: o.rockRough, reflectivity: 0.15 }); headM.envMapIntensity = 0.15;   // (the body's stone, cut in facets)
-  const head = G(); head.position.set(0, -o.h * 0.1, o.l * 1.05); body.add(head);   // (out from under the body's front, so its crystal stands clear)
+  const head = G(); head.position.set(0, -o.h * 0.1, o.l * 1.05 - o.headR * o.headCut[0] / 2); body.add(head);   // (its neck, where it joins the body: it droops from there (the owner: "Head droops downward", "It needs to droop downward more"))
+  const hd = G(); hd.position.z = o.headR * o.headCut[0] / 2; head.add(hd);   // (the head itself, out from under the body's front, so its crystal stands clear)
   const [hl, hb, hf, hy] = o.headCut, hg = new T.CylinderGeometry(o.headR * hf, o.headR * hb, o.headR * hl, 6, 1, false, PI / 6);   // (narrower at its face; a flat top and bottom)
-  const hm = new T.Mesh(hg, headM); hm.rotation.x = PI / 2; hm.scale.set(1, 1, hy); head.add(hm);   // (its axis forward, flattened)
+  const hm = new T.Mesh(hg, headM); hm.rotation.x = PI / 2; hm.scale.set(1, 1, hy); hd.add(hm);   // (its axis forward, flattened)
   const topY = o.headR * (hb + hf) / 2 * Math.cos(PI / 6) * hy;   // (its flat top, at its middle)
-  const [gh, gr, gt] = o.headGem, gb = o.bot * gr, hc = _gemCol32(_ccCrystal(gh, gr, gt, o.jag, 0.6, 77, gb), gem); hc.position.set(0, topY + gb * (1 - o.sink), o.headR * 0.05); head.add(hc); gems.push(hc);   // (its foot sunk in the head)
+  const [gh, gr, gt] = o.headGem, gb = o.bot * gr, hc = _gemCol32(_ccCrystal(gh, gr, gt, o.jag, 0.6, 77, gb), gem); hc.position.set(0, topY + gb * (1 - o.sink), o.headR * 0.05); hc.rotation.x = -0.5 * o.droop; hd.add(hc); gems.push(hc);   // (its foot sunk in the head)
   const [fl, fr2, ft2] = o.fang, fangGeo = new T.CylinderGeometry(fr2 * ft2, fr2, fl, 6); fangGeo.translate(0, fl / 2, 0);   // (its root at the origin, its blunt tip up: turned over below)
-  const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.32, -topY * 0.8, o.headR * hl * 0.36); head.add(pv);   // (each fang's root, under its face)
+  const jaws = [-1, 1].map(s => { const pv = G(); pv.position.set(s * o.headR * 0.32, -topY * 0.8, o.headR * hl * 0.36); hd.add(pv);   // (each fang's root, under its face)
     const f = new T.Mesh(fangGeo, headM); f.rotation.x = PI - 0.12; pv.add(f); return { s, pv }; });   // (pointing down, a touch forward)
   // THE LEGS (the owner: "the legs more like the original image, pointed steak like legs that have a shorter segment that connects to the body at 90degree"): a pair for
   // each of o.legs, each a short, straight segment out of the body's side, square to it, and at its knee the sketch's leaf-spear: a long pointed stake hanging almost
@@ -245,7 +246,7 @@ function _coralTick(o) {
     const glow = (0.85 + 0.15 * Math.sin(2 * ph)) * (1 + 0.8 * Math.max(0.5 * rear, strike));
     if (seamU) seamU.value = glow; Lt.intensity = 0.5 * glow;
     const gk = 1.2 * Math.max(0, glow - 0.85); gems.forEach(m => m.userData.relight(gk));   // (the crystals brighten with the glow)
-    head.rotation.x = 0.1 * Math.sin(ph) * calm - 0.25 * rear + 0.3 * strike;
+    head.rotation.x = o.droop + 0.1 * Math.sin(ph) * calm - 0.25 * rear + 0.3 * strike;   // (it hangs its head; it lifts it as it rears and drives it down as it bites)
     jaws.forEach(J => { J.pv.rotation.z = J.s * ((0.12 + 0.05 * Math.sin(ph * 2)) * calm + 0.45 * rear - 0.3 * strike); });   // (the fangs splay open, then clamp together)
     legs.forEach(L => { const ld = L.ld, lift = Math.max(0, Math.sin(2 * ph + L.ph)) * o.lift * calm, swing = Math.cos(2 * ph + L.ph) * o.stride * calm;
       dir.copy(L.out).applyAxisAngle(UP, -L.s * swing / (o.seg + ld.out));   // (it steps: the leg swings forward and back at its root)
@@ -270,7 +271,7 @@ const _ccT = {
     [-0.32, -0.36, -0.5, -0.65, 0.09, 0.048, 0.038, 0.7], [0.02, -0.68, 0.05, -1, 0.075, 0.044, 0.034, 0.9],
   ],
   jag: 0.8, bot: 0.8, sink: 0.6, gemK: 1,   // (how far off centre the points go; each crystal's lower point (times its half-width) and how much of that point is sunk; how bright their pink)
-  headR: 0.055, headCut: [1.8, 1.2, 0.78, 0.72], headGem: [0.085, 0.03, 0.035], fang: [0.034, 0.012, 0.5],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); the crystal on it (height to the shoulders, half-width, point); each fang (length, girth at the root, its tip's share of that))
+  headR: 0.055, droop: 0.68, headCut: [1.8, 1.2, 0.78, 0.72], headGem: [0.085, 0.03, 0.035], fang: [0.034, 0.012, 0.5],   // (its head; its cut (length, width at the back and at its face, all times headR; how flat); the crystal on it (height to the shoulders, half-width, point); each fang (length, girth at the root, its tip's share of that))
   gradK: 0.85, gradR: 0.06,   // (the glow on its back: how bright where a crystal breaks out, how far it reaches)
   flowers: null,   // (none: see No. 915)
   seg: 0.08, hipY: 0, legR: 0.022, lift: 0.03, stride: 0.03,   // (the legs' short segment: how long, how high on the body's side; how thick; their step)
