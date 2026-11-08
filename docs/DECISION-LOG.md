@@ -2421,4 +2421,23 @@ Approved (the concept). Its look is in review: drafts No. 919 (spikes) and No. 9
 The lotus lantern (a floating black lotus, its petals pink crystal round a glowing heart, 2026-11-02); the sketch's eyes.
 
 ### Supersedes / superseded by
-Supersedes the Mage's body in "BLOOM's creatures: SUNDEW, the lotus lantern, the coral crab; MEND's strength" (2026-11-02).
+Supersedes the Mage's body in "BLOOM's creatures: SUNDEW, the lotus lantern, the coral crab; MEND's strength" (2026-11-02). Partly superseded by "BLOOM's Mage holds its vines out and attacks with them; it shuffles to move" (2026-11-08): the vines no longer inch it along.
+
+## DECISION: BLOOM's Mage holds its vines out and attacks with them; it shuffles to move
+- Date and build: 2026-11-08, after build `2026-11-08i`, branch `claude/start-game-project-HSh7Z`. No game code changed.
+- The owner's words: "It doesn't need that little shard at the top anymore. The crystal by itself is enough of a character with inside of the bush. It needs to have the little tentacles. They need to be vines that have thorns on them. And they need to whip out in front of the character."; "Make the vines and the thorns black."; "Design notes, it doesn't crawl with its tentacles. It attacks with them and whips them out idly."; then "Actually, I think I like the idea of him holding his tentacles out, but not using them to crawl. He kind of shuffles around to move."
+
+### Decision
+- Its two vines are black, with thorns, and out in front of it. It holds them out; it does not crawl on them.
+- It attacks with its vines, whipping them out in front of it.
+- It shuffles about to move.
+- The crystal out of its back has no black shell shard on it.
+
+### Status
+Approved (the owner's design notes). Drawn in the drafts, Nos. 919 and 920 (`design/evolutions/forms39.js`), in review. Not implemented: BLOOM's forms are not built. Open (`CONVERSION.md` §11): the vine attack's damage type (the lotus lantern's seed-light was Elemental; the type sets the form's lean, +2 if Elemental, +1 if not), and whether its subclass (Elemental) and SEEDFALL still fit.
+
+### Alternatives
+The vines inching it along (the owner's first words on the sketch); whipping them out idly (the owner's first design note, revised by the next before it was drawn); the Rotshard's black shell shard on its crystal; plum vines.
+
+### Supersedes / superseded by
+Supersedes, in "BLOOM's Mage is a little shrub" (2026-11-08), the vines inching it along; and the lotus lantern's seed-light as its main attack.

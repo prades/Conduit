@@ -207,7 +207,7 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 - **CAPACITOR DISCHARGE** for the Static Orb (the design notes; PINBALL is superseded, its code kept): it stands still storing a charge every 1.5 s, up to 4, enemies near or not, and may move again once full; RETREAT stops the charging. The player releases them (its squad card's ⚡ chip, or its INFO) into an enemy within 2 tiles: a chain of 1 + the charges enemies, each within 2.5 tiles of the last, 0.5 × its attack × the charges each (electric). A switch of attack loses the charges. The numbers are the agent's (provisional).
 - **CORRODE SHOT** is the Rotshard's everyday shot (the design notes' primary): the Mage's shot, its own damage, and it eats the armour of what it hits, weaker round it. ROTTEN DECOY is its second attack.
 | SUNDEW (designed 2026-11-02) | Brawler · bloom | Slashing (barbed lip) | CONSUME: the digestion's type to set (`CONVERSION.md`) |
-| The little shrub (designed, name to come; it was the lotus lantern) | Mage · bloom | Elemental (seed-light) | SEEDFALL: Elemental |
+| The little shrub (designed, name to come; it was the lotus lantern) | Mage · bloom | Its vines, whipped (2026-11-08): type open (the lotus lantern's seed-light was Elemental) | SEEDFALL: Elemental |
 | Coral crab (designed; its name for now) | Technician · bloom | Crushing (claws) | REEF: to set (`CONVERSION.md`) |
 
 - **Every element special is Elemental:** the fire bombs (the fire forms' FIRE BOMBS move too, until it was taken out on 2026-11-07), the static field, the ice burst, the singularity, the smoke bomb. *(Since build `2026-11-07jj` no follower uses an element special: the owner, "each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate ability". The functions stay in js/elements.js, unused.)*
@@ -292,7 +292,7 @@ The elemental share of each form's main attack (the range runs from a wild to an
 | QUILLSTONE | Brawler · fire | Spine-legged | −1 | 21–29% |
 | SEEPER | Brawler · toxic | Spine-legged | −1 | 21–29% |
 | ELECTRO SKINK | Brawler · electric | Spine-legged (none until build `2026-11-08h`) | −1 | 21–29% (by the rule, as the other −1 Brawlers; not measured) |
-| The little shrub (designed; it was the lotus lantern) | Mage · bloom | Elemental | +2 | 82–87% |
+| The little shrub (designed; it was the lotus lantern) | Mage · bloom | Elemental | +2 if its vine attack is typed Elemental, +1 if not (open) | 82–87% at +2 |
 | Coral crab (designed) | Technician · bloom | Spine-legged | −1 | 40% |
 | SUNDEW (designed) | Brawler · bloom | Mollusk | −1 | 21–29% |
 
