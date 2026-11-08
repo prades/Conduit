@@ -696,5 +696,12 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - **CAPACITOR DISCHARGE:** should a full Static Orb move (it does now), and should a follower posted in a room (no squad card) be released from anywhere but its INFO?
 - **Accepted, 2026-11-07:** the owner passed build ss as it is ("go ahead and pass it, whatever it is"), so followers before they evolve keep BASH. The points above stay open.
 
+## The ELECTRO SKINK (built in build `2026-11-08a`)
+- **Its own attacks:** BASH stands in as its second attack; its everyday hit is Slashing (what it hit with as an egg) until you choose.
+- **Its subclass** (crustacean, mollusk, elemental, drone, jelly, or a new one): none yet, so no subclass card fits it and no row weakens or resists it.
+- **Its Ultimate:** it uses the electric element's for now.
+- **Its pace:** 1.6 × the follower's speed (the agent's number for "really fast").
+- **VOLTAGE FIELD** (a Series 2 form card) fits the Static Orb only; it stays with the Static Orb (set aside) unless you move it to the Skink.
+
 ## MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
 The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; today's electric Brawler (the STATIC ORB, its moves and all) becomes the MAGNETIC Brawler; the electric Brawler gets a new design. Not designed in detail and not built. Seven points are open, listed in `CONVERSION.md` §13 (how electric converts, MAGNETIC's rules and other forms, the new electric Brawler, saved Static Orbs, the name, the retired electric Brawler forms).

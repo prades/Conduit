@@ -66,8 +66,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('THE ASK ("the old core brawler is going to be switched to the technician class"; "Swap it"): a CORE TECHNICIAN becomes the HAMMER SLUG (design No. 467); a core brawler is the Jelly Ram now; an ELECTRIC BRAWLER becomes the STATIC ORB', () => {
         mk('core', 'camper', 20); run(lvlUp); same(run('__f.evolved'), 'hammerslug', 'core technician'); same(run('unitTypeLabel(__f)'), 'HAMMER SLUG', 'its tag'); same(run('__f.role'), 'camper', 'its role'); ok(run('EVOLUTIONS.warden.legacy === true'), 'the Aegis Warden is handed out again');
         mk('core', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'jellyram', 'a core brawler (its new form, the Jelly Ram)');
-        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'staticorb', 'electric brawler');
-        same(run('unitTypeLabel(__f)'), 'STATIC ORB', 'its tag'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.voltring.legacy === true'), 'the Volt Ring placeholder is no longer handed out'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
+        mk('electric', 'brawler', 20); run(lvlUp); same(run('__f.evolved'), 'electroskink', 'electric brawler (the Electro Skink since build 2026-11-08a)');
+        same(run('unitTypeLabel(__f)'), 'ELECTRO SKINK', 'its tag'); ok(run('EVOLUTIONS.staticorb.aside === true && !EVOLUTIONS.staticorb.legacy'), 'the Static Orb is set aside, kept whole (the magnetic brawler to be)'); ok(run('EVOLUTIONS.prism.legacy === true'), 'the Prism Hood design went to the fire mage'); ok(run('EVOLUTIONS.voltring.legacy === true'), 'the Volt Ring placeholder is no longer handed out'); ok(run('EVOLUTIONS.manta.legacy === true'), 'the Storm Manta is no longer handed out');
         mk('electric', 'sniper', 20); run(lvlUp); same(run('__f.evolved'), 'thunderhead', 'the electric sniper is the Thunderhead');
     });
     check('THE ASK: a FIRE SNIPER becomes the CINDER HALO (design No. 90, the ring drone); a fire brawler is still the Bunker Bloom', () => {

@@ -51,6 +51,7 @@ const DMG_FORM = {
     quillstone: { main: "piercing",   alt: "projectile" },
     maw:        { main: "slashing",   alt: "piercing" },
     staticorb:  { main: "crushing",   alt: "crushing" },
+    electroskink: { main: "slashing", alt: "crushing" },   // (build 2026-11-08a; provisional: the owner has not given its attacks' types: slashing is what it hit with as an egg, BASH is Crushing)
     jellyram:   { main: "crushing",   alt: "crushing" },
     seeper:     { main: "slashing",   alt: "earthquake" },
     mimic:      { main: "slashing",   alt: "earthquake" },

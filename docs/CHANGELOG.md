@@ -2,6 +2,15 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-08
+
+- **a · The ELECTRO SKINK is the electric brawler; the Static Orb set aside.** Owner (2026-11-07/08): the whiteboard sketch is "the new electric brawler", the Static Orb "will now be the magnetic one, but if you just wanna throw him to the side for now"; reviewed through models Nos. 900-904 ("Okay, that's good. Send it."); its name "Electro Skink"; "BASH for now"; "it's really fast", "maybe he moves like a fish, like a slippery eel, but also legs". Branch `claude/start-game-project-HSh7Z`.
+  - **The Electro Skink** (`img/evo/electroskink.png`, design No. 904, sprite No. 905): a long, skinny, flat black body, a rounded-off head with no face, four single-arch legs, its tail fading into a glowing electric yellow and ending in a zig-zag bolt. It slithers like an eel, legs paddling. An electric brawler evolves into it now.
+  - **Quick:** its pace is 1.6 × (a form's own pace, `js/abilities.js` tickSlowSpeed). Provisional number.
+  - **Its attacks:** its second attack is BASH; its everyday hit is Slashing for now (what it hit with as an egg). It uses the electric Ultimate and has no subclass yet: open questions.
+  - **The Static Orb is set aside**, not retired: a follower already evolved into it keeps it whole (SONIC ROLL, CAPACITOR DISCHARGE, its subclass, its Ultimate, its VOLTAGE FIELD card); no follower evolves into it any more. It becomes the MAGNETIC Brawler when electric gets its conversion (`CONVERSION.md` §13).
+  - Tests: evolution, cards, crystalline, damage, secondattacks and firebombs updated for the new form (and a stale firebombs line from build ss); the Bible lists the Electro Skink. Not playtested.
+
 ## 2026-11-07
 
 - **ss · Second attacks for every follower; the Ultimates on the squad cards.** Owner's requests (2026-11-07): "inherit second attacks on all the followers and have more visible ultimate bar on followers and access to use them", "Inherit from the design notes"; then "BASH for now", "Apply both" and "Squad cards + world". Branch `claude/start-game-project-HSh7Z`.

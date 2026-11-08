@@ -78,7 +78,7 @@ function measure(w, h) {
     await check('the eight forms have BASH as their second attack, and a follower that has not evolved has it; the others keep their own; a clone has none', () => {
         const r = J(`Object.values(EVOLUTIONS).filter(e => !e.legacy).map(e => e.id + ':' + evoMoveIds(e).join('/'))`);
         for (const id of ['jellyram', 'rimestar', 'hornshell', 'hammerslug', 'gooproxy', 'blightspider', 'hovershell', 'igloo']) ok(r.indexOf(id + ':bash') >= 0, id + ': ' + r.join(' '));
-        same(r.filter(x => /bash/.test(x)).length, 8, 'forms with BASH'); same(r.filter(x => /:$/.test(x)).length, 0, 'forms with no second attack');
+        same(r.filter(x => /bash/.test(x)).length, 9, 'forms with BASH (the eight, and the Electro Skink since build 2026-11-08a)'); same(r.filter(x => /:$/.test(x)).length, 0, 'forms with no second attack');
         same(J(`evoMoveIds(followerMoveDef({ isFollower: true })).join()`), 'bash', 'before it evolves'); same(J(`followerMoveDef({ isFollower: true, isClone: true })`), null, 'a clone');
     });
     await check('BASH rams the nearest enemy it can see within 1.8 tiles: it steps in, 1.5 × its attack (Crushing, its hit kind), the enemy pushed and stunned half a second; one farther is not touched; it waits its 4 s wind-up after', () => {

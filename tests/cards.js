@@ -222,14 +222,14 @@ function measure(w, h, query, seed) {
         const r = J('EQUIP_SUBCLASSES.map(function(s){ return s.id; })'); same(r.join(), 'crustacean,mollusk,elemental,drone,jelly', 'the subclasses');
         same(J('EQUIP_SUBCLASSES.map(function(s){ return s.label; })').join(), 'CRUSTACEAN,MOLLUSK,ELEMENTAL,DRONE,JELLY', 'their names');
     });
-    await check('each of the 18 forms has the subclass the chart gives it (by name); the ten retired forms have none; nothing else is in the table', () => {
-        const forms = J('Object.values(EVOLUTIONS).map(function(e){ return { id: e.id, name: e.name, legacy: !!e.legacy, sub: equipSubclassOf({ evolved: e.id }) }; })');
-        const live = forms.filter(f => !f.legacy), legacy = forms.filter(f => f.legacy);
-        same(live.length, 18, 'forms in play'); same(legacy.length, 10, 'retired forms');
-        for (const f of live) same(f.sub, CHART[f.name], f.name + '\'s subclass');
+    await check('each of the 18 forms has the subclass the chart gives it (by name), the Electro Skink none yet; the Static Orb, set aside, keeps its own; the ten retired forms have none; nothing else is in the table', () => {
+        const forms = J('Object.values(EVOLUTIONS).map(function(e){ return { id: e.id, name: e.name, legacy: !!e.legacy, aside: !!e.aside, sub: equipSubclassOf({ evolved: e.id }) }; })');
+        const live = forms.filter(f => !f.legacy && !f.aside), aside = forms.filter(f => f.aside), legacy = forms.filter(f => f.legacy);
+        same(live.length, 18, 'forms in play'); same(aside.map(f => f.id).join(), 'staticorb', 'set aside'); same(legacy.length, 10, 'retired forms');
+        for (const f of live.concat(aside)) same(f.sub, f.id === 'electroskink' ? null : CHART[f.name], f.name + '\'s subclass');   // (the Electro Skink, build 2026-11-08a: its subclass is an open question)
         for (const f of legacy) same(f.sub, null, f.name + ' (retired) has a subclass');
         same(Object.keys(CHART).length, 18, 'the chart'); same(J('Object.keys(EQUIP_FORM_SUBCLASS).length'), 18, 'the table');
-        const ids = J('Object.keys(EQUIP_FORM_SUBCLASS)'); for (const id of ids) ok(live.some(f => f.id === id), id + ' is in the table and is not a form in play');
+        const ids = J('Object.keys(EQUIP_FORM_SUBCLASS)'); for (const id of ids) ok(live.concat(aside).some(f => f.id === id), id + ' is in the table and is not a form in play');
     });
     await check('the counts: crustacean 2, mollusk 3, elemental 5, drone 5, jelly 3', () => {
         const n = {}; for (const v of Object.values(CHART)) n[v] = (n[v] || 0) + 1;

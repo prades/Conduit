@@ -198,10 +198,18 @@ const EVOLUTIONS = {
     // LEGACY: the ring-drone placeholder. New evolutions use the Static Orb; a follower already evolved into this keeps it.
     voltring:{ id: "voltring", legacy: true, name: "VOLT RING", element: "electric", role: "brawler", move: "SONIC ROLL", sheet: "img/evo/voltring.png",
               cell: 144, anchor: [72, 114.2], core: [72, 53.7], noGlow: true, color: "#ffee33" },
-    // The ELECTRIC BRAWLER, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
+    // THE ELECTRO SKINK, the ELECTRIC BRAWLER since build 2026-11-08a (design No. 904, its game sprite No. 905: design/evolutions/forms36.js), from the owner's whiteboard sketch and
+    // reviews (docs/CONVERSION.md §13): a long, skinny, flat black body, a rounded-off head with no face, four single-arch legs, its tail fading into a glowing yellow and ending in a
+    // zig-zag bolt. It slithers like an eel, legs paddling, and is quick: its pace is 1.6 × (js/abilities.js tickSlowSpeed; the owner: "it's really fast"; the number is provisional). Its second
+    // attack is BASH for now (the owner: "BASH for now"); its own attacks, subclass and Ultimate are open (it uses the electric Ultimate and has no subclass yet).
+    electroskink:{ id: "electroskink", name: "ELECTRO SKINK", element: "electric", role: "brawler", move: "BASH", moves: ["bash"], pace: 1.6, sheet: "img/evo/electroskink.png",
+              cell: 144, anchor: [72, 114.2], core: [72, 107.6], noGlow: true, color: "#ffe033" },
+    // The ELECTRIC BRAWLER until build 2026-11-08a, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
     // pair of long thick trapezoid brackets down its back, static arcing between them. The tread and core move, so its sheet carries its own light.
-    // (To come, the owner 2026-11-07: this design and its moves become the MAGNETIC Brawler when electric gets its conversion, and the electric Brawler gets a new form: docs/CONVERSION.md §13.)
-    staticorb:{ id: "staticorb", name: "STATIC ORB", element: "electric", role: "brawler", move: "SONIC ROLL", moves: ["static_rush", "capacitor_discharge"], sheet: "img/evo/staticorb.png",
+    // SET ASIDE since build 2026-11-08a (aside: true): the owner, 2026-11-07: "the old electric brawler [...] will now be the magnetic one, but if you just wanna throw him to the side
+    // for now". It is kept whole (its moves, its attack types, its subclass, its Ultimate) for a follower already evolved into it, and no longer handed out: an electric brawler evolves
+    // into the ELECTRO SKINK below. When electric gets its conversion it becomes the MAGNETIC Brawler (docs/CONVERSION.md §13).
+    staticorb:{ id: "staticorb", aside: true, name: "STATIC ORB", element: "electric", role: "brawler", move: "SONIC ROLL", moves: ["static_rush", "capacitor_discharge"], sheet: "img/evo/staticorb.png",
               cell: 144, anchor: [72, 114.2], core: [72, 80.1], noGlow: true, color: "#ffe033" },
     // The FIRE MAGE ("sniper" in the code): the hooded pyramid with the hovering gems (design No. 391), recoloured for fire. The gems turn, so its sheet carries its own light.
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire"], shot: "FIREBALL",   /* (FIRE BOMBS taken out as an alternate: the owner, 2026-11-07, build ii) */ sheet: "img/evo/embercowl.png",
@@ -277,7 +285,7 @@ const EVOLUTIONS = {
 function evolutionFor(f) {
     if (!f || !f.isFollower) return null;
     const role = f.role === "hybrid" ? "brawler" : f.role;
-    for (const k in EVOLUTIONS) { const d = EVOLUTIONS[k]; if (d.legacy || d.element !== f.element) continue; if (d.role === role) return d; }
+    for (const k in EVOLUTIONS) { const d = EVOLUTIONS[k]; if (d.legacy || d.aside || d.element !== f.element) continue; if (d.role === role) return d; }   // (aside: kept whole for whoever has it, but no longer handed out)
     return null;
 }
 function evolvedDef(f) { return f && f.evolved ? EVOLUTIONS[f.evolved] || null : null; }

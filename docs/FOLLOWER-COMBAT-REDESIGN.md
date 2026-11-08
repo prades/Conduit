@@ -13,7 +13,7 @@
 - **Related docs:** `COMBAT.md` §7 (the damage types, each form's attacks: §7.4), `FIRE-BOMBS.md`, `TECHNICIANS.md` (the technicians' abilities, the Kinetic Launcher), `FOLLOWER-PROGRESSION.md`, `SEWER-QUEST.md` (the puzzle routes the Thermite Drill opens), `UI-STYLE.md`, `DECISION-LOG.md` (the decision)
 
 
-> **To come (the owner, 2026-11-07):** the STATIC ORB's design and moves will become the MAGNETIC Brawler when electric gets its conversion, and the electric Brawler will get a new design (`CONVERSION.md` §13). Not built: the STATIC ORB is the electric Brawler until then.
+> **Since build `2026-11-08a` (the owner, 2026-11-07/08):** the electric Brawler is the ELECTRO SKINK; the STATIC ORB is set aside, kept whole by a follower that has it, and its design and moves will become the MAGNETIC Brawler when electric gets its conversion (`CONVERSION.md` §13).
 
 > **MAGMA VENT** (build `2026-11-06m`; the owner, 2026-11-06: "Short and hot"): the Thermite Burrower's move (its alternate, roadmap §12.3). A vent opens under the nearest enemy it can see within 6 tiles, bursts every 1 s for 8 s (60% of its power a burst, enemies within 1.5 tiles seen from the vent), then a 20 s wait. Code: js/evolution.js `magmaVent`, js/elements.js (the burst and the drawing), js/moves.js `magma_vent`. Test: tests/followercombat.js. Readings: `OPEN-QUESTIONS.md` §1za.
 

@@ -132,7 +132,7 @@ function measure() {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "quillstone";');
         const sec = J('followerInfo(__f).attacks.find(s => s.h === "ATTACK").choices.map(c => [c.label, c.on])'); same(JSON.stringify(sec), JSON.stringify([['NORMAL ATTACK', true], ['QUILL BURST', false]]), 'choices (FIRE BOMBS taken off the fire brawler, 2026-11-07)');
         same(run('followerAltSet(__f, "bomb_lob")'), false, 'FIRE BOMBS taken by a Quillstone'); run('followerAltSet(__f, "quill_burst");'); same(J('followerInfo(__f).attacks.filter(s => /LOCKED ON/.test(s.h)).map(s => s.h).join()'), 'ALTERNATE · QUILL BURST · LOCKED ON', 'the alternate it is locked on');
-        run('__f.evolved = "hammerslug"; __f.alt = null;'); same(run('followerInfo(__f).attacks.some(s => s.h === "ATTACK")'), false, 'a form with no move has no chooser');
+        run('__f.evolved = "warden"; __f.alt = null;'); same(run('followerInfo(__f).attacks.some(s => s.h === "ATTACK")'), false, 'a form with no move has no chooser');   // (the retired Aegis Warden: since build 2026-11-07ss every form in play has a second attack, the Hammer Slug BASH)
     });
 
     group('THE MOVE CHOOSER (real browser)');

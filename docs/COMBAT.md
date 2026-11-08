@@ -184,7 +184,8 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 |---|---|---|---|
 | QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST (five quills at once, each stopping at its first enemy): Projectile (FIRE BOMBS taken off it, 2026-11-07) |
 | FROST MAW | Brawler · ice | Slashing (ice jaws) | CHOMP: Piercing |
-| STATIC ORB | Brawler · electric | Crushing (rams) | SONIC ROLL (STATIC RUSH renamed): Crushing; CAPACITOR DISCHARGE (it stands still storing up to 4 charges; you release them into a short chain, build `2026-11-07ss`): Crushing and electric. PINBALL is superseded by it (the design notes) |
+| ELECTRO SKINK | Brawler · electric (since build `2026-11-08a`) | Slashing (for now: what it hit with as an egg; open) | BASH ("BASH for now"): Crushing |
+| STATIC ORB | Brawler · electric (set aside since build `2026-11-08a`: kept by a follower that has it; the magnetic brawler to be) | Crushing (rams) | SONIC ROLL (STATIC RUSH renamed): Crushing; CAPACITOR DISCHARGE (it stands still storing up to 4 charges; you release them into a short chain, build `2026-11-07ss`): Crushing and electric. PINBALL is superseded by it (the design notes) |
 | JELLY RAM | Brawler · core | Crushing (ram) | BASH (build `2026-11-07ss`, "BASH for now"): Crushing |
 | SEEPER | Brawler · toxic | Slashing (lash) | ERUPTION: Earthquake |
 | RIFT MIMIC | Brawler · flux | Slashing (claws) | GRAVITY SLAM: Earthquake |

@@ -105,7 +105,8 @@ function tickSlowSpeed(actor) {
         else return;
     }
     if (actor.state === 'attack') return;   // deliberately parked at 0
-    const pace = actor.paceMult > 0 ? actor.paceMult : 1;   // a lasting pace of its own (the clone of a CORE SHAPER, a Player card: js/playercards.js); 1 for everyone else
+    const fd = actor.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[actor.evolved] : null;   // (a form's own pace: the ELECTRO SKINK is quick, js/evolution.js)
+    const pace = (actor.paceMult > 0 ? actor.paceMult : 1) * (fd && fd.pace > 0 ? fd.pace : 1);   // a lasting pace of its own (the clone of a CORE SHAPER, a Player card: js/playercards.js); 1 for everyone else
     if (actor.slowed > 0) {
         actor.moveSpeed = actor.baseMoveSpeed * Math.max(0, actor.slowFactor ?? 1) * pace;
     } else if (actor.slowFactor !== 1 || actor.moveSpeed !== actor.baseMoveSpeed * pace) {

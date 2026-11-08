@@ -10,8 +10,8 @@
 //   LEGS   four, each a single arch out of its side and down to the floor;
 //   TAIL   long and tapering; toward its end it fades from the black of the body into a glowing electric yellow, and its last stretch IS the lightning bolt: the tail
 //          itself zig-zags in sharp jogs to a point, upright, its tip the brightest.
-// Idle: it walks on the spot as a salamander does, the body bending side to side, the diagonal legs stepping together, the bolt pulsing. Action: it rears its front, then
-// lunges, the bolt flaring.
+// Idle (its walk, fast): it slithers like an eel, a quick S-wave running down its body to the tail, its legs paddling in time with the wave (the owner: "it's really fast",
+// then "maybe he moves like a fish, like a slippery eel, but also legs"); the bolt pulsing. Action: it rears its front, then lunges, the bolt flaring.
 // Nos. 900 to 903 were rejected and are gone.
 // Uses forms31.js (_c31, _prog31) and forms32.js (_taper32). +z is the front; ph = 1.6 t runs once round the idle loop.
 const _skSkin = new T.MeshStandardMaterial({ color: 0x06070a, metalness: 0.2, roughness: 0.24 }); _skSkin.envMapIntensity = 0.9;   // (wet black skin: it catches the lights)
@@ -67,7 +67,7 @@ function _electroSkink(o) {
   let ph = 0, rear = 0, strike = 0, calm = 1;
   const spine = (s, out) => {
     curve.getPoint(Math.min(1, Math.max(0, s)), out);
-    out.x += (o.bend * Math.sin(PI * (s - o.sMid) / 0.7) * Math.sin(2 * ph) + o.tailWave * s * s * Math.sin(2 * ph - TAU * 0.9 * s)) * calm;
+    out.x += o.swimAmp * (0.22 + 0.78 * Math.pow(s, 1.15)) * Math.sin(2 * ph - TAU * o.swimWaves * s) * calm;   // (the eel's wave: small at the head, wide at the tail, two strokes a loop)
     const front = Math.max(0, 1 - s / o.rearReach); out.y += o.rearH * rear * front * front;
     return out;
   };
@@ -87,7 +87,7 @@ function _electroSkink(o) {
     // the legs: each an arch from the side of the body, up and out, down to a foot on the floor; the diagonal pairs step together
     legs.forEach(L => { const ld = L.ld; frameAt(ld.s); const r = rOf(ld.s), side = V(ax.x, 0, ax.z).normalize().multiplyScalar(L.sx), ahead = V(fw.x, 0, fw.z).normalize();
       const hip = P.clone().addScaledVector(ax, L.sx * r * 0.8);
-      const phi = 2 * ph + (L.li === 0 ? 0 : PI) + (L.sx > 0 ? PI : 0), stance = Math.sin(phi) > 0;
+      const phi = 2 * ph - TAU * o.swimWaves * ld.s + (L.sx > 0 ? PI : 0), stance = Math.sin(phi) > 0;   // (each leg paddles in time with the wave where it is)
       const lift = (stance ? 0 : o.lift * -Math.sin(phi)) * (1 - a * 0.7) + (L.li === 0 ? o.rearLift * rear : 0);
       const foot = V(hip.x, 0, hip.z).addScaledVector(side, o.reach).addScaledVector(ahead, ld.fwd + o.stride * Math.cos(phi) * (1 - a * 0.7)); foot.y = o.legR1 + lift;
       const ctrl = hip.clone().lerp(foot, 0.42); ctrl.y = Math.max(hip.y, foot.y) + 2 * o.arch;   // (a quadratic arch: its top halfway to the control point)
@@ -96,7 +96,7 @@ function _electroSkink(o) {
       L.tb.set(L.pts, 0, 0, legR, 1, 1); });
     // the head: a rounded end ahead of the neck, rearing back, then lunging
     frameAt(0); head.position.copy(P).addScaledVector(fw, o.headFwd).addScaledVector(ay, o.headUp);
-    m4.makeBasis(ax, ay, fw); head.quaternion.setFromRotationMatrix(m4); head.rotateX(-o.headTilt - 0.5 * rear + 0.25 * strike); head.rotateY(-0.12 * Math.sin(2 * ph) * calm);
+    m4.makeBasis(ax, ay, fw); head.quaternion.setFromRotationMatrix(m4); head.rotateX(-o.headTilt - 0.5 * rear + 0.25 * strike); head.rotateY(-0.16 * Math.sin(2 * ph + 0.6) * calm);
     // the light at the tail's glowing end
     Lt.position.copy(tpts[NT - 8]).add(V(0, 0.05, 0)); Lt.intensity = 0.6 * glow;
   } };
@@ -110,6 +110,7 @@ const _sk0 = {
   headW: 0.15, headH: 0.078, headL: 0.17, headFwd: 0.055, headUp: 0.004, headTilt: 0.1,
   sCut: 0.55, sBolt: 0.8, colStart: 0.57, colFull: 0.88, boltFx: 0.55, boltFy: 1.5,
   zig: [[0, 0], [0.3, 0.078], [0.38, 0.026], [0.66, 0.112], [0.74, 0.056], [1, 0.17]],   // (the bolt: (along its stretch, height): up, a sharp jog back down, up, a jog, up to the point)
-  bend: 0.045, sMid: 0.3, tailWave: 0.06, rearH: 0.12, rearReach: 0.42, lunge: 0.11,
+  swimAmp: 0.075, swimWaves: 1.1, rearH: 0.12, rearReach: 0.42, lunge: 0.11,
 };
 fx(904, "The ELECTRO SKINK, the new electric brawler (the owner's whiteboard sketch: a long, skinny, flat body, a rounded-off head with no face, four legs each a single arch): wet black and plain, its tail fading into a glowing electric yellow toward its end, its last stretch a zig-zag lightning bolt.", () => _electroSkink(_sk0));
+fx(905, "904, the game sprite (its size in the sheet's cell).", () => _electroSkink(Object.assign({}, _sk0, { S: 2.0 })));
