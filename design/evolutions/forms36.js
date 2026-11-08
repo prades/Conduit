@@ -9,7 +9,8 @@
 //   HEAD   small and rounded, no face, no eyes; on a pinched neck, taller than the flat body and lifted a little, so it reads as a head (the owner on build
 //          2026-11-08b: "He's supposed to have a small head, but it looks like he doesn't have a head at all"); a rounded triangle seen from above, wide at the back
 //          and narrowing to a rounded snout, its top domed, a pill from the side (on build c: "Needs a more triangle head, but still overall round. Still want it
-//          pill-shaped");
+//          pill-shaped"); sleek, its back only a little wider than the neck and its underside shallow, so it has no jaw (on build d: "a little bit sleeker. It needs
+//          to not have such a jaw");
 //   LEGS   four, each a single arch out of its side and down to the floor;
 //   TAIL   long and tapering; toward its end it fades from the black of the body into a glowing electric yellow, and its last stretch IS the lightning bolt: the tail
 //          itself zig-zags in sharp jogs to a point, upright, its tip the brightest.
@@ -39,7 +40,8 @@ function _skTube(parent, mat, n, ring) {
 // THE HEAD's shape (the owner, 2026-11-08: "Needs a more triangle head, but still overall round. Still want it pill-shaped"): seen from above a rounded triangle, wide
 // at the back and narrowing to a rounded snout (its outline the hull of three circles: two at the back corners, a smaller one at the snout); its top domed and its sides
 // round (every level a smaller copy of that outline, the rise a rounded oval: headP 2 is an ellipse, more is fuller); from the side a pill, lower toward the snout
-// (headTaper). Its length runs along +z, the snout at +z, its middle at the origin. (A hull of three balls was tried first: its top was flat between them.)
+// (headTaper); its underside shallower than its top (headUnder). Its length runs along +z, the snout at +z, its widest level at the origin. (A hull of three balls was
+// tried first: its top was flat between them.)
 function _skHeadGeo(o) {
   const rb = o.headRb, rf = o.headRf, bx = o.headW / 2 - rb, zb = -o.headL / 2 + rb, zf = o.headL / 2 - rf;
   const C = [[bx, zb, rb], [-bx, zb, rb], [0, zf, rf]], OL = [];   // (x, z, radius)
@@ -52,10 +54,11 @@ function _skHeadGeo(o) {
       if (t > 0 && u >= -1e-9 && u <= 1 + 1e-9 && t < best) best = t; }
     return best; };
   const NA = 96, NB = 36, e = 2 / (o.headP || 2), hh = o.headH / 2, tz = Z => 1 - (o.headTaper || 0) * Z / o.headL;   // (round the outline × top to bottom; the taper)
+  const un = o.headUnder > 0 ? o.headUnder : 1;   // (its underside shallower than its top, so no jaw hangs below it: the owner on build d, "It needs to not have such a jaw")
   const Rs = Array.from({ length: NA }, (_, i) => R(i / NA * TAU)), pos = [0, hh, 0], idx = [];
-  for (let j = 1; j < NB; j++) { const be = j / NB * PI, sb = Math.sin(be), cb = Math.cos(be), rho = Math.pow(sb, e), yy = Math.sign(cb) * Math.pow(Math.abs(cb), e);
+  for (let j = 1; j < NB; j++) { const be = j / NB * PI, sb = Math.sin(be), cb = Math.cos(be), rho = Math.pow(sb, e), yy = Math.sign(cb) * Math.pow(Math.abs(cb), e) * (cb < 0 ? un : 1);
     for (let i = 0; i < NA; i++) { const th = i / NA * TAU, X = Rs[i] * rho * Math.sin(th), Z = Rs[i] * rho * Math.cos(th); pos.push(X, hh * yy * tz(Z), Z); } }
-  pos.push(0, -hh, 0); const bot = pos.length / 3 - 1, at = (j, i) => 1 + (j - 1) * NA + (i % NA);   // (one point at each pole, the rings closed round: no seam)
+  pos.push(0, -hh * un, 0); const bot = pos.length / 3 - 1, at = (j, i) => 1 + (j - 1) * NA + (i % NA);   // (one point at each pole, the rings closed round: no seam)
   for (let i = 0; i < NA; i++) idx.push(0, at(1, i), at(1, i + 1));
   for (let j = 1; j < NB - 1; j++) for (let i = 0; i < NA; i++) { const a = at(j, i + 1), b = at(j, i), c = at(j + 1, i), d = at(j + 1, i + 1); idx.push(a, b, d, b, c, d); }
   for (let i = 0; i < NA; i++) idx.push(at(NB - 1, i + 1), at(NB - 1, i), bot);
@@ -137,8 +140,8 @@ const _sk0 = {
   sHip: 0.47, flat: 0.6,
   legs: [{ s: 0.115, fwd: 0.04 }, { s: 0.47, fwd: -0.03 }], legR0: 0.025, legR1: 0.015, reach: 0.13, arch: 0.045,
   stride: 0.035, lift: 0.028, rearLift: 0.05,
-  headW: 0.185, headL: 0.21, headH: 0.104, headRb: 0.045, headRf: 0.026, headP: 2.4, headTaper: 0.3,   // (small, taller than the flat body: wide at the back corners (rounded by headRb), narrowing to the snout (rounded by headRf). Build c's was a ball 0.165 × 0.115 × 0.165; build a's 0.15 × 0.078 × 0.17, level with the body)
-  headFwd: 0.075, headUp: 0.028, headTilt: 0.18,   // (ahead of the neck and lifted a little)
+  headW: 0.155, headL: 0.215, headH: 0.096, headRb: 0.05, headRf: 0.028, headP: 2.4, headTaper: 0.3, headUnder: 0.65,   // (small and sleek: a little wider than the neck at the back (rounded by headRb), narrowing to the snout (rounded by headRf); its underside shallow, so no jaw. The owner on build d: "a little bit sleeker. It needs to not have such a jaw": it was 0.185 wide, 0.21 long, 0.104 high, rb 0.045, rf 0.026, the underside as deep as the top, tilted 0.18. Build c's was a ball 0.165 × 0.115 × 0.165; build a's 0.15 × 0.078 × 0.17, level with the body)
+  headFwd: 0.075, headUp: 0.028, headTilt: 0.1,   // (ahead of the neck and lifted a little, its snout tipped up a little)
   sCut: 0.55, sBolt: 0.8, colStart: 0.57, colFull: 0.88, boltFx: 0.55, boltFy: 1.5,
   zig: [[0, 0], [0.3, 0.078], [0.38, 0.026], [0.66, 0.112], [0.74, 0.056], [1, 0.17]],   // (the bolt: (along its stretch, height): up, a sharp jog back down, up, a jog, up to the point)
   swimAmp: 0.075, swimWaves: 1.1, rearH: 0.12, rearReach: 0.42, lunge: 0.11,
