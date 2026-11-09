@@ -4,6 +4,25 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09s` · branch `claude/start-game-project-HSh7Z` · energy cards
+The owner: "I hate to keep adding different systems, but this one kind of incorporates a resource system that's been at the heart of most of the games I've ever played." Rules: `docs/ENERGY-CARDS.md` (§2; what the code does, §7; the agent's readings to confirm, §11).
+- **A follower's element comes from an energy card in its slot.**
+  - Without one it has NO ELEMENT: a grey, unlit crystal egg, plain hits, and its role for a name.
+  - An unevolved follower has 1 slot. The roster's RECRUIT and the recruitment posts give followers of no element.
+- **Evolving is at level 8 with a card** (it was level 10). The card is used up.
+  - An evolved follower has 3 slots. 1 card of its own element opens its second attack and 2 its Ultimate. Another element's card is a hybrid, NOT DESIGNED YET.
+  - Evolved followers from old saves are locked until they get cards; unevolved ones from old saves lose their element.
+- **The packs** (the owner: "Make the pack 50% less, but make 2 of the cards guaranteed energy cards, and 1 card guaranteed 3 rarity"): Pack 1 is ◆50 and Series 2 ◆75. Each deals 4 cards: 2 energy cards and 2 of its own, one of them the guaranteed Precision.
+- **Energy cards are counted copies** and belong to the run (saved; NEW GAME clears them). A card taken out comes back to your stock.
+- **Free cards:**
+  - A bred egg holds a card of the element breeding picked.
+  - The starting squad and the Flux Lab's technician keep their elements with free cards.
+  - The title crowd and the Ant Nest's evolved test forms have full slots.
+- **The conversion** turns toxic energy cards into BLOOM ones.
+- **The tutorial** lifts followers to level 7 and its ants to 6, still one under evolution.
+- **The Command Center:** one ENERGY row of chips. In the carousel it sits on the creature's card, so the settings column keeps its height; on a phone it is in the roster's panel. A tap opens the card picker.
+- Tests: `tests/energycards.js` (new, 15 checks); 37 suites brought to the new rules.
+
 ### Build `2026-11-09r` · branch `claude/start-game-project-HSh7Z` · the forms' sheets cropped
 The owner, on the optimization audit's fourth finding: "Crop the form sheets".
 - **Every form's sheet is cropped** (its body's and its ground pool's): each cell cut to its picture, with a 2 px clear border, and packed in rows no wider than 4096 px.

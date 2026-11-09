@@ -383,7 +383,7 @@ Built as decided (the owner, 2026-11-06: "Test room + arena": "a small neutral t
 3. **The objective is an ammunition pack** (any class can take it), in the pocket two tiles behind the barrier's front: a pickup is taken within 1.25 tiles, so it cannot be reached past the barrier. The pocket is in the east wall because the camera looks from the south-east: in the north wall, the wall in front of it hid it.
 4. **The way in**: a stairwell in the Crystal Chamber's floor (its north-east corner, beside the relay), which is there only with the flag, and stairs up in an alcove of the room's north wall. The room is an interior under the Crystal Chamber, at the arena's level, out of sight of every room.
 5. **The start**: the game starts in the room. The tutorial is over before it starts: no blackout, none of the Crystal's lines, no class picker, no cards screen. `?class=` still names a class for development.
-6. **The squad is one flux technician**, at the level a new game's squad has (TUT.followerLevel, 9). Its chip is ready at once, with no 60 s squad-join wait. The 60 s wait after each placement is the game's own and stays.
+6. **The squad is one flux technician**, at the level a new game's squad has (TUT.followerLevel: 9, now 7 since build `2026-11-09s`, one under the evolution level). Its chip is ready at once, with no 60 s squad-join wait. The 60 s wait after each placement is the game's own and stays.
 7. **The creatures are three ants** of the arena's kind (workers and scouts, level 2), beyond the divider. They belong to the room (they wander in it, calm until provoked, and never leave it) and are not replaced: a reload or NEW GAME brings them back.
 8. **Nothing is kept**: no saved game is read or written, and nothing at all is written to storage, as with `?attract`. A player's own save is left exactly as it was. NEW GAME starts the room again (the address keeps `?fluxlab`); its question says so ("Start the test room again? (Your own saved game is not touched.)").
 9. **The rest of the facility is a new game's**, power on. The arena's own creatures and its nine movable objects are there as in any game. The words of FLUX MOVE's INFO name the test room's objects with the arena's while the flag is on.
@@ -714,8 +714,17 @@ The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved
 - **The agent's numbers, provisional:** the bond hearts (within 1 tile, three over each, 1.5 s, again after more than 3 tiles apart); SUNDEW's and STONEPETAL's everyday hit, 0.45 × their attack.
 - **A reading:** an unevolved follower's meter no longer fills (it has no Ultimate); a charge an old save carries stays as it was until it evolves.
 
-## Energy cards (the owner's direction, 2026-11-09; not built)
-The approved rules and the open questions are in `ENERGY-CARDS.md` (§2 and §11): what an evolved follower's three slots unlock ("the attacks and hybrid attacks"), the pack, how a card is owned, new followers and breeding, the elementless look, a follower already past level 8.
+## Energy cards (built in `2026-11-09s`)
+The open questions are in `ENERGY-CARDS.md` §11. They are the hybrid attacks (to be designed with the owner), and the agent's readings to confirm:
+- elementless hits are plain;
+- the starting squad and the Flux Lab keep their elements with free cards;
+- the recruitment posts give elementless followers;
+- an exiled follower's cards go with it;
+- an evolved follower's toxic cards become BLOOM ones in the conversion;
+- the tutorial runs at levels 7 and 6;
+- the clear-crystal egg reuses the grey one;
+- an elementless Technician has no ability;
+- there are no energy slots on the HUD squad card.
 
 ## The cave's look (build `2026-11-09i`)
 - **The cave's walls.** Approved on 2026-11-09 and drawn for everyone from build `2026-11-09j`; then the owner said "I'm not big on these walls" and "Switch back to the drawn rock for now". The drawn rock is back for everyone in build `2026-11-09p`; the modelled walls stay on the preview `?walls=3d`. Open: what was not liked (offered: smeary faces up close, too smooth, the colour, the shape), and whether they come back reworked or the drawn rock stays.
