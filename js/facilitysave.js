@@ -187,7 +187,7 @@ function followerBuild(entry) {
     if (typeof bondRestoreFields === "function") bondRestoreFields(npc, entry);
     if (entry.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[entry.evolved]) npc.evolved = entry.evolved;   // (set before its level, so the evolved stats apply)
     if (entry.evoWait && !npc.evolved) npc._evoOnLevelUp = true;
-    if (entry.move) npc.move = entry.move; if (typeof entry.alt === "string") npc.alt = entry.alt;
+    if (entry.move) npc.move = entry.move; if (typeof entry.alt === "string") npc.alt = typeof moveAltCarried === "function" ? moveAltCarried(npc, entry.alt) : entry.alt;
     if (entry.playStyle) npc.playStyle = entry.playStyle;
     if (entry.conv && typeof entry.conv.from === "string") { npc.convertedFrom = entry.conv.from; npc.convertedAt = Number(entry.conv.at) || 0; }   // (what it was before its conversion: js/conversion.js)
     if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)

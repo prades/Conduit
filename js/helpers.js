@@ -177,10 +177,10 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (source && source.team === "green" && source.damageMultiplier > 1) amount *= source.damageMultiplier;
     // POISONED (the Toxic Queen's nymphs, js/combat.js playerPoison): your own hits land weaker while it lasts (a hit whose source is you: the gun's, the lash's and the gauntlet's copies carry isPlayer)
     if (source && (source.isPlayer || (typeof player !== "undefined" && source === player)) && typeof playerPoisoned === "function" && playerPoisoned()) amount *= 1 - PLAYER_POISON.cut;
-    // BONDS (js/bonds.js): a fighting pair hits harder together, a bereaved
-    // partner rages, a duo ultimate leaves both hitting harder for a while.
-    // Both sides of the hit count as being in combat, which is what builds one. (A bond changes no hit since build 2026-11-09b: it is for breeding: js/bonds.js.)
+    // BONDS (js/bonds.js): both sides of the hit count as being in combat, which is what builds one. (A bond changes no hit since build 2026-11-09b: it is for breeding: js/bonds.js.)
     if (typeof noteCombat === "function") { noteCombat(source); noteCombat(target); }
+    // VENOM BITE's mark (js/evolution.js venomMark; build 2026-11-09c): a marked enemy takes more from your side's next few hits; a set amount is left as it is
+    if (!fixed && target && target._venomHits > 0 && typeof venomMark === "function") amount = venomMark(target, source, amount);
     // EQUIP CARDS (js/cards.js): the share of every hit a follower deals that its cards add (the Core cards' DAMAGE DEALT); a set amount is left as it is
     if (!fixed && source && source.isFollower && source.team === "green" && source.cards && typeof equipMult === "function") amount *= equipMult(source, "damage");
     // THE MAGE AURAS (js/cards.js): the Mutator's clone in reach of one hits harder by their ATK share (its every hit is made from its power, its one attack stat; a follower's ATK is raised in its stats instead)
@@ -205,6 +205,7 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     else { const _el = element || (source && source.element); if (_el && target.element) amount *= getElementMultiplier(_el, target.element); }
     if (target.untargetable) return;   // underground: nothing reaches it
     if (target._consume && typeof consumeGuard === "function") amount = consumeGuard(target, amount);   // (SUNDEW holding a catch: 75% less, js/elements.js)
+    if (target._guardUntil > 0 && typeof shellGuardCut === "function") amount = shellGuardCut(target, amount);   // (the Hammer Slug's SHELL GUARD: less while it braces, js/evolution.js; build 2026-11-09c)
     if (target.frozen) return;
     if (target.invulnerable && target.invulnerable > 0) return;
     if (target.smokeForm > 0 && Math.random() < (target.smokeEvasion||0.75)) return;

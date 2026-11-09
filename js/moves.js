@@ -42,6 +42,17 @@ const MOVES = {
     // SWEET SCENT (SUNDEW's own, build 2026-11-08n: the owner's design, in place of BASH; js/evolution.js sweetScent): a puff that lures the enemies near it, or, its stockpile full, a heal. Its wind-up the
     // agent's, provisional (the owner: "having the wind up that'll be fine")
     sweet_scent:       { id: "sweet_scent",       name: "SWEET SCENT",       windup: 5, fn: f => sweetScent(f) },
+    // THE NINE SECOND ATTACKS (build 2026-11-09c; the owner picked each of the agent's drafts, one form at a time, in place of BASH: js/evolution.js "THE NINE SECOND ATTACKS"). Their wind-ups the agent's,
+    // provisional (BASH's 4 s for the quick ones, more for the bigger ones). `close`: a Mage or a Technician locked on it walks in to use it, as on BASH.
+    zigzag_dash:       { id: "zigzag_dash",       name: "ZIGZAG DASH",       windup: 4, fn: f => zigzagDash(f) },     // the Electro Skink's
+    wobble_slam:       { id: "wobble_slam",       name: "WOBBLE SLAM",       windup: 4, close: true, fn: f => wobbleSlam(f) },   // the Jelly Ram's
+    icicle_volley:     { id: "icicle_volley",     name: "ICICLE VOLLEY",     windup: 5, fn: f => icicleVolley(f) },   // the Rimestar's
+    echo_pulse:        { id: "echo_pulse",        name: "ECHO PULSE",        windup: 5, fn: f => echoPulse(f) },      // the Hornshell's
+    shell_guard:       { id: "shell_guard",       name: "SHELL GUARD",       windup: 6, fn: f => shellGuard(f) },     // the Hammer Slug's
+    phase_swap:        { id: "phase_swap",        name: "PHASE SWAP",        windup: 5, fn: f => phaseSwap(f) },      // the Goo Proxy's
+    venom_bite:        { id: "venom_bite",        name: "VENOM BITE",        windup: 5, close: true, fn: f => venomBite(f) },    // the Blight Spider's
+    shock_zap:         { id: "shock_zap",         name: "SHOCK ZAP",         windup: 4, fn: f => shockZap(f) },       // the Hover Shell's
+    skate_charge:      { id: "skate_charge",      name: "SKATE CHARGE",      windup: 4.5, fn: f => skateCharge(f) },  // the Igloo Skater's
     // CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; js/evolution.js capacitorTick). `manual`: no
     // wind-up cycle: it stores charges, standing still, and the player releases them (its squad card's chip, its INFO). `windup` is the time one charge takes.
     capacitor_discharge: { id: "capacitor_discharge", name: "CAPACITOR DISCHARGE", windup: 1.5, manual: true, fn: f => capacitorRelease(f) },
@@ -83,6 +94,9 @@ function evoMoveOf(f, d) {
     if (!d || !f || !f.alt) return null;
     return evoMoveAllowed(f, d, f.alt) ? MOVES[f.alt] : null;
 }
+// A saved choice of BASH on a form whose own second attack has replaced it since (build 2026-11-09c: the nine forms of "THE NINE SECOND ATTACKS"): the form's own, so a follower the player had locked on its
+// second attack stays on its second attack (js/facilitysave.js asks on load). Anything else is kept as it was.
+function moveAltCarried(f, alt) { const d = followerMoveDef(f); return alt === "bash" && d && !evoMoveAllowed(f, d, "bash") && evoMoveIds(d).length ? evoMoveIds(d)[0] : alt; }
 function followerAltLocked(f) { return !!(f && f.alt && evoMoveOf(f)); }
 // locked on a move that needs it close (BASH): the reach it closes to, else 0 (js/npc.js: a Mage locked on one walks in, as a Brawler does)
 function followerAltCloseReach(f) { const m = f && f.alt ? evoMoveOf(f) : null; return m && m.close ? moveReach(m.id) : 0; }
@@ -99,5 +113,6 @@ function followerAltSet(f, id) {
 // A move's reach (tiles): it winds up only with an enemy it can see this close, the reach the move itself looks in
 const MOVE_REACH = { petal_blaze: () => BLOOM_RADIUS, quill_burst: () => QUILL_RANGE, arc_volley: () => REAVER_RANGE, singularity_shot: () => SERPENT_RANGE, static_rush: () => MANTA_RANGE, hexfire: () => HALO_RANGE,
     corrode_shot: () => ROT_RANGE, gravity_slam: () => MIMIC_RADIUS, eruption: () => CALDERA_RADIUS, chomp: () => MAW_RANGE, pinball: () => PIN_RANGE,
-    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, seedfall: () => SEEDFALL_RANGE, bash: () => BASH_RANGE, stake_ring: () => STAKE_RADIUS, sweet_scent: () => SCENT_RADIUS, capacitor_discharge: () => CAP_REACH };
+    static_vortex: () => VORTEX_RANGE, magma_vent: () => MAGMA_RANGE, rotten_decoy: () => ROT_RANGE, seedfall: () => SEEDFALL_RANGE, bash: () => BASH_RANGE, stake_ring: () => STAKE_RADIUS, zigzag_dash: () => ZIG_RANGE, wobble_slam: () => WOBBLE_RADIUS, icicle_volley: () => ICICLE_RANGE, echo_pulse: () => ECHO_RADIUS,
+    shell_guard: () => GUARD_LURE, phase_swap: () => SWAP_RANGE, venom_bite: () => VENOM_RANGE, shock_zap: () => ZAP_RANGE, skate_charge: () => SKATE_RANGE, sweet_scent: () => SCENT_RADIUS, capacitor_discharge: () => CAP_REACH };
 function moveReach(id) { try { const r = MOVE_REACH[id] ? MOVE_REACH[id]() : 0; return r > 0 ? r : 5; } catch (e) { return 5; } }

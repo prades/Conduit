@@ -202,7 +202,7 @@ const EVOLUTIONS = {
     // reviews (docs/CONVERSION.md §13): a long, skinny, flat black body, a rounded-off head with no face, four single-arch legs, its tail fading into a glowing yellow and ending in a
     // zig-zag bolt. It slithers like an eel, legs paddling, and is quick: its pace is 1.6 × (js/abilities.js tickSlowSpeed; the owner: "it's really fast"; the number is provisional). Its second
     // attack is BASH for now (the owner: "BASH for now"); its own attacks, subclass and Ultimate are open (it uses the electric Ultimate and has no subclass yet).
-    electroskink:{ id: "electroskink", name: "ELECTRO SKINK", element: "electric", role: "brawler", move: "BASH", moves: ["bash"], pace: 1.6, sheet: "img/evo/electroskink.png",
+    electroskink:{ id: "electroskink", name: "ELECTRO SKINK", element: "electric", role: "brawler", move: "ZIGZAG DASH", moves: ["zigzag_dash"], pace: 1.6, sheet: "img/evo/electroskink.png",
               cell: 192, anchor: [96, 138.2], core: [96, 128.9], noGlow: true, color: "#ffe033" },   // (a 192 px cell since build 2026-11-08b, the owner: "make him darker and bigger": the same pixels a unit as the 144 px sheets, so it draws 1.4 × as big)
     // The ELECTRIC BRAWLER until build 2026-11-08a, design No. 781 (darkened): a near-black ball with an exposed amber diamond core, a slim tread band, open shell plates and a
     // pair of long thick trapezoid brackets down its back, static arcing between them. The tread and core move, so its sheet carries its own light.
@@ -215,13 +215,13 @@ const EVOLUTIONS = {
     embercowl:{ id: "embercowl", name: "EMBER HOOD", element: "fire", role: "sniper", move: "HEXFIRE", moves: ["hexfire"], shot: "FIREBALL",   /* (FIRE BOMBS taken out as an alternate: the owner, 2026-11-07, build ii) */ sheet: "img/evo/embercowl.png",
               cell: 144, anchor: [72, 114.2], core: [72, 77], noGlow: true, color: "#ff5a1f" },
     // The CORE TECHNICIAN ("camper" in the code; it was the core brawler: swapped), design No. 467: a hammerheaded slug, a uniform hexagon tile cover either side of a spiked spine, a small horn. The tiles ripple, so the sheet carries its own light.
-    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/hammerslug.png",
+    hammerslug:{ id: "hammerslug", name: "HAMMER SLUG", element: "core", role: "camper", move: "SHELL GUARD", moves: ["shell_guard"], sheet: "img/evo/hammerslug.png",
               cell: 144, anchor: [72, 114.2], core: [72, 99.5], noGlow: true, color: "#33e6c4" },
     // THE TECHNICIANS' FORMS ("camper" in the code), from the user's sheets. No signature move: the technician's job is the user's exploration tools, to come.
     // The FLUX TECHNICIAN, design No. 853 (the "GOO PROXY" sheet, then the user's review: "a frog face with diamond eye iris and one is way bigger than the other and
     // smaller ring", "thinner diamonds"): a head of violet goo in a small black spiked ring, two bulging eyes on top, one far bigger than the other, a thin diamond for
     // each iris with a slit of a pupil, a wide smile. It breathes and looks about, so the sheet carries its own light.
-    gooproxy:{ id: "gooproxy", name: "GOO PROXY", element: "flux", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/gooproxy.png",
+    gooproxy:{ id: "gooproxy", name: "GOO PROXY", element: "flux", role: "camper", move: "PHASE SWAP", moves: ["phase_swap"], sheet: "img/evo/gooproxy.png",
               cell: 144, anchor: [72, 114.2], core: [72, 85.1], noGlow: true, color: "#bb66ff" },
     // The FIRE TECHNICIAN, design No. 855 (the "THERMITE BU…" sheet, its name cut off on it, then the user's review: "a black body with red glowing accents",
     // "thick armored arms", "more like a bear/zoids style tank animal ... same silhouette", "no ears or any face"): a hunched black armoured digger with seams of
@@ -231,7 +231,7 @@ const EVOLUTIONS = {
     // The TOXIC TECHNICIAN, design No. 873 (the user's card, "BLIGHT SPIDER · TOXIC DEPLOY", then the review: "smaller, thinner, finer legs, and ... lower to the
     // ground"): a glass tank of bubbling toxin with black bands and a black front cap with a lens, on a black chassis riding low on six fine spider legs. The toxin
     // bubbles and the legs trot, so the sheet carries its own light.
-    blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/blightspider.png",
+    blightspider:{ id: "blightspider", name: "BLIGHT SPIDER", element: "toxic", role: "camper", move: "VENOM BITE", moves: ["venom_bite"], sheet: "img/evo/blightspider.png",
               cell: 144, anchor: [72, 114.2], core: [72, 79.6], noGlow: true, color: "#66ff66" },
     // The ELECTRIC TECHNICIAN, design No. 882 (the user's pencil sketch of 2026-11-01, "sleek redesign of the electric technician", then on No. 880: "the hover shell
     // should have wings trapezoidal and a manta ray like mouth open and long and straight", and on No. 882: "Yes to all"): a manta of a hover craft, a long low black
@@ -239,12 +239,12 @@ const EVOLUTIONS = {
     // its whole front, a long straight slot with a jutting jaw and gill plates lit yellow inside; two tall launcher prongs on top. Its action frames fire the launcher:
     // an arc between the prongs and a ring of light out of its mouth. It was No. 877 (the "ELECTRIC TECHNICIAN · FINAL CONCEPT" sheet's horseshoe-crab shell over a
     // six-legged shuttle, whose action frames lifted the shell off). It glows, so the sheet carries its own light.
-    hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/hovershell.png",
+    hovershell:{ id: "hovershell", name: "HOVER SHELL", element: "electric", role: "camper", move: "SHOCK ZAP", moves: ["shock_zap"], sheet: "img/evo/hovershell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 91.1], noGlow: true, color: "#ffee33" },
     // The ICE TECHNICIAN, design No. 857 (the user's pencil sketch: "a rectangular igloo looking dude that has diamonds for legs, who skates around", then the review:
     // "only 4 legs", "fitted bricks on the body", "the diamonds are nested under the body", "bigger bricks 2 layers", "moves like a train cart, so that the smaller side is
     // front facing"): a long box of big fitted ice bricks, narrow end first, on four diamonds nested in sockets under it. It glides, so the sheet carries its own light.
-    igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", move: "BASH", moves: ["bash"], sheet: "img/evo/igloo.png",
+    igloo:  { id: "igloo",  name: "IGLOO SKATER", element: "ice", role: "camper", move: "SKATE CHARGE", moves: ["skate_charge"], sheet: "img/evo/igloo.png",
               cell: 144, anchor: [72, 114.2], core: [72, 89], noGlow: true, color: "#9fe8ff" },
     // The CORE BRAWLER, design No. 881 (the user's pencil sketch of 2026-11-01: "a hard redesign of the jelly ram, [glass] head with bubble inside lit up blue white and a
     // swirly collar that orbits his neck", then "The brawler looks good"): a faceted glass head, a dodecahedron with its edges picked out, a bubble inside it lit blue white
@@ -252,15 +252,15 @@ const EVOLUTIONS = {
     // did (the user's review of the "JELLY RAM" sheet: "move with flicks from all of its tentacles like the jellyfish from SpongeBob"), every tentacle flicking back at once;
     // its action frames are the ram, head first, the bubble flaring. It was No. 867 (a clear dome with a big diamond under a black helmet band, a horn out of either side).
     // No signature move (AEGIS BURST went with the followers' shield). It is in core's teal, its bubble blue white. It swims, so the sheet carries its own light.
-    jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", move: "BASH", moves: ["bash"], sheet: "img/evo/jellyram.png",
+    jellyram:{ id: "jellyram", name: "JELLY RAM", element: "core", role: "brawler", move: "WOBBLE SLAM", moves: ["wobble_slam"], sheet: "img/evo/jellyram.png",
               cell: 144, anchor: [72, 114.2], core: [72, 64.7], noGlow: true, color: "#33e6c4" },
     // The ICE MAGE ("sniper" in the code), design No. 861 (the user's sheet, which has no name): a white drone of three long fins round a faceted blue diamond, black
     // joints ringed with light, a dark disc with a glowing eye at its back. No signature move (there was none for an ice mage). The fins sway, so the sheet carries its own light.
-    rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", move: "BASH", moves: ["bash"], sheet: "img/evo/rimestar.png",
+    rimestar:{ id: "rimestar", name: "RIMESTAR", element: "ice", role: "sniper", move: "ICICLE VOLLEY", moves: ["icicle_volley"], sheet: "img/evo/rimestar.png",
               cell: 144, anchor: [72, 114.2], core: [72, 72.1], noGlow: true, color: "#9fe8ff" },
     // The CORE MAGE ("sniper" in the code), design No. 220: a black shell-jar dragged along the ground on its side by fat, irregular
     // tentacles, a shard horn at the mouth. The tentacles move, so its sheet carries its own light.
-    hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "BASH", moves: ["bash"], sheet: "img/evo/hornshell.png",
+    hornshell:{ id: "hornshell", name: "HORNSHELL", element: "core", role: "sniper", move: "ECHO PULSE", moves: ["echo_pulse"], sheet: "img/evo/hornshell.png",
               cell: 144, anchor: [72, 114.2], core: [72, 89.4], noGlow: true, color: "#33e6c4" },
     // The TOXIC BRAWLER: a matte black volcano on four feet. Its shell is black and its goo moves, so its sheet carries its own light.
     // LEGACY: the first toxic brawler. New evolutions use the Seeper; a follower already evolved into this keeps it.
@@ -711,6 +711,177 @@ function scentLure(p) {
     const s = p && p._scentBy; if (!s) return null;
     if (s.dead || s.team !== "green" || (typeof frame !== "undefined" ? frame : 0) >= (p._scentUntil || 0)) { p._scentBy = null; return null; }
     return s;
+}
+
+// ── THE NINE SECOND ATTACKS (build 2026-11-09c) ──
+// The owner, 2026-11-09, picked one of the agent's drafts for each form that had BASH as a stand-in (one form at a time): the ELECTRO SKINK's ZIGZAG DASH, the JELLY RAM's WOBBLE SLAM, the RIMESTAR's
+// ICICLE VOLLEY, the HORNSHELL's ECHO PULSE, the HAMMER SLUG's SHELL GUARD, the GOO PROXY's PHASE SWAP ("Suggest more", then that), the BLIGHT SPIDER's VENOM BITE, the HOVER SHELL's SHOCK ZAP, the IGLOO
+// SKATER's SKATE CHARGE. Each is a chosen mode with a wind-up, as every second attack (js/moves.js), and each hit reads ATK as an alternate (DMG_HIT_ALT's `which`), with a type of its own (below). Every
+// number and type is the agent's, PROVISIONAL; their looks are plain for now and are to be designed next "with 3-D flare" (the owner). Each returns true when it fired.
+const DMG_HIT_ZIGZAG = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
+const DMG_HIT_WOBBLE = Object.freeze({ which: "alt", stat: "atk", type: "crushing" });
+const DMG_HIT_ICICLE = Object.freeze({ which: "alt", stat: "sp", type: "projectile" });   // (the Mage's shot, three times: it reads SP.ATK)
+const DMG_HIT_ECHO = Object.freeze({ which: "alt", stat: "atk", type: "elemental" });
+const DMG_HIT_SWAP = Object.freeze({ which: "alt", stat: "atk", type: "elemental" });
+const DMG_HIT_VENOM = Object.freeze({ which: "alt", stat: "atk", type: "piercing" });
+const DMG_HIT_ZAP = Object.freeze({ which: "alt", stat: "atk", type: "elemental" });
+const DMG_HIT_SKATE = Object.freeze({ which: "alt", stat: "atk", type: "slashing" });
+function _evoBoss(a) { return !!(a && (a.bossId || a.bossName || a.isBoss)); }
+function _evoNearest(x, y, list) { let best = null, bd = Infinity; for (const a of list) { const d = Math.hypot(a.x - x, a.y - y); if (d < bd) { bd = d; best = a; } } return best; }
+function _evoSay(f, text, color) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: f.x, y: f.y, text, color, life: 50, vy: -0.06, size: 10 }); }
+function _evoFx(e) { if (typeof elementEffects !== "undefined") elementEffects.push(e); }
+
+// ZIGZAG DASH (the Electro Skink's): it darts from where it stands to the nearest enemy it can see within ZIG_RANGE, then on to the nearest not yet struck within ZIG_HOP of that one, ZIG_HITS in all, each
+// leg along floor it could walk (SONIC ROLL's rule); each it passes takes ZIG_MULT × its attack (Slashing, electric) and its wind-up is broken (GLITCH, ZIG_GLITCH frames). It ends beside the last one;
+// a crackling trail shows the way it went.
+const ZIG_RANGE = 4, ZIG_HOP = 2.5, ZIG_HITS = 3, ZIG_MULT = 1, ZIG_GLITCH = 30;
+function zigzagDash(f) {
+    const first = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ZIG_RANGE).filter(a => _evoDashOk(f, a)));
+    if (!first) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, path = [{ x: f.x, y: f.y }], hits = [first];
+    for (let last = first; hits.length < ZIG_HITS;) { const n = _evoNearest(last.x, last.y, _evoFoesSeen(last.x, last.y, ZIG_HOP).filter(a => hits.indexOf(a) < 0 && _evoDashOk(last, a))); if (!n) break; hits.push(n); last = n; }
+    for (const a of hits) {
+        path.push({ x: a.x, y: a.y });
+        applyDamage(a, (f.power || 10) * ZIG_MULT, f, "electric", false, false, DMG_HIT_ZIGZAG);
+        if (!a.dead && typeof applyGlitch === "function") applyGlitch(a, ZIG_GLITCH);
+        _evoFx({ type: "impact", x: a.x, y: a.y, color: "#ffee33", radius: 0.5, life: 16 });
+    }
+    const last = hits[hits.length - 1], prev = path[path.length - 2], dx = last.x - prev.x, dy = last.y - prev.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8);
+    f.x = prev.x + dx / L * s; f.y = prev.y + dy / L * s; f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
+    f._arcPts = path.slice(0, -1).reverse(); f._arcUntil = f0 + 20; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];   // (drawn from where it ends, back along its way)
+    f._sigAt = f0; f._sigCd = moveWindupFrames("zigzag_dash"); f.state = "attack"; f.attackAnim = 0;
+    _evoSay(f, "ZIGZAG DASH", "#fff27a");
+    return true;
+}
+// WOBBLE SLAM (the Jelly Ram's): it bounces up and lands on its jelly body: every enemy it can see within WOBBLE_RADIUS takes WOBBLE_MULT × its attack (Crushing) and is staggered WOBBLE_STUN frames (not a
+// boss).
+const WOBBLE_RADIUS = 1.5, WOBBLE_MULT = 1.2, WOBBLE_STUN = 30;
+function wobbleSlam(f) {
+    const foes = _evoFoesSeen(f.x, f.y, WOBBLE_RADIUS);
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const a of foes) {
+        applyDamage(a, (f.power || 10) * WOBBLE_MULT, f, null, false, false, DMG_HIT_WOBBLE);
+        if (!a.dead && !_evoBoss(a) && typeof applyStun === "function") applyStun(a, WOBBLE_STUN);
+    }
+    f._wobbleAt = f0; f._sigAt = f0; f._sigCd = moveWindupFrames("wobble_slam"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "ring", x: f.x, y: f.y, radius: WOBBLE_RADIUS, color: "#00ccaa", life: 24 }); _evoFx({ type: "impact", x: f.x, y: f.y, color: "#7fffe0", radius: 0.9, life: 18 });
+    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 3);
+    _evoSay(f, "WOBBLE SLAM", "#7fffe0");
+    return true;
+}
+// ICICLE VOLLEY (the Rimestar's): a fan of ICICLE_COUNT icicles at the nearest enemy it can see within ICICLE_RANGE, ICICLE_FAN radians apart; each is its shot (SP.ATK × the Mages' share), ice, and
+// one that hits slows its target to ICICLE_SLOW_F of its speed for ICICLE_SLOW frames.
+const ICICLE_RANGE = 7, ICICLE_COUNT = 3, ICICLE_FAN = 0.26, ICICLE_SLOW = 120, ICICLE_SLOW_F = 0.6;
+function icicleVolley(f) {
+    const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ICICLE_RANGE));
+    if (!t || typeof spawnFollowerProjectile !== "function") return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, dmg = (f.stats && f.stats.specialAttack || 10) * (typeof MAGE_SHOT_MULT !== "undefined" ? MAGE_SHOT_MULT : 0.5);
+    const d = Math.hypot(t.x - f.x, t.y - f.y) || 1, a0 = Math.atan2(t.y - f.y, t.x - f.x), slow = a => { if (a && !a.dead && typeof applySlow === "function") applySlow(a, ICICLE_SLOW, ICICLE_SLOW_F); };
+    for (let k = 0; k < ICICLE_COUNT; k++) {
+        const ang = a0 + (k - (ICICLE_COUNT - 1) / 2) * ICICLE_FAN, aim = k === (ICICLE_COUNT - 1) / 2 ? t : { x: f.x + Math.cos(ang) * d, y: f.y + Math.sin(ang) * d };
+        spawnFollowerProjectile(f, aim, "#bfefff", dmg, 4, slow, DMG_HIT_ICICLE, { range: ICICLE_RANGE + 1 });
+    }
+    f.dirX = Math.cos(a0); f.dirY = Math.sin(a0); f._sigAt = f0; f._sigCd = moveWindupFrames("icicle_volley"); f.state = "attack"; f.attackAnim = 0;
+    _evoSay(f, "ICICLE VOLLEY", "#bfefff");
+    return true;
+}
+// ECHO PULSE (the Hornshell's): a ring of sound out to ECHO_RADIUS: every enemy it can see in it takes ECHO_MULT × its attack (core) and its wind-up is broken (GLITCH, ECHO_GLITCH frames).
+const ECHO_RADIUS = 4, ECHO_MULT = 0.4, ECHO_GLITCH = 30;
+function echoPulse(f) {
+    const foes = _evoFoesSeen(f.x, f.y, ECHO_RADIUS);
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    for (const a of foes) { applyDamage(a, (f.power || 10) * ECHO_MULT, f, null, false, false, DMG_HIT_ECHO); if (!a.dead && typeof applyGlitch === "function") applyGlitch(a, ECHO_GLITCH); }
+    f._sigAt = f0; f._sigCd = moveWindupFrames("echo_pulse"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "ring", x: f.x, y: f.y, radius: ECHO_RADIUS, color: "#00ccaa", life: 30 }); _evoFx({ type: "ring", x: f.x, y: f.y, radius: ECHO_RADIUS * 0.6, color: "#7fffe0", life: 22 });
+    _evoSay(f, "ECHO PULSE", "#7fffe0");
+    return true;
+}
+// SHELL GUARD (the Hammer Slug's): with an enemy it can see within GUARD_LURE (not a boss), it braces in its shell for GUARD_FRAMES: it takes GUARD_CUT less damage (js/helpers.js applyDamage asks
+// shellGuardCut), and every such enemy goes for it for that time (SWEET SCENT's lure: js/predator.js predatorPickPrey asks scentLure).
+const GUARD_FRAMES = 240, GUARD_CUT = 0.5, GUARD_LURE = 3;
+function shellGuard(f) {
+    const foes = _evoFoesSeen(f.x, f.y, GUARD_LURE).filter(a => !_evoBoss(a));
+    if (!foes.length) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    f._guardUntil = f0 + GUARD_FRAMES;
+    for (const a of foes) { a._scentBy = f; a._scentUntil = f0 + GUARD_FRAMES; a.provoked = true; }
+    f._sigAt = f0; f._sigCd = moveWindupFrames("shell_guard");
+    _evoFx({ type: "ring", x: f.x, y: f.y, radius: GUARD_LURE, color: "#00ccaa", life: 30 });
+    _evoSay(f, "SHELL GUARD", "#7fffe0");
+    return true;
+}
+function shellGuardCut(t, amount) { return t && t._guardUntil > (typeof frame !== "undefined" ? frame : 0) ? amount * (1 - GUARD_CUT) : amount; }
+// PHASE SWAP (the Goo Proxy's): it swaps places with the nearest enemy it can see within SWAP_RANGE (not a boss; both spots floor one can stand on), flux; a goo burst at the spot it left hurts every
+// enemy within SWAP_BURST of it, the one it swapped with included, SWAP_MULT × its attack.
+const SWAP_RANGE = 6, SWAP_BURST = 1, SWAP_MULT = 1;
+function phaseSwap(f) {
+    const stand = (x, y) => typeof facilityStandOk !== "function" || facilityStandOk(x, y);
+    const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, SWAP_RANGE).filter(a => !_evoBoss(a) && stand(a.x, a.y)));
+    if (!t || !stand(f.x, f.y)) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, ox = f.x, oy = f.y;
+    f.x = t.x; f.y = t.y; f._fpPath = null; t.x = ox; t.y = oy; t._fpPath = null; t.kbVX = t.kbVY = 0;
+    for (const a of _evoFoesSeen(ox, oy, SWAP_BURST)) applyDamage(a, (f.power || 10) * SWAP_MULT, f, null, false, false, DMG_HIT_SWAP);
+    f._sigAt = f0; f._sigCd = moveWindupFrames("phase_swap"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "impact", x: f.x, y: f.y, color: "#cc66ff", radius: 0.7, life: 18 }); _evoFx({ type: "ring", x: ox, y: oy, radius: SWAP_BURST, color: "#9933ff", life: 24 }); _evoFx({ type: "impact", x: ox, y: oy, color: "#e0a8ff", radius: 0.9, life: 20 });
+    _evoSay(f, "PHASE SWAP", "#d9a3ff");
+    return true;
+}
+// VENOM BITE (the Blight Spider's): it steps in and bites the nearest enemy it can see within VENOM_RANGE (BASH's reach, a close move): VENOM_MULT × its attack (Piercing), the enemy POISONED (its hits
+// VENOM_CUT weaker for VENOM_POISON frames: Pack 1's Precision numbers) and MARKED: your side's next VENOM_MARK hits on it, within VENOM_FRAMES, deal VENOM_BONUS more (js/helpers.js applyDamage asks
+// venomMark).
+const VENOM_RANGE = 1.8, VENOM_MULT = 1, VENOM_POISON = 240, VENOM_CUT = 0.4, VENOM_MARK = 3, VENOM_BONUS = 0.2, VENOM_FRAMES = 600;
+function venomBite(f) {
+    const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, VENOM_RANGE).filter(a => _evoDashOk(f, a)));
+    if (!t) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, dx = t.x - f.x, dy = t.y - f.y, L = Math.hypot(dx, dy) || 1, s = Math.max(0, L - 0.8);
+    f.x += dx / L * s; f.y += dy / L * s; f.dirX = dx / L; f.dirY = dy / L; f._fpPath = null;
+    applyDamage(t, (f.power || 10) * VENOM_MULT, f, null, false, false, DMG_HIT_VENOM);
+    if (!t.dead) { if (typeof applyWeaken === "function") applyWeaken(t, VENOM_POISON, 1 - VENOM_CUT); t._venomHits = VENOM_MARK; t._venomUntil = f0 + VENOM_FRAMES; }
+    f._sigAt = f0; f._sigCd = moveWindupFrames("venom_bite"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "impact", x: t.x, y: t.y, color: "#88ff44", radius: 0.6, life: 20 });
+    _evoSay(f, "VENOM BITE", "#88ff44");
+    return true;
+}
+function venomMark(t, src, amount) {
+    if (!t || !(t._venomHits > 0) || !(amount > 0) || !src || !(src.team === "green" || src.isPlayer)) return amount;
+    if ((typeof frame !== "undefined" ? frame : 0) >= (t._venomUntil || 0)) { t._venomHits = 0; return amount; }
+    t._venomHits--; return amount * (1 + VENOM_BONUS);
+}
+// SHOCK ZAP (the Hover Shell's): a zap from its shell at the nearest enemy it can see within ZAP_RANGE: ZAP_MULT × its attack, electric, and its wind-up broken (GLITCH, ZAP_GLITCH frames). Its KINETIC
+// LAUNCHER is untouched.
+const ZAP_RANGE = 4, ZAP_MULT = 1, ZAP_GLITCH = 30;
+function shockZap(f) {
+    const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, ZAP_RANGE));
+    if (!t) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0;
+    applyDamage(t, (f.power || 10) * ZAP_MULT, f, "electric", false, false, DMG_HIT_ZAP);
+    if (!t.dead && typeof applyGlitch === "function") applyGlitch(t, ZAP_GLITCH);
+    f._arcPts = [{ x: t.x, y: t.y }]; f._arcUntil = f0 + 16; f._arcStraight = false; f._arcFan = false; f._arcCol = [255, 238, 51];
+    f.dirX = t.x - f.x; f.dirY = t.y - f.y; f._sigAt = f0; f._sigCd = moveWindupFrames("shock_zap"); f.state = "attack"; f.attackAnim = 0;
+    _evoFx({ type: "impact", x: t.x, y: t.y, color: "#ffee33", radius: 0.5, life: 16 });
+    _evoSay(f, "SHOCK ZAP", "#fff27a");
+    return true;
+}
+// SKATE CHARGE (the Igloo Skater's): toward the nearest enemy it can see within SKATE_RANGE it skates in a straight line, on past it up to SKATE_RANGE in all along floor it could walk (else to it, as
+// SONIC ROLL stops): every enemy within SKATE_BAND of its line takes SKATE_MULT × its attack (Slashing, ice) and is slowed to SKATE_SLOW_F of its speed for SKATE_SLOW frames.
+const SKATE_RANGE = 4, SKATE_BAND = 0.8, SKATE_MULT = 1, SKATE_SLOW = 120, SKATE_SLOW_F = 0.6;
+function skateCharge(f) {
+    const t = _evoNearest(f.x, f.y, _evoFoesSeen(f.x, f.y, SKATE_RANGE).filter(a => _evoDashOk(f, a)));
+    if (!t) return false;
+    const f0 = typeof frame !== "undefined" ? frame : 0, x0 = f.x, y0 = f.y, dx = t.x - x0, dy = t.y - y0, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+    let len = Math.max(L, SKATE_RANGE);
+    if (typeof facilityLosFrom === "function" && !facilityLosFrom(x0, y0, x0 + ux * len, y0 + uy * len)) len = Math.max(0, L - 0.8);
+    const x1 = x0 + ux * len, y1 = y0 + uy * len, seg = (a) => { const t2 = Math.max(0, Math.min(1, ((a.x - x0) * ux + (a.y - y0) * uy) / (len || 1))); return Math.hypot(a.x - (x0 + ux * len * t2), a.y - (y0 + uy * len * t2)); };
+    const hit = _evoFoes(x0, y0, len + SKATE_BAND).filter(a => seg(a) <= SKATE_BAND && _evoSees(x0, y0, a));
+    if (hit.indexOf(t) < 0) hit.push(t);
+    for (const a of hit) { applyDamage(a, (f.power || 10) * SKATE_MULT, f, null, false, false, DMG_HIT_SKATE); if (!a.dead && typeof applySlow === "function") applySlow(a, SKATE_SLOW, SKATE_SLOW_F); }
+    f.x = x1; f.y = y1; f.dirX = ux; f.dirY = uy; f._fpPath = null;
+    for (let k = 0; k <= len; k += 0.7) _evoFx({ type: "impact", x: x0 + ux * k, y: y0 + uy * k, color: "#cff4ff", radius: 0.3, life: 14 });
+    f._sigAt = f0; f._sigCd = moveWindupFrames("skate_charge"); f.state = "attack"; f.attackAnim = 0;
+    _evoSay(f, "SKATE CHARGE", "#bfefff");
+    return true;
 }
 
 // CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; the owner, 2026-11-07: "Apply both"). Locked on it, the Static

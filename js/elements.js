@@ -405,6 +405,7 @@ const ULT_CONSUME = { reach: 2, frames: 300, tick: 60, mult: 0.5, guard: 0.75 };
 // PROVISIONAL: its reach (tiles), the thicket's radius (tiles) and life (frames), a beat every `tick` frames of `mult` × its power on every enemy in it (Elemental, BLOOM's), each held
 // in place till the next beat.
 const ULT_THICKET = { reach: 7, radius: 2, frames: 300, tick: 30, mult: 0.3 };
+const ULT_CIRCUIT = { reach: 6, radius: 2.5, loop: 30, frames: 300, tick: 30, mult: 0.4, stun: 30 };   // the Electro Skink's LIGHTNING CIRCUIT (build 2026-11-09c; provisional): reach (tiles), the ring's radius (tiles), the loop's points (a frame each), 5 s, a beat every 0.5 s, × power a beat (electric), the stun for crossing (frames)
 const ULT_DRIFT = { reach: 6, loop: 36, width: 1.6, beyond: 1.5, cut: 1.8, mult: 1.5, glitch: 30, fast: 1.3, frames: 360 };   // the Hover Shell's DRIFT SLASH (the owner's design, 2026-11-07; the oval: "a circular sort of slash, like a sword [...] he goes in and turns around like an oval shape"; the name and numbers are the agent's, provisional): reach (tiles), frames round the oval, its half width (tiles), how far past the enemies it swings (tiles), the blade's reach (tiles), × power a slash (half slashing, half electric), frames of interrupt, the squad's speed, its frames
 const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "crushing" });
 const DMG_HIT_ULT_SLASH = Object.freeze({ which: "special", stat: "sp", type: "slashing" });
@@ -683,8 +684,24 @@ const FORM_ULTIMATES = {
         spawnElementEffect({ type: "hoverdrift", x: actor.x, y: actor.y, on: actor, home: [actor.x, actor.y], path, i: 0, hit: [], life, maxLife: life, element: "electric" });
         _ultSay(actor, "DRIFT SLASH", "#fff27a");
     } },
+    // LIGHTNING CIRCUIT (the Electro Skink's own, build 2026-11-09c; the owner, 2026-11-09, picked it of the agent's drafts: "It races a loop round the biggest group of enemies it can see, leaving a ring of
+    // lightning on the floor: for 5 s every enemy inside is shocked every half second, and one crossing the ring is stunned a moment"): the biggest group it can see within ULT_CIRCUIT.reach (DRIFT SLASH's
+    // pick); it races round it at ULT_CIRCUIT.radius (a point of the loop a frame, only where it can stand: "skinkloop"), then the ring ("circuit") lies there for ULT_CIRCUIT.frames: every ULT_CIRCUIT.tick
+    // frames each enemy inside that its middle can see takes ULT_CIRCUIT.mult × its power (electric), and one that has crossed the ring since the last beat is stunned ULT_CIRCUIT.stun frames (not a boss).
+    // Nothing in reach: the charge is kept. The numbers the agent's, PROVISIONAL.
+    electroskink: { name: "Lightning Circuit", desc: "It races a loop round the biggest group of enemies it can see, leaving a ring of lightning: for 5 s the enemies inside are shocked every half second, and one crossing the ring is stunned a moment", execute(actor) {
+        const C = ULT_CIRCUIT, foes = typeof _evoFoesSeen === "function" ? _evoFoesSeen(actor.x, actor.y, C.reach) : [];
+        if (!foes.length) return;
+        actor.ultimateCharge = 0;
+        let best = foes[0], bn = -1, bd = Infinity;   // the biggest group (most enemies within 2 tiles), the nearer on a tie
+        for (const a of foes) { const n = foes.filter(b => Math.hypot(b.x - a.x, b.y - a.y) <= 2).length, d = Math.hypot(a.x - actor.x, a.y - actor.y); if (n > bn || (n === bn && d < bd)) { bn = n; bd = d; best = a; } }
+        const cx = best.x, cy = best.y, a0 = Math.atan2(actor.y - cy, actor.x - cx), path = [];
+        for (let n = 0; n <= C.loop; n++) { const t = a0 + n / C.loop * Math.PI * 2, px = cx + Math.cos(t) * C.radius, py = cy + Math.sin(t) * C.radius; if (typeof facilityStandOk !== "function" || facilityStandOk(px, py)) path.push([px, py]); }
+        spawnElementEffect({ type: "skinkloop", x: actor.x, y: actor.y, on: actor, path, i: 0, cx, cy, life: path.length + 2, maxLife: path.length + 2, element: "electric" });
+        _ultSay(actor, "LIGHTNING CIRCUIT", "#fff27a");
+    } },
 };
-// The Ultimate a follower fires: its form's own, else its element's (null: none, a core form without its own)
+// The Ultimate a follower fires: its form's own (null: an unevolved follower, a form without its own)
 // BLOOM's MEND (docs/CONVERSION.md §2, "Its status, MEND"; build 2026-11-08i): every hit a BLOOM follower lands heals the most hurt of your followers within 4 tiles by 2% of that one's maximum
 // health (js/helpers.js applyDamage calls it). "The most hurt": the lowest share of its health left; the BLOOM follower itself counts, being one of yours (the agent's reading of the approved
 // words, confirmed by the owner 2026-11-08: "Your calls were correct"). A follower at full health is passed over; none hurt nearby, no heal.
@@ -709,12 +726,13 @@ function elementMend(src, opts) {
 }
 // A follower's Ultimate: its evolved form's own, or null (an unevolved follower has none; nor has a flagged form: build 2026-11-09b)
 function followerUltimate(a) { return a && a.evolved && FORM_ULTIMATES[a.evolved] || null; }
-// FLAGGED (build 2026-11-09b; the owner: "flag every single creature that's evolved and does not have an ultimate"): an evolved form with no Ultimate of its own yet (the Electro Skink; the retired forms
-// kept for old saves). It has none until its own is designed: no meter on its card, nothing fired, "NOT DESIGNED YET" on its INFO card (js/unitinfo.js).
-function followerUltPending(a) { return !!(a && a.evolved && !FORM_ULTIMATES[a.evolved]); }
+// FLAGGED (build 2026-11-09b; the owner: "flag every single creature that's evolved and does not have an ultimate"): an evolved form with no Ultimate of its own yet. It has none until its own is designed:
+// no meter on its card, nothing fired, "NOT DESIGNED YET" on its INFO card (js/unitinfo.js). Since build 2026-11-09c no current form is (the Electro Skink has LIGHTNING CIRCUIT), and the retired forms kept
+// for old saves never get one ("No, leave them"): they have no Ultimate and are not flagged.
+function followerUltPending(a) { return !!(a && a.evolved && !FORM_ULTIMATES[a.evolved] && !(typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[a.evolved] && EVOLUTIONS[a.evolved].legacy)); }   // (a retired form kept for old saves is not pending: it never gets one, the owner: "No, leave them", build 2026-11-09c)
 // does its meter fill? only with an Ultimate to fire (an unevolved follower's and a flagged form's stays where it is: build 2026-11-09b)
 function followerUltCharges(a) { return !!followerUltimate(a); }
-function formUltPending(id) { return !!id && typeof EVOLUTIONS !== "undefined" && !!EVOLUTIONS[id] && !FORM_ULTIMATES[id]; }
+function formUltPending(id) { return !!id && typeof EVOLUTIONS !== "undefined" && !!EVOLUTIONS[id] && !EVOLUTIONS[id].legacy && !FORM_ULTIMATES[id]; }
 // FIRE A FOLLOWER'S ULTIMATE NOW (build 2026-11-07ss; the owner: "access to use them"): its squad card's ULTIMATE (js/party.js) and a double-tap on it (js/input.js) both come here. True when one went off
 // (its charge spent); an Ultimate that found nothing to act on (no enemy for an eruption) keeps its charge. (A bonded pair's DUO is gone since build 2026-11-09b: a bond is for breeding: js/bonds.js.)
 function followerUltFire(f) {
@@ -744,6 +762,10 @@ let DEBUG_PREDATOR = false;   // (js/draw.js: a creature's facing and reach draw
 function spawnElementEffect(effect) {
     elementEffects.push({ ...effect, currentRadius: 0 });
 }
+// An effect made during the effects' own update (updateElementEffects rebuilds the list with a filter: one pushed onto it then is lost): held here and added once the update is done (build 2026-11-09c,
+// LIGHTNING CIRCUIT's ring and sparks)
+let _fxLater = [];
+function fxLater(effect) { _fxLater.push({ ...effect, currentRadius: 0 }); }
 
 // ── THE EFFECT BUDGET (Conduit effects plan, rule 5) ─────
 // Clouds of the same kind within a tile merge (the newer refreshes the older);
@@ -751,7 +773,7 @@ function spawnElementEffect(effect) {
 // long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
+const FX_LONG = { circuit: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
     const keep = [], clouds = [];
@@ -929,6 +951,28 @@ function updateElementEffects() {
                 e.x = o.x; e.y = o.y;
             }
         }
+        if (e.type === "skinkloop") {   // (the Electro Skink's LIGHTNING CIRCUIT: a point of its loop a frame, a spark where it runs, then the ring where the group was)
+            const o = e.on; if (!o || o.dead) e.life = 0;
+            else if (e.i >= e.path.length) {
+                o._fpPath = null; e.life = 0;
+                fxLater({ type: "circuit", x: e.cx, y: e.cy, radius: ULT_CIRCUIT.radius, by: o, bite: (o.power || 10) * ULT_CIRCUIT.mult, inside: [], near: [], life: ULT_CIRCUIT.frames, maxLife: ULT_CIRCUIT.frames, element: "electric" });
+            } else {
+                const p = e.path[e.i++], px0 = o.x, py0 = o.y; o.x = p[0]; o.y = p[1]; o._fpPath = null; o.dirX = o.x - px0; o.dirY = o.y - py0; e.x = o.x; e.y = o.y;
+                if (e.i % 3 === 0) fxLater({ type: "impact", x: o.x, y: o.y, color: "#fff27a", radius: 0.35, life: 12 });
+            }
+        }
+        if (e.type === "circuit") {   // (LIGHTNING CIRCUIT's ring: a beat every ULT_CIRCUIT.tick frames: a shock for each enemy inside, a stun for one that has crossed the ring since the last beat)
+            const C = ULT_CIRCUIT, age = e.maxLife - e.life;
+            if (age > 0 && e.life > 0 && age % C.tick === 0) {
+                const near = typeof _evoFoesSeen === "function" ? _evoFoesSeen(e.x, e.y, e.radius + 1.5) : [], inside = [];
+                for (const a of near) {
+                    const isIn = Math.hypot(a.x - e.x, a.y - e.y) <= e.radius;
+                    if (isIn) { inside.push(a); applyDamage(a, e.bite, e.by || null, "electric", false, false, DMG_HIT_SPECIAL); }
+                    if (e.near.indexOf(a) >= 0 && (e.inside.indexOf(a) >= 0) !== isIn && !a.dead && !(a.bossId || a.bossName || a.isBoss) && typeof applyStun === "function") { applyStun(a, C.stun); fxLater({ type: "impact", x: a.x, y: a.y, color: "#ffffaa", radius: 0.6, life: 16 }); }
+                }
+                e.inside = inside; e.near = near.filter(a => !a.dead);
+            }
+        }
         if (e.type === "thunderstorm") {   // (the Thunderhead's Ultimate: moves with it, a bolt each tick on a random enemy under it)
             const o = e.on; if (!o || o.dead) e.life = 0;
             else { e.x = o.x; e.y = o.y; const age = e.maxLife - e.life;
@@ -970,6 +1014,7 @@ function updateElementEffects() {
 
         return e.life > 0;
     });
+    if (_fxLater.length) { for (const e of _fxLater) elementEffects.push(e); _fxLater = []; }   // (made during the update: fxLater)
     fxTidy();
 }
 
@@ -1283,6 +1328,20 @@ function drawElementEffects() {
             }
             // HEXFIRE's circle (js/evolution.js hexfireCircle): a disc of floor HALO_RADIUS tiles round, burning, that never grows or moves: a glow, its edge, a hexagon of fire turning slowly in it,
             // flames standing on its edge. (A circle on the floor is an ellipse on screen, its radius √2 tiles across each screen axis.)
+            // LIGHTNING CIRCUIT's ring (build 2026-11-09c; a plain look for now, to be designed "with 3-D flare"): a faint yellow disc on the floor and a crackling ring at its edge, its zig-zag redrawn every
+            // few frames; brighter on a beat. (A circle on the floor is an ellipse on screen, its radius √2 tiles across each screen axis.)
+            case "circuit": {
+                const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H;
+                const beat = ((e.maxLife - e.life) % ULT_CIRCUIT.tick) < 6, seed = Math.floor(frame / 3);
+                ctx.globalAlpha = (beat ? 0.2 : 0.1) * k; ctx.fillStyle = "#fff27a";
+                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                for (const [w, col, al] of [[4, "#ffee33", 0.35], [1.6, "#ffffe6", 0.95]]) {
+                    ctx.globalAlpha = al * k * (beat ? 1 : 0.75); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath();
+                    for (let i = 0; i <= 36; i++) { const an = i / 36 * Math.PI * 2, j = i % 36 ? (((Math.sin((i + seed) * 12.9898) * 43758.5) % 1 + 1) % 1 - 0.5) * 0.18 : 0, hx = px + Math.cos(an) * rx * (1 + j), hy = cy + Math.sin(an) * ry * (1 + j); if (i) ctx.lineTo(hx, hy); else ctx.moveTo(hx, hy); }
+                    ctx.stroke();
+                }
+                break;
+            }
             case "hexfire": {
                 const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H;
                 ctx.globalAlpha = 0.26 * k; ctx.fillStyle = "#ff4a12";
