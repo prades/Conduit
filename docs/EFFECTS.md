@@ -114,14 +114,14 @@ The owner's pick for the third piece (2026-11-09, "Rotshard's black spike").
 - About 1.15 form-units tall: 28 px at the forms' scale, drawn at each effect's own heights.
 - **Approved 2026-11-09** ("Yes, build it"), from the large preview.
 
-**In the game (built in `2026-11-09u` on the preview, `?fx=3d`).**
+**In the game (built in `2026-11-09u` on the preview; for everyone since `2026-11-09v`).**
 - The sheet is 8 turns in one row, in 72 px cells. It is lit from low in front by the green of the mist it stands in, so its facets catch it. The mist is still drawn in code.
 - **ROTTEN DECOY** stands its four at the drawn ones' places and heights (the tallest 44 px). They rise out of the floor over the 8 frames it is set in.
 - **TOXIC PUDDLE** stands three under each enemy it bites (the middle one 16 px, the sides three quarters). They rise as before and stay solid for most of their fade.
 - **The CRYSTAL SPIKE TRIO card attack** draws the same cluster, so it uses the spike too.
 - Each spike is turned by where it is in the world, not on the screen, and has a soft dark foot. A cluster costs under 30 canvas operations.
 - Rules, timing and hits are unchanged. Until its sheet arrives, or without `?fx=3d`, the drawn spikes are shown.
-- **Waiting for the owner's approval in the game.**
+- **Approved in the game 2026-11-09** ("Approve it for everyone"), from the in-game pictures, old and new side by side. It has been live for everyone since build `2026-11-09v`. The drawn spikes are kept only for the moment before its sheet arrives.
 - Tested: `tests/fx3d.js`. Checked in the real page with pictures, old and new side by side.
 
 ## 4. Open questions
@@ -129,7 +129,7 @@ The owner's pick for the third piece (2026-11-09, "Rotshard's black spike").
 - ~~What "3-D flare" means~~ *(answered 2026-11-09: "Modelled 3D pieces")*. ~~Which piece first~~ *(answered: "Quillstone's quill"; its model approved, "Yes, build it")*.
 - ~~**The quill in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09f`)*.
 - ~~**The icicle in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09h`)*.
-- **The black spike in the game** (build `2026-11-09u`, on `?fx=3d`): for the owner's approval.
+- ~~**The black spike in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09v`)*.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.

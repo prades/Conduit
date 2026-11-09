@@ -9,12 +9,13 @@ const FX3D = {
         // the RIMESTAR's icicle (ICICLE VOLLEY): one of the frost shards its cast throws (design/evolutions/forms32.js), made big, a slender six-sided spike of pale blue ice; the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09g on the preview; approved in the game the same day, for everyone since 2026-11-09h
         icicle: { sheet: "img/fx/icicle.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
         // the ROTSHARD's black spike (ROTTEN DECOY, TOXIC PUDDLE; the CRYSTAL SPIKE TRIO card's cluster is the same): a spike of its old glassy-black shell (design/evolutions/forms5.js shellShard), its faces broken, chips at its
-        // foot, a hairline of its green crystal light in a crack; the owner's pick ("Rotshard's black spike") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09u on the preview.
+        // foot, a hairline of its green crystal light in a crack; the owner's pick ("Rotshard's black spike") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09u on the preview; approved in the game the same day, for everyone since 2026-11-09v.
         // UPRIGHT: it stands on the floor; its columns are the ways it is turned (yaws), one row; ax, ay its foot in the cell and tipY its tip (design/effects/out/rotspike.json), so it is drawn foot on the floor, rising out of it
         rotspike: { sheet: "img/fx/rotspike.png", cell: 72, yaws: 8, pitches: [0], upright: true, ax: 36, ay: 53.716, tipY: 11.535 },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
-               "icicle"],  // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
+               "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
+               "rotspike"],   // the ROTSHARD's black spike: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09v
 };
 let _fx3dPrev = null;
 function fx3dPreview() { try { return typeof location !== "undefined" && /[?&]fx=3d\b/.test(location.search || ""); } catch (e) { return false; } }

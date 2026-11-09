@@ -53,7 +53,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle', 'the approved pieces');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotspike', 'the approved pieces');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
@@ -109,7 +109,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         run('spriteCell = __sc; __preview(false); delete FX3D.pieces.quill._img;');
     });
 
-    group('THE ROTSHARD\'S BLACK SPIKE: A STANDING PIECE (ROTTEN DECOY, TOXIC PUDDLE; the owner\'s pick and its model approved 2026-11-09; build 2026-11-09u, on the preview)');
+    group('THE ROTSHARD\'S BLACK SPIKE: A STANDING PIECE (ROTTEN DECOY, TOXIC PUDDLE; the owner\'s pick and its model approved 2026-11-09; built in 2026-11-09u on the preview; approved in the game, for everyone since 2026-11-09v)');
     check('its sheet: eight turns in one row, at the forms\' pixels a unit; its foot and its tip as the baker wrote; the model is the Rotshard\'s (No. 101): its old shell\'s glassy black, a hairline of its green in a crack', () => {
         const P = J('FX3D.pieces.rotspike'), meta = JSON.parse(rd('design/effects/out/rotspike.json'));
         same(P.sheet, 'img/fx/rotspike.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + P.cell, 'the sheet\'s size'); same(P.upright, true, 'standing');
@@ -119,10 +119,10 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const b = rd('design/effects/bake_fx.js'); ok(/rotspike: \{ form: 101, color: '#14c040',/.test(b), 'not the Rotshard\'s (No. 101)');
         ok(/if \(piece === 'rotspike'\)/.test(b) && /MeshPhysicalMaterial\(\{ color: 0x060607/.test(b) && /CylinderGeometry\(0\.0065, 0\.009, A\.distanceTo\(B\) \* 1\.04, 5\), M\.glow\)/.test(b), 'not its black with its green crack');
     });
-    check('not approved yet: it shows only on the preview (?fx=3d); without it, and until its sheet arrives, the old drawn spikes (paths, no picture)', () => {
-        same(J('FX3D.approved.indexOf("rotspike")'), -1, 'approved');
-        run('__preview(false)'); same(J('fx3dOn("rotspike")'), false, 'on without the preview'); same(J('_fxRotSpikes3d(100, 100, [[0, 1]], 16, 1, 1, 3)'), false, 'drawn without the preview');
-        run('__preview(true); FX3D.pieces.rotspike._img = null;'); same(J('_fxRotSpikes3d(100, 100, [[0, 1]], 16, 1, 1, 3)'), false, 'drawn before its sheet arrived');
+    check('approved in the game (the owner, 2026-11-09: "Approve it for everyone"): on for everyone, with or without the preview; until its sheet arrives, the old drawn spikes (paths, no picture)', () => {
+        ok(J('FX3D.approved.indexOf("rotspike")') >= 0, 'not approved');
+        run('__preview(false)'); same(J('fx3dOn("rotspike")'), true, 'off without the preview');
+        run('FX3D.pieces.rotspike._img = null;'); same(J('_fxRotSpikes3d(100, 100, [[0, 1]], 16, 1, 1, 3)'), false, 'drawn before its sheet arrived');
         const old = J(`(function(){ const P = __pen(), keep = ctx; ctx = P.g; try { _fxRotSpikes(100, 100, 16, 6, 1, 1, 3); } finally { ctx = keep; } return P.calls.map(c => c[0]); })()`);
         ok(old.indexOf('drawImage') < 0 && old.filter(c => c === 'fill').length >= 4, 'not the old spikes: ' + old.join());
         run('delete FX3D.pieces.rotspike._img; __preview(false);');

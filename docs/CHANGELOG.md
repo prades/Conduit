@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09v` · branch `claude/start-game-project-HSh7Z` · the black spike for everyone
+- **The Rotshard's black spike is approved in the game** ("Approve it for everyone"), from the pictures of ROTTEN DECOY and TOXIC PUDDLE, old and new side by side. It is live for everyone (`FX3D.approved`); the drawn spikes show only until its sheet arrives.
+- Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09u` · branch `claude/start-game-project-HSh7Z` · the Rotshard's black spike, modelled (on the preview)
 The owner's pick for the next 3-D piece ("Rotshard's black spike"), its model approved from the large preview ("Yes, build it"). `docs/EFFECTS.md`.
 - **The piece:** a spike of the Rotshard's old glassy-black shell, its faces broken, chips at its foot, and a hairline of green light in a crack. It is the first standing piece; the quill and icicle fly.
