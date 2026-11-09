@@ -32,7 +32,18 @@ const PIECES = {
   // ROTTEN DECOY (the ROTSHARD; the owner, 2026-11-09: "Make the decoy a black Rotshard"): its design's "black crystal copy", the Rotshard's own model (No. 101: the eaten crystal leaning in its pool,
   // the old shell shard) in its old shell's glassy black, its pool tar-black, no light of its own and no glow (the owner: "I don't like the green aura"); the shell shard's hairline crack keeps its green.
   // A COPY: its columns are frames of its idle loop (the Rotshard's own, 2 pi / 1.6 s), facing the camera; drawn at the forms' scale.
-  rotdecoy: { form: 101, color: '#14c040', copy: true, upright: true, h: 2.0, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6 },   // (a draft, for the owner's yes)
+  rotdecoy: { form: 101, color: '#14c040', copy: true, upright: true, h: 2.0, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
+    cap: ['ROTTEN DECOY (right) beside the Rotshard (left), at one scale', '(the Rotshard\'s own model, all black; no glow)'] },   // (approved in the game 2026-11-09: "Approve the black decoy")
+  // PROXY SWARM (the GOO PROXY, No. 853, the frog; the owner's pick for the next piece, 2026-11-09: "Goo Proxy's goo copies"): its three copies as the Goo Proxy's own model made of goo, three ways
+  // for the owner's pick (P.skin): GOO, all of it in the violet goo of its head (the ring and its spikes too), its diamond eyes kept; BLACK GOO, all of it an inky wet black, only its diamond eyes lit;
+  // MELTING, all violet goo, sagging into a puddle of itself. No glow under it and no light of its own (the owner, of the Rotshard's spike: "I don't like the green aura"). A COPY, as ROTTEN DECOY's:
+  // its columns are frames of its idle loop (the frog's own, 2 pi / 1.6 s), drawn at the forms' scale. pv: the preview's views (the copy alone; beside the Goo Proxy), its spikes reach far.
+  goocopy: { form: 853, color: '#9933ff', copy: true, skin: 'goo', upright: true, h: 1.15, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
+    pv: { big: [4.4, 1.936, 0.2], gap: 1.35, side: [5.4, 2.7, 0.55] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(A: all of it in its violet goo, its diamond eyes kept; no glow)'] },   // (a draft)
+  goocopy_black: { form: 853, color: '#9933ff', copy: true, skin: 'blackgoo', upright: true, h: 1.15, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
+    pv: { big: [4.4, 1.936, 0.2], gap: 1.35, side: [5.4, 2.7, 0.55] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(B: all of it a wet black goo, only its diamond eyes lit; no glow)'] },   // (a draft)
+  goocopy_melt: { form: 853, color: '#9933ff', copy: true, skin: 'melt', upright: true, h: 0.95, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
+    pv: { big: [4.4, 1.936, 0.15], gap: 1.35, side: [5.4, 2.7, 0.5] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(C: all violet goo, sagging into a puddle of itself; no glow)'] },   // (a draft)
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
@@ -83,13 +94,35 @@ window.__fx = async function (mode, piece, P) {
           for (let j = 0; j < 3; j++) col.setXYZ(i + j, base.r * f + w, base.g * f + w, base.b * f + w); }
         col.needsUpdate = true; };
     }
-    if (P.copy) {   // the form's own model, every surface of it black: glassy for the crystal and the shell, tar for the pool; its glows, washes and light off; its hairline crack (M.glow) kept
+    if (P.copy && !P.skin) {   // the form's own model, every surface of it black: glassy for the crystal and the shell, tar for the pool; its glows, washes and light off; its hairline crack (M.glow) kept
       const glass = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); glass.envMapIntensity = 1.7;
       const tar = new T.MeshPhysicalMaterial({ color: 0x030303, metalness: 0.05, roughness: 0.75, clearcoat: 0.25, clearcoatRoughness: 0.35 }); tar.envMapIntensity = 0.35;   // (matte: a black pool, not a mirror)
       const B = FORMS2[P.form].build(); B.update(0, 0); B.g.rotation.y = PI / 4;
       B.g.traverse(o => { if (o.isSprite || o.isLight) { o.visible = false; if (o.isLight) o.intensity = 0; return; } if (!o.isMesh) return; const m = o.material;
         if (m === M.glow) return; if (m.transparent || m.blending === T.AdditiveBlending) { o.visible = false; return; } o.material = (m === M.slurry || m === M.rotDk) ? tar : glass; });
       g.add(B.g); g.userData.B = B;
+    }
+    if (P.copy && P.skin) {   // a copy MADE OF GOO (PROXY SWARM's): its own model, its glow on the floor and its light off; its diamond eyes (lit facet by facet, vertex-coloured) kept
+      const gc = new T.Color(P.color).convertSRGBToLinear().multiply(new T.Color(0x8cffff));   // (the frog's own goo colour, forms31.js _gooFrog: its element's violet, leaning blue)
+      const goo = new T.MeshStandardMaterial({ color: gc.clone().multiplyScalar(0.44), emissive: gc.clone().multiplyScalar(0.336), roughness: 0.1, metalness: 0 }); goo.envMapIntensity = 0.55;   // (its head's goo, solid)
+      const ink = new T.MeshPhysicalMaterial({ color: 0x020104, metalness: 0.1, roughness: 0.2, clearcoat: 1.0, clearcoatRoughness: 0.05 }); ink.envMapIntensity = 0.9;   // (black goo: wet and glossy)
+      const B = FORMS2[P.form].build(); B.update(0, 0); B.g.rotation.y = PI / 4;
+      B.g.traverse(o => { if (o.isSprite || o.isLight) { o.visible = false; if (o.isLight) o.intensity = 0; return; } if (!o.isMesh) return; const m = o.material;
+        if (m.blending === T.AdditiveBlending) { o.visible = false; return; }   // (its glow on the floor)
+        if (m.vertexColors) return;   // (its diamond eyes)
+        if (P.skin === 'blackgoo') { o.material = ink; return; }
+        if (m.transparent) return;   // (its goo: its head, its eyeballs, its drips, as they are)
+        if (m.isMeshBasicMaterial && m.color.r + m.color.g + m.color.b < 0.1) return;   // (its mouth and its pupils)
+        o.material = goo; });   // (the ring, its spikes and the lines of light along them: goo)
+      g.add(B.g); g.userData.B = B;
+      if (P.skin === 'melt') {   // sagging: lower and wider, goo running down its ring between the spikes into a puddle of itself spread round it
+        B.g.scale.set(1.14, 0.78, 1.14);
+        const pud = new T.Mesh(new T.SphereGeometry(1, 48, 10), goo); pud.scale.set(1.3, 0.05, 1.18); pud.position.set(0.03, 0, 0.04); g.add(pud);
+        [[1.05, 0.62], [-0.74, 0.98], [0.4, -1.12], [-1.06, -0.5]].forEach(([x, z], i) => { const d = new T.Mesh(new T.SphereGeometry(1, 24, 8), goo); d.scale.set(0.32 - 0.04 * i, 0.04, 0.26 - 0.03 * i); d.position.set(x, 0, z); g.add(d); });   // (lobes of it run out)
+        for (let i = 0; i < 4; i++) { const a = PI / 4 + i * PI / 2 + 0.12 * (i % 2 ? 1 : -1), r = 0.69, d = new T.Mesh(new T.SphereGeometry(1, 16, 12), goo);   // (drips down the ring's face, between its spikes, to the floor)
+          d.scale.set(0.06, 0.2 - 0.03 * (i % 2), 0.06); d.position.set(Math.sin(a) * r, 0.19, Math.cos(a) * r); B.g.add(d);
+          const foot = new T.Mesh(new T.SphereGeometry(1, 16, 8), goo); foot.scale.set(0.1, 0.05, 0.1); foot.position.set(Math.sin(a) * (r + 0.03), 0.02, Math.cos(a) * (r + 0.03)); B.g.add(foot); }
+      }
     }
     if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
       const black = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); black.envMapIntensity = 1.7;   // (glassy: a clear coat over the black)
@@ -112,12 +145,14 @@ window.__fx = async function (mode, piece, P) {
   const aim = (g, yaw, pitch) => { g.rotation.set(0, 0, 0); g.rotation.order = 'YZX'; g.rotation.y = -yaw; g.rotation.z = pitch; if (g.userData.relight) g.userData.relight(); };   // (a piece lit from the world's way: lit again)
   if (mode === 'preview' && P.copy) {   // a copy of a form: alone, large; then beside the form itself, at one scale
     const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
+    const V = P.pv || { big: [6.2, 2.728, 1.0], gap: 1.2, side: [5.2, 2.6, 0.75] };   // (ROTTEN DECOY's views unless the piece gives its own)
     const s1 = new T.Scene(); lit(s1); const q1 = build(); s1.add(q1);
-    const big = shot(s1, camFor(6.2, 2.728, 1.0), 1600, 704);
-    const s2 = new T.Scene(); lit(s2); EL = { color: P.color }; setElementColour(P.color); const B = FORMS2[P.form].build(); B.update(0, 0); B.g.rotation.y = PI / 4; B.g.position.set(-1.2 * Math.SQRT1_2, 0, 1.2 * Math.SQRT1_2); s2.add(B.g);
-    const q2 = build(); q2.position.set(1.2 * Math.SQRT1_2, 0, -1.2 * Math.SQRT1_2); s2.add(q2);
-    const side = shot(s2, camFor(5.2, 2.6, 0.75), 800, 400);
-    return { big: big.toDataURL('image/png'), side: side.toDataURL('image/png') };
+    const big = shot(s1, camFor(V.big[0], V.big[1], V.big[2]), 1600, 704);
+    const box = new T.Box3().setFromObject(q1);   // (how tall it stands: its top, for the game's record)
+    const s2 = new T.Scene(); lit(s2); EL = { color: P.color }; setElementColour(P.color); const B = FORMS2[P.form].build(); B.update(0, 0); B.g.rotation.y = PI / 4; B.g.position.set(-V.gap * Math.SQRT1_2, 0, V.gap * Math.SQRT1_2); s2.add(B.g);
+    const q2 = build(); q2.position.set(V.gap * Math.SQRT1_2, 0, -V.gap * Math.SQRT1_2); s2.add(q2);
+    const side = shot(s2, camFor(V.side[0], V.side[1], V.side[2]), 800, 400);
+    return { big: big.toDataURL('image/png'), side: side.toDataURL('image/png'), top: box.max.y };
   }
   if (mode === 'preview' && P.upright) {   // a standing piece: alone, large; then beside its form, as its effect sets it out (ROTTEN DECOY's four, at its heights)
     const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
@@ -147,7 +182,7 @@ window.__fx = async function (mode, piece, P) {
     const sheet = document.createElement('canvas'); sheet.width = C * P.yaws; sheet.height = C * P.pitches.length; const sg = sheet.getContext('2d');
     const probe = document.createElement('canvas'); probe.width = C; probe.height = C; const pg = probe.getContext('2d'); const edges = [];
     for (let j = 0; j < P.pitches.length; j++) for (let k = 0; k < P.yaws; k++) {
-      if (P.copy) { const B = q.userData.B; B.update(k / P.yaws * P.loop, 0); B.g.traverse(o => { if (o.isSprite || o.isLight) o.visible = false; }); } else aim(q, k * 2 * PI / P.yaws, P.pitches[j]);   // (a copy: frame k of its idle loop)
+      if (P.copy) { const B = q.userData.B; B.update(k / P.yaws * P.loop, 0); B.g.traverse(o => { if (o.isSprite || o.isLight) o.visible = false; if (o.isMesh && o.material && o.material.blending === T.AdditiveBlending) o.visible = false; }); } else aim(q, k * 2 * PI / P.yaws, P.pitches[j]);   // (a copy: frame k of its idle loop)
       renderer.render(scene, cam); sg.drawImage(renderer.domElement, k * C, j * C, C, C);
       pg.clearRect(0, 0, C, C); pg.drawImage(renderer.domElement, 0, 0, C, C); const d = pg.getImageData(0, 0, C, C).data; let edge = false;
       for (let i = 0; i < C && !edge; i++) for (const [x, y] of [[i, 0], [i, C - 1], [0, i], [C - 1, i]]) if (d[(y * C + x) * 4 + 3] > 8) { edge = true; break; }
@@ -174,9 +209,9 @@ window.__fx = async function (mode, piece, P) {
   if (MODE === 'preview') {
     // one picture: the piece large on top, the piece beside its form below (on the arena's dark floor colour, so the glow reads as it will)
     const q = await b.newPage(); await q.setViewportSize({ width: 1600, height: 1160 });
-    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>${PIECES[PIECE].copy ? 'ROTTEN DECOY (right) beside the Rotshard (left), at one scale' : PIECES[PIECE].upright ? 'ROTTEN DECOY\'s four ' + PIECE + 's beside the Rotshard, at one scale' : 'the ' + PIECE + ' beside its form, at one scale'}<br><span style="font-weight:400;font-size:18px">${PIECES[PIECE].copy ? '(the Rotshard\'s own model, all black; no glow)' : PIECES[PIECE].upright ? '(in the game the tallest is about 44 px; the green mist stays drawn in code)' : '(in the game it is about ' + Math.round(PIECES[PIECE].len * 96 / 3.4) + ' px long)'}</span></div></div></body>`);
+    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>${PIECES[PIECE].cap ? PIECES[PIECE].cap[0] : PIECES[PIECE].upright ? 'ROTTEN DECOY\'s four ' + PIECE + 's beside the Rotshard, at one scale' : 'the ' + PIECE + ' beside its form, at one scale'}<br><span style="font-weight:400;font-size:18px">${PIECES[PIECE].cap ? PIECES[PIECE].cap[1] : PIECES[PIECE].upright ? '(in the game the tallest is about 44 px; the green mist stays drawn in code)' : '(in the game it is about ' + Math.round(PIECES[PIECE].len * 96 / 3.4) + ' px long)'}</span></div></div></body>`);
     await q.screenshot({ path: OUT, clip: { x: 0, y: 0, width: 1600, height: 1120 } });
-    console.log('wrote ' + OUT);
+    console.log('wrote ' + OUT + (res.top !== undefined ? '  (its top: ' + res.top.toFixed(3) + ' units up)' : ''));
   }
   if (MODE === 'sheet') {
     fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(path.join(OUT, PIECE + '.png'), Buffer.from(res.png.split(',')[1], 'base64'));

@@ -177,6 +177,7 @@ The owner's pick of three drafts (2026-11-09): a bud of its leaves, a burr of it
   - ROTTEN DECOY is the black Rotshard (build `2026-11-09x`).
   - The black decoy was approved in the game (for everyone since `2026-11-09aa`). The puddle's spikes stay on the preview, not approved.
 - ~~**PINK THICKET's crystal seed in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09cc`. Then "Just a crystal": its stalk off since `2026-11-09dd`, about 20 px)*. Still open: whether SEEDFALL's falling seeds use it too.
+- **PROXY SWARM's goo copies** (the owner's pick for the next piece, 2026-11-09: "Goo Proxy's goo copies"): three looks drafted in `design/effects/bake_fx.js` (`goocopy`, `goocopy_black`, `goocopy_melt`), each the Goo Proxy's own model: all its violet goo, black goo, or melting into a puddle. For the owner's pick; nothing in the game yet.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.
