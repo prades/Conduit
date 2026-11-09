@@ -66,7 +66,8 @@ function _caveRubbleSheet() {
     if (typeof document === "undefined" || !document.createElement) return (_caveRubbleImg = null);
     const im = document.createElement("img"); im.decoding = "async"; im.src = CAVE_RUBBLE.sheet + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : ""); _caveRubbleImg = im; return null;
 }
-// draw a rubble patch's picture: `stage` the stones shown ("9" ... "3") or "left" (what a drilled choke leaves); false when it has none or the sheet has not arrived (the drawn pile instead)
+// draw a rubble patch's picture: `stage` the stones shown ("9" ... "3") or "left" (what a drilled choke leaves); its atlas entry when drawn (e[7]: its seams, on the screen from the patch's start),
+// false when it has none or the sheet has not arrived (the drawn pile instead)
 function caveRubbleDraw(it, stage) {
     if (!caveRubbleOn() || typeof CAVE_RUBBLE === "undefined") return false;
     const P = CAVE_RUBBLE.items[it.rubble], e = P && P[stage]; if (!e) return false;
@@ -75,6 +76,6 @@ function caveRubbleDraw(it, stage) {
     const k = ctx._k === undefined ? 1 : ctx._k, bucket = k < 0.1 ? 0 : Math.min(PS_DIM_STEPS, Math.round(k * PS_DIM_STEPS)), key = "rubble|" + it.rubble + "|" + stage;
     if (bucket >= PS_DIM_STEPS) { const cell = typeof spriteCell === "function" ? spriteCell(img, e[1], e[2], e[3], e[4]) : null; if (cell) ctx.drawImage(cell, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
     else { const d = _caveDimmed(key, img, e, bucket); if (d) ctx.drawImage(d, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
-    return true;
+    return e;
 }
 

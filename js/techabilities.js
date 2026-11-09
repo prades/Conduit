@@ -1510,15 +1510,18 @@ function _techArcScr(x0, y0, x1, y1, z0, z1, peak, t) {
 // ── THE RUBBLE, AND THE HOLE IT LEAVES: drawn on the face of the room's edge like its decor (js/facilitydecor.js FP_WALL_KINDS.rubble asks this), u along the stretch, z px up from the floor ──
 // Broken rock lighter than the cliff round it, a cracked slab with hazard paint across it and seams that glow as it is drilled; boulders fall away with each hit. Drilled through: a dark hole, scorched round its mouth.
 const _TECH_RUBBLE = [[0.2, 0, 0.2, 22], [0.44, 0, 0.24, 26], [0.7, 0, 0.22, 24], [0.88, 0, 0.14, 16], [0.31, 17, 0.2, 22], [0.57, 19, 0.22, 24], [0.79, 15, 0.16, 18], [0.43, 36, 0.2, 20], [0.63, 38, 0.15, 16]];
-// the seams between a pile's stones: dull at first, glowing hotter with each hit (P: a point of the pile, u along it and z px up)
-function _techRubbleSeams(P, heat, f, sg) {
-    ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
-    const glow = 0.25 + 0.75 * heat, pul = 0.75 + 0.25 * Math.sin(f * 0.15 + sg);
-    for (const seam of [[[0.32, 0], [0.33, 14], [0.46, 26], [0.5, 40]], [[0.58, 0], [0.6, 18], [0.7, 30]], [[0.2, 20], [0.36, 36], [0.44, 50]]]) {
-        ctx.strokeStyle = "rgba(255,120,40," + (0.22 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 7; ctx.beginPath(); seam.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke();
+// the seams between a modelled pile's stones (js/caverubble.js: baked on the stones' front, as the pile stands at that stage): dull at first, glowing hotter with each hit, as the drawn pile's
+// (p0: the screen point of the patch's start; seams: [x, y, x, y, ...] from it, three to a pile, each pile's pulsing together)
+function _techRubbleSeamsAt(p0, seams, heat, f) {
+    ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    const glow = 0.25 + 0.75 * heat;
+    seams.forEach((sq, i) => {
+        const pul = 0.75 + 0.25 * Math.sin(f * 0.15 + Math.floor(i / 3)); ctx.beginPath();
+        for (let k = 0; k + 1 < sq.length; k += 2) { const x = p0[0] + sq[k], y = p0[1] + sq[k + 1]; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+        ctx.strokeStyle = "rgba(255,120,40," + (0.22 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 7; ctx.stroke();
         ctx.strokeStyle = "rgba(255,190,90," + (0.5 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 2; ctx.stroke();
-    }
-    ctx.globalCompositeOperation = "source-over"; ctx.lineCap = "butt";
+    });
+    ctx.globalCompositeOperation = "source-over";
 }
 function techDrawRubbleOn(it, f) {
     if (typeof _fpWP !== "function" || typeof ctx === "undefined") return;
@@ -1547,8 +1550,9 @@ function techDrawRubbleOn(it, f) {
         ctx.restore(); return;
     }
     const hits = (_techRubbleHits()[r.id] || 0), heat = hits / TECH_AB.drill.hits, show = _TECH_RUBBLE.length - Math.floor(hits * _TECH_RUBBLE.length / (TECH_AB.drill.hits + 1));
-    if (typeof caveRubbleDraw === "function" && caveRubbleDraw(it, String(show))) {   // THE PILE IN THE CAVE'S ROCK (js/cavewalls.js; on the preview until approved): its stones as the drilling has left them, and the seams glowing over it
-        for (let sg = 0; sg < segs; sg++) _techRubbleSeams((u, z) => _fpWP(it, (sg + u) / segs, z), heat, f, sg);
+    const rock = typeof caveRubbleDraw === "function" && caveRubbleDraw(it, String(show));
+    if (rock) {   // THE PILE IN THE CAVE'S ROCK (js/cavewalls.js; on the preview until approved): its stones as the drilling has left them, and the seams glowing on them
+        _techRubbleSeamsAt(_fpWP(it, 0, 0), rock[7] || [], heat, f);
         ctx.restore(); return;
     }
     const shades = ["#a8967e", "#8e7c66", "#bba98f", "#9a8670"];
