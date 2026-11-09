@@ -871,6 +871,7 @@ function render() {
     // was the biggest share of a step with no picture.
     if (!_simGhost) actors.forEach(a=>{ if(!a._swallowedBy && visibleForDraw(a.x,a.y)) drawList.push({type:'npc',x:a.x,y:a.y,actor:a}); });   // (one swallowed by ABSOLUTE ZERO is inside the Frost Maw: js/elements.js)
     if (!_simGhost && typeof cloneBodiesDrawItems === "function") cloneBodiesDrawItems(drawList);   // a fallen clone's body (js/mutator.js)
+    if (!_simGhost && typeof rotSpikeDrawItems === "function") rotSpikeDrawItems(drawList);   // TOXIC PUDDLE's modelled black spikes, among the units they burst up round (js/elements.js)
     if (!_simGhost && typeof techDrawItems === "function") techDrawItems(drawList);   // a Kinetic Launcher set up at a site, and the broken section the site's room is left by (js/techabilities.js)
     drawList.push({type:'crystal',x:crystal.x,y:crystal.y});
     facilityDrawItems(drawList);   // walls, props, doors and fixtures (js/facilityplay.js)
@@ -898,6 +899,7 @@ function render() {
             if (typeof facilityEnemyGlow === "function") facilityEnemyGlow(obj.actor, px, py);   // an enemy in a blackout shows a hostile glow on the floor under it (js/facilitytutorial.js)
             drawNPC(obj.actor, px, obj.actor._flight && typeof techFlightLift === "function" ? py - techFlightLift(obj.actor) : py);   // (one thrown by a Kinetic Launcher is drawn up in the air: js/techabilities.js)
         }
+        else if (obj.type==='rotspike') { if (typeof rotSpikeDrawItem === "function") rotSpikeDrawItem(obj, px, py); }   // (js/elements.js)
         else if (obj.type==='tech') {
             if (typeof techDrawItem === "function") techDrawItem(obj, px, py);
         }

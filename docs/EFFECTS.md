@@ -119,6 +119,10 @@ The owner's pick for the third piece (2026-11-09, "Rotshard's black spike").
 - **ROTTEN DECOY** stood its four at the drawn ones' places and heights (the tallest 44 px), rising over the 8 frames it is set in. Since build `2026-11-09x` the decoy is a black Rotshard instead (below).
 - **TOXIC PUDDLE** stands three under each enemy it bites (the middle one 16 px, the sides three quarters). They rise as before and stay solid for most of their fade.
   - With them it has no green disc and no rim (build `2026-11-09y`, the owner's "Remove [the] green space"). Only its spikes and its small bubbles show where it bites.
+  - **Build `2026-11-09z`** (the owner: "The little spikes look off to me"): drawn over the units, as every overlay effect is, they stuck out of the bugs' backs, and at 16 px they were black smudges. Now:
+    - They stand among the units, sorted by depth as STAKE RING's are. Three burst up round each bitten enemy's feet: two just behind it (its body covers them) and one in front.
+    - The front one is 26 px. They are up in 3 frames, held, then sink back into the floor over the last 6.
+    - They sit at the floor's real height on raised decks. The positions and heights are the agent's, provisional.
 - **The CRYSTAL SPIKE TRIO card attack** draws the same cluster, so it uses the spike too.
 - Each spike is turned by where it is in the world, not on the screen, and has a soft dark foot. A cluster costs under 30 canvas operations.
 - Rules, timing and hits are unchanged. Until its sheet arrives, or without `?fx=3d`, the drawn spikes are shown.

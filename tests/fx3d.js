@@ -187,8 +187,23 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
             try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; } delete FX3D.pieces.rotspike._img; __preview(false);
             return { disc: P.calls.some(c => c[0] === 'set fillStyle' && /3f9a1f/i.test(c[1])), rim: P.calls.some(c => c[0] === 'set strokeStyle' && /7dff4a/i.test(c[1])), bubbles: P.calls.filter(c => c[0] === 'arc').length, pics: P.calls.filter(c => c[0] === 'drawImage').length }; })()`);
         const on = draw(true), off = draw(false);
-        same(on.disc, false, 'the green disc with the black spikes'); same(on.rim, false, 'the rim with the black spikes'); ok(on.bubbles >= 5, 'its bubbles'); same(on.pics, 3, 'its three black spikes');
+        same(on.disc, false, 'the green disc with the black spikes'); same(on.rim, false, 'the rim with the black spikes'); ok(on.bubbles >= 5, 'its bubbles'); same(on.pics, 0, 'spikes drawn over the units (they stand among them now: below)');
         same(off.disc, true, 'the old disc without the preview'); same(off.rim, true, 'the old rim without the preview');
+    });
+
+    check('TOXIC PUDDLE\'s black spikes stand among the units (sorted by depth, as STAKE RING\'s): three round each bitten enemy\'s feet, two just behind it and one in front, the front one 26 px; up in 3 frames, sinking back in the last 6; each drawn foot on the floor; none without the preview, or once they have sunk', () => {
+        const items = (prev, since) => J(`(function(){ __preview(${prev}); FX3D.pieces.rotspike._img = { complete: true, naturalWidth: 576, naturalHeight: 72 }; const ef = elementEffects, list = [];
+            elementEffects = [{ type: 'toxicpuddle', x: 10, y: 10, radius: 2, life: 200, maxLife: 300, shards: [[10.5, 9.5]], shardAt: 100 - ${since} }];
+            try { rotSpikeDrawItems(list); } finally { elementEffects = ef; } delete FX3D.pieces.rotspike._img; __preview(false); return list; })()`);
+        const up = items(true, 6), rising = items(true, 1), sinking = items(true, 15), gone = items(true, 18), off = items(false, 6);
+        same(up.length, 3, 'its spikes'); const d0 = 10.5 + 9.5, dd = up.map(o => o.x + o.y - d0);
+        same(dd.filter(d => d < 0).length, 2, 'two behind the enemy (its body covers them): ' + dd); same(dd.filter(d => d > 0).length, 1, 'one in front: ' + dd);
+        same(Math.max(...up.map(o => o.h)), 26, 'the front one\'s height'); ok(up.every(o => o.rise === 1 && o.type === 'rotspike'), 'not up at 6 frames');
+        ok(Math.abs(rising[0].rise - 1 / 3) < 1e-9, 'rising: ' + rising[0].rise); ok(Math.abs(sinking[0].rise - 0.5) < 1e-9, 'sinking: ' + sinking[0].rise); same(gone.length, 0, 'once sunk'); same(off.length, 0, 'without the preview');
+        const d = J(`(function(){ __preview(true); FX3D.pieces.rotspike._img = { complete: true, naturalWidth: 576, naturalHeight: 72 }; const P = __pen(), keep = ctx; ctx = P.g; try { rotSpikeDrawItem({ type: 'rotspike', x: 0, y: 0, h: 26, rise: 1, a: 1, col: 2 }, 300, 200); } finally { ctx = keep; } delete FX3D.pieces.rotspike._img; __preview(false);
+            return P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)); })()`), P = J('FX3D.pieces.rotspike'), TH = J('TILE_H');
+        same(d.length, 1, 'its picture'); ok(Math.abs(d[0][6] + P.ay * d[0][8] / P.cell - (200 + TH)) < 1e-6, 'its foot is not on the floor (py + TILE_H)');
+        ok(/if \(!_simGhost && typeof rotSpikeDrawItems === "function"\) rotSpikeDrawItems\(drawList\);/.test(rd('js/game.js')) && /obj\.type==='rotspike'\) \{ if \(typeof rotSpikeDrawItem === "function"\) rotSpikeDrawItem\(obj, px, py\); \}/.test(rd('js/game.js')), 'not in the world\'s draw list');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

@@ -423,11 +423,30 @@ function _fxRotSpikes(sx, sy, h, w, a, rise, seed) {
 // a soft dark foot under each. False when the piece is not shown (not approved and no ?fx=3d) or its sheet has not arrived: the caller draws the old spikes.
 function _fxRotSpikes3d(sx, sy, list, h, a, rise, seed) {
     if (typeof fx3dOn !== "function" || !fx3dOn("rotspike") || !fx3dReady("rotspike")) return false;
-    const s0 = Math.floor(Math.abs(seed || 0) * 7919) % 8;
+    const s0 = Math.floor(Math.abs(seed || 0) * 7919) % 8;   // (an entry: [x offset, its share of h, y offset (px, + toward the camera)], drawn back to front)
     ctx.globalAlpha = 0.35 * a * Math.min(1, rise * 1.5); ctx.fillStyle = "#020302";
-    for (const [ox, k] of list) { const r = h * k * 0.26; ctx.beginPath(); ctx.ellipse(sx + ox, sy, r, r * 0.45, 0, 0, Math.PI * 2); ctx.fill(); }   // (each one's foot on the floor)
-    ctx.globalAlpha = Math.min(1, a * 1.6); list.forEach(([ox, k], i) => fx3dDrawUpright(ctx, "rotspike", sx + ox, sy, s0 + i * 3, h * k, rise));   // (solid for most of a fade: a dark picture fading early is lost in the haze, where the drawn ones kept their bright edge)
+    for (const [ox, k, oy] of list) { const r = h * k * 0.26; ctx.beginPath(); ctx.ellipse(sx + ox, sy + (oy || 0), r, r * 0.45, 0, 0, Math.PI * 2); ctx.fill(); }   // (each one's foot on the floor)
+    ctx.globalAlpha = Math.min(1, a * 1.6); list.forEach(([ox, k, oy], i) => fx3dDrawUpright(ctx, "rotspike", sx + ox, sy + (oy || 0), s0 + i * 3, h * k, rise));   // (solid for most of a fade: a dark picture fading early is lost in the haze, where the drawn ones kept their bright edge)
     return true;
+}
+// TOXIC PUDDLE'S BLACK SPIKES AMONG EVERYTHING ELSE (js/game.js sorts them by depth with the units, as STAKE RING's are: js/techabilities.js): with the modelled spike on (js/fx3d.js rotspike), three burst
+// up round each bitten enemy's feet, two just behind it (its body covers them) and one in front, 26 px, up in 3 frames, held, then sinking back into the floor over the last 6. Drawn over the units, as before,
+// they stuck out of the bugs' backs (the owner, 2026-11-09, of the 16 px ones: "The little spikes look off to me").
+const ROT_SPIKE_AROUND = [[-0.28, 0.05, 0.75], [0.05, -0.28, 0.8], [0.2, 0.22, 1]], ROT_SPIKE_H = 26;   // (world offsets round its feet and each one's share of the height; the agent's, provisional)
+function rotSpikeDrawItems(list) {
+    if (typeof fx3dOn !== "function" || !fx3dOn("rotspike") || !fx3dReady("rotspike") || typeof elementEffects === "undefined") return;
+    for (const e of elementEffects) {
+        if (e.type !== "toxicpuddle" || !e.shards || !e.shards.length) continue;
+        const since = (e.maxLife - e.life) - e.shardAt; if (!(since >= 0 && since < 18)) continue;
+        const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), rise = since < 3 ? since / 3 : since > 12 ? Math.max(0, (18 - since) / 6) : 1;
+        for (const s of e.shards) { const c0 = Math.floor(Math.abs(s[0] * 3.1 + s[1] * 1.7) * 7919) % 8;
+            ROT_SPIKE_AROUND.forEach(([dx, dy, kh], i) => list.push({ type: "rotspike", x: s[0] + dx, y: s[1] + dy, h: ROT_SPIKE_H * kh, rise, a: k, col: c0 + i * 3 })); }
+    }
+}
+function rotSpikeDrawItem(o, px, py) {
+    const sy = py + TILE_H;   // (on the floor where the puddle's own effects are)
+    ctx.save(); ctx.globalAlpha = 0.35 * o.a * Math.min(1, o.rise * 1.5); ctx.fillStyle = "#020302"; ctx.beginPath(); ctx.ellipse(px, sy, o.h * 0.26, o.h * 0.117, 0, 0, Math.PI * 2); ctx.fill();   // its foot
+    ctx.globalAlpha = Math.min(1, o.a * 1.6); fx3dDrawUpright(ctx, "rotspike", px, sy, o.col, o.h, o.rise); ctx.restore();
 }
 // One of WAVE MAKER's waves (FORM_ULTIMATES.hornshell), from where the Hornshell stands now: every enemy ahead of it (±50°) within ULT_WAVE.len that it can see is hurt (core) and thrown back
 function _ultWave(e) {
@@ -1404,7 +1423,8 @@ function drawElementEffects() {
                     ctx.globalAlpha = 0.6 * k; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke(); }
                 ctx.fillStyle = "#b8ff8a"; for (let i = 0; i < 5; i++) { const an = i * 2.4 + e.x, t = (frame * 0.02 + i * 0.37) % 1; ctx.globalAlpha = (1 - t) * 0.7 * k; ctx.beginPath(); ctx.arc(px + Math.cos(an) * rx * 0.6, cy0 + Math.sin(an) * ry * 0.6, 1.5 + t * 2.5, 0, Math.PI * 2); ctx.fill(); }
                 const since = (e.maxLife - e.life) - e.shardAt, b = Math.max(0, 1 - since / 18);
-                if (b > 0) for (const s of e.shards) _fxRotSpikes(px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, 16, 6, b * k, Math.min(1, since / 4 + 0.3), s[0] * 3.1 + s[1] * 1.7);
+                // (with the modelled black spike its spikes stand among everything else instead: rotSpikeDrawItems, below; here, the drawn ones)
+                if (b > 0 && !(typeof fx3dOn === "function" && fx3dOn("rotspike") && fx3dReady("rotspike"))) for (const s of e.shards) _fxRotSpikes(px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, 16, 6, b * k, Math.min(1, since / 4 + 0.3), s[0] * 3.1 + s[1] * 1.7);
                 break;
             }
             // CRYSTAL SPIKE TRIO (a card attack: cardAttackTry): the same cluster, larger, under the enemy it struck: it rises fast and fades

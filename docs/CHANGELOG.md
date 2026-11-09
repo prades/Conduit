@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09z` · branch `claude/start-game-project-HSh7Z` · TOXIC PUDDLE's black spikes among the bugs (on the preview)
+The owner, of the puddle's little spikes: "The little spikes look off to me. I'm not sure what the deal is."
+- **The deal:** effects are drawn over the units, so the spikes under each bitten bug stuck out of its back. At 16 px the model was a black smudge.
+- **Now:** they stand among the units, sorted by depth as STAKE RING's are. There are three round each bitten enemy's feet: two just behind it (its body covers them) and one in front, 26 px. They burst up, hold, and sink back into the floor.
+- Only with `?fx=3d`; rules are unchanged. Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09y` · branch `claude/start-game-project-HSh7Z` · no green space under the new looks (on the preview)
 The owner: "Remove [the] green space": both the decoy's circle and the puddle's disc.
 - **ROTTEN DECOY as a black Rotshard** stands on the bare floor: no green circle of its poison's reach.
