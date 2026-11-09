@@ -2635,3 +2635,25 @@ Offered and passed over: depth drawn in code (like STAKE RING and VOLCANIC ERUPT
 ### Supersedes / superseded by
 Supersedes the drawn 2D quill (kept only for the moment before the sheet arrives). `EFFECTS.md` §3 is the canonical record.
 
+## DECISION: Stay 2D for now (a real-time 3D engine not now); the Rimestar's modelled icicle
+- Date and build: 2026-11-09, builds `2026-11-09g` (built on the preview) and `2026-11-09h` (for everyone), branch `claude/start-game-project-HSh7Z`.
+- The owner's words: on the icicle's preview, "I intend to make this a fully 3-D game and if we're sitting here wasting resources making each projectile when we could just make a 3-D engine right now what do you say?"; then, offered a prototype behind a flag, going all in, or staying 2D: "Stay [2D] for now I mean, I don't wanna take [any] risks. Are we gonna be able to fit the whole library of different effects and keep a 3-D aesthetic as well throughout the entire game with 60 FPS on browser"; then "Yes, build it (Recommended)" (the icicle's model) and "Approve it for everyone (Recommended)" (in the game).
+
+### Decision
+- The game stays a 2D canvas game with baked 3D sprites for now. A real-time 3D engine is not started.
+- The Rimestar's icicle (ICICLE VOLLEY) is a modelled piece like the quill. It has been live for everyone since build `2026-11-09h`.
+
+### The agent's view, as given
+- For a 3D engine: the art is already three.js models (38 form files, 13 prop families, 69 card items), and the rules, map, saves and menus would not change.
+- Against starting now: about 40 of the 89 code files draw on the canvas (about 2,400 drawing calls), the creatures are drawn in 2D code, and iPad speed is the main risk. Had it been chosen, the agent recommended a prototype behind a flag (`?engine=3d`) first.
+- On 60 fps: a modelled piece is small (the quill's sheet is 53 KB, about 1 MB in memory) and costs less to draw than the old flat shot, and the effects layer was about half a millisecond of a squad fight's frame in the test browser. The real number on the iPad is not measured here (Settings → PERFORMANCE). The bigger costs are the optimization check's three open items.
+
+### Status
+Built and tested (`tests/fx3d.js`); checked in the real page with screenshots. Not playtested.
+
+### Alternatives
+Offered and passed over: a 3D prototype first (recommended); going all in on a 3D engine. For the icicle: bluer like the Rimestar's diamond; a glowing line inside; speed fixes first.
+
+### Supersedes / superseded by
+Supersedes the generic ice shot for ICICLE VOLLEY (kept only until the sheet arrives). A 3D engine stays open for later (`EFFECTS.md` §4).
+

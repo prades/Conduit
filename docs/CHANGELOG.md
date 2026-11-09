@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09h` · branch `claude/start-game-project-HSh7Z` · the modelled icicle for everyone
+On the in-game pictures of build `2026-11-09g`, the owner said "Approve it for everyone".
+- The Rimestar's modelled icicle (ICICLE VOLLEY) is now drawn for everyone (js/fx3d.js `FX3D.approved`: quill, icicle). The old ice shot is kept only for the moment before the icicle's sheet arrives.
+- The decision to stay 2D for now (no real-time 3D engine yet), with the agent's view as given, is in `DECISION-LOG.md`.
+- Tests: fx3d (both pieces approved); run: fx3d, bible, all passing. Not playtested.
+
 ### Build `2026-11-09g` · branch `claude/start-game-project-HSh7Z` · the Rimestar's modelled icicle (on the preview); staying 2D
 - **Asked about a 3D engine:** the owner asked whether the game should move to a real-time 3D engine rather than baking each piece. After the agent's view (the art is already 3D models; a staged prototype behind a flag), they chose to stay 2D for now: "I don't wanna take any risks".
 - **Their question on 60 fps:** will a full library of 3D-looking effects hold 60 fps in the browser? The agent's answer:

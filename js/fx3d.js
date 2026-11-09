@@ -6,10 +6,11 @@ const FX3D = {
     pieces: {
         // the QUILLSTONE's quill (QUILL BURST, QUILLSTORM): one of the red crystal shards on its back (design/evolutions/forms15.js), the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09e on the preview; approved in the game the same day, for everyone since 2026-11-09f
         quill: { sheet: "img/fx/quill.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
-        // the RIMESTAR's icicle (ICICLE VOLLEY): one of the frost shards its cast throws (design/evolutions/forms32.js), made big, a slender six-sided spike of pale blue ice; the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09g
+        // the RIMESTAR's icicle (ICICLE VOLLEY): one of the frost shards its cast throws (design/evolutions/forms32.js), made big, a slender six-sided spike of pale blue ice; the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09g on the preview; approved in the game the same day, for everyone since 2026-11-09h
         icicle: { sheet: "img/fx/icicle.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
     },
-    approved: ["quill"],   // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
+    approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
+               "icicle"],  // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
 };
 let _fx3dPrev = null;
 function fx3dPreview() { try { return typeof location !== "undefined" && /[?&]fx=3d\b/.test(location.search || ""); } catch (e) { return false; } }

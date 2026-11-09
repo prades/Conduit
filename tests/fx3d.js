@@ -53,7 +53,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill', 'the approved pieces');
+        same(J('FX3D.approved').join(), 'quill,icicle', 'the approved pieces');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
@@ -61,15 +61,15 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         run('__preview(null); globalThis.location = { search: "?fx=3dx" }'); same(J('fx3dOn("__test")'), false, 'on with another flag');
         same(J('fx3dOn("nothing")'), false, 'a piece that does not exist'); run('delete FX3D.pieces.__test; __preview(false)');
     });
-    check('the icicle is not approved yet: the old ice shot for everyone, the modelled icicle only on the preview (?fx=3d); ICICLE VOLLEY\'s three shots are the kind "icicle"', () => {
-        run('__preview(false)'); same(J('fx3dOn("icicle")'), false, 'on without the preview'); run('__preview(true)'); same(J('fx3dOn("icicle")'), true, 'off with the preview'); run('__preview(false)');
+    check('the icicle is approved too (the owner, 2026-11-09, in the game: "Approve it for everyone"): on for everyone; ICICLE VOLLEY\'s three shots are the kind "icicle"; until its sheet arrives, the ice shot', () => {
+        run('__preview(false)'); same(J('fx3dOn("icicle")'), true, 'off without the preview');
         ok(/spawnFollowerProjectile\(f, aim, "#bfefff", dmg, 4, slow, DMG_HIT_ICICLE, \{ range: ICICLE_RANGE \+ 1, kind: "icicle" \}\)/.test(rd('js/evolution.js')), 'its shots are not the kind "icicle"');
         const ice = J(`(function(){ const P = __pen(); _drawFollowerProjectile(P.g, { kind: 'icicle', x: 10, y: 10, vx: 0.17, vy: 0, frame: 5, life: 20, element: 'ice', radius: 4 }, 300, 200); return P.calls.map(c => c[0]); })()`);
-        ok(ice.indexOf('drawImage') < 0 && ice.indexOf('createRadialGradient') >= 0, 'without the preview it is not the ice shot: ' + ice.join());
-        run('__preview(true); FX3D.pieces.icicle._img = { complete: true, naturalWidth: 1792, naturalHeight: 168 }; globalThis.__sc2 = spriteCell; spriteCell = () => ({ cell: 1 });');
+        ok(ice.indexOf('drawImage') < 0 && ice.indexOf('createRadialGradient') >= 0, 'before its sheet arrives it is not the ice shot: ' + ice.join());
+        run('FX3D.pieces.icicle._img = { complete: true, naturalWidth: 1792, naturalHeight: 168 }; globalThis.__sc2 = spriteCell; spriteCell = () => ({ cell: 1 });');
         const r = J(`(function(){ const P = __pen(); _drawFollowerProjectile(P.g, { kind: 'icicle', x: 10, y: 10, vx: 0.17, vy: 0, frame: 10, life: 10, element: 'ice', radius: 4 }, 300, 200); return P.calls.filter(c => ['ellipse', 'set strokeStyle', 'drawImage', 'createRadialGradient'].indexOf(c[0]) >= 0).map(c => c.slice(0, 3)); })()`);
         run('spriteCell = __sc2; delete FX3D.pieces.icicle._img; __preview(false);');
-        same(r.filter(c => c[0] === 'drawImage').length, 1, 'on the preview: its picture'); ok(r.some(c => c[0] === 'set strokeStyle' && c[1] === '#bfefff'), 'its trail is not frosty');
+        same(r.filter(c => c[0] === 'drawImage').length, 1, 'its picture'); ok(r.some(c => c[0] === 'set strokeStyle' && c[1] === '#bfefff'), 'its trail is not frosty');
         ok(r.some(c => c[0] === 'ellipse' && Math.abs(c[2] - 240) < 1e-6), 'no shadow on the floor under it'); ok(!r.some(c => c[0] === 'createRadialGradient'), 'the ice shot drawn as well');
     });
     check('until its sheet has arrived a quill is drawn the old way (its paths, no picture), so a shot is never missing', () => {
