@@ -53,7 +53,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy', 'the approved pieces');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy,vortexshard', 'the approved pieces');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
@@ -271,7 +271,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         run('spriteCell = __sc5; delete FX3D.pieces.goocopy._img; __preview(false);');
     });
 
-    group('SHARD VORTEX\'S SHARDS: THE RIFT MIMIC\'S OWN BLACK BLADES (the agent\'s pick, the owner: "You pick"; the model approved 2026-11-09, "Yes, build it"; built in 2026-11-09gg on the preview)');
+    group('SHARD VORTEX\'S SHARDS: THE RIFT MIMIC\'S OWN BLACK BLADES (the agent\'s pick, the owner: "You pick"; the model approved 2026-11-09, "Yes, build it"; built in 2026-11-09gg on the preview; approved in the game, for everyone since 2026-11-09hh)');
     check('its sheet: sixteen turns in one row, at the forms\' pixels a unit; its foot and its tip as the baker wrote; the model is the Rift Mimic\'s own blade (No. 114, forms6.js blade), as big as the biggest standing round it', () => {
         const P = J('FX3D.pieces.vortexshard'), meta = JSON.parse(rd('design/effects/out/vortexshard.json'));
         same(P.sheet, 'img/fx/vortexshard.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + P.cell, 'the sheet\'s size'); same(JSON.stringify([P.cell, P.yaws, P.upright]), '[72,16,true]', 'the table');
@@ -286,9 +286,11 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         elementEffects = [{ type: 'shardvortex', x: player.visualX, y: player.visualY, radius: 3, life: 300, maxLife: 480 }];
         try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; frame = f0; spriteCell = sc; delete FX3D.pieces.vortexshard._img; __preview(false); }
         return { names: P.calls.map(c => c[0]), im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)), shadows: P.calls.filter(c => c[0] === 'ellipse' && c[3] === 7 && c[4] === 2.5).map(c => c.slice(1, 3)), cells: __cells6.slice(), H: canvas.height }; })()`);
-    check('not approved: it shows only on the preview (?fx=3d); without it, and until its sheet arrives, SHARD VORTEX\'s four pale diamonds', () => {
-        ok(J('FX3D.approved.indexOf("vortexshard")') < 0, 'approved before the owner has seen it in the game'); run('__preview(false)'); same(J('fx3dOn("vortexshard")'), false, 'on without the preview');
-        for (const r of [vortex(false, true), vortex(true, false)]) { same(r.im.length, 0, 'pictures drawn'); ok(r.names.filter(c => c === 'closePath').length >= 4, 'not the four drawn diamonds: ' + r.names.join()); }
+    check('approved in the game (the owner, 2026-11-09: "Approve it for everyone"): on for everyone, with or without the preview; until its sheet arrives, SHARD VORTEX\'s four pale diamonds', () => {
+        ok(J('FX3D.approved.indexOf("vortexshard")') >= 0, 'not approved'); run('__preview(false)'); same(J('fx3dOn("vortexshard")'), true, 'off without the preview');
+        const before = vortex(true, false), off = vortex(false, true);
+        same(before.im.length, 0, 'pictures drawn before its sheet arrived'); ok(before.names.filter(c => c === 'closePath').length >= 4, 'not the four drawn diamonds before its sheet arrived: ' + before.names.join());
+        same(off.im.length, 4, 'the blades without the preview');
     });
     check('with its sheet (on the preview): four pictures of the blade, as tall as the model at the forms\' scale, each over its own shadow on the swirl\'s ring, the farthest first; they turn as they circle; the swirl itself still drawn', () => {
         const a = vortex(true, true, 0), b = vortex(true, true, 9), P = J('FX3D.pieces.vortexshard'), S = J('EVO_SCALE');

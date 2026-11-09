@@ -44,7 +44,7 @@ const PIECES = {
   // black triangular blades standing round its blob (forms6.js blade, _bladeMat: black, catching the light along its edges), as big as the biggest of them (0.8 tall, x its scale 1.3). UPRIGHT, as the
   // Rotshard's spike: its columns are the ways it is turned (16), so the game can spin it as it circles. ring: the preview sets four out in a ring, floating a little, as the swirl carries them.
   vortexshard: { form: 114, color: '#9933ff', upright: true, bw: 0.336, bh: 0.8, bd: 0.1, S: 1.3, h: 1.04, cell: 72, yaws: 16, pitches: [0], ring: { n: 4, r: 0.85, lift: 0.22 }, bigYaw: Math.PI / 4 - 0.35, bigView: [3.0, 1.32, 0.5],
-    cap: ['SHARD VORTEX\'s four shards beside the Rift Mimic, at one scale', '(its own black blades, spinning as they circle; the swirl stays drawn in code)'] },   // (a draft, for the owner's yes)
+    cap: ['SHARD VORTEX\'s four shards beside the Rift Mimic, at one scale', '(its own black blades, spinning as they circle; the swirl stays drawn in code)'] },   // (the model approved 2026-11-09: "Yes, build it"; approved in the game: "Approve it for everyone")
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 

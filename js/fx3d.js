@@ -24,14 +24,16 @@ const FX3D = {
         // frames of the frog's idle loop (`loop` game frames), drawn at the forms' scale
         goocopy: { sheet: "img/fx/goocopy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 90.486, tipY: 46.472 },
         // SHARD VORTEX's shards (the RIFT MIMIC's Ultimate, "its four shards spin out into a swirl"): its own black blades (design/evolutions/forms6.js blade, No. 114); the agent's pick of the next piece (the owner:
-        // "You pick") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09gg on the preview. UPRIGHT: its columns are the ways it is turned (16), so it spins as it circles
+        // "You pick") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09gg on the preview; approved in the game the same day, for everyone since 2026-11-09hh. UPRIGHT: its columns are the
+        // ways it is turned (16), so it spins as it circles
         vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0], upright: true, ax: 36, ay: 52.021, tipY: 13.875 },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
                "rotdecoy",   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
                "bigseed",   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
-               "goocopy"],   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
+               "goocopy",   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
+               "vortexshard"],   // SHARD VORTEX's shards, the Rift Mimic's black blades: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09hh
     // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)
 };
 let _fx3dPrev = null;
