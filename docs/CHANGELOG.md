@@ -4,6 +4,17 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09k` · branch `claude/start-game-project-HSh7Z` · the rubble, modelled in the cave's rock (on the preview `?walls=3d`)
+The owner: "update the rubble patches make those look more like a cave rock"; approving the walls, "then do the rubble".
+- **Every rubble patch is a rock fall in the walls' rock:** the arena's south rubble and the Sewers' three (the way to the dam, the rock fall at the bank, the collapsed tunnel).
+  - **The drawn pile's layout, in rock:** nine stones to a pile of two tiles, each now a big block of the cave's brown rock, broken flat, softly lit with its facets showing. Behind them, a dark mound of rubble in shadow. The hazard-painted slab across it, as before.
+  - **One picture per stage of the drilling** (the stones shown after 0 to 5 hits: 9, 8, 7, 6, 4, 3): the top stones go first, the dark mound shrinks, knocked-off stones lie at its foot. A drilled choke shows what it leaves. The seams glow over the stones, hotter with each hit, baked for each stage so they sink with the pile.
+  - **How it is made:** `design/cave/bake_rubble.js` → `img/cave/rubble.png`, `js/caverubble.js`; drawn by `js/cavewalls.js caveRubbleDraw` from `js/techabilities.js techDrawRubbleOn`. Dim rooms darken it as they darken the walls.
+  - **Not changed:** the arena's hole once drilled (drawn as before), a drilled choke's warm sides, the rocks, the drilling.
+- **Cost:** about 0.1 ms a frame or less, against the drawn pile's 0.1–0.2 ms (headless Chromium).
+- **On the preview only** (`?walls=3d`) until the owner approves it in the game; everyone else sees the drawn pile, which stays as the fallback.
+- Tests: cavewalls (7 new checks: every patch's pictures and seams, the bake current with the patches, the sheet, the preview, the fallback, each stage drawn with its seams hotter each hit, what a choke leaves, dim rooms); ghost (the rubble's sheet cache allow-listed). Run: cavewalls, ghost, perf, techabilities, techlevel1, facilityplay, facility, sewers, sewerquest, nest, followercombat, all passing. cover fails on its real-page check (`?fluxlab`: "no result from the page"), as it has in every full run since before this build. Checked in the real page with screenshots: each patch lit at each stage, two in the dark, no page errors. Not playtested.
+
 ### Build `2026-11-09j` · branch `claude/start-game-project-HSh7Z` · the modelled cave walls for everyone
 On the pictures of build `2026-11-09i`, the owner said "Approve the walls for everyone, then do the rubble".
 - The cave's modelled rock walls (the arena, the Cold Storage's ice cave, the Nest's cavern) are drawn for everyone (js/cavewalls.js `CAVE_WALLS.approved`). The drawn rock stays only as the fallback before a cave's sheet arrives. `?walls=3d` stays as the preview for the cave pieces that come next (the rubble).

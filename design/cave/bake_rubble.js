@@ -161,9 +161,10 @@ window.__pile = function (R, stage) {
   fs.mkdirSync(path.join(ROOT, 'img', 'cave'), { recursive: true }); fs.writeFileSync(path.join(ROOT, 'img', 'cave', 'rubble.png'), Buffer.from(png.split(',')[1], 'base64'));
   const atlas = { sheet: 'img/cave/rubble.png', w: SW, h: SH, shows: SHOWS, items: {} };
   for (const s of pics) { (atlas.items[s.id] = atlas.items[s.id] || {})[s.stage] = ['rubble', s.x, s.y, s.w, s.h, s.dx, s.dy, s.seams]; }
+  for (const R of items) atlas.items[R.id].ends = [R.a[0], R.a[1], R.b[0], R.b[1]];   // (the patch it was baked from: a test checks the game's is still there)
   const js = '// THE RUBBLE, MODELLED IN THE CAVE\'S ROCK: written by design/cave/bake_rubble.js (do not edit by hand; bake again when the rubble changes).\n' +
     '// items: a rubble patch\'s id -> its pictures: "9" ... "3" (the stones shown as the drilling goes in), "left" (what a drilled choke leaves) -> [sheet, x, y, w, h, dx, dy, seams]: drawn with its top-left at (dx, dy)\n' +
-    '// from the screen point of the patch\'s start; seams: the lines that glow as it is drilled, each [x, y, x, y, ...] on the screen from the same point (three to a pile of two tiles).\n' +
+    '// from the screen point of the patch\'s start; seams: the lines that glow as it is drilled, each [x, y, x, y, ...] on the screen from the same point (three to a pile of two tiles); ends: the patch it was baked from.\n' +
     'const CAVE_RUBBLE = ' + JSON.stringify(atlas) + ';\n';
   fs.writeFileSync(path.join(ROOT, 'js', 'caverubble.js'), js);
   console.log('img/cave/rubble.png: ' + SW + ' x ' + SH + ', ' + pics.length + ' pictures; wrote js/caverubble.js');

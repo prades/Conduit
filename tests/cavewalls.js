@@ -25,8 +25,8 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('THE BAKE');
     check('js/caveatlas.js and js/cavewalls.js are loaded by the game page, and the page checks they arrived', () => {
-        const html = rd('game.html'); ok(/<script src="js\/caveatlas\.js\?v=[^"]+"><\/script>\s*<script src="js\/cavewalls\.js\?v=[^"]+"><\/script>/.test(html), 'no script tags');
-        ok(/"js\/caveatlas\.js": "CAVE_ATLAS", "js\/cavewalls\.js": "caveWallDraw"/.test(html), 'not in the page\'s arrival check');
+        const html = rd('game.html'); ok(/<script src="js\/caveatlas\.js\?v=[^"]+"><\/script>\s*(<script src="js\/caverubble\.js\?v=[^"]+"><\/script>\s*)?<script src="js\/cavewalls\.js\?v=[^"]+"><\/script>/.test(html), 'no script tags');   // (the rubble's atlas between them, build 2026-11-09k)
+        ok(/"js\/caveatlas\.js": "CAVE_ATLAS", ("js\/caverubble\.js": "CAVE_RUBBLE", )?"js\/cavewalls\.js": "caveWallDraw"/.test(html), 'not in the page\'s arrival check');
     });
     check('every rock wall piece has its strip, and the bake was made from the walls the game has now (the signature: bake again when the walls change)', () => {
         const r = J('(function(){ const its = __rocks(); return { n: its.length, missing: its.filter(it => !CAVE_ATLAS.pieces[caveWallKey(it)]).map(caveWallKey).slice(0, 5), extra: Object.keys(CAVE_ATLAS.pieces).length - its.length, sig: caveWallsSig(), baked: CAVE_ATLAS.sig, rooms: [...new Set(its.map(i => i.room))].sort() }; })()');
@@ -89,6 +89,64 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const r = J(`(function(){ let bad = 0, n = 0; for (const it of __rocks()) { const cb = caveWallBox(it); if (!cb) continue; n++; it._wb = undefined; const wb = _fpWallBounds(it); if (wb[0] > cb[0] || wb[1] > cb[1] || wb[2] < cb[2] || wb[3] < cb[3]) bad++; } return { n, bad }; })()`);
         ok(r.n > 300, 'only ' + r.n + ' boxes'); same(r.bad, 0, 'pieces whose cull box is smaller than their strip');
         run('_caveWallsPrev = false; for (const r in _caveImgs) delete _caveImgs[r];');
+    });
+
+    // THE RUBBLE, MODELLED IN THE SAME ROCK (build 2026-11-09k; the owner, 2026-11-09: "update the rubble patches make those look more like a cave rock", "then do the rubble"): every rubble patch
+    // a fire technician drills is a rock fall baked by design/cave/bake_rubble.js (img/cave/rubble.png, js/caverubble.js), one picture for each stage of the drilling; on the preview until approved.
+    group('THE RUBBLE, MODELLED IN THE CAVE\'S ROCK (on the preview, ?walls=3d, until the owner approves it in the game)');
+    run(`globalThis.__rub = () => _fp.items.filter(it => it.fp === 'wdecor' && it.kind === 'rubble');
+        globalThis.__pen2 = () => { const calls = [], t = {}; const g = new Proxy(t, { get(t, k) { if (k in t) return t[k]; return function () { calls.push([k].concat(Array.prototype.slice.call(arguments), k === 'stroke' ? [t.strokeStyle, t.globalCompositeOperation] : [])); }; }, set(t, k, v) { t[k] = v; return true; } }); return { g, calls }; };
+        globalThis.__rubDraw = (id, hits, k) => { const it = __rub().find(i => i.rubble === id), P = __pen2(), keep = ctx, H = _techRubbleHits(), was = H[id]; ctx = P.g; ctx._k = k;
+            if (hits) H[id] = hits; else delete H[id];
+            try { techDrawRubbleOn(it, 10); return P.calls; } finally { ctx = keep; if (was) H[id] = was; else delete H[id]; } };
+        globalThis.__rubSheet = on => { _caveRubbleImg = on ? { complete: true, naturalWidth: CAVE_RUBBLE.w, naturalHeight: CAVE_RUBBLE.h } : null; };
+        globalThis.__at = c => c.length === 4 ? [c[2], c[3]] : [c[6], c[7]];`);   // (a picture's place: from its own small canvas, or from the sheet)
+    check('js/caverubble.js is loaded by the game page (before js/cavewalls.js), and the page checks it arrived', () => {
+        const html = rd('game.html'); ok(/<script src="js\/caverubble\.js\?v=[^"]+"><\/script>\s*<script src="js\/cavewalls\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag');
+        ok(/"js\/caverubble\.js": "CAVE_RUBBLE"/.test(html), 'not in the page\'s arrival check');
+    });
+    check('every rubble patch has its pictures, baked from the patch the game has now: one for each count of stones the drilling shows (9 8 7 6 4 3), what a drilled choke leaves (chokes only); three seams to a pile', () => {
+        const r = J(`__rub().map(it => { const P = CAVE_RUBBLE.items[it.rubble], R = _techRubble(it.rubble), segs = Math.max(1, Math.round(Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) / 2));
+            return { id: it.rubble, has: P ? Object.keys(P).filter(k => k !== 'ends').sort() : null, ends: P && P.ends, now: [it.a[0], it.a[1], it.b[0], it.b[1]], choke: !!(R && R.solid), segs,
+                seams: P ? CAVE_RUBBLE.shows.map(s => P[s] && P[s][7] ? P[s][7].filter(q => q.length >= 4 && q.length % 2 === 0).length : -1) : [], left: P && P.left ? P.left[7].length : -1 }; })`);
+        ok(r.length >= 4, 'only ' + r.length + ' patches'); same(r.map(p => p.id).sort().join(), 'rubble_arena_south,rubble_sewer_bank,rubble_sewer_choke,rubble_sewer_gate', 'the patches');
+        for (const p of r) {
+            ok(p.has, p.id + ': no pictures'); same(p.has.join(), ['3', '4', '6', '7', '8', '9'].concat(p.choke ? ['left'] : []).sort().join(), p.id + ': its pictures');
+            same(JSON.stringify(p.ends), JSON.stringify(p.now), p.id + ': the patch moved since the bake: node design/cave/bake_rubble.js <three>');
+            same(p.seams.join(), [9, 8, 7, 6, 4, 3].map(() => p.segs * 3).join(), p.id + ': its seams (three to a pile)'); if (p.choke) same(p.left, 0, p.id + ': seams on what a choke leaves');
+        }
+        same(J('CAVE_RUBBLE.shows').join(), '9,8,7,6,4,3', 'the stages'); same(J('[0, 1, 2, 3, 4, 5].map(h => _TECH_RUBBLE.length - Math.floor(h * _TECH_RUBBLE.length / (TECH_AB.drill.hits + 1)))').join(), '9,8,7,6,4,3', 'the drilling shows other stages');
+    });
+    check('its sheet is the size the atlas says, every picture inside it; the model is the walls\' rock (their brown and their lights)', () => {
+        const A = J('CAVE_RUBBLE'); same(A.sheet, 'img/cave/rubble.png', 'the sheet'); same(pngSize(A.sheet).join('x'), A.w + 'x' + A.h, 'its size'); ok(A.w <= 4096 && A.h <= 4096, 'too big for a tablet\'s texture');
+        let n = 0, bad = 0; for (const P of Object.values(A.items)) for (const [k, e] of Object.entries(P)) { if (k === 'ends') continue; n++; if (e[1] < 0 || e[2] < 0 || e[1] + e[3] > A.w || e[2] + e[4] > A.h || e[3] < 1 || e[4] < 1) bad++; }
+        same(n, 27, 'pictures'); same(bad, 0, 'pictures outside the sheet');
+        const b = rd('design/cave/bake_rubble.js'), w = rd('design/cave/bake_walls.js'), lights = s => (s.match(/new T\.(HemisphereLight|DirectionalLight)\([^)]*\)/g) || []).join();
+        ok(/base = lin\(0x4a3f37\), dark = lin\(0x1d1714\), light = lin\(0x7a6a5c\)/.test(b), 'not the walls\' brown'); ok(lights(b).length > 40 && lights(b) === lights(w), 'not the walls\' lights');
+    });
+    check('without the preview, or before its sheet has arrived, the drawn pile, as before (so the rubble is never missing)', () => {
+        same(J('CAVE_RUBBLE_APPROVED'), false, 'approved already: the owner has not seen it in the game');
+        run('_caveWallsPrev = null; globalThis.location = { search: "" };'); same(J('caveRubbleOn()'), false, 'on without the preview');
+        run('__rubSheet(true);'); let c = J('__rubDraw("rubble_arena_south", 0)'); ok(!c.some(q => q[0] === 'drawImage') && c.filter(q => q[0] === 'fill').length >= 9, 'not the drawn pile without the preview');
+        run('_caveWallsPrev = null; globalThis.location = { search: "?power=on&walls=3d" };'); same(J('caveRubbleOn()'), true, 'off on the preview');
+        run('__rubSheet(false);'); c = J('__rubDraw("rubble_arena_south", 0)'); ok(!c.some(q => q[0] === 'drawImage') && c.filter(q => q[0] === 'fill').length >= 9, 'not the drawn pile before the sheet arrived');
+    });
+    check('on the preview, each stage of the drilling is its one picture, on whole pixels from the screen point of the patch\'s start, with its seams glowing over it (lighter), hotter with each hit; none of the drawn pile', () => {
+        run('_caveWallsPrev = true; __rubSheet(true);');
+        const r = J(`[0, 1, 2, 3, 4, 5].map(h => { const calls = __rubDraw("rubble_sewer_bank", h), it = __rub().find(i => i.rubble === "rubble_sewer_bank"), show = String(9 - Math.floor(h * 9 / 7)), e = CAVE_RUBBLE.items.rubble_sewer_bank[show], p = _fpWP(it, 0, 0);
+            const pics = calls.filter(c => c[0] === 'drawImage'), st = calls.filter(c => c[0] === 'stroke');
+            return { show, pics: pics.length, at: pics[0] && __at(pics[0]), want: [Math.round(p[0] + e[5]), Math.round(p[1] + e[6])], strokes: st.length, lighter: st.every(c => c[2] === 'lighter'), glow: +(String(st[1] && st[1][1]).match(/,([0-9.]+)\\)$/) || [0, 0])[1], fills: calls.filter(c => c[0] === 'fill').length }; })`);
+        for (const s of r) { same(s.pics, 1, s.show + ': pictures'); same(JSON.stringify(s.at), JSON.stringify(s.want), s.show + ': where'); same(s.strokes, 3 * 3 * 2, s.show + ': its seams (three to a pile, each a glow and a line)'); ok(s.lighter, s.show + ': its seams do not glow'); same(s.fills, 0, s.show + ': the drawn pile too'); }
+        ok(r.every((s, i) => !i || s.glow > r[i - 1].glow), 'the seams do not glow hotter with each hit: ' + r.map(s => s.glow).join(' '));
+    });
+    check('a choke drilled through: what it leaves, in the rock (one picture), its sides still warm; rubble against a wall drilled through: the hole, drawn as before', () => {
+        const a = J('__rubDraw("rubble_sewer_gate", 6)'); same(a.filter(q => q[0] === 'drawImage').length, 1, 'what a choke leaves'); same(a.filter(q => q[0] === 'fill').length, 2, 'its two warm sides'); same(a.filter(q => q[0] === 'stroke').length, 0, 'seams on what is left');
+        const h = J('__rubDraw("rubble_arena_south", 6)'); same(h.filter(q => q[0] === 'drawImage').length, 0, 'the hole is a picture'); ok(h.filter(q => q[0] === 'fill').length >= 8, 'not the hole');
+    });
+    check('in a dim room it is darkened as the walls are (its picture over its silhouette at the room\'s light, composed once per level)', () => {
+        run('_caveDim.clear();'); const c = J('__rubDraw("rubble_arena_south", 0, 0.5)'); same(c.filter(q => q[0] === 'drawImage').length, 1, 'pictures');
+        same(J('Object.keys(_caveDim.get("rubble|rubble_arena_south|9") || {})').join(), '6', 'the light level composed');
+        run('_caveWallsPrev = false; _caveRubbleImg = undefined; _caveDim.clear();');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
