@@ -120,13 +120,17 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             Q.bossResolvedAt = 1; Q.bossOutcome = 'calm'; o.fateOnly = [sqCardsForSale().length, sqSpeech()];
             Q.purifiedAt = 1; dialogueClear(); sqDrawOverlay(); __dlg(); const L = dialogueCurrent();
             o.after = { stock: sqStock().map(c => c.id + ':' + c.match + ':' + c.kit.el).join(), names: sqCardsForSale().map(c => c.name).join('|'), line: L && L.pages[0], who: L && L.who,
-                btns: _dlgBtns.map(b => [b.label, b.sub, b.card, b.w > 100, b.h].join('/')), verb: STATION_KINDS.sidequest.verbFn(st), price: SIDEQUEST.cardPrice, col: SIDEQUEST.cardCol, lines: dialogueLines()[0].choices };
+                btns: _dlgBtns.map(b => [b.label, b.sub, b.card, b.w > 100, b.h].join('/')), verb: STATION_KINDS.sidequest.verbFn(st), price: SIDEQUEST.cardPrice, col: SIDEQUEST.cardCol, lines: dialogueLines()[0].choices, at: _dlgBtns.map(b => [b.x, b.y, b.w]), box: [_dlgBox.y, _dlgBox.h], gap: DIALOGUE.choiceH + 10, perRow: DIALOGUE.perRow };
             return o; })()`);
         same(JSON.stringify(r.before), JSON.stringify([0, 0, 0, 'HE SELLS BLIGHT SHOOTER AFTER THE PURIFICATION', true]), 'before the purification');
         same(r.fateOnly.join('|'), '0|…', 'the queen calm, the water not yet clean');
         same(r.after.stock, 'blight_shooter:gunslinger:toxic,smog_engineer:technomancer:toxic,plague_doctor:mutator:toxic,seed_gunner:gunslinger:blossom,grove_engineer:technomancer:blossom,herbalist:mutator:blossom', 'his stock (BLOOM\'s three beside the toxic three since build 2026-11-09a: the purification module has run)');
         same(r.after.names, 'BLIGHT SHOOTER|SMOG ENGINEER|PLAGUE DOCTOR|SEED GUNNER|GROVE ENGINEER|HERBALIST', 'on sale'); same(r.after.line + '|' + r.after.who, '…|sidequest', 'his line');
         same(JSON.stringify(r.after.btns), JSON.stringify(['BLIGHT SHOOTER/◆1000 · KEPT FOR GOOD/blight_shooter/true/40', 'SMOG ENGINEER/◆1000 · KEPT FOR GOOD/smog_engineer/true/40', 'PLAGUE DOCTOR/◆1000 · KEPT FOR GOOD/plague_doctor/true/40', 'SEED GUNNER/◆1000 · KEPT FOR GOOD/seed_gunner/true/40', 'GROVE ENGINEER/◆1000 · KEPT FOR GOOD/grove_engineer/true/40', 'HERBALIST/◆1000 · KEPT FOR GOOD/herbalist/true/40']), 'the buttons (three to a row, build 2026-11-09a)');
+        { const A = r.after.at, row = i => A[i][1], col = i => A[i][0];   // (the six in two rows of three since build 2026-11-09a: js/dialogue.js DIALOGUE.perRow; the box grown by a row)
+          same(r.after.perRow, 3, 'choices to a row'); same([row(0) === row(1), row(1) === row(2), row(3) === row(4), row(4) === row(5)].join(), 'true,true,true,true', 'each row of three on one line');
+          same(row(3) - row(0), r.after.gap, 'the second row a button and a gap under the first'); same([col(0) === col(3), col(1) === col(4), col(2) === col(5), A.every(q => q[2] === A[0][2])].join(), 'true,true,true,true', 'the columns, and one width');
+          ok(row(0) > r.after.box[0] && row(5) + 40 <= r.after.box[0] + r.after.box[1], 'the buttons inside the box: ' + JSON.stringify([A, r.after.box])); }
         same(JSON.stringify(r.after.lines), JSON.stringify(['BLIGHT SHOOTER', 'SMOG ENGINEER', 'PLAGUE DOCTOR', 'SEED GUNNER', 'GROVE ENGINEER', 'HERBALIST']), 'the line\'s choices');
         same(r.after.verb, 'BUY A SLEEPING POTION ◆100', 'the potion on his station'); same(r.after.price + '|' + r.after.col, '1000|#ffe733', 'the price and the gold');
     });
