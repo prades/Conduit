@@ -30,7 +30,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const html = rd('game.html'); ok(/<script src="js\/fx3d\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag'); ok(/"js\/fx3d\.js": "FX3D"/.test(html), 'not in the page\'s arrival check');
     });
     check('each flying piece\'s sheet is in the build (the quill, the icicle), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
-        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike', 'the pieces (rotspike: a standing piece, below)');
+        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy', 'the pieces (rotspike and rotdecoy: standing pieces, below)');
         for (const k of ['quill', 'icicle']) {
             const P = J('FX3D.pieces.' + k), meta = JSON.parse(rd('design/effects/out/' + k + '.json'));
             same(P.sheet, 'img/fx/' + k + '.png', k + ': the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), k + ': the sheet\'s size');
@@ -127,7 +127,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(old.indexOf('drawImage') < 0 && old.filter(c => c === 'fill').length >= 4, 'not the old spikes: ' + old.join());
         run('delete FX3D.pieces.rotspike._img; __preview(false);');
     });
-    check('with its sheet (on the preview): TOXIC PUDDLE\'s three are pictures of it, each from its own small cell, foot on the floor, as tall as the old ones (the middle one the tallest), each turned its own way by the world, not the screen; a soft dark foot under each and no green haze round them (the owner: "I don\'t like the green aura"); ROTTEN DECOY\'s four the same, with no glow round them', () => {
+    check('with its sheet (on the preview): TOXIC PUDDLE\'s three are pictures of it, each from its own small cell, foot on the floor, as tall as the old ones (the middle one the tallest), each turned its own way by the world, not the screen; a soft dark foot under each and no green haze round them (the owner: "I don\'t like the green aura")', () => {
         run('__preview(true); FX3D.pieces.rotspike._img = { complete: true, naturalWidth: 576, naturalHeight: 72 }; globalThis.__sc3 = spriteCell; globalThis.__cells3 = []; spriteCell = function (img, sx, sy, sw, sh) { __cells3.push(sx / sw); return { cell: sx / sw }; };');
         const draw = (sx, seed) => J(`(function(){ __cells3.length = 0; const P = __pen(), keep = ctx; ctx = P.g; try { _fxRotSpikes(${sx}, 100, 16, 6, 1, 1, ${seed}); } finally { ctx = keep; } return { im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)), el: P.calls.filter(c => c[0] === 'ellipse').length, green: P.calls.some(c => c[0] === 'set fillStyle' && /7dff4a/i.test(c[1])), cells: __cells3.slice(), n: P.calls.length }; })()`);
         const a = draw(100, 3.7), b = draw(260, 3.7), c = draw(100, 8.2), P = J('FX3D.pieces.rotspike'), H0 = P.ay - P.tipY;
@@ -137,9 +137,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(a.im.every(d => Math.abs(d[6] + P.ay * d[8] / P.cell - 100) < 1e-6), 'a foot is not on the floor');
         same(a.cells.join(), b.cells.join(), 'turned by where it is on the screen'); ok(a.cells.join() !== c.cells.join(), 'every spike turned the same way: ' + a.cells + ' / ' + c.cells);
         same(a.el, 3, 'a dark foot under each, and nothing else round them'); same(a.green, false, 'a green haze round them'); ok(a.n < 30, 'a cluster costs ' + a.n + ' canvas operations');
-        ok(/if \(!m3\) \{ ctx\.globalAlpha = 0\.22 \* k; ctx\.fillStyle = "#7dff4a"/.test(rd('js/elements.js')), 'ROTTEN DECOY\'s glow is drawn round the modelled spikes');
         ok(!/mist: '#7dff4a'/.test(rd('design/effects/bake_fx.js')), 'the spike is still baked lit green');
-        ok(/if \(!_fxRotSpikes3d\(px, cy, \[\[-7, 30 \/ 44\], \[8, 34 \/ 44\], \[-2, 22 \/ 44\], \[0, 1\]\], 44, k, k, e\.x \* 3\.1 \+ e\.y \* 1\.7\)\) \{/.test(rd('js/elements.js')), 'ROTTEN DECOY does not stand its four (44 px the tallest), rising as it is set');
     });
     check('rising: while it comes up only the part above the floor is drawn (its cell cut where the floor meets it), the rest still under it; risen whole, all of it, its foot and its chips; at nothing, nothing', () => {
         const at = r => J(`(function(){ const P = __pen(); fx3dDrawUpright(P.g, 'rotspike', 100, 100, 0, 30, ${r}); return P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)); })()`), P = J('FX3D.pieces.rotspike');
@@ -149,6 +147,38 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(half[0][4] < P.ay && half[0][4] > P.tipY, 'half up, not cut between its tip and its foot: ' + half[0][4]);
         same(whole[0][4], P.cell, 'risen whole, not all of its cell'); ok(Math.abs(whole[0][6] + P.ay * whole[0][8] / P.cell - 100) < 1e-6, 'risen whole, its foot not on the floor');
         run('spriteCell = __sc3; delete FX3D.pieces.rotspike._img; __preview(false);');
+    });
+
+    group('ROTTEN DECOY AS A BLACK ROTSHARD (the owner, 2026-11-09: "Make the decoy a black Rotshard"; the model approved, "Yes, build it"; build 2026-11-09x, on the preview)');
+    check('its sheet: the Rotshard\'s idle loop in 12 frames, one row, at the forms\' own cell (144 px, 3.4 units); its foot and top as the baker wrote; the model is the Rotshard\'s own (No. 101), all black, its glows and its light off, its thin crack kept', () => {
+        const P = J('FX3D.pieces.rotdecoy'), meta = JSON.parse(rd('design/effects/out/rotdecoy.json'));
+        same(P.sheet, 'img/fx/rotdecoy.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + P.cell, 'the sheet\'s size'); same(JSON.stringify([P.cell, P.yaws, P.upright, P.copy]), '[144,12,true,true]', 'the table');
+        same(JSON.stringify([meta.cell, meta.yaws, meta.pitches, meta.upright, meta.unitsPerCell]), JSON.stringify([P.cell, P.yaws, P.pitches, true, 3.4]), 'the baker\'s record and the game\'s table');
+        ok(Math.abs(meta.anchor.x - P.ax) < 0.01 && Math.abs(meta.anchor.y - P.ay) < 0.01 && Math.abs(meta.tipY - P.tipY) < 0.01, 'its foot or its top: ' + JSON.stringify([meta.anchor, meta.tipY]));
+        const b = rd('design/effects/bake_fx.js'); ok(/rotdecoy: \{ form: 101, color: '#14c040', copy: true,/.test(b), 'not a copy of the Rotshard (No. 101)');
+        ok(/if \(o\.isSprite \|\| o\.isLight\) \{ o\.visible = false;/.test(b) && /if \(m === M\.glow\) return; if \(m\.transparent \|\| m\.blending === T\.AdditiveBlending\) \{ o\.visible = false;/.test(b), 'its glows or its light are not off, or its crack not kept');
+        ok(Math.abs(P.loop - Math.round(2 * Math.PI / 1.6 * 60)) <= 1, 'its loop is not the Rotshard\'s idle (2 pi / 1.6 s): ' + P.loop);
+    });
+    check('not approved: only on the preview; without it, or before its sheet arrives, ROTTEN DECOY is the drawn spikes in their glow', () => {
+        same(J('FX3D.approved.indexOf("rotdecoy")'), -1, 'approved'); run('__preview(false)'); same(J('fx3dOn("rotdecoy")'), false, 'on without the preview');
+        const r = J(`(function(){ const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption; ctx = P.g; activeFireEruption = null; elementEffects = [{ type: 'rotdecoy', x: player.visualX, y: player.visualY, life: 300, maxLife: 360, on: { maxHealth: 10, health: 5 } }];
+            try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; } return P.calls.map(c => c[0]); })()`);
+        ok(r.indexOf('drawImage') < 0 && r.filter(c => c === 'stroke').length >= 4, 'not the drawn spikes: ' + r.join());
+    });
+    check('with its sheet (on the preview): one picture of the copy, at the forms\' scale, its foot where the decoy is set, its frame the Rotshard\'s idle by the game\'s clock; risen as it is set; no glow round it (only its poison\'s reach); its health bar over its top', () => {
+        run('__preview(true); FX3D.pieces.rotdecoy._img = { complete: true, naturalWidth: 1728, naturalHeight: 144 }; globalThis.__sc4 = spriteCell; globalThis.__cells4 = []; spriteCell = function (img, sx, sy, sw, sh) { __cells4.push(sx / sw); return { cell: sx / sw }; };');
+        const at = (f, age) => J(`(function(){ __cells4.length = 0; const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption, f0 = frame; ctx = P.g; activeFireEruption = null; frame = ${f};
+            elementEffects = [{ type: 'rotdecoy', x: player.visualX, y: player.visualY, life: 360 - ${age}, maxLife: 360, on: { maxHealth: 10, health: 5 } }];
+            try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; frame = f0; }
+            return { im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)), glow: P.calls.filter(c => c[0] === 'ellipse' && c[3] === 30 && c[4] === 22).length, reach: P.calls.filter(c => c[0] === 'ellipse' && c[3] > 60).length, rects: P.calls.filter(c => c[0] === 'fillRect').map(c => c.slice(1)), cells: __cells4.slice(), W: canvas.width, H: canvas.height }; })()`);
+        const a = at(0, 30), b = at(59, 30), c = at(118, 30), half = at(0, 4), P = J('FX3D.pieces.rotdecoy'), S = J('EVO_SCALE'), TH = J('TILE_H');
+        same(a.im.length, 1, 'its pictures'); ok(Math.abs(a.im[0][7] - P.cell * S) < 1e-6, 'not at the forms\' scale: ' + a.im[0][7]);
+        const cy = a.H / 2 + TH * 0.5; ok(Math.abs(a.im[0][6] + P.ay * S - cy) < 1e-6 && Math.abs(a.im[0][5] + P.ax * S - a.W / 2) < 1e-6, 'its foot is not where the decoy is set');
+        same(JSON.stringify([a.cells[0], b.cells[0], c.cells[0]]), '[0,3,6]', 'its frames by the game\'s clock (12 over its ' + P.loop + '-frame loop)');
+        ok(half.im[0][4] < P.ay && Math.abs(half.im[0][6] + half.im[0][8] - cy) < 1e-6, 'it does not rise out of the floor as it is set: ' + JSON.stringify(half.im[0].slice(1)));
+        same(a.glow, 0, 'the glow round it'); same(a.reach, 1, 'its poison\'s reach');
+        const bar = a.rects.find(r => Math.abs(r[2] - 28) < 1e-6); ok(bar && Math.abs(bar[1] - (cy - (P.ay - P.tipY) * S - 8)) < 1e-6, 'its health bar is not over its top: ' + JSON.stringify(bar));
+        run('spriteCell = __sc4; delete FX3D.pieces.rotdecoy._img; __preview(false);');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

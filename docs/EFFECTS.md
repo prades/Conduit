@@ -116,7 +116,7 @@ The owner's pick for the third piece (2026-11-09, "Rotshard's black spike").
 
 **In the game (built in `2026-11-09u` on the preview; approved for everyone in `2026-11-09v`, taken back the same day; on the preview again since `2026-11-09w`).**
 - The sheet is 8 turns in one row, in 72 px cells, lit as the forms are. (Build `u` lit it green from below as well; that came out with the aura in `w`.)
-- **ROTTEN DECOY** stands its four at the drawn ones' places and heights (the tallest 44 px). They rise out of the floor over the 8 frames it is set in.
+- **ROTTEN DECOY** stood its four at the drawn ones' places and heights (the tallest 44 px), rising over the 8 frames it is set in. Since build `2026-11-09x` the decoy is a black Rotshard instead (below).
 - **TOXIC PUDDLE** stands three under each enemy it bites (the middle one 16 px, the sides three quarters). They rise as before and stay solid for most of their fade.
 - **The CRYSTAL SPIKE TRIO card attack** draws the same cluster, so it uses the spike too.
 - Each spike is turned by where it is in the world, not on the screen, and has a soft dark foot. A cluster costs under 30 canvas operations.
@@ -128,12 +128,32 @@ The owner's pick for the third piece (2026-11-09, "Rotshard's black spike").
   - It is back on the preview only, for the owner's look.
 - Tested: `tests/fx3d.js`. Checked in the real page with pictures, old and new side by side.
 
+### ROTSHARD: ROTTEN DECOY as a black Rotshard
+
+The owner, 2026-11-09, on what was off with the black spike: "Make the decoy a black Rotshard". The decoy's design already called it "a black crystal copy" of the Rotshard.
+
+**The model.** The Rotshard's own model (No. 101: the eaten crystal leaning in its pool, the old shell shard), all in black, built from the same code.
+- The crystal and the shell are glassy black; the pool is matte tar-black.
+- Its glows, washes and light are off ("I don't like the green aura"). Only the shell shard's thin green crack is kept.
+- **Approved 2026-11-09** ("Yes, build it"), from the large preview beside the real Rotshard.
+
+**In the game (built in `2026-11-09x` on the preview, `?fx=3d`).**
+- The sheet is the Rotshard's idle loop in 12 frames, at the forms' own 144 px cell. It is drawn at the forms' scale, so it is the Rotshard's size.
+- It stands where the decoy is set, rising out of the floor over the 8 frames it is set in, and breathes with the Rotshard's idle by the game's clock.
+- No glow round it. The faint circle of its poison's reach stays, and its health bar is over its top.
+- Rules, timing, lure and hits are unchanged. Without `?fx=3d`, or before its sheet arrives, the drawn spikes in their glow are shown.
+- **Waiting for the owner's approval in the game.**
+- Tested: `tests/fx3d.js`. Checked in the real page with pictures.
+
 ## 4. Open questions
 
 - ~~What "3-D flare" means~~ *(answered 2026-11-09: "Modelled 3D pieces")*. ~~Which piece first~~ *(answered: "Quillstone's quill"; its model approved, "Yes, build it")*.
 - ~~**The quill in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09f`)*.
 - ~~**The icicle in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09h`)*.
-- **The black spike in the game:** approved, then taken back ("I don't like the green aura"). Without its aura, on the preview, since build `2026-11-09w`: for the owner's look.
+- **The black spike in the game:** approved, then taken back ("I don't like the green aura"). Then "Still not right", and the owner's answer: "Make the decoy a black Rotshard".
+  - TOXIC PUDDLE (and the CRYSTAL SPIKE TRIO card) keep the black spike, without its aura.
+  - ROTTEN DECOY is the black Rotshard (build `2026-11-09x`).
+  - Both are on the preview, for the owner's approval in the game.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.

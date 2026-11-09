@@ -1,0 +1,15 @@
+{
+ "piece": "rotdecoy",
+ "cell": 144,
+ "yaws": 12,
+ "pitches": [
+  0
+ ],
+ "anchor": {
+  "x": 72.00000000000009,
+  "y": 102.8101273064017
+ },
+ "unitsPerCell": 3.4,
+ "tipY": 29.452681338778657,
+ "upright": true
+}

@@ -25,6 +25,10 @@ const PIECES = {
   // ROTTEN DECOY and TOXIC PUDDLE (the ROTSHARD; the owner's pick, 2026-11-09: "Rotshard's black spike"): a spike of its old black shell (forms5.js shellShard: "a broken piece of the old black
   // shell: jagged, glassy-black", the shell's black, M.black), standing in the floor: five-sided, each ring pulled in and out so its edges are broken, a little lean, a chip broken off at its foot.
   // UPRIGHT: it stands on the floor (its foot at the origin, pointing up +y); the game turns it (yaws) and lets it rise out of the floor. The green haze stays drawn in code.
+  // ROTTEN DECOY (the ROTSHARD; the owner, 2026-11-09: "Make the decoy a black Rotshard"): its design's "black crystal copy", the Rotshard's own model (No. 101: the eaten crystal leaning in its pool,
+  // the old shell shard) in its old shell's glassy black, its pool tar-black, no light of its own and no glow (the owner: "I don't like the green aura"); the shell shard's hairline crack keeps its green.
+  // A COPY: its columns are frames of its idle loop (the Rotshard's own, 2 pi / 1.6 s), facing the camera; drawn at the forms' scale.
+  rotdecoy: { form: 101, color: '#14c040', copy: true, upright: true, h: 2.0, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6 },   // (a draft, for the owner's yes)
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
@@ -58,6 +62,14 @@ window.__fx = async function (mode, piece, P) {
         geo.translate(0, h / 2, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, ice); if (!tip) m.rotation.z = PI; return m; };
       const spike = new T.Group(); spike.add(mk(front, true, P.seed)); spike.add(mk(P.back, false, P.seed + 7));   // (both cones from the widest point: the long one forward, the short one back)
       spike.rotation.z = -PI / 2; spike.position.x = (P.back - front) / 2; const r = new T.Group(); r.add(spike); r.rotation.x = P.roll || 0; g.add(r); }
+    if (P.copy) {   // the form's own model, every surface of it black: glassy for the crystal and the shell, tar for the pool; its glows, washes and light off; its hairline crack (M.glow) kept
+      const glass = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); glass.envMapIntensity = 1.7;
+      const tar = new T.MeshPhysicalMaterial({ color: 0x030303, metalness: 0.05, roughness: 0.75, clearcoat: 0.25, clearcoatRoughness: 0.35 }); tar.envMapIntensity = 0.35;   // (matte: a black pool, not a mirror)
+      const B = FORMS2[P.form].build(); B.update(0, 0); B.g.rotation.y = PI / 4;
+      B.g.traverse(o => { if (o.isSprite || o.isLight) { o.visible = false; if (o.isLight) o.intensity = 0; return; } if (!o.isMesh) return; const m = o.material;
+        if (m === M.glow) return; if (m.transparent || m.blending === T.AdditiveBlending) { o.visible = false; return; } o.material = (m === M.slurry || m === M.rotDk) ? tar : glass; });
+      g.add(B.g); g.userData.B = B;
+    }
     if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
       const black = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); black.envMapIntensity = 1.7;   // (glassy: a clear coat over the black)
       const N = P.sides, mk = (r, h, sd, segs, amt) => { const geo = new T.ConeGeometry(r, h, N, segs), q = geo.attributes.position;
@@ -77,6 +89,15 @@ window.__fx = async function (mode, piece, P) {
     return g; };
   // the way it flies, in the world: the game's x is the world's +x, the game's y the world's +z
   const aim = (g, yaw, pitch) => { g.rotation.set(0, 0, 0); g.rotation.order = 'YZX'; g.rotation.y = -yaw; g.rotation.z = pitch; };
+  if (mode === 'preview' && P.copy) {   // a copy of a form: alone, large; then beside the form itself, at one scale
+    const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
+    const s1 = new T.Scene(); lit(s1); const q1 = build(); s1.add(q1);
+    const big = shot(s1, camFor(6.2, 2.728, 1.0), 1600, 704);
+    const s2 = new T.Scene(); lit(s2); EL = { color: P.color }; setElementColour(P.color); const B = FORMS2[P.form].build(); B.update(0, 0); B.g.rotation.y = PI / 4; B.g.position.set(-1.2 * Math.SQRT1_2, 0, 1.2 * Math.SQRT1_2); s2.add(B.g);
+    const q2 = build(); q2.position.set(1.2 * Math.SQRT1_2, 0, -1.2 * Math.SQRT1_2); s2.add(q2);
+    const side = shot(s2, camFor(5.2, 2.6, 0.75), 800, 400);
+    return { big: big.toDataURL('image/png'), side: side.toDataURL('image/png') };
+  }
   if (mode === 'preview' && P.upright) {   // a standing piece: alone, large; then beside its form, as its effect sets it out (ROTTEN DECOY's four, at its heights)
     const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
     const s1 = new T.Scene(); lit(s1); const q1 = build(); q1.rotation.y = -0.45; s1.add(q1);   // (its crack toward the camera)
@@ -105,7 +126,8 @@ window.__fx = async function (mode, piece, P) {
     const sheet = document.createElement('canvas'); sheet.width = C * P.yaws; sheet.height = C * P.pitches.length; const sg = sheet.getContext('2d');
     const probe = document.createElement('canvas'); probe.width = C; probe.height = C; const pg = probe.getContext('2d'); const edges = [];
     for (let j = 0; j < P.pitches.length; j++) for (let k = 0; k < P.yaws; k++) {
-      aim(q, k * 2 * PI / P.yaws, P.pitches[j]); renderer.render(scene, cam); sg.drawImage(renderer.domElement, k * C, j * C, C, C);
+      if (P.copy) { const B = q.userData.B; B.update(k / P.yaws * P.loop, 0); B.g.traverse(o => { if (o.isSprite || o.isLight) o.visible = false; }); } else aim(q, k * 2 * PI / P.yaws, P.pitches[j]);   // (a copy: frame k of its idle loop)
+      renderer.render(scene, cam); sg.drawImage(renderer.domElement, k * C, j * C, C, C);
       pg.clearRect(0, 0, C, C); pg.drawImage(renderer.domElement, 0, 0, C, C); const d = pg.getImageData(0, 0, C, C).data; let edge = false;
       for (let i = 0; i < C && !edge; i++) for (const [x, y] of [[i, 0], [i, C - 1], [0, i], [C - 1, i]]) if (d[(y * C + x) * 4 + 3] > 8) { edge = true; break; }
       if (edge) edges.push(k + ',' + j);
@@ -131,7 +153,7 @@ window.__fx = async function (mode, piece, P) {
   if (MODE === 'preview') {
     // one picture: the piece large on top, the piece beside its form below (on the arena's dark floor colour, so the glow reads as it will)
     const q = await b.newPage(); await q.setViewportSize({ width: 1600, height: 1160 });
-    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>${PIECES[PIECE].upright ? 'ROTTEN DECOY\'s four ' + PIECE + 's beside the Rotshard, at one scale' : 'the ' + PIECE + ' beside its form, at one scale'}<br><span style="font-weight:400;font-size:18px">${PIECES[PIECE].upright ? '(in the game the tallest is about 44 px; the green mist stays drawn in code)' : '(in the game it is about 25 px long)'}</span></div></div></body>`);
+    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>${PIECES[PIECE].copy ? 'ROTTEN DECOY (right) beside the Rotshard (left), at one scale' : PIECES[PIECE].upright ? 'ROTTEN DECOY\'s four ' + PIECE + 's beside the Rotshard, at one scale' : 'the ' + PIECE + ' beside its form, at one scale'}<br><span style="font-weight:400;font-size:18px">${PIECES[PIECE].copy ? '(the Rotshard\'s own model, all black; no glow)' : PIECES[PIECE].upright ? '(in the game the tallest is about 44 px; the green mist stays drawn in code)' : '(in the game it is about 25 px long)'}</span></div></div></body>`);
     await q.screenshot({ path: OUT, clip: { x: 0, y: 0, width: 1600, height: 1120 } });
     console.log('wrote ' + OUT);
   }

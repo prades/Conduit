@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09x` · branch `claude/start-game-project-HSh7Z` · ROTTEN DECOY as a black Rotshard (on the preview)
+The owner, on what was still off with the black spike: "Make the decoy a black Rotshard"; the model approved from the large preview ("Yes, build it"). `docs/EFFECTS.md`.
+- **ROTTEN DECOY is a black copy of the Rotshard:** its own model all in black, the pool tar-black, no glow; only the shell shard's thin green crack is kept.
+  - At the Rotshard's size, it rises out of the floor as it is set and breathes with the Rotshard's idle.
+  - Its poison's reach and its health bar stay.
+- TOXIC PUDDLE keeps the small black spikes, without their aura.
+- **Only with `?fx=3d`** until the owner approves it in the game; everyone else sees the drawn spikes. Rules are unchanged.
+- Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09w` · branch `claude/start-game-project-HSh7Z` · the black spike back on the preview, without its green aura
 The owner, after approving it: "Wait, it still looks like trash. I don't like the green aura."
 - **Taken back to the preview** (`?fx=3d`). Everyone sees the drawn spikes again. Main never had it.

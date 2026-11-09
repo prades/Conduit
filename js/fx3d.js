@@ -12,6 +12,10 @@ const FX3D = {
         // foot, a hairline of its green crystal light in a crack; the owner's pick ("Rotshard's black spike") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09u on the preview; approved in the game the same day, for everyone since 2026-11-09v.
         // UPRIGHT: it stands on the floor; its columns are the ways it is turned (yaws), one row; ax, ay its foot in the cell and tipY its tip (design/effects/out/rotspike.json), so it is drawn foot on the floor, rising out of it
         rotspike: { sheet: "img/fx/rotspike.png", cell: 72, yaws: 8, pitches: [0], upright: true, ax: 36, ay: 53.716, tipY: 11.535 },
+        // ROTTEN DECOY as a BLACK ROTSHARD (the owner, 2026-11-09: "Make the decoy a black Rotshard"; the model approved: "Yes, build it"): its design's "black crystal copy", the Rotshard's own model
+        // (design/evolutions/forms5.js No. 101) all in black, no glow, the shell shard's thin green crack kept. A COPY: its columns are frames of the Rotshard's idle loop (`loop` game frames), drawn at the
+        // forms' scale; built in build 2026-11-09x on the preview
+        rotdecoy: { sheet: "img/fx/rotdecoy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 102.81, tipY: 29.453 },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle"],  // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
