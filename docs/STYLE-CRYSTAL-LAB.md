@@ -90,6 +90,7 @@ The owner, 2026-11-09: the cave's walls should look like RuneScape's 3D-model wa
 - It cuts the picture into one strip per piece (the screen columns between the piece's ends), packs them into a sheet per cave (`img/cave/<room>.png`) and writes `js/caveatlas.js`.
 - `js/cavewalls.js` draws a piece's strip in the piece's own place in the draw list, so units sort against the rock as before. Strips are on whole pixels, so a run's strips meet flush.
 - A dim room darkens a strip as it darkens the props: the props' navy at the room's light level, composed once per twelfth of light.
+- A lit strip is drawn from its own small canvas, cut once (`spriteCell`, js/draw.js). Drawn straight from the sheet, the arena's north rock cost about 20 ms a frame. Now the modelled rock costs less than the drawn rock did, about 5.8 ms against 7.7 there (headless Chromium).
 - `tests/cavewalls.js` checks the bake is current with the walls (a signature). **When the walls change, bake again.**
 
 **Status.** On the preview (`?walls=3d`) until the owner approves it in the game (`docs/ART-PROCESS.md`). Everyone else sees the drawn rock (`js/facilitydecor.js _fpDrawRock`), which stays as the fallback. The rubble patches come next, from the same rock (the owner's ask).

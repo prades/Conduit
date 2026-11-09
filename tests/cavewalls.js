@@ -73,11 +73,14 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     });
 
     group('THE STRIP (on the preview, the sheets in)');
-    check('a lit piece is one picture: its strip, on whole pixels, from the screen point of its start', () => {
+    check('a lit piece is one picture: its strip (cut once into a small canvas of its own, js/draw.js spriteCell), on whole pixels, from the screen point of its start; with no small canvas, straight from the sheet', () => {
         run('_caveWallsPrev = true; __sheets();');
-        const r = J(`(function(){ const it = __rocks().find(i => CAVE_ATLAS.pieces[caveWallKey(i)][3] > 0), e = CAVE_ATLAS.pieces[caveWallKey(it)], P = __pen(), keep = ctx; ctx = P.g; ctx._k = undefined;
-            try { const drew = caveWallDraw(it), p = _fpP(it.a[0], it.a[1], 0); return { drew, calls: P.calls.map(c => [c[0]].concat(c.slice(2))), want: [e[1], e[2], e[3], e[4], Math.round(p[0] + e[5]), Math.round(p[1] + e[6]), e[3], e[4]] }; } finally { ctx = keep; } })()`);
-        same(r.drew, true, 'not drawn'); same(r.calls.length, 1, 'canvas calls'); same(r.calls[0][0], 'drawImage', 'its call'); same(JSON.stringify(r.calls[0].slice(1)), JSON.stringify(r.want), 'where its strip goes');
+        const at = cells => J(`(function(){ const it = __rocks().find(i => CAVE_ATLAS.pieces[caveWallKey(i)][3] > 0), e = CAVE_ATLAS.pieces[caveWallKey(it)], P = __pen(), keep = ctx, sc = spriteCell; ctx = P.g; ctx._k = undefined;
+            spriteCell = ${cells} ? function (im, sx, sy, sw, sh) { return { cut: [sx, sy, sw, sh] }; } : () => null;
+            try { const drew = caveWallDraw(it), p = _fpP(it.a[0], it.a[1], 0); return { drew, calls: P.calls.map(c => c.slice(1)), e, x: Math.round(p[0] + e[5]), y: Math.round(p[1] + e[6]) }; } finally { ctx = keep; spriteCell = sc; } })()`);
+        const a = at(true), b = at(false);
+        same(a.drew, true, 'not drawn'); same(a.calls.length, 1, 'canvas calls'); same(JSON.stringify(a.calls[0]), JSON.stringify([{ cut: [a.e[1], a.e[2], a.e[3], a.e[4]] }, a.x, a.y]), 'its strip, from its own small canvas');
+        same(b.calls.length, 1, 'canvas calls (no small canvas)'); same(JSON.stringify(b.calls[0].slice(1)), JSON.stringify([b.e[1], b.e[2], b.e[3], b.e[4], b.x, b.y, b.e[3], b.e[4]]), 'its strip, from the sheet');
     });
     check('in a dim room it is darkened as the props are (its strip over its silhouette at the room\'s light, composed once per level); nearly dark, the silhouette alone', () => {
         const r = J(`(function(){ const it = __rocks().find(i => CAVE_ATLAS.pieces[caveWallKey(i)][3] > 0), P = __pen(), keep = ctx; ctx = P.g; _caveDim.clear();

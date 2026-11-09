@@ -2668,6 +2668,8 @@ Supersedes the generic ice shot for ICICLE VOLLEY (kept only until the sheet arr
 ### Status
 Built in build `2026-11-09i` and tested (`tests/cavewalls.js`); checked in the real page with screenshots. Not playtested. How it is made: `STYLE-CRYSTAL-LAB.md`, "The cave's rock walls, modelled".
 
+- Then, on the in-game pictures (their marks): "a 3-D like projected mountain top area for that little indent" and "a cap on the entire surface rooftop so it doesn't look all jagged. It looks kind of smooth like the walls". On the Cold Storage's pictures they marked slabs over the void and a step in the rim. Built: one smooth top (the height slopes continuously across each cave), a cap carried on over an opening in a far wall, and tops that run the drawn rock's way.
+
 ### Alternatives
 Drafted and passed over: the angular rock masses in two tiers (the second render); "blockier, flatter slabs"; "darker, wetter cave"; the pale colour.
 

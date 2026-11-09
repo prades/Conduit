@@ -4,6 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09i` · branch `claude/start-game-project-HSh7Z` · the cave's rock walls, modelled (on the preview `?walls=3d`)
+The owner asked for the cave's walls to look like RuneScape's 3D-model walls, with their lighting. Shown one piece first, they picked the tall, softly shaded rock face: "Brown, build the full wall set". On the first in-game pictures they marked two asks: "a 3-D like projected mountain top area for that little indent" and "a cap on the entire surface rooftop so it doesn't look all jagged". Then, on the Cold Storage's pictures, three flaws: slabs over the void, a slab at a corner, a step in the rim.
+- **Every rock wall is modelled from its own shape:** the arena, the Cold Storage's ice cave and the Nest's cavern, 326 pieces in 53 runs.
+  - **How it is made:** `design/cave/bake_walls.js` boots the game, reads the pieces, models each run and bakes one strip per piece into a sheet per cave (`img/cave/<room>.png`, `js/caveatlas.js`).
+  - **How it is drawn:** `js/cavewalls.js` draws each strip in its piece's own place, so units sort against the rock as before. A dim room and the blackout darken it as they darken the props.
+  - **The face:** pushed in and out by noise of its place in the world, softly shaded, in the cave's brown. Boulders lie at a far wall's foot. A near wall's cliff fades to black below the floor. The ice cave's rock is frosted as the drawn rock's glaze was, with icicles.
+  - **The top:** one smooth cap. The rock's height slopes continuously across each cave, lower toward the camera, so the top is one surface wherever runs meet, zigzags included.
+  - **Indents:** at an opening in a far wall (the Sewers' culvert, the Armory's door) the cap carries on over the indent as a projecting mountain top.
+  - **Fixed on the way:** a black line along the lip (the face and cap were wound opposite ways); tops that ran out over the void (they run the way the drawn rock's did now); steps at the Cold Storage's zigzag.
+- **Cost:** the modelled rock costs less to draw than the drawn rock. A drawn frame (headless Chromium): arena north about 5.8 ms against 7.7; arena south 4.2 against 5.0; the Nest 3.2 against 4.8. Each lit strip is drawn from its own small canvas (`spriteCell`), not straight from the sheet.
+- **On the preview only** (`?walls=3d`) until the owner approves it in the game; everyone else sees the drawn rock, which stays as the fallback. The rubble patches come next, from the same rock.
+- Tests: new suite cavewalls (10 checks: every piece has its strip, the bake current with the walls (a signature: bake again when the walls change), the sheets, flush runs, the preview, the fallback, the strip, dim rooms, the cull); run: cavewalls, facilityplay, foundation, loadorder, boot, bible. Checked in the real page: each cave lit, and the arena in the blackout, no page errors. Not playtested.
+
 ### Build `2026-11-09h` · branch `claude/start-game-project-HSh7Z` · the modelled icicle for everyone
 On the in-game pictures of build `2026-11-09g`, the owner said "Approve it for everyone".
 - The Rimestar's modelled icicle (ICICLE VOLLEY) is now drawn for everyone (js/fx3d.js `FX3D.approved`: quill, icicle). The old ice shot is kept only for the moment before the icicle's sheet arrives.

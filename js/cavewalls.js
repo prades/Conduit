@@ -43,7 +43,8 @@ function caveWallDraw(it) {
     const img = _caveImg(e[0]); if (!img) return false;
     const p = _fpP(it.a[0], it.a[1], 0), x = Math.round(p[0] + e[5]), y = Math.round(p[1] + e[6]);   // (on whole pixels: a strip drawn between pixels blurs its edges into a seam; a run's strips share one offset, so they stay flush)
     const k = ctx._k === undefined ? 1 : ctx._k, bucket = k < 0.1 ? 0 : Math.min(PS_DIM_STEPS, Math.round(k * PS_DIM_STEPS));
-    if (bucket >= PS_DIM_STEPS) ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]);
+    if (bucket >= PS_DIM_STEPS) { const cell = typeof spriteCell === "function" ? spriteCell(img, e[1], e[2], e[3], e[4]) : null;   // (its own small canvas, cut once: a strip drawn straight out of the big sheet cost about a third of a ms, js/draw.js)
+        if (cell) ctx.drawImage(cell, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
     else { const d = _caveDimmed(key, img, e, bucket); if (d) ctx.drawImage(d, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
     return true;
 }
