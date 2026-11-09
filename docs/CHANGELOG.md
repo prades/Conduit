@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09j` · branch `claude/start-game-project-HSh7Z` · the modelled cave walls for everyone
+On the pictures of build `2026-11-09i`, the owner said "Approve the walls for everyone, then do the rubble".
+- The cave's modelled rock walls (the arena, the Cold Storage's ice cave, the Nest's cavern) are drawn for everyone (js/cavewalls.js `CAVE_WALLS.approved`). The drawn rock stays only as the fallback before a cave's sheet arrives. `?walls=3d` stays as the preview for the cave pieces that come next (the rubble).
+- Tests: cavewalls (approved for everyone; the preview flag still reads); ghost (the cave walls' caches are drawing-only, allow-listed). Run: cavewalls, perf, ghost, facilityplay, attract, bible, all passing. Not playtested.
+
 ### Build `2026-11-09i` · branch `claude/start-game-project-HSh7Z` · the cave's rock walls, modelled (on the preview `?walls=3d`)
 The owner asked for the cave's walls to look like RuneScape's 3D-model walls, with their lighting. Shown one piece first, they picked the tall, softly shaded rock face: "Brown, build the full wall set". On the first in-game pictures they marked two asks: "a 3-D like projected mountain top area for that little indent" and "a cap on the entire surface rooftop so it doesn't look all jagged". Then, on the Cold Storage's pictures, three flaws: slabs over the void, a slab at a corner, a step in the rim.
 - **Every rock wall is modelled from its own shape:** the arena, the Cold Storage's ice cave and the Nest's cavern, 326 pieces in 53 runs.

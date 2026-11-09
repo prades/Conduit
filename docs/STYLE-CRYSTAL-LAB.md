@@ -67,7 +67,7 @@ There are none. Walls join cleanly where two meet and simply end where they end 
 
 Each styled wall piece (and each door's header) has a slab on top, `FP_WALL_T` = 0.4 tile deep, running back from the visible face (`_fpWallTop`): a pale top with an ink line along its back edge. The fill stops short of both edges so neighbouring pieces never cover each other's ink lines. It is drawing only; collision is unchanged.
 
-## The cave's rock walls, modelled (build `2026-11-09i`, on the preview `?walls=3d`)
+## The cave's rock walls, modelled (build `2026-11-09i`; for everyone since `2026-11-09j`)
 
 The owner, 2026-11-09: the cave's walls should look like RuneScape's 3D-model walls, with their lighting. Shown one piece first (a three-tile stretch), they picked the tall rock face with soft shading, in brown: "Brown, build the full wall set". `docs/DECISION-LOG.md` has the decision.
 
@@ -93,4 +93,4 @@ The owner, 2026-11-09: the cave's walls should look like RuneScape's 3D-model wa
 - A lit strip is drawn from its own small canvas, cut once (`spriteCell`, js/draw.js). Drawn straight from the sheet, the arena's north rock cost about 20 ms a frame. Now the modelled rock costs less than the drawn rock did, about 5.8 ms against 7.7 there (headless Chromium).
 - `tests/cavewalls.js` checks the bake is current with the walls (a signature). **When the walls change, bake again.**
 
-**Status.** On the preview (`?walls=3d`) until the owner approves it in the game (`docs/ART-PROCESS.md`). Everyone else sees the drawn rock (`js/facilitydecor.js _fpDrawRock`), which stays as the fallback. The rubble patches come next, from the same rock (the owner's ask).
+**Status.** Approved in the game on 2026-11-09 ("Approve the walls for everyone"): drawn for everyone since build `2026-11-09j`. The drawn rock (`js/facilitydecor.js _fpDrawRock`) stays as the fallback for the moment before a cave's sheet arrives. The preview flag `?walls=3d` stays for the cave pieces that come next: the rubble patches, from the same rock (the owner's ask).

@@ -1,8 +1,8 @@
 // THE CAVE'S ROCK WALLS, MODELLED (the owner, 2026-11-09: RuneScape's 3D-model walls and their lighting as the reference; the look approved on its preview, in the cave's brown: "Brown, build the full
 // wall set"). Every rock wall piece of the facility (the arena, the Cold Storage's ice cave, the Nest's cavern) has a strip of a modelled rock wall baked from its own shape by design/cave/bake_walls.js
 // (js/caveatlas.js says where each strip is). A piece draws its strip in its own place in the draw list, so units sort against the rock as before; a dim room darkens it as it darkens the props (its
-// silhouette under it, js/propsprites.js). docs/ART-PROCESS.md: the drawn rock stays until the owner approves the modelled one in the game, so it shows only on the preview (?walls=3d) until then.
-const CAVE_WALLS = { approved: false };
+// silhouette under it, js/propsprites.js). docs/ART-PROCESS.md: shown on the preview (?walls=3d) first; approved in the game on 2026-11-09, so it is drawn for everyone; the drawn rock stays only as the fallback (a sheet not yet arrived).
+const CAVE_WALLS = { approved: true };   // approved in the game 2026-11-09 ("Approve the walls for everyone"), live for everyone since build 2026-11-09j; ?walls=3d stays as the preview for the cave pieces that come next
 let _caveWallsPrev = null;
 function caveWallsPreview() { try { return typeof location !== "undefined" && /[?&]walls=3d\b/.test(location.search || ""); } catch (e) { return false; } }
 function caveWallsOn() { if (CAVE_WALLS.approved) return true; if (_caveWallsPrev === null) _caveWallsPrev = caveWallsPreview(); return _caveWallsPrev; }

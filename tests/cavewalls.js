@@ -1,6 +1,6 @@
 // THE CAVE'S ROCK WALLS, MODELLED (build 2026-11-09i; the owner, 2026-11-09: RuneScape's 3D-model walls as the reference, the look approved on its preview, "Brown, build the full wall set").
 // Every rock wall piece (the arena, the Cold Storage's ice cave, the Nest's cavern) draws a strip of a rock wall modelled from its own shape (design/cave/bake_walls.js -> img/cave/<room>.png,
-// js/caveatlas.js; js/cavewalls.js draws it). docs/ART-PROCESS.md: on the preview (?walls=3d) until the owner approves it in the game; the drawn rock stays for everyone until then.
+// js/caveatlas.js; js/cavewalls.js draws it). docs/ART-PROCESS.md: on the preview (?walls=3d) first; approved in the game on 2026-11-09 ("Approve the walls for everyone", build 2026-11-09j); the drawn rock stays as the fallback.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -57,14 +57,11 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(/gl_FragColor\.rgb \*= vFade/.test(b), 'no fade to black'); ok(/if \(ice\)/.test(b) && /ConeGeometry/.test(b), 'no frost or icicles');
     });
 
-    group('THE DRAWN ROCK STAYS UNTIL IT IS APPROVED IN THE GAME (the modelled rock on the preview, ?walls=3d)');
-    check('not approved yet: without the preview a rock piece is drawn as before (no picture); with it, its strip', () => {
-        same(J('CAVE_WALLS.approved'), false, 'approved before the owner saw it in the game');
-        run('_caveWallsPrev = null; globalThis.location = { search: "" };'); same(J('caveWallsOn()'), false, 'on without the preview');
-        run('_caveWallsPrev = null; globalThis.location = { search: "?power=on&walls=3d" };'); same(J('caveWallsOn()'), true, 'off with ?walls=3d');
-        run('_caveWallsPrev = null; globalThis.location = { search: "?walls=3dx" };'); same(J('caveWallsOn()'), false, 'on with another flag');
-        run('_caveWallsPrev = false;'); const r = J('(function(){ const it = __rocks()[10], P = __pen(), keep = ctx; ctx = P.g; try { return { drew: caveWallDraw(it), calls: P.calls.map(c => c[0]) }; } finally { ctx = keep; } })()');
-        same(r.drew, false, 'drawn without the preview');
+    group('APPROVED IN THE GAME (the owner, 2026-11-09: "Approve the walls for everyone"): the modelled rock for everyone; the drawn rock only as the fallback');
+    check('it is on for everyone, with or without the preview; the preview flag (?walls=3d) still reads, for the cave pieces that come next', () => {
+        same(J('CAVE_WALLS.approved'), true, 'not approved');
+        run('_caveWallsPrev = null; globalThis.location = { search: "" };'); same(J('caveWallsOn()'), true, 'off without the preview');
+        run('globalThis.location = { search: "?power=on&walls=3d" };'); same(J('caveWallsPreview()'), true, 'the preview flag'); run('globalThis.location = { search: "?walls=3dx" };'); same(J('caveWallsPreview()'), false, 'another flag');
         same(J('/if \\(it\\.kind === "rock"\\) \\{ if \\(typeof caveWallDraw === "function" && caveWallDraw\\(it\\)\\) return; return _fpDrawRock\\(it, H\\); \\}/.test(' + JSON.stringify(rd('js/facilityplay.js')) + ')'), true, 'the wall draw does not fall back to the drawn rock');
     });
     check('until its cave\'s sheet has arrived, the drawn rock (so a wall is never missing)', () => {

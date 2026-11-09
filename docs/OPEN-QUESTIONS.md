@@ -715,8 +715,8 @@ The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved
 - **A reading:** an unevolved follower's meter no longer fills (it has no Ultimate); a charge an old save carries stays as it was until it evolves.
 
 ## The cave's look (build `2026-11-09i`)
-- **The modelled cave walls in the game** (`?walls=3d`): a yes, or a correction, before everyone sees them (`STYLE-CRYSTAL-LAB.md`, "The cave's rock walls, modelled").
-- **The rubble patches as cave rock** (the owner, 2026-11-09): next, from the same rock.
+- ~~**The modelled cave walls in the game**~~ *(approved 2026-11-09, "Approve the walls for everyone"; for everyone since build `2026-11-09j`)*.
+- **The rubble patches as cave rock** (the owner, 2026-11-09: "then do the rubble"): in progress, from the same rock.
 - **The forms' effects with 3-D flare:** paused at the owner's turn to the cave (the quill and the icicle are done; `EFFECTS.md`).
 
 ## The optimization check (build `2026-11-09d`): found, not changed
