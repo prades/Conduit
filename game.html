@@ -2134,6 +2134,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 <script src="js/propatlas.js?v=2026-11-09j"></script>
 <script src="js/propsprites.js?v=2026-11-09j"></script>
 <script src="js/caveatlas.js?v=2026-11-09j"></script>
+<script src="js/caverubble.js?v=2026-11-09j"></script>
 <script src="js/cavewalls.js?v=2026-11-09j"></script>
 <script src="js/facilitystyle.js?v=2026-11-09j"></script>
 <script src="js/facilitystyleall.js?v=2026-11-09j"></script>
@@ -2173,7 +2174,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 (function () {
     var need = { "js/config.js": "ELEMENTS", "js/icons.js": "iconSVG", "js/uikit.js": "uiWrap", "js/species.js": "PREDATOR_TYPES", "js/elements.js": "getElementMultiplier", "js/damage.js": "dmgApply",
                  "js/predator.js": "Predator", "js/commands.js": "openInfoPanel", "js/draw.js": "drawNPC", "js/bugs3d.js": "drawBug3D", "js/levels.js": "levelFactor", "js/evolution.js": "evolutionTick",
-                 "js/clone.js": "openCloneMenu", "js/commandcenter.js": "ccOpen", "js/cards.js": "EQUIP", "js/cardart.js": "CARD_ART", "js/fx3d.js": "FX3D", "js/caveatlas.js": "CAVE_ATLAS", "js/cavewalls.js": "caveWallDraw", "js/cardsui.js": "cardsOpen", "js/infodex.js": "infoEntries", "js/classes.js": "CLASSES", "js/inventory.js": "invToggle", "js/weapons.js": "WEAPONS", "js/mutator.js": "MUTATOR", "js/specimen.js": "SPECIMEN", "js/serum.js": "SERUM", "js/technomancer.js": "TECHNO", "js/playercards.js": "playerRoundHit",
+                 "js/clone.js": "openCloneMenu", "js/commandcenter.js": "ccOpen", "js/cards.js": "EQUIP", "js/cardart.js": "CARD_ART", "js/fx3d.js": "FX3D", "js/caveatlas.js": "CAVE_ATLAS", "js/caverubble.js": "CAVE_RUBBLE", "js/cavewalls.js": "caveWallDraw", "js/cardsui.js": "cardsOpen", "js/infodex.js": "infoEntries", "js/classes.js": "CLASSES", "js/inventory.js": "invToggle", "js/weapons.js": "WEAPONS", "js/mutator.js": "MUTATOR", "js/specimen.js": "SPECIMEN", "js/serum.js": "SERUM", "js/technomancer.js": "TECHNO", "js/playercards.js": "playerRoundHit",
                  "js/nestconsole.js": "nestConsoleOpen", "js/conversion.js": "convertOpen", "js/stations.js": "facilityStationsStart", "js/tutorial.js": "TUT", "js/dialogue.js": "DIALOGUE", "js/questbox.js": "QUESTBOX", "js/facilitymap.js": "FACILITY_MAP", "js/facility.js": "facilityValidate", "js/facilityplay.js": "facilityPlayStart",
                  "js/facilitynet.js": "facilityNetState", "js/population.js": "SPAWN_TABLES", "js/facilityspawn.js": "facilitySpawnTick", "js/crystalpower.js": "CRYSTAL_POWER", "js/antraids.js": "RAID", "js/party.js": "PARTY", "js/techabilities.js": "TECH_AB", "js/fluxmove.js": "FLUX", "js/fluxlab.js": "FLUX_LAB", "js/puzzles.js": "PUZZLES", "js/quests.js": "QUEST_PURIFY", "js/bosses.js": "BOSS_ENCOUNTERS", "js/potion.js": "POTION", "js/sidequest.js": "SIDEQUEST", "js/breeding.js": "BREED", "js/mixtool.js": "mixToolRender", "js/targeting.js": "TARGET", "js/game.js": "render" };
     var missing = (window.__bootFailed || []).slice();

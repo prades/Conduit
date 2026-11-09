@@ -1510,6 +1510,16 @@ function _techArcScr(x0, y0, x1, y1, z0, z1, peak, t) {
 // ── THE RUBBLE, AND THE HOLE IT LEAVES: drawn on the face of the room's edge like its decor (js/facilitydecor.js FP_WALL_KINDS.rubble asks this), u along the stretch, z px up from the floor ──
 // Broken rock lighter than the cliff round it, a cracked slab with hazard paint across it and seams that glow as it is drilled; boulders fall away with each hit. Drilled through: a dark hole, scorched round its mouth.
 const _TECH_RUBBLE = [[0.2, 0, 0.2, 22], [0.44, 0, 0.24, 26], [0.7, 0, 0.22, 24], [0.88, 0, 0.14, 16], [0.31, 17, 0.2, 22], [0.57, 19, 0.22, 24], [0.79, 15, 0.16, 18], [0.43, 36, 0.2, 20], [0.63, 38, 0.15, 16]];
+// the seams between a pile's stones: dull at first, glowing hotter with each hit (P: a point of the pile, u along it and z px up)
+function _techRubbleSeams(P, heat, f, sg) {
+    ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+    const glow = 0.25 + 0.75 * heat, pul = 0.75 + 0.25 * Math.sin(f * 0.15 + sg);
+    for (const seam of [[[0.32, 0], [0.33, 14], [0.46, 26], [0.5, 40]], [[0.58, 0], [0.6, 18], [0.7, 30]], [[0.2, 20], [0.36, 36], [0.44, 50]]]) {
+        ctx.strokeStyle = "rgba(255,120,40," + (0.22 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 7; ctx.beginPath(); seam.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke();
+        ctx.strokeStyle = "rgba(255,190,90," + (0.5 * glow * pul).toFixed(3) + ")"; ctx.lineWidth = 2; ctx.stroke();
+    }
+    ctx.globalCompositeOperation = "source-over"; ctx.lineCap = "butt";
+}
 function techDrawRubbleOn(it, f) {
     if (typeof _fpWP !== "function" || typeof ctx === "undefined") return;
     const r = _techRubble(it.rubble); if (!r) return;
@@ -1517,6 +1527,10 @@ function techDrawRubbleOn(it, f) {
     const polyW = (P, pts, fill, stroke, lw) => { ctx.beginPath(); pts.forEach((q, i) => { const p = P(q[0], q[1]); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 2; ctx.lineJoin = "round"; ctx.stroke(); } };
     const PW = (u, z) => _fpWP(it, u, z), poly = (pts, fill, stroke, lw) => polyW(PW, pts, fill, stroke, lw);   // (u over the whole stretch)
     ctx.save();
+    if (techRubbleOpen(r) && r.solid && typeof caveRubbleDraw === "function" && caveRubbleDraw(it, "left")) {   // (what is left, in the cave's rock: js/cavewalls.js) and the sides still warm
+        ctx.globalAlpha = 0.3 + 0.1 * Math.sin(f * 0.03); for (const u of [0.06 / segs, 1 - 0.06 / segs]) poly([[u - 0.05 / segs, 0], [u, 16], [u + 0.05 / segs, 0]], "#ff7a2a", null); ctx.globalAlpha = 1;
+        ctx.restore(); return;
+    }
     if (techRubbleOpen(r) && r.solid) {   // A CHOKE drilled through: the passage behind it is open floor now, so only what is left of the pile is drawn: stones at the foot of each side (and where the piles met), scorched
         for (const [u, z, w] of [[0.1, 0, 0.1], [0.19, 0, 0.07], [0.9, 0, 0.11], [0.8, 0, 0.06], [0.14, 8, 0.06], [0.87, 7, 0.07]].map(([u, z, w]) => [u < 0.5 ? u / segs : 1 - (1 - u) / segs, z, w / segs])) poly([[u - w / 2, z], [u - w / 3, z + 8], [u + w / 3, z + 9], [u + w / 2, z]], "#6a5848", "#0b2a2f", 2);
         for (let sg = 1; sg < segs; sg++) for (const [du, w] of [[-0.04, 0.05], [0.05, 0.035]]) { const u = (sg + du) / segs, hw = w / segs; poly([[u - hw / 2, 0], [u - hw / 3, 7], [u + hw / 3, 8], [u + hw / 2, 0]], "#6a5848", "#0b2a2f", 2); }
@@ -1533,6 +1547,10 @@ function techDrawRubbleOn(it, f) {
         ctx.restore(); return;
     }
     const hits = (_techRubbleHits()[r.id] || 0), heat = hits / TECH_AB.drill.hits, show = _TECH_RUBBLE.length - Math.floor(hits * _TECH_RUBBLE.length / (TECH_AB.drill.hits + 1));
+    if (typeof caveRubbleDraw === "function" && caveRubbleDraw(it, String(show))) {   // THE PILE IN THE CAVE'S ROCK (js/cavewalls.js; on the preview until approved): its stones as the drilling has left them, and the seams glowing over it
+        for (let sg = 0; sg < segs; sg++) _techRubbleSeams((u, z) => _fpWP(it, (sg + u) / segs, z), heat, f, sg);
+        ctx.restore(); return;
+    }
     const shades = ["#a8967e", "#8e7c66", "#bba98f", "#9a8670"];
     for (let sg = 0; sg < segs; sg++) {   // one pile (two tiles of it), then the next
         const P = (u, z) => _fpWP(it, (sg + u) / segs, z), pl = (pts, fill, stroke, lw) => polyW(P, pts, fill, stroke, lw), seed = (it.seed + sg * 7919) >>> 0;

@@ -55,3 +55,26 @@ function caveWallBox(it) {
     const ox = (it.a[0] - it.x - (it.a[1] - it.y)) * TILE_W, oy = (it.a[0] - it.x + it.a[1] - it.y) * TILE_H;
     return [Math.floor(ox + e[5]), Math.floor(oy + e[6]), Math.ceil(ox + e[5] + e[3]), Math.ceil(oy + e[6] + e[4])];
 }
+// THE RUBBLE, MODELLED IN THE CAVE'S ROCK (the owner, 2026-11-09: "then do the rubble"): each patch's pile, for each stage of the drilling, baked by design/cave/bake_rubble.js (js/caverubble.js). docs/ART-PROCESS.md:
+// on the preview (?walls=3d) until the owner approves it in the game; the drawn pile stays for everyone until then. js/techabilities.js techDrawRubbleOn draws it, the glowing seams and warm edges over it.
+const CAVE_RUBBLE_APPROVED = false;
+function caveRubbleOn() { return CAVE_RUBBLE_APPROVED || (_caveWallsPrev === null ? (_caveWallsPrev = caveWallsPreview()) : _caveWallsPrev); }
+let _caveRubbleImg;
+function _caveRubbleSheet() {
+    if (typeof CAVE_RUBBLE === "undefined") return null;
+    if (_caveRubbleImg !== undefined) return _caveRubbleImg && _caveRubbleImg.complete && _caveRubbleImg.naturalWidth ? _caveRubbleImg : null;
+    if (typeof document === "undefined" || !document.createElement) return (_caveRubbleImg = null);
+    const im = document.createElement("img"); im.decoding = "async"; im.src = CAVE_RUBBLE.sheet + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : ""); _caveRubbleImg = im; return null;
+}
+// draw a rubble patch's picture: `stage` the stones shown ("9" ... "3") or "left" (what a drilled choke leaves); false when it has none or the sheet has not arrived (the drawn pile instead)
+function caveRubbleDraw(it, stage) {
+    if (!caveRubbleOn() || typeof CAVE_RUBBLE === "undefined") return false;
+    const P = CAVE_RUBBLE.items[it.rubble], e = P && P[stage]; if (!e) return false;
+    const img = _caveRubbleSheet(); if (!img) return false;
+    const p = _fpWP(it, 0, 0), x = Math.round(p[0] + e[5]), y = Math.round(p[1] + e[6]);
+    const k = ctx._k === undefined ? 1 : ctx._k, bucket = k < 0.1 ? 0 : Math.min(PS_DIM_STEPS, Math.round(k * PS_DIM_STEPS)), key = "rubble|" + it.rubble + "|" + stage;
+    if (bucket >= PS_DIM_STEPS) { const cell = typeof spriteCell === "function" ? spriteCell(img, e[1], e[2], e[3], e[4]) : null; if (cell) ctx.drawImage(cell, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
+    else { const d = _caveDimmed(key, img, e, bucket); if (d) ctx.drawImage(d, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
+    return true;
+}
+
