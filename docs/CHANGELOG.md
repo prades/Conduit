@@ -21,7 +21,9 @@ The owner: "I hate to keep adding different systems, but this one kind of incorp
 - **The conversion** turns toxic energy cards into BLOOM ones.
 - **The tutorial** lifts followers to level 7 and its ants to 6, still one under evolution.
 - **The Command Center:** one ENERGY row of chips. In the carousel it sits on the creature's card, so the settings column keeps its height; on a phone it is in the roster's panel. A tap opens the card picker.
-- Tests: `tests/energycards.js` (new, 16 checks); 37 suites brought to the new rules.
+- Tests: `tests/energycards.js` (new, 16 checks); 37 suites brought to the new rules. The carousel's strip-name check now measures a fixed short name: it failed whenever the first starter drew the Technician role.
+- Full run: 102 suites. 97 pass. 5 fail exactly as they did on `2026-11-09r`: visiblearea (2), bottomui (9), fluxlab (4 real-page checks), cover (1) and carousel (1, the 1024 covered-button check).
+- Real page: the Command Center at 1180×820, 1024×768, 820×1180 and 390×844, and a pack's reveal, checked by screenshot. Not playtested.
 
 ### Build `2026-11-09r` · branch `claude/start-game-project-HSh7Z` · the forms' sheets cropped
 The owner, on the optimization audit's fourth finding: "Crop the form sheets".

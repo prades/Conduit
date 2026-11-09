@@ -98,7 +98,7 @@ The checks in `tests/energycards.js`: the rules and numbers; owning (put, take, 
 | Check | Result | Evidence / notes |
 |---|---|---|
 | `tests/energycards.js` | Pass | 16 checks |
-| Full run (`node tests/run.js`) | See CHANGELOG `2026-11-09s` | 37 suites updated to the new rules (levels, packs, recruits, evolved test forms filled) |
+| Full run (`node tests/run.js`) | 97 of 102 pass | The 5 that fail fail as on `2026-11-09r` (visiblearea, bottomui, fluxlab, cover, carousel at 1024). 37 suites were updated to the new rules (levels, packs, recruits, evolved test forms filled). |
 | Real page, the Command Center | Checked | Screenshots at 1180×820, 1024×768, 820×1180 and 390×844: the row on the card or panel, no overflow |
 | Playtest | Not done | |
 
