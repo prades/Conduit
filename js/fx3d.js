@@ -14,8 +14,8 @@ const FX3D = {
         rotspike: { sheet: "img/fx/rotspike.png", cell: 72, yaws: 8, pitches: [0], upright: true, ax: 36, ay: 53.716, tipY: 11.535 },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
-               "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
-               "rotspike"],   // the ROTSHARD's black spike: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09v
+               "icicle"],  // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
+    // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)
 };
 let _fx3dPrev = null;
 function fx3dPreview() { try { return typeof location !== "undefined" && /[?&]fx=3d\b/.test(location.search || ""); } catch (e) { return false; } }

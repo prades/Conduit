@@ -53,7 +53,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle,rotspike', 'the approved pieces');
+        same(J('FX3D.approved').join(), 'quill,icicle', 'the approved pieces');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
@@ -109,7 +109,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         run('spriteCell = __sc; __preview(false); delete FX3D.pieces.quill._img;');
     });
 
-    group('THE ROTSHARD\'S BLACK SPIKE: A STANDING PIECE (ROTTEN DECOY, TOXIC PUDDLE; the owner\'s pick and its model approved 2026-11-09; built in 2026-11-09u on the preview; approved in the game, for everyone since 2026-11-09v)');
+    group('THE ROTSHARD\'S BLACK SPIKE: A STANDING PIECE (ROTTEN DECOY, TOXIC PUDDLE; the owner\'s pick and its model approved 2026-11-09; built in 2026-11-09u on the preview; approved in the game and taken back the same day, "I don\'t like the green aura": no green round it, on the preview again since 2026-11-09w)');
     check('its sheet: eight turns in one row, at the forms\' pixels a unit; its foot and its tip as the baker wrote; the model is the Rotshard\'s (No. 101): its old shell\'s glassy black, a hairline of its green in a crack', () => {
         const P = J('FX3D.pieces.rotspike'), meta = JSON.parse(rd('design/effects/out/rotspike.json'));
         same(P.sheet, 'img/fx/rotspike.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + P.cell, 'the sheet\'s size'); same(P.upright, true, 'standing');
@@ -119,24 +119,26 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const b = rd('design/effects/bake_fx.js'); ok(/rotspike: \{ form: 101, color: '#14c040',/.test(b), 'not the Rotshard\'s (No. 101)');
         ok(/if \(piece === 'rotspike'\)/.test(b) && /MeshPhysicalMaterial\(\{ color: 0x060607/.test(b) && /CylinderGeometry\(0\.0065, 0\.009, A\.distanceTo\(B\) \* 1\.04, 5\), M\.glow\)/.test(b), 'not its black with its green crack');
     });
-    check('approved in the game (the owner, 2026-11-09: "Approve it for everyone"): on for everyone, with or without the preview; until its sheet arrives, the old drawn spikes (paths, no picture)', () => {
-        ok(J('FX3D.approved.indexOf("rotspike")') >= 0, 'not approved');
-        run('__preview(false)'); same(J('fx3dOn("rotspike")'), true, 'off without the preview');
-        run('FX3D.pieces.rotspike._img = null;'); same(J('_fxRotSpikes3d(100, 100, [[0, 1]], 16, 1, 1, 3)'), false, 'drawn before its sheet arrived');
+    check('not approved (taken back, 2026-11-09: "it still looks like trash. I don\'t like the green aura"): it shows only on the preview (?fx=3d); without it, and until its sheet arrives, the old drawn spikes (paths, no picture)', () => {
+        same(J('FX3D.approved.indexOf("rotspike")'), -1, 'approved');
+        run('__preview(false)'); same(J('fx3dOn("rotspike")'), false, 'on without the preview'); same(J('_fxRotSpikes3d(100, 100, [[0, 1]], 16, 1, 1, 3)'), false, 'drawn without the preview');
+        run('__preview(true); FX3D.pieces.rotspike._img = null;'); same(J('_fxRotSpikes3d(100, 100, [[0, 1]], 16, 1, 1, 3)'), false, 'drawn before its sheet arrived');
         const old = J(`(function(){ const P = __pen(), keep = ctx; ctx = P.g; try { _fxRotSpikes(100, 100, 16, 6, 1, 1, 3); } finally { ctx = keep; } return P.calls.map(c => c[0]); })()`);
         ok(old.indexOf('drawImage') < 0 && old.filter(c => c === 'fill').length >= 4, 'not the old spikes: ' + old.join());
         run('delete FX3D.pieces.rotspike._img; __preview(false);');
     });
-    check('with its sheet (on the preview): TOXIC PUDDLE\'s three are pictures of it, each from its own small cell, foot on the floor, as tall as the old ones (the middle one the tallest), each turned its own way by the world, not the screen; a soft dark foot under each; ROTTEN DECOY\'s four the same', () => {
+    check('with its sheet (on the preview): TOXIC PUDDLE\'s three are pictures of it, each from its own small cell, foot on the floor, as tall as the old ones (the middle one the tallest), each turned its own way by the world, not the screen; a soft dark foot under each and no green haze round them (the owner: "I don\'t like the green aura"); ROTTEN DECOY\'s four the same, with no glow round them', () => {
         run('__preview(true); FX3D.pieces.rotspike._img = { complete: true, naturalWidth: 576, naturalHeight: 72 }; globalThis.__sc3 = spriteCell; globalThis.__cells3 = []; spriteCell = function (img, sx, sy, sw, sh) { __cells3.push(sx / sw); return { cell: sx / sw }; };');
-        const draw = (sx, seed) => J(`(function(){ __cells3.length = 0; const P = __pen(), keep = ctx; ctx = P.g; try { _fxRotSpikes(${sx}, 100, 16, 6, 1, 1, ${seed}); } finally { ctx = keep; } return { im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)), el: P.calls.filter(c => c[0] === 'ellipse').length, cells: __cells3.slice(), n: P.calls.length }; })()`);
+        const draw = (sx, seed) => J(`(function(){ __cells3.length = 0; const P = __pen(), keep = ctx; ctx = P.g; try { _fxRotSpikes(${sx}, 100, 16, 6, 1, 1, ${seed}); } finally { ctx = keep; } return { im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)), el: P.calls.filter(c => c[0] === 'ellipse').length, green: P.calls.some(c => c[0] === 'set fillStyle' && /7dff4a/i.test(c[1])), cells: __cells3.slice(), n: P.calls.length }; })()`);
         const a = draw(100, 3.7), b = draw(260, 3.7), c = draw(100, 8.2), P = J('FX3D.pieces.rotspike'), H0 = P.ay - P.tipY;
         same(a.im.length, 3, 'its three spikes'); ok(a.im.every(d => d[0] && d[0].cell !== undefined), 'not each from its own cell');
         const h = a.im.map(d => d[8] / P.cell * H0);   // (each one's height on the screen: its cell drawn d[8] tall)
         ok(Math.abs(h[2] - 16) < 1e-6 && Math.abs(h[0] - 12) < 1e-6 && Math.abs(h[1] - 12) < 1e-6, 'its heights (16, the sides three quarters): ' + h);
         ok(a.im.every(d => Math.abs(d[6] + P.ay * d[8] / P.cell - 100) < 1e-6), 'a foot is not on the floor');
         same(a.cells.join(), b.cells.join(), 'turned by where it is on the screen'); ok(a.cells.join() !== c.cells.join(), 'every spike turned the same way: ' + a.cells + ' / ' + c.cells);
-        ok(a.el >= 4, 'no dark foot under each (and the haze)'); ok(a.n < 30, 'a cluster costs ' + a.n + ' canvas operations');
+        same(a.el, 3, 'a dark foot under each, and nothing else round them'); same(a.green, false, 'a green haze round them'); ok(a.n < 30, 'a cluster costs ' + a.n + ' canvas operations');
+        ok(/if \(!m3\) \{ ctx\.globalAlpha = 0\.22 \* k; ctx\.fillStyle = "#7dff4a"/.test(rd('js/elements.js')), 'ROTTEN DECOY\'s glow is drawn round the modelled spikes');
+        ok(!/mist: '#7dff4a'/.test(rd('design/effects/bake_fx.js')), 'the spike is still baked lit green');
         ok(/if \(!_fxRotSpikes3d\(px, cy, \[\[-7, 30 \/ 44\], \[8, 34 \/ 44\], \[-2, 22 \/ 44\], \[0, 1\]\], 44, k, k, e\.x \* 3\.1 \+ e\.y \* 1\.7\)\) \{/.test(rd('js/elements.js')), 'ROTTEN DECOY does not stand its four (44 px the tallest), rising as it is set');
     });
     check('rising: while it comes up only the part above the floor is drawn (its cell cut where the floor meets it), the rest still under it; risen whole, all of it, its foot and its chips; at nothing, nothing', () => {

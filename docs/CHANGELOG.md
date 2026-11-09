@@ -4,6 +4,16 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09w` · branch `claude/start-game-project-HSh7Z` · the black spike back on the preview, without its green aura
+The owner, after approving it: "Wait, it still looks like trash. I don't like the green aura."
+- **Taken back to the preview** (`?fx=3d`). Everyone sees the drawn spikes again. Main never had it.
+- **No green aura round the modelled spikes:**
+  - no glow drawn behind ROTTEN DECOY's four or TOXIC PUDDLE's clusters;
+  - no green light baked into the spike, which is glassy black with its thin green crack.
+  - The puddle and the decoy's poison reach stay green.
+- A slip fixed on the way: the decoy's reach circle took its colour from the glow drawn before it; it has its own now.
+- Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09v` · branch `claude/start-game-project-HSh7Z` · the black spike for everyone
 - **The Rotshard's black spike is approved in the game** ("Approve it for everyone"), from the pictures of ROTTEN DECOY and TOXIC PUDDLE, old and new side by side. It is live for everyone (`FX3D.approved`); the drawn spikes show only until its sheet arrives.
 - Tests: `tests/fx3d.js`.

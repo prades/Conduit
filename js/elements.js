@@ -414,8 +414,8 @@ const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a
 // (h: its full height; rise 0..1, how far it has come up; seed: a number of the world, never of the screen, so each spike keeps the way it is turned)
 function _fxRotSpikes(sx, sy, h, w, a, rise, seed) {
     if (rise === undefined) rise = 1;
+    if (_fxRotSpikes3d(sx, sy, [[-w, 0.75], [w, 0.75], [0, 1]], h, a, rise, seed)) return;   // THE MODELLED SPIKE (docs/EFFECTS.md; js/fx3d.js rotspike): no green haze round it (the owner: "I don't like the green aura")
     ctx.globalAlpha = 0.35 * a; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(sx, sy - h * rise * 0.35, w * 2, h * rise * 0.5, 0, 0, Math.PI * 2); ctx.fill();   // the haze
-    if (_fxRotSpikes3d(sx, sy, [[-w, 0.75], [w, 0.75], [0, 1]], h, a, rise, seed)) return;   // THE MODELLED SPIKE (docs/EFFECTS.md; js/fx3d.js rotspike)
     h *= rise;
     for (let i = -1; i <= 1; i++) { const hx = sx + i * w, hh = h * (i ? 0.75 : 1), hw = w * 0.5; ctx.globalAlpha = a; ctx.fillStyle = "#14161a"; ctx.beginPath(); ctx.moveTo(hx - hw, sy); ctx.lineTo(hx, sy - hh); ctx.lineTo(hx + hw, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1; ctx.stroke(); }
 }
@@ -1494,8 +1494,9 @@ function drawElementEffects() {
             // ROTTEN DECOY (the Rotshard's move): a black crystal formation, the Rotshard's height, in a constant hazy green mist; its health as a thin bar
             case "rotdecoy": {
                 const d = e.on, k = Math.min(1, (e.maxLife - e.life) / 8), cy = py + TILE_H * 0.5, sway = Math.sin(frame * 0.05) * 2;
-                ctx.globalAlpha = 0.22 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px + sway, cy - 14, 30, 22, 0, 0, Math.PI * 2); ctx.fill();   // the mist
-                ctx.globalAlpha = 0.14 * k; ctx.beginPath(); ctx.ellipse(px - sway, cy - 4, DECOY_MIST * 1.4142 * TILE_W, DECOY_MIST * 1.4142 * TILE_H, 0, 0, Math.PI * 2); ctx.fill();
+                const m3 = typeof fx3dOn === "function" && fx3dOn("rotspike") && fx3dReady("rotspike");   // (the modelled spikes: no green glow round them, the owner: "I don't like the green aura")
+                if (!m3) { ctx.globalAlpha = 0.22 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px + sway, cy - 14, 30, 22, 0, 0, Math.PI * 2); ctx.fill(); }   // the mist
+                ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px - sway, cy - 4, DECOY_MIST * 1.4142 * TILE_W, DECOY_MIST * 1.4142 * TILE_H, 0, 0, Math.PI * 2); ctx.fill();
                 if (!_fxRotSpikes3d(px, cy, [[-7, 30 / 44], [8, 34 / 44], [-2, 22 / 44], [0, 1]], 44, k, k, e.x * 3.1 + e.y * 1.7)) {   // (the modelled spikes, rising as it is set: js/fx3d.js rotspike; else the drawn ones)
                     ctx.globalAlpha = k; for (const [ox, h, w] of [[-7, 30, 6], [0, 44, 8], [8, 34, 6], [-2, 22, 5]]) { ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.moveTo(px + ox - w, cy); ctx.lineTo(px + ox, cy - h); ctx.lineTo(px + ox + w, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "rgba(125,255,74,0.6)"; ctx.lineWidth = 1; ctx.stroke(); } }
                 if (d && d.maxHealth > 0) { const fr = Math.max(0, d.health / d.maxHealth); ctx.globalAlpha = 0.9 * k; ctx.fillStyle = "#0b0f0c"; ctx.fillRect(px - 14, cy - 52, 28, 3); ctx.fillStyle = "#7dff4a"; ctx.fillRect(px - 14, cy - 52, 28 * fr, 3); }

@@ -25,7 +25,7 @@ const PIECES = {
   // ROTTEN DECOY and TOXIC PUDDLE (the ROTSHARD; the owner's pick, 2026-11-09: "Rotshard's black spike"): a spike of its old black shell (forms5.js shellShard: "a broken piece of the old black
   // shell: jagged, glassy-black", the shell's black, M.black), standing in the floor: five-sided, each ring pulled in and out so its edges are broken, a little lean, a chip broken off at its foot.
   // UPRIGHT: it stands on the floor (its foot at the origin, pointing up +y); the game turns it (yaws) and lets it rise out of the floor. The green haze stays drawn in code.
-  rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0], mist: '#7dff4a', mistI: 1.4 },   // (the model approved 2026-11-09: "Yes, build it"; mist: lit from below by the green mist it stands in, so it reads in it as the drawn ones did)
+  rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
