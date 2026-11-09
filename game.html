@@ -739,6 +739,7 @@
     /* WHAT A CARD DOES, where you equip it (the owner, 2026-11-07: "see information about the cards when I'm equipping them to the creatures", then "use shortened text": js/cards.js equipShortText): under the slot
        for the card worn, and under each card's name in the HUD pop-out's list, beside its chip */
     #ccRoot .cc-dd-fx { font: 600 11px/1.35 var(--neo-font); color: #c9d6f0; padding: 0 4px 8px 14px; margin-top: -2px; }
+    .cd-chip.en { visibility: hidden; }   /* (an ENERGY CARD has no rarity: js/cardsui.js _cdChip) */
     /* ITS ENERGY SLOTS (js/cardsui.js energyRow; docs/ENERGY-CARDS.md): one row, a chip a slot in its card's colour (an empty one dashed), a line under it */
     #ccRoot :is(.cc-en, .cf-en) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     #ccRoot .cc-en { padding: 2px 0 8px; } #ccRoot .cc-en .cc-en-k { flex: none; width: 112px; font: 800 11px monospace; color: #ffcc44; letter-spacing: 0.4px; }

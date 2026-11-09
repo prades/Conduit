@@ -115,6 +115,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.same, true, 'the race\'s Elemental row changed its hit'); same(r.fireMoved, true, 'a FIRE hit\'s elemental part met the row'); same(r.noneWord, false, 'a word for no element (' + r.words + ')');
     });
 
+    group('WHAT THE ROSTER SAYS (js/cardsui.js energyRow: one row of chips and a line)');
+    check('its line: an egg with a card, ITS ELEMENT; without, NO ELEMENT (and where cards come from when you hold none); an evolved one, what is open, and its hybrids; the row is drawn again when its slots or your stock change', () => {
+        const r = J(`(function(){ __clear(); const u = __mk('brawler', 'fire'), n = __mk('brawler', ENERGY_NONE), e = __mk('brawler', 'fire'); e.evolved = 'quillstone'; energyEvolved(e); const o = {};
+            o.egg = energyRowNote(u, false); o.none = energyRowNote(n, false); energyAdd('fire', 2); energyAdd('ice', 1); o.noneHeld = energyRowNote(n, true);
+            const s0 = energySig(e); energyPut(e, 0, 'fire'); o.one = energyRowNote(e, true); energyPut(e, 1, 'ice'); o.hy = energyRowNote(e, true); o.sigMoved = s0 !== energySig(e); o.card = energyCardOf('ice').text; return o; })()`);
+        same(r.egg, 'ITS ELEMENT · USED UP WHEN IT EVOLVES', 'an egg with a card'); same(r.none, 'NO ELEMENT · NO ENERGY CARDS: THEY COME IN PACKS', 'one without, none held'); same(r.noneHeld, 'NO ELEMENT · PUT AN ENERGY CARD IN', 'one without, some held');
+        same(r.one, 'SECOND ATTACK OPEN · ULTIMATE LOCKED', 'evolved, one of its own'); same(r.hy, 'SECOND ATTACK OPEN · ULTIMATE LOCKED · 1 HYBRID: NOT DESIGNED YET', 'and an ICE card'); same(r.sigMoved, true, 'the row\'s signature');
+        same(r.card, 'ICE FOR AN EGG: IT EVOLVES WITH IT AT LV 8 (USED UP) · ICE FORMS: THEIR NEXT ATTACK', 'an energy card\'s words');
+    });
+
     group('A FALL AND THE CONVERSION');
     check('a follower that falls comes back with its energy cards', () => {
         const r = J(`(function(){ __clear(); respawnQueue.length = 0; if (typeof playerReviveFree !== 'undefined') globalThis.__rf = playerReviveFree; playerReviveFree = () => true; const f = __mk('brawler', 'core'); f.spawnProtection = 0; const uid = followerUid(f);

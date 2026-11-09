@@ -117,6 +117,6 @@ function energyApplyRecord(f, rec) {
 function energyCardOf(el) {
     if (!energyElementOk(el)) return null;
     return { id: "energy:" + el, kind: "energy", el, name: energyLabel(el) + " ENERGY", rarity: null,
-        text: "AN UNEVOLVED FOLLOWER TAKES ITS ELEMENT, " + energyLabel(el) + ", AND EVOLVES WITH IT AT LEVEL " + ENERGY.evolveLevel + " (THE CARD IS USED UP) · AN EVOLVED " + energyLabel(el) + " FOLLOWER: ITS NEXT ATTACK · ANOTHER: A HYBRID ATTACK" };
+        text: energyLabel(el) + " FOR AN EGG: IT EVOLVES WITH IT AT LV " + ENERGY.evolveLevel + " (USED UP) · " + energyLabel(el) + " FORMS: THEIR NEXT ATTACK" };
 }
 function energyCardEl(id) { return typeof id === "string" && id.indexOf("energy:") === 0 ? id.slice(7) : null; }

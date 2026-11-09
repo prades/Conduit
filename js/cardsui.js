@@ -55,7 +55,7 @@ function cardsClose() {
 // THE RARITY CHIP (docs/CARD-SYSTEM.md: "a cartridge-inspired rarity indicator" of illuminated bars): a notched plate set into the card's edge, six segments, one lit for each step of the rarity (the lowest at the foot).
 // On a card it stands on the right edge; in a slot or a list it is the same plate laid flat and small (.mini). Its title and label say the tier ("RARITY · PRECISION · 3 OF 6").
 function _cdChip(c, mini) {
-    const n = equipRarityBars(c), chip = _cdEl("span", "cd-chip" + (mini ? " mini" : "")), say = "RARITY · " + equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length;
+    const en = !!c && c.kind === "energy", n = en ? 0 : equipRarityBars(c), chip = _cdEl("span", "cd-chip" + (mini ? " mini" : "") + (en ? " en" : "")), say = en ? "ENERGY CARD · NO RARITY" : "RARITY · " + equipRarityLabel(c) + " · " + n + " OF " + EQUIP_RARITIES.length;   // (an ENERGY CARD has no rarity: its chip is kept for the card's shape, unseen: js/energy.js)
     chip.title = say; chip.setAttribute("role", "img"); chip.setAttribute("aria-label", say); chip.style.setProperty("--c", _cdKindCol(c));
     for (let i = 0; i < EQUIP_RARITIES.length; i++) { const seg = _cdEl("i", i < n ? "on" : ""); seg.style.setProperty("--i", String(i)); chip.appendChild(seg); }   // (--i: its place, so a lit chip can light up one segment after another)
     return chip;

@@ -97,7 +97,7 @@ The checks in `tests/energycards.js`: the rules and numbers; owning (put, take, 
 
 | Check | Result | Evidence / notes |
 |---|---|---|
-| `tests/energycards.js` | Pass | 15 checks |
+| `tests/energycards.js` | Pass | 16 checks |
 | Full run (`node tests/run.js`) | See CHANGELOG `2026-11-09s` | 37 suites updated to the new rules (levels, packs, recruits, evolved test forms filled) |
 | Real page, the Command Center | Checked | Screenshots at 1180×820, 1024×768, 820×1180 and 390×844: the row on the card or panel, no overflow |
 | Playtest | Not done | |

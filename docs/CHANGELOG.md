@@ -21,7 +21,7 @@ The owner: "I hate to keep adding different systems, but this one kind of incorp
 - **The conversion** turns toxic energy cards into BLOOM ones.
 - **The tutorial** lifts followers to level 7 and its ants to 6, still one under evolution.
 - **The Command Center:** one ENERGY row of chips. In the carousel it sits on the creature's card, so the settings column keeps its height; on a phone it is in the roster's panel. A tap opens the card picker.
-- Tests: `tests/energycards.js` (new, 15 checks); 37 suites brought to the new rules.
+- Tests: `tests/energycards.js` (new, 16 checks); 37 suites brought to the new rules.
 
 ### Build `2026-11-09r` · branch `claude/start-game-project-HSh7Z` · the forms' sheets cropped
 The owner, on the optimization audit's fourth finding: "Crop the form sheets".
