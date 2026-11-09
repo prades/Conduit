@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09ee` · branch `claude/start-game-project-HSh7Z` · PROXY SWARM's goo copies (on the preview)
+The owner's pick for the next 3-D piece ("Goo Proxy's goo copies"), then of three looks: "A · all its violet goo". `docs/EFFECTS.md`.
+- **The piece:** each of PROXY SWARM's three copies is the Goo Proxy's own frog model, every part in the violet goo of its head, its diamond eyes kept. No glow under it.
+- At the Goo Proxy's size, it rises out of the floor as it pops out and breathes with the frog's idle; its health bar is over its top.
+- **Only with `?fx=3d`** until the owner approves it in the game; everyone else sees the drawn blobs. Rules are unchanged.
+- Tests: `tests/fx3d.js`. Checked in the real page with pictures.
+
 ### Build `2026-11-09dd` · branch `claude/start-game-project-HSh7Z` · PINK THICKET's seed is just the crystal
 - The owner, of the approved crystal seed: "Just a crystal". The short black vine stalk at its back is gone. The crystal is unchanged, so the seed is now about 20 px long (it was 27 px with its stalk).
 - Still for everyone. Rules are unchanged.

@@ -30,7 +30,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const html = rd('game.html'); ok(/<script src="js\/fx3d\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag'); ok(/"js\/fx3d\.js": "FX3D"/.test(html), 'not in the page\'s arrival check');
     });
     check('each flying piece\'s sheet is in the build (the quill, the icicle, the big seed), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
-        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed', 'the pieces (rotspike and rotdecoy: standing pieces, below)');
+        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed,goocopy', 'the pieces (rotspike, rotdecoy and goocopy: standing pieces, below)');
         for (const k of ['quill', 'icicle', 'bigseed']) {
             const P = J('FX3D.pieces.' + k), meta = JSON.parse(rd('design/effects/out/' + k + '.json'));
             same(P.sheet, 'img/fx/' + k + '.png', k + ': the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), k + ': the sheet\'s size');
@@ -232,6 +232,43 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
             try { _drawFollowerProjectile(P.g, { x: 10, y: 10, vx: 0.18, vy: 0, frame: 6, life: 12, element: 'blossom', radius: 4 }, 300, 200); } finally { delete FX3D.pieces.bigseed._img; __preview(false); }
             return P.calls.map(c => c[0]); })()`);
         ok(r.indexOf('drawImage') < 0 && r.indexOf('ellipse') >= 0, 'SEED SHOT is not the drawn seed: ' + r.join());
+    });
+
+    group('PROXY SWARM\'S GOO COPIES: THE GOO PROXY IN ITS VIOLET GOO (the owner\'s pick, 2026-11-09: "Goo Proxy\'s goo copies", then "A · all its violet goo"; built in 2026-11-09ee on the preview)');
+    check('its sheet: the frog\'s idle loop in 12 frames, one row, at the forms\' own cell (144 px, 3.4 units); its foot and top as the baker wrote; the model is the Goo Proxy\'s own (No. 853) in its goo, its glow on the floor and its light off, its diamond eyes kept', () => {
+        const P = J('FX3D.pieces.goocopy'), meta = JSON.parse(rd('design/effects/out/goocopy.json'));
+        same(P.sheet, 'img/fx/goocopy.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + P.cell, 'the sheet\'s size'); same(JSON.stringify([P.cell, P.yaws, P.upright, P.copy]), '[144,12,true,true]', 'the table');
+        same(JSON.stringify([meta.cell, meta.yaws, meta.pitches, meta.upright, meta.unitsPerCell]), JSON.stringify([P.cell, P.yaws, P.pitches, true, 3.4]), 'the baker\'s record and the game\'s table');
+        ok(Math.abs(meta.anchor.x - P.ax) < 0.01 && Math.abs(meta.anchor.y - P.ay) < 0.01 && Math.abs(meta.tipY - P.tipY) < 0.01, 'its foot or its top: ' + JSON.stringify([meta.anchor, meta.tipY]));
+        const b = rd('design/effects/bake_fx.js'); ok(/goocopy: \{ form: 853, color: '#9933ff', copy: true, skin: 'goo',/.test(b), 'not a goo copy of the Goo Proxy (No. 853)');
+        ok(/if \(m\.blending === T\.AdditiveBlending\) \{ o\.visible = false; return; \}/.test(b) && /if \(m\.vertexColors\) return;/.test(b) && /o\.material = goo; \}\);/.test(b), 'its glow is not off, its eyes not kept, or it is not recast in goo');
+        ok(Math.abs(P.loop - Math.round(2 * Math.PI / 1.6 * 60)) <= 1, 'its loop is not the frog\'s idle (2 pi / 1.6 s): ' + P.loop);
+    });
+    check('on the preview only (not approved yet); without the preview, or before its sheet arrives, PROXY SWARM\'s copy is the drawn blob in its violet glow', () => {
+        ok(J('FX3D.approved.indexOf("goocopy")') < 0, 'approved before the owner has seen it in the game'); run('__preview(false)'); same(J('fx3dOn("goocopy")'), false, 'on without the preview');
+        ok(/spawnElementEffect\(\{ type: "gooproxy", x, y, on: d, life: X\.frames, maxLife: X\.frames, element: "flux" \}\)/.test(rd('js/elements.js')), 'PROXY SWARM\'s copies are not the "gooproxy" effect');
+        const blob = (prev, sheet) => J(`(function(){ __preview(${prev}); FX3D.pieces.goocopy._img = ${sheet ? '{ complete: true, naturalWidth: 1728, naturalHeight: 144 }' : 'null'}; const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption; ctx = P.g; activeFireEruption = null;
+            elementEffects = [{ type: 'gooproxy', x: player.visualX, y: player.visualY, life: 300, maxLife: 360, on: { maxHealth: 10, health: 5 } }];
+            try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; delete FX3D.pieces.goocopy._img; __preview(false); } return P.calls.map(c => c[0]); })()`);
+        const off = blob(false, true), before = blob(true, false);
+        ok(off.indexOf('drawImage') < 0 && off.filter(c => c === 'ellipse').length >= 2, 'not the drawn blob without the preview: ' + off.join());
+        ok(before.indexOf('drawImage') < 0 && before.filter(c => c === 'ellipse').length >= 2, 'not the drawn blob before its sheet arrived: ' + before.join());
+    });
+    check('with its sheet (on the preview): one picture of the copy at the forms\' scale, its foot where the copy stands, its frame the frog\'s idle by the game\'s clock (each copy a little out of step); risen as it pops out; no glow under it; its health bar over its top', () => {
+        run('__preview(true); FX3D.pieces.goocopy._img = { complete: true, naturalWidth: 1728, naturalHeight: 144 }; globalThis.__sc5 = spriteCell; globalThis.__cells5 = []; spriteCell = function (img, sx, sy, sw, sh) { __cells5.push(sx / sw); return { cell: sx / sw }; };');
+        const at = (f, age, dx) => J(`(function(){ __cells5.length = 0; const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption, f0 = frame; ctx = P.g; activeFireEruption = null; frame = ${f};
+            elementEffects = [{ type: 'gooproxy', x: player.visualX + ${dx || 0}, y: player.visualY, life: 360 - ${age}, maxLife: 360, on: { maxHealth: 10, health: 5 } }];
+            try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; frame = f0; }
+            return { im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)), glow: P.calls.filter(c => c[0] === 'ellipse' && c[3] === 18 && c[4] === 8).length, rects: P.calls.filter(c => c[0] === 'fillRect').map(c => c.slice(1)), cells: __cells5.slice(), W: canvas.width, H: canvas.height, x: player.visualX, y: player.visualY }; })()`);
+        const a = at(0, 30), P = J('FX3D.pieces.goocopy'), S = J('EVO_SCALE'), TH = J('TILE_H'), off = Math.round(a.x * 23 + a.y * 11), col = f => Math.floor((((f + off) % P.loop) + P.loop) % P.loop / P.loop * P.yaws);
+        same(a.im.length, 1, 'its pictures'); ok(Math.abs(a.im[0][7] - P.cell * S) < 1e-6, 'not at the forms\' scale: ' + a.im[0][7]);
+        const cy = a.H / 2 + TH * 0.5; ok(Math.abs(a.im[0][6] + P.ay * S - cy) < 1e-6 && Math.abs(a.im[0][5] + P.ax * S - a.W / 2) < 1e-6, 'its foot is not where the copy stands');
+        const b = at(59, 30), c = at(118, 30); same(JSON.stringify([a.cells[0], b.cells[0], c.cells[0]]), JSON.stringify([col(0), col(59), col(118)]), 'its frames by the game\'s clock, with its own step');
+        const other = at(0, 30, 1); same(other.cells[0], col(23), 'a copy a tile away: its own step (23 frames on)'); ok(col(23) !== col(0), 'copies standing apart breathe in step');
+        const half = at(0, 4); ok(half.im[0][4] < P.ay && Math.abs(half.im[0][6] + half.im[0][8] - cy) < 1e-6, 'it does not rise out of the floor as it pops out: ' + JSON.stringify(half.im[0].slice(1)));
+        same(a.glow, 0, 'the violet glow under it');
+        const bar = a.rects.find(r => Math.abs(r[2] - 28) < 1e-6); ok(bar && Math.abs(bar[1] - (cy - (P.ay - P.tipY) * S - 8)) < 1e-6, 'its health bar is not over its top: ' + JSON.stringify(bar));
+        run('spriteCell = __sc5; delete FX3D.pieces.goocopy._img; __preview(false);');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

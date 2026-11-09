@@ -1,0 +1,15 @@
+{
+ "piece": "goocopy",
+ "cell": 144,
+ "yaws": 12,
+ "pitches": [
+  0
+ ],
+ "anchor": {
+  "x": 72.00000000000003,
+  "y": 90.48607638384104
+ },
+ "unitsPerCell": 3.4,
+ "tipY": 46.471608803267216,
+ "upright": true
+}

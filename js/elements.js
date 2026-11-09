@@ -1479,12 +1479,18 @@ function drawElementEffects() {
             // PROXY SWARM (FORM_ULTIMATES.gooproxy): a copy of the Goo Proxy, a violet goo blob with its two eyes (one far bigger, a thin diamond iris in each) and a wide smile, wobbling; its HP as a bar
             case "gooproxy": {
                 const d = e.on, k = Math.min(1, (e.maxLife - e.life) / 8), cy = py + TILE_H * 0.5, wob = Math.sin(frame * 0.15 + e.x) * 1.5;
+                // AS THE GOO PROXY IN GOO (js/fx3d.js goocopy; the owner's pick, 2026-11-09: "A · all its violet goo"): its own model, all of it in its violet goo, at the forms' scale, rising out of the floor as it
+                // pops out and breathing with the frog's idle, each copy a little out of step (as the blob's wobble was); no glow under it. Else the drawn blob.
+                const G3 = typeof fx3dOn === "function" && fx3dOn("goocopy") && fx3dReady("goocopy") ? FX3D.pieces.goocopy : null, H3 = G3 ? (G3.ay - G3.tipY) * (typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144) : 0;
+                if (G3) { const f3 = frame + Math.round(e.x * 23 + e.y * 11); ctx.globalAlpha = 1; fx3dDrawUpright(ctx, "goocopy", px, cy, Math.floor(((f3 % G3.loop) + G3.loop) % G3.loop / G3.loop * G3.yaws), H3, k); }
+                else {
                 ctx.globalAlpha = 0.25 * k; ctx.fillStyle = "#9a3ae0"; ctx.beginPath(); ctx.ellipse(px, cy, 18, 8, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 0.85 * k; ctx.fillStyle = "#b66cf5"; ctx.beginPath(); ctx.ellipse(px, cy - 12, 14 + wob, 13 - wob * 0.5, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(px - 6, cy - 24, 7, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(px + 6, cy - 22, 4, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = "#3a0a5a"; for (const [ex, ey, r] of [[-6, -24, 6], [6, -22, 3.5]]) { ctx.beginPath(); ctx.moveTo(px + ex, cy + ey - r); ctx.lineTo(px + ex + r * 0.35, cy + ey); ctx.lineTo(px + ex, cy + ey + r); ctx.lineTo(px + ex - r * 0.35, cy + ey); ctx.closePath(); ctx.fill(); }
                 ctx.strokeStyle = "#3a0a5a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(px, cy - 12, 7, 0.2, Math.PI - 0.2); ctx.stroke();
-                if (d && d.maxHealth > 0) { const fr = Math.max(0, d.health / d.maxHealth); ctx.globalAlpha = 0.9 * k; ctx.fillStyle = "#12081a"; ctx.fillRect(px - 14, cy - 40, 28, 3); ctx.fillStyle = "#d9b0ff"; ctx.fillRect(px - 14, cy - 40, 28 * fr, 3); }
+                }
+                if (d && d.maxHealth > 0) { const fr = Math.max(0, d.health / d.maxHealth), by = G3 ? cy - H3 - 8 : cy - 40; ctx.globalAlpha = 0.9 * k; ctx.fillStyle = "#12081a"; ctx.fillRect(px - 14, by, 28, 3); ctx.fillStyle = "#d9b0ff"; ctx.fillRect(px - 14, by, 28 * fr, 3); }
                 break;
             }
             // THUNDERSTORM (FORM_ULTIMATES.thunderhead): a dark storm cloud over the Thunderhead, its reach a faint ring, a jagged bolt down to the enemy it struck last

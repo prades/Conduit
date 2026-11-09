@@ -167,6 +167,22 @@ The owner's pick of three drafts (2026-11-09): a bud of its leaves, a burr of it
 - **Approved in the game 2026-11-09** ("Approve it for everyone"), from the in-game pictures. It has been live for everyone since build `2026-11-09cc`. The drawn seed is kept only for the moment before its sheet arrives.
 - Tested: `tests/fx3d.js`. Checked in the real page with pictures, old and new side by side.
 
+### GOO PROXY: PROXY SWARM's goo copies
+
+The owner's pick for the next piece (2026-11-09, "Goo Proxy's goo copies"), then of three looks: "A · all its violet goo". The others were black goo, and melting into a puddle.
+
+**The model.** The Goo Proxy's own model (No. 853, the frog), every part of it in the violet goo of its head: the ring and its spikes too. Its diamond eyes are kept.
+- No glow under it and no light of its own.
+- It is built as ROTTEN DECOY's black Rotshard is: a copy of the form's model, recast.
+
+**In the game (built in `2026-11-09ee` on the preview).**
+- The sheet is the frog's idle loop in 12 frames, at the forms' own 144 px cell, so a copy is the Goo Proxy's size.
+- Each copy rises out of the floor as it pops out and breathes with the frog's idle, a little out of step with the others (as the blobs' wobble was). Its health bar is over its top.
+- No violet glow under it.
+- Like the decoy and the old blobs, the copies are drawn over the units, not sorted among them.
+- Rules, lure, burst and hits are unchanged. Without `?fx=3d`, or before its sheet arrives, the drawn blobs are shown.
+- Tested: `tests/fx3d.js`. Checked in the real page with pictures, old and new side by side.
+
 ## 4. Open questions
 
 - ~~What "3-D flare" means~~ *(answered 2026-11-09: "Modelled 3D pieces")*. ~~Which piece first~~ *(answered: "Quillstone's quill"; its model approved, "Yes, build it")*.
@@ -177,7 +193,7 @@ The owner's pick of three drafts (2026-11-09): a bud of its leaves, a burr of it
   - ROTTEN DECOY is the black Rotshard (build `2026-11-09x`).
   - The black decoy was approved in the game (for everyone since `2026-11-09aa`). The puddle's spikes stay on the preview, not approved.
 - ~~**PINK THICKET's crystal seed in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09cc`. Then "Just a crystal": its stalk off since `2026-11-09dd`, about 20 px)*. Still open: whether SEEDFALL's falling seeds use it too.
-- **PROXY SWARM's goo copies** (the owner's pick for the next piece, 2026-11-09: "Goo Proxy's goo copies"): three looks drafted in `design/effects/bake_fx.js` (`goocopy`, `goocopy_black`, `goocopy_melt`), each the Goo Proxy's own model: all its violet goo, black goo, or melting into a puddle. For the owner's pick; nothing in the game yet.
+- **PROXY SWARM's goo copies in the game:** the owner picked "A · all its violet goo" of three looks; on the preview (build `2026-11-09ee`), for the owner's yes.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.

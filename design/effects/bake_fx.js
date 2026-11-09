@@ -34,16 +34,12 @@ const PIECES = {
   // A COPY: its columns are frames of its idle loop (the Rotshard's own, 2 pi / 1.6 s), facing the camera; drawn at the forms' scale.
   rotdecoy: { form: 101, color: '#14c040', copy: true, upright: true, h: 2.0, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
     cap: ['ROTTEN DECOY (right) beside the Rotshard (left), at one scale', '(the Rotshard\'s own model, all black; no glow)'] },   // (approved in the game 2026-11-09: "Approve the black decoy")
-  // PROXY SWARM (the GOO PROXY, No. 853, the frog; the owner's pick for the next piece, 2026-11-09: "Goo Proxy's goo copies"): its three copies as the Goo Proxy's own model made of goo, three ways
-  // for the owner's pick (P.skin): GOO, all of it in the violet goo of its head (the ring and its spikes too), its diamond eyes kept; BLACK GOO, all of it an inky wet black, only its diamond eyes lit;
-  // MELTING, all violet goo, sagging into a puddle of itself. No glow under it and no light of its own (the owner, of the Rotshard's spike: "I don't like the green aura"). A COPY, as ROTTEN DECOY's:
-  // its columns are frames of its idle loop (the frog's own, 2 pi / 1.6 s), drawn at the forms' scale. pv: the preview's views (the copy alone; beside the Goo Proxy), its spikes reach far.
-  goocopy: { form: 853, color: '#9933ff', copy: true, skin: 'goo', upright: true, h: 1.15, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
-    pv: { big: [4.4, 1.936, 0.2], gap: 1.35, side: [5.4, 2.7, 0.55] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(A: all of it in its violet goo, its diamond eyes kept; no glow)'] },   // (a draft)
-  goocopy_black: { form: 853, color: '#9933ff', copy: true, skin: 'blackgoo', upright: true, h: 1.15, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
-    pv: { big: [4.4, 1.936, 0.2], gap: 1.35, side: [5.4, 2.7, 0.55] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(B: all of it a wet black goo, only its diamond eyes lit; no glow)'] },   // (a draft)
-  goocopy_melt: { form: 853, color: '#9933ff', copy: true, skin: 'melt', upright: true, h: 0.95, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
-    pv: { big: [4.4, 1.936, 0.15], gap: 1.35, side: [5.4, 2.7, 0.5] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(C: all violet goo, sagging into a puddle of itself; no glow)'] },   // (a draft)
+  // PROXY SWARM (the GOO PROXY, No. 853, the frog; the owner's pick for the next piece, 2026-11-09: "Goo Proxy's goo copies"): its three copies as the Goo Proxy's own model made of goo: all of it
+  // in the violet goo of its head, the ring and its spikes too, its diamond eyes kept (the owner's pick of three looks, 2026-11-09: "A · all its violet goo"; black goo and melting into a puddle were
+  // the others). No glow under it and no light of its own (the owner, of the Rotshard's spike: "I don't like the green aura"). A COPY, as ROTTEN DECOY's: its columns are frames of its idle loop
+  // (the frog's own, 2 pi / 1.6 s), drawn at the forms' scale. pv: the preview's views (the copy alone; beside the Goo Proxy): its spikes reach far.
+  goocopy: { form: 853, color: '#9933ff', copy: true, skin: 'goo', upright: true, h: 1.2, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
+    pv: { big: [4.4, 1.936, 0.2], gap: 1.35, side: [5.4, 2.7, 0.55] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(all of it in its violet goo, its diamond eyes kept; no glow)'] },   // (the owner's pick of three looks)
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
@@ -105,24 +101,14 @@ window.__fx = async function (mode, piece, P) {
     if (P.copy && P.skin) {   // a copy MADE OF GOO (PROXY SWARM's): its own model, its glow on the floor and its light off; its diamond eyes (lit facet by facet, vertex-coloured) kept
       const gc = new T.Color(P.color).convertSRGBToLinear().multiply(new T.Color(0x8cffff));   // (the frog's own goo colour, forms31.js _gooFrog: its element's violet, leaning blue)
       const goo = new T.MeshStandardMaterial({ color: gc.clone().multiplyScalar(0.44), emissive: gc.clone().multiplyScalar(0.336), roughness: 0.1, metalness: 0 }); goo.envMapIntensity = 0.55;   // (its head's goo, solid)
-      const ink = new T.MeshPhysicalMaterial({ color: 0x020104, metalness: 0.1, roughness: 0.2, clearcoat: 1.0, clearcoatRoughness: 0.05 }); ink.envMapIntensity = 0.9;   // (black goo: wet and glossy)
       const B = FORMS2[P.form].build(); B.update(0, 0); B.g.rotation.y = PI / 4;
       B.g.traverse(o => { if (o.isSprite || o.isLight) { o.visible = false; if (o.isLight) o.intensity = 0; return; } if (!o.isMesh) return; const m = o.material;
         if (m.blending === T.AdditiveBlending) { o.visible = false; return; }   // (its glow on the floor)
         if (m.vertexColors) return;   // (its diamond eyes)
-        if (P.skin === 'blackgoo') { o.material = ink; return; }
         if (m.transparent) return;   // (its goo: its head, its eyeballs, its drips, as they are)
         if (m.isMeshBasicMaterial && m.color.r + m.color.g + m.color.b < 0.1) return;   // (its mouth and its pupils)
         o.material = goo; });   // (the ring, its spikes and the lines of light along them: goo)
       g.add(B.g); g.userData.B = B;
-      if (P.skin === 'melt') {   // sagging: lower and wider, goo running down its ring between the spikes into a puddle of itself spread round it
-        B.g.scale.set(1.14, 0.78, 1.14);
-        const pud = new T.Mesh(new T.SphereGeometry(1, 48, 10), goo); pud.scale.set(1.3, 0.05, 1.18); pud.position.set(0.03, 0, 0.04); g.add(pud);
-        [[1.05, 0.62], [-0.74, 0.98], [0.4, -1.12], [-1.06, -0.5]].forEach(([x, z], i) => { const d = new T.Mesh(new T.SphereGeometry(1, 24, 8), goo); d.scale.set(0.32 - 0.04 * i, 0.04, 0.26 - 0.03 * i); d.position.set(x, 0, z); g.add(d); });   // (lobes of it run out)
-        for (let i = 0; i < 4; i++) { const a = PI / 4 + i * PI / 2 + 0.12 * (i % 2 ? 1 : -1), r = 0.69, d = new T.Mesh(new T.SphereGeometry(1, 16, 12), goo);   // (drips down the ring's face, between its spikes, to the floor)
-          d.scale.set(0.06, 0.2 - 0.03 * (i % 2), 0.06); d.position.set(Math.sin(a) * r, 0.19, Math.cos(a) * r); B.g.add(d);
-          const foot = new T.Mesh(new T.SphereGeometry(1, 16, 8), goo); foot.scale.set(0.1, 0.05, 0.1); foot.position.set(Math.sin(a) * (r + 0.03), 0.02, Math.cos(a) * (r + 0.03)); B.g.add(foot); }
-      }
     }
     if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
       const black = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); black.envMapIntensity = 1.7;   // (glassy: a clear coat over the black)
