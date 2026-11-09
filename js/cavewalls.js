@@ -67,10 +67,22 @@ function _caveRubbleSheet() {
     if (typeof document === "undefined" || !document.createElement) return (_caveRubbleImg = null);
     const im = document.createElement("img"); im.decoding = "async"; im.src = CAVE_RUBBLE.sheet + (typeof BUILD_VERSION !== "undefined" ? "?v=" + BUILD_VERSION : ""); _caveRubbleImg = im; return null;
 }
+// THE HOLE a drilled rubble leaves in the rock, modelled too (the owner, 2026-11-09: "Yes, model the hole in the rock too"; build 2026-11-09m): on the preview (?walls=3d) until the owner approves it in the game;
+// the drawn hole stays for everyone until then (js/techabilities.js techDrawRubbleOn)
+const CAVE_HOLE_APPROVED = false;
+function caveHoleOn() { return CAVE_HOLE_APPROVED || (_caveWallsPrev === null ? (_caveWallsPrev = caveWallsPreview()) : _caveWallsPrev); }
 // draw a rubble patch's picture: `stage` the stones shown ("9" ... "3") or "left" (what a drilled choke leaves); its atlas entry when drawn (e[7]: its seams, on the screen from the patch's start),
 // false when it has none or the sheet has not arrived (the drawn pile instead)
 function caveRubbleDraw(it, stage) {
     if (!caveRubbleOn() || typeof CAVE_RUBBLE === "undefined") return false;
+    return _caveRubblePic(it, stage);
+}
+// draw the hole a drilled rubble against a wall leaves: its atlas entry when drawn (e[7]: its rim, still warm, on the screen from the patch's start), false when not (the drawn hole instead)
+function caveHoleDraw(it) {
+    if (!caveHoleOn() || typeof CAVE_RUBBLE === "undefined") return false;
+    return _caveRubblePic(it, "hole");
+}
+function _caveRubblePic(it, stage) {
     const P = CAVE_RUBBLE.items[it.rubble], e = P && P[stage]; if (!e) return false;
     const img = _caveRubbleSheet(); if (!img) return false;
     const p = _fpWP(it, 0, 0), x = Math.round(p[0] + e[5]), y = Math.round(p[1] + e[6]);

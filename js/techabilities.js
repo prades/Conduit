@@ -1541,6 +1541,17 @@ function techDrawRubbleOn(it, f) {
         ctx.restore(); return;
     }
     if (techRubbleOpen(r)) {   // THE HOLE: a black arch going back into the rock, rings of dark inside it, scorched round the mouth, a few stones at its foot
+        const hole = typeof caveHoleDraw === "function" && caveHoleDraw(it);
+        if (hole) {   // modelled in the cave's rock (js/cavewalls.js; on the preview until approved): the tunnel going in and down, the rock round it scorched; its rim still warm, glowing over it
+            const p0 = _fpWP(it, 0, 0), a = 0.35 + 0.15 * Math.sin(f * 0.03);
+            ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round"; ctx.lineJoin = "round";
+            for (const sq of hole[7] || []) {
+                ctx.beginPath(); for (let k = 0; k + 1 < sq.length; k += 2) { const x = p0[0] + sq[k], y = p0[1] + sq[k + 1]; k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+                ctx.strokeStyle = "rgba(255,122,42," + (0.4 * a).toFixed(3) + ")"; ctx.lineWidth = 6; ctx.stroke();
+                ctx.strokeStyle = "rgba(255,160,80," + a.toFixed(3) + ")"; ctx.lineWidth = 1.5; ctx.stroke();
+            }
+            ctx.restore(); return;
+        }
         const arch = (u0, u1, z1, inset) => { const pts = [[u0, inset]]; for (let k = 0; k <= 10; k++) { const t = k / 10, a = Math.PI * t; pts.push([(u0 + u1) / 2 - Math.cos(a) * (u1 - u0) / 2, z1 * 0.55 + Math.sin(a) * z1 * 0.45]); } pts.push([u1, inset]); return pts; };
         poly(arch(0.14, 0.86, 60, 0), "#3a2414", null); poly(arch(0.18, 0.82, 55, 0), "#1a0f08", null);   // the scorch round the mouth
         poly(arch(0.22, 0.78, 50, 0), "#050506", "#0b2a2f", 2.5);

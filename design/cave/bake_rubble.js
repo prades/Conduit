@@ -38,7 +38,7 @@ window.__pile = function (R, stage) {
   // the walls' rock (design/cave/bake_walls.js); its blocks a shade lighter, broken rock (the drawn pile's stones were lighter than the cliff round them)
   const base = lin(0x4a3f37), dark = lin(0x1d1714), light = lin(0x7a6a5c), hollow = lin(0x0b0807), tones = [0x504034, 0x4a3b30, 0x574638, 0x46382d].map(lin), chipT = [0x40332a, 0x3c3027, 0x46382e].map(lin);   // (warm: the props' blue rim light cools their left faces)
   const A = R.a, L = R.len, dir = [(R.b[0] - A[0]) / L, (R.b[1] - A[1]) / L], n = R.n, segs = R.segs, SEG = L / segs, S0 = (R.seed % 997) + 0.5, rocks = R.rocks;
-  const left = stage === 'left', show = left ? 0 : stage, s = show / 9, sc = 0.55 + 0.45 * s;   // (sc: the dark it fills shrinks as the drawn pile's did)
+  const left = stage === 'left', hole = stage === 'hole', show = left || hole ? 0 : stage, s = show / 9, sc = 0.55 + 0.45 * s;   // (sc: the dark it fills shrinks as the drawn pile's did)
   // where things are: u along the stretch (tiles), d out from its line toward the camera's side (tiles), z px up; three's world is (game x, height, game y)
   const P3 = (u, d, z) => new T.Vector3(A[0] + dir[0] * u + n[0] * d, z / UH, A[1] + dir[1] * u + n[1] * d);
   const SX = (gx, gy) => (gx - gy - (A[0] - A[1])) * 60, SY = (gx, gy, z) => (gx + gy - (A[0] + A[1])) * 30 - z;   // the screen, from the patch's start at the floor
@@ -60,7 +60,7 @@ window.__pile = function (R, stage) {
     for (let k = 1; k < pts.length; k++) if (x <= pts[k][0]) { const t = (x - pts[k - 1][0]) / (pts[k][0] - pts[k - 1][0]); return pts[k - 1][1] + (pts[k][1] - pts[k - 1][1]) * t; } return 0; };
   const coreH = u => core(u) * sc * (0.9 + 0.2 * fbm(S0 + u * 4.3, 1.1, 3.7));
   const dC = t => 0.04 + t * (t >= 0 ? 0.2 : 0.14), pr = t => Math.pow(Math.max(0, 1 - t * t), 0.6);   // (across it: t -1 its back, 0 its top, 1 its front foot)
-  if (!left) { const pos = [], col = [], idx = [], NU = Math.max(12, Math.ceil(L / 0.03)), NT = 10, grid = [];
+  if (!left && !hole) { const pos = [], col = [], idx = [], NU = Math.max(12, Math.ceil(L / 0.03)), NT = 10, grid = [];
     for (let i = 0; i <= NU; i++) { const u = L * i / NU, H = coreH(u), row = [];
       for (let j = 0; j <= NT; j++) { const t = -1 + 2 * j / NT, z0 = H * pr(t), w = P3(u, dC(t), 0), big = fbm(w.x * 3.1 + 3, z0 / UH * 3 + 1, w.z * 3.1 + 1.7), small = fbm(w.x * 8.3, z0 / UH * 7 + 9, w.z * 8.3 + 5.3);
         const inner = Math.abs(t) < 1 && z0 > 2 ? 1 : 0, bump = ((big - 0.5) * 0.6 + (small - 0.5) * 0.3) * inner, z = Math.max(0, z0 + bump * 16), k = Math.max(0, Math.min(1, 0.5 + (big - 0.5) * 1.6 + (small - 0.5) * 0.6));
@@ -91,7 +91,47 @@ window.__pile = function (R, stage) {
     q.setAttribute('normal', new T.BufferAttribute(nrm, 3)); q.setAttribute('color', new T.BufferAttribute(c2, 3));
     const m = new T.Mesh(q, MAT.rock), c = P3(u, d, 0); m.scale.set(rx, ry, rz);
     m.rotation.set((h3(seed, 4, 4) - 0.5) * 0.3, -Math.atan2(dir[1], dir[0]) + (h3(seed, 5, 5) - 0.5) * 0.6, (h3(seed, 6, 6) - 0.5) * 0.3); m.position.set(c.x, (zb / UH) + ry * 0.5, c.z); g.add(m); };
-  if (!left) for (let sg = 0; sg < segs; sg++) { const seed = (R.seed + sg * 7919) >>> 0, U = u => (sg + u) * SEG, sd = k => (seed % 1009) + k * 13.7;
+  // THE HOLE the drilling leaves in rubble against a wall (the drawn hole's place and size: an arch over 0.22-0.78 of the stretch, 50 px high, its sides straight to 0.55 of that): the rock round its
+  // mouth, scorched, fading into the wall's own; its lip rolled into the dark; the tunnel going back into the rock and down (to the Nest), darker as it goes; a few of the pile's blocks at its foot
+  const rimLines = [];
+  const holeModel = () => {
+    const scorch = lin(0x24160e), Uc = L / 2, HW = 0.28 * L, ZH = 50, out = [];   // the opening's outline, from its left foot up, over and down to its right foot: [u tiles, z px]
+    for (let k = 0; k <= 4; k++) out.push([Uc - HW, 0.55 * ZH * k / 4]);
+    for (let k = 1; k < 16; k++) { const a = PI * k / 16; out.push([Uc - Math.cos(a) * HW, 0.55 * ZH + Math.sin(a) * 0.45 * ZH]); }
+    for (let k = 4; k >= 0; k--) out.push([Uc + HW, 0.55 * ZH * k / 4]);
+    const NO = out.length, nrm2 = out.map((p, i) => { const a = out[Math.max(0, i - 1)], b = out[Math.min(NO - 1, i + 1)], du = b[0] - a[0], dz = (b[1] - a[1]) / UH, l = Math.hypot(du, dz) || 1; return [-dz / l, du / l]; });   // (out of the opening, in the face's plane)
+    // the tunnel: the outline and the floor, ring by ring back into the rock, narrowing and going down, its rock rough, darker as it goes, black at its end
+    { const NJ = 10, DEEP = 1.3, DROP = 28, loop = out.concat([[Uc + HW * 0.5, 0], [Uc, 0], [Uc - HW * 0.5, 0]]), NL = loop.length, pos = [], col = [], idx = [], ring = [];
+      for (let j = 0; j <= NJ; j++) { const t = j / NJ, k = 1 - 0.22 * t, row = [];
+        for (let i = 0; i < NL; i++) { const [u, z] = loop[i], uu = Uc + (u - Uc) * k, zz = z * k - DROP * t, rough = j && j < NJ ? fbm(S0 + uu * 5, zz / UH * 5 + 3, t * 6) - 0.5 : 0, ou = i < NO ? nrm2[i][0] : 0, oz = i < NO ? nrm2[i][1] : -1;
+          const v = P3(uu + ou * rough * 0.14, -DEEP * t, zz + oz * rough * 0.14 * UH), c = dark.clone().lerp(base, 0.35 * (1 - t)).lerp(scorch, Math.max(0, 1 - t * 4) * 0.6).multiplyScalar(Math.pow(1 - t, 1.6));
+          pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); row.push(pos.length / 3 - 1); }
+        ring.push(row); }
+      for (let j = 0; j < NJ; j++) for (let i = 0; i < NL; i++) { const i2 = (i + 1) % NL; idx.push(ring[j][i], ring[j][i2], ring[j + 1][i2], ring[j][i], ring[j + 1][i2], ring[j + 1][i]); }
+      const e = P3(Uc, -DEEP, 0.3 * ZH * 0.78 - DROP); pos.push(e.x, e.y, e.z); col.push(0, 0, 0); const ce = pos.length / 3 - 1; for (let i = 0; i < NL; i++) idx.push(ce, ring[NJ][i], ring[NJ][(i + 1) % NL]);
+      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals(); g.add(new T.Mesh(geo, MAT.rock)); }
+    // the rock round the mouth: rings out from the opening, pushed in and out by the noise of where it is, its lip rolled back into the tunnel; scorched near the opening; its outer edge fading into the wall's rock
+    { const NK = 9, pos = [], col = [], idx = [], rows = [];
+      for (let k = 0; k <= NK; k++) { const f = k / NK, ex = 0.6 * Math.pow(f, 1.15), row = [];
+        for (let i = 0; i < NO; i++) { const u = out[i][0] + nrm2[i][0] * ex, z = out[i][1] + nrm2[i][1] * ex * UH, w = P3(u, 0, z), big = fbm(w.x * 2.4 + 3, z / UH * 2.4 + 1, w.z * 2.4 + 1.7), small = fbm(w.x * 6.3, z / UH * 6 + 9, w.z * 6.3 + 5.3);
+          const d = k === 0 ? -0.03 : k === 1 ? 0.05 : 0.04 + (big - 0.5) * 0.3 + (small - 0.5) * 0.1, kk = Math.max(0, Math.min(1, 0.5 + (big - 0.5) * 1.6 + (small - 0.5) * 0.6));
+          const c = dark.clone().lerp(base, Math.min(1, kk * 1.5)).lerp(light, Math.max(0, kk - 0.62) * 1.4).lerp(scorch, Math.max(0, 1 - f * 2.4) * 0.8);
+          const a = Math.max(0, Math.min(1, (1 - (f - 0.45) / 0.55) * (f > 0.4 ? 0.7 + 0.9 * (fbm(w.x * 3.3 + 7, z / UH * 3, w.z * 3.3) - 0.5) * 2 : 1)));
+          const v = P3(u, d, z); pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b, k === NK ? 0 : a); row.push(pos.length / 3 - 1); }
+        rows.push(row); }
+      for (let k = 0; k < NK; k++) for (let i = 0; i < NO - 1; i++) idx.push(rows[k][i], rows[k][i + 1], rows[k + 1][i + 1], rows[k][i], rows[k + 1][i + 1], rows[k + 1][i]);
+      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 4)); geo.setIndex(idx); geo.computeVertexNormals();
+      const fadeMat = window.__FADEMAT || (window.__FADEMAT = (() => { const m = new T.MeshStandardMaterial({ vertexColors: true, transparent: true, roughness: 0.95, metalness: 0, side: T.DoubleSide }); m.envMapIntensity = 0.25; return m; })());
+      g.add(new T.Mesh(geo, fadeMat)); }
+    // what is left of the pile at its foot (the drawn hole's three stones), and a block either side of the mouth
+    for (const [u, w, h, k] of [[0.12, 0.08, 11, 0], [0.85, 0.09, 12, 1], [0.24, 0.06, 9, 2]]) block(u * L, 0.14, 0, w * L / 2 * 1.3, h / UH / 2 * 1.2, 0.1, S0 + 300 + k, tones[k % tones.length]);
+    for (const [u, k] of [[0.17, 0], [0.83, 1]]) block(u * L, 0.06, 0, 0.13, 17 / UH / 2 * 1.2, 0.12, S0 + 320 + k, chipT[k].clone().lerp(scorch, 0.35));
+    for (let k = 0; k < 5; k++) { const r = 0.03 + 0.02 * h3(S0, k, 13); block(L * (0.2 + 0.6 * h3(S0, k, 11)), 0.2 + 0.25 * h3(S0, k, 12), 0, r * 1.3, r * 0.8, r, S0 + 340 + k, chipT[k % chipT.length]); }
+    // its rim, still warm (js/techabilities.js draws the glow): the opening's outline on the screen
+    const pts = []; for (const [u, z] of out) { const w = P3(u, -0.01, z); pts.push(Math.round(SX(w.x, w.z) * 10) / 10, Math.round(SY(w.x, w.z, z) * 10) / 10); } rimLines.push(pts);
+  };
+  if (hole) holeModel();
+  else if (!left) for (let sg = 0; sg < segs; sg++) { const seed = (R.seed + sg * 7919) >>> 0, U = u => (sg + u) * SEG, sd = k => (seed % 1009) + k * 13.7;
     // THE STONES of the drawn pile, where it had them, as big blocks of the rock (the top ones go first as it is drilled), and one across the joint with the pile before it
     for (let k = 0; k < Math.min(show, rocks.length); k++) { const [uc, zb, w, h] = rocks[k], rx = w * SEG / 2 * 1.15, ry = h / UH / 2 * 1.12;
       block(U(uc), rowD(zb), Math.max(0, zb - 3), rx, ry, 0.15 + 0.05 * h3(sd(k), 1, 1), sd(k), tones[(k + seed) % tones.length]); }
@@ -116,8 +156,8 @@ window.__pile = function (R, stage) {
     m.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(ex, ey, ez)).multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(1, 0, 0), -toCam * 0.45)).multiply(new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 0, 1), 0.26));   // its top leaning back, rising along the pile
     m.position.copy(P3((sg + 0.55) * SEG, 0.42, 16)); g.add(m); }
   // THE SEAMS that glow as it is drilled (js/techabilities.js draws them): the drawn pile's three to a pile, on the front of its stones, lower as the pile is
-  const seams = [];
-  if (!left) for (let sg = 0; sg < segs; sg++) for (const sq of [[[0.32, 0], [0.33, 14], [0.46, 26], [0.5, 40]], [[0.58, 0], [0.6, 18], [0.7, 30]], [[0.2, 20], [0.36, 36], [0.44, 50]]]) { const pts = [];
+  const seams = hole ? rimLines : [];
+  if (!left && !hole) for (let sg = 0; sg < segs; sg++) for (const sq of [[[0.32, 0], [0.33, 14], [0.46, 26], [0.5, 40]], [[0.58, 0], [0.6, 18], [0.7, 30]], [[0.2, 20], [0.36, 36], [0.44, 50]]]) { const pts = [];
     for (const [u, z] of sq) { const zz = z * sc, w = P3((sg + u) * SEG, rowD(zz) + 0.12, zz); pts.push(Math.round(SX(w.x, w.z) * 10) / 10, Math.round(SY(w.x, w.z, zz) * 10) / 10); }
     seams.push(pts); }
   // the screen box, from the patch's start A at the floor
@@ -146,7 +186,7 @@ window.__pile = function (R, stage) {
   await p.route('http://rubble.local/', r => r.fulfill({ contentType: 'text/html', body: page }));
   await p.goto('http://rubble.local/');
   const pics = [];
-  for (const R of items) for (const st of SHOWS.concat(R.choke ? ['left'] : [])) {
+  for (const R of items) for (const st of SHOWS.concat(R.choke ? ['left'] : ['hole'])) {   // (rubble against a wall leaves its hole; a choke, what is left of it)
     const res = await p.evaluate(([R, st]) => window.__pile(R, st), [R, st]); if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
     pics.push(Object.assign(res, { id: R.id, stage: String(st) }));
   }
@@ -168,4 +208,4 @@ window.__pile = function (R, stage) {
     'const CAVE_RUBBLE = ' + JSON.stringify(atlas) + ';\n';
   fs.writeFileSync(path.join(ROOT, 'js', 'caverubble.js'), js);
   console.log('img/cave/rubble.png: ' + SW + ' x ' + SH + ', ' + pics.length + ' pictures; wrote js/caverubble.js');
-})();
+})().catch(e => { console.error('the bake failed: ' + (e && e.message || e)); process.exit(1); });   // (its own failures stop it: the game's are let pass while it boots)
