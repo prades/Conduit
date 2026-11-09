@@ -717,7 +717,7 @@ The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved
 ## The cave's look (build `2026-11-09i`)
 - ~~**The modelled cave walls in the game**~~ *(approved 2026-11-09, "Approve the walls for everyone"; for everyone since build `2026-11-09j`)*.
 - ~~**The rubble patches as cave rock**~~ *(approved 2026-11-09, "Approve the rubble for everyone, keep the slab"; for everyone since build `2026-11-09l`, the hazard-painted slab kept)*.
-- **The hole a drilled rubble leaves** (the owner, 2026-11-09: "Yes, model the hole in the rock too"): built in build `2026-11-09m`, on the preview `?walls=3d` (`STYLE-CRYSTAL-LAB.md`). Waiting on the owner's look in the game: approve it for everyone?
+- ~~**The hole a drilled rubble leaves, modelled**~~ *(approved 2026-11-09, "Approve the hole for everyone"; for everyone since build `2026-11-09n`)*.
 - **The forms' effects with 3-D flare:** paused at the owner's turn to the cave (the quill and the icicle are done; `EFFECTS.md`).
 
 ## The optimization check (build `2026-11-09d`): found, not changed

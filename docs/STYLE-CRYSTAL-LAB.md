@@ -117,7 +117,7 @@ The owner, 2026-11-09: "update the rubble patches make those look more like a ca
 
 **Status.** Built in build `2026-11-09k` on the preview (`?walls=3d`). Approved in the game on 2026-11-09 ("Approve the rubble for everyone, keep the slab"): drawn for everyone since build `2026-11-09l`, the hazard-painted slab kept. The drawn pile (`js/techabilities.js techDrawRubbleOn`) stays as the fallback for the moment before the sheet arrives. The hole is next, below.
 
-**The hole, modelled too (build `2026-11-09m`; on the preview).** The owner, 2026-11-09: "Yes, model the hole in the rock too".
+**The hole, modelled too (build `2026-11-09m`; for everyone since `2026-11-09n`).** The owner, 2026-11-09: "Yes, model the hole in the rock too".
 - Where rubble against a wall is drilled through (the arena's south rubble, the way down to the Nest), the hole is a tunnel mouth in the cave's rock, in the drawn hole's place and size (an arch over the middle of the stretch, 50 px high).
 - **A rough lip** of broken rock round the opening, standing a little proud of the wall, scorched darkest at its edge.
 - **The tunnel** goes back into the rock and down, narrowing, in its own dark (unlit), black at its end.
@@ -125,4 +125,4 @@ The owner, 2026-11-09: "update the rubble patches make those look more like a ca
 - **The pile's last stones** lie at its foot (the drawn hole's three), with a scorched block either side of the mouth and a few chips.
 - **Its rim is still warm:** the game draws the glow along the opening's arch (baked as a line, like the seams), pulsing as the drawn rim did.
 - How it works: the wall's face is in the model only as a mask. It hides everything except what shows through the opening, so the tunnel's outside never shows over the game's own wall.
-- **Status:** on the preview (`?walls=3d`, js/cavewalls.js `CAVE_HOLE_APPROVED`) until the owner approves it in the game. Everyone else sees the drawn hole.
+- **Status:** shown on the preview (`?walls=3d`) in build `2026-11-09m`; approved in the game on 2026-11-09 ("Approve the hole for everyone"): drawn for everyone since build `2026-11-09n` (js/cavewalls.js `CAVE_HOLE_APPROVED`). The drawn hole stays as the fallback for the moment before the sheet arrives.

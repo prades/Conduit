@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09n` · branch `claude/start-game-project-HSh7Z` · the modelled hole for everyone
+On the pictures of build `2026-11-09m`, the owner said "Approve the hole for everyone".
+- The hole a drilled rubble leaves in a wall (the arena's south rubble, the way down to the Nest) is the modelled tunnel mouth for everyone (js/cavewalls.js `CAVE_HOLE_APPROVED`). The drawn hole stays only as the fallback before the rubble's sheet arrives.
+- With it, every cave piece asked for is modelled and approved: the rock walls (`2026-11-09j`), the rubble (`2026-11-09l`) and the hole.
+- Tests: cavewalls (the hole for everyone, with or without the preview; the fallback). Run: listed in the commit, all passing. Not playtested.
+
 ### Build `2026-11-09m` · branch `claude/start-game-project-HSh7Z` · the drilled hole, modelled in the cave's rock (on the preview `?walls=3d`)
 The owner, asked whether the hole a drilled rubble leaves should be modelled too: "Yes, model the hole in the rock too".
 - **Where rubble against a wall is drilled through** (the arena's south rubble, the way down to the Nest), the hole is a tunnel mouth in the cave's rock, in the drawn hole's place and size.

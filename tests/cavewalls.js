@@ -144,14 +144,15 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     check('a choke drilled through: what it leaves, in the rock (one picture), its sides still warm', () => {
         const a = J('__rubDraw("rubble_sewer_gate", 6)'); same(a.filter(q => q[0] === 'drawImage').length, 1, 'what a choke leaves'); same(a.filter(q => q[0] === 'fill').length, 2, 'its two warm sides'); same(a.filter(q => q[0] === 'stroke').length, 0, 'seams on what is left');
     });
-    // THE HOLE (the owner, 2026-11-09: "Yes, model the hole in the rock too"; build 2026-11-09m): rubble against a wall drilled through leaves a tunnel mouth modelled in the rock; on the preview until approved
-    check('the hole a drilled rubble leaves in a wall, modelled in the rock, on the preview (one picture, its rim still warm, glowing over it); without the preview, the drawn hole as before', () => {
-        same(J('CAVE_HOLE_APPROVED'), false, 'approved already: the owner has not seen it in the game');
-        run('_caveWallsPrev = true;'); const m = J('__rubDraw("rubble_arena_south", 6)'), st = m.filter(q => q[0] === 'stroke');
-        same(m.filter(q => q[0] === 'drawImage').length, 1, 'the modelled hole'); same(st.length, 2, 'its rim (a glow and a line)'); ok(st.every(c => c[2] === 'lighter'), 'its rim does not glow'); same(m.filter(q => q[0] === 'fill').length, 0, 'the drawn hole too');
+    // THE HOLE (the owner, 2026-11-09: "Yes, model the hole in the rock too"; build 2026-11-09m): rubble against a wall drilled through leaves a tunnel mouth modelled in the rock. Shown on the preview first;
+    // approved in the game on 2026-11-09 ("Approve the hole for everyone"): for everyone since build 2026-11-09n, the drawn hole only as the fallback
+    check('the hole a drilled rubble leaves in a wall, modelled in the rock, for everyone (one picture, its rim still warm, glowing over it), with or without the preview; before the sheet has arrived, the drawn hole', () => {
+        same(J('CAVE_HOLE_APPROVED'), true, 'not approved');
+        for (const prev of [false, true]) { run('_caveWallsPrev = ' + prev + ';'); const m = J('__rubDraw("rubble_arena_south", 6)'), st = m.filter(q => q[0] === 'stroke'), w = prev ? ' (the preview)' : ' (no preview)';
+            same(m.filter(q => q[0] === 'drawImage').length, 1, 'the modelled hole' + w); same(st.length, 2, 'its rim (a glow and a line)' + w); ok(st.every(c => c[2] === 'lighter'), 'its rim does not glow' + w); same(m.filter(q => q[0] === 'fill').length, 0, 'the drawn hole too' + w); }
         const e = J('CAVE_RUBBLE.items.rubble_arena_south.hole'); same(e[7].length, 1, 'its rim: one line'); ok(e[7][0].length >= 40, 'its rim: too few points');
-        run('_caveWallsPrev = false;'); const h = J('__rubDraw("rubble_arena_south", 6)'); same(h.filter(q => q[0] === 'drawImage').length, 0, 'the modelled hole without the preview'); ok(h.filter(q => q[0] === 'fill').length >= 8, 'not the drawn hole');
-        run('_caveWallsPrev = true;');
+        run('__rubSheet(false);'); const h = J('__rubDraw("rubble_arena_south", 6)'); same(h.filter(q => q[0] === 'drawImage').length, 0, 'a picture before the sheet arrived'); ok(h.filter(q => q[0] === 'fill').length >= 8, 'not the drawn hole before the sheet arrived');
+        run('_caveWallsPrev = true; __rubSheet(true);');
         const b = rd('design/cave/bake_rubble.js'); ok(/colorWrite: false/.test(b), 'the hole\'s tunnel is not masked by the wall\'s face (its outside would show)');
     });
     check('in a dim room it is darkened as the walls are (its picture over its silhouette at the room\'s light, composed once per level)', () => {
