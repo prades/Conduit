@@ -194,7 +194,8 @@ function _sqRow(dx, dy) {
     return typeof _evoFacing === "function" ? _evoFacing(_sqFace) : 1;
 }
 // one frame of the sheet with its feet (the anchor) on (gx, gy), at scale s
-function _sqBlit(img, col, row, gx, gy, s) { const C = SQ_LOOK.cell; ctx.drawImage(img, col * C, row * C, C, C, gx - SQ_LOOK.anchor[0] * s, gy - SQ_LOOK.anchor[1] * s, C * s, C * s); }
+function _sqBlit(img, col, row, gx, gy, s) { const C = SQ_LOOK.cell, cell = typeof spriteCell === "function" ? spriteCell(img, col * C, row * C, C, C) : null;   // (its own small canvas, cut once: js/draw.js)
+    if (cell) ctx.drawImage(cell, gx - SQ_LOOK.anchor[0] * s, gy - SQ_LOOK.anchor[1] * s, C * s, C * s); else ctx.drawImage(img, col * C, row * C, C, C, gx - SQ_LOOK.anchor[0] * s, gy - SQ_LOOK.anchor[1] * s, C * s, C * s); }
 // him, in the world (js/facilityplay.js drawFacilityItem): his shadow on the floor, the void walker over it turned toward you, a soft glow in his colour at his core, his plate over him
 function sqDraw(it) {
     if (typeof ctx === "undefined" || typeof _fpP !== "function") return;

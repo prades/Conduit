@@ -401,6 +401,32 @@ const SCENE = `(function(){
            'elements.js still assigns "none" to shadowColor');
     });
 
+    // THE OPTIMIZATION CHECK (build 2026-11-09d): in the browser's frame a cell drawn straight out of a big sheet (the evolved forms' are 2304 x 1152 to 4608 x 1536) cost a few ms a draw;
+    // the same cell from a small canvas of its own, cut once, a few hundredths (a squad's drawn frame went from about 40 ms to 9 in headless Chromium). The picture is the same, pixel for pixel.
+    group('the sprite cells');
+    check('a cell is cut once from its sheet and kept: the same cell gives the same canvas, another cell another, each its own size; a cell that is not whole pixels, or no sheet, gives none (the caller draws the sheet, as before)', () => {
+        const r = JSON.parse(E.run(`(function(){ const img = { k: 'sheet' }; const a = spriteCell(img, 0, 0, 144, 144), b = spriteCell(img, 0, 0, 144, 144), c = spriteCell(img, 144, 0, 144, 144);
+            return JSON.stringify({ same: !!a && a === b, other: !!c && c !== a, w: a && a.width, h: a && a.height, half: spriteCell(img, 0.5, 0, 144, 144), none: spriteCell(null, 0, 0, 144, 144) }); })()`));
+        ok(r.same, 'the same cell was cut again'); ok(r.other, 'another cell gave the same canvas'); same(r.w + 'x' + r.h, '144x144', 'the cell\'s size');
+        same(r.half, null, 'a cell that is not whole pixels'); same(r.none, null, 'no sheet');
+    });
+    check('they are bounded: past SPRITE_CELL_BUDGET pixels the cells drawn least recently are let go, and the one in use is kept', () => {
+        const r = JSON.parse(E.run(`(function(){ const img = { k: 'big' }, n = Math.ceil(SPRITE_CELL_BUDGET / 1e6) + 4; const first = spriteCell(img, 0, 0, 1000, 1000);
+            for (let i = 1; i < n; i++) { spriteCell(img, 0, 0, 1000, 1000); spriteCell(img, i * 1000, 0, 1000, 1000); }   // (the first drawn again each time: in use)
+            const kept = _spriteCells.get(img); return JSON.stringify({ px: _spriteCellPx, budget: SPRITE_CELL_BUDGET, firstKept: kept && kept.get(0) && kept.get(0).cv === first, secondKept: !!(kept && kept.get(1000 * 65536)), n }); })()`));
+        ok(r.px <= r.budget, 'the cells kept: ' + r.px + ' px, over the budget ' + r.budget); ok(r.firstKept, 'the cell in use was let go'); ok(!r.secondKept, 'the cell drawn longest ago was kept');
+    });
+    check('an evolved body and its pool are drawn from their cells (one drawImage of the cell), and from the sheet only when no cell can be made', () => {
+        const ev = fs.readFileSync(path.join(ROOT, 'js/evolution.js'), 'utf8');
+        same((ev.match(/spriteCell\(img, fr\.col \* C, fr\.row \* C, C, C\)/g) || []).length, 2, 'the body and the pool cut their cells');
+        const r = JSON.parse(E.run(`(function(){ const d = EVOLUTIONS.rimestar, keep = d._img; d._img = { complete: true, naturalWidth: 2304, naturalHeight: 1152 };
+            spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.evolved = 'rimestar'; f._moltAt = -1e9; const calls = [];
+            const g = { save() {}, restore() {}, beginPath() {}, ellipse() {}, fill() {}, drawImage() { calls.push(arguments.length + ':' + (arguments[0] === d._img ? 'sheet' : 'cell')); }, globalAlpha: 1 };
+            const drew = _drawEvolvedBody(f, 300, 300, g); const keepSC = spriteCell; spriteCell = () => null; _drawEvolvedBody(f, 300, 300, g); spriteCell = keepSC;
+            d._img = keep; followers.pop(); actors = actors.filter(a => a !== f); return JSON.stringify({ drew, calls }); })()`));
+        ok(r.drew, 'not drawn'); same(r.calls.join(), '5:cell,9:sheet', 'what was drawn');
+    });
+
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
     process.exit(failures ? 1 : 0);
 })();

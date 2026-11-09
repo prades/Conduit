@@ -4,6 +4,25 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09d` · branch `claude/start-game-project-HSh7Z` · the optimization check; the forms drawn from small cells
+The owner: "Build it, but we need to run an optimization check and then after that will go through and design each of these effects [...] with 3-D flare". The check ran in the real page (headless Chromium, software-rendered, 1180 × 820: a rough guide, not an iPad) over three scenes: QUIET (3 unevolved followers, 6 creatures), SQUAD (6 evolved forms, 8 creatures, their Ultimates fired) and BUSY (all 21 forms locked on their second attacks, 24 creatures, Ultimates firing). It also ran outside the browser (frame time and canvas operations by part), with a CPU profile and an allocation profile.
+- **Found and fixed: an evolved form's body was the costliest thing on screen.** Each body was drawn as a cell cut straight out of its sheet (2304 × 1152 to 4608 × 1536 px), and in the browser's frame that cost about 5–6 ms a draw.
+  - Each cell is now cut once into a small canvas of its own and drawn from that (`spriteCell`, js/draw.js). This covers the bodies, their floor pools, and the Side Quest's Hauler.
+  - The picture is the same pixel for pixel: all 21 forms were compared, three frames each.
+  - A drawn frame: SQUAD about 40 → 9 ms, BUSY about 45 → 14 ms. QUIET is unchanged (about 7 ms; it has no evolved form).
+  - The cells kept are capped at 12 million pixels (about 48 MB); past that, the ones drawn longest ago are let go and cut again when needed.
+  - The props and the player's sheets showed no gain from the same treatment and are left as they were.
+- **The effects are cheap today:**
+  - All the element effects together are about half a millisecond of a squad's 9 ms frame; REEF PILLAR's outcrops and floor haze are about 1.5 ms.
+  - In canvas operations, a busy fight's frame is about 19,000: the effects about 950, the units about 6,700, the facility about 7,800. PINK THICKET alone is about 1,800.
+  - The current look of all 42 effects and a proposed budget for their new looks are in `EFFECTS.md` (new).
+- **Found, not changed** (each needs the owner's yes; `OPEN-QUESTIONS.md`):
+  - route smoothing: about 4,200 walkability checks a frame in the busy fight;
+  - the catch-up steps re-run the frame's drawing code: about a fifth of the busy fight's time;
+  - about 50 MB of garbage a second in the busy fight;
+  - the forms' sheets' memory: about 450 MB unpacked if all were loaded, and SUNDEW's sheet is 4608 px wide.
+- Tests: perf (3 new checks on the cells); sidequest (his frame is read with the cells off, and drawn from a cell with them on). Run: perf, ghost, globals, evolution, attract, conversion, effects, foundation, hdsprites, sidequest, all passing. Not playtested; not measured on an iPad.
+
 ### Build `2026-11-09c` · branch `claude/start-game-project-HSh7Z` · every form its own second attack; the Electro Skink's LIGHTNING CIRCUIT
 The owner asked to be prompted one by one again, picked one of the agent's drafts for each form still on BASH (one form at a time), then said "Build it, but we need to run an optimization check and then after that will go through and design each of these effects [...] with 3-D flare".
 - **Nine second attacks** in place of BASH (each a chosen mode with a wind-up; every number the agent's, provisional):

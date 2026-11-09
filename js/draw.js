@@ -1757,4 +1757,31 @@ function cachedText(text, font, color, x, y) {
     }
     ctx.drawImage(e.cv, x - e.w / 2, y - (e.h - 4), e.w, e.h);
 }
+// A SPRITE CELL, cut once out of its big sheet and kept (the optimization check, build 2026-11-09d). In the browser's frame a cell drawn straight out of a sheet thousands of pixels across (the evolved
+// forms' sheets are 2304 x 1152 to 4608 x 1536) cost a few ms a draw, the same cell drawn from a small canvas of its own a few hundredths: the picture is the same. Bounded: past SPRITE_CELL_BUDGET pixels
+// the cells drawn least recently are let go (cut again when next needed). Returns null when no canvas can be made, or the cell is not whole pixels (the caller then draws from the sheet, as before).
+const SPRITE_CELL_BUDGET = 12e6;   // pixels (about 48 MB): a squad's cells in use are a small part of it
+const _spriteCells = new Map();    // sheet → Map(sx * 65536 + sy → { cv, w, h, u })
+let _spriteCellPx = 0, _spriteCellUse = 0;
+function spriteCell(img, sx, sy, sw, sh) {
+    if (!img || !(sw > 0) || !(sh > 0) || sw !== (sw | 0) || sh !== (sh | 0) || sx !== (sx | 0) || sy !== (sy | 0)) return null;
+    let m = _spriteCells.get(img); if (!m) { m = new Map(); _spriteCells.set(img, m); }
+    const k = sx * 65536 + sy; let e = m.get(k);
+    if (e && e.w === sw && e.h === sh) { e.u = ++_spriteCellUse; return e.cv; }
+    if (_spriteCellPx + sw * sh > SPRITE_CELL_BUDGET) _spriteCellTrim();
+    const cv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null;
+    const g = cv && cv.getContext ? cv.getContext("2d") : null;
+    if (!g || typeof g.drawImage !== "function") return null;
+    cv.width = sw; cv.height = sh;
+    try { g.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh); } catch (err) { return null; }
+    if (e) _spriteCellPx -= e.w * e.h;
+    m.set(k, e = { cv, w: sw, h: sh, u: ++_spriteCellUse }); _spriteCellPx += sw * sh;
+    return cv;
+}
+// let go of the cells drawn least recently, down to three quarters of the budget (rare: a sort of the cells kept)
+function _spriteCellTrim() {
+    const all = []; for (const [img, m] of _spriteCells) for (const [k, e] of m) all.push([e.u, img, k, e.w * e.h]);
+    all.sort((a, b) => a[0] - b[0]);
+    for (const [, img, k, px] of all) { if (_spriteCellPx <= SPRITE_CELL_BUDGET * 0.75) break; const m = _spriteCells.get(img); m.delete(k); _spriteCellPx -= px; if (!m.size) _spriteCells.delete(img); }
+}
 

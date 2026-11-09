@@ -3589,7 +3589,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-09c</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-09d</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3664,6 +3664,7 @@
     <tr><td>Draw distance</td><td class="num"><span class="n" data-k="RENDER_DIST">22</span> tiles</td><td><code>js/config.js:111</code></td></tr>
     <tr><td>Floor sprites kept</td><td class="num"><span class="n" data-k="FLOOR_SPRITE_CAP">700</span></td><td><code>js/game.js:250</code></td></tr>
     <tr><td>Follower sprites kept</td><td class="num"><span class="n" data-k="VIRUS_SPRITE_CAP">1200</span></td><td><code>js/draw.js:1274</code></td></tr>
+    <tr><td>Evolved forms’ cells kept (pixels)</td><td class="num"><span class="n" data-k="SPRITE_CELL_BUDGET">12,000,000</span></td><td><code>js/draw.js:1763</code></td></tr>
     <tr><td>No bubbles over this many followers on screen</td><td class="num"><span class="n" data-k="VIRUS_BUBBLE_CROWD">24</span></td><td><code>js/draw.js:1275</code></td></tr>
     <tr><td>Auto-LOW: under; readings; apart; after frame</td><td class="num">28 fps; 3; 90 frames; 420</td><td><code>js/propsprites.js:40-42</code> (literal)</td></tr>
   </table></div>
@@ -3674,6 +3675,7 @@
     <li>Tried and dropped: a per-piece wall sprite cache (no faster, about 100 MB) and walls baked to bitmaps (no gain, 30 MB).</li>
     <li>The prop work took <code>render()</code> from about 14–20 ms to 8–11 ms in most rooms (the lab stayed at about 16).</li>
     <li>In a fight the follower sprite cache had built a new 168 × 168 canvas about every frame and held about 97 MB; the sprites are 1× now.</li>
+    <li>The optimization check (build 2026-11-09d): an evolved form’s body drawn as a cell cut straight out of its big sheet cost about 5–6 ms a draw; each cell is now cut once into a small canvas (<code>spriteCell</code>, js/draw.js), the picture the same: a squad’s drawn frame about 40 → 9 ms, a 21-form fight’s about 45 → 14 ms. The rest of what it found: <code>docs/EFFECTS.md</code> §2, <code>docs/OPEN-QUESTIONS.md</code>.</li>
   </ul>
   <p class="where">Where it lives: <code>js/game.js</code> (<code>SIM_*</code> :456-458, <code>_simStep</code> :485, <code>gameLoop</code> :495, <code>render</code> :542) · <code>js/propsprites.js</code> <code>facilityPerfTick</code> · <code>tests/perf.js</code> <code>tests/clock.js</code> <code>tests/ghost.js</code> · the measurements: <code>docs/FACILITY.md:111</code> <code>:166-168</code>, <code>docs/TUTORIAL.md:208-219</code> <code>:305-306</code></p>
   <details class="dec"><summary>Decisions</summary><div>
@@ -3809,7 +3811,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-09c (9 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-09d (9 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

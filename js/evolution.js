@@ -1195,7 +1195,8 @@ function _drawEvolvedBody(f, px, py, g) {
     if (!d.ground) { g.fillStyle = "rgba(0,0,0,0.4)"; g.beginPath(); g.ellipse(px, py, 22 * rise, 9 * rise, 0, 0, Math.PI * 2); g.fill(); }
     const C = d.cell;
     g.globalAlpha *= rise;
-    g.drawImage(img, fr.col * C, fr.row * C, C, C, px - d.anchor[0] * s, py - d.anchor[1] * s, C * s, C * s);
+    const cell = typeof spriteCell === "function" ? spriteCell(img, fr.col * C, fr.row * C, C, C) : null;   // (its own small canvas, cut once: a cell straight out of the big sheet cost a few ms a draw, js/draw.js)
+    if (cell) g.drawImage(cell, px - d.anchor[0] * s, py - d.anchor[1] * s, C * s, C * s); else g.drawImage(img, fr.col * C, fr.row * C, C, C, px - d.anchor[0] * s, py - d.anchor[1] * s, C * s, C * s);
     // the reactor's glow (not the serpent's: its reactor sits in its head, which turns with it)
     if (d.noGlow) { g.restore(); return true; }
     const cx = px + (d.core[0] - d.anchor[0]) * s, cy = py + (d.core[1] - d.anchor[1]) * s;
@@ -1235,7 +1236,8 @@ function drawEvoGroundOnTile(tx, ty, px, py, g) {
         g.save();
         g.beginPath(); g.moveTo(px, py); g.lineTo(px + TILE_W, py + TILE_H); g.lineTo(px, py + 2 * TILE_H); g.lineTo(px - TILE_W, py + TILE_H); g.closePath(); g.clip();
         g.globalAlpha *= fr.rise;
-        g.drawImage(img, fr.col * C, fr.row * C, C, C, fx - d.anchor[0] * s, fy - d.anchor[1] * s, C * s, C * s);
+        const cell = typeof spriteCell === "function" ? spriteCell(img, fr.col * C, fr.row * C, C, C) : null;   // (as the body: its own small canvas)
+        if (cell) g.drawImage(cell, fx - d.anchor[0] * s, fy - d.anchor[1] * s, C * s, C * s); else g.drawImage(img, fr.col * C, fr.row * C, C, C, fx - d.anchor[0] * s, fy - d.anchor[1] * s, C * s, C * s);
         g.restore();
     }
 }

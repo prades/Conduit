@@ -88,7 +88,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const js = JSON.parse(rd('img/evo/hauler.json')); ok(fs.existsSync(path.join(ROOT, 'img/evo/hauler.png')), 'the sheet is not in the repository');
         const r = J(`(function(){ const o = {}; const it = _fp.items.find(i => i.fp === 'sidequest'); if (!it) return { none: true }; o.look = [SQ_LOOK.sheet, SQ_LOOK.cell, SQ_LOOK.anchor, SQ_LOOK.core, SQ_LOOK.plate];
             delete SQ_LOOK._img; sqPlace(false); o.asked = SQ_LOOK._img !== undefined; const it2 = _fp.items.find(i => i.fp === 'sidequest');
-            const calls = [], plates = [], keep = ctx.drawImage, dp = drawPlate, px = player.x, py = player.y, pvx = player.visualX, pvy = player.visualY, f0 = frame;
+            const calls = [], plates = [], keep = ctx.drawImage, dp = drawPlate, px = player.x, py = player.y, pvx = player.visualX, pvy = player.visualY, f0 = frame, sc = spriteCell;
+            spriteCell = () => null;   // (the sheet's own cut, so the frame drawn can be read: with a cell it is the same frame from its small canvas, checked below)
             ctx.drawImage = function(){ calls.push(Array.prototype.slice.call(arguments, 1)); }; drawPlate = function(t, c, x, y){ plates.push([t, c, x, y]); return true; };
             const at = (dx, dy) => { player.x = it2.x + dx; player.y = it2.y + dy; }, look = () => { calls.length = 0; plates.length = 0; drawFacilityItem(it2); const g = _fpP(it2.x, it2.y, 0); return { c: calls.slice(), p: plates.slice(), g }; };
             try {
@@ -97,7 +98,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 at(3, 0); const e = look(); at(2, 2); const se = look(); at(0, -3); const n = look(); at(0, 0); const on = look();
                 o.world = { e: e.c, se: se.c, n: n.c, on: on.c, g: e.g, plate: e.p, s: EVO_SCALE };
                 calls.length = 0; sqPortrait(200, 300, 90, 7 * 5); o.portrait = calls.slice();
-            } finally { ctx.drawImage = keep; drawPlate = dp; player.x = px; player.y = py; player.visualX = pvx; player.visualY = pvy; frame = f0; SQ_LOOK._img = null; }
+                spriteCell = sc; const cuts = []; spriteCell = function (im, sx, sy, sw, sh) { cuts.push([sx, sy, sw, sh]); return sc.apply(this, arguments); }; at(3, 0); calls.length = 0; drawFacilityItem(it2); o.viaCell = { cuts: cuts.slice(), args: calls.map(c => c.length + 1) };
+            } finally { ctx.drawImage = keep; drawPlate = dp; player.x = px; player.y = py; player.visualX = pvx; player.visualY = pvy; frame = f0; SQ_LOOK._img = null; spriteCell = sc; }
             return o; })()`);
         ok(!r.none, 'he is not in the world'); same(r.look[0], 'img/evo/hauler.png', 'the sheet'); same(r.look[1], js.cell, 'the cell');
         ok(Math.abs(r.look[2][0] - js.anchor.x) < 0.05 && Math.abs(r.look[2][1] - js.anchor.y) < 0.05, 'the anchor is not hauler.json\'s: ' + r.look[2]); ok(Math.abs(r.look[3][0] - js.core.x) < 0.05 && Math.abs(r.look[3][1] - js.core.y) < 0.05, 'the core is not hauler.json\'s: ' + r.look[3]);
@@ -107,6 +109,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(Math.abs(dx - (W.g[0] - A[0] * s)) < 0.01 && Math.abs(dy - (W.g[1] - A[1] * s)) < 0.01 && Math.abs(dw - C * s) < 0.01 && Math.abs(dh - C * s) < 0.01, 'its feet are not on his spot at the followers\' scale: ' + W.e[0].join() + ' at ' + W.g.join());
         same(W.se[0][1], C, 'you to the south-east: the row facing the screen'); same(W.n[0][1], 6 * C, 'you to the north: the north row'); same(W.on[0][1], 6 * C, 'standing on him: the last facing kept');
         same(JSON.stringify(W.plate), JSON.stringify([['SIDE QUEST', '#9fd8ff', W.g[0], W.g[1] - r.look[4]]]), 'his plate over him');
+        same(JSON.stringify(r.viaCell), JSON.stringify({ cuts: [[3 * C, 0, C, C]], args: [5] }), 'with its cells (build 2026-11-09d): the same frame, cut once into its own small canvas and drawn from it');
         same(r.portrait.length, 1, 'one frame in the dialogue box'); const P = r.portrait[0], k = 90 * 0.84 / C; same([P[0], P[1], P[2], P[3]].join(), [5 * C, C, C, C].join(), 'the idle beat, facing you');
         ok(Math.abs(P[6] - C * k) < 0.01 && P[5] + 45 * k >= 300 - 45 - 0.01 && P[5] + 143 * k <= 300 + 45 + 0.01 && P[4] >= 200 - 45 - 0.01 && P[4] + P[6] <= 200 + 45 + 0.01, 'the picture is not inside its square: ' + P.join());
         ok(!/_sqSaucer|ctx\.ellipse\(0, 2, 17/.test(rd('js/sidequest.js')), 'the saucer is still drawn in code');

@@ -143,6 +143,7 @@ Use existing documents first; add new ones only with a clear owner.
 | Unresolved questions | `OPEN-QUESTIONS.md` |
 | Decision index | `DECISION-LOG.md` |
 | Combat (and walls, cover and sight: §8, built in `2026-11-06h`) | `COMBAT.md` |
+| How the forms' second attacks and Ultimates look (the 3-D flare pass; the optimization check's budget for effects) | `EFFECTS.md` |
 | The fire and electric followers' attack redesign | `FOLLOWER-COMBAT-REDESIGN.md` |
 | Facility/core systems | `FACILITY.md` |
 | Followers/recruitment/breeding | `FOLLOWER-PROGRESSION.md` |
