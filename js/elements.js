@@ -781,7 +781,7 @@ const FORM_ULTIMATES = {
 const ELEMENT_MEND = { radius: 4, share: 0.02 };
 // BLOOM's Pack 1 picks (build 2026-11-09a): SAP VEIN and NECTAR HEART make each MEND of the one wearing them heal more, and DEWBURST gives each its chance to heal three times as much, with a burst of pink
 // dew (their numbers: bloomMendMult). `opts`: { any } a MEND from one that is not BLOOM (EVERBLOOM CROWN's extra, HERBALIST's clone), { mult } a MEND made bigger (DEWBURST set by ATTUNED CORE).
-// The player's own strikes in a BLOOM role's element (a punch, an arc, a lash: their source is BLOOM and yours) MEND nothing by themselves: what a role mends is what its kit says (js/playercards.js).
+// The player's own strikes in a BLOOM role's element (a punch, an arc, a lash: their source is BLOOM and yours) MEND nothing by themselves: what a role mends is what its kit says (the roles' own code).
 function elementMend(src, opts) {
     const any = !!(opts && opts.any);
     if (!src || src.dead || (!any && (src.element !== "blossom" || src.isPlayer)) || src.team !== "green" || typeof followers === "undefined") return 0;
