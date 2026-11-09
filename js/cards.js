@@ -411,8 +411,9 @@ function equipDevSet(v) { equipDev = v || ""; _equipReg = null; _equipOwned = nu
 function equipCards() { return _equipReg || (_equipReg = equipDev ? Object.assign({}, EQUIP_CARDS, EQUIP_TEST_CARDS) : EQUIP_CARDS); }
 function equipCard(id) { const c = typeof id === "string" ? equipCards()[id] : null; return c && typeof c === "object" ? c : null; }
 function equipAny() { return Object.keys(equipCards()).length > 0; }   // is there any card at all (when none, the screens say so)
-function equipRarityBars(c) { return Math.max(1, EQUIP_RARITIES.findIndex(r => r.id === (c && c.rarity)) + 1); }   // the segments lit on its rarity chip, of six
-function equipRarityLabel(c) { return (EQUIP_RARITIES.find(r => r.id === (c && c.rarity)) || EQUIP_RARITIES[0]).label; }
+function _equipIsEnergy(c) { return !!c && c.kind === "energy"; }   // (an ENERGY CARD has no rarity: its face says ENERGY, js/energy.js)
+function equipRarityBars(c) { if (_equipIsEnergy(c)) return 1; return Math.max(1, EQUIP_RARITIES.findIndex(r => r.id === (c && c.rarity)) + 1); }   // the segments lit on its rarity chip, of six
+function equipRarityLabel(c) { if (_equipIsEnergy(c)) return "ENERGY"; return (EQUIP_RARITIES.find(r => r.id === (c && c.rarity)) || EQUIP_RARITIES[0]).label; }
 
 // ── who a follower is: its element and its role (an evolved form's are its form's), its subclass ──
 function _equipForm(f) { return f && f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] || null : null; }
@@ -431,6 +432,7 @@ function equipKindLabel(c) {
     if (c.kind === "subclass") return "SUBCLASS · " + equipSubclassLabel(c.match);
     if (c.kind === "player") return "PLAYER" + (c.match ? " · " + _equipClassLabel(c.match) : "") + (c.kit && c.kit.el ? " · " + _equipElementLabel(c.kit.el) : "");
     if (c.kind === "form") return "SPECIAL ATTACK · " + _equipFormName(c.match);
+    if (c.kind === "energy") return "ENERGY · " + _equipElementLabel(c.el);   // (an ENERGY CARD's face, js/energy.js energyCardOf)
     return "";
 }
 function _equipFormName(id) { const e = typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[id] : null; return e ? e.name : String(id || "").toUpperCase(); }

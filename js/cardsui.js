@@ -136,13 +136,14 @@ function _cdPackBox(pack) {
     box.appendChild(_cdBtn(armed ? "TAP AGAIN TO OPEN" : "OPEN A PACK ◆" + pack.price, why || (armed ? "◆" + pack.price + " OF YOUR SHARDS · " + pack.size + " CARDS" : pack.size + " CARDS · " + _cdPackGuarantee(pack) + " AT LEAST"), "#ffe733", () => {
         if (_cdArm && _cdArm.id === key && _cdNow() < _cdArm.until) {
             _cdArm = null;
-            if (equipPackOpen(undefined, pack) && equipPackLast) _cdReveal = { pack: equipPackLast.pack || pack.id, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice() };   // (its cards come out of it: _cdRevealBox)
+            if (equipPackOpen(undefined, pack) && equipPackLast) _cdReveal = { pack: equipPackLast.pack || pack.id, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice(), energy: (equipPackLast.energy || []).slice() };   // (its cards come out of it: _cdRevealBox; its ENERGY CARDS after them)
         } else _cdArm = { id: key, until: _cdNow() + CARDS_ARM_MS };
     }, !!why));
     if (equipPackLast && (equipPackLast.pack || EQUIP_PACK.id) === pack.id) {
         box.appendChild(_cdEl("div", "cd-note", "THE LAST PACK"));
         const row = _cdEl("div", "cd-row");
         equipPackLast.ids.map(equipCard).filter(Boolean).forEach(c => { const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", equipPackLast.fresh.indexOf(c.id) >= 0 ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS")); row.appendChild(s); });
+        for (const el of equipPackLast.energy || []) { const c = typeof energyCardOf === "function" ? energyCardOf(el) : null; if (!c) continue; const s = _cdSlab(c, "found"); s.appendChild(_cdEl("div", "cd-worn", "ENERGY CARD · YOU HOLD " + energyCount(el))); row.appendChild(s); }   // (its ENERGY CARDS: js/energy.js)
         box.appendChild(row);
     }
     return box;
@@ -316,7 +317,7 @@ function _cdTabs(nOwned) {
 // CONTINUE, a tap once they are all out, or Escape closes it. While it is up the sheet under it is not drawn again, so the reveal never starts over.
 const CD_REVEAL = { first: 0.85, gap: 0.5, rise: 0.75, slot: 250, space: 24 };   // seconds (the first card leaves the pack, the next one after, each card's rise) and the row's px (a card's place, the room between)
 function _cdRevealBox(rv) {
-    const pack = equipPackById(rv.pack) || EQUIP_PACK, cards = rv.ids.map(equipCard).filter(Boolean), n = cards.length, step = CD_REVEAL.slot + CD_REVEAL.space;
+    const pack = equipPackById(rv.pack) || EQUIP_PACK, cards = rv.ids.map(equipCard).filter(Boolean).concat((rv.energy || []).map(el => typeof energyCardOf === "function" ? energyCardOf(el) : null).filter(Boolean)), n = cards.length, step = CD_REVEAL.slot + CD_REVEAL.space;   // (its ENERGY CARDS after its own: js/energy.js)
     const still = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
     const top = Math.max.apply(null, cards.map(equipRarityBars).concat([0])), end = still ? 0 : CD_REVEAL.first + Math.max(0, n - 1) * CD_REVEAL.gap + CD_REVEAL.rise;
     const ov = _cdEl("div", "cr-overlay"); ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "A PACK OPENED");
@@ -328,6 +329,7 @@ function _cdRevealBox(rv) {
         if (rare) { const b = _cdEl("i", "cr-back"); b.style.setProperty("--x", at + "px"); b.style.setProperty("--c", _cdKindCol(c)); stage.appendChild(b); }   // (the light behind the rarest, under the row)
         const slot = _cdEl("div", "cr-slot" + (rare ? " rarest" : "")); slot.style.setProperty("--k", String(k)); slot.style.setProperty("--fx", (-at) + "px"); slot.setAttribute("data-id", c.id);
         slot.appendChild(_cdSlab(c, ""));
+        if (c.kind === "energy") { slot.appendChild(_cdEl("div", "cd-worn cr-tag new", "ENERGY CARD · YOU HOLD " + energyCount(c.el))); slot.appendChild(_cdEl("div", "cd-note", "PUT IT IN A FOLLOWER'S ENERGY SLOT · ROSTER")); row.appendChild(slot); return; }   // (an ENERGY CARD: counted, and put in a follower's energy slot, not worn)
         slot.appendChild(_cdEl("div", "cd-worn cr-tag" + (fresh ? " new" : ""), fresh ? "NEW · FOUND FOR THIS RUN" : "DUPLICATE · +◇" + equipCreditsText(equipMarketValue(c) * EQUIP_MARKET.share) + " CREDITS"));
         {   // EQUIP NOW (build 2026-11-07rr), under each card: it opens over the reveal, which stays as it is (no redraw: the reveal never starts over)
             const why = _cdEquipNowWhy(c), eq = _cdEl("button", "cd-btn cr-eq"); eq.type = "button"; eq.style.setProperty("--c", "#19e6c1"); eq.appendChild(_cdEl("span", "cd-bl", "EQUIP NOW"));
@@ -405,12 +407,28 @@ function equipSubclassRow(side, f) {   // (drawn under the buttons, above the st
 }
 function equipRosterDraw(side, f) {   // (drawn under the styles)
     if (!f || f.isClone || f.isFollower !== true || typeof _ccEl !== "function") return;
+    if (typeof energyFor === "function" && energyFor(f)) energyRosterDraw(side, f);   // its ENERGY slots first (js/energy.js): 1 unevolved, 3 evolved
     const hand = equipUsableCards().filter(c => !c.attack);   // (the hand and what the packs found; the card attacks have their own slot, below)
     for (let slot = 0; slot < EQUIP.followerSlots; slot++) {
         const card = equipCard(equipSlots(f)[slot]), fits = hand.some(c => !equipWhyNot(f, c.id, slot));
         _ccDropdown(side, "card" + slot, "CARD " + (slot + 1), card ? card.name : "EMPTY", "#ffe733", () => equipFollowerPick(f, slot), _cpOff(card, fits, hand.length, "NO CARDS IN YOUR HAND"), card ? _cdChip(card, true) : null, card ? equipShortText(card) : null);
     }
     equipSpecialDraw(side, f);
+}
+// ITS ENERGY SLOTS (docs/ENERGY-CARDS.md; the owner, 2026-11-09): ENERGY 1 (unevolved: its element) or ENERGY 1-3 (evolved: its own element's cards unlock its second attack, then its Ultimate; another's,
+// a hybrid, not designed yet). A tap opens the card picker with the energy cards you hold (each with how many), EMPTY first (the card comes back to you).
+function energyRosterDraw(side, f) {
+    const s = energySlots(f), held = energyHeld();
+    for (let slot = 0; slot < s.length; slot++) {
+        const el = s[slot], card = el ? energyCardOf(el) : null, role = el ? energySlotRole(f, slot) : (f.evolved ? "EMPTY · " + energyLabel(f.element) + " ENERGY UNLOCKS ITS ATTACKS" : "NO ELEMENT · PUT AN ENERGY CARD IN");
+        _ccDropdown(side, "energy" + slot, "ENERGY " + (slot + 1), card ? card.name : "EMPTY", el ? energyColor(el) : "#cfd8e3", () => energyFollowerPick(f, slot), card || held.length ? null : "NO ENERGY CARDS · THEY COME IN PACKS", card ? _cdChip(card, true) : null, role);
+    }
+}
+function energyFollowerPick(f, slot) {
+    const cur = energySlots(f)[slot], els = energyHeld().filter(el => el !== cur).concat(cur ? [cur] : []);
+    const cards = els.map(el => { const c = energyCardOf(el); if (el !== cur) c.name = c.name + " ×" + energyCount(el); return c; });
+    return cardPickOpen({ key: "energy" + slot, title: "ENERGY " + (slot + 1) + " · " + _cpWho(f), sub: f.evolved ? "ITS OWN ELEMENT: ITS NEXT ATTACK · ANOTHER: A HYBRID" : "ITS ELEMENT · USED UP WHEN IT EVOLVES", col: cur ? energyColor(cur) : "#cfd8e3",
+        cur: cur ? "energy:" + cur : null, cards, why: c => energyWhyNot(f, slot, c.el), put: id => energyPut(f, slot, energyCardEl(id)) });
 }
 // ITS SPECIAL ATTACK (the owner, 2026-11-06: "You must change it in a separate menu inside of index/roster card system. Including access main hud"): a slot of its own under CARD 1 and CARD 2, its picker listing the card
 // attacks in the hand for its form (js/cards.js equipSpecialCards); the one set is marked. Set, it is the follower's primary attack (js/combat.js cardAttackTry).

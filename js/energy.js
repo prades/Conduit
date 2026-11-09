@@ -110,3 +110,11 @@ function energyApplyRecord(f, rec) {
     f.energy = new Array(energySlotCount(f)).fill(null);
     if (!f.evolved) f.element = ENERGY_NONE;
 }
+
+// ── ITS FACE (the card picker and a pack's reveal draw it as a card: js/cardsui.js; its kind, colour and no rarity: js/cards.js) ──
+function energyCardOf(el) {
+    if (!energyElementOk(el)) return null;
+    return { id: "energy:" + el, kind: "energy", el, name: energyLabel(el) + " ENERGY", rarity: null,
+        text: "AN UNEVOLVED FOLLOWER TAKES ITS ELEMENT, " + energyLabel(el) + ", AND EVOLVES WITH IT AT LEVEL " + ENERGY.evolveLevel + " (THE CARD IS USED UP) · AN EVOLVED " + energyLabel(el) + " FOLLOWER: ITS NEXT ATTACK · ANOTHER: A HYBRID ATTACK" };
+}
+function energyCardEl(id) { return typeof id === "string" && id.indexOf("energy:") === 0 ? id.slice(7) : null; }
