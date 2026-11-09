@@ -27,8 +27,8 @@ const PIECES = {
   // UPRIGHT: it stands on the floor (its foot at the origin, pointing up +y); the game turns it (yaws) and lets it rise out of the floor. The green haze stays drawn in code.
   // PINK THICKET's big seed (the THORNWHIP, No. 921; the owner's pick of three drafts, 2026-11-09: a bud of its leaves, a burr of its black thorns, or its pink crystal as a seed: this one, circled):
   // its pink crystal (the Rotshard's eaten crystal, as on the Thornwhip's back: forms39.js; forms5.js corroded), uneaten, cut as a seed: six-sided, pointed at both ends, coloured facet by facet as its own
-  // (forms32.js _gemCol32), a short stalk of its black vine at its back. No glow. As long, stalk and all, as the big seed drawn before it (27 px; the agent's number, provisional); it flies as the quill does, point first.
-  bigseed: { form: 921, color: '#ff7ab8', len: 0.72, r: 0.17, stalk: 0.234, roll: 0.35, cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },   // (a draft, for the owner's yes in the game)
+  // (forms32.js _gemCol32), a short stalk of its black vine at its back. No glow. As long, stalk and all, as the big seed drawn before it (27 px: the agent's number, approved with the piece); it flies as the quill does, point first.
+  bigseed: { form: 921, color: '#ff7ab8', len: 0.72, r: 0.17, stalk: 0.234, roll: 0.35, cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },   // (approved in the game 2026-11-09: "Approve it for everyone")
   // ROTTEN DECOY (the ROTSHARD; the owner, 2026-11-09: "Make the decoy a black Rotshard"): its design's "black crystal copy", the Rotshard's own model (No. 101: the eaten crystal leaning in its pool,
   // the old shell shard) in its old shell's glassy black, its pool tar-black, no light of its own and no glow (the owner: "I don't like the green aura"); the shell shard's hairline crack keeps its green.
   // A COPY: its columns are frames of its idle loop (the Rotshard's own, 2 pi / 1.6 s), facing the camera; drawn at the forms' scale.

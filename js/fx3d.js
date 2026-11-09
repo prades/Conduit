@@ -17,12 +17,13 @@ const FX3D = {
         // forms' scale; built in build 2026-11-09x on the preview; approved in the game the same day, for everyone since 2026-11-09aa
         rotdecoy: { sheet: "img/fx/rotdecoy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 102.81, tipY: 29.453 },
         // PINK THICKET's big seed (the THORNWHIP's Ultimate): its pink crystal (design/evolutions/forms39.js) cut as a seed, pointed at both ends, a short stalk of its black vine at its back, no glow; the owner's pick of
-        // three drafts, 2026-11-09 (circled: "its pink crystal, as a seed"); built in build 2026-11-09bb on the preview. It flies as the quill does
+        // three drafts, 2026-11-09 (circled: "its pink crystal, as a seed"); built in build 2026-11-09bb on the preview; approved in the game the same day, for everyone since 2026-11-09cc. It flies as the quill does
         bigseed: { sheet: "img/fx/bigseed.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
-               "rotdecoy"],   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
+               "rotdecoy",   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
+               "bigseed"],   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
     // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)
 };
 let _fx3dPrev = null;

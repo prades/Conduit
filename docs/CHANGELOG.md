@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09cc` · branch `claude/start-game-project-HSh7Z` · the crystal seed for everyone
+- **PINK THICKET's big seed as the Thornwhip's pink crystal is approved in the game** ("Approve it for everyone"), from the pictures of the old and new seed side by side. It is live for everyone (`FX3D.approved`), at about 27 px. The drawn seed shows only until its sheet arrives.
+- Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09bb` · branch `claude/start-game-project-HSh7Z` · PINK THICKET's big seed as the Thornwhip's pink crystal (on the preview)
 The owner's pick of three drafts for the next 3-D piece: they circled "its pink crystal, as a seed". `docs/EFFECTS.md`.
 - **The piece:** the Thornwhip's pink crystal cut as a seed, pointed at both ends, with a short stalk of its black vine at its back and no glow. It flies point first in the quill's shallow arc, with its shadow and a pink trail.

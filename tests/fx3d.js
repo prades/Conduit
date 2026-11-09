@@ -53,7 +53,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy', 'the approved pieces');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed', 'the approved pieces');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
@@ -206,7 +206,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(/if \(!_simGhost && typeof rotSpikeDrawItems === "function"\) rotSpikeDrawItems\(drawList\);/.test(rd('js/game.js')) && /obj\.type==='rotspike'\) \{ if \(typeof rotSpikeDrawItem === "function"\) rotSpikeDrawItem\(obj, px, py\); \}/.test(rd('js/game.js')), 'not in the world\'s draw list');
     });
 
-    group('PINK THICKET\'S BIG SEED: THE THORNWHIP\'S PINK CRYSTAL (the owner\'s pick of three drafts, 2026-11-09, circled: "its pink crystal, as a seed"; built in 2026-11-09bb on the preview)');
+    group('PINK THICKET\'S BIG SEED: THE THORNWHIP\'S PINK CRYSTAL (the owner\'s pick of three drafts, 2026-11-09, circled: "its pink crystal, as a seed"; built in 2026-11-09bb on the preview; approved in the game, for everyone since 2026-11-09cc)');
     check('the model is the Thornwhip\'s own crystal (the Rotshard\'s, uneaten), coloured facet by facet as its own, a stalk of its black vine at its back that meets it; no glow; lit from one way in the world whichever way it flies', () => {
         const b = rd('design/effects/bake_fx.js'), blk = b.slice(b.indexOf("if (piece === 'bigseed')"), b.indexOf('if (P.copy)'));
         ok(/bigseed: \{ form: 921, color: '#ff7ab8', len: 0\.72, r: 0\.17, stalk: 0\.234,/.test(b), 'not the Thornwhip\'s seed (No. 921) as built');
@@ -214,8 +214,8 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(/stalk\.position\.y = inside - sl \/ 2/.test(blk), 'its stalk does not meet the crystal'); ok(!/emissive|glowSprite|AdditiveBlending|PointLight/.test(blk), 'a glow on it');
         ok(/if \(g\.userData\.relight\) g\.userData\.relight\(\);/.test(b), 'not lit again as it turns');
     });
-    check('on the preview only (not approved yet); PINK THICKET\'s seed is the kind "bigseed"; before its sheet arrives, or without the preview, the big pink seed as before', () => {
-        ok(J('FX3D.approved.indexOf("bigseed")') < 0, 'approved before the owner has seen it in the game'); run('__preview(false)'); same(J('fx3dOn("bigseed")'), false, 'on without the preview');
+    check('approved in the game (the owner, 2026-11-09: "Approve it for everyone"): on for everyone, with or without the preview; PINK THICKET\'s seed is the kind "bigseed"; before its sheet arrives, the big pink seed as before', () => {
+        ok(J('FX3D.approved.indexOf("bigseed")') >= 0, 'not approved'); run('__preview(false)'); same(J('fx3dOn("bigseed")'), true, 'off without the preview');
         run('__preview(true)'); same(J('fx3dOn("bigseed")'), true, 'off with the preview');
         ok(/spawnFollowerProjectile\(actor, t, "#ff7ab8", 0, 9, a => land\(a\.x, a\.y\), DMG_HIT_SPECIAL, \{ range: L, kind: "bigseed" \}\)/.test(rd('js/elements.js')), 'PINK THICKET\'s seed is not the kind "bigseed"');
         const seed = (prev, sheet) => J(`(function(){ __preview(${prev}); FX3D.pieces.bigseed._img = ${sheet ? '{ complete: true, naturalWidth: 1792, naturalHeight: 168 }' : 'null'}; const sc = spriteCell; spriteCell = () => ({ cell: 1 }); const P = __pen();
@@ -224,7 +224,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
                 trail: P.calls.some(c => c[0] === 'set strokeStyle' && c[1] === '#ff7ab8'), shadow: P.calls.some(c => c[0] === 'ellipse' && Math.abs(c[2] - 240) < 1e-6) }; })()`);
         const before = seed(true, false), off = seed(false, true), on = seed(true, true);
         same(JSON.stringify([before.pics, before.seed > 0, before.glow > 0]), '[0,true,true]', 'before its sheet arrives, not the big pink seed in its glow');
-        same(JSON.stringify([off.pics, off.seed > 0]), '[0,true]', 'without the preview, not the big pink seed');
+        same(JSON.stringify([off.pics, off.seed]), '[1,0]', 'without the preview, not the crystal');
         same(on.pics, 1, 'its picture'); same(on.seed, 0, 'the drawn seed as well'); same(on.glow, 0, 'the pink glow round it (no glow)'); ok(on.trail, 'no pink trail behind it'); ok(on.shadow, 'no shadow on the floor under it');
     });
     check('every BLOOM follower\'s everyday SEED SHOT stays the drawn seed (only PINK THICKET\'s big seed is the crystal)', () => {
