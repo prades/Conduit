@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09ii` · branch `claude/start-game-project-HSh7Z` · SHARD VORTEX's blades back on the preview, whirling like a hurricane
+The owner: "Yeah, sorry, I was falling asleep. I accidentally approved that. So the shards are supposed to go sideways and sort of whirl about [...] all in different orientations, but they're spinning around like a hurricane." `docs/EFFECTS.md`.
+- **Taken back to the preview** (`?fx=3d`). Everyone sees the pale diamonds again. Main never had it.
+- **The four now whirl like a hurricane.** Each flies round at its own distance, speed and height, drifting in and out, and tumbles sideways about its own axis over its own shadow. The motion numbers are the agent's, provisional.
+- Rules are unchanged. Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09hh` · branch `claude/start-game-project-HSh7Z` · the black blades for everyone
 - **SHARD VORTEX's shards as the Rift Mimic's black blades are approved in the game** ("Approve it for everyone"), from the pictures of the diamonds and the blades side by side. They are live for everyone (`FX3D.approved`). The pale diamonds show only until the blades' sheet arrives.
 - Tests: `tests/fx3d.js`.

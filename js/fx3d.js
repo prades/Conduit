@@ -24,16 +24,17 @@ const FX3D = {
         // frames of the frog's idle loop (`loop` game frames), drawn at the forms' scale
         goocopy: { sheet: "img/fx/goocopy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 90.486, tipY: 46.472 },
         // SHARD VORTEX's shards (the RIFT MIMIC's Ultimate, "its four shards spin out into a swirl"): its own black blades (design/evolutions/forms6.js blade, No. 114); the agent's pick of the next piece (the owner:
-        // "You pick") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09gg on the preview; approved in the game the same day, for everyone since 2026-11-09hh. UPRIGHT: its columns are the
-        // ways it is turned (16), so it spins as it circles
-        vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0], upright: true, ax: 36, ay: 52.021, tipY: 13.875 },
+        // "You pick") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09gg on the preview, standing and turning; approved in the game the same day by accident and taken back (2026-11-09ii).
+        // TUMBLING since 2026-11-09ii (the owner: "the shards are supposed to go sideways and sort of whirl about ... all in different orientations, but they're spinning around like a hurricane"): its rows are
+        // the axes it tumbles about, its columns the steps of a turn; drawn centred (fx3dDrawCell)
+        vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0, 1, 2], tumble: true },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
                "rotdecoy",   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
                "bigseed",   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
-               "goocopy",   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
-               "vortexshard"],   // SHARD VORTEX's shards, the Rift Mimic's black blades: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09hh
+               "goocopy"],   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
+    // (SHARD VORTEX's black blades were approved in the game on 2026-11-09 and taken back the same day: "Yeah, sorry, I was falling asleep. I accidentally approved that": on the preview again, tumbling, build 2026-11-09ii)
     // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)
 };
 let _fx3dPrev = null;
@@ -75,6 +76,14 @@ function fx3dDrawUpright(g, piece, sx, sy, k, hpx, rise) {
     const cell = typeof spriteCell === "function" ? spriteCell(img, col * C, 0, C, C) : null, D = (1 - r) * H0;   // (D: how far its foot is still under the floor, in the cell's pixels)
     const rows = r >= 1 ? C : Math.max(1, Math.min(C, P.ay - D)), dx = sx - P.ax * sc, dy = sy + D * sc - P.ay * sc;   // (risen whole, its foot and the chips round it are drawn too)
     if (cell) g.drawImage(cell, 0, 0, C, rows, dx, dy, C * sc, rows * sc); else g.drawImage(img, col * C, 0, C, rows, dx, dy, C * sc, rows * sc);
+    return true;
+}
+// A TUMBLING piece (FX3D.pieces[piece].tumble): its cell (col, row) drawn centred on the screen point (sx, sy) at the forms' scale; the column wraps, the row is held to the sheet. False before its sheet arrives.
+function fx3dDrawCell(g, piece, sx, sy, col, row) {
+    const P = FX3D.pieces[piece], img = P && _fx3dImg(piece); if (!img) return false;
+    const C = P.cell, s = typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144, d = C * s, c = ((Math.floor(col) % P.yaws) + P.yaws) % P.yaws, r = Math.max(0, Math.min(P.pitches.length - 1, Math.floor(row) || 0));
+    const cell = typeof spriteCell === "function" ? spriteCell(img, c * C, r * C, C, C) : null;   // (its own small canvas: js/draw.js)
+    if (cell) g.drawImage(cell, sx - d / 2, sy - d / 2, d, d); else g.drawImage(img, c * C, r * C, C, C, sx - d / 2, sy - d / 2, d, d);
     return true;
 }
 // draw it centred on the screen point (sx, sy); false when its sheet has not arrived (the caller draws the old look)

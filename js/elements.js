@@ -385,6 +385,9 @@ const ULT_OVERDRIVE = { reach: 6, radius: 2, mult: 2, knock: 1 };               
 const ULT_ZERO = { reach: 3, max: 3, frames: 360 };                                       // the Frost Maw's: "6 s, no damage" (tiles, enemies, frames)
 const ULT_UNDERTOW = { radius: 3, mult: 1.5, thrown: 2.5, weak: 240, weakFactor: 0.7 };   // the Seeper's: "Strong" (tiles, × power, tiles thrown, frames of poison: hits 30% weaker)
 const ULT_NETWORK = { frames: 600, tick: 30, mult: 0.5, poison: 180, touch: 0.5 };         // the Blight Spider's: "10 s" (frames, frames between bites, × power, frames of poison, tiles from a strand)
+// How SHARD VORTEX's four shards whirl when they are the Rift Mimic's modelled blades (js/fx3d.js vortexshard; the owner: "spinning around like a hurricane"; the agent's numbers, provisional): each one's
+// distance from the middle (× the drawn ring's), its speed round (radians a frame; the nearer, the faster), where it starts, its height (px), how fast it tumbles (steps of its 16 a frame) and about which axis (its sheet's row)
+const SHARD_WHIRL = [{ r: 0.35, w: 0.19, a0: 0.0, h: 30, tw: 0.62, row: 0 }, { r: 0.62, w: 0.14, a0: 2.2, h: 14, tw: 0.47, row: 1 }, { r: 0.86, w: 0.105, a0: 4.0, h: 38, tw: 0.55, row: 2 }, { r: 0.5, w: 0.16, a0: 5.3, h: 22, tw: 0.7, row: 1 }];
 const ULT_VORTEX = { radius: 3, frames: 480, tick: 30, mult: 0.4, heal: 0.25, pull: 0.06 };   // the Rift Mimic's SHARD VORTEX: "8 s" (tiles, frames, frames between bites, × power a bite, share of the damage healed, pull a frame)
 const ULT_JELLY = { soak: 0.4, frames: 600, knock: 1 };                                     // the Jelly Ram's shields: "Squad only" (share of the wearer's max health, frames, tiles of knockback)
 const ULT_QUILLSTORM = { count: 16, mult: 1, reach: 6 };                                     // the Quillstone's QUILLSTORM: "16 quills" (quills all round it, × power each, fire, tiles)
@@ -1411,14 +1414,14 @@ function drawElementEffects() {
                 const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, spin = frame * 0.14;
                 ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#a070ff"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 0.5 * k; ctx.strokeStyle = "#c9a6ff"; ctx.lineWidth = 1.5; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(px, cy, rx * (0.4 + i * 0.25), ry * (0.4 + i * 0.25), 0, spin + i, spin + i + 2.4); ctx.stroke(); }
-                // ITS OWN BLACK BLADES (js/fx3d.js vortexshard; the agent's pick, the owner: "You pick"; the model approved 2026-11-09, "Yes, build it"): the Rift Mimic's four shards, each turning as it circles,
-                // floating a little over its own shadow, the farthest drawn first. Each turns twice for every time round, a turn and a quarter out of step with the next (so the four always show four sides of
-                // a blade, never all edge-on at once). Else the drawn pale diamonds.
+                // ITS OWN BLACK BLADES, WHIRLING LIKE A HURRICANE (js/fx3d.js vortexshard; the owner, 2026-11-09: "the shards are supposed to go sideways and sort of whirl about ... all in different orientations,
+                // but they're spinning around like a hurricane"): the Rift Mimic's four shards fly round the middle each at its own distance, height and speed (SHARD_WHIRL), drifting in and out and up and down,
+                // each tumbling about its own axis; each over its shadow on the floor, the farthest drawn first. Else the drawn pale diamonds.
                 const V3 = typeof fx3dOn === "function" && fx3dOn("vortexshard") && fx3dReady("vortexshard") ? FX3D.pieces.vortexshard : null;
-                if (V3) { const H3 = (V3.ay - V3.tipY) * (typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144), T2 = 2 * Math.PI, order = [0, 1, 2, 3].map(i => ({ i, an: spin + i * Math.PI / 2 })).sort((a, b) => Math.sin(a.an) - Math.sin(b.an));
-                    for (const { i, an } of order) { const sx = px + Math.cos(an) * rx * 0.6, fy = cy + Math.sin(an) * ry * 0.6, yaw = 2 * an + i * 1.25 * Math.PI, col = Math.round(((yaw % T2) + T2) % T2 / T2 * V3.yaws) % V3.yaws;
-                        ctx.globalAlpha = 0.3 * k; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(sx, fy, 7, 2.5, 0, 0, Math.PI * 2); ctx.fill();   // (its shadow on the floor)
-                        ctx.globalAlpha = k; fx3dDrawUpright(ctx, "vortexshard", sx, fy - 6 - 2 * Math.sin(frame * 0.1 + an), col, H3, 1); } }
+                if (V3) { const t = frame, list = SHARD_WHIRL.map((s, i) => { const an = s.a0 + t * s.w, rr = s.r + 0.1 * Math.sin(t * 0.045 + i * 1.7), up = s.h + 7 * Math.sin(t * 0.07 + i * 2.3);
+                        return { sx: px + Math.cos(an) * rx * rr, fy: cy + Math.sin(an) * ry * rr, up, row: s.row, col: Math.floor(t * s.tw + i * 5) }; }).sort((a, b) => a.fy - b.fy);
+                    for (const o of list) { ctx.globalAlpha = 0.28 * k; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(o.sx, o.fy, Math.max(3, 8 - o.up * 0.09), Math.max(1.2, 3 - o.up * 0.035), 0, 0, Math.PI * 2); ctx.fill();   // (its shadow)
+                        ctx.globalAlpha = k; fx3dDrawCell(ctx, "vortexshard", o.sx, o.fy - o.up, o.col, o.row); } }
                 else for (let i = 0; i < 4; i++) { const an = spin + i * Math.PI / 2, sx = px + Math.cos(an) * rx * 0.6, sy = cy + Math.sin(an) * ry * 0.6 - 10; ctx.globalAlpha = 0.95 * k; ctx.fillStyle = "#e6d6ff"; ctx.beginPath(); ctx.moveTo(sx, sy - 9); ctx.lineTo(sx + 5, sy); ctx.lineTo(sx, sy + 9); ctx.lineTo(sx - 5, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7a4adf"; ctx.lineWidth = 1; ctx.stroke(); }
                 break;
             }

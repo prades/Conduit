@@ -192,14 +192,16 @@ The agent's pick for the next piece (the owner, 2026-11-09: "You pick"). The des
 - As big as the biggest of them: about 1.04 form-units tall, 25 px in the game.
 - **Approved 2026-11-09** ("Yes, build it"), from the large preview beside the Mimic.
 
-**In the game (built in `2026-11-09gg` on the preview; for everyone since `2026-11-09hh`).**
-- The sheet is 16 turns in one row, in 72 px cells, so a blade can spin.
-- The four circle on the swirl's ring as the diamonds did, each floating a little over its own small shadow, the farthest drawn first.
-- Each turns twice for every time round, out of step with the next, so the four always show different sides of a blade. The turning is the agent's, provisional.
+**In the game (built in `2026-11-09gg` on the preview; approved for everyone in `2026-11-09hh` by accident and taken back; tumbling, on the preview, since `2026-11-09ii`).**
+- Build `gg` stood the four upright on the swirl's ring, turning as they circled. The owner approved it, then: "Yeah, sorry, I was falling asleep. I accidentally approved that. So the shards are supposed to go sideways and sort of whirl about, kind of not really put together very well. It's like all they're all in different orientations, but they're spinning around like a hurricane." It is back on the preview.
+- **Since build `2026-11-09ii`, they whirl like a hurricane:**
+  - The sheet is the blade tumbling: 16 steps of a turn about each of three axes, in 72 px cells, drawn centred (`fx3dDrawCell`).
+  - Each of the four flies round the middle at its own distance, speed and height, drifting in and out and up and down; the nearer, the faster. Each tumbles about its own axis at its own rate (`SHARD_WHIRL` in js/elements.js: the agent's numbers, provisional).
+  - Each has its own small shadow on the floor, and the farthest is drawn first.
+  - Four, as the design says ("its four shards").
 - The violet swirl (its faint disc and arcs) is drawn as before. Like it, the blades are drawn over the units.
-- Rules, pull, bites and healing are unchanged.
-- **Approved in the game 2026-11-09** ("Approve it for everyone"), from the in-game pictures. It has been live for everyone since build `2026-11-09hh`. The pale diamonds are kept only for the moment before its sheet arrives.
-- Tested: `tests/fx3d.js`. Checked in the real page with pictures, old and new side by side.
+- Rules, pull, bites and healing are unchanged. Without `?fx=3d`, or before its sheet arrives, the pale diamonds are shown.
+- Tested: `tests/fx3d.js`. Checked in the real page with pictures and an animation.
 
 ## 4. Open questions
 
@@ -212,7 +214,7 @@ The agent's pick for the next piece (the owner, 2026-11-09: "You pick"). The des
   - The black decoy was approved in the game (for everyone since `2026-11-09aa`). The puddle's spikes stay on the preview, not approved.
 - ~~**PINK THICKET's crystal seed in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09cc`. Then "Just a crystal": its stalk off since `2026-11-09dd`, about 20 px)*. Still open: whether SEEDFALL's falling seeds use it too.
 - ~~**PROXY SWARM's goo copies in the game**~~ *(the owner picked "A · all its violet goo" of three looks; approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09ff`)*.
-- ~~**SHARD VORTEX's black blades in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09hh`)*.
+- **SHARD VORTEX's black blades in the game:** approved by accident and taken back ("I accidentally approved that"); whirling and tumbling like a hurricane since build `2026-11-09ii`, on the preview, for the owner's yes.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.

@@ -53,7 +53,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy,vortexshard', 'the approved pieces');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy', 'the approved pieces (SHARD VORTEX\'s blades were approved by accident and taken back)');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
@@ -271,35 +271,34 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         run('spriteCell = __sc5; delete FX3D.pieces.goocopy._img; __preview(false);');
     });
 
-    group('SHARD VORTEX\'S SHARDS: THE RIFT MIMIC\'S OWN BLACK BLADES (the agent\'s pick, the owner: "You pick"; the model approved 2026-11-09, "Yes, build it"; built in 2026-11-09gg on the preview; approved in the game, for everyone since 2026-11-09hh)');
-    check('its sheet: sixteen turns in one row, at the forms\' pixels a unit; its foot and its tip as the baker wrote; the model is the Rift Mimic\'s own blade (No. 114, forms6.js blade), as big as the biggest standing round it', () => {
+    group('SHARD VORTEX\'S SHARDS: THE RIFT MIMIC\'S OWN BLACK BLADES, WHIRLING LIKE A HURRICANE (the agent\'s pick, the owner: "You pick"; the model approved 2026-11-09, "Yes, build it"; approved in the game by accident and taken back the same day; tumbling since 2026-11-09ii)');
+    check('its sheet: the blade tumbling, sixteen steps of a turn about each of three axes, at the forms\' pixels a unit, its middle in the middle of its cell; the model is the Rift Mimic\'s own blade (No. 114, forms6.js blade), as big as the biggest standing round it', () => {
         const P = J('FX3D.pieces.vortexshard'), meta = JSON.parse(rd('design/effects/out/vortexshard.json'));
-        same(P.sheet, 'img/fx/vortexshard.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + P.cell, 'the sheet\'s size'); same(JSON.stringify([P.cell, P.yaws, P.upright]), '[72,16,true]', 'the table');
-        same(JSON.stringify([meta.cell, meta.yaws, meta.pitches, meta.upright]), JSON.stringify([P.cell, P.yaws, P.pitches, true]), 'the baker\'s record and the game\'s table');
-        ok(Math.abs(meta.unitsPerCell * 144 / 3.4 - P.cell) < 1e-6, 'not at the forms\' pixels a unit');
-        ok(Math.abs(meta.anchor.x - P.ax) < 0.01 && Math.abs(meta.anchor.y - P.ay) < 0.01 && Math.abs(meta.tipY - P.tipY) < 0.01, 'its foot or its tip: ' + JSON.stringify([meta.anchor, meta.tipY]));
-        const b = rd('design/effects/bake_fx.js'); ok(/vortexshard: \{ form: 114, color: '#9933ff', upright: true, bw: 0\.336, bh: 0\.8, bd: 0\.1, S: 1\.3,/.test(b) && /if \(piece === 'vortexshard'\) \{ const sh = blade\(P\.bw, P\.bh, P\.bd\); sh\.scale\.setScalar\(P\.S\);/.test(b), 'not the Mimic\'s own blade');
+        same(P.sheet, 'img/fx/vortexshard.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), 'the sheet\'s size'); same(JSON.stringify([P.cell, P.yaws, P.pitches.length, P.tumble, !!P.upright]), '[72,16,3,true,false]', 'the table');
+        same(JSON.stringify([meta.cell, meta.yaws, meta.pitches]), JSON.stringify([P.cell, P.yaws, P.pitches]), 'the baker\'s record and the game\'s table');
+        ok(Math.abs(meta.unitsPerCell * 144 / 3.4 - P.cell) < 1e-6, 'not at the forms\' pixels a unit'); same(Math.round(meta.anchor.x) + ',' + Math.round(meta.anchor.y), (P.cell / 2) + ',' + (P.cell / 2), 'its middle in the middle of its cell');
+        const b = rd('design/effects/bake_fx.js'); ok(/vortexshard: \{ form: 114, color: '#9933ff', bw: 0\.336, bh: 0\.8, bd: 0\.1, S: 1\.3,[^\n]*tumble: \{ axes:/.test(b) && /if \(piece === 'vortexshard'\) \{[^]*?const sh = blade\(P\.bw, P\.bh, P\.bd\); sh\.scale\.setScalar\(P\.S\);[^]*?g\.userData\.tumbler = tum; \}/.test(b), 'not the Mimic\'s own blade, tumbling');
+        ok(/else if \(P\.tumble\) q\.userData\.tumbler\.quaternion\.setFromAxisAngle\(new T\.Vector3\(\.\.\.P\.tumble\.axes\[j\]\)\.normalize\(\), k \* 2 \* PI \/ P\.yaws\);/.test(b), 'its sheet is not its tumble');
         ok(/fx\(114, "Ground blob, bigger shards\."[^]*?w: 0\.28, h: 0\.8,/.test(rd('design/evolutions/forms6.js')), 'the Mimic\'s biggest standing blade is no longer 0.28 wide, 0.8 tall');
     });
-    const vortex = (prev, sheet, f) => J(`(function(){ __preview(${prev}); FX3D.pieces.vortexshard._img = ${sheet ? '{ complete: true, naturalWidth: 1152, naturalHeight: 72 }' : 'null'}; const sc = spriteCell; globalThis.__cells6 = []; spriteCell = function (img, sx, sy, sw, sh) { __cells6.push(sx / sw); return { cell: sx / sw }; };
+    const vortex = (prev, sheet, f) => J(`(function(){ __preview(${prev}); FX3D.pieces.vortexshard._img = ${sheet ? '{ complete: true, naturalWidth: 1152, naturalHeight: 216 }' : 'null'}; const sc = spriteCell; globalThis.__cells6 = []; spriteCell = function (img, sx, sy, sw, sh) { __cells6.push([sx / sw, sy / sh]); return { cell: [sx / sw, sy / sh] }; };
         const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption, f0 = frame; ctx = P.g; activeFireEruption = null; frame = ${f || 0};
         elementEffects = [{ type: 'shardvortex', x: player.visualX, y: player.visualY, radius: 3, life: 300, maxLife: 480 }];
         try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; frame = f0; spriteCell = sc; delete FX3D.pieces.vortexshard._img; __preview(false); }
-        return { names: P.calls.map(c => c[0]), im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)), shadows: P.calls.filter(c => c[0] === 'ellipse' && c[3] === 7 && c[4] === 2.5).map(c => c.slice(1, 3)), cells: __cells6.slice(), H: canvas.height }; })()`);
-    check('approved in the game (the owner, 2026-11-09: "Approve it for everyone"): on for everyone, with or without the preview; until its sheet arrives, SHARD VORTEX\'s four pale diamonds', () => {
-        ok(J('FX3D.approved.indexOf("vortexshard")') >= 0, 'not approved'); run('__preview(false)'); same(J('fx3dOn("vortexshard")'), true, 'off without the preview');
-        const before = vortex(true, false), off = vortex(false, true);
-        same(before.im.length, 0, 'pictures drawn before its sheet arrived'); ok(before.names.filter(c => c === 'closePath').length >= 4, 'not the four drawn diamonds before its sheet arrived: ' + before.names.join());
-        same(off.im.length, 4, 'the blades without the preview');
+        return { names: P.calls.map(c => c[0]), im: P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(2)), shadows: P.calls.filter(c => c[0] === 'ellipse' && c[3] <= 8).map(c => c.slice(1, 3)), cells: __cells6.slice(), W: canvas.width, H: canvas.height, TH: TILE_H }; })()`);
+    check('not approved (approved in the game by accident and taken back: "Yeah, sorry, I was falling asleep. I accidentally approved that"): it shows only on the preview (?fx=3d); without it, and until its sheet arrives, SHARD VORTEX\'s four pale diamonds', () => {
+        ok(J('FX3D.approved.indexOf("vortexshard")') < 0, 'still approved'); run('__preview(false)'); same(J('fx3dOn("vortexshard")'), false, 'on without the preview');
+        for (const r of [vortex(false, true), vortex(true, false)]) { same(r.im.length, 0, 'pictures drawn'); ok(r.names.filter(c => c === 'closePath').length >= 4, 'not the four drawn diamonds: ' + r.names.join()); }
     });
-    check('with its sheet (on the preview): four pictures of the blade, as tall as the model at the forms\' scale, each over its own shadow on the swirl\'s ring, the farthest first; they turn as they circle; the swirl itself still drawn', () => {
+    check('with its sheet (on the preview): the four whirl like a hurricane: each at its own distance from the middle and its own height over its shadow, each tumbling about its own axis, the farthest drawn first; they fly round and tumble as the frames go; the swirl itself still drawn', () => {
         const a = vortex(true, true, 0), b = vortex(true, true, 9), P = J('FX3D.pieces.vortexshard'), S = J('EVO_SCALE');
         same(a.im.length, 4, 'its pictures'); same(a.shadows.length, 4, 'their shadows'); ok(a.names.filter(c => c === 'stroke').length >= 3, 'the swirl\'s arcs are gone');
-        const H3 = (P.ay - P.tipY) * S; ok(a.im.every(d => Math.abs(d[7] / P.cell * (P.ay - P.tipY) - H3) < 1e-6), 'not as tall as the model at the forms\' scale');
+        ok(a.im.every(d => Math.abs(d[2] - P.cell * S) < 1e-6), 'not at the forms\' scale');
+        const cx = a.W / 2, cy = a.H / 2 + a.TH, dist = a.shadows.map(([x, y]) => Math.round(Math.hypot((x - cx) / 2, y - cy))), ups = a.im.map((d, i) => Math.round(a.shadows[i][1] - (d[1] + d[3] / 2)));
+        same(new Set(dist).size, 4, 'not each at its own distance from the middle: ' + dist); same(new Set(ups).size, 4, 'not each at its own height: ' + ups); ok(ups.every(u => u > 5), 'not over its shadow: ' + ups);
+        ok(new Set(a.cells.map(c => c[1])).size >= 3, 'not tumbling about different axes: ' + JSON.stringify(a.cells));
         const ys = a.shadows.map(s => s[1]); ok(ys.every((y, i) => i === 0 || y >= ys[i - 1] - 1e-9), 'not drawn from the farthest: ' + ys);
-        a.im.forEach((d, i) => { const foot = d[6] + P.ay * d[8] / P.cell; ok(foot < a.shadows[i][1] - 3 && foot > a.shadows[i][1] - 10, 'not floating a little over its shadow: ' + [foot, a.shadows[i][1]]); });
-        ok(JSON.stringify(a.cells) !== JSON.stringify(b.cells), 'they do not turn as they circle: ' + a.cells + ' / ' + b.cells);
-        for (const f of [0, 5, 9, 17, 30]) { const r = vortex(true, true, f), half = new Set(r.cells.map(c => c % (P.yaws / 2))); ok(half.size >= 3, 'at frame ' + f + ' the four show the same sides of a blade (all edge-on together): ' + r.cells); }
+        ok(JSON.stringify(a.cells) !== JSON.stringify(b.cells) && JSON.stringify(a.shadows) !== JSON.stringify(b.shadows), 'they do not fly round and tumble');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');
