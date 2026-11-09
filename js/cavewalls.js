@@ -8,6 +8,10 @@ function caveWallsPreview() { try { return typeof location !== "undefined" && /[
 function caveWallsOn() { if (CAVE_WALLS.approved) return true; if (_caveWallsPrev === null) _caveWallsPrev = caveWallsPreview(); return _caveWallsPrev; }
 // a piece's key: its two ends (the bake and the game key the strips the same way)
 function caveWallKey(it) { return it.a[0].toFixed(3) + "," + it.a[1].toFixed(3) + "," + it.b[0].toFixed(3) + "," + it.b[1].toFixed(3); }
+// ...made once per piece and kept (the owner, 2026-11-09: "Cache the wall lookup text too"; build 2026-11-09o): a piece's ends never change, and making its key every frame it was drawn
+// was a few hundred little strings a frame. Kept beside the piece, not on it (a WeakMap: drawing-only, nothing of the game's state; a rebuilt facility's new pieces get their own)
+let _caveWallKeys = new WeakMap();
+function _caveWallKeyOf(it) { let k = _caveWallKeys.get(it); if (k === undefined) { k = caveWallKey(it); _caveWallKeys.set(it, k); } return k; }
 // the walls' signature (every rock piece's ends, side and skyline): the bake writes the one it was made from; a test checks the game's walls still match it
 function caveWallsSig() {
     if (typeof _fp === "undefined" || !_fp || !_fp.items) return null;
@@ -38,7 +42,7 @@ function _caveDimmed(key, img, e, bucket) {
 // draw a rock wall piece's modelled strip; false when it has none (or its sheet has not arrived): the drawn rock is drawn instead
 function caveWallDraw(it) {
     if (!caveWallsOn() || typeof CAVE_ATLAS === "undefined") return false;
-    const key = caveWallKey(it), e = CAVE_ATLAS.pieces[key]; if (!e) return false;
+    const key = _caveWallKeyOf(it), e = CAVE_ATLAS.pieces[key]; if (!e) return false;
     if (!e[3]) return true;   // (nothing of the rock shows in this piece's columns)
     const img = _caveImg(e[0]); if (!img) return false;
     const p = _fpP(it.a[0], it.a[1], 0), x = Math.round(p[0] + e[5]), y = Math.round(p[1] + e[6]);   // (on whole pixels: a strip drawn between pixels blurs its edges into a seam; a run's strips share one offset, so they stay flush)
@@ -51,7 +55,7 @@ function caveWallDraw(it) {
 // a piece's strip as a box on the screen from the piece's ground anchor (screen of (it.x, it.y, 0)), for the walls' off-screen cull (js/facilitydecor.js _fpWallBounds); null when it has none
 function caveWallBox(it) {
     if (!caveWallsOn() || typeof CAVE_ATLAS === "undefined") return null;
-    const e = CAVE_ATLAS.pieces[caveWallKey(it)]; if (!e || !e[3]) return null;
+    const e = CAVE_ATLAS.pieces[_caveWallKeyOf(it)]; if (!e || !e[3]) return null;
     const ox = (it.a[0] - it.x - (it.a[1] - it.y)) * TILE_W, oy = (it.a[0] - it.x + it.a[1] - it.y) * TILE_H;
     return [Math.floor(ox + e[5]), Math.floor(oy + e[6]), Math.ceil(ox + e[5] + e[3]), Math.ceil(oy + e[6] + e[4])];
 }
@@ -86,9 +90,10 @@ function _caveRubblePic(it, stage) {
     const P = CAVE_RUBBLE.items[it.rubble], e = P && P[stage]; if (!e) return false;
     const img = _caveRubbleSheet(); if (!img) return false;
     const p = _fpWP(it, 0, 0), x = Math.round(p[0] + e[5]), y = Math.round(p[1] + e[6]);
-    const k = ctx._k === undefined ? 1 : ctx._k, bucket = k < 0.1 ? 0 : Math.min(PS_DIM_STEPS, Math.round(k * PS_DIM_STEPS)), key = "rubble|" + it.rubble + "|" + stage;
+    const k = ctx._k === undefined ? 1 : ctx._k, bucket = k < 0.1 ? 0 : Math.min(PS_DIM_STEPS, Math.round(k * PS_DIM_STEPS));
     if (bucket >= PS_DIM_STEPS) { const cell = typeof spriteCell === "function" ? spriteCell(img, e[1], e[2], e[3], e[4]) : null; if (cell) ctx.drawImage(cell, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
-    else { const d = _caveDimmed(key, img, e, bucket); if (d) ctx.drawImage(d, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
+    else { const d = _caveDimmed("rubble|" + it.rubble + "|" + stage, img, e, bucket);   // (its key made only when it is darkened)
+      if (d) ctx.drawImage(d, x, y); else ctx.drawImage(img, e[1], e[2], e[3], e[4], x, y, e[3], e[4]); }
     return e;
 }
 

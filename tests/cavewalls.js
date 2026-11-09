@@ -79,6 +79,11 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         same(a.drew, true, 'not drawn'); same(a.calls.length, 1, 'canvas calls'); same(JSON.stringify(a.calls[0]), JSON.stringify([{ cut: [a.e[1], a.e[2], a.e[3], a.e[4]] }, a.x, a.y]), 'its strip, from its own small canvas');
         same(b.calls.length, 1, 'canvas calls (no small canvas)'); same(JSON.stringify(b.calls[0].slice(1)), JSON.stringify([b.e[1], b.e[2], b.e[3], b.e[4], b.x, b.y, b.e[3], b.e[4]]), 'its strip, from the sheet');
     });
+    check('a piece\'s lookup text is made once and kept, not each frame it is drawn (the owner, 2026-11-09: "Cache the wall lookup text too"; build 2026-11-09o)', () => {
+        const r = J(`(function(){ const it = __rocks().find(i => CAVE_ATLAS.pieces[caveWallKey(i)][3] > 0), P = __pen(), keep = ctx, ck = caveWallKey; let n = 0; caveWallKey = function (x) { n++; return ck(x); }; _caveWallKeys = new WeakMap(); ctx = P.g; ctx._k = undefined;
+            try { caveWallDraw(it); caveWallDraw(it); caveWallDraw(it); caveWallBox(it); return { n, draws: P.calls.length, same: _caveWallKeys.get(it) === ck(it) }; } finally { ctx = keep; caveWallKey = ck; } })()`);
+        same(r.n, 1, 'the text made (three draws and a cull)'); same(r.draws, 3, 'pictures drawn'); same(r.same, true, 'the kept text is not the piece\'s own');
+    });
     check('in a dim room it is darkened as the props are (its strip over its silhouette at the room\'s light, composed once per level); nearly dark, the silhouette alone', () => {
         const r = J(`(function(){ const it = __rocks().find(i => CAVE_ATLAS.pieces[caveWallKey(i)][3] > 0), P = __pen(), keep = ctx; ctx = P.g; _caveDim.clear();
             try { ctx._k = 0.5; caveWallDraw(it); const half = _caveDim.get(caveWallKey(it)); ctx._k = 0.52; caveWallDraw(it); ctx._k = 0.05; caveWallDraw(it); const st = _caveDim.get(caveWallKey(it));

@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09o` · branch `claude/start-game-project-HSh7Z` · each rock wall piece's lookup text kept
+The owner, on the optimization audit's first finding: "Cache the wall lookup text too".
+- A rock wall piece's lookup text (its two ends, which find its strip in the cave's sheet) is now made once, the first time the piece is drawn, and kept beside it (js/cavewalls.js `_caveWallKeyOf`).
+  - Before, it was made every frame each piece was drawn: a few hundred short strings a frame in a cave.
+- The rubble's key for its darkened picture is made only in a dim room.
+- No change to what is drawn.
+- A test made steady: the conversion pop-up's real-page check failed now and then (about 2 runs in 5 on `main`'s own build). Its wait relied on the game's frames, and in the test's headless page they sometimes stop for the whole wait (the frame count still, both pictures loaded). The check now calls the pop-up's tick itself as it waits. The game is unchanged.
+- Tests: cavewalls (the text made once over three draws and a cull); ghost (the new cache allow-listed as drawing-only); conversion (steady). Run: listed in the commit. Not playtested.
+
 ### Build `2026-11-09n` · branch `claude/start-game-project-HSh7Z` · the modelled hole for everyone
 On the pictures of build `2026-11-09m`, the owner said "Approve the hole for everyone".
 - The hole a drilled rubble leaves in a wall (the arena's south rubble, the way down to the Nest) is the modelled tunnel mouth for everyone (js/cavewalls.js `CAVE_HOLE_APPROVED`). The drawn hole stays only as the fallback before the rubble's sheet arrives.

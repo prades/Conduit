@@ -43,7 +43,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var b = mk('toxic', 'brawler'), sp = mk('toxic', 'camper', 'blightspider'); partyTick(); partyPost(sp, 'sewers', true);
     questState('purify').installedAt = 1; questState('purify').purifiedAt = 2;
     out.room = partyRoomAt(player.x, player.y); out.verb = STATION_KINDS.purifier_mount.verbFn(st); out.name = STATION_KINDS.purifier_mount.name;
-    out.use = stationUse(st); await wait(60); out.pending0 = _cv.pending; for (var k2 = 0; k2 < 60 && _cv.pending; k2++) await wait(250); out.pending = _cv.pending;   // (the Blight Spider's sheet loads, and its card is drawn again)
+    out.use = stationUse(st); await wait(60); out.pending0 = _cv.pending; for (var k2 = 0; k2 < 60 && _cv.pending; k2++) { await wait(250); convertTick(); } out.pending = _cv.pending;   // (the Blight Spider's sheet loads, and its card is drawn again. The game's tick does that; it is called here too: in this headless page's virtual time the frames sometimes stop for the whole wait (seen: the frame count still, both pictures loaded), and nothing would draw it. Build 2026-11-09o)
     out.open = !!$('#convPanel.open'); out.cards = $$('#convPanel .cv-strip .cv-unit').map(function(e){ return [e.querySelector('.cv-n').textContent, (e.querySelector('.cv-why') || {}).textContent || '', e.classList.contains('off')]; });
     out.drawn = $$('#convPanel .cv-unit canvas').length; out.stripScrolls = getComputedStyle($('#convPanel .cv-strip')).overflowX;
     click($$('#convPanel .cv-strip .cv-unit').filter(function(e){ return !e.classList.contains('off'); })[0]); await wait(60);
