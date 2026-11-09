@@ -71,6 +71,7 @@ function evoMoveIds(d) {
 // Whether move `id` is open to this follower: on its form's list (class-only moves: when the player's class is on the move's list too, wired in a later stage).
 function evoMoveAllowed(f, d, id) {
     const m = MOVES[id]; if (!m || evoMoveIds(d).indexOf(id) < 0) return false;
+    if (f && f.evolved && typeof energyAltOpen === "function" && !energyAltOpen(f)) return false;   // ENERGY CARDS (js/energy.js): an evolved follower's second attack is locked until it holds an energy card of its element
     if (m.classes && typeof playerClassId === "function" && m.classes.indexOf(playerClassId()) < 0) return false;
     return true;
 }

@@ -725,7 +725,8 @@ function elementMend(src, opts) {
     return healUnit(best, best.maxHealth * ELEMENT_MEND.share * mult, src);
 }
 // A follower's Ultimate: its evolved form's own, or null (an unevolved follower has none; nor has a flagged form: build 2026-11-09b)
-function followerUltimate(a) { return a && a.evolved && FORM_ULTIMATES[a.evolved] || null; }
+function followerUltimate(a) { return a && a.evolved && FORM_ULTIMATES[a.evolved] && (typeof energyUltOpen !== "function" || energyUltOpen(a)) ? FORM_ULTIMATES[a.evolved] : null; }   // (ENERGY CARDS, js/energy.js: a follower's Ultimate is locked until it holds two energy cards of its element)
+function followerUltLocked(a) { return !!(a && a.evolved && FORM_ULTIMATES[a.evolved] && typeof energyUltOpen === "function" && !energyUltOpen(a)); }   // (it has one, locked: its INFO says what opens it)
 // FLAGGED (build 2026-11-09b; the owner: "flag every single creature that's evolved and does not have an ultimate"): an evolved form with no Ultimate of its own yet. It has none until its own is designed:
 // no meter on its card, nothing fired, "NOT DESIGNED YET" on its INFO card (js/unitinfo.js). Since build 2026-11-09c no current form is (the Electro Skink has LIGHTNING CIRCUIT), and the retired forms kept
 // for old saves never get one ("No, leave them"): they have no Ultimate and are not flagged.

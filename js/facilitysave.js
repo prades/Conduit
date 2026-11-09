@@ -35,6 +35,7 @@ function facilitySaveCollect() {
             cstep: S.cstep, tally: S.tally, ck0: S.ck0, cr0: S.cr0, cstages: S.cstages || {} } : null,   // (cstep, tally, ck0, cr0: the class's stage, js/tutorial.js; cstages: the others', put away)
         followers: followerRosterSnapshot(),
         cards: typeof equipSaveCollect === "function" ? equipSaveCollect() : null,   // the run's hand of equip cards and the player's two slots (js/cards.js; the collection is its own key, which NEW GAME leaves alone)
+        energy: typeof energySaveCollect === "function" ? energySaveCollect() : undefined,   // the run's ENERGY CARDS not in a slot (js/energy.js): NEW GAME clears them
         dna: typeof getDNA === "function" ? getDNA() : {},   // the splices the Clone Bay spends (js/clone.js)
         clones: cloneRosterSnapshot(),   // the clones: alive, or waiting at the Crystal to come back
         bodies: typeof cloneBodiesSnapshot === "function" ? cloneBodiesSnapshot() : [],   // the Mutator's fallen clone, a follower fallen for good, a capsule on the floor (js/mutator.js, js/specimen.js)
@@ -117,6 +118,7 @@ function facilitySaveApply(d) {
     if (typeof potionApply === "function") potionApply(d.potion);   // the potion in hand (after the pack: one no longer in the pack is not in hand), the discount owed
     if (typeof sqApply === "function") sqApply(d.sidequest);        // Side Quest back in his passage, the gate open again, the talk where it was
     if (d.dna && typeof d.dna === "object" && typeof dnaApply === "function") dnaApply(d.dna);
+    if (typeof energySaveApply === "function") energySaveApply(d.energy);   // the run's ENERGY CARDS (js/energy.js; a game saved before them has none)
     if (typeof equipSaveApply === "function") equipSaveApply(d.cards);   // the hand and the player's slots (a game saved before the cards has none: the hand is empty; the followers' own cards came back with them)
     if (Array.isArray(d.clones)) cloneRosterApply(d.clones);
     if (Array.isArray(d.bodies) && typeof cloneBodiesApply === "function") cloneBodiesApply(d.bodies);
@@ -162,7 +164,8 @@ function followerRecord(a) {
         move: a.move || undefined,             // the signature move it was given (js/moves.js)
         alt: a.alt || undefined,               // the alternate it is locked to (js/moves.js; none: its normal attack)
         special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // its SPECIAL ATTACK card (js/cards.js)
-        cards: typeof equipRecord === "function" ? equipRecord(a) : undefined   // its equip cards (js/cards.js); a fallen follower's preserved body leaves them out (js/specimen.js)
+        cards: typeof equipRecord === "function" ? equipRecord(a) : undefined,   // its equip cards (js/cards.js); a fallen follower's preserved body leaves them out (js/specimen.js)
+        energy: Array.isArray(a.energy) && typeof energyElementOk === "function" ? a.energy.map(x => energyElementOk(x) ? x : null) : undefined   // its ENERGY CARDS' slots (js/energy.js); a record from before them has none (it is migrated on load)
     };
 }
 function spawnFollowerFromSave(entry) {
@@ -192,6 +195,7 @@ function followerBuild(entry) {
     if (entry.conv && typeof entry.conv.from === "string") { npc.convertedFrom = entry.conv.from; npc.convertedAt = Number(entry.conv.at) || 0; }   // (what it was before its conversion: js/conversion.js)
     if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
     if (entry.special && typeof equipSpecialRestore === "function") equipSpecialRestore(npc, entry.special);   // its SPECIAL ATTACK card
+    if (typeof energyApplyRecord === "function") energyApplyRecord(npc, entry);   // its ENERGY CARDS (js/energy.js): an unevolved one's element is its card's; a record from before them: unevolved, no element; evolved, empty slots
     if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base below already carries what it was born with; nothing is added again
     // A DEATH NO LONGER COSTS HP (the owner, 2026-11-01): a follower saved with hp stat lost to earlier deaths gets it back, up to what it was born with (js/breeding.js followerHp0)
     let base = entry.base; if (base && Number.isFinite(base.hp) && typeof followerHp0 === "function") { const h0 = followerHp0(npc); if (base.hp < h0) base = Object.assign({}, base, { hp: h0 }); }

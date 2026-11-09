@@ -121,7 +121,7 @@
 //          stands on the tile. Drawn with the body in depth order, a pool wider
 //          than its owner painted over the units beside it in a bundle.
 
-const EVOLVE_LEVEL = 10;
+const EVOLVE_LEVEL = 8;   // (10 until the energy cards, build 2026-11-09s: at level 8 with an energy card it evolves, js/energy.js; the owner, 2026-11-09)
 const EVOLVE_MULT  = 1.25;
 const EVO_MOLT     = 120;          // frames: shake, burst, rise
 const EVO_SCALE    = 96 / 144;     // a sheet cell (144 px, 3.4 world units) drawn at game size
@@ -315,9 +315,11 @@ function evolvedDef(f) { return f && f.evolved ? EVOLUTIONS[f.evolved] || null :
 // Evolve it now if it is due. True when it did.
 function evoCheck(f) {
     if (!f || f.dead || !f.isFollower || f.evolved || f.noEvolve || f.team !== "green" || !((f.level || 0) >= EVOLVE_LEVEL)) return false;   // (noEvolve: a test follower of the Ant Nest's console picked unevolved stays so, js/nestconsole.js)
+    if (typeof energySlots === "function" && energyFor(f) && !energySlots(f)[0]) return false;   // ENERGY CARDS (js/energy.js): it evolves only with an energy card in its slot; its element is the card's
     const d = evolutionFor(f);
     if (!d) return false;
     f.evolved = d.id; delete f._evoOnLevelUp;
+    if (typeof energyEvolved === "function" && energyFor(f)) energyEvolved(f);   // (the card is used up: its element is its own for good, and it has three empty energy slots)
     f._moltAt = typeof frame !== "undefined" ? frame : 0;
     f._sigCd = 90;
     if (typeof _applyFollowerLevel === "function") _applyFollowerLevel(f, false);

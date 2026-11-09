@@ -496,6 +496,7 @@ let equipPlayer = [null, null];    // the player's slots
 function equipReset() {            // a fresh game (js/facilityplay.js facilityResetState): the collection stays, the rest begins empty
     equipHand = equipDev === "all" ? Object.keys(equipCards()) : []; equipFound = []; equipPackLast = null; equipPlayer = [null, null]; equipCredits = 0; equipShelf = { ids: [], until: 0 };
     _equipAuraHeld = []; _equipAuraRings = [];   // (the auras: the next tick finds them again)
+    if (typeof energyReset === "function") energyReset();   // the run's ENERGY CARDS (js/energy.js): NEW GAME clears them (the owner: "The run's")
 }
 function equipInHand(id) { return equipHand.indexOf(id) >= 0; }
 function equipIsFound(id) { return equipFound.indexOf(id) >= 0; }
@@ -1103,7 +1104,8 @@ function equipPackOpen(seed, pack) {
     }
     if (pack.keep === "forever") equipWriteOwned();
     equipCredits += credits;
-    equipPackLast = { pack: pack.id, ids: ids.slice(), fresh, dupes, credits };
+    const energy = typeof energyPackDeal === "function" ? energyPackDeal(Number.isFinite(seed) ? equipRng(seed + 7919) : null) : [];   // ENERGY CARDS (js/energy.js): 1 to 2 besides the pack's own (the owner: "Inside the old packs", "1 to 2 per pack")
+    equipPackLast = { pack: pack.id, ids: ids.slice(), fresh, dupes, credits, energy };
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "PACK OPENED · " + ids.length + " CARDS", color: "#ffe733", life: 140, vy: -0.25, size: 14 });
     return ids;
 }
