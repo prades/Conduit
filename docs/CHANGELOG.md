@@ -17,7 +17,7 @@ The owner asked again to be prompted one by one ("Prompt me questions one by one
 - **Screens:** the cards screen sorts BLOOM's cards after core's; the Side Quest's choices wrap to rows of three, so the six roles fit.
 - **Kept:** SWEET SCENT stays a chosen mode ("Keep it a chosen mode"); BLOOM's moves' numbers (SEEDFALL, PINK THICKET, STAKE RING, SWEET SCENT and the stockpile) stay provisional until a playtest ("Keep them all").
 - **Numbers:** the nine cards' are the agent's drafts, approved as drafted, provisional until a playtest; picked when building, inside the approved words: SEED GUNNER's SEEDFALL 1 tile round and its bite 0.2 × the gun's damage, and GROVE ENGINEER's "every few seconds" as 3 s.
-- Tests: new suite bloomcards (15 checks); new checks in reef (the crate rule), followerprog (BLOOM breeding); updated packs, series2, market, classcards, playercards, cards, cardart, sidequest. FULL_RUN_PENDING. Not playtested.
+- Tests: new suite bloomcards (15 checks); new checks in reef (the crate rule), followerprog (BLOOM breeding), sidequest (the six roles in two rows of three); updated packs, series2, market, classcards, playercards, cards, cardart, bible. The full run (98 suites) was still going when this build went to main (the owner: "push to main"): of the first 69, 66 passing; failing: cards (its architecture check, on a comment in js/elements.js naming a card file: fixed in this build, and passing run alone since), visiblearea and bottomui (two of the five suites failing before these builds too). The rest of the run is reported after. Not checked in a browser yet. Not playtested.
 
 ## 2026-11-08
 
