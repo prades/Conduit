@@ -2704,3 +2704,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - **Conversion:** "Only an egg's card". An evolved follower's toxic cards stay toxic, and its attacks lock until it holds BLOOM cards.
 - Still to confirm: plain elementless hits, the grey egg reused, an elementless Technician's lack of an ability, and no energy slots on the HUD squad card (`ENERGY-CARDS.md` §11).
 
+## DECISION: The ten forms that walk in place hold still standing (2026-11-09, build `2026-11-09jj`)
+- The owner: "the creatures need an idle phase where they don't squirm [...] some of them need to keep the way they are. Like, for instance, the salamander needs to stop moving, but the thunderhead looks fine whenever he's idle right now." Then, of three choices: "The 10 that walk in place".
+- Standing, the Electro Skink, Voidstar, Hammer Slug, Thermite Burrower, Blight Spider, Hornshell, Seeper, Thornwhip, Sundew and Stonepetal hold one idle frame (`EVO_STILL`, js/evolution.js). Walking, they play their loop; their moves and attacks play over it.
+- The other 11 keep their idle loop standing: they hover, breathe, bob or ripple.
+- Found on the way, not changed: every form's idle loop plays about 4× faster than it was designed (a frame every 7 game frames). It doubles as the walk.

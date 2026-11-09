@@ -146,6 +146,11 @@ const MIMIC_RADIUS = 2.2, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, 
 const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
 const MAW_RANGE = 1.8, MAW_MULT = 2.4, MAW_STUN = 75, MAW_SLOW_R = 1.6, MAW_SLOW = 0.5, MAW_SLOW_FRAMES = 120;
 const EVO_ACT_FRAMES = 40;         // how long a signature move plays its action frames
+// THE FORMS THAT HOLD STILL STANDING (the owner, 2026-11-09: "the creatures need an idle phase where they don't squirm ... the salamander needs to stop moving, but the thunderhead looks fine whenever he's
+// idle right now"; then "The 10 that walk in place"): their idle loop is a walk, so standing they hold one idle column (the number: which; 0, where the loop's steps start); walking they play the loop as
+// before, and their moves and attacks play over it. The other forms keep their idle loop standing (they hover, breathe, bob or ripple). Standing: its walk has not moved for EVO_STILL_AFTER frames (as the eggs, js/hdsprites.js).
+const EVO_STILL = { electroskink: 0, voidstar: 0, hammerslug: 0, thermite: 0, blightspider: 0, hornshell: 0, seeper: 0, shrub: 0, sundew: 0, coralcrab: 0 };
+const EVO_STILL_AFTER = 6;
 // QUILL BURST (the redesign): EXACTLY five quills at once (approved), fanned forward, the middle one at the nearest enemy; each its own follower shot that stops at the first enemy it touches. The fan, reach, speed, damage and wait are PROVISIONAL.
 const QUILL_RANGE = 4, QUILL_COUNT = 5, QUILL_FAN = 40, QUILL_MULT = 0.5, QUILL_SPEED = 0.18;   // its reach (tiles), the quills, the fan (degrees, edge to edge), × power a quill, its speed (the follower shots')
 
@@ -1172,6 +1177,10 @@ function _evoFrame(f, d, f0) {
     const rise = m < EVO_MOLT ? 1 - Math.pow(1 - u, 3) : 1;
     const sigK = f._sigAt !== undefined ? (f0 - f._sigAt) / EVO_ACT_FRAMES : 9;
     let col = Math.floor(f0 / 7) % 8;
+    const still = EVO_STILL[d.id];
+    if (still !== undefined) {   // (a form that holds still standing: walking while its walkCycle moved within EVO_STILL_AFTER frames; _evoWc and _evoMoveAt are the drawing's own memory of it)
+        const wc = f.walkCycle || 0; if (f._evoWc !== undefined && Math.abs(wc - f._evoWc) > 1e-4) f._evoMoveAt = f0; f._evoWc = wc;
+        if (!(f._evoMoveAt !== undefined && f0 - f._evoMoveAt < EVO_STILL_AFTER)) col = still; }
     const cs = d.consume && f._consume && typeof consumeFrame === "function" ? consumeFrame(f, f0) : -1;   // (SUNDEW holding a catch: its CONSUME block, js/elements.js)
     if (cs >= 0) col = d.consume + cs;
     else if (sigK >= 0 && sigK < 1) col = 8 + Math.min(7, Math.floor(sigK * 8));

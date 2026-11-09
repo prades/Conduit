@@ -407,6 +407,23 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(!r.tw, 'the prism hood still has a twitch'); ok(r.changes >= 3 && r.changes <= 5, 'it should advance a frame every 7 steps: ' + JSON.stringify(r));
     });
 
+    check('THE TEN THAT WALK IN PLACE HOLD STILL STANDING (the owner, 2026-11-09: "the salamander needs to stop moving, but the thunderhead looks fine"; "The 10 that walk in place"): standing, one idle column; walking, the loop; attacking, the attack; the Thunderhead keeps its idle loop', () => {
+        const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower);
+            const mk = (el, role, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.evolved = evo; f._moltAt = -1e9; f.x = 20; f.y = 2; f.dirX = 1; f.dirY = 0; return f; };
+            const sk = mk('electric', 'brawler', 'electroskink'), th = mk('electric', 'sniper', 'thunderhead'), D = EVOLUTIONS, stand = [], walk = [], after = [], th0 = [];
+            for (let i = 0; i < 28; i++) { frame++; stand.push(_evoFrame(sk, D.electroskink, frame).col); th0.push(_evoFrame(th, D.thunderhead, frame).col); }
+            for (let i = 0; i < 28; i++) { frame++; sk.walkCycle = (sk.walkCycle || 0) + 2; walk.push(_evoFrame(sk, D.electroskink, frame).col); }
+            for (let i = 0; i < 20; i++) { frame++; after.push(_evoFrame(sk, D.electroskink, frame).col); }
+            sk.state = 'attack'; sk.attackAnim = 1.5; frame++; const atk = _evoFrame(sk, D.electroskink, frame).col; sk.state = 'idle';
+            return { keys: Object.keys(EVO_STILL).sort().join(), held: EVO_STILL.electroskink, after: EVO_STILL_AFTER, stand, walk, tail: after, atk, th0, thHas: 'thunderhead' in EVO_STILL }; })()`);
+        same(r.keys, 'blightspider,coralcrab,electroskink,hammerslug,hornshell,seeper,shrub,sundew,thermite,voidstar', 'the forms that hold still standing');
+        ok(r.stand.every(c => c === r.held), 'the Electro Skink squirms standing: ' + r.stand);
+        ok(r.walk.filter((c, i) => i && c !== r.walk[i - 1]).length >= 3, 'the Electro Skink does not walk its loop while it moves: ' + r.walk);
+        ok(r.tail.slice(r.after).every(c => c === r.held), 'it does not settle still once it stops: ' + r.tail);
+        ok(r.atk >= 8, 'its attack does not play over the hold: ' + r.atk);
+        ok(!r.thHas && r.th0.filter((c, i) => i && c !== r.th0[i - 1]).length >= 3, 'the Thunderhead lost its idle loop: ' + r.th0);
+    });
+
     console.log('\nIT STAYS EVOLVED');
     check('its role is fixed: a role switch skips it', () => {
         const r = run(`(function(){ followers.length = 0; actors = actors.filter(a => !a.isFollower); ELEMENTS.forEach(e => { followerByElement[e.id] = []; }); if (typeof ccClearSelection === 'function') ccClearSelection();

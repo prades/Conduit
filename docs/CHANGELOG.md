@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09jj` · branch `claude/start-game-project-HSh7Z` · ten forms hold still standing
+The owner: "the creatures need an idle phase where they don't squirm [...] the salamander needs to stop moving, but the thunderhead looks fine whenever he's idle right now"; then "The 10 that walk in place".
+- **Standing, ten forms hold still:** Electro Skink, Voidstar, Hammer Slug, Thermite Burrower, Blight Spider, Hornshell, Seeper, Thornwhip, Sundew and Stonepetal. Their idle loop was a walk, so they squirmed in place.
+- Walking, they play their loop as before, and their moves and attacks play over it. The other 11, the Thunderhead among them, keep their idle.
+- Tests: `tests/evolution.js`. Checked in the real page.
+
 ### Build `2026-11-09ii` · branch `claude/start-game-project-HSh7Z` · SHARD VORTEX's blades back on the preview, whirling like a hurricane
 The owner: "Yeah, sorry, I was falling asleep. I accidentally approved that. So the shards are supposed to go sideways and sort of whirl about [...] all in different orientations, but they're spinning around like a hurricane." `docs/EFFECTS.md`.
 - **Taken back to the preview** (`?fx=3d`). Everyone sees the pale diamonds again. Main never had it.
