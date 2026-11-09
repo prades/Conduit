@@ -53,7 +53,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle', 'the approved pieces');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy', 'the approved pieces');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
@@ -149,7 +149,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         run('spriteCell = __sc3; delete FX3D.pieces.rotspike._img; __preview(false);');
     });
 
-    group('ROTTEN DECOY AS A BLACK ROTSHARD (the owner, 2026-11-09: "Make the decoy a black Rotshard"; the model approved, "Yes, build it"; build 2026-11-09x, on the preview)');
+    group('ROTTEN DECOY AS A BLACK ROTSHARD (the owner, 2026-11-09: "Make the decoy a black Rotshard"; the model approved, "Yes, build it"; built in 2026-11-09x on the preview; approved in the game, for everyone since 2026-11-09aa)');
     check('its sheet: the Rotshard\'s idle loop in 12 frames, one row, at the forms\' own cell (144 px, 3.4 units); its foot and top as the baker wrote; the model is the Rotshard\'s own (No. 101), all black, its glows and its light off, its thin crack kept', () => {
         const P = J('FX3D.pieces.rotdecoy'), meta = JSON.parse(rd('design/effects/out/rotdecoy.json'));
         same(P.sheet, 'img/fx/rotdecoy.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + P.cell, 'the sheet\'s size'); same(JSON.stringify([P.cell, P.yaws, P.upright, P.copy]), '[144,12,true,true]', 'the table');
@@ -159,13 +159,13 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(/if \(o\.isSprite \|\| o\.isLight\) \{ o\.visible = false;/.test(b) && /if \(m === M\.glow\) return; if \(m\.transparent \|\| m\.blending === T\.AdditiveBlending\) \{ o\.visible = false;/.test(b), 'its glows or its light are not off, or its crack not kept');
         ok(Math.abs(P.loop - Math.round(2 * Math.PI / 1.6 * 60)) <= 1, 'its loop is not the Rotshard\'s idle (2 pi / 1.6 s): ' + P.loop);
     });
-    check('not approved: only on the preview; without it, or before its sheet arrives, ROTTEN DECOY is the drawn spikes in their glow', () => {
-        same(J('FX3D.approved.indexOf("rotdecoy")'), -1, 'approved'); run('__preview(false)'); same(J('fx3dOn("rotdecoy")'), false, 'on without the preview');
+    check('approved in the game (the owner, 2026-11-09: "Approve the black decoy"): on for everyone; before its sheet arrives, ROTTEN DECOY is the drawn spikes in their glow', () => {
+        ok(J('FX3D.approved.indexOf("rotdecoy")') >= 0, 'not approved'); run('__preview(false)'); same(J('fx3dOn("rotdecoy")'), true, 'off without the preview'); run('FX3D.pieces.rotdecoy._img = null;');
         const r = J(`(function(){ const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption; ctx = P.g; activeFireEruption = null; elementEffects = [{ type: 'rotdecoy', x: player.visualX, y: player.visualY, life: 300, maxLife: 360, on: { maxHealth: 10, health: 5 } }];
             try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; } return P.calls.map(c => c[0]); })()`);
-        ok(r.indexOf('drawImage') < 0 && r.filter(c => c === 'stroke').length >= 4, 'not the drawn spikes: ' + r.join());
+        ok(r.indexOf('drawImage') < 0 && r.filter(c => c === 'stroke').length >= 4, 'not the drawn spikes before its sheet arrived: ' + r.join()); run('delete FX3D.pieces.rotdecoy._img;');
     });
-    check('with its sheet (on the preview): one picture of the copy, at the forms\' scale, its foot where the decoy is set, its frame the Rotshard\'s idle by the game\'s clock; risen as it is set; no glow and no green circle round it (it stands on the bare floor); its health bar over its top', () => {
+    check('with its sheet: one picture of the copy, at the forms\' scale, its foot where the decoy is set, its frame the Rotshard\'s idle by the game\'s clock; risen as it is set; no glow and no green circle round it (it stands on the bare floor); its health bar over its top', () => {
         run('__preview(true); FX3D.pieces.rotdecoy._img = { complete: true, naturalWidth: 1728, naturalHeight: 144 }; globalThis.__sc4 = spriteCell; globalThis.__cells4 = []; spriteCell = function (img, sx, sy, sw, sh) { __cells4.push(sx / sw); return { cell: sx / sw }; };');
         const at = (f, age) => J(`(function(){ __cells4.length = 0; const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption, f0 = frame; ctx = P.g; activeFireEruption = null; frame = ${f};
             elementEffects = [{ type: 'rotdecoy', x: player.visualX, y: player.visualY, life: 360 - ${age}, maxLife: 360, on: { maxHealth: 10, health: 5 } }];

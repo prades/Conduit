@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09aa` · branch `claude/start-game-project-HSh7Z` · the black decoy for everyone
+- **ROTTEN DECOY as a black Rotshard is approved in the game** ("Approve the black decoy"). It is live for everyone (`FX3D.approved`): the Rotshard's own model in black, on the bare floor, no glow.
+- TOXIC PUDDLE's black spikes were not approved. They stay on the `?fx=3d` preview, and everyone sees the old puddle.
+- Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09z` · branch `claude/start-game-project-HSh7Z` · TOXIC PUDDLE's black spikes among the bugs (on the preview)
 The owner, of the puddle's little spikes: "The little spikes look off to me. I'm not sure what the deal is."
 - **The deal:** effects are drawn over the units, so the spikes under each bitten bug stuck out of its back. At 16 px the model was a black smudge.

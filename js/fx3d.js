@@ -14,11 +14,12 @@ const FX3D = {
         rotspike: { sheet: "img/fx/rotspike.png", cell: 72, yaws: 8, pitches: [0], upright: true, ax: 36, ay: 53.716, tipY: 11.535 },
         // ROTTEN DECOY as a BLACK ROTSHARD (the owner, 2026-11-09: "Make the decoy a black Rotshard"; the model approved: "Yes, build it"): its design's "black crystal copy", the Rotshard's own model
         // (design/evolutions/forms5.js No. 101) all in black, no glow, the shell shard's thin green crack kept. A COPY: its columns are frames of the Rotshard's idle loop (`loop` game frames), drawn at the
-        // forms' scale; built in build 2026-11-09x on the preview
+        // forms' scale; built in build 2026-11-09x on the preview; approved in the game the same day, for everyone since 2026-11-09aa
         rotdecoy: { sheet: "img/fx/rotdecoy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 102.81, tipY: 29.453 },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
-               "icicle"],  // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
+               "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
+               "rotdecoy"],   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
     // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)
 };
 let _fx3dPrev = null;

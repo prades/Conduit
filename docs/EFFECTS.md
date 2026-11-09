@@ -142,12 +142,12 @@ The owner, 2026-11-09, on what was off with the black spike: "Make the decoy a b
 - Its glows, washes and light are off ("I don't like the green aura"). Only the shell shard's thin green crack is kept.
 - **Approved 2026-11-09** ("Yes, build it"), from the large preview beside the real Rotshard.
 
-**In the game (built in `2026-11-09x` on the preview, `?fx=3d`).**
+**In the game (built in `2026-11-09x` on the preview; for everyone since `2026-11-09aa`).**
 - The sheet is the Rotshard's idle loop in 12 frames, at the forms' own 144 px cell. It is drawn at the forms' scale, so it is the Rotshard's size.
 - It stands where the decoy is set, rising out of the floor over the 8 frames it is set in, and breathes with the Rotshard's idle by the game's clock.
 - No glow round it, and no green circle of its poison's reach either: it stands on the bare floor (the owner, 2026-11-09: "Remove [the] green space"; build `2026-11-09y`). Its health bar is over its top.
-- Rules, timing, lure and hits are unchanged. Without `?fx=3d`, or before its sheet arrives, the drawn spikes in their glow are shown.
-- **Waiting for the owner's approval in the game.**
+- Rules, timing, lure and hits are unchanged. Before its sheet arrives, the drawn spikes in their glow are shown.
+- **Approved in the game 2026-11-09** ("Approve the black decoy"), from the in-game pictures. It has been live for everyone since build `2026-11-09aa`.
 - Tested: `tests/fx3d.js`. Checked in the real page with pictures.
 
 ## 4. Open questions
@@ -158,7 +158,7 @@ The owner, 2026-11-09, on what was off with the black spike: "Make the decoy a b
 - **The black spike in the game:** approved, then taken back ("I don't like the green aura"). Then "Still not right", and the owner's answer: "Make the decoy a black Rotshard".
   - TOXIC PUDDLE (and the CRYSTAL SPIKE TRIO card) keep the black spike, without its aura.
   - ROTTEN DECOY is the black Rotshard (build `2026-11-09x`).
-  - Both are on the preview, for the owner's approval in the game.
+  - The black decoy was approved in the game (for everyone since `2026-11-09aa`). The puddle's spikes stay on the preview, not approved.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.
