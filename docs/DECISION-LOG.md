@@ -2677,3 +2677,17 @@ Drafted and passed over: the angular rock masses in two tiers (the second render
 ### Supersedes / superseded by
 Supersedes the drawn rock (`js/facilitydecor.js _fpDrawRock`), which stays as the fallback before a sheet arrives. **Superseded for the walls on 2026-11-09** (build `2026-11-09p`): the owner, "I'm not big on these walls", "Switch back to the drawn rock for now". The drawn rock is back for everyone; the modelled walls stay on the preview `?walls=3d`; what to change is open. The rubble and the hole stay modelled (approved on their own).
 
+## DECISION: Energy cards: a follower's element comes from a card it spends (designed in part)
+- Date and build: 2026-11-09, after build `2026-11-09r`, branch `claude/start-game-project-HSh7Z`. Not built.
+- The owner's words: "I want to make each follower have 3 new card zones slots, and unevolved followers have only 1 slot. So unevolved followers lose their color and their element unless they have this new version of a card, which is an energy card. [...] when they reach level 8 and they have an energy card, they can evolve into a that element's type. And now whenever the element card goes away, it permanently gets infused with it. And now the follower has 3 card slots for energy cards. Still has 2 slots for the other cards."
+- Their answers: the three slots "Unlock the attacks and hybrid attacks"; the cards come from "Card packs"; it evolves "On its own"; saved games: "Start elementless".
+
+### Decision
+The approved rules are in `ENERGY-CARDS.md` §2; its §11 lists what is still open (what the slots unlock, the pack, how a card is owned, new followers and breeding, the elementless look, a follower already past level 8).
+
+### Status
+Designed in part. Not built.
+
+### Supersedes / superseded by
+When built, it supersedes evolution at level 10 with the element a follower was found or bred with (`FOLLOWER-PROGRESSION.md`).
+

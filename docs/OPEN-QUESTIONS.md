@@ -714,6 +714,9 @@ The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved
 - **The agent's numbers, provisional:** the bond hearts (within 1 tile, three over each, 1.5 s, again after more than 3 tiles apart); SUNDEW's and STONEPETAL's everyday hit, 0.45 × their attack.
 - **A reading:** an unevolved follower's meter no longer fills (it has no Ultimate); a charge an old save carries stays as it was until it evolves.
 
+## Energy cards (the owner's direction, 2026-11-09; not built)
+The approved rules and the open questions are in `ENERGY-CARDS.md` (§2 and §11): what an evolved follower's three slots unlock ("the attacks and hybrid attacks"), the pack, how a card is owned, new followers and breeding, the elementless look, a follower already past level 8.
+
 ## The cave's look (build `2026-11-09i`)
 - **The cave's walls.** Approved on 2026-11-09 and drawn for everyone from build `2026-11-09j`; then the owner said "I'm not big on these walls" and "Switch back to the drawn rock for now". The drawn rock is back for everyone in build `2026-11-09p`; the modelled walls stay on the preview `?walls=3d`. Open: what was not liked (offered: smeary faces up close, too smooth, the colour, the shape), and whether they come back reworked or the drawn rock stays.
 - ~~**The rubble patches as cave rock**~~ *(approved 2026-11-09, "Approve the rubble for everyone, keep the slab"; for everyone since build `2026-11-09l`, the hazard-painted slab kept)*.
