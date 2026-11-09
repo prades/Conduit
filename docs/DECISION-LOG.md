@@ -2675,5 +2675,5 @@ Built in build `2026-11-09i` and tested (`tests/cavewalls.js`); checked in the r
 Drafted and passed over: the angular rock masses in two tiers (the second render); "blockier, flatter slabs"; "darker, wetter cave"; the pale colour.
 
 ### Supersedes / superseded by
-Supersedes the drawn rock (`js/facilitydecor.js _fpDrawRock`), which stays as the fallback before a sheet arrives.
+Supersedes the drawn rock (`js/facilitydecor.js _fpDrawRock`), which stays as the fallback before a sheet arrives. **Superseded for the walls on 2026-11-09** (build `2026-11-09p`): the owner, "I'm not big on these walls", "Switch back to the drawn rock for now". The drawn rock is back for everyone; the modelled walls stay on the preview `?walls=3d`; what to change is open. The rubble and the hole stay modelled (approved on their own).
 

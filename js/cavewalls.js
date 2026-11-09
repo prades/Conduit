@@ -1,8 +1,10 @@
 // THE CAVE'S ROCK WALLS, MODELLED (the owner, 2026-11-09: RuneScape's 3D-model walls and their lighting as the reference; the look approved on its preview, in the cave's brown: "Brown, build the full
 // wall set"). Every rock wall piece of the facility (the arena, the Cold Storage's ice cave, the Nest's cavern) has a strip of a modelled rock wall baked from its own shape by design/cave/bake_walls.js
 // (js/caveatlas.js says where each strip is). A piece draws its strip in its own place in the draw list, so units sort against the rock as before; a dim room darkens it as it darkens the props (its
-// silhouette under it, js/propsprites.js). docs/ART-PROCESS.md: shown on the preview (?walls=3d) first; approved in the game on 2026-11-09, so it is drawn for everyone; the drawn rock stays only as the fallback (a sheet not yet arrived).
-const CAVE_WALLS = { approved: true };   // approved in the game 2026-11-09 ("Approve the walls for everyone"), live for everyone since build 2026-11-09j; ?walls=3d stays as the preview for the cave pieces that come next
+// silhouette under it, js/propsprites.js). docs/ART-PROCESS.md: shown on the preview (?walls=3d) first; approved in the game on 2026-11-09 and drawn for everyone from build 2026-11-09j.
+// SWITCHED BACK the same day (the owner: "I'm not big on these walls", "Switch back to the drawn rock for now"; build 2026-11-09p): everyone sees the drawn rock again (js/facilitydecor.js _fpDrawRock);
+// the modelled walls stay on the preview (?walls=3d). The rubble and the hole, approved on their own, stay modelled for everyone (below).
+const CAVE_WALLS = { approved: false };   // switched back 2026-11-09 (build 2026-11-09p); was approved from 2026-11-09j to 2026-11-09o
 let _caveWallsPrev = null;
 function caveWallsPreview() { try { return typeof location !== "undefined" && /[?&]walls=3d\b/.test(location.search || ""); } catch (e) { return false; } }
 function caveWallsOn() { if (CAVE_WALLS.approved) return true; if (_caveWallsPrev === null) _caveWallsPrev = caveWallsPreview(); return _caveWallsPrev; }

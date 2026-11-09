@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09p` · branch `claude/start-game-project-HSh7Z` · the drawn rock walls back for everyone
+The owner: "I'm not big on these walls"; then "Switch back to the drawn rock for now".
+- The cave's walls are the drawn rock again for everyone (js/cavewalls.js `CAVE_WALLS.approved` off). The modelled walls stay on the preview (`?walls=3d`).
+- The rubble and the drilled hole, approved on their own, stay modelled. Checked on the drawn rock: the arena's rubble, the hole and the Sewers' piles.
+- Open: what was not liked about the modelled walls, and whether they come back reworked (`OPEN-QUESTIONS.md`).
+- Tests: cavewalls (the modelled walls off without the preview, on with it). Run: listed in the commit. Checked in the real page without the flag: the arena, the Cold Storage and the Nest in the drawn rock, the rubble and the hole on it, no page errors. Not playtested.
+
 ### Build `2026-11-09o` · branch `claude/start-game-project-HSh7Z` · each rock wall piece's lookup text kept
 The owner, on the optimization audit's first finding: "Cache the wall lookup text too".
 - A rock wall piece's lookup text (its two ends, which find its strip in the cave's sheet) is now made once, the first time the piece is drawn, and kept beside it (js/cavewalls.js `_caveWallKeyOf`).

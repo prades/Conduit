@@ -57,10 +57,13 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(/gl_FragColor\.rgb \*= vFade/.test(b), 'no fade to black'); ok(/if \(ice\)/.test(b) && /ConeGeometry/.test(b), 'no frost or icicles');
     });
 
-    group('APPROVED IN THE GAME (the owner, 2026-11-09: "Approve the walls for everyone"): the modelled rock for everyone; the drawn rock only as the fallback');
-    check('it is on for everyone, with or without the preview; the preview flag (?walls=3d) still reads, for the cave pieces that come next', () => {
-        same(J('CAVE_WALLS.approved'), true, 'not approved');
-        run('_caveWallsPrev = null; globalThis.location = { search: "" };'); same(J('caveWallsOn()'), true, 'off without the preview');
+    group('SWITCHED BACK (the owner, 2026-11-09: "I\'m not big on these walls", "Switch back to the drawn rock for now"; build 2026-11-09p): the drawn rock for everyone; the modelled walls on the preview (?walls=3d)');
+    check('the modelled walls are off for everyone (a piece draws the drawn rock), and on with the preview flag (?walls=3d)', () => {
+        same(J('CAVE_WALLS.approved'), false, 'still approved: the owner switched back to the drawn rock');
+        run('_caveWallsPrev = null; globalThis.location = { search: "" };'); same(J('caveWallsOn()'), false, 'on without the preview');
+        run('__sheets();'); same(J('(function(){ const it = __rocks()[10], P = __pen(), keep = ctx; ctx = P.g; try { return caveWallDraw(it); } finally { ctx = keep; } })()'), false, 'the modelled strip drawn without the preview (the drawn rock is not)');
+        run('_caveWallsPrev = null; for (const r in _caveImgs) delete _caveImgs[r];');
+        run('globalThis.location = { search: "?power=on&walls=3d" };'); same(J('caveWallsOn()'), true, 'off on the preview');
         run('globalThis.location = { search: "?power=on&walls=3d" };'); same(J('caveWallsPreview()'), true, 'the preview flag'); run('globalThis.location = { search: "?walls=3dx" };'); same(J('caveWallsPreview()'), false, 'another flag');
         same(J('/if \\(it\\.kind === "rock"\\) \\{ if \\(typeof caveWallDraw === "function" && caveWallDraw\\(it\\)\\) return; return _fpDrawRock\\(it, H\\); \\}/.test(' + JSON.stringify(rd('js/facilityplay.js')) + ')'), true, 'the wall draw does not fall back to the drawn rock');
     });
