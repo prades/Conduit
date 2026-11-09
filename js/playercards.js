@@ -38,8 +38,8 @@ function playerRoundHit(role, t, src) {
     if (k.status && typeof equipElementStatus === "function") equipElementStatus(src, t, k.el);
     if (k.pull > 0 && typeof applyKnockback === "function" && typeof player !== "undefined" && player && !(typeof vortexPullImmune === "function" && vortexPullImmune(t)))
         applyKnockback(t, { x: 2 * t.x - player.x, y: 2 * t.y - player.y }, k.pull);   // (a push away from the point beyond it: toward you)
-    if (k.seedfall && typeof elementEffects !== "undefined") {   // SEED GUNNER (BLOOM, build 2026-11-09a): every `every`th round that hits plants a small SEEDFALL where it hit
-        _pc.seedHits = (_pc.seedHits || 0) + 1;
+    if (k.seedfall && typeof elementEffects !== "undefined" && src !== _pc.seedSrc) {   // SEED GUNNER (BLOOM, build 2026-11-09a): every `every`th SHOT that hits plants a small SEEDFALL where it first hit
+        _pc.seedSrc = src; _pc.seedHits = (_pc.seedHits || 0) + 1;   // (a shot counts once, however many it hits: the laser's beam through a line of them shares one source)
         if (_pc.seedHits % k.seedfall.every === 0) {
             const S = k.seedfall, dmg = typeof weaponDamage === "function" ? weaponDamage() : 10, e = { type: "seedfall", x: t.x, y: t.y, radius: S.radius, life: S.frames, maxLife: S.frames, by: src, bite: dmg * S.bite, element: "blossom" };
             elementEffects.push(e); if (typeof seedfallBeat === "function") seedfallBeat(e);   // (the first seeds land as it opens, as THORNWHIP's)
@@ -191,8 +191,8 @@ function playerCloneElement(c) { if (!_pcMyClone(c)) return null; const r = play
 // killed takes nothing. True when a status was asked for.
 function playerCloneBit(c, t, dealt) {
     if (!t || !_pcMyClone(c)) return false;
-    const r = playerMutRole(), mend = !!(r && r.kit.biteMend);
-    if (mend && typeof elementMend === "function") elementMend(c, { any: true });   // HERBALIST (BLOOM, build 2026-11-09a): every bite MENDs
+    const r = playerMutRole(), mend = !!(r && r.kit.biteMend) && (dealt || 0) > 0;
+    if (mend && typeof elementMend === "function") elementMend(c, { any: true });   // HERBALIST (BLOOM, build 2026-11-09a): every bite that lands MENDs (as BLOOM's MEND: a hit that does damage)
     if (typeof equipElementStatus !== "function") return mend;
     const el = !r ? null : r.kit.splice ? c._pcSplice : r.kit.bite ? r.kit.el : null; if (!el) return mend;
     equipElementStatus(c, t, el, dealt || 0); return true;

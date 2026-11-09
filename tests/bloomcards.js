@@ -50,7 +50,7 @@ async function boot(search, store) {
         globalThis.__wear = (form, cards, x, y) => { const E = EVOLUTIONS[form]; spawnFollowerAtCrystal(E.element, E.role); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.role = E.role; f.evolved = form; f.element = E.element;
             initFollowerLevel(f, { level: 10 }); __at(f, x, y); const cs = (Array.isArray(cards) ? cards : [cards]).filter(Boolean); if (cs.length) { for (const c of cs) if (equipFound.indexOf(c) < 0) equipFound.push(c); f.cards = [cs[0], cs[1] || null]; equipRefresh(f); } f.health = f.maxHealth; return f; };
         // a follower at half health (the one a MEND finds: the most hurt), and the share of its maximum health a deed gave it
-        globalThis.__hurt = (form, x, y) => { const f = __wear(form, null, x, y); f.update = () => {}; f.health = f.maxHealth * 0.5; return f; };
+        globalThis.__hurt = (form, x, y) => { const f = __wear(form, null, x, y); f.update = () => {}; f.perk = null; f.health = f.maxHealth * 0.5; return f; };   // (no perk: SIPHON, js/traits.js, would heal it on its own hits)
         globalThis.__mend = (f, fn) => { const h = f.health; fn(); return Math.round((f.health - h) / f.maxHealth * 1e6) / 1e6; };
         globalThis.__clone = (x, y) => { const c = makeClone('ant', 'scout', __P[0] + x, __P[1] + y); c.health = c.maxHealth; return c; };
         globalThis.__foe = (species, x, y) => { const p = spawnCreature({ species, className: 'tank', x: __P[0] + x, y: __P[1] + y, level: 5, state: 'wander' }); p.fpCreature = true; p.homeRoom = 'arena'; p.spawnProtection = 0; p.health = p.maxHealth = 50000; p.element = null; p.reflectDamage = false; p.update = () => {}; return p; };
@@ -60,9 +60,9 @@ async function boot(search, store) {
         globalThis.__class = id => { invReset(); playerClassKey = null; classPerks = new Set(); weaponReset(); if (id) classSet(id); };
         globalThis.__role = (cls, ...ids) => { __clear(); __class(cls); equipReset(); for (const id of ids) if (id) equipFound.push(id); if (ids[0]) equipPlayerPut(0, ids[0]); playerAmmo = 99; technoCharge = 6; player.selectedElement = 'ice'; return equipPlayer.slice(); };
         globalThis.__dummy = (dx, dy) => { const p = spawnCreature({ species: 'ant', className: 'scout', level: 3, x: player.x + dx, y: player.y + dy, state: 'hunt' }); p.provoked = true; p.element = null; p.spawnProtection = 0; p.update = () => {}; p.health = p.maxHealth = 1e6; return p; };
-        // a follower of yours at half health that stays where it is put (level 10, and already lifted by the tutorial, whose director would bring a new one in at its level with its health full)
+        // a follower of yours at half health that stays where it is put (level 10, and already lifted by the tutorial, whose director would bring a new one in at its level with its health full; no perk)
         globalThis.__ally = (x, y) => { spawnFollowerAtCrystal('fire', 'brawler'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.update = () => {}; initFollowerLevel(f, { level: 10 });
-            if (_fp.tut && _fp.tut.script && _fp.tut.script.levelled) _fp.tut.script.levelled.add(f); f.x = x; f.y = y; f.health = f.maxHealth * 0.5; return f; };
+            if (_fp.tut && _fp.tut.script && _fp.tut.script.levelled) _fp.tut.script.levelled.add(f); f.perk = null; f.x = x; f.y = y; f.health = f.maxHealth * 0.5; return f; };   // (no perk: SIPHON would heal it when it hits)
         globalThis.__share = f => Math.round((f.health / f.maxHealth - 0.5) * 1e6) / 1e6;   // (what it gained since it was put at half health)
         globalThis.__frames = n => { for (let i = 0; i < n; i++) render(); };
         globalThis.__said = w => floatingTexts.some(t => t.text === w);
@@ -154,6 +154,12 @@ async function boot(search, store) {
         same(r.role.hits, 10, 'the rounds that hit'); same(r.role.at.join(), '5,10', 'the shots that planted one'); same(r.role.said, true, 'SEEDFALL said');
         same(r.role.first.join(), '0,1,120,0.2,blossom,true', 'the SEEDFALL (where, how big, how long, its bite, its element, yours)'); same(r.none.hits, 10, 'the rounds that hit with no role'); same(r.none.at.length, 0, 'a SEEDFALL with no role');
     });
+    await check('SEED GUNNER counts SHOTS that hit, not creatures: a shot that hits two (the laser\'s beam through a line shares one source) counts once, so the 5th such shot plants one, on the first it hit', () => {
+        const r = J(`(function(){ __role('gunslinger', 'seed_gunner'); _pc.seedHits = 0; _pc.seedSrc = null; const role = EQUIP_CARDS.seed_gunner, a = __dummy(2, 0), b = __dummy(2.6, 0), n = [];
+            for (let i = 0; i < 5; i++) { const s = { x: player.x, y: player.y, element: 'blossom', isPlayer: true }; playerRoundHit(role, a, s); playerRoundHit(role, b, s); n.push(elementEffects.filter(z => z.type === 'seedfall').length); }
+            const z = elementEffects.find(q => q.type === 'seedfall'), res = { n, at: z ? [z.x === a.x, z.y === a.y] : null, count: _pc.seedHits }; __gone(a, b); elementEffects.length = 0; return res; })()`);
+        same(r.n.join(), '0,0,0,0,1', 'SEEDFALLs after each of five shots, each hitting two'); same(r.count, 5, 'the shots counted'); same(String(r.at), 'true,true', 'where it was planted (the first it hit)');
+    });
     await check('SEED GUNNER\'s SEEDFALL is THORNWHIP\'s, smaller: on its beats an enemy in it is bitten and a hurt follower in it mended', () => {
         const r = J(`(function(){ __role('gunslinger', 'seed_gunner'); _pc.seedHits = 4; const e = __dummy(3, 0), f = __ally(e.x + 0.4, e.y + 0.3); __shoot(e); const z = elementEffects.find(q => q.type === 'seedfall'), h0 = e.health, m0 = __share(f);
             __frames(65); const res = { planted: !!z, bit: h0 - e.health, mended: Math.round((__share(f) - m0) * 1e6) / 1e6 }; __gone(e); elementEffects.length = 0; return res; })()`);
@@ -167,11 +173,12 @@ async function boot(search, store) {
             _fp.relays[R.id].online = false; return o; })()`);
         same(r.first.join(), '0.01,0', 'the first tick (3 tiles off: 2.5; 3.5)'); same(r.again, 0.01, 'at once again'); same(r.later, 0.02, '180 frames later'); same(r.down, 0.02, 'with the relay down'); same(r.off, 0.02, 'with the role off');
     });
-    await check('HERBALIST: every bite of your clone MENDs (the most hurt follower within 4 tiles of it heals 2%); the serum\'s pool heals 1.5 times as much (9% a beat, not 6%); with no role, a bite mends nothing and the pool heals as before', () => {
+    await check('HERBALIST: every bite of your clone that lands MENDs (the most hurt follower within 4 tiles of it heals 2%), one that dealt nothing does not; the serum\'s pool heals 1.5 times as much (9% a beat, not 6%); with no role, a bite mends nothing and the pool heals as before', () => {
         const r = J(`(function(){ const o = {}; const bite = role => { __role('mutator', role); const c = __mclone(), e = __byClone(c), f = __ally(c.x - 1, c.y + 0.5), h = e.health; c.bite(e); const res = [h - e.health > 0, __share(f)]; __gone(e, c); return res; };
             const pool = role => { __role('mutator', role); serumZones = []; const f = __ally(player.x - 1, player.y); serumSplash(player.x, player.y); serumTick(); const got = __share(f); serumZones = []; return got; };
-            o.herb = bite('herbalist'); o.none = bite(null); o.pool = [pool('herbalist'), pool(null)]; __role('mutator', 'herbalist'); o.mult = [playerSerumHealMult()]; equipPlayerPut(0, null); o.mult.push(playerSerumHealMult()); return o; })()`);
-        same(r.herb.join(), 'true,0.02', 'a bite with HERBALIST (it bit, the follower mended)'); same(r.none.join(), 'true,0', 'a bite with no role');
+            o.herb = bite('herbalist'); o.none = bite(null); o.pool = [pool('herbalist'), pool(null)]; __role('mutator', 'herbalist'); o.mult = [playerSerumHealMult()]; equipPlayerPut(0, null); o.mult.push(playerSerumHealMult());
+            __role('mutator', 'herbalist'); const c = __mclone(), e = __byClone(c), f = __ally(c.x - 1, c.y + 0.5); playerCloneBit(c, e, 0); o.nothing = __share(f); __gone(e, c); return o; })()`);
+        same(r.herb.join(), 'true,0.02', 'a bite with HERBALIST (it bit, the follower mended)'); same(r.none.join(), 'true,0', 'a bite with no role'); same(r.nothing, 0, 'a bite that dealt nothing');
         near(r.pool[0], 0.09, 1e-6, 'the pool\'s beat with HERBALIST'); near(r.pool[1], 0.06, 1e-6, 'the pool\'s beat with no role'); same(r.mult.join(), '1.5,1', 'the pool\'s multiple');
     });
     await check('the player\'s own strikes in a BLOOM role\'s element MEND nothing by themselves: GROVE ENGINEER\'s punch and arc, HERBALIST\'s lash, SEED GUNNER\'s rounds (what a role mends is what its kit says)', () => {

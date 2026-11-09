@@ -125,7 +125,7 @@ The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). The agent drafte
 | **Ice** | CRYO MARKSMAN: slower shots that slow; a charged shot freezes | CRYO TECH: enemies near powered relays are slowed | CRYO GENETICIST: fallen followers are preserved for free |
 | **Flux** | RIFT RUNNER: shots pull enemies toward you | GRAVITY ENGINEER: swap places with a squad member | SPLICER: the clone takes a trait from the last creature it killed |
 | **Core** | BREACH GUNNER: knockback rounds | BULWARK ENGINEER: the overcharge shields the squad | CORE SHAPER: the clone becomes a heavy tank |
-| **Bloom** (designed and approved 2026-11-09, built in build `2026-11-09a`; `CONVERSION.md` §2) | SEED GUNNER: every 5th hit plants a small seedfall | GROVE ENGINEER: online relays mend the squad near them | HERBALIST: the clone's bites mend; the serum's pool heals more |
+| **Bloom** (designed and approved 2026-11-09, built in build `2026-11-09a`; `CONVERSION.md` §2) | SEED GUNNER: every 5th shot that hits plants a small seedfall | GROVE ENGINEER: online relays mend the squad near them | HERBALIST: the clone's bites mend; the serum's pool heals more |
 
 With BLOOM, the seventh element, there are 21 roles. BLOOM's three were drafted by the agent and approved one by one (the owner, 2026-11-09: "SEED GUNNER: seedfall", "GROVE ENGINEER: relays (Recommended)", "HERBALIST: bites and pool (Recommended)").
 
@@ -202,9 +202,9 @@ With BLOOM, the seventh element, there are 21 roles. BLOOM's three were drafted 
 
 | Role | Theme | Kit |
 |---|---|---|
-| SEED GUNNER (Gunslinger) | every 5th hit plants a small seedfall | Every 5th round that hits, from any gun, plants a SEEDFALL where it hit: THORNWHIP's, 1 tile round for 2 s (120 frames); on its beats (every half second) the enemies in it are bitten 0.2 × the gun's damage and your hurt followers in it mended 1% of their health. The count is not saved. |
+| SEED GUNNER (Gunslinger) | every 5th shot that hits plants a small seedfall | Every 5th shot that hits, from any gun, plants a SEEDFALL where it first hit (a shot counts once, however many creatures it hits: the laser's beam through a line): THORNWHIP's, 1 tile round for 2 s (120 frames); on its beats (every half second) the enemies in it are bitten 0.2 × the gun's damage and your hurt followers in it mended 1% of their health. The count is not saved. |
 | GROVE ENGINEER (Technomancer) | online relays mend the squad near them | Every 3 s (180 frames), every online relay mends your followers within 3 tiles of its node 1% of their maximum health. |
-| HERBALIST (Mutator) | the clone's bites mend; the serum's pool heals more | Every bite of your clone MENDs: the most hurt of your followers within 4 tiles of it heals 2% of its maximum health (BLOOM's MEND). The serum's pool heals 50% more (9% a beat, not 6%). |
+| HERBALIST (Mutator) | the clone's bites mend; the serum's pool heals more | Every bite of your clone that lands MENDs: the most hurt of your followers within 4 tiles of it heals 2% of its maximum health (BLOOM's MEND; a bite that deals nothing mends nothing). The serum's pool heals 50% more (9% a beat, not 6%). |
 
 **The electric Technomancer's new name** (the planned class keeps STORMCALLER): **ARC WARDEN** (the owner, 2026-11-02; chosen from SURGE ENGINEER, LAMPLIGHTER and ARC WARDEN).
 
