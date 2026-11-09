@@ -779,15 +779,22 @@ const FORM_ULTIMATES = {
 // health (js/helpers.js applyDamage calls it). "The most hurt": the lowest share of its health left; the BLOOM follower itself counts, being one of yours (the agent's reading of the approved
 // words, confirmed by the owner 2026-11-08: "Your calls were correct"). A follower at full health is passed over; none hurt nearby, no heal.
 const ELEMENT_MEND = { radius: 4, share: 0.02 };
-function elementMend(src) {
-    if (!src || src.dead || src.element !== "blossom" || src.team !== "green" || typeof followers === "undefined") return 0;
+// BLOOM's Pack 1 picks (build 2026-11-09a): SAP VEIN and NECTAR HEART make each MEND of the one wearing them heal more, and DEWBURST gives each its chance to heal three times as much, with a burst of pink
+// dew (their numbers: bloomMendMult). `opts`: { any } a MEND from one that is not BLOOM (EVERBLOOM CROWN's extra, HERBALIST's clone), { mult } a MEND made bigger (DEWBURST set by ATTUNED CORE).
+function elementMend(src, opts) {
+    const any = !!(opts && opts.any);
+    if (!src || src.dead || (!any && src.element !== "blossom") || src.team !== "green" || typeof followers === "undefined") return 0;
     let best = null, low = 1;
     for (const a of followers) {
         if (!a || a.dead || a.team !== "green" || !(a.maxHealth > 0) || !(a.health < a.maxHealth)) continue;
         if (Math.hypot(a.x - src.x, a.y - src.y) > ELEMENT_MEND.radius) continue;
         const k = a.health / a.maxHealth; if (k < low) { low = k; best = a; }
     }
-    return best && typeof healUnit === "function" ? healUnit(best, best.maxHealth * ELEMENT_MEND.share, src) : 0;
+    if (!best || typeof healUnit !== "function") return 0;
+    let mult = (opts && opts.mult > 0) ? opts.mult : 1, dew = mult > 1;
+    if (!any && typeof bloomMendMult === "function") { const m = bloomMendMult(src); mult *= m.k; dew = dew || m.dew; }
+    if (dew && typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: best.x, y: best.y, color: "#ffd3e8", radius: 0.8, life: 18 });   // (DEWBURST: a burst of pink dew)
+    return healUnit(best, best.maxHealth * ELEMENT_MEND.share * mult, src);
 }
 function followerUltimate(a) { if (!a) return null; return (a.evolved && FORM_ULTIMATES[a.evolved]) || FOLLOWER_ULTIMATES[a.element] || null; }
 // FIRE A FOLLOWER'S ULTIMATE NOW (build 2026-11-07ss; the owner: "access to use them"): its squad card's ULTIMATE (js/party.js) and a double-tap on it (js/input.js) both come here. A bonded pair, both full

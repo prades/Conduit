@@ -85,6 +85,12 @@ const PACK1 = [
     ['bedrock_matrix', 'BEDROCK MATRIX', 'core', 'refined', { bonus: { damage: 0.10 } }, '+10% DAMAGE DEALT, ALL ATTACKS'],
     ['repulsor_pulse', 'REPULSOR PULSE', 'core', 'precision', { proc: { kind: 'knockback', chance: 0.15, push: 0.22 } }, '15% PER HIT TO KNOCK THE TARGET BACK'],
 ];
+// BLOOM's three (build 2026-11-09a; the owner's picks, 2026-11-09): in the registry, but dealt only once the purification module has run (js/cards.js equipBloomReady), so the dealing checks keep to PACK1
+const PACK1_BLOOM = [
+    ['sap_vein', 'SAP VEIN', 'blossom', 'unrefined', { bonus: { mend: 0.25 } }, '+25% TO WHAT ITS MEND HEALS'],
+    ['nectar_heart', 'NECTAR HEART', 'blossom', 'refined', { bonus: { mend: 0.50 } }, '+50% TO WHAT ITS MEND HEALS'],
+    ['dewburst', 'DEWBURST', 'blossom', 'precision', { proc: { kind: 'dewburst', chance: 0.15, mult: 3 } }, '15% PER HIT TO DEWBURST: ITS MEND HEALS 3 TIMES AS MUCH'],
+];
 const ELEMENTS = ['fire', 'toxic', 'electric', 'ice', 'flux', 'core'], RARITY3 = ['unrefined', 'refined', 'precision'];
 const st = (v, k) => Math.max(1, Math.round(v * k * 1000) / 1000);   // a stat a card moves: kept to three places, as js/levels.js makes it
 const restOf = (n, k) => Math.max(1, Math.round((n + 1) / k) - 1);   // the rest after an attack of n frames at attack speed x k (js/combat.js followerRest)
@@ -167,23 +173,29 @@ function measure(w, h, query, seed) {
 
     group('1. THE EIGHTEEN CARDS: the registry');
     await check('eighteen cards, the ELEMENT kind, three for each of the six elements (Unrefined, Refined, Precision), with the brief\'s names, elements, rarities, numbers and words', () => {
-        const cs = J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; })'); same(cs.length, 18, 'Pack 1\'s cards');
-        PACK1.forEach(([id, name, el, rarity, fx, text], i) => {
+        const cs = J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; })'); same(cs.length, 21, 'Pack 1\'s cards (the eighteen, and BLOOM\'s three since build 2026-11-09a)');
+        PACK1.concat(PACK1_BLOOM).forEach(([id, name, el, rarity, fx, text], i) => {
             const c = cs[i]; same(c.id, id, 'card ' + (i + 1) + '\'s id'); same(c.name, name, id + '\'s name'); same(c.kind, 'element', id + ' is of the element kind'); same(c.match, el, id + '\'s element'); same(c.rarity, rarity, id + '\'s rarity');
             sameJ(fx.bonus || null, c.bonus || null, id + '\'s bonus'); sameJ(fx.proc || null, c.proc || null, id + '\'s proc'); same(c.text, text, id + '\'s words'); same(Object.keys(c).sort().join(), (fx.bonus ? 'bonus,' : 'proc,').concat('id,kind,match,name,pack,rarity,text').split(',').sort().join(), id + ' has a field that is not the card shape plus its effect');
         });
-        for (const el of ELEMENTS) sameJ(cs.filter(c => c.match === el).map(c => c.rarity), RARITY3, el + '\'s three');
+        for (const el of ELEMENTS.concat(['blossom'])) sameJ(cs.filter(c => c.match === el).map(c => c.rarity), RARITY3, el + '\'s three');
     });
     await check('stable ids: unique, lower_snake_case, the same as the names\' words; no id is shared with another card (the Crystalline six, the test cards)', () => {
         const ids = J('Object.keys(EQUIP_CARDS)'); same(new Set(ids).size, ids.length, 'ids are unique'); ok(ids.every(i => /^[a-z]+(_[a-z]+)*$/.test(i)), 'an id is not lower_snake_case');
-        for (const [id, name] of PACK1) same(id, name.toLowerCase().replace(/ /g, '_'), id + ' is not its name');
+        for (const [id, name] of PACK1.concat(PACK1_BLOOM)) same(id, name.toLowerCase().replace(/ /g, '_'), id + ' is not its name');
         const names = J('Object.values(EQUIP_CARDS).map(function(c){ return c.name; })'); same(new Set(names).size, names.length, 'names are unique');
         same(J('Object.keys(EQUIP_TEST_CARDS).filter(function(i){ return i in EQUIP_CARDS; }).length'), 0, 'a test card shares an id');
     });
     await check('every card of Pack 1 is of an eligible kind and rarity (ELEMENT; Unrefined, Refined, Precision) and none is Prototype, Lustrous or Crystalline; the rarity names are the six, unchanged', () => {
         const cs = J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; })'); ok(cs.every(c => c.kind === 'element' && RARITY3.includes(c.rarity)), 'a card of Pack 1 is of another kind or rarity');
         same(J('EQUIP_RARITIES.map(function(r){ return r.label; })').join(), 'UNREFINED,REFINED,PRECISION,PROTOTYPE,LUSTROUS,CRYSTALLINE', 'the rarity names');
-        same(J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).map(function(c){ return equipRarityBars(c); })').join(), '1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3', 'the illuminated bars: one, two, three');
+        same(J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).map(function(c){ return equipRarityBars(c); })').join(), '1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3,1,2,3', 'the illuminated bars: one, two, three');
+    });
+    await check('BLOOM\'s three (build 2026-11-09a) are dealt only once the purification module is installed and has run: none in 3000 packs before, every one of them in 3000 after, at their rarities\' odds', () => {
+        const o = J(`(function(){ const Q = questState('purify'), keep = [Q.installedAt, Q.purifiedAt], bloom = ['sap_vein', 'nectar_heart', 'dewburst'], deal = () => { const seen = {}; for (let s = 1; s <= 3000; s++) for (const id of equipPackRoll(s)) seen[id] = (seen[id] || 0) + 1; return seen; };
+            Q.installedAt = 0; Q.purifiedAt = 0; const before = deal(), poolBefore = equipPackPool().length; Q.installedAt = 1; Q.purifiedAt = 2; const after = deal(), poolAfter = equipPackPool().length; Q.installedAt = keep[0]; Q.purifiedAt = keep[1];
+            return { before: bloom.map(i => before[i] || 0), after: bloom.map(i => after[i] || 0), pools: [poolBefore, poolAfter] }; })()`);
+        same(o.before.join(), '0,0,0', 'before the module has run'); ok(o.after.every(n => n > 100), 'after: ' + o.after); same(o.pools.join(), '18,21', 'the pool before and after');
     });
     await check('the numbers are in the registry only: the words on a card are made from them (changing a number changes the card\'s words, and nothing else holds a copy)', () => {
         const o = J(`(function(){ const c = EQUIP_CARDS.cinderbrand, was = c.text; c.proc.chance = 0.25; c.proc.dps = 5; c.proc.seconds = 2; const now = equipEffectText({ proc: c.proc }); c.proc.chance = 0.15; c.proc.dps = 3; c.proc.seconds = 3; return { was, now, back: equipEffectText({ proc: c.proc }) }; })()`);
@@ -503,7 +515,7 @@ function measure(w, h, query, seed) {
                 ok(/OPEN A PACK ◆100/.test(P.packBtn0), 'the button: ' + P.packBtn0); same(P.armed, 'TAP AGAIN TO OPEN', 'the first tap'); same(P.armedSpent, 0, 'the first tap spent shards'); same(P.revealArmed, false, 'the first tap opened the reveal'); same(P.spent, 100, 'the second tap\'s price');
                 same(P.found.length, 4, 'found'); same(P.owned, 0, 'a card was owned'); same(P.slabs.length, 4, 'the cards shown under the pack'); for (const s of P.slabs) { const c = PACK1.find(x => x[1] === s[0]); ok(c, s[0] + ' is not a card of Pack 1'); same(s[1], c[3].toUpperCase(), s[0] + '\'s rarity'); same(s[2], (1 + RARITY3.indexOf(c[3])) + '/6', s[0] + '\'s bars'); same(s[3], 'ELEMENT · ' + c[2].toUpperCase(), s[0] + '\'s element'); same(s[4], c[5], s[0] + '\'s words'); }
                 ok(P.slabs.some(s => s[1] === 'PRECISION'), 'no Precision in the pack shown'); same(P.shopSecs.join('|'), 'BOOSTER PACK|BOOSTER PACK · SERIES 2|MARKET', 'the SHOP after'); ok(/4 FOUND/.test(P.summary), 'the summary: ' + P.summary);
-                same(P.foundSecs.join('|'), 'THE COLLECTION', 'the CARDS menu after'); same(P.views, 'OWNED 4*|ALL 91', 'OWNED: the four found are the player\'s for this run');
+                same(P.foundSecs.join('|'), 'THE COLLECTION', 'the CARDS menu after'); same(P.views, 'OWNED 4*|ALL 100', 'OWNED: the four found are the player\'s for this run (ALL: the 100 real cards since build 2026-11-09a, BLOOM\'s nine among them)');
                 sameJ(P.foundMinis.map(m => m[0]).sort(), P.found.map(id => PACK1.find(x => x[0] === id)[1]).sort(), 'the rail in OWNED: the found cards'); same(P.foundMinis.every(m => m[1]), true, 'a found card on the rail not marked found');
             });
             await check('THE REVEAL (build l; the owner: "a new transparent menu pop up where the cards come up out of the pack one by one to fill the screen in a straight row with the rarest card ... illuminated from the back"): the pack\'s four cards in a row as dealt, each tagged NEW, the rarest lit from behind (every card of the pack\'s highest rarity, and no other), the pack, CONTINUE; not drawn again by the sheet\'s timer; Escape closes it and not the sheet; CONTINUE closes it too', () => {

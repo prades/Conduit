@@ -143,7 +143,7 @@ function measure(w, h, query, seed) {
 
 (async () => {
     const G = await boot('', {}), run = G.run, J = G.J;
-    const PACK1_IDS = J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1"; }).map(function(c){ return c.id; })');
+    const PACK1_IDS = J('Object.values(EQUIP_CARDS).filter(function(c){ return c.pack === "pack1" && equipBloomReady(c); }).map(function(c){ return c.id; })');   // (Pack 1's cards the shelf can deal now: BLOOM's three wait for the purification module, build 2026-11-09a)
 
     group('1. THE NUMBERS');
     await check('a card is worth 90 / 150 / 250 / 350 / 500 / 650 credits by rarity (Unrefined to Crystalline), a duplicate pays 25% of it, the shelf holds 6, a shelf lasts 5 minutes of play (18,000 frames at 60 a second); a shard buys the same number as a credit', () => {

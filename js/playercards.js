@@ -38,6 +38,14 @@ function playerRoundHit(role, t, src) {
     if (k.status && typeof equipElementStatus === "function") equipElementStatus(src, t, k.el);
     if (k.pull > 0 && typeof applyKnockback === "function" && typeof player !== "undefined" && player && !(typeof vortexPullImmune === "function" && vortexPullImmune(t)))
         applyKnockback(t, { x: 2 * t.x - player.x, y: 2 * t.y - player.y }, k.pull);   // (a push away from the point beyond it: toward you)
+    if (k.seedfall && typeof elementEffects !== "undefined") {   // SEED GUNNER (BLOOM, build 2026-11-09a): every `every`th round that hits plants a small SEEDFALL where it hit
+        _pc.seedHits = (_pc.seedHits || 0) + 1;
+        if (_pc.seedHits % k.seedfall.every === 0) {
+            const S = k.seedfall, dmg = typeof weaponDamage === "function" ? weaponDamage() : 10, e = { type: "seedfall", x: t.x, y: t.y, radius: S.radius, life: S.frames, maxLife: S.frames, by: src, bite: dmg * S.bite, element: "blossom" };
+            elementEffects.push(e); if (typeof seedfallBeat === "function") seedfallBeat(e);   // (the first seeds land as it opens, as THORNWHIP's)
+            if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: t.x, y: t.y, text: "SEEDFALL", color: "#ff9ccc", size: 10, life: 44, vy: -0.04 });
+        }
+    }
     return true;
 }
 // ARC SLINGER: the shot that hit `from` jumps on to the nearest other creature within the kit's reach of it, for its share of `dmg` (the shot's damage), the round's own kind of hit (Projectile, the role's element). `skip`:
@@ -83,6 +91,7 @@ function playerRepairShare() { const r = playerTechRole(); return r && r.kit.rep
 function playerRolesTick() {
     const r = playerTechRole();
     if (r && r.kit.relays) _pcRelays(r);
+    if (r && r.kit.grove) _pcGrove(r);
     if (r && r.kit.lamp) _pcWarden(r); else _pc.wardenAt = null;
     _pcCloneTick();   // CORE SHAPER's clone (below): its health and its pace follow the role, worn or not
 }
@@ -94,6 +103,18 @@ function _pcRelays(r) {
         if (!(typeof relayOnline === "function" && relayOnline(R.id))) continue;
         const s = facilityRelayAt(R.id); if (!s) continue;
         for (const a of foes) if (Math.hypot(a.x - s.x, a.y - s.y) <= k.radius) { equipElementStatus(s, a, r.kit.el); n++; }
+    }
+    return n;
+}
+// GROVE ENGINEER (BLOOM, build 2026-11-09a): every `every` frames, every ONLINE relay mends your followers within `radius` tiles of its node, `share` of their maximum health. How many it mended.
+function _pcGrove(r) {
+    const k = r.kit.grove, f0 = _pcFrame(); if (f0 < (_pc.groveAt || 0)) return 0; _pc.groveAt = f0 + k.every;
+    if (typeof _fp === "undefined" || !_fp || !_fp.F || typeof facilityRelayAt !== "function" || typeof healUnit !== "function" || typeof followers === "undefined") return 0;
+    let n = 0;
+    for (const R of (_fp.F.relays || [])) {
+        if (!(typeof relayOnline === "function" && relayOnline(R.id))) continue;
+        const s = facilityRelayAt(R.id); if (!s) continue;
+        for (const a of followers) if (a && !a.dead && a.team === "green" && a.maxHealth > 0 && a.health < a.maxHealth && Math.hypot(a.x - s.x, a.y - s.y) <= k.radius) { healUnit(a, a.maxHealth * k.share, null); n++; }
     }
     return n;
 }
@@ -169,10 +190,15 @@ function playerCloneElement(c) { if (!_pcMyClone(c)) return null; const r = play
 // THE CLONE'S BITE HAS LANDED on `t` (`dealt` of it): the status its role's kit sets (PLAGUE DOCTOR, SPARK GENETICIST, CORE SHAPER: the role's element's; SPLICER: its last kill's element's). A creature the bite
 // killed takes nothing. True when a status was asked for.
 function playerCloneBit(c, t, dealt) {
-    if (!t || !_pcMyClone(c) || typeof equipElementStatus !== "function") return false;
-    const r = playerMutRole(), el = !r ? null : r.kit.splice ? c._pcSplice : r.kit.bite ? r.kit.el : null; if (!el) return false;
+    if (!t || !_pcMyClone(c)) return false;
+    const r = playerMutRole(), mend = !!(r && r.kit.biteMend);
+    if (mend && typeof elementMend === "function") elementMend(c, { any: true });   // HERBALIST (BLOOM, build 2026-11-09a): every bite MENDs
+    if (typeof equipElementStatus !== "function") return mend;
+    const el = !r ? null : r.kit.splice ? c._pcSplice : r.kit.bite ? r.kit.el : null; if (!el) return mend;
     equipElementStatus(c, t, el, dealt || 0); return true;
 }
+// HERBALIST: what your serum's pool heals, as a multiple (1 without the role: js/serum.js)
+function playerSerumHealMult() { const r = playerMutRole(); return r && r.kit.poolHeal > 0 ? 1 + r.kit.poolHeal : 1; }
 // SPLICER: a creature has died (js/game.js, once a creature): if your clone killed it and it had an element, the clone's bites take that element from now on
 function playerCloneKill(a) {
     const c = a && a.lastAttacker; if (!_pcMyClone(c) || !a.element) return null;

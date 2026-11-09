@@ -40,7 +40,7 @@ const SIDEQUEST = {
     replyFrames: 480,   // how long his answer to the promise stays before the hint takes its place
     // HIS CARDS (the owner, 2026-11-02: "side quest should sell them after each quest for the quest lines elements"; approved with the following update's Part 1: "◆1,000 each, kept for good"): a quest line and its element.
     // The Sewers' line (js/quests.js "purify") is toxic: BLIGHT SHOOTER, SMOG ENGINEER and PLAGUE DOCTOR. A later quest line adds a row here (which elements they have is open).
-    stock: [{ quest: "purify", el: "toxic", after: "THE PURIFICATION" }],   // (after: what a refusal says it waits for)
+    stock: [{ quest: "purify", el: "toxic", after: "THE PURIFICATION" }, { quest: "purify", el: "blossom", after: "THE PURIFICATION" }],   // (after: what a refusal says it waits for; BLOOM's three since build 2026-11-09a, once the purification module has run: the same quest)
     cardPrice: 1000,       // shards a card (the owner: "◆1,000 each")
     cardCol: "#ffe733",    // the buttons' gold: a Player card's colour (js/cardsui.js _cdKindCol)
 };

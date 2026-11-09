@@ -55,7 +55,7 @@ function serumTick() {
     if (serumZones.length) {
         for (const z of serumZones) {
             if (f < z.next) continue; z.next = f + SERUM.splash.every;
-            for (const a of serumAllies(z)) { if (a.health >= a.maxHealth) { a._serumAt = f; continue; } if (typeof healUnit === "function") healUnit(a, a.maxHealth * SERUM.splash.pct, z); else a.health = Math.min(a.maxHealth, a.health + a.maxHealth * SERUM.splash.pct); a._serumAt = f; }
+            for (const a of serumAllies(z)) { if (a.health >= a.maxHealth) { a._serumAt = f; continue; } if (typeof healUnit === "function") healUnit(a, a.maxHealth * SERUM.splash.pct * (typeof playerSerumHealMult === "function" ? playerSerumHealMult() : 1), z); else a.health = Math.min(a.maxHealth, a.health + a.maxHealth * SERUM.splash.pct); a._serumAt = f; }
             if (typeof playerSerumBeat === "function") playerSerumBeat(z);   // ASH SURGEON, PLAGUE DOCTOR (Player cards: js/playercards.js): the creatures in the pool take the role's status on the beat
         }
         serumZones = serumZones.filter(z => f < z.until);

@@ -121,9 +121,9 @@ function page(w, h, query) {
 
     group('THE GUNSLINGER\'S SIX (their names, themes and kits approved: "Approve as drafted")');
     await check('six PLAYER cards for the Gunslinger, one per element, each PROTOTYPE and Series 2\'s: INCENDIARY GUNNER, BLIGHT SHOOTER, ARC SLINGER, CRYO MARKSMAN, RIFT RUNNER, BREACH GUNNER', () => {
-        const r = J(`EQUIP_PLAYER_CARDS.filter(row => row[2] === 'gunslinger').map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); })`);
+        const r = J(`EQUIP_PLAYER_CARDS.filter(row => row[2] === 'gunslinger' && row[3] !== 'blossom').map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); })`);
         same(r.length, 6, 'the Gunslinger\'s roles'); SIX.forEach(([id, name, el], i) => same(r[i], [id, name, 'player', 'gunslinger', el, 'prototype', 'series2'].join(), name));
-        same(J(`Object.values(EQUIP_CARDS).filter(c => c.kind === 'player').length`), 18, 'Player cards in the game (the Gunslinger\'s, the Technomancer\'s and the Mutator\'s six; the two test cards are behind ?cards)');
+        same(J(`Object.values(EQUIP_CARDS).filter(c => c.kind === 'player').length`), 21, 'Player cards in the game (the Gunslinger\'s, the Technomancer\'s and the Mutator\'s six, and BLOOM\'s three since build 2026-11-09a: tests/bloomcards.js; the two test cards are behind ?cards)');
     });
     await check('every number is one the game already has, or the approved new ones: the jump is the Technomancer arc\'s (2.6 tiles, 60%), the freeze the Frost Maw\'s stun (75 frames = 1.25 s), not again for 5 s (new), the guns 20% slower (new), the pull Pack 1\'s knockback (0.22) reversed; the statuses Pack 1\'s Precision cards\'', () => {
         const r = J(`({ jump: EQUIP_CARDS.arc_slinger.kit.jump, arc: [TECHNO.arc.chainRange, TECHNO.arc.chainPct], freeze: EQUIP_CARDS.cryo_marksman.kit.freeze, maw: MAW_STUN, slower: EQUIP_CARDS.cryo_marksman.kit.slower,
@@ -158,7 +158,7 @@ function page(w, h, query) {
         same(JSON.stringify(r.locked), '[null,0]', 'before the purification: a roll, or a Player card on the shelf');
         same(r.pool, 67, 'Series 2\'s pool (and the 4 card attacks since builds 2026-11-06q and r)'); same(r.poolPlayer, 18, 'Player cards in its pool'); same(r.dealt, 18, 'Player cards ever dealt in 2,000 packs'); ok(r.shelf > 0, 'no Player card on 300 shelves');
         same(r.why, 'FIND IT IN A PACK FIRST', 'an outright unlock'); same(r.whyFound, null, 'the unlock once found'); same(r.unlock, true, 'kept for good'); same(r.owned, true, 'owned'); same(r.shards, 4000, 'the shards after');
-        same(r.all, '18/18', 'every Player card in the hand with ?cards=all');
+        same(r.all, '21/21', 'every Player card in the hand with ?cards=all');
     });
 
     group('THE RULES: it needs its class; one role of a class at a time; it sleeps after a switch of class');
@@ -355,8 +355,8 @@ function page(w, h, query) {
     group('THE MUTATOR\'S SIX (Part 1c, build 2026-11-02j)');
     const MUT = [['ash_surgeon', 'ASH SURGEON', 'fire'], ['plague_doctor', 'PLAGUE DOCTOR', 'toxic'], ['spark_geneticist', 'SPARK GENETICIST', 'electric'], ['cryo_geneticist', 'CRYO GENETICIST', 'ice'], ['splicer', 'SPLICER', 'flux'], ['core_shaper', 'CORE SHAPER', 'core']];
     await check('six PLAYER cards for the Mutator, one per element, PROTOTYPE and Series 2\'s; their numbers are the game\'s own (CORE SHAPER\'s +50% health is two ranks of ARMOR PLATING; its 20% slower is new, approved); their words made from them', () => {
-        const r = J(`({ rows: EQUIP_PLAYER_CARDS.slice(12).map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); }), texts: EQUIP_PLAYER_CARDS.slice(12).map(row => EQUIP_CARDS[row[0]].text),
-            tank: EQUIP_CARDS.core_shaper.kit.tank, armor: CLONE_UPGRADES.armor.stat.health.mul, kinds: EQUIP_PLAYER_CARDS.slice(12).map(row => equipKindLabel(EQUIP_CARDS[row[0]])) })`);
+        const r = J(`({ rows: EQUIP_PLAYER_CARDS.slice(12, 18).map(row => { const c = EQUIP_CARDS[row[0]]; return [c.id, c.name, c.kind, c.match, c.kit.el, c.rarity, c.pack].join(); }), texts: EQUIP_PLAYER_CARDS.slice(12, 18).map(row => EQUIP_CARDS[row[0]].text),
+            tank: EQUIP_CARDS.core_shaper.kit.tank, armor: CLONE_UPGRADES.armor.stat.health.mul, kinds: EQUIP_PLAYER_CARDS.slice(12, 18).map(row => equipKindLabel(EQUIP_CARDS[row[0]])) })`);
         same(r.rows.length, 6, 'the roles'); MUT.forEach(([id, name, el], i) => same(r.rows[i], [id, name, 'player', 'mutator', el, 'prototype', 'series2'].join(), name));
         same(r.tank.health, r.armor * 2, 'CORE SHAPER\'s health against two ranks of ARMOR'); same(r.tank.slower, 0.2, 'its pace');
         same(r.texts[0], "YOUR LASH AND YOUR CLONE'S BITES ARE FIRE · ENEMIES IN YOUR SERUM'S POOL, ON EVERY HEAL BEAT, TO BURN: 3 DAMAGE A SECOND FOR 3 SECONDS", 'ASH SURGEON');

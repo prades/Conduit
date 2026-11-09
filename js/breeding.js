@@ -46,7 +46,16 @@ function breedCan(f) {
     return { ok: true, partner: p };
 }
 // the offspring's element: one of its two parents' current elements, an even toss (below 0.5 the first's, else the second's; a parent with none gives the other's)
-function breedElement(a, b, draw) { const ea = (a && a.element) || null, eb = (b && b.element) || null; return draw() < 0.5 ? ea || eb : eb || ea; }
+// BLOOM (build 2026-11-09a; docs/CONVERSION.md §2, "Breeding, once conversion exists"; the owner, 2026-11-09: "Build it"): a TOXIC + FIRE pair, once the purification module is installed and its cycle has
+// run (js/conversion.js convertReady: the module took the conversion apparatus's place), is BLOOM BREED_BLOOM of the time and each parent's element a quarter: the one draw, under BREED_BLOOM BLOOM, else
+// the even toss over the rest of its range. Never before the module has run. (A BLOOM offspring's class is the usual even draw: all three classes have a BLOOM form since build 2026-11-08m.)
+const BREED_BLOOM = 0.5;
+function breedElement(a, b, draw) {
+    const ea = (a && a.element) || null, eb = (b && b.element) || null, d = draw();
+    if (((ea === "toxic" && eb === "fire") || (ea === "fire" && eb === "toxic")) && typeof convertReady === "function" && convertReady())
+        return d < BREED_BLOOM ? "blossom" : (d - BREED_BLOOM) / (1 - BREED_BLOOM) < 0.5 ? ea : eb;
+    return d < 0.5 ? ea || eb : eb || ea;
+}
 // the offspring's class: one of the three (brawler, sniper = MAGE, camper = TECHNICIAN), an even draw; the parents' classes play no part
 function breedClass(draw) {
     const cs = typeof FOLLOWER_TYPE_ORDER !== "undefined" && FOLLOWER_TYPE_ORDER.length ? FOLLOWER_TYPE_ORDER : ["brawler", "sniper", "camper"];

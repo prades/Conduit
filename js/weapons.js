@@ -104,7 +104,8 @@ function fireLaserShot(foe) {
     const role = typeof playerGunRole === "function" ? playerGunRole() : null;
     const dmg = weaponDamage("laser"), src = { x: player.x, y: player.y, element: role ? role.kit.el : (player.selectedElement || null), isPlayer: true }, f = typeof frame !== "undefined" ? frame : 0;
     const ux = (foe.x - player.x) / (d || 1), uy = (foe.y - player.y) / (d || 1), far = Math.min(W.range, d + 3);
-    const reach = _fp && _fp.F && typeof facilityShotReach === "function" ? facilityShotReach(player.x, player.y, player.x + ux * far, player.y + uy * far, _fp.F) : far;   // (as far as the beam gets: a wall or cover stops it, the shooter's own cover excepted)
+    const reach = Math.min(_fp && _fp.F && typeof facilityShotReach === "function" ? facilityShotReach(player.x, player.y, player.x + ux * far, player.y + uy * far, _fp.F) : far,
+                           typeof techReefShotReach === "function" ? techReefShotReach(player.x, player.y, player.x + ux * far, player.y + uy * far) : far);   // (REEF's rock stops it too, as a crate: js/techabilities.js)   // (as far as the beam gets: a wall or cover stops it, the shooter's own cover excepted)
     const hits = reach >= d - 0.3;   // (the target itself, unless the beam stops short of it)
     if (hits) { applyDamage(foe, dmg, src, null, false, false, DMG_HIT_GUN); if (role) playerRoundHit(role, foe, src); }
     // whatever stands in the line behind it, a little further on, is hit for less

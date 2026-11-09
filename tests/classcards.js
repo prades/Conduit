@@ -23,6 +23,7 @@ const CUT = ['knuckle_wraps', 'iron_guard', 'haymaker_gauntlet', 'cleaver_arm', 
 const AURAS = [   // the approved names (UNIVERSAL-AND-PLAYER-CARDS.md, "The 21 new cards' names"): element, Refined, Precision, Prototype
     ['fire', 'KINDLING BAND', 'HEARTH SIGIL', 'INFERNO CROWN'], ['toxic', 'SPORE BAND', 'MIASMA SIGIL', 'PESTILENCE CROWN'], ['electric', 'IONIC BAND', 'VOLTAIC SIGIL', 'TEMPEST CROWN'],
     ['ice', 'CHILL BAND', 'GLACIAL SIGIL', 'WINTER CROWN'], ['flux', 'PHASE BAND', 'WARP SIGIL', 'ECLIPSE CROWN'], ['core', 'LODESTONE BAND', 'KEYSTONE SIGIL', 'MONOLITH CROWN'],
+    ['blossom', 'THORN BAND', 'PETAL SIGIL', 'EVERBLOOM CROWN'],   // (BLOOM's, build 2026-11-09a: the owner, "Approve as drafted"; its Prototype extra a MEND)
 ];
 
 async function boot(search, store) {
@@ -55,7 +56,7 @@ async function boot(search, store) {
     group('THE 21 NEW CARDS (their names approved: "Approve all 21")');
     check('18 Mage auras: six elements × Refined +5%, Precision +7.5%, Prototype +10% ATK; each a CLASS card for Mages that names its element; only the Prototype adds the element\'s status, at 10% (the owner raised the first guess of 5%); all dealt by Series 2', () => {
         const rows = J(`EQUIP_AURAS.map(r => { const c = EQUIP_CARDS[r[0]]; return [c.name, c.kind, c.match, c.aura.el, c.rarity, c.aura.attack, c.aura.status || 0, c.pack]; })`);
-        same(rows.length, 18, 'the auras');
+        same(rows.length, 21, 'the auras (seven elements since build 2026-11-09a)');
         AURAS.forEach(([el, a, b, p], i) => {
             same(rows[3 * i].join(), [a, 'class', 'sniper', el, 'refined', 0.05, 0, 'series2'].join(), el + ' Refined');
             same(rows[3 * i + 1].join(), [b, 'class', 'sniper', el, 'precision', 0.075, 0, 'series2'].join(), el + ' Precision');
@@ -87,7 +88,7 @@ async function boot(search, store) {
     });
     check('no card is of the Universal kind, the test cards included; the two that were are PLAYER cards now (test_player_a, test_player_b), beside the Gunslinger\'s six roles (build 2026-11-02h) and the Technomancer\'s six (build 2026-11-02i)', () => {
         const B = J(`(function(){ equipDevSet('on'); const r = Object.values(equipCards()).map(c => c.id + ':' + c.kind); equipDevSet(''); return r; })()`);
-        same(B.filter(x => /:universal$/.test(x)).length, 0, 'a Universal card'); same(B.filter(x => /:player$/.test(x)).join(), 'incendiary_gunner:player,blight_shooter:player,arc_slinger:player,cryo_marksman:player,rift_runner:player,breach_gunner:player,forgemaster:player,smog_engineer:player,arc_warden:player,cryo_tech:player,gravity_engineer:player,bulwark_engineer:player,ash_surgeon:player,plague_doctor:player,spark_geneticist:player,cryo_geneticist:player,splicer:player,core_shaper:player,test_player_a:player,test_player_b:player', 'the Player cards');
+        same(B.filter(x => /:universal$/.test(x)).length, 0, 'a Universal card'); same(B.filter(x => /:player$/.test(x)).join(), 'incendiary_gunner:player,blight_shooter:player,arc_slinger:player,cryo_marksman:player,rift_runner:player,breach_gunner:player,forgemaster:player,smog_engineer:player,arc_warden:player,cryo_tech:player,gravity_engineer:player,bulwark_engineer:player,ash_surgeon:player,plague_doctor:player,spark_geneticist:player,cryo_geneticist:player,splicer:player,core_shaper:player,seed_gunner:player,grove_engineer:player,herbalist:player,test_player_a:player,test_player_b:player', 'the Player cards');
     });
 
     group('WHO WEARS WHAT');

@@ -121,6 +121,18 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
         same(r.el.join(), 'fire,fire,ice,ice,ice,fire', 'the element'); same(r.cl.join(), 'brawler,brawler,sniper,sniper,camper,camper,camper,brawler,brawler', 'the class'); same(r.order.join(), 'brawler,sniper,camper', 'the three'); same(r.gone.join(), 'undefined,undefined', 'the lead\'s rule');
         ok(/breedElement\(f, p, draw\)/.test(rd('js/breeding.js')) && /breedClass\(draw\)/.test(rd('js/breeding.js')) && /breedBase\(own, breedParentBase\(f\), breedParentBase\(p\), draw\)/.test(rd('js/breeding.js')), 'one source for every draw in breedMake');
     });
+    check('BLOOM (build 2026-11-09a, the owner: "Build it"): a toxic + fire pair, once the purification module is installed and has run, is BLOOM half the draws and each parent\'s element a quarter; before the module has run, never; another pair, never', () => {
+        const r = J(`(function(){ const T = { element: 'toxic' }, F = { element: 'fire' }, I = { element: 'ice' }, k = v => () => v, Q = questState('purify'), keep = [Q.installedAt, Q.purifiedAt];
+            Q.installedAt = 0; Q.purifiedAt = 0; const before = [0, 0.3, 0.6, 0.9].map(v => breedElement(T, F, k(v)));
+            Q.installedAt = 1; Q.purifiedAt = 0; const running = [0, 0.3].map(v => breedElement(T, F, k(v)));
+            Q.installedAt = 1; Q.purifiedAt = 2; const after = [0, 0.4999, 0.5, 0.7499, 0.75, 0.9999].map(v => breedElement(T, F, k(v))), flip = [0.1, 0.6, 0.9].map(v => breedElement(F, T, k(v))), other = [0.1, 0.9].map(v => breedElement(T, I, k(v)));
+            let t = 5, n = { blossom: 0, toxic: 0, fire: 0 }; const rnd = () => { t = (t + 0x6D2B79F5) >>> 0; let x = Math.imul(t ^ (t >>> 15), 1 | t); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+            for (let i = 0; i < 1000; i++) n[breedElement(i % 2 ? T : F, i % 2 ? F : T, rnd)]++;
+            Q.installedAt = keep[0]; Q.purifiedAt = keep[1]; return { before, running, after, flip, other, n }; })()`);
+        same(r.before.join(), 'toxic,toxic,fire,fire', 'before the module is in'); same(r.running.join(), 'toxic,toxic', 'while its cycle has not run');
+        same(r.after.join(), 'blossom,blossom,toxic,toxic,fire,fire', 'once it has run'); same(r.flip.join(), 'blossom,fire,toxic', 'fire + toxic'); same(r.other.join(), 'toxic,ice', 'toxic + ice');
+        ok(r.n.blossom >= 450 && r.n.blossom <= 550, 'BLOOM ' + r.n.blossom + ' of 1000'); ok(r.n.toxic >= 200 && r.n.toxic <= 300, 'toxic ' + r.n.toxic); ok(r.n.fire >= 200 && r.n.fire <= 300, 'fire ' + r.n.fire);
+    });
     check('over 600 offspring of a fire Brawler and an ice MAGE (a seeded draw, the parent in view taking turns): about half fire and half ice and no other element; about a third of each class, its role the class drawn; the same seed gives the same elements and classes in the same order (seedable for tests); each paid ◆50', () => {
         const r = J(`(function(){ __clearF(); shardCount = 0; const a = __rec('fire', 'brawler'), b = __rec('ice', 'sniper'); __bond(a, b);
             const seeded = seed => { let t = seed >>> 0; return () => { t = (t + 0x6D2B79F5) >>> 0; let x = Math.imul(t ^ (t >>> 15), 1 | t); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; };   /* (mulberry32) */

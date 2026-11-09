@@ -1175,7 +1175,7 @@ function render() {
         // A SHOT THAT TRAVELS STOPS AT A WALL OR AT COVER, either side's (Milestone Two; the owner, 2026-11-06: "Walls stop shots", cover "Stops shots", "Shoot over own cover"): a small spark where it
         // stops; one that lands where it ends (HEXFIRE) lands on its own side of what stopped it. A lob (an arc) flies over everything, as before.
         if (!p.arcData && !p.noHitDetect && typeof facilityShotStopAt === "function") {
-            const st = facilityShotStopAt(p.x - p.vx, p.y - p.vy, p.x, p.y, p.ox, p.oy);
+            const st = facilityShotStopAt(p.x - p.vx, p.y - p.vy, p.x, p.y, p.ox, p.oy) || (typeof techReefShotStop === "function" ? techReefShotStop(p.x - p.vx, p.y - p.vy, p.x, p.y, p.ox, p.oy) : null);   // (and at REEF's rock and crystal, as at a crate: js/techabilities.js)
             if (st) {
                 p.x -= p.vx; p.y -= p.vy;
                 if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: st.x, y: st.y, color: p.color || "#ffffff", radius: 0.35, life: 12 });

@@ -86,9 +86,14 @@ const EQUIP_PACK1 = [
     ["impact_studs",       "IMPACT STUDS",       "core",     "unrefined", { bonus: { damage: 0.05 } }],
     ["bedrock_matrix",     "BEDROCK MATRIX",     "core",     "refined",   { bonus: { damage: 0.10 } }],
     ["repulsor_pulse",     "REPULSOR PULSE",     "core",     "precision", { proc: { kind: "knockback", chance: 0.15, push: 0.22 } }],
+    // BLOOM (build 2026-11-09a; the owner, 2026-11-09: "MEND's heal", "DEWBURST: big MEND"; docs/CONVERSION.md §2): they fit only a BLOOM follower, whose every hit MENDs (js/elements.js elementMend), and are
+    // dealt only once the purification module has run (equipBloomReady). SAP VEIN and NECTAR HEART make each MEND heal more; DEWBURST gives each MEND its chance to heal `mult` times as much.
+    ["sap_vein",           "SAP VEIN",           "blossom",  "unrefined", { bonus: { mend: 0.25 } }],
+    ["nectar_heart",       "NECTAR HEART",       "blossom",  "refined",   { bonus: { mend: 0.50 } }],
+    ["dewburst",           "DEWBURST",           "blossom",  "precision", { proc: { kind: "dewburst", chance: 0.15, mult: 3 } }],
 ];
 const EQUIP_FPS = 60;   // the game's frames in a second (every timer in it is in frames: a 3 second burn is 180)
-const _EQUIP_STAT_WORDS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", attackSpeed: "ATTACK SPEED", defense: "DEFENSE", maxHealth: "MAXIMUM HP", damage: "DAMAGE DEALT, ALL ATTACKS", cooldown: "ABILITY COOLDOWN" };
+const _EQUIP_STAT_WORDS = { attack: "ATTACK", specialAttack: "SPECIAL ATTACK", attackSpeed: "ATTACK SPEED", defense: "DEFENSE", maxHealth: "MAXIMUM HP", damage: "DAMAGE DEALT, ALL ATTACKS", cooldown: "ABILITY COOLDOWN", mend: "TO WHAT ITS MEND HEALS" };
 const _equipPct = n => (Math.round(n * 1000) / 10) + "%", _equipSec = n => (Math.round(n * 10) / 10) + (n === 1 ? " SECOND" : " SECONDS");
 // a status in words, from its numbers: what follows "15% PER HIT TO " on a Pack 1 card (and "EVERY HIT TO " on a Player card); "" for a kind it does not know
 function _equipStatusText(p) {
@@ -99,6 +104,7 @@ function _equipStatusText(p) {
     if (p.kind === "slow") return "SLOW BY " + _equipPct(p.cut) + " FOR " + _equipSec(p.seconds);
     if (p.kind === "siphon") return "HEAL " + _equipPct(p.share) + " OF THE DAMAGE DEALT";
     if (p.kind === "knockback") return "KNOCK THE TARGET BACK";
+    if (p.kind === "dewburst") return "DEWBURST: ITS MEND HEALS " + p.mult + " TIMES AS MUCH";
     return "";
 }
 // what a card says, made from its numbers (so that tuning a number tunes the words)
@@ -107,7 +113,7 @@ function equipEffectText(fx) {
     if (fx && fx.ability) return equipAbilityText(fx.ability);
     if (fx && fx.attack) return equipAttackText(fx.attack);
     if (fx && fx.aura) {   // a Mage's aura: its ATK, its reach, and at Prototype its element's status (named by the Pack 1 card whose numbers it uses)
-        const a = fx.aura, tpl = EQUIP_CARDS[_EQUIP_ATTUNED[a.el]], st = tpl && tpl.proc ? _EQUIP_STATUS_WORDS[tpl.proc.kind] : "";
+        const a = fx.aura, st = _equipAuraExtraWord(a.el);
         return "AURA: +" + _equipPct(a.attack) + " ATTACK TO EVERY FOLLOWER WITHIN " + EQUIP_AURA.reach + " TILES IN ITS ROOM, AND THE CLONE" + (a.status > 0 && st ? " · EACH OF THEIR HITS: " + _equipPct(a.status) + " TO " + st : "");
     }
     if (fx && fx.opportunity) return "OPPORTUNITY: +" + _equipPct(fx.opportunity) + " ON A HIT FOR EACH WEAKNESS IT EXPLOITS: AN ELEMENT MATCH-UP, A RACE WEAK TO ITS TYPE, A RACE WEAK TO ELEMENTAL, A STUNNED OR SLEEPING TARGET";
@@ -118,8 +124,10 @@ function equipEffectText(fx) {
 }
 EQUIP_PACK1.forEach(([id, name, element, rarity, fx]) => { EQUIP_CARDS[id] = Object.assign({ id, name, kind: "element", match: element, rarity, text: equipEffectText(fx), pack: "pack1" }, fx); });
 // EACH ELEMENT'S OWN STATUS: the one Pack 1's Precision card of that element sets, with its numbers (fire burns, toxic poisons, electric glitches, ice slows, flux siphons, core knocks back). ATTUNED CORE (Series 2) and the Prototype Mage auras set it.
-const _EQUIP_ATTUNED = { fire: "cinderbrand", toxic: "mireblight", electric: "static_lock", ice: "rime_snare", flux: "siphon_field", core: "repulsor_pulse" };
-const _EQUIP_STATUS_WORDS = { burn: "BURN", poison: "POISON", glitch: "GLITCH", slow: "SLOW", siphon: "SIPHON", knockback: "KNOCK BACK" };
+const _EQUIP_ATTUNED = { fire: "cinderbrand", toxic: "mireblight", electric: "static_lock", ice: "rime_snare", flux: "siphon_field", core: "repulsor_pulse", blossom: "dewburst" };   // (BLOOM's: DEWBURST, a MEND three times as big: the owner, 2026-11-09)
+const _EQUIP_STATUS_WORDS = { burn: "BURN", poison: "POISON", glitch: "GLITCH", slow: "SLOW", siphon: "SIPHON", knockback: "KNOCK BACK", dewburst: "DEWBURST" };
+// BLOOM'S AURA (EVERBLOOM CROWN) sets no status: its extra is a MEND from the follower that hit (decided 2026-11-02, "its Prototype extra is MEND"; approved as drafted, 2026-11-09)
+function _equipAuraExtraWord(el) { if (el === "blossom") return "MEND"; const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[el]]; return tpl && tpl.proc ? _EQUIP_STATUS_WORDS[tpl.proc.kind] : ""; }
 // SERIES 2 (ASKED, the "Series 2" brief, 2026-10-31): two categories of card, SPECIES CARDS (the game's `subclass` kind: Jelly, Mollusk, Elemental, Spine-legged (it was Crustacean) or Drone, a tag every evolved form has: EQUIP_FORM_SUBCLASS) and CLASS CARDS
 // (the `class` kind: Brawler, Mage or Technician), no hybrid identities, over the six rarities. THE LIST IS NOT HERE YET: the archive that holds it could not be read this session (docs/OPEN-QUESTIONS.md), and no card is invented in its
 // place. A Series 2 card is a row of this table, in the shape of Pack 1's rows with its kind and its match: [id, name, kind ("subclass" | "class"), match (a subclass id | brawler | sniper | camper), rarity, fx]; a row added here is dealt by
@@ -214,6 +222,10 @@ const EQUIP_AURAS = [
     ["lodestone_band",   "LODESTONE BAND",   "core",     "refined",   { aura: { attack: 0.05 } }],
     ["keystone_sigil",   "KEYSTONE SIGIL",   "core",     "precision", { aura: { attack: 0.075 } }],
     ["monolith_crown",   "MONOLITH CROWN",   "core",     "prototype", { aura: { attack: 0.10, status: 0.10 } }],
+    // BLOOM's (build 2026-11-09a; the owner, 2026-11-09: "Approve as drafted"): its Prototype extra a MEND, not a status (_equipAuraExtraWord, equipOnHit); dealt only once the purification module has run
+    ["thorn_band",       "THORN BAND",       "blossom",  "refined",   { aura: { attack: 0.05 } }],
+    ["petal_sigil",      "PETAL SIGIL",      "blossom",  "precision", { aura: { attack: 0.075 } }],
+    ["everbloom_crown",  "EVERBLOOM CROWN",  "blossom",  "prototype", { aura: { attack: 0.10, status: 0.10 } }],
 ];
 const EQUIP_OPPORTUNITY = [
     ["pressure_spur",    "PRESSURE SPUR",    "refined",   { opportunity: 0.20 }],
@@ -268,6 +280,14 @@ const EQUIP_PLAYER_CARDS = [
     ["cryo_geneticist",   "CRYO GENETICIST",   "mutator",      "ice",      { freeRevive: true, preserve: true }],
     ["splicer",           "SPLICER",           "mutator",      "flux",     { splice: true }],
     ["core_shaper",       "CORE SHAPER",       "mutator",      "core",     { bite: true, tank: { health: 0.5, slower: 0.2 } }],
+    // BLOOM'S THREE (build 2026-11-09a; the owner, 2026-11-09, of drafts: "SEED GUNNER: seedfall", "GROVE ENGINEER: relays", "HERBALIST: bites and pool"; dealt and sold only once the purification module has run).
+    // BLOOM is ×1 against everything, so their worth is their kit (js/playercards.js): the numbers are the agent's, provisional.
+    //   seedfall  { every, radius, frames, bite }: every `every`th round that hits plants a small SEEDFALL where it hit (THORNWHIP's: js/evolution.js seedfallBeat), `radius` tiles round for `frames`, its bite `bite` × the gun's damage
+    //   grove     { radius, share, every }: every ONLINE relay mends your followers within `radius` tiles of it, `share` of their maximum health, every `every` frames
+    //   biteMend  true: every bite of your clone MENDs (BLOOM's MEND: the most hurt of your followers within 4 tiles of it);  poolHeal: your serum's pool heals that share more (js/serum.js)
+    ["seed_gunner",       "SEED GUNNER",       "gunslinger",   "blossom",  { seedfall: { every: 5, radius: 1, frames: 120, bite: 0.2 } }],
+    ["grove_engineer",    "GROVE ENGINEER",    "technomancer", "blossom",  { grove: { radius: 3, share: 0.01, every: 180 } }],
+    ["herbalist",         "HERBALIST",         "mutator",      "blossom",  { biteMend: true, poolHeal: 0.5 }],
 ];
 // what a role does, in the card's words, made from its kit's numbers
 const _EQUIP_KIT_HITS = { gunslinger: ["YOUR ROUNDS ARE ", "EACH SHOT"], technomancer: ["YOUR PUNCH AND ARC ARE ", "EACH ARC"], mutator: ["YOUR LASH AND YOUR CLONE'S BITES ARE ", "EVERY BITE OF YOUR CLONE"] };   // (whose hits a class's role works on: rule 1)
@@ -291,6 +311,10 @@ function equipPlayerKitText(cls, k) {
     if (k.preserve) out.push("IF YOUR CLONE FALLS, IT IS PRESERVED AT ONCE (NO ICE MAGE), ITS UPGRADES KEPT");
     if (k.splice) out.push("YOUR CLONE'S BITES TAKE THE ELEMENT OF THE LAST ENEMY IT KILLED, AND THAT ELEMENT'S STATUS, UNTIL ITS NEXT KILL");
     if (k.tank) out.push("YOUR CLONE HAS " + _equipPct(k.tank.health) + " MORE HEALTH AND MOVES " + _equipPct(k.tank.slower) + " SLOWER");
+    if (k.seedfall) out.push("EVERY " + k.seedfall.every + "TH SHOT THAT HITS PLANTS A SMALL SEEDFALL WHERE IT HITS, " + k.seedfall.radius + " TILE ROUND FOR " + sec2(k.seedfall.frames / EQUIP_FPS) + ": ENEMIES IN IT BITTEN, YOUR FOLLOWERS IN IT MENDED");
+    if (k.grove) out.push("EVERY ONLINE RELAY MENDS YOUR FOLLOWERS WITHIN " + k.grove.radius + " TILES OF IT " + _equipPct(k.grove.share) + " OF THEIR HEALTH EVERY " + sec2(k.grove.every / EQUIP_FPS));
+    if (k.biteMend) out.push(h[1] + " MENDS: THE MOST HURT FOLLOWER WITHIN 4 TILES OF IT HEALS");
+    if (k.poolHeal > 0) out.push("YOUR SERUM'S POOL HEALS " + _equipPct(k.poolHeal) + " MORE");
     return out.join(" · ");
 }
 EQUIP_PLAYER_CARDS.forEach(([id, name, cls, el, kit]) => { const k = Object.assign({ el }, kit); EQUIP_CARDS[id] = { id, name, kind: "player", match: cls, rarity: "prototype", pack: "series2", kit: k, text: equipPlayerKitText(cls, k) }; });
@@ -299,7 +323,7 @@ EQUIP_PLAYER_CARDS.forEach(([id, name, cls, el, kit]) => { const k = Object.assi
 // lists. The CARDS screen keeps the full text. The words are the agent's (provisional).
 const EQUIP_SHORT = { max: 30 };
 const _EQUIP_SHORT_STAT = { attack: "ATTACK", specialAttack: "SP. ATTACK", attackSpeed: "ATTACK SPEED", defense: "DEFENSE", maxHealth: "MAX HP", damage: "DAMAGE", cooldown: "COOLDOWN" };
-const _EQUIP_STATUS_VERBS = { burn: "BURNS", poison: "POISONS", glitch: "GLITCHES", slow: "SLOWS", siphon: "SIPHONS", knockback: "KNOCKS BACK" };
+const _EQUIP_STATUS_VERBS = { burn: "BURNS", poison: "POISONS", glitch: "GLITCHES", slow: "SLOWS", siphon: "SIPHONS", knockback: "KNOCKS BACK", dewburst: "DEWBURSTS" };
 function equipShortText(c) {
     const t = c && c.text || ""; if (t.length <= EQUIP_SHORT.max) return t;
     return _equipShort(c) || t;
@@ -329,7 +353,7 @@ function _equipShort(c) {
         if (k.kind === "wraithfire") return "FIRE GHOST " + sec(k.lasts) + ", THEN A BLAST" + when;
         return "";
     }
-    if (c.aura) { const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[c.aura.el]], st = tpl && tpl.proc ? _EQUIP_STATUS_WORDS[tpl.proc.kind] : ""; return "AURA: +" + _equipPct(c.aura.attack) + " ATTACK" + (c.aura.status > 0 && st ? ", " + _equipPct(c.aura.status) + " TO " + st : ""); }
+    if (c.aura) { const st = _equipAuraExtraWord(c.aura.el); return "AURA: +" + _equipPct(c.aura.attack) + " ATTACK" + (c.aura.status > 0 && st ? ", " + _equipPct(c.aura.status) + " TO " + st : ""); }
     if (c.opportunity) return "+" + _equipPct(c.opportunity) + " PER WEAKNESS EXPLOITED";
     const p = c.proc;
     if (p) { if (p.kind === "attuned") return _equipPct(p.chance) + " PER HIT: ITS ELEMENT'S STATUS"; const w = _EQUIP_STATUS_WORDS[p.kind]; return w ? _equipPct(p.chance) + " PER HIT TO " + w : ""; }
@@ -357,6 +381,10 @@ function _equipKitShort(cls, k) {
     if (k.preserve) out.push("CLONE PRESERVED");
     if (k.splice) out.push("CLONE STEALS ELEMENTS");
     if (k.tank) out.push("TOUGH CLONE");
+    if (k.seedfall) out.push("SEEDFALLS");
+    if (k.grove) out.push("RELAYS MEND");
+    if (k.biteMend) out.push("BITES MEND");
+    if (k.poolHeal > 0) out.push("STRONGER POOL");
     return _equipElementLabel(k.el) + " " + hits + (out.length ? " · " + out.join(", ") : "");
 }
 // THE CUT CARDS (the owner, 2026-11-02: Series 2 reshaped): its eight Brawler and Mage class cards are no longer cards. The registry does not know them, so every place that reads a saved id already drops them (the hand, the cards
@@ -696,11 +724,14 @@ function equipOnHit(src, target, dealt) {
     const c = src.cards, worn = Array.isArray(c) && src.isFollower === true && !src.isClone;   // (cards are a follower's: the clone only ever comes for an aura)
     if (worn) for (let i = 0; i < EQUIP.followerSlots; i++) {
         const id = c[i]; if (!id || c.indexOf(id) !== i) continue;
-        const card = equipCard(id), p = card && card.proc; if (!p || equipFit(src, card)) continue;
+        const card = equipCard(id), p = card && card.proc; if (!p || equipFit(src, card) || p.kind === "dewburst") continue;   // (DEWBURST rolls in the MEND it makes bigger: js/elements.js elementMend, equipDewburst)
         if (Math.random() < p.chance) _equipProc(src, target, p, dealt);
     }
     const au = src._aura;
-    if (au && au.extras.length) for (const a of au.extras) if (Math.random() < a.status) { const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[a.el]]; if (tpl && tpl.proc) _equipProc(src, target, tpl.proc, dealt); }
+    if (au && au.extras.length) for (const a of au.extras) if (Math.random() < a.status) {
+        if (a.el === "blossom") { if (typeof elementMend === "function") elementMend(src, { any: true }); continue; }   // (EVERBLOOM CROWN: a MEND from the one that hit)
+        const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[a.el]]; if (tpl && tpl.proc) _equipProc(src, target, tpl.proc, dealt);
+    }
     if (worn) _equipAbilitiesOnHit(src, target, dealt);
 }
 // OPPORTUNITY (a Brawler's cards): the share each opening adds to a hit, over the opportunity cards it wears that fit it (js/damage.js dmgApply counts the openings); 0 for anyone else
@@ -782,6 +813,7 @@ function _equipSay(t, text, col) { if (typeof floatingTexts !== "undefined") flo
 function _equipProc(src, t, p, dealt) {
     if (p.kind === "attuned") { const tpl = EQUIP_CARDS[_EQUIP_ATTUNED[equipElementOf(src)]]; if (tpl && tpl.proc) _equipProc(src, t, tpl.proc, dealt); return; }
     if (p.kind === "siphon") { if (typeof healUnit === "function") healUnit(src, dealt * p.share, src); return; }   // (to the follower, whatever the hit killed or not)
+    if (p.kind === "dewburst") { if (typeof elementMend === "function") elementMend(src, { any: true, mult: p.mult }); return; }   // (BLOOM's status, set by something else (ATTUNED CORE): a MEND `mult` times as big)
     if (!t || t.dead || !(t.health > 0) || t.team === "green") return;   // (every other effect is for an enemy still standing)
     const frames = Math.round((p.seconds || 0) * EQUIP_FPS), tick = typeof DOT_TICK === "number" ? DOT_TICK : 20;
     if (p.kind === "burn" && typeof applyBurn === "function") { if (applyBurn(t, p.dps * tick / EQUIP_FPS, frames)) _equipSay(t, "BURN", "#ff8844"); }
@@ -1021,7 +1053,18 @@ function equipRng(seed) {
     let a = seed >>> 0;
     return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
-function equipPackPool(pack) { pack = pack || EQUIP_PACK; return Object.values(equipCards()).filter(c => !c.test && c.pack === pack.id && pack.kinds.indexOf(c.kind) >= 0 && (!pack.eligible || pack.eligible.indexOf(c.rarity) >= 0) && !!pack.rarities && pack.rarities[c.rarity] > 0); }
+// BLOOM'S CARDS (build 2026-11-09a; docs/CONVERSION.md §2) are dealt by no pack, shelf or shop until the purification module is installed and has run (js/conversion.js convertReady)
+function equipIsBloom(c) { return !!c && (c.match === "blossom" || !!(c.aura && c.aura.el === "blossom") || !!(c.kit && c.kit.el === "blossom")); }
+function equipBloomReady(c) { return !equipIsBloom(c) || (typeof convertReady === "function" && convertReady()); }
+// DEWBURST (BLOOM's Pack 1 Precision card), worn and fitting: the multiplier its chance gives one of its wearer's MENDs (js/elements.js elementMend): `mult` on a roll under its chance, else 1
+function equipDewburst(f) {
+    const c = f && f.cards; if (!Array.isArray(c)) return 1;
+    for (let i = 0; i < EQUIP.followerSlots; i++) { const id = c[i]; if (!id || c.indexOf(id) !== i) continue; const card = equipCard(id), p = card && card.proc; if (p && p.kind === "dewburst" && !equipFit(f, card) && Math.random() < p.chance) return p.mult; }
+    return 1;
+}
+// BLOOM'S MEND MADE BIGGER (build 2026-11-09a; js/elements.js elementMend asks): its wearer's SAP VEIN or NECTAR HEART (+ their share) and, at its chance, DEWBURST (× its mult). { k: the multiple, dew: DEWBURST rolled }
+function bloomMendMult(src) { const dew = equipDewburst(src); return { k: (1 + Math.max(0, equipBonus(src, "mend") || 0)) * dew, dew: dew > 1 }; }
+function equipPackPool(pack) { pack = pack || EQUIP_PACK; return Object.values(equipCards()).filter(c => !c.test && equipBloomReady(c) && c.pack === pack.id && pack.kinds.indexOf(c.kind) >= 0 && (!pack.eligible || pack.eligible.indexOf(c.rarity) >= 0) && !!pack.rarities && pack.rarities[c.rarity] > 0); }
 // the ids a pack deals (in no set order), or null when it cannot be made (nor from a pack that is not on sale)
 function equipPackRoll(seed, pack) {
     pack = pack || EQUIP_PACK; if (!equipPackOnSale(pack) || equipPackLocked(pack)) return null; const rnd = Number.isFinite(seed) ? equipRng(seed) : Math.random;

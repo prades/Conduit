@@ -18,6 +18,7 @@ const DIALOGUE = {
     lines: 3, lineH: 17, charW: 7.9,              // lines of words a page, their pitch, and a letter's width at 13 px mono (the wrap's budget)
     margin: 12, above: 10,                        // the gutter at the screen's edges; the gap over the dock or the squad row
     choiceH: 40, cursor: 28,                      // the choice buttons' height; the ▼'s blink (frames)
+    perRow: 3,                                    // choices to a row; more go on another row under it (build 2026-11-09a: Side Quest's six roles)
     place: 15,                                    // frames a measured place is kept (the page's rectangles are not asked for every frame)
 };
 const DLG_SPEAKERS = {
@@ -157,7 +158,8 @@ function dialogueDraw() {
     _dlgBox.w = 0; _dlgBtns = [];
     const L = _dlgCur; if (!L || dialoguePaused() || typeof ctx === "undefined" || typeof uiSlab !== "function") return;
     const P = dialoguePlace(), f = _dlgFrame(), pad = DIALOGUE.pad, ps = DIALOGUE.port, w = P.w, flow = _dlgFlow(L, _dlgChars(w)), pg = flow.pages[L.page], len = _dlgPageLen(L), typed = L.shown >= len, last = L.page + 1 >= flow.pages.length;
-    const choices = L.choices && last && typed ? L.choices : null, h = DIALOGUE.h + (choices ? DIALOGUE.choiceH + 10 : 0), x = P.x, y = P.bottom - h;
+    const choices = L.choices && last && typed ? L.choices : null, rows = choices ? Math.ceil(choices.length / DIALOGUE.perRow) : 0;   // (more than DIALOGUE.perRow choices wrap onto more rows: Side Quest's six roles, build 2026-11-09a)
+    const h = DIALOGUE.h + (choices ? rows * (DIALOGUE.choiceH + 10) : 0), x = P.x, y = P.bottom - h;
     _dlgBox.x = x; _dlgBox.y = y; _dlgBox.w = w; _dlgBox.h = h;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     uiSlab(x, y, w, h, L.col, false, "#0b1226");
@@ -171,9 +173,10 @@ function dialogueDraw() {
         ctx.fillStyle = L.col; const cx = x + w - 24, cy = y + h - 15; ctx.beginPath(); ctx.moveTo(cx - 6, cy - 4); ctx.lineTo(cx + 6, cy - 4); ctx.lineTo(cx, cy + 4); ctx.closePath(); ctx.fill();
     }
     if (choices && typeof uiButton === "function") {
-        const k = choices.length, bw = Math.floor((tw - 10 * (k - 1)) / k), by = y + h - pad - DIALOGUE.choiceH;
+        const k = Math.min(choices.length, DIALOGUE.perRow), bw = Math.floor((tw - 10 * (k - 1)) / k), by0 = y + h - pad - rows * DIALOGUE.choiceH - (rows - 1) * 10;
         choices.forEach((c, i) => {
-            const r = { x: tx + i * (bw + 10), y: by, w: bw, h: DIALOGUE.choiceH, label: c.label, fn: c.fn, yes: c.yes, sub: c.sub || null, card: c.card || null };
+            const row = Math.floor(i / DIALOGUE.perRow), col = i % DIALOGUE.perRow;
+            const r = { x: tx + col * (bw + 10), y: by0 + row * (DIALOGUE.choiceH + 10), w: bw, h: DIALOGUE.choiceH, label: c.label, fn: c.fn, yes: c.yes, sub: c.sub || null, card: c.card || null };
             if (c.sub && typeof uiCaptionFit === "function") { uiButton(r, c.label, c.col || L.col, false, 15, " "); uiCaptionFit(c.sub, r.x + r.w / 2, r.y + r.h * 0.76, "#8aa0c8", "center", 12, r.w - 14); }   // (the label up top, the sub shrunk to fit under it)
             else uiButton(r, c.label, c.col || L.col, false, 16);
             _dlgBtns.push(r);

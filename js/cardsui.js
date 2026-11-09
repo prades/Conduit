@@ -185,7 +185,7 @@ function _cdMarketBox() {
 // The view, the order and the card selected are kept while the sheet is open and between openings (_cdView, _cdSort, _cdSel). Sliding the rail redraws only the stage, never the rail under the finger.
 let _cdSort = "rarity", _cdSel = null;
 const CD_RAIL = { settle: 110, wheel: 60 };
-const _CD_EL_ORDER = ["fire", "toxic", "electric", "ice", "flux", "core"], _CD_ROLE_ORDER = ["brawler", "sniper", "camper"];
+const _CD_EL_ORDER = ["fire", "toxic", "electric", "ice", "flux", "core", "blossom"], _CD_ROLE_ORDER = ["brawler", "sniper", "camper"];   // (BLOOM, the seventh, last: its cards since build 2026-11-09a)
 const _CD_INFO_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED", "": "YOURS FOR GOOD" };
 function _cdRarityIdx(c) { return EQUIP_RARITIES.findIndex(r => r.id === c.rarity); }
 function _cdGroupIdx(c) { return c.kind === "element" ? _CD_EL_ORDER.indexOf(c.match) : c.kind === "class" ? 10 + _CD_ROLE_ORDER.indexOf(c.match) + (c.aura ? (1 + _CD_EL_ORDER.indexOf(c.aura.el)) / 10 : 0) : c.kind === "subclass" ? 20 + EQUIP_SUBCLASSES.findIndex(s => s.id === c.match) : c.kind === "form" ? 30 : 40; }   // (a Mage's auras after its other cards, by their element; the Player cards last)

@@ -49,7 +49,7 @@ function facilitySeesFrom(x0, y0, x1, y1) { return !_fp || !_fp.F || facilitySee
 // a shot's step in play (js/facility.js facilityShotStop): where it stops at a wall or at cover, or null
 function facilityShotStopAt(x0, y0, x1, y1, ox, oy) { return _fp && _fp.F ? facilityShotStop(x0, y0, x1, y1, ox, oy, _fp.F) : null; }
 // would a shot fired at (x0,y0) reach (x1,y1) with nothing stopping it short (a wall, or cover not the shooter's own)? (a turret's: every shot it fires is paid from the Crystal, js/stations.js)
-function facilityShotClear(x0, y0, x1, y1) { return !_fp || !_fp.F || facilityShotReach(x0, y0, x1, y1, _fp.F) >= Math.hypot(x1 - x0, y1 - y0) - 0.3; }
+function facilityShotClear(x0, y0, x1, y1) { return !_fp || !_fp.F || (facilityShotReach(x0, y0, x1, y1, _fp.F) >= Math.hypot(x1 - x0, y1 - y0) - 0.3 && (typeof techReefShotReach !== "function" || techReefShotReach(x0, y0, x1, y1) >= Math.hypot(x1 - x0, y1 - y0) - 0.3)); }   // (REEF's rock, as a crate: js/techabilities.js)
 function _fpNearestCell(x, y) {
     const c = _fp.cellsP, rx = Math.round(x), ry = Math.round(y);
     if (c.has(rx + "," + ry)) return [rx, ry];

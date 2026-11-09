@@ -403,12 +403,11 @@ function techShieldBlocks(src, tgt) {
     const W = techShieldBetween(src.x, src.y, tgt.x, tgt.y); if (!W) return false;
     _techShieldHit(W, src.x, src.y, tgt.x, tgt.y); return true;
 }
-// an enemy's shot (js/game.js): stopped where its step crosses a shield, or REEF's rock and crystal (_techReefStopsShot)
+// an enemy's shot (js/game.js): stopped where its step crosses a shield (REEF's rock and crystal stop every side's shots, as cover does: techReefShotStop)
 function techShieldStopsShot(p) {
-    if ((!techShields.length && !techReefs.length) || !p || !p.targetsGreen) return false;
-    const x0 = p.x - p.vx, y0 = p.y - p.vy, W = techShields.length ? techShieldBetween(x0, y0, p.x, p.y) : null;
-    if (W) { _techShieldHit(W, x0, y0, p.x, p.y); return true; }
-    return techReefs.length ? _techReefStopsShot(p, x0, y0) : false;
+    if (!techShields.length || !p || !p.targetsGreen) return false;
+    const x0 = p.x - p.vx, y0 = p.y - p.vy, W = techShieldBetween(x0, y0, p.x, p.y); if (!W) return false;
+    _techShieldHit(W, x0, y0, p.x, p.y); return true;
 }
 function _techShieldHit(W, x0, y0, x1, y1) {
     const s0 = _techShieldS(W, x0, y0), s1 = _techShieldS(W, x1, y1), k = Math.abs(s0 - s1) > 1e-9 ? s0 / (s0 - s1) : 0.5, f0 = _techFrame();
@@ -785,22 +784,34 @@ function _techReefKeep(a, px, py) {
         }
     }
 }
-// AN ENEMY'S SHOT AT REEF'S ROCK AND CRYSTAL (build 2026-11-08n; the owner, 2026-11-08: "Stop shots too", as cover stops shots, bites still reaching over it): a shot whose step crosses an outcrop's
-// body (a REEF PILLAR's spikes too) stops there, with a spark of crystal. A lob (an arc) flies over it, as over cover. Your side's shots pass it, as they pass a Photonic Shield (the agent's reading).
-function _techReefStopsShot(p, x0, y0) {
-    if (p.arcData || p.noHitDetect) return false;
-    const f0 = _techFrame();
+// A SHOT AT REEF'S ROCK AND CRYSTAL, as at a crate (the owner: "Stop shots too", 2026-11-08, build 2026-11-08n, enemy shots; then "Stops everyone's", 2026-11-09, build 2026-11-09a: "Like a crate: it stops
+// shots from both sides, except one fired from right behind it"): a shot's step from (x0,y0) to (x1,y1) that crosses an outcrop's body (a REEF PILLAR spike's too) stops where it enters it, whichever side
+// fired it (js/game.js asks with the cover check, so a lob flies over it, as over cover); one fired from right behind it, within FAC_SHOT.own tiles of its edge (ox, oy: where it was fired), passes over it,
+// as over the shooter's own cover. Bites still reach over it. Returns where it stops ({ x, y, reef }) or null; `quiet`: only asking (a turret's aim, the laser's reach), so the rock does not flash.
+function _techSegCircle(x0, y0, x1, y1, cx, cy, r) {   // where along the segment (0..1) it first enters the circle, or null
+    const dx = x1 - x0, dy = y1 - y0, fx = x0 - cx, fy = y0 - cy, a = dx * dx + dy * dy, b = 2 * (fx * dx + fy * dy), c = fx * fx + fy * fy - r * r;
+    if (c <= 0) return 0;   // (it starts inside)
+    if (a < 1e-12) return null;
+    const disc = b * b - 4 * a * c; if (disc < 0) return null;
+    const t = (-b - Math.sqrt(disc)) / (2 * a); return t >= 0 && t <= 1 ? t : null;
+}
+function techReefShotStop(x0, y0, x1, y1, ox, oy, quiet) {
+    if (!techReefs.length) return null;
+    const f0 = _techFrame(), own = typeof FAC_SHOT !== "undefined" ? FAC_SHOT.own : 1;
+    let best = null, bt = Infinity;
     for (const O of techReefs) {
         if (!_techReefOn(O, f0)) continue;
         for (const c of O.parts) {
-            if (_techSegDist([x0, y0], [p.x, p.y], c.x, c.y) > c.r) continue;
-            O.pressedAt = f0;
-            if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: p.x, y: p.y, color: "#ffd3e8", radius: 0.4, life: 12 });
-            return true;
+            if (Number.isFinite(ox) && Number.isFinite(oy) && Math.hypot(ox - c.x, oy - c.y) - c.r <= own) continue;   // (fired from right behind it: over it)
+            const t = _techSegCircle(x0, y0, x1, y1, c.x, c.y, c.r); if (t === null || t >= bt) continue;
+            bt = t; best = { x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t, reef: O };
         }
     }
-    return false;
+    if (best && !quiet) best.reef.pressedAt = f0;
+    return best;
 }
+// how far along the line from (x0,y0) to (x1,y1) a shot fired at (x0,y0) gets before REEF's rock stops it (the whole length when nothing does): the laser's beam (js/weapons.js), a turret's aim (js/facilityplay.js)
+function techReefShotReach(x0, y0, x1, y1) { const s = techReefShotStop(x0, y0, x1, y1, x0, y0, true); return s ? Math.hypot(s.x - x0, s.y - y0) : Math.hypot(x1 - x0, y1 - y0); }
 function techOnReef(a) { if (!techReefs.length || !a) return null; const f0 = _techFrame(); for (const O of techReefs) if (_techReefOn(O, f0) && O.parts.some(c => Math.hypot(a.x - c.x, a.y - c.y) < c.r)) return O; return null; }
 // the outcrops' clock: each grows when its shards land (what stands there is put out), then mends your followers beside it every `every` frames, until it crumbles
 function _techReefTick(f0) {
