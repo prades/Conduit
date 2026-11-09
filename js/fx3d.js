@@ -4,10 +4,10 @@
 //   approved   the pieces the owner approved in the game: shown to everyone. The rest show only on a preview (?fx=3d), so a piece can be looked at while the old look stays on for everyone.
 const FX3D = {
     pieces: {
-        // the QUILLSTONE's quill (QUILL BURST, QUILLSTORM): one of the red crystal shards on its back (design/evolutions/forms15.js), the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09e
+        // the QUILLSTONE's quill (QUILL BURST, QUILLSTORM): one of the red crystal shards on its back (design/evolutions/forms15.js), the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09e on the preview; approved in the game the same day, for everyone since 2026-11-09f
         quill: { sheet: "img/fx/quill.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
     },
-    approved: [],
+    approved: ["quill"],   // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
 };
 let _fx3dPrev = null;
 function fx3dPreview() { try { return typeof location !== "undefined" && /[?&]fx=3d\b/.test(location.search || ""); } catch (e) { return false; } }

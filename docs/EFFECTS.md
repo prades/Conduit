@@ -81,18 +81,18 @@ Each piece is recorded here as it is approved, with the date and the build.
 - It is rolled a little about its length, so a ridge rather than a flat face meets the light.
 - **Approved 2026-11-09** ("Yes, build it"), from the large preview.
 
-**In the game (build `2026-11-09e`, preview only).**
+**In the game (built in `2026-11-09e` on the preview; for everyone since `2026-11-09f`).**
 - The sheet is 32 directions × 3 tilts (nose down, level, nose up; ±0.3 rad), in 56 px cells, drawn at the forms' scale.
 - A quill flies point first in a shallow arc: up to `QUILL_ARC` = 16 px over the 40 px every shot flies at, highest halfway (the agent's number, provisional). Its tilt follows its climb: nose up as it leaves, level at the top, nose down as it ends.
 - Its shadow lies on the floor under it, a little smaller while it is higher, and a short heat streak trails behind it.
 - QUILLSTORM's sixteen are the same quill.
 - Hits are unchanged: where a quill flies and what it strikes are as before.
-- **Waiting for the owner's look in the game** (`?fx=3d`). Until then everyone sees the old 2D quill.
+- **Approved in the game 2026-11-09** ("Approve it for everyone"), from the in-game pictures. It has been live for everyone since build `2026-11-09f`. The old drawn quill is kept only for the moment before its sheet arrives.
 - Tested: `tests/fx3d.js`. Checked in the real page with screenshots.
 
 ## 4. Open questions
 
 - ~~What "3-D flare" means~~ *(answered 2026-11-09: "Modelled 3D pieces")*. ~~Which piece first~~ *(answered: "Quillstone's quill"; its model approved, "Yes, build it")*.
-- **The quill in the game** (`?fx=3d`): a yes, or a correction, before it is shown to everyone and before the next piece.
+- ~~**The quill in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09f`)*.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.

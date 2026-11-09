@@ -1,6 +1,6 @@
 // THE FORMS' EFFECT PIECES IN 3D (docs/EFFECTS.md, the 3-D flare pass; build 2026-11-09e). The owner chose "Modelled 3D pieces" and the QUILLSTONE's quill first, and approved its model
 // ("Yes, build it"): one of the red shards on its back, baked by design/effects/bake_fx.js to img/fx/quill.png. docs/ART-PROCESS.md: the old look stays until the owner approves the new one in the game,
-// so the modelled quill shows only on the preview (?fx=3d) until it is on FX3D.approved (js/fx3d.js).
+// so a piece shows only on the preview (?fx=3d) until it is on FX3D.approved (js/fx3d.js). The quill was approved in the game on 2026-11-09 ("Approve it for everyone", build 2026-11-09f).
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -43,19 +43,19 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(/DirectionalLight\(0xfff1e2, 2\.4\); key\.position\.set\(3, 6, 4\)/.test(b) && /Math\.asin\(0\.5\)/.test(b), 'not the forms\' light or camera');
     });
 
-    group('THE OLD LOOK STAYS UNTIL IT IS APPROVED IN THE GAME');
-    check('nothing is approved yet: the quill is the old one, and the modelled one only on the preview (?fx=3d); a piece that does not exist is never on', () => {
-        same(J('FX3D.approved').length, 0, 'approved before the owner saw it in the game');
-        run('__preview(false)'); same(J('fx3dOn("quill")'), false, 'on without the preview');
-        run('__preview(null); globalThis.location = { search: "?fx=3d" }'); same(J('fx3dOn("quill")'), true, 'off with ?fx=3d');
-        run('__preview(null); globalThis.location = { search: "?fx=3dx" }'); same(J('fx3dOn("quill")'), false, 'on with another flag');
-        same(J('fx3dOn("nothing")'), false, 'a piece that does not exist'); run('__preview(false)');
+    group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
+    check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
+        same(J('FX3D.approved').join(), 'quill', 'the approved pieces');
+        run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
+        run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
+        run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
+        run('__preview(null); globalThis.location = { search: "?fx=3d" }'); same(J('fx3dOn("__test")'), true, 'a piece not approved, off with ?fx=3d');
+        run('__preview(null); globalThis.location = { search: "?fx=3dx" }'); same(J('fx3dOn("__test")'), false, 'on with another flag');
+        same(J('fx3dOn("nothing")'), false, 'a piece that does not exist'); run('delete FX3D.pieces.__test; __preview(false)');
     });
-    check('without the preview a quill is drawn the old way (its paths, no picture); with it, before its sheet has arrived, the old way too', () => {
-        run('__preview(false)'); let r = J('(function(){ const P = __pen(); _drawRedesignShot(P.g, __quill(5, 15), 300, 200); return P.calls.map(c => c[0]); })()');
-        ok(r.indexOf('drawImage') < 0 && r.indexOf('fill') >= 0, 'not the old quill: ' + r.join());
-        run('__preview(true); FX3D.pieces.quill._img = null;'); r = J('(function(){ const P = __pen(); _drawRedesignShot(P.g, __quill(5, 15), 300, 200); return P.calls.map(c => c[0]); })()');
-        ok(r.indexOf('drawImage') < 0, 'a picture before its sheet arrived'); run('__preview(false); delete FX3D.pieces.quill._img;');
+    check('until its sheet has arrived a quill is drawn the old way (its paths, no picture), so a shot is never missing', () => {
+        run('FX3D.pieces.quill._img = null;'); const r = J('(function(){ const P = __pen(); _drawRedesignShot(P.g, __quill(5, 15), 300, 200); return P.calls.map(c => c[0]); })()');
+        ok(r.indexOf('drawImage') < 0 && r.indexOf('fill') >= 0, 'not the old quill before its sheet arrived: ' + r.join()); run('delete FX3D.pieces.quill._img;');
     });
 
     group('THE CELL');
@@ -64,7 +64,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         same(J('[fx3dCell("quill", 1, 0, -0.25), fx3dCell("quill", 1, 0, 0.1), fx3dCell("quill", 1, 0, 0.2), fx3dCell("quill", 1, 0, 2)].map(c => c[1]).join()'), '0,1,2,2', 'the rows (nose down, level, nose up)');
     });
 
-    group('THE FLIGHT (on the preview, its sheet in)');
+    group('THE FLIGHT (its sheet in)');
     check('a quill flies a shallow arc: QUILL_ARC px over the 40 every shot flies at, highest halfway; nose up as it leaves, level at the top, nose down as it ends', () => {
         run('__preview(true); __sheetIn(); globalThis.__cells = []; globalThis.__sc = spriteCell; spriteCell = function (img, sx, sy, sw, sh) { __cells.push([sx / sw, sy / sh]); return { cell: [sx / sw, sy / sh] }; };');
         const at = (f, l) => J(`(function(){ __cells.length = 0; const P = __pen(); _drawRedesignShot(P.g, __quill(${f}, ${l}), 300, 200); const d = P.calls.find(c => c[0] === 'drawImage'); return { y: d ? d[3] + d[5] / 2 : null, size: d ? d[4] : null, cell: __cells[0] || null }; })()`);

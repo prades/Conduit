@@ -253,11 +253,11 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     ctx.restore();
 }
 const QUILL_ARC = 16;   // px: how much higher than a shot's 40 px the modelled quill flies at the top of its arc (the agent's number, provisional; docs/EFFECTS.md)
-// A QUILL BURST quill: a dark crystal shard pointed along its flight, red-hot at its tip. A HEXFIRE shot: an ember in a hexagon of fire that turns as it flies. (Drawn in screen space.)
+// A QUILL BURST quill: the modelled one above; until its sheet has arrived, the old drawn one: a dark crystal shard pointed along its flight, red-hot at its tip. A HEXFIRE shot: an ember in a hexagon of fire that turns as it flies. (Drawn in screen space.)
 function _drawRedesignShot(ctx, p, sx, sy) {
     if (p.kind === "quill") {
         const dx = (p.vx - p.vy) * TILE_W, dy = (p.vx + p.vy) * TILE_H, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux;   // its flight on screen
-        // THE MODELLED QUILL (docs/EFFECTS.md, the 3-D flare pass: js/fx3d.js; on the preview, ?fx=3d, until the owner approves it in the game): one of the QUILLSTONE's own red shards, point first,
+        // THE MODELLED QUILL (docs/EFFECTS.md, the 3-D flare pass: js/fx3d.js; approved in the game 2026-11-09, for everyone since build 2026-11-09f): one of the QUILLSTONE's own red shards, point first,
         // flying a shallow arc (QUILL_ARC px over the 40 every shot flies at, highest halfway; its tilt follows the climb), its shadow on the floor under it and its heat trailing
         if (typeof fx3dOn === "function" && fx3dOn("quill") && fx3dReady("quill")) {
             const T = Math.max(1, (p.frame || 0) + Math.max(0, p.life || 0)), t = Math.min(1, (p.frame || 0) / T), lift = QUILL_ARC * Math.sin(Math.PI * t), rise = QUILL_ARC * Math.PI / T * Math.cos(Math.PI * t), qy = sy - lift;

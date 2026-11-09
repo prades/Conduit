@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09f` · branch `claude/start-game-project-HSh7Z` · the modelled quill for everyone
+On the in-game pictures of build `2026-11-09e`, the owner said "Approve it for everyone".
+- The Quillstone's modelled quill (QUILL BURST and QUILLSTORM) is now drawn for everyone, with no `?fx=3d` needed (js/fx3d.js `FX3D.approved`: quill). The old drawn quill is kept only for the moment before the quill's sheet arrives.
+- `?fx=3d` stays as the preview for the pieces that come next.
+- Tests: fx3d (the approved piece is on for everyone, a piece not approved only on the preview, the old quill until the sheet arrives); run: fx3d, followercombat, perf, ghost, bible, all passing. Not playtested.
+
 ### Build `2026-11-09e` · branch `claude/start-game-project-HSh7Z` · the 3-D flare pass begins: the Quillstone's modelled quill (on the preview)
 Asked one question at a time, the owner chose "Modelled 3D pieces" for the forms' effects and "Quillstone's quill" as the first piece. On the large preview of the quill they said "Yes, build it".
 - **The quill, modelled:** one of the red crystal shards on the Quillstone's back (the same shard code and material), about 25 px long in the game.
