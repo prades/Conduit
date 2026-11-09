@@ -129,11 +129,12 @@ function _cdOwnedCards() { return Object.values(equipCards()).filter(c => equipO
 // ── a booster pack (Pack 1; Series 2 when it is on sale: js/cards.js EQUIP_PACKS): its button (two taps, as an unlock is) and what the last pack of it dealt ──
 function _cdPackKinds(pack) { return pack.kinds.map(k => k === "subclass" ? "SPECIES" : k === "class" ? "CLASS" : k.toUpperCase()).join(" AND ") + " CARDS"; }
 function _cdPackGuarantee(pack) { return "ONE " + equipRarityLabel({ rarity: pack.guaranteed.rarity }) + (pack.guaranteed.orHigher ? " OR BETTER" : ""); }   // (Pack 2's guarantee is "Precision or higher": js/cards.js)
-function _cdPackSub(pack) { return "◆" + pack.price + " · " + pack.size + " " + _cdPackKinds(pack) + ", ALWAYS " + _cdPackGuarantee(pack) + " · THEY ARE FOUND FOR THIS RUN · ◆" + EQUIP.unlockCost + " KEEPS ONE FOR GOOD"; }
+function _cdPackCards(pack) { return pack.size + (pack.energy || 0); }   // (its cards: its own and its ENERGY CARDS, js/energy.js)
+function _cdPackSub(pack) { return "◆" + pack.price + " · " + (pack.energy ? pack.energy + " ENERGY CARDS AND " : "") + pack.size + " " + _cdPackKinds(pack) + ", ALWAYS " + _cdPackGuarantee(pack) + " · THEY ARE FOUND FOR THIS RUN · ◆" + EQUIP.unlockCost + " KEEPS ONE FOR GOOD"; }
 function _cdPackBox(pack) {
     pack = pack || EQUIP_PACK;
     const box = _cdEl("div", "cd-pack"), why = equipPackWhyNot(pack), key = pack === EQUIP_PACK ? "pack" : "pack:" + pack.id, armed = _cdArm && _cdArm.id === key && _cdNow() < _cdArm.until;
-    box.appendChild(_cdBtn(armed ? "TAP AGAIN TO OPEN" : "OPEN A PACK ◆" + pack.price, why || (armed ? "◆" + pack.price + " OF YOUR SHARDS · " + pack.size + " CARDS" : pack.size + " CARDS · " + _cdPackGuarantee(pack) + " AT LEAST"), "#ffe733", () => {
+    box.appendChild(_cdBtn(armed ? "TAP AGAIN TO OPEN" : "OPEN A PACK ◆" + pack.price, why || (armed ? "◆" + pack.price + " OF YOUR SHARDS · " + _cdPackCards(pack) + " CARDS" : _cdPackCards(pack) + " CARDS · " + (pack.energy ? pack.energy + " ENERGY · " : "") + _cdPackGuarantee(pack) + " AT LEAST"), "#ffe733", () => {
         if (_cdArm && _cdArm.id === key && _cdNow() < _cdArm.until) {
             _cdArm = null;
             if (equipPackOpen(undefined, pack) && equipPackLast) _cdReveal = { pack: equipPackLast.pack || pack.id, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice(), energy: (equipPackLast.energy || []).slice() };   // (its cards come out of it: _cdRevealBox; its ENERGY CARDS after them)

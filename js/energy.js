@@ -8,15 +8,14 @@
 //   UNLOCKS     an evolved follower's cards of its OWN element unlock its next attack: ENERGY.altNeeds for its second attack, ENERGY.ultNeeds for its Ultimate (js/moves.js evoMoveAllowed, js/elements.js
 //               followerUltimate ask energyAltOpen and energyUltOpen). A card of ANOTHER element unlocks a HYBRID attack of the two (energyHybrids): none is designed yet ("NOT DESIGNED YET").
 //   OWNING      counted copies: energyStock, element -> how many you hold (not in a slot). Put in a slot, a card leaves your stock; taken out before it evolves a follower, it comes back.
-//   PACKS       Pack 1 and Series 2 deal ENERGY.packMin to ENERGY.packMax energy cards besides their cards (js/cards.js equipPackOpen), of elements found (BLOOM aside).
+//   PACKS       Pack 1 and Series 2 each deal 2 energy cards, guaranteed, of their 4 (the pack's `energy`, js/cards.js; the owner: "make 2 of the cards guaranteed energy cards"), of elements found (BLOOM aside).
 //   THE RUN'S   NEW GAME clears the stock (energyReset); the run's save holds it (js/facilitysave.js), and each follower's record its slots.
 //   EGGS        a bred egg comes with an energy card of the element breeding picked (js/breeding.js), free: it is not taken from the stock. A recruit comes with none.
 //   CONVERSION  an unevolved toxic follower's toxic card becomes a BLOOM one (js/conversion.js).
 //   OLD SAVES   a follower saved before energy cards: an unevolved one loses its element; an evolved one keeps it, its slots empty (its second attack and Ultimate locked until it has cards of its element).
-// The numbers the owner gave: 1 slot, 3 slots, level 8, 1 to 2 a pack. The owner's rule "a card of its own element unlocks its next attack: its second attack, then its Ultimate" read as 1 card, then 2.
-// Within "1 to 2 a pack", each count as likely: PROVISIONAL (ENERGY-CARDS.md §11).
+// The numbers the owner gave: 1 slot, 3 slots, level 8, 2 a pack. The owner's rule "a card of its own element unlocks its next attack: its second attack, then its Ultimate" read as 1 card, then 2.
 const ENERGY_NONE = "none";
-const ENERGY = { unevolvedSlots: 1, evolvedSlots: 3, evolveLevel: 8, altNeeds: 1, ultNeeds: 2, packMin: 1, packMax: 2 };
+const ENERGY = { unevolvedSlots: 1, evolvedSlots: 3, evolveLevel: 8, altNeeds: 1, ultNeeds: 2 };
 let energyStock = {};   // the run's: element id -> the cards of it you hold (not in a slot)
 
 // an element an energy card can be of: a real one (not "none")
@@ -88,15 +87,14 @@ function energyStart(f, el) {
     f.energy = [energyElementOk(el) ? el : null]; f.element = f.energy[0] || ENERGY_NONE;
 }
 
-// ── PACKS: ENERGY.packMin to ENERGY.packMax cards besides a pack's own, each of an element found (BLOOM aside), each count as likely (provisional) ──
-function energyPackRoll(rnd) {
+// ── PACKS: a pack's `energy` cards (2 in Pack 1 and Series 2: js/cards.js), each of an element found (BLOOM aside), each element as likely ──
+function energyPackRoll(rnd, n) {
     rnd = rnd || Math.random; const pool = typeof elementsFound === "function" ? elementsFound().filter(energyElementOk) : [];
-    if (!pool.length) return [];
-    const n = ENERGY.packMin + Math.floor(rnd() * (ENERGY.packMax - ENERGY.packMin + 1)), out = [];
-    for (let i = 0; i < n; i++) out.push(pool[Math.min(pool.length - 1, Math.floor(rnd() * pool.length))]);
+    if (!pool.length || !(n > 0)) return [];
+    const out = []; for (let i = 0; i < n; i++) out.push(pool[Math.min(pool.length - 1, Math.floor(rnd() * pool.length))]);
     return out;
 }
-function energyPackDeal(rnd) { const got = energyPackRoll(rnd); for (const el of got) energyAdd(el, 1); return got; }
+function energyPackDeal(rnd, n) { const got = energyPackRoll(rnd, n); for (const el of got) energyAdd(el, 1); return got; }
 
 // ── SAVING: the run's stock (the run's save, js/facilitysave.js); a follower's slots (its record) ──
 function energyReset() { energyStock = {}; }   // NEW GAME (js/facilityplay.js facilityResetState, through equipReset)

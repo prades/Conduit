@@ -22,8 +22,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__clear = () => { actors = actors.filter(a => !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; energyReset(); };`);
 
     group('THE RULES (js/energy.js)');
-    check('the owner\'s numbers: 1 slot unevolved, 3 evolved, level 8, 1 to 2 a pack; the second attack with 1 card of its element, the Ultimate with 2; "none" is no element a card can be', () => {
-        same(J('[ENERGY.unevolvedSlots, ENERGY.evolvedSlots, ENERGY.evolveLevel, ENERGY.packMin, ENERGY.packMax, ENERGY.altNeeds, ENERGY.ultNeeds].join()'), '1,3,8,1,2,1,2', 'the numbers');
+    check('the owner\'s numbers: 1 slot unevolved, 3 evolved, level 8, 2 a pack; the second attack with 1 card of its element, the Ultimate with 2; "none" is no element a card can be', () => {
+        same(J('[ENERGY.unevolvedSlots, ENERGY.evolvedSlots, ENERGY.evolveLevel, ENERGY.altNeeds, ENERGY.ultNeeds].join()'), '1,3,8,1,2', 'the numbers');
         same(J('EVOLVE_LEVEL'), 8, 'the evolution level'); same(J('energyElementOk(ENERGY_NONE)'), false, '"none" as a card'); same(J('energyElementOk("fire") && energyElementOk("blossom")'), true, 'fire and BLOOM as cards');
     });
 
@@ -56,10 +56,16 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.altSet, true, 'its second attack could not be chosen'); same(r.altOne, r.altOne && String(r.altOne), 'one FIRE card left: its second attack kept'); ok(r.altOne, 'one FIRE card left, yet it left its second attack'); same(r.altAfter, null, 'its last FIRE card taken out left it on a locked second attack');
     });
 
-    group('PACKS: 1 to 2 energy cards besides a pack\'s own, of elements found (BLOOM aside)');
-    check('a roll deals 1 or 2, never BLOOM; over many rolls both counts and every element found come up', () => {
-        const r = J(`(function(){ let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, n = {}, el = {}; for (let i = 0; i < 2000; i++) { const g = energyPackRoll(rnd); n[g.length] = (n[g.length] || 0) + 1; for (const e of g) el[e] = (el[e] || 0) + 1; } return { n, el: Object.keys(el).sort(), found: elementsFound().sort() }; })()`);
-        same(Object.keys(r.n).sort().join(), '1,2', 'the counts'); same(r.el.join(), r.found.join(), 'the elements'); ok(r.el.indexOf('blossom') < 0, 'BLOOM dealt');
+    group('PACKS (the owner, 2026-11-09: "Make the pack 50% less, but make 2 of the cards guaranteed energy cards, and 1 card guaranteed 3 rarity")');
+    check('Pack 1 ◆50 and Series 2 ◆75 (half): 4 cards each, 2 of them energy cards and 2 their own, one of those the guaranteed Precision (the third rarity; Series 2\'s or better)', () => {
+        const r = J(`EQUIP_PACKS.map(p => [p.id, p.price, p.size, p.energy, p.guaranteed.rarity, p.guaranteed.count, EQUIP_RARITIES.findIndex(x => x.id === p.guaranteed.rarity) + 1].join(':'))`);
+        same(r.join(' '), 'pack1:50:2:2:precision:1:3 series2:75:2:2:precision:1:3', 'the packs');
+    });
+    check('opening a pack deals its 2 energy cards into your stock, of elements found (never BLOOM), and its 2 own cards; over many rolls every element found comes up', () => {
+        const r = J(`(function(){ __clear(); shardCount = 1000; const ids = equipPackOpen(11, EQUIP_PACK), o = { ids: ids && ids.length, energy: equipPackLast.energy.length, stock: energyTotal(), paid: 1000 - shardCount };
+            let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, el = {}; for (let i = 0; i < 2000; i++) for (const e of energyPackRoll(rnd, 2)) el[e] = 1; o.el = Object.keys(el).sort(); o.found = elementsFound().sort(); return o; })()`);
+        same(r.ids, 2, 'its own cards'); same(r.energy, 2, 'its energy cards'); same(r.stock, 2, 'your energy cards after'); same(r.paid, 50, 'what it cost');
+        same(r.el.join(), r.found.join(), 'the elements dealt'); ok(r.el.indexOf('blossom') < 0, 'BLOOM dealt');
     });
 
     group('THE RUN\'S, AND SAVED');

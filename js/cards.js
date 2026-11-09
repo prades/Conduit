@@ -20,7 +20,7 @@
 //             The UNIVERSAL kind (any follower, and the player) is retired (the owner, 2026-11-02; docs/UNIVERSAL-AND-PLAYER-CARDS.md).
 //   OWNED     the permanent COLLECTION: a card is unlocked for good for EQUIP.unlockCost shards (flat, paid from the run's), kept at EQUIP.key, which NEW GAME does not touch and the run's save does not hold.
 //   THE HAND  the card types taken into a run, up to EQUIP.startPick, chosen from the collection when it begins (js/cardsui.js). A card put back out of the hand comes off everyone, unless it was found as well.
-//   PACK 1    ◆EQUIP_PACK.price buys a BOOSTER PACK: 4 Element cards, one reserved for a Precision, the others rolled over Unrefined, Refined and Precision by weight; none twice in a pack. What a pack deals is FOUND (equipFound): a card
+//   PACK 1    ◆EQUIP_PACK.price buys a BOOSTER PACK: 2 ENERGY CARDS (js/energy.js, since build 2026-11-09s) and 2 Element cards, one reserved for a Precision, the other rolled over Unrefined, Refined and Precision by weight; none twice in a pack. What a pack deals is FOUND (equipFound): a card
 //             to wear at once, for this run only (NEW GAME clears it) unless EQUIP.unlockCost shards keep it for good. Only the hand and what is found can be worn.
 //   SERIES 2  a second pack (EQUIP_PACK2, in EQUIP_PACKS with Pack 1), which is the archive's BOOSTER PACK 2 (the roll, the sale, the shelf and the sheet take any pack of the list). It deals 63 cards: the 20 SPECIES cards (the subclass
 //             kind) and the Technician's 4 cooldown cards (EQUIP_SERIES2), the 18 Mage AURAS and the 3 Brawler OPPORTUNITY cards (EQUIP_AURAS, EQUIP_OPPORTUNITY), all four since Build B, and the 18 PLAYER cards at Prototype since the
@@ -1008,7 +1008,8 @@ function equipSaveApply(d) {
 // All of it is in EQUIP_PACK, to tune. A pack takes its cards from the cards that name it (c.pack) and are of its kinds and rarities, so no other card can come out of it; a rarity that has run out of cards in this pack is left out of the roll
 // (the weights of the others are used as they are), and a pack that cannot be made (too few cards, none of the reserved rarity) is not sold. A card you already have (in the hand, or found this run) is a DUPLICATE: it pays credits (the market, below) and is not found again.
 const EQUIP_PACK = {
-    id: "pack1", name: "PACK 1", price: 100, size: 4,
+    id: "pack1", name: "PACK 1", price: 50, size: 2, energy: 2,   // THE OWNER (2026-11-09, with the energy cards): "Make the pack 50% less, but make 2 of the cards guaranteed energy cards, and 1 card guaranteed 3 rarity": ◆100 → ◆50; its 4 cards are
+                                                               // 2 ENERGY CARDS (js/energy.js) and 2 of its own, one of them the guaranteed PRECISION (the third rarity, as before), the other rolled by weight. (It was 4 of its own.)
     kinds: ["element"],
     rarities: { unrefined: 60, refined: 30, precision: 10 },   // the weight of each eligible rarity for a slot that is rolled
     guaranteed: { rarity: "precision", count: 1 },             // the slots reserved for a rarity, filled first
@@ -1024,7 +1025,8 @@ const EQUIP_PACK = {
 // ("UNLOCKS AFTER THE PURIFICATION"), not rolled, and its cards are not on the market's shelf (equipPacksOpen). Its cards are worn, found, unlocked and saved like any card; once it is open the market's shelf can offer any of
 // them, a Player card too (a Prototype card's value). Every pack is in EQUIP_PACKS: the roll, the sale, the shelf and the sheet take a pack and ask nothing of which one it is.
 const EQUIP_PACK2 = {
-    id: "series2", name: "SERIES 2", price: 150, size: 4,     // PICKED by us at the owner's word ("Pick a price and set the odds", 2026-11-01): half again Pack 1's ◆100, for stronger cards that come later
+    id: "series2", name: "SERIES 2", price: 75, size: 2, energy: 2,   // PICKED by us at the owner's word ("Pick a price and set the odds", 2026-11-01): half again Pack 1's price, for stronger cards that come later. Halved with Pack 1 (the owner,
+                                                               // 2026-11-09: "Make the pack 50% less, but make 2 of the cards guaranteed energy cards, and 1 card guaranteed 3 rarity"): ◆150 → ◆75; 2 ENERGY CARDS and 2 of its own, one the Precision-or-better
     kinds: ["subclass", "class", "player", "form"],            // species cards (the subclass kind), class cards (the class families), Player cards and, since build 2026-11-06q, the card attacks (the form kind: "Series 2, Prototype") (the player's roles, all Prototype; since Part 1d, once all eighteen were
                                                                // built); never an element card
     eligible: ["unrefined", "refined", "precision", "prototype"],   // THE OWNER (2026-11-01): "Prototype unlocks": Series 2 deals up to PROTOTYPE, the rarity it unlocks beyond Pack 1's Precision; Lustrous joins in a
@@ -1106,7 +1108,7 @@ function equipPackOpen(seed, pack) {
     }
     if (pack.keep === "forever") equipWriteOwned();
     equipCredits += credits;
-    const energy = typeof energyPackDeal === "function" ? energyPackDeal(Number.isFinite(seed) ? equipRng(seed + 7919) : null) : [];   // ENERGY CARDS (js/energy.js): 1 to 2 besides the pack's own (the owner: "Inside the old packs", "1 to 2 per pack")
+    const energy = typeof energyPackDeal === "function" ? energyPackDeal(Number.isFinite(seed) ? equipRng(seed + 7919) : null, pack.energy || 0) : [];   // its ENERGY CARDS (js/energy.js): 2, guaranteed (the owner: "make 2 of the cards guaranteed energy cards")
     equipPackLast = { pack: pack.id, ids: ids.slice(), fresh, dupes, credits, energy };
     if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined" && canvas) floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "PACK OPENED · " + ids.length + " CARDS", color: "#ffe733", life: 140, vy: -0.25, size: 14 });
     return ids;
