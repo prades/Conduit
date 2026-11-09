@@ -720,7 +720,8 @@ The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved
 - ~~**The hole a drilled rubble leaves, modelled**~~ *(approved 2026-11-09, "Approve the hole for everyone"; for everyone since build `2026-11-09n`)*.
 - **The forms' effects with 3-D flare:** paused at the owner's turn to the cave (the quill and the icicle are done; `EFFECTS.md`).
 
-## The optimization audit (build `2026-11-09p`): found, waiting for a yes
+## The optimization audit (build `2026-11-09p`): found, waiting for a yes · PARKED
+**Parked (2026-11-09, after build `2026-11-09r`).** The owner: "we set the optimization down for now. It's working fine as far as I can tell." Built from this list: the routes' 1A and 1B (`2026-11-09q`) and the forms' sheets, 4 (`2026-11-09r`); and the wall lookup text (`2026-11-09o`). The rest waits until the owner picks it up again: route option C, the catch-up steps (2), the garbage (3), and 5–6.
 The owner, 2026-11-09: "Audit for optimization", "Finish the optimization audit". Measured in the real page (headless Chromium, software-rendered, 1180 × 820: a rough guide, not an iPad), on build `2026-11-09p`, against the check of build `2026-11-09d` (its fix: the forms' bodies drawn from small cells). Nothing below is changed yet except where it says so.
 
 **Where things stand.**
