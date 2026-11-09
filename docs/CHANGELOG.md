@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09ff` · branch `claude/start-game-project-HSh7Z` · the goo copies for everyone
+- **PROXY SWARM's goo copies are approved in the game** ("Approve it for everyone"), from the pictures of the blobs and the copies side by side. They are live for everyone (`FX3D.approved`). The drawn blobs show only until the copies' sheet arrives.
+- Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09ee` · branch `claude/start-game-project-HSh7Z` · PROXY SWARM's goo copies (on the preview)
 The owner's pick for the next 3-D piece ("Goo Proxy's goo copies"), then of three looks: "A · all its violet goo". `docs/EFFECTS.md`.
 - **The piece:** each of PROXY SWARM's three copies is the Goo Proxy's own frog model, every part in the violet goo of its head, its diamond eyes kept. No glow under it.

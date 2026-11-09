@@ -20,14 +20,15 @@ const FX3D = {
         // three drafts, 2026-11-09 (circled: "its pink crystal, as a seed"); built in build 2026-11-09bb on the preview; approved in the game the same day, for everyone since 2026-11-09cc. It flies as the quill does
         bigseed: { sheet: "img/fx/bigseed.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
         // PROXY SWARM's goo copies (the GOO PROXY's Ultimate): the Goo Proxy's own model (design/evolutions/forms31.js No. 853, the frog), all of it in the violet goo of its head, the ring and its spikes too,
-        // its diamond eyes kept, no glow under it; the owner's pick of three looks, 2026-11-09 ("A · all its violet goo"); built in build 2026-11-09ee on the preview. A COPY, as ROTTEN DECOY's: its columns are
+        // its diamond eyes kept, no glow under it; the owner's pick of three looks, 2026-11-09 ("A · all its violet goo"); built in build 2026-11-09ee on the preview; approved in the game the same day, for everyone since 2026-11-09ff. A COPY, as ROTTEN DECOY's: its columns are
         // frames of the frog's idle loop (`loop` game frames), drawn at the forms' scale
         goocopy: { sheet: "img/fx/goocopy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 90.486, tipY: 46.472 },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
                "rotdecoy",   // ROTTEN DECOY as a black Rotshard: approved in the game 2026-11-09 ("Approve the black decoy"), live for everyone since build 2026-11-09aa
-               "bigseed"],   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
+               "bigseed",   // PINK THICKET's big seed as the Thornwhip's pink crystal: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09cc
+               "goocopy"],   // PROXY SWARM's goo copies, the Goo Proxy in its violet goo: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09ff
     // (the ROTSHARD's black spike was approved in the game on 2026-11-09 and taken back the same day: "it still looks like trash. I don't like the green aura": on the preview again, its aura gone, build 2026-11-09w)
 };
 let _fx3dPrev = null;

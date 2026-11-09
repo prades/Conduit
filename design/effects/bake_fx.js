@@ -39,7 +39,7 @@ const PIECES = {
   // the others). No glow under it and no light of its own (the owner, of the Rotshard's spike: "I don't like the green aura"). A COPY, as ROTTEN DECOY's: its columns are frames of its idle loop
   // (the frog's own, 2 pi / 1.6 s), drawn at the forms' scale. pv: the preview's views (the copy alone; beside the Goo Proxy): its spikes reach far.
   goocopy: { form: 853, color: '#9933ff', copy: true, skin: 'goo', upright: true, h: 1.2, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
-    pv: { big: [4.4, 1.936, 0.2], gap: 1.35, side: [5.4, 2.7, 0.55] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(all of it in its violet goo, its diamond eyes kept; no glow)'] },   // (the owner's pick of three looks)
+    pv: { big: [4.4, 1.936, 0.2], gap: 1.35, side: [5.4, 2.7, 0.55] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(all of it in its violet goo, its diamond eyes kept; no glow)'] },   // (the owner's pick of three looks; approved in the game 2026-11-09: "Approve it for everyone")
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 

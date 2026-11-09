@@ -53,7 +53,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
     check('the quill is approved (the owner, 2026-11-09, in the game: "Approve it for everyone"): it is on for everyone, with or without the preview; a piece not approved is on only with ?fx=3d; one that does not exist never', () => {
-        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed', 'the approved pieces');
+        same(J('FX3D.approved').join(), 'quill,icicle,rotdecoy,bigseed,goocopy', 'the approved pieces');
         run('__preview(false)'); same(J('fx3dOn("quill")'), true, 'off without the preview');
         run('FX3D.pieces.__test = { sheet: "x.png", cell: 8, yaws: 4, pitches: [0] };');
         run('__preview(null); globalThis.location = { search: "" }'); same(J('fx3dOn("__test")'), false, 'a piece not approved, on without the preview');
@@ -234,7 +234,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(r.indexOf('drawImage') < 0 && r.indexOf('ellipse') >= 0, 'SEED SHOT is not the drawn seed: ' + r.join());
     });
 
-    group('PROXY SWARM\'S GOO COPIES: THE GOO PROXY IN ITS VIOLET GOO (the owner\'s pick, 2026-11-09: "Goo Proxy\'s goo copies", then "A · all its violet goo"; built in 2026-11-09ee on the preview)');
+    group('PROXY SWARM\'S GOO COPIES: THE GOO PROXY IN ITS VIOLET GOO (the owner\'s pick, 2026-11-09: "Goo Proxy\'s goo copies", then "A · all its violet goo"; built in 2026-11-09ee on the preview; approved in the game, for everyone since 2026-11-09ff)');
     check('its sheet: the frog\'s idle loop in 12 frames, one row, at the forms\' own cell (144 px, 3.4 units); its foot and top as the baker wrote; the model is the Goo Proxy\'s own (No. 853) in its goo, its glow on the floor and its light off, its diamond eyes kept', () => {
         const P = J('FX3D.pieces.goocopy'), meta = JSON.parse(rd('design/effects/out/goocopy.json'));
         same(P.sheet, 'img/fx/goocopy.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + P.cell, 'the sheet\'s size'); same(JSON.stringify([P.cell, P.yaws, P.upright, P.copy]), '[144,12,true,true]', 'the table');
@@ -244,14 +244,14 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         ok(/if \(m\.blending === T\.AdditiveBlending\) \{ o\.visible = false; return; \}/.test(b) && /if \(m\.vertexColors\) return;/.test(b) && /o\.material = goo; \}\);/.test(b), 'its glow is not off, its eyes not kept, or it is not recast in goo');
         ok(Math.abs(P.loop - Math.round(2 * Math.PI / 1.6 * 60)) <= 1, 'its loop is not the frog\'s idle (2 pi / 1.6 s): ' + P.loop);
     });
-    check('on the preview only (not approved yet); without the preview, or before its sheet arrives, PROXY SWARM\'s copy is the drawn blob in its violet glow', () => {
-        ok(J('FX3D.approved.indexOf("goocopy")') < 0, 'approved before the owner has seen it in the game'); run('__preview(false)'); same(J('fx3dOn("goocopy")'), false, 'on without the preview');
+    check('approved in the game (the owner, 2026-11-09: "Approve it for everyone"): on for everyone, with or without the preview; before its sheet arrives, PROXY SWARM\'s copy is the drawn blob in its violet glow', () => {
+        ok(J('FX3D.approved.indexOf("goocopy")') >= 0, 'not approved'); run('__preview(false)'); same(J('fx3dOn("goocopy")'), true, 'off without the preview');
         ok(/spawnElementEffect\(\{ type: "gooproxy", x, y, on: d, life: X\.frames, maxLife: X\.frames, element: "flux" \}\)/.test(rd('js/elements.js')), 'PROXY SWARM\'s copies are not the "gooproxy" effect');
         const blob = (prev, sheet) => J(`(function(){ __preview(${prev}); FX3D.pieces.goocopy._img = ${sheet ? '{ complete: true, naturalWidth: 1728, naturalHeight: 144 }' : 'null'}; const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption; ctx = P.g; activeFireEruption = null;
             elementEffects = [{ type: 'gooproxy', x: player.visualX, y: player.visualY, life: 300, maxLife: 360, on: { maxHealth: 10, health: 5 } }];
             try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; delete FX3D.pieces.goocopy._img; __preview(false); } return P.calls.map(c => c[0]); })()`);
         const off = blob(false, true), before = blob(true, false);
-        ok(off.indexOf('drawImage') < 0 && off.filter(c => c === 'ellipse').length >= 2, 'not the drawn blob without the preview: ' + off.join());
+        ok(off.indexOf('drawImage') >= 0 && off.filter(c => c === 'ellipse').length === 0, 'not the goo copy without the preview: ' + off.join());
         ok(before.indexOf('drawImage') < 0 && before.filter(c => c === 'ellipse').length >= 2, 'not the drawn blob before its sheet arrived: ' + before.join());
     });
     check('with its sheet (on the preview): one picture of the copy at the forms\' scale, its foot where the copy stands, its frame the frog\'s idle by the game\'s clock (each copy a little out of step); risen as it pops out; no glow under it; its health bar over its top', () => {
