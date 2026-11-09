@@ -38,9 +38,13 @@ function _fpBuildWorld(F) {
 
 // ── navigation: A* over tile centres, with line-of-sight smoothing ──
 function _fpLos(x0, y0, x1, y1) {
-    const F = _fp.P, d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 0.25));
+    const F = _fp.P;
+    // THE EXACT TEST FIRST (the owner, 2026-11-09, the optimization audit's 1A; build 2026-11-09q): most lines a route tries have a wall or a solid in the way, and the exact test finds it without the samples.
+    // Both must pass, so the answer is the same; straightening routes took about half the time in a busy fight (it had been the biggest cost in one: thousands of walkability samples a step)
+    if (!facilityCanStep(x0, y0, x1, y1, F)) return false;
+    const d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 0.25));
     for (let i = 1; i <= n; i++) { const t = i / n; if (!facilityWalkable(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, F)) return false; }
-    return facilityCanStep(x0, y0, x1, y1, F);
+    return true;
 }
 function facilityLosFrom(x0, y0, x1, y1) { return !_fp || _fpLos(x0, y0, x1, y1); }
 // SIGHT, not walking (Milestone Two, js/facility.js facilitySees: walls and tall solids hide, low ones are seen over): who can see whom, for the auto-lock, a creature's choice of prey and the aims. A straight walk

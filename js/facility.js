@@ -197,20 +197,25 @@ function facilityCanStep(x0, y0, x1, y1, F) {
     if (!facilityWalkable(x1, y1, F)) return false;
     const a = [x0, y0], b = [x1, y1], sx0 = Math.min(x0, x1), sx1 = Math.max(x0, x1), sy0 = Math.min(y0, y1), sy1 = Math.max(y0, y1);
     const near = bb => !(sx1 < bb[0] || sx0 > bb[2] || sy1 < bb[1] || sy0 > bb[3]);
-    let walls = F.walls, solids = F.solids;
-    if (sx1 - sx0 < FAC_BUCKET && sy1 - sy0 < FAC_BUCKET) {   // a short step: only what is in the buckets its box touches (at most four, each item once)
-        const ix = _facIndex(F), B = FAC_BUCKET, bx0 = Math.floor(sx0 / B), bx1 = Math.floor(sx1 / B), by0 = Math.floor(sy0 / B), by1 = Math.floor(sy1 / B);
-        if (bx0 === bx1 && by0 === by1) { walls = _facNear(ix.walls, ix, sx0, sy0); solids = _facNear(ix.solids, ix, sx0, sy0); }
-        else { walls = new Set(); solids = new Set(); for (let by = by0; by <= by1; by++) for (let bx = bx0; bx <= bx1; bx++) { for (const w of ix.walls.get(ix.key(bx, by)) || _FAC_NONE) walls.add(w); for (const s of ix.solids.get(ix.key(bx, by)) || _FAC_NONE) solids.add(s); } }
-    }
-    for (const w of walls) if (near(w.bb) && facilitySegmentsCross(a, b, w.a, w.b)) return false;
-    for (const s of solids) {
-        if (s.open || !near(s.bb)) continue;   // (open: taken away in play, js/facilityplay.js facilitySolidOpen)
-        if (s.shape === "circle") { if (_facSegPointDist(a, b, s.at[0], s.at[1]) < s.r) return false; }
-        else for (let i = 0; i < s.poly.length; i++) {
-            const c = s.poly[i], d = s.poly[(i + 1) % s.poly.length]; if (!facilitySegmentsCross(a, b, c, d)) continue;
-            if (s.water && F.ice && F.ice.length) { const q = _facSegHit(a, b, c, d); if (q && facilityIced(F, q[0], q[1])) continue; }   // (onto the ice from the bank: water frozen there is floor)
-            return false;
+    // ONLY THE GRID'S BUCKETS THE STEP PASSES THROUGH (the owner, 2026-11-09, the optimization audit's 1B; build 2026-11-09q): a wall or solid the step hits has its box round the point where it hits, that point
+    // is on the step, and the bucket it is in holds everything whose box touches it; so these buckets hold everything the step can hit, and the answer is the one the whole building gives. A long step once
+    // looked at every wall in the building, and a short one gathered its buckets' walls into a new set on every call. An item in two of these buckets is looked at twice (the answer is the same).
+    const ix = _facIndex(F), B = FAC_BUCKET, dy = y1 - y0;
+    for (let by = Math.floor(sy0 / B), by1 = Math.floor(sy1 / B); by <= by1; by++) {
+        let xa = sx0, xb = sx1;   // (the step's stretch of x in this row of buckets: all of it, for a level step)
+        if (dy) { const xA = x0 + (x1 - x0) * (Math.max(sy0, by * B) - y0) / dy, xB = x0 + (x1 - x0) * (Math.min(sy1, (by + 1) * B) - y0) / dy; xa = Math.min(xA, xB); xb = Math.max(xA, xB); }
+        for (let bx = Math.floor(xa / B - 1e-9), bx1 = Math.floor(xb / B + 1e-9); bx <= bx1; bx++) {   // (a hair wider at the bucket's edges: the rounding of the stretch never drops one)
+            const k = ix.key(bx, by), walls = ix.walls.get(k), solids = ix.solids.get(k);
+            if (walls) for (const w of walls) if (near(w.bb) && facilitySegmentsCross(a, b, w.a, w.b)) return false;
+            if (solids) for (const s of solids) {
+                if (s.open || !near(s.bb)) continue;   // (open: taken away in play, js/facilityplay.js facilitySolidOpen)
+                if (s.shape === "circle") { if (_facSegPointDist(a, b, s.at[0], s.at[1]) < s.r) return false; }
+                else for (let i = 0; i < s.poly.length; i++) {
+                    const c = s.poly[i], d = s.poly[(i + 1) % s.poly.length]; if (!facilitySegmentsCross(a, b, c, d)) continue;
+                    if (s.water && F.ice && F.ice.length) { const q = _facSegHit(a, b, c, d); if (q && facilityIced(F, q[0], q[1])) continue; }   // (onto the ice from the bank: water frozen there is floor)
+                    return false;
+                }
+            }
         }
     }
     return true;

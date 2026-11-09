@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09q` · branch `claude/start-game-project-HSh7Z` · routes straightened faster, the same routes
+The owner, on the optimization audit's first finding (straightening routes, the biggest cost in a fight): "Yes" to its fixes A and B.
+- **A. The line test does its exact test first** (js/facilityplay.js `_fpLos`): a route tries straight lines between its points, and most have a wall or a solid in the way. The exact test finds it without the walkability samples, which are taken only for a line that passes. Both must pass, so the answer is the same.
+- **B. The step test looks only where the step goes** (js/facility.js `facilityCanStep`): the grid's buckets the step passes through, instead of every wall in the building for a long step. Anything a step can hit is registered in a bucket the step passes through, so the answer is the same. A short step no longer gathers its walls into a new set on every call.
+- **Measured** in the busy fight (headless Chromium, against build `2026-11-09p`, turn about): the line tests 0.5–0.6 ms a game step instead of 1.4–1.8; walkability tests 1,500–1,600 a step instead of 5,900–8,200.
+- **The same answers:** a new check runs the old code beside the new over 24,000 random lines across the building. It covers a copy of the map changed as play changes it (a crate moved, ice on the water, a choke opened) and 38 whole routes. No difference in any of them.
+- Tests: facilityplay (the new check). Run: listed in the commit. Not playtested.
+
 ### Build `2026-11-09p` · branch `claude/start-game-project-HSh7Z` · the drawn rock walls back for everyone
 The owner: "I'm not big on these walls"; then "Switch back to the drawn rock for now".
 - The cave's walls are the drawn rock again for everyone (js/cavewalls.js `CAVE_WALLS.approved` off). The modelled walls stay on the preview (`?walls=3d`).

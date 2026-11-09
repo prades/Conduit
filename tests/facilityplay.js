@@ -181,6 +181,46 @@ function measure() {
         same(r.seen.join(), 'true,true', 'a step with a clear line was rerouted'); same(r.flee, true, 'a flee was rerouted');
     });
 
+    // STRAIGHTENING ROUTES FASTER, THE SAME ANSWERS (the owner, 2026-11-09, "Yes" to the optimization audit's 1A and 1B; build 2026-11-09q): the step test looks only in the grid's buckets the step passes
+    // through (js/facility.js facilityCanStep), and the line test does the exact test before its samples (js/facilityplay.js _fpLos). Checked against the old code, kept here as it was.
+    check('straightening a route gives the answers it gave before: the step test and the line test against the old ones over 24,000 random lines across the building, short and long; on a copy of the map with a crate moved, ice on the water and a choke opened; the same routes, with far fewer walkability tests', () => {
+        const r = J(`(function(){
+            const oldStep = (x0, y0, x1, y1, F) => { F = F || facilityGet(); if (!facilityWalkable(x1, y1, F)) return false; const a = [x0, y0], b = [x1, y1], sx0 = Math.min(x0, x1), sx1 = Math.max(x0, x1), sy0 = Math.min(y0, y1), sy1 = Math.max(y0, y1), near = bb => !(sx1 < bb[0] || sx0 > bb[2] || sy1 < bb[1] || sy0 > bb[3]);
+                for (const w of F.walls) if (near(w.bb) && facilitySegmentsCross(a, b, w.a, w.b)) return false;
+                for (const s of F.solids) { if (s.open || !near(s.bb)) continue; if (s.shape === 'circle') { if (_facSegPointDist(a, b, s.at[0], s.at[1]) < s.r) return false; }
+                    else for (let i = 0; i < s.poly.length; i++) { const c = s.poly[i], d = s.poly[(i + 1) % s.poly.length]; if (!facilitySegmentsCross(a, b, c, d)) continue; if (s.water && F.ice && F.ice.length) { const q = _facSegHit(a, b, c, d); if (q && facilityIced(F, q[0], q[1])) continue; } return false; } }
+                return true; };
+            const oldLos = (x0, y0, x1, y1) => { const F = _fp.P, d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 0.25)); for (let i = 1; i <= n; i++) { const t = i / n; if (!facilityWalkable(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, F)) return false; } return oldStep(x0, y0, x1, y1, F); };
+            let seed = 20261109; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+            const box = F => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const r of F.rooms) { x0 = Math.min(x0, r.bb[0]); y0 = Math.min(y0, r.bb[1]); x1 = Math.max(x1, r.bb[2]); y1 = Math.max(y1, r.bb[3]); } return [x0, y0, x1, y1]; };
+            const line = (bb, near, F) => { let x0, y0, k = 0; do { x0 = near ? near[0] + (rnd() - 0.5) * 6 : bb[0] + rnd() * (bb[2] - bb[0]); y0 = near ? near[1] + (rnd() - 0.5) * 6 : bb[1] + rnd() * (bb[3] - bb[1]); } while (F && ++k < 30 && !facilityWalkable(x0, y0, F));   // (mostly from the floor: more of them clear)
+                const a = rnd() * 6.2832, L = rnd() < 0.5 ? rnd() * 3.5 : 3.5 + rnd() * 18; return [x0, y0, x0 + Math.cos(a) * L, y0 + Math.sin(a) * L, L]; };
+            const out = { step: 0, los: 0, clear: 0, long: 0, n: 0 }, P = _fp.P, bb = box(P);
+            for (let i = 0; i < 12000; i++) { const [x0, y0, x1, y1, L] = line(bb, null, i % 2 ? P : null); out.n++; if (L >= 4) out.long++; const s = facilityCanStep(x0, y0, x1, y1, P); if (s !== oldStep(x0, y0, x1, y1, P)) out.step++; if (s) out.clear++; if (_fpLos(x0, y0, x1, y1) !== oldLos(x0, y0, x1, y1)) out.los++; }
+            // a copy of the map, changed as play changes it: a crate moved two tiles (its bucket index built again), ice over part of the water, a choke taken away
+            const C = facilityBuild(), crate = C.solids.find(s => s.shape === 'rect' && !s.tilted && /crate/.test(s.kind || s.id)), water = C.solids.find(s => s.water), choke = C.solids.find(s => s.id === 'sewer_gate_boss') || C.solids.find(s => s.shape !== 'circle' && s !== crate && !s.water);
+            const moved = crate ? crate.at && crate.at.slice() : null; if (crate) { for (const q of crate.poly) q[0] += 2; crate.bb = [crate.bb[0] + 2, crate.bb[1], crate.bb[2] + 2, crate.bb[3]]; if (crate.at) crate.at[0] += 2; }
+            if (water) C.ice = [[water.bb[0], water.bb[1], (water.bb[0] + water.bb[2]) / 2, water.bb[3]]];
+            if (choke) choke.open = true; C._ix = null;
+            const ch = { step: 0, n: 0, clear: 0, crate: !!crate, water: !!water, choke: choke && choke.id };
+            for (const near of [crate && [(crate.bb[0] + crate.bb[2]) / 2, (crate.bb[1] + crate.bb[3]) / 2], water && [(water.bb[0] + water.bb[2]) / 2, (water.bb[1] + water.bb[3]) / 2], choke && [(choke.bb[0] + choke.bb[2]) / 2, (choke.bb[1] + choke.bb[3]) / 2], null])
+                for (let i = 0; i < 3000; i++) { const [x0, y0, x1, y1] = line(box(C), near, i % 2 ? C : null); ch.n++; const s = facilityCanStep(x0, y0, x1, y1, C); if (s !== oldStep(x0, y0, x1, y1, C)) ch.step++; if (s) ch.clear++; }
+            out.changed = ch;
+            // whole routes: the same waypoints, and the walkability tests they cost, the old line test against the new
+            let walk = 0; const W = facilityWalkable; facilityWalkable = function (x, y, F) { walk++; return W(x, y, F); };
+            const ends = []; for (let i = 0; i < 40; i++) { const a = line(bb, null, P), b = line(bb, null, P); if (facilityWalkable(a[0], a[1], P) && facilityWalkable(b[0], b[1], P)) ends.push([a[0], a[1], b[0], b[1]]); }
+            const NEW = _fpLos; _fp.paths.clear(); walk = 0; const routesNew = ends.map(e => JSON.stringify(facilityPath(e[0], e[1], e[2], e[3]))), walkNew = walk;
+            _fpLos = oldLos; _fp.paths.clear(); walk = 0; const routesOld = ends.map(e => JSON.stringify(facilityPath(e[0], e[1], e[2], e[3]))), walkOld = walk; _fpLos = NEW; facilityWalkable = W; _fp.paths.clear();   // (each from no planned routes kept: both pay for the planning)
+            out.routes = { n: ends.length, found: routesNew.filter(s => s !== 'null').length, differ: routesNew.filter((s, i) => s !== routesOld[i]).length, walkNew, walkOld };
+            return out; })()`);
+        same(r.step, 0, 'step tests that differ from the old (of ' + r.n + ', ' + r.long + ' long, ' + r.clear + ' clear)'); same(r.los, 0, 'line tests that differ from the old');
+        ok(r.long > 3000 && r.clear > 1000, 'fixture: too few long or clear lines (' + r.long + ', ' + r.clear + ')');
+        ok(r.changed.crate && r.changed.water && r.changed.choke, 'fixture: the copy has no crate, water or choke: ' + JSON.stringify(r.changed)); same(r.changed.step, 0, 'step tests that differ on the changed copy (of ' + r.changed.n + ', ' + r.changed.clear + ' clear)');
+        ok(r.routes.found >= 10, 'fixture: only ' + r.routes.found + ' routes found'); same(r.routes.differ, 0, 'routes that differ from the ones the old line test makes');
+        process.stdout.write('    (walkability tests for ' + r.routes.n + ' routes: ' + r.routes.walkNew + ' now, ' + r.routes.walkOld + ' with the old line test)\n');
+        ok(r.routes.walkNew < r.routes.walkOld * 0.9, 'walkability tests: ' + r.routes.walkNew + ' now against ' + r.routes.walkOld + ' with the old line test (not a tenth fewer)');   // (long routes across the building from no kept plans: their search's one-tile steps cost the same, the straightening less: about a sixth fewer here; in a busy fight, where most lines a route tries are blocked, about a sixth as many)
+    });
+
     group('INTERIORS AND PORTALS: a doorway into a room that is a part of the map of its own');
     check('the Armory is an interior under the Observation Deck: built far from the rest of the building (its own stretch of floor), its doorway an alcove two tiles wide and one deep at each end, the arrival spot in front of each, and no path joins it to the arena or anything else', () => {
         const r = J(`(function(){ canvas.width = 1280; canvas.height = 860; facilityPlay = true; const F = _fp.F, o = {}; const own = _fp.portals.filter(p => /armory/.test(p.id)); o.n = own.length; o.ids = own.map(p => p.id).join(); const cm = _fpComps();   // (the armory's: the Cold Storage has its own)
