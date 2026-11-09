@@ -661,6 +661,21 @@ function measure() {
         same(r.lobbyUnpowered, 0, 'an unpowered room is lit with the player in it'); same(r.hallLeft, 0, 'a powered room stays lit when the player leaves'); same(r.still, true, 'the blackout ended with one room powered'); same(r.after, false, 'powering every room does not end the blackout'); same(r.showLit, 1, 'the ordinary rule is gone'); same(r.dark, r.normal, 'the dark did not return to the ordinary one'); same(r.showLeft, 0, 'the room stays lit once the player leaves (the ordinary rule)'); same(r.lobbyLeft, 0, 'the server room stays lit once the player leaves');
         same(r.lobbyLit, r.dim, 'the server room is not kept dim with the power on (FP_ROOM_DIM, build 2026-11-07qq: "a dark server room")'); ok(r.dim > 0.2 && r.dim < 0.8, 'the server room\'s light: ' + r.dim);
     });
+    check('THE POWERED ROOM\'S LEVEL (the owner, 2026-11-09: "the lighting in the facility is too bright"): 1 for everyone until the owner picks one (FP_LIT); the preview ?lit= lights the room you stand in to its level, its floor and walls darker, a door still throwing its pool; a level out of range is ignored', () => {
+        const r = J(`(function(){ const F = _fp.F, keep = _fpLitPrev, at = id => { const c = partyRoomCells(id); return [c[0][0] + 0.5, c[0][1] + 0.5]; };
+            const go = id => { const p = at(id); player.x = player.visualX = p[0]; player.y = player.visualY = p[1]; _fp.light = null; _fp.pool = null; for (let i = 0; i < 80; i++) _fpLightUpdate(F); };
+            facilityPower('all', true); const door = _fp.items.find(i => i.id === 'door_lobby_hallway_west' && i.part === 'm'); door.st = door.st || { open: 0 }; door.st.open = 1;
+            const out = { FP_LIT, def: _fpLit() }; go('lab_hallway'); out.now = _fpRoomLight('lab_hallway');
+            _fpLitPrev = 0.7; go('lab_hallway'); out.prev = _fpRoomLight('lab_hallway'); out.pools = _fp.pools.length; out.wall = _fpDimColour('#ffffff', 1 - _fpDarkAmt() * (1 - out.prev));
+            go('front_lobby'); out.lobby = _fpRoomLight('front_lobby');
+            _fpLitPrev = undefined; const loc = globalThis.location; globalThis.location = { search: '?lit=0.2' }; out.outOfRange = _fpLit(); _fpLitPrev = undefined; globalThis.location = { search: '?lit=0.65' }; out.read = _fpLit();
+            globalThis.location = loc; _fpLitPrev = keep; go('lab_hallway'); return out; })()`);
+        same(r.FP_LIT, 1, 'the level for everyone (until the owner picks one)'); same(r.def, 1, 'the level without the preview'); same(r.now, 1, 'a powered room without the preview');
+        ok(Math.abs(r.prev - 0.7) < 1e-9, 'the preview does not set the room\'s level: ' + r.prev); ok(r.pools >= 1, 'a door throws no pool with the room darker');
+        ok(/^rgba\((\d+),/.test(r.wall) && +/^rgba\((\d+),/.exec(r.wall)[1] < 210, 'a white wall is not darker: ' + r.wall);
+        ok(Math.abs(r.lobby - 0.42 * 0.7) < 1e-9, 'the dim server room is not dimmer still: ' + r.lobby);
+        same(r.outOfRange, 1, 'a level out of range was taken'); same(r.read, 0.65, 'the preview level was not read');
+    });
     check('enemies stay visible in the blackout: units are never dimmed, and an enemy in the dark gets a hostile glow under it (not an ally, not a lit enemy, not a dead one)', () => {
         const r = J(`(function(){ canvas.width = 1280; canvas.height = 860; facilityPlay = true; facilityTutorialStart(_fp.F); const F = _fp.F; player.x = player.visualX = 20; player.y = player.visualY = 20; _fp.light = null; for (let i = 0; i < 80; i++) _fpLightUpdate(F);
             let grads = 0; const gi = ctx.createRadialGradient; ctx.createRadialGradient = function () { grads++; return gi.apply(this, arguments); };

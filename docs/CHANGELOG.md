@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09kk` · branch `claude/start-game-project-HSh7Z` · a preview to try darker rooms
+The owner: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for."
+- **`?lit=<0.4 to 1>`** lights the powered room you stand in to that level instead of full (`FP_LIT`, js/facilitystyle.js). Its floor, walls, doors and props darken together; units, effects and the controls do not.
+- Nothing changes for anyone yet: the level stays 1 until the owner picks one from the pictures (0.75, 0.6, 0.5).
+- Tests: `tests/facilityplay.js`.
+
 ### Build `2026-11-09jj` · branch `claude/start-game-project-HSh7Z` · ten forms hold still standing
 The owner: "the creatures need an idle phase where they don't squirm [...] the salamander needs to stop moving, but the thunderhead looks fine whenever he's idle right now"; then "The 10 that walk in place".
 - **Standing, ten forms hold still:** Electro Skink, Voidstar, Hammer Slug, Thermite Burrower, Blight Spider, Hornshell, Seeper, Thornwhip, Sundew and Stonepetal. Their idle loop was a walk, so they squirmed in place.

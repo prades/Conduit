@@ -469,18 +469,27 @@ function _fpStyleRig(it) {
 var FP_DARK = 0.82, FP_POOL = 0.7, FP_POOL_R = 3.6, FP_LIGHT_EASE = 0.12;
 // a room that stays DIM with you in it and the power on (the owner, 2026-11-07: "a dark server room"): its light level is held at this (the agent's number, provisional); its racks' lights blink over it (js/propsprites.js)
 const FP_ROOM_DIM = { front_lobby: 0.42 };
+// THE POWERED ROOM'S LEVEL (the owner, 2026-11-09: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for"): the room you stand in, with power, is
+// lit to this (1: its palette as drawn; 0.7 about a quarter darker, floor, walls, doors and props together; units, effects and the screen's controls are never dimmed). Until the owner picks a level it
+// stays 1 for everyone, and the preview ?lit=<0.4 to 1> tries one (read once: location.search is slow in Safari).
+const FP_LIT = 1;
+let _fpLitPrev;
+function _fpLit() {
+    if (_fpLitPrev === undefined) { _fpLitPrev = null; try { const m = typeof location !== "undefined" && /[?&]lit=([\d.]+)/.exec(location.search || ""); const v = m ? parseFloat(m[1]) : NaN; if (v >= 0.4 && v <= 1) _fpLitPrev = v; } catch (e) {} }
+    return _fpLitPrev !== null ? _fpLitPrev : FP_LIT;
+}
 function _fpLightKey(id) { return id === "teleport_stair_room" ? "lab_hallway" : id; }
 function _fpLightUpdate(F) {
     _fp.light = _fp.light || new Map(); _fp.pool = _fp.pool || new Map();
     const pr = facilityRoomAt(player.visualX, player.visualY, F), here = pr ? _fpLightKey(pr.id) : (_fp.lastRoom || null); if (here) _fp.lastRoom = here; _fp.here = here;
     const bo = facilityBlackout(), away = typeof attractOn === "function" && attractOn();   // (a blackout: a room is lit, and a door throws a pool, only once it has power: js/facilitytutorial.js; the website's background: every room dim, js/attract.js)
-    for (const r of F.rooms) { const k = _fpLightKey(r.id), v = away ? attractRoomLight(k, here) : k === here && (!bo || _fpPowered(k)) ? (FP_ROOM_DIM[k] || 1) : 0, cur = _fp.light.has(k) ? _fp.light.get(k) : v; if (r.id === k || !_fp.light.has(k)) _fp.light.set(k, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
+    for (const r of F.rooms) { const k = _fpLightKey(r.id), v = away ? attractRoomLight(k, here) : k === here && (!bo || _fpPowered(k)) ? (FP_ROOM_DIM[k] || 1) * _fpLit() : 0, cur = _fp.light.has(k) ? _fp.light.get(k) : v; if (r.id === k || !_fp.light.has(k)) _fp.light.set(k, Math.abs(v - cur) < 0.01 ? v : cur + (v - cur) * FP_LIGHT_EASE); }
     const pools = [];
     if (!_fp.openings) { _fp.openings = F.openings.map(o => ({ id: o.id, x: (o.a[0] + o.b[0]) / 2, y: (o.a[1] + o.b[1]) / 2, rooms: (F.connections.find(c => c.opening === o.id) || { rooms: o.rooms || [] }).rooms.map(_fpLightKey), ramp: F.connections.some(c => c.opening === o.id && c.ramp) })); _fp.doorItems = new Map(_fp.items.filter(i => i.fp === "door").map(i => [i.id, i])); }
     for (const o of _fp.openings) {
         const di = _fp.doorItems.get(o.id), want = o.ramp ? 1 : (di && di.st && (di.st.open || 0) >= 0.5 ? 1 : 0), cur = _fp.pool.get(o.id) || 0, v = Math.abs(want - cur) < 0.01 ? want : cur + (want - cur) * FP_LIGHT_EASE; _fp.pool.set(o.id, v);
         // a doorway with no door (a stairway) always glows softly on both sides, near or far; a door throws light only when it is open and the room on one side is lit
-        if (v > 0.02 && (o.rooms.some(k => (!bo || _fpPowered(k)) && (o.ramp || (_fp.light.get(k) || 0) > 0.5)))) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms, r: o.ramp ? 5.2 : FP_POOL_R, k: o.ramp ? 0.55 : FP_POOL });
+        if (v > 0.02 && (o.rooms.some(k => (!bo || _fpPowered(k)) && (o.ramp || (_fp.light.get(k) || 0) > 0.5 * _fpLit())))) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms, r: o.ramp ? 5.2 : FP_POOL_R, k: o.ramp ? 0.55 : FP_POOL });
     }
     if (away) attractPools(pools);
     _fp.pools = pools;
