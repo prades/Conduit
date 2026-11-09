@@ -552,7 +552,7 @@ The Flux test room (`?fluxlab`) now has the roadmap's "object that provides cove
   - lobs (an arc: the toxic smoke bomb) fly over everything;
   - the fire bombs bounce off walls and props (`js/firebombs.js`);
   - the Photonic Shield stops enemy shots;
-  - REEF's outcrops and REEF PILLAR (build `2026-11-08m`) stop enemies' movement, and since build `2026-11-08n` their shots (the owner: "Stop shots too"; a lob flies over, your shots pass); bites and sight pass them (`TECHNICIANS.md`, "REEF");
+  - REEF's outcrops and REEF PILLAR (build `2026-11-08m`) stop enemies' movement, and since build `2026-11-08n` their shots (the owner: "Stop shots too"; a lob flies over, your shots pass); bites and sight pass them (`TECHNICIANS.md`, "REEF"). *(Changed in build `2026-11-09a`, the owner: "Stops everyone's": REEF's rock is cover for every side, as a crate: every shot's step, the laser's beam and a sentry's aim stop at it, with the own-cover rule (a shot fired within `FAC_SHOT.own` of its edge passes over it); a lob flies over; bites and sight still pass it.)*
   - melee (bites, the lash, the punch) tests distance only, so a bite still reaches over a one-tile object;
   - ~~the moves that strike at once (ARC VOLLEY, SINGULARITY SHOT, STATIC VORTEX, PETAL BLAZE) are as they were~~ *(superseded in build `2026-11-06i` by the owner's "Need sight": §8.5)*.
 

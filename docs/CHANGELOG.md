@@ -2,6 +2,23 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-09
+
+### Build `2026-11-09a` · branch `claude/start-game-project-HSh7Z` · the owner's answers: REEF's rock as a crate, BLOOM breeding, BLOOM's nine cards
+The owner asked again to be prompted one by one ("Prompt me questions one by one"), then said "Build these answers".
+- **REEF stops everyone's shots, as a crate** ("Stops everyone's"; it was enemy shots only): any shot that crosses an outcrop or a REEF PILLAR spike stops there with a spark of crystal, yours and your followers' too; the laser's beam ends at it and a sentry holds its fire at a target behind it. As at a crate, a shot fired from right behind it passes over it, and a lob flies over it; bites still reach over it.
+- **BLOOM breeding** ("Build it"): once the purification module is installed and has run, a toxic + fire pair's offspring is BLOOM half the time, toxic a quarter and fire a quarter. Before that, the normal toss.
+- **BLOOM's nine cards** (drafted by the agent, approved one by one: "MEND's heal", "DEWBURST: big MEND", "Approve as drafted", "SEED GUNNER: seedfall", "GROVE ENGINEER: relays", "HERBALIST: bites and pool"). They are dealt by no pack, shelf or shop until the purification module has run:
+  - **Pack 1**, for a BLOOM follower: **SAP VEIN** (Unrefined, +25% to what its MEND heals), **NECTAR HEART** (Refined, +50%), **DEWBURST** (Precision: 15% a hit for its MEND to heal 3 times as much, with a burst of pink dew). DEWBURST is also what ATTUNED CORE sets on a BLOOM follower's hit.
+  - **Series 2**, BLOOM's Mage auras: **THORN BAND** (+5% ATTACK), **PETAL SIGIL** (+7.5%), **EVERBLOOM CROWN** (+10%, and 10% a hit of a unit in its reach for a MEND from the one that hit).
+  - **Series 2**, BLOOM's Player roles: **SEED GUNNER** (Gunslinger: every 5th round that hits plants a small SEEDFALL, 1 tile round for 2 s), **GROVE ENGINEER** (Technomancer: every online relay mends your followers within 3 tiles 1% every 3 s), **HERBALIST** (Mutator: the clone's bites MEND; the serum's pool heals 50% more). The Side Quest sells the three, ◆1,000 each, after the purification.
+  - The player's own punch, arc, lash and rounds in a BLOOM role's element MEND nothing by themselves: what a role mends is what its kit says (the agent's reading, to confirm).
+  - Pack 1 deals 21 cards once the module has run (18 before), Series 2 73 (67 before); the game has 100 cards.
+- **Screens:** the cards screen sorts BLOOM's cards after core's; the Side Quest's choices wrap to rows of three, so the six roles fit.
+- **Kept:** SWEET SCENT stays a chosen mode ("Keep it a chosen mode"); every BLOOM number stays provisional until a playtest ("Keep them all").
+- **Numbers:** the nine cards' are the agent's, provisional.
+- Tests: new suite bloomcards (15 checks); new checks in reef (the crate rule), followerprog (BLOOM breeding); updated packs, series2, market, classcards, playercards, cards, cardart, sidequest. FULL_RUN_PENDING. Not playtested.
+
 ## 2026-11-08
 
 ### Build `2026-11-08n` · branch `claude/start-game-project-HSh7Z` · the owner's answers: STONEPETAL and STAKE RING, SUNDEW's NECTAR STING and SWEET SCENT, REEF stopping shots

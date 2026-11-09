@@ -2556,3 +2556,23 @@ Offered and passed over: REEF movement-only, or blocking shots and bites; a step
 
 ### Supersedes / superseded by
 Answers the readings of "The coral crab built, with REEF (its outcrop and its climbs) and REEF PILLAR: the agent's numbers and readings" (2026-11-08, build `2026-11-08m`). Supersedes SUNDEW's slash and BASH, and the coral crab's BASH and its working name.
+
+## DECISION: The owner's answers on REEF, BLOOM breeding and BLOOM's cards: REEF's rock as a crate, BLOOM half of a toxic + fire brood, BLOOM's nine cards
+- Date and build: 2026-11-09, build `2026-11-09a`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Prompt me questions one by one", then the answers one by one: "Stops everyone's"; "Keep it a chosen mode"; "Keep them all (Recommended)"; "Build it (Recommended)"; "Draft them (Recommended)"; "MEND's heal (Recommended)"; "DEWBURST: big MEND"; "Approve as drafted (Recommended)"; "SEED GUNNER: seedfall"; "GROVE ENGINEER: relays (Recommended)"; "HERBALIST: bites and pool (Recommended)"; then "Build these answers (Recommended)".
+
+### Decision
+- REEF's outcrop and REEF PILLAR stop everyone's shots, as a crate does ("Stops everyone's"): your side's too, with the crate's own-cover rule (a shot fired from right behind it passes over it); lobs fly over it; bites still reach over it.
+- SWEET SCENT stays a chosen mode, as every second attack; every BLOOM number stays provisional until a playtest.
+- BLOOM breeding goes in: once the purification module is installed and has run, a toxic + fire pair's offspring is BLOOM half the time (25% toxic, 25% fire).
+- BLOOM's cards, drafted by the agent and approved: Pack 1's three make MEND heal more (SAP VEIN +25%, NECTAR HEART +50%) and its Precision card gives a big MEND (DEWBURST, 15% for ×3; BLOOM's status for ATTUNED CORE); the aura as drafted (THORN BAND +5%, PETAL SIGIL +7.5%, EVERBLOOM CROWN +10% and 10% a hit to MEND); the roles SEED GUNNER (every 5th hit a small seedfall), GROVE ENGINEER (online relays mend the squad near them), HERBALIST (the clone's bites MEND; the serum's pool +50%). Dealt only once the purification module has run; the Side Quest sells the three roles from then, ◆1,000 each.
+- The agent's reading, to confirm: the player's own strikes in a BLOOM role's element MEND nothing by themselves (their kits say what they mend).
+
+### Status
+Built in build `2026-11-09a` and tested (`tests/bloomcards.js`, `tests/reef.js`, `tests/followerprog.js`, and the card suites' counts). Not playtested. `CONVERSION.md` §2 ("BLOOM's cards"), §9 and §11.
+
+### Alternatives
+Offered and passed over: your side's shots passing REEF, as they pass the Photonic Shield ("Yours pass", the agent's recommendation, as built in `2026-11-08n`); SUNDEW stinging between puffs; the provisional numbers one by one; BLOOM breeding not yet, or another rule; BLOOM's cards later; for Pack 1's Unrefined and Refined, healing received or special attack; for its Precision card, ROOTSNARE (bind; the agent's recommendation) or THORNCOAT (thorns); for the aura, DEWBURST as the crown's extra, or other names; for the Gunslinger, BLOOM SHOOTER with dew (the agent's recommendation) or a steady mend; for the Technomancer, GROVE ENGINEER on the lamp or the arc; for the Mutator, HERBALIST's dew bites, or THORN GRAFTER (thorns).
+
+### Supersedes / superseded by
+Supersedes the enemy-only shot rule of "The owner's answers on STONEPETAL, SUNDEW and REEF" (2026-11-08, build `2026-11-08n`). Fills in "BLOOM's cards (the full set, each to be designed for the owner's approval)" (`CONVERSION.md` §2, decided 2026-11-02).

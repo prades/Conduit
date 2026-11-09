@@ -16,9 +16,10 @@
   - **Implemented in build `2026-11-02i` (Part 1b; on main at the owner's word), and tested:** the Technomancer's six roles (tests/playercards.js; section 9, "Part 1b"). Not playtested.
   - **Implemented in build `2026-11-02j` (Part 1c; on main at the owner's word), and tested:** the Mutator's six roles, on the lash, the clone and the serum (tests/playercards.js, 42 checks; section 9, "Part 1c"). Not playtested.
   - **Implemented in build `2026-11-06c` (Part 1d; on main at the owner's word), and tested:** Series 2 deals the eighteen at Prototype (45 → 63 cards), and Side Quest sells the Sewers' three toxic roles once the water is purified, ◆1,000 each, kept for good (tests/sidequest.js, tests/playercards.js, tests/classcards.js, tests/series2.js; section 9, "Part 1d"). Not playtested. All of Part 1 is built.
+  - **Implemented in build `2026-11-09a` (on the branch), and tested:** BLOOM's three Mage auras (THORN BAND, PETAL SIGIL, EVERBLOOM CROWN, its extra a MEND) and three Player roles (SEED GUNNER, GROVE ENGINEER, HERBALIST), dealt by Series 2 only once the purification module has run (67 → 73 cards), and the Side Quest selling the three from then (tests/bloomcards.js, 15 checks; `CONVERSION.md` §2 "BLOOM's cards", §9). Not playtested. Their names and numbers are the agent's drafts (approved as designs, 2026-11-09), provisional until a playtest.
   - **Open:** section 11.
 - **Owner:** User (creative direction); agent (implementation support)
-- **Last updated:** 2026-11-06
+- **Last updated:** 2026-11-09
 - **Branch/build context:** written on `claude/start-game-project-HSh7Z` against build `2026-11-01n`. Built in build `2026-11-02c` on the same branch (on main since the owner's word). Since that build the player's two slots take Player cards only. Since build `2026-11-02h` (on main too, at the owner's word) the Gunslinger's six are Player cards too, beside the two test cards; the Technomancer's six since build `2026-11-02i` (on main), the Mutator's six since build `2026-11-02j` (on main). Series 2 deals them, and Side Quest sells the Sewers' three, since build `2026-11-06c` (Part 1d, on main at the owner's word).
 - **Related docs:** `TUTORIAL.md` (the equip cards), `UI-STYLE.md` (the CARDS screen; YOU on the roster), `COMBAT.md` §7 (the damage types and race weaknesses), `SERIES-2.md`, `TECHNICIANS.md`, `OPEN-QUESTIONS.md` §1l and §3, `DECISION-LOG.md`
 
@@ -41,7 +42,7 @@ Each follower class has a card family of its own; the player has Player cards.
 
 - **The six element auras**, one per element (fire, toxic, electric, ice, flux, core). **A Mage wears the aura of its own element**: a fire Mage the fire aura.
 - **What it gives:** every follower **near the Mage**, of any element, the Mage included, gets **+5% attack damage** at the aura's lowest tier and **+10%** at its rarest. Attack damage is ATK, the POWER on a follower's roster card. Every hit is now part physical (ATK) and part elemental (SP.ATK) (`COMBAT.md` §7.6), so an aura lifts the physical part and helps Brawlers most: about +4% on a Brawler's hit and +1% on a Mage's, at the lowest tier. The owner kept it on ATK (2026-11-02).
-- **Three tiers** (2026-11-02): each element's aura comes as three cards, Refined +5%, Precision +7.5% and Prototype +10% with the element's extra: 18 aura cards in all. BLOOM's aura makes 21; its extra is MEND (`CONVERSION.md`).
+- **Three tiers** (2026-11-02): each element's aura comes as three cards, Refined +5%, Precision +7.5% and Prototype +10% with the element's extra: 18 aura cards in all. BLOOM's aura makes 21; its extra is MEND (`CONVERSION.md`). *(Built in build `2026-11-09a`: THORN BAND, PETAL SIGIL and EVERBLOOM CROWN, for BLOOM Mages; the crown's 10% a hit is a MEND from the unit that hit.)*
 - **Reach** (2026-11-02): 4 tiles from the Mage, **in its own room** (the owner, 2026-11-02, of the first build: "It shouldn't be displayed or affected in other rooms"). A wall stops an aura. The Mutator's clone in reach gets the aura too.
 - **The rarest tier adds the element's extra:** each hit of a follower in reach has a small chance to apply the element's own status: fire burns, toxic weakens, electric glitches, ice slows, flux siphons, core knocks back. The chance is **10%** (the owner raised the first guess of 5%, 2026-11-02: "Raise to 10%").
 - **Stacking:** different auras stack. A second copy of the same aura adds nothing, even worn by another Mage. Two different cards of one element on one Mage (KINDLING BAND and HEARTH SIGIL) both count (the owner, 2026-11-02: "Both count").
@@ -102,7 +103,7 @@ The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). The agent drafte
   - the 18 auras and the 3 opportunity cards;
   - the 18 Player cards.
 
-  Its price and rarity odds stay as they are. BLOOM's aura and three roles make it 69, once the conversion apparatus is in (`CONVERSION.md`).
+  Its price and rarity odds stay as they are. BLOOM's aura and three roles make it 69, once the conversion apparatus is in (`CONVERSION.md`). *(Counted in build `2026-11-09a`: Series 2 deals 73 cards with the six, 67 without: the four card attacks (Prototype) came in after this was written: `SERIES-2.md`.)*
 - **Copies of the cut cards already owned are removed** from collections, hands and slots. Each permanently unlocked copy refunds its ◆1,000, added when the next run starts (at once if a run is in progress).
 
 ### Player cards
@@ -124,9 +125,9 @@ The owner: "You draft, I approve" (`NEXT-UPDATE.md` section 4). The agent drafte
 | **Ice** | CRYO MARKSMAN: slower shots that slow; a charged shot freezes | CRYO TECH: enemies near powered relays are slowed | CRYO GENETICIST: fallen followers are preserved for free |
 | **Flux** | RIFT RUNNER: shots pull enemies toward you | GRAVITY ENGINEER: swap places with a squad member | SPLICER: the clone takes a trait from the last creature it killed |
 | **Core** | BREACH GUNNER: knockback rounds | BULWARK ENGINEER: the overcharge shields the squad | CORE SHAPER: the clone becomes a heavy tank |
-| **Bloom** (designed 2026-11-02, `CONVERSION.md`) | to design | to design | to design |
+| **Bloom** (designed and approved 2026-11-09, built in build `2026-11-09a`; `CONVERSION.md` §2) | SEED GUNNER: every 5th hit plants a small seedfall | GROVE ENGINEER: online relays mend the squad near them | HERBALIST: the clone's bites mend; the serum's pool heals more |
 
-With BLOOM, the seventh element, there are 21 roles. BLOOM's three are named and designed later, for the owner's approval.
+With BLOOM, the seventh element, there are 21 roles. BLOOM's three were drafted by the agent and approved one by one (the owner, 2026-11-09: "SEED GUNNER: seedfall", "GROVE ENGINEER: relays (Recommended)", "HERBALIST: bites and pool (Recommended)").
 
 ### The 18 kits (drafted 2026-11-02; approved the same day)
 
@@ -197,7 +198,13 @@ With BLOOM, the seventh element, there are 21 roles. BLOOM's three are named and
 | SPLICER (flux) | the clone takes a trait from the last creature it killed | The trait is read as the creature's element. The clone's bites take the element of the last creature it killed, with that element's status (weakness after a toxic ant), until its next kill. A creature with no element leaves it as it was. This replaces rule 2 for the clone. |
 | CORE SHAPER (core) | the clone becomes a heavy tank | The clone gets +50% health (two ranks of ARMOR) and its bites KNOCK BACK. It moves 20% slower (**new**). |
 
-**BLOOM's three roles** come later, with BLOOM (`CONVERSION.md`).
+**BLOOM's three roles** (build `2026-11-09a`; every number the agent's, provisional until a playtest). As every role, each makes its class's strikes BLOOM's element, for the triangle only (BLOOM is ×1 against everything). The player's own strikes MEND nothing by themselves: what a role mends is what its kit says (the agent's reading).
+
+| Role | Theme | Kit |
+|---|---|---|
+| SEED GUNNER (Gunslinger) | every 5th hit plants a small seedfall | Every 5th round that hits, from any gun, plants a SEEDFALL where it hit: THORNWHIP's, 1 tile round for 2 s (120 frames); on its beats (every half second) the enemies in it are bitten 0.2 × the gun's damage and your hurt followers in it mended 1% of their health. The count is not saved. |
+| GROVE ENGINEER (Technomancer) | online relays mend the squad near them | Every 3 s (180 frames), every online relay mends your followers within 3 tiles of its node 1% of their maximum health. |
+| HERBALIST (Mutator) | the clone's bites mend; the serum's pool heals more | Every bite of your clone MENDs: the most hurt of your followers within 4 tiles of it heals 2% of its maximum health (BLOOM's MEND). The serum's pool heals 50% more (9% a beat, not 6%). |
 
 **The electric Technomancer's new name** (the planned class keeps STORMCALLER): **ARC WARDEN** (the owner, 2026-11-02; chosen from SURGE ENGINEER, LAMPLIGHTER and ARC WARDEN).
 

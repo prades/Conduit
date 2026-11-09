@@ -1,6 +1,6 @@
 # Series 2: the items
 
-**Status: 63 cards implemented and on sale after the purification:** the 20 species cards, the Technician's 4, the 18 Mage auras and the 3 Brawler opportunity cards (45, build 2026-11-02c, Build B), and the 18 Player cards at Prototype (build `2026-11-06c`, the following update's Part 1d, on main at the owner's word; built in builds `2026-11-02h`, `i` and `j`, and dealt once all eighteen were in: "All 18 together"; `UNIVERSAL-AND-PLAYER-CARDS.md`). Tested (tests/series2.js, tests/series2abilities.js, tests/classcards.js, tests/playercards.js), not playtested. The 8 Lustrous cards are PROPOSED (a later update). Built in build 2026-11-01j with 32 cards.
+**Status (build `2026-11-09a`): 73 cards implemented:** 67 dealt after the purification (the 63 below and the four card attacks, Prototype) and **BLOOM's six** (THORN BAND, PETAL SIGIL, EVERBLOOM CROWN; SEED GUNNER, GROVE ENGINEER, HERBALIST) once the purification module is installed and has run (`CONVERSION.md` §2, "BLOOM's cards"; tests/bloomcards.js). Not playtested. **Before: 63 cards implemented and on sale after the purification:** the 20 species cards, the Technician's 4, the 18 Mage auras and the 3 Brawler opportunity cards (45, build 2026-11-02c, Build B), and the 18 Player cards at Prototype (build `2026-11-06c`, the following update's Part 1d, on main at the owner's word; built in builds `2026-11-02h`, `i` and `j`, and dealt once all eighteen were in: "All 18 together"; `UNIVERSAL-AND-PLAYER-CARDS.md`). Tested (tests/series2.js, tests/series2abilities.js, tests/classcards.js, tests/playercards.js), not playtested. The 8 Lustrous cards are PROPOSED (a later update). Built in build 2026-11-01j with 32 cards.
 
 **Series 2 reshaped: designed 2026-11-02, implemented in build 2026-11-02c, except the Player cards** (the owner, in prompts; the rules are in `UNIVERSAL-AND-PLAYER-CARDS.md`).
 - **Cut:** the eight Brawler and Mage class cards (the two tables below, marked CUT). Their two proposed Lustrous cards, WAR BANNER and ASTRAL FOCUS, go with them.
@@ -15,7 +15,7 @@
   | Prototype | 31 (5 species + 1 Technician + 6 auras + 1 opportunity + 18 Player cards) |
 
   Its price and odds stay as they are. With the same odds, each Unrefined card comes up more often than today and each Prototype card far less often: measured on 20,000 seeded packs since the Player cards came in, 35.4% of packs hold a Prototype card, and a given one turns up in about 1 pack in 78 (it was about 1 in 32 among 13).
-- **With BLOOM** (the seventh element, `CONVERSION.md`), its aura (Refined, Precision, Prototype) and its three Player roles (Prototype) join. That makes 69 cards: Refined 14, Precision 14, Prototype 35. They are dealt only once the conversion apparatus is in, as Pack 1's BLOOM cards are (the owner, 2026-11-02).
+- **With BLOOM** (the seventh element, `CONVERSION.md`), its aura (Refined, Precision, Prototype) and its three Player roles (Prototype) join. That makes 69 cards: Refined 14, Precision 14, Prototype 35. They are dealt only once the conversion apparatus is in, as Pack 1's BLOOM cards are (the owner, 2026-11-02). *(Built in build `2026-11-09a`, the six designed by the agent and approved 2026-11-09: THORN BAND (Refined, +5% ATTACK), PETAL SIGIL (Precision, +7.5%), EVERBLOOM CROWN (Prototype, +10% and 10% a hit to MEND); SEED GUNNER, GROVE ENGINEER and HERBALIST (Prototype). With the four card attacks, Series 2 deals 73: Unrefined 6, Refined 14, Precision 14, Prototype 39; 67 before the purification module has run.)*
 - **Owned copies of the cut cards are removed** from collections, hands and slots. Each permanently unlocked copy refunds ◆1,000, added when the next run starts (at once if a run is in progress). *Implemented:* the collection drops them in the same write that keeps the refund; the refund is paid on the first card tick of a run in play, a line says so (◆3000 BACK · 3 SERIES 2 CARDS YOU OWNED WERE CUT), and the run is saved at once. Paid once; safe on malformed saves (js/cards.js `EQUIP_CUT`, `equipOwnedSet`, `equipRefundTick`).
 
 The owner's word (2026-11-01): "Series 2. Pick a price and set the odds for the pack and make it to where another rarity is unlocked". Asked which rarity, the owner picked "Prototype unlocks". So Series 2 deals **Unrefined, Refined, Precision and Prototype**: Prototype is the fourth tier (four lit segments), the first rarity beyond Pack 1's Precision. Lustrous comes in a later update.
@@ -40,7 +40,7 @@ Each card is an **item** with its own 3D look (the "3D look" column). The looks 
 | Cards a pack | 4 | 4 |
 | Odds a slot: Unrefined / Refined / Precision / Prototype | 50 / 30 / 15 / 5 (PICKED) | 60 / 30 / 10 / none |
 | Reserved slot | 1, Precision or higher, drawn among Precision and Prototype by the same odds (15 to 5) | 1, Precision |
-| Deals | 63 cards since build `2026-11-06c`: the 20 species cards, the Technician's 4, the 18 Mage auras, the 3 Brawler opportunity cards (45 since build 2026-11-02c; 32 before) and the 18 Player cards | the 18 element cards |
+| Deals | 73 since build `2026-11-09a` (67 until the purification module has run: BLOOM's three auras and three roles wait for it; the four card attacks are among the 67); 63 cards since build `2026-11-06c`: the 20 species cards, the Technician's 4, the 18 Mage auras, the 3 Brawler opportunity cards (45 since build 2026-11-02c; 32 before) and the 18 Player cards | the 18 element cards |
 | Opens | after the purification (the owner's rule) | from the start |
 
 - **About one pack in three holds a Prototype card**: 1 − 0.75 × 0.95³ ≈ 36% (the reserved slot draws Prototype 5 times in 20, each other slot 5 in 100). Measured: 35.5% of 20,000 seeded packs.
@@ -164,7 +164,7 @@ A card's ability works only on a follower the card fits, as a bonus does (js/car
 - **Two stats on one card** (the drone's and the three classes' Precision cards): each stat is a bonus like any other and adds to the same stat on the other slot.
 - **Ability cooldown** shortens a technician's ability wait: never below one frame, and never by more than 90% in all.
 
-Tests: tests/series2.js (the pack, its 63 cards, the price and odds, the lock, fits, the saves, the shelf), tests/series2abilities.js (each ability, Attuned Core and the two-stat cards, on real followers), tests/playercards.js (the Player cards in the deal and on the shelf) and tests/classcards.js (the class families, the deal of 63, the cut cards' clean-up and refund).
+Tests: tests/series2.js (the pack, its 63 cards, the price and odds, the lock, fits, the saves, the shelf), tests/series2abilities.js (each ability, Attuned Core and the two-stat cards, on real followers), tests/playercards.js (the Player cards in the deal and on the shelf) and tests/classcards.js (the class families, the deal of 63, the cut cards' clean-up and refund), tests/bloomcards.js (BLOOM's six, and the deal waiting for the purification module).
 
 ## What is left
 
