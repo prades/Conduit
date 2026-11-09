@@ -4,6 +4,24 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09c` · branch `claude/start-game-project-HSh7Z` · every form its own second attack; the Electro Skink's LIGHTNING CIRCUIT
+The owner asked to be prompted one by one again, picked one of the agent's drafts for each form still on BASH (one form at a time), then said "Build it, but we need to run an optimization check and then after that will go through and design each of these effects [...] with 3-D flare".
+- **Nine second attacks** in place of BASH (each a chosen mode with a wind-up; every number the agent's, provisional):
+  - **ZIGZAG DASH** (Electro Skink): it darts through the nearest enemy within 4 tiles and on, a hop at a time, 3 at most: each slashed (electric) and its wind-up broken; it ends beside the last.
+  - **WOBBLE SLAM** (Jelly Ram): it bounces and lands: every enemy within 1.5 tiles hurt (crushing) and staggered half a second (not a boss).
+  - **ICICLE VOLLEY** (Rimestar): a fan of three icicles, each its shot (ice); one that hits slows its target for 2 s.
+  - **ECHO PULSE** (Hornshell): a ring of sound out to 4 tiles: every enemy in it hurt a little and its wind-up broken.
+  - **SHELL GUARD** (Hammer Slug): it braces for 4 s: half damage, and the enemies within 3 tiles come for it.
+  - **PHASE SWAP** (Goo Proxy): it swaps places with the nearest enemy within 6 tiles (not a boss); a goo burst hurts every enemy within a tile of the spot it left.
+  - **VENOM BITE** (Blight Spider): a bite that poisons and marks: your side's next 3 hits on it deal 20% more.
+  - **SHOCK ZAP** (Hover Shell): a zap at an enemy within 4 tiles, its wind-up broken; the KINETIC LAUNCHER untouched.
+  - **SKATE CHARGE** (Igloo Skater): it skates 4 tiles through the enemies on its line, each hurt and slowed.
+- BASH is now only an unevolved follower's second attack; a follower saved locked on BASH carries over to its form's own.
+- **LIGHTNING CIRCUIT**, the Electro Skink's Ultimate: it races a loop round the biggest group it can see, and a ring of lightning lies there 5 s: the enemies inside shocked every half second, one crossing it stunned a moment. No current form is flagged NOT DESIGNED YET any more; the retired forms kept for old saves never get an Ultimate ("No, leave them") and are not flagged.
+- Their looks are plain for now: they are to be designed with 3-D flare next, after an optimization check (the owner).
+- Fixed on the way: an effect spawned during the effects' own update was lost (the list is rebuilt by a filter); new ones made there go through a small queue (`fxLater`).
+- Tests: new suite ninemoves (14 checks); updated secondattacks, moves, evolution, unitinfo, followercombat, ultimate. FULL_RUN_PENDING. Not playtested.
+
 ### Build `2026-11-09b` · branch `claude/start-game-project-HSh7Z` · Ultimates are evolved forms' own, a bond is for breeding, unevolved followers hit plainly
 The owner asked to be prompted one by one again ("Prompt me questions one by one"), rethought Ultimates and bonds in their answers, then said "Build these answers".
 - **Ultimates are each evolved form's own** ("an ultimate is an evolved followers thing"): an unevolved follower has none (no meter on its card; its charge does not fill). The element-wide Ultimates are removed with everything only they used: electric's EMP (its screen dim, glow and speed boost), ice's BLIZZARD (its freezing field), flux's DISORIENT (creatures turning on each other), toxic's SMOKE SCREEN (its creeping smoke). Fire's VOLCANIC ERUPTION was the Ember Hood's own and stays as that.

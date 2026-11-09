@@ -721,7 +721,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 
 - **Preservation requirement:** preserve Hover Shell's existing design, behavior, and role exactly.
 - KINETIC LAUNCHER is an existing ability and must not be replaced, renamed, rebalanced, or reinterpreted during this combat pass.
-- Retrieve remaining kit details from the live registry and documentation; do not invent a new attack or Ultimate.
+- Retrieve remaining kit details from the live registry and documentation; do not invent a new attack or Ultimate. *(2026-11-09: asked, with this note quoted, the owner chose a second attack drafted for it, SHOCK ZAP, in place of BASH; the KINETIC LAUNCHER untouched; built in build `2026-11-09c`.)*
 - **Ultimate (built in `2026-11-07y`, the owner's design, 2026-11-07; name and numbers provisional):** DRIFT SLASH — interrupts the enemies it can see within 6 tiles, swings round them in an oval like a sword (build `2026-11-07ee`, the owner: "a circular sort of slash"), slashing each it passes (1.5 × its power, half slashing, half electric), returns to its post; the squad 30% faster for 6 s. It replaces EMP for this form; the KINETIC LAUNCHER is untouched.
 
 ##### 15. Goo Proxy — Jelly Technician
@@ -747,7 +747,7 @@ The working roster contains 18 followers. Use the existing roster registry to ve
 - Preserve existing design. Retrieve primary, alternate, Technician utility, passive, and Ultimate from source notes/registry before proposing changes.
 - **Technician utility (the owner, 2026-11-06):** the ability to freeze water, making bridges to cross it ("I would like to make it to where the ICE technician's utility ability is the ability to freeze water. And make bridges to cross across the water."). Its name, and what becomes of FROST PATCH, the ice technician's ability today, are open (§14).
 
-**Second attacks where the notes give none (build `2026-11-07ss`; the owner: "BASH for now"):** the Jelly Ram, Rimestar, Hornshell, Hammer Slug, Goo Proxy, Blight Spider, Hover Shell and Igloo Skater, and every follower before it evolves, have BASH (`COMBAT.md`) until each gets its own. Their own second attacks are still to be recovered or designed (`OPEN-QUESTIONS.md`).
+**Second attacks where the notes give none (build `2026-11-07ss`; the owner: "BASH for now"):** the Jelly Ram, Rimestar, Hornshell, Hammer Slug, Goo Proxy, Blight Spider, Hover Shell and Igloo Skater, and every follower before it evolves, have BASH (`COMBAT.md`) until each gets its own. Their own second attacks are still to be recovered or designed (`OPEN-QUESTIONS.md`). *(Designed 2026-11-09 and built in build `2026-11-09c`: each picked by the owner from the agent's drafts, one form at a time: WOBBLE SLAM, ICICLE VOLLEY, ECHO PULSE, SHELL GUARD, PHASE SWAP, VENOM BITE, SHOCK ZAP, SKATE CHARGE, and the Electro Skink's ZIGZAG DASH with its Ultimate LIGHTNING CIRCUIT: `COMBAT.md` §7.4. BASH is an unevolved follower's only.)*
 
 ### 12.4 Series 2 Combat Interaction cards — design work to carry forward
 

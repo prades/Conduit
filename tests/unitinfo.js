@@ -63,24 +63,26 @@ function findChromium() {
         const miss = JSON.parse(run(`JSON.stringify(Object.values(EVOLUTIONS).filter(e => e.move && typeof MOVE_INFO[e.move] !== 'function').map(e => e.id + ':' + e.move))`));
         same(miss.length, 0, 'forms without an info entry: ' + miss.join(', '));
     });
-    check('every follower has a second attack (build 2026-11-07ss): BASH before it evolves, and on a form the design notes give none (the new technicians\'); its INFO shows it with its ATTACK choice, and says what it evolves into', () => {
+    check('every follower has a second attack (build 2026-11-07ss): BASH before it evolves; a form its own (the new technicians\' had BASH until build 2026-11-09c: the Igloo Skater\'s SKATE CHARGE); its INFO shows it with its ATTACK choice, and says what it evolves into', () => {
         const r = JSON.parse(run(`(function(){ spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.role = 'camper'; f.level = 5;
             const pick = () => { const i = followerInfo(f); return { sig: i.attacks.find(s => /^SIGNATURE/.test(s.h)) || null, alts: i.attacks.filter(s => /^ALTERNATE/.test(s.h)).map(s => s.h), choice: (i.attacks.find(s => s.h === 'ATTACK') || { choices: [] }).choices.map(c => c.label) }; };
             const before = pick(); f.evolved = 'igloo'; f._moltAt = -1e9; const after = pick();
             followers.splice(followers.indexOf(f), 1); actors = actors.filter(a => a !== f); return JSON.stringify({ before, after }); })()`));
-        ok(r.before.sig && /into the IGLOO SKATER/.test(r.before.sig.note) && /with the move BASH/.test(r.before.sig.note) && !/undefined/.test(r.before.sig.note), 'before: ' + JSON.stringify(r.before.sig));
+        ok(r.before.sig && /into the IGLOO SKATER/.test(r.before.sig.note) && /with the move SKATE CHARGE/.test(r.before.sig.note) && !/undefined/.test(r.before.sig.note), 'before: ' + JSON.stringify(r.before.sig));
         same(r.before.alts.join(), 'ALTERNATE · BASH', 'before: its alternates'); same(r.before.choice.join(), 'NORMAL ATTACK,BASH', 'before: its ATTACK choice');
-        same(r.after.sig, null, 'after: a SIGNATURE section'); same(r.after.alts.join(), 'ALTERNATE · BASH', 'after: its alternates'); same(r.after.choice.join(), 'NORMAL ATTACK,BASH', 'after: its ATTACK choice');
+        same(r.after.sig, null, 'after: a SIGNATURE section'); same(r.after.alts.join(), 'ALTERNATE · SKATE CHARGE', 'after: its alternates'); same(r.after.choice.join(), 'NORMAL ATTACK,SKATE CHARGE', 'after: its ATTACK choice');
     });
-    check('the Ultimates are each evolved form\'s own (build 2026-11-09b): every form with one has it described on its card under its own name; an unevolved follower\'s card shows none, of any element; a form without one of its own (the Electro Skink) shows ULTIMATE · NOT DESIGNED YET', () => {
+    check('the Ultimates are each evolved form\'s own (build 2026-11-09b): every form with one has it described on its card under its own name; an unevolved follower\'s card shows none, of any element; a form without one of its own shows ULTIMATE · NOT DESIGNED YET (none today: the Electro Skink was, until build 2026-11-09c; checked with its entry taken away); a retired form shows none (not flagged)', () => {
         const forms = JSON.parse(run(`JSON.stringify(Object.keys(FORM_ULTIMATES).filter(id => EVOLUTIONS[id]).map(id => { const E = EVOLUTIONS[id], f = __mk(E.element, E.role, 14, id), i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); const u = FORM_ULTIMATES[id];
             return [id, !!u.desc, i.attacks.some(s => s.h === 'ULTIMATE · ' + u.name.toUpperCase())]; }))`));
         ok(forms.length >= 20, 'forms with an Ultimate: ' + forms.length);
         const bad = forms.filter(f => !f[1] || !f[2]); same(bad.map(f => f[0]).join(), '', 'a form whose Ultimate the card does not describe');
         const egg = JSON.parse(run(`JSON.stringify(ELEMENTS.map(e => { const f = __mk(e.id, 'brawler', 5); const i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); return e.id + ':' + i.attacks.filter(s => /^ULTIMATE/.test(s.h)).length; }))`));
         same(egg.filter(x => !/:0$/.test(x)).join(), '', 'an unevolved follower\'s card showing an ultimate');
-        const sk = JSON.parse(run(`(function(){ const f = __mk('electric', 'brawler', 14, 'electroskink'); const i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); return JSON.stringify(i.attacks.filter(s => /^ULTIMATE/.test(s.h)).map(s => s.h)); })()`));
-        same(sk.join(), 'ULTIMATE · NOT DESIGNED YET', 'the Electro Skink\'s card');
+        const sk = JSON.parse(run(`(function(){ const keep = FORM_ULTIMATES.electroskink; delete FORM_ULTIMATES.electroskink; try { const f = __mk('electric', 'brawler', 14, 'electroskink'); const i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); return JSON.stringify(i.attacks.filter(s => /^ULTIMATE/.test(s.h)).map(s => s.h)); } finally { FORM_ULTIMATES.electroskink = keep; } })()`));
+        same(sk.join(), 'ULTIMATE · NOT DESIGNED YET', 'a form without one of its own');
+        const now = JSON.parse(run(`(function(){ const f = __mk('electric', 'brawler', 14, 'electroskink'); const i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); const g = __mk('electric', 'brawler', 14, 'manta'); const j = unitInfo(g); followers.pop(); actors = actors.filter(a => a !== g); return JSON.stringify([i.attacks.filter(s => /^ULTIMATE/.test(s.h)).map(s => s.h).join(), j.attacks.filter(s => /^ULTIMATE/.test(s.h)).length]); })()`));
+        same(now.join('|'), 'ULTIMATE · LIGHTNING CIRCUIT|0', 'the Electro Skink\'s card now, and a retired form\'s');
         same(run('typeof ELEMENT_ULTIMATES'), 'undefined', 'the element Ultimates\' descriptions are gone');
     });
     check('stats: vitals, base stats with the personality, traits with their descriptions', () => {

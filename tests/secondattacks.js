@@ -75,14 +75,14 @@ function measure(w, h) {
         globalThis.__dmg = p => 1e6 - p.health;`);
 
     group('1. BASH (the eight forms the design notes give none, and every follower before it evolves)');
-    await check('the eight forms have BASH as their second attack, and a follower that has not evolved has it; the others keep their own; a clone has none', () => {
+    await check('BASH is the second attack of a follower that has not evolved; every form has its own (the eight forms and the Electro Skink had BASH as a stand-in until build 2026-11-09c: tests/ninemoves.js); a clone has none', () => {
         const r = J(`Object.values(EVOLUTIONS).filter(e => !e.legacy).map(e => e.id + ':' + evoMoveIds(e).join('/'))`);
-        for (const id of ['jellyram', 'rimestar', 'hornshell', 'hammerslug', 'gooproxy', 'blightspider', 'hovershell', 'igloo']) ok(r.indexOf(id + ':bash') >= 0, id + ': ' + r.join(' '));
-        same(r.filter(x => /bash/.test(x)).length, 9, 'forms with BASH (the eight, the Electro Skink since build 2026-11-08a; SUNDEW had it from 2026-11-08k and the coral crab from 2026-11-08m until each got its own, 2026-11-08n)'); same(r.filter(x => /:$/.test(x)).length, 0, 'forms with no second attack');
+        for (const [id, mid] of [['jellyram', 'wobble_slam'], ['rimestar', 'icicle_volley'], ['hornshell', 'echo_pulse'], ['hammerslug', 'shell_guard'], ['gooproxy', 'phase_swap'], ['blightspider', 'venom_bite'], ['hovershell', 'shock_zap'], ['igloo', 'skate_charge'], ['electroskink', 'zigzag_dash']]) ok(r.indexOf(id + ':' + mid) >= 0, id + ': ' + r.join(' '));
+        same(r.filter(x => /bash/.test(x)).length, 0, 'forms with BASH'); same(r.filter(x => /:$/.test(x)).length, 0, 'forms with no second attack');
         same(J(`evoMoveIds(followerMoveDef({ isFollower: true })).join()`), 'bash', 'before it evolves'); same(J(`followerMoveDef({ isFollower: true, isClone: true })`), null, 'a clone');
     });
     await check('BASH rams the nearest enemy it can see within 1.8 tiles: it steps in, 1.5 × its attack (Crushing, its hit kind), the enemy pushed and stunned half a second; one farther is not touched; it waits its 4 s wind-up after', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('core', 'brawler', 'jellyram'), a = __foe(f.x + 1.5, f.y), far = __foe(f.x + 1.5 + 2, f.y + 1.5); let hit = null; const keep = applyDamage;
+        const r = J(`(function(){ __clear(); const f = __fol('core', 'brawler'), a = __foe(f.x + 1.5, f.y), far = __foe(f.x + 1.5 + 2, f.y + 1.5); let hit = null; const keep = applyDamage;   // (an unevolved Brawler: BASH is its second attack since build 2026-11-09c)
             globalThis.applyDamage = function (t, amt, src, el, rf, fx, kind) { if (src === f && t === a) hit = { amt, el: el || null, kind: kind === DMG_HIT_BASH }; return keep.apply(this, arguments); };
             try { followerAltSet(f, 'bash'); f._altWind = 1; frame++; evolutionTick(); } finally { globalThis.applyDamage = keep; }
             return { hit, power: f.power, dist: Math.hypot(a.x - f.x, a.y - f.y), push: Math.hypot(a.kbVX || 0, a.kbVY || 0), stun: a.stunned, far: __dmg(far), cd: f._sigCd, live: !!f._altLive }; })()`);
@@ -96,7 +96,7 @@ function measure(w, h) {
         same(r.hit, true, 'it did not bash'); same(r.alt, 'bash', 'its mode'); same(r.info.join(), 'ALTERNATE · BASH · LOCKED ON', 'its INFO'); same(r.cc, 'normal,bash', 'the Command Center\'s ATTACK');
     });
     await check('a Mage locked on BASH walks in to use it (a close move), where on its normal attack it keeps its distance', () => {
-        const r = J(`(function(){ __clear(); const f = __fol('ice', 'sniper', 'rimestar'); f.stance = undefined; const a = __foe(f.x + 5, f.y); a.update = () => {};
+        const r = J(`(function(){ __clear(); const f = __fol('ice', 'sniper'); f.stance = undefined; const a = __foe(f.x + 5, f.y); a.update = () => {};   // (an unevolved Mage: BASH is its second attack since build 2026-11-09c)
             const d0 = Math.hypot(a.x - f.x, a.y - f.y); for (let i = 0; i < 60; i++) { frame++; updateNPC(f); } const dNormal = Math.hypot(a.x - f.x, a.y - f.y);
             followerAltSet(f, 'bash'); for (let i = 0; i < 240 && Math.hypot(a.x - f.x, a.y - f.y) > 1.6; i++) { frame++; updateNPC(f); } const dBash = Math.hypot(a.x - f.x, a.y - f.y);
             return { d0, dNormal, dBash, reach: followerAltCloseReach(f) }; })()`);

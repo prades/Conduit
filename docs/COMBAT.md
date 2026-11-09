@@ -184,26 +184,36 @@ A follower's **main attack** is its everyday hit: a Brawler's or Technician's pl
 |---|---|---|---|
 | QUILLSTONE | Brawler · fire | Piercing (quill spikes) | QUILL BURST (five quills at once, each stopping at its first enemy): Projectile (FIRE BOMBS taken off it, 2026-11-07) |
 | FROST MAW | Brawler · ice | Slashing (ice jaws) | CHOMP: Piercing |
-| ELECTRO SKINK | Brawler · electric (since build `2026-11-08a`) | Slashing (for now: what it hit with as an egg; open) | BASH ("BASH for now"): Crushing |
+| ELECTRO SKINK | Brawler · electric (since build `2026-11-08a`) | Slashing (for now: what it hit with as an egg; open) | ZIGZAG DASH (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Slashing, electric (BASH before). Its Ultimate LIGHTNING CIRCUIT: electric |
 | STATIC ORB | Brawler · electric (set aside since build `2026-11-08a`: kept by a follower that has it; the magnetic brawler to be) | Crushing (rams) | SONIC ROLL (STATIC RUSH renamed): Crushing; CAPACITOR DISCHARGE (it stands still storing up to 4 charges; you release them into a short chain, build `2026-11-07ss`): Crushing and electric. PINBALL is superseded by it (the design notes) |
-| JELLY RAM | Brawler · core | Crushing (ram) | BASH (build `2026-11-07ss`, "BASH for now"): Crushing |
+| JELLY RAM | Brawler · core | Crushing (ram) | WOBBLE SLAM (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Crushing (BASH before) |
 | SEEPER | Brawler · toxic | Slashing (lash) | ERUPTION: Earthquake |
 | RIFT MIMIC | Brawler · flux | Slashing (claws) | GRAVITY SLAM: Earthquake |
 | THUNDERHEAD | Mage · electric | Elemental (CHAIN LIGHTNING: the shot conducts on, by distance) | STATIC VORTEX (a stationary pull that bites): Elemental |
 | VOIDSTAR | Mage · flux | Elemental | SINGULARITY SHOT: Elemental |
 | EMBER HOOD | Mage · fire | Elemental (FIREBALL) | HEXFIRE (a shot that leaves a stationary burning circle): Elemental (FIRE BOMBS taken out as an alternate, 2026-11-07) |
-| RIMESTAR | Mage · ice | Projectile (ice shards) | BASH (build `2026-11-07ss`; it walks in to use it): Crushing |
-| HORNSHELL | Mage · core | Projectile (horn spines) | BASH (build `2026-11-07ss`; it walks in to use it): Crushing |
+| RIMESTAR | Mage · ice | Projectile (ice shards) | ICICLE VOLLEY (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Projectile, three of its shots (reading SP.ATK) (BASH before) |
+| HORNSHELL | Mage · core | Projectile (horn spines) | ECHO PULSE (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Elemental (BASH before) |
 | ROTSHARD | Mage · toxic | Projectile (CORRODE SHOT since build `2026-11-07ss`: its everyday shot eats the armour of what it hits) | ROTTEN DECOY |
-| HAMMER SLUG | Technician · core | Crushing (hammer) | BASH: Crushing (build `2026-11-07ss`). Its utility, PHOTONIC SHIELD: no damage |
-| GOO PROXY | Technician · flux | Crushing (goo slam) | BASH: Crushing (build `2026-11-07ss`). Its utility, FLUX MOVE: no damage (it moves objects; Telegrab, retired 2026-11-06, did none either) |
+| HAMMER SLUG | Technician · core | Crushing (hammer) | SHELL GUARD (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): no damage (BASH before). Its utility, PHOTONIC SHIELD: no damage |
+| GOO PROXY | Technician · flux | Crushing (goo slam) | PHASE SWAP (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): its burst Elemental (BASH before). Its utility, FLUX MOVE: no damage (it moves objects; Telegrab, retired 2026-11-06, did none either) |
 | THERMITE BURROWER | Technician · fire | Piercing (BURROW STRIKE: it dives, travels under the floor and erupts beneath the enemy, 2 × its plain hit; build `2026-11-06a`) | THERMITE DRILL: Piercing; FAULTLINE (a path the player draws, spikes along it): Piercing |
-| BLIGHT SPIDER | Technician · toxic | Piercing (fangs) | BASH: Crushing (build `2026-11-07ss`). Its utility, BLIGHT pools: Elemental |
-| HOVER SHELL | Technician · electric | Crushing (ram) | BASH: Crushing (build `2026-11-07ss`). Its utility, KINETIC LAUNCHER: Earthquake (the landing) |
-| IGLOO SKATER | Technician · ice | Slashing (skate blades) | BASH: Crushing (build `2026-11-07ss`). Its utility, FROST PATCH: Elemental |
+| BLIGHT SPIDER | Technician · toxic | Piercing (fangs) | VENOM BITE (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Piercing (BASH before). Its utility, BLIGHT pools: Elemental |
+| HOVER SHELL | Technician · electric | Crushing (ram) | SHOCK ZAP (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Elemental, electric (BASH before). Its utility, KINETIC LAUNCHER: Earthquake (the landing) |
+| IGLOO SKATER | Technician · ice | Slashing (skate blades) | SKATE CHARGE (build `2026-11-09c`, the owner's pick of the agent's drafts; numbers provisional): Slashing (BASH before). Its utility, FROST PATCH: Elemental |
 
 **Second attacks for every follower (build `2026-11-07ss`; the owner: "inherit second attacks on all the followers", "Inherit from the design notes", then "BASH for now" and "Apply both").** Every follower has a second attack now, chosen as a locked mode as before (`js/moves.js`):
-- **BASH** where the design notes give none (the eight forms above, and every follower before it evolves): it rams the nearest enemy it can see within 1.8 tiles, 1.5 × its attack, Crushing whatever its form, a push of a tile and a 0.5 s stun; a 4 s wind-up. A Mage locked on it walks in to use it. The numbers are the agent's (provisional).
+- **BASH** where the design notes give none (the eight forms above, and every follower before it evolves): it rams the nearest enemy it can see within 1.8 tiles, 1.5 × its attack, Crushing whatever its form, a push of a tile and a 0.5 s stun; a 4 s wind-up. A Mage locked on it walks in to use it. The numbers are the agent's (provisional). *(Since build `2026-11-09c` BASH is only an unevolved follower's: the nine forms that had it as a stand-in each have their own, the owner's pick of the agent's drafts, 2026-11-09 (the numbers the agent's, provisional; their looks to be designed "with 3-D flare"):*
+  - *ZIGZAG DASH (Electro Skink, 4 s): it darts through the nearest enemy within 4 tiles and on, a hop of 2.5 tiles at a time, 3 at most: each 1 × its attack, Slashing, electric, and its wind-up broken (GLITCH 0.5 s); it ends beside the last.*
+  - *WOBBLE SLAM (Jelly Ram, 4 s; a close move): every enemy within 1.5 tiles 1.2 × its attack, Crushing, staggered 0.5 s (not a boss).*
+  - *ICICLE VOLLEY (Rimestar, 5 s): three icicles in a fan (0.26 rad apart) at the nearest enemy within 7 tiles, each its shot (SP.ATK × the Mages' share), Projectile, ice; one that hits slows to 60% for 2 s.*
+  - *ECHO PULSE (Hornshell, 5 s): every enemy within 4 tiles 0.4 × its attack, Elemental (core), its wind-up broken (GLITCH 0.5 s).*
+  - *SHELL GUARD (Hammer Slug, 6 s): with an enemy within 3 tiles, it braces for 4 s: half damage taken, and the enemies within 3 tiles (not a boss) go for it (SWEET SCENT's lure).*
+  - *PHASE SWAP (Goo Proxy, 5 s): it swaps places with the nearest enemy within 6 tiles that is not a boss (both spots floor); a goo burst at the spot it left, 1 × its attack, Elemental (flux), on every enemy within 1 tile of it.*
+  - *VENOM BITE (Blight Spider, 5 s; a close move): it steps in and bites the nearest enemy within 1.8 tiles, 1 × its attack, Piercing: POISONED (40% weaker for 4 s) and MARKED: your side's next 3 hits on it within 10 s deal 20% more.*
+  - *SHOCK ZAP (Hover Shell, 4 s): the nearest enemy within 4 tiles, 1 × its attack, Elemental, electric, its wind-up broken (GLITCH 0.5 s); its KINETIC LAUNCHER untouched.*
+  - *SKATE CHARGE (Igloo Skater, 4.5 s): it skates toward the nearest enemy within 4 tiles and on, 4 tiles along open floor: every enemy within 0.8 of its line 1 × its attack, Slashing, ice, slowed to 60% for 2 s.*
+  - *A follower saved locked on BASH carries over to its form's own (js/moves.js `moveAltCarried`).*
 - **CAPACITOR DISCHARGE** for the Static Orb (the design notes; PINBALL is superseded, its code kept): it stands still storing a charge every 1.5 s, up to 4, enemies near or not, and may move again once full; RETREAT stops the charging. The player releases them (its squad card's ⚡ chip, or its INFO) into an enemy within 2 tiles: a chain of 1 + the charges enemies, each within 2.5 tiles of the last, 0.5 × its attack × the charges each (electric). A switch of attack loses the charges. The numbers are the agent's (provisional).
 - **CORRODE SHOT** is the Rotshard's everyday shot (the design notes' primary): the Mage's shot, its own damage, and it eats the armour of what it hits, weaker round it. ROTTEN DECOY is its second attack.
 | SUNDEW (built `2026-11-08k`) | Brawler · bloom | Piercing: NECTAR STING, its blade-leaf's sting (build `2026-11-08n`; Slashing, its slash, before) | SWEET SCENT: no damage (a lure, or a heal with its stockpile full; build `2026-11-08n`; BASH before). Its Ultimate CONSUME: the digestion Elemental (the owner kept it, 2026-11-08) |

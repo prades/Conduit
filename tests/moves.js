@@ -33,9 +33,9 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     check('every form with a move has it in the table (so every move has a row)', () => {
         for (const id of J('Object.keys(EVOLUTIONS).filter(k => EVOLUTIONS[k].move)')) { const n = J(`EVOLUTIONS[${JSON.stringify(id)}].move`); ok(J(`!!MOVE_BY_NAME[${JSON.stringify(n)}]`), id + ': no row for ' + n); }
     });
-    check('the eight forms the design notes give no second attack have BASH (build 2026-11-07ss, the owner: "BASH for now"); the retired Petal and Warden still have none and fire none; a follower that has not evolved has BASH too', () => {
+    check('the eight forms the design notes gave no second attack had BASH (build 2026-11-07ss) until each got its own (build 2026-11-09c, the owner\'s picks: tests/ninemoves.js); the retired Petal and Warden still have none and fire none; a follower that has not evolved has BASH', () => {
         same(J('Object.keys(EVOLUTIONS).filter(k => !EVOLUTIONS[k].move).sort()').join(), 'petal,warden', 'forms without a move');
-        for (const id of ['blightspider', 'gooproxy', 'hammerslug', 'hornshell', 'hovershell', 'igloo', 'jellyram', 'rimestar']) same(J(`evoMoveIds(EVOLUTIONS.${id})`).join(), 'bash', id + ' moves');
+        for (const [id, mid] of [['blightspider', 'venom_bite'], ['gooproxy', 'phase_swap'], ['hammerslug', 'shell_guard'], ['hornshell', 'echo_pulse'], ['hovershell', 'shock_zap'], ['igloo', 'skate_charge'], ['jellyram', 'wobble_slam'], ['rimestar', 'icicle_volley']]) same(J(`evoMoveIds(EVOLUTIONS.${id})`).join(), mid, id + ' moves');
         for (const id of ['petal', 'warden']) { same(J(`evoMoveIds(EVOLUTIONS.${id})`).length, 0, id + ' moves'); same(run(`evoMoveOf({ evolved: '${id}', move: 'chomp' })`), null, id + ' given another form\'s move'); }
         same(J(`evoMoveIds(followerMoveDef({ isFollower: true }))`).join(), 'bash', 'before it evolves'); same(run(`followerMoveDef({ isFollower: true, isClone: true })`), null, 'a clone');
     });
@@ -83,7 +83,8 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
     check('every move has a WIND-UP of its own (seconds), the old waits unchanged, and its function waits exactly that after firing', () => {
         const OLDWAIT = { petal_blaze: 360, quill_burst: 240, arc_volley: 300, singularity_shot: 330, static_rush: 300, hexfire: 330, corrode_shot: 320, gravity_slam: 330,
-            eruption: 330, chomp: 300, pinball: 300, static_vortex: 330, magma_vent: 1200, rotten_decoy: 840, bash: 240, capacitor_discharge: 90, seedfall: 330, stake_ring: 240, sweet_scent: 300 };   // (BASH and CAPACITOR DISCHARGE: build 2026-11-07ss; the second's is the time one charge takes; SEEDFALL, the THORNWHIP's: build 2026-11-08j, provisional; STAKE RING, STONEPETAL's, and SWEET SCENT, SUNDEW's: build 2026-11-08n, provisional)
+            eruption: 330, chomp: 300, pinball: 300, static_vortex: 330, magma_vent: 1200, rotten_decoy: 840, bash: 240, capacitor_discharge: 90, seedfall: 330, stake_ring: 240, sweet_scent: 300,
+            zigzag_dash: 240, wobble_slam: 240, icicle_volley: 300, echo_pulse: 300, shell_guard: 360, phase_swap: 300, venom_bite: 300, shock_zap: 240, skate_charge: 270 };   // (the nine of build 2026-11-09c, provisional)   // (BASH and CAPACITOR DISCHARGE: build 2026-11-07ss; the second's is the time one charge takes; SEEDFALL, the THORNWHIP's: build 2026-11-08j, provisional; STAKE RING, STONEPETAL's, and SWEET SCENT, SUNDEW's: build 2026-11-08n, provisional)
         same(J('Object.keys(MOVES).sort()').join(), Object.keys(OLDWAIT).sort().join(), 'the moves');
         for (const id in OLDWAIT) {
             ok(J(`MOVES.${id}.windup > 0`), id + ' has no wind-up'); same(J(`moveWindupFrames('${id}')`), OLDWAIT[id], id + ' (frames)');

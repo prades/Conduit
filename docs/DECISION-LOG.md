@@ -2596,3 +2596,22 @@ Offered and passed over: your BLOOM-role hits MENDing too; a bigger seedfall or 
 
 ### Supersedes / superseded by
 Supersedes the element Ultimates (`TUTORIAL.md`, "Follower ultimates"; `NEXT-PHASE-ROADMAP.md` §12) and "Own Ultimates" falling back to the element's; the bonds' together bonus, rage and DUO (`FOLLOWER-PROGRESSION.md` §2a); unevolved followers' element moves. Follows "The owner's answers on REEF, BLOOM breeding and BLOOM's cards" (2026-11-09, build `2026-11-09a`).
+
+## DECISION: Every form its own second attack (nine picked from drafts), the Electro Skink's LIGHTNING CIRCUIT, the retired forms without an Ultimate
+- Date and build: 2026-11-09, build `2026-11-09c`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Prompt me questions one by one"; "No, leave them (Recommended)" (the retired forms' Ultimates); "Draft both (Recommended)" (the Electro Skink's kit); "ZIGZAG DASH (Recommended)"; "LIGHTNING CIRCUIT (Recommended)"; "Draft them now (Recommended)" (the eight forms on BASH); "WOBBLE SLAM"; "ICICLE VOLLEY (Recommended)"; "ECHO PULSE"; "SHELL GUARD"; for the Goo Proxy "Suggest more", then "PHASE SWAP"; "VENOM BITE"; "SHOCK ZAP (Recommended)" (asked with the roadmap's note to preserve the Hover Shell quoted); "SKATE CHARGE (Recommended)"; then "Build it, but we need to run an optimization check and then after that will go through and design each of these effects all 21 of them or plus the ultimate too as well just design them with 3-D flare".
+
+### Decision
+- The nine forms that had BASH as a stand-in each get their own second attack: ZIGZAG DASH (Electro Skink), WOBBLE SLAM (Jelly Ram), ICICLE VOLLEY (Rimestar), ECHO PULSE (Hornshell), SHELL GUARD (Hammer Slug), PHASE SWAP (Goo Proxy), VENOM BITE (Blight Spider), SHOCK ZAP (Hover Shell), SKATE CHARGE (Igloo Skater). BASH stays an unevolved follower's.
+- The Electro Skink's Ultimate is LIGHTNING CIRCUIT.
+- The retired forms kept for old saves never get an Ultimate.
+- Next: an optimization check, then the visual design of all 21 forms' effects and Ultimates "with 3-D flare".
+
+### Status
+Built in build `2026-11-09c` and tested (`tests/ninemoves.js`, and the suites that counted BASH). Not playtested. Every number and damage type is the agent's, provisional; their looks are plain until the 3-D flare pass.
+
+### Alternatives
+Offered and passed over, per form: the retired forms' Ultimates designed too; the Skink's Ultimate only, or later; TAIL WHIP, GROUND CURRENT; BOLT TAIL, THUNDER SHED; HEADLONG RAM, STICKY SPLASH; FREEZE BEAM, HAIL MINE; HORN BLAST, SHELL MORTAR; HAMMER STRIKE, SLIME TRAIL; GOO GLOB, GOO PUDDLE, SPLIT LUNGE, TETHER SNAP, VACUUM GULP; TOXIN SPRAY, WEB SHOT; STATIC MINE, keeping BASH on the Hover Shell; SNOWBALL, ICE WALL.
+
+### Supersedes / superseded by
+Supersedes "BASH for now" for the eight forms and the Electro Skink (build `2026-11-07ss`, `2026-11-08a`) and the Skink's flag of build `2026-11-09b`.

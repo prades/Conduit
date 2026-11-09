@@ -694,21 +694,22 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 - The market: everything in sections 1b and 1c.
 
 ## Second attacks and Ultimates (build `2026-11-07ss`)
-- **The eight forms on BASH** (Jelly Ram, Rimestar, Hornshell, Hammer Slug, Goo Proxy, Blight Spider, Hover Shell, Igloo Skater): their own second attacks, from the design archive (Notion, not reachable this session) or new designs. BASH stays until then.
+- ~~**The eight forms on BASH**~~ *(answered 2026-11-09, one form at a time from the agent's drafts, built in build `2026-11-09c`: WOBBLE SLAM (Jelly Ram), ICICLE VOLLEY (Rimestar), ECHO PULSE (Hornshell), SHELL GUARD (Hammer Slug), PHASE SWAP (Goo Proxy), VENOM BITE (Blight Spider), SHOCK ZAP (Hover Shell), SKATE CHARGE (Igloo Skater): `COMBAT.md` §7.4. Their numbers the agent's, provisional; their looks to be designed with 3-D flare.)*
 - **BASH's and CAPACITOR DISCHARGE's numbers** are the agent's (provisional): see `COMBAT.md`.
 - **CAPACITOR DISCHARGE:** should a full Static Orb move (it does now), and should a follower posted in a room (no squad card) be released from anywhere but its INFO?
 - **Accepted, 2026-11-07:** the owner passed build ss as it is ("go ahead and pass it, whatever it is"), so followers before they evolve keep BASH. The points above stay open.
 
 ## The ELECTRO SKINK (built in build `2026-11-08a`)
-- **Its own attacks:** BASH stands in as its second attack; its everyday hit is Slashing (what it hit with as an egg) until you choose.
+- **Its own attacks:** ~~BASH stands in as its second attack~~ *(answered 2026-11-09: ZIGZAG DASH, built in build `2026-11-09c`)*; its everyday hit is Slashing (what it hit with as an egg) until you choose.
 - ~~**Its subclass**~~ *(answered 2026-11-08, build `2026-11-08h`: **Spine-legged**, the Crustacean renamed; the owner: "Also, I want to rename the crustaceans to spine-legged to include electroskink and the toxic spider")*: so the Spine-legged cards fit it, it is weak to Crushing and Earthquake and resists Slashing and Piercing, and its lean is −1.
-- **Its Ultimate:** it used the electric element's (EMP). *(Since build `2026-11-09b` it has none: the element Ultimates are removed and it is flagged, ULTIMATE · NOT DESIGNED YET on its INFO card, the owner: "Nothing yet"; its own is open, below.)*
+- **Its Ultimate:** it used the electric element's (EMP). *(Since build `2026-11-09b` it had none, flagged; answered 2026-11-09: LIGHTNING CIRCUIT, built in build `2026-11-09c`: it races a loop round the biggest group, and a ring of lightning shocks the enemies inside for 5 s and stuns one crossing it. Its numbers the agent's, provisional.)*
 - **Its pace:** 1.6 × the follower's speed (the agent's number for "really fast").
 - **VOLTAGE FIELD** (a Series 2 form card) fits the Static Orb only; it stays with the Static Orb (set aside) unless you move it to the Skink.
 
 ## Ultimates, bonds and unevolved followers (build `2026-11-09b`)
 The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved form's own; the element Ultimates are removed; a bond is for breeding and the hearts; unevolved followers make the plain hit for now. Open:
-- **The flagged forms' Ultimates** (evolved, with none of their own; none until designed): the **ELECTRO SKINK**; and the retired forms kept only for old saves: BUNKER BLOOM, REAVER, SERPENT, AEGIS WARDEN, STORM MANTA, CINDER HALO, PRISM HOOD, VOLT RING, CALDERA, PETAL AEGIS (whether these need one at all).
+- ~~**The flagged forms' Ultimates**~~ *(answered 2026-11-09: the ELECTRO SKINK's is LIGHTNING CIRCUIT, built in build `2026-11-09c`; the retired forms kept only for old saves (BUNKER BLOOM, REAVER, SERPENT, AEGIS WARDEN, STORM MANTA, CINDER HALO, PRISM HOOD, VOLT RING, CALDERA, PETAL AEGIS) never get one, "No, leave them": they are no longer flagged. No current form is flagged.)*
+- **The forms' effects with "3-D flare"** (the owner, 2026-11-09: "after that will go through and design each of these effects all 21 of them or plus the ultimate too as well just design them with 3-D flare"): each of the 21 current forms' second attacks and Ultimates, designed with them, after an optimization check.
 - **Unevolved followers' attacks and secondary attacks:** "we'll figure out some new way to categorize them with different attacks [and] secondary attacks later" (the owner, 2026-11-09). Until then: the plain hit (a Mage shoots) and BASH, and no Ultimate; each keeps its element.
 - **The agent's numbers, provisional:** the bond hearts (within 1 tile, three over each, 1.5 s, again after more than 3 tiles apart); SUNDEW's and STONEPETAL's everyday hit, 0.45 × their attack.
 - **A reading:** an unevolved follower's meter no longer fills (it has no Ultimate); a charge an old save carries stays as it was until it evolves.

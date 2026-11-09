@@ -456,7 +456,7 @@ async function boot(store) {
     group('spending it powers up the entire army');
 
     const squadBefore = S.squad(4);
-    S.run('followers[0].evolved = "embercowl"; followers[1].evolved = "electroskink";');   // (one with an Ultimate of its own, one flagged without; the other two unevolved: none, since build 2026-11-09b)
+    S.run('followers[0].evolved = "embercowl"; followers[1].evolved = "manta";');   // (one with an Ultimate of its own, a retired form without one; the other two unevolved: none, since build 2026-11-09b)
     S.fill();
     S.run('floatingTexts = [];');
     const fired = S.run('fireArmySurge()');
@@ -470,7 +470,7 @@ async function boot(store) {
         for (const f of after) {
             same(f.h, f.mh, 'every unit should be healed');
             same(f.w, 20, 'and its WILL refilled');
-            same(f.u, f.ult ? 100 : 0, 'and its own ultimate charged (only one that has an Ultimate: the Ember Hood here; the flagged Electro Skink and the unevolved two have none to charge, build 2026-11-09b)');
+            same(f.u, f.ult ? 100 : 0, 'and its own ultimate charged (only one that has an Ultimate: the Ember Hood here; the retired Storm Manta and the unevolved two have none to charge, build 2026-11-09b)');
         }
         ok(S.run('floatingTexts.some(t => /ARMY SURGE/.test(t.text))'), 'no callout');
     });

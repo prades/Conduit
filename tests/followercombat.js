@@ -262,7 +262,7 @@ function measure(w, h) {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); __pinOn(); f.move = 'pinball'; __foe(f.x + PIN_RANGE + 0.7, f.y); __fire(f); const out = { roll: !!f._pinball, cd: f._sigCd };
             out.legacy = ['manta', 'prism', 'voltring'].map(k => evoMoveIds(EVOLUTIONS[k]).join()); out.hover = evoMoveIds(EVOLUTIONS.hovershell).join();
             out.sees = (function(){ const g = { x: __C[0], y: __C[1] }, cells = partyRoomCells('arena'); return typeof _pinSees === 'function' && cells.length > 0; })(); return out; })()`);
-        same(r.roll, false, 'a roll at an enemy out of reach'); ok(!(r.cd > 0), 'a wait for nothing: ' + r.cd); same(r.legacy.join('|'), 'static_rush|static_rush|static_rush', 'the retired forms'); same(r.hover, 'bash', 'the Hover Shell\'s moves (BASH only, build 2026-11-07ss)'); ok(r.sees, 'no sight check');
+        same(r.roll, false, 'a roll at an enemy out of reach'); ok(!(r.cd > 0), 'a wait for nothing: ' + r.cd); same(r.legacy.join('|'), 'static_rush|static_rush|static_rush', 'the retired forms'); same(r.hover, 'shock_zap', 'the Hover Shell\'s moves (BASH until build 2026-11-09c, then SHOCK ZAP, the owner\'s pick)'); ok(r.sees, 'no sight check');
         ok(/_pinSees\(f, a\)/.test(rd('js/evolution.js')) && /facilityLosFrom\(f\.x, f\.y, a\.x, a\.y\)/.test(rd('js/evolution.js')), 'PINBALL does not ask whether it can see its target');
     });
 
@@ -424,9 +424,9 @@ function measure(w, h) {
         same(JSON.stringify(r.ab), JSON.stringify({ id: 'kinetic_launcher', name: 'KINETIC LAUNCHER', short: 'LAUNCH', icon: '⚡', col: '#ffe733', aim: ['follower', 'enemy'], use: 'fn', ask: 'fn' }), 'the ability');
         same(JSON.stringify(r.launch), JSON.stringify({ cooldown: 3600, selfDamage: 10, powerMult: 3, siteXp: 100, hitReach: 1.6, loadReach: 1.3, loadWait: 480, flight: 40, peak: 70, siteFlight: 64, sitePeak: 120, dropFlight: 28, near: 6, setupWalk: 1200, setup: 120 }), 'its numbers');
     });
-    check('the Hover Shell itself is as it was: BASH its only move (build 2026-11-07ss, the design notes give it none), no named shot, its types (Crushing, Earthquake) and subclass (Drone), and the Technicians\' shared plain hit within 4 tiles', () => {
+    check('the Hover Shell itself is as it was: SHOCK ZAP its only move (BASH until build 2026-11-09c, the owner\'s pick in its place; the design notes give it none), no named shot, its types (Crushing, Earthquake) and subclass (Drone), and the Technicians\' shared plain hit within 4 tiles', () => {
         const r = J(`({ form: EVOLUTIONS.hovershell, dmg: DMG_FORM.hovershell, sub: EQUIP_FORM_SUBCLASS.hovershell })`);
-        same(JSON.stringify(r.form), JSON.stringify({ id: 'hovershell', name: 'HOVER SHELL', element: 'electric', role: 'camper', move: 'BASH', moves: ['bash'], sheet: 'img/evo/hovershell.png', cell: 144, anchor: [72, 114.2], core: [72, 91.1], noGlow: true, color: '#ffee33' }), 'its form');
+        same(JSON.stringify(r.form), JSON.stringify({ id: 'hovershell', name: 'HOVER SHELL', element: 'electric', role: 'camper', move: 'SHOCK ZAP', moves: ['shock_zap'], sheet: 'img/evo/hovershell.png', cell: 144, anchor: [72, 114.2], core: [72, 91.1], noGlow: true, color: '#ffee33' }), 'its form');
         same(JSON.stringify(r.dmg), JSON.stringify({ main: 'crushing', alt: 'earthquake' }), 'its damage types'); same(r.sub, 'drone', 'its subclass');
         const N = rd('js/npc.js'); ok(/const CAMPER_ENGAGE_RADIUS = 4;/.test(N) && /\} else \{\s*followerAttack\(actor, nearestEnemy\);\s*\}/.test(N.slice(N.indexOf('CAMPER (the technician)'))), 'the Technicians\' plain hit changed');
     });
@@ -552,10 +552,10 @@ function measure(w, h) {
         same(r.r, r.want[0], 'its radius'); same(r.first, true, 'no bite as it opened'); same(r.far, 0, 'it reached an enemy beyond its radius');
         same(r.bites, Math.floor(r.want[1] / r.want[2]) - 1, 'bursts after the first (one a second while it is open): ' + r.bites); ok(r.gone <= r.want[1] + 2, 'it stayed open too long: ' + r.gone); same(r.cd, r.want[3], 'the wait');
     });
-    check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it, a form without one (the Electro Skink) and an unevolved follower none (build 2026-11-09b: the element Ultimates are gone; the Ember Hood keeps its VOLCANIC ERUPTION); OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
+    check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it (the Electro Skink its LIGHTNING CIRCUIT since build 2026-11-09c), a retired form and an unevolved follower none (build 2026-11-09b: the element Ultimates are gone; the Ember Hood keeps its VOLCANIC ERUPTION); OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
         const r = J(`(function(){ const o = {};
-            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('electric', 'camper', null), sk = __fol('electric', 'brawler', 'electroskink');
-            o.look = [followerUltimate(so).name, followerUltimate(eh) === ULT_VOLCANIC_ERUPTION && followerUltimate(eh).name, followerUltimate(qs), followerUltimate(sk), followerUltPending(sk), followerUltPending(qs), typeof FOLLOWER_ULTIMATES];
+            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('electric', 'camper', null), sk = __fol('electric', 'brawler', 'electroskink'), rt = __fol('electric', 'brawler', 'manta');
+            o.look = [followerUltimate(so).name, followerUltimate(eh) === ULT_VOLCANIC_ERUPTION && followerUltimate(eh).name, followerUltimate(qs), followerUltimate(sk).name, followerUltimate(rt), followerUltPending(rt), followerUltPending(qs), typeof FOLLOWER_ULTIMATES];
             __clear(); const s = __fol('electric', 'brawler', 'staticorb'), g1 = __foe(s.x + 4, s.y), g2 = __foe(s.x + 4.6, s.y + 0.4), lone = __foe(s.x - 3, s.y); s.ultimateCharge = 100; followerUltimate(s).execute(s);
             o.over = [s.ultimateCharge < 50, Math.hypot(s.x - g1.x, s.y - g1.y) <= 1.2, __dmg(g1) > 0, __dmg(g2) > 0, __dmg(lone), !!(g1.kbVX || g1.kbVY)];
             __clear(); const m = __fol('ice', 'brawler', 'maw'), z = [1, 2, 3, 4].map(i => __foe(m.x + i * 0.6, m.y)); m.ultimateCharge = 100; followerUltimate(m).execute(m);
@@ -568,7 +568,7 @@ function measure(w, h) {
             followerUltimate(bs).execute(bs); for (let i = 0; i < 61; i++) updateElementEffects();
             o.net = [bs.ultimateCharge < 50, elementEffects.some(e => e.type === 'toxicnet'), __dmg(on) > 0, __dmg(off), on.toxicWeakened > 0];
             techPools = []; return o; })()`);
-        same(r.look.join(), 'Overdrive,Volcanic Eruption,,,true,false,undefined', 'its own, the Ember Hood\'s (VOLCANIC ERUPTION, the fire one once), an unevolved follower none, the Electro Skink none (flagged), the element Ultimates gone');
+        same(r.look.join(), 'Overdrive,Volcanic Eruption,,Lightning Circuit,,false,false,undefined', 'its own, the Ember Hood\'s (VOLCANIC ERUPTION, the fire one once), an unevolved follower none, the Electro Skink\'s LIGHTNING CIRCUIT, a retired form none and not flagged, the element Ultimates gone');
         same(r.over.join(), 'true,true,true,true,0,true', 'OVERDRIVE: spent (its own hits charge it a little again), rushed to the group, both hit, the lone one not, knocked back');
         same(r.zero.join(), '0,3,true', 'ABSOLUTE ZERO: spent, three swallowed (not four), no damage'); same(r.zeroAfter.join(), '0,true,true', 'let go after 6 s, targetable again, still no damage');
         same(r.under.join(), 'true,true,240,0.7,true', 'TOXIC UNDERTOW: both hurt, poisoned 4 s at 70% of their hits, thrown');
