@@ -92,8 +92,9 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     });
 
     // THE RUBBLE, MODELLED IN THE SAME ROCK (build 2026-11-09k; the owner, 2026-11-09: "update the rubble patches make those look more like a cave rock", "then do the rubble"): every rubble patch
-    // a fire technician drills is a rock fall baked by design/cave/bake_rubble.js (img/cave/rubble.png, js/caverubble.js), one picture for each stage of the drilling; on the preview until approved.
-    group('THE RUBBLE, MODELLED IN THE CAVE\'S ROCK (on the preview, ?walls=3d, until the owner approves it in the game)');
+    // a fire technician drills is a rock fall baked by design/cave/bake_rubble.js (img/cave/rubble.png, js/caverubble.js), one picture for each stage of the drilling. Shown on the preview first; approved in the
+    // game on 2026-11-09 ("Approve the rubble for everyone, keep the slab"): for everyone since build 2026-11-09l, the drawn pile only as the fallback.
+    group('THE RUBBLE, MODELLED IN THE CAVE\'S ROCK (approved in the game, 2026-11-09: "Approve the rubble for everyone, keep the slab")');
     run(`globalThis.__rub = () => _fp.items.filter(it => it.fp === 'wdecor' && it.kind === 'rubble');
         globalThis.__pen2 = () => { const calls = [], t = {}; const g = new Proxy(t, { get(t, k) { if (k in t) return t[k]; return function () { calls.push([k].concat(Array.prototype.slice.call(arguments), k === 'stroke' ? [t.strokeStyle, t.globalCompositeOperation] : [])); }; }, set(t, k, v) { t[k] = v; return true; } }); return { g, calls }; };
         globalThis.__rubDraw = (id, hits, k) => { const it = __rub().find(i => i.rubble === id), P = __pen2(), keep = ctx, H = _techRubbleHits(), was = H[id]; ctx = P.g; ctx._k = k;
@@ -124,14 +125,15 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const b = rd('design/cave/bake_rubble.js'), w = rd('design/cave/bake_walls.js'), lights = s => (s.match(/new T\.(HemisphereLight|DirectionalLight)\([^)]*\)/g) || []).join();
         ok(/base = lin\(0x4a3f37\), dark = lin\(0x1d1714\), light = lin\(0x7a6a5c\)/.test(b), 'not the walls\' brown'); ok(lights(b).length > 40 && lights(b) === lights(w), 'not the walls\' lights');
     });
-    check('without the preview, or before its sheet has arrived, the drawn pile, as before (so the rubble is never missing)', () => {
-        same(J('CAVE_RUBBLE_APPROVED'), false, 'approved already: the owner has not seen it in the game');
-        run('_caveWallsPrev = null; globalThis.location = { search: "" };'); same(J('caveRubbleOn()'), false, 'on without the preview');
-        run('__rubSheet(true);'); let c = J('__rubDraw("rubble_arena_south", 0)'); ok(!c.some(q => q[0] === 'drawImage') && c.filter(q => q[0] === 'fill').length >= 9, 'not the drawn pile without the preview');
+    check('it is on for everyone, with or without the preview; before its sheet has arrived, the drawn pile (so the rubble is never missing); the hazard-painted slab kept ("keep the slab")', () => {
+        same(J('CAVE_RUBBLE_APPROVED'), true, 'not approved');
+        run('_caveWallsPrev = null; globalThis.location = { search: "" };'); same(J('caveRubbleOn()'), true, 'off without the preview');
+        run('__rubSheet(true);'); let c = J('__rubDraw("rubble_arena_south", 0)'); same(c.filter(q => q[0] === 'drawImage').length, 1, 'not the modelled pile without the preview');
         run('_caveWallsPrev = null; globalThis.location = { search: "?power=on&walls=3d" };'); same(J('caveRubbleOn()'), true, 'off on the preview');
         run('__rubSheet(false);'); c = J('__rubDraw("rubble_arena_south", 0)'); ok(!c.some(q => q[0] === 'drawImage') && c.filter(q => q[0] === 'fill').length >= 9, 'not the drawn pile before the sheet arrived');
+        const b = rd('design/cave/bake_rubble.js'); ok(/THE SLAB, hazard-painted/.test(b) && /if \(!left && show > 4\)/.test(b) && /MAT\.painted, MAT\.painted\]/.test(b), 'the slab is not in the model (the owner: "keep the slab")');
     });
-    check('on the preview, each stage of the drilling is its one picture, on whole pixels from the screen point of the patch\'s start, with its seams glowing over it (lighter), hotter with each hit; none of the drawn pile', () => {
+    check('each stage of the drilling is its one picture, on whole pixels from the screen point of the patch\'s start, with its seams glowing over it (lighter), hotter with each hit; none of the drawn pile', () => {
         run('_caveWallsPrev = true; __rubSheet(true);');
         const r = J(`[0, 1, 2, 3, 4, 5].map(h => { const calls = __rubDraw("rubble_sewer_bank", h), it = __rub().find(i => i.rubble === "rubble_sewer_bank"), show = String(9 - Math.floor(h * 9 / 7)), e = CAVE_RUBBLE.items.rubble_sewer_bank[show], p = _fpWP(it, 0, 0);
             const pics = calls.filter(c => c[0] === 'drawImage'), st = calls.filter(c => c[0] === 'stroke');

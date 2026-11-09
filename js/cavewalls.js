@@ -56,8 +56,9 @@ function caveWallBox(it) {
     return [Math.floor(ox + e[5]), Math.floor(oy + e[6]), Math.ceil(ox + e[5] + e[3]), Math.ceil(oy + e[6] + e[4])];
 }
 // THE RUBBLE, MODELLED IN THE CAVE'S ROCK (the owner, 2026-11-09: "then do the rubble"): each patch's pile, for each stage of the drilling, baked by design/cave/bake_rubble.js (js/caverubble.js). docs/ART-PROCESS.md:
-// on the preview (?walls=3d) until the owner approves it in the game; the drawn pile stays for everyone until then. js/techabilities.js techDrawRubbleOn draws it, the glowing seams and warm edges over it.
-const CAVE_RUBBLE_APPROVED = false;
+// shown on the preview (?walls=3d) first (build 2026-11-09k); approved in the game on 2026-11-09 ("Approve the rubble for everyone, keep the slab"), so it is drawn for everyone; the drawn pile stays only as the
+// fallback (the sheet not yet arrived). js/techabilities.js techDrawRubbleOn draws it, the glowing seams and warm edges over it.
+const CAVE_RUBBLE_APPROVED = true;   // approved in the game 2026-11-09, live for everyone since build 2026-11-09l
 function caveRubbleOn() { return CAVE_RUBBLE_APPROVED || (_caveWallsPrev === null ? (_caveWallsPrev = caveWallsPreview()) : _caveWallsPrev); }
 let _caveRubbleImg;
 function _caveRubbleSheet() {

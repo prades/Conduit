@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09l` · branch `claude/start-game-project-HSh7Z` · the modelled rubble for everyone
+On the pictures of build `2026-11-09k`, the owner said "Approve the rubble for everyone, keep the slab".
+- The rubble patches' modelled rock falls (the arena's south rubble; the Sewers' way to the dam, rock fall at the bank and collapsed tunnel) are drawn for everyone (js/cavewalls.js `CAVE_RUBBLE_APPROVED`), the hazard-painted slab kept. The drawn pile stays only as the fallback before the rubble's sheet arrives.
+- Still open: whether the hole a drilled rubble leaves in the arena's rock is modelled too.
+- Tests: cavewalls (approved for everyone; the slab in the model). Run: listed in the commit; all passing except cover's real-page check (`?fluxlab`), which has failed the same way since before these builds. Not playtested.
+
 ### Build `2026-11-09k` · branch `claude/start-game-project-HSh7Z` · the rubble, modelled in the cave's rock (on the preview `?walls=3d`)
 The owner: "update the rubble patches make those look more like a cave rock"; approving the walls, "then do the rubble".
 - **Every rubble patch is a rock fall in the walls' rock:** the arena's south rubble and the Sewers' three (the way to the dam, the rock fall at the bank, the collapsed tunnel).

@@ -95,7 +95,7 @@ The owner, 2026-11-09: the cave's walls should look like RuneScape's 3D-model wa
 
 **Status.** Approved in the game on 2026-11-09 ("Approve the walls for everyone"): drawn for everyone since build `2026-11-09j`. The drawn rock (`js/facilitydecor.js _fpDrawRock`) stays as the fallback for the moment before a cave's sheet arrives. The preview flag `?walls=3d` stays for the cave pieces that come next: the rubble patches, from the same rock (the owner's ask).
 
-## The rubble, modelled in the cave's rock (build `2026-11-09k`; on the preview)
+## The rubble, modelled in the cave's rock (build `2026-11-09k`; for everyone since `2026-11-09l`)
 
 The owner, 2026-11-09: "update the rubble patches make those look more like a cave rock"; then, approving the walls, "then do the rubble".
 
@@ -103,7 +103,7 @@ The owner, 2026-11-09: "update the rubble patches make those look more like a ca
 - Every rubble patch a fire technician drills is a rock fall in the walls' rock, baked to pictures: the arena's south rubble and the Sewers' rubble on the way to the dam, rock fall at the bank and collapsed tunnel.
 - **The drawn pile's layout is kept.** Each pile of two tiles has nine stones where the drawn pile had them (`_TECH_RUBBLE`). Each stone is now a big block of the cave's rock: a lumpy low-poly block cut flat where it broke, softly lit with its facets showing, its underside dark.
 - **Behind the stones, the dark the pile fills** (the drawn pile's dark gap) is a lumpy mound of rock in shadow, with smaller blocks sunk in it. Small stones lie in its crevices, on its crest and at its foot.
-- **The hazard-painted slab** lies across it as on the drawn pile (every other pile of a long one), until the fourth hit.
+- **The hazard-painted slab** lies across it as on the drawn pile (every other pile of a long one), until the fourth hit. The owner kept it ("keep the slab").
 - **One picture for each stage of the drilling:** the stones shown after 0 to 5 hits (9, 8, 7, 6, 4, 3; the top ones go first). The dark mound shrinks as the drawn one did, and the stones knocked off lie at its foot. A drilled choke has a picture of what it leaves: blocks at each side and where the piles met.
 - **The seams** glow over the stones as before, hotter with each hit. They are baked onto the stones' front for each stage, so they sink with the pile.
 - The colours are the walls' brown, its blocks a shade warmer, so the props' blue rim light does not turn their left faces mauve (agent-chosen, provisional). The lights and camera are the walls'.
@@ -115,4 +115,4 @@ The owner, 2026-11-09: "update the rubble patches make those look more like a ca
 - Cost: about 0.1 ms a frame or less, against the drawn pile's 0.1–0.2 ms (headless Chromium, at the Sewers' tunnel, the bank and the arena).
 - `tests/cavewalls.js` checks each patch is still where the bake found it. **When a rubble patch moves or changes, bake again.**
 
-**Status.** Built in build `2026-11-09k`, on the preview (`?walls=3d`) until the owner approves it in the game. Everyone else sees the drawn pile, which stays as the fallback.
+**Status.** Built in build `2026-11-09k` on the preview (`?walls=3d`). Approved in the game on 2026-11-09 ("Approve the rubble for everyone, keep the slab"): drawn for everyone since build `2026-11-09l`, the hazard-painted slab kept. The drawn pile (`js/techabilities.js techDrawRubbleOn`) stays as the fallback for the moment before the sheet arrives. Still open: whether the hole a drilled rubble leaves in the arena's rock is modelled too (`OPEN-QUESTIONS.md`).
