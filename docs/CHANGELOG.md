@@ -15,8 +15,8 @@ The owner asked again to be prompted one by one ("Prompt me questions one by one
   - The player's own punch, arc, lash and rounds in a BLOOM role's element MEND nothing by themselves: what a role mends is what its kit says (the agent's reading, to confirm).
   - Pack 1 deals 21 cards once the module has run (18 before), Series 2 73 (67 before); the game has 100 cards.
 - **Screens:** the cards screen sorts BLOOM's cards after core's; the Side Quest's choices wrap to rows of three, so the six roles fit.
-- **Kept:** SWEET SCENT stays a chosen mode ("Keep it a chosen mode"); every BLOOM number stays provisional until a playtest ("Keep them all").
-- **Numbers:** the nine cards' are the agent's, provisional.
+- **Kept:** SWEET SCENT stays a chosen mode ("Keep it a chosen mode"); BLOOM's moves' numbers (SEEDFALL, PINK THICKET, STAKE RING, SWEET SCENT and the stockpile) stay provisional until a playtest ("Keep them all").
+- **Numbers:** the nine cards' are the agent's drafts, approved as drafted, provisional until a playtest; picked when building, inside the approved words: SEED GUNNER's SEEDFALL 1 tile round and its bite 0.2 × the gun's damage, and GROVE ENGINEER's "every few seconds" as 3 s.
 - Tests: new suite bloomcards (15 checks); new checks in reef (the crate rule), followerprog (BLOOM breeding); updated packs, series2, market, classcards, playercards, cards, cardart, sidequest. FULL_RUN_PENDING. Not playtested.
 
 ## 2026-11-08

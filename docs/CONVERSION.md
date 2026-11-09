@@ -94,7 +94,7 @@ The owner chose these in prompts. The names are working names; the bodies are to
   - It cannot be undone.
 
 ### BLOOM's cards (designed and approved 2026-11-09; built in build `2026-11-09a`)
-The owner's answers, one by one (2026-11-09): the Pack 1 cards strengthen "MEND's heal (Recommended)", the Precision one is "DEWBURST: big MEND"; the aura "Approve as drafted (Recommended)"; the roles "SEED GUNNER: seedfall", "GROVE ENGINEER: relays (Recommended)", "HERBALIST: bites and pool (Recommended)". The names and every number are the agent's drafts, **provisional until a playtest** (the owner: "Keep them all").
+The owner's answers, one by one (2026-11-09): the Pack 1 cards strengthen "MEND's heal (Recommended)", the Precision one is "DEWBURST: big MEND"; the aura "Approve as drafted (Recommended)"; the roles "SEED GUNNER: seedfall", "GROVE ENGINEER: relays (Recommended)", "HERBALIST: bites and pool (Recommended)". The names and numbers are the agent's drafts, approved as drafted; three numbers were picked when building, inside the approved words: SEED GUNNER's SEEDFALL 1 tile round ("small") and its bite 0.2 × the gun's damage, and GROVE ENGINEER's "every few seconds" as every 3 s. All are **provisional until a playtest**, as every BLOOM number (the owner, of BLOOM's moves: "Keep them all").
 - **Pack 1:** three BLOOM element cards, for a BLOOM follower of any class. Pack 1 deals them only once the module is installed and has run.
   - **SAP VEIN** (Unrefined): +25% to what its MEND heals.
   - **NECTAR HEART** (Refined): +50% to what its MEND heals.
@@ -270,7 +270,7 @@ Still open:
 5. *(Answered 2026-11-08: SUNDEW's second attack is SWEET SCENT, the owner's design, with NECTAR STING its everyday hit and its stockpile: section 2; built in build `2026-11-08n`.)* Their numbers (the agent's, provisional, build `2026-11-08n`): a quarter of the stockpile a sting; SWEET SCENT's wind-up 5 s, its puff luring the enemies within 5 tiles for 4 s (not a boss), its heal 20% of their health within 3 tiles; STAKE RING's (STONEPETAL's): 1.8 tiles all round, 1.2 × its attack, a push of 1.5 tiles, its wind-up 4 s.
 5b. *(Answered 2026-11-08: the coral crab, drawn as a tick (No. 914), stays Crustacean, and its main attack stays Crushing.)*
 6. *(Answered 2026-11-08: the coral crab's main attack stays Crushing; REEF fires the shards.)*
-7. *(Answered 2026-11-09: BLOOM's cards' designs, section 2, "BLOOM's cards"; built in build `2026-11-09a`.)* Their numbers are the agent's, provisional until a playtest (the owner: "Keep them all"): SAP VEIN +25%, NECTAR HEART +50%, DEWBURST 15% for ×3; THORN BAND +5%, PETAL SIGIL +7.5%, EVERBLOOM CROWN +10% and 10% to MEND; SEED GUNNER every 5th hit, 1 tile, 2 s, 0.2 × the gun; GROVE ENGINEER 3 tiles, 1%, every 3 s; HERBALIST's pool +50%. Also the agent's reading, to confirm: the player's own strikes in a BLOOM role's element MEND nothing by themselves.
+7. *(Answered 2026-11-09: BLOOM's cards' designs, section 2, "BLOOM's cards"; built in build `2026-11-09a`.)* Their numbers are the agent's drafts, approved as drafted and provisional until a playtest (the three picked when building are marked in section 2): SAP VEIN +25%, NECTAR HEART +50%, DEWBURST 15% for ×3; THORN BAND +5%, PETAL SIGIL +7.5%, EVERBLOOM CROWN +10% and 10% to MEND; SEED GUNNER every 5th hit, 1 tile, 2 s, 0.2 × the gun; GROVE ENGINEER 3 tiles, 1%, every 3 s; HERBALIST's pool +50%. Also the agent's reading, to confirm: the player's own strikes in a BLOOM role's element MEND nothing by themselves.
 8. **BLOOM's crystal on a card** (`UI-STYLE.md`): BLOOM's nine cards show BLOOM's texture and emblem (build `2026-11-09a`); none has an item picture of its own yet. *(Its texture, emblem and icon are answered: below.)*
 9. **BLOOM's element move and Ultimate** for an unevolved BLOOM follower: none for now (approved 2026-11-08), not designed.
 10. *(Answered 2026-11-08, the owner, one by one: REEF's readings of build `2026-11-08m`.)*
@@ -283,7 +283,7 @@ Still open:
     - the coral crab's name: **STONEPETAL** (of drafted names); its second attack: **STAKE RING** (of four drafts), both built in build `2026-11-08n`.
 
 Answered on 2026-11-09 (the owner, one by one; built in build `2026-11-09a`):
-- REEF's rock stops everyone's shots, as a crate ("Stops everyone's"); SWEET SCENT stays a chosen mode ("Keep it a chosen mode"); every BLOOM number stays provisional until a playtest ("Keep them all (Recommended)");
+- REEF's rock stops everyone's shots, as a crate ("Stops everyone's"); SWEET SCENT stays a chosen mode ("Keep it a chosen mode"); BLOOM's moves' numbers (SEEDFALL, PINK THICKET, STAKE RING, SWEET SCENT and the stockpile) stay provisional until a playtest ("Keep them all (Recommended)");
 - BLOOM breeding goes in ("Build it (Recommended)"): a toxic + fire pair, once the module has run, 50% BLOOM;
 - BLOOM's cards: drafted by the agent ("Draft them (Recommended)"); Pack 1's strengthen MEND's heal ("MEND's heal (Recommended)"), its Precision card a big MEND ("DEWBURST: big MEND"); the aura as drafted ("Approve as drafted (Recommended)"); the roles "SEED GUNNER: seedfall", "GROVE ENGINEER: relays (Recommended)", "HERBALIST: bites and pool (Recommended)"; then "Build these answers (Recommended)".
 
