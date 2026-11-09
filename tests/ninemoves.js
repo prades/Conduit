@@ -29,7 +29,7 @@ const NINE = [['electroskink', 'zigzag_dash', 'ZIGZAG DASH'], ['jellyram', 'wobb
             globalThis.__C = [best[0] + 0.5, best[1] + 0.5]; player.x = player.visualX = __C[0] - 8; player.y = player.visualY = __C[1]; })();
         globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k] = []; followerProjectiles.length = 0; elementEffects.length = 0; floatingTexts.length = 0; frame++; };
         globalThis.__foe = (dx, dy) => { const S = SPECIES.ant, p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), __C[0] + dx, __C[1] + dy); p.speciesName = 'ant'; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; p.element = null; actors.push(p); return p; };
-        globalThis.__fol = (id) => { const E = EVOLUTIONS[id]; spawnFollowerAtCrystal(E.element); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = E.role; f.evolved = id; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.stance = 'hold'; f.x = __C[0]; f.y = __C[1]; f.update = () => {}; return f; };
+        globalThis.__fol = (id) => { const E = EVOLUTIONS[id]; spawnFollowerAtCrystal(E.element); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = E.role; f.evolved = id; energyFill(f); f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.stance = 'hold'; f.x = __C[0]; f.y = __C[1]; f.update = () => {}; return f; };
         globalThis.__dmg = p => Math.round((1e6 - p.health) * 1000) / 1000;`);
 
     group('THE NINE: each form\'s own second attack in place of BASH (the owner, 2026-11-09, one form at a time)');

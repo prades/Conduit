@@ -43,7 +43,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
 
     group('THE CORAL CRAB HAS REEF');
     check('a BLOOM technician (egg or evolved: the coral crab) has REEF: its chip ◆ REEF, a spot to tap, its prompt; the seventh ability', () => {
-        const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], o = {}; o.id = (techAbilityOf(t) || {}).id; t.evolved = 'coralcrab'; o.evolved = (techAbilityOf(t) || {}).id;
+        const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], o = {}; o.id = (techAbilityOf(t) || {}).id; t.evolved = 'coralcrab'; energyFill(t); o.evolved = (techAbilityOf(t) || {}).id;
             o.chip = techChipState(t).text; techChipTap(t); o.need = techAimNeed(); o.prompt = techAimPrompt(); techAimCancel(true); o.keys = Object.keys(TECH_ABILITIES).length; o.ult = (followerUltimate(t) || {}).name; return o; })()`);
         same(r.id, 'reef', 'the egg\'s ability'); same(r.evolved, 'reef', 'the coral crab\'s'); same(r.chip, '◆ REEF', 'the chip'); same(r.need, 'spot', 'the pick');
         same(r.prompt, 'REEF · TAP THE FLOOR FOR AN OUTCROP, OR HIGH GROUND TO CLIMB, WHERE IT CAN SEE', 'the prompt'); same(r.keys, 7, 'the abilities'); same(r.ult, 'Reef Pillar', 'its Ultimate');
@@ -185,7 +185,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
 
     group('REEF PILLAR (its Ultimate)');
     check('charged, at the nearest enemy it sees: a giant spike on the line between them, in front of the enemy, a lesser one either side across the line; nothing in reach keeps the charge', () => {
-        const r = J(`(function(){ const fs = __fresh(['blossom']), t = fs[0], o = {}; t.evolved = 'coralcrab'; t.ultimateCharge = 100;
+        const r = J(`(function(){ const fs = __fresh(['blossom']), t = fs[0], o = {}; t.evolved = 'coralcrab'; energyFill(t); t.ultimateCharge = 100;
             o.none = followerUltFire(t); o.kept = t.ultimateCharge;
             const e = __foe(t.x + 5, t.y), f2 = __foe(t.x + 6.5, t.y + 1); o.fired = followerUltFire(t); o.spent = t.ultimateCharge; const O = techReefs[0] || {};
             o.pillar = O.pillar; o.parts = (O.parts || []).map(q => [q.x - t.x, q.y - t.y, q.r]); o.life = O.until - O.t0; return o; })()`);
@@ -194,7 +194,7 @@ const near = (a, b, tol, m) => { if (!(Math.abs(a - b) <= tol)) throw new Error(
         near(Math.abs(r.parts[1][1]), 1.1, 0.01, 'a lesser one across the line'); near(r.parts[1][1], -r.parts[2][1], 0.01, 'one either side'); same(r.life, 600, 'its life (provisional)');
     });
     check('it blocks the enemy\'s way, mends your followers near it 2% every half second, and hurts no one', () => {
-        const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], g = fs[1], o = {}; t.evolved = 'coralcrab'; t.ultimateCharge = 100; g.stance = 'hold';
+        const r = J(`(function(){ const fs = __fresh(['blossom', 'fire']), t = fs[0], g = fs[1], o = {}; t.evolved = 'coralcrab'; energyFill(t); t.ultimateCharge = 100; g.stance = 'hold';
             const e = __foe(t.x + 5, t.y); followerUltFire(t); __calm(); const O = techReefs[0], C = O.parts[0]; __step(TECH_AB.reef.shards + 1, [e]);
             g.x = C.x - 1.8; g.y = C.y + 0.4; g.job = { type: 'move', target: { x: g.x, y: g.y } }; g.health = 100; __heals.length = 0;
             __walker(e, t.x - 2, t.y, 0.05); let minX = 99; for (let i = 0; i < 150; i++) { __step(1, [e]); minX = Math.min(minX, e.x - t.x); }

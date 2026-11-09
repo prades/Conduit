@@ -18,6 +18,8 @@ const ENERGY_NONE = "none";
 const ENERGY = { unevolvedSlots: 1, evolvedSlots: 3, evolveLevel: 8, altNeeds: 1, ultNeeds: 2 };
 let energyStock = {};   // the run's: element id -> the cards of it you hold (not in a slot)
 
+// what its energy row shows (the roster draws it again when this changes: js/commandcenter.js _ccSideSigNow)
+function energySig(f) { return energyFor(f) ? energySlots(f).join() + "/" + energyHeld().map(el => el + energyCount(el)).join() : ""; }
 // an element an energy card can be of: a real one (not "none")
 function energyElementOk(el) { return typeof el === "string" && el !== ENERGY_NONE && typeof ELEMENTS !== "undefined" && ELEMENTS.some(e => e.id === el && !e.none); }
 function energyLabel(el) { const e = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(x => x.id === el) : null; return e ? e.label : "NO"; }

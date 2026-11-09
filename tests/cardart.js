@@ -86,7 +86,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var body = $('#cardsRoot .cd-body'); out.overflow = { sw: body.scrollWidth, cw: body.clientWidth };
     click($$('#cardsRoot .cd-tab').filter(function(b){ return b.textContent.indexOf('SHOP') === 0; })[0]); await wait(200);
     out.shopCards = measureCards().length; out.cards = out.cards.concat(measureCards()); body = $('#cardsRoot .cd-body'); out.overflowShop = { sw: body.scrollWidth, cw: body.clientWidth };
-    _cdReveal = { pack: equipPackLast.pack, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice() }; cardsRender(true); await wait(200);   // a pack's reveal: its cards are cards too
+    _cdReveal = { pack: equipPackLast.pack, ids: equipPackLast.ids.slice(), fresh: equipPackLast.fresh.slice(), energy: (equipPackLast.energy || []).slice() }; cardsRender(true); await wait(200);   // a pack's reveal: its cards are cards too (its two and, since build 2026-11-09s, its two energy cards)
     var rc = measureCards('#cardsRoot .cr-overlay .cd-card'); out.revealCards = rc.length; out.cards = out.cards.concat(rc); _cdReveal = null; cardsRender(true); await wait(60);
     // every picture is one the browser can draw (the nine card faces, the eighteen backdrops, the crystal in each colour and the cube)
     var urls = []; ['fire', 'electric', 'ice', 'flux', 'core', 'toxic', 'brawler', 'mage', 'technician', 'spinelegged', 'mollusk', 'elemental', 'drone', 'jelly'].forEach(function(k){ urls.push(['c:' + k, cardArtUrl('c:' + k, function(){ return cardArtFaceSvg(k); })]); });
@@ -117,7 +117,7 @@ function measure(w, h) {
 
     group('THE TEXTURES: one for each element and each class, drawn the same on every load');
     await check('every element of the game has a texture, and every class (a follower\'s role) has one: brawler impact cracks, mage facets, technician circuit traces', () => {
-        same(J('CARD_ART_ELEMENTS.slice().sort().join()'), J('ELEMENTS.map(e => e.id).sort().join()'), 'the elements');
+        same(J('CARD_ART_ELEMENTS.slice().sort().join()'), J('ELEMENTS.filter(e => !e.none).map(e => e.id).sort().join()'), 'the elements (NO ELEMENT has no texture: no element, no colour, build 2026-11-09s)');
         same(J('CARD_ART_CLASSES.join()'), 'brawler,mage,technician', 'the classes');
         for (const k of J('CARD_ART_ELEMENTS.concat(CARD_ART_CLASSES)')) ok(J(`cardArtTexture(${JSON.stringify(k)}).length`) > 300, k + ' has no drawing');
         same(J('[cardArtClassOfRole("brawler"), cardArtClassOfRole("sniper"), cardArtClassOfRole("camper"), cardArtClassOfRole("hybrid"), cardArtClassOfRole("boss")].join()'), 'brawler,mage,technician,brawler,', 'a role\'s class (sniper is the MAGE, camper the TECHNICIAN, a hybrid a brawler)');

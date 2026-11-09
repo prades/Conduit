@@ -546,6 +546,7 @@ function _ccDrawSide(side) {
     _ccDrawSquadButtons(side, sel);   // (ADD TO SQUAD / REMOVE FROM SQUAD: REMOVE posts it in its room, so there is no STANCE setting here; nobody works, so no DUTY)
     side.appendChild(_ccEl("div", "cc-sec", "SETTINGS"));
     _ccDrawStyles(side, S, sel);
+    if (one && typeof energyRosterDraw === "function" && typeof energyFor === "function" && energyFor(one)) energyRosterDraw(side, one);   // its ENERGY slots (js/cardsui.js; on a phone, the roster's one way to them)
     const row = _ccEl("div", "cc-row"); side.appendChild(row);
     if (S.followers) row.appendChild(_ccBtn(ccRerollArmed ? "TAP AGAIN: RE-ROLL " + S.followers : "RE-ROLL", "#ff4a1c", ccRerollArmed, () => { if (!ccRerollArmed) ccRerollArmed = true; else { ccApplyReroll(sel); ccRerollArmed = false; } }, "wide", "BACK TO THE CRYSTAL, MADE AGAIN"));
     row.appendChild(_ccBtn("CLEAR SELECTION", "#8aa0c8", false, () => { ccClearSelection(); ccRerollArmed = false; _ccDD = null; }, "wide"));
@@ -590,16 +591,19 @@ function _ccFocusBuild(box) {
     const lv = _ccEl("span", "cf-lv"), el = _ccEl("span", "cf-el"), sc = _ccEl("span", "cf-sc"); art.appendChild(lv); art.appendChild(el); art.appendChild(sc);   // (sc: its subclass tag, js/cards.js)
     const txt = _ccEl("div", "cf-txt"), name = _ccEl("div", "cf-name"), state = _ccEl("span", "cf-state"), bars = _ccEl("div", "cf-bars");
     const rows = ["HEALTH", "POWER", "SPEED", "DEFENSE", "ATTACK", "XP", "EVOLVES"].map(k => { const r = _ccEl("div", "cf-bar"); r._k = k; r.appendChild(_ccEl("span", "cf-k", k)); const i = _ccEl("i"); i.appendChild(_ccEl("b")); r.appendChild(i); r.appendChild(_ccEl("em")); bars.appendChild(r); return r; });
-    txt.appendChild(name); txt.appendChild(state); txt.appendChild(bars);
+    const en = _ccEl("div", "cf-enbox");   // its ENERGY slots (js/cardsui.js energyRow), under its numbers
+    txt.appendChild(name); txt.appendChild(state); txt.appendChild(bars); txt.appendChild(en);
     card.appendChild(art); card.appendChild(txt); card.appendChild(_ccEl("div", "cf-none", "NOBODY HERE: TAP RECRUIT, AT THE END OF THE STRIP, TO CALL A FOLLOWER"));
     const prev = arrow(-1), next = arrow(1); box.appendChild(prev); box.appendChild(card); box.appendChild(next);
-    return box._cf = { card, cv, lv, el, sc, name, state, rows, prev, next, txt, pc: null, pcSig: null, key: null, done: false };
+    return box._cf = { card, cv, lv, el, sc, name, state, rows, prev, next, txt, en, enSig: null, pc: null, pcSig: null, key: null, done: false };
 }
 function _ccFocusDraw(box) {
     const E = _ccFocusBuild(box), f = _ccFocus, list = _ccStripUnits(), walk = list.length > (f && list.indexOf(f) >= 0 ? 1 : 0);
     E.card.classList.toggle("none", !f); E.prev.disabled = E.next.disabled = !walk;
     const you = f === CC_YOU; E.card.classList.toggle("you", you); if (E.pc) E.pc.style.display = you ? "" : "none";
     if (typeof cardArtUnitClass === "function") cardArtMark(E.card, f && !you ? cardArtUnitClass(f) : "");   // its backdrop, behind its picture and its numbers (js/cardart.js); the player's card has none (it is gold)
+    if (you || !f || f.isClone || f.isFollower !== true || typeof energyRow !== "function") { if (E.enSig !== "") { E.en.textContent = ""; E.enSig = ""; } }
+    else { const sig = _ccUid(f) + "|" + f.evolved + "|" + f.element + "|" + energySlots(f).join() + "|" + energyHeld().join(); if (E.enSig !== sig) { E.enSig = sig; E.en.textContent = ""; E.en.appendChild(energyRow(f, "cf-en")); } }   // (made again only when what it shows changes)
     if (you) { _ccFocusYou(E); return; }
     if (!f) return;
     const col = _ccColour(f.element), st = typeof unitStatus === "function" ? unitStatus(f) : null, set = (e, p, v) => { if (e[p] !== v) e[p] = v; };
@@ -759,11 +763,11 @@ function _ccSideSigNow() {
     if (ccCarousel()) {   // the carousel's settings are for the creature in view
         const f = _ccFocus; if (!f) return "F-";
         if (f === CC_YOU) return "Y|" + (typeof equipPlayerSig === "function" ? equipPlayerSig() : "") + "|" + _ccDD + "|" + (typeof playerClassId === "function" ? playerClassId() : "") + "|" + (typeof classRank === "function" ? classRank() : "") + "|" + _ccYouHits().hp + "|" + (typeof partyMembers === "function" ? partyMembers().length : 0);   // (the player's card: its slots, the hand, its class, its health)
-        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed + "|" + partyExileArmed([f]) + "|" + (typeof equipSig === "function" ? equipSig(f) : "")
+        return "F" + _ccUid(f) + "|" + [f.level, Math.round((f.health || 0) / 5), f.evolved, f.element, f.role, f.playStyle, f.partySlot, f.post, f.stance, f.isFollower].join() + "|" + JSON.stringify(ccSelectionSummary([f])) + "|" + _ccDD + "|" + ccRerollArmed + "|" + partyExileArmed([f]) + "|" + (typeof equipSig === "function" ? equipSig(f) : "") + "|" + (typeof energySig === "function" ? energySig(f) : "")
             + "|" + (f.partnerUid || "") + "|" + (typeof breedArmed === "function" ? breedArmed(f) : "") + "|" + (typeof BREED !== "undefined" && typeof shardCount === "number" ? shardCount >= BREED.price : "");   // (the BREED button: its partner, its two taps, whether it can pay: js/breeding.js)
     }
     const pool = typeof getCommandPool === "function" ? getCommandPool().filter(f => !f.dead).length : 0;
-    const one = ccSelectionList().length === 1 ? ccSelectionList()[0] : null, snap = one ? [one.level, Math.round((one.health || 0) / 5), one.evolved, one.element].join() : "";
+    const one = ccSelectionList().length === 1 ? ccSelectionList()[0] : null, snap = one ? [one.level, Math.round((one.health || 0) / 5), one.evolved, one.element, typeof energySig === "function" ? energySig(one) : ""].join() : "";
     return JSON.stringify(ccSelectionSummary()) + "|" + snap + "|" + _ccDD + "|" + _ccSqSig() + "|" + partyExileArmed(ccSelectionList().filter(a => a.isFollower === true && !a.isClone)) + "|" + squadMode + "|" + (typeof player !== "undefined" ? player.selectedElement : "") + "|" + ccRerollArmed + "|" + pool + "|" + (typeof unlockedElements !== "undefined" ? unlockedElements.size : 0);
 }
 // The squad-wide orders (they were the COMMAND page): who world orders go to, and orders for the whole pool. Appended to the side panel.

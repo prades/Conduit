@@ -31,7 +31,7 @@ const menu = HTML.slice(HTML.indexOf('<div id="controlsMenu">'), HTML.indexOf('<
     group('ICONS');
 
     await check('THE ASK: an icon for every element', () => {
-        const missing = run('ELEMENTS.filter(e => !ICONS[ELEMENT_ICON[e.id]]).map(e => e.id)');
+        const missing = run('ELEMENTS.filter(e => !e.none && !ICONS[ELEMENT_ICON[e.id]]).map(e => e.id)');   // (NO ELEMENT is no element: no icon, build 2026-11-09s)
         ok(missing.length === 0, 'no icon for ' + missing.join(', '));
     });
     await check('and for the systems the index explains (the pylon and formation icons went with the strip game)', () => {

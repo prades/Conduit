@@ -214,7 +214,7 @@ function measure(w, h) {
     group('THE EMBLEMS (js/cardart.js CARD_ART_EMBLEMS)');
     await check('eighteen: the five species\', the seven elements\' and the six enemy races\' (js/damage.js DMG_RACE), each the approved drawing in its approved colour; BLOOM\'s (build 2026-11-08i, approved 2026-11-08) in its pink', () => {
         same(J('Object.keys(CARD_ART_EMBLEMS).sort().join()'), J('CARD_ART_SPECIES.concat(CARD_ART_ELEMENTS, CARD_ART_RACES).sort().join()'), 'the emblems'); same(J('Object.keys(CARD_ART_EMBLEMS)').length, 18, 'how many'); same(J('CARD_ART_EMBLEMS.blossom.col'), '#ff7ab8', 'BLOOM\'s colour');
-        same(J('CARD_ART_RACES.slice().sort().join()'), J('Object.keys(DMG_RACE).sort().join()'), 'the races'); same(J('CARD_ART_ELEMENTS.slice().sort().join()'), J('ELEMENTS.map(e => e.id).sort().join()'), 'the elements');
+        same(J('CARD_ART_RACES.slice().sort().join()'), J('Object.keys(DMG_RACE).sort().join()'), 'the races'); same(J('CARD_ART_ELEMENTS.slice().sort().join()'), J('ELEMENTS.filter(e => !e.none).map(e => e.id).sort().join()'), 'the elements (NO ELEMENT has none: build 2026-11-09s)');
         for (const k of J('Object.keys(CARD_ART_EMBLEMS)').filter(k => k !== 'blossom')) { same(J(`cardArtEmblemPath(${JSON.stringify(k)}) === __P2.ICONS[${JSON.stringify(k)}].d`), true, k + ' is not the approved drawing'); same(J(`CARD_ART_EMBLEMS[${JSON.stringify(k)}].col`), J(`__P2.ICONS[${JSON.stringify(k)}].col`), k + '\'s colour'); }
         for (const sp of SPECIES) same(J(`CARD_ART_EMBLEMS[${JSON.stringify(sp)}].col`), COLOURS[sp], sp + ' is not in its species\' colour'); for (const r of RACES) same(J(`CARD_ART_EMBLEMS[${JSON.stringify(r)}].col`), '#ff8a6a', r + ' is not in the enemy colour');
     });

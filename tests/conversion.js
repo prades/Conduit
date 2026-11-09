@@ -39,7 +39,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var st = _fp.stations.find(function(s){ return s.id === 'st_purifier'; }), at = facilityApproachTile(st.bb, STATION_RANGE - 0.3);
     player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null;
     actors = actors.filter(function(a){ return !(a instanceof Predator) && !a.isFollower; }); followers.length = 0; for (var k in followerByElement) followerByElement[k].length = 0;
-    var mk = function(el, role, evo){ spawnFollowerAtCrystal(el, role); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.role = role; f.x = player.x - 0.6; f.y = player.y; if (evo) f.evolved = evo; return f; };
+    var mk = function(el, role, evo){ spawnFollowerAtCrystal(el, role); var f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.role = role; f.x = player.x - 0.6; f.y = player.y; if (evo) { f.evolved = evo; energyFill(f); } return f; };
     var b = mk('toxic', 'brawler'), sp = mk('toxic', 'camper', 'blightspider'); partyTick(); partyPost(sp, 'sewers', true);
     questState('purify').installedAt = 1; questState('purify').purifiedAt = 2;
     out.room = partyRoomAt(player.x, player.y); out.verb = STATION_KINDS.purifier_mount.verbFn(st); out.name = STATION_KINDS.purifier_mount.name;
@@ -78,7 +78,7 @@ function measure(w, h) {
         globalThis.__st = () => _fp.stations.find(s => s.id === 'st_purifier');
         globalThis.__atModule = () => { const st = __st(), at = facilityApproachTile(st.bb, STATION_RANGE - 0.3); player.x = player.targetX = player.visualX = at[0]; player.y = player.targetY = player.visualY = at[1]; player.fpPath = null; return st; };
         globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; if (typeof respawnQueue !== 'undefined') respawnQueue.length = 0; };
-        globalThis.__mk = (el, role, evo) => { spawnFollowerAtCrystal(el, role); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.role = role; f.x = player.x - 0.6; f.y = player.y; if (evo) f.evolved = evo; return f; };
+        globalThis.__mk = (el, role, evo) => { spawnFollowerAtCrystal(el, role); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 1e9; f.role = role; f.x = player.x - 0.6; f.y = player.y; if (evo) { f.evolved = evo; energyFill(f); } return f; };
         globalThis.__quest = (installed) => { const Q = questState('purify'); Q.installedAt = installed ? 1 : 0; Q.purifiedAt = installed ? 2 : 0; };`);
 
     group('BLOOM, THE SEVENTH ELEMENT (js/config.js ELEMENTS: id "blossom", "bloom" being the retired BUNKER BLOOM\'s form)');
@@ -103,9 +103,9 @@ function measure(w, h) {
     });
     check('a BLOOM Mage evolves at its level into the THORNWHIP, BLOOM\'s Mage (build 2026-11-08j): its name, its shot SEED SHOT and its alternate SEEDFALL, and its Ultimate PINK THICKET; a BLOOM Brawler into SUNDEW (build 2026-11-08k); a BLOOM Technician into the CORAL CRAB (build 2026-11-08m)', () => {
         const r = J(`(function(){ __clear(); const m = __mk('blossom', 'sniper'), b = __mk('blossom', 'brawler'), t = __mk('blossom', 'camper'); for (const f of [m, b, t]) { f.level = 12; f.xp = 0; }
-            const did = [m, b, t].map(evoCheck); return { did, forms: [m, b, t].map(f => f.evolved || null), label: unitTypeLabel(m), shot: EVOLUTIONS.shrub.shot, moves: evoMoveIds(EVOLUTIONS.shrub), ult: followerUltimate(m), lean: dmgLean(m), sub: equipSubclassOf(m) }; })()`);
+            const did = [m, b, t].map(evoCheck); energyFill(m); return { did, forms: [m, b, t].map(f => f.evolved || null), label: unitTypeLabel(m), shot: EVOLUTIONS.shrub.shot, moves: evoMoveIds(EVOLUTIONS.shrub), ult: followerUltimate(m), lean: dmgLean(m), sub: equipSubclassOf(m) }; })()`);
         same(r.did.join(), 'true,true,true', 'who evolved'); same(r.forms.join(), 'shrub,sundew,coralcrab', 'their forms'); same(r.label, 'THORNWHIP', 'its name'); same(r.shot, 'SEED SHOT', 'its shot');
-        same(r.moves.join(), 'seedfall', 'its alternate'); same(r.ult && r.ult.name, 'Pink Thicket', 'its Ultimate (PINK THICKET since build 2026-11-08l)'); same(r.lean, 2, 'its lean (Elemental, and an Elemental shot)'); same(r.sub, 'elemental', 'its subclass');
+        same(r.moves.join(), 'seedfall', 'its alternate'); same(r.ult && r.ult.name, 'Pink Thicket', 'its Ultimate (PINK THICKET since build 2026-11-08l; open with BLOOM energy cards in its slots since build 2026-11-09s)'); same(r.lean, 2, 'its lean (Elemental, and an Elemental shot)'); same(r.sub, 'elemental', 'its subclass');
     });
     check('MEND: a BLOOM follower\'s hit heals the most hurt of yours within 4 tiles (the lowest share of health) by 2% of its max; one 5 tiles off, or at full health, is passed over; it counts itself', () => {
         const r = J(`(function(){ __clear(); __put0 = 0; const b = __mk('blossom', 'brawler'), near = __mk('fire', 'brawler'), far = __mk('ice', 'brawler'), full = __mk('core', 'brawler'); partyTick();

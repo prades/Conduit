@@ -43,7 +43,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(f
       if (s % 20 !== 0) continue;
       maxCrowd = Math.max(maxCrowd, _at.crowd.length); texts = Math.max(texts, floatingTexts.length);
       for (var w of _at.crowd) {
-        seenForms[w.form] = 1; modes[w.mode] = (modes[w.mode] || 0) + 1; if (w.f.level !== 10) badLevel++; if (!w.f.evolved) notEvolved++;
+        seenForms[w.form] = 1; modes[w.mode] = (modes[w.mode] || 0) + 1; if (w.f.level !== EVOLVE_LEVEL) badLevel++; if (!w.f.evolved) notEvolved++;
         if (!facilityWalkable(w.f.x, w.f.y, _fp.F)) inWall++;
         var d = Math.hypot(w.f.x - _at.cam.x, w.f.y - _at.cam.y); minDist = Math.min(minDist, d); maxDist = Math.max(maxDist, d);
       }
@@ -146,9 +146,9 @@ function measure() {
                 same(r.fpSave, 'visitor-save', 'the facility save'); same(r.otherKept, 'visitor', 'another site\'s key'); same(r.writeBlocked, true, 'a write is refused'); same(r.saveWriteBlocked, true, 'the facility\'s own save wrote'); same(r.keys.length, 0, 'keys written: ' + r.keys.join());
             });
             check('there is somewhere to search: rooms, floor and props, and twenty-one forms to search it', () => { ok(r.rooms >= 8, r.rooms + ' rooms'); ok(r.cells >= 800, r.cells + ' cells'); ok(r.spots >= 100, r.spots + ' spots beside props'); same(r.forms, 21, 'the evolved forms (every element and role has one, and BLOOM\'s THORNWHIP and SUNDEW: the owner, 2026-11-08, "Show them")'); });
-            check('searchers came, one after another, from out of sight and went (never more than the cap at once, never none left over), each an evolved follower of level 10, on the floor', () => {
+            check('searchers came, one after another, from out of sight and went (never more than the cap at once, never none left over), each an evolved follower of the evolution level (EVOLVE_LEVEL: 8 since build 2026-11-09s), on the floor', () => {
                 ok(r.frames > 8000, r.frames + ' frames'); ok(r.spawned >= 3, 'only ' + r.spawned + ' came'); ok(r.gone >= r.spawned - 2, r.gone + ' went of ' + r.spawned); ok(r.maxCrowd >= 1 && r.maxCrowd <= 2, 'at most ' + r.maxCrowd + ' at once');
-                ok(r.followers1 <= 2, r.followers1 + ' followers left'); ok(r.actors1 <= 3, r.actors1 + ' actors left'); same(r.badLevel, 0, 'a searcher not at level 10'); same(r.notEvolved, 0, 'a searcher that was not evolved'); same(r.inWall, 0, 'a searcher in a wall');
+                ok(r.followers1 <= 2, r.followers1 + ' followers left'); ok(r.actors1 <= 3, r.actors1 + ' actors left'); same(r.badLevel, 0, 'a searcher not at the evolution level'); same(r.notEvolved, 0, 'a searcher that was not evolved'); same(r.inWall, 0, 'a searcher in a wall');
                 ok(r.forms2.length >= 2, 'only ' + r.forms2.join() + ' came');
             });
             check('they search: they stop in rooms (a stop in each), and walk between them', () => { ok(r.searched >= 5, r.searched + ' stops'); ok((r.modes.go || 0) > 0 && (r.modes.search || 0) > 0, JSON.stringify(r.modes)); ok((r.modes.leave || 0) > 0, 'one left: ' + JSON.stringify(r.modes)); });

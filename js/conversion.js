@@ -46,7 +46,7 @@ function convertVerb() { return "CONVERT A TOXIC FOLLOWER INTO BLOOM"; }
 
 // what it would be: a copy with its new element (and, evolved, its class's BLOOM form), for the preview's card and words (nothing about the follower itself changes)
 function convertPreview(f) {
-    const g = Object.assign({}, f, { element: CONVERT.to, cards: f.cards ? f.cards.slice() : f.cards });
+    const g = Object.assign({}, f, { element: CONVERT.to, cards: f.cards ? f.cards.slice() : f.cards, energy: Array.isArray(f.energy) ? f.energy.map(x => x === CONVERT.from ? CONVERT.to : x) : f.energy });   // (its energy cards as the conversion leaves them: convertApply)
     if (f.evolved) { const d = convertBloomForm(f); if (d) g.evolved = d.id; }
     return g;
 }

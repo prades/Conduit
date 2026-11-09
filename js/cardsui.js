@@ -416,14 +416,32 @@ function equipRosterDraw(side, f) {   // (drawn under the styles)
     }
     equipSpecialDraw(side, f);
 }
-// ITS ENERGY SLOTS (docs/ENERGY-CARDS.md; the owner, 2026-11-09): ENERGY 1 (unevolved: its element) or ENERGY 1-3 (evolved: its own element's cards unlock its second attack, then its Ultimate; another's,
-// a hybrid, not designed yet). A tap opens the card picker with the energy cards you hold (each with how many), EMPTY first (the card comes back to you).
+// ITS ENERGY SLOTS (docs/ENERGY-CARDS.md; the owner, 2026-11-09): ONE ROW, ENERGY and a chip for each slot: 1 unevolved (its element) or 3 evolved (its own element's cards unlock its second attack, then its
+// Ultimate; another's, a hybrid, not designed yet), and a line under it saying what they do now. A tap on a chip opens the card picker with the energy cards you hold (each with how many), EMPTY first (the card
+// comes back to you). One row, so the roster's column keeps its height; the carousel draws it on the creature's card instead (js/commandcenter.js _ccFocusDraw), its column as it was.
 function energyRosterDraw(side, f) {
-    const s = energySlots(f), held = energyHeld();
-    for (let slot = 0; slot < s.length; slot++) {
-        const el = s[slot], card = el ? energyCardOf(el) : null, role = el ? energySlotRole(f, slot) : (f.evolved ? "EMPTY · " + energyLabel(f.element) + " ENERGY UNLOCKS ITS ATTACKS" : "NO ELEMENT · PUT AN ENERGY CARD IN");
-        _ccDropdown(side, "energy" + slot, "ENERGY " + (slot + 1), card ? card.name : "EMPTY", el ? energyColor(el) : "#cfd8e3", () => energyFollowerPick(f, slot), card || held.length ? null : "NO ENERGY CARDS · THEY COME IN PACKS", card ? _cdChip(card, true) : null, role);
-    }
+    if (typeof ccCarousel === "function" && ccCarousel()) return;   // (on the creature's card in the carousel)
+    side.appendChild(energyRow(f, "cc-en"));
+}
+function energyRow(f, cls) {
+    const s = energySlots(f), held = energyHeld().length > 0, row = _ccEl("div", cls);
+    row.appendChild(_ccEl("span", "cc-en-k", "ENERGY"));
+    s.forEach((el, slot) => {
+        const b = _ccEl("button", "cc-en-s" + (el ? " on" : ""), el ? energyLabel(el) : "EMPTY");
+        b.style.setProperty("--c", el ? energyColor(el) : "#cfd8e3"); b.setAttribute("aria-label", "ENERGY " + (slot + 1) + ": " + (el ? energyLabel(el) + " · " + energySlotRole(f, slot) : "EMPTY"));
+        if (!el && !held) b.disabled = true; else _ccClick(b, () => energyFollowerPick(f, slot));
+        row.appendChild(b);
+    });
+    row.appendChild(_ccEl("span", "cc-en-n", energyRowNote(f, held)));
+    return row;
+}
+// what its energy cards do now, in a line
+function energyRowNote(f, held) {
+    const s = energySlots(f);
+    if (!s.some(Boolean) && !held) return f.evolved ? "NO ENERGY CARDS · THEY COME IN PACKS · " + energyLabel(f.element) + " ONES UNLOCK ITS ATTACKS" : "NO ELEMENT · NO ENERGY CARDS: THEY COME IN PACKS";
+    if (!f.evolved) return s[0] ? "ITS ELEMENT · USED UP WHEN IT EVOLVES" : "NO ELEMENT · PUT AN ENERGY CARD IN";
+    const hy = energyHybrids(f).length;
+    return "SECOND ATTACK " + (energyAltOpen(f) ? "OPEN" : "LOCKED") + " · ULTIMATE " + (energyUltOpen(f) ? "OPEN" : "LOCKED") + (hy ? " · " + hy + " HYBRID" + (hy > 1 ? "S" : "") + ": NOT DESIGNED YET" : "");
 }
 function energyFollowerPick(f, slot) {
     const cur = energySlots(f)[slot], els = energyHeld().filter(el => el !== cur).concat(cur ? [cur] : []);
