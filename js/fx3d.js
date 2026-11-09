@@ -23,6 +23,9 @@ const FX3D = {
         // its diamond eyes kept, no glow under it; the owner's pick of three looks, 2026-11-09 ("A · all its violet goo"); built in build 2026-11-09ee on the preview; approved in the game the same day, for everyone since 2026-11-09ff. A COPY, as ROTTEN DECOY's: its columns are
         // frames of the frog's idle loop (`loop` game frames), drawn at the forms' scale
         goocopy: { sheet: "img/fx/goocopy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 90.486, tipY: 46.472 },
+        // SHARD VORTEX's shards (the RIFT MIMIC's Ultimate, "its four shards spin out into a swirl"): its own black blades (design/evolutions/forms6.js blade, No. 114); the agent's pick of the next piece (the owner:
+        // "You pick") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09gg on the preview. UPRIGHT: its columns are the ways it is turned (16), so it spins as it circles
+        vortexshard: { sheet: "img/fx/vortexshard.png", cell: 72, yaws: 16, pitches: [0], upright: true, ax: 36, ay: 52.021, tipY: 13.875 },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h

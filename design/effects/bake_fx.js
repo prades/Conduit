@@ -40,6 +40,11 @@ const PIECES = {
   // (the frog's own, 2 pi / 1.6 s), drawn at the forms' scale. pv: the preview's views (the copy alone; beside the Goo Proxy): its spikes reach far.
   goocopy: { form: 853, color: '#9933ff', copy: true, skin: 'goo', upright: true, h: 1.2, cell: 144, yaws: 12, pitches: [0], loop: 2 * Math.PI / 1.6,
     pv: { big: [4.4, 1.936, 0.2], gap: 1.35, side: [5.4, 2.7, 0.55] }, cap: ['PROXY SWARM\'s copy (right) beside the Goo Proxy (left), at one scale', '(all of it in its violet goo, its diamond eyes kept; no glow)'] },   // (the owner's pick of three looks; approved in the game 2026-11-09: "Approve it for everyone")
+  // SHARD VORTEX (the RIFT MIMIC, No. 114; the agent's pick for the next piece, the owner having said "You pick", 2026-11-09): "its four shards spin out into a swirl": its own shard, one of the solid
+  // black triangular blades standing round its blob (forms6.js blade, _bladeMat: black, catching the light along its edges), as big as the biggest of them (0.8 tall, x its scale 1.3). UPRIGHT, as the
+  // Rotshard's spike: its columns are the ways it is turned (16), so the game can spin it as it circles. ring: the preview sets four out in a ring, floating a little, as the swirl carries them.
+  vortexshard: { form: 114, color: '#9933ff', upright: true, bw: 0.336, bh: 0.8, bd: 0.1, S: 1.3, h: 1.04, cell: 72, yaws: 16, pitches: [0], ring: { n: 4, r: 0.85, lift: 0.22 }, bigYaw: Math.PI / 4 - 0.35, bigView: [3.0, 1.32, 0.5],
+    cap: ['SHARD VORTEX\'s four shards beside the Rift Mimic, at one scale', '(its own black blades, spinning as they circle; the swirl stays drawn in code)'] },   // (a draft, for the owner's yes)
   rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0] },   // (the model approved 2026-11-09: "Yes, build it"; its green underlight taken out at the owner's word, "I don't like the green aura")
 };
 
@@ -110,6 +115,7 @@ window.__fx = async function (mode, piece, P) {
         o.material = goo; });   // (the ring, its spikes and the lines of light along them: goo)
       g.add(B.g); g.userData.B = B;
     }
+    if (piece === 'vortexshard') { const sh = blade(P.bw, P.bh, P.bd); sh.scale.setScalar(P.S); g.add(sh); }   // (the Mimic's own blade: its base on the floor at the origin, its point up)
     if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
       const black = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); black.envMapIntensity = 1.7;   // (glassy: a clear coat over the black)
       const N = P.sides, mk = (r, h, sd, segs, amt) => { const geo = new T.ConeGeometry(r, h, N, segs), q = geo.attributes.position;
@@ -142,11 +148,13 @@ window.__fx = async function (mode, piece, P) {
   }
   if (mode === 'preview' && P.upright) {   // a standing piece: alone, large; then beside its form, as its effect sets it out (ROTTEN DECOY's four, at its heights)
     const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
-    const s1 = new T.Scene(); lit(s1); const q1 = build(); q1.rotation.y = -0.45; s1.add(q1);   // (its crack toward the camera)
-    const big = shot(s1, camFor(P.h * 2.4, P.h * 1.056, P.h * 0.5), 1600, 704);
+    const s1 = new T.Scene(); lit(s1); const q1 = build(); q1.rotation.y = P.bigYaw !== undefined ? P.bigYaw : -0.45; s1.add(q1);   // (the spike's crack, a blade's face, toward the camera)
+    const big = shot(s1, P.bigView ? camFor(P.bigView[0], P.bigView[1], P.bigView[2]) : camFor(P.h * 2.4, P.h * 1.056, P.h * 0.5), 1600, 704);
     const s2 = new T.Scene(); lit(s2); const B = FORMS2[P.form].build(); B.update(0, 0); s2.add(B.g); B.g.rotation.y = PI / 4; B.g.position.set(-1.0 * Math.SQRT1_2, 0, 1.0 * Math.SQRT1_2);
-    { const mist = new T.Mesh(new T.CircleGeometry(0.9, 40), M.floorGlow); mist.rotation.x = -PI / 2; mist.position.set(1.3 * Math.SQRT1_2, 0.01, -1.3 * Math.SQRT1_2); s2.add(mist); }   // (the mist the game draws round it, here only to show it in place)
-    [[-0.22, 0.68, 0.3], [0, 1, 1.4], [0.24, 0.77, 2.6], [-0.06, 0.5, 4.1]].forEach(([dx, k, yaw], i) => { const q = build(); q.scale.setScalar(k * 1.3); q.rotation.y = yaw; q.position.set((1.3 + dx) * Math.SQRT1_2 + (i % 2 ? 0.12 : -0.1), 0, -(1.3 - dx) * Math.SQRT1_2 + (i > 1 ? 0.18 : -0.12)); s2.add(q); });
+    if (P.ring) { const cx = 1.35 * Math.SQRT1_2, cz = -1.35 * Math.SQRT1_2;   // (as its effect sets them out: in a ring round a spot beside the form, floating a little, each turned its own way)
+      for (let i = 0; i < P.ring.n; i++) { const a = i * 2 * PI / P.ring.n + 0.4, q = build(); q.rotation.y = a * 1.7; q.position.set(cx + Math.cos(a) * P.ring.r, P.ring.lift, cz + Math.sin(a) * P.ring.r); s2.add(q); } }
+    else { const mist = new T.Mesh(new T.CircleGeometry(0.9, 40), M.floorGlow); mist.rotation.x = -PI / 2; mist.position.set(1.3 * Math.SQRT1_2, 0.01, -1.3 * Math.SQRT1_2); s2.add(mist); }   // (the mist the game draws round it, here only to show it in place)
+    if (!P.ring) [[-0.22, 0.68, 0.3], [0, 1, 1.4], [0.24, 0.77, 2.6], [-0.06, 0.5, 4.1]].forEach(([dx, k, yaw], i) => { const q = build(); q.scale.setScalar(k * 1.3); q.rotation.y = yaw; q.position.set((1.3 + dx) * Math.SQRT1_2 + (i % 2 ? 0.12 : -0.1), 0, -(1.3 - dx) * Math.SQRT1_2 + (i > 1 ? 0.18 : -0.12)); s2.add(q); });
     const side = shot(s2, camFor(5.2, 2.6, 0.75), 800, 400);
     return { big: big.toDataURL('image/png'), side: side.toDataURL('image/png') };
   }

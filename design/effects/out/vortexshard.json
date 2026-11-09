@@ -1,0 +1,15 @@
+{
+ "piece": "vortexshard",
+ "cell": 72,
+ "yaws": 16,
+ "pitches": [
+  0
+ ],
+ "anchor": {
+  "x": 36.00000000000007,
+  "y": 52.02126619932892
+ },
+ "unitsPerCell": 1.7,
+ "tipY": 13.875394296164929,
+ "upright": true
+}

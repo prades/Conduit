@@ -1411,7 +1411,15 @@ function drawElementEffects() {
                 const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, spin = frame * 0.14;
                 ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#a070ff"; ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.globalAlpha = 0.5 * k; ctx.strokeStyle = "#c9a6ff"; ctx.lineWidth = 1.5; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(px, cy, rx * (0.4 + i * 0.25), ry * (0.4 + i * 0.25), 0, spin + i, spin + i + 2.4); ctx.stroke(); }
-                for (let i = 0; i < 4; i++) { const an = spin + i * Math.PI / 2, sx = px + Math.cos(an) * rx * 0.6, sy = cy + Math.sin(an) * ry * 0.6 - 10; ctx.globalAlpha = 0.95 * k; ctx.fillStyle = "#e6d6ff"; ctx.beginPath(); ctx.moveTo(sx, sy - 9); ctx.lineTo(sx + 5, sy); ctx.lineTo(sx, sy + 9); ctx.lineTo(sx - 5, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7a4adf"; ctx.lineWidth = 1; ctx.stroke(); }
+                // ITS OWN BLACK BLADES (js/fx3d.js vortexshard; the agent's pick, the owner: "You pick"; the model approved 2026-11-09, "Yes, build it"): the Rift Mimic's four shards, each turning as it circles,
+                // floating a little over its own shadow, the farthest drawn first. Each turns twice for every time round, a turn and a quarter out of step with the next (so the four always show four sides of
+                // a blade, never all edge-on at once). Else the drawn pale diamonds.
+                const V3 = typeof fx3dOn === "function" && fx3dOn("vortexshard") && fx3dReady("vortexshard") ? FX3D.pieces.vortexshard : null;
+                if (V3) { const H3 = (V3.ay - V3.tipY) * (typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144), T2 = 2 * Math.PI, order = [0, 1, 2, 3].map(i => ({ i, an: spin + i * Math.PI / 2 })).sort((a, b) => Math.sin(a.an) - Math.sin(b.an));
+                    for (const { i, an } of order) { const sx = px + Math.cos(an) * rx * 0.6, fy = cy + Math.sin(an) * ry * 0.6, yaw = 2 * an + i * 1.25 * Math.PI, col = Math.round(((yaw % T2) + T2) % T2 / T2 * V3.yaws) % V3.yaws;
+                        ctx.globalAlpha = 0.3 * k; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(sx, fy, 7, 2.5, 0, 0, Math.PI * 2); ctx.fill();   // (its shadow on the floor)
+                        ctx.globalAlpha = k; fx3dDrawUpright(ctx, "vortexshard", sx, fy - 6 - 2 * Math.sin(frame * 0.1 + an), col, H3, 1); } }
+                else for (let i = 0; i < 4; i++) { const an = spin + i * Math.PI / 2, sx = px + Math.cos(an) * rx * 0.6, sy = cy + Math.sin(an) * ry * 0.6 - 10; ctx.globalAlpha = 0.95 * k; ctx.fillStyle = "#e6d6ff"; ctx.beginPath(); ctx.moveTo(sx, sy - 9); ctx.lineTo(sx + 5, sy); ctx.lineTo(sx, sy + 9); ctx.lineTo(sx - 5, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7a4adf"; ctx.lineWidth = 1; ctx.stroke(); }
                 break;
             }
             // THE ROTSHARD'S PUDDLE (FORM_ULTIMATES.rotshard): a green puddle growing on the floor, bubbles in it; each eruption throws up a cluster of three small black crystal shards in green haze under each enemy it bites

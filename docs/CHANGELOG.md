@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09gg` · branch `claude/start-game-project-HSh7Z` · SHARD VORTEX's shards as the Rift Mimic's black blades (on the preview)
+The agent's pick for the next 3-D piece (the owner: "You pick"); the model approved from the large preview ("Yes, build it"). `docs/EFFECTS.md`.
+- **The piece:** SHARD VORTEX's four shards are the Rift Mimic's own black blades, about 25 px, instead of pale diamonds. They circle in the swirl as before, each spinning and floating a little over its own shadow, never all edge-on at once.
+- The violet swirl is unchanged.
+- **Only with `?fx=3d`** until the owner approves it in the game; everyone else sees the diamonds. Rules are unchanged.
+- Tests: `tests/fx3d.js`. Checked in the real page with pictures.
+
 ### Build `2026-11-09ff` · branch `claude/start-game-project-HSh7Z` · the goo copies for everyone
 - **PROXY SWARM's goo copies are approved in the game** ("Approve it for everyone"), from the pictures of the blobs and the copies side by side. They are live for everyone (`FX3D.approved`). The drawn blobs show only until the copies' sheet arrives.
 - Tests: `tests/fx3d.js`.
