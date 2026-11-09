@@ -252,10 +252,20 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     ctx.shadowBlur =0;
     ctx.restore();
 }
+const QUILL_ARC = 16;   // px: how much higher than a shot's 40 px the modelled quill flies at the top of its arc (the agent's number, provisional; docs/EFFECTS.md)
 // A QUILL BURST quill: a dark crystal shard pointed along its flight, red-hot at its tip. A HEXFIRE shot: an ember in a hexagon of fire that turns as it flies. (Drawn in screen space.)
 function _drawRedesignShot(ctx, p, sx, sy) {
     if (p.kind === "quill") {
         const dx = (p.vx - p.vy) * TILE_W, dy = (p.vx + p.vy) * TILE_H, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux;   // its flight on screen
+        // THE MODELLED QUILL (docs/EFFECTS.md, the 3-D flare pass: js/fx3d.js; on the preview, ?fx=3d, until the owner approves it in the game): one of the QUILLSTONE's own red shards, point first,
+        // flying a shallow arc (QUILL_ARC px over the 40 every shot flies at, highest halfway; its tilt follows the climb), its shadow on the floor under it and its heat trailing
+        if (typeof fx3dOn === "function" && fx3dOn("quill") && fx3dReady("quill")) {
+            const T = Math.max(1, (p.frame || 0) + Math.max(0, p.life || 0)), t = Math.min(1, (p.frame || 0) / T), lift = QUILL_ARC * Math.sin(Math.PI * t), rise = QUILL_ARC * Math.PI / T * Math.cos(Math.PI * t), qy = sy - lift;
+            ctx.globalAlpha = 0.28; ctx.fillStyle = "#000"; ctx.beginPath(); ctx.ellipse(sx, sy + 40, 8 - lift * 0.15, 3.2 - lift * 0.06, 0, 0, Math.PI * 2); ctx.fill();   // (its shadow on the floor: shots fly 40 px up)
+            ctx.globalAlpha = 0.35; ctx.strokeStyle = "#ff7a2e"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sx - ux * 10, qy - uy * 10); ctx.lineTo(sx - ux * 22, qy - uy * 22); ctx.stroke(); ctx.globalAlpha = 1;   // (its heat)
+            fx3dDraw(ctx, "quill", sx, qy, p.vx, p.vy, Math.atan2(rise / 24.45, Math.hypot(p.vx, p.vy) * 3));   // (its climb in the world: 24.45 px a unit up at the forms' scale, a tile three units across)
+            return;
+        }
         ctx.fillStyle = "#1a0b08"; ctx.strokeStyle = "#ff5a1f"; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(sx + ux * 8, sy + uy * 8); ctx.lineTo(sx + nx * 2.6, sy + ny * 2.6); ctx.lineTo(sx - ux * 11, sy - uy * 11); ctx.lineTo(sx - nx * 2.6, sy - ny * 2.6); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.fillStyle = "#ffb15c"; ctx.beginPath(); ctx.moveTo(sx + ux * 8, sy + uy * 8); ctx.lineTo(sx + ux * 3 + nx * 1.6, sy + uy * 3 + ny * 1.6); ctx.lineTo(sx + ux * 3 - nx * 1.6, sy + uy * 3 - ny * 1.6); ctx.closePath(); ctx.fill();

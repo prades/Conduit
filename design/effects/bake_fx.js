@@ -3,6 +3,9 @@
 // is one of the red shards on its back (forms15.js _quillShard, _redShardMat). The lights, the environment and the camera are the forms' baker's
 // (design/evolutions/bake.js): the game's 2:1 iso camera, a warm key light from above right, a blue rim light.
 //   node design/effects/bake_fx.js <three-dir> preview quill <out.png>   one piece, large, with its form beside it for scale (for the owner's yes: docs/ART-PROCESS.md)
+//   node design/effects/bake_fx.js <three-dir> sheet quill img/fx          the game's sheet: one column per direction it flies (yaws, round the floor, the first along the game's +x),
+//                                                                          one row per tilt (pitches, nose down to nose up); writes <piece>.png there and design/effects/out/<piece>.json
+// The sheet is at the forms' own pixels a unit (144 px over 3.4 units, design/evolutions/bake.js), so the game draws it at their scale (EVO_SCALE).
 // <three-dir>: an unpacked three@0.128.0 npm package (its package/build/three.min.js).
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
@@ -15,7 +18,7 @@ const src = files.map(f => fs.readFileSync(path.join(EVO, f), 'utf8')).join('\n'
 const PIECES = {
   // QUILL BURST and QUILLSTORM (the QUILLSTONE): one of the big red shards on its back, five-sided and faceted, glowing from within (the same material, glow 0.5),
   // as long as the biggest of them in the game sprite (0.65 x its scale 1.5, about 25 px on screen).
-  quill: { form: 361, color: '#ff3300', len: 0.95, fat: 0.2, sides: 5, seed: 5, roll: 0.75 },
+  quill: { form: 361, color: '#ff3300', len: 0.95, fat: 0.2, sides: 5, seed: 5, roll: 0.75, cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },   // (approved as a model 2026-11-09: "Yes, build it")
 };
 
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
@@ -53,6 +56,21 @@ window.__fx = async function (mode, piece, P) {
     const side = shot(s2, camFor(5.2, 2.6, 0.75), 800, 400);
     return { big: big.toDataURL('image/png'), side: side.toDataURL('image/png') };
   }
+  if (mode === 'sheet') {
+    const C = P.cell, PXU = 144 / 3.4, Wv = C / PXU;   // (the forms' pixels a unit)
+    renderer.setSize(C, C, false);
+    const scene = new T.Scene(); lit(scene); const q = build(); scene.add(q); const cam = camFor(Wv, Wv, 0);
+    const sheet = document.createElement('canvas'); sheet.width = C * P.yaws; sheet.height = C * P.pitches.length; const sg = sheet.getContext('2d');
+    const probe = document.createElement('canvas'); probe.width = C; probe.height = C; const pg = probe.getContext('2d'); const edges = [];
+    for (let j = 0; j < P.pitches.length; j++) for (let k = 0; k < P.yaws; k++) {
+      aim(q, k * 2 * PI / P.yaws, P.pitches[j]); renderer.render(scene, cam); sg.drawImage(renderer.domElement, k * C, j * C, C, C);
+      pg.clearRect(0, 0, C, C); pg.drawImage(renderer.domElement, 0, 0, C, C); const d = pg.getImageData(0, 0, C, C).data; let edge = false;
+      for (let i = 0; i < C && !edge; i++) for (const [x, y] of [[i, 0], [i, C - 1], [0, i], [C - 1, i]]) if (d[(y * C + x) * 4 + 3] > 8) { edge = true; break; }
+      if (edge) edges.push(k + ',' + j);
+    }
+    const g0 = new T.Vector3(0, 0, 0).project(cam);
+    return { png: sheet.toDataURL('image/png'), meta: { piece, cell: C, yaws: P.yaws, pitches: P.pitches, anchor: { x: (g0.x * 0.5 + 0.5) * C, y: (1 - (g0.y * 0.5 + 0.5)) * C }, unitsPerCell: Wv, len: P.len }, edges };
+  }
   return { err: 'mode ' + mode };
 };
 </script></body></html>`;
@@ -73,6 +91,11 @@ window.__fx = async function (mode, piece, P) {
     await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>the quill beside the QUILLSTONE, at one scale<br><span style="font-weight:400;font-size:18px">(in the game the quill is about 25 px long)</span></div></div></body>`);
     await q.screenshot({ path: OUT, clip: { x: 0, y: 0, width: 1600, height: 1120 } });
     console.log('wrote ' + OUT);
+  }
+  if (MODE === 'sheet') {
+    fs.mkdirSync(OUT, { recursive: true }); fs.writeFileSync(path.join(OUT, PIECE + '.png'), Buffer.from(res.png.split(',')[1], 'base64'));
+    const od = path.join(__dirname, 'out'); fs.mkdirSync(od, { recursive: true }); fs.writeFileSync(path.join(od, PIECE + '.json'), JSON.stringify(res.meta, null, 1) + '\n');
+    console.log('wrote ' + path.join(OUT, PIECE + '.png') + ' (' + res.meta.cell * res.meta.yaws + ' x ' + res.meta.cell * res.meta.pitches.length + ') and ' + path.join(od, PIECE + '.json') + (res.edges.length ? '  EDGE! cells touching their edge: ' + res.edges.join(' ') : ''));
   }
   await b.close();
 })();

@@ -1,10 +1,10 @@
 # The forms' effects: the 3-D flare pass
 
-**Status: in design (Proposed).** This is the canonical document for how the 21 current evolved forms' **second attacks** and **Ultimates** look. Their rules (reach, damage, timing) stay in `COMBAT.md` and `FOLLOWER-COMBAT-REDESIGN.md`. This pass changes only how the effects are drawn.
+**Status: in design.** The approach and the first piece are decided (2026-11-09); every look is the owner's to approve, one piece at a time. This is the canonical document for how the 21 current evolved forms' **second attacks** and **Ultimates** look. Their rules (reach, damage, timing) stay in `COMBAT.md` and `FOLLOWER-COMBAT-REDESIGN.md`. This pass changes only how the effects are drawn.
 
 The owner, 2026-11-09: *"Build it, but we need to run an optimization check and then after that will go through and design each of these effects all 21 of them or plus the ultimate too as well just design them with 3-D flare."*
 
-What "3-D flare" means is not defined yet. Per `ART-PROCESS.md`, the agent asks for a reference or a short written spec, then builds **one piece first** and gets a yes before the rest. The old looks stay until each new one is approved.
+**What 3-D flare means** (the owner, 2026-11-09, "Modelled 3D pieces"): the solid parts of the effects (quills, icicles, shells, shards, goo, thorns) are modelled in 3D like the forms and the props, and baked to sprites; light and energy stay drawn in code. Per `ART-PROCESS.md`, **one piece first**: the QUILLSTONE's quill (the owner's pick). Each model is shown large for a yes, then built in the game on the preview (`?fx=3d`), and the old look stays for everyone until the owner approves it in the game.
 
 ## 1. What is drawn now (build `2026-11-09d`)
 
@@ -67,10 +67,32 @@ Measured in the real page (headless Chromium, software-rendered, 1180 × 820). T
 
 ## 3. Designs
 
-None approved yet. Each form's two looks are written here as they are approved, with the date and the build.
+Each piece is recorded here as it is approved, with the date and the build.
+
+**How a piece is made.** `design/effects/bake_fx.js` builds the piece from its form's own model code (design/evolutions/forms*.js), under the forms' lights and at the game's camera.
+- `preview <piece>` renders it large, beside its form for scale. This is the picture the owner approves.
+- `sheet <piece>` bakes the game's sheet to img/fx: one column for each direction it can fly (yaws), one row for each tilt (pitches), at the forms' pixels per unit.
+- The game draws it from js/fx3d.js: `FX3D.pieces` lists each sheet; `FX3D.approved` lists the pieces shown to everyone; `?fx=3d` shows the rest.
+
+### QUILLSTONE: the quill (QUILL BURST and QUILLSTORM)
+
+**The model.** It is one of the red crystal shards on the Quillstone's back: five-sided, faceted, glowing a little from within, the same shard code and material (forms15.js `_quillShard`, `_redShardMat`).
+- It is 0.95 form-units long, about 25 px in the game, as long as the biggest shards on its back.
+- It is rolled a little about its length, so a ridge rather than a flat face meets the light.
+- **Approved 2026-11-09** ("Yes, build it"), from the large preview.
+
+**In the game (build `2026-11-09e`, preview only).**
+- The sheet is 32 directions × 3 tilts (nose down, level, nose up; ±0.3 rad), in 56 px cells, drawn at the forms' scale.
+- A quill flies point first in a shallow arc: up to `QUILL_ARC` = 16 px over the 40 px every shot flies at, highest halfway (the agent's number, provisional). Its tilt follows its climb: nose up as it leaves, level at the top, nose down as it ends.
+- Its shadow lies on the floor under it, a little smaller while it is higher, and a short heat streak trails behind it.
+- QUILLSTORM's sixteen are the same quill.
+- Hits are unchanged: where a quill flies and what it strikes are as before.
+- **Waiting for the owner's look in the game** (`?fx=3d`). Until then everyone sees the old 2D quill.
+- Tested: `tests/fx3d.js`. Checked in the real page with screenshots.
 
 ## 4. Open questions
 
-- What "3-D flare" means for the effects: a reference or a short written spec (`ART-PROCESS.md`).
-- Which piece is built first.
+- ~~What "3-D flare" means~~ *(answered 2026-11-09: "Modelled 3D pieces")*. ~~Which piece first~~ *(answered: "Quillstone's quill"; its model approved, "Yes, build it")*.
+- **The quill in the game** (`?fx=3d`): a yes, or a correction, before it is shown to everyone and before the next piece.
+- **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.

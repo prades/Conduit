@@ -4,6 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09e` · branch `claude/start-game-project-HSh7Z` · the 3-D flare pass begins: the Quillstone's modelled quill (on the preview)
+Asked one question at a time, the owner chose "Modelled 3D pieces" for the forms' effects and "Quillstone's quill" as the first piece. On the large preview of the quill they said "Yes, build it".
+- **The quill, modelled:** one of the red crystal shards on the Quillstone's back (the same shard code and material), about 25 px long in the game.
+  - It is baked by a new effects baker (`design/effects/bake_fx.js`) with the forms' lights and camera: 32 directions × 3 tilts (img/fx/quill.png).
+- **In flight** (QUILL BURST's five and QUILLSTORM's sixteen):
+  - It flies point first in a shallow arc, up to 16 px over the 40 px every shot flies at (the agent's number, provisional).
+  - It tilts nose up as it leaves, level at the top, nose down as it ends.
+  - Its shadow lies on the floor under it, and a short heat streak trails behind it.
+  - Hits are unchanged.
+- **On the preview only:** add `?fx=3d` to the game's address to see it. Everyone else still sees the old 2D quill until the owner approves the new one in the game (`ART-PROCESS.md`; js/fx3d.js `FX3D.approved`, empty for now).
+- The record of each piece, and how a piece is made, are in `EFFECTS.md` §3; the decision is in `DECISION-LOG.md`.
+- Tests: new suite fx3d (10 checks: the sheet and its table, the preview flag and the old look, the cell for each direction and tilt, the arc, shadow, trail and cost, QUILLSTORM's quills). Run: fx3d, followercombat, perf, ghost, globals, foundation, loadorder, boot, bible, all passing. Checked in the real page: QUILL BURST and QUILLSTORM in flight with `?fx=3d`, the old quill without it, no page errors. Not playtested.
+
 ### Build `2026-11-09d` · branch `claude/start-game-project-HSh7Z` · the optimization check; the forms drawn from small cells
 The owner: "Build it, but we need to run an optimization check and then after that will go through and design each of these effects [...] with 3-D flare". The check ran in the real page (headless Chromium, software-rendered, 1180 × 820: a rough guide, not an iPad) over three scenes: QUIET (3 unevolved followers, 6 creatures), SQUAD (6 evolved forms, 8 creatures, their Ultimates fired) and BUSY (all 21 forms locked on their second attacks, 24 creatures, Ultimates firing). It also ran outside the browser (frame time and canvas operations by part), with a CPU profile and an allocation profile.
 - **Found and fixed: an evolved form's body was the costliest thing on screen.** Each body was drawn as a cell cut straight out of its sheet (2304 × 1152 to 4608 × 1536 px), and in the browser's frame that cost about 5–6 ms a draw.

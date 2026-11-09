@@ -2615,3 +2615,22 @@ Offered and passed over, per form: the retired forms' Ultimates designed too; th
 
 ### Supersedes / superseded by
 Supersedes "BASH for now" for the eight forms and the Electro Skink (build `2026-11-07ss`, `2026-11-08a`) and the Skink's flag of build `2026-11-09b`.
+
+## DECISION: The forms' effects with "3-D flare" are modelled 3D pieces; the Quillstone's quill first
+- Date and build: 2026-11-09, build `2026-11-09e`, branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "Build it, but we need to run an optimization check and then after that will go through and design each of these effects all 21 of them or plus the ultimate too as well just design them with 3-D flare"; then, asked one question at a time: "Modelled 3D pieces"; "Quillstone's quill"; and on the large preview of the quill, "Yes, build it (Recommended)".
+
+### Decision
+- 3-D flare is modelled pieces: the solid parts of the effects are modelled in 3D like the forms and props and baked to sprites; light and energy stay drawn in code.
+- One piece first (`ART-PROCESS.md`): the QUILLSTONE's quill, one of the red shards on its back. Its model is approved.
+- It is built in the game on the preview (`?fx=3d`); the old 2D quill stays for everyone until the owner approves it in the game.
+
+### Status
+Built in build `2026-11-09e` (js/fx3d.js, img/fx/quill.png, design/effects/bake_fx.js) and tested (`tests/fx3d.js`); checked in the real page with screenshots. Not playtested. Its flight's arc (16 px) is the agent's number, provisional.
+
+### Alternatives
+Offered and passed over: depth drawn in code (like STAKE RING and VOLCANIC ERUPTION); both, by size (modelled pieces for the Ultimates only). For the first piece: Rimestar's icicle, Stonepetal's crystal, Rift Mimic's shards. For the quill: black with a hot tip; a hotter glow.
+
+### Supersedes / superseded by
+Supersedes nothing yet: the old quill stays until the in-game approval. `EFFECTS.md` §3 is the canonical record.
+
