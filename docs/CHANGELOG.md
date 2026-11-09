@@ -4,6 +4,19 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09g` · branch `claude/start-game-project-HSh7Z` · the Rimestar's modelled icicle (on the preview); staying 2D
+- **Asked about a 3D engine:** the owner asked whether the game should move to a real-time 3D engine rather than baking each piece. After the agent's view (the art is already 3D models; a staged prototype behind a flag), they chose to stay 2D for now: "I don't wanna take any risks".
+- **Their question on 60 fps:** will a full library of 3D-looking effects hold 60 fps in the browser? The agent's answer:
+  - A modelled piece is small: the quill's sheet is 53 KB, about 1 MB in memory.
+  - It costs less to draw than the old flat shot.
+  - The effects layer measured about half a millisecond of a squad fight's frame.
+  - The iPad's real number is for the owner to read (Settings → PERFORMANCE).
+  - The bigger costs are the three items found in the optimization check.
+- **The icicle, modelled** (approved as a model: "Yes, build it"): one of the frost shards the Rimestar's cast throws, made big. It is a slender six-sided spike of pale blue ice, about 25 px long, baked like the quill (img/fx/icicle.png, 32 directions × 3 tilts).
+- **In flight:** ICICLE VOLLEY's three shots fly like the quill: a shallow arc, their shadow on the floor and a frosty trail. They share the quill's flight drawing (js/game.js `_drawFx3dShot`). Hits and the slow are unchanged.
+- **On the preview only** (`?fx=3d`) until the owner approves it in the game; everyone else sees the old ice shot.
+- Tests: fx3d (now 12 checks: both pieces' sheets, the icicle's model, its preview and its shots, its drawing); run: fx3d, ninemoves, followercombat, perf, ghost, bible, all passing. Checked in the real page: ICICLE VOLLEY in flight with `?fx=3d`, the ice shot without it, no page errors. Not playtested.
+
 ### Build `2026-11-09f` · branch `claude/start-game-project-HSh7Z` · the modelled quill for everyone
 On the in-game pictures of build `2026-11-09e`, the owner said "Approve it for everyone".
 - The Quillstone's modelled quill (QUILL BURST and QUILLSTORM) is now drawn for everyone, with no `?fx=3d` needed (js/fx3d.js `FX3D.approved`: quill). The old drawn quill is kept only for the moment before the quill's sheet arrives.

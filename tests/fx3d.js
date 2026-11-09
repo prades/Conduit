@@ -20,7 +20,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = s => vm.runInContext(s, context), J = s => JSON.parse(run('JSON.stringify(' + s + ')'));
     // a pen that records what is drawn: each call's name and its arguments
-    run(`globalThis.__pen = () => { const calls = []; const g = new Proxy({}, { get(t, k) { if (k in t) return t[k]; return function () { calls.push([k].concat(Array.prototype.slice.call(arguments))); }; }, set(t, k, v) { t[k] = v; calls.push(['set ' + k, v]); return true; } }); return { g, calls }; };
+    run(`globalThis.__pen = () => { const calls = []; const g = new Proxy({}, { get(t, k) { if (k in t) return t[k]; return function () { calls.push([k].concat(Array.prototype.slice.call(arguments))); if (k === 'createRadialGradient' || k === 'createLinearGradient') return { addColorStop() {} }; }; }, set(t, k, v) { t[k] = v; calls.push(['set ' + k, v]); return true; } }); return { g, calls }; };
         globalThis.__quill = (frame, life) => ({ kind: 'quill', x: 10, y: 10, vx: 0.17, vy: 0, frame, life, element: 'fire' });
         globalThis.__sheetIn = () => { FX3D.pieces.quill._img = { complete: true, naturalWidth: 1792, naturalHeight: 168, k: 'sheet' }; };
         globalThis.__preview = on => { _fx3dPrev = on; };`);
@@ -29,18 +29,26 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     check('js/fx3d.js is loaded by the game page, and the page checks it arrived (FX3D)', () => {
         const html = rd('game.html'); ok(/<script src="js\/fx3d\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag'); ok(/"js\/fx3d\.js": "FX3D"/.test(html), 'not in the page\'s arrival check');
     });
-    check('the quill\'s sheet is in the build, one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
-        const P = J('FX3D.pieces.quill'), meta = JSON.parse(rd('design/effects/out/quill.json'));
-        same(P.sheet, 'img/fx/quill.png', 'the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), 'the sheet\'s size');
-        same(JSON.stringify([meta.cell, meta.yaws, meta.pitches]), JSON.stringify([P.cell, P.yaws, P.pitches]), 'the baker\'s record and the game\'s table');
-        same(Math.round(meta.anchor.x) + ',' + Math.round(meta.anchor.y), (P.cell / 2) + ',' + (P.cell / 2), 'the quill is in the middle of its cell');
-        ok(Math.abs(meta.unitsPerCell * 144 / 3.4 - P.cell) < 1e-6, 'not at the forms\' pixels a unit (so EVO_SCALE would not fit it)');
+    check('each piece\'s sheet is in the build (the quill, the icicle), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
+        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle', 'the pieces');
+        for (const k of ['quill', 'icicle']) {
+            const P = J('FX3D.pieces.' + k), meta = JSON.parse(rd('design/effects/out/' + k + '.json'));
+            same(P.sheet, 'img/fx/' + k + '.png', k + ': the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), k + ': the sheet\'s size');
+            same(JSON.stringify([meta.cell, meta.yaws, meta.pitches]), JSON.stringify([P.cell, P.yaws, P.pitches]), k + ': the baker\'s record and the game\'s table');
+            same(Math.round(meta.anchor.x) + ',' + Math.round(meta.anchor.y), (P.cell / 2) + ',' + (P.cell / 2), k + ': in the middle of its cell');
+            ok(Math.abs(meta.unitsPerCell * 144 / 3.4 - P.cell) < 1e-6, k + ': not at the forms\' pixels a unit (so EVO_SCALE would not fit it)');
+        }
     });
     check('the model is the QUILLSTONE\'s own red shard (its shard code and its material), lit and seen as the forms are', () => {
         const b = rd('design/effects/bake_fx.js');
         ok(/_quillShard\(P\.len, P\.len \* P\.fat, P\.sides, _redShardMat\(0\.5\), P\.seed\)/.test(b), 'not the Quillstone\'s shard'); ok(/quill: \{ form: 361,/.test(b), 'not the Quillstone\'s (No. 361)');
         ok(/forms15\.js|forms\\d\+/.test(b) && /readdirSync\(EVO\)/.test(b), 'the forms\' model code is not what it is built from');
         ok(/DirectionalLight\(0xfff1e2, 2\.4\); key\.position\.set\(3, 6, 4\)/.test(b) && /Math\.asin\(0\.5\)/.test(b), 'not the forms\' light or camera');
+    });
+    check('the icicle is the RIMESTAR\'s (No. 861): a slender six-sided spike of pale blue ice, long-pointed in front, as long as the quill', () => {
+        const b = rd('design/effects/bake_fx.js');
+        ok(/icicle: \{ form: 861, color: '#7fd6ff', len: 0\.95, r: 0\.085, sides: 6, back: 0\.15,/.test(b), 'not the Rimestar\'s icicle as approved');
+        ok(/if \(piece === 'icicle'\)/.test(b), 'no icicle model');
     });
 
     group('A PIECE IS SHOWN TO EVERYONE ONCE IT IS APPROVED IN THE GAME (the rest on the preview, ?fx=3d)');
@@ -52,6 +60,17 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         run('__preview(null); globalThis.location = { search: "?fx=3d" }'); same(J('fx3dOn("__test")'), true, 'a piece not approved, off with ?fx=3d');
         run('__preview(null); globalThis.location = { search: "?fx=3dx" }'); same(J('fx3dOn("__test")'), false, 'on with another flag');
         same(J('fx3dOn("nothing")'), false, 'a piece that does not exist'); run('delete FX3D.pieces.__test; __preview(false)');
+    });
+    check('the icicle is not approved yet: the old ice shot for everyone, the modelled icicle only on the preview (?fx=3d); ICICLE VOLLEY\'s three shots are the kind "icicle"', () => {
+        run('__preview(false)'); same(J('fx3dOn("icicle")'), false, 'on without the preview'); run('__preview(true)'); same(J('fx3dOn("icicle")'), true, 'off with the preview'); run('__preview(false)');
+        ok(/spawnFollowerProjectile\(f, aim, "#bfefff", dmg, 4, slow, DMG_HIT_ICICLE, \{ range: ICICLE_RANGE \+ 1, kind: "icicle" \}\)/.test(rd('js/evolution.js')), 'its shots are not the kind "icicle"');
+        const ice = J(`(function(){ const P = __pen(); _drawFollowerProjectile(P.g, { kind: 'icicle', x: 10, y: 10, vx: 0.17, vy: 0, frame: 5, life: 20, element: 'ice', radius: 4 }, 300, 200); return P.calls.map(c => c[0]); })()`);
+        ok(ice.indexOf('drawImage') < 0 && ice.indexOf('createRadialGradient') >= 0, 'without the preview it is not the ice shot: ' + ice.join());
+        run('__preview(true); FX3D.pieces.icicle._img = { complete: true, naturalWidth: 1792, naturalHeight: 168 }; globalThis.__sc2 = spriteCell; spriteCell = () => ({ cell: 1 });');
+        const r = J(`(function(){ const P = __pen(); _drawFollowerProjectile(P.g, { kind: 'icicle', x: 10, y: 10, vx: 0.17, vy: 0, frame: 10, life: 10, element: 'ice', radius: 4 }, 300, 200); return P.calls.filter(c => ['ellipse', 'set strokeStyle', 'drawImage', 'createRadialGradient'].indexOf(c[0]) >= 0).map(c => c.slice(0, 3)); })()`);
+        run('spriteCell = __sc2; delete FX3D.pieces.icicle._img; __preview(false);');
+        same(r.filter(c => c[0] === 'drawImage').length, 1, 'on the preview: its picture'); ok(r.some(c => c[0] === 'set strokeStyle' && c[1] === '#bfefff'), 'its trail is not frosty');
+        ok(r.some(c => c[0] === 'ellipse' && Math.abs(c[2] - 240) < 1e-6), 'no shadow on the floor under it'); ok(!r.some(c => c[0] === 'createRadialGradient'), 'the ice shot drawn as well');
     });
     check('until its sheet has arrived a quill is drawn the old way (its paths, no picture), so a shot is never missing', () => {
         run('FX3D.pieces.quill._img = null;'); const r = J('(function(){ const P = __pen(); _drawRedesignShot(P.g, __quill(5, 15), 300, 200); return P.calls.map(c => c[0]); })()');

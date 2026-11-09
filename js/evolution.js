@@ -780,7 +780,7 @@ function icicleVolley(f) {
     const d = Math.hypot(t.x - f.x, t.y - f.y) || 1, a0 = Math.atan2(t.y - f.y, t.x - f.x), slow = a => { if (a && !a.dead && typeof applySlow === "function") applySlow(a, ICICLE_SLOW, ICICLE_SLOW_F); };
     for (let k = 0; k < ICICLE_COUNT; k++) {
         const ang = a0 + (k - (ICICLE_COUNT - 1) / 2) * ICICLE_FAN, aim = k === (ICICLE_COUNT - 1) / 2 ? t : { x: f.x + Math.cos(ang) * d, y: f.y + Math.sin(ang) * d };
-        spawnFollowerProjectile(f, aim, "#bfefff", dmg, 4, slow, DMG_HIT_ICICLE, { range: ICICLE_RANGE + 1 });
+        spawnFollowerProjectile(f, aim, "#bfefff", dmg, 4, slow, DMG_HIT_ICICLE, { range: ICICLE_RANGE + 1, kind: "icicle" });   // (kind: its modelled icicle, js/fx3d.js; without it, the ice shot)
     }
     f.dirX = Math.cos(a0); f.dirY = Math.sin(a0); f._sigAt = f0; f._sigCd = moveWindupFrames("icicle_volley"); f.state = "attack"; f.attackAnim = 0;
     _evoSay(f, "ICICLE VOLLEY", "#bfefff");

@@ -90,9 +90,24 @@ Each piece is recorded here as it is approved, with the date and the build.
 - **Approved in the game 2026-11-09** ("Approve it for everyone"), from the in-game pictures. It has been live for everyone since build `2026-11-09f`. The old drawn quill is kept only for the moment before its sheet arrives.
 - Tested: `tests/fx3d.js`. Checked in the real page with screenshots.
 
+### RIMESTAR: the icicle (ICICLE VOLLEY)
+
+**The model.** It is one of the frost shards the Rimestar's cast throws (forms32.js), made big: a slender six-sided spike of pale blue ice, long-pointed in front with a short faceted point behind, a little uneven.
+- It is glossy and flat-shaded with a cold blue glow from within.
+- It is 0.95 form-units long (about 25 px in the game), as long as the quill.
+- **Approved 2026-11-09** ("Yes, build it"), from the large preview. The owner had first asked whether the game should move to a real-time 3D engine; they chose to stay 2D for now ("I don't wanna take any risks").
+
+**In the game (build `2026-11-09g`, preview only).**
+- It is built like the quill and shares its flight drawing (js/game.js `_drawFx3dShot`): 32 directions × 3 tilts, a shallow arc (16 px), its shadow on the floor and a frosty trail.
+- ICICLE VOLLEY's three shots are the kind "icicle". Hits and the slow are unchanged.
+- **Waiting for the owner's look in the game** (`?fx=3d`). Until then everyone sees the old ice shot.
+- Tested: `tests/fx3d.js`. Checked in the real page with screenshots.
+
 ## 4. Open questions
 
 - ~~What "3-D flare" means~~ *(answered 2026-11-09: "Modelled 3D pieces")*. ~~Which piece first~~ *(answered: "Quillstone's quill"; its model approved, "Yes, build it")*.
 - ~~**The quill in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09f`)*.
+- **The icicle in the game** (`?fx=3d`, build `2026-11-09g`): a yes, or a correction.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
+- **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.
