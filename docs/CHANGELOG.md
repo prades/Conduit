@@ -11,6 +11,7 @@ The owner's answers on the agent's readings (`docs/ENERGY-CARDS.md` rules 15–1
 - **Exile gives a follower's energy cards back** to your stock ("They come back to you").
 - **The conversion converts only an unevolved follower's toxic card** ("Only an egg's card"). An evolved follower's toxic cards stay toxic, so its second attack and Ultimate lock until it holds BLOOM cards. The preview marks them LOCKED, and the conversion says so.
 - Tests: `tests/energycards.js` (17 checks), followerspots, followerprog and conversion updated.
+- Full run: 97 of 102 suites pass. The 5 that fail fail exactly as on `2026-11-09r`: visiblearea, bottomui, fluxlab, cover, and carousel's 1024 check. Pushed to main at the owner's "Push 2 main".
 
 ### Build `2026-11-09s` · branch `claude/start-game-project-HSh7Z` · energy cards
 The owner: "I hate to keep adding different systems, but this one kind of incorporates a resource system that's been at the heart of most of the games I've ever played." Rules: `docs/ENERGY-CARDS.md` (§2; what the code does, §7; the agent's readings to confirm, §11).
