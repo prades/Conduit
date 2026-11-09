@@ -702,9 +702,16 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
 ## The ELECTRO SKINK (built in build `2026-11-08a`)
 - **Its own attacks:** BASH stands in as its second attack; its everyday hit is Slashing (what it hit with as an egg) until you choose.
 - ~~**Its subclass**~~ *(answered 2026-11-08, build `2026-11-08h`: **Spine-legged**, the Crustacean renamed; the owner: "Also, I want to rename the crustaceans to spine-legged to include electroskink and the toxic spider")*: so the Spine-legged cards fit it, it is weak to Crushing and Earthquake and resists Slashing and Piercing, and its lean is −1.
-- **Its Ultimate:** it uses the electric element's for now.
+- **Its Ultimate:** it used the electric element's (EMP). *(Since build `2026-11-09b` it has none: the element Ultimates are removed and it is flagged, ULTIMATE · NOT DESIGNED YET on its INFO card, the owner: "Nothing yet"; its own is open, below.)*
 - **Its pace:** 1.6 × the follower's speed (the agent's number for "really fast").
 - **VOLTAGE FIELD** (a Series 2 form card) fits the Static Orb only; it stays with the Static Orb (set aside) unless you move it to the Skink.
+
+## Ultimates, bonds and unevolved followers (build `2026-11-09b`)
+The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved form's own; the element Ultimates are removed; a bond is for breeding and the hearts; unevolved followers make the plain hit for now. Open:
+- **The flagged forms' Ultimates** (evolved, with none of their own; none until designed): the **ELECTRO SKINK**; and the retired forms kept only for old saves: BUNKER BLOOM, REAVER, SERPENT, AEGIS WARDEN, STORM MANTA, CINDER HALO, PRISM HOOD, VOLT RING, CALDERA, PETAL AEGIS (whether these need one at all).
+- **Unevolved followers' attacks and secondary attacks:** "we'll figure out some new way to categorize them with different attacks [and] secondary attacks later" (the owner, 2026-11-09). Until then: the plain hit (a Mage shoots) and BASH, and no Ultimate; each keeps its element.
+- **The agent's numbers, provisional:** the bond hearts (within 1 tile, three over each, 1.5 s, again after more than 3 tiles apart); SUNDEW's and STONEPETAL's everyday hit, 0.45 × their attack.
+- **A reading:** an unevolved follower's meter no longer fills (it has no Ultimate); a charge an old save carries stays as it was until it evolves.
 
 ## MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
 The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; today's electric Brawler (the STATIC ORB, its moves and all) becomes the MAGNETIC Brawler; the electric Brawler gets a new design. Not designed in detail and not built. Seven points are open, listed in `CONVERSION.md` §13 (how electric converts, MAGNETIC's rules and other forms, the new electric Brawler, saved Static Orbs, the name, the retired electric Brawler forms).

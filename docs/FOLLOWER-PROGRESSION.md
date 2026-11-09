@@ -46,6 +46,15 @@ The eight pads of the map (`FACILITY_MAP.followerSpots`, stable ids `spot_lobby 
 - **Applied once**: the bonus lives in the base only. `_applyFollowerLevel` derives stats and health from the base on every level-up, reload (`followerBuild`), respawn (the queue entry's `base`) and restored body (`rec.base`); nothing is added again anywhere.
 - **Provenance**: `f.bred = { gen, parents: [uidA, uidB] }` (gen = the parents' highest + 1) and `f.hp0` (its born hp, what the Vital items restore to). Both are in `followerRecord` (the save, a fallen body's record), restored by `followerBuild`, carried by the respawn queue and its rebuild, and cleared by a RE-ROLL (someone new). A recruit's record writes neither. The INFO's VITALS show `ORIGIN: BRED · GEN n` (or `RECRUITED`).
 
+## 2a. Bonds (`js/bonds.js`)
+
+- **Status:** Implemented as below since build `2026-11-09b` (the owner, 2026-11-09), tested (tests/bonds.js, 14 checks). Not playtested. The hearts' numbers are the agent's, provisional.
+- **Forming (unchanged):** two followers who fight side by side (within 2.5 tiles, both in combat) for about 20 s (`BOND_POINTS` checks of `BOND_TICK` frames) bond, one partner each; announced (♥ … & … BONDED). Kept by each follower's stable `uid` (`partnerUid`), and saved.
+- **What a bond does:** **breeding** (section 2: a bonded pair can breed) and **the hearts**, and nothing else. The owner, 2026-11-09: "A pairing like this should only show a few hearts on top of the follower whenever they get really close to each other and it goes away until they interact with each other again and it doesn't stay active if they're right next to each other for long [...] the bonuses there is none other than breeding and the visual effect."
+- **The hearts** (drafted from those words and approved, "As drafted"): when the two come within 1 tile of each other (`BOND_HEARTS.near`), three small pink hearts float up over each and fade in about 1.5 s (`frames` 90); they do not come again until the pair have been more than 3 tiles apart (`apart`) and come close again. Drawn in screen space over the world (`drawBonds`); not saved.
+- **A fall:** the bond lasts ("Bond survives"): the fallen follower comes back at the Crystal still bonded (its respawn carries `partnerUid`; js/game.js). A re-rolled follower is someone new: its bond ends (`breakBond`). A partner gone for good (out of the roster) leaves the bond open.
+- **Superseded 2026-11-09 (build `2026-11-09b`), removed from the code:** together within 3 tiles each hit 15% harder and took 10% less (`BOND_ATTACK_MULT`, `BOND_DEFENSE_MULT`); a fall ended the bond and the partner RAGED (×1.5 damage, ×1.3 speed, 10 s, a red ring); the DUO ultimate (both bars full and close: a double-tap fired both partners' element Ultimates, then ×1.3 damage for 5 s); a dotted pink line with a heart between partners standing together.
+
 ## 3. The Vital items (REMOVED 2026-11-01; this was `js/vital.js`, `js/inventory.js`)
 
 | Item | Puts back | Rarity | Stack |
