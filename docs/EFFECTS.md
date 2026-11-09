@@ -118,6 +118,7 @@ The owner's pick for the third piece (2026-11-09, "Rotshard's black spike").
 - The sheet is 8 turns in one row, in 72 px cells, lit as the forms are. (Build `u` lit it green from below as well; that came out with the aura in `w`.)
 - **ROTTEN DECOY** stood its four at the drawn ones' places and heights (the tallest 44 px), rising over the 8 frames it is set in. Since build `2026-11-09x` the decoy is a black Rotshard instead (below).
 - **TOXIC PUDDLE** stands three under each enemy it bites (the middle one 16 px, the sides three quarters). They rise as before and stay solid for most of their fade.
+  - With them it has no green disc and no rim (build `2026-11-09y`, the owner's "Remove [the] green space"). Only its spikes and its small bubbles show where it bites.
 - **The CRYSTAL SPIKE TRIO card attack** draws the same cluster, so it uses the spike too.
 - Each spike is turned by where it is in the world, not on the screen, and has a soft dark foot. A cluster costs under 30 canvas operations.
 - Rules, timing and hits are unchanged. Until its sheet arrives, or without `?fx=3d`, the drawn spikes are shown.
@@ -140,7 +141,7 @@ The owner, 2026-11-09, on what was off with the black spike: "Make the decoy a b
 **In the game (built in `2026-11-09x` on the preview, `?fx=3d`).**
 - The sheet is the Rotshard's idle loop in 12 frames, at the forms' own 144 px cell. It is drawn at the forms' scale, so it is the Rotshard's size.
 - It stands where the decoy is set, rising out of the floor over the 8 frames it is set in, and breathes with the Rotshard's idle by the game's clock.
-- No glow round it. The faint circle of its poison's reach stays, and its health bar is over its top.
+- No glow round it, and no green circle of its poison's reach either: it stands on the bare floor (the owner, 2026-11-09: "Remove [the] green space"; build `2026-11-09y`). Its health bar is over its top.
 - Rules, timing, lure and hits are unchanged. Without `?fx=3d`, or before its sheet arrives, the drawn spikes in their glow are shown.
 - **Waiting for the owner's approval in the game.**
 - Tested: `tests/fx3d.js`. Checked in the real page with pictures.

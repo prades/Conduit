@@ -165,7 +165,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
             try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; } return P.calls.map(c => c[0]); })()`);
         ok(r.indexOf('drawImage') < 0 && r.filter(c => c === 'stroke').length >= 4, 'not the drawn spikes: ' + r.join());
     });
-    check('with its sheet (on the preview): one picture of the copy, at the forms\' scale, its foot where the decoy is set, its frame the Rotshard\'s idle by the game\'s clock; risen as it is set; no glow round it (only its poison\'s reach); its health bar over its top', () => {
+    check('with its sheet (on the preview): one picture of the copy, at the forms\' scale, its foot where the decoy is set, its frame the Rotshard\'s idle by the game\'s clock; risen as it is set; no glow and no green circle round it (it stands on the bare floor); its health bar over its top', () => {
         run('__preview(true); FX3D.pieces.rotdecoy._img = { complete: true, naturalWidth: 1728, naturalHeight: 144 }; globalThis.__sc4 = spriteCell; globalThis.__cells4 = []; spriteCell = function (img, sx, sy, sw, sh) { __cells4.push(sx / sw); return { cell: sx / sw }; };');
         const at = (f, age) => J(`(function(){ __cells4.length = 0; const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption, f0 = frame; ctx = P.g; activeFireEruption = null; frame = ${f};
             elementEffects = [{ type: 'rotdecoy', x: player.visualX, y: player.visualY, life: 360 - ${age}, maxLife: 360, on: { maxHealth: 10, health: 5 } }];
@@ -176,9 +176,19 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         const cy = a.H / 2 + TH * 0.5; ok(Math.abs(a.im[0][6] + P.ay * S - cy) < 1e-6 && Math.abs(a.im[0][5] + P.ax * S - a.W / 2) < 1e-6, 'its foot is not where the decoy is set');
         same(JSON.stringify([a.cells[0], b.cells[0], c.cells[0]]), '[0,3,6]', 'its frames by the game\'s clock (12 over its ' + P.loop + '-frame loop)');
         ok(half.im[0][4] < P.ay && Math.abs(half.im[0][6] + half.im[0][8] - cy) < 1e-6, 'it does not rise out of the floor as it is set: ' + JSON.stringify(half.im[0].slice(1)));
-        same(a.glow, 0, 'the glow round it'); same(a.reach, 1, 'its poison\'s reach');
+        same(a.glow, 0, 'the glow round it'); same(a.reach, 0, 'the green circle of its reach (the owner, 2026-11-09: "Remove [the] green space")');
         const bar = a.rects.find(r => Math.abs(r[2] - 28) < 1e-6); ok(bar && Math.abs(bar[1] - (cy - (P.ay - P.tipY) * S - 8)) < 1e-6, 'its health bar is not over its top: ' + JSON.stringify(bar));
         run('spriteCell = __sc4; delete FX3D.pieces.rotdecoy._img; __preview(false);');
+    });
+
+    check('TOXIC PUDDLE with the black spikes (on the preview): no green disc and no rim (the owner, 2026-11-09: "Remove [the] green space"), only its bubbles and its spikes where it bites; without the preview, the old disc and rim', () => {
+        const draw = (prev) => J(`(function(){ __preview(${prev}); FX3D.pieces.rotspike._img = { complete: true, naturalWidth: 576, naturalHeight: 72 }; const P = __pen(), keep = ctx, ef = elementEffects, fe = activeFireEruption; ctx = P.g; activeFireEruption = null;
+            elementEffects = [{ type: 'toxicpuddle', x: player.visualX, y: player.visualY, radius: 2, life: 200, maxLife: 300, shards: [[player.visualX, player.visualY]], shardAt: 96 }];
+            try { drawElementEffects(); } finally { ctx = keep; elementEffects = ef; activeFireEruption = fe; } delete FX3D.pieces.rotspike._img; __preview(false);
+            return { disc: P.calls.some(c => c[0] === 'set fillStyle' && /3f9a1f/i.test(c[1])), rim: P.calls.some(c => c[0] === 'set strokeStyle' && /7dff4a/i.test(c[1])), bubbles: P.calls.filter(c => c[0] === 'arc').length, pics: P.calls.filter(c => c[0] === 'drawImage').length }; })()`);
+        const on = draw(true), off = draw(false);
+        same(on.disc, false, 'the green disc with the black spikes'); same(on.rim, false, 'the rim with the black spikes'); ok(on.bubbles >= 5, 'its bubbles'); same(on.pics, 3, 'its three black spikes');
+        same(off.disc, true, 'the old disc without the preview'); same(off.rim, true, 'the old rim without the preview');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

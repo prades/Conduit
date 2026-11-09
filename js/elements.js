@@ -1398,8 +1398,10 @@ function drawElementEffects() {
             // THE ROTSHARD'S PUDDLE (FORM_ULTIMATES.rotshard): a green puddle growing on the floor, bubbles in it; each eruption throws up a cluster of three small black crystal shards in green haze under each enemy it bites
             case "toxicpuddle": {
                 const k = Math.min(1, (e.maxLife - e.life) / 10, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy0 = py + TILE_H;
-                ctx.globalAlpha = 0.3 * k; ctx.fillStyle = "#3f9a1f"; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.globalAlpha = 0.6 * k; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+                // with the modelled black spikes (js/fx3d.js rotspike), no green disc or rim: only its spikes and its bubbles where it bites (the owner, 2026-11-09: "Remove [the] green space")
+                if (!(typeof fx3dOn === "function" && fx3dOn("rotspike") && fx3dReady("rotspike"))) {
+                    ctx.globalAlpha = 0.3 * k; ctx.fillStyle = "#3f9a1f"; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalAlpha = 0.6 * k; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke(); }
                 ctx.fillStyle = "#b8ff8a"; for (let i = 0; i < 5; i++) { const an = i * 2.4 + e.x, t = (frame * 0.02 + i * 0.37) % 1; ctx.globalAlpha = (1 - t) * 0.7 * k; ctx.beginPath(); ctx.arc(px + Math.cos(an) * rx * 0.6, cy0 + Math.sin(an) * ry * 0.6, 1.5 + t * 2.5, 0, Math.PI * 2); ctx.fill(); }
                 const since = (e.maxLife - e.life) - e.shardAt, b = Math.max(0, 1 - since / 18);
                 if (b > 0) for (const s of e.shards) _fxRotSpikes(px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, 16, 6, b * k, Math.min(1, since / 4 + 0.3), s[0] * 3.1 + s[1] * 1.7);
@@ -1498,7 +1500,7 @@ function drawElementEffects() {
                 // and breathing with the Rotshard's idle; no glow round it (the owner: "I don't like the green aura"). Else the drawn spikes in their glow.
                 const R3 = typeof fx3dOn === "function" && fx3dOn("rotdecoy") && fx3dReady("rotdecoy") ? FX3D.pieces.rotdecoy : null, H3 = R3 ? (R3.ay - R3.tipY) * (typeof EVO_SCALE === "number" ? EVO_SCALE : 96 / 144) : 0;
                 if (!R3) { ctx.globalAlpha = 0.22 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px + sway, cy - 14, 30, 22, 0, 0, Math.PI * 2); ctx.fill(); }   // the mist
-                ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px - sway, cy - 4, DECOY_MIST * 1.4142 * TILE_W, DECOY_MIST * 1.4142 * TILE_H, 0, 0, Math.PI * 2); ctx.fill();   // its poison's reach
+                if (!R3) { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px - sway, cy - 4, DECOY_MIST * 1.4142 * TILE_W, DECOY_MIST * 1.4142 * TILE_H, 0, 0, Math.PI * 2); ctx.fill(); }   // its poison's reach (the black Rotshard stands on the bare floor: the owner, 2026-11-09, "Remove [the] green space")
                 if (R3) { ctx.globalAlpha = 1; fx3dDrawUpright(ctx, "rotdecoy", px, cy, Math.floor(((frame % R3.loop) + R3.loop) % R3.loop / R3.loop * R3.yaws), H3, k); }
                 else { ctx.globalAlpha = k; for (const [ox, h, w] of [[-7, 30, 6], [0, 44, 8], [8, 34, 6], [-2, 22, 5]]) { ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.moveTo(px + ox - w, cy); ctx.lineTo(px + ox, cy - h); ctx.lineTo(px + ox + w, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "rgba(125,255,74,0.6)"; ctx.lineWidth = 1; ctx.stroke(); } }
                 if (d && d.maxHealth > 0) { const fr = Math.max(0, d.health / d.maxHealth), by = R3 ? cy - H3 - 8 : cy - 52; ctx.globalAlpha = 0.9 * k; ctx.fillStyle = "#0b0f0c"; ctx.fillRect(px - 14, by, 28, 3); ctx.fillStyle = "#7dff4a"; ctx.fillRect(px - 14, by, 28 * fr, 3); }

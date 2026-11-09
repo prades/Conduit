@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09y` · branch `claude/start-game-project-HSh7Z` · no green space under the new looks (on the preview)
+The owner: "Remove [the] green space": both the decoy's circle and the puddle's disc.
+- **ROTTEN DECOY as a black Rotshard** stands on the bare floor: no green circle of its poison's reach.
+- **TOXIC PUDDLE with the black spikes** has no green disc and no rim. Only its spikes and its small bubbles show where it bites.
+- Only with `?fx=3d`; everyone else still sees the old looks. Rules are unchanged.
+- Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09x` · branch `claude/start-game-project-HSh7Z` · ROTTEN DECOY as a black Rotshard (on the preview)
 The owner, on what was still off with the black spike: "Make the decoy a black Rotshard"; the model approved from the large preview ("Yes, build it"). `docs/EFFECTS.md`.
 - **ROTTEN DECOY is a black copy of the Rotshard:** its own model all in black, the pool tar-black, no glow; only the shell shard's thin green crack is kept.
