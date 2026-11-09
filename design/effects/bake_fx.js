@@ -19,6 +19,9 @@ const PIECES = {
   // QUILL BURST and QUILLSTORM (the QUILLSTONE): one of the big red shards on its back, five-sided and faceted, glowing from within (the same material, glow 0.5),
   // as long as the biggest of them in the game sprite (0.65 x its scale 1.5, about 25 px on screen).
   quill: { form: 361, color: '#ff3300', len: 0.95, fat: 0.2, sides: 5, seed: 5, roll: 0.75, cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },   // (approved as a model 2026-11-09: "Yes, build it")
+  // ICICLE VOLLEY (the RIMESTAR): one of the frost shards its cast throws (forms32.js: an eight-faced crystal drawn out long), made big: a slender six-sided spike of pale blue ice,
+  // long-pointed in front and a short faceted point behind, a little uneven, as long as the quill
+  icicle: { form: 861, color: '#7fd6ff', len: 0.95, r: 0.085, sides: 6, back: 0.15, seed: 3, roll: 0.5, cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },   // (a draft, for the owner's yes)
 };
 
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
@@ -42,6 +45,13 @@ window.__fx = async function (mode, piece, P) {
     c.position.set(D * Math.cos(el) * Math.SQRT1_2, lookY + D * Math.sin(el), D * Math.cos(el) * Math.SQRT1_2); c.lookAt(0, lookY, 0); c.updateMatrixWorld(); c.updateProjectionMatrix(); return c; };
   const build = () => { const g = new T.Group();
     if (piece === 'quill') { const sh = _quillShard(P.len, P.len * P.fat, P.sides, _redShardMat(0.5), P.seed); sh.rotation.z = -PI / 2; sh.position.x = -P.len / 2; const r = new T.Group(); r.add(sh); r.rotation.x = P.roll || 0; g.add(r); }   // (rolled about its length so a ridge, not a flat face, meets the light)
+    if (piece === 'icicle') {   // pale ice: glossy, flat-shaded facets, a cold glow from within (the Rimestar's light blue)
+      const ice = new T.MeshStandardMaterial({ color: new T.Color(0x7cc8f2).convertSRGBToLinear(), emissive: new T.Color(0x1f6fc4).multiplyScalar(0.45), roughness: 0.3, metalness: 0.05, flatShading: true }); ice.envMapIntensity = 0.55;
+      const front = P.len - P.back, mk = (h, tip, sd) => { const geo = new T.ConeGeometry(P.r, h, P.sides, 1), q = geo.attributes.position;
+        for (let v = 0; v < q.count; v++) { const x = q.getX(v), y = q.getY(v), z = q.getZ(v), n = _hz(Math.round(x * 400) + sd, Math.round(y * 400), Math.round(z * 400)); q.setXYZ(v, x * (0.8 + 0.4 * n), y, z * (0.8 + 0.4 * (1 - n))); }
+        geo.translate(0, h / 2, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, ice); if (!tip) m.rotation.z = PI; return m; };
+      const spike = new T.Group(); spike.add(mk(front, true, P.seed)); spike.add(mk(P.back, false, P.seed + 7));   // (both cones from the widest point: the long one forward, the short one back)
+      spike.rotation.z = -PI / 2; spike.position.x = (P.back - front) / 2; const r = new T.Group(); r.add(spike); r.rotation.x = P.roll || 0; g.add(r); }
     return g; };
   // the way it flies, in the world: the game's x is the world's +x, the game's y the world's +z
   const aim = (g, yaw, pitch) => { g.rotation.set(0, 0, 0); g.rotation.order = 'YZX'; g.rotation.y = -yaw; g.rotation.z = pitch; };
@@ -88,7 +98,7 @@ window.__fx = async function (mode, piece, P) {
   if (MODE === 'preview') {
     // one picture: the piece large on top, the piece beside its form below (on the arena's dark floor colour, so the glow reads as it will)
     const q = await b.newPage(); await q.setViewportSize({ width: 1600, height: 1160 });
-    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>the quill beside the QUILLSTONE, at one scale<br><span style="font-weight:400;font-size:18px">(in the game the quill is about 25 px long)</span></div></div></body>`);
+    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>the ${PIECE} beside its form, at one scale<br><span style="font-weight:400;font-size:18px">(in the game it is about 25 px long)</span></div></div></body>`);
     await q.screenshot({ path: OUT, clip: { x: 0, y: 0, width: 1600, height: 1120 } });
     console.log('wrote ' + OUT);
   }
