@@ -438,7 +438,7 @@ function facilityResetState() {
     if (typeof mutatorReset === "function") mutatorReset();   // the lash and any fallen clone's body (js/mutator.js)
     if (typeof specimenReset === "function") specimenReset();   // the capsules carried, a preservation under way (js/specimen.js)
     if (typeof equipReset === "function") equipReset();   // the hand of equip cards and the player's slots (the collection of unlocked cards stays: js/cards.js)
-    if (typeof activeFireEruption !== "undefined") activeFireEruption = null; if (typeof activeEmpEffect !== "undefined") activeEmpEffect = null;
+    if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
     frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(elementsFound()); lifetimeKills = 0;
     // (after the clock is back at 0: these count from it)

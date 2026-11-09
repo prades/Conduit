@@ -4,15 +4,8 @@
 // REPORTED: "I would like an info tab for each of the followers and their different attacks and jobs", "on each card". Every card (the Command
 // Center's roster cards, the phone roster, the Clone Bay's player cards) has an INFO button that opens this: ATTACKS, JOBS and STATS tabs.
 // The numbers are the game's own constants (evolution.js, species.js, elements.js), read, not retyped, so the page cannot drift from play.
-// The ultimates (js/elements.js FOLLOWER_ULTIMATES): each works within ULT_REACH tiles of the follower.
-const ELEMENT_ULTIMATES = [
-    { el: "fire",     name: "Volcanic Eruption", desc: "A column of fire on the biggest enemy in reach, then a burning crater" },
-    { el: "electric", name: "EMP",               desc: "Strips every enemy shield in reach and speeds up your followers" },
-    { el: "ice",      name: "Blizzard",          desc: "A field of snow that keeps freezing the enemies in it" },
-    { el: "flux",     name: "Disorient",         desc: "The creatures in reach turn on each other" },
-    // (core has none: its Shield Grant put a shield on every follower, and the followers' shield is gone)
-    { el: "toxic",    name: "Smoke Screen",      desc: "Smoke creeps out: the enemies in it lose their aim" },
-];
+// The Ultimates are each evolved form's own (js/elements.js FORM_ULTIMATES, since build 2026-11-09b): each works within ULT_REACH tiles of the follower. An unevolved follower has none; a form
+// without one of its own is flagged (followerUltPending): NOT DESIGNED YET.
 const ROLE_INFO = {
     brawler: { label: "BRAWLER",    text: "Closes in and fights up close." },
     sniper:  { label: "MAGE",       text: "Fires from a distance." },
@@ -55,7 +48,7 @@ const SHOT_INFO = {
     "FIREBALL":        () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack-speed cards)"], ["EFFECT", "A ball of fire at the nearest enemy: a direct hit"]],
     "BURROW STRIKE":   () => [["REACH", BURROW_REACH + " tiles, an enemy it can see"], ["DAMAGE", _uiX(BURROW_MULT) + " its plain hit, as it erupts"], ["REST", _uiSec(BURROW_REST) + " after an eruption"], ["EFFECT", "It dives into the floor, travels under it to the enemy and erupts beneath it. Under the floor nothing can target or hurt it"]],
     "CORRODE SHOT":    () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack speed)"], ["EFFECT", "Eats the target's armour for " + _uiSec(ROT_SHRED_FRAMES) + " (×" + ROT_SHRED + " defence), weaker within " + ROT_SPLASH_R + " tiles of it"]],
-    "NECTAR STING":    () => [["DAMAGE", "its plain hit (a quarter of its attack), piercing"], ["STOCKPILE", "+" + SUNDEW_NECTAR_STEP + "% a sting; four fill it (the pips over it), and then SWEET SCENT heals"], ["EFFECT", "Its stem arches over and stabs with its blade-leaf"]],
+    "NECTAR STING":    () => [["DAMAGE", _uiX(typeof ELEMENT_ATTACKS !== "undefined" && ELEMENT_ATTACKS.blossom ? ELEMENT_ATTACKS.blossom.mult : 0.45) + " its attack, piercing (1 WILL; without WILL a quarter)"], ["STOCKPILE", "+" + SUNDEW_NECTAR_STEP + "% a sting; four fill it (the pips over it), and then SWEET SCENT heals"], ["EFFECT", "Its stem arches over and stabs with its blade-leaf"]],
     "SEED SHOT":       () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack, Elemental"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack-speed cards)"], ["EFFECT", "Its vines rear round a glowing seed and fling it at the nearest enemy, like a sling: a direct hit, and it MENDs, as every BLOOM hit"]],
     "CHAIN LIGHTNING": () => [["DAMAGE", _uiX(MAGE_SHOT_MULT) + " special attack on the first enemy"], ["WIND-UP", _uiSec(MAGE_SHOT_WINDUP) + ", standing still"], ["EVERY", _uiSec(MAGE_SHOT_REST) + " after it (less with attack-speed cards)"], ["JUMPS", "On to the nearest enemy not yet struck within " + CHAIN_HOP + " tiles, each " + Math.round(CHAIN_SHARE * 100) + "% of the one before, while one is that near"], ["EFFECT", "A close cluster carries it far; a gap breaks it"]],
 };
@@ -95,9 +88,9 @@ function followerInfo(a) {
     }
     { const ab = typeof techAbilityInfo === "function" ? techAbilityInfo(a) : null; if (ab) out.attacks.push(ab); }   // a technician's ability: what it does, its numbers, when it is ready (js/techabilities.js)
     { const ab2 = typeof techAbility2Info === "function" ? techAbility2Info(a) : null; if (ab2) out.attacks.push(ab2); }   // the Thermite Burrower's second ability, FAULTLINE
-    const own = a.evolved && typeof FORM_ULTIMATES !== "undefined" && FORM_ULTIMATES[a.evolved] && FORM_ULTIMATES[a.evolved].desc ? FORM_ULTIMATES[a.evolved] : null;   // (its form's own Ultimate, js/elements.js)
-    const u = own ? { name: own.name, desc: own.desc } : ELEMENT_ULTIMATES.find(x => x.el === a.element);
-    if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: u.desc + ". When it is fully charged, tap ULTIMATE on its squad card (or double-tap the follower).", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
+    const u = typeof followerUltimate === "function" ? followerUltimate(a) : null;   // (its form's own Ultimate, js/elements.js; an unevolved follower has none since build 2026-11-09b)
+    if (u) out.attacks.push({ h: "ULTIMATE · " + u.name.toUpperCase(), note: (u.desc || u.name) + ". When it is fully charged, tap ULTIMATE on its squad card (or double-tap the follower).", rows: typeof a.ultimateCharge === "number" ? [["CHARGE", Math.round(Math.min(100, a.ultimateCharge)) + "%"]] : [] });
+    else if (typeof followerUltPending === "function" && followerUltPending(a)) out.attacks.push({ h: "ULTIMATE · NOT DESIGNED YET", note: "The " + (ev ? ev.name : "form") + " has no Ultimate of its own yet: none until it is designed.", rows: [] });   // (flagged: the owner, 2026-11-09)
     // JOBS: the squad, or a room it holds (js/party.js)
     out.jobs.push({ h: "RIGHT NOW", rows: [["STANCE", a.post && typeof partyRoomName === "function" ? "HOLDING THE " + partyRoomName(a.post).toUpperCase() : typeof partyIsMember === "function" && partyIsMember(a) ? "IN THE SQUAD, FOLLOWING YOU" : a.stance === "hold" || (a.job && a.job.type === "move") ? "HOLDING A POST" : "FOLLOWING YOU"]] });
     // STATS

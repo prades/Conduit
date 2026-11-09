@@ -1,27 +1,25 @@
 // ─────────────────────────────────────────────────────────
 //  FOLLOWER BONDS  (docs/ROADMAP-top5.md §4)
 // ─────────────────────────────────────────────────────────
-// Two followers who fight side by side long enough BOND. Together (within
-// BOND_TOGETHER tiles) each hits harder and takes less; if one dies the other
-// goes into a RAGE; with both ultimates full and close, the double-tap fires a
-// DUO ultimate. A follower bonds with one partner at a time.
+// Two followers who fight side by side long enough BOND, one partner each. A bond is for BREEDING (js/breeding.js:
+// a bonded pair can breed) and for the look of it, and nothing else (build 2026-11-09b; the owner, 2026-11-09: "the
+// bonuses there is none other than breeding and the visual effect"): no harder hits together, no rage when one
+// falls, no DUO ultimate. When the two come really close (BOND_HEARTS.near), a few hearts float up over each and
+// fade; they do not come again until the pair have been apart (BOND_HEARTS.apart) and meet again ("it doesn't stay
+// active if they're right next to each other for long").
 //
 // Every follower carries a stable `uid` (followerUid) — a respawn builds a new
-// object, so a bond is kept by uid, not by reference. A respawned follower and
-// a re-rolled one come back unbonded: they are someone new.
+// object, so a bond is kept by uid, not by reference. A bond lasts through a fall
+// (the owner: "Bond survives"): the fallen one comes back still bonded. A re-rolled
+// follower comes back unbonded: it is someone new.
 const BOND_TICK          = 30;     // frames between bond checks
 const BOND_RANGE         = 2.5;    // tiles: fighting this close builds a bond
 const BOND_COMBAT_WINDOW = 120;    // frames since a hit given or taken = "in combat"
 const BOND_POINTS        = 40;     // checks side by side to bond (≈ 20 s)
-const BOND_TOGETHER      = 3;      // tiles: the bonus holds this close
-const BOND_ATTACK_MULT   = 1.15;
-const BOND_DEFENSE_MULT  = 0.9;
-const BOND_RAGE_FRAMES   = 600;    // 10 s
-const BOND_RAGE_ATTACK   = 1.5;
-const BOND_RAGE_SPEED    = 1.3;
-const BOND_DUO_FRAMES    = 300;    // 5 s of the duo's damage boost after a duo ultimate
-const BOND_DUO_MULT      = 1.3;
 const BOND_COLOUR        = "#ff7ab8";
+// THE HEARTS (the owner's words, drafted 2026-11-09 and approved "As drafted"; the numbers the agent's, provisional): within `near` tiles, `count` small hearts float up over each partner for `frames`;
+// not again until the two have been more than `apart` tiles from each other
+const BOND_HEARTS = { near: 1, apart: 3, frames: 90, count: 3, rise: 26 };
 
 let followerSerial = 0;
 let _bondPoints = new Map();       // "uidA-uidB" (lower first) → points
@@ -43,11 +41,6 @@ function bondPartner(a) {
     let p = _bondByUid.get(a.partnerUid);
     if (!p || p.dead) p = (typeof followers !== "undefined" ? followers : []).find(f => f.uid === a.partnerUid && !f.dead) || null;
     return p && !p.dead && p.partnerUid === a.uid ? p : null;
-}
-// Partner alive and within BOND_TOGETHER tiles.
-function bondTogether(a) {
-    const p = bondPartner(a);
-    return !!p && Math.hypot(p.x - a.x, p.y - a.y) <= BOND_TOGETHER;
 }
 function breakBond(a) {
     if (!a) return;
@@ -91,77 +84,35 @@ function bondTick() {
     }
 }
 
-// Damage multipliers, read by applyDamage. `source` gives, `target` takes.
-function bondAttackMult(source) {
-    if (!source || !source.isFollower) return 1;
-    let m = 1;
-    if (source._rageUntil > frame) m *= BOND_RAGE_ATTACK;
-    if (source._duoUntil > frame) m *= BOND_DUO_MULT;
-    if (source.partnerUid && bondTogether(source)) m *= BOND_ATTACK_MULT;
-    return m;
+// THE HEARTS: per pair (by its key, so a respawned partner keeps the pair's state), whether its hearts may show again (`armed`, true at first and again once they have been apart) and when the last
+// ones began (`at`). Read each frame by drawBonds, which starts them; only drawing reads them (not saved).
+let _bondHearts = new Map();
+function _bondHeartTick(a, p) {
+    const k = _bondKey(a, p), d = Math.hypot(p.x - a.x, p.y - a.y), H = BOND_HEARTS;
+    let st = _bondHearts.get(k); if (!st) { st = { armed: true, at: -1e9 }; _bondHearts.set(k, st); }
+    if (d > H.apart) st.armed = true;
+    else if (d <= H.near && st.armed) { st.armed = false; st.at = frame; }
+    return frame - st.at < H.frames ? (frame - st.at) / H.frames : -1;   // how far through its hearts the pair is (0..1), or -1: none showing
 }
-function bondDefenseMult(target) {
-    return target && target.isFollower && target.partnerUid && bondTogether(target) ? BOND_DEFENSE_MULT : 1;
-}
-
-// A follower has died: its partner rages, and the bond is over.
-function bondOnDeath(a) {
-    if (!a || !a.partnerUid) return;
-    const p = bondPartner(a);
-    a.partnerUid = null;
-    if (!p) return;
-    p.partnerUid = null;
-    p._rageUntil = frame + BOND_RAGE_FRAMES;
-    if (typeof applySlow === "function") applySlow(p, BOND_RAGE_FRAMES, BOND_RAGE_SPEED);
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 96,
-        text: "☠ " + bondName(p) + " RAGES FOR " + bondName(a), color: "#ff4455", life: 160, vy: -0.18, size: 13 });
-}
-
-// The double-tap on a bonded follower with BOTH bars full and the partner
-// close fires both ultimates at once, and the pair hits harder for a while.
-// Returns true when it fired.
-function tryDuoUltimate(a) {
-    const p = bondPartner(a);
-    if (!p || !bondTogether(a)) return false;
-    if (!(a.ultimateCharge >= 100 && p.ultimateCharge >= 100)) return false;
-    const ua = FOLLOWER_ULTIMATES[a.element], ub = FOLLOWER_ULTIMATES[p.element];
-    if (!ua || !ub) return false;
-    a._duoUntil = p._duoUntil = frame + BOND_DUO_FRAMES;
-    ua.execute(a); ub.execute(p);
-    a.ultimateCharge = 0; p.ultimateCharge = 0;
-    const la = bondName(a).split("-")[0], lb = bondName(p).split("-")[0];
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 120,
-        text: "♥ DUO: " + la + " × " + lb, color: BOND_COLOUR, life: 160, vy: -0.15, size: 18 });
-    if (typeof shake !== "undefined") shake = Math.max(shake || 0, 12);
-    return true;
-}
-
-// A thin pink line between partners standing together, a heart at its middle;
-// a red ring under a raging follower. Screen space, after the world.
+// Hearts over a pair that has just come together: BOND_HEARTS.count small pink hearts rising over each and fading (screen space, after the world)
 function drawBonds() {
     if (typeof followers === "undefined" || followers.length === 0) return;
-    const W = canvas.width / 2, H = canvas.height / 2;
+    const W = canvas.width / 2, H = canvas.height / 2, B = BOND_HEARTS;
     const scr = o => [(o.x - player.visualX - (o.y - player.visualY)) * TILE_W + W,
                       (o.x - player.visualX + (o.y - player.visualY)) * TILE_H + H];
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     for (const a of followers) {
-        if (a.dead) continue;
-        if (a._rageUntil > frame) {
-            const [x, y] = scr(a);
-            ctx.globalAlpha = 0.5 + 0.3 * Math.sin(frame * 0.3);
-            ctx.strokeStyle = "#ff3344"; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.ellipse(x, y + TILE_H * 0.2, 16, 8, 0, 0, Math.PI * 2); ctx.stroke();
+        if (a.dead || !a.partnerUid || !(a.uid < a.partnerUid)) continue;   // each pair once
+        const p = bondPartner(a); if (!p) continue;
+        const t = _bondHeartTick(a, p); if (t < 0) continue;
+        for (const u of [a, p]) {
+            const [x, y] = scr(u);
+            for (let i = 0; i < B.count; i++) {
+                const ti = Math.max(0, Math.min(1, t * 1.25 - i * 0.12));   // (each a little after the one before)
+                ctx.globalAlpha = Math.max(0, 1 - ti) * 0.95;
+                if (typeof cachedText === "function") cachedText("♥", "bold " + (9 + (i % 2) * 2) + "px monospace", BOND_COLOUR, x + (i - (B.count - 1) / 2) * 9 + Math.sin(ti * 6 + i) * 2, y - 44 - ti * B.rise);
+            }
         }
-        if (!a.partnerUid || !(a.uid < a.partnerUid)) continue;   // each pair once
-        const p = bondPartner(a);
-        if (!p || Math.hypot(p.x - a.x, p.y - a.y) > BOND_TOGETHER) continue;
-        const [ax, ay] = scr(a), [bx, by] = scr(p);
-        ctx.globalAlpha = 0.55; ctx.strokeStyle = BOND_COLOUR; ctx.lineWidth = 1.2;
-        ctx.setLineDash([3, 4]);
-        ctx.beginPath(); ctx.moveTo(ax, ay - 40); ctx.lineTo(bx, by - 40); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.globalAlpha = 0.9;
-        if (typeof cachedText === "function") cachedText("♥", "bold 10px monospace", BOND_COLOUR, (ax + bx) / 2, (ay + by) / 2 - 38);
     }
     ctx.restore();
 }

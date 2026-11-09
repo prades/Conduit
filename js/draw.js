@@ -1392,7 +1392,7 @@ function _drawVirus(actor, px, py, drawCtx) {
     if (!_bare && typeof drawUnitTag === "function") drawUnitTag(actor, px, py - 87, drawCtx);
 
     // ── ULTIMATE CHARGE BAR ───────────────────────────────
-    if (actor.isFollower && typeof actor.ultimateCharge === "number" && typeof followerUltimate === "function" && followerUltimate(actor)) {   // (none for an element with no ultimate: core)
+    if (actor.isFollower && typeof actor.ultimateCharge === "number" && typeof followerUltimate === "function" && followerUltimate(actor)) {   // (none without an Ultimate: an unevolved follower, a flagged form; build 2026-11-09b)
         const _uc = Math.max(0, Math.min(100, actor.ultimateCharge));
         const _ucFull = _uc >= 100;
         const _elDef = ELEMENTS.find(e => e.id === actor.element);

@@ -174,7 +174,7 @@ class Predator {
         const distCrystal=Math.hypot(dxC,dyC);
         // a prey it is after is chased up to COMBAT.prey.leash tiles (it gave up at 2 tiles: nothing was ever chased); anything else, as before
         const t = this.currentTarget, dT = t && !t.dead ? Math.hypot(t.x - this.x, t.y - this.y) : Infinity;
-        const attackScore = dT === Infinity ? 0 : !(this.disorientFF > 0) && predatorPreyOk(this, t) ? (dT <= COMBAT.prey.leash ? 1 : 0) : 1 - Math.min(1, dT / 2);
+        const attackScore = dT === Infinity ? 0 : predatorPreyOk(this, t) ? (dT <= COMBAT.prey.leash ? 1 : 0) : 1 - Math.min(1, dT / 2);
         const huntScore    = 0.4+(1-Math.min(1,distCrystal/6))*0.2;
         return { attack:attackScore, hunt:huntScore, wander:0.1 };
     }
@@ -183,16 +183,15 @@ class Predator {
     // Disoriented, it bites its own kind. In smoke it misses half the time. The Crystal is bitten the same way (target === crystal). Returns what it hit, or null.
     // Its reach is COMBAT.bite.reach, or its own (biteReach: a clone's, js/clone.js cloneReach).
     bite(target) {
-        const B = COMBAT.bite, R = this.biteReach || B.reach, reach2 = R * R, pwr = this.power * (this.disorientPowerFactor || 1.0) * (this.toxicWeakened > 0 ? (this.toxicWeakenFactor || 0.6) : 1.0);
+        const B = COMBAT.bite, R = this.biteReach || B.reach, reach2 = R * R, pwr = this.power * (this.toxicWeakened > 0 ? (this.toxicWeakenFactor || 0.6) : 1.0);
         // A PHOTONIC SHIELD between it and what it bites (js/techabilities.js): the bite is stopped (walled: and the shield shows where); nothing on the far side is in reach (across)
-        const walled = a => !(this.disorientFF > 0) && typeof techShieldBlocks === "function" && techShieldBlocks(this, a);
-        const across = a => !this.isClone && !(this.disorientFF > 0) && typeof techShieldBetween === "function" && !!techShieldBetween(this.x, this.y, a.x, a.y);
+        const walled = a => typeof techShieldBlocks === "function" && techShieldBlocks(this, a);
+        const across = a => !this.isClone && typeof techShieldBetween === "function" && !!techShieldBetween(this.x, this.y, a.x, a.y);
         if (target === crystal) { if (walled(crystal)) return null; crystal.health = Math.max(0, crystal.health - pwr); shake = Math.max(shake, 6); return crystal; }
         if (target && target.sentry) { if (walled(target)) return null; if (typeof sentryDamage === "function") sentryDamage(target, pwr, this); return target; }   // a TURRET a raider wrecks (js/antraids.js)
         const inReach = a => { const dx = a.x - this.x, dy = a.y - this.y; return dx * dx + dy * dy <= reach2 && !across(a); };
         // the bite lands on `a` (its race's type, or a clone's Piercing: js/damage.js); a clone's bite also carries the kit of a Mutator's role (a Player card: js/playercards.js playerCloneBit)
         const land = a => { const h0 = a.health; applyDamage(a, pwr, this, null, false, false, dmgBiteHit(this)); if (this.isClone && typeof playerCloneBit === "function") playerCloneBit(this, a, Math.max(0, h0 - Math.max(0, a.health))); };
-        if (this.disorientFF > 0) { let n = null; actors.forEach(a => { if (a === this || a.dead || a.team !== "red" || a.isClone || isNeutralBystander(a) || !inReach(a)) return; land(a); n = a; }); return n; }
         const hitTeam = this.isClone ? "red" : "green";
         if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: this.x, y: this.y, text: "MISS", color: "#aabb88", life: 30, vy: -0.04 }); return null; }   // the smoke screen: half its bites miss
         // THE PLAYER (its prey too, COMBAT.prey): one of its three hits, and a step back (hurtPlayer; the grace after a hit spaces them). Out of reach when it lands: missed.
@@ -233,7 +232,6 @@ class Predator {
 
         // ── STATUS TIMERS ──
         if (this.smokeDebuff  > 0) this.smokeDebuff--;
-        if (this.disorientFF  > 0) this.disorientFF--;
 
         // ── BLIND ──
         // It cannot see: no target, no attack, no shot — it staggers about at
@@ -265,7 +263,7 @@ class Predator {
         // ── THE PREY (COMBAT.prey, predatorPickPrey above) ──
         // Every few frames it picks whom to go for among your followers, your clones and YOU: the near, the WEAK (a weak player above all) and whoever hit it. It used to turn only on a unit within
         // 1.2 tiles, or on the spot a hit came from, and never left that spot for anything but the Crystal. The pick costs a little, so it is spread over COMBAT.prey.every frames (each creature its own phase).
-        if (!this.isClone && !(this.disorientFF > 0)) {
+        if (!this.isClone) {
             const P = COMBAT.prey; if (this._preyPhase === undefined) this._preyPhase = Math.floor(Math.random() * P.every);
             const due = ((frame || 0) + this._preyPhase) % P.every === 0;
             if (due) this._prey = predatorPickPrey(this); else if (this._prey && !predatorPreyOk(this, this._prey)) this._prey = null;   // (gone: the next pick finds another)
@@ -278,7 +276,7 @@ class Predator {
 
         // A prey that got away (gone, or further than COMBAT.prey.leash: out-run, or knocked back to the Crystal) is let go, and with no alarm up it calms down: it does not follow you to the Crystal.
         { const ct = this.currentTarget;
-          if (ct && !(this.disorientFF > 0) && ct !== crystal && (!predatorPreyOk(this, ct) || Math.hypot(ct.x - this.x, ct.y - this.y) > COMBAT.prey.leash)) {
+          if (ct && ct !== crystal && (!predatorPreyOk(this, ct) || Math.hypot(ct.x - this.x, ct.y - this.y) > COMBAT.prey.leash)) {
               this.currentTarget = null; this._prey = null; this.attackWindup = 0; this.biteTarget = null; if (this.lastAttacker === ct) this.lastAttacker = null; if (!predatorAlarm(this)) this.provoked = false;
           } }
 
@@ -377,17 +375,6 @@ class Predator {
                 this.lastX=this.x; this.lastY=this.y;
                 return;
             }
-            // ── DISORIENT: attack nearest red ally instead of crystal ──
-            if (this.disorientFF > 0) {
-                let nearRed=null, bd2=Infinity;
-                actors.forEach(a=>{
-                    if(a===this||a.dead||a.team!=="red"||a.isClone) return;
-                    if(isNeutralBystander(a)) return;
-                    const dx=a.x-this.x,dy=a.y-this.y,d2=dx*dx+dy*dy;
-                    if(d2<bd2){bd2=d2;nearRed=a;}
-                });
-                if (nearRed) { this.currentTarget=nearRed; this.state="attack"; return; }
-            }
             // AN ANT RAID (js/antraids.js): its goal is the nearest turret still standing, then the Crystal; any other hunter's is the Crystal
             const goal = (this.raid && typeof raidGoal === "function" && raidGoal(this)) || crystal, at = goal.sentry && typeof raidSteerAt === "function" ? raidSteerAt(this, goal) : goal, reach = typeof raidReach === "function" ? raidReach(goal) : 0.8;
             const dx=goal.x-this.x, dy=goal.y-this.y;
@@ -428,13 +415,13 @@ class Predator {
             const target=this.currentTarget, base=(PREDATOR_TYPES[this.predatorType]||{moveSpeed:this.moveSpeed}).moveSpeed;
             const drop = () => { this.state="hunt"; this.currentTarget=null; this.attackWindup = 0; this.biteTarget = null; this._prey = null; this.moveSpeed=base; };
             // nothing it can bite (gone, or not a thing it can bite): back to the Crystal
-            if (!target || target.dead || !(this.disorientFF > 0 || predatorPreyOk(this, target))) { drop(); return; }
+            if (!target || target.dead || !predatorPreyOk(this, target)) { drop(); return; }
             this.moveSpeed=0;
             const dx=target.x-this.x, dy=target.y-this.y, dist=Math.sqrt(dx*dx+dy*dy);
             if (dist>(this.biteReach || COMBAT.bite.reach)) {
                 if (this.attackWindup > 0 && typeof player !== "undefined" && this.biteTarget === player && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: player.x, y: player.y, text: "DODGED", color: "#9be8ff", size: 12, life: 40, vy: -0.03 });
                 this.attackWindup = 0; this.biteTarget = null; this.attackAnim = 0;
-                if (this.disorientFF > 0 || dist > COMBAT.prey.leash) { drop(); if (!predatorAlarm(this)) { this.provoked = false; this.lastAttacker = null; } return; }   // (let go)
+                if (dist > COMBAT.prey.leash) { drop(); if (!predatorAlarm(this)) { this.provoked = false; this.lastAttacker = null; } return; }   // (let go)
                 // ROOTED (js/bosses.js: the Toxic Queen at her post, the archive's "she does not chase the player"): it turns to face what it is after and takes no step; its projectiles and its brood are the boss's own (bossTick)
                 if (this.bossRooted) { faceToward(this, target.x, target.y, 0.25); return; }
                 // THE CHASE, at its own pace (a slow on it still slows it: js/abilities.js tickSlowSpeed parks moveSpeed while it attacks)

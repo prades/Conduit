@@ -17,15 +17,17 @@ const INFO_CATS = [
     { id: "rules",    label: "RULES",    col: "#8fe3ff", blurb: "How the facility fits together: the Crystal, the relays, your gun and your pack, what a kill pays." },
 ];
 
-// What each element's follower attacks are called (the attacks themselves are js/elements.js; their names were only ever written down in the GAME INDEX, so they are written down here too).
+// What each element's follower attacks are called (the attacks themselves are js/elements.js; their names were only ever written down in the GAME INDEX, so they are written down here too). Since
+// build 2026-11-09b an element's move is only an evolved Brawler's or Technician's everyday hit (before it evolves a follower makes a plain hit; a Mage shoots), and no element has an Ultimate: each
+// evolved form has its own (the owner: "remove all data of elemental ultimate that aren't specific to a certain follower").
 const _IP_ATTACKS = {
-    fire:     { physical: "Ring of Fire",    special: "Fire Bombs",    ult: "Volcanic Eruption", proc: "burn" },
-    electric: { physical: "Chain Lightning", special: "Static Field",  ult: "EMP",          proc: "stun" },
-    ice:      { physical: "Frost Lance",     special: "Ice Burst",     ult: "Blizzard",     proc: "hard freeze" },
-    flux:     { physical: "Volatility Aura", special: "Singularity",   ult: "Disorient",    proc: "disorient" },
-    core:     { physical: "Shield Bash",     special: null,            ult: null,           proc: "knockback" },   // (Radiant Pulse and Shield Grant shielded the followers: gone with the followers' shield)
-    toxic:    { physical: "Smoke Form",      special: "Toxic Cloud",   ult: "Smoke Screen", proc: "defense shred" },
-    blossom:  { physical: null,              special: null,            ult: null,           proc: "mend" },   // BLOOM (build 2026-11-08i): no moves designed yet; every hit MENDS (js/elements.js elementMend)
+    fire:     { physical: "Ring of Fire",    special: "Fire Bombs",    proc: "burn" },
+    electric: { physical: "Chain Lightning", special: "Static Field",  proc: "stun" },
+    ice:      { physical: "Frost Lance",     special: "Ice Burst",     proc: "hard freeze" },
+    flux:     { physical: "Volatility Aura", special: "Singularity",   proc: "disorient" },
+    core:     { physical: "Shield Bash",     special: null,            proc: "knockback" },   // (Radiant Pulse and Shield Grant shielded the followers: gone with the followers' shield)
+    toxic:    { physical: "Smoke Form",      special: "Toxic Cloud",   proc: "defense shred" },
+    blossom:  { physical: null,              special: null,            proc: "mend" },   // BLOOM (build 2026-11-08i): every hit MENDS (js/elements.js elementMend); its evolved Brawler's and Technician's hit since build 2026-11-09b: 0.45 × ATTACK
 };
 const _ipElName = (id) => { const e = ELEMENTS.find(x => x.id === id); return e ? e.label.toUpperCase() : String(id || "?").toUpperCase(); };
 
@@ -69,11 +71,9 @@ function infoEntries() {
          "XP comes from kills: the follower that lands the kill takes " + Math.round((typeof XP_KILLER_SHARE !== "undefined" ? XP_KILLER_SHARE : 0.6) * 100) + "% and the rest of its squad, wherever they stand, and any unit within " + (typeof XP_SHARE_RANGE !== "undefined" ? XP_SHARE_RANGE : 4) + " tiles share the rest. A kill by your own gun, or by a burn, goes to the squad and the units near it at half the worth. A follower that is not in the squad only gets XP from what it kills or fights beside. The XP for a level is its cube (level 10 is 1,000: a follower that starts at level " + (typeof LEVEL_START !== "undefined" ? LEVEL_START : 5) + " needs " + (typeof xpForLevel === "function" ? xpForLevel(evolveAt) - xpForLevel(typeof LEVEL_START !== "undefined" ? LEVEL_START : 5) : 875) + " more to evolve). A unit that dies keeps its level but loses part of its progress to the next."],
         [["CAP", "level " + (typeof LEVEL_CAP !== "undefined" ? LEVEL_CAP : 100)], ["ON A DEATH", "nothing lost (back at the Crystal)", "#9fe8c0"], ["EVOLVES", "at level " + evolveAt, UI_GOLD]]);
     add("bonds", "allies", "BONDS", typeof BOND_COLOUR !== "undefined" ? BOND_COLOUR : "#ff7ab8", "Two who fight side by side",
-        ["Two followers who fight side by side for about " + sec(typeof BOND_TICK !== "undefined" && typeof BOND_POINTS !== "undefined" ? BOND_TICK * BOND_POINTS : 1200) + " bond: a dotted pink line with a heart joins them, one partner each. Close together they hit harder and take less.",
-         "If one dies the other rages for a while, then the bond is over and the fallen one comes back unbonded. With both ultimate bars full and the pair close, double-tap either and both ultimates fire at once."],
-        [["TOGETHER", "+" + Math.round(((typeof BOND_ATTACK_MULT !== "undefined" ? BOND_ATTACK_MULT : 1.15) - 1) * 100) + "% damage, −" + Math.round((1 - (typeof BOND_DEFENSE_MULT !== "undefined" ? BOND_DEFENSE_MULT : 0.9)) * 100) + "% taken, within " + (typeof BOND_TOGETHER !== "undefined" ? BOND_TOGETHER : 3) + " tiles"],
-         ["RAGE", "+" + Math.round(((typeof BOND_RAGE_ATTACK !== "undefined" ? BOND_RAGE_ATTACK : 1.5) - 1) * 100) + "% damage for " + sec(typeof BOND_RAGE_FRAMES !== "undefined" ? BOND_RAGE_FRAMES : 600), "#ff6655"],
-         ["DUO", "×" + (typeof BOND_DUO_MULT !== "undefined" ? BOND_DUO_MULT : 1.3) + " for " + sec(typeof BOND_DUO_FRAMES !== "undefined" ? BOND_DUO_FRAMES : 300)]]);
+        ["Two followers who fight side by side for about " + sec(typeof BOND_TICK !== "undefined" && typeof BOND_POINTS !== "undefined" ? BOND_TICK * BOND_POINTS : 1200) + " bond, one partner each. A bonded pair can breed (in the roster); that, and the hearts, is all a bond does: it gives no bonus in a fight.",
+         "When the two come within " + (typeof BOND_HEARTS !== "undefined" ? BOND_HEARTS.near : 1) + " tile of each other a few hearts float up over each, and not again until they have been apart. A bond lasts through a fall: the fallen one comes back still bonded."],
+        [["BREEDING", "a bonded pair can breed", "#ff9ccc"], ["HEARTS", "within " + (typeof BOND_HEARTS !== "undefined" ? BOND_HEARTS.near : 1) + " tile, " + sec(typeof BOND_HEARTS !== "undefined" ? BOND_HEARTS.frames : 90)], ["ON A FALL", "still bonded", "#9fe8c0"]]);
     add("clones", "allies", "CLONES", "#19e6c1", "Grown in the Clone Bay from DNA",
         ["Clones are the MUTATOR's: open the CLONE BAY (CLONES on the dock) and grow a creature's species as your ally, for shards and the DNA splices its kind drops when you kill it (" + (typeof cloneCap === "function" ? cloneCap() : MAX_CLONES) + " at a time). A clone is far tougher than a follower, fights as its species does (its bite in two beats, its special) and follows you under the squad's orders.",
          "The Mutator's clone does NOT come back by itself: when it falls its body stays where it fell, and a new one has to be grown. Keep it alive: pull it back (RETREAT, COME) when a fight turns.",
@@ -111,7 +111,7 @@ function infoEntries() {
             add("el_" + el.id, "elements", el.label.toUpperCase(), el.color, "Outside the triangles; its hits mend",
                 ["A " + el.label.toUpperCase() + " follower stands outside the two triangles: it hits every element for ×" + mult(el.id, "fire") + ", and every element hits it for ×" + mult("fire", el.id) + ".",
                  "It is never found: no recruit, egg or creature is " + el.label.toUpperCase() + ". The purification module in the Sewers, once it has run, converts a toxic follower into one (its level, XP, bond and stats stay).",
-                 "Its hits MEND: each heals the most hurt of your followers within " + M.radius + " tiles by " + Math.round(M.share * 100) + "% of its maximum health. It has no element move or ultimate yet.",
+                 "Its hits MEND: each heals the most hurt of your followers within " + M.radius + " tiles by " + Math.round(M.share * 100) + "% of its maximum health. Its evolved Brawler and Technician hit for " + (typeof ELEMENT_ATTACKS !== "undefined" && ELEMENT_ATTACKS.blossom ? ELEMENT_ATTACKS.blossom.mult : 0.45) + " × their attack (1 WILL); before it evolves a follower makes a plain hit (a Mage shoots). Its Ultimates are its forms' own.",
                  (() => { const fs = typeof EVOLUTIONS !== "undefined" ? Object.values(EVOLUTIONS).filter(d => d.element === el.id && !d.legacy && !d.aside) : [];   // (its forms in the game: the THORNWHIP since build 2026-11-08j)
                    return fs.length ? "Its forms: " + fs.map(d => "a " + el.label.toUpperCase() + " " + roleLabel(d.role) + " evolves at level " + (typeof EVOLVE_LEVEL !== "undefined" ? EVOLVE_LEVEL : 10) + " into the " + d.name + (d.shot ? " (" + d.shot + (d.move ? "; " + d.move : "") + ")" : "")).join("; ") + ". The others are not in the game yet." : "Its forms are not in the game yet."; })()],
                 [["AGAINST ALL", "×" + mult(el.id, "fire")], ["MEND", Math.round(M.share * 100) + "% · " + M.radius + " tiles", el.color], ["FOUND", "never: converted", UI_GOLD]]);
@@ -119,9 +119,9 @@ function infoEntries() {
         }
         add("el_" + el.id, "elements", el.label.toUpperCase(), el.color, "Beats " + _ipElName(strong[el.id]).toLowerCase() + ", weak to " + _ipElName(weak[el.id]).toLowerCase(),
             ["A " + el.label.toUpperCase() + " follower hits " + _ipElName(strong[el.id]) + " for ×" + mult(el.id, strong[el.id]) + " and " + _ipElName(weak[el.id]) + " for ×" + mult(el.id, weak[el.id]) + (el.id === "ice" ? ", and does nothing to CORE" : "") + ".",
-             "Its physical attack is " + (a.physical || "—") + " (1 WILL)" + (a.ult ? ", and its ultimate, fired by a double-tap once the bar is full, is " + a.ult + "." : ". It has no ultimate for now.") + " Its hits can " + (a.proc || "proc") + " the target. (Elements have no special attack: a follower's attacks are its primary, an alternate, a card's special attack and its ultimate.)"],
+             "Its move, " + (a.physical || "—") + " (1 WILL), is the everyday hit of its evolved Brawlers and Technicians; before it evolves a follower makes a plain hit (a Mage shoots). No element has an ultimate: each evolved form has its own. Its hits can " + (a.proc || "proc") + " the target. (Elements have no special attack: a follower's attacks are its primary, an alternate, a card's special attack and its ultimate.)"],
             [["BEATS", _ipElName(strong[el.id]), ELEMENTS.find(x => x.id === strong[el.id]).color], ["WEAK TO", _ipElName(weak[el.id]), ELEMENTS.find(x => x.id === weak[el.id]).color],
-             ["PHYSICAL", a.physical || "—"], ["ULTIMATE", a.ult || "—", UI_GOLD], ["PROC", (proc !== undefined ? Math.round(proc * 100) + "% " : "") + (a.proc || "")]]);
+             ["EVOLVED HIT", a.physical || "—"], ["PROC", (proc !== undefined ? Math.round(proc * 100) + "% " : "") + (a.proc || "")]]);
     });
 
     // ── RULES ──

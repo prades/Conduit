@@ -163,12 +163,9 @@ const ALERT_DURATION = 600; // 10 seconds at 60fps
 // effects plan page; its rules: no fog (nothing tints the whole screen for
 // longer than half a second), no blur, lines not discs, quiet when idle,
 // capped (FX_MAX in elements.js), one voice (one centre banner at a time).
-const FX_EMP_FRAMES   = 30;    // the EMP's dim: half a second …
-const FX_EMP_DIM      = 0.35;  // … at this much
 const FX_VIGNETTE     = 0.2;   // the eruption's red edges
 const FX_CRATER_FRAMES = 300;  // the eruption's crater lasts 5 s
 const FX_CRATER_ALPHA = 0.35;
-const FX_FROST_ALPHA  = 0.08;  // the blizzard's frost over the floor of its field
 // (The crystal's slow healing while no alarm is up, CRYSTAL_REGEN, 0.01 a frame, is now its IDLE REFILL: js/crystalpower.js CRYSTAL_POWER.refill, whole in five minutes, the owner's answer of 2026-11-01.)
 
 let projectiles = [], fragments = [], smoke = [], shards = [];
@@ -176,7 +173,6 @@ let floatingTexts = [];   // { x, y, text, color, life, vy, size } (js/drops.js 
 let followerProjectiles = []; // ranged attacks from snipers/specials
 let respawnQueue = [];
 let frame = 0, shake = 0;
-let activeEmpEffect = null; // { timer, maxTimer } — the EMP's screen-darkening flash (js/elements.js)
 // Every new play begins with this many crystals. A creature you kill pays its worth on the spot (js/drops.js), and a recruit costs RECRUIT_COST (js/clone.js).
 const STARTING_SHARDS = 100;
 let shardCount = 0;   // (set by facilityResetState, and put back by the save)
@@ -307,8 +303,8 @@ const PLAYER_KNOCKBACK     = 0.7;   // tiles you are pushed per hit
 // every unit you own healed, its WILL refilled, its own ultimate charged, and
 // harder-hitting for the duration.
 //
-// This is NOT the same thing as FOLLOWER_ULTIMATES in js/elements.js, which are
-// per-follower, charge individually and fire on a double-tap. The surge charges all of them at once.
+// This is NOT the same thing as a follower's Ultimate (js/elements.js FORM_ULTIMATES: an evolved form's own,
+// since build 2026-11-09b), which charges by itself and fires on a double-tap. The surge charges all of them at once.
 const PLAYER_ULT_MAX      = 100;
 const ARMY_SURGE_FRAMES   = 600;   // ten seconds
 const ARMY_SURGE_POWER    = 1.6;   // damage multiplier for the whole army

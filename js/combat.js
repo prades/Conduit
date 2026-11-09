@@ -231,9 +231,6 @@ function updateStatusEffects() {
             if (typeof techShieldKeep === "function") techShieldKeep(actor, _kx, _ky);   // (nor through a Photonic Shield, an enemy: js/techabilities.js)
         }
 
-        // ── EMP GLOW (electric ultimate hit marker) ──
-        if (actor.empGlow > 0) actor.empGlow--;
-
         // ── TOXIC WEAKENED (smoke bomb power debuff) ──
         if (actor.toxicWeakened > 0) actor.toxicWeakened--;
         if (!(actor.toxicWeakened > 0) && actor.toxicWeakenFactor !== undefined) actor.toxicWeakenFactor = undefined;   // (a card's weakness has its own strength: gone with the time)
@@ -331,7 +328,9 @@ function followerAttack(actor, target) {
     if (actor.attackCooldown > 0) { actor.attackCooldown--; return; }
 
     const element  = actor.element;
-    const attacks  = element ? ELEMENT_ATTACKS[element] : null;
+    // ITS ELEMENT'S MOVE is an EVOLVED follower's everyday hit; an unevolved one makes the plain hit until its new attacks are designed (build 2026-11-09b; the owner, 2026-11-09: "Unevolved only",
+    // "Plain hit for now"; it keeps its element: "the unevolved followers will keep their element")
+    const attacks  = element && actor.evolved ? ELEMENT_ATTACKS[element] : null;
     const role     = actor.role || "brawler";
     const hasWill  = actor.currentWill >= WILL_COST_PHYSICAL;
 
@@ -341,7 +340,7 @@ function followerAttack(actor, target) {
         return;
     }
 
-    // Decide attack tier: its element's physical move when it has the WILL, else the plain hit. NO ELEMENT SPECIAL any more (the owner, 2026-11-07: "I don't think
+    // Decide attack tier: its element's physical move when it has the WILL (an evolved follower: above), else the plain hit. NO ELEMENT SPECIAL any more (the owner, 2026-11-07: "I don't think
     // we're gonna have a special attack. It's going to be each [follower] has at max a primary attack and alternate attack and a card special attack and a ultimate
     // ability"): ELEMENT_ATTACKS[el].special is no longer fired by a follower (js/elements.js keeps the functions, unused).
     let attackTier = "normal";

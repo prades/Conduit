@@ -140,12 +140,13 @@ function _cvDraw(root, units) {
         if (typeof cardArtMark === "function" && typeof cardArtUnitClass === "function") { try { cardArtMark(el, cardArtUnitClass(u)); } catch (e) {} }
     });
 }
-// its moves: unevolved, its element's move; evolved, its form's own shot or hit and its alternates; and its Ultimate (an element's special is no longer fired by a follower: js/combat.js)
+// its moves: unevolved, a plain hit, or a Mage's shot (no element move nor Ultimate since build 2026-11-09b); evolved, its form's own shot or hit and its alternates, and its Ultimate (an element's special is no longer
+// fired by a follower: js/combat.js)
 function _cvMoves(f) {
-    const A = typeof _IP_ATTACKS !== "undefined" ? _IP_ATTACKS[f.element] : null, U = typeof followerUltimate === "function" ? followerUltimate(f) : null;
+    const U = typeof followerUltimate === "function" ? followerUltimate(f) : null;
     const d = f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] : null, list = [];
     if (d) { if (d.shot || d.hit) list.push(String(d.shot || d.hit).toUpperCase()); if (typeof evoMoveIds === "function") evoMoveIds(d).forEach(id => list.push(MOVES[id].name)); }
-    else if (A && A.physical) list.push(String(A.physical).toUpperCase());
+    else list.push(f.role === "sniper" ? "MAGE SHOT" : "PLAIN HIT");   // (a Mage shoots, evolved or not: js/npc.js)
     if (U && U.name) list.push("ULTIMATE " + String(U.name).toUpperCase());
     return list.length ? list.join(" · ") : "NONE YET";
 }

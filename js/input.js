@@ -346,8 +346,7 @@ canvas.addEventListener('pointerup', e=>{
             const _now = performance.now();
             if (_tappedFollower === _ultimateLastTapActor && (_now - _ultimateLastTapTime) < 400) {
                 // Double-tap confirmed — fire ultimate if charged
-                // A bonded pair, both full and close: the DUO ultimate (js/bonds.js).
-                if (typeof followerUltFire === "function") followerUltFire(_tappedFollower);   // (its form's own, else its element's; a bonded pair's DUO: js/elements.js followerUltFire)
+                if (typeof followerUltFire === "function") followerUltFire(_tappedFollower);   // (its form's own; none for an unevolved follower or a flagged form: js/elements.js followerUltFire)
                 _ultimateLastTapActor = null;
                 _ultimateLastTapTime  = 0;
             } else {

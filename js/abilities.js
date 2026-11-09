@@ -82,7 +82,7 @@ function resolveAbilityKey(speciesName, className) {
 // nothing ever scaled movement by it, so every slow in the game — web shots,
 // blinding dust, the ice moves — was purely cosmetic. Rather than edit ~35
 // movement sites, the factor is applied to moveSpeed once per frame in
-// updateStatusEffects, mirroring the existing _empBaseSpeed pattern.
+// updateStatusEffects (the pattern the electric EMP's speed boost used; that Ultimate is gone since build 2026-11-09b).
 // Last writer wins on the factor, longest duration wins on the timer. Keeping
 // "strongest wins" instead would be worse: a slow that is refreshed every few
 // frames would latch a one-off 0% freeze for as long as it kept topping the

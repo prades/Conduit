@@ -734,7 +734,7 @@ function render() {
     actors.forEach(a=>{
         if (a.dead&&a.team==="green"&&!a.queuedForRespawn&&!a.sacrificed) {
             a.queuedForRespawn=true;
-            if (typeof bondOnDeath === "function") bondOnDeath(a);   // the partner rages; the bond ends
+            // (A bond lasts through a fall since build 2026-11-09b, the owner: "Bond survives": the partner neither rages nor loses it; the respawn below brings the bond back: js/bonds.js.)
             // A clone DISMISSED at the Clone Bay is gone: it does not come back (it did, 20 seconds later, and filled the slot DISMISS had just freed).
             if (a.isClone && a.dismissed) return;
             // The Mutator's clone does not come back by itself: its body stays where it fell (js/mutator.js).
@@ -748,7 +748,7 @@ function render() {
             // losing one has to be felt. The Crystal shows the countdown.
             if (a.nestTest) return;   // a TEST follower of the Ant Nest's console (js/nestconsole.js): one that falls is gone, never revived
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
-            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined, special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
+            respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, partnerUid:a.partnerUid||null, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined, special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
                 // Its level and its XP come back with it, all of them.
                 base: a.base ? Object.assign({}, a.base) : undefined,
                 hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // its birth (js/breeding.js)
@@ -784,7 +784,7 @@ function render() {
     if (frame % 60 === 0 && followers.length > 0) {
         const nearCrystal = Math.hypot(player.x - crystal.x, player.y - crystal.y) < 3.0, chargeGain = nearCrystal ? 2 : 1;
         followers.forEach(f => {
-            if (f.dead) return;
+            if (f.dead || (typeof followerUltCharges === "function" && !followerUltCharges(f))) return;   // (no Ultimate, no charge: an unevolved follower, a flagged form, build 2026-11-09b)
             if (typeof f.ultimateCharge !== "number") f.ultimateCharge = 0;
             f.ultimateCharge = Math.min(100, f.ultimateCharge + chargeGain);
         });
@@ -839,8 +839,6 @@ function render() {
     });
 
     // ── BUILD DRAW LIST ──
-    // The toxic ultimate's smoke, drawn per tile in the depth pass (there is rarely more than one)
-    const smokeFx = elementEffects.filter(e => e.type === "smokeScreen");
 
     // Culled in SCREEN space by visibleForDraw — see its comment for why the
     // old column-distance filter kept half the frame's work off screen. The
@@ -1040,36 +1038,6 @@ function render() {
             if (typeof drawThicketOnTile === "function") drawThicketOnTile(obj.x, obj.y, px, py);   // THORNWHIP's PINK THICKET, its bushes and aura on the floor of its room (js/elements.js)
             if (typeof drawSeedfallOnTile === "function") drawSeedfallOnTile(obj.x, obj.y, px, py);   // a THORNWHIP's SEEDFALL, on the floor of its room (js/elements.js): the walls and units in front cover it
 
-            // ── 3D SMOKE TILES — toxic ultimate: creeping raised slabs + single wisp ──
-            for (const sE of smokeFx) {
-                const elapsed        = sE.maxLife - sE.life;
-                const distFromCaster = Math.hypot(obj.x - sE.x, obj.y - sE.y);
-                const spreadRadius   = Math.min(elapsed / 5, SMOKE_SCREEN_REACH); // ~1 tile per 5 frames, out to its reach
-                if (distFromCaster < spreadRadius) {
-                    const arrivalT = Math.min(1, (spreadRadius - distFromCaster) / 4);
-                    const fadeOut  = Math.min(1, sE.life / 90);
-                    const factor   = arrivalT * fadeOut;
-                    // A 0.08 tint on the tile and a slow wisp on one tile in three.
-                    const seed     = obj.x * 17.3 + obj.y * 11.7;
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H);
-                    ctx.lineTo(px, py + TILE_W); ctx.lineTo(px - TILE_W, py + TILE_H);
-                    ctx.closePath();
-                    ctx.fillStyle = `rgba(150, 130, 220, ${0.08 * factor})`;
-                    ctx.fill();
-                    if ((Math.round(obj.x) + Math.round(obj.y) * 2) % 3 === 0) {
-                        const u = ((frame * 0.5 + seed * 3) % 90) / 90;
-                        const wy = py + TILE_H - u * 20;
-                        ctx.strokeStyle = `rgba(200, 180, 255, ${0.35 * factor * (1 - u)})`;
-                        ctx.lineWidth = 1.2;
-                        ctx.beginPath(); ctx.moveTo(px - 8, wy);
-                        ctx.bezierCurveTo(px - 2, wy - 8, px + 4, wy + 4, px + 10, wy - 6); ctx.stroke();
-                    }
-                    ctx.restore();
-                }
-            }
-
             // The tile a long-press ring was opened on (js/input.js handleLongHold): lit while the ring is up
             if (commandMode&&commandTarget===obj) {
                 ctx.save();
@@ -1145,8 +1113,8 @@ function render() {
                     hitFlash:0, dead:false, attackAnim:0, state:"idle",
                     combatTrait:entry.combatTrait, naturalTrait:entry.naturalTrait, perk:entry.perk
                 };
-                // The same person back — same uid — but the bond did not survive.
-                if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid });
+                // The same person back — same uid — and still bonded (a bond lasts through a fall since build 2026-11-09b).
+                if (typeof bondRestoreFields === "function") bondRestoreFields(npc, { uid: entry.uid, partnerUid: entry.partnerUid });
                 if (entry.playStyle) npc.playStyle = entry.playStyle;   // its play style (js/commandcenter.js)
                 if (entry.move) npc.move = entry.move;   // the signature move it was given (js/moves.js)
                 if (typeof entry.alt === "string") npc.alt = entry.alt;   // the alternate it is locked to (js/moves.js)

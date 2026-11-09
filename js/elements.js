@@ -309,6 +309,20 @@ const ELEMENT_ATTACKS = {
             });
             return { hit: true };
         }
+    },
+
+    // ── BLOOM (build 2026-11-09b; the owner, 2026-11-09: "Full-strength hit") ─────
+    // Its evolved Brawler's and Technician's everyday hit (SUNDEW's NECTAR STING, STONEPETAL's crushing head): `mult` × its attack on the one it hits, core's single-target number, no effect of
+    // its own (a BLOOM hit MENDs: elementMend, called by applyDamage). It was the plain hit (a quarter of its attack) while BLOOM had no move. The number the agent's, provisional.
+    blossom: {
+        mult: 0.45,
+        physical(actor, target) {
+            if (!target) return { hit: false };
+            applyElementalDamage(target, (actor.stats?.attack||10) * ELEMENT_ATTACKS.blossom.mult, actor, "blossom", DMG_HIT_MAIN);
+            spawnElementEffect({ type:"impact", x:target.x, y:target.y, color:"#ff7ab8", radius:0.6, life:18, element:"blossom" });
+            return { hit: true };
+        }
+        // (no special: an element's special is no longer fired by a follower, js/combat.js)
     }
 };
 
@@ -316,9 +330,12 @@ const ELEMENT_ATTACKS = {
 //  FOLLOWER ULTIMATE ABILITIES
 //  Triggered by double-tap when ultimateCharge === 100
 // ─────────────────────────────────────────────────────────
-// Each one works on what is within ULT_REACH tiles of the follower that fires it (the facility is rooms and halls: there is no zone to fill).
+// AN ULTIMATE IS AN EVOLVED FORM'S OWN (build 2026-11-09b; the owner, 2026-11-09: "an ultimate is an evolved followers thing, and there are not ultimate that can be used across all classes in one
+// element"; "followers who are unevolved do not have an ultimate and remove all data of elemental ultimate that aren't specific to a certain follower"). The element-wide Ultimates (electric's EMP,
+// ice's BLIZZARD, flux's DISORIENT, toxic's SMOKE SCREEN) are gone, with what only they used; fire's VOLCANIC ERUPTION was the Ember Hood's own and stays as that (FORM_ULTIMATES.embercowl). An
+// unevolved follower has none; an evolved form without its own is flagged (followerUltPending, below): none yet, "NOT DESIGNED YET" on its INFO card (the owner: "Nothing yet").
+// An Ultimate works on what is within ULT_REACH tiles of the follower that fires it (the facility is rooms and halls: there is no zone to fill).
 const ULT_REACH = 12;                   // tiles
-const SMOKE_SCREEN_REACH = ULT_REACH;   // how far the toxic smoke creeps out (js/game.js draws it tile by tile)
 function ultNear(from, a) { return !!a && Math.hypot(a.x - from.x, a.y - from.y) <= ULT_REACH; }
 // the hostile with the most health within reach of `from` (the eruption's target)
 function ultBiggestFoe(from) {
@@ -329,148 +346,41 @@ function ultBiggestFoe(from) {
 // activeFireEruption: { caster, target, tx, ty, frames, maxFrames, crackDirs[] }
 let activeFireEruption = null;
 
-const FOLLOWER_ULTIMATES = {
-
-    // ── FIRE: Volcanic Eruption ───────────────────────────
-    // 3-phase 3D eruption — ground cracks and glows (charge),
-    // an isometric fire column erupts and rises (eruption),
-    // a crown burst explodes at the apex (crown), then
-    // the ground detonates with a massive shockwave + crater.
-    fire: {
-        name: "Volcanic Eruption",
-        execute(actor) {
-            if (actor.dead || activeFireEruption) return;
-            const target = ultBiggestFoe(actor);
-            if (!target) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 3);
-            // Pre-compute deterministic crack directions from target position
-            const seed = (Math.floor(target.x)*7 + Math.floor(target.y)*13) | 0;
-            const crackDirs = [];
-            for (let _i = 0; _i < 7; _i++) {
-                const base  = (_i / 7) * Math.PI * 2;
-                const jit   = (((seed * (_i+1) * 0x9e37) & 0xffff) / 0xffff) * 0.45 - 0.22;
-                crackDirs.push({ a: base + jit });
-            }
-            activeFireEruption = {
-                caster: actor, target,
-                tx: target.x, ty: target.y,
-                frames: 0, maxFrames: 138,
-                crackDirs
-            };
-            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
-            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
-            floatingTexts.push({x:_px,y:_py-80,text:"VOLCANIC ERUPTION",color:"#ff4400",life:138,vy:-0.45});
+// ── THE EMBER HOOD'S VOLCANIC ERUPTION (FORM_ULTIMATES.embercowl; it was fire's element Ultimate until build 2026-11-09b) ──
+// 3-phase 3D eruption — ground cracks and glows (charge), an isometric fire column erupts and rises (eruption), a crown burst explodes at the apex (crown), then the ground detonates with a massive
+// shockwave + crater.
+const ULT_VOLCANIC_ERUPTION = {
+    desc: "A column of fire on the biggest enemy in reach, then a burning crater",
+    name: "Volcanic Eruption",
+    execute(actor) {
+        if (actor.dead || activeFireEruption) return;
+        const target = ultBiggestFoe(actor);
+        if (!target) return;
+        actor.ultimateCharge = 0;
+        shake = Math.max(shake, 3);
+        // Pre-compute deterministic crack directions from target position
+        const seed = (Math.floor(target.x)*7 + Math.floor(target.y)*13) | 0;
+        const crackDirs = [];
+        for (let _i = 0; _i < 7; _i++) {
+            const base  = (_i / 7) * Math.PI * 2;
+            const jit   = (((seed * (_i+1) * 0x9e37) & 0xffff) / 0xffff) * 0.45 - 0.22;
+            crackDirs.push({ a: base + jit });
         }
-    },
-
-    // ── ELECTRIC: EMP ─────────────────────────────────────
-    // Instantly destroys every enemy shield within reach and
-    // surges the followers there with resonance and speed.
-    electric: {
-        name: "EMP",
-        execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 8);
-            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
-            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
-            floatingTexts.push({x:_px,y:_py-80,text:"⚡ EMP",color:"#ffffaa",life:90,vy:-0.9});
-            // Strip shields + mark every enemy in reach for the EMP glow highlight
-            actors.forEach(a => {
-                if (!isHostileTarget(a) || !ultNear(actor, a)) return;
-                if (a.shielded) {
-                    a.shielded=false; a.shieldAmount=0; a._shieldMax=0;
-                    spawnElementEffect({type:"impact",x:a.x,y:a.y,color:"#ffee33",radius:1.2,life:25,element:"electric"});
-                }
-                a.empGlow = 80; // electric highlight for screen-dark effect
-            });
-            // Activate screen-darkening EMP flash
-            activeEmpEffect = { timer: FX_EMP_FRAMES, maxTimer: FX_EMP_FRAMES };
-            // Buff the followers in reach: +30 resonance + 1.5× speed for 5 seconds
-            followers.forEach(f => {
-                if (f.dead || !ultNear(actor, f)) return;
-                f.currentResonance = Math.min(100, (f.currentResonance||0)+30);
-                if (!f._empBoostTimer || f._empBoostTimer<=0) {
-                    f._empBaseSpeed = f.moveSpeed;
-                    f.moveSpeed = f._empBaseSpeed * 1.5;
-                    // tickSlowSpeed pins moveSpeed back to baseMoveSpeed every
-                    // frame, which undid this boost within a frame — so the
-                    // base is raised with it and put back when it ends.
-                    if (f.baseMoveSpeed === undefined) f.baseMoveSpeed = f._empBaseSpeed;
-                    if (f.baseMoveSpeed !== undefined) { f._empBaseBase = f.baseMoveSpeed; f.baseMoveSpeed = f.baseMoveSpeed * 1.5; }
-                }
-                f._empBoostTimer = 300;
-                spawnElementEffect({type:"impact",x:f.x,y:f.y,color:"#ffee33",radius:0.8,life:20,element:"electric"});
-            });
-            spawnElementEffect({type:"ring",x:actor.x,y:actor.y,color:"#ffee33",radius:8.0,life:55,element:"electric"});
-        }
-    },
-
-    // ── ICE: Blizzard ─────────────────────────────────────
-    // A blizzard field ULT_REACH tiles round the follower — enemies in it have
-    // a high chance to freeze every 30 frames for the field's duration.
-    ice: {
-        name: "Blizzard",
-        execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 6);
-            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
-            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
-            floatingTexts.push({x:_px,y:_py-80,text:"❄ BLIZZARD",color:"#aaddff",life:90,vy:-0.9});
-            spawnElementEffect({type:"blizzardField",x:actor.x,y:actor.y,radius:ULT_REACH,color:"#99ddff",life:360,maxLife:360,element:"ice"});
-            spawnElementEffect({type:"ring",x:actor.x,y:actor.y,color:"#99ddff",radius:8.0,life:60,element:"ice"});
-        }
-    },
-
-    // ── FLUX: Disorient ───────────────────────────────────
-    // Every creature within reach turns on its own kind — they attack
-    // each other for 4 seconds with half attack power.
-    flux: {
-        name: "Disorient",
-        execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 10);
-            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
-            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
-            floatingTexts.push({x:_px,y:_py-80,text:"⟳ DISORIENT",color:"#cc66ff",life:90,vy:-0.9});
-            actors.forEach(a => {
-                if (!(a instanceof Predator)||a.team==="green"||a.isClone||a.dead||!ultNear(actor, a)) return;
-                a.disorientFF = 240;          // friendly-fire mode for 4 s
-                a.disorientPowerFactor = 0.5; // attacks at half power
-                a.disoriented = 240;
-                spawnElementEffect({type:"impact",x:a.x,y:a.y,color:"#cc66ff",radius:0.8,life:25,element:"flux"});
-            });
-            spawnElementEffect({type:"singularity",x:actor.x,y:actor.y,color:"#9933ff",radius:5.0,life:60,element:"flux"});
-        }
-    },
-
-    // (CORE has no ultimate: SHIELD GRANT put a shield on every follower, and the followers' shield is gone; js/draw.js shows no bar for it)
-
-    // ── TOXIC: Smoke Screen ───────────────────────────────
-    // A thick smoke cloud creeps out SMOKE_SCREEN_REACH tiles round the
-    // follower — every enemy within reach has its attack accuracy halved for 8 seconds.
-    toxic: {
-        name: "Smoke Screen",
-        execute(actor) {
-            if (actor.dead) return;
-            actor.ultimateCharge = 0;
-            shake = Math.max(shake, 5);
-            const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
-            const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
-            floatingTexts.push({x:_px,y:_py-80,text:"◎ SMOKE SCREEN",color:"#aabb99",life:90,vy:-0.9});
-            actors.forEach(a => { if (isHostileTarget(a) && ultNear(actor, a)) a.smokeDebuff = 480; });
-            spawnElementEffect({type:"smokeScreen",x:actor.x,y:actor.y,radius:SMOKE_SCREEN_REACH,color:"#aabb88",life:480,maxLife:480,element:"toxic"});
-        }
+        activeFireEruption = {
+            caster: actor, target,
+            tx: target.x, ty: target.y,
+            frames: 0, maxFrames: 138,
+            crackDirs
+        };
+        const _px=(actor.x-player.visualX-(actor.y-player.visualY))*TILE_W+canvas.width/2;
+        const _py=(actor.x-player.visualX+(actor.y-player.visualY))*TILE_H+canvas.height/2;
+        floatingTexts.push({x:_px,y:_py-80,text:"VOLCANIC ERUPTION",color:"#ff4400",life:138,vy:-0.45});
     }
-
-}; // end FOLLOWER_ULTIMATES
+};
 
 // ── EACH FOLLOWER'S OWN ULTIMATE (Milestone Three; the owner, 2026-11-06: "Own Ultimates"; docs/NEXT-PHASE-ROADMAP.md §12.3) ──
-// A form with an Ultimate of its own uses it; every other form keeps its element's (FOLLOWER_ULTIMATES above) until its own is designed. The meter, its charge and the double-tap are unchanged.
-// An Ultimate that finds nothing to do keeps its charge (as the element ones do).
+// Each evolved form fires its own; a form with none is flagged and fires nothing (build 2026-11-09b: the element Ultimates it once borrowed are gone). The meter, its charge and the double-tap are
+// unchanged. An Ultimate that finds nothing to do keeps its charge.
 const ULT_OVERDRIVE = { reach: 6, radius: 2, mult: 2, knock: 1 };                         // the Static Orb's: "Smaller rush" (tiles, tiles, × power split crush/electric, tiles of knockback)
 const ULT_ZERO = { reach: 3, max: 3, frames: 360 };                                       // the Frost Maw's: "6 s, no damage" (tiles, enemies, frames)
 const ULT_UNDERTOW = { radius: 3, mult: 1.5, thrown: 2.5, weak: 240, weakFactor: 0.7 };   // the Seeper's: "Strong" (tiles, × power, tiles thrown, frames of poison: hits 30% weaker)
@@ -532,7 +442,7 @@ function _ultDriftSlash(o, a) {
 }
 function _ultSay(a, text, color) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: a.x, y: a.y, text, color, life: 60, vy: -0.06, size: 13 }); }
 const FORM_ULTIMATES = {
-    embercowl: FOLLOWER_ULTIMATES.fire,   // VOLCANIC ERUPTION: the Ember Hood's own (roadmap §12.3)
+    embercowl: ULT_VOLCANIC_ERUPTION,   // VOLCANIC ERUPTION: the Ember Hood's own (roadmap §12.3)
     // OVERDRIVE: an overload, then a rush to the biggest group of enemies it can see and walk straight to (up to ULT_OVERDRIVE.reach tiles); everything within ULT_OVERDRIVE.radius of where it
     // lands takes ULT_OVERDRIVE.mult × its power, half crushing and half electric, and is knocked back.
     staticorb: { name: "Overdrive", desc: "An overload, then a rush to the biggest group of enemies it can see: crushing and electric damage, and a knockback", execute(actor) {
@@ -797,12 +707,18 @@ function elementMend(src, opts) {
     if (dew && typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: best.x, y: best.y, color: "#ffd3e8", radius: 0.8, life: 18 });   // (DEWBURST: a burst of pink dew)
     return healUnit(best, best.maxHealth * ELEMENT_MEND.share * mult, src);
 }
-function followerUltimate(a) { if (!a) return null; return (a.evolved && FORM_ULTIMATES[a.evolved]) || FOLLOWER_ULTIMATES[a.element] || null; }
-// FIRE A FOLLOWER'S ULTIMATE NOW (build 2026-11-07ss; the owner: "access to use them"): its squad card's ULTIMATE (js/party.js) and a double-tap on it (js/input.js) both come here. A bonded pair, both full
-// and close, fire the DUO ultimate (js/bonds.js). True when one went off (its charge spent); an Ultimate that found nothing to act on (no enemy for an eruption) keeps its charge.
+// A follower's Ultimate: its evolved form's own, or null (an unevolved follower has none; nor has a flagged form: build 2026-11-09b)
+function followerUltimate(a) { return a && a.evolved && FORM_ULTIMATES[a.evolved] || null; }
+// FLAGGED (build 2026-11-09b; the owner: "flag every single creature that's evolved and does not have an ultimate"): an evolved form with no Ultimate of its own yet (the Electro Skink; the retired forms
+// kept for old saves). It has none until its own is designed: no meter on its card, nothing fired, "NOT DESIGNED YET" on its INFO card (js/unitinfo.js).
+function followerUltPending(a) { return !!(a && a.evolved && !FORM_ULTIMATES[a.evolved]); }
+// does its meter fill? only with an Ultimate to fire (an unevolved follower's and a flagged form's stays where it is: build 2026-11-09b)
+function followerUltCharges(a) { return !!followerUltimate(a); }
+function formUltPending(id) { return !!id && typeof EVOLUTIONS !== "undefined" && !!EVOLUTIONS[id] && !FORM_ULTIMATES[id]; }
+// FIRE A FOLLOWER'S ULTIMATE NOW (build 2026-11-07ss; the owner: "access to use them"): its squad card's ULTIMATE (js/party.js) and a double-tap on it (js/input.js) both come here. True when one went off
+// (its charge spent); an Ultimate that found nothing to act on (no enemy for an eruption) keeps its charge. (A bonded pair's DUO is gone since build 2026-11-09b: a bond is for breeding: js/bonds.js.)
 function followerUltFire(f) {
     if (!f || f.dead || !(f.ultimateCharge >= 100)) return false;
-    if (typeof tryDuoUltimate === "function" && tryDuoUltimate(f)) return true;
     const u = followerUltimate(f); if (!u) return false;
     u.execute(f);
     return !(f.ultimateCharge >= 100);
@@ -831,14 +747,14 @@ function spawnElementEffect(effect) {
 
 // ── THE EFFECT BUDGET (Conduit effects plan, rule 5) ─────
 // Clouds of the same kind within a tile merge (the newer refreshes the older);
-// two blizzards within reach of each other merge; and never more than FX_MAX
-// alive — the oldest short-lived ones go first, the long area effects are kept.
+// and never more than FX_MAX alive — the oldest short-lived ones go first, the
+// long area effects are kept.
 const FX_MAX = 80;
 const FX_CLOUD_MAX = 12;
-const FX_LONG = { blizzardField: 1, smokeScreen: 1, flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
+const FX_LONG = { flameCrater: 1, hexfire: 1, staticVortex: 1, faultTrace: 1, seedfall: 1, thicket: 1 };   // (HEXFIRE's circle and STATIC VORTEX are play, not show; FAULTLINE's path is its telegraph: never dropped for the budget)
 function fxTidy() {
     if (!elementEffects.length) return;
-    const keep = [], clouds = [], blizzards = [];
+    const keep = [], clouds = [];
     for (let i = elementEffects.length - 1; i >= 0; i--) {   // newest first
         const e = elementEffects[i];
         if (e.type === "toxicCloud" || e.type === "smoke") {
@@ -846,11 +762,6 @@ function fxTidy() {
             if (twin) { twin.life = Math.max(twin.life, e.life); continue; }
             if (clouds.length >= FX_CLOUD_MAX) continue;
             clouds.push(e);
-        }
-        if (e.type === "blizzardField") {
-            const twin = blizzards.find(b => Math.hypot(b.x - e.x, b.y - e.y) < (e.radius || ULT_REACH));
-            if (twin) { twin.life = Math.max(twin.life, e.life); continue; }
-            blizzards.push(e);
         }
         keep.push(e);
     }
@@ -1057,57 +968,13 @@ function updateElementEffects() {
             }
         }
 
-        // Blizzard field — 60 % freeze chance every 30 frames for every enemy in it
-        if (e.type === "blizzardField" && e.life % 30 === 0) {
-            const r = e.radius || ULT_REACH;
-            actors.forEach(a=>{
-                if(isHostileTarget(a)&&!a.frozen){
-                    if(Math.hypot(a.x-e.x,a.y-e.y)<=r && Math.random()<0.60){
-                        a.frozen=true; a.frozenEscapeChance=0.006; // ~2.8 s average
-                        spawnElementEffect({type:"impact",x:a.x,y:a.y,color:"#99ddff",radius:0.5,life:15,element:"ice"});
-                    }
-                }
-            });
-        }
-
         return e.life > 0;
     });
     fxTidy();
-
-    // Tick EMP screen-darkening flash
-    if (activeEmpEffect) {
-        activeEmpEffect.timer--;
-        if (activeEmpEffect.timer <= 0) activeEmpEffect = null;
-    }
 }
 
 const FX_VORTEX_DASH = [6, 5], FX_NO_DASH = [];   // (STATIC VORTEX's turning edge: made once, not a frame)
 function drawElementEffects() {
-
-    // ── EMP: a short dim, and a crackling ring on each predator it hit ──
-    // (Conduit effects plan: 0.35 for half a second, no blur.)
-    if (activeEmpEffect && activeEmpEffect.timer > 0) {
-        const t = activeEmpEffect.timer / activeEmpEffect.maxTimer;
-        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-        ctx.fillStyle = `rgba(0,0,14,${FX_EMP_DIM * t})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.restore();
-    }
-    actors.forEach(a => {
-        if (!a.empGlow || a.empGlow <= 0 || a.dead) return;
-        const epx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width  / 2;
-        const epy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2;
-        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
-        ctx.globalAlpha = Math.min(1, a.empGlow / 30) * 0.85;
-        ctx.strokeStyle = "#ffee33"; ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        for (let i = 0; i <= 12; i++) {
-            const an = i / 12 * Math.PI * 2, r = 15 + ((i + (frame >> 2)) % 3) * 2;
-            ctx.lineTo(epx + Math.cos(an) * r, epy - 12 + Math.sin(an) * r * 0.6);
-        }
-        ctx.stroke();
-        ctx.restore();
-    });
 
     // ── VOLCANIC ERUPTION — 3D DRAW ─────────────────────────
     if (activeFireEruption) {
@@ -1412,48 +1279,6 @@ function drawElementEffects() {
                     ctx.moveTo(px, cy); ctx.lineTo(px + Math.cos(a) * l, cy + Math.sin(a) * l * 0.5);
                 }
                 ctx.stroke();
-                break;
-            }
-            // Snow falling INSIDE its field, and a light frost over that disc of
-            // floor. It used to tint the whole screen, and every copy added
-            // another layer. (Conduit effects plan.)
-            case "blizzardField": {
-                const fadeIn  = Math.min(1, (e.maxLife - e.life) / 60);
-                const fadeOut = Math.min(1, e.life / 60);
-                const factor  = Math.min(fadeIn, fadeOut), R = e.radius || ULT_REACH;
-                const W = canvas.width / 2, H = canvas.height / 2;
-                const scr = (x, y) => [(x - player.visualX - (y - player.visualY)) * TILE_W + W,
-                                       (x - player.visualX + (y - player.visualY)) * TILE_H + H + TILE_H];
-                ctx.setTransform(1,0,0,1,0,0);
-                const c0 = scr(e.x, e.y);   // a disc R tiles across on the floor is an ellipse on screen (a circle's corners land R√2 out along each screen axis)
-                ctx.globalAlpha = factor * FX_FROST_ALPHA;
-                ctx.fillStyle = "#aadcff";
-                ctx.beginPath(); ctx.ellipse(c0[0], c0[1], R * 1.4142 * TILE_W, R * 1.4142 * TILE_H, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = "#e6f5ff";
-                for (let si = 0; si < 60; si++) {
-                    const rx = ((Math.sin(si * 127.1) * 43758.5) % 1 + 1) % 1, ry = ((Math.sin(si * 311.7) * 9631.3) % 1 + 1) % 1;
-                    const an = rx * Math.PI * 2, rr = Math.sqrt(ry) * R;   // a flake somewhere in the disc
-                    const [sx, sy] = scr(e.x + Math.cos(an) * rr, e.y + Math.sin(an) * rr);
-                    const fall = ((frame * (0.6 + rx * 0.5) + ry * 120) % 120) - 100;
-                    ctx.globalAlpha = factor * (0.4 + rx * 0.4);
-                    ctx.fillRect(sx + Math.sin(frame * 0.03 + si) * 3, sy + fall, 1.5, 1.5);
-                }
-                break;
-            }
-            case "smokeScreen": {
-                // 3D visuals handled per-tile in the depth-sorted draw pass (game.js).
-                // Only render an initial cast pulse ring here.
-                const fadeIn = Math.min(1, (e.maxLife - e.life) / 30);
-                if (fadeIn < 0.3) {
-                    const prog = 1 - fadeIn / 0.3;
-                    const r = prog * 4.0 * TILE_W;
-                    ctx.strokeStyle = "#8aaa66";
-                    ctx.lineWidth = 2;
-                    ctx.globalAlpha = (1 - prog) * 0.55;
-                    ctx.beginPath();
-                    ctx.ellipse(px, py + TILE_H * 0.6, r, r * 0.5, 0, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
                 break;
             }
             // HEXFIRE's circle (js/evolution.js hexfireCircle): a disc of floor HALO_RADIUS tiles round, burning, that never grows or moves: a glow, its edge, a hexagon of fire turning slowly in it,

@@ -179,9 +179,8 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (source && (source.isPlayer || (typeof player !== "undefined" && source === player)) && typeof playerPoisoned === "function" && playerPoisoned()) amount *= 1 - PLAYER_POISON.cut;
     // BONDS (js/bonds.js): a fighting pair hits harder together, a bereaved
     // partner rages, a duo ultimate leaves both hitting harder for a while.
-    // Both sides of the hit count as being in combat, which is what builds one.
+    // Both sides of the hit count as being in combat, which is what builds one. (A bond changes no hit since build 2026-11-09b: it is for breeding: js/bonds.js.)
     if (typeof noteCombat === "function") { noteCombat(source); noteCombat(target); }
-    if (typeof bondAttackMult === "function") amount *= bondAttackMult(source);
     // EQUIP CARDS (js/cards.js): the share of every hit a follower deals that its cards add (the Core cards' DAMAGE DEALT); a set amount is left as it is
     if (!fixed && source && source.isFollower && source.team === "green" && source.cards && typeof equipMult === "function") amount *= equipMult(source, "damage");
     // THE MAGE AURAS (js/cards.js): the Mutator's clone in reach of one hits harder by their ATK share (its every hit is made from its power, its one attack stat; a follower's ATK is raised in its stats instead)
@@ -236,7 +235,6 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
     if (fixed) { /* a set amount: no defense */ }
     else if (typeof defenseMult === "function") amount *= defenseMult(target, source);
     else if (target.isFollower && target.stats && target.stats.defense) amount *= 10 / (10 + target.stats.defense * 0.6);
-    if (!fixed && target && target.isFollower && target.team === "green" && typeof bondDefenseMult === "function") amount *= bondDefenseMult(target);   // a partner close by
     // THE CAP (docs/COMBAT.md COMBAT.hitCap): no single hit takes more than this share of one of your units' max health, so every one of them survives at least three hits of anything.
     const _mine = target.team === "green" && (target.isFollower || target.isClone);
     if (_mine && typeof COMBAT !== "undefined") amount = Math.min(amount, (target.maxHealth || 20) * COMBAT.hitCap);
@@ -282,14 +280,14 @@ function applyDamage(target, amount, source=null, element=null, isReflected=fals
         // DEFEATED, over it (docs/COMBAT.md): in its side's colour
         if (typeof COMBAT !== "undefined" && COMBAT.defeatText > 0 && typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: target.x, y: target.y, text: "DEFEATED", color: target.team === "green" || target.isClone ? "#19e6c1" : "#ff8a6a", size: 11, life: COMBAT.defeatText, vy: -0.015 });
         // ── ULTIMATE KILL BONUS ───────────────────────────────
-        if (source && source.isFollower && source.team === "green") {
+        if (source && source.isFollower && source.team === "green" && (typeof followerUltCharges !== "function" || followerUltCharges(source))) {   // (no Ultimate, no charge: build 2026-11-09b)
             if (typeof source.ultimateCharge !== "number") source.ultimateCharge = 0;
             const _killUltGain = 20;
             source.ultimateCharge = Math.min(100, source.ultimateCharge + _killUltGain);
         }
     }
     // ── ULTIMATE CHARGE GAIN ──────────────────────────────
-    if (source && source.isFollower && source.team === "green" && !target.dead) {
+    if (source && source.isFollower && source.team === "green" && !target.dead && (typeof followerUltCharges !== "function" || followerUltCharges(source))) {
         if (typeof source.ultimateCharge !== "number") source.ultimateCharge = 0;
         const _hitUltGain = 3;
         source.ultimateCharge = Math.min(100, source.ultimateCharge + _hitUltGain);
@@ -363,7 +361,7 @@ function fireArmySurge() {
         if (a.stats && typeof a.currentWill === "number") a.currentWill = a.stats.will;
         // And their own ultimates come online, which is the existing
         // double-tap system rather than a new one.
-        if (typeof a.ultimateCharge === "number") a.ultimateCharge = 100;
+        if (typeof a.ultimateCharge === "number" && (typeof followerUltCharges !== "function" || followerUltCharges(a))) a.ultimateCharge = 100;
         if (typeof elementEffects !== "undefined") {
             elementEffects.push({ type: "impact", x: a.x, y: a.y,
                                   color: "#ffdd44", radius: 0.9, life: 26 });

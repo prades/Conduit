@@ -62,15 +62,6 @@ function updateRTSNPC(actor) {
     if (actor.combatTrait) { const t=COMBAT_TRAITS[actor.combatTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
     if (actor.naturalTrait){ const t=NATURAL_TRAITS[actor.naturalTrait]; if(t&&t.onUpdate) t.onUpdate(actor); }
 
-    // ── EMP SPEED BOOST TIMER ──
-    if ((actor._empBoostTimer||0) > 0) {
-        actor._empBoostTimer--;
-        if (actor._empBoostTimer === 0 && actor._empBaseSpeed != null) {
-            actor.moveSpeed = actor._empBaseSpeed;
-            actor._empBaseSpeed = null;
-            if (actor._empBaseBase !== undefined) { actor.baseMoveSpeed = actor._empBaseBase; actor._empBaseBase = undefined; }
-        }
-    }
 
     // A HOLD is a standing move order (stance "hold" + job "move"). When the job is dropped (it was hurt below half and went to heal, its target tile went, a new order
     // replaced it) the stance used to stay "hold" with nothing to hold: the unit stood there for good, ignoring COME and the player. No post, no hold.
