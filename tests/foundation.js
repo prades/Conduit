@@ -121,21 +121,14 @@ const OLD_NAMES = ['spawnPredatorForZone', 'generateSegment', 'ensureWorldTo', '
 
     group('AN ULTIMATE WORKS WITHIN ITS REACH');
     run(`globalThis.__foes = (f) => { actors = actors.filter(a => !(a.speciesName) || a.isClone); const near = spawnCreature({ species: 'ant', className: 'scout', x: f.x + 4, y: f.y }), far = spawnCreature({ species: 'ant', className: 'scout', x: f.x + 40, y: f.y }); for (const c of [near, far]) { c.shielded = true; c.shieldAmount = 5; c._shieldMax = 5; c.moveSpeed = 0; } return [near, far]; };`);
-    check('ULT_REACH is twelve tiles; the toxic smoke, the flux disorient and the EMP reach the creature four tiles off and not the one forty tiles off; the smoke and the blizzard carry a radius, not a zone', () => {
-        const r = J(`(function(){ const f = followers.find(x => !x.dead), o = { reach: ULT_REACH, smokeReach: SMOKE_SCREEN_REACH }; let [near, far] = __foes(f);
-            f.ultimateCharge = 100; FOLLOWER_ULTIMATES.toxic.execute(f); o.smoke = [near.smokeDebuff > 0, far.smokeDebuff > 0]; const sm = elementEffects.find(e => e.type === 'smokeScreen'); o.smokeFx = sm ? [sm.radius, sm.zone === undefined] : null;
-            f.ultimateCharge = 100; FOLLOWER_ULTIMATES.flux.execute(f); o.dis = [near.disoriented > 0, far.disoriented > 0];
-            f.ultimateCharge = 100; FOLLOWER_ULTIMATES.electric.execute(f); o.emp = [near.shielded, far.shielded]; o.empFx = activeEmpEffect ? Object.keys(activeEmpEffect).sort().join() : null;
-            f.ultimateCharge = 100; FOLLOWER_ULTIMATES.ice.execute(f); const bz = elementEffects.find(e => e.type === 'blizzardField'); o.bz = bz ? [bz.radius, bz.zone === undefined, bz.x === f.x && bz.y === f.y] : null; o.charge = f.ultimateCharge; return o; })()`);
-        same(r.reach, 12, 'ULT_REACH'); same(r.smokeReach, 12, 'the smoke creeps as far'); same(r.smoke.join(), 'true,false', 'the smoke'); same(r.dis.join(), 'true,false', 'disorient'); same(r.emp.join(), 'false,true', 'the EMP strips the near shield and not the far one');
-        same(r.empFx, 'maxTimer,timer', 'the EMP flash carries no zone'); ok(r.smokeFx && r.smokeFx[0] === 12 && r.smokeFx[1] === true, 'the smoke effect: ' + r.smokeFx); ok(r.bz && r.bz[0] === 12 && r.bz[1] === true && r.bz[2], 'the blizzard effect: ' + r.bz); same(r.charge, 0, 'spent');
-    });
-    check('the eruption goes for the biggest enemy within reach (never one out of it); two blizzards within reach of each other merge into one', () => {
-        const r = J(`(function(){ const f = followers.find(x => !x.dead), o = {}; let [near, far] = __foes(f); const big = spawnCreature({ species: 'beetle', className: 'tank', x: f.x + 6, y: f.y + 1 }); far.health = far.maxHealth = 1e6; big.health = big.maxHealth = 500; near.health = 10;
-            o.pick = ultBiggestFoe(f) === big; o.notFar = ultBiggestFoe(f) !== far;
-            elementEffects.length = 0; spawnElementEffect({ type: 'blizzardField', x: f.x, y: f.y, radius: ULT_REACH, life: 100, maxLife: 360 }); spawnElementEffect({ type: 'blizzardField', x: f.x + 3, y: f.y, radius: ULT_REACH, life: 200, maxLife: 360 }); fxTidy(); o.merged = elementEffects.filter(e => e.type === 'blizzardField').length; o.life = elementEffects[0] && elementEffects[0].life;
-            spawnElementEffect({ type: 'blizzardField', x: f.x + 30, y: f.y, radius: ULT_REACH, life: 50, maxLife: 360 }); fxTidy(); o.apart = elementEffects.filter(e => e.type === 'blizzardField').length; elementEffects.length = 0; return o; })()`);
-        same(r.pick && r.notFar, true, 'the eruption\'s target'); same(r.merged, 1, 'merged'); same(r.life, 200, 'the longer life is kept'); same(r.apart, 2, 'one out of reach is its own');
+    check('ULT_REACH is twelve tiles: the Ember Hood\'s VOLCANIC ERUPTION goes for the biggest enemy within it (never one out of it). The element Ultimates (the toxic smoke, the flux disorient, the EMP, the blizzard) are gone since build 2026-11-09b, and so are their effects and what only they set', () => {
+        const r = J(`(function(){ const f = followers.find(x => !x.dead), o = { reach: ULT_REACH }; let [near, far] = __foes(f); const big = spawnCreature({ species: 'beetle', className: 'tank', x: f.x + 6, y: f.y + 1 }); far.health = far.maxHealth = 1e6; big.health = big.maxHealth = 500; near.health = 10;
+            o.pick = ultBiggestFoe(f) === big; o.notFar = ultBiggestFoe(f) !== far; o.erupt = FORM_ULTIMATES.embercowl === ULT_VOLCANIC_ERUPTION;
+            o.gone = ['FOLLOWER_ULTIMATES', 'SMOKE_SCREEN_REACH', 'activeEmpEffect', 'FX_EMP_FRAMES', 'FX_FROST_ALPHA'].filter(k => (function(){ try { return eval('typeof ' + k) !== 'undefined'; } catch (e) { return false; } })());
+            actors = actors.filter(a => a !== big); return o; })()`);
+        same(r.reach, 12, 'ULT_REACH'); same(r.pick && r.notFar, true, 'the eruption\'s target'); same(r.erupt, true, 'the Ember Hood\'s own');
+        same(r.gone.join(), '', 'still defined');
+        for (const [file, re] of [['js/elements.js', /blizzardField|smokeScreen|empGlow|_empBoost|disorientFF/], ['js/game.js', /smokeScreen|SMOKE_SCREEN/], ['js/predator.js', /disorientFF|disorientPowerFactor/], ['js/npc.js', /_empBoost/], ['js/combat.js', /empGlow/]]) ok(!re.test(rd(file)), file + ' still has ' + re);
     });
 
     group('FIRE BOMBS STOP AT THE WALLS');

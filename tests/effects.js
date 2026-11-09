@@ -34,21 +34,14 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('RULE 1 · NO FOG');
 
-    await check('THE CULPRIT: a blizzard tints nothing beyond its own field — no full-screen fill', () => {
-        const r = run(`(function(){ elementEffects.length = 0; activeEmpEffect = null; activeFireEruption = null;
-            elementEffects.push({ type: 'blizzardField', x: player.x, y: player.y, radius: ULT_REACH, color: '#99ddff', life: 200, maxLife: 360 });
-            return __rec(() => drawElementEffects()); })()`);
+    await check('THE CULPRIT, the blizzard\'s tint, is gone with the blizzard (build 2026-11-09b: the element Ultimates, BLIZZARD among them, are removed): no blizzard field in the code; drawing the effects makes no full-screen fill', () => {
+        const E = rd('js/elements.js');
+        ok(!/blizzardField/.test(E) && !/blizzardField/.test(rd('js/game.js')), 'the blizzard field is still in the code');
+        const r = run(`(function(){ elementEffects.length = 0; activeFireEruption = null; return __rec(() => drawElementEffects()); })()`);
         ok(r.fullFills === 0, r.fullFills + ' full-screen fills');
     });
-    await check('a second blizzard within reach of the first refreshes it instead of stacking', () => {
-        const r = run(`(function(){ elementEffects.length = 0;
-            for (let i = 0; i < 3; i++) elementEffects.push({ type: 'blizzardField', x: 20 + i, y: 20, radius: ULT_REACH, life: 100 + i * 50, maxLife: 360 });
-            elementEffects.push({ type: 'blizzardField', x: 20 + 2 * ULT_REACH, y: 20, radius: ULT_REACH, life: 100, maxLife: 360 });
-            updateElementEffects(); return elementEffects.filter(e => e.type === 'blizzardField').map(e => e.x + ':' + e.life); })()`);
-        ok(r.length === 2 && r.some(s => /^2\d:199$/.test(s)), JSON.stringify(r));
-    });
-    await check('the EMP dims for half a second at 0.35; the eruption only tints the edges, at 0.2', () => {
-        ok(run('FX_EMP_FRAMES') <= 30 && run('FX_EMP_DIM') <= 0.35, 'EMP ' + run('FX_EMP_FRAMES') + ' / ' + run('FX_EMP_DIM'));
+    await check('the EMP\'s dim is gone with the EMP (build 2026-11-09b); the eruption (the Ember Hood\'s) only tints the edges, at 0.2', () => {
+        ok(run('typeof FX_EMP_FRAMES') === 'undefined' && run('typeof FX_EMP_DIM') === 'undefined' && run('typeof activeEmpEffect') === 'undefined', 'the EMP\'s dim is still in the code');
         ok(run('FX_VIGNETTE') <= 0.2, 'vignette ' + run('FX_VIGNETTE'));
         ok(!/0\.82/.test(rd('js/elements.js')), 'the old 0.82 blackout is still there');
         ok(/const vigA = FX_VIGNETTE \* \(1 - since \/ 30\);/.test(rd('js/elements.js')), 'the eruption vignette is not the short edge one');
@@ -69,7 +62,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     group('RULE 3 · LINES, NOT DISCS');
 
     await check('an impact is a ring and sparks — no filled disc', () => {
-        const r = run(`(function(){ elementEffects.length = 0; activeEmpEffect = null;
+        const r = run(`(function(){ elementEffects.length = 0;
             elementEffects.push({ type: 'impact', x: player.x, y: player.y, color: '#ff3300', radius: 0.8, life: 10 });
             return __rec(() => drawElementEffects()); })()`);
         ok(r.fills === 0, r.fills + ' fills');

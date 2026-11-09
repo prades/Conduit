@@ -72,13 +72,16 @@ function findChromium() {
         same(r.before.alts.join(), 'ALTERNATE · BASH', 'before: its alternates'); same(r.before.choice.join(), 'NORMAL ATTACK,BASH', 'before: its ATTACK choice');
         same(r.after.sig, null, 'after: a SIGNATURE section'); same(r.after.alts.join(), 'ALTERNATE · BASH', 'after: its alternates'); same(r.after.choice.join(), 'NORMAL ATTACK,BASH', 'after: its ATTACK choice');
     });
-    check('every element with an ultimate has it described, under the name the game gives it (js/elements.js FOLLOWER_ULTIMATES); core has none (its Shield Grant went with the followers\' shield), and its card shows none', () => {
-        same(run('ELEMENTS.filter(e => FOLLOWER_ULTIMATES[e.id]).every(e => ELEMENT_ULTIMATES.some(u => u.el === e.id))'), true, 'an element with an ultimate the card does not describe');
-        same(run('ELEMENTS.filter(e => !FOLLOWER_ULTIMATES[e.id]).map(e => e.id).join()'), 'core,blossom', 'the elements without an ultimate (BLOOM\'s is not designed yet, build 2026-11-08i)');
-        const off = JSON.parse(run(`JSON.stringify(ELEMENT_ULTIMATES.filter(u => !FOLLOWER_ULTIMATES[u.el] || u.name !== FOLLOWER_ULTIMATES[u.el].name).map(u => u.el))`));
-        same(off.length, 0, 'the card names an ultimate the game does not: ' + off.join(', '));
-        const i = run(`(function(){ spawnFollowerAtCrystal('core'); const f = followers[followers.length - 1]; const o = unitInfo(f); followers.pop(); return o; })()`);
-        ok(!i.attacks.some(s => /^ULTIMATE/.test(s.h)), 'a core follower\'s card shows an ultimate: ' + i.attacks.map(s => s.h));
+    check('the Ultimates are each evolved form\'s own (build 2026-11-09b): every form with one has it described on its card under its own name; an unevolved follower\'s card shows none, of any element; a form without one of its own (the Electro Skink) shows ULTIMATE · NOT DESIGNED YET', () => {
+        const forms = JSON.parse(run(`JSON.stringify(Object.keys(FORM_ULTIMATES).filter(id => EVOLUTIONS[id]).map(id => { const E = EVOLUTIONS[id], f = __mk(E.element, E.role, 14, id), i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); const u = FORM_ULTIMATES[id];
+            return [id, !!u.desc, i.attacks.some(s => s.h === 'ULTIMATE · ' + u.name.toUpperCase())]; }))`));
+        ok(forms.length >= 20, 'forms with an Ultimate: ' + forms.length);
+        const bad = forms.filter(f => !f[1] || !f[2]); same(bad.map(f => f[0]).join(), '', 'a form whose Ultimate the card does not describe');
+        const egg = JSON.parse(run(`JSON.stringify(ELEMENTS.map(e => { const f = __mk(e.id, 'brawler', 5); const i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); return e.id + ':' + i.attacks.filter(s => /^ULTIMATE/.test(s.h)).length; }))`));
+        same(egg.filter(x => !/:0$/.test(x)).join(), '', 'an unevolved follower\'s card showing an ultimate');
+        const sk = JSON.parse(run(`(function(){ const f = __mk('electric', 'brawler', 14, 'electroskink'); const i = unitInfo(f); followers.pop(); actors = actors.filter(a => a !== f); return JSON.stringify(i.attacks.filter(s => /^ULTIMATE/.test(s.h)).map(s => s.h)); })()`));
+        same(sk.join(), 'ULTIMATE · NOT DESIGNED YET', 'the Electro Skink\'s card');
+        same(run('typeof ELEMENT_ULTIMATES'), 'undefined', 'the element Ultimates\' descriptions are gone');
     });
     check('stats: vitals, base stats with the personality, traits with their descriptions', () => {
         const i = JSON.parse(run(`JSON.stringify(followerInfo(__mk('ice', 'brawler', 5)))`)); ok(sec(i, 'stats', 'VITALS') && sec(i, 'stats', 'BASE STATS') && sec(i, 'stats', 'TRAITS'), 'sections ' + i.stats.map(s => s.h));

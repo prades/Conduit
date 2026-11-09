@@ -138,7 +138,7 @@ async function boot(store) {
 
     check('it is ONE bar, and the per-follower ultimates are untouched', () => {
         ok(/let playerUltimate/.test(SRC.config), 'the bar is not player state');
-        same(E.run('typeof FOLLOWER_ULTIMATES'), 'object', 'the per-follower ultimates are gone');
+        same(E.run('typeof FORM_ULTIMATES'), 'object', 'the per-follower ultimates (each evolved form\'s own since build 2026-11-09b: js/elements.js FORM_ULTIMATES) are gone');
         ok(/ultimateCharge/.test(SRC.elements), 'the per-follower charge was removed');
     });
 
@@ -456,6 +456,7 @@ async function boot(store) {
     group('spending it powers up the entire army');
 
     const squadBefore = S.squad(4);
+    S.run('followers[0].evolved = "embercowl"; followers[1].evolved = "electroskink";');   // (one with an Ultimate of its own, one flagged without; the other two unevolved: none, since build 2026-11-09b)
     S.fill();
     S.run('floatingTexts = [];');
     const fired = S.run('fireArmySurge()');
@@ -464,12 +465,12 @@ async function boot(store) {
         same(fired, true, 'a full bar should fire');
         ok(squadBefore.every(f => f.h < 40 && f.w === 0 && f.u === 0),
            'fixture: the squad should start hurt, spent and uncharged');
-        const after = S.run('followers.map(f => ({h: f.health, mh: f.maxHealth, w: f.currentWill, u: f.ultimateCharge}))');
-        same(after.length, 4, 'fixture: four followers');
+        const after = S.run('followers.map(f => ({h: f.health, mh: f.maxHealth, w: f.currentWill, u: f.ultimateCharge, ult: !!followerUltimate(f)}))');
+        same(after.length, 4, 'fixture: four followers'); same(after.filter(f => f.ult).length, 1, 'fixture: one with an Ultimate');
         for (const f of after) {
             same(f.h, f.mh, 'every unit should be healed');
             same(f.w, 20, 'and its WILL refilled');
-            same(f.u, 100, 'and its own ultimate charged');
+            same(f.u, f.ult ? 100 : 0, 'and its own ultimate charged (only one that has an Ultimate: the Ember Hood here; the flagged Electro Skink and the unevolved two have none to charge, build 2026-11-09b)');
         }
         ok(S.run('floatingTexts.some(t => /ARMY SURGE/.test(t.text))'), 'no callout');
     });

@@ -187,12 +187,14 @@ function measure(w, h) {
     });
 
     group('3. THE ULTIMATES: fired from the squad card, and a bigger bar');
-    await check('followerUltFire: only when full; a bonded pair both full and close fire the duo first; one that finds nothing keeps its charge; the double-tap uses it', () => {
+    await check('followerUltFire: only when full; one that finds nothing keeps its charge; the double-tap uses it; no DUO (a bond is for breeding since build 2026-11-09b); an unevolved follower and a flagged form fire nothing', () => {
         const r = J(`(function(){ __clear(); const f = __fol('core', 'camper', 'hammerslug'); const u = followerUltimate(f), keep = u.execute; let ran = 0; u.execute = a => { ran++; a.ultimateCharge = 0; };
             f.ultimateCharge = 99; const half = followerUltFire(f); f.ultimateCharge = 100; const full = followerUltFire(f); u.execute = () => {}; f.ultimateCharge = 100; const nothing = followerUltFire(f); u.execute = keep;
-            return { half, full, ran, nothing, kept: f.ultimateCharge }; })()`);
+            const egg = __fol('fire', 'brawler', null), sk = __fol('electric', 'brawler', 'electroskink'); egg.ultimateCharge = sk.ultimateCharge = 100;
+            return { half, full, ran, nothing, kept: f.ultimateCharge, egg: followerUltFire(egg), sk: followerUltFire(sk), eggKept: egg.ultimateCharge }; })()`);
         same(r.half, false, 'not full'); same(r.full, true, 'full'); same(r.ran, 1, 'its Ultimate ran'); same(r.nothing, false, 'nothing to act on'); same(r.kept, 100, 'its charge');
-        ok(/followerUltFire\(_tappedFollower\)/.test(rd('js/input.js')), 'the double-tap does not use it'); ok(/function followerUltFire[\s\S]{0,200}tryDuoUltimate\(f\)/.test(rd('js/elements.js')), 'the duo is not tried first');
+        ok(/followerUltFire\(_tappedFollower\)/.test(rd('js/input.js')), 'the double-tap does not use it'); ok(!/tryDuoUltimate/.test(rd('js/elements.js') + rd('js/bonds.js')), 'the duo is still there');
+        same(r.egg + ',' + r.sk, 'false,false', 'an unevolved follower and the Electro Skink (flagged) fire nothing');
     });
     await check('the bar over a follower is 40 × 5 (it was 28 × 3), with a light edge; full, it glows and a ▲ stands beside it', () => {
         const D = rd('js/draw.js'); ok(/const _ux = px - 20, _uy = py - 84, _uw = 40, _uh = 5/.test(D), 'its size'); ok(/if \(_ucFull\) \{ const a0 = drawCtx\.globalAlpha;[^\n]*fillRect\(_ux - 3, _uy - 3/.test(D), 'its glow'); ok(/fillText\("▲", px \+ 27, py - 78\)/.test(D), 'its ▲');

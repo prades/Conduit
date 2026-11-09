@@ -254,7 +254,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0; const o = {};
             o.moves = ['jellyram', 'hornshell', 'hammerslug', 'warden', 'petal'].filter(id => evoMoveOf({ evolved: id }, EVOLUTIONS[id])).join();
             o.left = ['aegisBurst', 'aegisBloom'].filter(n => typeof globalThis[n] === 'function').join() + (typeof WARDEN_SHIELD !== 'undefined' || typeof PETAL_SHIELD !== 'undefined' ? ',constants' : '');
-            o.special = typeof ELEMENT_ATTACKS.core.special; o.ult = typeof FOLLOWER_ULTIMATES.core; o.otherUlts = ['fire', 'electric', 'ice', 'flux', 'toxic'].filter(e => FOLLOWER_ULTIMATES[e]).length;
+            o.special = typeof ELEMENT_ATTACKS.core.special; o.ult = typeof FOLLOWER_ULTIMATES; o.otherUlts = typeof ELEMENT_ATTACKS.core.physical;   // (no element has an ultimate since build 2026-11-09b: each evolved form has its own)
             const S = SPECIES.ant, mkP = (x) => { const p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, 2); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
             o.cast = [];
             for (const id of ['jellyram', 'hornshell', 'hammerslug', 'warden', 'petal']) {
@@ -276,7 +276,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             tgt.shielded = true; tgt.shieldAmount = 50; const h1 = tgt.health; applyDamage(tgt, 10, c, 'core'); o.soak = [tgt.health === h1, tgt.shieldAmount]; tgt.dead = true;
             return o; })()`);
         same(r.moves, '', 'core forms with a move'); same(r.left, '', 'the shield moves are still defined'); same(r.cast.join(), '', 'cast with an enemy in reach');
-        same(r.special, 'undefined', 'core still has a special (Radiant Pulse)'); same(r.ult, 'undefined', 'core still has an ultimate (Shield Grant)'); same(r.otherUlts, 5, 'the other elements\' ultimates');
+        same(r.special, 'undefined', 'core still has a special (Radiant Pulse)'); same(r.ult, 'undefined', 'an element still has an ultimate (Shield Grant was core\'s; every element\'s is gone since build 2026-11-09b)'); same(r.otherUlts, 'function', 'core\'s physical (Shield Bash)');
         same(r.shieldedBy, undefined, 'a core follower\'s attack shielded someone'); same(r.bashes, 200, 'every attack a Shield Bash that hit');
         same(r.soak.join(), 'true,40', 'a creature\'s shield did not soak the hit');
         const draw = fs.readFileSync(path.join(ROOT, 'js/draw.js'), 'utf8'), helpers = fs.readFileSync(path.join(ROOT, 'js/helpers.js'), 'utf8');

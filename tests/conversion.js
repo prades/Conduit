@@ -234,7 +234,7 @@ function measure(w, h) {
             same(R.drawn, 2, 'pictures'); same(R.stripScrolls, 'auto', 'the strip scrolls');
             same(R.pair.join(), 'TOXIC BRAWLER,BLOOM BRAWLER', 'now and after'); same(R.changed.join(), 'ELEMENT,ITS HITS,MOVES,EVOLVES INTO', 'what changes');
             ok(R.rows.some(r => /^HEALTH\|(\d+ \/ \d+)\|\1$/.test(r)), 'health side by side: ' + R.rows.join(' ; ')); ok(R.rows.some(r => /^ELEMENT\|TOXIC\|BLOOM$/.test(r)), 'the element row');
-            ok(R.rows.indexOf('MOVES|SMOKE FORM · ULTIMATE SMOKE SCREEN|NONE YET') >= 0, 'the moves row (its element\'s move and its Ultimate; none yet for BLOOM)');
+            ok(R.rows.indexOf('MOVES|PLAIN HIT|PLAIN HIT') >= 0, 'the moves row (an unevolved follower\'s plain hit, before and after; no element move nor Ultimate since build 2026-11-09b): ' + R.rows.filter(x => /^MOVES/.test(x)).join());
             same(R.pending, false, 'the evolved form\'s picture drawn once its sheet loaded (pending at first: ' + R.pending0 + ')');
             same(R.goText, 'CONVERT INTO BLOOM', 'the button'); same(R.armedText, 'TAP AGAIN TO CONVERT', 'armed'); same(R.stillToxic, 'toxic', 'after one tap');
             same(R.after.element, 'blossom', 'after two'); same(R.after.label, 'BLOOM BRAWLER', 'its name'); same(R.after.from, 'toxic', 'what it was'); same(R.backToList, 1, 'the list after (the Blight Spider)');

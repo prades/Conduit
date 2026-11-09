@@ -552,10 +552,10 @@ function measure(w, h) {
         same(r.r, r.want[0], 'its radius'); same(r.first, true, 'no bite as it opened'); same(r.far, 0, 'it reached an enemy beyond its radius');
         same(r.bites, Math.floor(r.want[1] / r.want[2]) - 1, 'bursts after the first (one a second while it is open): ' + r.bites); ok(r.gone <= r.want[1] + 2, 'it stayed open too long: ' + r.gone); same(r.cd, r.want[3], 'the wait');
     });
-    check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it, any other its element\'s; OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
+    check('OWN ULTIMATES (the owner, 2026-11-06: "Own Ultimates"): a form with its own fires it, a form without one (the Electro Skink) and an unevolved follower none (build 2026-11-09b: the element Ultimates are gone; the Ember Hood keeps its VOLCANIC ERUPTION); OVERDRIVE rushes to the biggest group and hits it with a knockback ("Smaller rush"); ABSOLUTE ZERO swallows up to three, holds them 6 s, no damage, then lets them go; TOXIC UNDERTOW hurts, scatters and poisons ("Strong"); CONTAMINATION NETWORK needs two pods and bites what touches a strand ("10 s")', () => {
         const r = J(`(function(){ const o = {};
-            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('electric', 'camper', null);
-            o.look = [followerUltimate(so).name, followerUltimate(eh) === FOLLOWER_ULTIMATES.fire, followerUltimate(qs) === FOLLOWER_ULTIMATES.electric];
+            __clear(); const so = __fol('electric', 'brawler', 'staticorb'), eh = __fol('fire', 'sniper', 'embercowl'), qs = __fol('electric', 'camper', null), sk = __fol('electric', 'brawler', 'electroskink');
+            o.look = [followerUltimate(so).name, followerUltimate(eh) === ULT_VOLCANIC_ERUPTION && followerUltimate(eh).name, followerUltimate(qs), followerUltimate(sk), followerUltPending(sk), followerUltPending(qs), typeof FOLLOWER_ULTIMATES];
             __clear(); const s = __fol('electric', 'brawler', 'staticorb'), g1 = __foe(s.x + 4, s.y), g2 = __foe(s.x + 4.6, s.y + 0.4), lone = __foe(s.x - 3, s.y); s.ultimateCharge = 100; followerUltimate(s).execute(s);
             o.over = [s.ultimateCharge < 50, Math.hypot(s.x - g1.x, s.y - g1.y) <= 1.2, __dmg(g1) > 0, __dmg(g2) > 0, __dmg(lone), !!(g1.kbVX || g1.kbVY)];
             __clear(); const m = __fol('ice', 'brawler', 'maw'), z = [1, 2, 3, 4].map(i => __foe(m.x + i * 0.6, m.y)); m.ultimateCharge = 100; followerUltimate(m).execute(m);
@@ -568,7 +568,7 @@ function measure(w, h) {
             followerUltimate(bs).execute(bs); for (let i = 0; i < 61; i++) updateElementEffects();
             o.net = [bs.ultimateCharge < 50, elementEffects.some(e => e.type === 'toxicnet'), __dmg(on) > 0, __dmg(off), on.toxicWeakened > 0];
             techPools = []; return o; })()`);
-        same(r.look.join(), 'Overdrive,true,true', 'its own, the Ember Hood\'s (the fire one), a form without its own (its element\'s)');
+        same(r.look.join(), 'Overdrive,Volcanic Eruption,,,true,false,undefined', 'its own, the Ember Hood\'s (VOLCANIC ERUPTION, the fire one once), an unevolved follower none, the Electro Skink none (flagged), the element Ultimates gone');
         same(r.over.join(), 'true,true,true,true,0,true', 'OVERDRIVE: spent (its own hits charge it a little again), rushed to the group, both hit, the lone one not, knocked back');
         same(r.zero.join(), '0,3,true', 'ABSOLUTE ZERO: spent, three swallowed (not four), no damage'); same(r.zeroAfter.join(), '0,true,true', 'let go after 6 s, targetable again, still no damage');
         same(r.under.join(), 'true,true,240,0.7,true', 'TOXIC UNDERTOW: both hurt, poisoned 4 s at 70% of their hits, thrown');
@@ -743,6 +743,19 @@ function measure(w, h) {
         same(run(`(function(){ try { elementEffects.length = 0; elementEffects.push({ type: 'hexfire', x: player.x, y: player.y, radius: HALO_RADIUS, life: 100, maxLife: HALO_LIFE }, { type: 'staticVortex', x: player.x + 1, y: player.y, radius: VORTEX_RADIUS, life: 100, maxLife: VORTEX_LIFE }, { type: 'chainBolt', pts: [{ x: player.x, y: player.y }, { x: player.x + 2, y: player.y }], color: '#ffee33', life: 10, maxLife: 18 });
             drawElementEffects(); _drawFollowerProjectile(ctx, { kind: 'quill', vx: 0.18, vy: 0, element: 'fire', frame: 3 }, 100, 100); _drawFollowerProjectile(ctx, { kind: 'hex', vx: 0.18, vy: 0, element: 'fire', frame: 3 }, 100, 100); return 'drawn'; } catch (e) { return e.message; } finally { elementEffects.length = 0; } })()`), 'drawn', 'drawing');
         same(run(`FX_LONG.hexfire === 1 && FX_LONG.staticVortex === 1`), true, 'the budget could drop them');
+    });
+    check('EVERYDAY HITS (build 2026-11-09b; the owner, 2026-11-09: "Unevolved only", "Plain hit for now", "Full-strength hit"): an unevolved Brawler makes the plain hit even with WILL, one enemy, and spends none (it keeps its element: the triangle still reads it); an evolved one its element\'s move (a Quillstone\'s ring of fire hits the enemies round it) for 1 WILL; SUNDEW and STONEPETAL hit 0.45 × their attack, one enemy, for 1 WILL (1.8 times their plain hit), and MEND', () => {
+        const r = J(`(function(){ const keep = Math.random; Math.random = () => 0.5; try { const o = {};
+            const swing = (f, will) => { f.currentWill = will; f.attackCooldown = 0; const a = __foe(f.x + 0.7, f.y), b = __foe(f.x - 0.7, f.y + 0.3); followerAttack(f, a); const res = { a: __dmg(a), b: __dmg(b), will: f.currentWill }; actors = actors.filter(q => q !== a && q !== b); return res; };
+            __clear(); const egg = __fol('fire', 'brawler', null); o.egg = swing(egg, 20); o.eggEl = egg.element;
+            __clear(); const qs = __fol('fire', 'brawler', 'quillstone'); o.qs = swing(qs, 20);
+            for (const id of ['sundew', 'coralcrab']) { __clear(); const E = EVOLUTIONS[id], f = __fol(E.element, E.role, id), hurt = __fol('fire', 'brawler', 'maw'); hurt.x = f.x + 1; hurt.y = f.y + 1; hurt.health = hurt.maxHealth * 0.5; const h0 = hurt.health;
+                const full = swing(f, 20), plain = swing(f, 0); o[id] = { full, plain, ratio: Math.round(full.a / plain.a * 1000) / 1000, mended: hurt.health > h0 }; }
+            o.mult = ELEMENT_ATTACKS.blossom.mult; return o; } finally { Math.random = keep; } })()`);
+        ok(r.egg.a > 0 && r.egg.b === 0 && r.egg.will === 20, 'the unevolved Brawler: ' + JSON.stringify(r.egg)); same(r.eggEl, 'fire', 'its element');
+        ok(r.qs.a > 0 && r.qs.b > 0 && r.qs.will === 19, 'the Quillstone\'s ring of fire: ' + JSON.stringify(r.qs));
+        same(r.mult, 0.45, 'BLOOM\'s hit');
+        for (const id of ['sundew', 'coralcrab']) { const x = r[id]; ok(x.full.a > 0 && x.full.b === 0 && x.full.will === 19, id + ' with WILL: ' + JSON.stringify(x.full)); same(x.ratio, 1.8, id + '\'s hit against its plain hit'); same(x.mended, true, id + '\'s hit MENDed'); }
     });
 
     console.log(failures ? `\n${failures} FAILED` : '\nall passed');

@@ -24,7 +24,7 @@ const rd = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
         globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isClone && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k].length = 0; respawnQueue.length = 0; floatingTexts.length = 0;
             projectiles = []; followerProjectiles = []; elementEffects = []; fragments = []; smoke = []; shards = [];
             if (typeof fireBombs !== 'undefined') { fireBombs = []; fireTiles = new Map(); }
-            if (typeof activeFireEruption !== 'undefined') activeFireEruption = null; if (typeof activeEmpEffect !== 'undefined') activeEmpEffect = null;
+            if (typeof activeFireEruption !== 'undefined') activeFireEruption = null;
             if (typeof techReset === 'function') techReset();
             frame = 0; shake = 0; _fp.spawnAt = Infinity;   // (the screen's shake too, whose jitter draws random numbers; and the arena's spawner held off: a creature it sends would join the fight)
             _ucolsFrame = -1;   // (the units-by-column cache, js/helpers.js, is kept by frame and count: with the clock back at 0 it would hand the last run's units back)
