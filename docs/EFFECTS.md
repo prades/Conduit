@@ -156,9 +156,9 @@ The owner's pick of three drafts (2026-11-09): a bud of its leaves, a burr of it
 
 **The model.** The Thornwhip's pink crystal (the Rotshard's crystal on its back, forms39.js; here whole, forms5.js `corroded`), cut as a seed.
 - Six-sided and pointed at both ends, coloured facet by facet as its own (forms32.js `_gemCol32`). No glow.
-- A short stalk of its black vine at its back. In the draft the stalk stood apart from the crystal; now it meets it.
+- Just the crystal (the owner, 2026-11-09: "Just a crystal"). Until build `2026-11-09dd` it had a short stalk of its black vine at its back.
 - Its facets are lit from one way in the world, the way the draft was lit, so it looks alike whichever way it flies.
-- It is 0.72 form-units long, 0.95 with its stalk: about 27 px in the game, as long as the drawn seed (the agent's number, approved with the piece). It is slimmer than the drawn seed and has no glow, so it reads smaller.
+- It is 0.72 form-units long: about 20 px in the game (the agent's number, approved with the piece). With its stalk it was 27 px, as long as the drawn seed. It is slimmer than the drawn seed and has no glow, so it reads smaller.
 
 **In the game (built in `2026-11-09bb` on the preview; for everyone since `2026-11-09cc`).**
 - It is built like the quill and shares its flight drawing: 32 directions × 3 tilts, a shallow arc (16 px), its shadow on the floor and a pink trail.
@@ -176,7 +176,7 @@ The owner's pick of three drafts (2026-11-09): a bud of its leaves, a burr of it
   - TOXIC PUDDLE (and the CRYSTAL SPIKE TRIO card) keep the black spike, without its aura.
   - ROTTEN DECOY is the black Rotshard (build `2026-11-09x`).
   - The black decoy was approved in the game (for everyone since `2026-11-09aa`). The puddle's spikes stay on the preview, not approved.
-- ~~**PINK THICKET's crystal seed in the game**~~ *(approved 2026-11-09, "Approve it for everyone", at about 27 px; live since build `2026-11-09cc`)*. Still open: whether SEEDFALL's falling seeds use it too.
+- ~~**PINK THICKET's crystal seed in the game**~~ *(approved 2026-11-09, "Approve it for everyone"; live since build `2026-11-09cc`. Then "Just a crystal": its stalk off since `2026-11-09dd`, about 20 px)*. Still open: whether SEEDFALL's falling seeds use it too.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.

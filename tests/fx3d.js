@@ -207,11 +207,11 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     });
 
     group('PINK THICKET\'S BIG SEED: THE THORNWHIP\'S PINK CRYSTAL (the owner\'s pick of three drafts, 2026-11-09, circled: "its pink crystal, as a seed"; built in 2026-11-09bb on the preview; approved in the game, for everyone since 2026-11-09cc)');
-    check('the model is the Thornwhip\'s own crystal (the Rotshard\'s, uneaten), coloured facet by facet as its own, a stalk of its black vine at its back that meets it; no glow; lit from one way in the world whichever way it flies', () => {
+    check('the model is the Thornwhip\'s own crystal (the Rotshard\'s, uneaten), coloured facet by facet as its own; just the crystal, no stalk (the owner, 2026-11-09: "Just a crystal"); no glow; lit from one way in the world whichever way it flies', () => {
         const b = rd('design/effects/bake_fx.js'), blk = b.slice(b.indexOf("if (piece === 'bigseed')"), b.indexOf('if (P.copy)'));
-        ok(/bigseed: \{ form: 921, color: '#ff7ab8', len: 0\.72, r: 0\.17, stalk: 0\.234,/.test(b), 'not the Thornwhip\'s seed (No. 921) as built');
+        ok(/bigseed: \{ form: 921, color: '#ff7ab8', len: 0\.72, r: 0\.17, roll: 0\.35,/.test(b), 'not the Thornwhip\'s seed (No. 921) as built');
         ok(/corroded\(0\.34, 1\.5, 0\.55, 0, M\.crystal, 0\.5\)/.test(blk) && /_gemCol32\(cg, base\)/.test(blk), 'not its crystal, or not coloured as its own');
-        ok(/stalk\.position\.y = inside - sl \/ 2/.test(blk), 'its stalk does not meet the crystal'); ok(!/emissive|glowSprite|AdditiveBlending|PointLight/.test(blk), 'a glow on it');
+        ok(!/stalk|CylinderGeometry|vineM/.test(blk) && /sd\.add\(gem\);\s*sd\.rotation\.z = -PI \/ 2; sd\.position\.x = -P\.len \/ 2;/.test(blk), 'not just the crystal, its middle at the origin'); ok(!/emissive|glowSprite|AdditiveBlending|PointLight/.test(blk), 'a glow on it');
         ok(/if \(g\.userData\.relight\) g\.userData\.relight\(\);/.test(b), 'not lit again as it turns');
     });
     check('approved in the game (the owner, 2026-11-09: "Approve it for everyone"): on for everyone, with or without the preview; PINK THICKET\'s seed is the kind "bigseed"; before its sheet arrives, the big pink seed as before', () => {

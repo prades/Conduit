@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09dd` · branch `claude/start-game-project-HSh7Z` · PINK THICKET's seed is just the crystal
+- The owner, of the approved crystal seed: "Just a crystal". The short black vine stalk at its back is gone. The crystal is unchanged, so the seed is now about 20 px long (it was 27 px with its stalk).
+- Still for everyone. Rules are unchanged.
+- Tests: `tests/fx3d.js`.
+
 ### Build `2026-11-09cc` · branch `claude/start-game-project-HSh7Z` · the crystal seed for everyone
 - **PINK THICKET's big seed as the Thornwhip's pink crystal is approved in the game** ("Approve it for everyone"), from the pictures of the old and new seed side by side. It is live for everyone (`FX3D.approved`), at about 27 px. The drawn seed shows only until its sheet arrives.
 - Tests: `tests/fx3d.js`.
