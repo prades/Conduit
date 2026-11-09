@@ -74,7 +74,11 @@ The owner, 2026-11-09: the cave's walls should look like RuneScape's 3D-model wa
 **What it is.**
 - Every rock wall in the facility is modelled from its own shape and baked to sprites: the arena (the cave), the Cold Storage's ice cave and the Nest's cavern. That is 326 half-tile pieces in 53 straight runs.
 - **The face** is pushed in and out by noise of its place in the world, so neighbouring runs meet without a seam. It is softly (Gouraud) shaded, in the cave's brown: darker in its hollows and at its foot, lighter on its bulges.
-- **The top** of the rock runs back, as the drawn rock's did: a far wall's roof goes back to the wall behind it, and a near wall's top is its thickness toward the room.
+- **The top is one smooth cap** (the owner, on the first in-game pictures: "a cap on the entire surface rooftop so it doesn't look all jagged. It looks kind of smooth like the walls").
+  - The rock's height is one smooth function of its place in the world: a far wall's top is 135–220 px over the floor, a near wall's 100–150 px. So the top is the same surface wherever runs meet.
+  - It runs back from a softly rounded lip, gently domed. A far wall's cap goes back toward the wall behind it (0.8 to 3.2 tiles); a near wall's cap is its thickness toward the room (1 tile).
+  - Beside the observation deck's glass, the rock rises to the deck's wall top, as before.
+- **Indents** (the owner's ask, marked on the same picture: "a 3-D like projected mountain top area for that little indent"): where a run ends at an inner corner or at an opening (a door, like the Sewers' culvert), its cap carries on over the indent for 0.9 tile. It is a projecting mountain top with a short rock edge under it.
 - **Boulders** lie at the foot of a far wall, on the room's side.
 - **A near wall's rock** runs on down below the floor into the dark, fading to black.
 - **In the ice room** the rock is frosted, with icicles off its lip.

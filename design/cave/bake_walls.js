@@ -28,9 +28,9 @@ const sigOf = pieces => { let h = 2166136261; const s = pieces.map(p => p.key + 
   const pieces = JSON.parse(vm.runInContext(`JSON.stringify((_fp.items || []).filter(it => it.fp === "wall" && it.kind === "rock").map(it => {
       const H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0)), dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1;
       let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
-      return { key: caveWallKey(it), a: it.a, b: it.b, room: it.room, back: !!it.back, n: [nx, ny], hs: _fpRockHeights(it, H), cap: it.cap || null, drop: it.drop || 0, ice: !!_fpRoomStyle(it.room).ice, down: FP_ROCK_DOWN };
+      return { key: caveWallKey(it), a: it.a, b: it.b, room: it.room, back: !!it.back, n: [nx, ny], hs: _fpRockHeights(it, H), cap: it.cap || null, drop: it.drop || 0, ice: !!_fpRoomStyle(it.room).ice, down: FP_ROCK_DOWN, ext: H - FP_WALL_H, dk: it.dk || null };
     }))`, ctx));
-  const sig = sigOf(pieces);
+  const sig = sigOf(pieces), deckTop = +vm.runInContext('(_fp.deckRise || 0) + 20', ctx);   // (the deck's wall top, where the rock beside its glass rises to)
   console.log(pieces.length + ' rock pieces, signature ' + sig);
 
   // ── 2. runs: one room, one side, end to end, one direction ──
@@ -44,7 +44,12 @@ const sigOf = pieces => { let h = 2166136261; const s = pieces.map(p => p.key + 
       runs.push(run); i = j; } };
   pieces.forEach((p, i) => { if (!hasPrev.has(i)) chainFrom(i); });
   pieces.forEach((p, i) => { if (!used.has(i)) chainFrom(i); });   // (closed loops)
-  console.log(runs.length + ' runs');
+  // an end of a run carries its cap on over an indent: where the rock turns back into itself (an inner corner, an alcove's side), or where it stops at an opening (a door: no rock goes on from it)
+  const ends = new Map(); pieces.forEach((p, i) => { for (const e of [p.a, p.b]) { const k = p.room + '|' + k2(e); if (!ends.has(k)) ends.set(k, []); ends.get(k).push(i); } });
+  const indentAt = (E, own, n) => { const others = (ends.get(pieces[own[0]].room + '|' + k2(E)) || []).filter(i => !own.includes(i)); if (!others.length) return true;
+    return others.some(i => { const q = pieces[i], far = Math.hypot(q.a[0] - E[0], q.a[1] - E[1]) < 1e-3 ? q.b : q.a, v = [far[0] - E[0], far[1] - E[1]], L = Math.hypot(v[0], v[1]) || 1; return (v[0] * n[0] + v[1] * n[1]) / L < -0.3; }); };
+  const runInfo = runs.map(run => { const f = pieces[run[0]], l = pieces[run[run.length - 1]]; return { extStart: indentAt(f.a, run, f.n), extEnd: indentAt(l.b, run, f.n) }; });
+  console.log(runs.length + ' runs, ' + runInfo.filter(r => r.extStart || r.extEnd).length + ' with a cap carried on over an indent');
 
   // ── 3-4. model, render and cut each run (in the browser, with three.js) ──
   const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
@@ -59,57 +64,74 @@ window.__run = function (run, P) {
   const base = lin(0x4a3f37), dark = lin(0x1d1714), light = lin(0x7a6a5c), roofC = lin(0x3a312b), frost = lin(0xcfe6f2), black = lin(0x050404);
   const ps = run.pieces, first = ps[0], back = first.back, ice = first.ice, n = first.n;
   const A = first.a, len = ps.length, dir = [ (ps[len - 1].b[0] - A[0]), (ps[len - 1].b[1] - A[1]) ], RL = Math.hypot(dir[0], dir[1]) || 1; dir[0] /= RL; dir[1] /= RL;
-  // the skyline (px) and the cap along the run, u in tiles from A: at each piece's ends and middle
-  const sky = [], capAt = [];
-  ps.forEach((p, i) => { const u0 = i * RL / len, u1 = (i + 1) * RL / len; sky.push([u0, p.hs[0]], [(u0 + u1) / 2, p.hs[1]], [u1, p.hs[2]]);
-    const c = p.cap; capAt.push([u0, c ? (c.da === undefined ? { o: [-c.nx * c.d, -c.ny * c.d] } : { o: [0, -c.da] }) : { o: [-n[0] * 0.35, -n[1] * 0.35] }], [u1, c ? (c.da === undefined ? { o: [-c.nx * c.d, -c.ny * c.d] } : { o: [0, -c.db] }) : { o: [-n[0] * 0.35, -n[1] * 0.35] }]); });
-  const at = (arr, u, f) => { if (u <= arr[0][0]) return f(arr[0][1]); for (let i = 1; i < arr.length; i++) if (u <= arr[i][0]) { const t = (u - arr[i - 1][0]) / ((arr[i][0] - arr[i - 1][0]) || 1); return f(arr[i - 1][1]) * (1 - t) + f(arr[i][1]) * t; } return f(arr[arr.length - 1][1]); };
-  const skyAt = u => at(sky, u, v => v), capO = (u, k) => at(capAt, u, v => v.o[k]);
-  const EXT = 0.08, U0 = -EXT, U1 = RL + EXT, NU = Math.max(8, Math.ceil((U1 - U0) / 0.0625)), NV = 12, NC = 6;
+  // THE HEIGHT is one smooth function of where the rock is in the world (the owner, 2026-11-09: "a cap on the entire surface rooftop so it doesn't look all jagged ... smooth like the walls"):
+  // so the top of the rock is ONE surface wherever runs meet, a back wall's 135-220 px, a front wall's 100-150 px over the floor; beside the observation deck's glass it rises to the deck's wall top, as before
+  const hW = (gx, gy, dk) => { let h = first.ext + (back ? 176 : 126) + (back ? 42 : 26) * (fbm(gx * 0.42 + 5, 2.7, gy * 0.42 + 9) - 0.5) * 3; if (dk > 0) h += Math.max(0, P.deckTop - h) * dk; return h; };
+  const dkAt = u => { const i = Math.max(0, Math.min(len - 1, Math.floor(u / (RL / len)))), p = ps[i]; if (!p.dk) return 0; const t = (u - i * RL / len) / (RL / len); return t < 0.5 ? p.dk[0] + (p.dk[1] - p.dk[0]) * t * 2 : p.dk[1] + (p.dk[2] - p.dk[1]) * (t - 0.5) * 2; };
+  // the cap's depth (tiles, back from the lip, away from the camera's side): a front wall's, its thickness (1); a back wall's, back to the wall behind (the game's own distances, 0.8 to 3.2)
+  const capD = u => { const i = Math.max(0, Math.min(len - 1, Math.floor(u / (RL / len)))), c = ps[i].cap; if (!c) return 0.6; if (c.da === undefined) return c.d; const t = Math.max(0, Math.min(1, (u - i * RL / len) / (RL / len))); return Math.max(0.8, Math.min(3.2, c.da + (c.db - c.da) * t)); };
+  // an end of the run at an inner corner or an opening (a door: the Sewers' culvert): its cap carries on over the indent, a projecting mountain top (the owner's ask)
+  const XS = run.extStart ? 0.9 : 0, XE = run.extEnd ? 0.9 : 0;
+  const EXT = 0.08, U0 = -EXT, U1 = RL + EXT, NU = Math.max(8, Math.ceil((U1 - U0) / 0.0625)), NV = 12, NC = 7;
   const zb = back ? -(first.drop || 0) : -first.down;   // (a front wall's rock runs on down into the dark)
   const W2 = (u) => [A[0] + dir[0] * u, A[1] + dir[1] * u];
-  const pos = [], col = [], idx = [];
-  const fade = [];
+  const skyAt = u => { const w = W2(u); return hW(w[0], w[1], dkAt(Math.max(0, Math.min(RL, u)))); };
+  const pos = [], col = [], idx = [], fade = [];
   const put = (gx, gy, zpx, c) => { pos.push(gx, zpx / UH, gy); col.push(c.r, c.g, c.b); fade.push(zpx >= 0 ? 1 : Math.pow(Math.max(0, 1 + zpx / first.down), 1.6)); return pos.length / 3 - 1; };   // (fade: a front wall's rock below the floor goes to black, on the final colour)
-  const shade = (gx, gy, zpx, k) => { // its colour: hollows dark, bulges lit, the foot darker, frost in an ice room, black down in the dark
+  // frost in an ice room, blended as the drawn rock's glaze was (in the screen's colours: a pale blue-white 42% at the lip, 16% low down), so the rock still shows through it
+  const frostS = new T.Color(0xe1f5ff), frostAt = (c, a) => c.convertLinearToSRGB().lerp(frostS, a).convertSRGBToLinear();
+  const shade = (gx, gy, zpx, k, v) => { // its colour: hollows dark, bulges lit, the foot darker, frost in an ice room
     let c = dark.clone().lerp(base, Math.min(1, k * 1.6)).lerp(light, Math.max(0, k - 0.62) * 1.6);
     if (zpx < 14 && zpx > -6) c.lerp(dark, 0.45 * (1 - Math.max(0, zpx) / 14));
-    if (ice) c.lerp(frost, 0.1 + 0.16 * Math.max(0, k - 0.5));   // (frost on the rock, the rock still showing)
+    if (ice) c = frostAt(c, 0.16 + 0.26 * Math.max(0, Math.min(1, v)));
     return c; };
-  // THE FACE: a grid along the run (u) and up it (v), pushed toward the camera's side by the noise of where it is in the world
+  // THE FACE: a grid along the run (u) and up it (v), pushed toward the camera's side by the noise of where it is in the world; its top is the smooth height, its lip rounded into the cap
   const face = [];
-  for (let i = 0; i <= NU; i++) { const u = U0 + (U1 - U0) * i / NU, w = W2(u), top = skyAt(Math.max(0, Math.min(RL, u))), row = [];
+  for (let i = 0; i <= NU; i++) { const u = U0 + (U1 - U0) * i / NU, w = W2(u), top = skyAt(u), row = [];
+    let dPrev = 1e9;
     for (let j = 0; j <= NV; j++) { const v = j / NV, z = zb + (top - zb) * v;
       const big = fbm(w[0] * 1.3 + 3, z / UH * 1.6, w[1] * 1.3 + 1.7), small = fbm(w[0] * 4.1, z / UH * 3.7 + 9, w[1] * 4.1 + 5.3);
-      let d = (big - 0.5) * 0.36 + (small - 0.5) * 0.12; if (j === NV) d *= 0.4;   // (the lip stays near its line, so the cap meets it)
-      const zz = z + (j === NV ? (small - 0.5) * 10 : 0);
+      let d = (big - 0.5) * 0.36 + (small - 0.5) * 0.12; if (j === NV) d = d * 0.25 - 0.03; else if (j === NV - 1) d = d * 0.6 - 0.01;
+      if (j >= NV - 2) d = Math.min(d, dPrev); dPrev = d;   // (the top never juts out past the rock under it: the face rolls back into the cap, with no dark underside at the lip)
       const k = Math.max(0, Math.min(1, 0.5 + (big - 0.5) * 1.6 + (small - 0.5) * 0.6));
-      row.push(put(w[0] + n[0] * d, w[1] + n[1] * d, zz, shade(w[0], w[1], zz, k))); }
+      row.push(put(w[0] + n[0] * d, w[1] + n[1] * d, z, shade(w[0], w[1], z, k, z / Math.max(1, top)))); }
     face.push(row); }
-  for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) { const a = face[i][j], b = face[i + 1][j], c = face[i + 1][j + 1], d = face[i][j + 1]; idx.push(a, b, c, a, c, d); }
-  // THE CAP: the rock's top, from the lip back (a front wall's: its thickness toward the room; a back wall's: its roof, back to the wall behind)
-  const cap = [];
-  for (let i = 0; i <= NU; i++) { const u = U0 + (U1 - U0) * i / NU, uc = Math.max(0, Math.min(RL, u)), w = W2(u), top = skyAt(uc), ox = capO(uc, 0), oy = capO(uc, 1), row = [face[i][NV]];
-    for (let j = 1; j <= NC; j++) { const t = j / NC, gx = w[0] + ox * t, gy = w[1] + oy * t, nz = fbm(gx * 2.2, 3.1, gy * 2.2);
-      const z = top + (nz - 0.5) * 18 * Math.sin(PI * t), k = 0.35 + 0.5 * nz; let c = roofC.clone().lerp(light, Math.max(0, k - 0.55) * 0.8); if (j === NC) c.lerp(dark, 0.6);   // (a dark crease where it meets the wall behind)
-      if (ice) c.lerp(frost, 0.4);
+  // THE WINDING: every triangle's front toward the camera's side (the face) or up (the cap), so the normals shared along the lip agree and it is lit, not black: n is (dy, -dx) or its opposite
+  const SG = (n[0] * dir[1] - n[1] * dir[0]) > 0 ? 1 : -1, quad = (a, b, c, d) => { if (SG < 0) idx.push(a, b, c, a, c, d); else idx.push(a, c, b, a, d, c); };
+  for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) quad(face[i][j], face[i + 1][j], face[i + 1][j + 1], face[i][j + 1]);
+  // THE CAP: ONE smooth top, from the lip back (away from the camera's side), its height the world's smooth height, gently domed; past an indented end it runs on over the indent
+  const STEP = (U1 - U0) / NU, NS = Math.round(XS / STEP), NE = Math.round(XE / STEP), NCU = NU + NS + NE, cap = [], lipOf = [];   // (the cap's grid IS the face's grid, run on by whole steps: its lip is the face's top row exactly)
+  for (let i = 0; i <= NCU; i++) { const fi = i - NS, u = U0 + STEP * fi, w = W2(u), D = capD(Math.max(0, Math.min(RL, u))), onFace = fi >= 0 && fi <= NU, row = [];
+    for (let j = 0; j <= NC; j++) { const t = j / NC, gx = w[0] - n[0] * D * t, gy = w[1] - n[1] * D * t;
+      if (j === 0 && onFace) { row.push(face[fi][NV]); continue; }   // (the lip is the face's top row: the two meet, softly shaded across it)
+      const lo = fbm(gx * 0.9 + 1, 4.2, gy * 0.9 + 7), z = hW(gx, gy, dkAt(Math.max(0, Math.min(RL, u)))) + 10 * Math.sin(PI * Math.min(1, t * 1.15)) * (0.6 + 0.8 * (lo - 0.5));
+      let c = roofC.clone().lerp(light, Math.max(0, lo - 0.45) * 0.9).lerp(base, 0.25); if (j === NC) c.lerp(dark, 0.5);   // (a soft dark crease where it meets the wall behind)
+      if (ice) c = frostAt(c, 0.42);
       row.push(put(gx, gy, z, c)); }
-    cap.push(row); }
-  for (let i = 0; i < NU; i++) for (let j = 0; j < NC; j++) { const a = cap[i][j], b = cap[i + 1][j], c = cap[i + 1][j + 1], d = cap[i][j + 1]; idx.push(a, d, c, a, c, b); }
+    cap.push(row); lipOf.push(onFace); }
+  for (let i = 0; i < NCU; i++) for (let j = 0; j < NC; j++) quad(cap[i][j], cap[i + 1][j], cap[i + 1][j + 1], cap[i][j + 1]);
+  // under the cap where it runs on past the face (over an indent): a short rock lip down from it, so it is a mountain's edge and not a sheet
+  for (let i = 0; i < NCU; i++) { if (lipOf[i] && lipOf[i + 1]) continue;
+    const p0 = cap[i][0], p1 = cap[i + 1][0], under = (k, dz) => { const x = pos[k * 3], y = pos[k * 3 + 1] * UH, z = pos[k * 3 + 2], lo = fbm(x * 3.1, y / UH * 2, z * 3.1); let c = dark.clone().lerp(base, 0.55 + 0.4 * (lo - 0.5)); if (ice) c = frostAt(c, 0.3); return put(x - n[0] * 0.08, z - n[1] * 0.08, y - dz, c); };   // (leaning back under the cap: a rounded rock edge)
+    const q0 = under(p0, 20), q1 = under(p1, 20); quad(q0, q1, p1, p0); }
   const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.setAttribute('fade', new T.Float32BufferAttribute(fade, 1)); geo.setIndex(idx); geo.computeVertexNormals();
-  const rock = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, flatShading: false }); rock.envMapIntensity = 0.25;   // (boulders)
-  const rockFade = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, flatShading: false, side: T.DoubleSide }); rockFade.envMapIntensity = 0.25;
-  rockFade.onBeforeCompile = sh => { sh.vertexShader = 'attribute float fade;\nvarying float vFade;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvFade = fade;');
-    sh.fragmentShader = 'varying float vFade;\n' + sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\ngl_FragColor.rgb *= vFade;'); };
+  // the materials, made once and shared by every run (a material's shader is compiled once)
+  const MAT = window.__MAT || (window.__MAT = (() => { const rock = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, flatShading: false }); rock.envMapIntensity = 0.25;   // (boulders)
+    const rockFade = new T.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0, flatShading: false, side: T.DoubleSide }); rockFade.envMapIntensity = 0.25;
+    rockFade.onBeforeCompile = sh => { sh.vertexShader = 'attribute float fade;\\nvarying float vFade;\\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\\nvFade = fade;');
+      sh.fragmentShader = 'varying float vFade;\\n' + sh.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\\ngl_FragColor.rgb *= vFade;'); };
+    const icy = new T.MeshStandardMaterial({ color: lin(0xe6f6ff), emissive: lin(0x5fa9d6).multiplyScalar(0.25), roughness: 0.25, metalness: 0.05 }); icy.envMapIntensity = 0.9;
+    return { rock, rockFade, icy }; })());
+  const rock = MAT.rock, rockFade = MAT.rockFade;
   const g = new T.Group(); g.add(new T.Mesh(geo, rockFade));
   // BOULDERS at the foot of a back wall, on the room's side, where the world's hash puts them
   if (back) for (let s = 0.15; s < RL - 0.1; s += 0.55) { const w = W2(s + (h3(Math.round((A[0] + s) * 7), Math.round(A[1] * 7), 3) - 0.5) * 0.3), hh = h3(Math.round(w[0] * 9), Math.round(w[1] * 9), 5);
     if (hh < 0.35) continue; const r = 0.07 + 0.11 * hh, q = new T.IcosahedronGeometry(r, 1), a = q.attributes.position, c2 = new Float32Array(a.count * 3);
     for (let i = 0; i < a.count; i++) { const x = a.getX(i), y = a.getY(i), z = a.getZ(i), kk = 0.78 + 0.44 * n3(x * 9 + w[0] * 3, y * 9, z * 9 + w[1] * 3); a.setXYZ(i, x * kk * 1.2, Math.max(y * kk, -r * 0.3) * 0.8, z * kk);
-      const cc = base.clone().lerp(light, 0.3 * n3(x * 11, y * 11 + hh, z * 11)).lerp(dark, y < 0 ? 0.45 : 0); if (ice) cc.lerp(frost, 0.3); c2[i * 3] = cc.r; c2[i * 3 + 1] = cc.g; c2[i * 3 + 2] = cc.b; }
+      let cc = base.clone().lerp(light, 0.3 * n3(x * 11, y * 11 + hh, z * 11)).lerp(dark, y < 0 ? 0.45 : 0); if (ice) cc = frostAt(cc, 0.3); c2[i * 3] = cc.r; c2[i * 3 + 1] = cc.g; c2[i * 3 + 2] = cc.b; }
     q.setAttribute('color', new T.BufferAttribute(c2, 3)); q.computeVertexNormals(); const m = new T.Mesh(q, rock); const off = 0.12 + 0.12 * hh; m.position.set(w[0] + n[0] * off, r * 0.35, w[1] + n[1] * off); m.rotation.y = hh * 6; g.add(m); }
   // ICICLES off the lip in an ice room
-  if (ice) { const icy = new T.MeshStandardMaterial({ color: lin(0xe6f6ff), emissive: lin(0x5fa9d6).multiplyScalar(0.25), roughness: 0.25, metalness: 0.05 }); icy.envMapIntensity = 0.9;
+  if (ice) { const icy = MAT.icy;
     for (let s = 0.05; s < RL; s += 0.17) { const hh = h3(Math.round((A[0] + dir[0] * s) * 13), Math.round((A[1] + dir[1] * s) * 13), 7); if (hh < 0.3) continue;
       const w = W2(s), top = skyAt(s), L = (8 + 16 * hh) / UH, c = new T.Mesh(new T.ConeGeometry(0.022 + 0.01 * hh, L, 5), icy); c.rotation.x = PI; c.position.set(w[0] + n[0] * 0.04, top / UH - L / 2 - 0.02, w[1] + n[1] * 0.04); g.add(c); } }
   // the screen box of the model, from the run's start A at the floor: game (x, y, z px) -> screen (x - y) * 60, (x + y) * 30 - z
@@ -148,7 +170,7 @@ window.__run = function (run, P) {
   await p.route('http://cave.local/', r => r.fulfill({ contentType: 'text/html', body: page }));
   await p.goto('http://cave.local/');
   const strips = [];
-  for (let r = 0; r < runs.length; r++) { const res = await p.evaluate(run => window.__run(run), { pieces: runs[r].map(i => pieces[i]) }); if (errs.length) { console.error(errs.join('\n')); process.exit(1); } res.strips.forEach(s => strips.push(Object.assign(s, { room: pieces[runs[r][0]].room }))); }
+  for (let r = 0; r < runs.length; r++) { const res = await p.evaluate(([run, P]) => window.__run(run, P), [Object.assign({ pieces: runs[r].map(i => pieces[i]) }, runInfo[r]), { deckTop }]); if (errs.length) { console.error(errs.join('\n')); process.exit(1); } res.strips.forEach(s => strips.push(Object.assign(s, { room: pieces[runs[r][0]].room }))); }
   // ── 5. one sheet per room (shelf-packed), and the atlas ──
   const rooms = [...new Set(strips.map(s => s.room))].sort(), atlas = { sig, rooms: {}, pieces: {} };
   fs.mkdirSync(path.join(ROOT, 'img', 'cave'), { recursive: true });
