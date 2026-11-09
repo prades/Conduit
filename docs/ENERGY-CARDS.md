@@ -1,6 +1,6 @@
 # Energy cards
 
-- **Status:** Designed in part (the owner's direction and four answers, 2026-11-09). Not built. Open questions below block the build.
+- **Status:** Designed (the owner's direction and two rounds of answers, 2026-11-09). Not built. The hybrid attacks are still to be designed (§11).
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-09
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, after build `2026-11-09r`
@@ -19,6 +19,16 @@ The owner's words, 2026-11-09: "I want to make each follower have 3 new card zon
 5. **An evolved follower has 3 energy slots.** What they do (the owner's answer): **"Unlock the attacks and hybrid attacks."**
 6. **Where energy cards come from: card packs** (the owner's answer), bought with ◆ shards as Pack 1 and Series 2 are.
 7. **Saved games** (the owner's answer, "Start elementless"): an unevolved follower in a save loses its element, until you give it an energy card. An evolved follower keeps its element.
+
+The owner's second round of answers, 2026-11-09:
+
+8. **What the three slots unlock** ("Own element vs other"): a card of its **own element** unlocks its **next attack**: its second attack, then its Ultimate. A card of **another element** unlocks a **hybrid attack** mixing the two. (Hybrid attacks do not exist yet: each is to be designed with the owner, as the 3-D effects are.)
+9. **The packs** ("Inside the old packs"): energy cards are dealt inside **Pack 1 and Series 2**, **1 to 2 in each pack** ("1 to 2 per pack"), each of an element at random. BLOOM's are not dealt by a pack (BLOOM is never found: it comes from breeding and the conversion).
+10. **Owning them** ("Counted copies"): you own a **number of each element's card**. One is **used up only when it evolves a follower**; taken out of an unevolved follower before then, it **comes back** to you.
+11. **They are the run's** ("The run's"): NEW GAME clears them, as it does the cards a pack deals.
+12. **New followers:** a recruit starts **elementless**. A **bred egg comes with an energy card** of the element breeding picked ("A card with the egg"), in its slot: breeding's element, and BLOOM from toxic + fire, still matter.
+13. **The conversion** ("Convert its card"): for an unevolved toxic follower, the purification module turns the **toxic energy card in its slot into a BLOOM one**, so it is BLOOM (and evolves into a BLOOM form). An evolved toxic follower is converted as now.
+14. **The elementless egg** ("Clear crystal"): the same egg, with a **colourless, unlit crystal** inside, until it gets an energy card.
 
 ## 3. Must-have requirements (from the approved design; to be completed once the open questions are answered)
 - [ ] Energy cards of each element, dealt by a card pack.
@@ -62,12 +72,12 @@ None yet.
 | Not built | Not run | |
 
 ## 11. Open questions
-1. **What the three slots unlock.** "Unlock the attacks and hybrid attacks": which card unlocks which attack (its second attack? its Ultimate?), and what a hybrid attack is (an energy card of another element? designed for each pair?). Until it has energy cards, does an evolved follower lose its second attack and Ultimate (as the word "unlock" says), and does that apply to the evolved followers in saved games?
-2. **The pack.** A new pack of energy cards, or energy cards inside Pack 1 and Series 2? Its price, its size, the odds; BLOOM energy cards (BLOOM is never found today: it is made by the conversion and by breeding).
-3. **Owning an energy card.** An equip card is a type you own for good and is never used up. An energy card is used up when it evolves a follower, so it is counted: you own some number of each. Taken out of an unevolved follower before it evolves, does it come back to you?
-4. **New followers.** Do recruits and bred eggs start elementless? Then what becomes of breeding's element (an offspring takes one of its parents' elements; toxic + fire gives BLOOM half the time once the purification module has run) and of the conversion (a toxic follower → BLOOM)?
-5. **An elementless follower.** Its egg without an element colour (what colour?); its hits (plain, no element: ×1 against everything?).
-6. **A follower already at level 8 or more** when it first gets an energy card: does it evolve at once?
+1. **The hybrid attacks:** one for each form and each other element? Each to be designed with the owner (its look, what it does, its numbers).
+2. **Proposed, not yet confirmed** (the agent's reading of the approved rules):
+   - An elementless follower's hits are **plain, ×1 against everything** (an unevolved follower's hit has been plain since build `2026-11-09b`).
+   - A follower **already at level 8 or more when it first gets an energy card evolves at once**.
+   - **Evolved followers in saved games keep their element, but their second attack and Ultimate are locked** until they have energy cards of their element (rule 8 read as written).
+   - In a pack, **1 or 2 energy cards, each as likely** (provisional odds), taking places among the pack's 4 cards.
 
 ## 12. History
-- 2026-11-09: the owner's direction and four answers (this document, sections 1–2).
+- 2026-11-09: the owner's direction and four answers (rules 1–7); a second round of answers (rules 8–14).
