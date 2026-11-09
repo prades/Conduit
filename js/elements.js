@@ -411,9 +411,23 @@ const DMG_HIT_ULT_CRUSH = Object.freeze({ which: "special", stat: "sp", type: "c
 const DMG_HIT_ULT_SLASH = Object.freeze({ which: "special", stat: "sp", type: "slashing" });
 const KNOCK_PER_TILE = 0.28;   // (a push decays ×0.72 a frame, js/combat.js: a push of 0.28 carries a tile)
 // A cluster of three black crystal spikes in green haze at a screen point (the Rotshard's: its puddle's shards and CRYSTAL SPIKE TRIO): h the tallest spike's height, w the spacing, a its opacity
-function _fxRotSpikes(sx, sy, h, w, a) {
-    ctx.globalAlpha = 0.35 * a; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(sx, sy - h * 0.35, w * 2, h * 0.5, 0, 0, Math.PI * 2); ctx.fill();   // the haze
+// (h: its full height; rise 0..1, how far it has come up; seed: a number of the world, never of the screen, so each spike keeps the way it is turned)
+function _fxRotSpikes(sx, sy, h, w, a, rise, seed) {
+    if (rise === undefined) rise = 1;
+    ctx.globalAlpha = 0.35 * a; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(sx, sy - h * rise * 0.35, w * 2, h * rise * 0.5, 0, 0, Math.PI * 2); ctx.fill();   // the haze
+    if (_fxRotSpikes3d(sx, sy, [[-w, 0.75], [w, 0.75], [0, 1]], h, a, rise, seed)) return;   // THE MODELLED SPIKE (docs/EFFECTS.md; js/fx3d.js rotspike)
+    h *= rise;
     for (let i = -1; i <= 1; i++) { const hx = sx + i * w, hh = h * (i ? 0.75 : 1), hw = w * 0.5; ctx.globalAlpha = a; ctx.fillStyle = "#14161a"; ctx.beginPath(); ctx.moveTo(hx - hw, sy); ctx.lineTo(hx, sy - hh); ctx.lineTo(hx + hw, sy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1; ctx.stroke(); }
+}
+// THE ROTSHARD'S BLACK SPIKE, MODELLED (docs/EFFECTS.md; js/fx3d.js, the piece rotspike): spikes stood at (sx + ox, sy), each k of the height h, rising out of the floor, each turned its own way by the seed;
+// a soft dark foot under each. False when the piece is not shown (not approved and no ?fx=3d) or its sheet has not arrived: the caller draws the old spikes.
+function _fxRotSpikes3d(sx, sy, list, h, a, rise, seed) {
+    if (typeof fx3dOn !== "function" || !fx3dOn("rotspike") || !fx3dReady("rotspike")) return false;
+    const s0 = Math.floor(Math.abs(seed || 0) * 7919) % 8;
+    ctx.globalAlpha = 0.35 * a * Math.min(1, rise * 1.5); ctx.fillStyle = "#020302";
+    for (const [ox, k] of list) { const r = h * k * 0.26; ctx.beginPath(); ctx.ellipse(sx + ox, sy, r, r * 0.45, 0, 0, Math.PI * 2); ctx.fill(); }   // (each one's foot on the floor)
+    ctx.globalAlpha = Math.min(1, a * 1.6); list.forEach(([ox, k], i) => fx3dDrawUpright(ctx, "rotspike", sx + ox, sy, s0 + i * 3, h * k, rise));   // (solid for most of a fade: a dark picture fading early is lost in the haze, where the drawn ones kept their bright edge)
+    return true;
 }
 // One of WAVE MAKER's waves (FORM_ULTIMATES.hornshell), from where the Hornshell stands now: every enemy ahead of it (±50°) within ULT_WAVE.len that it can see is hurt (core) and thrown back
 function _ultWave(e) {
@@ -1388,13 +1402,13 @@ function drawElementEffects() {
                 ctx.globalAlpha = 0.6 * k; ctx.strokeStyle = "#7dff4a"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(px, cy0, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
                 ctx.fillStyle = "#b8ff8a"; for (let i = 0; i < 5; i++) { const an = i * 2.4 + e.x, t = (frame * 0.02 + i * 0.37) % 1; ctx.globalAlpha = (1 - t) * 0.7 * k; ctx.beginPath(); ctx.arc(px + Math.cos(an) * rx * 0.6, cy0 + Math.sin(an) * ry * 0.6, 1.5 + t * 2.5, 0, Math.PI * 2); ctx.fill(); }
                 const since = (e.maxLife - e.life) - e.shardAt, b = Math.max(0, 1 - since / 18);
-                if (b > 0) for (const s of e.shards) _fxRotSpikes(px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, 16 * Math.min(1, since / 4 + 0.3), 6, b * k);
+                if (b > 0) for (const s of e.shards) _fxRotSpikes(px + ((s[0] - e.x) - (s[1] - e.y)) * TILE_W, cy0 + ((s[0] - e.x) + (s[1] - e.y)) * TILE_H, 16, 6, b * k, Math.min(1, since / 4 + 0.3), s[0] * 3.1 + s[1] * 1.7);
                 break;
             }
             // CRYSTAL SPIKE TRIO (a card attack: cardAttackTry): the same cluster, larger, under the enemy it struck: it rises fast and fades
             case "spiketrio": {
                 const age = e.maxLife - e.life, k = Math.min(1, e.life / 14);
-                _fxRotSpikes(px, py + TILE_H, 28 * Math.min(1, age / 5 + 0.2), 9, k);
+                _fxRotSpikes(px, py + TILE_H, 28, 9, k, Math.min(1, age / 5 + 0.2), e.x * 3.1 + e.y * 1.7);
                 break;
             }
             // SEARED CHARGE (a card attack: cardAttackTry): a streak of fire from where the Quillstone set off to where it struck, and a burst there
@@ -1482,7 +1496,8 @@ function drawElementEffects() {
                 const d = e.on, k = Math.min(1, (e.maxLife - e.life) / 8), cy = py + TILE_H * 0.5, sway = Math.sin(frame * 0.05) * 2;
                 ctx.globalAlpha = 0.22 * k; ctx.fillStyle = "#7dff4a"; ctx.beginPath(); ctx.ellipse(px + sway, cy - 14, 30, 22, 0, 0, Math.PI * 2); ctx.fill();   // the mist
                 ctx.globalAlpha = 0.14 * k; ctx.beginPath(); ctx.ellipse(px - sway, cy - 4, DECOY_MIST * 1.4142 * TILE_W, DECOY_MIST * 1.4142 * TILE_H, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.globalAlpha = k; for (const [ox, h, w] of [[-7, 30, 6], [0, 44, 8], [8, 34, 6], [-2, 22, 5]]) { ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.moveTo(px + ox - w, cy); ctx.lineTo(px + ox, cy - h); ctx.lineTo(px + ox + w, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "rgba(125,255,74,0.6)"; ctx.lineWidth = 1; ctx.stroke(); }
+                if (!_fxRotSpikes3d(px, cy, [[-7, 30 / 44], [8, 34 / 44], [-2, 22 / 44], [0, 1]], 44, k, k, e.x * 3.1 + e.y * 1.7)) {   // (the modelled spikes, rising as it is set: js/fx3d.js rotspike; else the drawn ones)
+                    ctx.globalAlpha = k; for (const [ox, h, w] of [[-7, 30, 6], [0, 44, 8], [8, 34, 6], [-2, 22, 5]]) { ctx.fillStyle = "#121418"; ctx.beginPath(); ctx.moveTo(px + ox - w, cy); ctx.lineTo(px + ox, cy - h); ctx.lineTo(px + ox + w, cy); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "rgba(125,255,74,0.6)"; ctx.lineWidth = 1; ctx.stroke(); } }
                 if (d && d.maxHealth > 0) { const fr = Math.max(0, d.health / d.maxHealth); ctx.globalAlpha = 0.9 * k; ctx.fillStyle = "#0b0f0c"; ctx.fillRect(px - 14, cy - 52, 28, 3); ctx.fillStyle = "#7dff4a"; ctx.fillRect(px - 14, cy - 52, 28 * fr, 3); }
                 break;
             }

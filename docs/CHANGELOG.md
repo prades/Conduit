@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09u` · branch `claude/start-game-project-HSh7Z` · the Rotshard's black spike, modelled (on the preview)
+The owner's pick for the next 3-D piece ("Rotshard's black spike"), its model approved from the large preview ("Yes, build it"). `docs/EFFECTS.md`.
+- **The piece:** a spike of the Rotshard's old glassy-black shell, its faces broken, chips at its foot, and a hairline of green light in a crack. It is the first standing piece; the quill and icicle fly.
+- **Where it is used:**
+  - ROTTEN DECOY's four spikes and TOXIC PUDDLE's spikes under each enemy (and the CRYSTAL SPIKE TRIO card's cluster, the same drawing).
+  - They rise out of the floor, lit green from below by the mist they stand in.
+- **Only with `?fx=3d`** until the owner approves it in the game; everyone else sees the drawn spikes. Rules and hits are unchanged.
+- Tests: `tests/fx3d.js` (the sheet, preview only, the old look before the sheet, foot on the floor, rising). Checked in the real page with pictures.
+
 ### Build `2026-11-09t` · branch `claude/start-game-project-HSh7Z` · energy cards: the owner's answers
 The owner's answers on the agent's readings (`docs/ENERGY-CARDS.md` rules 15–18):
 - **The starting squad keeps its elements** with free cards, and the tutorial stays at levels 7 and 6 ("Keep as built").

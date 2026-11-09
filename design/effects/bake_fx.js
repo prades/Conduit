@@ -22,6 +22,10 @@ const PIECES = {
   // ICICLE VOLLEY (the RIMESTAR): one of the frost shards its cast throws (forms32.js: an eight-faced crystal drawn out long), made big: a slender six-sided spike of pale blue ice,
   // long-pointed in front and a short faceted point behind, a little uneven, as long as the quill
   icicle: { form: 861, color: '#7fd6ff', len: 0.95, r: 0.085, sides: 6, back: 0.15, seed: 3, roll: 0.5, cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },   // (a draft, for the owner's yes)
+  // ROTTEN DECOY and TOXIC PUDDLE (the ROTSHARD; the owner's pick, 2026-11-09: "Rotshard's black spike"): a spike of its old black shell (forms5.js shellShard: "a broken piece of the old black
+  // shell: jagged, glassy-black", the shell's black, M.black), standing in the floor: five-sided, each ring pulled in and out so its edges are broken, a little lean, a chip broken off at its foot.
+  // UPRIGHT: it stands on the floor (its foot at the origin, pointing up +y); the game turns it (yaws) and lets it rise out of the floor. The green haze stays drawn in code.
+  rotspike: { form: 101, color: '#14c040', h: 1.15, r: 0.17, sides: 5, seed: 4, lean: 0.09, upright: true, cell: 72, yaws: 8, pitches: [0], mist: '#7dff4a', mistI: 1.4 },   // (the model approved 2026-11-09: "Yes, build it"; mist: lit from below by the green mist it stands in, so it reads in it as the drawn ones did)
 };
 
 const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
@@ -39,7 +43,9 @@ window.__fx = async function (mode, piece, P) {
   const lit = scene => { scene.environment = env; scene.add(new T.HemisphereLight(0x7f8ea3, 0x050505, 0.45));
     const key = new T.DirectionalLight(0xfff1e2, 2.4); key.position.set(3, 6, 4); scene.add(key);
     const rim = new T.DirectionalLight(0x6c8cff, 1.3); rim.position.set(-5, 1.2, 1.5); scene.add(rim);
-    const back = new T.DirectionalLight(0x6c8cff, 0.6); back.position.set(2, 1, -5); scene.add(back); };
+    const back = new T.DirectionalLight(0x6c8cff, 0.6); back.position.set(2, 1, -5); scene.add(back);
+    if (P.mist) { const m = new T.DirectionalLight(new T.Color(P.mist).convertSRGBToLinear(), P.mistI || 1.2); m.position.set(1.5, -0.35, 2.2); scene.add(m);   // (the glowing mist it stands in, lighting it from low in front: a standing piece's own, drawn in code round it in the game)
+      const m2 = new T.DirectionalLight(new T.Color(P.mist).convertSRGBToLinear(), (P.mistI || 1.2) * 0.6); m2.position.set(-2.2, -0.2, 1.4); scene.add(m2); } };
   // the game's 2:1 iso camera (as design/evolutions/bake.js), looking at (0, lookY, 0), the view w x h world units across
   const camFor = (w, h, lookY) => { const c = new T.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.1, 100), D = 10, el = Math.asin(0.5);
     c.position.set(D * Math.cos(el) * Math.SQRT1_2, lookY + D * Math.sin(el), D * Math.cos(el) * Math.SQRT1_2); c.lookAt(0, lookY, 0); c.updateMatrixWorld(); c.updateProjectionMatrix(); return c; };
@@ -52,9 +58,35 @@ window.__fx = async function (mode, piece, P) {
         geo.translate(0, h / 2, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, ice); if (!tip) m.rotation.z = PI; return m; };
       const spike = new T.Group(); spike.add(mk(front, true, P.seed)); spike.add(mk(P.back, false, P.seed + 7));   // (both cones from the widest point: the long one forward, the short one back)
       spike.rotation.z = -PI / 2; spike.position.x = (P.back - front) / 2; const r = new T.Group(); r.add(spike); r.rotation.x = P.roll || 0; g.add(r); }
+    if (piece === 'rotspike') {   // the old shell's glassy black (forms-core.js M.black), flat-shaded so each broken face catches the light
+      const black = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); black.envMapIntensity = 1.7;   // (glassy: a clear coat over the black)
+      const N = P.sides, mk = (r, h, sd, segs, amt) => { const geo = new T.ConeGeometry(r, h, N, segs), q = geo.attributes.position;
+        for (let v = 0; v < q.count; v++) { const x = q.getX(v), y = q.getY(v), z = q.getZ(v); if (Math.hypot(x, z) < 1e-4) continue;
+          const n = _hz(Math.round(x * 400) + sd, Math.round(y * 400), Math.round(z * 400)), n2 = _hz(Math.round(z * 400), Math.round(x * 400) + sd, Math.round(y * 400)), k = 1 - amt + 2 * amt * n;   // (rounded, so the seam's twin vertices move alike)
+          q.setXYZ(v, x * k + (n2 - 0.5) * r * 0.3, y + (n - 0.5) * h * 0.05, z * (2 - k) * 0.9 + (n - 0.5) * r * 0.25); }
+        geo.translate(0, h / 2, 0); geo.computeVertexNormals(); return new T.Mesh(geo, black); };
+      const s1 = mk(P.r, P.h, P.seed, 4, 0.4); s1.rotation.z = -P.lean; s1.rotation.x = P.lean * 0.5; g.add(s1);
+      // THE HAIRLINE of its crystal's green light in a crack (as on the shell shard on the Rotshard, forms5.js shellShard): along one ridge, from its foot to past halfway up
+      { const q = s1.geometry.attributes.position, col = 1, at = row => new T.Vector3(q.getX(row * (N + 1) + col), q.getY(row * (N + 1) + col), q.getZ(row * (N + 1) + col));
+        for (const [r0, r1] of [[4, 3], [3, 2]]) {   // along the ridge, a row at a time (the ridge bends where its row was pulled out)
+          const A = at(r0), B = at(r1), mid = A.clone().add(B).multiplyScalar(0.5), out = new T.Vector3(mid.x, 0, mid.z).normalize().multiplyScalar(0.008);
+          const cr = new T.Mesh(new T.CylinderGeometry(0.0065, 0.009, A.distanceTo(B) * 1.04, 5), M.glow); cr.position.copy(mid).add(out); cr.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), B.clone().sub(A).normalize()); s1.add(cr); } }
+      const c1 = mk(P.r * 0.5, P.h * 0.34, P.seed + 11, 2, 0.35); c1.position.set(P.r * 0.8, 0, P.r * 0.3); c1.rotation.set(0.3, 0.6, -0.6); g.add(c1);   // chips broken off at its foot
+      const c2 = mk(P.r * 0.38, P.h * 0.22, P.seed + 23, 1, 0.3); c2.position.set(-P.r * 0.7, 0, -P.r * 0.5); c2.rotation.set(-0.35, 2.1, 0.5); g.add(c2);
+    }
     return g; };
   // the way it flies, in the world: the game's x is the world's +x, the game's y the world's +z
   const aim = (g, yaw, pitch) => { g.rotation.set(0, 0, 0); g.rotation.order = 'YZX'; g.rotation.y = -yaw; g.rotation.z = pitch; };
+  if (mode === 'preview' && P.upright) {   // a standing piece: alone, large; then beside its form, as its effect sets it out (ROTTEN DECOY's four, at its heights)
+    const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
+    const s1 = new T.Scene(); lit(s1); const q1 = build(); q1.rotation.y = -0.45; s1.add(q1);   // (its crack toward the camera)
+    const big = shot(s1, camFor(P.h * 2.4, P.h * 1.056, P.h * 0.5), 1600, 704);
+    const s2 = new T.Scene(); lit(s2); const B = FORMS2[P.form].build(); B.update(0, 0); s2.add(B.g); B.g.rotation.y = PI / 4; B.g.position.set(-1.0 * Math.SQRT1_2, 0, 1.0 * Math.SQRT1_2);
+    { const mist = new T.Mesh(new T.CircleGeometry(0.9, 40), M.floorGlow); mist.rotation.x = -PI / 2; mist.position.set(1.3 * Math.SQRT1_2, 0.01, -1.3 * Math.SQRT1_2); s2.add(mist); }   // (the mist the game draws round it, here only to show it in place)
+    [[-0.22, 0.68, 0.3], [0, 1, 1.4], [0.24, 0.77, 2.6], [-0.06, 0.5, 4.1]].forEach(([dx, k, yaw], i) => { const q = build(); q.scale.setScalar(k * 1.3); q.rotation.y = yaw; q.position.set((1.3 + dx) * Math.SQRT1_2 + (i % 2 ? 0.12 : -0.1), 0, -(1.3 - dx) * Math.SQRT1_2 + (i > 1 ? 0.18 : -0.12)); s2.add(q); });
+    const side = shot(s2, camFor(5.2, 2.6, 0.75), 800, 400);
+    return { big: big.toDataURL('image/png'), side: side.toDataURL('image/png') };
+  }
   if (mode === 'preview') {
     const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
     // 1. the piece alone, large: flying to the screen's right (the game's +x, -y), its nose a little up
@@ -69,7 +101,7 @@ window.__fx = async function (mode, piece, P) {
   if (mode === 'sheet') {
     const C = P.cell, PXU = 144 / 3.4, Wv = C / PXU;   // (the forms' pixels a unit)
     renderer.setSize(C, C, false);
-    const scene = new T.Scene(); lit(scene); const q = build(); scene.add(q); const cam = camFor(Wv, Wv, 0);
+    const scene = new T.Scene(); lit(scene); const q = build(); scene.add(q); const cam = camFor(Wv, Wv, P.upright ? P.h * 0.42 : 0);   // (a standing piece: the view raised to its middle)
     const sheet = document.createElement('canvas'); sheet.width = C * P.yaws; sheet.height = C * P.pitches.length; const sg = sheet.getContext('2d');
     const probe = document.createElement('canvas'); probe.width = C; probe.height = C; const pg = probe.getContext('2d'); const edges = [];
     for (let j = 0; j < P.pitches.length; j++) for (let k = 0; k < P.yaws; k++) {
@@ -78,8 +110,9 @@ window.__fx = async function (mode, piece, P) {
       for (let i = 0; i < C && !edge; i++) for (const [x, y] of [[i, 0], [i, C - 1], [0, i], [C - 1, i]]) if (d[(y * C + x) * 4 + 3] > 8) { edge = true; break; }
       if (edge) edges.push(k + ',' + j);
     }
-    const g0 = new T.Vector3(0, 0, 0).project(cam);
-    return { png: sheet.toDataURL('image/png'), meta: { piece, cell: C, yaws: P.yaws, pitches: P.pitches, anchor: { x: (g0.x * 0.5 + 0.5) * C, y: (1 - (g0.y * 0.5 + 0.5)) * C }, unitsPerCell: Wv, len: P.len }, edges };
+    const g0 = new T.Vector3(0, 0, 0).project(cam), t0 = new T.Vector3(0, P.h || 0, 0).project(cam);   // (its foot, the origin; a standing piece's tip, straight above it)
+    return { png: sheet.toDataURL('image/png'), meta: { piece, cell: C, yaws: P.yaws, pitches: P.pitches, anchor: { x: (g0.x * 0.5 + 0.5) * C, y: (1 - (g0.y * 0.5 + 0.5)) * C }, unitsPerCell: Wv, len: P.len,
+      tipY: P.upright ? (1 - (t0.y * 0.5 + 0.5)) * C : undefined, upright: !!P.upright }, edges };
   }
   return { err: 'mode ' + mode };
 };
@@ -98,7 +131,7 @@ window.__fx = async function (mode, piece, P) {
   if (MODE === 'preview') {
     // one picture: the piece large on top, the piece beside its form below (on the arena's dark floor colour, so the glow reads as it will)
     const q = await b.newPage(); await q.setViewportSize({ width: 1600, height: 1160 });
-    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>the ${PIECE} beside its form, at one scale<br><span style="font-weight:400;font-size:18px">(in the game it is about 25 px long)</span></div></div></body>`);
+    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>${PIECES[PIECE].upright ? 'ROTTEN DECOY\'s four ' + PIECE + 's beside the Rotshard, at one scale' : 'the ' + PIECE + ' beside its form, at one scale'}<br><span style="font-weight:400;font-size:18px">${PIECES[PIECE].upright ? '(in the game the tallest is about 44 px; the green mist stays drawn in code)' : '(in the game it is about 25 px long)'}</span></div></div></body>`);
     await q.screenshot({ path: OUT, clip: { x: 0, y: 0, width: 1600, height: 1120 } });
     console.log('wrote ' + OUT);
   }

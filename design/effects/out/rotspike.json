@@ -1,0 +1,15 @@
+{
+ "piece": "rotspike",
+ "cell": 72,
+ "yaws": 8,
+ "pitches": [
+  0
+ ],
+ "anchor": {
+  "x": 36.00000000000007,
+  "y": 53.71582320118098
+ },
+ "unitsPerCell": 1.7,
+ "tipY": 11.535291769797743,
+ "upright": true
+}

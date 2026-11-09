@@ -8,6 +8,10 @@ const FX3D = {
         quill: { sheet: "img/fx/quill.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
         // the RIMESTAR's icicle (ICICLE VOLLEY): one of the frost shards its cast throws (design/evolutions/forms32.js), made big, a slender six-sided spike of pale blue ice; the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09g on the preview; approved in the game the same day, for everyone since 2026-11-09h
         icicle: { sheet: "img/fx/icicle.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
+        // the ROTSHARD's black spike (ROTTEN DECOY, TOXIC PUDDLE; the CRYSTAL SPIKE TRIO card's cluster is the same): a spike of its old glassy-black shell (design/evolutions/forms5.js shellShard), its faces broken, chips at its
+        // foot, a hairline of its green crystal light in a crack; the owner's pick ("Rotshard's black spike") and the model approved 2026-11-09 ("Yes, build it"); built in build 2026-11-09u on the preview.
+        // UPRIGHT: it stands on the floor; its columns are the ways it is turned (yaws), one row; ax, ay its foot in the cell and tipY its tip (design/effects/out/rotspike.json), so it is drawn foot on the floor, rising out of it
+        rotspike: { sheet: "img/fx/rotspike.png", cell: 72, yaws: 8, pitches: [0], upright: true, ax: 36, ay: 53.716, tipY: 11.535 },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle"],  // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h
@@ -41,6 +45,17 @@ function fx3dCell(piece, vx, vy, climb) {
     const step = 2 * Math.PI / P.yaws, k = ((Math.round(Math.atan2(vy, vx) / step) % P.yaws) + P.yaws) % P.yaws;
     let j = 0; for (let i = 1; i < P.pitches.length; i++) if (Math.abs(P.pitches[i] - (climb || 0)) < Math.abs(P.pitches[j] - (climb || 0))) j = i;
     return [k, j];
+}
+// A STANDING piece (FX3D.pieces[piece].upright): its foot on the floor at the screen point (sx, sy), turned to its column k (any whole number: it wraps), hpx tall on the screen, risen `rise` (0..1) out of the floor:
+// while it rises only the part above the floor is drawn (no clip: the cell is cut where the floor meets it). False when its sheet has not arrived (the caller draws the old look).
+function fx3dDrawUpright(g, piece, sx, sy, k, hpx, rise) {
+    const P = FX3D.pieces[piece], img = P && P.upright && _fx3dImg(piece); if (!img) return false;
+    const C = P.cell, col = ((Math.floor(k) % P.yaws) + P.yaws) % P.yaws, H0 = P.ay - P.tipY, sc = hpx / H0, r = Math.max(0, Math.min(1, rise === undefined ? 1 : rise));
+    if (r <= 0 || !(sc > 0)) return true;
+    const cell = typeof spriteCell === "function" ? spriteCell(img, col * C, 0, C, C) : null, D = (1 - r) * H0;   // (D: how far its foot is still under the floor, in the cell's pixels)
+    const rows = r >= 1 ? C : Math.max(1, Math.min(C, P.ay - D)), dx = sx - P.ax * sc, dy = sy + D * sc - P.ay * sc;   // (risen whole, its foot and the chips round it are drawn too)
+    if (cell) g.drawImage(cell, 0, 0, C, rows, dx, dy, C * sc, rows * sc); else g.drawImage(img, col * C, 0, C, rows, dx, dy, C * sc, rows * sc);
+    return true;
 }
 // draw it centred on the screen point (sx, sy); false when its sheet has not arrived (the caller draws the old look)
 function fx3dDraw(g, piece, sx, sy, vx, vy, climb) {
