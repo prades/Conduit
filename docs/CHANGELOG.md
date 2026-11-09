@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09m` · branch `claude/start-game-project-HSh7Z` · the drilled hole, modelled in the cave's rock (on the preview `?walls=3d`)
+The owner, asked whether the hole a drilled rubble leaves should be modelled too: "Yes, model the hole in the rock too".
+- **Where rubble against a wall is drilled through** (the arena's south rubble, the way down to the Nest), the hole is a tunnel mouth in the cave's rock, in the drawn hole's place and size.
+  - **The model:** a rough scorched lip of broken rock round the opening; the tunnel going back into the rock and down, in its own dark, black at its end; soot on the wall round it, climbing over the arch, fading raggedly into the wall; the pile's last stones at its foot.
+  - **Its rim is still warm:** the glow along the arch is drawn by the game over the picture, pulsing as the drawn rim did.
+  - **How it works:** the wall's face is in the model only as a mask, so the tunnel shows only through the opening and never over the game's own wall. `design/cave/bake_rubble.js` bakes it with the rubble's pictures (`img/cave/rubble.png`, `js/caverubble.js`). It also trims every picture to what shows (the rubble's look is unchanged), and its own errors now stop it instead of leaving it hanging.
+- **On the preview only** (`?walls=3d`, js/cavewalls.js `CAVE_HOLE_APPROVED`) until the owner approves it in the game; everyone else sees the drawn hole. The modelled rubble stays for everyone.
+- Tests: cavewalls (the hole's picture and rim, the preview, the drawn hole without it, the mask; 28 pictures). Run: listed in the commit. Checked in the real page with screenshots: the hole lit and in the blackout, beside the drawn hole and the bare wall, no page errors. Not playtested.
+
 ### Build `2026-11-09l` · branch `claude/start-game-project-HSh7Z` · the modelled rubble for everyone
 On the pictures of build `2026-11-09k`, the owner said "Approve the rubble for everyone, keep the slab".
 - The rubble patches' modelled rock falls (the arena's south rubble; the Sewers' way to the dam, rock fall at the bank and collapsed tunnel) are drawn for everyone (js/cavewalls.js `CAVE_RUBBLE_APPROVED`), the hazard-painted slab kept. The drawn pile stays only as the fallback before the rubble's sheet arrives.

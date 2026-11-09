@@ -112,7 +112,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
                 seams: P ? CAVE_RUBBLE.shows.map(s => P[s] && P[s][7] ? P[s][7].filter(q => q.length >= 4 && q.length % 2 === 0).length : -1) : [], left: P && P.left ? P.left[7].length : -1 }; })`);
         ok(r.length >= 4, 'only ' + r.length + ' patches'); same(r.map(p => p.id).sort().join(), 'rubble_arena_south,rubble_sewer_bank,rubble_sewer_choke,rubble_sewer_gate', 'the patches');
         for (const p of r) {
-            ok(p.has, p.id + ': no pictures'); same(p.has.join(), ['3', '4', '6', '7', '8', '9'].concat(p.choke ? ['left'] : []).sort().join(), p.id + ': its pictures');
+            ok(p.has, p.id + ': no pictures'); same(p.has.join(), ['3', '4', '6', '7', '8', '9'].concat(p.choke ? ['left'] : ['hole']).sort().join(), p.id + ': its pictures (and the hole, for rubble against a wall: build 2026-11-09m)');
             same(JSON.stringify(p.ends), JSON.stringify(p.now), p.id + ': the patch moved since the bake: node design/cave/bake_rubble.js <three>');
             same(p.seams.join(), [9, 8, 7, 6, 4, 3].map(() => p.segs * 3).join(), p.id + ': its seams (three to a pile)'); if (p.choke) same(p.left, 0, p.id + ': seams on what a choke leaves');
         }
@@ -121,7 +121,7 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     check('its sheet is the size the atlas says, every picture inside it; the model is the walls\' rock (their brown and their lights)', () => {
         const A = J('CAVE_RUBBLE'); same(A.sheet, 'img/cave/rubble.png', 'the sheet'); same(pngSize(A.sheet).join('x'), A.w + 'x' + A.h, 'its size'); ok(A.w <= 4096 && A.h <= 4096, 'too big for a tablet\'s texture');
         let n = 0, bad = 0; for (const P of Object.values(A.items)) for (const [k, e] of Object.entries(P)) { if (k === 'ends') continue; n++; if (e[1] < 0 || e[2] < 0 || e[1] + e[3] > A.w || e[2] + e[4] > A.h || e[3] < 1 || e[4] < 1) bad++; }
-        same(n, 27, 'pictures'); same(bad, 0, 'pictures outside the sheet');
+        same(n, 28, 'pictures'); same(bad, 0, 'pictures outside the sheet');
         const b = rd('design/cave/bake_rubble.js'), w = rd('design/cave/bake_walls.js'), lights = s => (s.match(/new T\.(HemisphereLight|DirectionalLight)\([^)]*\)/g) || []).join();
         ok(/base = lin\(0x4a3f37\), dark = lin\(0x1d1714\), light = lin\(0x7a6a5c\)/.test(b), 'not the walls\' brown'); ok(lights(b).length > 40 && lights(b) === lights(w), 'not the walls\' lights');
     });
@@ -141,9 +141,18 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
         for (const s of r) { same(s.pics, 1, s.show + ': pictures'); same(JSON.stringify(s.at), JSON.stringify(s.want), s.show + ': where'); same(s.strokes, 3 * 3 * 2, s.show + ': its seams (three to a pile, each a glow and a line)'); ok(s.lighter, s.show + ': its seams do not glow'); same(s.fills, 0, s.show + ': the drawn pile too'); }
         ok(r.every((s, i) => !i || s.glow > r[i - 1].glow), 'the seams do not glow hotter with each hit: ' + r.map(s => s.glow).join(' '));
     });
-    check('a choke drilled through: what it leaves, in the rock (one picture), its sides still warm; rubble against a wall drilled through: the hole, drawn as before', () => {
+    check('a choke drilled through: what it leaves, in the rock (one picture), its sides still warm', () => {
         const a = J('__rubDraw("rubble_sewer_gate", 6)'); same(a.filter(q => q[0] === 'drawImage').length, 1, 'what a choke leaves'); same(a.filter(q => q[0] === 'fill').length, 2, 'its two warm sides'); same(a.filter(q => q[0] === 'stroke').length, 0, 'seams on what is left');
-        const h = J('__rubDraw("rubble_arena_south", 6)'); same(h.filter(q => q[0] === 'drawImage').length, 0, 'the hole is a picture'); ok(h.filter(q => q[0] === 'fill').length >= 8, 'not the hole');
+    });
+    // THE HOLE (the owner, 2026-11-09: "Yes, model the hole in the rock too"; build 2026-11-09m): rubble against a wall drilled through leaves a tunnel mouth modelled in the rock; on the preview until approved
+    check('the hole a drilled rubble leaves in a wall, modelled in the rock, on the preview (one picture, its rim still warm, glowing over it); without the preview, the drawn hole as before', () => {
+        same(J('CAVE_HOLE_APPROVED'), false, 'approved already: the owner has not seen it in the game');
+        run('_caveWallsPrev = true;'); const m = J('__rubDraw("rubble_arena_south", 6)'), st = m.filter(q => q[0] === 'stroke');
+        same(m.filter(q => q[0] === 'drawImage').length, 1, 'the modelled hole'); same(st.length, 2, 'its rim (a glow and a line)'); ok(st.every(c => c[2] === 'lighter'), 'its rim does not glow'); same(m.filter(q => q[0] === 'fill').length, 0, 'the drawn hole too');
+        const e = J('CAVE_RUBBLE.items.rubble_arena_south.hole'); same(e[7].length, 1, 'its rim: one line'); ok(e[7][0].length >= 40, 'its rim: too few points');
+        run('_caveWallsPrev = false;'); const h = J('__rubDraw("rubble_arena_south", 6)'); same(h.filter(q => q[0] === 'drawImage').length, 0, 'the modelled hole without the preview'); ok(h.filter(q => q[0] === 'fill').length >= 8, 'not the drawn hole');
+        run('_caveWallsPrev = true;');
+        const b = rd('design/cave/bake_rubble.js'); ok(/colorWrite: false/.test(b), 'the hole\'s tunnel is not masked by the wall\'s face (its outside would show)');
     });
     check('in a dim room it is darkened as the walls are (its picture over its silhouette at the room\'s light, composed once per level)', () => {
         run('_caveDim.clear();'); const c = J('__rubDraw("rubble_arena_south", 0, 0.5)'); same(c.filter(q => q[0] === 'drawImage').length, 1, 'pictures');

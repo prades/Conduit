@@ -100,29 +100,39 @@ window.__pile = function (R, stage) {
     for (let k = 1; k < 16; k++) { const a = PI * k / 16; out.push([Uc - Math.cos(a) * HW, 0.55 * ZH + Math.sin(a) * 0.45 * ZH]); }
     for (let k = 4; k >= 0; k--) out.push([Uc + HW, 0.55 * ZH * k / 4]);
     const NO = out.length, nrm2 = out.map((p, i) => { const a = out[Math.max(0, i - 1)], b = out[Math.min(NO - 1, i + 1)], du = b[0] - a[0], dz = (b[1] - a[1]) / UH, l = Math.hypot(du, dz) || 1; return [-dz / l, du / l]; });   // (out of the opening, in the face's plane)
-    // the tunnel: the outline and the floor, ring by ring back into the rock, narrowing and going down, its rock rough, darker as it goes, black at its end
-    { const NJ = 10, DEEP = 1.3, DROP = 28, loop = out.concat([[Uc + HW * 0.5, 0], [Uc, 0], [Uc - HW * 0.5, 0]]), NL = loop.length, pos = [], col = [], idx = [], ring = [];
+    // THE WALL'S FACE as a mask (it writes depth, no colour; drawn first): only what is seen through the opening shows, the tunnel's outside never (the wall itself is the game's own picture behind)
+    { const sh = new T.Shape(); sh.moveTo(-1.2, -1.6); sh.lineTo(L + 1.2, -1.6); sh.lineTo(L + 1.2, 2.2); sh.lineTo(-1.2, 2.2); sh.lineTo(-1.2, -1.6);
+      const hp = new T.Path(); out.forEach(([u, z], i) => i ? hp.lineTo(u, z / UH) : hp.moveTo(u, z / UH)); hp.lineTo(out[0][0], 0); sh.holes.push(hp);
+      const geo = new T.ShapeGeometry(sh), a = geo.attributes.position; for (let i = 0; i < a.count; i++) { const v = P3(a.getX(i), -0.05, a.getY(i) * UH); a.setXYZ(i, v.x, v.y, v.z); }
+      const m = new T.Mesh(geo, new T.MeshBasicMaterial({ colorWrite: false, side: T.DoubleSide })); m.renderOrder = -1; g.add(m); }
+    // the tunnel: the outline and the floor, ring by ring back into the rock, narrowing and going down, its rock rough; in its own dark (unlit: no light reaches in), black at its end
+    { const NJ = 10, DEEP = 1.3, DROP = 28, loop = out.concat([[Uc + HW * 0.5, 0], [Uc, 0], [Uc - HW * 0.5, 0]]), NL = loop.length, pos = [], col = [], idx = [], ring = [], wallC = lin(0x2c1b10), floorC = lin(0x342218);
       for (let j = 0; j <= NJ; j++) { const t = j / NJ, k = 1 - 0.22 * t, row = [];
-        for (let i = 0; i < NL; i++) { const [u, z] = loop[i], uu = Uc + (u - Uc) * k, zz = z * k - DROP * t, rough = j && j < NJ ? fbm(S0 + uu * 5, zz / UH * 5 + 3, t * 6) - 0.5 : 0, ou = i < NO ? nrm2[i][0] : 0, oz = i < NO ? nrm2[i][1] : -1;
-          const v = P3(uu + ou * rough * 0.14, -DEEP * t, zz + oz * rough * 0.14 * UH), c = dark.clone().lerp(base, 0.35 * (1 - t)).lerp(scorch, Math.max(0, 1 - t * 4) * 0.6).multiplyScalar(Math.pow(1 - t, 1.6));
+        for (let i = 0; i < NL; i++) { const [u, z] = loop[i], uu = Uc + (u - Uc) * k, zz = z * k - DROP * t, rough = j > 1 && j < NJ ? fbm(S0 + uu * 5, zz / UH * 5 + 3, t * 6) - 0.5 : 0, ou = i < NO ? nrm2[i][0] : 0, oz = i < NO ? nrm2[i][1] : -1;
+          const v = P3(uu + ou * rough * 0.14, -DEEP * t, zz + oz * rough * 0.14 * UH), c = (i < NO ? wallC : floorC).clone().multiplyScalar(Math.pow(1 - t, 3) * (0.8 + 0.5 * (rough + 0.5)));
           pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); row.push(pos.length / 3 - 1); }
         ring.push(row); }
       for (let j = 0; j < NJ; j++) for (let i = 0; i < NL; i++) { const i2 = (i + 1) % NL; idx.push(ring[j][i], ring[j][i2], ring[j + 1][i2], ring[j][i], ring[j + 1][i2], ring[j + 1][i]); }
       const e = P3(Uc, -DEEP, 0.3 * ZH * 0.78 - DROP); pos.push(e.x, e.y, e.z); col.push(0, 0, 0); const ce = pos.length / 3 - 1; for (let i = 0; i < NL; i++) idx.push(ce, ring[NJ][i], ring[NJ][(i + 1) % NL]);
+      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.setIndex(idx);
+      g.add(new T.Mesh(geo, new T.MeshBasicMaterial({ vertexColors: true, side: T.DoubleSide }))); }
+    // its lip: broken rock round the opening, standing a little proud of the wall, rough, scorched darkest at the edge
+    { const EX = [0, 0.04, 0.1, 0.17], DD = [-0.02, 0.05, 0.07, 0.02], SCO = [0.85, 0.6, 0.35, 0.15], pos = [], col = [], idx = [], rows = [];
+      EX.forEach((ex, k) => { const row = []; for (let i = 0; i < NO; i++) { const u = out[i][0] + nrm2[i][0] * ex, z = out[i][1] + nrm2[i][1] * ex * UH, w = P3(u, 0, z), big = fbm(w.x * 4.4 + 3, z / UH * 4.4 + 1, w.z * 4.4 + 1.7), small = fbm(w.x * 9.3, z / UH * 9 + 9, w.z * 9.3 + 5.3);
+        const kk = Math.max(0, Math.min(1, 0.5 + (big - 0.5) * 1.6 + (small - 0.5) * 0.6)), c = dark.clone().lerp(base, Math.min(1, kk * 1.5)).lerp(light, Math.max(0, kk - 0.62) * 1.2).lerp(scorch, SCO[k]);
+        const v = P3(u, DD[k] + (k ? (big - 0.5) * 0.08 : 0), z); pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); row.push(pos.length / 3 - 1); } rows.push(row); });
+      for (let k = 0; k < EX.length - 1; k++) for (let i = 0; i < NO - 1; i++) idx.push(rows[k][i], rows[k][i + 1], rows[k + 1][i + 1], rows[k][i], rows[k + 1][i + 1], rows[k + 1][i]);
       const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals(); g.add(new T.Mesh(geo, MAT.rock)); }
-    // the rock round the mouth: rings out from the opening, pushed in and out by the noise of where it is, its lip rolled back into the tunnel; scorched near the opening; its outer edge fading into the wall's rock
-    { const NK = 9, pos = [], col = [], idx = [], rows = [];
-      for (let k = 0; k <= NK; k++) { const f = k / NK, ex = 0.6 * Math.pow(f, 1.15), row = [];
-        for (let i = 0; i < NO; i++) { const u = out[i][0] + nrm2[i][0] * ex, z = out[i][1] + nrm2[i][1] * ex * UH, w = P3(u, 0, z), big = fbm(w.x * 2.4 + 3, z / UH * 2.4 + 1, w.z * 2.4 + 1.7), small = fbm(w.x * 6.3, z / UH * 6 + 9, w.z * 6.3 + 5.3);
-          const d = k === 0 ? -0.03 : k === 1 ? 0.05 : 0.04 + (big - 0.5) * 0.3 + (small - 0.5) * 0.1, kk = Math.max(0, Math.min(1, 0.5 + (big - 0.5) * 1.6 + (small - 0.5) * 0.6));
-          const c = dark.clone().lerp(base, Math.min(1, kk * 1.5)).lerp(light, Math.max(0, kk - 0.62) * 1.4).lerp(scorch, Math.max(0, 1 - f * 2.4) * 0.8);
-          const a = Math.max(0, Math.min(1, (1 - (f - 0.45) / 0.55) * (f > 0.4 ? 0.7 + 0.9 * (fbm(w.x * 3.3 + 7, z / UH * 3, w.z * 3.3) - 0.5) * 2 : 1)));
-          const v = P3(u, d, z); pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b, k === NK ? 0 : a); row.push(pos.length / 3 - 1); }
+    // the scorch on the wall round it (the drawn hole's dark arches): soot, darkest by the lip, fading raggedly into the wall's rock
+    { const NK = 7, pos = [], col = [], idx = [], rows = [], soot = lin(0x140b06);
+      for (let k = 0; k <= NK; k++) { const f = k / NK, row = [];
+        for (let i = 0; i < NO; i++) { const up = Math.max(0, nrm2[i][1]), rag0 = fbm(out[i][0] * 4.1 + S0, out[i][1] / UH * 4.1, 3.3), ex = 0.06 + f * (0.16 + 0.42 * up) * (0.7 + 0.6 * rag0);   // (heat rises: the soot climbs over the arch, little beside its feet)
+          const u = out[i][0] + nrm2[i][0] * ex, z = out[i][1] + nrm2[i][1] * ex * UH, w = P3(u, 0, z), rag = fbm(w.x * 3.7 + 7, z / UH * 3.7, w.z * 3.7 + 2), low = Math.min(1, Math.max(0, z / 22));
+          const a = k === NK ? 0 : Math.max(0, Math.min(1, 0.85 * Math.pow(1 - f, 1.3) * (0.55 + 1.1 * rag) * (0.35 + 0.65 * low))), v = P3(u, 0, z); pos.push(v.x, v.y, v.z); col.push(soot.r, soot.g, soot.b, a); row.push(pos.length / 3 - 1); }
         rows.push(row); }
       for (let k = 0; k < NK; k++) for (let i = 0; i < NO - 1; i++) idx.push(rows[k][i], rows[k][i + 1], rows[k + 1][i + 1], rows[k][i], rows[k + 1][i + 1], rows[k + 1][i]);
-      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 4)); geo.setIndex(idx); geo.computeVertexNormals();
-      const fadeMat = window.__FADEMAT || (window.__FADEMAT = (() => { const m = new T.MeshStandardMaterial({ vertexColors: true, transparent: true, roughness: 0.95, metalness: 0, side: T.DoubleSide }); m.envMapIntensity = 0.25; return m; })());
-      g.add(new T.Mesh(geo, fadeMat)); }
+      const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 4)); geo.setIndex(idx);
+      g.add(new T.Mesh(geo, new T.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: T.DoubleSide }))); }
     // what is left of the pile at its foot (the drawn hole's three stones), and a block either side of the mouth
     for (const [u, w, h, k] of [[0.12, 0.08, 11, 0], [0.85, 0.09, 12, 1], [0.24, 0.06, 9, 2]]) block(u * L, 0.14, 0, w * L / 2 * 1.3, h / UH / 2 * 1.2, 0.1, S0 + 300 + k, tones[k % tones.length]);
     for (const [u, k] of [[0.17, 0], [0.83, 1]]) block(u * L, 0.06, 0, 0.13, 17 / UH / 2 * 1.2, 0.12, S0 + 320 + k, chipT[k].clone().lerp(scorch, 0.35));
@@ -162,7 +172,8 @@ window.__pile = function (R, stage) {
     seams.push(pts); }
   // the screen box, from the patch's start A at the floor
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; g.updateMatrixWorld(true);
-  g.traverse(o => { if (!o.isMesh) return; const a = o.geometry.attributes.position, v = new T.Vector3(); for (let i = 0; i < a.count; i++) { v.fromBufferAttribute(a, i).applyMatrix4(o.matrixWorld); const sx = SX(v.x, v.z), sy = SY(v.x, v.z, v.y * UH); if (sx < x0) x0 = sx; if (sx > x1) x1 = sx; if (sy < y0) y0 = sy; if (sy > y1) y1 = sy; } });
+  g.traverse(o => { if (!o.isMesh || o.material.colorWrite === false) return; const a = o.geometry.attributes.position, v = new T.Vector3();   // (not the hole's mask: it is never seen)
+    for (let i = 0; i < a.count; i++) { v.fromBufferAttribute(a, i).applyMatrix4(o.matrixWorld); const sx = SX(v.x, v.z), sy = SY(v.x, v.z, v.y * UH); if (sx < x0) x0 = sx; if (sx > x1) x1 = sx; if (sy < y0) y0 = sy; if (sy > y1) y1 = sy; } });
   const M = 3, W = Math.ceil(x1 - x0) + 2 * M, H = Math.ceil(y1 - y0) + 2 * M, cx = Math.round(-x0 + M), cy = Math.round(-y0 + M);
   const renderer = window.__R || (window.__R = (() => { const r = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, premultipliedAlpha: false }); r.setPixelRatio(1);
     r.outputEncoding = T.sRGBEncoding; r.toneMapping = T.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setClearColor(0x000000, 0); return r; })());
@@ -175,9 +186,14 @@ window.__pile = function (R, stage) {
   const cam = new T.OrthographicCamera(-cx / PX, (W - cx) / PX, cy / PX, -(H - cy) / PX, 0.1, 400), D = 100, el = Math.asin(0.5);
   cam.position.set(A[0] + D * Math.cos(el) * Math.SQRT1_2, D * Math.sin(el), A[1] + D * Math.cos(el) * Math.SQRT1_2); cam.lookAt(A[0], 0, A[1]); cam.updateMatrixWorld(); cam.updateProjectionMatrix();
   renderer.setSize(W, H, false); renderer.render(scene, cam);
-  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.getContext('2d').drawImage(renderer.domElement, 0, 0);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cg = cv.getContext('2d'); cg.drawImage(renderer.domElement, 0, 0);
   scene.traverse(o => { if (o.geometry) o.geometry.dispose(); });
-  return { w: W, h: H, dx: -cx, dy: -cy, seams, png: cv.toDataURL('image/png') };
+  // trimmed to what shows (a margin of a pixel): the box is the model's, and most of a hole's tunnel is hidden behind its mask
+  const px = cg.getImageData(0, 0, W, H).data; let tx0 = W, ty0 = H, tx1 = -1, ty1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (px[(y * W + x) * 4 + 3] > 0) { if (x < tx0) tx0 = x; if (x > tx1) tx1 = x; if (y < ty0) ty0 = y; if (y > ty1) ty1 = y; }
+  if (tx1 < 0) { tx0 = ty0 = 0; tx1 = ty1 = 0; } tx0 = Math.max(0, tx0 - 1); ty0 = Math.max(0, ty0 - 1); tx1 = Math.min(W - 1, tx1 + 1); ty1 = Math.min(H - 1, ty1 + 1);
+  const TW = tx1 - tx0 + 1, TH = ty1 - ty0 + 1, tv = document.createElement('canvas'); tv.width = TW; tv.height = TH; tv.getContext('2d').drawImage(cv, -tx0, -ty0);
+  return { w: TW, h: TH, dx: -cx + tx0, dy: -cy + ty0, seams, png: tv.toDataURL('image/png') };
 };
 </script></body></html>`;
   const b = await chromium.launch({ args: ['--no-sandbox', '--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
