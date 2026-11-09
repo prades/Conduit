@@ -126,7 +126,7 @@ function measure() {
     check('the chosen alternate is the one that fires (the owner, 2026-11-07: a chosen mode, none by default), is kept with the follower through a respawn and the facility\'s save, and is dropped once the form cannot use it', () => {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "embercowl";'); same(run('evoMoveOf(__f)'), null, 'default: its normal attack');
         run('followerAltSet(__f, "hexfire");'); same(run('evoMoveOf(__f).id'), 'hexfire', 'chosen'); run('__f.evolved = "maw";'); same(run('evoMoveOf(__f)'), null, 'not for another form');
-        const g = rd('js/game.js'), s = rd('js/facilitysave.js'); ok(/alt: a\.alt \|\| undefined/.test(g) && /npc\.alt = entry\.alt/.test(g), 'the respawn queue loses the alternate'); ok(/alt: a\.alt \|\| undefined/.test(s) && /npc\.alt = entry\.alt/.test(s), 'the save loses the alternate');
+        const g = rd('js/game.js'), s = rd('js/facilitysave.js'); ok(/alt: a\.alt \|\| undefined/.test(g) && /npc\.alt = entry\.alt/.test(g), 'the respawn queue loses the alternate'); ok(/alt: a\.alt \|\| undefined/.test(s) && /npc\.alt = (entry\.alt|[^;\n]*moveAltCarried\(npc, entry\.alt\))/.test(s), 'the save loses the alternate');   // (since build 2026-11-09c a save made on BASH carries over to the form's own move: tests/ninemoves.js)
     });
     check('the INFO tab lists the form\'s moves with the current one lit (the data)', () => {
         run('__clear(); spawnFollowerAtCrystal("fire"); globalThis.__f = followers[followers.length - 1]; __f.evolved = "quillstone";');
