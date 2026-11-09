@@ -418,13 +418,53 @@ const SCENE = `(function(){
     });
     check('an evolved body and its pool are drawn from their cells (one drawImage of the cell), and from the sheet only when no cell can be made', () => {
         const ev = fs.readFileSync(path.join(ROOT, 'js/evolution.js'), 'utf8');
-        same((ev.match(/spriteCell\(img, fr\.col \* C, fr\.row \* C, C, C\)/g) || []).length, 2, 'the body and the pool cut their cells');
+        ok(/evoCellDraw\(g, img, d\.sheet, d\.cell, fr\.col, fr\.row,/.test(ev) && /evoCellDraw\(g, img, d\.ground, C, fr\.col, fr\.row,/.test(ev) && /spriteCell\(img, R\[0\], R\[1\], R\[2\], R\[3\]\)/.test(ev), 'the body and the pool cut their cells (js/evolution.js evoCellDraw, since build 2026-11-09r)');
         const r = JSON.parse(E.run(`(function(){ const d = EVOLUTIONS.rimestar, keep = d._img; d._img = { complete: true, naturalWidth: 2304, naturalHeight: 1152 };
             spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.evolved = 'rimestar'; f._moltAt = -1e9; const calls = [];
             const g = { save() {}, restore() {}, beginPath() {}, ellipse() {}, fill() {}, drawImage() { calls.push(arguments.length + ':' + (arguments[0] === d._img ? 'sheet' : 'cell')); }, globalAlpha: 1 };
             const drew = _drawEvolvedBody(f, 300, 300, g); const keepSC = spriteCell; spriteCell = () => null; _drawEvolvedBody(f, 300, 300, g); spriteCell = keepSC;
             d._img = keep; followers.pop(); actors = actors.filter(a => a !== f); return JSON.stringify({ drew, calls }); })()`));
         ok(r.drew, 'not drawn'); same(r.calls.join(), '5:cell,9:sheet', 'what was drawn');
+    });
+
+    // THE FORMS' SHEETS, CROPPED (the owner, 2026-11-09: "Crop the form sheets"; the optimization audit's 4; build 2026-11-09r): each cell cut to its picture and packed (design/evolutions/crop_sheets.js,
+    // js/evopack.js); the crop checked when it was made by putting every cell back together, pixel for pixel. Here: the sheets are as js/evopack.js says, and the game finds and places each cell right.
+    group('the forms\' sheets, cropped');
+    const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.readUInt32BE(16), b.readUInt32BE(20)]; };
+    check('every form\'s sheet (and its ground pool\'s) is cropped as js/evopack.js says, no wider than 4096 px, every cell inside it and in its full cell, on the 3 px grid (whole pixels at the forms\' 2/3 size); or left whole, a full grid; together a fraction of what they were', () => {
+        const r = JSON.parse(E.run(`JSON.stringify((function(){ const out = []; for (const id in EVOLUTIONS) { const d = EVOLUTIONS[id]; for (const sh of [d.sheet, d.ground]) if (sh) out.push({ id, sheet: sh, cell: d.cell, legacy: !!(d.legacy || d.aside), pack: EVO_PACK[sh] || null }); } return out; })())`));
+        ok(r.length >= 30, 'only ' + r.length + ' sheets'); let full = 0, cropped = 0, now = 0, was = 0, nowCur = 0, wasCur = 0;
+        for (const q of r) {
+            const [W, H] = pngSize(q.sheet), P = q.pack;
+            if (!P) { same(H, 8 * q.cell, q.sheet + ': neither cropped nor a full grid'); same(W % q.cell, 0, q.sheet + ': not a full grid'); full++; now += W * H; was += W * H; if (!q.legacy) { nowCur += W * H; wasCur += W * H; } continue; }
+            same(W + 'x' + H, P.w + 'x' + P.h, q.sheet + ': its size is not the one js/evopack.js gives (baked again? node design/evolutions/crop_sheets.js)'); ok(W <= 4096 && H <= 4096, q.sheet + ': ' + W + ' x ' + H + ', over 4096');
+            same(P.cell, q.cell, q.sheet + ': cell'); same(P.cells.length, P.cols * P.rows * 6, q.sheet + ': cells');
+            for (let k = 0; k < P.cells.length; k += 6) { const [x, y, w, h, ox, oy] = P.cells.slice(k, k + 6); if (!w) continue;
+                ok([x, y, w, h, ox, oy].every(Number.isInteger) && x >= 0 && y >= 0 && x + w <= W && y + h <= H, q.sheet + ': cell ' + k / 6 + ' outside its sheet');
+                ok(ox >= 0 && oy >= 0 && ox + w <= q.cell && oy + h <= q.cell, q.sheet + ': cell ' + k / 6 + ' outside its full cell'); ok(ox % 3 === 0 && oy % 3 === 0, q.sheet + ': cell ' + k / 6 + ' off the 3 px grid'); }
+            cropped++; now += W * H; was += P.cols * q.cell * 8 * q.cell; if (!q.legacy) { nowCur += W * H; wasCur += P.cols * q.cell * 8 * q.cell; }
+        }
+        ok(cropped >= 30, 'only ' + cropped + ' cropped'); ok(now < was * 0.5, 'unpacked ' + Math.round(now * 4 / 1048576) + ' MB of ' + Math.round(was * 4 / 1048576));
+        process.stdout.write('    (the sheets unpacked: ' + Math.round(was * 4 / 1048576) + ' MB as baked, ' + Math.round(now * 4 / 1048576) + ' MB now; today\'s forms\' ' + Math.round(wasCur * 4 / 1048576) + ' MB -> ' + Math.round(nowCur * 4 / 1048576) + ' MB; ' + cropped + ' cropped, ' + full + ' whole)\n');
+    });
+    check('a cell is found in either kind of sheet: a cropped one (the size js/evopack.js gives) by its place in the pack, a full one (a bake not cropped yet) on its grid; an empty cell draws nothing', () => {
+        const r = JSON.parse(E.run(`JSON.stringify((function(){ const d = EVOLUTIONS.sundew, P = EVO_PACK[d.sheet], k = (5 * P.cols + 17) * 6;
+            const cropped = evoCellRect({ naturalWidth: P.w, naturalHeight: P.h }, d.sheet, d.cell, 17, 5, [0,0,0,0,0,0]), whole = evoCellRect({ naturalWidth: P.cols * d.cell, naturalHeight: 8 * d.cell }, d.sheet, d.cell, 17, 5, [0,0,0,0,0,0]);
+            const calls = []; const g = { drawImage() { calls.push(arguments.length); } }, P2 = Object.assign({}, P, { cells: P.cells.slice() }); P2.cells[k + 2] = 0; const keep = EVO_PACK[d.sheet]; EVO_PACK[d.sheet] = P2;
+            evoCellDraw(g, { naturalWidth: P.w, naturalHeight: P.h }, d.sheet, d.cell, 17, 5, 0, 0, 1); EVO_PACK[d.sheet] = keep;
+            return { cropped, want: P.cells.slice(k, k + 6), whole, C: d.cell, emptyDraws: calls.length }; })())`));
+        same(r.cropped.join(), r.want.join(), 'the cropped sheet\'s cell'); same(r.whole.join(), [17 * r.C, 5 * r.C, r.C, r.C, 0, 0].join(), 'the full sheet\'s cell'); same(r.emptyDraws, 0, 'an empty cell drew');
+    });
+    check('a body from a cropped sheet is drawn where its full cell was: its picture at the anchor plus its place in the cell, at the form\'s size; a portrait\'s part is cut from the full cell put back together (js/commandcenter.js, js/radialmenu.js)', () => {
+        const r = JSON.parse(E.run(`JSON.stringify((function(){ const d = EVOLUTIONS.rimestar, P = EVO_PACK[d.sheet], keep = d._img; d._img = { complete: true, naturalWidth: P.w, naturalHeight: P.h };
+            spawnFollowerAtCrystal('ice'); const f = followers[followers.length - 1]; f.evolved = 'rimestar'; f._moltAt = -1e9; f.dirX = 1; f.dirY = 0; const calls = [];
+            const g = { save() {}, restore() {}, beginPath() {}, ellipse() {}, fill() {}, drawImage() { calls.push(Array.prototype.slice.call(arguments, 1)); }, globalAlpha: 1 };
+            const keepF = frame; frame = 0; _drawEvolvedBody(f, 300, 300, g); frame = keepF; const fr = { col: 0, row: _evoFacing(f) }, k = (fr.row * P.cols + fr.col) * 6, c = P.cells.slice(k, k + 6), s = EVO_SCALE;
+            d._img = keep; followers.pop(); actors = actors.filter(a => a !== f);
+            return { call: calls[0], want: [300 + (c[4] - d.anchor[0]) * s, 300 + (c[5] - d.anchor[1]) * s, c[2] * s, c[3] * s] }; })())`));
+        same(r.call.map(v => +v.toFixed(6)).join(), r.want.map(v => +v.toFixed(6)).join(), 'where the body was drawn');
+        for (const f of ['js/commandcenter.js', 'js/radialmenu.js']) ok(/evoCellPart\(g, im, d\.sheet, C, 0, 2, 8 \* k, 6 \* k, 128 \* k, 128 \* k,/.test(fs.readFileSync(path.join(ROOT, f), 'utf8')), f + ': the portrait is not drawn through evoCellPart');
+        ok(/cg\.drawImage\(img, R\[0\], R\[1\], R\[2\], R\[3\], R\[4\], R\[5\], R\[2\], R\[3\]\); g\.drawImage\(cv, rx, ry, rw, rh, dx, dy, dw, dh\);/.test(fs.readFileSync(path.join(ROOT, 'js/evolution.js'), 'utf8')), 'a portrait is not cut from the full cell put back together');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

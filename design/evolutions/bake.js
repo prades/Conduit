@@ -6,6 +6,8 @@
 // columns (8 idle frames, then 8 action frames). Orthographic camera at the
 // game's 2:1 iso angle; world +x (game x) projects down-right, +z (game y)
 // down-left. Writes <id>.png and <id>.json (cell size and the ground anchor).
+// THEN CROP IT (build 2026-11-09r): node design/evolutions/crop_sheets.js (each cell cut to its picture and packed; js/evopack.js updated). The game draws a full sheet
+// too, but tests/perf.js asks for every form's sheet cropped.
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs'), path = require('path');
 const THREE_DIR = process.argv[2], OUT = process.argv[3];

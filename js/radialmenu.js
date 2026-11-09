@@ -168,7 +168,7 @@ function _radialCard(r, roster) {
 function _radialThumb(cv, f) {
     const g = cv.getContext && cv.getContext("2d"); if (!g) return;
     const d = f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] : null, im = d && typeof _evoImg === "function" ? _evoImg(d) : null;
-    if (im) { try { const C = d.cell || 144, k = C / 144; g.drawImage(im, 8 * k, 2 * C + 6 * k, 128 * k, 128 * k, 0, 0, 44, 44); return; } catch (e) {} }   // (the form's own cell)
+    if (im) { try { const C = d.cell || 144, k = C / 144; evoCellPart(g, im, d.sheet, C, 0, 2, 8 * k, 6 * k, 128 * k, 128 * k, 0, 0, 44, 44); return; } catch (e) {} }   // (the form's own cell)
     g.fillStyle = _radialElementColour(f.element); g.globalAlpha = 0.85; g.beginPath(); g.ellipse(22, 25, 12, 15, 0, 0, Math.PI * 2); g.fill();
 }
 

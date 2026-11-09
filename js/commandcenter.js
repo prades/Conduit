@@ -491,7 +491,7 @@ function _ccUpdateCard(card, r) {
 function _ccThumb(cv, f) {
     const g = cv.getContext && cv.getContext("2d"); if (!g) return; g.clearRect(0, 0, cv.width, cv.height);
     const d = f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] : null, im = d && typeof _evoImg === "function" ? _evoImg(d) : null;
-    if (im) { try { const C = d.cell || 144, k = C / 144; g.drawImage(im, 8 * k, 2 * C + 6 * k, 128 * k, 128 * k, 0, 0, cv.width, cv.height); return; } catch (e) {} }   // (the form's own cell: the Electro Skink's is 192)
+    if (im) { try { const C = d.cell || 144, k = C / 144; evoCellPart(g, im, d.sheet, C, 0, 2, 8 * k, 6 * k, 128 * k, 128 * k, 0, 0, cv.width, cv.height); return; } catch (e) {} }   // (the form's own cell: the Electro Skink's is 192)
     g.save(); const k = cv.width / 72; if (k !== 1) g.scale(k, k);   // (drawn for 72 px: the carousel's big picture is the same, scaled, and an egg's is a glossy orb)
     g.fillStyle = _ccColour(f.element); g.globalAlpha = 0.85; g.beginPath();
     if (f.isClone) { g.ellipse(36, 44, 22, 14, 0, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; g.fillStyle = "#05070f"; g.font = "900 22px sans-serif"; g.textAlign = "center"; g.fillText(String(f.speciesName || "?").charAt(0).toUpperCase(), 36, 52); }

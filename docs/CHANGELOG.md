@@ -4,6 +4,21 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09r` · branch `claude/start-game-project-HSh7Z` · the forms' sheets cropped
+The owner, on the optimization audit's fourth finding: "Crop the form sheets".
+- **Every form's sheet is cropped** (its body's and its ground pool's): each cell cut to its picture, with a 2 px clear border, and packed in rows no wider than 4096 px.
+  - Unpacked in memory, today's forms' sheets went from 308 MB to 140 MB; all 36 sheets from 419 MB to 188 MB.
+  - SUNDEW's was 4608 px wide, over what some older iPads take in one piece; it is 4091 now.
+  - THUNDERHEAD's is left whole: its pictures fill their cells.
+- **How it is made:** `design/evolutions/crop_sheets.js` crops the sheets the bake writes. It puts every cell back together from the cropped sheet and compares it with the full one, pixel for pixel, before it writes. It writes `js/evopack.js` (where each cell went). The bake's notes say to run it after a bake.
+- **How it is drawn:** `js/evolution.js evoCellRect` finds a cell in a cropped sheet, or in a full one (a bake not yet cropped still draws). The body, its ground pool and the two portraits (the Command Center's, the radial menu's) all use it.
+  - A crop's edges are on a 3 px grid, so at the forms' 2/3 size a cell lands on whole pixels, as before.
+- **The same pictures:** every form drawn through the game's own drawing, the old build beside this one (all 8 facings, idle and action frames, SUNDEW's CONSUME frames): the bodies the same to the pixel.
+  - Two exceptions, both the browser's resampling, not the crop:
+    - THORNWHIP's body (its 256 × 256 cells took another drawing path in the browser; drawn on a smaller canvas, the same to the pixel).
+    - The 192 px forms' portraits (a part of the cell a fraction of a pixel off where it was, the same picture side by side).
+- Tests: perf (the sheets as js/evopack.js says, cells found and placed, portraits), evolution (the sheets' sizes, cropped), ghost (the drawing's scratch allow-listed). Run: listed in the commit. Not playtested.
+
 ### Build `2026-11-09q` · branch `claude/start-game-project-HSh7Z` · routes straightened faster, the same routes
 The owner, on the optimization audit's first finding (straightening routes, the biggest cost in a fight): "Yes" to its fixes A and B.
 - **A. The line test does its exact test first** (js/facilityplay.js `_fpLos`): a route tries straight lines between its points, and most have a wall or a solid in the way. The exact test finds it without the walkability samples, which are taken only for a line that passes. Both must pass, so the answer is the same.

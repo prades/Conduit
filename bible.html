@@ -1582,7 +1582,7 @@
 <li><b>When.</b> At every level-up, and every 30 frames for a follower that has not evolved, <code>evoCheck</code> looks up <code>evolutionFor(f)</code>: the form, not legacy, with its element and role (a hybrid counts as a brawler).</li>
 <li><b>The molt</b> takes <span class="n" data-k="EVO_MOLT">120</span> frames. In the first 30% the egg shakes and cracks; then the glass bursts, the legs drop and the machine rises. “◆ EVOLVED · NAME” floats over it, the screen shakes, and its health is set to full.</li>
 <li><b>The signature move.</b> The first comes 90 frames after the molt; after that the move's own “every” applies. It fires whenever it is ready and a hostile creature is within its reach, but not while the follower is retreating or flying. Every move waits for one the follower can see: the moves that fly (QUILL BURST, HEXFIRE) since build <code>2026-11-06h</code>, since a wall or a tall object would stop them; the moves that strike at once since build <code>2026-11-06i</code> (the owner: "Need sight"). None checks the room. It hits calm creatures too. A form with two moves (the fire forms) shows MOVE buttons on its INFO card's ATTACKS tab; the pick is saved as <code>f.move</code>, and the first move is the default.</li>
-<li><b>The look.</b> img/evo/&lt;id&gt;.png: 8 facings × 16 frames (8 idle, 8 action), 144 px cells drawn at <span class="n" data-k="EVO_SCALE * 144">96</span> px. The action frames play for <span class="n" data-k="EVO_ACT_FRAMES">40</span> frames when a move fires. Four forms also have a ground sheet, &lt;id&gt;_g.png, that is painted onto the floor under them.</li>
+<li><b>The look.</b> img/evo/&lt;id&gt;.png: 8 facings × 16 frames (8 idle, 8 action), 144 px cells drawn at <span class="n" data-k="EVO_SCALE * 144">96</span> px. The action frames play for <span class="n" data-k="EVO_ACT_FRAMES">40</span> frames when a move fires. Four forms also have a ground sheet, &lt;id&gt;_g.png, that is painted onto the floor under them. Since build 2026-11-09r each sheet is <b>cropped</b>: every cell cut to its picture and packed, no wider than 4096 px (<code>design/evolutions/crop_sheets.js</code>; where each cell went: <code>js/evopack.js</code>). The pictures are the same; the sheets are under half the memory.</li>
 </ul>
 <figure><a href="img/bible/poster.webp"><img src="img/bible/poster.webp" alt="The evolution roster poster: eighteen forms in a grid of six element columns (fire, electric, flux, core, toxic, ice) and three role rows (brawler, mage, technician), each with its name and signature move or NO SIGNATURE MOVE YET" width="1800" height="1108" loading="lazy"></a><figcaption>The evolution roster (design/roster-poster, read from <code>EVOLUTIONS</code>): one form for every element and role, 18 / 18.</figcaption></figure>
 <div class="roster">
@@ -3589,7 +3589,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-09q</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-09r</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3811,7 +3811,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-09q (9 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-09r (9 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

@@ -1137,6 +1137,32 @@ function _evoGroundImg(d) {
     d._gimg = im; if (typeof startupAsset === "function") startupAsset(im, "evo/" + d.id + "-ground");
     return null;
 }
+// THE SHEETS, CROPPED (the owner, 2026-11-09: "Crop the form sheets"; build 2026-11-09r): each cell of a cropped sheet is cut to its picture and packed (js/evopack.js, design/evolutions/crop_sheets.js);
+// a sheet the size js/evopack.js gives is read that way, any other (a bake not cropped yet) as the full grid it was baked as. Where cell (col, row) is in the sheet, [x, y, w, h], and where its top-left goes in
+// the full cell, [ox, oy]: written into `out` (one array kept for it: nothing made per draw). w 0: an empty cell.
+const _evoRect = [0, 0, 0, 0, 0, 0];
+function evoCellRect(img, path, C, col, row, out) {
+    out = out || _evoRect; const P = typeof EVO_PACK !== "undefined" && path ? EVO_PACK[path] : null;
+    if (P && img && img.naturalWidth === P.w && img.naturalHeight === P.h) { const c = P.cells, k = (row * P.cols + col) * 6; out[0] = c[k]; out[1] = c[k + 1]; out[2] = c[k + 2]; out[3] = c[k + 3]; out[4] = c[k + 4]; out[5] = c[k + 5]; return out; }
+    out[0] = col * C; out[1] = row * C; out[2] = C; out[3] = C; out[4] = 0; out[5] = 0; return out;
+}
+// draw cell (col, row) of a sheet with the full cell's top-left at (dx, dy), scaled s: from its own small canvas, cut once (js/draw.js spriteCell), else straight from the sheet
+function evoCellDraw(g, img, path, C, col, row, dx, dy, s) {
+    const R = evoCellRect(img, path, C, col, row); if (!R[2]) return;
+    const x = dx + R[4] * s, y = dy + R[5] * s, cell = typeof spriteCell === "function" ? spriteCell(img, R[0], R[1], R[2], R[3]) : null;   // (a cell straight out of the big sheet cost a few ms a draw)
+    if (cell) g.drawImage(cell, x, y, R[2] * s, R[3] * s); else g.drawImage(img, R[0], R[1], R[2], R[3], x, y, R[2] * s, R[3] * s);
+}
+// draw the part (rx, ry, rw, rh) of cell (col, row), in the full cell's pixels, into the box (dx, dy, dw, dh): a form's portrait (js/commandcenter.js, js/radialmenu.js). What of the part is outside the
+// cell's picture is clear, and is left out.
+let _evoPartCv = null;
+function evoCellPart(g, img, path, C, col, row, rx, ry, rw, rh, dx, dy, dw, dh) {
+    const R = evoCellRect(img, path, C, col, row); if (!R[2]) return;
+    if (R[2] === C && R[3] === C && !R[4] && !R[5]) { g.drawImage(img, R[0] + rx, R[1] + ry, rw, rh, dx, dy, dw, dh); return; }   // (a full sheet: straight from it)
+    // a cropped cell is put back in a full cell first (a copy, pixel for pixel) and the part drawn from that: scaled, it is the same to the pixel as it was from the full sheet
+    const cv = _evoPartCv || (_evoPartCv = typeof document !== "undefined" && document.createElement ? document.createElement("canvas") : null), cg = cv && cv.getContext ? cv.getContext("2d") : null; if (!cg) return;
+    if (cv.width !== C || cv.height !== C) { cv.width = C; cv.height = C; } else cg.clearRect(0, 0, C, C);
+    cg.drawImage(img, R[0], R[1], R[2], R[3], R[4], R[5], R[2], R[3]); g.drawImage(cv, rx, ry, rw, rh, dx, dy, dw, dh);
+}
 // Which frame of its sheets it is on, how big, and how far out of the egg: the body and its ground layer share this.
 function _evoFrame(f, d, f0) {
     const m = f0 - (f._moltAt === undefined ? -1e9 : f._moltAt);
@@ -1193,10 +1219,8 @@ function _drawEvolvedBody(f, px, py, g) {
     if (f._fade !== undefined) g.globalAlpha *= f._fade;   // (a searcher in the website's background fades out as it goes: js/attract.js)
     // its shadow (a form with a pool of its own stands in that: see GROUND above)
     if (!d.ground) { g.fillStyle = "rgba(0,0,0,0.4)"; g.beginPath(); g.ellipse(px, py, 22 * rise, 9 * rise, 0, 0, Math.PI * 2); g.fill(); }
-    const C = d.cell;
     g.globalAlpha *= rise;
-    const cell = typeof spriteCell === "function" ? spriteCell(img, fr.col * C, fr.row * C, C, C) : null;   // (its own small canvas, cut once: a cell straight out of the big sheet cost a few ms a draw, js/draw.js)
-    if (cell) g.drawImage(cell, px - d.anchor[0] * s, py - d.anchor[1] * s, C * s, C * s); else g.drawImage(img, fr.col * C, fr.row * C, C, C, px - d.anchor[0] * s, py - d.anchor[1] * s, C * s, C * s);
+    evoCellDraw(g, img, d.sheet, d.cell, fr.col, fr.row, px - d.anchor[0] * s, py - d.anchor[1] * s, s);   // (the full cell's top-left at the anchor; a cropped cell where its picture was in it)
     // the reactor's glow (not the serpent's: its reactor sits in its head, which turns with it)
     if (d.noGlow) { g.restore(); return true; }
     const cx = px + (d.core[0] - d.anchor[0]) * s, cy = py + (d.core[1] - d.anchor[1]) * s;
@@ -1236,8 +1260,7 @@ function drawEvoGroundOnTile(tx, ty, px, py, g) {
         g.save();
         g.beginPath(); g.moveTo(px, py); g.lineTo(px + TILE_W, py + TILE_H); g.lineTo(px, py + 2 * TILE_H); g.lineTo(px - TILE_W, py + TILE_H); g.closePath(); g.clip();
         g.globalAlpha *= fr.rise;
-        const cell = typeof spriteCell === "function" ? spriteCell(img, fr.col * C, fr.row * C, C, C) : null;   // (as the body: its own small canvas)
-        if (cell) g.drawImage(cell, fx - d.anchor[0] * s, fy - d.anchor[1] * s, C * s, C * s); else g.drawImage(img, fr.col * C, fr.row * C, C, C, fx - d.anchor[0] * s, fy - d.anchor[1] * s, C * s, C * s);
+        evoCellDraw(g, img, d.ground, C, fr.col, fr.row, fx - d.anchor[0] * s, fy - d.anchor[1] * s, s);   // (as the body: its own small canvas; its sheet cropped as the body's)
         g.restore();
     }
 }

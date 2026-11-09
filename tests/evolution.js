@@ -446,15 +446,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the sheets are in the build, 8 facings × 16 frames of each form\'s cell (144 px; the Electro Skink\'s 192, build 2026-11-08b, and the THORNWHIP\'s, build 2026-11-08j)', () => {
         for (const id of run('Object.keys(EVOLUTIONS)')) {
             const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '.png')), C = run('EVOLUTIONS.' + id + '.cell') || 144, N = run('EVOLUTIONS.' + id + '.consume') ? 24 : 16;   // (SUNDEW's has a third block, CONSUME's: build 2026-11-08k)
-            same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), (N * C) + 'x' + (8 * C), id + ' size');
+            const P = run('JSON.stringify(EVO_PACK["img/evo/' + id + '.png"] || null)'), pk = P && JSON.parse(P);   // (cropped since build 2026-11-09r, js/evopack.js: its grid as baked, its size as cropped; or a full grid, left whole)
+            if (pk) { same(pk.cols + 'x' + pk.rows + '@' + pk.cell, N + 'x8@' + C, id + ' grid as baked'); same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), pk.w + 'x' + pk.h, id + ' size as cropped'); }
+            else same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), (N * C) + 'x' + (8 * C), id + ' size');
         }
         same(run('Object.keys(EVOLUTIONS).filter(k => (EVOLUTIONS[k].cell || 144) !== 144).join()'), 'electroskink,shrub,sundew,coralcrab', 'the forms in a bigger cell');   // (the THORNWHIP's: room for its whip, build 2026-11-08j; SUNDEW's, build 2026-11-08k)
         ok(/js\/evolution\.js/.test(fs.readFileSync(path.join(ROOT, 'game.html'), 'utf8')), 'not loaded by the game');
     });
     check('the pools of material are on a sheet of their own (rotshard, mimic), the same size as the body sheet', () => {
         for (const id of ['rotshard', 'mimic', 'maw', 'seeper']) {
-            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '_g.png'));
-            same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
+            const b = fs.readFileSync(path.join(ROOT, 'img/evo', id + '_g.png')), pk = JSON.parse(run('JSON.stringify(EVO_PACK["img/evo/' + id + '_g.png"] || null)')), body = JSON.parse(run('JSON.stringify(EVO_PACK["img/evo/' + id + '.png"] || null)'));
+            if (pk) { same(pk.cols + 'x' + pk.rows + '@' + pk.cell, (body ? body.cols + 'x' + body.rows + '@' + body.cell : '16x8@144'), id + ' ground sheet: the body\'s grid, as baked'); same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), pk.w + 'x' + pk.h, id + ' ground sheet size as cropped'); }   // (cropped as the body's since build 2026-11-09r)
+            else same(b.readUInt32BE(16) + 'x' + b.readUInt32BE(20), '2304x1152', id + ' ground sheet size');
             same(run('EVOLUTIONS.' + id + '.ground'), 'img/evo/' + id + '_g.png', id + ' ground path');
         }
         for (const id of run('Object.keys(EVOLUTIONS)').filter(id => !['rotshard', 'mimic', 'maw', 'seeper'].includes(id))) same(run('EVOLUTIONS.' + id + '.ground || null'), null, id + ' has no pool');
