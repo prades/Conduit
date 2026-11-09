@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09bb` · branch `claude/start-game-project-HSh7Z` · PINK THICKET's big seed as the Thornwhip's pink crystal (on the preview)
+The owner's pick of three drafts for the next 3-D piece: they circled "its pink crystal, as a seed". `docs/EFFECTS.md`.
+- **The piece:** the Thornwhip's pink crystal cut as a seed, pointed at both ends, with a short stalk of its black vine at its back and no glow. It flies point first in the quill's shallow arc, with its shadow and a pink trail.
+- **Size:** about 27 px with its stalk, as long as the drawn seed (the agent's number, provisional).
+- **Only PINK THICKET's big seed**, and only with `?fx=3d` until the owner approves it in the game. SEED SHOT and SEEDFALL keep their drawn seeds. Rules are unchanged.
+- Tests: `tests/fx3d.js`. Checked in the real page with pictures.
+
 ### Build `2026-11-09aa` · branch `claude/start-game-project-HSh7Z` · the black decoy for everyone
 - **ROTTEN DECOY as a black Rotshard is approved in the game** ("Approve the black decoy"). It is live for everyone (`FX3D.approved`): the Rotshard's own model in black, on the bare floor, no glow.
 - TOXIC PUDDLE's black spikes were not approved. They stay on the `?fx=3d` preview, and everyone sees the old puddle.

@@ -150,6 +150,22 @@ The owner, 2026-11-09, on what was off with the black spike: "Make the decoy a b
 - **Approved in the game 2026-11-09** ("Approve the black decoy"), from the in-game pictures. It has been live for everyone since build `2026-11-09aa`.
 - Tested: `tests/fx3d.js`. Checked in the real page with pictures.
 
+### THORNWHIP: PINK THICKET's big seed
+
+The owner's pick of three drafts (2026-11-09): a bud of its leaves, a burr of its black thorns, or its pink crystal as a seed. They circled the crystal.
+
+**The model.** The Thornwhip's pink crystal (the Rotshard's crystal on its back, forms39.js; here whole, forms5.js `corroded`), cut as a seed.
+- Six-sided and pointed at both ends, coloured facet by facet as its own (forms32.js `_gemCol32`). No glow.
+- A short stalk of its black vine at its back. In the draft the stalk stood apart from the crystal; now it meets it.
+- Its facets are lit from one way in the world, the way the draft was lit, so it looks alike whichever way it flies.
+- It is 0.72 form-units long, 0.95 with its stalk: about 27 px in the game, as long as the drawn seed (the agent's number, provisional). It is slimmer than the drawn seed and has no glow, so it reads smaller.
+
+**In the game (built in `2026-11-09bb` on the preview).**
+- It is built like the quill and shares its flight drawing: 32 directions × 3 tilts, a shallow arc (16 px), its shadow on the floor and a pink trail.
+- It is only PINK THICKET's big seed (the kind "bigseed"). Every BLOOM follower's SEED SHOT, and SEEDFALL's seeds, stay drawn.
+- Rules and hits are unchanged. Without `?fx=3d`, or before its sheet arrives, the drawn seed in its glow is shown.
+- Tested: `tests/fx3d.js`. Checked in the real page with pictures, old and new side by side.
+
 ## 4. Open questions
 
 - ~~What "3-D flare" means~~ *(answered 2026-11-09: "Modelled 3D pieces")*. ~~Which piece first~~ *(answered: "Quillstone's quill"; its model approved, "Yes, build it")*.
@@ -159,6 +175,7 @@ The owner, 2026-11-09, on what was off with the black spike: "Make the decoy a b
   - TOXIC PUDDLE (and the CRYSTAL SPIKE TRIO card) keep the black spike, without its aura.
   - ROTTEN DECOY is the black Rotshard (build `2026-11-09x`).
   - The black decoy was approved in the game (for everyone since `2026-11-09aa`). The puddle's spikes stay on the preview, not approved.
+- **PINK THICKET's crystal seed in the game:** on the preview (build `2026-11-09bb`), for the owner's yes. Its size (about 27 px, the agent's) is part of that, and so is whether SEEDFALL's falling seeds use it too.
 - **The next pieces, and what each effect's code-drawn light and energy look like:** to be drafted for the owner one at a time.
 - **A real-time 3D engine** (the owner, 2026-11-09: "I intend to make this a fully 3-D game"): not now ("Stay [2D] for now ... I don't wanna take any risks"). The agent's view, given then: the art is already three.js models, the rules would not change, about 40 drawing files would; iPad speed is the main risk, so it would start as a prototype behind a flag.
 - Whether the floor-ring and raised-floor faults (section 1) are fixed as part of this pass.

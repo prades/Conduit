@@ -25,6 +25,10 @@ const PIECES = {
   // ROTTEN DECOY and TOXIC PUDDLE (the ROTSHARD; the owner's pick, 2026-11-09: "Rotshard's black spike"): a spike of its old black shell (forms5.js shellShard: "a broken piece of the old black
   // shell: jagged, glassy-black", the shell's black, M.black), standing in the floor: five-sided, each ring pulled in and out so its edges are broken, a little lean, a chip broken off at its foot.
   // UPRIGHT: it stands on the floor (its foot at the origin, pointing up +y); the game turns it (yaws) and lets it rise out of the floor. The green haze stays drawn in code.
+  // PINK THICKET's big seed (the THORNWHIP, No. 921; the owner's pick of three drafts, 2026-11-09: a bud of its leaves, a burr of its black thorns, or its pink crystal as a seed: this one, circled):
+  // its pink crystal (the Rotshard's eaten crystal, as on the Thornwhip's back: forms39.js; forms5.js corroded), uneaten, cut as a seed: six-sided, pointed at both ends, coloured facet by facet as its own
+  // (forms32.js _gemCol32), a short stalk of its black vine at its back. No glow. As long, stalk and all, as the big seed drawn before it (27 px; the agent's number, provisional); it flies as the quill does, point first.
+  bigseed: { form: 921, color: '#ff7ab8', len: 0.72, r: 0.17, stalk: 0.234, roll: 0.35, cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },   // (a draft, for the owner's yes in the game)
   // ROTTEN DECOY (the ROTSHARD; the owner, 2026-11-09: "Make the decoy a black Rotshard"): its design's "black crystal copy", the Rotshard's own model (No. 101: the eaten crystal leaning in its pool,
   // the old shell shard) in its old shell's glassy black, its pool tar-black, no light of its own and no glow (the owner: "I don't like the green aura"); the shell shard's hairline crack keeps its green.
   // A COPY: its columns are frames of its idle loop (the Rotshard's own, 2 pi / 1.6 s), facing the camera; drawn at the forms' scale.
@@ -62,6 +66,25 @@ window.__fx = async function (mode, piece, P) {
         geo.translate(0, h / 2, 0); geo.computeVertexNormals(); const m = new T.Mesh(geo, ice); if (!tip) m.rotation.z = PI; return m; };
       const spike = new T.Group(); spike.add(mk(front, true, P.seed)); spike.add(mk(P.back, false, P.seed + 7));   // (both cones from the widest point: the long one forward, the short one back)
       spike.rotation.z = -PI / 2; spike.position.x = (P.back - front) / 2; const r = new T.Group(); r.add(spike); r.rotation.x = P.roll || 0; g.add(r); }
+    if (piece === 'bigseed') {   // the crystal along +y, its back point at 0 and its front point at len; the stalk out of its back point; then turned to point along +x, the middle of it all at the origin
+      const cg = corroded(0.34, 1.5, 0.55, 0, M.crystal, 0.5).geometry.clone(), sv = P.len / 2.435, bt = 0.385 * sv;   // (corroded's crystal runs from -1.135, its back point 0.7 x 0.55 long, to 1.3, its front point 0.55 long)
+      cg.scale(P.r / 0.34, sv, P.r / 0.34); cg.translate(0, 1.135 * sv, 0);
+      const base = new T.Color(P.color).convertSRGBToLinear(), gem = _gemCol32(cg, base), sd = new T.Group(); sd.add(gem);
+      const vineM = new T.MeshStandardMaterial({ color: 0x050505, metalness: 0.3, roughness: 0.4 }); vineM.envMapIntensity = 0.6;   // (its vines' black, with their sheen: forms39.js)
+      const inside = bt * 0.4, sl = P.stalk + inside, stalk = new T.Mesh(new T.CylinderGeometry(P.r * 0.21, P.r * 0.14, sl, 8), vineM); stalk.position.y = inside - sl / 2; sd.add(stalk);   // (its front end inside the back point: they meet)
+      sd.rotation.z = -PI / 2; sd.position.x = -(P.len - P.stalk) / 2;
+      const r = new T.Group(); r.add(sd); r.rotation.x = P.roll || 0; g.add(r);
+      // ITS FACETS LIT FROM ONE WAY IN THE WORLD: _gemCol32's light (fixed to the crystal) where it was in the draft as the owner saw it (flying to the screen's right, its nose a little up), so the crystal is
+      // lit alike whichever way it flies; at that angle its colours are the draft's own
+      const Ld = new T.Vector3(-0.4, 0.7, 0.6).normalize().applyQuaternion(new T.Quaternion().setFromEuler(new T.Euler(0, 0, -PI / 2))).applyQuaternion(new T.Quaternion().setFromEuler(new T.Euler(P.roll || 0, 0, 0)))
+        .applyQuaternion(new T.Quaternion().setFromEuler(new T.Euler(0, PI / 4, 0.12, 'YZX')));
+      const pos = gem.geometry.attributes.position, col = gem.geometry.attributes.color, a = new T.Vector3(), b = new T.Vector3(), c = new T.Vector3(), n = new T.Vector3();
+      g.userData.relight = () => { g.updateMatrixWorld(true); const W = gem.matrixWorld;
+        for (let i = 0; i < pos.count; i += 3) { a.fromBufferAttribute(pos, i).applyMatrix4(W); b.fromBufferAttribute(pos, i + 1).applyMatrix4(W); c.fromBufferAttribute(pos, i + 2).applyMatrix4(W);
+          n.crossVectors(b.sub(a), c.sub(a)).normalize(); const k = 0.5 + 0.5 * n.dot(Ld), w = 0.45 * k * k * k, f = 0.35 + 0.65 * k;   // (_gemCol32's own shading, no glow)
+          for (let j = 0; j < 3; j++) col.setXYZ(i + j, base.r * f + w, base.g * f + w, base.b * f + w); }
+        col.needsUpdate = true; };
+    }
     if (P.copy) {   // the form's own model, every surface of it black: glassy for the crystal and the shell, tar for the pool; its glows, washes and light off; its hairline crack (M.glow) kept
       const glass = new T.MeshPhysicalMaterial({ color: 0x060607, metalness: 0.35, roughness: 0.32, clearcoat: 1.0, clearcoatRoughness: 0.06, flatShading: true }); glass.envMapIntensity = 1.7;
       const tar = new T.MeshPhysicalMaterial({ color: 0x030303, metalness: 0.05, roughness: 0.75, clearcoat: 0.25, clearcoatRoughness: 0.35 }); tar.envMapIntensity = 0.35;   // (matte: a black pool, not a mirror)
@@ -88,7 +111,7 @@ window.__fx = async function (mode, piece, P) {
     }
     return g; };
   // the way it flies, in the world: the game's x is the world's +x, the game's y the world's +z
-  const aim = (g, yaw, pitch) => { g.rotation.set(0, 0, 0); g.rotation.order = 'YZX'; g.rotation.y = -yaw; g.rotation.z = pitch; };
+  const aim = (g, yaw, pitch) => { g.rotation.set(0, 0, 0); g.rotation.order = 'YZX'; g.rotation.y = -yaw; g.rotation.z = pitch; if (g.userData.relight) g.userData.relight(); };   // (a piece lit from the world's way: lit again)
   if (mode === 'preview' && P.copy) {   // a copy of a form: alone, large; then beside the form itself, at one scale
     const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
     const s1 = new T.Scene(); lit(s1); const q1 = build(); s1.add(q1);
@@ -112,7 +135,7 @@ window.__fx = async function (mode, piece, P) {
     const shot = (scene, cam, W, H) => { renderer.setSize(W, H, false); renderer.render(scene, cam); const c = document.createElement('canvas'); c.width = W; c.height = H; c.getContext('2d').drawImage(renderer.domElement, 0, 0); return c; };
     // 1. the piece alone, large: flying to the screen's right (the game's +x, -y), its nose a little up
     const s1 = new T.Scene(); lit(s1); const q1 = build(); aim(q1, -PI / 4, 0.12); s1.add(q1);
-    const big = shot(s1, camFor(P.len * 1.4, P.len * 0.616, 0), 1600, 704);
+    const Lv = P.len + (P.stalk || 0), big = shot(s1, camFor(Lv * 1.4, Lv * 0.616, 0), 1600, 704);   // (all of it: a seed's stalk too)
     // 2. the same, beside its form, at one scale (the form idle, facing the camera; the piece at mid height, as in flight)
     const s2 = new T.Scene(); lit(s2); const B = FORMS2[P.form].build(); B.update(0, 0); s2.add(B.g); B.g.rotation.y = PI / 4;
     const q2 = build(); aim(q2, -PI / 4, 0.12); q2.position.set(1.75 * Math.SQRT1_2, 0.55, -1.75 * Math.SQRT1_2); s2.add(q2); B.g.position.set(-0.75 * Math.SQRT1_2, 0, 0.75 * Math.SQRT1_2);
@@ -153,7 +176,7 @@ window.__fx = async function (mode, piece, P) {
   if (MODE === 'preview') {
     // one picture: the piece large on top, the piece beside its form below (on the arena's dark floor colour, so the glow reads as it will)
     const q = await b.newPage(); await q.setViewportSize({ width: 1600, height: 1160 });
-    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>${PIECES[PIECE].copy ? 'ROTTEN DECOY (right) beside the Rotshard (left), at one scale' : PIECES[PIECE].upright ? 'ROTTEN DECOY\'s four ' + PIECE + 's beside the Rotshard, at one scale' : 'the ' + PIECE + ' beside its form, at one scale'}<br><span style="font-weight:400;font-size:18px">${PIECES[PIECE].copy ? '(the Rotshard\'s own model, all black; no glow)' : PIECES[PIECE].upright ? '(in the game the tallest is about 44 px; the green mist stays drawn in code)' : '(in the game it is about 25 px long)'}</span></div></div></body>`);
+    await q.setContent(`<body style="margin:0;background:#15181d;font:600 22px sans-serif;color:#9aa6b2"><img src="${res.big}" style="display:block"><div style="display:flex;align-items:center;gap:24px;padding:8px 24px"><img src="${res.side}"><div>${PIECES[PIECE].copy ? 'ROTTEN DECOY (right) beside the Rotshard (left), at one scale' : PIECES[PIECE].upright ? 'ROTTEN DECOY\'s four ' + PIECE + 's beside the Rotshard, at one scale' : 'the ' + PIECE + ' beside its form, at one scale'}<br><span style="font-weight:400;font-size:18px">${PIECES[PIECE].copy ? '(the Rotshard\'s own model, all black; no glow)' : PIECES[PIECE].upright ? '(in the game the tallest is about 44 px; the green mist stays drawn in code)' : '(in the game it is about ' + Math.round((PIECES[PIECE].len + (PIECES[PIECE].stalk || 0)) * 96 / 3.4) + ' px long)'}</span></div></div></body>`);
     await q.screenshot({ path: OUT, clip: { x: 0, y: 0, width: 1600, height: 1120 } });
     console.log('wrote ' + OUT);
   }

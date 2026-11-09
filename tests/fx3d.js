@@ -29,9 +29,9 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
     check('js/fx3d.js is loaded by the game page, and the page checks it arrived (FX3D)', () => {
         const html = rd('game.html'); ok(/<script src="js\/fx3d\.js\?v=[^"]+"><\/script>/.test(html), 'no script tag'); ok(/"js\/fx3d\.js": "FX3D"/.test(html), 'not in the page\'s arrival check');
     });
-    check('each flying piece\'s sheet is in the build (the quill, the icicle), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
-        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy', 'the pieces (rotspike and rotdecoy: standing pieces, below)');
-        for (const k of ['quill', 'icicle']) {
+    check('each flying piece\'s sheet is in the build (the quill, the icicle, the big seed), one column for each way it flies and one row for each tilt, as the table says and as the baker wrote', () => {
+        same(J('Object.keys(FX3D.pieces)').join(), 'quill,icicle,rotspike,rotdecoy,bigseed', 'the pieces (rotspike and rotdecoy: standing pieces, below)');
+        for (const k of ['quill', 'icicle', 'bigseed']) {
             const P = J('FX3D.pieces.' + k), meta = JSON.parse(rd('design/effects/out/' + k + '.json'));
             same(P.sheet, 'img/fx/' + k + '.png', k + ': the sheet'); same(pngSize(P.sheet).join('x'), (P.cell * P.yaws) + 'x' + (P.cell * P.pitches.length), k + ': the sheet\'s size');
             same(JSON.stringify([meta.cell, meta.yaws, meta.pitches]), JSON.stringify([P.cell, P.yaws, P.pitches]), k + ': the baker\'s record and the game\'s table');
@@ -204,6 +204,34 @@ const pngSize = f => { const b = fs.readFileSync(path.join(ROOT, f)); return [b.
             return P.calls.filter(c => c[0] === 'drawImage').map(c => c.slice(1)); })()`), P = J('FX3D.pieces.rotspike'), TH = J('TILE_H');
         same(d.length, 1, 'its picture'); ok(Math.abs(d[0][6] + P.ay * d[0][8] / P.cell - (200 + TH)) < 1e-6, 'its foot is not on the floor (py + TILE_H)');
         ok(/if \(!_simGhost && typeof rotSpikeDrawItems === "function"\) rotSpikeDrawItems\(drawList\);/.test(rd('js/game.js')) && /obj\.type==='rotspike'\) \{ if \(typeof rotSpikeDrawItem === "function"\) rotSpikeDrawItem\(obj, px, py\); \}/.test(rd('js/game.js')), 'not in the world\'s draw list');
+    });
+
+    group('PINK THICKET\'S BIG SEED: THE THORNWHIP\'S PINK CRYSTAL (the owner\'s pick of three drafts, 2026-11-09, circled: "its pink crystal, as a seed"; built in 2026-11-09bb on the preview)');
+    check('the model is the Thornwhip\'s own crystal (the Rotshard\'s, uneaten), coloured facet by facet as its own, a stalk of its black vine at its back that meets it; no glow; lit from one way in the world whichever way it flies', () => {
+        const b = rd('design/effects/bake_fx.js'), blk = b.slice(b.indexOf("if (piece === 'bigseed')"), b.indexOf('if (P.copy)'));
+        ok(/bigseed: \{ form: 921, color: '#ff7ab8', len: 0\.72, r: 0\.17, stalk: 0\.234,/.test(b), 'not the Thornwhip\'s seed (No. 921) as built');
+        ok(/corroded\(0\.34, 1\.5, 0\.55, 0, M\.crystal, 0\.5\)/.test(blk) && /_gemCol32\(cg, base\)/.test(blk), 'not its crystal, or not coloured as its own');
+        ok(/stalk\.position\.y = inside - sl \/ 2/.test(blk), 'its stalk does not meet the crystal'); ok(!/emissive|glowSprite|AdditiveBlending|PointLight/.test(blk), 'a glow on it');
+        ok(/if \(g\.userData\.relight\) g\.userData\.relight\(\);/.test(b), 'not lit again as it turns');
+    });
+    check('on the preview only (not approved yet); PINK THICKET\'s seed is the kind "bigseed"; before its sheet arrives, or without the preview, the big pink seed as before', () => {
+        ok(J('FX3D.approved.indexOf("bigseed")') < 0, 'approved before the owner has seen it in the game'); run('__preview(false)'); same(J('fx3dOn("bigseed")'), false, 'on without the preview');
+        run('__preview(true)'); same(J('fx3dOn("bigseed")'), true, 'off with the preview');
+        ok(/spawnFollowerProjectile\(actor, t, "#ff7ab8", 0, 9, a => land\(a\.x, a\.y\), DMG_HIT_SPECIAL, \{ range: L, kind: "bigseed" \}\)/.test(rd('js/elements.js')), 'PINK THICKET\'s seed is not the kind "bigseed"');
+        const seed = (prev, sheet) => J(`(function(){ __preview(${prev}); FX3D.pieces.bigseed._img = ${sheet ? '{ complete: true, naturalWidth: 1792, naturalHeight: 168 }' : 'null'}; const sc = spriteCell; spriteCell = () => ({ cell: 1 }); const P = __pen();
+            try { _drawFollowerProjectile(P.g, { kind: 'bigseed', x: 10, y: 10, vx: 0.18, vy: 0, frame: 6, life: 12, element: 'blossom', radius: 9 }, 300, 200); } finally { spriteCell = sc; delete FX3D.pieces.bigseed._img; __preview(false); }
+            return { pics: P.calls.filter(c => c[0] === 'drawImage').length, glow: P.calls.filter(c => c[0] === 'arc').length, seed: P.calls.filter(c => c[0] === 'ellipse' && Math.abs(c[3] - 13.5) < 1e-6).length,
+                trail: P.calls.some(c => c[0] === 'set strokeStyle' && c[1] === '#ff7ab8'), shadow: P.calls.some(c => c[0] === 'ellipse' && Math.abs(c[2] - 240) < 1e-6) }; })()`);
+        const before = seed(true, false), off = seed(false, true), on = seed(true, true);
+        same(JSON.stringify([before.pics, before.seed > 0, before.glow > 0]), '[0,true,true]', 'before its sheet arrives, not the big pink seed in its glow');
+        same(JSON.stringify([off.pics, off.seed > 0]), '[0,true]', 'without the preview, not the big pink seed');
+        same(on.pics, 1, 'its picture'); same(on.seed, 0, 'the drawn seed as well'); same(on.glow, 0, 'the pink glow round it (no glow)'); ok(on.trail, 'no pink trail behind it'); ok(on.shadow, 'no shadow on the floor under it');
+    });
+    check('every BLOOM follower\'s everyday SEED SHOT stays the drawn seed (only PINK THICKET\'s big seed is the crystal)', () => {
+        const r = J(`(function(){ __preview(true); FX3D.pieces.bigseed._img = { complete: true, naturalWidth: 1792, naturalHeight: 168 }; const P = __pen();
+            try { _drawFollowerProjectile(P.g, { x: 10, y: 10, vx: 0.18, vy: 0, frame: 6, life: 12, element: 'blossom', radius: 4 }, 300, 200); } finally { delete FX3D.pieces.bigseed._img; __preview(false); }
+            return P.calls.map(c => c[0]); })()`);
+        ok(r.indexOf('drawImage') < 0 && r.indexOf('ellipse') >= 0, 'SEED SHOT is not the drawn seed: ' + r.join());
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

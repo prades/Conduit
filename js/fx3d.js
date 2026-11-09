@@ -16,6 +16,9 @@ const FX3D = {
         // (design/evolutions/forms5.js No. 101) all in black, no glow, the shell shard's thin green crack kept. A COPY: its columns are frames of the Rotshard's idle loop (`loop` game frames), drawn at the
         // forms' scale; built in build 2026-11-09x on the preview; approved in the game the same day, for everyone since 2026-11-09aa
         rotdecoy: { sheet: "img/fx/rotdecoy.png", cell: 144, yaws: 12, pitches: [0], upright: true, copy: true, loop: 236, ax: 72, ay: 102.81, tipY: 29.453 },
+        // PINK THICKET's big seed (the THORNWHIP's Ultimate): its pink crystal (design/evolutions/forms39.js) cut as a seed, pointed at both ends, a short stalk of its black vine at its back, no glow; the owner's pick of
+        // three drafts, 2026-11-09 (circled: "its pink crystal, as a seed"); built in build 2026-11-09bb on the preview. It flies as the quill does
+        bigseed: { sheet: "img/fx/bigseed.png", cell: 56, yaws: 32, pitches: [-0.3, 0, 0.3] },
     },
     approved: ["quill",    // the QUILLSTONE's quill: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09f
                "icicle",   // the RIMESTAR's icicle: approved in the game 2026-11-09 ("Approve it for everyone"), live for everyone since build 2026-11-09h

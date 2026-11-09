@@ -18,6 +18,8 @@ function _drawFollowerProjectile(ctx, p, sx, sy) {
     if (p.kind === "quill" || p.kind === "hex") { _drawRedesignShot(ctx, p, sx, sy); ctx.restore(); return; }
     // the RIMESTAR's ICICLE VOLLEY: its modelled icicle (js/fx3d.js), a frosty trail behind it; until it is on (or its sheet in), the ice shot below
     if (p.kind === "icicle" && _drawFx3dShot(ctx, p, sx, sy, "icicle", "#bfefff", QUILL_ARC)) { ctx.restore(); return; }
+    // the THORNWHIP's PINK THICKET: its big seed, the modelled pink crystal (js/fx3d.js), a pink trail behind it; until it is on (or its sheet in), the big pink seed below
+    if (p.kind === "bigseed" && _drawFx3dShot(ctx, p, sx, sy, "bigseed", "#ff7ab8", QUILL_ARC)) { ctx.restore(); return; }
 
     if (el === 'fire') {
         // Fireball — flickering orange/red core with white-hot centre
