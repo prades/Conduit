@@ -2608,7 +2608,7 @@ Supersedes the element Ultimates (`TUTORIAL.md`, "Follower ultimates"; `NEXT-PHA
 - Next: an optimization check, then the visual design of all 21 forms' effects and Ultimates "with 3-D flare".
 
 ### Status
-Built in build `2026-11-09c` and tested (`tests/ninemoves.js`, and the suites that counted BASH). Not playtested. Every number and damage type is the agent's, provisional; their looks are plain until the 3-D flare pass.
+Built in build `2026-11-09c` and tested (`tests/ninemoves.js`, and the suites that counted BASH; the full run's only other failures are the five known ones); checked in a browser in the real game. Not playtested. Every number and damage type is the agent's, provisional; their looks are plain until the 3-D flare pass.
 
 ### Alternatives
 Offered and passed over, per form: the retired forms' Ultimates designed too; the Skink's Ultimate only, or later; TAIL WHIP, GROUND CURRENT; BOLT TAIL, THUNDER SHED; HEADLONG RAM, STICKY SPLASH; FREEZE BEAM, HAIL MINE; HORN BLAST, SHELL MORTAR; HAMMER STRIKE, SLIME TRAIL; GOO GLOB, GOO PUDDLE, SPLIT LUNGE, TETHER SNAP, VACUUM GULP; TOXIN SPRAY, WEB SHOT; STATIC MINE, keeping BASH on the Hover Shell; SNOWBALL, ICE WALL.
