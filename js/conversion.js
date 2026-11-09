@@ -46,7 +46,7 @@ function convertVerb() { return "CONVERT A TOXIC FOLLOWER INTO BLOOM"; }
 
 // what it would be: a copy with its new element (and, evolved, its class's BLOOM form), for the preview's card and words (nothing about the follower itself changes)
 function convertPreview(f) {
-    const g = Object.assign({}, f, { element: CONVERT.to, cards: f.cards ? f.cards.slice() : f.cards, energy: Array.isArray(f.energy) ? f.energy.map(x => x === CONVERT.from ? CONVERT.to : x) : f.energy });   // (its energy cards as the conversion leaves them: convertApply)
+    const g = Object.assign({}, f, { element: CONVERT.to, cards: f.cards ? f.cards.slice() : f.cards, energy: !f.evolved && Array.isArray(f.energy) ? f.energy.map(x => x === CONVERT.from ? CONVERT.to : x) : f.energy });   // (its energy cards as the conversion leaves them: convertApply)
     if (f.evolved) { const d = convertBloomForm(f); if (d) g.evolved = d.id; }
     return g;
 }
@@ -63,9 +63,9 @@ function convertApply(f) {
     const off = convertCardsOff(f), name = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER";
     const form = f.evolved ? convertBloomForm(f) : null;   // (evolved: its class's BLOOM form, there or convertWhyNot would have said)
     f.element = CONVERT.to; f.convertedFrom = CONVERT.from; f.convertedAt = typeof frame !== "undefined" ? frame : 0;
-    // ITS ENERGY CARDS (docs/ENERGY-CARDS.md rule 13, "Convert its card"; js/energy.js): the toxic card in an unevolved one's slot becomes a BLOOM one, so it is BLOOM (saved so, and it evolves into a BLOOM form);
-    // an evolved one's toxic cards, its own element's until now, become BLOOM ones as well, so what they unlocked stays unlocked (no pack deals a BLOOM card: the agent's reading, docs/ENERGY-CARDS.md §11)
-    if (Array.isArray(f.energy)) f.energy = f.energy.map(x => x === CONVERT.from ? CONVERT.to : x);
+    // ITS ENERGY CARD (docs/ENERGY-CARDS.md rule 13, "Convert its card"; js/energy.js): the toxic card in an unevolved one's slot becomes a BLOOM one, so it is BLOOM (saved so, and it evolves into a BLOOM form).
+    // An evolved one's toxic cards stay toxic (the owner, 2026-11-09: "Only an egg's card"): on a BLOOM form they are another element's, and its second attack and Ultimate lock until it holds BLOOM cards
+    if (!f.evolved && Array.isArray(f.energy)) f.energy = f.energy.map(x => x === CONVERT.from ? CONVERT.to : x);
     if (form) {
         f.evolved = form.id;   // (its stats stay as they are: no level is applied again)
         if (f.alt && !(typeof evoMoveAllowed === "function" && evoMoveAllowed(f, form, f.alt))) { f.alt = null; f._altWind = 0; f._altLive = null; }   // (an alternate the new form does not have: back to its normal attack)
@@ -75,7 +75,8 @@ function convertApply(f) {
     if (typeof partyBarRender === "function") partyBarRender(true);
     if (typeof facilitySaveWrite === "function") facilitySaveWrite();   // (saved now, not in a few seconds: it cannot be undone)
     const now = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "BLOOM FOLLOWER";
-    return { ok: true, msg: name + " IS NOW A " + now + (off.length ? " · " + off.join(", ") + " CAME OFF" : ""), off };
+    const locked = f.evolved && typeof energyAltOpen === "function" && !energyAltOpen(f);   // (its toxic energy cards stay toxic: js/energy.js)
+    return { ok: true, msg: name + " IS NOW A " + now + (off.length ? " · " + off.join(", ") + " CAME OFF" : "") + (locked ? " · ITS ATTACKS WAIT FOR BLOOM ENERGY CARDS" : ""), off };
 }
 
 // ── THE PANEL (the station's use: js/stations.js) ──
@@ -146,11 +147,13 @@ function _cvDraw(root, units) {
 // its moves: unevolved, a plain hit, or a Mage's shot (no element move nor Ultimate since build 2026-11-09b); evolved, its form's own shot or hit and its alternates, and its Ultimate (an element's special is no longer
 // fired by a follower: js/combat.js)
 function _cvMoves(f) {
-    const U = typeof followerUltimate === "function" ? followerUltimate(f) : null;
+    const U = typeof followerUltimate === "function" ? followerUltimate(f) : null, UL = !U && typeof followerUltLocked === "function" && followerUltLocked(f) ? FORM_ULTIMATES[f.evolved] : null;
+    const lock = f.evolved && typeof energyAltOpen === "function" && !energyAltOpen(f) ? " (LOCKED)" : "";   // (its energy cards: an evolved one's attacks locked until it holds its element's, js/energy.js)
     const d = f.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[f.evolved] : null, list = [];
-    if (d) { if (d.shot || d.hit) list.push(String(d.shot || d.hit).toUpperCase()); if (typeof evoMoveIds === "function") evoMoveIds(d).forEach(id => list.push(MOVES[id].name)); }
+    if (d) { if (d.shot || d.hit) list.push(String(d.shot || d.hit).toUpperCase()); if (typeof evoMoveIds === "function") evoMoveIds(d).forEach(id => list.push(MOVES[id].name + lock)); }
     else list.push(f.role === "sniper" ? "MAGE SHOT" : "PLAIN HIT");   // (a Mage shoots, evolved or not: js/npc.js)
     if (U && U.name) list.push("ULTIMATE " + String(U.name).toUpperCase());
+    else if (UL && UL.name) list.push("ULTIMATE " + String(UL.name).toUpperCase() + " (LOCKED)");
     return list.length ? list.join(" · ") : "NONE YET";
 }
 // a Technician's ability, now and after (build 2026-11-08m: TOXIC PODS to REEF); null for a Brawler or a Mage

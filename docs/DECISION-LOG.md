@@ -2697,3 +2697,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - This supersedes "1 to 2 energy cards per pack" (`ENERGY-CARDS.md` rule 9).
 - Building energy cards needed choices the rules do not settle. They are listed in `ENERGY-CARDS.md` §7 and §11 for the owner to confirm: plain elementless hits, the starters' free cards, elementless posts, exile, the conversion of an evolved follower's cards, and the tutorial at levels 7 and 6.
 
+## DECISION: Energy cards: the owner's third round of answers (2026-11-09, build `2026-11-09t`)
+- **Starters:** "Keep as built". The starting squad holds free cards of its elements, and the tutorial runs at levels 7 and 6.
+- **Posts:** "With the post's card". A recruitment post's follower comes with a free card of the post's element, so each post keeps its fixed element.
+- **Exile:** "They come back to you". An exiled follower's energy cards return to your stock.
+- **Conversion:** "Only an egg's card". An evolved follower's toxic cards stay toxic, and its attacks lock until it holds BLOOM cards.
+- Still to confirm: plain elementless hits, the grey egg reused, an elementless Technician's lack of an ability, and no energy slots on the HUD squad card (`ENERGY-CARDS.md` §11).
+

@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09t` · branch `claude/start-game-project-HSh7Z` · energy cards: the owner's answers
+The owner's answers on the agent's readings (`docs/ENERGY-CARDS.md` rules 15–18):
+- **The starting squad keeps its elements** with free cards, and the tutorial stays at levels 7 and 6 ("Keep as built").
+- **A recruitment post's follower comes with a free card of the post's element** ("With the post's card"). Each post has its element and colour back. The roster's RECRUIT still starts elementless.
+- **Exile gives a follower's energy cards back** to your stock ("They come back to you").
+- **The conversion converts only an unevolved follower's toxic card** ("Only an egg's card"). An evolved follower's toxic cards stay toxic, so its second attack and Ultimate lock until it holds BLOOM cards. The preview marks them LOCKED, and the conversion says so.
+- Tests: `tests/energycards.js` (17 checks), followerspots, followerprog and conversion updated.
+
 ### Build `2026-11-09s` · branch `claude/start-game-project-HSh7Z` · energy cards
 The owner: "I hate to keep adding different systems, but this one kind of incorporates a resource system that's been at the heart of most of the games I've ever played." Rules: `docs/ENERGY-CARDS.md` (§2; what the code does, §7; the agent's readings to confirm, §11).
 - **A follower's element comes from an energy card in its slot.**

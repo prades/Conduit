@@ -1,9 +1,9 @@
 # Energy cards
 
-- **Status:** Implemented in build `2026-11-09s` (phase 1), verified by `tests/energycards.js` and the suites listed in §10. Not playtested. The hybrid attacks are still to be designed (§11).
+- **Status:** Implemented in builds `2026-11-09s` and `2026-11-09t` (phase 1; `t` is the owner's third round of answers, rules 15–18), verified by `tests/energycards.js` and the suites listed in §10. Not playtested. The hybrid attacks are still to be designed (§11).
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-09
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-09s` (main is at `2026-11-09r` until the owner says "push to main")
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-09t` (main is at `2026-11-09r` until the owner says "push to main")
 - **Related docs:** `FOLLOWER-PROGRESSION.md` (levels, evolution, breeding), `CONVERSION.md` (BLOOM, the conversion machine), `UNIVERSAL-AND-PLAYER-CARDS.md` and `SERIES-2.md` (the equip cards and their packs), `OPEN-QUESTIONS.md`
 
 ## 1. Intent
@@ -30,6 +30,13 @@ The owner's second round of answers, 2026-11-09:
 12. **New followers:** a recruit starts **elementless**. A **bred egg comes with an energy card** of the element breeding picked ("A card with the egg"), in its slot: breeding's element, and BLOOM from toxic + fire, still matter.
 13. **The conversion** ("Convert its card"): for an unevolved toxic follower, the purification module turns the **toxic energy card in its slot into a BLOOM one**, so it is BLOOM (and evolves into a BLOOM form). An evolved toxic follower is converted as now.
 14. **The elementless egg** ("Clear crystal"): the same egg, with a **colourless, unlit crystal** inside, until it gets an energy card.
+
+The owner's third round of answers, 2026-11-09 (on the agent's readings, build `2026-11-09t`):
+
+15. **The starting squad** ("Keep as built"): the three starters hold free cards of their elements. The tutorial lifts followers to level 7 and its ants to 6, one under evolution, so the first assault still evolves them.
+16. **The recruitment posts** ("With the post's card"): a post's follower comes with a free energy card of the post's element, as a bred egg does. Each post keeps its fixed element and colour. This narrows rule 12: the roster's RECRUIT starts elementless, a post's follower does not.
+17. **Exile** ("They come back to you"): the energy cards in an exiled follower's slots come back to your stock.
+18. **The conversion** ("Only an egg's card"): only an unevolved follower's toxic card becomes a BLOOM one. An evolved follower's toxic cards stay toxic. On its BLOOM form they are another element's, so its second attack and Ultimate lock until it holds BLOOM cards. Its preview marks them LOCKED, and the conversion says so.
 
 ## 3. Must-have requirements
 - [x] Energy cards of each element, dealt by a card pack.
@@ -64,17 +71,17 @@ What the code does (build `2026-11-09s`). Items marked *(reading)* are the agent
 - **No form for its element and role:** it does not evolve, and keeps its card.
 - **A fall:** it comes back with its energy cards (the respawn queue carries them).
 - **Falling for good:** the preserved body keeps its cards in its record, and a body restored later has them.
-- **Exile:** its energy cards go with it, as EXILE gives nothing back *(reading)*.
+- **Exile:** its energy cards come back to your stock (rule 17).
 - **Re-roll:** it keeps its element, so it keeps its card *(reading)*.
 - **NO ELEMENT:** an entry in `ELEMENTS` (`none: true`, grey `#b4bcc8`). It is never found, never a random pick, never a card, and has no index entry, icon, card texture or WHO chip. A follower of it is named by its role alone ("BRAWLER").
 - **Its hits:** an elementless hit is plain, ×1 against everything. Its elemental part meets no race's Elemental row and no triangle, and puts up no word *(reading)*.
 - **New followers:**
-  - The roster's RECRUIT and the recruitment posts give NO ELEMENT followers (rule 12). A post's egg is the clear crystal, and the post's own element is kept in the map, unused.
-  - A follower made of an element gets that element's card free, not from your stock: a bred egg (rule 12), the starting squad, the Flux Lab's flux technician, and a scripted recruit *(reading: the starting squad and the Flux Lab keep their elements)*.
+  - The roster's RECRUIT gives NO ELEMENT followers (rule 12).
+  - A follower made of an element gets that element's card free, not from your stock: a recruitment post's (rule 16), a bred egg (rule 12), the starting squad (rule 15), the Flux Lab's flux technician, and a scripted recruit.
   - Two NO ELEMENT parents breed a NO ELEMENT egg.
 - **The title crowd and the Ant Nest's evolved test forms:** their slots are full of their own element, so their attacks are whole.
-- **The conversion (rule 13):** the toxic cards in its slots become BLOOM cards. For an evolved follower too, so what they unlocked stays open, since no pack deals BLOOM cards *(reading)*. Its preview shows the same.
-- **The tutorial:** it lifts followers to level 7 and its ants to 6, one under evolution as before (it was 9 and 8 under level 10). Otherwise the starters would evolve at once *(reading)*.
+- **The conversion (rules 13, 18):** an unevolved follower's toxic card becomes a BLOOM one. An evolved follower's stay toxic, and its attacks lock until it holds BLOOM cards. A BLOOM card comes from taking an egg's converted card out, or a bred BLOOM egg's.
+- **The tutorial (rule 15):** it lifts followers to level 7 and its ants to 6, one under evolution as before (it was 9 and 8 under level 10).
 
 ## 8. Acceptance criteria
 The checks in `tests/energycards.js`: the rules and numbers; owning (put, take, the stock); evolving at 8 with a card (used up); the unlocks; the packs; the save, NEW GAME and old saves; where a card comes from (made of an element, recruits, posts, breeding); NO ELEMENT (pools, the filter, the table, plain hits); a fall; the conversion.
@@ -97,23 +104,18 @@ The checks in `tests/energycards.js`: the rules and numbers; owning (put, take, 
 
 | Check | Result | Evidence / notes |
 |---|---|---|
-| `tests/energycards.js` | Pass | 16 checks |
+| `tests/energycards.js` | Pass | 17 checks |
 | Full run (`node tests/run.js`) | 97 of 102 pass | The 5 that fail fail as on `2026-11-09r` (visiblearea, bottomui, fluxlab, cover, carousel at 1024). 37 suites were updated to the new rules (levels, packs, recruits, evolved test forms filled). |
 | Real page, the Command Center | Checked | Screenshots at 1180×820, 1024×768, 820×1180 and 390×844: the row on the card or panel, no overflow |
 | Playtest | Not done | |
 
 ## 11. Open questions
 1. **The hybrid attacks:** one for each form and each other element? Each is to be designed with the owner (its look, what it does, its numbers).
-2. **The agent's readings, to confirm** (§7 *(reading)*):
+2. **The agent's readings still to confirm** (§7 *(reading)*; the others were answered in rules 15–18):
    - Elementless hits are plain, ×1 against everything.
-   - The starting squad, and the Flux Lab's technician, keep their elements with free cards.
-   - The recruitment posts give elementless followers; the post's own element is unused.
-   - An exiled follower's cards go with it.
-   - The conversion turns an evolved follower's toxic cards into BLOOM ones too.
-   - The tutorial's levels are now 7 and 6.
    - The clear-crystal egg reuses the wild recruit's grey egg, unlit.
    - An elementless Technician has no ability (no element's).
    - The energy slots are not on the squad member's card over the HUD.
 
 ## 12. History
-- 2026-11-09: the owner's direction and four answers (rules 1–7); a second round of answers (rules 8–14); the pack rule (rule 9, superseded the same day); built in `2026-11-09s`.
+- 2026-11-09: the owner's direction and four answers (rules 1–7); a second round of answers (rules 8–14); the pack rule (rule 9, superseded the same day); built in `2026-11-09s`; a third round of answers (rules 15–18) in `2026-11-09t`.

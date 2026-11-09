@@ -39,9 +39,9 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
     check('the table: a post is free (FP_SPOT.price is kept at 0: a price set there is asked for again) and the quick recruit RECRUIT_COST = 200 (the archive: "Directly purchasing a recruit costs exactly 200 shards"); nothing refills (no refill, no cap)', () => {
         same(J('FP_SPOT.price'), 0, 'the price'); same(J('RECRUIT_COST'), 200, 'the recruit'); same(run('FP_SPOT.refill === undefined && FP_SPOT.cap === undefined'), true, 'a refill or a cap');
     });
-    check('the eight posts start with their eggs (the player at the Crystal), none claimed, each of its own type, of NO ELEMENT (a recruit starts elementless since build 2026-11-09s: docs/ENERGY-CARDS.md rule 12), each with a stable id', () => {
+    check('the eight posts start with their eggs (the player at the Crystal), none claimed, each of its own type and element, each with a stable id', () => {
         run('__clearF(); __put(crystal.x, crystal.y); frame = 10; facilityFollowerSpotsTick();');
-        const r = J('_fp.spots.map(s => [s.id, !!s.egg, s.used, s.egg && s.egg.element === "none" && s.egg.role === s.type])');
+        const r = J('_fp.spots.map(s => [s.id, !!s.egg, s.used, s.egg && s.egg.element === s.element && s.egg.role === s.type])');
         same(r.length, 8, 'posts'); for (const s of r) ok(s[1] && !s[2] && s[3], s[0] + ': ' + JSON.stringify(s)); same(r.map(s => s[0]).join(), 'spot_lobby,spot_show,spot_deck,spot_lab,spot_tele_2,spot_arena_w,spot_arena_c,spot_cold', 'the ids');
     });
     check('the price machinery, kept: with a price set (200, for this check only), standing on the egg short of it takes nothing, spends nothing, makes nothing; the egg stays; it says what it needs once, and again only after walking off and back', () => {
@@ -49,10 +49,10 @@ function near(a, b, tol, m) { if (!(Math.abs(a - b) <= tol)) throw new Error(`${
             o.followers = followers.length - n; o.shards = shardCount; o.egg = !!s.egg; o.used = s.used; o.said = __said(/NEED \\u25c6200/); __put(s.x + 3, s.y); __tickSpots(2); __put(s.x + 0.5, s.y); __tickSpots(3); o.saidAgain = __said(/NEED \\u25c6200/); FP_SPOT.price = 0; __put(s.x + 30, s.y); return o; })()`);
         same(r.followers, 0, 'a follower'); same(r.shards, 150, 'shards'); same(r.egg, true, 'the egg'); same(r.used, false, 'claimed'); same(r.said, 1, 'said'); same(r.saidAgain, 2, 'said again');
     });
-    check('free: one step onto the egg claims it: nothing taken, one follower of the post\'s type, of NO ELEMENT, made there (not walked home), the egg gone, the post claimed', () => {
+    check('free: one step onto the egg claims it: nothing taken, one follower of the post\'s type and element made there (not walked home), with the post\'s energy card, the egg gone, the post claimed', () => {
         const r = J(`(function(){ const s = __spot(1), o = {}; shardCount = 450; const n = followers.length; __put(s.x + 0.5, s.y); __tickSpots(1); const f = followers[followers.length - 1];
-            o.n = followers.length - n; o.shards = shardCount; o.used = s.used; o.egg = !!s.egg; o.f = f && [f.role === s.type, f.element === 'none', f.fromSpot, !!f.returningToCrystal, Math.abs(f.x - s.x) < 0.01, f.team]; o.taken = s.taken; o.toast = floatingTexts.filter(t => /JOINED|HOLDS THE/.test(t.text)).map(t => t.text).join('|'); return o; })()`);
-        same(r.n, 1, 'one follower'); same(r.shards, 450, 'nothing taken'); same(r.used, true, 'claimed'); same(r.egg, false, 'the egg'); same(JSON.stringify(r.f), JSON.stringify([true, true, 'spot_show', false, true, 'green']), 'the follower'); same(r.taken, 1, 'taken once'); ok(/^MAGE (JOINED!|HOLDS THE)/.test(r.toast) && /NO ELEMENT YET/.test(r.toast) && !/\u25c6/.test(r.toast), 'the toast names no price: ' + r.toast);
+            o.n = followers.length - n; o.shards = shardCount; o.used = s.used; o.egg = !!s.egg; o.f = f && [f.role === s.type, f.element === s.element && energySlots(f)[0] === s.element, f.fromSpot, !!f.returningToCrystal, Math.abs(f.x - s.x) < 0.01, f.team]; o.taken = s.taken; o.toast = floatingTexts.filter(t => /JOINED|HOLDS THE/.test(t.text)).map(t => t.text).join('|'); return o; })()`);
+        same(r.n, 1, 'one follower'); same(r.shards, 450, 'nothing taken'); same(r.used, true, 'claimed'); same(r.egg, false, 'the egg'); same(JSON.stringify(r.f), JSON.stringify([true, true, 'spot_show', false, true, 'green']), 'the follower'); same(r.taken, 1, 'taken once'); ok(/MAGE · ICE/.test(r.toast) && !/\u25c6/.test(r.toast), 'the toast names no price: ' + r.toast);
     });
     check('claimed is claimed: fifty more steps on it, walking off and back, make nothing and take nothing, and no egg comes back', () => {
         const r = J(`(function(){ const s = __spot(1), o = {}; const n = followers.length, sh = shardCount; __tickSpots(50); __put(s.x + 30, s.y); __tickSpots(10); __put(s.x + 0.5, s.y); __tickSpots(10); o.n = followers.length - n; o.shards = shardCount - sh; o.egg = !!s.egg; o.used = s.used; return o; })()`);

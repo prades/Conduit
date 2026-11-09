@@ -7,7 +7,7 @@
 // once (the archive's Sanctuary page: "a free one-time post"); the roster's RECRUIT is the direct purchase at ◆200 (js/clone.js). FP_SPOT.price is kept at 0: a price set there would be asked for again, said on the pad
 // and refused when short (the egg stays, nothing is taken, nothing is made), as it was.
 // A post (the map's `followerSpots`, js/facilitymap.js) is a pad on the floor in its element's colour, with the follower on it as a grey egg and a label over it: its type (BRAWLER, MAGE, TECHNICIAN) and its element.
-// Since build 2026-11-09s (energy cards: a recruit starts elementless) the follower is of NO ELEMENT: the pad is in its grey, the label its type alone (_fpSpotElement).
+// Its follower comes with the post's element's energy card, free (energy cards: build 2026-11-09t; _fpSpotElement).
 // Both are the post's, never the player's: there is nothing to choose, and the follower that joins is exactly that.
 //   TAKE      walking up to the egg (FP_SPOT.take tiles) makes it a follower there and then (spawnFollowerAtCrystal with the post's element and type, put on the pad, no walk home to the Crystal first), and claims the
 //             post, in one step; with the squad full, who makes room is asked first and the post is claimed once that is chosen (js/party.js partyPickOpen)
@@ -28,9 +28,9 @@ function facilityFollowerSpotsStart(F) {
         _fp.items.push({ type: "fp", fp: "spot", id: p.id, room: p.room, x: s.x, y: s.y, depth: s.x + s.y - 0.25, base: facilityRoomHeight(p.room, F) * FP_ELEV_PX, seed: _fpHash(Math.round(s.x * 3), Math.round(s.y * 5)), spot: s });
     }
 }
-// ITS ELEMENT: a recruit starts elementless (docs/ENERGY-CARDS.md rule 12, build 2026-11-09s): the egg on the pad is the clear, unlit crystal and the follower that joins has no element until you give it an
-// energy card. The post's own element in the map (js/facilitymap.js `followerSpots`) is kept, unused while that rule holds.
-function _fpSpotElement(s) { return typeof ENERGY_NONE !== "undefined" ? ENERGY_NONE : s.element; }
+// ITS ELEMENT: the post's own (js/facilitymap.js `followerSpots`). Its follower comes with that element's energy card in its slot, free, as a bred egg does (the owner, 2026-11-09: "With the post's card";
+// docs/ENERGY-CARDS.md; js/helpers.js spawnFollowerAtCrystal). (In build 2026-11-09s a post's follower came with none.)
+function _fpSpotElement(s) { return s.element; }
 // the egg: a neutral recruit made as the world makes one (js/world.js), of the post's type and element
 function _fpSpotEgg(s) {
     const def = NPC_TYPES["virus"], personality = personalityForType(s.type), stats = applyPersonality(personality), role = assignRole(stats);

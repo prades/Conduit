@@ -88,11 +88,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             return { a: [a.element, energySlots(a).join(), (followerByElement.ice || []).includes(a)], stock: energyTotal(), b: [b.element, energySlots(b).join(), (followerByElement.none || []).includes(b), unitTypeLabel(b), hdEggSheet(b)] }; })()`);
         same(r.a.join('|'), 'ice|ice|true', 'made of ICE'); same(r.stock, 0, 'your stock'); same(r.b.join('|'), 'none||true|MAGE|egg_neutral', 'made of NO ELEMENT');
     });
-    check('the roster\'s RECRUIT and a recruitment post give a follower of NO ELEMENT; a scripted recruit that asks for an element gets it with its card', () => {
+    check('the roster\'s RECRUIT gives a follower of NO ELEMENT; a recruitment post, one of its own element with that element\'s card, free (the owner, 2026-11-09: "With the post\'s card"); a scripted recruit that asks for an element gets it with its card', () => {
         const r = J(`(function(){ __clear(); shardCount = 5000; recruitFollower(); const a = followers[followers.length - 1]; recruitFollower('sniper', 'fire'); const b = followers[followers.length - 1];
             const s = { id: 'energytest', room: (_fp.spots[0] || {}).room, x: player.x, y: player.y, type: 'camper', element: 'toxic', egg: { dead: false }, used: false, taken: 0 }; const c = facilityFollowerSpotTake(s);
-            return { a: [a.element, energySlots(a).join()], b: [b.element, energySlots(b).join()], c: c ? [c.element, energySlots(c).join(), _fpSpotLabel(s)] : null }; })()`);
-        same(r.a.join('|'), 'none|', 'a RECRUIT'); same(r.b.join('|'), 'fire|fire', 'a scripted FIRE recruit'); ok(r.c, 'the post gave nothing'); same(r.c.join('|'), 'none||TECHNICIAN', 'a post\'s recruit');
+            return { a: [a.element, energySlots(a).join()], b: [b.element, energySlots(b).join()], c: c ? [c.element, energySlots(c).join(), _fpSpotLabel(s)] : null, stock: energyTotal() }; })()`);
+        same(r.a.join('|'), 'none|', 'a RECRUIT'); same(r.b.join('|'), 'fire|fire', 'a scripted FIRE recruit'); ok(r.c, 'the post gave nothing'); same(r.c.join('|'), 'toxic|toxic|TECHNICIAN · TOXIC', 'a post\'s recruit'); same(r.stock, 0, 'your stock (the post\'s card is free)');
     });
     check('breeding: a parent of NO ELEMENT gives none (the other\'s element; two of none, none); its egg holds the card of the element picked', () => {
         const r = J(`[breedElement({ element: 'none' }, { element: 'fire' }, () => 0.1), breedElement({ element: 'none' }, { element: 'fire' }, () => 0.9), breedElement({ element: 'none' }, { element: 'none' }, () => 0.3)]`);
@@ -132,12 +132,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             for (let i = 0; i < 260; i++) render(); const g = followers.find(x => x.uid === uid && !x.dead); playerReviveFree = globalThis.__rf; return { queued, back: g ? [g.element, energySlots(g).join()] : null }; })()`);
         same(r.queued, '["core"]', 'what its queue entry carries'); ok(r.back, 'it did not come back'); same(r.back.join('|'), 'core|core', 'it came back as');
     });
-    check('the conversion (rule 13): an unevolved toxic follower\'s TOXIC card becomes a BLOOM one (so it is BLOOM, and saved so); an evolved one\'s toxic cards too, so what they unlocked stays open', () => {
+    check('the conversion (rule 13): an unevolved toxic follower\'s TOXIC card becomes a BLOOM one (so it is BLOOM, and saved so); an evolved one\'s toxic cards stay toxic, so its attacks lock until it holds BLOOM cards (the owner, 2026-11-09: "Only an egg\'s card"); its preview says so', () => {
         const r = J(`(function(){ __clear(); const Q = questState('purify'); Q.installedAt = 1; Q.purifiedAt = 2; const u = __mk('brawler', 'toxic'); const a = convertApply(u); const rec = followerRecord(u), g = followerBuild(rec);
-            const e = __mk('brawler', 'toxic'); e.evolved = 'seeper'; energyEvolved(e); energyAdd('toxic', 2); energyPut(e, 0, 'toxic'); energyPut(e, 1, 'toxic'); const before = [energyAltOpen(e), energyUltOpen(e)].join(); const b = convertApply(e);
-            return { a: a.ok, u: [u.element, energySlots(u).join()], g: [g.element, energySlots(g).join()], b: b.ok, e: [e.element, e.evolved, energySlots(e).join(), before, [energyAltOpen(e), energyUltOpen(e)].join()] }; })()`);
+            const e = __mk('brawler', 'toxic'); e.evolved = 'seeper'; energyEvolved(e); energyAdd('toxic', 2); energyPut(e, 0, 'toxic'); energyPut(e, 1, 'toxic'); const before = [energyAltOpen(e), energyUltOpen(e)].join(), preview = _cvMoves(convertPreview(e)); const b = convertApply(e);
+            return { a: a.ok, u: [u.element, energySlots(u).join()], g: [g.element, energySlots(g).join()], b: b.ok, msg: b.msg, preview, e: [e.element, e.evolved, energySlots(e).join(), before, [energyAltOpen(e), energyUltOpen(e)].join(), energyHybrids(e).join('+')] }; })()`);
         same(r.a, true, 'the unevolved one converted'); same(r.u.join('|'), 'blossom|blossom', 'unevolved, after'); same(r.g.join('|'), 'blossom|blossom', 'unevolved, saved and read back');
-        same(r.b, true, 'the evolved one converted'); same(r.e.join('|'), 'blossom|sundew|blossom,blossom,|true,true|true,true', 'evolved, after');
+        same(r.b, true, 'the evolved one converted'); same(r.e.join('|'), 'blossom|sundew|toxic,toxic,|true,true|false,false|toxic+toxic', 'evolved, after (its toxic cards are another element\'s on a BLOOM form)');
+        ok(/\(LOCKED\)/.test(r.preview), 'the preview does not say its attacks lock: ' + r.preview); ok(/ITS ATTACKS WAIT FOR BLOOM ENERGY CARDS/.test(r.msg), 'what it says after: ' + r.msg);
+    });
+    check('EXILE: the energy cards in its slots come back to your stock (the owner, 2026-11-09: "They come back to you")', () => {
+        const r = J(`(function(){ __clear(); const u = __mk('brawler', 'ice'), e = __mk('brawler', 'fire'); e.evolved = 'quillstone'; energyEvolved(e); energyAdd('fire', 2); energyPut(e, 0, 'fire'); energyPut(e, 1, 'fire');
+            const before = energyTotal(); const ok = [partyExile(u, true), partyExile(e, true)]; return { before, ok, after: energySaveCollect(), slots: [energySlots(u).join(), energySlots(e).join()] }; })()`);
+        same(r.before, 0, 'your stock before'); same(r.ok.join(), 'true,true', 'exiled'); same(JSON.stringify(r.after), '{"fire":2,"ice":1}', 'your stock after'); same(r.slots.join('|'), '|,,', 'their slots');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

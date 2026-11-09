@@ -715,16 +715,13 @@ The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved
 - **A reading:** an unevolved follower's meter no longer fills (it has no Ultimate); a charge an old save carries stays as it was until it evolves.
 
 ## Energy cards (built in `2026-11-09s`)
-The open questions are in `ENERGY-CARDS.md` §11. They are the hybrid attacks (to be designed with the owner), and the agent's readings to confirm:
+The open questions are in `ENERGY-CARDS.md` §11. They are the hybrid attacks (to be designed with the owner), and four readings to confirm:
 - elementless hits are plain;
-- the starting squad and the Flux Lab keep their elements with free cards;
-- the recruitment posts give elementless followers;
-- an exiled follower's cards go with it;
-- an evolved follower's toxic cards become BLOOM ones in the conversion;
-- the tutorial runs at levels 7 and 6;
 - the clear-crystal egg reuses the grey one;
 - an elementless Technician has no ability;
 - there are no energy slots on the HUD squad card.
+
+The starters, the posts, exile and the conversion were answered on 2026-11-09 (rules 15–18, build `2026-11-09t`).
 
 ## The cave's look (build `2026-11-09i`)
 - **The cave's walls.** Approved on 2026-11-09 and drawn for everyone from build `2026-11-09j`; then the owner said "I'm not big on these walls" and "Switch back to the drawn rock for now". The drawn rock is back for everyone in build `2026-11-09p`; the modelled walls stay on the preview `?walls=3d`. Open: what was not liked (offered: smeary faces up close, too smooth, the colour, the shape), and whether they come back reworked or the drawn rock stays.

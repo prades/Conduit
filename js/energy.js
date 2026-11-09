@@ -80,6 +80,8 @@ function energyPut(f, slot, el) {
     if (f.evolved && f.alt && typeof evoMoveOf === "function" && !evoMoveOf(f)) { f.alt = null; f._altWind = 0; f._altLive = null; }   // (its second attack locked again: back to its normal attack)
     return true;
 }
+// EXILE (js/party.js partyExile): every card in its slots comes back to your stock (the owner, 2026-11-09: "They come back to you")
+function energyReturnAll(f) { if (!energyFor(f)) return 0; let n = 0; for (const el of energySlots(f)) if (el) { energyAdd(el, 1); n++; } f.energy = new Array(energySlotCount(f)).fill(null); return n; }
 // EVOLVING (js/evolution.js evoCheck): the card in its slot is used up, its element is its own for good, and it has ENERGY.evolvedSlots empty slots
 function energyEvolved(f) { if (!f) return; f.energy = new Array(ENERGY.evolvedSlots).fill(null); }
 // a follower's slots full of its own element's cards, free (not from the stock): the title screen's crowd (js/attract.js) and the Ant Nest's test forms (js/nestconsole.js) show a form whole
