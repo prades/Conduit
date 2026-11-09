@@ -28,7 +28,7 @@ const sigOf = pieces => { let h = 2166136261; const s = pieces.map(p => p.key + 
   const pieces = JSON.parse(vm.runInContext(`JSON.stringify((_fp.items || []).filter(it => it.fp === "wall" && it.kind === "rock").map(it => {
       const H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0)), dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1;
       let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
-      return { key: caveWallKey(it), a: it.a, b: it.b, room: it.room, back: !!it.back, n: [nx, ny], hs: _fpRockHeights(it, H), cap: it.cap || null, drop: it.drop || 0, ice: !!_fpRoomStyle(it.room).ice, down: FP_ROCK_DOWN, ext: H - FP_WALL_H, dk: it.dk || null };
+      return { key: caveWallKey(it), a: it.a, b: it.b, room: it.room, back: !!it.back, n: [nx, ny], hs: _fpRockHeights(it, H), cap: it.cap || null, drop: it.drop || 0, ice: !!_fpRoomStyle(it.room).ice, down: FP_ROCK_DOWN, ext: H - FP_WALL_H, dk: it.dk || null, mid: (function(){ const R = _fp.F.byId.get(it.room), bb = R && R.bb; return bb ? [(bb[0] + bb[2]) / 2, (bb[1] + bb[3]) / 2] : [it.x, it.y]; })() };
     }))`, ctx));
   const sig = sigOf(pieces), deckTop = +vm.runInContext('(_fp.deckRise || 0) + 20', ctx);   // (the deck's wall top, where the rock beside its glass rises to)
   console.log(pieces.length + ' rock pieces, signature ' + sig);
@@ -46,10 +46,11 @@ const sigOf = pieces => { let h = 2166136261; const s = pieces.map(p => p.key + 
   pieces.forEach((p, i) => { if (!used.has(i)) chainFrom(i); });   // (closed loops)
   // an end of a run carries its cap on over an indent: where the rock turns back into itself (an inner corner, an alcove's side), or where it stops at an opening (a door: no rock goes on from it)
   const ends = new Map(); pieces.forEach((p, i) => { for (const e of [p.a, p.b]) { const k = p.room + '|' + k2(e); if (!ends.has(k)) ends.set(k, []); ends.get(k).push(i); } });
-  const indentAt = (E, own, n) => { const others = (ends.get(pieces[own[0]].room + '|' + k2(E)) || []).filter(i => !own.includes(i)); if (!others.length) return true;
-    return others.some(i => { const q = pieces[i], far = Math.hypot(q.a[0] - E[0], q.a[1] - E[1]) < 1e-3 ? q.b : q.a, v = [far[0] - E[0], far[1] - E[1]], L = Math.hypot(v[0], v[1]) || 1; return (v[0] * n[0] + v[1] * n[1]) / L < -0.3; }); };
-  const runInfo = runs.map(run => { const f = pieces[run[0]], l = pieces[run[run.length - 1]]; return { extStart: indentAt(f.a, run, f.n), extEnd: indentAt(l.b, run, f.n) }; });
-  console.log(runs.length + ' runs, ' + runInfo.filter(r => r.extStart || r.extEnd).length + ' with a cap carried on over an indent');
+  // (the owner, on the Cold Storage's pictures, marked the slabs a cap made where it carried on at a zigzag's joints and over the void: so only a BACK run's end at an OPENING carries it on: a door's alcove,
+  // the Sewers' culvert, the Armory's door; never at a corner where the rock goes on, never on a front wall's cliff, never beside the deck's glass)
+  const openAt = (E, own, p, dkEnd) => p.back && !(dkEnd > 0.05) && !(ends.get(p.room + '|' + k2(E)) || []).some(i => !own.includes(i));
+  const runInfo = runs.map(run => { const f = pieces[run[0]], l = pieces[run[run.length - 1]]; return { extStart: openAt(f.a, run, f, f.dk ? f.dk[0] : 0), extEnd: openAt(l.b, run, l, l.dk ? l.dk[2] : 0) }; });
+  console.log(runs.length + ' runs, ' + runInfo.filter(r => r.extStart || r.extEnd).length + ' with a cap carried on over an opening');
 
   // ── 3-4. model, render and cut each run (in the browser, with three.js) ──
   const page = `<!doctype html><html><body style="margin:0;background:#000"><script src="three.min.js"></script><script>
@@ -66,12 +67,14 @@ window.__run = function (run, P) {
   const A = first.a, len = ps.length, dir = [ (ps[len - 1].b[0] - A[0]), (ps[len - 1].b[1] - A[1]) ], RL = Math.hypot(dir[0], dir[1]) || 1; dir[0] /= RL; dir[1] /= RL;
   // THE HEIGHT is one smooth function of where the rock is in the world (the owner, 2026-11-09: "a cap on the entire surface rooftop so it doesn't look all jagged ... smooth like the walls"):
   // so the top of the rock is ONE surface wherever runs meet, a back wall's 135-220 px, a front wall's 100-150 px over the floor; beside the observation deck's glass it rises to the deck's wall top, as before
-  const hW = (gx, gy, dk) => { let h = first.ext + (back ? 176 : 126) + (back ? 42 : 26) * (fbm(gx * 0.42 + 5, 2.7, gy * 0.42 + 9) - 0.5) * 3; if (dk > 0) h += Math.max(0, P.deckTop - h) * dk; return h; };
+  const M0 = first.mid[0] + first.mid[1], hW = (gx, gy, dk) => { let h = first.ext + Math.max(108, Math.min(214, 152 - 2.6 * (gx + gy - M0))) + 20 * (fbm(gx * 0.42 + 5, 2.7, gy * 0.42 + 9) - 0.5) * 3;   // (continuous along any edge, a zigzag's too: no steps where its pieces face alternately in and out)
+    if (dk > 0) h += Math.max(0, P.deckTop - h) * dk; return h; };
   const dkAt = u => { const i = Math.max(0, Math.min(len - 1, Math.floor(u / (RL / len)))), p = ps[i]; if (!p.dk) return 0; const t = (u - i * RL / len) / (RL / len); return t < 0.5 ? p.dk[0] + (p.dk[1] - p.dk[0]) * t * 2 : p.dk[1] + (p.dk[2] - p.dk[1]) * (t - 0.5) * 2; };
   // the cap's depth (tiles, back from the lip, away from the camera's side): a front wall's, its thickness (1); a back wall's, back to the wall behind (the game's own distances, 0.8 to 3.2)
-  const capD = u => { const i = Math.max(0, Math.min(len - 1, Math.floor(u / (RL / len)))), c = ps[i].cap; if (!c) return 0.6; if (c.da === undefined) return c.d; const t = Math.max(0, Math.min(1, (u - i * RL / len) / (RL / len))); return Math.max(0.8, Math.min(3.2, c.da + (c.db - c.da) * t)); };
+  const capD = u => { const i = Math.max(0, Math.min(len - 1, Math.floor(u / (RL / len)))), c = ps[i].cap; if (!c) return 0.6; if (c.da === undefined) return c.d; if (n[1] < 0.8) return 0.7;   // (a back wall not facing the camera's way (a zigzag's piece, a west wall) has no wall behind it to run to: a thick top, not a roof over the void)
+    const t = Math.max(0, Math.min(1, (u - i * RL / len) / (RL / len))); return Math.max(0.8, Math.min(3.2, c.da + (c.db - c.da) * t)); };
   // an end of the run at an inner corner or an opening (a door: the Sewers' culvert): its cap carries on over the indent, a projecting mountain top (the owner's ask)
-  const XS = run.extStart ? 0.9 : 0, XE = run.extEnd ? 0.9 : 0;
+  const XS = run.extStart ? 0.8 : 0, XE = run.extEnd ? 0.8 : 0;
   const EXT = 0.08, U0 = -EXT, U1 = RL + EXT, NU = Math.max(8, Math.ceil((U1 - U0) / 0.0625)), NV = 12, NC = 7;
   const zb = back ? -(first.drop || 0) : -first.down;   // (a front wall's rock runs on down into the dark)
   const W2 = (u) => [A[0] + dir[0] * u, A[1] + dir[1] * u];
@@ -100,19 +103,21 @@ window.__run = function (run, P) {
   const SG = (n[0] * dir[1] - n[1] * dir[0]) > 0 ? 1 : -1, quad = (a, b, c, d) => { if (SG < 0) idx.push(a, b, c, a, c, d); else idx.push(a, c, b, a, d, c); };
   for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) quad(face[i][j], face[i + 1][j], face[i + 1][j + 1], face[i][j + 1]);
   // THE CAP: ONE smooth top, from the lip back (away from the camera's side), its height the world's smooth height, gently domed; past an indented end it runs on over the indent
+  // its direction, as the drawn rock's (js/facilitydecor.js _fpRockSides): a back wall's top runs north (back, away from the camera, to the wall behind); a front wall's runs its thickness toward the room
+  const CD = back ? [0, -1] : [-n[0], -n[1]], SGC = (dir[1] * CD[0] - dir[0] * CD[1]) > 0 ? -1 : 1, quadC = (a, b, c, d) => { if (SGC < 0) idx.push(a, b, c, a, c, d); else idx.push(a, c, b, a, d, c); };   // (the cap's own winding: its front up)
   const STEP = (U1 - U0) / NU, NS = Math.round(XS / STEP), NE = Math.round(XE / STEP), NCU = NU + NS + NE, cap = [], lipOf = [];   // (the cap's grid IS the face's grid, run on by whole steps: its lip is the face's top row exactly)
   for (let i = 0; i <= NCU; i++) { const fi = i - NS, u = U0 + STEP * fi, w = W2(u), D = capD(Math.max(0, Math.min(RL, u))), onFace = fi >= 0 && fi <= NU, row = [];
-    for (let j = 0; j <= NC; j++) { const t = j / NC, gx = w[0] - n[0] * D * t, gy = w[1] - n[1] * D * t;
+    for (let j = 0; j <= NC; j++) { const t = j / NC, gx = w[0] + CD[0] * D * t, gy = w[1] + CD[1] * D * t;
       if (j === 0 && onFace) { row.push(face[fi][NV]); continue; }   // (the lip is the face's top row: the two meet, softly shaded across it)
       const lo = fbm(gx * 0.9 + 1, 4.2, gy * 0.9 + 7), z = hW(gx, gy, dkAt(Math.max(0, Math.min(RL, u)))) + 10 * Math.sin(PI * Math.min(1, t * 1.15)) * (0.6 + 0.8 * (lo - 0.5));
       let c = roofC.clone().lerp(light, Math.max(0, lo - 0.45) * 0.9).lerp(base, 0.25); if (j === NC) c.lerp(dark, 0.5);   // (a soft dark crease where it meets the wall behind)
       if (ice) c = frostAt(c, 0.42);
       row.push(put(gx, gy, z, c)); }
     cap.push(row); lipOf.push(onFace); }
-  for (let i = 0; i < NCU; i++) for (let j = 0; j < NC; j++) quad(cap[i][j], cap[i + 1][j], cap[i + 1][j + 1], cap[i][j + 1]);
+  for (let i = 0; i < NCU; i++) for (let j = 0; j < NC; j++) quadC(cap[i][j], cap[i + 1][j], cap[i + 1][j + 1], cap[i][j + 1]);
   // under the cap where it runs on past the face (over an indent): a short rock lip down from it, so it is a mountain's edge and not a sheet
   for (let i = 0; i < NCU; i++) { if (lipOf[i] && lipOf[i + 1]) continue;
-    const p0 = cap[i][0], p1 = cap[i + 1][0], under = (k, dz) => { const x = pos[k * 3], y = pos[k * 3 + 1] * UH, z = pos[k * 3 + 2], lo = fbm(x * 3.1, y / UH * 2, z * 3.1); let c = dark.clone().lerp(base, 0.55 + 0.4 * (lo - 0.5)); if (ice) c = frostAt(c, 0.3); return put(x - n[0] * 0.08, z - n[1] * 0.08, y - dz, c); };   // (leaning back under the cap: a rounded rock edge)
+    const p0 = cap[i][0], p1 = cap[i + 1][0], under = (k, dz) => { const x = pos[k * 3], y = pos[k * 3 + 1] * UH, z = pos[k * 3 + 2], lo = fbm(x * 3.1, y / UH * 2, z * 3.1); let c = dark.clone().lerp(base, 0.55 + 0.4 * (lo - 0.5)); if (ice) c = frostAt(c, 0.3); return put(x + CD[0] * 0.08, z + CD[1] * 0.08, y - dz, c); };   // (leaning back under the cap: a rounded rock edge)
     const q0 = under(p0, 20), q1 = under(p1, 20); quad(q0, q1, p1, p0); }
   const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new T.Float32BufferAttribute(col, 3)); geo.setAttribute('fade', new T.Float32BufferAttribute(fade, 1)); geo.setIndex(idx); geo.computeVertexNormals();
   // the materials, made once and shared by every run (a material's shader is compiled once)

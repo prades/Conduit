@@ -75,10 +75,11 @@ The owner, 2026-11-09: the cave's walls should look like RuneScape's 3D-model wa
 - Every rock wall in the facility is modelled from its own shape and baked to sprites: the arena (the cave), the Cold Storage's ice cave and the Nest's cavern. That is 326 half-tile pieces in 53 straight runs.
 - **The face** is pushed in and out by noise of its place in the world, so neighbouring runs meet without a seam. It is softly (Gouraud) shaded, in the cave's brown: darker in its hollows and at its foot, lighter on its bulges.
 - **The top is one smooth cap** (the owner, on the first in-game pictures: "a cap on the entire surface rooftop so it doesn't look all jagged. It looks kind of smooth like the walls").
-  - The rock's height is one smooth function of its place in the world: a far wall's top is 135–220 px over the floor, a near wall's 100–150 px. So the top is the same surface wherever runs meet.
-  - It runs back from a softly rounded lip, gently domed. A far wall's cap goes back toward the wall behind it (0.8 to 3.2 tiles); a near wall's cap is its thickness toward the room (1 tile).
+  - The rock's height is one smooth function of its place in the world: it slopes across each cave, lower toward the camera and taller at the back (108–214 px over the floor), with gentle noise. So the top is the same surface wherever runs meet, along a zigzag too (its pieces face alternately in and out).
+  - It runs back from a softly rounded lip, gently domed, the way the drawn rock's did. A far wall's top runs north, back toward the wall behind it: 0.8 to 3.2 tiles when it faces the camera's way, 0.7 tile otherwise (a zigzag's piece, a west wall). A near wall's top is its thickness toward the room (1 tile). No top runs out over the void.
   - Beside the observation deck's glass, the rock rises to the deck's wall top, as before.
-- **Indents** (the owner's ask, marked on the same picture: "a 3-D like projected mountain top area for that little indent"): where a run ends at an inner corner or at an opening (a door, like the Sewers' culvert), its cap carries on over the indent for 0.9 tile. It is a projecting mountain top with a short rock edge under it.
+- **Indents** (the owner's ask, marked on the same picture: "a 3-D like projected mountain top area for that little indent"): where a far-side run ends at an opening with no rock beyond it (a door's alcove: the Sewers' culvert, the Armory's door), its cap carries on over the indent for 0.8 tile. It is a projecting mountain top with a short rock edge under it.
+  - Never at a corner where the rock goes on, on a near-side cliff, or beside the deck's glass. The owner marked the slabs it made at the Cold Storage's zigzag joints and over the void.
 - **Boulders** lie at the foot of a far wall, on the room's side.
 - **A near wall's rock** runs on down below the floor into the dark, fading to black.
 - **In the ice room** the rock is frosted, with icicles off its lip.
