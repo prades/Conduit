@@ -117,6 +117,7 @@ function attractSpawn() {
     spawnFollowerAtCrystal(d.element, typeof FOLLOWER_TYPES !== "undefined" && FOLLOWER_TYPES[d.role] ? d.role : "brawler");   // (its form's role: a brawler, a mage, or a technician like the Hammer Slug)
     const f = followers[followers.length - 1]; if (!f) return false;
     f.evolved = d.id; f.role = d.role; f.level = typeof EVOLVE_LEVEL === "number" ? EVOLVE_LEVEL : 10; if (typeof xpForLevel === "function") f.xp = xpForLevel(f.level);
+    if (typeof energyFill === "function") energyFill(f);   // (the crowd shows every form at its best: its energy slots full of its own element, js/energy.js)
     _applyFollowerLevel(f, true); f._moltAt = -1e9; f._sigCd = 1e9; f._fade = 1;
     f.x = s0.x; f.y = s0.y; f.returningToCrystal = false; f.stance = "hold"; f.dirX = w0.x - s0.x; f.dirY = w0.y - s0.y;
     const route = [w0]; let at = w0, n = _atInt(ATTRACT.stops) - 1;

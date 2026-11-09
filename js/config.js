@@ -23,12 +23,17 @@ const ELEMENTS = [
     { id:"toxic",    label:"TOXIC",    color:"#66ff66" },
     // BLOOM, the seventh (docs/CONVERSION.md; build 2026-11-08i): life-giving, the toxin filtered out. Its id is "blossom" ("bloom" is the retired BUNKER BLOOM form's, js/evolution.js).
     // `converted`: it only ever comes from the purification module's conversion (js/conversion.js): never a recruit, an egg, a post or a creature (elementsFound, below).
-    { id:"blossom",  label:"BLOOM",    color:"#ff7ab8", converted: true }
+    { id:"blossom",  label:"BLOOM",    color:"#ff7ab8", converted: true },
+    // NO ELEMENT (docs/ENERGY-CARDS.md; build 2026-11-09s): an unevolved follower without an energy card in its slot (js/energy.js ENERGY_NONE). `none`: it is no element at all: never found, never dealt as a card,
+    // never a creature's; its egg is the clear, unlit crystal (js/hdsprites.js); its hits are plain, ×1 against everything (js/damage.js); its name is its role alone (js/levels.js unitTypeLabel).
+    { id:"none",     label:"NO ELEMENT", color:"#b4bcc8", none: true }
 ];
-// the elements a follower or a creature can be found or made with (every one but BLOOM): the pool of every random pick (js/helpers.js, js/npc.js, js/clone.js modulationPick)
-function elementsFound() { return ELEMENTS.filter(e => !e.converted).map(e => e.id); }
-// the elements to filter your followers by (the roster's ELEMENT drop-down): every element found, and BLOOM once one of yours is BLOOM
-function elementsOwned() { return ELEMENTS.filter(e => !e.converted || (typeof followers !== "undefined" && followers.some(f => f && !f.dead && f.isFollower && f.element === e.id))).map(e => e.id); }
+// the elements a follower or a creature can be found or made with (every one but BLOOM and NO ELEMENT): the pool of every random pick (js/helpers.js, js/npc.js, js/clone.js modulationPick)
+function elementsFound() { return ELEMENTS.filter(e => !e.converted && !e.none).map(e => e.id); }
+// an element's word in a follower's name ("FIRE" of "FIRE BRAWLER"; BLOOM's id is "blossom"); NO ELEMENT's is none: such a follower is named by its role alone
+function elementWord(id) { const e = ELEMENTS.find(x => x.id === id); return e ? (e.none ? "" : e.label) : String(id || "").toUpperCase(); }
+// the elements to filter your followers by (the roster's ELEMENT drop-down): every element found, and BLOOM or NO ELEMENT once one of yours is
+function elementsOwned() { return ELEMENTS.filter(e => (!e.converted && !e.none) || (typeof followers !== "undefined" && followers.some(f => f && !f.dead && f.isFollower && f.element === e.id))).map(e => e.id); }
 // Every element is online from the start (ASKED: "make the crystal have access to all the colors from the beginning"): a follower is made of any of the six
 // (js/clone.js modulationPick), and a creature carries one too (the type chart runs on every fight: js/elements.js getElementMultiplier, js/helpers.js applyDamage).
 let unlockedElements = new Set(elementsFound());

@@ -30,7 +30,7 @@ function specimenReset() { specimenCarried = []; _pres = null; }
 // ── who it is ──
 function specimenName(b) {
     if (!b) return "SPECIMEN";
-    if (b.kind === "follower") { const r = b.rec || {}; return r.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[r.evolved] ? EVOLUTIONS[r.evolved].name : String(r.element || "").toUpperCase() + " " + (typeof roleLabel === "function" ? roleLabel(r.role) : String(r.role || "").toUpperCase()); }
+    if (b.kind === "follower") { const r = b.rec || {}; return r.evolved && typeof EVOLUTIONS !== "undefined" && EVOLUTIONS[r.evolved] ? EVOLUTIONS[r.evolved].name : ((typeof elementWord === "function" ? elementWord(r.element) : String(r.element || "").toUpperCase()) + " " + (typeof roleLabel === "function" ? roleLabel(r.role) : String(r.role || "").toUpperCase())).trim(); }
     return String(b.sp || "").toUpperCase() + " " + String(b.cls || "").toUpperCase() + " CLONE";
 }
 // an ICE MAGE: a live follower of yours of the element and role (an evolved form counts by its form's: EVOLUTIONS[id].element and .role)

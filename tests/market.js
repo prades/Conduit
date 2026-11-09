@@ -46,7 +46,7 @@ async function boot(search, store) {
         globalThis.__lv = (f, L) => { f.level = L; f.xp = xpForLevel(L); _applyFollowerLevel(f, true); return f; };
         globalThis.__prep = (el, role, L) => { const f = __mk(el, role || 'brawler'); delete f.evolved; f.perk = null; f.combatTrait = null; f.naturalTrait = null; return __lv(f, L || 12); };
         // a pack that deals the cards given (the roll is staged; the opening, the price and the duplicates are the game's)
-        globalThis.__deal = ids => { const orig = equipPackRoll; equipPackRoll = () => ids.slice(); try { return equipPackOpen(); } finally { equipPackRoll = orig; } };
+        globalThis.__deal = ids => { const orig = equipPackRoll, size = EQUIP_PACK.size; equipPackRoll = () => ids.slice(); EQUIP_PACK.size = ids.length; try { return equipPackOpen(); } finally { equipPackRoll = orig; EQUIP_PACK.size = size; } };   // (the pack made to deal these: the duplicates are under test, not the pack's size, 2 since build 2026-11-09s)
         globalThis.__at = f => { frame = f; };`, ctx);
     return { ctx, errs, run: s => vm.runInContext(s, ctx), J: s => JSON.parse(vm.runInContext('JSON.stringify(' + s + ')', ctx)) };
 }
@@ -69,7 +69,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     var btns = function(s){ return Array.prototype.slice.call(s.querySelectorAll('.cd-btn')).map(function(b){ return { label: b.querySelector('.cd-bl').textContent, sub: b.querySelector('.cd-bs').textContent, off: b.disabled }; }); };
 
     shardCount = 1500; equipHand = []; equipFound = ['ember_plating', 'venom_gland']; equipCredits = 0;
-    var orig = equipPackRoll; equipPackRoll = function(){ return ['ember_plating', 'venom_gland', 'flux_cell', 'siphon_field']; }; equipPackOpen(); equipPackRoll = orig;   // two duplicates (already found), two new
+    var orig = equipPackRoll, size0 = EQUIP_PACK.size; equipPackRoll = function(){ return ['ember_plating', 'venom_gland', 'flux_cell', 'siphon_field']; }; EQUIP_PACK.size = 4; equipPackOpen(); equipPackRoll = orig; EQUIP_PACK.size = size0;   // two duplicates (already found), two new
     equipShelfDeal(1); equipShelf.until = frame + 7260;   // the shelf after the pack: six cards, none of them found; 121 seconds to run
     cardsOpen(); await wait(150);
     out.tab0 = _cdTab; click($$('#cardsRoot .cd-tab').filter(function(b){ return b.textContent.indexOf('SHOP') === 0; })[0]); await wait(120);   // (the market is in the SHOP menu: build l)
@@ -157,11 +157,11 @@ function measure(w, h, query, seed) {
     });
 
     group('2. DUPLICATES PAY CREDITS');
-    await check('a card already in the hand, or already found this run, is a DUPLICATE: the pack still costs ◆100, the card is not found again and pays 25% of its value in credits (22.5, 37.5, 62.5); a card new to you pays nothing and is found; four Unrefined duplicates make exactly 90', () => {
+    await check('a card already in the hand, or already found this run, is a DUPLICATE: the pack still costs ◆50 (◆100 until build 2026-11-09s), the card is not found again and pays 25% of its value in credits (22.5, 37.5, 62.5); a card new to you pays nothing and is found; four Unrefined duplicates make exactly 90', () => {
         const o = J(`(function(){ __fresh(0); shardCount = 1000; equipOwnedSet().clear(); equipOwnedSet().add('ember_plating'); equipHand.length = 0; equipHandAdd('ember_plating'); equipFound = ['furnace_heart', 'cinderbrand'];
             __deal(['ember_plating', 'furnace_heart', 'cinderbrand', 'venom_gland']); const out = { shards: shardCount, credits: equipCredits, found: equipFound.slice(), last: JSON.parse(JSON.stringify(equipPackLast)) };
             const had = equipCredits; equipFound = ['ember_plating', 'venom_gland', 'charged_wiring', 'flux_cell']; equipHand.length = 0; __deal(['ember_plating', 'venom_gland', 'charged_wiring', 'flux_cell']); out.four = equipCredits - had; out.total = equipCredits; out.foundAfter = equipFound.length; return out; })()`);
-        same(o.shards, 900, "the pack's price"); near(o.credits, 22.5 + 37.5 + 62.5, 'the credits'); sameJ(o.found, ['furnace_heart', 'cinderbrand', 'venom_gland'], 'what was found (only the new card)');
+        same(o.shards, 950, "the pack's price"); near(o.credits, 22.5 + 37.5 + 62.5, 'the credits'); sameJ(o.found, ['furnace_heart', 'cinderbrand', 'venom_gland'], 'what was found (only the new card)');
         sameJ(o.last.dupes, ['ember_plating', 'furnace_heart', 'cinderbrand'], 'the duplicates'); sameJ(o.last.fresh, ['venom_gland'], 'the new card'); near(o.last.credits, 122.5, "the pack's credits"); near(o.four, 90, 'four Unrefined duplicates'); near(o.total, 212.5, 'the credits add up from pack to pack'); same(o.foundAfter, 4, 'a duplicate was found again');
     });
     await check('a card you own for good but did NOT bring (not in the hand, not found) is not a duplicate: a pack finds it for the run, so it can be worn even when the hand is full of other cards, and it pays no credits', () => {
@@ -169,8 +169,8 @@ function measure(w, h, query, seed) {
             __deal(['venom_gland', 'ember_plating', 'flux_cell', 'cinderbrand']); const f = __prep('toxic', 'brawler'); return { hand: equipHand.length, credits: equipCredits, found: equipFound.slice(), wearsIt: equipPut(f, 0, 'venom_gland'), inHand: equipInHand('venom_gland') }; })()`);
         same(o.hand, 3, 'the hand was full'); near(o.credits, 22.5, 'only the card in the hand paid'); sameJ(o.found, ['venom_gland', 'flux_cell', 'cinderbrand'], 'the owned card was found again, the new ones too'); same(o.wearsIt, true, 'the found card was not wearable'); same(o.inHand, false, 'it went into the hand');
     });
-    await check('credits come only from duplicates (a pack of new cards pays none); they belong to the run (equipReset, which NEW GAME runs, clears them and the shelf); the other pack rules are as they were (4 cards, one Precision, none twice)', () => {
-        const o = J(`(function(){ __fresh(0); shardCount = 5000; equipFound = []; equipCredits = 0; for (let s = 1; s <= 30; s++) { equipFound = []; equipHand.length = 0; const ids = equipPackRoll(s); if (!ids || ids.length !== 4 || new Set(ids).size !== 4 || !ids.some(i => equipCard(i).rarity === 'precision')) return { bad: s }; }
+    await check('credits come only from duplicates (a pack of new cards pays none); they belong to the run (equipReset, which NEW GAME runs, clears them and the shelf); the other pack rules are as they were (its 2 cards, one Precision, none twice; and 2 energy cards)', () => {
+        const o = J(`(function(){ __fresh(0); shardCount = 5000; equipFound = []; equipCredits = 0; for (let s = 1; s <= 30; s++) { equipFound = []; equipHand.length = 0; const ids = equipPackRoll(s); if (!ids || ids.length !== EQUIP_PACK.size || new Set(ids).size !== EQUIP_PACK.size || !ids.some(i => equipCard(i).rarity === 'precision')) return { bad: s }; }
             equipFound = []; equipHand.length = 0; equipPackOpen(1); const fresh = equipCredits; equipShelfDeal(3); const dealt = equipShelf.ids.length; equipCredits = 33.5; equipReset(); return { fresh, dealt, after: equipCredits, shelf: equipShelf.ids.length, until: equipShelf.until }; })()`);
         same(o.bad, undefined, 'a pack broke a rule'); same(o.fresh, 0, 'a new card paid credits'); same(o.dealt, 6, 'the shelf before the reset'); same(o.after, 0, 'credits survived equipReset'); same(o.shelf, 0, 'the shelf survived equipReset'); same(o.until, 0, "the shelf's clock survived equipReset");
     });
@@ -252,7 +252,7 @@ function measure(w, h, query, seed) {
     await check('a saved game comes back with its credits and its shelf and the time left on it (a reload keeps the same six cards and the clock); three saves and loads in a row change nothing; the save has the same 37 fields and version 1', async () => {
         const store = {}, A = await boot('', store);
         const a = A.J(`(function(){ __fresh(1); equipReset(); equipFound = ['frost_lining']; equipCredits = 77.5; __at(500); equipShelfDeal(4); __at(500 + 6000); const wrote = facilitySaveWrite(); return { wrote, ids: equipShelfIds().slice(), left: equipShelf.until - frame, credits: equipCredits }; })()`);
-        same(a.wrote, true, 'the save was written'); const saved = JSON.parse(store.conduit_fp_save); sameJ(saved.cards.shelf.ids, a.ids, 'the shelf in the save'); same(saved.cards.shelf.left, a.left, 'the time left in the save'); same(a.left, 12000, 'the time left'); same(saved.cards.credits, 77.5, 'the credits in the save'); same(saved.v, 1, 'the version'); same(Object.keys(saved).length, 38, 'the fields (33, the turrets\' wear since 2026-11-01: js/antraids.js, and the objects FLUX MOVE has moved since 2026-11-06f: js/fluxmove.js, the ice bridges since 2026-11-07aa, the drain pipe\'s grate since 2026-11-07bb and REEF\'s climbs since 2026-11-08m)');
+        same(a.wrote, true, 'the save was written'); const saved = JSON.parse(store.conduit_fp_save); sameJ(saved.cards.shelf.ids, a.ids, 'the shelf in the save'); same(saved.cards.shelf.left, a.left, 'the time left in the save'); same(a.left, 12000, 'the time left'); same(saved.cards.credits, 77.5, 'the credits in the save'); same(saved.v, 1, 'the version'); same(Object.keys(saved).length, 39, 'the fields (39 since 2026-11-09s: the energy cards you hold; 33, the turrets\' wear since 2026-11-01: js/antraids.js, and the objects FLUX MOVE has moved since 2026-11-06f: js/fluxmove.js, the ice bridges since 2026-11-07aa, the drain pipe\'s grate since 2026-11-07bb and REEF\'s climbs since 2026-11-08m)');
         for (let round = 1; round <= 3; round++) {
             const B = await boot('', store), r = B.J(`(function(){ const out = { ids: equipShelfIds().slice(), until: equipShelf.until, credits: equipCredits, found: equipFound.slice() }; __at(0); facilitySaveWrite(); return out; })()`);   // (saved again at the instant it loaded: a frame or two may have run since)
             sameJ(r.ids, a.ids, 'round ' + round + ': the shelf'); same(r.until, a.left, 'round ' + round + ': the time left (the clock starts again at 0 on a load)'); same(r.credits, 77.5, 'round ' + round + ': the credits'); sameJ(r.found, ['frost_lining'], 'round ' + round + ': the found cards'); same(B.errs.length, 0, 'errors: ' + B.errs.join(' | '));

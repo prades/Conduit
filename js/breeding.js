@@ -51,7 +51,8 @@ function breedCan(f) {
 // the even toss over the rest of its range. Never before the module has run. (A BLOOM offspring's class is the usual even draw: all three classes have a BLOOM form since build 2026-11-08m.)
 const BREED_BLOOM = 0.5;
 function breedElement(a, b, draw) {
-    const ea = (a && a.element) || null, eb = (b && b.element) || null, d = draw();
+    const real = f => f && f.element && f.element !== "none" ? f.element : null;   // (a parent of NO ELEMENT, without an energy card, gives none: the other's, js/config.js)
+    const ea = real(a), eb = real(b), d = draw();
     if (((ea === "toxic" && eb === "fire") || (ea === "fire" && eb === "toxic")) && typeof convertReady === "function" && convertReady())
         return d < BREED_BLOOM ? "blossom" : (d - BREED_BLOOM) / (1 - BREED_BLOOM) < 0.5 ? ea : eb;
     return d < 0.5 ? ea || eb : eb || ea;
@@ -84,7 +85,7 @@ function breedBase(own, A, B, rnd) {
 function breedMake(f, rnd) {
     const can = breedCan(f); if (!can.ok) { _brSay(can.why); return null; }
     if (typeof spawnFollowerAtCrystal !== "function" || typeof followers === "undefined") return null;
-    const p = can.partner, draw = typeof rnd === "function" ? rnd : Math.random, element = breedElement(f, p, draw), type = breedClass(draw);
+    const p = can.partner, draw = typeof rnd === "function" ? rnd : Math.random, element = breedElement(f, p, draw) || (typeof ENERGY_NONE !== "undefined" ? ENERGY_NONE : null), type = breedClass(draw);   // (its egg comes with that element's energy card, free: js/helpers.js spawnFollowerAtCrystal; two parents of no element, an egg of none)
     const n0 = followers.length; spawnFollowerAtCrystal(element, type);
     const c = followers[followers.length - 1]; if (!c || followers.length === n0) { _brSay("NOTHING CAME OF IT"); return null; }
     shardCount -= BREED.price;

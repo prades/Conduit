@@ -56,6 +56,7 @@ const HOST_PROVIDED = new Set([
     'DeviceOrientationEvent', 'ontouchstart', 'chrome', 'opr', 'safari',
     'CanvasRenderingContext2D', 'Storage',
     'HTMLImageElement',   // (the start lists the sheets only when the page has real images to wait for: js/init.js startupAsset; the sandbox has none)
+    'Image',              // (a form's sheet is asked for when a follower first evolves, guarded by typeof: js/evolution.js _evoImg; since build 2026-11-09s one evolves at level 8, which the fight below reaches)
 ]);
 
 // The facility's save, with a squad in it: the state that crashed is a
@@ -68,9 +69,9 @@ function savedStore() {
         [SAVE_KEY]: JSON.stringify({
             v: 1,
             followers: [
-                { element: 'fire', personality: 'stoic', role: 'brawler',
+                { element: 'fire', energy: ['fire'], personality: 'stoic', role: 'brawler',
                   stats: { hp: 22, attack: 6, speed: 11, will: 20 } },
-                { element: 'electric' },
+                { element: 'electric', energy: ['electric'] },   // (each with its energy card: one saved without loses an unevolved follower's element, docs/ENERGY-CARDS.md rule 7)
             ],
         }),
         other_site_key: 'kept',   // a key that is not the facility's: left alone

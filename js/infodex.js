@@ -108,9 +108,10 @@ function infoEntries() {
     const weak = typeof ELEMENT_WEAK_TO !== "undefined" ? ELEMENT_WEAK_TO : { fire: "toxic", flux: "fire", toxic: "flux", electric: "ice", core: "electric", ice: "core" };
     add("wheel", "elements", "THE WHEEL", UI_GOLD, "Two triangles, on every hit",
         ["FIRE beats FLUX, FLUX beats TOXIC, TOXIC beats FIRE. ELECTRIC beats CORE, CORE beats ICE, ICE beats ELECTRIC. A hit of the element that beats its target's does ×" + mult("fire", "flux") + "; the one it is beaten by does ×" + mult("flux", "fire") + "; ice does " + (mult("ice", "core") === 0 ? "nothing" : "×" + mult("ice", "core")) + " to core.",
-         "It runs on every hit, your followers' and the creatures' alike, against anything that has an element. A follower's element is the one it was found with: an egg's pad says it, and a recruit draws one."],
+         "It runs on every hit, your followers' and the creatures' alike, against anything that has an element. A follower's element comes from the energy card it holds (ENERGY CARDS); one with none has NO ELEMENT, and its hits are plain."],
         [["BEATS", "×" + mult("fire", "flux"), "#7fffb0"], ["BEATEN BY", "×" + mult("flux", "fire"), "#ff8a7a"], ["ICE ON CORE", mult("ice", "core") === 0 ? "no damage" : "×" + mult("ice", "core"), "#99ddff"]]);
     ELEMENTS.forEach(el => {
+        if (el.none) return;   // (NO ELEMENT is no element: the ENERGY CARDS entry, below, says what it is)
         const a = _IP_ATTACKS[el.id] || {}, proc = typeof ELEMENT_PROC_CHANCE !== "undefined" ? ELEMENT_PROC_CHANCE[el.id] : undefined;
         if (!strong[el.id]) {   // BLOOM (build 2026-11-08i; docs/CONVERSION.md): outside the two triangles, made only by conversion, its hits MEND
             const M = typeof ELEMENT_MEND !== "undefined" ? ELEMENT_MEND : { radius: 4, share: 0.02 };
@@ -228,7 +229,7 @@ function _ipReadout(chars) {
     const eid = infoEntryForSubject({ follower: f, enemy: S.enemy });
     out.push({ k: "gap" });
     if (eid) { const e = infoEntry(eid); if (e) out.push({ k: "nav", t: "ABOUT: " + e.name, sub: e.sub, c: e.col, page: "e:" + eid }); }
-    const elId = f ? f.element : S.enemy ? S.enemy.element : null, el2 = elId && ELEMENTS.find(e => e.id === elId);
+    const elId = f ? f.element : S.enemy ? S.enemy.element : null, el2 = elId && ELEMENTS.find(e => e.id === elId && !e.none);
     if (el2) out.push({ k: "nav", t: el2.label.toUpperCase(), sub: "WHAT IT BEATS, WHAT BEATS IT", c: el2.color, page: "e:el_" + elId });
     return { title, col, items: out };
 }

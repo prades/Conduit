@@ -74,7 +74,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var goldLit = function(el, part){ var cs = getComputedStyle(el), bg = getComputedStyle(el.querySelector(part)).backgroundImage; return /255, 231, 51/.test(cs.boxShadow) && /radial-gradient.*255, 2(31|46|50)/.test(bg); };
   // the sheet and the roster's slots with NO card in the registry (the contract of js/cardsui.js; the game itself has six real cards now, so a probe empties the registry for the moment)
   var emptyProbe = async function(){
-      var f0 = followers[0]; f0.evolved = 'quillstone'; f0.role = 'brawler'; f0.element = 'fire'; selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f0; ccRender(); await wait(60);
+      var f0 = followers[0]; f0.evolved = 'quillstone'; f0.role = 'brawler'; f0.element = 'fire'; energyFill(f0); selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f0; ccRender(); await wait(60);
       var offs = $$('#ccSide .cc-dd').map(function(d){ return [d.querySelector('.cc-dd-k').textContent, d.querySelector('.cc-dd-v').textContent, d.disabled]; });
       out.plain = { dds: offs.map(function(o){ return o[0]; }), cardDds: offs.filter(function(o){ return /^CARD/.test(o[0]); }), sub: $$('#ccSide .cc-stat').map(function(r){ return [r.querySelector('.cc-stat-k').textContent, r.querySelector('.cc-stat-v').textContent]; }).filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chip: ($('#ccFocus .cf-sc') || {}).textContent, cardsOpen: $('#cardsRoot').className };
       click($('#ccGrid .cc-ytile')); await wait(60);   // YOU: the player's two slots, with no card in the hand
@@ -153,7 +153,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       click($('#ccFocus .cf-arrow.next')); await wait(60); out.you.next = [ccFocusIsYou(), _ccFocus === _ccStripUnits()[0], $$('#ccSide .cc-dd .cc-dd-k').map(function(e){ return e.textContent; }).join('|'), getComputedStyle($('#ccFocus .cf-pcwrap')).display];
       ccClose(); await wait(60);
       // THE ROSTER: the creature in view's SUBCLASS and its two slots
-      var f = followers[0]; f.evolved = 'quillstone'; f.role = 'brawler'; f.element = 'fire'; f.cards = undefined;
+      var f = followers[0]; f.evolved = 'quillstone'; f.role = 'brawler'; f.element = 'fire'; energyFill(f); f.cards = undefined;
       selectedUnits.clear(); ccOpen('roster'); await wait(300); _ccFocus = f; ccRender(); await wait(60);
       var rows = function(){ return $$('#ccSide .cc-stat').map(function(r){ return [r.querySelector('.cc-stat-k').textContent, r.querySelector('.cc-stat-v').textContent]; }); };
       out.ro = { dds: $$('#ccSide .cc-dd .cc-dd-k').map(function(e){ return e.textContent; }), sub: rows().filter(function(r){ return r[0] === 'SUBCLASS'; })[0], chip: ($('#ccFocus .cf-sc') || {}).textContent, chipShown: shown($('#ccFocus .cf-sc')) };
@@ -298,7 +298,7 @@ function measure(w, h, query, seed) {
         same(r.uni.join(), 'FOR THE PLAYER,FOR THE PLAYER,FOR THE PLAYER', 'a Player card on a follower');
     });
     await check('a card is worn from the hand only; the same card cannot be on both of one follower\'s slots; any number of followers can wear the same card (it is a type, never used up)', () => {
-        const r = J(`(function(){ const fs = __fresh(3); fs.forEach(f => { f.element = 'fire'; f.role = 'brawler'; }); __hand([]); const o = {}; o.outOfHand = equipPut(fs[0], 0, 'test_fire'); __hand(['test_fire', 'test_brawler']);
+        const r = J(`(function(){ const fs = __fresh(3); fs.forEach(f => { energyStart(f, 'fire'); f.role = 'brawler'; }); __hand([]); const o = {}; o.outOfHand = equipPut(fs[0], 0, 'test_fire'); __hand(['test_fire', 'test_brawler']);
             o.a = equipPut(fs[0], 0, 'test_fire'); o.dupOther = equipPut(fs[0], 1, 'test_fire'); o.sameSlot = equipPut(fs[0], 0, 'test_fire'); o.b = equipPut(fs[0], 1, 'test_brawler'); o.cards = equipSlots(fs[0]);
             o.second = equipPut(fs[1], 0, 'test_fire'); o.third = equipPut(fs[2], 1, 'test_fire'); o.wearers = equipWearers('test_fire'); o.badSlot = equipPut(fs[0], 2, 'test_fire'); o.clone = equipPut({ isClone: true }, 0, 'test_fire');
             o.swap = equipPut(fs[0], 0, 'test_brawler'); o.afterSwap = equipSlots(fs[0]); o.off = equipPut(fs[0], 0, null); o.offAgain = equipPut(fs[0], 0, null); o.afterOff = equipSlots(fs[0]); o.hasField = fs[0].cards !== undefined; return o; })()`);
@@ -308,11 +308,11 @@ function measure(w, h, query, seed) {
         same(r.off, true, 'it did not come off'); same(r.offAgain, false, 'an empty slot changed'); same(r.afterOff.join(), ',test_brawler', 'the slots after'); same(r.hasField, true, 'the second card went with the first');
     });
     await check('both slots empty: the follower carries no field at all (nothing is left behind)', () => {
-        const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; __hand(['test_fire']); equipPut(f, 1, 'test_fire'); const had = f.cards !== undefined; equipPut(f, 1, null); return { had, now: f.cards === undefined, rec: equipRecord(f) === undefined }; })()`);
+        const r = J(`(function(){ const f = __fresh(1)[0]; energyStart(f, 'fire'); __hand(['test_fire']); equipPut(f, 1, 'test_fire'); const had = f.cards !== undefined; equipPut(f, 1, null); return { had, now: f.cards === undefined, rec: equipRecord(f) === undefined }; })()`);
         same(r.had, true, 'it was not worn'); same(r.now, true, 'a field was left'); same(r.rec, true, 'a record was made for nothing');
     });
     await check('the hand: up to three, from the collection only; a card put back comes off everyone at once (the tick would do it a half second later)', () => {
-        const r = J(`(function(){ const fs = __fresh(2); fs.forEach(f => { f.element = 'fire'; f.role = 'brawler'; }); equipHand.length = 0; const o = {}; o.notOwned = equipHandAdd('test_fire');
+        const r = J(`(function(){ const fs = __fresh(2); fs.forEach(f => { energyStart(f, 'fire'); f.role = 'brawler'; }); equipHand.length = 0; const o = {}; o.notOwned = equipHandAdd('test_fire');
             ['test_fire', 'test_brawler', 'test_player_a', 'test_player_b'].forEach(id => equipOwnedSet().add(id)); o.add = ['test_fire', 'test_brawler', 'test_player_a', 'test_player_b'].map(id => equipHandAdd(id)); o.hand = equipHand.slice(); o.twice = equipHandAdd('test_fire'); o.max = EQUIP.startPick;
             equipPut(fs[0], 0, 'test_fire'); equipPut(fs[1], 1, 'test_fire'); equipPlayerPut(0, 'test_player_a'); o.before = equipWearers('test_fire'); o.back = equipHandRemove('test_fire'); o.after = equipWearers('test_fire'); o.f0 = equipSlots(fs[0]).join('|'); o.backAgain = equipHandRemove('test_fire');
             equipHandRemove('test_player_a'); o.player = equipPlayer.slice(); return o; })()`);
@@ -328,7 +328,7 @@ function measure(w, h, query, seed) {
         same(JSON.stringify({ hand: r.rec.hand, found: r.rec.found, player: r.rec.player }), JSON.stringify({ hand: ['test_player_a', 'test_player_b', 'test_fire'], found: [], player: [null, 'test_player_b'] }), 'what the save would keep (the hand, the found, the slots; the credits and the shelf are tests/market.js\'s)');
     });
     await check('the tick takes off what no longer fits: a role switched (a class card), a card put out of the hand, a card that is on both slots, a card the registry does not have; every EQUIP.every frames, and at once when forced', () => {
-        const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; f.role = 'brawler'; delete f.evolved; __hand(['test_brawler', 'test_fire', 'test_player_a']); const o = {};
+        const r = J(`(function(){ const f = __fresh(1)[0]; energyStart(f, 'fire'); f.role = 'brawler'; delete f.evolved; __hand(['test_brawler', 'test_fire', 'test_player_a']); const o = {};
             equipPut(f, 0, 'test_brawler'); equipPut(f, 1, 'test_fire'); f.role = 'sniper'; frame = 1; equipTick(); o.notYet = equipSlots(f).join('|'); frame = EQUIP.every * 4; equipTick(); o.afterTick = equipSlots(f).join('|');
             f.cards = ['test_fire', 'test_fire']; equipTick(true); o.dup = equipSlots(f).join('|'); f.cards = ['gone_card', 'test_fire']; equipTick(true); o.unknown = equipSlots(f).join('|'); f.cards = ['test_player_a', null]; __hand([]); frame = EQUIP.every * 5; equipTick(); o.outOfHand = f.cards === undefined;
             return o; })()`);
@@ -365,10 +365,10 @@ function measure(w, h, query, seed) {
     });
 
     group('5. THE LIFE OF A FOLLOWER\'S CARDS');
-    run(`globalThis.__wear = f => { f.element = 'fire'; f.role = 'brawler'; __hand(['test_fire', 'test_brawler', 'test_player_a']); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); return f; };
+    run(`globalThis.__wear = f => { energyStart(f, 'fire'); f.role = 'brawler'; __hand(['test_fire', 'test_brawler', 'test_player_a']); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); return f; };
          globalThis.__fall = (f, forGood) => { f.spawnProtection = 0; if (forGood) { f.queuedForRespawn = true; f.dead = true; specimenFollowerFell(f); render(); render(); return; } const foe = { x: f.x + 1, y: f.y, team: 'red' }; for (let i = 0; i < 20 && !f.dead; i++) applyDamage(f, f.maxHealth, foe); render(); render(); };   // (FOR GOOD: the body an older save can hold; a death no longer wears the HP stat down, the owner's rule of 2026-11-01)`);
     await check('a follower that falls and comes back at the Crystal comes back with its cards (the same person, the same uid), and with the role it had: an egg switched to another ATTACK STYLE keeps it, so its Class card stays on', () => {
-        const r = J(`(function(){ const f = __fresh(1)[0]; f.element = 'fire'; delete f.evolved; const own = assignRole(applyPersonality(f.personality)); f.role = own === 'camper' ? 'brawler' : 'camper'; const picked = f.role; __hand(['test_fire', 'test_brawler', 'test_technician']);
+        const r = J(`(function(){ const f = __fresh(1)[0]; energyStart(f, 'fire'); delete f.evolved; const own = assignRole(applyPersonality(f.personality)); f.role = own === 'camper' ? 'brawler' : 'camper'; const picked = f.role; __hand(['test_fire', 'test_brawler', 'test_technician']);
             equipPut(f, 0, 'test_fire'); equipPut(f, 1, picked === 'camper' ? 'test_technician' : 'test_brawler'); const worn = equipSlots(f).join('|'); const uid = followerUid(f); __fall(f, false); const q = respawnQueue.filter(e => !e.isClone)[0]; const queued = q && q.cards ? q.cards.join('|') : null; __frames(260);
             equipTick(true); const back = followers.filter(x => followerUid(x) === uid)[0]; return { worn, queued, back: !!back, cards: back ? equipSlots(back).join('|') : null, old: f.dead, picked, role: back ? back.role : null }; })()`);
         same(r.old, true, 'it did not fall'); same(r.queued, r.worn, 'the respawn entry'); same(r.back, true, 'it did not come back'); same(r.role, r.picked, 'the attack style it was switched to was forgotten'); same(r.cards, r.worn, 'its cards on the way back (the Class card with them)');
@@ -408,7 +408,7 @@ function measure(w, h, query, seed) {
     });
     await check('a game is saved with its cards and comes back with them: the followers\' cards, the hand, the player\'s slots; the collection stays its own key', async () => {
         const store = {}, A = await boot('?cards', store);
-        A.run(`shardCount = 5000; ['test_fire', 'test_brawler', 'test_player_a'].forEach(id => equipUnlock(id)); const f = __fresh(2)[0]; f.element = 'fire'; f.role = 'brawler'; ['test_fire', 'test_brawler', 'test_player_a'].forEach(id => equipHandAdd(id)); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); equipPlayerPut(1, 'test_player_a'); facilitySaveWrite();`);
+        A.run(`shardCount = 5000; ['test_fire', 'test_brawler', 'test_player_a'].forEach(id => equipUnlock(id)); const f = __fresh(2)[0]; energyStart(f, 'fire'); f.role = 'brawler'; ['test_fire', 'test_brawler', 'test_player_a'].forEach(id => equipHandAdd(id)); equipPut(f, 0, 'test_fire'); equipPut(f, 1, 'test_brawler'); equipPlayerPut(1, 'test_player_a'); facilitySaveWrite();`);
         ok(store.conduit_fp_save, 'no save was written'); const saved = JSON.parse(store.conduit_fp_save); same(saved.cards.hand.join(), 'test_fire,test_brawler,test_player_a', 'the hand in the save'); ok(saved.followers.some(e => e.cards && e.cards.join() === 'test_fire,test_brawler'), 'a follower\'s cards are not in the save');
         const B = await boot('?cards', store), r = B.J(`({ hand: equipHand, player: equipPlayer, worn: followers.map(f => equipSlots(f).join('|')), n: followers.length, owned: equipOwnedList().length })`);
         same(r.hand.join(), 'test_fire,test_brawler,test_player_a', 'the hand after'); same(r.player.join(), ',test_player_a', 'the player\'s slots after'); ok(r.worn.includes('test_fire|test_brawler'), 'the follower\'s cards after: ' + r.worn); same(r.owned, 3, 'the collection');
@@ -421,7 +421,7 @@ function measure(w, h, query, seed) {
     });
     await check('a save with a test card in a game with the switch off (?cards off): it is dropped, quietly (the collection keeps its id for when the switch is back on)', async () => {
         const store = {}, A = await boot('?cards', store);
-        A.run(`shardCount = 5000; equipUnlock('test_fire'); equipHandAdd('test_fire'); const f = __fresh(1)[0]; f.element = 'fire'; equipPut(f, 0, 'test_fire'); facilitySaveWrite();`);
+        A.run(`shardCount = 5000; equipUnlock('test_fire'); equipHandAdd('test_fire'); const f = __fresh(1)[0]; energyStart(f, 'fire'); equipPut(f, 0, 'test_fire'); facilitySaveWrite();`);
         const B = await boot('', store); B.run('equipTick(true)');
         same(B.J('followers.length >= 1'), true, 'its followers'); same(B.J('equipCards().test_fire === undefined'), true, 'the test card exists'); same(B.J('followers.reduce((n, f) => n + equipWorn(f), 0)'), 0, 'a card that does not exist is worn'); same(B.J('equipHand.length'), 0, 'a hand without cards');
         same(JSON.parse(store.conduit_fp_cards).owned.join(), 'test_fire', 'the collection lost its ids');
@@ -492,7 +492,7 @@ function measure(w, h, query, seed) {
                 same(en(T.pList0), 'TEST · PLAYER A|TEST · PLAYER B', 'what the first slot can take'); same(T.pList0.length, 3, 'the list (EMPTY and the two that fit: since build 2026-11-07pp a card that does not fit is not shown)'); same(T.pAfter.join(), 'test_player_a,', 'slot one'); same(T.pShown, 'TEST · PLAYER A', 'what it shows');
                 same(T.you.worn.join('|'), 'TEST · PLAYER A(gold)|EMPTY', 'the player\'s card'); same(T.you.pips, 1, 'the tile\'s lit slots'); same(T.you.tapOpens, 'YOUR SLOT 2', 'a tap on the second card did not open its card picker');
                 same(en(T.pList1), 'TEST · PLAYER B', 'what the second can take once the first has A (EMPTY is off while it is empty)'); same(T.pList1.length, 2, 'the second\'s list (A, on the other slot, is not shown)'); same(T.pAfter2.join(), 'test_player_a,test_player_b', 'both slots');
-                same(T.you.next.join('|'), 'false|true|ATTACK STYLE|PLAY STYLE|ATTACK|CARD 1|CARD 2|none', '▸ from the player: the strip\'s first creature, its settings, the player\'s cards put away');
+                same(T.you.next.join('|'), 'false|true|ATTACK STYLE|PLAY STYLE|ATTACK|ENERGY 1|CARD 1|CARD 2|none', '▸ from the player: the strip\'s first creature, its settings, the player\'s cards put away');
             });
             await check('A CARD\'S ITEM is smaller since build l (the owner: "They\'re a little bit too big. They\'re blocking the buttons above it for sorting"): 140 × 176, and on the stage it stays clear of the SHOW / SORT BY bar, which is drawn over it in any case', () => {
                 ok(T.item, 'EMBER PLATING has no item on the stage'); same(T.item.w + ' × ' + T.item.h, '140 × 176', 'its size'); ok(T.item.gap >= 17, 'the item comes within ' + T.item.gap + ' px of the bar (17 needed for the blow-up and the hover)');
@@ -500,7 +500,7 @@ function measure(w, h, query, seed) {
             });
             await check('✕ CLOSE and Escape shut the sheet and give the HUD back', () => { same(T.closed.cls.indexOf('open') < 0, true, 'close'); same(T.closed.body, false, 'body.cardsOpen after'); same(T.closed.hud, true, 'the dock did not come back'); same(T.escaped.indexOf('open') < 0, true, 'Escape'); });
             await check('THE ROSTER: the creature in view shows its SUBCLASS (a row, and a tag on its picture), and CARD 1 and CARD 2 under its styles', () => {
-                same(T.ro.dds.join('|'), 'PLAY STYLE|ATTACK|CARD 1|CARD 2|SPECIAL ATTACK', 'the settings');   // (no ATTACK STYLE for an evolved one: it keeps its role, build 2026-11-07gg)   // (ATTACK: NORMAL ATTACK or its alternate, build 2026-11-07ff) same(T.ro.sub.join(), 'SUBCLASS,SPINE-LEGGED', 'the row'); same(T.ro.chip, 'SPINE-LEGGED', 'the tag'); same(T.ro.chipShown, true, 'the tag is not shown');
+                same(T.ro.dds.join('|'), 'PLAY STYLE|ATTACK|ENERGY 1|ENERGY 2|ENERGY 3|CARD 1|CARD 2|SPECIAL ATTACK', 'the settings');   // (ENERGY 1-3: an evolved follower's energy slots, js/energy.js, build 2026-11-09s)   // (no ATTACK STYLE for an evolved one: it keeps its role, build 2026-11-07gg)   // (ATTACK: NORMAL ATTACK or its alternate, build 2026-11-07ff) same(T.ro.sub.join(), 'SUBCLASS,SPINE-LEGGED', 'the row'); same(T.ro.chip, 'SPINE-LEGGED', 'the tag'); same(T.ro.chipShown, true, 'the tag is not shown');
             });
             await check('a slot lists only the cards it can take (since build 2026-11-07pp, the owner: "don\'t display cards that aren\'t available to the follower"), each with its short text on the card; a pick fills the slot and closes the picker; the other slot does not show the card worn on this one; EMPTY takes it off', () => {
                 const en = l => l.filter(x => !x[1]).map(x => x[0]).sort().join('|'), has = (l, n) => l.some(x => x[0] === n);
@@ -512,7 +512,7 @@ function measure(w, h, query, seed) {
                 same(T.ro.opts1.find(x => x[0] === 'TIDE SHELL')[5], 'BLOCKS A HIT, AGAIN AFTER 8 S', 'a long text shortened on its card');
                 same(T.ro.cards1.join(), 'test_fire,', 'slot one after the pick'); same(T.ro.closedAfter, 0, 'the card picker stayed open');
                 same(has(T.ro.opts2, 'TEST · FIRE'), false, 'the card on the other slot is shown'); same(en(T.ro.opts2), FITS.split('|').filter(n => n !== 'TEST · FIRE').join('|'), 'what the other slot lists'); same(T.ro.cards2.join(), 'test_fire,test_brawler', 'slot two after the pick');
-                same(T.ro.values.slice(1).join('|'), 'NORMAL ATTACK|TEST · FIRE|TEST · BRAWLER|EMPTY', 'what the drop-downs show'); same(T.ro.cards3.join(), ',test_brawler', 'EMPTY');   // (PLAY STYLE first: no ATTACK STYLE for an evolved one, gg)
+                same(T.ro.values.slice(1).join('|'), 'NORMAL ATTACK|FIRE ENERGY|FIRE ENERGY|FIRE ENERGY|TEST · FIRE|TEST · BRAWLER|EMPTY', 'what the drop-downs show'); same(T.ro.cards3.join(), ',test_brawler', 'EMPTY');   // (PLAY STYLE first: no ATTACK STYLE for an evolved one, gg)
                 same(T.ro.headChips.join('|'), '1/6|3/6', 'the chip beside each card worn (its rarity: unrefined, precision)'); for (const o of [...T.ro.opts1, ...T.ro.opts2]) same(o[3], o[0] === 'EMPTY' ? '' : o[4], o[0] + '\'s chip in the list');
             });
             await check('an egg has no subclass yet (the row says so, and no tag); a retired form has none (the row says so)', () => {
@@ -554,7 +554,7 @@ function measure(w, h, query, seed) {
         same(N.real.names.slice(45, 52).join('|'), 'CINDERBRAND|MIREBLIGHT|STATIC LOCK|RIME SNARE|SIPHON FIELD|REPULSOR PULSE|DEWBURST', 'then the Precision cards, Pack 1\'s seven first, by element (fire, toxic, electric, ice, flux, core, BLOOM since build 2026-11-09a)');
         same(JSON.stringify(N.minis.map(m => m[0])), JSON.stringify(N.real.names), 'the rail\'s mini cards are not the stage\'s cards in the same order'); same(N.minis.map(m => m[2]).join(), N.real.lit.join(), 'a mini card\'s rarity chip'); same(N.minis.every(m => m[1]), true, 'a mini card not locked');
         ok(/HAND 0 \/ 3 · 0 OF 100 UNLOCKED$/.test(N.real.summary), 'the summary: ' + N.real.summary);
-        same(N.plain.dds.join('|'), 'PLAY STYLE|ATTACK|CARD 1|CARD 2|SPECIAL ATTACK', 'the roster\'s settings (its form has a card attack: its SPECIAL ATTACK menu too; and an alternate: ATTACK, build 2026-11-07ff; no ATTACK STYLE for an evolved one, gg)'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
+        same(N.plain.dds.join('|'), 'PLAY STYLE|ATTACK|ENERGY 1|ENERGY 2|ENERGY 3|CARD 1|CARD 2|SPECIAL ATTACK', 'the roster\'s settings (its form has a card attack: its SPECIAL ATTACK menu too; and an alternate: ATTACK, build 2026-11-07ff; no ATTACK STYLE for an evolved one, gg)'); same(JSON.stringify(N.plain.cardDds), JSON.stringify([['CARD 1', 'NO CARDS IN YOUR HAND', true], ['CARD 2', 'NO CARDS IN YOUR HAND', true]]), 'the slots with no card to put in them');
         same(N.plain.sub.join(), 'SUBCLASS,SPINE-LEGGED', 'the subclass row'); same(N.plain.chip, 'SPINE-LEGGED', 'the subclass tag'); same(N.plain.cardsOpen.indexOf('open') < 0, true, 'the sheet is open on its own');
         same(N.plain.you.you, true, 'YOU did not come into view'); same(JSON.stringify(N.plain.you.dds), JSON.stringify([['YOUR SLOT 1', 'NO CARDS IN YOUR HAND', true], ['YOUR SLOT 2', 'NO CARDS IN YOUR HAND', true]]), 'the player\'s slots with no card to put in them');
         same(N.plain.you.slots.join('|'), 'SLOT 1EMPTY|SLOT 2EMPTY', 'the player\'s card'); ok(N.plain.you.note.some(t => /TAKE CARDS INTO THE RUN FROM THE CARDS SCREEN/.test(t)), 'what the column says: ' + N.plain.you.note);

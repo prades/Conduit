@@ -43,7 +43,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         openIndex(); run(`_infoCat = 'elements'`);
         let navs = 0; for (let n = 0; n < 8; n++) { run(`_infoPageNo = ${n}`); const L = J('_ipLayout()'); if (n >= L.pages) break; navs += L.placed.filter(p => p.it.k === 'nav').length; }   // (the list may run to a second page on a phone)
         same(navs, 8, 'the wheel and the seven elements');
-        for (const id of J('ELEMENTS.map(e => e.id)')) ok(E.some(e => e.id === 'el_' + id && e.cat === 'elements'), 'no entry for ' + id);
+        for (const id of J('ELEMENTS.filter(e => !e.none).map(e => e.id)')) ok(E.some(e => e.id === 'el_' + id && e.cat === 'elements'), 'no entry for ' + id);   // (NO ELEMENT is no element: the ENERGY CARDS entry says what it is, build 2026-11-09s)
         run('closeInfoPanel(); _infoPageNo = 0');
     });
     check('the numbers in the descriptions are the game\'s own constants', () => {
@@ -60,7 +60,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     check('the element entries say what each beats and is beaten by, as the game plays it; BLOOM\'s says it is outside the triangles (×1 both ways), never found, and that its hits mend', () => {
         { const rows = J(`infoEntry('el_blossom').rows`).map(r => r.join(' ')), text = J(`infoEntry('el_blossom').text`).join(' ');
           ok(rows.some(r => r === 'AGAINST ALL ×1'), 'BLOOM\'s match-ups: ' + rows.join(' | ')); ok(rows.some(r => /^MEND 2% · 4 tiles/.test(r)), 'its MEND'); ok(/never found/.test(text) && /purification module/.test(text), 'how it is made'); }
-        for (const id of J('ELEMENTS.filter(e => !e.converted).map(e => e.id)')) {
+        for (const id of J('ELEMENTS.filter(e => !e.converted && !e.none).map(e => e.id)')) {
             const rows = J(`infoEntry('el_${id}').rows`), beats = rows.find(r => r[0] === 'BEATS'), weak = rows.find(r => r[0] === 'WEAK TO');
             ok(beats && weak, id + ' has no matchups');
             ok(run(`getElementMultiplier(${JSON.stringify(id)}, ${JSON.stringify(beats[1].toLowerCase())})`) > 1, id + ' does not beat ' + beats[1]);
@@ -99,7 +99,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     group('THE READOUT: what you pressed, then a way into its entry');
     check('a follower that has not evolved says how far it is from evolving (EVOLVES: the level, the levels and the XP to go) under its LEVEL, and an evolved one says EVOLVED', () => {
         run('(function(){ const f = followers[0]; f.evolved = undefined; f.level = 7; f.xp = xpForLevel(7) + 85; })()'); open('{ follower: followers[0] }');
-        let L = J('_ipLayout()'), pair = k => (L.placed.find(p => p.it.k === 'pair' && p.it.a === k) || { it: {} }).it.b; same(pair('LEVEL'), '7  ·  84 XP TO NEXT', 'level'); same(pair('EVOLVES'), 'AT LV 10 · 3 LEVELS · 572 XP TO GO', 'evolves');
+        let L = J('_ipLayout()'), pair = k => (L.placed.find(p => p.it.k === 'pair' && p.it.a === k) || { it: {} }).it.b; same(pair('LEVEL'), '7  ·  84 XP TO NEXT', 'level'); same(pair('EVOLVES'), 'AT LV 8 · 1 LEVEL · 84 XP TO GO', 'evolves');   // (level 8 with an energy card since build 2026-11-09s)
         run('(function(){ const f = followers[0]; f.evolved = "seeper"; })()'); L = J('_ipLayout()'); same(pair('EVOLVES'), undefined, 'an evolved one has no EVOLVES'); same(pair('EVOLVED'), 'YES', 'it says it has');
         run('(function(){ const f = followers[0]; f.evolved = undefined; })()'); run('closeInfoPanel()');
     });

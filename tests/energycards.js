@@ -46,7 +46,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
 
     group('UNLOCKS: its own element\'s cards, its second attack then its Ultimate; another element\'s, a hybrid (not designed yet)');
     check('an evolved follower with no card: second attack and Ultimate locked; 1 of its element: its second attack; 2: its Ultimate too; another element\'s card: a hybrid, unlocking nothing yet', () => {
-        const r = J(`(function(){ __clear(); const f = __mk('brawler', 'fire'); f.evolved = 'quillstone'; energyStart(f); const d = evolvedDef(f), mv = evoMoveIds(d)[0], o = {};
+        const r = J(`(function(){ __clear(); const f = __mk('brawler', 'fire'); f.evolved = 'quillstone'; energyEvolved(f); const d = evolvedDef(f), mv = evoMoveIds(d)[0], o = {};
             const st = () => [evoMoveAllowed(f, d, mv), !!followerUltimate(f), !!followerUltLocked(f), energyHybrids(f).join('+')].join('/');
             o.none = st(); energyAdd('fire', 3); energyAdd('ice', 1);
             energyPut(f, 0, 'ice'); o.hybrid = st(); energyPut(f, 1, 'fire'); o.one = st(); energyPut(f, 2, 'fire'); o.two = st();
@@ -80,6 +80,54 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const u = followerBuild({ element: 'ice', role: 'brawler', level: 5 }), e = followerBuild({ element: 'fire', role: 'brawler', level: 12, evolved: 'quillstone' });
             return { u: [u.element, energySlots(u).join()], e: [e.element, energySlots(e).join(), !!followerUltimate(e)] }; })()`);
         same(r.u.join('|'), 'none|', 'an unevolved follower from an old save'); same(r.e.join('|'), 'fire|,,|false', 'an evolved one');
+    });
+
+    group('WHERE ITS CARD COMES FROM: made of an element, with that element\'s card, free; a recruit with none (rule 12)');
+    check('made of an element (a bred egg, the starting squad, a test squad), it holds that element\'s card and your stock is untouched; made as NO ELEMENT, its slot is empty, it is in the NO ELEMENT bucket, named by its role, a clear unlit egg', () => {
+        const r = J(`(function(){ __clear(); spawnFollowerAtCrystal('ice', 'brawler'); const a = followers[followers.length - 1]; spawnFollowerAtCrystal(ENERGY_NONE, 'sniper'); const b = followers[followers.length - 1];
+            return { a: [a.element, energySlots(a).join(), (followerByElement.ice || []).includes(a)], stock: energyTotal(), b: [b.element, energySlots(b).join(), (followerByElement.none || []).includes(b), unitTypeLabel(b), hdEggSheet(b)] }; })()`);
+        same(r.a.join('|'), 'ice|ice|true', 'made of ICE'); same(r.stock, 0, 'your stock'); same(r.b.join('|'), 'none||true|MAGE|egg_neutral', 'made of NO ELEMENT');
+    });
+    check('the roster\'s RECRUIT and a recruitment post give a follower of NO ELEMENT; a scripted recruit that asks for an element gets it with its card', () => {
+        const r = J(`(function(){ __clear(); shardCount = 5000; recruitFollower(); const a = followers[followers.length - 1]; recruitFollower('sniper', 'fire'); const b = followers[followers.length - 1];
+            const s = { id: 'energytest', room: (_fp.spots[0] || {}).room, x: player.x, y: player.y, type: 'camper', element: 'toxic', egg: { dead: false }, used: false, taken: 0 }; const c = facilityFollowerSpotTake(s);
+            return { a: [a.element, energySlots(a).join()], b: [b.element, energySlots(b).join()], c: c ? [c.element, energySlots(c).join(), _fpSpotLabel(s)] : null }; })()`);
+        same(r.a.join('|'), 'none|', 'a RECRUIT'); same(r.b.join('|'), 'fire|fire', 'a scripted FIRE recruit'); ok(r.c, 'the post gave nothing'); same(r.c.join('|'), 'none||TECHNICIAN', 'a post\'s recruit');
+    });
+    check('breeding: a parent of NO ELEMENT gives none (the other\'s element; two of none, none); its egg holds the card of the element picked', () => {
+        const r = J(`[breedElement({ element: 'none' }, { element: 'fire' }, () => 0.1), breedElement({ element: 'none' }, { element: 'fire' }, () => 0.9), breedElement({ element: 'none' }, { element: 'none' }, () => 0.3)]`);
+        same(r.join('|'), 'fire|fire|', 'the offspring\'s element');
+    });
+
+    group('NO ELEMENT: never found or drawn, filtered by once it is yours, kept right in the table, its hits plain');
+    check('not in the found pool, never a random pick (even with every element online), in the roster\'s filter only once one of yours has it; one table entry each, however often it is rebuilt', () => {
+        const r = J(`(function(){ __clear(); const o = { found: elementsFound().includes('none'), owned0: elementsOwned().includes('none') }; unlockedElements = new Set(ELEMENTS.map(e => e.id)); let drew = 0;
+            for (let i = 0; i < 300; i++) { if (modulationPick() === 'none') drew++; } for (let i = 0; i < 30; i++) { spawnFollowerAtCrystal(null, 'brawler'); if (followers[followers.length - 1].element === 'none') drew++; }
+            unlockedElements = new Set(elementsFound()); __clear(); const f = __mk('brawler', ENERGY_NONE); rebuildFollowerTable(); rebuildFollowerTable(); o.drew = drew; o.owned1 = elementsOwned().includes('none'); o.bucket = followerByElement.none.filter(x => x === f).length; return o; })()`);
+        same(r.found, false, 'NO ELEMENT found'); same(r.owned0, false, 'in the filter with none of yours'); same(r.drew, 0, 'NO ELEMENT drawn'); same(r.owned1, true, 'in the filter with one of yours'); same(r.bucket, 1, 'its entries in the table');
+    });
+    check('its hit is plain, ×1 against everything: its elemental part meets no race\'s Elemental row, no triangle and puts up no word (a FIRE follower\'s does)', () => {
+        const r = J(`(function(){ __clear(); const n = __mk('brawler', ENERGY_NONE), f = __mk('brawler', 'fire'); f.stats = n.stats; f.personality = n.personality; f.role = n.role;
+            const row = DMG_RACE.ant, keep = row.resist.slice(), tg = { speciesName: 'ant', element: 'flux', x: 0, y: 0 }, hit = (s, el) => dmgApply(tg, 10, s, el, DMG_HIT_MAIN);
+            floatingTexts.length = 0; const n1 = hit(n, 'none'), f1 = hit(f, 'fire'); tg._dmgWordAt = undefined; const words = floatingTexts.map(t => t.text);
+            row.resist = row.resist.filter(x => x !== 'elemental'); const n2 = hit(n, 'none'), f2 = hit(f, 'fire'); row.resist = keep;
+            return { same: Math.abs(n1 - n2) < 1e-9, fireMoved: Math.abs(f1 - f2) > 1e-9, words: words.join(','), noneWord: words.some(w => /NO ELEMENT|NONE/.test(w)) }; })()`);
+        same(r.same, true, 'the race\'s Elemental row changed its hit'); same(r.fireMoved, true, 'a FIRE hit\'s elemental part met the row'); same(r.noneWord, false, 'a word for no element (' + r.words + ')');
+    });
+
+    group('A FALL AND THE CONVERSION');
+    check('a follower that falls comes back with its energy cards', () => {
+        const r = J(`(function(){ __clear(); respawnQueue.length = 0; if (typeof playerReviveFree !== 'undefined') globalThis.__rf = playerReviveFree; playerReviveFree = () => true; const f = __mk('brawler', 'core'); f.spawnProtection = 0; const uid = followerUid(f);
+            const foe = { x: f.x + 1, y: f.y, team: 'red' }; for (let i = 0; i < 20 && !f.dead; i++) applyDamage(f, f.maxHealth, foe); render(); render(); const q = respawnQueue.filter(e => !e.isClone)[0], queued = q ? JSON.stringify(q.energy) : null;
+            for (let i = 0; i < 260; i++) render(); const g = followers.find(x => x.uid === uid && !x.dead); playerReviveFree = globalThis.__rf; return { queued, back: g ? [g.element, energySlots(g).join()] : null }; })()`);
+        same(r.queued, '["core"]', 'what its queue entry carries'); ok(r.back, 'it did not come back'); same(r.back.join('|'), 'core|core', 'it came back as');
+    });
+    check('the conversion (rule 13): an unevolved toxic follower\'s TOXIC card becomes a BLOOM one (so it is BLOOM, and saved so); an evolved one\'s toxic cards too, so what they unlocked stays open', () => {
+        const r = J(`(function(){ __clear(); const Q = questState('purify'); Q.installedAt = 1; Q.purifiedAt = 2; const u = __mk('brawler', 'toxic'); const a = convertApply(u); const rec = followerRecord(u), g = followerBuild(rec);
+            const e = __mk('brawler', 'toxic'); e.evolved = 'seeper'; energyEvolved(e); energyAdd('toxic', 2); energyPut(e, 0, 'toxic'); energyPut(e, 1, 'toxic'); const before = [energyAltOpen(e), energyUltOpen(e)].join(); const b = convertApply(e);
+            return { a: a.ok, u: [u.element, energySlots(u).join()], g: [g.element, energySlots(g).join()], b: b.ok, e: [e.element, e.evolved, energySlots(e).join(), before, [energyAltOpen(e), energyUltOpen(e)].join()] }; })()`);
+        same(r.a, true, 'the unevolved one converted'); same(r.u.join('|'), 'blossom|blossom', 'unevolved, after'); same(r.g.join('|'), 'blossom|blossom', 'unevolved, saved and read back');
+        same(r.b, true, 'the evolved one converted'); same(r.e.join('|'), 'blossom|sundew|blossom,blossom,|true,true|true,true', 'evolved, after');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

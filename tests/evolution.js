@@ -104,11 +104,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.evo, 'maw', 'its form'); same(r.tag, 'FROST MAW', 'its tag'); same(r.role, 'brawler', 'its role');
         mk('ice', 'hybrid', 20); run(lvlUp); same(run('__f.evolved'), 'maw', 'a hybrid fights as a brawler');
     });
-    check('…every element and role has its form now; nobody evolves before level 10', () => {
+    check('…every element and role has its form now; nobody evolves before level 8 (energy cards, build 2026-11-09s: it was 10)', () => {
         for (const el of ['fire', 'electric', 'flux', 'core', 'toxic', 'ice']) for (const role of ['brawler', 'sniper', 'camper']) ok(run(`!!evolutionFor({ isFollower: true, element: '${el}', role: '${role}' })`), 'no form for a ' + el + ' ' + role);
-        mk('fire', 'brawler', 9); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 9');
-        mk('fire', 'brawler', 10); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'a fire brawler at 10');
-        same(run('EVOLVE_LEVEL'), 10, 'THE ASK: they evolve at level 10');
+        mk('fire', 'brawler', 7); run(lvlUp); same(run('__f.evolved || null'), null, 'a fire brawler at 7');
+        mk('fire', 'brawler', 8); run(lvlUp); same(run('__f.evolved'), 'quillstone', 'a fire brawler at 8');
+        same(run('EVOLVE_LEVEL'), 8, 'THE ASK (the owner, 2026-11-09: "when they reach level 8 and they have an energy card"): they evolve at level 8');
     });
     check('THE ASK ("add the new technician forms now"): a FLUX TECHNICIAN becomes the GOO PROXY, a FIRE one the THERMITE BURROWER, an ICE one the IGLOO SKATER; each stays a technician', () => {
         for (const [el, id, name] of [['flux', 'gooproxy', 'GOO PROXY'], ['fire', 'thermite', 'THERMITE BURROWER'], ['ice', 'igloo', 'IGLOO SKATER'], ['toxic', 'blightspider', 'BLIGHT SPIDER'], ['electric', 'hovershell', 'HOVER SHELL']]) {

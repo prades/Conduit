@@ -32,7 +32,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   try {
     gameState.running = true; facilityBlackoutSet(false); if (typeof classPickerClose === 'function') classPickerClose(); classPickerOpen = false;
     shardCount = 5000; for (var i = followers.length; i < 3; i++) recruitFollower(); for (var k = 0; k < followers.length; k++) followers[k].returningToCrystal = false;
-    var so = followers[0], eg = followers[1], fh = followers[2]; so.evolved = 'staticorb'; so.element = 'electric'; so.role = 'brawler'; eg.evolved = undefined; eg.element = 'fire'; fh.evolved = 'hammerslug'; fh.element = 'core'; fh.role = 'camper';
+    var so = followers[0], eg = followers[1], fh = followers[2]; so.evolved = 'staticorb'; so.element = 'electric'; so.role = 'brawler'; energyFill(so); eg.evolved = undefined; energyStart(eg, 'fire'); fh.evolved = 'hammerslug'; fh.element = 'core'; fh.role = 'camper'; energyFill(fh);
     partyAdd([so, eg, fh]); partyTick(); partyBarRender(true); await wait(80);
     var card = function(f){ return $$('#squadBar .sb-slot').filter(function(s){ return s._unit === f; })[0]; };
     var meter = function(f){ var b = card(f).querySelector('.sb-ult'); return { hidden: b.hidden, full: b.classList.contains('full'), l: b.querySelector('.sb-ultl').textContent, n: b.querySelector('.sb-ultn').textContent, w: b.querySelector('u').style.width, h: Math.round(b.getBoundingClientRect().height) }; };
@@ -71,7 +71,7 @@ function measure(w, h) {
             globalThis.__C = [best[0] + 0.5, best[1] + 0.5]; player.x = player.visualX = __C[0] - 8; player.y = player.visualY = __C[1]; })();
         globalThis.__clear = () => { actors = actors.filter(a => !(a instanceof Predator) && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k] = []; followerProjectiles.length = 0; elementEffects.length = 0; floatingTexts.length = 0; frame++; };
         globalThis.__foe = (x, y, sp) => { const S = SPECIES[sp || 'ant'], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp || 'ant'; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-        globalThis.__fol = (el, role, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.evolved = evo || undefined; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.stance = 'hold'; f.x = __C[0]; f.y = __C[1]; return f; };
+        globalThis.__fol = (el, role, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.evolved = evo || undefined; if (evo) energyFill(f); f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.stance = 'hold'; f.x = __C[0]; f.y = __C[1]; return f; };
         globalThis.__dmg = p => 1e6 - p.health;`);
 
     group('1. BASH (the eight forms the design notes give none, and every follower before it evolves)');

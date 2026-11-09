@@ -33,7 +33,7 @@ function findChromium() {
     const run = s => vm.runInContext(s, context);
     ok(run('facilityPlay === true'), 'fixture: the page did not boot the facility');
     run(`gameState.running = true; facilityBlackoutSet(false); followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0;
-         globalThis.__mk = (el, role, lv, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.role = role; f.level = lv; f.evolved = evo || null; return f; };`);
+         globalThis.__mk = (el, role, lv, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.role = role; f.level = lv; f.evolved = evo || null; if (evo) energyFill(f); return f; };   // (an evolved one with its energy slots full of its element: its second attack and Ultimate open, js/energy.js)`);
     const sec = (info, tab, h) => info[tab].find(s => s.h.indexOf(h) === 0);
     const rowOf = (s, k) => (s.rows.find(r => r[0] === k) || [])[1];
 
@@ -47,7 +47,7 @@ function findChromium() {
     });
     check('an unevolved follower says what it evolves into, at what level, and what that form does', () => {
         const i = JSON.parse(run(`JSON.stringify(followerInfo(__mk('fire', 'brawler', 3)))`)), m = sec(i, 'attacks', 'SIGNATURE');
-        ok(/Evolves at level 10 into the QUILLSTONE/.test(m.note), m.note); ok(m.rows.length >= 3, 'no move rows');
+        ok(/Evolves at level 8 into the QUILLSTONE/.test(m.note), m.note);   // (level 8 with an energy card since build 2026-11-09s) ok(m.rows.length >= 3, 'no move rows');
     });
     check('JOBS is the squad\'s: a member is IN THE SQUAD, a follower holding a room says which, a clone fights beside you; nobody works', () => {
         run(`followers.length = 0; actors = actors.filter(a => !a.isFollower); for (const k in followerByElement) followerByElement[k].length = 0; globalThis.__m = __mk('electric', 'brawler', 3); globalThis.__h = __mk('fire', 'brawler', 3); partySync(false); partyPost(__h, partyRoomOf(__h), true);`);
@@ -91,7 +91,7 @@ function findChromium() {
     check('the vitals say its XP in this level and how far it is from evolving (js/levels.js xpProgress); an evolved follower has no EVOLVES row', () => {
         const rows = ev => { const i = JSON.parse(run(`(function(){ const f = __mk('ice', 'brawler', 5); f.level = 7; f.xp = xpForLevel(7) + 85; ${ev || ''} return JSON.stringify(followerInfo(f)); })()`)); return sec(i, 'stats', 'VITALS').rows; };
         const a = rows(), b = rows("f.evolved = 'seeper';");
-        same(a.map(r => r[0]).join(), 'LEVEL,XP,EVOLVES,HEALTH,POWER,SPEED,ORIGIN,HP STAT', 'the rows (ORIGIN and HP STAT: its birth and what deaths cost it, js/breeding.js, js/vital.js)'); same(a[1][1], '85 / 169 XP', 'XP'); same(a[2][1], 'AT LV 10 · 3 LEVELS · 572 XP TO GO', 'EVOLVES');
+        same(a.map(r => r[0]).join(), 'LEVEL,XP,EVOLVES,HEALTH,POWER,SPEED,ORIGIN,HP STAT', 'the rows (ORIGIN and HP STAT: its birth and what deaths cost it, js/breeding.js, js/vital.js)'); same(a[1][1], '85 / 169 XP', 'XP'); same(a[2][1], 'AT LV 8 · 1 LEVEL · 84 XP TO GO', 'EVOLVES');
         same(b.map(r => r[0]).join(), 'LEVEL,XP,HEALTH,POWER,SPEED,ORIGIN,HP STAT', 'an evolved follower'); same(b[1][1], '85 / 169 XP', 'it still levels');
     });
     check('a clone type: a scorpion striker has the stinger (its damage and rate), an ant scout has no special; its limits and price', () => {

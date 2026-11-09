@@ -104,6 +104,7 @@ function hdEggSheet(f) {
     if (!f || f.isClone || f.evolved) return null;
     if (f.isFollower && HD_ELEMENTS.indexOf(f.element) >= 0) return "egg_" + f.element;
     if (f.isNeutralRecruit && !f.isFollower) return "egg_neutral";
+    if (f.isFollower && f.element === "none") return "egg_neutral";   // NO ELEMENT (no energy card: docs/ENERGY-CARDS.md rule 14, "Clear crystal"): the colourless crystal, unlit (no glow, below)
     return null;
 }
 function drawHdEgg(f, px, py, g, flash) {
@@ -119,7 +120,7 @@ function drawHdEgg(f, px, py, g, flash) {
     const sh = _hdShadowStamp(); if (sh) g.drawImage(sh, px - 20, py - 8, 40, 18);
     _hdBlit(g, img, HD_BOX.egg, col, row, px, py + 2, s);
     // the crystal's glow, and white for a moment when it is hit
-    const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, gl = def ? _hdGlowStamp(f.element, def.color) : _hdGlowStamp("neutral", "#b4bcc8");
+    const def = typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, gl = def && def.none ? null : def ? _hdGlowStamp(f.element, def.color) : _hdGlowStamp("neutral", "#b4bcc8");   // (no element: unlit)
     if (gl) { const cy = py + 2 - (HD_ANCHOR[1] - HD_EGG_CORE_Y) * s, a0 = g.globalAlpha; g.globalAlpha = a0 * (0.4 + 0.15 * Math.sin(f0 * 0.12)); g.drawImage(gl, px - 14, cy - 14, 28, 28); g.globalAlpha = a0; }
     if (flash) { const a0 = g.globalAlpha; g.globalAlpha = a0 * 0.5; _hdBlit(g, img, HD_BOX.egg, col, row, px, py + 2, s); g.globalAlpha = a0; }
     return true;

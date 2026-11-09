@@ -131,7 +131,7 @@ function drawRadialMenu() {
             drawRadialButton(commandX-RADIAL_RADIUS, commandY, "RE-ROLL", fLeft);
             if (fLeft) selectedRadialAction = "reroll_follower";
         }
-        _radialCaption(f.isClone ? (f.speciesName || "").toUpperCase() + " CLONE" : (f.element||"?").toUpperCase(), "#7dffb5");
+        _radialCaption(f.isClone ? (f.speciesName || "").toUpperCase() + " CLONE" : ((typeof elementWord === "function" ? elementWord(f.element) : String(f.element || "").toUpperCase()) || "NO ELEMENT"), "#7dffb5");
         ctx.restore();
         return;
     }

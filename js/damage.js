@@ -175,9 +175,11 @@ function dmgApply(target, amount, source, element, hit) {
         phys = k * (1 - w) * A; elem = k * w * S;
         if (ptype === "elemental") ptype = null;   // an Elemental attack's physical quarter has no type
         el = element || source.element || null;
+        if (el === "none") el = null;
     } else {
         ptype = hit.type || null; player = !!hit.player;
         el = hit.element || element || (source && source.element) || null;
+        if (el === "none") el = null;   // NO ELEMENT (js/config.js; an unevolved follower without an energy card, docs/ENERGY-CARDS.md): its hit is plain, ×1 against everything
         let w = 0;
         if (ptype === "elemental") { w = 1; ptype = null; }
         else if (el && !player) w = 0.5;           // an enemy with an element: half and half
@@ -185,8 +187,10 @@ function dmgApply(target, amount, source, element, hit) {
     }
     const row = dmgRow(target);
     const pm = dmgRowMult(row, ptype);
+    // a hit of NO ELEMENT: its elemental part meets nothing (no race's Elemental row, no triangle, no word): plain, ×1 against everything (docs/ENERGY-CARDS.md §11, the agent's reading)
+    const bare = !el && !!source && source.element === "none";
     let em = 1;
-    if (elem > 0) { em = dmgRowMult(row, "elemental"); if (el && target.element && typeof getElementMultiplier === "function") em *= getElementMultiplier(el, target.element); }
+    if (elem > 0 && !bare) { em = dmgRowMult(row, "elemental"); if (el && target.element && typeof getElementMultiplier === "function") em *= getElementMultiplier(el, target.element); }
     // a player's weapon with an element (the laser on a selected element, an elemental lash) still sets the triangle on the whole hit, as it did
     let whole = 1;
     if (player && phys > 0 && el && target.element && typeof getElementMultiplier === "function") whole = getElementMultiplier(el, target.element);
@@ -198,7 +202,7 @@ function dmgApply(target, amount, source, element, hit) {
         if (op > 0) {
             let n = 0;
             if (phys > 0 && pm > 1) n++;
-            if (elem > 0 && dmgRowMult(row, "elemental") > 1) n++;
+            if (elem > 0 && !bare && dmgRowMult(row, "elemental") > 1) n++;
             if (elem > 0 && el && target.element && typeof getElementMultiplier === "function" && getElementMultiplier(el, target.element) > 1) n++;
             if (target.stunned > 0 || target.asleep > 0) n++;
             if (n) whole *= 1 + op * n;

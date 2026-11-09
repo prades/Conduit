@@ -109,7 +109,7 @@ const dom = (P, id) => P.dom[id];
         same(P.run('_perf.loops'), 1, 'clocks started'); ok(P.run('_perf.denied') >= 1, 'the refused start is counted');
     });
     await check('the saved game is put back as it was: its followers come back, once (the game then saves its restored self, as it always did at its first step)', async () => {
-        const save = { v: 1, followers: [{ element: 'fire', personality: 'stoic', role: 'brawler', stats: { hp: 22, attack: 6, speed: 11, will: 20 } }, { element: 'electric' }] };
+        const save = { v: 1, followers: [{ element: 'fire', energy: ['fire'], personality: 'stoic', role: 'brawler', stats: { hp: 22, attack: 6, speed: 11, will: 20 } }, { element: 'electric', energy: ['electric'] }] };   // (each with its energy card: one saved without loses an unevolved follower's element, docs/ENERGY-CARDS.md rule 7)
         const store = { conduit_fp_save: JSON.stringify(save) }; const P = makePage({ auto: true, store }); P.load(); P.init(); await settle();
         same(P.state(), 'done', 'state'); same(P.run('followers.length'), 2, 'followers'); same(P.run('followers.map(f => f.element).join()'), 'fire,electric', 'which');
         const back = JSON.parse(store.conduit_fp_save); same(back.followers.map(f => f.element).join(), 'fire,electric', 'the followers in the save the game wrote back');
@@ -174,7 +174,7 @@ const dom = (P, id) => P.dom[id];
         same(P.run('startupPlayAnyway()'), false, 'a second PLAY ANYWAY'); same(P.run('startupRetry()'), false, 'RETRY after the start'); same(P.raf.length, 1, 'frames scheduled after');
     });
     await check('THE ASK: an error in building the world stops the start at PREPARING INITIAL GAME STATE; RETRY builds it again from a fresh state — the same followers, the same world, nothing doubled — and the saved game is untouched', async () => {
-        const save = { v: 1, followers: [{ element: 'fire', personality: 'stoic', role: 'brawler', stats: { hp: 22, attack: 6, speed: 11, will: 20 } }, { element: 'electric' }] };
+        const save = { v: 1, followers: [{ element: 'fire', energy: ['fire'], personality: 'stoic', role: 'brawler', stats: { hp: 22, attack: 6, speed: 11, will: 20 } }, { element: 'electric', energy: ['electric'] }] };   // (each with its energy card: one saved without loses an unevolved follower's element, docs/ENERGY-CARDS.md rule 7)
         const store = { conduit_fp_save: JSON.stringify(save) }, clean = makePage({ auto: true, store: { conduit_fp_save: JSON.stringify(save) } }); clean.load(); clean.init(); await settle();
         const shape = P => P.run('JSON.stringify([followers.length, actors.length, world.length, _fp.items.length, _fp.cells.size, Object.keys(followerByElement).map(k => followerByElement[k].length)])');
         const P = makePage({ auto: true, store }); P.load();

@@ -80,6 +80,8 @@ function energyPut(f, slot, el) {
 }
 // EVOLVING (js/evolution.js evoCheck): the card in its slot is used up, its element is its own for good, and it has ENERGY.evolvedSlots empty slots
 function energyEvolved(f) { if (!f) return; f.energy = new Array(ENERGY.evolvedSlots).fill(null); }
+// a follower's slots full of its own element's cards, free (not from the stock): the title screen's crowd (js/attract.js) and the Ant Nest's test forms (js/nestconsole.js) show a form whole
+function energyFill(f) { if (!energyFor(f) || !energyElementOk(f.element)) return; f.energy = new Array(energySlotCount(f)).fill(f.element); }
 // a follower made without a card (a recruit) or with one (a bred egg's, free: not from the stock): its slots and element
 function energyStart(f, el) {
     if (!energyFor(f)) return;

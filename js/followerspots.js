@@ -7,6 +7,7 @@
 // once (the archive's Sanctuary page: "a free one-time post"); the roster's RECRUIT is the direct purchase at ◆200 (js/clone.js). FP_SPOT.price is kept at 0: a price set there would be asked for again, said on the pad
 // and refused when short (the egg stays, nothing is taken, nothing is made), as it was.
 // A post (the map's `followerSpots`, js/facilitymap.js) is a pad on the floor in its element's colour, with the follower on it as a grey egg and a label over it: its type (BRAWLER, MAGE, TECHNICIAN) and its element.
+// Since build 2026-11-09s (energy cards: a recruit starts elementless) the follower is of NO ELEMENT: the pad is in its grey, the label its type alone (_fpSpotElement).
 // Both are the post's, never the player's: there is nothing to choose, and the follower that joins is exactly that.
 //   TAKE      walking up to the egg (FP_SPOT.take tiles) makes it a follower there and then (spawnFollowerAtCrystal with the post's element and type, put on the pad, no walk home to the Crystal first), and claims the
 //             post, in one step; with the squad full, who makes room is asked first and the post is claimed once that is chosen (js/party.js partyPickOpen)
@@ -27,14 +28,17 @@ function facilityFollowerSpotsStart(F) {
         _fp.items.push({ type: "fp", fp: "spot", id: p.id, room: p.room, x: s.x, y: s.y, depth: s.x + s.y - 0.25, base: facilityRoomHeight(p.room, F) * FP_ELEV_PX, seed: _fpHash(Math.round(s.x * 3), Math.round(s.y * 5)), spot: s });
     }
 }
+// ITS ELEMENT: a recruit starts elementless (docs/ENERGY-CARDS.md rule 12, build 2026-11-09s): the egg on the pad is the clear, unlit crystal and the follower that joins has no element until you give it an
+// energy card. The post's own element in the map (js/facilitymap.js `followerSpots`) is kept, unused while that rule holds.
+function _fpSpotElement(s) { return typeof ENERGY_NONE !== "undefined" ? ENERGY_NONE : s.element; }
 // the egg: a neutral recruit made as the world makes one (js/world.js), of the post's type and element
 function _fpSpotEgg(s) {
     const def = NPC_TYPES["virus"], personality = personalityForType(s.type), stats = applyPersonality(personality), role = assignRole(stats);
-    return { type: "virus", element: s.element, x: s.x, y: s.y, team: "red", convertFlash: 0, isNeutralRecruit: true, health: stats.hp, maxHealth: stats.hp, moveSpeed: def.moveSpeed, power: stats.attack,
+    return { type: "virus", element: _fpSpotElement(s), x: s.x, y: s.y, team: "red", convertFlash: 0, isNeutralRecruit: true, health: stats.hp, maxHealth: stats.hp, moveSpeed: def.moveSpeed, power: stats.attack,
              stats, personality, role, currentResonance: 0, currentWill: stats.will, targetX: s.x, targetY: s.y, walkCycle: 0, moveCooldown: 0, stance: "follow", isFollower: false, isHealing: false,
              hitFlash: 0, spawnProtection: 0, dead: false, fpSpot: s.id };
 }
-function _fpSpotLabel(s) { const def = ELEMENTS.find(e => e.id === s.element); return roleLabel(s.type) + " · " + (def ? def.label.toUpperCase() : String(s.element).toUpperCase()); }
+function _fpSpotLabel(s) { const el = _fpSpotElement(s), def = ELEMENTS.find(e => e.id === el); return def && def.none ? roleLabel(s.type) : roleLabel(s.type) + " · " + (def ? def.label.toUpperCase() : String(el).toUpperCase()); }   // (no element: its role alone)
 function _fpSpotSay(text, good) { if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text, color: good ? "#9dffb6" : "#ff8a6a", life: 110, vy: -0.2, size: 13 }); }
 // can this post be claimed now? { ok } or { ok: false, why }
 function facilityFollowerSpotCan(s) {
@@ -51,12 +55,12 @@ function facilityFollowerSpotTake(s) {
     if (typeof spawnFollowerAtCrystal !== "function") return null;
     const egg = s.egg, k = egg ? actors.indexOf(egg) : -1; if (k >= 0) actors.splice(k, 1);
     s.egg = null; s.used = true; s.taken++; shardCount -= FP_SPOT.price;
-    spawnFollowerAtCrystal(s.element, s.type);
+    spawnFollowerAtCrystal(_fpSpotElement(s), s.type);
     const f = followers[followers.length - 1]; if (!f) return null;
     f.x = s.x; f.y = s.y; f.returningToCrystal = false; f.convertFlash = 30; f.fromSpot = s.id;
     if (f.post) { if (typeof partyPlace === "function") partyPlace(f, s.room, true); else f.post = s.room; } else f.stance = "follow";   // (the squad was full: it holds the room the egg was in, or the nearest with a place: js/party.js)
-    const def = ELEMENTS.find(e => e.id === s.element);
-    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: _fpSpotLabel(s) + (f.post ? " HOLDS THE " + partyRoomName(f.post).toUpperCase() : " JOINED!") + (FP_SPOT.price > 0 ? " · ◆" + FP_SPOT.price : ""), color: def ? def.color : "#fff", life: 120, vy: -0.2, size: 14 });
+    const def = ELEMENTS.find(e => e.id === f.element);
+    if (typeof floatingTexts !== "undefined" && typeof canvas !== "undefined") floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: _fpSpotLabel(s) + (f.post ? " HOLDS THE " + partyRoomName(f.post).toUpperCase() : " JOINED!") + (def && def.none ? " · NO ELEMENT YET" : "") + (FP_SPOT.price > 0 ? " · ◆" + FP_SPOT.price : ""), color: def ? def.color : "#fff", life: 120, vy: -0.2, size: 14 });
     return f;
 }
 // each frame (from facilityTutorialTick)
@@ -89,7 +93,7 @@ function followerSpotsApply(d) {
 
 // the pad and its label (js/facilityplay.js drawFacilityItem): lit and ringed with an egg on it, dark and CLAIMED once it is exhausted
 function _fpDrawSpot(it) {
-    const s = it.spot, f = _fpFrame(), def = ELEMENTS.find(e => e.id === s.element), col = def ? def.color : "#9fe8ff", full = !!s.egg && !s.used, pul = 0.7 + 0.3 * Math.sin(f * 0.07 + it.seed);
+    const s = it.spot, f = _fpFrame(), el = _fpSpotElement(s), def = ELEMENTS.find(e => e.id === el), col = def ? def.color : "#9fe8ff", full = !!s.egg && !s.used, pul = 0.7 + 0.3 * Math.sin(f * 0.07 + it.seed);
     const c = _fpP(it.x, it.y, 0), rx = 0.82 * TILE_W * 1.4142, ry = 0.82 * TILE_H * 1.4142;
     _fpDisc(it.x, it.y, 0, 0.95, s.used ? "rgba(6,9,14,0.85)" : "rgba(10,18,30,0.8)", null);   // the pad: a dark disc
     ctx.lineWidth = 3; ctx.strokeStyle = _fpRgba(col, full ? 0.55 + 0.35 * pul : s.used ? 0.14 : 0.22); ctx.beginPath(); ctx.ellipse(c[0], c[1], rx, ry, 0, 0, 6.2832); ctx.stroke();   // a ring in its element's colour

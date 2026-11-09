@@ -96,7 +96,7 @@ function updateRTSNPC(actor) {
             if (!Number.isFinite(actor.level) && typeof initFollowerLevel === "function") initFollowerLevel(actor, { level: recruitLevel() });
             // A follower that is made again keeps its element (js/helpers.js startFollowerReroll); one that is found or recruited takes an even draw of the six (its element in the world is stale and irrelevant).
             if (actor.keepElement) { actor.element = actor.keepElement; actor.keepElement = null; }
-            else { const pool = [...unlockedElements]; actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire"; }
+            else { const pool = [...unlockedElements].filter(e => e !== "none"); actor.element = pool[Math.floor(Math.random()*pool.length)] || "fire"; }
             if (!actor.combatTrait)  actor.combatTrait  = Object.keys(COMBAT_TRAITS)[Math.floor(Math.random()*2)];
             if (!actor.naturalTrait) actor.naturalTrait = Object.keys(NATURAL_TRAITS)[Math.floor(Math.random()*2)];
             if (!actor.perk)         actor.perk         = Object.keys(PERKS)[Math.floor(Math.random()*2)];

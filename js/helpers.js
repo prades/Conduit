@@ -507,7 +507,7 @@ function tickArmySurge() {
 
 // `type`: the role it is made as (FOLLOWER_TYPES, js/species.js); none is a draw, as a follower found in the world is.
 function spawnFollowerAtCrystal(element, type) {
-    if (!element) { const pool = [...unlockedElements]; element = pool[Math.floor(Math.random()*pool.length)] || "fire"; }
+    if (!element) { const pool = [...unlockedElements].filter(e => e !== "none"); element = pool[Math.floor(Math.random()*pool.length)] || "fire"; }   // (NO ELEMENT is asked for by name, never drawn: js/config.js)
     const def         = NPC_TYPES["virus"];
     const personality = personalityForType(type);
     const stats       = applyPersonality(personality);
@@ -535,8 +535,11 @@ function spawnFollowerAtCrystal(element, type) {
     if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { level: recruitLevel() });
     actors.push(npc);
     followers.push(npc);
-    followerByElement[element] = followerByElement[element]||[];
-    followerByElement[element].push(npc);
+    // ITS ENERGY SLOT (docs/ENERGY-CARDS.md; js/energy.js): made of an element, it comes with that element's energy card in its slot, free (not from your stock): a bred egg, the starting squad, a test squad;
+    // made as "none" (a recruit: js/clone.js, js/followerspots.js), its slot is empty and it has no element until you give it a card
+    if (typeof energyStart === "function") energyStart(npc, element);
+    followerByElement[npc.element] = followerByElement[npc.element]||[];
+    followerByElement[npc.element].push(npc);
     if (typeof partyAdmit === "function") partyAdmit(npc);   // the facility: the squad takes it if it has room, else it is posted where it is (js/party.js)
 }
 

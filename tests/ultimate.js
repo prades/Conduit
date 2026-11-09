@@ -456,7 +456,7 @@ async function boot(store) {
     group('spending it powers up the entire army');
 
     const squadBefore = S.squad(4);
-    S.run('followers[0].evolved = "embercowl"; followers[1].evolved = "manta";');   // (one with an Ultimate of its own, a retired form without one; the other two unevolved: none, since build 2026-11-09b)
+    S.run('followers[0].evolved = "embercowl"; followers[1].evolved = "manta"; energyFill(followers[0]); energyFill(followers[1]);');   // (one with an Ultimate of its own, a retired form without one; the other two unevolved: none, since build 2026-11-09b)
     S.fill();
     S.run('floatingTexts = [];');
     const fired = S.run('fireArmySurge()');

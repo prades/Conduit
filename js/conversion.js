@@ -63,6 +63,9 @@ function convertApply(f) {
     const off = convertCardsOff(f), name = typeof unitTypeLabel === "function" ? unitTypeLabel(f) : "FOLLOWER";
     const form = f.evolved ? convertBloomForm(f) : null;   // (evolved: its class's BLOOM form, there or convertWhyNot would have said)
     f.element = CONVERT.to; f.convertedFrom = CONVERT.from; f.convertedAt = typeof frame !== "undefined" ? frame : 0;
+    // ITS ENERGY CARDS (docs/ENERGY-CARDS.md rule 13, "Convert its card"; js/energy.js): the toxic card in an unevolved one's slot becomes a BLOOM one, so it is BLOOM (saved so, and it evolves into a BLOOM form);
+    // an evolved one's toxic cards, its own element's until now, become BLOOM ones as well, so what they unlocked stays unlocked (no pack deals a BLOOM card: the agent's reading, docs/ENERGY-CARDS.md §11)
+    if (Array.isArray(f.energy)) f.energy = f.energy.map(x => x === CONVERT.from ? CONVERT.to : x);
     if (form) {
         f.evolved = form.id;   // (its stats stay as they are: no level is applied again)
         if (f.alt && !(typeof evoMoveAllowed === "function" && evoMoveAllowed(f, form, f.alt))) { f.alt = null; f._altWind = 0; f._altLive = null; }   // (an alternate the new form does not have: back to its normal attack)

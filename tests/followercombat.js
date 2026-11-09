@@ -38,7 +38,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; selectedUnits.clear();
     actors = actors.filter(function(a){ return !(a instanceof Predator); });
-    var t = followers[0]; t.element = 'fire'; t.role = 'camper'; t.evolved = 'thermite'; t._moltAt = -1e9; followers.slice(1).forEach(function(f){ f.role = 'brawler'; f.evolved = undefined; });
+    var t = followers[0]; t.element = 'fire'; t.role = 'camper'; t.evolved = 'thermite'; t._moltAt = -1e9; energyFill(t); followers.slice(1).forEach(function(f){ f.role = 'brawler'; f.evolved = undefined; });
     var said = [], keepSay = _techSay; _techSay = function(m){ said.push(m); return keepSay.apply(this, arguments); };   // (what the game tells the player, in case a path is refused)
     var cells = partyRoomCells('arena'), set = new Set(cells.map(function(c){ return c[0] + ',' + c[1]; })), best = null, bn = -1;   // (the arena's most open patch of floor, as the node checks use: where the Burrower stands, the player beside it)
     cells.forEach(function(c){ var n = 0; for (var dx = -6; dx <= 6; dx++) for (var dy = -6; dy <= 6; dy++) if (set.has((c[0] + dx) + ',' + (c[1] + dy))) n++; if (n > bn) { bn = n; best = c; } });
@@ -111,7 +111,7 @@ function measure(w, h) {
         globalThis.__pinOn = () => { if (!globalThis.__soMoves) globalThis.__soMoves = EVOLUTIONS.staticorb.moves.slice(); EVOLUTIONS.staticorb.moves = ['static_rush', 'pinball']; };   // (PINBALL is superseded by CAPACITOR DISCHARGE since build 2026-11-07ss: its checks turn it back on for themselves, as its code is kept)
         globalThis.__clear = () => { if (globalThis.__soMoves) { EVOLUTIONS.staticorb.moves = globalThis.__soMoves; globalThis.__soMoves = null; } actors = actors.filter(a => !(a instanceof Predator) && !a.isFollower); followers.length = 0; for (const k in followerByElement) followerByElement[k] = []; followerProjectiles.length = 0; elementEffects.length = 0; floatingTexts.length = 0; frame++; };
         globalThis.__foe = (x, y, sp) => { const S = SPECIES[sp || 'ant'], p = new Predator('scout', Object.assign({}, S.scout, { color: S.color }), x, y); p.speciesName = sp || 'ant'; p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {}; actors.push(p); return p; };
-        globalThis.__fol = (el, role, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.evolved = evo || undefined; f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.stance = 'hold'; f.x = __C[0]; f.y = __C[1]; return f; };
+        globalThis.__fol = (el, role, evo) => { spawnFollowerAtCrystal(el); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.role = role; f.evolved = evo || undefined; if (evo) energyFill(f); f._moltAt = -1e9; f.level = 20; _applyFollowerLevel(f, true); f.stance = 'hold'; f.x = __C[0]; f.y = __C[1]; return f; };
         globalThis.__off = f => { actors = actors.filter(a => a !== f); followers = followers.filter(a => a !== f); };   // (out of the world: its own AI and melee add nothing; its shots and fields keep it as their source)
         globalThis.__dmg = p => 1e6 - p.health;
         globalThis.__fire = f => { frame++; __arm(f); evolutionTick(); };

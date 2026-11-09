@@ -73,6 +73,7 @@ function nestTestSendIn() {
         const F = _ncForm(pk.form); if (!F || typeof spawnFollowerAtCrystal !== "function") return;
         spawnFollowerAtCrystal(F.element); const f = followers[followers.length - 1]; if (!f || f.nestTest || made.indexOf(f) >= 0) return;
         f.nestTest = true; f.returningToCrystal = false; f.role = F.role; f.evolved = F.evolved; f.noEvolve = !F.evolved; f._moltAt = -1e9; f.alt = null; f.post = null; f.job = null; f.stance = "follow"; f.spawnProtection = 0;
+        if (F.evolved && typeof energyFill === "function") energyFill(f);   // (a test form is tested whole: its energy slots full of its own element, so its second attack and Ultimate are open, js/energy.js; free, and gone with it)
         f.level = _ncClamp(pk.level); f.xp = 0; if (typeof _applyFollowerLevel === "function") _applyFollowerLevel(f, true); f.health = f.maxHealth;
         if (typeof _pBeside === "function") _pBeside(f); else { f.x = player.x + (i - 1) * 0.8; f.y = player.y + 0.7; }
         made.push(f);
@@ -115,7 +116,7 @@ function nestMeterHit(target, dealt, source, hit) {
 function _ncName(u) {
     if (u === player) return "YOU";
     const d = u.evolved && typeof EVOLUTIONS !== "undefined" ? EVOLUTIONS[u.evolved] : null;
-    return (d ? d.name : (String(u.element || "").toUpperCase() + " " + (u.role === "sniper" ? "MAGE" : u.role === "camper" ? "TECH" : "BRAWLER"))) + (u.nestTest ? " ·T" : "");
+    return (d ? d.name : (((typeof elementWord === "function" ? elementWord(u.element) : String(u.element || "").toUpperCase()) + " " + (u.role === "sniper" ? "MAGE" : u.role === "camper" ? "TECH" : "BRAWLER")).trim())) + (u.nestTest ? " ·T" : "");
 }
 // the meter's lines, the longest total first: { name, total, dps, P, A, S, Y, secs }
 function nestMeterRows() {

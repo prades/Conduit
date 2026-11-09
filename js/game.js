@@ -347,7 +347,7 @@ function drawCloneRespawnTicker(cx, topY) {
         const secs  = Math.max(0, Math.ceil(e.timer / 60));   // (0, with e.waitPower: it waits for the Crystal's power, js/crystalpower.js)
         const total = e.totalTimer || CLONE_RESPAWN_FRAMES;
         const done  = Math.max(0, Math.min(1, 1 - e.timer / total));
-        const name  = e.isClone ? ((e.speciesName || "clone") + " " + (e.className || "")).toUpperCase().trim() : ((e.element || "") + " " + (typeof roleLabel === "function" ? roleLabel(e.role || "brawler") : "")).toUpperCase().trim(), col = e.isClone ? "#22ff88" : "#19e6c1";
+        const name  = e.isClone ? ((e.speciesName || "clone") + " " + (e.className || "")).toUpperCase().trim() : ((typeof elementWord === "function" ? elementWord(e.element) : String(e.element || "")) + " " + (typeof roleLabel === "function" ? roleLabel(e.role || "brawler") : "")).toUpperCase().trim(), col = e.isClone ? "#22ff88" : "#19e6c1";
 
         // A bar that fills as it comes back, so the wait is legible at a glance
         // and the number is the detail rather than the whole message.
@@ -765,6 +765,7 @@ function render() {
             if (a.nestTest) return;   // a TEST follower of the Ant Nest's console (js/nestconsole.js): one that falls is gone, never revived
             const _respawnFrames = a.isClone ? CLONE_RESPAWN_FRAMES : 180;
             respawnQueue.push({ element:a.element, role:a.role, combatTrait:a.combatTrait, naturalTrait:a.naturalTrait, perk:a.perk, personality:a.personality, timer:_respawnFrames, totalTimer:_respawnFrames, isClone:a.isClone||false, speciesName:a.speciesName, className:a.className, hpStat:Math.max(1,keptHp), uid:a.uid, partnerUid:a.partnerUid||null, cards: typeof equipRecord === "function" ? equipRecord(a) : undefined, special: typeof equipSpecialRecord === "function" ? equipSpecialRecord(a) : undefined,   // (its equip cards come back with it: js/cards.js)
+                energy: typeof energyRecord === "function" ? energyRecord(a) : undefined,   // (and its energy cards: js/energy.js)
                 // Its level and its XP come back with it, all of them.
                 base: a.base ? Object.assign({}, a.base) : undefined,
                 hp0: Number.isFinite(a.hp0) ? a.hp0 : undefined, bred: a.bred || undefined,   // its birth (js/breeding.js)
@@ -1137,14 +1138,15 @@ function render() {
                 if (entry.cards && typeof equipRestore === "function") equipRestore(npc, entry.cards);   // its equip cards (js/cards.js)
                 if (entry.special && typeof equipSpecialRestore === "function") equipSpecialRestore(npc, entry.special);   // its SPECIAL ATTACK card
                 if (_evo) npc.evolved = _evo.id;   // before its level, so the evolved stats apply
+                if (Array.isArray(entry.energy) && typeof energyApplyRecord === "function") energyApplyRecord(npc, entry);   // its energy cards (js/energy.js), after its form: an evolved one has three slots
                 if (entry.evoWait) npc._evoOnLevelUp = true;   // an egg again until it next levels up (js/evolution.js)
                 if (Number.isFinite(entry.hp0)) npc.hp0 = entry.hp0; if (entry.bred) npc.bred = entry.bred;   // its birth (js/breeding.js): the base carries it; nothing is added again
                 // Its level and its XP, all of them — js/levels.js.
                 if (typeof initFollowerLevel === "function") initFollowerLevel(npc, { base: entry.base, level: entry.level, xp: entry.xp, hpStat: entry.hpStat });
                 if (entry.post) { npc.post = entry.post; npc.stance = "hold"; }   // a follower that held a room goes back to it (js/party.js)
                 actors.push(npc); followers.push(npc);
-                if(!followerByElement[rElement]) followerByElement[rElement]=[];
-                followerByElement[rElement].push(npc);
+                if(!followerByElement[npc.element]) followerByElement[npc.element]=[];
+                followerByElement[npc.element].push(npc);
                 if (typeof partyAdmit === "function") partyAdmit(npc);   // (the squad's slot may have been taken while it was gone: then it is posted where it stands)
             }
             respawnQueue.splice(i,1);

@@ -641,14 +641,16 @@ const CSORTS = [
 const RECRUIT_COST = 200;
 // The type of a recruit that is not asked for one: an even draw of the three.
 function recruitDrawType() { return FOLLOWER_TYPE_ORDER[Math.floor(Math.random() * FOLLOWER_TYPE_ORDER.length)]; }
-// `type`, `element`: for a test or a scripted recruit; none is a draw.
+// `type`, `element`: for a test or a scripted recruit (an element asked for comes with its energy card, free: js/helpers.js spawnFollowerAtCrystal); none is a draw of the type, and NO ELEMENT:
+// a recruit starts elementless (docs/ENERGY-CARDS.md rule 12) until you give it an energy card (the roster's ENERGY slot, js/cardsui.js).
 function recruitFollower(type, element) {
     if (shardCount < RECRUIT_COST) { floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: "NEED " + RECRUIT_COST + " SHARDS", color: "#f44", life: 90, vy: -0.2 }); return false; }
     shardCount -= RECRUIT_COST;
-    const t = FOLLOWER_TYPES[type] ? type : recruitDrawType(), e = element && unlockedElements.has(element) ? element : modulationPick() || "fire";
+    const none = typeof ENERGY_NONE !== "undefined" ? ENERGY_NONE : null;
+    const t = FOLLOWER_TYPES[type] ? type : recruitDrawType(), e = element && unlockedElements.has(element) && element !== none ? element : none || modulationPick() || "fire";
     spawnFollowerAtCrystal(e, t);
     const def = ELEMENTS.find(x => x.id === e);
-    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: roleLabel(t) + " \u00b7 " + (def ? def.label.toUpperCase() : String(e).toUpperCase()) + " RECRUITED!", color: FOLLOWER_TYPES[t].colour, life: 120, vy: -0.2 });
+    floatingTexts.push({ x: canvas.width / 2, y: canvas.height / 2 - 80, text: e === none ? roleLabel(t) + " RECRUITED! \u00b7 NO ELEMENT YET: GIVE IT AN ENERGY CARD" : roleLabel(t) + " \u00b7 " + (def ? def.label.toUpperCase() : String(e).toUpperCase()) + " RECRUITED!", color: FOLLOWER_TYPES[t].colour, life: 120, vy: -0.2 });
     return true;
 }
 // The + RECRUIT button: recruit, and bring the roster up to date. With the squad full it asks first who makes room (js/party.js partyPickOpen): nothing is paid until that is chosen, and one question is up at a time.
@@ -665,7 +667,7 @@ function recruitDo() {
 
 // What new followers draw their element from: every element that is online, which is all six from the start (js/facilityplay.js). There is no mix to narrow.
 function recruitElementPool() {
-    return ELEMENTS.filter(e => unlockedElements.has(e.id)).map(e => e.id);
+    return ELEMENTS.filter(e => unlockedElements.has(e.id) && !e.none).map(e => e.id);
 }
 // One element, evenly from those brought online; null when nothing is.
 function modulationPick(rnd) {

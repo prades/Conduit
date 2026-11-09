@@ -187,11 +187,11 @@ async function boot(store) {
     console.log('\nXP PROGRESS (the bars and the cards: js/levels.js xpProgress, js/draw.js drawXpBar)');
     // ASKED: "they will not evolve. I need to see the progress. Add a progress experience bar or something so I know what's going on." A recruit needs 875 XP to reach level 10 and the XP was only a line on the INFO page.
     const XP = (lv, into, extra) => run(`(function(){ const f = ${FOL('', 2, 0)}; f.level = ${lv}; f.xp = xpForLevel(${lv}) + ${into}; ${extra || ''} const p = xpProgress(f); f.dead = true; return p; })()`);
-    check('xpProgress: how far through its level a unit is (into of ask), what is left, and for a follower that has not evolved how far it is from evolving (the recruit level to level 10)', () => {
-        const a = XP(5, 0), b = XP(7, 85), c = XP(9, 100);
-        same(a.into, 0, 'a recruit has no XP in its level'); same(a.ask, 91, 'level 5 asks 216 - 125'); same(a.frac, 0, 'frac'); same(a.toNext, 91, 'to next'); same(a.evo.level, 10, 'it evolves at 10'); same(a.evo.levels, 5, 'five levels to go'); same(a.evo.toGo, 875, '1000 - 125'); same(a.evo.frac, 0, 'no way along'); same(a.evo.next, false, 'not on its next level');
-        same(b.into, 85, 'level 7 with 85'); same(b.ask, 169, '512 - 343'); ok(near(b.frac, 85 / 169), 'frac'); same(b.toNext, 84, 'to next'); same(b.evo.levels, 3, 'three levels'); same(b.evo.toGo, 572, '1000 - 428'); ok(near(b.evo.frac, (428 - 125) / 875), 'along the way from level 5 to 10');
-        same(c.evo.levels, 1, 'one level to go: the last before it evolves'); same(c.evo.toGo, 1000 - (729 + 100), '171');
+    check('xpProgress: how far through its level a unit is (into of ask), what is left, and for a follower that has not evolved how far it is from evolving (the recruit level to level 8: energy cards, build 2026-11-09s)', () => {
+        const a = XP(5, 0), b = XP(6, 85), c = XP(7, 100);
+        same(a.into, 0, 'a recruit has no XP in its level'); same(a.ask, 91, 'level 5 asks 216 - 125'); same(a.frac, 0, 'frac'); same(a.toNext, 91, 'to next'); same(a.evo.level, 8, 'it evolves at 8'); same(a.evo.levels, 3, 'three levels to go'); same(a.evo.toGo, 387, '512 - 125'); same(a.evo.frac, 0, 'no way along'); same(a.evo.next, false, 'not on its next level');
+        same(b.into, 85, 'level 6 with 85'); same(b.ask, 127, '343 - 216'); ok(near(b.frac, 85 / 127), 'frac'); same(b.toNext, 42, 'to next'); same(b.evo.levels, 2, 'two levels'); same(b.evo.toGo, 211, '512 - 301'); ok(near(b.evo.frac, (301 - 125) / 387), 'along the way from level 5 to 8');
+        same(c.evo.levels, 1, 'one level to go: the last before it evolves'); same(c.evo.toGo, 512 - (343 + 100), '69');
     });
     check('…an evolved follower has no evolution to wait for; a follower re-rolled to another element evolves on its next level-up, whatever its level; the top level is a full bar; something with no level has nothing', () => {
         const ev = XP(12, 50, "f.evolved = 'seeper';"), rr = XP(25, 100, 'f._evoOnLevelUp = true;'), top = run(`(function(){ const f = ${FOL('', 2, 0)}; f.level = 100; f.xp = xpForLevel(100); const p = xpProgress(f); f.dead = true; return p; })()`);
@@ -201,7 +201,7 @@ async function boot(store) {
     });
     check('…the words the cards say: the XP in this level, and what evolving still takes', () => {
         const t = (lv, into, extra) => run(`(function(){ const f = ${FOL('', 2, 0)}; f.level = ${lv}; f.xp = xpForLevel(${lv}) + ${into}; ${extra || ''} const p = xpProgress(f); f.dead = true; return [xpText(p), xpEvoText(p)]; })()`);
-        same(t(7, 85).join(' | '), '85 / 169 XP | EVOLVES AT LV 10 · 3 LEVELS · 572 XP TO GO', 'level 7'); same(t(9, 100).join(' | '), '100 / 271 XP | EVOLVES AT LV 10 · 1 LEVEL · 171 XP TO GO', 'level 9: one level');
+        same(t(6, 100).join(' | '), '100 / 127 XP | EVOLVES AT LV 8 · 2 LEVELS · 196 XP TO GO', 'level 6'); same(t(7, 85).join(' | '), '85 / 169 XP | EVOLVES AT LV 8 · 1 LEVEL · 84 XP TO GO', 'level 7: one level');
         same(t(25, 100, 'f._evoOnLevelUp = true;')[1], 'EVOLVES ON ITS NEXT LEVEL · ' + (run('xpForLevel(26)') - run('xpForLevel(25)') - 100) + ' XP TO GO', 're-rolled'); same(t(12, 0, "f.evolved = 'seeper';")[1], '', 'evolved: nothing to say'); same(run('xpText(null) + xpEvoText(null)'), '', 'nobody');
     });
     check('the bar in the world: a slab under each follower\'s health bar (3 px), as long as its level is done, and a follower about to evolve breathes lighter; an empty one draws no fill', () => {

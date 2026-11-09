@@ -13,7 +13,7 @@
 // A crystal that is about to fall is saved: the enemies are called off, the Crystal is mended and the assault comes again (the tutorial is not a loss).
 
 const TUT = {
-    followerLevel: 9, enemyLevel: 8,
+    followerLevel: 7, enemyLevel: 6,   // one level under the evolution level (EVOLVE_LEVEL, js/evolution.js), the enemies one under that: 8 since energy cards (build 2026-11-09s; docs/ENERGY-CARDS.md), when these were 9 and 8 under level 10
     countdown: 1200,                 // frames between the objective coming up and the first wave (20 s)
     waves: [                          // the assault: each wave is a list of [class, spawn x, spawn y] (tiles; the east end of the hallway, in rows with no floodlight in the way: the lab's ring comes round to the Crystal)
         { at: 0, who: [["scout", 44, 23], ["scout", 45, 24], ["scout", 46, 23], ["scout", 46, 24]] },
