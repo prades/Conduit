@@ -714,6 +714,11 @@ The owner's answers of 2026-11-09 (`DECISION-LOG.md`): an Ultimate is an evolved
 - **The agent's numbers, provisional:** the bond hearts (within 1 tile, three over each, 1.5 s, again after more than 3 tiles apart); SUNDEW's and STONEPETAL's everyday hit, 0.45 × their attack.
 - **A reading:** an unevolved follower's meter no longer fills (it has no Ultimate); a charge an old save carries stays as it was until it evolves.
 
+## The cave's look (build `2026-11-09i`)
+- **The modelled cave walls in the game** (`?walls=3d`): a yes, or a correction, before everyone sees them (`STYLE-CRYSTAL-LAB.md`, "The cave's rock walls, modelled").
+- **The rubble patches as cave rock** (the owner, 2026-11-09): next, from the same rock.
+- **The forms' effects with 3-D flare:** paused at the owner's turn to the cave (the quill and the icicle are done; `EFFECTS.md`).
+
 ## The optimization check (build `2026-11-09d`): found, not changed
 Measured in the real page (headless Chromium, software-rendered: a rough guide, not an iPad; `CHANGELOG.md` 09d). The forms' bodies, the biggest cost, were fixed in that build (drawn from small cells). These were found too and left as they are, each waiting for a yes:
 - **Route smoothing** (js/facilityplay.js `facilityPath`). A route is pulled tight by trying the farthest waypoint first and stepping back, and each try samples the line every quarter tile. In the busy fight that came to about 4,200 walkability checks a frame, nearly all of them here. A cheaper smoothing is possible, but it could change routes a little, so it needs a yes and its own checks.

@@ -2657,3 +2657,20 @@ Offered and passed over: a 3D prototype first (recommended); going all in on a 3
 ### Supersedes / superseded by
 Supersedes the generic ice shot for ICICLE VOLLEY (kept only until the sheet arrives). A 3D engine stays open for later (`EFFECTS.md` §4).
 
+## DECISION: The cave's rock walls are modelled 3D rock (the tall, softly shaded face, in brown)
+- Date and build: 2026-11-09, build `2026-11-09i` (on the preview `?walls=3d`), branch `claude/start-game-project-HSh7Z`.
+- The owner's words: "I kind of want to update the rubble patches make those look more like a cave rock and before that ... also change the way the walls look in the cave. I kind of like the aesthetic RuneScape has a 3-D model wall that obviously has a [Gouraud] lighting effects that come with it. I understand that would be a task." Shown one piece first, they sent back the first render (the tall face, softly shaded; pale by the agent's colour mistake), then: "Brown, build the full wall set".
+
+### Decision
+- Every rock wall (the arena, the Cold Storage's ice cave, the Nest's cavern) is a modelled rock wall baked to sprites from its own shape, in the approved look, in the cave's brown.
+- It is on the preview (`?walls=3d`) until the owner approves it in the game. The rubble patches come next, from the same rock.
+
+### Status
+Built in build `2026-11-09i` and tested (`tests/cavewalls.js`); checked in the real page with screenshots. Not playtested. How it is made: `STYLE-CRYSTAL-LAB.md`, "The cave's rock walls, modelled".
+
+### Alternatives
+Drafted and passed over: the angular rock masses in two tiers (the second render); "blockier, flatter slabs"; "darker, wetter cave"; the pale colour.
+
+### Supersedes / superseded by
+Will supersede the drawn rock (`js/facilitydecor.js _fpDrawRock`) once approved in the game; the drawn rock stays as the fallback.
+

@@ -66,3 +66,25 @@ There are none. Walls join cleanly where two meet and simply end where they end 
 ## Wall thickness
 
 Each styled wall piece (and each door's header) has a slab on top, `FP_WALL_T` = 0.4 tile deep, running back from the visible face (`_fpWallTop`): a pale top with an ink line along its back edge. The fill stops short of both edges so neighbouring pieces never cover each other's ink lines. It is drawing only; collision is unchanged.
+
+## The cave's rock walls, modelled (build `2026-11-09i`, on the preview `?walls=3d`)
+
+The owner, 2026-11-09: the cave's walls should look like RuneScape's 3D-model walls, with their lighting. Shown one piece first (a three-tile stretch), they picked the tall rock face with soft shading, in brown: "Brown, build the full wall set". `docs/DECISION-LOG.md` has the decision.
+
+**What it is.**
+- Every rock wall in the facility is modelled from its own shape and baked to sprites: the arena (the cave), the Cold Storage's ice cave and the Nest's cavern. That is 326 half-tile pieces in 53 straight runs.
+- **The face** is pushed in and out by noise of its place in the world, so neighbouring runs meet without a seam. It is softly (Gouraud) shaded, in the cave's brown: darker in its hollows and at its foot, lighter on its bulges.
+- **The top** of the rock runs back, as the drawn rock's did: a far wall's roof goes back to the wall behind it, and a near wall's top is its thickness toward the room.
+- **Boulders** lie at the foot of a far wall, on the room's side.
+- **A near wall's rock** runs on down below the floor into the dark, fading to black.
+- **In the ice room** the rock is frosted, with icicles off its lip.
+- The lights and camera are the props' (`design/props/bake_props.js`).
+
+**How it is made and drawn.**
+- `design/cave/bake_walls.js` boots the game, reads every rock piece (its ends, skyline, side and top), models each run and renders it.
+- It cuts the picture into one strip per piece (the screen columns between the piece's ends), packs them into a sheet per cave (`img/cave/<room>.png`) and writes `js/caveatlas.js`.
+- `js/cavewalls.js` draws a piece's strip in the piece's own place in the draw list, so units sort against the rock as before. Strips are on whole pixels, so a run's strips meet flush.
+- A dim room darkens a strip as it darkens the props: the props' navy at the room's light level, composed once per twelfth of light.
+- `tests/cavewalls.js` checks the bake is current with the walls (a signature). **When the walls change, bake again.**
+
+**Status.** On the preview (`?walls=3d`) until the owner approves it in the game (`docs/ART-PROCESS.md`). Everyone else sees the drawn rock (`js/facilitydecor.js _fpDrawRock`), which stays as the fallback. The rubble patches come next, from the same rock (the owner's ask).

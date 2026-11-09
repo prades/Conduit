@@ -774,6 +774,8 @@ function _fpWallBounds(it) {
     else if (/^deck_window_arena/.test(it.win || "") && it.room === "arena") { const rise = (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + 4; zlo = -8; zhi = rise + 12; mx = 46; my = 30; pts.push([it.a[0] + 0.5, it.a[1]], [it.b[0] + 0.5, it.b[1]]); }
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     for (const q of pts) for (const z of [zlo, zhi]) { const sx = (q[0] - it.x - (q[1] - it.y)) * TILE_W, sy = (q[0] - it.x + q[1] - it.y) * TILE_H - z; if (sx < x0) x0 = sx; if (sx > x1) x1 = sx; if (sy < y0) y0 = sy; if (sy > y1) y1 = sy; }
+    const cb = it.kind === "rock" && typeof caveWallBox === "function" ? caveWallBox(it) : null;   // (the modelled rock's own strip: js/cavewalls.js)
+    if (cb) { x0 = Math.min(x0, cb[0]); y0 = Math.min(y0, cb[1]); x1 = Math.max(x1, cb[2]); y1 = Math.max(y1, cb[3]); }
     return [Math.floor(x0 - mx), Math.floor(y0 - my), Math.ceil(x1 + mx), Math.ceil(y1 + my)];   // relative to the piece's ground anchor (screen of (it.x, it.y, 0))
 }
 

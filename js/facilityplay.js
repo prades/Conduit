@@ -683,7 +683,7 @@ function _fpSkirts(items) {
 function _fpDrawWall(it) {
     const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0));
     // a wall is always drawn at its full height, whatever the player is doing: it never fades, shrinks or reacts when the player comes close
-    if (it.kind === "rock") return _fpDrawRock(it, H);   // rock formations (js/facilitydecor.js)
+    if (it.kind === "rock") { if (typeof caveWallDraw === "function" && caveWallDraw(it)) return; return _fpDrawRock(it, H); }   // rock formations: the modelled rock (js/cavewalls.js; on the preview, ?walls=3d, until approved), else drawn (js/facilitydecor.js)
     if (it.kind === "spill" && typeof _fpDrawSpillLip === "function") return _fpDrawSpillLip(it);   // a low lip the water spills over (the Sewers' Nest: js/facilitysewers.js)
     if (it.scaffold) return _fpDrawRail(it);                   // the catwalks: an open deck with a rail, not a room (js/facilitydecor.js)
     if (it.support) return _fpDrawSupport(it, H - FP_WALL_H);  // the arena's frame under the deck: open steel, you see through it
