@@ -1056,8 +1056,8 @@ function render() {
             else _drawFloorTile(ctx, px, py, dist);
             if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
             if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
-            if (typeof drawAcidOnTile === "function") drawAcidOnTile(obj.x, obj.y, px, py);   // a hazard container's acid (js/hazards.js)
             facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
+            if (typeof drawAcidOnTile === "function") drawAcidOnTile(obj.x, obj.y, px, py);   // a hazard container's acid (js/hazards.js): over the floor's paint, as the serum's pool is
             if (typeof drawSerumOnTile === "function") drawSerumOnTile(obj.x, obj.y, px, py);   // a healing serum's pool (js/serum.js)
             if (typeof techDrawOnTile === "function") techDrawOnTile(obj.x, obj.y, px, py);   // a Frost Patch's ice, a Blight Spider's pool (js/techabilities.js)
             if (typeof equipAuraOnTile === "function") equipAuraOnTile(obj.x, obj.y, px, py);   // a Mage's aura ring, on the floor of its room (js/cards.js): the walls and units in front cover it

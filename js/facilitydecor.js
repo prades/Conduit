@@ -68,7 +68,8 @@ function _fpFloorBuild(F, only) {
     // (only: what can touch those cells is the solids, the water and the decor whose boxes come near them; the rest of the building is passed over)
     let oBox = null; if (only) { oBox = [Infinity, Infinity, -Infinity, -Infinity]; for (const k of only) { const [x, y] = k.split(",").map(Number); oBox = [Math.min(oBox[0], x), Math.min(oBox[1], y), Math.max(oBox[2], x), Math.max(oBox[3], y)]; } }
     const nearO = bb => !oBox || !bb || !(bb[2] < oBox[0] - 1.5 || bb[0] > oBox[2] + 1.5 || bb[3] < oBox[1] - 1.5 || bb[1] > oBox[3] + 1.5);
-    for (const s of F.solids) { if (!nearO(s.bb)) continue; const box = s.bb; for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) solid.add(x + "," + y); }
+    for (const s of F.solids) { if (s.away || !nearO(s.bb)) continue; const box = s.bb;   // (away: a hazard container that went off, for a minute: its tile is floor, js/facilityplay.js facilitySolidSet)
+        for (let x = Math.floor(box[0]); x <= Math.ceil(box[2]); x++) for (let y = Math.floor(box[1]); y <= Math.ceil(box[3]); y++) if (s.shape === "circle" ? Math.hypot(x - s.at[0], y - s.at[1]) < s.r : facilityPointInPoly(x, y, s.poly)) solid.add(x + "," + y); }
     // 1. the room's own floor
     const style = new Map(); for (const f of (F.floors || [])) style.set(f.room, f);
     const under = new Map();   // the floor under a solid cell: a small piece of furniture stands on it, and a bare black tile would show

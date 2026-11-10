@@ -134,7 +134,7 @@ function facilitySolidSet(id, open) {
     if (!_fp || !_fp.F || !_fp.cells || !_fp.cellsP) return false;
     const F = _fp.F, P = _fp.P, s = F.solids.find(q => q.id === id), p = P ? P.solids.find(q => q.id === id) : null;
     if (!s || !!s.open === !!open) return false;
-    s.open = !!open; if (p) p.open = !!open;
+    s.open = !!open; s.away = !!open; if (p) { p.open = !!open; p.away = !!open; }   // (away: its floor is painted as floor while it is gone, js/facilitydecor.js _fpFloorBuild; a solid opened for good keeps its paint)
     const cells = [..._fpSolidCells(s)], covered = [], left = [], gone = new Set();
     for (const k of cells) {
         const [x, y] = k.split(",").map(Number);

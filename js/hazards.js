@@ -129,8 +129,14 @@ function drawAcidOnTile(tx, ty, px, py) {
         const a = Math.max(0, Math.min(1, (P.until - f) / 60, (f - P.born + 1) / 8)), dx = P.x - tx, dy = P.y - ty, cx = px + (dx - dy) * TILE_W, cy = py + TILE_H + (dx + dy) * TILE_H, rx = P.r * TILE_W * 1.4142, ry = P.r * TILE_H * 1.4142;
         ctx.save();
         ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + TILE_W, py + TILE_H); ctx.lineTo(px, py + 2 * TILE_H); ctx.lineTo(px - TILE_W, py + TILE_H); ctx.closePath(); ctx.clip();
-        const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, rx); g.addColorStop(0, "rgba(150,255,70," + (0.62 * a).toFixed(3) + ")"); g.addColorStop(0.7, "rgba(110,225,40," + (0.5 * a).toFixed(3) + ")"); g.addColorStop(1, "rgba(80,190,30,0)");
-        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 6.2832); ctx.fill();
+        // a soft puddle of a few overlapping lobes, drawn as circles in a space squashed to the floor's 2:1 (so it fades the same way to every side)
+        ctx.save(); ctx.translate(cx, cy); ctx.scale(1, ry / rx);
+        for (const [ox, oy, k] of [[0, 0, 0.92], [0.42, -0.18, 0.55], [-0.4, 0.22, 0.6], [0.12, 0.42, 0.5]]) {
+            const x0 = ox * rx, y0 = oy * rx, R = k * rx, g = ctx.createRadialGradient(x0, y0, 1, x0, y0, R);
+            g.addColorStop(0, "rgba(150,255,70," + (0.5 * a).toFixed(3) + ")"); g.addColorStop(0.65, "rgba(110,225,40," + (0.38 * a).toFixed(3) + ")"); g.addColorStop(1, "rgba(80,190,30,0)");
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x0, y0, R, 0, 6.2832); ctx.fill();
+        }
+        ctx.restore();
         // bubbles that rise in it and pop
         for (let i = 0; i < 6; i++) {
             const ph = ((f + i * 23) % 60) / 60, ang = i * 2.4 + Math.floor((f + i * 23) / 60) * 1.3, rr = 0.55 * ((i * 37) % 10) / 10, bx = cx + Math.cos(ang) * rx * rr, by = cy + Math.sin(ang) * ry * rr, br = 1.5 + 2.5 * ph;
