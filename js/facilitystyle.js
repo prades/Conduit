@@ -149,7 +149,6 @@ function _fpStyleWall(it, Hd) {
         else _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out, it.inkBack, cap);
     }
     if (it.nbBand) return;   // (only the slab: the neighbouring room's own wall face stands in front of this one)
-    if (Hd < 1) return;      // (cut right down in front of the player, js/facilityplay.js _fpCutAt: its top only)
     // the piece's frame on screen: a point at (u along the piece, z up) is (X0 + DX u, Y0 + DY u - z): no arrays per point
     const a0 = _fpP(ax, ay, 0), b0 = _fpP(bx, by, 0), X0 = a0[0], Y0 = a0[1], DX = b0[0] - X0, DY = b0[1] - Y0;
     // (each base band runs a hair past both ends, so neighbours overlap and leave no seam; the shading over it does not)

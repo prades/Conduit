@@ -669,7 +669,6 @@ function drawFacilityItem(it) {
     _fpBase = it.base || 0;
     const lv = (typeof _fpItemLight === "function" && _fp.light) ? _fpItemLight(it) : 1, real = ctx;
     if (lv < 0.12 && (it.fp === "wdecor" || it.fp === "fixture")) return;   // (posters and signs in a dark room are all but invisible: not drawn)
-    if (it.fp === "wdecor" && FP_CUT_HIDE.has(it.kind) && _fpCutAt(it.x, it.y) > 0.05) return;   // (nor the dressing on a wall cut down in front of the player: it would float over it)
     if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
     try {
@@ -699,26 +698,16 @@ function _fpSkirts(items) {
         const lo = Math.min(facilityHeightAt(it.a[0], it.a[1], _fp.F), facilityHeightAt(it.b[0], it.b[1], _fp.F), facilityHeightAt(it.x, it.y, _fp.F)) * FP_ELEV_PX; if ((it.base || 0) - lo > 2) it.drop = Math.max(it.drop || 0, (it.base || 0) - lo);
     }
 }
-// WALLS IN FRONT OF THE PLAYER ARE CUT DOWN (the owner, 2026-11-09: "Cut the wall down", of the robot hidden behind the Stair Room's raised wall, which read as a hole; it supersedes "walls do not react
-// to the player"): a wall on the camera's side of the player (nearer the camera than the player) is drawn lower, opaque, down to a low parapet FP_CUT.low px over the player's floor (never below its own
-// base): right down within FP_CUT.near tiles, easing back to its full height by FP_CUT.far (the agent's numbers, provisional). Glass, doors, the catwalks' rails and frames are left as they are. Drawing
-// only: it reads where the player is and changes nothing. Rock: js/facilitydecor.js _fpRockCut.
-const FP_CUT = { near: 2, far: 3.2, low: 30 };
-// the wall dressing not drawn on a wall cut down (it would float over it); the rest is drawn whatever: doors, relays, the drillable rubble, the garage doors, hatches, the nest's holes
-const FP_CUT_HIDE = new Set(["pipe", "panel", "vent", "screen", "wall_light", "hazard_sign", "poster", "cable_run", "exit_sign", "graffiti", "monitor_bank", "board", "shelf", "clock", "sign", "banner", "beam", "ooze_drip", "moss", "vein", "lamp", "scoreboard", "bulbs", "crack", "plate", "chain", "claw", "gun_rack", "ladder"]);
-function _fpCutAt(x, y) {   // how far a wall at (x, y) is cut: 0 (full height) to 1 (right down)
-    if (typeof player === "undefined" || !player) return 0;
-    const px = player.visualX, py = player.visualY; if (x + y <= px + py + 0.3) return 0;   // (behind the player, or level with it)
-    const d = Math.hypot(x - px, y - py); return d >= FP_CUT.far ? 0 : d <= FP_CUT.near ? 1 : (FP_CUT.far - d) / (FP_CUT.far - FP_CUT.near);
-}
-function _fpCutH(H, base, k) { if (!(k > 0)) return H; const low = Math.max(0, Math.min(H, _fpCam + FP_CUT.low - (base || 0))); return Math.round(H + (low - H) * k); }   // a wall H px tall on `base`, cut k (whole px: the shading's cached gradients are kept by height)
 function _fpDrawWall(it) {
     const glass = it.kind === "glass", c = FP_WALL[it.kind] || FP_WALL.wall, H = FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0));
+    // a wall is always drawn at its full height, whatever the player is doing: it never fades, shrinks or reacts when the player comes close
     if (it.kind === "rock") { if (typeof caveWallDraw === "function" && caveWallDraw(it)) return; return _fpDrawRock(it, H); }   // rock formations: the modelled rock (js/cavewalls.js; on the preview, ?walls=3d, until approved), else drawn (js/facilitydecor.js)
     if (it.kind === "spill" && typeof _fpDrawSpillLip === "function") return _fpDrawSpillLip(it);   // a low lip the water spills over (the Sewers' Nest: js/facilitysewers.js)
+    if (it.kind === "open") return;                            // an edge with no wall drawn (solid still): the warehouse's floor's edge onto Teleport Room 2's deck (js/facilitygrow.js; build 2026-11-09uu)
+    if (it.kind === "deck_rail") return _fpDrawRail(it);       // a raised floor's open edge with a rail: Teleport Room 2's deck over the warehouse (as the catwalks' edge: js/facilitydecor.js)
     if (it.scaffold) return _fpDrawRail(it);                   // the catwalks: an open deck with a rail, not a room (js/facilitydecor.js)
     if (it.support) return _fpDrawSupport(it, H - FP_WALL_H);  // the arena's frame under the deck: open steel, you see through it
-    const Hd = glass ? H : _fpCutH(H, it.base, _fpCutAt(it.x, it.y));   // (in front of the player: cut down)
+    const Hd = H;   // walls never react to the player
     if (!glass && facilityStyleRoom(it.room)) return _fpStyleWall(it, Hd);   // (the crystal laboratory style)
     if (/^deck_window_arena/.test(it.win || "") && it.room === "arena") return _fpDrawDeckCliff(it);   // the deck stands on a thick rock cliff (js/facilitydecor.js)
     if (glass && facilityStyleRoom(it.room)) return _fpStyleGlass(it, H);

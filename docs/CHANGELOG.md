@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09uu` · branch `claude/start-game-project-HSh7Z` · the wall cut-down reverted; the hole plugged
+- **Walls no longer cut down when you come near** (the owner: "Revert the changes where the walls strip down whenever you get near them"). Build `09ss`'s cut-down is gone; walls are drawn as they were in `09rr`.
+- **The hole at the warehouse's corner is plugged** (the owner: "I wanted you to simply remove one wall that is near the teleporter room and the warehouse", "just plugging that hole that I circled", "This looks correct"). The wall between the warehouse and Teleport Room 2 is gone. Teleport Room 2's floor runs to the warehouse's edge behind a deck rail, and its wall to the stair room runs up to the glass's corner, so no gap is left between the walls there. Nobody walks or shoots across the rail. The screens, pipe, vent and light on that wall went with it.
+- Tests: `tests/facilityplay.js` ("THE HOLE PLUGGED"; walls never react, as before `09ss`). The route-straightening check now clears the line-test cache before each of its two runs, so it compares them fairly.
+
 ### Build `2026-11-09tt` · branch `claude/start-game-project-HSh7Z` · the purification's ambush
 - **The queen comes later** (the owner: "the queen does not appear until the player halfway installs the purification module"). Nobody is at her post at first.
 - **Three toxic ants at the install's halfway**: a tank, a striker and a worker, "a bit bigger and tougher" (level 8, ×1.5 size and health). The install pauses until all three are dead. Their bites poison your followers over time (green bubbles), never you.

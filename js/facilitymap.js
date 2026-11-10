@@ -699,11 +699,7 @@ const FACILITY_MAP = {
         { id: "cables_13", room: "teleport_room_2", kind: "cables", path: [[980, 632], [980, 710], [1004, 710]], colour: "#a64dff" },
         { id: "scorch_3", room: "teleport_room_2", kind: "scorch", at: [1060, 660], radius: 18, colour: "#0c0c10" },
         { id: "debris_6", room: "teleport_room_2", kind: "debris", at: [990, 750], radius: 20, n: 5 },
-        { id: "screen_5", room: "teleport_room_2", kind: "screen", a: [970, 610], b: [1010, 610], colour: "#a64dff" },
-        { id: "screen_6", room: "teleport_room_2", kind: "screen", a: [1030, 610], b: [1070, 610], colour: "#6adfff" },
-        { id: "pipe_11", room: "teleport_room_2", kind: "pipe", a: [950, 610], b: [1090, 610], colour: "#a64dff", z: 64 },
-        { id: "vent_9", room: "teleport_room_2", kind: "vent", a: [1010, 610], b: [1030, 610] },
-        { id: "wall_light_12", room: "teleport_room_2", kind: "wall_light", a: [950, 610], b: [1090, 610], colour: "#c9a0ff" },
+        // (screen_5, screen_6, pipe_11, vent_9 and wall_light_12 hung on Teleport Room 2's north wall, the wall between it and the warehouse: they went with it, build 2026-11-09uu: js/facilitygrow.js)
         { id: "poster_13", room: "teleport_room_2", kind: "poster", a: [950, 710], b: [950, 750] },
         { id: "vent_10", room: "teleport_room_2", kind: "vent", a: [950, 750], b: [950, 770] },
         { id: "panel_4", room: "teleport_room_2", kind: "panel", a: [950, 770], b: [950, 790] },
