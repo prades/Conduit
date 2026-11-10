@@ -26,6 +26,7 @@ const SUITES = [
     ['targeting rules',          'targets.js'],
     ['player weapon',            'weapon.js'],
     ['fire bombs',               'firebombs.js'],
+    ['the hazard containers: explosive and corrosive flasks (a shot sets one off, a blast or an acid pool, back after a minute), moved by FLUX MOVE', 'hazards.js'],
     ['the player\'s ultimate',   'ultimate.js'],
     ['effects plan',             'effects.js'],
     ['combat readability: the bite in two beats, one bite one unit, the cap, the numbers, the bar, DEFEATED', 'combat.js'],

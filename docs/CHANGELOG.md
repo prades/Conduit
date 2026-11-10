@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09yy` · branch `claude/start-game-project-HSh7Z` · the hazard containers
+- **Explosive and corrosive containers on the map** (the owner: "containers on the map that contain explosives ... and some that contain acid ... and the flux move can work on it"; the look, of ten designs and four combinations: "4 Flask in hex armour"): two explosive flasks in the arena and a corrosive one in the sewer, north of the dam's pumps. FLUX MOVE moves them like a crate.
+- **A shot sets one off**, whoever fires it. The explosive one's blast hurts everyone within 2 tiles, your side included, and sets off any other container caught in it. The corrosive one bursts into an acid pool about 1.5 tiles across that eats at anyone standing in it for 10 seconds. A container that went off comes back on its tile after a minute. (No compressed air one: "Maybe no compressed air".) The numbers are provisional.
+- TESTS_LINE
+
 ### Build `2026-11-09xx` · branch `claude/start-game-project-HSh7Z` · the Crystal in a bubbling glass tank
 - **The crown and its posts are gone** (the owner: "Remove the cap/roof and the columns"): the machine in the ceiling, its posts, struts and energy lines, and the rings and sparks rising off the pad.
 - **The Crystal floats in an oval glass tank** ("I want want oval tank that bubbles"; of the draft, "No hoops, plain glass"; "The crystal should rise within it"): plain glass in a slim steel collar in the pad's well, glowing liquid, bubbles rising and bursting at the surface. The Crystal slowly rises and sinks in the middle; its health bar is over the tank.

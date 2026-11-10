@@ -322,3 +322,4 @@ Letting some units pass over some objects means a second floor, or a cost on cel
 - 2026-11-06, build `2026-11-06g`: Build 2 built (the test room, `?fluxlab`); to main at the owner's word. The owner chose Milestone Two next (§13: the study and the questions).
 - 2026-11-06, build `2026-11-06h`: Milestone Two's cover, walls and sight built from the owner's seven answers (§13; `COMBAT.md` §8); on the branch.
 - 2026-11-06: build `2026-11-06h` to main at the owner's word. Build `2026-11-06i`: the moves that strike at once need sight ("Need sight"; `COMBAT.md` §8.5); on the branch.
+- 2026-11-10, build `2026-11-09yy`: the hazard containers (two explosive flasks in the arena, a corrosive one in the sewer; js/hazards.js, `FACILITY.md` "The hazard containers") are FLUX MOVE's too: 2 tiles a move, like a crate; moving one never sets it off, and one that went off cannot be picked until it is back.

@@ -761,5 +761,14 @@ The owner, 2026-11-09: "Audit for optimization", "Finish the optimization audit"
 
 **History:** the check of build `2026-11-09d` found 2–4 above first. It measured route straightening at about 4,200 walkability tests a frame, the catch-up steps at about a fifth of the busy fight's time and the forms' sheets at about 450 MB (all forms then; 267 MB for today's 21).
 
+## The hazard containers (built in `2026-11-09yy`; `FACILITY.md`, "The hazard containers")
+The agent's numbers and readings, to tune once the owner has played with them:
+1. **The blast:** 30 at the middle, falling to 15 at its edge, 2 tiles across its radius; the player loses a heart (any hit costs one). Followers and clones are hurt like creatures ("your side included").
+2. **The acid:** 3 every half second for 10 s, in a pool 0.75 tiles from its middle; no lasting effect after stepping out.
+3. **The chain:** a container caught in a blast goes off 12 frames later.
+4. **What sets one off:** a shot that stops on it (any side's) and another container's blast. Not a fire bomb that bounces off it, a melee hit, or an ability's area.
+5. **The spots:** the arena's two at 35,47 and 38,54 (8 tiles apart, so one does not set off the other unless FLUX MOVE brings them together); the sewer's at -3,112 north of the dam's pumps.
+6. **The compressed air one** was left out ("Maybe no compressed air"): it could come back later as a container that throws everyone back without hurting them.
+
 ## MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
 The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; today's electric Brawler (the STATIC ORB, its moves and all) becomes the MAGNETIC Brawler; the electric Brawler gets a new design. Not designed in detail and not built. Seven points are open, listed in `CONVERSION.md` §13 (how electric converts, MAGNETIC's rules and other forms, the new electric Brawler, saved Static Orbs, the name, the retired electric Brawler forms).

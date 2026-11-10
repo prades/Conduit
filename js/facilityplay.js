@@ -126,6 +126,39 @@ function facilityIceSet(rects) {
     return true;
 }
 function facilitySolidIsOpen(id) { const s = _fp && _fp.F && _fp.F.solids.find(q => q.id === id); return !!(s && s.open); }
+// ── A SOLID TAKEN AWAY FOR A WHILE AND PUT BACK: a hazard container that goes off, and comes back a minute later (js/hazards.js) ──
+// Done as FLUX MOVE carries out a move (facilitySolidMove), in one step: marked open (or closed again) in the map and in its planning copy; the floor it stands on becomes floor (or stops being floor: the cells,
+// the world's tiles, the floor's paint); the stretches of floor relabelled only where they changed; the cached routes, spots and spawners' cells let go, and every route in flight planned again. A body is never on
+// it when it closes (js/hazards.js waits for the tile to be clear), but one that is would be put on the nearest floor. Returns true when something changed.
+function facilitySolidSet(id, open) {
+    if (!_fp || !_fp.F || !_fp.cells || !_fp.cellsP) return false;
+    const F = _fp.F, P = _fp.P, s = F.solids.find(q => q.id === id), p = P ? P.solids.find(q => q.id === id) : null;
+    if (!s || !!s.open === !!open) return false;
+    s.open = !!open; if (p) p.open = !!open;
+    const cells = [..._fpSolidCells(s)], covered = [], left = [], gone = new Set();
+    for (const k of cells) {
+        const [x, y] = k.split(",").map(Number);
+        if (open) {
+            if (!_fp.cells.has(k) && facilityWalkable(x, y, F)) { const room = facilityRoomAt(x, y, F); if (room) { const t = _fpFloorTile(x, y, room.id); world.push(t); worldTileMap.set(k, t); _fp.cells.set(k, [x, y]); left.push(k); } }
+            if (_fp.cells.has(k) && !_fp.cellsP.has(k) && P && facilityWalkable(x, y, P)) _fp.cellsP.set(k, [x, y]);
+        } else {
+            if (_fp.cells.has(k) && !facilityWalkable(x, y, F)) { _fp.cells.delete(k); gone.add(k); covered.push(k); }
+            if (_fp.cellsP.has(k) && !(P && facilityWalkable(x, y, P))) _fp.cellsP.delete(k);
+        }
+    }
+    if (gone.size) { world = world.filter(t => !gone.has(t.x + "," + t.y)); for (const k of gone) worldTileMap.delete(k); }   // (a new list, not one spliced: as facilitySolidMove)
+    if (typeof facilityFloorRedo === "function") facilityFloorRedo(new Set(cells));
+    _fpCompsMoved(covered, left);
+    _fp.edges.clear(); _fp.paths.clear(); _fp.spawnCells = null; _fp.roomCells = null; _fp.fromCells = null; _fp.spiderCover = null;
+    const units = (typeof actors !== "undefined" ? actors : []).concat(typeof player !== "undefined" && player ? [player] : []);
+    for (const a of units) {
+        if (!a || a.dead) continue;
+        if (a._fpPath) { a._fpPath = null; a._fpAt = 0; a._fpFail = 0; }
+        if (gone.size && gone.has(Math.round(a.x) + "," + Math.round(a.y))) { const c = _fpNearestCellOpen(a.x, a.y); if (c) { a.x = c[0]; a.y = c[1]; if (a === player) { player.targetX = c[0]; player.targetY = c[1]; player.fpPath = null; } } }
+    }
+    if (typeof player !== "undefined" && player && player.fpPath && player.fpPath.length) { const np = facilityPath(player.x, player.y, player.targetX, player.targetY); player.fpPath = np || null; if (!np) { player.targetX = player.x; player.targetY = player.y; } }
+    return true;
+}
 // ── A SOLID MOVED IN PLAY: the Flux technician's FLUX MOVE (js/fluxmove.js checks the move first, every rule of it: this only carries it out; docs/FLUX-MOVEMENT.md) ──
 // ONE TRANSACTION: the solid's outline in the map and in its planning copy (and both bucket indexes), the floor it leaves and the floor it covers (the walkable cells, the floor tiles and their paint), its draw
 // pieces and its sprite's caches, the stretches of floor (relabelled only where they changed: a whole relabelling costs tens of ms), the cached routes and spawn spots, and every route in flight (each unit plans
@@ -444,6 +477,7 @@ function facilityResetState() {
     if (typeof equipReset === "function") equipReset();   // the hand of equip cards and the player's slots (the collection of unlocked cards stays: js/cards.js)
     if (typeof activeFireEruption !== "undefined") activeFireEruption = null;
     if (typeof fireBombs !== "undefined") { fireBombs = []; fireTiles = new Map(); }
+    if (typeof hazardsReset === "function") hazardsReset();   // the hazard containers' fuses, comebacks, acid pools and blasts (js/hazards.js)
     frame = 0; shake = 0; shardCount = STARTING_SHARDS; unlockedElements = new Set(elementsFound()); lifetimeKills = 0;
     // (after the clock is back at 0: these count from it)
     if (typeof serumReset === "function") serumReset();   // the serum's pools and the Mutator's laboratory (js/serum.js)
@@ -750,6 +784,7 @@ function _fpFaceX(it, u0, u1, z0, z1, fill, stroke) { const x = it.x + 0.5, y0 =
 const FP_AMBER = "#ffb347";
 function _fpDrawProp(it) {
     const kind = it.kind, seed = it.seed || 0, f = typeof frame !== "undefined" ? frame : 0;
+    if ((kind === "hazard_explosive" || kind === "hazard_corrosive") && typeof hazardDrawProp === "function" && hazardDrawProp(it)) return;   // a hazard container: its sprite and its glow, or nothing while it is away (js/hazards.js)
     if (typeof facilitySpriteDraw === "function") { if (facilitySpriteDraw(it)) return; if (it.spriteOnly || kind === "bridge") return; }   // every prop in 3D (js/propsprites.js); a rim cell or a bridge piece is nothing without its sprite
     if (_fpDecorProp(it)) return;   // the dressing's furniture (js/facilitydecor.js)
     if (kind === "computer_desk") {

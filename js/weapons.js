@@ -107,6 +107,7 @@ function fireLaserShot(foe) {
     const reach = Math.min(_fp && _fp.F && typeof facilityShotReach === "function" ? facilityShotReach(player.x, player.y, player.x + ux * far, player.y + uy * far, _fp.F) : far,
                            typeof techReefShotReach === "function" ? techReefShotReach(player.x, player.y, player.x + ux * far, player.y + uy * far) : far);   // (REEF's rock stops it too, as a crate: js/techabilities.js)   // (as far as the beam gets: a wall or cover stops it, the shooter's own cover excepted)
     const hits = reach >= d - 0.3;   // (the target itself, unless the beam stops short of it)
+    if (!hits && typeof hazardShotNear === "function") hazardShotNear(player.x + ux * reach, player.y + uy * reach);   // (a hazard container that stopped the beam goes off: js/hazards.js)
     if (hits) { applyDamage(foe, dmg, src, null, false, false, DMG_HIT_GUN); if (role) playerRoundHit(role, foe, src); }
     // whatever stands in the line behind it, a little further on, is hit for less
     const through = role ? [] : null;

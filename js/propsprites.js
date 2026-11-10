@@ -13,6 +13,8 @@
 //                drawn since build 2026-11-09xx); the light that moves (the chasers on the inlaid rings, the well, the lamps) is painted live on the marks the baker records. The flat drawing is kept for a sheet that has not arrived.
 //   crystaltank  THE CRYSTAL'S TANK (build 2026-11-09xx): `back`, the glass's far wall and the collar it sits in, drawn with the pad; `front`, its near wall, drawn after the crystal (js/facilitystyle.js FP_TANK:
 //                the liquid, its surface and the bubbles are painted live between them).
+//   hazard       THE HAZARD CONTAINERS (build 2026-11-09yy; js/hazards.js): one tile, `hazard_explosive` and `hazard_corrosive` (a flask in hex armour, glowing orange or acid green); not drawn while one
+//                that went off is away (js/hazards.js hazardDrawProp).
 //   bridge       a footbridge from each tank's top to the catwalks' deck: `bridges` in js/facilitymap.js, drawn as a row of one-tile pieces (mid, with a tank-end and a deck-end) at the deck's height.
 // The light: a prop in the dark is dimmed by drawing its silhouette in the dark navy the flat drawing fades to, and the lit sprite over it at the room's light level (as the dimmed pen does for colours).
 const PS = { dark: "#060b16", aimSteps: 16 };
@@ -120,6 +122,7 @@ const PS_FAMILY = {
     teleporter: "tech", charger: "tech", relay: "tech", mech_bay: "tech", locker: "tech", cabinet: "tech", display_case: "tech", telescope: "tech", junction: "tech",
     crate: "cargo", crate_stack: "cargo", barrel: "cargo", floodlight: "cargo", barrier: "cargo", pallet_rack: "cargo",
     freezer_bank: "cold", toppled_rack: "cold", plant: "plant", sentry: "sentry", semi_truck: "truck", liquid_reserve: "tank", tank: "tank", bridge: "bridge",
+    hazard_explosive: "hazard", hazard_corrosive: "hazard",
 };
 const _psIndex = {};
 function _psNames(fam) {   // the variants of a sheet, parsed: { kind: [{ name, dims, state, style }] }

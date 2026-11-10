@@ -271,6 +271,9 @@ const FACILITY_MAP = {
         { id: "crate_5", room: "arena", shape: "rect", rect: [970, 1110, 990, 1130], status: "placed", kind: "crate", flux: { range: 2 } },
         { id: "crate_6", room: "arena", shape: "rect", rect: [970, 1130, 990, 1150], status: "placed", kind: "crate", flux: { range: 2 } },
         { id: "crate_stack_3", room: "arena", shape: "rect", rect: [970, 970, 990, 990], status: "placed", kind: "crate_stack", flux: { range: 2 } },
+        // THE HAZARD CONTAINERS (build 2026-11-09yy; the owner, 2026-11-10: "two explosive ones in the arena"; js/hazards.js): flasks in hex armour that FLUX MOVE carries like a crate; a shot sets one off
+        { id: "hazard_x1", room: "arena", shape: "rect", rect: [690, 910, 710, 930], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "An explosive flask on the open floor between the north barrier and the north reserve." },
+        { id: "hazard_x2", room: "arena", shape: "rect", rect: [750, 1050, 770, 1070], status: "placed", kind: "hazard_explosive", flux: { range: 2 }, note: "An explosive flask on the open floor between the south barrier and the south reserve." },
         { id: "console_4", room: "catwalks", shape: "rect", rect: [1030, 810, 1090, 830], status: "placed", kind: "console" },
         { id: "chair_1", room: "catwalks", shape: "rect", rect: [1050, 830, 1070, 850], status: "placed", kind: "chair" },
         { id: "toolbox_1", room: "catwalks", shape: "rect", rect: [1090, 810, 1110, 830], status: "placed", kind: "toolbox" },
@@ -370,6 +373,7 @@ const FACILITY_MAP = {
         { id: "sewer_pump_2", room: "sewers", shape: "rect", rect: [1180, 1000, 1200, 1040], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A second pump housing, turned the other way, further south on the dam." },
         { id: "sewer_valve_1", room: "sewers", shape: "rect", rect: [1240, 980, 1260, 1000], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing beside the first pump (the owner, 2026-11-07: \"add valves\")." },
         { id: "sewer_valve_2", room: "sewers", shape: "rect", rect: [1200, 1020, 1220, 1040], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing beside the second pump." },
+        { id: "hazard_c1", room: "sewers", shape: "rect", rect: [1200, 940, 1220, 960], status: "placed", kind: "hazard_corrosive", flux: { range: 2 }, note: "A corrosive flask on the open floor north of the dam's pumps (the owner, 2026-11-10: \"we're going to put one in the sewer\"; js/hazards.js)." },
         // THE PUMP ROOM (the owner, 2026-11-07: "Machinery elsewhere", then "Widen a section"): a chamber opened off the north walkway (x 440 to 560, y 780 to 860) with machinery to move for cover
         { id: "sewer_pump_3", room: "sewers", shape: "rect", rect: [440, 780, 480, 800], status: "placed", kind: "pump", flux: { range: 2, turn: true }, note: "A pump housing against the pump room's back wall." },
         { id: "sewer_valve_3", room: "sewers", shape: "rect", rect: [520, 780, 540, 800], status: "placed", kind: "valve", flux: { range: 2 }, note: "A valve housing against the pump room's back wall." },

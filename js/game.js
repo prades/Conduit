@@ -745,6 +745,7 @@ function render() {
     }
 
     if (typeof fireBombsTick === "function") fireBombsTick();   // the bouncing fire bombs and the ground they burn (js/firebombs.js)
+    if (typeof hazardsTick === "function") hazardsTick();   // the hazard containers: fuses, blasts, acid pools, comebacks (js/hazards.js)
 
     // (A creature loses health only to a hit, a burn or a hazard: it never bleeds on its own. It once lost 0.01 a frame, which killed an idle creature in time and paid shards, DNA and scrap for it.)
 
@@ -1055,6 +1056,7 @@ function render() {
             else _drawFloorTile(ctx, px, py, dist);
             if (typeof drawEvoGroundOnTile === "function") drawEvoGroundOnTile(obj.x, obj.y, px, py);   // pools of evolved followers lie on the floor
             if (typeof drawFireOnTile === "function") drawFireOnTile(obj.x, obj.y, px, py);   // burning ground (js/firebombs.js)
+            if (typeof drawAcidOnTile === "function") drawAcidOnTile(obj.x, obj.y, px, py);   // a hazard container's acid (js/hazards.js)
             facilityDrawFloorOn(obj, px, py);   // the facility's floor coverings and decals (js/facilitydecor.js)
             if (typeof drawSerumOnTile === "function") drawSerumOnTile(obj.x, obj.y, px, py);   // a healing serum's pool (js/serum.js)
             if (typeof techDrawOnTile === "function") techDrawOnTile(obj.x, obj.y, px, py);   // a Frost Patch's ice, a Blight Spider's pool (js/techabilities.js)
@@ -1171,6 +1173,7 @@ function render() {
             const st = facilityShotStopAt(p.x - p.vx, p.y - p.vy, p.x, p.y, p.ox, p.oy) || (typeof techReefShotStop === "function" ? techReefShotStop(p.x - p.vx, p.y - p.vy, p.x, p.y, p.ox, p.oy) : null);   // (and at REEF's rock and crystal, as at a crate: js/techabilities.js)
             if (st) {
                 p.x -= p.vx; p.y -= p.vy;
+                if (st.solid && typeof hazardShot === "function") hazardShot(st.solid);   // a shot that stops on a hazard container sets it off, whoever fired it (js/hazards.js)
                 if (typeof elementEffects !== "undefined") elementEffects.push({ type: "impact", x: st.x, y: st.y, color: p.color || "#ffffff", radius: 0.35, life: 12 });
                 if (p.onLand) p.onLand();
                 return false;
@@ -1211,6 +1214,7 @@ function render() {
         return !hit && p.life > 0;
     });
     if (typeof drawFireBombs === "function") drawFireBombs();   // fire bombs in flight (js/firebombs.js)
+    if (typeof drawHazardBlasts === "function") drawHazardBlasts();   // a hazard container's blast or splash (js/hazards.js)
     if (typeof facilityDrawOverlay === "function") facilityDrawOverlay();   // the monitor lamp's colour, flares, CCTV marks and the station plate (js/facilitytutorial.js)
 
     ctx.restore();
