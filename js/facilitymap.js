@@ -316,7 +316,7 @@ const FACILITY_MAP = {
         { id: "wh_barrel_1", room: "show_room", shape: "rect", rect: [1050, 580, 1070, 600], status: "placed", kind: "barrel" },
         { id: "wh_barrel_2", room: "show_room", shape: "rect", rect: [1070, 560, 1090, 580], status: "placed", kind: "barrel" },
         { id: "sentry_chamber_1", room: "crystal_chamber", shape: "rect", rect: [330, 430, 350, 450], status: "placed", kind: "sentry", note: "An automatic sentry guarding the chamber's door." },
-        { id: "sentry_chamber_2", room: "crystal_chamber", shape: "rect", rect: [290, 470, 310, 490], status: "placed", kind: "sentry" },
+        // (sentry_chamber_2, by the chamber's south wall, is gone: the owner, 2026-11-10, "I don't like how there's two inside of the crystal room. So maybe we can make one of those disappear"; build 2026-11-09ww)
         { id: "sentry_hall", room: "lab_hallway", shape: "rect", rect: [750, 490, 770, 510], status: "placed", kind: "sentry", note: "A sentry on the hallway's north-east corner." },
         { id: "charger_hall", room: "lab_hallway", shape: "rect", rect: [390, 630, 410, 650], status: "placed", kind: "charger", note: "A charging station: it refills your ammunition once the hallway has power." },
         // ── THE ARMORY (x 190-350, y 950-1150): a terminal and a workbench in the middle, crates in the corners, lockers and barrels along the south wall; the door's landing (x 310-350, y 1070-1110) stays clear ──

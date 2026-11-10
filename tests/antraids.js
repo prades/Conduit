@@ -73,11 +73,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE TURRETS (js/antraids.js; js/stations.js facilitySentryTick)');
-    check('three, each whole at SENTRY.hp; they run on the Crystal ALONE: every relay off, a turret fires at a creature in range and the Crystal pays for the shot; at the reserve it holds its fire', () => {
+    check('two (since build 2026-11-09ww: one in the Crystal Chamber, one in the hallway), each whole at SENTRY.hp; they run on the Crystal ALONE: every relay off, a turret fires at a creature in range and the Crystal pays for the shot; at the reserve it holds its fire', () => {
         const r = J(`(function(){ __wild(); __crystal(300); sentriesStart(); const all = sentryItems(), it = __sentry('sentry_hall'); for (const k in _fp.relays) _fp.relays[k].online = false; facilityBlackoutSet(true);
             const a = __ant(it.x + 3, it.y); a.health = a.maxHealth = 1e6; followerProjectiles = []; it.cd = 0; const h0 = crystal.health; facilitySentryTick(); const o = { n: all.length, hp: all.every(i => i.hp === SENTRY.hp), shots: followerProjectiles.length, paid: Math.round((h0 - crystal.health) * 10) / 10 };
             __crystal(30); it.cd = 0; followerProjectiles = []; facilitySentryTick(); o.reserve = followerProjectiles.length; facilityBlackoutSet(false); __wild(); __crystal(300); followerProjectiles = []; return o; })()`);
-        same(r.n, 3, 'the turrets'); same(r.hp, true, 'a turret not whole'); same(r.shots, 1, 'it did not fire with the relays off'); same(r.paid, 0.3, 'the shot\'s cost'); same(r.reserve, 0, 'it fired at the reserve');
+        same(r.n, 2, 'the turrets'); same(r.hp, true, 'a turret not whole'); same(r.shots, 1, 'it did not fire with the relays off'); same(r.paid, 0.3, 'the shot\'s cost'); same(r.reserve, 0, 'it fired at the reserve');
     });
     check('a turret aims only at what its shot can hit: never at a RECRUIT WAITING AT ITS POST (the Experiment Lab\'s is in the hallway turret\'s range, through the wall: it fired at that one forever, every shot paid from the Crystal); at a creature, yes', () => {
         const r = J(`(function(){ __wild(); __crystal(200); sentriesStart(); const h = __sentry('sentry_hall'), lab = actors.find(a => a.isNeutralRecruit && !a.dead && Math.hypot(a.x - h.x, a.y - h.y) < SENTRY_RANGE);

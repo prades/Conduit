@@ -66,7 +66,7 @@ function playerRoundJump(role, from, src, dmg, skip) {
 
 // ── THE TECHNOMANCER'S SIX (the following update's Part 1b, build 2026-11-02i) ──
 //   (rule 2)           its PUNCH (js/mutator.js _mxStrike, the gauntlet) and its ARC (js/technomancer.js _tcZap) take the role's element, for the triangle only (playerHitElement; the arc's hit: js/damage.js dmgArcHit)
-//   FORGEMASTER        fire: the facility's three sentries' rounds BURN (js/stations.js, playerSentryHit); your repairs take kit.repair of the time, a sentry's (playerRepairShare; a relay's too until build 2026-11-07qq, when relay repairs went)
+//   FORGEMASTER        fire: the facility's sentries' rounds BURN (js/stations.js, playerSentryHit); your repairs take kit.repair of the time, a sentry's (playerRepairShare; a relay's too until build 2026-11-07qq, when relay repairs went)
 //   SMOG ENGINEER      toxic: every ONLINE relay WEAKENS every creature within kit.relays.radius tiles of it, on every card tick while it stays (js/cards.js equipTick → playerRolesTick)
 //   CRYO TECH          ice: the same, and it SLOWS
 //   ARC WARDEN         electric: while your lamp is OVERCHARGED (a POWER CELL), every kit.lamp.every frames every creature in its light (js/facilitytutorial.js facilityLampReach), in sight, takes the arc's zap

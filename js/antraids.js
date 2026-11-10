@@ -10,7 +10,7 @@
 //                  (The facility's own alarm, js/alarm.js, is not raised: it would rouse every creature, the Sewers' brood too, and its end calms them all.)
 //   THE GOAL       the nearest turret still standing, then the next, then the Crystal (raidGoal). They bite a turret as they bite the Crystal (js/predator.js bite).
 //   THE CLOCK      the first raid RAID.every frames after the Sewers are found (js/quests.js discoveredAt), then every RAID.every; a load starts the clock again (PROVISIONAL: the clock is not saved).
-//   THE TURRETS    the three automatic sentries of the map (two in the Crystal Chamber, one in the Main Hallway: js/facilitymap.js kind "sentry"); they fire at the nearest creature in range while the
+//   THE TURRETS    the two automatic sentries of the map (one in the Crystal Chamber by its door, one in the Main Hallway: js/facilitymap.js kind "sentry"; a second in the chamber went in build 2026-11-09ww); they fire at the nearest creature in range while the
 //                  Crystal has power (js/stations.js facilitySentryTick, js/crystalpower.js: each shot is paid from it), each with SENTRY.hp: a raid's bites wear it down and at 0 it is BROKEN: it
 //                  stops, smokes, and a REPAIR station is on it (stand there SENTRY.repair frames, nothing paid: STATION_KINDS.sentry_repair, a build). The damage is saved (js/facilitysave.js).
 // SENTRY.hp is PROVISIONAL (the owner's "Sturdy": "a raid of 3 needs a good while to wreck one; it's often still shooting when you arrive"). MEASURED (2026-11-01, the real loop, nobody defending, you away

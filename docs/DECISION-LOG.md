@@ -2753,3 +2753,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner: "Need to add Bloom energy cards ASAP." Until then a BLOOM energy card came only with a bred BLOOM egg or the conversion, so an evolved BLOOM follower's attacks rarely unlocked.
 - Pack 1 and Series 2 deal BLOOM energy cards once the purification module is installed and has run, as BLOOM's other cards and its breeding do. BLOOM is then one more element of their energy cards, each as likely. When they start is the agent's reading. `docs/ENERGY-CARDS.md` rule 19.
 - Supersedes rule 9's "BLOOM's are not dealt by a pack" (`docs/ENERGY-CARDS.md`).
+
+## DECISION: The sentries: one in the Crystal Chamber, a sleek laser sentry (2026-11-10, build `2026-11-09ww`)
+- The owner: "make the sentries in the facility look less tough. I don't like how there's two inside of the crystal room. So maybe we can make one of those disappear and make it just look like a sleek. Laser sentry." Of the one-piece draft: "Use it".
+- The Crystal Chamber's second sentry (`sentry_chamber_2`, by its south wall) is gone; the one by its door and the hallway's stay. Every sentry is the sleek laser sentry model (design/props/models/sentry.js), its 16 aims, lamp and muzzle as before. `docs/FACILITY.md`, "The turrets".
+- Supersedes the armoured twin-cannon turret model and the map's three sentries.

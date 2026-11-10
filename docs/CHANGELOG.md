@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09ww` · branch `claude/start-game-project-HSh7Z` · the sleek laser sentry; one sentry in the Crystal Chamber
+- **The sentries look less tough** (the owner: "make it just look like a sleek laser sentry"; the draft: "Use it"). The armoured twin-cannon turret is now a sleek laser sentry: a pale plinth and slender column, a smooth white pod of a head with a lit cyan visor band, and one slim emitter with a glowing lens. It still turns to aim, with its lamp and muzzle flash as before.
+- **One sentry in the Crystal Chamber, not two** ("make one of those disappear"). The one by the south wall is gone; the one guarding the chamber's door and the hallway's stay.
+- Tests: the Bible, raids, facility and cover suites, and the nine other suites that touch sentries, pass. Cover fails only its known real-page check (on the baseline too).
+
 ### Build `2026-11-09vv` · branch `claude/start-game-project-HSh7Z` · BLOOM energy cards in the packs
 - **BLOOM energy cards come in packs** (the owner: "Need to add Bloom energy cards ASAP"). Once the purification module is installed and has run, Pack 1 and Series 2 deal BLOOM energy cards too, BLOOM as likely as each other element. Before that, as for BLOOM's other cards, none. They unlock an evolved BLOOM follower's second attack and Ultimate, and evolve an elementless egg into a BLOOM form.
 - Tests: `tests/energycards.js` (none before the purification, none with the module installed but not run, BLOOM as likely as the rest after it, and a real pack dealing one into your stock). Checked in the real page: a pack opened from the CARDS screen after the purification dealt a BLOOM ENERGY card into the stock, shown pink in the reveal.

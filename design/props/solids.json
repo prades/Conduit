@@ -126,7 +126,6 @@
 {"id":"mech_bay","kind":"mech_bay","room":"show_room","shape":"rect","bb":[49.5,19.5,51.5,21.5]},
 {"id":"relay_chamber_box","kind":"relay","room":"crystal_chamber","shape":"rect","bb":[14.5,13.5,15.5,14.5]},
 {"id":"sentry_chamber_1","kind":"sentry","room":"crystal_chamber","shape":"rect","bb":[15.5,20.5,16.5,21.5]},
-{"id":"sentry_chamber_2","kind":"sentry","room":"crystal_chamber","shape":"rect","bb":[13.5,22.5,14.5,23.5]},
 {"id":"relay_hall_box","kind":"relay","room":"lab_hallway","shape":"rect","bb":[31.5,20.5,32.5,21.5]},
 {"id":"sentry_hall","kind":"sentry","room":"lab_hallway","shape":"rect","bb":[37.5,24.5,38.5,25.5]},
 {"id":"charger_hall","kind":"charger","room":"lab_hallway","shape":"rect","bb":[19.5,31.5,20.5,32.5]},
