@@ -72,11 +72,17 @@ function _cdKindCol(c) {   // a card's colour: its element's (an element card, a
 // edge, and its name, kind and text are a raised hologram with a blurred copy under it for its shadow. `extra` is its state: "hand", "found", "locked" (or "" for none). The callers put what can be done with it
 // (its buttons, who wears it) under the slab, flat: a tap there is never lost to the tilt.
 const _CD_STATE = { hand: "IN YOUR HAND", found: "FOUND THIS RUN", locked: "LOCKED" };
+// AN ENERGY CARD'S MOVING BACKGROUND (the owner, 2026-11-09: "the energy cards, I like to make them where they have backgrounds that are electric and vibrant, that move"): three looks drafted for the owner's
+// pick, shown only on the preview ?enbg=a (plasma), b (lightning) or c (rays) until one is chosen (game.html "AN ENERGY CARD'S MOVING BACKGROUND"; read once). A layer over the card's texture, under its frame.
+let _cdEnPrev;
+function _cdEnLook() { if (_cdEnPrev === undefined) { _cdEnPrev = null; try { const m = typeof location !== "undefined" && /[?&]enbg=([abc])\b/.exec(location.search || ""); if (m) _cdEnPrev = m[1]; } catch (e) {} } return _cdEnPrev; }
 function _cdSlab(c, extra, short) {   // (short: its text is its short text, js/cards.js equipShortText: the card picker's cards)
     const s = _cdEl("div", "cd-card" + (extra ? " " + extra : "")), col = _cdKindCol(c), fx = short && typeof equipShortText === "function" ? equipShortText(c) : c.text || ""; s.style.setProperty("--c", col);
     const art = _cdEl("div", "cd-art"), slab = _cdEl("div", "cd-slab"), face = _cdEl("div", "cd-face");
     slab.appendChild(_cdEl("i", "cd-back"));   // (its back plate, which shows along its right edge and its foot: its thickness)
     const tex = _cdEl("i", "cd-tex"); if (typeof cardArtFaceClass === "function") cardArtMark(tex, cardArtFaceClass(c)); face.appendChild(tex);
+    const enLook = c.kind === "energy" ? _cdEnLook() : null;
+    if (enLook) { s.classList.add("en", "en-" + enLook); const en = _cdEl("i", "cd-en"); en.setAttribute("aria-hidden", "true"); for (let i = 0; i < 3; i++) en.appendChild(_cdEl("b")); face.appendChild(en); }   // (its moving background)
     face.appendChild(_cdEl("i", "cd-frame"));
     const top = _cdEl("div", "cd-top"); top.appendChild(_cdEl("span", "cd-rar", equipRarityLabel(c))); if (_CD_STATE[extra]) top.appendChild(_cdEl("span", "cd-state", _CD_STATE[extra])); face.appendChild(top);
     face.appendChild(_cdChip(c));   // (on the card's right edge)

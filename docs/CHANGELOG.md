@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09mm` · branch `claude/start-game-project-HSh7Z` · three moving backgrounds for energy cards (on the preview)
+The owner: "the energy cards, I like to make them where they have backgrounds that are electric and vibrant, that move."
+- Three drafts, in each card's element colour: **A** plasma (soft blobs drifting), **B** lightning (forked bolts crackling over a pulsing glow), **C** rays (a turning sunburst and a pulsing core).
+- Only with `?enbg=a`, `b` or `c` until the owner picks one; everyone else sees the cards as before. CSS only (js/cardsui.js `_cdEnLook`, game.html), brightest round the crystal and faint under the text; still with reduced motion.
+- Tests: the card suites, unchanged.
+
 ### Build `2026-11-09ll` · branch `claude/start-game-project-HSh7Z` · the facility two fifths darker
 The owner's pick from the pictures: "C · two fifths darker (0.5)". `docs/FACILITY.md`.
 - **The room you stand in is lit to 0.5 instead of full**, for everyone: floor, walls, doors and props darker together. Units, effects and the controls are as bright as before.
