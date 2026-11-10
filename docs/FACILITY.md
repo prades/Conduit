@@ -107,6 +107,13 @@ The arena's rock edge is diagonal on the tile grid, so decor on it is given on t
 - **The cap (a burrow).** Back rock has a 3-D top: a flat rock roof running back, away from the camera, from the rocky lip to the wall behind it (`it.cap`, found in `_fpRockSides` by marching back until a room is reached: the hallway's south wall for the north teeth). Its far edge meets that wall at the wall's top, so the pocket behind the rock reads as covered, a burrow; a thin spur with the arena on both sides gets a short cap. Front rock has no cap.
 - **Caps all round.** Front rock (the south and east rock) has a cap too: a 1-tile-thick rock roof running back toward the arena from its craggy lip, with the same pits and a dark seam on the inner edge. Every rock wall piece has a cap.
 
+### Rounded rock (on the preview `?rock=round`, build `2026-11-09oo`)
+The owner, 2026-11-09, of the rock by the Cold Storage door: "it looks really jank. You need to make it to where the wall bends in, the cave wall bends in with a circular sort of look, rounded off sort of look. And then just fix it up all around"; then "Rock curves into the alcove".
+- **Bends:** where two rock pieces meet at an angle, each stops short of the corner (up to 0.45 tile) and a curved stretch of rock face sweeps round between them, its lip, roof and cliff carried round (js/facilitydecor.js `_fpRockJoints`, `_fpDrawRockBend`). It is an item of its own in the depth order, a few canvas calls (about 340 more a frame in the performance scene).
+- **The Cold Storage alcove:** its two sides are rock, not pale lab wall (js/facility.js `_facEdgeKinds`), so the rock curves in round it to the door. Its east side, between two back pieces, is drawn as back rock.
+- **Ends of runs** stay flush with what they meet: rounded, they opened a gap against the wall or door beside them.
+- Until approved, only with `?rock=round`; everyone else sees the walls as before.
+
 ### The catwalks are scaffolding
 
 The catwalks are not a room but an open steel deck at the top of the arena's east side, on legs. The map keeps their polygon (and so the collision) and marks the room `structure: "scaffold"`; the drawing then treats it as scaffolding (`_fpScaffoldMarks`, `_fpDrawRail`, `_fpDrawFrame` in js/facilitydecor.js):

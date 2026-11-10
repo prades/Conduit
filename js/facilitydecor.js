@@ -232,6 +232,75 @@ function _fpDrawFillTile(it) {
 // never react to the player. A BACK wall (the camera sees the arena in front of it: the north rock) stands 120-170 px with a ragged skyline and a shadowed, overhanging top; a FRONT wall (the arena is
 // behind it: the south and east rock) keeps a lower 70-130 px skyline, and the rock carries on DOWN below its base, fading to black, so the void beyond it is rock too.
 const FP_ROCK_DOWN = 170;
+// ROUNDED ROCK (the owner, 2026-11-09, of the rock by the Cold Storage door: "it looks really jank. You need to make it to where the wall bends in, the cave wall bends in with a circular sort of look,
+// rounded off sort of look. And then just fix it up all around"; then "Rock curves into the alcove"): where two rock pieces meet at a bend, each stops short of the corner (FP_ROCK_ROUND.t) and a curved
+// stretch of rock face sweeps round between them (a "rockbend" item of its own, in the depth order), its lip, its roof and its cliff carried round. A run's END stays flush with what it meets (rounded,
+// it opened a gap against the wall or door beside it). A piece between two back rock pieces (a notch's side: the Cold Storage alcove's east side) is back rock too, tall, with no cliff under it.
+// On the preview ?rock=round until approved, the Cold Storage alcove's sides made rock (js/facility.js _facEdgeKinds).
+let _fpRockRoundPrev;
+function fpRockRound() { if (_fpRockRoundPrev === undefined) { _fpRockRoundPrev = false; try { _fpRockRoundPrev = typeof location !== "undefined" && /[?&]rock=round\b/.test(location.search || ""); } catch (e) {} } return _fpRockRoundPrev; }
+const FP_ROCK_ROUND = { t: 0.45, seg: 8 };   // a bend's inset along each piece (tiles; at most nearly all of a piece, half of one bent at both ends), points on its curve (the agent's numbers, provisional)
+function _fpRockHAt(hs, u) { return u < 0.5 ? hs[0] + (hs[1] - hs[0]) * u * 2 : hs[1] + (hs[2] - hs[1]) * (u * 2 - 1); }   // a rock piece's height at u (0 at a, 1 at b)
+function _fpRockWallH(it) { return FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0)); }
+function _fpRockNormal(it) { const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; } return [nx, ny]; }   // (its camera-facing side)
+// each rock piece's two ends: a BEND with the next piece (both stop short; a bend item sweeps round), or not (the end of a run, or straight on: nothing)
+function _fpRockJoints(items) {
+    const R = FP_ROCK_ROUND, key = p => Math.round(p[0] * 1000) + "," + Math.round(p[1] * 1000), at = new Map();
+    for (const it of items) if (it.fp === "wall" && it.kind === "rock") for (const e of ["a", "b"]) { const k = key(it[e]); if (!at.has(k)) at.set(k, []); at.get(k).push({ it, e }); }
+    const into = (it, e) => { const p = it[e], q = e === "a" ? it.b : it.a, L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1; return [(q[0] - p[0]) / L, (q[1] - p[1]) / L, L]; };
+    const other = (it, e) => { const l = at.get(key(it[e])) || []; const o = l.find(x => x.it !== it); return o ? o.it : null; };
+    for (const list of at.values()) for (const { it } of list) if (!it.back && !it._notch) { const A = other(it, "a"), B = other(it, "b"); if (A && B && A.back && B.back) { it.back = true; it.cap = null; it._notch = true; } }   // (a notch's side)
+    const bent = list => { if (list.length !== 2) return false; const [P, Q] = list, u = into(P.it, P.e), w = into(Q.it, Q.e); return u[0] * w[0] + u[1] * w[1] >= -0.985; };   // (not straight on)
+    for (const list of at.values()) if (bent(list)) for (const { it } of list) it._bends = (it._bends || 0) + 1;
+    const lim = (it, L) => L * (it._bends > 1 ? 0.475 : 0.95);   // (a piece bent at both ends leaves room for both)
+    for (const list of at.values()) {
+        if (!bent(list)) continue;
+        const [P, Q] = list, u = into(P.it, P.e), w = into(Q.it, Q.e);
+        const t = Math.min(R.t, lim(P.it, u[2]), lim(Q.it, w[2])), K = P.it[P.e];
+        (P.it.round || (P.it.round = {}))[P.e] = { t }; (Q.it.round || (Q.it.round = {}))[Q.e] = { t };
+        items.push({ type: "fp", fp: "rockbend", kind: "rock", P: P.it, Pe: P.e, Q: Q.it, Qe: Q.e, K, s0: [K[0] + u[0] * t, K[1] + u[1] * t], s1: [K[0] + w[0] * t, K[1] + w[1] * t],
+            room: P.it.room, lroom: P.it.lroom, base: P.it.base || 0, x: K[0], y: K[1], depth: Math.max(P.it.depth, Q.it.depth) + 0.001 });
+    }
+}
+// A CURVED STRETCH OF ROCK FACE (a bend, or a run's rounded end): pts the floor line (world x, y), hs its heights, back its style, lits its shading at its two ends, far(i) the far edge of its roof at
+// point i (or null: no roof). One face polygon under one gradient, shaded across by a second, the cliff below a front one, the roof, the lip: a handful of canvas calls, whatever its length.
+function _fpRockCurve(pts, hs, back, lit0, lit1, far) {
+    const n = pts.length, P = (i, z) => _fpP(pts[i][0], pts[i][1], z), bot = pts.map((p, i) => P(i, 0)), top = pts.map((p, i) => P(i, hs[i]));
+    let ty = 1e9, by = -1e9, lx = 1e9, rx = -1e9; for (let i = 0; i < n; i++) { ty = Math.min(ty, top[i][1]); by = Math.max(by, bot[i][1]); lx = Math.min(lx, bot[i][0]); rx = Math.max(rx, bot[i][0]); }
+    const face = bot.concat(top.slice().reverse());
+    if (!back) { const g = ctx.createLinearGradient(0, by, 0, by + FP_ROCK_DOWN); g.addColorStop(0, _fpShade("#4a413b", (lit0 + lit1) / 2)); g.addColorStop(1, "#0e0b0a"); _fpQuad(bot.concat(pts.map((p, i) => P(n - 1 - i, -FP_ROCK_DOWN))), g, null); }   // the cliff below it
+    const g = ctx.createLinearGradient(0, ty, 0, by); if (back) { g.addColorStop(0, "#1c1714"); g.addColorStop(0.22, "#38302b"); g.addColorStop(1, "#4a413b"); } else { g.addColorStop(0, "#403731"); g.addColorStop(1, "#4a413b"); }
+    _fpQuad(face, g, g, 1);
+    const xl = bot[0][0] <= bot[n - 1][0] ? 0 : n - 1, sl = ctx.createLinearGradient(lx, 0, Math.max(rx, lx + 1), 0), dl = 1 - (xl === 0 ? lit0 : lit1), dr = 1 - (xl === 0 ? lit1 : lit0);   // (shaded across, from one end's light to the other's)
+    sl.addColorStop(0, "rgba(0,0,0," + Math.max(0, dl).toFixed(3) + ")"); sl.addColorStop(1, "rgba(0,0,0," + Math.max(0, dr).toFixed(3) + ")"); if (dl > 0.01 || dr > 0.01) _fpQuad(face, sl, null);
+    if (far) {   // its roof, a flat rock top running back from its lip
+        const fr = pts.map((p, i) => { const f = far(i); return f ? _fpP(f[0], f[1], hs[i]) : null; }); if (fr.every(Boolean)) {
+            const cg = ctx.createLinearGradient(0, Math.min(...fr.map(p => p[1])), 0, Math.max(...top.map(p => p[1]))); cg.addColorStop(0, _fpShade("#352d28", lit0)); cg.addColorStop(1, _fpShade("#5a4f47", lit1));
+            _fpQuad(top.concat(fr.slice().reverse()), cg, cg, 1); } }
+    _fpWallGradCurve(bot, back);
+    ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(10,6,4,0.6)"; ctx.lineWidth = 2.6; ctx.beginPath(); top.forEach((p, i) => i ? ctx.lineTo(p[0], p[1] - 1) : ctx.moveTo(p[0], p[1] - 1)); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,236,212," + (0.3 * (lit0 + lit1) / 2).toFixed(3) + ")"; ctx.lineWidth = 1.6; ctx.beginPath(); top.forEach((p, i) => i ? ctx.lineTo(p[0], p[1] + 1.5) : ctx.moveTo(p[0], p[1] + 1.5)); ctx.stroke(); ctx.lineJoin = "miter";   // the lip, carried round
+}
+function _fpWallGradCurve(bot, back) {   // the dark at the foot of a curved stretch, as along a straight piece's (a band 26 px up from the floor)
+    const g = ctx.createLinearGradient(0, Math.max(...bot.map(p => p[1])), 0, Math.min(...bot.map(p => p[1])) - 26); g.addColorStop(0, back ? "rgba(0,0,0,0.45)" : "rgba(0,0,0,0.3)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    _fpQuad(bot.concat(bot.slice().reverse().map(p => [p[0], p[1] - 26])), g, null);
+}
+// the far edge of a rock piece's roof at a point on its lip (the roof runs back from the lip: a back wall's north to the wall behind it, a front wall's 1 tile into the rock), or null if it has no roof
+function _fpRockFar(it, u, p) {
+    const c = it.cap; if (!c) return null;
+    if (c.da === undefined) { const n = _fpRockNormal(it); return [p[0] - n[0] * c.d, p[1] - n[1] * c.d]; }
+    return [p[0], p[1] - (c.da + (c.db - c.da) * u)];
+}
+function _fpRockU(it, p) { const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L2 = dx * dx + dy * dy || 1; return Math.max(0, Math.min(1, ((p[0] - it.a[0]) * dx + (p[1] - it.a[1]) * dy) / L2)); }
+// A BEND: a curve from where one piece stops to where the other starts, round its corner (a quadratic curve: it meets both pieces along their own line), its heights from theirs
+function _fpDrawRockBend(it) {
+    if (typeof caveWallsOn === "function" && caveWallsOn()) return;   // (the modelled walls' preview draws its own)
+    const P = it.P, Q = it.Q, hP = _fpRockHeights(P, _fpRockWallH(P)), hQ = _fpRockHeights(Q, _fpRockWallH(Q)), uP = _fpRockU(P, it.s0), uQ = _fpRockU(Q, it.s1), uK = it.Pe === "a" ? 0 : 1;
+    const h0 = _fpRockHAt(hP, uP), h1 = _fpRockHAt(hQ, uQ), hK = (_fpRockHAt(hP, uK) + _fpRockHAt(hQ, it.Qe === "a" ? 0 : 1)) / 2, N = FP_ROCK_ROUND.seg, pts = [], hs = [];
+    for (let i = 0; i < N; i++) { const s = i / (N - 1), a = (1 - s) * (1 - s), b = 2 * (1 - s) * s, c = s * s; pts.push([a * it.s0[0] + b * it.K[0] + c * it.s1[0], a * it.s0[1] + b * it.K[1] + c * it.s1[1]]); hs.push(a * h0 + b * hK + c * h1); }
+    const far = (P.cap && Q.cap) ? (i => { const s = i / (N - 1), f0 = _fpRockFar(P, uP, it.s0), f1 = _fpRockFar(Q, uQ, it.s1); if (!f0 || !f1) return null; return [pts[i][0] + (f0[0] - it.s0[0]) * (1 - s) + (f1[0] - it.s1[0]) * s, pts[i][1] + (f0[1] - it.s0[1]) * (1 - s) + (f1[1] - it.s1[1]) * s]; }) : null;
+    _fpRockCurve(pts, hs, !!P.back, P.lit || 1, Q.lit || 1, far);
+}
 function _fpRockSides(items) {
     for (const it of items) {
         if (it.fp !== "wall" || it.kind !== "rock") continue;
@@ -248,6 +317,7 @@ function _fpRockSides(items) {
             if (ref) { const same = ref.room.id === it.room, da = ea ? (same ? Math.min(ea.d, 0.5) : ea.d) : ref.d, db = eb ? (same ? Math.min(eb.d, 0.5) : eb.d) : ref.d; if (Math.max(da, db) >= 0.15 || same) it.cap = { da, db, zb: null }; }   // (the roof is flat at the rock's own height, so the wall behind it and its corner posts rise above it)
         }
     }
+    if (fpRockRound()) _fpRockJoints(items);   // (the rounded rock's preview: bends and ends)
 }
 // the heights (px) of a rock wall piece at its two ends and its middle: a ragged skyline, the same for every piece at the same place
 function _fpRockHeights(it, H) {
@@ -260,15 +330,17 @@ function _fpRockHeightsBase(it, H) {
     return [ext + 70 + FP_WALL_X + j(it.a[0], it.a[1], 40), ext + 70 + FP_WALL_X + j(mx, my, 60), ext + 70 + FP_WALL_X + j(it.b[0], it.b[1], 40)];
 }
 function _fpDrawRock(it, H) {
-    const back = !!it.back, lit = it.lit || 1, hs = _fpRockHeights(it, H), ha = hs[0], hm = hs[1], hb = hs[2];
+    const back = !!it.back, lit = it.lit || 1, hs = _fpRockHeights(it, H), rd = it.round, L = rd ? Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) || 1 : 1;
+    // (the rounded rock's preview, FP_ROCK_ROUND: an end at a bend stops short; the bend item is drawn round the corner)
+    const ua = rd && rd.a ? (rd.a.t || 0) / L : 0, ub = rd && rd.b ? 1 - (rd.b.t || 0) / L : 1, um = (ua + ub) / 2, ha = _fpRockHAt(hs, ua), hm = _fpRockHAt(hs, um), hb = _fpRockHAt(hs, ub);
     const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);
-    const a0 = P(0, 0), b0 = P(1, 0), a1 = P(0, ha), m1 = P(0.5, hm), b1 = P(1, hb), ty = Math.min(a1[1], m1[1], b1[1]), by = Math.max(a0[1], b0[1]);
-    if (!back) { const g = ctx.createLinearGradient(0, by, 0, by + FP_ROCK_DOWN); g.addColorStop(0, _fpShade("#4a413b", lit)); g.addColorStop(1, "#0e0b0a"); _fpQuad([a0, b0, P(1, -FP_ROCK_DOWN), P(0, -FP_ROCK_DOWN)], g, null); }   // the cliff below it
+    const a0 = P(ua, 0), b0 = P(ub, 0), a1 = P(ua, ha), m1 = P(um, hm), b1 = P(ub, hb), ty = Math.min(a1[1], m1[1], b1[1]), by = Math.max(a0[1], b0[1]);
+    if (!back) { const g = ctx.createLinearGradient(0, by, 0, by + FP_ROCK_DOWN); g.addColorStop(0, _fpShade("#4a413b", lit)); g.addColorStop(1, "#0e0b0a"); _fpQuad([a0, b0, P(ub, -FP_ROCK_DOWN), P(ua, -FP_ROCK_DOWN)], g, null); }   // the cliff below it
     const g = ctx.createLinearGradient(0, ty, 0, by); if (back) { g.addColorStop(0, "#1c1714"); g.addColorStop(0.22, _fpShade("#38302b", lit)); g.addColorStop(1, _fpShade("#4a413b", lit)); } else { g.addColorStop(0, _fpShade("#403731", lit)); g.addColorStop(1, _fpShade("#4a413b", lit)); }   // (a back wall's top is in shadow: it overhangs)
     _fpQuad([a0, b0, b1, m1, a1], g, g, 1);
     if (it.cap) {   // the 3-D cap: the top of the rock, a flat rock roof running back to the wall behind it
         const c = it.cap, back = (u, z) => c.da === undefined ? _fpP(it.a[0] + (it.b[0] - it.a[0]) * u - c.nx * c.d, it.a[1] + (it.b[1] - it.a[1]) * u - c.ny * c.d, z === null ? 0 : z) : _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u - (c.da + (c.db - c.da) * u), z === null ? 0 : z), zb = c.zb === null ? null : c.zb;
-        const A1 = back(0, zb === null ? ha : zb), M1 = back(0.5, zb === null ? hm : zb), B1 = back(1, zb === null ? hb : zb), lip = [a1, m1, b1];
+        const A1 = back(ua, zb === null ? ha : zb), M1 = back(um, zb === null ? hm : zb), B1 = back(ub, zb === null ? hb : zb), lip = [a1, m1, b1];
         const cg = ctx.createLinearGradient(0, Math.min(A1[1], B1[1]), 0, Math.max(a1[1], b1[1])); cg.addColorStop(0, _fpShade("#352d28", lit)); cg.addColorStop(1, _fpShade("#5a4f47", lit));
         _fpQuad([a1, m1, b1, B1, M1, A1], cg, cg, 1);
         const cs = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
@@ -276,13 +348,13 @@ function _fpDrawRock(it, H) {
             ctx.fillStyle = "rgba(0,0,0,0.2)"; ctx.beginPath(); ctx.ellipse(p0[0] + (p1[0] - p0[0]) * v, p0[1] + (p1[1] - p0[1]) * v, 5 + k * 2, 2.5 + k, 0, 0, 6.2832); ctx.fill(); }   // pits and pebbles on the roof
         ctx.strokeStyle = "rgba(10,6,4,0.55)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(A1[0], A1[1]); ctx.lineTo(M1[0], M1[1]); ctx.lineTo(B1[0], B1[1]); ctx.stroke();   // where the roof meets the wall behind: a dark crease
     }
-    _fpWallGrad(it, 0, 1, 0, 26, back ? FP_GS.foot : FP_GS.footSoft, back ? "rockfoot" : "rockfoot2");   // the foot of the rock: dark where it meets the floor
+    _fpWallGrad(it, ua, ub, 0, 26, back ? FP_GS.foot : FP_GS.footSoft, back ? "rockfoot" : "rockfoot2");   // the foot of the rock: dark where it meets the floor
     const zTop = Math.max(ha, hm, hb), zLow = Math.min(ha, hm, hb), seed = _fpHash(Math.round(it.a[0] * 2), Math.round(it.a[1] * 2));
-    for (let k = 0; k * 36 < zTop; k++) { const z = k * 36 + _fpHash(k, 7) % 12; if (z > zLow - 4) continue; _fpQuad([P(0, z), P(1, z), P(1, z + 3), P(0, z + 3)], "rgba(0,0,0,0.3)", null); _fpQuad([P(0, z + 3), P(1, z + 3), P(1, z + 5), P(0, z + 5)], "rgba(255,240,220,0.06)", null); }   // strata
+    for (let k = 0; k * 36 < zTop; k++) { const z = k * 36 + _fpHash(k, 7) % 12; if (z > zLow - 4) continue; _fpQuad([P(ua, z), P(ub, z), P(ub, z + 3), P(ua, z + 3)], "rgba(0,0,0,0.3)", null); _fpQuad([P(ua, z + 3), P(ub, z + 3), P(ub, z + 5), P(ua, z + 5)], "rgba(255,240,220,0.06)", null); }   // strata
     const cap = Math.max(20, zLow - 20);
-    for (let s2 = 0; s2 < 4; s2++) { const h = _fpHash(seed, s2 + 3), u = ((h >>> 3) % 80) / 100 + 0.1, z = 8 + ((h >>> 9) % 100) / 100 * Math.min(cap, 120), w = 0.12 + ((h >>> 5) % 6) / 100, hh = 12 + (h % 16);   // boulders
+    for (let s2 = 0; s2 < 4; s2++) { const h = _fpHash(seed, s2 + 3), u = ua + (ub - ua) * (((h >>> 3) % 80) / 100 + 0.1), z = 8 + ((h >>> 9) % 100) / 100 * Math.min(cap, 120), w = 0.12 + ((h >>> 5) % 6) / 100, hh = 12 + (h % 16);   // boulders
         _fpQuad([P(u - w, z), P(u + w, z + 2), P(u + w * 0.8, z + hh), P(u, z + hh + 4), P(u - w * 0.8, z + hh - 2)], "rgba(255,240,220,0.07)", null); }
-    for (let s2 = 0; s2 < 2; s2++) { const u = (((seed >>> (s2 * 4)) % 90) + 5) / 100, zh = zLow - 6; ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.lineWidth = 2; const p = P(u, 0), q = P(u, Math.min(zh, 120)); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+    for (let s2 = 0; s2 < 2; s2++) { const u = ua + (ub - ua) * ((((seed >>> (s2 * 4)) % 90) + 5) / 100), zh = zLow - 6; ctx.strokeStyle = "rgba(0,0,0,0.35)"; ctx.lineWidth = 2; const p = P(u, 0), q = P(u, Math.min(zh, 120)); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
     ctx.lineJoin = "round"; ctx.strokeStyle = "rgba(10,6,4,0.6)"; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] - 1); ctx.lineTo(m1[0], m1[1] - 1); ctx.lineTo(b1[0], b1[1] - 1); ctx.stroke(); ctx.strokeStyle = "rgba(255,236,212," + (0.3 * lit).toFixed(3) + ")"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(a1[0], a1[1] + 1.5); ctx.lineTo(m1[0], m1[1] + 1.5); ctx.lineTo(b1[0], b1[1] + 1.5); ctx.stroke(); ctx.lineJoin = "miter";   // the rocky lip: a dark crease with a pale lit edge under it
     _fpRockIce(it, ha, hm, hb);   // (in an ice room: frost over it, icicles off its lip)
 }

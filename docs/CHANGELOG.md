@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09oo` · branch `claude/start-game-project-HSh7Z` · rounded rock (on the preview)
+The owner: "This cave wall here next to where the door is, it looks really jank. You need to make it to where the wall bends in [...] with a circular sort of look, rounded off sort of look. And then just fix it up all around"; then "Rock curves into the alcove". `docs/FACILITY.md`.
+- **Every bend in the cave rock is rounded:** the face, lip, roof and cliff curve round the corner instead of meeting at a sharp edge.
+- **The Cold Storage alcove's sides are rock** instead of pale lab wall, so the rock curves in round it to the door.
+- Only with `?rock=round` until the owner approves it in the game. Rules, movement and the map are unchanged.
+- Tests: `tests/facilityplay.js`; `tests/perf.js` measured about 340 more operations a frame with it on, under budget.
+
 ### Build `2026-11-09nn` · branch `claude/start-game-project-HSh7Z` · energy cards' plasma backgrounds for everyone
 The owner's pick of three drafts: "A · plasma". `docs/ENERGY-CARDS.md` §9.
 - **Every energy card's face now has a moving background:** soft blobs of its element's colour drifting and turning behind its crystal, in a pack's reveal, the last-pack panel and the card picker.
