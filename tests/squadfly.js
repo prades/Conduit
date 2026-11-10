@@ -70,6 +70,15 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
       m0.evolved = undefined; m0.level = 6; m0.xp = xpForLevel(6) + 85; partyTick(); await wait(60); out.xp = { l6: xs() };
       m0.level = 7; m0.xp = xpForLevel(7) + 100; partyTick(); await wait(60); out.xp.l7 = xs();
       m0.evolved = 'seeper'; partyTick(); await wait(60); out.xp.evolved = xs(); m0.evolved = undefined; m0.level = 5; m0.xp = xpForLevel(5); partyTick(); await wait(60); out.xp.l5 = xs(); }
+    // ITS ENERGY CARDS (build 2026-11-10d; the owner: "You also need to be able to equip energy cards ... from the pop-out menus as well. Fly-out menu for the roster"): the row, a chip's list, a card in, EMPTY out
+    if (card) { var en0 = m0.energy ? m0.energy.slice() : null, el0 = m0.element, st0 = Object.assign({}, energyStock);
+      var enState = function(){ return { chips: $$('#squadFly .sf-en').map(function(b){ return [b.textContent, b.disabled, b.classList.contains('open')]; }), opts: $$('#squadFly .sf-opt[data-slot^=en]').map(function(o){ return [o.querySelector('.sf-ol').textContent, o.disabled]; }), note: txt('#squadFly .sf-en-n'), slots: energySlots(m0).join(), el: m0.element, stock: energyCount('ice') }; };
+      energyStock = {}; energyAdd('ice', 2); m0.energy = [null]; energySetElement(m0, null); partyFlyRender(true); await wait(40); out.en = { empty: enState() };
+      click($('#squadFly .sf-en')); await wait(40); out.en.list = enState();
+      click($$('#squadFly .sf-opt[data-slot^=en]').filter(function(o){ return /^ICE ENERGY/.test(o.querySelector('.sf-ol').textContent); })[0]); await wait(60); out.en.put = enState();
+      click($('#squadFly .sf-en')); await wait(40); out.en.list2 = enState(); click($$('#squadFly .sf-opt[data-slot^=en]').filter(function(o){ return o.querySelector('.sf-ol').textContent === 'EMPTY'; })[0]); await wait(60); out.en.out = enState();
+      m0.evolved = 'seeper'; energyEvolved(m0); partyFlyRender(true); await wait(40); out.en.evolved = enState().chips.map(function(c){ return c[0]; }).join();
+      m0.evolved = undefined; m0.energy = en0; energySetElement(m0, el0); energyStock = st0; partyFlyRender(true); await wait(40); }
     // INDEX opens the unit's info (its attacks, jobs and stats)
     var ix = $('#squadFly [data-act=index]'); if (ix) click(ix); await wait(40); out.index = { open: !!$('#unitInfo'), title: $('#unitInfo .ui-title') ? $('#unitInfo .ui-title').textContent : null };
     var press = function(el){ el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true })); };
@@ -217,6 +226,13 @@ function measure(w, h) {
             same(r.cards.second[0], 1, 'CARD 2 did not open its list'); same(r.cards.second[1], 1, 'open rows'); same(r.cards.second[2], 0, 'CARD 2 shows the card CARD 1 wears');
             ok(!(r.cards.off2[0] && r.cards.off2[0][0]), 'EMPTY did not take the card off: ' + JSON.stringify(r.cards.off2[0])); same(r.cards.off2[1], 'EMPTY', 'the row after EMPTY'); same(r.cards.off2[2], 0, 'the list after EMPTY');
             same(JSON.stringify(r.cards.back), JSON.stringify(['CARD 1', 'NO CARDS IN YOUR HAND', true, false]), 'the row with the hand empty again');
+        });
+        check(w + ': ITS ENERGY CARDS (build 2026-11-10d): an ENERGY row with a chip for its slot (EMPTY on an egg without one) and the line saying what they do; a tap opens its list (the cards you hold, with how many); a pick puts it in from your stock (the egg is that element), EMPTY takes it out (back to you); an evolved one has three chips', () => {
+            same(JSON.stringify(r.en.empty.chips), JSON.stringify([['EMPTY', false, false]]), 'the row on an egg without a card'); same(r.en.empty.note, 'NO ELEMENT · PUT AN ENERGY CARD IN', 'its line');
+            same(r.en.list.chips[0][2], true, 'the chip is not lit open'); same(JSON.stringify(r.en.list.opts), JSON.stringify([['ICE ENERGY ×2', false]]), 'its list');
+            same([r.en.put.slots, r.en.put.el, r.en.put.stock].join(), 'ice,ice,1', 'the pick: in its slot, its element, the stock'); same(JSON.stringify(r.en.put.chips), JSON.stringify([['ICE', false, false]]), 'the row after (the list shut)'); same(r.en.put.note, 'ITS ELEMENT · USED UP WHEN IT EVOLVES', 'its line after');
+            same(JSON.stringify(r.en.list2.opts), JSON.stringify([['ICE ENERGY', true], ['EMPTY', false]]), 'the list with a card in: the card (in this slot, off), EMPTY, and the other elements you hold (none here: the same element again would change nothing, as in the roster\'s picker)');
+            same([r.en.out.slots, r.en.out.el, r.en.out.stock].join(), ',none,2', 'EMPTY: out of its slot, no element, back in the stock'); same(r.en.evolved, 'EMPTY,EMPTY,EMPTY', 'an evolved one\'s three slots');
         });
         check(w + ': a press on the card keeps it; a press anywhere else puts it away and the member stays picked (its card on the stack lit, the tool still names it), also after a tick; a tap on it then lets it go, and the next tap picks it and opens its card; a press on the unit info is not one away', () => {
             same(r.index.back, true, 'closing the unit info did not bring the card back'); same(r.away.onCard, true, 'a press on the card put it away');

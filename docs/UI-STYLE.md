@@ -317,7 +317,8 @@ Five layouts of the roster and the squad viewer were drawn on the same parts (do
   - A slot that cannot take it is off and says why (e.g. ALREADY ON ITS OTHER SLOT).
 - After a tap the box **stays open** (the same card can go on more followers) and its note says what changed in gold, e.g. CINDERBRAND OFF · EMBER PLATING ON · QUILLSTONE · CARD 2. ✕, a tap outside the box or Escape closes it. Escape closes it first, then a reveal, then the screen.
 - A card kept for good that is not in the hand **goes into the hand as it goes on**; the note says so before (IT GOES INTO YOUR HAND AS IT GOES ON (2 OF 3)).
-- (js/cardsui.js `equipNowOpen`, `_ceTile`; js/cards.js `equipNowPut`, `equipNowWhyNot`, `equipNowTakes`; game.html "EQUIP NOW", which shares the card picker's box styles.) The look, the colours and the box staying open are the agent's, provisional.
+- **An energy card** (since build `2026-11-10d`; the owner, 2026-11-10: "You also need to be able to equip energy cards from the packs after you pull them"): EQUIP NOW is under each energy card of a pack's reveal too, on while you hold one of its element (else NONE LEFT · ALL IN SLOTS). Its pop-out lists every follower, each with its energy slots, ENERGY (an egg) or ENERGY 1 to 3 (evolved), each slot's card as a chip in its element's colour: EQUIP HERE, SWITCH ⇄ (the card there comes back to you), IN IT ✓, or why not (NO ICE ENERGY CARD). Under the slots, what its energy cards do now. A card goes in from your stock (js/energy.js `energyPut`), and the reveal's YOU HOLD n and its button follow where they are.
+- (js/cardsui.js `equipNowOpen`, `_ceTile`, `_ceEnergySlots`; js/cards.js `equipNowPut`, `equipNowWhyNot`, `equipNowTakes`; game.html "EQUIP NOW", which shares the card picker's box styles.) The look, the colours and the box staying open are the agent's, provisional.
 
 ## The INFO panel (js/infodex.js)
 

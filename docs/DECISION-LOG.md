@@ -2798,3 +2798,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Built: while a member's card is open the squad stack and the battle tool's orders are hidden and the card stands in their place; its tab ◂ SQUAD & ORDERS, or a press anywhere else, puts it away and brings them back, the member still picked. The enemy card stays. `js/squadfly.js`, `game.html`; `TUTORIAL.md`, "The HUD: one group to a corner".
 - The agent's choices: the tab on the card's top edge, its words and the tool's gold. Closing INDEX's window still returns to the card.
 - Supersedes the card's place beside the stack ("pull their card roster information up on the fly", `js/squadfly.js`).
+
+## DECISION: Energy cards from a pack's reveal and the squad member's card (2026-11-10, build `2026-11-10d`)
+- The owner: "You also need to be able to equip energy cards from the packs after you pull them, and from the pop-out menus as well. Fly-out menu for the roster."
+- Built: EQUIP NOW under each energy card of a pack's reveal (its pop-out lists every follower with its energy slots), and an ENERGY row on the squad member's fly-out card. The rules are the roster's. `ENERGY-CARDS.md` rule 20.
+- The agent's choices: the slots as colour chips in EQUIP NOW's tiles (three card faces do not fit a tile), the ENERGY row over the card's ATTACK and CARD rows, and a tall card scrolling its rows.
+- Supersedes the reading that the energy slots are not on the squad member's card over the HUD (`ENERGY-CARDS.md` §11).

@@ -132,6 +132,17 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(r.card, 'ICE FOR AN EGG: IT EVOLVES WITH IT AT LV 8 (USED UP) · ICE FORMS: THEIR NEXT ATTACK', 'an energy card\'s words');
     });
 
+    group('WHERE ELSE YOU PUT THEM (build 2026-11-10d; the owner: "You also need to be able to equip energy cards from the packs after you pull them, and from the pop-out menus as well. Fly-out menu for the roster")');
+    check('a pack\'s reveal: EQUIP NOW under an energy card, on while you hold one of its element ("NONE LEFT · ALL IN SLOTS" once none is left); its pop-out takes the card by its id and lists every follower (not a clone); the squad member\'s fly-out card has an ENERGY row whose lists put a card in and take it out by the roster\'s rules', () => {
+        const r = J(`(function(){ __clear(); const a = __mk('brawler', 'fire'), b = __mk('sniper', ENERGY_NONE), o = {}; energyAdd('ice', 1);
+            o.card = (_ceCard('energy:ice') || {}).kind; o.bad = _ceCard('energy:none'); o.on = _cdEquipNowWhy(energyCardOf('ice')); o.off = _cdEquipNowWhy(energyCardOf('fire'));
+            o.who = _ceWho(energyCardOf('ice')).length === followers.filter(f => !f.dead && f.isFollower === true && !f.isClone).length && _ceWho(energyCardOf('ice')).indexOf(b) >= 0; return o; })()`);
+        same(r.card, 'energy', 'the pop-out does not take an energy card'); same(r.bad, null, 'a card of no element'); same(r.on, null, 'EQUIP NOW is off while you hold one'); same(r.off, 'NONE LEFT · ALL IN SLOTS', 'EQUIP NOW with none left'); same(r.who, true, 'every follower, an elementless one too');
+        const ui = rd('js/cardsui.js'), sf = rd('js/squadfly.js');
+        ok(/if \(c\.kind === "energy"\) _cdClick\(eq, \(\) => \{ if \(!_cdEquipNowWhy\(c\)\) equipNowOpen\(c\.id\); \}\)/.test(ui), 'the reveal\'s button for an energy card'); ok(/const ok = energyPut\(who, slot, c\.el\);/.test(ui) && /energyWhyNot\(who, slot, c\.el\)/.test(ui), 'the pop-out does not use js/energy.js\'s rules');
+        ok(/if \(en\) _sfEnergyDraw\(box, f, mk\);/.test(sf) && /energyPut\(f, \+raw\.slice\(2\), id \? energyCardEl\(id\) : null\)/.test(sf), 'the fly-out card\'s ENERGY row and its lists');
+    });
+
     group('A FALL AND THE CONVERSION');
     check('a follower that falls comes back with its energy cards', () => {
         const r = J(`(function(){ __clear(); respawnQueue.length = 0; if (typeof playerReviveFree !== 'undefined') globalThis.__rf = playerReviveFree; playerReviveFree = () => true; const f = __mk('brawler', 'core'); f.spawnProtection = 0; const uid = followerUid(f);

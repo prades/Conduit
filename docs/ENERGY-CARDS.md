@@ -1,9 +1,9 @@
 # Energy cards
 
-- **Status:** Implemented in builds `2026-11-09s` and `2026-11-09t` (phase 1; `t` is the owner's third round of answers, rules 15–18), and BLOOM's in the packs in `2026-11-09vv` (rule 19), verified by `tests/energycards.js` and the suites listed in §10. Not playtested. The hybrid attacks are still to be designed (§11).
+- **Status:** Implemented in builds `2026-11-09s` and `2026-11-09t` (phase 1; `t` is the owner's third round of answers, rules 15–18), BLOOM's in the packs in `2026-11-09vv` (rule 19), and where else you put them in `2026-11-10d` (rule 20), verified by `tests/energycards.js` and the suites listed in §10. Not playtested. The hybrid attacks are still to be designed (§11).
 - **Owner:** User (creative direction); agent (implementation support)
 - **Last updated:** 2026-11-10
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-09vv` (main is at `2026-11-09ss` until the owner says "push to main")
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-10d` (main is at `2026-11-10b` until the owner says "push")
 - **Related docs:** `FOLLOWER-PROGRESSION.md` (levels, evolution, breeding), `CONVERSION.md` (BLOOM, the conversion machine), `UNIVERSAL-AND-PLAYER-CARDS.md` and `SERIES-2.md` (the equip cards and their packs), `OPEN-QUESTIONS.md`
 
 ## 1. Intent
@@ -41,6 +41,10 @@ The owner's third round of answers, 2026-11-09 (on the agent's readings, build `
 The owner, 2026-11-10: "Need to add Bloom energy cards ASAP."
 
 19. **BLOOM's energy cards come in the packs** (build `2026-11-09vv`), once the purification module is installed and has run, as BLOOM's other cards and its breeding do (CONVERSION.md). From then on BLOOM is one more element of Pack 1's and Series 2's energy cards, as likely as each of the others. Until then BLOOM's energy cards come only with a bred BLOOM egg and the conversion. *(When they start is the agent's reading, from BLOOM's other cards: §11.)*
+
+The owner, 2026-11-10: "You also need to be able to equip energy cards from the packs after you pull them, and from the pop-out menus as well. Fly-out menu for the roster."
+
+20. **Where you put them** (build `2026-11-10d`): besides the roster, from **a pack's reveal** (EQUIP NOW under each energy card, its pop-out listing every follower with its energy slots) and from **the squad member's card on the HUD** (the fly-out, a tablet's and a desktop's: its ENERGY row, a tap on a slot opening its list). The rules are the roster's (`energyWhyNot`, `energyPut`). This answers the reading "the energy slots are not on the squad member's card over the HUD" (§11).
 
 ## 3. Must-have requirements
 - [x] Energy cards of each element, dealt by a card pack.
@@ -102,7 +106,8 @@ The checks in `tests/energycards.js`: the rules and numbers; owning (put, take, 
 - **NO ELEMENT:** `js/config.js` `ELEMENTS` and `elementWord`; `js/damage.js`; `js/hdsprites.js` (the clear crystal: `egg_neutral`, unlit).
 - **The UI:**
   - One ENERGY row of chips (`js/cardsui.js` `energyRow`). It is on the creature's card in the carousel and in the phone roster's panel; a tap opens the card picker.
-  - The pack's reveal and its last-pack panel show the energy cards.
+  - The pack's reveal and its last-pack panel show the energy cards. Since build `2026-11-10d` the reveal has **EQUIP NOW** under each (`_cdEquipNowWhy`; the pop-out's `_ceEnergySlots`; `_cdRevealEnergyRefresh` keeps its counts true while it is up).
+  - **The squad member's fly-out card** (`js/squadfly.js` `_sfEnergyDraw`, build `2026-11-10d`): an ENERGY row, a chip a slot, over its ATTACK and CARD rows, and the roster's line under it; a chip opens its slot's list on the card: the card in it, EMPTY, and each other element you hold, with how many.
   - The INFO card shows SECOND ATTACK and ULTIMATE as LOCKED, and the hybrids.
 - **The card's moving background** (build `2026-11-09nn`; the owner, 2026-11-09: "electric and vibrant, that move"; of three drafts, "A · plasma"):
   - Wherever an energy card's face shows (a pack's reveal, the last-pack panel, the card picker), three big soft blobs of its element's colour drift and turn behind its crystal (`js/cardsui.js` `_cdSlab`, game.html `cdEnA`).
@@ -124,9 +129,9 @@ The checks in `tests/energycards.js`: the rules and numbers; owning (put, take, 
    - Elementless hits are plain, ×1 against everything.
    - The clear-crystal egg reuses the wild recruit's grey egg, unlit.
    - An elementless Technician has no ability (no element's).
-   - The energy slots are not on the squad member's card over the HUD.
    - BLOOM's energy cards start in the packs once the purification module has run (rule 19), as BLOOM's other cards; each element as likely, BLOOM too.
 
 ## 12. History
 - 2026-11-09: the owner's direction and four answers (rules 1–7); a second round of answers (rules 8–14); the pack rule (rule 9, superseded the same day); built in `2026-11-09s`; a third round of answers (rules 15–18) in `2026-11-09t`.
 - 2026-11-10: "Need to add Bloom energy cards ASAP": BLOOM's energy cards in the packs once the module has run (rule 19, `2026-11-09vv`; rule 9's "BLOOM's are not dealt by a pack" superseded).
+- 2026-11-10: "You also need to be able to equip energy cards from the packs after you pull them, and from the pop-out menus as well": EQUIP NOW in a pack's reveal and the ENERGY row on the squad member's fly-out card (rule 20, `2026-11-10d`; the reading that they are not on that card, superseded).
