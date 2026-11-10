@@ -2,6 +2,10 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-10
+
+- **Key art: the movie poster, kept as the template (no build; no game code changed)** (the owner: "save this as … some artwork for the game Bible … but also for the template moving forward"). `design/key-art/`: `make.sh` renders the poster (2400 × 3600) from the game's own models, rendered large by `bake_hi.js` (a copy of `design/evolutions/bake.js` for one facing and frame at any size), plus three models made for the poster (the mantis, the glass headquarters, the power plant); `README.md` says what each layer is and where to change it. The Bible shows it under Art direction → Key art (`img/bible/key-art-poster.webp`, 155 KB). Checked: `make.sh` from scratch matches the approved poster pixel for pixel; `tests/bible.js` passes. `design/key-art/out/` is ignored.
+
 ## 2026-11-09
 
 ### Build `2026-11-09qq` · branch `claude/start-game-project-HSh7Z` · rounded rock for everyone
