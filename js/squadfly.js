@@ -12,6 +12,10 @@
 // ASKED (2026-11-01): "be able to equip different equipment cards from the on-screen roster open tab, like the active squad bar." ITS TWO EQUIP CARD SLOTS are on the card (CARD 1 and CARD 2, as on the roster's
 // settings column: js/cardsui.js equipRosterDraw): tap a slot for the hand's cards (EMPTY, then each card, the ones that do not fit saying why), tap one and the member wears it at once (js/cards.js equipPut),
 // its rarity chip beside the name; one list is open at a time, and a press away closes the card as before.
+// ASKED (2026-11-10): "Whenever I open the pop-out menu for a follower, make it to where it hides the mini roster and the battle tactics menu, and puts the creature information over that, so it doesn't
+// invade on the world view", "when the player clicks away from the menu in some way, the menu refreshes to the normal look", and "a little tab ... where the player can return to the mini roster battle
+// tactics menu without having to interact with the world or click a button they don't want to". While the card is open the stack and the tool's orders give way to it (game.html body.flyOpen; the
+// enemy card at the bottom right stays) and it stands where they stood; its tab, ◂ SQUAD & ORDERS, or a press anywhere else puts it away and brings them back, the member still picked.
 let _sfEls = null, _sfSig = "", _sfDD = null;   // _sfDD: the slot whose list of cards is open on the card (0, 1 or "sp", its SPECIAL ATTACK), or null
 function partyFlyEl() { return typeof document !== "undefined" && document.getElementById ? document.getElementById("squadFly") : null; }
 // the member whose card is open: the last one tapped that is still picked, else the first that is picked; nobody when nothing is picked, when the card was put away (the member
@@ -23,7 +27,7 @@ function partyFlySubject() {
 }
 function partyFlyBuild(root) {
     if (_sfEls && _sfEls.root === root) return _sfEls;
-    root.innerHTML = '<div class="sf-card"><span class="sf-tip"></span><div class="sf-head"><canvas class="sf-thumb" width="64" height="64"></canvas><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span></div>'
+    root.innerHTML = '<div class="sf-card"><button class="sf-back" type="button" data-act="back" aria-label="Back to the squad and its orders">◂ SQUAD &amp; ORDERS</button><div class="sf-head"><canvas class="sf-thumb" width="64" height="64"></canvas><span class="sf-ht"><b class="sf-name"></b><i class="sf-sub"></i></span></div>'
         + '<div class="sf-tags"></div><div class="sf-hp"><span>HP</span><span class="sb-hp"><u></u></span><em class="sf-hpn"></em></div><div class="sf-xp"><span>XP</span><span class="sb-xp"><u></u></span><em class="sf-xpn"></em></div><div class="sf-evo"></div><div class="sf-kv"><span>POWER<b class="sf-pw"></b></span><span>SPEED<b class="sf-sp"></b></span></div>'
         + '<div class="sf-cards"></div>'
         + '<div class="sf-btns sf-swaprow"><button class="sf-btn sf-swap" data-act="swap">SWAP PLACES ⇄<small class="sf-swapw"></small></button></div>'   // (GRAVITY ENGINEER's SWAP: shown only while that role is awake, js/playercards.js)
@@ -44,6 +48,7 @@ function partyFlyClick(ev) {
     if (s) { if (s.disabled) return; const raw = s.getAttribute("data-slot"), slot = raw === "sp" || raw === "alt" ? raw : +raw; _sfDD = _sfDD === slot ? null : slot; partyFlyRender(true); return; }
     const b = t.closest("[data-act]"); if (!b) return;
     const act = b.getAttribute("data-act");
+    if (act === "back") { _sfAway = true; _sfDD = null; partyFlyRender(true); return; }   // ◂ SQUAD & ORDERS: put away as a press elsewhere puts it, the member still picked; the stack and the tool are back
     if (act === "index") { if (typeof unitInfoOpen === "function") unitInfoOpen(f); return; }
     if (act === "swap") { if (typeof playerSwap === "function") { const r = playerSwap(f); if (!r.ok && typeof _pcSay === "function") _pcSay(r.why, "#ff9c8a"); } partyFlyRender(true); return; }   // (GRAVITY ENGINEER: js/playercards.js)
     if (act === "dismiss") {
@@ -118,7 +123,7 @@ function partyFlyRender(force) {
     if (_sfAway && !(typeof ccSelectionList === "function" && ccSelectionList().some(has))) _sfAway = false;   // (nobody picked now: the next one picked opens their card)
     const root = partyFlyEl(); if (!root) return;
     const f = partyFlySubject(), bar = typeof _sbEls !== "undefined" ? _sbEls : null, slot = f && bar ? (f.isClone ? bar.clone || null : f.partySlot !== undefined ? bar.slots[f.partySlot] : null) : null;   // (the clone's card is its own: js/party.js _partyCloneCard)
-    if (!f || !slot) { if (_sfEls) { _sfEls.subject = null; _sfEls.cardSig = ""; } _sfDD = null; if (root.classList) root.classList.remove("on"); _sfSig = ""; return; }
+    if (!f || !slot) { if (_sfEls) { _sfEls.subject = null; _sfEls.cardSig = ""; } _sfDD = null; if (root.classList) root.classList.remove("on"); _sfCorner(false); _sfSig = ""; return; }
     const E = partyFlyBuild(root); if (E.subject !== f) { _sfDD = null; E.cardSig = ""; E.thumbKey = null; } E.subject = f;   // (another member's card: its own slots, no list open)
     const clone = !!f.isClone, def = !clone && typeof ELEMENTS !== "undefined" ? ELEMENTS.find(e => e.id === f.element) : null, col = clone ? (typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : "#c06bff") : def ? def.color : "#19e6c1", st = typeof unitStatus === "function" ? unitStatus(f) : null;
     if (E.card && E.card.style && typeof E.card.style.setProperty === "function") E.card.style.setProperty("--c", col);
@@ -147,20 +152,24 @@ function partyFlyRender(force) {
     _sfSwapDraw(E, f);    // GRAVITY ENGINEER's SWAP, while that role is awake
     const key = clone ? "clone|" + f.speciesName + "|" + f.className : f.evolved + "|" + f.element + "|" + (f.id || "");
     if (E.thumbKey !== key && E.thumb) { if (clone && typeof partyCloneThumb === "function") { E.thumbKey = key; partyCloneThumb(E.thumb, f); } else if (typeof _ccThumb === "function") { E.thumbKey = key; _ccThumb(E.thumb, f); } }
-    // beside the member's own card: its top lines up with the card's, and it stands to the right of the stack; it keeps clear of the dock and of the enemy card where they lie
-    // under it (it goes up as far as it must: a lower member's card, a narrow screen), and its tip still points at the member's card
+    // IN THE SQUAD'S CORNER (since build 2026-11-10c; it stood beside the stack, over the world): the stack and the tool's orders give way to it (game.html body.flyOpen) and it stands where they stood,
+    // its left at the stack's and its foot on the tool's. It keeps clear of the dock and of the enemy card where they lie under it, and goes up as far as it must (its tab still on the screen).
     if (root.classList) root.classList.add("on");
+    _sfCorner(true);
     if (typeof slot.getBoundingClientRect === "function" && root.style) {
-        const r = slot.getBoundingClientRect(), br = bar && bar.root && bar.root.getBoundingClientRect ? bar.root.getBoundingClientRect() : r, H = typeof innerHeight === "number" ? innerHeight : 700;
-        const left = Math.round(br.right + 18), own = typeof root.getBoundingClientRect === "function" ? root.getBoundingClientRect() : null, cw = own && own.width || 340, ch = own && own.height || 322;
-        let floor = H - 8;
-        for (const sel of ["#topToggles", "#mixTool .mt-foe"]) {   // (the dock; the enemy card, while a creature is locked)
-            const el = typeof document !== "undefined" && document.querySelector ? document.querySelector(sel) : null, q = el && typeof el.getBoundingClientRect === "function" ? el.getBoundingClientRect() : null;
-            if (q && q.width > 0 && q.height > 0 && q.left < left + cw && q.right > left) floor = Math.min(floor, q.top - 8);
-        }
-        const top = Math.round(Math.max(8, Math.min(r.top - 4, floor - ch)));
+        const q = s => { const el = typeof document !== "undefined" && document.querySelector ? document.querySelector(s) : null; return el && typeof el.getBoundingClientRect === "function" ? el.getBoundingClientRect() : null; };
+        const br = bar && bar.root && bar.root.getBoundingClientRect ? bar.root.getBoundingClientRect() : slot.getBoundingClientRect(), H = typeof innerHeight === "number" ? innerHeight : 700;
+        const left = Math.round(br.width > 0 ? br.left : 14), own = typeof root.getBoundingClientRect === "function" ? root.getBoundingClientRect() : null, cw = own && own.width || 340, ch = own && own.height || 322;
+        const tool = q("#mixTool .mt-panel"), tab = q("#squadFly .sf-back");   // (hidden, the stack and the tool keep their places: visibility, not display)
+        let floor = tool && tool.height > 0 ? tool.bottom : H - 8;
+        for (const sel of ["#topToggles", "#mixTool .mt-foe"]) { const b = q(sel); if (b && b.width > 0 && b.height > 0 && b.left < left + cw && b.right > left) floor = Math.min(floor, b.top - 8); }   // (the dock; the enemy card, while a creature is locked)
+        const lift = own && tab && tab.height > 0 ? Math.max(0, own.top - tab.top) : 0;   // (how far the tab stands above it)
+        const top = Math.round(Math.max(8 + lift, floor - ch));
         root.style.left = left + "px"; root.style.top = top + "px";
-        const tip = root.querySelector ? root.querySelector(".sf-tip") : null, tt = Math.round(Math.max(10, Math.min(r.top + 18 - top, ch - 34))) + "px";
-        if (tip && tip.style && tip.style.top !== tt) tip.style.top = tt;
     }
+}
+// the squad's corner shows the stack and the tool, or a member's card in their place (game.html: body.flyOpen hides the two)
+function _sfCorner(on) {
+    const b = typeof document !== "undefined" && document.body && document.body.classList ? document.body.classList : null;
+    if (b && b.contains("flyOpen") !== on) b.toggle("flyOpen", on);
 }

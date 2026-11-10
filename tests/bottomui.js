@@ -51,11 +51,15 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     selectedUnits.clear(); selectedUnits.add(followers[0]); squadMode = 'selected'; partyTick();
     actors = actors.filter(function(a){ return !(a instanceof Predator); }); var e = spawnCreature({ species: 'beetle', className: 'tank' }); e.x = player.x + 3; e.y = player.y + 1; e.state = 'wander'; e.provoked = false; e.moveSpeed = 0; e.baseMoveSpeed = 0;
     targetSet(e, true); mixToolRender(true); frameNow(); await wait(60);
+    // a tablet: the picked member's card is open, in the squad's corner (since build 2026-11-10c the stack and the tool's orders give way to it); then put away, the member still picked: the stack and the orders are back
+    var vis = function(s){ var el = $(s); return el ? getComputedStyle(el).visibility : null; };
+    out.card = snap(); out.card.corner = [vis('#squadBar'), vis('#mixTool .mt-main')].join(); out.card.tab = rect('#squadFly .sf-back');
+    if (hudCorners()) { _sfAway = true; partyFlyRender(true); frameNow(); await wait(30); }
     out.shut = snap();
-    // the third member's card, the lowest on the stack: clear of the dock and the enemy card, its tip at the member's card
+    // the third member's card, the lowest on the stack: in the same corner, clear of the dock and the enemy card
     var s2 = $$('#squadBar .sb-slot')[2];
-    if (hudCorners() && s2 && s2._unit) { selectedUnits.clear(); selectedUnits.add(s2._unit); partyTick(); frameNow(); await wait(60); var b2 = s2.getBoundingClientRect();
-      out.third = { fly: rect('#squadFly.on'), tip: rect('#squadFly .sf-tip'), slot: [Math.round(b2.left), Math.round(b2.top), Math.round(b2.right), Math.round(b2.bottom)], dock: rect('#topToggles'), foe: rect('#mixTool .mt-foe'), panel: rect('#mixTool .mt-panel') };
+    if (hudCorners() && s2 && s2._unit) { selectedUnits.clear(); selectedUnits.add(s2._unit); _sfAway = false; partyTick(); frameNow(); await wait(60);   // (as a tap on its card opens it: js/party.js partyBarClick)
+      out.third = { fly: rect('#squadFly.on'), dock: rect('#topToggles'), foe: rect('#mixTool .mt-foe') };
       selectedUnits.clear(); selectedUnits.add(followers[0]); partyTick(); }
     if (!mixToolWide()) { crystalMenuOpen = true; mixToolRender(true); frameNow(); await wait(60); out.open = snap(); crystalMenuOpen = false; mixToolRender(true); }
     // what lets a selection go without it: a tap on the lit card, the battle tool's WHO row (ALL)
@@ -105,18 +109,21 @@ for (const [w, h] of [[360, 740], [390, 844], [421, 800], [560, 800], [561, 800]
         const b = r.shut.bar; if (!phone) ok(b[3] <= r.shut.dock[1] + 1, 'the bar ' + b + ' is not over the dock ' + r.shut.dock);
         same(r.empty.bar[3] - r.empty.bar[1], r.shut.bar[3] - r.shut.bar[1], 'the bar changed height with open slots'); same(r.shut.slots.length, 3, 'slots'); ok(r.shut.slots.every(q => q[3] - q[1] === r.shut.slots[0][3] - r.shut.slots[0][1]), 'the slots are not all one height: ' + JSON.stringify(r.shut.slots));
     });
-    if (!phone) check(w + ': the corners: the three cards are stacked over the battle tool at the bottom left, the enemy card is at the bottom right over the dock\'s line, the crystals and the bars are at the top left and the zone tag at the top right, and a picked member\'s card stands beside the stack, clear of the tool, the dock and the enemy card', () => {
-        const s = r.shut; ok(s.bar && s.panel && s.foe && s.dock && s.fly, 'a piece is missing: ' + JSON.stringify({ bar: s.bar, panel: s.panel, foe: s.foe, dock: s.dock, fly: s.fly }));
+    if (!phone) check(w + ': the corners: the three cards are stacked over the battle tool at the bottom left, the enemy card is at the bottom right over the dock\'s line, the crystals and the bars are at the top left and the zone tag at the top right; a picked member\'s card takes the squad\'s corner (the stack and the orders give way to it, the enemy card does not), clear of the dock and the enemy card, its tab on top of it', () => {
+        const s = r.shut, c = r.card; ok(s.bar && s.panel && s.foe && s.dock && c && c.fly, 'a piece is missing: ' + JSON.stringify({ bar: s.bar, panel: s.panel, foe: s.foe, dock: s.dock, fly: c && c.fly }));
         ok(s.bar[3] <= s.panel[1] + 1, 'the stack ' + s.bar + ' is not over the tool ' + s.panel); ok(s.bar[0] <= 20 && s.panel[0] <= 20, 'not at the left: ' + s.bar + ' ' + s.panel); ok(s.bar[3] - s.bar[1] > (s.bar[2] - s.bar[0]) / 2, 'the cards are not stacked: ' + s.bar);
         ok(w - s.foe[2] <= 20 && s.foe[2] <= w && s.foe[1] > h / 2 && !cross(s.foe, s.dock), 'the enemy card ' + s.foe + ' is not at the bottom right, clear of the dock ' + s.dock);   // (on a wide screen the dock is narrower than the room: the card may stand beside it)
         ok(s.hudl && s.hudc && s.hudr && s.hudl[2] <= s.hudc[0] + 1 && s.hudc[0] < w / 2 && w - s.hudr[2] <= 30, 'the top: ' + JSON.stringify([s.hudl, s.hudc, s.hudr]));
-        ok(s.fly[0] >= s.bar[2] && !cross(s.fly, s.panel) && !cross(s.fly, s.dock) && !cross(s.fly, s.foe) && inside(s.fly, w, h), 'the member\'s card ' + s.fly + ' lies over something (bar ' + s.bar + ', tool ' + s.panel + ', dock ' + s.dock + ', enemy card ' + s.foe + ')');
+        same(c.corner, 'hidden,hidden', 'the stack and the tool\'s orders while the card is open'); ok(c.foe, 'the enemy card went with them'); same(c.bar, null, 'the stack'); same(c.panel, null, 'the tool');
+        ok(Math.abs(c.fly[0] - s.bar[0]) <= 2 && c.fly[3] <= s.panel[3] + 1 && c.fly[3] >= s.panel[3] - 12, 'the member\'s card ' + c.fly + ' is not where the stack ' + s.bar + ' and the tool ' + s.panel + ' stand');
+        ok(!cross(c.fly, c.dock) && !cross(c.fly, c.foe) && inside(c.fly, w, h), 'the member\'s card ' + c.fly + ' lies over the dock ' + c.dock + ' or the enemy card ' + c.foe + ', or off the screen');
+        ok(c.tab && c.tab[1] >= 0 && c.tab[3] <= c.fly[1] + 1 && c.tab[0] >= c.fly[0], 'its tab ' + c.tab + ' is not on top of it ' + c.fly);
         ok(r.lit.flyAfter === false, 'the card stays after the member is let go');
     });
-    if (!phone) check(w + ': the third member\'s card (the lowest on the stack) keeps clear of the dock, the enemy card and the tool, on the screen, and its tip points at the member\'s card', () => {
-        const t = r.third; ok(t && t.fly && t.tip && t.slot, 'no card: ' + JSON.stringify(t));
-        ok(!cross(t.fly, t.dock) && !cross(t.fly, t.foe) && !cross(t.fly, t.panel) && inside(t.fly, w, h), 'the member\'s card ' + t.fly + ' lies over something (dock ' + t.dock + ', enemy card ' + t.foe + ', tool ' + t.panel + ')');
-        const mid = (t.tip[1] + t.tip[3]) / 2; ok(mid > t.slot[1] && mid < t.slot[3], 'the tip ' + t.tip + ' does not point at the member\'s card ' + t.slot);
+    if (!phone) check(w + ': the third member\'s card (the lowest on the stack) stands in the same corner as the first\'s, clear of the dock and the enemy card, on the screen', () => {
+        const t = r.third; ok(t && t.fly, 'no card: ' + JSON.stringify(t));
+        ok(!cross(t.fly, t.dock) && !cross(t.fly, t.foe) && inside(t.fly, w, h), 'the member\'s card ' + t.fly + ' lies over something (dock ' + t.dock + ', enemy card ' + t.foe + ')');
+        ok(Math.abs(t.fly[0] - r.card.fly[0]) <= 1 && Math.abs(t.fly[3] - r.card.fly[3]) <= 1, 'the third member\'s card ' + t.fly + ' is not where the first\'s is ' + r.card.fly);
     });
     check(w + ': there is no "N SELECTED" chip, with one selected, with all three, or with a follower the roster picked that holds a room: nothing in the page makes one', () => {
         same(r.chip.made, false, 'a chip is in the page'); same(r.chip.maker, 'undefined', 'the chip\'s code is still there'); same(r.chip.one, null, 'a chip with one selected'); same(r.chip.three, null, 'a chip with three selected'); same(r.chip.posted, null, 'a chip for a selected follower that holds a room'); same(r.chip.madeAfter, false, 'a chip was made along the way');

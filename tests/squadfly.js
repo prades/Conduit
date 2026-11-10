@@ -34,6 +34,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   var rect = function(e){ if (!e) return null; var b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.right), Math.round(b.bottom)]; };
   var flyOn = function(){ var f = $('#squadFly'); return !!f && f.classList.contains('on') && getComputedStyle(f).display !== 'none'; };
   var slots = function(){ return $$('#squadBar .sb-slot'); }, txt = function(sel){ var e = $(sel); return e ? e.textContent : null; };
+  var vis = function(s){ var e = $(s); return e ? getComputedStyle(e).visibility : null; }, corner = function(){ return [vis('#squadBar'), vis('#mixTool .mt-main'), document.body.classList.contains('flyOpen')].join(); };   // (the squad's corner: the stack and the tool's orders, hidden while a member's card is open, build 2026-11-10c)
   try {
     if (!(typeof facilityPlay !== 'undefined' && facilityPlay)) facilityPlayStart(); await wait(300);
     gameState.running = true; crystalMenuOpen = false; var wide = innerWidth > 700; out.wide = wide; out.corners = hudCorners(); if (!wide) crystalMenuOpen = true; selectedUnits.clear(); partyTick(); mixToolRender(true); await wait(60);   // (a phone: the tool is open, to see its WHO row)
@@ -44,6 +45,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     out.pick = { fly: flyOn(), sel: selectedUnits.size, all: !!$('#mixTool .mt-all.on'), to: $('#mixTool .mt-to b') ? $('#mixTool .mt-to b').textContent : null, name: f && f.querySelector('.sf-name') ? f.querySelector('.sf-name').textContent : null, label: unitTypeLabel(m0), sub: f && f.querySelector('.sf-sub') ? f.querySelector('.sf-sub').textContent : null,
       tags: f ? $$('#squadFly .sf-tag, #squadFly .sf-rt').map(function(t){ return t.textContent; }).join() : '', hpn: f && f.querySelector('.sf-hpn') ? f.querySelector('.sf-hpn').textContent : null, btns: f ? $$('#squadFly .sf-btn').filter(function(b){ return b.getClientRects().length > 0; }).map(function(b){ return b.textContent; }) : [], thumb: !!(f && f.querySelector('canvas.sf-thumb')),
       fr: rect(f), sr: rect(s0), br: rect($('#squadBar')), tr: rect($('#mixTool .mt-panel')), col: card ? card.style.getPropertyValue('--c') : '', go: $('#mixTool .mt-foe-go') ? $('#mixTool .mt-foe-go').textContent : null };
+    out.corner = { now: corner(), foe: vis('#mixTool .mt-foe-slot'), tab: rect($('#squadFly .sf-back')), tabText: txt('#squadFly .sf-back'), dock: rect($('#topToggles')) };
     // ITS TWO EQUIP CARD SLOTS on the card (js/cards.js; the owner, 2026-11-01: "equip different equipment cards from the on-screen roster open tab"): with nothing in the hand the two rows say so and take no tap; with the test cards to hand
     // (?cards=all, in-page) CARD 1 lists EMPTY and the cards that fit this follower, each with its short text (since build 2026-11-07pp the rest are not shown); a tap wears one (the row names it, with its rarity chip, the list shuts, the card stays open); EMPTY takes it off
     if (card) {
@@ -74,11 +76,14 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     if ($('#unitInfo')) press($('#unitInfo')); unitInfoClose(); await wait(40); out.index.back = flyOn();   // (a press on the unit info is not one away from the card: closing it brings the card back)
     // REPORTED: "when I click away, it should still have that character selected, but the card should go away"
     if ($('#squadFly .sf-name')) press($('#squadFly .sf-name')); await wait(40); out.away = { onCard: flyOn() };   // (a phone has no card)
-    press(document.body); await wait(60); out.away.fly = flyOn(); out.away.sel = selectedUnits.size; out.away.lit = s0.classList.contains('sel');
+    press(document.body); await wait(60); out.away.fly = flyOn(); out.away.sel = selectedUnits.size; out.away.lit = s0.classList.contains('sel'); out.away.corner = corner();
     for (var w = 0; w < 40 && txt('#mixTool .mt-to b') !== unitTypeLabel(m0); w++) { if (typeof mixToolRender === 'function') mixToolRender(false); await wait(25); }   // (the tool's caption is redrawn by the loop every six frames, js/game.js render, when its signature moves: in this page the loop's cadence is not reliable, and the XP step's SEEPER could stay on the caption; the loop's own call is made here until it catches up, up to a second)
     out.away.to = txt('#mixTool .mt-to b'); out.away.label = unitTypeLabel(m0);
     partyTick(); await wait(40); out.away.tick = flyOn();
     click(s0); await wait(60); out.away.letGo = [selectedUnits.size, flyOn()]; click(s0); await wait(60); out.away.again = [selectedUnits.size, flyOn(), txt('#squadFly .sf-name')];
+    // ◂ SQUAD & ORDERS (the owner, 2026-11-10: "a little tab ... where the player can return to the mini roster battle tactics menu without having to interact with the world or click a button they don't want to")
+    var back = $('#squadFly .sf-back'); if (back) { press(back); click(back); } await wait(60);
+    out.tab = { found: !!back, fly: flyOn(), sel: selectedUnits.size, lit: s0.classList.contains('sel'), corner: corner(), to: txt('#mixTool .mt-to b') };
     // a second card picked: the card is the last one tapped; two picked says so
     var s1 = slots()[1], m1 = s1._unit; click(s1); await wait(60);
     out.two = { fly: flyOn(), sel: selectedUnits.size, name: txt('#squadFly .sf-name'), label1: unitTypeLabel(m1), to: txt('#mixTool .mt-to b') };
@@ -160,7 +165,8 @@ function measure(w, h) {
         const t = rd('js/squadfly.js'); ok(/addEventListener\("pointerdown", partyFlyPressAway, true\)/.test(t), 'the press away is not heard'); ok(/closest\("\.sf-card"\)/.test(t) && /closest\("#squadBar"\)/.test(t) && /closest\("#unitInfo"\)/.test(t), 'a press on the card, the stack or the unit info counts as away');
     });
     check('the card\'s code: INDEX opens the unit info, DISMISS is the roster\'s REMOVE (the member holds the room it is in); it follows the card it is for and is hidden with the bar', () => {
-        const t = rd('js/squadfly.js'); ok(/unitInfoOpen\(f\)/.test(t) && /partyRemove\(\[f\]\)/.test(t), 'the buttons'); ok(/data-act="index"/.test(t) && /data-act="dismiss"/.test(t), 'the markup'); ok(/getBoundingClientRect\(\)/.test(t), 'it is not placed beside its card');
+        const t = rd('js/squadfly.js'); ok(/unitInfoOpen\(f\)/.test(t) && /partyRemove\(\[f\]\)/.test(t), 'the buttons'); ok(/data-act="index"/.test(t) && /data-act="dismiss"/.test(t), 'the markup'); ok(/getBoundingClientRect\(\)/.test(t) && /_sfCorner\(true\)/.test(t) && /_sfCorner\(false\)/.test(t), 'it is not placed in the squad\'s corner, or the corner does not give way to it and come back');
+        ok(/body\.corners\.flyOpen #squadBar, body\.corners\.flyOpen #mixTool \.mt-main \{ visibility: hidden; \}/.test(rd('game.html')), 'game.html does not hide the stack and the orders while the card is open (visibility, so they keep their places)');
         ok(/body\.placing #squadFly, body\.ccOpen #squadFly, body\.panel-open #squadFly/.test(rd('game.html')), 'it stays up over the Command Center'); ok(/<div id="squadFly"/.test(rd('game.html')) && /js\/squadfly\.js/.test(rd('game.html')), 'game.html');
         ok(/typeof partyFlyRender === "function"\) partyFlyRender\(\)/.test(rd('js/party.js')), 'the bar does not render it');
     });
@@ -181,12 +187,16 @@ function measure(w, h) {
         check(w + ': at the start nobody is picked: ALL is lit, the tool says how many follow, there is one scope button, no card; the body has the corners class', () => {
             same(r.corners, true, 'hudCorners'); same(r.start.body, true, 'the corners class'); same(r.start.fly, false, 'a card with nobody picked'); same(r.start.all, true, 'ALL is not lit'); same(r.start.to, '3 FOLLOWING', 'the caption'); same(r.start.who, 'all', 'the scope buttons'); same(r.start.chips, 0, 'element chips');
         });
-        check(w + ': a tap on a card picks that member (the tool names them, ALL goes dark, the enemy strip says SELECTED) and their card opens beside the stack: picture, name, element · level · role, state / role / style / SQUAD, health, INDEX and DISMISS FROM SQUAD; its top lines up with the card and it lies clear of the tool, the dock and the stack', () => {
+        check(w + ': a tap on a card picks that member (the tool names them, ALL goes dark, the enemy strip says SELECTED) and their card opens in the squad\'s corner: picture, name, element · level · role, state / role / style / SQUAD, health, INDEX and DISMISS FROM SQUAD; the stack and the tool\'s orders give way to it (the enemy card does not), it stands where they stood (its left at the stack\'s, its foot on the tool\'s), clear of the dock, its tab ◂ SQUAD & ORDERS on top of it', () => {
             same(r.pick.fly, true, 'no card'); same(r.pick.sel, 1, 'picked'); same(r.pick.all, false, 'ALL is lit'); same(r.pick.to, r.pick.label, 'the tool names the member'); same(r.pick.name, r.pick.label, 'the card\'s name'); ok(/LV 7/.test(r.pick.sub) && / · /.test(r.pick.sub), 'sub ' + r.pick.sub);
             ok(/FOLLOWING/.test(r.pick.tags) && /SQUAD/.test(r.pick.tags) && /BRAWL|MAGE|TECH/.test(r.pick.tags), 'tags ' + r.pick.tags); ok(/^\d+ \/ \d+$/.test(r.pick.hpn), 'health ' + r.pick.hpn); same(r.pick.thumb, true, 'a picture'); ok(/^#/.test(r.pick.col) || /rgb/.test(r.pick.col), 'colour ' + r.pick.col);
             same(r.pick.btns.length, 2, 'buttons'); ok(/^INDEX/.test(r.pick.btns[0]) && /^DISMISS FROM SQUAD/.test(r.pick.btns[1]), 'buttons ' + r.pick.btns);
-            ok(r.pick.fr[0] >= r.pick.br[2], 'the card ' + r.pick.fr + ' is not beside the stack ' + r.pick.br); ok(Math.abs(r.pick.fr[1] - r.pick.sr[1]) <= 24, 'the card\'s top ' + r.pick.fr[1] + ' is not at its card\'s ' + r.pick.sr[1]);   // (24: since build 2026-11-07ss every follower's card has an ATTACK row and the squad cards an Ultimate meter, so on a narrow screen it rises up to a row to stay clear of the dock, its tip still at the member's card) ok(r.pick.fr[3] <= r.pick.tr[1] + 40 || r.pick.fr[0] >= r.pick.tr[2], 'the card ' + r.pick.fr + ' lies over the tool ' + r.pick.tr);
-            ok(r.pick.fr[2] <= w && r.pick.fr[3] <= h, 'the card is off the screen: ' + r.pick.fr);
+            // IN THE SQUAD'S CORNER (build 2026-11-10c; the owner: "hides the mini roster and the battle tactics menu, and puts the creature information over that, so it doesn't invade on the world view"; it stood beside the stack before)
+            same(r.corner.now, 'hidden,hidden,true', 'the stack and the tool\'s orders (visibility, and the body\'s flyOpen) while the card is open'); ok(r.corner.foe !== 'hidden', 'the enemy card went with them');
+            ok(Math.abs(r.pick.fr[0] - r.pick.br[0]) <= 2, 'the card ' + r.pick.fr + ' is not at the stack\'s left ' + r.pick.br); ok(r.pick.fr[3] <= r.pick.tr[3] + 1 && r.pick.fr[3] >= r.pick.tr[3] - 12, 'the card\'s foot ' + r.pick.fr[3] + ' is not on the tool\'s ' + r.pick.tr[3] + ' (8 px clear of the dock at most)');
+            const over = (a, b) => !!a && !!b && a[0] < b[2] - 1 && b[0] < a[2] - 1 && a[1] < b[3] - 1 && b[1] < a[3] - 1;
+            ok(r.pick.fr[0] >= 0 && r.pick.fr[2] <= w && r.pick.fr[3] <= h && !over(r.pick.fr, r.corner.dock), 'the card is off the screen or over the dock: ' + r.pick.fr + ' / ' + r.corner.dock);
+            ok(r.corner.tab && r.corner.tab[1] >= 0 && r.corner.tab[3] <= r.pick.fr[1] + 1 && r.corner.tab[0] >= r.pick.fr[0], 'the tab ' + r.corner.tab + ' does not stand on top of the card ' + r.pick.fr); same(r.corner.tabText, '◂ SQUAD & ORDERS', 'the tab\'s words');
         });
         check(w + ': the card has an XP row (a bar as long as the level is done, and the numbers) and says how far the member is from evolving: the levels and the XP to go, in the last level before it evolves lit; an evolved member says EVOLVED', () => {
             if (!wide) return; ok(r.xp, 'no xp probe');
@@ -212,6 +222,11 @@ function measure(w, h) {
             same(r.index.back, true, 'closing the unit info did not bring the card back'); same(r.away.onCard, true, 'a press on the card put it away');
             same(r.away.fly, false, 'the card stayed after a press away'); same(r.away.sel, 1, 'the press away let the member go'); same(r.away.lit, true, 'its card on the stack is not lit'); same(r.away.to, r.away.label, 'the tool does not name it'); same(r.away.tick, false, 'a tick brought the card back');
             same(r.away.letGo.join(), '0,false', 'a tap on the picked member'); same(r.away.again[0], 1, 'the next tap did not pick it'); same(r.away.again[1], true, 'the next tap did not open its card'); same(r.away.again[2], r.away.label, 'the card is not its');
+            same(r.away.corner, 'visible,visible,false', 'after a press away the corner is not the stack and the orders again (the owner, 2026-11-10: "the menu refreshes to the normal look")');
+        });
+        check(w + ': the card\'s tab, ◂ SQUAD & ORDERS, puts it away as a press elsewhere does, with nothing else touched: the stack and the tool\'s orders are back, the member still picked (its card on the stack lit, the tool names it)', () => {
+            same(r.tab.found, true, 'no tab on the card'); same(r.tab.fly, false, 'the card stayed after its tab'); same(r.tab.corner, 'visible,visible,false', 'the stack and the orders did not come back');
+            same(r.tab.sel, 1, 'the tab let the member go'); same(r.tab.lit, true, 'its card on the stack is not lit'); same(r.tab.to, r.away.label, 'the tool does not name it');
         });
         check(w + ': INDEX opens the unit\'s info; a second member picked makes THEIR card the open one and the tool says 2 SELECTED; letting that one go gives the card back to the first; ALL lets everyone go and the card closes', () => {
             same(r.index.open, true, 'INDEX opened nothing'); ok(/./.test(r.index.title || ''), 'its title'); same(r.two.fly, true, 'card'); same(r.two.sel, 2, 'two picked'); same(r.two.name, r.two.label1, 'the last tapped'); same(r.two.to, '2 SELECTED', 'the caption');
