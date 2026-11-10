@@ -6,59 +6,62 @@
 // each form's first (default) move is the one it always had, and until a follower is given another it uses that.
 //   id        the key (saved with a follower as f.move once a choice exists)
 //   name      what the form calls it (EVOLUTIONS[x].move, the floating text, MOVE_INFO in js/unitinfo.js)
-//   windup    its WIND-UP, in seconds: the charge between two firings. Once it is full the move fires the moment an enemy is in reach. It is the attack's own stat, so a
-//             form with two moves charges each at its own pace; change a number here and the move, its INFO and the bible all follow (the owner, 2026-11-07: "make it
-//             another stat ... it needs to be adjustable ... it's on the attack not the follower"). The values were the moves' old waits, unchanged. PINBALL's counts from
-//             the end of a roll.
+//   windup    its TIME, in seconds, between two firings. A Mage or a Technician WINDS UP for it, standing still, and fires when it is over; a Brawler fires the moment an enemy is
+//             in reach and then COOLS DOWN for it, free to move (build 2026-11-10a; the owner, 2026-11-10: "make it to where the brawlers have a cooldown time and the mages have
+//             wind-up time and not vice versa", Technicians "Wind-up"; altCools below). It is the attack's own stat, so a form with two moves times each at its own pace; change
+//             a number here and the move, its INFO and the bible all follow (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it's on the attack
+//             not the follower"). The values are the moves' old waits HALVED in build 2026-11-10a ("and also make it half as slow"). PINBALL's counts from the end of a roll.
 //   fn        the function that fires it: fn(f) -> true when it fired (it sets f._sigCd itself, to moveWindupFrames(id))
 //   classes   (optional) the player classes whose followers may use it; absent = everyone's
 const MOVES = {
-    petal_blaze:       { id: "petal_blaze",       name: "PETAL BLAZE",       windup: 6, fn: f => petalBlaze(f) },
-    quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       windup: 4, fn: f => quillBurst(f) },
-    arc_volley:        { id: "arc_volley",        name: "ARC VOLLEY",        windup: 5, fn: f => arcVolley(f) },
-    singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  windup: 5.5, fn: f => singularityShot(f) },
-    static_rush:       { id: "static_rush",       name: "SONIC ROLL",        windup: 5, fn: f => staticRush(f) },   // (it was STATIC RUSH: renamed by the owner, 2026-11-02; the id stays, a saved choice)
-    hexfire:           { id: "hexfire",           name: "HEXFIRE",           windup: 5.5, fn: f => hexfire(f) },
-    corrode_shot:      { id: "corrode_shot",      name: "CORRODE SHOT",      windup: 5.33, fn: f => corrodeShot(f) },
-    gravity_slam:      { id: "gravity_slam",      name: "GRAVITY SLAM",      windup: 5.5, fn: f => gravitySlam(f) },
+    petal_blaze:       { id: "petal_blaze",       name: "PETAL BLAZE",       windup: 3, fn: f => petalBlaze(f) },
+    quill_burst:       { id: "quill_burst",       name: "QUILL BURST",       windup: 2, fn: f => quillBurst(f) },
+    arc_volley:        { id: "arc_volley",        name: "ARC VOLLEY",        windup: 2.5, fn: f => arcVolley(f) },
+    singularity_shot:  { id: "singularity_shot",  name: "SINGULARITY SHOT",  windup: 2.75, fn: f => singularityShot(f) },
+    static_rush:       { id: "static_rush",       name: "SONIC ROLL",        windup: 2.5, fn: f => staticRush(f) },   // (it was STATIC RUSH: renamed by the owner, 2026-11-02; the id stays, a saved choice)
+    hexfire:           { id: "hexfire",           name: "HEXFIRE",           windup: 2.75, fn: f => hexfire(f) },
+    corrode_shot:      { id: "corrode_shot",      name: "CORRODE SHOT",      windup: 2.67, fn: f => corrodeShot(f) },
+    gravity_slam:      { id: "gravity_slam",      name: "GRAVITY SLAM",      windup: 2.75, fn: f => gravitySlam(f) },
     // (AEGIS BURST and AEGIS BLOOM, the core forms' moves, went with the followers' shield: js/evolution.js "THE CORE FORMS HAVE NO MOVE NOW")
-    eruption:          { id: "eruption",          name: "ERUPTION",          windup: 5.5, fn: f => eruption(f) },
-    chomp:             { id: "chomp",             name: "CHOMP",             windup: 5, fn: f => chomp(f) },
+    eruption:          { id: "eruption",          name: "ERUPTION",          windup: 2.75, fn: f => eruption(f) },
+    chomp:             { id: "chomp",             name: "CHOMP",             windup: 2.5, fn: f => chomp(f) },
     // A second move for the fire forms (js/firebombs.js): three bouncing bombs fanned at the nearest foe. Chosen on the unit's INFO tab; a fire form's own move stays its default.
     // THE FOLLOWER COMBAT REDESIGN (docs/FOLLOWER-COMBAT-REDESIGN.md): the Static Orb's second move, chosen on its INFO tab (SONIC ROLL stays its default), and the Thunderhead's move.
-    pinball:           { id: "pinball",           name: "PINBALL",           windup: 5, fn: f => pinball(f) },
-    static_vortex:     { id: "static_vortex",     name: "STATIC VORTEX",     windup: 5.5, fn: f => staticVortex(f) },
+    pinball:           { id: "pinball",           name: "PINBALL",           windup: 2.5, fn: f => pinball(f) },
+    static_vortex:     { id: "static_vortex",     name: "STATIC VORTEX",     windup: 2.75, fn: f => staticVortex(f) },
     // the Thermite Burrower's alternate (the owner, 2026-11-06: "Short and hot"; js/evolution.js magmaVent)
-    magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        windup: 20, fn: f => magmaVent(f) },
+    magma_vent:        { id: "magma_vent",        name: "MAGMA VENT",        windup: 10, fn: f => magmaVent(f) },
     // the Rotshard's second move, picked on its INFO (the owner, 2026-11-07: "Short lure"; js/evolution.js rottenDecoy)
-    rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      windup: 14, fn: f => rottenDecoy(f) },
+    rotten_decoy:      { id: "rotten_decoy",      name: "ROTTEN DECOY",      windup: 7, fn: f => rottenDecoy(f) },
     // the THORNWHIP's alternate (BLOOM's Mage, build 2026-11-08j; js/evolution.js seedfall): its wind-up is the agent's, provisional (HEXFIRE's and STATIC VORTEX's)
-    seedfall:          { id: "seedfall",          name: "SEEDFALL",          windup: 5.5, fn: f => seedfall(f) },
+    seedfall:          { id: "seedfall",          name: "SEEDFALL",          windup: 2.75, fn: f => seedfall(f) },
     // BASH (build 2026-11-07ss; the owner: "Ram and knock back", then "BASH for now" as the second attack of the eight forms the design notes give none, and of every follower before it
     // evolves: js/evolution.js bash). `close`: a Mage locked on it closes in to use it (js/npc.js), as a Brawler does.
-    bash:              { id: "bash",              name: "BASH",              windup: 4, close: true, fn: f => bash(f) },
+    bash:              { id: "bash",              name: "BASH",              windup: 2, close: true, fn: f => bash(f) },
     // STAKE RING (STONEPETAL's own, build 2026-11-08n: the owner picked it of four drafts, in place of BASH; js/evolution.js stakeRing): its wind-up the agent's, provisional (BASH's)
-    stake_ring:        { id: "stake_ring",        name: "STAKE RING",        windup: 4, fn: f => stakeRing(f) },
+    stake_ring:        { id: "stake_ring",        name: "STAKE RING",        windup: 2, fn: f => stakeRing(f) },
     // SWEET SCENT (SUNDEW's own, build 2026-11-08n: the owner's design, in place of BASH; js/evolution.js sweetScent): a puff that lures the enemies near it, or, its stockpile full, a heal. Its wind-up the
     // agent's, provisional (the owner: "having the wind up that'll be fine")
-    sweet_scent:       { id: "sweet_scent",       name: "SWEET SCENT",       windup: 5, fn: f => sweetScent(f) },
+    sweet_scent:       { id: "sweet_scent",       name: "SWEET SCENT",       windup: 2.5, fn: f => sweetScent(f) },
     // THE NINE SECOND ATTACKS (build 2026-11-09c; the owner picked each of the agent's drafts, one form at a time, in place of BASH: js/evolution.js "THE NINE SECOND ATTACKS"). Their wind-ups the agent's,
     // provisional (BASH's 4 s for the quick ones, more for the bigger ones). `close`: a Mage or a Technician locked on it walks in to use it, as on BASH.
-    zigzag_dash:       { id: "zigzag_dash",       name: "ZIGZAG DASH",       windup: 4, fn: f => zigzagDash(f) },     // the Electro Skink's
-    wobble_slam:       { id: "wobble_slam",       name: "WOBBLE SLAM",       windup: 4, close: true, fn: f => wobbleSlam(f) },   // the Jelly Ram's
-    icicle_volley:     { id: "icicle_volley",     name: "ICICLE VOLLEY",     windup: 5, fn: f => icicleVolley(f) },   // the Rimestar's
-    echo_pulse:        { id: "echo_pulse",        name: "ECHO PULSE",        windup: 5, fn: f => echoPulse(f) },      // the Hornshell's
-    shell_guard:       { id: "shell_guard",       name: "SHELL GUARD",       windup: 6, fn: f => shellGuard(f) },     // the Hammer Slug's
-    phase_swap:        { id: "phase_swap",        name: "PHASE SWAP",        windup: 5, fn: f => phaseSwap(f) },      // the Goo Proxy's
-    venom_bite:        { id: "venom_bite",        name: "VENOM BITE",        windup: 5, close: true, fn: f => venomBite(f) },    // the Blight Spider's
-    shock_zap:         { id: "shock_zap",         name: "SHOCK ZAP",         windup: 4, fn: f => shockZap(f) },       // the Hover Shell's
-    skate_charge:      { id: "skate_charge",      name: "SKATE CHARGE",      windup: 4.5, fn: f => skateCharge(f) },  // the Igloo Skater's
+    zigzag_dash:       { id: "zigzag_dash",       name: "ZIGZAG DASH",       windup: 2, fn: f => zigzagDash(f) },     // the Electro Skink's
+    wobble_slam:       { id: "wobble_slam",       name: "WOBBLE SLAM",       windup: 2, close: true, fn: f => wobbleSlam(f) },   // the Jelly Ram's
+    icicle_volley:     { id: "icicle_volley",     name: "ICICLE VOLLEY",     windup: 2.5, fn: f => icicleVolley(f) },   // the Rimestar's
+    echo_pulse:        { id: "echo_pulse",        name: "ECHO PULSE",        windup: 2.5, fn: f => echoPulse(f) },      // the Hornshell's
+    shell_guard:       { id: "shell_guard",       name: "SHELL GUARD",       windup: 3, fn: f => shellGuard(f) },     // the Hammer Slug's
+    phase_swap:        { id: "phase_swap",        name: "PHASE SWAP",        windup: 2.5, fn: f => phaseSwap(f) },      // the Goo Proxy's
+    venom_bite:        { id: "venom_bite",        name: "VENOM BITE",        windup: 2.5, close: true, fn: f => venomBite(f) },    // the Blight Spider's
+    shock_zap:         { id: "shock_zap",         name: "SHOCK ZAP",         windup: 2, fn: f => shockZap(f) },       // the Hover Shell's
+    skate_charge:      { id: "skate_charge",      name: "SKATE CHARGE",      windup: 2.25, fn: f => skateCharge(f) },  // the Igloo Skater's
     // CAPACITOR DISCHARGE (build 2026-11-07ss; the design notes, docs/NEXT-PHASE-ROADMAP.md §12.3: the Static Orb's alternate, PINBALL superseded; js/evolution.js capacitorTick). `manual`: no
     // wind-up cycle: it stores charges, standing still, and the player releases them (its squad card's chip, its INFO). `windup` is the time one charge takes.
-    capacitor_discharge: { id: "capacitor_discharge", name: "CAPACITOR DISCHARGE", windup: 1.5, manual: true, fn: f => capacitorRelease(f) },
+    capacitor_discharge: { id: "capacitor_discharge", name: "CAPACITOR DISCHARGE", windup: 0.75, manual: true, fn: f => capacitorRelease(f) },
 };
-// A move's wind-up in frames (60 a second). A row without one waits 5 s.
-function moveWindupFrames(id) { const m = MOVES[id]; return Math.round((m && m.windup > 0 ? m.windup : 5) * 60); }
+// A move's time in frames (60 a second): a Mage's or a Technician's wind-up, a Brawler's cooldown. A row without one takes 2.5 s.
+function moveWindupFrames(id) { const m = MOVES[id]; return Math.round((m && m.windup > 0 ? m.windup : 2.5) * 60); }
+// Whether its second attack COOLS DOWN after it fires (a Brawler) rather than winding up before it (a Mage, `sniper`, or a Technician, `camper`): build 2026-11-10a (js/evolution.js altTick)
+function altCools(f) { return !!f && f.role !== "sniper" && f.role !== "camper"; }
 const MOVE_BY_NAME = {};
 for (const id in MOVES) MOVE_BY_NAME[MOVES[id].name] = MOVES[id];
 
@@ -80,7 +83,8 @@ function evoMoveAllowed(f, d, id) {
 // [...] follower cannot move"; then "Yes, exactly" and "Stays on the alternate"). A follower fights with its NORMAL ATTACK (the default) or with ONE of its form's moves, chosen (`f.alt`: on its INFO, its
 // squad card on the HUD, or the Command Center's setter). On a move it is LOCKED to it until switched back: no everyday hit, no shot, no card attack, an attack order included (js/combat.js followerAttack,
 // js/npc.js). The cycle (js/evolution.js altTick): an enemy it can see within the move's reach → its WIND-UP (moveWindupFrames; it stands still, js/npc.js) → the move → its EFFECT (what the move left in the
-// world) → when that is over, the next wind-up.
+// world) → when that is over, the next wind-up. A BRAWLER's is the other way round since build 2026-11-10a (altCools): an enemy in reach → the move at once → its EFFECT → its COOLDOWN (moveWindupFrames, free to
+// move) → ready again.
 // BEFORE IT EVOLVES (build 2026-11-07ss; the owner: "inherit second attacks on all the followers"): a follower that has not evolved has a second attack too, BASH. Its moves, as a form's.
 const UNEVOLVED_MOVES = { id: "unevolved", name: "IT", moves: ["bash"] };
 // The moves a follower may use: its form's, or UNEVOLVED_MOVES before it evolves; null for a clone or anything not a follower
@@ -101,7 +105,7 @@ function moveAltCarried(f, alt) { const d = followerMoveDef(f); return alt === "
 function followerAltLocked(f) { return !!(f && f.alt && evoMoveOf(f)); }
 // locked on a move that needs it close (BASH): the reach it closes to, else 0 (js/npc.js: a Mage locked on one walks in, as a Brawler does)
 function followerAltCloseReach(f) { const m = f && f.alt ? evoMoveOf(f) : null; return m && m.close ? moveReach(m.id) : 0; }
-// Switch a follower's attack: a move id it may use, or null (its normal attack). True when it changed. A switch starts the move's cycle afresh (no wind-up carried over).
+// Switch a follower's attack: a move id it may use, or null (its normal attack). True when it changed. A switch starts the move's cycle afresh (no wind-up carried over); a Brawler's cooldown is kept (f._altReadyAt), so switching away and back does not skip it.
 function followerAltSet(f, id) {
     if (!f) return false;
     const d = followerMoveDef(f);

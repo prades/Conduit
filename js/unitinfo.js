@@ -17,7 +17,7 @@ const CLONE_SPECIAL = {
 const CLONE_SPECIAL_TEXT = {
     scorpion: "Fires its stinger tail from the rear.", spider: "Spits spinneret venom from the rear.", mantis: "Strikes with its raptorial forelegs at range.", moth: "Blows a cloud of wing-dust powder.",
 };
-const _uiSec = f => (f / 60) % 1 === 0 ? (f / 60) + " s" : (f / 60).toFixed(1) + " s";
+const _uiSec = f => Math.round(f / 60 * 100) / 100 + " s";   // (to the hundredth, no trailing zeros: the second attacks' halved times are 2.75 s and the like since build 2026-11-10a)
 const _uiX = n => n + "×";
 
 // A signature move, as rows ([label, value]) read off the constants.
@@ -85,10 +85,12 @@ function followerInfo(a) {
     if (altIds.length) {
         // ITS ALTERNATES (js/moves.js "THE ALTERNATE ATTACK IS A CHOSEN MODE"): each move it may use, what it does, and the mode it fights in now: its NORMAL ATTACK or one alternate it is locked to
         const cur = typeof evoMoveOf === "function" ? evoMoveOf(a, mvd) : null, w = a._altWind > 0 ? Math.ceil(a._altWind / 60) : 0, who = ev ? ev.name : "BEFORE IT EVOLVES";
+        const cools = typeof altCools === "function" && altCools(a), cd = cools ? Math.max(0, Math.ceil(((a._altReadyAt || 0) - (typeof frame !== "undefined" ? frame : 0)) / 60)) : 0;   // (a Brawler cools down after its second attack instead of winding up before it: build 2026-11-10a)
+        const timeRows = rows => cools ? rows.map(r => r[0] === "WIND-UP" ? ["COOLDOWN", r[1]] : r) : rows;
         for (const id of altIds) { const m = MOVES[id], on = !!cur && cur.id === id, cap = on && m.manual;
-            out.attacks.push({ h: "ALTERNATE · " + m.name + (on ? " · LOCKED ON" : ""), note: who + (cap ? " · " + (a._cap || 0) + " OF " + CAP_MAX + " CHARGES" + ((a._cap || 0) < CAP_MAX ? " (IT STANDS STILL TO CHARGE)" : " · FULL") : on ? (w ? " · WINDING UP, " + w + " S (IT STANDS STILL)" : a._altLive ? " · ITS EFFECT IS ON: IT WINDS UP AGAIN WHEN IT ENDS" : " · READY") : ""), rows: MOVE_INFO[m.name] ? MOVE_INFO[m.name]() : [],
+            out.attacks.push({ h: "ALTERNATE · " + m.name + (on ? " · LOCKED ON" : ""), note: who + (cap ? " · " + (a._cap || 0) + " OF " + CAP_MAX + " CHARGES" + ((a._cap || 0) < CAP_MAX ? " (IT STANDS STILL TO CHARGE)" : " · FULL") : on ? (w ? " · WINDING UP, " + w + " S (IT STANDS STILL)" : a._altLive ? (cools ? " · ITS EFFECT IS ON: ITS COOLDOWN STARTS WHEN IT ENDS" : " · ITS EFFECT IS ON: IT WINDS UP AGAIN WHEN IT ENDS") : cd ? " · COOLING DOWN, " + cd + " S" : " · READY") : ""), rows: timeRows(MOVE_INFO[m.name] ? MOVE_INFO[m.name]() : []),
                 choices: cap ? [{ id: "release", label: "RELEASE ⚡ " + (a._cap || 0) + "/" + CAP_MAX + (typeof capacitorWhyNot === "function" && capacitorWhyNot(a) ? " · " + capacitorWhyNot(a) : ""), act: () => capacitorRelease(a) }] : undefined, unit: a }); }
-        out.attacks.push({ h: "ATTACK", note: "Its normal attack, or one alternate it is locked to until you switch it back: it winds up standing still, strikes, and winds up again when the strike's effect is over. On an alternate it makes no other attack, an attack order included.",
+        out.attacks.push({ h: "ATTACK", note: "Its normal attack, or one alternate it is locked to until you switch it back: " + (cools ? "a Brawler strikes the moment an enemy is in reach, then cools down once the strike's effect is over (it can move meanwhile)." : "it winds up standing still, strikes, and winds up again when the strike's effect is over.") + " On an alternate it makes no other attack, an attack order included.",
             choices: [{ id: null, label: "NORMAL ATTACK", on: !cur }].concat(altIds.map(id => ({ id, label: MOVES[id].name, on: !!cur && cur.id === id }))), unit: a });
     }
     const altLocked = ev && !altIds.length && typeof energyAltOpen === "function" && !energyAltOpen(a) && mvd && typeof evoMoveIds === "function" && evoMoveIds(mvd).length;   // ENERGY CARDS (js/energy.js): its second attack locked
@@ -97,7 +99,7 @@ function followerInfo(a) {
     else if (!ev) {
         const f = typeof evolutionFor === "function" ? evolutionFor(a) : null;
         if (typeof energyFor === "function" && energyFor(a) && !energySlots(a)[0]) out.attacks.push({ h: "NO ELEMENT", note: "Put an energy card in its ENERGY slot (the roster): it takes that card's element, and at level " + EVOLVE_LEVEL + " it evolves into its element's form (the card is used up). Energy cards come in Pack 1 and Series 2.", rows: [] });   // (ENERGY CARDS, js/energy.js)
-        else out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health, attack and special attack)" + (f.move ? ", with the move " + f.move + ":" : ". It has no signature move yet.") : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]() : [] });
+        else out.attacks.push({ h: "SIGNATURE", note: f ? "Evolves at level " + EVOLVE_LEVEL + " into the " + f.name + " (and gets ×" + EVOLVE_MULT + " health, attack and special attack)" + (f.move ? ", with the move " + f.move + ":" : ". It has no signature move yet.") : "No form for this element and role yet.", rows: f && MOVE_INFO[f.move] ? MOVE_INFO[f.move]().map(r => r[0] === "WIND-UP" && typeof altCools === "function" && altCools(a) ? ["COOLDOWN", r[1]] : r) : [] });   // (a Brawler's is a cooldown: build 2026-11-10a)
     }
     { const ab = typeof techAbilityInfo === "function" ? techAbilityInfo(a) : null; if (ab) out.attacks.push(ab); }   // a technician's ability: what it does, its numbers, when it is ready (js/techabilities.js)
     { const ab2 = typeof techAbility2Info === "function" ? techAbility2Info(a) : null; if (ab2) out.attacks.push(ab2); }   // the Thermite Burrower's second ability, FAULTLINE

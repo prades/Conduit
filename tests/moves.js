@@ -56,13 +56,21 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
         same(J('["aegis_burst", "aegis_bloom"].filter(id => MOVES[id]).concat(["AEGIS BURST", "AEGIS BLOOM"].filter(n => MOVE_BY_NAME[n]))').join(), '', 'shield moves in the table');
         same(run(`evoMoveOf({ evolved: 'jellyram', move: 'aegis_burst' })`), null, 'a Jelly Ram saved with AEGIS BURST'); same(run(`evoMoveOf({ evolved: 'hornshell', move: 'aegis_bloom' })`), null, 'a Hornshell saved with AEGIS BLOOM');
     });
-    check('THE ALTERNATE IS A CHOSEN MODE (the owner, 2026-11-07): on its normal attack evolutionTick fires no move; locked on one (followerAltSet), the move fires when its wind-up runs out, once; set back to NORMAL it is unlocked', () => {
+    check('THE ALTERNATE IS A CHOSEN MODE (the owner, 2026-11-07): on its normal attack evolutionTick fires no move; locked on one (followerAltSet), a Brawler\'s fires the moment an enemy is in reach and not again until its cooldown is over, a switch away and back included, and a Mage\'s winds up first and fires when its wind-up runs out, once (build 2026-11-10a: "the brawlers have a cooldown time and the mages have wind-up time"); set back to NORMAL it is unlocked', () => {
         run(`gameState.running = true; followers.length = 0; spawnFollowerAtCrystal('fire'); globalThis.__f = followers[followers.length - 1]; __f.evolved = 'quillstone'; __f._moltAt = -1e9;
              globalThis.__fired = 0; globalThis.__keep = MOVES.quill_burst.fn; MOVES.quill_burst.fn = f => { __fired++; f._sigAt = frame; return true; }; evolutionTick();`);
         same(J('__fired'), 0, 'fired on its normal attack');
         same(J('[followerAltSet(__f, "quill_burst"), followerAltLocked(__f), followerAltSet(__f, "chomp"), __f.alt]').join(), 'true,true,false,quill_burst', 'locked on it (another form\'s move changes nothing)');
-        run('__f._altWind = 1; evolutionTick();'); same(J('__fired'), 1, 'fired when its wind-up ran out'); same(J('__f._altWind'), 0, 'no wind-up left');
+        run('__f.role = "brawler"; globalThis.__keepSeen = _evoFoesSeen; _evoFoesSeen = () => [{}]; evolutionTick();'); same(J('[__fired, __f._altWind]').join(), '1,0', 'a Brawler fired at once, with no wind-up');
+        run('frame++; evolutionTick(); globalThis.__ready = __f._altReadyAt;'); same(J('__fired'), 1, 'fired again at once'); same(J('__ready - frame'), J("moveWindupFrames('quill_burst')"), 'its cooldown, from the end of its effect');
+        run('followerAltSet(__f, null); followerAltSet(__f, "quill_burst"); frame = __ready - 1; evolutionTick();'); same(J('__fired'), 1, 'fired in its cooldown (a switch away and back skipped it)');
+        run('frame = __ready; evolutionTick();'); same(J('__fired'), 2, 'not fired when its cooldown was over');
         same(J('[followerAltSet(__f, null), __f.alt, followerAltLocked(__f)]').join(), 'true,,false', 'back on its normal attack'); run('MOVES.quill_burst.fn = __keep;');
+        // a MAGE (the Thunderhead, its role fixed by its form): it winds up first, standing still, and fires when the wind-up runs out
+        run(`spawnFollowerAtCrystal('electric'); globalThis.__m = followers[followers.length - 1]; __m.evolved = 'thunderhead'; __m._moltAt = -1e9; energyFill(__m); globalThis.__firedM = 0; globalThis.__keepM = MOVES.static_vortex.fn;
+             MOVES.static_vortex.fn = f => { __firedM++; f._sigAt = frame; return true; }; followerAltSet(__m, 'static_vortex'); frame++; evolutionTick();`);
+        same(J('[__m.role, __firedM, __m._altWind]').join(), 'sniper,0,' + J("moveWindupFrames('static_vortex')"), 'a Mage fired at once, or did not wind up');
+        run('__m._altWind = 1; frame++; evolutionTick(); _evoFoesSeen = __keepSeen; MOVES.static_vortex.fn = __keepM;'); same(J('[__firedM, __m._altWind]').join(), '1,0', 'a Mage did not fire when its wind-up ran out');
     });
 
     group('CHOOSING A MOVE');
@@ -81,10 +89,10 @@ const OLD = { bloom: 'petalBlaze', quillstone: 'quillBurst', reaver: 'arcVolley'
     });
 
     group('THE WIND-UP (the owner, 2026-11-07: "make it another stat ... it needs to be adjustable ... it\'s on the attack not the follower")');
-    check('every move has a WIND-UP of its own (seconds), the old waits unchanged, and its function waits exactly that after firing', () => {
-        const OLDWAIT = { petal_blaze: 360, quill_burst: 240, arc_volley: 300, singularity_shot: 330, static_rush: 300, hexfire: 330, corrode_shot: 320, gravity_slam: 330,
-            eruption: 330, chomp: 300, pinball: 300, static_vortex: 330, magma_vent: 1200, rotten_decoy: 840, bash: 240, capacitor_discharge: 90, seedfall: 330, stake_ring: 240, sweet_scent: 300,
-            zigzag_dash: 240, wobble_slam: 240, icicle_volley: 300, echo_pulse: 300, shell_guard: 360, phase_swap: 300, venom_bite: 300, shock_zap: 240, skate_charge: 270 };   // (the nine of build 2026-11-09c, provisional)   // (BASH and CAPACITOR DISCHARGE: build 2026-11-07ss; the second's is the time one charge takes; SEEDFALL, the THORNWHIP's: build 2026-11-08j, provisional; STAKE RING, STONEPETAL's, and SWEET SCENT, SUNDEW's: build 2026-11-08n, provisional)
+    check('every move has a TIME of its own (seconds: a Mage\'s or a Technician\'s wind-up, a Brawler\'s cooldown), the old waits halved (build 2026-11-10a: "make it half as slow"), and its function waits exactly that after firing', () => {
+        const OLDWAIT = { petal_blaze: 180, quill_burst: 120, arc_volley: 150, singularity_shot: 165, static_rush: 150, hexfire: 165, corrode_shot: 160, gravity_slam: 165,
+            eruption: 165, chomp: 150, pinball: 150, static_vortex: 165, magma_vent: 600, rotten_decoy: 420, bash: 120, capacitor_discharge: 45, seedfall: 165, stake_ring: 120, sweet_scent: 150,
+            zigzag_dash: 120, wobble_slam: 120, icicle_volley: 150, echo_pulse: 150, shell_guard: 180, phase_swap: 150, venom_bite: 150, shock_zap: 120, skate_charge: 135 };   // (half the old waits: 360, 240, 300, 330, 300, 330, 320, 330, 330, 300, 300, 330, 1200, 840, 240, 90, 330, 240, 300, 240, 240, 300, 300, 360, 300, 300, 240, 270)   // (the nine of build 2026-11-09c, provisional)   // (BASH and CAPACITOR DISCHARGE: build 2026-11-07ss; the second's is the time one charge takes; SEEDFALL, the THORNWHIP's: build 2026-11-08j, provisional; STAKE RING, STONEPETAL's, and SWEET SCENT, SUNDEW's: build 2026-11-08n, provisional)
         same(J('Object.keys(MOVES).sort()').join(), Object.keys(OLDWAIT).sort().join(), 'the moves');
         for (const id in OLDWAIT) {
             ok(J(`MOVES.${id}.windup > 0`), id + ' has no wind-up'); same(J(`moveWindupFrames('${id}')`), OLDWAIT[id], id + ' (frames)');

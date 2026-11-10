@@ -81,13 +81,26 @@ function measure(w, h) {
         same(r.filter(x => /bash/.test(x)).length, 0, 'forms with BASH'); same(r.filter(x => /:$/.test(x)).length, 0, 'forms with no second attack');
         same(J(`evoMoveIds(followerMoveDef({ isFollower: true })).join()`), 'bash', 'before it evolves'); same(J(`followerMoveDef({ isFollower: true, isClone: true })`), null, 'a clone');
     });
-    await check('BASH rams the nearest enemy it can see within 1.8 tiles: it steps in, 1.5 × its attack (Crushing, its hit kind), the enemy pushed and stunned half a second; one farther is not touched; it waits its 4 s wind-up after', () => {
+    await check('BASH rams the nearest enemy it can see within 1.8 tiles: it steps in, 1.5 × its attack (Crushing, its hit kind), the enemy pushed and stunned half a second; one farther is not touched; it waits its time after (2 s since build 2026-11-10a: a Brawler\'s cooldown, a Mage\'s or a Technician\'s wind-up)', () => {
         const r = J(`(function(){ __clear(); const f = __fol('core', 'brawler'), a = __foe(f.x + 1.5, f.y), far = __foe(f.x + 1.5 + 2, f.y + 1.5); let hit = null; const keep = applyDamage;   // (an unevolved Brawler: BASH is its second attack since build 2026-11-09c)
             globalThis.applyDamage = function (t, amt, src, el, rf, fx, kind) { if (src === f && t === a) hit = { amt, el: el || null, kind: kind === DMG_HIT_BASH }; return keep.apply(this, arguments); };
             try { followerAltSet(f, 'bash'); f._altWind = 1; frame++; evolutionTick(); } finally { globalThis.applyDamage = keep; }
             return { hit, power: f.power, dist: Math.hypot(a.x - f.x, a.y - f.y), push: Math.hypot(a.kbVX || 0, a.kbVY || 0), stun: a.stunned, far: __dmg(far), cd: f._sigCd, live: !!f._altLive }; })()`);
         ok(r.hit && Math.abs(r.hit.amt - r.power * 1.5) < 1e-6 && r.hit.el === null && r.hit.kind, 'the hit: ' + JSON.stringify(r));
-        ok(Math.abs(r.dist - 0.8) < 0.05 || r.dist < 1, 'it did not step in: ' + r.dist); ok(Math.abs(r.push - 0.28) < 1e-6, 'the push: ' + r.push); same(r.stun, 30, 'the stun'); same(r.far, 0, 'the far enemy'); same(r.cd, 240, 'its wait (frames)');
+        ok(Math.abs(r.dist - 0.8) < 0.05 || r.dist < 1, 'it did not step in: ' + r.dist); ok(Math.abs(r.push - 0.28) < 1e-6, 'the push: ' + r.push); same(r.stun, 30, 'the stun'); same(r.far, 0, 'the far enemy'); same(r.cd, 120, 'its wait (frames; half the old 240 since build 2026-11-10a)');
+    });
+    await check('THE TIMING BY CLASS (build 2026-11-10a; the owner: "the brawlers have a cooldown time and the mages have wind-up time and not vice versa", "Wind-up" for Technicians, "half as slow"): a Brawler locked on BASH rams the moment an enemy is in reach, with no wind-up, and then cools down 2 s once its effect is over, free to move; a Mage or a Technician winds up 2 s standing still first', () => {
+        const r = J(`(function(){ __clear(); const o = {}, b = __fol('core', 'brawler'), a = __foe(b.x + 1.5, b.y); b._evoOnLevelUp = true; followerAltSet(b, 'bash');   /* (at level 20 it would evolve, every 30 frames, into a form whose second attack is not BASH: held off) */
+            const x0 = b.x; frame++; evolutionTick(); o.brawler = { wind: b._altWind, hit: __dmg(a) > 0, live: !!b._altLive };
+            elementEffects.length = 0; followerProjectiles.length = 0; frame++; evolutionTick(); o.cool = (b._altReadyAt || 0) - frame; o.coolRooted = b._altWind > 0;   // (its effect over: the sandbox does not age effects, so the test ends it)
+            const hp = a.health; for (let i = 0; i < o.cool - 1; i++) { frame++; evolutionTick(); } o.inCool = a.health === hp; frame++; evolutionTick(); o.after = a.health < hp;
+            for (const role of ['sniper', 'camper']) { __clear(); const f = __fol('core', role), e = __foe(f.x + 1.5, f.y); followerAltSet(f, 'bash'); frame++; evolutionTick(); o[role] = { wind: f._altWind, hit: __dmg(e) > 0, rooted: f._altWind > 0 }; }
+            o.time = moveWindupFrames('bash'); __clear(); return o; })()`);
+        same(JSON.stringify(r.brawler), JSON.stringify({ wind: 0, hit: true, live: true }), 'a Brawler did not ram at once, or wound up');
+        same(r.cool, r.time, 'its cooldown once the effect was over'); same(r.coolRooted, false, 'rooted in its cooldown');
+        same(r.inCool, true, 'it rammed again in its cooldown'); same(r.after, true, 'it did not ram again when its cooldown was over');
+        for (const role of ['sniper', 'camper']) same(JSON.stringify(r[role]), JSON.stringify({ wind: r.time, hit: false, rooted: true }), role + ' did not wind up first, standing still');
+        same(r.time, 120, 'BASH\'s time (frames; half the old 240)');
     });
     await check('a follower before it evolves fights with BASH when it is chosen: the move runs from its own tick, and its INFO, the HUD card and the Command Center offer it', () => {
         const r = J(`(function(){ __clear(); const f = __fol('fire', 'brawler'), a = __foe(f.x + 1.2, f.y); followerAltSet(f, 'bash'); f._altWind = 1; frame++; evolutionTick();
@@ -104,7 +117,7 @@ function measure(w, h) {
     });
 
     group('1b. STAKE RING (STONEPETAL\'s own second attack, build 2026-11-08n: the owner\'s pick, in place of BASH)');
-    await check('STONEPETAL\'s second attack is STAKE RING: every enemy it can see within 1.8 tiles takes 1.2 × its attack (its form\'s alternate: Piercing) and is pushed out from it; one farther is not touched; spikes rise round it; it waits its 4 s wind-up after', () => {
+    await check('STONEPETAL\'s second attack is STAKE RING: every enemy it can see within 1.8 tiles takes 1.2 × its attack (its form\'s alternate: Piercing) and is pushed out from it; one farther is not touched; spikes rise round it; it waits its time after (2 s since build 2026-11-10a)', () => {
         const r = J(`(function(){ __clear(); const f = __fol('blossom', 'camper', 'coralcrab'), a = __foe(f.x + 1.2, f.y), b = __foe(f.x - 0.8, f.y + 0.9), far = __foe(f.x + 3, f.y + 1); const hits = []; const keep = applyDamage;
             globalThis.applyDamage = function (t, amt, src, el, rf, fx, kind) { if (src === f) hits.push({ who: t === a ? 'a' : t === b ? 'b' : 'x', amt, alt: kind === DMG_HIT_ALT }); return keep.apply(this, arguments); };
             try { followerAltSet(f, 'stake_ring'); f._altWind = 1; frame++; evolutionTick(); } finally { globalThis.applyDamage = keep; }
@@ -112,7 +125,7 @@ function measure(w, h) {
             return { moves: evoMoveIds(EVOLUTIONS.coralcrab).join(), name: EVOLUTIONS.coralcrab.move, hits, power: f.power, out: [out(a), out(b)], far: __dmg(far), cd: f._sigCd, spikes: techSpikes.length, type: DMG_FORM.coralcrab.alt, reach: moveReach('stake_ring') }; })()`);
         same(r.moves, 'stake_ring', 'its moves'); same(r.name, 'STAKE RING', 'its move\'s name'); same(r.type, 'piercing', 'its type'); same(r.reach, 1.8, 'its reach');
         same(r.hits.map(h => h.who).sort().join(), 'a,b', 'who it hit'); ok(r.hits.every(h => Math.abs(h.amt - r.power * 1.2) < 1e-6 && h.alt), 'the hits: ' + JSON.stringify(r.hits));
-        same(r.out.join(), 'true,true', 'pushed out from it'); same(r.far, 0, 'the far enemy'); same(r.cd, 240, 'its wait (frames)'); ok(r.spikes >= 6, 'the spikes: ' + r.spikes);
+        same(r.out.join(), 'true,true', 'pushed out from it'); same(r.far, 0, 'the far enemy'); same(r.cd, 120, 'its wait (frames; half the old 240 since build 2026-11-10a)'); ok(r.spikes >= 6, 'the spikes: ' + r.spikes);
     });
     await check('with no enemy in its reach when its wind-up ends, STAKE RING does not fire (ready again)', () => {
         const r = J(`(function(){ __clear(); const f = __fol('blossom', 'camper', 'coralcrab'), far = __foe(f.x + 4, f.y); followerAltSet(f, 'stake_ring'); f._altWind = 1; frame++; evolutionTick(); return { far: __dmg(far), live: !!f._altLive }; })()`);
@@ -123,7 +136,7 @@ function measure(w, h) {
     await check('its form: NECTAR STING its everyday hit (Piercing), SWEET SCENT its second attack in place of BASH; INFO names both', () => {
         const r = J(`(function(){ __clear(); const f = __fol('blossom', 'brawler', 'sundew'), info = followerInfo(f).attacks.map(s => s.h);
             return { hit: EVOLUTIONS.sundew.hit, moves: evoMoveIds(EVOLUTIONS.sundew).join(), main: DMG_FORM.sundew.main, info, reach: moveReach('sweet_scent'), windup: moveWindupFrames('sweet_scent') }; })()`);
-        same(r.hit, 'NECTAR STING', 'its hit'); same(r.moves, 'sweet_scent', 'its second attack'); same(r.main, 'piercing', 'its hit\'s type'); same(r.reach, 5, 'the scent\'s reach'); same(r.windup, 300, 'its wind-up (frames)');
+        same(r.hit, 'NECTAR STING', 'its hit'); same(r.moves, 'sweet_scent', 'its second attack'); same(r.main, 'piercing', 'its hit\'s type'); same(r.reach, 5, 'the scent\'s reach'); same(r.windup, 150, 'its wind-up (frames; half the old 300 since build 2026-11-10a)');
         ok(r.info.some(h => h === 'MAIN ATTACK · NECTAR STING'), 'INFO: ' + r.info.join(' | ')); ok(r.info.some(h => /SWEET SCENT/.test(h)), 'INFO: ' + r.info.join(' | '));
     });
     await check('each NECTAR STING adds a quarter to its stockpile, up to full (four); another form\'s hit adds none; locked on SWEET SCENT it makes no sting, so nothing is added', () => {
@@ -159,14 +172,14 @@ function measure(w, h) {
         same(J('evoMoveIds(EVOLUTIONS.staticorb).join()'), 'static_rush,capacitor_discharge', 'its moves');
         same(J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); return followerAltSet(f, 'pinball'); })()`), false, 'PINBALL set');
     });
-    await check('locked on it, it stands still storing a charge every 1.5 s, enemies near or not, up to 4; full, it may move; RETREAT stops the charging and frees it', () => {
+    await check('locked on it, it stands still storing a charge every 0.75 s (1.5 s until build 2026-11-10a halved it), enemies near or not, up to 4; full, it may move; RETREAT stops the charging and frees it', () => {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'brawler', 'staticorb'); followerAltSet(f, 'capacitor_discharge'); const out = { r0: capacitorRooted(f) };
-            const x0 = f.x, y0 = f.y; player.x = f.x + 6; player.y = f.y; for (let i = 0; i < 89; i++) { frame++; evolutionTick(); updateNPC(f); } out.at89 = f._cap || 0; frame++; evolutionTick(); out.at90 = f._cap;
+            const x0 = f.x, y0 = f.y; player.x = f.x + 6; player.y = f.y; for (let i = 0; i < 44; i++) { frame++; evolutionTick(); updateNPC(f); } out.at89 = f._cap || 0; frame++; evolutionTick(); out.at90 = f._cap;
             out.still = Math.hypot(f.x - x0, f.y - y0) < 1e-9;
             for (let i = 0; i < 400; i++) { frame++; evolutionTick(); } out.full = f._cap; out.r1 = capacitorRooted(f);
             followerAltSet(f, 'capacitor_discharge'); f._cap = 1; f.retreatUntil = frame + 100; out.rRetreat = capacitorRooted(f); for (let i = 0; i < 200; i++) capacitorTick(f); out.retreatCap = f._cap;
             return out; })()`);
-        same(r.r0, true, 'rooted while charging'); same(r.at89, 0, 'a charge before 1.5 s'); same(r.at90, 1, 'the first charge at 1.5 s'); same(r.still, true, 'it moved while charging');
+        same(r.r0, true, 'rooted while charging'); same(r.at89, 0, 'a charge before 0.75 s'); same(r.at90, 1, 'the first charge at 0.75 s'); same(r.still, true, 'it moved while charging');
         same(r.full, 4, 'the most it stores'); same(r.r1, false, 'rooted when full'); same(r.rRetreat, false, 'rooted while retreating'); same(r.retreatCap, 1, 'charged while retreating');
     });
     await check('the player releases them (never itself): with an enemy within 2 tiles it chains to 1 + the charges enemies, each 0.5 × its attack × the charges (electric), and the charges are spent; no enemy close, nothing happens and it says so', () => {

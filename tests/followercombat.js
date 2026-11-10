@@ -231,9 +231,9 @@ function measure(w, h) {
             __fire(f); const d = __dmg;
             return { name: MOVES.static_rush.name, fn: MOVES.static_rush.fn.toString(), nums: [MANTA_RANGE, moveWindupFrames("static_rush"), MANTA_MULT, MANTA_CHAIN, MANTA_HOP, MANTA_CHAIN_SHARE, MANTA_STUN], def: evoMoveOf(f).id, ids: evoMoveIds(EVOLUTIONS.staticorb),
                      dist: Math.hypot(a.x - f.x, a.y - f.y), hit: [d(a), d(b), d(c), d(far)], stun: [a, b, c].every(p => p.stunned > 0), cd: f._sigCd, legacy: ['manta', 'prism', 'voltring'].map(k => EVOLUTIONS[k].move) }; })()`);
-        same(r.name, 'SONIC ROLL', 'its name'); ok(/staticRush\(/.test(r.fn), 'its function'); same(r.nums.join(), '4,300,2.4,2,2.2,0.6,45', 'its numbers (unchanged)');
+        same(r.name, 'SONIC ROLL', 'its name'); ok(/staticRush\(/.test(r.fn), 'its function'); same(r.nums.join(), '4,150,2.4,2,2.2,0.6,45', 'its numbers (unchanged but its time, halved in build 2026-11-10a: 300 frames before)');
         same(r.def, 'static_rush', 'the default'); same(r.ids.join(), 'static_rush,capacitor_discharge', 'its moves (PINBALL superseded by CAPACITOR DISCHARGE, build 2026-11-07ss)');
-        ok(Math.abs(r.dist - 0.8) < 1e-6, 'the dash stops 0.8 short: ' + r.dist); ok(r.hit[0] > r.hit[1] && r.hit[1] > 0 && r.hit[2] > 0 && r.hit[3] === 0, 'hit and shocks: ' + r.hit); ok(r.stun, 'not stunned'); same(r.cd, 300, 'its wait');
+        ok(Math.abs(r.dist - 0.8) < 1e-6, 'the dash stops 0.8 short: ' + r.dist); ok(r.hit[0] > r.hit[1] && r.hit[1] > 0 && r.hit[2] > 0 && r.hit[3] === 0, 'hit and shocks: ' + r.hit); ok(r.stun, 'not stunned'); same(r.cd, 150, 'its wait (half the old 300 since build 2026-11-10a)');
         same(r.legacy.join(), 'SONIC ROLL,SONIC ROLL,SONIC ROLL', 'the retired electric brawlers');
     });
     check('PINBALL rolls into the nearest valid enemy, then each time into the nearest enemy it has NOT hit within PIN_HOP of it; an enemy farther than that ends it; no fixed count', () => {
@@ -647,7 +647,7 @@ function measure(w, h) {
         same(r.wf.join(), 'true,25,true,1140', 'WRAITHFIRE: 25% of its HP given, a ghost no one can hit; 4 s and then 15 s to wait');
         same(r.mid.join(), 'true,true', 'a touch hurt the enemy, spending part of its power'); same(r.end.join(), 'true,true,true,true', 'at the end: no ghost, targetable, back where it began; the rest exploded');
     });
-    check('ROTTEN DECOY (the owner, 2026-11-07: "Short lure", "A second move to pick"): the Rotshard\'s second move sets a black crystal decoy 2 tiles from the nearest enemy, toward it; enemies within 6 tiles go for it (a boss does not); its mist poisons within 1.5 tiles; it lasts 6 s (half the Rotshard\'s max HP) and is ready again every 14 s', () => {
+    check('ROTTEN DECOY (the owner, 2026-11-07: "Short lure", "A second move to pick"): the Rotshard\'s second move sets a black crystal decoy 2 tiles from the nearest enemy, toward it; enemies within 6 tiles go for it (a boss does not); its mist poisons within 1.5 tiles; it lasts 6 s (half the Rotshard\'s max HP) and is ready again every 7 s (14 s until build 2026-11-10a halved it)', () => {
         const r = J(`(function(){ const o = {}; __clear(); rotDecoys = [];
             const rs = __fol('toxic', 'sniper', 'rotshard'); rs.move = 'rotten_decoy'; const t = __foe(rs.x + 5, rs.y), far = __foe(rs.x + 14, rs.y);
             o.moves = EVOLUTIONS.rotshard.moves.join(); __fire(rs); const d = rotDecoys[0];
@@ -656,7 +656,7 @@ function measure(w, h) {
             const m = __foe(d.x + 0.5, d.y); for (let i = 0; i < 31; i++) { frame++; evolutionTick(); } o.mist = m.toxicWeakened > 0;
             for (let i = 0; i < 340; i++) { frame++; evolutionTick(); } o.gone = rotDecoys.length; o.info = !!MOVE_INFO['ROTTEN DECOY'];
             return o; })()`);
-        same(r.moves, 'rotten_decoy', 'its moves (CORRODE SHOT its everyday shot since build 2026-11-07ss)'); same(r.set.join(), '1,2,true,0.5,840', 'set 2 tiles from the enemy toward the Rotshard; half its max HP; 14 s to the next');
+        same(r.moves, 'rotten_decoy', 'its moves (CORRODE SHOT its everyday shot since build 2026-11-07ss)'); same(r.set.join(), '1,2,true,0.5,420', 'set 2 tiles from the enemy toward the Rotshard (its time halved in build 2026-11-10a: 840 frames before); half its max HP; 7 s to the next');
         same(r.lure.join(), 'true,false', 'the near enemy goes for it, the far one not'); same(r.boss, false, 'a boss goes for it'); same(r.mist, true, 'the mist poisons'); same(r.gone, 0, 'gone after 6 s'); same(r.info, true, 'INFO has its rows');
     });
     check('QUILLSTORM, THUNDERSTORM, EVENT HORIZON (the owner, 2026-11-07): the Quillstone throws 16 burning quills all round; the Thunderhead\'s storm moves with it and its bolts strike enemies under it; the Void Star\'s black hole opens on the group, drags them in and crushes them', () => {

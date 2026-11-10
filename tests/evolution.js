@@ -166,7 +166,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             near.dead = far.dead = true; return out; })()`);
         ok(r.near > 0 && r.burn, 'the close one: ' + JSON.stringify(r));
         same(r.far, 0, 'damage 4 tiles away');
-        ok(r.cd > 300 && r.again === 0, 'it fired again at once: ' + JSON.stringify(r));
+        ok(r.cd > 150 && r.again === 0, 'it fired again at once: ' + JSON.stringify(r));
     });
     // QUILL BURST: the roll-and-splash volley (2026-10-30) is SUPERSEDED by the owner's follower combat brief (2026-11-02): five quills at once, each stopping at its first enemy, no
     // splash, no roll (docs/FOLLOWER-COMBAT-REDESIGN.md). The quills' own checks are in tests/followercombat.js; here, that the Quillstone fires it and the Bunker Bloom keeps its own move.
@@ -178,7 +178,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             frame++; __arm(f); evolutionTick();
             const q = followerProjectiles.filter(x => x.kind === 'quill'), out = { n: q.length, cd: f._sigCd, src: q.every(x => x.source === f) };
             followerProjectiles.length = 0; p.dead = true; return out; })()`);
-        same(r.n, 5, 'quills'); same(r.cd, 240, 'its wait'); ok(r.src, 'the quills are its own');
+        same(r.n, 5, 'quills'); same(r.cd, 120, 'its wait (half the old 240 since build 2026-11-10a)'); ok(r.src, 'the quills are its own');
         same(run(`MOVES.petal_blaze.fn.toString().indexOf('petalBlaze(') >= 0 && MOVES.quill_burst.fn.toString().indexOf('quillBurst(') >= 0 && MOVES.quill_burst.fn.toString().indexOf('petalBlaze') < 0`), true, 'the two moves');
     });
     // ARC VOLLEY (the charged arc that jumps to the ones beside it) left the THUNDERHEAD with the redesign (the owner, 2026-11-02, "Its everyday shot": CHAIN LIGHTNING is its shot, STATIC VORTEX
@@ -190,7 +190,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             frame++; __arm(f); evolutionTick();
             const out = { vortex: elementEffects.filter(e => e.type === 'staticVortex').length, move: evoMoveOf(f).id, cd: f._sigCd };
             p.dead = true; elementEffects.length = 0; return out; })()`);
-        same(r.vortex, 1, 'a vortex cast'); same(r.move, 'static_vortex', 'its move'); same(r.cd, 330, 'its wait');
+        same(r.vortex, 1, 'a vortex cast'); same(r.move, 'static_vortex', 'its move'); same(r.cd, 165, 'its wait (half the old 330 since build 2026-11-10a)');
     });
 
     check('the legacy REAVER still fires ARC VOLLEY for a follower already evolved into it', () => {
@@ -218,7 +218,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
                 const h = followerProjectiles.filter(x => x.kind === 'hex'); out[evo] = { n: h.length, dmg: h.length ? h[0].damage : null, cd: f._sigCd };
                 followerProjectiles.length = 0; p.dead = true; }
             return out; })()`);
-        for (const evo of ['embercowl', 'halo']) { same(r[evo].n, 1, evo + ': its shots'); same(r[evo].dmg, 0, evo + ': the shot\'s own damage'); same(r[evo].cd, 330, evo + ': its wait'); }
+        for (const evo of ['embercowl', 'halo']) { same(r[evo].n, 1, evo + ': its shots'); same(r[evo].dmg, 0, evo + ': the shot\'s own damage'); same(r[evo].cd, 165, evo + ': its wait (half the old 330 since build 2026-11-10a)'); }
     });
 
     check('THE ASK: CORRODE SHOT eats the armour of the enemy it hits, with a weaker corrosion splashed over its neighbours; since build 2026-11-07ss it is the Rotshard\'s EVERYDAY SHOT (the design notes\' primary), ROTTEN DECOY its second attack', () => {
@@ -247,7 +247,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             [a, b, beetle, far].forEach(p => p.dead = true); return out; })()`);
         ok(r.a > 0 && r.b > 0 && r.beetle > 0, 'the slam hit: ' + JSON.stringify(r));
         same(r.far, 0, 'damage outside the slam'); ok(!r.farSlowed, 'slowed outside the slam');
-        ok(r.pushed > 0.3 && r.slowed && r.sf === run('MIMIC_SLOW') && r.sf < 1, 'shoved and slowed: ' + JSON.stringify(r)); ok(!r.beetleMoved, 'a beetle was shoved'); ok(r.cd > 300, 'it did not wait');
+        ok(r.pushed > 0.3 && r.slowed && r.sf === run('MIMIC_SLOW') && r.sf < 1, 'shoved and slowed: ' + JSON.stringify(r)); ok(!r.beetleMoved, 'a beetle was shoved'); ok(r.cd > 150, 'it did not wait');
     });
 
     check('REPORTED ("Remove the bubble shield from the followers and all relevant abilities"): nothing puts a shield on a follower now. The core forms (the Jelly Ram, the Hornshell, the Hammer Slug, the old Aegis Warden and Petal Aegis) have no move and cast nothing with an enemy and a hurt ally in reach; core has no special (a core follower\'s attacks are its physical, Shield Bash) and no ultimate; a creature\'s shield still soaks a hit', () => {
@@ -294,7 +294,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const lone = mkP(24, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
         ok(r.a > 0 && r.b > 0 && r.a === r.b, 'both in the blast take the same: ' + JSON.stringify(r)); same(r.far, 0, 'damage outside the blast');
         ok(r.sa[0] >= run('CALDERA_SHRED_FRAMES') && r.sa[1] === 0.5 && r.sb[1] === 0.5, 'armour eaten (it takes double): ' + JSON.stringify(r));
-        same(r.sfar, 0, 'armour eaten outside the blast'); ok(r.cd > 300, 'it did not wait'); ok(!r.loneCast, 'it erupted with nothing in reach');
+        same(r.sfar, 0, 'armour eaten outside the blast'); ok(r.cd > 150, 'it did not wait'); ok(!r.loneCast, 'it erupted with nothing in reach');
     });
 
     check('the legacy CALDERA still erupts for a follower already evolved into it', () => {
@@ -308,7 +308,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const lone = mkP(24, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
         ok(r.a > 0 && r.b > 0 && r.a === r.b, 'both in the blast take the same: ' + JSON.stringify(r)); same(r.far, 0, 'damage outside the blast');
         ok(r.sa[0] >= run('CALDERA_SHRED_FRAMES') && r.sa[1] === 0.5 && r.sb[1] === 0.5, 'armour eaten (it takes double): ' + JSON.stringify(r));
-        same(r.sfar, 0, 'armour eaten outside the blast'); ok(r.cd > 300, 'it did not wait'); ok(!r.loneCast, 'it erupted with nothing in reach');
+        same(r.sfar, 0, 'armour eaten outside the blast'); ok(r.cd > 150, 'it did not wait'); ok(!r.loneCast, 'it erupted with nothing in reach');
     });
 
     check('THE ASK: CHOMP — the fangs slam down on the nearest enemy: ice damage, frozen stiff; the ones beside it slowed', () => {
@@ -321,7 +321,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             [a, b, far, apart].forEach(p => p.dead = true);
             const lone = mkP(23.5, 2); frame++; __arm(f); f._sigAt = undefined; evolutionTick(); out.loneCast = f._sigAt !== undefined; lone.dead = true; return out; })()`);
         ok(r.a > 0 && r.b === 0, 'one bite, into the nearest: ' + JSON.stringify(r)); ok(r.stunA >= 60 && r.stunB === 0, 'frozen stiff (only the one bitten): ' + JSON.stringify(r)); ok(r.realA >= 60 && r.realB === 0, 'the stun is real, not a number nothing reads (only the one bitten): ' + JSON.stringify(r));
-        ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 250, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
+        ok(r.slowB && r.sf <= 0.6 && r.sf > 0 && !r.farSlow && !r.apartSlow, 'the ones beside it slowed: ' + JSON.stringify(r)); ok(r.cd > 125, 'it did not wait'); ok(!r.loneCast, 'it bit at something out of reach');
     });
 
     check('the VOIDSTAR (the void mage) fires SINGULARITY SHOT too', () => {
@@ -338,7 +338,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.mateIn > 0.5 && r.slowed, 'the one beside it was not dragged in and slowed: ' + JSON.stringify(r));
         same(r.beetleIn, 0, 'a beetle was dragged');
         ok(!r.apartMoved, 'one out of the pull\'s reach was moved');
-        ok(r.cd > 300, 'it did not wait: ' + r.cd);
+        ok(r.cd > 150, 'it did not wait: ' + r.cd);
     });
 
     check('the legacy SERPENT still fires SINGULARITY SHOT for a follower already evolved into it', () => {
@@ -355,7 +355,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.mateIn > 0.5 && r.slowed, 'the one beside it was not dragged in and slowed: ' + JSON.stringify(r));
         same(r.beetleIn, 0, 'a beetle was dragged');
         ok(!r.apartMoved, 'one out of the pull\'s reach was moved');
-        ok(r.cd > 300, 'it did not wait: ' + r.cd);
+        ok(r.cd > 150, 'it did not wait: ' + r.cd);
     });
 
     check('the HAMMER SLUG (the core technician now): one evolved while it was the core brawler is a technician now', () => {
@@ -373,7 +373,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const d = p => 1e6 - p.health, out = { dist: Math.hypot(a.x - f.x, a.y - f.y), a: d(a), b: d(b), c: d(c), far: d(far), stun: [a, b, c].every(p => p.hitStun >= MANTA_STUN), real: [a, b, c].every(p => p.stunned > 0), cd: f._sigCd };
             [a, b, c, far].forEach(p => p.dead = true); return out; })()`);
         ok(r.dist < 1 && r.a > r.b && r.b > 0 && r.c > 0, 'the dash and the shocks: ' + JSON.stringify(r));
-        same(r.far, 0, 'damage to one out of reach'); ok(r.stun, 'not all stunned'); ok(r.real, 'not all really stunned (js/combat.js applyStun)'); ok(r.cd > 250, 'it did not wait');
+        same(r.far, 0, 'damage to one out of reach'); ok(r.stun, 'not all stunned'); ok(r.real, 'not all really stunned (js/combat.js applyStun)'); ok(r.cd > 125, 'it did not wait');
     });
     check('the PRISM HOOD runs the same SONIC ROLL (dash, shock, stun) as the Storm Manta did', () => {
         const r = run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); followers.length = 0;

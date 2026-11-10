@@ -2,6 +2,15 @@
 
 What changed, build by build, newest first. Each entry names its commit (`git log`); the full account of a change is in that commit's message, in the revision section of the design document it names, and in the game bible (bible.html), which quotes the code's own numbers. A build is stamped on game.html (`?v=`), js/config.js (`BUILD_VERSION`) and bible.html; the letter after the date is the build of that day.
 
+## 2026-11-10
+
+### Build `2026-11-10a` · branch `claude/start-game-project-HSh7Z` · Brawlers cool down, Mages and Technicians wind up; second attacks twice as quick
+- **A Brawler's second attack has a cooldown, not a wind-up** (the owner: "make it to where the brawlers have a cooldown time and the mages have wind-up time and not vice versa"; of the agent's questions, "Second attacks"). It strikes the moment an enemy is in reach. Once the strike's effect has ended it cools down, free to move. A Mage's and a Technician's ("Wind-up, halved") still wind up first, standing still. Everyday hits are unchanged.
+- **Every second attack's time is halved** ("and also make it half as slow"; "Second attack timings"): BASH 4 → 2 s, the nine forms' moves 2 to 3 s, MAGMA VENT 20 → 10 s, ROTTEN DECOY 14 → 7 s, CAPACITOR DISCHARGE a charge every 0.75 s.
+- The INFO tab calls a Brawler's time COOLDOWN and counts it down; its squad card says COOLING DOWN. Times show to the hundredth (2.75 s).
+- The agent's choices (provisional): the cooldown starts when the strike's effect has ended, as the wind-up did; switching away and back does not skip it; a strike that finds nothing to hit tries again a quarter second later.
+- Tests: the moves suite (a Brawler fires at once and waits out its cooldown, a switch included; a Mage winds up first), the second attacks suite (a new check with the real BASH: a Brawler rams at once and cools down free to move; a Mage and a Technician wind up first), and the evolution, follower combat, INFO and Bible suites, their times halved. All pass.
+
 ## 2026-11-09
 
 ### Build `2026-11-09zz` · branch `claude/start-game-project-HSh7Z` · the items on the ground, the PACK as a roster, the PACK button on the HUD

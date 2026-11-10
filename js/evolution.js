@@ -394,13 +394,20 @@ function evolutionTick() {
 }
 // THE ALTERNATE'S CYCLE (js/moves.js, "THE ALTERNATE ATTACK IS A CHOSEN MODE"): READY → WIND-UP (f._altWind frames, standing still: js/npc.js) → the move → its EFFECT (f._altLive: the effects, shots, bombs
 // and decoys the move put in the world, and a PINBALL's roll) → READY. A move that finds nothing when its wind-up ends does not fire: it is READY again. RETREAT (js/mixtool.js) holds the cycle.
+// A BRAWLER's runs the other way (build 2026-11-10a, js/moves.js altCools): READY → the move, the moment an enemy is in reach → its EFFECT → its COOLDOWN (f._altReadyAt, free to move) → READY.
 const ALT_EFFECT_CAP = 1200;   // (frames: an effect still in the world after this no longer holds the next wind-up)
+const ALT_RETRY = 15;   // (frames: a Brawler whose move found nothing to strike looks again this much later; the agent's, provisional)
 function altTick(f, d, f0) {
     const mv = typeof evoMoveOf === "function" ? evoMoveOf(f, d) : null;
     if (!mv) { f._altWind = 0; f._altLive = null; f._cap = 0; f._capT = 0; return; }
     if (mv.manual) { capacitorTick(f); return; }   // (CAPACITOR DISCHARGE: no wind-up cycle; it stores charges, and the player releases them)
     if (f.retreatUntil > f0) { f._altWind = 0; return; }
-    if (f._altLive) { if (f0 - f._altLive.t0 < ALT_EFFECT_CAP && _altLiveAny(f._altLive)) return; f._altLive = null; }
+    if (f._altLive) { if (f0 - f._altLive.t0 < ALT_EFFECT_CAP && _altLiveAny(f._altLive)) return; f._altLive = null; if (altCools(f)) f._altReadyAt = f0 + moveWindupFrames(mv.id); }   // (a Brawler's cooldown starts when the effect is over)
+    if (altCools(f)) {   // A BRAWLER (build 2026-11-10a; the owner: "the brawlers have a cooldown time"): no wind-up; it fires the moment an enemy is in reach, then cools down (above), free to move
+        f._altWind = 0; if (f0 < (f._altReadyAt || 0)) return;
+        if (_evoFoesSeen(f.x, f.y, moveReach(mv.id)).length) { _altFire(f, mv, f0); if (!f._altLive) f._altReadyAt = f0 + ALT_RETRY; }   // (nothing to strike after all: it looks again a moment later, not every frame)
+        return;
+    }
     if (f._altWind > 0) { if (--f._altWind > 0) return; _altFire(f, mv, f0); return; }
     if (_evoFoesSeen(f.x, f.y, moveReach(mv.id)).length) { f._altWind = moveWindupFrames(mv.id); f._altWindMax = f._altWind; f._fpPath = null; }
 }

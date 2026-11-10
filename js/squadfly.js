@@ -83,7 +83,7 @@ function _sfCardsDraw(E, f) {
     if (altIds.length) {
         const cur = typeof evoMoveOf === "function" ? evoMoveOf(f, ev) : null, open = _sfDD === "alt";
         const b = mk("button", "sf-slot sp" + (open ? " open" : "")); b.type = "button"; b.setAttribute("data-slot", "alt");
-        b.appendChild(mk("span", "sf-sk", "ATTACK")); b.appendChild(mk("span", "sf-sv", cur ? cur.name + (f._altWind > 0 ? " · WINDING UP" : " · LOCKED ON") : "NORMAL ATTACK")); b.appendChild(mk("span", "sf-sa", open ? "\u25b4" : "\u25be"));
+        b.appendChild(mk("span", "sf-sk", "ATTACK")); b.appendChild(mk("span", "sf-sv", cur ? cur.name + (f._altWind > 0 ? " · WINDING UP" : typeof altCools === "function" && altCools(f) && (f._altReadyAt || 0) > (typeof frame !== "undefined" ? frame : 0) ? " · COOLING DOWN" : " · LOCKED ON") : "NORMAL ATTACK")); b.appendChild(mk("span", "sf-sa", open ? "\u25b4" : "\u25be"));
         box.appendChild(b);
         if (open) {
             const list = mk("div", "sf-slot-list"), opt = (label, sub, on, id) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", "alt"); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); el.appendChild(mk("small", "sf-os", sub)); list.appendChild(el); };

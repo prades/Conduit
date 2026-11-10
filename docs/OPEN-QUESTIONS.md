@@ -778,5 +778,13 @@ The agent's choices, to change on the owner's word:
 4. **The last one used stays chosen** while the pack is open (its tile at ×0, NONE IN THE PACK under USE); reopened, the pack chooses the first item carried.
 5. **The sizes:** the button 176 × 78 (160 wide under 1,100 px, 128 × 66 under 900); the tiles as big as fit, 6 to 11 across (4 to 6 on a phone).
 
+## Second attacks: a Brawler's cooldown, the halved times (built in `2026-11-10a`; `COMBAT.md`, "A Brawler cools down; a Mage and a Technician wind up")
+The agent's choices, to change on the owner's word:
+1. **When the cooldown starts:** once the strike's effect has ended (a burning circle, a decoy, a roll), as the wind-up did. It could start at the strike instead.
+2. **A switch keeps the cooldown:** choosing NORMAL ATTACK and then the move again does not skip it (else a switch would be a free reset).
+3. **A strike that finds nothing** (the enemy stepped out of reach) tries again 15 frames later, not every frame.
+4. **CAPACITOR DISCHARGE** (the Static Orb's, a Brawler's) still stands still to store its charges, now one every 0.75 s. Whether a Brawler should store them on the move is open.
+5. **The look:** a Brawler no longer winds up, so the rumble it had while winding up no longer shows; nothing marks its cooldown in the world (its squad card and INFO do).
+
 ## MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
 The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; today's electric Brawler (the STATIC ORB, its moves and all) becomes the MAGNETIC Brawler; the electric Brawler gets a new design. Not designed in detail and not built. Seven points are open, listed in `CONVERSION.md` §13 (how electric converts, MAGNETIC's rules and other forms, the new electric Brawler, saved Static Orbs, the name, the retired electric Brawler forms).
