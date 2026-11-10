@@ -2786,3 +2786,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The agent's choices (provisional, `OPEN-QUESTIONS.md`): the cooldown starts when the effect has ended; a switch keeps it; a strike that finds nothing tries again after 15 frames; CAPACITOR DISCHARGE (the Static Orb's, a Brawler's) keeps standing still to store its charges, at half the time a charge.
 - Supersedes, for Brawlers, the rule that every alternate winds up rooted (`COMBAT.md`, "An alternate is a chosen mode"; the owner, 2026-11-07: "the wind up makes it balanced").
 
+## DECISION: The squad's formation (2026-11-10, build `2026-11-10b`)
+- The owner: "Okay, so I want to make it to where it feels more structured with the fights. So can we make it for now? We'll make a formation function, and it will basically put the brawlers in front of the player and whatever they're looking at, and it will put the mage behind the player where there's some distance, and it will put the technician constantly patrolling the area around the player."
+- Of the agent's questions: when, "Always while following (Recommended)"; in a fight, "Fight from their places (Recommended)"; ahead, "Locked enemy, else your way (Recommended)".
+- Built: `js/formation.js` gives each squad member following you a place (Brawlers ahead, Mages behind, Technicians going round); `js/npc.js` walks it there and lets a Mage shoot from its place. `COMBAT.md`, "The formation".
+- The agent's choices (provisional, `OPEN-QUESTIONS.md`): the distances, the Mage's reach from its place, the Technicians' pace and opposite ways round, and the natural traits' nudges in place of their old pulls (which would have undone the formation).
+- Supersedes the loose follow (every follower stopping 2 tiles from you, a LONE WOLF 4, an EMPATHETIC one leaning 60% to its allies) for a squad member following you; a follower with no place still follows that way.
+

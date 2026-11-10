@@ -4,6 +4,14 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-10
 
+### Build `2026-11-10b` · branch `claude/start-game-project-HSh7Z` · the squad's formation
+- **The squad keeps a formation round you** (the owner: "a formation function ... put the brawlers in front of the player and whatever they're looking at, ... the mage behind the player where there's some distance, ... the technician constantly patrolling the area around the player"; their picks: "Always while following", "Fight from their places", "Locked enemy, else your way"). Brawlers stand ahead of you, Mages behind you at a distance, Technicians go round you. Ahead is toward the enemy you have locked, else the way you last walked. It used to be a loose crowd 2 tiles from you.
+- **In a fight they fight from their places.** A Brawler goes out to meet what comes and comes back. A Mage shoots from behind you at what it sees within 8 tiles (it used to walk up to 4 tiles from an enemy) and moves only to see. A Technician keeps going round and hits what comes within its reach.
+- **Walls:** a place in a wall or out of your sight comes in toward you, then to a diagonal or a side.
+- **The natural traits nudge a place:** a LONE WOLF stands 1.2 tiles farther out, an EMPATHETIC one a quarter nearer you. At full strength (4 tiles out, a 60% lean toward allies) they would have undone the formation, and every follower has one of the two.
+- HOLD, a posted room, an order, a clone and the way home are as they were. Every number is the agent's, provisional.
+- Tests: `tests/formation.js` (new, 11 checks: the places, the round, side by side, ahead, the Mage from behind and beyond its reach, a Brawler going out and back, walls, the traits' nudge, who takes a place). The traits suite's two following checks and the Command Center's play-style scene were brought to the formation.
+
 ### Tooling, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-10a`)
 - **The full test run runs suites side by side** (the owner: "What can be done about long testing periods", then "Best approach then on"): one per core, each suite's output whole and in the same order as before, its time after it. One at a time a full run took 28 minutes; four at a time about 12. `node tests/run.js --jobs=1` runs them one at a time; `node tests/run.js moves bible` runs only those.
 - **The Bible fills in its own numbers:** `node tests/bible.js --fix` writes the code's value into every number the page shows wrong (the words stay a person's job).

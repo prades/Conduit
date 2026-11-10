@@ -96,23 +96,24 @@ function ok(c, m) { if (!c) throw new Error(m); }
 
     group('NATURAL TRAITS: distance and company');
 
-    await check('LONE WOLF keeps its distance, a default follower comes close', () => {
+    await check('LONE WOLF keeps its distance, a default follower comes close (in the formation, js/formation.js: its place, FORMATION.loneWolf tiles farther out)', () => {
         // The follower starts five tiles west of the player along the open row.
         const d = trait => { const r = scene(`f.naturalTrait = ${JSON.stringify(trait)}; f.x = __O.x - 5; f.y = __O.y;`, 900);
             return Math.hypot(r.fx - run('__O.x'), r.fy - run('__O.y')); };
         const normal = d(null), lone = d('lone_wolf');
         ok(normal <= 2.3, 'fixture: a default follower stops near the player, got ' + normal.toFixed(2));
-        ok(lone >= 3.5, 'a lone wolf came within ' + lone.toFixed(2) + ' tiles');
+        ok(lone >= normal + 0.8, 'a lone wolf came within ' + lone.toFixed(2) + ' tiles (a default follower: ' + normal.toFixed(2) + ')');   // (it kept 4 tiles until build 2026-11-10b: the formation's places are nudged by a trait, not undone)
     });
 
-    await check('EMPATHETIC leans toward its allies', () => {
-        // The player four tiles north of the follower, two allies four tiles west of it: an empathetic follower ends west of a plain one.
+    await check('EMPATHETIC keeps near the squad: in the formation (js/formation.js) it holds its place nearer you, the squad\'s middle, than a default follower', () => {
+        // The player four tiles north of the follower, two allies four tiles west of it. Until build 2026-11-10b an empathetic follower leaned 60% of the way to its allies (it ended west of a
+        // plain one); in the formation, where the allies stand round you, it holds its place a quarter nearer you instead, so the formation keeps its shape.
         const x = trait => scene(`f.naturalTrait = ${JSON.stringify(trait)}; f.x = __O.x; f.y = __O.y + 1;
             player.x = __O.x; player.y = __O.y - 4; player.visualX = player.x; player.visualY = player.y; player.targetX = player.x; player.targetY = player.y;
             spawnFollowerAtCrystal('fire'); spawnFollowerAtCrystal('fire');
             for (const o of followers.slice(1)) { o.x = __O.x - 4; o.y = __O.y + 1; o.isFollower = true; o.returningToCrystal = false; o.post = null; o.stance = 'hold'; o.moveSpeed = 0; }`, 600);
-        const plain = x(null), emp = x('empathetic');
-        ok(emp.fx < plain.fx - 0.5, 'empathetic ended at x=' + emp.fx.toFixed(2) + ' vs ' + plain.fx.toFixed(2) + ' for a default follower');
+        const plain = x(null), emp = x('empathetic'), py = run('__O.y - 4'), dist = r => Math.hypot(r.fx - run('__O.x'), r.fy - py);
+        ok(dist(emp) < dist(plain) - 0.2, 'empathetic ended ' + dist(emp).toFixed(2) + ' tiles from you vs ' + dist(plain).toFixed(2) + ' for a default follower');
     });
 
     console.log(failures ? `\n${failures} FAILING\n` : '\nall passing\n');

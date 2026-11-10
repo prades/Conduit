@@ -786,5 +786,12 @@ The agent's choices, to change on the owner's word:
 4. **CAPACITOR DISCHARGE** (the Static Orb's, a Brawler's) still stands still to store its charges, now one every 0.75 s. Whether a Brawler should store them on the move is open.
 5. **The look:** a Brawler no longer winds up, so the rumble it had while winding up no longer shows; nothing marks its cooldown in the world (its squad card and INFO do).
 
-## MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
+## The formation (built in `2026-11-10b`; `COMBAT.md`, "The formation")
+The agent's numbers and readings, to tune once the owner has played with them:
+1. **The places:** Brawlers 1.8 tiles ahead, Mages 3 behind, two of a kind 1.2 apart side by side; Technicians 2.5 tiles out, each making for a point a little way round the ring (0.6 rad) so it walks the round at its own pace; a second Technician goes the other way round.
+2. **The Mage's reach from its place:** 8 tiles (it used to close to 4). Between shots it walks back to its place; at a corner where its place cannot see the enemy it may step out and back.
+3. **The traits:** a LONE WOLF 1.2 tiles farther out, an EMPATHETIC one a quarter nearer you (their old 4 tiles and 60% lean would undo the formation).
+4. **Ahead with nothing locked:** the way you last walked, kept while you stand. It could instead follow the enemy nearest you.
+5. **A clone** (the Mutator's) takes no place: it follows as before.
+
 The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; today's electric Brawler (the STATIC ORB, its moves and all) becomes the MAGNETIC Brawler; the electric Brawler gets a new design. Not designed in detail and not built. Seven points are open, listed in `CONVERSION.md` §13 (how electric converts, MAGNETIC's rules and other forms, the new electric Brawler, saved Static Orbs, the name, the retired electric Brawler forms).

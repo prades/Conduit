@@ -280,10 +280,15 @@ function updateRTSNPC(actor) {
                 const _close = typeof followerAltCloseReach === "function" ? followerAltCloseReach(actor) : 0;   // locked on a close move (BASH, build 2026-11-07ss): it walks in to use it, as a Brawler does (js/moves.js)
                 if (_close > 0) { if (!seen || dist > _close - 0.3) { actor.x += (dx/dist)*actor.moveSpeed*0.8; actor.y += (dy/dist)*actor.moveSpeed*0.8; } return; }
 
+                // THE FORMATION (js/formation.js, build 2026-11-10b; the owner: "Fight from their places"): a Mage with its place behind you shoots from there, at an enemy it can see within
+                // FORMATION.mageRange; it moves only to see one (as before), keeps its place when one is farther, and goes back to it between shots. One sent at a creature fights as before.
+                const _fmSpot = !_ord && typeof formationSpot === "function" ? formationSpot(actor) : null, _range = _fmSpot ? FORMATION.mageRange : SNIPER_PREFERRED;
                 if (seen && dist < SNIPER_MIN) {
                     actor.x-=(dx/dist)*actor.moveSpeed*1.2;
                     actor.y-=(dy/dist)*actor.moveSpeed*1.2;
-                } else if (!seen || dist > SNIPER_PREFERRED) {
+                } else if (_fmSpot && seen && dist > _range) {
+                    followPlayer(actor);   // (beyond its reach: it keeps its place, and the Brawlers meet it)
+                } else if (!seen || dist > _range) {
                     const _sp = _ord && dist > SNIPER_PREFERRED + 2 ? 1 : 0.6;   // (a creature it was sent at, far off: at its full pace)
                     actor.x+=(dx/dist)*actor.moveSpeed*_sp;
                     actor.y+=(dy/dist)*actor.moveSpeed*_sp;
@@ -295,6 +300,7 @@ function updateRTSNPC(actor) {
                         actor._shotTarget = nearestEnemy; actor._shotWind = Math.max(1, followerRest(actor, MAGE_SHOT_WINDUP));   // (the shot winds up first, rooted, then _mageShotFire sends it and sets the rest; attack speed shortens the wind-up as it does the rest)
                     } else {
                         actor.attackCooldown--;
+                        if (_fmSpot) followPlayer(actor);   // (between shots, back to its place behind you)
                     }
                 }
             } else {
@@ -357,7 +363,17 @@ function followPlayer(actor) {
     const nt = actor.naturalTrait && NATURAL_TRAITS[actor.naturalTrait];
     if (nt && nt.onIdle) nt.onIdle(actor);
     let tx = player.x, ty = player.y, stop = actor.wanderRadius || FOLLOW_STOP;
-    if (actor.preferGroup) {
+    // THE FORMATION (js/formation.js, build 2026-11-10b): its place round you, not just near you. Its trait nudges the place: a LONE WOLF's is FORMATION.loneWolf tiles farther out (where that is
+    // floor you can see), an EMPATHETIC one's FORMATION.empathetic of the way nearer you, the squad's middle.
+    const spot = typeof formationSpot === "function" ? formationSpot(actor) : null;
+    if (spot) {
+        tx = spot[0]; ty = spot[1]; stop = FORMATION.stop;
+        const ox = tx - player.x, oy = ty - player.y, L = Math.hypot(ox, oy);
+        if (actor.wanderRadius && L > 1e-6) { const wx = tx + ox / L * FORMATION.loneWolf, wy = ty + oy / L * FORMATION.loneWolf; if (facilityFloorAt(wx, wy) && facilityLosFrom(player.x, player.y, wx, wy)) { tx = wx; ty = wy; } }
+        else if (actor.preferGroup) { tx = player.x + ox * (1 - FORMATION.empathetic); ty = player.y + oy * (1 - FORMATION.empathetic); }
+    }
+    const baseX = tx, baseY = ty;
+    if (actor.preferGroup && !spot) {
         let sx = 0, sy = 0, n = 0;
         for (const o of followers) {
             if (o === actor || o.dead || !o.isFollower) continue;
@@ -365,7 +381,7 @@ function followPlayer(actor) {
         }
         if (n > 0) { tx = tx * 0.4 + (sx / n) * 0.6; ty = ty * 0.4 + (sy / n) * 0.6; }
         // Leaning toward the group must not pick a spot behind a wall (inside the lab, say), so a lean only counts where you can see it from where you stand, and only once it is near you.
-        if (!facilityLosFrom(player.x, player.y, tx, ty) || Math.hypot(player.x - actor.x, player.y - actor.y) > 8) { tx = player.x; ty = player.y; }   // (and a lean only counts when it is already close: a far group otherwise sits together and never comes to you)
+        if (!facilityLosFrom(player.x, player.y, tx, ty) || Math.hypot(player.x - actor.x, player.y - actor.y) > 8) { tx = baseX; ty = baseY; }   // (and a lean only counts when it is already close: a far group otherwise sits together and never comes to you)
     }
     // A follower on another stretch of floor than you (you are in an interior) walks to the doorway that comes out beside you and goes through it (js/facilityportals.js)
     if (actor._fpPortalGoal && typeof facilityPortalGoal === "function") { const g = facilityPortalGoal(actor); if (g) { tx = g.x; ty = g.y; stop = 0.04; } }

@@ -102,11 +102,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(run('playReach(__b)'), run('PLAY_STYLES.find(p => p.id === "aggressive").reach'), 'reach'); same(run('playReach(__a)'), 1, 'no style = the usual reach');
         run('ccApplyPlayStyle([__b, __c], "balanced")');
     });
-    // A brawler standing on the player (so following does not move it) and one provoked creature `d` tiles away, frozen where it is put.
-    const brawlerMoves = (style, d) => run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); const f = __b; f.x = player.x; f.y = player.y; f.role = 'brawler'; f.playStyle = ${style ? "'" + style + "'" : 'undefined'}; f.job = null; f.stance = 'follow'; f.post = null; f.dead = false; f.attackOrder = null; f.retreatUntil = 0;
+    // A brawler standing at its place in the formation (js/formation.js; so following does not move it: until build 2026-11-10b that was on the player), "ahead" set across the creature's line so its
+    // distance to it stays about d, and one provoked creature `d` tiles away, frozen where it is put.
+    const brawlerMoves = (style, d) => run(`(function(){ actors = actors.filter(a => !(a instanceof Predator)); const f = __b; f.x = player.x; f.y = player.y; f.role = 'brawler'; f.playStyle = ${style ? "'" + style + "'" : 'undefined'}; f.job = null; f.stance = 'follow'; f.post = null; f.dead = false; f.attackOrder = null; f.retreatUntil = 0; f.naturalTrait = null; f.preferGroup = false; f.wanderRadius = 0;
         player.visualX = player.x; player.visualY = player.y;
         const p = spawnCreature({ species: 'ant', className: 'scout', x: player.x + ${d}, y: player.y, level: 3, state: 'hunt' }); p.team = 'red'; p.provoked = true; p.health = p.maxHealth = 1e6; p.update = () => {};
-        f._enemyCacheFrame = 0; frame += 8; const x0 = f.x, y0 = f.y; updateRTSNPC(f); const moved = Math.abs(f.x - x0) + Math.abs(f.y - y0); p.dead = true; actors.splice(actors.indexOf(p), 1); return moved > 1e-6; })()`);
+        f._enemyCacheFrame = 0; frame += 8; _fmFace.x = 0; _fmFace.y = 1; _fmFace.px = player.x; _fmFace.py = player.y; f._fmAt = -1e9; const s = formationSpot(f); if (s) { f.x = s[0]; f.y = s[1]; }
+        const x0 = f.x, y0 = f.y; updateRTSNPC(f); const moved = Math.abs(f.x - x0) + Math.abs(f.y - y0); p.dead = true; actors.splice(actors.indexOf(p), 1); return moved > 1e-6; })()`);
     check('THE BEHAVIOUR: an enemy 8 tiles out: balanced ignores it, aggressive goes for it', () => {
         same(brawlerMoves(null, 8), false, 'balanced at 8'); same(brawlerMoves('aggressive', 8), true, 'aggressive at 8');
     });

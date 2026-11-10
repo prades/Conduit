@@ -79,6 +79,7 @@ const SUITES = [
     ['the bottom of the screen: dock, squad bar, tool, enemy card: none over another', 'bottomui.js'],
     ['the squad in the Command Center (box, add / remove / swap, SQUADS window, disband, the phone\'s menu)', 'squadui.js'],
     ['HOLD one follower, then COME brings it back', 'holdcome.js'],
+    ['the formation: Brawlers ahead of you, Mages behind at a distance, Technicians going round you, while they follow you; a Mage shoots from its place; walls; who takes a place', 'formation.js'],
     ['the Mutator\'s clone in the squad: its card after the three on the bar, picked alone with a tap, the orders (RETREAT, HOLD, COME, ALL, the enemy card\'s ATTACK), the squad\'s XP, a doorway, a load; SWITCH ROLES leaves it alone', 'clonesquad.js'],
     ['where a tap may send you: the room you are in and a little way through its doorways (a stray tap elsewhere is ignored, with a ✕); the five-tile step under pressure, a prototype the Settings turn off', 'movement.js'],
     ['room capacity, who makes room, the arena over its six', 'rooms.js'],
