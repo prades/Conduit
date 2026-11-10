@@ -40,6 +40,7 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
   out.shown = Array.prototype.filter.call(tr.querySelectorAll('.top-btn'), function(b){ return getComputedStyle(b).display !== 'none' && b.getBoundingClientRect().width > 0; }).map(function(b){ return b.id; });
   // as the page comes up: whether the strip overflows at this width, and that fades and arrows follow (none when it all fits)
   out.natural = snap(); out.naturalOver = tr.scrollWidth > tr.clientWidth + 2;
+  var pk = document.getElementById('btnPack'), pr = pk.getBoundingClientRect(), br = bar.getBoundingClientRect(); out.pack = { shown: getComputedStyle(pk).display !== 'none' && pr.width > 0, inDock: bar.contains(pk), right: Math.round(innerWidth - pr.right), line: Math.abs(pr.bottom - br.bottom) <= 2, clear: pr.left >= br.right + 8, r: [Math.round(pr.left), Math.round(pr.top), Math.round(pr.right), Math.round(pr.bottom)], dock: [Math.round(br.left), Math.round(br.right), Math.round(br.bottom)] };
   // more than fits: the strip is narrowed (the game cannot know how many tools a build will have) and the slider has to work
   tr.style.flex = 'none'; tr.style.width = '300px'; toolboxSync(); await wait(50);
   out.start = snap(); out.over = tr.scrollWidth > tr.clientWidth;
@@ -85,12 +86,14 @@ check('the strip, its arrows and the script are in the page; phones do not get t
     ok(/overflow-x: ?auto/.test(HTML), 'the strip does not scroll sideways');
     ok(/@media \(max-width: 700px\)[^}]*#topToggles \{ display: none !important/.test(HTML), 'a phone still gets the dock (it has the radial menu)');
 });
-check('the dock is ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ? and nothing of the strip game (no Crystal, Shop, Modules, Build or Auto button)', () => {
+check('the dock is ROSTER, CARDS, QUESTS, CLONES, SETTINGS, MAP, ? and nothing of the strip game (no Crystal, Shop, Modules, Build or Auto button); the PACK is out of it, on the HUD (build 2026-11-09zz)', () => {
     const dock = HTML.slice(HTML.indexOf('<div id="dockScroll">'), HTML.indexOf('id="dockNext"'));
     const ids = [...dock.matchAll(/<button id="(\w+)"\s+class="top-btn"/g)].map(m => m[1]);
-    same(ids.join(), 'btnRoster,btnCards,btnQuests,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the buttons');
+    same(ids.join(), 'btnRoster,btnCards,btnQuests,btnClones,btnSettings,btnFacility,btnCtrl', 'the buttons');
     for (const id of ['btnCrystal', 'btnShop', 'btnModules', 'btnBuild', 'btnAuto', 'btnSquad', 'btnCommand']) ok(!new RegExp('id="' + id + '"').test(HTML), id + ' is still in the page');
-    ok(/onclick="ccToggleOpen\(\)"/.test(dock) && /onclick="dockClones\(\)"/.test(dock) && /onclick="dockSettings\(\)"/.test(dock) && /onclick="invToggle\(\)"/.test(dock) && /onclick="toggleControlsMenu\(\)"/.test(dock), 'a button does not open its menu');
+    ok(/onclick="ccToggleOpen\(\)"/.test(dock) && /onclick="dockClones\(\)"/.test(dock) && /onclick="dockSettings\(\)"/.test(dock) && /onclick="toggleControlsMenu\(\)"/.test(dock), 'a button does not open its menu');
+    const bar = HTML.slice(HTML.indexOf('<div id="topToggles">'), HTML.indexOf('<div id="mixTool"')), dockEnd = bar.indexOf('id="dockNext"');
+    ok(!/btnPack/.test(dock) && /<button id="btnPack" onclick="invToggle\(\)"/.test(bar) && bar.indexOf('id="btnPack"') > dockEnd && /id="packCount"/.test(bar), 'the PACK is still in the dock, or its HUD button (after the dock, in the HUD) does not open the pack or has no count');
     const tb = fs.readFileSync(path.join(ROOT, 'js/toolbox.js'), 'utf8'); ok(/function dockClones\(\)/.test(tb) && /function dockSettings\(\)/.test(tb) && !/dockShop|dockCrystal|dockModules|toggleBuild|toggleAutoplay/.test(tb), 'toolbox.js still opens a menu that is gone');
 });
 console.log('\nTHE SLIDER (real browser, 1080x700)');
@@ -99,8 +102,11 @@ if (r === null) console.log('  (no Chromium here: skipped)');
 else {
     check('the instrument ran', () => { ok(r, 'the probe produced nothing'); same(r.err, undefined, 'the probe threw'); same(r.facility, true, 'the page did not boot the facility'); });
     if (r && !r.err) {
-        check('every menu is in the strip, and shown: ROSTER, CARDS, CLONES, SETTINGS, PACK, MAP, ?', () => {
-            same(r.ids.join(), 'btnRoster,btnCards,btnQuests,btnClones,btnSettings,btnPack,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.join(), 'a button is hidden');
+        check('every menu is in the strip, and shown: ROSTER, CARDS, QUESTS, CLONES, SETTINGS, MAP, ?', () => {
+            same(r.ids.join(), 'btnRoster,btnCards,btnQuests,btnClones,btnSettings,btnFacility,btnCtrl', 'the strip'); same(r.shown.join(), r.ids.join(), 'a button is hidden');
+        });
+        check('the PACK is on the HUD, in the bottom-right corner on the dock\'s line, clear of the dock (build 2026-11-09zz; the owner\'s pick: the HUD, bottom right)', () => {
+            const k = r.pack; ok(k, 'not measured'); same(k.shown, true, 'the PACK button is not shown in the facility'); same(k.inDock, false, 'the PACK is in the dock'); same(k.right, 14, 'its gap to the right edge'); same(k.line, true, 'it is not on the dock\'s line: ' + JSON.stringify(k)); same(k.clear, true, 'it overlaps the dock: ' + JSON.stringify(k));
         });
         check('when it all fits there is no fade and no arrow; when there is more than fits it slides sideways (right room at the start, an arrow and a fade)', () => {
             if (!r.naturalOver) { same(r.natural.room.left + r.natural.room.right, 0, 'room to slide with everything fitting'); ok(!/fade-|slides/.test(r.natural.cls), 'a fade or an arrow with everything fitting: ' + r.natural.cls); }

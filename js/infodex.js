@@ -142,7 +142,7 @@ function infoEntries() {
         [["RELAY NODES", relays], ["THE REPAIR", "the junction, once"], ["THE MODULE", "the catwalks: Side Quest flies up"]]);
     add("gun", "rules", "YOUR GUN", "#ffb070", "Lock on, then the round dial fires",
         ["Near a creature the gun takes aim by itself: the nearest one within " + target.range + " tiles that you can see is locked, red corners close on it, and a round DIAL with its picture appears: its health as a ring, its level, an INFO button and the ammunition under it. CLICK the dial for a shot, HOLD it to keep firing at the gun's own rate.",
-         "Tap another creature to lock that one instead; a tap on the locked creature is a shot too. The ammunition chip stands the gun down. Rounds come from AMMO PACKS in the supply cases and from scrap at the Armory's terminal, where weapons are equipped and upgraded as well."],
+         "Tap another creature to lock that one instead; a tap on the locked creature is a shot too. The ammunition chip stands the gun down. Rounds come from AMMO PACKS lying about the facility and from scrap at the Armory's terminal, where weapons are equipped and upgraded as well."],
         [["LOCKS", "within " + target.range + " tiles, in sight"], ["THE GUN HOLDS", ammoMax + " rounds"], ["YOU", hits + " hits, then back to the Crystal", "#ff8a7a"]]);
     add("pack", "rules", "THE PACK & THE CLASSES", "#31e8ff", "Press I; a class after the tutorial",
         ["Press I (or PACK on the dock) for your pack: everything you carry, in tabs, with an INSPECT page and USE for each item. Supply cases glow in the dark; walk over one to take what is in it. Any class may carry another class's gear, but only the right class may use it.",

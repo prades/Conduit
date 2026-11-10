@@ -195,15 +195,22 @@ function _fpDrawPickup(it) {
         ctx.fillStyle = "#7a6650"; ctx.strokeStyle = "#1e2a2f"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.beginPath(); ctx.moveTo(c[0] - s, c[1] - 1); ctx.lineTo(c[0] - s * 0.6, c[1] - s); ctx.lineTo(c[0] + s * 0.3, c[1] - s * 1.2); ctx.lineTo(c[0] + s, c[1] - s * 0.4); ctx.lineTo(c[0] + s * 0.7, c[1] + 2); ctx.lineTo(c[0] - s * 0.3, c[1] + 3); ctx.closePath(); ctx.fill(); ctx.stroke();
         ctx.fillStyle = "#a99076"; ctx.beginPath(); ctx.moveTo(c[0] - s * 0.6, c[1] - s); ctx.lineTo(c[0] + s * 0.3, c[1] - s * 1.2); ctx.lineTo(c[0] + s * 0.5, c[1] - s * 0.6); ctx.lineTo(c[0] - s * 0.3, c[1] - s * 0.5); ctx.closePath(); ctx.fill();
     } else
+    if (_fpPickupOwn(first)) {   // THE ITEM ITSELF on the floor (build 2026-11-09zz; the owner: "redesign the items, like the scrap metal design on the ground"): its model (design/props/models/pickups.js) in a soft glow of its colour
+        const g0 = _fpP(it.x, it.y, 0); ctx.save(); ctx.translate(g0[0], g0[1]); ctx.scale(1, 0.5); _fpGlow(0, 0, 30 + Math.sin(f * 0.08 + it.seed) * 4, col, 0.42); ctx.restore();
+        _psBlit("pickups", first, it.x, it.y);
+    } else
     if (!(typeof facilityCaseSprite === "function" && facilityCaseSprite(it))) {   // (the 3D case, js/propsprites.js, else the flat box)
     _fpSBox(it.x - 0.3, it.y - 0.3, it.x + 0.3, it.y + 0.3, 0, 13, A.caseLit, A.case, A.cap, 3);   // the case
     _fpSBox(it.x - 0.31, it.y - 0.31, it.x + 0.31, it.y + 0.31, 8, 11, col, _fpShade(col, 0.7), _fpShade(col, 0.88), 2);   // a coloured band round it
     }
     if (it.arrive !== undefined && f - it.arrive < 90) { const k = (f - it.arrive) / 90, top = _fpP(it.x, it.y, 260), bot = _fpP(it.x, it.y, 0); ctx.save(); ctx.globalCompositeOperation = "lighter"; const g = ctx.createLinearGradient(0, top[1], 0, bot[1]); g.addColorStop(0, _fpRgba(col, 0)); g.addColorStop(1, _fpRgba(col, 0.7 * (1 - k))); ctx.fillStyle = g; const w = 16 * (1 - k * 0.6); ctx.fillRect(bot[0] - w, top[1], w * 2, bot[1] - top[1]); ctx.restore(); }   // (the column of light it arrives in)
+    if (!it.rock && _fpPickupOwn(first)) { if (it.items.length > 1) { const c = _fpP(it.x, it.y, 30); ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c[0] + 12, c[1], 3, 0, 6.2832); ctx.fill(); } return; }   // (the item shows itself: no icon over it; a dot when there is more than one kind)
     const c = _fpP(it.x, it.y, 40 + bob); if (typeof invDrawIcon === "function") invDrawIcon(first, c[0], c[1], 30, f);
     const g = _fpP(it.x, it.y, 18); _fpGlow(g[0], g[1], 34 + Math.sin(f * 0.08 + it.seed) * 4, col, 0.34);
     if (it.items.length > 1) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(c[0] + 14, c[1] - 11, 3, 0, 6.2832); ctx.fill(); }
 }
+// whether an item is drawn on the floor as itself (it has a model on the pickups sheet, and the sheet has arrived)
+function _fpPickupOwn(id) { return typeof PROP_ATLAS !== "undefined" && !!PROP_ATLAS.pickups && !!PROP_ATLAS.pickups.cells[id] && typeof _psImg === "function" && typeof _psBlit === "function" && !!_psImg("pickups"); }
 // each frame: take what the player walks over
 function facilityPickupTick() {
     if (!_fp || !_fp.items || typeof invAdd !== "function") return;

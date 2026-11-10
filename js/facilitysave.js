@@ -27,7 +27,7 @@ function facilitySaveCollect() {
     const S = _fp.tut && _fp.tut.script;
     return {
         v: FS.version,
-        cls: typeof playerClassKey !== "undefined" ? playerClassKey : null, perks: Array.from(classPerks), inv: playerInv, ammo: playerAmmo, shots: playerShotsFired,
+        cls: typeof playerClassKey !== "undefined" ? playerClassKey : null, perks: Array.from(classPerks), inv: playerInv, seen: typeof invSeen !== "undefined" ? Array.from(invSeen) : [], ammo: playerAmmo, shots: playerShotsFired,
         classes: typeof classSeen !== "undefined" ? { seen: Array.from(classSeen), weapon: classWeapon, clone: classWaitingClone } : null,   // the classes you have been, the weapon each last held, the Mutator's clone waiting (js/classes.js)
         taken: _fp.items.filter(i => i.fp === "pickup" && i.taken && !i.temp).map(i => i.id),
         relays: Object.keys(_fp.relays || {}).filter(id => _fp.relays[id].online),
@@ -86,6 +86,7 @@ function facilitySaveApply(d) {
     // the player: class (no start kit again: the pack is the saved one), perks, pack, ammunition
     invReset(); playerClassKey = CLASSES[d.cls] ? d.cls : null; classPicker_off();
     classPerks = new Set((d.perks || []).filter(id => CLASS_PERKS[id])); playerInv = {}; if (d.inv && typeof d.inv === "object") for (const id of Object.keys(d.inv)) if (typeof ITEMS === "undefined" || ITEMS[id]) playerInv[id] = d.inv[id];   // (an item the game no longer has is dropped: the Vital Fleck, Prism and Core, removed 2026-11-01)
+    if (typeof invSeen !== "undefined") { invSeen = new Set((Array.isArray(d.seen) ? d.seen : []).filter(id => typeof ITEMS === "undefined" || ITEMS[id])); for (const id of Object.keys(playerInv)) invSeen.add(id); }   // (the items ever held, for the PACK's roster: js/inventory.js; a save from before build 2026-11-09zz knows what it holds)
     // the classes you have been (a game saved before classes switched: the one it had), the weapon each last held, the Mutator's clone if it was waiting
     const dc = d.classes && typeof d.classes === "object" ? d.classes : {};
     classSeen = new Set((Array.isArray(dc.seen) ? dc.seen : []).concat(playerClassKey ? [playerClassKey] : []).filter(id => CLASSES[id]));

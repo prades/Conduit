@@ -770,5 +770,13 @@ The agent's numbers and readings, to tune once the owner has played with them:
 5. **The spots:** the arena's two at 35,47 and 38,54 (8 tiles apart, so one does not set off the other unless FLUX MOVE brings them together); the sewer's at -3,112 north of the dam's pumps.
 6. **The compressed air one** was left out ("Maybe no compressed air"): it could come back later as a container that throws everyone back without hurting them.
 
+## The items on the ground, the PACK roster, the PACK button (built in `2026-11-09zz`; `TUTORIAL.md`, "Phase 3: the pack")
+The agent's choices, to change on the owner's word:
+1. **Five item models beyond the drafts** (in the approved style, not drafted first): the fuel cell (a square glass canister glowing green), two crossed red flares, a mech leg lying jointed with a cyan strip, the mech core (a hexagonal housing, its cyan heart lit), the mutagen sample (a stoppered violet flask, its pack icon's shape).
+2. **The count on the PACK button** is the kinds of item carried ("8 ITEMS"), not the total; the · I key hint shows only where there is a mouse.
+3. **A phone's PACK button** (a phone had none before): a small slab at the right edge over the QUEST button, its count in a badge, hidden while a window is open. The owner's pick was shown at an iPad's size only.
+4. **The last one used stays chosen** while the pack is open (its tile at ×0, NONE IN THE PACK under USE); reopened, the pack chooses the first item carried.
+5. **The sizes:** the button 176 × 78 (160 wide under 1,100 px, 128 × 66 under 900); the tiles as big as fit, 6 to 11 across (4 to 6 on a phone).
+
 ## MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
 The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; today's electric Brawler (the STATIC ORB, its moves and all) becomes the MAGNETIC Brawler; the electric Brawler gets a new design. Not designed in detail and not built. Seven points are open, listed in `CONVERSION.md` §13 (how electric converts, MAGNETIC's rules and other forms, the new electric Brawler, saved Static Orbs, the name, the retired electric Brawler forms).

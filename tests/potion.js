@@ -109,11 +109,11 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
 
     group('THE SAVE (js/facilitysave.js)');
-    check('the potion in hand, the count bought, the copies, the throws, the boss uses and the discount owed come back; a potion the pack no longer holds is not in hand; the save has 39 fields', () => {
+    check('the potion in hand, the count bought, the copies, the throws, the boss uses and the discount owed come back; a potion the pack no longer holds is not in hand; the save has 40 fields', () => {
         const r = J(`(function(){ const o = {}; __clear(); shardCount = 300; potionBuy(); invAdd('sleeping_potion_copy', 1); potionEquip('sleeping_potion_copy'); potionState().discount = true; potionState().bossUses = 2; potionState().thrown = 3;
             const sv = facilitySaveCollect(); o.saved = sv.potion; o.fields = Object.keys(sv).length; __reload(sv); o.back = [potionEquipped(), invCount('sleeping_potion'), invCount('sleeping_potion_copy'), potionState().bought, potionState().copies, potionState().thrown, potionState().bossUses, potionState().discount, potionPrice()];
             const sv2 = facilitySaveCollect(); delete sv2.inv.sleeping_potion_copy; __reload(sv2); o.notHeld = [potionEquipped(), invCount('sleeping_potion_copy'), potionState().discount]; return o; })()`);
-        same(JSON.stringify(r.saved), JSON.stringify({ eq: 'sleeping_potion_copy', bought: 1, copies: 0, thrown: 3, boss: 2, disc: 1 }), 'the record'); same(r.fields, 39, 'the fields (39 since 2026-11-09s: the energy cards you hold; 33, the turrets\' wear since 2026-11-01, and the objects FLUX MOVE has moved since 2026-11-06f, the ice bridges since 2026-11-07aa, the drain pipe\'s grate since 2026-11-07bb, REEF\'s climbs since 2026-11-08m)');
+        same(JSON.stringify(r.saved), JSON.stringify({ eq: 'sleeping_potion_copy', bought: 1, copies: 0, thrown: 3, boss: 2, disc: 1 }), 'the record'); same(r.fields, 40, 'the fields (40 since 2026-11-09zz: the items ever held, for the PACK\'s roster; 39 since 2026-11-09s: the energy cards you hold; 33, the turrets\' wear since 2026-11-01, and the objects FLUX MOVE has moved since 2026-11-06f, the ice bridges since 2026-11-07aa, the drain pipe\'s grate since 2026-11-07bb, REEF\'s climbs since 2026-11-08m)');
         same(r.back.join(), 'sleeping_potion_copy,1,1,1,0,3,2,true,50', 'the load'); same(r.notHeld.join(), ',0,true', 'a potion no longer in the pack');
     });
 

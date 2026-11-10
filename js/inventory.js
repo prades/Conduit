@@ -124,12 +124,12 @@ function invRoom(id) { const d = itemDef(id); return d ? Math.max(0, d.stack - i
 function invAdd(id, n) {
     const d = itemDef(id); n = Math.floor(n === undefined ? 1 : n); if (!d || !(n > 0)) return 0;
     if (!classCanCarry(d.classes)) return 0;
-    const put = Math.min(n, invRoom(id)); if (put > 0) { playerInv[id] = invCount(id) + put; if (!_invSel) _invSel = id; }
+    const put = Math.min(n, invRoom(id)); if (put > 0) { playerInv[id] = invCount(id) + put; invSeen.add(id); if (!_invSel) _invSel = id; }
     return put;
 }
-function invRemove(id, n) { n = Math.floor(n === undefined ? 1 : n); if (!invHas(id, n)) return false; playerInv[id] -= n; if (playerInv[id] <= 0) { delete playerInv[id]; if (_invSel === id) _invSel = null; } return true; }
+function invRemove(id, n) { n = Math.floor(n === undefined ? 1 : n); if (!invHas(id, n)) return false; playerInv[id] -= n; if (playerInv[id] <= 0) { delete playerInv[id]; if (_invSel === id && !invPanelOpen) _invSel = null; } return true; }   // (the window open: the last one used stays chosen, its tile at x0)
 function invItems(cat) { return ITEM_ORDER.filter(id => invCount(id) > 0 && (!cat || cat === "all" || itemDef(id).cat === cat)); }
-function invReset() { if (typeof classPerks !== "undefined") classPerks = new Set(); if (typeof classReset === "function") classReset(); if (typeof weaponReset === "function") weaponReset(); playerInv = {}; _invSel = null; _invInspect = false; _invMsg = null; invPanelOpen = false; }
+function invReset() { invSeen = new Set(); if (typeof classPerks !== "undefined") classPerks = new Set(); if (typeof classReset === "function") classReset(); if (typeof weaponReset === "function") weaponReset(); playerInv = {}; _invSel = null; _invInspect = false; _invMsg = null; invPanelOpen = false; }
 // can the player use it? { ok, why }: the class rule first, then what the item itself needs
 function invCanUse(id) {
     const d = itemDef(id); if (!d) return { ok: false, why: "UNKNOWN ITEM" };
@@ -226,71 +226,121 @@ const INV_ICONS = {
 };
 function invDrawIcon(id, x, y, s, t) { const d = itemDef(id); if (!d || typeof ctx === "undefined") return; ctx.save(); (INV_ICONS[d.icon] || INV_ICONS.ammo)(ctx, x, y, s, d.col, t || 0); ctx.restore(); }
 
-// ── the window ──
-// Wide screens: the items on the left, the item's page on the right. A phone: the items above, the page below.
+// ── the window: THE WHOLE ROSTER (build 2026-11-09zz; the owner, 2026-11-10: "redo the item bag to match the Super Smash Bros. Roster style"; of two drafts, "B The whole roster") ──
+// A select screen of every item in the game (ITEM_ORDER), filtered by the tabs. An item you carry is a lit tile: its icon, its count, its name on a black bar, a corner of its colour. One you have held but have
+// none of now is dimmed at ×0; one never found is a dark silhouette marked ???; one your class may not use has a red LOCKED strip. The chosen tile glows white. The chosen item stands on the STAGE card at the
+// foot: big, its name, its line (tab, kind, count, who may use it), its text (on INSPECT its lore and numbers), USE and INSPECT. A phone: the same, smaller tiles, SWITCH CLASS in a row under the title band, the
+// buttons along the foot of the stage. (Until this build the pack listed only what it held, beside an item page.)
+let invSeen = new Set();   // every item ever in the pack, so its tile stays known when the last of it is used (kept with the save: js/facilitysave.js)
+function invKnown(id) { return invSeen.has(id) || invCount(id) > 0; }
+function _ivRoster() { return ITEM_ORDER.filter(id => _invCat === "all" || itemDef(id).cat === _invCat); }
+function _ivRgba(hex, a) { const h = String(hex || "#ffffff").replace("#", ""), n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16); return "rgba(" + ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")"; }
 function _ivLayout() {
     const W = canvas.width, H = canvas.height, wide = W >= 720;
-    const pw = Math.min(W - 16, wide ? 900 : 520), px = Math.round((W - pw) / 2), top = typeof uiTopSafe === "function" ? uiTopSafe() : 8, bottom = typeof uiBottomSafe === "function" ? uiBottomSafe() : H - 8;
-    const ph = Math.max(300, Math.min(bottom - top, wide ? 560 : 700)), py = Math.max(4, Math.min(top, H - ph - 4)), gut = 22;
-    const L = { W, H, wide, px, py, pw, ph, tabs: [], cells: [], buttons: [], close: null, swap: null };
-    // SWITCH CLASS (js/classes.js), once there is a class: in the title row when the pack is wide; on a phone a row of its own under the title, and everything below it a row lower
-    const swapRow = !!(typeof playerClassKey !== "undefined" && playerClassKey) && !wide;
-    if (typeof playerClassKey !== "undefined" && playerClassKey) L.swap = wide ? { x: px + pw - gut - 120 - 10 - 170, y: py + 12, w: 170, h: 38 } : { x: px + pw - gut - 160, y: py + 56, w: 160, h: 36 };
-    L.classAt = swapRow ? { x: px + 26, y: py + 70, w: pw - gut - 160 - 36 } : { x: px + 124, y: py + 26, w: wide && L.swap ? L.swap.x - px - 134 : pw - 300 };   // (on a phone the class's line goes in that row, beside the button, out of CLOSE's way)
-    const tw = Math.floor((pw - gut * 2 - (INV_CATS.length - 1) * 6) / INV_CATS.length), ty = py + 58 + (swapRow ? 44 : 0);
-    INV_CATS.forEach((c, i) => L.tabs.push({ id: c.id, label: c.label, x: px + gut + i * (tw + 6), y: ty, w: tw, h: 38, on: c.id === _invCat }));
-    const gy = ty + 50, listW = wide ? Math.floor((pw - gut * 2) * 0.52) : pw - gut * 2, listH = wide ? ph - (gy - py) - gut - 54 : Math.floor((ph - (gy - py)) * 0.36);
-    const cell = wide ? 92 : 78, gap = 8, cols = Math.max(1, Math.floor((listW + gap) / (cell + gap)));
-    L.list = { x: px + gut, y: gy, w: listW, h: listH };
-    invItems(_invCat).forEach((id, i) => L.cells.push({ id, x: px + gut + (i % cols) * (cell + gap), y: gy + Math.floor(i / cols) * (cell + gap), w: cell, h: cell }));
-    L.detail = wide ? { x: px + gut + listW + 16, y: gy, w: pw - gut * 2 - listW - 16, h: ph - (gy - py) - gut - 54 } : { x: px + gut, y: gy + listH + 10, w: pw - gut * 2, h: ph - (gy - py) - listH - 10 - gut - 54 };
-    const by = py + ph - gut - 44, bw = 150;
-    L.buttons = [{ id: "use", x: L.detail.x, y: by, w: Math.min(bw, L.detail.w * 0.46), h: 44 }, { id: "inspect", x: L.detail.x + Math.min(bw, L.detail.w * 0.46) + 8, y: by, w: Math.min(bw, L.detail.w * 0.46), h: 44 }];
-    L.close = { x: px + pw - gut - 120, y: py + 12, w: 120, h: 38 };
+    const top = typeof uiTopSafe === "function" ? uiTopSafe() : 8, bottom = typeof uiBottomSafe === "function" ? uiBottomSafe() : H - 8;
+    const pw = Math.min(W - 16, wide ? 1100 : 560), px = Math.round((W - pw) / 2), py = Math.max(4, Math.min(top, H - 380)), ph = Math.max(360, bottom - py), gut = wide ? 22 : 12;
+    const L = { W, H, wide, px, py, pw, ph, gut, tabs: [], cells: [], buttons: [], close: null, swap: null };
+    // the title band: CLOSE at its end, SWITCH CLASS beside it once there is a class (js/classes.js; on a phone in a row of its own under the band, with the class's line)
+    const hasClass = !!(typeof playerClassKey !== "undefined" && playerClassKey);
+    L.close = { x: px + pw - gut - 112, y: py + 12, w: 112, h: 38 };
+    if (hasClass) L.swap = wide ? { x: L.close.x - 10 - 170, y: py + 12, w: 170, h: 38 } : { x: px + pw - gut - 160, y: py + 68, w: 160, h: 34 };
+    L.classAt = wide ? { x: px + gut + 150, y: py + 22, w: (L.swap ? L.swap.x : L.close.x) - (px + gut + 150) - 12 } : { x: px + gut, y: py + 76, w: pw - gut * 2 - (L.swap ? 172 : 0) };
+    const ty = py + 62 + (wide ? 12 : 54), tabH = wide ? 38 : 34, tw = Math.floor((pw - gut * 2 - (INV_CATS.length - 1) * 8) / INV_CATS.length);
+    INV_CATS.forEach((c, i) => L.tabs.push({ id: c.id, label: c.label, x: px + gut + i * (tw + 8), y: ty, w: tw, h: tabH, on: c.id === _invCat }));
+    // the stage at the foot, and the roster between the tabs and it: as many tiles across as gives the biggest tiles that all fit
+    const sh = wide ? 170 : 212; L.stage = L.detail = { x: px + 6, y: py + ph - sh - 6, w: pw - 12, h: sh };
+    const gy = ty + tabH + 14, gw = pw - gut * 2, gh = L.stage.y - 12 - gy, ids = _ivRoster(), gap = wide ? 10 : 6;
+    let best = null;
+    for (let cols = wide ? 6 : 4; cols <= (wide ? 11 : 6); cols++) { const w = Math.floor((gw - (cols - 1) * gap) / cols), h = Math.round(w * 0.84), rows = Math.ceil(ids.length / cols); if (rows * (h + gap) - gap <= gh && (!best || w > best.w)) best = { cols, w, h }; }
+    if (!best) { const cols = wide ? 11 : 6, rows = Math.max(1, Math.ceil(ids.length / cols)); best = { cols, w: Math.floor((gw - (cols - 1) * gap) / cols), h: Math.max(36, Math.floor((gh + gap) / rows - gap)) }; }
+    best.h = Math.max(best.h, Math.min(Math.round(best.w * 1.05), Math.floor((gh + gap) / Math.max(1, Math.ceil(ids.length / best.cols)) - gap)));   // (taller tiles where the rows leave room: the names fit)
+    L.list = { x: px + gut, y: gy, w: gw, h: gh };
+    ids.forEach((id, i) => L.cells.push({ id, x: px + gut + (i % best.cols) * (best.w + gap), y: gy + Math.floor(i / best.cols) * (best.h + gap), w: best.w, h: best.h }));
+    const S = L.stage, bw = wide ? 150 : Math.floor((S.w - 50) / 2), bh = wide ? 52 : 42, by = wide ? S.y + Math.round(S.h / 2 - bh / 2) + 4 : S.y + S.h - bh - 12;
+    L.buttons = wide ? [{ id: "use", x: S.x + S.w - 34 - bw * 2 - 14, y: by, w: bw, h: bh }, { id: "inspect", x: S.x + S.w - 34 - bw, y: by, w: bw, h: bh }]
+                     : [{ id: "use", x: S.x + 20, y: by, w: bw, h: bh }, { id: "inspect", x: S.x + 30 + bw, y: by, w: bw, h: bh }];
     return L;
 }
 function _ivWrap(lines, text, chars) { for (const l of uiWrap(text, chars)) lines.push(l); }
+function _ivPara(x, y, w, h, s) { ctx.beginPath(); ctx.moveTo(x + s, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w - s, y + h); ctx.lineTo(x, y + h); ctx.closePath(); }
+// an item never found: its icon as a dark silhouette (drawn once per size)
+const _ivSil = {};
+function _ivSilhouette(id, s) {
+    const k = id + "@" + s; if (_ivSil[k] !== undefined) return _ivSil[k];
+    let c = null; try { c = document.createElement("canvas"); c.width = c.height = Math.ceil(s * 1.4); const g = c.getContext("2d"), d = itemDef(id); if (!g) c = null; else { (INV_ICONS[d.icon] || INV_ICONS.ammo)(g, c.width / 2, c.height / 2, s, d.col, 0); g.globalCompositeOperation = "source-in"; g.fillStyle = "#1c2440"; g.fillRect(0, 0, c.width, c.height); } } catch (e) { c = null; }
+    return (_ivSil[k] = c);
+}
+// a tile's name on its bar: one line, or two when it does not fit
+function _ivName(t, c, nb, col) {
+    const max = c.w - 10, size = Math.max(8, Math.min(13, Math.round(nb * 0.5))), y = c.y + c.h - nb / 2 + 1;
+    ctx.save(); ctx.font = uiFont(size); const one = ctx.measureText(t).width <= max; ctx.restore();
+    if (one || t.indexOf(" ") < 0) { uiTextFit(t, c.x + c.w / 2, y, size, col, "center", max); return; }
+    const w = t.split(" "), mid = Math.ceil(w.length / 2), s2 = Math.max(7, size - 2);
+    uiTextFit(w.slice(0, mid).join(" "), c.x + c.w / 2, y - s2 * 0.55, s2, col, "center", max); uiTextFit(w.slice(mid).join(" "), c.x + c.w / 2, y + s2 * 0.55, s2, col, "center", max);
+}
+function _ivTile(c, f) {
+    const id = c.id, d = itemDef(id), n = invCount(id), known = invKnown(id), on = id === _invSel, ok = classAllows(d.classes), col = known ? d.col : "#2a3350", s = Math.min(10, c.h * 0.16);
+    const nb = Math.max(14, Math.round(c.h * 0.24)), isz = Math.round(Math.min(c.w, c.h) * 0.56), ix = c.x + c.w / 2, iy = c.y + (c.h - nb) * 0.55;
+    ctx.save();
+    _ivPara(c.x, c.y, c.w, c.h, s); const g = ctx.createLinearGradient(0, c.y, 0, c.y + c.h); g.addColorStop(0, known ? "#111a34" : "#0b1020"); g.addColorStop(1, known ? "#070b16" : "#05070f"); ctx.fillStyle = g; ctx.fill();
+    ctx.save(); ctx.clip();
+    if (known) { ctx.globalAlpha = n > 0 ? 0.9 : 0.35; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(c.x + s, c.y); ctx.lineTo(c.x + s + c.w * 0.34, c.y); ctx.lineTo(c.x + s * 0.4, c.y + c.h * 0.34); ctx.lineTo(c.x, c.y + c.h * 0.34); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1; }   // a corner of its colour
+    if (known) { ctx.save(); if (!n || !ok) ctx.globalAlpha = 0.38; invDrawIcon(id, ix, iy, isz, f); ctx.restore(); }
+    else { const sil = _ivSilhouette(id, isz); if (sil) ctx.drawImage(sil, ix - sil.width / 2, iy - sil.height / 2); }
+    ctx.fillStyle = "#04070f"; ctx.fillRect(c.x - 2, c.y + c.h - nb, c.w + 4, nb); ctx.fillStyle = col; ctx.fillRect(c.x - 2, c.y + c.h - nb, c.w + 4, 2);   // the name bar
+    if (known && !ok) { ctx.fillStyle = "rgba(150,20,10,0.88)"; ctx.fillRect(c.x - 2, c.y + c.h - nb - 13, c.w + 4, 13); uiCaption("LOCKED", c.x + c.w / 2, c.y + c.h - nb - 6, "#ffd0c8", "center", 10); }
+    ctx.restore();
+    _ivName(known ? d.name : "???", c, nb, known ? (n ? "#ffffff" : "#8a93ab") : "#4f5b7a");
+    if (known) uiText("×" + n, c.x + c.w - 8, c.y + Math.max(12, c.h * 0.15), Math.max(12, Math.round(c.h * 0.17)), n ? d.col : "#6d7fa6", "right");
+    _ivPara(c.x, c.y, c.w, c.h, s);
+    if (on) { ctx.lineWidth = 9; ctx.globalAlpha = 0.35; ctx.strokeStyle = known ? d.col : UI_TEAL; ctx.stroke(); ctx.globalAlpha = 1; ctx.lineWidth = 3; ctx.strokeStyle = "#ffffff"; ctx.stroke(); }
+    else { ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.globalAlpha = known ? (n ? 1 : 0.5) : 0.75; ctx.stroke(); ctx.globalAlpha = 1; }
+    ctx.restore();
+}
+function _ivStage(L, f) {
+    const S = L.stage, id = _invSel, d = id ? itemDef(id) : null, known = !!d && invKnown(id), col = known ? d.col : UI_TEAL, sk = 16, wide = L.wide;
+    ctx.save(); _ivPara(S.x, S.y, S.w, S.h, sk); const g = ctx.createLinearGradient(S.x, 0, S.x + S.w, 0); g.addColorStop(0, "#04070f"); g.addColorStop(0.6, "#0b1430"); g.addColorStop(1, "#04070f"); ctx.fillStyle = g; ctx.fill(); ctx.fillStyle = col; ctx.fillRect(S.x + sk, S.y, S.w - sk, 4); ctx.restore();
+    const use = L.buttons[0], ins = L.buttons[1];
+    if (!d) { uiTextFit("SELECT AN ITEM", S.x + S.w / 2, S.y + S.h / 2 - (wide ? 0 : 20), 22, "#6d7fa6", "center", S.w - 40); return; }
+    const isz = wide ? (_invInspect ? 108 : 98) : 66, cx = S.x + (wide ? 50 : 22) + isz / 2, cy = wide ? S.y + S.h / 2 + 2 : S.y + 18 + isz / 2, sway = _invInspect ? Math.sin(f * 0.04) * 5 : 0;
+    ctx.save(); const r = ctx.createRadialGradient(cx, cy, 4, cx, cy, isz); r.addColorStop(0, _ivRgba(col, known ? 0.32 : 0.12)); r.addColorStop(1, _ivRgba(col, 0)); ctx.fillStyle = r; ctx.fillRect(cx - isz, cy - isz, isz * 2, isz * 2); ctx.restore();
+    if (known) { ctx.save(); ctx.beginPath(); ctx.rect(S.x, S.y, S.w, S.h); ctx.clip(); invDrawIcon(id, cx + sway, cy, isz, f); ctx.restore(); } else { const sil = _ivSilhouette(id, isz); if (sil) ctx.drawImage(sil, cx - sil.width / 2, cy - sil.height / 2); }
+    const tx = cx + isz / 2 + (wide ? 34 : 16), tw = (wide ? use.x - 24 : S.x + S.w - 16) - tx;
+    if (!known) { uiTextFit("???", tx, S.y + (wide ? 46 : 34), wide ? 40 : 28, "#6d7fa6", "left", tw); uiCaptionFit("NOT FOUND YET: SEARCH THE FACILITY", tx, S.y + (wide ? 84 : 62), "#8aa0c8", "left", 13, tw); }
+    else {
+        const n = invCount(id), cls = d.classes && d.classes.length ? d.classes.map(className).join(" / ") + " ONLY" : "ANY CLASS", okc = classAllows(d.classes), eq = typeof potionEquipped === "function" && potionEquipped() === d.id;   // (the Sleeping Potion in hand: js/potion.js)
+        uiTextFit(d.name, tx, S.y + (wide ? 42 : 32), wide ? 38 : 26, d.col, "left", tw);
+        uiCaptionFit(INV_CATS.find(c => c.id === d.cat).label.replace(/S$/, "") + "  ·  " + INV_TYPES[d.type] + "  ·  ×" + n, tx, S.y + (wide ? 76 : 56), "#8aa0c8", "left", 12, tw);
+        uiCaptionFit(cls + (eq ? "  ·  EQUIPPED: THE POTION PILL, OR " + (typeof POTION !== "undefined" ? POTION.key.toUpperCase() : "T") + ", THROWS IT" : ""), tx, S.y + (wide ? 96 : 74), okc ? (eq ? "#bcd0ff" : "#9dffb6") : "#ff9c8a", "left", 12, tw);
+        const chars = Math.max(14, Math.floor(tw / 8.4)), lines = []; if (_invInspect) { _ivWrap(lines, d.lore, chars); lines.push(""); for (const st of d.stats) lines.push(st); } else _ivWrap(lines, d.desc, chars);
+        let y = S.y + (wide ? 120 : 96); const yMax = wide ? S.y + S.h - 12 : use.y - 10;
+        for (const l of lines) { if (y > yMax) break; if (l) uiCaptionFit(l, tx, y, /^[A-Z ]{3,}  /.test(l) ? d.col : "#c8d4f0", "left", 13, tw); y += 18; }
+    }
+    const can = known ? invCanUse(id) : { ok: false, why: "" };
+    uiButton(use, known && typeof d.verb === "function" ? d.verb(d) : "USE", known ? d.col : "#3a4566", !!can.ok, wide ? 20 : 17, null, !can.ok);   // (filled with its colour when it can be used)   // (verb: an item whose button is not a use: the potion's EQUIP)
+    uiButton(ins, _invInspect ? "BACK" : "INSPECT", UI_ICE, _invInspect, wide ? 20 : 17, null, !known);
+    if (known && !can.ok && _invMsg === null) uiCaptionFit(can.why, use.x, use.y - 12, "#ff9c8a", "left", 12, ins.x + ins.w - use.x);
+}
 function drawInvPanel() {
     if (!invPanelOpen) return;
-    const L = _ivLayout(), pc = playerClass(), col = pc ? pc.colour : UI_TEAL, f = typeof frame !== "undefined" ? frame : 0;
+    const L = _ivLayout(), pc = playerClass(), f = typeof frame !== "undefined" ? frame : 0;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-    uiBackdrop(0.6); uiPanel(L.px, L.py, L.pw, L.ph, col);
-    uiText("PACK", L.px + 26, L.py + 32, 28, col, "left"); if (pc) { const A = L.classAt; uiCaptionFit(pc.name + "  \u00b7  RANK " + classRank(), A.x, A.y, pc.colour, "left", 14, A.w); const pl = classPerkList(); uiCaptionFit(pl.length ? pl.map(q => q.name).join("  \u00b7  ") : "NO PERKS YET: FIND YOUR CLASS'S STATION", A.x, A.y + 18, pl.length ? "#9dffb6" : "#6d7fa6", "left", 11, A.w); }
+    uiBackdrop(0.62);
+    // the roster's ground: a deep wash with faint diagonal streaks, a thin outline
+    ctx.save(); ctx.beginPath(); ctx.rect(L.px, L.py, L.pw, L.ph); ctx.clip();
+    const bg = ctx.createRadialGradient(L.px + L.pw / 2, L.py + L.ph * 0.4, 20, L.px + L.pw / 2, L.py + L.ph * 0.4, L.pw * 0.75); bg.addColorStop(0, "rgba(20,33,66,0.97)"); bg.addColorStop(1, "rgba(7,11,22,0.98)"); ctx.fillStyle = bg; ctx.fillRect(L.px, L.py, L.pw, L.ph);
+    ctx.strokeStyle = "rgba(49,232,255,0.05)"; ctx.lineWidth = 2; for (let x = L.px - L.ph; x < L.px + L.pw; x += 46) { ctx.beginPath(); ctx.moveTo(x, L.py + L.ph); ctx.lineTo(x + L.ph * 0.47, L.py); ctx.stroke(); }
+    ctx.restore(); ctx.strokeStyle = _ivRgba(UI_TEAL, 0.55); ctx.lineWidth = 2; ctx.strokeRect(L.px + 1, L.py + 1, L.pw - 2, L.ph - 2);
+    // the title band: PACK (white on a teal shadow), the class's line, SWITCH CLASS and CLOSE
+    ctx.fillStyle = "#04070f"; ctx.beginPath(); ctx.moveTo(L.px, L.py); ctx.lineTo(L.px + L.pw, L.py); ctx.lineTo(L.px + L.pw - 18, L.py + 62); ctx.lineTo(L.px, L.py + 62); ctx.closePath(); ctx.fill(); ctx.fillStyle = UI_TEAL; ctx.fillRect(L.px, L.py + 60, L.pw - 18, 3);
+    uiText("PACK", L.px + L.gut + 3, L.py + 34, L.wide ? 46 : 38, UI_TEAL, "left", false); uiText("PACK", L.px + L.gut, L.py + 31, L.wide ? 46 : 38, "#ffffff", "left");
+    if (pc) { const A = L.classAt; uiCaptionFit(pc.name + "  ·  RANK " + classRank(), A.x, A.y, pc.colour, "left", 14, A.w); const pl = classPerkList(); uiCaptionFit(pl.length ? pl.map(q => q.name).join("  ·  ") : "NO PERKS YET: FIND YOUR CLASS'S STATION", A.x, A.y + 18, pl.length ? "#9dffb6" : "#6d7fa6", "left", 11, A.w); }
     uiButton(L.close, "CLOSE", UI_RED, false, 16);
-    if (L.swap) uiButton(L.swap, "SWITCH CLASS", col, false, 15);   // (js/classes.js: every class keeps its own progress)
-    for (const t of L.tabs) uiButton(t, t.label, col, t.on, 15);
-    // the items
-    if (!L.cells.length) { uiTextFit("PACK EMPTY", L.list.x + L.list.w / 2, L.list.y + 50, 24, "#8aa0c8", "center", L.list.w); uiCaptionFit("SEARCH THE FACILITY: THE GLOWING CRATES AND LOCKERS", L.list.x + L.list.w / 2, L.list.y + 84, "#6d7fa6", "center", 13, L.list.w); }
-    for (const c of L.cells) {
-        const d = itemDef(c.id), ok = classAllows(d.classes), on = c.id === _invSel;
-        uiSlab(c.x, c.y, c.w, c.h, on ? "#ffffff" : d.col, false, on ? "#1d2a52" : null, !ok && !on);
-        ctx.save(); if (!ok) ctx.globalAlpha = 0.5; invDrawIcon(c.id, c.x + c.w / 2, c.y + c.h * 0.42, c.w * 0.62, f); ctx.restore();
-        uiCaptionFit(d.name, c.x + c.w / 2, c.y + c.h - 11, ok ? "#c8d4f0" : "#7a86a6", "center", 11, c.w - 8);
-        uiText("×" + invCount(c.id), c.x + c.w - 9, c.y + 15, 15, d.col, "right");
-        if (!ok) uiCaption("LOCKED", c.x + 9, c.y + 13, "#ff9c8a", "left", 10);
-    }
-    // the item's page
-    const d = _invSel ? itemDef(_invSel) : null, D = L.detail;
-    uiSlab(D.x, D.y, D.w, D.h, "#2a3556", false, "#0b1226");
-    if (!d) { uiTextFit("SELECT AN ITEM", D.x + D.w / 2, D.y + D.h / 2, 20, "#6d7fa6", "center", D.w - 20); }
-    else {
-        const ok = invCanUse(d.id), chars = Math.max(14, Math.floor((D.w - 28) / 8.4)), isz = _invInspect ? 92 : 64;
-        const sway = _invInspect ? Math.sin(f * 0.04) * 6 : 0;
-        ctx.save(); ctx.beginPath(); ctx.rect(D.x, D.y, D.w, D.h); ctx.clip(); invDrawIcon(d.id, D.x + 14 + isz / 2 + sway, D.y + 14 + isz / 2, isz, f); ctx.restore();
-        const tx = D.x + 24 + isz;
-        uiTextFit(d.name, tx, D.y + 32, 24, d.col, "left", D.w - isz - 38);
-        uiCaption(INV_CATS.find(c => c.id === d.cat).label.replace(/S$/, "") + "  ·  " + INV_TYPES[d.type] + "  ·  ×" + invCount(d.id), tx, D.y + 56, "#8aa0c8", "left", 12);
-        const cls = d.classes && d.classes.length ? d.classes.map(className).join(" / ") + " ONLY" : "ANY CLASS", okc = classAllows(d.classes);
-        const eq = typeof potionEquipped === "function" && potionEquipped() === d.id;   // (the Sleeping Potion in hand: js/potion.js)
-        uiCaptionFit(cls + (eq ? "  ·  EQUIPPED: THE POTION PILL, OR " + (typeof POTION !== "undefined" ? POTION.key.toUpperCase() : "T") + ", THROWS IT" : ""), tx, D.y + 76, okc ? (eq ? "#bcd0ff" : "#9dffb6") : "#ff9c8a", "left", 12, D.w - isz - 38);
-        const lines = []; let y = D.y + isz + 34;
-        if (_invInspect) { _ivWrap(lines, d.lore, chars); lines.push(""); for (const s of d.stats) lines.push(s); } else _ivWrap(lines, d.desc, chars);
-        for (const l of lines) { if (y > D.y + D.h - 16) break; if (l) uiCaptionFit(l, D.x + 16, y, /^[A-Z ]{3,}  /.test(l) ? d.col : "#c8d4f0", "left", 13, D.w - 28); y += 19; }
-        if (!ok.ok && _invMsg === null) uiCaptionFit(ok.why, D.x + 16, D.y + D.h - 14, "#ff9c8a", "left", 12, D.w - 28);
-        const use = L.buttons[0], ins = L.buttons[1];
-        uiButton(use, typeof d.verb === "function" ? d.verb(d) : "USE", d.col, false, 18, null, !ok.ok); uiButton(ins, _invInspect ? "BACK" : "INSPECT", UI_ICE, _invInspect, 18);   // (verb: an item whose button is not a use: the potion's EQUIP)
-    }
-    if (_invMsg && _invMsg.until > f) { const m = _invMsg, bx = L.px + 26, by = L.py + L.ph - 60; uiTextFit(m.text, L.px + L.pw - 26, by + 22, 17, m.good ? "#9dffb6" : "#ff9c8a", "right", L.pw * 0.5); void bx; } else if (_invMsg) _invMsg = null;
+    if (L.swap) uiButton(L.swap, "SWITCH CLASS", pc ? pc.colour : UI_TEAL, false, 15);   // (js/classes.js: every class keeps its own progress)
+    for (const t of L.tabs) uiButton(t, t.label, UI_TEAL, t.on, 15);
+    for (const c of L.cells) _ivTile(c, f);
+    _ivStage(L, f);
+    if (_invMsg && _invMsg.until > f) uiTextFit(_invMsg.text, L.stage.x + L.stage.w - 30, L.stage.y - 14, 17, _invMsg.good ? "#9dffb6" : "#ff9c8a", "right", L.pw * 0.6); else if (_invMsg) _invMsg = null;
     ctx.restore();
 }
 function invOpen() { invPanelOpen = true; if (!_invSel || !invCount(_invSel)) _invSel = invItems("all")[0] || null; _invInspect = false; }
@@ -298,16 +348,25 @@ function invClose() { invPanelOpen = false; _invInspect = false; }
 function invToggle() { if (invPanelOpen) invClose(); else { if (typeof infoPanelOpen !== "undefined") infoPanelOpen = false; if (typeof settingsPanelOpen !== "undefined") settingsPanelOpen = false; invOpen(); } }
 function _handleInvPanelTap(tx, ty) {
     if (!invPanelOpen) return false;
-    const L = _ivLayout(), inR = r => tx >= r.x && tx <= r.x + r.w && ty >= r.y && ty <= r.y + r.h;
+    const L = _ivLayout(), inR = r => !!r && tx >= r.x && tx <= r.x + r.w && ty >= r.y && ty <= r.y + r.h;
     if (inR(L.close) || tx < L.px || tx > L.px + L.pw || ty < L.py || ty > L.py + L.ph) { invClose(); return true; }
     if (L.swap && inR(L.swap)) { if (typeof classSwitchOpen === "function") classSwitchOpen(); return true; }   // the class picker, over the pack (js/classes.js)
-    for (const t of L.tabs) if (inR(t)) { _invCat = t.id; const list = invItems(_invCat); if (!list.includes(_invSel)) _invSel = list[0] || null; return true; }
+    for (const t of L.tabs) if (inR(t)) { _invCat = t.id; const list = _ivRoster(); if (!list.includes(_invSel)) _invSel = list.find(id => invCount(id) > 0) || list.find(invKnown) || null; _invInspect = false; return true; }
     for (const c of L.cells) if (inR(c)) { _invSel = c.id; _invInspect = false; return true; }
-    if (_invSel) {
+    if (_invSel && invKnown(_invSel)) {
         if (inR(L.buttons[1])) { _invInspect = !_invInspect; return true; }
-        if (inR(L.buttons[0])) { invUse(_invSel); if (!invCount(_invSel)) { _invSel = invItems(_invCat)[0] || null; _invInspect = false; } return true; }
+        if (inR(L.buttons[0])) { invUse(_invSel); return true; }   // (the last one used: its tile stays, at ×0)
     }
     return true;
 }
+// THE PACK BUTTON on the HUD (game.html #btnPack: the bottom-right corner since build 2026-11-09zz; it was in the dock): shown in the facility, its line the count of the kinds of item carried, written only when it changes
+// (js/game.js calls the tick each frame, as it does the quests' "!"; a phone shows the count as a badge, data-n)
 function invButtonShow(on) { try { const b = document.getElementById("btnPack"); if (b) b.style.display = on ? "" : "none"; } catch (e) {} }
+let _ivBadgeN = -1, _ivBadgeEl = null, _ivBadgeBtn = null;
+function invBadgeTick() {
+    let n = 0; for (const id in playerInv) if (playerInv[id] > 0) n++;
+    if (n === _ivBadgeN) return; _ivBadgeN = n;
+    try { if (!_ivBadgeEl || !_ivBadgeEl.isConnected) { _ivBadgeEl = document.getElementById("packCount"); _ivBadgeBtn = document.getElementById("btnPack"); }
+          if (_ivBadgeEl) _ivBadgeEl.textContent = n + (n === 1 ? " ITEM" : " ITEMS"); if (_ivBadgeBtn && _ivBadgeBtn.setAttribute) _ivBadgeBtn.setAttribute("data-n", String(n)); } catch (e) {}
+}
 try { if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", e => { if (!e) return; if ((e.key === "i" || e.key === "I") && typeof facilityPlay !== "undefined" && facilityPlay && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName || ""))) invToggle(); else if (e.key === "Escape" && invPanelOpen && !(typeof classPickerOpen !== "undefined" && classPickerOpen)) invClose(); }); } catch (e) { /* no page (the test sandbox) */ }

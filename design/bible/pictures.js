@@ -67,7 +67,7 @@ async function openGame(b, w, h) {
     await p.evaluate(() => { ccSquadsOpen = true; ccRender(); }); await shot(p, 'squads_window');
     await p.evaluate(() => { ccSquadsOpen = false; ccClose(); }); await p.waitForTimeout(200);
     await p.evaluate(() => { classPickerOpenNow(); }); await shot(p, 'class_picker');
-    await p.evaluate(() => { classPickerOpen = false; invOpen(); }); await shot(p, 'pack');
+    await p.evaluate(() => { classPickerOpen = false; for (const [id, k] of [['ammo_pack', 3], ['scrap_metal', 12], ['power_cell', 2], ['fuel_cell', 2], ['toxic_sample', 1]]) invAdd(id, k); invOpen(); _invSel = 'scrap_metal'; }); await shot(p, 'pack');   // (a few items found, so the roster shows lit tiles beside the ??? ones: build 2026-11-09zz)
     await p.evaluate(() => { invPanelOpen = false; facilityInspectToggle(); }); await shot(p, 'map');
     await p.evaluate(() => { facilityInspectToggle(); toggleControlsMenu(); }); await shot(p, 'guide');
     await p.close();

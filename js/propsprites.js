@@ -15,6 +15,8 @@
 //                the liquid, its surface and the bubbles are painted live between them).
 //   hazard       THE HAZARD CONTAINERS (build 2026-11-09yy; js/hazards.js): one tile, `hazard_explosive` and `hazard_corrosive` (a flask in hex armour, glowing orange or acid green); not drawn while one
 //                that went off is away (js/hazards.js hazardDrawProp).
+//   pickups      THE ITEMS ON THE GROUND (build 2026-11-09zz; not a prop of the map: js/facilitytutorial.js _fpDrawPickup draws them): each item that lies on the floor as itself, named by its id (scrap_metal,
+//                ammo_pack, power_cell, power_module, fuel_cell, flare, mech_leg, mech_core, mutagen_sample, toxic_sample, sewer_sample); an item with no model is still the supply case.
 //   bridge       a footbridge from each tank's top to the catwalks' deck: `bridges` in js/facilitymap.js, drawn as a row of one-tile pieces (mid, with a tank-end and a deck-end) at the deck's height.
 // The light: a prop in the dark is dimmed by drawing its silhouette in the dark navy the flat drawing fades to, and the lit sprite over it at the room's light level (as the dimmed pen does for colours).
 const PS = { dark: "#060b16", aimSteps: 16 };

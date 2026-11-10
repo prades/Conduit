@@ -693,6 +693,7 @@ function render() {
     if (document.body && document.body.classList && document.body.classList.contains("info-open") !== !!infoPanelOpen) document.body.classList.toggle("info-open", !!infoPanelOpen);
     if (_panelOpen !== _lastPanelOpen) { _lastPanelOpen = _panelOpen; if (document.body && document.body.classList) document.body.classList.toggle("panel-open", _panelOpen); }
     if (typeof questBoxBadgeTick === "function") questBoxBadgeTick();   // the QUESTS button's "!" for a new objective (js/questbox.js)
+    if (typeof invBadgeTick === "function") invBadgeTick();   // the PACK button's count (js/inventory.js)
     // The room tag names the room the player is in (js/facilitynet.js): cached element, written only on a change.
     const _fpz = typeof facilityZoneName === "function" ? facilityZoneName() : null;
     if (_fpz !== null && _fpz !== _lastZoneName) { _lastZoneName = _fpz; if (!_zoneEl) _zoneEl = document.getElementById("zoneInfo"); if (_zoneEl) _zoneEl.textContent = _fpz; }
