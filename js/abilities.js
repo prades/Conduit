@@ -203,7 +203,9 @@ function _abForEachFoeInRadius(pred, radius, fn) {
 }
 
 function _abHurt(pred, victim, amount) {
+    const h0 = victim ? victim.health : 0;
     applyDamage(victim, amount, pred, null, false, false, dmgAbilityHit(pred));   // (the special's type: js/damage.js)
+    if (pred && pred.poisonsFollowers && typeof poisonOnHit === "function") poisonOnHit(pred, victim, h0);   // (the purification's three toxic ants poison a follower: js/combat.js)
 }
 
 function _abBurst(pred, color, radius, life, count) {

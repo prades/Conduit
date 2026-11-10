@@ -8,7 +8,8 @@ function onPredatorDeath(predator) {
     if (predator && predator.noReward) return;   // a test boss and her brood (the Ant Nest's: js/bosses.js) pay nothing
     if (typeof facilityScrapDrop === "function") facilityScrapDrop(predator);
     if (typeof questDropFor === "function") questDropFor(predator);   // a toxic ant of the Sewers: an ANT SAMPLE while the analysis bench wants them (js/quests.js)
-    if (typeof questAntKilled === "function") questAntKilled(predator);   // and it counts toward Side Quest's appearance (js/sidequest.js: about ten of them, the archive's target)
+    if (typeof questAntKilled === "function") questAntKilled(predator);   // and it is counted (Side Quest's appearance needed about ten of them until build 2026-11-09tt: js/quests.js)
+    if (typeof questTrioKilled === "function") questTrioKilled(predator);   // one of the purification's three toxic ants: the third, and the queen comes out (js/quests.js)
     const px = (predator.x - player.visualX - (predator.y - player.visualY)) * TILE_W + canvas.width / 2;
     const py = (predator.x - player.visualX + (predator.y - player.visualY)) * TILE_H + canvas.height / 2;
     if (!isNymph(predator)) {

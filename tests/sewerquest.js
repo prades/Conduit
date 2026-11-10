@@ -48,6 +48,8 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__kill = (a) => { a.health = 0; a.dead = true; a.deathProcessed = true; onPredatorDeath(a); actors = actors.filter(q => q !== a); };   // (as js/game.js does a death, once)
         globalThis.__st = (id) => _fp.stations.find(s => s.id === id);
         globalThis.__openWay = () => { const R = _fp.F.rubble.find(q => q.id === 'rubble_sewer_gate'); const h = Object.assign({}, _fp.rubbleHits || {}); h[R.id] = TECH_AB.drill.hits; techRubbleApply(h); const L = bossLair(bossEnc('sewer_cistern')); __put(R.work[0], R.work[1]); questTick(); const c = _fpNearestCell(L[0] - 4, L[1]); __put(c[0], c[1]); questTick(); return R; };   // (build 2026-11-06l: rubble, drilled, in the gate's place)
+        // (build 2026-11-09tt: the queen is not there until the ambush; the checks of her below begin with it over, as it leaves her: asleep at her post, the three dead, you back from the Crystal)
+        globalThis.__pastAmbush = () => { const Q = questState('purify'); Q.trioAt = Q.trioAt || 1; Q.trioKills = 3; Q.trioDeadAt = Q.trioDeadAt || 1; Q.queenOutAt = Q.queenOutAt || 1; return bossArm('sewer_cistern'); };
         globalThis.__near = (s) => { const g = _stApproach(s) || [s.x, s.y + 1.5]; __put(g[0], g[1]); return stationDist(s) <= STATION_RANGE; };
         globalThis.__Q = () => questState('purify'); globalThis.__B = () => bossState('sewer_cistern'); globalThis.__E = () => BOSS_ENCOUNTERS.sewer_cistern; globalThis.__boss = () => bossUnit('sewer_cistern'); globalThis.__lair = () => bossLair(BOSS_ENCOUNTERS.sewer_cistern);
         globalThis.__dl = () => { const b = __boss(), L = __lair(); return b ? Math.round(Math.hypot(b.x - L[0], b.y - L[1]) * 10) / 10 : null; };
@@ -162,12 +164,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         same(J('QUEST_PURIFY.modulePrice'), 300, 'the module\'s price'); ok(/◆300$/.test(J(`itemDef('purification_module').stats[0]`)), 'the item card does not say ◆300: ' + J(`itemDef('purification_module').stats[0]`));
         same(r.analyse.join(), 'true,0,0,true,purify:module,BUY THE PURIFICATION MODULE ◆300', 'the analysis'); same(r.poor.join(), 'NEED ◆200 MORE FOR THE MODULE,100,0', 'too poor'); same(r.buy.join('|'), 'true|700|1|true|purify:install|PURIFY THE SEWERS  ·  4/5  ·  INSTALL THE MODULE IN THE NEST', 'the purchase'); same(r.again.join(), 'THE MODULE IS BOUGHT · INSTALL IT IN THE SEWERS\' CISTERN,700,1', 'a second purchase');
     });
-    check('the way onto the dam (build 2026-11-06l: "Rubble, drilled"): the rubble in the gate\'s place is drilled through and the way is open (the quest marks it); coming near her post, the boss is ARMED: THE TOXIC ANT QUEEN (the archive\'s proposed Sewers queen, provisional) asleep in its lair in the cistern, which the player can now walk to; the auto-lock passes it by (a tap still locks it), a squad technician beside it does not start on it, and it stays asleep', () => {
+    check('the way onto the dam (build 2026-11-06l: "Rubble, drilled"): the rubble in the gate\'s place is drilled through and the way is open (the quest marks it); coming near her post NOBODY is there (build 2026-11-09tt, the owner: "the queen does not appear until the player halfway installs the purification module": the ambush, below); once she has come out, the boss is ARMED: THE TOXIC ANT QUEEN (the archive\'s proposed Sewers queen, provisional) asleep in its lair in the cistern, which the player can now walk to; the auto-lock passes it by (a tap still locks it), a squad technician beside it does not start on it, and it stays asleep', () => {
         const r = J(`(function(){ const o = {}; o.station = !!__st('st_sewer_gate'); o.closed = !facilitySolidIsOpen('sewer_gate_boss'); o.kind = _fp.F.solids.find(q => q.id === 'sewer_gate_boss').kind; __openWay(); o.open = [facilitySolidIsOpen('sewer_gate_boss'), __Q().gateAt > 0];
+            o.nobody = [__B().state, !!__boss()]; __pastAmbush();   // (__openWay stood you by her post: under the old rule, that armed her)
             const S = __B(), b = __boss(), L = __lair(); o.state = S.state; o.boss = [b.speciesName, b.className, b.element, b.level, b.bossAsleep, b.bossCalm, b.provoked, partyRoomAt(b.x, b.y), __dl() <= 1.2, unitTypeLabel(b), b.homeRoom, b.fpCreature, b.bossName];
             o.path = !!facilityPath(player.x, player.y, L[0], L[1]); o.passive = bossPassive(b); __put(L[0] - 3, L[1]); o.autoLock = targetNearest() === b; o.tapLock = targetSet(b, true); targetDrop();
             const t = followers[0]; t.x = player.x - 1; t.y = player.y; t._enemyCacheFrame = 0; __tick(30); o.techIgnores = t._nearestEnemy !== b; o.stillAsleep = [b.bossAsleep, __B().state, __dl() <= 1.2, b.health === b.maxHealth]; o.obj = questObjective().key; return o; })()`);
-        same([r.station, r.closed, r.kind].join(), 'false,true,rubble', 'rubble, not a gate with a seal'); same(r.open.join(), 'true,true', 'drilled through, marked'); same(r.state, 'armed', 'the boss is not armed'); same(r.boss.join(), 'ant,boss,toxic,8,true,false,false,sewers,true,THE TOXIC ANT QUEEN,sewers,true,THE TOXIC ANT QUEEN', 'the boss: ' + r.boss.join());
+        same([r.station, r.closed, r.kind].join(), 'false,true,rubble', 'rubble, not a gate with a seal'); same(r.open.join(), 'true,true', 'drilled through, marked'); same(r.nobody.join(), 'idle,false', 'the queen is there before the ambush'); same(r.state, 'armed', 'the boss is not armed'); same(r.boss.join(), 'ant,boss,toxic,8,true,false,false,sewers,true,THE TOXIC ANT QUEEN,sewers,true,THE TOXIC ANT QUEEN', 'the boss: ' + r.boss.join());
         same([r.path, r.passive, r.autoLock, r.tapLock, r.techIgnores].join(), 'true,true,false,true,true', 'the way in, the auto-lock, the tap, the technician'); same(r.stillAsleep.join(), 'true,armed,true,true', 'it did not stay asleep'); same(r.obj, 'purify:install', 'the step');
     });
 
@@ -251,7 +254,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             const far = _fpNearestCell(L[0] - 20, L[1]); __put(far[0], far[1]); let n = 0; for (; n < 600 && b.provoked; n++) __tick(1); o.calmAgain = [n < 600, b.provoked, b.bossCalm, __B().state];
             __kill(b); __tick(2); o.killedLater = [__B().state, __B().outcome, __B().defeated > 0, __Q().bossOutcome, __Q().bossDefeated > 0, !!__boss()];
             const sv2 = facilitySaveCollect(); __reload(sv2); o.loadedDead = [__B().state, __B().outcome, !!__boss(), __B().defeated > 0]; return o; })()`);
-        same(r.saved.q, 'antKills,bossOutcome,bossResolvedAt,bossStartedAt,discoveredAt,drops,gateAt,installedAt,moduleAt,nestSeenAt,purifiedAt,puzzleAt,puzzleHow,samplesAt,turnedInAt', 'the quest line\'s record (antKills: the four brood kills above)'); same(JSON.stringify([r.saved.b.state, r.saved.b.outcome, r.saved.b.defeated, r.saved.p]), JSON.stringify(['resolved', 'calm', 0, 'drill']), 'the boss\'s and the puzzle\'s');
+        same(r.saved.q, 'antKills,bossOutcome,bossResolvedAt,bossStartedAt,discoveredAt,drops,gateAt,installedAt,moduleAt,nestSeenAt,purifiedAt,puzzleAt,puzzleHow,queenOutAt,samplesAt,trioAt,trioDeadAt,trioKills,turnedInAt', 'the quest line\'s record (antKills: the four brood kills above; trioAt, trioKills, trioDeadAt, queenOutAt: the ambush, build 2026-11-09tt)'); same(JSON.stringify([r.saved.b.state, r.saved.b.outcome, r.saved.b.defeated, r.saved.p]), JSON.stringify(['resolved', 'calm', 0, 'drill']), 'the boss\'s and the puzzle\'s');
         same(r.loaded.join(), 'true,resolved,calm,true,true,true,true,true,true,true,drill,1', 'the load'); same(r.touched.join(), 'false,true,true,true', 'standing right beside the calm queen provoked her (only a hit does): ' + r.touched.join()); same(r.defends.join(), 'true,false,attack,resolved,calm', 'it does not defend itself'); same(r.calmAgain.join(), 'true,false,true,resolved', 'it does not calm again');
         same(r.killedLater.join(), 'resolved,calm,true,calm,true,false', 'the death after the calm'); same(r.loadedDead.join(), 'resolved,calm,false,true', 'a dead boss came back');
     });
@@ -259,7 +262,7 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`(function(){ const o = {}; __freshRecords(); __clearSquad(); const p = _fp.portals.find(q => q.room === 'sewers'); __put(p.ax, p.ay); __tick(2);
             invAdd('toxic_sample', 3); invAdd('sewer_sample', 1); __tick(1); o.pre = [__Q().discoveredAt > 0, __Q().samplesAt > 0, questObjective().key];
             const bch = __st('st_analysis_bench'); __near(bch); stationUse(bch); shardCount = 300; const rb = stationUse(bch); o.bought = [rb.ok, shardCount, invCount('purification_module')];
-            __openWay(); const b = __boss(); o.armed = [__B().state, !!b];
+            __openWay(); __pastAmbush(); const b = __boss(); o.armed = [__B().state, !!b];
             const m = __st('st_purifier'); __near(m); stationUse(m); __tick(60); o.active = [__B().state, b.provoked, __Q().bossStartedAt > 0];
             __kill(b); __tick(2); o.dead = [__B().state, __B().outcome, __B().defeated > 0, __Q().bossOutcome, __Q().bossDefeated > 0, !!__boss(), _fp.channel && _fp.channel.station];
             let n = 0; for (; n < 1500 && !__Q().installedAt; n++) __tick(1); o.installed = [__Q().installedAt > 0, __Q().cycleLeft];
@@ -271,11 +274,94 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
     });
     check('an interrupted encounter in a save (the boss awake and hurt, the install under way) comes back armed: the boss asleep in its lair, whole; the module still in the pack, nothing installed, no build running; the nest row of the table names THE ANT QUEEN, the Ant Nest\'s test boss since build 2026-11-07mm (docs/NEST.md): she arms in her own room', () => {
         const r = J(`(function(){ const o = {}; __freshRecords(); __clearSquad(); const p = _fp.portals.find(q => q.room === 'sewers'); __put(p.ax, p.ay); __tick(2); invAdd('toxic_sample', 3); invAdd('sewer_sample', 1); __tick(1);
-            const bch = __st('st_analysis_bench'); __near(bch); stationUse(bch); shardCount = 300; stationUse(bch); __openWay(); const b = __boss(); const m = __st('st_purifier'); __near(m); stationUse(m); __tick(30); applyDamage(b, 50, player); __tick(5);
+            const bch = __st('st_analysis_bench'); __near(bch); stationUse(bch); shardCount = 300; stationUse(bch); __openWay(); __pastAmbush(); const b = __boss(); const m = __st('st_purifier'); __near(m); stationUse(m); __tick(30); applyDamage(b, 50, player); __tick(5);
             o.before = [__B().state, b.health < b.maxHealth, _fp.channel && _fp.channel.station]; const sv = facilitySaveCollect(); o.savedState = sv.bosses.sewer_cistern.state; __reload(sv); const b2 = __boss();
             o.after = [__B().state, !!b2, b2.bossAsleep, b2.health === b2.maxHealth, __dl() <= 1.2, __Q().installedAt, invCount('purification_module'), __Q().bossStartedAt > 0, _fp.channel];
             const N = BOSS_ENCOUNTERS.nest; o.nest = [N.domain, N.name, N.species, N.lair, N.quest, bossArm('nest'), bossState('nest').state]; return o; })()`);
         same(r.before.join(), 'active,true,st_purifier', 'the encounter under way'); same(r.savedState, 'active', 'saved as it was'); same(JSON.stringify(r.after), JSON.stringify(['armed', true, true, true, true, 0, 1, true, null]), 'the load'); same(JSON.stringify(r.nest), JSON.stringify(['nest_area', 'THE ANT QUEEN', 'ant', null, null, true, 'armed']), 'the nest row: THE ANT QUEEN, the Ant Nest\'s test boss, arms in her room (her post is a function of the map: null in JSON)');
+    });
+
+    // THE AMBUSH (build 2026-11-09tt; the owner, 2026-11-09: "the queen does not appear until the player halfway installs the purification module"; "you have to fight 3 different enemies at the same time ... a tank, a
+    // striker, and a worker, and they're all poison"; "the queen comes out after you defeat them"; "she destroys you and sends you back to the crystal"; "upon returning side quest talks to you"; and the answers
+    // "Pauses till all 3 die", "A bit bigger and tougher", "Damage over time", "Only followers", "Comes back with you"). From fresh records, after the checks above.
+    group('THE AMBUSH (js/quests.js QUEST_PURIFY.trio, questMountBlocked, questTrioSpawn, questQueenTakesYou; js/combat.js FOLLOWER_POISON)');
+    const __setup = `__freshRecords(); __clearSquad(); { const p = _fp.portals.find(q => q.room === 'sewers'); __put(p.ax, p.ay); } __tick(2); invAdd('toxic_sample', 3); invAdd('sewer_sample', 1); __tick(1);
+            { const bch = __st('st_analysis_bench'); __near(bch); stationUse(bch); shardCount = 300; stationUse(bch); } __openWay();`;
+    check('nobody at her post; the install begins with no queen to wake; at its HALFWAY (QUEST_PURIFY.trio.at, 300 of its 600 frames) THE THREE come up near the console, on your floor: an ant TANK, STRIKER and WORKER, toxic, level 8, half as big again and with half as much health again as their kind (the agent\'s reading of "a bit bigger and tougher", provisional), going for you; the install HOLDS while any of them lives (the plate says why and how many are left; the hint tells of them); still no queen', () => {
+        const r = J(`(function(){ const o = {}; ${__setup} __tick(2); o.nobody = [__B().state, !!__boss()];
+            const m = __st('st_purifier'), T = QUEST_PURIFY.trio, M = bossMount(__E()); __near(m); const r1 = stationUse(m); o.start = [r1.ok, !!_fp.channel, __B().state, !!__boss(), __Q().bossStartedAt, questObjective().hint];
+            __tick(T.at - 4); o.early = [__prog(), questTrioAlive().length, __Q().trioAt];
+            __tick(8); const A = questTrioAlive(); o.came = [__Q().trioAt > 0, floatingTexts.some(t => /THREE TOXIC ANTS COME UP OUT OF THE DAM — A TANK, A STRIKER AND A WORKER/.test(t.text))];
+            o.three = A.map(a => { const ref = spawnCreature({ species: 'ant', className: a.className, x: a.x, y: a.y, level: T.level, state: 'wander' }), k = [a.dimensions.width / ref.dimensions.width, a.maxHealth / ref.maxHealth]; ref.dead = true; ref.deathProcessed = true; actors = actors.filter(q => q !== ref);
+                return [a.className, a.speciesName, a.element, a.level, Math.round(k[0] * 100) / 100, Math.round(k[1] * 10) / 10, a.health === a.maxHealth, a.questTrio, a.poisonsFollowers, a.provoked, a.currentTarget === player || a._prey === player, partyRoomAt(a.x, a.y), Math.hypot(a.x - M.x, a.y - M.y) <= T.near[1] + 0.5, _pComp(a.x, a.y) === _pComp(player.x, player.y), !a.sewerBrood].join(); }).sort();
+            const p1 = __prog(); __tick(60); o.held = [__prog() - p1, !!_fp.channel, questMountBlocked(), questObjective().hint, __B().state, !!__boss()]; return o; })()`);
+        same(r.nobody.join(), 'idle,false', 'the queen is there before the install'); same(r.start.join('|'), 'true|true|idle|false|0|STAY AT THE CONSOLE UNTIL THE MODULE IS IN: WALKING AWAY STOPS IT, AND IT STARTS AGAIN.', 'the install\'s start: ' + r.start.join('|'));
+        same(r.early.join(), '296,0,0', 'before the halfway'); same(r.came.join(), 'true,true', 'the three did not come');
+        same(JSON.stringify(r.three), JSON.stringify(['striker', 'tank', 'worker'].map(c => c + ',ant,toxic,8,1.5,1.5,true,true,true,true,true,sewers,true,true,true')), 'the three');
+        same(JSON.stringify(r.held), JSON.stringify([0, true, 'THREE TOXIC ANTS · KILL ALL THREE AND THE INSTALL GOES ON · 3 LEFT', 'STAY AT THE CONSOLE UNTIL THE MODULE IS IN: WALKING AWAY STOPS IT, AND IT STARTS AGAIN. THREE TOXIC ANTS HAVE COME FOR YOU: THE INSTALL HOLDS UNTIL ALL THREE ARE DEAD. THEIR BITES POISON YOUR FOLLOWERS.', 'idle', false]), 'the install did not hold for them');
+    });
+    check('their bites POISON A FOLLOWER: it loses FOLLOWER_POISON.perTick × the biter\'s power every DOT_TICK frames for FOLLOWER_POISON.frames (nine ticks; the agent\'s numbers, provisional), green bubbles over it; a new bite refreshes it and never stacks it; their bites on you do not poison you; a brood ant\'s bite poisons no follower', () => {
+        const r = J(`(function(){ const o = {}; const A = questTrioAlive(), s = A.find(a => a.className === 'striker');
+            spawnFollowerAtCrystal('fire'); const f = followers[followers.length - 1]; f.returningToCrystal = false; f.spawnProtection = 0; f.health = f.maxHealth = 5000; f.currentWill = 1e5; f.role = 'camper'; f.x = s.x + 0.6; f.y = s.y; partyTick();
+            for (const a of A) { a.currentTarget = f; a._prey = f; a.state = 'attack'; }
+            const h0 = f.health; let n = 0; for (; n < 400 && !(f.poisoned > 0); n++) __tick(1);
+            o.bitten = [n < 400, f.health < h0, f.poisoned > FOLLOWER_POISON.frames - 3, A.some(a => Math.abs(f.poisonDamage - a.power * FOLLOWER_POISON.perTick) < 1e-9)];
+            for (const a of A) a.stunned = 1e6; f.x = crystal.x - 2; f.y = crystal.y + 1; f.currentTarget = null;   // (they are held, and it is away from them: only the poison hurts it now)
+            const pd = f.poisonDamage, ad = applyDamage, ticks = []; applyDamage = function (t, amt, src) { if (t === f && src === null) ticks.push(amt); return ad.apply(this, arguments); };
+            try { __tick(FOLLOWER_POISON.frames + 10); } finally { applyDamage = ad; }
+            o.dot = [ticks.length, ticks.every(t => Math.abs(t - pd) < 1e-9), f.poisoned, pd > 0];
+            f.poisoned = 60; let arcs = 0; const arc = ctx.arc; ctx.arc = function () { arcs++; return arc.apply(this, arguments); }; try { drawFollowerPoisonMarks(); } finally { ctx.arc = arc; } o.marks = arcs; f.poisoned = 0;
+            o.refresh = [applyFollowerPoison(f, 1, 180), applyFollowerPoison(f, 0.5, 60), f.poisoned, f.poisonDamage, applyFollowerPoison(f, 2, 100), f.poisoned, f.poisonDamage]; f.poisoned = 0; f.poisonDamage = 0;
+            o.notYou = applyFollowerPoison(player, 1, 60); const brood = { power: 20, x: f.x, y: f.y }; poisonOnHit(brood, f, f.health + 5); o.broodBite = !!(f.poisoned > 0);
+            const w = A.find(a => a.className === 'worker'); w.stunned = 0; w.x = player.x + 0.5; w.y = player.y; w.currentTarget = player; w._prey = player; w.state = 'attack'; player.invuln = 0; const hp = health; for (n = 0; n < 400 && health === hp; n++) __tick(1);
+            o.onYou = [health < hp, playerPoisoned(), !!(player.poisoned > 0), !!_fp.channel]; for (const a of A) a.stunned = 0; return o; })()`);
+        same(r.bitten.join(), 'true,true,true,true', 'a bite of theirs did not poison the follower: ' + r.bitten.join()); same(r.dot.join(), '9,true,0,true', 'the poison\'s ticks'); same(r.marks, 3, 'the bubbles over a poisoned follower');
+        same(r.refresh.join(), 'true,false,180,1,false,180,2', 'a new bite stacked it'); same(r.notYou, false, 'the player can be poisoned this way'); same(r.broodBite, false, 'a brood ant\'s bite poisoned a follower');
+        same(r.onYou.join(), 'true,false,false,true', 'their bite on you: ' + r.onYou.join());
+    });
+    check('the three killed: the install does not go on; THE QUEEN COMES OUT, awake beside the console, and you are safe for her moment (QUEST_PURIFY.ambush, 90 frames: provisional); then SHE TAKES YOU OUT: you are back at the Crystal with all your hits, nothing paid from the Crystal (a knock-back pays 5%), your squad with you; the install is stopped (it starts again: the module still in your pack); away from you she sleeps again at her post; and SIDE QUEST is waiting by the Crystal, named in the hint', () => {
+        const r = J(`(function(){ const o = {}; const A = questTrioAlive(), f = followers[followers.length - 1];
+            __kill(A[0]); __kill(A[1]); o.two = [__Q().trioKills, __Q().trioDeadAt, questMountBlocked()]; __kill(A[2]); o.three = [__Q().trioKills, __Q().trioDeadAt > 0, questMountBlocked()];
+            let draws = 0; const cd = crystalDraw; crystalDraw = function () { draws++; return cd.apply(this, arguments); };
+            try {
+                const p1 = __prog(); __tick(2); const b = __boss(); o.out = [__B().state, !!b, b && !b.bossAsleep, b && b.bossRooted, player.invuln > QUEST_PURIFY.ambush, floatingTexts.some(t => /THE TOXIC ANT QUEEN COMES OUT/.test(t.text)), __prog() - p1, __Q().bossStartedAt > 0, __Q().queenOutAt];
+                f.x = player.x - 1; f.y = player.y; o.inSquad = partyMembers().includes(f);
+                __tick(QUEST_PURIFY.ambush);
+                o.takenOut = [__Q().queenOutAt > 0, player.x === crystal.x + 2 && player.y === crystal.y, partyRoomAt(player.x, player.y), health === PLAYER_HITS, draws, _fp.channel, invCount('purification_module'), __Q().installedAt, floatingTexts.some(t => /TAKES YOU DOWN — BACK AT THE CRYSTAL/.test(t.text))];
+                o.squad = [partyRoomAt(f.x, f.y), Math.hypot(f.x - player.x, f.y - player.y) < 2.5, !f.dead];
+            } finally { crystalDraw = cd; health = 1e6; }
+            __tick(2); const h = questObjective().hint; o.sq = [sqPresent(), sqAtCrystal(), sqWhereSaid(), /SIDE QUEST, BY THE CRYSTAL, SELLS A SLEEPING POTION\\./.test(h), /SLEEPS BESIDE THE CONSOLE/.test(h)];
+            let n = 0; for (; n < 900 && __B().state !== 'armed'; n++) __tick(1); o.slept = [__B().state, n < 900, __dl() <= 1.2, !!__boss()]; return o; })()`);
+        same(JSON.stringify(r.two), JSON.stringify([2, 0, 'THREE TOXIC ANTS · KILL ALL THREE AND THE INSTALL GOES ON · 1 LEFT']), 'two of them'); same(JSON.stringify(r.three), JSON.stringify([3, true, '⚠ THE TOXIC ANT QUEEN COMES OUT']), 'the third');
+        same(r.out.join(), 'active,true,true,true,true,true,0,true,0', 'she did not come out: ' + r.out.join()); same(r.inSquad, true, 'the follower is not of the squad');
+        same(JSON.stringify(r.takenOut), JSON.stringify([true, true, 'crystal_chamber', true, 0, null, 1, 0, true]), 'she did not take you out as she should');
+        same(r.squad.join(), 'crystal_chamber,true,true', 'the squad did not come back with you'); same(r.sq.join(), 'true,true,BY THE CRYSTAL,true,true', 'Side Quest is not by the Crystal: ' + r.sq.join()); same(r.slept.join(), 'armed,true,true,true', 'she did not sleep again at her post');
+    });
+    check('back at the console the install starts from the beginning and wakes her (as before build 2026-11-09tt: she SITS AT THE CONSOLE and it holds); the three do not come again: with her asleep it goes past its halfway to the end', () => {
+        const r = J(`(function(){ const o = {}; const m = __st('st_purifier'), b = __boss(); __near(m); const r1 = stationUse(m); o.start = [r1.ok, __prog(), __B().state, b.bossRooted, floatingTexts.some(t => /WAKES — SHE SITS AT THE CONSOLE/.test(t.text))];
+            __tick(5); o.held = [__prog(), !!bossInstallBlocked('sewer_cistern'), questMountBlocked() === bossInstallBlocked('sewer_cistern')];
+            applySleep(b, 5000); const k0 = __Q().trioAt; let n = 0, most = 0; for (; n < 700 && !__Q().installedAt; n++) { __tick(1); most = Math.max(most, questTrioAlive().length); }
+            o.done = [__Q().installedAt > 0, most, __Q().trioAt === k0, invCount('purification_module')]; return o; })()`);
+        same(r.start.join(), 'true,0,active,true,true', 'the install\'s new start'); same(r.held.join(), '0,true,true', 'she did not hold it'); same(r.done.join(), 'true,0,true,0', 'the install after the ambush');
+    });
+    check('the saves: in the middle of the three, a load brings back no build and none of them (creatures are not saved; their count is): the install starts again, and at its halfway the three come again, counted again; with the three dead but before she came out, she comes out as you come back to the console, and takes you out; a game from before build 2026-11-09tt whose encounter had begun goes on as it was (the ambush marked over: Side Quest by the Crystal if he had not come); one in which she only slept at her post (armed as you came near: the old rule) loses her quietly, without a death', () => {
+        const r = J(`(function(){ const o = {}; const T = QUEST_PURIFY.trio; ${__setup}
+            __near(__st('st_purifier')); stationUse(__st('st_purifier')); __tick(T.at + 4); __kill(questTrioAlive()[0]);
+            const sv1 = facilitySaveCollect(); o.saved1 = [sv1.quests.purify.trioAt > 0, sv1.quests.purify.trioKills, sv1.quests.purify.trioDeadAt];
+            __reload(sv1); o.load1 = [questTrioAlive().length, _fp.channel, __Q().trioAt > 0, __Q().trioDeadAt, __Q().trioKills, invCount('purification_module'), __B().state];
+            __near(__st('st_purifier')); stationUse(__st('st_purifier')); __tick(T.at + 4); o.again = [questTrioAlive().length, __Q().trioKills, !!questMountBlocked()];
+            for (const a of questTrioAlive()) __kill(a); o.dead = __Q().trioDeadAt > 0; const sv2 = facilitySaveCollect(); __reload(sv2);
+            __put(crystal.x + 2, crystal.y); __tick(30); o.waits = [__B().state, !!__boss(), __Q().queenOutAt];
+            __near(__st('st_purifier')); __tick(2); o.comes = [__B().state, !!__boss()]; __tick(QUEST_PURIFY.ambush + 2); o.takes = [__Q().queenOutAt > 0, partyRoomAt(player.x, player.y)]; health = 1e6;
+            const old = facilitySaveCollect(), q = old.quests.purify; for (const k of ['trioAt', 'trioKills', 'trioDeadAt', 'queenOutAt']) delete q[k]; q.bossStartedAt = 7; old.bosses.sewer_cistern = { state: 'active', outcome: null, started: 7, defeated: 0 }; old.sidequest = null;
+            __reload(old); __put(crystal.x + 2, crystal.y); __tick(3); o.oldBegun = [__Q().trioAt, __Q().trioDeadAt, __Q().queenOutAt, __B().state, !!__boss(), sqAtCrystal()];
+            const old2 = facilitySaveCollect(), q2 = old2.quests.purify; for (const k of ['trioAt', 'trioKills', 'trioDeadAt', 'queenOutAt']) delete q2[k]; q2.bossStartedAt = 0; old2.bosses.sewer_cistern = { state: 'armed', outcome: null, started: 0, defeated: 0 }; old2.sidequest = null;
+            floatingTexts.length = 0; __reload(old2); o.armedAtLoad = __B().state; __tick(3);
+            o.oldArmed = [__B().state, !!__boss(), __B().defeated, __B().outcome, __Q().bossDefeated, __Q().bossOutcome, __Q().queenOutAt, floatingTexts.some(t => /DEFEATED|IS DEAD/.test(t.text)), sqPresent()]; return o; })()`);
+        same(r.saved1.join(), 'true,1,0', 'the save in the middle of the three'); same(JSON.stringify(r.load1), JSON.stringify([0, null, true, 0, 1, 1, 'idle']), 'its load'); same(r.again.join(), '3,0,true', 'the three did not come again');
+        same(r.dead, true, 'the three'); same(JSON.stringify(r.waits), JSON.stringify(['idle', false, 0]), 'she came out while you were away'); same(r.comes.join(), 'active,true', 'she did not come out as you came back'); same(r.takes.join(), 'true,crystal_chamber', 'she did not take you out');
+        same(JSON.stringify(r.oldBegun), JSON.stringify([7, 7, 7, 'armed', true, true]), 'an old game with the encounter begun'); same(r.armedAtLoad, 'armed', 'the old armed queen');
+        same(JSON.stringify(r.oldArmed), JSON.stringify(['idle', false, 0, null, 0, '', 0, false, false]), 'an old game with her asleep at her post');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');

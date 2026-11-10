@@ -77,7 +77,7 @@ Built from the archive's newest sections (the patch frame, the clarifications, t
 - **Damage and sleep.** A sleeper is not woken by a hit (your followers must be able to hold a sleeping queen while you install). The archive leaves resistance and immunity open.
 - **The queen's provisional numbers**: her guard 2.5 tiles; her leash and roam 15 tiles (the cistern); the bomb's 12 tiles of reach, 1.6-tile burst, 1 s wind-up and 1 s flight; the spit's 3-tile trigger, 1-tile burst, half a second each way; a wave of 4 nymphs (the archive: start at 4, up to 6), the first 30 s after she wakes, level 2 to 3; her frantic pace at 3 times her own; the sleep of 5 s on every creature (the archive gives only the queen's); the potion's 3-tile area and 4-tile reach. The archive's fixed numbers are built as given: 45 s, 10 s, 30 s, 50%, about 10 s to install, about 5 s of sleep, ◆100 / ◆50 / ◆100.
 - **Poison on you**: the game's poison is a weakness, so yours is too (your hits at 60% for 2 s). The archive says only that it should wear off quickly.
-- **Side Quest's look and lines.** *His look is answered:* the void walker (your decision of 2026-11-02), built in `2026-11-02f`; until then he was a small black saucer drawn in code, and the saucer design family (Nos. 661–683) is set aside. His opening is the archive's word for word; the other lines are mine, to polish. His spot: the maintenance platform off the north ledge since 2026-11-01 (first the south ledge's side passage; the archive: "a safe side passage or maintenance platform roughly halfway"). His "gadgets and gizmos", his later inventory and his progression into the Nests: open, as the archive says.
+- **Side Quest's look and lines.** *His look is answered:* the void walker (your decision of 2026-11-02), built in `2026-11-02f`; until then he was a small black saucer drawn in code, and the saucer design family (Nos. 661–683) is set aside. His opening is the archive's word for word; the other lines are mine, to polish. His spot: the maintenance platform off the north ledge since 2026-11-01 (first the south ledge's side passage; the archive: "a safe side passage or maintenance platform roughly halfway"); since build `2026-11-09tt` he is first met by the Crystal (§2-tt). His "gadgets and gizmos", his later inventory and his progression into the Nests: open, as the archive says.
 - **The name.** The archive's newest notes say "the Toxic Queen"; the game keeps the name you approved this morning, THE TOXIC ANT QUEEN (provisional either way).
 - **Side Quest's reaction to a kill** (disappointment, reduced trust): undecided in the archive; the placeholder stands.
 
@@ -462,7 +462,7 @@ The owner, 2026-11-06: pods "Shorter life"; the ice "One ability", "Straight, 30
 
 Readings taken (each stands until the owner says otherwise):
 1. **Any water freezes now** (the Sewers' river, the Nest's reservoir and moat), as "sneak in before the gate opens" asks.
-2. **The Queen is at her post, asleep, once the player comes within 10 tiles of it** (`QUEST_PURIFY.queenNear`), not only when her gate opens, so sneaking onto her dam over the ice does not skip her: the install still wakes her.
+2. **The Queen is at her post, asleep, once the player comes within 10 tiles of it** (`QUEST_PURIFY.queenNear`), not only when her gate opens, so sneaking onto her dam over the ice does not skip her: the install still wakes her. *Superseded in build `2026-11-09tt` by the owner's ambush: she is not there until the install's three are dead (`SEWER-QUEST.md`, "The ambush"); a bridge skips nothing.*
 3. **The bridge's second lane** is on the side of the tapped tile the tap is nearer; a tap too near the bank (the second lane on floor) is refused ("TAP FURTHER INTO THE WATER").
 4. **The pod's field is round**, shrinking as it runs down (the pools' fade, kept).
 
@@ -501,6 +501,13 @@ Nothing market-related is open: the eight questions above were all answered. (Wh
   - Ways to steady it: fix the scene's types the same way, then set the budget from what it measures; or raise the budget a little, with the reason written beside it. Nothing is changed until someone picks. **Changed by the agent in build `2026-11-07ff`** (not the owner's pick): the budget raised to 22,000 with the reason beside it, after the same code measured 21,164 to 21,645 across runs; the scene's types are still random. Reversible.
 
 - **A card's words are cut on its face** (seen 2026-11-02, build `2026-11-02j`, on the CARDS screen at 1180 × 820). The face's box shows about five lines, so the longer words run past it and are cut. That is 23 cards: the six Mage CROWNs, the three opportunity cards and 14 of the 18 Player cards (PLAGUE DOCTOR's words are the longest). The EFFECT line beside the stage always shows the whole text. It is not new: the auras and the opportunity cards have been cut this way since Build B. Ways to mend it, for the owner: smaller type on the face for long words; a short line on the face (the role's theme) with the full words in EFFECT; or a taller box. Nothing is changed until the owner picks.
+
+### 2-tt. The purification's ambush (build `2026-11-09tt`): the agent's choices, waiting for a look
+- The three's "bigger and tougher": ×1.5 size and health, at the queen's level 8. They come up 1.5 to 4 tiles from the console, and pay as ordinary kills.
+- Their poison on a follower: 3 s, a tick of 0.06 × the biter's power every 20 frames (about half a bite more in all); a new bite refreshes it.
+- The queen's moment before she takes you out: 90 frames, with you untouchable. Her knockout costs nothing from the Crystal.
+- After the knockout the install starts again from the beginning (walking away always did that).
+- Side Quest by the Crystal: his spot (the first floor of five offsets beside it), his line there, and his going back down once his talk is over (or her fate decided) and you leave the chamber. Should he stay by the Crystal instead?
 
 ### 2-qq. The server room, the warehouse, the junction and the ledge (build `2026-11-07qq`): the agent's choices, waiting for a look
 - How dark the Server Room stays with the power on (`FP_ROOM_DIM.front_lobby`, 0.42), and its blinking rack lights.

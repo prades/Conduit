@@ -82,6 +82,31 @@ function applyBurn(t, perTick, frames) {   // `perTick`: the damage of one tick
     t.burning = Math.max(t.burning || 0, frames);
     return fresh;
 }
+// POISON ON A FOLLOWER (the owner, 2026-11-09: the three toxic ants of the purification's ambush, js/quests.js, "have poison effects": "Damage over time", on "Only followers"): a follower bitten by a creature that
+// `poisonsFollowers` loses `perTick` health every DOT_TICK frames for FOLLOWER_POISON.frames (ticked with the burn, below). A new bite refreshes it, never stacks it: the longer time and the stronger tick win.
+// The numbers are the agent's, provisional: three seconds, nine ticks of 0.06 × the biter's power (about half its power in all, on top of the bite).
+const FOLLOWER_POISON = { frames: 180, perTick: 0.06, col: "#8cff5a" };
+function applyFollowerPoison(t, perTick, frames) {
+    if (!t || t.dead || !t.isFollower || t.team !== "green" || t.isClone || !(frames > 0) || !(perTick > 0)) return false;
+    const fresh = !(t.poisoned > 0);
+    t.poisonDamage = fresh ? perTick : Math.max(t.poisonDamage || 0, perTick);
+    t.poisoned = Math.max(t.poisoned || 0, frames);
+    return fresh;
+}
+// a hit from `src` has landed on `t` (its health was h0 before: js/predator.js bite, js/abilities.js _abHurt): a poisoner's poisons a follower it hurt
+function poisonOnHit(src, t, h0) { if (src && src.poisonsFollowers && t && t.isFollower && !t.dead && (t.health || 0) < h0) applyFollowerPoison(t, (src.power || 0) * FOLLOWER_POISON.perTick, FOLLOWER_POISON.frames); }
+// the mark over a poisoned follower (js/game.js, with the sleepers' z's): green bubbles rising over its head, on the left (the z's are on the right: js/potion.js), each ringed dark so it reads on a pale floor
+function drawFollowerPoisonMarks() {
+    if (typeof ctx === "undefined" || typeof canvas === "undefined" || !canvas || typeof player === "undefined" || typeof followers === "undefined") return;
+    const f = typeof frame !== "undefined" ? frame : 0;
+    ctx.fillStyle = FOLLOWER_POISON.col; ctx.strokeStyle = "rgba(10,30,8,0.85)"; ctx.lineWidth = 1.5;
+    for (const a of followers) {
+        if (!a || a.dead || !(a.poisoned > 0)) continue;
+        const sx = (a.x - player.visualX - (a.y - player.visualY)) * TILE_W + canvas.width / 2, sy = (a.x - player.visualX + (a.y - player.visualY)) * TILE_H + canvas.height / 2 + TILE_H - (typeof facilityLiftRel === "function" ? facilityLiftRel(a.x, a.y) : 0);
+        for (let i = 0; i < 3; i++) { const u = ((f * 0.015) + i / 3) % 1; ctx.globalAlpha = 0.9 * (1 - u * u); ctx.beginPath(); ctx.arc(sx - 14 - i * 7 + Math.sin((f + i * 20) * 0.1) * 2, sy - 100 - u * 30, 3.2 + i * 0.9, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    }
+    ctx.globalAlpha = 1;
+}
 // WEAKNESS (the toxic cards' poison: no damage, it only makes the creature weak): its bite lands for `factor` of its power (0.6: the smoke bomb's, js/elements.js) for `frames`. The stronger weakness it has is kept.
 function applyWeaken(t, frames, factor) {
     if (!t || t.dead || t.isClone || t.team === "green" || !(frames > 0)) return false;
@@ -170,6 +195,8 @@ function updateStatusEffects() {
                 applyDamage(actor, actor.burnDamage || 0.5, null);
             }
         }
+        // ── POISON (a follower's: applyFollowerPoison) ──
+        if (actor.poisoned > 0) { actor.poisoned--; if (actor.poisoned % DOT_TICK === 0) applyDamage(actor, actor.poisonDamage || 0.5, null); }
 
         // ── STUN and GLITCH (js/predator.js reads them), and SLEEP (applySleep: a creature's runs with its stun; a follower's is its own): the timers run here ──
         if (actor.stunned > 0) actor.stunned--;

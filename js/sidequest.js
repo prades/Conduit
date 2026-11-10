@@ -12,20 +12,29 @@
 //                  whose walls the camera hides). Its back wall faces you: the platform is seen through the bars from both ledges and the bridges, its lamp in his colour. Out of the queen's reach (she roams within
 //                  15 tiles of her post in the Nest: js/bosses.js) and out of the brood's spawns (js/facilityspawn.js keeps them 3 tiles off him). When he appears the gate opens (facilitySolidOpen: he is a
 //                  technician) and he hovers two tiles in, with a STATION on him (js/stations.js STATION_KINDS.sidequest, made here, not a prop of the map): the plate, E, a tap, as any station.
-//   WHEN           sqUnlocked: the samples turned in at the lab AND QUEST_PURIFY.antTarget toxic ants of the Sewers killed (js/quests.js antKills). Not location, not the samples alone, not the count alone.
+//   WHEN           sqUnlocked (since build 2026-11-09tt; the owner, 2026-11-09: "The queen takes out the player, upon returning side quest talks to you"; seen "Only when she" does): once the queen's ambush has
+//                  taken you out (js/quests.js queenOutAt), he is waiting BY THE CRYSTAL (SIDEQUEST.crystal), where it sent you, and calls you over there; the talk over (or the queen's fate decided) and you gone
+//                  from the Crystal Chamber, he is back on his platform (WHERE), his gate open, your note of it. Until build 2026-11-09tt: the samples turned in at the lab AND about ten toxic ants of the Sewers killed.
 //   THE TALK       four lines, one a press (the archive's opening verbatim, then his name and the Queen blocking the system, his idea that she only needs to be moved, and the PROMISE he asks for), then a choice of two
 //                  buttons: I PROMISE or NO PROMISES (sqChoose: recorded in `promised`, 1 or −1; it changes nothing of the quest line, and killing her later invalidates nothing: the archive). Either way he sells
 //                  the potion after. Come back and he gives the hint. Once the queen's fate is decided (the quest line's bossResolvedAt), everything he says is "…" (SIDEQUEST.lines.after), and he still sells.
 //   THE SHOP       the SLEEPING POTION (js/potion.js potionBuy: ◆100, ◆50 the next once it has put the queen to sleep), on his station; and, after each quest, its quest line's three PLAYER CARDS (below, "his cards":
 //                  the following update's Part 1d), on buttons in his line. His "gadgets and gizmos" and his later role are open (the archive).
-//   SAVED          `sidequest` (js/facilitysave.js): that he appeared, how far the talk got, the promise, that he called you over. A load opens the gate again and puts him back.
+//   SAVED          `sidequest` (js/facilitysave.js): that he appeared, where (`w`: "crystal" or the platform), how far the talk got, the promise, that he called you over. A load puts him back there (on the
+//                  platform: the gate open again; a save from before build 2026-11-09tt, with no `w`: the platform).
 //   HIS LOOK       the void walker, the old flux worker's form (the owner, 2026-11-02): see "drawing" below. (Until build 2026-11-02f he was a small black saucer drawn here in code.)
-//   PROVISIONAL    the platform as his spot, and every line but the archive's opening (its wording "can be polished during implementation").
+//   PROVISIONAL    the platform as his spot, his spot by the Crystal and when he goes back down, and every line but the archive's opening (its wording "can be polished during implementation").
 const SIDEQUEST = {
     id: "sidequest", name: "SIDE QUEST", room: "sewers", gate: "sewer_gate_n2", into: -2, col: "#9fd8ff",   // (into: tiles from the gate's line to his spot, north: the platform is behind the north ledge's wall)
     callNear: 8,   // tiles: the first time you come this near, he calls you over (once)
+    // AT THE CRYSTAL (the owner, 2026-11-09: "The queen takes out the player, upon returning side quest talks to you"; seen "Only when she" does): he first appears by the Crystal, where the queen's ambush sends you
+    // (js/quests.js questQueenTakesYou): the first of these offsets (tiles) from the Crystal that is Crystal Chamber floor. He talks and sells there; once the talk is over and you have left the chamber, he is back on
+    // his platform in the Sewers (as he told you in the tutorial: "I'M GOING BACK DOWN BELOW"). The spots and his call there are the agent's (provisional).
+    crystal: { room: "crystal_chamber", spots: [[-2, 1.5], [-2.5, -1], [0, 2.5], [2, 2.5], [-1, 3]] },
     lines: {
         call: "PSST. UP HERE, ON THE MAINTENANCE PLATFORM.",
+        callCrystal: "OVER HERE. I SAW WHAT SHE DID TO YOU DOWN THERE. WE NEED TO TALK.",
+        gone: "◈ SIDE QUEST HAS GONE BACK DOWN TO HIS MAINTENANCE PLATFORM OFF THE SEWERS' NORTH LEDGE",
         talk: [
             "OH NO, IT'S CLOGGING EVERYTHING. LOOK, PLEASE, THERE HAS TO BE A WAY TO FIX THIS WITHOUT KILLING IT.",
             "I'M SIDE QUEST. I LEFT THE FACILITY; I DON'T WORK FOR IT ANY MORE. BUT THAT QUEEN IS BLOCKING THE WHOLE SYSTEM, AND THE SYSTEM IS ALL OF US.",
@@ -49,7 +58,7 @@ function _sqFrame() { return typeof frame !== "undefined" ? frame : 0; }
 function _sqNow() { return typeof techClock === "number" ? techClock : _sqFrame(); }
 function sqState() {
     if (typeof _fp === "undefined" || !_fp) return null;
-    if (!_fp.sidequest) _fp.sidequest = { appearedAt: 0, talk: 0, promised: 0, promisedAt: 0, calledAt: 0, metAt: 0, replyUntil: 0 };
+    if (!_fp.sidequest) _fp.sidequest = { appearedAt: 0, talk: 0, promised: 0, promisedAt: 0, calledAt: 0, metAt: 0, replyUntil: 0, where: "" };   // (where: "crystal" or "platform", once he has appeared)
     return _fp.sidequest;
 }
 function sqReset() {
@@ -57,15 +66,25 @@ function sqReset() {
     if (typeof dialogueDismiss === "function") dialogueDismiss("sq");
 }
 function _sqQuest() { return typeof questState === "function" ? questState("purify") : null; }
-// may he appear? the lab turn-in done AND about ten toxic ants killed (js/quests.js)
-function sqUnlocked() { const Q = _sqQuest(); return !!Q && Q.turnedInAt > 0 && (Q.antKills || 0) >= (typeof QUEST_PURIFY !== "undefined" ? QUEST_PURIFY.antTarget : 10); }
+// may he appear? once the queen has taken you out (js/quests.js, the ambush: the owner, 2026-11-09, "Only when she" does). Until build 2026-11-09tt: the lab turn-in done AND about ten toxic ants killed.
+function sqUnlocked() { const Q = _sqQuest(); return !!Q && Q.queenOutAt > 0; }
 function sqPresent() { const S = sqState(); return !!(S && S.appearedAt); }
+function sqAtCrystal() { const S = sqState(); return !!(S && S.appearedAt && S.where === "crystal"); }
+// where he is, for a hint (js/quests.js: the install step's): null before he appears
+function sqWhereSaid() { return !sqPresent() ? null : sqAtCrystal() ? "BY THE CRYSTAL" : "ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE"; }
+// his spot at the Crystal (SIDEQUEST.crystal)
+function sqCrystalSpot() {
+    if (typeof crystal === "undefined" || !crystal || typeof _fpNearestCell !== "function" || typeof facilityRoomAt !== "function") return null;
+    for (const d of SIDEQUEST.crystal.spots) { const p = _fpNearestCell(crystal.x + d[0], crystal.y + d[1]); if (p && (facilityRoomAt(p[0], p[1], _fp.F) || {}).id === SIDEQUEST.crystal.room) return p; }
+    return null;
+}
 // the queen's fate is decided (spared or killed): his line is the placeholder
 function sqAfter() { const Q = _sqQuest(); return !!(Q && Q.bossResolvedAt > 0); }
 // his spot: two tiles in from the gate's line (SIDEQUEST.into: the platform is north of it), on floor, once the gate is open
 function sqSpot() {
     if (typeof _fp === "undefined" || !_fp || !_fp.F) return null;
     if (_fp._sqSpot) return _fp._sqSpot;
+    if ((sqState() || {}).where === "crystal") { const p = sqCrystalSpot(); return p ? (_fp._sqSpot = [p[0], p[1]]) : null; }   // (by the Crystal, the first time: SIDEQUEST.crystal; asked as he is placed, before he has appeared)
     const g = _fp.F.solids.find(q => q.id === SIDEQUEST.gate); if (!g || !g.bb || typeof facilitySolidIsOpen !== "function" || !facilitySolidIsOpen(SIDEQUEST.gate)) return null;
     const cx = (g.bb[0] + g.bb[2]) / 2, cy = (g.bb[1] + g.bb[3]) / 2, c = typeof _fpNearestCell === "function" ? _fpNearestCell(cx, cy + SIDEQUEST.into) : null; if (!c) return null;
     return (_fp._sqSpot = [c[0], c[1]]);
@@ -74,9 +93,10 @@ function _sqStation() { return typeof _fp !== "undefined" && _fp && _fp.stations
 // he appears (or is put back by a load): the gate opens, he hovers on the platform, his station is on him
 function sqPlace(announce) {
     const S = sqState(); if (!S || typeof _fp === "undefined" || !_fp || !_fp.items || !_fp.stations) return false;
-    if (typeof facilitySolidOpen === "function") facilitySolidOpen(SIDEQUEST.gate);
+    const atC = S.where === "crystal";   // (by the Crystal, the first time; else his platform, whose gate opens)
+    if (!atC && typeof facilitySolidOpen === "function") facilitySolidOpen(SIDEQUEST.gate);
     _fp._sqSpot = null; const at = sqSpot(); if (!at) return false;
-    const x = at[0], y = at[1], room = SIDEQUEST.room, base = typeof facilityRoomHeight === "function" ? facilityRoomHeight(room, _fp.F) * FP_ELEV_PX : 0, seed = typeof _fpHash === "function" ? _fpHash(Math.round(x * 3), Math.round(y * 7)) : 1;
+    const x = at[0], y = at[1], room = atC ? SIDEQUEST.crystal.room : SIDEQUEST.room, base = typeof facilityRoomHeight === "function" ? facilityRoomHeight(room, _fp.F) * FP_ELEV_PX : 0, seed = typeof _fpHash === "function" ? _fpHash(Math.round(x * 3), Math.round(y * 7)) : 1;
     _fp.items = _fp.items.filter(i => !(i.fp === "sidequest" || (i.fp === "station" && i.id === "st_sidequest"))); _fp.stations = _fp.stations.filter(s => s.id !== "st_sidequest");
     const bb = [x - 0.45, y - 0.45, x + 0.45, y + 0.45], st = { id: "st_sidequest", kind: "sidequest", room, prop: null, bb, x, y };
     _fp.stations.push(st);
@@ -85,17 +105,21 @@ function sqPlace(announce) {
     _fp.items.push({ type: "fp", fp: "sidequest", id: "sidequest", room, x, y, depth: x + y + 0.02, base, seed });
     sqSheet();   // (his sheet starts on its way now, so it is in by the time you reach him: js/evolution.js _evoImg)
     if (!S.appearedAt) S.appearedAt = Math.max(1, _sqNow());
-    if (announce && typeof dialogueSay === "function") dialogueSay("player", "◈ SOMETHING HAS OPENED THE MAINTENANCE PLATFORM OFF THE SEWERS' NORTH LEDGE", { key: "sq:opened" });   // (your note of it: the dialogue box)
+    if (announce && typeof dialogueSay === "function") dialogueSay("player", atC ? "◈ SIDE QUEST IS WAITING BY THE CRYSTAL" : SIDEQUEST.lines.gone, { key: atC ? "sq:crystal" : "sq:opened" });   // (your note of it: the dialogue box)
     return true;
 }
-// each frame (js/facilitytutorial.js facilityTutorialTick): he appears when he may; he is put back if the stations were rebuilt; he calls you over the first time you come near
+// each frame (js/facilitytutorial.js facilityTutorialTick): he appears when he may (by the Crystal); he is put back if the stations were rebuilt; he calls you over the first time you come near; his talk over and you
+// gone from the Crystal Chamber, he goes back down to his platform
 function sqTick() {
     sqTutTick();   // (the tutorial: he waits under the catwalks and flies up for the power module, below)
     const S = sqState(); if (!S) return;
-    if (!S.appearedAt) { if (sqUnlocked()) sqPlace(true); return; }
+    if (!S.appearedAt) { if (sqUnlocked()) { S.where = "crystal"; sqPlace(false); } return; }
+    if (!S.where) S.where = "platform";
     if (!_sqStation()) sqPlace(false);
-    if (!S.calledAt && typeof player !== "undefined" && typeof partyRoomAt === "function" && partyRoomAt(player.x, player.y) === SIDEQUEST.room) {
-        const p = sqSpot(); if (p && Math.hypot(p[0] - player.x, p[1] - player.y) <= SIDEQUEST.callNear) { S.calledAt = Math.max(1, _sqNow()); if (typeof dialogueSay === "function") dialogueSay("sidequest", SIDEQUEST.lines.call, { key: "sq:call" }); }   // (his call, in the dialogue box with his picture)
+    const here = typeof player !== "undefined" && typeof partyRoomAt === "function" ? partyRoomAt(player.x, player.y) : null, atC = S.where === "crystal";
+    if (atC && (S.talk >= SIDEQUEST.lines.talk.length && S.promised !== 0 || sqAfter()) && here && here !== SIDEQUEST.crystal.room) { S.where = "platform"; sqPlace(true); return; }   // (back down below: the talk over, or the queen's fate decided without it)
+    if (!S.calledAt && here === (atC ? SIDEQUEST.crystal.room : SIDEQUEST.room)) {
+        const p = sqSpot(); if (p && Math.hypot(p[0] - player.x, p[1] - player.y) <= SIDEQUEST.callNear) { S.calledAt = Math.max(1, _sqNow()); if (typeof dialogueSay === "function") dialogueSay("sidequest", atC ? SIDEQUEST.lines.callCrystal : SIDEQUEST.lines.call, { key: atC ? "sq:callCrystal" : "sq:call" }); }   // (his call, in the dialogue box with his picture)
     }
 }
 // ── the talk, through his station (js/stations.js STATION_KINDS.sidequest) ──
@@ -106,7 +130,7 @@ function sqSpeech() {
     const S = sqState(); if (!S || !S.appearedAt) return null;
     if (sqAfter()) return SIDEQUEST.lines.after;
     const T = SIDEQUEST.lines.talk;
-    if (S.talk === 0) return S.calledAt ? SIDEQUEST.lines.call : null;
+    if (S.talk === 0) return S.calledAt ? (S.where === "crystal" ? SIDEQUEST.lines.callCrystal : SIDEQUEST.lines.call) : null;
     if (S.talk <= T.length && (S.talk < T.length || S.promised === 0)) return T[S.talk - 1];
     if (S.promised !== 0 && S.replyUntil > _sqFrame()) return S.promised > 0 ? SIDEQUEST.lines.promised : SIDEQUEST.lines.declined;
     return SIDEQUEST.lines.hint;
@@ -237,11 +261,12 @@ function sqDrawOverlay() {
             : sale.length ? sale.map(c => ({ label: c.name, sub: "◆" + SIDEQUEST.cardPrice + " · KEPT FOR GOOD", col: SIDEQUEST.cardCol, card: c.id, fn: () => sqCardBuy(c.id) })) : null });
 }
 // ── saving (js/facilitysave.js) ──
-function sqSnapshot() { const S = sqState(); return S ? { at: S.appearedAt, talk: S.talk, promised: S.promised, pAt: S.promisedAt, called: S.calledAt, met: S.metAt } : null; }
+function sqSnapshot() { const S = sqState(); return S ? { at: S.appearedAt, talk: S.talk, promised: S.promised, pAt: S.promisedAt, called: S.calledAt, met: S.metAt, w: S.where } : null; }
 function sqApply(d) {
     sqReset(); const S = sqState(); if (!S || !d || typeof d !== "object") return false;
     S.appearedAt = Number.isFinite(d.at) ? Math.max(0, d.at) : 0; S.talk = Math.max(0, Math.min(SIDEQUEST.lines.talk.length, d.talk | 0)); S.promised = d.promised === 1 || d.promised === -1 ? d.promised : 0;
     S.promisedAt = Number.isFinite(d.pAt) ? d.pAt : 0; S.calledAt = Number.isFinite(d.called) ? d.called : 0; S.metAt = Number.isFinite(d.met) ? d.met : 0; S.replyUntil = 0;
+    S.where = S.appearedAt ? (d.w === "crystal" ? "crystal" : "platform") : "";   // (a game from before build 2026-11-09tt: he is on his platform)
     if (S.appearedAt) sqPlace(false);
     return true;
 }

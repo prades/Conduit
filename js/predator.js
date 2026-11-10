@@ -191,7 +191,7 @@ class Predator {
         if (target && target.sentry) { if (walled(target)) return null; if (typeof sentryDamage === "function") sentryDamage(target, pwr, this); return target; }   // a TURRET a raider wrecks (js/antraids.js)
         const inReach = a => { const dx = a.x - this.x, dy = a.y - this.y; return dx * dx + dy * dy <= reach2 && !across(a); };
         // the bite lands on `a` (its race's type, or a clone's Piercing: js/damage.js); a clone's bite also carries the kit of a Mutator's role (a Player card: js/playercards.js playerCloneBit)
-        const land = a => { const h0 = a.health; applyDamage(a, pwr, this, null, false, false, dmgBiteHit(this)); if (this.isClone && typeof playerCloneBit === "function") playerCloneBit(this, a, Math.max(0, h0 - Math.max(0, a.health))); };
+        const land = a => { const h0 = a.health; applyDamage(a, pwr, this, null, false, false, dmgBiteHit(this)); if (this.isClone && typeof playerCloneBit === "function") playerCloneBit(this, a, Math.max(0, h0 - Math.max(0, a.health))); if (this.poisonsFollowers && typeof poisonOnHit === "function") poisonOnHit(this, a, h0); };   // (the purification's three toxic ants poison a follower: js/combat.js)
         const hitTeam = this.isClone ? "red" : "green";
         if (!this.isClone && this.smokeDebuff > 0 && Math.random() < 0.5) { if (typeof floatingTexts !== "undefined") floatingTexts.push({ world: true, x: this.x, y: this.y, text: "MISS", color: "#aabb88", life: 30, vy: -0.04 }); return null; }   // the smoke screen: half its bites miss
         // THE PLAYER (its prey too, COMBAT.prey): one of its three hits, and a step back (hurtPlayer; the grace after a hit spaces them). Out of reach when it lands: missed.

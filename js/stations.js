@@ -39,9 +39,9 @@ const STATION_KINDS = {
     purifier_mount: { classes: null, get name() { return _stConvert() ? "PURIFICATION MODULE" : "PURIFIER MOUNT"; }, get build() { return _stConvert() ? 0 : 600; }, get cost() { return _stConvert() ? [] : [["purification_module", 1]]; },
         buildMsg: "MOUNTING THE MODULE… STAY AT THE CONSOLE", verbFn: () => _stConvert() ? convertVerb() : typeof questMountVerb === "function" ? questMountVerb() : "INSTALL",   // (build: the archive's 10 s install)
         canFn: () => _stConvert() ? convertCan() : typeof questMountCan === "function" ? questMountCan() : { ok: false, why: "NO QUEST" }, onStart: () => { if (typeof questMountStart === "function") questMountStart(); },
-        blockFn: () => typeof questMountBlocked === "function" ? questMountBlocked() : null,   // (the queen at the console: the build's progress holds, js/bosses.js bossInstallBlocked)
+        blockFn: () => typeof questMountBlocked === "function" ? questMountBlocked() : null,   // (the install's three, then the queen at the console: the build's progress holds, js/quests.js, js/bosses.js bossInstallBlocked)
         use: () => _stConvert() ? convertOpen() : typeof questMountUse === "function" ? questMountUse() : { ok: false, why: "NO QUEST" } },
-    // SIDE QUEST, the void walker on the Sewers' maintenance platform (js/sidequest.js): a talk, a choice, then his shop; a station made at runtime when he appears (sqPlace), not a prop of the map
+    // SIDE QUEST, the void walker on the Sewers' maintenance platform, met first by the Crystal (js/sidequest.js): a talk, a choice, then his shop; a station made at runtime when he appears (sqPlace), not a prop of the map
     sidequest: { name: "SIDE QUEST", classes: null, verbFn: () => typeof sqVerb === "function" ? sqVerb() : "TALK", canFn: () => typeof sqCan === "function" ? sqCan() : { ok: false, why: "NOBODY HERE" },
         use: () => typeof sqUse === "function" ? sqUse() : { ok: false, why: "NOBODY HERE" } },
     // SIDE QUEST IN THE TUTORIAL (js/sidequest.js, build 2026-11-07qq): under the catwalks in the arena, a talk of two lines, and then he flies up for the power module; a station made at runtime, as his Sewers' one

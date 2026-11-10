@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09tt` · branch `claude/start-game-project-HSh7Z` · the purification's ambush
+- **The queen comes later** (the owner: "the queen does not appear until the player halfway installs the purification module"). Nobody is at her post at first.
+- **Three toxic ants at the install's halfway**: a tank, a striker and a worker, "a bit bigger and tougher" (level 8, ×1.5 size and health). The install pauses until all three are dead. Their bites poison your followers over time (green bubbles), never you.
+- **Then the queen comes out and takes you out** ("she destroys you and sends you back to the crystal"): you are back at the Crystal with your squad; nothing is paid from the Crystal for it. The install starts again later, with her at her post as before.
+- **Side Quest waits by the Crystal** ("upon returning side quest talks to you"): his talk and promise there, then he goes back to his platform. The old way he came (ten ant kills) is gone.
+- Old saves: an encounter already begun goes on as it was; a queen only asleep at her post is taken away quietly.
+- The agent's numbers, provisional: the ×1.5, the poison (3 s, 0.06 × the biter's power a tick), the queen's moment (1.5 s), his spot by the Crystal.
+- Tests: `tests/sewerquest.js` ("THE AMBUSH" and the queen's checks after it), `tests/sidequest.js`.
+
 ### Build `2026-11-09ss` · branch `claude/start-game-project-HSh7Z` · walls in front of you are cut down
 - **The HOLE** (the owner circled the robot behind the Stair Room's raised wall: its top covered it, so it looked sunk in a hole). The owner's choice, "Cut the wall down": a wall in front of you (nearer the camera) drops, opaque, to a low parapet when you come within about 3 tiles, and its top with it; rock too. It is never see-through. Posters, signs and lights on a cut wall are hidden while it is; doors, relays and the drillable rubble stay. This supersedes "walls do not react to the player". The numbers (2 tiles right down, 3.2 back up, a 30 px parapet) are the agent's, provisional.
 - Tests: `tests/facilityplay.js` (a wall in front, half-way out, far, behind and level with the player; the rubble stays).

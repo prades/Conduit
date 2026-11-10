@@ -5,7 +5,7 @@
 // distinct boss-domain environments [...] Do not arbitrarily assign bosses to domains or invent new domain relationships where the design archive has not settled them."
 // AN ENCOUNTER is data (BOSS_ENCOUNTERS): its domain (a room), the creature (a species' boss class, js/species.js, at a level), its POST (`lair`: where it sleeps, sits and returns to), how far it chases (`leash`), the console it
 // keeps (`mount`, `guard`), its ATTACKS, its WAVES and its FRANTIC rule, what wakes it and what calms it. The framework is the state machine below, the same for every row: IDLE (nothing there) → ARMED (bossArm: the boss
-// is spawned asleep at its post; the Sewers' is armed when the boss gate's seal is broken, js/quests.js) → ACTIVE (bossWake: the module's install begins, or it is hit) → RESOLVED, by one of two OUTCOMES: "calm"
+// is spawned asleep at its post; the Sewers' is armed when the purification's ambush brings her out, js/quests.js, since build 2026-11-09tt) → ACTIVE (bossWake: the module's install begins, or it is hit) → RESOLVED, by one of two OUTCOMES: "calm"
 // (bossCalm: the purification completed with it alive: it settles at its post, hunts nothing, defends itself if attacked) or "defeated" (it died: the game's own kill, js/drops.js pays it). A boss that is left (the
 // player goes further than its leash from its post) lets go; a rooted one sleeps again (ARMED), a frantic one only roams. A boss killed after it was calmed is recorded too (`defeated`), the outcome stays "calm":
 // the three things the brief keeps apart are kept apart (the quest line's purification, the encounter's resolution, the boss's death). SAVED as `bosses` (the state and outcome of each; the creature itself is not: a
@@ -129,7 +129,7 @@ function bossWake(id, why) {
     if (!S.frantic) { b.bossRooted = !!E.frantic; if (E.waves) S.waveAt = f + E.waves.first; }
     if (E.attacks) { S.bombAt = f + E.attacks.bomb.every; S.spitAt = f; } S.cast = null;
     _bossHunt(b);
-    bossSay("⚠ " + _bossName(E) + " WAKES" + (why === "install" ? " — SHE SITS AT THE CONSOLE" : ""), "#ff6a4a");
+    bossSay("⚠ " + _bossName(E) + (why === "ambush" ? " COMES OUT" : " WAKES" + (why === "install" ? " — SHE SITS AT THE CONSOLE" : "")), "#ff6a4a");   // (ambush: the purification's, js/quests.js)
     if (typeof questBossStarted === "function") questBossStarted(id);
     return true;
 }

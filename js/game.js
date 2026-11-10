@@ -1224,6 +1224,7 @@ function render() {
     if (typeof drawSpecimenOverlay === "function") drawSpecimenOverlay();   // the Ice Mage's beam; the Resurrection Zone and its plate (js/specimen.js)
     if (typeof drawSerumOverlay === "function") drawSerumOverlay();   // the allies a serum's pool is healing (js/serum.js)
     if (typeof drawPotionOverlay === "function") drawPotionOverlay();   // a Sleeping Potion in the air, where one shattered, the z z z over the sleepers (js/potion.js)
+    if (typeof drawFollowerPoisonMarks === "function") drawFollowerPoisonMarks();   // green bubbles over a poisoned follower (js/combat.js)
     if (typeof bossDrawOverlay === "function") bossDrawOverlay();       // the queen's wind-up ring and her shots in the air (js/bosses.js)
     if (typeof nestMeterDraw === "function") nestMeterDraw();           // the Ant Nest's damage meter (js/nestconsole.js)
     if (typeof techDrawOverlay === "function") techDrawOverlay();   // a launcher site's highlight and label, the arc a launcher throws on, the aim's rings, a flyer's shadow (js/techabilities.js)

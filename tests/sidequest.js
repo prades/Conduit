@@ -2,14 +2,15 @@
 // ASKED (the archive, 2026-10-31): a small flying drone, an outlander, "an optional side-quest giver, merchant, technician, and source of hints"; "a safe side passage or maintenance platform roughly halfway along the route";
 // he appears "only after the required samples have been collected and returned to the Experiment Lab", with "approximately 10 Toxic Ants" killed ("not location alone"); the suggested opening; the promise as a moral
 // choice that invalidates nothing; the user: his post-encounter line is "…" whether the queen is spared or killed.
-//   WHEN           not before the lab turn-in, not before ten brood kills, not on location; both: he appears, the gate of his maintenance platform off the north ledge opens (2026-11-01: he was in the south
-//                  ledge's side passage, behind walls the camera hides), he hovers on the platform with his station, its back wall facing you; the brood keeps off him
+//   WHEN           (since build 2026-11-09tt) once the queen's ambush has taken you out: he waits by the Crystal and calls you over there; the talk over and you out of the chamber, he is back on his maintenance
+//                  platform off the north ledge, its gate open (2026-11-01: he was in the south ledge's side passage, behind walls the camera hides), its back wall facing you; the brood keeps off him. The old
+//                  way (the lab turn-in and ten brood kills) no longer brings him
 //   THE COUNT      a brood ant's death counts; the queen's and an arena creature's do not
 //   THE CALL       the first time you come near, once
 //   THE TALK       four lines a press, the archive's opening first; the choice of two buttons; I PROMISE or NO PROMISES recorded; his answer, then the hint; the quest line untouched by any of it; the shop after
 //   AFTER          the queen's fate decided (calm, or defeated): "…", and the shop
 //   HIS LOOK       the void walker (the owner, 2026-11-02; build 2026-11-02f): the old flux worker's sheet, in the world turned toward you and in the dialogue box facing you
-//   THE SAVE       he comes back where he was, the gate open, the talk and the promise kept; the plate's install hint names him once he is there
+//   THE SAVE       he comes back where he was (by the Crystal, or on his platform with the gate open; an old save: the platform), the talk and the promise kept; the plate's install hint names him once he is there
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -43,14 +44,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         globalThis.__dlg = () => { for (let i = 0; i < 600; i++) dialogueTick(); dialogueDraw(); };   // (his line in the dialogue box, typed to its end and drawn: its choice buttons stand, js/dialogue.js)`);
 
     group('WHEN HE APPEARS (sqUnlocked, sqPlace, js/quests.js questAntKilled)');
-    check('before: nobody, the side gate shut; the lab turn-in alone does not bring him, nor ten kills alone, nor standing in the Sewers; both together do: the gate opens, he hovers on his platform (floor of the Sewers, NORTH of the gate\'s line: the back wall the camera sees behind him, now walkable from the ledge), with his station on him; the brood keeps off him', () => {
+    // (build 2026-11-09tt; the owner, 2026-11-09: "The queen takes out the player, upon returning side quest talks to you", seen "Only when she" does: js/quests.js, the ambush)
+    check('before: nobody, the side gate shut; the lab turn-in and ten kills no longer bring him (until build 2026-11-09tt they did); THE QUEEN TAKING YOU OUT does: he waits BY THE CRYSTAL (Crystal Chamber floor, near it), his station on him, the side gate still shut, and calls you over there; his talk over and you gone from the chamber, he is BACK DOWN on his platform (floor of the Sewers, NORTH of the gate\'s line: the back wall the camera sees behind him, walkable from the ledge), the gate open, your note of it; the brood keeps off him', () => {
         const r = J(`(function(){ const o = {}; __gone(); __clearSquad(); __sewers(); __tick(2); const g = __gate(); o.before = [sqPresent(), !!__st('st_sidequest'), facilitySolidIsOpen('sewer_gate_n2'), sqSpot(), sqUnlocked()];
-            const Q = __Q(); Q.turnedInAt = 1; sqTick(); o.turnInOnly = [sqUnlocked(), sqPresent()]; Q.turnedInAt = 0; Q.antKills = QUEST_PURIFY.antTarget; sqTick(); o.killsOnly = [sqUnlocked(), sqPresent()];
-            Q.turnedInAt = 1; __tick(2); const sp = sqSpot(), st = __st('st_sidequest'), it = _fp.items.find(i => i.fp === 'sidequest'), cx = (g.bb[0] + g.bb[2]) / 2, cy = (g.bb[1] + g.bb[3]) / 2;
-            o.appeared = [sqUnlocked(), sqPresent(), facilitySolidIsOpen('sewer_gate_n2'), !!st, st && st.kind, !!it, partyRoomAt(sp[0], sp[1]), facilityStandOk(sp[0], sp[1]), sp[1] < cy, Math.hypot(sp[0] - cx, sp[1] - cy) <= 3.2, !!facilityPath(player.x, player.y, sp[0], sp[1]), dialogueLines().some(l => /MAINTENANCE PLATFORM/.test(l.text) && l.who === 'player'), __S().appearedAt > 0];
-            let near = 0; for (let i = 0; i < 150; i++) { const c = facilitySpawnSpot(FP_SPAWN_SEWERS); if (c && Math.hypot(c[0] - sp[0], c[1] - sp[1]) < 3) near++; } o.broodOff = near; return o; })()`);
-        same(JSON.stringify(r.before), JSON.stringify([false, false, false, null, false]), 'before'); same(r.turnInOnly.join(), 'false,false', 'the turn-in alone'); same(r.killsOnly.join(), 'false,false', 'the kills alone');
-        same(r.appeared.join('|'), 'true|true|true|true|sidequest|true|sewers|true|true|true|true|true|true', 'he did not appear as he should: ' + r.appeared.join('|')); same(r.broodOff, 0, 'the brood came up beside him');
+            const Q = __Q(); Q.turnedInAt = 1; Q.antKills = 10; __tick(2);   /* (the old target: about ten) */ o.oldWay = [sqUnlocked(), sqPresent()];
+            Q.queenOutAt = 1; __put(crystal.x + 2, crystal.y); __tick(2); const cs = sqSpot(), cst = __st('st_sidequest');
+            o.crystal = [sqUnlocked(), sqPresent(), sqAtCrystal(), !!cst, cst && cst.room, partyRoomAt(cs[0], cs[1]), facilityStandOk(cs[0], cs[1]), Math.hypot(cs[0] - crystal.x, cs[1] - crystal.y) <= 3.6, facilitySolidIsOpen('sewer_gate_n2'), __S().calledAt > 0, sqSpeech() === SIDEQUEST.lines.callCrystal, sqWhereSaid()];
+            const S = __S(); S.talk = SIDEQUEST.lines.talk.length; S.promised = 1; __tick(2); o.stillThere = sqAtCrystal();   // (in the chamber still: he stays)
+            __sewers(); __tick(2); const sp = sqSpot(), st = __st('st_sidequest'), it = _fp.items.find(i => i.fp === 'sidequest'), cx = (g.bb[0] + g.bb[2]) / 2, cy = (g.bb[1] + g.bb[3]) / 2;
+            o.appeared = [sqPresent(), sqAtCrystal(), facilitySolidIsOpen('sewer_gate_n2'), !!st, st && st.kind, !!it, partyRoomAt(sp[0], sp[1]), facilityStandOk(sp[0], sp[1]), sp[1] < cy, Math.hypot(sp[0] - cx, sp[1] - cy) <= 3.2, !!facilityPath(player.x, player.y, sp[0], sp[1]), dialogueLines().some(l => /GONE BACK DOWN TO HIS MAINTENANCE PLATFORM/.test(l.text) && l.who === 'player'), sqWhereSaid()];
+            let near = 0; for (let i = 0; i < 150; i++) { const c = facilitySpawnSpot(FP_SPAWN_SEWERS); if (c && Math.hypot(c[0] - sp[0], c[1] - sp[1]) < 3) near++; } o.broodOff = near;
+            S.talk = 0; S.promised = 0; S.calledAt = 0; S.metAt = 0; dialogueClear(); return o; })()`);   // (the talk and the call put back: the next checks have them on his platform)
+        same(JSON.stringify(r.before), JSON.stringify([false, false, false, null, false]), 'before'); same(r.oldWay.join(), 'false,false', 'the turn-in and ten kills still bring him');
+        same(r.crystal.join('|'), 'true|true|true|true|crystal_chamber|crystal_chamber|true|true|false|true|true|BY THE CRYSTAL', 'he is not waiting by the Crystal: ' + r.crystal.join('|')); same(r.stillThere, true, 'he left while you were still in the chamber');
+        same(r.appeared.join('|'), 'true|false|true|true|sidequest|true|sewers|true|true|true|true|true|ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE', 'he is not back on his platform: ' + r.appeared.join('|')); same(r.broodOff, 0, 'the brood came up beside him');
     });
     check('the count: a brood ant\'s death counts toward him; the queen\'s does not, nor an arena creature\'s; the brood thinned quietly does not die (no count)', () => {
         const r = J(`(function(){ const o = {}; const Q = __Q(); Q.antKills = 0; __sewers(); const a = facilitySpawnCreature(null, null, FP_SPAWN_SEWERS); o.brood = !!a && a.sewerBrood; __kill(a); o.one = Q.antKills;
@@ -178,6 +185,13 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
             o.back = [sqPresent(), S2.appearedAt === sv.sidequest.at, S2.talk, S2.promised, S2.calledAt > 0, facilitySolidIsOpen('sewer_gate_n2'), !!st, sp2 && sp2[0] === sp[0] && sp2[1] === sp[1], _fp.items.filter(i => i.fp === 'sidequest').length, __Q().turnedInAt > 0, __Q().antKills];
             const sv2 = facilitySaveCollect(); sv2.sidequest = null; __reload(sv2); o.none = [sqPresent(), !!__st('st_sidequest'), _fp.items.filter(i => i.fp === 'sidequest').length]; return o; })()`);
         ok(r.saved && r.saved.at > 0 && r.saved.talk === 4 && r.saved.promised === -1 && r.saved.called > 0, 'the record: ' + JSON.stringify(r.saved)); same(r.back.join('|'), 'true|true|4|-1|true|true|true|true|1|true|1', 'the load'); same(r.none.join(), 'false,false,0', 'a save from before him');
+    });
+    check('where he is is saved (build 2026-11-09tt): by the Crystal, a load puts him back by the Crystal; a record from before (no `w`) puts him on his platform, the gate open', () => {
+        const r = J(`(function(){ const o = {}; const S = __S(); S.where = 'crystal'; _fp._sqSpot = null; sqPlace(false); const sv = facilitySaveCollect(); o.saved = sv.sidequest.w; __reload(sv);
+            o.back = [sqPresent(), sqAtCrystal(), (__st('st_sidequest') || {}).room, sqWhereSaid(), _fp.items.filter(i => i.fp === 'sidequest').length];
+            const sv2 = facilitySaveCollect(); delete sv2.sidequest.w; __reload(sv2); o.old = [sqPresent(), sqAtCrystal(), (__st('st_sidequest') || {}).room, facilitySolidIsOpen('sewer_gate_n2'), sqWhereSaid()]; return o; })()`);
+        same(r.saved, 'crystal', 'the record'); same(r.back.join('|'), 'true|true|crystal_chamber|BY THE CRYSTAL|1', 'the load by the Crystal');
+        same(r.old.join('|'), 'true|false|sewers|true|ON THE MAINTENANCE PLATFORM OFF THE NORTH LEDGE', 'an old record');
     });
 
     console.log(failures ? `\n${failures} FAILING` : '\nall passing');
