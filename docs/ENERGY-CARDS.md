@@ -99,6 +99,10 @@ The checks in `tests/energycards.js`: the rules and numbers; owning (put, take, 
   - One ENERGY row of chips (`js/cardsui.js` `energyRow`). It is on the creature's card in the carousel and in the phone roster's panel; a tap opens the card picker.
   - The pack's reveal and its last-pack panel show the energy cards.
   - The INFO card shows SECOND ATTACK and ULTIMATE as LOCKED, and the hybrids.
+- **The card's moving background** (build `2026-11-09nn`; the owner, 2026-11-09: "electric and vibrant, that move"; of three drafts, "A · plasma"):
+  - Wherever an energy card's face shows (a pack's reveal, the last-pack panel, the card picker), three big soft blobs of its element's colour drift and turn behind its crystal (`js/cardsui.js` `_cdSlab`, game.html `cdEnA`).
+  - Brightest round the crystal, faint under the text. Still with reduced motion, and the panel's cards hold still under a pack's reveal.
+  - The other drafts were lightning and rays.
 
 ## 10. Verification record
 

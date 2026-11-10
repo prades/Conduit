@@ -4,6 +4,12 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09nn` · branch `claude/start-game-project-HSh7Z` · energy cards' plasma backgrounds for everyone
+The owner's pick of three drafts: "A · plasma". `docs/ENERGY-CARDS.md` §9.
+- **Every energy card's face now has a moving background:** soft blobs of its element's colour drifting and turning behind its crystal, in a pack's reveal, the last-pack panel and the card picker.
+- Still with reduced motion; the panel's cards hold still under a pack's reveal. The lightning and rays drafts and the `?enbg=` preview are gone.
+- Tests: `tests/cardart.js`.
+
 ### Build `2026-11-09mm` · branch `claude/start-game-project-HSh7Z` · three moving backgrounds for energy cards (on the preview)
 The owner: "the energy cards, I like to make them where they have backgrounds that are electric and vibrant, that move."
 - Three drafts, in each card's element colour: **A** plasma (soft blobs drifting), **B** lightning (forked bolts crackling over a pulsing glow), **C** rays (a turning sunburst and a pulsing core).

@@ -9,18 +9,18 @@
     <!-- THE PROPS SHEETS THE START WAITS FOR (js/init.js, docs/STARTUP.md) begin to download with the page, alongside the scripts, instead of once the world is built: measured on a slow link (2x CPU, 60 ms, 15 Mbit/s), the start is about half a second sooner (4.1 s to 3.5 s for a new player, 6.4 s to 5.9 s for a returning one).
          They are the addresses the loader asks for (img/props/<family>.png, with the build stamp), so its own requests are answered from these; the stamp changes with the build (tests/startup.js checks both).
          Not here: the player's sheet (the website's background, ?attract, draws no player), the eggs and the evolved forms (which of them the first picture draws depends on the saved game): the start asks for those itself. -->
-    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-09mm">
-    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-09mm">
+    <link rel="preload" as="image" href="img/props/crystalpad.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/tech.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/lab.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/office.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/lounge.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/cargo.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/cold.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/plant.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/sentry.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/tank.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/truck.png?v=2026-11-09nn">
+    <link rel="preload" as="image" href="img/props/bridge.png?v=2026-11-09nn">
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; touch-action: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -610,7 +610,7 @@
     #cardPick .cp-tile.empty.off > .cp-blank { opacity: 0.5; }
     :is(#cardPick, #cardEquip) .cp-note { font: 700 11px monospace; color: #8aa0c8; letter-spacing: 0.05em; text-align: center; padding-top: 4px; }
     @media (max-width: 700px) { #cardPick .cp-title { font-size: 18px; } #cardPick .cp-arrow { display: none; } #cardPick .cp-rail { padding: 16px 8px 8px; } }
-    /* EQUIP NOW (js/cardsui.js equipNowOpen; build 2026-11-09mm): over the CARDS screen (and a pack's reveal), the followers a card fits in a row that slides, each with its slots: the card picker's box, teal */
+    /* EQUIP NOW (js/cardsui.js equipNowOpen; build 2026-11-09nn): over the CARDS screen (and a pack's reveal), the followers a card fits in a row that slides, each with its slots: the card picker's box, teal */
     #cardEquip { z-index: 82; }
     #cardEquip .cp-box { box-shadow: 0 0 30px rgba(0,0,0,0.6), 0 0 18px rgba(25,230,193,0.22); } #cardEquip .cp-title { text-shadow: 0 0 12px rgba(25,230,193,0.35); }
     #cardEquip .cp-head { justify-content: flex-start; align-items: center; } #cardEquip .cp-hl { flex: 1; min-width: 0; } #cardEquip .ce-card { flex: none; scroll-snap-align: none; }
@@ -740,29 +740,15 @@
        for the card worn, and under each card's name in the HUD pop-out's list, beside its chip */
     #ccRoot .cc-dd-fx { font: 600 11px/1.35 var(--neo-font); color: #c9d6f0; padding: 0 4px 8px 14px; margin-top: -2px; }
     .cd-chip.en { visibility: hidden; }   /* (an ENERGY CARD has no rarity: js/cardsui.js _cdChip) */
-    /* AN ENERGY CARD'S MOVING BACKGROUND (js/cardsui.js _cdEnLook; the owner, 2026-11-09: "electric and vibrant, that move"): three drafts on the preview ?enbg=a|b|c. Only transform and opacity
-       move (nothing repaints the tilted face); brightest round its crystal, fading under its text; still with reduced motion. */
+    /* AN ENERGY CARD'S MOVING BACKGROUND (js/cardsui.js _cdSlab; the owner, 2026-11-09: "electric and vibrant, that move"; of three drafts, "A · plasma"): three big soft blobs of its colour drifting and
+       turning. Only transform and opacity move (nothing repaints the tilted face); brightest round its crystal, fading under its text; held still with reduced motion, and while a pack's reveal covers it. */
     :is(#cardsRoot, #cardPick) .cd-card.en .cd-en { position: absolute; inset: 0; overflow: hidden; pointer-events: none; -webkit-mask: linear-gradient(180deg, #000 0%, #000 48%, rgba(0,0,0,0.4) 72%, rgba(0,0,0,0.22) 100%); mask: linear-gradient(180deg, #000 0%, #000 48%, rgba(0,0,0,0.4) 72%, rgba(0,0,0,0.22) 100%); }
-    :is(#cardsRoot, #cardPick) .cd-card.en .cd-en b { position: absolute; display: block; will-change: transform, opacity; }
-    /* A · plasma: three big soft blobs of its colour drifting and turning */
-    :is(#cardsRoot, #cardPick) .cd-card.en-a .cd-en b { left: -40%; top: -45%; width: 180%; height: 180%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 80%, transparent), transparent 72%); animation: cdEnA 6s ease-in-out infinite alternate; }
-    :is(#cardsRoot, #cardPick) .cd-card.en-a .cd-en b:nth-child(2) { background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 55%, #fff 30%), transparent 60%); animation-duration: 4.4s; animation-delay: -2.2s; }
-    :is(#cardsRoot, #cardPick) .cd-card.en-a .cd-en b:nth-child(3) { background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 65%, transparent), transparent 68%); animation-duration: 8s; animation-delay: -5s; animation-direction: alternate-reverse; }
+    :is(#cardsRoot, #cardPick) .cd-card.en .cd-en b { position: absolute; display: block; left: -40%; top: -45%; width: 180%; height: 180%; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 80%, transparent), transparent 72%); will-change: transform, opacity; animation: cdEnA 6s ease-in-out infinite alternate; }
+    :is(#cardsRoot, #cardPick) .cd-card.en .cd-en b:nth-child(2) { background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 55%, #fff 30%), transparent 60%); animation-duration: 4.4s; animation-delay: -2.2s; }
+    :is(#cardsRoot, #cardPick) .cd-card.en .cd-en b:nth-child(3) { background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 65%, transparent), transparent 68%); animation-duration: 8s; animation-delay: -5s; animation-direction: alternate-reverse; }
     @keyframes cdEnA { 0% { transform: translate(-24%, -16%) scale(0.5) rotate(0deg); opacity: 0.5; } 50% { transform: translate(20%, 4%) scale(0.72) rotate(140deg); opacity: 0.95; } 100% { transform: translate(-6%, 20%) scale(0.48) rotate(280deg); opacity: 0.6; } }
-    /* B · lightning: forked bolts of its colour crackling across it, over a glow that pulses */
-    :is(#cardsRoot, #cardPick) .cd-card.en-b .cd-en::before { content: ""; position: absolute; inset: -20%; background: radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--c) 55%, transparent), transparent 55%); animation: cdEnPulse 2.2s ease-in-out infinite; }
-    :is(#cardsRoot, #cardPick) .cd-card.en-b .cd-en b { inset: 0; background: color-mix(in srgb, var(--c) 70%, #fff 30%); -webkit-mask: var(--bolt) center / 100% 100% no-repeat; mask: var(--bolt) center / 100% 100% no-repeat; opacity: 0; animation: cdEnB 1.7s steps(1, end) infinite; }
-    :is(#cardsRoot, #cardPick) .cd-card.en-b .cd-en b:nth-child(1) { --bolt: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140' preserveAspectRatio='none'><path d='M12 6 L30 30 L21 34 L47 60 L38 64 L66 100 L57 104 L86 136' fill='none' stroke='white' stroke-opacity='0.3' stroke-width='7' stroke-linejoin='round' stroke-linecap='round'/><path d='M12 6 L30 30 L21 34 L47 60 L38 64 L66 100 L57 104 L86 136' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/></svg>"); }
-    :is(#cardsRoot, #cardPick) .cd-card.en-b .cd-en b:nth-child(2) { --bolt: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140' preserveAspectRatio='none'><path d='M90 4 L71 27 L80 31 L57 57 L66 61 L42 90 L51 94 L24 128' fill='none' stroke='white' stroke-opacity='0.3' stroke-width='7' stroke-linejoin='round' stroke-linecap='round'/><path d='M90 4 L71 27 L80 31 L57 57 L66 61 L42 90 L51 94 L24 128' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/></svg>"); animation-delay: -0.6s; animation-duration: 2.1s; }
-    :is(#cardsRoot, #cardPick) .cd-card.en-b .cd-en b:nth-child(3) { --bolt: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140' preserveAspectRatio='none'><path d='M2 74 L20 66 L27 77 L47 62 L54 73 L74 57 L81 68 L98 60' fill='none' stroke='white' stroke-opacity='0.3' stroke-width='7' stroke-linejoin='round' stroke-linecap='round'/><path d='M2 74 L20 66 L27 77 L47 62 L54 73 L74 57 L81 68 L98 60' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/></svg>"); animation-delay: -1.1s; animation-duration: 1.4s; }
-    @keyframes cdEnB { 0% { opacity: 0; } 6% { opacity: 1; } 10% { opacity: 0.25; } 14% { opacity: 0.95; } 22% { opacity: 0; } 100% { opacity: 0; } }
-    /* C · rays: a sunburst of its colour turning slowly behind its crystal, and a core that pulses */
-    :is(#cardsRoot, #cardPick) .cd-card.en-c .cd-en b:nth-child(-n+2) { left: -50%; top: -50%; width: 200%; height: 200%; transform-origin: 50% 42%; background: repeating-conic-gradient(from 0deg at 50% 42%, color-mix(in srgb, var(--c) 60%, transparent) 0deg 5deg, transparent 5deg 15deg); opacity: 0.6; animation: cdEnC 16s linear infinite; }
-    :is(#cardsRoot, #cardPick) .cd-card.en-c .cd-en b:nth-child(2) { background: repeating-conic-gradient(from 7deg at 50% 42%, color-mix(in srgb, var(--c) 40%, #fff 20%) 0deg 2deg, transparent 2deg 24deg); opacity: 0.45; animation-duration: 11s; animation-direction: reverse; }
-    :is(#cardsRoot, #cardPick) .cd-card.en-c .cd-en b:nth-child(3) { inset: 0; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--c) 75%, #fff 15%), transparent 42%); animation: cdEnPulse 2.4s ease-in-out infinite; }
-    @keyframes cdEnC { to { transform: rotate(360deg); } }
-    @keyframes cdEnPulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { :is(#cardsRoot, #cardPick) .cd-card.en :is(.cd-en b, .cd-en::before) { animation: none; } :is(#cardsRoot, #cardPick) .cd-card.en-b .cd-en b:nth-child(1) { opacity: 0.9; } }
+    #cardsRoot:has(.cr-overlay) .cd-card.en .cd-en b { animation-play-state: paused; } #cardsRoot .cr-overlay .cd-card.en .cd-en b { animation-play-state: running; }   /* (the SHOP's cards under a pack's blurred reveal hold still: the blur would be made again every frame) */
+    @media (prefers-reduced-motion: reduce) { :is(#cardsRoot, #cardPick) .cd-card.en .cd-en b { animation: none; } }
     /* ITS ENERGY SLOTS (js/cardsui.js energyRow; docs/ENERGY-CARDS.md): one row, a chip a slot in its card's colour (an empty one dashed), a line under it */
     #ccRoot :is(.cc-en, .cf-en) { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     #ccRoot .cc-en { padding: 2px 0 8px; } #ccRoot .cc-en .cc-en-k { flex: none; width: 112px; font: 800 11px monospace; color: #ffcc44; letter-spacing: 0.4px; }
@@ -1111,7 +1097,7 @@
     :is(#squadBar, #ccSquadBox) .sb-xp u { display: block; height: 100%; width: 0; background: #9ca8ff; text-decoration: none; transition: width 0.3s; }
     :is(#squadBar, #ccSquadBox) .sb-slot.xp-gain .sb-xp u { background: #e4e8ff; box-shadow: 0 0 8px #9ca8ff; }
     :is(#squadBar, #ccSquadBox) .sb-slot.evo-soon .sb-xp u { animation: sb-evo-soon 1.2s ease-in-out infinite; } @keyframes sb-evo-soon { 50% { background: #e4e8ff; box-shadow: 0 0 8px #9ca8ff; } }
-    /* a card's ULTIMATE (js/party.js _partyUltBar; build 2026-11-09mm, the owner: "more visible ultimate bar on followers and access to use them"): a meter under the XP in its element's colour, ULT and the charge in it;
+    /* a card's ULTIMATE (js/party.js _partyUltBar; build 2026-11-09nn, the owner: "more visible ultimate bar on followers and access to use them"): a meter under the XP in its element's colour, ULT and the charge in it;
        full, gold, glowing and pulsing, ULTIMATE ▲ and TAP: a tap on it fires the Ultimate (js/elements.js followerUltFire) */
     :is(#squadBar, #ccSquadBox) .sb-ult { position: relative; display: block; box-sizing: border-box; width: 100%; height: 8px; margin: 2px 0 0; padding: 0; border: 0; background: rgba(255,255,255,0.12); cursor: default; font: inherit; color: inherit; }
     :is(#squadBar, #ccSquadBox) .sb-ult[hidden] { display: none; }
@@ -1248,7 +1234,7 @@
     #ccRoot.carousel .cf-none { display: none; flex: 1; align-items: center; justify-content: center; text-align: center; font: 800 13px/1.5 monospace; letter-spacing: 0.06em; color: #8aa0c8; }
     #ccRoot.carousel .cf-card.none .cf-art, #ccRoot.carousel .cf-card.none .cf-txt { display: none; } #ccRoot.carousel .cf-card.none .cf-none { display: flex; }
     /* its settings, beside it */
-    #ccRoot.carousel .cc-side { width: auto; min-height: 0; padding: 0 4px 14px 0; gap: 6px; background: none; border: 0; box-shadow: none; clip-path: none; -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 14px), transparent); }   /* (a long list of traits fades out at the foot: it scrolls. The settings are slimmer since build 2026-11-09mm: every follower has an ATTACK setting now, and the five settings and RE-ROLL · INFO · EXILE still stand in view at 1024 × 768) */
+    #ccRoot.carousel .cc-side { width: auto; min-height: 0; padding: 0 4px 14px 0; gap: 6px; background: none; border: 0; box-shadow: none; clip-path: none; -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 14px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 14px), transparent); }   /* (a long list of traits fades out at the foot: it scrolls. The settings are slimmer since build 2026-11-09nn: every follower has an ATTACK setting now, and the five settings and RE-ROLL · INFO · EXILE still stand in view at 1024 × 768) */
     #ccRoot.carousel .cc-dd { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "k a" "v a"; align-items: center; row-gap: 4px; position: relative; isolation: isolate; flex: none; min-height: 44px; padding: 0 16px; border: 0; background: none; box-shadow: none; text-shadow: 0 1px 6px rgba(0,0,0,0.7); }
     #ccRoot.carousel .cc-dd::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
     #ccRoot.carousel .cc-dd.open { background: none; box-shadow: none; } #ccRoot.carousel .cc-dd.open::before { background: color-mix(in srgb, var(--c) 20%, #05070f); }
@@ -2066,12 +2052,12 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-11-09mm, so a new deploy
+// THE BUILD. Every script URL below carries ?v=2026-11-09nn, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree).
-window.__PAGE_BUILD = "2026-11-09mm";
+window.__PAGE_BUILD = "2026-11-09nn";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -2107,99 +2093,99 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-09mm"></script>
-<script src="js/icons.js?v=2026-11-09mm"></script>
-<script src="js/uikit.js?v=2026-11-09mm"></script>
-<script src="js/traits.js?v=2026-11-09mm"></script>
-<script src="js/elements.js?v=2026-11-09mm"></script>
-<script src="js/damage.js?v=2026-11-09mm"></script>
-<script src="js/combat.js?v=2026-11-09mm"></script>
-<script src="js/species.js?v=2026-11-09mm"></script>
-<script src="js/levels.js?v=2026-11-09mm"></script>
-<script src="js/status.js?v=2026-11-09mm"></script>
-<script src="js/helpers.js?v=2026-11-09mm"></script>
-<script src="js/predator.js?v=2026-11-09mm"></script>
-<script src="js/abilities.js?v=2026-11-09mm"></script>
-<script src="js/commands.js?v=2026-11-09mm"></script>
-<script src="js/npc.js?v=2026-11-09mm"></script>
-<script src="js/draw.js?v=2026-11-09mm"></script>
-<script src="js/beetle3d.js?v=2026-11-09mm"></script>
-<script src="js/bugs3d.js?v=2026-11-09mm"></script>
-<script src="js/settings.js?v=2026-11-09mm"></script>
-<script src="js/alarm.js?v=2026-11-09mm"></script>
-<script src="js/drops.js?v=2026-11-09mm"></script>
-<script src="js/clone.js?v=2026-11-09mm"></script>
-<script src="js/bonds.js?v=2026-11-09mm"></script>
-<script src="js/evopack.js?v=2026-11-09mm"></script>
-<script src="js/evolution.js?v=2026-11-09mm"></script>
-<script src="js/cards.js?v=2026-11-09mm"></script>
-<script src="js/energy.js?v=2026-11-09mm"></script>
-<script src="js/cardart.js?v=2026-11-09mm"></script>
-<script src="js/hdsprites.js?v=2026-11-09mm"></script>
-<script src="js/fx3d.js?v=2026-11-09mm"></script>
-<script src="js/firebombs.js?v=2026-11-09mm"></script>
-<script src="js/moves.js?v=2026-11-09mm"></script>
-<script src="js/hudgems.js?v=2026-11-09mm"></script>
-<script src="js/commandcenter.js?v=2026-11-09mm"></script>
-<script src="js/cardsui.js?v=2026-11-09mm"></script>
-<script src="js/unitinfo.js?v=2026-11-09mm"></script>
-<script src="js/infodex.js?v=2026-11-09mm"></script>
-<script src="js/classes.js?v=2026-11-09mm"></script>
-<script src="js/playergear.js?v=2026-11-09mm"></script>
-<script src="js/inventory.js?v=2026-11-09mm"></script>
-<script src="js/weapons.js?v=2026-11-09mm"></script>
-<script src="js/mutator.js?v=2026-11-09mm"></script>
-<script src="js/specimen.js?v=2026-11-09mm"></script>
-<script src="js/serum.js?v=2026-11-09mm"></script>
-<script src="js/potion.js?v=2026-11-09mm"></script>
-<script src="js/technomancer.js?v=2026-11-09mm"></script>
-<script src="js/playercards.js?v=2026-11-09mm"></script>
-<script src="js/stations.js?v=2026-11-09mm"></script>
-<script src="js/facilityportals.js?v=2026-11-09mm"></script>
-<script src="js/tutorial.js?v=2026-11-09mm"></script>
-<script src="js/dialogue.js?v=2026-11-09mm"></script>
-<script src="js/questbox.js?v=2026-11-09mm"></script>
-<script src="js/facilitymap.js?v=2026-11-09mm"></script>
-<script src="js/facilitygrow.js?v=2026-11-09mm"></script>
-<script src="js/facility.js?v=2026-11-09mm"></script>
-<script src="js/attract.js?v=2026-11-09mm"></script>
-<script src="js/facilitysave.js?v=2026-11-09mm"></script>
-<script src="js/facilityplay.js?v=2026-11-09mm"></script>
-<script src="js/facilitydecor.js?v=2026-11-09mm"></script>
-<script src="js/propatlas.js?v=2026-11-09mm"></script>
-<script src="js/propsprites.js?v=2026-11-09mm"></script>
-<script src="js/caveatlas.js?v=2026-11-09mm"></script>
-<script src="js/caverubble.js?v=2026-11-09mm"></script>
-<script src="js/cavewalls.js?v=2026-11-09mm"></script>
-<script src="js/facilitystyle.js?v=2026-11-09mm"></script>
-<script src="js/facilitystyleall.js?v=2026-11-09mm"></script>
-<script src="js/facilitysewers.js?v=2026-11-09mm"></script>
-<script src="js/facilitynet.js?v=2026-11-09mm"></script>
-<script src="js/population.js?v=2026-11-09mm"></script>
-<script src="js/facilityspawn.js?v=2026-11-09mm"></script>
-<script src="js/crystalpower.js?v=2026-11-09mm"></script>
-<script src="js/antraids.js?v=2026-11-09mm"></script>
-<script src="js/followerspots.js?v=2026-11-09mm"></script>
-<script src="js/breeding.js?v=2026-11-09mm"></script>
-<script src="js/party.js?v=2026-11-09mm"></script>
-<script src="js/squadfly.js?v=2026-11-09mm"></script>
-<script src="js/techabilities.js?v=2026-11-09mm"></script>
-<script src="js/fluxmove.js?v=2026-11-09mm"></script>
-<script src="js/fluxlab.js?v=2026-11-09mm"></script>
-<script src="js/puzzles.js?v=2026-11-09mm"></script>
-<script src="js/quests.js?v=2026-11-09mm"></script>
-<script src="js/bosses.js?v=2026-11-09mm"></script>
-<script src="js/nestconsole.js?v=2026-11-09mm"></script>
-<script src="js/conversion.js?v=2026-11-09mm"></script>
-<script src="js/sidequest.js?v=2026-11-09mm"></script>
-<script src="js/facilitytutorial.js?v=2026-11-09mm"></script>
-<script src="js/gunfire.js?v=2026-11-09mm"></script>
-<script src="js/targeting.js?v=2026-11-09mm"></script>
-<script src="js/toolbox.js?v=2026-11-09mm"></script>
-<script src="js/mixtool.js?v=2026-11-09mm"></script>
-<script src="js/radialmenu.js?v=2026-11-09mm"></script>
-<script src="js/input.js?v=2026-11-09mm"></script>
-<script src="js/game.js?v=2026-11-09mm"></script>
+<script src="js/config.js?v=2026-11-09nn"></script>
+<script src="js/icons.js?v=2026-11-09nn"></script>
+<script src="js/uikit.js?v=2026-11-09nn"></script>
+<script src="js/traits.js?v=2026-11-09nn"></script>
+<script src="js/elements.js?v=2026-11-09nn"></script>
+<script src="js/damage.js?v=2026-11-09nn"></script>
+<script src="js/combat.js?v=2026-11-09nn"></script>
+<script src="js/species.js?v=2026-11-09nn"></script>
+<script src="js/levels.js?v=2026-11-09nn"></script>
+<script src="js/status.js?v=2026-11-09nn"></script>
+<script src="js/helpers.js?v=2026-11-09nn"></script>
+<script src="js/predator.js?v=2026-11-09nn"></script>
+<script src="js/abilities.js?v=2026-11-09nn"></script>
+<script src="js/commands.js?v=2026-11-09nn"></script>
+<script src="js/npc.js?v=2026-11-09nn"></script>
+<script src="js/draw.js?v=2026-11-09nn"></script>
+<script src="js/beetle3d.js?v=2026-11-09nn"></script>
+<script src="js/bugs3d.js?v=2026-11-09nn"></script>
+<script src="js/settings.js?v=2026-11-09nn"></script>
+<script src="js/alarm.js?v=2026-11-09nn"></script>
+<script src="js/drops.js?v=2026-11-09nn"></script>
+<script src="js/clone.js?v=2026-11-09nn"></script>
+<script src="js/bonds.js?v=2026-11-09nn"></script>
+<script src="js/evopack.js?v=2026-11-09nn"></script>
+<script src="js/evolution.js?v=2026-11-09nn"></script>
+<script src="js/cards.js?v=2026-11-09nn"></script>
+<script src="js/energy.js?v=2026-11-09nn"></script>
+<script src="js/cardart.js?v=2026-11-09nn"></script>
+<script src="js/hdsprites.js?v=2026-11-09nn"></script>
+<script src="js/fx3d.js?v=2026-11-09nn"></script>
+<script src="js/firebombs.js?v=2026-11-09nn"></script>
+<script src="js/moves.js?v=2026-11-09nn"></script>
+<script src="js/hudgems.js?v=2026-11-09nn"></script>
+<script src="js/commandcenter.js?v=2026-11-09nn"></script>
+<script src="js/cardsui.js?v=2026-11-09nn"></script>
+<script src="js/unitinfo.js?v=2026-11-09nn"></script>
+<script src="js/infodex.js?v=2026-11-09nn"></script>
+<script src="js/classes.js?v=2026-11-09nn"></script>
+<script src="js/playergear.js?v=2026-11-09nn"></script>
+<script src="js/inventory.js?v=2026-11-09nn"></script>
+<script src="js/weapons.js?v=2026-11-09nn"></script>
+<script src="js/mutator.js?v=2026-11-09nn"></script>
+<script src="js/specimen.js?v=2026-11-09nn"></script>
+<script src="js/serum.js?v=2026-11-09nn"></script>
+<script src="js/potion.js?v=2026-11-09nn"></script>
+<script src="js/technomancer.js?v=2026-11-09nn"></script>
+<script src="js/playercards.js?v=2026-11-09nn"></script>
+<script src="js/stations.js?v=2026-11-09nn"></script>
+<script src="js/facilityportals.js?v=2026-11-09nn"></script>
+<script src="js/tutorial.js?v=2026-11-09nn"></script>
+<script src="js/dialogue.js?v=2026-11-09nn"></script>
+<script src="js/questbox.js?v=2026-11-09nn"></script>
+<script src="js/facilitymap.js?v=2026-11-09nn"></script>
+<script src="js/facilitygrow.js?v=2026-11-09nn"></script>
+<script src="js/facility.js?v=2026-11-09nn"></script>
+<script src="js/attract.js?v=2026-11-09nn"></script>
+<script src="js/facilitysave.js?v=2026-11-09nn"></script>
+<script src="js/facilityplay.js?v=2026-11-09nn"></script>
+<script src="js/facilitydecor.js?v=2026-11-09nn"></script>
+<script src="js/propatlas.js?v=2026-11-09nn"></script>
+<script src="js/propsprites.js?v=2026-11-09nn"></script>
+<script src="js/caveatlas.js?v=2026-11-09nn"></script>
+<script src="js/caverubble.js?v=2026-11-09nn"></script>
+<script src="js/cavewalls.js?v=2026-11-09nn"></script>
+<script src="js/facilitystyle.js?v=2026-11-09nn"></script>
+<script src="js/facilitystyleall.js?v=2026-11-09nn"></script>
+<script src="js/facilitysewers.js?v=2026-11-09nn"></script>
+<script src="js/facilitynet.js?v=2026-11-09nn"></script>
+<script src="js/population.js?v=2026-11-09nn"></script>
+<script src="js/facilityspawn.js?v=2026-11-09nn"></script>
+<script src="js/crystalpower.js?v=2026-11-09nn"></script>
+<script src="js/antraids.js?v=2026-11-09nn"></script>
+<script src="js/followerspots.js?v=2026-11-09nn"></script>
+<script src="js/breeding.js?v=2026-11-09nn"></script>
+<script src="js/party.js?v=2026-11-09nn"></script>
+<script src="js/squadfly.js?v=2026-11-09nn"></script>
+<script src="js/techabilities.js?v=2026-11-09nn"></script>
+<script src="js/fluxmove.js?v=2026-11-09nn"></script>
+<script src="js/fluxlab.js?v=2026-11-09nn"></script>
+<script src="js/puzzles.js?v=2026-11-09nn"></script>
+<script src="js/quests.js?v=2026-11-09nn"></script>
+<script src="js/bosses.js?v=2026-11-09nn"></script>
+<script src="js/nestconsole.js?v=2026-11-09nn"></script>
+<script src="js/conversion.js?v=2026-11-09nn"></script>
+<script src="js/sidequest.js?v=2026-11-09nn"></script>
+<script src="js/facilitytutorial.js?v=2026-11-09nn"></script>
+<script src="js/gunfire.js?v=2026-11-09nn"></script>
+<script src="js/targeting.js?v=2026-11-09nn"></script>
+<script src="js/toolbox.js?v=2026-11-09nn"></script>
+<script src="js/mixtool.js?v=2026-11-09nn"></script>
+<script src="js/radialmenu.js?v=2026-11-09nn"></script>
+<script src="js/input.js?v=2026-11-09nn"></script>
+<script src="js/game.js?v=2026-11-09nn"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2254,7 +2240,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-09mm"></script>
+<script src="js/init.js?v=2026-11-09nn"></script>
 
 </body>
 </html>

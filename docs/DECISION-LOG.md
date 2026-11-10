@@ -2714,3 +2714,7 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for." Of four levels shown in pictures (now, 0.75, 0.6, 0.5): "C · two fifths darker (0.5)".
 - A powered room with the player in it is lit to `FP_LIT` = 0.5 (it was 1). Door pools and the dim Server Room scale with it; the blackout's own lights do not. `docs/FACILITY.md`.
 - Supersedes "the room the player stands in is fully lit" (js/facilitystyle.js, room lighting).
+
+## DECISION: Energy cards' moving background is plasma (2026-11-09, build `2026-11-09nn`)
+- The owner: "the energy cards, I like to make them where they have backgrounds that are electric and vibrant, that move." Of three drafts shown moving (plasma, lightning, rays): "A · plasma".
+- Soft blobs of the card's element colour drift and turn behind its crystal. CSS only. `docs/ENERGY-CARDS.md` §9.
