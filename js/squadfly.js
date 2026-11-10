@@ -88,7 +88,7 @@ function _sfCardsDraw(E, f) {
         if (open) {
             const list = mk("div", "sf-slot-list"), opt = (label, sub, on, id) => { const el = mk("button", "sf-opt" + (on ? " on" : "")); el.type = "button"; el.setAttribute("data-slot", "alt"); el.setAttribute("data-card", id || ""); el.appendChild(mk("span", "sf-ol", label)); el.appendChild(mk("small", "sf-os", sub)); list.appendChild(el); };
             opt("NORMAL ATTACK", "ITS EVERYDAY HITS", !cur, null);
-            for (const id of altIds) opt(MOVES[id].name, "LOCKED ON · WINDS UP IN PLACE", !!cur && cur.id === id, id);   // (short: the owner, 2026-11-07, "use shortened text")
+            for (const id of altIds) opt(MOVES[id].name, typeof altCools === "function" && altCools(f) ? "LOCKED ON · STRIKES, THEN COOLS DOWN" : "LOCKED ON · WINDS UP IN PLACE", !!cur && cur.id === id, id);   // (short: the owner, 2026-11-07, "use shortened text"; a Brawler cools down after it since build 2026-11-10a)
             box.appendChild(list);
         }
     }

@@ -96,6 +96,11 @@ function ccRow(a) {
     };
 }
 
+// how the units picked fight on a second attack (build 2026-11-10a, js/moves.js altCools): a Brawler strikes, then cools down; a Mage or a Technician winds up first, standing still
+function _ccMoveTiming(sel) {
+    const n = (sel || []).filter(u => typeof altCools === "function" && altCools(u)).length;
+    return !n ? "IT WINDS UP STANDING STILL" : n === sel.length ? "IT STRIKES, THEN COOLS DOWN" : "BRAWLERS COOL DOWN AFTER, THE REST WIND UP";
+}
 // ── THE ORDERS (each is the existing game action) ──
 // Attack style: a follower's role. An evolved form keeps its role (js/evolution.js), a clone has none. Returns how many changed.
 function ccApplyRole(units, role) {
@@ -578,7 +583,7 @@ function _ccDrawStyles(side, S, sel) {
     if (M) {
         const nm = id => id === "normal" ? "NORMAL ATTACK" : (MOVES[id] || {}).name || "\u2014";
         _ccDropdown(side, "move", "ATTACK", M.cur === "mixed" ? "MIXED" : nm(M.cur), "#19e6c1",
-            M.list.map(m => ({ label: nm(m.id), col: "#19e6c1", sub: m.id === "normal" ? "NO ALTERNATE: ITS EVERYDAY HITS" : (m.can === M.evo.length ? "ALL CAN USE IT" : m.can + " OF " + M.evo.length + " CAN USE IT") + " · LOCKED ON, IT WINDS UP STANDING STILL", on: M.cur === m.id, fn: () => ccApplyMove(sel, m.id) })));
+            M.list.map(m => ({ label: nm(m.id), col: "#19e6c1", sub: m.id === "normal" ? "NO ALTERNATE: ITS EVERYDAY HITS" : (m.can === M.evo.length ? "ALL CAN USE IT" : m.can + " OF " + M.evo.length + " CAN USE IT") + " · LOCKED ON, " + _ccMoveTiming(sel), on: M.cur === m.id, fn: () => ccApplyMove(sel, m.id) })));
         const N = _ccMoveNote; if (N && N.units.length === sel.length && sel.every(a => N.units.indexOf(a) >= 0)) side.appendChild(_ccEl("div", "cc-note", N.text));
     }
 }
