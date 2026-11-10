@@ -226,7 +226,7 @@ function _fpDrawFillTile(it) {
     const spr = typeof _floorTileSprite === "function" ? _floorTileSprite(Math.round(dist / FLOOR_DIST_STEP)) : null;
     if (spr) ctx.drawImage(spr, c[0] - TILE_W - 1, c[1] - TILE_H - 1); else { ctx.fillStyle = "#0d1424"; ctx.beginPath(); ctx.moveTo(c[0], c[1] - TILE_H); ctx.lineTo(c[0] + TILE_W, c[1]); ctx.lineTo(c[0], c[1] + TILE_H); ctx.lineTo(c[0] - TILE_W, c[1]); ctx.closePath(); ctx.fill(); }
     const ops = _fp.floorOps && _fp.floorOps.get(it.key); if (ops) _fpDrawOps(ops, c[0], c[1], it.key);
-    if (typeof _fpTileLight === "function") { const lv = _fpTileLight(it.x, it.y, it.room); if (lv < 0.98) _fpDarkTile(c[0], c[1], lv); }
+    if (typeof _fpTileLight === "function") { const lv = _fpTileLight(it.x, it.y, it.room); if (ops) _fpDarkTileOver(c[0], c[1], lv); else if (lv < 0.98) _fpDarkTile(c[0], c[1], lv); }   // (its sprite already as dark as a lit room: js/facilitystyle.js)
 }
 // ROCK: a wall of kind rock is a rock formation, not a thin wall: a brown face with strata, boulders and cracks, and a ragged rocky top edge. Nothing here depends on where the player is: walls
 // never react to the player. A BACK wall (the camera sees the arena in front of it: the north rock) stands 120-170 px with a ragged skyline and a shadowed, overhanging top; a FRONT wall (the arena is
@@ -438,7 +438,7 @@ function facilityDrawFloorOn(obj, px, py) {
     if (!_fp || !_fp.floorOps) return;
     const key = obj.x + "," + obj.y, ops = _fp.floorOps.get(key); if (!ops) return;
     _fpDrawOps(ops, px, py + TILE_H, key);
-    if (typeof _fpTileLight === "function" && obj.room) { const lv = _fpTileLight(obj.x, obj.y, obj.room); if (lv < 0.98) _fpDarkTile(px, py + TILE_H, lv); }   // the tile's light: its room's, or a pool from an open door (js/facilitystyle.js)
+    if (typeof _fpTileLight === "function" && obj.room) _fpDarkTileOver(px, py + TILE_H, _fpTileLight(obj.x, obj.y, obj.room));   // the tile's light: its room's, or a pool from an open door, over the lit room's dark its sprite carries (js/facilitystyle.js)
 }
 // (cx, cy) is the middle of the tile on screen; key names the tile's cached sprite
 // The opaque base of a floor tile is painted this many pixels wider (EX) and higher (EY) than the tile's diamond, over the fringe of the tile sprite under it and so that two tiles overlap and no hair of the ground shows between them.
@@ -452,12 +452,15 @@ function _fpDrawOps(ops, cx, cy, key) {
         try {
             if (typeof document !== "undefined" && document.createElement) {
                 const c = document.createElement("canvas"); c.width = W * 2 + 2 + EX * 2; c.height = H * 2 + 2 + EY * 2; const g = c.getContext("2d"), wide = !!(ops[0] && ops[0].t === "D" && ops[0].x), ex = wide ? EX : 0, ey = wide ? EY : 0, mx = W + 1 + EX, my = H + 1 + EY;
-                if (g && g.clip) { g.beginPath(); g.moveTo(mx, my - H - ey); g.lineTo(mx + W + ex, my); g.lineTo(mx, my + H + ey); g.lineTo(mx - W - ex, my); g.closePath(); g.clip(); _fpPaintOps(g, ops, mx, my, true, wide ? [ex, ey] : null); spr = c; }
+                if (g && g.clip) { g.beginPath(); g.moveTo(mx, my - H - ey); g.lineTo(mx + W + ex, my); g.lineTo(mx, my + H + ey); g.lineTo(mx - W - ex, my); g.closePath(); g.clip(); _fpPaintOps(g, ops, mx, my, true, wide ? [ex, ey] : null);
+                    const A0 = typeof _fpFloorA0 === "function" ? _fpFloorA0() : 0; if (A0 > 0.002) { g.fillStyle = "rgba(6,11,22," + A0.toFixed(3) + ")"; g.fillRect(0, 0, c.width, c.height); }   // (a lit room's dark, painted in once)
+                    spr = c; }
             }
         } catch (e) { spr = null; }
         _fp.spr.set(key, spr);
     }
-    if (spr) ctx.drawImage(spr, cx - W - 1 - EX, cy - H - 1 - EY); else { ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy - H); ctx.lineTo(cx + W, cy); ctx.lineTo(cx, cy + H); ctx.lineTo(cx - W, cy); ctx.closePath(); ctx.clip(); _fpPaintOps(ctx, ops, cx, cy, true); ctx.restore(); }
+    if (spr) ctx.drawImage(spr, cx - W - 1 - EX, cy - H - 1 - EY); else { ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy - H); ctx.lineTo(cx + W, cy); ctx.lineTo(cx, cy + H); ctx.lineTo(cx - W, cy); ctx.closePath(); ctx.clip(); _fpPaintOps(ctx, ops, cx, cy, true);
+        const A0 = typeof _fpFloorA0 === "function" ? _fpFloorA0() : 0; if (A0 > 0.002) { ctx.fillStyle = "rgba(6,11,22," + A0.toFixed(3) + ")"; ctx.fill(); } ctx.restore(); }   // (the same lit room's dark, with no sprite to carry it)
     for (let i = 0; i < ops.length; i++) if (ops[i].t === "G" && ops[i].fl) _fpPaintOps(ctx, [ops[i]], cx, cy, false);
 }
 // staticPass: paint the marks (not the light); otherwise only the light

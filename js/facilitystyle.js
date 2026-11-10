@@ -469,10 +469,10 @@ function _fpStyleRig(it) {
 var FP_DARK = 0.82, FP_POOL = 0.7, FP_POOL_R = 3.6, FP_LIGHT_EASE = 0.12;
 // a room that stays DIM with you in it and the power on (the owner, 2026-11-07: "a dark server room"): its light level is held at this (the agent's number, provisional); its racks' lights blink over it (js/propsprites.js)
 const FP_ROOM_DIM = { front_lobby: 0.42 };
-// THE POWERED ROOM'S LEVEL (the owner, 2026-11-09: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for"): the room you stand in, with power, is
-// lit to this (1: its palette as drawn; 0.7 about a quarter darker, floor, walls, doors and props together; units, effects and the screen's controls are never dimmed). Until the owner picks a level it
-// stays 1 for everyone, and the preview ?lit=<0.4 to 1> tries one (read once: location.search is slow in Safari).
-const FP_LIT = 1;
+// THE POWERED ROOM'S LEVEL (the owner, 2026-11-09: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for"; then, of four levels in pictures,
+// "C · two fifths darker (0.5)"): the room you stand in, with power, is lit to this (1 was its palette as drawn): floor, walls, doors and props together; units, effects and the screen's controls are never
+// dimmed. A dim room (FP_ROOM_DIM) is that much darker again. The preview ?lit=<0.4 to 1> tries another level (read once: location.search is slow in Safari).
+const FP_LIT = 0.5;
 let _fpLitPrev;
 function _fpLit() {
     if (_fpLitPrev === undefined) { _fpLitPrev = null; try { const m = typeof location !== "undefined" && /[?&]lit=([\d.]+)/.exec(location.search || ""); const v = m ? parseFloat(m[1]) : NaN; if (v >= 0.4 && v <= 1) _fpLitPrev = v; } catch (e) {} }
@@ -489,7 +489,7 @@ function _fpLightUpdate(F) {
     for (const o of _fp.openings) {
         const di = _fp.doorItems.get(o.id), want = o.ramp ? 1 : (di && di.st && (di.st.open || 0) >= 0.5 ? 1 : 0), cur = _fp.pool.get(o.id) || 0, v = Math.abs(want - cur) < 0.01 ? want : cur + (want - cur) * FP_LIGHT_EASE; _fp.pool.set(o.id, v);
         // a doorway with no door (a stairway) always glows softly on both sides, near or far; a door throws light only when it is open and the room on one side is lit
-        if (v > 0.02 && (o.rooms.some(k => (!bo || _fpPowered(k)) && (o.ramp || (_fp.light.get(k) || 0) > 0.5 * _fpLit())))) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms, r: o.ramp ? 5.2 : FP_POOL_R, k: o.ramp ? 0.55 : FP_POOL });
+        if (v > 0.02 && (o.rooms.some(k => (!bo || _fpPowered(k)) && (o.ramp || (_fp.light.get(k) || 0) > 0.5 * _fpLit())))) pools.push({ x: o.x, y: o.y, s: v, rooms: o.rooms, r: o.ramp ? 5.2 : FP_POOL_R, k: (o.ramp ? 0.55 : FP_POOL) * _fpLit() });   // (a pool is never brighter than the lit room it comes from)
     }
     if (away) attractPools(pools);
     _fp.pools = pools;
@@ -504,7 +504,15 @@ function _fpTileLight(x, y, roomId) {
     return Math.max(v, _fpPoolAt(x, y, k), _fpExtraLight(x, y, [k]));   // (and, in a blackout, the monitor lamp and the emergency lights)
 }
 function _fpRoomLight(roomId) { return (_fp.light && _fp.light.get(_fpLightKey(roomId))) || 0; }
-function _fpDarkFill(pts, lv) { const a = _fpDarkAmt() * (1 - lv); if (a < 0.02) return; ctx.fillStyle = "rgba(6,11,22," + a.toFixed(3) + ")"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); }
+function _fpDarkFill(pts, lv) { _fpDarkFillA(pts, _fpDarkAmt() * (1 - lv)); }
+function _fpDarkFillA(pts, a) { if (a < 0.02) return; ctx.fillStyle = "rgba(6,11,22," + a.toFixed(3) + ")"; ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill(); }
+// A FLOOR TILE'S OWN SPRITE CARRIES A LIT ROOM'S DARK (FP_LIT below 1): its marks are painted once with this much of the night blue over them (js/facilitydecor.js _fpDrawOps), so the room you stand in
+// costs nothing more to darken than it did lit; a tile darker than that (an unlit room, a door's pool, a blackout) takes only the rest (_fpDarkTileOver). None on the website's background (its own lights).
+function _fpFloorA0() { return typeof attractOn === "function" && attractOn() ? 0 : FP_DARK * (1 - _fpLit()); }
+function _fpDarkTileOver(cx, cy, lv) {
+    const a = _fpDarkAmt() * (1 - lv), A0 = _fpFloorA0(); if (a <= A0 + 0.02) return;
+    const ex = FP_BASE_EX + 0.4, ey = FP_BASE_EY + 0.3; _fpDarkFillA([[cx, cy - TILE_H - ey], [cx + TILE_W + ex, cy], [cx, cy + TILE_H + ey], [cx - TILE_W - ex, cy]], 1 - (1 - a) / (1 - A0));   // (over A0, the rest: together, a)
+}
 // An unlit tile's dark covers the tile's opaque base (FP_BASE_EX / FP_BASE_EY, js/facilitydecor.js) and a little more: measured on an unlit pale floor at twice the pixel density, a margin of 1.2 px left a bright dotted line on every tile edge (the base's
 // antialiased fringe, uncovered); 0.4 px beyond the base in x and 0.3 in y covers it and leaves a barely darker hair between tiles (more doubles the dark where two tiles overlap).
 function _fpDarkTile(cx, cy, lv) { const ex = FP_BASE_EX + 0.4, ey = FP_BASE_EY + 0.3; _fpDarkFill([[cx, cy - TILE_H - ey], [cx + TILE_W + ex, cy], [cx, cy + TILE_H + ey], [cx - TILE_W - ex, cy]], lv); }

@@ -4,6 +4,13 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09ll` · branch `claude/start-game-project-HSh7Z` · the facility two fifths darker
+The owner's pick from the pictures: "C · two fifths darker (0.5)". `docs/FACILITY.md`.
+- **The room you stand in is lit to 0.5 instead of full**, for everyone: floor, walls, doors and props darker together. Units, effects and the controls are as bright as before.
+- An open door's pool and the dim Server Room are darker by the same proportion; the blackout's lamp and flares are unchanged.
+- No extra drawing cost: each floor tile's cached picture carries the darkness.
+- Tests: `tests/facilityplay.js` (a lit room's level is now `FP_LIT`), `tests/perf.js` under budget.
+
 ### Build `2026-11-09kk` · branch `claude/start-game-project-HSh7Z` · a preview to try darker rooms
 The owner: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for."
 - **`?lit=<0.4 to 1>`** lights the powered room you stand in to that level instead of full (`FP_LIT`, js/facilitystyle.js). Its floor, walls, doors and props darken together; units, effects and the controls do not.

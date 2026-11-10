@@ -134,6 +134,14 @@ Walls stand `FP_WALL_H` = 122 px (they were 74); doors stand `FP_DOOR_H` = 108 p
 
 Drawing: each styled wall piece draws a slab over its band (`_fpWallTop`, `FP_WALL_T` = 1 tile): a north or west wall's slab runs away from the camera, a south or east wall's towards it, so a band between two rooms is covered twice. A south/east piece whose band has another room's wall on the far side draws only its slab (`nbBand`): the neighbour's own face stands in front. A door's header slab covers its cut. A door in glass (`thin`: both ends of its opening are on a window; only the show room's door) has no cut and no thick top: the glass beside it has a rail and nothing more, so its header is a band at the rail's height (a thick slab there floated over the hallway like a plank, joined to nothing).
 
+## Room lighting: the facility two fifths darker (build `2026-11-09ll`)
+
+The owner, 2026-11-09: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for"; of four levels in pictures, "C · two fifths darker (0.5)".
+- The powered room you stand in is lit to `FP_LIT` = 0.5 (js/facilitystyle.js), not 1. Floor, walls, doors and props darken together; units, effects and the screen's controls are never dimmed.
+- An open door's pool of light, and the dim Server Room (`FP_ROOM_DIM`), are darker by the same proportion. The blackout's lamp, flares and floodlights are unchanged.
+- A floor tile's cached sprite carries the lit room's dark (`_fpFloorA0`), so the room you stand in costs no more to draw than it did lit; darker tiles take only the rest (`_fpDarkTileOver`).
+- `?lit=<0.4 to 1>` tries another level. Glowing details on walls (neon strips, screens) dim with the room.
+
 ## Interiors and portals (js/facilityportals.js)
 
 ASKED: "little rooms you can go into that load in [...] a room under the observation deck, and that would be the armory, through a doorway that you have to go into, and it loads in a new part of the map."

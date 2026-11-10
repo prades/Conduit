@@ -2709,3 +2709,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Standing, the Electro Skink, Voidstar, Hammer Slug, Thermite Burrower, Blight Spider, Hornshell, Seeper, Thornwhip, Sundew and Stonepetal hold one idle frame (`EVO_STILL`, js/evolution.js). Walking, they play their loop; their moves and attacks play over it.
 - The other 11 keep their idle loop standing: they hover, breathe, bob or ripple.
 - Found on the way, not changed: every form's idle loop plays about 4× faster than it was designed (a frame every 7 game frames). It doubles as the walk.
+
+## DECISION: The facility two fifths darker (2026-11-09, build `2026-11-09ll`)
+- The owner: "the lighting in the facility is too bright, and the walls, it just looks way too bright for what I'm going for." Of four levels shown in pictures (now, 0.75, 0.6, 0.5): "C · two fifths darker (0.5)".
+- A powered room with the player in it is lit to `FP_LIT` = 0.5 (it was 1). Door pools and the dim Server Room scale with it; the blackout's own lights do not. `docs/FACILITY.md`.
+- Supersedes "the room the player stands in is fully lit" (js/facilitystyle.js, room lighting).
