@@ -49,7 +49,7 @@ function findChromium() {
     let dirs = [];
     try { dirs = fs.readdirSync(base); } catch (e) { return null; }
     for (const d of dirs.filter(d => d.startsWith('chromium')).sort().reverse()) {
-        for (const rel of ['chrome-linux/chrome', 'chrome-linux/headless_shell']) {
+        for (const rel of ['chrome-headless-shell-linux64/chrome-headless-shell', 'chrome-linux/headless_shell', 'chrome-linux/chrome', 'chrome-linux64/chrome']) {
             const p = path.join(base, d, rel);
             if (fs.existsSync(p)) return p;
         }
