@@ -99,8 +99,10 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     click(s0); await wait(80); partyFlyRender(true); await wait(40);
     var row = $('#squadFly .sf-swaprow'), sb = function(){ return $('#squadFly .sf-swap'); }, sw = function(){ return ($('#squadFly .sf-swapw') || {}).textContent; };
     out.swap = { member: !!m0, shown: !!row && getComputedStyle(row).display !== 'none', text: sw(), disabled: !!(sb() && sb().disabled) };
-    var p0 = [player.x, player.y], q0 = m0 ? [m0.x, m0.y] : [0, 0]; click(sb()); await wait(60); partyFlyRender(true); await wait(40);
-    out.swap.moved = !!m0 && player.x === q0[0] && player.y === q0[1] && m0.x === p0[0] && m0.y === p0[1]; out.swap.after = sw(); out.swap.offAfter = !!(sb() && sb().disabled);
+    var p0 = [player.x, player.y], q0 = m0 ? [m0.x, m0.y] : [0, 0]; click(sb());
+    out.swap.moved = !!m0 && player.x === q0[0] && player.y === q0[1] && m0.x === p0[0] && m0.y === p0[1];   // (read at once, as the tap made it: in the frames after, the member walks to its place in the formation, build 2026-11-10b)
+    await wait(60); partyFlyRender(true); await wait(40);
+    out.swap.after = sw(); out.swap.offAfter = !!(sb() && sb().disabled);
     equipPlayerPut(0, null); partyFlyRender(true); await wait(40); out.swap.hidden = !!row && getComputedStyle(row).display === 'none';
   } catch (err) { out.err = String(err && err.stack || err); }
   var pre = document.createElement('pre'); pre.id = '__pc'; pre.textContent = JSON.stringify(out); document.body.appendChild(pre);

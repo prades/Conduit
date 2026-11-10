@@ -794,4 +794,5 @@ The agent's numbers and readings, to tune once the owner has played with them:
 4. **Ahead with nothing locked:** the way you last walked, kept while you stand. It could instead follow the enemy nearest you.
 5. **A clone** (the Mutator's) takes no place: it follows as before.
 
+## MAGNETIC: electric's conversion (the owner's direction, 2026-11-07)
 The owner: electric can be converted into MAGNETIC, the same dynamic as BLOOM; today's electric Brawler (the STATIC ORB, its moves and all) becomes the MAGNETIC Brawler; the electric Brawler gets a new design. Not designed in detail and not built. Seven points are open, listed in `CONVERSION.md` §13 (how electric converts, MAGNETIC's rules and other forms, the new electric Brawler, saved Static Orbs, the name, the retired electric Brawler forms).
