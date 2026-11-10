@@ -2748,3 +2748,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner: "Revert the changes where the walls strip down whenever you get near them. I wanted you to simply remove one wall that is near the teleporter room and the warehouse"; then "just plugging that hole that I circled"; and of the picture of it: "This looks correct".
 - Walls never react to the player again (build `2026-11-09ss` reverted). The wall between the warehouse and Teleport Room 2 is gone: Teleport Room 2's floor runs to the warehouse's edge behind its deck's rail, and its west wall runs up to the glass's corner, closing the gap. The line stays solid. `docs/FACILITY.md`, "The hole at the warehouse's corner, plugged".
 - Supersedes "Walls in front of the player are cut down" (build `2026-11-09ss`).
+
+## DECISION: BLOOM energy cards in the packs (2026-11-10, build `2026-11-09vv`)
+- The owner: "Need to add Bloom energy cards ASAP." Until then a BLOOM energy card came only with a bred BLOOM egg or the conversion, so an evolved BLOOM follower's attacks rarely unlocked.
+- Pack 1 and Series 2 deal BLOOM energy cards once the purification module is installed and has run, as BLOOM's other cards and its breeding do. BLOOM is then one more element of their energy cards, each as likely. When they start is the agent's reading. `docs/ENERGY-CARDS.md` rule 19.
+- Supersedes rule 9's "BLOOM's are not dealt by a pack" (`docs/ENERGY-CARDS.md`).

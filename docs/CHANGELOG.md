@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09vv` · branch `claude/start-game-project-HSh7Z` · BLOOM energy cards in the packs
+- **BLOOM energy cards come in packs** (the owner: "Need to add Bloom energy cards ASAP"). Once the purification module is installed and has run, Pack 1 and Series 2 deal BLOOM energy cards too, BLOOM as likely as each other element. Before that, as for BLOOM's other cards, none. They unlock an evolved BLOOM follower's second attack and Ultimate, and evolve an elementless egg into a BLOOM form.
+- Tests: `tests/energycards.js` (none before the purification, none with the module installed but not run, BLOOM as likely as the rest after it, and a real pack dealing one into your stock). Checked in the real page: a pack opened from the CARDS screen after the purification dealt a BLOOM ENERGY card into the stock, shown pink in the reveal.
+
 ### Build `2026-11-09uu` · branch `claude/start-game-project-HSh7Z` · the wall cut-down reverted; the hole plugged
 - **Walls no longer cut down when you come near** (the owner: "Revert the changes where the walls strip down whenever you get near them"). Build `09ss`'s cut-down is gone; walls are drawn as they were in `09rr`.
 - **The hole at the warehouse's corner is plugged** (the owner: "I wanted you to simply remove one wall that is near the teleporter room and the warehouse", "just plugging that hole that I circled", "This looks correct"). The wall between the warehouse and Teleport Room 2 is gone. Teleport Room 2's floor runs to the warehouse's edge behind a deck rail, and its wall to the stair room runs up to the glass's corner, so no gap is left between the walls there. Nobody walks or shoots across the rail. The screens, pipe, vent and light on that wall went with it.

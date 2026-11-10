@@ -61,11 +61,18 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         const r = J(`EQUIP_PACKS.map(p => [p.id, p.price, p.size, p.energy, p.guaranteed.rarity, p.guaranteed.count, EQUIP_RARITIES.findIndex(x => x.id === p.guaranteed.rarity) + 1].join(':'))`);
         same(r.join(' '), 'pack1:50:2:2:precision:1:3 series2:75:2:2:precision:1:3', 'the packs');
     });
-    check('opening a pack deals its 2 energy cards into your stock, of elements found (never BLOOM), and its 2 own cards; over many rolls every element found comes up', () => {
-        const r = J(`(function(){ __clear(); shardCount = 1000; const ids = equipPackOpen(11, EQUIP_PACK), o = { ids: ids && ids.length, energy: equipPackLast.energy.length, stock: energyTotal(), paid: 1000 - shardCount };
-            let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, el = {}; for (let i = 0; i < 2000; i++) for (const e of energyPackRoll(rnd, 2)) el[e] = 1; o.el = Object.keys(el).sort(); o.found = elementsFound().sort(); return o; })()`);
+    check('opening a pack deals its 2 energy cards into your stock, of elements found, and its 2 own cards; over many rolls every element found comes up; BLOOM\'s only once the purification module is installed and has run (build 2026-11-09vv; the owner, 2026-11-10: "Need to add Bloom energy cards ASAP"), then as likely as any other, and a real pack deals them into your stock', () => {
+        const r = J(`(function(){ __clear(); const Q = questState('purify'), q0 = [Q.installedAt, Q.purifiedAt]; Q.installedAt = 0; Q.purifiedAt = 0;
+            shardCount = 1000; const ids = equipPackOpen(11, EQUIP_PACK), o = { ids: ids && ids.length, energy: equipPackLast.energy.length, stock: energyTotal(), paid: 1000 - shardCount };
+            let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647, el = {}; for (let i = 0; i < 2000; i++) for (const e of energyPackRoll(rnd, 2)) el[e] = 1; o.el = Object.keys(el).sort(); o.found = elementsFound().sort();
+            Q.installedAt = 1; o.installedOnly = energyPackPool().indexOf('blossom') >= 0; Q.purifiedAt = 2;
+            const n = {}; let all = 0; for (let i = 0; i < 6000; i++) for (const e of energyPackRoll(rnd, 2)) { n[e] = (n[e] || 0) + 1; all++; } o.after = Object.keys(n).sort(); o.share = n.blossom / all; o.kinds = o.after.length;
+            __clear(); let packs = 0; for (let k = 0; k < 60 && !energyCount('blossom'); k++) { shardCount = 1000; equipPackOpen(101 + k, EQUIP_PACK); packs++; } o.real = [energyCount('blossom') > 0, packs, (equipPackLast.energy || []).indexOf('blossom') >= 0];
+            Q.installedAt = q0[0]; Q.purifiedAt = q0[1]; return o; })()`);
         same(r.ids, 2, 'its own cards'); same(r.energy, 2, 'its energy cards'); same(r.stock, 2, 'your energy cards after'); same(r.paid, 50, 'what it cost');
-        same(r.el.join(), r.found.join(), 'the elements dealt'); ok(r.el.indexOf('blossom') < 0, 'BLOOM dealt');
+        same(r.el.join(), r.found.join(), 'the elements dealt before the purification'); ok(r.el.indexOf('blossom') < 0, 'BLOOM dealt before the purification'); same(r.installedOnly, false, 'BLOOM dealt with the module installed but its cycle not run');
+        same(r.after.join(), r.found.concat(['blossom']).sort().join(), 'the elements dealt after it'); ok(Math.abs(r.share - 1 / r.kinds) < 0.02, 'BLOOM not as likely as the rest after it: ' + r.share.toFixed(3) + ' of the cards, against ' + (1 / r.kinds).toFixed(3));
+        same(r.real[0] && r.real[2], true, 'no BLOOM energy card into your stock from a real pack after it (' + r.real[1] + ' packs)');
     });
 
     group('THE RUN\'S, AND SAVED');

@@ -1,9 +1,9 @@
 # Energy cards
 
-- **Status:** Implemented in builds `2026-11-09s` and `2026-11-09t` (phase 1; `t` is the owner's third round of answers, rules 15–18), verified by `tests/energycards.js` and the suites listed in §10. Not playtested. The hybrid attacks are still to be designed (§11).
+- **Status:** Implemented in builds `2026-11-09s` and `2026-11-09t` (phase 1; `t` is the owner's third round of answers, rules 15–18), and BLOOM's in the packs in `2026-11-09vv` (rule 19), verified by `tests/energycards.js` and the suites listed in §10. Not playtested. The hybrid attacks are still to be designed (§11).
 - **Owner:** User (creative direction); agent (implementation support)
-- **Last updated:** 2026-11-09
-- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-09t` (main is at `2026-11-09r` until the owner says "push to main")
+- **Last updated:** 2026-11-10
+- **Branch/build context:** `claude/start-game-project-HSh7Z`, build `2026-11-09vv` (main is at `2026-11-09ss` until the owner says "push to main")
 - **Related docs:** `FOLLOWER-PROGRESSION.md` (levels, evolution, breeding), `CONVERSION.md` (BLOOM, the conversion machine), `UNIVERSAL-AND-PLAYER-CARDS.md` and `SERIES-2.md` (the equip cards and their packs), `OPEN-QUESTIONS.md`
 
 ## 1. Intent
@@ -23,7 +23,7 @@ The owner's words, 2026-11-09: "I want to make each follower have 3 new card zon
 The owner's second round of answers, 2026-11-09:
 
 8. **What the three slots unlock** ("Own element vs other"): a card of its **own element** unlocks its **next attack**: its second attack, then its Ultimate. A card of **another element** unlocks a **hybrid attack** mixing the two. (Hybrid attacks do not exist yet: each is to be designed with the owner, as the 3-D effects are.)
-9. **The packs** ("Inside the old packs"): energy cards are dealt inside **Pack 1 and Series 2**, each of an element found, at random. BLOOM's are not dealt by a pack (BLOOM is never found: it comes from breeding and the conversion).
+9. **The packs** ("Inside the old packs"): energy cards are dealt inside **Pack 1 and Series 2**, each of an element found, at random. ~~BLOOM's are not dealt by a pack (BLOOM is never found: it comes from breeding and the conversion).~~ *(BLOOM's: superseded by rule 19.)*
    - **Superseded the same day** ("1 to 2 per pack"). The owner, 2026-11-09: "Make the pack 50% less, but make 2 of the cards guaranteed energy cards, and 1 card guaranteed 3 rarity." Pack 1 is ◆50 (was ◆100) and Series 2 ◆75 (was ◆150). Each deals 4 cards: **2 energy cards, guaranteed**, and **2 of its own**, one of them the guaranteed **Precision** (the third rarity; Series 2's is Precision or better, as before).
 10. **Owning them** ("Counted copies"): you own a **number of each element's card**. One is **used up only when it evolves a follower**; taken out of an unevolved follower before then, it **comes back** to you.
 11. **They are the run's** ("The run's"): NEW GAME clears them, as it does the cards a pack deals.
@@ -38,6 +38,10 @@ The owner's third round of answers, 2026-11-09 (on the agent's readings, build `
 17. **Exile** ("They come back to you"): the energy cards in an exiled follower's slots come back to your stock.
 18. **The conversion** ("Only an egg's card"): only an unevolved follower's toxic card becomes a BLOOM one. An evolved follower's toxic cards stay toxic. On its BLOOM form they are another element's, so its second attack and Ultimate lock until it holds BLOOM cards. Its preview marks them LOCKED, and the conversion says so.
 
+The owner, 2026-11-10: "Need to add Bloom energy cards ASAP."
+
+19. **BLOOM's energy cards come in the packs** (build `2026-11-09vv`), once the purification module is installed and has run, as BLOOM's other cards and its breeding do (CONVERSION.md). From then on BLOOM is one more element of Pack 1's and Series 2's energy cards, as likely as each of the others. Until then BLOOM's energy cards come only with a bred BLOOM egg and the conversion. *(When they start is the agent's reading, from BLOOM's other cards: §11.)*
+
 ## 3. Must-have requirements
 - [x] Energy cards of each element, dealt by a card pack.
 - [x] One energy slot on an unevolved follower; three on an evolved one; the two equip slots unchanged.
@@ -45,6 +49,7 @@ The owner's third round of answers, 2026-11-09 (on the agent's readings, build `
 - [x] At level 8 with an energy card, it evolves on its own into its element's form for its role; the card is used up; the element is its own for good.
 - [x] An evolved follower's three energy slots unlock its second attack (1 card of its element) and its Ultimate (2). A card of another element is shown as a hybrid, NOT DESIGNED YET (open question 1).
 - [x] Saves: unevolved followers lose their element; evolved ones keep theirs.
+- [x] BLOOM's energy cards in the packs once the purification module has run (rule 19).
 
 ## 4. Non-goals (for now)
 - The creatures' elements: unchanged.
@@ -80,7 +85,7 @@ What the code does (build `2026-11-09s`). Items marked *(reading)* are the agent
   - A follower made of an element gets that element's card free, not from your stock: a recruitment post's (rule 16), a bred egg (rule 12), the starting squad (rule 15), the Flux Lab's flux technician, and a scripted recruit.
   - Two NO ELEMENT parents breed a NO ELEMENT egg.
 - **The title crowd and the Ant Nest's evolved test forms:** their slots are full of their own element, so their attacks are whole.
-- **The conversion (rules 13, 18):** an unevolved follower's toxic card becomes a BLOOM one. An evolved follower's stay toxic, and its attacks lock until it holds BLOOM cards. A BLOOM card comes from taking an egg's converted card out, or a bred BLOOM egg's.
+- **The conversion (rules 13, 18):** an unevolved follower's toxic card becomes a BLOOM one. An evolved follower's stay toxic, and its attacks lock until it holds BLOOM cards. A BLOOM card comes from a pack once the module has run (rule 19), from taking an egg's converted card out, or from a bred BLOOM egg.
 - **The tutorial (rule 15):** it lifts followers to level 7 and its ants to 6, one under evolution as before (it was 9 and 8 under level 10).
 
 ## 8. Acceptance criteria
@@ -120,6 +125,8 @@ The checks in `tests/energycards.js`: the rules and numbers; owning (put, take, 
    - The clear-crystal egg reuses the wild recruit's grey egg, unlit.
    - An elementless Technician has no ability (no element's).
    - The energy slots are not on the squad member's card over the HUD.
+   - BLOOM's energy cards start in the packs once the purification module has run (rule 19), as BLOOM's other cards; each element as likely, BLOOM too.
 
 ## 12. History
 - 2026-11-09: the owner's direction and four answers (rules 1–7); a second round of answers (rules 8–14); the pack rule (rule 9, superseded the same day); built in `2026-11-09s`; a third round of answers (rules 15–18) in `2026-11-09t`.
+- 2026-11-10: "Need to add Bloom energy cards ASAP": BLOOM's energy cards in the packs once the module has run (rule 19, `2026-11-09vv`; rule 9's "BLOOM's are not dealt by a pack" superseded).

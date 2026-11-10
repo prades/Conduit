@@ -8,7 +8,8 @@
 //   UNLOCKS     an evolved follower's cards of its OWN element unlock its next attack: ENERGY.altNeeds for its second attack, ENERGY.ultNeeds for its Ultimate (js/moves.js evoMoveAllowed, js/elements.js
 //               followerUltimate ask energyAltOpen and energyUltOpen). A card of ANOTHER element unlocks a HYBRID attack of the two (energyHybrids): none is designed yet ("NOT DESIGNED YET").
 //   OWNING      counted copies: energyStock, element -> how many you hold (not in a slot). Put in a slot, a card leaves your stock; taken out before it evolves a follower, it comes back.
-//   PACKS       Pack 1 and Series 2 each deal 2 energy cards, guaranteed, of their 4 (the pack's `energy`, js/cards.js; the owner: "make 2 of the cards guaranteed energy cards"), of elements found (BLOOM aside).
+//   PACKS       Pack 1 and Series 2 each deal 2 energy cards, guaranteed, of their 4 (the pack's `energy`, js/cards.js; the owner: "make 2 of the cards guaranteed energy cards"), of elements found, and BLOOM's too
+//               once the purification module has run (energyPackPool; build 2026-11-09vv).
 //   THE RUN'S   NEW GAME clears the stock (energyReset); the run's save holds it (js/facilitysave.js), and each follower's record its slots.
 //   EGGS        a bred egg comes with an energy card of the element breeding picked (js/breeding.js), free: it is not taken from the stock. A recruit comes with none.
 //   CONVERSION  an unevolved toxic follower's toxic card becomes a BLOOM one (js/conversion.js).
@@ -93,9 +94,15 @@ function energyStart(f, el) {
     f.energy = [energyElementOk(el) ? el : null]; f.element = f.energy[0] || ENERGY_NONE;
 }
 
-// ── PACKS: a pack's `energy` cards (2 in Pack 1 and Series 2: js/cards.js), each of an element found (BLOOM aside), each element as likely ──
+// ── PACKS: a pack's `energy` cards (2 in Pack 1 and Series 2: js/cards.js), each of an element found, each element as likely; BLOOM's too once the purification module is installed and has run
+//    (build 2026-11-09vv; the owner, 2026-11-10: "Need to add Bloom energy cards ASAP": as BLOOM's other cards, js/cards.js equipBloomReady, and its breeding; until then BLOOM's came only with a bred egg or a conversion) ──
+function energyPackPool() {
+    const pool = typeof elementsFound === "function" ? elementsFound().filter(energyElementOk) : [], bloom = typeof CONVERT !== "undefined" ? CONVERT.to : "blossom";
+    if (typeof convertReady === "function" && convertReady() && energyElementOk(bloom) && pool.indexOf(bloom) < 0) pool.push(bloom);
+    return pool;
+}
 function energyPackRoll(rnd, n) {
-    rnd = rnd || Math.random; const pool = typeof elementsFound === "function" ? elementsFound().filter(energyElementOk) : [];
+    rnd = rnd || Math.random; const pool = energyPackPool();
     if (!pool.length || !(n > 0)) return [];
     const out = []; for (let i = 0; i < n; i++) out.push(pool[Math.min(pool.length - 1, Math.floor(rnd() * pool.length))]);
     return out;
