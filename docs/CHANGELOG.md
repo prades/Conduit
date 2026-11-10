@@ -4,6 +4,16 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09rr` · branch `claude/start-game-project-HSh7Z` · the wall spots that did not look right; a new follower comes up in the roster
+- **The owner's five screenshots** ("a few spots where the geometry just doesn't look right ... It's mostly in the walls"; the Armory: "a floor that is kind of strangely positioned behind the door"). Only the hook was the rounded rock's (`09qq`); the rest were older.
+  - **The chimney at the hallway's south-west corner:** a one-tile stub of the arena's rock, between the observation deck's glass and the steps' walls, rose to the deck's top like the rock beside the glass. It keeps the rock's own height now, at least as tall as the hallway's walls behind it.
+  - **The Cold Storage door:** the hallway's wall at the alcove's east corner drew its pale top over the rock (it stands inside it); the rock's roof pinched to a hook at the alcove's west corner. Neither now.
+  - **The Armory's door (and the Cold Storage's):** a plain wall built into the rock has the rock's roof for a top, not a pale lab top that read as a floor. The floor that floated in the void behind the west rock is gone.
+  - **The pale square** by the Stair Room's door to Teleport Room 2 (and the like at every doorway between two rooms): a doorway's side wall takes its band's light for its top.
+- **Recruit or breed from the roster** (the owner: "it should pop up in the command window or the roster window rather than having to exit"): the SQUAD FULL question opened hidden behind the Command Center. It shows over it now, and the new follower then comes up as the card in view, its squad buttons under it. With the roster shut nothing opens.
+- The 3-D walls preview (`?walls=3d`) was baked again (the stub's height).
+- Tests: `tests/facilityplay.js`, `tests/rooms.js`, `tests/cavewalls.js`.
+
 ### Build `2026-11-09qq` · branch `claude/start-game-project-HSh7Z` · rounded rock for everyone
 - **The rounded cave rock is approved in the game** ("Approve it for everyone"). Every bend in the rock curves round, for everyone; the Cold Storage alcove's sides are rock in the map itself. The `?rock=round` preview is gone.
 - The 3-D walls preview (`?walls=3d`) was baked again for the alcove's new rock (img/cave, js/caveatlas.js).

@@ -56,6 +56,20 @@ function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.str
         ok(r.member[0] && !r.member[1], 'the member that made room: ' + JSON.stringify(r.member)); same(r.recruit.join(), 'true,true,200,4', 'the recruit takes its card, paid once (RECRUIT_COST, 200 since the follow-up scope of 2026-10-31)');
         same(r.nobody.join(), 'true,3,5', 'NOBODY: the recruit holds a room'); same(r.cancel.join(), '0,5,false', 'CANCEL');
     });
+    check('THE QUESTION SHOWS OVER THE ROSTER, AND THE NEW ONE COMES UP IN IT (the owner, 2026-11-09: "whenever I recruit or breed a follower, it should pop up in the command window or the roster window rather than having to exit"): #partyPick stands over the Command Center and the cards, under the consoles and the card pickers; with the roster open, a recruit (after the question, or at once with room) and an offspring are the card in view; with it shut, nothing opens', () => {
+        const css = rd('game.html'), z = id => { const m = new RegExp('#' + id + ' \\{[^}]*z-index: (\\d+)').exec(css); return m ? +m[1] : NaN; };
+        ok(z('partyPick') > z('ccRoot') && z('partyPick') > z('cardsRoot'), 'the question opens under the roster: ' + z('partyPick') + ' vs ' + z('ccRoot') + '/' + z('cardsRoot'));
+        ok(z('partyPick') < z('nestConsole') && z('partyPick') < z('convPanel') && z('partyPick') < 80, 'the question opens over a console or a card picker: ' + z('partyPick'));
+        // (the roster's drawing is the browser's: here only which card is in view; the browser check was made by hand, the screenshots of build 2026-11-09rr)
+        const r = J(`(function(){ const o = {}, keepCar = ccCarousel, keepTab = ccOpenTab, keepRender = ccRender; ccCarousel = () => true; ccRender = () => {}; try {
+            __fresh(3); shardCount = 1000; ccOpenTab = 'roster'; recruitDo(); partyPickChoose('nobody'); o.asked = ccFocusUnit() === followers[followers.length - 1];
+            __fresh(2); shardCount = 1000; ccOpenTab = 'roster'; recruitDo(); o.room = [partyPickBusy(), ccFocusUnit() === followers[followers.length - 1]];
+            const a = partyOrdered()[0], b = partyOrdered()[1]; a.partnerUid = followerUid(b); b.partnerUid = followerUid(a); breedStart(a); partyPickChoose('nobody'); const c = followers[followers.length - 1]; o.bred = [!!c.bred, ccFocusUnit() === c];
+            ccOpenTab = null; __fresh(2); shardCount = 1000; recruitDo(); o.shut = ccOpenTab;
+        } finally { ccCarousel = keepCar; ccOpenTab = keepTab; ccRender = keepRender; } return o; })()`);
+        same(r.asked, true, 'the recruit after the question is not the card in view'); same(r.room.join(), 'false,true', 'a recruit with room (no question) is not the card in view');
+        same(r.bred.join(), 'true,true', 'the offspring is not the card in view'); same(r.shut, null, 'the roster opened by itself');
+    });
     check('a member that makes room when no room has a place: exiling it is asked first; BACK goes back; EXILE takes it off the roster for good (no body, not coming back, not saved) and the recruit takes its card', () => {
         const r = J(`(function(){ const fs = __fresh(3), o = {}; shardCount = 500; partyVacancy = () => null; recruitDo(); const m = partyOrdered()[0], slot = m.partySlot; partyPickChoose(m);
             o.confirm = document.getElementById('partyPick') && 1; o.stage = (_ppAsk || {}).stage; partyPickChoose('back'); o.back = _ppAsk.stage; partyPickChoose(m); o.asked = (document.getElementById('partyPick') || {}).innerHTML || ''; partyPickChoose('exile');

@@ -271,6 +271,19 @@ function ccShowUnit(u) {
     return true;
 }
 function ccToggleOpen() { if (ccOpenTab) ccClose(); else ccOpen(); }   // (the dock's ROSTER button)
+// A NEW FOLLOWER (a recruit, an offspring: js/clone.js recruitDo, js/breeding.js breedStart) comes up in the roster that is open (the owner, 2026-11-09: "whenever I recruit or breed a follower, it should pop up
+// in the command window or the roster window rather than having to exit"): the carousel brings its card into view, with its squad buttons under it; the grid and the phone's roster scroll to it. It opens
+// nothing: with no roster open, nothing changes. (The SQUAD FULL question that comes first shows over the roster: game.html #partyPick.)
+function ccShowNew(f) {
+    if (!f || f.dead) return false;
+    let shown = false;
+    if (ccOpenTab) {
+        if (ccCarousel()) shown = ccFocusSet(f);
+        else { ccRender(); const card = _ccCards.get(f); if (card && card.scrollIntoView) card.scrollIntoView({ block: "center" }); shown = !!card; }
+    }
+    if (typeof radialShowNew === "function" && radialShowNew(f)) shown = true;
+    return shown;
+}
 
 function ccBuildFrame() {
     const root = document.getElementById("ccRoot"); if (!root || root.getAttribute("data-built")) return;

@@ -141,9 +141,16 @@ function _radialSquadStrip(panel) {
 function _radialCloneRow(c) {
     return { f: c, element: null, name: typeof unitTypeLabel === "function" ? unitTypeLabel(c) : "CLONE", level: c.level || 1, hp: Math.max(0, Math.min(1, (c.health || 0) / (c.maxHealth || 1))), role: null, evolved: false, clone: true };
 }
+// a new follower (js/commandcenter.js ccShowNew): the phone's roster, when it is the panel open, scrolls to its card
+function radialShowNew(f) {
+    if (!f || !radialOpen || radialPanel !== "roster") return false;
+    radialRender(); const panel = document.getElementById("radialPanel"); if (!panel) return false;
+    const card = Array.from(panel.querySelectorAll(".rp-card")).find(c => c._rpF === f); if (card && card.scrollIntoView) card.scrollIntoView({ block: "center" });
+    return !!card;
+}
 // one follower's card: its picture, name, status, level and health, and its buttons (ADD TO / REMOVE FROM SQUAD; INFO; in the ROSTER, EXILE); a tap on the card selects it
 function _radialCard(r, roster) {
-    const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : ""));
+    const card = _rEl("div", "rp-card" + (typeof selectedUnits !== "undefined" && selectedUnits.has(r.f) ? " sel" : "")); card._rpF = r.f;   // (whose card: radialShowNew)
     card.style.setProperty("--c", r.clone && typeof PARTY_CLONE_COL !== "undefined" ? PARTY_CLONE_COL : _radialElementColour(r.element));   // (the Mutator's clone: the Mutator's colour)
     if (typeof cardArtUnitClass === "function") cardArtMark(card, r.clone ? "" : cardArtUnitClass(r.f));   // its backdrop (js/cardart.js)
     const cv = _rEl("canvas", "rp-thumb"); cv.width = 44; cv.height = 44; cv.style.width = "36px"; cv.style.height = "36px"; if (r.clone && typeof partyCloneThumb === "function") partyCloneThumb(cv, r.f); else _radialThumb(cv, r.f); card.appendChild(cv);

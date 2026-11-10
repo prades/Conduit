@@ -194,7 +194,8 @@ function _fpFillCells(F, solid) {
         const mx = (w.a[0] + w.b[0]) / 2, my = (w.a[1] + w.b[1]) / 2, face = facilityRoomAt(mx + nx * 0.4, my + ny * 0.4, F); if (!face || face.id !== "arena") continue;   // the camera sees the arena in front of this wall
         for (let x = Math.floor(Math.min(w.a[0], w.b[0]) - 3.5); x <= Math.ceil(Math.max(w.a[0], w.b[0]) + 3.5); x++) for (let y = Math.floor(Math.min(w.a[1], w.b[1]) - 3.5); y <= Math.ceil(Math.max(w.a[1], w.b[1]) + 3.5); y++) {
             const k = x + "," + y; if (have.has(k) || solid.has(k) || out.has(k) || facilityRoomAt(x, y, F)) continue;
-            const t = (x - w.a[0]) * ux + (y - w.a[1]) * uy, sd = -((x - mx) * nx + (y - my) * ny); if (t > -0.5 && t < L + 0.5 && sd > 0 && sd <= 3) out.set(k, { x, y, room: "arena", base: facilityRoomHeight("arena", F) * PX, pocket: true });
+            const t = (x - w.a[0]) * ux + (y - w.a[1]) * uy, sd = -((x - mx) * nx + (y - my) * ny); if (!(t > -0.5 && t < L + 0.5 && sd > 0 && sd <= 3)) continue;
+            if (_fpPocketBacked(x, y, nx, ny, F)) out.set(k, { x, y, room: "arena", base: facilityRoomHeight("arena", F) * PX, pocket: true });
         }
     }
     // a cell a room only partly covers is cut to the room's outline, so its floor stops at the edge: past an edge the camera sees side-on (the Cold Storage's cave, south-west) nothing hides it, and a pale
@@ -205,6 +206,12 @@ function _fpFillCells(F, solid) {
         if (!byPocket) f.clip = _fpClipSquare(F.byId.get(f.room).poly, f.x, f.y, 0.52);   // (a hair over half a tile: it still overlaps the tiles beside it, so no seam shows)
     }
     return out;
+}
+// a pocket is floored only where another room lies behind it, within 3 tiles (back from the rock, or north): the hallway behind the north rock. Behind the west rock there is only void, and its floor
+// floated in it beside the Armory's door (the owner, 2026-11-09: "a floor that is kind of strangely positioned behind the door")
+function _fpPocketBacked(x, y, nx, ny, F) {
+    for (let t = 0.5; t <= 3; t += 0.5) for (const [dx, dy] of [[-nx, -ny], [0, -1]]) { const r = facilityRoomAt(x + dx * t, y + dy * t, F); if (r && r.id !== "arena") return true; }
+    return false;
 }
 // the part of a polygon inside the square of half-side h round (cx, cy) (Sutherland-Hodgman, one side of the square at a time)
 function _fpClipSquare(poly, cx, cy, h) {
@@ -291,6 +298,12 @@ function _fpWallGradCurve(bot, back) {   // the dark at the foot of a curved str
     const g = ctx.createLinearGradient(0, Math.max(...bot.map(p => p[1])), 0, Math.min(...bot.map(p => p[1])) - 26); g.addColorStop(0, back ? "rgba(0,0,0,0.45)" : "rgba(0,0,0,0.3)"); g.addColorStop(1, "rgba(0,0,0,0)");
     _fpQuad(bot.concat(bot.slice().reverse().map(p => [p[0], p[1] - 26])), g, null);
 }
+// the top of a plain wall built into the rock (_fpInRock): the rock's roof (its colours, as _fpDrawRock's cap: darker away from the camera), a dark crease along its far edge (p0 p1 its near edge, p2 p3 far)
+function _fpRockSlab(p0, p1, p2, p3) {
+    const y0 = Math.min(p0[1], p1[1], p2[1], p3[1]), y1 = Math.max(p0[1], p1[1], p2[1], p3[1]), g = ctx.createLinearGradient(0, y0, 0, Math.max(y1, y0 + 1)); g.addColorStop(0, "#352d28"); g.addColorStop(1, "#5a4f47");
+    _fpQuad([p0, p1, p2, p3], g, g, 1);
+    ctx.strokeStyle = "rgba(10,6,4,0.55)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p3[0], p3[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+}
 // the far edge of a rock piece's roof at a point on its lip (the roof runs back from the lip: a back wall's north to the wall behind it, a front wall's 1 tile into the rock), or null if it has no roof
 function _fpRockFar(it, u, p) {
     const c = it.cap; if (!c) return null;
@@ -298,6 +311,10 @@ function _fpRockFar(it, u, p) {
     return [p[0], p[1] - (c.da + (c.db - c.da) * u)];
 }
 function _fpRockU(it, p) { const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L2 = dx * dx + dy * dy || 1; return Math.max(0, Math.min(1, ((p[0] - it.a[0]) * dx + (p[1] - it.a[1]) * dy) / L2)); }
+// a bend's roof at its two ends, from its pieces' (o0, o1: each the offset from the lip to the far edge, or null): it runs back as far as the pieces' do; where one piece has none, as far as the other's.
+// A north-south piece's roof, run north along its own line, is all but nothing deep: it counts as none, or the roof pinched to a point at the corner and stuck out as a hook beside the Cold Storage's door
+// (the owner's screenshot, 2026-11-09)
+function _fpBendRoof(o0, o1) { const some = o => o && Math.hypot(o[0], o[1]) >= 0.15 ? o : null; return [some(o0) || some(o1), some(o1) || some(o0)]; }
 // A BEND: a curve from where one piece stops to where the other starts, round its corner (a quadratic curve: it meets both pieces along their own line), its heights from theirs
 function _fpDrawRockBend(it) {
     if (typeof caveWallsOn === "function" && caveWallsOn()) return;   // (the modelled walls' preview draws its own)
@@ -305,7 +322,7 @@ function _fpDrawRockBend(it) {
     const h0 = _fpRockHAt(hP, uP), h1 = _fpRockHAt(hQ, uQ), hK = (_fpRockHAt(hP, uK) + _fpRockHAt(hQ, it.Qe === "a" ? 0 : 1)) / 2, N = FP_ROCK_ROUND.seg, pts = [], hs = [];
     for (let i = 0; i < N; i++) { const s = i / (N - 1), a = (1 - s) * (1 - s), b = 2 * (1 - s) * s, c = s * s; pts.push([a * it.s0[0] + b * it.K[0] + c * it.s1[0], a * it.s0[1] + b * it.K[1] + c * it.s1[1]]); hs.push(a * h0 + b * hK + c * h1); }
     const fP = P.cap ? _fpRockFar(P, uP, it.s0) : null, fQ = Q.cap ? _fpRockFar(Q, uQ, it.s1) : null, o0 = fP ? [fP[0] - it.s0[0], fP[1] - it.s0[1]] : null, o1 = fQ ? [fQ[0] - it.s1[0], fQ[1] - it.s1[1]] : null;
-    const oa = o0 || o1, ob = o1 || o0;   // (the roof runs back from the lip as far as the pieces' do; where one piece has none, as far as the other's)
+    const [oa, ob] = _fpBendRoof(o0, o1);
     const far = oa ? (i => { const s = i / (N - 1); return [pts[i][0] + oa[0] * (1 - s) + ob[0] * s, pts[i][1] + oa[1] * (1 - s) + ob[1] * s]; }) : null;
     _fpRockCurve(pts, hs, !!P.back, P.lit || 1, Q.lit || 1, far);
 }
@@ -318,6 +335,7 @@ function _fpRockBackCap(it) {
     return null;
 }
 function _fpRockSides(items) {
+    _fpRockStubs(items);   // (a lone stub of rock keeps the rock's own height)
     for (const it of items) {
         if (it.fp !== "wall" || it.kind !== "rock") continue;
         const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
@@ -325,14 +343,57 @@ function _fpRockSides(items) {
         // the rock beside the ends of the observation deck's glass rises to the deck's wall top, so no gap shows between the deck and the rock (it tapers back to its own height within 1.5 tiles)
         if (!_fp.glassEnds) { const Ws = _fp.F.windows.filter(w => /^deck_window_arena/.test(w.id)), A = _fp.F.byId.get("arena"), D = _fp.F.byId.get("observation_deck"); _fp.glassEnds = Ws.reduce((l, w) => l.concat([w.a, w.b]), []); _fp.deckRise = D && A ? (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + FP_WALL_H + 6 : 0; }
         const wd = (px, py) => { let d = 9; for (const e of _fp.glassEnds) d = Math.min(d, Math.hypot(px - e[0], py - e[1])); return Math.max(0, 1 - d / 1.5); };
-        it.dk = _fp.glassEnds.length ? [wd(it.a[0], it.a[1]), wd((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), wd(it.b[0], it.b[1])] : null; if (it.dk && !(it.dk[0] || it.dk[1] || it.dk[2])) it.dk = null;
+        it.dk = _fp.glassEnds.length && !it.stub ? [wd(it.a[0], it.a[1]), wd((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), wd(it.b[0], it.b[1])] : null; if (it.dk && !(it.dk[0] || it.dk[1] || it.dk[2])) it.dk = null;   // (a lone stub: none)
+        if (it.stub) { const r = facilityRoomAt(it.x, it.y - 2, _fp.F); if (r && r.id !== it.room) it.lo = Math.max(0, facilityRoomHeight(r.id, _fp.F) * FP_ELEV_PX - (it.base || 0)) + FP_WALL_H + 6; }   // (a stub stands at least as tall as the walls of the room behind it, so their tops do not show over it)
         it.cap = it.back ? _fpRockBackCap(it) : { d: 1.0, nx, ny, zb: null };   // a front wall's cap is the thickness of the rock, 1 tile, running back toward the arena
     }
     _fpRockJoints(items);   // (the rounded rock: its bends)
+    _fpInRock(items); _fpUnderRock(items);   // (the tops of the walls built into the rock, and of the walls under its roof)
+}
+// THE WALL PIECES' RUNS: each run of pieces of one room, one kind (`same`), joined end to end, with the pieces met at its two tips (the pieces of other runs at a tip that is no other piece of its own)
+function _fpWallRuns(items, same) {
+    const key = p => Math.round(p[0] * 1000) + "," + Math.round(p[1] * 1000), at = new Map(), runs = [], seen = new Set();
+    for (const it of items) if (it.fp === "wall") for (const e of [it.a, it.b]) { const k = key(e); if (!at.has(k)) at.set(k, []); at.get(k).push(it); }
+    for (const r0 of items) {
+        if (r0.fp !== "wall" || !same(r0) || seen.has(r0)) continue;
+        const run = [], st = [r0]; seen.add(r0);
+        while (st.length) { const w = st.pop(); run.push(w); for (const e of [w.a, w.b]) for (const o of at.get(key(e)) || []) if (o.room === w.room && same(o) && !seen.has(o)) { seen.add(o); st.push(o); } }
+        const n = new Map(); for (const w of run) for (const e of [w.a, w.b]) { const k = key(e); n.set(k, (n.get(k) || 0) + 1); }
+        const tips = [...n].filter(e => e[1] === 1).map(e => (at.get(e[0]) || []).filter(o => run.indexOf(o) < 0));
+        runs.push({ run, tips, len: run.reduce((s, w) => s + Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]), 0) });
+    }
+    return runs;
+}
+// A LONE STUB OF ROCK: a run of rock a tile long or less with walls, not rock, at both its tips (the arena's north-west corner, between the observation deck's glass and the steps' alcove) rose to the deck's
+// top like the rock beside the deck's glass, and stood up alone as a chimney (the owner's screenshot of the Main Hallway, 2026-11-09: "a few spots where the geometry just doesn't look right"): it keeps the
+// rock's own height (`stub`: no rise, below)
+function _fpRockStubs(items) {
+    for (const r of _fpWallRuns(items, it => it.kind === "rock")) if (r.len <= 1.01 && r.tips.length === 2 && r.tips.every(t => t.some(o => o.kind !== "rock"))) for (const w of r.run) w.stub = true;
+}
+// PLAIN WALLS BUILT INTO THE ROCK: a short run of plain wall (4 tiles or less) with rock at both its tips (the arena's door alcoves: the Cold Storage's door wall, the Armory's alcove) has the rock's roof for its
+// top, not a lab wall's pale one, which read as a floor behind the Armory's door (the owner, 2026-11-09: "a floor that is kind of strangely positioned behind the door"). `inRock`: js/facilitystyle.js _fpStyleWall
+function _fpInRock(items) {
+    for (const r of _fpWallRuns(items, it => it.kind === "wall" && !it.win && !it.scaffold && !it.support)) if (r.len <= 4.01 && r.tips.length === 2 && r.tips.every(t => t.some(o => o.kind === "rock"))) for (const w of r.run) w.inRock = true;
+}
+// A WALL'S TOP UNDER THE ROCK'S ROOF: a wall whose slab lies under a back rock piece's roof, and which is drawn after that piece (the hallway's wall at the east corner of the Cold Storage's alcove: the two
+// sort level), drew its pale slab on the rock's roof, though it is lower, inside the rock (the owner's screenshot, 2026-11-09): its slab is not drawn (`underRock`: js/facilitystyle.js _fpStyleWall)
+function _fpUnderRock(items) {
+    const roofs = items.filter(it => it.fp === "wall" && it.kind === "rock" && it.back && it.cap && it.cap.da !== undefined && Math.abs(it.b[0] - it.a[0]) > 1e-6 && Math.max(it.cap.da, it.cap.db) > 0.15);
+    const inRoof = (r, x, y) => { const u = (x - r.a[0]) / (r.b[0] - r.a[0]); if (u < 0 || u > 1) return false; const ly = r.a[1] + (r.b[1] - r.a[1]) * u, d = r.cap.da + (r.cap.db - r.cap.da) * u; return y <= ly + 1e-6 && y >= ly - d; };
+    for (const it of items) {
+        if (it.fp !== "wall" || it.kind === "rock" || it.kind === "glass") continue;
+        const n = _fpRockNormal(it), m = it.out || -1, dep = it.depth !== undefined ? it.depth : it.x + it.y;
+        for (const u of [0.25, 0.75]) for (const s of [0.3, 0.7]) {
+            const sx = it.a[0] + (it.b[0] - it.a[0]) * u + n[0] * m * FP_WALL_T * s, sy = it.a[1] + (it.b[1] - it.a[1]) * u + n[1] * m * FP_WALL_T * s;   // (a point of its slab)
+            for (const r of roofs) if (Math.abs(r.x - sx) < 1.5 && Math.abs(r.y - sy) < 2.5 && r.depth < dep && inRoof(r, sx, sy)) { it.underRock = true; break; }
+            if (it.underRock) break;
+        }
+    }
 }
 // the heights (px) of a rock wall piece at its two ends and its middle: a ragged skyline, the same for every piece at the same place
 function _fpRockHeights(it, H) {
-    const hs = _fpRockHeightsBase(it, H); if (!it.dk) return hs;
+    const hs = _fpRockHeightsBase(it, H); if (it.lo) return hs.map(h => Math.max(h, it.lo));   // (a lone stub: _fpRockStubs)
+    if (!it.dk) return hs;
     const top = _fp.deckRise + 14 + _fpHash(Math.round(it.a[0] * 4), Math.round(it.a[1] * 4)) % 12; return hs.map((h, i) => h + Math.max(0, top - h) * it.dk[i]);   // rock beside the deck's glass rises to the deck's wall top
 }
 function _fpRockHeightsBase(it, H) {

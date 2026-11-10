@@ -2723,3 +2723,12 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner, of the rock by the Cold Storage door: "it looks really jank. You need to make it to where the wall bends in, the cave wall bends in with a circular sort of look, rounded off sort of look. And then just fix it up all around." Then "Rock curves into the alcove"; of the first pictures, "The left side [...] looks good. The right side still needs work"; then "Approve it for everyone".
 - Every bend in the cave rock is a curve. The alcove's two sides are rock (they were plain wall). Ends of runs stay flush. `docs/FACILITY.md`.
 - Supersedes "the alcove's two sides are plain wall" (js/facilitymap.js, the arena).
+
+## DECISION: The wall spots that did not look right (2026-11-09, build `2026-11-09rr`)
+- The owner, with five screenshots: "we found a few spots where the geometry just doesn't look right [...] It's mostly in the walls. I see a few part where the armory is at where it has a floor that is kind of strangely positioned behind the door."
+- Fixed as faults, the look otherwise kept: a lone stub of rock keeps the rock's height (it rose to the deck's top); plain walls built into the rock have the rock's roof for a top; a wall's top inside the rock is not drawn over it; a doorway's side wall takes its band's light for its top; a bend's roof no longer pinches to a hook; the pocket floor is laid only where a room lies behind it. `docs/FACILITY.md`.
+- Supersedes "the rock at each end of the deck's glass rises to the deck's wall top" for a lone stub only.
+
+## DECISION: A new follower comes up in the roster (2026-11-09, build `2026-11-09rr`)
+- The owner: "whenever I recruit or breed a follower, it should pop up in the command window or the roster window rather than having to exit to pick to put it on the squad or send it to the floor."
+- The who-makes-room question shows over the Command Center (it opened behind it). A recruit or an offspring made with the roster open is then the card in view, its squad buttons under it. The rules are unchanged (a member makes room, NOBODY, CANCEL, EXILE). `docs/FOLLOWER-PROGRESSION.md` §1.

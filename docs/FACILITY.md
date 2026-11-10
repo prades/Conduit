@@ -97,7 +97,7 @@ The arena's rock edge is diagonal on the tile grid, so decor on it is given on t
 
 ### Floor under the walls, and walls that do not fade
 
-- **No holes.** Floor tiles are drawn only for walkable cells, so where a wall met the floor on a diagonal (the arena's rock) a black gap showed. `_fpFillCells` (js/facilitydecor.js) adds drawing-only FILL cells: any cell a room even partly covers gets that room's floor, cut to the room's outline (`clip`: past a rock edge the camera sees side-on nothing would hide it, and the Cold Storage's pale floor showed as white teeth in the void); and the pocket of void behind the arena's north rock (between the rock teeth and the hallway, up to 3 tiles) gets the arena's floor. The void beyond the south and east rock is NOT filled: it is in front of those walls. Fill cells are never walkable, are drawn as `fill` items sorted just before the walls (`depth`), and carry the room's floor marks. A wall whose camera-facing side looks onto a lower filled floor reaches down to it (`drop`, the skirt).
+- **No holes.** Floor tiles are drawn only for walkable cells, so where a wall met the floor on a diagonal (the arena's rock) a black gap showed. `_fpFillCells` (js/facilitydecor.js) adds drawing-only FILL cells: any cell a room even partly covers gets that room's floor, cut to the room's outline (`clip`: past a rock edge the camera sees side-on nothing would hide it, and the Cold Storage's pale floor showed as white teeth in the void); and the pocket of void behind the arena's north rock (between the rock teeth and the hallway, up to 3 tiles) gets the arena's floor, only where a room lies behind it (since build `2026-11-09rr`: behind the west rock it floated in the void). The void beyond the south and east rock is NOT filled: it is in front of those walls. Fill cells are never walkable, are drawn as `fill` items sorted just before the walls (`depth`), and carry the room's floor marks. A wall whose camera-facing side looks onto a lower filled floor reaches down to it (`drop`, the skirt).
 - **Walls never turn translucent.** A wall in front of the player used to fade out. It is now cut down, opaque, to a low parapet as the player comes within about 3 tiles (`_fpCut`: 0 beyond 3.2 tiles or behind the player, 1 within 2), so nothing behind it is hidden. Wall decor and fixtures on a wall that is cut down are not drawn while it is. Glass is left as it is.
 
 ### Rock formations; walls never react (supersedes the parapet and tall-rock rules above)
@@ -114,6 +114,15 @@ The owner, 2026-11-09, of the rock by the Cold Storage door: "it looks really ja
 - **Ends of runs** stay flush with what they meet: rounded, they opened a gap against the wall or door beside them.
 - **Approved in the game 2026-11-09** ("Approve it for everyone"); for everyone since build `2026-11-09qq`. The modelled 3-D walls (the `?walls=3d` preview) were baked again for the alcove's new rock.
 
+### The spots that did not look right (build `2026-11-09rr`)
+The owner's screenshots of 2026-11-09: "a few spots where the geometry just doesn't look right ... It's mostly in the walls"; of the Armory, "a floor that is kind of strangely positioned behind the door". All in js/facilitydecor.js unless named.
+- **A lone stub of rock** (a run of rock a tile long or less with walls at both ends: the arena's north-west corner, between the deck's glass and the steps) keeps the rock's own height, at least as tall as the walls of the room behind it (`_fpRockStubs`, `it.stub`, `it.lo`). Beside the deck's glass it rose to the deck's top: a chimney.
+- **Plain walls built into the rock** (a run of plain wall 4 tiles long or less with rock at both ends: the Cold Storage's door wall, the Armory's alcove) have the rock's roof for a top (`_fpInRock`, `_fpRockSlab`), not a pale lab top.
+- **A wall under the rock's roof** that sorts after the rock (the hallway's wall at the Cold Storage alcove's east corner) does not draw its top over it (`_fpUnderRock`).
+- **A doorway's side wall** across a band another room's wall roofs takes that roof's light for its top (js/facilityplay.js `_fpSlabShare`): the pale squares, as at the Stair Room's door to Teleport Room 2.
+- **A bend's roof** counts a north-south piece's roof (run north along its own line, all but nothing deep) as none (`_fpBendRoof`): it pinched to a hook.
+- **The pocket floor** behind the arena's rock is laid only where a room lies behind it, within 3 tiles: the hallway behind the north rock (above, "No holes").
+
 ### The catwalks are scaffolding
 
 The catwalks are not a room but an open steel deck at the top of the arena's east side, on legs. The map keeps their polygon (and so the collision) and marks the room `structure: "scaffold"`; the drawing then treats it as scaffolding (`_fpScaffoldMarks`, `_fpDrawRail`, `_fpDrawFrame` in js/facilitydecor.js):
@@ -123,7 +132,7 @@ The catwalks are not a room but an open steel deck at the top of the arena's eas
 
 ### The deck's cliff and the rock beside it
 
-The observation deck is cut into the rock: the arena's own pane of the deck window (the lower glass the arena owns, seen below the deck's glass) is drawn as a THICK ROCK FACE (`_fpDrawDeckCliff`), from the arena floor up to the underside of the deck, with strata, boulders, a crack and a lit lip under the deck. The arena rock at each end of the window rises to the deck's wall top (`it.dk`, tapering back within 1.5 tiles), so there is no gap between the deck and the rock.
+The observation deck is cut into the rock: the arena's own pane of the deck window (the lower glass the arena owns, seen below the deck's glass) is drawn as a THICK ROCK FACE (`_fpDrawDeckCliff`), from the arena floor up to the underside of the deck, with strata, boulders, a crack and a lit lip under the deck. The arena rock at each end of the window rises to the deck's wall top (`it.dk`, tapering back within 1.5 tiles), so there is no gap between the deck and the rock; not a lone stub of rock (the north end's, since build `2026-11-09rr`: it stood up as a chimney; "The spots that did not look right", above).
 
 The cliff face is a continuous cavern wall of stacked rock ledges (strata). Every ledge swells and thins along the wall (smooth noise of the position along it, shared by all the wall's pieces so the rock runs on unbroken), its lit top, shaded face and shaded underside giving the relief; fissures, a hanging tooth under the deck's lip and the odd rock at the foot finish it. No outlines except the lip under the deck. (Two earlier attempts, outlined faceted lumps, read as brown crystals.)
 

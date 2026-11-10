@@ -132,6 +132,7 @@ function _fpWallStops(top, wain) {
 function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink, cap) {   // the thick top of a wall: a slab FP_WALL_T deep over the band, running from the piece towards the other side of the wall (out: +1 towards the camera, -1 away). It runs half a tile past both ends (not on a short piece, a tunnel's side, where it would stick out), so the slab of a corner or of a row of pieces is continuous. A soft crease along its far edge (where `ink` allows: the boundary of the whole top), a light bevel along the edge towards the room.
     const t = FP_WALL_T, L = Math.hypot(bx - ax, by - ay) || 1, e = L < 1.6 ? 0 : 0.5, ex = (bx - ax) / L * e, ey = (by - ay) / L * e, Q = (x, y) => _fpP(x, y, Hd), mx = nx * (out || -1), my = ny * (out || -1);
     const p0 = Q(ax - ex, ay - ey), p1 = Q(bx + ex, by + ey), p2 = Q(bx + ex + mx * t, by + ey + my * t), p3 = Q(ax - ex + mx * t, ay - ey + my * t);
+    if (cap === "rock" && typeof _fpRockSlab === "function") { _fpRockSlab(p0, p1, p2, p3); return; }   // (a wall built into the rock: the rock's roof, js/facilitydecor.js _fpInRock)
     _fpFlat([p0, p1, p2, p3], cap || FP_PAL.cap);
     _fpEdge(p0, p1, FP_EDGE.lightSoft, 1.5);   // the bevel on the edge the wall face hangs from
     if (ink === false) return;
@@ -140,7 +141,13 @@ function _fpWallTop(ax, ay, bx, by, nx, ny, Hd, out, ink, cap) {   // the thick 
 function _fpStyleWall(it, Hd) {
     const ax = it.a[0], ay = it.a[1], bx = it.b[0], by = it.b[1], dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; }
     const lit = nx > ny, wain = Math.min(24, Hd), capH = Math.min(8, Math.max(0, Hd - wain)), RC = _fpRoomCols(it.room), zb = Hd - capH;
-    _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out, it.inkBack, RC.cap);   // the wall's thickness: a slab over the band (the building is spaced out for it)
+    if (!it.underRock) {   // the wall's thickness: a slab over the band (the building is spaced out for it); none under the rock's roof (js/facilitydecor.js _fpUnderRock)
+        const cap = it.inRock ? "rock" : RC.cap, o = it.slabFrom;   // (built into the rock: the rock's roof for a top)
+        // (over a band another room's wall roofs: in that roof's light, js/facilityplay.js _fpSlabShare)
+        const sl = o && _fp.light && typeof _fpWallLightAt === "function" ? _fpWallLightAt(o.room, o.x, o.y) : undefined;
+        if (sl !== undefined && Math.abs(sl - _fpItemLight(it)) > 0.01) _fpWithLight(sl, () => _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out, it.inkBack, cap));
+        else _fpWallTop(ax, ay, bx, by, nx, ny, Hd, it.out, it.inkBack, cap);
+    }
     if (it.nbBand) return;   // (only the slab: the neighbouring room's own wall face stands in front of this one)
     // the piece's frame on screen: a point at (u along the piece, z up) is (X0 + DX u, Y0 + DY u - z): no arrays per point
     const a0 = _fpP(ax, ay, 0), b0 = _fpP(bx, by, 0), X0 = a0[0], Y0 = a0[1], DX = b0[0] - X0, DY = b0[1] - Y0;

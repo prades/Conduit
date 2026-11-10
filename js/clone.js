@@ -654,15 +654,17 @@ function recruitFollower(type, element) {
     return true;
 }
 // The + RECRUIT button: recruit, and bring the roster up to date. With the squad full it asks first who makes room (js/party.js partyPickOpen): nothing is paid until that is chosen, and one question is up at a time.
+// The new follower then comes up in the roster that is open (js/commandcenter.js ccShowNew).
 function recruitDo() {
-    const after = () => { if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); };
+    const after = (f) => { if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); if (f && typeof ccShowNew === "function") ccShowNew(f); };
+    const made = () => { const n0 = followers.length; return recruitFollower() && followers.length > n0 ? followers[followers.length - 1] : null; };   // (the recruit is the last one made: js/helpers.js spawnFollowerAtCrystal)
     if (typeof partyPickBusy === "function" && partyPickBusy()) return false;
     if (shardCount >= RECRUIT_COST && typeof partyOn === "function" && partyOn() && typeof partyFull === "function" && partyFull() && typeof partyPickOpen === "function") {
-        partyPickOpen("A RECRUIT", [crystal.x, crystal.y], () => { recruitFollower(); after(); }, null);
+        partyPickOpen("A RECRUIT", [crystal.x, crystal.y], () => { after(made()); }, null);
         return true;
     }
-    const ok = recruitFollower(); after();
-    return ok;
+    const f = made(); after(f);
+    return !!f;
 }
 
 // What new followers draw their element from: every element that is online, which is all six from the start (js/facilityplay.js). There is no mix to narrow.

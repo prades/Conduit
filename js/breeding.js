@@ -99,13 +99,14 @@ function breedMake(f, rnd) {
     return c;
 }
 // the button's act: with the squad full, who makes room is asked first (nothing paid until it is chosen); else the offspring is made now. Returns true when something was started.
+// The offspring then comes up in the roster that is open (js/commandcenter.js ccShowNew).
 function breedStart(f) {
     const can = breedCan(f); if (!can.ok) { _brSay(can.why); return false; }
-    const after = () => { if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); };
+    const after = (c) => { if (typeof ccRender === "function") ccRender(); if (typeof radialRender === "function") radialRender(); if (c && typeof ccShowNew === "function") ccShowNew(c); };
     if (typeof partyOn === "function" && partyOn() && typeof partyFull === "function" && partyFull() && typeof partyPickOpen === "function") {
-        return partyPickOpen("AN OFFSPRING", [crystal.x, crystal.y], () => { breedMake(f); after(); }, null);
+        return partyPickOpen("AN OFFSPRING", [crystal.x, crystal.y], () => { after(breedMake(f)); }, null);
     }
-    const c = breedMake(f); after(); return !!c;
+    const c = breedMake(f); after(c); return !!c;
 }
 // the two taps: the first arms (for BREED_ARM ms), the second breeds. Returns "armed", "bred" or "refused".
 function breedArmed(f) { return !!f && !!_breedArmed && _breedArmed.uid === (f.uid || 0) && _brNow() - _breedArmed.at < BREED_ARM; }

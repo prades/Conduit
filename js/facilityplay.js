@@ -625,6 +625,7 @@ function _fpPlaceStatics(F) {
     for (const d of (F.decor || [])) if (d.kind === "bridge_deck" && d.rect) for (const k of facilityRectCells(d.rect)) { const t = worldTileMap.get(k); if (t) t.deck = true; }   // (a bridge's grating: the game's tile under it is not drawn, so the water shows through: js/game.js)
     for (const it of _fpFillItems()) items.push(it);     // floor that runs in under the walls (no black where a wall meets the floor)
     _fpSkirts(items);                                    // a wall above a lower floor reaches down to it
+    _fpSlabShare(items);                                 // a wall's top over a band another room's wall roofs takes that roof's light
     _fp.items = items; _fpRockSides(items); _fpScaffoldMarks(items);   // which rock walls are formations the arena is in front of, and which are behind; which walls are scaffolding
     _fp.items = items;
 }
@@ -673,6 +674,19 @@ function drawFacilityItem(it) {
     try {
         if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "rockbend") _fpDrawRockBend(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it); else if (it.fp === "sewer") facilitySewerDraw(it); else if (it.fp === "sidequest") sqDraw(it);
     } finally { ctx.restore(); ctx = real; }
+}
+// A WALL'S TOP OVER ANOTHER ROOM'S BAND: a wall across a band that a wall of another room already roofs (the sides of the Stair Room's doorway to Teleport Room 2, a short wall each across the band between the
+// two rooms) draws its slab in that roof's light, so a lit room's slab is not a pale square on a dark roof (the owner's screenshots of the hallway and the Stair Room, 2026-11-09). `slabFrom`: where that
+// wall takes its light from, its room and its middle (js/facilitystyle.js _fpStyleWall; a copy, not the wall itself).
+function _fpSlabShare(items) {
+    const frame = it => { const dx = it.b[0] - it.a[0], dy = it.b[1] - it.a[1], L = Math.hypot(dx, dy) || 1; let nx = dy / L, ny = -dx / L; if (nx + ny < -1e-9 || (Math.abs(nx + ny) < 1e-9 && nx < 0)) { nx = -nx; ny = -ny; } const o = it.out || -1; return { ux: dx / L, uy: dy / L, L, mx: nx * o, my: ny * o }; };
+    const bands = items.filter(it => it.fp === "wall" && it.nbBand && it.kind !== "glass" && it.kind !== "rock").map(o => ({ o, f: frame(o) }));
+    const inSlab = (b, x, y) => { const px = x - b.o.a[0], py = y - b.o.a[1], t = px * b.f.ux + py * b.f.uy, s = px * b.f.mx + py * b.f.my; return t >= -0.001 && t <= b.f.L + 0.001 && s > 0.02 && s < FP_WALL_T - 0.02; };   // (along it, its ends too: a point at the joint of two pieces is in both)
+    for (const it of items) {
+        if (it.fp !== "wall" || it.nbBand || it.kind === "glass" || it.kind === "rock") continue;
+        const f = frame(it), cx = it.x + f.mx * FP_WALL_T * 0.5, cy = it.y + f.my * FP_WALL_T * 0.5;   // (the middle of its slab)
+        for (const b of bands) if (Math.abs(b.o.x - cx) < 1.5 && Math.abs(b.o.y - cy) < 1.5 && (b.o.lroom || b.o.room) !== (it.lroom || it.room) && inSlab(b, cx, cy)) { it.slabFrom = { room: b.o.lroom || b.o.room, x: b.o.x, y: b.o.y }; break; }
+    }
 }
 // A wall whose camera-facing side looks onto a LOWER floor (the pocket of floor behind the arena's rock, a fill cell) reaches down to it, so no gap shows under it.
 function _fpSkirts(items) {
