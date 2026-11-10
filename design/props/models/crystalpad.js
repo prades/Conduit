@@ -1,4 +1,5 @@
-// THE CRYSTAL PAD FAMILY (docs: design/props/BRIEF.md). Variants (the game picks them by name, js/facilitystyle.js _fpStyleRigPad / _fpStyleRig):
+// THE CRYSTAL PAD FAMILY (docs: design/props/BRIEF.md). Variants (the game picks them by name, js/facilitystyle.js _fpStyleRigPad; `rig` is not drawn since build 2026-11-09xx, when the crystal went into a glass
+// tank standing in the pad's well: crystaltank.js):
 //   pad    THE CRADLE ON THE FLOOR: a round, three-tier machine (radius 1.5 tiles, 24 px high): a graphite foundation ring with a hazard-striped chamfer, a teal drum with panel grooves, vents and a light band,
 //          a pale top deck inlaid with three glowing rings (cyan, violet, cyan) and eight seams, a chrome-collared emitter well in the middle with four cradle prongs round it, four lamp pylons on the deck and two
 //          heavy cables leaving the foundation. The crystal floats over the well (it is drawn live, with the pulses and the field rings).

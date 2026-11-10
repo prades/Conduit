@@ -916,7 +916,9 @@ function render() {
             // agitated as it fails.
             const hpR   = Math.max(0, Math.min(1, crystal.health / crystal.maxHealth));
             const hurt  = 1 - hpR;
-            const bob   = Math.sin(frame * 0.028) * 6;
+            // In its TANK (js/facilitystyle.js FP_TANK; build 2026-11-09xx, the owner: "The crystal should rise within it") it floats in the middle of the liquid, slowly rising and sinking
+            const tank  = typeof FP_TANK !== "undefined" && typeof _fp !== "undefined" && _fp && _fp.crystalDepth !== undefined ? FP_TANK : null;
+            const bob   = tank ? -Math.sin(frame * 0.012) * tank.rise : Math.sin(frame * 0.028) * 6;
             const rot   = frame * (0.010 + hurt * 0.012);
             const pulse = 0.72 + 0.28 * Math.sin(frame * 0.06);
             // A failing crystal stutters; a healthy one burns steady.
@@ -933,7 +935,7 @@ function render() {
             const rs = (v, m) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${v * m})`;
 
             const cx  = px;
-            const gy  = py - 64 + bob;   // gem centre (a dozen px higher than it once hovered, over the facility's taller pad, js/facilitystyle.js FP_PAD)
+            const gy  = tank ? py + TILE_H - tank.gemZ + bob : py - 64 + bob;   // gem centre (py is TILE_H over the floor in the facility's heights: js/facilityplay.js _fpP)
             const rx  = 27, ry = 13.5;               // equator radii (2:1 iso)
             const topY = 42, botY = 32;              // apex heights
 
@@ -1034,8 +1036,9 @@ function render() {
 
             ctx.restore();
 
-            drawHealthBar(px - 25, py - 118 + bob, 50, 7, crystal.health, crystal.maxHealth);
-            drawCloneRespawnTicker(px, py - 130 + bob);
+            const barY = tank ? py + TILE_H - tank.z1 - 16 : py - 118 + bob;   // (over the tank's top, not in it)
+            drawHealthBar(px - 25, barY, 50, 7, crystal.health, crystal.maxHealth);
+            drawCloneRespawnTicker(px, barY - 12);
             if (hpR < 0.3 && frame % 30 < 15) {
                 ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.fillStyle = "rgba(255,0,0,0.08)";

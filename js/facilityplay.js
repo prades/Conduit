@@ -620,7 +620,7 @@ function _fpPlaceStatics(F) {
     if (typeof facilitySewerItems === "function") for (const it of facilitySewerItems(F)) items.push(it);   // THE SEWERS' water, bridge rails, broken bridge, gates, and the arena's overflow grates (js/facilitysewers.js)
     for (const it of _fpWallPlace(F)) items.push(it);   // wall decor (js/facilitydecor.js)
     for (const it of _fpStylePillars(F)) items.push(it);   // the corner posts of a styled room (js/facilitystyle.js)
-    for (const it of _fpStyleRigs(F)) items.push(it);      // the crystal's pad machine (js/facilitystyle.js)
+    for (const it of _fpStyleRigs(F)) items.push(it);      // the crystal's pad and its tank (js/facilitystyle.js)
     _fp.floorOps = _fpFloorBuild(F);                     // the floors' coverings and decals, cut into tiles
     for (const d of (F.decor || [])) if (d.kind === "bridge_deck" && d.rect) for (const k of facilityRectCells(d.rect)) { const t = worldTileMap.get(k); if (t) t.deck = true; }   // (a bridge's grating: the game's tile under it is not drawn, so the water shows through: js/game.js)
     for (const it of _fpFillItems()) items.push(it);     // floor that runs in under the walls (no black where a wall meets the floor)
@@ -629,11 +629,6 @@ function _fpPlaceStatics(F) {
     _fp.items = items; _fpRockSides(items); _fpScaffoldMarks(items);   // which rock walls are formations the arena is in front of, and which are behind; which walls are scaffolding
     _fp.items = items;
 }
-// a TALL item (the Crystal's crown and its struts, 640 px up) is on screen while its foot is anywhere from just above the top of the screen to `tall` px below the bottom (visibleForDraw only allows 210)
-function _fpTallVisible(it) {
-    const dx = it.x - player.visualX, dy = it.y - player.visualY, px = (dx - dy) * TILE_W + canvas.width / 2; if (px < -DRAW_CULL_SIDE || px > canvas.width + DRAW_CULL_SIDE) return false;
-    const py = (dx + dy) * TILE_H + canvas.height / 2; return py >= -DRAW_CULL_TOP && py <= canvas.height + it.tall;
-}
 function facilityDrawItems(drawList) {
     if (!_fp || !_fp.items) return;
     _fpCam = facilityLiftPx(player.visualX, player.visualY);   // the camera rides the player's floor (input and targeting read it: it is kept in a step with no picture)
@@ -641,8 +636,8 @@ function facilityDrawItems(drawList) {
     if (typeof _fpLightUpdate === "function") _fpLightUpdate(_fp.F);   // the rooms' light levels and the pools at open doors
     if (typeof facilityTutorialTick === "function") facilityTutorialTick();
     if (typeof _simGhost !== "undefined" && _simGhost) return;   // a step with no picture draws nothing: no item is added to the draw list (see render(), js/game.js)
-    for (const it of _fp.items) if ((visibleForDraw(it.x, it.y) || (it.tall && _fpTallVisible(it)) || (it.span && _fpSpanVisible(it))) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);   // (span: a long item, the sewers' water, on screen anywhere along it)
-    if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn after the pad machine it rests in
+    for (const it of _fp.items) if ((visibleForDraw(it.x, it.y) || (it.span && _fpSpanVisible(it))) && (it.fp !== "wall" || _fpWallOnScreen(it))) drawList.push(it);   // (span: a long item, the sewers' water, on screen anywhere along it)
+    if (_fp.crystalDepth !== undefined) for (const o of drawList) if (o.type === "crystal") o.depth = _fp.crystalDepth;   // the crystal is drawn inside its tank: after the pad with the tank's far side, before the tank's near side
 }
 
 // ── height: the floors rise and fall (drawing only: movement is flat) ──
@@ -672,7 +667,7 @@ function drawFacilityItem(it) {
     if (lv < 0.98 && typeof CanvasRenderingContext2D !== "undefined" && real instanceof CanvasRenderingContext2D) ctx = _fpDimCtx(real, 1 - _fpDarkAmt() * (1 - lv));   // (not on the null context of a simulation-only step): an unlit room's things are drawn through the dimmed pen (js/facilitystyle.js)
     ctx.save();
     try {
-        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "rockbend") _fpDrawRockBend(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rig") _fpStyleRig(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it); else if (it.fp === "sewer") facilitySewerDraw(it); else if (it.fp === "sidequest") sqDraw(it);
+        if (it.fp === "wall") _fpDrawWall(it); else if (it.fp === "rockbend") _fpDrawRockBend(it); else if (it.fp === "door") _fpDrawDoor(it); else if (it.fp === "prop") _fpDrawProp(it); else if (it.fp === "fixture") _fpDrawFixture(it); else if (it.fp === "wdecor") _fpDrawWDecor(it); else if (it.fp === "fill") _fpDrawFill(it); else if (it.fp === "pickup") _fpDrawPickup(it); else if (it.fp === "station") _fpDrawStation(it); else if (it.fp === "spot") _fpDrawSpot(it); else if (it.fp === "pillar") _fpStylePillar(it); else if (it.fp === "rigpad") _fpStyleRigPad(it); else if (it.fp === "tank") _fpStyleTankFront(it); else if (it.fp === "stair") _fpStyleStair(it); else if (it.fp === "stairwell") _fpDrawStairwell(it); else if (it.fp === "sewer") facilitySewerDraw(it); else if (it.fp === "sidequest") sqDraw(it);
     } finally { ctx.restore(); ctx = real; }
 }
 // A WALL'S TOP OVER ANOTHER ROOM'S BAND: a wall across a band that a wall of another room already roofs (the sides of the Stair Room's doorway to Teleport Room 2, a short wall each across the band between the

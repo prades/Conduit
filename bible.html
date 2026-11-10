@@ -3398,8 +3398,8 @@
     <tr><td><span class="sw" style="--s:#9a5cff"></span>Violet</td><td class="num"><span class="n" data-k="FP_PAL.violet">#9a5cff</span></td><td><code>js/facilitystyle.js:21</code></td></tr>
     <tr><td><span class="sw" style="--s:#f2b13a"></span>Amber (the one warning colour)</td><td class="num"><span class="n" data-k="FP_PAL.amber">#f2b13a</span></td><td><code>js/facilitystyle.js:21</code></td></tr>
   </table></div>
-  <figure><a href="img/bible/rooms/crystal_chamber.webp"><img src="img/bible/rooms/crystal_chamber.webp" alt="The Crystal Chamber in the Crystal Laboratory style: the pale floor, the pad and crown round the Crystal, consoles, sentries and steel doors" width="1400" height="900" loading="lazy"></a>
-    <figcaption>The Crystal Chamber: pale matte floor and walls, cyan crystal energy, the baked pad and crown, consoles and sentries.</figcaption></figure>
+  <figure><a href="img/bible/rooms/crystal_chamber.webp"><img src="img/bible/rooms/crystal_chamber.webp" alt="The Crystal Chamber in the Crystal Laboratory style: the pale floor, the Crystal in its glass tank on the pad, consoles, the sentry and steel doors" width="1400" height="900" loading="lazy"></a>
+    <figcaption>The Crystal Chamber: pale matte floor and walls, the Crystal floating in its bubbling glass tank on the baked pad, consoles and the sentry by the door.</figcaption></figure>
   <p class="where">Where it lives: <code>docs/STYLE-CRYSTAL-LAB.md</code> · <code>js/facilitystyle.js</code> (<code>FP_PAL</code>, <code>FP_STYLE_ROOMS</code>) · pictures: <code>docs/style/crystal-lab-*.png</code></p>
   <details class="dec"><summary>Decisions</summary><div>
     <blockquote class="asked">“reference Dexter's Laboratory and The Powerpuff Girls”<cite>Chosen · docs/STYLE-CRYSTAL-LAB.md:27 · commit c1d1551</cite></blockquote>
@@ -3444,7 +3444,7 @@
     <tr><td>Screen lift per unit of a room's height</td><td class="num"><span class="n" data-k="FP_ELEV_PX">34</span> px</td><td><code>js/facilityplay.js:20</code></td></tr>
     <tr><td>A body keeps this far from a wall</td><td class="num"><span class="n" data-k="FP_BODY">0.4</span> tiles</td><td><code>js/facilityplay.js:17</code></td></tr>
     <tr><td>Effects on screen at most</td><td class="num"><span class="n" data-k="FX_MAX">80</span></td><td><code>js/elements.js:486</code></td></tr>
-    <tr><td>The pad: the gem's tip height; the crown's</td><td class="num"><span class="n" data-k="FP_PAD.tipZ">76</span> px; <span class="n" data-k="FP_PAD.crownZ">226</span> px</td><td><code>js/facilitystyle.js:414</code></td></tr>
+    <tr><td>The Crystal's tank (since build <code>2026-11-09xx</code>): its top; the crystal's middle in it, rising and sinking</td><td class="num"><span class="n" data-k="FP_TANK.z1">192</span> px; <span class="n" data-k="FP_TANK.gemZ">104</span> ± <span class="n" data-k="FP_TANK.rise">12</span> px</td><td><code>js/facilitystyle.js:439</code></td></tr>
   </table></div>
   <p class="where">Where it lives: <code>js/facilitystyle.js</code> (<code>_fpStyleWall</code> <code>_fpStyleDoor</code> <code>_fpStyleRigPad</code> <code>_fpLightUpdate</code> <code>_fpDimCtx</code>) · <code>js/facilitystyleall.js</code> (floors, glass, stairs, the flat furniture fallbacks) · <code>js/facilitydecor.js</code> · <code>js/facilitysewers.js</code> · <code>js/config.js:153-164</code> (the effects plan)</p>
   <details class="dec"><summary>Decisions</summary><div>
@@ -3457,7 +3457,7 @@
   </ul></div>
 
   <h3 id="art-props">The 3D prop sprites</h3>
-  <p>Every piece of furniture, and the Crystal's pad and crown, is a 3D model baked to a sprite in the game's own projection, so the facility reads as one 3D world. There are <span class="n" data-k="Object.keys(PROP_ATLAS).length">12</span> sheets: <b>office</b> (desks, consoles, server racks), <b>lounge</b> (couches, tables, vending machines), <b>lab</b> (benches, the fume hood, test chambers), <b>tech</b> (teleporters, relays and the charger ON / OFF, the mech bay, lockers, display cases, the telescope), <b>cargo</b> (crates, barrels, the floodlight, barriers, the supply case), <b>cold</b> (freezers, toppled racks), <b>plant</b>, <b>sentry</b> (16 aim angles), <b>truck</b>, <b>tank</b>, <b>bridge</b> and <b>crystalpad</b>.</p>
+  <p>Every piece of furniture, and the Crystal's pad and its tank, is a 3D model baked to a sprite in the game's own projection, so the facility reads as one 3D world. There are <span class="n" data-k="Object.keys(PROP_ATLAS).length">13</span> sheets: <b>office</b> (desks, consoles, server racks), <b>lounge</b> (couches, tables, vending machines), <b>lab</b> (benches, the fume hood, test chambers), <b>tech</b> (teleporters, relays and the charger ON / OFF, the mech bay, lockers, display cases, the telescope), <b>cargo</b> (crates, barrels, the floodlight, barriers, the supply case), <b>cold</b> (freezers, toppled racks), <b>plant</b>, <b>sentry</b> (16 aim angles), <b>truck</b>, <b>tank</b>, <b>bridge</b>, <b>crystalpad</b> and <b>crystaltank</b>.</p>
   <ol>
     <li><b>Model</b> (<code>design/props/models/&lt;family&gt;.js</code>, rules in <code>design/props/BRIEF.md</code>): three.js code builds a group, footprint centre at the origin, floor at y = 0. <b>One world unit is one tile.</b> Models use the shared style kit (<code>_style.js</code>; three r128 reads hex as linear, so colours go through <code>STY.col</code>). Hard-surface and bevelled, panel lines, emissive screens and lamps, “no cartoon outlines (shading does the work)”. A model stays inside its footprint; its front faces +z when it is at least as wide as it is long, else +x.</li>
     <li><b>Bake</b> (<code>node design/props/bake_props.js &lt;three-dir&gt; &lt;family|all&gt;</code>, three@0.128.0 in headless Chromium through Playwright): an orthographic 2:1 iso camera at 60 / sin 45° px per unit. Each variant is rendered, cropped and packed into <code>img/props/&lt;family&gt;.png</code>; its place, its <b>anchor</b> (the ground point under the origin) and its <b>marks</b> (a sentry's lamp and muzzle) go to <code>design/props/out/&lt;family&gt;.json</code>. A variant touching the canvas edge is flagged “EDGE!”. <code>preview.js</code> writes a contact sheet.</li>
@@ -3471,8 +3471,8 @@
   </ul>
   <div class="tw"><table>
     <tr><th>What</th><th class="num">Value</th><th>Code</th></tr>
-    <tr><td>Sheets</td><td class="num"><span class="n" data-k="Object.keys(PROP_ATLAS).length">12</span></td><td><code>js/propatlas.js:2</code></td></tr>
-    <tr><td>Baked variants in all</td><td class="num"><span class="n" data-k="Object.values(PROP_ATLAS).reduce(function (n, f) { return n + Object.keys(f.cells).length; }, 0)">118</span></td><td><code>js/propatlas.js:2</code></td></tr>
+    <tr><td>Sheets</td><td class="num"><span class="n" data-k="Object.keys(PROP_ATLAS).length">13</span></td><td><code>js/propatlas.js:2</code></td></tr>
+    <tr><td>Baked variants in all</td><td class="num"><span class="n" data-k="Object.values(PROP_ATLAS).reduce(function (n, f) { return n + Object.keys(f.cells).length; }, 0)">120</span></td><td><code>js/propatlas.js:2</code></td></tr>
     <tr><td>Pixels per world unit (one tile)</td><td class="num"><span class="n" data-k="PROP_ATLAS.cargo.px">84.85</span></td><td><code>design/props/bake_props.js:23</code></td></tr>
     <tr><td>Pixels per unit of height</td><td class="num"><span class="n" data-k="PROP_ATLAS.cargo.uh">73.48</span></td><td><code>js/propatlas.js:2</code></td></tr>
     <tr><td>Prop kinds mapped to a sheet</td><td class="num"><span class="n" data-k="Object.keys(PS_FAMILY).length">44</span></td><td><code>js/propsprites.js:114</code></td></tr>
@@ -3480,8 +3480,8 @@
     <tr><td><span class="sw" style="--s:#060b16"></span>Silhouette in the dark</td><td class="num"><span class="n" data-k="PS.dark">#060b16</span></td><td><code>js/propsprites.js:16</code></td></tr>
     <tr><td>Light levels a dim prop is composed at</td><td class="num"><span class="n" data-k="PS_DIM_STEPS">12</span></td><td><code>js/propsprites.js:76</code></td></tr>
     <tr><td>Slices cached before the cache is cleared</td><td class="num">900</td><td><code>js/propsprites.js:53</code> (literal)</td></tr>
-    <tr><td>The crystal pad's sheet: cells (120 KB)</td><td class="num"><span class="n" data-k="Object.keys(PROP_ATLAS.crystalpad.cells).length">2</span></td><td><code>js/propatlas.js:2</code></td></tr>
-    <tr><td>Sheet budget per family (the brief); all twelve on disk</td><td class="num">under ~2.5 MB; 1.9 MB</td><td><code>design/props/BRIEF.md:31</code> (doc; measured)</td></tr>
+    <tr><td>The crystal pad's sheet: cells (120 KB; the crown's, <code>rig</code>, is not drawn since build <code>2026-11-09xx</code>)</td><td class="num"><span class="n" data-k="Object.keys(PROP_ATLAS.crystalpad.cells).length">2</span></td><td><code>js/propatlas.js:2</code></td></tr>
+    <tr><td>Sheet budget per family (the brief); all thirteen on disk</td><td class="num">under ~2.5 MB; 1.9 MB</td><td><code>design/props/BRIEF.md:31</code> (doc; measured)</td></tr>
   </table></div>
   <p class="where">Where it lives: <code>design/props/</code> · <code>img/props/*.png</code> · <code>js/propatlas.js</code> (generated) · <code>js/propsprites.js</code> (<code>_psSlice</code> <code>_psDimmed</code> <code>_psResolve</code> <code>facilitySpriteDraw</code>)</p>
   <details class="dec"><summary>Decisions</summary><div>
@@ -3591,7 +3591,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-09ww</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-09xx</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3813,7 +3813,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-09ww (9 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-09xx (9 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

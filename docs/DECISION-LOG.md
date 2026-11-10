@@ -2758,3 +2758,9 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - The owner: "make the sentries in the facility look less tough. I don't like how there's two inside of the crystal room. So maybe we can make one of those disappear and make it just look like a sleek. Laser sentry." Of the one-piece draft: "Use it".
 - The Crystal Chamber's second sentry (`sentry_chamber_2`, by its south wall) is gone; the one by its door and the hallway's stay. Every sentry is the sleek laser sentry model (design/props/models/sentry.js), its 16 aims, lamp and muzzle as before. `docs/FACILITY.md`, "The turrets".
 - Supersedes the armoured twin-cannon turret model and the map's three sentries.
+
+## DECISION: The Crystal in a bubbling glass tank; the crown and posts removed (2026-11-10, build `2026-11-09xx`)
+- The owner, of the Crystal Chamber (a screenshot with the crown and its posts marked): "Remove the cap/roof and the columns. I want want oval tank that bubbles". Of the draft (a glass oval with two steel hoops, a ring and a valve at its top): "No hoops, plain glass". Then: "The crystal should rise within it".
+- The crown in the ceiling, its posts and struts, the energy lines and the pad's hover field are gone. The Crystal floats in an upright oval of plain glass standing in the pad's well, full of glowing liquid, with bubbles rising and bursting at the surface; it slowly rises and sinks in the middle of the tank. `docs/FACILITY.md`, "The Crystal's tank".
+- The agent's choices (provisional): the slim steel collar with a lit band the glass stands in, the liquid's colour and level (84% of the tank), the bubbles (16; 8 in LOW graphics), the crystal's height (104 px) and its rise and sink (12 px, about nine seconds).
+- Supersedes the crown, posts and energy lines (`docs/FACILITY.md`, "The Crystal's pad, in 3D"; `docs/STYLE-CRYSTAL-LAB.md`).

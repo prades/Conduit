@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09xx` · branch `claude/start-game-project-HSh7Z` · the Crystal in a bubbling glass tank
+- **The crown and its posts are gone** (the owner: "Remove the cap/roof and the columns"): the machine in the ceiling, its posts, struts and energy lines, and the rings and sparks rising off the pad.
+- **The Crystal floats in an oval glass tank** ("I want want oval tank that bubbles"; of the draft, "No hoops, plain glass"; "The crystal should rise within it"): plain glass in a slim steel collar in the pad's well, glowing liquid, bubbles rising and bursting at the surface. The Crystal slowly rises and sinks in the middle; its health bar is over the tank.
+- Tests: the facility suite (its pad-and-crown checks rewritten for the tank), the Bible, startup, clones, sewers, Side Quest, globals, load order, website background and performance suites pass. The Bible's Crystal Chamber picture is retaken.
+
 ### Build `2026-11-09ww` · branch `claude/start-game-project-HSh7Z` · the sleek laser sentry; one sentry in the Crystal Chamber
 - **The sentries look less tough** (the owner: "make it just look like a sleek laser sentry"; the draft: "Use it"). The armoured twin-cannon turret is now a sleek laser sentry: a pale plinth and slender column, a smooth white pod of a head with a lit cyan visor band, and one slim emitter with a glowing lens. It still turns to aim, with its lamp and muzzle flash as before.
 - **One sentry in the Crystal Chamber, not two** ("make one of those disappear"). The one by the south wall is gone; the one guarding the chamber's door and the hallway's stay.

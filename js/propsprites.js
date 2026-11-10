@@ -9,8 +9,10 @@
 //   sentry       one tile. 16 variants a00..a15 for where the head aims (the old `aim`, rounded to 22.5 degrees); the status lamp (cyan when fed, a blinking red when not) and the muzzle flash are painted on its marks.
 //   truck, tank  big. The prop is a set of one-tile CELLS (the items the game sorts by depth); each cell draws the whole sprite clipped to its own tile's column, so a unit walking round them goes in front of the
 //                parts that are behind it and behind the parts in front. The round tanks add the cells round the rim that the circle only grazes, so its edge is not cut square.
-//   crystalpad   THE CRYSTAL'S PAD (not a prop of the map: js/facilitystyle.js _fpStyleRigPad and _fpStyleRig draw it): `pad` on the floor under the crystal and `rig` (the crown in the ceiling, three posts and two struts);
-//                the light that moves (the chasers on the inlaid rings, the well, the lamps, the energy lines, the sparks) is painted live on the marks the baker records. The flat drawings are kept for a sheet that has not arrived.
+//   crystalpad   THE CRYSTAL'S PAD (not a prop of the map: js/facilitystyle.js _fpStyleRigPad draws it): `pad` on the floor under the crystal (the sheet's `rig`, the crown in the ceiling with its posts, is not
+//                drawn since build 2026-11-09xx); the light that moves (the chasers on the inlaid rings, the well, the lamps) is painted live on the marks the baker records. The flat drawing is kept for a sheet that has not arrived.
+//   crystaltank  THE CRYSTAL'S TANK (build 2026-11-09xx): `back`, the glass's far wall and the collar it sits in, drawn with the pad; `front`, its near wall, drawn after the crystal (js/facilitystyle.js FP_TANK:
+//                the liquid, its surface and the bubbles are painted live between them).
 //   bridge       a footbridge from each tank's top to the catwalks' deck: `bridges` in js/facilitymap.js, drawn as a row of one-tile pieces (mid, with a tank-end and a deck-end) at the deck's height.
 // The light: a prop in the dark is dimmed by drawing its silhouette in the dark navy the flat drawing fades to, and the lit sprite over it at the room's light level (as the dimmed pen does for colours).
 const PS = { dark: "#060b16", aimSteps: 16 };

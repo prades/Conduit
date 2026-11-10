@@ -375,32 +375,16 @@ function _fpStyleProp(it) {
     return true;
 }
 
-// ── the crystal's pad machine ──
-// The crystal rests in a round pad machine on the floor and is hooked up to the ceiling: a matching round machine up in the ceiling, tied to the pad by three posts behind the crystal and by energy
-// lines that run down to it. Drawn as one item just before the crystal, in every styled room that has the objective.
+// ── the crystal's pad and its tank ──
+// The crystal floats in a glass tank of glowing liquid seated in a round pad machine on the floor. (Until build 2026-11-09xx it hung over the pad, hooked up to a machine in the ceiling by three posts and
+// energy lines; the owner, 2026-11-10: "Remove the cap/roof and the columns. I want want oval tank that bubbles".) Two items in every styled room that has the objective, one each side of the crystal:
 function _fpStyleRigs(F) {
     const out = [];
     for (const r of F.rooms) { if (!facilityStyleRoom(r.id)) continue; const ob = (r.objects || []).find(o => o.type === "objective"); if (!ob) continue; const x = Math.round(ob.at[0]), y = Math.round(ob.at[1]); const base = facilityRoomHeight(r.id, F) * FP_ELEV_PX;
-        out.push({ type: "fp", fp: "rig", x, y, room: r.id, base, depth: x + y - 0.3, tall: 640 });      // the ceiling machine, the posts and the energy lines: behind everything
-        out.push({ type: "fp", fp: "rigpad", x, y, room: r.id, base, depth: x + y + 2.05 });   // the pad: after every floor tile it covers (the nearest is two tiles on), then the crystal
+        out.push({ type: "fp", fp: "rigpad", x, y, room: r.id, base, depth: x + y + 2.05 });   // the pad, the tank's far wall and the liquid: after every floor tile the pad covers (the nearest is two tiles on), then the crystal
+        out.push({ type: "fp", fp: "tank", x, y, room: r.id, base, depth: x + y + 2.15 });     // the tank's near side, over the crystal: the liquid in front of it, the bubbles, the surface and the glass
         _fp.crystalDepth = x + y + 2.1; }
     return out;
-}
-function _fpStyleRigFlat(it) {
-    const f = _fpFrame(), cx = typeof crystal !== "undefined" && crystal && typeof crystal.x === "number" ? crystal.x : it.x, cy = typeof crystal !== "undefined" && crystal && typeof crystal.y === "number" ? crystal.y : it.y, R = 1.5, zc = 230, P = _fpP;
-    const line = (p, q, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }, ring = (x, y, z, r, col, w) => { const c = P(x, y, z); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.ellipse(c[0], c[1], r * TILE_W * 1.4142, r * TILE_H * 1.4142, 0, 0, 6.2832); ctx.stroke(); };
-    // (back to front: the posts and energy lines first, then the ceiling machine over their tops, then its struts: every beam goes UNDER the machine it joins)
-    // 2. three posts from the pad up to the ceiling machine, on the side away from the camera
-    for (const a of [Math.PI, Math.PI * 1.25, Math.PI * 1.5]) { const px = cx + Math.cos(a) * R * 0.92, py = cy + Math.sin(a) * R * 0.92; _fpStyleCyl(px, py, 0.1, 9, zc, FP_PAL.tealLit, FP_PAL.cap, FP_PAL.cap, 3); for (const z of [60, 120, 180]) { const c0 = P(px, py, z); ctx.fillStyle = FP_PAL.cyan; ctx.fillRect(c0[0] - 6, c0[1] - 2, 12, 4); } }
-    // 3. the energy lines: from the ceiling machine down to the crystal, with a pulse running down each
-    const tip = P(cx, cy, 64);
-    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4, top = P(cx + Math.cos(a) * R * 0.5, cy + Math.sin(a) * R * 0.5, zc + 14), t = ((f * 0.012) + i * 0.25) % 1;
-        line(top, tip, "rgba(49,232,255,0.28)", 6); line(top, tip, FP_PAL.cyan, 2.5); const px = top[0] + (tip[0] - top[0]) * t, py = top[1] + (tip[1] - top[1]) * t; ctx.fillStyle = FP_PAL.white; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, 6.2832); ctx.fill(); _fpGlow(px, py, 12, FP_PAL.cyan, 0.5); }
-    // 1. the ceiling machine: two struts running up out of the frame, a round housing with a lit neon ring and a core
-    _fpStyleCyl(cx, cy, R, zc, zc + 14, FP_PAL.teal, FP_PAL.tealLit, FP_PAL.caseLit, 4);
-    ring(cx, cy, zc + 14, R * 0.72, FP_PAL.cyan, 3); ring(cx, cy, zc + 14, R * 0.42, FP_PAL.violet, 3); _fpDisc(cx, cy, zc + 14, R * 0.2, "#12323a", FP_PAL.ink); const cc = P(cx, cy, zc + 14); _fpGlow(cc[0], cc[1], 46, FP_PAL.cyan, 0.3);
-    // the struts rise from the top of the housing, over its rings
-    for (const [dx, dy] of [[-0.8, -0.8], [0.8, 0.8]]) _fpStyleCyl(cx + dx, cy + dy, 0.13, zc + 14, zc + 330, FP_PAL.teal, FP_PAL.tealLit, FP_PAL.tealLit, 3);
 }
 function _fpStyleRigPadFlat(it) {
     const f = _fpFrame(), cx = typeof crystal !== "undefined" && crystal && typeof crystal.x === "number" ? crystal.x : it.x, cy = typeof crystal !== "undefined" && crystal && typeof crystal.y === "number" ? crystal.y : it.y, R = 1.5, P = _fpP;
@@ -412,13 +396,12 @@ function _fpStyleRigPadFlat(it) {
     for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 + f * 0.004, p0 = P(cx + Math.cos(a) * R * 0.5, cy + Math.sin(a) * R * 0.5, 10), p1 = P(cx + Math.cos(a) * R * 0.72, cy + Math.sin(a) * R * 0.72, 10); line(p0, p1, "rgba(22,48,58,0.55)", 2); }   // the segment seams between the rings
     _fpDisc(cx, cy, 10, R * 0.26, "#12323a", FP_PAL.ink); const pc = P(cx, cy, 10), pul = 0.7 + 0.3 * Math.sin(f * 0.06); _fpGlow(pc[0], pc[1], 50, FP_PAL.cyan, 0.35 * pul);
     for (const a of [0.7, 2.27, 3.84, 5.41]) _fpStyleCyl(cx + Math.cos(a) * R * 0.96, cy + Math.sin(a) * R * 0.96, 0.11, 10, 15, FP_PAL.teal, FP_PAL.tealLit, FP_PAL.cyan, 2.5);
-    // 5. the hover field: rings rising off the pad, fading as they climb to the crystal
-    for (let i = 0; i < 3; i++) { const t = ((f * 0.01) + i / 3) % 1; ring(cx, cy, 12 + t * 44, R * (0.55 - t * 0.15), _fpRgba(FP_PAL.cyan, 0.7 * (1 - t)), 2.5); }
 }
 
-// ── THE CRYSTAL PAD, in 3D (design/props/models/crystalpad.js -> img/props/crystalpad.png): the pad on the floor and the crown in the ceiling are baked sprites; what moves is painted live over and under them ──
-// The flat drawings above (_fpStyleRigFlat, _fpStyleRigPadFlat) are what is drawn until the sheet has arrived, and where there is no canvas to bake from.
-const FP_PAD = { z: 23.2, rings: [0.951, 0.673, 0.441], pylonAt: [0.5, 1.5, 2.5, 3.5], tipZ: 76, crownZ: 226 };   // heights in game px (tipZ: where the energy lines meet the crystal, in its upper half; the gem floats 64 px up over the pad); the three inlaid rings' radii in tiles; the four pylons' angles (x PI/2, plus 1/4 PI in the model)
+// ── THE CRYSTAL PAD, in 3D (design/props/models/crystalpad.js -> img/props/crystalpad.png): the pad on the floor is a baked sprite; what moves is painted live over it ──
+// (The sheet's other cell, `rig`, the crown in the ceiling with its posts, is not drawn since build 2026-11-09xx.) The flat drawing above (_fpStyleRigPadFlat) is what is drawn until the sheet has arrived, and where
+// there is no canvas to bake from.
+const FP_PAD = { z: 23.2, rings: [0.951, 0.673, 0.441], pylonAt: [0.5, 1.5, 2.5, 3.5] };   // the deck's height in game px; the three inlaid rings' radii in tiles; the four pylons' angles (x PI/2, plus 1/4 PI in the model)
 function _fpCrystalXY(it) { return [typeof crystal !== "undefined" && crystal && typeof crystal.x === "number" ? crystal.x : it.x, typeof crystal !== "undefined" && crystal && typeof crystal.y === "number" ? crystal.y : it.y]; }
 // an arc of an ellipse on the floor plane's projection (radius r in tiles, at height z), from angle a0 to a1 (the ellipse's own parameter)
 function _fpPadArc(cx, cy, z, r, a0, a1, col, w) { const c = _fpP(cx, cy, z); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.ellipse(c[0], c[1], r * TILE_W * 1.4142, r * TILE_H * 1.4142, 0, a0, a1); ctx.stroke(); }
@@ -428,7 +411,7 @@ function _fpStyleRigPad(it) {
     // under it: a wide soft halo on the floor, so the pad lights the room's floor (not in LOW graphics)
     if (typeof gfxLow === "undefined" || !gfxLow) { ctx.save(); ctx.translate(base[0], base[1]); ctx.scale(1, 0.5); _fpGlow(0, 0, 150, FP_PAL.cyan, 0.16 + 0.05 * pul); ctx.restore(); }
     const spr = typeof _psBlit === "function" && typeof _psImg === "function" && _psImg("crystalpad") ? _psBlit("crystalpad", "pad", cx, cy) : null;
-    if (!spr) { _fpStyleRigPadFlat(it); return; }
+    if (!spr) { _fpStyleRigPadFlat(it); _fpTankBack(cx, cy); return; }
     const c = spr[2], well = c.marks && c.marks.well ? [spr[0] + c.marks.well[0], spr[1] + c.marks.well[1]] : P(cx, cy, FP_PAD.z);
     // the light running round the inlaid rings: a bright spot and a short tail on each, the violet one the other way round, never over a pylon (they stand on the rings)
     ctx.save(); ctx.lineCap = "round";
@@ -445,26 +428,52 @@ function _fpStyleRigPad(it) {
     // the emitter well and the lamps on the four pylons
     _fpGlow(well[0], well[1] - 4, 48, FP_PAL.cyan, 0.34 * pul);
     for (const q of FP_PAD.pylonAt) { const a = q * Math.PI / 2, lp = P(cx + Math.cos(a) * 0.98, cy + Math.sin(a) * 0.98, 36); _fpGlow(lp[0], lp[1], 15, FP_PAL.cyan, 0.38 * pul); }
-    // the hover field: rings rising off the well, narrowing and fading as they climb to the crystal, and a faint column of light up to it
-    if (typeof gfxLow === "undefined" || !gfxLow) {
-        const tip = P(cx, cy, FP_PAD.tipZ), top = P(cx, cy, FP_PAD.z + 2);
-        ctx.save(); ctx.globalCompositeOperation = "lighter"; const gr = ctx.createLinearGradient(0, top[1], 0, tip[1]); gr.addColorStop(0, "rgba(49,232,255," + (0.2 * pul).toFixed(3) + ")"); gr.addColorStop(1, "rgba(49,232,255,0)"); ctx.fillStyle = gr;
-        ctx.beginPath(); ctx.moveTo(top[0] - 40, top[1]); ctx.lineTo(tip[0] - 9, tip[1]); ctx.lineTo(tip[0] + 9, tip[1]); ctx.lineTo(top[0] + 40, top[1]); ctx.closePath(); ctx.fill(); ctx.restore();
-    }
-    for (let i = 0; i < 3; i++) { const t = ((f * 0.01) + i / 3) % 1; _fpPadArc(cx, cy, FP_PAD.z + 2 + t * 40, 0.52 - t * 0.2, 0, 6.2832, _fpRgba(FP_PAL.cyan, 0.7 * (1 - t)), 2.2); }
-    if (typeof gfxLow === "undefined" || !gfxLow) for (let i = 0; i < 8; i++) { const t = ((f * 0.0055) + i * 0.125) % 1, p = P(cx, cy, FP_PAD.z + 6 + t * 50), sw = Math.sin(f * 0.03 + i * 2.1) * (5 + 11 * t); ctx.fillStyle = "rgba(210,252,255," + (0.85 * (1 - t) * Math.min(1, t * 6)).toFixed(3) + ")"; ctx.fillRect(Math.round(p[0] + sw) - 1, Math.round(p[1]) - 1, 2, 2); }   // (sparks rising in the light)
+    _fpTankBack(cx, cy);   // (the hover field that rose off the well to the crystal went with the tank: the tank stands in the well)
 }
-function _fpStyleRig(it) {
-    const [cx, cy] = _fpCrystalXY(it), f = _fpFrame(), P = _fpP;
-    if (!(typeof _psBlit === "function" && typeof _psImg === "function" && _psImg("crystalpad"))) { _fpStyleRigFlat(it); return; }
-    // the energy lines first (the crown is drawn over their tops): four from under the crown's rim and one straight down from its core, to the crystal's point, each with a pulse running down it
-    const tip = P(cx, cy, FP_PAD.tipZ), line = (p, q, col, w) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); };
-    for (let i = 0; i < 5; i++) { const a = i * Math.PI / 2 + Math.PI / 4, top = i === 4 ? P(cx, cy, FP_PAD.crownZ + 6) : P(cx + Math.cos(a) * 0.55, cy + Math.sin(a) * 0.55, FP_PAD.crownZ + 6), t = ((f * 0.012) + i * 0.2) % 1, w = i === 4 ? 1.6 : 1;
-        line(top, tip, "rgba(49,232,255,0.26)", 7 * w); line(top, tip, FP_PAL.cyan, 2.6 * w); line(top, tip, "rgba(234,255,255,0.55)", 0.9 * w);
-        const px = top[0] + (tip[0] - top[0]) * t, py = top[1] + (tip[1] - top[1]) * t; ctx.fillStyle = FP_PAL.white; ctx.beginPath(); ctx.arc(px, py, 3.4 * w, 0, 6.2832); ctx.fill(); _fpGlow(px, py, 13, FP_PAL.cyan, 0.55); }
-    const spr = _psBlit("crystalpad", "rig", cx, cy); if (!spr) { _fpStyleRigFlat(it); return; }
-    const c = spr[2], core = c.marks && c.marks.core ? [spr[0] + c.marks.core[0], spr[1] + c.marks.core[1]] : P(cx, cy, FP_PAD.crownZ + 25);
-    _fpGlow(core[0], core[1], 56, FP_PAL.cyan, 0.3 + 0.08 * Math.sin(f * 0.06));
+
+// ── THE CRYSTAL'S TANK (build 2026-11-09xx; the owner, 2026-11-10: "I want want oval tank that bubbles"; of the draft, "No hoops, plain glass"; "The crystal should rise within it") ──
+// An upright oval of plain glass seated in the pad's well (design/props/models/crystaltank.js -> img/props/crystaltank.png: `back`, its far wall and the steel collar it sits in, and `front`, its near wall),
+// full of glowing liquid with bubbles rising through it; the crystal floats in the middle, slowly rising and sinking (js/game.js). Drawn in two passes round the crystal: the pad item draws the far wall, the
+// liquid and the bubbles behind the middle (_fpTankBack); the `tank` item, just after the crystal, a thin film of the liquid over it, the surface, the bubbles in front and the near wall (_fpStyleTankFront).
+// Heights in game px over the floor, the radius in tiles; the model has the same r, z0 and z1. gemZ and rise: the crystal's middle and how far it rises and sinks (the agent's numbers, provisional).
+const FP_TANK = { r: 0.56, z0: 26, z1: 192, fill: 0.84, gemZ: 104, rise: 12 };
+function _fpTankR(z) { const T = FP_TANK, t = (z - (T.z0 + T.z1) / 2) / ((T.z1 - T.z0) / 2); return t * t >= 1 ? 0 : T.r * Math.sqrt(1 - t * t); }   // the oval's radius at a height
+// the liquid as seen through the glass: the oval's outline (a little inside the glass) below the far edge of the surface, in a light-to-deep cyan
+function _fpTankLiquid(cx, cy, a) {
+    const T = FP_TANK, zc = (T.z0 + T.z1) / 2, zf = T.z0 + (T.z1 - T.z0) * T.fill, c = _fpP(cx, cy, zc), s = _fpP(cx, cy, zf), rf = _fpTankR(zf) * 0.96 * TILE_W * 1.4142;
+    const hx = T.r * 0.96 * TILE_W * 1.4142, hy = Math.hypot(T.r * TILE_H * 1.4142, (T.z1 - T.z0) / 2) * 0.97, bot = c[1] + hy;   // (an upright oval's outline on screen is an ellipse this size round its middle)
+    ctx.save(); ctx.beginPath(); ctx.ellipse(c[0], c[1], hx, hy, 0, 0, 6.2832); ctx.clip();
+    const gr = ctx.createLinearGradient(0, s[1], 0, bot); gr.addColorStop(0, "rgba(80,220,255," + a + ")"); gr.addColorStop(1, "rgba(10,105,190," + a + ")"); ctx.fillStyle = gr;
+    ctx.beginPath(); ctx.moveTo(s[0] - rf, s[1]); ctx.ellipse(s[0], s[1], rf, rf * TILE_H / TILE_W, 0, Math.PI, 2 * Math.PI); ctx.lineTo(c[0] + hx + 2, s[1]); ctx.lineTo(c[0] + hx + 2, bot + 2); ctx.lineTo(c[0] - hx - 2, bot + 2); ctx.lineTo(c[0] - hx - 2, s[1]); ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+// the bubbles: each rises from the well to the surface, wobbling and growing a little as it climbs, and bursts there in a spreading ring; those behind the tank's middle are drawn behind the crystal (front false), the others over it
+function _fpTankBubbles(cx, cy, front) {
+    const T = FP_TANK, f = _fpFrame(), zs = T.z0 + 10, zf = T.z0 + (T.z1 - T.z0) * T.fill, n = typeof gfxLow !== "undefined" && gfxLow ? 8 : 16;
+    ctx.lineWidth = 1;
+    for (let i = 0; i < n; i++) {
+        const cyc = (f * (0.0016 + (i % 5) * 0.00045) + i * 0.618) % 1, a = i * 2.4 + f * 0.004, rho = 0.25 + ((i * 7) % 11) / 11 * 0.6, k = Math.min(1, cyc / 0.92);
+        const z = zs + (zf - 3 - zs) * k, rr = _fpTankR(z) * rho * 0.8, wob = Math.sin(f * 0.07 + i * 1.7) * 0.03, dx = Math.cos(a) * rr + wob, dy = Math.sin(a) * rr - wob;
+        if (cyc < 0.92) { if ((dx + dy >= 0) !== front) continue; const p = _fpP(cx + dx, cy + dy, z), r = 1.4 + (i % 3) * 0.6 + k * 1.2;
+            ctx.fillStyle = "rgba(225,255,255,0.25)"; ctx.strokeStyle = "rgba(235,255,255,0.85)"; ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, 6.2832); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(Math.round(p[0] - r * 0.5), Math.round(p[1] - r * 0.6), 1, 1);
+        } else if (front) { const b = (cyc - 0.92) / 0.08, p = _fpP(cx + dx, cy + dy, zf), w = (0.02 + 0.07 * b) * TILE_W * 1.4142;   // (a burst is on the surface, which is drawn over the crystal: every burst is drawn with the front)
+            ctx.strokeStyle = "rgba(220,255,255," + (0.75 * (1 - b)).toFixed(3) + ")"; ctx.beginPath(); ctx.ellipse(p[0], p[1], w, w * TILE_H / TILE_W, 0, 0, 6.2832); ctx.stroke(); }
+    }
+}
+// behind the crystal: the glass's far wall and its collar, the liquid, the bubbles behind the middle
+function _fpTankBack(cx, cy) {
+    if (typeof _psBlit === "function" && typeof _psImg === "function" && _psImg("crystaltank")) _psBlit("crystaltank", "back", cx, cy);
+    _fpTankLiquid(cx, cy, 0.5); _fpTankBubbles(cx, cy, false);
+}
+// over the crystal: a thin film of the liquid (so the crystal is IN it), the surface with its lit rim, the bubbles in front and the bursts, and the glass's near wall (an outline until the sheet has arrived)
+function _fpStyleTankFront(it) {
+    const [cx, cy] = _fpCrystalXY(it), T = FP_TANK, zf = T.z0 + (T.z1 - T.z0) * T.fill, s = _fpP(cx, cy, zf), rf = _fpTankR(zf) * 0.96 * TILE_W * 1.4142;
+    _fpTankLiquid(cx, cy, 0.16);
+    ctx.fillStyle = "rgba(150,240,255,0.22)"; ctx.strokeStyle = "rgba(190,252,255,0.85)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.ellipse(s[0], s[1], rf, rf * TILE_H / TILE_W, 0, 0, 6.2832); ctx.fill(); ctx.stroke();
+    _fpTankBubbles(cx, cy, true);
+    if (typeof _psBlit === "function" && typeof _psImg === "function" && _psImg("crystaltank") && _psBlit("crystaltank", "front", cx, cy)) return;
+    const c = _fpP(cx, cy, (T.z0 + T.z1) / 2); ctx.strokeStyle = "rgba(225,250,255,0.55)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(c[0], c[1], T.r * TILE_W * 1.4142, Math.hypot(T.r * TILE_H * 1.4142, (T.z1 - T.z0) / 2), 0, 0, 6.2832); ctx.stroke();
 }
 
 // ── room lighting: a room you are not in is not lit up ──
@@ -554,7 +563,7 @@ function _fpDimCtx(real, k) {
 // the light level that applies to a facility item (the room that shows its face)
 function _fpItemLight(it) {
     if (it.fp === "pickup" || it.fp === "station" || it.fp === "sidequest" || it.fp === "spot") return 0.8;   // (a supply case is lit by its own beacon: it can be found in the dark; Side Quest by his own lamp)
-    const lv = _fpItemRoomLight(it); if (lv > 0.98 || it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return lv;
+    const lv = _fpItemRoomLight(it); if (lv > 0.98 || it.fp === "rigpad" || it.fp === "tank" || it.fp === "fill") return lv;
     const k = _fpLightKey(it.lroom || it.room || (it.rooms && it.rooms[0])); return Math.max(lv, _fpPoolAt(it.x, it.y, k), _fpExtraLight(it.x, it.y, it.rooms ? it.rooms.map(_fpLightKey) : [k]));   // (near a stairway or an open door, things share its light; in a blackout the monitor lamp and the emergency lights add theirs)
 }
 // the light on the wall at (x, y) that shows the face of room `roomId` (what a wall piece gets from _fpItemLight: the room's level, or the pool of an open door near it)
@@ -576,6 +585,6 @@ function _fpItemRoomLight(it) {
     if (it.fp === "wall") return _fpRoomLight(it.lroom || it.room);
     if (it.fp === "stair") return _fpRoomLight(it.room || "lab_hallway");
     if (it.fp === "pillar") { if (it.lt === undefined) { const ids = new Set(); for (const [dx, dy] of [[0.7, 0.7], [-0.7, 0.7], [0.7, -0.7]]) { const r = facilityRoomAt(it.x + dx, it.y + dy, _fp.F); if (r) ids.add(r.id); } it.lt = Array.from(ids); } return it.lt.length ? Math.max(...it.lt.map(_fpRoomLight)) : _fpRoomLight(it.room); }   // a corner post takes the light of the brightest room its visible faces look onto (the three quadrants in front of it, not the one behind)
-    if (it.fp === "rig" || it.fp === "rigpad" || it.fp === "fill") return 1;   // (the fill tile darkens itself)
+    if (it.fp === "rigpad" || it.fp === "tank" || it.fp === "fill") return 1;   // (the fill tile darkens itself)
     return _fpRoomLight(it.room);
 }
