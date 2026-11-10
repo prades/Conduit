@@ -4,6 +4,10 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09ss` · branch `claude/start-game-project-HSh7Z` · walls in front of you are cut down
+- **The HOLE** (the owner circled the robot behind the Stair Room's raised wall: its top covered it, so it looked sunk in a hole). The owner's choice, "Cut the wall down": a wall in front of you (nearer the camera) drops, opaque, to a low parapet when you come within about 3 tiles, and its top with it; rock too. It is never see-through. Posters, signs and lights on a cut wall are hidden while it is; doors, relays and the drillable rubble stay. This supersedes "walls do not react to the player". The numbers (2 tiles right down, 3.2 back up, a 30 px parapet) are the agent's, provisional.
+- Tests: `tests/facilityplay.js` (a wall in front, half-way out, far, behind and level with the player; the rubble stays).
+
 ### Build `2026-11-09rr` · branch `claude/start-game-project-HSh7Z` · the wall spots that did not look right; a new follower comes up in the roster
 - **The owner's five screenshots** ("a few spots where the geometry just doesn't look right ... It's mostly in the walls"; the Armory: "a floor that is kind of strangely positioned behind the door"). Only the hook was the rounded rock's (`09qq`); the rest were older.
   - **The chimney at the hallway's south-west corner:** a one-tile stub of the arena's rock, between the observation deck's glass and the steps' walls, rose to the deck's top like the rock beside the glass. It keeps the rock's own height now, at least as tall as the hallway's walls behind it.

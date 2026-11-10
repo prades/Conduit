@@ -1061,12 +1061,16 @@ function measure() {
     check('they draw without throwing, and a wall between the camera and the player is cut down to a low parapet (never translucent)', () => {
         run('facilityPlay = true; canvas.width = 800; canvas.height = 600;'); const n = J('(function(){ let n = 0; for (const it of _fp.items) { if (visibleForDraw(it.x, it.y)) { drawFacilityItem(it); n++; } } return n; })()'); ok(n > 20, 'only ' + n + ' items on screen');
         const a = J(`(function(){ const it = _fp.items.find(i => i.fp === 'wall' && i.kind === 'wall' && i.x + i.y > player.visualX + player.visualY + 0.5 && Math.hypot(i.x - player.visualX, i.y - player.visualY) < 3); let alpha = null; const keep = ctx.fillStyle; if (!it) return null; return { found: true }; })()`);
-        const src = rd('js/facilityplay.js'); ok(!/_fpWallCutH|_fpCut\b/.test(src + rd('js/facilitydecor.js') + rd('js/facilitystyle.js')) && !/Math\.max\(0\.22/.test(src) && !/ctx\.globalAlpha = wd/.test(src), 'walls still react to the player (cut down or fade)');
-        const h = J(`(function(){ canvas.width = 1280; canvas.height = 860; const w = _fp.items.find(i => i.fp === 'wall' && i.kind === 'wall' && !i.base2 && !i.drop), keep = _fpFlat, out = []; let got = null;
-            _fpFlat = function (pts) { if (got === null) got = pts[0][1] - pts[3][1]; return keep.apply(this, arguments); };
-            for (const [dx, dy] of [[0, 0], [0.4, 0.4], [-0.6, 2.5], [3, 5], [9, 9]]) { player.visualX = w.x + dx; player.visualY = w.y + dy; _fpBase = w.base || 0; _fpCam = _fpBase; got = null; _fpDrawWall(w); out.push(got); }
-            _fpFlat = keep; return out; })()`);
-        ok(h.length === 5 && h[0] > 0 && h.every(v => Math.abs(v - h[0]) < 1e-6), 'a wall changed height as the player moved: ' + h.join());
+        // (the owner, 2026-11-09: "Cut the wall down", of the robot hidden behind the Stair Room's raised wall, which read as a hole; it supersedes "walls do not react to the player")
+        const src = rd('js/facilityplay.js'); ok(!/Math\.max\(0\.22/.test(src) && !/ctx\.globalAlpha = wd/.test(src), 'a wall fades (it is cut down, opaque, never translucent)');
+        const h = J(`(function(){ canvas.width = 1280; canvas.height = 860; const w = _fp.items.find(i => i.fp === 'wall' && i.kind === 'wall' && facilityStyleRoom(i.room) && !i.base2 && !i.drop && !i.nbBand && !i.underRock), keep = _fpWallTop, out = []; let got = null;
+            _fpWallTop = function (ax, ay, bx, by, nx, ny, Hd) { got = Hd; return keep.apply(this, arguments); };
+            // in front of the player and near (the player north-west of it), half-way out, far, behind the player, level with it
+            for (const [dx, dy] of [[-1, -0.5], [-1.9, -1.6], [-3, -3], [1, 1], [0, 0]]) { player.visualX = w.x + dx; player.visualY = w.y + dy; _fpBase = w.base || 0; _fpCam = _fpBase; got = null; _fpDrawWall(w); out.push(Math.round(got)); }
+            _fpWallTop = keep; return { out, H: FP_WALL_H, low: FP_CUT.low }; })()`);
+        same(h.out[0], h.low, 'a wall right in front of the player is not cut down to the parapet'); ok(h.out[1] > h.low && h.out[1] < h.H, 'half-way out it is not part cut: ' + h.out[1]);
+        same(h.out.slice(2).join(), [h.H, h.H, h.H].join(), 'a wall far off, behind the player or level with it is cut');
+        same(J('(function(){ const r = _fp.items.find(i => i.fp === "wdecor" && i.kind === "rubble"); if (!r) return "none"; player.visualX = r.x - 1; player.visualY = r.y - 1; return FP_CUT_HIDE.has(r.kind) + "/" + (_fpCutAt(r.x, r.y) > 0); })()'), 'false/true', 'the drillable rubble is hidden on a cut wall');
     });
 
     check('every piece of furniture draws (computer desks with monitors, server racks, lab benches with glassware, the fume hood, the glass test chambers), and a window draws its sill, glass, rail and mullions', () => {

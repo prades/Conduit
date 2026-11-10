@@ -807,7 +807,7 @@
 <tr><td>14 candidate connections, 4 candidate stairs (FACILITY.md:36)</td><td>5 and 2</td></tr>
 <tr><td>the deck “treated as ground level [...] no ramp”; heights “unknown” (FACILITY.md:27, 37)</td><td>the deck is high (3.2), 5 steps up; heights set</td></tr>
 <tr><td>“A body keeps 0.3 tiles from a wall” (FACILITY.md:56)</td><td>0.4</td></tr>
-<tr><td>a wall in front of you “turns see-through” (FACILITY.md:58)</td><td>walls never react (the same doc, :92)</td></tr>
+<tr><td>a wall in front of you “turns see-through” (FACILITY.md:58)</td><td>a wall in front of you is cut down, opaque, to a low parapet when you come close (since build 2026-11-09ss; it never turns see-through)</td></tr>
 <tr><td>only the catwalks and the Nest Area have no door, the Armory a portal (FACILITY.md:34)</td><td>the Cold Storage, the Sewers and the Ant Nest are portal-only too</td></tr>
 <tr><td>the style used by “Only the Crystal Chamber” (STYLE-CRYSTAL-LAB.md:40)</td><td>every room</td></tr>
 <tr><td>“FP_WALL_T = 0.4 tile” (STYLE-CRYSTAL-LAB.md:68)</td><td>1.0</td></tr>
@@ -3589,7 +3589,7 @@
   </div></details>
 
   <h3 id="tech-build">The build stamp and the address flags</h3>
-  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-09rr</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
+  <p>The build is <code><span class="n" data-k="BUILD_VERSION">2026-11-09ss</span></code> (a date and a letter). <code>BUILD_VERSION</code>, the page's <code>window.__PAGE_BUILD</code> and the <code>?v=</code> on every script tag must be the same string, and every sprite sheet's address carries <code>?v=</code> and the build too (props, the player and egg, the forms and their ground layers), so a new deploy fetches a matching set. The three are changed together; <code>tests/boot.js</code> checks that they agree.</p>
   <ul>
     <li><b>Address flags</b>: <code>?attract</code> (the website's background, below); <code>?power=on</code> (every room lit); <code>?class=&lt;id&gt;</code> (start as a class, for development). NEW GAME strips the stale <code>classic</code> and <code>facilityplay</code> flags.</li>
     <li><b>The inspection map</b> (the dock's MAP): an isometric overlay of the authored map with its own camera (drag to pan, wheel or pinch to zoom, FIT, +, −) that draws each room's outline, name and level, and ✕ CLOSE (<a href="#world-map">part 03</a>).</li>
@@ -3811,7 +3811,7 @@
   </main>
 </div>
 
-<footer>Conduit · the game bible · written against build 2026-11-09rr (9 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
+<footer>Conduit · the game bible · written against build 2026-11-09ss (9 November 2026) · <a href="index.html">Dragonlord</a> · <a href="game.html">play Conduit</a> · the build reports this page was written from are in the repository's <code>docs/</code></footer>
 
 <script>
 // each number read from the code says where it comes from; the contents light the part in view; on a narrow screen the contents start folded

@@ -318,7 +318,7 @@ function _fpBendRoof(o0, o1) { const some = o => o && Math.hypot(o[0], o[1]) >= 
 // A BEND: a curve from where one piece stops to where the other starts, round its corner (a quadratic curve: it meets both pieces along their own line), its heights from theirs
 function _fpDrawRockBend(it) {
     if (typeof caveWallsOn === "function" && caveWallsOn()) return;   // (the modelled walls' preview draws its own)
-    const P = it.P, Q = it.Q, hP = _fpRockHeights(P, _fpRockWallH(P)), hQ = _fpRockHeights(Q, _fpRockWallH(Q)), uP = _fpRockU(P, it.s0), uQ = _fpRockU(Q, it.s1), uK = it.Pe === "a" ? 0 : 1;
+    const P = it.P, Q = it.Q, hP = _fpRockCut(P, _fpRockHeights(P, _fpRockWallH(P))), hQ = _fpRockCut(Q, _fpRockHeights(Q, _fpRockWallH(Q))), uP = _fpRockU(P, it.s0), uQ = _fpRockU(Q, it.s1), uK = it.Pe === "a" ? 0 : 1;   // (cut as its pieces are)
     const h0 = _fpRockHAt(hP, uP), h1 = _fpRockHAt(hQ, uQ), hK = (_fpRockHAt(hP, uK) + _fpRockHAt(hQ, it.Qe === "a" ? 0 : 1)) / 2, N = FP_ROCK_ROUND.seg, pts = [], hs = [];
     for (let i = 0; i < N; i++) { const s = i / (N - 1), a = (1 - s) * (1 - s), b = 2 * (1 - s) * s, c = s * s; pts.push([a * it.s0[0] + b * it.K[0] + c * it.s1[0], a * it.s0[1] + b * it.K[1] + c * it.s1[1]]); hs.push(a * h0 + b * hK + c * h1); }
     const fP = P.cap ? _fpRockFar(P, uP, it.s0) : null, fQ = Q.cap ? _fpRockFar(Q, uQ, it.s1) : null, o0 = fP ? [fP[0] - it.s0[0], fP[1] - it.s0[1]] : null, o1 = fQ ? [fQ[0] - it.s1[0], fQ[1] - it.s1[1]] : null;
@@ -401,8 +401,13 @@ function _fpRockHeightsBase(it, H) {
     if (it.back) return [ext + 120 + FP_WALL_X + j(it.a[0], it.a[1], 40), ext + 120 + FP_WALL_X + j(mx, my, 50), ext + 120 + FP_WALL_X + j(it.b[0], it.b[1], 40)];
     return [ext + 70 + FP_WALL_X + j(it.a[0], it.a[1], 40), ext + 70 + FP_WALL_X + j(mx, my, 60), ext + 70 + FP_WALL_X + j(it.b[0], it.b[1], 40)];
 }
+// ROCK IN FRONT OF THE PLAYER is cut down as a wall is (js/facilityplay.js _fpCutAt): each of a piece's three heights by the cut at its own point, so neighbours and the bends between them still meet
+function _fpRockCut(it, hs) {
+    const mx = (it.a[0] + it.b[0]) / 2, my = (it.a[1] + it.b[1]) / 2, k0 = _fpCutAt(it.a[0], it.a[1]), k1 = _fpCutAt(mx, my), k2 = _fpCutAt(it.b[0], it.b[1]);
+    return k0 > 0 || k1 > 0 || k2 > 0 ? [_fpCutH(hs[0], it.base, k0), _fpCutH(hs[1], it.base, k1), _fpCutH(hs[2], it.base, k2)] : hs;
+}
 function _fpDrawRock(it, H) {
-    const back = !!it.back, lit = it.lit || 1, hs = _fpRockHeights(it, H), rd = it.round, L = rd ? Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) || 1 : 1;
+    const back = !!it.back, lit = it.lit || 1, hs = _fpRockCut(it, _fpRockHeights(it, H)), rd = it.round, L = rd ? Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) || 1 : 1;
     // (the rounded rock, FP_ROCK_ROUND: an end at a bend stops short; the bend item is drawn round the corner)
     const ua = rd && rd.a ? (rd.a.t || 0) / L : 0, ub = rd && rd.b ? 1 - (rd.b.t || 0) / L : 1, um = (ua + ub) / 2, ha = _fpRockHAt(hs, ua), hm = _fpRockHAt(hs, um), hb = _fpRockHAt(hs, ub);
     const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);

@@ -2732,3 +2732,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## DECISION: A new follower comes up in the roster (2026-11-09, build `2026-11-09rr`)
 - The owner: "whenever I recruit or breed a follower, it should pop up in the command window or the roster window rather than having to exit to pick to put it on the squad or send it to the floor."
 - The who-makes-room question shows over the Command Center (it opened behind it). A recruit or an offspring made with the roster open is then the card in view, its squad buttons under it. The rules are unchanged (a member makes room, NOBODY, CANCEL, EXILE). `docs/FOLLOWER-PROGRESSION.md` §1.
+
+## DECISION: Walls in front of the player are cut down (2026-11-09, build `2026-11-09ss`)
+- The owner circled the robot behind the Stair Room's raised wall and wrote "HOLE": the wall's top covered it. Of three ways (the character seen through the wall; the squad too; the wall cut down), the owner chose "Cut the wall down".
+- A wall in front of the player (nearer the camera) drops, opaque, to a low parapet when the player comes within about 3 tiles; rock too. Never see-through. The numbers are the agent's, provisional. `docs/FACILITY.md`, "Walls in front of the player are cut down".
+- Supersedes "Walls do not react to the player" (`docs/FACILITY.md`).
