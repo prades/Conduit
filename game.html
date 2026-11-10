@@ -2079,11 +2079,11 @@ function _showError(msg) {
 // Script files that failed to download. A missing file raises no error of its
 // own — only the "Can't find variable" from whatever needed it — so the load
 // failure is caught here, on its way down (capture phase).
-// THE BUILD. Every script URL below carries ?v=2026-11-10a, so a new deploy
+// THE BUILD. Every script URL below carries ?v=<the build>, so a new deploy
 // fetches a matching set: REPORTED, an iPad ran the new js/indexart.js against
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
-// together (tests/boot.js checks they agree).
+// together (tests/boot.js checks they agree): `node tools/stamp.js <build>`.
 window.__PAGE_BUILD = "2026-11-10a";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {

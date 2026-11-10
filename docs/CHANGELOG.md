@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-10
 
+### Tooling, no change to the game · branch `claude/start-game-project-HSh7Z` (on build `2026-11-10a`)
+- **The full test run runs suites side by side** (the owner: "What can be done about long testing periods", then "Best approach then on"): one per core, each suite's output whole and in the same order as before, its time after it. One at a time a full run took 28 minutes; four at a time about 12. `node tests/run.js --jobs=1` runs them one at a time; `node tests/run.js moves bible` runs only those.
+- **The Bible fills in its own numbers:** `node tests/bible.js --fix` writes the code's value into every number the page shows wrong (the words stay a person's job).
+- **One command stamps a build:** `node tools/stamp.js <build>` changes only the version tags, the page's build line, `BUILD_VERSION` and the Bible's build number and footer. It lists anything else that still names the old build instead of changing it. The page's note on the build no longer quotes one.
+
 ### Build `2026-11-10a` · branch `claude/start-game-project-HSh7Z` · Brawlers cool down, Mages and Technicians wind up; second attacks twice as quick
 - **A Brawler's second attack has a cooldown, not a wind-up** (the owner: "make it to where the brawlers have a cooldown time and the mages have wind-up time and not vice versa"; of the agent's questions, "Second attacks"). It strikes the moment an enemy is in reach. Once the strike's effect has ended it cools down, free to move. A Mage's and a Technician's ("Wind-up, halved") still wind up first, standing still. Everyday hits are unchanged.
 - **Every second attack's time is halved** ("and also make it half as slow"; "Second attack timings"): BASH 4 → 2 s, the nine forms' moves 2 to 3 s, MAGMA VENT 20 → 10 s, ROTTEN DECOY 14 → 7 s, CAPACITOR DISCHARGE a charge every 0.75 s.

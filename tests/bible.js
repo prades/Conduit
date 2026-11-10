@@ -7,6 +7,8 @@
 //   THE PAGE      the home page has its card; every picture is in the repo and the pictures stay small; every link inside it goes somewhere; the contents list every part; the story's parts
 //                 say they are to be written; it loads nothing from elsewhere
 //   THE SCREEN    in the real browser (no Chromium: it says so and passes): every picture loads, the script runs, and on a phone nothing is wider than the screen
+//   --fix         (the owner, 2026-11-10: "make edits smoother") first writes the code's value into every number the page has wrong, and nothing else: the words stay a person's job.
+//                 `node tests/bible.js --fix`; the checks then run on the page as written.
 const fs = require('fs');
 const vm = require('vm');
 const path = require('path');
@@ -22,6 +24,28 @@ function ok(c, m) { if (!c) throw new Error(m); }
 function same(a, b, m) { if (a !== b) throw new Error(`${m}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); }
 const unesc = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 
+// --fix: each number the page shows wrong, rewritten from the code (the same reading as the check below: data-f scales it, the page's own decimals unless the value needs more, its
+// thousands commas and minus sign kept); a word read from the code (a name, the build) replaced whole. Returns the page and what changed.
+function fixNumbers(page, context) {
+    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'), changed = [];
+    const out = page.replace(/<span class="n" data-k="([^"]+)"( data-f="([^"]+)")?>([^<]*)<\/span>/g, (all, kRaw, fAttr, f, t) => {
+        let v; try { v = vm.runInContext('(' + unesc(kRaw) + ')', context); } catch (e) { return all; }
+        const text = unesc(t).trim(), head = '<span class="n" data-k="' + kRaw + '"' + (fAttr || '') + '>';
+        if (typeof v === 'string') { if (v === text) return all; changed.push(unesc(kRaw) + ': "' + text + '" → "' + v + '"'); return head + esc(v) + '</span>'; }
+        if (typeof v !== 'number' || !isFinite(v)) return all;
+        const shown = f === 'pct' ? v * 100 : f === 's' ? v / 1000 : f === 'f' ? v / 60 : f === 'min' ? v / 60000 : v;
+        const txt = text.replace(/−/g, '-').replace(/,/g, ''), m = txt.match(/-?\d+(\.\d+)?/); if (!m) return all;
+        const dec = ((txt.match(/\.(\d+)/) || [])[1] || '').length, r = (x, d) => Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
+        if (Math.abs(r(shown, dec) - parseFloat(m[0])) <= 1e-9) return all;
+        let d = dec; if (Math.abs(r(shown, d) - r(shown, 4)) > 1e-9) { d = 0; while (d < 4 && Math.abs(r(shown, d) - r(shown, 4)) > 1e-9) d++; }
+        let num = r(shown, d).toFixed(d);
+        if (/\d,\d/.test(t)) num = num.replace(/^(-?)(\d+)/, (a, sg, ip) => sg + ip.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+        if (t.indexOf('−') >= 0) num = num.replace(/^-/, '−');
+        const nt = t.replace(/[-−]?\d[\d,]*(\.\d+)?/, num); changed.push(unesc(kRaw) + (f ? ' (' + f + ')' : '') + ': "' + text + '" → "' + unesc(nt).trim() + '"');
+        return head + nt + '</span>';
+    });
+    return { page: out, changed };
+}
 function findChromium() {
     const fromEnv = process.env.CHROMIUM_PATH; if (fromEnv && fs.existsSync(fromEnv)) return fromEnv;
     const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers'; let dirs = [];
@@ -51,12 +75,14 @@ function measure(w, h) {
 }
 
 (async () => {
-    const page = rd('bible.html'), home = rd('index.html');
+    let page = rd('bible.html'); const home = rd('index.html');
 
     group('THE NUMBERS (each one against the code)');
     const context = vm.createContext(makeBrowserSandbox({}));
     for (const rel of scriptOrder()) { try { vm.runInContext(rd(rel), context, { filename: rel }); } catch (e) {} }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
+    if (process.argv.includes('--fix')) { const r = fixNumbers(page, context); if (r.changed.length) { page = r.page; fs.writeFileSync(path.join(ROOT, 'bible.html'), page); }
+        console.log('  --fix: ' + r.changed.length + ' number(s) written' + (r.changed.length ? ':\n        ' + r.changed.join('\n        ') : '')); }
     const tags = [...page.matchAll(/<span class="n" data-k="([^"]+)"(?: data-f="([^"]+)")?>([^<]*)<\/span>/g)].map(m => ({ k: unesc(m[1]), f: m[2] || '', t: unesc(m[3]).trim() }));
     check('the page has numbers read from the code, and each one is written the one way the test reads (no other attributes on a number, no tags inside it)', () => {
         ok(tags.length >= 80, 'only ' + tags.length + ' numbers are tagged');

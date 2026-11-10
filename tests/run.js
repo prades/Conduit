@@ -1,6 +1,13 @@
 // Runs every Conduit test suite. `node tests/run.js`
-const { execFileSync } = require('child_process');
+// The suites run side by side, one per core (the owner, 2026-11-10: "What can be done about long testing periods"; one at a time a full run took 28 minutes, four at a time 12),
+// each in its own process; each suite's output is printed whole, in the list's order, so a run reads as it always did (scratchpad comparisons parse the same "══ … (file.js)"
+// headers and "  FAIL" lines). After each suite: its time.
+//   node tests/run.js                     every suite, as many at once as there are cores
+//   node tests/run.js --jobs=1            one at a time, as before
+//   node tests/run.js moves bible         only the suites named (with or without .js)
+const { spawn } = require('child_process');
 const path = require('path');
+const os = require('os');
 
 const SUITES = [
     ['THE FOUNDATION: the facility is the whole game, nothing of the old strip game is left, a kill pays on the spot', 'foundation.js'],
@@ -108,17 +115,44 @@ const SUITES = [
     ['attract screen (website background)', 'attract.js'],
 ];
 
-let failed = 0;
-for (const [label, file] of SUITES) {
-    process.stdout.write(`\n══ ${label} (${file})\n`);
-    try {
-        process.stdout.write(execFileSync(process.execPath, [path.join(__dirname, file)],
-                                          { encoding: 'utf8' }));
-    } catch (e) {
-        failed++;
-        process.stdout.write((e.stdout || '') + (e.stderr || ''));
-        process.stdout.write(`\n✗ ${label} FAILED\n`);
-    }
+const args = process.argv.slice(2);
+const jobsArg = args.find(a => /^--jobs=\d+$/.test(a));
+const JOBS = Math.max(1, jobsArg ? parseInt(jobsArg.slice(7), 10) : parseInt(process.env.TEST_JOBS || '', 10) || (os.cpus() || []).length || 1);
+const named = args.filter(a => !a.startsWith('--')).map(a => a.replace(/\.js$/, '') + '.js');
+const unknown = named.filter(n => !SUITES.some(s => s[1] === n));
+if (unknown.length) { console.error('no such suite: ' + unknown.join(', ')); process.exit(2); }
+const list = named.length ? SUITES.filter(s => named.includes(s[1])) : SUITES;
+
+// one suite in its own process: its whole output (stdout, then stderr) and whether it passed
+function runSuite(file) {
+    return new Promise(resolve => {
+        const t0 = Date.now(), out = [], err = [];
+        const child = spawn(process.execPath, [path.join(__dirname, file)], { stdio: ['ignore', 'pipe', 'pipe'] });
+        child.stdout.on('data', d => out.push(d)); child.stderr.on('data', d => err.push(d));
+        child.on('error', e => err.push(Buffer.from(String(e && e.stack || e))));
+        child.on('close', code => resolve({ ok: code === 0, out: Buffer.concat(out).toString('utf8'), err: Buffer.concat(err).toString('utf8'), secs: (Date.now() - t0) / 1000 }));
+    });
 }
-console.log(failed ? `\n${failed} suite(s) failing\n` : '\nall suites passing\n');
-process.exit(failed ? 1 : 0);
+
+(async () => {
+    const t0 = Date.now(), done = new Array(list.length), times = [];
+    let next = 0, shown = 0, failed = 0;
+    // print every finished suite whose turn has come (the list's order), so the output is the same whatever finishes first
+    const flush = () => {
+        while (shown < list.length && done[shown]) {
+            const [label, file] = list[shown], r = done[shown];
+            process.stdout.write(`\n══ ${label} (${file})\n`);
+            if (r.ok) { process.stdout.write(r.out); if (r.err) process.stderr.write(r.err); }   // (a passing suite's stderr goes where it always went)
+            else { failed++; process.stdout.write(r.out + r.err); process.stdout.write(`\n✗ ${label} FAILED\n`); }
+            process.stdout.write(`  (${r.secs.toFixed(1)} s)\n`);
+            times.push([file, r.secs]); shown++;
+        }
+    };
+    const worker = async () => { while (next < list.length) { const i = next++; done[i] = await runSuite(list[i][1]); flush(); } };
+    await Promise.all(Array.from({ length: Math.min(JOBS, list.length) }, worker));
+    flush();
+    const slow = times.slice().sort((a, b) => b[1] - a[1]).slice(0, 5).map(([f, s]) => f.replace(/\.js$/, '') + ' ' + s.toFixed(0) + ' s').join(', ');
+    console.log(`\n${list.length} suite(s), ${JOBS} at a time, ${((Date.now() - t0) / 60000).toFixed(1)} min; the slowest: ${slow}`);
+    console.log(failed ? `\n${failed} suite(s) failing\n` : '\nall suites passing\n');
+    process.exit(failed ? 1 : 0);
+})();

@@ -80,6 +80,11 @@ For gameplay, consider normal and boundary paths, repeated activation, death/rem
 
 Report exactly what was tested, what passed/failed, and what could not be tested. Implemented does not automatically mean verified.
 
+Tools (2026-11-10):
+- `node tests/run.js` runs every suite, one per core at a time (a full run: about 12 minutes on 4 cores; one at a time it was 28). `--jobs=1` runs them one at a time; naming suites (`node tests/run.js moves bible`) runs only those. Each suite's time is printed after it, and the slowest at the end.
+- `node tests/bible.js --fix` writes the code's value into every number the Bible shows wrong (the words stay a person's job), then checks the page.
+- `node tools/stamp.js <build>` stamps a build: the `?v=` on every script and preload and `__PAGE_BUILD` in `game.html`, `BUILD_VERSION` in `js/config.js`, the Bible's build number and footer. It lists anything else in the page that still names the old build instead of changing it.
+
 ### G — Document
 - Update the existing canonical system document.
 - Update `docs/CHANGELOG.md` for meaningful player-facing/system changes, including branch/build context when known.
