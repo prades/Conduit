@@ -25,7 +25,7 @@ function ok(c, m) { if (!c) throw new Error(m); }
     for (let i = 0; i < 20; i++) await new Promise(r => setImmediate(r));
     const run = e => vm.runInContext(e, ctx);
     ok(run('world.length') > 100, 'fixture: the facility did not build');
-    run('gameState.running = true; facilityBlackoutSet(false); globalThis.__O = { x: 36, y: 50 };');
+    run('gameState.running = true; facilityBlackoutSet(false); globalThis.__O = { x: 36, y: 50 }; for (const s of hazardSolids()) if (s.room === "arena") facilitySolidSet(s.id, true);');   // (the arena\'s hazard containers, build 2026-11-09yy, taken off the floor: one stood on the open row these scenes walk)
 
     // A clean board: one follower of the given role/traits at the arena's origin, the player on top of it.
     const scene = (setup, frames) => run(`(function(){
