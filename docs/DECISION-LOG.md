@@ -2718,3 +2718,8 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 ## DECISION: Energy cards' moving background is plasma (2026-11-09, build `2026-11-09nn`)
 - The owner: "the energy cards, I like to make them where they have backgrounds that are electric and vibrant, that move." Of three drafts shown moving (plasma, lightning, rays): "A · plasma".
 - Soft blobs of the card's element colour drift and turn behind its crystal. CSS only. `docs/ENERGY-CARDS.md` §9.
+
+## DECISION: Rounded cave rock, and the Cold Storage alcove in rock (2026-11-09, build `2026-11-09qq`)
+- The owner, of the rock by the Cold Storage door: "it looks really jank. You need to make it to where the wall bends in, the cave wall bends in with a circular sort of look, rounded off sort of look. And then just fix it up all around." Then "Rock curves into the alcove"; of the first pictures, "The left side [...] looks good. The right side still needs work"; then "Approve it for everyone".
+- Every bend in the cave rock is a curve. The alcove's two sides are rock (they were plain wall). Ends of runs stay flush. `docs/FACILITY.md`.
+- Supersedes "the alcove's two sides are plain wall" (js/facilitymap.js, the arena).

@@ -107,12 +107,12 @@ The arena's rock edge is diagonal on the tile grid, so decor on it is given on t
 - **The cap (a burrow).** Back rock has a 3-D top: a flat rock roof running back, away from the camera, from the rocky lip to the wall behind it (`it.cap`, found in `_fpRockSides` by marching back until a room is reached: the hallway's south wall for the north teeth). Its far edge meets that wall at the wall's top, so the pocket behind the rock reads as covered, a burrow; a thin spur with the arena on both sides gets a short cap. Front rock has no cap.
 - **Caps all round.** Front rock (the south and east rock) has a cap too: a 1-tile-thick rock roof running back toward the arena from its craggy lip, with the same pits and a dark seam on the inner edge. Every rock wall piece has a cap.
 
-### Rounded rock (on the preview `?rock=round`, build `2026-11-09oo`)
+### Rounded rock (built on the preview in `2026-11-09oo` and `pp`; for everyone since `2026-11-09qq`)
 The owner, 2026-11-09, of the rock by the Cold Storage door: "it looks really jank. You need to make it to where the wall bends in, the cave wall bends in with a circular sort of look, rounded off sort of look. And then just fix it up all around"; then "Rock curves into the alcove".
 - **Bends:** where two rock pieces meet at an angle, each stops short of the corner (up to 0.45 tile) and a curved stretch of rock face sweeps round between them, its lip, roof and cliff carried round (js/facilitydecor.js `_fpRockJoints`, `_fpDrawRockBend`). It is an item of its own in the depth order, a few canvas calls (about 340 more a frame in the performance scene).
-- **The Cold Storage alcove:** its two sides are rock, not pale lab wall (js/facility.js `_facEdgeKinds`), so the rock curves in round it to the door. The owner liked the left side; of the right: "The right side still needs work" (it was drawn as low outer rock with a lid: a slab). Since build `2026-11-09pp` the east side (a short run between two back pieces, seen from behind) is tall back rock with its own roof, its two corners rounded.
+- **The Cold Storage alcove:** its two sides are rock, not pale lab wall (js/facilitymap.js, the arena's `edge_kinds`), so the rock curves in round it to the door. The owner liked the left side; of the right: "The right side still needs work" (it was drawn as low outer rock with a lid: a slab). Since build `2026-11-09pp` the east side (a short run between two back pieces, seen from behind) is tall back rock with its own roof, its two corners rounded.
 - **Ends of runs** stay flush with what they meet: rounded, they opened a gap against the wall or door beside them.
-- Until approved, only with `?rock=round`; everyone else sees the walls as before.
+- **Approved in the game 2026-11-09** ("Approve it for everyone"); for everyone since build `2026-11-09qq`. The modelled 3-D walls (the `?walls=3d` preview) were baked again for the alcove's new rock.
 
 ### The catwalks are scaffolding
 

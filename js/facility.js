@@ -64,13 +64,6 @@ function _facTrim(a, b, openings) {
     return pieces.filter(p => (p[1] - p[0]) * len > 0.02).map(p => [[a[0] + dx * p[0], a[1] + dy * p[0]], [a[0] + dx * p[1], a[1] + dy * p[1]]]);
 }
 
-// THE COLD STORAGE ALCOVE'S SIDES (the owner, 2026-11-09: "Rock curves into the alcove"): rock, not plain wall, on the rounded rock's preview (?rock=round, js/facilitydecor.js fpRockRound) until it is
-// approved. They are the arena's two one-tile edges up and down at x 580 and x 680 (the sketch's pixels), either side of the Cold Storage's door.
-function _facEdgeKinds(r) {
-    const k = r.edge_kinds; if (!k || r.id !== "arena" || typeof fpRockRound !== "function" || !fpRockRound()) return k;
-    const P = r.polygon, side = i => { const p = P[i], q = P[(i + 1) % P.length]; return !!p && !!q && p[0] === q[0] && (p[0] === 580 || p[0] === 680) && Math.abs(p[1] - q[1]) === 20; };
-    return k.map((x, i) => x === "wall" && side(i) ? "rock" : x);
-}
 // ── compile ──
 // `extra` lets a test add openings/connections WITHOUT touching the authored data: { openings: [...], connections: [...] }.
 function facilityBuild(extra) {
@@ -82,7 +75,7 @@ function _facilityBuild(ex) {
     const closed = ex.closed || [];   // rooms whose openings are CLOSED in this copy (the validator's sealed-room test)
     const widen = (o) => { const pa = _facP(o.a), pb = _facP(o.b), l = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]); if (_facSnap && l > 0 && l < 2) { pb[0] = pa[0] + (pb[0] - pa[0]) / l * 2; pb[1] = pa[1] + (pb[1] - pa[1]) / l * 2; } return [pa, pb]; };   // a door is at least two tiles wide on the grid
     const openings = (M.openings || []).concat(ex.openings || []).filter(o => !closed.some(id => (o.rooms || []).includes(id))).map(o => { const [wa, wb] = widen(o); return { id: o.id, a: wa, b: wb, rooms: o.rooms || [], door: ("door" in o) ? o.door : (M.door_type || "sliding_access_door") }; });
-    const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: _facEdgeKinds(r) || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
+    const rooms = M.rooms.map(r => ({ id: r.id, label: r.label, level: r.level, status: r.status, poly: _facPoly(r.polygon), edgeKinds: r.edge_kinds || null, boundary: r.boundary_type || null, objects: (r.objects || []).map(o => Object.assign({}, o, { at: _facP(o.at) })), raw: r }));
     const walls = [];
     for (const r of rooms) {
         const p = r.poly;

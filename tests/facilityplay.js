@@ -661,27 +661,27 @@ function measure() {
         same(r.lobbyUnpowered, 0, 'an unpowered room is lit with the player in it'); same(r.hallLeft, 0, 'a powered room stays lit when the player leaves'); same(r.still, true, 'the blackout ended with one room powered'); same(r.after, false, 'powering every room does not end the blackout'); same(r.showLit, J('FP_LIT'), 'the ordinary rule is gone'); same(r.dark, r.normal, 'the dark did not return to the ordinary one'); same(r.showLeft, 0, 'the room stays lit once the player leaves (the ordinary rule)'); same(r.lobbyLeft, 0, 'the server room stays lit once the player leaves');
         ok(Math.abs(r.lobbyLit - r.dim * J('FP_LIT')) < 1e-9, 'the server room is not kept dim with the power on (FP_ROOM_DIM, build 2026-11-07qq: "a dark server room"; that much darker than a powered room): ' + r.lobbyLit); ok(r.dim > 0.2 && r.dim < 0.8, 'the server room\'s light: ' + r.dim);
     });
-    check('ROUNDED ROCK (the preview ?rock=round; the owner, 2026-11-09: "the cave wall bends in with a circular sort of look, rounded off"; "Rock curves into the alcove"): off, nothing changes; on, two rock pieces meeting at a bend each stop short and a bend item sweeps round the corner (drawn in a few calls), straight joins and run ends are left alone, a notch\'s side between two back pieces is back rock, and the Cold Storage alcove\'s two sides are rock', () => {
-        const r = J(`(function(){ const keep = _fpRockRoundPrev, out = {};
-            out.offBends = _fp.items.filter(i => i.fp === 'rockbend').length; out.offRound = _fp.items.filter(i => i.round).length;
+    check('ROUNDED ROCK (the owner, 2026-11-09: "the cave wall bends in with a circular sort of look, rounded off"; "Rock curves into the alcove"; approved for everyone, build 2026-11-09qq): two rock pieces meeting at a bend each stop short and a bend item sweeps round the corner (drawn in a few calls); straight joins and run ends are left alone; the Cold Storage alcove\'s sides are rock, its east side (seen from behind) tall back rock with its roof', () => {
+        const r = J(`(function(){ const out = {};
+            out.bends = _fp.items.filter(i => i.fp === 'rockbend').length;
             const sides = F => F.walls.filter(w => w.room === 'arena' && Math.abs(w.a[0] - w.b[0]) < 1e-6 && (Math.abs(w.a[0] - 29.5) < 1e-6 || Math.abs(w.a[0] - 34.5) < 1e-6) && Math.min(w.a[1], w.b[1]) > 38 && Math.max(w.a[1], w.b[1]) < 40).map(w => w.kind);
-            out.offSides = sides(_fp.F);
-            _fpRockRoundPrev = true; const arena = FACILITY_MAP.rooms.find(x => x.id === 'arena'), k0 = arena.edge_kinds, k1 = _facEdgeKinds(arena); out.onSides = k1.filter((x, i) => x !== k0[i]).length; out.onKinds = k1.filter((x, i) => x !== k0[i]).join();
+            out.sides = sides(_fp.F);
+            const east = _fp.items.filter(i => i.fp === 'wall' && i.kind === 'rock' && Math.abs(i.a[0] - 34.5) < 1e-6 && Math.abs(i.b[0] - 34.5) < 1e-6 && Math.min(i.a[1], i.b[1]) > 38 && Math.max(i.a[1], i.b[1]) < 40);
+            out.east = east.map(i => [!!i._notch, !!i.back, !!i.cap].join('/'));
             const mk = (a, b, back) => ({ type: 'fp', fp: 'wall', kind: 'rock', a, b, x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, room: 'arena', back, lit: 1, depth: (a[0] + b[0]) / 2 + (a[1] + b[1]) / 2 + 0.02, cap: null });
             // an L (east then north), a straight join, and a notch side between two back pieces
             const items = [mk([10, 10], [10.5, 10], true), mk([10.5, 10], [11, 10], true), mk([11, 10], [11, 9.5], true), mk([20, 10], [20.5, 10], true), mk([20.5, 10], [20.5, 9.5], false), mk([20.5, 9.5], [21, 9.5], true)];
             _fpRockJoints(items); const bends = items.filter(i => i.fp === 'rockbend');
-            out.bends = bends.length; out.straight = !!(items[0].round && items[0].round.b) || !!(items[1].round && items[1].round.a); out.end = !!(items[0].round && items[0].round.a);
+            out.n = bends.length; out.straight = !!(items[0].round && items[0].round.b) || !!(items[1].round && items[1].round.a); out.end = !!(items[0].round && items[0].round.a);
             const b0 = bends.find(b => Math.abs(b.K[0] - 11) < 1e-6 && Math.abs(b.K[1] - 10) < 1e-6); out.l = b0 ? [b0.s0, b0.s1, b0.depth > Math.max(items[1].depth, items[2].depth)] : null; out.notch = items[4].back;
             out.inset = items[1].round && items[1].round.b ? items[1].round.b.t : null;
             const calls = [], pen = new Proxy({}, { get(t, k) { if (k in t) return t[k]; return function () { calls.push(k); if (k === 'createLinearGradient' || k === 'createRadialGradient') return { addColorStop() {} }; }; }, set(t, k, v) { t[k] = v; calls.push('set'); return true; } });
             const keepCtx = ctx; ctx = pen; let err = null; try { _fpDrawRockBend(b0); } catch (e) { err = String(e); } finally { ctx = keepCtx; }
-            out.err = err; out.ops = calls.length; out.fills = calls.filter(c => c === 'fill').length;
-            _fpRockRoundPrev = keep; return out; })()`);
-        same(r.offBends, 0, 'bends without the preview'); same(r.offRound, 0, 'pieces stopped short without the preview'); same(r.offSides.join(), 'wall,wall', 'the alcove\'s sides without the preview');
-        same(r.onSides, 2, 'the alcove\'s two sides are not made rock on the preview'); same(r.onKinds, 'rock,rock', 'the alcove\'s sides on the preview');
+            out.err = err; out.ops = calls.length; out.fills = calls.filter(c => c === 'fill').length; return out; })()`);
+        ok(r.bends >= 30, 'the facility\'s bends: ' + r.bends); same(r.sides.join(), 'rock,rock', 'the Cold Storage alcove\'s sides');
+        ok(r.east.length === 2 && r.east.every(x => x === 'true/true/true'), 'the alcove\'s east side is not tall back rock with its roof: ' + r.east.join(' '));
         same(r.straight, false, 'a straight join was rounded'); same(r.end, false, 'a run\'s end was rounded (it opened a gap against the wall beside it)');
-        ok(r.bends >= 3, 'the bends: ' + r.bends); ok(r.l, 'no bend at the L\'s corner');
+        ok(r.n >= 3, 'the bends: ' + r.n); ok(r.l, 'no bend at the L\'s corner');
         const [s0, s1, after] = r.l; ok(Math.abs(s0[1] - 10) < 1e-9 && s0[0] < 11 && s0[0] >= 10.5 && Math.abs(s1[0] - 11) < 1e-9 && s1[1] < 10 && s1[1] >= 9.5, 'the bend does not run from one piece to the other round the corner: ' + JSON.stringify(r.l)); ok(after, 'the bend is drawn before the pieces either side of it');
         ok(r.inset > 0.2 && r.inset <= 0.5, 'a piece at a bend does not stop short: ' + r.inset); same(r.notch, true, 'a notch\'s side between two back pieces is not back rock');
         same(r.err, null, 'the bend threw'); ok(r.fills >= 2 && r.ops < 120, 'the bend is not a handful of calls: ' + r.ops + ' operations, ' + r.fills + ' fills');

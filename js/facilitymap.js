@@ -82,7 +82,8 @@ const FACILITY_MAP = {
           // The floor outline, clockwise from the top-left. Every edge is solid; `edge_kinds[i]` is the edge from point i to point i+1.
           // THE COLD STORAGE DOOR: the arena's north side, where the generator stood (its bay was cut back from a lobe of rock that ran down to y 825), is cave rock again, and in it an ALCOVE five tiles wide and one deep
           // (x 580 to 680) holds the Cold Storage's double door, set in boulders, on its middle three tiles (x 600 to 660): the doorway into the Cold Storage, which lies under the Experiment Lab (a portal: it is an interior,
-          // see `interiors`). The door's wall is plain wall, built into the rock, with a tile of rock either side of it; the alcove's two sides are plain wall. It takes the one-tile band of wall between the arena
+          // see `interiors`). The door's wall is plain wall, built into the rock, with a tile of rock either side of it; the alcove's two sides are rock (the owner, 2026-11-09: "Rock curves into the alcove";
+          // they were plain wall), the rock rounded round its corners (js/facilitydecor.js, rounded rock). It takes the one-tile band of wall between the arena
           // and the hallway above it, so the hallway gives up the tile behind it (a notch in its south side: js/facilitygrow.js) and a wall of full thickness still stands between the two. (Five wide, not three: the
           // camera looks at the north wall from the south-east, and the rock in front of an alcove's east corner hides the last tile of its back wall, so the door stops a tile short of it.)
           // THE SEWER CULVERT: a second alcove in the north rock, behind the north tank (three tiles wide, x 780 to 840, one deep): an arched concrete culvert with its grating raised, the way down to the Sewers
@@ -91,7 +92,7 @@ const FACILITY_MAP = {
                     // THE ARMORY DOOR: an ALCOVE in the west cave wall just south of the two garage doors, where the Armory's own door used to be (two tiles wide at y 1090 to 1130, one deep): the doorway into the Armory
                     // from the arena (a portal: the Armory is an interior, see `interiors`). Its three sides are plain wall, built into the rock.
                     [1000, 1180], [805, 1155], [640, 1135], [560, 1138], [520, 1180], [440, 1215], [380, 1190], [340, 1165], [340, 1130], [320, 1130], [320, 1090], [340, 1090], [340, 950]],
-          edge_kinds: ["rock", "rock", "wall", "rock", "wall", "rock", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "railing_wall",
+          edge_kinds: ["rock", "rock", "rock", "rock", "wall", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "railing_wall",
                        "rock", "rock", "rock", "rock", "rock", "rock", "rock", "rock", "wall", "wall", "wall", "rock", "deck_wall"] },
         { id: "cold_storage", label: "Cold Storage", level: -1, status: "placed", wall_material: "solid", interior: true,
           note: "The cold storage, UNDER the Experiment Lab, at the arena's floor level: an INTERIOR like the armory (drawn here, under the lab, built in a part of the map of its own: `interiors`). Two ways in, each a pair of doorways (`portals`): the double freezer door in the arena's north cave wall (where the generator stood), and the stairwell in the Experiment Lab's floor, in its north-west corner by its door. Inside, from the user's floor plan: the entrance in the west wall at the top, a bank of freezers along the north wall, the stairs up in the floor at the west side, two storage racks toppled over in the middle, and in the south and east an ice cave with rough walls. ICE: the look only (frost, an icy floor, icicles); it plays like any floor.",

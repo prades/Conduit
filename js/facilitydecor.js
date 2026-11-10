@@ -237,9 +237,7 @@ const FP_ROCK_DOWN = 170;
 // stretch of rock face sweeps round between them (a "rockbend" item of its own, in the depth order), its lip, its roof and its cliff carried round. A run's END stays flush with what it meets (rounded,
 // it opened a gap against the wall or door beside it). A short run of rock between two back rock pieces whose camera-facing side is solid rock (a notch's side seen from behind: the Cold Storage alcove's
 // east side) is drawn as back rock too, tall, its roof running back like theirs, so the rock round the alcove is one mass (the owner: "the right side still needs work"; drawn low with a lid, it was a slab).
-// On the preview ?rock=round until approved, the Cold Storage alcove's sides made rock (js/facility.js _facEdgeKinds).
-let _fpRockRoundPrev;
-function fpRockRound() { if (_fpRockRoundPrev === undefined) { _fpRockRoundPrev = false; try { _fpRockRoundPrev = typeof location !== "undefined" && /[?&]rock=round\b/.test(location.search || ""); } catch (e) {} } return _fpRockRoundPrev; }
+// Built on the preview ?rock=round in builds 2026-11-09oo and pp; approved in the game ("Approve it for everyone"), for everyone since 2026-11-09qq, with the Cold Storage alcove's sides rock in the map.
 const FP_ROCK_ROUND = { t: 0.45, seg: 8 };   // a bend's inset along each piece (tiles; at most nearly all of a piece, half of one bent at both ends), points on its curve (the agent's numbers, provisional)
 function _fpRockHAt(hs, u) { return u < 0.5 ? hs[0] + (hs[1] - hs[0]) * u * 2 : hs[1] + (hs[2] - hs[1]) * (u * 2 - 1); }   // a rock piece's height at u (0 at a, 1 at b)
 function _fpRockWallH(it) { return FP_WALL_H + Math.max(0, (it.base2 || it.base || 0) - (it.base || 0)); }
@@ -330,7 +328,7 @@ function _fpRockSides(items) {
         it.dk = _fp.glassEnds.length ? [wd(it.a[0], it.a[1]), wd((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), wd(it.b[0], it.b[1])] : null; if (it.dk && !(it.dk[0] || it.dk[1] || it.dk[2])) it.dk = null;
         it.cap = it.back ? _fpRockBackCap(it) : { d: 1.0, nx, ny, zb: null };   // a front wall's cap is the thickness of the rock, 1 tile, running back toward the arena
     }
-    if (fpRockRound()) _fpRockJoints(items);   // (the rounded rock's preview: bends and ends)
+    _fpRockJoints(items);   // (the rounded rock: its bends)
 }
 // the heights (px) of a rock wall piece at its two ends and its middle: a ragged skyline, the same for every piece at the same place
 function _fpRockHeights(it, H) {
@@ -344,7 +342,7 @@ function _fpRockHeightsBase(it, H) {
 }
 function _fpDrawRock(it, H) {
     const back = !!it.back, lit = it.lit || 1, hs = _fpRockHeights(it, H), rd = it.round, L = rd ? Math.hypot(it.b[0] - it.a[0], it.b[1] - it.a[1]) || 1 : 1;
-    // (the rounded rock's preview, FP_ROCK_ROUND: an end at a bend stops short; the bend item is drawn round the corner)
+    // (the rounded rock, FP_ROCK_ROUND: an end at a bend stops short; the bend item is drawn round the corner)
     const ua = rd && rd.a ? (rd.a.t || 0) / L : 0, ub = rd && rd.b ? 1 - (rd.b.t || 0) / L : 1, um = (ua + ub) / 2, ha = _fpRockHAt(hs, ua), hm = _fpRockHAt(hs, um), hb = _fpRockHAt(hs, ub);
     const P = (u, z) => _fpP(it.a[0] + (it.b[0] - it.a[0]) * u, it.a[1] + (it.b[1] - it.a[1]) * u, z);
     const a0 = P(ua, 0), b0 = P(ub, 0), a1 = P(ua, ha), m1 = P(um, hm), b1 = P(ub, hb), ty = Math.min(a1[1], m1[1], b1[1]), by = Math.max(a0[1], b0[1]);

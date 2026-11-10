@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09qq` · branch `claude/start-game-project-HSh7Z` · rounded rock for everyone
+- **The rounded cave rock is approved in the game** ("Approve it for everyone"). Every bend in the rock curves round, for everyone; the Cold Storage alcove's sides are rock in the map itself. The `?rock=round` preview is gone.
+- The 3-D walls preview (`?walls=3d`) was baked again for the alcove's new rock (img/cave, js/caveatlas.js).
+- Tests: `tests/facilityplay.js`, `tests/facility.js` (the alcove's sides are rock), `tests/cavewalls.js`.
+
 ### Build `2026-11-09pp` · branch `claude/start-game-project-HSh7Z` · the rounded rock's right side by the Cold Storage door (on the preview)
 The owner: "The left side of the rock structure on the left side of the door looks good. The right side still needs work", with the flat slab over it and the curve under it circled.
 - **The alcove's right side** was drawn as low outer rock with a lid, because it is two pieces and the check took them one at a time. It is now tall rock with its roof running back like its neighbours', its corners rounded; no slab, no gap beside it.
