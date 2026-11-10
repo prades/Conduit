@@ -98,7 +98,7 @@ async function boot(search, store) {
         globalThis.__room = (x, y) => { const r = facilityRoomAt(x, y, _fp.F); return r ? r.id : null; };`);
     return { run, J, store: sb.localStorage };
 }
-const ARENA9 = 'barrel_5,barrel_6,barrel_7,barrier_1,barrier_2,crate_4,crate_5,crate_6,crate_stack_3' + ',hazard_c1,hazard_x1,hazard_x2' + ',sewer_pump_1,sewer_pump_2,sewer_pump_3,sewer_valve_1,sewer_valve_2,sewer_valve_3,sewer_valve_4';   // the arena's nine and the Sewers' machinery (builds 2026-11-07b and d), and the hazard containers (the arena's two, the Sewers' one: build 2026-11-09yy)
+let ARENA9 = null;   // what moves in the game without the flag: the map's own movable objects (the arena's nine, the Sewers' machinery, the hazard containers), read from the map by the first check below (FLUX MOVE's own list of them is tests/fluxmove.js's)
 const ROOMS17 = 'arena,armory,catwalks,cold_storage,crystal_chamber,experiment_lab,front_lobby,lab_hallway,lab_passage,nest_area,observation_deck,security_room,sewers,show_room,teleport_room_1,teleport_room_2,teleport_stair_room';
 
 (async () => {
@@ -107,10 +107,10 @@ const ROOMS17 = 'arena,armory,catwalks,cold_storage,crystal_chamber,experiment_l
         const { J } = await boot('');
         check('without ?fluxlab nothing changes: the map\'s 17 rooms, 14 doorways and 165 props, no test room and no stairwell to it; the arena\'s nine objects, the Sewers\' machinery and the three hazard containers are the only ones that move; the facility\'s tables are as they were; a new game starts as it always did (the three followers, the Crystal Chamber, the tutorial at its first step, the save on)', () => {
             const r = J(`(function(){ const M = FACILITY_MAP; return { rooms: M.rooms.map(r => r.id).sort().join(), portals: M.portals.length, props: M.props.length, flag: !!M._fluxLab, lab: fluxLabOn(), stair: M.decor.some(d => d.id === 'crystal_lab_stairwell'),
-                moves: fluxObjects().map(s => s.id).sort().join(), styled: FP_STYLE_ROOMS.size, tag: 'flux_lab' in FP_ROOM_TAG, look: 'flux_lab' in FP_ROOM_STYLE, squad: followers.map(f => f.element).sort().join(),
+                moves: fluxObjects().map(s => s.id).sort().join(), mapMoves: M.props.filter(s => s.flux && s.shape === 'rect').map(s => s.id).sort().join(), styled: FP_STYLE_ROOMS.size, tag: 'flux_lab' in FP_ROOM_TAG, look: 'flux_lab' in FP_ROOM_STYLE, squad: followers.map(f => f.element).sort().join(),
                 room: __room(player.x, player.y), step: _fp.tut.script.step, save: !!_fp.saveReady, mode: !!_fp.fluxLab, spy: (render(), facilitySaveWrite(), __opened.concat(__writes).join()) }; })()`);
             same(r.rooms, ROOMS17, 'the rooms'); same(r.portals, 14, 'the doorways');   /* 165 props since 2026-11-07nn: the Ant Nest's console */   // (12 since build 2026-11-07bb: the drain pipe's two ends; 14 since 2026-11-07ll: the Ant Nest's two) same(r.props, 165, 'the props'); same(r.flag || r.lab || r.stair || r.mode, false, 'something of the test room is there');
-            same(r.moves, ARENA9, 'what moves'); same(r.styled, 17, 'the styled rooms'); same(r.tag || r.look, false, 'the room\'s look or name is in the tables');
+            ARENA9 = r.mapMoves; same(r.moves, r.mapMoves, 'what moves: the map\'s own movable objects'); ok(r.moves && !/lab_/.test(r.moves), 'nothing moves, or something of the test room does'); same(r.styled, 17, 'the styled rooms'); same(r.tag || r.look, false, 'the room\'s look or name is in the tables');
             same(r.squad, 'core,electric,fire', 'the squad'); same(r.room, 'crystal_chamber', 'the start'); same(r.step, 0, 'the tutorial'); same(r.save, true, 'the save');
             ok(/^run start(,set conduit_fp_save)+$/.test(r.spy), 'the spies on the start\'s cards screen and on storage (used below) do not see a new game\'s: ' + r.spy);
         });

@@ -36,8 +36,8 @@ const SCRIPT = `<script>window.addEventListener('load', function(){ setTimeout(a
     partyAdd([so, eg, fh]); partyTick(); partyBarRender(true); await wait(80);
     var card = function(f){ return $$('#squadBar .sb-slot').filter(function(s){ return s._unit === f; })[0]; };
     var meter = function(f){ var b = card(f).querySelector('.sb-ult'); return { hidden: b.hidden, full: b.classList.contains('full'), l: b.querySelector('.sb-ultl').textContent, n: b.querySelector('.sb-ultn').textContent, w: b.querySelector('u').style.width, h: Math.round(b.getBoundingClientRect().height) }; };
-    eg.ultimateCharge = 40; fh.ultimateCharge = 100; partyBarRender(true); await wait(40);
-    out.egg = meter(eg); out.full = meter(fh); out.cardH = Math.round(card(fh).getBoundingClientRect().height);
+    eg.ultimateCharge = 40; so.ultimateCharge = 40; fh.ultimateCharge = 100; partyBarRender(true); await wait(40);
+    out.egg = meter(eg); out.half = meter(so); out.full = meter(fh); out.cardH = Math.round(card(fh).getBoundingClientRect().height);
     // a tap on the full meter fires its Ultimate (its execute stubbed: the fire path is what is checked); a tap on one not full is a tap on the card (it selects)
     var u = followerUltimate(fh), keep = u.execute, ran = 0; u.execute = function(a){ ran++; a.ultimateCharge = 0; };
     click(card(fh).querySelector('.sb-ult')); await wait(40); out.fired = { ran: ran, charge: fh.ultimateCharge, after: meter(fh) }; u.execute = keep;
@@ -217,8 +217,9 @@ function measure(w, h) {
     else {
         await check('the probe ran (a tablet)', () => { ok(T, 'the probe produced nothing'); same(T.err, undefined, 'the probe threw'); });
         if (T && !T.err) {
-            await check('THE SQUAD CARD\'S ULTIMATE METER: ULT and the charge in it, in its element\'s colour; full, gold, taller, ULTIMATE ▲ and TAP', () => {
-                same(JSON.stringify(T.egg), JSON.stringify({ hidden: false, full: false, l: 'ULT', n: '40%', w: '40%', h: 8 }), 'not full');
+            await check('THE SQUAD CARD\'S ULTIMATE METER: ULT and the charge in it, in its element\'s colour; full, gold, taller, ULTIMATE ▲ and TAP; none for a follower before it evolves (it has no Ultimate since build 2026-11-09b)', () => {
+                same([T.egg.hidden, T.egg.h].join(), 'true,0', 'a meter for a follower before it evolves');   // (this probe expected one until 2026-11-10: in this container it had been skipped, finding no browser, so it never met the rule)
+                same(JSON.stringify(T.half), JSON.stringify({ hidden: false, full: false, l: 'ULT', n: '40%', w: '40%', h: 8 }), 'not full');
                 same(JSON.stringify(T.full), JSON.stringify({ hidden: false, full: true, l: 'ULTIMATE ▲', n: 'TAP', w: '100%', h: 11 }), 'full'); same(T.cardH, 64, 'the card\'s height');
             });
             await check('a tap on the full meter fires the Ultimate and the meter empties; a tap on one not full is a tap on the card (it picks the follower)', () => {
