@@ -235,7 +235,8 @@ const FP_ROCK_DOWN = 170;
 // ROUNDED ROCK (the owner, 2026-11-09, of the rock by the Cold Storage door: "it looks really jank. You need to make it to where the wall bends in, the cave wall bends in with a circular sort of look,
 // rounded off sort of look. And then just fix it up all around"; then "Rock curves into the alcove"): where two rock pieces meet at a bend, each stops short of the corner (FP_ROCK_ROUND.t) and a curved
 // stretch of rock face sweeps round between them (a "rockbend" item of its own, in the depth order), its lip, its roof and its cliff carried round. A run's END stays flush with what it meets (rounded,
-// it opened a gap against the wall or door beside it). A piece between two back rock pieces (a notch's side: the Cold Storage alcove's east side) is back rock too, tall, with no cliff under it.
+// it opened a gap against the wall or door beside it). A short run of rock between two back rock pieces whose camera-facing side is solid rock (a notch's side seen from behind: the Cold Storage alcove's
+// east side) is drawn as back rock too, tall, its roof running back like theirs, so the rock round the alcove is one mass (the owner: "the right side still needs work"; drawn low with a lid, it was a slab).
 // On the preview ?rock=round until approved, the Cold Storage alcove's sides made rock (js/facility.js _facEdgeKinds).
 let _fpRockRoundPrev;
 function fpRockRound() { if (_fpRockRoundPrev === undefined) { _fpRockRoundPrev = false; try { _fpRockRoundPrev = typeof location !== "undefined" && /[?&]rock=round\b/.test(location.search || ""); } catch (e) {} } return _fpRockRoundPrev; }
@@ -249,7 +250,14 @@ function _fpRockJoints(items) {
     for (const it of items) if (it.fp === "wall" && it.kind === "rock") for (const e of ["a", "b"]) { const k = key(it[e]); if (!at.has(k)) at.set(k, []); at.get(k).push({ it, e }); }
     const into = (it, e) => { const p = it[e], q = e === "a" ? it.b : it.a, L = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1; return [(q[0] - p[0]) / L, (q[1] - p[1]) / L, L]; };
     const other = (it, e) => { const l = at.get(key(it[e])) || []; const o = l.find(x => x.it !== it); return o ? o.it : null; };
-    for (const list of at.values()) for (const { it } of list) if (!it.back && !it._notch) { const A = other(it, "a"), B = other(it, "b"); if (A && B && A.back && B.back) { it.back = true; it.cap = null; it._notch = true; } }   // (a notch's side)
+    // (a NOTCH'S SIDE seen from behind: a short straight run of front rock, up to 2 tiles, with back rock at both its ends: back rock, its roof as theirs)
+    const along = (it, o) => Math.abs((it.b[0] - it.a[0]) * (o.b[1] - o.a[1]) - (it.b[1] - it.a[1]) * (o.b[0] - o.a[0])) < 1e-6;
+    for (const list of at.values()) for (const { it } of list) {
+        if (it.back || it._notch) continue;
+        const run = [it], ends = [];
+        for (const e of ["a", "b"]) { let cur = it, ce = e; for (let n = 0; n < 4; n++) { const o = other(cur, ce); if (!o || o.back || !along(cur, o)) { ends.push(o); break; } run.push(o); ce = key(o.a) === key(cur[ce]) ? "b" : "a"; cur = o; if (n === 3) ends.push(null); } }
+        if (run.length <= 4 && ends.length === 2 && ends.every(o => o && o.back)) for (const p of run) { p.back = true; p._notch = true; p.cap = _fpRockBackCap(p); }
+    }
     const bent = list => { if (list.length !== 2) return false; const [P, Q] = list, u = into(P.it, P.e), w = into(Q.it, Q.e); return u[0] * w[0] + u[1] * w[1] >= -0.985; };   // (not straight on)
     for (const list of at.values()) if (bent(list)) for (const { it } of list) it._bends = (it._bends || 0) + 1;
     const lim = (it, L) => L * (it._bends > 1 ? 0.475 : 0.95);   // (a piece bent at both ends leaves room for both)
@@ -298,8 +306,18 @@ function _fpDrawRockBend(it) {
     const P = it.P, Q = it.Q, hP = _fpRockHeights(P, _fpRockWallH(P)), hQ = _fpRockHeights(Q, _fpRockWallH(Q)), uP = _fpRockU(P, it.s0), uQ = _fpRockU(Q, it.s1), uK = it.Pe === "a" ? 0 : 1;
     const h0 = _fpRockHAt(hP, uP), h1 = _fpRockHAt(hQ, uQ), hK = (_fpRockHAt(hP, uK) + _fpRockHAt(hQ, it.Qe === "a" ? 0 : 1)) / 2, N = FP_ROCK_ROUND.seg, pts = [], hs = [];
     for (let i = 0; i < N; i++) { const s = i / (N - 1), a = (1 - s) * (1 - s), b = 2 * (1 - s) * s, c = s * s; pts.push([a * it.s0[0] + b * it.K[0] + c * it.s1[0], a * it.s0[1] + b * it.K[1] + c * it.s1[1]]); hs.push(a * h0 + b * hK + c * h1); }
-    const far = (P.cap && Q.cap) ? (i => { const s = i / (N - 1), f0 = _fpRockFar(P, uP, it.s0), f1 = _fpRockFar(Q, uQ, it.s1); if (!f0 || !f1) return null; return [pts[i][0] + (f0[0] - it.s0[0]) * (1 - s) + (f1[0] - it.s1[0]) * s, pts[i][1] + (f0[1] - it.s0[1]) * (1 - s) + (f1[1] - it.s1[1]) * s]; }) : null;
+    const fP = P.cap ? _fpRockFar(P, uP, it.s0) : null, fQ = Q.cap ? _fpRockFar(Q, uQ, it.s1) : null, o0 = fP ? [fP[0] - it.s0[0], fP[1] - it.s0[1]] : null, o1 = fQ ? [fQ[0] - it.s1[0], fQ[1] - it.s1[1]] : null;
+    const oa = o0 || o1, ob = o1 || o0;   // (the roof runs back from the lip as far as the pieces' do; where one piece has none, as far as the other's)
+    const far = oa ? (i => { const s = i / (N - 1); return [pts[i][0] + oa[0] * (1 - s) + ob[0] * s, pts[i][1] + oa[1] * (1 - s) + ob[1] * s]; }) : null;
     _fpRockCurve(pts, hs, !!P.back, P.lit || 1, Q.lit || 1, far);
+}
+// a BACK rock piece's CAP: the rock's top surface is ONE roof running back (north, away from the camera) from the rock to the wall behind it; each end finds its own distance, so neighbouring pieces share an
+// edge and the roof is smooth (null: nothing behind it within 4 tiles)
+function _fpRockBackCap(it) {
+    const march = (px, py) => { for (let t = 0.1; t <= 4.2; t += 0.2) { const q = facilityRoomAt(px, py - t, _fp.F); if (q) { let lo = Math.max(0, t - 0.2), hi = t; for (let i = 0; i < 4; i++) { const mid = (lo + hi) / 2; if (facilityRoomAt(px, py - mid, _fp.F)) hi = mid; else lo = mid; } return { d: hi, room: q }; } } return null; };
+    const ea = march(it.a[0], it.a[1]), eb = march(it.b[0], it.b[1]), em = march((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), ref = em || ea || eb;
+    if (ref) { const same = ref.room.id === it.room, da = ea ? (same ? Math.min(ea.d, 0.5) : ea.d) : ref.d, db = eb ? (same ? Math.min(eb.d, 0.5) : eb.d) : ref.d; if (Math.max(da, db) >= 0.15 || same) return { da, db, zb: null }; }   // (the roof is flat at the rock's own height, so the wall behind it and its corner posts rise above it)
+    return null;
 }
 function _fpRockSides(items) {
     for (const it of items) {
@@ -310,12 +328,7 @@ function _fpRockSides(items) {
         if (!_fp.glassEnds) { const Ws = _fp.F.windows.filter(w => /^deck_window_arena/.test(w.id)), A = _fp.F.byId.get("arena"), D = _fp.F.byId.get("observation_deck"); _fp.glassEnds = Ws.reduce((l, w) => l.concat([w.a, w.b]), []); _fp.deckRise = D && A ? (facilityRoomHeight("observation_deck", _fp.F) - facilityRoomHeight("arena", _fp.F)) * FP_ELEV_PX + FP_WALL_H + 6 : 0; }
         const wd = (px, py) => { let d = 9; for (const e of _fp.glassEnds) d = Math.min(d, Math.hypot(px - e[0], py - e[1])); return Math.max(0, 1 - d / 1.5); };
         it.dk = _fp.glassEnds.length ? [wd(it.a[0], it.a[1]), wd((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), wd(it.b[0], it.b[1])] : null; if (it.dk && !(it.dk[0] || it.dk[1] || it.dk[2])) it.dk = null;
-        it.cap = it.back ? null : { d: 1.0, nx, ny, zb: null };   // a front wall's cap is the thickness of the rock, 1 tile, running back toward the arena
-        if (it.back) {   // the CAP: the rock's top surface is ONE roof running back (north, away from the camera) from the rock to the wall behind it; each end finds its own distance, so neighbouring pieces share an edge and the roof is smooth
-            const march = (px, py) => { for (let t = 0.1; t <= 4.2; t += 0.2) { const q = facilityRoomAt(px, py - t, _fp.F); if (q) { let lo = Math.max(0, t - 0.2), hi = t; for (let i = 0; i < 4; i++) { const mid = (lo + hi) / 2; if (facilityRoomAt(px, py - mid, _fp.F)) hi = mid; else lo = mid; } return { d: hi, room: q }; } } return null; };
-            const ea = march(it.a[0], it.a[1]), eb = march(it.b[0], it.b[1]), em = march((it.a[0] + it.b[0]) / 2, (it.a[1] + it.b[1]) / 2), ref = em || ea || eb;
-            if (ref) { const same = ref.room.id === it.room, da = ea ? (same ? Math.min(ea.d, 0.5) : ea.d) : ref.d, db = eb ? (same ? Math.min(eb.d, 0.5) : eb.d) : ref.d; if (Math.max(da, db) >= 0.15 || same) it.cap = { da, db, zb: null }; }   // (the roof is flat at the rock's own height, so the wall behind it and its corner posts rise above it)
-        }
+        it.cap = it.back ? _fpRockBackCap(it) : { d: 1.0, nx, ny, zb: null };   // a front wall's cap is the thickness of the rock, 1 tile, running back toward the arena
     }
     if (fpRockRound()) _fpRockJoints(items);   // (the rounded rock's preview: bends and ends)
 }

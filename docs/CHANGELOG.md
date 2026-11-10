@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-09
 
+### Build `2026-11-09pp` · branch `claude/start-game-project-HSh7Z` · the rounded rock's right side by the Cold Storage door (on the preview)
+The owner: "The left side of the rock structure on the left side of the door looks good. The right side still needs work", with the flat slab over it and the curve under it circled.
+- **The alcove's right side** was drawn as low outer rock with a lid, because it is two pieces and the check took them one at a time. It is now tall rock with its roof running back like its neighbours', its corners rounded; no slab, no gap beside it.
+- Still only with `?rock=round`. Tests: `tests/facilityplay.js`.
+
 ### Build `2026-11-09oo` · branch `claude/start-game-project-HSh7Z` · rounded rock (on the preview)
 The owner: "This cave wall here next to where the door is, it looks really jank. You need to make it to where the wall bends in [...] with a circular sort of look, rounded off sort of look. And then just fix it up all around"; then "Rock curves into the alcove". `docs/FACILITY.md`.
 - **Every bend in the cave rock is rounded:** the face, lip, roof and cliff curve round the corner instead of meeting at a sharp edge.
