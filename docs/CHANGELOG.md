@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11o` · branch `claude/start-game-project-HSh7Z` · the enemy card's full art, and its orders as cards
+- **The creature fills the enemy card.** The owner circled the full art from ten variations on the trading card ("Very cool"). The card takes the orders' whole height, and the creature is drawn large and sharp on a clear ground (`js/targeting.js` `targetBigPortraitURL`, made once per kind). Its numbers sit on a dark panel at the right.
+- **ALL, RUN and ATTACK are cards.** The owner: "We need to move the buttons and jazz them up". Of seventeen concepts they chose the cards tucked behind ("Right direction"); of six ways in that direction, "Build 1 with 4's ATTACK drawn out".
+  - ALL and RUN are tucked behind the creature's card, fanned a little, their ends showing at its side, each with its emblem over its word.
+  - ATTACK is drawn out in front: a whole card, the claws for its picture, its count on a badge. It reads ATTACK · 3, then ATTACKING · 2/3; with no one to send it goes dark (NO ONE).
+  - RUNNING draws RUN's card out, and it pulses.
+- **The motion:** the tucked cards breathe, ATTACK glows with a light running across it, and the emblems move. All of it is still for a player who asks for reduced motion.
+- What the buttons do and the words on them are unchanged; a narrow window keeps its card. Tests: `tests/enemycard.js` (the full art, the cards under and over the creature's card, the badge). Docs: `UI-STYLE.md`, `DECISION-LOG.md`, the Bible. Not playtested.
+
 ### Build `2026-11-11n` · branch `claude/start-game-project-HSh7Z` · the enemy card as a trading card, and the orders' emblems
 - **The enemy card at the left is redrawn as a trading card.** The owner asked for "like 10 different designs" and circled design 5 of the ten drafts.
   - The card is a slab tilted in 3-D, like the equip cards, wearing its creature's element texture under a dark veil (fire's flames, electric's bolts and so on; a creature with no element has none).

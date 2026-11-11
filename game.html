@@ -1388,42 +1388,62 @@
     body.corners #squadBar .sb-thumb { width: 38px; height: 38px; } body.corners #squadBar .sb-name { font-size: 13px; padding-right: 18px; } body.corners #squadBar .sb-sub { display: block; font-size: 9px; } body.corners #squadBar .sb-info { right: 14px; top: 6px; } body.corners #squadBar .sb-open { font-size: 14px; }
     /* the target: the enemy card at the bottom right (the dial and the ammunition are drawn over it, js/targeting.js) */
     /* THE ENEMY CARD AT THE LEFT (build 2026-11-11m; the owner: "move the HUD enemy pop-up window to the left to cover up the squad command HUD window under the roster card"): it stands where the orders stand,
-       as wide as the stack above it and at least as tall as the orders, over them (they are hidden while it is up: #mixTool.foe), with ALL, RUN and ATTACK along its foot (js/mixtool.js mixToolFoeHTML).
-       ITS LOOK, THE TRADING CARD (build 2026-11-11n; the owner circled design 5 of ten drafts): the card is a slab tilted in 3-D, as the equip cards are, with a back plate at its right edge and foot,
-       wearing its creature's element texture under a dark veil (js/cardart.js cardArtFaceClass sets --tex). The picture is at its left on a wash of the creature's colour, the level and element on a plate
-       at its foot; the name, HP, the bite and the race's row are at its right (the row's chips without their words: green is WEAK, grey RESISTS). ALL, RUN and ATTACK are flat under it (a tap is never
-       lost to the tilt), each with its emblem before its word (js/cardart.js cardArtOrderClass); RUNNING and ATTACKING · n/m stand smaller under their emblem, to fit. */
+       as wide as the stack above it and at least as tall as the orders, over them (they are hidden while it is up: #mixTool.foe), with ALL, RUN and ATTACK (js/mixtool.js mixToolFoeHTML).
+       ITS LOOK (build 2026-11-11n, the trading card; build 2026-11-11o, the owner's picks of three more rounds of drafts: the full art, "Very cool"; the cards tucked behind, "Right direction"; then
+       "Build 1 with 4's ATTACK drawn out"): the card is a slab tilted in 3-D, as the equip cards are, with a back plate at its right edge and foot, wearing its creature's element texture under a dark veil
+       (js/cardart.js cardArtFaceClass sets --tex). The creature fills it, large and sharp (js/targeting.js targetBigPortraitURL: .mt-foe-pic.full), on a wash of its colour, with its level and element
+       at its foot; the name, HP, the bite and the race's row are on a dark panel at its right (the row's chips without their words: green is WEAK, grey RESISTS). ALL and RUN are cards tucked behind it,
+       their ends showing at its side, each its emblem over its word (js/cardart.js cardArtOrderClass); ATTACK is a card drawn out in front of it, the claws for its picture and its count on a badge
+       (.mt-fa-n). They breathe a little and their emblems move; RUNNING draws RUN's card out; with no one to send, ATTACK's card goes dark. Still for a player who asks for less motion. */
     body.corners #mixTool .mt-foe-slot { position: fixed; left: 14px; right: auto; bottom: calc(var(--cn-bottom) + var(--vv-bottom, 0px)); width: var(--cn-w); }
     body.corners #mixTool.foe .mt-main { visibility: hidden; }
-    body.corners #mixTool .mt-foe.at-left { display: flex; flex-direction: column; justify-content: space-between; align-items: stretch; gap: 6px; min-height: var(--cn-tool); box-sizing: border-box; padding: 2px 4px 0 2px; box-shadow: none; cursor: default; }
+    body.corners #mixTool .mt-foe.at-left { display: block; min-height: var(--cn-tool); box-sizing: border-box; padding: 2px 4px 0 2px; box-shadow: none; cursor: default; }
     body.corners #mixTool .mt-foe.at-left::before { display: none; }
-    body.corners #mixTool .mt-foe-stage { display: block; perspective: 700px; perspective-origin: 30% 40%; }
-    body.corners #mixTool .mt-foe-slab { position: relative; display: grid; grid-template-columns: 90px 1fr; height: 124px; box-sizing: border-box; transform: rotateX(7deg) rotateY(-14deg); transform-origin: 40% 50%; border: 2px solid var(--c); overflow: hidden;
+    body.corners #mixTool .mt-foe-stage { position: relative; z-index: 2; display: block; perspective: 700px; perspective-origin: 30% 40%; }
+    body.corners #mixTool .mt-foe-slab { position: relative; display: grid; grid-template-columns: 1fr 128px; height: 172px; box-sizing: border-box; transform: rotateX(7deg) rotateY(-14deg); transform-origin: 40% 50%; border: 2px solid var(--c); overflow: hidden;
         background: linear-gradient(180deg, rgba(5,7,15,0.55), rgba(5,7,15,0.82)), var(--tex, none) center / cover, #0f1730; box-shadow: 5px 5px 0 color-mix(in srgb, var(--c) 35%, #05070f), 0 12px 22px rgba(0,0,0,0.6), 0 0 16px -4px var(--c); }
-    body.corners #mixTool .mt-foe.at-left .mt-foe-pic { position: relative; width: auto; height: auto; border: 0; border-right: 1px solid color-mix(in srgb, var(--c) 50%, transparent); clip-path: none;
-        background: radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--c) 55%, transparent), transparent 68%), repeating-linear-gradient(120deg, rgba(255,255,255,0.06) 0 1px, transparent 1px 8px); }
+    body.corners #mixTool .mt-foe.at-left .mt-foe-pic { position: absolute; inset: 0; width: auto; height: auto; border: 0; clip-path: none; background: radial-gradient(166px 153px at 30% 55%, color-mix(in srgb, var(--c) 55%, transparent), transparent 70%); }
     body.corners #mixTool .mt-foe.at-left .mt-foe-pic img { position: absolute; left: 2px; top: 2px; width: 84px; height: 84px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
-    body.corners #mixTool .mt-foe.at-left .mt-foe-sub { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-wrap: wrap; gap: 3px 4px; padding: 14px 4px 5px 7px; background: linear-gradient(0deg, rgba(5,7,15,0.95), rgba(5,7,15,0)); border-left: 3px solid var(--c); }
+    body.corners #mixTool .mt-foe.at-left .mt-foe-pic.full img { left: -17px; top: -28px; width: 216px; height: 216px; object-fit: contain; filter: drop-shadow(0 10px 8px rgba(0,0,0,0.65)); }
+    body.corners #mixTool .mt-foe.at-left .mt-foe-sub { position: absolute; left: 0; bottom: 0; width: 110px; display: flex; flex-wrap: wrap; gap: 3px 4px; padding: 14px 4px 5px 6px; background: none; border-left: 0; }
     body.corners #mixTool .mt-foe.at-left .mt-foe-sub s { display: none; }
     body.corners #mixTool .mt-foe.at-left .mt-foe-sub i { font: italic 900 9px var(--neo-font); letter-spacing: 0.05em; padding: 0 5px; transform: skewX(-12deg); white-space: nowrap; }
-    body.corners #mixTool .mt-foe.at-left .mt-foe-sub .lv { color: #fff; border: 1px solid rgba(255,255,255,0.6); } body.corners #mixTool .mt-foe.at-left .mt-foe-sub .el { color: #05070f; background: var(--c); }
-    body.corners #mixTool .mt-foe.at-left .mt-foe-txt { display: flex; flex-direction: column; gap: 3px; padding: 7px 8px 6px 9px; min-width: 0; }
+    body.corners #mixTool .mt-foe.at-left .mt-foe-sub .lv { color: #fff; background: rgba(5,7,15,0.7); border: 1px solid rgba(255,255,255,0.6); } body.corners #mixTool .mt-foe.at-left .mt-foe-sub .el { color: #05070f; background: var(--c); }
+    body.corners #mixTool .mt-foe.at-left .mt-foe-txt { grid-column: 2; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; margin: 5px 5px 5px 0; padding: 6px 7px 5px; background: rgba(5,7,15,0.8); border-left: 2px solid var(--c); }
     body.corners #mixTool .mt-foe.at-left .mt-foe-name { font-size: 12.5px; line-height: 1.1; color: #fff; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-shadow: 0 0 8px color-mix(in srgb, var(--c) 70%, transparent); }
     body.corners #mixTool .mt-foe.at-left :is(.mt-foe-num, .mt-foe-bite) { display: flex; justify-content: space-between; align-items: baseline; font: 800 9px/1.05 monospace; letter-spacing: 0.06em; color: #9fb0d6; white-space: nowrap; }
     body.corners #mixTool .mt-foe.at-left :is(.mt-foe-num, .mt-foe-bite) i { font-style: normal; } body.corners #mixTool .mt-foe.at-left .mt-foe-bite:empty { display: none; }
     body.corners #mixTool .mt-foe.at-left :is(.mt-foe-num, .mt-foe-bite) b { font: italic 900 13px/1.05 var(--neo-font); letter-spacing: 0; color: #fff; } body.corners #mixTool .mt-foe.at-left .mt-foe-num small { font-size: 9px; color: #9fb0d6; }
     body.corners #mixTool .mt-foe.at-left .mt-foe-hp u { background: linear-gradient(90deg, #2fcf78, #8dffbf); } body.corners #mixTool .mt-foe.at-left .mt-foe-hp u.mid { background: #ffd34d; } body.corners #mixTool .mt-foe.at-left .mt-foe-hp u.low { background: #ff5a3a; }
     body.corners #mixTool .mt-foe.at-left .mt-foe-dmg { gap: 2px; margin-top: 1px; } body.corners #mixTool .mt-foe.at-left .mt-foe-dmg b { display: none; } body.corners #mixTool .mt-foe.at-left .mt-foe-dmg i { margin: 0; }
-    body.corners #mixTool .mt-foe-acts { display: grid; grid-template-columns: 0.85fr 0.9fr 1.75fr; gap: 7px; padding: 0 6px 1px; }
-    body.corners #mixTool .mt-fa { --c: #19e6c1; position: relative; isolation: isolate; height: 42px; padding: 0; font: italic 900 13px var(--neo-font); letter-spacing: 0.02em; color: #fff; background: none; border: 0; cursor: pointer; white-space: nowrap; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
-    body.corners #mixTool .mt-fa::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: #0a1022; border: 1.5px solid var(--c); }
-    body.corners #mixTool .mt-fa b { display: inline-flex; align-items: center; justify-content: center; gap: 4px; font: inherit; } body.corners #mixTool .mt-fa b::before { width: 17px; height: 17px; margin: 0; vertical-align: 0; }
-    body.corners #mixTool .mt-fa.all.on { color: #05070f; text-shadow: none; } body.corners #mixTool .mt-fa.all.on::before { background: var(--c); box-shadow: 0 0 12px var(--c); }
-    body.corners #mixTool .mt-fa.run { --c: #ff4a1c; } body.corners #mixTool .mt-fa.run.going { color: #ff9a7a; } body.corners #mixTool .mt-fa.run.going::before { background: #3a1a10; }
-    body.corners #mixTool .mt-fa.atk { --c: #ff4a1c; color: #05070f; text-shadow: none; } body.corners #mixTool .mt-fa.atk::before { background: #ff4a1c; box-shadow: 0 0 14px #ff4a1c; }
-    body.corners #mixTool .mt-foe.going .mt-fa.atk { color: #ff9a7a; } body.corners #mixTool .mt-foe.going .mt-fa.atk::before { background: #3a1a10; box-shadow: none; }
-    body.corners #mixTool .mt-foe.idle .mt-fa.atk { color: #6d7fa6; } body.corners #mixTool .mt-foe.idle .mt-fa.atk::before { background: #1d2540; box-shadow: none; }
-    body.corners #mixTool :is(.mt-fa.run.going, .mt-foe.going .mt-fa.atk) b { flex-direction: column; gap: 1px; font-size: 9px; letter-spacing: 0; } body.corners #mixTool :is(.mt-fa.run.going, .mt-foe.going .mt-fa.atk) b::before { width: 14px; height: 14px; }
+    /* ALL, RUN and ATTACK as cards: ALL and RUN tucked behind the creature's card (under it: z 1 to its 2), their ends showing at its side; ATTACK drawn out in front (z 4) */
+    body.corners #mixTool .mt-foe-acts { position: absolute; inset: 0; display: block; padding: 0; pointer-events: none; }
+    body.corners #mixTool .mt-fa { --c: #19e6c1; position: absolute; z-index: 1; pointer-events: auto; display: flex; align-items: center; justify-content: flex-end; padding: 0 4px 0 0; font: italic 900 9px var(--neo-font); letter-spacing: 0.05em; color: #fff; background: none; border: 0; cursor: pointer; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,0.7); }
+    body.corners #mixTool .mt-fa::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 6px; border: 2px solid var(--c); background: radial-gradient(circle at 88% 50%, color-mix(in srgb, var(--c) 38%, transparent), transparent 58%), linear-gradient(180deg, #24305e, #0a1022); box-shadow: 3px 3px 0 rgba(0,0,0,0.55), 0 0 12px -3px var(--c); }
+    body.corners #mixTool .mt-fa::after { content: ""; position: absolute; inset: 0; z-index: -2; border-radius: 6px; opacity: 0; pointer-events: none; }
+    body.corners #mixTool .mt-fa b { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 54px; font: inherit; } body.corners #mixTool .mt-fa b::before { width: 22px; height: 22px; margin: 0; vertical-align: 0; }
+    body.corners #mixTool .mt-fa.all, body.corners #mixTool .mt-fa.run { width: 150px; height: 42px; transform-origin: 0 50%; animation: mt-fa-peek 1.6s ease-in-out infinite; }
+    body.corners #mixTool .mt-fa.all { left: 152px; top: 4px; transform: rotate(-4deg); }
+    body.corners #mixTool .mt-fa.all.on { color: #05070f; text-shadow: none; } body.corners #mixTool .mt-fa.all.on::before { background: radial-gradient(circle at 88% 50%, rgba(255,255,255,0.45), transparent 58%), linear-gradient(180deg, #b8fff4, #19e6c1 55%, #0fae92); box-shadow: 3px 3px 0 rgba(0,0,0,0.55), 0 0 12px #19e6c1; }
+    body.corners #mixTool .mt-fa.run { --c: #ff4a1c; left: 154px; top: 46px; animation-delay: -0.4s; }
+    body.corners #mixTool .mt-fa.run::before { background: radial-gradient(circle at 88% 50%, rgba(255,90,40,0.4), transparent 58%), linear-gradient(180deg, #3a1a1a, #12080a); }
+    body.corners #mixTool .mt-fa.run.going { color: #ffd2c2; translate: 40px 0; animation: none; } body.corners #mixTool .mt-fa.run.going::before { background: radial-gradient(circle at 88% 50%, rgba(255,140,80,0.6), transparent 60%), linear-gradient(180deg, #6a2416, #2a0e08); }
+    body.corners #mixTool .mt-fa.run.going::after { box-shadow: 0 0 14px 2px #ff4a1c; animation: mt-fa-glow 0.8s ease-in-out infinite; }
+    body.corners #mixTool .mt-fa.atk { --c: #ff4a1c; z-index: 4; left: 228px; top: 82px; width: 82px; height: 94px; padding: 0; justify-content: center; transform: rotate(7deg); transform-origin: 50% 100%; font-size: 11px; color: #05070f; text-shadow: none; }
+    body.corners #mixTool .mt-fa.atk::before { border-color: #ffe0c8; background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.7) 48%, transparent 58%) no-repeat, linear-gradient(180deg, #ffe07a 0%, #ff8a2a 42%, #ff3a10 100%); background-size: 260% 100%, 100% 100%; background-position: 160% 0, 0 0; animation: mt-fa-gleam 3.2s ease-in-out infinite; }
+    body.corners #mixTool .mt-fa.atk::after { box-shadow: 0 0 18px 3px #ff5a1c; animation: mt-fa-glow 1.6s ease-in-out infinite; }
+    body.corners #mixTool .mt-fa.atk b { gap: 6px; width: auto; } body.corners #mixTool .mt-fa.atk b::before { width: 40px; height: 40px; }
+    body.corners #mixTool .mt-fa-n { position: absolute; right: -8px; top: -9px; min-width: 20px; height: 20px; padding: 0 4px; box-sizing: border-box; border-radius: 10px; font: italic 900 11px/16px var(--neo-font); letter-spacing: 0; text-align: center; color: #fff; background: #05070f; border: 2px solid #ffe07a; } body.corners #mixTool .mt-fa-n s { display: none; }
+    body.corners #mixTool .mt-foe.going .mt-fa.atk b { font-size: 10px; letter-spacing: 0.01em; }
+    body.corners #mixTool .mt-foe.idle .mt-fa.atk { color: #6d7fa6; } body.corners #mixTool .mt-foe.idle .mt-fa.atk::before { border-color: #3a4a70; background: #1d2540; animation: none; } body.corners #mixTool .mt-foe.idle .mt-fa.atk::after { animation: none; opacity: 0; }
+    body.corners #mixTool .mt-fa.atk b::before { animation: mt-fa-flick 1.6s ease-in-out infinite; } body.corners #mixTool .mt-fa.run b::before { animation: mt-fa-slip 0.8s ease-in-out infinite; } body.corners #mixTool .mt-fa.all b::before { animation: mt-fa-settle 1.6s ease-in-out infinite; }
+    @keyframes mt-fa-peek { 0%, 100% { translate: 0 0; } 50% { translate: 5px 0; } }
+    @keyframes mt-fa-glow { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+    @keyframes mt-fa-gleam { 0% { background-position: 160% 0, 0 0; } 30%, 100% { background-position: -60% 0, 0 0; } }
+    @keyframes mt-fa-flick { 0%, 62%, 100% { transform: none; } 70% { transform: translate(2px, -2px) scale(1.22) rotate(-6deg); } 78% { transform: translate(-1px, 1px) scale(0.96); } }
+    @keyframes mt-fa-slip { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-4px); } }
+    @keyframes mt-fa-settle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    @media (prefers-reduced-motion: reduce) { body.corners #mixTool .mt-fa, body.corners #mixTool .mt-fa::before, body.corners #mixTool .mt-fa::after, body.corners #mixTool .mt-fa b::before { animation: none !important; } }
     body.corners #mixTool .mt-fa:hover { filter: brightness(1.15); }
     body.corners #mixTool .mt-foe { width: 100%; max-width: none; margin: 0; padding: 9px 16px 10px 18px; border: 0; clip-path: none; background: none; isolation: isolate; position: relative; }
     body.corners #mixTool .mt-foe::before { content: ""; position: absolute; inset: 0; z-index: -1; transform: skewX(-9deg); background: linear-gradient(180deg, #101a36, #05070f); border: 2px solid var(--c); box-shadow: 0 0 12px -2px var(--c), inset 0 0 14px rgba(0,0,0,0.5); }
@@ -2223,7 +2243,7 @@ function _showError(msg) {
 // an old cached js/config.js ("Attempted to assign to readonly property").
 // Change this, the ?v= on every script tag and BUILD_VERSION in js/config.js
 // together (tests/boot.js checks they agree): `node tools/stamp.js <build>`.
-window.__PAGE_BUILD = "2026-11-11n";
+window.__PAGE_BUILD = "2026-11-11o";
 window.__bootFailed = [];
 window.addEventListener("error", function (e) {
     var t = e && e.target;
@@ -2259,104 +2279,104 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 </script>
 
 <!-- Game scripts — load order matters (globals first, logic last) -->
-<script src="js/config.js?v=2026-11-11n"></script>
-<script src="js/imgmap.js?v=2026-11-11n"></script>
-<script src="js/icons.js?v=2026-11-11n"></script>
-<script src="js/uikit.js?v=2026-11-11n"></script>
-<script src="js/traits.js?v=2026-11-11n"></script>
-<script src="js/elements.js?v=2026-11-11n"></script>
-<script src="js/damage.js?v=2026-11-11n"></script>
-<script src="js/combat.js?v=2026-11-11n"></script>
-<script src="js/species.js?v=2026-11-11n"></script>
-<script src="js/levels.js?v=2026-11-11n"></script>
-<script src="js/status.js?v=2026-11-11n"></script>
-<script src="js/helpers.js?v=2026-11-11n"></script>
-<script src="js/predator.js?v=2026-11-11n"></script>
-<script src="js/abilities.js?v=2026-11-11n"></script>
-<script src="js/commands.js?v=2026-11-11n"></script>
-<script src="js/npc.js?v=2026-11-11n"></script>
-<script src="js/formation.js?v=2026-11-11n"></script>
-<script src="js/draw.js?v=2026-11-11n"></script>
-<script src="js/beetle3d.js?v=2026-11-11n"></script>
-<script src="js/bugs3d.js?v=2026-11-11n"></script>
-<script src="js/settings.js?v=2026-11-11n"></script>
-<script src="js/alarm.js?v=2026-11-11n"></script>
-<script src="js/drops.js?v=2026-11-11n"></script>
-<script src="js/clone.js?v=2026-11-11n"></script>
-<script src="js/bonds.js?v=2026-11-11n"></script>
-<script src="js/evopack.js?v=2026-11-11n"></script>
-<script src="js/evolution.js?v=2026-11-11n"></script>
-<script src="js/cards.js?v=2026-11-11n"></script>
-<script src="js/energy.js?v=2026-11-11n"></script>
-<script src="js/cardart.js?v=2026-11-11n"></script>
-<script src="js/hdsprites.js?v=2026-11-11n"></script>
-<script src="js/fx3d.js?v=2026-11-11n"></script>
-<script src="js/firebombs.js?v=2026-11-11n"></script>
-<script src="js/hazards.js?v=2026-11-11n"></script>
-<script src="js/moves.js?v=2026-11-11n"></script>
-<script src="js/hudgems.js?v=2026-11-11n"></script>
-<script src="js/commandcenter.js?v=2026-11-11n"></script>
-<script src="js/cardsui.js?v=2026-11-11n"></script>
-<script src="js/unitinfo.js?v=2026-11-11n"></script>
-<script src="js/infodex.js?v=2026-11-11n"></script>
-<script src="js/classes.js?v=2026-11-11n"></script>
-<script src="js/playergear.js?v=2026-11-11n"></script>
-<script src="js/inventory.js?v=2026-11-11n"></script>
-<script src="js/weapons.js?v=2026-11-11n"></script>
-<script src="js/mutator.js?v=2026-11-11n"></script>
-<script src="js/specimen.js?v=2026-11-11n"></script>
-<script src="js/serum.js?v=2026-11-11n"></script>
-<script src="js/potion.js?v=2026-11-11n"></script>
-<script src="js/playercombat.js?v=2026-11-11n"></script>
-<script src="js/battleview.js?v=2026-11-11n"></script>
-<script src="js/technomancer.js?v=2026-11-11n"></script>
-<script src="js/playercards.js?v=2026-11-11n"></script>
-<script src="js/stations.js?v=2026-11-11n"></script>
-<script src="js/facilityportals.js?v=2026-11-11n"></script>
-<script src="js/tutorial.js?v=2026-11-11n"></script>
-<script src="js/dialogue.js?v=2026-11-11n"></script>
-<script src="js/questbox.js?v=2026-11-11n"></script>
-<script src="js/facilitymap.js?v=2026-11-11n"></script>
-<script src="js/facilitygrow.js?v=2026-11-11n"></script>
-<script src="js/facility.js?v=2026-11-11n"></script>
-<script src="js/attract.js?v=2026-11-11n"></script>
-<script src="js/facilitysave.js?v=2026-11-11n"></script>
-<script src="js/facilityplay.js?v=2026-11-11n"></script>
-<script src="js/facilitydecor.js?v=2026-11-11n"></script>
-<script src="js/propatlas.js?v=2026-11-11n"></script>
-<script src="js/propsprites.js?v=2026-11-11n"></script>
-<script src="js/caveatlas.js?v=2026-11-11n"></script>
-<script src="js/caverubble.js?v=2026-11-11n"></script>
-<script src="js/cavewalls.js?v=2026-11-11n"></script>
-<script src="js/facilitystyle.js?v=2026-11-11n"></script>
-<script src="js/facilitystyleall.js?v=2026-11-11n"></script>
-<script src="js/facilitysewers.js?v=2026-11-11n"></script>
-<script src="js/facilitynet.js?v=2026-11-11n"></script>
-<script src="js/population.js?v=2026-11-11n"></script>
-<script src="js/facilityspawn.js?v=2026-11-11n"></script>
-<script src="js/crystalpower.js?v=2026-11-11n"></script>
-<script src="js/antraids.js?v=2026-11-11n"></script>
-<script src="js/followerspots.js?v=2026-11-11n"></script>
-<script src="js/breeding.js?v=2026-11-11n"></script>
-<script src="js/party.js?v=2026-11-11n"></script>
-<script src="js/squadfly.js?v=2026-11-11n"></script>
-<script src="js/techabilities.js?v=2026-11-11n"></script>
-<script src="js/fluxmove.js?v=2026-11-11n"></script>
-<script src="js/fluxlab.js?v=2026-11-11n"></script>
-<script src="js/puzzles.js?v=2026-11-11n"></script>
-<script src="js/quests.js?v=2026-11-11n"></script>
-<script src="js/bosses.js?v=2026-11-11n"></script>
-<script src="js/nestconsole.js?v=2026-11-11n"></script>
-<script src="js/conversion.js?v=2026-11-11n"></script>
-<script src="js/sidequest.js?v=2026-11-11n"></script>
-<script src="js/facilitytutorial.js?v=2026-11-11n"></script>
-<script src="js/gunfire.js?v=2026-11-11n"></script>
-<script src="js/targeting.js?v=2026-11-11n"></script>
-<script src="js/toolbox.js?v=2026-11-11n"></script>
-<script src="js/mixtool.js?v=2026-11-11n"></script>
-<script src="js/radialmenu.js?v=2026-11-11n"></script>
-<script src="js/input.js?v=2026-11-11n"></script>
-<script src="js/game.js?v=2026-11-11n"></script>
+<script src="js/config.js?v=2026-11-11o"></script>
+<script src="js/imgmap.js?v=2026-11-11o"></script>
+<script src="js/icons.js?v=2026-11-11o"></script>
+<script src="js/uikit.js?v=2026-11-11o"></script>
+<script src="js/traits.js?v=2026-11-11o"></script>
+<script src="js/elements.js?v=2026-11-11o"></script>
+<script src="js/damage.js?v=2026-11-11o"></script>
+<script src="js/combat.js?v=2026-11-11o"></script>
+<script src="js/species.js?v=2026-11-11o"></script>
+<script src="js/levels.js?v=2026-11-11o"></script>
+<script src="js/status.js?v=2026-11-11o"></script>
+<script src="js/helpers.js?v=2026-11-11o"></script>
+<script src="js/predator.js?v=2026-11-11o"></script>
+<script src="js/abilities.js?v=2026-11-11o"></script>
+<script src="js/commands.js?v=2026-11-11o"></script>
+<script src="js/npc.js?v=2026-11-11o"></script>
+<script src="js/formation.js?v=2026-11-11o"></script>
+<script src="js/draw.js?v=2026-11-11o"></script>
+<script src="js/beetle3d.js?v=2026-11-11o"></script>
+<script src="js/bugs3d.js?v=2026-11-11o"></script>
+<script src="js/settings.js?v=2026-11-11o"></script>
+<script src="js/alarm.js?v=2026-11-11o"></script>
+<script src="js/drops.js?v=2026-11-11o"></script>
+<script src="js/clone.js?v=2026-11-11o"></script>
+<script src="js/bonds.js?v=2026-11-11o"></script>
+<script src="js/evopack.js?v=2026-11-11o"></script>
+<script src="js/evolution.js?v=2026-11-11o"></script>
+<script src="js/cards.js?v=2026-11-11o"></script>
+<script src="js/energy.js?v=2026-11-11o"></script>
+<script src="js/cardart.js?v=2026-11-11o"></script>
+<script src="js/hdsprites.js?v=2026-11-11o"></script>
+<script src="js/fx3d.js?v=2026-11-11o"></script>
+<script src="js/firebombs.js?v=2026-11-11o"></script>
+<script src="js/hazards.js?v=2026-11-11o"></script>
+<script src="js/moves.js?v=2026-11-11o"></script>
+<script src="js/hudgems.js?v=2026-11-11o"></script>
+<script src="js/commandcenter.js?v=2026-11-11o"></script>
+<script src="js/cardsui.js?v=2026-11-11o"></script>
+<script src="js/unitinfo.js?v=2026-11-11o"></script>
+<script src="js/infodex.js?v=2026-11-11o"></script>
+<script src="js/classes.js?v=2026-11-11o"></script>
+<script src="js/playergear.js?v=2026-11-11o"></script>
+<script src="js/inventory.js?v=2026-11-11o"></script>
+<script src="js/weapons.js?v=2026-11-11o"></script>
+<script src="js/mutator.js?v=2026-11-11o"></script>
+<script src="js/specimen.js?v=2026-11-11o"></script>
+<script src="js/serum.js?v=2026-11-11o"></script>
+<script src="js/potion.js?v=2026-11-11o"></script>
+<script src="js/playercombat.js?v=2026-11-11o"></script>
+<script src="js/battleview.js?v=2026-11-11o"></script>
+<script src="js/technomancer.js?v=2026-11-11o"></script>
+<script src="js/playercards.js?v=2026-11-11o"></script>
+<script src="js/stations.js?v=2026-11-11o"></script>
+<script src="js/facilityportals.js?v=2026-11-11o"></script>
+<script src="js/tutorial.js?v=2026-11-11o"></script>
+<script src="js/dialogue.js?v=2026-11-11o"></script>
+<script src="js/questbox.js?v=2026-11-11o"></script>
+<script src="js/facilitymap.js?v=2026-11-11o"></script>
+<script src="js/facilitygrow.js?v=2026-11-11o"></script>
+<script src="js/facility.js?v=2026-11-11o"></script>
+<script src="js/attract.js?v=2026-11-11o"></script>
+<script src="js/facilitysave.js?v=2026-11-11o"></script>
+<script src="js/facilityplay.js?v=2026-11-11o"></script>
+<script src="js/facilitydecor.js?v=2026-11-11o"></script>
+<script src="js/propatlas.js?v=2026-11-11o"></script>
+<script src="js/propsprites.js?v=2026-11-11o"></script>
+<script src="js/caveatlas.js?v=2026-11-11o"></script>
+<script src="js/caverubble.js?v=2026-11-11o"></script>
+<script src="js/cavewalls.js?v=2026-11-11o"></script>
+<script src="js/facilitystyle.js?v=2026-11-11o"></script>
+<script src="js/facilitystyleall.js?v=2026-11-11o"></script>
+<script src="js/facilitysewers.js?v=2026-11-11o"></script>
+<script src="js/facilitynet.js?v=2026-11-11o"></script>
+<script src="js/population.js?v=2026-11-11o"></script>
+<script src="js/facilityspawn.js?v=2026-11-11o"></script>
+<script src="js/crystalpower.js?v=2026-11-11o"></script>
+<script src="js/antraids.js?v=2026-11-11o"></script>
+<script src="js/followerspots.js?v=2026-11-11o"></script>
+<script src="js/breeding.js?v=2026-11-11o"></script>
+<script src="js/party.js?v=2026-11-11o"></script>
+<script src="js/squadfly.js?v=2026-11-11o"></script>
+<script src="js/techabilities.js?v=2026-11-11o"></script>
+<script src="js/fluxmove.js?v=2026-11-11o"></script>
+<script src="js/fluxlab.js?v=2026-11-11o"></script>
+<script src="js/puzzles.js?v=2026-11-11o"></script>
+<script src="js/quests.js?v=2026-11-11o"></script>
+<script src="js/bosses.js?v=2026-11-11o"></script>
+<script src="js/nestconsole.js?v=2026-11-11o"></script>
+<script src="js/conversion.js?v=2026-11-11o"></script>
+<script src="js/sidequest.js?v=2026-11-11o"></script>
+<script src="js/facilitytutorial.js?v=2026-11-11o"></script>
+<script src="js/gunfire.js?v=2026-11-11o"></script>
+<script src="js/targeting.js?v=2026-11-11o"></script>
+<script src="js/toolbox.js?v=2026-11-11o"></script>
+<script src="js/mixtool.js?v=2026-11-11o"></script>
+<script src="js/radialmenu.js?v=2026-11-11o"></script>
+<script src="js/input.js?v=2026-11-11o"></script>
+<script src="js/game.js?v=2026-11-11o"></script>
 <script>
 // ── BOOT CHECK ────────────────────────────────────────────
 // Every file above must have arrived and run before init.js starts the game.
@@ -2411,7 +2431,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
     document.body.appendChild(d);
 })();
 </script>
-<script src="js/init.js?v=2026-11-11n"></script>
+<script src="js/init.js?v=2026-11-11o"></script>
 
 </body>
 </html>

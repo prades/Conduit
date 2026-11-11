@@ -127,6 +127,23 @@ function targetPortraitURL(a) {
     if (_tgPortraitURLs[key] === undefined) { try { _tgPortraitURLs[key] = c.toDataURL("image/png"); } catch (e) { _tgPortraitURLs[key] = ""; } }
     return _tgPortraitURLs[key];
 }
+// THE BIG PORTRAIT (the enemy card's full art at the left, build 2026-11-11o): the creature as the portrait draws it, but on a clear ground and drawn at the size it is shown
+// (it is drawn in shapes, so it stays sharp), centred in a square, 94% of it; "" where it cannot be drawn (the card then takes the small portrait). Made once per kind.
+const _tgBigURLs = {}, TG_BIG = 300;
+function targetBigPortraitURL(a) {
+    if (!a || typeof drawBug3D !== "function") return ""; const key = [a.speciesName, a.className, a.color, a.element].join("|"); if (_tgBigURLs[key] !== undefined) return _tgBigURLs[key];
+    let url = ""; const dx = a.dirX, dy = a.dirY; a.dirX = 0.35; a.dirY = 1;   // (facing the camera's left, as the portrait; put back below)
+    try {
+        const t = document.createElement("canvas"); t.width = t.height = 260; const tg = t.getContext("2d"); tg.translate(130, 150); drawBug3D(a, 0, 0, tg);   // where it is: drawn once at its own size
+        const d = tg.getImageData(0, 0, 260, 260).data; let x0 = 260, y0 = 260, x1 = -1, y1 = -1;
+        for (let y = 0; y < 260; y++) for (let x = 0; x < 260; x++) if (d[(y * 260 + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        if (x1 >= 0) {
+            const w = x1 - x0 + 1, h = y1 - y0 + 1, sc = TG_BIG * 0.94 / Math.max(w, h), c = document.createElement("canvas"); c.width = c.height = TG_BIG; const g = c.getContext("2d");
+            g.translate(TG_BIG / 2, TG_BIG / 2); g.scale(sc, sc); g.translate(-(x0 + w / 2 - 130), -(y0 + h / 2 - 150)); drawBug3D(a, 0, 0, g); url = c.toDataURL("image/png");
+        }
+    } catch (e) { url = ""; } finally { a.dirX = dx; a.dirY = dy; }
+    return (_tgBigURLs[key] = url);
+}
 
 // ── drawing ──
 function _tgScreen(a) { return typeof _gunScreen === "function" ? _gunScreen(a) : { x: canvas.width / 2, y: canvas.height / 2 }; }

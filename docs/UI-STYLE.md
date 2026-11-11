@@ -59,12 +59,15 @@ Ten layouts of the HUD were drawn on one set of parts (docs/images/hud-corners.j
 - The other layout (a narrow window) keeps the card as it was: a button above the orders.
 - **Its look: the trading card** (build `2026-11-11n`; the owner circled design 5 of ten drafts).
   - The card is a slab tilted in 3-D, like the equip cards, with a back plate along its right edge and foot. It wears the creature's element texture under a dark veil (`cardArtFaceClass`); a creature with no element has plain navy.
-  - The picture fills its left on a wash of the creature's colour, with the level and element on a plate at its foot. The element wraps under the level when it is long.
+  - The level and element sit on a plate at the picture's foot; the element wraps under the level when it is long.
   - At its right: the name (two lines at most, after the race's emblem), HP with its numbers, the bar, the bite, and the race's chips. The chips carry no WEAK or RESISTS word: green is weak, grey resists.
-  - ALL, RUN and ATTACK are flat under it, so a tap is never lost to the tilt.
+- **The full art and the cards** (build `2026-11-11o`; the owner's picks of three more rounds of drafts: the full art ("Very cool"), the cards tucked behind ("Right direction"), then "Build 1 with 4's ATTACK drawn out"). This replaces 11n's picture at the left and its buttons flat under the card.
+  - The card takes the orders' whole height. The creature fills it, drawn large and sharp on a clear ground (`targetBigPortraitURL`, made once per kind; the small portrait if it cannot be drawn). The numbers sit on a dark panel at its right.
+  - ALL and RUN are cards tucked behind it, their ends showing at its side, each with its emblem over its word. A tap on the end that shows works as before.
+  - ATTACK is a card drawn out in front of it, the claws for its picture and its count on a badge (it reads ATTACK · 3, then ATTACKING · 2/3; NO ONE, dark, with no one to send).
+  - RUNNING draws RUN's card out, and it pulses. The tucked cards breathe a little; ATTACK glows and a light runs across it; the emblems move. All of it is still for a player who asks for reduced motion.
 - **The orders' emblems** stand before the three words (the owner's picks of the drafts: "set C for the all and the run, but set A for the attack"): ALL three slanted cards stacked, RUN two chevrons pointing back, ATTACK three claw slashes.
   - They are drawn like the species emblems: one colour, 32 units square, in the word's colour (`js/cardart.js` `CARD_ART_ORDERS`, class `cao-<key>`).
-  - RUNNING and ATTACKING · n/m stand smaller under their emblem so every word fits its button.
 
 ## FLUX MOVE's aim (build `2026-11-06f`; docs/FLUX-MOVEMENT.md)
 
