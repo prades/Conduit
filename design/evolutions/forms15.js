@@ -54,7 +54,7 @@ function _porcupine(o) {
     let pos = new T.Vector3(dirN.x * sx * 0.9, dirN.y * sy * 0.9, dirN.z * sz * 0.9);
     if (o.gem) { rock.updateMatrixWorld(true); const org = dirN.clone().multiplyScalar(4), wO = body.localToWorld(org.clone()), wC = body.localToWorld(new T.Vector3(0, 0, 0)); ray.set(wO, wC.sub(wO).normalize()); const hit = ray.intersectObject(hitMesh, false)[0]; if (hit) pos = body.worldToLocal(hit.point.clone()).addScaledVector(dirN, -0.03); }
     const dir = dirN.clone().multiplyScalar(P.out == null ? 0.6 : P.out).add(new T.Vector3(0, P.up == null ? 0.7 : P.up, -(P.back || 0))).normalize(), r = P.len * (P.fat || o.fat || 0.2);
-    const sh = _quillShard(P.len, r, P.sides || 5, mat, i + (o.seed || 0)); sh.position.copy(pos); sh.quaternion.setFromUnitVectors(UPV2, dir); body.add(sh); quills.push({ m: sh, q: sh.quaternion.clone(), i }); }
+    const sh = _quillShard(P.len, r, P.sides || 5, mat, i + (o.seed || 0)); sh.position.copy(pos); sh.quaternion.setFromUnitVectors(UPV2, dir); body.add(sh); quills.push({ m: sh, q: sh.quaternion.clone(), i, p: sh.position.clone(), d: dir.clone() }); }
   if (!placed) for (let i = 0; i < o.n; i++) { const u = Math.pow(rn(i, 1), o.top || 1), phi = rn(i, 2) * TAU, up = Math.cos(u * PI * 0.5 * (o.cover || 0.95));
     // a point on the rock's upper hemisphere (angle from the top: u*cover), the front-bias pushes some toward +z
     const polar = u * PI * 0.5 * (o.cover || 0.95) + 0.05, dirN = new T.Vector3(Math.sin(polar) * Math.sin(phi), Math.cos(polar), Math.sin(polar) * Math.cos(phi));
@@ -63,14 +63,18 @@ function _porcupine(o) {
     if (o.gem) { rock.updateMatrixWorld(true); const org = dirN.clone().multiplyScalar(4), wO = body.localToWorld(org.clone()), wC = body.localToWorld(new T.Vector3(0, 0, 0)); ray.set(wO, wC.sub(wO).normalize()); const hit = ray.intersectObject(hitMesh, false)[0]; if (hit) pos = body.worldToLocal(hit.point.clone()).addScaledVector(dirN, -0.03); }
     const len = o.len[0] + (o.len[1] - o.len[0]) * Math.pow(rn(i, 4), o.skew || 1), r = len * (o.fat || 0.16) * (0.8 + 0.5 * rn(i, 5));
     const dir = dirN.clone().add(new T.Vector3((rn(i, 6) - 0.5) * o.spread, (rn(i, 7) - 0.3) * o.spread, (rn(i, 8) - 0.5) * o.spread)).normalize();
-    const sh = _quillShard(len, r, 4 + Math.floor(rn(i, 9) * 3), mat, i); sh.position.copy(pos); sh.quaternion.setFromUnitVectors(UPV2, dir); body.add(sh); quills.push({ m: sh, q: sh.quaternion.clone(), i }); }
+    const sh = _quillShard(len, r, 4 + Math.floor(rn(i, 9) * 3), mat, i); sh.position.copy(pos); sh.quaternion.setFromUnitVectors(UPV2, dir); body.add(sh); quills.push({ m: sh, q: sh.quaternion.clone(), i, p: sh.position.clone(), d: dir.clone() }); }
   if (o.cracks) for (let k = 0; k < o.cracks; k++) { const a = rn(k, 20) * TAU, polar = 0.4 + 0.8 * rn(k, 21), c = cbox(0.02, 0.28 + 0.2 * rn(k, 22), 0.02, 0.004, M.glow), d = new T.Vector3(Math.sin(polar) * Math.sin(a), Math.cos(polar), Math.sin(polar) * Math.cos(a));
     c.position.set(d.x * sx * 0.97, d.y * sy * 0.97, d.z * sz * 0.97); c.quaternion.setFromUnitVectors(UPV2, d.clone().add(new T.Vector3(0.2, 0.0, 0.1)).normalize()); body.add(c); }
   if (o.blackFront) { const shellMat = o.gem ? (o.glossy ? _gemMatGloss : _gemMatMatte) : _rockBlack; quills.slice().sort((p, q) => (q.m.position.z + 0.3 * Math.abs(q.m.position.x)) - (p.m.position.z + 0.3 * Math.abs(p.m.position.x)) - 0.0).slice(0, o.blackFront).forEach(Q => { Q.m.material = shellMat; Q.black = true; }); }   // the front-most spikes are the shell's own black
   const L = new T.PointLight(0xffffff, 0.35, 3, 2); L.color.set(EL.color); L.position.set(0, cy + sy, 0.3); b.add(L); LIGHTS.push(L);
-  return { g, core: (cy + sy * 0.3) * (o.S || 1), update(t, act) { const ph = 1.6 * t, ac = act || 0;
+  return { g, core: (cy + sy * 0.3) * (o.S || 1), update(t, act, ex) { const ph = 1.6 * t, ac = act || 0;
     body.position.y = cy + 0.012 * Math.sin(ph * 2) + 0.03 * ac; body.rotation.z = 0.035 * Math.sin(ph); body.rotation.x = 0.025 * Math.sin(ph * 2 + 1) - 0.12 * ac;   // a crawling waddle; it hunches when it attacks
-    const q = new T.Quaternion(), e = new T.Euler(); for (const Q of quills) { e.set(0.05 * Math.sin(ph * 2 + Q.i) * (1 + 3 * ac), 0, 0.05 * Math.sin(ph * 3 + Q.i * 1.7) * (1 + 3 * ac)); q.setFromEuler(e); Q.m.quaternion.copy(Q.q).multiply(q); Q.m.scale.y = 1 + 0.25 * ac; }
+    // QUILLSTONE'S ATTACKS (No. 927, below): o.dive: the everyday hit dives forward, nose down, and back (act pulses up and down); o.burst: ex = { turn, q, fly } from the sheet's extra blocks: QUILL BURST turns its back
+    // (turn: 0 facing, 1 back to the enemy), its quills (q: their size, 1 whole, 0 gone) leave the crown (fly: how far out along their own line) and grow back
+    if (o.dive) { b.position.z = o.dive * ac; body.rotation.x = 0.025 * Math.sin(ph * 2 + 1) + 0.3 * ac; }
+    const turn = ex && ex.turn != null ? ex.turn : 0, qk = ex && ex.q != null ? ex.q : 1, fly = ex && ex.fly ? ex.fly : 0; if (o.burst) b.rotation.y = turn * PI;
+    const q = new T.Quaternion(), e = new T.Euler(); for (const Q of quills) { e.set(0.05 * Math.sin(ph * 2 + Q.i) * (1 + 3 * ac), 0, 0.05 * Math.sin(ph * 3 + Q.i * 1.7) * (1 + 3 * ac)); q.setFromEuler(e); Q.m.quaternion.copy(Q.q).multiply(q); Q.m.scale.y = 1 + 0.25 * ac; if (o.burst) { Q.m.scale.x = Q.m.scale.z = qk; Q.m.scale.y *= qk; Q.m.visible = qk > 0.02; Q.m.position.copy(Q.p).addScaledVector(Q.d, fly * (o.flyDist || 1)); } }
     for (const A of ants) { const e2 = new T.Euler(0.14 * Math.sin(ph * 2 + A.sgn) + 0.2 * ac, 0, 0.12 * Math.sin(ph * 3 + A.sgn * 2)); A.g.quaternion.copy(A.q).multiply(new T.Quaternion().setFromEuler(e2)); }   // the feelers sway, and prick up when it attacks
     feet.forEach((f, i) => { f.position.z = (i < 2 ? 1 : -1) * sz * 0.36 + 0.04 * Math.sin(ph + (i % 2 ? PI : 0)); }); } };
 }
@@ -118,3 +122,7 @@ fx(359, "Tall-spray layout with antennae.", () => _porcupine(Object.assign({}, _
 const _fire354 = Object.assign({}, _pc, _g342, { n: 11, len: [0.3, 0.65], fat: 0.2, seed: 5, top: 1.2, cover: 0.9, blackFront: 2 });
 fx(360, "The fire brawler: the gem porcupine, front two spikes black.", () => _porcupine(Object.assign({}, _fire354)));
 fx(361, "The fire brawler, the game sprite.", () => _porcupine(Object.assign({}, _fire354, { S: 1.5 })));
+// No. 927 (draft, 2026-11-11), the game sprite of the QUILLSTONE with its own attacks (the owner: "it just dives forward a little bit for the primary attack, and for the secondary attack, it should turn around and
+// shoot off all of its projectiles, and they should disappear for a second"; of the agent's questions: its back to the enemy, the quills "grow back fast"): No. 361 with o.dive (its everyday hit) and o.burst (QUILL BURST),
+// baked in extra blocks of the sheet: cols 16-23 the turn and the quills leaving, 24-31 the turn back and the quills growing back, 32-39 standing with no quills (design/evolutions/bake.js job.blocks).
+fx(927, "The QUILLSTONE: dives forward for its everyday hit; turns its back, shoots its quills and grows them back for QUILL BURST.", () => _porcupine(Object.assign({}, _fire354, { S: 1.5, dive: 0.45, burst: true, flyDist: 1.4 })));

@@ -164,7 +164,13 @@ const JOBS = [
   { id: 'hammerslug', form: 469, color: '#00ccaa', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 391 (the game sprite of 388), the electric brawler: the hood with black hex crystals that breathe, three hovering gems in a triangle before the diamond; it bounces.
   // No. 361, the fire brawler: a pitch-black cut gem with red shards, the two front spikes black; its action frames hunch it and bristle the quills, up and back.
-  { id: 'quillstone', form: 361, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true },
+  // No. 927 (forms15.js; draft 2026-11-11), the QUILLSTONE with its own attacks: the action block (cols 8-15) is its everyday hit's dive; then three extra blocks (job.blocks, 8 frames each, values handed to update(t, act, value)):
+  //   16-23 QUILL BURST: it turns its back to the enemy (turn 0 to 1), the quills leave (fly) and shrink to nothing (q);   24-31 it turns back with no quills (turn 1 to 0), then they grow back (q 0 to 1);   32-39 standing with no quills (the idle loop).
+  // Bake it alone in a 192 px cell (the dive needs room): node design/evolutions/bake.js <three> img/evo quillstone 192 2.2667   (it was 144 px, form 361, before: its sheet is bigger now, the same pixels a unit)
+  { id: 'quillstone', form: 927, color: '#ff3300', idleAct: 0, action: [0, 1.0], pulse: true, blocks: [
+    [{ turn: 0.12, q: 1 }, { turn: 0.4, q: 1 }, { turn: 0.8, q: 1 }, { turn: 1, q: 1, act: 0.5 }, { turn: 1, q: 0.9, fly: 0.6, act: 0.5 }, { turn: 1, q: 0.5, fly: 1.3 }, { turn: 1, q: 0.1, fly: 2.0 }, { turn: 1, q: 0, fly: 2.6 }],
+    [{ turn: 0.85, q: 0 }, { turn: 0.6, q: 0 }, { turn: 0.3, q: 0 }, { turn: 0, q: 0 }, { turn: 0, q: 0.2 }, { turn: 0, q: 0.5 }, { turn: 0, q: 0.8 }, { turn: 0, q: 1 }],
+    [0, 1, 2, 3, 4, 5, 6, 7].map(() => ({ turn: 0, q: 0 }))] },
   // No. 314 (a game-ready No. 312), the electric brawler: a black hollow pyramid hood drooping over the top half of an octahedron diamond; its action frames bow the hood and flare the diamond.
   { id: 'prism', form: 391, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: true },
   // No. 220, the core mage: a black shell-jar dragged on its side by fat irregular tentacles, a shard horn at its mouth; the horn drops to aim in its action frames.
@@ -243,7 +249,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
   const sheetG = document.createElement('canvas'); sheetG.width = CELL * 16; sheetG.height = CELL * 8; const sgG = sheetG.getContext('2d');
   const isGround = o => { for (let q = o; q; q = q.parent) if (q.userData && q.userData.ground) return true; return false; };
   for (const job of jobs) {
-    const NCOL = job.consume ? 24 : 16; if (sheetCv.width !== CELL * NCOL) { sheetCv.width = CELL * NCOL; sheetG.width = CELL * NCOL; }   // (24 columns with a CONSUME block)
+    const NCOL = job.blocks ? 16 + 8 * job.blocks.length : job.consume ? 24 : 16; if (sheetCv.width !== CELL * NCOL) { sheetCv.width = CELL * NCOL; sheetG.width = CELL * NCOL; }   // (24 columns with a CONSUME block)
     sg.clearRect(0, 0, sheetCv.width, sheetCv.height); sgG.clearRect(0, 0, sheetG.width, sheetG.height);
     EL = { color: job.color }; setElementColour(job.color); if (typeof job.form === 'number' && !job.brightCrystal) { M.crystal.color.multiplyScalar(0.5); M.crystal.emissive.multiplyScalar(0.8); }
     const scene = new T.Scene(); scene.environment = env;
@@ -274,10 +280,10 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
       const th = k * PI / 4, fx = Math.cos(th), fz = Math.sin(th);
       B.g.rotation.y = Math.atan2(fx, fz);
       for (let f = 0; f < NCOL; f++) {
-        const idle = f < 8, i = f % 8, cons = f >= 16 ? job.consume[i] : null;
-        const t = cons != null ? (i < 4 ? i * 0.1 : (i - 4) * P / 4) : idle ? i * P / 8 : 1.0 + i * 0.06;   // (the CONSUME block: its hold frames loop the idle's breath over four)
-        const act = cons != null ? 0 : idle ? job.idleAct : job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;   // pulse: up and back down, so the move ends where it began
-        if (cons != null) B.update(t, act, cons); else B.update(t, act);
+        const idle = f < 8, i = f % 8, blk = f >= 16 && job.blocks ? job.blocks[Math.floor(f / 8) - 2][i] : null, cons = f >= 16 && job.consume ? job.consume[i] : null;
+        const t = blk ? (blk.t != null ? blk.t : i * P / 8) : cons != null ? (i < 4 ? i * 0.1 : (i - 4) * P / 4) : idle ? i * P / 8 : 1.0 + i * 0.06;   // (the CONSUME block: its hold frames loop the idle's breath over four)
+        const act = blk ? (blk.act != null ? blk.act : job.idleAct) : cons != null ? 0 : idle ? job.idleAct : job.pulse ? Math.sin(PI * (i + 0.5) / 8) : job.action[0] + (job.action[1] - job.action[0]) * (i + 0.5) / 8;   // pulse: up and back down, so the move ends where it began
+        if (blk) B.update(t, act, blk); else if (cons != null) B.update(t, act, cons); else B.update(t, act);
         if (!gMeshes.length) { renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL); }
         else {
           gMeshes.forEach(m => m.visible = false); renderer.render(scene, cam); sg.drawImage(renderer.domElement, f * CELL, k * CELL, CELL, CELL);   // the body
@@ -286,7 +292,7 @@ window.__bake = async function (jobs, CELL, HALF, LOOK_Y) {
         }
       }
     }
-    out[job.id] = { png: sheetCv.toDataURL('image/png'), ground: gMeshes.length ? sheetG.toDataURL('image/png') : null, meta: Object.assign({ cell: CELL, rows: 8, cols: NCOL, idle: 8, action: 8 }, job.consume ? { consume: 8 } : {}, { anchor, core: coreAt, unitsPerCell: HALF * 2 }) };
+    out[job.id] = { png: sheetCv.toDataURL('image/png'), ground: gMeshes.length ? sheetG.toDataURL('image/png') : null, meta: Object.assign({ cell: CELL, rows: 8, cols: NCOL, idle: 8, action: 8 }, job.consume ? { consume: 8 } : {}, job.blocks ? { blocks: job.blocks.length } : {}, { anchor, core: coreAt, unitsPerCell: HALF * 2 }) };
     scene.traverse(o => { if (o.geometry) o.geometry.dispose(); });
   }
   return out;
