@@ -140,7 +140,7 @@ const PIN_RANGE = 4, PIN_HOP = 3, PIN_SPEED = 0.35, PIN_TOUCH = 0.7, PIN_MULT = 
 // CHAIN LIGHTNING (the Thunderhead's everyday shot): the Mages' shot, then on from the enemy it struck to the nearest one not yet struck within CHAIN_HOP, each jump CHAIN_SHARE of the last, until none is that near or a jump would do under CHAIN_MIN.
 const CHAIN_HOP = 2.5, CHAIN_SHARE = 0.6, CHAIN_MIN = 1;
 // STATIC VORTEX (the Thunderhead's move): a stationary storm at the nearest enemy in reach; enemies in it are pulled toward its middle and take electric damage until it runs out.
-const VORTEX_RANGE = 7, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2;   // reach, its radius and life, the pull (tiles a frame), a bite every VORTEX_TICK frames of VORTEX_MULT × power
+const VORTEX_RANGE = 7, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2, VORTEX_HOLD = 1;   // reach, its radius and life, the pull (tiles a frame), a bite every VORTEX_TICK frames of VORTEX_MULT × power, and how far in front of its middle the pull gathers the enemies (tiles; the agent's, provisional)
 const ROT_RANGE = 7, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
 const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
@@ -1143,15 +1143,20 @@ function staticVortex(f) {
     return true;
 }
 // a frame of a STATIC VORTEX (js/elements.js updateElementEffects): the pull, and the bite every VORTEX_TICK frames
+// WHERE THE PULL GATHERS THEM (build 2026-11-11o; the owner, 2026-11-11: "make sure that the creatures are pushed to the opposite side of the tiles so that they're not being completely hidden"; of the agent's questions: "In front of the
+// storm", "About 1 tile"): the tornado stands on the storm's middle and is drawn over what is behind it, so enemies pulled to that very spot were hidden by it. They are pulled to a point VORTEX_HOLD tiles IN FRONT of the middle,
+// on the camera's side (+x and +y together is straight down the screen), where the funnel does not cover them. Who is in the storm (VORTEX_RADIUS from its middle), who can be seen from it, the pull's strength and
+// the shocks are as they were; only where the pull ends changes.
+function staticVortexGather(e) { return { x: e.x + VORTEX_HOLD * Math.SQRT1_2, y: e.y + VORTEX_HOLD * Math.SQRT1_2 }; }
 function staticVortexTick(e) {
     if (typeof actors === "undefined" || typeof isHostileTarget !== "function") return;
-    const R = e.radius, age = e.maxLife - e.life;
+    const R = e.radius, age = e.maxLife - e.life, G = staticVortexGather(e);
     for (const a of actors) {
         if (!a || !isHostileTarget(a)) continue;
-        const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy);
-        if (d > R || !_evoSees(e.x, e.y, a)) continue;   // (not through a wall or a tall object: "Need sight")
+        if (Math.hypot(e.x - a.x, e.y - a.y) > R || !_evoSees(e.x, e.y, a)) continue;   // (in the storm: round its middle; not through a wall or a tall object: "Need sight")
+        const dx = G.x - a.x, dy = G.y - a.y, d = Math.hypot(dx, dy);
         if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) {
-            const v = Math.min(VORTEX_PULL, d - 0.3);   // (in toward the middle, never past it)
+            const v = Math.min(VORTEX_PULL, d - 0.3);   // (in toward the gathering point, never past it)
             if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) { a.kbVX = dx / d * v; a.kbVY = dy / d * v; }   // (a stronger knock is left as it is)
         }
     }

@@ -10866,7 +10866,7 @@ const MAGMA_RANGE = 6, MAGMA_RADIUS = 1.5, MAGMA_LIFE = 480, MAGMA_TICK = 60, MA
 const HALO_RANGE = 7, HALO_RADIUS = 1.2, HALO_LIFE = 240, HALO_TICK = 30, HALO_BITE = 0.25;
 const PIN_RANGE = 4, PIN_HOP = 3, PIN_SPEED = 0.35, PIN_TOUCH = 0.7, PIN_MULT = 1.44, PIN_MAX_FRAMES = 600, PIN_MAX_DIST = 30;
 const CHAIN_HOP = 2.5, CHAIN_SHARE = 0.6, CHAIN_MIN = 1;
-const VORTEX_RANGE = 7, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2;
+const VORTEX_RANGE = 7, VORTEX_RADIUS = 2.5, VORTEX_LIFE = 240, VORTEX_PULL = 0.06, VORTEX_TICK = 30, VORTEX_MULT = 0.2, VORTEX_HOLD = 1;
 const ROT_RANGE = 7, ROT_MULT = 2.2, ROT_SHRED = 0.4, ROT_SHRED_FRAMES = 360, ROT_SPLASH_R = 1.6, ROT_SPLASH_SHRED = 0.6, ROT_SPLASH_FRAMES = 180;
 const MIMIC_RADIUS = 2.2, MIMIC_MULT = 1.9, MIMIC_PUSH = 0.5, MIMIC_SLOW = 0.5, MIMIC_SLOW_FRAMES = 90;
 const CALDERA_RADIUS = 2.4, CALDERA_MULT = 1.8, CALDERA_SHRED = 0.5, CALDERA_SHRED_FRAMES = 240;
@@ -12165,16 +12165,17 @@ function staticVortex(f) {
         floatingTexts.push({ world: true, x: f.x, y: f.y, text: "STATIC VORTEX", color: "#fff27a", life: 50, vy: -0.06, size: 10 });
     return true;
 }
+function staticVortexGather(e) { return { x: e.x + VORTEX_HOLD * Math.SQRT1_2, y: e.y + VORTEX_HOLD * Math.SQRT1_2 }; }
 function staticVortexTick(e) {
     if (typeof actors === "undefined" || typeof isHostileTarget !== "function")
         return;
-    const R = e.radius, age = e.maxLife - e.life;
+    const R = e.radius, age = e.maxLife - e.life, G = staticVortexGather(e);
     for (const a of actors) {
         if (!a || !isHostileTarget(a))
             continue;
-        const dx = e.x - a.x, dy = e.y - a.y, d = Math.hypot(dx, dy);
-        if (d > R || !_evoSees(e.x, e.y, a))
+        if (Math.hypot(e.x - a.x, e.y - a.y) > R || !_evoSees(e.x, e.y, a))
             continue;
+        const dx = G.x - a.x, dy = G.y - a.y, d = Math.hypot(dx, dy);
         if (d > 0.3 && !(typeof vortexPullImmune === "function" && vortexPullImmune(a))) {
             const v = Math.min(VORTEX_PULL, d - 0.3);
             if (Math.hypot(a.kbVX || 0, a.kbVY || 0) < v) {
@@ -18529,7 +18530,7 @@ const MOVE_INFO = {
     "HEXFIRE": () => [["REACH", HALO_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("hexfire"))], ["CIRCLE", HALO_RADIUS + " tiles round, " + _uiSec(HALO_LIFE)], ["DAMAGE", _uiX(HALO_BITE) + " power every " + _uiSec(HALO_TICK)], ["EFFECT", "A fire shot that leaves a burning circle where it lands. The circle stays put and never grows; enemies in it burn, your side does not. A new one takes the last one's place"]],
     "SEEDFALL": () => [["REACH", SEEDFALL_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("seedfall"))], ["AREA", SEEDFALL_RADIUS + " tiles round, " + _uiSec(SEEDFALL_LIFE)], ["DAMAGE", _uiX(SEEDFALL_BITE) + " power every " + _uiSec(SEEDFALL_TICK)], ["MENDS", Math.round(SEEDFALL_MEND * 100) + "% of their maximum health every " + _uiSec(SEEDFALL_TICK) + ", your followers in it"], ["EFFECT", "Glowing seeds rain on the area round the enemy it can see: the enemies in it are hurt (each hit MENDs, as every BLOOM hit), and your followers in it are mended"]],
     "PINBALL": () => [["REACH", PIN_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("pinball")) + " after a roll"], ["DAMAGE", _uiX(PIN_MULT) + " power a collision"], ["EFFECT", "Rolls into the nearest enemy, then on into the nearest one it has not hit within " + PIN_HOP + " tiles, and on while one is that near: each enemy once. A wall stops it"]],
-    "STATIC VORTEX": () => [["REACH", VORTEX_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("static_vortex"))], ["STORM", VORTEX_RADIUS + " tiles round, " + _uiSec(VORTEX_LIFE)], ["DAMAGE", _uiX(VORTEX_MULT) + " power every " + _uiSec(VORTEX_TICK)], ["EFFECT", "A storm that stays where it is cast: it pulls the enemies in it toward its middle (not a beetle or a boss) and shocks them until it runs out"]],
+    "STATIC VORTEX": () => [["REACH", VORTEX_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("static_vortex"))], ["STORM", VORTEX_RADIUS + " tiles round, " + _uiSec(VORTEX_LIFE)], ["DAMAGE", _uiX(VORTEX_MULT) + " power every " + _uiSec(VORTEX_TICK)], ["EFFECT", "A storm that stays where it is cast: it pulls the enemies in it to a spot in front of it, about " + VORTEX_HOLD + " tile from its middle, so the storm does not hide them (not a beetle or a boss) and shocks them until it runs out"]],
     "ROTTEN DECOY": () => [["REACH", ROT_RANGE + " tiles (set " + DECOY_SET + " tiles from the nearest enemy)"], ["WIND-UP", _uiSec(moveWindupFrames("rotten_decoy"))], ["LASTS", _uiSec(DECOY_LIFE) + " or until broken (half its max HP)"], ["EFFECT", "A black crystal copy in green mist: every enemy within " + DECOY_DRAW + " tiles goes for it (not a boss); its mist poisons enemies within " + DECOY_MIST + " tiles"]],
     "CORRODE SHOT": () => [["REACH", ROT_RANGE + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("corrode_shot"))], ["DAMAGE", _uiX(ROT_MULT) + " power"], ["EFFECT", "Eats the target's armour for " + _uiSec(ROT_SHRED_FRAMES) + " and splashes the corrosion over " + ROT_SPLASH_R + " tiles"]],
     "GRAVITY SLAM": () => [["REACH", MIMIC_RADIUS + " tiles"], ["WIND-UP", _uiSec(moveWindupFrames("gravity_slam"))], ["DAMAGE", _uiX(MIMIC_MULT) + " power"], ["EFFECT", "Flattens and slams: shoves enemies back and slows them for " + _uiSec(MIMIC_SLOW_FRAMES) + " (heavy ones are not moved)"]],

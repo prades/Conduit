@@ -2904,3 +2904,10 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Agent's (provisional): the sizes; the glow's strength (0.6) and radius (about 110 px across the floor's slant); two pulses in the middle of every 4th loop; the puffs' sizes and number; baking only the one row and loop the game draws.
 - Not changed: what the move does (reach, radius, life, pull, bite); the 70% the owner asked for earlier.
 - Status: Implemented and tested; not playtested. `EFFECTS.md`, `CHANGELOG.md`.
+
+## DECISION: The Thunderhead's STATIC VORTEX gathers the enemies in front of the storm (2026-11-11, build `2026-11-11o`, branch `claude/tornado-fix`)
+- The owner, of the storm (a tornado standing on the enemy it was cast on): "Just need to make sure that the creatures are pushed to the opposite side of the tiles so that they're not being completely hidden." The pull used to gather every enemy at the storm's exact middle, where the tornado stands and is drawn over them.
+- Asked where to hold them and how far: **"In front of the storm"** (on the camera's side; not a ring round it, not to one side) and **"About 1 tile"** (not 1.5, not 0.7).
+- A changed game rule, within the owner's own request: the pull's end point is a spot `VORTEX_HOLD` (1) tile in front of the middle (+x and +y together: straight down the screen), not the middle. **Not changed:** who is in the storm (2.5 tiles from the middle, and in sight of it), the reach, the pull's strength (0.06 a frame; not a beetle or a boss), the shocks, the 4 s.
+- Seen in the real page: both enemies gather just in front of the funnel's foot, their legs, lock brackets and tiles clear; the funnel's narrow foot still overlaps the top of their bodies a little, and they overlap each other (they share one gathering point). A larger hold (1.5 tiles) would clear that; offered.
+- Status: Implemented and tested; not playtested. `FOLLOWER-COMBAT-REDESIGN.md` §2.6, `EFFECTS.md`, `CHANGELOG.md`.

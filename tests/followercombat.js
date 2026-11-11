@@ -297,13 +297,19 @@ function measure(w, h) {
         ok(r.shot && r.hasHit && r.hit, 'the shot: ' + JSON.stringify(r)); ok(r.a > 0 && r.b > 0 && r.b < r.a, 'struck and conducted: ' + JSON.stringify(r));
         same(r.egg, false, 'an egg\'s shot chains'); same(r.reaver, false, 'the Reaver\'s shot chains'); same(r.name, 'CHAIN LIGHTNING', 'its name'); same(r.info, 'MAIN ATTACK · CHAIN LIGHTNING', 'INFO');
     });
-    check('STATIC VORTEX is STATIONARY (it never travels or grows) and pulls the enemies in it toward its middle; a beetle is too heavy to drag; one outside it is left alone', () => {
+    check('STATIC VORTEX is STATIONARY (it never travels or grows) and pulls the enemies in it to a spot VORTEX_HOLD tile in front of its middle (the owner, build 2026-11-11o: so the tornado does not hide them); a beetle is too heavy to drag; one outside it is left alone', () => {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'sniper', 'thunderhead'), t = __foe(f.x + 5, f.y), p = __foe(f.x + 6.9, f.y + 0.4), b = __foe(f.x + 5, f.y + 1.8, 'beetle'), out = __foe(f.x + 9, f.y);
-            __fire(f); __off(f); const v = elementEffects.find(e => e.type === 'staticVortex'), x0 = v.x, y0 = v.y, r0 = v.radius, d0 = Math.hypot(p.x - v.x, p.y - v.y), b0 = [b.x, b.y], o0 = [out.x, out.y];
+            __fire(f); __off(f); const v = elementEffects.find(e => e.type === 'staticVortex'), x0 = v.x, y0 = v.y, r0 = v.radius, G = staticVortexGather(v), d0 = Math.hypot(p.x - G.x, p.y - G.y), b0 = [b.x, b.y], o0 = [out.x, out.y];
             let moved = false; for (let i = 0; i < 90; i++) { render(); if (v.x !== x0 || v.y !== y0 || v.radius !== r0) moved = true; }
-            return { at: [x0, y0], t: [5, 0], moved, d0, d1: Math.hypot(p.x - x0, p.y - y0), beetle: Math.hypot(b.x - b0[0], b.y - b0[1]), outMoved: Math.hypot(out.x - o0[0], out.y - o0[1]), r: r0, R: VORTEX_RADIUS }; })()`);
-        same(r.moved, false, 'the vortex moved or grew'); same(r.r, r.R, 'its radius'); ok(r.d1 < r.d0 - 1, 'pulled in from ' + r.d0 + ' to ' + r.d1);
+            return { at: [x0, y0], t: [5, 0], moved, d0, d1: Math.hypot(p.x - G.x, p.y - G.y), beetle: Math.hypot(b.x - b0[0], b.y - b0[1]), outMoved: Math.hypot(out.x - o0[0], out.y - o0[1]), r: r0, R: VORTEX_RADIUS }; })()`);
+        same(r.moved, false, 'the vortex moved or grew'); same(r.r, r.R, 'its radius'); ok(r.d1 < r.d0 - 0.8 && r.d1 <= 0.35, 'pulled in to the gathering point from ' + r.d0 + ' to ' + r.d1);
         same(r.beetle, 0, 'the beetle was dragged'); same(r.outMoved, 0, 'an enemy outside it was pulled');
+    });
+    check('the enemies in the storm end at that point and not at its middle; the storm\'s radius and who is in it are still measured from the middle', () => {
+        const r = J(`(function(){ __clear(); const f = __fol('electric', 'sniper', 'thunderhead'), t = __foe(f.x + 5, f.y), a = __foe(f.x + 6.4, f.y - 0.6), edge = __foe(f.x + 5 + VORTEX_RADIUS - 0.1, f.y), out = __foe(f.x + 5 + VORTEX_RADIUS + 0.6, f.y);
+            __fire(f); __off(f); const v = elementEffects.find(e => e.type === 'staticVortex'), G = staticVortexGather(v), edge0 = [edge.x, edge.y], out0 = [out.x, out.y]; for (let i = 0; i < 150; i++) render();
+            return { aG: Math.hypot(a.x - G.x, a.y - G.y), aMid: Math.hypot(a.x - v.x, a.y - v.y), edgeMoved: Math.hypot(edge.x - edge0[0], edge.y - edge0[1]), outMoved: Math.hypot(out.x - out0[0], out.y - out0[1]) }; })()`);
+        ok(r.aG <= 0.35, 'it did not reach the gathering point: ' + r.aG); ok(r.aMid > 0.6, 'it ended at the storm\'s middle (under the funnel): ' + r.aMid); ok(r.edgeMoved > 0.5, 'one at the storm\'s edge was not pulled: ' + r.edgeMoved); same(r.outMoved, 0, 'one just outside the storm was pulled');
     });
     check('STATIC VORTEX bites every enemy in it every VORTEX_TICK frames for power × VORTEX_MULT, through the damage system, until it runs out after VORTEX_LIFE frames; it is the Thunderhead\'s move (ARC VOLLEY stays the Reaver\'s)', () => {
         const r = J(`(function(){ __clear(); const f = __fol('electric', 'sniper', 'thunderhead'), t = __foe(f.x + 5, f.y), out = __foe(f.x + 9.5, f.y); __fire(f); __off(f);

@@ -41,6 +41,12 @@ const rd = rel => fs.readFileSync(path.join(ROOT, rel), 'utf8');
         same(J('[VORTEX_RANGE, VORTEX_RADIUS, VORTEX_LIFE, VORTEX_PULL, VORTEX_TICK, VORTEX_MULT]').join(), '7,2.5,240,0.06,30,0.2', 'VORTEX_*');
     });
 
+    group('THE ENEMIES ARE GATHERED IN FRONT OF THE STORM, NOT UNDER IT (the owner: "make sure that the creatures are pushed to the opposite side of the tiles so that they\'re not being completely hidden")');
+    check('the pull gathers them VORTEX_HOLD tile in front of the storm\'s middle, on the camera\'s side: straight down the screen from the funnel\'s foot, by the hold distance', () => {
+        const r = J(`(function(){ const e = { x: 20, y: 12 }, G = staticVortexGather(e), sx = a => (a.x - 0 - (a.y - 0)) * TILE_W, sy = a => (a.x + a.y) * TILE_H; return { hold: VORTEX_HOLD, dist: Math.hypot(G.x - e.x, G.y - e.y), dx: sx(G) - sx(e), dy: sy(G) - sy(e), tileH: TILE_H }; })()`);
+        same(r.hold, 1, 'VORTEX_HOLD'); ok(Math.abs(r.dist - r.hold) < 1e-9, 'its distance from the middle: ' + r.dist); ok(Math.abs(r.dx) < 1e-9, 'not straight down the screen from the foot: ' + r.dx); ok(r.dy > 0 && Math.abs(r.dy - r.hold * Math.SQRT2 * r.tileH) < 1e-6, 'it is not in front (down the screen): ' + r.dy);
+    });
+
     group('THE SHEET: baked, cropped, named');
     check('img/evo/staticvortex.png is the cropped sheet js/evopack.js describes (16 columns, 8 rows, 256 px cells), and the Thunderhead\'s definition names it', () => {
         const png = fs.readFileSync(path.join(ROOT, 'img/evo/staticvortex.png')), w = png.readUInt32BE(16), h = png.readUInt32BE(20), pk = J(`EVO_PACK['img/evo/staticvortex.png'] || null`);
