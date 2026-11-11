@@ -1,6 +1,6 @@
 # The battle look (the JRPG feel)
 
-- **Status:** **Designed** (the direction approved 2026-11-11, from options); drafts next; nothing built.
+- **Status:** **Designed** (the direction approved 2026-11-11, from options). The first drafts (the faces, the battle view) are shown to the owner; nothing built.
 - **Owner:** the user (creative direction); the agent (implementation support)
 - **Last updated:** 2026-11-11
 - **Branch/build context:** `claude/start-game-project-HSh7Z`, after build `2026-11-11f`
@@ -52,7 +52,9 @@ What it is today:
 - **The edges:** a soft blur over the outer part of the picture with a little darkening. On GRAPHICS: LOW (and so on older iPads) only the darkening, which costs one fill a frame.
 
 **The numbers and fonts**
-- **Size:** about **twice as big** (28 px), with a small pop as each appears.
+- **Size:** about **twice as big** (28 px), with a small pop as each appears, and up about a second (today 0.6 s).
+- **Who leads:** the numbers. A weakness or resistance word is only a little bigger than today, and a status word sits a line above the numbers.
+- **No pile-ups:** words that would overlap stack upward, the newest moving up a line until it is clear.
 - **Fonts:** free-licensed (SIL Open Font License), shipped with the game (nothing loaded from elsewhere), and cut down to the letters and digits the game shows.
 - **Which face a number takes:**
   - The type of the hit's attack: a follower's from its form, anyone else's from the hit.
@@ -81,6 +83,8 @@ What it is today:
 - Panels open over the game: the HUD is unchanged.
 - `?attract` (the website's background): no battle view.
 - Dark rooms.
+- **The network panel and the Crystal's ring** (top right) are drawn with the world today. Under the zoom they slide off the edge and blur, so they must be drawn after the zoom (seen in the drafts).
+- **Words near the edge of the fight end up under the HUD:** the zoom pushes them outward (in the drafts, DEFEATED under the STUN button).
 - A fight at the edge of the screen: the zoom centres on you, as the camera does, so a far creature may leave the picture. The drafts should show whether to centre between you and the fight instead.
 
 ## 8. Acceptance criteria
@@ -99,7 +103,9 @@ Written per step once the drafts are approved.
 
 ## 10. Verification record
 
-Nothing built yet.
+Nothing built yet. The drafts (2026-11-11) were made in the real game in a test browser. The look was added there for the pictures only, with no change to the game's files:
+- a sheet of three candidate faces for each of the seven, against today's 14 px monospace;
+- one moment of a fight in the arena drawn three ways: today, the battle view on HIGH (1.25×, soft blurred edges) and on LOW (1.25×, darkened edges only), with the numbers in one set of the candidates.
 
 ## 11. Open questions
 
