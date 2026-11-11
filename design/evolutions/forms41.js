@@ -61,22 +61,35 @@ fx(929, "STATIC VORTEX tornado, design B: a faint funnel with three jagged bolts
     const ap = []; for (let i = 0; i <= 20; i++) { const s = i / 20; ap.push(new T.Vector3((_twHash(i, fr, 7) - 0.5) * 0.16 * Math.min(1, s * 4), _twH * s * 0.95, (_twHash(i, fr + 3, 7) - 0.5) * 0.16 * Math.min(1, s * 4))); }
     axis.core.geometry.dispose(); axis.core.geometry = new T.TubeGeometry(new T.CatmullRomCurve3(ap), 20, 0.025, 4, false); axis.halo.geometry.dispose(); axis.halo.geometry = new T.TubeGeometry(new T.CatmullRomCurve3(ap), 20, 0.07, 4, false); } };
 });
-// 930 · THE DARK STORM FUNNEL
-fx(930, "STATIC VORTEX tornado, design C: a dark grey funnel under a small storm cloud, lightning flickering from the cloud.", () => {
-  const g = G(), root = G(); g.add(root); const rad = s => _twRad(s, 1.2, 0.12, 1.6), H = _twH - 0.5;
-  root.add(_twFunnel(new T.MeshStandardMaterial({ color: _twC(0x2f394e), roughness: 0.85, metalness: 0.05, transparent: true, opacity: 0.75, side: T.DoubleSide }), rad, H));
-  const rings = _twRings(root, rad, H, 11, i => i % 2 ? 0x7d8ba6 : 0x161c2a, 0.7, 0.03, 1.4);
-  const cloud = G(); cloud.position.y = H + 0.05; root.add(cloud);
-  const puffs = [[-1.1, -0.05, 0.1, 0.62], [-0.5, 0.18, -0.3, 0.7], [0.3, 0.2, 0.25, 0.72], [1.0, -0.02, -0.1, 0.6], [0, -0.1, 0.0, 0.85], [-0.2, 0.28, 0.45, 0.55], [0.55, 0.05, -0.55, 0.55], [-0.85, 0.08, -0.5, 0.5]];
-  const cMat = _twStd(0x2a3243, 1), cMat2 = _twStd(0x5b6a86, 1);
-  puffs.forEach((p, i) => { const m = new T.Mesh(new T.SphereGeometry(p[3], 14, 10), i % 3 === 2 ? cMat2 : cMat); m.position.set(p[0], p[1], p[2]); m.scale.set(1, 0.55, 1); cloud.add(m); });
+// 930 · THE DARK STORM, REVISED (the owner chose C of the six, then: "Need design fix for tornado": the funnel "bigger and twistier", the cloud "swirling", the colour "lighter grey-blue"): a long narrow stem flaring wide at the
+// top and bending in an S as it turns, spiral bands winding up it, a swirling cloud of curling arms round a dark eye on top (the hurricane's, No. 931), lightning flickering from the cloud. Bigger than the first C (4.2 tall, 1.45 across
+// at the top, was 3.5 and 1.2). The idle block (act 0) is its loop with the lightning on frames 1 and 2; the action block (act > 0) the same loop with none (js/evolution.js staticVortexCol).
+fx(930, "STATIC VORTEX tornado, design C (revised): a bigger, twistier grey-blue funnel with spiral bands under a swirling cloud, lightning flickering from it.", () => {
+  const g = G(), root = G(); g.add(root); const H = 4.2, rTop = 1.45, rFoot = 0.13, N = 56;
+  const rad = s => rFoot + (rTop - rFoot) * Math.pow(s, 2.2);   // a long narrow stem, flaring wide at the top
+  const bx = (s, u) => 0.24 * s * Math.sin(u * TAU + s * 4.2), bz = (s, u) => 0.17 * s * Math.sin(u * TAU + s * 3.1 + 1.3);   // the axis bends in an S that turns with the loop
+  const funnel = _twFunnel(new T.MeshStandardMaterial({ color: _twC(0x7d8fae), roughness: 0.85, metalness: 0.05, transparent: true, opacity: 0.78, side: T.DoubleSide }), rad, H, 24); root.add(funnel);
+  const base = funnel.geometry.attributes.position.array.slice();
+  // the spiral bands: four, alternately pale and dark, wound 2.4 times up the funnel
+  const bandMat = [_twLight(0xe3ecf8), _twLight(0x4a5b7a), _twLight(0xe3ecf8), _twLight(0x4a5b7a)], bands = bandMat.map(m => { const t = new T.Mesh(new T.BufferGeometry(), m); root.add(t); return t; });
+  // the cloud: a dark underside, four curling arms of flat puffs round a dark eye, the funnel running into it
+  const cloud = G(); cloud.position.y = H; root.add(cloud);
+  const under = new T.Mesh(new T.CylinderGeometry(1.95, 1.55, 0.12, 40), _twGlass(0x3a465e, 0.85, 1)); under.position.y = -0.05; cloud.add(under);
+  const puffG = new T.SphereGeometry(1, 10, 8), pale = _twStd(0x6f80a0, 1), mid = _twStd(0x566688, 1), dim = _twStd(0x445370, 1);   // (the scene's lights brighten the cloud's top: these read as a soft grey-blue, not white)
+  for (let a = 0; a < 4; a++) for (let i = 0; i < 18; i++) { const q = i / 17, an = a * PI / 2 + q * 3.5, r = 1.95 * (0.13 + 0.87 * q), sz = 0.15 + 0.3 * Math.sin(PI * Math.min(1, q * 1.1));
+    for (let layer = 0; layer < 2; layer++) { const m = new T.Mesh(puffG, layer ? pale : (q > 0.55 ? dim : mid)); m.position.set(Math.cos(an) * r, 0.04 + layer * 0.1 + 0.04 * Math.sin(q * PI), Math.sin(an) * r); m.scale.set(sz * 1.5, sz * (layer ? 0.42 : 0.55), sz * (layer ? 0.8 : 1)); m.rotation.y = -an - 0.5; cloud.add(m); } }
+  const eye = new T.Mesh(new T.CylinderGeometry(0.3, 0.3, 0.2, 18), _twStd(0x1d2535, 1)); eye.position.y = 0.06; cloud.add(eye);
   const bolt = new T.Mesh(new T.BufferGeometry(), _twLight(0xfff6b0)), halo = new T.Mesh(new T.BufferGeometry(), _twLight(0xffd21a, 0.4)); root.add(halo); root.add(bolt);
-  // (the idle block, act 0, is the loop with its lightning on frames 1 and 2; the action block, act > 0, is the same loop with none, frame i at act (i + 0.5) / 8: the game flashes only every few loops, js/evolution.js staticVortexCol)
-  return { g, core: 1.2, update(t, act) { const calm = act > 0, u = calm ? Math.floor(act * 8) / 8 : _twU(t), fr = Math.round(u * 8); _twSway(root, u);
-    rings.forEach(R => { R.gr.rotation.y = u * PI * R.k; }); cloud.rotation.y = u * TAU;
+  const tube = (pts, r) => new T.TubeGeometry(new T.CatmullRomCurve3(pts), pts.length * 3, r, 5, false);
+  // (the idle block, act 0, is the loop with its lightning on frames 1 and 2; the action block, act > 0, is the same loop with none, frame i at act (i + 0.5) / 8: the game flashes only every few loops)
+  return { g, core: 1.2, update(t, act) { const calm = act > 0, u = calm ? Math.floor(act * 8) / 8 : _twU(t), fr = Math.round(u * 8);
+    const pos = funnel.geometry.attributes.position, arr = pos.array; for (let i = 0; i < arr.length; i += 3) { const s = Math.min(1, Math.max(0, base[i + 1] / H)); arr[i] = base[i] + bx(s, u); arr[i + 2] = base[i + 2] + bz(s, u); } pos.needsUpdate = true;
+    bands.forEach((m, bi) => { const pts = []; for (let i = 0; i <= N; i++) { const s = i / N, a = bi * PI / 2 + u * PI + s * TAU * 2.4, r = rad(s) * 1.02; pts.push(new T.Vector3(Math.cos(a) * r + bx(s, u), H * s, Math.sin(a) * r + bz(s, u))); }
+      m.geometry.dispose(); m.geometry = tube(pts, 0.04 + 0.03 * (bi % 2)); });
+    cloud.position.x = bx(1, u); cloud.position.z = bz(1, u); cloud.rotation.y = -u * TAU / 4;
     const on = !calm && (fr === 1 || fr === 2); bolt.visible = halo.visible = on;
-    if (on) { const pts = []; let x = 0.3, y = H - 0.05, z = 0.2; for (let i = 0; i < 7; i++) { pts.push(new T.Vector3(x, y, z)); x += (_twHash(i, fr, 1) - 0.5) * 0.55; y -= 0.4; z += (_twHash(i, fr, 2) - 0.5) * 0.4; }
-      bolt.geometry.dispose(); bolt.geometry = new T.TubeGeometry(new T.CatmullRomCurve3(pts), 24, 0.04, 5, false); halo.geometry.dispose(); halo.geometry = new T.TubeGeometry(new T.CatmullRomCurve3(pts), 24, 0.11, 5, false); } } };
+    if (on) { const pts = []; let x = 0.9 + bx(1, u), y = H - 0.05, z = 0.3 + bz(1, u); for (let i = 0; i < 8; i++) { pts.push(new T.Vector3(x, y, z)); x += (_twHash(i, fr, 1) - 0.5) * 0.5 - 0.1; y -= 0.46; z += (_twHash(i, fr, 2) - 0.5) * 0.4; }
+      bolt.geometry.dispose(); bolt.geometry = tube(pts, 0.045); halo.geometry.dispose(); halo.geometry = tube(pts, 0.12); } } };
 });
 // 931 · THE HURRICANE
 fx(931, "STATIC VORTEX tornado, design D: a spiral of cloud arms turning overhead round a dark eye, a thin funnel dropping from it.", () => {

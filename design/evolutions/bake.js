@@ -44,7 +44,7 @@ const JOBS = [
   { id: 'tornadoF', form: 933, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
   // THE STATIC VORTEX (the owner chose design C of the six, 2026-11-11: "C"): the dark storm funnel, form 930, the game's sheet for the Thunderhead's second attack (js/evolution.js staticVortexDraw): bake it alone:
   //   node design/evolutions/bake.js <three> img/evo staticvortex 256 3.0222   then node design/evolutions/crop_sheets.js
-  { id: 'staticvortex', form: 930, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.0 },
+  { id: 'staticvortex', form: 930, color: '#ffe033', idleAct: 0, action: [0, 1.0], pulse: false, unpremul: true, lookY: 2.5 },
   // Nos. 880-882 (forms34.js), the user's pencil sketch (2026-11-01): the HOVER SHELL made sleek (one low hull, two tall prongs; its action fires the launcher) and the JELLY RAM
   // redone (a faceted glass head with a bubble lit blue white inside, a swirly collar orbiting its neck, seven fat tentacles, one curled; it swims and rams). The Jelly Ram was
   // approved ("The brawler looks good") and replaces the game's sheet of its name; the form it replaces bakes as jellyram_867, to compare.
