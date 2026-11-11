@@ -4,6 +4,15 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11v` · branch `claude/start-game-project-HSh7Z` · THE CORE: the creature's slab under the cube
+- **The owner:** "I honestly want a way to incorporate the little player to shoot or attack predator little bubble. I want that to be incorporated into that little menu down there as well, but I want the whole thing to look elegant". Of three drafts the owner circled the slab and drew it under the cube, then: "This should be in a fixed position. It shouldn't move up whenever the predator lock on pill button shows up."
+- **The creature's slab.** While a creature is locked, its slab stands under your cube, over the pills and your slab: its picture in a round socket, its name and level, its health, INFO and the trigger. It replaces the round dial on a tablet or a desktop (a phone keeps the dial).
+- **A press on it shoots**, as the dial's did: a tap is a shot, holding keeps firing; it never walks you. INFO opens the INFO card beside it.
+- **The cube shoots it.** The cube looks down at the slab; as you fire, a beam runs from under the cube into the slab, the slab lights, and the damage pops over it.
+- **Fixed.** THE CORE is 356 px tall for good: the cube stays in the raised place whether or not a creature is locked. With none locked the band under the cube is empty.
+- Files: js/corehud.js, js/targeting.js (`targetFireHold`, no dial while THE CORE is shown), game.html, tests/corehud.js; design/ui-mocks/core-target/draft.js; docs/UI-STYLE.md, docs/CHANGELOG.md, docs/DECISION-LOG.md, docs/OPEN-QUESTIONS.md, bible.html.
+- Verified: `tests/corehud.js` (the slab in the sandbox and in the real page at three iPad sizes: shown, a press shoots and walks nowhere, INFO, gone with the creature, the cube not moved) and the nearest suites. Not playtested.
+
 ### Build `2026-11-11u` · branch `claude/start-game-project-HSh7Z` · THE CORE from the owner's playtest
 - **The owner, playing build `2026-11-11t`:** "When I click on the new menu, it moves the character across the map, and the buttons feel a little too small, and it's the new little box should include the ammo and the equipped item with it".
 - **A tap on THE CORE never walks you.** Its slab, the cube's sides, the arc and the labels let a tap through to the map. Now two pads take the tap: all of its box (340 × 300) but the empty strip at its left above the pills, which stays the map's. Its buttons sit on top of them.

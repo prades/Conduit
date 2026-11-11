@@ -812,7 +812,7 @@ The agent's choices, to change on the owner's word:
 7. **A pill that does not fit** in the row (POISONED beside a potion and kits) goes a row up, out to the left of the box.
 8. **Under the ring** (a long press) it dims to a third and lets taps through.
 9. **Its pads take a tap** over all of its box (its empty corners too: a tap there does nothing) but a strip 56 px wide at its left above the pills, which stays the map's and where the dialogue's box now stops. They could take only its drawn parts.
-10. **The target bubble in it** (drafts, not built; `UI-STYLE.md`, THE CORE): the owner circled C SLABS and drew it down under the cube; drafted as C2. To confirm: C2 as drawn, and whether the surge's words (inside the owner's circle) come down too or stay on the arc.
+10. ~~**The target bubble in it**~~ settled: the owner circled C SLABS, drew it under the cube and asked for a fixed position; built in `2026-11-11v` (the surge's words stay on the arc). Open: the empty band under the cube with none locked (it could hold a faint NO TARGET); the slab's size; the beam and the damage number.
 
 ## BOTH (built in `2026-11-11s`; `COMBAT.md` §7.4, "BOTH")
 The agent's choices, to change on the owner's word:

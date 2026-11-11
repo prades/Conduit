@@ -21,8 +21,13 @@
 // box may reach (js/dialogue.js); GUARD, STUN, the PACK tag and the siphon are bigger, and the surge's words take a tap
 // as its face does; THE PILL ROW (the ammunition with the weapon in hand, the serum, the potion, the kits, POISONED: js/targeting.js) is in its box, over the slab. While the ring is up (a long press) it dims
 // and lets taps through to the ring.
+// Build 2026-11-11v, THE CREATURE'S SLAB: the round dial (the locked creature; a tap shoots it) folded into it. Of three drafts (design/ui-mocks/core-target) the owner circled the slab and drew it down
+// under the cube, then: "This should be in a fixed position. It shouldn't move up whenever the predator lock on pill button shows up." So its box is 356 tall for good, the cube in the raised place, and
+// while a creature is locked its slab stands under the cube, over the pills and your slab: its picture in a round socket, its name and level, its health, INFO, the trigger. A tap on it shoots (holding
+// keeps firing, as the dial did: js/targeting.js targetFireHold), the cube looks down at it, and each shot runs from the cube into it.
 const CORE_HUD = { hit: 40, heal: 70, shards: 70, ko: 150, boop: 36, lid: 16, lidOpen: 10, blinkEvery: 250, blinkFor: 8, bob: 2.5,   // (frames and pixels: the agent's, provisional)
-    emblem: 1.3, stunDown: 12, pills: [10, 229],   // GUARD and STUN 1.3 times the baked size, STUN 12 px lower (clear of GUARD's word); the pill row's left end and middle in its 340 x 300 box (game.html)
+    emblem: 1.3, stunDown: 12, pills: [10, 285],   // GUARD and STUN 1.3 times the baked size, STUN 12 px lower (clear of GUARD's word); the pill row's left end and middle in its 340 x 356 box (game.html)
+    foe: { x0: 34, y: 236, r: 22 }, shot: 9,       // the creature's slab: its left edge and middle in the box, half its height (game.html .core-foe); a shot's beam lasts this many frames
     strip: 56, padTop: 210,                        // the pads: the box but the strip this wide at its left, down to the pill row's top (its buttons start 62 px in)
     cols: { none: "#19e6c1", gunslinger: "#ffb347", technomancer: "#31e8ff", mutator: "#c06bff" } };
 let _core = null, _coreWas = null;
@@ -30,7 +35,7 @@ let _core = null, _coreWas = null;
 // dome's pictures, the crackle round STUN, and the face being chosen (_corePick)
 const _coreDrawn = { cv: null, g: null, dpr: 1, faceCv: null, fg: null, faceKey: "", emb: {}, dome: null, crackleAt: -1, crackle: null,
     F: { eye: "dash", col: "#00ff88", lx: 0, ly: 0, flash: null, glitch: false, crack: false, static: false, text: null, phase: 0 } };
-const _coreS = { hp: 3, mx: 3, shards: 0, ult: 0, ready: false, surging: false, surgeS: 0, siphon: true, stalled: false, guard: false, armed: false, rest: 0, restS: 0, pack: false, packN: 0, look: "plain", cls: "none", fight: false };
+const _coreS = { foe: null, shot: false, hp: 3, mx: 3, shards: 0, ult: 0, ready: false, surging: false, surgeS: 0, siphon: true, stalled: false, guard: false, armed: false, rest: 0, restS: 0, pack: false, packN: 0, look: "plain", cls: "none", fight: false };
 function coreOn() { return typeof hudCorners === "function" && hudCorners() && typeof CORE_FRAMES !== "undefined"; }
 // the top of THE CORE on the screen (CSS pixels), or null when it is not shown (js/targeting.js: the dial stands above it)
 function coreTop() { return _core && _coreWas && _core.topY > 0 ? _core.topY : null; }
@@ -39,6 +44,9 @@ function coreKnocked() { if (_core) _coreReact("ko"); }
 // THE PILL ROW's place in its box (js/targeting.js _tgAmmoIcon draws it there, on the game's canvas under it): its left end, its middle and how far right it may run (screen pixels); false while THE CORE is
 // hidden (a panel, the roster: the pills hide with it); null when it is not shown at all (a phone: the pills stay by the dial)
 function corePills() { if (!_core || !_coreWas || !(_core.pills.x > 0)) return null; return _core.topY > 0 ? _core.pills : false; }
+// THE CREATURE'S SLAB on the screen (js/targeting.js: no dial while THE CORE is on; the INFO card opens to its left): its left edge, its middle and half its height; false while THE CORE is hidden;
+// null when it is not shown at all (a phone: the dial)
+function coreFoe() { const Q = corePills(); return Q ? _core.foeAt : Q; }
 
 function _coreEl(tag, cls, text, parent) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
 function _coreBuild() {
@@ -59,9 +67,21 @@ function _coreBuild() {
         siphon: hit("core-siphon", "SIPHON", () => { if (typeof toggleSiphon === "function") toggleSiphon(); }) };
     _coreEl("span", "", "PACK", els.pack); els.packN = _coreEl("b", "", "0", els.pack); els.siphon.textContent = "⌁";
     const padA = _coreEl("div", "core-pad core-pad-a", null, root), padB = _coreEl("div", "core-pad core-pad-b", null, root); padA.style.left = CORE_HUD.strip + "px"; padB.style.top = CORE_HUD.padTop + "px";
+    // the creature's slab: a press on it is the trigger's (a tap shoots, holding keeps firing; the finger's lift lets go wherever it is: the press is held by it), and its INFO
+    const foe = _coreEl("button", "core-hit core-foe", null, root); foe.type = "button"; foe.setAttribute("aria-label", "FIRE");
+    _coreEl("span", "core-foe-slab", null, foe); const sock = _coreEl("span", "core-foe-sock", null, foe), pic = _coreEl("img", "", null, sock); pic.alt = "";
+    const frow = _coreEl("span", "core-foe-row", null, foe), fname = _coreEl("b", "", "", frow), flv = _coreEl("i", "", "", frow), fhp = _coreEl("span", "core-foe-hp", null, foe), fbar = _coreEl("i", "", null, fhp);
+    _coreEl("span", "core-foe-trig", null, foe).innerHTML = '<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="8"/><path d="M20 3v10M20 27v10M3 20h10M27 20h10"/></svg>';
+    const fdmg = _coreEl("em", "core-foe-dmg", "", foe), finfo = hit("core-foe-info", "INFO", () => { if (typeof infoOpen !== "undefined") infoOpen = !infoOpen; }); finfo.textContent = "i";
+    if (foe.addEventListener) {
+        foe.addEventListener("pointerdown", e => { e.stopPropagation(); if (e.preventDefault) e.preventDefault(); try { foe.setPointerCapture(e.pointerId); } catch (x) {} if (typeof targetFireHold === "function") targetFireHold(); });
+        const up = e => { e.stopPropagation(); if (typeof gunRelease === "function") gunRelease(); }; foe.addEventListener("pointerup", up); foe.addEventListener("pointercancel", up);
+        foe.addEventListener("click", e => e.stopPropagation());
+    }
+    Object.assign(els, { foe, pic, fname, flv, fbar, fdmg, finfo });
     if (root.addEventListener) root.addEventListener("click", _corePillTap);   // (a tap on a pad: its buttons' taps stop at them)
     _coreDrawn.cv = cv; _coreDrawn.g = cv.getContext ? cv.getContext("2d") : null;
-    _core = { root, els, look: null, art: null, img: null, imgs: {}, stunP: null, pills: { x: 0, y: 0, maxX: 0 }, bodyCls: null,
+    _core = { root, els, look: null, art: null, img: null, imgs: {}, stunP: null, pills: { x: 0, y: 0, maxX: 0 }, foeAt: { x0: 0, y: 0, r: CORE_HUD.foe.r }, bodyCls: null, foeId: null, foeHp: -1, dmg: 0, dmgAt: -1e9, foeTxt: {},
         hp: -1, shards: -1, topY: 0, packAt: 0, quiet: 0, lostAt: -1e9, gainAt: -1e9, react: null, reactAt: 0, plusN: 0, plusAt: -1e9, lost: 0, gain: 0, blinkAt: 0, txt: {}, place: "" };
 }
 // a tap on its face or on the surge's words: ARMY SURGE when it is full (js/helpers.js fireArmySurge), else it smiles
@@ -105,6 +125,8 @@ function _coreRead(S) {
     const gear = typeof playerGear === "function" ? playerGear() : null; S.look = gear && typeof CORE_FRAMES !== "undefined" && CORE_FRAMES.variants[gear] ? gear : "plain";
     S.cls = typeof playerClassKey !== "undefined" && playerClassKey && CORE_HUD.cols[playerClassKey] ? playerClassKey : "none";
     S.fight = typeof battleViewOn === "function" && battleViewOn();
+    S.foe = typeof targetOn === "function" && targetOn() && typeof targetCurrent === "function" ? targetCurrent() : null;   // (the creature the gun is locked on: its slab)
+    S.shot = !!S.foe && typeof player !== "undefined" && player && player.gunShotAt !== undefined && f - player.gunShotAt >= 0 && f - player.gunShotAt < CORE_HUD.shot;
     return S;
 }
 // each step (js/game.js render, with the HUD's other parts): the state, the reactions, the page's words; the drawing on a step with a picture
@@ -141,17 +163,34 @@ function coreTick() {
     _coreCls(E.siphon, "core-hit core-siphon" + (S.siphon ? "" : " off"));
     _coreSet(E.lg, "textContent", S.guard ? "GUARD ON" : "GUARD"); _coreCls(E.lg, "core-lbl" + (S.guard ? " on" : ""));
     _coreSet(E.ls, "textContent", S.rest > 0 ? S.restS + " S" : S.armed ? "PICK A TARGET" : "STUN"); _coreCls(E.ls, "core-lbl core-lst" + (S.armed ? " on" : S.rest > 0 ? " rest" : ""));
+    _coreFoeTick(S, f);
     const ring = typeof commandMode !== "undefined" && !!commandMode;   // (the ring is up: it dims and lets taps through to it, game.html)
-    const state = (S.hp <= 1 ? " low" : "") + (S.ready ? " ready" : "") + (S.surging ? " surging" : "") + (_core.react === "ko" ? " ko" : "") + (ring ? " ring" : "");
+    const state = (S.hp <= 1 ? " low" : "") + (S.ready ? " ready" : "") + (S.surging ? " surging" : "") + (_core.react === "ko" ? " ko" : "") + (ring ? " ring" : "") + (S.foe ? " foe" : "") + (S.shot ? " shot" : "");
     if (_core.txt.state !== state) { _core.txt.state = state; _core.root.className = state.trim(); }
     _corePlace(S);
     // where it is on the screen, for the dial above it and the pill row in it: read twice a second, not every frame, and at once when the page's classes change (a panel opening hides it)
     const bc = typeof document !== "undefined" && document.body ? document.body.className : "";
     if (f % 30 === 0 || !(_core.topY > 0) || bc !== _core.bodyCls) { _core.bodyCls = bc;
         const r = _core.root.getBoundingClientRect ? _core.root.getBoundingClientRect() : null; _core.topY = r && r.height > 0 ? r.top : 0;
-        if (_core.topY > 0) { const Q = _core.pills; Q.x = r.left + CORE_HUD.pills[0]; Q.y = r.top + CORE_HUD.pills[1]; Q.maxX = r.left + r.width - 4; } }
+        if (_core.topY > 0) { const Q = _core.pills; Q.x = r.left + CORE_HUD.pills[0]; Q.y = r.top + CORE_HUD.pills[1]; Q.maxX = r.left + r.width - 4; _core.foeAt.x0 = r.left + CORE_HUD.foe.x0; _core.foeAt.y = r.top + CORE_HUD.foe.y; } }
     if (typeof _simGhost !== "undefined" && _simGhost) return;   // (a step with no picture: nothing is drawn)
-    if (_core.react || S.armed || S.hp <= 1 || S.ready || S.surging || f % 2 === 0) _coreDraw(S, f);
+    if (_core.react || S.armed || S.hp <= 1 || S.ready || S.surging || S.shot || f % 2 === 0) _coreDraw(S, f);
+}
+// THE CREATURE'S SLAB, each step: shown while one is locked; its name, level, colour and picture when the creature changes; its health; the damage a shot did (the number, a moment)
+function _coreFoeTick(S, f) {
+    const E = _core.els, a = S.foe; if (!E.foe) return;
+    if (!a) { _core.foeId = null; _core.foeHp = -1; return; }
+    if (_core.foeId !== a) {
+        _core.foeId = a; _core.foeHp = a.health; _core.dmgAt = -1e9;
+        const info = typeof targetCardInfo === "function" ? targetCardInfo(a) : null, url = typeof targetPortraitURL === "function" ? targetPortraitURL(a) : "";
+        _coreSet(E.fname, "textContent", info ? info.title : String(a.speciesName || "").toUpperCase()); _coreSet(E.flv, "textContent", info && info.level !== null ? "LV " + info.level : "");
+        if (E.foe.style.setProperty) E.foe.style.setProperty("--fc", info ? info.col : "#ff8a6a"); if (url && E.pic.src !== url) E.pic.src = url;
+    }
+    if (a.health < _core.foeHp) { _core.dmg = (f - _core.dmgAt < 40 ? _core.dmg : 0) + Math.round(_core.foeHp - a.health); _core.dmgAt = f; }
+    _core.foeHp = a.health;
+    const k = Math.max(0, Math.min(1, Math.max(0, a.health) / Math.max(1, a.maxHealth || a.health || 1))), w = Math.round(k * 1000) / 10 + "%";
+    if (_core.foeTxt.w !== w) { _core.foeTxt.w = w; E.fbar.style.width = w; _coreCls(E.fbar, k > 0.5 ? "" : k > 0.25 ? "y" : "r"); }
+    _coreSet(E.fdmg, "textContent", f - _core.dmgAt < 40 && _core.dmg > 0 ? String(_core.dmg) : "");
 }
 // the look (the plain cube or the class's gear): its sheet and points
 function _coreLook(look) {
@@ -224,6 +263,7 @@ function _corePick(S, f) {
     else if (R === "heal") { F.eye = "happy"; F.col = "#7dffa8"; F.lx = 0; }
     else if (R === "shards" || R === "boop") { F.eye = "happy"; F.lx = R === "shards" ? -0.45 : 0; F.ly = R === "shards" ? -0.35 : 0; }
     else if (S.pack || R === "lid") { F.eye = "up"; F.lx = 0; F.ly = -0.85; }
+    else if (S.foe) { F.lx = 0; F.ly = 0.8; if (S.shot) { F.eye = "set"; F.flash = "rgba(255,240,200,0.16)"; } }   // (the creature's slab under it: it looks down at it, and sets its look to shoot)
     if (F.eye === "dash" && f % CORE_HUD.blinkEvery < CORE_HUD.blinkFor) F.eye = "blink";
     return F;
 }
@@ -280,6 +320,9 @@ function _coreDraw(S, f) {
     // the cables to GUARD and STUN (from its left flank, behind the cube)
     const r = P0.emblemR * CORE_HUD.emblem, St = _core.stunP, Gp = S.guard ? P0.guardUp : P0.guard, cable = (s, e, sag) => { g.beginPath(); g.moveTo(s[0] + dx, s[1] + dy); g.quadraticCurveTo((s[0] + e[0]) / 2 - 6, (s[1] + e[1]) / 2 + sag, e[0], e[1]); g.lineWidth = 6; g.strokeStyle = "#040506"; g.stroke(); g.lineWidth = 1.4; g.strokeStyle = "rgba(120,140,170,0.35)"; g.stroke(); };
     cable(P0.guardSock, [Gp[0] + r * 0.6, Gp[1] + r * 0.3], S.guard ? 4 : 20); cable(P0.stunSock, [St[0] + r * 0.6, St[1]], 14);
+    // a shot: it runs from under the cube down into the creature's slab (the slab is over this canvas: the beam goes in under its edge)
+    if (S.shot) { const x = P.bottom[0] + dx, y0 = P.bottom[1] + dy - 6, y1 = CORE_HUD.foe.y - 8, k = Math.max(0, 1 - (f - player.gunShotAt) / CORE_HUD.shot);
+        g.lineCap = "round"; g.beginPath(); g.moveTo(x, y0); g.lineTo(x, y1); g.lineWidth = 11; g.strokeStyle = "rgba(255,170,90," + (0.4 * k).toFixed(2) + ")"; g.stroke(); g.lineWidth = 3; g.strokeStyle = "rgba(255,243,200," + k.toFixed(2) + ")"; g.stroke(); }
     // the cube, then its face on its screen
     g.save(); g.translate(C[0] + dx, C[1] + dy); g.rotate(rot); g.translate(-C[0], -C[1]);
     const im = _core.img; if (im && im.complete && im.naturalWidth) g.drawImage(im, fi * A.cw, 0, A.cw, A.ch, A.ox / CORE_FRAMES.dpr, A.oy / CORE_FRAMES.dpr, A.cw / CORE_FRAMES.dpr, A.ch / CORE_FRAMES.dpr);
