@@ -4,6 +4,11 @@ What changed, build by build, newest first. Each entry names its commit (`git lo
 
 ## 2026-11-11
 
+### Build `2026-11-11m` · branch `claude/thunderhead-tornado` · the Thunderhead's STATIC VORTEX is a tornado
+- **The look** (the owner: "It's like a whirlwind vortex, and I kind of want to make it a like a tornado sort of look, and remove the highlighted floor effect"; of the agent's questions: a **pale wind funnel with yellow sparks**, **the disc and the dashed ring both removed**, **tall and narrow**): a funnel of turning dashed rings, narrow at the foot and wide at the top, swaying, a faint see-through body, yellow sparks spiralling up it, a little dust at its foot. Nothing is drawn flat on the floor. 13 rings and 12 sparks (7 and 6 on LOW graphics).
+- **How it works is unchanged:** the reach (7 tiles), the storm's radius (2.5 tiles), 4 s, the pull and the bite are as they were. The funnel is narrower than the pull's reach, so the reach is no longer drawn.
+- `js/elements.js` (case `staticVortex`, `FX_TORNADO`; the old turning-edge dash is gone). Tests: `tests/tornado.js` (new, 6 checks). Docs: `EFFECTS.md` §1. The sizes are the agent's, provisional. Seen in the real page in frozen frames; **not playtested**.
+
 ### Build `2026-11-11l` · branch `claude/skink-swirl-tile` · the Skink's green tile goes with its swirl
 - **In the battle view the Electro Skink's lit green tile follows its swirl** (the owner: "Whenever it attacks the little green square tile, highlight should match where it is at attacking the enemy"). While the vortex plays round an enemy the green tile is lit round the enemy's tile, a little wider than the enemy's red one so both show, and the Skink's own spot is not lit (its body is not drawn there). When the swirl ends it is back at its feet. No other follower's tile moves.
 - `js/evolution.js` `skinkSwirlSpot`, `js/battleview.js` `battleViewDecals`. Tests: `tests/skinkswirl.js` (2 new checks, 15 in all). Docs: `BATTLE-LOOK.md` §2, `COMBAT.md` §7.4. Seen in the real page in a frozen frame (before, mid-swirl, after). **Not playtested.**

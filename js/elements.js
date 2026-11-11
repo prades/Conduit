@@ -1056,7 +1056,10 @@ function updateElementEffects() {
     fxTidy();
 }
 
-const FX_VORTEX_DASH = [6, 5], FX_NO_DASH = [];   // (STATIC VORTEX's turning edge: made once, not a frame)
+const FX_NO_DASH = [];
+// STATIC VORTEX's tornado (the owner, 2026-11-11: "a tornado sort of look", no highlighted floor; a pale wind funnel with sparks, tall and narrow): its height and its radius at the top and at the foot, in screen px, and
+// the dashes of its turning rings: all made once, not a frame. PROVISIONAL (the agent's sizes; the pull's own reach is VORTEX_RADIUS, js/evolution.js, and does not change).
+const FX_TORNADO = { h: 112, top: 44, base: 6, dash: [[10, 7], [7, 9], [12, 6]] };
 function drawElementEffects() {
 
     // ── VOLCANIC ERUPTION — 3D DRAW ─────────────────────────
@@ -1585,25 +1588,38 @@ function drawElementEffects() {
                 if (b > 0) { ctx.globalAlpha = b * k; const h = 46 * (1 - b * 0.4); const gr = ctx.createLinearGradient(px, cy, px, cy - h); gr.addColorStop(0, "#ffd27a"); gr.addColorStop(1, "rgba(255,90,20,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(px - 8, cy); ctx.lineTo(px, cy - h); ctx.lineTo(px + 8, cy); ctx.closePath(); ctx.fill(); }   // the burst
                 break;
             }
-            // STATIC VORTEX (js/evolution.js staticVortex): a stationary storm VORTEX_RADIUS tiles round: a faint disc, its edge turning, three arms of lightning winding in to a bright eye at its middle.
+            // STATIC VORTEX (js/evolution.js staticVortex): a stationary TORNADO on the enemy (the owner, 2026-11-11: "a tornado sort of look", and no highlighted floor: the faint disc and the dashed ring are gone; a pale wind
+            // funnel with sparks, tall and narrow): stacked rings turning, narrow at the floor and wide at the top, the whole funnel swaying, a faint body between its edges, yellow sparks spiralling up it. Nothing is drawn flat on
+            // the floor but a little dust at its foot. See-through, so the enemies in it show. Its pull (VORTEX_RADIUS) is not drawn: the funnel is not as wide as it.
             case "staticVortex": {
-                const k = Math.min(1, (e.maxLife - e.life) / 12, e.life / 20), R = e.radius, rx = R * 1.4142 * TILE_W, ry = R * 1.4142 * TILE_H, cy = py + TILE_H, spin = frame * 0.12;
-                ctx.globalAlpha = 0.12 * k; ctx.fillStyle = "#ffee33";
-                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.globalAlpha = 0.55 * k; ctx.strokeStyle = "#fff27a"; ctx.lineWidth = 1.5; ctx.setLineDash(FX_VORTEX_DASH); ctx.lineDashOffset = -frame * 0.6;
-                ctx.beginPath(); ctx.ellipse(px, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash(FX_NO_DASH);
+                const age = e.maxLife - e.life, k = Math.min(1, age / 12, e.life / 20), cy = py + TILE_H, T = FX_TORNADO, L = gfxLow ? 7 : 13, H = T.h * (0.35 + 0.65 * k);
+                const sway = s => Math.sin(frame * 0.07 + s * 3.2) * 5 * s, rad = s => T.base + (T.top - T.base) * Math.pow(s, 1.7);
                 ctx.lineCap = "round"; ctx.lineJoin = "round";
-                for (let arm = 0; arm < 3; arm++) {
-                    ctx.globalAlpha = 0.8 * k; ctx.strokeStyle = arm === 0 ? "#ffffff" : "#ffee33"; ctx.lineWidth = arm === 0 ? 1.5 : 2;
-                    ctx.beginPath();
-                    for (let s = 0; s <= 12; s++) {
-                        const q = s / 12, an = spin + arm * 2.094 + q * 3.2, rr = 1 - q * 0.9, j = (s % 2 ? 2 : -2) * Math.sin(frame * 0.7 + arm + s), vx = px + Math.cos(an) * rx * rr + j, vy = cy + Math.sin(an) * ry * rr - q * 14;
-                        if (s) ctx.lineTo(vx, vy); else ctx.moveTo(vx, vy);
-                    }
-                    ctx.stroke();
+                // the body: a faint pale fill between the funnel's two edges
+                ctx.globalAlpha = 0.16 * k; ctx.fillStyle = "#dfe8f4";
+                ctx.beginPath(); ctx.moveTo(px + sway(0) - rad(0), cy);
+                for (let i = 1; i <= L; i++) { const s = i / L; ctx.lineTo(px + sway(s) - rad(s), cy - H * s); }
+                for (let i = L; i >= 0; i--) { const s = i / L; ctx.lineTo(px + sway(s) + rad(s), cy - H * s); }
+                ctx.closePath(); ctx.fill();
+                // the rings: each a dashed ellipse of the floor's slant turning round the funnel, faster at its foot
+                ctx.lineWidth = 1.6;
+                for (let i = 1; i <= L; i++) {
+                    const s = i / L, r = rad(s);
+                    ctx.globalAlpha = (0.3 + 0.35 * (1 - s)) * k; ctx.strokeStyle = i % 4 === 0 ? "#fff6c8" : "#e8f0fa";
+                    ctx.setLineDash(T.dash[i % 3]); ctx.lineDashOffset = -frame * (1.4 + 1.4 * (1 - s));
+                    ctx.beginPath(); ctx.ellipse(px + sway(s), cy - H * s, r, r * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
                 }
-                ctx.globalAlpha = (0.5 + 0.3 * Math.sin(frame * 0.5)) * k; ctx.fillStyle = "#ffffff";
-                ctx.beginPath(); ctx.ellipse(px, cy - 14, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.setLineDash(FX_NO_DASH);
+                // the sparks: yellow, spiralling up the funnel's skin, a few with a bright core
+                const n = gfxLow ? 6 : 12; ctx.fillStyle = "#ffee33";
+                for (let i = 0; i < n; i++) {
+                    const s = (frame * 0.011 + i / n) % 1, an = frame * 0.26 + i * 2.4 + s * 7, r = rad(s) * 0.95, sx = px + sway(s) + Math.cos(an) * r, sy = cy - H * s + Math.sin(an) * r * 0.5;
+                    ctx.globalAlpha = (0.95 - 0.5 * s) * k; ctx.fillRect(sx - 1.4, sy - 1.4, 2.8, 2.8);
+                    if (i % 3 === 0) { ctx.globalAlpha = k; ctx.fillStyle = "#ffffff"; ctx.fillRect(sx - 0.7, sy - 0.7, 1.4, 1.4); ctx.fillStyle = "#ffee33"; }
+                }
+                // a little dust turning at its foot
+                ctx.fillStyle = "#cfd6dc";
+                for (let i = 0; i < 5; i++) { const an = frame * 0.3 + i * 1.26; ctx.globalAlpha = 0.45 * k; ctx.fillRect(px + Math.cos(an) * 14 - 1, cy + Math.sin(an) * 7 - 0.5, 2.4, 1.2); }
                 break;
             }
             // FAULTLINE's path (js/techabilities.js techFaultlineAt): a molten line along the drawn path from the moment it is sent; the stretch the Burrower has passed burns white-hot, the rest pulses

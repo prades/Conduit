@@ -2878,3 +2878,11 @@ When built, it supersedes evolution at level 10 with the element a follower was 
 - Read as: during the swirl the green tile is lit at the enemy, where the Skink is shown. The agent's detail, provisional: it is drawn a little wider than the enemy's red tile (0.52 of a tile, not 0.42) so both outlines show instead of one on top of the other.
 - Alternatives not taken (not asked): the same size as the red tile (the two would overlap exactly); lighting the tile only when the Skink is not at the enemy.
 - Status: Implemented and tested; not playtested.
+
+## DECISION: The Thunderhead's STATIC VORTEX is a tornado (2026-11-11, build `2026-11-11m`, branch `claude/thunderhead-tornado`)
+- The owner: "For the Thunderhead, I want to work on his secondary attack. It's like a whirlwind vortex, and I kind of want to make it a like a tornado sort of look, and remove the highlighted floor effect."
+- Asked its make, the floor and the size: **a wind funnel with sparks** (not a lightning funnel, not a dark storm funnel); **the disc and the dashed ring both go** (not the disc only); **tall and narrow** (not as wide as the reach).
+- Consequence: the pull's 2.5-tile reach is no longer drawn (the funnel is about 44 px across at the top, the reach 212 px). Offered back only if wanted.
+- Agent's (provisional): 112 px tall, 44 px top radius, 13 rings and 12 sparks (7 and 6 on LOW), the dust at the foot, the sway.
+- Not changed: what the move does (reach, radius, life, pull, bite): look only.
+- Status: Implemented and tested; not playtested. `EFFECTS.md`, `CHANGELOG.md`.
